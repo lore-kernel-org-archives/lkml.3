@@ -1,54 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758020AbaE2RPL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 13:15:11 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:48387 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757320AbaE2RPJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 13:15:09 -0400
-Date: Thu, 29 May 2014 13:04:14 -0400
-From: "John W. Linville" <linville@tuxdriver.com>
-To: Gustavo Padovan <gustavo@padovan.org>, linux-wireless@vger.kernel.org,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: pull request: bluetooth-next 2014-05-26
-Message-ID: <20140529170414.GC3542@tuxdriver.com>
-References: <20140526214122.GA2034@joana>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140526214122.GA2034@joana>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1758044AbaE2RPs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 13:15:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9415 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758027AbaE2RPr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 13:15:47 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <CA+icZUXfzPsqZt6=o5evcQ2xO9XGKcMVYBO1zco0aEmGn_x0rA@mail.gmail.com>
+References: <CA+icZUXfzPsqZt6=o5evcQ2xO9XGKcMVYBO1zco0aEmGn_x0rA@mail.gmail.com> <1400838223-30844-1-git-send-email-miklos@szeredi.hu> <28592.1401382081@warthog.procyon.org.uk>
+To: sedat.dilek@gmail.com
+Cc: dhowells@redhat.com, Miklos Szeredi <miklos@szeredi.hu>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>, apw@canonical.com,
+        Felix Fietkau <nbd@openwrt.org>, neilb@suse.de, jordipujolp@gmail.com,
+        ezk@fsl.cs.sunysb.edu, "J. R. Okajima" <hooanon05@yahoo.co.jp>,
+        mszeredi@suse.cz
+Subject: Re: Unionmount and overlayfs testsuite
+Date: Thu, 29 May 2014 18:15:05 +0100
+Message-ID: <29026.1401383705@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 26, 2014 at 06:41:22PM -0300, Gustavo Padovan wrote:
-> Hi John,
-> 
-> Some more patches for 3.16. There is nothing really special here, just a
-> bunch of clean ups, fixes plus some small improvements. Please pull.
-> 
-> Thanks!
-> 
-> 	Gustavo
-> 
-> ---
-> 
-> The following changes since commit 22e70786413ed05950207eda7be420c280b776d7:
-> 
->   Bluetooth: Remove hci_h4 unused defines (2014-04-24 11:55:26 -0300)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth-next.git for-upstream
-> 
-> for you to fetch changes up to d7b2545023ecfde94d3ea9c03c5480ac18da96c9:
-> 
->   Bluetooth: Clearly distinguish mgmt LTK type from authenticated property (2014-05-23 11:24:04 -0700)
+Sedat Dilek <sedat.dilek@gmail.com> wrote:
 
-Pulling now...
+> # grep LOCKDEP /boot/config-3.15.0-rc7-58.1-iniza-small
+> CONFIG_LOCKDEP_SUPPORT=y
 
--- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+That's not LOCKDEP, merely support for it.  What I see:
+
+	warthog>grep LOCKDEP build/.config
+	CONFIG_LOCKDEP_SUPPORT=y
+	CONFIG_LOCKDEP=y
+
+> ./tool_box.inc: line 144: /usr/local/bin/open-file: No such file or directory
+
+Did you follow this step in the README file?
+
+	(2) Copy fs-op and open-file to /usr/local/bin/
+
+David
