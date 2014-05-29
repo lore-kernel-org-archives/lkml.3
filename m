@@ -1,111 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934663AbaE2Fez (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 01:34:55 -0400
-Received: from mail.dev.rtsoft.ru ([213.79.90.226]:56161 "EHLO dev.rtsoft.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933267AbaE2Few (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 01:34:52 -0400
-Message-ID: <5386C6F9.7070202@dev.rtsoft.ru>
-Date: Thu, 29 May 2014 09:34:49 +0400
-From: Nikita Yushchenko <nyushchenko@dev.rtsoft.ru>
-Organization: RTSoft Software Development Center
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
-MIME-Version: 1.0
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: Mathias Nyman <mathias.nyman@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        lugovskoy@dev.rtsoft.ru
-Subject: Re: [PATCH] usb: pci-quirks: do not access OHCI_FMINTERVAL register
- on ULI hw
-References: <Pine.LNX.4.44L0.1405281014320.1552-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1405281014320.1552-100000@iolanthe.rowland.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1756256AbaE2Ee6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 00:34:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57610 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756057AbaE2Eer (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 00:34:47 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Roman Pen <r.peniaev@gmail.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Jens Axboe <axboe@fb.com>
+Subject: [PATCH 3.14 010/140] blktrace: fix accounting of partially completed requests
+Date: Wed, 28 May 2014 21:32:29 -0700
+Message-Id: <20140529043050.901994594@linuxfoundation.org>
+X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
+In-Reply-To: <20140529043049.661315084@linuxfoundation.org>
+References: <20140529043049.661315084@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> It would help to print the value of fminterval.
-> And here to print the value obtained by the readl().
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
-I've checked these... all values read as 0xffffffff - which does not
-look correct
+------------------
 
-readl(base + OHCI_CONTROL) several lines before returns 0x00000000
-Read of HcRevision register (base + 0x0) at the same point returns
-0x00000110.
+From: Roman Pen <r.peniaev@gmail.com>
 
-If I comment out access to OHCI_FMINTERVAL, then, after writing OHCI_HCR
-to CMDSTATUS, read of OHCI_CMDSTATUS immediately returns zero, and
-routine succeeds.
+commit af5040da01ef980670b3741b3e10733ee3e33566 upstream.
 
->> irq 26: nobody cared (try booting with the "irqpoll" option)
->> CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.15.0-rc6-dirty #5
->> Call Trace:
->> [effe5ed0] [c000726c] show_stack+0x48/0x15c (unreliable)
->> [effe5f10] [c05eece4] dump_stack+0x78/0xa0
->> [effe5f20] [c0087acc] __report_bad_irq+0x38/0x100
->> [effe5f40] [c0088060] note_interrupt+0x224/0x280
->> [effe5f70] [c008563c] handle_irq_event_percpu+0xc8/0x178
->> [effe5fa0] [c0085730] handle_irq_event+0x44/0x74
->> [effe5fc0] [c0088f88] handle_fasteoi_irq+0xd4/0x1d0
->> [effe5fd0] [c0084d20] generic_handle_irq+0x30/0x50
->> [effe5fe0] [c00048d0] __do_irq+0x2c/0x70
->> [effe5ff0] [c000d9a0] call_do_irq+0x24/0x3c
->> [ef047d10] [c00049a0] do_IRQ+0x8c/0xf8
->> [ef047d30] [c000f598] ret_from_except+0x0/0x18
->> --- Exception: 501 at quirk_usb_early_handoff+0x794/0x85c
->>     LR = quirk_usb_early_handoff+0x788/0x85c
-> 
-> That exception looks very suspicious.  Do you know what it means?
+trace_block_rq_complete does not take into account that request can
+be partially completed, so we can get the following incorrect output
+of blkparser:
 
-This is just what powerpc backtraces show for hardware interrupt.
-I.e. hardware interrupt happened at quirk_usb_early_handoff+0x794/0x85c
+  C   R 232 + 240 [0]
+  C   R 240 + 232 [0]
+  C   R 248 + 224 [0]
+  C   R 256 + 216 [0]
 
-> 
-> It looks like this IRQ 26 stuff has no connection with OHCI, right?
+but should be:
 
-26 is a virtual number, assigned by irq_of_parse_and_map() call.
-Physically it is MPIC internal IRQ 9, which is PCI Express port 2 IRQ.
-(ULI1553 southbridge is connected to PCI Express port 2).
-This is not interrupt from PCI/PCIe device, but interrupt from
-controller itself. However, per code in fsl_pci_pme_handle(), none of
-bits in status register are set (otherwise it won't return IRQ_NONE, and
-kernel won't claim that "nobody cared"). Looks bogus.
+  C   R 232 + 8 [0]
+  C   R 240 + 8 [0]
+  C   R 248 + 8 [0]
+  C   R 256 + 8 [0]
 
->> A2
->> A3
->> A4
->> A5
->> A4
->> A5
->> A4
->> A5
->> A4
->> A5
->> A4
->>
->> and hang.
-> 
-> Meaning that it stops completely, not that it goes into an infinite 
-> loop?
+Also, the whole output summary statistics of completed requests and
+final throughput will be incorrect.
 
-Yes, it hangs.
+This patch takes into account real completion size of the request and
+fixes wrong completion accounting.
+
+Signed-off-by: Roman Pen <r.peniaev@gmail.com>
+CC: Steven Rostedt <rostedt@goodmis.org>
+CC: Frederic Weisbecker <fweisbec@gmail.com>
+CC: Ingo Molnar <mingo@redhat.com>
+CC: linux-kernel@vger.kernel.org
+Signed-off-by: Jens Axboe <axboe@fb.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ block/blk-core.c             |    2 +-
+ include/trace/events/block.h |   33 ++++++++++++++++++++++++++++++---
+ kernel/trace/blktrace.c      |   20 +++++++++++---------
+ 3 files changed, 42 insertions(+), 13 deletions(-)
+
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -2353,7 +2353,7 @@ bool blk_update_request(struct request *
+ 	if (!req->bio)
+ 		return false;
+ 
+-	trace_block_rq_complete(req->q, req);
++	trace_block_rq_complete(req->q, req, nr_bytes);
+ 
+ 	/*
+ 	 * For fs requests, rq is just carrier of independent bio's
+--- a/include/trace/events/block.h
++++ b/include/trace/events/block.h
+@@ -132,6 +132,7 @@ DEFINE_EVENT(block_rq_with_error, block_
+  * block_rq_complete - block IO operation completed by device driver
+  * @q: queue containing the block operation request
+  * @rq: block operations request
++ * @nr_bytes: number of completed bytes
+  *
+  * The block_rq_complete tracepoint event indicates that some portion
+  * of operation request has been completed by the device driver.  If
+@@ -139,11 +140,37 @@ DEFINE_EVENT(block_rq_with_error, block_
+  * do for the request. If @rq->bio is non-NULL then there is
+  * additional work required to complete the request.
+  */
+-DEFINE_EVENT(block_rq_with_error, block_rq_complete,
++TRACE_EVENT(block_rq_complete,
+ 
+-	TP_PROTO(struct request_queue *q, struct request *rq),
++	TP_PROTO(struct request_queue *q, struct request *rq,
++		 unsigned int nr_bytes),
+ 
+-	TP_ARGS(q, rq)
++	TP_ARGS(q, rq, nr_bytes),
++
++	TP_STRUCT__entry(
++		__field(  dev_t,	dev			)
++		__field(  sector_t,	sector			)
++		__field(  unsigned int,	nr_sector		)
++		__field(  int,		errors			)
++		__array(  char,		rwbs,	RWBS_LEN	)
++		__dynamic_array( char,	cmd,	blk_cmd_buf_len(rq)	)
++	),
++
++	TP_fast_assign(
++		__entry->dev	   = rq->rq_disk ? disk_devt(rq->rq_disk) : 0;
++		__entry->sector    = blk_rq_pos(rq);
++		__entry->nr_sector = nr_bytes >> 9;
++		__entry->errors    = rq->errors;
++
++		blk_fill_rwbs(__entry->rwbs, rq->cmd_flags, nr_bytes);
++		blk_dump_cmd(__get_str(cmd), rq);
++	),
++
++	TP_printk("%d,%d %s (%s) %llu + %u [%d]",
++		  MAJOR(__entry->dev), MINOR(__entry->dev),
++		  __entry->rwbs, __get_str(cmd),
++		  (unsigned long long)__entry->sector,
++		  __entry->nr_sector, __entry->errors)
+ );
+ 
+ DECLARE_EVENT_CLASS(block_rq,
+--- a/kernel/trace/blktrace.c
++++ b/kernel/trace/blktrace.c
+@@ -702,6 +702,7 @@ void blk_trace_shutdown(struct request_q
+  * blk_add_trace_rq - Add a trace for a request oriented action
+  * @q:		queue the io is for
+  * @rq:		the source request
++ * @nr_bytes:	number of completed bytes
+  * @what:	the action
+  *
+  * Description:
+@@ -709,7 +710,7 @@ void blk_trace_shutdown(struct request_q
+  *
+  **/
+ static void blk_add_trace_rq(struct request_queue *q, struct request *rq,
+-			     u32 what)
++			     unsigned int nr_bytes, u32 what)
+ {
+ 	struct blk_trace *bt = q->blk_trace;
+ 
+@@ -718,11 +719,11 @@ static void blk_add_trace_rq(struct requ
+ 
+ 	if (rq->cmd_type == REQ_TYPE_BLOCK_PC) {
+ 		what |= BLK_TC_ACT(BLK_TC_PC);
+-		__blk_add_trace(bt, 0, blk_rq_bytes(rq), rq->cmd_flags,
++		__blk_add_trace(bt, 0, nr_bytes, rq->cmd_flags,
+ 				what, rq->errors, rq->cmd_len, rq->cmd);
+ 	} else  {
+ 		what |= BLK_TC_ACT(BLK_TC_FS);
+-		__blk_add_trace(bt, blk_rq_pos(rq), blk_rq_bytes(rq),
++		__blk_add_trace(bt, blk_rq_pos(rq), nr_bytes,
+ 				rq->cmd_flags, what, rq->errors, 0, NULL);
+ 	}
+ }
+@@ -730,33 +731,34 @@ static void blk_add_trace_rq(struct requ
+ static void blk_add_trace_rq_abort(void *ignore,
+ 				   struct request_queue *q, struct request *rq)
+ {
+-	blk_add_trace_rq(q, rq, BLK_TA_ABORT);
++	blk_add_trace_rq(q, rq, blk_rq_bytes(rq), BLK_TA_ABORT);
+ }
+ 
+ static void blk_add_trace_rq_insert(void *ignore,
+ 				    struct request_queue *q, struct request *rq)
+ {
+-	blk_add_trace_rq(q, rq, BLK_TA_INSERT);
++	blk_add_trace_rq(q, rq, blk_rq_bytes(rq), BLK_TA_INSERT);
+ }
+ 
+ static void blk_add_trace_rq_issue(void *ignore,
+ 				   struct request_queue *q, struct request *rq)
+ {
+-	blk_add_trace_rq(q, rq, BLK_TA_ISSUE);
++	blk_add_trace_rq(q, rq, blk_rq_bytes(rq), BLK_TA_ISSUE);
+ }
+ 
+ static void blk_add_trace_rq_requeue(void *ignore,
+ 				     struct request_queue *q,
+ 				     struct request *rq)
+ {
+-	blk_add_trace_rq(q, rq, BLK_TA_REQUEUE);
++	blk_add_trace_rq(q, rq, blk_rq_bytes(rq), BLK_TA_REQUEUE);
+ }
+ 
+ static void blk_add_trace_rq_complete(void *ignore,
+ 				      struct request_queue *q,
+-				      struct request *rq)
++				      struct request *rq,
++				      unsigned int nr_bytes)
+ {
+-	blk_add_trace_rq(q, rq, BLK_TA_COMPLETE);
++	blk_add_trace_rq(q, rq, nr_bytes, BLK_TA_COMPLETE);
+ }
+ 
+ /**
 
 
->> I think problem is caused by access to OHCI regs from PCI quirks - before
->> driver was initialized. ULI1553 southbridge chip could be in strange state
->> at this point.
-> 
-> If that is the cause, we ought to be able to see it from the values
-> printed out by the debugging statements.  And if that is so, it's a
-> serious problem.  The southbridge chip really should be working at this
-> point, because the quirk_usb_handoff_* routines need to be able to
-> communicate with the host controllers.
-
-In this case, communication looks possible.
-However, read of OHCI_FMINTERVAL register somehow breaks it.
-
-Nikita
