@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933583AbaE2Esh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 00:48:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58613 "EHLO
+	id S933201AbaE2Eii (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 00:38:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58545 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933202AbaE2Eij (ORCPT
+	with ESMTP id S933137AbaE2Eib (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 00:38:39 -0400
+	Thu, 29 May 2014 00:38:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kumar Sundararajan <kumar@fb.com>, Chris Mason <clm@fb.com>,
+        Daniel Borkmann <dborkman@redhat.com>, Thomas Graf <tgraf@suug.ch>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        Vlad Yasevich <vyasevic@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 58/86] ipv6: fib: fix fib dump restart
-Date: Wed, 28 May 2014 21:37:33 -0700
-Message-Id: <20140529043521.344415824@linuxfoundation.org>
+Subject: [PATCH 3.10 39/86] net: sctp: wake up all assocs if sndbuf policy is per socket
+Date: Wed, 28 May 2014 21:37:14 -0700
+Message-Id: <20140529043518.759787741@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
 In-Reply-To: <20140529043513.451722422@linuxfoundation.org>
 References: <20140529043513.451722422@linuxfoundation.org>
@@ -27,45 +29,116 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kumar Sundararajan <kumar@fb.com>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-[ Upstream commit 1c2658545816088477e91860c3a645053719cb54 ]
+[ Upstream commit 52c35befb69b005c3fc5afdaae3a5717ad013411 ]
 
-When the ipv6 fib changes during a table dump, the walk is
-restarted and the number of nodes dumped are skipped. But the existing
-code doesn't advance to the next node after a node is skipped. This can
-cause the dump to loop or produce lots of duplicates when the fib
-is modified during the dump.
+SCTP charges chunks for wmem accounting via skb->truesize in
+sctp_set_owner_w(), and sctp_wfree() respectively as the
+reverse operation. If a sender runs out of wmem, it needs to
+wait via sctp_wait_for_sndbuf(), and gets woken up by a call
+to __sctp_write_space() mostly via sctp_wfree().
 
-This change advances the walk to the next node if the current node is
-skipped after a restart.
+__sctp_write_space() is being called per association. Although
+we assign sk->sk_write_space() to sctp_write_space(), which
+is then being done per socket, it is only used if send space
+is increased per socket option (SO_SNDBUF), as SOCK_USE_WRITE_QUEUE
+is set and therefore not invoked in sock_wfree().
 
-Signed-off-by: Kumar Sundararajan <kumar@fb.com>
-Signed-off-by: Chris Mason <clm@fb.com>
+Commit 4c3a5bdae293 ("sctp: Don't charge for data in sndbuf
+again when transmitting packet") fixed an issue where in case
+sctp_packet_transmit() manages to queue up more than sndbuf
+bytes, sctp_wait_for_sndbuf() will never be woken up again
+unless it is interrupted by a signal. However, a still
+remaining issue is that if net.sctp.sndbuf_policy=0, that is
+accounting per socket, and one-to-many sockets are in use,
+the reclaimed write space from sctp_wfree() is 'unfairly'
+handed back on the server to the association that is the lucky
+one to be woken up again via __sctp_write_space(), while
+the remaining associations are never be woken up again
+(unless by a signal).
+
+The effect disappears with net.sctp.sndbuf_policy=1, that
+is wmem accounting per association, as it guarantees a fair
+share of wmem among associations.
+
+Therefore, if we have reclaimed memory in case of per socket
+accounting, wake all related associations to a socket in a
+fair manner, that is, traverse the socket association list
+starting from the current neighbour of the association and
+issue a __sctp_write_space() to everyone until we end up
+waking ourselves. This guarantees that no association is
+preferred over another and even if more associations are
+taken into the one-to-many session, all receivers will get
+messages from the server and are not stalled forever on
+high load. This setting still leaves the advantage of per
+socket accounting in touch as an association can still use
+up global limits if unused by others.
+
+Fixes: 4eb701dfc618 ("[SCTP] Fix SCTP sendbuffer accouting.")
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Cc: Thomas Graf <tgraf@suug.ch>
+Cc: Neil Horman <nhorman@tuxdriver.com>
+Cc: Vlad Yasevich <vyasevic@redhat.com>
+Acked-by: Vlad Yasevich <vyasevic@redhat.com>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv6/ip6_fib.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ net/sctp/socket.c |   36 +++++++++++++++++++++++++++++++++++-
+ 1 file changed, 35 insertions(+), 1 deletion(-)
 
---- a/net/ipv6/ip6_fib.c
-+++ b/net/ipv6/ip6_fib.c
-@@ -1418,7 +1418,7 @@ static int fib6_walk_continue(struct fib
+--- a/net/sctp/socket.c
++++ b/net/sctp/socket.c
+@@ -6582,6 +6582,40 @@ static void __sctp_write_space(struct sc
+ 	}
+ }
  
- 				if (w->skip) {
- 					w->skip--;
--					continue;
-+					goto skip;
- 				}
++static void sctp_wake_up_waiters(struct sock *sk,
++				 struct sctp_association *asoc)
++{
++	struct sctp_association *tmp = asoc;
++
++	/* We do accounting for the sndbuf space per association,
++	 * so we only need to wake our own association.
++	 */
++	if (asoc->ep->sndbuf_policy)
++		return __sctp_write_space(asoc);
++
++	/* Accounting for the sndbuf space is per socket, so we
++	 * need to wake up others, try to be fair and in case of
++	 * other associations, let them have a go first instead
++	 * of just doing a sctp_write_space() call.
++	 *
++	 * Note that we reach sctp_wake_up_waiters() only when
++	 * associations free up queued chunks, thus we are under
++	 * lock and the list of associations on a socket is
++	 * guaranteed not to change.
++	 */
++	for (tmp = list_next_entry(tmp, asocs); 1;
++	     tmp = list_next_entry(tmp, asocs)) {
++		/* Manually skip the head element. */
++		if (&tmp->asocs == &((sctp_sk(sk))->ep->asocs))
++			continue;
++		/* Wake up association. */
++		__sctp_write_space(tmp);
++		/* We've reached the end. */
++		if (tmp == asoc)
++			break;
++	}
++}
++
+ /* Do accounting for the sndbuf space.
+  * Decrement the used sndbuf space of the corresponding association by the
+  * data size which was just transmitted(freed).
+@@ -6609,7 +6643,7 @@ static void sctp_wfree(struct sk_buff *s
+ 	sk_mem_uncharge(sk, skb->truesize);
  
- 				err = w->func(w);
-@@ -1428,6 +1428,7 @@ static int fib6_walk_continue(struct fib
- 				w->count++;
- 				continue;
- 			}
-+skip:
- 			w->state = FWS_U;
- 		case FWS_U:
- 			if (fn == w->root)
+ 	sock_wfree(skb);
+-	__sctp_write_space(asoc);
++	sctp_wake_up_waiters(sk, asoc);
+ 
+ 	sctp_association_put(asoc);
+ }
 
 
