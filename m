@@ -1,69 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934466AbaE2F1l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 01:27:41 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:44770 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933103AbaE2F1i (ORCPT
+	id S934477AbaE2F2M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 01:28:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57806 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756375AbaE2EfM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 01:27:38 -0400
-Message-ID: <5386C543.6070104@linaro.org>
-Date: Thu, 29 May 2014 14:27:31 +0900
-From: AKASHI Takahiro <takahiro.akashi@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Thu, 29 May 2014 00:35:12 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        =?UTF-8?q?Thomas=20B=C3=A4chler?= <thomas@archlinux.org>,
+        Tejun Heo <tj@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Alexandre Demers <alexandre.f.demers@gmail.com>
+Subject: [PATCH 3.14 053/140] fs: Dont return 0 from get_anon_bdev
+Date: Wed, 28 May 2014 21:33:12 -0700
+Message-Id: <20140529043056.256883830@linuxfoundation.org>
+X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
+In-Reply-To: <20140529043049.661315084@linuxfoundation.org>
+References: <20140529043049.661315084@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>, Steven Rostedt <rostedt@goodmis.org>
-CC: "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "tim.bird@sonymobile.com" <tim.bird@sonymobile.com>,
-        "gkulkarni@caviumnetworks.com" <gkulkarni@caviumnetworks.com>,
-        "dsaxena@linaro.org" <dsaxena@linaro.org>,
-        "arndb@arndb.de" <arndb@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [for-next][PATCH] ftrace: Make CALLER_ADDRx macros more generic
-References: <1394705630-12384-1-git-send-email-takahiro.akashi@linaro.org> <1394862353-28963-7-git-send-email-takahiro.akashi@linaro.org> <20140416135217.GF1001@arm.com> <535E3040.7090402@linaro.org> <20140527091019.54a8d2d6@gandalf.local.home> <20140527184940.GA26035@arm.com>
-In-Reply-To: <20140527184940.GA26035@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Will
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
-On 05/28/2014 03:49 AM, Will Deacon wrote:
-> On Tue, May 27, 2014 at 02:10:19PM +0100, Steven Rostedt wrote:
->> Will,
->>
->> I made a separate branch called ftrace/arm64 as shown below. You can
->> pull that branch to base the rest of Akashi-san's patches on top of it.
->> The branch is based on top of v3.15-rc5.
->
-> Thanks Steve, I'll pull that in.
->
-> Akashi: please can you re-send your series, based on the branch below and
-> including the acks/reviewed-by tags you got for v6 of the patches?
+------------------
 
-Sorry again to have missed your e-mail :-)
-I'm sure that you can successfully apply all my patch series, without any
-modification, from:
-     v6 arm64: prerequisites for audit and ftrace
-     v8 arm64: Add ftrace support
-except for the patch, "[v8 1/8] ftrace: make CALLER_ADDRx macros more generic,"
-which was replaced by a new version and already appears in Steven's repo.
+From: =?UTF-8?q?Thomas=20B=C3=A4chler?= <thomas@archlinux.org>
 
-Thank you,
--Takahiro AKASHI
+commit a2a4dc494a7b7135f460e38e788c4a58f65e4ac3 upstream.
 
-> Cheers,
->
-> Will
->
->>    git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
->> ftrace/arm64
->>
->> Head SHA1: eed542d6962ba33a689b4007a389f466e407bd74
+Commit 9e30cc9595303b27b48 removed an internal mount. This
+has the side-effect that rootfs now has FSID 0. Many
+userspace utilities assume that st_dev in struct stat
+is never 0, so this change breaks a number of tools in
+early userspace.
+
+Since we don't know how many userspace programs are affected,
+make sure that FSID is at least 1.
+
+References: http://article.gmane.org/gmane.linux.kernel/1666905
+References: http://permalink.gmane.org/gmane.linux.utilities.util-linux-ng/8557
+Signed-off-by: Thomas Bächler <thomas@archlinux.org>
+Acked-by: Tejun Heo <tj@kernel.org>
+Acked-by: H. Peter Anvin <hpa@zytor.com>
+Tested-by: Alexandre Demers <alexandre.f.demers@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ fs/super.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+--- a/fs/super.c
++++ b/fs/super.c
+@@ -802,7 +802,10 @@ void emergency_remount(void)
+ 
+ static DEFINE_IDA(unnamed_dev_ida);
+ static DEFINE_SPINLOCK(unnamed_dev_lock);/* protects the above */
+-static int unnamed_dev_start = 0; /* don't bother trying below it */
++/* Many userspace utilities consider an FSID of 0 invalid.
++ * Always return at least 1 from get_anon_bdev.
++ */
++static int unnamed_dev_start = 1;
+ 
+ int get_anon_bdev(dev_t *p)
+ {
+
+
