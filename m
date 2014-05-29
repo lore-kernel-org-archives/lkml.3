@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933877AbaE2FGU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 01:06:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58178 "EHLO
+	id S932752AbaE2Ef4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 00:35:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58152 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932756AbaE2Ef5 (ORCPT
+	with ESMTP id S1756424AbaE2Efx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 00:35:57 -0400
+	Thu, 29 May 2014 00:35:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eyal Perry <eyalpe@mellanox.com>, Or Gerlitz <ogerlitz@mellanox.com>,
+        Florian Westphal <fw@strlen.de>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 108/140] net/mlx4_core: Dont issue PCIe speed/width checks for VFs
-Date: Wed, 28 May 2014 21:34:07 -0700
-Message-Id: <20140529043103.463288884@linuxfoundation.org>
+Subject: [PATCH 3.14 112/140] net: ipv4: ip_forward: fix inverted local_df test
+Date: Wed, 28 May 2014 21:34:11 -0700
+Message-Id: <20140529043103.996859766@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
 In-Reply-To: <20140529043049.661315084@linuxfoundation.org>
 References: <20140529043049.661315084@linuxfoundation.org>
@@ -27,33 +27,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eyal Perry <eyalpe@mellanox.com>
+From: Florian Westphal <fw@strlen.de>
 
-[ Upstream commit 83d3459a5928f18c9344683e31bc2a7c3c25562a ]
+[ Upstream commit ca6c5d4ad216d5942ae544bbf02503041bd802aa ]
 
-Carrying out PCI speed/width checks through pcie_get_minimum_link()
-on VFs yield wrong results, so remove them.
+local_df means 'ignore DF bit if set', so if its set we're
+allowed to perform ip fragmentation.
 
-Fixes: b912b2f ('net/mlx4_core: Warn if device doesn't have enough PCI bandwidth')
-Signed-off-by: Eyal Perry <eyalpe@mellanox.com>
-Signed-off-by: Or Gerlitz <ogerlitz@mellanox.com>
+This wasn't noticed earlier because the output path also drops such skbs
+(and emits needed icmp error) and because netfilter ip defrag did not
+set local_df until couple of days ago.
+
+Only difference is that DF-packets-larger-than MTU now discarded
+earlier (f.e. we avoid pointless netfilter postrouting trip).
+
+While at it, drop the repeated test ip_exceeds_mtu, checking it once
+is enough...
+
+Fixes: fe6cc55f3a9 ("net: ip, ipv6: handle gso skbs in forwarding path")
+Signed-off-by: Florian Westphal <fw@strlen.de>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/mellanox/mlx4/main.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ net/ipv4/ip_forward.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/net/ethernet/mellanox/mlx4/main.c
-+++ b/drivers/net/ethernet/mellanox/mlx4/main.c
-@@ -2399,7 +2399,8 @@ slave_start:
- 	 * No return code for this call, just warn the user in case of PCI
- 	 * express device capabilities are under-satisfied by the bus.
- 	 */
--	mlx4_check_pcie_caps(dev);
-+	if (!mlx4_is_slave(dev))
-+		mlx4_check_pcie_caps(dev);
+--- a/net/ipv4/ip_forward.c
++++ b/net/ipv4/ip_forward.c
+@@ -42,12 +42,12 @@
+ static bool ip_may_fragment(const struct sk_buff *skb)
+ {
+ 	return unlikely((ip_hdr(skb)->frag_off & htons(IP_DF)) == 0) ||
+-	       !skb->local_df;
++		skb->local_df;
+ }
  
- 	/* In master functions, the communication channel must be initialized
- 	 * after obtaining its address from fw */
+ static bool ip_exceeds_mtu(const struct sk_buff *skb, unsigned int mtu)
+ {
+-	if (skb->len <= mtu || skb->local_df)
++	if (skb->len <= mtu)
+ 		return false;
+ 
+ 	if (skb_is_gso(skb) && skb_gso_network_seglen(skb) <= mtu)
 
 
