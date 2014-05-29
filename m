@@ -1,124 +1,481 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933339AbaE2HVG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 03:21:06 -0400
-Received: from mail-la0-f52.google.com ([209.85.215.52]:33165 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933066AbaE2HVE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 03:21:04 -0400
-Subject: [PATCH] mm: make try_to_unmap_one static and cleanup ttu_flags
-From: Konstantin Khlebnikov <koct9i@gmail.com>
-To: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Date: Thu, 29 May 2014 11:20:54 +0400
-Message-ID: <20140529072054.12187.36670.stgit@zurg>
-User-Agent: StGit/0.17.1-dirty
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S933467AbaE2HWc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 03:22:32 -0400
+Received: from mga02.intel.com ([134.134.136.20]:50601 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933066AbaE2HWb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 03:22:31 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,932,1392192000"; 
+   d="scan'208";a="519514773"
+From: "Zhu, Lejun" <lejun.zhu@linux.intel.com>
+To: linus.walleij@linaro.org, gnurou@gmail.com,
+        mika.westerberg@linux.intel.com, mathias.nyman@linux.intel.com
+Cc: linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jacob.jun.pan@linux.intel.com, bin.yang@intel.com,
+        lejun.zhu@linux.intel.com
+Subject: [PATCH] gpio: Add support for Intel Crystal Cove PMIC
+Date: Thu, 29 May 2014 15:21:32 +0800
+Message-Id: <1401348092-24468-1-git-send-email-lejun.zhu@linux.intel.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nowdays try_to_unmap_one() is used only inside mm/rmap.c, this patch makes it
-static. Also it transforms action part of ttu_flags into individiual bits.
-These flags aren't part of any uses-space visible api or even trace events.
+Devices based on Intel SoC products such as Baytrail have a Power
+Management IC. In the PMIC there are subsystems for voltage regulation,
+A/D conversion, GPIO and PWMs. The PMIC in Baytrail-T platform is
+called Crystal Cove.
 
-Signed-off-by: Konstantin Khlebnikov <koct9i@gmail.com>
+This patch adds support for the GPIO function in Crystal Cove.
+
+Signed-off-by: Yang, Bin <bin.yang@intel.com>
+Signed-off-by: Zhu, Lejun <lejun.zhu@linux.intel.com>
 ---
- include/linux/rmap.h |   11 +++--------
- mm/rmap.c            |   14 +++++++-------
- 2 files changed, 10 insertions(+), 15 deletions(-)
+v2:
+- Use IRQ chip helper to provide irqdomain.
+- Implement .remove and can now build as a module.
+- Various fix for unreadable or ugly code pieces.
+v3:
+- More fix in irq_handler and probe.
+v4:
+- Minor fix of one return statement.
+v5:
+- intel_soc_pmic_readb/writeb/setb/clearb are removed from the MFD
+  driver, so use regmap_* API here instead.
+- Check for unsupported IRQ type and return -EINVAL.
+- Create to_cg() and to_reg() inline functions to make the code
+  readable.
+---
+ drivers/gpio/Kconfig            |  13 ++
+ drivers/gpio/Makefile           |   1 +
+ drivers/gpio/gpio-crystalcove.c | 380 ++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 394 insertions(+)
+ create mode 100644 drivers/gpio/gpio-crystalcove.c
 
-diff --git a/include/linux/rmap.h b/include/linux/rmap.h
-index b66c211..1960daa 100644
---- a/include/linux/rmap.h
-+++ b/include/linux/rmap.h
-@@ -72,10 +72,9 @@ struct anon_vma_chain {
- };
+diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+index a86c49a..fed08d9d 100644
+--- a/drivers/gpio/Kconfig
++++ b/drivers/gpio/Kconfig
+@@ -440,6 +440,19 @@ config GPIO_ARIZONA
+ 	help
+ 	  Support for GPIOs on Wolfson Arizona class devices.
  
- enum ttu_flags {
--	TTU_UNMAP = 0,			/* unmap mode */
--	TTU_MIGRATION = 1,		/* migration mode */
--	TTU_MUNLOCK = 2,		/* munlock mode */
--	TTU_ACTION_MASK = 0xff,
-+	TTU_UNMAP = 1,			/* unmap mode */
-+	TTU_MIGRATION = 2,		/* migration mode */
-+	TTU_MUNLOCK = 4,		/* munlock mode */
- 
- 	TTU_IGNORE_MLOCK = (1 << 8),	/* ignore mlock */
- 	TTU_IGNORE_ACCESS = (1 << 9),	/* don't age */
-@@ -186,11 +185,7 @@ int page_referenced(struct page *, int is_locked,
- int page_referenced_one(struct page *, struct vm_area_struct *,
- 	unsigned long address, void *arg);
- 
--#define TTU_ACTION(x) ((x) & TTU_ACTION_MASK)
--
- int try_to_unmap(struct page *, enum ttu_flags flags);
--int try_to_unmap_one(struct page *, struct vm_area_struct *,
--			unsigned long address, void *arg);
- 
- /*
-  * Called from mm/filemap_xip.c to unmap empty zero page
-diff --git a/mm/rmap.c b/mm/rmap.c
-index 75d9d5c..b8e78be 100644
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -1112,8 +1112,8 @@ out:
- /*
-  * @arg: enum ttu_flags will be passed to this argument
-  */
--int try_to_unmap_one(struct page *page, struct vm_area_struct *vma,
--		     unsigned long address, void *arg)
-+static int try_to_unmap_one(struct page *page, struct vm_area_struct *vma,
-+			    unsigned long address, void *arg)
- {
- 	struct mm_struct *mm = vma->vm_mm;
- 	pte_t *pte;
-@@ -1135,7 +1135,7 @@ int try_to_unmap_one(struct page *page, struct vm_area_struct *vma,
- 		if (vma->vm_flags & VM_LOCKED)
- 			goto out_mlock;
- 
--		if (TTU_ACTION(flags) == TTU_MUNLOCK)
-+		if (flags & TTU_MUNLOCK)
- 			goto out_unmap;
- 	}
- 	if (!(flags & TTU_IGNORE_ACCESS)) {
-@@ -1203,7 +1203,7 @@ int try_to_unmap_one(struct page *page, struct vm_area_struct *vma,
- 			 * pte. do_swap_page() will wait until the migration
- 			 * pte is removed and then restart fault handling.
- 			 */
--			BUG_ON(TTU_ACTION(flags) != TTU_MIGRATION);
-+			BUG_ON(!(flags & TTU_MIGRATION));
- 			entry = make_migration_entry(page, pte_write(pteval));
- 		}
- 		swp_pte = swp_entry_to_pte(entry);
-@@ -1212,7 +1212,7 @@ int try_to_unmap_one(struct page *page, struct vm_area_struct *vma,
- 		set_pte_at(mm, address, pte, swp_pte);
- 		BUG_ON(pte_file(*pte));
- 	} else if (IS_ENABLED(CONFIG_MIGRATION) &&
--		   (TTU_ACTION(flags) == TTU_MIGRATION)) {
-+		   (flags & TTU_MIGRATION)) {
- 		/* Establish migration entry for a file page */
- 		swp_entry_t entry;
- 		entry = make_migration_entry(page, pte_write(pteval));
-@@ -1225,7 +1225,7 @@ int try_to_unmap_one(struct page *page, struct vm_area_struct *vma,
- 
- out_unmap:
- 	pte_unmap_unlock(pte, ptl);
--	if (ret != SWAP_FAIL && TTU_ACTION(flags) != TTU_MUNLOCK)
-+	if (ret != SWAP_FAIL && !(flags & TTU_MUNLOCK))
- 		mmu_notifier_invalidate_page(mm, address);
- out:
- 	return ret;
-@@ -1512,7 +1512,7 @@ int try_to_unmap(struct page *page, enum ttu_flags flags)
- 	 * locking requirements of exec(), migration skips
- 	 * temporary VMAs until after exec() completes.
- 	 */
--	if (flags & TTU_MIGRATION && !PageKsm(page) && PageAnon(page))
-+	if ((flags & TTU_MIGRATION) && !PageKsm(page) && PageAnon(page))
- 		rwc.invalid_vma = invalid_migration_vma;
- 
- 	ret = rmap_walk(page, &rwc);
++config GPIO_CRYSTAL_COVE
++	tristate "GPIO support for Crystal Cove PMIC"
++	depends on INTEL_SOC_PMIC
++	select GPIOLIB_IRQCHIP
++	help
++	  Support for GPIO pins on Crystal Cove PMIC.
++
++	  Say Yes if you have a Intel SoC based tablet with Crystal Cove PMIC
++	  inside.
++
++	  This driver can also be built as a module. If so, the module will be
++	  called gpio-crystalcove.
++
+ config GPIO_LP3943
+ 	tristate "TI/National Semiconductor LP3943 GPIO expander"
+ 	depends on MFD_LP3943
+diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
+index 6309aff..e6cd935 100644
+--- a/drivers/gpio/Makefile
++++ b/drivers/gpio/Makefile
+@@ -20,6 +20,7 @@ obj-$(CONFIG_GPIO_BCM_KONA)	+= gpio-bcm-kona.o
+ obj-$(CONFIG_GPIO_BT8XX)	+= gpio-bt8xx.o
+ obj-$(CONFIG_GPIO_CLPS711X)	+= gpio-clps711x.o
+ obj-$(CONFIG_GPIO_CS5535)	+= gpio-cs5535.o
++obj-$(CONFIG_GPIO_CRYSTAL_COVE)	+= gpio-crystalcove.o
+ obj-$(CONFIG_GPIO_DA9052)	+= gpio-da9052.o
+ obj-$(CONFIG_GPIO_DA9055)	+= gpio-da9055.o
+ obj-$(CONFIG_GPIO_DAVINCI)	+= gpio-davinci.o
+diff --git a/drivers/gpio/gpio-crystalcove.c b/drivers/gpio/gpio-crystalcove.c
+new file mode 100644
+index 0000000..b8ed0c6
+--- /dev/null
++++ b/drivers/gpio/gpio-crystalcove.c
+@@ -0,0 +1,380 @@
++/*
++ * gpio-crystalcove.c - Intel Crystal Cove GPIO Driver
++ *
++ * Copyright (C) 2012, 2014 Intel Corporation. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License version
++ * 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * Author: Yang, Bin <bin.yang@intel.com>
++ */
++
++#include <linux/interrupt.h>
++#include <linux/platform_device.h>
++#include <linux/gpio.h>
++#include <linux/bitops.h>
++#include <linux/regmap.h>
++#include <linux/mfd/intel_soc_pmic.h>
++
++#define NUM_GPIO		16
++
++#define UPDATE_IRQ_TYPE		BIT(0)
++#define UPDATE_IRQ_MASK		BIT(1)
++
++#define GPIO0IRQ		0x0b
++#define GPIO1IRQ		0x0c
++#define MGPIO0IRQS0		0x19
++#define MGPIO1IRQS0		0x1a
++#define MGPIO0IRQSX		0x1b
++#define MGPIO1IRQSX		0x1c
++#define GPIO0P0CTLO		0x2b
++#define GPIO0P0CTLI		0x33
++#define GPIO1P0CTLO		0x3b
++#define GPIO1P0CTLI		0x43
++
++#define CTLI_INTCNT_DIS		(0)
++#define CTLI_INTCNT_NE		(1 << 1)
++#define CTLI_INTCNT_PE		(2 << 1)
++#define CTLI_INTCNT_BE		(3 << 1)
++
++#define CTLO_DIR_IN		(0)
++#define CTLO_DIR_OUT		(1 << 5)
++
++#define CTLO_DRV_CMOS		(0)
++#define CTLO_DRV_OD		(1 << 4)
++
++#define CTLO_DRV_REN		(1 << 3)
++
++#define CTLO_RVAL_2KDW		(0)
++#define CTLO_RVAL_2KUP		(1 << 1)
++#define CTLO_RVAL_50KDW		(2 << 1)
++#define CTLO_RVAL_50KUP		(3 << 1)
++
++#define CTLO_INPUT_SET	(CTLO_DRV_CMOS | CTLO_DRV_REN | CTLO_RVAL_2KUP)
++#define CTLO_OUTPUT_SET	(CTLO_DIR_OUT | CTLO_INPUT_SET)
++
++enum ctrl_register {
++	CTRL_IN,
++	CTRL_OUT,
++};
++
++/**
++ * struct crystalcove_gpio - Crystal Cove GPIO controller
++ * @buslock: for bus lock/sync and unlock.
++ * @chip: the abstract gpio_chip structure.
++ * @regmap: the regmap from the parent device.
++ * @update: pending IRQ setting update, to be written to the chip upon unlock.
++ * @intcnt_value: the Interrupt Detect value to be written.
++ * @set_irq_mask: true if the IRQ mask needs to be set, false to clear.
++ */
++struct crystalcove_gpio {
++	struct mutex buslock; /* irq_bus_lock */
++	struct gpio_chip chip;
++	struct regmap *regmap;
++	int update;
++	int intcnt_value;
++	bool set_irq_mask;
++};
++
++static inline struct crystalcove_gpio *to_cg(struct gpio_chip *gc)
++{
++	return container_of(gc, struct crystalcove_gpio, chip);
++}
++
++static inline int to_reg(int gpio, enum ctrl_register reg_type)
++{
++	int reg;
++
++	if (reg_type == CTRL_IN) {
++		if (gpio < 8)
++			reg = GPIO0P0CTLI;
++		else
++			reg = GPIO1P0CTLI;
++	} else {
++		if (gpio < 8)
++			reg = GPIO0P0CTLO;
++		else
++			reg = GPIO1P0CTLO;
++	}
++
++	return reg + gpio % 8;
++}
++
++static void crystalcove_update_irq_mask(struct crystalcove_gpio *cg,
++					int gpio)
++{
++	u8 mirqs0 = gpio < 8 ? MGPIO0IRQS0 : MGPIO1IRQS0;
++	int mask = BIT(gpio % 8);
++
++	if (cg->set_irq_mask)
++		regmap_update_bits(cg->regmap, mirqs0, mask, mask);
++	else
++		regmap_update_bits(cg->regmap, mirqs0, mask, 0);
++}
++
++static void crystalcove_update_irq_ctrl(struct crystalcove_gpio *cg, int gpio)
++{
++	int reg = to_reg(gpio, CTRL_IN);
++
++	regmap_update_bits(cg->regmap, reg, CTLI_INTCNT_BE, cg->intcnt_value);
++}
++
++static int crystalcove_gpio_dir_in(struct gpio_chip *chip, unsigned gpio)
++{
++	struct crystalcove_gpio *cg = to_cg(chip);
++
++	return regmap_write(cg->regmap, to_reg(gpio, CTRL_OUT),
++			    CTLO_INPUT_SET);
++}
++
++static int crystalcove_gpio_dir_out(struct gpio_chip *chip, unsigned gpio,
++				    int value)
++{
++	struct crystalcove_gpio *cg = to_cg(chip);
++
++	return regmap_write(cg->regmap, to_reg(gpio, CTRL_OUT),
++			    CTLO_OUTPUT_SET | value);
++}
++
++static int crystalcove_gpio_get(struct gpio_chip *chip, unsigned gpio)
++{
++	struct crystalcove_gpio *cg = to_cg(chip);
++	int ret;
++	unsigned int val;
++
++	ret = regmap_read(cg->regmap, to_reg(gpio, CTRL_IN), &val);
++	if (ret)
++		return ret;
++
++	return val & 0x1;
++}
++
++static void crystalcove_gpio_set(struct gpio_chip *chip,
++				 unsigned gpio, int value)
++{
++	struct crystalcove_gpio *cg = to_cg(chip);
++
++	if (value)
++		regmap_update_bits(cg->regmap, to_reg(gpio, CTRL_OUT), 1, 1);
++	else
++		regmap_update_bits(cg->regmap, to_reg(gpio, CTRL_OUT), 1, 0);
++}
++
++static int crystalcove_irq_type(struct irq_data *data, unsigned type)
++{
++	struct crystalcove_gpio *cg = to_cg(irq_data_get_irq_chip_data(data));
++
++	switch (type) {
++	case IRQ_TYPE_NONE:
++		cg->intcnt_value = CTLI_INTCNT_DIS;
++		break;
++	case IRQ_TYPE_EDGE_BOTH:
++		cg->intcnt_value = CTLI_INTCNT_BE;
++		break;
++	case IRQ_TYPE_EDGE_RISING:
++		cg->intcnt_value = CTLI_INTCNT_PE;
++		break;
++	case IRQ_TYPE_EDGE_FALLING:
++		cg->intcnt_value = CTLI_INTCNT_NE;
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	cg->update |= UPDATE_IRQ_TYPE;
++
++	return 0;
++}
++
++static void crystalcove_bus_lock(struct irq_data *data)
++{
++	struct crystalcove_gpio *cg = to_cg(irq_data_get_irq_chip_data(data));
++
++	mutex_lock(&cg->buslock);
++}
++
++static void crystalcove_bus_sync_unlock(struct irq_data *data)
++{
++	struct crystalcove_gpio *cg = to_cg(irq_data_get_irq_chip_data(data));
++	int gpio = data->hwirq;
++
++	if (cg->update & UPDATE_IRQ_TYPE)
++		crystalcove_update_irq_ctrl(cg, gpio);
++	if (cg->update & UPDATE_IRQ_MASK)
++		crystalcove_update_irq_mask(cg, gpio);
++	cg->update = 0;
++
++	mutex_unlock(&cg->buslock);
++}
++
++static void crystalcove_irq_unmask(struct irq_data *data)
++{
++	struct crystalcove_gpio *cg = to_cg(irq_data_get_irq_chip_data(data));
++
++	cg->set_irq_mask = false;
++	cg->update |= UPDATE_IRQ_MASK;
++}
++
++static void crystalcove_irq_mask(struct irq_data *data)
++{
++	struct crystalcove_gpio *cg = to_cg(irq_data_get_irq_chip_data(data));
++
++	cg->set_irq_mask = true;
++	cg->update |= UPDATE_IRQ_MASK;
++}
++
++static struct irq_chip crystalcove_irqchip = {
++	.name			= "Crystal Cove",
++	.irq_mask		= crystalcove_irq_mask,
++	.irq_unmask		= crystalcove_irq_unmask,
++	.irq_set_type		= crystalcove_irq_type,
++	.irq_bus_lock		= crystalcove_bus_lock,
++	.irq_bus_sync_unlock	= crystalcove_bus_sync_unlock,
++};
++
++static irqreturn_t crystalcove_gpio_irq_handler(int irq, void *data)
++{
++	struct crystalcove_gpio *cg = data;
++	unsigned int p0, p1;
++	int pending;
++	int gpio;
++	unsigned int virq;
++
++	if (regmap_read(cg->regmap, GPIO0IRQ, &p0) ||
++	    regmap_read(cg->regmap, GPIO1IRQ, &p1))
++		return IRQ_NONE;
++
++	regmap_write(cg->regmap, GPIO0IRQ, p0);
++	regmap_write(cg->regmap, GPIO1IRQ, p1);
++
++	pending = p0 | p1 << 8;
++
++	for (gpio = 0; gpio < cg->chip.ngpio; gpio++) {
++		if (pending & BIT(gpio)) {
++			virq = irq_find_mapping(cg->chip.irqdomain, gpio);
++			generic_handle_irq(virq);
++		}
++	}
++
++	return IRQ_HANDLED;
++}
++
++static void crystalcove_gpio_dbg_show(struct seq_file *s,
++				      struct gpio_chip *chip)
++{
++	struct crystalcove_gpio *cg = to_cg(chip);
++	int gpio, offset;
++	unsigned int ctlo, ctli, mirqs0, mirqsx, irq;
++
++	for (gpio = 0; gpio < cg->chip.ngpio; gpio++) {
++		regmap_read(cg->regmap, to_reg(gpio, CTRL_OUT), &ctlo);
++		regmap_read(cg->regmap, to_reg(gpio, CTRL_IN), &ctli);
++		regmap_read(cg->regmap, gpio < 8 ? MGPIO0IRQS0 : MGPIO1IRQS0,
++			    &mirqs0);
++		regmap_read(cg->regmap, gpio < 8 ? MGPIO0IRQSX : MGPIO1IRQSX,
++			    &mirqsx);
++		regmap_read(cg->regmap, gpio < 8 ? GPIO0IRQ : GPIO1IRQ,
++			    &irq);
++
++		offset = gpio % 8;
++		seq_printf(s, " gpio-%-2d %s %s %s %s ctlo=%2x,%s %s %s\n",
++			   gpio, ctlo & CTLO_DIR_OUT ? "out" : "in ",
++			   ctli & 0x1 ? "hi" : "lo",
++			   ctli & CTLI_INTCNT_NE ? "fall" : "    ",
++			   ctli & CTLI_INTCNT_PE ? "rise" : "    ",
++			   ctlo,
++			   mirqs0 & BIT(offset) ? "s0 mask  " : "s0 unmask",
++			   mirqsx & BIT(offset) ? "sx mask  " : "sx unmask",
++			   irq & BIT(offset) ? "pending" : "       ");
++	}
++}
++
++static int crystalcove_gpio_probe(struct platform_device *pdev)
++{
++	int irq = platform_get_irq(pdev, 0);
++	struct crystalcove_gpio *cg;
++	int retval;
++	struct device *dev = pdev->dev.parent;
++	struct intel_soc_pmic *pmic = dev_get_drvdata(dev);
++
++	if (irq < 0)
++		return irq;
++
++	cg = devm_kzalloc(&pdev->dev, sizeof(*cg), GFP_KERNEL);
++	if (!cg)
++		return -ENOMEM;
++
++	platform_set_drvdata(pdev, cg);
++
++	mutex_init(&cg->buslock);
++	cg->chip.label = KBUILD_MODNAME;
++	cg->chip.direction_input = crystalcove_gpio_dir_in;
++	cg->chip.direction_output = crystalcove_gpio_dir_out;
++	cg->chip.get = crystalcove_gpio_get;
++	cg->chip.set = crystalcove_gpio_set;
++	cg->chip.base = -1;
++	cg->chip.ngpio = NUM_GPIO;
++	cg->chip.can_sleep = true;
++	cg->chip.dev = dev;
++	cg->chip.dbg_show = crystalcove_gpio_dbg_show;
++	cg->regmap = pmic->regmap;
++
++	gpiochip_irqchip_add(&cg->chip, &crystalcove_irqchip, 0,
++			     handle_simple_irq, IRQ_TYPE_NONE);
++
++	retval = request_threaded_irq(irq, NULL, crystalcove_gpio_irq_handler,
++				      IRQF_ONESHOT, KBUILD_MODNAME, cg);
++
++	if (retval) {
++		dev_warn(&pdev->dev, "request irq failed: %d\n", retval);
++		goto out;
++	}
++
++	retval = gpiochip_add(&cg->chip);
++	if (retval) {
++		dev_warn(&pdev->dev, "add gpio chip error: %d\n", retval);
++		goto out_free_irq;
++	}
++
++	return 0;
++
++out_free_irq:
++	free_irq(irq, cg);
++out:
++	return retval;
++}
++
++static int crystalcove_gpio_remove(struct platform_device *pdev)
++{
++	struct crystalcove_gpio *cg = platform_get_drvdata(pdev);
++	int irq = platform_get_irq(pdev, 0);
++	int err;
++
++	err = gpiochip_remove(&cg->chip);
++
++	if (irq >= 0)
++		free_irq(irq, cg);
++
++	return err;
++}
++
++static struct platform_driver crystalcove_gpio_driver = {
++	.probe = crystalcove_gpio_probe,
++	.remove = crystalcove_gpio_remove,
++	.driver = {
++		.name = "crystal_cove_gpio",
++		.owner = THIS_MODULE,
++	},
++};
++
++module_platform_driver(crystalcove_gpio_driver);
++
++MODULE_AUTHOR("Yang, Bin <bin.yang@intel.com>");
++MODULE_DESCRIPTION("Intel Crystal Cove GPIO Driver");
++MODULE_LICENSE("GPL v2");
+-- 
+1.8.3.2
 
