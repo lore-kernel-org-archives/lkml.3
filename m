@@ -1,73 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754222AbaE2ACF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 20:02:05 -0400
-Received: from mail-ve0-f182.google.com ([209.85.128.182]:38260 "EHLO
-	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751739AbaE2ACD (ORCPT
+	id S1754778AbaE2ACk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 20:02:40 -0400
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:55784 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752714AbaE2ACi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 20:02:03 -0400
+	Wed, 28 May 2014 20:02:38 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 06/14] perf tools: Cache dso data file descriptor
+References: <1400174615-2121-1-git-send-email-jolsa@kernel.org>
+	<1400174615-2121-7-git-send-email-jolsa@kernel.org>
+	<87tx8chvzb.fsf@sejong.aot.lge.com>
+	<20140527073738.GA12920@krava.brq.redhat.com>
+Date: Thu, 29 May 2014 09:02:36 +0900
+In-Reply-To: <20140527073738.GA12920@krava.brq.redhat.com> (Jiri Olsa's
+	message of "Tue, 27 May 2014 09:37:38 +0200")
+Message-ID: <87sinth2oz.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <20140522130931.GV13658@twins.programming.kicks-ass.net>
-References: <20140411134243.160989490@infradead.org> <CALCETrWJZ1-T+qOY9v=KBOSJkck7YYe7khw_dYPc9Ar8WFgMKw@mail.gmail.com>
- <20140522125818.GV30445@twins.programming.kicks-ass.net> <20140522130931.GV13658@twins.programming.kicks-ass.net>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 28 May 2014 17:01:41 -0700
-Message-ID: <CALCETrVBVOjs0EVqEz3qKtSHQg1agJzAyG4Ohqueky-zPF7uKA@mail.gmail.com>
-Subject: Re: [RFC][PATCH 0/8] sched,idle: need resched polling rework
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        nicolas.pitre@linaro.org, Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 22, 2014 at 6:09 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Thu, May 22, 2014 at 02:58:18PM +0200, Peter Zijlstra wrote:
->> ---
->> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
->> index 4ea7b3f1a087..a5da85fb3570 100644
->> --- a/kernel/sched/core.c
->> +++ b/kernel/sched/core.c
->> @@ -546,12 +546,38 @@ static bool set_nr_and_not_polling(struct task_struct *p)
->>       struct thread_info *ti = task_thread_info(p);
->>       return !(fetch_or(&ti->flags, _TIF_NEED_RESCHED) & _TIF_POLLING_NRFLAG);
->>  }
->> +
->> +/*
->> + * Atomically set TIF_NEED_RESCHED if TIF_POLLING_NRFLAG is set.
->> + */
->> +static bool set_nr_if_polling(struct task_struct *p)
->> +{
->> +     struct thread_info *ti = task_thread_info(p);
->> +     typeof(ti->flags) old, val = ti->flags;
->> +
->> +     for (;;) {
->> +             if (!(val & _TIF_POLLING_NRFLAG))
->> +                     return false;
->> +             if (val & _TIF_NEED_RESCHED)
->> +                     return true;
+On Tue, 27 May 2014 09:37:38 +0200, Jiri Olsa wrote:
+> On Tue, May 27, 2014 at 10:05:28AM +0900, Namhyung Kim wrote:
+>> Hi Jiri,
+>> 
+>> On Thu, 15 May 2014 19:23:27 +0200, Jiri Olsa wrote:
+>> 
+>> [SNIP]
+>> > +static void data_close(void)
+>> > +{
+>> > +	bool cache_fd = may_cache_fd();
+>> > +
+>> > +	if (!cache_fd)
+>> > +		close_first_dso();
+>> > +}
+>> 
+>> Why do you do this at close()?  As long as there's no attempt to open a
+>> new file, we can keep existing fd, no?
 >
-> Hmm, I think this is racy, false would be safer. If its already set we
-> might already be past the sched_ttwu_pending() invocation, while if its
-> clear and we're the one to set it, we're guaranteed not.
+> so the way it works now is:
 >
->> +             old = cmpxchg(&ti->flags, val, val | _TIF_NEED_RESCHED);
->> +             if (old == val)
->> +                     return true;
->> +             val = old;
->> +     }
->> +}
+>  - we keep up to the 'RLIMIT_NOFILE / 2' of open dso objects
+>  - if we try to open dso and it fails, because we are out of
+>    file descriptors, we close dso objects and try to reopen
+>    (check do_open function)
+>  - when we close the dso object we check if number of opened
+>    dso objects is below 'RLIMIT_NOFILE / 2'.. if it is, we keep
+>    the dso opened, if not we close first dso in the list
+>
+> util/dso.h tries to describe that
 
-Do you have an updated patch?  After fixing the MIME flow damage
-(sigh), it doesn't apply to sched/core, which is my best guess for
-what it's based on.
+Yes, I know.  But my question is why do this at close()?  Isn't it
+sufficient to check the file limit at open() and close previous one if
+necessary?
 
---Andy
+>
+>> 
+>> > +
+>> > +void dso__data_close(struct dso *dso)
+>> > +{
+>> > +	if (dso->data.fd >= 0)
+>> > +		data_close();
+>> > +}
+>> 
+>> Hmm.. it's confusing dso__data_close(dso) closes an other dso rather
+>> than the given dso.  And this dso__data_close() is not paired with any
+>> _open() also these close calls make me confusing which one to use. ;-p
+>
+> thats due to the caching.. as explained above
+>
+> About the pairing.. originally the interface was only dso__data_fd
+> that opened and returned fd, which the caller needed to close.
+>
+> I added dso__data_close so we could keep track of file descriptors.
+>
+> I could add dso__data_open I guess, but it is dso__data_fd which is
+> needed for elf interface anyway.
 
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+I'd rather suggest dropping the open/close idiom for this case since
+it's confusing.  What about get/put or get_fd/put_fd?
+
+Thanks,
+Namhyung
