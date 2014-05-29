@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964832AbaE2FIC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 01:08:02 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58155 "EHLO
+	id S933940AbaE2FIW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 01:08:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58131 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756429AbaE2Efy (ORCPT
+	with ESMTP id S1756406AbaE2Efv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 00:35:54 -0400
+	Thu, 29 May 2014 00:35:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Florian Westphal <fw@strlen.de>,
+        Guenter Roeck <linux@roeck-us.net>,
+        Florian Fainelli <f.fainelli@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 113/140] net: ipv6: send pkttoobig immediately if orig frag size > mtu
-Date: Wed, 28 May 2014 21:34:12 -0700
-Message-Id: <20140529043104.127821384@linuxfoundation.org>
+Subject: [PATCH 3.14 129/140] net: phy: Dont call phy_resume if phy_init_hw failed
+Date: Wed, 28 May 2014 21:34:28 -0700
+Message-Id: <20140529043105.959131414@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
 In-Reply-To: <20140529043049.661315084@linuxfoundation.org>
 References: <20140529043049.661315084@linuxfoundation.org>
@@ -27,49 +28,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Florian Westphal <fw@strlen.de>
+From: Guenter Roeck <linux@roeck-us.net>
 
-[ Upstream commit 418a31561d594a2b636c1e2fa94ecd9e1245abb1 ]
+[ Upstream commit b394745df2d9d4c30bf1bcc55773bec6f3bc7c67 ]
 
-If conntrack defragments incoming ipv6 frags it stores largest original
-frag size in ip6cb and sets ->local_df.
+After the call to phy_init_hw failed in phy_attach_direct, phy_detach is called
+to detach the phy device from its network device. If the attached driver is a
+generic phy driver, this also detaches the driver. Subsequently phy_resume
+is called, which assumes without checking that a driver is attached to the
+device. This will result in a crash such as
 
-We must thus first test the largest original frag size vs. mtu, and not
-vice versa.
+Unable to handle kernel paging request for data at address 0xffffffffffffff90
+Faulting instruction address: 0xc0000000003a0e18
+Oops: Kernel access of bad area, sig: 11 [#1]
+...
+NIP [c0000000003a0e18] .phy_attach_direct+0x68/0x17c
+LR [c0000000003a0e6c] .phy_attach_direct+0xbc/0x17c
+Call Trace:
+[c0000003fc0475d0] [c0000000003a0e6c] .phy_attach_direct+0xbc/0x17c (unreliable)
+[c0000003fc047670] [c0000000003a0ff8] .phy_connect_direct+0x28/0x98
+[c0000003fc047700] [c0000000003f0074] .of_phy_connect+0x4c/0xa4
 
-Without this patch PKTTOOBIG is still generated in ip6_fragment() later
-in the stack, but
+Only call phy_resume if phy_init_hw was successful.
 
-1) IPSTATS_MIB_INTOOBIGERRORS won't increment
-2) packet did (needlessly) traverse netfilter postrouting hook.
-
-Fixes: fe6cc55f3a9 ("net: ip, ipv6: handle gso skbs in forwarding path")
-Signed-off-by: Florian Westphal <fw@strlen.de>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Acked-by: Florian Fainelli <f.fainelli@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv6/ip6_output.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ drivers/net/phy/phy_device.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/net/ipv6/ip6_output.c
-+++ b/net/ipv6/ip6_output.c
-@@ -344,12 +344,16 @@ static unsigned int ip6_dst_mtu_forward(
+--- a/drivers/net/phy/phy_device.c
++++ b/drivers/net/phy/phy_device.c
+@@ -613,8 +613,8 @@ int phy_attach_direct(struct net_device
+ 	err = phy_init_hw(phydev);
+ 	if (err)
+ 		phy_detach(phydev);
+-
+-	phy_resume(phydev);
++	else
++		phy_resume(phydev);
  
- static bool ip6_pkt_too_big(const struct sk_buff *skb, unsigned int mtu)
- {
--	if (skb->len <= mtu || skb->local_df)
-+	if (skb->len <= mtu)
- 		return false;
- 
-+	/* ipv6 conntrack defrag sets max_frag_size + local_df */
- 	if (IP6CB(skb)->frag_max_size && IP6CB(skb)->frag_max_size > mtu)
- 		return true;
- 
-+	if (skb->local_df)
-+		return false;
-+
- 	if (skb_is_gso(skb) && skb_gso_network_seglen(skb) <= mtu)
- 		return false;
- 
+ 	return err;
+ }
 
 
