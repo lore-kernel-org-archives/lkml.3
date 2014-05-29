@@ -1,118 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965402AbaE2Rzv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 13:55:51 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:45387 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933562AbaE2Rzu (ORCPT
+	id S965299AbaE2RyJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 13:54:09 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:46401 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932993AbaE2RyF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 13:55:50 -0400
-From: navin patidar <navin.patidar@gmail.com>
-To: gregkh@linuxfoundation.org, Larry.Finger@lwfinger.net
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        navin patidar <navin.patidar@gmail.com>
-Subject: [PATCH 18/18] staging: rtl8188eu: Remove usb_vendor_req.h header file
-Date: Thu, 29 May 2014 23:20:58 +0530
-Message-Id: <1401385858-28722-18-git-send-email-navin.patidar@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1401385858-28722-1-git-send-email-navin.patidar@gmail.com>
-References: <1401385858-28722-1-git-send-email-navin.patidar@gmail.com>
+	Thu, 29 May 2014 13:54:05 -0400
+Date: Thu, 29 May 2014 18:54:07 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Rob Herring <robherring2@gmail.com>
+Cc: Kishon Vijay Abraham I <kishon@ti.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-omap <linux-omap@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, Tony Lindgren <tony@atomide.com>,
+        Jingoo Han <jg1.han@samsung.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>, Mark Rutland <Mark.Rutland@arm.com>,
+        Kumar Gala <galak@codeaurora.org>
+Subject: Re: [PATCH v2 16/18] ARM: OMAP: Enable PCI for DRA7
+Message-ID: <20140529175407.GB24270@arm.com>
+References: <1401345500-20188-1-git-send-email-kishon@ti.com>
+ <1401345500-20188-17-git-send-email-kishon@ti.com>
+ <CAL_JsqJifZqs9MpL=n4FRB+Z1OMtkw0sns8Vwec=_boGqRL8-w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAL_JsqJifZqs9MpL=n4FRB+Z1OMtkw0sns8Vwec=_boGqRL8-w@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-driver doesn't need usb_vendor_req.h.
+On Thu, May 29, 2014 at 06:52:14PM +0100, Rob Herring wrote:
+> On Thu, May 29, 2014 at 1:38 AM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
+> > Now that we have added PCIe driver for DRA7 SOCs, enable PCI on
+> > DRA7 SOCs.
+> >
+> > Cc: Tony Lindgren <tony@atomide.com>
+> > Cc: Rob Herring <robh+dt@kernel.org>
+> > Cc: Pawel Moll <pawel.moll@arm.com>
+> > Cc: Mark Rutland <mark.rutland@arm.com>
+> > Cc: Kumar Gala <galak@codeaurora.org>
+> > Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+> > ---
+> >  arch/arm/mach-omap2/Kconfig |    2 ++
+> >  1 file changed, 2 insertions(+)
+> >
+> > diff --git a/arch/arm/mach-omap2/Kconfig b/arch/arm/mach-omap2/Kconfig
+> > index cb31d43..b179e80 100644
+> > --- a/arch/arm/mach-omap2/Kconfig
+> > +++ b/arch/arm/mach-omap2/Kconfig
+> > @@ -75,6 +75,8 @@ config SOC_DRA7XX
+> >         select ARM_GIC
+> >         select HAVE_ARM_ARCH_TIMER
+> >         select IRQ_CROSSBAR
+> > +       select MIGHT_HAVE_PCI
+> 
+> I believe we moved or intend to move this under MULTI_PLATFORM, so you
+> don't need this. Will D. had a patch, but I don't think I saw a final
+> version to merge.
 
-Signed-off-by: navin patidar <navin.patidar@gmail.com>
----
- drivers/staging/rtl8188eu/include/usb_osintf.h     |    1 -
- drivers/staging/rtl8188eu/include/usb_vendor_req.h |   52 --------------------
- drivers/staging/rtl8188eu/os_dep/usb_intf.c        |    1 -
- 3 files changed, 54 deletions(-)
- delete mode 100644 drivers/staging/rtl8188eu/include/usb_vendor_req.h
+I posted it earlier this week for somebody in arm-soc to pick up (although I
+don't think they have done yet):
 
-diff --git a/drivers/staging/rtl8188eu/include/usb_osintf.h b/drivers/staging/rtl8188eu/include/usb_osintf.h
-index 2dce3bf..292ded7 100644
---- a/drivers/staging/rtl8188eu/include/usb_osintf.h
-+++ b/drivers/staging/rtl8188eu/include/usb_osintf.h
-@@ -22,7 +22,6 @@
- 
- #include <osdep_service.h>
- #include <drv_types.h>
--#include <usb_vendor_req.h>
- 
- extern char *rtw_initmac;
- extern int rtw_mc2u_disable;
-diff --git a/drivers/staging/rtl8188eu/include/usb_vendor_req.h b/drivers/staging/rtl8188eu/include/usb_vendor_req.h
-deleted file mode 100644
-index 7f26c8f..0000000
---- a/drivers/staging/rtl8188eu/include/usb_vendor_req.h
-+++ /dev/null
-@@ -1,52 +0,0 @@
--/******************************************************************************
-- *
-- * Copyright(c) 2007 - 2011 Realtek Corporation. All rights reserved.
-- *
-- * This program is free software; you can redistribute it and/or modify it
-- * under the terms of version 2 of the GNU General Public License as
-- * published by the Free Software Foundation.
-- *
-- * This program is distributed in the hope that it will be useful, but WITHOUT
-- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-- * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
-- * more details.
-- *
-- * You should have received a copy of the GNU General Public License along with
-- * this program; if not, write to the Free Software Foundation, Inc.,
-- * 51 Franklin Street, Fifth Floor, Boston, MA 02110, USA
-- *
-- *
-- ******************************************************************************/
--#ifndef _USB_VENDOR_REQUEST_H_
--#define _USB_VENDOR_REQUEST_H_
--
--/* 4	Set/Get Register related wIndex/Data */
--#define	RT_USB_RESET_MASK_OFF		0
--#define	RT_USB_RESET_MASK_ON		1
--#define	RT_USB_SLEEP_MASK_OFF		0
--#define	RT_USB_SLEEP_MASK_ON		1
--#define	RT_USB_LDO_ON				1
--#define	RT_USB_LDO_OFF				0
--
--/* 4	Set/Get SYSCLK related	wValue or Data */
--#define	RT_USB_SYSCLK_32KHZ		0
--#define	RT_USB_SYSCLK_40MHZ		1
--#define	RT_USB_SYSCLK_60MHZ		2
--
--
--enum bt_usb_request {
--	RT_USB_SET_REGISTER		= 1,
--	RT_USB_SET_SYSCLK		= 2,
--	RT_USB_GET_SYSCLK		= 3,
--	RT_USB_GET_REGISTER		= 4
--};
--
--enum rt_usb_wvalue {
--	RT_USB_RESET_MASK	=	1,
--	RT_USB_SLEEP_MASK	=	2,
--	RT_USB_USB_HRCPWM	=	3,
--	RT_USB_LDO			=	4,
--	RT_USB_BOOT_TYPE	=	5
--};
--
--#endif
-diff --git a/drivers/staging/rtl8188eu/os_dep/usb_intf.c b/drivers/staging/rtl8188eu/os_dep/usb_intf.c
-index 7526b98..05dce99 100644
---- a/drivers/staging/rtl8188eu/os_dep/usb_intf.c
-+++ b/drivers/staging/rtl8188eu/os_dep/usb_intf.c
-@@ -29,7 +29,6 @@
- #include <linux/vmalloc.h>
- #include <osdep_intf.h>
- 
--#include <usb_vendor_req.h>
- #include <usb_ops.h>
- #include <usb_osintf.h>
- #include <usb_hal.h>
--- 
-1.7.10.4
+  http://lists.infradead.org/pipermail/linux-arm-kernel/2014-May/260238.html
 
+Will
