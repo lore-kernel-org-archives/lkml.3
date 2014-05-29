@@ -1,32 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932993AbaE2NjQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 09:39:16 -0400
-Received: from smtp-1.indo.net.id ([202.53.253.72]:50334 "EHLO
-	smtp-1.indo.net.id" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932413AbaE2NjO convert rfc822-to-8bit (ORCPT
+	id S933025AbaE2NkG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 09:40:06 -0400
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:32835 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932809AbaE2NkE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 09:39:14 -0400
-X-Greylist: delayed 548 seconds by postgrey-1.27 at vger.kernel.org; Thu, 29 May 2014 09:39:13 EDT
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 29 May 2014 09:40:04 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7BIT
-Content-Description: Mail message body
-Subject: Venture
-To: Recipients <mr.Beno.bukpd1@yahoo.co.jp>
-From: mr.Beno.bukpd1@yahoo.co.jp
-Date: Thu, 29 May 2014 11:50:34 +0100
-Reply-To: benoro7@yahoo.co.jp
-Message-Id: <20140529104028.4C083A1A46F@mail.amp-group.co.id>
+In-Reply-To: <1400734743-3154-1-git-send-email-lejun.zhu@linux.intel.com>
+References: <1400734743-3154-1-git-send-email-lejun.zhu@linux.intel.com>
+Date: Thu, 29 May 2014 15:40:03 +0200
+Message-ID: <CACRpkdYXT7NR6kWyzBbo2aR_Cu0=9wOFbWTA0zZyN90nUb4CAw@mail.gmail.com>
+Subject: Re: [PATCH v3] gpio: Add support for Intel SoC PMIC (Crystal Cove)
+From: Linus Walleij <linus.walleij@linaro.org>
+To: "Zhu, Lejun" <lejun.zhu@linux.intel.com>
+Cc: Alexandre Courbot <gnurou@gmail.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        jacob.jun.pan@linux.intel.com, bin.yang@intel.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, May 22, 2014 at 6:59 AM, Zhu, Lejun <lejun.zhu@linux.intel.com> wrote:
 
-For Your Attention:
+> Devices based on Intel SoC products such as Baytrail have a Power
+> Management IC. In the PMIC there are subsystems for voltage regulation,
+> A/D conversion, GPIO and PWMs. The PMIC in Baytrail-T platform is called
+> Crystal Cove.
+>
+> This patch adds support for the GPIO function in Crystal Cove.
+>
+> v2:
+> - Use IRQ chip helper to provide irqdomain.
+> - Implement .remove and can now build as a module.
+> - Various fix for unreadable or ugly code pieces.
+> v3:
+> - More fix in irq_handler and probe.
 
-My name is Mr. Beno and I am contacting you from Liberia for a joint business relationship. I have some funds realized through contract deal and I need your cooperation to invest the funds. The primary stage requires transferring the funds to your account for subsequent investment. I therefore want you to work with me as a partner. On receipt of your response, I will send you more details of the transaction and also full information about myself.
+(...)
 
-I am waiting for your prompt response. Please forward your reply to  benrw7777@yahoo.co.jp 
+> +       gpiochip_irqchip_add(&cg->chip, &crystalcove_irqchip, 0,
+> +                            handle_simple_irq, IRQ_TYPE_NONE);
+> +
+> +       retval = request_threaded_irq(irq, NULL, crystalcove_gpio_irq_handler,
+> +                                     IRQF_ONESHOT, KBUILD_MODNAME, cg);
+> +
+> +       if (retval) {
+> +               dev_warn(&pdev->dev, "request irq failed: %d\n", retval);
+> +               goto out;
+> +       }
+> +
+> +       retval = gpiochip_add(&cg->chip);
+> +       if (retval) {
+> +               dev_warn(&pdev->dev, "add gpio chip error: %d\n", retval);
+> +               goto out_free_irq;
+> +       }
 
-Beno
+As concluded from discussion, please switch the order of
+gpiochip_irqchip_add() and gpiochip_add() so that the
+gpiochip is added first, then the irqchip.
+
+Yours,
+Linus Walleij
