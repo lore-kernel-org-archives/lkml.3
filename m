@@ -1,180 +1,301 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757430AbaE2N0R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 09:26:17 -0400
-Received: from mail-ig0-f181.google.com ([209.85.213.181]:55226 "EHLO
-	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757389AbaE2N0Q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 09:26:16 -0400
-Message-ID: <53873577.8000502@linaro.org>
-Date: Thu, 29 May 2014 08:26:15 -0500
-From: Alex Elder <elder@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Mike Turquette <mturquette@linaro.org>, mporter@linaro.org,
-        bcm@fixthebug.org, devicetree@vger.kernel.org
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/5] clk: bcm281xx: implement prerequisite clocks
-References: <1400590362-11177-1-git-send-email-elder@linaro.org> <1400590362-11177-3-git-send-email-elder@linaro.org> <20140524005358.23136.8918@quantum>
-In-Reply-To: <20140524005358.23136.8918@quantum>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S932586AbaE2N0p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 09:26:45 -0400
+Received: from [125.64.60.192] ([125.64.60.192]:55362 "EHLO mail.081.com.cn"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1757373AbaE2N0o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 09:26:44 -0400
+X-Greylist: delayed 754 seconds by postgrey-1.27 at vger.kernel.org; Thu, 29 May 2014 09:26:42 EDT
+Date: Thu, 29 May 2014 18:03:00 +0800
+X-Mailer: Microsoft Outlook Express 6.00.2900.5512
+Message-ID: <007673260318$87282264$04800538@ihiz>
+From: =?gb2312?B?1cK+rcDt?= <tanbo@081.com.cn>
+To: <linux-kernel@vger.kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/23/2014 07:53 PM, Mike Turquette wrote:
-> Quoting Alex Elder (2014-05-20 05:52:39)
->> @@ -743,11 +746,16 @@ struct clk *kona_clk_setup(struct kona_clk *bcm_clk)
->>         clk = clk_register(NULL, &bcm_clk->hw);
->>         if (IS_ERR(clk)) {
->>                 pr_err("%s: error registering clock %s (%ld)\n", __func__,
->> -                       init_data->name, PTR_ERR(clk));
->> +                       name, PTR_ERR(clk));
->>                 goto out_teardown;
->>         }
->>         BUG_ON(!clk);
->>  
->> +       /*  Make it so we can look the clock up using clk_find() */
-> 
-> s/clk_find/clk_get/ ?
 
-Yes, this is a mistake.
 
-> 
->> +       bcm_clk->cl.con_id = name;
->> +       bcm_clk->cl.clk = clk;
->> +       clkdev_add(&bcm_clk->cl);
-> 
-> This is not so nice. I'll explain more below.
 
-Actually, this code is no longer needed at all.  It was
-at one time, but I evolved away from that need, and never
-noticed that this remnant remained.  I will delete it.
 
-I'm really sorry I missed that, it was confusing for
-it to still be there I'm sure.
+	
+	             《移动互联网时代下的营销模式转型》特训营  【主讲：黄圣陶】
+       -----------------------------------------------------------------------------------------------
+	                                                     —— 2天1夜帮你打造赚钱的电商！	
 
->> +
->>         return clk;
->>  out_teardown:
->>         bcm_clk_teardown(bcm_clk);
->> diff --git a/drivers/clk/bcm/clk-kona.c b/drivers/clk/bcm/clk-kona.c
->> index d8a7f38..fd070d6 100644
->> --- a/drivers/clk/bcm/clk-kona.c
->> +++ b/drivers/clk/bcm/clk-kona.c
->> @@ -1195,6 +1195,48 @@ static bool __peri_clk_init(struct kona_clk *bcm_clk)
->>         return true;
->>  }
->>  
->> +static bool __kona_clk_init(struct kona_clk *bcm_clk);
->> +static bool __kona_prereq_init(struct kona_clk *bcm_clk)
->> +{
->> +       struct clk *clk;
->> +       struct clk_hw *hw;
->> +       struct kona_clk *prereq;
->> +
->> +       BUG_ON(clk_is_initialized(bcm_clk));
->> +
->> +       if (!bcm_clk->p.prereq)
->> +               return true;
->> +
->> +       clk = clk_get(NULL, bcm_clk->p.prereq);
-> 
-> The clkdev global namespace is getting polluted with all of these new
-> prereq clocks. If there was an associated struct device *dev with them
-> then it wouldn't be a problem, but you might get collisions with other
-> clock drivers that also use NULL for the device.
+	
+	  报名详情 >	
 
-Again, you caught a confusing mistake.  The clk_lookup
-structure will go away.
+	【培训时间】2014年6月14-15北京、6月19-20上海、6月21-22深圳 
+ 	
+	【培训对象】 企业总经理、营销总监、企划总监、网络运营主管等	
 
-> It would be a lot nicer for the clocks that require a prereq clock to
-> just use clk_get(dev, "well_known_name"); in the same way that drivers
-> use it, without considering it a special case.
+	【授课方式】 讲师讲授 + 视频演绎 + 案例研讨 +角色扮演 + 讲师点评
+	
+	【培训费用】 原价9800元（2中餐,1晚宴 税费,专家演讲费,教材费,茶点等）特惠价：980元/位	
 
-That is in fact what happens, in __kona_prereq_init().
+	【承办单位】宇杰企管	
 
->> +       if (IS_ERR(clk)) {
->> +               pr_err("%s: unable to get prereq clock %s for %s\n",
->> +                       __func__, bcm_clk->p.prereq, bcm_clk->init_data.name);
->> +               return false;
->> +       }
->> +       hw = __clk_get_hw(clk);
->> +       if (!hw) {
->> +               pr_err("%s: null hw pointer for clock %s\n", __func__,
->> +                       bcm_clk->init_data.name);
->> +               return false;
->> +       }
->> +       prereq = to_kona_clk(hw);
->> +       if (prereq->ccu != bcm_clk->ccu) {
->> +               pr_err("%s: prereq clock %s CCU different for clock %s\n",
->> +                       __func__, bcm_clk->p.prereq, bcm_clk->init_data.name);
->> +               return false;
->> +       }
->> +
->> +       /* Initialize the prerequisite clock first */
->> +       if (!__kona_clk_init(prereq)) {
->> +               pr_err("%s: failed to init prereq %s for clock %s\n",
->> +                       __func__, bcm_clk->p.prereq, bcm_clk->init_data.name);
->> +               return false;
->> +       }
->> +       bcm_clk->p.prereq_clk = clk;
-> 
-> The above seems like a lot effort to go to. Why not skip all of this and
-> just implement the prerequisite logic in the .enable & .disable
-> callbacks? E.g. your kona clk .enable callback would look like:
+        【报名热线】深圳：O755-612 82 36O 上海: O21-51 6O2 O3O 北京：O1O-516 693 1O
 
-I think the problem is that it means the clock consumers
-would have to know that prerequisite relationship.  And
-that is dependent on the clock tree.  The need for it in
-this case was because the boot loader didn't initialize
-all the clocks that were needed.  If we could count on
-the boot loader setting things up initially we might not
-need to do this.
+        【QQ在线】51179 8337
 
-> 
-> diff --git a/drivers/clk/bcm/clk-kona.c b/drivers/clk/bcm/clk-kona.c
-> index d603c4e..51f35b4 100644
-> --- a/drivers/clk/bcm/clk-kona.c
-> +++ b/drivers/clk/bcm/clk-kona.c
-> @@ -987,6 +987,12 @@ static int kona_peri_clk_enable(struct clk_hw *hw)
->  {
->  	struct kona_clk *bcm_clk = to_kona_clk(hw);
->  	struct bcm_clk_gate *gate = &bcm_clk->u.peri->gate;
-> +	int ret;
-> +
-> +	hw->prereq_bus_clk = clk_get(hw->ccu, hw->prereq);
-> +	ret = clk_enable(prereq_bus_clk);
-> +	if (ret)
-> +		return ret;
->  
->  	return clk_gate(bcm_clk->ccu, bcm_clk->init_data.name, gate, true);
->  }
-> @@ -997,6 +1003,9 @@ static void kona_peri_clk_disable(struct clk_hw *hw)
->  	struct bcm_clk_gate *gate = &bcm_clk->u.peri->gate;
->  
->  	(void)clk_gate(bcm_clk->ccu, bcm_clk->init_data.name, gate, false);
-> +
-> +	clk_disable(hw->prereq_bus_clk);
-> +	clk_put(hw->prereq_bus_clk);
->  }
->  
->  static int kona_peri_clk_is_enabled(struct clk_hw *hw)
-> 
-> 
-> I guess it might take some trickery to get clk_get to work like that.
-> Let me know if I've completely lost the plot.
+	  课程简介 >
+	
+	【课程背景】	
 
-I don't think so, but I think there's a lot of stuff
-here to try to understand, and you're trying to extract
-it from the code without the benefit of some background
-of how and why it's done this way.
+	    网商企业化，企业网商化
+	
+	   《移动互联网时代下的营销模式转型》（2天1夜）是目前最实战、最超值、最权威的网商培训课程，	
 
-Hopefully all this verbiage is moving you closer to
-understanding...  I appreciate your patience.
+	由业内扶持和辅导1000余家企业成功转型网商的黄圣陶老师开发和主讲，课程至今在全国各地开设100。
+	
+	多期，参与课程的学员给予了100%的好评，帮助至少10000家公司从互联网获取客户、销售产品、创立品牌	
 
-					-Alex
+	    课程全面覆盖互联网营销趋势分析、网店实战运营、网商运营与分销实战、搜索营销实战运营、微营
+	
+	销实战运营、网商团队打造6大模块，系统解决传统企业进驻电商的5大困境：	
+
+	困境一：决策--- 是否进驻电商？如何才能快速启动？
+	
+	困境二：团队--- 挖人还是培养？电商团队如何架构与管理？	
+
+	困境三：销量--- 流量？平台资源利用？如何提升转化率？
+	
+	困境四：运营--- 供应链管理？淘宝规则？诚信通规则？日常管理？	
+
+	困境五：冲突--- 线上与线下价格、品牌传播的冲突与协调？……	
+		
+		
+	【课程收益】	
+
+	   帮助和扶持传统企业打造五位一体的营销模式	
+	黄圣陶老师将在课程现场手把手帮助您和您的团队打造五位一体的全网营销模式，成功转型网商！	
+	知趋势　全面了解电子商务发展趋势以及企业互联网思维模式及营销趋势	
+	懂案例　经典案例新颖分析，全面了解企业的互联网转型方略和落地方案	
+	学平台　全面系统学习网络营销平台，普及运营及营销的多种实操技巧	
+	掌方法　知晓网络营销定位、策划、运营、推广、成交5大模块成功方法	
+	搭团队　获得网络营销落地搭建团队一系列建议，包括绩效考核与效果分析	
+	出效果　后续的顾问指导，全方面帮助网络营销系统企业落地，出实际效果	
+		
+	课程现场可以给到的实战工具：	
+	企业网站360度测评量表 　根据表格内容，对照自己公司网站打分，快速发现企业网站的优劣，同时能发	
+	现问题出在哪？如何增加客户量？ 	
+	电商岗位KPI考核系统　针对电子商务工作各个岗位设定考核指标，让员工的工作内容、绩效量化，可监督，	
+	最终达到员工自动自发工作的结果。	
+		
+	  导师简介 >【黄圣陶】	
+
+	互联网盈利模式创新导师	
+
+	国家教育部电子商务项目研发者	
+		
+	曾任：淘宝大学资深讲师	
+
+	　　　阿里巴巴商学院讲师	
+
+	　　　阿里软件讲师训练营营长
+	
+	现任：商动力集团副总裁	
+
+	      阿百商学院会员联盟主席	
+		
+	【专长领域】
+	
+	    11年的互联网B2B、B2C电商领域的网络营销、电子商务渠道与咨询管理实战经验	
+	　  黄圣陶老师一直致力于互联网盈利模式和中小企业触网解决方案的研究工作。在传统企业成功转型	
+	互联网电子商务、品牌电子商务网络渠道搭建和管理、独立平台搭建和线上线下结合的O2O营销、微信微	
+	博微营销、店铺运营能力提升方面拥有丰富的理论和实战经验，并深入企业，了解企业触网困境及需求，	
+	为中小企业进入互联网提供行之有效的落地解决方案。到目前为止，黄圣陶老师在全国各地讲授电子商	
+	务课程已超过1000场。	
+	　　2010年黄老师开始创办阿百商学院，组织国内网络营销和电子商务类专家共同为企业触网作指导和	
+	培训，亲自扶持与辅导的电子商务企业超过200余家，组织并主讲了50多期《传统企业成功转型互联网电	
+	子商务》，帮助100多家企业成功转型；同期主讲《互联网发展趋势与企业商业模式》、《打造网络营销	
+	赚钱系统》等课程在行业内引起强烈反响，累计培训学员超过15000余名。	
+		
+	【授课风格】	
+
+	    黄圣陶老师拥有深厚的互联网盈利模式及中小企业触网解决方案的专业实战经验，授课风格以题问	
+	式引导、顾问式讲授方式从互联网系统角度进行精辟分析。亲和力强、风趣幽默、一针见血、富有激情、课题气氛轻松活跃能够有效的调动学员的积极性，通过实际案例以深入浅出的方式讲解专业知识。	
+	【主讲课程】	
+	《互联网发展趋势与企业商业模式》    《打造网络营销赚钱系统》	
+	《网络分销致胜法则》                《电商企业人才战略》	
+	《企业全程全网电子商务》            《打造网商金牌客服》	
+		
+	【实战经验】	
+
+	    2003年，加入阿里巴巴集团，正式开始互联网的工作经历。从销售人员做起，到成为阿里巴巴商学院	
+	钻石级讲师，任职期间，致力于电商企业职业化内训和实操，服务群体为电商品牌商、高校、培训和咨询	
+	机构。	
+	    2005年，在淘宝大学任资深讲师，主讲淘宝大学开发的系列课程，熟悉等品牌打造实操模式和线上线	
+	下全渠道一体化成功经验，为母婴、服装服饰、3C数码家电等多家电商品牌商特聘顾问。	
+	    2009年，成为阿里软件讲师训练营营长，为全国渠道商训练讲师，带领团队连续7个月获得阿里软件销	
+	售冠军，成为阿里资深电子商务培训师、网络营销顾问专家。	
+	　　2010年，创立阿百商学院，任职院长，在全国特别是广东开展电子商务和网络营销方面讲座超过1000	
+	场，组织并主讲了50多期《传统企业成功转型互联网电子商务》，在行业内引起强烈反响。亲自辅导仙锯	
+	机械设备有限公司、岭美印刷集团、东升药业、红谷皮具、俏丹娜服饰、桥兴达包装等100余家各行业知名	
+	企业，帮助企业成功转型并在互联网上取得明显成效。近年来，通过对互联网深入了解淘系平台天猫、聚	
+	划算、淘宝、京东、一号店、易迅等电商平台的类目运营推广思路和规划，以“全程全网电子商务”来打	
+	造传统企业触网并快速实现盈利的落地方案，并指导操盘众多大型品牌服装、母婴和3C类目。 	
+		
+	【服务客户】	
+
+	阿里巴巴、淘宝、支付宝、一淘、腾讯、百度、E网、报喜鸟、红孩儿、嘟迪、小米、七匹狼、韩都衣舍、	
+	赛琪运动品牌、城市丽人服装、森美服装、安奈尔服装、美好服饰、美特斯邦威、佐丹奴、经典故事、百	
+	分百感觉、伊丝艾拉服饰、衡韵女装、非牌女装、欧迪芬服饰、利郎男装、瑞雀服饰、维多利亚、格格屋、	
+	爱林服饰、诺和服饰、水中花服饰、杉杉服饰、爱林至善服饰贝尔莱德、小熊电器、麦包包、骆驼、茵曼、	
+	POUCH、仙锯机械设备有限公司、岭美印刷集团、东升药业、红谷皮具、俏丹娜服饰、桥兴达包装等。	
+		
+	课程大纲
+	
+	第一讲：互联网营销发展趋势	
+	一、互联网在中国发展的前景和潜力预测	
+	·人在哪生意就在哪，互联网发展到今天，已经改变了很多人的生活习惯。现在人们已经随时上网，全	
+	天候网购。	
+	·商业网民在哪里？如何抓住商业网民的眼球？企业在互联网究竟应该干什么？	
+	·企业网上的商业模式解析，做对事比做事本身更重要。	
+	·太多企业在天猫受挫，不是天猫有问题，是企业没做对事。广东今年有1800多家天猫店出淘，全国超	
+	过8000家出淘，这些出淘店都是因为亏损，但天猫的总量却在快速增长	
+	·案例分析：七格格与裂帛的天猫营销策略分析	
+	二、中国的网络零售、网络品牌打造的现状以及成果	
+	·网络品牌的形成基因是什么？	
+	·传统企业线上品牌如何上线，怎么解决线上线下冲突的问题？七匹狼是如何线上线下融合的？	
+	·如何快速建立网络品牌，而且深入人心？	
+	·案例分析：阿芙精油是怎么快速打起出互联网精油第一品牌	
+	三、传统企业转向电商的可行性以及一般规律	
+	·方向不对累死人，而且没效果，作为企业首先要选择适合企业发展的互联网商业模式。B2B,B2C,还是	
+	B2B2C？	
+	·各行业运用电商的规律	
+	·“上网找死，不上等死。”如何让自己的企业不找死？	
+	四、网络营销商业模式的探讨与数据报告	
+	·2013年中国电子商务总规模9.8万亿，淘宝、天猫、京东等加起来只有1.85万亿，更大的数字来自B2B，	
+	如网站和诚信通、出口通等。你的企业有多少来自B2B？	
+	·淘宝有800万店铺，其中能拿到一手货源的不到10%，与其自己去开店，还不如让500个以上淘宝店来卖	
+	你的货，让专业的人做专业的事。	
+	·如何发挥企业网站就是企业网上公司的价值？	
+		
+	第二讲：网络的实战运营	
+	一、全方位的介绍和认识阿里巴巴	
+	·一亿注册用户，840万企业商家，在阿里巴巴的超级平台上如何让自己进入前三页？	
+	·阿里巴巴的新变化，不用天天更新产品也能卖得很好。?	
+	·做好诚信通的三步曲	
+	二、经营好淘宝、天猫通要做好哪几件关键的事情	
+	·店铺设计是基础	
+	·图片与视频营销是重点	
+	·在线交易的手段与方法，如何让不适合在线交易的产品也排名靠前？	
+	三、网络营销定位与5A级别的设计装修	
+	·定位定天下，店铺做到小而美而不是大而全	
+	·阿里巴巴宝典：店铺装修的七星阵法	
+	·发布5A级宝贝的技巧	
+	·产品重发的最佳时间点在哪里？少做无用功	
+	·为何总排不到前三页？	
+	·做了几年诚信通了都没接到过生意，如何在一个月内让店铺火起来？	
+	四、成功淘宝、天猫店铺故事的分享与改善建议	
+	·阿里巴巴年批发5000万是怎么炼成的？	
+	·案例：优秀网商故事	
+		
+	第三讲：优秀网商运营与分销	
+	一、电商的趋势、优秀网商的运营解析	
+	·移动互联网有势无市，如何坚守淘宝和天猫？	
+	·5年内不触网，企业一定没希望。	
+	二、网店装修设计的要点以及注意事项	
+	·完美网店装修的设计要点	
+	三、淘宝的推广方式分解（免费和付费）	
+	·不要一搞活动就只想到聚划算	
+	·淘宝活动的参与技巧	
+	四、分销的优势以及分销的管理	
+	·分销的模式与优缺点	
+	·如何快速招商	
+	·怎样区分优质与劣质的经销商	
+	五、分销平台的构建与核心功能解读	
+	·如何借助分销平台优势进行分销	
+		
+	第四讲：网赢天下之搜索营销	
+	一、网络营销新突破——效果型网站	
+	·网站是您在网上的公司，是企业触网的根本	
+	·如何盘活自己的网站？	
+	·效果型网站的核心要素	
+	二、效果型网站怎样内外兼修	
+	·什么是效果型网站？死网站的问题究竟在哪？	
+	·如何让普通文员也能做好网络营销	
+	·让网站有效果的几条有效途径	
+	三、营销理念、SEO怎样植入实现全网营销	
+	·工具为王，服务致胜	
+	·搜索营销的成功案例剖析	
+	·仙锯哥如何三个月实现网络接单300万	
+	·德生科技的全网覆盖之道	
+		
+	第五讲：微营销实战运营	
+	一、微信与微电商时代	
+	·微信改变了互联网时代	
+	·微信已经是一种生活方式	
+	·微博与微营销	
+	二、入口的改变，电商模式也得改变	
+	·线下市场入口决定市场	
+	·互联时代的入口经济	
+	·移动互联网的入口在哪里	
+	三、强关系与圈子效益	
+	·朋友圈的特殊含义	
+	·圈子生意的真正价值	
+	·如何扩大圈子	
+	·未来的生意就是圈子生意	
+	四、微时代的跨界电商	
+	·疯狂的跨界	
+	·电商如何利用微媒体与微平台	
+	·微网站与微商城	
+	·如何快速增加会员？	
+	五、微博的推广	
+	·你想用微博推广什么？如何与众不同？	
+	·微博营销世界中你所不知道的内幕！	
+	·微博粉丝来源潜藏的微博推广秘诀	
+	·自动发布微博与时间分布？	
+	·如何让你的微博增加5倍的曝光率？	
+	·创造热闹氛围，让信息源自动传播	
+	·集中精力推广一条微博，目标受众100万人	
+	·从专注到专家，借力大平台免费宣传	
+	·微博推广必须知道的五大秘诀	
+	六、微博的营销	
+	·从娱乐炒作，谈微博如何营造氛围	
+	·微博营销的两种主要方法：重资源与细回复	
+	·微博营销评论与互动，最核心的一个绝招	
+	·微博的逻辑漏洞，将激发微博营销的无限潜能？	
+	·绝密：明星的超高微博人气是如何营造出来的？	
+	·微博矩阵的三种基本模式与微博账号的意义	
+	·微博营销的出路在于团队合作与联盟营销	
+	·微博营销：在借力中博弈	
+	·如何创作微博营销段子？什么是微植入？	
+		
+	第六讲：沙盘演练：老师现场辅导	
+	一、企业自主设计网络营销（品牌）推广方案	
+	二、企业解读自己的方案	
+	三、专家现场指导和点评企业个案	
+	四、头脑风暴、学员互动	
+	·实务案例研讨、点评辅导	
+		
+	第七讲：网商人才战略	
+	一、网商人才招聘技巧与培训	
+	·网商人才哪里招	
+	·网商人才如何培养	
+	二、网商人才架构分析与制度制定标准	
+	·如何把KPI用活用好	
+	·90后的电商员工怎么管理	
+	·如何不让企业成为培训学校？	
+	三、网商人才的考核机制	
+	·量化、可行是关键，物资、精神双管齐下	
+	四、我们的人才成长计划	
+	·网商企业留人技巧	
+	·网商企业的员工激励系统	
+	·自动自发工作的网商企业文化打造	
+		
+       ----------------------------------------------------------------------------------
+
+      
+
+
+
+
+
+
 
