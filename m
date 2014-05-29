@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932660AbaE2ItE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 04:49:04 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:50580 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932546AbaE2ItA (ORCPT
+	id S933943AbaE2It4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 04:49:56 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:42685 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933406AbaE2ItG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 04:49:00 -0400
+	Thu, 29 May 2014 04:49:06 -0400
 From: Daniel Thompson <daniel.thompson@linaro.org>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-serial@vger.kernel.org,
@@ -17,49 +17,112 @@ Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-serial@vger.kernel.org,
         Jason Wessel <jason.wessel@windriver.com>,
         kgdb-bugreport@lists.sourceforge.net, Jiri Slaby <jslaby@suse.cz>,
         Dirk Behme <dirk.behme@de.bosch.com>
-Subject: [PATCH tty-next v2 0/4] serial: kgdb_nmi: Allow ttyNMIX to act as primary console
-Date: Thu, 29 May 2014 09:48:42 +0100
-Message-Id: <1401353326-14148-1-git-send-email-daniel.thompson@linaro.org>
+Subject: [PATCH tty-next v2 3/4] serial: kgdb_nmi: Switch from tasklets to real timers
+Date: Thu, 29 May 2014 09:48:45 +0100
+Message-Id: <1401353326-14148-4-git-send-email-daniel.thompson@linaro.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140528200344.GA2750@kroah.com>
+In-Reply-To: <1401353326-14148-1-git-send-email-daniel.thompson@linaro.org>
 References: <20140528200344.GA2750@kroah.com>
+ <1401353326-14148-1-git-send-email-daniel.thompson@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset contains a number of fixes to make it possible to use
-ttyNMIX as the primary console (providing you also have that the
-additional architecture specific code which is proposed in a 
-different patch set).
+kgdb_nmi uses tasklets on the assumption they will not be scheduled
+until the next timer tick. This assumption is invalid and can lead to
+live lock, continually servicing the kgdb_nmi tasklet. This is fixed
+by using the timer API instead.
 
-The first patch fixes a bug in the cpm poll_put_char() driver. This
-is not strictly related to ttyNMIX but appears in this patch series
-for historical reasons (it was part of a patch that did impact ttyNMIX
-but most of that patch is already in the kernel thanks to an 
-independent patch from Doug Anderson).
+Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
+---
+ drivers/tty/serial/kgdb_nmi.c | 30 +++++++++---------------------
+ 1 file changed, 9 insertions(+), 21 deletions(-)
 
-The remaining patches are specific to kgdb_nmi and have no effect on
-any other part of the kernel.
-
-The series has been runtime tested on ARM and compile tested on
-x86 and powerpc.
-
-Changes since v1:
-
-- Trimmed down the first patch to the remaining fragments as described 
-  above.
-- Rebased on tty-next as requested by Greg KH.
-
-Daniel Thompson (4):
-  serial: cpm_uart: No LF conversion in put_poll_char()
-  serial: kgdb_nmi: Use container_of() to locate private data
-  serial: kgdb_nmi: Switch from tasklets to real timers
-  serial: kgdb_nmi: Improve console integration with KDB I/O
-
- drivers/tty/serial/cpm_uart/cpm_uart_core.c |  8 ++--
- drivers/tty/serial/kgdb_nmi.c               | 59 +++++++++++++----------------
- 2 files changed, 31 insertions(+), 36 deletions(-)
-
+diff --git a/drivers/tty/serial/kgdb_nmi.c b/drivers/tty/serial/kgdb_nmi.c
+index d51b2a1..20d21d0 100644
+--- a/drivers/tty/serial/kgdb_nmi.c
++++ b/drivers/tty/serial/kgdb_nmi.c
+@@ -80,24 +80,10 @@ static struct console kgdb_nmi_console = {
+ 
+ struct kgdb_nmi_tty_priv {
+ 	struct tty_port port;
+-	struct tasklet_struct tlet;
++	struct timer_list timer;
+ 	STRUCT_KFIFO(char, KGDB_NMI_FIFO_SIZE) fifo;
+ };
+ 
+-/*
+- * Our debugging console is polled in a tasklet, so we'll check for input
+- * every tick. In HZ-less mode, we should program the next tick.  We have
+- * to use the lowlevel stuff as no locks should be grabbed.
+- */
+-#ifdef CONFIG_HIGH_RES_TIMERS
+-static void kgdb_tty_poke(void)
+-{
+-	tick_program_event(ktime_get(), 0);
+-}
+-#else
+-static inline void kgdb_tty_poke(void) {}
+-#endif
+-
+ static struct tty_port *kgdb_nmi_port;
+ 
+ static void kgdb_tty_recv(int ch)
+@@ -108,14 +94,13 @@ static void kgdb_tty_recv(int ch)
+ 	if (!kgdb_nmi_port || ch < 0)
+ 		return;
+ 	/*
+-	 * Can't use port->tty->driver_data as tty might be not there. Tasklet
++	 * Can't use port->tty->driver_data as tty might be not there. Timer
+ 	 * will check for tty and will get the ref, but here we don't have to
+ 	 * do that, and actually, we can't: we're in NMI context, no locks are
+ 	 * possible.
+ 	 */
+ 	priv = container_of(kgdb_nmi_port, struct kgdb_nmi_tty_priv, port);
+ 	kfifo_in(&priv->fifo, &c, 1);
+-	kgdb_tty_poke();
+ }
+ 
+ static int kgdb_nmi_poll_one_knock(void)
+@@ -199,7 +184,8 @@ static void kgdb_nmi_tty_receiver(unsigned long data)
+ 	struct kgdb_nmi_tty_priv *priv = (void *)data;
+ 	char ch;
+ 
+-	tasklet_schedule(&priv->tlet);
++	priv->timer.expires = jiffies + (HZ/100);
++	add_timer(&priv->timer);
+ 
+ 	if (likely(!kgdb_nmi_tty_enabled || !kfifo_len(&priv->fifo)))
+ 		return;
+@@ -215,7 +201,9 @@ static int kgdb_nmi_tty_activate(struct tty_port *port, struct tty_struct *tty)
+ 	    container_of(port, struct kgdb_nmi_tty_priv, port);
+ 
+ 	kgdb_nmi_port = port;
+-	tasklet_schedule(&priv->tlet);
++	priv->timer.expires = jiffies + (HZ/100);
++	add_timer(&priv->timer);
++
+ 	return 0;
+ }
+ 
+@@ -224,7 +212,7 @@ static void kgdb_nmi_tty_shutdown(struct tty_port *port)
+ 	struct kgdb_nmi_tty_priv *priv =
+ 	    container_of(port, struct kgdb_nmi_tty_priv, port);
+ 
+-	tasklet_kill(&priv->tlet);
++	del_timer(&priv->timer);
+ 	kgdb_nmi_port = NULL;
+ }
+ 
+@@ -243,7 +231,7 @@ static int kgdb_nmi_tty_install(struct tty_driver *drv, struct tty_struct *tty)
+ 		return -ENOMEM;
+ 
+ 	INIT_KFIFO(priv->fifo);
+-	tasklet_init(&priv->tlet, kgdb_nmi_tty_receiver, (unsigned long)priv);
++	setup_timer(&priv->timer, kgdb_nmi_tty_receiver, (unsigned long)priv);
+ 	tty_port_init(&priv->port);
+ 	priv->port.ops = &kgdb_nmi_tty_port_ops;
+ 	tty->driver_data = priv;
 -- 
 1.9.0
 
