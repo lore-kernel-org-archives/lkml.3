@@ -1,88 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934429AbaE2NvG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 09:51:06 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:59524 "EHLO
+	id S934504AbaE2NvI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 09:51:08 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:59525 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932416AbaE2Nte (ORCPT
+	by vger.kernel.org with ESMTP id S933630AbaE2Nte (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 29 May 2014 09:49:34 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Nikolay Aleksandrov <nikolay@redhat.com>,
-        Zenghui Shi <zshi@redhat.com>, Ben Hutchings <ben@decadent.org.uk>,
-        <linux-net-drivers@solarflare.com>,
-        Shradha Shah <sshah@solarflare.com>,
+Cc: linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
+        Greg Suarez <gsuarez@smithmicro.com>,
         "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 097/103] sfc: fix calling of free_irq with already free vector
-Date: Thu, 29 May 2014 15:49:22 +0200
-Message-Id: <ce37c23f8c394e6bd271557044cbbdd0d2f7b9c9.1401371259.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 095/103] net: cdc_mbim: handle unaccelerated VLAN tagged frames
+Date: Thu, 29 May 2014 15:49:20 +0200
+Message-Id: <5cc338cf5f3fdf1758240b50f7403b6c9e17e1a6.1401371259.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <bcbac220dab16a4038ac1a7c5cfe3e7f034b3836.1401371258.git.jslaby@suse.cz>
 References: <bcbac220dab16a4038ac1a7c5cfe3e7f034b3836.1401371258.git.jslaby@suse.cz>
 In-Reply-To: <cover.1401371258.git.jslaby@suse.cz>
 References: <cover.1401371258.git.jslaby@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nikolay Aleksandrov <nikolay@redhat.com>
+From: Bjørn Mork <bjorn@mork.no>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-[ Upstream commit 1c3639005f48492e5f2d965779efd814e80f8b15 ]
+[ Upstream commit 6b5eeb7f874b689403e52a646e485d0191ab9507 ]
 
-If the sfc driver is in legacy interrupt mode (either explicitly by
-using interrupt_mode module param or by falling back to it) it will
-hit a warning at kernel/irq/manage.c because it will try to free an irq
-which wasn't allocated by it in the first place because the MSI(X) irqs are
-zero and it'll try to free them unconditionally. So fix it by checking if
-we're in legacy mode and freeing the appropriate irqs.
+This driver maps 802.1q VLANs to MBIM sessions. The mapping is based on
+a bogus assumption that all tagged frames will use the acceleration API
+because we enable NETIF_F_HW_VLAN_CTAG_TX. This fails for e.g. frames
+tagged in userspace using packet sockets. Such frames will erroneously
+be considered as untagged and silently dropped based on not being IP.
 
-CC: Zenghui Shi <zshi@redhat.com>
-CC: Ben Hutchings <ben@decadent.org.uk>
-CC: <linux-net-drivers@solarflare.com>
-CC: Shradha Shah <sshah@solarflare.com>
-CC: David S. Miller <davem@davemloft.net>
+Fix by falling back to looking into the ethernet header for a tag if no
+accelerated tag was found.
 
-Fixes: 1899c111a535 ("sfc: Fix IRQ cleanup in case of a probe failure")
-Reported-by: Zenghui Shi <zshi@redhat.com>
-Signed-off-by: Nikolay Aleksandrov <nikolay@redhat.com>
-Acked-by: Shradha Shah <sshah@solarflare.com>
+Fixes: a82c7ce5bc5b ("net: cdc_ncm: map MBIM IPS SessionID to VLAN ID")
+Cc: Greg Suarez <gsuarez@smithmicro.com>
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/net/ethernet/sfc/nic.c | 14 ++++++++------
- 1 file changed, 8 insertions(+), 6 deletions(-)
+ drivers/net/usb/cdc_mbim.c | 39 ++++++++++++++++++++++++++++-----------
+ 1 file changed, 28 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/net/ethernet/sfc/nic.c b/drivers/net/ethernet/sfc/nic.c
-index 9826594c8a48..65087178a0a7 100644
---- a/drivers/net/ethernet/sfc/nic.c
-+++ b/drivers/net/ethernet/sfc/nic.c
-@@ -155,13 +155,15 @@ void efx_nic_fini_interrupt(struct efx_nic *efx)
- 	efx->net_dev->rx_cpu_rmap = NULL;
- #endif
- 
--	/* Disable MSI/MSI-X interrupts */
--	efx_for_each_channel(channel, efx)
--		free_irq(channel->irq, &efx->msi_context[channel->channel]);
--
--	/* Disable legacy interrupt */
--	if (efx->legacy_irq)
-+	if (EFX_INT_MODE_USE_MSI(efx)) {
-+		/* Disable MSI/MSI-X interrupts */
-+		efx_for_each_channel(channel, efx)
-+			free_irq(channel->irq,
-+				 &efx->msi_context[channel->channel]);
-+	} else {
-+		/* Disable legacy interrupt */
- 		free_irq(efx->legacy_irq, efx);
-+	}
+diff --git a/drivers/net/usb/cdc_mbim.c b/drivers/net/usb/cdc_mbim.c
+index 25ba7eca9a13..7cabe4583904 100644
+--- a/drivers/net/usb/cdc_mbim.c
++++ b/drivers/net/usb/cdc_mbim.c
+@@ -120,6 +120,16 @@ static void cdc_mbim_unbind(struct usbnet *dev, struct usb_interface *intf)
+ 	cdc_ncm_unbind(dev, intf);
  }
  
- /* Register dump */
++/* verify that the ethernet protocol is IPv4 or IPv6 */
++static bool is_ip_proto(__be16 proto)
++{
++	switch (proto) {
++	case htons(ETH_P_IP):
++	case htons(ETH_P_IPV6):
++		return true;
++	}
++	return false;
++}
+ 
+ static struct sk_buff *cdc_mbim_tx_fixup(struct usbnet *dev, struct sk_buff *skb, gfp_t flags)
+ {
+@@ -128,6 +138,7 @@ static struct sk_buff *cdc_mbim_tx_fixup(struct usbnet *dev, struct sk_buff *skb
+ 	struct cdc_ncm_ctx *ctx = info->ctx;
+ 	__le32 sign = cpu_to_le32(USB_CDC_MBIM_NDP16_IPS_SIGN);
+ 	u16 tci = 0;
++	bool is_ip;
+ 	u8 *c;
+ 
+ 	if (!ctx)
+@@ -137,25 +148,32 @@ static struct sk_buff *cdc_mbim_tx_fixup(struct usbnet *dev, struct sk_buff *skb
+ 		if (skb->len <= ETH_HLEN)
+ 			goto error;
+ 
++		/* Some applications using e.g. packet sockets will
++		 * bypass the VLAN acceleration and create tagged
++		 * ethernet frames directly.  We primarily look for
++		 * the accelerated out-of-band tag, but fall back if
++		 * required
++		 */
++		skb_reset_mac_header(skb);
++		if (vlan_get_tag(skb, &tci) < 0 && skb->len > VLAN_ETH_HLEN &&
++		    __vlan_get_tag(skb, &tci) == 0) {
++			is_ip = is_ip_proto(vlan_eth_hdr(skb)->h_vlan_encapsulated_proto);
++			skb_pull(skb, VLAN_ETH_HLEN);
++		} else {
++			is_ip = is_ip_proto(eth_hdr(skb)->h_proto);
++			skb_pull(skb, ETH_HLEN);
++		}
++
+ 		/* mapping VLANs to MBIM sessions:
+ 		 *   no tag     => IPS session <0>
+ 		 *   1 - 255    => IPS session <vlanid>
+ 		 *   256 - 511  => DSS session <vlanid - 256>
+ 		 *   512 - 4095 => unsupported, drop
+ 		 */
+-		vlan_get_tag(skb, &tci);
+-
+ 		switch (tci & 0x0f00) {
+ 		case 0x0000: /* VLAN ID 0 - 255 */
+-			/* verify that datagram is IPv4 or IPv6 */
+-			skb_reset_mac_header(skb);
+-			switch (eth_hdr(skb)->h_proto) {
+-			case htons(ETH_P_IP):
+-			case htons(ETH_P_IPV6):
+-				break;
+-			default:
++			if (!is_ip)
+ 				goto error;
+-			}
+ 			c = (u8 *)&sign;
+ 			c[3] = tci;
+ 			break;
+@@ -169,7 +187,6 @@ static struct sk_buff *cdc_mbim_tx_fixup(struct usbnet *dev, struct sk_buff *skb
+ 				  "unsupported tci=0x%04x\n", tci);
+ 			goto error;
+ 		}
+-		skb_pull(skb, ETH_HLEN);
+ 	}
+ 
+ 	spin_lock_bh(&ctx->mtx);
 -- 
 1.9.3
 
