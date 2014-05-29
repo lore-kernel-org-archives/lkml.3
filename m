@@ -1,24 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934023AbaE2FM5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 01:12:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58061 "EHLO
+	id S934034AbaE2FNY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 01:13:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58056 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932666AbaE2Efm (ORCPT
+	with ESMTP id S932659AbaE2Efm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 29 May 2014 00:35:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Jiri Pirko <jiri@resnulli.us>, "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 089/140] rtnetlink: Only supply IFLA_VF_PORTS information when RTEXT_FILTER_VF is set
-Date: Wed, 28 May 2014 21:33:48 -0700
-Message-Id: <20140529043101.063080483@linuxfoundation.org>
+        Lars Melin <larsm17@gmail.com>,
+        =?UTF-8?q?Bj=F8rn=20Mork?= <bjorn@mork.no>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.14 098/140] net: qmi_wwan: add a number of CMOTech devices
+Date: Wed, 28 May 2014 21:33:57 -0700
+Message-Id: <20140529043102.153070164@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
 In-Reply-To: <20140529043049.661315084@linuxfoundation.org>
 References: <20140529043049.661315084@linuxfoundation.org>
 User-Agent: quilt/0.60-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -27,98 +31,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Gibson <david@gibson.dropbear.id.au>
+From: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
 
-[ Upstream commit c53864fd60227de025cb79e05493b13f69843971 ]
+[ Upstream commit 41be7d90993b1502d445bfc59e58348c258ce66a ]
 
-Since 115c9b81928360d769a76c632bae62d15206a94a (rtnetlink: Fix problem with
-buffer allocation), RTM_NEWLINK messages only contain the IFLA_VFINFO_LIST
-attribute if they were solicited by a GETLINK message containing an
-IFLA_EXT_MASK attribute with the RTEXT_FILTER_VF flag.
+A number of older CMOTech modems are based on Qualcomm
+chips and exporting a QMI/wwan function.
 
-That was done because some user programs broke when they received more data
-than expected - because IFLA_VFINFO_LIST contains information for each VF
-it can become large if there are many VFs.
-
-However, the IFLA_VF_PORTS attribute, supplied for devices which implement
-ndo_get_vf_port (currently the 'enic' driver only), has the same problem.
-It supplies per-VF information and can therefore become large, but it is
-not currently conditional on the IFLA_EXT_MASK value.
-
-Worse, it interacts badly with the existing EXT_MASK handling.  When
-IFLA_EXT_MASK is not supplied, the buffer for netlink replies is fixed at
-NLMSG_GOODSIZE.  If the information for IFLA_VF_PORTS exceeds this, then
-rtnl_fill_ifinfo() returns -EMSGSIZE on the first message in a packet.
-netlink_dump() will misinterpret this as having finished the listing and
-omit data for this interface and all subsequent ones.  That can cause
-getifaddrs(3) to enter an infinite loop.
-
-This patch addresses the problem by only supplying IFLA_VF_PORTS when
-IFLA_EXT_MASK is supplied with the RTEXT_FILTER_VF flag set.
-
-Signed-off-by: David Gibson <david@gibson.dropbear.id.au>
-Reviewed-by: Jiri Pirko <jiri@resnulli.us>
+Reported-by: Lars Melin <larsm17@gmail.com>
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/core/rtnetlink.c |   16 ++++++++++------
- 1 file changed, 10 insertions(+), 6 deletions(-)
+ drivers/net/usb/qmi_wwan.c |   16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
 
---- a/net/core/rtnetlink.c
-+++ b/net/core/rtnetlink.c
-@@ -774,7 +774,8 @@ static inline int rtnl_vfinfo_size(const
- 		return 0;
- }
- 
--static size_t rtnl_port_size(const struct net_device *dev)
-+static size_t rtnl_port_size(const struct net_device *dev,
-+			     u32 ext_filter_mask)
- {
- 	size_t port_size = nla_total_size(4)		/* PORT_VF */
- 		+ nla_total_size(PORT_PROFILE_MAX)	/* PORT_PROFILE */
-@@ -790,7 +791,8 @@ static size_t rtnl_port_size(const struc
- 	size_t port_self_size = nla_total_size(sizeof(struct nlattr))
- 		+ port_size;
- 
--	if (!dev->netdev_ops->ndo_get_vf_port || !dev->dev.parent)
-+	if (!dev->netdev_ops->ndo_get_vf_port || !dev->dev.parent ||
-+	    !(ext_filter_mask & RTEXT_FILTER_VF))
- 		return 0;
- 	if (dev_num_vf(dev->dev.parent))
- 		return port_self_size + vf_ports_size +
-@@ -825,7 +827,7 @@ static noinline size_t if_nlmsg_size(con
- 	       + nla_total_size(ext_filter_mask
- 			        & RTEXT_FILTER_VF ? 4 : 0) /* IFLA_NUM_VF */
- 	       + rtnl_vfinfo_size(dev, ext_filter_mask) /* IFLA_VFINFO_LIST */
--	       + rtnl_port_size(dev) /* IFLA_VF_PORTS + IFLA_PORT_SELF */
-+	       + rtnl_port_size(dev, ext_filter_mask) /* IFLA_VF_PORTS + IFLA_PORT_SELF */
- 	       + rtnl_link_get_size(dev) /* IFLA_LINKINFO */
- 	       + rtnl_link_get_af_size(dev) /* IFLA_AF_SPEC */
- 	       + nla_total_size(MAX_PHYS_PORT_ID_LEN); /* IFLA_PHYS_PORT_ID */
-@@ -887,11 +889,13 @@ static int rtnl_port_self_fill(struct sk
- 	return 0;
- }
- 
--static int rtnl_port_fill(struct sk_buff *skb, struct net_device *dev)
-+static int rtnl_port_fill(struct sk_buff *skb, struct net_device *dev,
-+			  u32 ext_filter_mask)
- {
- 	int err;
- 
--	if (!dev->netdev_ops->ndo_get_vf_port || !dev->dev.parent)
-+	if (!dev->netdev_ops->ndo_get_vf_port || !dev->dev.parent ||
-+	    !(ext_filter_mask & RTEXT_FILTER_VF))
- 		return 0;
- 
- 	err = rtnl_port_self_fill(skb, dev);
-@@ -1076,7 +1080,7 @@ static int rtnl_fill_ifinfo(struct sk_bu
- 		nla_nest_end(skb, vfinfo);
- 	}
- 
--	if (rtnl_port_fill(skb, dev))
-+	if (rtnl_port_fill(skb, dev, ext_filter_mask))
- 		goto nla_put_failure;
- 
- 	if (dev->rtnl_link_ops || rtnl_have_link_slave_info(dev)) {
+--- a/drivers/net/usb/qmi_wwan.c
++++ b/drivers/net/usb/qmi_wwan.c
+@@ -662,6 +662,22 @@ static const struct usb_device_id produc
+ 	{QMI_FIXED_INTF(0x05c6, 0x920d, 5)},
+ 	{QMI_FIXED_INTF(0x12d1, 0x140c, 1)},	/* Huawei E173 */
+ 	{QMI_FIXED_INTF(0x12d1, 0x14ac, 1)},	/* Huawei E1820 */
++	{QMI_FIXED_INTF(0x16d8, 0x6003, 0)},	/* CMOTech 6003 */
++	{QMI_FIXED_INTF(0x16d8, 0x6007, 0)},	/* CMOTech CHE-628S */
++	{QMI_FIXED_INTF(0x16d8, 0x6008, 0)},	/* CMOTech CMU-301 */
++	{QMI_FIXED_INTF(0x16d8, 0x6280, 0)},	/* CMOTech CHU-628 */
++	{QMI_FIXED_INTF(0x16d8, 0x7001, 0)},	/* CMOTech CHU-720S */
++	{QMI_FIXED_INTF(0x16d8, 0x7002, 0)},	/* CMOTech 7002 */
++	{QMI_FIXED_INTF(0x16d8, 0x7003, 4)},	/* CMOTech CHU-629K */
++	{QMI_FIXED_INTF(0x16d8, 0x7004, 3)},	/* CMOTech 7004 */
++	{QMI_FIXED_INTF(0x16d8, 0x7006, 5)},	/* CMOTech CGU-629 */
++	{QMI_FIXED_INTF(0x16d8, 0x700a, 4)},	/* CMOTech CHU-629S */
++	{QMI_FIXED_INTF(0x16d8, 0x7211, 0)},	/* CMOTech CHU-720I */
++	{QMI_FIXED_INTF(0x16d8, 0x7212, 0)},	/* CMOTech 7212 */
++	{QMI_FIXED_INTF(0x16d8, 0x7213, 0)},	/* CMOTech 7213 */
++	{QMI_FIXED_INTF(0x16d8, 0x7251, 1)},	/* CMOTech 7251 */
++	{QMI_FIXED_INTF(0x16d8, 0x7252, 1)},	/* CMOTech 7252 */
++	{QMI_FIXED_INTF(0x16d8, 0x7253, 1)},	/* CMOTech 7253 */
+ 	{QMI_FIXED_INTF(0x19d2, 0x0002, 1)},
+ 	{QMI_FIXED_INTF(0x19d2, 0x0012, 1)},
+ 	{QMI_FIXED_INTF(0x19d2, 0x0017, 3)},
 
 
