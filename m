@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933789AbaE2FD2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 01:03:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58376 "EHLO
+	id S933805AbaE2FDn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 01:03:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58358 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932962AbaE2EiH (ORCPT
+	with ESMTP id S932955AbaE2EiG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 00:38:07 -0400
+	Thu, 29 May 2014 00:38:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Florian Westphal <fw@strlen.de>, Thomas Graf <tgraf@suug.ch>,
-        Pablo Neira Ayuso <pablo@netfilter.org>
-Subject: [PATCH 3.10 06/86] netfilter: Cant fail and free after table replacement
-Date: Wed, 28 May 2014 21:36:41 -0700
-Message-Id: <20140529043514.354579846@linuxfoundation.org>
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andrey Vagin <avagin@openvz.org>
+Subject: [PATCH 3.10 05/86] netfilter: nf_conntrack: reserve two bytes for nf_ct_ext->len
+Date: Wed, 28 May 2014 21:36:40 -0700
+Message-Id: <20140529043514.219721929@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
 In-Reply-To: <20140529043513.451722422@linuxfoundation.org>
 References: <20140529043513.451722422@linuxfoundation.org>
@@ -27,91 +30,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Graf <tgraf@suug.ch>
+From: Andrey Vagin <avagin@openvz.org>
 
-commit c58dd2dd443c26d856a168db108a0cd11c285bf3 upstream.
+commit 223b02d923ecd7c84cf9780bb3686f455d279279 upstream.
 
-All xtables variants suffer from the defect that the copy_to_user()
-to copy the counters to user memory may fail after the table has
-already been exchanged and thus exposed. Return an error at this
-point will result in freeing the already exposed table. Any
-subsequent packet processing will result in a kernel panic.
+"len" contains sizeof(nf_ct_ext) and size of extensions. In a worst
+case it can contain all extensions. Bellow you can find sizes for all
+types of extensions. Their sum is definitely bigger than 256.
 
-We can't copy the counters before exposing the new tables as we
-want provide the counter state after the old table has been
-unhooked. Therefore convert this into a silent error.
+nf_ct_ext_types[0]->len = 24
+nf_ct_ext_types[1]->len = 32
+nf_ct_ext_types[2]->len = 24
+nf_ct_ext_types[3]->len = 32
+nf_ct_ext_types[4]->len = 152
+nf_ct_ext_types[5]->len = 2
+nf_ct_ext_types[6]->len = 16
+nf_ct_ext_types[7]->len = 8
 
-Cc: Florian Westphal <fw@strlen.de>
-Signed-off-by: Thomas Graf <tgraf@suug.ch>
+I have seen "len" up to 280 and my host has crashes w/o this patch.
+
+The right way to fix this problem is reducing the size of the ecache
+extension (4) and Florian is going to do this, but these changes will
+be quite large to be appropriate for a stable tree.
+
+Fixes: 5b423f6a40a0 (netfilter: nf_conntrack: fix racy timer handling with reliable)
+Cc: Pablo Neira Ayuso <pablo@netfilter.org>
+Cc: Patrick McHardy <kaber@trash.net>
+Cc: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
+Cc: "David S. Miller" <davem@davemloft.net>
+Signed-off-by: Andrey Vagin <avagin@openvz.org>
 Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/bridge/netfilter/ebtables.c |    5 ++---
- net/ipv4/netfilter/arp_tables.c |    6 ++++--
- net/ipv4/netfilter/ip_tables.c  |    6 ++++--
- net/ipv6/netfilter/ip6_tables.c |    6 ++++--
- 4 files changed, 14 insertions(+), 9 deletions(-)
+ include/net/netfilter/nf_conntrack_extend.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/net/bridge/netfilter/ebtables.c
-+++ b/net/bridge/netfilter/ebtables.c
-@@ -1044,10 +1044,9 @@ static int do_replace_finish(struct net
- 	if (repl->num_counters &&
- 	   copy_to_user(repl->counters, counterstmp,
- 	   repl->num_counters * sizeof(struct ebt_counter))) {
--		ret = -EFAULT;
-+		/* Silent error, can't fail, new table is already in place */
-+		net_warn_ratelimited("ebtables: counters copy to user failed while replacing table\n");
- 	}
--	else
--		ret = 0;
+--- a/include/net/netfilter/nf_conntrack_extend.h
++++ b/include/net/netfilter/nf_conntrack_extend.h
+@@ -41,8 +41,8 @@ enum nf_ct_ext_id {
+ /* Extensions: optional stuff which isn't permanently in struct. */
+ struct nf_ct_ext {
+ 	struct rcu_head rcu;
+-	u8 offset[NF_CT_EXT_NUM];
+-	u8 len;
++	u16 offset[NF_CT_EXT_NUM];
++	u16 len;
+ 	char data[0];
+ };
  
- 	/* decrease module count and free resources */
- 	EBT_ENTRY_ITERATE(table->entries, table->entries_size,
---- a/net/ipv4/netfilter/arp_tables.c
-+++ b/net/ipv4/netfilter/arp_tables.c
-@@ -1039,8 +1039,10 @@ static int __do_replace(struct net *net,
- 
- 	xt_free_table_info(oldinfo);
- 	if (copy_to_user(counters_ptr, counters,
--			 sizeof(struct xt_counters) * num_counters) != 0)
--		ret = -EFAULT;
-+			 sizeof(struct xt_counters) * num_counters) != 0) {
-+		/* Silent error, can't fail, new table is already in place */
-+		net_warn_ratelimited("arptables: counters copy to user failed while replacing table\n");
-+	}
- 	vfree(counters);
- 	xt_table_unlock(t);
- 	return ret;
---- a/net/ipv4/netfilter/ip_tables.c
-+++ b/net/ipv4/netfilter/ip_tables.c
-@@ -1226,8 +1226,10 @@ __do_replace(struct net *net, const char
- 
- 	xt_free_table_info(oldinfo);
- 	if (copy_to_user(counters_ptr, counters,
--			 sizeof(struct xt_counters) * num_counters) != 0)
--		ret = -EFAULT;
-+			 sizeof(struct xt_counters) * num_counters) != 0) {
-+		/* Silent error, can't fail, new table is already in place */
-+		net_warn_ratelimited("iptables: counters copy to user failed while replacing table\n");
-+	}
- 	vfree(counters);
- 	xt_table_unlock(t);
- 	return ret;
---- a/net/ipv6/netfilter/ip6_tables.c
-+++ b/net/ipv6/netfilter/ip6_tables.c
-@@ -1236,8 +1236,10 @@ __do_replace(struct net *net, const char
- 
- 	xt_free_table_info(oldinfo);
- 	if (copy_to_user(counters_ptr, counters,
--			 sizeof(struct xt_counters) * num_counters) != 0)
--		ret = -EFAULT;
-+			 sizeof(struct xt_counters) * num_counters) != 0) {
-+		/* Silent error, can't fail, new table is already in place */
-+		net_warn_ratelimited("ip6tables: counters copy to user failed while replacing table\n");
-+	}
- 	vfree(counters);
- 	xt_table_unlock(t);
- 	return ret;
 
 
