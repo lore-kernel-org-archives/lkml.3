@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933670AbaE2E7b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 00:59:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58426 "EHLO
+	id S933683AbaE2E7q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 00:59:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58422 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933023AbaE2EiN (ORCPT
+	with ESMTP id S933016AbaE2EiN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 29 May 2014 00:38:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kent Overstreet <koverstreet@google.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        NeilBrown <neilb@suse.de>
-Subject: [PATCH 3.10 17/86] md/raid1: r1buf_pool_alloc: free allocate pages when subsequent allocation fails.
-Date: Wed, 28 May 2014 21:36:52 -0700
-Message-Id: <20140529043515.806516513@linuxfoundation.org>
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: [PATCH 3.10 16/86] dont bother with {get,put}_write_access() on non-regular files
+Date: Wed, 28 May 2014 21:36:51 -0700
+Message-Id: <20140529043515.670995902@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
 In-Reply-To: <20140529043513.451722422@linuxfoundation.org>
 References: <20140529043513.451722422@linuxfoundation.org>
@@ -28,76 +26,97 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Al Viro <viro@zeniv.linux.org.uk>
 
-commit da1aab3dca9aa88ae34ca392470b8943159e25fe upstream.
+commit dd20908a8a06b22c171f6c3fcdbdbd65bed07505 upstream.
 
-When performing a user-request check/repair (MD_RECOVERY_REQUEST is set)
-on a raid1, we allocate multiple bios each with their own set of pages.
+it's pointless and actually leads to wrong behaviour in at least one
+moderately convoluted case (pipe(), close one end, try to get to
+another via /proc/*/fd and run into ETXTBUSY).
 
-If the page allocations for one bio fails, we currently do *not* free
-the pages allocated for the previous bios, nor do we free the bio itself.
-
-This patch frees all the already-allocate pages, and makes sure that
-all the bios are freed as well.
-
-This bug can cause a memory leak which can ultimately OOM a machine.
-It was introduced in 3.10-rc1.
-
-Fixes: a07876064a0b73ab5ef1ebcf14b1cf0231c07858
-Cc: Kent Overstreet <koverstreet@google.com>
-Reported-by: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/raid1.c |   17 +++++++++++++----
- 1 file changed, 13 insertions(+), 4 deletions(-)
+ fs/file_table.c |    4 ++--
+ fs/open.c       |   26 +++++++-------------------
+ 2 files changed, 9 insertions(+), 21 deletions(-)
 
---- a/drivers/md/raid1.c
-+++ b/drivers/md/raid1.c
-@@ -94,6 +94,7 @@ static void * r1buf_pool_alloc(gfp_t gfp
- 	struct pool_info *pi = data;
- 	struct r1bio *r1_bio;
- 	struct bio *bio;
-+	int need_pages;
- 	int i, j;
+--- a/fs/file_table.c
++++ b/fs/file_table.c
+@@ -211,10 +211,10 @@ static void drop_file_write_access(struc
+ 	struct dentry *dentry = file->f_path.dentry;
+ 	struct inode *inode = dentry->d_inode;
  
- 	r1_bio = r1bio_pool_alloc(gfp_flags, pi);
-@@ -116,15 +117,15 @@ static void * r1buf_pool_alloc(gfp_t gfp
- 	 * RESYNC_PAGES for each bio.
- 	 */
- 	if (test_bit(MD_RECOVERY_REQUESTED, &pi->mddev->recovery))
--		j = pi->raid_disks;
-+		need_pages = pi->raid_disks;
- 	else
--		j = 1;
--	while(j--) {
-+		need_pages = 1;
-+	for (j = 0; j < need_pages; j++) {
- 		bio = r1_bio->bios[j];
- 		bio->bi_vcnt = RESYNC_PAGES;
+-	put_write_access(inode);
+-
+ 	if (special_file(inode->i_mode))
+ 		return;
++
++	put_write_access(inode);
+ 	if (file_check_writeable(file) != 0)
+ 		return;
+ 	__mnt_drop_write(mnt);
+--- a/fs/open.c
++++ b/fs/open.c
+@@ -628,23 +628,12 @@ out:
+ static inline int __get_file_write_access(struct inode *inode,
+ 					  struct vfsmount *mnt)
+ {
+-	int error;
+-	error = get_write_access(inode);
++	int error = get_write_access(inode);
+ 	if (error)
+ 		return error;
+-	/*
+-	 * Do not take mount writer counts on
+-	 * special files since no writes to
+-	 * the mount itself will occur.
+-	 */
+-	if (!special_file(inode->i_mode)) {
+-		/*
+-		 * Balanced in __fput()
+-		 */
+-		error = __mnt_want_write(mnt);
+-		if (error)
+-			put_write_access(inode);
+-	}
++	error = __mnt_want_write(mnt);
++	if (error)
++		put_write_access(inode);
+ 	return error;
+ }
  
- 		if (bio_alloc_pages(bio, gfp_flags))
--			goto out_free_bio;
-+			goto out_free_pages;
+@@ -677,12 +666,11 @@ static int do_dentry_open(struct file *f
+ 
+ 	path_get(&f->f_path);
+ 	inode = f->f_inode = f->f_path.dentry->d_inode;
+-	if (f->f_mode & FMODE_WRITE) {
++	if (f->f_mode & FMODE_WRITE && !special_file(inode->i_mode)) {
+ 		error = __get_file_write_access(inode, f->f_path.mnt);
+ 		if (error)
+ 			goto cleanup_file;
+-		if (!special_file(inode->i_mode))
+-			file_take_write(f);
++		file_take_write(f);
  	}
- 	/* If not user-requests, copy the page pointers to all bios */
- 	if (!test_bit(MD_RECOVERY_REQUESTED, &pi->mddev->recovery)) {
-@@ -138,6 +139,14 @@ static void * r1buf_pool_alloc(gfp_t gfp
  
- 	return r1_bio;
- 
-+out_free_pages:
-+	while (--j >= 0) {
-+		struct bio_vec *bv;
-+
-+		bio_for_each_segment_all(bv, r1_bio->bios[j], i)
-+			__free_page(bv->bv_page);
-+	}
-+
- out_free_bio:
- 	while (++j < pi->raid_disks)
- 		bio_put(r1_bio->bios[j]);
+ 	f->f_mapping = inode->i_mapping;
+@@ -723,7 +711,6 @@ cleanup_all:
+ 	fops_put(f->f_op);
+ 	file_sb_list_del(f);
+ 	if (f->f_mode & FMODE_WRITE) {
+-		put_write_access(inode);
+ 		if (!special_file(inode->i_mode)) {
+ 			/*
+ 			 * We don't consider this a real
+@@ -731,6 +718,7 @@ cleanup_all:
+ 			 * because it all happenend right
+ 			 * here, so just reset the state.
+ 			 */
++			put_write_access(inode);
+ 			file_reset_write(f);
+ 			__mnt_drop_write(f->f_path.mnt);
+ 		}
 
 
