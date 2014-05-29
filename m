@@ -1,88 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757057AbaE2Gel (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 02:34:41 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:46163 "EHLO
-	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756142AbaE2Gej (ORCPT
+	id S1757103AbaE2Gg7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 02:36:59 -0400
+Received: from mail.siteground.com ([67.19.240.234]:40194 "EHLO
+	mail.siteground.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751367AbaE2Gg6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 02:34:39 -0400
-X-Original-SENDERIP: 10.177.220.169
-X-Original-MAILFROM: minchan@kernel.org
-Date: Thu, 29 May 2014 15:35:05 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: Re: [PATCH] CMA: use MIGRATE_SYNC in alloc_contig_range()
-Message-ID: <20140529063505.GH10092@bbox>
-References: <1401344750-3684-1-git-send-email-iamjoonsoo.kim@lge.com>
+	Thu, 29 May 2014 02:36:58 -0400
+Message-ID: <5386D58D.2080809@1h.com>
+Date: Thu, 29 May 2014 09:37:01 +0300
+From: Marian Marinov <mm@1h.com>
+Organization: 1H Ltd.
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1401344750-3684-1-git-send-email-iamjoonsoo.kim@lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        LXC development mailing-list 
+	<lxc-devel@lists.linuxcontainers.org>,
+        Linux Containers <containers@lists.linux-foundation.org>
+Subject: [RFC] Per-user namespace process accounting
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - mail.siteground.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - 1h.com
+X-Get-Message-Sender-Via: mail.siteground.com: none
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 29, 2014 at 03:25:50PM +0900, Joonsoo Kim wrote:
-> Before commit 'mm, compaction: embed migration mode in compact_control'
-> from David is merged, alloc_contig_range() used sync migration,
-> instead of sync_light migration. This doesn't break anything currently
-> because page isolation doesn't have any difference with sync and
-> sync_light, but it could in the future, so change back as it was.
-> 
-> And pass cc->mode to migrate_pages(), instead of passing MIGRATE_SYNC
-> to migrate_pages().
-> 
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Acked-by: Minchan Kim <minchan@kernel.org>
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-Hello Joonsoo,
+Hello,
 
-Please Ccing me if you send patch related to CMA mm part.
-I have reviewed/fixed mm part of CMA for a long time so worth to Cced
-although I always don't have a time to look at it. :)
+I have the following proposition.
 
-Thanks.
+Number of currently running processes is accounted at the root user namespace. The problem I'm facing is that multiple
+containers in different user namespaces share the process counters.
 
-> 
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index 7f97767..97c4185 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -6262,7 +6262,7 @@ static int __alloc_contig_migrate_range(struct compact_control *cc,
->  		cc->nr_migratepages -= nr_reclaimed;
->  
->  		ret = migrate_pages(&cc->migratepages, alloc_migrate_target,
-> -				    NULL, 0, MIGRATE_SYNC, MR_CMA);
-> +				    NULL, 0, cc->mode, MR_CMA);
->  	}
->  	if (ret < 0) {
->  		putback_movable_pages(&cc->migratepages);
-> @@ -6301,7 +6301,7 @@ int alloc_contig_range(unsigned long start, unsigned long end,
->  		.nr_migratepages = 0,
->  		.order = -1,
->  		.zone = page_zone(pfn_to_page(start)),
-> -		.mode = MIGRATE_SYNC_LIGHT,
-> +		.mode = MIGRATE_SYNC,
->  		.ignore_skip_hint = true,
->  	};
->  	INIT_LIST_HEAD(&cc.migratepages);
-> -- 
-> 1.7.9.5
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+So if containerX runs 100 with UID 99, containerY should have NPROC limit of above 100 in order to execute any
+processes with ist own UID 99.
 
--- 
-Kind regards,
-Minchan Kim
+I know that some of you will tell me that I should not provision all of my containers with the same UID/GID maps, but
+this brings another problem.
+
+We are provisioning the containers from a template. The template has a lot of files 500k and more. And chowning these
+causes a lot of I/O and also slows down provisioning considerably.
+
+The other problem is that when we migrate one container from one host machine to another the IDs may be already in use
+on the new machine and we need to chown all the files again.
+
+Finally if we use different UID/GID maps we can not do live migration to another node because the UIDs may be already
+in use.
+
+So I'm proposing one hack modifying unshare_userns() to allocate new user_struct for the cred that is created for the
+first task creating the user_ns and free it in exit_creds().
+
+Can you please comment on that?
+
+Or suggest a better solution?
+
+Best regards,
+Marian
+
+
+- -- 
+Marian Marinov
+Founder & CEO of 1H Ltd.
+Jabber/GTalk: hackman@jabber.org
+ICQ: 7556201
+Mobile: +359 886 660 270
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iEYEARECAAYFAlOG1Y0ACgkQ4mt9JeIbjJQREACbBrax+ztBj2Y0P2jY3qYEUY9T
+JJ0AnAqLj3pqFFjXCkczEydV1V0LdzQ3
+=8M+P
+-----END PGP SIGNATURE-----
