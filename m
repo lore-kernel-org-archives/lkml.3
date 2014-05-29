@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964942AbaE2FUz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 01:20:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57942 "EHLO
+	id S932526AbaE2Ef1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 00:35:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57847 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932534AbaE2Ef2 (ORCPT
+	with ESMTP id S1756405AbaE2EfR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 00:35:28 -0400
+	Thu, 29 May 2014 00:35:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vlad Yasevich <vyasevic@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 082/140] net: Allow for more then a single subclass for netif_addr_lock
-Date: Wed, 28 May 2014 21:33:41 -0700
-Message-Id: <20140529043100.165494770@linuxfoundation.org>
+        Jani Nikula <jani.nikula@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [PATCH 3.14 063/140] drm/i915/tv: fix gen4 composite s-video tv-out
+Date: Wed, 28 May 2014 21:33:22 -0700
+Message-Id: <20140529043057.592591753@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
 In-Reply-To: <20140529043049.661315084@linuxfoundation.org>
 References: <20140529043049.661315084@linuxfoundation.org>
@@ -27,55 +27,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vlad Yasevich <vyasevic@redhat.com>
+From: Jani Nikula <jani.nikula@intel.com>
 
-[ Upstream commit 25175ba5c9bff9aaf0229df34bb5d54c81633ec3 ]
+commit e1f23f3dd817f53f622e486913ac662add46eeed upstream.
 
-Currently netif_addr_lock_nested assumes that there can be only
-a single nesting level between 2 devices.  However, if we
-have multiple devices of the same type stacked, this fails.
-For example:
- eth0 <-- vlan0.10 <-- vlan0.10.20
+This is *not* bisected, but the likely regression is
 
-A more complicated configuration may stack more then one type of
-device in different order.
-Ex:
-  eth0 <-- vlan0.10 <-- macvlan0 <-- vlan1.10.20 <-- macvlan1
+commit c35614380d5c956bfda20eab2755b2f5a7d6f1e7
+Author: Zhao Yakui <yakui.zhao@intel.com>
+Date:   Tue Nov 24 09:48:48 2009 +0800
 
-This patch adds an ndo_* function that allows each stackable
-device to report its nesting level.  If the device doesn't
-provide this function default subclass of 1 is used.
+    drm/i915: Don't set up the TV port if it isn't in the BIOS table.
 
-Signed-off-by: Vlad Yasevich <vyasevic@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+The commit does not check for all TV device types that might be present
+in the VBT, disabling TV out for the missing ones. Add composite
+S-video.
+
+Reported-and-tested-by: Matthew Khouzam <matthew.khouzam@gmail.com>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=73362
+Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- include/linux/netdevice.h |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
 
---- a/include/linux/netdevice.h
-+++ b/include/linux/netdevice.h
-@@ -1145,6 +1145,7 @@ struct net_device_ops {
- 	netdev_tx_t		(*ndo_dfwd_start_xmit) (struct sk_buff *skb,
- 							struct net_device *dev,
- 							void *priv);
-+	int			(*ndo_get_lock_subclass)(struct net_device *dev);
- };
- 
- /*
-@@ -2861,7 +2862,12 @@ static inline void netif_addr_lock(struc
- 
- static inline void netif_addr_lock_nested(struct net_device *dev)
- {
--	spin_lock_nested(&dev->addr_list_lock, SINGLE_DEPTH_NESTING);
-+	int subclass = SINGLE_DEPTH_NESTING;
-+
-+	if (dev->netdev_ops->ndo_get_lock_subclass)
-+		subclass = dev->netdev_ops->ndo_get_lock_subclass(dev);
-+
-+	spin_lock_nested(&dev->addr_list_lock, subclass);
- }
- 
- static inline void netif_addr_lock_bh(struct net_device *dev)
+---
+ drivers/gpu/drm/i915/intel_tv.c |    9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
+
+--- a/drivers/gpu/drm/i915/intel_tv.c
++++ b/drivers/gpu/drm/i915/intel_tv.c
+@@ -1536,9 +1536,14 @@ static int tv_is_present_in_vbt(struct d
+ 		/*
+ 		 * If the device type is not TV, continue.
+ 		 */
+-		if (p_child->old.device_type != DEVICE_TYPE_INT_TV &&
+-			p_child->old.device_type != DEVICE_TYPE_TV)
++		switch (p_child->old.device_type) {
++		case DEVICE_TYPE_INT_TV:
++		case DEVICE_TYPE_TV:
++		case DEVICE_TYPE_TV_SVIDEO_COMPOSITE:
++			break;
++		default:
+ 			continue;
++		}
+ 		/* Only when the addin_offset is non-zero, it is regarded
+ 		 * as present.
+ 		 */
 
 
