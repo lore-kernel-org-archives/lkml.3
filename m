@@ -1,50 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933952AbaE2RmS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 13:42:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51213 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932640AbaE2RmR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 13:42:17 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <CA+icZUV64FQy4K7zx4B8NvwSXRgFfHZ_Y5D3A+zDAw9+XAwrxA@mail.gmail.com>
-References: <CA+icZUV64FQy4K7zx4B8NvwSXRgFfHZ_Y5D3A+zDAw9+XAwrxA@mail.gmail.com> <1400838223-30844-1-git-send-email-miklos@szeredi.hu> <28592.1401382081@warthog.procyon.org.uk> <CA+icZUXfzPsqZt6=o5evcQ2xO9XGKcMVYBO1zco0aEmGn_x0rA@mail.gmail.com> <29026.1401383705@warthog.procyon.org.uk> <CA+icZUWXjPR6wLk0+Dtmyr-VAHW2VMK-=MiZn8WX39F_qh+LHg@mail.gmail.com> <29191.1401384252@warthog.procyon.org.uk>
-To: sedat.dilek@gmail.com
-Cc: dhowells@redhat.com, Miklos Szeredi <miklos@szeredi.hu>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>, apw@canonical.com,
-        Felix Fietkau <nbd@openwrt.org>, neilb@suse.de, jordipujolp@gmail.com,
-        ezk@fsl.cs.sunysb.edu, "J. R. Okajima" <hooanon05@yahoo.co.jp>,
-        mszeredi@suse.cz
-Subject: Re: Unionmount and overlayfs testsuite
-Date: Thu, 29 May 2014 18:41:36 +0100
-Message-ID: <29410.1401385296@warthog.procyon.org.uk>
+	id S934236AbaE2Rmz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 13:42:55 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:56820 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932691AbaE2Rmx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 13:42:53 -0400
+Message-ID: <53877199.5090009@wwwdotorg.org>
+Date: Thu, 29 May 2014 11:42:49 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arvind Chauhan <arvind.chauhan@arm.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        Doug Anderson <dianders@chromium.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>
+Subject: Re: [PATCH V4 3/3] cpufreq: Tegra: implement intermediate frequency
+ callbacks
+References: <cover.1400662383.git.viresh.kumar@linaro.org>	<dc2702973028425e3ded689a6da227658fb914c4.1400662383.git.viresh.kumar@linaro.org>	<537E285C.6060608@wwwdotorg.org> <CAKohpomdOEspgfxNR5p=PVLCeSUYcUWZ2cWGGQo0b__ptKiYtw@mail.gmail.com>
+In-Reply-To: <CAKohpomdOEspgfxNR5p=PVLCeSUYcUWZ2cWGGQo0b__ptKiYtw@mail.gmail.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sedat Dilek <sedat.dilek@gmail.com> wrote:
+On 05/22/2014 10:05 PM, Viresh Kumar wrote:
+> On 22 May 2014 22:09, Stephen Warren <swarren@wwwdotorg.org> wrote:
+>> I think the call to tegra_target_intermediate() is wrong here; shouldn't
+>> the cpufreq core guarantee that tegra_target_intermediate() has always
+>> been called before tegra_target(), so there's no need to repeat that
+>> call here?
 
-> >> /mnt/a/foo101: Test file not on upper filesystem  (line 30)
-> >
-> > Now check dmesg.
-> >
+>> Also, tegra_target() doesn't seem to follow the rule documented by patch
+>> 2/3 that states ->target() should restore the orignal frequency on
+>> error. I'm not even sure if that's possible in general.
 > 
-> [ 1384.995334] tmpfs: No value for mount option 'union'
+> I thought I took care of that. Can you please give some example when
+> we aren't restoring original frequency on failure ?
+> 
+> About the rule, that has to be the expectation from core as there is no
+> way out that for core to know what happened at end of target_index()..
+> 
+> It can call get_rate() but that would be over engineering it looks ..
 
-That's going down the unionmount testing route, it would appear.  You're
-definitely doing:
+E.g. in the following code after the series is applied:
 
-	TEST_OVERLAYFS=1 ./run.sh
+> 	ret = clk_set_rate(pll_x_clk, rate * 1000);
+> 	/* Restore to earlier frequency on error, i.e. pll_x */
+> 	if (ret)
+> 		pr_err("Failed to change pll_x to %lu\n", rate);
+> 
+> 	ret = clk_set_parent(cpu_clk, pll_x_clk);
 
-right?
+If the clk_set_rate() failed, we have no idea what the pll_x rate is; I
+don't think the clock API guarantees that zero HW changes have been made
+if the function fails. Yet the code switches the CPU clock back to pll_x
+without attempting to fix the pll_x rate to be the old rate. Perhaps
+there's not much that can be done here though, since if one
+clk_set_rate() failed, perhaps the one to fix it will too.
 
-David
+I suspect there are other issues, like switching between pll_p/pllx
+might not be restored on error, and the EMC frequency isn't switched
+back, etc.
