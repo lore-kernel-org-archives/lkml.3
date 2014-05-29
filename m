@@ -1,89 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964914AbaE2JIL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 05:08:11 -0400
-Received: from ozlabs.org ([103.22.144.67]:51897 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964853AbaE2JIH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 05:08:07 -0400
-Date: Thu, 29 May 2014 19:08:00 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Fabian Frederick <fabf@skynet.be>
-Subject: linux-next: manual merge of the akpm-current tree with Linus' tree
-Message-ID: <20140529190800.1d5f6ef7@canb.auug.org.au>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
+	id S964939AbaE2JI3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 05:08:29 -0400
+Received: from relay.parallels.com ([195.214.232.42]:38755 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933198AbaE2JI1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 05:08:27 -0400
+Message-ID: <5386F8EA.8050501@parallels.com>
+Date: Thu, 29 May 2014 13:07:54 +0400
+From: Pavel Emelyanov <xemul@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/F9c8TILyZzSO8n0oBMX4=/4"; protocol="application/pgp-signature"
+To: Vasily Kulikov <segoon@openwall.com>
+CC: Richard Weinberger <richard.weinberger@gmail.com>,
+        <containers@lists.linux-foundation.org>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>, <linux-kernel@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>, David Howells <dhowells@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH v2] /proc/pid/status: show all sets of pid according to
+ ns
+References: <1401272683-1659-1-git-send-email-chenhanxiao@cn.fujitsu.com> <5385DA19.2060008@parallels.com> <20140528182824.GA5057@cachalot> <53863889.9080509@parallels.com> <20140529055954.GA10354@cachalot>
+In-Reply-To: <20140529055954.GA10354@cachalot>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.24.36.87]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/F9c8TILyZzSO8n0oBMX4=/4
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On 05/29/2014 09:59 AM, Vasily Kulikov wrote:
+> On Wed, May 28, 2014 at 23:27 +0400, Pavel Emelyanov wrote:
+>> On 05/28/2014 10:28 PM, Vasily Kulikov wrote:
+>>> On Wed, May 28, 2014 at 16:44 +0400, Pavel Emelyanov wrote:
+>>> It will be simplier
+>>> to parse the file -- if 'ns_ids' file contains some ID then this ID for
+>>> every ns can be obtained regardless of the specific ID name (SID, PID,
+>>> PGID, etc.).
+>>
+>> True, but given a task PID how to determine which pid namespaces it lives in
+>> to get the idea of how PIDs map to each other? Maybe we need some explicit
+>> API for converting (ID, NS1, NS2) into (ID)?
+> 
+> AFAIU the idea of the patch is to add a new debugging information which
+> can be trivially obtained via 'cat /proc/...':
 
-Hi Andrew,
+I agree, but this ability will be very useful by checkpoint-restore project
+too and I'd really appreciate if the API we have for that would be scalable
+enough. Per-task proc file works for me, but how about sid-s and pgid-s?
 
-Today's linux-next merge of the akpm-current tree got a conflict in
-kernel/kexec.c between commit 011e4b02f1da ("powerpc, kexec: Fix
-"Processor X is stuck" issue during kexec from ST mode") from Linus'
-tree and commit 51950fcb6d27 ("kernel/kexec.c: convert printk to
-pr_foo()") from the akpm-current tree.
+> ] We need a direct method of getting the pid inside containers.
+> ] If some issues occurred inside container guest, host user
+> ] could not know which process is in trouble just by guest pid:
+> ] the users of container guest only knew the pid inside containers.
+> ] This will bring obstacle for trouble shooting.
+> 
+> A new syscall might complicate trouble shooting by admin.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+Pure syscall -- yes. What if we teach the ps and top utilities to show additional
+info? I think that would help.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc kernel/kexec.c
-index 28c57069ef68,bf0b929e7f94..000000000000
---- a/kernel/kexec.c
-+++ b/kernel/kexec.c
-@@@ -1683,15 -1679,7 +1679,15 @@@ int kernel_kexec(void
-  		kexec_in_progress =3D true;
-  		kernel_restart_prepare(NULL);
-  		migrate_to_reboot_cpu();
- +
- +		/*
- +		 * migrate_to_reboot_cpu() disables CPU hotplug assuming that
- +		 * no further code needs to use CPU hotplug (which is true in
- +		 * the reboot case). However, the kexec path depends on using
- +		 * CPU hotplug again; so re-enable it here.
- +		 */
- +		cpu_hotplug_enable();
-- 		printk(KERN_EMERG "Starting new kernel\n");
-+ 		pr_emerg("Starting new kernel\n");
-  		machine_shutdown();
-  	}
- =20
-
---Sig_/F9c8TILyZzSO8n0oBMX4=/4
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJThvj1AAoJEMDTa8Ir7ZwVFD0P/jd+RfbaMqLmfLJe6alAc5O7
-A2OTXTxr07tJ1D4wzNGNkD7aNydLmV7V1mVu+kuBlGWDrL731nELJ3ppd8As03pM
-2Lt1Gp/Y/vFHL2N1FF+aVCCxrOFm387wR00mW2sdezQVFK+n1jcuUuPniTEp++/O
-FFj8hEmpQlQnV1UOhBFn6jMj/ttnBI8kFsq3fdE1lz507YjQptHPAGo5yS8mYGkO
-ZqEd8HuJR7qedVtMTPBjSXZnVNfkos+nW6vr67Dp80JpvVjh1NwGsOziFT8GHZFD
-oyWto2ECeenAgNZ1yZ41wnhwDM81n2vBIYzwHV5CXQu0dVByCTZW2yxMwrf08hKz
-n/2vgyFQi5xMFBLkhFyUGMGZqx7/HvUxdKz/KwowgIOg2zp7ijYOhH83I55IFEgL
-rLhV1QzWFbdtXnhiihfSwzl5OEqSms1m6+XM/znGzw0Rux0Qqe0rlXmdv9g7sgPI
-3hBrOwO0/KDki9g05KzxpDdLfYthH0BOaK5iFNEi3XDM9MKfEbFaozX3aGzOf2bP
-PyJWSxBqV8rPc3XugUly+mzNVPWRiFertUVtikNajbDil8e1LW2XKMopz8AxgxXg
-3YmXWL0/CuEecsPs6Md/l5/ookxKw3wr1HMSu+S4K33SqoNKdUzywXU52tAV6VnX
-bVelajLFA6pDvk2sOGQ7
-=P4mB
------END PGP SIGNATURE-----
-
---Sig_/F9c8TILyZzSO8n0oBMX4=/4--
+Thanks,
+Pavel
