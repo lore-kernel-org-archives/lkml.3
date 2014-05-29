@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934372AbaE2FYi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 01:24:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57839 "EHLO
+	id S934357AbaE2FYg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 01:24:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57878 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932420AbaE2EfU (ORCPT
+	with ESMTP id S932426AbaE2EfV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 00:35:20 -0400
+	Thu, 29 May 2014 00:35:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.14 059/140] drm/radeon: clear needs_reset flag if IB test fails
-Date: Wed, 28 May 2014 21:33:18 -0700
-Message-Id: <20140529043057.063137026@linuxfoundation.org>
+        Toshiaki Makita <makita.toshiaki@lab.ntt.co.jp>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.14 070/140] bridge: Fix double free and memory leak around br_allowed_ingress
+Date: Wed, 28 May 2014 21:33:29 -0700
+Message-Id: <20140529043058.525402286@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
 In-Reply-To: <20140529043049.661315084@linuxfoundation.org>
 References: <20140529043049.661315084@linuxfoundation.org>
 User-Agent: quilt/0.60-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,32 +27,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christian König <christian.koenig@amd.com>
+From: Toshiaki Makita <makita.toshiaki@lab.ntt.co.jp>
 
-commit 06a139f7a0885fa2c84962300edd181821ddc2c9 upstream.
+[ Upstream commit eb7076182d1ae4bc4641534134ed707100d76acc ]
 
-If the IB test fails we don't want to reset the card over
-and over again, just accept that it isn't working.
+br_allowed_ingress() has two problems.
 
-Bug: https://bugs.freedesktop.org/show_bug.cgi?id=76501
+1. If br_allowed_ingress() is called by br_handle_frame_finish() and
+vlan_untag() in br_allowed_ingress() fails, skb will be freed by both
+vlan_untag() and br_handle_frame_finish().
 
-Signed-off-by: Christian König <christian.koenig@amd.com>
-Reviewed-by: Alex Deucher <alexander.deucher@amd.com>
+2. If br_allowed_ingress() is called by br_dev_xmit() and
+br_allowed_ingress() fails, the skb will not be freed.
+
+Fix these two problems by freeing the skb in br_allowed_ingress()
+if it fails.
+
+Signed-off-by: Toshiaki Makita <makita.toshiaki@lab.ntt.co.jp>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/gpu/drm/radeon/radeon_ring.c |    1 +
- 1 file changed, 1 insertion(+)
+ net/bridge/br_input.c |    2 +-
+ net/bridge/br_vlan.c  |    7 ++++---
+ 2 files changed, 5 insertions(+), 4 deletions(-)
 
---- a/drivers/gpu/drm/radeon/radeon_ring.c
-+++ b/drivers/gpu/drm/radeon/radeon_ring.c
-@@ -257,6 +257,7 @@ int radeon_ib_ring_tests(struct radeon_d
- 		r = radeon_ib_test(rdev, i, ring);
- 		if (r) {
- 			ring->ready = false;
-+			rdev->needs_reset = false;
+--- a/net/bridge/br_input.c
++++ b/net/bridge/br_input.c
+@@ -73,7 +73,7 @@ int br_handle_frame_finish(struct sk_buf
+ 		goto drop;
  
- 			if (i == RADEON_RING_TYPE_GFX_INDEX) {
- 				/* oh, oh, that's really bad */
+ 	if (!br_allowed_ingress(p->br, nbp_get_vlan_info(p), skb, &vid))
+-		goto drop;
++		goto out;
+ 
+ 	/* insert into forwarding database after filtering to avoid spoofing */
+ 	br = p->br;
+--- a/net/bridge/br_vlan.c
++++ b/net/bridge/br_vlan.c
+@@ -170,7 +170,7 @@ bool br_allowed_ingress(struct net_bridg
+ 	 * rejected.
+ 	 */
+ 	if (!v)
+-		return false;
++		goto drop;
+ 
+ 	/* If vlan tx offload is disabled on bridge device and frame was
+ 	 * sent from vlan device on the bridge device, it does not have
+@@ -193,7 +193,7 @@ bool br_allowed_ingress(struct net_bridg
+ 		 * vlan untagged or priority-tagged traffic belongs to.
+ 		 */
+ 		if (pvid == VLAN_N_VID)
+-			return false;
++			goto drop;
+ 
+ 		/* PVID is set on this port.  Any untagged or priority-tagged
+ 		 * ingress frame is considered to belong to this vlan.
+@@ -216,7 +216,8 @@ bool br_allowed_ingress(struct net_bridg
+ 	/* Frame had a valid vlan tag.  See if vlan is allowed */
+ 	if (test_bit(*vid, v->vlan_bitmap))
+ 		return true;
+-
++drop:
++	kfree_skb(skb);
+ 	return false;
+ }
+ 
 
 
