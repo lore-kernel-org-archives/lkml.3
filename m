@@ -1,90 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755306AbaE2CE7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 22:04:59 -0400
-Received: from ozlabs.org ([103.22.144.67]:45062 "EHLO ozlabs.org"
+	id S1755320AbaE2CHm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 22:07:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21657 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753991AbaE2CE6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 22:04:58 -0400
-Date: Thu, 29 May 2014 12:04:48 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        <linuxppc-dev@lists.ozlabs.org>, Alexander Graf <agraf@suse.de>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Anton Blanchard <anton@samba.org>
-Subject: linux-next: manual merge of the powerpc tree with Linus' tree
-Message-ID: <20140529120448.1a90dd4a@canb.auug.org.au>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
+	id S1753573AbaE2CHl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 22:07:41 -0400
+Date: Thu, 29 May 2014 10:08:37 +0800
+From: Dave Young <dyoung@redhat.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: matt.fleming@intel.com, bp@alien8.de, linux-kernel@vger.kernel.org,
+        linux-efi@vger.kernel.org
+Subject: Re: [PATCH] export efi.flags to sysfs
+Message-ID: <20140529020837.GB2068@darkstar.nay.redhat.com>
+References: <20140526083935.GA19682@dhcp-16-198.nay.redhat.com>
+ <20140527133411.GG10994@redhat.com>
+ <20140528021359.GC2820@darkstar.nay.redhat.com>
+ <20140528124029.GF14863@redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/_a/MzqsLpGCnGLvuqYeSMEw"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140528124029.GF14863@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/_a/MzqsLpGCnGLvuqYeSMEw
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On 05/28/14 at 08:40am, Vivek Goyal wrote:
+> On Wed, May 28, 2014 at 10:13:59AM +0800, Dave Young wrote:
+> > On 05/27/14 at 09:34am, Vivek Goyal wrote:
+> > > On Mon, May 26, 2014 at 04:39:35PM +0800, Dave Young wrote:
+> > > > 
+> > > > For efi=old_map and any old_map quirks like SGI UV in current
+> > > > tree kexec/kdump will fail because it depends on the new 1:1 mapping.
+> > > > 
+> > > > Thus export the mapping method to sysfs so kexec tools can switch
+> > > > to original way to boot.
+> > > > 
+> > > > Since we have efi.flags for all efi facilities so let's just export the
+> > > > efi.flags itself, it maybe useful for other arches and use cases.
+> > > > 
+> > > 
+> > > Does it require any documentation in Documentation/ABI/..
+> > 
+> > Yes, it's necessary. Will do in next version.
+> > 
+> > I'm still discussing with Matt, exporting efi.flags seems not a good way
+> > because they are more internal interfaces. 
+> > 
+> > Probably I should export only a file 'old_map' instead.
+> 
+> How does /sys/firmware/efi/runtime-map/* look like with old mapping? Can't
+> we look at it and figure out if it is 1:1 or not.
 
-Hi all,
+There's phys_addr and virt_addr, (virt_addr - phys_addr) will always be
+-64G for 1:1 map, ioremapped addresses space is different.
 
-Today's linux-next merge of the powerpc tree got a conflict in
-arch/powerpc/include/asm/sections.h between commit b18db0b80867 ("KVM
-guest: Make pv trampoline code executable") from the  tree and commit
-07de8377f748 ("powerpc: Fix ABIv2 issue with
-dereference_function_descriptor") from the powerpc tree.
+So this is a good idea, we can do this way to avoid more ABI.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+Thanks
+Dave
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --cc arch/powerpc/include/asm/sections.h
-index 521790330672,d1bb96d5a298..000000000000
---- a/arch/powerpc/include/asm/sections.h
-+++ b/arch/powerpc/include/asm/sections.h
-@@@ -39,17 -39,7 +39,18 @@@ static inline int overlaps_kernel_text(
-  		(unsigned long)_stext < end;
-  }
- =20
- +static inline int overlaps_kvm_tmp(unsigned long start, unsigned long end)
- +{
- +#ifdef CONFIG_KVM_GUEST
- +	extern char kvm_tmp[];
- +	return start < (unsigned long)kvm_tmp &&
- +		(unsigned long)&kvm_tmp[1024 * 1024] < end;
- +#else
- +	return 0;
- +#endif
- +}
- +
-+ #if !defined(_CALL_ELF) || _CALL_ELF !=3D 2
-  #undef dereference_function_descriptor
-  static inline void *dereference_function_descriptor(void *ptr)
-  {
 
---Sig_/_a/MzqsLpGCnGLvuqYeSMEw
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJThpXEAAoJEMDTa8Ir7ZwVN5EP/1a/1IkrYVfT47a2v1PZGbNA
-2pBoYeuuXU4Cq7qYlQ6sdhhudWyyNSYXJzdyM/Vz2sX5eu7gqEIzAXj5V/BBud7a
-LOGL6mfZ+7MKG15IXAr84ZuwFyVDew/AvSrsIo3pdiQtkw/zLZvXiIDd/eYXJcTH
-ottaAn1Grk++xl+6sQa8G+/kVYhWA/jveaABPAFFuevZsPVvLRW52m20F6Zkddem
-1YzqC5nN4ScpjPgghB6lwXKOlJG8VxcyBEoj8i8lQYRJq037c4MjsVaTF1rZUPSV
-qRZhkQDfSXwOMzW2xTOgl8SSt5iWn/BqfpWEutgi6maB+gBqBmWH8VQIvi63Nkqd
-EQkJ3++C7To8Keh3GfJ+OFy71eFg7vp6e1D+kmKu5IqXdS35d/Mkpu47QWXgojF4
-0sqDgiqmeqadAiskss9T3AgYvz7wvbb7nryJiV5jcAw4fnOwsV/XmoFl81uPhfFx
-l3ILsyBDrFJtR/3Di45PCEoh28GodnqCWYw9ahPGd2tYSrrpOwoLj5nXnv4/Z8Bm
-V26W0XAHS9s931mFGomuhAMXE0DS7SPJZKIUej+JMJl9qhZ5naTIk0yc9sqaJGBs
-ttVLoIuI07SgzMhqNJKQEk7h8NuGmxnR6e+j8AInH27hcBcB94BqNWpEjSD7CKiR
-CK9Ta9lsRVvUGdkQsgUC
-=6Ln7
------END PGP SIGNATURE-----
-
---Sig_/_a/MzqsLpGCnGLvuqYeSMEw--
