@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964898AbaE2Gj6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 02:39:58 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:59807 "EHLO comal.ext.ti.com"
+	id S964968AbaE2GkM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 02:40:12 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:47034 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933194AbaE2Gjv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 02:39:51 -0400
+	id S964906AbaE2GkF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 02:40:05 -0400
 From: Kishon Vijay Abraham I <kishon@ti.com>
 To: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
         <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>
 CC: <arnd@arndb.de>, <tony@atomide.com>, <jg1.han@samsung.com>,
-        <kishon@ti.com>, Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, Mohit Kumar <mohit.kumar@st.com>,
-        Marek Vasut <marex@denx.de>
-Subject: [PATCH v2 04/18] PCI: designware: use untranslated address while programming ATU
-Date: Thu, 29 May 2014 12:08:06 +0530
-Message-ID: <1401345500-20188-5-git-send-email-kishon@ti.com>
+        <kishon@ti.com>, Rajendra Nayak <rnayak@ti.com>,
+        Tero Kristo <t-kristo@ti.com>, Paul Walmsley <paul@pwsan.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>
+Subject: [PATCH v2 10/18] ARM: dts: dra7xx-clocks: Add missing 32khz clocks used for PHY
+Date: Thu, 29 May 2014 12:08:12 +0530
+Message-ID: <1401345500-20188-11-git-send-email-kishon@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1401345500-20188-1-git-send-email-kishon@ti.com>
 References: <1401345500-20188-1-git-send-email-kishon@ti.com>
@@ -26,177 +27,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In DRA7, the cpu sees 32bit address, but the pcie controller can see only 28bit
-address. So whenever the cpu issues a read/write request, the 4 most
-significant bits are used by L3 to determine the target controller.
-For example, the cpu reserves 0x2000_0000 - 0x2FFF_FFFF for PCIe controller but
-the PCIe controller will see only (0x000_0000 - 0xFFF_FFF). So for programming
-the outbound translation window the *base* should be programmed as 0x000_0000.
-Whenever we try to write to say 0x2000_0000, it will be translated to whatever
-we have programmed in the translation window with base as 0x000_0000.
+Added missing 32khz clock used by PCIe PHY.
+The documention for this node can be found @ ../bindings/clock/ti/gate.txt.
 
-This is needed when the dt node is modelled something like below
-axi {
-	compatible = "simple-bus";
-	#size-cells = <1>;
-	#address-cells = <1>;
-	ranges = <0x0        0x20000000 0x10000000 // 28-bit bus
-		  0x51000000 0x51000000 0x3000>;
-	pcie@51000000 {
-		reg = <0x1000 0x2000>, <0x51002000 0x14c>, <0x51000000 0x2000>;
-		reg-names = "config", "ti_conf", "rc_dbics";
-		#address-cells = <3>;
-		#size-cells = <2>;
-		ranges = <0x81000000 0 0          0x03000 0 0x00010000
-			  0x82000000 0 0x20013000 0x13000 0 0xffed000>;
-	};
-};
-
-Here the CPU address for configuration space is 0x20013000 and the controller
-address for configuration space is 0x13000. The controller address should be
-used while programming the ATU (in order for translation to happen properly in
-DRA7xx).
-
-Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Mohit Kumar <mohit.kumar@st.com>
-Cc: Jingoo Han <jg1.han@samsung.com>
-Cc: Marek Vasut <marex@denx.de>
-Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Tony Lindgren <tony@atomide.com>
+Cc: Rajendra Nayak <rnayak@ti.com>
+Cc: Tero Kristo <t-kristo@ti.com>
+Cc: Paul Walmsley <paul@pwsan.com>
+Cc: Tony Lindgren <tony@atomide.com>
+Cc: Rob Herring <robh+dt@kernel.org>
+Cc: Pawel Moll <pawel.moll@arm.com>
+Cc: Mark Rutland <mark.rutland@arm.com>
+Cc: Kumar Gala <galak@codeaurora.org>
 Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
 ---
- drivers/pci/host/pcie-designware.c |   49 ++++++++++++++++++++++++++++--------
- drivers/pci/host/pcie-designware.h |    4 +++
- 2 files changed, 42 insertions(+), 11 deletions(-)
+ arch/arm/boot/dts/dra7xx-clocks.dtsi |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/drivers/pci/host/pcie-designware.c b/drivers/pci/host/pcie-designware.c
-index 603b386..9dfd2d4 100644
---- a/drivers/pci/host/pcie-designware.c
-+++ b/drivers/pci/host/pcie-designware.c
-@@ -397,8 +397,15 @@ int __init dw_pcie_host_init(struct pcie_port *pp)
- 	struct of_pci_range range;
- 	struct of_pci_range_parser parser;
- 	struct resource *cfg_res;
--	u32 val;
--	int i;
-+	u32 val, na, ns;
-+	const __be32 *addrp;
-+	int i, index;
-+
-+	/* Find the address cell size and the number of cells in order to get
-+	 * the untranslated address.
-+	 */
-+	of_property_read_u32(np, "#address-cells", &na);
-+	ns = of_n_size_cells(np);
+diff --git a/arch/arm/boot/dts/dra7xx-clocks.dtsi b/arch/arm/boot/dts/dra7xx-clocks.dtsi
+index 44993ec..e1bd052 100644
+--- a/arch/arm/boot/dts/dra7xx-clocks.dtsi
++++ b/arch/arm/boot/dts/dra7xx-clocks.dtsi
+@@ -1165,6 +1165,14 @@
+ 		reg = <0x021c>, <0x0220>;
+ 	};
  
- 	cfg_res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "config");
- 	if (cfg_res) {
-@@ -406,6 +413,12 @@ int __init dw_pcie_host_init(struct pcie_port *pp)
- 		pp->config.cfg1_size = resource_size(cfg_res)/2;
- 		pp->cfg0_base = cfg_res->start;
- 		pp->cfg1_base = cfg_res->start + pp->config.cfg0_size;
++	optfclk_pciephy_32khz: optfclk_pciephy_32khz@4a0093b0 {
++		compatible = "ti,gate-clock";
++		clocks = <&sys_32k_ck>;
++		#clock-cells = <0>;
++		reg = <0x13b0>;
++		ti,bit-shift = <8>;
++	};
 +
-+		/* Find the untranslated configuration space address */
-+		index = of_property_match_string(np, "reg-names", "config");
-+		addrp = of_get_address(np, index, false, false);
-+		pp->cfg0_mod_addr = of_read_number(addrp, ns);
-+		pp->cfg1_mod_addr = pp->cfg0_mod_addr + pp->config.cfg0_size;
- 	} else {
- 		dev_err(pp->dev, "missing *config* reg space\n");
- 	}
-@@ -431,12 +444,20 @@ int __init dw_pcie_host_init(struct pcie_port *pp)
- 			pp->config.io_size = resource_size(&pp->io);
- 			pp->config.io_bus_addr = range.pci_addr;
- 			pp->io_base = range.cpu_addr;
-+
-+			/* Find the untranslated IO space address */
-+			pp->io_mod_addr = of_read_number(parser.range -
-+							 parser.np + na, ns);
- 		}
- 		if (restype == IORESOURCE_MEM) {
- 			of_pci_range_to_resource(&range, np, &pp->mem);
- 			pp->mem.name = "MEM";
- 			pp->config.mem_size = resource_size(&pp->mem);
- 			pp->config.mem_bus_addr = range.pci_addr;
-+
-+			/* Find the untranslated MEM space address */
-+			pp->mem_mod_addr = of_read_number(parser.range -
-+							  parser.np + na, ns);
- 		}
- 		if (restype == 0) {
- 			of_pci_range_to_resource(&range, np, &pp->cfg);
-@@ -444,6 +465,12 @@ int __init dw_pcie_host_init(struct pcie_port *pp)
- 			pp->config.cfg1_size = resource_size(&pp->cfg)/2;
- 			pp->cfg0_base = pp->cfg.start;
- 			pp->cfg1_base = pp->cfg.start + pp->config.cfg0_size;
-+
-+			/* Find the untranslated configuration space address */
-+			pp->cfg0_mod_addr = of_read_number(parser.range -
-+							   parser.np + na, ns);
-+			pp->cfg1_mod_addr = pp->cfg0_mod_addr +
-+					    pp->config.cfg0_size;
- 		}
- 	}
- 
-@@ -518,9 +545,9 @@ static void dw_pcie_prog_viewport_cfg0(struct pcie_port *pp, u32 busdev)
- 	/* Program viewport 0 : OUTBOUND : CFG0 */
- 	dw_pcie_writel_rc(pp, PCIE_ATU_REGION_OUTBOUND | PCIE_ATU_REGION_INDEX0,
- 			  PCIE_ATU_VIEWPORT);
--	dw_pcie_writel_rc(pp, pp->cfg0_base, PCIE_ATU_LOWER_BASE);
--	dw_pcie_writel_rc(pp, (pp->cfg0_base >> 32), PCIE_ATU_UPPER_BASE);
--	dw_pcie_writel_rc(pp, pp->cfg0_base + pp->config.cfg0_size - 1,
-+	dw_pcie_writel_rc(pp, pp->cfg0_mod_addr, PCIE_ATU_LOWER_BASE);
-+	dw_pcie_writel_rc(pp, (pp->cfg0_mod_addr >> 32), PCIE_ATU_UPPER_BASE);
-+	dw_pcie_writel_rc(pp, pp->cfg0_mod_addr + pp->config.cfg0_size - 1,
- 			  PCIE_ATU_LIMIT);
- 	dw_pcie_writel_rc(pp, busdev, PCIE_ATU_LOWER_TARGET);
- 	dw_pcie_writel_rc(pp, 0, PCIE_ATU_UPPER_TARGET);
-@@ -534,9 +561,9 @@ static void dw_pcie_prog_viewport_cfg1(struct pcie_port *pp, u32 busdev)
- 	dw_pcie_writel_rc(pp, PCIE_ATU_REGION_OUTBOUND | PCIE_ATU_REGION_INDEX1,
- 			  PCIE_ATU_VIEWPORT);
- 	dw_pcie_writel_rc(pp, PCIE_ATU_TYPE_CFG1, PCIE_ATU_CR1);
--	dw_pcie_writel_rc(pp, pp->cfg1_base, PCIE_ATU_LOWER_BASE);
--	dw_pcie_writel_rc(pp, (pp->cfg1_base >> 32), PCIE_ATU_UPPER_BASE);
--	dw_pcie_writel_rc(pp, pp->cfg1_base + pp->config.cfg1_size - 1,
-+	dw_pcie_writel_rc(pp, pp->cfg1_mod_addr, PCIE_ATU_LOWER_BASE);
-+	dw_pcie_writel_rc(pp, (pp->cfg1_mod_addr >> 32), PCIE_ATU_UPPER_BASE);
-+	dw_pcie_writel_rc(pp, pp->cfg1_mod_addr + pp->config.cfg1_size - 1,
- 			  PCIE_ATU_LIMIT);
- 	dw_pcie_writel_rc(pp, busdev, PCIE_ATU_LOWER_TARGET);
- 	dw_pcie_writel_rc(pp, 0, PCIE_ATU_UPPER_TARGET);
-@@ -549,9 +576,9 @@ static void dw_pcie_prog_viewport_mem_outbound(struct pcie_port *pp)
- 	dw_pcie_writel_rc(pp, PCIE_ATU_REGION_OUTBOUND | PCIE_ATU_REGION_INDEX0,
- 			  PCIE_ATU_VIEWPORT);
- 	dw_pcie_writel_rc(pp, PCIE_ATU_TYPE_MEM, PCIE_ATU_CR1);
--	dw_pcie_writel_rc(pp, pp->mem_base, PCIE_ATU_LOWER_BASE);
--	dw_pcie_writel_rc(pp, (pp->mem_base >> 32), PCIE_ATU_UPPER_BASE);
--	dw_pcie_writel_rc(pp, pp->mem_base + pp->config.mem_size - 1,
-+	dw_pcie_writel_rc(pp, pp->mem_mod_addr, PCIE_ATU_LOWER_BASE);
-+	dw_pcie_writel_rc(pp, (pp->mem_mod_addr >> 32), PCIE_ATU_UPPER_BASE);
-+	dw_pcie_writel_rc(pp, pp->mem_mod_addr + pp->config.mem_size - 1,
- 			  PCIE_ATU_LIMIT);
- 	dw_pcie_writel_rc(pp, pp->config.mem_bus_addr, PCIE_ATU_LOWER_TARGET);
- 	dw_pcie_writel_rc(pp, upper_32_bits(pp->config.mem_bus_addr),
-diff --git a/drivers/pci/host/pcie-designware.h b/drivers/pci/host/pcie-designware.h
-index 3063b35..d1f7d5e 100644
---- a/drivers/pci/host/pcie-designware.h
-+++ b/drivers/pci/host/pcie-designware.h
-@@ -36,11 +36,15 @@ struct pcie_port {
- 	u8			root_bus_nr;
- 	void __iomem		*dbi_base;
- 	u64			cfg0_base;
-+	u64			cfg0_mod_addr;
- 	void __iomem		*va_cfg0_base;
- 	u64			cfg1_base;
-+	u64			cfg1_mod_addr;
- 	void __iomem		*va_cfg1_base;
- 	u64			io_base;
-+	u64			io_mod_addr;
- 	u64			mem_base;
-+	u64			mem_mod_addr;
- 	spinlock_t		conf_lock;
- 	struct resource		cfg;
- 	struct resource		io;
+ 	optfclk_pciephy_div: optfclk_pciephy_div@4a00821c {
+ 		compatible = "ti,divider-clock";
+ 		clocks = <&apll_pcie_ck>;
 -- 
 1.7.9.5
 
