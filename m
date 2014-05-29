@@ -1,126 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965090AbaE2OBP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 10:01:15 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:59449 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933358AbaE2Ntc (ORCPT
+	id S934606AbaE2OCP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 10:02:15 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:36298 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932867AbaE2OCN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 09:49:32 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Thomas Graf <tgraf@suug.ch>,
-        Florian Westphal <fw@strlen.de>,
-        Pablo Neira Ayuso <pablo@netfilter.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 024/103] netfilter: Can't fail and free after table replacement
-Date: Thu, 29 May 2014 15:48:09 +0200
-Message-Id: <f34728610b2a8c7b9864f9404f2884c17f6fca5c.1401371259.git.jslaby@suse.cz>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <bcbac220dab16a4038ac1a7c5cfe3e7f034b3836.1401371258.git.jslaby@suse.cz>
-References: <bcbac220dab16a4038ac1a7c5cfe3e7f034b3836.1401371258.git.jslaby@suse.cz>
-In-Reply-To: <cover.1401371258.git.jslaby@suse.cz>
-References: <cover.1401371258.git.jslaby@suse.cz>
+	Thu, 29 May 2014 10:02:13 -0400
+Date: Thu, 29 May 2014 16:02:04 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: mingo@kernel.org, linux-kernel@vger.kernel.org, linux@arm.linux.org.uk,
+        linux-arm-kernel@lists.infradead.org, preeti@linux.vnet.ibm.com,
+        Morten.Rasmussen@arm.com, efault@gmx.de, nicolas.pitre@linaro.org,
+        linaro-kernel@lists.linaro.org, daniel.lezcano@linaro.org
+Subject: Re: [PATCH v2 11/11] sched: replace capacity by activity
+Message-ID: <20140529140204.GH11074@laptop.programming.kicks-ass.net>
+References: <1400860385-14555-1-git-send-email-vincent.guittot@linaro.org>
+ <1400860385-14555-12-git-send-email-vincent.guittot@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1400860385-14555-12-git-send-email-vincent.guittot@linaro.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Graf <tgraf@suug.ch>
+On Fri, May 23, 2014 at 05:53:05PM +0200, Vincent Guittot wrote:
+> @@ -6052,8 +6006,8 @@ static inline void update_sd_lb_stats(struct lb_env *env, struct sd_lb_stats *sd
+>  		 * with a large weight task outweighs the tasks on the system).
+>  		 */
+>  		if (prefer_sibling && sds->local &&
+> -		    sds->local_stat.group_has_capacity)
+> -			sgs->group_capacity = min(sgs->group_capacity, 1U);
+> +		    sds->local_stat.group_capacity > 0)
+> +			sgs->group_capacity = min(sgs->group_capacity, 1L);
+>  
+>  		if (update_sd_pick_busiest(env, sds, sg, sgs)) {
+>  			sds->busiest = sg;
+> @@ -6228,7 +6182,7 @@ static inline void calculate_imbalance(struct lb_env *env, struct sd_lb_stats *s
+>  		 * have to drop below capacity to reach cpu-load equilibrium.
+>  		 */
+>  		load_above_capacity =
+> -			(busiest->sum_nr_running - busiest->group_capacity);
+> +			(busiest->sum_nr_running - busiest->group_weight);
+>  
+>  		load_above_capacity *= (SCHED_LOAD_SCALE * SCHED_POWER_SCALE);
+>  		load_above_capacity /= busiest->group_power;
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+I think you just broke PREFER_SIBLING here..
 
-===============
-
-commit c58dd2dd443c26d856a168db108a0cd11c285bf3 upstream.
-
-All xtables variants suffer from the defect that the copy_to_user()
-to copy the counters to user memory may fail after the table has
-already been exchanged and thus exposed. Return an error at this
-point will result in freeing the already exposed table. Any
-subsequent packet processing will result in a kernel panic.
-
-We can't copy the counters before exposing the new tables as we
-want provide the counter state after the old table has been
-unhooked. Therefore convert this into a silent error.
-
-Cc: Florian Westphal <fw@strlen.de>
-Signed-off-by: Thomas Graf <tgraf@suug.ch>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- net/bridge/netfilter/ebtables.c | 5 ++---
- net/ipv4/netfilter/arp_tables.c | 6 ++++--
- net/ipv4/netfilter/ip_tables.c  | 6 ++++--
- net/ipv6/netfilter/ip6_tables.c | 6 ++++--
- 4 files changed, 14 insertions(+), 9 deletions(-)
-
-diff --git a/net/bridge/netfilter/ebtables.c b/net/bridge/netfilter/ebtables.c
-index ac7802428384..b166fc2ec4b9 100644
---- a/net/bridge/netfilter/ebtables.c
-+++ b/net/bridge/netfilter/ebtables.c
-@@ -1044,10 +1044,9 @@ static int do_replace_finish(struct net *net, struct ebt_replace *repl,
- 	if (repl->num_counters &&
- 	   copy_to_user(repl->counters, counterstmp,
- 	   repl->num_counters * sizeof(struct ebt_counter))) {
--		ret = -EFAULT;
-+		/* Silent error, can't fail, new table is already in place */
-+		net_warn_ratelimited("ebtables: counters copy to user failed while replacing table\n");
- 	}
--	else
--		ret = 0;
- 
- 	/* decrease module count and free resources */
- 	EBT_ENTRY_ITERATE(table->entries, table->entries_size,
-diff --git a/net/ipv4/netfilter/arp_tables.c b/net/ipv4/netfilter/arp_tables.c
-index 85a4f21aac1a..c8abe31961ed 100644
---- a/net/ipv4/netfilter/arp_tables.c
-+++ b/net/ipv4/netfilter/arp_tables.c
-@@ -1039,8 +1039,10 @@ static int __do_replace(struct net *net, const char *name,
- 
- 	xt_free_table_info(oldinfo);
- 	if (copy_to_user(counters_ptr, counters,
--			 sizeof(struct xt_counters) * num_counters) != 0)
--		ret = -EFAULT;
-+			 sizeof(struct xt_counters) * num_counters) != 0) {
-+		/* Silent error, can't fail, new table is already in place */
-+		net_warn_ratelimited("arptables: counters copy to user failed while replacing table\n");
-+	}
- 	vfree(counters);
- 	xt_table_unlock(t);
- 	return ret;
-diff --git a/net/ipv4/netfilter/ip_tables.c b/net/ipv4/netfilter/ip_tables.c
-index d23118d95ff9..651c10774d58 100644
---- a/net/ipv4/netfilter/ip_tables.c
-+++ b/net/ipv4/netfilter/ip_tables.c
-@@ -1226,8 +1226,10 @@ __do_replace(struct net *net, const char *name, unsigned int valid_hooks,
- 
- 	xt_free_table_info(oldinfo);
- 	if (copy_to_user(counters_ptr, counters,
--			 sizeof(struct xt_counters) * num_counters) != 0)
--		ret = -EFAULT;
-+			 sizeof(struct xt_counters) * num_counters) != 0) {
-+		/* Silent error, can't fail, new table is already in place */
-+		net_warn_ratelimited("iptables: counters copy to user failed while replacing table\n");
-+	}
- 	vfree(counters);
- 	xt_table_unlock(t);
- 	return ret;
-diff --git a/net/ipv6/netfilter/ip6_tables.c b/net/ipv6/netfilter/ip6_tables.c
-index 44400c216dc6..89a4e4ddd8bb 100644
---- a/net/ipv6/netfilter/ip6_tables.c
-+++ b/net/ipv6/netfilter/ip6_tables.c
-@@ -1236,8 +1236,10 @@ __do_replace(struct net *net, const char *name, unsigned int valid_hooks,
- 
- 	xt_free_table_info(oldinfo);
- 	if (copy_to_user(counters_ptr, counters,
--			 sizeof(struct xt_counters) * num_counters) != 0)
--		ret = -EFAULT;
-+			 sizeof(struct xt_counters) * num_counters) != 0) {
-+		/* Silent error, can't fail, new table is already in place */
-+		net_warn_ratelimited("ip6tables: counters copy to user failed while replacing table\n");
-+	}
- 	vfree(counters);
- 	xt_table_unlock(t);
- 	return ret;
--- 
-1.9.3
+So we want PREFER_SIBLING to work on nr_running, not utilization because
+we want to spread single tasks around, regardless of their utilization.
 
