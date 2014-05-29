@@ -1,73 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756871AbaE2GTf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 02:19:35 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:65031 "EHLO
+	id S1756894AbaE2GWr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 02:22:47 -0400
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:43247 "EHLO
 	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756299AbaE2GTe (ORCPT
+	with ESMTP id S1756277AbaE2GWq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 02:19:34 -0400
+	Thu, 29 May 2014 02:22:46 -0400
 X-Original-SENDERIP: 10.177.220.145
 X-Original-MAILFROM: iamjoonsoo.kim@lge.com
 From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Zhang Yanfei <zhangyanfei.yes@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Andi Kleen <andi@firstfloor.org>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Richard Yao <ryao@gentoo.org>, Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH] vmalloc: use rcu list iterator to reduce vmap_area_lock contention
-Date: Thu, 29 May 2014 15:22:34 +0900
-Message-Id: <1401344554-3596-1-git-send-email-iamjoonsoo.kim@lge.com>
+Cc: David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: [PATCH] CMA: use MIGRATE_SYNC in alloc_contig_range()
+Date: Thu, 29 May 2014 15:25:50 +0900
+Message-Id: <1401344750-3684-1-git-send-email-iamjoonsoo.kim@lge.com>
 X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Richard Yao reported a month ago that his system have a trouble
-with vmap_area_lock contention during performance analysis
-by /proc/meminfo. Andrew asked why his analysis checks /proc/meminfo
-stressfully, but he didn't answer it.
+Before commit 'mm, compaction: embed migration mode in compact_control'
+from David is merged, alloc_contig_range() used sync migration,
+instead of sync_light migration. This doesn't break anything currently
+because page isolation doesn't have any difference with sync and
+sync_light, but it could in the future, so change back as it was.
 
-https://lkml.org/lkml/2014/4/10/416
+And pass cc->mode to migrate_pages(), instead of passing MIGRATE_SYNC
+to migrate_pages().
 
-Although I'm not sure that this is right usage or not, there is a solution
-reducing vmap_area_lock contention with no side-effect. That is just
-to use rcu list iterator in get_vmalloc_info(). This function only needs
-values on vmap_area structure, so we don't need to grab a spinlock.
-
-Reported-by: Richard Yao <ryao@gentoo.org>
 Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
-diff --git a/mm/vmalloc.c b/mm/vmalloc.c
-index f64632b..fdbb116 100644
---- a/mm/vmalloc.c
-+++ b/mm/vmalloc.c
-@@ -2690,14 +2690,14 @@ void get_vmalloc_info(struct vmalloc_info *vmi)
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 7f97767..97c4185 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -6262,7 +6262,7 @@ static int __alloc_contig_migrate_range(struct compact_control *cc,
+ 		cc->nr_migratepages -= nr_reclaimed;
  
- 	prev_end = VMALLOC_START;
- 
--	spin_lock(&vmap_area_lock);
-+	rcu_read_lock();
- 
- 	if (list_empty(&vmap_area_list)) {
- 		vmi->largest_chunk = VMALLOC_TOTAL;
- 		goto out;
+ 		ret = migrate_pages(&cc->migratepages, alloc_migrate_target,
+-				    NULL, 0, MIGRATE_SYNC, MR_CMA);
++				    NULL, 0, cc->mode, MR_CMA);
  	}
- 
--	list_for_each_entry(va, &vmap_area_list, list) {
-+	list_for_each_entry_rcu(va, &vmap_area_list, list) {
- 		unsigned long addr = va->va_start;
- 
- 		/*
-@@ -2724,7 +2724,7 @@ void get_vmalloc_info(struct vmalloc_info *vmi)
- 		vmi->largest_chunk = VMALLOC_END - prev_end;
- 
- out:
--	spin_unlock(&vmap_area_lock);
-+	rcu_read_unlock();
- }
- #endif
- 
+ 	if (ret < 0) {
+ 		putback_movable_pages(&cc->migratepages);
+@@ -6301,7 +6301,7 @@ int alloc_contig_range(unsigned long start, unsigned long end,
+ 		.nr_migratepages = 0,
+ 		.order = -1,
+ 		.zone = page_zone(pfn_to_page(start)),
+-		.mode = MIGRATE_SYNC_LIGHT,
++		.mode = MIGRATE_SYNC,
+ 		.ignore_skip_hint = true,
+ 	};
+ 	INIT_LIST_HEAD(&cc.migratepages);
 -- 
 1.7.9.5
 
