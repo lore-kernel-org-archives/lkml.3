@@ -1,148 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752105AbaE2ELX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 00:11:23 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:60051 "EHLO
-	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750746AbaE2ELV (ORCPT
+	id S1755854AbaE2EMJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 00:12:09 -0400
+Received: from ozlabs.org ([103.22.144.67]:59709 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754282AbaE2EMH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 00:11:21 -0400
-X-Original-SENDERIP: 10.177.220.169
-X-Original-MAILFROM: minchan@kernel.org
-Date: Thu, 29 May 2014 13:11:51 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Hugh Dickins <hughd@google.com>, rusty@rustcorp.com.au,
-        Dave Hansen <dave.hansen@intel.com>
-Subject: Re: [RFC 2/2] x86_64: expand kernel stack to 16K
-Message-ID: <20140529041151.GE10092@bbox>
-References: <1401260039-18189-1-git-send-email-minchan@kernel.org>
- <1401260039-18189-2-git-send-email-minchan@kernel.org>
- <20140528090409.GA16795@redhat.com>
- <20140529010940.GA10092@bbox>
- <20140528224448.1c1b1999@gandalf.local.home>
+	Thu, 29 May 2014 00:12:07 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: "Michael S. Tsirkin" <mst@redhat.com>, Minchan Kim <minchan@kernel.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: virtio_ring stack usage.
+In-Reply-To: <20140528090409.GA16795@redhat.com>
+References: <1401260039-18189-1-git-send-email-minchan@kernel.org> <1401260039-18189-2-git-send-email-minchan@kernel.org> <20140528090409.GA16795@redhat.com>
+User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
+Date: Thu, 29 May 2014 13:40:08 +0930
+Message-ID: <87r43d6x9b.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140528224448.1c1b1999@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 28, 2014 at 10:44:48PM -0400, Steven Rostedt wrote:
-> On Thu, 29 May 2014 10:09:40 +0900
-> Minchan Kim <minchan@kernel.org> wrote:
-> 
-> > stacktrace reported that vring_add_indirect used 376byte and objdump says
-> > 
-> > ffffffff8141dc60 <vring_add_indirect>:
-> > ffffffff8141dc60:       55                      push   %rbp
-> > ffffffff8141dc61:       48 89 e5                mov    %rsp,%rbp
-> > ffffffff8141dc64:       41 57                   push   %r15
-> > ffffffff8141dc66:       41 56                   push   %r14
-> > ffffffff8141dc68:       41 55                   push   %r13
-> > ffffffff8141dc6a:       49 89 fd                mov    %rdi,%r13
-> > ffffffff8141dc6d:       89 cf                   mov    %ecx,%edi
-> > ffffffff8141dc6f:       48 c1 e7 04             shl    $0x4,%rdi
-> > ffffffff8141dc73:       41 54                   push   %r12
-> > ffffffff8141dc75:       49 89 d4                mov    %rdx,%r12
-> > ffffffff8141dc78:       53                      push   %rbx
-> > ffffffff8141dc79:       48 89 f3                mov    %rsi,%rbx
-> > ffffffff8141dc7c:       48 83 ec 28             sub    $0x28,%rsp
-> > ffffffff8141dc80:       8b 75 20                mov    0x20(%rbp),%esi
-> > ffffffff8141dc83:       89 4d bc                mov    %ecx,-0x44(%rbp)
-> > ffffffff8141dc86:       44 89 45 cc             mov    %r8d,-0x34(%rbp)
-> > ffffffff8141dc8a:       44 89 4d c8             mov    %r9d,-0x38(%rbp)
-> > ffffffff8141dc8e:       83 e6 dd                and    $0xffffffdd,%esi
-> > ffffffff8141dc91:       e8 7a d1 d7 ff          callq  ffffffff8119ae10 <__kmalloc>
-> > ffffffff8141dc96:       48 85 c0                test   %rax,%rax
-> > 
-> > So, it's *strange*.
-> > 
-> > I will add .config and .o.
-> > Maybe someone might find what happens.
-> > 
-> 
-> This is really bothering me. I'm trying to figure it out. We have from
-> the stack trace:
-> 
-> [ 1065.604404] kworker/-5766    0d..2 1071625993us : stack_trace_call:   9)     6456      80   __kmalloc+0x1cb/0x200
-> [ 1065.604404] kworker/-5766    0d..2 1071625993us : stack_trace_call:  10)     6376     376   vring_add_indirect+0x36/0x200
-> [ 1065.604404] kworker/-5766    0d..2 1071625993us : stack_trace_call:  11)     6000     144   virtqueue_add_sgs+0x2e2/0x320
-> 
-> The way the stack tracer works, is that when it detects a new max stack
-> it calls save_stack_trace() to get the complete call chain from the
-> stack. This should be rather accurate as it seems that your kernel was
-> compiled with frame pointers (confirmed by the objdump as well as the
-> config file). It then uses that stack trace that it got to examine the
-> stack to find the locations of the saved return addresses and records
-> them in an array (in your case, an array of 50 entries).
-> 
-> From your .o file:
-> 
-> vring_add_indirect + 0x36: (0x370 + 0x36 = 0x3a6)
-> 
-> 0000000000000370 <vring_add_indirect>:
-> 
->  39e:   83 e6 dd                and    $0xffffffdd,%esi
->  3a1:   e8 00 00 00 00          callq  3a6 <vring_add_indirect+0x36>
->                         3a2: R_X86_64_PC32      __kmalloc-0x4
->  3a6:   48 85 c0                test   %rax,%rax
-> 
-> Definitely the return address to the call to __kmalloc. Then to
-> determine the size of the stack frame, it is subtracted from the next
-> one down. In this case, the location of virtqueue_add_sgs+0x2e2.
-> 
-> virtqueue_add_sgs + 0x2e2: (0x880 + 0x2e2 = 0xb62)
-> 
-> 0000000000000880 <virtqueue_add_sgs>:
-> 
-> b4f:   89 4c 24 08             mov    %ecx,0x8(%rsp)
->  b53:   48 c7 c2 00 00 00 00    mov    $0x0,%rdx
->                         b56: R_X86_64_32S       .text+0x570
->  b5a:   44 89 d1                mov    %r10d,%ecx
->  b5d:   e8 0e f8 ff ff          callq  370 <vring_add_indirect>
->  b62:   85 c0                   test   %eax,%eax
-> 
-> 
-> Which is the return address of where vring_add_indirect was called.
-> 
-> The return address back to virtqueue_add_sgs was found at 6000 bytes of
-> the stack. The return address back to vring_add_indirect was found at
-> 6376 bytes from the top of the stack.
-> 
-> My question is, why were they so far apart? I see 6 words pushed
-> (8bytes each, for a total of 48 bytes), and a subtraction of the stack
-> pointer of 0x28 (40 bytes) giving us a total of 88 bytes. Plus we need
-> to add the push of the return address itself which would just give us
-> 96 bytes for the stack frame. What is making this show 376 bytes??
+"Michael S. Tsirkin" <mst@redhat.com> writes:
+> On Wed, May 28, 2014 at 03:53:59PM +0900, Minchan Kim wrote:
+>> [ 1065.604404] kworker/-5766    0d..2 1071625993us : stack_trace_call:   9)     6456      80   __kmalloc+0x1cb/0x200
+>> [ 1065.604404] kworker/-5766    0d..2 1071625993us : stack_trace_call:  10)     6376     376   vring_add_indirect+0x36/0x200
+>> [ 1065.604404] kworker/-5766    0d..2 1071625993us : stack_trace_call:  11)     6000     144   virtqueue_add_sgs+0x2e2/0x320
+>> [ 1065.604404] kworker/-5766    0d..2 1071625993us : stack_trace_call:  12)     5856     288   __virtblk_add_req+0xda/0x1b0
+>> [ 1065.604404] kworker/-5766    0d..2 1071625993us : stack_trace_call:  13)     5568      96   virtio_queue_rq+0xd3/0x1d0
+>
+> virtio stack usage seems very high.
+> Here is virtio_ring.su generated using -fstack-usage flag for gcc 4.8.2.
+>
+> virtio_ring.c:107:35:sg_next_arr        16      static
+...
+> <--- this is a surprise, I really expected it to be inlined
+>      same for sg_next_chained.
+> <--- Rusty: should we force compiler to inline it?
 
-That's what I want to know. :(
+Extra cc's dropped.
 
-> 
-> Looking more into this, I'm not sure I trust the top numbers anymore.
-> kmalloc reports a stack frame of 80, and I'm coming up with 104
-> (perhaps even 112). And slab_alloc only has 8. Something's messed up there.
+Weird, works here (gcc 4.8.2, 32 bit).  Hmm, same with 64 bit:
 
-Yes, Looks weired but some of upper functions in callstack match well so might
-think only top functions of callstack was corrupted.
-But in case of alloc_pages_current(8 byte), it looks weired too but it reports
-same value 8 bytes in uppder and bottom of callstack. :(
-> 
-> -- Steve
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+gcc -Wp,-MD,drivers/virtio/.virtio_ring.o.d  -nostdinc -isystem /usr/lib/gcc/x86_64-linux-gnu/4.8/include -I/home/rusty/devel/kernel/linux/arch/x86/include -Iarch/x86/include/generated  -Iinclude -I/home/rusty/devel/kernel/linux/arch/x86/include/uapi -Iarch/x86/include/generated/uapi -I/home/rusty/devel/kernel/linux/include/uapi -Iinclude/generated/uapi -include /home/rusty/devel/kernel/linux/include/linux/kconfig.h -D__KERNEL__ -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs -fno-strict-aliasing -fno-common -Werror-implicit-function-declaration -Wno-format-security -fno-delete-null-pointer-checks -O2 -m64 -mno-mmx -mno-sse -mno-80387 -mno-fp-ret-in-387 -mpreferred-stack-boundary=3 -march=core2 -mno-red-zone -mcmodel=kernel -funit-at-a-time -maccumulate-outgoing-args -DCONFIG_AS_CFI=1 -DCONFIG_AS_CFI_SIGNAL_FRAME=1 -DCONFIG_AS_CFI_SECTIONS=1 -DCONFIG_AS_FXSAVEQ=1 -DCONFIG_AS_CRC32=1 -DCONFIG_AS_AVX=1 -DCONFIG_AS_AVX2=1 -pipe -Wno-sign-compare -fno-asynchronous-unwind-tables -mno-sse -mno-mmx -mno-sse2 -mno-3dnow -mno-avx -Wframe-larger-than=1024 -fno-stack-protector -Wno-unused-but-set-variable -fno-omit-frame-pointer -fno-optimize-sibling-calls -Wdeclaration-after-statement -Wno-pointer-sign -fno-strict-overflow -fconserve-stack -Werror=implicit-int -Werror=strict-prototypes -DCC_HAVE_ASM_GOTO    -D"KBUILD_STR(s)=#s" -D"KBUILD_BASENAME=KBUILD_STR(virtio_ring)"  -D"KBUILD_MODNAME=KBUILD_STR(virtio_ring)" -c -o drivers/virtio/virtio_ring.o drivers/virtio/virtio_ring.c
 
--- 
-Kind regards,
-Minchan Kim
+$ objdump -dr drivers/virtio/virtio_ring.o | grep sg_next
+			988: R_X86_64_PC32	sg_next-0x4
+			9d8: R_X86_64_PC32	sg_next-0x4
+			ae9: R_X86_64_PC32	sg_next-0x4
+			b99: R_X86_64_PC32	sg_next-0x4
+			d31: R_X86_64_PC32	sg_next-0x4
+			df1: R_X86_64_PC32	sg_next-0x4
+$
+
+It's worth noting that older GCCs would sometimes successfully inline
+the indirect function (ie. sg_next_chained and sg_next_ar) but still
+emit an unused copy.  Is that happening for you too?
+
+I added a hack to actually measure how much stack we're using (x86-64):
+
+gcc 4.8.4:
+[    3.261826] virtio_blk: stack used = 408
+
+gcc 4.6:
+[    3.276449] virtio_blk: stack depth = 448
+
+Here's the hack I used:
+
+diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
+index 6d8a87f252de..bcd6336e3561 100644
+--- a/drivers/block/virtio_blk.c
++++ b/drivers/block/virtio_blk.c
+@@ -151,15 +151,19 @@ static void virtblk_done(struct virtqueue *vq)
+ 		blk_mq_start_stopped_hw_queues(vblk->disk->queue);
+ }
+ 
++extern struct task_struct *record_stack;
++extern unsigned long stack_top;
++
+ static int virtio_queue_rq(struct blk_mq_hw_ctx *hctx, struct request *req)
+ {
++	unsigned long stack_bottom = (unsigned long)&stack_bottom;
+ 	struct virtio_blk *vblk = hctx->queue->queuedata;
+ 	struct virtblk_req *vbr = req->special;
+ 	unsigned long flags;
+ 	unsigned int num;
+ 	const bool last = (req->cmd_flags & REQ_END) != 0;
+ 	int err;
+-
++	
+ 	BUG_ON(req->nr_phys_segments + 2 > vblk->sg_elems);
+ 
+ 	vbr->req = req;
+@@ -199,7 +203,10 @@ static int virtio_queue_rq(struct blk_mq_hw_ctx *hctx, struct request *req)
+ 	}
+ 
+ 	spin_lock_irqsave(&vblk->vq_lock, flags);
++	record_stack = current;
+ 	err = __virtblk_add_req(vblk->vq, vbr, vbr->sg, num);
++	record_stack = NULL;
++	printk("virtio_blk: stack used = %lu\n", stack_bottom - stack_top);
+ 	if (err) {
+ 		virtqueue_kick(vblk->vq);
+ 		spin_unlock_irqrestore(&vblk->vq_lock, flags);
+diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
+index 1e443629f76d..39158d6079a9 100644
+--- a/drivers/virtio/virtio_ring.c
++++ b/drivers/virtio/virtio_ring.c
+@@ -113,6 +113,14 @@ static inline struct scatterlist *sg_next_arr(struct scatterlist *sg,
+ 	return sg + 1;
+ }
+ 
++extern struct task_struct *record_stack;
++struct task_struct *record_stack;
++EXPORT_SYMBOL(record_stack);
++
++extern unsigned long stack_top;
++unsigned long stack_top;
++EXPORT_SYMBOL(stack_top);
++
+ /* Set up an indirect table of descriptors and add it to the queue. */
+ static inline int vring_add_indirect(struct vring_virtqueue *vq,
+ 				     struct scatterlist *sgs[],
+@@ -141,6 +149,9 @@ static inline int vring_add_indirect(struct vring_virtqueue *vq,
+ 	if (!desc)
+ 		return -ENOMEM;
+ 
++	if (record_stack == current)
++		stack_top = (unsigned long)&desc;
++
+ 	/* Transfer entries from the sg lists into the indirect page */
+ 	i = 0;
+ 	for (n = 0; n < out_sgs; n++) {
