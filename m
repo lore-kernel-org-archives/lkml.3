@@ -1,52 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757312AbaE2PBK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 11:01:10 -0400
-Received: from mga09.intel.com ([134.134.136.24]:37257 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756055AbaE2PBH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 11:01:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,934,1392192000"; 
-   d="scan'208";a="519708576"
-Date: Thu, 29 May 2014 18:00:58 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Grygorii Strashko <grygorii.strashko@ti.com>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        "Zhu, Lejun" <lejun.zhu@linux.intel.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        jacob.jun.pan@linux.intel.com, bin.yang@intel.com
-Subject: Re: [PATCH v4] gpio: Add support for Intel SoC PMIC (Crystal Cove)
-Message-ID: <20140529150058.GB6263@lahna.fi.intel.com>
-References: <1400810423-14067-1-git-send-email-lejun.zhu@linux.intel.com>
- <CAAVeFu+F=nHDCpL6Vfmq26QNr74mfRD5p9at_osB3R97v7xBSA@mail.gmail.com>
- <538459E8.6010701@ti.com>
- <20140527084615.GC1801@lahna.fi.intel.com>
- <53847F39.2010503@ti.com>
- <CACRpkdbe1=Yt3UDm9f4ZmZ+K2ZB9nVL+RNr7eU_TbnK-CmNY+A@mail.gmail.com>
-MIME-Version: 1.0
+	id S1757477AbaE2PEF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 11:04:05 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:42870 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756143AbaE2PEB convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 11:04:01 -0400
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACRpkdbe1=Yt3UDm9f4ZmZ+K2ZB9nVL+RNr7eU_TbnK-CmNY+A@mail.gmail.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Mime-Version: 1.0 (Mac OS X Mail 7.2 \(1874\))
+Subject: Re: [PATCH v2 03/18] PCI: designware: Configuration space should be specified in 'reg'
+From: Kumar Gala <galak@codeaurora.org>
+In-Reply-To: <1401345500-20188-4-git-send-email-kishon@ti.com>
+Date: Thu, 29 May 2014 10:03:54 -0500
+Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Marek Vasut <marex@denx.de>, arnd@arndb.de, tony@atomide.com,
+        Mohit Kumar <mohit.kumar@st.com>, jg1.han@samsung.com,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <98E18225-3C63-4106-901A-A5D3DEC268C8@codeaurora.org>
+References: <1401345500-20188-1-git-send-email-kishon@ti.com> <1401345500-20188-4-git-send-email-kishon@ti.com>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+X-Mailer: Apple Mail (2.1874)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 29, 2014 at 03:37:37PM +0200, Linus Walleij wrote:
-> My idea is that you should call gpiochip_add() *first* and then
-> add the IRQs to the chip. In succession.
+
+On May 29, 2014, at 1:38 AM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
+
+> The configuration address space has so far been specified in *ranges*,
+> however it should be specified in *reg* making it a platform MEM resource.
+> Hence used 'platform_get_resource_*' API to get configuration address
+> space in the designware driver.
 > 
-> Rationale: with dynamic GPIO numbers, gpio_to_irq()
-> cannot reasonably be working before the gpiochip is added,
-> so it should be added first, then the irqchip. Since irq_to_gpio()
-> is *NOT* to be used (rather obliterated), this is the sequence
-> we mandate.
+> Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+> Cc: Bjorn Helgaas <bhelgaas@google.com>
+> Cc: Mohit Kumar <mohit.kumar@st.com>
+> Cc: Jingoo Han <jg1.han@samsung.com>
+> Cc: Marek Vasut <marex@denx.de>
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+> ---
+> .../devicetree/bindings/pci/designware-pcie.txt    |    1 +
+> drivers/pci/host/pcie-designware.c                 |   17 +++++++++++++++--
+> 2 files changed, 16 insertions(+), 2 deletions(-)
 
-Thanks for the explanation. Makes sense.
+Why should the cfg space be defined in *reg* instead of ranges?
 
-I was wrong again, oh well it happens ;-)
+- k
+
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
+
