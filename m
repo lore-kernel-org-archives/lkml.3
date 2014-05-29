@@ -1,67 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934034AbaE2Qvr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 12:51:47 -0400
-Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:53555 "EHLO
-	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932790AbaE2Qvq (ORCPT
+	id S1757121AbaE2Qxa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 12:53:30 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:20899 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752294AbaE2Qx3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 12:51:46 -0400
-Message-ID: <1401382304.25908.5.camel@x220>
-Subject: [PATCH] sound: remove checks for CONFIG_BCM_CS4297A_CSWARM
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>
-Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Date: Thu, 29 May 2014 18:51:44 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
+	Thu, 29 May 2014 12:53:29 -0400
+Message-ID: <538765E5.7010200@oracle.com>
+Date: Thu, 29 May 2014 12:52:53 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Ingo Molnar <mingo@kernel.org>, acme@ghostprotocols.net,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Dave Jones <davej@redhat.com>
+Subject: Re: perf: use after free in perf_remove_from_context
+References: <5370EBE9.6@oracle.com> <20140514162943.GR30445@twins.programming.kicks-ass.net> <53739A9A.5010703@oracle.com> <20140514163535.GS30445@twins.programming.kicks-ass.net> <538676A7.6090306@oracle.com> <20140529075723.GA30445@twins.programming.kicks-ass.net> <5387486D.20108@oracle.com> <20140529150705.GJ19143@laptop.programming.kicks-ass.net> <538763E7.6030902@oracle.com> <20140529165057.GK19143@laptop.programming.kicks-ass.net>
+In-Reply-To: <20140529165057.GK19143@laptop.programming.kicks-ass.net>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 29 May 2014 16:51:44.0895 (UTC) FILETIME=[4605A0F0:01CF7B5E]
-X-RcptDomain: vger.kernel.org
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Checks for CONFIG_BCM_CS4297A_CSWARM were added in v2.6.11. The related
-Kconfig symbol was never added so these checks always evaluated to true.
-Remove them.
+On 05/29/2014 12:50 PM, Peter Zijlstra wrote:
+>> > 
+>> > So the only caller to sync_child_event() is that loop. According to what you said
+>> > it should be safe to remove that mutex lock, but doing that triggers a list
+>> > corruption:
+>> > 
+>> > [ 1204.341887] WARNING: CPU: 20 PID: 12839 at lib/list_debug.c:62 __list_del_entry+0xa1/0xe0()
+>> > [ 1204.347597] list_del corruption. next->prev should be ffff8806ca68b108, but was ffff88051a67c398
+>> > [...]
+>> > 
+>> > I don't see how that would happen :/
+> No, what I said is that the mutex in perf_event_exit_task() should be
+> sufficient to guard the list iteration calling __perf_event_exit_task().
+> 
+> Ading the RCU was a bit of paranoia.. 
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-Untested.
+Oh, my bad, I thought you referred to the mutex lock in sync_child_event().
 
- sound/oss/swarm_cs4297a.c | 4 ----
- 1 file changed, 4 deletions(-)
 
-diff --git a/sound/oss/swarm_cs4297a.c b/sound/oss/swarm_cs4297a.c
-index f851fd0e199c..a33e8ce8085b 100644
---- a/sound/oss/swarm_cs4297a.c
-+++ b/sound/oss/swarm_cs4297a.c
-@@ -2625,15 +2625,12 @@ static int __init cs4297a_init(void)
- 	u32 pwr, id;
- 	mm_segment_t fs;
- 	int rval;
--#ifndef CONFIG_BCM_CS4297A_CSWARM
- 	u64 cfg;
- 	int mdio_val;
--#endif
- 
- 	CS_DBGOUT(CS_INIT | CS_FUNCTION, 2, printk(KERN_INFO 
- 		"cs4297a: cs4297a_init_module()+ \n"));
- 
--#ifndef CONFIG_BCM_CS4297A_CSWARM
-         mdio_val = __raw_readq(KSEG1 + A_MAC_REGISTER(2, R_MAC_MDIO)) &
-                 (M_MAC_MDIO_DIR|M_MAC_MDIO_OUT);
- 
-@@ -2659,7 +2656,6 @@ static int __init cs4297a_init(void)
-         __raw_writeq(mdio_val | M_MAC_GENC, KSEG1+A_MAC_REGISTER(2, R_MAC_MDIO));
-         /* Give the codec some time to finish resetting (start the bit clock) */
-         udelay(100);
--#endif
- 
- 	if (!(s = kzalloc(sizeof(struct cs4297a_state), GFP_KERNEL))) {
- 		CS_DBGOUT(CS_ERROR, 1, printk(KERN_ERR
--- 
-1.9.3
-
+Thanks,
+Sasha
