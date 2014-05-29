@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934485AbaE2F2h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 01:28:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57820 "EHLO
+	id S934500AbaE2F2z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 01:28:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57814 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756367AbaE2EfM (ORCPT
+	with ESMTP id S1756351AbaE2EfL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 00:35:12 -0400
+	Thu, 29 May 2014 00:35:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chris Mason <clm@fb.com>, Amir Vadai <amirv@mellanox.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 052/140] mlx4_en: dont use napi_synchronize inside mlx4_en_netpoll
-Date: Wed, 28 May 2014 21:33:11 -0700
-Message-Id: <20140529043056.121896578@linuxfoundation.org>
+        Tony Lindgren <tony@atomide.com>, Felipe Balbi <balbi@ti.com>
+Subject: [PATCH 3.14 051/140] serial: omap: Fix missing pm_runtime_resume handling by simplifying code
+Date: Wed, 28 May 2014 21:33:10 -0700
+Message-Id: <20140529043055.989714164@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
 In-Reply-To: <20140529043049.661315084@linuxfoundation.org>
 References: <20140529043049.661315084@linuxfoundation.org>
@@ -27,71 +26,121 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Mason <clm@fb.com>
+From: Tony Lindgren <tony@atomide.com>
 
-commit c98235cb8584a72e95786e17d695a8e5fafcd766 upstream.
+commit d758c9c1b36b4d9a141c2146c70398d756167ed1 upstream.
 
-The mlx4 driver is triggering schedules while atomic inside
-mlx4_en_netpoll:
+The lack of pm_runtime_resume handling for the device state leads into
+device wake-up interrupts not working after a while for runtime PM.
 
-	spin_lock_irqsave(&cq->lock, flags);
-	napi_synchronize(&cq->napi);
-		^^^^^ msleep here
-	mlx4_en_process_rx_cq(dev, cq, 0);
-	spin_unlock_irqrestore(&cq->lock, flags);
+Also, serial-omap is confused about the use of device_may_wakeup.
+The checks for device_may_wakeup should only be done for suspend and
+resume, not for pm_runtime_suspend and pm_runtime_resume. The wake-up
+events for PM runtime should always be enabled.
 
-This was part of a patch by Alexander Guller from Mellanox in 2011,
-but it still isn't upstream.
+The lack of pm_runtime_resume handling leads into device wake-up
+interrupts not working after a while for runtime PM.
 
-Signed-off-by: Chris Mason <clm@fb.com>
-Acked-By: Amir Vadai <amirv@mellanox.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Rather than try to patch over the issue of adding complex tests to
+the pm_runtime_resume, let's fix the issues properly:
+
+1. Make serial_omap_enable_wakeup deal with all internal PM state
+   handling so we don't need to test for up->wakeups_enabled elsewhere.
+
+   Later on once omap3 boots in device tree only mode we can also
+   remove the up->wakeups_enabled flag and rely on the wake-up
+   interrupt enable/disable state alone.
+
+2. Do the device_may_wakeup checks in suspend and resume only,
+   for runtime PM the wake-up events need to be always enabled.
+
+3. Finally just call serial_omap_enable_wakeup and make sure we
+   call it also in pm_runtime_resume.
+
+4. Note that we also have to use disable_irq_nosync as serial_omap_irq
+   calls pm_runtime_get_sync.
+
+Fixes: 2a0b965cfb6e (serial: omap: Add support for optional wake-up)
+Signed-off-by: Tony Lindgren <tony@atomide.com>
+Acked-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/mellanox/mlx4/en_cq.c     |    1 -
- drivers/net/ethernet/mellanox/mlx4/en_netdev.c |    6 +-----
- drivers/net/ethernet/mellanox/mlx4/mlx4_en.h   |    1 -
- 3 files changed, 1 insertion(+), 7 deletions(-)
+ drivers/tty/serial/omap-serial.c |   29 +++++++++++++++++------------
+ 1 file changed, 17 insertions(+), 12 deletions(-)
 
---- a/drivers/net/ethernet/mellanox/mlx4/en_cq.c
-+++ b/drivers/net/ethernet/mellanox/mlx4/en_cq.c
-@@ -66,7 +66,6 @@ int mlx4_en_create_cq(struct mlx4_en_pri
- 
- 	cq->ring = ring;
- 	cq->is_tx = mode;
--	spin_lock_init(&cq->lock);
- 
- 	/* Allocate HW buffers on provided NUMA node.
- 	 * dev->numa_node is used in mtt range allocation flow.
---- a/drivers/net/ethernet/mellanox/mlx4/en_netdev.c
-+++ b/drivers/net/ethernet/mellanox/mlx4/en_netdev.c
-@@ -1315,15 +1315,11 @@ static void mlx4_en_netpoll(struct net_d
- {
- 	struct mlx4_en_priv *priv = netdev_priv(dev);
- 	struct mlx4_en_cq *cq;
--	unsigned long flags;
- 	int i;
- 
- 	for (i = 0; i < priv->rx_ring_num; i++) {
- 		cq = priv->rx_cq[i];
--		spin_lock_irqsave(&cq->lock, flags);
--		napi_synchronize(&cq->napi);
--		mlx4_en_process_rx_cq(dev, cq, 0);
--		spin_unlock_irqrestore(&cq->lock, flags);
-+		napi_schedule(&cq->napi);
- 	}
+--- a/drivers/tty/serial/omap-serial.c
++++ b/drivers/tty/serial/omap-serial.c
+@@ -225,14 +225,19 @@ static inline void serial_omap_enable_wa
+ 	if (enable)
+ 		enable_irq(up->wakeirq);
+ 	else
+-		disable_irq(up->wakeirq);
++		disable_irq_nosync(up->wakeirq);
  }
- #endif
---- a/drivers/net/ethernet/mellanox/mlx4/mlx4_en.h
-+++ b/drivers/net/ethernet/mellanox/mlx4/mlx4_en.h
-@@ -309,7 +309,6 @@ struct mlx4_en_cq {
- 	struct mlx4_cq          mcq;
- 	struct mlx4_hwq_resources wqres;
- 	int                     ring;
--	spinlock_t              lock;
- 	struct net_device      *dev;
- 	struct napi_struct	napi;
- 	int size;
+ 
+ static void serial_omap_enable_wakeup(struct uart_omap_port *up, bool enable)
+ {
+ 	struct omap_uart_port_info *pdata = dev_get_platdata(up->dev);
+ 
++	if (enable == up->wakeups_enabled)
++		return;
++
+ 	serial_omap_enable_wakeirq(up, enable);
++	up->wakeups_enabled = enable;
++
+ 	if (!pdata || !pdata->enable_wakeup)
+ 		return;
+ 
+@@ -1488,6 +1493,11 @@ static int serial_omap_suspend(struct de
+ 	uart_suspend_port(&serial_omap_reg, &up->port);
+ 	flush_work(&up->qos_work);
+ 
++	if (device_may_wakeup(dev))
++		serial_omap_enable_wakeup(up, true);
++	else
++		serial_omap_enable_wakeup(up, false);
++
+ 	return 0;
+ }
+ 
+@@ -1495,6 +1505,9 @@ static int serial_omap_resume(struct dev
+ {
+ 	struct uart_omap_port *up = dev_get_drvdata(dev);
+ 
++	if (device_may_wakeup(dev))
++		serial_omap_enable_wakeup(up, false);
++
+ 	uart_resume_port(&serial_omap_reg, &up->port);
+ 
+ 	return 0;
+@@ -1870,17 +1883,7 @@ static int serial_omap_runtime_suspend(s
+ 
+ 	up->context_loss_cnt = serial_omap_get_context_loss_count(up);
+ 
+-	if (device_may_wakeup(dev)) {
+-		if (!up->wakeups_enabled) {
+-			serial_omap_enable_wakeup(up, true);
+-			up->wakeups_enabled = true;
+-		}
+-	} else {
+-		if (up->wakeups_enabled) {
+-			serial_omap_enable_wakeup(up, false);
+-			up->wakeups_enabled = false;
+-		}
+-	}
++	serial_omap_enable_wakeup(up, true);
+ 
+ 	up->latency = PM_QOS_CPU_DMA_LAT_DEFAULT_VALUE;
+ 	schedule_work(&up->qos_work);
+@@ -1894,6 +1897,8 @@ static int serial_omap_runtime_resume(st
+ 
+ 	int loss_cnt = serial_omap_get_context_loss_count(up);
+ 
++	serial_omap_enable_wakeup(up, false);
++
+ 	if (loss_cnt < 0) {
+ 		dev_dbg(dev, "serial_omap_get_context_loss_count failed : %d\n",
+ 			loss_cnt);
 
 
