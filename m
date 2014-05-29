@@ -1,156 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934432AbaE2F00 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 01:26:26 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:54834 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934410AbaE2F0X (ORCPT
+	id S934415AbaE2F0W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 01:26:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57858 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756416AbaE2EfS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 01:26:23 -0400
-Date: Thu, 29 May 2014 06:26:21 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Miklos Szeredi <mszeredi@suse.cz>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: fs/dcache.c - BUG: soft lockup - CPU#5 stuck for 22s!
- [systemd-udevd:1667]
-Message-ID: <20140529052621.GH18016@ZenIV.linux.org.uk>
-References: <20140527070409.GA1801@lahna.fi.intel.com>
- <20140528031955.GW18016@ZenIV.linux.org.uk>
- <20140528073751.GB1757@lahna.fi.intel.com>
- <20140528115701.GY18016@ZenIV.linux.org.uk>
- <20140528131136.GA1643@lahna.fi.intel.com>
- <20140528141937.GZ18016@ZenIV.linux.org.uk>
- <20140528183954.GA18016@ZenIV.linux.org.uk>
- <20140529031149.GE18016@ZenIV.linux.org.uk>
- <CA+55aFyHCF1+DfxndzxkGLLoNErRF2MA0YWtdx7UOTJ=gQWhEw@mail.gmail.com>
- <20140529051647.GG18016@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140529051647.GG18016@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 29 May 2014 00:35:18 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Daniel Borkmann <dborkman@redhat.com>, Thomas Graf <tgraf@suug.ch>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        Vlad Yasevich <vyasevic@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.14 065/140] net: sctp: wake up all assocs if sndbuf policy is per socket
+Date: Wed, 28 May 2014 21:33:24 -0700
+Message-Id: <20140529043057.835069073@linuxfoundation.org>
+X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
+In-Reply-To: <20140529043049.661315084@linuxfoundation.org>
+References: <20140529043049.661315084@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 29, 2014 at 06:16:47AM +0100, Al Viro wrote:
-> On Wed, May 28, 2014 at 09:21:00PM -0700, Linus Torvalds wrote:
-> > On Wed, May 28, 2014 at 8:11 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> > >
-> > > Here's an updated patch, hopefully slightly less vomit-inducing.
-> > 
-> > Hmm. Less vomit-inducing, except for this part:
-> 
-> > Ugh, that just *screams* for a helper function. Something like
-> > 
-> >         parent = get_parent_and_lock(dentry);
-> > 
-> > or whatever, with that trylock/renamelock dance separated out. The
-> > rule would be that it would lock the "dentry", and return the
-> > (similarly locked) parent. Or NULL for a root dentry, of course.
-> > 
-> > Please?
-> 
-> Already done in my current tree; see below for the next commit in there...
-> I can separate that helper from the rest (dealing with the same livelock
-> for dentry_kill(dentry, 1) caller in shrink_dentry_list()).  All of that
-> is very much subject to reordering, resplitting, writing more decent commit
-> messages, etc.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
-Except that it's from the wrong branch ;-/  Correct one follows:
+------------------
 
-commit fb860957449c07c6f1a1dd911e83a635b6f11f21
-Author: Al Viro <viro@zeniv.linux.org.uk>
-Date:   Thu May 29 00:37:49 2014 -0400
+From: Daniel Borkmann <dborkman@redhat.com>
 
-    deal with "put the parent" side of shrink_dentry_list()
+[ Upstream commit 52c35befb69b005c3fc5afdaae3a5717ad013411 ]
 
-diff --git a/fs/dcache.c b/fs/dcache.c
-index 6c2a92e..628a791 100644
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -793,30 +793,34 @@ restart:
- }
- EXPORT_SYMBOL(d_prune_aliases);
- 
--static void shrink_dentry_list(struct list_head *list)
-+static inline struct dentry *lock_parent(struct dentry *dentry)
- {
--	struct dentry *dentry, *parent;
-+	struct dentry *parent = dentry->d_parent;
-+	if (IS_ROOT(dentry))
-+		return NULL;
-+	if (unlikely(!spin_trylock(&parent->d_lock))) {
-+		spin_unlock(&dentry->d_lock);
-+		read_seqlock_excl(&rename_lock);
-+		parent = NULL;
-+		if (!IS_ROOT(dentry)) {
-+			parent = dentry->d_parent;
-+			spin_lock(&parent->d_lock);
-+		}
-+		read_sequnlock_excl(&rename_lock);
-+		spin_lock(&dentry->d_lock);
-+	}
-+	return parent;
-+}
- 
-+static void shrink_dentry_list(struct list_head *list)
-+{
- 	while (!list_empty(list)) {
- 		struct inode *inode;
--		dentry = list_entry(list->prev, struct dentry, d_lru);
-+		struct dentry *dentry = list_entry(list->prev, struct dentry, d_lru);
-+		struct dentry *parent;
- 
--		parent = NULL;
- 		spin_lock(&dentry->d_lock);
--		if (!IS_ROOT(dentry)) {
--			parent = dentry->d_parent;
--			if (unlikely(!spin_trylock(&parent->d_lock))) {
--				spin_unlock(&dentry->d_lock);
--				parent = NULL;
--				read_seqlock_excl(&rename_lock);
--				if (!IS_ROOT(dentry)) {
--					parent = dentry->d_parent;
--					spin_lock(&parent->d_lock);
--				}
--				read_sequnlock_excl(&rename_lock);
--				spin_lock(&dentry->d_lock);
--			}
--		}
-+		parent = lock_parent(dentry);
- 
- 		/*
- 		 * The dispose list is isolated and dentries are not accounted
-@@ -864,8 +868,26 @@ static void shrink_dentry_list(struct list_head *list)
- 		 * fragmentation.
- 		 */
- 		dentry = parent;
--		while (dentry && !lockref_put_or_lock(&dentry->d_lockref))
--			dentry = dentry_kill(dentry);
-+		while (dentry && !lockref_put_or_lock(&dentry->d_lockref)) {
-+			parent = lock_parent(dentry);
-+			if (dentry->d_lockref.count != 1) {
-+				dentry->d_lockref.count--;
-+				spin_unlock(&dentry->d_lock);
-+				if (parent)
-+					spin_unlock(&parent->d_lock);
-+				break;
-+			}
-+			inode = dentry->d_inode;	/* can't be NULL */
-+			if (unlikely(!spin_trylock(&inode->i_lock))) {
-+				spin_unlock(&dentry->d_lock);
-+				if (parent)
-+					spin_unlock(&parent->d_lock);
-+				cpu_relax();
-+				continue;
-+			}
-+			__dentry_kill(dentry);
-+			dentry = parent;
-+		}
+SCTP charges chunks for wmem accounting via skb->truesize in
+sctp_set_owner_w(), and sctp_wfree() respectively as the
+reverse operation. If a sender runs out of wmem, it needs to
+wait via sctp_wait_for_sndbuf(), and gets woken up by a call
+to __sctp_write_space() mostly via sctp_wfree().
+
+__sctp_write_space() is being called per association. Although
+we assign sk->sk_write_space() to sctp_write_space(), which
+is then being done per socket, it is only used if send space
+is increased per socket option (SO_SNDBUF), as SOCK_USE_WRITE_QUEUE
+is set and therefore not invoked in sock_wfree().
+
+Commit 4c3a5bdae293 ("sctp: Don't charge for data in sndbuf
+again when transmitting packet") fixed an issue where in case
+sctp_packet_transmit() manages to queue up more than sndbuf
+bytes, sctp_wait_for_sndbuf() will never be woken up again
+unless it is interrupted by a signal. However, a still
+remaining issue is that if net.sctp.sndbuf_policy=0, that is
+accounting per socket, and one-to-many sockets are in use,
+the reclaimed write space from sctp_wfree() is 'unfairly'
+handed back on the server to the association that is the lucky
+one to be woken up again via __sctp_write_space(), while
+the remaining associations are never be woken up again
+(unless by a signal).
+
+The effect disappears with net.sctp.sndbuf_policy=1, that
+is wmem accounting per association, as it guarantees a fair
+share of wmem among associations.
+
+Therefore, if we have reclaimed memory in case of per socket
+accounting, wake all related associations to a socket in a
+fair manner, that is, traverse the socket association list
+starting from the current neighbour of the association and
+issue a __sctp_write_space() to everyone until we end up
+waking ourselves. This guarantees that no association is
+preferred over another and even if more associations are
+taken into the one-to-many session, all receivers will get
+messages from the server and are not stalled forever on
+high load. This setting still leaves the advantage of per
+socket accounting in touch as an association can still use
+up global limits if unused by others.
+
+Fixes: 4eb701dfc618 ("[SCTP] Fix SCTP sendbuffer accouting.")
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Cc: Thomas Graf <tgraf@suug.ch>
+Cc: Neil Horman <nhorman@tuxdriver.com>
+Cc: Vlad Yasevich <vyasevic@redhat.com>
+Acked-by: Vlad Yasevich <vyasevic@redhat.com>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ net/sctp/socket.c |   36 +++++++++++++++++++++++++++++++++++-
+ 1 file changed, 35 insertions(+), 1 deletion(-)
+
+--- a/net/sctp/socket.c
++++ b/net/sctp/socket.c
+@@ -6593,6 +6593,40 @@ static void __sctp_write_space(struct sc
  	}
  }
  
++static void sctp_wake_up_waiters(struct sock *sk,
++				 struct sctp_association *asoc)
++{
++	struct sctp_association *tmp = asoc;
++
++	/* We do accounting for the sndbuf space per association,
++	 * so we only need to wake our own association.
++	 */
++	if (asoc->ep->sndbuf_policy)
++		return __sctp_write_space(asoc);
++
++	/* Accounting for the sndbuf space is per socket, so we
++	 * need to wake up others, try to be fair and in case of
++	 * other associations, let them have a go first instead
++	 * of just doing a sctp_write_space() call.
++	 *
++	 * Note that we reach sctp_wake_up_waiters() only when
++	 * associations free up queued chunks, thus we are under
++	 * lock and the list of associations on a socket is
++	 * guaranteed not to change.
++	 */
++	for (tmp = list_next_entry(tmp, asocs); 1;
++	     tmp = list_next_entry(tmp, asocs)) {
++		/* Manually skip the head element. */
++		if (&tmp->asocs == &((sctp_sk(sk))->ep->asocs))
++			continue;
++		/* Wake up association. */
++		__sctp_write_space(tmp);
++		/* We've reached the end. */
++		if (tmp == asoc)
++			break;
++	}
++}
++
+ /* Do accounting for the sndbuf space.
+  * Decrement the used sndbuf space of the corresponding association by the
+  * data size which was just transmitted(freed).
+@@ -6620,7 +6654,7 @@ static void sctp_wfree(struct sk_buff *s
+ 	sk_mem_uncharge(sk, skb->truesize);
+ 
+ 	sock_wfree(skb);
+-	__sctp_write_space(asoc);
++	sctp_wake_up_waiters(sk, asoc);
+ 
+ 	sctp_association_put(asoc);
+ }
+
+
