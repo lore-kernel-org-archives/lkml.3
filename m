@@ -1,77 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934119AbaE2Qyr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 12:54:47 -0400
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:48392 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932867AbaE2Qyo (ORCPT
+	id S932513AbaE2Q62 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 12:58:28 -0400
+Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:50146 "EHLO
+	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932331AbaE2Q60 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 12:54:44 -0400
-Date: Thu, 29 May 2014 17:54:37 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        Mark Brown <broonie@kernel.org>,
-        Josh Cartwright <joshc@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH 1/3] mfd: devicetree: bindings: Add Qualcomm RPM DT
- binding
-Message-ID: <20140529165437.GM1954@lee--X1>
-References: <1401211721-19712-1-git-send-email-bjorn.andersson@sonymobile.com>
- <1401211721-19712-2-git-send-email-bjorn.andersson@sonymobile.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1401211721-19712-2-git-send-email-bjorn.andersson@sonymobile.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 29 May 2014 12:58:26 -0400
+Message-ID: <1401382705.25908.9.camel@x220>
+Subject: [PATCH] sound: remove checks for CONFIG_SND_DEBUG_ROM
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>
+Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Date: Thu, 29 May 2014 18:58:25 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 29 May 2014 16:58:25.0791 (UTC) FILETIME=[34F980F0:01CF7B5F]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Add binding for the Qualcomm Resource Power Manager (RPM) found in 8660, 8960
-> and 8064 based devices. The binding currently describes the rpm itself and the
-> regulator subnodes.
-> 
-> Signed-off-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-> ---
->  Documentation/devicetree/bindings/mfd/qcom,rpm.txt | 284 +++++++++++++++++++++
->  include/dt-bindings/mfd/qcom_rpm.h                 | 142 +++++++++++
->  2 files changed, 426 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/mfd/qcom,rpm.txt
->  create mode 100644 include/dt-bindings/mfd/qcom_rpm.h
+Checks for CONFIG_SND_DEBUG_ROM were added in v2.5.5 but a Kconfig
+symbol SND_DEBUG_ROM was never added. These checks have always
+evaluated to false. Remove them and the printk()s they hide.
 
-[...]
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+Untested.
 
-> diff --git a/include/dt-bindings/mfd/qcom_rpm.h b/include/dt-bindings/mfd/qcom_rpm.h
-> new file mode 100644
-> index 0000000..277e789
-> --- /dev/null
-> +++ b/include/dt-bindings/mfd/qcom_rpm.h
-> @@ -0,0 +1,142 @@
-> +/*
-> + * This header provides constants for the Qualcomm RPM bindings.
-> + */
+Perhaps one is expected to define this debugging macro by hand, somehow.
+In that case it would be nice to drop the CONFIG_ prefix.
 
-Proper header please.
+ sound/isa/gus/interwave.c | 6 ------
+ 1 file changed, 6 deletions(-)
 
-> +#ifndef _DT_BINDINGS_MFD_QCOM_RPM_H
-> +#define _DT_BINDINGS_MFD_QCOM_RPM_H
-> +
-> +#define QCOM_RPM_APPS_FABRIC_ARB		1
-> +#define QCOM_RPM_APPS_FABRIC_CLK		2
-> +#define QCOM_RPM_APPS_FABRIC_HALT		3
-
-[...]
-
-> +#define QCOM_RPM_SYS_FABRIC_MODE		131
-> +#define QCOM_RPM_USB_OTG_SWITCH		132
-> +#define QCOM_RPM_VDDMIN_GPIO			133
-
-Are you sure you don't want these in 0xXY format?
-
+diff --git a/sound/isa/gus/interwave.c b/sound/isa/gus/interwave.c
+index 5abbbe477d16..ad55e5cb8e94 100644
+--- a/sound/isa/gus/interwave.c
++++ b/sound/isa/gus/interwave.c
+@@ -442,17 +442,11 @@ static void snd_interwave_detect_memory(struct snd_gus_card *gus)
+ 	for (bank_pos = 0; bank_pos < 16L * 1024L * 1024L; bank_pos += 4L * 1024L * 1024L) {
+ 		for (i = 0; i < 8; ++i)
+ 			iwave[i] = snd_gf1_peek(gus, bank_pos + i);
+-#ifdef CONFIG_SND_DEBUG_ROM
+-		printk(KERN_DEBUG "ROM at 0x%06x = %8phC\n", bank_pos, iwave);
+-#endif
+ 		if (strncmp(iwave, "INTRWAVE", 8))
+ 			continue;	/* first check */
+ 		csum = 0;
+ 		for (i = 0; i < sizeof(struct rom_hdr); i++)
+ 			csum += snd_gf1_peek(gus, bank_pos + i);
+-#ifdef CONFIG_SND_DEBUG_ROM
+-		printk(KERN_DEBUG "ROM checksum = 0x%x (computed)\n", csum);
+-#endif
+ 		if (csum != 0)
+ 			continue;	/* not valid rom */
+ 		gus->gf1.rom_banks++;
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.9.3
+
