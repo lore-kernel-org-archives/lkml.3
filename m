@@ -1,77 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757406AbaE2Mxk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 08:53:40 -0400
-Received: from relay.parallels.com ([195.214.232.42]:57853 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757048AbaE2Mxj (ORCPT
+	id S1757362AbaE2M4K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 08:56:10 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:42611 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756275AbaE2M4I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 08:53:39 -0400
-Message-ID: <53872DAD.1070502@parallels.com>
-Date: Thu, 29 May 2014 16:53:01 +0400
-From: Pavel Emelyanov <xemul@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
-MIME-Version: 1.0
-To: Vasily Kulikov <segoon@openwall.com>
-CC: Richard Weinberger <richard.weinberger@gmail.com>,
-        <containers@lists.linux-foundation.org>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>, <linux-kernel@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>, David Howells <dhowells@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [PATCH v2] /proc/pid/status: show all sets of pid according to
- ns
-References: <1401272683-1659-1-git-send-email-chenhanxiao@cn.fujitsu.com> <5385DA19.2060008@parallels.com> <20140528182824.GA5057@cachalot> <53863889.9080509@parallels.com> <20140529055954.GA10354@cachalot> <5386F8EA.8050501@parallels.com> <20140529111236.GA14576@cachalot> <53871A92.9000004@parallels.com> <20140529115946.GA19889@cachalot>
-In-Reply-To: <20140529115946.GA19889@cachalot>
+	Thu, 29 May 2014 08:56:08 -0400
+Message-ID: <1401368165.3645.21.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: [PATCH] vmalloc: use rcu list iterator to reduce vmap_area_lock
+ contention
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Zhang Yanfei <zhangyanfei.yes@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Andi Kleen <andi@firstfloor.org>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Richard Yao <ryao@gentoo.org>
+Date: Thu, 29 May 2014 05:56:05 -0700
+In-Reply-To: <1401344554-3596-1-git-send-email-iamjoonsoo.kim@lge.com>
+References: <1401344554-3596-1-git-send-email-iamjoonsoo.kim@lge.com>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.24.36.87]
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/29/2014 03:59 PM, Vasily Kulikov wrote:
-> On Thu, May 29, 2014 at 15:31 +0400, Pavel Emelyanov wrote:
->> On 05/29/2014 03:12 PM, Vasily Kulikov wrote:
->>> On Thu, May 29, 2014 at 13:07 +0400, Pavel Emelyanov wrote:
->>>> On 05/29/2014 09:59 AM, Vasily Kulikov wrote:
->>>>> On Wed, May 28, 2014 at 23:27 +0400, Pavel Emelyanov wrote:
->>>>> ] We need a direct method of getting the pid inside containers.
->>>>> ] If some issues occurred inside container guest, host user
->>>>> ] could not know which process is in trouble just by guest pid:
->>>>> ] the users of container guest only knew the pid inside containers.
->>>>> ] This will bring obstacle for trouble shooting.
->>>>>
->>>>> A new syscall might complicate trouble shooting by admin.
->>>>
->>>> Pure syscall -- yes. What if we teach the ps and top utilities to show additional
->>>> info? I think that would help.
->>>
->>> I like the idea with low level non-shell API which can be used by
->>> utility like ps (or implementation of a new tool to work with complex
->>> namespace hierarchies).  It should fit for troublesooting.  Then there
->>> should be no reason to implement two different APIs for observation from
->>> shell via FS and from applications.
->>
->> Maybe we can reuse the existing kcmp() system call? We would have to store
->> the collected pid values in some hash/tree anyway, and kcmp() provides us
->> good comparing function for doing this.
->>
->> Like we can call kcmp(pid1, pid2, KCMP_PID, nsfd1, nsfd2) which will mean
->> "Are tasks with pid1 in namespace pointed by nsfd1 and with pid2 in namespace
->> nsfd2 the same?"
->>
->> What do you think?
+On Thu, 2014-05-29 at 15:22 +0900, Joonsoo Kim wrote:
+> Richard Yao reported a month ago that his system have a trouble
+> with vmap_area_lock contention during performance analysis
+> by /proc/meminfo. Andrew asked why his analysis checks /proc/meminfo
+> stressfully, but he didn't answer it.
 > 
-> kcmp() is not needed, just compare inode numbers:
+> https://lkml.org/lkml/2014/4/10/416
 > 
->     # ls -il /proc/{43,self}/ns/mnt
->     208182 lrwxrwxrwx 1 root root 0 мая   29 15:52 /proc/43/ns/mnt -> mnt:[4026531856]
->     216556 lrwxrwxrwx 1 root root 0 мая   29 15:57 /proc/self/ns/mnt -> mnt:[4026531840]
+> Although I'm not sure that this is right usage or not, there is a solution
+> reducing vmap_area_lock contention with no side-effect. That is just
+> to use rcu list iterator in get_vmalloc_info(). This function only needs
+> values on vmap_area structure, so we don't need to grab a spinlock.
+> 
+> Reported-by: Richard Yao <ryao@gentoo.org>
+> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
-But that's for comparing the namespaces, while I'm proposing the kcmp to
-check for PIDs.
+Nice, I was considering the same
 
-Thanks,
-Pavel
+Acked-by: Eric Dumazet <edumazet@google.com>
+
+
+
