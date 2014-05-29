@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756263AbaE2UJP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 16:09:15 -0400
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:49118 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755909AbaE2UJM (ORCPT
+	id S932568AbaE2UJX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 16:09:23 -0400
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:52566 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756205AbaE2UJO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 16:09:12 -0400
+	Thu, 29 May 2014 16:09:14 -0400
 From: Larry Bassel <larry.bassel@linaro.org>
 To: catalin.marinas@arm.com, will.deacon@arm.com
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linaro-kernel@lists.linaro.org, khilman@linaro.org,
         Larry Bassel <larry.bassel@linaro.org>
-Subject: [PATCH v6 1/2] arm64: adjust el0_sync so that a function can be called
-Date: Thu, 29 May 2014 13:08:58 -0700
-Message-Id: <1401394139-23469-2-git-send-email-larry.bassel@linaro.org>
+Subject: [PATCH v6 2/2] arm64: enable context tracking
+Date: Thu, 29 May 2014 13:08:59 -0700
+Message-Id: <1401394139-23469-3-git-send-email-larry.bassel@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1401394139-23469-1-git-send-email-larry.bassel@linaro.org>
 References: <1401394139-23469-1-git-send-email-larry.bassel@linaro.org>
@@ -22,116 +22,186 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To implement the context tracker properly on arm64,
-a function call needs to be made after debugging and
-interrupts are turned on, but before the lr is changed
-to point to ret_to_user(). If the function call
-is made after the lr is changed the function will not
-return to the correct place.
+Make calls to ct_user_enter when the kernel is exited
+and ct_user_exit when the kernel is entered (in el0_da,
+el0_ia, el0_svc, el0_irq and all of the "error" paths).
 
-For similar reasons, defer the setting of x0 so that
-it doesn't need to be saved around the function call
-(save far_el1 in x26 temporarily instead).
+These macros expand to function calls which will only work
+properly if el0_sync and related code has been rearranged
+(in a previous patch of this series).
 
+The calls to ct_user_exit are made after hw debugging has been
+enabled (enable_dbg_and_irq).
+
+The call to ct_user_enter is made at the beginning of the
+kernel_exit macro.
+
+This patch is based on earlier work by Kevin Hilman.
+Save/restore optimizations were also done by Kevin.
+
+Signed-off-by: Kevin Hilman <khilman@linaro.org>
 Signed-off-by: Larry Bassel <larry.bassel@linaro.org>
 ---
- arch/arm64/kernel/entry.S | 19 +++++++++++++------
- 1 file changed, 13 insertions(+), 6 deletions(-)
+ arch/arm64/Kconfig                   |  1 +
+ arch/arm64/include/asm/thread_info.h |  4 ++++
+ arch/arm64/kernel/entry.S            | 39 +++++++++++++++++++++++++++++++++++-
+ 3 files changed, 43 insertions(+), 1 deletion(-)
 
+diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+index e759af5..ef18ae5 100644
+--- a/arch/arm64/Kconfig
++++ b/arch/arm64/Kconfig
+@@ -55,6 +55,7 @@ config ARM64
+ 	select RTC_LIB
+ 	select SPARSE_IRQ
+ 	select SYSCTL_EXCEPTION_TRACE
++	select HAVE_CONTEXT_TRACKING
+ 	help
+ 	  ARM 64-bit (AArch64) Linux support.
+ 
+diff --git a/arch/arm64/include/asm/thread_info.h b/arch/arm64/include/asm/thread_info.h
+index 720e70b..8363f34 100644
+--- a/arch/arm64/include/asm/thread_info.h
++++ b/arch/arm64/include/asm/thread_info.h
+@@ -100,6 +100,7 @@ static inline struct thread_info *current_thread_info(void)
+ #define TIF_SIGPENDING		0
+ #define TIF_NEED_RESCHED	1
+ #define TIF_NOTIFY_RESUME	2	/* callback before returning to user */
++#define TIF_NOHZ                7
+ #define TIF_SYSCALL_TRACE	8
+ #define TIF_POLLING_NRFLAG	16
+ #define TIF_MEMDIE		18	/* is terminating due to OOM killer */
+@@ -113,9 +114,12 @@ static inline struct thread_info *current_thread_info(void)
+ #define _TIF_NEED_RESCHED	(1 << TIF_NEED_RESCHED)
+ #define _TIF_NOTIFY_RESUME	(1 << TIF_NOTIFY_RESUME)
+ #define _TIF_32BIT		(1 << TIF_32BIT)
++#define _TIF_SYSCALL_TRACE      (1 << TIF_SYSCALL_TRACE)
++#define _TIF_NOHZ               (1 << TIF_NOHZ)
+ 
+ #define _TIF_WORK_MASK		(_TIF_NEED_RESCHED | _TIF_SIGPENDING | \
+ 				 _TIF_NOTIFY_RESUME)
++#define _TIF_SYSCALL_WORK       (_TIF_SYSCALL_TRACE | _TIF_NOHZ)
+ 
+ #endif /* __KERNEL__ */
+ #endif /* __ASM_THREAD_INFO_H */
 diff --git a/arch/arm64/kernel/entry.S b/arch/arm64/kernel/entry.S
-index e8b23a3..b0101b9 100644
+index b0101b9..3c484e2 100644
 --- a/arch/arm64/kernel/entry.S
 +++ b/arch/arm64/kernel/entry.S
-@@ -354,7 +354,6 @@ el0_sync:
- 	lsr	x24, x25, #ESR_EL1_EC_SHIFT	// exception class
- 	cmp	x24, #ESR_EL1_EC_SVC64		// SVC in 64-bit state
- 	b.eq	el0_svc
--	adr	lr, ret_to_user
- 	cmp	x24, #ESR_EL1_EC_DABT_EL0	// data abort in EL0
- 	b.eq	el0_da
- 	cmp	x24, #ESR_EL1_EC_IABT_EL0	// instruction abort in EL0
-@@ -383,7 +382,6 @@ el0_sync_compat:
- 	lsr	x24, x25, #ESR_EL1_EC_SHIFT	// exception class
- 	cmp	x24, #ESR_EL1_EC_SVC32		// SVC in 32-bit state
- 	b.eq	el0_svc_compat
--	adr	lr, ret_to_user
- 	cmp	x24, #ESR_EL1_EC_DABT_EL0	// data abort in EL0
- 	b.eq	el0_da
- 	cmp	x24, #ESR_EL1_EC_IABT_EL0	// instruction abort in EL0
-@@ -426,22 +424,25 @@ el0_da:
- 	/*
- 	 * Data abort handling
- 	 */
--	mrs	x0, far_el1
--	bic	x0, x0, #(0xff << 56)
-+	mrs	x26, far_el1
+@@ -30,6 +30,32 @@
+ #include <asm/unistd32.h>
+ 
+ /*
++ * Context tracking subsystem.  Used to instrument transitions
++ * between user and kernel mode.
++ */
++	.macro ct_user_exit, restore = 0
++#ifdef CONFIG_CONTEXT_TRACKING
++	bl	context_tracking_user_exit
++	.if \restore == 1
++	/*
++	 * Save/restore needed during syscalls.  Restore syscall arguments from
++	 * the values already saved on stack during kernel_entry.
++	 */
++	ldp	x0, x1, [sp]
++	ldp	x2, x3, [sp, #S_X2]
++	ldp	x4, x5, [sp, #S_X4]
++	ldp	x6, x7, [sp, #S_X6]
++	.endif
++#endif
++	.endm
++
++	.macro ct_user_enter
++#ifdef CONFIG_CONTEXT_TRACKING
++	bl	context_tracking_user_enter
++#endif
++	.endm
++
++/*
+  * Bad Abort numbers
+  *-----------------
+  */
+@@ -91,6 +117,7 @@
+ 	.macro	kernel_exit, el, ret = 0
+ 	ldp	x21, x22, [sp, #S_PC]		// load ELR, SPSR
+ 	.if	\el == 0
++	ct_user_enter
+ 	ldr	x23, [sp, #S_SP]		// load return stack pointer
+ 	.endif
+ 	.if	\ret
+@@ -318,6 +345,7 @@ el1_irq:
+ 	bl	trace_hardirqs_off
+ #endif
+ 
++	ct_user_exit
+ 	irq_handler
+ 
+ #ifdef CONFIG_PREEMPT
+@@ -427,6 +455,7 @@ el0_da:
+ 	mrs	x26, far_el1
  	// enable interrupts before calling the main handler
  	enable_dbg_and_irq
-+	bic	x0, x26, #(0xff << 56)
++	ct_user_exit
+ 	bic	x0, x26, #(0xff << 56)
  	mov	x1, x25
  	mov	x2, sp
-+	adr	lr, ret_to_user
- 	b	do_mem_abort
- el0_ia:
- 	/*
- 	 * Instruction abort handling
- 	 */
--	mrs	x0, far_el1
-+	mrs	x26, far_el1
+@@ -439,6 +468,7 @@ el0_ia:
+ 	mrs	x26, far_el1
  	// enable interrupts before calling the main handler
  	enable_dbg_and_irq
-+	mov	x0, x26
++	ct_user_exit
+ 	mov	x0, x26
  	orr	x1, x25, #1 << 24		// use reserved ISS bit for instruction aborts
  	mov	x2, sp
-+	adr	lr, ret_to_user
- 	b	do_mem_abort
- el0_fpsimd_acc:
- 	/*
-@@ -450,6 +451,7 @@ el0_fpsimd_acc:
- 	enable_dbg
- 	mov	x0, x25
- 	mov	x1, sp
-+	adr	lr, ret_to_user
- 	b	do_fpsimd_acc
- el0_fpsimd_exc:
- 	/*
-@@ -458,16 +460,19 @@ el0_fpsimd_exc:
- 	enable_dbg
- 	mov	x0, x25
- 	mov	x1, sp
-+	adr	lr, ret_to_user
- 	b	do_fpsimd_exc
- el0_sp_pc:
- 	/*
- 	 * Stack or PC alignment exception handling
+@@ -449,6 +479,7 @@ el0_fpsimd_acc:
+ 	 * Floating Point or Advanced SIMD access
  	 */
--	mrs	x0, far_el1
-+	mrs	x26, far_el1
+ 	enable_dbg
++	ct_user_exit
+ 	mov	x0, x25
+ 	mov	x1, sp
+ 	adr	lr, ret_to_user
+@@ -458,6 +489,7 @@ el0_fpsimd_exc:
+ 	 * Floating Point or Advanced SIMD exception
+ 	 */
+ 	enable_dbg
++	ct_user_exit
+ 	mov	x0, x25
+ 	mov	x1, sp
+ 	adr	lr, ret_to_user
+@@ -480,6 +512,7 @@ el0_undef:
+ 	 */
  	// enable interrupts before calling the main handler
  	enable_dbg_and_irq
-+	mov	x0, x26
- 	mov	x1, x25
- 	mov	x2, sp
-+	adr	lr, ret_to_user
- 	b	do_sp_pc_abort
- el0_undef:
- 	/*
-@@ -476,6 +481,7 @@ el0_undef:
- 	// enable interrupts before calling the main handler
- 	enable_dbg_and_irq
++	ct_user_exit
  	mov	x0, sp
-+	adr	lr, ret_to_user
+ 	adr	lr, ret_to_user
  	b	do_undefinstr
- el0_dbg:
- 	/*
-@@ -493,6 +499,7 @@ el0_inv:
+@@ -493,9 +526,11 @@ el0_dbg:
+ 	mov	x2, sp
+ 	bl	do_debug_exception
+ 	enable_dbg
++	ct_user_exit
+ 	b	ret_to_user
+ el0_inv:
+ 	enable_dbg
++	ct_user_exit
  	mov	x0, sp
  	mov	x1, #BAD_SYNC
  	mrs	x2, esr_el1
-+	adr	lr, ret_to_user
- 	b	bad_mode
- ENDPROC(el0_sync)
+@@ -616,9 +651,11 @@ el0_svc:
+ el0_svc_naked:					// compat entry point
+ 	stp	x0, scno, [sp, #S_ORIG_X0]	// save the original x0 and syscall number
+ 	enable_dbg_and_irq
++	ct_user_exit 1
  
+ 	ldr	x16, [tsk, #TI_FLAGS]		// check for syscall tracing
+-	tbnz	x16, #TIF_SYSCALL_TRACE, __sys_trace // are we tracing syscalls?
++	and	x16, x16, #_TIF_SYSCALL_WORK    // are we tracing syscalls?
++	cbnz	x16, __sys_trace
+ 	adr	lr, ret_fast_syscall		// return address
+ 	cmp     scno, sc_nr                     // check upper syscall limit
+ 	b.hs	ni_sys
 -- 
 1.8.3.2
 
