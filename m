@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932592AbaE2GiA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 02:38:00 -0400
-Received: from mail-we0-f177.google.com ([74.125.82.177]:65103 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932494AbaE2Gh5 (ORCPT
+	id S932664AbaE2GiO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 02:38:14 -0400
+Received: from mail-we0-f172.google.com ([74.125.82.172]:41923 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932522AbaE2GiA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 02:37:57 -0400
+	Thu, 29 May 2014 02:38:00 -0400
 From: Benjamin Gaignard <benjamin.gaignard@linaro.org>
 To: dri-devel@lists.freedesktop.org, linaro-mm-sig@lists.linaro.org,
         linux-kernel@vger.kernel.org, airlied@linux.ie
 Cc: lee.jones@linaro.org, Benjamin Gaignard <benjamin.gaignard@linaro.org>
-Subject: [PATCH v4 07/11] drm: sti: add GDP layer
-Date: Thu, 29 May 2014 08:37:03 +0200
-Message-Id: <1401345427-5299-8-git-send-email-benjamin.gaignard@linaro.org>
+Subject: [PATCH v4 09/11] drm: sti: add Mixer
+Date: Thu, 29 May 2014 08:37:05 +0200
+Message-Id: <1401345427-5299-10-git-send-email-benjamin.gaignard@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1401345427-5299-1-git-send-email-benjamin.gaignard@linaro.org>
 References: <1401345427-5299-1-git-send-email-benjamin.gaignard@linaro.org>
@@ -21,42 +21,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Generic Display Pipeline are one of the compositor input sub-devices.
-GDP are dedicated to graphic input like RGB plans.
-GDP is part of Compositor hardware block which will be introduce later.
+Mixer hardware IP is responsible of mixing the different inputs layers.
+Z-order is managed by the mixer.
+We could 2 mixers: one for main path and one for auxillary path
 
-A sti_layer structure is used to abstract GDP calls from Compositor.
+Mixers are part of Compositor hardware block
 
 Signed-off-by: Benjamin Gaignard <benjamin.gaignard@linaro.org>
 ---
- drivers/gpu/drm/sti/Makefile    |   3 +-
- drivers/gpu/drm/sti/sti_gdp.c   | 482 ++++++++++++++++++++++++++++++++++++++++
- drivers/gpu/drm/sti/sti_gdp.h   |  73 ++++++
- drivers/gpu/drm/sti/sti_layer.h | 111 +++++++++
- 4 files changed, 668 insertions(+), 1 deletion(-)
- create mode 100644 drivers/gpu/drm/sti/sti_gdp.c
- create mode 100644 drivers/gpu/drm/sti/sti_gdp.h
- create mode 100644 drivers/gpu/drm/sti/sti_layer.h
+ drivers/gpu/drm/sti/Makefile    |   1 +
+ drivers/gpu/drm/sti/sti_mixer.c | 243 ++++++++++++++++++++++++++++++++++++++++
+ drivers/gpu/drm/sti/sti_mixer.h |  52 +++++++++
+ 3 files changed, 296 insertions(+)
+ create mode 100644 drivers/gpu/drm/sti/sti_mixer.c
+ create mode 100644 drivers/gpu/drm/sti/sti_mixer.h
 
 diff --git a/drivers/gpu/drm/sti/Makefile b/drivers/gpu/drm/sti/Makefile
-index dcc9568..1745697 100644
+index bb0f6b3..ce03e15 100644
 --- a/drivers/gpu/drm/sti/Makefile
 +++ b/drivers/gpu/drm/sti/Makefile
-@@ -5,4 +5,5 @@ obj-$(CONFIG_DRM_STI) += \
- 	sti_hdmi_tx3g0c55phy.o \
+@@ -6,5 +6,6 @@ obj-$(CONFIG_DRM_STI) += \
  	sti_hdmi_tx3g4c28phy.o \
  	sti_hda.o \
--	sti_tvout.o
+ 	sti_tvout.o \
++	sti_mixer.o \
+ 	sti_gdp.o \
+ 	sti_vid.o
 \ No newline at end of file
-+	sti_tvout.o \
-+	sti_gdp.o
-\ No newline at end of file
-diff --git a/drivers/gpu/drm/sti/sti_gdp.c b/drivers/gpu/drm/sti/sti_gdp.c
+diff --git a/drivers/gpu/drm/sti/sti_mixer.c b/drivers/gpu/drm/sti/sti_mixer.c
 new file mode 100644
-index 0000000..a014214
+index 0000000..c812c68
 --- /dev/null
-+++ b/drivers/gpu/drm/sti/sti_gdp.c
-@@ -0,0 +1,482 @@
++++ b/drivers/gpu/drm/sti/sti_mixer.c
+@@ -0,0 +1,243 @@
 +/*
 + * Copyright (C) STMicroelectronics SA 2014
 + * Authors: Benjamin Gaignard <benjamin.gaignard@st.com>
@@ -65,486 +62,247 @@ index 0000000..a014214
 + * License terms:  GNU General Public License (GPL), version 2
 + */
 +
-+#include <linux/clk.h>
-+#include <linux/dma-mapping.h>
-+
-+#include "sti_gdp.h"
-+#include "sti_layer.h"
++#include "sti_mixer.h"
 +#include "sti_vtg.h"
 +
-+#define ENA_COLOR_FILL  BIT(8)
-+#define WAIT_NEXT_VSYNC BIT(31)
-+
-+/* GDP color formats */
-+#define GDP_RGB565      0x00
-+#define GDP_RGB888      0x01
-+#define GDP_RGB888_32   0x02
-+#define GDP_ARGB8565    0x04
-+#define GDP_ARGB8888    0x05
-+#define GDP_ARGB1555    0x06
-+#define GDP_ARGB4444    0x07
-+#define GDP_CLUT8       0x0B
-+#define GDP_YCBR888     0x10
-+#define GDP_YCBR422R    0x12
-+#define GDP_AYCBR8888   0x15
-+
-+#define GAM_GDP_CTL_OFFSET      0x00
-+#define GAM_GDP_AGC_OFFSET      0x04
-+#define GAM_GDP_VPO_OFFSET      0x0C
-+#define GAM_GDP_VPS_OFFSET      0x10
-+#define GAM_GDP_PML_OFFSET      0x14
-+#define GAM_GDP_PMP_OFFSET      0x18
-+#define GAM_GDP_SIZE_OFFSET     0x1C
-+#define GAM_GDP_NVN_OFFSET      0x24
-+#define GAM_GDP_KEY1_OFFSET     0x28
-+#define GAM_GDP_KEY2_OFFSET     0x2C
-+#define GAM_GDP_PPT_OFFSET      0x34
-+#define GAM_GDP_CML_OFFSET      0x3C
-+#define GAM_GDP_MST_OFFSET      0x68
-+
-+#define GAM_GDP_ALPHARANGE_255  BIT(5)
-+#define GAM_GDP_AGC_FULL_RANGE  0x00808080
-+#define GAM_GDP_PPT_IGNORE      (BIT(1) | BIT(0))
-+#define GAM_GDP_SIZE_MAX        0x7FF
-+
-+static const uint32_t gdp_supported_formats[] = {
-+	DRM_FORMAT_XRGB8888,
-+	DRM_FORMAT_ARGB8888,
-+	DRM_FORMAT_ARGB4444,
-+	DRM_FORMAT_ARGB1555,
-+	DRM_FORMAT_RGB565,
-+	DRM_FORMAT_RGB888,
-+	DRM_FORMAT_AYUV,
-+	DRM_FORMAT_YUV444,
-+	DRM_FORMAT_VYUY,
-+	DRM_FORMAT_C8,
++/* Identity: G=Y , B=Cb , R=Cr */
++static const u32 MixerColorSpaceMatIdentity[] = {
++	0x10000000, 0x00000000, 0x10000000, 0x00001000,
++	0x00000000, 0x00000000, 0x00000000, 0x00000000
 +};
 +
-+static const uint32_t *sti_gdp_get_formats(void)
-+{
-+	return gdp_supported_formats;
-+}
++/* regs offset */
++#define GAM_MIXER_CTL      0x00
++#define GAM_MIXER_BKC      0x04
++#define GAM_MIXER_BCO      0x0C
++#define GAM_MIXER_BCS      0x10
++#define GAM_MIXER_AVO      0x28
++#define GAM_MIXER_AVS      0x2C
++#define GAM_MIXER_CRB      0x34
++#define GAM_MIXER_ACT      0x38
++#define GAM_MIXER_MBP      0x3C
++#define GAM_MIXER_MX0      0x80
 +
-+static unsigned int sti_gdp_get_nb_formats(void)
-+{
-+	return ARRAY_SIZE(gdp_supported_formats);
-+}
++/* id for depth of CRB reg */
++#define GAM_DEPTH_VID0_ID  1
++#define GAM_DEPTH_VID1_ID  2
++#define GAM_DEPTH_GDP0_ID  3
++#define GAM_DEPTH_GDP1_ID  4
++#define GAM_DEPTH_GDP2_ID  5
++#define GAM_DEPTH_GDP3_ID  6
++#define GAM_DEPTH_MASK_ID  7
 +
-+static int sti_gdp_fourcc2format(int fourcc)
++/* mask in CTL reg */
++#define GAM_CTL_BACK_MASK  BIT(0)
++#define GAM_CTL_VID0_MASK  BIT(1)
++#define GAM_CTL_VID1_MASK  BIT(2)
++#define GAM_CTL_GDP0_MASK  BIT(3)
++#define GAM_CTL_GDP1_MASK  BIT(4)
++#define GAM_CTL_GDP2_MASK  BIT(5)
++#define GAM_CTL_GDP3_MASK  BIT(6)
++
++const char *sti_mixer_to_str(struct sti_mixer *mixer)
 +{
-+	switch (fourcc) {
-+	case DRM_FORMAT_XRGB8888:
-+		return GDP_RGB888_32;
-+	case DRM_FORMAT_ARGB8888:
-+		return GDP_ARGB8888;
-+	case DRM_FORMAT_ARGB4444:
-+		return GDP_ARGB4444;
-+	case DRM_FORMAT_ARGB1555:
-+		return GDP_ARGB1555;
-+	case DRM_FORMAT_RGB565:
-+		return GDP_RGB565;
-+	case DRM_FORMAT_RGB888:
-+		return GDP_RGB888;
-+	case DRM_FORMAT_AYUV:
-+		return GDP_AYCBR8888;
-+	case DRM_FORMAT_YUV444:
-+		return GDP_YCBR888;
-+	case DRM_FORMAT_VYUY:
-+		return GDP_YCBR422R;
-+	case DRM_FORMAT_C8:
-+		return GDP_CLUT8;
++	switch (mixer->id) {
++	case STI_MIXER_MAIN:
++		return "MAIN_MIXER";
++	case STI_MIXER_AUX:
++		return "AUX_MIXER";
++	default:
++		return "<UNKNOWN MIXER>";
 +	}
-+	return -1;
 +}
 +
-+static int sti_gdp_get_alpharange(int format)
++static inline u32 sti_mixer_reg_read(struct sti_mixer *mixer, u32 reg_id)
 +{
-+	switch (format) {
-+	case GDP_ARGB8565:
-+	case GDP_ARGB8888:
-+	case GDP_AYCBR8888:
-+		return GAM_GDP_ALPHARANGE_255;
-+	}
-+	return 0;
++	return readl(mixer->regs + reg_id);
 +}
 +
-+/**
-+ * sti_gdp_get_free_nodes
-+ * @layer: gdp layer
-+ *
-+ * Look for a GDP node list that is not currently read by the HW.
-+ *
-+ * RETURNS:
-+ * Pointer to the free GDP node list
-+ */
-+static struct sti_gdp_node_list *sti_gdp_get_free_nodes(struct sti_layer *layer)
++static inline void sti_mixer_reg_write(struct sti_mixer *mixer,
++				       u32 reg_id, u32 val)
 +{
-+	int hw_nvn;
-+	void *virt_nvn;
-+	struct sti_gdp *gdp = layer->gdp;
-+	unsigned int i;
-+
-+	hw_nvn = readl(gdp->regs + GAM_GDP_NVN_OFFSET);
-+	if (!hw_nvn)
-+		goto end;
-+
-+	virt_nvn = dma_to_virt(gdp->dev, (dma_addr_t) hw_nvn);
-+
-+	for (i = 0; i < GDP_NODE_NB_BANK; i++)
-+		if ((virt_nvn != gdp->node_list[i].btm_field) &&
-+		    (virt_nvn != gdp->node_list[i].top_field))
-+			return &gdp->node_list[i];
-+
-+end:
-+	return &gdp->node_list[0];
++	writel(val, mixer->regs + reg_id);
 +}
 +
-+/**
-+ * sti_gdp_get_current_nodes
-+ * @layer: GDP layer
-+ *
-+ * Look for GDP nodes that are currently read by the HW.
-+ *
-+ * RETURNS:
-+ * Pointer to the current GDP node list
-+ */
-+static
-+struct sti_gdp_node_list *sti_gdp_get_current_nodes(struct sti_layer *layer)
++void sti_mixer_set_background_status(struct sti_mixer *mixer, bool enable)
 +{
-+	int hw_nvn;
-+	void *virt_nvn;
-+	struct sti_gdp *gdp = layer->gdp;
-+	unsigned int i;
++	u32 val = sti_mixer_reg_read(mixer, GAM_MIXER_CTL);
 +
-+	hw_nvn = readl(gdp->regs + GAM_GDP_NVN_OFFSET);
-+	if (!hw_nvn)
-+		goto end;
-+
-+	virt_nvn = dma_to_virt(gdp->dev, (dma_addr_t) hw_nvn);
-+
-+	for (i = 0; i < GDP_NODE_NB_BANK; i++)
-+		if ((virt_nvn == gdp->node_list[i].btm_field) ||
-+				(virt_nvn == gdp->node_list[i].top_field))
-+			return &gdp->node_list[i];
-+
-+end:
-+	return NULL;
++	val &= ~GAM_CTL_BACK_MASK;
++	val |= enable;
++	sti_mixer_reg_write(mixer, GAM_MIXER_CTL, val);
 +}
 +
-+/**
-+ * sti_gdp_prepare_layer
-+ * @lay: gdp layer
-+ * @first_prepare: true if it is the first time this function is called
-+ *
-+ * Update the free GDP node list according to the layer properties.
-+ *
-+ * RETURNS:
-+ * 0 on success.
-+ */
-+static int sti_gdp_prepare_layer(void *lay, bool first_prepare)
++static void sti_mixer_set_background_color(struct sti_mixer *mixer,
++					   u8 red, u8 green, u8 blue)
 +{
-+	struct sti_layer *layer = (struct sti_layer *)lay;
-+	struct sti_gdp_node_list *list;
-+	struct sti_gdp_node *top_field, *btm_field;
-+	struct drm_display_mode *mode = layer->mode;
-+	struct device *dev = layer->gdp->dev;
-+	int format;
-+	unsigned int depth, bpp;
-+	int rate = mode->clock * 1000;
-+	int res;
++	u32 val = (red << 16) | (green << 8) | blue;
++
++	sti_mixer_reg_write(mixer, GAM_MIXER_BKC, val);
++}
++
++static void sti_mixer_set_background_area(struct sti_mixer *mixer,
++					  struct drm_display_mode *mode)
++{
 +	u32 ydo, xdo, yds, xds;
 +
-+	list = sti_gdp_get_free_nodes(layer);
-+	top_field = list->top_field;
-+	btm_field = list->btm_field;
++	ydo = sti_vtg_get_line_number(*mode, 0);
++	yds = sti_vtg_get_line_number(*mode, mode->vdisplay - 1);
++	xdo = sti_vtg_get_pixel_number(*mode, 0);
++	xds = sti_vtg_get_pixel_number(*mode, mode->hdisplay - 1);
 +
-+	/* Build the top field from layer params */
-+	top_field->gam_gdp_agc = GAM_GDP_AGC_FULL_RANGE;
-+	top_field->gam_gdp_ctl = WAIT_NEXT_VSYNC;
-+	format = sti_gdp_fourcc2format(layer->format);
-+	if (format == -1) {
-+		DRM_ERROR("Format not supported by GDP %.4s\n",
-+			  (char *)&layer->format);
++	sti_mixer_reg_write(mixer, GAM_MIXER_BCO, ydo << 16 | xdo);
++	sti_mixer_reg_write(mixer, GAM_MIXER_BCS, yds << 16 | xds);
++}
++
++int sti_mixer_set_layer_depth(struct sti_mixer *mixer, struct sti_layer *layer)
++{
++	int layer_id = 0, depth = layer->zorder;
++	u32 mask, val;
++
++	if (depth >= GAM_MIXER_NB_DEPTH_LEVEL)
 +		return 1;
-+	}
-+	top_field->gam_gdp_ctl |= format;
-+	top_field->gam_gdp_ctl |= sti_gdp_get_alpharange(format);
-+	top_field->gam_gdp_ppt &= ~GAM_GDP_PPT_IGNORE;
 +
-+	/* pixel memory location */
-+	drm_fb_get_bpp_depth(layer->format, &depth, &bpp);
-+	top_field->gam_gdp_pml = (u32) layer->paddr + layer->offsets[0];
-+	top_field->gam_gdp_pml += layer->src_x * (bpp >> 3);
-+	top_field->gam_gdp_pml += layer->src_y * layer->pitches[0];
-+
-+	/* input parameters */
-+	top_field->gam_gdp_pmp = layer->pitches[0];
-+	top_field->gam_gdp_size =
-+	    clamp_val(layer->src_h, 0, GAM_GDP_SIZE_MAX) << 16 |
-+	    clamp_val(layer->src_w, 0, GAM_GDP_SIZE_MAX);
-+
-+	/* output parameters */
-+	ydo = sti_vtg_get_line_number(*mode, layer->dst_y);
-+	yds = sti_vtg_get_line_number(*mode, layer->dst_y + layer->dst_h - 1);
-+	xdo = sti_vtg_get_pixel_number(*mode, layer->dst_x);
-+	xds = sti_vtg_get_pixel_number(*mode, layer->dst_x + layer->dst_w - 1);
-+	top_field->gam_gdp_vpo = (ydo << 16) | xdo;
-+	top_field->gam_gdp_vps = (yds << 16) | xds;
-+
-+	/* Same content and chained together */
-+	memcpy(btm_field, top_field, sizeof(*btm_field));
-+	top_field->gam_gdp_nvn = virt_to_dma(dev, btm_field);
-+	btm_field->gam_gdp_nvn = virt_to_dma(dev, top_field);
-+
-+	/* Interlaced mode */
-+	if (layer->mode->flags & DRM_MODE_FLAG_INTERLACE)
-+		btm_field->gam_gdp_pml = top_field->gam_gdp_pml +
-+		    layer->pitches[0];
-+
-+	if (first_prepare) {
-+		/* Set and enable gdp clock */
-+		if (layer->gdp->clk_pix) {
-+			res = clk_set_rate(layer->gdp->clk_pix, rate);
-+			if (res < 0) {
-+				DRM_ERROR("Cannot set rate (%dHz) for gdp\n",
-+						rate);
-+				return 1;
-+			}
-+
-+			if (clk_prepare_enable(layer->gdp->clk_pix)) {
-+				DRM_ERROR("Failed to prepare/enable gdp\n");
-+				return 1;
-+			}
-+		}
-+	}
-+
-+	return 0;
-+}
-+
-+/**
-+ * sti_gdp_commit_layer
-+ * @lay: gdp layer
-+ *
-+ * Update the NVN field of the 'right' field of the current GDP node (being
-+ * used by the HW) with the address of the updated ('free') top field GDP node.
-+ * - In interlaced mode the 'right' field is the bottom field as we update
-+ *   frames starting from their top field
-+ * - In progressive mode, we update both bottom and top fields which are
-+ *   equal nodes.
-+ * At the next VSYNC, the updated node list will be used by the HW.
-+ *
-+ * RETURNS:
-+ * 0 on success.
-+ */
-+static int sti_gdp_commit_layer(void *lay)
-+{
-+	struct sti_layer *layer = (struct sti_layer *)lay;
-+	struct sti_gdp_node_list *updated_list = sti_gdp_get_free_nodes(layer);
-+	struct sti_gdp_node *updated_top_node = updated_list->top_field;
-+	struct sti_gdp_node *updated_btm_node = updated_list->btm_field;
-+	struct sti_gdp *gdp = layer->gdp;
-+	u32 dma_updated_top = virt_to_dma(gdp->dev, updated_top_node);
-+	u32 dma_updated_btm = virt_to_dma(gdp->dev, updated_btm_node);
-+	struct sti_gdp_node_list *curr_list = sti_gdp_get_current_nodes(layer);
-+
-+	dev_dbg(gdp->dev, "Current NVN:0x%X\n",
-+		readl(gdp->regs + GAM_GDP_NVN_OFFSET));
-+	dev_dbg(gdp->dev, "Posted buff: %lx current buff: %x\n",
-+		(unsigned long)layer->paddr,
-+		readl(gdp->regs + GAM_GDP_PML_OFFSET));
-+
-+	if (curr_list == NULL) {
-+		/* First update or invalid node should directly write in the
-+		 * hw register */
-+		writel(gdp->is_curr_top == true ?
-+				dma_updated_btm : dma_updated_top,
-+				gdp->regs + GAM_GDP_NVN_OFFSET);
-+		return 0;
-+	}
-+
-+	if (layer->mode->flags & DRM_MODE_FLAG_INTERLACE) {
-+		if (gdp->is_curr_top == true) {
-+			/* Do not update in the middle of the frame, but
-+			 * postpone the update after the bottom field has
-+			 * been displayed */
-+			curr_list->btm_field->gam_gdp_nvn = dma_updated_top;
-+		} else {
-+			/* Direct update to avoid one frame delay */
-+			writel(dma_updated_top, gdp->regs + GAM_GDP_NVN_OFFSET);
-+		}
-+	} else {
-+		/* Direct update for progressive to avoid one frame delay */
-+		writel(dma_updated_top, gdp->regs + GAM_GDP_NVN_OFFSET);
-+	}
-+
-+	return 0;
-+}
-+
-+/**
-+ * sti_gdp_disable_layer
-+ * @lay: gdp layer
-+ *
-+ * Disable a GDP.
-+ *
-+ * RETURNS:
-+ * 0 on success.
-+ */
-+static int sti_gdp_disable_layer(void *lay)
-+{
-+	unsigned int i;
-+	struct sti_layer *layer = (struct sti_layer *)lay;
-+	struct sti_gdp *gdp = layer->gdp;
-+
-+	/* Set the nodes as 'to be ignored on mixer' */
-+	for (i = 0; i < GDP_NODE_NB_BANK; i++) {
-+		gdp->node_list[i].top_field->gam_gdp_ppt |= GAM_GDP_PPT_IGNORE;
-+		gdp->node_list[i].btm_field->gam_gdp_ppt |= GAM_GDP_PPT_IGNORE;
-+	}
-+
-+	if (gdp->clk_pix)
-+		clk_disable_unprepare(gdp->clk_pix);
-+
-+	return 0;
-+}
-+
-+/**
-+ * sti_gdp_field_cb
-+ * @nb: notifier block
-+ * @event: event message
-+ * @data: private data
-+ *
-+ * Handle VTG top field and bottom field event.
-+ *
-+ * RETURNS:
-+ * 0 on success.
-+ */
-+int sti_gdp_field_cb(struct notifier_block *nb,
-+		unsigned long event, void *data)
-+{
-+	struct sti_gdp *gdp = container_of(nb, struct sti_gdp, vtg_field_nb);
-+
-+	switch (event) {
-+	case VTG_TOP_FIELD_EVENT:
-+		gdp->is_curr_top = true;
++	switch (layer->desc) {
++	case STI_GDP_0:
++		layer_id = GAM_DEPTH_GDP0_ID;
 +		break;
-+	case VTG_BOTTOM_FIELD_EVENT:
-+		gdp->is_curr_top = false;
++	case STI_GDP_1:
++		layer_id = GAM_DEPTH_GDP1_ID;
++		break;
++	case STI_GDP_2:
++		layer_id = GAM_DEPTH_GDP2_ID;
++		break;
++	case STI_GDP_3:
++		layer_id = GAM_DEPTH_GDP3_ID;
++		break;
++	case STI_VID_0:
++		layer_id = GAM_DEPTH_VID0_ID;
++		break;
++	case STI_VID_1:
++		layer_id = GAM_DEPTH_VID1_ID;
 +		break;
 +	default:
-+		DRM_ERROR("unsupported event: %lu\n", event);
-+		break;
++		DRM_ERROR("Unknown layer %d\n", layer->desc);
++		return 1;
 +	}
++	mask = GAM_DEPTH_MASK_ID << (3 * depth);
++	layer_id = layer_id << (3 * depth);
++
++	dev_dbg(mixer->dev, "GAM_MIXER_CRB val 0x%x mask 0x%x\n",
++		layer_id, mask);
++
++	val = sti_mixer_reg_read(mixer, GAM_MIXER_CRB);
++	val &= ~mask;
++	val |= layer_id;
++	sti_mixer_reg_write(mixer, GAM_MIXER_CRB, val);
++
++	dev_dbg(mixer->dev, "Read GAM_MIXER_CRB 0x%x\n",
++		sti_mixer_reg_read(mixer, GAM_MIXER_CRB));
++	return 0;
++}
++
++int sti_mixer_active_video_area(struct sti_mixer *mixer,
++				struct drm_display_mode *mode)
++{
++	u32 ydo, xdo, yds, xds;
++
++	ydo = sti_vtg_get_line_number(*mode, 0);
++	yds = sti_vtg_get_line_number(*mode, mode->vdisplay - 1);
++	xdo = sti_vtg_get_pixel_number(*mode, 0);
++	xds = sti_vtg_get_pixel_number(*mode, mode->hdisplay - 1);
++
++	DRM_DEBUG_DRIVER("%s active video area xdo:%d ydo:%d xds:%d yds:%d\n",
++			 sti_mixer_to_str(mixer), xdo, ydo, xds, yds);
++	sti_mixer_reg_write(mixer, GAM_MIXER_AVO, ydo << 16 | xdo);
++	sti_mixer_reg_write(mixer, GAM_MIXER_AVS, yds << 16 | xds);
++
++	sti_mixer_set_background_color(mixer, 0xFF, 0, 0);
++
++	sti_mixer_set_background_area(mixer, mode);
++	sti_mixer_set_background_status(mixer, true);
++	return 0;
++}
++
++static u32 sti_mixer_get_layer_mask(struct sti_layer *layer)
++{
++	switch (layer->desc) {
++	case STI_BACK:
++		return GAM_CTL_BACK_MASK;
++	case STI_GDP_0:
++		return GAM_CTL_GDP0_MASK;
++	case STI_GDP_1:
++		return GAM_CTL_GDP1_MASK;
++	case STI_GDP_2:
++		return GAM_CTL_GDP2_MASK;
++	case STI_GDP_3:
++		return GAM_CTL_GDP3_MASK;
++	case STI_VID_0:
++		return GAM_CTL_VID0_MASK;
++	case STI_VID_1:
++		return GAM_CTL_VID1_MASK;
++	default:
++		return 0;
++	}
++}
++
++int sti_mixer_set_layer_status(struct sti_mixer *mixer,
++			       struct sti_layer *layer, bool status)
++{
++	u32 mask, val;
++
++	mask = sti_mixer_get_layer_mask(layer);
++	if (!mask) {
++		DRM_ERROR("Can not find layer mask\n");
++		return -EINVAL;
++	}
++
++	val = sti_mixer_reg_read(mixer, GAM_MIXER_CTL);
++	val &= ~mask;
++	val |= status ? mask : 0;
++	sti_mixer_reg_write(mixer, GAM_MIXER_CTL, val);
 +
 +	return 0;
 +}
 +
-+/**
-+ * sti_gdp_create
-+ * @dev:      device
-+ * @id:       gdp id
-+ * @baseaddr: IO addr
-+ *
-+ * Create a gdp object. Allocate memory and initialize parameters.
-+ *
-+ *
-+ * RETURNS:
-+ * Pointer to the created gdp object.
-+ */
-+struct sti_gdp *sti_gdp_create(struct device *dev, int id,
-+			       void __iomem *baseaddr)
++void sti_mixer_set_matrix(struct sti_mixer *mixer)
 +{
-+	struct sti_gdp *gdp;
-+	struct device_node *np = dev->of_node;
-+	dma_addr_t dma;
-+	void *base;
-+	unsigned int i, size;
++	unsigned int i;
 +
-+	gdp = devm_kzalloc(dev, sizeof(*gdp), GFP_KERNEL);
-+	if (!gdp) {
-+		DRM_ERROR("Failed to allocate memory for GDP\n");
++	for (i = 0; i < ARRAY_SIZE(MixerColorSpaceMatIdentity); i++)
++		sti_mixer_reg_write(mixer, GAM_MIXER_MX0 + (i * 4),
++				    MixerColorSpaceMatIdentity[i]);
++}
++
++struct sti_mixer *sti_mixer_create(struct device *dev, int id,
++				   void __iomem *baseaddr)
++{
++	struct sti_mixer *mixer = devm_kzalloc(dev, sizeof(*mixer), GFP_KERNEL);
++	struct device_node *np = dev->of_node;
++
++	dev_dbg(dev, "%s\n", __func__);
++	if (!mixer) {
++		DRM_ERROR("Failed to allocated memory for mixer\n");
 +		return NULL;
 +	}
++	mixer->regs = baseaddr;
++	mixer->dev = dev;
++	mixer->id = id;
 +
-+	/* Allocate all the nodes within a single memory page */
-+	size = sizeof(struct sti_gdp_node) *
-+	    GDP_NODE_PER_FIELD * GDP_NODE_NB_BANK;
++	if (of_device_is_compatible(np, "st,stih416-compositor"))
++		sti_mixer_set_matrix(mixer);
 +
-+	base = dma_alloc_writecombine(dev, size, &dma, GFP_KERNEL | GFP_DMA);
-+	if (!base) {
-+		DRM_ERROR("Failed to allocate memory for GDP node\n");
-+		goto mem_err;
-+	}
-+	memset(base, 0, size);
++	DRM_DEBUG_DRIVER("%s created. Regs=%p\n",
++			 sti_mixer_to_str(mixer), mixer->regs);
 +
-+	for (i = 0; i < GDP_NODE_NB_BANK; i++) {
-+		if (virt_to_dma(dev, base) & 0xF) {
-+			DRM_ERROR("Mem alignment failed\n");
-+			goto mem_err;
-+		}
-+		gdp->node_list[i].top_field = base;
-+		DRM_DEBUG_DRIVER("node[%d].top_field=%p\n", i, base);
-+		base += sizeof(struct sti_gdp_node);
-+
-+		if (virt_to_dma(dev, base) & 0xF) {
-+			DRM_ERROR("Mem alignment failed\n");
-+			goto mem_err;
-+		}
-+		gdp->node_list[i].btm_field = base;
-+		DRM_DEBUG_DRIVER("node[%d].btm_field=%p\n", i, base);
-+		base += sizeof(struct sti_gdp_node);
-+	}
-+
-+	gdp->dev = dev;
-+	gdp->regs = baseaddr;
-+	gdp->get_formats = sti_gdp_get_formats;
-+	gdp->get_nb_formats = sti_gdp_get_nb_formats;
-+	gdp->prepare = sti_gdp_prepare_layer;
-+	gdp->commit = sti_gdp_commit_layer;
-+	gdp->disable = sti_gdp_disable_layer;
-+	gdp->vtg_field_nb.notifier_call = sti_gdp_field_cb;
-+
-+	if (of_device_is_compatible(np, "st,stih407-compositor")) {
-+		/* GDP of STiH407 chip have its own pixel clock */
-+		char *clk_name;
-+
-+		switch (id) {
-+		case STI_GDP_0:
-+			clk_name = "pix_gdp1";
-+			break;
-+		case STI_GDP_1:
-+			clk_name = "pix_gdp2";
-+			break;
-+		case STI_GDP_2:
-+			clk_name = "pix_gdp3";
-+			break;
-+		case STI_GDP_3:
-+			clk_name = "pix_gdp4";
-+			break;
-+		default:
-+			DRM_ERROR("GDP id not recognized\n");
-+			goto err_clk_pix_gdp;
-+		}
-+
-+		gdp->clk_pix = devm_clk_get(dev, clk_name);
-+		if (IS_ERR(gdp->clk_pix)) {
-+			DRM_ERROR("Cannot get %s clock\n", clk_name);
-+			goto err_clk_pix_gdp;
-+		}
-+	}
-+
-+	return gdp;
-+
-+err_clk_pix_gdp:
-+mem_err:
-+	devm_kfree(dev, gdp);
-+	return NULL;
++	return mixer;
 +}
-diff --git a/drivers/gpu/drm/sti/sti_gdp.h b/drivers/gpu/drm/sti/sti_gdp.h
+diff --git a/drivers/gpu/drm/sti/sti_mixer.h b/drivers/gpu/drm/sti/sti_mixer.h
 new file mode 100644
-index 0000000..3618039
+index 0000000..2d86378
 --- /dev/null
-+++ b/drivers/gpu/drm/sti/sti_gdp.h
-@@ -0,0 +1,73 @@
++++ b/drivers/gpu/drm/sti/sti_mixer.h
+@@ -0,0 +1,52 @@
 +/*
 + * Copyright (C) STMicroelectronics SA 2014
 + * Authors: Benjamin Gaignard <benjamin.gaignard@st.com>
@@ -553,186 +311,48 @@ index 0000000..3618039
 + * License terms:  GNU General Public License (GPL), version 2
 + */
 +
-+#ifndef _STI_GDP_H_
-+#define _STI_GDP_H_
-+
-+#include <linux/types.h>
-+
-+#define GDP_NODE_NB_BANK	2
-+#define GDP_NODE_PER_FIELD	2
-+
-+struct sti_gdp_node {
-+	u32 gam_gdp_ctl;
-+	u32 gam_gdp_agc;
-+	u32 reserved1;
-+	u32 gam_gdp_vpo;
-+	u32 gam_gdp_vps;
-+	u32 gam_gdp_pml;
-+	u32 gam_gdp_pmp;
-+	u32 gam_gdp_size;
-+	u32 reserved2;
-+	u32 gam_gdp_nvn;
-+	u32 gam_gdp_key1;
-+	u32 gam_gdp_key2;
-+	u32 reserved3;
-+	u32 gam_gdp_ppt;
-+	u32 reserved4;
-+	u32 gam_gdp_cml;
-+};
-+
-+struct sti_gdp_node_list {
-+	struct sti_gdp_node *top_field;
-+	struct sti_gdp_node *btm_field;
-+};
-+
-+/*
-+ * STI GDP structure
-+ *
-+ * @device:		driver device
-+ * @regs:               subdevice register
-+ * @clk_pix:            pixel clock for the current gdp
-+ * @vtg_field_nb:       callback for VTG FIELD (top or bottom) notification
-+ * @is_curr_top:        true if the current node processed is the top field
-+ * @get_formats:	get GDP supported formats
-+ * @get_nb_formats:	get number of format supported
-+ * @prepare:		prepare GDP before rendering
-+ * @commit:		set GDP for rendering
-+ * @disable:		disable GDP
-+ * @node_list:		array of node list
-+ */
-+struct sti_gdp {
-+	struct device *dev;
-+	void __iomem *regs;
-+	struct clk *clk_pix;
-+	struct notifier_block vtg_field_nb;
-+	bool is_curr_top;
-+	const uint32_t* (*get_formats)(void);
-+	unsigned int (*get_nb_formats)(void);
-+	int (*prepare)(void *layer, bool first_prepare);
-+	int (*commit)(void *layer);
-+	int (*disable)(void *layer);
-+	struct sti_gdp_node_list node_list[GDP_NODE_NB_BANK];
-+};
-+
-+struct sti_gdp *sti_gdp_create(struct device *dev, int id,
-+		void __iomem *baseaddr);
-+
-+#endif
-diff --git a/drivers/gpu/drm/sti/sti_layer.h b/drivers/gpu/drm/sti/sti_layer.h
-new file mode 100644
-index 0000000..7ba5a40
---- /dev/null
-+++ b/drivers/gpu/drm/sti/sti_layer.h
-@@ -0,0 +1,111 @@
-+/*
-+ * Copyright (C) STMicroelectronics SA 2014
-+ * Authors: Benjamin Gaignard <benjamin.gaignard@st.com>
-+ *          Fabien Dessenne <fabien.dessenne@st.com>
-+ *          for STMicroelectronics.
-+ * License terms:  GNU General Public License (GPL), version 2
-+ */
-+
-+#ifndef _STI_LAYER_H_
-+#define _STI_LAYER_H_
++#ifndef _STI_MIXER_H_
++#define _STI_MIXER_H_
 +
 +#include <drm/drmP.h>
-+#include "sti_gdp.h"
 +
-+#define to_sti_layer(x) container_of(x, struct sti_layer, plane)
++#include "sti_layer.h"
 +
-+#define STI_LAYER_TYPE_SHIFT 8
-+#define STI_LAYER_TYPE_MASK (~((1<<STI_LAYER_TYPE_SHIFT)-1))
++#define to_sti_mixer(x) container_of(x, struct sti_mixer, drm_crtc)
 +
-+
-+enum sti_layer_type {
-+	STI_GDP = 1 << STI_LAYER_TYPE_SHIFT,
-+	STI_VID = 2 << STI_LAYER_TYPE_SHIFT,
-+	STI_CUR = 3 << STI_LAYER_TYPE_SHIFT,
-+	STI_BCK = 4 << STI_LAYER_TYPE_SHIFT
-+};
-+
-+enum sti_layer_id_of_type {
-+	STI_ID_0 = 0,
-+	STI_ID_1 = 1,
-+	STI_ID_2 = 2,
-+	STI_ID_3 = 3
-+};
-+
-+enum sti_layer_desc {
-+	STI_GDP_0       = STI_GDP | STI_ID_0,
-+	STI_GDP_1       = STI_GDP | STI_ID_1,
-+	STI_GDP_2       = STI_GDP | STI_ID_2,
-+	STI_GDP_3       = STI_GDP | STI_ID_3,
-+	STI_VID_0       = STI_VID | STI_ID_0,
-+	STI_VID_1       = STI_VID | STI_ID_1,
-+	STI_CURSOR      = STI_CUR,
-+	STI_BACK        = STI_BCK
-+};
-+
-+struct sti_fps_info {
-+	bool output;
-+	unsigned int curr_frame_counter;
-+	unsigned int last_frame_counter;
-+	struct timespec last_timestamp;
-+};
-+
-+/*
-+ * STI layer structure
++/**
++ * STI Mixer subdevice structure
 + *
-+ * @plane:              drm plane it is bound to (if any)
-+ * @fb:                 drm fb it is bound to
-+ * @mode:               display mode
-+ * @desc:               layer type & id
-+ * @zorder:             layer z-order
-+ * @mixer_id:           id of the mixer used to display the layer
-+ * @enabled:            to know if the layer is active or not
-+ * @src_x src_y:        coordinates of the input (fb) area
-+ * @src_w src_h:        size of the input (fb) area
-+ * @dst_x dst_y:        coordinates of the output (crtc) area
-+ * @dst_w dst_h:        size of the output (crtc) area
-+ * @format:             format
-+ * @pitches:            pitch of 'planes' (eg: Y, U, V)
-+ * @offsets:            offset of 'planes'
-+ * @paddr:              physical address of the input buffer
-+ * @fps_info:           frame per second info
-+ * @gdp:                related GDP (if the layer is a GDP)
++ * @dev: driver device
++ * @regs: mixer registers
++ * @id: id of the mixer
++ * @drm_crtc: crtc object link to the mixer
 + */
-+struct sti_layer {
-+	struct drm_plane plane;
-+	struct drm_framebuffer *fb;
-+	struct drm_display_mode *mode;
-+	enum sti_layer_desc desc;
-+	int zorder;
-+	int mixer_id;
-+	bool enabled;
-+	int src_x, src_y;
-+	int src_w, src_h;
-+	int dst_x, dst_y;
-+	int dst_w, dst_h;
-+	uint32_t format;
-+	unsigned int pitches[4];
-+	unsigned int offsets[4];
-+	dma_addr_t paddr;
-+	struct sti_fps_info fps_info;
-+	struct sti_gdp *gdp;
++struct sti_mixer {
++	struct device *dev;
++	void __iomem *regs;
++	int id;
++	struct drm_crtc	drm_crtc;
 +};
 +
-+struct sti_layer *sti_layer_create(struct device *dev, int desc,
-+			void __iomem *baseaddr);
-+int sti_layer_prepare(struct sti_layer *layer, struct drm_framebuffer *fb,
-+			struct drm_display_mode *mode,
-+			int mixer_id,
-+			int dest_x, int dest_y,
-+			int dest_w, int dest_h,
-+			int src_x, int src_y,
-+			int src_w, int src_h);
-+int sti_layer_commit(struct sti_layer *layer);
-+int sti_layer_disable(struct sti_layer *layer);
-+const uint32_t *sti_layer_get_formats(struct sti_layer *layer);
-+unsigned int sti_layer_get_nb_formats(struct sti_layer *layer);
-+struct sti_layer *sti_layer_find_layer(struct sti_layer *layer[],
-+			enum sti_layer_desc desc);
-+const char *sti_layer_to_str(struct sti_layer *layer);
++const char *sti_mixer_to_str(struct sti_mixer *mixer);
++
++struct sti_mixer *sti_mixer_create(struct device *dev, int id,
++		void __iomem *baseaddr);
++
++int sti_mixer_set_layer_status(struct sti_mixer *mixer,
++		struct sti_layer *layer, bool status);
++int sti_mixer_set_layer_depth(struct sti_mixer *mixer, struct sti_layer *layer);
++int sti_mixer_active_video_area(struct sti_mixer *mixer,
++		struct drm_display_mode *mode);
++
++void sti_mixer_set_background_status(struct sti_mixer *mixer, bool enable);
++
++/* depth in Cross-bar control = z order */
++#define GAM_MIXER_NB_DEPTH_LEVEL 7
++
++#define STI_MIXER_MAIN 0
++#define STI_MIXER_AUX  1
 +
 +#endif
 -- 
