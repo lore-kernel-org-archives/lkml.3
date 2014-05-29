@@ -1,111 +1,635 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756634AbaE2Eui (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 00:50:38 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:53895 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756557AbaE2Eta (ORCPT
+	id S1756651AbaE2Eux (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 00:50:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58599 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933138AbaE2Eih (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 00:49:30 -0400
-From: Chaitanya Hazarey <c@24.io>
-To: gregkh@linuxfoundation.org, burzalodowa@gmail.com,
-        andrea.merello@gmail.com
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Chaitanya Hazarey <c@24.io>
-Subject: [PATCH 2/5] Staging: rtl8192u: r8192U_wx.c removed dead code
-Date: Wed, 28 May 2014 21:49:18 -0700
-Message-Id: <1401338961-27412-2-git-send-email-c@24.io>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1401338961-27412-1-git-send-email-c@24.io>
-References: <1401338961-27412-1-git-send-email-c@24.io>
+	Thu, 29 May 2014 00:38:37 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Joshua Kinard <kumba@gentoo.org>, Vlad Yasevich <vyasevic@redhat.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 54/86] net: sctp: cache auth_enable per endpoint
+Date: Wed, 28 May 2014 21:37:29 -0700
+Message-Id: <20140529043520.817668664@linuxfoundation.org>
+X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
+In-Reply-To: <20140529043513.451722422@linuxfoundation.org>
+References: <20140529043513.451722422@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removed dead code, commented out printks and DMESG.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Chaitanya Hazarey <c@24.io>
+------------------
+
+From: Vlad Yasevich <vyasevic@redhat.com>
+
+[ Upstream commit b14878ccb7fac0242db82720b784ab62c467c0dc ]
+
+Currently, it is possible to create an SCTP socket, then switch
+auth_enable via sysctl setting to 1 and crash the system on connect:
+
+Oops[#1]:
+CPU: 0 PID: 0 Comm: swapper Not tainted 3.14.1-mipsgit-20140415 #1
+task: ffffffff8056ce80 ti: ffffffff8055c000 task.ti: ffffffff8055c000
+[...]
+Call Trace:
+[<ffffffff8043c4e8>] sctp_auth_asoc_set_default_hmac+0x68/0x80
+[<ffffffff8042b300>] sctp_process_init+0x5e0/0x8a4
+[<ffffffff8042188c>] sctp_sf_do_5_1B_init+0x234/0x34c
+[<ffffffff804228c8>] sctp_do_sm+0xb4/0x1e8
+[<ffffffff80425a08>] sctp_endpoint_bh_rcv+0x1c4/0x214
+[<ffffffff8043af68>] sctp_rcv+0x588/0x630
+[<ffffffff8043e8e8>] sctp6_rcv+0x10/0x24
+[<ffffffff803acb50>] ip6_input+0x2c0/0x440
+[<ffffffff8030fc00>] __netif_receive_skb_core+0x4a8/0x564
+[<ffffffff80310650>] process_backlog+0xb4/0x18c
+[<ffffffff80313cbc>] net_rx_action+0x12c/0x210
+[<ffffffff80034254>] __do_softirq+0x17c/0x2ac
+[<ffffffff800345e0>] irq_exit+0x54/0xb0
+[<ffffffff800075a4>] ret_from_irq+0x0/0x4
+[<ffffffff800090ec>] rm7k_wait_irqoff+0x24/0x48
+[<ffffffff8005e388>] cpu_startup_entry+0xc0/0x148
+[<ffffffff805a88b0>] start_kernel+0x37c/0x398
+Code: dd0900b8  000330f8  0126302d <dcc60000> 50c0fff1  0047182a  a48306a0
+03e00008  00000000
+---[ end trace b530b0551467f2fd ]---
+Kernel panic - not syncing: Fatal exception in interrupt
+
+What happens while auth_enable=0 in that case is, that
+ep->auth_hmacs is initialized to NULL in sctp_auth_init_hmacs()
+when endpoint is being created.
+
+After that point, if an admin switches over to auth_enable=1,
+the machine can crash due to NULL pointer dereference during
+reception of an INIT chunk. When we enter sctp_process_init()
+via sctp_sf_do_5_1B_init() in order to respond to an INIT chunk,
+the INIT verification succeeds and while we walk and process
+all INIT params via sctp_process_param() we find that
+net->sctp.auth_enable is set, therefore do not fall through,
+but invoke sctp_auth_asoc_set_default_hmac() instead, and thus,
+dereference what we have set to NULL during endpoint
+initialization phase.
+
+The fix is to make auth_enable immutable by caching its value
+during endpoint initialization, so that its original value is
+being carried along until destruction. The bug seems to originate
+from the very first days.
+
+Fix in joint work with Daniel Borkmann.
+
+Reported-by: Joshua Kinard <kumba@gentoo.org>
+Signed-off-by: Vlad Yasevich <vyasevic@redhat.com>
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
+Tested-by: Joshua Kinard <kumba@gentoo.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/staging/rtl8192u/r8192U_wx.c | 10 ----------
- 1 file changed, 10 deletions(-)
+ include/net/sctp/structs.h |    4 ++-
+ net/sctp/auth.c            |   17 +++++---------
+ net/sctp/endpointola.c     |    3 +-
+ net/sctp/sm_make_chunk.c   |   32 ++++++++++++++------------
+ net/sctp/sm_statefuns.c    |    6 ++---
+ net/sctp/socket.c          |   54 +++++++++++++++++++++------------------------
+ net/sctp/sysctl.c          |   38 ++++++++++++++++++++++++++++++-
+ 7 files changed, 93 insertions(+), 61 deletions(-)
 
-diff --git a/drivers/staging/rtl8192u/r8192U_wx.c b/drivers/staging/rtl8192u/r8192U_wx.c
-index 675a12d..7dc2a96 100644
---- a/drivers/staging/rtl8192u/r8192U_wx.c
-+++ b/drivers/staging/rtl8192u/r8192U_wx.c
-@@ -341,10 +341,8 @@ static int r8192_wx_set_scan(struct net_device *dev, struct iw_request_info *a,
- 	if (wrqu->data.flags & IW_SCAN_THIS_ESSID) {
- 		struct iw_scan_req *req = (struct iw_scan_req *)b;
- 		if (req->essid_len) {
--			//printk("==**&*&*&**===>scan set ssid:%s\n", req->essid);
- 			ieee->current_network.ssid_len = req->essid_len;
- 			memcpy(ieee->current_network.ssid, req->essid, req->essid_len);
--			//printk("=====>network ssid:%s\n", ieee->current_network.ssid);
- 		}
+--- a/include/net/sctp/structs.h
++++ b/include/net/sctp/structs.h
+@@ -1252,6 +1252,7 @@ struct sctp_endpoint {
+ 	/* SCTP-AUTH: endpoint shared keys */
+ 	struct list_head endpoint_shared_keys;
+ 	__u16 active_key_id;
++	__u8  auth_enable;
+ };
+ 
+ /* Recover the outter endpoint structure. */
+@@ -1280,7 +1281,8 @@ struct sctp_endpoint *sctp_endpoint_is_m
+ int sctp_has_association(struct net *net, const union sctp_addr *laddr,
+ 			 const union sctp_addr *paddr);
+ 
+-int sctp_verify_init(struct net *net, const struct sctp_association *asoc,
++int sctp_verify_init(struct net *net, const struct sctp_endpoint *ep,
++		     const struct sctp_association *asoc,
+ 		     sctp_cid_t, sctp_init_chunk_t *peer_init,
+ 		     struct sctp_chunk *chunk, struct sctp_chunk **err_chunk);
+ int sctp_process_init(struct sctp_association *, struct sctp_chunk *chunk,
+--- a/net/sctp/auth.c
++++ b/net/sctp/auth.c
+@@ -393,14 +393,13 @@ nomem:
+  */
+ int sctp_auth_asoc_init_active_key(struct sctp_association *asoc, gfp_t gfp)
+ {
+-	struct net *net = sock_net(asoc->base.sk);
+ 	struct sctp_auth_bytes	*secret;
+ 	struct sctp_shared_key *ep_key;
+ 
+ 	/* If we don't support AUTH, or peer is not capable
+ 	 * we don't need to do anything.
+ 	 */
+-	if (!net->sctp.auth_enable || !asoc->peer.auth_capable)
++	if (!asoc->ep->auth_enable || !asoc->peer.auth_capable)
+ 		return 0;
+ 
+ 	/* If the key_id is non-zero and we couldn't find an
+@@ -447,16 +446,16 @@ struct sctp_shared_key *sctp_auth_get_sh
+  */
+ int sctp_auth_init_hmacs(struct sctp_endpoint *ep, gfp_t gfp)
+ {
+-	struct net *net = sock_net(ep->base.sk);
+ 	struct crypto_hash *tfm = NULL;
+ 	__u16   id;
+ 
+-	/* if the transforms are already allocted, we are done */
+-	if (!net->sctp.auth_enable) {
++	/* If AUTH extension is disabled, we are done */
++	if (!ep->auth_enable) {
+ 		ep->auth_hmacs = NULL;
+ 		return 0;
  	}
  
-@@ -703,7 +701,6 @@ static int r8192_wx_get_retry(struct net_device *dev,
- 		wrqu->retry.flags = IW_RETRY_LIMIT | IW_RETRY_MIN;
- 		wrqu->retry.value = priv->retry_data;
++	/* If the transforms are already allocated, we are done */
+ 	if (ep->auth_hmacs)
+ 		return 0;
+ 
+@@ -677,12 +676,10 @@ static int __sctp_auth_cid(sctp_cid_t ch
+ /* Check if peer requested that this chunk is authenticated */
+ int sctp_auth_send_cid(sctp_cid_t chunk, const struct sctp_association *asoc)
+ {
+-	struct net  *net;
+ 	if (!asoc)
+ 		return 0;
+ 
+-	net = sock_net(asoc->base.sk);
+-	if (!net->sctp.auth_enable || !asoc->peer.auth_capable)
++	if (!asoc->ep->auth_enable || !asoc->peer.auth_capable)
+ 		return 0;
+ 
+ 	return __sctp_auth_cid(chunk, asoc->peer.peer_chunks);
+@@ -691,12 +688,10 @@ int sctp_auth_send_cid(sctp_cid_t chunk,
+ /* Check if we requested that peer authenticate this chunk. */
+ int sctp_auth_recv_cid(sctp_cid_t chunk, const struct sctp_association *asoc)
+ {
+-	struct net *net;
+ 	if (!asoc)
+ 		return 0;
+ 
+-	net = sock_net(asoc->base.sk);
+-	if (!net->sctp.auth_enable)
++	if (!asoc->ep->auth_enable)
+ 		return 0;
+ 
+ 	return __sctp_auth_cid(chunk,
+--- a/net/sctp/endpointola.c
++++ b/net/sctp/endpointola.c
+@@ -75,7 +75,8 @@ static struct sctp_endpoint *sctp_endpoi
+ 	if (!ep->digest)
+ 		return NULL;
+ 
+-	if (net->sctp.auth_enable) {
++	ep->auth_enable = net->sctp.auth_enable;
++	if (ep->auth_enable) {
+ 		/* Allocate space for HMACS and CHUNKS authentication
+ 		 * variables.  There are arrays that we encode directly
+ 		 * into parameters to make the rest of the operations easier.
+--- a/net/sctp/sm_make_chunk.c
++++ b/net/sctp/sm_make_chunk.c
+@@ -199,6 +199,7 @@ struct sctp_chunk *sctp_make_init(const
+ 			     gfp_t gfp, int vparam_len)
+ {
+ 	struct net *net = sock_net(asoc->base.sk);
++	struct sctp_endpoint *ep = asoc->ep;
+ 	sctp_inithdr_t init;
+ 	union sctp_params addrs;
+ 	size_t chunksize;
+@@ -258,7 +259,7 @@ struct sctp_chunk *sctp_make_init(const
+ 	chunksize += vparam_len;
+ 
+ 	/* Account for AUTH related parameters */
+-	if (net->sctp.auth_enable) {
++	if (ep->auth_enable) {
+ 		/* Add random parameter length*/
+ 		chunksize += sizeof(asoc->c.auth_random);
+ 
+@@ -343,7 +344,7 @@ struct sctp_chunk *sctp_make_init(const
  	}
--	//printk("returning %d",wrqu->retry.value);
  
+ 	/* Add SCTP-AUTH chunks to the parameter list */
+-	if (net->sctp.auth_enable) {
++	if (ep->auth_enable) {
+ 		sctp_addto_chunk(retval, sizeof(asoc->c.auth_random),
+ 				 asoc->c.auth_random);
+ 		if (auth_hmacs)
+@@ -1995,7 +1996,7 @@ static void sctp_process_ext_param(struc
+ 			    /* if the peer reports AUTH, assume that he
+ 			     * supports AUTH.
+ 			     */
+-			    if (net->sctp.auth_enable)
++			    if (asoc->ep->auth_enable)
+ 				    asoc->peer.auth_capable = 1;
+ 			    break;
+ 		    case SCTP_CID_ASCONF:
+@@ -2087,6 +2088,7 @@ static sctp_ierror_t sctp_process_unk_pa
+  * 	SCTP_IERROR_NO_ERROR - continue with the chunk
+  */
+ static sctp_ierror_t sctp_verify_param(struct net *net,
++					const struct sctp_endpoint *ep,
+ 					const struct sctp_association *asoc,
+ 					union sctp_params param,
+ 					sctp_cid_t cid,
+@@ -2137,7 +2139,7 @@ static sctp_ierror_t sctp_verify_param(s
+ 		goto fallthrough;
  
- 	return 0;
-@@ -730,7 +727,6 @@ static int r8192_wx_set_sens(struct net_device *dev,
+ 	case SCTP_PARAM_RANDOM:
+-		if (!net->sctp.auth_enable)
++		if (!ep->auth_enable)
+ 			goto fallthrough;
  
- 	short err = 0;
- 	down(&priv->wx_sem);
--	//DMESG("attempt to set sensivity to %ddb",wrqu->sens.value);
- 	if (priv->rf_set_sens == NULL) {
- 		err = -1; /* we have not this support for this radio */
- 		goto exit;
-@@ -754,7 +750,6 @@ static int r8192_wx_set_enc_ext(struct net_device *dev,
- 	int ret = 0;
- 	struct r8192_priv *priv = ieee80211_priv(dev);
- 	struct ieee80211_device *ieee = priv->ieee80211;
--	//printk("===>%s()\n", __func__);
+ 		/* SCTP-AUTH: Secion 6.1
+@@ -2154,7 +2156,7 @@ static sctp_ierror_t sctp_verify_param(s
+ 		break;
  
+ 	case SCTP_PARAM_CHUNKS:
+-		if (!net->sctp.auth_enable)
++		if (!ep->auth_enable)
+ 			goto fallthrough;
  
- 	down(&priv->wx_sem);
-@@ -828,7 +823,6 @@ static int r8192_wx_set_auth(struct net_device *dev,
- 					union iwreq_data *data, char *extra)
+ 		/* SCTP-AUTH: Section 3.2
+@@ -2170,7 +2172,7 @@ static sctp_ierror_t sctp_verify_param(s
+ 		break;
+ 
+ 	case SCTP_PARAM_HMAC_ALGO:
+-		if (!net->sctp.auth_enable)
++		if (!ep->auth_enable)
+ 			goto fallthrough;
+ 
+ 		hmacs = (struct sctp_hmac_algo_param *)param.p;
+@@ -2204,10 +2206,9 @@ fallthrough:
+ }
+ 
+ /* Verify the INIT packet before we process it.  */
+-int sctp_verify_init(struct net *net, const struct sctp_association *asoc,
+-		     sctp_cid_t cid,
+-		     sctp_init_chunk_t *peer_init,
+-		     struct sctp_chunk *chunk,
++int sctp_verify_init(struct net *net, const struct sctp_endpoint *ep,
++		     const struct sctp_association *asoc, sctp_cid_t cid,
++		     sctp_init_chunk_t *peer_init, struct sctp_chunk *chunk,
+ 		     struct sctp_chunk **errp)
  {
- 	int ret = 0;
--	//printk("====>%s()\n", __func__);
- 	struct r8192_priv *priv = ieee80211_priv(dev);
- 	down(&priv->wx_sem);
- 	ret = ieee80211_wx_set_auth(priv->ieee80211, info, &(data->param), extra);
-@@ -840,7 +834,6 @@ static int r8192_wx_set_mlme(struct net_device *dev,
- 					struct iw_request_info *info,
- 					union iwreq_data *wrqu, char *extra)
- {
--	//printk("====>%s()\n", __func__);
+ 	union sctp_params param;
+@@ -2250,8 +2251,8 @@ int sctp_verify_init(struct net *net, co
  
- 	int ret = 0;
- 	struct r8192_priv *priv = ieee80211_priv(dev);
-@@ -855,13 +848,11 @@ static int r8192_wx_set_gen_ie(struct net_device *dev,
- 					struct iw_request_info *info,
- 					union iwreq_data *data, char *extra)
+ 	/* Verify all the variable length parameters */
+ 	sctp_walk_params(param, peer_init, init_hdr.params) {
+-
+-		result = sctp_verify_param(net, asoc, param, cid, chunk, errp);
++		result = sctp_verify_param(net, ep, asoc, param, cid,
++					   chunk, errp);
+ 		switch (result) {
+ 		    case SCTP_IERROR_ABORT:
+ 		    case SCTP_IERROR_NOMEM:
+@@ -2483,6 +2484,7 @@ static int sctp_process_param(struct sct
+ 	struct sctp_af *af;
+ 	union sctp_addr_param *addr_param;
+ 	struct sctp_transport *t;
++	struct sctp_endpoint *ep = asoc->ep;
+ 
+ 	/* We maintain all INIT parameters in network byte order all the
+ 	 * time.  This allows us to not worry about whether the parameters
+@@ -2623,7 +2625,7 @@ do_addr_param:
+ 		goto fall_through;
+ 
+ 	case SCTP_PARAM_RANDOM:
+-		if (!net->sctp.auth_enable)
++		if (!ep->auth_enable)
+ 			goto fall_through;
+ 
+ 		/* Save peer's random parameter */
+@@ -2636,7 +2638,7 @@ do_addr_param:
+ 		break;
+ 
+ 	case SCTP_PARAM_HMAC_ALGO:
+-		if (!net->sctp.auth_enable)
++		if (!ep->auth_enable)
+ 			goto fall_through;
+ 
+ 		/* Save peer's HMAC list */
+@@ -2652,7 +2654,7 @@ do_addr_param:
+ 		break;
+ 
+ 	case SCTP_PARAM_CHUNKS:
+-		if (!net->sctp.auth_enable)
++		if (!ep->auth_enable)
+ 			goto fall_through;
+ 
+ 		asoc->peer.peer_chunks = kmemdup(param.p,
+--- a/net/sctp/sm_statefuns.c
++++ b/net/sctp/sm_statefuns.c
+@@ -364,7 +364,7 @@ sctp_disposition_t sctp_sf_do_5_1B_init(
+ 
+ 	/* Verify the INIT chunk before processing it. */
+ 	err_chunk = NULL;
+-	if (!sctp_verify_init(net, asoc, chunk->chunk_hdr->type,
++	if (!sctp_verify_init(net, ep, asoc, chunk->chunk_hdr->type,
+ 			      (sctp_init_chunk_t *)chunk->chunk_hdr, chunk,
+ 			      &err_chunk)) {
+ 		/* This chunk contains fatal error. It is to be discarded.
+@@ -531,7 +531,7 @@ sctp_disposition_t sctp_sf_do_5_1C_ack(s
+ 
+ 	/* Verify the INIT chunk before processing it. */
+ 	err_chunk = NULL;
+-	if (!sctp_verify_init(net, asoc, chunk->chunk_hdr->type,
++	if (!sctp_verify_init(net, ep, asoc, chunk->chunk_hdr->type,
+ 			      (sctp_init_chunk_t *)chunk->chunk_hdr, chunk,
+ 			      &err_chunk)) {
+ 
+@@ -1437,7 +1437,7 @@ static sctp_disposition_t sctp_sf_do_une
+ 
+ 	/* Verify the INIT chunk before processing it. */
+ 	err_chunk = NULL;
+-	if (!sctp_verify_init(net, asoc, chunk->chunk_hdr->type,
++	if (!sctp_verify_init(net, ep, asoc, chunk->chunk_hdr->type,
+ 			      (sctp_init_chunk_t *)chunk->chunk_hdr, chunk,
+ 			      &err_chunk)) {
+ 		/* This chunk contains fatal error. It is to be discarded.
+--- a/net/sctp/socket.c
++++ b/net/sctp/socket.c
+@@ -3318,10 +3318,10 @@ static int sctp_setsockopt_auth_chunk(st
+ 				      char __user *optval,
+ 				      unsigned int optlen)
  {
--	   //printk("====>%s(), len:%d\n", __func__, data->length);
- 	int ret = 0;
- 	struct r8192_priv *priv = ieee80211_priv(dev);
- 	down(&priv->wx_sem);
- 	ret = ieee80211_wx_set_gen_ie(priv->ieee80211, extra, data->data.length);
- 	up(&priv->wx_sem);
--	//printk("<======%s(), ret:%d\n", __func__, ret);
+-	struct net *net = sock_net(sk);
++	struct sctp_endpoint *ep = sctp_sk(sk)->ep;
+ 	struct sctp_authchunk val;
+ 
+-	if (!net->sctp.auth_enable)
++	if (!ep->auth_enable)
+ 		return -EACCES;
+ 
+ 	if (optlen != sizeof(struct sctp_authchunk))
+@@ -3338,7 +3338,7 @@ static int sctp_setsockopt_auth_chunk(st
+ 	}
+ 
+ 	/* add this chunk id to the endpoint */
+-	return sctp_auth_ep_add_chunkid(sctp_sk(sk)->ep, val.sauth_chunk);
++	return sctp_auth_ep_add_chunkid(ep, val.sauth_chunk);
+ }
+ 
+ /*
+@@ -3351,12 +3351,12 @@ static int sctp_setsockopt_hmac_ident(st
+ 				      char __user *optval,
+ 				      unsigned int optlen)
+ {
+-	struct net *net = sock_net(sk);
++	struct sctp_endpoint *ep = sctp_sk(sk)->ep;
+ 	struct sctp_hmacalgo *hmacs;
+ 	u32 idents;
+ 	int err;
+ 
+-	if (!net->sctp.auth_enable)
++	if (!ep->auth_enable)
+ 		return -EACCES;
+ 
+ 	if (optlen < sizeof(struct sctp_hmacalgo))
+@@ -3373,7 +3373,7 @@ static int sctp_setsockopt_hmac_ident(st
+ 		goto out;
+ 	}
+ 
+-	err = sctp_auth_ep_set_hmacs(sctp_sk(sk)->ep, hmacs);
++	err = sctp_auth_ep_set_hmacs(ep, hmacs);
+ out:
+ 	kfree(hmacs);
+ 	return err;
+@@ -3389,12 +3389,12 @@ static int sctp_setsockopt_auth_key(stru
+ 				    char __user *optval,
+ 				    unsigned int optlen)
+ {
+-	struct net *net = sock_net(sk);
++	struct sctp_endpoint *ep = sctp_sk(sk)->ep;
+ 	struct sctp_authkey *authkey;
+ 	struct sctp_association *asoc;
+ 	int ret;
+ 
+-	if (!net->sctp.auth_enable)
++	if (!ep->auth_enable)
+ 		return -EACCES;
+ 
+ 	if (optlen <= sizeof(struct sctp_authkey))
+@@ -3415,7 +3415,7 @@ static int sctp_setsockopt_auth_key(stru
+ 		goto out;
+ 	}
+ 
+-	ret = sctp_auth_set_key(sctp_sk(sk)->ep, asoc, authkey);
++	ret = sctp_auth_set_key(ep, asoc, authkey);
+ out:
+ 	kzfree(authkey);
  	return ret;
+@@ -3431,11 +3431,11 @@ static int sctp_setsockopt_active_key(st
+ 				      char __user *optval,
+ 				      unsigned int optlen)
+ {
+-	struct net *net = sock_net(sk);
++	struct sctp_endpoint *ep = sctp_sk(sk)->ep;
+ 	struct sctp_authkeyid val;
+ 	struct sctp_association *asoc;
  
+-	if (!net->sctp.auth_enable)
++	if (!ep->auth_enable)
+ 		return -EACCES;
  
-@@ -992,7 +983,6 @@ struct iw_statistics *r8192_get_wireless_stats(struct net_device *dev)
- 	tmp_level = (&ieee->current_network)->stats.rssi;
- 	tmp_qual = (&ieee->current_network)->stats.signal;
- 	tmp_noise = (&ieee->current_network)->stats.noise;
--	//printk("level:%d, qual:%d, noise:%d\n", tmp_level, tmp_qual, tmp_noise);
+ 	if (optlen != sizeof(struct sctp_authkeyid))
+@@ -3447,8 +3447,7 @@ static int sctp_setsockopt_active_key(st
+ 	if (!asoc && val.scact_assoc_id && sctp_style(sk, UDP))
+ 		return -EINVAL;
  
- 	wstats->qual.level = tmp_level;
- 	wstats->qual.qual = tmp_qual;
--- 
-1.9.1
+-	return sctp_auth_set_active_key(sctp_sk(sk)->ep, asoc,
+-					val.scact_keynumber);
++	return sctp_auth_set_active_key(ep, asoc, val.scact_keynumber);
+ }
+ 
+ /*
+@@ -3460,11 +3459,11 @@ static int sctp_setsockopt_del_key(struc
+ 				   char __user *optval,
+ 				   unsigned int optlen)
+ {
+-	struct net *net = sock_net(sk);
++	struct sctp_endpoint *ep = sctp_sk(sk)->ep;
+ 	struct sctp_authkeyid val;
+ 	struct sctp_association *asoc;
+ 
+-	if (!net->sctp.auth_enable)
++	if (!ep->auth_enable)
+ 		return -EACCES;
+ 
+ 	if (optlen != sizeof(struct sctp_authkeyid))
+@@ -3476,8 +3475,7 @@ static int sctp_setsockopt_del_key(struc
+ 	if (!asoc && val.scact_assoc_id && sctp_style(sk, UDP))
+ 		return -EINVAL;
+ 
+-	return sctp_auth_del_key_id(sctp_sk(sk)->ep, asoc,
+-				    val.scact_keynumber);
++	return sctp_auth_del_key_id(ep, asoc, val.scact_keynumber);
+ 
+ }
+ 
+@@ -5368,16 +5366,16 @@ static int sctp_getsockopt_maxburst(stru
+ static int sctp_getsockopt_hmac_ident(struct sock *sk, int len,
+ 				    char __user *optval, int __user *optlen)
+ {
+-	struct net *net = sock_net(sk);
++	struct sctp_endpoint *ep = sctp_sk(sk)->ep;
+ 	struct sctp_hmacalgo  __user *p = (void __user *)optval;
+ 	struct sctp_hmac_algo_param *hmacs;
+ 	__u16 data_len = 0;
+ 	u32 num_idents;
+ 
+-	if (!net->sctp.auth_enable)
++	if (!ep->auth_enable)
+ 		return -EACCES;
+ 
+-	hmacs = sctp_sk(sk)->ep->auth_hmacs_list;
++	hmacs = ep->auth_hmacs_list;
+ 	data_len = ntohs(hmacs->param_hdr.length) - sizeof(sctp_paramhdr_t);
+ 
+ 	if (len < sizeof(struct sctp_hmacalgo) + data_len)
+@@ -5398,11 +5396,11 @@ static int sctp_getsockopt_hmac_ident(st
+ static int sctp_getsockopt_active_key(struct sock *sk, int len,
+ 				    char __user *optval, int __user *optlen)
+ {
+-	struct net *net = sock_net(sk);
++	struct sctp_endpoint *ep = sctp_sk(sk)->ep;
+ 	struct sctp_authkeyid val;
+ 	struct sctp_association *asoc;
+ 
+-	if (!net->sctp.auth_enable)
++	if (!ep->auth_enable)
+ 		return -EACCES;
+ 
+ 	if (len < sizeof(struct sctp_authkeyid))
+@@ -5417,7 +5415,7 @@ static int sctp_getsockopt_active_key(st
+ 	if (asoc)
+ 		val.scact_keynumber = asoc->active_key_id;
+ 	else
+-		val.scact_keynumber = sctp_sk(sk)->ep->active_key_id;
++		val.scact_keynumber = ep->active_key_id;
+ 
+ 	len = sizeof(struct sctp_authkeyid);
+ 	if (put_user(len, optlen))
+@@ -5431,7 +5429,7 @@ static int sctp_getsockopt_active_key(st
+ static int sctp_getsockopt_peer_auth_chunks(struct sock *sk, int len,
+ 				    char __user *optval, int __user *optlen)
+ {
+-	struct net *net = sock_net(sk);
++	struct sctp_endpoint *ep = sctp_sk(sk)->ep;
+ 	struct sctp_authchunks __user *p = (void __user *)optval;
+ 	struct sctp_authchunks val;
+ 	struct sctp_association *asoc;
+@@ -5439,7 +5437,7 @@ static int sctp_getsockopt_peer_auth_chu
+ 	u32    num_chunks = 0;
+ 	char __user *to;
+ 
+-	if (!net->sctp.auth_enable)
++	if (!ep->auth_enable)
+ 		return -EACCES;
+ 
+ 	if (len < sizeof(struct sctp_authchunks))
+@@ -5475,7 +5473,7 @@ num:
+ static int sctp_getsockopt_local_auth_chunks(struct sock *sk, int len,
+ 				    char __user *optval, int __user *optlen)
+ {
+-	struct net *net = sock_net(sk);
++	struct sctp_endpoint *ep = sctp_sk(sk)->ep;
+ 	struct sctp_authchunks __user *p = (void __user *)optval;
+ 	struct sctp_authchunks val;
+ 	struct sctp_association *asoc;
+@@ -5483,7 +5481,7 @@ static int sctp_getsockopt_local_auth_ch
+ 	u32    num_chunks = 0;
+ 	char __user *to;
+ 
+-	if (!net->sctp.auth_enable)
++	if (!ep->auth_enable)
+ 		return -EACCES;
+ 
+ 	if (len < sizeof(struct sctp_authchunks))
+@@ -5500,7 +5498,7 @@ static int sctp_getsockopt_local_auth_ch
+ 	if (asoc)
+ 		ch = (struct sctp_chunks_param*)asoc->c.auth_chunks;
+ 	else
+-		ch = sctp_sk(sk)->ep->auth_chunk_list;
++		ch = ep->auth_chunk_list;
+ 
+ 	if (!ch)
+ 		goto num;
+--- a/net/sctp/sysctl.c
++++ b/net/sctp/sysctl.c
+@@ -65,8 +65,11 @@ extern int sysctl_sctp_wmem[3];
+ static int proc_sctp_do_hmac_alg(ctl_table *ctl,
+ 				int write,
+ 				void __user *buffer, size_t *lenp,
+-
+ 				loff_t *ppos);
++static int proc_sctp_do_auth(struct ctl_table *ctl, int write,
++			     void __user *buffer, size_t *lenp,
++			     loff_t *ppos);
++
+ static ctl_table sctp_table[] = {
+ 	{
+ 		.procname	= "sctp_mem",
+@@ -267,7 +270,7 @@ static ctl_table sctp_net_table[] = {
+ 		.data		= &init_net.sctp.auth_enable,
+ 		.maxlen		= sizeof(int),
+ 		.mode		= 0644,
+-		.proc_handler	= proc_dointvec,
++		.proc_handler	= proc_sctp_do_auth,
+ 	},
+ 	{
+ 		.procname	= "addr_scope_policy",
+@@ -346,6 +349,37 @@ static int proc_sctp_do_hmac_alg(ctl_tab
+ 	}
+ 
+ 	return ret;
++}
++
++static int proc_sctp_do_auth(struct ctl_table *ctl, int write,
++			     void __user *buffer, size_t *lenp,
++			     loff_t *ppos)
++{
++	struct net *net = current->nsproxy->net_ns;
++	struct ctl_table tbl;
++	int new_value, ret;
++
++	memset(&tbl, 0, sizeof(struct ctl_table));
++	tbl.maxlen = sizeof(unsigned int);
++
++	if (write)
++		tbl.data = &new_value;
++	else
++		tbl.data = &net->sctp.auth_enable;
++
++	ret = proc_dointvec(&tbl, write, buffer, lenp, ppos);
++
++	if (write) {
++		struct sock *sk = net->sctp.ctl_sock;
++
++		net->sctp.auth_enable = new_value;
++		/* Update the value in the control socket */
++		lock_sock(sk);
++		sctp_sk(sk)->ep->auth_enable = new_value;
++		release_sock(sk);
++	}
++
++	return ret;
+ }
+ 
+ int sctp_sysctl_net_register(struct net *net)
+
 
