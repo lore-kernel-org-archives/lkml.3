@@ -1,101 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757560AbaE2OVN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 10:21:13 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:59331 "EHLO
+	id S1757441AbaE2OVL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 10:21:11 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:59337 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933167AbaE2Nta (ORCPT
+	by vger.kernel.org with ESMTP id S933178AbaE2Nta (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 29 May 2014 09:49:30 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, James Bottomley <JBottomley@Parallels.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 018/103] SCSI: dual scan thread bug fix
-Date: Thu, 29 May 2014 15:48:03 +0200
-Message-Id: <40e27bd1b33c703c9b5ba66fc1c4f98419490727.1401371259.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org,
+        Aleksander Morgado <aleksander@aleksander.es>,
+        Hans-Christoph Schemmel <hans-christoph.schemmel@gemalto.com>,
+        Christian Schmiedl <christian.schmiedl@gemalto.com>,
+        Nicolaus Colberg <nicolaus.colberg@gemalto.com>,
+        David McCullough <david.mccullough@accelecon.com>,
+        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 015/103] net: qmi_wwan: add support for Cinterion PXS8 and PHS8
+Date: Thu, 29 May 2014 15:48:00 +0200
+Message-Id: <87344d15c7c16a64687365a73f62422ffa853545.1401371259.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <bcbac220dab16a4038ac1a7c5cfe3e7f034b3836.1401371258.git.jslaby@suse.cz>
 References: <bcbac220dab16a4038ac1a7c5cfe3e7f034b3836.1401371258.git.jslaby@suse.cz>
 In-Reply-To: <cover.1401371258.git.jslaby@suse.cz>
 References: <cover.1401371258.git.jslaby@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: James Bottomley <JBottomley@Parallels.com>
+From: Aleksander Morgado <aleksander@aleksander.es>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit f2495e228fce9f9cec84367547813cbb0d6db15a upstream.
+commit 9b2b6a2d669c909dd0b125fc834da94bcfc0aee7 upstream.
 
-In the highly unusual case where two threads are running concurrently through
-the scanning code scanning the same target, we run into the situation where
-one may allocate the target while the other is still using it.  In this case,
-because the reap checks for STARGET_CREATED and kills the target without
-reference counting, the second thread will do the wrong thing on reap.
+When the PXS8 and PHS8 devices show up with PID 0x0053 they will expose both a
+QMI port and a WWAN interface.
 
-Fix this by reference counting even creates and doing the STARGET_CREATED
-check in the final put.
-
-Tested-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+CC: Hans-Christoph Schemmel <hans-christoph.schemmel@gemalto.com>
+CC: Christian Schmiedl <christian.schmiedl@gemalto.com>
+CC: Nicolaus Colberg <nicolaus.colberg@gemalto.com>
+CC: David McCullough <david.mccullough@accelecon.com>
+Signed-off-by: Aleksander Morgado <aleksander@aleksander.es>
+Acked-by: Bjørn Mork <bjorn@mork.no>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/scsi/scsi_scan.c | 23 ++++++++++++++++-------
- 1 file changed, 16 insertions(+), 7 deletions(-)
+ drivers/net/usb/qmi_wwan.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/scsi/scsi_scan.c b/drivers/scsi/scsi_scan.c
-index 5fad646ee6e5..4109530e92a0 100644
---- a/drivers/scsi/scsi_scan.c
-+++ b/drivers/scsi/scsi_scan.c
-@@ -320,6 +320,7 @@ static void scsi_target_destroy(struct scsi_target *starget)
- 	struct Scsi_Host *shost = dev_to_shost(dev->parent);
- 	unsigned long flags;
+diff --git a/drivers/net/usb/qmi_wwan.c b/drivers/net/usb/qmi_wwan.c
+index 18dcafd64ff4..6d3532d73ef2 100644
+--- a/drivers/net/usb/qmi_wwan.c
++++ b/drivers/net/usb/qmi_wwan.c
+@@ -719,6 +719,7 @@ static const struct usb_device_id products[] = {
+ 	{QMI_FIXED_INTF(0x1bc7, 0x1201, 2)},	/* Telit LE920 */
+ 	{QMI_FIXED_INTF(0x0b3c, 0xc005, 6)},    /* Olivetti Olicard 200 */
+ 	{QMI_FIXED_INTF(0x1e2d, 0x0060, 4)},	/* Cinterion PLxx */
++	{QMI_FIXED_INTF(0x1e2d, 0x0053, 4)},	/* Cinterion PHxx,PXxx */
  
-+	starget->state = STARGET_DEL;
- 	transport_destroy_device(dev);
- 	spin_lock_irqsave(shost->host_lock, flags);
- 	if (shost->hostt->target_destroy)
-@@ -384,9 +385,15 @@ static void scsi_target_reap_ref_release(struct kref *kref)
- 	struct scsi_target *starget
- 		= container_of(kref, struct scsi_target, reap_ref);
- 
--	transport_remove_device(&starget->dev);
--	device_del(&starget->dev);
--	starget->state = STARGET_DEL;
-+	/*
-+	 * if we get here and the target is still in the CREATED state that
-+	 * means it was allocated but never made visible (because a scan
-+	 * turned up no LUNs), so don't call device_del() on it.
-+	 */
-+	if (starget->state != STARGET_CREATED) {
-+		transport_remove_device(&starget->dev);
-+		device_del(&starget->dev);
-+	}
- 	scsi_target_destroy(starget);
- }
- 
-@@ -506,11 +513,13 @@ static struct scsi_target *scsi_alloc_target(struct device *parent,
-  */
- void scsi_target_reap(struct scsi_target *starget)
- {
-+	/*
-+	 * serious problem if this triggers: STARGET_DEL is only set in the if
-+	 * the reap_ref drops to zero, so we're trying to do another final put
-+	 * on an already released kref
-+	 */
- 	BUG_ON(starget->state == STARGET_DEL);
--	if (starget->state == STARGET_CREATED)
--		scsi_target_destroy(starget);
--	else
--		scsi_target_reap_ref_put(starget);
-+	scsi_target_reap_ref_put(starget);
- }
- 
- /**
+ 	/* 4. Gobi 1000 devices */
+ 	{QMI_GOBI1K_DEVICE(0x05c6, 0x9212)},	/* Acer Gobi Modem Device */
 -- 
 1.9.3
 
