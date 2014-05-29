@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932633AbaE2Efj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 00:35:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58004 "EHLO
+	id S933533AbaE2FPk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 01:15:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58025 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932609AbaE2Eff (ORCPT
+	with ESMTP id S932625AbaE2Efi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 00:35:35 -0400
+	Thu, 29 May 2014 00:35:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Liu Yu <allanyuliu@tencent.com>, Eric Dumazet <edumazet@google.com>,
-        Neal Cardwell <ncardwell@google.com>,
+        Tom Gundersen <teg@jklm.no>,
+        Toshiaki Makita <makita.toshiaki@lab.ntt.co.jp>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 104/140] tcp_cubic: fix the range of delayed_ack
-Date: Wed, 28 May 2014 21:34:03 -0700
-Message-Id: <20140529043102.959654965@linuxfoundation.org>
+Subject: [PATCH 3.14 091/140] bridge: Handle IFLA_ADDRESS correctly when creating bridge device
+Date: Wed, 28 May 2014 21:33:50 -0700
+Message-Id: <20140529043101.331750494@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
 In-Reply-To: <20140529043049.661315084@linuxfoundation.org>
 References: <20140529043049.661315084@linuxfoundation.org>
@@ -29,44 +28,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Liu Yu <allanyuliu@tencent.com>
+From: Toshiaki Makita <makita.toshiaki@lab.ntt.co.jp>
 
-[ Upstream commit 0cda345d1b2201dd15591b163e3c92bad5191745 ]
+[ Upstream commit 30313a3d5794472c3548d7288e306a5492030370 ]
 
-commit b9f47a3aaeab (tcp_cubic: limit delayed_ack ratio to prevent
-divide error) try to prevent divide error, but there is still a little
-chance that delayed_ack can reach zero. In case the param cnt get
-negative value, then ratio+cnt would overflow and may happen to be zero.
-As a result, min(ratio, ACK_RATIO_LIMIT) will calculate to be zero.
+When bridge device is created with IFLA_ADDRESS, we are not calling
+br_stp_change_bridge_id(), which leads to incorrect local fdb
+management and bridge id calculation, and prevents us from receiving
+frames on the bridge device.
 
-In some old kernels, such as 2.6.32, there is a bug that would
-pass negative param, which then ultimately leads to this divide error.
-
-commit 5b35e1e6e9c (tcp: fix tcp_trim_head() to adjust segment count
-with skb MSS) fixed the negative param issue. However,
-it's safe that we fix the range of delayed_ack as well,
-to make sure we do not hit a divide by zero.
-
-CC: Stephen Hemminger <shemminger@vyatta.com>
-Signed-off-by: Liu Yu <allanyuliu@tencent.com>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Acked-by: Neal Cardwell <ncardwell@google.com>
+Reported-by: Tom Gundersen <teg@jklm.no>
+Signed-off-by: Toshiaki Makita <makita.toshiaki@lab.ntt.co.jp>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/tcp_cubic.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/bridge/br_netlink.c |   15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
 
---- a/net/ipv4/tcp_cubic.c
-+++ b/net/ipv4/tcp_cubic.c
-@@ -409,7 +409,7 @@ static void bictcp_acked(struct sock *sk
- 		ratio -= ca->delayed_ack >> ACK_RATIO_SHIFT;
- 		ratio += cnt;
+--- a/net/bridge/br_netlink.c
++++ b/net/bridge/br_netlink.c
+@@ -445,6 +445,20 @@ static int br_validate(struct nlattr *tb
+ 	return 0;
+ }
  
--		ca->delayed_ack = min(ratio, ACK_RATIO_LIMIT);
-+		ca->delayed_ack = clamp(ratio, 1U, ACK_RATIO_LIMIT);
- 	}
++static int br_dev_newlink(struct net *src_net, struct net_device *dev,
++			  struct nlattr *tb[], struct nlattr *data[])
++{
++	struct net_bridge *br = netdev_priv(dev);
++
++	if (tb[IFLA_ADDRESS]) {
++		spin_lock_bh(&br->lock);
++		br_stp_change_bridge_id(br, nla_data(tb[IFLA_ADDRESS]));
++		spin_unlock_bh(&br->lock);
++	}
++
++	return register_netdevice(dev);
++}
++
+ static size_t br_get_link_af_size(const struct net_device *dev)
+ {
+ 	struct net_port_vlans *pv;
+@@ -473,6 +487,7 @@ struct rtnl_link_ops br_link_ops __read_
+ 	.priv_size	= sizeof(struct net_bridge),
+ 	.setup		= br_dev_setup,
+ 	.validate	= br_validate,
++	.newlink	= br_dev_newlink,
+ 	.dellink	= br_dev_delete,
+ };
  
- 	/* Some calls are for duplicates without timetamps */
 
 
