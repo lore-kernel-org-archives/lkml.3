@@ -1,65 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756281AbaE2IJq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 04:09:46 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:50958 "EHLO
-	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754741AbaE2IJn (ORCPT
+	id S1756797AbaE2IKK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 04:10:10 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:38836 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756330AbaE2IKF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 04:09:43 -0400
-X-Original-SENDERIP: 10.178.33.69
-X-Original-MAILFROM: gioh.kim@lge.com
-Message-ID: <5386EB3E.5090007@lge.com>
-Date: Thu, 29 May 2014 17:09:34 +0900
-From: Gioh Kim <gioh.kim@lge.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Thu, 29 May 2014 04:10:05 -0400
+Date: Thu, 29 May 2014 09:07:05 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: AKASHI Takahiro <takahiro.akashi@linaro.org>,
+        "rostedt@goodmis.org" <rostedt@goodmis.org>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "tim.bird@sonymobile.com" <tim.bird@sonymobile.com>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "arndb@arndb.de" <arndb@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dsaxena@linaro.org" <dsaxena@linaro.org>,
+        "gkulkarni@caviumnetworks.com" <gkulkarni@caviumnetworks.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v8 5/8] arm64: Add ftrace support
+Message-ID: <20140529080705.GD29812@arm.com>
+References: <1394862048-28758-1-git-send-email-takahiro.akashi@linaro.org>
+ <1398851676-16389-1-git-send-email-takahiro.akashi@linaro.org>
+ <1398851676-16389-6-git-send-email-takahiro.akashi@linaro.org>
+ <20140528201955.GJ5099@sirena.org.uk>
 MIME-Version: 1.0
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mgorman@suse.de>,
-        Laura Abbott <lauraa@codeaurora.org>, Minchan Kim <minchan@kernel.org>,
-        Heesub Shin <heesub.shin@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/3] CMA: aggressively allocate the pages on cma reserved
- memory when not used
-References: <1401260672-28339-1-git-send-email-iamjoonsoo.kim@lge.com> <1401260672-28339-3-git-send-email-iamjoonsoo.kim@lge.com> <5386E0CA.5040201@lge.com> <20140529074847.GA7554@js1304-P5Q-DELUXE>
-In-Reply-To: <20140529074847.GA7554@js1304-P5Q-DELUXE>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140528201955.GJ5099@sirena.org.uk>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, May 28, 2014 at 09:19:55PM +0100, Mark Brown wrote:
+> On Wed, Apr 30, 2014 at 06:54:33PM +0900, AKASHI Takahiro wrote:
+> 
+> > +/*
+> > + * arch/arm64/kernel/entry-ftrace.S
+> > + *
+> > + * Copyright (C) 2013 Linaro Limited
+> > + * Author: AKASHI Takahiro <takahiro.akashi@linaro.org>
+> > + *
+> > + * This program is free software; you can redistribute it and/or modify
+> > + * it under the terms of the GNU General Public License version 2 as
+> > + * published by the Free Software Foundation.
+> > + */
+> > +
+> > +#include <linux/linkage.h>
+> > +#include <asm/ftrace.h>
+> > +#include <asm/insn.h>
+> 
+> asm/insn.h contains a bunch of C stuff which won't build without
+> __ASSEMBLY__ guards unless I'm missing something (I'm working with a
+> non-mainline tree so I might be).
 
->>> +
->>>    /*
->>>     * Do the hard work of removing an element from the buddy allocator.
->>>     * Call me with the zone->lock already held.
->>> @@ -1143,10 +1223,15 @@ __rmqueue_fallback(struct zone *zone, int order, int start_migratetype)
->>>    static struct page *__rmqueue(struct zone *zone, unsigned int order,
->>>    						int migratetype)
->>>    {
->>> -	struct page *page;
->>> +	struct page *page = NULL;
->>> +
->>> +	if (IS_ENABLED(CONFIG_CMA) &&
->>
->> You might know that CONFIG_CMA is enabled and there is no CMA memory, because CONFIG_CMA_SIZE_MBYTES can be zero.
->> Is IS_ENABLED(CONFIG_CMA) alright in that case?
->
-> next line checks whether zone->managed_cma_pages is positive or not.
-> If there is no CMA memory, zone->managed_cma_pages will be zero and
-> we will skip to call __rmqueue_cma().
+The guards are added earlier in this series.
 
-Is IS_ENABLED(CONFIG_CMA) necessary?
-What about if (migratetype == MIGRATE_MOVABLE && zone->managed_cma_pages) ?
-
->
-> Thanks for review!!!
->
-> Thanks.
->
->
+Will
