@@ -1,54 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932790AbaE2Nal (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 09:30:41 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:57506 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932413AbaE2Naj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 09:30:39 -0400
-Date: Thu, 29 May 2014 14:30:36 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Miklos Szeredi <mszeredi@suse.cz>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: fs/dcache.c - BUG: soft lockup - CPU#5 stuck for 22s!
- [systemd-udevd:1667]
-Message-ID: <20140529133036.GJ18016@ZenIV.linux.org.uk>
-References: <20140528073751.GB1757@lahna.fi.intel.com>
- <20140528115701.GY18016@ZenIV.linux.org.uk>
- <20140528131136.GA1643@lahna.fi.intel.com>
- <20140528141937.GZ18016@ZenIV.linux.org.uk>
- <20140528183954.GA18016@ZenIV.linux.org.uk>
- <20140529031149.GE18016@ZenIV.linux.org.uk>
- <20140529035233.GF18016@ZenIV.linux.org.uk>
- <20140529053444.GI18016@ZenIV.linux.org.uk>
- <20140529105107.GB1938@lahna.fi.intel.com>
- <20140529110439.GA2006@lahna.fi.intel.com>
+	id S932823AbaE2NeJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 09:34:09 -0400
+Received: from mail.kernel.org ([198.145.19.201]:47904 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756576AbaE2NeH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 09:34:07 -0400
+Date: Thu, 29 May 2014 15:33:57 +0200
+From: Sebastian Reichel <sre@kernel.org>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Dmitry Torokhov <dtor@mail.ru>, linux-input@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv4 0/4] tsc2005 DT binding
+Message-ID: <20140529133356.GA4716@earth.universe>
+References: <1400693774-21306-1-git-send-email-sre@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="sdtB3X0nJg68CQEu"
 Content-Disposition: inline
-In-Reply-To: <20140529110439.GA2006@lahna.fi.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1400693774-21306-1-git-send-email-sre@kernel.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 29, 2014 at 02:04:39PM +0300, Mika Westerberg wrote:
 
-> With your both patches applied the problem is gone :-)
-> 
-> I did 20 plug/unplugs, rebooted the machine and another 20 plug/unplugs
-> and didn't see the livelock at once.
+--sdtB3X0nJg68CQEu
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Great...  OK, saner splitup of that sucker (equivalent to combination of
-these two patches) is in vfs.git#for-linus.
+On Wed, May 21, 2014 at 07:36:10PM +0200, Sebastian Reichel wrote:
+> This adds device tree support for the tsc2005 touchscreen
+> controller, which is currently only used by the Nokia N900
+> board.
+>=20
+> The patch does not update the reset pin handling for platform
+> data based probe to avoid merge conflicts. The n900 platform
+> code will be removed in the near future (3.17?) and the driver
+> can be simplified once that has happened.
+>=20
+> Changes since v3 [0]:
+>  * Move common touchscreen DT handling code into its own file
+>  * Add regulator support to tsc2005 driver
+>  * Added N900 DTS patch for completeness. It should go via
+>    Tony's Tree of course.
 
-Review and testing would be very welcome.
+ping! It would be nice to have this in 3.16, since it makes
+the N900 usable with the mainline kernel when booted in DT
+mode. The DT bindings haven't changed for more than 3 weeks,
+so we don't need to wait longer for feedback from the DT
+maintainers AFAIK.
 
-PS: The diff between that and aforementioned "both patches applied" is noise -
-dentry and parent declarations had been moved into the loop body there,
-while in #for-linus they are left alone.  So Mika's testing results should
-apply to that one as well.
+-- Sebastian
+
+--sdtB3X0nJg68CQEu
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBCgAGBQJThzdEAAoJENju1/PIO/qaZXoQAJ9ifTNGksfdMZ7yWbgM9NKL
+6MUMajU8zESTicwRp2woT/cCfRuTUFtgdm+j4nc/yRAqikeUPMwBnOgY+IKOlb/W
+bxTdBwVeWm7OuM8jJvXwktj1Y/Mr3yo1Wr4/vHGZoK8P7EalB1m9GqAnx6fVhuMz
+iPS0dF1TvgDXa7xOQl/riFPB+bVd7v8hZhqNYjLHUvxgRf3yN2KADdohMRPyxHWl
+hZSc6Z/mnCXCk+7ompwpTzgk6IAe+Mxbmogp07AwnQbYiykZKD4sBkqt45Dih9P+
+zBGnO2iI0o986U0UC3aBlx2Vf9fi/yZO2ZK6nJS8xcz/YIagDcyjyRBAnLdrz50w
+nPEkw3WNyS+1NVXO3rUTveAZYGLUaGK1hYl9ZTrh+rsaw3Blc/YpD/Ik4Qhqy1tu
+0QUcKRSeXDnbdVqxGksG5PF6y7gSwq8Bp2+o06ICyClNax1OECQDpsZZa9U3M2AF
+X3TxtHgUlza12aOVn7G1maZY67fKHzZIlEcwTl7GDeAZWNr1zgac1MJI7VmXJ+tZ
+eShfiLG1M8kWnEdOM19XIQAq9A0EX7YmKjCEOMESx18+erQ9L9XprIUfIIrKIiIL
+dKGeIni9cllVOuEUFJP5+DwsAVbFdo1K/4cC8MckKj+1oKd3PW5XrMTOc5OYQdRX
+Dy4JB3wJ7GnBQqThOxXZ
+=Ib1e
+-----END PGP SIGNATURE-----
+
+--sdtB3X0nJg68CQEu--
