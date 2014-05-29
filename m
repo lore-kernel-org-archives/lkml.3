@@ -1,50 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934188AbaE2Run (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 13:50:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51630 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932640AbaE2Rul (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 13:50:41 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <CA+icZUWeyh3GEUr9+naecGVECUp4mXNQuOuj--r78f2f5UdgdA@mail.gmail.com>
-References: <CA+icZUWeyh3GEUr9+naecGVECUp4mXNQuOuj--r78f2f5UdgdA@mail.gmail.com> <1400838223-30844-1-git-send-email-miklos@szeredi.hu> <28592.1401382081@warthog.procyon.org.uk> <CA+icZUXfzPsqZt6=o5evcQ2xO9XGKcMVYBO1zco0aEmGn_x0rA@mail.gmail.com> <29026.1401383705@warthog.procyon.org.uk>
-To: sedat.dilek@gmail.com
-Cc: dhowells@redhat.com, Miklos Szeredi <miklos@szeredi.hu>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>, apw@canonical.com,
-        Felix Fietkau <nbd@openwrt.org>, neilb@suse.de, jordipujolp@gmail.com,
-        ezk@fsl.cs.sunysb.edu, "J. R. Okajima" <hooanon05@yahoo.co.jp>,
-        mszeredi@suse.cz
-Subject: Re: Unionmount and overlayfs testsuite
-Date: Thu, 29 May 2014 18:50:03 +0100
-Message-ID: <31514.1401385803@warthog.procyon.org.uk>
+	id S934636AbaE2RvN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 13:51:13 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:41866 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932640AbaE2RvK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 13:51:10 -0400
+From: navin patidar <navin.patidar@gmail.com>
+To: gregkh@linuxfoundation.org, Larry.Finger@lwfinger.net
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        navin patidar <navin.patidar@gmail.com>
+Subject: [PATCH 01/18] staging: rtl8188eu: Remove "silentreset_mutex" from struct sreset_priv
+Date: Thu, 29 May 2014 23:20:41 +0530
+Message-Id: <1401385858-28722-1-git-send-email-navin.patidar@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sedat Dilek <sedat.dilek@gmail.com> wrote:
+silentreset_mutex initialized but not being used.
 
-> config LOCKDEP
->         bool
+Signed-off-by: navin patidar <navin.patidar@gmail.com>
+---
+ drivers/staging/rtl8188eu/core/rtw_sreset.c    |    1 -
+ drivers/staging/rtl8188eu/include/rtw_sreset.h |    1 -
+ 2 files changed, 2 deletions(-)
 
-It has no name, so you can't turn it on manually.  You have to enable
-something the depends on or selects it.
+diff --git a/drivers/staging/rtl8188eu/core/rtw_sreset.c b/drivers/staging/rtl8188eu/core/rtw_sreset.c
+index ee20d4a..b7b787e 100644
+--- a/drivers/staging/rtl8188eu/core/rtw_sreset.c
++++ b/drivers/staging/rtl8188eu/core/rtw_sreset.c
+@@ -25,7 +25,6 @@ void sreset_init_value(struct adapter *padapter)
+ 	struct hal_data_8188e	*pHalData = GET_HAL_DATA(padapter);
+ 	struct sreset_priv *psrtpriv = &pHalData->srestpriv;
+ 
+-	mutex_init(&psrtpriv->silentreset_mutex);
+ 	psrtpriv->silent_reset_inprogress = false;
+ 	psrtpriv->Wifi_Error_Status = WIFI_STATUS_SUCCESS;
+ 	psrtpriv->last_tx_time = 0;
+diff --git a/drivers/staging/rtl8188eu/include/rtw_sreset.h b/drivers/staging/rtl8188eu/include/rtw_sreset.h
+index 2a1244f..fbfdffb 100644
+--- a/drivers/staging/rtl8188eu/include/rtw_sreset.h
++++ b/drivers/staging/rtl8188eu/include/rtw_sreset.h
+@@ -24,7 +24,6 @@
+ #include <drv_types.h>
+ 
+ struct sreset_priv {
+-	struct mutex	silentreset_mutex;
+ 	u8	silent_reset_inprogress;
+ 	u8	Wifi_Error_Status;
+ 	unsigned long last_tx_time;
+-- 
+1.7.10.4
 
-Turn on:
-
-	CONFIG_DEBUG_ATOMIC_SLEEP=y
-	CONFIG_DEBUG_LOCK_ALLOC=y
-	CONFIG_DEBUG_MUTEXES=y
-	CONFIG_DEBUG_RT_MUTEXES=y
-	CONFIG_DEBUG_SPINLOCK=y
-
-David
