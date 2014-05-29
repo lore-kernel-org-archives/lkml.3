@@ -1,20 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934530AbaE2F34 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 01:29:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57797 "EHLO
+	id S934535AbaE2FaU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 01:30:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57795 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756328AbaE2EfI (ORCPT
+	with ESMTP id S1756324AbaE2EfI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 29 May 2014 00:35:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Hellstrom <thellstrom@vmware.com>,
-        Jakob Bornecrantz <jakob@vmware.com>
-Subject: [PATCH 3.14 057/140] drm/vmwgfx: Make sure user-space cant DMA across buffer object boundaries v2
-Date: Wed, 28 May 2014 21:33:16 -0700
-Message-Id: <20140529043056.801093160@linuxfoundation.org>
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Sasha Levin <sasha.levin@oracle.com>, Bob Liu <lliubbo@gmail.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Michel Lespinasse <walken@google.com>,
+        Dave Jones <davej@redhat.com>, Vlastimil Babka <vbabka@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.14 034/140] thp: close race between split and zap huge pages
+Date: Wed, 28 May 2014 21:32:53 -0700
+Message-Id: <20140529043053.762030739@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
 In-Reply-To: <20140529043049.661315084@linuxfoundation.org>
 References: <20140529043049.661315084@linuxfoundation.org>
@@ -27,61 +32,136 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Hellstrom <thellstrom@vmware.com>
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-commit cbd75e97a525e3819c02dc18bc2d67aa544c9e45 upstream.
+commit b5a8cad376eebbd8598642697e92a27983aee802 upstream.
 
-We already check that the buffer object we're accessing is registered with
-the file. Now also make sure that we can't DMA across buffer object boundaries.
+Sasha Levin has reported two THP BUGs[1][2].  I believe both of them
+have the same root cause.  Let's look to them one by one.
 
-v2: Code commenting update.
+The first bug[1] is "kernel BUG at mm/huge_memory.c:1829!".  It's
+BUG_ON(mapcount != page_mapcount(page)) in __split_huge_page().  From my
+testing I see that page_mapcount() is higher than mapcount here.
 
-Signed-off-by: Thomas Hellstrom <thellstrom@vmware.com>
-Reviewed-by: Jakob Bornecrantz <jakob@vmware.com>
+I think it happens due to race between zap_huge_pmd() and
+page_check_address_pmd().  page_check_address_pmd() misses PMD which is
+under zap:
+
+	CPU0						CPU1
+						zap_huge_pmd()
+						  pmdp_get_and_clear()
+__split_huge_page()
+  anon_vma_interval_tree_foreach()
+    __split_huge_page_splitting()
+      page_check_address_pmd()
+        mm_find_pmd()
+	  /*
+	   * We check if PMD present without taking ptl: no
+	   * serialization against zap_huge_pmd(). We miss this PMD,
+	   * it's not accounted to 'mapcount' in __split_huge_page().
+	   */
+	  pmd_present(pmd) == 0
+
+  BUG_ON(mapcount != page_mapcount(page)) // CRASH!!!
+
+						  page_remove_rmap(page)
+						    atomic_add_negative(-1, &page->_mapcount)
+
+The second bug[2] is "kernel BUG at mm/huge_memory.c:1371!".
+It's VM_BUG_ON_PAGE(!PageHead(page), page) in zap_huge_pmd().
+
+This happens in similar way:
+
+	CPU0						CPU1
+						zap_huge_pmd()
+						  pmdp_get_and_clear()
+						  page_remove_rmap(page)
+						    atomic_add_negative(-1, &page->_mapcount)
+__split_huge_page()
+  anon_vma_interval_tree_foreach()
+    __split_huge_page_splitting()
+      page_check_address_pmd()
+        mm_find_pmd()
+	  pmd_present(pmd) == 0	/* The same comment as above */
+  /*
+   * No crash this time since we already decremented page->_mapcount in
+   * zap_huge_pmd().
+   */
+  BUG_ON(mapcount != page_mapcount(page))
+
+  /*
+   * We split the compound page here into small pages without
+   * serialization against zap_huge_pmd()
+   */
+  __split_huge_page_refcount()
+						VM_BUG_ON_PAGE(!PageHead(page), page); // CRASH!!!
+
+So my understanding the problem is pmd_present() check in mm_find_pmd()
+without taking page table lock.
+
+The bug was introduced by me commit with commit 117b0791ac42. Sorry for
+that. :(
+
+Let's open code mm_find_pmd() in page_check_address_pmd() and do the
+check under page table lock.
+
+Note that __page_check_address() does the same for PTE entires
+if sync != 0.
+
+I've stress tested split and zap code paths for 36+ hours by now and
+don't see crashes with the patch applied. Before it took <20 min to
+trigger the first bug and few hours for second one (if we ignore
+first).
+
+[1] https://lkml.kernel.org/g/<53440991.9090001@oracle.com>
+[2] https://lkml.kernel.org/g/<5310C56C.60709@oracle.com>
+
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Reported-by: Sasha Levin <sasha.levin@oracle.com>
+Tested-by: Sasha Levin <sasha.levin@oracle.com>
+Cc: Bob Liu <lliubbo@gmail.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Michel Lespinasse <walken@google.com>
+Cc: Dave Jones <davej@redhat.com>
+Cc: Vlastimil Babka <vbabka@suse.cz>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/vmwgfx/vmwgfx_execbuf.c |   22 ++++++++++++++++++++++
- 1 file changed, 22 insertions(+)
+ mm/huge_memory.c |   13 ++++++++++---
+ 1 file changed, 10 insertions(+), 3 deletions(-)
 
---- a/drivers/gpu/drm/vmwgfx/vmwgfx_execbuf.c
-+++ b/drivers/gpu/drm/vmwgfx/vmwgfx_execbuf.c
-@@ -1214,14 +1214,36 @@ static int vmw_cmd_dma(struct vmw_privat
- 		SVGA3dCmdSurfaceDMA dma;
- 	} *cmd;
- 	int ret;
-+	SVGA3dCmdSurfaceDMASuffix *suffix;
-+	uint32_t bo_size;
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1611,16 +1611,23 @@ pmd_t *page_check_address_pmd(struct pag
+ 			      enum page_check_address_pmd_flag flag,
+ 			      spinlock_t **ptl)
+ {
++	pgd_t *pgd;
++	pud_t *pud;
+ 	pmd_t *pmd;
  
- 	cmd = container_of(header, struct vmw_dma_cmd, header);
-+	suffix = (SVGA3dCmdSurfaceDMASuffix *)((unsigned long) &cmd->dma +
-+					       header->size - sizeof(*suffix));
-+
-+	/* Make sure device and verifier stays in sync. */
-+	if (unlikely(suffix->suffixSize != sizeof(*suffix))) {
-+		DRM_ERROR("Invalid DMA suffix size.\n");
-+		return -EINVAL;
-+	}
-+
- 	ret = vmw_translate_guest_ptr(dev_priv, sw_context,
- 				      &cmd->dma.guest.ptr,
- 				      &vmw_bo);
- 	if (unlikely(ret != 0))
- 		return ret;
+ 	if (address & ~HPAGE_PMD_MASK)
+ 		return NULL;
  
-+	/* Make sure DMA doesn't cross BO boundaries. */
-+	bo_size = vmw_bo->base.num_pages * PAGE_SIZE;
-+	if (unlikely(cmd->dma.guest.ptr.offset > bo_size)) {
-+		DRM_ERROR("Invalid DMA offset.\n");
-+		return -EINVAL;
-+	}
+-	pmd = mm_find_pmd(mm, address);
+-	if (!pmd)
++	pgd = pgd_offset(mm, address);
++	if (!pgd_present(*pgd))
+ 		return NULL;
++	pud = pud_offset(pgd, address);
++	if (!pud_present(*pud))
++		return NULL;
++	pmd = pmd_offset(pud, address);
 +
-+	bo_size -= cmd->dma.guest.ptr.offset;
-+	if (unlikely(suffix->maximumOffset > bo_size))
-+		suffix->maximumOffset = bo_size;
-+
- 	ret = vmw_cmd_res_check(dev_priv, sw_context, vmw_res_surface,
- 				user_surface_converter, &cmd->dma.host.sid,
- 				NULL);
+ 	*ptl = pmd_lock(mm, pmd);
+-	if (pmd_none(*pmd))
++	if (!pmd_present(*pmd))
+ 		goto unlock;
+ 	if (pmd_page(*pmd) != page)
+ 		goto unlock;
 
 
