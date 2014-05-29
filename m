@@ -1,51 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758044AbaE2RPs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 13:15:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9415 "EHLO mx1.redhat.com"
+	id S1758050AbaE2RQR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 13:16:17 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50597 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758027AbaE2RPr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 13:15:47 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <CA+icZUXfzPsqZt6=o5evcQ2xO9XGKcMVYBO1zco0aEmGn_x0rA@mail.gmail.com>
-References: <CA+icZUXfzPsqZt6=o5evcQ2xO9XGKcMVYBO1zco0aEmGn_x0rA@mail.gmail.com> <1400838223-30844-1-git-send-email-miklos@szeredi.hu> <28592.1401382081@warthog.procyon.org.uk>
-To: sedat.dilek@gmail.com
-Cc: dhowells@redhat.com, Miklos Szeredi <miklos@szeredi.hu>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>, apw@canonical.com,
-        Felix Fietkau <nbd@openwrt.org>, neilb@suse.de, jordipujolp@gmail.com,
-        ezk@fsl.cs.sunysb.edu, "J. R. Okajima" <hooanon05@yahoo.co.jp>,
-        mszeredi@suse.cz
-Subject: Re: Unionmount and overlayfs testsuite
-Date: Thu, 29 May 2014 18:15:05 +0100
-Message-ID: <29026.1401383705@warthog.procyon.org.uk>
+	id S1756902AbaE2RQQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 13:16:16 -0400
+Date: Thu, 29 May 2014 18:16:08 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH] mm: page_alloc: Reset fair zone allocation policy only
+ when batch counts are expired
+Message-ID: <20140529171608.GB23991@suse.de>
+References: <20140529090432.GY23991@suse.de>
+ <20140529143832.GJ2878@cmpxchg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20140529143832.GJ2878@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sedat Dilek <sedat.dilek@gmail.com> wrote:
+On Thu, May 29, 2014 at 10:38:32AM -0400, Johannes Weiner wrote:
+> Hi Mel!
+> 
+> On Thu, May 29, 2014 at 10:04:32AM +0100, Mel Gorman wrote:
+> > The fair zone allocation policy round-robins allocations between zones on
+> > a node to avoid age inversion problems during reclaim using a counter to
+> > manage the round-robin. If the first allocation fails, the batch counts get
+> > reset and the allocation is attempted again before going into the slow path.
+> > There are at least two problems with this
+> > 
+> > 1. If the eligible zones are below the low watermark we reset the counts
+> >    even though the batches might be fine.
+> 
+> The idea behind setting the batches to high-low was that they should
+> be roughly exhausted by the time the low watermark is hit.  And that
+> misconception must be the crux of this patch, because if they *were*
+> to exhaust together this patch wouldn't make a difference.
+> 
+> But once they diverge, we reset the batches prematurely, which means
+> not everybody is getting their fair share, and that reverts us back to
+> an imbalance in zone utilization.
+> 
+> So I think the changelog should include why this assumption was wrong.
+> 
 
-> # grep LOCKDEP /boot/config-3.15.0-rc7-58.1-iniza-small
-> CONFIG_LOCKDEP_SUPPORT=y
+They won't exhaust together when there are multiple allocation requests
+simply on the basis that there is no lock there and there is per-cpu
+accounting drift for vmstats. You'd at least expect them to drift by the
+per-cpu update threshold.
 
-That's not LOCKDEP, merely support for it.  What I see:
+> > 2. We potentially do batch resets even when the right choice is to fallback
+> >    to other nodes.
+> 
+> We only fall back to other nodes when the fairness cycle is over and
+> all local zones have been considered fair and square.  Why *not* reset
+> the batches and start a new fairness cycle at this point?  Remember
+> that remote nodes are not - can not - be part of the fairness cycle.
+> 
+> So I think this one is a red herring.
+> 
 
-	warthog>grep LOCKDEP build/.config
-	CONFIG_LOCKDEP_SUPPORT=y
-	CONFIG_LOCKDEP=y
+Ok. There have been a lot of red herrings chasing down this one
+unfortunately as it was not possible to bisect and there were a lot of
+candidates :/
 
-> ./tool_box.inc: line 144: /usr/local/bin/open-file: No such file or directory
+> > When resetting batch counts, it was expected that the count would be <=
+> > 0 but the bizarre side-effect is that we are resetting counters that were
+> > initially postive so (high - low - batch) potentially sets a high positive
+> > batch count to close to 0. This leads to a premature reset in the near
+> > future, more overhead and more ... screwing around.
+> 
+> We're just adding the missing delta between the "should" and "is"
+> value to the existing batch, so a high batch value means small delta,
+> and we *add* a value close to 0, we don't *set* the batch close to 0.
+> 
+> I think this one is a red herring as well.
+> 
 
-Did you follow this step in the README file?
+There are still boundary issues that results in screwing around and
+maybe I should have focused on this one instead. The situation I had in
+mind started out as follows
 
-	(2) Copy fs-op and open-file to /usr/local/bin/
+high zone alloc batch	1000	low watermark not ok
+low zone alloc batch	   0	low watermark     ok
 
-David
+during the fairness cycle, no action can take place. The higher zone is not
+allowed to allcoate at below the low watermark and must always enter the
+slow path. The lower zone also temporarily cannot be used. At this point, a
+reset takes place and the system continues until the low watermark is reached
+
+high zone alloc batch	1000	low watermark not ok
+low zone allooc batch	 100	low watermark not ok
+
+During this window, every ALLOC_FAIR is going to fail to due watermarks but
+still do another zone batch reset and recycle every time before falling
+into the slow path.  It ends up being more zonelist traversals which is
+why I moved the reset check inside get_page_from_freelist to detect the
+difference between ALLOC_FAIL failures and watermarks failures.
+
+The differences in timing when watermarks are hit may also account for
+some of the drift for when the alloc batches get depleted.
+
+> > The user-visible effect depends on zone sizes and a host of other effects
+> > the obvious one is that single-node machines with multiple zones will see
+> > degraded performance for streaming readers at least. The effect is also
+> > visible on NUMA machines but it may be harder to identify in the midst of
+> > other noise.
+> > 
+> > Comparison is tiobench with data size 2*RAM on ext3 on a small single-node
+> > machine and on an ext3 filesystem. Baseline kernel is mmotm with the
+> > shrinker and proportional reclaim patches on top.
+> > 
+> >                                       3.15.0-rc5            3.15.0-rc5
+> >                                   mmotm-20140528         fairzone-v1r1
+> > Mean   SeqRead-MB/sec-1         120.95 (  0.00%)      133.59 ( 10.45%)
+> > Mean   SeqRead-MB/sec-2         100.81 (  0.00%)      113.61 ( 12.70%)
+> > Mean   SeqRead-MB/sec-4          93.75 (  0.00%)      104.75 ( 11.74%)
+> > Mean   SeqRead-MB/sec-8          85.35 (  0.00%)       91.21 (  6.86%)
+> > Mean   SeqRead-MB/sec-16         68.91 (  0.00%)       74.77 (  8.49%)
+> > Mean   RandRead-MB/sec-1          1.08 (  0.00%)        1.07 ( -0.93%)
+> > Mean   RandRead-MB/sec-2          1.28 (  0.00%)        1.25 ( -2.34%)
+> > Mean   RandRead-MB/sec-4          1.54 (  0.00%)        1.51 ( -1.73%)
+> > Mean   RandRead-MB/sec-8          1.67 (  0.00%)        1.70 (  2.20%)
+> > Mean   RandRead-MB/sec-16         1.74 (  0.00%)        1.73 ( -0.19%)
+> > Mean   SeqWrite-MB/sec-1        113.73 (  0.00%)      113.88 (  0.13%)
+> > Mean   SeqWrite-MB/sec-2        103.76 (  0.00%)      104.13 (  0.36%)
+> > Mean   SeqWrite-MB/sec-4         98.45 (  0.00%)       98.44 ( -0.01%)
+> > Mean   SeqWrite-MB/sec-8         93.11 (  0.00%)       92.79 ( -0.34%)
+> > Mean   SeqWrite-MB/sec-16        87.64 (  0.00%)       87.85 (  0.24%)
+> > Mean   RandWrite-MB/sec-1         1.38 (  0.00%)        1.36 ( -1.21%)
+> > Mean   RandWrite-MB/sec-2         1.35 (  0.00%)        1.35 (  0.25%)
+> > Mean   RandWrite-MB/sec-4         1.33 (  0.00%)        1.35 (  1.00%)
+> > Mean   RandWrite-MB/sec-8         1.31 (  0.00%)        1.29 ( -1.53%)
+> > Mean   RandWrite-MB/sec-16        1.27 (  0.00%)        1.28 (  0.79%)
+> > 
+> > Streaming readers see a huge boost. Random random readers, sequential
+> > writers and random writers are all in the noise.
+> 
+> Impressive, but I would really like to understand what's going on
+> there.
+> 
+> Did you record the per-zone allocation numbers by any chance as well,
+> so we can see the difference in zone utilization?
+
+No, I didn't record per-zone usage because at the time when the low
+watermarks are being hit, it would have been less useful anyway.
+
+> > Signed-off-by: Mel Gorman <mgorman@suse.de>
+> > ---
+> >  mm/page_alloc.c | 89 +++++++++++++++++++++++++++++++++++++++++++++++------------------------------------------
+> >  1 file changed, 47 insertions(+), 42 deletions(-)
+> > 
+> > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> > index 2c7d394..70d4264 100644
+> > --- a/mm/page_alloc.c
+> > +++ b/mm/page_alloc.c
+> > @@ -1919,6 +1919,28 @@ static bool zone_allows_reclaim(struct zone *local_zone, struct zone *zone)
+> >  
+> >  #endif	/* CONFIG_NUMA */
+> >  
+> > +static void reset_alloc_batches(struct zonelist *zonelist,
+> > +				enum zone_type high_zoneidx,
+> > +				struct zone *preferred_zone)
+> > +{
+> > +	struct zoneref *z;
+> > +	struct zone *zone;
+> > +
+> > +	for_each_zone_zonelist(zone, z, zonelist, high_zoneidx) {
+> > +		/*
+> > +		 * Only reset the batches of zones that were actually
+> > +		 * considered in the fairness pass, we don't want to
+> > +		 * trash fairness information for zones that are not
+> > +		 * actually part of this zonelist's round-robin cycle.
+> > +		 */
+> > +		if (!zone_local(preferred_zone, zone))
+> > +			continue;
+> > +		mod_zone_page_state(zone, NR_ALLOC_BATCH,
+> > +			high_wmark_pages(zone) - low_wmark_pages(zone) -
+> > +			atomic_long_read(&zone->vm_stat[NR_ALLOC_BATCH]));
+> > +	}
+> > +}
+> > +
+> >  /*
+> >   * get_page_from_freelist goes through the zonelist trying to allocate
+> >   * a page.
+> > @@ -1936,6 +1958,7 @@ get_page_from_freelist(gfp_t gfp_mask, nodemask_t *nodemask, unsigned int order,
+> >  	int did_zlc_setup = 0;		/* just call zlc_setup() one time */
+> >  	bool consider_zone_dirty = (alloc_flags & ALLOC_WMARK_LOW) &&
+> >  				(gfp_mask & __GFP_WRITE);
+> > +	bool batch_depleted = (alloc_flags & ALLOC_FAIR);
+> >  
+> >  zonelist_scan:
+> >  	/*
+> > @@ -1960,11 +1982,13 @@ zonelist_scan:
+> >  		 * time the page has in memory before being reclaimed.
+> >  		 */
+> >  		if (alloc_flags & ALLOC_FAIR) {
+> > -			if (!zone_local(preferred_zone, zone))
+> > -				continue;
+> >  			if (zone_page_state(zone, NR_ALLOC_BATCH) <= 0)
+> >  				continue;
+> > +			batch_depleted = false;
+> > +			if (!zone_local(preferred_zone, zone))
+> > +				continue;
+> 
+> This only resets the local batches once the first non-local zone's
+> batch is exhausted as well.  Which means that once we start spilling,
+> the fairness pass will never consider local zones again until the
+> first spill-over target is exhausted too. 
+
+Yes, you're right. The intent was that the reset would only task place
+after all local zones had used their allocation batch but it got mucked
+up along the way.
+
+-- 
+Mel Gorman
+SUSE Labs
