@@ -1,50 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934082AbaE2Nz0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 09:55:26 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:34233 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932786AbaE2NzW (ORCPT
+	id S934678AbaE2Nzs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 09:55:48 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:59492 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933523AbaE2Ntd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 09:55:22 -0400
-Date: Thu, 29 May 2014 15:55:10 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: mingo@kernel.org, linux-kernel@vger.kernel.org, linux@arm.linux.org.uk,
-        linux-arm-kernel@lists.infradead.org, preeti@linux.vnet.ibm.com,
-        Morten.Rasmussen@arm.com, efault@gmx.de, nicolas.pitre@linaro.org,
-        linaro-kernel@lists.linaro.org, daniel.lezcano@linaro.org
-Subject: Re: [PATCH v2 11/11] sched: replace capacity by activity
-Message-ID: <20140529135510.GG11074@laptop.programming.kicks-ass.net>
-References: <1400860385-14555-1-git-send-email-vincent.guittot@linaro.org>
- <1400860385-14555-12-git-send-email-vincent.guittot@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1400860385-14555-12-git-send-email-vincent.guittot@linaro.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Thu, 29 May 2014 09:49:33 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Sergey Popovich <popovich_sergei@mail.ru>,
+        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 094/103] ipv4: fib_semantics: increment fib_info_cnt after fib_info allocation
+Date: Thu, 29 May 2014 15:49:19 +0200
+Message-Id: <d4e90595f9f3c66c88af853f2a08a103280126fc.1401371259.git.jslaby@suse.cz>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <bcbac220dab16a4038ac1a7c5cfe3e7f034b3836.1401371258.git.jslaby@suse.cz>
+References: <bcbac220dab16a4038ac1a7c5cfe3e7f034b3836.1401371258.git.jslaby@suse.cz>
+In-Reply-To: <cover.1401371258.git.jslaby@suse.cz>
+References: <cover.1401371258.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 23, 2014 at 05:53:05PM +0200, Vincent Guittot wrote:
-> The scheduler tries to compute how many tasks a group of CPUs can handle by
-> assuming that a task's load is SCHED_LOAD_SCALE and a CPU capacity is
-> SCHED_POWER_SCALE.
-> We can now have a better idea of the utilization of a group fo CPUs thanks to
-> group_actitvity and deduct how many capacity is still available.
-> 
-> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
-> ---
+From: Sergey Popovich <popovich_sergei@mail.ru>
 
-Right, so as Preeti already mentioned, this wrecks SMT. It also seems to
-loose the aggressive spread, where we want to run 1 task on each 'core'
-before we start 'balancing'.
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-So I think we should be able to fix this by setting PREFER_SIBLING on
-the SMT domain, that way we'll get single tasks running on each SMT
-domain before filling them up until capacity.
+===============
 
-Now, its been a while since I looked at PREFER_SIBLING, and I've not yet
-looked at what your patch does to it, but it seems to me that that is
-the first direction we should look for an answer to this.
+[ Upstream commit aeefa1ecfc799b0ea2c4979617f14cecd5cccbfd ]
+
+Increment fib_info_cnt in fib_create_info() right after successfuly
+alllocating fib_info structure, overwise fib_metrics allocation failure
+leads to fib_info_cnt incorrectly decremented in free_fib_info(), called
+on error path from fib_create_info().
+
+Signed-off-by: Sergey Popovich <popovich_sergei@mail.ru>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ net/ipv4/fib_semantics.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/net/ipv4/fib_semantics.c b/net/ipv4/fib_semantics.c
+index d5dbca5ecf62..9f1014ab86c6 100644
+--- a/net/ipv4/fib_semantics.c
++++ b/net/ipv4/fib_semantics.c
+@@ -819,13 +819,13 @@ struct fib_info *fib_create_info(struct fib_config *cfg)
+ 	fi = kzalloc(sizeof(*fi)+nhs*sizeof(struct fib_nh), GFP_KERNEL);
+ 	if (fi == NULL)
+ 		goto failure;
++	fib_info_cnt++;
+ 	if (cfg->fc_mx) {
+ 		fi->fib_metrics = kzalloc(sizeof(u32) * RTAX_MAX, GFP_KERNEL);
+ 		if (!fi->fib_metrics)
+ 			goto failure;
+ 	} else
+ 		fi->fib_metrics = (u32 *) dst_default_metrics;
+-	fib_info_cnt++;
+ 
+ 	fi->fib_net = hold_net(net);
+ 	fi->fib_protocol = cfg->fc_protocol;
+-- 
+1.9.3
+
