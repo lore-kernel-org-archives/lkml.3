@@ -1,93 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934483AbaE2OBK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 10:01:10 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:59453 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933386AbaE2Ntc (ORCPT
+	id S934616AbaE2ODJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 10:03:09 -0400
+Received: from cpsmtpb-ews08.kpnxchange.com ([213.75.39.13]:49954 "EHLO
+	cpsmtpb-ews08.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932902AbaE2ODG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 09:49:32 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Vlad Yasevich <vyasevic@redhat.com>,
-        Daniel Lezcano <daniel.lezcano@free.fr>,
-        Patrick McHardy <kaber@trash.net>, Andrian Nord <nightnord@gmail.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Jason Wang <jasowang@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 088/103] Revert "macvlan : fix checksums error when we are in bridge mode"
-Date: Thu, 29 May 2014 15:49:13 +0200
-Message-Id: <04adf0fb0c5a2d52279ff6a2215dad9187bc9890.1401371259.git.jslaby@suse.cz>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <bcbac220dab16a4038ac1a7c5cfe3e7f034b3836.1401371258.git.jslaby@suse.cz>
-References: <bcbac220dab16a4038ac1a7c5cfe3e7f034b3836.1401371258.git.jslaby@suse.cz>
-In-Reply-To: <cover.1401371258.git.jslaby@suse.cz>
-References: <cover.1401371258.git.jslaby@suse.cz>
+	Thu, 29 May 2014 10:03:06 -0400
+Message-ID: <1401372183.25908.3.camel@x220>
+Subject: Re: [PATCH v2 04/05] staging: board: Initial board staging support
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Magnus Damm <magnus.damm@gmail.com>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        devel <devel@driverdev.osuosl.org>,
+        SH-Linux <linux-sh@vger.kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        "Simon Horman [Horms]" <horms@verge.net.au>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Olof Johansson <olof@lixom.net>
+Date: Thu, 29 May 2014 16:03:03 +0200
+In-Reply-To: <CANqRtoQDQLsWOyRSbQmtbmJc_qO=5X3ZMK12ZuwZ-FSR1iWCog@mail.gmail.com>
+References: <20140529131650.2329.3197.sendpatchset@w520>
+	 <20140529131732.2329.50630.sendpatchset@w520>
+	 <20140529132034.GB15585@mwanda>
+	 <CANqRtoTzOn5d9qB85sXvmLYhoTDMDtbjSkLbz9V4FRmzFM3ycQ@mail.gmail.com>
+	 <CANqRtoQDQLsWOyRSbQmtbmJc_qO=5X3ZMK12ZuwZ-FSR1iWCog@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 29 May 2014 14:03:04.0140 (UTC) FILETIME=[B594F8C0:01CF7B46]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vlad Yasevich <vyasevic@redhat.com>
+On Thu, 2014-05-29 at 22:53 +0900, Magnus Damm wrote:
+> --- 0011/drivers/staging/board/Kconfig
+> +++ work/drivers/staging/board/Kconfig    2014-05-29 22:32:39.000000000 +0900
+> @@ -1,5 +1,6 @@
+>  config STAGING_BOARD
+>      boolean "Staging Board Support"
+> +    depends on OF && OF_ADDRESS
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+I have no idea what this is all about, but wouldn't just OF_ADDRESS be
+enough here (as OF_ADDRESS depends on OF)?
 
-===============
+>      help
+>        Select to enable per-board staging support code.
+> 
+> Actually, there are not many dependencies - I believe the OF bits is about it.
 
-[ Upstream commit f114890cdf84d753f6b41cd0cc44ba51d16313da ]
 
-This reverts commit 12a2856b604476c27d85a5f9a57ae1661fc46019.
-The commit above doesn't appear to be necessary any more as the
-checksums appear to be correctly computed/validated.
-
-Additionally the above commit breaks kvm configurations where
-one VM is using a device that support checksum offload (virtio) and
-the other VM does not.
-In this case, packets leaving virtio device will have CHECKSUM_PARTIAL
-set.  The packets is forwarded to a macvtap that has offload features
-turned off.  Since we use CHECKSUM_UNNECESSARY, the host does does not
-update the checksum and thus a bad checksum is passed up to
-the guest.
-
-CC: Daniel Lezcano <daniel.lezcano@free.fr>
-CC: Patrick McHardy <kaber@trash.net>
-CC: Andrian Nord <nightnord@gmail.com>
-CC: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Michael S. Tsirkin <mst@redhat.com>
-CC: Jason Wang <jasowang@redhat.com>
-Signed-off-by: Vlad Yasevich <vyasevic@redhat.com>
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
-Acked-by: Jason Wang <jasowang@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- drivers/net/macvlan.c | 3 ---
- 1 file changed, 3 deletions(-)
-
-diff --git a/drivers/net/macvlan.c b/drivers/net/macvlan.c
-index 9bf46bd19b87..fb5f47e94547 100644
---- a/drivers/net/macvlan.c
-+++ b/drivers/net/macvlan.c
-@@ -263,11 +263,9 @@ static int macvlan_queue_xmit(struct sk_buff *skb, struct net_device *dev)
- 	const struct macvlan_dev *vlan = netdev_priv(dev);
- 	const struct macvlan_port *port = vlan->port;
- 	const struct macvlan_dev *dest;
--	__u8 ip_summed = skb->ip_summed;
- 
- 	if (vlan->mode == MACVLAN_MODE_BRIDGE) {
- 		const struct ethhdr *eth = (void *)skb->data;
--		skb->ip_summed = CHECKSUM_UNNECESSARY;
- 
- 		/* send to other bridge ports directly */
- 		if (is_multicast_ether_addr(eth->h_dest)) {
-@@ -285,7 +283,6 @@ static int macvlan_queue_xmit(struct sk_buff *skb, struct net_device *dev)
- 	}
- 
- xmit_world:
--	skb->ip_summed = ip_summed;
- 	skb->dev = vlan->lowerdev;
- 	return dev_queue_xmit(skb);
- }
--- 
-1.9.3
+Paul Bolle
 
