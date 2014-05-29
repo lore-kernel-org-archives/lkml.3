@@ -1,97 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757202AbaE2LDW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 07:03:22 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:41295 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751217AbaE2LDV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 07:03:21 -0400
-Message-ID: <538713F1.6000801@hitachi.com>
-Date: Thu, 29 May 2014 20:03:13 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1757265AbaE2LE5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 07:04:57 -0400
+Received: from mga03.intel.com ([143.182.124.21]:21114 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752427AbaE2LEz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 07:04:55 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,933,1392192000"; 
+   d="scan'208";a="438501120"
+Date: Thu, 29 May 2014 14:04:39 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Miklos Szeredi <mszeredi@suse.cz>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: fs/dcache.c - BUG: soft lockup - CPU#5 stuck for 22s!
+ [systemd-udevd:1667]
+Message-ID: <20140529110439.GA2006@lahna.fi.intel.com>
+References: <20140528031955.GW18016@ZenIV.linux.org.uk>
+ <20140528073751.GB1757@lahna.fi.intel.com>
+ <20140528115701.GY18016@ZenIV.linux.org.uk>
+ <20140528131136.GA1643@lahna.fi.intel.com>
+ <20140528141937.GZ18016@ZenIV.linux.org.uk>
+ <20140528183954.GA18016@ZenIV.linux.org.uk>
+ <20140529031149.GE18016@ZenIV.linux.org.uk>
+ <20140529035233.GF18016@ZenIV.linux.org.uk>
+ <20140529053444.GI18016@ZenIV.linux.org.uk>
+ <20140529105107.GB1938@lahna.fi.intel.com>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH -tip/urgent ] [BUGFIX] perf/probe: Fix a segfault if asked
- for variable it doesn't find
-References: <20140528214406.GE2764@kernel.org> <20140529105232.28251.30447.stgit@ltc230.yrl.intra.hitachi.co.jp>
-In-Reply-To: <20140529105232.28251.30447.stgit@ltc230.yrl.intra.hitachi.co.jp>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140529105107.GB1938@lahna.fi.intel.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnaldo, this fixes the SEGV bug which you reported.
+On Thu, May 29, 2014 at 01:51:07PM +0300, Mika Westerberg wrote:
+> On Thu, May 29, 2014 at 06:34:44AM +0100, Al Viro wrote:
+> > On Thu, May 29, 2014 at 04:52:33AM +0100, Al Viro wrote:
+> > > On Thu, May 29, 2014 at 04:11:49AM +0100, Al Viro wrote:
+> > > > On Wed, May 28, 2014 at 07:39:54PM +0100, Al Viro wrote:
+> > > > 
+> > > > > OK, the warnings about averting your eyes very much apply; the thing below
+> > > > > definitely needs more massage before it becomes acceptable (and no, it's
+> > > > > not a single commit; I'm not that insane), but it changes behaviour in the
+> > > > > way described above.  Could you check if the livelock persists with it?
+> > > > > No trace-generating code in there, so the logs should be compact enough...
+> > > > 
+> > > > Here's an updated patch, hopefully slightly less vomit-inducing.  Should
+> > > > give the same behaviour as the previous one...  Again, it's a cumulative
+> > > > diff - I'm still massaging the splitup here.
+> > > 
+> > > BTW, it still leaves the "proceed to parent" case in shrink_dentry_list();
+> > > in theory, it's also vulnerable to the same livelock.  Can be dealt pretty
+> > > much the same way; I'd rather leave that one for right after -final, though,
+> > > if the already posted variant turns out to be sufficient...
+> > 
+> > ... which is (presumably) dealt with the incremental I'd just sent to Linus;
+> > seeing what kind of dumb mistakes I'm making, I'd better call it quits for
+> > tonight - it's 1:30am here and I didn't have anywhere near enough sleep
+> > yesterday.  I'd appeciate if you could test the patch immediately
+> > upthread (from Message-ID: <20140529031149.GE18016@ZenIV.linux.org.uk>)
+> > and see if it helps.  There's an incremental on top of it (from
+> > Message-ID: <20140529052621.GH18016@ZenIV.linux.org.uk>) that might or
+> > might not be a good idea.
+> 
+> Thanks for the patch.
+> 
+> I tested patch <20140529031149.GE18016@ZenIV.linux.org.uk> and it seems
+> to improve things. After first plug/unplug I can see similar behaviour
+> but after a while it recovered. I did several iterations of plug/unplug
+> afterwards and didn't see the livelock to trigger.
+> 
+> dmesg is attached.
+> 
+> I'm going to try your incremental patch now.
 
-But I've found that perf probe sometimes loses the location of variables
-with recent DWARF implementation. I need to check and fix that too.
+With your both patches applied the problem is gone :-)
 
-Anyway, this patch should be applied for fixing critical bug.
+I did 20 plug/unplugs, rebooted the machine and another 20 plug/unplugs
+and didn't see the livelock at once.
 
-Thank you,
-
-(2014/05/29 19:52), Masami Hiramatsu wrote:
-> Fix a segfault bug by asking for variable it doesn't find.
-> Since the convert_variable() didn't handle error code returned
-> from convert_variable_location(), it just passed an incomplete
-> variable field and then a segfault was occured when formatting
-> the field.
-> 
-> This fixes that bug by handling success code correctly in
-> convert_variable(). Other callers of convert_variable_location()
-> are correctly checking the return code.
-> 
-> This bug was introduced by following commit. But another hidden
-> erroneous error handling has been there previuosly (-ENOMEM case).
-> 
->  commit 3d918a12a1b3088ac16ff37fa52760639d6e2403
-> 
-> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> Reported-by: Arnaldo Carvalho de Melo <acme@kernel.org>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: Namhyung Kim <namhyung@kernel.org>
-> Cc: Jiri Olsa <jolsa@redhat.com>
-> ---
->  tools/perf/util/probe-finder.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
-> index 5627621..9d8eb26 100644
-> --- a/tools/perf/util/probe-finder.c
-> +++ b/tools/perf/util/probe-finder.c
-> @@ -511,12 +511,12 @@ static int convert_variable(Dwarf_Die *vr_die, struct probe_finder *pf)
->  
->  	ret = convert_variable_location(vr_die, pf->addr, pf->fb_ops,
->  					&pf->sp_die, pf->tvar);
-> -	if (ret == -ENOENT)
-> +	if (ret == -ENOENT || ret == -EINVAL)
->  		pr_err("Failed to find the location of %s at this address.\n"
->  		       " Perhaps, it has been optimized out.\n", pf->pvar->var);
->  	else if (ret == -ENOTSUP)
->  		pr_err("Sorry, we don't support this variable location yet.\n");
-> -	else if (pf->pvar->field) {
-> +	else if (ret == 0 && pf->pvar->field) {
->  		ret = convert_variable_fields(vr_die, pf->pvar->var,
->  					      pf->pvar->field, &pf->tvar->ref,
->  					      &die_mem);
-> 
-> 
-> 
-> 
-
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+Thanks a lot!
