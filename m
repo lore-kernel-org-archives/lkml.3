@@ -1,76 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755908AbaE2HhV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 03:37:21 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:48444 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750746AbaE2HhU (ORCPT
+	id S1756152AbaE2Hkr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 03:40:47 -0400
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:59817 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752105AbaE2Hkq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 03:37:20 -0400
-Date: Thu, 29 May 2014 08:37:13 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: carlo@caione.org, Boris Brezillon <boris@free-electrons.com>,
-        Mark Brown <broonie@kernel.org>, lgirdwood@gmail.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kevin.z.m.zh@gmail.com, sunny@allwinnertech.com,
-        shuge@allwinnertech.com, zhuzhenhua@allwinnertech.com
-Subject: Re: [PATCH 4/5] mfd: axp209x: Drop the parent supplies field
-Message-ID: <20140529073713.GF1954@lee--X1>
-References: <1401297069-7423-1-git-send-email-maxime.ripard@free-electrons.com>
- <1401297069-7423-5-git-send-email-maxime.ripard@free-electrons.com>
+	Thu, 29 May 2014 03:40:46 -0400
+X-Original-SENDERIP: 10.177.220.169
+X-Original-MAILFROM: minchan@kernel.org
+Date: Thu, 29 May 2014 16:41:17 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Chinner <david@fromorbit.com>, Jens Axboe <axboe@kernel.dk>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm <linux-mm@kvack.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Hugh Dickins <hughd@google.com>, "Michael S. Tsirkin" <mst@redhat.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: virtio ring cleanups, which save stack on older gcc
+Message-ID: <20140529074117.GI10092@bbox>
+References: <87oayh6s3s.fsf@rustcorp.com.au>
+ <1401348405-18614-1-git-send-email-rusty@rustcorp.com.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1401297069-7423-5-git-send-email-maxime.ripard@free-electrons.com>
+In-Reply-To: <1401348405-18614-1-git-send-email-rusty@rustcorp.com.au>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Now that the regulator code get its parent supplies purely from the DT, we can
-> drop the parent supplies resources in the MFD driver.
+Hello Rusty,
+
+On Thu, May 29, 2014 at 04:56:41PM +0930, Rusty Russell wrote:
+> They don't make much difference: the easier fix is use gcc 4.8
+> which drops stack required across virtio block's virtio_queue_rq
+> down to that kmalloc in virtio_ring from 528 to 392 bytes.
 > 
-> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-> ---
->  drivers/mfd/axp20x.c | 11 -----------
->  1 file changed, 11 deletions(-)
+> Still, these (*lightly tested*) patches reduce to 432 bytes,
+> even for gcc 4.6.4.  Posted here FYI.
 
-Acked-by: Lee Jones <lee.jones@linaro.org>
+I am testing with below which was hack for Dave's idea so don't have
+a machine to test your patches until tomorrow.
+So, I will queue your patches into testing machine tomorrow morning.
 
-> diff --git a/drivers/mfd/axp20x.c b/drivers/mfd/axp20x.c
-> index 5734f8c82abf..6231adbb295d 100644
-> --- a/drivers/mfd/axp20x.c
-> +++ b/drivers/mfd/axp20x.c
-> @@ -140,15 +140,6 @@ static const struct regmap_irq_chip axp20x_regmap_irq_chip = {
->  	.init_ack_masked	= true,
->  };
->  
-> -static const char * axp20x_supplies[] = {
-> -	"acin",
-> -	"vin2",
-> -	"vin3",
-> -	"ldo24in",
-> -	"ldo3in",
-> -	"ldo5in",
-> -};
-> -
->  static struct mfd_cell axp20x_cells[] = {
->  	{
->  		.name			= "axp20x-pek",
-> @@ -156,8 +147,6 @@ static struct mfd_cell axp20x_cells[] = {
->  		.resources		= axp20x_pek_resources,
->  	}, {
->  		.name			= "axp20x-regulator",
-> -		.parent_supplies	= axp20x_supplies,
-> -		.num_parent_supplies	= ARRAY_SIZE(axp20x_supplies),
->  	},
->  };
->  
+Thanks!
+
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index f5c6635b806c..95f169e85dbe 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -4241,10 +4241,13 @@ EXPORT_SYMBOL_GPL(yield_to);
+ void __sched io_schedule(void)
+ {
+ 	struct rq *rq = raw_rq();
++	struct blk_plug *plug = current->plug;
+ 
+ 	delayacct_blkio_start();
+ 	atomic_inc(&rq->nr_iowait);
+-	blk_flush_plug(current);
++	if (plug)
++		blk_flush_plug_list(plug, true);
++
+ 	current->in_iowait = 1;
+ 	schedule();
+ 	current->in_iowait = 0;
+
+> 
+> Cheers,
+> Rusty.
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Kind regards,
+Minchan Kim
