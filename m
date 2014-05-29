@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934733AbaE2FjA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 01:39:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57610 "EHLO
+	id S964825AbaE2Fjf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 01:39:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57640 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751771AbaE2Eew (ORCPT
+	with ESMTP id S1756162AbaE2Eev (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 00:34:52 -0400
+	Thu, 29 May 2014 00:34:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>, linaro-kernel@lists.linaro.org,
-        fweisbec@gmail.com, Arvind.Chauhan@arm.com,
-        linaro-networking@linaro.org
-Subject: [PATCH 3.14 018/140] tick-sched: Dont call update_wall_time() when delta is lesser than tick_period
-Date: Wed, 28 May 2014 21:32:37 -0700
-Message-Id: <20140529043051.680646547@linuxfoundation.org>
+        Romain Francoise <romain@orebokech.com>,
+        Daniel Vetter <daniel@ffwll.ch>, Kamal Mostafa <kamal@canonical.com>,
+        Jani Nikula <jani.nikula@intel.com>
+Subject: [PATCH 3.14 016/140] [PATCH for stable 3.14 only 1/1] drm/i915: restore QUIRK_NO_PCH_PWM_ENABLE
+Date: Wed, 28 May 2014 21:32:35 -0700
+Message-Id: <20140529043051.383198983@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
 In-Reply-To: <20140529043049.661315084@linuxfoundation.org>
 References: <20140529043049.661315084@linuxfoundation.org>
@@ -30,48 +28,110 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Viresh Kumar <viresh.kumar@linaro.org>
+From: Jani Nikula <jani.nikula@intel.com>
 
-commit 03e6bdc5c4d0fc166bfd5d3cf749a5a0c1b5b1bd upstream.
+This reverts the bisected regressing
 
-In tick_do_update_jiffies64() we are processing ticks only if delta is
-greater than tick_period. This is what we are supposed to do here and
-it broke a bit with this patch:
+commit bc0bb9fd1c7810407ab810d204bbaecb255fddde
+Author: Jani Nikula <jani.nikula@intel.com>
+Date:   Thu Nov 14 12:14:29 2013 +0200
 
-commit 47a1b796 (tick/timekeeping: Call update_wall_time outside the
-jiffies lock)
+    drm/i915: remove QUIRK_NO_PCH_PWM_ENABLE
 
-With above patch, we might end up calling update_wall_time() even if
-delta is found to be smaller that tick_period. Fix this by returning
-when the delta is less than tick period.
+restoring QUIRK_NO_PCH_PWM_ENABLE for a couple of Dell XPS models which
+broke in 3.14.
 
-[ tglx: Made it a 3 liner and massaged changelog ]
+There is no such revert upstream. We have root caused and fixed the
+issue upstream, without the quirk, with:
 
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: linaro-kernel@lists.linaro.org
-Cc: fweisbec@gmail.com
-Cc: Arvind.Chauhan@arm.com
-Cc: linaro-networking@linaro.org
-Cc: John Stultz <john.stultz@linaro.org>
-Link: http://lkml.kernel.org/r/80afb18a494b0bd9710975bcc4de134ae323c74f.1397537987.git.viresh.kumar@linaro.org
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+commit 39fbc9c8f6765959b55e0b127dd5c57df5a47d67
+Author: Jani Nikula <jani.nikula@intel.com>
+Date:   Wed Apr 9 11:22:06 2014 +0300
+
+    drm/i915: check VBT for supported backlight type
+
+and
+
+commit c675949ec58ca50d5a3ae3c757892f1560f6e896
+Author: Jani Nikula <jani.nikula@intel.com>
+Date:   Wed Apr 9 11:31:37 2014 +0300
+
+    drm/i915: do not setup backlight if not available according to VBT
+
+While the commits are within the stable rules otherwise, and fix more
+machines than just the regressed Dell XPS models, we feel backporting
+them to stable may be too risky. The revert is limited to the broken
+machines, and the impact should be effectively the same as what the
+upstream commits do more generally.
+
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=76276
+Reported-by: Romain Francoise <romain@orebokech.com>
+Acked-by: Daniel Vetter <daniel@ffwll.ch>
+Tested-by: Kamal Mostafa <kamal@canonical.com>
+Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+Tested-by: Romain Francoise <romain@orebokech.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/time/tick-sched.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/gpu/drm/i915/i915_drv.h      |    1 +
+ drivers/gpu/drm/i915/intel_display.c |   16 ++++++++++++++++
+ drivers/gpu/drm/i915/intel_panel.c   |    4 ++++
+ 3 files changed, 21 insertions(+)
 
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -84,6 +84,9 @@ static void tick_do_update_jiffies64(kti
+--- a/drivers/gpu/drm/i915/i915_drv.h
++++ b/drivers/gpu/drm/i915/i915_drv.h
+@@ -734,6 +734,7 @@ enum intel_sbi_destination {
+ #define QUIRK_PIPEA_FORCE (1<<0)
+ #define QUIRK_LVDS_SSC_DISABLE (1<<1)
+ #define QUIRK_INVERT_BRIGHTNESS (1<<2)
++#define QUIRK_NO_PCH_PWM_ENABLE (1<<3)
  
- 		/* Keep the tick_next_period variable up to date */
- 		tick_next_period = ktime_add(last_jiffies_update, tick_period);
-+	} else {
-+		write_sequnlock(&jiffies_lock);
+ struct intel_fbdev;
+ struct intel_fbc_work;
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -10771,6 +10771,17 @@ static void quirk_invert_brightness(stru
+ 	DRM_INFO("applying inverted panel brightness quirk\n");
+ }
+ 
++/*
++ * Some machines (Dell XPS13) suffer broken backlight controls if
++ * BLM_PCH_PWM_ENABLE is set.
++ */
++static void quirk_no_pcm_pwm_enable(struct drm_device *dev)
++{
++	struct drm_i915_private *dev_priv = dev->dev_private;
++	dev_priv->quirks |= QUIRK_NO_PCH_PWM_ENABLE;
++	DRM_INFO("applying no-PCH_PWM_ENABLE quirk\n");
++}
++
+ struct intel_quirk {
+ 	int device;
+ 	int subsystem_vendor;
+@@ -10839,6 +10850,11 @@ static struct intel_quirk intel_quirks[]
+ 
+ 	/* Acer Aspire 4736Z */
+ 	{ 0x2a42, 0x1025, 0x0260, quirk_invert_brightness },
++
++	/* Dell XPS13 HD Sandy Bridge */
++	{ 0x0116, 0x1028, 0x052e, quirk_no_pcm_pwm_enable },
++	/* Dell XPS13 HD and XPS13 FHD Ivy Bridge */
++	{ 0x0166, 0x1028, 0x058b, quirk_no_pcm_pwm_enable },
+ };
+ 
+ static void intel_init_quirks(struct drm_device *dev)
+--- a/drivers/gpu/drm/i915/intel_panel.c
++++ b/drivers/gpu/drm/i915/intel_panel.c
+@@ -671,6 +671,10 @@ static void pch_enable_backlight(struct
+ 	pch_ctl2 = panel->backlight.max << 16;
+ 	I915_WRITE(BLC_PWM_PCH_CTL2, pch_ctl2);
+ 
++	/* XXX: transitional */
++	if (dev_priv->quirks & QUIRK_NO_PCH_PWM_ENABLE)
 +		return;
- 	}
- 	write_sequnlock(&jiffies_lock);
- 	update_wall_time();
++
+ 	pch_ctl1 = 0;
+ 	if (panel->backlight.active_low_pwm)
+ 		pch_ctl1 |= BLM_PCH_POLARITY;
 
 
