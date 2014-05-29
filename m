@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932502AbaE2EfZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 00:35:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57839 "EHLO
+	id S934278AbaE2FWR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 01:22:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57924 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756283AbaE2EfP (ORCPT
+	with ESMTP id S932505AbaE2EfZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 00:35:15 -0400
+	Thu, 29 May 2014 00:35:25 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>,
-        =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>
-Subject: [PATCH 3.14 060/140] drm/radeon: call drm_edid_to_eld when we update the edid
-Date: Wed, 28 May 2014 21:33:19 -0700
-Message-Id: <20140529043057.194102759@linuxfoundation.org>
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Daniel Borkman <dborkman@redhat.com>,
+        Martin Filip <nexus+kernel@smoula.net>,
+        Vlad Yasevich <vyasevic@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.14 078/140] net: Start with correct mac_len in skb_network_protocol
+Date: Wed, 28 May 2014 21:33:37 -0700
+Message-Id: <20140529043059.611180189@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
 In-Reply-To: <20140529043049.661315084@linuxfoundation.org>
 References: <20140529043049.661315084@linuxfoundation.org>
 User-Agent: quilt/0.60-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,32 +30,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexdeucher@gmail.com>
+From: Vlad Yasevich <vyasevic@redhat.com>
 
-commit 16086279353cbfecbb3ead474072dced17b97ddc upstream.
+[ Upstream commit 1e785f48d29a09b6cf96db7b49b6320dada332e1 ]
 
-This needs to be done to update some of the fields in
-the connector structure used by the audio code.
+Sometimes, when the packet arrives at skb_mac_gso_segment()
+its skb->mac_len already accounts for some of the mac lenght
+headers in the packet.  This seems to happen when forwarding
+through and OpenSSL tunnel.
 
-Noticed by several users on irc.
+When we start looking for any vlan headers in skb_network_protocol()
+we seem to ignore any of the already known mac headers and start
+with an ETH_HLEN.  This results in an incorrect offset, dropped
+TSO frames and general slowness of the connection.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Signed-off-by: Christian König <christian.koenig@amd.com>
+We can start counting from the known skb->mac_len
+and return at least that much if all mac level headers
+are known and accounted for.
+
+Fixes: 53d6471cef17262d3ad1c7ce8982a234244f68ec (net: Account for all vlan headers in skb_mac_gso_segment)
+CC: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Daniel Borkman <dborkman@redhat.com>
+Tested-by: Martin Filip <nexus+kernel@smoula.net>
+Signed-off-by: Vlad Yasevich <vyasevic@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/gpu/drm/radeon/radeon_display.c |    1 +
- 1 file changed, 1 insertion(+)
+ net/core/dev.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/radeon/radeon_display.c
-+++ b/drivers/gpu/drm/radeon/radeon_display.c
-@@ -792,6 +792,7 @@ int radeon_ddc_get_modes(struct radeon_c
- 	if (radeon_connector->edid) {
- 		drm_mode_connector_update_edid_property(&radeon_connector->base, radeon_connector->edid);
- 		ret = drm_add_edid_modes(&radeon_connector->base, radeon_connector->edid);
-+		drm_edid_to_eld(&radeon_connector->base, radeon_connector->edid);
- 		return ret;
- 	}
- 	drm_mode_connector_update_edid_property(&radeon_connector->base, NULL);
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -2289,7 +2289,7 @@ EXPORT_SYMBOL(skb_checksum_help);
+ __be16 skb_network_protocol(struct sk_buff *skb, int *depth)
+ {
+ 	__be16 type = skb->protocol;
+-	int vlan_depth = ETH_HLEN;
++	int vlan_depth = skb->mac_len;
+ 
+ 	/* Tunnel gso handlers can set protocol to ethernet. */
+ 	if (type == htons(ETH_P_TEB)) {
 
 
