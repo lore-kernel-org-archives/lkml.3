@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933437AbaE2EoV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 00:44:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58680 "EHLO
+	id S933276AbaE2Eiq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 00:38:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58631 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933216AbaE2Eir (ORCPT
+	with ESMTP id S933216AbaE2Eik (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 00:38:47 -0400
+	Thu, 29 May 2014 00:38:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lana Black <sickmind@lavabit.com>,
-        =?UTF-8?q?Bj=F8rn=20Mork?= <bjorn@mork.no>,
+        Daniel Lezcano <daniel.lezcano@free.fr>,
+        Patrick McHardy <kaber@trash.net>, Andrian Nord <nightnord@gmail.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Jason Wang <jasowang@redhat.com>, Vlad Yasevich <vyasevic@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 71/86] net: qmi_wwan: fixup Sierra Wireless MC8305 entry
-Date: Wed, 28 May 2014 21:37:46 -0700
-Message-Id: <20140529043523.081126286@linuxfoundation.org>
+Subject: [PATCH 3.10 61/86] Revert "macvlan : fix checksums error when we are in bridge mode"
+Date: Wed, 28 May 2014 21:37:36 -0700
+Message-Id: <20140529043521.764532521@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
 In-Reply-To: <20140529043513.451722422@linuxfoundation.org>
 References: <20140529043513.451722422@linuxfoundation.org>
 User-Agent: quilt/0.60-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,38 +31,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
+From: Vlad Yasevich <vyasevic@redhat.com>
 
-[ Upstream commit 5a008ffa73b4401251d548c10cadac6f8a67cfb5 ]
+[ Upstream commit f114890cdf84d753f6b41cd0cc44ba51d16313da ]
 
-The MC8305 module got an additional entry added based solely on
-information from a Windows driver *.inf file. We now have the
-actual descriptor layout from one of these modules, and it
-consists of two alternate configurations where cfg #1 is a
-normal Gobi 2k layout and cfg #2 is MBIM only, using interface
-numbers 5 and 6 for MBIM control and data. The extra Windows
-driver entry for interface number 5 was most likely a bug.
+This reverts commit 12a2856b604476c27d85a5f9a57ae1661fc46019.
+The commit above doesn't appear to be necessary any more as the
+checksums appear to be correctly computed/validated.
 
-Deleting the bogus entry to avoid unnecessary qmi_wwan probe
-failures when using the MBIM configuration.
+Additionally the above commit breaks kvm configurations where
+one VM is using a device that support checksum offload (virtio) and
+the other VM does not.
+In this case, packets leaving virtio device will have CHECKSUM_PARTIAL
+set.  The packets is forwarded to a macvtap that has offload features
+turned off.  Since we use CHECKSUM_UNNECESSARY, the host does does not
+update the checksum and thus a bad checksum is passed up to
+the guest.
 
-Reported-by: Lana Black <sickmind@lavabit.com>
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
+CC: Daniel Lezcano <daniel.lezcano@free.fr>
+CC: Patrick McHardy <kaber@trash.net>
+CC: Andrian Nord <nightnord@gmail.com>
+CC: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Michael S. Tsirkin <mst@redhat.com>
+CC: Jason Wang <jasowang@redhat.com>
+Signed-off-by: Vlad Yasevich <vyasevic@redhat.com>
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
+Acked-by: Jason Wang <jasowang@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/usb/qmi_wwan.c |    1 -
- 1 file changed, 1 deletion(-)
+ drivers/net/macvlan.c |    3 ---
+ 1 file changed, 3 deletions(-)
 
---- a/drivers/net/usb/qmi_wwan.c
-+++ b/drivers/net/usb/qmi_wwan.c
-@@ -760,7 +760,6 @@ static const struct usb_device_id produc
- 	{QMI_GOBI_DEVICE(0x1199, 0x9009)},	/* Sierra Wireless Gobi 2000 Modem device (VT773) */
- 	{QMI_GOBI_DEVICE(0x1199, 0x900a)},	/* Sierra Wireless Gobi 2000 Modem device (VT773) */
- 	{QMI_GOBI_DEVICE(0x1199, 0x9011)},	/* Sierra Wireless Gobi 2000 Modem device (MC8305) */
--	{QMI_FIXED_INTF(0x1199, 0x9011, 5)},	/* alternate interface number!? */
- 	{QMI_GOBI_DEVICE(0x16d8, 0x8002)},	/* CMDTech Gobi 2000 Modem device (VU922) */
- 	{QMI_GOBI_DEVICE(0x05c6, 0x9205)},	/* Gobi 2000 Modem device */
- 	{QMI_GOBI_DEVICE(0x1199, 0x9013)},	/* Sierra Wireless Gobi 3000 Modem device (MC8355) */
+--- a/drivers/net/macvlan.c
++++ b/drivers/net/macvlan.c
+@@ -261,11 +261,9 @@ static int macvlan_queue_xmit(struct sk_
+ 	const struct macvlan_dev *vlan = netdev_priv(dev);
+ 	const struct macvlan_port *port = vlan->port;
+ 	const struct macvlan_dev *dest;
+-	__u8 ip_summed = skb->ip_summed;
+ 
+ 	if (vlan->mode == MACVLAN_MODE_BRIDGE) {
+ 		const struct ethhdr *eth = (void *)skb->data;
+-		skb->ip_summed = CHECKSUM_UNNECESSARY;
+ 
+ 		/* send to other bridge ports directly */
+ 		if (is_multicast_ether_addr(eth->h_dest)) {
+@@ -283,7 +281,6 @@ static int macvlan_queue_xmit(struct sk_
+ 	}
+ 
+ xmit_world:
+-	skb->ip_summed = ip_summed;
+ 	skb->dev = vlan->lowerdev;
+ 	return dev_queue_xmit(skb);
+ }
 
 
