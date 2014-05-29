@@ -1,108 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757052AbaE2Lt2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 07:49:28 -0400
-Received: from mail-ig0-f172.google.com ([209.85.213.172]:41100 "EHLO
-	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751547AbaE2Lt0 (ORCPT
+	id S932444AbaE2Lvy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 07:51:54 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:26178 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753882AbaE2Lvx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 07:49:26 -0400
-Date: Thu, 29 May 2014 12:49:21 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: "Zhu, Lejun" <lejun.zhu@linux.intel.com>
-Cc: broonie@kernel.org, sameo@linux.intel.com, linux-kernel@vger.kernel.org,
-        jacob.jun.pan@linux.intel.com, bin.yang@intel.com
-Subject: Re: [PATCH v4 2/3] mfd: intel_soc_pmic: Crystal Cove support
-Message-ID: <20140529114921.GK1954@lee--X1>
-References: <1401347968-24410-1-git-send-email-lejun.zhu@linux.intel.com>
- <1401347968-24410-3-git-send-email-lejun.zhu@linux.intel.com>
+	Thu, 29 May 2014 07:51:53 -0400
+Date: Thu, 29 May 2014 14:51:31 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Ian Abbott <abbotti@mev.co.uk>
+Cc: driverdev-devel@linuxdriverproject.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Fred Brooks <frederick.brooks@microchip.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] staging: comedi: ni_daq_700: add AI range and input
+ mode switching
+Message-ID: <20140529115131.GA15585@mwanda>
+References: <1401362147-5965-1-git-send-email-abbotti@mev.co.uk>
+ <1401362147-5965-3-git-send-email-abbotti@mev.co.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1401347968-24410-3-git-send-email-lejun.zhu@linux.intel.com>
+In-Reply-To: <1401362147-5965-3-git-send-email-abbotti@mev.co.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 29 May 2014, Zhu, Lejun wrote:
+These days, I don't barely look at comedi changes at all because you
+guys do such a great job.  I just had a process/git comment on this one.
+Normally, these changelogs look like:
 
-> This patch provides chip-specific support for Crystal Cove. Crystal
-> Cove is the PMIC in Baytrail-T platform.
-> 
-> Signed-off-by: Yang, Bin <bin.yang@intel.com>
-> Signed-off-by: Zhu, Lejun <lejun.zhu@linux.intel.com>
-> ---
-> v2:
-> - Add regmap_config for Crystal Cove.
-> v3:
-> - Convert IRQ config to regmap_irq_chip.
-> v4:
-> - Cleanup include files.
-> - Remove useless init() function.
-> - Remove useless .label and .init from struct intel_soc_pmic_config.
-> - Fix various coding style issues.
-> ---
->  drivers/mfd/intel_soc_pmic_crc.c | 160 +++++++++++++++++++++++++++++++++++++++
->  1 file changed, 160 insertions(+)
->  create mode 100644 drivers/mfd/intel_soc_pmic_crc.c
-> 
-> diff --git a/drivers/mfd/intel_soc_pmic_crc.c b/drivers/mfd/intel_soc_pmic_crc.c
-> new file mode 100644
-> index 0000000..43dbfcd
-> --- /dev/null
-> +++ b/drivers/mfd/intel_soc_pmic_crc.c
-> @@ -0,0 +1,160 @@
-> +/*
-> + * intel_soc_pmic_crc.c - Device access for Crystal Cove PMIC
-> + *
-> + * Copyright (C) 2013, 2014 Intel Corporation. All rights reserved.
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public License version
-> + * 2 as published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * Author: Yang, Bin <bin.yang@intel.com>
-> + * Author: Zhu, Lejun <lejun.zhu@linux.intel.com>
-> + */
-> +
-> +#include <linux/mfd/core.h>
-> +#include <linux/interrupt.h>
-> +#include <linux/regmap.h>
-> +#include <linux/mfd/intel_soc_pmic.h>
-> +#include "intel_soc_pmic_core.h"
-> +
-> +#define CRYSTAL_COVE_MAX_REGISTER	0xC6
-> +
-> +#define REG_IRQLVL1			0x02
-> +#define REG_MIRQLVL1			0x0E
-> +
-> +enum crystal_cove_irq {
-> +	PWRSRC_IRQ = 0,
-> +	THRM_IRQ,
-> +	BCU_IRQ,
-> +	ADC_IRQ,
-> +	CHGR_IRQ,
-> +	GPIO_IRQ,
-> +	VHDMIOCP_IRQ
-> +};
+From: Fred Brooks <frederick.brooks@microchip.com>
 
-I can't help thinking that these should be nice clear #defines
+Add support for switching the input range and the
+single-ended/differential input mode for the AI subdevice.  We needed to
+clear the FIFO of data before the conversion to handle card mode
+switching glitches.
 
-#define CRYSTAL_COVE_IRQ_PWSRC 		0
-...
-#define CRYSTAL_COVE_IRQ_VHDMIOCP	6
+[ I made some style changes.  - Ian ]
 
-[...]
+If the first line of the email is From: then git assigns authorship
+credit automatically.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+regards,
+dan carpenter
+
