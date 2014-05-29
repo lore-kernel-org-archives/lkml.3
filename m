@@ -1,86 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757194AbaE2GpL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 02:45:11 -0400
-Received: from mailrelay006.isp.belgacom.be ([195.238.6.172]:45851 "EHLO
-	mailrelay006.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757163AbaE2GpI (ORCPT
+	id S1757177AbaE2GpK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 02:45:10 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:46298 "EHLO
+	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756773AbaE2GpG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 02:45:08 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AiwJAPbWhlNXQ3h6/2dsb2JhbABZgwerNwoFAZgegRAXdIJmHCMYgQIkE4hGAddZhVWIfYRHAQOPQIo0AYsYiBCDOjs
-Date: Thu, 29 May 2014 08:45:05 +0200
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        akpm <akpm@linux-foundation.org>
-Subject: [PATCH 1/3] init/calibrate.c: convert printk(KERN_NOTICE to
- pr_notice
-Message-Id: <20140529084505.bec19f03b65d6d0d71a71ac5@skynet.be>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 29 May 2014 02:45:06 -0400
+X-Original-SENDERIP: 10.177.220.145
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+Date: Thu, 29 May 2014 15:48:10 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: Re: [PATCH] CMA: use MIGRATE_SYNC in alloc_contig_range()
+Message-ID: <20140529064810.GA7044@js1304-P5Q-DELUXE>
+References: <1401344750-3684-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <20140529063505.GH10092@bbox>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140529063505.GH10092@bbox>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, May 29, 2014 at 03:35:05PM +0900, Minchan Kim wrote:
+> On Thu, May 29, 2014 at 03:25:50PM +0900, Joonsoo Kim wrote:
+> > Before commit 'mm, compaction: embed migration mode in compact_control'
+> > from David is merged, alloc_contig_range() used sync migration,
+> > instead of sync_light migration. This doesn't break anything currently
+> > because page isolation doesn't have any difference with sync and
+> > sync_light, but it could in the future, so change back as it was.
+> > 
+> > And pass cc->mode to migrate_pages(), instead of passing MIGRATE_SYNC
+> > to migrate_pages().
+> > 
+> > Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> Acked-by: Minchan Kim <minchan@kernel.org>
 
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
----
- init/calibrate.c | 21 ++++++++-------------
- 1 file changed, 8 insertions(+), 13 deletions(-)
+Thanks.
 
-diff --git a/init/calibrate.c b/init/calibrate.c
-index 520702d..0d747bb 100644
---- a/init/calibrate.c
-+++ b/init/calibrate.c
-@@ -95,10 +95,8 @@ static unsigned long calibrate_delay_direct(void)
- 		 * >= 12.5% apart, redo calibration.
- 		 */
- 		if (start >= post_end)
--			printk(KERN_NOTICE "calibrate_delay_direct() ignoring "
--					"timer_rate as we had a TSC wrap around"
--					" start=%lu >=post_end=%lu\n",
--				start, post_end);
-+			pr_notice("calibrate_delay_direct() ignoring timer_rate as we had a TSC wrap around start=%lu >=post_end=%lu\n",
-+				  start, post_end);
- 		if (start < post_end && pre_start != 0 && pre_end != 0 &&
- 		    (timer_rate_max - timer_rate_min) < (timer_rate_max >> 3)) {
- 			good_timer_count++;
-@@ -134,15 +132,13 @@ static unsigned long calibrate_delay_direct(void)
- 		good_timer_count = 0;
- 		if ((measured_times[max] - estimate) <
- 				(estimate - measured_times[min])) {
--			printk(KERN_NOTICE "calibrate_delay_direct() dropping "
--					"min bogoMips estimate %d = %lu\n",
--				min, measured_times[min]);
-+			pr_notice("calibrate_delay_direct() dropping min bogoMips estimate %d = %lu\n",
-+				  min, measured_times[min]);
- 			measured_times[min] = 0;
- 			min = max;
- 		} else {
--			printk(KERN_NOTICE "calibrate_delay_direct() dropping "
--					"max bogoMips estimate %d = %lu\n",
--				max, measured_times[max]);
-+			pr_notice("calibrate_delay_direct() dropping max bogoMips estimate %d = %lu\n",
-+				  max, measured_times[max]);
- 			measured_times[max] = 0;
- 			max = min;
- 		}
-@@ -160,9 +156,8 @@ static unsigned long calibrate_delay_direct(void)
- 
- 	}
- 
--	printk(KERN_NOTICE "calibrate_delay_direct() failed to get a good "
--	       "estimate for loops_per_jiffy.\nProbably due to long platform "
--		"interrupts. Consider using \"lpj=\" boot option.\n");
-+	pr_notice("calibrate_delay_direct() failed to get a good estimate for loops_per_jiffy.\nProbably due to long platform "
-+		  "interrupts. Consider using \"lpj=\" boot option.\n");
- 	return 0;
- }
- #else
--- 
-1.9.1
+> 
+> Hello Joonsoo,
+> 
+> Please Ccing me if you send patch related to CMA mm part.
+> I have reviewed/fixed mm part of CMA for a long time so worth to Cced
+> although I always don't have a time to look at it. :)
+
+Okay! This is just small fix going back orignal, so I didn't cc many people
+related to CMA mm part. Anyway, I'm sorry.
+
+Thanks.
