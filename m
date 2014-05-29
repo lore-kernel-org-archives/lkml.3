@@ -1,244 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932456AbaE2EFz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 00:05:55 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:53199 "EHLO
-	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754095AbaE2D6e (ORCPT
+	id S1752105AbaE2ELX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 00:11:23 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:60051 "EHLO
+	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750746AbaE2ELV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 23:58:34 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@kernel.org
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>, Arun Sharma <asharma@fb.com>,
-        Rodrigo Campos <rodrigo@sdfg.com.ar>, Don Zickus <dzickus@redhat.com>
-Subject: [PATCH 04/27] perf hists: Check if accumulated when adding a hist entry
-Date: Thu, 29 May 2014 12:58:07 +0900
-Message-Id: <1401335910-16832-5-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.9.2
-In-Reply-To: <1401335910-16832-1-git-send-email-namhyung@kernel.org>
-References: <1401335910-16832-1-git-send-email-namhyung@kernel.org>
+	Thu, 29 May 2014 00:11:21 -0400
+X-Original-SENDERIP: 10.177.220.169
+X-Original-MAILFROM: minchan@kernel.org
+Date: Thu, 29 May 2014 13:11:51 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Hugh Dickins <hughd@google.com>, rusty@rustcorp.com.au,
+        Dave Hansen <dave.hansen@intel.com>
+Subject: Re: [RFC 2/2] x86_64: expand kernel stack to 16K
+Message-ID: <20140529041151.GE10092@bbox>
+References: <1401260039-18189-1-git-send-email-minchan@kernel.org>
+ <1401260039-18189-2-git-send-email-minchan@kernel.org>
+ <20140528090409.GA16795@redhat.com>
+ <20140529010940.GA10092@bbox>
+ <20140528224448.1c1b1999@gandalf.local.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140528224448.1c1b1999@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To support callchain accumulation, @entry should be recognized if it's
-accumulated or not when add_hist_entry() called.  The period of an
-accumulated entry should be added to ->stat_acc but not ->stat. Add
-@sample_self arg for that.
+On Wed, May 28, 2014 at 10:44:48PM -0400, Steven Rostedt wrote:
+> On Thu, 29 May 2014 10:09:40 +0900
+> Minchan Kim <minchan@kernel.org> wrote:
+> 
+> > stacktrace reported that vring_add_indirect used 376byte and objdump says
+> > 
+> > ffffffff8141dc60 <vring_add_indirect>:
+> > ffffffff8141dc60:       55                      push   %rbp
+> > ffffffff8141dc61:       48 89 e5                mov    %rsp,%rbp
+> > ffffffff8141dc64:       41 57                   push   %r15
+> > ffffffff8141dc66:       41 56                   push   %r14
+> > ffffffff8141dc68:       41 55                   push   %r13
+> > ffffffff8141dc6a:       49 89 fd                mov    %rdi,%r13
+> > ffffffff8141dc6d:       89 cf                   mov    %ecx,%edi
+> > ffffffff8141dc6f:       48 c1 e7 04             shl    $0x4,%rdi
+> > ffffffff8141dc73:       41 54                   push   %r12
+> > ffffffff8141dc75:       49 89 d4                mov    %rdx,%r12
+> > ffffffff8141dc78:       53                      push   %rbx
+> > ffffffff8141dc79:       48 89 f3                mov    %rsi,%rbx
+> > ffffffff8141dc7c:       48 83 ec 28             sub    $0x28,%rsp
+> > ffffffff8141dc80:       8b 75 20                mov    0x20(%rbp),%esi
+> > ffffffff8141dc83:       89 4d bc                mov    %ecx,-0x44(%rbp)
+> > ffffffff8141dc86:       44 89 45 cc             mov    %r8d,-0x34(%rbp)
+> > ffffffff8141dc8a:       44 89 4d c8             mov    %r9d,-0x38(%rbp)
+> > ffffffff8141dc8e:       83 e6 dd                and    $0xffffffdd,%esi
+> > ffffffff8141dc91:       e8 7a d1 d7 ff          callq  ffffffff8119ae10 <__kmalloc>
+> > ffffffff8141dc96:       48 85 c0                test   %rax,%rax
+> > 
+> > So, it's *strange*.
+> > 
+> > I will add .config and .o.
+> > Maybe someone might find what happens.
+> > 
+> 
+> This is really bothering me. I'm trying to figure it out. We have from
+> the stack trace:
+> 
+> [ 1065.604404] kworker/-5766    0d..2 1071625993us : stack_trace_call:   9)     6456      80   __kmalloc+0x1cb/0x200
+> [ 1065.604404] kworker/-5766    0d..2 1071625993us : stack_trace_call:  10)     6376     376   vring_add_indirect+0x36/0x200
+> [ 1065.604404] kworker/-5766    0d..2 1071625993us : stack_trace_call:  11)     6000     144   virtqueue_add_sgs+0x2e2/0x320
+> 
+> The way the stack tracer works, is that when it detects a new max stack
+> it calls save_stack_trace() to get the complete call chain from the
+> stack. This should be rather accurate as it seems that your kernel was
+> compiled with frame pointers (confirmed by the objdump as well as the
+> config file). It then uses that stack trace that it got to examine the
+> stack to find the locations of the saved return addresses and records
+> them in an array (in your case, an array of 50 entries).
+> 
+> From your .o file:
+> 
+> vring_add_indirect + 0x36: (0x370 + 0x36 = 0x3a6)
+> 
+> 0000000000000370 <vring_add_indirect>:
+> 
+>  39e:   83 e6 dd                and    $0xffffffdd,%esi
+>  3a1:   e8 00 00 00 00          callq  3a6 <vring_add_indirect+0x36>
+>                         3a2: R_X86_64_PC32      __kmalloc-0x4
+>  3a6:   48 85 c0                test   %rax,%rax
+> 
+> Definitely the return address to the call to __kmalloc. Then to
+> determine the size of the stack frame, it is subtracted from the next
+> one down. In this case, the location of virtqueue_add_sgs+0x2e2.
+> 
+> virtqueue_add_sgs + 0x2e2: (0x880 + 0x2e2 = 0xb62)
+> 
+> 0000000000000880 <virtqueue_add_sgs>:
+> 
+> b4f:   89 4c 24 08             mov    %ecx,0x8(%rsp)
+>  b53:   48 c7 c2 00 00 00 00    mov    $0x0,%rdx
+>                         b56: R_X86_64_32S       .text+0x570
+>  b5a:   44 89 d1                mov    %r10d,%ecx
+>  b5d:   e8 0e f8 ff ff          callq  370 <vring_add_indirect>
+>  b62:   85 c0                   test   %eax,%eax
+> 
+> 
+> Which is the return address of where vring_add_indirect was called.
+> 
+> The return address back to virtqueue_add_sgs was found at 6000 bytes of
+> the stack. The return address back to vring_add_indirect was found at
+> 6376 bytes from the top of the stack.
+> 
+> My question is, why were they so far apart? I see 6 words pushed
+> (8bytes each, for a total of 48 bytes), and a subtraction of the stack
+> pointer of 0x28 (40 bytes) giving us a total of 88 bytes. Plus we need
+> to add the push of the return address itself which would just give us
+> 96 bytes for the stack frame. What is making this show 376 bytes??
 
-Tested-by: Arun Sharma <asharma@fb.com>
-Tested-by: Rodrigo Campos <rodrigo@sdfg.com.ar>
-Acked-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/builtin-annotate.c |  3 ++-
- tools/perf/builtin-diff.c     |  2 +-
- tools/perf/builtin-top.c      |  2 +-
- tools/perf/tests/hists_link.c |  4 ++--
- tools/perf/util/hist.c        | 29 ++++++++++++++++++-----------
- tools/perf/util/hist.h        |  3 ++-
- 6 files changed, 26 insertions(+), 17 deletions(-)
+That's what I want to know. :(
 
-diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
-index bf52461a88bd..1ec429fef2be 100644
---- a/tools/perf/builtin-annotate.c
-+++ b/tools/perf/builtin-annotate.c
-@@ -65,7 +65,8 @@ static int perf_evsel__add_sample(struct perf_evsel *evsel,
- 		return 0;
- 	}
- 
--	he = __hists__add_entry(&evsel->hists, al, NULL, NULL, NULL, 1, 1, 0);
-+	he = __hists__add_entry(&evsel->hists, al, NULL, NULL, NULL, 1, 1, 0,
-+				true);
- 	if (he == NULL)
- 		return -ENOMEM;
- 
-diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
-index 8bff543acaab..9a5a035cb426 100644
---- a/tools/perf/builtin-diff.c
-+++ b/tools/perf/builtin-diff.c
-@@ -315,7 +315,7 @@ static int hists__add_entry(struct hists *hists,
- 			    u64 weight, u64 transaction)
- {
- 	if (__hists__add_entry(hists, al, NULL, NULL, NULL, period, weight,
--			       transaction) != NULL)
-+			       transaction, true) != NULL)
- 		return 0;
- 	return -ENOMEM;
- }
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 51309264d210..12e2e1227e47 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -247,7 +247,7 @@ static struct hist_entry *perf_evsel__add_hist_entry(struct perf_evsel *evsel,
- 	pthread_mutex_lock(&evsel->hists.lock);
- 	he = __hists__add_entry(&evsel->hists, al, NULL, NULL, NULL,
- 				sample->period, sample->weight,
--				sample->transaction);
-+				sample->transaction, true);
- 	pthread_mutex_unlock(&evsel->hists.lock);
- 	if (he == NULL)
- 		return NULL;
-diff --git a/tools/perf/tests/hists_link.c b/tools/perf/tests/hists_link.c
-index 5ffa2c3eb77d..ca6693b37cd7 100644
---- a/tools/perf/tests/hists_link.c
-+++ b/tools/perf/tests/hists_link.c
-@@ -88,7 +88,7 @@ static int add_hist_entries(struct perf_evlist *evlist, struct machine *machine)
- 				goto out;
- 
- 			he = __hists__add_entry(&evsel->hists, &al, NULL,
--						NULL, NULL, 1, 1, 0);
-+						NULL, NULL, 1, 1, 0, true);
- 			if (he == NULL)
- 				goto out;
- 
-@@ -112,7 +112,7 @@ static int add_hist_entries(struct perf_evlist *evlist, struct machine *machine)
- 				goto out;
- 
- 			he = __hists__add_entry(&evsel->hists, &al, NULL,
--						NULL, NULL, 1, 1, 0);
-+						NULL, NULL, 1, 1, 0, true);
- 			if (he == NULL)
- 				goto out;
- 
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index dfff2ee8effb..b9facf33b224 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -279,7 +279,8 @@ void hists__decay_entries(struct hists *hists, bool zap_user, bool zap_kernel)
-  * histogram, sorted on item, collects periods
-  */
- 
--static struct hist_entry *hist_entry__new(struct hist_entry *template)
-+static struct hist_entry *hist_entry__new(struct hist_entry *template,
-+					  bool sample_self)
- {
- 	size_t callchain_size = 0;
- 	struct hist_entry *he;
-@@ -299,6 +300,8 @@ static struct hist_entry *hist_entry__new(struct hist_entry *template)
- 				return NULL;
- 			}
- 			memcpy(he->stat_acc, &he->stat, sizeof(he->stat));
-+			if (!sample_self)
-+				memset(&he->stat, 0, sizeof(he->stat));
- 		}
- 
- 		if (he->ms.map)
-@@ -351,7 +354,8 @@ static u8 symbol__parent_filter(const struct symbol *parent)
- 
- static struct hist_entry *add_hist_entry(struct hists *hists,
- 					 struct hist_entry *entry,
--					 struct addr_location *al)
-+					 struct addr_location *al,
-+					 bool sample_self)
- {
- 	struct rb_node **p;
- 	struct rb_node *parent = NULL;
-@@ -375,7 +379,8 @@ static struct hist_entry *add_hist_entry(struct hists *hists,
- 		cmp = hist_entry__cmp(he, entry);
- 
- 		if (!cmp) {
--			he_stat__add_period(&he->stat, period, weight);
-+			if (sample_self)
-+				he_stat__add_period(&he->stat, period, weight);
- 			if (symbol_conf.cumulate_callchain)
- 				he_stat__add_period(he->stat_acc, period, weight);
- 
-@@ -405,14 +410,15 @@ static struct hist_entry *add_hist_entry(struct hists *hists,
- 			p = &(*p)->rb_right;
- 	}
- 
--	he = hist_entry__new(entry);
-+	he = hist_entry__new(entry, sample_self);
- 	if (!he)
- 		return NULL;
- 
- 	rb_link_node(&he->rb_node_in, parent, p);
- 	rb_insert_color(&he->rb_node_in, hists->entries_in);
- out:
--	he_stat__add_cpumode_period(&he->stat, al->cpumode, period);
-+	if (sample_self)
-+		he_stat__add_cpumode_period(&he->stat, al->cpumode, period);
- 	if (symbol_conf.cumulate_callchain)
- 		he_stat__add_cpumode_period(he->stat_acc, al->cpumode, period);
- 	return he;
-@@ -423,7 +429,8 @@ struct hist_entry *__hists__add_entry(struct hists *hists,
- 				      struct symbol *sym_parent,
- 				      struct branch_info *bi,
- 				      struct mem_info *mi,
--				      u64 period, u64 weight, u64 transaction)
-+				      u64 period, u64 weight, u64 transaction,
-+				      bool sample_self)
- {
- 	struct hist_entry entry = {
- 		.thread	= al->thread,
-@@ -448,7 +455,7 @@ struct hist_entry *__hists__add_entry(struct hists *hists,
- 		.transaction = transaction,
- 	};
- 
--	return add_hist_entry(hists, &entry, al);
-+	return add_hist_entry(hists, &entry, al, sample_self);
- }
- 
- static int
-@@ -501,7 +508,7 @@ iter_add_single_mem_entry(struct hist_entry_iter *iter, struct addr_location *al
- 	 * and the he_stat__add_period() function.
- 	 */
- 	he = __hists__add_entry(&iter->evsel->hists, al, iter->parent, NULL, mi,
--				cost, cost, 0);
-+				cost, cost, 0, true);
- 	if (!he)
- 		return -ENOMEM;
- 
-@@ -608,7 +615,7 @@ iter_add_next_branch_entry(struct hist_entry_iter *iter, struct addr_location *a
- 	 * and not events sampled. Thus we use a pseudo period of 1.
- 	 */
- 	he = __hists__add_entry(&evsel->hists, al, iter->parent, &bi[i], NULL,
--				1, 1, 0);
-+				1, 1, 0, true);
- 	if (he == NULL)
- 		return -ENOMEM;
- 
-@@ -657,7 +664,7 @@ iter_add_single_normal_entry(struct hist_entry_iter *iter, struct addr_location
- 
- 	he = __hists__add_entry(&evsel->hists, al, iter->parent, NULL, NULL,
- 				sample->period, sample->weight,
--				sample->transaction);
-+				sample->transaction, true);
- 	if (he == NULL)
- 		return -ENOMEM;
- 
-@@ -1161,7 +1168,7 @@ static struct hist_entry *hists__add_dummy_entry(struct hists *hists,
- 			p = &(*p)->rb_right;
- 	}
- 
--	he = hist_entry__new(pair);
-+	he = hist_entry__new(pair, true);
- 	if (he) {
- 		memset(&he->stat, 0, sizeof(he->stat));
- 		he->hists = hists;
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index 8894f184357c..bedb24d3643c 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -130,7 +130,8 @@ struct hist_entry *__hists__add_entry(struct hists *hists,
- 				      struct symbol *parent,
- 				      struct branch_info *bi,
- 				      struct mem_info *mi, u64 period,
--				      u64 weight, u64 transaction);
-+				      u64 weight, u64 transaction,
-+				      bool sample_self);
- int hist_entry_iter__add(struct hist_entry_iter *iter, struct addr_location *al,
- 			 struct perf_evsel *evsel, struct perf_sample *sample,
- 			 int max_stack_depth);
+> 
+> Looking more into this, I'm not sure I trust the top numbers anymore.
+> kmalloc reports a stack frame of 80, and I'm coming up with 104
+> (perhaps even 112). And slab_alloc only has 8. Something's messed up there.
+
+Yes, Looks weired but some of upper functions in callstack match well so might
+think only top functions of callstack was corrupted.
+But in case of alloc_pages_current(8 byte), it looks weired too but it reports
+same value 8 bytes in uppder and bottom of callstack. :(
+> 
+> -- Steve
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
 -- 
-1.9.2
-
+Kind regards,
+Minchan Kim
