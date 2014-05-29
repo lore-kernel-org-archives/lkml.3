@@ -1,116 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752099AbaE2Wc1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 18:32:27 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:50395 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751332AbaE2WcY (ORCPT
+	id S1752323AbaE2Wcc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 18:32:32 -0400
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:61102 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751332AbaE2Wc3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 18:32:24 -0400
-Message-ID: <5387B575.2040803@gmail.com>
-Date: Thu, 29 May 2014 15:32:21 -0700
-From: Frank Rowand <frowand.list@gmail.com>
-Reply-To: frowand.list@gmail.com
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Bjorn Andersson <bjorn@kryo.se>
-CC: Kumar Gala <galak@codeaurora.org>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>
-Subject: Re: [PATCH 1/3] mfd: devicetree: bindings: Add Qualcomm RPM DT binding
-References: <1401211721-19712-1-git-send-email-bjorn.andersson@sonymobile.com> <1401211721-19712-2-git-send-email-bjorn.andersson@sonymobile.com> <09409B75-BBE3-47A6-8B4A-4E3DD29F81CD@codeaurora.org> <CAJAp7OgvChWSWgj6XRhqFC6i+T26PUCTLg5Ff722-oXDCgVuww@mail.gmail.com>
-In-Reply-To: <CAJAp7OgvChWSWgj6XRhqFC6i+T26PUCTLg5Ff722-oXDCgVuww@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Thu, 29 May 2014 18:32:29 -0400
+From: abdoulaye berthe <berthe.ab@gmail.com>
+To: linus.walleij@linaro.org, gnurou@gmail.com,
+        mika.westerberg@linux.intel.com, andriy.shevchenko@linux.intel.com,
+        sfr@canb.auug.org.au, linux-gpio@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: abdoulaye berthe <berthe.ab@gmail.com>
+Subject: [PATCH] gpio: gpiolib: set gpiochip_remove retval to void
+Date: Fri, 30 May 2014 00:32:02 +0200
+Message-Id: <1401402722-26631-1-git-send-email-berthe.ab@gmail.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <CACRpkdZg559ogf5koyxA_urM949ee-+upauYWQmo-sPUQn-g2w@mail.gmail.com>
+References: <CACRpkdZg559ogf5koyxA_urM949ee-+upauYWQmo-sPUQn-g2w@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/29/2014 11:24 AM, Bjorn Andersson wrote:
-> On Wed, May 28, 2014 at 9:34 AM, Kumar Gala <galak@codeaurora.org> wrote:
->>
->> On May 27, 2014, at 12:28 PM, Bjorn Andersson <bjorn.andersson@sonymobile.com> wrote:
->>
->>> Add binding for the Qualcomm Resource Power Manager (RPM) found in 8660, 8960
->>> and 8064 based devices. The binding currently describes the rpm itself and the
->>> regulator subnodes.
->>>
->>> Signed-off-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
->>> ---
->>> Documentation/devicetree/bindings/mfd/qcom,rpm.txt | 284 +++++++++++++++++++++
->>> include/dt-bindings/mfd/qcom_rpm.h                 | 142 +++++++++++
->>> 2 files changed, 426 insertions(+)
->>> create mode 100644 Documentation/devicetree/bindings/mfd/qcom,rpm.txt
->>> create mode 100644 include/dt-bindings/mfd/qcom_rpm.h
->>>
->>> diff --git a/Documentation/devicetree/bindings/mfd/qcom,rpm.txt b/Documentation/devicetree/bindings/mfd/qcom,rpm.txt
->>> new file mode 100644
->>> index 0000000..3908a5d
->>> --- /dev/null
->>> +++ b/Documentation/devicetree/bindings/mfd/qcom,rpm.txt
+This avoids handling gpiochip remove error in device
+remove handler.
 
-< snip >
+Signed-off-by: abdoulaye berthe <berthe.ab@gmail.com>
+---
+ drivers/gpio/gpiolib.c      | 24 +++++++-----------------
+ include/linux/gpio/driver.h |  2 +-
+ 2 files changed, 8 insertions(+), 18 deletions(-)
 
->>> +
->>> +- qcom,force-mode-none:
->>> +     Usage: optional (default if no other qcom,force-mode is specified)
->>> +     Value type: <empty>
->>> +     Defintion: indicates that the regulator should not be forced to any
->>> +                particular mode
->>> +
->>> +- qcom,force-mode-lpm:
->>> +     Usage: optional
->>> +     Value type: <empty>
->>> +     Definition: indicates that the regulator should be forced to operate in
->>> +                 low-power-mode
->>> +
->>> +- qcom,force-mode-auto:
->>> +     Usage: optional (only available for 8960/8064)
->>> +     Value type: <empty>
->>> +     Definition: indicates that the regulator should be automatically pick
->>> +                 operating mode
->>> +
->>> +- qcom,force-mode-hpm:
->>> +     Usage: optional (only available for 8960/8064)
->>> +     Value type: <empty>
->>> +     Definition: indicates that the regulator should be forced to operate in
->>> +                 high-power-mode
->>> +
->>> +- qcom,force-mode-bypass: (only for 8960/8064)
->>> +     Usage: optional (only available for 8960/8064)
->>> +     Value type: <empty>
->>> +     Definition: indicates that the regulator should be forced to operate in
->>> +                 bypass mode
->>> +
->>
->> Is force-mode really an enum?  Or can we really have multiple force-mode’s set?
->>
-> 
-> Force mode is an enum, you can only set one of these.
-> 
-> Looking around you can find three ways of doing this:
-> 1) Make it an int and provide defines in a dt-bindings header file
-> 2) Make it a string and list the possible values
-> 3) Make it a set of boolean properties
-> 
-> I just spent some time in the pinctrl struff that implements 3), I
-> like the feel of it and I like how the dts ended up looking like.
-> 
-> But if there's a strong opinion regarding this I could change it.
-
-The problem with separate properties is that there is not a way to
-detect the error of specifying multiple conflicting force-modes
-at compile time.
-
-It also means you can not override the default force-mode from one
-.dts/.dtsi in another .dts/.dtsi.
-
-< snip >
-
--Frank
+diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
+index f48817d..022543f 100644
+--- a/drivers/gpio/gpiolib.c
++++ b/drivers/gpio/gpiolib.c
+@@ -1263,10 +1263,9 @@ static void gpiochip_irqchip_remove(struct gpio_chip *gpiochip);
+  *
+  * A gpio_chip with any GPIOs still requested may not be removed.
+  */
+-int gpiochip_remove(struct gpio_chip *chip)
++void gpiochip_remove(struct gpio_chip *chip)
+ {
+ 	unsigned long	flags;
+-	int		status = 0;
+ 	unsigned	id;
+ 
+ 	acpi_gpiochip_remove(chip);
+@@ -1278,24 +1277,15 @@ int gpiochip_remove(struct gpio_chip *chip)
+ 	of_gpiochip_remove(chip);
+ 
+ 	for (id = 0; id < chip->ngpio; id++) {
+-		if (test_bit(FLAG_REQUESTED, &chip->desc[id].flags)) {
+-			status = -EBUSY;
+-			break;
+-		}
+-	}
+-	if (status == 0) {
+-		for (id = 0; id < chip->ngpio; id++)
+-			chip->desc[id].chip = NULL;
+-
+-		list_del(&chip->list);
++		if (test_bit(FLAG_REQUESTED, &chip->desc[id].flags))
++			panic("gpio: removing gpiochip with gpios still requested\n");
+ 	}
++	for (id = 0; id < chip->ngpio; id++)
++		chip->desc[id].chip = NULL;
+ 
++	list_del(&chip->list);
+ 	spin_unlock_irqrestore(&gpio_lock, flags);
+-
+-	if (status == 0)
+-		gpiochip_unexport(chip);
+-
+-	return status;
++	gpiochip_unexport(chip);
+ }
+ EXPORT_SYMBOL_GPL(gpiochip_remove);
+ 
+diff --git a/include/linux/gpio/driver.h b/include/linux/gpio/driver.h
+index 1827b43..72ed256 100644
+--- a/include/linux/gpio/driver.h
++++ b/include/linux/gpio/driver.h
+@@ -138,7 +138,7 @@ extern const char *gpiochip_is_requested(struct gpio_chip *chip,
+ 
+ /* add/remove chips */
+ extern int gpiochip_add(struct gpio_chip *chip);
+-extern int __must_check gpiochip_remove(struct gpio_chip *chip);
++void gpiochip_remove(struct gpio_chip *chip);
+ extern struct gpio_chip *gpiochip_find(void *data,
+ 			      int (*match)(struct gpio_chip *chip, void *data));
+ 
+-- 
+1.8.3.2
 
