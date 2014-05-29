@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932974AbaE2EiH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 00:38:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58352 "EHLO
+	id S933784AbaE2FDG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 01:03:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58382 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932948AbaE2EiE (ORCPT
+	with ESMTP id S932965AbaE2EiH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 00:38:04 -0400
+	Thu, 29 May 2014 00:38:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [PATCH 3.10 02/86] SCSI: dual scan thread bug fix
-Date: Wed, 28 May 2014 21:36:37 -0700
-Message-Id: <20140529043513.804967960@linuxfoundation.org>
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH 3.10 07/86] tracepoint: Do not waste memory on mods with no tracepoints
+Date: Wed, 28 May 2014 21:36:42 -0700
+Message-Id: <20140529043514.486988385@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
 In-Reply-To: <20140529043513.451722422@linuxfoundation.org>
 References: <20140529043513.451722422@linuxfoundation.org>
@@ -27,73 +27,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: James Bottomley <JBottomley@Parallels.com>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit f2495e228fce9f9cec84367547813cbb0d6db15a upstream.
+commit 7dec935a3aa04412cba2cebe1524ae0d34a30c24 upstream.
 
-In the highly unusual case where two threads are running concurrently through
-the scanning code scanning the same target, we run into the situation where
-one may allocate the target while the other is still using it.  In this case,
-because the reap checks for STARGET_CREATED and kills the target without
-reference counting, the second thread will do the wrong thing on reap.
+No reason to allocate tp_module structures for modules that have no
+tracepoints. This just wastes memory.
 
-Fix this by reference counting even creates and doing the STARGET_CREATED
-check in the final put.
-
-Tested-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Fixes: b75ef8b44b1c "Tracepoint: Dissociate from module mutex"
+Acked-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/scsi_scan.c |   23 ++++++++++++++++-------
- 1 file changed, 16 insertions(+), 7 deletions(-)
+ kernel/tracepoint.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/drivers/scsi/scsi_scan.c
-+++ b/drivers/scsi/scsi_scan.c
-@@ -320,6 +320,7 @@ static void scsi_target_destroy(struct s
- 	struct Scsi_Host *shost = dev_to_shost(dev->parent);
- 	unsigned long flags;
+--- a/kernel/tracepoint.c
++++ b/kernel/tracepoint.c
+@@ -641,6 +641,9 @@ static int tracepoint_module_coming(stru
+ 	struct tp_module *tp_mod, *iter;
+ 	int ret = 0;
  
-+	starget->state = STARGET_DEL;
- 	transport_destroy_device(dev);
- 	spin_lock_irqsave(shost->host_lock, flags);
- 	if (shost->hostt->target_destroy)
-@@ -384,9 +385,15 @@ static void scsi_target_reap_ref_release
- 	struct scsi_target *starget
- 		= container_of(kref, struct scsi_target, reap_ref);
- 
--	transport_remove_device(&starget->dev);
--	device_del(&starget->dev);
--	starget->state = STARGET_DEL;
-+	/*
-+	 * if we get here and the target is still in the CREATED state that
-+	 * means it was allocated but never made visible (because a scan
-+	 * turned up no LUNs), so don't call device_del() on it.
-+	 */
-+	if (starget->state != STARGET_CREATED) {
-+		transport_remove_device(&starget->dev);
-+		device_del(&starget->dev);
-+	}
- 	scsi_target_destroy(starget);
- }
- 
-@@ -506,11 +513,13 @@ static struct scsi_target *scsi_alloc_ta
-  */
- void scsi_target_reap(struct scsi_target *starget)
++	if (!mod->num_tracepoints)
++		return 0;
++
+ 	/*
+ 	 * We skip modules that taint the kernel, especially those with different
+ 	 * module headers (for forced load), to make sure we don't cause a crash.
+@@ -684,6 +687,9 @@ static int tracepoint_module_going(struc
  {
-+	/*
-+	 * serious problem if this triggers: STARGET_DEL is only set in the if
-+	 * the reap_ref drops to zero, so we're trying to do another final put
-+	 * on an already released kref
-+	 */
- 	BUG_ON(starget->state == STARGET_DEL);
--	if (starget->state == STARGET_CREATED)
--		scsi_target_destroy(starget);
--	else
--		scsi_target_reap_ref_put(starget);
-+	scsi_target_reap_ref_put(starget);
- }
+ 	struct tp_module *pos;
  
- /**
++	if (!mod->num_tracepoints)
++		return 0;
++
+ 	mutex_lock(&tracepoints_mutex);
+ 	tracepoint_update_probe_range(mod->tracepoints_ptrs,
+ 		mod->tracepoints_ptrs + mod->num_tracepoints);
 
 
