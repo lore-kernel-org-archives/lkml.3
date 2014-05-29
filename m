@@ -1,25 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933840AbaE2FFI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 01:05:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58197 "EHLO
+	id S932772AbaE2Ef6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 00:35:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58143 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932776AbaE2Ef7 (ORCPT
+	with ESMTP id S1756422AbaE2Efw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 00:35:59 -0400
+	Thu, 29 May 2014 00:35:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Simon Wunderlich <simon@open-mesh.com>,
-        Antonio Quartulli <antonio@open-mesh.com>,
-        Marek Lindner <mareklindner@neomailbox.ch>
-Subject: [PATCH 3.14 135/140] batman-adv: fix local TT check for outgoing arp requests in DAT
-Date: Wed, 28 May 2014 21:34:34 -0700
-Message-Id: <20140529043106.721764222@linuxfoundation.org>
+        =?UTF-8?q?Timo=20Ter=E4s?= <timo.teras@iki.fi>,
+        Tom Herbert <therbert@google.com>, Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.14 110/140] ipv4: ip_tunnels: disable cache for nbma gre tunnels
+Date: Wed, 28 May 2014 21:34:09 -0700
+Message-Id: <20140529043103.740161463@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
 In-Reply-To: <20140529043049.661315084@linuxfoundation.org>
 References: <20140529043049.661315084@linuxfoundation.org>
 User-Agent: quilt/0.60-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -28,43 +31,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Antonio Quartulli <antonio@open-mesh.com>
+From: =?UTF-8?q?Timo=20Ter=C3=A4s?= <timo.teras@iki.fi>
 
-[ Upstream commit cc2f33860cea0e48ebec096130bd0f7c4bf6e0bc ]
+[ Upstream commit 22fb22eaebf4d16987f3fd9c3484c436ee0badf2 ]
 
-Change introduced by 88e48d7b3340ef07b108eb8a8b3813dd093cc7f7
-("batman-adv: make DAT drop ARP requests targeting local clients")
-implements a check that prevents DAT from using the caching
-mechanism when the client that is supposed to provide a reply
-to an arp request is local.
+The connected check fails to check for ip_gre nbma mode tunnels
+properly. ip_gre creates temporary tnl_params with daddr specified
+to pass-in the actual target on per-packet basis from neighbor
+layer. Detect these tunnels by inspecting the actual tunnel
+configuration.
 
-However change brought by be1db4f6615b5e6156c807ea8985171c215c2d57
-("batman-adv: make the Distributed ARP Table vlan aware")
-has not converted the above check into its vlan aware version
-thus making it useless when the local client is behind a vlan.
+Minimal test case:
+ ip route add 192.168.1.1/32 via 10.0.0.1
+ ip route add 192.168.1.2/32 via 10.0.0.2
+ ip tunnel add nbma0 mode gre key 1 tos c0
+ ip addr add 172.17.0.0/16 dev nbma0
+ ip link set nbma0 up
+ ip neigh add 172.17.0.1 lladdr 192.168.1.1 dev nbma0
+ ip neigh add 172.17.0.2 lladdr 192.168.1.2 dev nbma0
+ ping 172.17.0.1
+ ping 172.17.0.2
 
-Fix the behaviour by properly specifying the vlan when
-checking for a client being local or not.
+The second ping should be going to 192.168.1.2 and head 10.0.0.2;
+but cached gre tunnel level route is used and it's actually going
+to 192.168.1.1 via 10.0.0.1.
 
-Reported-by: Simon Wunderlich <simon@open-mesh.com>
-Signed-off-by: Antonio Quartulli <antonio@open-mesh.com>
-Signed-off-by: Marek Lindner <mareklindner@neomailbox.ch>
+The lladdr's need to go to separate dst for the bug to trigger.
+Test case uses separate route entries, but this can also happen
+when the route entry is same: if there is a nexthop exception or
+the GRE tunnel is IPsec'ed in which case the dst points to xfrm
+bundle unique to the gre lladdr.
+
+Fixes: 7d442fab0a67 ("ipv4: Cache dst in tunnels")
+Signed-off-by: Timo Teräs <timo.teras@iki.fi>
+Cc: Tom Herbert <therbert@google.com>
+Cc: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/batman-adv/distributed-arp-table.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ net/ipv4/ip_tunnel.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/net/batman-adv/distributed-arp-table.c
-+++ b/net/batman-adv/distributed-arp-table.c
-@@ -940,8 +940,7 @@ bool batadv_dat_snoop_outgoing_arp_reque
- 		 * additional DAT answer may trigger kernel warnings about
- 		 * a packet coming from the wrong port.
- 		 */
--		if (batadv_is_my_client(bat_priv, dat_entry->mac_addr,
--					BATADV_NO_FLAGS)) {
-+		if (batadv_is_my_client(bat_priv, dat_entry->mac_addr, vid)) {
- 			ret = true;
- 			goto out;
- 		}
+--- a/net/ipv4/ip_tunnel.c
++++ b/net/ipv4/ip_tunnel.c
+@@ -536,9 +536,10 @@ void ip_tunnel_xmit(struct sk_buff *skb,
+ 	unsigned int max_headroom;	/* The extra header space needed */
+ 	__be32 dst;
+ 	int err;
+-	bool connected = true;
++	bool connected;
+ 
+ 	inner_iph = (const struct iphdr *)skb_inner_network_header(skb);
++	connected = (tunnel->parms.iph.daddr != 0);
+ 
+ 	dst = tnl_params->daddr;
+ 	if (dst == 0) {
 
 
