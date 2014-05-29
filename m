@@ -1,88 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756871AbaE2Jlw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 05:41:52 -0400
-Received: from relay.parallels.com ([195.214.232.42]:46383 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756119AbaE2Jlu (ORCPT
+	id S1756956AbaE2JnO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 05:43:14 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:55492 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756074AbaE2JnM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 05:41:50 -0400
-Message-ID: <538700B5.5070601@parallels.com>
-Date: Thu, 29 May 2014 13:41:09 +0400
-From: Pavel Emelyanov <xemul@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	Thu, 29 May 2014 05:43:12 -0400
+Message-ID: <53870129.5010505@monstr.eu>
+Date: Thu, 29 May 2014 11:43:05 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Richard Weinberger <richard@nod.at>
-CC: Vasily Kulikov <segoon@openwall.com>,
-        <containers@lists.linux-foundation.org>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>, <linux-kernel@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>, David Howells <dhowells@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [PATCH v2] /proc/pid/status: show all sets of pid according to
- ns
-References: <1401272683-1659-1-git-send-email-chenhanxiao@cn.fujitsu.com> <5385DA19.2060008@parallels.com> <20140528182824.GA5057@cachalot> <53863889.9080509@parallels.com> <20140529055954.GA10354@cachalot> <5386F8EA.8050501@parallels.com> <5386FC0C.9000307@nod.at>
-In-Reply-To: <5386FC0C.9000307@nod.at>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.24.36.87]
+To: Mark Rutland <mark.rutland@arm.com>, Harini Katakam <harinik@xilinx.com>
+CC: "wim@iguana.be" <wim@iguana.be>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "rob@landley.net" <rob@landley.net>,
+        "michals@xilinx.com" <michals@xilinx.com>,
+        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Subject: Re: [PATCH v2 1/2] watchdog: Add Cadence WDT driver
+References: <1401185895-3677-1-git-send-email-harinik@xilinx.com> <20140529092106.GC24233@leverpostej>
+In-Reply-To: <20140529092106.GC24233@leverpostej>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="lMOK2oNEsjMuSaeX4mDQc4TLT8TPkNpNn"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/29/2014 01:21 PM, Richard Weinberger wrote:
-> Am 29.05.2014 11:07, schrieb Pavel Emelyanov:
->> On 05/29/2014 09:59 AM, Vasily Kulikov wrote:
->>> On Wed, May 28, 2014 at 23:27 +0400, Pavel Emelyanov wrote:
->>>> On 05/28/2014 10:28 PM, Vasily Kulikov wrote:
->>>>> On Wed, May 28, 2014 at 16:44 +0400, Pavel Emelyanov wrote:
->>>>> It will be simplier
->>>>> to parse the file -- if 'ns_ids' file contains some ID then this ID for
->>>>> every ns can be obtained regardless of the specific ID name (SID, PID,
->>>>> PGID, etc.).
->>>>
->>>> True, but given a task PID how to determine which pid namespaces it lives in
->>>> to get the idea of how PIDs map to each other? Maybe we need some explicit
->>>> API for converting (ID, NS1, NS2) into (ID)?
->>>
->>> AFAIU the idea of the patch is to add a new debugging information which
->>> can be trivially obtained via 'cat /proc/...':
->>
->> I agree, but this ability will be very useful by checkpoint-restore project
->> too and I'd really appreciate if the API we have for that would be scalable
->> enough. Per-task proc file works for me, but how about sid-s and pgid-s?
-> 
-> What kind of information does CRIU need?
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--lMOK2oNEsjMuSaeX4mDQc4TLT8TPkNpNn
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-We need to know what pid namespaces a task lives in and how pid, sid and
-pgid look in all of them. A short example with pids only
+Hi Mark,
 
-Task t1 with pid 2, lives in init pid ns calls clone(CLONE_NEWPID), creates
-ns1 with task t2 having pid (3, 1), then t2 calls clone(CLONE_NEWPID) again
-and creates ns2 with task t3 having pid (4, 5, 1). I.e. the trees look like 
-this:
+>> +static struct of_device_id cdns_wdt_of_match[] =3D {
+>> +       { .compatible =3D "xlnx,zynq-wdt-r1p2", },
+>> +       { .compatible =3D "cdns,wdt-r1p2", },
+>=20
+> If these can currently be handled identically, why not just have
+> "cdns,wdt-r1p2" in the driver and in your dts have:
+>=20
+> compatible =3D "xlnx,zynq-wdt-r1p2", "cdns,wdt-r1p2";
+>=20
+> If we need to distinguish the two for some reason later we can always
+> add the "xlnx,zynq-wdt-r1p2" string to the driver.
 
-    init_pid_ns    ns1         ns2
-t1  2
-t2   `- 3          1 
-t3       `- 4      `- 5        1
+I would prefer to have 2 compatible strings just because
+of that we don't know what is different compare to origin cadence
+version. We have done the same for spi-cadence.c that's why
+it shouldn't be any problem to keep it as is.
+Having zynq compatible property here and using it give us option
+that if another SoC vendor come with new configuration or clean
+cadence one we can simple handle it without changing compatible
+property for us.
 
-Also note, that /proc/pid/ns will show us that t1 lives in init_pid_ns,
-t2 lives in ns1 and t3 lives in ns2.
+thanks,
+Michal
 
-Now if we come from init pid ns with criu and try to dump task with pid 3
-(i.e. the t2), the existing kernel API can tell us that:
 
-a) t2 lives in ns1 != init_pid_ns (via /proc/pid/ns link)
-b) t3 lives in ns2 != init_pid_ns
-c) t2 has pid 3 (via init's /proc) in init ns and pid 1 in its ns (via t2's /proc)
-d) t3 has pid 4 in init ns and pid 1 in its ns
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
 
-what we also need to know and don't yet have an API for is
 
-e) ns2 is the child of ns1
-f) t3 has pid 5 in ns1
 
-Thanks,
-Pavel
+--lMOK2oNEsjMuSaeX4mDQc4TLT8TPkNpNn
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlOHASkACgkQykllyylKDCG8gwCeL6kJMQbQxry99bkhop6MTcJk
+KbUAn0/EQdJPou+FGxg28m65l3X4Jipb
+=riNy
+-----END PGP SIGNATURE-----
+
+--lMOK2oNEsjMuSaeX4mDQc4TLT8TPkNpNn--
