@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933784AbaE2FDG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 01:03:06 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58382 "EHLO
+	id S933789AbaE2FD2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 01:03:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58376 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932965AbaE2EiH (ORCPT
+	with ESMTP id S932962AbaE2EiH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 29 May 2014 00:38:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 3.10 07/86] tracepoint: Do not waste memory on mods with no tracepoints
-Date: Wed, 28 May 2014 21:36:42 -0700
-Message-Id: <20140529043514.486988385@linuxfoundation.org>
+        Florian Westphal <fw@strlen.de>, Thomas Graf <tgraf@suug.ch>,
+        Pablo Neira Ayuso <pablo@netfilter.org>
+Subject: [PATCH 3.10 06/86] netfilter: Cant fail and free after table replacement
+Date: Wed, 28 May 2014 21:36:41 -0700
+Message-Id: <20140529043514.354579846@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
 In-Reply-To: <20140529043513.451722422@linuxfoundation.org>
 References: <20140529043513.451722422@linuxfoundation.org>
@@ -27,43 +27,91 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Thomas Graf <tgraf@suug.ch>
 
-commit 7dec935a3aa04412cba2cebe1524ae0d34a30c24 upstream.
+commit c58dd2dd443c26d856a168db108a0cd11c285bf3 upstream.
 
-No reason to allocate tp_module structures for modules that have no
-tracepoints. This just wastes memory.
+All xtables variants suffer from the defect that the copy_to_user()
+to copy the counters to user memory may fail after the table has
+already been exchanged and thus exposed. Return an error at this
+point will result in freeing the already exposed table. Any
+subsequent packet processing will result in a kernel panic.
 
-Fixes: b75ef8b44b1c "Tracepoint: Dissociate from module mutex"
-Acked-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+We can't copy the counters before exposing the new tables as we
+want provide the counter state after the old table has been
+unhooked. Therefore convert this into a silent error.
+
+Cc: Florian Westphal <fw@strlen.de>
+Signed-off-by: Thomas Graf <tgraf@suug.ch>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/tracepoint.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ net/bridge/netfilter/ebtables.c |    5 ++---
+ net/ipv4/netfilter/arp_tables.c |    6 ++++--
+ net/ipv4/netfilter/ip_tables.c  |    6 ++++--
+ net/ipv6/netfilter/ip6_tables.c |    6 ++++--
+ 4 files changed, 14 insertions(+), 9 deletions(-)
 
---- a/kernel/tracepoint.c
-+++ b/kernel/tracepoint.c
-@@ -641,6 +641,9 @@ static int tracepoint_module_coming(stru
- 	struct tp_module *tp_mod, *iter;
- 	int ret = 0;
+--- a/net/bridge/netfilter/ebtables.c
++++ b/net/bridge/netfilter/ebtables.c
+@@ -1044,10 +1044,9 @@ static int do_replace_finish(struct net
+ 	if (repl->num_counters &&
+ 	   copy_to_user(repl->counters, counterstmp,
+ 	   repl->num_counters * sizeof(struct ebt_counter))) {
+-		ret = -EFAULT;
++		/* Silent error, can't fail, new table is already in place */
++		net_warn_ratelimited("ebtables: counters copy to user failed while replacing table\n");
+ 	}
+-	else
+-		ret = 0;
  
-+	if (!mod->num_tracepoints)
-+		return 0;
-+
- 	/*
- 	 * We skip modules that taint the kernel, especially those with different
- 	 * module headers (for forced load), to make sure we don't cause a crash.
-@@ -684,6 +687,9 @@ static int tracepoint_module_going(struc
- {
- 	struct tp_module *pos;
+ 	/* decrease module count and free resources */
+ 	EBT_ENTRY_ITERATE(table->entries, table->entries_size,
+--- a/net/ipv4/netfilter/arp_tables.c
++++ b/net/ipv4/netfilter/arp_tables.c
+@@ -1039,8 +1039,10 @@ static int __do_replace(struct net *net,
  
-+	if (!mod->num_tracepoints)
-+		return 0;
-+
- 	mutex_lock(&tracepoints_mutex);
- 	tracepoint_update_probe_range(mod->tracepoints_ptrs,
- 		mod->tracepoints_ptrs + mod->num_tracepoints);
+ 	xt_free_table_info(oldinfo);
+ 	if (copy_to_user(counters_ptr, counters,
+-			 sizeof(struct xt_counters) * num_counters) != 0)
+-		ret = -EFAULT;
++			 sizeof(struct xt_counters) * num_counters) != 0) {
++		/* Silent error, can't fail, new table is already in place */
++		net_warn_ratelimited("arptables: counters copy to user failed while replacing table\n");
++	}
+ 	vfree(counters);
+ 	xt_table_unlock(t);
+ 	return ret;
+--- a/net/ipv4/netfilter/ip_tables.c
++++ b/net/ipv4/netfilter/ip_tables.c
+@@ -1226,8 +1226,10 @@ __do_replace(struct net *net, const char
+ 
+ 	xt_free_table_info(oldinfo);
+ 	if (copy_to_user(counters_ptr, counters,
+-			 sizeof(struct xt_counters) * num_counters) != 0)
+-		ret = -EFAULT;
++			 sizeof(struct xt_counters) * num_counters) != 0) {
++		/* Silent error, can't fail, new table is already in place */
++		net_warn_ratelimited("iptables: counters copy to user failed while replacing table\n");
++	}
+ 	vfree(counters);
+ 	xt_table_unlock(t);
+ 	return ret;
+--- a/net/ipv6/netfilter/ip6_tables.c
++++ b/net/ipv6/netfilter/ip6_tables.c
+@@ -1236,8 +1236,10 @@ __do_replace(struct net *net, const char
+ 
+ 	xt_free_table_info(oldinfo);
+ 	if (copy_to_user(counters_ptr, counters,
+-			 sizeof(struct xt_counters) * num_counters) != 0)
+-		ret = -EFAULT;
++			 sizeof(struct xt_counters) * num_counters) != 0) {
++		/* Silent error, can't fail, new table is already in place */
++		net_warn_ratelimited("ip6tables: counters copy to user failed while replacing table\n");
++	}
+ 	vfree(counters);
+ 	xt_table_unlock(t);
+ 	return ret;
 
 
