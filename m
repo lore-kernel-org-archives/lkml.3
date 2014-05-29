@@ -1,23 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933108AbaE2EiW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 00:38:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58475 "EHLO
+	id S933131AbaE2Ei2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 00:38:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58492 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933035AbaE2EiS (ORCPT
+	with ESMTP id S933035AbaE2EiW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 00:38:18 -0400
+	Thu, 29 May 2014 00:38:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 3.10 26/86] USB: serial: fix sysfs-attribute removal deadlock
-Date: Wed, 28 May 2014 21:37:01 -0700
-Message-Id: <20140529043517.024052286@linuxfoundation.org>
+        Julio Araujo <julio.araujo@wllctel.com.br>,
+        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
+Subject: [PATCH 3.10 31/86] usb: option: add Olivetti Olicard 500
+Date: Wed, 28 May 2014 21:37:06 -0700
+Message-Id: <20140529043517.678872570@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
 In-Reply-To: <20140529043513.451722422@linuxfoundation.org>
 References: <20140529043513.451722422@linuxfoundation.org>
 User-Agent: quilt/0.60-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -26,138 +30,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Bjørn Mork <bjorn@mork.no>
 
-commit 10164c2ad6d2c16809f6c09e278f946e47801b3a upstream.
+commit 533b3994610f316e5cd61b56d0c4daa15c830f89 upstream.
 
-Fix driver new_id sysfs-attribute removal deadlock by making sure to
-not hold any locks that the attribute operations grab when removing the
-attribute.
+Device interface layout:
+0: ff/ff/ff - serial
+1: ff/ff/ff - serial AT+PPP
+2: 08/06/50 - storage
+3: ff/ff/ff - serial
+4: ff/ff/ff - QMI/wwan
 
-Specifically, usb_serial_deregister holds the table mutex when
-deregistering the driver, which includes removing the new_id attribute.
-This can lead to a deadlock as writing to new_id increments the
-attribute's active count before trying to grab the same mutex in
-usb_serial_probe.
-
-The deadlock can easily be triggered by inserting a sleep in
-usb_serial_deregister and writing the id of an unbound device to new_id
-during module unload.
-
-As the table mutex (in this case) is used to prevent subdriver unload
-during probe, it should be sufficient to only hold the lock while
-manipulating the usb-serial driver list during deregister. A racing
-probe will then either fail to find a matching subdriver or fail to get
-the corresponding module reference.
-
-Since v3.15-rc1 this also triggers the following lockdep warning:
-
-======================================================
-[ INFO: possible circular locking dependency detected ]
-3.15.0-rc2 #123 Tainted: G        W
--------------------------------------------------------
-modprobe/190 is trying to acquire lock:
- (s_active#4){++++.+}, at: [<c0167aa0>] kernfs_remove_by_name_ns+0x4c/0x94
-
-but task is already holding lock:
- (table_lock){+.+.+.}, at: [<bf004d84>] usb_serial_deregister+0x3c/0x78 [usbserial]
-
-which lock already depends on the new lock.
-
-the existing dependency chain (in reverse order) is:
-
--> #1 (table_lock){+.+.+.}:
-       [<c0075f84>] __lock_acquire+0x1694/0x1ce4
-       [<c0076de8>] lock_acquire+0xb4/0x154
-       [<c03af3cc>] _raw_spin_lock+0x4c/0x5c
-       [<c02bbc24>] usb_store_new_id+0x14c/0x1ac
-       [<bf007eb4>] new_id_store+0x68/0x70 [usbserial]
-       [<c025f568>] drv_attr_store+0x30/0x3c
-       [<c01690e0>] sysfs_kf_write+0x5c/0x60
-       [<c01682c0>] kernfs_fop_write+0xd4/0x194
-       [<c010881c>] vfs_write+0xbc/0x198
-       [<c0108e4c>] SyS_write+0x4c/0xa0
-       [<c000f880>] ret_fast_syscall+0x0/0x48
-
--> #0 (s_active#4){++++.+}:
-       [<c03a7a28>] print_circular_bug+0x68/0x2f8
-       [<c0076218>] __lock_acquire+0x1928/0x1ce4
-       [<c0076de8>] lock_acquire+0xb4/0x154
-       [<c0166b70>] __kernfs_remove+0x254/0x310
-       [<c0167aa0>] kernfs_remove_by_name_ns+0x4c/0x94
-       [<c0169fb8>] remove_files.isra.1+0x48/0x84
-       [<c016a2fc>] sysfs_remove_group+0x58/0xac
-       [<c016a414>] sysfs_remove_groups+0x34/0x44
-       [<c02623b8>] driver_remove_groups+0x1c/0x20
-       [<c0260e9c>] bus_remove_driver+0x3c/0xe4
-       [<c026235c>] driver_unregister+0x38/0x58
-       [<bf007fb4>] usb_serial_bus_deregister+0x84/0x88 [usbserial]
-       [<bf004db4>] usb_serial_deregister+0x6c/0x78 [usbserial]
-       [<bf005330>] usb_serial_deregister_drivers+0x2c/0x4c [usbserial]
-       [<bf016618>] usb_serial_module_exit+0x14/0x1c [sierra]
-       [<c009d6cc>] SyS_delete_module+0x184/0x210
-       [<c000f880>] ret_fast_syscall+0x0/0x48
-
-other info that might help us debug this:
-
- Possible unsafe locking scenario:
-
-       CPU0                    CPU1
-       ----                    ----
-  lock(table_lock);
-                               lock(s_active#4);
-                               lock(table_lock);
-  lock(s_active#4);
-
- *** DEADLOCK ***
-
-1 lock held by modprobe/190:
- #0:  (table_lock){+.+.+.}, at: [<bf004d84>] usb_serial_deregister+0x3c/0x78 [usbserial]
-
-stack backtrace:
-CPU: 0 PID: 190 Comm: modprobe Tainted: G        W     3.15.0-rc2 #123
-[<c0015e10>] (unwind_backtrace) from [<c0013728>] (show_stack+0x20/0x24)
-[<c0013728>] (show_stack) from [<c03a9a54>] (dump_stack+0x24/0x28)
-[<c03a9a54>] (dump_stack) from [<c03a7cac>] (print_circular_bug+0x2ec/0x2f8)
-[<c03a7cac>] (print_circular_bug) from [<c0076218>] (__lock_acquire+0x1928/0x1ce4)
-[<c0076218>] (__lock_acquire) from [<c0076de8>] (lock_acquire+0xb4/0x154)
-[<c0076de8>] (lock_acquire) from [<c0166b70>] (__kernfs_remove+0x254/0x310)
-[<c0166b70>] (__kernfs_remove) from [<c0167aa0>] (kernfs_remove_by_name_ns+0x4c/0x94)
-[<c0167aa0>] (kernfs_remove_by_name_ns) from [<c0169fb8>] (remove_files.isra.1+0x48/0x84)
-[<c0169fb8>] (remove_files.isra.1) from [<c016a2fc>] (sysfs_remove_group+0x58/0xac)
-[<c016a2fc>] (sysfs_remove_group) from [<c016a414>] (sysfs_remove_groups+0x34/0x44)
-[<c016a414>] (sysfs_remove_groups) from [<c02623b8>] (driver_remove_groups+0x1c/0x20)
-[<c02623b8>] (driver_remove_groups) from [<c0260e9c>] (bus_remove_driver+0x3c/0xe4)
-[<c0260e9c>] (bus_remove_driver) from [<c026235c>] (driver_unregister+0x38/0x58)
-[<c026235c>] (driver_unregister) from [<bf007fb4>] (usb_serial_bus_deregister+0x84/0x88 [usbserial])
-[<bf007fb4>] (usb_serial_bus_deregister [usbserial]) from [<bf004db4>] (usb_serial_deregister+0x6c/0x78 [usbserial])
-[<bf004db4>] (usb_serial_deregister [usbserial]) from [<bf005330>] (usb_serial_deregister_drivers+0x2c/0x4c [usbserial])
-[<bf005330>] (usb_serial_deregister_drivers [usbserial]) from [<bf016618>] (usb_serial_module_exit+0x14/0x1c [sierra])
-[<bf016618>] (usb_serial_module_exit [sierra]) from [<c009d6cc>] (SyS_delete_module+0x184/0x210)
-[<c009d6cc>] (SyS_delete_module) from [<c000f880>] (ret_fast_syscall+0x0/0x48)
-
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Reported-by: Julio Araujo <julio.araujo@wllctel.com.br>
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/usb-serial.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/usb/serial/option.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/usb/serial/usb-serial.c
-+++ b/drivers/usb/serial/usb-serial.c
-@@ -1367,10 +1367,12 @@ static int usb_serial_register(struct us
- static void usb_serial_deregister(struct usb_serial_driver *device)
- {
- 	pr_info("USB Serial deregistering driver %s\n", device->description);
-+
- 	mutex_lock(&table_lock);
- 	list_del(&device->driver_list);
--	usb_serial_bus_deregister(device);
- 	mutex_unlock(&table_lock);
-+
-+	usb_serial_bus_deregister(device);
- }
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -349,6 +349,7 @@ static void option_instat_callback(struc
+ #define OLIVETTI_PRODUCT_OLICARD100		0xc000
+ #define OLIVETTI_PRODUCT_OLICARD145		0xc003
+ #define OLIVETTI_PRODUCT_OLICARD200		0xc005
++#define OLIVETTI_PRODUCT_OLICARD500		0xc00b
  
- /**
+ /* Celot products */
+ #define CELOT_VENDOR_ID				0x211f
+@@ -1545,6 +1546,9 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD200),
+ 		.driver_info = (kernel_ulong_t)&net_intf6_blacklist
+ 	},
++	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD500),
++		.driver_info = (kernel_ulong_t)&net_intf4_blacklist
++	},
+ 	{ USB_DEVICE(CELOT_VENDOR_ID, CELOT_PRODUCT_CT680M) }, /* CT-650 CDMA 450 1xEVDO modem */
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(SAMSUNG_VENDOR_ID, SAMSUNG_PRODUCT_GT_B3730, USB_CLASS_CDC_DATA, 0x00, 0x00) }, /* Samsung GT-B3730 LTE USB modem.*/
+ 	{ USB_DEVICE(YUGA_VENDOR_ID, YUGA_PRODUCT_CEM600) },
 
 
