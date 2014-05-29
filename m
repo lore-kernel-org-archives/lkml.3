@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964903AbaE2FTJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 01:19:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57959 "EHLO
+	id S964930AbaE2FTr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 01:19:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57948 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932562AbaE2Efb (ORCPT
+	with ESMTP id S932551AbaE2Ef3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 00:35:31 -0400
+	Thu, 29 May 2014 00:35:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joshua Kinard <kumba@gentoo.org>, Vlad Yasevich <vyasevic@redhat.com>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Neil Horman <nhorman@tuxdriver.com>,
+        Vlad Yasevich <vyasevic@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 086/140] net: sctp: cache auth_enable per endpoint
-Date: Wed, 28 May 2014 21:33:45 -0700
-Message-Id: <20140529043100.674671334@linuxfoundation.org>
+Subject: [PATCH 3.14 084/140] macvlan: Fix lockdep warnings with stacked macvlan devices
+Date: Wed, 28 May 2014 21:33:43 -0700
+Message-Id: <20140529043100.406912011@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
 In-Reply-To: <20140529043049.661315084@linuxfoundation.org>
 References: <20140529043049.661315084@linuxfoundation.org>
@@ -31,602 +29,206 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Vlad Yasevich <vyasevic@redhat.com>
 
-[ Upstream commit b14878ccb7fac0242db82720b784ab62c467c0dc ]
+[ Upstream commit c674ac30c549596295eb0a5af7f4714c0b905b6f ]
 
-Currently, it is possible to create an SCTP socket, then switch
-auth_enable via sysctl setting to 1 and crash the system on connect:
+Macvlan devices try to avoid stacking, but that's not always
+successfull or even desired.  As an example, the following
+configuration is perefectly legal and valid:
 
-Oops[#1]:
-CPU: 0 PID: 0 Comm: swapper Not tainted 3.14.1-mipsgit-20140415 #1
-task: ffffffff8056ce80 ti: ffffffff8055c000 task.ti: ffffffff8055c000
-[...]
-Call Trace:
-[<ffffffff8043c4e8>] sctp_auth_asoc_set_default_hmac+0x68/0x80
-[<ffffffff8042b300>] sctp_process_init+0x5e0/0x8a4
-[<ffffffff8042188c>] sctp_sf_do_5_1B_init+0x234/0x34c
-[<ffffffff804228c8>] sctp_do_sm+0xb4/0x1e8
-[<ffffffff80425a08>] sctp_endpoint_bh_rcv+0x1c4/0x214
-[<ffffffff8043af68>] sctp_rcv+0x588/0x630
-[<ffffffff8043e8e8>] sctp6_rcv+0x10/0x24
-[<ffffffff803acb50>] ip6_input+0x2c0/0x440
-[<ffffffff8030fc00>] __netif_receive_skb_core+0x4a8/0x564
-[<ffffffff80310650>] process_backlog+0xb4/0x18c
-[<ffffffff80313cbc>] net_rx_action+0x12c/0x210
-[<ffffffff80034254>] __do_softirq+0x17c/0x2ac
-[<ffffffff800345e0>] irq_exit+0x54/0xb0
-[<ffffffff800075a4>] ret_from_irq+0x0/0x4
-[<ffffffff800090ec>] rm7k_wait_irqoff+0x24/0x48
-[<ffffffff8005e388>] cpu_startup_entry+0xc0/0x148
-[<ffffffff805a88b0>] start_kernel+0x37c/0x398
-Code: dd0900b8  000330f8  0126302d <dcc60000> 50c0fff1  0047182a  a48306a0
-03e00008  00000000
----[ end trace b530b0551467f2fd ]---
-Kernel panic - not syncing: Fatal exception in interrupt
+eth0 <--- macvlan0 <---- vlan0.10 <--- macvlan1
 
-What happens while auth_enable=0 in that case is, that
-ep->auth_hmacs is initialized to NULL in sctp_auth_init_hmacs()
-when endpoint is being created.
+However, this configuration produces the following lockdep
+trace:
+[  115.620418] ======================================================
+[  115.620477] [ INFO: possible circular locking dependency detected ]
+[  115.620516] 3.15.0-rc1+ #24 Not tainted
+[  115.620540] -------------------------------------------------------
+[  115.620577] ip/1704 is trying to acquire lock:
+[  115.620604]  (&vlan_netdev_addr_lock_key/1){+.....}, at: [<ffffffff815df49c>] dev_uc_sync+0x3c/0x80
+[  115.620686]
+but task is already holding lock:
+[  115.620723]  (&macvlan_netdev_addr_lock_key){+.....}, at: [<ffffffff815da5be>] dev_set_rx_mode+0x1e/0x40
+[  115.620795]
+which lock already depends on the new lock.
 
-After that point, if an admin switches over to auth_enable=1,
-the machine can crash due to NULL pointer dereference during
-reception of an INIT chunk. When we enter sctp_process_init()
-via sctp_sf_do_5_1B_init() in order to respond to an INIT chunk,
-the INIT verification succeeds and while we walk and process
-all INIT params via sctp_process_param() we find that
-net->sctp.auth_enable is set, therefore do not fall through,
-but invoke sctp_auth_asoc_set_default_hmac() instead, and thus,
-dereference what we have set to NULL during endpoint
-initialization phase.
+[  115.620853]
+the existing dependency chain (in reverse order) is:
+[  115.620894]
+-> #1 (&macvlan_netdev_addr_lock_key){+.....}:
+[  115.620935]        [<ffffffff810d57f2>] lock_acquire+0xa2/0x130
+[  115.620974]        [<ffffffff816f62e7>] _raw_spin_lock_nested+0x37/0x50
+[  115.621019]        [<ffffffffa07296c3>] vlan_dev_set_rx_mode+0x53/0x110 [8021q]
+[  115.621066]        [<ffffffff815da557>] __dev_set_rx_mode+0x57/0xa0
+[  115.621105]        [<ffffffff815da5c6>] dev_set_rx_mode+0x26/0x40
+[  115.621143]        [<ffffffff815da6be>] __dev_open+0xde/0x140
+[  115.621174]        [<ffffffff815da9ad>] __dev_change_flags+0x9d/0x170
+[  115.621174]        [<ffffffff815daaa9>] dev_change_flags+0x29/0x60
+[  115.621174]        [<ffffffff815e7f11>] do_setlink+0x321/0x9a0
+[  115.621174]        [<ffffffff815ea59f>] rtnl_newlink+0x51f/0x730
+[  115.621174]        [<ffffffff815e6e75>] rtnetlink_rcv_msg+0x95/0x250
+[  115.621174]        [<ffffffff81608b19>] netlink_rcv_skb+0xa9/0xc0
+[  115.621174]        [<ffffffff815e6dca>] rtnetlink_rcv+0x2a/0x40
+[  115.621174]        [<ffffffff81608150>] netlink_unicast+0xf0/0x1c0
+[  115.621174]        [<ffffffff8160851f>] netlink_sendmsg+0x2ff/0x740
+[  115.621174]        [<ffffffff815bc9db>] sock_sendmsg+0x8b/0xc0
+[  115.621174]        [<ffffffff815bd4b9>] ___sys_sendmsg+0x369/0x380
+[  115.621174]        [<ffffffff815bdbb2>] __sys_sendmsg+0x42/0x80
+[  115.621174]        [<ffffffff815bdc02>] SyS_sendmsg+0x12/0x20
+[  115.621174]        [<ffffffff816ffd69>] system_call_fastpath+0x16/0x1b
+[  115.621174]
+-> #0 (&vlan_netdev_addr_lock_key/1){+.....}:
+[  115.621174]        [<ffffffff810d4d43>] __lock_acquire+0x1773/0x1a60
+[  115.621174]        [<ffffffff810d57f2>] lock_acquire+0xa2/0x130
+[  115.621174]        [<ffffffff816f62e7>] _raw_spin_lock_nested+0x37/0x50
+[  115.621174]        [<ffffffff815df49c>] dev_uc_sync+0x3c/0x80
+[  115.621174]        [<ffffffffa0696d2a>] macvlan_set_mac_lists+0xca/0x110 [macvlan]
+[  115.621174]        [<ffffffff815da557>] __dev_set_rx_mode+0x57/0xa0
+[  115.621174]        [<ffffffff815da5c6>] dev_set_rx_mode+0x26/0x40
+[  115.621174]        [<ffffffff815da6be>] __dev_open+0xde/0x140
+[  115.621174]        [<ffffffff815da9ad>] __dev_change_flags+0x9d/0x170
+[  115.621174]        [<ffffffff815daaa9>] dev_change_flags+0x29/0x60
+[  115.621174]        [<ffffffff815e7f11>] do_setlink+0x321/0x9a0
+[  115.621174]        [<ffffffff815ea59f>] rtnl_newlink+0x51f/0x730
+[  115.621174]        [<ffffffff815e6e75>] rtnetlink_rcv_msg+0x95/0x250
+[  115.621174]        [<ffffffff81608b19>] netlink_rcv_skb+0xa9/0xc0
+[  115.621174]        [<ffffffff815e6dca>] rtnetlink_rcv+0x2a/0x40
+[  115.621174]        [<ffffffff81608150>] netlink_unicast+0xf0/0x1c0
+[  115.621174]        [<ffffffff8160851f>] netlink_sendmsg+0x2ff/0x740
+[  115.621174]        [<ffffffff815bc9db>] sock_sendmsg+0x8b/0xc0
+[  115.621174]        [<ffffffff815bd4b9>] ___sys_sendmsg+0x369/0x380
+[  115.621174]        [<ffffffff815bdbb2>] __sys_sendmsg+0x42/0x80
+[  115.621174]        [<ffffffff815bdc02>] SyS_sendmsg+0x12/0x20
+[  115.621174]        [<ffffffff816ffd69>] system_call_fastpath+0x16/0x1b
+[  115.621174]
+other info that might help us debug this:
 
-The fix is to make auth_enable immutable by caching its value
-during endpoint initialization, so that its original value is
-being carried along until destruction. The bug seems to originate
-from the very first days.
+[  115.621174]  Possible unsafe locking scenario:
 
-Fix in joint work with Daniel Borkmann.
+[  115.621174]        CPU0                    CPU1
+[  115.621174]        ----                    ----
+[  115.621174]   lock(&macvlan_netdev_addr_lock_key);
+[  115.621174]                                lock(&vlan_netdev_addr_lock_key/1);
+[  115.621174]                                lock(&macvlan_netdev_addr_lock_key);
+[  115.621174]   lock(&vlan_netdev_addr_lock_key/1);
+[  115.621174]
+ *** DEADLOCK ***
 
-Reported-by: Joshua Kinard <kumba@gentoo.org>
+[  115.621174] 2 locks held by ip/1704:
+[  115.621174]  #0:  (rtnl_mutex){+.+.+.}, at: [<ffffffff815e6dbb>] rtnetlink_rcv+0x1b/0x40
+[  115.621174]  #1:  (&macvlan_netdev_addr_lock_key){+.....}, at: [<ffffffff815da5be>] dev_set_rx_mode+0x1e/0x40
+[  115.621174]
+stack backtrace:
+[  115.621174] CPU: 3 PID: 1704 Comm: ip Not tainted 3.15.0-rc1+ #24
+[  115.621174] Hardware name: Hewlett-Packard HP xw8400 Workstation/0A08h, BIOS 786D5 v02.38 10/25/2010
+[  115.621174]  ffffffff82339ae0 ffff880465f79568 ffffffff816ee20c ffffffff82339ae0
+[  115.621174]  ffff880465f795a8 ffffffff816e9e1b ffff880465f79600 ffff880465b019c8
+[  115.621174]  0000000000000001 0000000000000002 ffff880465b019c8 ffff880465b01230
+[  115.621174] Call Trace:
+[  115.621174]  [<ffffffff816ee20c>] dump_stack+0x4d/0x66
+[  115.621174]  [<ffffffff816e9e1b>] print_circular_bug+0x200/0x20e
+[  115.621174]  [<ffffffff810d4d43>] __lock_acquire+0x1773/0x1a60
+[  115.621174]  [<ffffffff810d3172>] ? trace_hardirqs_on_caller+0xb2/0x1d0
+[  115.621174]  [<ffffffff810d57f2>] lock_acquire+0xa2/0x130
+[  115.621174]  [<ffffffff815df49c>] ? dev_uc_sync+0x3c/0x80
+[  115.621174]  [<ffffffff816f62e7>] _raw_spin_lock_nested+0x37/0x50
+[  115.621174]  [<ffffffff815df49c>] ? dev_uc_sync+0x3c/0x80
+[  115.621174]  [<ffffffff815df49c>] dev_uc_sync+0x3c/0x80
+[  115.621174]  [<ffffffffa0696d2a>] macvlan_set_mac_lists+0xca/0x110 [macvlan]
+[  115.621174]  [<ffffffff815da557>] __dev_set_rx_mode+0x57/0xa0
+[  115.621174]  [<ffffffff815da5c6>] dev_set_rx_mode+0x26/0x40
+[  115.621174]  [<ffffffff815da6be>] __dev_open+0xde/0x140
+[  115.621174]  [<ffffffff815da9ad>] __dev_change_flags+0x9d/0x170
+[  115.621174]  [<ffffffff815daaa9>] dev_change_flags+0x29/0x60
+[  115.621174]  [<ffffffff811e1db1>] ? mem_cgroup_bad_page_check+0x21/0x30
+[  115.621174]  [<ffffffff815e7f11>] do_setlink+0x321/0x9a0
+[  115.621174]  [<ffffffff810d394c>] ? __lock_acquire+0x37c/0x1a60
+[  115.621174]  [<ffffffff815ea59f>] rtnl_newlink+0x51f/0x730
+[  115.621174]  [<ffffffff815ea169>] ? rtnl_newlink+0xe9/0x730
+[  115.621174]  [<ffffffff815e6e75>] rtnetlink_rcv_msg+0x95/0x250
+[  115.621174]  [<ffffffff810d329d>] ? trace_hardirqs_on+0xd/0x10
+[  115.621174]  [<ffffffff815e6dbb>] ? rtnetlink_rcv+0x1b/0x40
+[  115.621174]  [<ffffffff815e6de0>] ? rtnetlink_rcv+0x40/0x40
+[  115.621174]  [<ffffffff81608b19>] netlink_rcv_skb+0xa9/0xc0
+[  115.621174]  [<ffffffff815e6dca>] rtnetlink_rcv+0x2a/0x40
+[  115.621174]  [<ffffffff81608150>] netlink_unicast+0xf0/0x1c0
+[  115.621174]  [<ffffffff8160851f>] netlink_sendmsg+0x2ff/0x740
+[  115.621174]  [<ffffffff815bc9db>] sock_sendmsg+0x8b/0xc0
+[  115.621174]  [<ffffffff8119d4af>] ? might_fault+0x5f/0xb0
+[  115.621174]  [<ffffffff8119d4f8>] ? might_fault+0xa8/0xb0
+[  115.621174]  [<ffffffff8119d4af>] ? might_fault+0x5f/0xb0
+[  115.621174]  [<ffffffff815cb51e>] ? verify_iovec+0x5e/0xe0
+[  115.621174]  [<ffffffff815bd4b9>] ___sys_sendmsg+0x369/0x380
+[  115.621174]  [<ffffffff816faa0d>] ? __do_page_fault+0x11d/0x570
+[  115.621174]  [<ffffffff810cfe9f>] ? up_read+0x1f/0x40
+[  115.621174]  [<ffffffff816fab04>] ? __do_page_fault+0x214/0x570
+[  115.621174]  [<ffffffff8120a10b>] ? mntput_no_expire+0x6b/0x1c0
+[  115.621174]  [<ffffffff8120a0b7>] ? mntput_no_expire+0x17/0x1c0
+[  115.621174]  [<ffffffff8120a284>] ? mntput+0x24/0x40
+[  115.621174]  [<ffffffff815bdbb2>] __sys_sendmsg+0x42/0x80
+[  115.621174]  [<ffffffff815bdc02>] SyS_sendmsg+0x12/0x20
+[  115.621174]  [<ffffffff816ffd69>] system_call_fastpath+0x16/0x1b
+
+Fix this by correctly providing macvlan lockdep class.
+
 Signed-off-by: Vlad Yasevich <vyasevic@redhat.com>
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
-Tested-by: Joshua Kinard <kumba@gentoo.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- include/net/sctp/structs.h |    4 ++-
- net/sctp/auth.c            |   17 +++++---------
- net/sctp/endpointola.c     |    3 +-
- net/sctp/sm_make_chunk.c   |   32 ++++++++++++++------------
- net/sctp/sm_statefuns.c    |    6 ++---
- net/sctp/socket.c          |   54 +++++++++++++++++++++------------------------
- net/sctp/sysctl.c          |   36 +++++++++++++++++++++++++++++-
- 7 files changed, 92 insertions(+), 60 deletions(-)
+ drivers/net/macvlan.c      |   12 ++++++++++--
+ include/linux/if_macvlan.h |    1 +
+ 2 files changed, 11 insertions(+), 2 deletions(-)
 
---- a/include/net/sctp/structs.h
-+++ b/include/net/sctp/structs.h
-@@ -1241,6 +1241,7 @@ struct sctp_endpoint {
- 	/* SCTP-AUTH: endpoint shared keys */
- 	struct list_head endpoint_shared_keys;
- 	__u16 active_key_id;
-+	__u8  auth_enable;
- };
- 
- /* Recover the outter endpoint structure. */
-@@ -1269,7 +1270,8 @@ struct sctp_endpoint *sctp_endpoint_is_m
- int sctp_has_association(struct net *net, const union sctp_addr *laddr,
- 			 const union sctp_addr *paddr);
- 
--int sctp_verify_init(struct net *net, const struct sctp_association *asoc,
-+int sctp_verify_init(struct net *net, const struct sctp_endpoint *ep,
-+		     const struct sctp_association *asoc,
- 		     sctp_cid_t, sctp_init_chunk_t *peer_init,
- 		     struct sctp_chunk *chunk, struct sctp_chunk **err_chunk);
- int sctp_process_init(struct sctp_association *, struct sctp_chunk *chunk,
---- a/net/sctp/auth.c
-+++ b/net/sctp/auth.c
-@@ -386,14 +386,13 @@ nomem:
-  */
- int sctp_auth_asoc_init_active_key(struct sctp_association *asoc, gfp_t gfp)
- {
--	struct net *net = sock_net(asoc->base.sk);
- 	struct sctp_auth_bytes	*secret;
- 	struct sctp_shared_key *ep_key;
- 
- 	/* If we don't support AUTH, or peer is not capable
- 	 * we don't need to do anything.
- 	 */
--	if (!net->sctp.auth_enable || !asoc->peer.auth_capable)
-+	if (!asoc->ep->auth_enable || !asoc->peer.auth_capable)
- 		return 0;
- 
- 	/* If the key_id is non-zero and we couldn't find an
-@@ -440,16 +439,16 @@ struct sctp_shared_key *sctp_auth_get_sh
-  */
- int sctp_auth_init_hmacs(struct sctp_endpoint *ep, gfp_t gfp)
- {
--	struct net *net = sock_net(ep->base.sk);
- 	struct crypto_hash *tfm = NULL;
- 	__u16   id;
- 
--	/* if the transforms are already allocted, we are done */
--	if (!net->sctp.auth_enable) {
-+	/* If AUTH extension is disabled, we are done */
-+	if (!ep->auth_enable) {
- 		ep->auth_hmacs = NULL;
- 		return 0;
- 	}
- 
-+	/* If the transforms are already allocated, we are done */
- 	if (ep->auth_hmacs)
- 		return 0;
- 
-@@ -665,12 +664,10 @@ static int __sctp_auth_cid(sctp_cid_t ch
- /* Check if peer requested that this chunk is authenticated */
- int sctp_auth_send_cid(sctp_cid_t chunk, const struct sctp_association *asoc)
- {
--	struct net  *net;
- 	if (!asoc)
- 		return 0;
- 
--	net = sock_net(asoc->base.sk);
--	if (!net->sctp.auth_enable || !asoc->peer.auth_capable)
-+	if (!asoc->ep->auth_enable || !asoc->peer.auth_capable)
- 		return 0;
- 
- 	return __sctp_auth_cid(chunk, asoc->peer.peer_chunks);
-@@ -679,12 +676,10 @@ int sctp_auth_send_cid(sctp_cid_t chunk,
- /* Check if we requested that peer authenticate this chunk. */
- int sctp_auth_recv_cid(sctp_cid_t chunk, const struct sctp_association *asoc)
- {
--	struct net *net;
- 	if (!asoc)
- 		return 0;
- 
--	net = sock_net(asoc->base.sk);
--	if (!net->sctp.auth_enable)
-+	if (!asoc->ep->auth_enable)
- 		return 0;
- 
- 	return __sctp_auth_cid(chunk,
---- a/net/sctp/endpointola.c
-+++ b/net/sctp/endpointola.c
-@@ -68,7 +68,8 @@ static struct sctp_endpoint *sctp_endpoi
- 	if (!ep->digest)
- 		return NULL;
- 
--	if (net->sctp.auth_enable) {
-+	ep->auth_enable = net->sctp.auth_enable;
-+	if (ep->auth_enable) {
- 		/* Allocate space for HMACS and CHUNKS authentication
- 		 * variables.  There are arrays that we encode directly
- 		 * into parameters to make the rest of the operations easier.
---- a/net/sctp/sm_make_chunk.c
-+++ b/net/sctp/sm_make_chunk.c
-@@ -219,6 +219,7 @@ struct sctp_chunk *sctp_make_init(const
- 			     gfp_t gfp, int vparam_len)
- {
- 	struct net *net = sock_net(asoc->base.sk);
-+	struct sctp_endpoint *ep = asoc->ep;
- 	sctp_inithdr_t init;
- 	union sctp_params addrs;
- 	size_t chunksize;
-@@ -278,7 +279,7 @@ struct sctp_chunk *sctp_make_init(const
- 	chunksize += vparam_len;
- 
- 	/* Account for AUTH related parameters */
--	if (net->sctp.auth_enable) {
-+	if (ep->auth_enable) {
- 		/* Add random parameter length*/
- 		chunksize += sizeof(asoc->c.auth_random);
- 
-@@ -363,7 +364,7 @@ struct sctp_chunk *sctp_make_init(const
- 	}
- 
- 	/* Add SCTP-AUTH chunks to the parameter list */
--	if (net->sctp.auth_enable) {
-+	if (ep->auth_enable) {
- 		sctp_addto_chunk(retval, sizeof(asoc->c.auth_random),
- 				 asoc->c.auth_random);
- 		if (auth_hmacs)
-@@ -2010,7 +2011,7 @@ static void sctp_process_ext_param(struc
- 			/* if the peer reports AUTH, assume that he
- 			 * supports AUTH.
- 			 */
--			if (net->sctp.auth_enable)
-+			if (asoc->ep->auth_enable)
- 				asoc->peer.auth_capable = 1;
- 			break;
- 		case SCTP_CID_ASCONF:
-@@ -2102,6 +2103,7 @@ static sctp_ierror_t sctp_process_unk_pa
-  * 	SCTP_IERROR_NO_ERROR - continue with the chunk
-  */
- static sctp_ierror_t sctp_verify_param(struct net *net,
-+					const struct sctp_endpoint *ep,
- 					const struct sctp_association *asoc,
- 					union sctp_params param,
- 					sctp_cid_t cid,
-@@ -2152,7 +2154,7 @@ static sctp_ierror_t sctp_verify_param(s
- 		goto fallthrough;
- 
- 	case SCTP_PARAM_RANDOM:
--		if (!net->sctp.auth_enable)
-+		if (!ep->auth_enable)
- 			goto fallthrough;
- 
- 		/* SCTP-AUTH: Secion 6.1
-@@ -2169,7 +2171,7 @@ static sctp_ierror_t sctp_verify_param(s
- 		break;
- 
- 	case SCTP_PARAM_CHUNKS:
--		if (!net->sctp.auth_enable)
-+		if (!ep->auth_enable)
- 			goto fallthrough;
- 
- 		/* SCTP-AUTH: Section 3.2
-@@ -2185,7 +2187,7 @@ static sctp_ierror_t sctp_verify_param(s
- 		break;
- 
- 	case SCTP_PARAM_HMAC_ALGO:
--		if (!net->sctp.auth_enable)
-+		if (!ep->auth_enable)
- 			goto fallthrough;
- 
- 		hmacs = (struct sctp_hmac_algo_param *)param.p;
-@@ -2220,10 +2222,9 @@ fallthrough:
- }
- 
- /* Verify the INIT packet before we process it.  */
--int sctp_verify_init(struct net *net, const struct sctp_association *asoc,
--		     sctp_cid_t cid,
--		     sctp_init_chunk_t *peer_init,
--		     struct sctp_chunk *chunk,
-+int sctp_verify_init(struct net *net, const struct sctp_endpoint *ep,
-+		     const struct sctp_association *asoc, sctp_cid_t cid,
-+		     sctp_init_chunk_t *peer_init, struct sctp_chunk *chunk,
- 		     struct sctp_chunk **errp)
- {
- 	union sctp_params param;
-@@ -2264,8 +2265,8 @@ int sctp_verify_init(struct net *net, co
- 
- 	/* Verify all the variable length parameters */
- 	sctp_walk_params(param, peer_init, init_hdr.params) {
--
--		result = sctp_verify_param(net, asoc, param, cid, chunk, errp);
-+		result = sctp_verify_param(net, ep, asoc, param, cid,
-+					   chunk, errp);
- 		switch (result) {
- 		case SCTP_IERROR_ABORT:
- 		case SCTP_IERROR_NOMEM:
-@@ -2497,6 +2498,7 @@ static int sctp_process_param(struct sct
- 	struct sctp_af *af;
- 	union sctp_addr_param *addr_param;
- 	struct sctp_transport *t;
-+	struct sctp_endpoint *ep = asoc->ep;
- 
- 	/* We maintain all INIT parameters in network byte order all the
- 	 * time.  This allows us to not worry about whether the parameters
-@@ -2636,7 +2638,7 @@ do_addr_param:
- 		goto fall_through;
- 
- 	case SCTP_PARAM_RANDOM:
--		if (!net->sctp.auth_enable)
-+		if (!ep->auth_enable)
- 			goto fall_through;
- 
- 		/* Save peer's random parameter */
-@@ -2649,7 +2651,7 @@ do_addr_param:
- 		break;
- 
- 	case SCTP_PARAM_HMAC_ALGO:
--		if (!net->sctp.auth_enable)
-+		if (!ep->auth_enable)
- 			goto fall_through;
- 
- 		/* Save peer's HMAC list */
-@@ -2665,7 +2667,7 @@ do_addr_param:
- 		break;
- 
- 	case SCTP_PARAM_CHUNKS:
--		if (!net->sctp.auth_enable)
-+		if (!ep->auth_enable)
- 			goto fall_through;
- 
- 		asoc->peer.peer_chunks = kmemdup(param.p,
---- a/net/sctp/sm_statefuns.c
-+++ b/net/sctp/sm_statefuns.c
-@@ -357,7 +357,7 @@ sctp_disposition_t sctp_sf_do_5_1B_init(
- 
- 	/* Verify the INIT chunk before processing it. */
- 	err_chunk = NULL;
--	if (!sctp_verify_init(net, asoc, chunk->chunk_hdr->type,
-+	if (!sctp_verify_init(net, ep, asoc, chunk->chunk_hdr->type,
- 			      (sctp_init_chunk_t *)chunk->chunk_hdr, chunk,
- 			      &err_chunk)) {
- 		/* This chunk contains fatal error. It is to be discarded.
-@@ -524,7 +524,7 @@ sctp_disposition_t sctp_sf_do_5_1C_ack(s
- 
- 	/* Verify the INIT chunk before processing it. */
- 	err_chunk = NULL;
--	if (!sctp_verify_init(net, asoc, chunk->chunk_hdr->type,
-+	if (!sctp_verify_init(net, ep, asoc, chunk->chunk_hdr->type,
- 			      (sctp_init_chunk_t *)chunk->chunk_hdr, chunk,
- 			      &err_chunk)) {
- 
-@@ -1430,7 +1430,7 @@ static sctp_disposition_t sctp_sf_do_une
- 
- 	/* Verify the INIT chunk before processing it. */
- 	err_chunk = NULL;
--	if (!sctp_verify_init(net, asoc, chunk->chunk_hdr->type,
-+	if (!sctp_verify_init(net, ep, asoc, chunk->chunk_hdr->type,
- 			      (sctp_init_chunk_t *)chunk->chunk_hdr, chunk,
- 			      &err_chunk)) {
- 		/* This chunk contains fatal error. It is to be discarded.
---- a/net/sctp/socket.c
-+++ b/net/sctp/socket.c
-@@ -3321,10 +3321,10 @@ static int sctp_setsockopt_auth_chunk(st
- 				      char __user *optval,
- 				      unsigned int optlen)
- {
--	struct net *net = sock_net(sk);
-+	struct sctp_endpoint *ep = sctp_sk(sk)->ep;
- 	struct sctp_authchunk val;
- 
--	if (!net->sctp.auth_enable)
-+	if (!ep->auth_enable)
- 		return -EACCES;
- 
- 	if (optlen != sizeof(struct sctp_authchunk))
-@@ -3341,7 +3341,7 @@ static int sctp_setsockopt_auth_chunk(st
- 	}
- 
- 	/* add this chunk id to the endpoint */
--	return sctp_auth_ep_add_chunkid(sctp_sk(sk)->ep, val.sauth_chunk);
-+	return sctp_auth_ep_add_chunkid(ep, val.sauth_chunk);
- }
- 
- /*
-@@ -3354,12 +3354,12 @@ static int sctp_setsockopt_hmac_ident(st
- 				      char __user *optval,
- 				      unsigned int optlen)
- {
--	struct net *net = sock_net(sk);
-+	struct sctp_endpoint *ep = sctp_sk(sk)->ep;
- 	struct sctp_hmacalgo *hmacs;
- 	u32 idents;
- 	int err;
- 
--	if (!net->sctp.auth_enable)
-+	if (!ep->auth_enable)
- 		return -EACCES;
- 
- 	if (optlen < sizeof(struct sctp_hmacalgo))
-@@ -3376,7 +3376,7 @@ static int sctp_setsockopt_hmac_ident(st
- 		goto out;
- 	}
- 
--	err = sctp_auth_ep_set_hmacs(sctp_sk(sk)->ep, hmacs);
-+	err = sctp_auth_ep_set_hmacs(ep, hmacs);
- out:
- 	kfree(hmacs);
- 	return err;
-@@ -3392,12 +3392,12 @@ static int sctp_setsockopt_auth_key(stru
- 				    char __user *optval,
- 				    unsigned int optlen)
- {
--	struct net *net = sock_net(sk);
-+	struct sctp_endpoint *ep = sctp_sk(sk)->ep;
- 	struct sctp_authkey *authkey;
- 	struct sctp_association *asoc;
- 	int ret;
- 
--	if (!net->sctp.auth_enable)
-+	if (!ep->auth_enable)
- 		return -EACCES;
- 
- 	if (optlen <= sizeof(struct sctp_authkey))
-@@ -3418,7 +3418,7 @@ static int sctp_setsockopt_auth_key(stru
- 		goto out;
- 	}
- 
--	ret = sctp_auth_set_key(sctp_sk(sk)->ep, asoc, authkey);
-+	ret = sctp_auth_set_key(ep, asoc, authkey);
- out:
- 	kzfree(authkey);
- 	return ret;
-@@ -3434,11 +3434,11 @@ static int sctp_setsockopt_active_key(st
- 				      char __user *optval,
- 				      unsigned int optlen)
- {
--	struct net *net = sock_net(sk);
-+	struct sctp_endpoint *ep = sctp_sk(sk)->ep;
- 	struct sctp_authkeyid val;
- 	struct sctp_association *asoc;
- 
--	if (!net->sctp.auth_enable)
-+	if (!ep->auth_enable)
- 		return -EACCES;
- 
- 	if (optlen != sizeof(struct sctp_authkeyid))
-@@ -3450,8 +3450,7 @@ static int sctp_setsockopt_active_key(st
- 	if (!asoc && val.scact_assoc_id && sctp_style(sk, UDP))
- 		return -EINVAL;
- 
--	return sctp_auth_set_active_key(sctp_sk(sk)->ep, asoc,
--					val.scact_keynumber);
-+	return sctp_auth_set_active_key(ep, asoc, val.scact_keynumber);
- }
- 
- /*
-@@ -3463,11 +3462,11 @@ static int sctp_setsockopt_del_key(struc
- 				   char __user *optval,
- 				   unsigned int optlen)
- {
--	struct net *net = sock_net(sk);
-+	struct sctp_endpoint *ep = sctp_sk(sk)->ep;
- 	struct sctp_authkeyid val;
- 	struct sctp_association *asoc;
- 
--	if (!net->sctp.auth_enable)
-+	if (!ep->auth_enable)
- 		return -EACCES;
- 
- 	if (optlen != sizeof(struct sctp_authkeyid))
-@@ -3479,8 +3478,7 @@ static int sctp_setsockopt_del_key(struc
- 	if (!asoc && val.scact_assoc_id && sctp_style(sk, UDP))
- 		return -EINVAL;
- 
--	return sctp_auth_del_key_id(sctp_sk(sk)->ep, asoc,
--				    val.scact_keynumber);
-+	return sctp_auth_del_key_id(ep, asoc, val.scact_keynumber);
- 
- }
- 
-@@ -5387,16 +5385,16 @@ static int sctp_getsockopt_maxburst(stru
- static int sctp_getsockopt_hmac_ident(struct sock *sk, int len,
- 				    char __user *optval, int __user *optlen)
- {
--	struct net *net = sock_net(sk);
-+	struct sctp_endpoint *ep = sctp_sk(sk)->ep;
- 	struct sctp_hmacalgo  __user *p = (void __user *)optval;
- 	struct sctp_hmac_algo_param *hmacs;
- 	__u16 data_len = 0;
- 	u32 num_idents;
- 
--	if (!net->sctp.auth_enable)
-+	if (!ep->auth_enable)
- 		return -EACCES;
- 
--	hmacs = sctp_sk(sk)->ep->auth_hmacs_list;
-+	hmacs = ep->auth_hmacs_list;
- 	data_len = ntohs(hmacs->param_hdr.length) - sizeof(sctp_paramhdr_t);
- 
- 	if (len < sizeof(struct sctp_hmacalgo) + data_len)
-@@ -5417,11 +5415,11 @@ static int sctp_getsockopt_hmac_ident(st
- static int sctp_getsockopt_active_key(struct sock *sk, int len,
- 				    char __user *optval, int __user *optlen)
- {
--	struct net *net = sock_net(sk);
-+	struct sctp_endpoint *ep = sctp_sk(sk)->ep;
- 	struct sctp_authkeyid val;
- 	struct sctp_association *asoc;
- 
--	if (!net->sctp.auth_enable)
-+	if (!ep->auth_enable)
- 		return -EACCES;
- 
- 	if (len < sizeof(struct sctp_authkeyid))
-@@ -5436,7 +5434,7 @@ static int sctp_getsockopt_active_key(st
- 	if (asoc)
- 		val.scact_keynumber = asoc->active_key_id;
- 	else
--		val.scact_keynumber = sctp_sk(sk)->ep->active_key_id;
-+		val.scact_keynumber = ep->active_key_id;
- 
- 	len = sizeof(struct sctp_authkeyid);
- 	if (put_user(len, optlen))
-@@ -5450,7 +5448,7 @@ static int sctp_getsockopt_active_key(st
- static int sctp_getsockopt_peer_auth_chunks(struct sock *sk, int len,
- 				    char __user *optval, int __user *optlen)
- {
--	struct net *net = sock_net(sk);
-+	struct sctp_endpoint *ep = sctp_sk(sk)->ep;
- 	struct sctp_authchunks __user *p = (void __user *)optval;
- 	struct sctp_authchunks val;
- 	struct sctp_association *asoc;
-@@ -5458,7 +5456,7 @@ static int sctp_getsockopt_peer_auth_chu
- 	u32    num_chunks = 0;
- 	char __user *to;
- 
--	if (!net->sctp.auth_enable)
-+	if (!ep->auth_enable)
- 		return -EACCES;
- 
- 	if (len < sizeof(struct sctp_authchunks))
-@@ -5495,7 +5493,7 @@ num:
- static int sctp_getsockopt_local_auth_chunks(struct sock *sk, int len,
- 				    char __user *optval, int __user *optlen)
- {
--	struct net *net = sock_net(sk);
-+	struct sctp_endpoint *ep = sctp_sk(sk)->ep;
- 	struct sctp_authchunks __user *p = (void __user *)optval;
- 	struct sctp_authchunks val;
- 	struct sctp_association *asoc;
-@@ -5503,7 +5501,7 @@ static int sctp_getsockopt_local_auth_ch
- 	u32    num_chunks = 0;
- 	char __user *to;
- 
--	if (!net->sctp.auth_enable)
-+	if (!ep->auth_enable)
- 		return -EACCES;
- 
- 	if (len < sizeof(struct sctp_authchunks))
-@@ -5520,7 +5518,7 @@ static int sctp_getsockopt_local_auth_ch
- 	if (asoc)
- 		ch = (struct sctp_chunks_param *)asoc->c.auth_chunks;
- 	else
--		ch = sctp_sk(sk)->ep->auth_chunk_list;
-+		ch = ep->auth_chunk_list;
- 
- 	if (!ch)
- 		goto num;
---- a/net/sctp/sysctl.c
-+++ b/net/sctp/sysctl.c
-@@ -64,6 +64,9 @@ static int proc_sctp_do_rto_min(struct c
- static int proc_sctp_do_rto_max(struct ctl_table *ctl, int write,
- 				void __user *buffer, size_t *lenp,
- 				loff_t *ppos);
-+static int proc_sctp_do_auth(struct ctl_table *ctl, int write,
-+			     void __user *buffer, size_t *lenp,
-+			     loff_t *ppos);
- 
- static struct ctl_table sctp_table[] = {
- 	{
-@@ -266,7 +269,7 @@ static struct ctl_table sctp_net_table[]
- 		.data		= &init_net.sctp.auth_enable,
- 		.maxlen		= sizeof(int),
- 		.mode		= 0644,
--		.proc_handler	= proc_dointvec,
-+		.proc_handler	= proc_sctp_do_auth,
- 	},
- 	{
- 		.procname	= "addr_scope_policy",
-@@ -400,6 +403,37 @@ static int proc_sctp_do_rto_max(struct c
- 	return ret;
- }
- 
-+static int proc_sctp_do_auth(struct ctl_table *ctl, int write,
-+			     void __user *buffer, size_t *lenp,
-+			     loff_t *ppos)
+--- a/drivers/net/macvlan.c
++++ b/drivers/net/macvlan.c
+@@ -518,6 +518,11 @@ static struct lock_class_key macvlan_net
+ #define MACVLAN_STATE_MASK \
+ 	((1<<__LINK_STATE_NOCARRIER) | (1<<__LINK_STATE_DORMANT))
+ 
++static int macvlan_get_nest_level(struct net_device *dev)
 +{
-+	struct net *net = current->nsproxy->net_ns;
-+	struct ctl_table tbl;
-+	int new_value, ret;
-+
-+	memset(&tbl, 0, sizeof(struct ctl_table));
-+	tbl.maxlen = sizeof(unsigned int);
-+
-+	if (write)
-+		tbl.data = &new_value;
-+	else
-+		tbl.data = &net->sctp.auth_enable;
-+
-+	ret = proc_dointvec(&tbl, write, buffer, lenp, ppos);
-+
-+	if (write) {
-+		struct sock *sk = net->sctp.ctl_sock;
-+
-+		net->sctp.auth_enable = new_value;
-+		/* Update the value in the control socket */
-+		lock_sock(sk);
-+		sctp_sk(sk)->ep->auth_enable = new_value;
-+		release_sock(sk);
-+	}
-+
-+	return ret;
++	return ((struct macvlan_dev *)netdev_priv(dev))->nest_level;
 +}
 +
- int sctp_sysctl_net_register(struct net *net)
+ static void macvlan_set_lockdep_class_one(struct net_device *dev,
+ 					  struct netdev_queue *txq,
+ 					  void *_unused)
+@@ -528,8 +533,9 @@ static void macvlan_set_lockdep_class_on
+ 
+ static void macvlan_set_lockdep_class(struct net_device *dev)
  {
- 	struct ctl_table *table = sctp_net_table;
+-	lockdep_set_class(&dev->addr_list_lock,
+-			  &macvlan_netdev_addr_lock_key);
++	lockdep_set_class_and_subclass(&dev->addr_list_lock,
++				       &macvlan_netdev_addr_lock_key,
++				       macvlan_get_nest_level(dev));
+ 	netdev_for_each_tx_queue(dev, macvlan_set_lockdep_class_one, NULL);
+ }
+ 
+@@ -731,6 +737,7 @@ static const struct net_device_ops macvl
+ 	.ndo_fdb_add		= macvlan_fdb_add,
+ 	.ndo_fdb_del		= macvlan_fdb_del,
+ 	.ndo_fdb_dump		= ndo_dflt_fdb_dump,
++	.ndo_get_lock_subclass  = macvlan_get_nest_level,
+ };
+ 
+ void macvlan_common_setup(struct net_device *dev)
+@@ -859,6 +866,7 @@ int macvlan_common_newlink(struct net *s
+ 	vlan->dev      = dev;
+ 	vlan->port     = port;
+ 	vlan->set_features = MACVLAN_FEATURES;
++	vlan->nest_level = dev_get_nest_level(lowerdev, netif_is_macvlan) + 1;
+ 
+ 	vlan->mode     = MACVLAN_MODE_VEPA;
+ 	if (data && data[IFLA_MACVLAN_MODE])
+--- a/include/linux/if_macvlan.h
++++ b/include/linux/if_macvlan.h
+@@ -56,6 +56,7 @@ struct macvlan_dev {
+ 	int			numqueues;
+ 	netdev_features_t	tap_features;
+ 	int			minor;
++	int			nest_level;
+ };
+ 
+ static inline void macvlan_count_rx(const struct macvlan_dev *vlan,
 
 
