@@ -1,73 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964988AbaE2NyB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 09:54:01 -0400
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:62301 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932945AbaE2Nx7 (ORCPT
+	id S964832AbaE2Nxs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 09:53:48 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:59497 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933562AbaE2Ntd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 09:53:59 -0400
-MIME-Version: 1.0
-In-Reply-To: <CANqRtoTzOn5d9qB85sXvmLYhoTDMDtbjSkLbz9V4FRmzFM3ycQ@mail.gmail.com>
-References: <20140529131650.2329.3197.sendpatchset@w520>
-	<20140529131732.2329.50630.sendpatchset@w520>
-	<20140529132034.GB15585@mwanda>
-	<CANqRtoTzOn5d9qB85sXvmLYhoTDMDtbjSkLbz9V4FRmzFM3ycQ@mail.gmail.com>
-Date: Thu, 29 May 2014 22:53:57 +0900
-Message-ID: <CANqRtoQDQLsWOyRSbQmtbmJc_qO=5X3ZMK12ZuwZ-FSR1iWCog@mail.gmail.com>
-Subject: Re: [PATCH v2 04/05] staging: board: Initial board staging support
-From: Magnus Damm <magnus.damm@gmail.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        devel <devel@driverdev.osuosl.org>,
-        SH-Linux <linux-sh@vger.kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        "Simon Horman [Horms]" <horms@verge.net.au>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Olof Johansson <olof@lixom.net>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 29 May 2014 09:49:33 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Peter Christensen <pch@ordbogen.com>,
+        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 096/103] macvlan: Don't propagate IFF_ALLMULTI changes on down interfaces.
+Date: Thu, 29 May 2014 15:49:21 +0200
+Message-Id: <951c8657d8c4bb80afa304e4f506cdcf40fc1b8f.1401371259.git.jslaby@suse.cz>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <bcbac220dab16a4038ac1a7c5cfe3e7f034b3836.1401371258.git.jslaby@suse.cz>
+References: <bcbac220dab16a4038ac1a7c5cfe3e7f034b3836.1401371258.git.jslaby@suse.cz>
+In-Reply-To: <cover.1401371258.git.jslaby@suse.cz>
+References: <cover.1401371258.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 29, 2014 at 10:27 PM, Magnus Damm <magnus.damm@gmail.com> wrote:
-> Hi Dan,
->
-> On Thu, May 29, 2014 at 10:20 PM, Dan Carpenter
-> <dan.carpenter@oracle.com> wrote:
->> On Thu, May 29, 2014 at 10:17:32PM +0900, Magnus Damm wrote:
->>> --- /dev/null
->>> +++ work/drivers/staging/board/Kconfig        2014-05-29 21:40:41.000000000 +0900
->>> @@ -0,0 +1,7 @@
->>> +config STAGING_BOARD
->>> +     boolean "Staging Board Support"
->>> +     help
->>> +       Select to enable per-board staging support code.
->>> +
->>> +       If in doubt, say N here.
->>> +
->>
->> Actually, you're probably going to need to add a bunch of dependencies
->> here or it will break "make randconfig" right away.  Sorry that I forgot
->> about this in the first review.
->
-> Good point, thanks for checking. I will have a look at this and add
-> dependencies to make sure it builds on a wide range of platforms.
+From: Peter Christensen <pch@ordbogen.com>
 
-To begin with, this hunk fixes the i386_defconfig + staging board build.
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
---- 0011/drivers/staging/board/Kconfig
-+++ work/drivers/staging/board/Kconfig    2014-05-29 22:32:39.000000000 +0900
-@@ -1,5 +1,6 @@
- config STAGING_BOARD
-     boolean "Staging Board Support"
-+    depends on OF && OF_ADDRESS
-     help
-       Select to enable per-board staging support code.
+===============
 
-Actually, there are not many dependencies - I believe the OF bits is about it.
+[ Upstream commit bbeb0eadcf9fe74fb2b9b1a6fea82cd538b1e556 ]
 
-Cheers,
+Clearing the IFF_ALLMULTI flag on a down interface could cause an allmulti
+overflow on the underlying interface.
 
-/ magnus
+Attempting the set IFF_ALLMULTI on the underlying interface would cause an
+error and the log message:
+
+"allmulti touches root, set allmulti failed."
+
+Signed-off-by: Peter Christensen <pch@ordbogen.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ drivers/net/macvlan.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/macvlan.c b/drivers/net/macvlan.c
+index fb5f47e94547..743aa91c853c 100644
+--- a/drivers/net/macvlan.c
++++ b/drivers/net/macvlan.c
+@@ -425,8 +425,10 @@ static void macvlan_change_rx_flags(struct net_device *dev, int change)
+ 	struct macvlan_dev *vlan = netdev_priv(dev);
+ 	struct net_device *lowerdev = vlan->lowerdev;
+ 
+-	if (change & IFF_ALLMULTI)
+-		dev_set_allmulti(lowerdev, dev->flags & IFF_ALLMULTI ? 1 : -1);
++	if (dev->flags & IFF_UP) {
++		if (change & IFF_ALLMULTI)
++			dev_set_allmulti(lowerdev, dev->flags & IFF_ALLMULTI ? 1 : -1);
++	}
+ }
+ 
+ static void macvlan_set_mac_lists(struct net_device *dev)
+-- 
+1.9.3
+
