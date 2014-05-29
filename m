@@ -1,50 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754182AbaE2BTS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 21:19:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31388 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751834AbaE2BTR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 21:19:17 -0400
-Message-ID: <53868AD2.7020902@redhat.com>
-Date: Wed, 28 May 2014 21:18:10 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
+	id S1753929AbaE2BaN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 21:30:13 -0400
+Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:20365 "EHLO
+	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751696AbaE2BaL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 21:30:11 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ArxPADiMhlN5LL1sPGdsb2JhbABagweDRIUIom0BAQEBAQEGmB0BgRIXAwEBAQE4NYIlAQEEAScTHCMFCwgDFAQJJQ8FJQMHGhOIOgfYCBcWhT+IME0HgyuBFQSZdIsYi1orgTE
+Date: Thu, 29 May 2014 11:30:07 +1000
+From: Dave Chinner <david@fromorbit.com>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Peter Anvin <hpa@zytor.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Waiman Long <waiman.long@hp.com>, Dave Jones <davej@redhat.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Andi Kleen <ak@linux.intel.com>, Jason Wang <jasowang@redhat.com>,
-        fernando_b1@lab.ntt.co.jp,
+Cc: Minchan Kim <minchan@kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        KVM list <kvm@vger.kernel.org>,
-        virtualization <virtualization@lists.linux-foundation.org>,
-        xen-devel@lists.xenproject.org, Marcelo Tosatti <mtosatti@redhat.com>,
-        "Vinod, Chegu" <chegu_vinod@hp.com>
-Subject: Re: [RFC] Implement Batched (group) ticket lock
-References: <1401279399-23854-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com>	<53865B53.7050809@redhat.com> <CA+55aFx9d1dP+A3tdR-GaASQYBkkJHcV-=t9FdA7AGrMN12S0w@mail.gmail.com>
-In-Reply-To: <CA+55aFx9d1dP+A3tdR-GaASQYBkkJHcV-=t9FdA7AGrMN12S0w@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm <linux-mm@kvack.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Hugh Dickins <hughd@google.com>, Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [RFC 2/2] x86_64: expand kernel stack to 16K
+Message-ID: <20140529013007.GF6677@dastard>
+References: <1401260039-18189-1-git-send-email-minchan@kernel.org>
+ <1401260039-18189-2-git-send-email-minchan@kernel.org>
+ <CA+55aFxXdc22dirnE49UbQP_2s2vLQpjQFL+NptuyK7Xry6c=g@mail.gmail.com>
+ <20140528223142.GO8554@dastard>
+ <CA+55aFyRk6_v6COPGVvu6hvt=i2A8-dPcs1X3Ydn1g24AxbPkg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFyRk6_v6COPGVvu6hvt=i2A8-dPcs1X3Ydn1g24AxbPkg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/28/2014 06:19 PM, Linus Torvalds wrote:
+On Wed, May 28, 2014 at 03:41:11PM -0700, Linus Torvalds wrote:
+> On Wed, May 28, 2014 at 3:31 PM, Dave Chinner <david@fromorbit.com> wrote:
+> >
+> > Indeed, the call chain reported here is not caused by swap issuing
+> > IO.
+> 
+> Well, that's one way of reading that callchain.
+> 
+> I think it's the *wrong* way of reading it, though. Almost dishonestly
+> so.
 
-> If somebody has a P4 still, that's likely the worst case by far.
+I guess you haven't met your insult quota for the day, Linus. :/
 
-I'm sure cmpxchg isn't the only thing making P4 the worst case :)
+> Because very clearly, the swapout _is_ what causes the unplugging
+> of the IO queue, and does so because it is allocating the BIO for its
+> own IO.  The fact that that then fails (because of other IO's in
+> flight), and causes *other* IO to be flushed, doesn't really change
+> anything fundamental. It's still very much swap that causes that
+> "let's start IO".
 
+It is not rocket science to see how plugging outside memory
+allocation context can lead to flushing that plug within direct
+reclaim without having dispatched any IO at all from direct
+reclaim....
+
+You're focussing on the specific symptoms, not the bigger picture.
+i.e. you're ignoring all the other "let's start IO" triggers in
+direct reclaim. e.g there's two separate plug flush triggers in
+shrink_inactive_list(), one of which is:
+
+        /*
+         * Stall direct reclaim for IO completions if underlying BDIs or zone
+         * is congested. Allow kswapd to continue until it starts encountering
+         * unqueued dirty pages or cycling through the LRU too quickly.
+         */
+        if (!sc->hibernation_mode && !current_is_kswapd())
+                wait_iff_congested(zone, BLK_RW_ASYNC, HZ/10);
+
+I'm not saying we shouldn't turn of swap from direct reclaim, just
+that all we'd be doing by turning off swap is playing whack-a-stack
+- the next report will simply be from one of the other direct
+reclaim IO schedule points.
+
+Regardless of whether it is swap or something external queues the
+bio on the plug, perhaps we should look at why it's done inline
+rather than by kblockd, where it was moved because it was blowing
+the stack from schedule():
+
+commit f4af3c3d077a004762aaad052049c809fd8c6f0c
+Author: Jens Axboe <jaxboe@fusionio.com>
+Date:   Tue Apr 12 14:58:51 2011 +0200
+
+    block: move queue run on unplug to kblockd
+    
+    There are worries that we are now consuming a lot more stack in
+    some cases, since we potentially call into IO dispatch from
+    schedule() or io_schedule(). We can reduce this problem by moving
+    the running of the queue to kblockd, like the old plugging scheme
+    did as well.
+    
+    This may or may not be a good idea from a performance perspective,
+    depending on how many tasks have queue plugs running at the same
+    time. For even the slightly contended case, doing just a single
+    queue run from kblockd instead of multiple runs directly from the
+    unpluggers will be faster.
+    
+    Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
+
+
+commit a237c1c5bc5dc5c76a21be922dca4826f3eca8ca
+Author: Jens Axboe <jaxboe@fusionio.com>
+Date:   Sat Apr 16 13:27:55 2011 +0200
+
+    block: let io_schedule() flush the plug inline
+    
+    Linus correctly observes that the most important dispatch cases
+    are now done from kblockd, this isn't ideal for latency reasons.
+    The original reason for switching dispatches out-of-line was to
+    avoid too deep a stack, so by _only_ letting the "accidental"
+    flush directly in schedule() be guarded by offload to kblockd,
+    we should be able to get the best of both worlds.
+    
+    So add a blk_schedule_flush_plug() that offloads to kblockd,
+    and only use that from the schedule() path.
+    
+    Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
+
+And now we have too deep a stack due to unplugging from io_schedule()...
+
+> IOW, swap-out directly caused that extra 3kB of stack use in what was
+> a deep call chain (due to memory allocation). I really don't
+> understand why you are arguing anything else on a pure technicality.
+>
+> I thought you had some other argument for why swap was different, and
+> against removing that "page_is_file_cache()" special case in
+> shrink_page_list().
+
+I've said in the past that swap is different to filesystem
+->writepage implementations because it doesn't require significant
+stack to do block allocation and doesn't trigger IO deep in that
+allocation stack. Hence it has much lower stack overhead than the
+filesystem ->writepage implementations and so is much less likely to
+have stack issues.
+
+This stack overflow shows us that just the memory reclaim + IO
+layers are sufficient to cause a stack overflow, which is something
+I've never seen before. That implies no IO in direct reclaim context
+is safe - either from swap or io_schedule() unplugging. It also
+lends a lot of weight to my assertion that the majority of the stack
+growth over the past couple of years has been ocurring outside the
+filesystems....
+
+Cheers,
+
+Dave.
 -- 
-All rights reversed
+Dave Chinner
+david@fromorbit.com
