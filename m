@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964891AbaE2FSu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 01:18:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57968 "EHLO
+	id S964917AbaE2FTK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 01:19:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57962 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932573AbaE2Efb (ORCPT
+	with ESMTP id S932570AbaE2Efb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 29 May 2014 00:35:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Jiri Pirko <jpirko@redhat.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 088/140] rtnetlink: Warn when interfaces information wont fit in our packet
-Date: Wed, 28 May 2014 21:33:47 -0700
-Message-Id: <20140529043100.928899175@linuxfoundation.org>
+Subject: [PATCH 3.14 087/140] net: Fix ns_capable check in sock_diag_put_filterinfo
+Date: Wed, 28 May 2014 21:33:46 -0700
+Message-Id: <20140529043100.804633030@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
 In-Reply-To: <20140529043049.661315084@linuxfoundation.org>
 References: <20140529043049.661315084@linuxfoundation.org>
@@ -28,63 +28,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Gibson <david@gibson.dropbear.id.au>
+From: Andrew Lutomirski <luto@amacapital.net>
 
-[ Upstream commit 973462bbde79bb827824c73b59027a0aed5c9ca6 ]
+[ Upstream commit 78541c1dc60b65ecfce5a6a096fc260219d6784e ]
 
-Without IFLA_EXT_MASK specified, the information reported for a single
-interface in response to RTM_GETLINK is expected to fit within a netlink
-packet of NLMSG_GOODSIZE.
+The caller needs capabilities on the namespace being queried, not on
+their own namespace.  This is a security bug, although it likely has
+only a minor impact.
 
-If it doesn't, however, things will go badly wrong,  When listing all
-interfaces, netlink_dump() will incorrectly treat -EMSGSIZE on the first
-message in a packet as the end of the listing and omit information for
-that interface and all subsequent ones.  This can cause getifaddrs(3) to
-enter an infinite loop.
-
-This patch won't fix the problem, but it will WARN_ON() making it easier to
-track down what's going wrong.
-
-Signed-off-by: David Gibson <david@gibson.dropbear.id.au>
-Reviewed-by: Jiri Pirko <jpirko@redhat.com>
+Cc: stable@vger.kernel.org
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Acked-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/core/rtnetlink.c |   17 ++++++++++++-----
- 1 file changed, 12 insertions(+), 5 deletions(-)
+ include/linux/sock_diag.h |    2 +-
+ net/core/sock_diag.c      |    4 ++--
+ net/packet/diag.c         |    2 +-
+ 3 files changed, 4 insertions(+), 4 deletions(-)
 
---- a/net/core/rtnetlink.c
-+++ b/net/core/rtnetlink.c
-@@ -1130,6 +1130,7 @@ static int rtnl_dump_ifinfo(struct sk_bu
- 	struct hlist_head *head;
- 	struct nlattr *tb[IFLA_MAX+1];
- 	u32 ext_filter_mask = 0;
-+	int err;
+--- a/include/linux/sock_diag.h
++++ b/include/linux/sock_diag.h
+@@ -23,7 +23,7 @@ int sock_diag_check_cookie(void *sk, __u
+ void sock_diag_save_cookie(void *sk, __u32 *cookie);
  
- 	s_h = cb->args[0];
- 	s_idx = cb->args[1];
-@@ -1150,11 +1151,17 @@ static int rtnl_dump_ifinfo(struct sk_bu
- 		hlist_for_each_entry_rcu(dev, head, index_hlist) {
- 			if (idx < s_idx)
- 				goto cont;
--			if (rtnl_fill_ifinfo(skb, dev, RTM_NEWLINK,
--					     NETLINK_CB(cb->skb).portid,
--					     cb->nlh->nlmsg_seq, 0,
--					     NLM_F_MULTI,
--					     ext_filter_mask) <= 0)
-+			err = rtnl_fill_ifinfo(skb, dev, RTM_NEWLINK,
-+					       NETLINK_CB(cb->skb).portid,
-+					       cb->nlh->nlmsg_seq, 0,
-+					       NLM_F_MULTI,
-+					       ext_filter_mask);
-+			/* If we ran out of room on the first message,
-+			 * we're in trouble
-+			 */
-+			WARN_ON((err == -EMSGSIZE) && (skb->len == 0));
-+
-+			if (err <= 0)
- 				goto out;
+ int sock_diag_put_meminfo(struct sock *sk, struct sk_buff *skb, int attr);
+-int sock_diag_put_filterinfo(struct user_namespace *user_ns, struct sock *sk,
++int sock_diag_put_filterinfo(struct sock *sk,
+ 			     struct sk_buff *skb, int attrtype);
  
- 			nl_dump_check_consistent(cb, nlmsg_hdr(skb));
+ #endif
+--- a/net/core/sock_diag.c
++++ b/net/core/sock_diag.c
+@@ -49,7 +49,7 @@ int sock_diag_put_meminfo(struct sock *s
+ }
+ EXPORT_SYMBOL_GPL(sock_diag_put_meminfo);
+ 
+-int sock_diag_put_filterinfo(struct user_namespace *user_ns, struct sock *sk,
++int sock_diag_put_filterinfo(struct sock *sk,
+ 			     struct sk_buff *skb, int attrtype)
+ {
+ 	struct nlattr *attr;
+@@ -57,7 +57,7 @@ int sock_diag_put_filterinfo(struct user
+ 	unsigned int len;
+ 	int err = 0;
+ 
+-	if (!ns_capable(user_ns, CAP_NET_ADMIN)) {
++	if (!ns_capable(sock_net(sk)->user_ns, CAP_NET_ADMIN)) {
+ 		nla_reserve(skb, attrtype, 0);
+ 		return 0;
+ 	}
+--- a/net/packet/diag.c
++++ b/net/packet/diag.c
+@@ -172,7 +172,7 @@ static int sk_diag_fill(struct sock *sk,
+ 		goto out_nlmsg_trim;
+ 
+ 	if ((req->pdiag_show & PACKET_SHOW_FILTER) &&
+-	    sock_diag_put_filterinfo(user_ns, sk, skb, PACKET_DIAG_FILTER))
++	    sock_diag_put_filterinfo(sk, skb, PACKET_DIAG_FILTER))
+ 		goto out_nlmsg_trim;
+ 
+ 	return nlmsg_end(skb, nlh);
 
 
