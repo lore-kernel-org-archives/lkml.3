@@ -1,68 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965083AbaE2N7e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 09:59:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57523 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964780AbaE2N7b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 09:59:31 -0400
-Date: Thu, 29 May 2014 15:59:00 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+	id S934591AbaE2N7Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 09:59:24 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:59464 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933434AbaE2Ntd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 09:49:33 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
+        Eilon Greenstein <eilong@broadcom.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>, Arun Sharma <asharma@fb.com>,
-        Rodrigo Campos <rodrigo@sdfg.com.ar>, Don Zickus <dzickus@redhat.com>
-Subject: Re: [PATCHSET 00/27] perf tools: Add support to accumulate hist
- periods (v11)
-Message-ID: <20140529135859.GF1177@krava.brq.redhat.com>
-References: <1401335910-16832-1-git-send-email-namhyung@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1401335910-16832-1-git-send-email-namhyung@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 016/103] list: introduce list_next_entry() and list_prev_entry()
+Date: Thu, 29 May 2014 15:48:01 +0200
+Message-Id: <99565b6c9eb1ae28ab633d7104e654e6dc6a6679.1401371259.git.jslaby@suse.cz>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <bcbac220dab16a4038ac1a7c5cfe3e7f034b3836.1401371258.git.jslaby@suse.cz>
+References: <bcbac220dab16a4038ac1a7c5cfe3e7f034b3836.1401371258.git.jslaby@suse.cz>
+In-Reply-To: <cover.1401371258.git.jslaby@suse.cz>
+References: <cover.1401371258.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 29, 2014 at 12:58:03PM +0900, Namhyung Kim wrote:
-> Hello,
-> 
-> This is a new attempt to implement cumulative hist period report.
-> This work begins from Arun's SORT_INCLUSIVE patch [1] but I completely
-> rewrote it from scratch.
-> 
-> This patchset basically adds period in a sample to every node in the
-> callchain.  A hist_entry now has an additional fields to keep the
-> cumulative period if --children option is given on perf report.
-> 
-> I changed the option as a separate --children and added a new
-> "Children" column (and renamed the default "Overhead" column into
-> "Self").  The output will be sorted by children (cumulative) overhead
-> for now.  It also adds 'overhead_children' field to -F/--fields option
-> to be selected by user and it'll show you "N/A" if the cumulation is
-> not supported (due to missing callchain).
-> 
-> I added Tested-by from Rodrigo Campos since this version is basically
-> rebase of previous series + bugfix.  But it still needs to be tested
-> more intensively IMHO.  Also note that, this will change default
-> behavior of perf report/top if callchain is recorded, so might confuse
-> old users.  Let's see how many of them come to shout. :)  I think we
-> need to merge Jiri's TUI column header patch at least.
-> 
-> 
->  * changes in v11:
->   - factor out hists__inc_nr_samples  (Jiri)
->   - remove unrelated change  (Jiri)
->   - disable accumulation on branch or mem mode
->   - slightly refactor hist_iter code
+From: Oleg Nesterov <oleg@redhat.com>
 
-apart from that comment I sent, I think it's ready to go in
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-thanks,
-jirka
+===============
+
+commit 008208c6b26f21c2648c250a09c55e737c02c5f8 upstream.
+
+Add two trivial helpers list_next_entry() and list_prev_entry(), they
+can have a lot of users including list.h itself.  In fact the 1st one is
+already defined in events/core.c and bnx2x_sp.c, so the patch simply
+moves the definition to list.h.
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Cc: Eilon Greenstein <eilong@broadcom.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_sp.c |  3 ---
+ include/linux/list.h                           | 16 ++++++++++++++++
+ kernel/events/core.c                           |  3 ---
+ 3 files changed, 16 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_sp.c b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_sp.c
+index 9fbeee522d2c..32c92abf5094 100644
+--- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_sp.c
++++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_sp.c
+@@ -1217,9 +1217,6 @@ static void bnx2x_set_one_vlan_mac_e1h(struct bnx2x *bp,
+ 				     ETH_VLAN_FILTER_CLASSIFY, config);
+ }
+ 
+-#define list_next_entry(pos, member) \
+-	list_entry((pos)->member.next, typeof(*(pos)), member)
+-
+ /**
+  * bnx2x_vlan_mac_restore - reconfigure next MAC/VLAN/VLAN-MAC element
+  *
+diff --git a/include/linux/list.h b/include/linux/list.h
+index f4d8a2f12a33..2ece63847001 100644
+--- a/include/linux/list.h
++++ b/include/linux/list.h
+@@ -373,6 +373,22 @@ static inline void list_splice_tail_init(struct list_head *list,
+ 	(!list_empty(ptr) ? list_first_entry(ptr, type, member) : NULL)
+ 
+ /**
++ * list_next_entry - get the next element in list
++ * @pos:	the type * to cursor
++ * @member:	the name of the list_struct within the struct.
++ */
++#define list_next_entry(pos, member) \
++	list_entry((pos)->member.next, typeof(*(pos)), member)
++
++/**
++ * list_prev_entry - get the prev element in list
++ * @pos:	the type * to cursor
++ * @member:	the name of the list_struct within the struct.
++ */
++#define list_prev_entry(pos, member) \
++	list_entry((pos)->member.prev, typeof(*(pos)), member)
++
++/**
+  * list_for_each	-	iterate over a list
+  * @pos:	the &struct list_head to use as a loop cursor.
+  * @head:	the head for your list.
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index fea4f6cf7e90..6c318bc71be5 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -2210,9 +2210,6 @@ static void __perf_event_sync_stat(struct perf_event *event,
+ 	perf_event_update_userpage(next_event);
+ }
+ 
+-#define list_next_entry(pos, member) \
+-	list_entry(pos->member.next, typeof(*pos), member)
+-
+ static void perf_event_sync_stat(struct perf_event_context *ctx,
+ 				   struct perf_event_context *next_ctx)
+ {
+-- 
+1.9.3
+
