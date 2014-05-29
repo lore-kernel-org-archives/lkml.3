@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756439AbaE2Esx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 00:48:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58609 "EHLO
+	id S1756551AbaE2EtM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 00:49:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58603 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933197AbaE2Eii (ORCPT
+	with ESMTP id S933190AbaE2Eih (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 00:38:38 -0400
+	Thu, 29 May 2014 00:38:37 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Jiri Pirko <jiri@resnulli.us>, "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 57/86] rtnetlink: Only supply IFLA_VF_PORTS information when RTEXT_FILTER_VF is set
-Date: Wed, 28 May 2014 21:37:32 -0700
-Message-Id: <20140529043521.227957757@linuxfoundation.org>
+        Andy Lutomirski <luto@amacapital.net>,
+        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 55/86] net: Fix ns_capable check in sock_diag_put_filterinfo
+Date: Wed, 28 May 2014 21:37:30 -0700
+Message-Id: <20140529043520.957204250@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
 In-Reply-To: <20140529043513.451722422@linuxfoundation.org>
 References: <20140529043513.451722422@linuxfoundation.org>
@@ -27,98 +28,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Gibson <david@gibson.dropbear.id.au>
+From: Andrew Lutomirski <luto@amacapital.net>
 
-[ Upstream commit c53864fd60227de025cb79e05493b13f69843971 ]
+[ Upstream commit 78541c1dc60b65ecfce5a6a096fc260219d6784e ]
 
-Since 115c9b81928360d769a76c632bae62d15206a94a (rtnetlink: Fix problem with
-buffer allocation), RTM_NEWLINK messages only contain the IFLA_VFINFO_LIST
-attribute if they were solicited by a GETLINK message containing an
-IFLA_EXT_MASK attribute with the RTEXT_FILTER_VF flag.
+The caller needs capabilities on the namespace being queried, not on
+their own namespace.  This is a security bug, although it likely has
+only a minor impact.
 
-That was done because some user programs broke when they received more data
-than expected - because IFLA_VFINFO_LIST contains information for each VF
-it can become large if there are many VFs.
-
-However, the IFLA_VF_PORTS attribute, supplied for devices which implement
-ndo_get_vf_port (currently the 'enic' driver only), has the same problem.
-It supplies per-VF information and can therefore become large, but it is
-not currently conditional on the IFLA_EXT_MASK value.
-
-Worse, it interacts badly with the existing EXT_MASK handling.  When
-IFLA_EXT_MASK is not supplied, the buffer for netlink replies is fixed at
-NLMSG_GOODSIZE.  If the information for IFLA_VF_PORTS exceeds this, then
-rtnl_fill_ifinfo() returns -EMSGSIZE on the first message in a packet.
-netlink_dump() will misinterpret this as having finished the listing and
-omit data for this interface and all subsequent ones.  That can cause
-getifaddrs(3) to enter an infinite loop.
-
-This patch addresses the problem by only supplying IFLA_VF_PORTS when
-IFLA_EXT_MASK is supplied with the RTEXT_FILTER_VF flag set.
-
-Signed-off-by: David Gibson <david@gibson.dropbear.id.au>
-Reviewed-by: Jiri Pirko <jiri@resnulli.us>
+Cc: stable@vger.kernel.org
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Acked-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/core/rtnetlink.c |   16 ++++++++++------
- 1 file changed, 10 insertions(+), 6 deletions(-)
+ include/linux/sock_diag.h |    2 +-
+ net/core/sock_diag.c      |    4 ++--
+ net/packet/diag.c         |    2 +-
+ 3 files changed, 4 insertions(+), 4 deletions(-)
 
---- a/net/core/rtnetlink.c
-+++ b/net/core/rtnetlink.c
-@@ -714,7 +714,8 @@ static inline int rtnl_vfinfo_size(const
- 		return 0;
- }
+--- a/include/linux/sock_diag.h
++++ b/include/linux/sock_diag.h
+@@ -23,7 +23,7 @@ int sock_diag_check_cookie(void *sk, __u
+ void sock_diag_save_cookie(void *sk, __u32 *cookie);
  
--static size_t rtnl_port_size(const struct net_device *dev)
-+static size_t rtnl_port_size(const struct net_device *dev,
-+			     u32 ext_filter_mask)
+ int sock_diag_put_meminfo(struct sock *sk, struct sk_buff *skb, int attr);
+-int sock_diag_put_filterinfo(struct user_namespace *user_ns, struct sock *sk,
++int sock_diag_put_filterinfo(struct sock *sk,
+ 			     struct sk_buff *skb, int attrtype);
+ 
+ #endif
+--- a/net/core/sock_diag.c
++++ b/net/core/sock_diag.c
+@@ -49,7 +49,7 @@ int sock_diag_put_meminfo(struct sock *s
+ }
+ EXPORT_SYMBOL_GPL(sock_diag_put_meminfo);
+ 
+-int sock_diag_put_filterinfo(struct user_namespace *user_ns, struct sock *sk,
++int sock_diag_put_filterinfo(struct sock *sk,
+ 			     struct sk_buff *skb, int attrtype)
  {
- 	size_t port_size = nla_total_size(4)		/* PORT_VF */
- 		+ nla_total_size(PORT_PROFILE_MAX)	/* PORT_PROFILE */
-@@ -730,7 +731,8 @@ static size_t rtnl_port_size(const struc
- 	size_t port_self_size = nla_total_size(sizeof(struct nlattr))
- 		+ port_size;
+ 	struct nlattr *attr;
+@@ -57,7 +57,7 @@ int sock_diag_put_filterinfo(struct user
+ 	unsigned int len;
+ 	int err = 0;
  
--	if (!dev->netdev_ops->ndo_get_vf_port || !dev->dev.parent)
-+	if (!dev->netdev_ops->ndo_get_vf_port || !dev->dev.parent ||
-+	    !(ext_filter_mask & RTEXT_FILTER_VF))
+-	if (!ns_capable(user_ns, CAP_NET_ADMIN)) {
++	if (!ns_capable(sock_net(sk)->user_ns, CAP_NET_ADMIN)) {
+ 		nla_reserve(skb, attrtype, 0);
  		return 0;
- 	if (dev_num_vf(dev->dev.parent))
- 		return port_self_size + vf_ports_size +
-@@ -765,7 +767,7 @@ static noinline size_t if_nlmsg_size(con
- 	       + nla_total_size(ext_filter_mask
- 			        & RTEXT_FILTER_VF ? 4 : 0) /* IFLA_NUM_VF */
- 	       + rtnl_vfinfo_size(dev, ext_filter_mask) /* IFLA_VFINFO_LIST */
--	       + rtnl_port_size(dev) /* IFLA_VF_PORTS + IFLA_PORT_SELF */
-+	       + rtnl_port_size(dev, ext_filter_mask) /* IFLA_VF_PORTS + IFLA_PORT_SELF */
- 	       + rtnl_link_get_size(dev) /* IFLA_LINKINFO */
- 	       + rtnl_link_get_af_size(dev); /* IFLA_AF_SPEC */
- }
-@@ -826,11 +828,13 @@ static int rtnl_port_self_fill(struct sk
- 	return 0;
- }
- 
--static int rtnl_port_fill(struct sk_buff *skb, struct net_device *dev)
-+static int rtnl_port_fill(struct sk_buff *skb, struct net_device *dev,
-+			  u32 ext_filter_mask)
- {
- 	int err;
- 
--	if (!dev->netdev_ops->ndo_get_vf_port || !dev->dev.parent)
-+	if (!dev->netdev_ops->ndo_get_vf_port || !dev->dev.parent ||
-+	    !(ext_filter_mask & RTEXT_FILTER_VF))
- 		return 0;
- 
- 	err = rtnl_port_self_fill(skb, dev);
-@@ -985,7 +989,7 @@ static int rtnl_fill_ifinfo(struct sk_bu
- 		nla_nest_end(skb, vfinfo);
  	}
+--- a/net/packet/diag.c
++++ b/net/packet/diag.c
+@@ -171,7 +171,7 @@ static int sk_diag_fill(struct sock *sk,
+ 		goto out_nlmsg_trim;
  
--	if (rtnl_port_fill(skb, dev))
-+	if (rtnl_port_fill(skb, dev, ext_filter_mask))
- 		goto nla_put_failure;
+ 	if ((req->pdiag_show & PACKET_SHOW_FILTER) &&
+-	    sock_diag_put_filterinfo(user_ns, sk, skb, PACKET_DIAG_FILTER))
++	    sock_diag_put_filterinfo(sk, skb, PACKET_DIAG_FILTER))
+ 		goto out_nlmsg_trim;
  
- 	if (dev->rtnl_link_ops) {
+ 	return nlmsg_end(skb, nlh);
 
 
