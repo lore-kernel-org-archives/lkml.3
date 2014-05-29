@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933655AbaE2E7H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 00:59:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58457 "EHLO
+	id S933670AbaE2E7b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 00:59:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58426 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933036AbaE2EiQ (ORCPT
+	with ESMTP id S933023AbaE2EiN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 00:38:16 -0400
+	Thu, 29 May 2014 00:38:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Olof Johansson <olof@lixom.net>, Jason Cooper <jason@lakedaemon.net>,
-        Kevin Hilman <khilman@linaro.org>
-Subject: [PATCH 3.10 11/86] ARM: multi_v7_defconfig: enable ARM_ATAG_DTB_COMPAT
-Date: Wed, 28 May 2014 21:36:46 -0700
-Message-Id: <20140529043515.026932952@linuxfoundation.org>
+        Kent Overstreet <koverstreet@google.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        NeilBrown <neilb@suse.de>
+Subject: [PATCH 3.10 17/86] md/raid1: r1buf_pool_alloc: free allocate pages when subsequent allocation fails.
+Date: Wed, 28 May 2014 21:36:52 -0700
+Message-Id: <20140529043515.806516513@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
 In-Reply-To: <20140529043513.451722422@linuxfoundation.org>
 References: <20140529043513.451722422@linuxfoundation.org>
@@ -27,34 +28,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Olof Johansson <olof@lixom.net>
+From: NeilBrown <neilb@suse.de>
 
-commit a0396b9bd5a4a7baf598b60d2ca53c605c440a42 upstream.
+commit da1aab3dca9aa88ae34ca392470b8943159e25fe upstream.
 
-Without this, legacy platforms that can boot with a multiplatform
-kernel but that need the DTB to be appended, won't have a way to pass
-firmware-set bootargs to the kernel.
+When performing a user-request check/repair (MD_RECOVERY_REQUEST is set)
+on a raid1, we allocate multiple bios each with their own set of pages.
 
-This is needed to boot multi_v7_defconfig on snowball, for instance.
+If the page allocations for one bio fails, we currently do *not* free
+the pages allocated for the previous bios, nor do we free the bio itself.
 
-Signed-off-by: Olof Johansson <olof@lixom.net>
-Cc: Jason Cooper <jason@lakedaemon.net>
-Cc: Kevin Hilman <khilman@linaro.org>
+This patch frees all the already-allocate pages, and makes sure that
+all the bios are freed as well.
+
+This bug can cause a memory leak which can ultimately OOM a machine.
+It was introduced in 3.10-rc1.
+
+Fixes: a07876064a0b73ab5ef1ebcf14b1cf0231c07858
+Cc: Kent Overstreet <koverstreet@google.com>
+Reported-by: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/configs/multi_v7_defconfig |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/md/raid1.c |   17 +++++++++++++----
+ 1 file changed, 13 insertions(+), 4 deletions(-)
 
---- a/arch/arm/configs/multi_v7_defconfig
-+++ b/arch/arm/configs/multi_v7_defconfig
-@@ -23,6 +23,7 @@ CONFIG_AEABI=y
- CONFIG_HIGHMEM=y
- CONFIG_HIGHPTE=y
- CONFIG_ARM_APPENDED_DTB=y
-+CONFIG_ARM_ATAG_DTB_COMPAT=y
- CONFIG_VFP=y
- CONFIG_NEON=y
- CONFIG_NET=y
+--- a/drivers/md/raid1.c
++++ b/drivers/md/raid1.c
+@@ -94,6 +94,7 @@ static void * r1buf_pool_alloc(gfp_t gfp
+ 	struct pool_info *pi = data;
+ 	struct r1bio *r1_bio;
+ 	struct bio *bio;
++	int need_pages;
+ 	int i, j;
+ 
+ 	r1_bio = r1bio_pool_alloc(gfp_flags, pi);
+@@ -116,15 +117,15 @@ static void * r1buf_pool_alloc(gfp_t gfp
+ 	 * RESYNC_PAGES for each bio.
+ 	 */
+ 	if (test_bit(MD_RECOVERY_REQUESTED, &pi->mddev->recovery))
+-		j = pi->raid_disks;
++		need_pages = pi->raid_disks;
+ 	else
+-		j = 1;
+-	while(j--) {
++		need_pages = 1;
++	for (j = 0; j < need_pages; j++) {
+ 		bio = r1_bio->bios[j];
+ 		bio->bi_vcnt = RESYNC_PAGES;
+ 
+ 		if (bio_alloc_pages(bio, gfp_flags))
+-			goto out_free_bio;
++			goto out_free_pages;
+ 	}
+ 	/* If not user-requests, copy the page pointers to all bios */
+ 	if (!test_bit(MD_RECOVERY_REQUESTED, &pi->mddev->recovery)) {
+@@ -138,6 +139,14 @@ static void * r1buf_pool_alloc(gfp_t gfp
+ 
+ 	return r1_bio;
+ 
++out_free_pages:
++	while (--j >= 0) {
++		struct bio_vec *bv;
++
++		bio_for_each_segment_all(bv, r1_bio->bios[j], i)
++			__free_page(bv->bv_page);
++	}
++
+ out_free_bio:
+ 	while (++j < pi->raid_disks)
+ 		bio_put(r1_bio->bios[j]);
 
 
