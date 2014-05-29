@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934505AbaE2F3X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 01:29:23 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57803 "EHLO
+	id S934530AbaE2F34 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 01:29:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57797 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756332AbaE2EfJ (ORCPT
+	with ESMTP id S1756328AbaE2EfI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 00:35:09 -0400
+	Thu, 29 May 2014 00:35:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [PATCH 3.14 058/140] drm/qxl: unset a pointer in sync_obj_unref
-Date: Wed, 28 May 2014 21:33:17 -0700
-Message-Id: <20140529043056.935879074@linuxfoundation.org>
+        Thomas Hellstrom <thellstrom@vmware.com>,
+        Jakob Bornecrantz <jakob@vmware.com>
+Subject: [PATCH 3.14 057/140] drm/vmwgfx: Make sure user-space cant DMA across buffer object boundaries v2
+Date: Wed, 28 May 2014 21:33:16 -0700
+Message-Id: <20140529043056.801093160@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
 In-Reply-To: <20140529043049.661315084@linuxfoundation.org>
 References: <20140529043049.661315084@linuxfoundation.org>
@@ -27,29 +27,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+From: Thomas Hellstrom <thellstrom@vmware.com>
 
-commit 41ccec352f3c823931a7d9d2a9c7880c14d7415a upstream.
+commit cbd75e97a525e3819c02dc18bc2d67aa544c9e45 upstream.
 
-This fixes a BUG_ON(bo->sync_obj != NULL); in ttm_bo_release_list.
+We already check that the buffer object we're accessing is registered with
+the file. Now also make sure that we can't DMA across buffer object boundaries.
 
-Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+v2: Code commenting update.
+
+Signed-off-by: Thomas Hellstrom <thellstrom@vmware.com>
+Reviewed-by: Jakob Bornecrantz <jakob@vmware.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/qxl/qxl_ttm.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/gpu/drm/vmwgfx/vmwgfx_execbuf.c |   22 ++++++++++++++++++++++
+ 1 file changed, 22 insertions(+)
 
---- a/drivers/gpu/drm/qxl/qxl_ttm.c
-+++ b/drivers/gpu/drm/qxl/qxl_ttm.c
-@@ -433,6 +433,7 @@ static int qxl_sync_obj_flush(void *sync
+--- a/drivers/gpu/drm/vmwgfx/vmwgfx_execbuf.c
++++ b/drivers/gpu/drm/vmwgfx/vmwgfx_execbuf.c
+@@ -1214,14 +1214,36 @@ static int vmw_cmd_dma(struct vmw_privat
+ 		SVGA3dCmdSurfaceDMA dma;
+ 	} *cmd;
+ 	int ret;
++	SVGA3dCmdSurfaceDMASuffix *suffix;
++	uint32_t bo_size;
  
- static void qxl_sync_obj_unref(void **sync_obj)
- {
-+	*sync_obj = NULL;
- }
+ 	cmd = container_of(header, struct vmw_dma_cmd, header);
++	suffix = (SVGA3dCmdSurfaceDMASuffix *)((unsigned long) &cmd->dma +
++					       header->size - sizeof(*suffix));
++
++	/* Make sure device and verifier stays in sync. */
++	if (unlikely(suffix->suffixSize != sizeof(*suffix))) {
++		DRM_ERROR("Invalid DMA suffix size.\n");
++		return -EINVAL;
++	}
++
+ 	ret = vmw_translate_guest_ptr(dev_priv, sw_context,
+ 				      &cmd->dma.guest.ptr,
+ 				      &vmw_bo);
+ 	if (unlikely(ret != 0))
+ 		return ret;
  
- static void *qxl_sync_obj_ref(void *sync_obj)
++	/* Make sure DMA doesn't cross BO boundaries. */
++	bo_size = vmw_bo->base.num_pages * PAGE_SIZE;
++	if (unlikely(cmd->dma.guest.ptr.offset > bo_size)) {
++		DRM_ERROR("Invalid DMA offset.\n");
++		return -EINVAL;
++	}
++
++	bo_size -= cmd->dma.guest.ptr.offset;
++	if (unlikely(suffix->maximumOffset > bo_size))
++		suffix->maximumOffset = bo_size;
++
+ 	ret = vmw_cmd_res_check(dev_priv, sw_context, vmw_res_surface,
+ 				user_surface_converter, &cmd->dma.host.sid,
+ 				NULL);
 
 
