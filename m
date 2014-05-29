@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933131AbaE2Ei2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 00:38:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58492 "EHLO
+	id S933222AbaE2Eil (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 00:38:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58519 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933035AbaE2EiW (ORCPT
+	with ESMTP id S933139AbaE2Eib (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 00:38:22 -0400
+	Thu, 29 May 2014 00:38:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Julio Araujo <julio.araujo@wllctel.com.br>,
-        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
-Subject: [PATCH 3.10 31/86] usb: option: add Olivetti Olicard 500
-Date: Wed, 28 May 2014 21:37:06 -0700
-Message-Id: <20140529043517.678872570@linuxfoundation.org>
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Tobias Brunner <tobias@strongswan.org>,
+        Florian Westphal <fw@strlen.de>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 42/86] net: core: dont account for udp header size when computing seglen
+Date: Wed, 28 May 2014 21:37:17 -0700
+Message-Id: <20140529043519.201231466@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
 In-Reply-To: <20140529043513.451722422@linuxfoundation.org>
 References: <20140529043513.451722422@linuxfoundation.org>
 User-Agent: quilt/0.60-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,44 +29,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bjørn Mork <bjorn@mork.no>
+From: Florian Westphal <fw@strlen.de>
 
-commit 533b3994610f316e5cd61b56d0c4daa15c830f89 upstream.
+[ Upstream commit 6d39d589bb76ee8a1c6cde6822006ae0053decff ]
 
-Device interface layout:
-0: ff/ff/ff - serial
-1: ff/ff/ff - serial AT+PPP
-2: 08/06/50 - storage
-3: ff/ff/ff - serial
-4: ff/ff/ff - QMI/wwan
+In case of tcp, gso_size contains the tcpmss.
 
-Reported-by: Julio Araujo <julio.araujo@wllctel.com.br>
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
+For UFO (udp fragmentation offloading) skbs, gso_size is the fragment
+payload size, i.e. we must not account for udp header size.
+
+Otherwise, when using virtio drivers, a to-be-forwarded UFO GSO packet
+will be needlessly fragmented in the forward path, because we think its
+individual segments are too large for the outgoing link.
+
+Fixes: fe6cc55f3a9a053 ("net: ip, ipv6: handle gso skbs in forwarding path")
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Reported-by: Tobias Brunner <tobias@strongswan.org>
+Signed-off-by: Florian Westphal <fw@strlen.de>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/usb/serial/option.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ net/core/skbuff.c |   12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -349,6 +349,7 @@ static void option_instat_callback(struc
- #define OLIVETTI_PRODUCT_OLICARD100		0xc000
- #define OLIVETTI_PRODUCT_OLICARD145		0xc003
- #define OLIVETTI_PRODUCT_OLICARD200		0xc005
-+#define OLIVETTI_PRODUCT_OLICARD500		0xc00b
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -3487,12 +3487,14 @@ EXPORT_SYMBOL(skb_try_coalesce);
+ unsigned int skb_gso_transport_seglen(const struct sk_buff *skb)
+ {
+ 	const struct skb_shared_info *shinfo = skb_shinfo(skb);
+-	unsigned int hdr_len;
  
- /* Celot products */
- #define CELOT_VENDOR_ID				0x211f
-@@ -1545,6 +1546,9 @@ static const struct usb_device_id option
- 	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD200),
- 		.driver_info = (kernel_ulong_t)&net_intf6_blacklist
- 	},
-+	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD500),
-+		.driver_info = (kernel_ulong_t)&net_intf4_blacklist
-+	},
- 	{ USB_DEVICE(CELOT_VENDOR_ID, CELOT_PRODUCT_CT680M) }, /* CT-650 CDMA 450 1xEVDO modem */
- 	{ USB_DEVICE_AND_INTERFACE_INFO(SAMSUNG_VENDOR_ID, SAMSUNG_PRODUCT_GT_B3730, USB_CLASS_CDC_DATA, 0x00, 0x00) }, /* Samsung GT-B3730 LTE USB modem.*/
- 	{ USB_DEVICE(YUGA_VENDOR_ID, YUGA_PRODUCT_CEM600) },
+ 	if (likely(shinfo->gso_type & (SKB_GSO_TCPV4 | SKB_GSO_TCPV6)))
+-		hdr_len = tcp_hdrlen(skb);
+-	else
+-		hdr_len = sizeof(struct udphdr);
+-	return hdr_len + shinfo->gso_size;
++		return tcp_hdrlen(skb) + shinfo->gso_size;
++
++	/* UFO sets gso_size to the size of the fragmentation
++	 * payload, i.e. the size of the L4 (UDP) header is already
++	 * accounted for.
++	 */
++	return shinfo->gso_size;
+ }
+ EXPORT_SYMBOL_GPL(skb_gso_transport_seglen);
 
 
