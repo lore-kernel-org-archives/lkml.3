@@ -1,109 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932922AbaE2IAG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 04:00:06 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:33189 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932616AbaE2IAF (ORCPT
+	id S933161AbaE2IBm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 04:01:42 -0400
+Received: from casper.infradead.org ([85.118.1.10]:46682 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932616AbaE2IBl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 04:00:05 -0400
-From: Ming Lei <ming.lei@canonical.com>
-To: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
-Cc: Ming Lei <ming.lei@canonical.com>, Maurizio Lombardi <mlombard@redhat.com>,
-        Dongsu Park <dongsu.park@profitbricks.com>,
-        Christoph Hellwig <hch@lst.de>, Kent Overstreet <kmo@daterainc.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH] block/bio.c: update bi_iter.bi_size before recounting segments
-Date: Thu, 29 May 2014 15:59:40 +0800
-Message-Id: <1401350380-31072-1-git-send-email-ming.lei@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 29 May 2014 04:01:41 -0400
+Date: Thu, 29 May 2014 10:01:34 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Rik van Riel <riel@redhat.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Christoph Lameter <cl@linux.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Mel Gorman <mgorman@suse.de>,
+        Roland Dreier <roland@kernel.org>, Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>,
+        Mike Marciniszyn <infinipath@intel.com>
+Subject: Re: [RFC][PATCH 1/5] mm: Introduce VM_PINNED and interfaces
+Message-ID: <20140529080134.GC30445@twins.programming.kicks-ass.net>
+References: <20140526145605.016140154@infradead.org>
+ <20140526152107.823060865@infradead.org>
+ <538691FB.8060309@redhat.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="CR5S1WJ1/E083K3u"
+Content-Disposition: inline
+In-Reply-To: <538691FB.8060309@redhat.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch of "bio: modify __bio_add_page() to accept pages that
-don't start a new segment" changes the way for adding one page
-to bio:
 
-	- previously by adding page after checking successfully
-	- now by trying to add page and recover if it fails
+--CR5S1WJ1/E083K3u
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Unfortunately the patch forgets to update bio->bi_iter.bi_size
-before trying to add page, then the last vector for holding
-the added page may not be covered if recouning segments is needed,
-so bio->bi_phys_segments may become not consistent with the
-actual bio page buffers after the page is added successfully
-to the bio(after bi_iter.bi_size is added by 'len')
+On Wed, May 28, 2014 at 09:48:43PM -0400, Rik van Riel wrote:
+> On 05/26/2014 10:56 AM, Peter Zijlstra wrote:
+>=20
+> >  include/linux/mm.h       |    3 +
+> >  include/linux/mm_types.h |    5 +
+> >  kernel/fork.c            |    2=20
+> >  mm/mlock.c               |  133 ++++++++++++++++++++++++++++++++++++++=
+++++-----
+> >  mm/mmap.c                |   18 ++++--
+> >  5 files changed, 141 insertions(+), 20 deletions(-)
+>=20
+> I'm guessing you will also want a patch that adds some code to
+> rmap.c, madvise.c, and a few other places to actually enforce
+> the VM_PINNED semantics?
 
-Suppose the page in the last vector can't be merged to bio, tragedy
-will happen when __bio_add_page() is called to add another page:
+Eventually, yes. As it stands they're not needed, because perf pages
+aren't in the pagecache and IB goes a big get_user_pages() and the
+elevated refcount stops everything dead.
 
-	- blk_recount_segments() is called and the actual segments get
-	figured out correctly
+But yes, once we go do fancy things like migrate the pages into
+UNMOVABLE blocks, then we need to have VM_PINNED itself mean something,
+instead of it describing something.
 
-	- the actual segments may become queue_max_segments(q) plus one
-	in failure path
+But before we go down there, I'd like to get the IB bits sorted and
+general agreement on the path.
 
-	- driver will find the segment count is too big to handle.
+--CR5S1WJ1/E083K3u
+Content-Type: application/pgp-signature
 
-The patch fixes the virtio-blk oops bug reported from Jet Chen in
-below link:
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-	http://marc.info/?l=linux-kernel&m=140113053817095&w=2
+iQIcBAEBAgAGBQJThuleAAoJEHZH4aRLwOS6DP8P/1IFis+qI+Cr3bWTHrHH9YYy
+cF4qu8m9nR8yt1y2+N3ELAYXeJCq/ow8Jd115R/eUV1pdxYV5NuG9rukKA0klDOa
+AEP49AS/8fSqGOvWuH4v4gnDQVjffGzGEf3LWGrIh0lSHARoXaMQ4bmxFCNWuaqA
+gldnEIHGW3glWIkVSocrbSY0aSciCvHBErkUUTFe3QvMTa6fAcnbweE7Zc8tAzid
+Wtjc7YH9SGBnQtQa8MrrMGFSg26FQgWivINyvohKyFGrHApydRO7HID2nvgwuARL
+1MFsWlxR98EujGv7oi0Hf0A/F7ScdS4ZWUuI5uo7x6ZDZDXiy+BwdFDnRLyxDGdZ
+NVk85K1YZLLZ0e8Ff48nB2xY0S5K9feIsudCGqX4ikZ+8he57c6DEDOyYXmFMjK+
+/A17zL+yzYXWpDVSjRMFBG7dK0vevXJ6hjdk5cpm0oiZMz2pbwD6LDqTzK/L4t39
+u5VA0uQyadbXGAuESz7qrS/hqTI7NlyNFbBCH3opLdp2DMoXhXIX9xxpTVNy4Ufs
+yoNiuF+p8Gyazc+sjRTHnQIVW4pGWNrxiIS/9UJS2AYYpdHixOF9bivKCci1pg2i
+i3L/szF9eq8ev+VwKkGcowmbcc5R1PQ3b8B92ntvaXsrVCugRfMWexAbrvKEZPB3
+4+4zdsXqvhwGDa0QVwpW
+=dCSI
+-----END PGP SIGNATURE-----
 
-Cc: Jens Axboe <axboe@kernel.dk>
-Cc: Maurizio Lombardi <mlombard@redhat.com>
-Cc: Dongsu Park <dongsu.park@profitbricks.com>
-Cc: Christoph Hellwig <hch@lst.de>
-Cc: Kent Overstreet <kmo@daterainc.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Reported-by: Jet Chen <jet.chen@intel.com>
-Tested-by: Jet Chen <jet.chen@intel.com>
-Signed-off-by: Ming Lei <ming.lei@canonical.com>
----
-Andrew, could you put the patch in your -mm tree
-because the previous two patches were routed from
-your tree?
-
- block/bio.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-
-diff --git a/block/bio.c b/block/bio.c
-index 0443694..f9bae56 100644
---- a/block/bio.c
-+++ b/block/bio.c
-@@ -744,6 +744,7 @@ static int __bio_add_page(struct request_queue *q, struct bio *bio, struct page
- 				}
- 			}
- 
-+			bio->bi_iter.bi_size += len;
- 			goto done;
- 		}
- 	}
-@@ -761,6 +762,7 @@ static int __bio_add_page(struct request_queue *q, struct bio *bio, struct page
- 	bvec->bv_offset = offset;
- 	bio->bi_vcnt++;
- 	bio->bi_phys_segments++;
-+	bio->bi_iter.bi_size += len;
- 
- 	/*
- 	 * Perform a recount if the number of segments is greater
-@@ -802,7 +804,6 @@ static int __bio_add_page(struct request_queue *q, struct bio *bio, struct page
- 		bio->bi_flags &= ~(1 << BIO_SEG_VALID);
- 
-  done:
--	bio->bi_iter.bi_size += len;
- 	return len;
- 
-  failed:
-@@ -810,6 +811,7 @@ static int __bio_add_page(struct request_queue *q, struct bio *bio, struct page
- 	bvec->bv_len = 0;
- 	bvec->bv_offset = 0;
- 	bio->bi_vcnt--;
-+	bio->bi_iter.bi_size -= len;
- 	blk_recount_segments(q, bio);
- 	return 0;
- }
--- 
-1.7.9.5
-
+--CR5S1WJ1/E083K3u--
