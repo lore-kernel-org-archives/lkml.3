@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933827AbaE2FEp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 01:04:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58207 "EHLO
+	id S933840AbaE2FFI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 01:05:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58197 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932789AbaE2EgA (ORCPT
+	with ESMTP id S932776AbaE2Ef7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 00:36:00 -0400
+	Thu, 29 May 2014 00:35:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kelly Anderson <kelly@xilka.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Cong Wang <xiyou.wangcong@gmail.com>
-Subject: [PATCH 3.14 137/140] net_sched: fix an oops in tcindex filter
-Date: Wed, 28 May 2014 21:34:36 -0700
-Message-Id: <20140529043106.998496112@linuxfoundation.org>
+        Simon Wunderlich <simon@open-mesh.com>,
+        Antonio Quartulli <antonio@open-mesh.com>,
+        Marek Lindner <mareklindner@neomailbox.ch>
+Subject: [PATCH 3.14 135/140] batman-adv: fix local TT check for outgoing arp requests in DAT
+Date: Wed, 28 May 2014 21:34:34 -0700
+Message-Id: <20140529043106.721764222@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
 In-Reply-To: <20140529043049.661315084@linuxfoundation.org>
 References: <20140529043049.661315084@linuxfoundation.org>
@@ -28,164 +28,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Cong Wang <xiyou.wangcong@gmail.com>
+From: Antonio Quartulli <antonio@open-mesh.com>
 
-[ Upstream commit bf63ac73b3e132e6bf0c8798aba7b277c3316e19 ]
+[ Upstream commit cc2f33860cea0e48ebec096130bd0f7c4bf6e0bc ]
 
-Kelly reported the following crash:
+Change introduced by 88e48d7b3340ef07b108eb8a8b3813dd093cc7f7
+("batman-adv: make DAT drop ARP requests targeting local clients")
+implements a check that prevents DAT from using the caching
+mechanism when the client that is supposed to provide a reply
+to an arp request is local.
 
-        IP: [<ffffffff817a993d>] tcf_action_exec+0x46/0x90
-        PGD 3009067 PUD 300c067 PMD 11ff30067 PTE 800000011634b060
-        Oops: 0000 [#1] SMP DEBUG_PAGEALLOC
-        CPU: 1 PID: 639 Comm: dhclient Not tainted 3.15.0-rc4+ #342
-        Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-        task: ffff8801169ecd00 ti: ffff8800d21b8000 task.ti: ffff8800d21b8000
-        RIP: 0010:[<ffffffff817a993d>]  [<ffffffff817a993d>] tcf_action_exec+0x46/0x90
-        RSP: 0018:ffff8800d21b9b90  EFLAGS: 00010283
-        RAX: 00000000ffffffff RBX: ffff88011634b8e8 RCX: ffff8800cf7133d8
-        RDX: ffff88011634b900 RSI: ffff8800cf7133e0 RDI: ffff8800d210f840
-        RBP: ffff8800d21b9bb0 R08: ffffffff8287bf60 R09: 0000000000000001
-        R10: ffff8800d2b22b24 R11: 0000000000000001 R12: ffff8800d210f840
-        R13: ffff8800d21b9c50 R14: ffff8800cf7133e0 R15: ffff8800cad433d8
-        FS:  00007f49723e1840(0000) GS:ffff88011a800000(0000) knlGS:0000000000000000
-        CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-        CR2: ffff88011634b8f0 CR3: 00000000ce469000 CR4: 00000000000006e0
-        Stack:
-         ffff8800d2170188 ffff8800d210f840 ffff8800d2171b90 0000000000000000
-         ffff8800d21b9be8 ffffffff817c55bb ffff8800d21b9c50 ffff8800d2171b90
-         ffff8800d210f840 ffff8800d21b0300 ffff8800d21b9c50 ffff8800d21b9c18
-        Call Trace:
-         [<ffffffff817c55bb>] tcindex_classify+0x88/0x9b
-         [<ffffffff817a7f7d>] tc_classify_compat+0x3e/0x7b
-         [<ffffffff817a7fdf>] tc_classify+0x25/0x9f
-         [<ffffffff817b0e68>] htb_enqueue+0x55/0x27a
-         [<ffffffff817b6c2e>] dsmark_enqueue+0x165/0x1a4
-         [<ffffffff81775642>] __dev_queue_xmit+0x35e/0x536
-         [<ffffffff8177582a>] dev_queue_xmit+0x10/0x12
-         [<ffffffff818f8ecd>] packet_sendmsg+0xb26/0xb9a
-         [<ffffffff810b1507>] ? __lock_acquire+0x3ae/0xdf3
-         [<ffffffff8175cf08>] __sock_sendmsg_nosec+0x25/0x27
-         [<ffffffff8175d916>] sock_aio_write+0xd0/0xe7
-         [<ffffffff8117d6b8>] do_sync_write+0x59/0x78
-         [<ffffffff8117d84d>] vfs_write+0xb5/0x10a
-         [<ffffffff8117d96a>] SyS_write+0x49/0x7f
-         [<ffffffff8198e212>] system_call_fastpath+0x16/0x1b
+However change brought by be1db4f6615b5e6156c807ea8985171c215c2d57
+("batman-adv: make the Distributed ARP Table vlan aware")
+has not converted the above check into its vlan aware version
+thus making it useless when the local client is behind a vlan.
 
-This is because we memcpy struct tcindex_filter_result which contains
-struct tcf_exts, obviously struct list_head can not be simply copied.
-This is a regression introduced by commit 33be627159913b094bb578
-(net_sched: act: use standard struct list_head).
+Fix the behaviour by properly specifying the vlan when
+checking for a client being local or not.
 
-It's not very easy to fix it as the code is a mess:
-
-       if (old_r)
-               memcpy(&cr, r, sizeof(cr));
-       else {
-               memset(&cr, 0, sizeof(cr));
-               tcf_exts_init(&cr.exts, TCA_TCINDEX_ACT, TCA_TCINDEX_POLICE);
-       }
-       ...
-       tcf_exts_change(tp, &cr.exts, &e);
-       ...
-       memcpy(r, &cr, sizeof(cr));
-
-the above code should equal to:
-
-        tcindex_filter_result_init(&cr);
-        if (old_r)
-               cr.res = r->res;
-        ...
-        if (old_r)
-               tcf_exts_change(tp, &r->exts, &e);
-        else
-               tcf_exts_change(tp, &cr.exts, &e);
-        ...
-        r->res = cr.res;
-
-after this change, since there is no need to copy struct tcf_exts.
-
-And it also fixes other places zero'ing struct's contains struct tcf_exts.
-
-Fixes: commit 33be627159913b0 (net_sched: act: use standard struct list_head)
-Reported-by: Kelly Anderson <kelly@xilka.com>
-Tested-by: Kelly Anderson <kelly@xilka.com>
-Cc: David S. Miller <davem@davemloft.net>
-Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-by: Simon Wunderlich <simon@open-mesh.com>
+Signed-off-by: Antonio Quartulli <antonio@open-mesh.com>
+Signed-off-by: Marek Lindner <mareklindner@neomailbox.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/sched/cls_tcindex.c |   30 ++++++++++++++++++++----------
- 1 file changed, 20 insertions(+), 10 deletions(-)
+ net/batman-adv/distributed-arp-table.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/net/sched/cls_tcindex.c
-+++ b/net/sched/cls_tcindex.c
-@@ -188,6 +188,12 @@ static const struct nla_policy tcindex_p
- 	[TCA_TCINDEX_CLASSID]		= { .type = NLA_U32 },
- };
- 
-+static void tcindex_filter_result_init(struct tcindex_filter_result *r)
-+{
-+	memset(r, 0, sizeof(*r));
-+	tcf_exts_init(&r->exts, TCA_TCINDEX_ACT, TCA_TCINDEX_POLICE);
-+}
-+
- static int
- tcindex_set_parms(struct net *net, struct tcf_proto *tp, unsigned long base,
- 		  u32 handle, struct tcindex_data *p,
-@@ -207,15 +213,11 @@ tcindex_set_parms(struct net *net, struc
- 		return err;
- 
- 	memcpy(&cp, p, sizeof(cp));
--	memset(&new_filter_result, 0, sizeof(new_filter_result));
--	tcf_exts_init(&new_filter_result.exts, TCA_TCINDEX_ACT, TCA_TCINDEX_POLICE);
-+	tcindex_filter_result_init(&new_filter_result);
- 
-+	tcindex_filter_result_init(&cr);
- 	if (old_r)
--		memcpy(&cr, r, sizeof(cr));
--	else {
--		memset(&cr, 0, sizeof(cr));
--		tcf_exts_init(&cr.exts, TCA_TCINDEX_ACT, TCA_TCINDEX_POLICE);
--	}
-+		cr.res = r->res;
- 
- 	if (tb[TCA_TCINDEX_HASH])
- 		cp.hash = nla_get_u32(tb[TCA_TCINDEX_HASH]);
-@@ -267,9 +269,14 @@ tcindex_set_parms(struct net *net, struc
- 	err = -ENOMEM;
- 	if (!cp.perfect && !cp.h) {
- 		if (valid_perfect_hash(&cp)) {
-+			int i;
-+
- 			cp.perfect = kcalloc(cp.hash, sizeof(*r), GFP_KERNEL);
- 			if (!cp.perfect)
- 				goto errout;
-+			for (i = 0; i < cp.hash; i++)
-+				tcf_exts_init(&cp.perfect[i].exts, TCA_TCINDEX_ACT,
-+					      TCA_TCINDEX_POLICE);
- 			balloc = 1;
- 		} else {
- 			cp.h = kcalloc(cp.hash, sizeof(f), GFP_KERNEL);
-@@ -295,14 +302,17 @@ tcindex_set_parms(struct net *net, struc
- 		tcf_bind_filter(tp, &cr.res, base);
- 	}
- 
--	tcf_exts_change(tp, &cr.exts, &e);
-+	if (old_r)
-+		tcf_exts_change(tp, &r->exts, &e);
-+	else
-+		tcf_exts_change(tp, &cr.exts, &e);
- 
- 	tcf_tree_lock(tp);
- 	if (old_r && old_r != r)
--		memset(old_r, 0, sizeof(*old_r));
-+		tcindex_filter_result_init(old_r);
- 
- 	memcpy(p, &cp, sizeof(cp));
--	memcpy(r, &cr, sizeof(cr));
-+	r->res = cr.res;
- 
- 	if (r == &new_filter_result) {
- 		struct tcindex_filter **fp;
+--- a/net/batman-adv/distributed-arp-table.c
++++ b/net/batman-adv/distributed-arp-table.c
+@@ -940,8 +940,7 @@ bool batadv_dat_snoop_outgoing_arp_reque
+ 		 * additional DAT answer may trigger kernel warnings about
+ 		 * a packet coming from the wrong port.
+ 		 */
+-		if (batadv_is_my_client(bat_priv, dat_entry->mac_addr,
+-					BATADV_NO_FLAGS)) {
++		if (batadv_is_my_client(bat_priv, dat_entry->mac_addr, vid)) {
+ 			ret = true;
+ 			goto out;
+ 		}
 
 
