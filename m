@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933566AbaE2EsU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 00:48:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58618 "EHLO
+	id S933583AbaE2Esh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 00:48:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58613 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933137AbaE2Eij (ORCPT
+	with ESMTP id S933202AbaE2Eij (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 29 May 2014 00:38:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tom Gundersen <teg@jklm.no>,
-        Toshiaki Makita <makita.toshiaki@lab.ntt.co.jp>,
+        Kumar Sundararajan <kumar@fb.com>, Chris Mason <clm@fb.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 59/86] bridge: Handle IFLA_ADDRESS correctly when creating bridge device
-Date: Wed, 28 May 2014 21:37:34 -0700
-Message-Id: <20140529043521.488960161@linuxfoundation.org>
+Subject: [PATCH 3.10 58/86] ipv6: fib: fix fib dump restart
+Date: Wed, 28 May 2014 21:37:33 -0700
+Message-Id: <20140529043521.344415824@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
 In-Reply-To: <20140529043513.451722422@linuxfoundation.org>
 References: <20140529043513.451722422@linuxfoundation.org>
@@ -28,53 +27,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Toshiaki Makita <makita.toshiaki@lab.ntt.co.jp>
+From: Kumar Sundararajan <kumar@fb.com>
 
-[ Upstream commit 30313a3d5794472c3548d7288e306a5492030370 ]
+[ Upstream commit 1c2658545816088477e91860c3a645053719cb54 ]
 
-When bridge device is created with IFLA_ADDRESS, we are not calling
-br_stp_change_bridge_id(), which leads to incorrect local fdb
-management and bridge id calculation, and prevents us from receiving
-frames on the bridge device.
+When the ipv6 fib changes during a table dump, the walk is
+restarted and the number of nodes dumped are skipped. But the existing
+code doesn't advance to the next node after a node is skipped. This can
+cause the dump to loop or produce lots of duplicates when the fib
+is modified during the dump.
 
-Reported-by: Tom Gundersen <teg@jklm.no>
-Signed-off-by: Toshiaki Makita <makita.toshiaki@lab.ntt.co.jp>
+This change advances the walk to the next node if the current node is
+skipped after a restart.
+
+Signed-off-by: Kumar Sundararajan <kumar@fb.com>
+Signed-off-by: Chris Mason <clm@fb.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/bridge/br_netlink.c |   15 +++++++++++++++
- 1 file changed, 15 insertions(+)
+ net/ipv6/ip6_fib.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/net/bridge/br_netlink.c
-+++ b/net/bridge/br_netlink.c
-@@ -438,6 +438,20 @@ static int br_validate(struct nlattr *tb
- 	return 0;
- }
+--- a/net/ipv6/ip6_fib.c
++++ b/net/ipv6/ip6_fib.c
+@@ -1418,7 +1418,7 @@ static int fib6_walk_continue(struct fib
  
-+static int br_dev_newlink(struct net *src_net, struct net_device *dev,
-+			  struct nlattr *tb[], struct nlattr *data[])
-+{
-+	struct net_bridge *br = netdev_priv(dev);
-+
-+	if (tb[IFLA_ADDRESS]) {
-+		spin_lock_bh(&br->lock);
-+		br_stp_change_bridge_id(br, nla_data(tb[IFLA_ADDRESS]));
-+		spin_unlock_bh(&br->lock);
-+	}
-+
-+	return register_netdevice(dev);
-+}
-+
- static size_t br_get_link_af_size(const struct net_device *dev)
- {
- 	struct net_port_vlans *pv;
-@@ -466,6 +480,7 @@ struct rtnl_link_ops br_link_ops __read_
- 	.priv_size	= sizeof(struct net_bridge),
- 	.setup		= br_dev_setup,
- 	.validate	= br_validate,
-+	.newlink	= br_dev_newlink,
- 	.dellink	= br_dev_delete,
- };
+ 				if (w->skip) {
+ 					w->skip--;
+-					continue;
++					goto skip;
+ 				}
  
+ 				err = w->func(w);
+@@ -1428,6 +1428,7 @@ static int fib6_walk_continue(struct fib
+ 				w->count++;
+ 				continue;
+ 			}
++skip:
+ 			w->state = FWS_U;
+ 		case FWS_U:
+ 			if (fn == w->root)
 
 
