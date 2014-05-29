@@ -1,104 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935110AbaE2OS0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 10:18:26 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:59345 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933193AbaE2Ntb (ORCPT
+	id S935146AbaE2OTG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 10:19:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38695 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933196AbaE2OSZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 09:49:31 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Johan Hovold <jhovold@gmail.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 038/103] USB: usb_wwan: fix handling of missing bulk endpoints
-Date: Thu, 29 May 2014 15:48:23 +0200
-Message-Id: <f17c4324018727f3cfc767889cd496aac0e7c7e1.1401371259.git.jslaby@suse.cz>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <bcbac220dab16a4038ac1a7c5cfe3e7f034b3836.1401371258.git.jslaby@suse.cz>
-References: <bcbac220dab16a4038ac1a7c5cfe3e7f034b3836.1401371258.git.jslaby@suse.cz>
-In-Reply-To: <cover.1401371258.git.jslaby@suse.cz>
-References: <cover.1401371258.git.jslaby@suse.cz>
+	Thu, 29 May 2014 10:18:25 -0400
+Date: Thu, 29 May 2014 07:18:23 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: NeilBrown <neilb@suse.de>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, linux@roeck-us.net,
+        satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
+        stable@vger.kernel.org
+Subject: Re: [PATCH 3.14 000/140] 3.14.5-stable review
+Message-ID: <20140529141823.GA28074@kroah.com>
+References: <20140529043049.661315084@linuxfoundation.org>
+ <20140529155923.61a11b69@notabene.brown>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140529155923.61a11b69@notabene.brown>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Johan Hovold <jhovold@gmail.com>
+On Thu, May 29, 2014 at 03:59:23PM +1000, NeilBrown wrote:
+> On Wed, 28 May 2014 21:32:19 -0700 Greg Kroah-Hartman
+> <gregkh@linuxfoundation.org> wrote:
+> 
+> > This is the start of the stable review cycle for the 3.14.5 release.
+> > There are 140 patches in this series, all will be posted as a response
+> > to this one.  If anyone has any issues with these being applied, please
+> > let me know.
+> > 
+> > Responses should be made by Sat May 31 04:30:12 UTC 2014.
+> > Anything received after that time might be too late.
+> > 
+> > The whole patch series can be found in one patch at:
+> > 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.14.5-rc1.gz
+> > and the diffstat can be found below.
+> > 
+> 
+> Hi Greg,
+> I notice that the patch in commit cc13b1d1500656a2 (see below for comment) is
+> missing. I was hoping it would be in 3.14.5.  Is there a reason I missed out?
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+227 patches marked for stable inclusion "missed out" as I just didn't
+get to them yet.  So don't worry, you are in good company, I'll get to
+them eventually, but 140 patches seemed like a good cut off for this
+release.
 
-===============
+thanks,
 
-commit bd73bd8831696f189a479a0712ae95208e513d7e upstream.
-
-Fix regression introduced by commit 8e493ca1767d ("USB: usb_wwan: fix
-bulk-urb allocation") by making sure to require both bulk-in and out
-endpoints during port probe.
-
-The original option driver (which usb_wwan is based on) was written
-under the assumption that either endpoint could be missing, but
-evidently this cannot have been tested properly. Specifically, it would
-handle opening a device without bulk-in (but would blow up during resume
-which was implemented later), but not a missing bulk-out in write()
-(although it is handled in some places such as write_room()).
-
-Fortunately (?), the driver also got the test for missing endpoints
-wrong so the urbs were in fact always allocated, although they would be
-initialised using the wrong endpoint address (0) and any submission of
-such an urb would fail.
-
-The commit mentioned above fixed the test for missing endpoints but
-thereby exposed the other bugs which would now generate null-pointer
-exceptions rather than failed urb submissions.
-
-The regression was introduced in v3.7, but the offending commit was also
-marked for stable.
-
-Reported-by: Rafał Miłecki <zajec5@gmail.com>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Tested-by: Rafał Miłecki <zajec5@gmail.com>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- drivers/usb/serial/usb_wwan.c | 9 +++------
- 1 file changed, 3 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/usb/serial/usb_wwan.c b/drivers/usb/serial/usb_wwan.c
-index 85365784040b..6fa78361be56 100644
---- a/drivers/usb/serial/usb_wwan.c
-+++ b/drivers/usb/serial/usb_wwan.c
-@@ -470,6 +470,9 @@ int usb_wwan_port_probe(struct usb_serial_port *port)
- 	int err;
- 	int i;
- 
-+	if (!port->bulk_in_size || !port->bulk_out_size)
-+		return -ENODEV;
-+
- 	portdata = kzalloc(sizeof(*portdata), GFP_KERNEL);
- 	if (!portdata)
- 		return -ENOMEM;
-@@ -477,9 +480,6 @@ int usb_wwan_port_probe(struct usb_serial_port *port)
- 	init_usb_anchor(&portdata->delayed);
- 
- 	for (i = 0; i < N_IN_URB; i++) {
--		if (!port->bulk_in_size)
--			break;
--
- 		buffer = (u8 *)__get_free_page(GFP_KERNEL);
- 		if (!buffer)
- 			goto bail_out_error;
-@@ -493,9 +493,6 @@ int usb_wwan_port_probe(struct usb_serial_port *port)
- 	}
- 
- 	for (i = 0; i < N_OUT_URB; i++) {
--		if (!port->bulk_out_size)
--			break;
--
- 		buffer = kmalloc(OUT_BUFLEN, GFP_KERNEL);
- 		if (!buffer)
- 			goto bail_out_error2;
--- 
-1.9.3
-
+greg k-h
