@@ -1,31 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933491AbaE2Ep6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 00:45:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58657 "EHLO
+	id S933502AbaE2EqV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 00:46:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58653 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933256AbaE2Eip (ORCPT
+	with ESMTP id S933247AbaE2Eio (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 00:38:45 -0400
+	Thu, 29 May 2014 00:38:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hans-Christoph Schemmel <hans-christoph.schemmel@gemalto.com>,
-        Christian Schmiedl <christian.schmiedl@gemalto.com>,
-        Nicolaus Colberg <nicolaus.colberg@gemalto.com>,
-        Aleksander Morgado <aleksander@lanedo.com>,
-        =?UTF-8?q?Bj=F8rn=20Mork?= <bjorn@mork.no>,
+        David Gibson <david@gibson.dropbear.id.au>,
+        Jiri Pirko <jpirko@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 76/86] net: qmi_wwan: fix Cinterion PLXX product ID
-Date: Wed, 28 May 2014 21:37:51 -0700
-Message-Id: <20140529043523.555416792@linuxfoundation.org>
+Subject: [PATCH 3.10 56/86] rtnetlink: Warn when interfaces information wont fit in our packet
+Date: Wed, 28 May 2014 21:37:31 -0700
+Message-Id: <20140529043521.094635392@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
 In-Reply-To: <20140529043513.451722422@linuxfoundation.org>
 References: <20140529043513.451722422@linuxfoundation.org>
 User-Agent: quilt/0.60-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -34,38 +28,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Aleksander Morgado <aleksander@lanedo.com>
+From: David Gibson <david@gibson.dropbear.id.au>
 
-[ Upstream commit 2d77f343343c4f38b8f94be1964bbbc6456a147f ]
+[ Upstream commit 973462bbde79bb827824c73b59027a0aed5c9ca6 ]
 
-Cinterion PLXX LTE devices have a 0x0060 product ID, not 0x12d1.
+Without IFLA_EXT_MASK specified, the information reported for a single
+interface in response to RTM_GETLINK is expected to fit within a netlink
+packet of NLMSG_GOODSIZE.
 
-The blacklisting in the serial/option driver does actually use the correct PID,
-as per commit 8ff10bdb14a52e3f25d4ce09e0582a8684c1a6db ('USB: Blacklisted
-Cinterion's PLxx WWAN Interface').
+If it doesn't, however, things will go badly wrong,  When listing all
+interfaces, netlink_dump() will incorrectly treat -EMSGSIZE on the first
+message in a packet as the end of the listing and omit information for
+that interface and all subsequent ones.  This can cause getifaddrs(3) to
+enter an infinite loop.
 
-CC: Hans-Christoph Schemmel <hans-christoph.schemmel@gemalto.com>
-CC: Christian Schmiedl <christian.schmiedl@gemalto.com>
-CC: Nicolaus Colberg <nicolaus.colberg@gemalto.com>
-Signed-off-by: Aleksander Morgado <aleksander@lanedo.com>
-Acked-by: Bjørn Mork <bjorn@mork.no>
-Acked-by: Christian Schmiedl <christian.schmiedl@gemalto.com>
+This patch won't fix the problem, but it will WARN_ON() making it easier to
+track down what's going wrong.
+
+Signed-off-by: David Gibson <david@gibson.dropbear.id.au>
+Reviewed-by: Jiri Pirko <jpirko@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/usb/qmi_wwan.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/core/rtnetlink.c |   17 ++++++++++++-----
+ 1 file changed, 12 insertions(+), 5 deletions(-)
 
---- a/drivers/net/usb/qmi_wwan.c
-+++ b/drivers/net/usb/qmi_wwan.c
-@@ -716,7 +716,7 @@ static const struct usb_device_id produc
- 	{QMI_FIXED_INTF(0x2357, 0x9000, 4)},	/* TP-LINK MA260 */
- 	{QMI_FIXED_INTF(0x1bc7, 0x1200, 5)},	/* Telit LE920 */
- 	{QMI_FIXED_INTF(0x1bc7, 0x1201, 2)},	/* Telit LE920 */
--	{QMI_FIXED_INTF(0x1e2d, 0x12d1, 4)},	/* Cinterion PLxx */
-+	{QMI_FIXED_INTF(0x1e2d, 0x0060, 4)},	/* Cinterion PLxx */
+--- a/net/core/rtnetlink.c
++++ b/net/core/rtnetlink.c
+@@ -1039,6 +1039,7 @@ static int rtnl_dump_ifinfo(struct sk_bu
+ 	struct hlist_head *head;
+ 	struct nlattr *tb[IFLA_MAX+1];
+ 	u32 ext_filter_mask = 0;
++	int err;
  
- 	/* 4. Gobi 1000 devices */
- 	{QMI_GOBI1K_DEVICE(0x05c6, 0x9212)},	/* Acer Gobi Modem Device */
+ 	s_h = cb->args[0];
+ 	s_idx = cb->args[1];
+@@ -1059,11 +1060,17 @@ static int rtnl_dump_ifinfo(struct sk_bu
+ 		hlist_for_each_entry_rcu(dev, head, index_hlist) {
+ 			if (idx < s_idx)
+ 				goto cont;
+-			if (rtnl_fill_ifinfo(skb, dev, RTM_NEWLINK,
+-					     NETLINK_CB(cb->skb).portid,
+-					     cb->nlh->nlmsg_seq, 0,
+-					     NLM_F_MULTI,
+-					     ext_filter_mask) <= 0)
++			err = rtnl_fill_ifinfo(skb, dev, RTM_NEWLINK,
++					       NETLINK_CB(cb->skb).portid,
++					       cb->nlh->nlmsg_seq, 0,
++					       NLM_F_MULTI,
++					       ext_filter_mask);
++			/* If we ran out of room on the first message,
++			 * we're in trouble
++			 */
++			WARN_ON((err == -EMSGSIZE) && (skb->len == 0));
++
++			if (err <= 0)
+ 				goto out;
+ 
+ 			nl_dump_check_consistent(cb, nlmsg_hdr(skb));
 
 
