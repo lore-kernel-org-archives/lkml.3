@@ -1,146 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932698AbaE2WOm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 18:14:42 -0400
-Received: from mail-ig0-f181.google.com ([209.85.213.181]:65060 "EHLO
-	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751149AbaE2WOh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 18:14:37 -0400
-Message-ID: <5387B149.20408@gmail.com>
-Date: Thu, 29 May 2014 15:14:33 -0700
-From: David Daney <ddaney.cavm@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S932551AbaE2WUW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 18:20:22 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:40903 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751321AbaE2WUV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 18:20:21 -0400
+Message-ID: <5387B287.5050007@ti.com>
+Date: Thu, 29 May 2014 17:19:51 -0500
+From: Nishanth Menon <nm@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: abdoulaye berthe <berthe.ab@gmail.com>
-CC: linus.walleij@linaro.org, gnurou@gmail.com, m@bues.ch,
-        linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-mips@linux-mips.org,
-        linuxppc-dev@lists.ozlabs.org, linux-sh@vger.kernel.org,
-        linux-wireless@vger.kernel.org, patches@opensource.wolfsonmicro.com,
-        linux-input@vger.kernel.org, linux-leds@vger.kernel.org,
-        linux-media@vger.kernel.org, linux-samsungsoc@vger.kernel.org,
-        spear-devel@list.st.com, platform-driver-x86@vger.kernel.org,
-        netdev@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: Re: [PATCH] gpio: removes all usage of gpiochip_remove retval
-References: <1401400492-26175-1-git-send-email-berthe.ab@gmail.com>
-In-Reply-To: <1401400492-26175-1-git-send-email-berthe.ab@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Viresh Kumar <viresh.kumar@linaro.org>, <rjw@rjwysocki.net>
+CC: <linaro-kernel@lists.linaro.org>, <linux-pm@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <arvind.chauhan@arm.com>,
+        <inderpal.s@samsung.com>, <chander.kashyap@linaro.org>, <pavel@ucw.cz>,
+        <len.brown@intel.com>, <sudeep.holla@arm.com>
+Subject: Re: [PATCH V4 1/8] opp: of_init_opp_table(): return -ENOSYS when
+ feature isn't implemented
+References: <cover.1401191054.git.viresh.kumar@linaro.org> <231be85cd01bcdc00a0a7936cd9ba57ccba52749.1401191054.git.viresh.kumar@linaro.org>
+In-Reply-To: <231be85cd01bcdc00a0a7936cd9ba57ccba52749.1401191054.git.viresh.kumar@linaro.org>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/29/2014 02:54 PM, abdoulaye berthe wrote:
+minor (Rafael usually fixes it up, but still):
+$subject: PM / OPP:
 
-Did you forget a changelog explaining why this is either needed, or even 
-a good idea?  I joined the conversation late and don't know why you are 
-doing this.
+On 05/27/2014 06:50 AM, Viresh Kumar wrote:
+> When none of CONFIG_PM_OPP or CONFIG_OF is enabled we use the dummy
+> implementation of of_init_opp_table() routine, which returns -EINVAL currently.
+> -EINVAL can confuse the callers a bit as it can have other meanings for the
+> actual implementation of this routine.
+> 
+> It is more appropriate to return -ENOSYS instead to avoid confusion at caller.
+> 
+> Suggested-and-reviewed-by: Sudeep Holla <sudeep.holla@arm.com>
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 
-Thanks,
-David Daney
+otherwise,
 
+Acked-by: Nishanth Menon <nm@ti.com>
 
-
-> Signed-off-by: abdoulaye berthe <berthe.ab@gmail.com>
 > ---
->   arch/arm/common/scoop.c                        | 10 ++--------
->   arch/mips/txx9/generic/setup.c                 |  4 ++--
->   arch/powerpc/platforms/83xx/mcu_mpc8349emitx.c |  3 ++-
->   arch/sh/boards/mach-x3proto/gpio.c             |  6 ++----
->   drivers/bcma/driver_gpio.c                     |  3 ++-
->   drivers/gpio/gpio-74x164.c                     |  8 +++-----
->   drivers/gpio/gpio-adnp.c                       |  9 +--------
->   drivers/gpio/gpio-adp5520.c                    |  8 +-------
->   drivers/gpio/gpio-adp5588.c                    |  6 +-----
->   drivers/gpio/gpio-amd8111.c                    |  3 +--
->   drivers/gpio/gpio-arizona.c                    |  3 ++-
->   drivers/gpio/gpio-cs5535.c                     |  8 +-------
->   drivers/gpio/gpio-da9052.c                     |  3 ++-
->   drivers/gpio/gpio-da9055.c                     |  3 ++-
->   drivers/gpio/gpio-dwapb.c                      |  2 +-
->   drivers/gpio/gpio-em.c                         |  5 +----
->   drivers/gpio/gpio-f7188x.c                     | 18 ++----------------
->   drivers/gpio/gpio-generic.c                    |  3 ++-
->   drivers/gpio/gpio-grgpio.c                     |  4 +---
->   drivers/gpio/gpio-ich.c                        |  9 +--------
->   drivers/gpio/gpio-it8761e.c                    |  6 +-----
->   drivers/gpio/gpio-janz-ttl.c                   |  8 +-------
->   drivers/gpio/gpio-kempld.c                     |  3 ++-
->   drivers/gpio/gpio-lp3943.c                     |  3 ++-
->   drivers/gpio/gpio-lynxpoint.c                  |  5 +----
->   drivers/gpio/gpio-max730x.c                    | 12 ++++--------
->   drivers/gpio/gpio-max732x.c                    |  7 +------
->   drivers/gpio/gpio-mc33880.c                    | 11 +++--------
->   drivers/gpio/gpio-mc9s08dz60.c                 |  3 ++-
->   drivers/gpio/gpio-mcp23s08.c                   | 26 +++++++-------------------
->   drivers/gpio/gpio-ml-ioh.c                     |  8 ++------
->   drivers/gpio/gpio-msm-v2.c                     |  5 +----
->   drivers/gpio/gpio-mxc.c                        |  2 +-
->   drivers/gpio/gpio-octeon.c                     |  3 ++-
->   drivers/gpio/gpio-palmas.c                     |  3 ++-
->   drivers/gpio/gpio-pca953x.c                    |  7 +------
->   drivers/gpio/gpio-pcf857x.c                    |  4 +---
->   drivers/gpio/gpio-pch.c                        | 10 ++--------
->   drivers/gpio/gpio-rc5t583.c                    |  3 ++-
->   drivers/gpio/gpio-rcar.c                       |  5 +----
->   drivers/gpio/gpio-rdc321x.c                    |  7 ++-----
->   drivers/gpio/gpio-sch.c                        | 16 +++-------------
->   drivers/gpio/gpio-sch311x.c                    |  6 ++----
->   drivers/gpio/gpio-sodaville.c                  |  4 +---
->   drivers/gpio/gpio-stmpe.c                      |  8 +-------
->   drivers/gpio/gpio-sx150x.c                     |  7 ++-----
->   drivers/gpio/gpio-syscon.c                     |  3 ++-
->   drivers/gpio/gpio-tb10x.c                      |  5 +----
->   drivers/gpio/gpio-tc3589x.c                    |  8 +-------
->   drivers/gpio/gpio-timberdale.c                 |  5 +----
->   drivers/gpio/gpio-tps6586x.c                   |  3 ++-
->   drivers/gpio/gpio-tps65910.c                   |  3 ++-
->   drivers/gpio/gpio-tps65912.c                   |  3 ++-
->   drivers/gpio/gpio-ts5500.c                     |  6 +++---
->   drivers/gpio/gpio-twl4030.c                    |  4 +---
->   drivers/gpio/gpio-twl6040.c                    |  3 ++-
->   drivers/gpio/gpio-ucb1400.c                    |  2 +-
->   drivers/gpio/gpio-viperboard.c                 | 10 +++-------
->   drivers/gpio/gpio-vx855.c                      |  3 +--
->   drivers/gpio/gpio-wm831x.c                     |  3 ++-
->   drivers/gpio/gpio-wm8350.c                     |  3 ++-
->   drivers/gpio/gpio-wm8994.c                     |  3 ++-
->   drivers/hid/hid-cp2112.c                       |  6 ++----
->   drivers/input/keyboard/adp5588-keys.c          |  4 +---
->   drivers/input/keyboard/adp5589-keys.c          |  4 +---
->   drivers/input/touchscreen/ad7879.c             | 10 +++-------
->   drivers/leds/leds-pca9532.c                    | 10 ++--------
->   drivers/leds/leds-tca6507.c                    |  7 ++-----
->   drivers/media/dvb-frontends/cxd2820r_core.c    | 10 +++-------
->   drivers/mfd/asic3.c                            |  3 ++-
->   drivers/mfd/htc-i2cpld.c                       |  8 +-------
->   drivers/mfd/sm501.c                            | 17 +++--------------
->   drivers/mfd/tc6393xb.c                         | 13 ++++---------
->   drivers/mfd/ucb1x00-core.c                     |  8 ++------
->   drivers/pinctrl/pinctrl-abx500.c               | 15 +++------------
->   drivers/pinctrl/pinctrl-adi2.c                 |  9 ++++-----
->   drivers/pinctrl/pinctrl-as3722.c               | 11 ++---------
->   drivers/pinctrl/pinctrl-baytrail.c             |  5 +----
->   drivers/pinctrl/pinctrl-coh901.c               | 10 ++--------
->   drivers/pinctrl/pinctrl-exynos5440.c           |  6 +-----
->   drivers/pinctrl/pinctrl-msm.c                  | 11 ++---------
->   drivers/pinctrl/pinctrl-nomadik.c              |  2 +-
->   drivers/pinctrl/pinctrl-rockchip.c             | 16 ++++------------
->   drivers/pinctrl/pinctrl-samsung.c              | 14 ++++----------
->   drivers/pinctrl/pinctrl-sunxi.c                |  3 +--
->   drivers/pinctrl/sh-pfc/gpio.c                  |  9 +++------
->   drivers/pinctrl/spear/pinctrl-plgpio.c         |  3 +--
->   drivers/pinctrl/vt8500/pinctrl-wmt.c           |  9 ++-------
->   drivers/platform/x86/intel_pmic_gpio.c         |  3 +--
->   drivers/ssb/driver_gpio.c                      |  3 ++-
->   drivers/staging/vme/devices/vme_pio2_gpio.c    |  4 +---
->   drivers/tty/serial/max310x.c                   | 10 ++++------
->   drivers/video/fbdev/via/via-gpio.c             | 10 +++-------
->   sound/soc/codecs/wm5100.c                      |  5 +----
->   sound/soc/codecs/wm8903.c                      |  6 +-----
->   sound/soc/codecs/wm8962.c                      |  5 +----
->   sound/soc/codecs/wm8996.c                      |  6 +-----
->   97 files changed, 182 insertions(+), 460 deletions(-)
->
-[...]
+>  include/linux/pm_opp.h | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/include/linux/pm_opp.h b/include/linux/pm_opp.h
+> index 0330217..6668150 100644
+> --- a/include/linux/pm_opp.h
+> +++ b/include/linux/pm_opp.h
+> @@ -112,7 +112,7 @@ int of_init_opp_table(struct device *dev);
+>  #else
+>  static inline int of_init_opp_table(struct device *dev)
+>  {
+> -	return -EINVAL;
+> +	return -ENOSYS;
+>  }
+>  #endif
+>  
+> 
+
+
+-- 
+Regards,
+Nishanth Menon
