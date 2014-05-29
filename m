@@ -1,91 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933054AbaE2Vu3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 17:50:29 -0400
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:47330 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754728AbaE2VuZ (ORCPT
+	id S933069AbaE2Vvm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 17:51:42 -0400
+Received: from mail-yk0-f174.google.com ([209.85.160.174]:63649 "EHLO
+	mail-yk0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750905AbaE2Vvl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 17:50:25 -0400
+	Thu, 29 May 2014 17:51:41 -0400
 MIME-Version: 1.0
-In-Reply-To: <47B1E3D0-4336-4529-80B0-172F4ACA5C97@codeaurora.org>
-References: <1401379426-9701-1-git-send-email-galak@codeaurora.org>
-	<CAL_JsqLPFDwtd-QYDqCwx1JVj1Aa8=nof-e0P6R9CZra+fXHfw@mail.gmail.com>
-	<47B1E3D0-4336-4529-80B0-172F4ACA5C97@codeaurora.org>
-Date: Thu, 29 May 2014 16:50:24 -0500
-Message-ID: <CAL_JsqK8PJHUgb0-i=6MdydAo-97iUTBfnqVgTchgghY8R9XZA@mail.gmail.com>
-Subject: Re: [PATCH] of: treat PCI config space as IORESOURCE_MEM type
-From: Rob Herring <robherring2@gmail.com>
-To: Kumar Gala <galak@codeaurora.org>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Grant Likely <grant.likely@linaro.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Liviu Dudau <liviu@dudau.co.uk>,
-        Kishon Vijay Abraham I <kishon@ti.com>
-Content-Type: text/plain; charset=UTF-8
+X-Originating-IP: [128.107.151.95]
+In-Reply-To: <20140529214115.GC15585@mwanda>
+References: <1401319428-20798-1-git-send-email-c@24.io>
+	<20140529204317.GA9865@kroah.com>
+	<CADadk9E3bhsr9_f13ugQNX_mtX1c4a5DM2=+ZVK76QUb+FAePg@mail.gmail.com>
+	<20140529210051.GA21250@kroah.com>
+	<20140529214115.GC15585@mwanda>
+Date: Thu, 29 May 2014 14:51:40 -0700
+Message-ID: <CADadk9E1d2UCYtCWmUiLcqF=vrsfuQerCGUyQ3d-B3Y6TGWiaw@mail.gmail.com>
+Subject: Re: [PATCH 1/2] Staging: rtl8192u: r8192U_wx.c Fixed a misplaced brace
+From: Chaitanya Hazarey <c@24.io>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Andrea Merello <andrea.merello@gmail.com>,
+        devel <devel@driverdev.osuosl.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Ksenia Ragiadakou <burzalodowa@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding Jason Gunthorpe...
+Ok will be quite for till the last ones get accepted.
 
-On Thu, May 29, 2014 at 3:51 PM, Kumar Gala <galak@codeaurora.org> wrote:
->
-> On May 29, 2014, at 3:44 PM, Rob Herring <robherring2@gmail.com> wrote:
->
->> On Thu, May 29, 2014 at 11:03 AM, Kumar Gala <galak@codeaurora.org> wrote:
->>> If we have a PCI config space specified in something like a ranges
->>> property we should treat it as memory type resource.
->>
->> Config space should not be in ranges[1]. We have some cases that are,
->> but we don't want new ones.
->
-> For the cases we have I agree, however an ECAM based cfg seems completely legit.
+Sorry for the bother !
 
-The previous discussion concluded otherwise. Debate it with Jason. I
-don't really have an opinion other than it be done one way.
+Chaitanya
 
-Rob
-
->>> Signed-off-by: Kumar Gala <galak@codeaurora.org>
->>> ---
->>> drivers/of/address.c | 3 +++
->>> 1 file changed, 3 insertions(+)
->>>
->>> diff --git a/drivers/of/address.c b/drivers/of/address.c
->>> index cb4242a..4e7ee59 100644
->>> --- a/drivers/of/address.c
->>> +++ b/drivers/of/address.c
->>> @@ -122,6 +122,9 @@ static unsigned int of_bus_pci_get_flags(const __be32 *addr)
->>>        u32 w = be32_to_cpup(addr);
->>>
->>>        switch((w >> 24) & 0x03) {
->>> +       case 0x00: /* cfg space */
->>> +               flags |= IORESOURCE_MEM;
->>> +               break;
+On Thu, May 29, 2014 at 2:41 PM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
+> On Thu, May 29, 2014 at 02:00:51PM -0700, Greg KH wrote:
+>> On Thu, May 29, 2014 at 01:43:01PM -0700, Chaitanya Hazarey wrote:
+>> > I have 1/5 through to 5/5. Will resend rightaway with slightly changed
+>> > subjects.
 >>
->> How would you then distinguish actual memory ranges?
->
-> One assumes you are still looking at pci_space as part of of_pci_range
->
+>> What does that have to do with patch 2/2 here?  You sent a 1/2 patch, so
+>> obviously there should be a 2/2 somewhere...
 >>
->> Rob
->>
->> [1] http://www.spinics.net/lists/linux-pci/msg30585.html
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-arm-msm" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> confused,
 >
-> --
-> Employee of Qualcomm Innovation Center, Inc.
-> Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
+> Heh.  You recieved [patch 2/2] but you didn't like it.
+> https://lkml.org/lkml/2014/5/28/818
+>
+> Meanwhile Chaitanya keeps resending these patches over and over so now
+> I have around 5 million of them in my inbox.  Calm down, Chaitanya!
+> Give us a little time to catch up before you resend.
+>
+> The latest couple versions of the patches have been ok, btw.
+>
+> regards,
+> dan carpenter
 >
