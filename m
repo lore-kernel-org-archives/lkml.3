@@ -1,60 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932650AbaE2TOx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 15:14:53 -0400
-Received: from mail-ve0-f171.google.com ([209.85.128.171]:60952 "EHLO
-	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754738AbaE2TOw (ORCPT
+	id S932475AbaE2TRt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 15:17:49 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:55139 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753815AbaE2TRr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 15:14:52 -0400
+	Thu, 29 May 2014 15:17:47 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 99.127.230.128
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/yxRTfzwZ4CA01XQ/zIOCi
+Date: Thu, 29 May 2014 12:17:39 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Paul Bolle <pebolle@tiscali.nl>, Russell King <linux@arm.linux.org.uk>,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: OMAP: SX1: remove check for CONFIG_SX1_OLD_FLASH
+Message-ID: <20140529191738.GA18567@atomide.com>
+References: <1400182902.11786.21.camel@x220>
+ <20140516211231.GF12881@atomide.com>
+ <20140529190227.GB18230@amd.pavel.ucw.cz>
 MIME-Version: 1.0
-In-Reply-To: <20140529185201.GN18016@ZenIV.linux.org.uk>
-References: <20140529035233.GF18016@ZenIV.linux.org.uk>
-	<20140529053444.GI18016@ZenIV.linux.org.uk>
-	<20140529105107.GB1938@lahna.fi.intel.com>
-	<20140529110439.GA2006@lahna.fi.intel.com>
-	<20140529133036.GJ18016@ZenIV.linux.org.uk>
-	<CA+55aFzYjRrvSaF=wGimrgtEqR7GHbu1ku1qn1wQs5wgQrCZdg@mail.gmail.com>
-	<20140529154454.GK18016@ZenIV.linux.org.uk>
-	<20140529162307.GL18016@ZenIV.linux.org.uk>
-	<CA+55aFyRDJpm2Wfg9jvXCsKYgt36=6A_++bX+Q=C4MvQRbqh_A@mail.gmail.com>
-	<20140529165351.GM18016@ZenIV.linux.org.uk>
-	<20140529185201.GN18016@ZenIV.linux.org.uk>
-Date: Thu, 29 May 2014 12:14:51 -0700
-X-Google-Sender-Auth: nfBNnO_NSxxL8vf7gBM3q8f1pW4
-Message-ID: <CA+55aFwNv2-9=uXxzYH9UpN_x209Cv_BBu-9j2prSh2xVmmsAg@mail.gmail.com>
-Subject: Re: fs/dcache.c - BUG: soft lockup - CPU#5 stuck for 22s! [systemd-udevd:1667]
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Miklos Szeredi <mszeredi@suse.cz>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140529190227.GB18230@amd.pavel.ucw.cz>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 29, 2014 at 11:52 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
->
-> Grrr...  Sadly, that's not good enough.  Leaking rcu_read_lock() on
-> success is trivial, but there's more serious problem: suppose dentries
-> involved get moved before we get to locking what we thought was parent.
-> We end up taking ->d_lock on two dentries that might be nowhere near each
-> other in the tree, with obvious nasty implications.  Would be _very_ hard
-> to reproduce ;-/
+* Pavel Machek <pavel@ucw.cz> [140529 12:03]:
+> On Fri 2014-05-16 14:12:31, Tony Lindgren wrote:
+> > * Paul Bolle <pebolle@tiscali.nl> [140515 12:42]:
+> > > A check for CONFIG_SX1_OLD_FLASH was added in v2.6.24. But the related
+> > > Kconfig symbol was never part of the tree. So we can remove some dead
+> > > code.
+> > 
+> > Thanks applying into omap-for-v3.16/board.
+> 
+> Actually... It seems there are two variant of SX1, and this is very
+> useful piece of documentation how the _other_ variant looks.
+> 
+> And if someone is hacking linux on sx1, he can probably figure out
+> #ifdef in .c file...
+> 
+> IOW adding the config option might be better solution.
 
-Yeah, I don't think you can reproduce that, but I guess renaming
-directories into each other (two renames needed) could trigger an ABBA
-deadlock by changing the topological order of dentry/parent.
+Or just a comment saying the same?
 
-I suspect there's no way in hell that tiny race will ever happen in
-practice, but let's not risk it.
+Regards,
 
-And your solution (to re-check after just taking the parent lock)
-seems sufficient and sane, since dentry_lock_for_move() will always
-take the parent lock(s) before we move a dentry.
-
-So that looks good to me.
-
-              Linus
+Tony
