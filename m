@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932915AbaE2Ehr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 00:37:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58219 "EHLO
+	id S932945AbaE2Ehv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 00:37:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58212 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932801AbaE2EgC (ORCPT
+	with ESMTP id S932795AbaE2EgB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 00:36:02 -0400
+	Thu, 29 May 2014 00:36:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Dumazet <edumazet@google.com>,
+        Eric Dumazet <edumazet@google.com>, Jerry Chu <hkchu@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 140/140] net-gro: reset skb->truesize in napi_reuse_skb()
-Date: Wed, 28 May 2014 21:34:39 -0700
-Message-Id: <20140529043107.404111405@linuxfoundation.org>
+Subject: [PATCH 3.14 138/140] ipv6: gro: fix CHECKSUM_COMPLETE support
+Date: Wed, 28 May 2014 21:34:37 -0700
+Message-Id: <20140529043107.124711772@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
 In-Reply-To: <20140529043049.661315084@linuxfoundation.org>
 References: <20140529043049.661315084@linuxfoundation.org>
@@ -29,37 +29,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit e33d0ba8047b049c9262fdb1fcafb93cb52ceceb ]
+[ Upstream commit 4de462ab63e23953fd05da511aeb460ae10cc726 ]
 
-Recycling skb always had been very tough...
+When GRE support was added in linux-3.14, CHECKSUM_COMPLETE handling
+broke on GRE+IPv6 because we did not update/use the appropriate csum :
 
-This time it appears GRO layer can accumulate skb->truesize
-adjustments made by drivers when they attach a fragment to skb.
+GRO layer is supposed to use/update NAPI_GRO_CB(skb)->csum instead of
+skb->csum
 
-skb_gro_receive() can only subtract from skb->truesize the used part
-of a fragment.
+Tested using a GRE tunnel and IPv6 traffic. GRO aggregation now happens
+at the first level (ethernet device) instead of being done in gre
+tunnel. Native IPv6+TCP is still properly aggregated.
 
-I spotted this problem seeing TcpExtPruneCalled and
-TcpExtTCPRcvCollapsed that were unexpected with a recent kernel, where
-TCP receive window should be sized properly to accept traffic coming
-from a driver not overshooting skb->truesize.
-
+Fixes: bf5a755f5e918 ("net-gre-gro: Add GRE support to the GRO stack")
 Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Jerry Chu <hkchu@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/core/dev.c |    1 +
- 1 file changed, 1 insertion(+)
+ net/ipv6/ip6_offload.c   |    6 +-----
+ net/ipv6/tcpv6_offload.c |    2 +-
+ 2 files changed, 2 insertions(+), 6 deletions(-)
 
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -4051,6 +4051,7 @@ static void napi_reuse_skb(struct napi_s
- 	skb->vlan_tci = 0;
- 	skb->dev = napi->dev;
- 	skb->skb_iif = 0;
-+	skb->truesize = SKB_TRUESIZE(skb_end_offset(skb));
+--- a/net/ipv6/ip6_offload.c
++++ b/net/ipv6/ip6_offload.c
+@@ -196,7 +196,6 @@ static struct sk_buff **ipv6_gro_receive
+ 	unsigned int off;
+ 	u16 flush = 1;
+ 	int proto;
+-	__wsum csum;
  
- 	napi->skb = skb;
- }
+ 	off = skb_gro_offset(skb);
+ 	hlen = off + sizeof(*iph);
+@@ -264,13 +263,10 @@ static struct sk_buff **ipv6_gro_receive
+ 
+ 	NAPI_GRO_CB(skb)->flush |= flush;
+ 
+-	csum = skb->csum;
+-	skb_postpull_rcsum(skb, iph, skb_network_header_len(skb));
++	skb_gro_postpull_rcsum(skb, iph, nlen);
+ 
+ 	pp = ops->callbacks.gro_receive(head, skb);
+ 
+-	skb->csum = csum;
+-
+ out_unlock:
+ 	rcu_read_unlock();
+ 
+--- a/net/ipv6/tcpv6_offload.c
++++ b/net/ipv6/tcpv6_offload.c
+@@ -42,7 +42,7 @@ static struct sk_buff **tcp6_gro_receive
+ 	if (NAPI_GRO_CB(skb)->flush)
+ 		goto skip_csum;
+ 
+-	wsum = skb->csum;
++	wsum = NAPI_GRO_CB(skb)->csum;
+ 
+ 	switch (skb->ip_summed) {
+ 	case CHECKSUM_NONE:
 
 
