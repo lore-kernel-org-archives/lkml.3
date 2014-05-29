@@ -1,62 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932691AbaE2N1d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 09:27:33 -0400
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:49292 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757370AbaE2N1c (ORCPT
+	id S932790AbaE2Nal (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 09:30:41 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:57506 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932413AbaE2Naj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 09:27:32 -0400
+	Thu, 29 May 2014 09:30:39 -0400
+Date: Thu, 29 May 2014 14:30:36 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Miklos Szeredi <mszeredi@suse.cz>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: fs/dcache.c - BUG: soft lockup - CPU#5 stuck for 22s!
+ [systemd-udevd:1667]
+Message-ID: <20140529133036.GJ18016@ZenIV.linux.org.uk>
+References: <20140528073751.GB1757@lahna.fi.intel.com>
+ <20140528115701.GY18016@ZenIV.linux.org.uk>
+ <20140528131136.GA1643@lahna.fi.intel.com>
+ <20140528141937.GZ18016@ZenIV.linux.org.uk>
+ <20140528183954.GA18016@ZenIV.linux.org.uk>
+ <20140529031149.GE18016@ZenIV.linux.org.uk>
+ <20140529035233.GF18016@ZenIV.linux.org.uk>
+ <20140529053444.GI18016@ZenIV.linux.org.uk>
+ <20140529105107.GB1938@lahna.fi.intel.com>
+ <20140529110439.GA2006@lahna.fi.intel.com>
 MIME-Version: 1.0
-In-Reply-To: <20140529132034.GB15585@mwanda>
-References: <20140529131650.2329.3197.sendpatchset@w520>
-	<20140529131732.2329.50630.sendpatchset@w520>
-	<20140529132034.GB15585@mwanda>
-Date: Thu, 29 May 2014 22:27:30 +0900
-Message-ID: <CANqRtoTzOn5d9qB85sXvmLYhoTDMDtbjSkLbz9V4FRmzFM3ycQ@mail.gmail.com>
-Subject: Re: [PATCH v2 04/05] staging: board: Initial board staging support
-From: Magnus Damm <magnus.damm@gmail.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        devel <devel@driverdev.osuosl.org>,
-        SH-Linux <linux-sh@vger.kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        "Simon Horman [Horms]" <horms@verge.net.au>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Olof Johansson <olof@lixom.net>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140529110439.GA2006@lahna.fi.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dan,
+On Thu, May 29, 2014 at 02:04:39PM +0300, Mika Westerberg wrote:
 
-On Thu, May 29, 2014 at 10:20 PM, Dan Carpenter
-<dan.carpenter@oracle.com> wrote:
-> On Thu, May 29, 2014 at 10:17:32PM +0900, Magnus Damm wrote:
->> --- /dev/null
->> +++ work/drivers/staging/board/Kconfig        2014-05-29 21:40:41.000000000 +0900
->> @@ -0,0 +1,7 @@
->> +config STAGING_BOARD
->> +     boolean "Staging Board Support"
->> +     help
->> +       Select to enable per-board staging support code.
->> +
->> +       If in doubt, say N here.
->> +
->
-> Actually, you're probably going to need to add a bunch of dependencies
-> here or it will break "make randconfig" right away.  Sorry that I forgot
-> about this in the first review.
+> With your both patches applied the problem is gone :-)
+> 
+> I did 20 plug/unplugs, rebooted the machine and another 20 plug/unplugs
+> and didn't see the livelock at once.
 
-Good point, thanks for checking. I will have a look at this and add
-dependencies to make sure it builds on a wide range of platforms.
+Great...  OK, saner splitup of that sucker (equivalent to combination of
+these two patches) is in vfs.git#for-linus.
 
-Regarding the emxx_udc portion of the patches (in the v2 series patch
-1 -> 3), if there are no objections would it be possible for you to
-take them as-is? If so I'll resend the staging board bits only.
+Review and testing would be very welcome.
 
-Thanks!
-
-/ magnus
+PS: The diff between that and aforementioned "both patches applied" is noise -
+dentry and parent declarations had been moved into the loop body there,
+while in #for-linus they are left alone.  So Mika's testing results should
+apply to that one as well.
