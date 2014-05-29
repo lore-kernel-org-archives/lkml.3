@@ -1,44 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756834AbaE2GR5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 02:17:57 -0400
-Received: from mga14.intel.com ([192.55.52.115]:53186 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756325AbaE2GR4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 02:17:56 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,932,1392192000"; 
-   d="scan'208";a="539355061"
-Message-ID: <1401344267.11182.36.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH 01/27] mtd: nand: introduce function to fix a common bug
- in most nand-drivers not showing a device in sysfs
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Alexander Holler <holler@ahsoftware.de>
-Cc: Brian Norris <computersforpeace@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 29 May 2014 09:17:47 +0300
-In-Reply-To: <53865071.5060501@ahsoftware.de>
-References: <1401142372-14148-1-git-send-email-holler@ahsoftware.de>
-	 <1401142372-14148-2-git-send-email-holler@ahsoftware.de>
-	 <20140528084344.GB4285@norris-Latitude-E6410>
-	 <53863056.2070405@ahsoftware.de> <20140528201018.GA3599@ld-irv-0074>
-	 <53865071.5060501@ahsoftware.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756871AbaE2GTf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 02:19:35 -0400
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:65031 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756299AbaE2GTe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 02:19:34 -0400
+X-Original-SENDERIP: 10.177.220.145
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Zhang Yanfei <zhangyanfei.yes@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Andi Kleen <andi@firstfloor.org>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Richard Yao <ryao@gentoo.org>, Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: [PATCH] vmalloc: use rcu list iterator to reduce vmap_area_lock contention
+Date: Thu, 29 May 2014 15:22:34 +0900
+Message-Id: <1401344554-3596-1-git-send-email-iamjoonsoo.kim@lge.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-05-28 at 23:09 +0200, Alexander Holler wrote:
-> I'm very sorry, but I find such discussions extremly tiresome.
+Richard Yao reported a month ago that his system have a trouble
+with vmap_area_lock contention during performance analysis
+by /proc/meminfo. Andrew asked why his analysis checks /proc/meminfo
+stressfully, but he didn't answer it.
 
-Why discussing then at all, just go ahead and to something else.
+https://lkml.org/lkml/2014/4/10/416
 
+Although I'm not sure that this is right usage or not, there is a solution
+reducing vmap_area_lock contention with no side-effect. That is just
+to use rcu list iterator in get_vmalloc_info(). This function only needs
+values on vmap_area structure, so we don't need to grab a spinlock.
+
+Reported-by: Richard Yao <ryao@gentoo.org>
+Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+
+diff --git a/mm/vmalloc.c b/mm/vmalloc.c
+index f64632b..fdbb116 100644
+--- a/mm/vmalloc.c
++++ b/mm/vmalloc.c
+@@ -2690,14 +2690,14 @@ void get_vmalloc_info(struct vmalloc_info *vmi)
+ 
+ 	prev_end = VMALLOC_START;
+ 
+-	spin_lock(&vmap_area_lock);
++	rcu_read_lock();
+ 
+ 	if (list_empty(&vmap_area_list)) {
+ 		vmi->largest_chunk = VMALLOC_TOTAL;
+ 		goto out;
+ 	}
+ 
+-	list_for_each_entry(va, &vmap_area_list, list) {
++	list_for_each_entry_rcu(va, &vmap_area_list, list) {
+ 		unsigned long addr = va->va_start;
+ 
+ 		/*
+@@ -2724,7 +2724,7 @@ void get_vmalloc_info(struct vmalloc_info *vmi)
+ 		vmi->largest_chunk = VMALLOC_END - prev_end;
+ 
+ out:
+-	spin_unlock(&vmap_area_lock);
++	rcu_read_unlock();
+ }
+ #endif
+ 
 -- 
-Best Regards,
-Artem Bityutskiy
+1.7.9.5
 
