@@ -1,79 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934133AbaE2FQP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 01:16:15 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:32875 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932622AbaE2FQL (ORCPT
+	id S934148AbaE2FQe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 01:16:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58017 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932615AbaE2Efh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 01:16:11 -0400
-X-AuditID: 85900ec0-d312bb9000001514-67-5386c297456e
-Message-ID: <5386C296.4040706@hitachi.com>
-Date: Thu, 29 May 2014 14:16:06 +0900
-From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120604 Thunderbird/13.0
+	Thu, 29 May 2014 00:35:37 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        =?UTF-8?q?Bj=F8rn=20Mork?= <bjorn@mork.no>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.14 107/140] net: cdc_ncm: fix buffer overflow
+Date: Wed, 28 May 2014 21:34:06 -0700
+Message-Id: <20140529043103.327713075@linuxfoundation.org>
+X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
+In-Reply-To: <20140529043049.661315084@linuxfoundation.org>
+References: <20140529043049.661315084@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Stephen Warren <swarren@nvidia.com>, Alan <gnomes@lxorguk.ukuu.org.uk>,
-        Jingoo Han <jg1.han@samsung.com>, linux-kernel@vger.kernel.org,
-        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
-        linux-serial@vger.kernel.org, yrl.pp-manager.tt@hitachi.com,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Aaron Sierra <asierra@xes-inc.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: Re: Re: [PATCH V7] serial/uart/8250: Add tunable RX interrupt
- trigger I/F of FIFO buffers
-References: <20140527050921.17672.97365.stgit@yunodevel> <20140528201327.GA19249@kroah.com>
-In-Reply-To: <20140528201327.GA19249@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
-Thank you for your review.
+------------------
 
-(2014/05/29 5:13), Greg Kroah-Hartman wrote:
-> On Tue, May 27, 2014 at 02:09:21PM +0900, Yoshihiro YUNOMAE wrote:
->> Add tunable RX interrupt trigger I/F of FIFO buffers.
->>
->> Serial devices are used as not only message communication devices but control
->> or sending communication devices. For the latter uses, normally small data
->> will be exchanged, so user applications want to receive data unit as soon as
->> possible for real-time tendency. If we have a sensor which sends a 1 byte data
->> each time and must control a device based on the sensor feedback, the RX
->> interrupt should be triggered for each data.
->>
->> According to HW specification of serial UART devices, RX interrupt trigger
->> can be changed, but the trigger is hard-coded. For example, RX interrupt trigger
->> in 16550A can be set to 1, 4, 8, or 14 bytes for HW, but current driver sets
->> the trigger to only 8bytes.
->>
->> This patch makes some devices change RX interrupt trigger from userland.
->
-> I'd prefer it if you could split the attr_grps logic out into a separate
-> patch, the first one in a 2 patch series.  I don't think it is quite
-> correct what you are doing here, but given the other changes going on at
-> the same time, it's hard to pick it apart.
+From: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
 
-OK, I understood. If this patch will be separated as you say, other
-people will be able to understand easily when attr_grps will have
-been introduced.
+[ Upstream commit 9becd707841207652449a8dfd90fe9c476d88546 ]
 
-> So, can you split this up into 2 patches and resend please?
+Commit 4d619f625a60 ("net: cdc_ncm: no point in filling up the NTBs
+if we send ZLPs") changed the padding logic for devices with the ZLP
+flag set.  This meant that frames of any size will be sent without
+additional padding, except for the single byte added if the size is
+a multiple of the USB packet size. But if the unpadded size is
+identical to the maximum frame size, and the maximum size is a
+multiplum of the USB packet size, then this one-byte padding will
+overflow the buffer.
 
-Sure. I'll do it soon.
+Prevent padding if already at maximum frame size, letting usbnet
+transmit a ZLP instead in this case.
 
-Thank you,
-Yoshihiro YUNOMAE
+Fixes: 4d619f625a60 ("net: cdc_ncm: no point in filling up the NTBs if we send ZLPs")
+Reported by: Yu-an Shih <yshih@nvidia.com>
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/net/usb/cdc_ncm.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
--- 
-Yoshihiro YUNOMAE
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: yoshihiro.yunomae.ez@hitachi.com
+--- a/drivers/net/usb/cdc_ncm.c
++++ b/drivers/net/usb/cdc_ncm.c
+@@ -768,7 +768,7 @@ cdc_ncm_fill_tx_frame(struct usbnet *dev
+ 	    skb_out->len > CDC_NCM_MIN_TX_PKT)
+ 		memset(skb_put(skb_out, ctx->tx_max - skb_out->len), 0,
+ 		       ctx->tx_max - skb_out->len);
+-	else if ((skb_out->len % dev->maxpacket) == 0)
++	else if (skb_out->len < ctx->tx_max && (skb_out->len % dev->maxpacket) == 0)
+ 		*skb_put(skb_out, 1) = 0;	/* force short packet */
+ 
+ 	/* set final frame length */
 
 
