@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932752AbaE2Ef4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 00:35:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58152 "EHLO
+	id S933905AbaE2FGw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 01:06:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58169 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756424AbaE2Efx (ORCPT
+	with ESMTP id S932748AbaE2Ef4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 00:35:53 -0400
+	Thu, 29 May 2014 00:35:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Florian Westphal <fw@strlen.de>,
+        Peter Christensen <pch@ordbogen.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 112/140] net: ipv4: ip_forward: fix inverted local_df test
-Date: Wed, 28 May 2014 21:34:11 -0700
-Message-Id: <20140529043103.996859766@linuxfoundation.org>
+Subject: [PATCH 3.14 116/140] macvlan: Dont propagate IFF_ALLMULTI changes on down interfaces.
+Date: Wed, 28 May 2014 21:34:15 -0700
+Message-Id: <20140529043104.499331306@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
 In-Reply-To: <20140529043049.661315084@linuxfoundation.org>
 References: <20140529043049.661315084@linuxfoundation.org>
@@ -27,47 +27,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Florian Westphal <fw@strlen.de>
+From: Peter Christensen <pch@ordbogen.com>
 
-[ Upstream commit ca6c5d4ad216d5942ae544bbf02503041bd802aa ]
+[ Upstream commit bbeb0eadcf9fe74fb2b9b1a6fea82cd538b1e556 ]
 
-local_df means 'ignore DF bit if set', so if its set we're
-allowed to perform ip fragmentation.
+Clearing the IFF_ALLMULTI flag on a down interface could cause an allmulti
+overflow on the underlying interface.
 
-This wasn't noticed earlier because the output path also drops such skbs
-(and emits needed icmp error) and because netfilter ip defrag did not
-set local_df until couple of days ago.
+Attempting the set IFF_ALLMULTI on the underlying interface would cause an
+error and the log message:
 
-Only difference is that DF-packets-larger-than MTU now discarded
-earlier (f.e. we avoid pointless netfilter postrouting trip).
+"allmulti touches root, set allmulti failed."
 
-While at it, drop the repeated test ip_exceeds_mtu, checking it once
-is enough...
-
-Fixes: fe6cc55f3a9 ("net: ip, ipv6: handle gso skbs in forwarding path")
-Signed-off-by: Florian Westphal <fw@strlen.de>
+Signed-off-by: Peter Christensen <pch@ordbogen.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/ip_forward.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/macvlan.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/net/ipv4/ip_forward.c
-+++ b/net/ipv4/ip_forward.c
-@@ -42,12 +42,12 @@
- static bool ip_may_fragment(const struct sk_buff *skb)
- {
- 	return unlikely((ip_hdr(skb)->frag_off & htons(IP_DF)) == 0) ||
--	       !skb->local_df;
-+		skb->local_df;
+--- a/drivers/net/macvlan.c
++++ b/drivers/net/macvlan.c
+@@ -458,8 +458,10 @@ static void macvlan_change_rx_flags(stru
+ 	struct macvlan_dev *vlan = netdev_priv(dev);
+ 	struct net_device *lowerdev = vlan->lowerdev;
+ 
+-	if (change & IFF_ALLMULTI)
+-		dev_set_allmulti(lowerdev, dev->flags & IFF_ALLMULTI ? 1 : -1);
++	if (dev->flags & IFF_UP) {
++		if (change & IFF_ALLMULTI)
++			dev_set_allmulti(lowerdev, dev->flags & IFF_ALLMULTI ? 1 : -1);
++	}
  }
  
- static bool ip_exceeds_mtu(const struct sk_buff *skb, unsigned int mtu)
- {
--	if (skb->len <= mtu || skb->local_df)
-+	if (skb->len <= mtu)
- 		return false;
- 
- 	if (skb_is_gso(skb) && skb_gso_network_seglen(skb) <= mtu)
+ static void macvlan_set_mac_lists(struct net_device *dev)
 
 
