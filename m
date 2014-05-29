@@ -1,77 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757287AbaE2MO0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 08:14:26 -0400
-Received: from mail-qg0-f47.google.com ([209.85.192.47]:57494 "EHLO
-	mail-qg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756254AbaE2MOY (ORCPT
+	id S1757198AbaE2MTn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 08:19:43 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:50532 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756576AbaE2MTm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 08:14:24 -0400
+	Thu, 29 May 2014 08:19:42 -0400
+Subject: [PATCH -tip ] [BUGFIX] perf/probe: Fix perf probe to find correct
+ variable DIE
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+To: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Date: Thu, 29 May 2014 21:19:30 +0900
+Message-ID: <20140529121930.30879.87092.stgit@ltc230.yrl.intra.hitachi.co.jp>
+In-Reply-To: <20140529105232.28251.30447.stgit@ltc230.yrl.intra.hitachi.co.jp>
+References: <20140529105232.28251.30447.stgit@ltc230.yrl.intra.hitachi.co.jp>
+User-Agent: StGit/0.17-dirty
 MIME-Version: 1.0
-In-Reply-To: <1401358423-31532-1-git-send-email-daniel.thompson@linaro.org>
-References: <1396010535-2654-1-git-send-email-daniel.thompson@linaro.org> <1401358423-31532-1-git-send-email-daniel.thompson@linaro.org>
-From: Barry Song <baohua@kernel.org>
-Date: Thu, 29 May 2014 20:14:02 +0800
-X-Google-Sender-Auth: 6Jv6oAhQ2UswobArcRwEaizfvvw
-Message-ID: <CAGsJ_4ypSdP-i35BaQaciPo-g=+8Z5-T2MV5zgDP98BMciGbGw@mail.gmail.com>
-Subject: Re: [PATCH tty-next] serial: sirf: Fix compilation failure
-To: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        patches@linaro.org, linaro-kernel@lists.linaro.org,
-        Jiri Slaby <jslaby@suse.cz>, Qipan Li <Qipan.Li@csr.com>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-05-29 18:13 GMT+08:00 Daniel Thompson <daniel.thompson@linaro.org>:
-> After 07d410e0) serial: sirf: fix spinlock deadlock issue it is no longer
-> possiblet to compile this driver. The rename of one of the spinlocks is
-> faulty. After looking at the original patch I believe this is the correct
-> fix.
->
-> Compile tested using ARM's multi_v7_defconfig
->
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: Jiri Slaby <jslaby@suse.cz>
-> Cc: Barry Song <baohua@kernel.org>
-> Cc: Qipan Li <Qipan.Li@csr.com>
-> Cc: linux-serial@vger.kernel.org
-> Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
+Fix perf probe to find correct variable DIE which has location or
+external instance by tracking down the lexical blocks.
 
-Qipan prepared a same patch to fix this. since you have sent,
+Current die_find_variable() expects that the all variable DIEs
+which has DW_TAG_variable have a location. However, since recent
+dwarf information may have declaration variable DIEs at the
+entry of function (subprogram), die_find_variable() returns it.
 
-Acked-by: Barry Song <baohua@kernel.org>
+To solve this problem, it must track down the DIE tree to find
+a DIE which has an actual location or a reference for external
+instance.
+
+e.g. finding a DIE which origin is <0xdc73>;
+
+ <1><11496>: Abbrev Number: 95 (DW_TAG_subprogram)
+    <11497>   DW_AT_abstract_origin: <0xdc42>
+    <1149b>   DW_AT_low_pc      : 0x1850
+[...]
+ <2><114cc>: Abbrev Number: 119 (DW_TAG_variable) <- this is a declaration
+    <114cd>   DW_AT_abstract_origin: <0xdc73>
+ <2><114d1>: Abbrev Number: 119 (DW_TAG_variable)
+[...]
+ <3><115a7>: Abbrev Number: 105 (DW_TAG_lexical_block)
+    <115a8>   DW_AT_ranges      : 0xaa0
+ <4><115ac>: Abbrev Number: 96 (DW_TAG_variable) <- this has a location
+    <115ad>   DW_AT_abstract_origin: <0xdc73>
+    <115b1>   DW_AT_location    : 0x486c        (location list)
+
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+---
+ tools/perf/util/dwarf-aux.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/tools/perf/util/dwarf-aux.c b/tools/perf/util/dwarf-aux.c
+index 7defd77..cc66c40 100644
+--- a/tools/perf/util/dwarf-aux.c
++++ b/tools/perf/util/dwarf-aux.c
+@@ -747,14 +747,17 @@ struct __find_variable_param {
+ static int __die_find_variable_cb(Dwarf_Die *die_mem, void *data)
+ {
+ 	struct __find_variable_param *fvp = data;
++	Dwarf_Attribute attr;
+ 	int tag;
+ 
+ 	tag = dwarf_tag(die_mem);
+ 	if ((tag == DW_TAG_formal_parameter ||
+ 	     tag == DW_TAG_variable) &&
+-	    die_compare_name(die_mem, fvp->name))
++	    die_compare_name(die_mem, fvp->name) &&
++	/* Does the DIE have location information or external instance? */
++	    (dwarf_attr(die_mem, DW_AT_external, &attr) ||
++	     dwarf_attr(die_mem, DW_AT_location, &attr)))
+ 		return DIE_FIND_CB_END;
+-
+ 	if (dwarf_haspc(die_mem, fvp->addr))
+ 		return DIE_FIND_CB_CONTINUE;
+ 	else
 
 
-> ---
->
-> Notes:
->     Sorry to resend within a few minutes. Patch is identical to parent but the
->     subject line has been corrected. The original 'v6' was just utterly
->     wrong! This patch is a not-previously-shared patch to fix a build
->     regression that appears in tty-next.
->
->  drivers/tty/serial/sirfsoc_uart.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/tty/serial/sirfsoc_uart.c b/drivers/tty/serial/sirfsoc_uart.c
-> index 236f892..1f2be48 100644
-> --- a/drivers/tty/serial/sirfsoc_uart.c
-> +++ b/drivers/tty/serial/sirfsoc_uart.c
-> @@ -704,7 +704,7 @@ static void sirfsoc_uart_rx_dma_complete_tl(unsigned long param)
->         struct sirfsoc_int_en *uint_en = &sirfport->uart_reg->uart_int_en;
->         unsigned long flags;
->         struct dma_tx_state tx_state;
-> -       spin_lock_irqsave(&port->rx_lock, flags);
-> +       spin_lock_irqsave(&port->lock, flags);
->         while (DMA_COMPLETE == dmaengine_tx_status(sirfport->rx_dma_chan,
->                         sirfport->rx_dma_items[sirfport->rx_completed].cookie, &tx_state)) {
->                 sirfsoc_uart_insert_rx_buf_to_tty(sirfport,
-> --
-> 1.9.0
->
