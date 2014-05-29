@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934068AbaE2FOY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 01:14:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58043 "EHLO
+	id S932633AbaE2Efj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 00:35:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58004 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932640AbaE2Efk (ORCPT
+	with ESMTP id S932609AbaE2Eff (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 00:35:40 -0400
+	Thu, 29 May 2014 00:35:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Bj=F8rn=20Mork?= <bjorn@mork.no>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Liu Yu <allanyuliu@tencent.com>, Eric Dumazet <edumazet@google.com>,
+        Neal Cardwell <ncardwell@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 095/140] net: qmi_wwan: add Sierra Wireless MC7305/MC7355
-Date: Wed, 28 May 2014 21:33:54 -0700
-Message-Id: <20140529043101.743377878@linuxfoundation.org>
+Subject: [PATCH 3.14 104/140] tcp_cubic: fix the range of delayed_ack
+Date: Wed, 28 May 2014 21:34:03 -0700
+Message-Id: <20140529043102.959654965@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
 In-Reply-To: <20140529043049.661315084@linuxfoundation.org>
 References: <20140529043049.661315084@linuxfoundation.org>
 User-Agent: quilt/0.60-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,26 +29,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
+From: Liu Yu <allanyuliu@tencent.com>
 
-[ Upstream commit 9214224e43e4264b02686ea8b455f310935607b5 ]
+[ Upstream commit 0cda345d1b2201dd15591b163e3c92bad5191745 ]
 
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
+commit b9f47a3aaeab (tcp_cubic: limit delayed_ack ratio to prevent
+divide error) try to prevent divide error, but there is still a little
+chance that delayed_ack can reach zero. In case the param cnt get
+negative value, then ratio+cnt would overflow and may happen to be zero.
+As a result, min(ratio, ACK_RATIO_LIMIT) will calculate to be zero.
+
+In some old kernels, such as 2.6.32, there is a bug that would
+pass negative param, which then ultimately leads to this divide error.
+
+commit 5b35e1e6e9c (tcp: fix tcp_trim_head() to adjust segment count
+with skb MSS) fixed the negative param issue. However,
+it's safe that we fix the range of delayed_ack as well,
+to make sure we do not hit a divide by zero.
+
+CC: Stephen Hemminger <shemminger@vyatta.com>
+Signed-off-by: Liu Yu <allanyuliu@tencent.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Acked-by: Neal Cardwell <ncardwell@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/usb/qmi_wwan.c |    1 +
- 1 file changed, 1 insertion(+)
+ net/ipv4/tcp_cubic.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/usb/qmi_wwan.c
-+++ b/drivers/net/usb/qmi_wwan.c
-@@ -728,6 +728,7 @@ static const struct usb_device_id produc
- 	{QMI_FIXED_INTF(0x1199, 0x68c0, 11)},	/* Sierra Wireless MC73xx */
- 	{QMI_FIXED_INTF(0x1199, 0x901c, 8)},    /* Sierra Wireless EM7700 */
- 	{QMI_FIXED_INTF(0x1199, 0x901f, 8)},    /* Sierra Wireless EM7355 */
-+	{QMI_FIXED_INTF(0x1199, 0x9041, 8)},	/* Sierra Wireless MC7305/MC7355 */
- 	{QMI_FIXED_INTF(0x1199, 0x9051, 8)},	/* Netgear AirCard 340U */
- 	{QMI_FIXED_INTF(0x1bbb, 0x011e, 4)},	/* Telekom Speedstick LTE II (Alcatel One Touch L100V LTE) */
- 	{QMI_FIXED_INTF(0x2357, 0x0201, 4)},	/* TP-LINK HSUPA Modem MA180 */
+--- a/net/ipv4/tcp_cubic.c
++++ b/net/ipv4/tcp_cubic.c
+@@ -409,7 +409,7 @@ static void bictcp_acked(struct sock *sk
+ 		ratio -= ca->delayed_ack >> ACK_RATIO_SHIFT;
+ 		ratio += cnt;
+ 
+-		ca->delayed_ack = min(ratio, ACK_RATIO_LIMIT);
++		ca->delayed_ack = clamp(ratio, 1U, ACK_RATIO_LIMIT);
+ 	}
+ 
+ 	/* Some calls are for duplicates without timetamps */
 
 
