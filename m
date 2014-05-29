@@ -1,57 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932642AbaE2TEj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 15:04:39 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:47514 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932109AbaE2TEg (ORCPT
+	id S1755890AbaE2TEy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 15:04:54 -0400
+Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:58182 "EHLO
+	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932545AbaE2TEh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 15:04:36 -0400
-Message-ID: <538784C1.6000504@wwwdotorg.org>
-Date: Thu, 29 May 2014 13:04:33 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: Russell King <linux@arm.linux.org.uk>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Wolfram Sang <wsa@the-dreams.de>, linux-arm-kernel@lists.infradead.org,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 3/5] misc: fuse: Add efuse driver for Tegra
-References: <1401281677-32110-1-git-send-email-pdeschrijver@nvidia.com> <1401281677-32110-4-git-send-email-pdeschrijver@nvidia.com>
-In-Reply-To: <1401281677-32110-4-git-send-email-pdeschrijver@nvidia.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 29 May 2014 15:04:37 -0400
+Message-ID: <1401390275.25908.24.camel@x220>
+Subject: Re: [PATCH] pcmcia: m8xx: remove checks for four macros
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: Scott Wood <scottwood@freescale.com>,
+        Vitaly Bordug <vitb@kernel.crashing.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linux-pcmcia@lists.infradead.org,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Date: Thu, 29 May 2014 21:04:35 +0200
+In-Reply-To: <1401388744.25908.16.camel@x220>
+References: <1400916970.31526.78.camel@x220>
+	 <1401387624.6603.161.camel@snotra.buserror.net>
+	 <1401388744.25908.16.camel@x220>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 29 May 2014 19:04:35.0871 (UTC) FILETIME=[D5180AF0:01CF7B70]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/28/2014 06:54 AM, Peter De Schrijver wrote:
-> Implement fuse driver for Tegra20, Tegra30, Tegra114 and Tegra124.
+On Thu, 2014-05-29 at 20:39 +0200, Paul Bolle wrote:
+> That's why I included the people (and lists) maintaining PPC8XX and
+> PPC.
 
-> diff --git a/Documentation/ABI/testing/sysfs-driver-tegra-fuse b/Documentation/ABI/testing/sysfs-driver-tegra-fuse
+And of those people Marcelo might consider replacing the bouncing
+knack.org address with a redhat.com address. Provided Marcelo still
+cares about PPC8XX, that is. But perhaps there are two Marcelo Tosatti's
+working on the kernel.
 
-> +Description:	read-only access to the efuses on Tegra20, Tegra30, Tegra114
-> +		and Tegra124 SoC's from NVIDIA. The efuses contain write once
-> +		data programmed at the factory. The data is layed out in 32bit
-> +		words in LSB first formnat. The number of valid bits depends
 
-s/formnat/format/
+Paul Bolle
 
-> +		on the word and the SoC. The mapping is as follows:
-> +
-> +		For Tegra20:
-> +		Word 0 - 1    : bit 0
-> +		Word 2        : unused
-> +		Word 3        : bits 0 - 31
-> +		Word 4        : bits 0 - 7
-
-Do we really need these long tables that indicate which bits are used?
-As I mentioned before, when I asked for documentation of the format of
-these files, all I wanted was a brief not indicating that the data was
-binary, and that each bit potentially represents a fuse... Either we
-should leave it at that, or actually document what each bit represents,
-which would hopefully be a pointless duplication of the TRM.
