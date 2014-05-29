@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756282AbaE2EfC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 00:35:02 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57631 "EHLO
+	id S964814AbaE2Fdh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 01:33:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57731 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756211AbaE2Eey (ORCPT
+	with ESMTP id S1756268AbaE2EfB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 00:34:54 -0400
+	Thu, 29 May 2014 00:35:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Helge Deller <deller@gmx.de>
-Subject: [PATCH 3.14 021/140] parisc: fix epoll_pwait syscall on compat kernel
-Date: Wed, 28 May 2014 21:32:40 -0700
-Message-Id: <20140529043052.083680394@linuxfoundation.org>
+        Ludovic Drolez <ldrolez@debian.org>, Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH 3.14 044/140] USB: io_ti: fix firmware download on big-endian machines
+Date: Wed, 28 May 2014 21:33:03 -0700
+Message-Id: <20140529043055.054101442@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
 In-Reply-To: <20140529043049.661315084@linuxfoundation.org>
 References: <20140529043049.661315084@linuxfoundation.org>
@@ -26,30 +26,168 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Helge Deller <deller@gmx.de>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit ab3e55b119c9653b19ea4edffb86f04db867ac98 upstream.
+commit 5509076d1b4485ce9fb07705fcbcd2695907ab5b upstream.
 
-This bug was detected with the libio-epoll-perl debian package where the
-test case IO-Ppoll-compat.t failed.
+During firmware download the device expects memory addresses in
+big-endian byte order. As the wIndex parameter which hold the address is
+sent in little-endian byte order regardless of host byte order, we need
+to use swab16 rather than cpu_to_be16.
 
-Signed-off-by: Helge Deller <deller@gmx.de>
+Also make sure to handle the struct ti_i2c_desc size parameter which is
+returned in little-endian byte order.
+
+Reported-by: Ludovic Drolez <ldrolez@debian.org>
+Tested-by: Ludovic Drolez <ldrolez@debian.org>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/parisc/kernel/syscall_table.S |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/serial/io_ti.c |   50 +++++++++++++++++++++++++++++----------------
+ 1 file changed, 33 insertions(+), 17 deletions(-)
 
---- a/arch/parisc/kernel/syscall_table.S
-+++ b/arch/parisc/kernel/syscall_table.S
-@@ -392,7 +392,7 @@
- 	ENTRY_COMP(vmsplice)
- 	ENTRY_COMP(move_pages)		/* 295 */
- 	ENTRY_SAME(getcpu)
--	ENTRY_SAME(epoll_pwait)
-+	ENTRY_COMP(epoll_pwait)
- 	ENTRY_COMP(statfs64)
- 	ENTRY_COMP(fstatfs64)
- 	ENTRY_COMP(kexec_load)		/* 300 */
+--- a/drivers/usb/serial/io_ti.c
++++ b/drivers/usb/serial/io_ti.c
+@@ -28,6 +28,7 @@
+ #include <linux/spinlock.h>
+ #include <linux/mutex.h>
+ #include <linux/serial.h>
++#include <linux/swab.h>
+ #include <linux/kfifo.h>
+ #include <linux/ioctl.h>
+ #include <linux/firmware.h>
+@@ -280,7 +281,7 @@ static int read_download_mem(struct usb_
+ {
+ 	int status = 0;
+ 	__u8 read_length;
+-	__be16 be_start_address;
++	u16 be_start_address;
+ 
+ 	dev_dbg(&dev->dev, "%s - @ %x for %d\n", __func__, start_address, length);
+ 
+@@ -296,10 +297,14 @@ static int read_download_mem(struct usb_
+ 		if (read_length > 1) {
+ 			dev_dbg(&dev->dev, "%s - @ %x for %d\n", __func__, start_address, read_length);
+ 		}
+-		be_start_address = cpu_to_be16(start_address);
++		/*
++		 * NOTE: Must use swab as wIndex is sent in little-endian
++		 *       byte order regardless of host byte order.
++		 */
++		be_start_address = swab16((u16)start_address);
+ 		status = ti_vread_sync(dev, UMPC_MEMORY_READ,
+ 					(__u16)address_type,
+-					(__force __u16)be_start_address,
++					be_start_address,
+ 					buffer, read_length);
+ 
+ 		if (status) {
+@@ -394,7 +399,7 @@ static int write_i2c_mem(struct edgeport
+ 	struct device *dev = &serial->serial->dev->dev;
+ 	int status = 0;
+ 	int write_length;
+-	__be16 be_start_address;
++	u16 be_start_address;
+ 
+ 	/* We can only send a maximum of 1 aligned byte page at a time */
+ 
+@@ -409,11 +414,16 @@ static int write_i2c_mem(struct edgeport
+ 		__func__, start_address, write_length);
+ 	usb_serial_debug_data(dev, __func__, write_length, buffer);
+ 
+-	/* Write first page */
+-	be_start_address = cpu_to_be16(start_address);
++	/*
++	 * Write first page.
++	 *
++	 * NOTE: Must use swab as wIndex is sent in little-endian byte order
++	 *       regardless of host byte order.
++	 */
++	be_start_address = swab16((u16)start_address);
+ 	status = ti_vsend_sync(serial->serial->dev,
+ 				UMPC_MEMORY_WRITE, (__u16)address_type,
+-				(__force __u16)be_start_address,
++				be_start_address,
+ 				buffer,	write_length);
+ 	if (status) {
+ 		dev_dbg(dev, "%s - ERROR %d\n", __func__, status);
+@@ -436,11 +446,16 @@ static int write_i2c_mem(struct edgeport
+ 			__func__, start_address, write_length);
+ 		usb_serial_debug_data(dev, __func__, write_length, buffer);
+ 
+-		/* Write next page */
+-		be_start_address = cpu_to_be16(start_address);
++		/*
++		 * Write next page.
++		 *
++		 * NOTE: Must use swab as wIndex is sent in little-endian byte
++		 *       order regardless of host byte order.
++		 */
++		be_start_address = swab16((u16)start_address);
+ 		status = ti_vsend_sync(serial->serial->dev, UMPC_MEMORY_WRITE,
+ 				(__u16)address_type,
+-				(__force __u16)be_start_address,
++				be_start_address,
+ 				buffer, write_length);
+ 		if (status) {
+ 			dev_err(dev, "%s - ERROR %d\n", __func__, status);
+@@ -585,8 +600,8 @@ static int get_descriptor_addr(struct ed
+ 		if (rom_desc->Type == desc_type)
+ 			return start_address;
+ 
+-		start_address = start_address + sizeof(struct ti_i2c_desc)
+-							+ rom_desc->Size;
++		start_address = start_address + sizeof(struct ti_i2c_desc) +
++						le16_to_cpu(rom_desc->Size);
+ 
+ 	} while ((start_address < TI_MAX_I2C_SIZE) && rom_desc->Type);
+ 
+@@ -599,7 +614,7 @@ static int valid_csum(struct ti_i2c_desc
+ 	__u16 i;
+ 	__u8 cs = 0;
+ 
+-	for (i = 0; i < rom_desc->Size; i++)
++	for (i = 0; i < le16_to_cpu(rom_desc->Size); i++)
+ 		cs = (__u8)(cs + buffer[i]);
+ 
+ 	if (cs != rom_desc->CheckSum) {
+@@ -650,7 +665,7 @@ static int check_i2c_image(struct edgepo
+ 			break;
+ 
+ 		if ((start_address + sizeof(struct ti_i2c_desc) +
+-					rom_desc->Size) > TI_MAX_I2C_SIZE) {
++			le16_to_cpu(rom_desc->Size)) > TI_MAX_I2C_SIZE) {
+ 			status = -ENODEV;
+ 			dev_dbg(dev, "%s - structure too big, erroring out.\n", __func__);
+ 			break;
+@@ -665,7 +680,8 @@ static int check_i2c_image(struct edgepo
+ 			/* Read the descriptor data */
+ 			status = read_rom(serial, start_address +
+ 						sizeof(struct ti_i2c_desc),
+-						rom_desc->Size, buffer);
++						le16_to_cpu(rom_desc->Size),
++						buffer);
+ 			if (status)
+ 				break;
+ 
+@@ -674,7 +690,7 @@ static int check_i2c_image(struct edgepo
+ 				break;
+ 		}
+ 		start_address = start_address + sizeof(struct ti_i2c_desc) +
+-								rom_desc->Size;
++						le16_to_cpu(rom_desc->Size);
+ 
+ 	} while ((rom_desc->Type != I2C_DESC_TYPE_ION) &&
+ 				(start_address < TI_MAX_I2C_SIZE));
+@@ -712,7 +728,7 @@ static int get_manuf_info(struct edgepor
+ 
+ 	/* Read the descriptor data */
+ 	status = read_rom(serial, start_address+sizeof(struct ti_i2c_desc),
+-						rom_desc->Size, buffer);
++					le16_to_cpu(rom_desc->Size), buffer);
+ 	if (status)
+ 		goto exit;
+ 
 
 
