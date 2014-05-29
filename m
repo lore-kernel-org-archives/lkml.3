@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932655AbaE2Efl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 00:35:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57999 "EHLO
+	id S934063AbaE2FN6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 01:13:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58048 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932608AbaE2Eff (ORCPT
+	with ESMTP id S932645AbaE2Efl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 00:35:35 -0400
+	Thu, 29 May 2014 00:35:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Lezcano <daniel.lezcano@free.fr>,
-        Patrick McHardy <kaber@trash.net>, Andrian Nord <nightnord@gmail.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Jason Wang <jasowang@redhat.com>, Vlad Yasevich <vyasevic@redhat.com>,
+        Julio Araujo <julio.araujo@wllctel.com.br>,
+        =?UTF-8?q?Bj=F8rn=20Mork?= <bjorn@mork.no>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 103/140] Revert "macvlan : fix checksums error when we are in bridge mode"
-Date: Wed, 28 May 2014 21:34:02 -0700
-Message-Id: <20140529043102.826214901@linuxfoundation.org>
+Subject: [PATCH 3.14 096/140] net: qmi_wwan: add Olivetti Olicard 500
+Date: Wed, 28 May 2014 21:33:55 -0700
+Message-Id: <20140529043101.875975210@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
 In-Reply-To: <20140529043049.661315084@linuxfoundation.org>
 References: <20140529043049.661315084@linuxfoundation.org>
 User-Agent: quilt/0.60-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,59 +31,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vlad Yasevich <vyasevic@redhat.com>
+From: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
 
-[ Upstream commit f114890cdf84d753f6b41cd0cc44ba51d16313da ]
+[ Upstream commit efc0b25c3add97717ece57bf5319792ca98f348e ]
 
-This reverts commit 12a2856b604476c27d85a5f9a57ae1661fc46019.
-The commit above doesn't appear to be necessary any more as the
-checksums appear to be correctly computed/validated.
+Device interface layout:
+0: ff/ff/ff - serial
+1: ff/ff/ff - serial AT+PPP
+2: 08/06/50 - storage
+3: ff/ff/ff - serial
+4: ff/ff/ff - QMI/wwan
 
-Additionally the above commit breaks kvm configurations where
-one VM is using a device that support checksum offload (virtio) and
-the other VM does not.
-In this case, packets leaving virtio device will have CHECKSUM_PARTIAL
-set.  The packets is forwarded to a macvtap that has offload features
-turned off.  Since we use CHECKSUM_UNNECESSARY, the host does does not
-update the checksum and thus a bad checksum is passed up to
-the guest.
-
-CC: Daniel Lezcano <daniel.lezcano@free.fr>
-CC: Patrick McHardy <kaber@trash.net>
-CC: Andrian Nord <nightnord@gmail.com>
-CC: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Michael S. Tsirkin <mst@redhat.com>
-CC: Jason Wang <jasowang@redhat.com>
-Signed-off-by: Vlad Yasevich <vyasevic@redhat.com>
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
-Acked-by: Jason Wang <jasowang@redhat.com>
+Reported-by: Julio Araujo <julio.araujo@wllctel.com.br>
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/macvlan.c |    3 ---
- 1 file changed, 3 deletions(-)
+ drivers/net/usb/qmi_wwan.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/net/macvlan.c
-+++ b/drivers/net/macvlan.c
-@@ -263,11 +263,9 @@ static int macvlan_queue_xmit(struct sk_
- 	const struct macvlan_dev *vlan = netdev_priv(dev);
- 	const struct macvlan_port *port = vlan->port;
- 	const struct macvlan_dev *dest;
--	__u8 ip_summed = skb->ip_summed;
+--- a/drivers/net/usb/qmi_wwan.c
++++ b/drivers/net/usb/qmi_wwan.c
+@@ -736,6 +736,7 @@ static const struct usb_device_id produc
+ 	{QMI_FIXED_INTF(0x1bc7, 0x1200, 5)},	/* Telit LE920 */
+ 	{QMI_FIXED_INTF(0x1bc7, 0x1201, 2)},	/* Telit LE920 */
+ 	{QMI_FIXED_INTF(0x0b3c, 0xc005, 6)},    /* Olivetti Olicard 200 */
++	{QMI_FIXED_INTF(0x0b3c, 0xc00b, 4)},	/* Olivetti Olicard 500 */
+ 	{QMI_FIXED_INTF(0x1e2d, 0x0060, 4)},	/* Cinterion PLxx */
+ 	{QMI_FIXED_INTF(0x1e2d, 0x0053, 4)},	/* Cinterion PHxx,PXxx */
  
- 	if (vlan->mode == MACVLAN_MODE_BRIDGE) {
- 		const struct ethhdr *eth = (void *)skb->data;
--		skb->ip_summed = CHECKSUM_UNNECESSARY;
- 
- 		/* send to other bridge ports directly */
- 		if (is_multicast_ether_addr(eth->h_dest)) {
-@@ -285,7 +283,6 @@ static int macvlan_queue_xmit(struct sk_
- 	}
- 
- xmit_world:
--	skb->ip_summed = ip_summed;
- 	skb->dev = vlan->lowerdev;
- 	return dev_queue_xmit(skb);
- }
 
 
