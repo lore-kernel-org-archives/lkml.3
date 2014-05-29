@@ -1,98 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934429AbaE2JHi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 05:07:38 -0400
-Received: from spostino.sms.unimo.it ([155.185.44.3]:41605 "EHLO
-	spostino.sms.unimo.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933198AbaE2JHe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 05:07:34 -0400
-From: Paolo Valente <paolo.valente@unimore.it>
-To: Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>,
-        Li Zefan <lizefan@huawei.com>
-Cc: Fabio Checconi <fchecconi@gmail.com>,
-        Arianna Avanzini <avanzini.arianna@gmail.com>,
-        Paolo Valente <posta_paolo@yahoo.it>, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        Paolo Valente <paolo.valente@unimore.it>
-Subject: [PATCH RFC - TAKE TWO - 08/12] block, bfq: preserve a low latency also with NCQ-capable drives
-Date: Thu, 29 May 2014 11:05:39 +0200
-Message-Id: <1401354343-5527-9-git-send-email-paolo.valente@unimore.it>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1401354343-5527-1-git-send-email-paolo.valente@unimore.it>
-References: <20140528221929.GG1419@htj.dyndns.org>
- <1401354343-5527-1-git-send-email-paolo.valente@unimore.it>
-UNIMORE-X-SA-Score: -2.9
+	id S964848AbaE2JHz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 05:07:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53088 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933198AbaE2JHx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 05:07:53 -0400
+Date: Thu, 29 May 2014 17:09:13 +0800
+From: Dave Young <dyoung@redhat.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: matt.fleming@intel.com, bp@alien8.de, linux-kernel@vger.kernel.org,
+        linux-efi@vger.kernel.org
+Subject: Re: [PATCH] export efi.flags to sysfs
+Message-ID: <20140529090913.GK2068@darkstar.nay.redhat.com>
+References: <20140526083935.GA19682@dhcp-16-198.nay.redhat.com>
+ <20140527133411.GG10994@redhat.com>
+ <20140528021359.GC2820@darkstar.nay.redhat.com>
+ <20140528124029.GF14863@redhat.com>
+ <20140529020837.GB2068@darkstar.nay.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140529020837.GB2068@darkstar.nay.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I/O schedulers typically allow NCQ-capable drives to prefetch I/O
-requests, as NCQ boosts the throughput exactly by prefetching and
-internally reordering requests.
+On 05/29/14 at 10:08am, Dave Young wrote:
+> On 05/28/14 at 08:40am, Vivek Goyal wrote:
+> > On Wed, May 28, 2014 at 10:13:59AM +0800, Dave Young wrote:
+> > > On 05/27/14 at 09:34am, Vivek Goyal wrote:
+> > > > On Mon, May 26, 2014 at 04:39:35PM +0800, Dave Young wrote:
+> > > > > 
+> > > > > For efi=old_map and any old_map quirks like SGI UV in current
+> > > > > tree kexec/kdump will fail because it depends on the new 1:1 mapping.
+> > > > > 
+> > > > > Thus export the mapping method to sysfs so kexec tools can switch
+> > > > > to original way to boot.
+> > > > > 
+> > > > > Since we have efi.flags for all efi facilities so let's just export the
+> > > > > efi.flags itself, it maybe useful for other arches and use cases.
+> > > > > 
+> > > > 
+> > > > Does it require any documentation in Documentation/ABI/..
+> > > 
+> > > Yes, it's necessary. Will do in next version.
+> > > 
+> > > I'm still discussing with Matt, exporting efi.flags seems not a good way
+> > > because they are more internal interfaces. 
+> > > 
+> > > Probably I should export only a file 'old_map' instead.
+> > 
+> > How does /sys/firmware/efi/runtime-map/* look like with old mapping? Can't
+> > we look at it and figure out if it is 1:1 or not.
+> 
+> There's phys_addr and virt_addr, (virt_addr - phys_addr) will always be
+> -64G for 1:1 map, ioremapped addresses space is different.
+> 
+> So this is a good idea, we can do this way to avoid more ABI.
 
-Unfortunately, as discussed in detail and shown experimentally in [1],
-this may cause fairness and latency guarantees to be violated. The
-main problem is that the internal scheduler of an NCQ-capable drive
-may postpone the service of some unlucky (prefetched) requests as long
-as it deems serving other requests more appropriate to boost the
-throughput.
+Thinking more about it. There's another another way. ioremapped addresses can not
+be garanteed to be same in 2nd kernel, but for same kernel it's usually are same
+so in 2nd kernel just try ioremap the regions again hopefully it will work.
+At lease it works for me before Boris's patchset. So user can do some test if it
+works then just use it as is. If kexec/kdump test failed he can switch to use
+--noefi in userspace. Like below patch:
 
-This patch addresses this issue by not disabling device idling for
-weight-raised queues, even if the device supports NCQ. This allows BFQ
-to start serving a new queue, and therefore allows the drive to
-prefetch new requests, only after the idling timeout expires. At that
-time, all the outstanding requests of the expired queue have been most
-certainly served.
 
-[1] P. Valente and M. Andreolini, "Improving Application
-    Responsiveness with the BFQ Disk I/O Scheduler", Proceedings of
-    the 5th Annual International Systems and Storage Conference
-    (SYSTOR '12), June 2012.
-    Slightly extended version:
-http://www.algogroup.unimo.it/people/paolo/disk_sched/bf1-v1-suite-results.pdf
+Subject: [PATCH 2/2] x86: kexec efi boot use ioremap in case efi=old_map
 
-Signed-off-by: Paolo Valente <paolo.valente@unimore.it>
-Signed-off-by: Arianna Avanzini <avanzini.arianna@gmail.com>
+In case efi=old_map or quirked system which use old ioremap kexec should
+hopefully work for same kernel but it is not garanteed to be true.
+
+It will help if one has to use old_map and he want kexec support as well.
+At the same time he has succesfully tested the kexec boot. If it does not
+work then user can switch to use kexec --noefi in userspace instead.
+
+Signed-off-by: Dave Young <dyoung@redhat.com>
 ---
- block/bfq-iosched.c | 5 +++--
- block/bfq.h         | 2 +-
- 2 files changed, 4 insertions(+), 3 deletions(-)
+ arch/x86/platform/efi/efi.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/block/bfq-iosched.c b/block/bfq-iosched.c
-index 661f948..0b24130 100644
---- a/block/bfq-iosched.c
-+++ b/block/bfq-iosched.c
-@@ -2051,7 +2051,8 @@ static void bfq_update_idle_window(struct bfq_data *bfqd,
+diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+index 3781dd3..d2eaa6f 100644
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -1030,7 +1030,11 @@ static void __init kexec_enter_virtual_mode(void)
+ 	*/
+ 	for (p = memmap.map; p < memmap.map_end; p += memmap.desc_size) {
+ 		md = p;
+-		efi_map_region_fixed(md); /* FIXME: add error handling */
++		/* For ioremapped ranges it will hopefully work with same kernel. */
++		if (efi_enabled(EFI_OLD_MEMMAP))
++			old_map_region(md);
++		else
++			efi_map_region_fixed(md); /* FIXME: add error handling */
+ 		get_systab_virt_addr(md);
+ 	}
  
- 	if (atomic_read(&bic->icq.ioc->active_ref) == 0 ||
- 	    bfqd->bfq_slice_idle == 0 ||
--		(bfqd->hw_tag && BFQQ_SEEKY(bfqq)))
-+		(bfqd->hw_tag && BFQQ_SEEKY(bfqq) &&
-+			bfqq->wr_coeff == 1))
- 		enable_idle = 0;
- 	else if (bfq_sample_valid(bic->ttime.ttime_samples)) {
- 		if (bic->ttime.ttime_mean > bfqd->bfq_slice_idle &&
-@@ -2874,7 +2875,7 @@ static int __init bfq_init(void)
- 	device_speed_thresh[1] = (R_fast[1] + R_slow[1]) / 2;
- 
- 	elv_register(&iosched_bfq);
--	pr_info("BFQ I/O-scheduler version: v1");
-+	pr_info("BFQ I/O-scheduler version: v2");
- 
- 	return 0;
- }
-diff --git a/block/bfq.h b/block/bfq.h
-index 5fa8b34..3b5763a7 100644
---- a/block/bfq.h
-+++ b/block/bfq.h
-@@ -1,5 +1,5 @@
- /*
-- * BFQ-v1 for 3.15.0: data structures and common functions prototypes.
-+ * BFQ-v2 for 3.15.0: data structures and common functions prototypes.
-  *
-  * Based on ideas and code from CFQ:
-  * Copyright (C) 2003 Jens Axboe <axboe@kernel.dk>
--- 
-1.9.2
-
