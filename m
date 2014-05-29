@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756749AbaE2Ewn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 00:52:43 -0400
+	id S1756766AbaE2ExA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 00:53:00 -0400
 Received: from mail.linuxfoundation.org ([140.211.169.12]:58565 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933159AbaE2Eid (ORCPT
+	with ESMTP id S933154AbaE2Eid (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 29 May 2014 00:38:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Julian Anastasov <ja@ssi.bg>, "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 49/86] ipv4: return valid RTA_IIF on ip route get
-Date: Wed, 28 May 2014 21:37:24 -0700
-Message-Id: <20140529043520.126242226@linuxfoundation.org>
+        Chuansheng Liu <chuansheng.liu@intel.com>,
+        Zhang Dongxing <dongxing.zhang@intel.com>,
+        xiaoming wang <xiaoming.wang@intel.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 48/86] net: ipv4: current group_info should be put after using.
+Date: Wed, 28 May 2014 21:37:23 -0700
+Message-Id: <20140529043519.988480377@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
 In-Reply-To: <20140529043513.451722422@linuxfoundation.org>
 References: <20140529043513.451722422@linuxfoundation.org>
@@ -26,35 +29,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Julian Anastasov <ja@ssi.bg>
+From: "Wang, Xiaoming" <xiaoming.wang@intel.com>
 
-[ Upstream commit 91146153da2feab18efab2e13b0945b6bb704ded ]
+[ Upstream commit b04c46190219a4f845e46a459e3102137b7f6cac ]
 
-Extend commit 13378cad02afc2adc6c0e07fca03903c7ada0b37
-("ipv4: Change rt->rt_iif encoding.") from 3.6 to return valid
-RTA_IIF on 'ip route get ... iif DEVICE' instead of rt_iif 0
-which is displayed as 'iif *'.
+Plug a group_info refcount leak in ping_init.
+group_info is only needed during initialization and
+the code failed to release the reference on exit.
+While here move grabbing the reference to a place
+where it is actually needed.
 
-inet_iif is not appropriate to use because skb_iif is not set.
-Use the skb->dev->ifindex instead.
-
-Signed-off-by: Julian Anastasov <ja@ssi.bg>
+Signed-off-by: Chuansheng Liu <chuansheng.liu@intel.com>
+Signed-off-by: Zhang Dongxing <dongxing.zhang@intel.com>
+Signed-off-by: xiaoming wang <xiaoming.wang@intel.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/route.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/ipv4/ping.c |   15 +++++++++++----
+ 1 file changed, 11 insertions(+), 4 deletions(-)
 
---- a/net/ipv4/route.c
-+++ b/net/ipv4/route.c
-@@ -2306,7 +2306,7 @@ static int rt_fill_info(struct net *net,
- 			}
- 		} else
- #endif
--			if (nla_put_u32(skb, RTA_IIF, rt->rt_iif))
-+			if (nla_put_u32(skb, RTA_IIF, skb->dev->ifindex))
- 				goto nla_put_failure;
+--- a/net/ipv4/ping.c
++++ b/net/ipv4/ping.c
+@@ -204,26 +204,33 @@ static int ping_init_sock(struct sock *s
+ {
+ 	struct net *net = sock_net(sk);
+ 	kgid_t group = current_egid();
+-	struct group_info *group_info = get_current_groups();
+-	int i, j, count = group_info->ngroups;
++	struct group_info *group_info;
++	int i, j, count;
+ 	kgid_t low, high;
++	int ret = 0;
+ 
+ 	inet_get_ping_group_range_net(net, &low, &high);
+ 	if (gid_lte(low, group) && gid_lte(group, high))
+ 		return 0;
+ 
++	group_info = get_current_groups();
++	count = group_info->ngroups;
+ 	for (i = 0; i < group_info->nblocks; i++) {
+ 		int cp_count = min_t(int, NGROUPS_PER_BLOCK, count);
+ 		for (j = 0; j < cp_count; j++) {
+ 			kgid_t gid = group_info->blocks[i][j];
+ 			if (gid_lte(low, gid) && gid_lte(gid, high))
+-				return 0;
++				goto out_release_group;
+ 		}
+ 
+ 		count -= cp_count;
  	}
  
+-	return -EACCES;
++	ret = -EACCES;
++
++out_release_group:
++	put_group_info(group_info);
++	return ret;
+ }
+ 
+ static void ping_close(struct sock *sk, long timeout)
 
 
