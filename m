@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934477AbaE2F2M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 01:28:12 -0400
+	id S1756376AbaE2EfM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 00:35:12 -0400
 Received: from mail.linuxfoundation.org ([140.211.169.12]:57806 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756375AbaE2EfM (ORCPT
+	with ESMTP id S1756339AbaE2EfK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 00:35:12 -0400
+	Thu, 29 May 2014 00:35:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Thomas=20B=C3=A4chler?= <thomas@archlinux.org>,
-        Tejun Heo <tj@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Alexandre Demers <alexandre.f.demers@gmail.com>
-Subject: [PATCH 3.14 053/140] fs: Dont return 0 from get_anon_bdev
-Date: Wed, 28 May 2014 21:33:12 -0700
-Message-Id: <20140529043056.256883830@linuxfoundation.org>
+        Julio Araujo <julio.araujo@wllctel.com.br>,
+        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
+Subject: [PATCH 3.14 048/140] usb: option: add Olivetti Olicard 500
+Date: Wed, 28 May 2014 21:33:07 -0700
+Message-Id: <20140529043055.592610881@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
 In-Reply-To: <20140529043049.661315084@linuxfoundation.org>
 References: <20140529043049.661315084@linuxfoundation.org>
@@ -31,44 +30,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Thomas=20B=C3=A4chler?= <thomas@archlinux.org>
+From: Bjørn Mork <bjorn@mork.no>
 
-commit a2a4dc494a7b7135f460e38e788c4a58f65e4ac3 upstream.
+commit 533b3994610f316e5cd61b56d0c4daa15c830f89 upstream.
 
-Commit 9e30cc9595303b27b48 removed an internal mount. This
-has the side-effect that rootfs now has FSID 0. Many
-userspace utilities assume that st_dev in struct stat
-is never 0, so this change breaks a number of tools in
-early userspace.
+Device interface layout:
+0: ff/ff/ff - serial
+1: ff/ff/ff - serial AT+PPP
+2: 08/06/50 - storage
+3: ff/ff/ff - serial
+4: ff/ff/ff - QMI/wwan
 
-Since we don't know how many userspace programs are affected,
-make sure that FSID is at least 1.
-
-References: http://article.gmane.org/gmane.linux.kernel/1666905
-References: http://permalink.gmane.org/gmane.linux.utilities.util-linux-ng/8557
-Signed-off-by: Thomas Bächler <thomas@archlinux.org>
-Acked-by: Tejun Heo <tj@kernel.org>
-Acked-by: H. Peter Anvin <hpa@zytor.com>
-Tested-by: Alexandre Demers <alexandre.f.demers@gmail.com>
+Reported-by: Julio Araujo <julio.araujo@wllctel.com.br>
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/super.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/usb/serial/option.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/fs/super.c
-+++ b/fs/super.c
-@@ -802,7 +802,10 @@ void emergency_remount(void)
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -349,6 +349,7 @@ static void option_instat_callback(struc
+ #define OLIVETTI_PRODUCT_OLICARD100		0xc000
+ #define OLIVETTI_PRODUCT_OLICARD145		0xc003
+ #define OLIVETTI_PRODUCT_OLICARD200		0xc005
++#define OLIVETTI_PRODUCT_OLICARD500		0xc00b
  
- static DEFINE_IDA(unnamed_dev_ida);
- static DEFINE_SPINLOCK(unnamed_dev_lock);/* protects the above */
--static int unnamed_dev_start = 0; /* don't bother trying below it */
-+/* Many userspace utilities consider an FSID of 0 invalid.
-+ * Always return at least 1 from get_anon_bdev.
-+ */
-+static int unnamed_dev_start = 1;
- 
- int get_anon_bdev(dev_t *p)
- {
+ /* Celot products */
+ #define CELOT_VENDOR_ID				0x211f
+@@ -1545,6 +1546,9 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD200),
+ 		.driver_info = (kernel_ulong_t)&net_intf6_blacklist
+ 	},
++	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD500),
++		.driver_info = (kernel_ulong_t)&net_intf4_blacklist
++	},
+ 	{ USB_DEVICE(CELOT_VENDOR_ID, CELOT_PRODUCT_CT680M) }, /* CT-650 CDMA 450 1xEVDO modem */
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(SAMSUNG_VENDOR_ID, SAMSUNG_PRODUCT_GT_B3730, USB_CLASS_CDC_DATA, 0x00, 0x00) }, /* Samsung GT-B3730 LTE USB modem.*/
+ 	{ USB_DEVICE(YUGA_VENDOR_ID, YUGA_PRODUCT_CEM600) },
 
 
