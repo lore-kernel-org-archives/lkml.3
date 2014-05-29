@@ -1,47 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757192AbaE2KQf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 06:16:35 -0400
-Received: from mail-ve0-f180.google.com ([209.85.128.180]:61924 "EHLO
-	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757166AbaE2KQd (ORCPT
+	id S1756853AbaE2KUi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 06:20:38 -0400
+Received: from eddie.linux-mips.org ([78.24.191.182]:36929 "EHLO
+	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756095AbaE2KUh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 06:16:33 -0400
+	Thu, 29 May 2014 06:20:37 -0400
+Date: Thu, 29 May 2014 12:20:25 +0200
+From: Ralf Baechle <ralf@linux-mips.org>
+To: Li Zefan <lizefan@huawei.com>
+Cc: Aaro Koskinen <aaro.koskinen@iki.fi>,
+        Yong Zhang <yong.zhang@windriver.com>, huawei.libin@huawei.com,
+        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
+        Xinwei Hu <huxinwei@huawei.com>
+Subject: Re: [PATCH V2] MIPS: change type of asid_cache to unsigned long
+Message-ID: <20140529102025.GF5157@linux-mips.org>
+References: <1400650563-1033-1-git-send-email-yong.zhang@windriver.com>
+ <5384119E.7010606@huawei.com>
+ <20140528200929.GA30528@drone.musicnaut.iki.fi>
+ <5386F663.4010401@huawei.com>
 MIME-Version: 1.0
-In-Reply-To: <1400482268-4971-1-git-send-email-acourbot@nvidia.com>
-References: <1400482268-4971-1-git-send-email-acourbot@nvidia.com>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Thu, 29 May 2014 19:16:11 +0900
-Message-ID: <CAAVeFuLHjwjQPB+O3WExKjDQ+ZxFzxi_P3Pr1WuqwK5ApcFJ3w@mail.gmail.com>
-Subject: Re: [PATCH 0/2] drm/gk20a: FB fixes
-To: Alexandre Courbot <acourbot@nvidia.com>
-Cc: Ben Skeggs <bskeggs@redhat.com>,
-        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5386F663.4010401@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ben, I am withdrawing this series as it will be superseeded by a new
-version. You probably did not intend to merge it, but just in case. :)
+On Thu, May 29, 2014 at 04:57:07PM +0800, Li Zefan wrote:
 
-On Mon, May 19, 2014 at 3:51 PM, Alexandre Courbot <acourbot@nvidia.com> wrote:
-> Fix a very shameful memory leak and a compilation error due to the use of
-> non-exported CMA functions. The workaround for the latter is not really elegant
-> (replace the CMA functions by a runtime failure if we are compiled as a
-> module), but is temporary and still an improvement over the current situation
-> (compile error).
->
-> Alexandre Courbot (2):
->   drm/gk20a/fb: fix huge memory leak
->   drm/gk20a/fb: fix compile error whith CMA and module
->
->  drivers/gpu/drm/nouveau/core/subdev/fb/ramgk20a.c | 95 ++++++++++++++++-------
->  1 file changed, 67 insertions(+), 28 deletions(-)
->
-> --
-> 1.9.2
->
+> I don't think Ralf has committed it, so we'll send out a fix
+> with detailed changelog.
+
+It's queued to go upstream, commit e5eb925a1804c4a52994ba57f4f68ee7a9132905.
+
+  Ralf
