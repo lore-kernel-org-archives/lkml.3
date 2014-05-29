@@ -1,323 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755670AbaE2DD6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 May 2014 23:03:58 -0400
-Received: from mga01.intel.com ([192.55.52.88]:36491 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755376AbaE2DD4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 May 2014 23:03:56 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,932,1392192000"; 
-   d="scan'208";a="546521554"
-Subject: Re: [PATCH char-misc-next 2/8] misc: mic: add a bus driver for
- virtual MIC devices
-From: Sudeep Dutt <sudeep.dutt@intel.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: sudeep.dutt@intel.com, Dan Williams <dan.j.williams@intel.com>,
-        Siva Yerramreddy <yshivakrishna@gmail.com>,
-        Ashutosh Dixit <ashutosh.dixit@intel.com>,
-        Nikhil Rao <nikhil.rao@intel.com>, linux-kernel@vger.kernel.org,
-        dmaengine@vger.kernel.org
-In-Reply-To: <20140528205049.GA10468@kroah.com>
-References: <cover.1401239759.git.sudeep.dutt@intel.com>
-	 <07b374763197000963b1161e0fce0c3254ce8a0d.1401239759.git.sudeep.dutt@intel.com>
-	 <20140528205049.GA10468@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 28 May 2014 19:56:35 -0700
-Message-ID: <1401332195.18473.42.camel@rbtaylor-desk1.amr.corp.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-30.el6) 
+	id S932228AbaE2DEk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 May 2014 23:04:40 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:51223 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755730AbaE2DEh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 May 2014 23:04:37 -0400
+X-IronPort-AV: E=Sophos;i="4.98,932,1392134400"; 
+   d="scan'208";a="31163529"
+Message-ID: <5386A147.6010602@cn.fujitsu.com>
+Date: Thu, 29 May 2014 10:53:59 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+MIME-Version: 1.0
+To: Greg KH <greg@kroah.com>
+CC: <stable@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        tangchen <tangchen@cn.fujitsu.com>
+Subject: Re: [stable-3.10.y] possible unsafe locking warning
+References: <5385B52A.7050106@cn.fujitsu.com> <20140528142637.GB24250@kroah.com>
+In-Reply-To: <20140528142637.GB24250@kroah.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.226.100]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-05-28 at 13:50 -0700, Greg Kroah-Hartman wrote: 
-> On Tue, May 27, 2014 at 07:36:11PM -0700, Sudeep Dutt wrote:
-> > +int register_mbus_driver(struct mbus_driver *driver)
-> > +{
-> > +	driver->driver.bus = &mic_bus;
-> > +	return driver_register(&driver->driver);
-> > +}
-> > +EXPORT_SYMBOL_GPL(register_mbus_driver);
-> 
-> mbus_register_driver()?
-> 
+Hi Greg,
 
-The idea was to follow the register_virtio_driver(..) naming convention
-but will rename as your suggestion is better.
+On 05/28/2014 10:26 PM, Greg KH wrote:
 
-> > +void unregister_mbus_driver(struct mbus_driver *driver)
-> > +{
-> > +	driver_unregister(&driver->driver);
-> > +}
-> > +EXPORT_SYMBOL_GPL(unregister_mbus_driver);
+> On Wed, May 28, 2014 at 06:06:34PM +0800, Gu Zheng wrote:
+>> Hi all,
+>> When offline the whole memory of a movable numa node on kernel stable-3.10-y,
+>> the following possible deadlock warning occurs.
+>>
+>> [ 2457.467359] 
+>> [ 2457.485175] =================================
+>> [ 2457.537325] [ INFO: inconsistent lock state ]
+>> [ 2457.589476] 3.10.39+ #4 Not tainted
+>> [ 2457.631218] ---------------------------------
+>> [ 2457.683370] inconsistent {RECLAIM_FS-ON-W} -> {IN-RECLAIM_FS-R} usage.
+>> [ 2457.761540] kswapd2/1151 [HC0[0]:SC0[0]:HE1:SE1] takes:
+>> [ 2457.824102]  (&sig->group_rwsem){+++++?}, at: [<ffffffff81071864>] exit_signals+0x24/0x130
+>> [ 2457.923538] {RECLAIM_FS-ON-W} state was registered at:
+>> [ 2457.985055]   [<ffffffff810bfc99>] mark_held_locks+0xb9/0x140
+>> [ 2458.053976]   [<ffffffff810c1e3a>] lockdep_trace_alloc+0x7a/0xe0
+>> [ 2458.126015]   [<ffffffff81194f47>] kmem_cache_alloc_trace+0x37/0x240
+>> [ 2458.202214]   [<ffffffff812c6e89>] flex_array_alloc+0x99/0x1a0
+>> [ 2458.272175]   [<ffffffff810da563>] cgroup_attach_task+0x63/0x430
+>> [ 2458.344214]   [<ffffffff810dcca0>] attach_task_by_pid+0x210/0x280
+>> [ 2458.417294]   [<ffffffff810dcd26>] cgroup_procs_write+0x16/0x20
+>> [ 2458.488287]   [<ffffffff810d8410>] cgroup_file_write+0x120/0x2c0
+>> [ 2458.560320]   [<ffffffff811b21a0>] vfs_write+0xc0/0x1f0
+>> [ 2458.622994]   [<ffffffff811b2bac>] SyS_write+0x4c/0xa0
+>> [ 2458.684618]   [<ffffffff815ec3c0>] tracesys+0xdd/0xe2
+>> [ 2458.745214] irq event stamp: 49
+>> [ 2458.782794] hardirqs last  enabled at (49): [<ffffffff815e2b56>] _raw_spin_unlock_irqrestore+0x36/0x70
+>> [ 2458.894388] hardirqs last disabled at (48): [<ffffffff815e337b>] _raw_spin_lock_irqsave+0x2b/0xa0
+>> [ 2459.000771] softirqs last  enabled at (0): [<ffffffff81059247>] copy_process.part.24+0x627/0x15f0
+>> [ 2459.107161] softirqs last disabled at (0): [<          (null)>]           (null)
+>> [ 2459.195852] 
+>> [ 2459.195852] other info that might help us debug this:
+>> [ 2459.274024]  Possible unsafe locking scenario:
+>> [ 2459.274024] 
+>> [ 2459.344911]        CPU0
+>> [ 2459.374161]        ----
+>> [ 2459.403408]   lock(&sig->group_rwsem);
+>> [ 2459.448490]   <Interrupt>
+>> [ 2459.479825]     lock(&sig->group_rwsem);
+>> [ 2459.526979] 
+>> [ 2459.526979]  *** DEADLOCK ***
+>> [ 2459.526979] 
+>> [ 2459.597866] no locks held by kswapd2/1151.
+>> [ 2459.646896] 
+>> [ 2459.646896] stack backtrace:
+>> [ 2459.699049] CPU: 30 PID: 1151 Comm: kswapd2 Not tainted 3.10.39+ #4
+>> [ 2459.774098] Hardware name: FUJITSU PRIMEQUEST2800E/SB, BIOS PRIMEQUEST 2000 Series BIOS Version 01.48 05/07/2014
+>> [ 2459.895983]  ffffffff82284bf0 ffff88085856bbf8 ffffffff815dbcf6 ffff88085856bc48
+>> [ 2459.985003]  ffffffff815d67c6 0000000000000000 ffff880800000001 ffff880800000001
+>> [ 2460.074024]  000000000000000a ffff88085edc9600 ffffffff810be0e0 0000000000000009
+>> [ 2460.163087] Call Trace:
+>> [ 2460.192345]  [<ffffffff815dbcf6>] dump_stack+0x19/0x1b
+>> [ 2460.253874]  [<ffffffff815d67c6>] print_usage_bug+0x1f7/0x208
+>> [ 2460.322679]  [<ffffffff810be0e0>] ? check_usage_backwards+0x160/0x160
+>> [ 2460.399807]  [<ffffffff810bfb5d>] mark_lock+0x21d/0x2a0
+>> [ 2460.462369]  [<ffffffff810c076a>] __lock_acquire+0x52a/0xb60
+>> [ 2460.530136]  [<ffffffff8101acd3>] ? native_sched_clock+0x13/0x80
+>> [ 2460.602065]  [<ffffffff8101ad49>] ? sched_clock+0x9/0x10
+>> [ 2460.665668]  [<ffffffff81096f05>] ? sched_clock_cpu+0xb5/0x100
+>> [ 2460.735516]  [<ffffffff810c1592>] lock_acquire+0xa2/0x140
+>> [ 2460.800156]  [<ffffffff81071864>] ? exit_signals+0x24/0x130
+>> [ 2460.866885]  [<ffffffff81158ca0>] ? balance_pgdat+0x5e0/0x5e0
+>> [ 2460.935691]  [<ffffffff815e01e1>] down_read+0x51/0xa0
+>> [ 2460.996166]  [<ffffffff81071864>] ? exit_signals+0x24/0x130
+>> [ 2461.062888]  [<ffffffff81071864>] exit_signals+0x24/0x130
+>> [ 2461.127536]  [<ffffffff81060d55>] do_exit+0xb5/0xa50
+>> [ 2461.186976]  [<ffffffff810841e0>] ? wake_up_bit+0x30/0x30
+>> [ 2461.251629]  [<ffffffff81158ca0>] ? balance_pgdat+0x5e0/0x5e0
+>> [ 2461.320433]  [<ffffffff8108303b>] kthread+0xdb/0x100
+>> [ 2461.379870]  [<ffffffff815e12eb>] ? wait_for_completion+0x3b/0x110
+>> [ 2461.453879]  [<ffffffff81082f60>] ? kthread_create_on_node+0x140/0x140
+>> [ 2461.532049]  [<ffffffff815ec0ec>] ret_from_fork+0x7c/0xb0
+>> [ 2461.596689]  [<ffffffff81082f60>] ? kthread_create_on_node+0x140/0x140
+>>
+>> And when reference to the related code(kernel-3.10.y), it seems that cgroup_attach_task(thread-2,
+>> attach kswapd) trigger kswapd(reclaim memory?) when trying to alloc memory(flex_array_alloc) under
+>> the protection of sig->group_rwsem, but meanwhile the kswapd(thread-1) is in the exit routine
+>> (because it was marked SHOULD STOP when offline pages completed), which needs to acquire
+>> sig->group_rwsem in exit_signals(), so the deadlock occurs.
+>>
+>>        thread-1                           			 |            thread-2
+>>                                                                  |
+>> __offline_pages():                                               | system_call_fastpath()
+>> |-> kswapd_stop(node);                                           | |-> ......
+>>     |-> kthread_stop(kswapd)                                     | |-> cgroup_file_write()
+>>         |-> set_bit(KTHREAD_SHOULD_STOP, &kthread->flags);       | |-> ......
+>>         |-> wake_up_process(k)                                   | |-> attach_task_by_pid()
+>>             |                                                    |     |-> threadgroup_lock(tsk)
+>> |<----------|                                                    |        // Here, got the lock.
+>> |-> kswapd()                                                     |    |-> ...
+>>     |-> if (kthread_should_stop())                               |     |-> cgroup_attach_task()
+>>             return;                                              |         |-> flex_array_alloc()
+>>             |                                                    |             |-> kzalloc()
+>> |<----------|                                                    |                |-> wait for kswapd to reclaim memory
+>> |-> kthread()                                                    |
+>>     |-> do_exit(ret)                                             |
+>>         |-> exit_signals()                                       |
+>>             |-> threadgroup_change_begin(tsk)                    |
+>>                 |-> down_read(&tsk->signal->group_rwsem)         |
+>>                     // Here, acquire the lock. 
+>>
+>> If my analysis is correct, the latest kernel may have the same issue, though the flex_array was replaced
+>> by list, but we still need to alloc memory(e.g. in find_css_set()), so the race may still occur.
+>> Any comments about this? If I missed something, please correct me.:)
 > 
-> mbus_unregister_driver()?
+> Can you test the latest kernel release to verify this?  There's nothing
+> we can do to an old kernel version that isn't already fixed in upstream
+> first.
 
-Will rename.
+There is another lockdep warning in the booting stage with the latest kernel, so
+I can not verify this issue on it now.
 
-> 
-> > +int register_mbus_device(struct mbus_device *dev)
-> 
-> mbus_register_device()?
-> 
-> Trying to keep the kernel namespace sane.
-
-Will rename.
-
-> 
-> Why doesn't this function create the device structure?
-> 
-
-The mbus_device containing the device structure is allocated by the
-driver calling this API. However that creates other issues as you
-highlighted below. It is better to allocate mbus_device here so that it
-can be freed in the device release callback correctly by the bus driver.
-
-> > +{
-> > +	int err;
-> > +
-> > +	dev->dev.bus = &mic_bus;
-> > +
-> > +	/* Assign a unique device index and hence name. */
-> > +	err = ida_simple_get(&mbus_index_ida, 0, 0, GFP_KERNEL);
-> > +	if (err < 0)
-> > +		return err;
-> > +
-> > +	dev->index = err;
-> > +	dev_set_name(&dev->dev, "mbus-dev%u", dev->index);
-> > +	/*
-> > +	 * device_register() causes the bus infrastructure to look for a
-> > +	 * matching driver.
-> > +	 */
-> > +	err = device_register(&dev->dev);
-> > +	return err;
-> > +}
-> > +EXPORT_SYMBOL_GPL(register_mbus_device);
-> > +
-> > +void unregister_mbus_device(struct mbus_device *dev)
-> > +{
-> > +	int index = dev->index; /* save for after device release */
-> > +
-> > +	device_unregister(&dev->dev);
-> > +	ida_simple_remove(&mbus_index_ida, index);
-> > +}
-> > +EXPORT_SYMBOL_GPL(unregister_mbus_device);
-> > +
-> > +static int __init mbus_init(void)
-> > +{
-> > +	return bus_register(&mic_bus);
-> > +}
-> > +
-> > +static void __exit mbus_exit(void)
-> > +{
-> > +	bus_unregister(&mic_bus);
-> > +}
-> > +
-> > +core_initcall(mbus_init);
-> > +module_exit(mbus_exit);
-> > +
-> > +MODULE_AUTHOR("Intel Corporation");
-> > +MODULE_DESCRIPTION("Intel(R) MIC Bus driver");
-> > +MODULE_LICENSE("GPL v2");
-> > diff --git a/include/linux/mic_bus.h b/include/linux/mic_bus.h
-> > new file mode 100644
-> > index 0000000..8297573
-> > --- /dev/null
-> > +++ b/include/linux/mic_bus.h
-> > @@ -0,0 +1,148 @@
-> > +/*
-> > + * Intel MIC Platform Software Stack (MPSS)
-> > + *
-> > + * Copyright(c) 2014 Intel Corporation.
-> > + *
-> > + * This program is free software; you can redistribute it and/or modify
-> > + * it under the terms of the GNU General Public License, version 2, as
-> > + * published by the Free Software Foundation.
-> > + *
-> > + * This program is distributed in the hope that it will be useful, but
-> > + * WITHOUT ANY WARRANTY; without even the implied warranty of
-> > + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-> > + * General Public License for more details.
-> > + *
-> > + * The full GNU General Public License is included in this distribution in
-> > + * the file called "COPYING".
-> > + *
-> > + * Intel MIC Bus driver.
-> > + *
-> > + * This implementation is very similar to the the virtio bus driver
-> > + * implementation @ include/linux/virtio.h.
-> > + */
-> > +#ifndef _MIC_BUS_H_
-> > +#define _MIC_BUS_H_
-> > +/*
-> > + * Everything a mbus driver needs to work with any particular mbus
-> > + * implementation.
-> > + */
-> > +#include <linux/types.h>
-> > +#include <linux/device.h>
-> > +#include <linux/mod_devicetable.h>
-> > +#include <linux/interrupt.h>
-> > +#include <linux/dma-mapping.h>
-> > +
-> > +struct mbus_device_id {
-> > +	__u32 device;
-> > +	__u32 vendor;
-> > +};
-> > +
-> > +#define MBUS_DEV_DMA_HOST 2
-> > +#define MBUS_DEV_DMA_MIC 3
-> > +#define MBUS_DEV_ANY_ID 0xffffffff
-> > +
-> > +/**
-> > + * mbus_device - representation of a device using mbus
-> > + * @priv: private pointer for the driver's use.
-> > + * @mmio_va: virtual address of mmio space
-> > + * @hw_ops: the hardware ops supported by this device.
-> > + * @id: the device type identification (used to match it with a driver).
-> > + * @dev: underlying device.
-> > + * be used to communicate with.
-> > + * @index: unique position on the mbus bus
-> > + */
-> > +struct mbus_device {
-> > +	void *priv;
-> > +	void __iomem *mmio_va;
-> > +	struct mbus_hw_ops *hw_ops;
-> > +	struct mbus_device_id id;
-> > +	struct device dev;
-> > +	int index;
-> > +};
-> > +
-> > +/**
-> > + * mbus_driver - operations for a mbus I/O driver
-> > + * @driver: underlying device driver (populate name and owner).
-> > + * @id_table: the ids serviced by this driver.
-> > + * @probe: the function to call when a device is found.  Returns 0 or -errno.
-> > + * @remove: the function to call when a device is removed.
-> > + */
-> > +struct mbus_driver {
-> > +	struct device_driver driver;
-> > +	const struct mbus_device_id *id_table;
-> > +	int (*probe)(struct mbus_device *dev);
-> > +	void (*scan)(struct mbus_device *dev);
-> > +	void (*remove)(struct mbus_device *dev);
-> > +};
-> > +
-> > +/**
-> > + * struct mic_irq - opaque pointer used as cookie
-> > + */
-> > +struct mic_irq;
-> > +
-> > +/**
-> > + * mbus_hw_ops - Hardware operations for accessing a MIC device on the MIC bus.
-> > + */
-> > +struct mbus_hw_ops {
-> > +	struct mic_irq* (*request_threaded_irq)(struct mbus_device *mbdev,
-> > +			irq_handler_t handler, irq_handler_t thread_fn,
-> > +			const char *name, void *data, int intr_src);
-> > +	void (*free_irq)(struct mbus_device *mbdev,
-> > +			struct mic_irq *cookie, void *data);
-> > +	void (*ack_interrupt)(struct mbus_device *mbdev, int num);
-> > +};
-> > +
-> > +int register_mbus_device(struct mbus_device *dev);
-> > +void unregister_mbus_device(struct mbus_device *dev);
-> > +
-> > +int register_mbus_driver(struct mbus_driver *drv);
-> > +void unregister_mbus_driver(struct mbus_driver *drv);
-> > +
-> > +static inline struct mbus_device *dev_to_mbus(struct device *_dev)
-> > +{
-> > +	return container_of(_dev, struct mbus_device, dev);
-> > +}
-> > +
-> > +static inline struct mbus_driver *drv_to_mbus(struct device_driver *drv)
-> > +{
-> > +	return container_of(drv, struct mbus_driver, driver);
-> > +}
-> > +
-> > +static inline void mbus_release_dev(struct device *d)
-> > +{
-> > +}
-> 
-> As per the kernel documentation rules, I get to publicly make fun of you
-> for doing this half-hearted attempt to get around the kernel providing
-> you with a valid kernel message as to why you always need to provide a
-> proper release function :(
-> 
-> Consider yourself mocked.
-> 
-> And go read the kernel documentation for why.
-
-This will be fixed up by allocating mbus_device in
-mbus_register_device(..) so that it can be freed in the device release
-callback correctly by the bus driver.
-
-> An inline function?  Why?
-> 
-
-This is no longer an inline function after the changes above.
+Thanks,
+Gu 
 
 > 
-> > +static inline int
-> > +mbus_add_device(struct mbus_device *mbdev, struct device *pdev, int id,
-> > +		struct dma_map_ops *dma_ops, struct mbus_hw_ops *hw_ops,
-> > +		void __iomem *mmio_va)
-> 
-> inline?  Why?
+> greg k-h
+> .
 > 
 
-This API was a wrapper for register_mbus_device(..). However after the
-changes above this inline function is no longer required as
-mbus_register_device(..) allocates and initializes mbus_device.
-
-> > +{
-> > +	int ret;
-> > +
-> > +	mbdev->mmio_va = mmio_va;
-> > +	mbdev->dev.parent = pdev;
-> > +	mbdev->id.device = id;
-> > +	mbdev->id.vendor = MBUS_DEV_ANY_ID;
-> > +	mbdev->dev.archdata.dma_ops = dma_ops;
-> > +	mbdev->dev.dma_mask = &mbdev->dev.coherent_dma_mask;
-> > +	dma_set_mask(&mbdev->dev, DMA_BIT_MASK(64));
-> > +	mbdev->dev.release = mbus_release_dev;
-> > +	mbdev->hw_ops = hw_ops;
-> > +	dev_set_drvdata(&mbdev->dev, mbdev);
-> > +
-> > +	ret = register_mbus_device(mbdev);
-> > +	if (ret) {
-> > +		dev_err(mbdev->dev.parent,
-> > +			"Failed to register mbus device type %u\n", id);
-> > +		return ret;
-> > +	}
-> > +	return 0;
-> > +}
-> > +
-> > +static inline void mbus_remove_device(struct mbus_device *mbdev)
-> > +{
-> > +	unregister_mbus_device(mbdev);
-> > +	memset(mbdev, 0x0, sizeof(*mbdev));
-> 
-> Why are you doing this?  (hint, I think I know why, and it's totally and
-> unacceptably wrong.)
-> 
-
-mbus_device is registered by the host driver upon card boot and
-unregistered when the card is reset. The mbus_device field in the host
-driver was being reused since it was not allocated by the bus driver for
-each reboot iteration and hence needed the ugly memset(..) here. The
-change to allocate the mbus_device in the bus driver cleans this up
-nicely and we no longer need the memset(..).
-
-> Also, inline?
-> 
-
-This inline function is no longer required after the changes above. 
-
-Rev2 of this patch series addressing your feedback will be posted this
-week after some validation. Thanks for the review!
-
-Sudeep Dutt 
 
