@@ -1,64 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933077AbaE2Iht (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 04:37:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51238 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932814AbaE2Ihq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 04:37:46 -0400
-Date: Thu, 29 May 2014 10:37:32 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 13/14] perf tests: Add test for caching dso file
- descriptors
-Message-ID: <20140529083732.GA1177@krava.brq.redhat.com>
-References: <1400174615-2121-1-git-send-email-jolsa@kernel.org>
- <1400174615-2121-14-git-send-email-jolsa@kernel.org>
- <87d2f0huj7.fsf@sejong.aot.lge.com>
- <20140527075436.GE12920@krava.brq.redhat.com>
- <87oayhh2j6.fsf@sejong.aot.lge.com>
+	id S933273AbaE2Iia (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 04:38:30 -0400
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:62415 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932814AbaE2Ii1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 04:38:27 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87oayhh2j6.fsf@sejong.aot.lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1399658905-12415-1-git-send-email-galak@codeaurora.org>
+References: <1399658905-12415-1-git-send-email-galak@codeaurora.org>
+Date: Thu, 29 May 2014 10:38:27 +0200
+Message-ID: <CACRpkdYzhUNo339hR-PNXxhd6-aYnqXgbgey-Hd_1fv+qO832w@mail.gmail.com>
+Subject: Re: [PATCH] pinctrl: qcom: ipq8064: Fix naming convention
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Kumar Gala <galak@codeaurora.org>
+Cc: "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andy Gross <agross@codeaurora.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 29, 2014 at 09:06:05AM +0900, Namhyung Kim wrote:
-> On Tue, 27 May 2014 09:54:36 +0200, Jiri Olsa wrote:
-> > On Tue, May 27, 2014 at 10:36:44AM +0900, Namhyung Kim wrote:
-> >> On Thu, 15 May 2014 19:23:34 +0200, Jiri Olsa wrote:
-> >> > Adding test that setup test_dso_data__fd_limit and test
-> >> > dso data file descriptors are cached appropriately.
-> >> 
-> >> [SNIP]
-> >> > +static long open_files_cnt(void)
-> >> > +{
-> >> > +	char path[PATH_MAX];
-> >> > +	struct dirent *dent;
-> >> > +	DIR *dir;
-> >> > +	long nr = 0;
-> >> > +	int n;
-> >> > +
-> >> > +	n = scnprintf(path, PATH_MAX, "%s/self/fd", procfs__mountpoint());
-> >> > +	TEST_ASSERT_VAL("couldn't get fd path", n < PATH_MAX);
-> >> 
-> >> Looks like an unnecessary check since the scnprintf() cannot return more
-> >> than (or equal to) PATH_MAX.
-> >
-> > once it's equal it's bad.. as the man says:
-> > "return value of size or more means that the output was  truncated"
-> 
-> Did you see "sn"printf?
+On Fri, May 9, 2014 at 8:08 PM, Kumar Gala <galak@codeaurora.org> wrote:
 
-yes, I just double checked.. jirka
+> Drop underscore in spdif_groups to match all other groups.
+>
+> Signed-off-by: Kumar Gala <galak@codeaurora.org>
+
+Patch applied with Andy's ACK, sorry for missing this :-(
+
+Yours,
+Linus Walleij
