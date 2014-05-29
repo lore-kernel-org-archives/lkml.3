@@ -1,73 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756119AbaE2EVD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 00:21:03 -0400
-Received: from mail-vc0-f182.google.com ([209.85.220.182]:47751 "EHLO
-	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751660AbaE2EVB (ORCPT
+	id S932460AbaE2EYW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 00:24:22 -0400
+Received: from mail-ve0-f178.google.com ([209.85.128.178]:60483 "EHLO
+	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932424AbaE2EYT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 00:21:01 -0400
+	Thu, 29 May 2014 00:24:19 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140529031149.GE18016@ZenIV.linux.org.uk>
-References: <20140527014054.GR18016@ZenIV.linux.org.uk>
-	<20140527031415.GS18016@ZenIV.linux.org.uk>
-	<20140527040026.GT18016@ZenIV.linux.org.uk>
-	<20140527070409.GA1801@lahna.fi.intel.com>
-	<20140528031955.GW18016@ZenIV.linux.org.uk>
-	<20140528073751.GB1757@lahna.fi.intel.com>
-	<20140528115701.GY18016@ZenIV.linux.org.uk>
-	<20140528131136.GA1643@lahna.fi.intel.com>
-	<20140528141937.GZ18016@ZenIV.linux.org.uk>
-	<20140528183954.GA18016@ZenIV.linux.org.uk>
-	<20140529031149.GE18016@ZenIV.linux.org.uk>
-Date: Wed, 28 May 2014 21:21:00 -0700
-X-Google-Sender-Auth: wROt2y5umnZAg49J4GamhNGzB0U
-Message-ID: <CA+55aFyHCF1+DfxndzxkGLLoNErRF2MA0YWtdx7UOTJ=gQWhEw@mail.gmail.com>
-Subject: Re: fs/dcache.c - BUG: soft lockup - CPU#5 stuck for 22s! [systemd-udevd:1667]
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Miklos Szeredi <mszeredi@suse.cz>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+In-Reply-To: <20140527083021.GE4730@lukather>
+References: <1400831485-28576-1-git-send-email-wens@csie.org>
+ <1400831485-28576-18-git-send-email-wens@csie.org> <20140525191434.GX10768@lukather>
+ <CAGb2v66cV_nRpHhrtDUYzncO5wimx+vRBW6BFcU0Kz=bKkNs+g@mail.gmail.com> <20140527083021.GE4730@lukather>
+From: Chen-Yu Tsai <wens@csie.org>
+Date: Thu, 29 May 2014 12:23:58 +0800
+X-Google-Sender-Auth: 1yVXeNTRvH2IHTdEqzvwErdXpqM
+Message-ID: <CAGb2v65v7rqBwFbn1JtQv44nQxepAq-ciwsBdHaELbzWXQNU9g@mail.gmail.com>
+Subject: Re: [PATCH 17/22] mfd: sun6i-prcm: Add support for Allwinner A23 PRCM
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Emilio Lopez <emilio@elopez.com.ar>,
+        Linus Walleij <linus.walleij@linaro.org>, linux-serial@vger.kernel.org,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        devicetree <devicetree@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Luc Verhaegen <libv@skynet.be>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 28, 2014 at 8:11 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+On Tue, May 27, 2014 at 4:30 PM, Maxime Ripard
+<maxime.ripard@free-electrons.com> wrote:
+> On Mon, May 26, 2014 at 12:36:38PM +0800, Chen-Yu Tsai wrote:
+>> On Mon, May 26, 2014 at 3:14 AM, Maxime Ripard
+>> <maxime.ripard@free-electrons.com> wrote:
+>> > On Fri, May 23, 2014 at 03:51:20PM +0800, Chen-Yu Tsai wrote:
+>> >> The Allwinner A23 SoC has a PRCM unit like the previous A31 SoC.
+>> >> The differences are the AR100 clock can no longer be modified,
+>> >> and the APB0 clock has different divisors.
+>> >>
+>> >> This patch adds a compatible with a modified subdevice list for
+>> >> the A23.
+>> >>
+>> >> Signed-off-by: Chen-Yu Tsai <wens@csie.org>
+>> >> ---
+>> >>  .../devicetree/bindings/mfd/sun6i-prcm.txt         |  2 +-
+>> >>  drivers/mfd/sun6i-prcm.c                           | 30 ++++++++++++++++++++++
+>> >>  2 files changed, 31 insertions(+), 1 deletion(-)
+>> >>
+>> >> diff --git a/Documentation/devicetree/bindings/mfd/sun6i-prcm.txt b/Documentation/devicetree/bindings/mfd/sun6i-prcm.txt
+>> >> index 1f5a31f..03c5a55 100644
+>> >> --- a/Documentation/devicetree/bindings/mfd/sun6i-prcm.txt
+>> >> +++ b/Documentation/devicetree/bindings/mfd/sun6i-prcm.txt
+>> >> @@ -4,7 +4,7 @@ PRCM is an MFD device exposing several Power Management related devices
+>> >>  (like clks and reset controllers).
+>> >>
+>> >>  Required properties:
+>> >> - - compatible: "allwinner,sun6i-a31-prcm"
+>> >> + - compatible: "allwinner,sun6i-a31-prcm" or "allwinner,sun8i-a23-prcm"
+>> >>   - reg: The PRCM registers range
+>> >>
+>> >>  The prcm node may contain several subdevices definitions:
+>> >> diff --git a/drivers/mfd/sun6i-prcm.c b/drivers/mfd/sun6i-prcm.c
+>> >> index 718fc4d..c96bb6c 100644
+>> >> --- a/drivers/mfd/sun6i-prcm.c
+>> >> +++ b/drivers/mfd/sun6i-prcm.c
+>> >> @@ -76,16 +76,46 @@ static const struct mfd_cell sun6i_a31_prcm_subdevs[] = {
+>> >>       },
+>> >>  };
+>> >>
+>> >> +static const struct mfd_cell sun8i_a23_prcm_subdevs[] = {
+>> >> +     {
+>> >> +             .name = "sun6i-a31-apb0-clk",
+>> >> +             .of_compatible = "allwinner,sun8i-a23-apb0-clk",
+>> >> +             .num_resources = ARRAY_SIZE(sun6i_a31_apb0_clk_res),
+>> >> +             .resources = sun6i_a31_apb0_clk_res,
+>> >> +     },
+>> >> +     {
+>> >> +             .name = "sun6i-a31-apb0-gates-clk",
+>> >> +             .of_compatible = "allwinner,sun6i-a31-apb0-gates-clk",
+>> >> +             .num_resources = ARRAY_SIZE(sun6i_a31_apb0_gates_clk_res),
+>> >> +             .resources = sun6i_a31_apb0_gates_clk_res,
+>> >> +     },
+>> >
+>> > Did I just have a brainfart, or didn't you just introduced an
+>> > sun8i-a23-apb0-gates-clk driver?
+>>
+>> My bad, I missed this one. The one in the DT is correct.
+>> It actually works, so I'm a bit confused here.
+>> Which one does the driver core actually use?
 >
-> Here's an updated patch, hopefully slightly less vomit-inducing.
+> Actually, it will use both, and will match the of_compatible string
+> try to match it against the mfd-sub-nodes compatibles. If nothing
+> matches, it won't fill the dev.of_node field.
 
-Hmm. Less vomit-inducing, except for this part:
+So actually it was supposed to use "allwinner,sun6i-a31-apb0-gates-clk",
+as that clk driver takes clock-indices, so no need to define gate masks
+and tie them to some new compatible.
 
->                 dentry = list_entry(list->prev, struct dentry, d_lru);
-> +
-> +               parent = NULL;
->                 spin_lock(&dentry->d_lock);
-> +               if (!IS_ROOT(dentry)) {
-> +                       parent = dentry->d_parent;
-> +                       if (unlikely(!spin_trylock(&parent->d_lock))) {
-> +                               spin_unlock(&dentry->d_lock);
-> +                               parent = NULL;
-> +                               read_seqlock_excl(&rename_lock);
-> +                               if (!IS_ROOT(dentry)) {
-> +                                       parent = dentry->d_parent;
-> +                                       spin_lock(&parent->d_lock);
-> +                               }
-> +                               read_sequnlock_excl(&rename_lock);
-> +                               spin_lock(&dentry->d_lock);
-> +                       }
-> +               }
+There was no sun8i-a23-apb0-gates-clk driver.
 
-Ugh, that just *screams* for a helper function. Something like
+I must not be getting enough sleep.
 
-        parent = get_parent_and_lock(dentry);
-
-or whatever, with that trylock/renamelock dance separated out. The
-rule would be that it would lock the "dentry", and return the
-(similarly locked) parent. Or NULL for a root dentry, of course.
-
-Please?
-
-             Linus
+>> > And there's no ar100 and ahb0 clocks ?
+>>
+>> The ahb0 is a fixed-factor (1:1) clock. There are no controls for it.
+>> The ar100 clock on the A23 has no controls either, so fixed-factor
+>> clock again.
+>
+> Ack.
+>
+> --
+> Maxime Ripard, Free Electrons
+> Embedded Linux, Kernel and Android engineering
+> http://free-electrons.com
