@@ -1,61 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933458AbaE2Eo5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 00:44:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58667 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933262AbaE2Eiq (ORCPT
+	id S932941AbaE2EpJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 00:45:09 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:45228 "EHLO
+	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932813AbaE2EpF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 00:38:46 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Susant Sahani <susant@redhat.com>, Thomas Graf <tgraf@suug.ch>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 68/86] ip6_tunnel: fix potential NULL pointer dereference
-Date: Wed, 28 May 2014 21:37:43 -0700
-Message-Id: <20140529043522.697725981@linuxfoundation.org>
-X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
-In-Reply-To: <20140529043513.451722422@linuxfoundation.org>
-References: <20140529043513.451722422@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	Thu, 29 May 2014 00:45:05 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@kernel.org
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>, Jiri Olsa <jolsa@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Tom Zanussi <tzanussi@gmail.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Subject: [PATCH] perf script/python: Print array argument as string
+Date: Thu, 29 May 2014 13:44:55 +0900
+Message-Id: <1401338695-18837-1-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.9.2
+In-Reply-To: <1401207274-8170-2-git-send-email-bigeasy@linutronix.de>
+References: <1401207274-8170-2-git-send-email-bigeasy@linutronix.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+With the Sebastian's change of handling num array argument (of raw
+syscall enter), the script still failed to work like this:
 
-------------------
+  $ perf record -e raw_syscalls:* sleep 1
+  $ perf script -g python
+  $ perf script -s perf-script.py
+  ...
+  Traceback (most recent call last):
+    File "perf-script.py", line 42, in raw_syscalls__sys_enter
+      (id, args),
+  TypeError: %u format: a number is required, not list
+  Fatal Python error: problem in Python trace event handler
+  Aborted (core dumped)
 
-From: Susant Sahani <susant@redhat.com>
+This is because the generated script tries to print the array arg as
+unsigned integer (%u).  Since the python seems to convert arguments to
+strings by default, just using %s solved the problem for me.
 
-[ Upstream commit c8965932a2e3b70197ec02c6741c29460279e2a8 ]
-
-The function ip6_tnl_validate assumes that the rtnl
-attribute IFLA_IPTUN_PROTO always be filled . If this
-attribute is not filled by  the userspace application
-kernel get crashed with NULL pointer dereference. This
-patch fixes the potential kernel crash when
-IFLA_IPTUN_PROTO is missing .
-
-Signed-off-by: Susant Sahani <susant@redhat.com>
-Acked-by: Thomas Graf <tgraf@suug.ch>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Tom Zanussi <tzanussi@gmail.com>
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- net/ipv6/ip6_tunnel.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ tools/perf/util/scripting-engines/trace-event-python.c | 1 +
+ 1 file changed, 1 insertion(+)
 
---- a/net/ipv6/ip6_tunnel.c
-+++ b/net/ipv6/ip6_tunnel.c
-@@ -1531,7 +1531,7 @@ static int ip6_tnl_validate(struct nlatt
- {
- 	u8 proto;
- 
--	if (!data)
-+	if (!data || !data[IFLA_IPTUN_PROTO])
- 		return 0;
- 
- 	proto = nla_get_u8(data[IFLA_IPTUN_PROTO]);
-
+diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
+index 40a815a5360b..a22ab53788bf 100644
+--- a/tools/perf/util/scripting-engines/trace-event-python.c
++++ b/tools/perf/util/scripting-engines/trace-event-python.c
+@@ -649,6 +649,7 @@ static int python_generate_script(struct pevent *pevent, const char *outfile)
+ 			fprintf(ofp, "%s=", f->name);
+ 			if (f->flags & FIELD_IS_STRING ||
+ 			    f->flags & FIELD_IS_FLAG ||
++			    f->flags & FIELD_IS_ARRAY ||
+ 			    f->flags & FIELD_IS_SYMBOLIC)
+ 				fprintf(ofp, "%%s");
+ 			else if (f->flags & FIELD_IS_SIGNED)
+-- 
+1.9.2
 
