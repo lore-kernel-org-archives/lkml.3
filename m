@@ -1,53 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755455AbaE2Szf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 14:55:35 -0400
-Received: from canardo.mork.no ([148.122.252.1]:43029 "EHLO canardo.mork.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751206AbaE2Sze convert rfc822-to-8bit (ORCPT
+	id S1755229AbaE2TBM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 15:01:12 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:58662 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752298AbaE2TBK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 14:55:34 -0400
-From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
-To: Jim Baxter <jim_baxter@mentor.com>
-Cc: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        David Laight <David.Laight@ACULAB.COM>, <netdev@vger.kernel.org>
-Subject: Re: [PATCH v1 1/3] usb: gadget: NCM: RX function support multiple NDPs
-Organization: m
-References: <jim_baxter@mentor.com>
-	<1401383543-10181-1-git-send-email-jim_baxter@mentor.com>
-	<1401383543-10181-2-git-send-email-jim_baxter@mentor.com>
-Date: Thu, 29 May 2014 20:55:16 +0200
-In-Reply-To: <1401383543-10181-2-git-send-email-jim_baxter@mentor.com> (Jim
-	Baxter's message of "Thu, 29 May 2014 18:12:21 +0100")
-Message-ID: <87d2ewbejv.fsf@nemi.mork.no>
-User-Agent: Gnus/5.130011 (Ma Gnus v0.11) Emacs/24.3 (gnu/linux)
+	Thu, 29 May 2014 15:01:10 -0400
+Message-ID: <538783F2.9020901@wwwdotorg.org>
+Date: Thu, 29 May 2014 13:01:06 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: Russell King <linux@arm.linux.org.uk>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Wolfram Sang <wsa@the-dreams.de>, linux-arm-kernel@lists.infradead.org,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 2/5] ARM: tegra: move fuse exports to tegra-soc.h
+References: <1401281677-32110-1-git-send-email-pdeschrijver@nvidia.com> <1401281677-32110-3-git-send-email-pdeschrijver@nvidia.com>
+In-Reply-To: <1401281677-32110-3-git-send-email-pdeschrijver@nvidia.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jim Baxter <jim_baxter@mentor.com> writes:
+On 05/28/2014 06:54 AM, Peter De Schrijver wrote:
+> All fuse related functionality will move to a driver in the following patches.
+> To prepare for this, export all the required functionality in a global header
+> file and move all users of fuse.h to tegra-soc.h. While we're at it, remove
+> tegra_bct_strapping, as its only user was removed in Commit a7cbe92cef27
+> ("ARM: tegra: remove tegra EMC scaling driver").
 
-> The NDP was ignoring the wNextNdpIndex in the NDP which
-> means that NTBs containing multiple NDPs would have missed
-> frames.
+> diff --git a/include/linux/tegra-soc.h b/include/linux/tegra-soc.h
 
-Well, just for the record: I believe this field was meant to be reserved
-and always 0 in the CDC NCM spec.  Table 3-3, describing 16bit NDPs,
-says so.  But reading the spec now, I noticed that there is an
-inconsistency between table 3-3 and table 3-4 describing 32bit NDPs.  It
-looks like the field is not reserved in the 32bit version.
+> @@ -33,4 +54,8 @@ static inline int tegra_apb_writel_using_dma(u32 value, unsigned long offset)
+>  	return -EINVAL;
+>  }
+>  #endif
+> +
+> +#endif /* __ASSEMBLY__ */
+> +
+> +
+>  #endif /* __LINUX_TEGRA_SOC_H_ */
 
-I am pretty sure that is a specification error, but I guess it doesn't
-harm to implement the support anyway.  And it paves the way for an MBIM
-gadget :-)
-
-
-
-
-Bjørn
+Nit: 2 blank lines there. I'll try and remember to fix that up when I
+apply this, if nothing requires a repost.
