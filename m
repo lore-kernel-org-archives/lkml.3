@@ -1,45 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757380AbaE2Mur (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 08:50:47 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:41830 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755646AbaE2Muq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 08:50:46 -0400
-Date: Thu, 29 May 2014 14:50:38 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Dave Young <dyoung@redhat.com>, matt.fleming@intel.com,
-        linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org
-Subject: Re: [PATCH] export efi.flags to sysfs
-Message-ID: <20140529125038.GC21718@pd.tnic>
-References: <20140526083935.GA19682@dhcp-16-198.nay.redhat.com>
- <20140527133411.GG10994@redhat.com>
- <20140528021359.GC2820@darkstar.nay.redhat.com>
- <20140528124029.GF14863@redhat.com>
- <20140529020837.GB2068@darkstar.nay.redhat.com>
- <20140529124520.GC14570@redhat.com>
+	id S1757157AbaE2Mw5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 08:52:57 -0400
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:64307 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755646AbaE2Mw4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 08:52:56 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140529124520.GC14570@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140529064302.GG19143@laptop.programming.kicks-ass.net>
+References: <5386B75A.3010806@gmail.com> <20140529064302.GG19143@laptop.programming.kicks-ass.net>
+From: Pranith Kumar <bobby.prani@gmail.com>
+Date: Thu, 29 May 2014 08:52:25 -0400
+Message-ID: <CAJhHMCBbawzB+yvYUqTFw23krK+aB0ze_qXP5fFEYD8nfOEtBQ@mail.gmail.com>
+Subject: Re: [RFC PATCH v2 1/1] rename {before/after}_atomic_{inc/dec} to {before/after}_atomic
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 29, 2014 at 08:45:20AM -0400, Vivek Goyal wrote:
-> I am curious that what's the meaning of 1:1 mapping here? So far I
-> thought that means virt and physical addresses are same but that does
-> not seem to be the case. So what does it mean?
+On Thu, May 29, 2014 at 2:43 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+>
+> See http://marc.info/?l=linux-kernel&m=139782635207358 and the 20 or so
+> patches afterwards.
+>
+> This has already been done. See a -next tree or so near you.
 
-1:1 mapping in the EFI's case (and maybe in any other case I'm aware of)
-is taking the physical addresses of the EFI regions and mapping them at
-the exact same addresses in the EFI page table.
+I think I will start working against the linux-next tree from now on. Thanks!
 
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Pranith
