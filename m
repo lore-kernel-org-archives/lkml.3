@@ -1,73 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965299AbaE2RyJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 13:54:09 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:46401 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932993AbaE2RyF (ORCPT
+	id S965416AbaE2R4h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 13:56:37 -0400
+Received: from mail-ig0-f180.google.com ([209.85.213.180]:35277 "EHLO
+	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965204AbaE2Rxi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 13:54:05 -0400
-Date: Thu, 29 May 2014 18:54:07 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Kishon Vijay Abraham I <kishon@ti.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-omap <linux-omap@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Tony Lindgren <tony@atomide.com>,
-        Jingoo Han <jg1.han@samsung.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>, Mark Rutland <Mark.Rutland@arm.com>,
-        Kumar Gala <galak@codeaurora.org>
-Subject: Re: [PATCH v2 16/18] ARM: OMAP: Enable PCI for DRA7
-Message-ID: <20140529175407.GB24270@arm.com>
-References: <1401345500-20188-1-git-send-email-kishon@ti.com>
- <1401345500-20188-17-git-send-email-kishon@ti.com>
- <CAL_JsqJifZqs9MpL=n4FRB+Z1OMtkw0sns8Vwec=_boGqRL8-w@mail.gmail.com>
+	Thu, 29 May 2014 13:53:38 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAL_JsqJifZqs9MpL=n4FRB+Z1OMtkw0sns8Vwec=_boGqRL8-w@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Date: Thu, 29 May 2014 13:53:37 -0400
+Message-ID: <CALRD3qKzmrvRqBabQQuvVH7jTb0mexZGw4rXVTBkYS3YRc6NtQ@mail.gmail.com>
+Subject: dev over nfs
+From: riya khanna <riyakhanna1983@gmail.com>
+To: undisclosed-recipients:;
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 29, 2014 at 06:52:14PM +0100, Rob Herring wrote:
-> On Thu, May 29, 2014 at 1:38 AM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
-> > Now that we have added PCIe driver for DRA7 SOCs, enable PCI on
-> > DRA7 SOCs.
-> >
-> > Cc: Tony Lindgren <tony@atomide.com>
-> > Cc: Rob Herring <robh+dt@kernel.org>
-> > Cc: Pawel Moll <pawel.moll@arm.com>
-> > Cc: Mark Rutland <mark.rutland@arm.com>
-> > Cc: Kumar Gala <galak@codeaurora.org>
-> > Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
-> > ---
-> >  arch/arm/mach-omap2/Kconfig |    2 ++
-> >  1 file changed, 2 insertions(+)
-> >
-> > diff --git a/arch/arm/mach-omap2/Kconfig b/arch/arm/mach-omap2/Kconfig
-> > index cb31d43..b179e80 100644
-> > --- a/arch/arm/mach-omap2/Kconfig
-> > +++ b/arch/arm/mach-omap2/Kconfig
-> > @@ -75,6 +75,8 @@ config SOC_DRA7XX
-> >         select ARM_GIC
-> >         select HAVE_ARM_ARCH_TIMER
-> >         select IRQ_CROSSBAR
-> > +       select MIGHT_HAVE_PCI
-> 
-> I believe we moved or intend to move this under MULTI_PLATFORM, so you
-> don't need this. Will D. had a patch, but I don't think I saw a final
-> version to merge.
+Hi,
 
-I posted it earlier this week for somebody in arm-soc to pick up (although I
-don't think they have done yet):
+I'm trying to access remote devices locally by mounting/exporting /dev
+nodes over NFS. However, looks like the access requests are treated local
+based on major minor numbers (e.g. "cat /mnt-dev-over-nfs/kmg" output is
+same as "cat /dev/kmsg")
 
-  http://lists.infradead.org/pipermail/linux-arm-kernel/2014-May/260238.html
+How can I change this behavior? and if it is at all feasible?
 
-Will
+Thanks,
+Riya
