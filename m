@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933712AbaE2FbD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 01:31:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57758 "EHLO
+	id S1756312AbaE2EfF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 00:35:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57694 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756315AbaE2EfG (ORCPT
+	with ESMTP id S1756038AbaE2Ee5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 00:35:06 -0400
+	Thu, 29 May 2014 00:34:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Richard Farina <sidhayn@gmail.com>, Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 3.14 042/140] Revert "USB: serial: add usbid for dell wwan card to sierra.c"
-Date: Wed, 28 May 2014 21:33:01 -0700
-Message-Id: <20140529043054.792743464@linuxfoundation.org>
+        Hans de Goede <hdegoede@redhat.com>,
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: [PATCH 3.14 029/140] HID: add NO_INIT_REPORTS quirk for Synaptics Touch Pad V 103S
+Date: Wed, 28 May 2014 21:32:48 -0700
+Message-Id: <20140529043053.113545450@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
 In-Reply-To: <20140529043049.661315084@linuxfoundation.org>
 References: <20140529043049.661315084@linuxfoundation.org>
@@ -26,32 +28,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Hans de Goede <hdegoede@redhat.com>
 
-commit 2e01280d2801c72878cf3a7119eac30077b463d5 upstream.
+commit 2f433083e854ec72c19dc9b0e1cebcc8e230fd75 upstream.
 
-This reverts commit 1ebca9dad5abe8b2ed4dbd186cd657fb47c1f321.
+This touchpad seriously dislikes init reports, not only timeing out, but
+also refusing to work after this.
 
-This device was erroneously added to the sierra driver even though it's
-not a Sierra device and was already handled by the option driver.
-
-Cc: Richard Farina <sidhayn@gmail.com>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Reported-and-tested-by: Vincent Fortier <th0ma7@gmail.com>
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/sierra.c |    1 -
- 1 file changed, 1 deletion(-)
+ drivers/hid/hid-ids.h           |    1 +
+ drivers/hid/usbhid/hid-quirks.c |    1 +
+ 2 files changed, 2 insertions(+)
 
---- a/drivers/usb/serial/sierra.c
-+++ b/drivers/usb/serial/sierra.c
-@@ -291,7 +291,6 @@ static const struct usb_device_id id_tab
- 	{ USB_DEVICE(0x0f3d, 0x68A3), 	/* Airprime/Sierra Wireless Direct IP modems */
- 	  .driver_info = (kernel_ulong_t)&direct_ip_interface_blacklist
- 	},
--       { USB_DEVICE(0x413C, 0x08133) }, /* Dell Computer Corp. Wireless 5720 VZW Mobile Broadband (EVDO Rev-A) Minicard GPS Port */
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -828,6 +828,7 @@
+ #define USB_DEVICE_ID_SYNAPTICS_LTS2	0x1d10
+ #define USB_DEVICE_ID_SYNAPTICS_HD	0x0ac3
+ #define USB_DEVICE_ID_SYNAPTICS_QUAD_HD	0x1ac3
++#define USB_DEVICE_ID_SYNAPTICS_TP_V103	0x5710
  
- 	{ }
+ #define USB_VENDOR_ID_THINGM		0x27b8
+ #define USB_DEVICE_ID_BLINK1		0x01ed
+--- a/drivers/hid/usbhid/hid-quirks.c
++++ b/drivers/hid/usbhid/hid-quirks.c
+@@ -119,6 +119,7 @@ static const struct hid_blacklist {
+ 	{ USB_VENDOR_ID_SYNAPTICS, USB_DEVICE_ID_SYNAPTICS_LTS2, HID_QUIRK_NO_INIT_REPORTS },
+ 	{ USB_VENDOR_ID_SYNAPTICS, USB_DEVICE_ID_SYNAPTICS_HD, HID_QUIRK_NO_INIT_REPORTS },
+ 	{ USB_VENDOR_ID_SYNAPTICS, USB_DEVICE_ID_SYNAPTICS_QUAD_HD, HID_QUIRK_NO_INIT_REPORTS },
++	{ USB_VENDOR_ID_SYNAPTICS, USB_DEVICE_ID_SYNAPTICS_TP_V103, HID_QUIRK_NO_INIT_REPORTS },
+ 
+ 	{ 0, 0 }
  };
 
 
