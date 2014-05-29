@@ -1,64 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756938AbaE2Jyb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 05:54:31 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751598AbaE2Jya (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 05:54:30 -0400
-Message-ID: <538703D0.7030308@nod.at>
-Date: Thu, 29 May 2014 11:54:24 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1757126AbaE2J4M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 05:56:12 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:50783 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757006AbaE2J4L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 05:56:11 -0400
+Message-ID: <53870433.8090606@hitachi.com>
+Date: Thu, 29 May 2014 18:56:03 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: Pavel Emelyanov <xemul@parallels.com>
-CC: Vasily Kulikov <segoon@openwall.com>,
-        containers@lists.linux-foundation.org,
-        Serge Hallyn <serge.hallyn@ubuntu.com>, linux-kernel@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>, David Howells <dhowells@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [PATCH v2] /proc/pid/status: show all sets of pid according to
- ns
-References: <1401272683-1659-1-git-send-email-chenhanxiao@cn.fujitsu.com> <5385DA19.2060008@parallels.com> <20140528182824.GA5057@cachalot> <53863889.9080509@parallels.com> <20140529055954.GA10354@cachalot> <5386F8EA.8050501@parallels.com> <5386FC0C.9000307@nod.at> <538700B5.5070601@parallels.com>
-In-Reply-To: <538700B5.5070601@parallels.com>
-X-Enigmail-Version: 1.6
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Jiri Olsa <jolsa@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [BUG] perf probe segfaulting when asked for variable it doesn't
+ find
+References: <20140528214406.GE2764@kernel.org>
+In-Reply-To: <20140528214406.GE2764@kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 29.05.2014 11:41, schrieb Pavel Emelyanov:
-> On 05/29/2014 01:21 PM, Richard Weinberger wrote:
->> Am 29.05.2014 11:07, schrieb Pavel Emelyanov:
->>> On 05/29/2014 09:59 AM, Vasily Kulikov wrote:
->>>> On Wed, May 28, 2014 at 23:27 +0400, Pavel Emelyanov wrote:
->>>>> On 05/28/2014 10:28 PM, Vasily Kulikov wrote:
->>>>>> On Wed, May 28, 2014 at 16:44 +0400, Pavel Emelyanov wrote:
->>>>>> It will be simplier
->>>>>> to parse the file -- if 'ns_ids' file contains some ID then this ID for
->>>>>> every ns can be obtained regardless of the specific ID name (SID, PID,
->>>>>> PGID, etc.).
->>>>>
->>>>> True, but given a task PID how to determine which pid namespaces it lives in
->>>>> to get the idea of how PIDs map to each other? Maybe we need some explicit
->>>>> API for converting (ID, NS1, NS2) into (ID)?
->>>>
->>>> AFAIU the idea of the patch is to add a new debugging information which
->>>> can be trivially obtained via 'cat /proc/...':
->>>
->>> I agree, but this ability will be very useful by checkpoint-restore project
->>> too and I'd really appreciate if the API we have for that would be scalable
->>> enough. Per-task proc file works for me, but how about sid-s and pgid-s?
->>
->> What kind of information does CRIU need?
+(2014/05/29 6:44), Arnaldo Carvalho de Melo wrote:
+> Masami-san,
 > 
-> We need to know what pid namespaces a task lives in and how pid, sid and
-> pgid look in all of them. A short example with pids only
+> 	While trying:
+> 
+> [root@zoo ~]# perf probe 'vfs_getname=getname_flags:65 pathname=result->name:string'
+> Failed to find the location of result at this address.
+>  Perhaps, it has been optimized out.
+> Failed to find 'result' in this function.
+>   Error: Failed to add events. (-2)
+> [root@zoo ~]# perf probe 'vfs_getname=getname_flags:65 pathname=result->name:string'
+> Added new event:
+> Segmentation fault (core dumped)
+> 
+> I got segfaulted while in the past I would get the much nicer:
+> 
+> [root@zoo ~]# perf probe 'vfs_getname=getname_flags:65 pathname=result->name:string'
+> Failed to find the location of result at this address.
+>  Perhaps, it has been optimized out.
+> Failed to find 'result' in this function.
+>   Error: Failed to add events. (-2)
+> [root@zoo ~]#
 
-So use case is to checkpoint/restore nested containers? :)
+Oops, I got that. Bad SEGV was reproduced here too.
+And I've found an error-handling miss in the convert_variable(),
+I'll send a patch for fixing it.
+Thank you very much for bisecting and finding my fault.
 
-Thanks,
-//richard
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
