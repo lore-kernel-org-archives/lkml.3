@@ -1,85 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757242AbaE2Kj3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 06:39:29 -0400
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:28346 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752220AbaE2Kj2 (ORCPT
+	id S1757252AbaE2Kkk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 06:40:40 -0400
+Received: from mail.siteground.com ([67.19.240.234]:41686 "EHLO
+	mail.siteground.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751924AbaE2Kkj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 06:39:28 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AndMAN8Nh1N5LL1sPGdsb2JhbABZgweDRIUIonYGmB4BgQwXAwEBAQE4NYIlAQEFJxMcIxAIAxgJJQ8FJQMHGhOIQddlFxaFP4h9B4RAAQOZdJZzKw
-Date: Thu, 29 May 2014 20:39:05 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm <linux-mm@kvack.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Hugh Dickins <hughd@google.com>, "Michael S. Tsirkin" <mst@redhat.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: virtio ring cleanups, which save stack on older gcc
-Message-ID: <20140529103905.GQ8554@dastard>
-References: <87oayh6s3s.fsf@rustcorp.com.au>
- <1401348405-18614-1-git-send-email-rusty@rustcorp.com.au>
- <20140529074117.GI10092@bbox>
+	Thu, 29 May 2014 06:40:39 -0400
+Message-ID: <53870EAA.4060101@1h.com>
+Date: Thu, 29 May 2014 13:40:42 +0300
+From: Marian Marinov <mm@1h.com>
+Organization: 1H Ltd.
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140529074117.GI10092@bbox>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        LXC development mailing-list 
+	<lxc-devel@lists.linuxcontainers.org>,
+        Linux Containers <containers@lists.linux-foundation.org>
+Subject: Re: [RFC] Per-user namespace process accounting
+References: <5386D58D.2080809@1h.com> <87tx88nbko.fsf@x220.int.ebiederm.org>
+In-Reply-To: <87tx88nbko.fsf@x220.int.ebiederm.org>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=windows-1251
+Content-Transfer-Encoding: 7bit
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - mail.siteground.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - 1h.com
+X-Get-Message-Sender-Via: mail.siteground.com: none
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 29, 2014 at 04:41:17PM +0900, Minchan Kim wrote:
-> Hello Rusty,
-> 
-> On Thu, May 29, 2014 at 04:56:41PM +0930, Rusty Russell wrote:
-> > They don't make much difference: the easier fix is use gcc 4.8
-> > which drops stack required across virtio block's virtio_queue_rq
-> > down to that kmalloc in virtio_ring from 528 to 392 bytes.
-> > 
-> > Still, these (*lightly tested*) patches reduce to 432 bytes,
-> > even for gcc 4.6.4.  Posted here FYI.
-> 
-> I am testing with below which was hack for Dave's idea so don't have
-> a machine to test your patches until tomorrow.
-> So, I will queue your patches into testing machine tomorrow morning.
-> 
-> Thanks!
-> 
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index f5c6635b806c..95f169e85dbe 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -4241,10 +4241,13 @@ EXPORT_SYMBOL_GPL(yield_to);
->  void __sched io_schedule(void)
->  {
->  	struct rq *rq = raw_rq();
-> +	struct blk_plug *plug = current->plug;
->  
->  	delayacct_blkio_start();
->  	atomic_inc(&rq->nr_iowait);
-> -	blk_flush_plug(current);
-> +	if (plug)
-> +		blk_flush_plug_list(plug, true);
-> +
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-Could simply be
+On 05/29/2014 01:06 PM, Eric W. Biederman wrote:
+> Marian Marinov <mm@1h.com> writes:
+> 
+>> Hello,
+>> 
+>> I have the following proposition.
+>> 
+>> Number of currently running processes is accounted at the root user namespace. The problem I'm facing is that
+>> multiple containers in different user namespaces share the process counters.
+> 
+> That is deliberate.
 
--	blk_flush_plug(current);
-+	blk_schedule_flush_plug(current);
+And I understand that very well ;)
 
-Cheers,
+> 
+>> So if containerX runs 100 with UID 99, containerY should have NPROC limit of above 100 in order to execute any 
+>> processes with ist own UID 99.
+>> 
+>> I know that some of you will tell me that I should not provision all of my containers with the same UID/GID maps,
+>> but this brings another problem.
+>> 
+>> We are provisioning the containers from a template. The template has a lot of files 500k and more. And chowning
+>> these causes a lot of I/O and also slows down provisioning considerably.
+>> 
+>> The other problem is that when we migrate one container from one host machine to another the IDs may be already
+>> in use on the new machine and we need to chown all the files again.
+> 
+> You should have the same uid allocations for all machines in your fleet as much as possible.   That has been true
+> ever since NFS was invented and is not new here.  You can avoid the cost of chowning if you untar your files inside
+> of your user namespace.  You can have different maps per machine if you are crazy enough to do that.  You can even
+> have shared uids that you use to share files between containers as long as none of those files is setuid.  And map
+> those shared files to some kind of nobody user in your user namespace.
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+We are not using NFS. We are using a shared block storage that offers us snapshots. So provisioning new containers is
+extremely cheep and fast. Comparing that with untar is comparing a race car with Smart. Yes it can be done and no, I
+do not believe we should go backwards.
+
+We do not share filesystems between containers, we offer them block devices.
+
+> 
+>> Finally if we use different UID/GID maps we can not do live migration to another node because the UIDs may be
+>> already in use.
+>> 
+>> So I'm proposing one hack modifying unshare_userns() to allocate new user_struct for the cred that is created for
+>> the first task creating the user_ns and free it in exit_creds().
+> 
+> I do not like the idea of having user_structs be per user namespace, and deliberately made the code not work that
+> way.
+> 
+>> Can you please comment on that?
+> 
+> I have been pondering having some recursive resources limits that are per user namespace and if all you are worried
+> about are process counts that might work.  I don't honestly know what makes sense at the moment.
+
+It seams to me that the only limit(from RLIMIT) that are generally a problem for the namespaces is number of processes
+and pending signals.
+This is why I proposed the above modification. However I'm not sure if the places I have chosen are right and also I'm
+not really convinced that having per-namespace user_struct is the right approach for the process counter.
+
+> 
+> Eric
+> 
+Marian
+
+- -- 
+Marian Marinov
+Founder & CEO of 1H Ltd.
+Jabber/GTalk: hackman@jabber.org
+ICQ: 7556201
+Mobile: +359 886 660 270
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iEYEARECAAYFAlOHDqoACgkQ4mt9JeIbjJRLPACZARH6agr856HeoB3Ub+e6U1PI
+ICgAoLbQTRM2SqcYOLep7WPIeuoiw4aB
+=/Ii4
+-----END PGP SIGNATURE-----
