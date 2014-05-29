@@ -1,57 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933679AbaE2HZf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 03:25:35 -0400
-Received: from mailrelay004.isp.belgacom.be ([195.238.6.170]:40801 "EHLO
-	mailrelay004.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932664AbaE2HZe (ORCPT
+	id S933760AbaE2HZo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 03:25:44 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:34139 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932664AbaE2HZl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 03:25:34 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ai4JAObfhlNXQ3h6/2dsb2JhbABZgweCRahyCgUBmB6BERd0gmYcIxiBAiQTiEYB10UXhVWIfYRHAQOPQIo0AYsYiBCDOjs
-Date: Thu, 29 May 2014 09:25:32 +0200
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Josh Triplett <josh@joshtriplett.org>, akpm <akpm@linux-foundation.org>
-Subject: [PATCH V2 3/3] lib/debugobjects.c: convert printk(KERN_DEBUG to
- pr_debug
-Message-Id: <20140529092532.850a410f6df7b3ae57726a41@skynet.be>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 29 May 2014 03:25:41 -0400
+Date: Thu, 29 May 2014 00:25:38 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Himangi Saraogi <himangi774@gmail.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        julia.lawall@lip6.fr
+Subject: Re: [PATCH] Input: 88pm860x_onkey : Introduce the use of the managed
+ version of  kzalloc
+Message-ID: <20140529072538.GG11817@core.coreip.homeip.net>
+References: <20140528200123.GA9946@himangi-Dell>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140528200123.GA9946@himangi-Dell>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Direct conversion of one KERN_DEBUG message without DEBUG definition
-(suggested by Josh Triplett)
+On Thu, May 29, 2014 at 01:31:23AM +0530, Himangi Saraogi wrote:
+> This patch moves most data allocated in the probe function from
+> unmanaged interfaces to managed interfaces. The kfrees and error
+> handling code is done away with. Also, the unnecesary labels are
+> removed and the function pm860x_onkey_remove is removed as it becomes
+> empty after removing the no longer required function calls. Also,
+> linux/device.h include is added to make sure the devm_*() routine
+> declarations are unambiguously available.
+> 
+> The following Coccinelle semantic patch was used for making a part of
+> the change:
+> 
+> @platform@
+> identifier p, probefn, removefn;
+> @@
+> struct platform_driver p = {
+>   .probe = probefn,
+>   .remove = removefn,
+> };
+> 
+> @prb@
+> identifier platform.probefn, pdev;
+> expression e, e1, e2;
+> @@
+> probefn(struct platform_device *pdev, ...) {
+>   <+...
+> - e = kzalloc(e1, e2)
+> + e = devm_kzalloc(&pdev->dev, e1, e2)
+>   ...
+> ?-kfree(e);
+>   ...+>
+> }
+> 
+> @rem depends on prb@
+> identifier platform.removefn;
+> expression e;
+> @@
+> removefn(...) {
+>   <...
+> - kfree(e);
+>   ...>
+> }
+> 
+> Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+> Acked-by: Julia Lawall <julia.lawall@lip6.fr>
 
-That message will now be disabled by default.
-(see Documentation/CodingStyle Chapter 13)
+Applied, thank you.
 
-Cc: Josh Triplett <josh@joshtriplett.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- lib/debugobjects.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+> ---
+>  drivers/input/misc/88pm860x_onkey.c | 40 ++++++++++---------------------------
+>  1 file changed, 10 insertions(+), 30 deletions(-)
+> 
+> diff --git a/drivers/input/misc/88pm860x_onkey.c b/drivers/input/misc/88pm860x_onkey.c
+> index abd8453..220ce0f 100644
+> --- a/drivers/input/misc/88pm860x_onkey.c
+> +++ b/drivers/input/misc/88pm860x_onkey.c
+> @@ -26,6 +26,7 @@
+>  #include <linux/interrupt.h>
+>  #include <linux/mfd/88pm860x.h>
+>  #include <linux/slab.h>
+> +#include <linux/device.h>
+>  
+>  #define PM8607_WAKEUP		0x0b
+>  
+> @@ -68,7 +69,8 @@ static int pm860x_onkey_probe(struct platform_device *pdev)
+>  		return -EINVAL;
+>  	}
+>  
+> -	info = kzalloc(sizeof(struct pm860x_onkey_info), GFP_KERNEL);
+> +	info = devm_kzalloc(&pdev->dev, sizeof(struct pm860x_onkey_info),
+> +			    GFP_KERNEL);
+>  	if (!info)
+>  		return -ENOMEM;
+>  	info->chip = chip;
+> @@ -76,11 +78,10 @@ static int pm860x_onkey_probe(struct platform_device *pdev)
+>  	info->dev = &pdev->dev;
+>  	info->irq = irq;
+>  
+> -	info->idev = input_allocate_device();
+> +	info->idev = devm_input_allocate_device(&pdev->dev);
+>  	if (!info->idev) {
+>  		dev_err(chip->dev, "Failed to allocate input dev\n");
+> -		ret = -ENOMEM;
+> -		goto out;
+> +		return -ENOMEM;
+>  	}
+>  
+>  	info->idev->name = "88pm860x_on";
+> @@ -93,42 +94,22 @@ static int pm860x_onkey_probe(struct platform_device *pdev)
+>  	ret = input_register_device(info->idev);
+>  	if (ret) {
+>  		dev_err(chip->dev, "Can't register input device: %d\n", ret);
+> -		goto out_reg;
+> +		return ret;
+>  	}
+>  
+> -	ret = request_threaded_irq(info->irq, NULL, pm860x_onkey_handler,
+> -				   IRQF_ONESHOT, "onkey", info);
+> +	ret = devm_request_threaded_irq(&pdev->dev, info->irq, NULL,
+> +					pm860x_onkey_handler, IRQF_ONESHOT,
+> +					"onkey", info);
+>  	if (ret < 0) {
+>  		dev_err(chip->dev, "Failed to request IRQ: #%d: %d\n",
+>  			info->irq, ret);
+> -		goto out_irq;
+> +		return ret;
+>  	}
+>  
+>  	platform_set_drvdata(pdev, info);
+>  	device_init_wakeup(&pdev->dev, 1);
+>  
+>  	return 0;
+> -
+> -out_irq:
+> -	input_unregister_device(info->idev);
+> -	kfree(info);
+> -	return ret;
+> -
+> -out_reg:
+> -	input_free_device(info->idev);
+> -out:
+> -	kfree(info);
+> -	return ret;
+> -}
+> -
+> -static int pm860x_onkey_remove(struct platform_device *pdev)
+> -{
+> -	struct pm860x_onkey_info *info = platform_get_drvdata(pdev);
+> -
+> -	free_irq(info->irq, info);
+> -	input_unregister_device(info->idev);
+> -	kfree(info);
+> -	return 0;
+>  }
+>  
+>  #ifdef CONFIG_PM_SLEEP
+> @@ -161,7 +142,6 @@ static struct platform_driver pm860x_onkey_driver = {
+>  		.pm	= &pm860x_onkey_pm_ops,
+>  	},
+>  	.probe		= pm860x_onkey_probe,
+> -	.remove		= pm860x_onkey_remove,
+>  };
+>  module_platform_driver(pm860x_onkey_driver);
+>  
+> -- 
+> 1.9.1
+> 
 
-diff --git a/lib/debugobjects.c b/lib/debugobjects.c
-index b628247..547f7f9 100644
---- a/lib/debugobjects.c
-+++ b/lib/debugobjects.c
-@@ -1061,8 +1061,8 @@ static int __init debug_objects_replace_static_objects(void)
- 	}
- 	local_irq_enable();
- 
--	printk(KERN_DEBUG "ODEBUG: %d of %d active objects replaced\n", cnt,
--	       obj_pool_used);
-+	pr_debug("%d of %d active objects replaced\n",
-+		 cnt, obj_pool_used);
- 	return 0;
- free:
- 	hlist_for_each_entry_safe(obj, tmp, &objects, node) {
 -- 
-1.9.1
+Dmitry
