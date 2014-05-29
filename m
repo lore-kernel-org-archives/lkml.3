@@ -1,70 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756029AbaE2Tqw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 15:46:52 -0400
-Received: from mail-ve0-f169.google.com ([209.85.128.169]:63226 "EHLO
-	mail-ve0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755439AbaE2Tqu (ORCPT
+	id S932526AbaE2Tve (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 15:51:34 -0400
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:33061 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755205AbaE2Tvd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 15:46:50 -0400
+	Thu, 29 May 2014 15:51:33 -0400
 MIME-Version: 1.0
-In-Reply-To: <53878DCF.2050501@zytor.com>
-References: <2c4fcf45524162a34d87fdda1eb046b2a5cecee7.1399317206.git.luto@amacapital.net>
- <tip-6f121e548f83674ab4920a4e60afb58d4f61b829@git.kernel.org>
- <CAP=VYLrzMP23B9NVnu4N3NYsoU+ai1K9HpAE_eXQzXESUUZ-Lg@mail.gmail.com>
- <CALCETrWuHGnekoYZKJ6DAGtE8fQRMiPz590VQGctunvgee+uuA@mail.gmail.com> <53878DCF.2050501@zytor.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 29 May 2014 12:46:29 -0700
-Message-ID: <CALCETrXef77JLoEp5hCXSdMAk7usWsL-sUG6NrcgLgrz3krfag@mail.gmail.com>
-Subject: Re: [tip:x86/vdso] x86, vdso: Reimplement vdso.so preparation in
- build-time C
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        linux-tip-commits@vger.kernel.org,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20140529135510.GG11074@laptop.programming.kicks-ass.net>
+References: <1400860385-14555-1-git-send-email-vincent.guittot@linaro.org>
+ <1400860385-14555-12-git-send-email-vincent.guittot@linaro.org> <20140529135510.GG11074@laptop.programming.kicks-ass.net>
+From: Vincent Guittot <vincent.guittot@linaro.org>
+Date: Thu, 29 May 2014 21:51:12 +0200
+Message-ID: <CAKfTPtAdUJfXQAEwA+9+rNJrKE-3B9ZOELUxsWfyVXWre0mKjQ@mail.gmail.com>
+Subject: Re: [PATCH v2 11/11] sched: replace capacity by activity
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Mike Galbraith <efault@gmx.de>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 29, 2014 at 12:43 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 05/29/2014 12:32 PM, Andy Lutomirski wrote:
->> On Thu, May 29, 2014 at 12:17 PM, Paul Gortmaker
->> <paul.gortmaker@windriver.com> wrote:
->>> On Mon, May 5, 2014 at 6:25 PM, tip-bot for Andy Lutomirski
->>> <tipbot@zytor.com> wrote:
->>>> Commit-ID:  6f121e548f83674ab4920a4e60afb58d4f61b829
->>>> Gitweb:     http://git.kernel.org/tip/6f121e548f83674ab4920a4e60afb58d4f61b829
->>>> Author:     Andy Lutomirski <luto@amacapital.net>
->>>> AuthorDate: Mon, 5 May 2014 12:19:34 -0700
->>>> Committer:  H. Peter Anvin <hpa@linux.intel.com>
->>>> CommitDate: Mon, 5 May 2014 13:18:51 -0700
->>>>
->>>> x86, vdso: Reimplement vdso.so preparation in build-time C
->>>
->>> Just a heads up in case it hasn't been mentioned already;
->>> the x86 builds in linux-next which IIRC are done as cross
->>> compile on a powerpc box are failing as follows:
->>>
->>>   VDSO2C  arch/x86/vdso/vdso-image-64.c
->>> /bin/sh: line 1: 15995 Segmentation fault      arch/x86/vdso/vdso2c
->>> arch/x86/vdso/vdso64.so.dbg arch/x86/vdso/vdso-image-64.c
->>> make[3]: *** [arch/x86/vdso/vdso-image-64.c] Error 139
->>>
->>> http://kisskb.ellerman.id.au/kisskb/buildresult/11265454/
->>>
+On 29 May 2014 15:55, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Fri, May 23, 2014 at 05:53:05PM +0200, Vincent Guittot wrote:
+>> The scheduler tries to compute how many tasks a group of CPUs can handle by
+>> assuming that a task's load is SCHED_LOAD_SCALE and a CPU capacity is
+>> SCHED_POWER_SCALE.
+>> We can now have a better idea of the utilization of a group fo CPUs thanks to
+>> group_actitvity and deduct how many capacity is still available.
 >>
->> Egads.  This wouldn't be a big-endian host by any chance?
->>
+>> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+>> ---
 >
-> He said PowerPC; most but not all PowerPC systems are bigendian.  Seems
-> like a fair assumption to make.
+> Right, so as Preeti already mentioned, this wrecks SMT. It also seems to
+> loose the aggressive spread, where we want to run 1 task on each 'core'
+> before we start 'balancing'.
 >
+> So I think we should be able to fix this by setting PREFER_SIBLING on
+> the SMT domain, that way we'll get single tasks running on each SMT
+> domain before filling them up until capacity.
+>
+> Now, its been a while since I looked at PREFER_SIBLING, and I've not yet
+> looked at what your patch does to it, but it seems to me that that is
+> the first direction we should look for an answer to this.
 
-I suppose I shouldn't have assumed that code in arch/x86 would always
-run on little-endian machines.  I'll fix it.
-
---Andy
+OK, i'm going to look more deeply in PREFER_SIBLING too
