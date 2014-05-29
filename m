@@ -1,153 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934180AbaE2FQ4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 01:16:56 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:54823 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932615AbaE2FQv (ORCPT
+	id S934209AbaE2FRi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 01:17:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57984 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932593AbaE2Efd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 01:16:51 -0400
-Date: Thu, 29 May 2014 06:16:47 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Miklos Szeredi <mszeredi@suse.cz>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: fs/dcache.c - BUG: soft lockup - CPU#5 stuck for 22s!
- [systemd-udevd:1667]
-Message-ID: <20140529051647.GG18016@ZenIV.linux.org.uk>
-References: <20140527040026.GT18016@ZenIV.linux.org.uk>
- <20140527070409.GA1801@lahna.fi.intel.com>
- <20140528031955.GW18016@ZenIV.linux.org.uk>
- <20140528073751.GB1757@lahna.fi.intel.com>
- <20140528115701.GY18016@ZenIV.linux.org.uk>
- <20140528131136.GA1643@lahna.fi.intel.com>
- <20140528141937.GZ18016@ZenIV.linux.org.uk>
- <20140528183954.GA18016@ZenIV.linux.org.uk>
- <20140529031149.GE18016@ZenIV.linux.org.uk>
- <CA+55aFyHCF1+DfxndzxkGLLoNErRF2MA0YWtdx7UOTJ=gQWhEw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFyHCF1+DfxndzxkGLLoNErRF2MA0YWtdx7UOTJ=gQWhEw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 29 May 2014 00:35:33 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Oliver Hartkopp <socketcan@hartkopp.net>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.14 100/140] slip: fix spinlock variant
+Date: Wed, 28 May 2014 21:33:59 -0700
+Message-Id: <20140529043102.420859131@linuxfoundation.org>
+X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
+In-Reply-To: <20140529043049.661315084@linuxfoundation.org>
+References: <20140529043049.661315084@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 28, 2014 at 09:21:00PM -0700, Linus Torvalds wrote:
-> On Wed, May 28, 2014 at 8:11 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> >
-> > Here's an updated patch, hopefully slightly less vomit-inducing.
-> 
-> Hmm. Less vomit-inducing, except for this part:
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
-> Ugh, that just *screams* for a helper function. Something like
-> 
->         parent = get_parent_and_lock(dentry);
-> 
-> or whatever, with that trylock/renamelock dance separated out. The
-> rule would be that it would lock the "dentry", and return the
-> (similarly locked) parent. Or NULL for a root dentry, of course.
-> 
-> Please?
+------------------
 
-Already done in my current tree; see below for the next commit in there...
-I can separate that helper from the rest (dealing with the same livelock
-for dentry_kill(dentry, 1) caller in shrink_dentry_list()).  All of that
-is very much subject to reordering, resplitting, writing more decent commit
-messages, etc.
+From: Oliver Hartkopp <socketcan@hartkopp.net>
 
-commit 67e2554f6ca62e20363139f6f2968063410f0f3b
-Author: Al Viro <viro@zeniv.linux.org.uk>
-Date:   Wed May 28 23:53:36 2014 -0400
+[ Upstream commit ddcde142bed44490e338ed1124cb149976d355bb ]
 
-    deal with "put the parent" side of shrink_dentry_list()
-    
-    Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+With commit cc9fa74e2a ("slip/slcan: added locking in wakeup function") a
+formerly missing locking was added to slip.c and slcan.c by Andre Naujoks.
 
-diff --git a/fs/dcache.c b/fs/dcache.c
-index 6c2a92e..7434169 100644
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -793,30 +793,31 @@ restart:
- }
- EXPORT_SYMBOL(d_prune_aliases);
+Alexander Stein contributed the fix 367525c8c2 ("can: slcan: Fix spinlock
+variant") as the kernel lock debugging advised to use spin_lock_bh() instead
+of just using spin_lock().
+
+This fix has to be applied to the same code section in slip.c for the same
+reason too.
+
+Signed-off-by: Oliver Hartkopp <socketcan@hartkopp.net>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/net/slip/slip.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+--- a/drivers/net/slip/slip.c
++++ b/drivers/net/slip/slip.c
+@@ -429,13 +429,13 @@ static void slip_write_wakeup(struct tty
+ 	if (!sl || sl->magic != SLIP_MAGIC || !netif_running(sl->dev))
+ 		return;
  
--static void shrink_dentry_list(struct list_head *list)
-+static inline struct dentry *lock_parent(struct dentry *dentry)
- {
--	struct dentry *dentry, *parent;
--
--	while (!list_empty(list)) {
--		struct inode *inode;
--		dentry = list_entry(list->prev, struct dentry, d_lru);
--
-+	struct dentry *parent = dentry->d_parent;
-+	if (IS_ROOT(dentry))
-+		return NULL;
-+	if (unlikely(!spin_trylock(&parent->d_lock))) {
-+		spin_unlock(&dentry->d_lock);
-+		read_seqlock_excl(&rename_lock);
- 		parent = NULL;
--		spin_lock(&dentry->d_lock);
- 		if (!IS_ROOT(dentry)) {
- 			parent = dentry->d_parent;
--			if (unlikely(!spin_trylock(&parent->d_lock))) {
--				spin_unlock(&dentry->d_lock);
--				parent = NULL;
--				read_seqlock_excl(&rename_lock);
--				if (!IS_ROOT(dentry)) {
--					parent = dentry->d_parent;
--					spin_lock(&parent->d_lock);
--				}
--				read_sequnlock_excl(&rename_lock);
--				spin_lock(&dentry->d_lock);
--			}
-+			spin_lock(&parent->d_lock);
- 		}
-+		read_sequnlock_excl(&rename_lock);
-+		spin_lock(&dentry->d_lock);
-+	}
-+	return parent;
-+}
-+
-+static void shrink_dentry_list(struct list_head *list)
-+{
-+	while (!list_empty(list)) {
-+		struct inode *inode;
-+		struct dentry *dentry = list_entry(list->prev, struct dentry, d_lru);
-+		struct dentry *parent = lock_parent(dentry);
- 
- 		/*
- 		 * The dispose list is isolated and dentries are not accounted
-@@ -864,8 +865,26 @@ static void shrink_dentry_list(struct list_head *list)
- 		 * fragmentation.
- 		 */
- 		dentry = parent;
--		while (dentry && !lockref_put_or_lock(&dentry->d_lockref))
--			dentry = dentry_kill(dentry);
-+		while (dentry && !lockref_put_or_lock(&dentry->d_lockref)) {
-+			parent = lock_parent(dentry);
-+			if (dentry->d_lockref.count != 1) {
-+				dentry->d_lockref.count--;
-+				spin_unlock(&dentry->d_lock);
-+				if (parent)
-+					spin_unlock(&parent->d_lock);
-+				break;
-+			}
-+			inode = dentry->d_inode;	/* can't be NULL */
-+			if (unlikely(!spin_trylock(&inode->i_lock))) {
-+				spin_unlock(&dentry->d_lock);
-+				if (parent)
-+					spin_unlock(&parent->d_lock);
-+				cpu_relax();
-+				continue;
-+			}
-+			__dentry_kill(dentry);
-+			dentry = parent;
-+		}
+-	spin_lock(&sl->lock);
++	spin_lock_bh(&sl->lock);
+ 	if (sl->xleft <= 0)  {
+ 		/* Now serial buffer is almost free & we can start
+ 		 * transmission of another packet */
+ 		sl->dev->stats.tx_packets++;
+ 		clear_bit(TTY_DO_WRITE_WAKEUP, &tty->flags);
+-		spin_unlock(&sl->lock);
++		spin_unlock_bh(&sl->lock);
+ 		sl_unlock(sl);
+ 		return;
  	}
+@@ -443,7 +443,7 @@ static void slip_write_wakeup(struct tty
+ 	actual = tty->ops->write(tty, sl->xhead, sl->xleft);
+ 	sl->xleft -= actual;
+ 	sl->xhead += actual;
+-	spin_unlock(&sl->lock);
++	spin_unlock_bh(&sl->lock);
  }
  
+ static void sl_tx_timeout(struct net_device *dev)
+
+
