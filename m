@@ -1,49 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755934AbaE2TO3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 15:14:29 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:37128 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754738AbaE2TO2 (ORCPT
+	id S932650AbaE2TOx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 15:14:53 -0400
+Received: from mail-ve0-f171.google.com ([209.85.128.171]:60952 "EHLO
+	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754738AbaE2TOw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 15:14:28 -0400
-Message-ID: <53878711.9050702@wwwdotorg.org>
-Date: Thu, 29 May 2014 13:14:25 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Thu, 29 May 2014 15:14:52 -0400
 MIME-Version: 1.0
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: Russell King <linux@arm.linux.org.uk>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Wolfram Sang <wsa@the-dreams.de>, linux-arm-kernel@lists.infradead.org,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 5/5] ARM: tegra: build new fuse driver in drivers/misc
-References: <1401281677-32110-1-git-send-email-pdeschrijver@nvidia.com> <1401281677-32110-6-git-send-email-pdeschrijver@nvidia.com>
-In-Reply-To: <1401281677-32110-6-git-send-email-pdeschrijver@nvidia.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140529185201.GN18016@ZenIV.linux.org.uk>
+References: <20140529035233.GF18016@ZenIV.linux.org.uk>
+	<20140529053444.GI18016@ZenIV.linux.org.uk>
+	<20140529105107.GB1938@lahna.fi.intel.com>
+	<20140529110439.GA2006@lahna.fi.intel.com>
+	<20140529133036.GJ18016@ZenIV.linux.org.uk>
+	<CA+55aFzYjRrvSaF=wGimrgtEqR7GHbu1ku1qn1wQs5wgQrCZdg@mail.gmail.com>
+	<20140529154454.GK18016@ZenIV.linux.org.uk>
+	<20140529162307.GL18016@ZenIV.linux.org.uk>
+	<CA+55aFyRDJpm2Wfg9jvXCsKYgt36=6A_++bX+Q=C4MvQRbqh_A@mail.gmail.com>
+	<20140529165351.GM18016@ZenIV.linux.org.uk>
+	<20140529185201.GN18016@ZenIV.linux.org.uk>
+Date: Thu, 29 May 2014 12:14:51 -0700
+X-Google-Sender-Auth: nfBNnO_NSxxL8vf7gBM3q8f1pW4
+Message-ID: <CA+55aFwNv2-9=uXxzYH9UpN_x209Cv_BBu-9j2prSh2xVmmsAg@mail.gmail.com>
+Subject: Re: fs/dcache.c - BUG: soft lockup - CPU#5 stuck for 22s! [systemd-udevd:1667]
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Miklos Szeredi <mszeredi@suse.cz>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/28/2014 06:54 AM, Peter De Schrijver wrote:
-> The Tegra fuse code has moved to drivers/misc/fuse/tegra. Enable the
-> building of that code, and disable the building of the old fuse code in
-> arch/arm/mach-tegra/.
+On Thu, May 29, 2014 at 11:52 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>
+> Grrr...  Sadly, that's not good enough.  Leaking rcu_read_lock() on
+> success is trivial, but there's more serious problem: suppose dentries
+> involved get moved before we get to locking what we thought was parent.
+> We end up taking ->d_lock on two dentries that might be nowhere near each
+> other in the tree, with obvious nasty implications.  Would be _very_ hard
+> to reproduce ;-/
 
-> diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
-> index 7eb4b69..994d02d 100644
-> --- a/drivers/misc/Makefile
-> +++ b/drivers/misc/Makefile
-> @@ -55,3 +55,5 @@ obj-$(CONFIG_SRAM)		+= sram.o
->  obj-y				+= mic/
->  obj-$(CONFIG_GENWQE)		+= genwqe/
->  obj-$(CONFIG_ECHO)		+= echo/
-> +obj-y				+= fuse/
-> +
+Yeah, I don't think you can reproduce that, but I guess renaming
+directories into each other (two renames needed) could trigger an ABBA
+deadlock by changing the topological order of dentry/parent.
 
-This adds an empty blank line to the end of the file.
+I suspect there's no way in hell that tiny race will ever happen in
+practice, but let's not risk it.
 
+And your solution (to re-check after just taking the parent lock)
+seems sufficient and sane, since dentry_lock_for_move() will always
+take the parent lock(s) before we move a dentry.
+
+So that looks good to me.
+
+              Linus
