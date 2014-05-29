@@ -1,122 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757700AbaE2QXk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 12:23:40 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:18511 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757346AbaE2QXi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 12:23:38 -0400
-X-AuditID: cbfec7f5-b7f626d000004b39-36-53875f08a73f
-From: Rafal Krypa <r.krypa@samsung.com>
-To: Casey Schaufler <casey@schaufler-ca.com>
-Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rafal Krypa <r.krypa@samsung.com>
-Subject: [PATCH] Smack: fix bug with empty label causing memory read beyond
- range
-Date: Thu, 29 May 2014 18:23:32 +0200
-Message-id: <1401380612-20006-1-git-send-email-r.krypa@samsung.com>
-X-Mailer: git-send-email 2.0.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrKJMWRmVeSWpSXmKPExsVy+t/xa7oc8e3BBkv6hCzubfvFZnF51xw2
-	iw89j9gs3k5awezA4tG3ZRWjx9H9i9g8Pm+SC2CO4rJJSc3JLEst0rdL4Mo4u2sVa8EUyYrz
-	s5axNDC+Eeli5OSQEDCRONP7jRnCFpO4cG89WxcjF4eQwFJGiXOb17BDOL1MEq1nfzOBVLEJ
-	qEssnd/LBmKLCOhI7NvznB3EZhbIkbg9bykLiC0sECxx6cwMsDiLgKrEs7UNjCA2r4CzxM0P
-	j1khtslJNNz4xDaBkXsBI8MqRtHU0uSC4qT0XCO94sTc4tK8dL3k/NxNjBCvf93BuPSY1SFG
-	AQ5GJR7eDJf2YCHWxLLiytxDjBIczEoivHKhQCHelMTKqtSi/Pii0pzU4kOMTBycUg2MW4MO
-	tFs79hvMbM8S4Szxs15Td25V4/R1ixJyNri9MH7/c1Lhok8vd6vpr3Bdf/XHmvfR+f8eLHrq
-	c8DKfgGfV/4O3agCE/3y+W9b1sje0mB//iayQ8FM6k6UUmTPD3Uu887vc+d+6DktFHSZ06rc
-	P29RhWvGpXdli7gmaH2VWOdqK+Sgm7RciaU4I9FQi7moOBEA9OjdnNgBAAA=
+	id S1757837AbaE2QXr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 12:23:47 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:60317 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757729AbaE2QXn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 12:23:43 -0400
+Message-ID: <53875F09.3090607@linux.vnet.ibm.com>
+Date: Thu, 29 May 2014 12:23:37 -0400
+From: "Jason J. Herne" <jjherne@linux.vnet.ibm.com>
+Reply-To: jjherne@linux.vnet.ibm.com
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Lai Jiangshan <laijs@cn.fujitsu.com>, Sasha Levin <sasha.levin@oracle.com>,
+        Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: workqueue: WARN at at kernel/workqueue.c:2176
+References: <537119EF.2060102@oracle.com> <20140512200135.GL1421@htj.dyndns.org> <53718119.1090000@cn.fujitsu.com> <537180B9.6080407@oracle.com> <53739F3B.4060608@linux.vnet.ibm.com> <53758B12.8060609@cn.fujitsu.com> <20140516115737.GP11096@twins.programming.kicks-ass.net> <CACvQF52-jUMzK32uoDCb8zn0RZsiC9uzUOq+ZBRXK22esYKS0g@mail.gmail.com> <20140516162945.GZ11096@twins.programming.kicks-ass.net> <53849EB7.9090302@linux.vnet.ibm.com> <20140527142637.GB19143@laptop.programming.kicks-ass.net>
+In-Reply-To: <20140527142637.GB19143@laptop.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14052916-7182-0000-0000-00000AB6127B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Setting zero-length Smack label on a file crashes the kernel.
-The following command:
- # setfattr -n security.SMACK64 /dev/null
+On 05/27/2014 10:26 AM, Peter Zijlstra wrote:
+> On Tue, May 27, 2014 at 10:18:31AM -0400, Jason J. Herne wrote:
+>> On 05/16/2014 12:29 PM, Peter Zijlstra wrote:
+>>> On Sat, May 17, 2014 at 12:18:06AM +0800, Lai Jiangshan wrote:
+>>>> so the scheduler/set_cpus_allowed_ptr()/cpu_active_mask should be the first
+>>>> place to fix.
+>>>
+>>> I'm not arguing about that, not to mention that this is userspace
+>>> exposed and nobody protects that.
+>>>
+>>> But I was expecting kernel stuff that calls it on hotplug to be
+>>> serialized thusly, but apparently not so.
+>>>
+>>
+>> Was a final patch posted for this issue? The discussion made it sound like
+>> there were still a few things to figure out before we could resolve this
+>> bug. I can recreate this as needed and I'm happy to test any patches.
+>
+>
+> https://git.kernel.org/cgit/linux/kernel/git/tip/tip.git/commit/?h=sched/urgent&id=6acbfb96976fc3350e30d964acb1dbbdf876d55e
+>
+> which should make its way to Linus soonish I suppose.
+>
 
-causes kernel panic. Call Trace:
- [<601a3b1e>] smk_parse_smack+0x1e/0xb2
- [<601a3cb0>] smk_import_entry+0x16/0x180
- [<601a1d0f>] smack_inode_setxattr+0x1ac/0x269
- [<6001ea92>] ? strncpy_chunk_from_user+0x0/0x56
- [<6001ecdb>] ? do_op_one_page+0x142/0x1e9
- [<6019e88f>] security_inode_setxattr+0x1e/0x23
- [<600e23e9>] vfs_setxattr+0x79/0xbd
- [<600e2579>] setxattr+0x14c/0x1a2
- [<600e27c3>] SyS_setxattr+0x7e/0xd1
- [<60043fad>] ? ptrace_notify+0xbc/0xc3
- [<6001ea26>] handle_syscall+0x65/0x7c
- [<60031c10>] userspace+0x441/0x547
- [<6001b9b3>] ? interrupt_end+0x0/0x80
- [<6001ea69>] ? copy_chunk_to_user+0x0/0x29
- [<6002d98f>] ? save_registers+0x1f/0x39
- [<6003488e>] ? arch_prctl+0xf9/0x173
- [<6001b867>] fork_handler+0x85/0x87
+I applied the patch on top of c7208164e66f63e3ec1759b98087849286410741 
+and I am still hitting the problem.
+Should I have applied to a different branch/commit to pick up any other 
+needed changes?
 
-It is caused by passing len=0 to function smk_parse_smack(). In such case
-the function assumes that the string to parse is null-terminated and tries
-to calculate it's length by strlen(). But the string in this case is empty
-and not null-terminated.
+Patch applied:
 
-During investigation of all other calls leading to smk_parse_smack()
-another similar issue was found in smk_write_onlycap().
+diff --git a/kernel/cpu.c b/kernel/cpu.c
+index a9e710e..247979a 100644
+--- a/kernel/cpu.c
++++ b/kernel/cpu.c
+@@ -726,10 +726,12 @@ void set_cpu_present(unsigned int cpu, bool present)
+void set_cpu_online(unsigned int cpu, bool online)
+{
+- if (online)
++ if (online) {
+cpumask_set_cpu(cpu, to_cpumask(cpu_online_bits));
+- else
++ cpumask_set_cpu(cpu, to_cpumask(cpu_active_bits));
++ } else {
+cpumask_clear_cpu(cpu, to_cpumask(cpu_online_bits));
++ }
+}
+void set_cpu_active(unsigned int cpu, bool active)
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 44e00ab..86f3890 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -5076,7 +5076,6 @@ static int sched_cpu_active(struct notifier_block 
+*nfb,
+unsigned long action, void *hcpu)
+{
+switch (action & ~CPU_TASKS_FROZEN) {
+- case CPU_STARTING:
+case CPU_DOWN_FAILED:
+set_cpu_active((long)hcpu, true);
+return NOTIFY_OK;
 
-This patch fixes both cases by ensuring that smk_parse_smack() by handling
-of zero-length labels.
+Here is the output from the recreation using this patch:
 
-Signed-off-by: Rafal Krypa <r.krypa@samsung.com>
----
- security/smack/smack_lsm.c | 9 ++++++---
- security/smack/smackfs.c   | 2 +-
- 2 files changed, 7 insertions(+), 4 deletions(-)
+[ 3634.146233] ------------[ cut here ]------------
+[ 3634.146238] WARNING: at kernel/workqueue.c:2176
+[ 3634.146239] Modules linked in: ipt_MASQUERADE iptable_nat nf_nat_ipv4 
+nf_nat nf_conntrack_ipv4 nf_defrag_ipv4 xt_conntrack nf_conntrack 
+xt_CHECKSUM iptable_mangle bridge stp llc ip6table_filter ip6_tables 
+ebtable_nat ebtables iscsi_tcp libiscsi_tcp libiscsi 
+scsi_transport_iscsi qeth_l2 tape_3590 tape tape_class vhost_net tun 
+vhost macvtap macvlan eadm_sch qeth ccwgroup zfcp scsi_transport_fc 
+scsi_tgt qdio dasd_eckd_mod dasd_mod dm_multipath [last unloaded: kvm]
+[ 3634.146260] CPU: 6 PID: 28009 Comm: kworker/7:0 Not tainted 3.15.0-rc7 #1
+[ 3634.146263] Workqueue: \xffffff80           (null)
+[ 3634.146264] task: 000000025def32e0 ti: 000000026dca0000 task.ti: 
+000000026dca0000
+[ 3634.146266] Krnl PSW : 0404c00180000000 000000000015ad1a 
+(process_one_work+0x2e6/0x4c0)
+[ 3634.146272]            R:0 T:1 IO:0 EX:0 Key:0 M:1 W:0 P:0 AS:3 CC:0 
+PM:0 EA:3
+Krnl GPRS: 0000000000000000 0000000000bc649a 00000002764b0980 
+0000000000b94f40
+[ 3634.146275]            0000000000b94f40 0000000000000000 
+0000000000000000 0000000000bc6496
+[ 3634.146277]            0000000000000000 000000008b65b600 
+000000008b657000 000000008b657018
+[ 3634.146278]            00000002764b0980 0000000000b94f40 
+000000026dca3dd0 000000026dca3d70
+[ 3634.146287] Krnl Code: 000000000015ad0e: 95001000		cli	0(%r1),0
+            000000000015ad12: a774fece		brc	7,15aaae
+           #000000000015ad16: a7f40001		brc	15,15ad18
+           >000000000015ad1a: 92011000		mvi	0(%r1),1
+            000000000015ad1e: a7f4fec8		brc	15,15aaae
+            000000000015ad22: e31003180004	lg	%r1,792
+            000000000015ad28: 58301024		l	%r3,36(%r1)
+            000000000015ad2c: a73a0001		ahi	%r3,1
+[ 3634.146299] Call Trace:
+[ 3634.146301] ([<000000000015ace8>] process_one_work+0x2b4/0x4c0)
+[ 3634.146303]  [<000000000015c100>] worker_thread+0x178/0x39c
+[ 3634.146305]  [<0000000000164ba6>] kthread+0x10e/0x128
+[ 3634.146310]  [<000000000072d026>] kernel_thread_starter+0x6/0xc
+[ 3634.146312]  [<000000000072d020>] kernel_thread_starter+0x0/0xc
+[ 3634.146313] Last Breaking-Event-Address:
+[ 3634.146315]  [<000000000015ad16>] process_one_work+0x2e2/0x4c0
+[ 3634.146316] ---[ end trace 03f51c9126c24171 ]---
 
-diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
-index 14f52be..be8651d 100644
---- a/security/smack/smack_lsm.c
-+++ b/security/smack/smack_lsm.c
-@@ -800,8 +800,8 @@ static int smack_inode_getattr(struct vfsmount *mnt, struct dentry *dentry)
-  * smack_inode_setxattr - Smack check for setting xattrs
-  * @dentry: the object
-  * @name: name of the attribute
-- * @value: unused
-- * @size: unused
-+ * @value: attribute value
-+ * @size: attribute size
-  * @flags: unused
-  *
-  * This protects the Smack attribute explicitly.
-@@ -842,6 +842,9 @@ static int smack_inode_setxattr(struct dentry *dentry, const char *name,
- 	if (check_priv && !smack_privileged(CAP_MAC_ADMIN))
- 		rc = -EPERM;
- 
-+	if (value == NULL || size > SMK_LONGLABEL || size == 0)
-+		return -EINVAL;
-+
- 	if (rc == 0 && check_import) {
- 		skp = smk_import_entry(value, size);
- 		if (skp == NULL || (check_star &&
-@@ -2076,7 +2079,7 @@ static int smack_inode_setsecurity(struct inode *inode, const char *name,
- 	int rc = 0;
- 
- 	if (value == NULL || size > SMK_LONGLABEL || size == 0)
--		return -EACCES;
-+		return -EINVAL;
- 
- 	skp = smk_import_entry(value, size);
- 	if (skp == NULL)
-diff --git a/security/smack/smackfs.c b/security/smack/smackfs.c
-index 3198cfe..c29e8ee 100644
---- a/security/smack/smackfs.c
-+++ b/security/smack/smackfs.c
-@@ -1667,7 +1667,7 @@ static ssize_t smk_write_onlycap(struct file *file, const char __user *buf,
- 	if (smack_onlycap != NULL && smack_onlycap != skp)
- 		return -EPERM;
- 
--	data = kzalloc(count, GFP_KERNEL);
-+	data = kzalloc(count + 1, GFP_KERNEL);
- 	if (data == NULL)
- 		return -ENOMEM;
- 
+I don't think this output provides anything new. Please let me know if I 
+can gather any more data.
+
 -- 
-2.0.0
+-- Jason J. Herne (jjherne@linux.vnet.ibm.com)
 
