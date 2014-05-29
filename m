@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932710AbaE2Efq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 00:35:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58008 "EHLO
+	id S933994AbaE2FLo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 01:11:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58089 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932610AbaE2Efg (ORCPT
+	with ESMTP id S932703AbaE2Efq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 00:35:36 -0400
+	Thu, 29 May 2014 00:35:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        John Fastabend <john.r.fastabend@intel.com>,
-        Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 105/140] net: sched: lock imbalance in hhf qdisc
-Date: Wed, 28 May 2014 21:34:04 -0700
-Message-Id: <20140529043103.094942791@linuxfoundation.org>
+        Simon Wunderlich <simon@open-mesh.com>,
+        Marek Lindner <mareklindner@neomailbox.ch>,
+        Antonio Quartulli <antonio@meshcoding.com>
+Subject: [PATCH 3.14 122/140] batman-adv: always run purge_orig_neighbors
+Date: Wed, 28 May 2014 21:34:21 -0700
+Message-Id: <20140529043105.169706456@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
 In-Reply-To: <20140529043049.661315084@linuxfoundation.org>
 References: <20140529043049.661315084@linuxfoundation.org>
@@ -28,51 +28,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: John Fastabend <john.fastabend@gmail.com>
+From: Simon Wunderlich <simon@open-mesh.com>
 
-[ Upstream commit f6a082fed1e6407c2f4437d0d963b1bcbe5f9f58 ]
+[ Upstream commit 7b955a9fc164487d7c51acb9787f6d1b01b35ef6 ]
 
-hhf_change() takes the sch_tree_lock and releases it but misses the
-error cases. Fix the missed case here.
+The current code will not execute batadv_purge_orig_neighbors() when an
+orig_ifinfo has already been purged. However we need to run it in any
+case. Fix that.
 
-To reproduce try a command like this,
+This is a regression introduced by
+7351a4822d42827ba0110677c0cbad88a3d52585
+("batman-adv: split out router from orig_node")
 
-# tc qdisc change dev p3p2 root hhf quantum 40960 non_hh_weight 300000
-
-Signed-off-by: John Fastabend <john.r.fastabend@intel.com>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Simon Wunderlich <simon@open-mesh.com>
+Signed-off-by: Marek Lindner <mareklindner@neomailbox.ch>
+Signed-off-by: Antonio Quartulli <antonio@meshcoding.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/sched/sch_hhf.c |   11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+ net/batman-adv/originator.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/net/sched/sch_hhf.c
-+++ b/net/sched/sch_hhf.c
-@@ -553,11 +553,6 @@ static int hhf_change(struct Qdisc *sch,
- 	if (err < 0)
- 		return err;
+--- a/net/batman-adv/originator.c
++++ b/net/batman-adv/originator.c
+@@ -857,7 +857,7 @@ static bool batadv_purge_orig_node(struc
+ {
+ 	struct batadv_neigh_node *best_neigh_node;
+ 	struct batadv_hard_iface *hard_iface;
+-	bool changed;
++	bool changed_ifinfo, changed_neigh;
  
--	sch_tree_lock(sch);
--
--	if (tb[TCA_HHF_BACKLOG_LIMIT])
--		sch->limit = nla_get_u32(tb[TCA_HHF_BACKLOG_LIMIT]);
--
- 	if (tb[TCA_HHF_QUANTUM])
- 		new_quantum = nla_get_u32(tb[TCA_HHF_QUANTUM]);
+ 	if (batadv_has_timed_out(orig_node->last_seen,
+ 				 2 * BATADV_PURGE_TIMEOUT)) {
+@@ -867,10 +867,10 @@ static bool batadv_purge_orig_node(struc
+ 			   jiffies_to_msecs(orig_node->last_seen));
+ 		return true;
+ 	}
+-	changed = batadv_purge_orig_ifinfo(bat_priv, orig_node);
+-	changed = changed || batadv_purge_orig_neighbors(bat_priv, orig_node);
++	changed_ifinfo = batadv_purge_orig_ifinfo(bat_priv, orig_node);
++	changed_neigh = batadv_purge_orig_neighbors(bat_priv, orig_node);
  
-@@ -567,6 +562,12 @@ static int hhf_change(struct Qdisc *sch,
- 	non_hh_quantum = (u64)new_quantum * new_hhf_non_hh_weight;
- 	if (non_hh_quantum > INT_MAX)
- 		return -EINVAL;
-+
-+	sch_tree_lock(sch);
-+
-+	if (tb[TCA_HHF_BACKLOG_LIMIT])
-+		sch->limit = nla_get_u32(tb[TCA_HHF_BACKLOG_LIMIT]);
-+
- 	q->quantum = new_quantum;
- 	q->hhf_non_hh_weight = new_hhf_non_hh_weight;
+-	if (!changed)
++	if (!changed_ifinfo && !changed_neigh)
+ 		return false;
  
+ 	/* first for NULL ... */
 
 
