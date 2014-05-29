@@ -1,52 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753430AbaE2WuR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 18:50:17 -0400
-Received: from mail-ve0-f175.google.com ([209.85.128.175]:49594 "EHLO
-	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752425AbaE2WuN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 18:50:13 -0400
+	id S1752065AbaE2W6k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 18:58:40 -0400
+Received: from ozlabs.org ([103.22.144.67]:54680 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751329AbaE2W6j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 18:58:39 -0400
+Date: Fri, 30 May 2014 08:58:32 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: abdoulaye berthe <berthe.ab@gmail.com>
+Cc: linus.walleij@linaro.org, gnurou@gmail.com,
+        mika.westerberg@linux.intel.com, andriy.shevchenko@linux.intel.com,
+        linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] gpio: gpiolib: set gpiochip_remove retval to void
+Message-ID: <20140530085832.711df1c6@canb.auug.org.au>
+In-Reply-To: <1401402722-26631-1-git-send-email-berthe.ab@gmail.com>
+References: <CACRpkdZg559ogf5koyxA_urM949ee-+upauYWQmo-sPUQn-g2w@mail.gmail.com>
+	<1401402722-26631-1-git-send-email-berthe.ab@gmail.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <5387B7A0.3030302@windriver.com>
-References: <CALCETrXef77JLoEp5hCXSdMAk7usWsL-sUG6NrcgLgrz3krfag@mail.gmail.com>
- <cover.1401400316.git.luto@amacapital.net> <5387B7A0.3030302@windriver.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 29 May 2014 15:49:52 -0700
-Message-ID: <CALCETrVSG7-=Q3sG87YTzDYOLXzEbkvW9Ws=HeJ5cAUGxQhdJA@mail.gmail.com>
-Subject: Re: [PATCH 0/2] x86,vdso: vdso build fixes and improvements
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Josh Boyer <jwboyer@fedoraproject.org>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/TVK/E9unbWQjnMAzm.Niu=0"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 29, 2014 at 3:41 PM, Paul Gortmaker
-<paul.gortmaker@windriver.com> wrote:
-> On 14-05-29 05:57 PM, Andy Lutomirski wrote:
->> Patch 1 causes make;make to behave similarly to make if vdso2c fails.
->> Patch 2 hopefully fixes x86 crossbuilds on big-endian machines.  I don't
->> have a big-endian machine to test on, though.
+--Sig_/TVK/E9unbWQjnMAzm.Niu=0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
+
+Hi abdoulaye,
+
+On Fri, 30 May 2014 00:32:02 +0200 abdoulaye berthe <berthe.ab@gmail.com> w=
+rote:
 >
-> Since the x86 builds are unconditionally failing as-is now in
-> linux-next, perhaps Stephen [Cc'd] can layer these on the top of
-> the tree he'll be making within the next couple of hours to give
-> them a big-endian test.
+> +		if (test_bit(FLAG_REQUESTED, &chip->desc[id].flags))
+> +			panic("gpio: removing gpiochip with gpios still requested\n");
 
-Stephen, if you do this, could you also send me some of the build outputs:
+Someone else already commented that panic is probably overkill ... is
+there no way to log this and continue?
 
-arch/x86/vdso/*.so.dbg
-arch/x86/vdso/*-image-*.c
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-I'd like to verify that the output is correct.  It would be
-unfortunate if the cross-built kernel had some subtle error.
+--Sig_/TVK/E9unbWQjnMAzm.Niu=0
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-Thanks,
-Andy
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTh7ucAAoJEMDTa8Ir7ZwVzz0P/Al0FVFzrAA6QH0U2YTzs/m6
+uFKcpTHL0k9gxkUNk7irzqqj9iUvKn14Yy0DgoLTFxtFOF+Fpo+RAJ9RBAw2aaAp
+I8AOd6MGNHV2gViB58NAlOGCrTQJ5pnR8QVwCpKPtNYrRuMUbnSUjPTI1/kFLLkN
+junPrCw+5gJVabJ8RauBZwLIsDtU5rVaEriANtBZNb8MvdLjQJlJ0jWx+XSf1WtL
+hvz9XtJJI+gXUyZP+1h6R3h5U1alC4VhAJ7WUvmN6GticC+R2RiIw+thV52p0AxH
+gsXQMNFsgbnQEBSdVdLDGEXp5ZAPyvQLlSifC5Y+s05lwakcZKsmUu6so8Hx1GfN
+XJAhQmBwLTvCpzEcuv7xd1GO1mG1LbgYlKPG91OH7a3W2KWqcykVNNPUl9OYgzw7
+tD0gXgX9uzp67XBiG/e0FvyT10AJmHxBe+HvSfhSTHwdvPf178x4BCDOflxxMVeI
+zz9rG80xiyLJ1wZsjc+fNzdivx+dNvwSkdjOvFMHp78isvAE/Gl2Xkjmu1R3E3Da
+qmQTPV81yizUw3WNbmiIHiitN6PpeqjSYkLZJz6WKj0AEtxbZBOdh1/duxG25S82
+PeyIX/EU1u/gbHoQRlhodlHl8cBJ3LXnjB5Zmjpz6ZQgMFqhKrvS2Ix7yk8qzaxX
+I1L8ZujZSaEnBbPhEboE
+=nnbe
+-----END PGP SIGNATURE-----
+
+--Sig_/TVK/E9unbWQjnMAzm.Niu=0--
