@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934718AbaE2Fil (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 01:38:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57624 "EHLO
+	id S934749AbaE2FjB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 01:39:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57614 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756192AbaE2Eex (ORCPT
+	with ESMTP id S1756180AbaE2Eew (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 00:34:53 -0400
+	Thu, 29 May 2014 00:34:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
@@ -14,9 +14,9 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Thomas Gleixner <tglx@linutronix.de>, linaro-kernel@lists.linaro.org,
         fweisbec@gmail.com, Arvind.Chauhan@arm.com,
         linaro-networking@linaro.org
-Subject: [PATCH 3.14 019/140] tick-sched: Check tick_nohz_enabled in tick_nohz_switch_to_nohz()
-Date: Wed, 28 May 2014 21:32:38 -0700
-Message-Id: <20140529043051.817462147@linuxfoundation.org>
+Subject: [PATCH 3.14 017/140] tick-common: Fix wrong check in tick_check_replacement()
+Date: Wed, 28 May 2014 21:32:36 -0700
+Message-Id: <20140529043051.525154521@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
 In-Reply-To: <20140529043049.661315084@linuxfoundation.org>
 References: <20140529043049.661315084@linuxfoundation.org>
@@ -31,38 +31,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Viresh Kumar <viresh.kumar@linaro.org>
 
-commit 27630532ef5ead28b98cfe28d8f95222ef91c2b7 upstream.
+commit 521c42990e9d561ed5ed9f501f07639d0512b3c9 upstream.
 
-Since commit d689fe222 (NOHZ: Check for nohz active instead of nohz
-enabled) the tick_nohz_switch_to_nohz() function returns because it
-checks for the tick_nohz_active flag. This can't be set, because the
-function itself sets it.
+tick_check_replacement() returns if a replacement of clock_event_device is
+possible or not. It does this as the first check:
 
-Undo the change in tick_nohz_switch_to_nohz().
+	if (tick_check_percpu(curdev, newdev, smp_processor_id()))
+		return false;
+
+Thats wrong. tick_check_percpu() returns true when the device is
+useable. Check for false instead.
+
+[ tglx: Massaged changelog ]
 
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 Cc: linaro-kernel@lists.linaro.org
 Cc: fweisbec@gmail.com
 Cc: Arvind.Chauhan@arm.com
 Cc: linaro-networking@linaro.org
-Link: http://lkml.kernel.org/r/40939c05f2d65d781b92b20302b02243d0654224.1397537987.git.viresh.kumar@linaro.org
+Link: http://lkml.kernel.org/r/486a02efe0246635aaba786e24b42d316438bf3b.1397537987.git.viresh.kumar@linaro.org
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/time/tick-sched.c |    2 +-
+ kernel/time/tick-common.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -970,7 +970,7 @@ static void tick_nohz_switch_to_nohz(voi
- 	struct tick_sched *ts = &__get_cpu_var(tick_cpu_sched);
- 	ktime_t next;
+--- a/kernel/time/tick-common.c
++++ b/kernel/time/tick-common.c
+@@ -276,7 +276,7 @@ static bool tick_check_preferred(struct
+ bool tick_check_replacement(struct clock_event_device *curdev,
+ 			    struct clock_event_device *newdev)
+ {
+-	if (tick_check_percpu(curdev, newdev, smp_processor_id()))
++	if (!tick_check_percpu(curdev, newdev, smp_processor_id()))
+ 		return false;
  
--	if (!tick_nohz_active)
-+	if (!tick_nohz_enabled)
- 		return;
- 
- 	local_irq_disable();
+ 	return tick_check_preferred(curdev, newdev);
 
 
