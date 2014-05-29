@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753066AbaE2EzW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 00:55:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58506 "EHLO
+	id S933329AbaE2Ezo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 00:55:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58500 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933121AbaE2Ei0 (ORCPT
+	with ESMTP id S933114AbaE2EiY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 00:38:26 -0400
+	Thu, 29 May 2014 00:38:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Toshiaki Makita <makita.toshiaki@lab.ntt.co.jp>,
+        Thomas Richter <tmricht@linux.vnet.ibm.com>,
+        Jay Vosburgh <j.vosburgh@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 44/86] bridge: Fix double free and memory leak around br_allowed_ingress
-Date: Wed, 28 May 2014 21:37:19 -0700
-Message-Id: <20140529043519.431127468@linuxfoundation.org>
+Subject: [PATCH 3.10 43/86] bonding: Remove debug_fs files when module init fails
+Date: Wed, 28 May 2014 21:37:18 -0700
+Message-Id: <20140529043519.309450161@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
 In-Reply-To: <20140529043513.451722422@linuxfoundation.org>
 References: <20140529043513.451722422@linuxfoundation.org>
@@ -27,70 +28,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Toshiaki Makita <makita.toshiaki@lab.ntt.co.jp>
+From: Thomas Richter <tmricht@linux.vnet.ibm.com>
 
-[ Upstream commit eb7076182d1ae4bc4641534134ed707100d76acc ]
+[ Upstream commit db29868653394937037d71dc3545768302dda643 ]
 
-br_allowed_ingress() has two problems.
+Remove the bonding debug_fs entries when the
+module initialization fails. The debug_fs
+entries should be removed together with all other
+already allocated resources.
 
-1. If br_allowed_ingress() is called by br_handle_frame_finish() and
-vlan_untag() in br_allowed_ingress() fails, skb will be freed by both
-vlan_untag() and br_handle_frame_finish().
-
-2. If br_allowed_ingress() is called by br_dev_xmit() and
-br_allowed_ingress() fails, the skb will not be freed.
-
-Fix these two problems by freeing the skb in br_allowed_ingress()
-if it fails.
-
-Signed-off-by: Toshiaki Makita <makita.toshiaki@lab.ntt.co.jp>
+Signed-off-by: Thomas Richter <tmricht@linux.vnet.ibm.com>
+Signed-off-by: Jay Vosburgh <j.vosburgh@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/bridge/br_input.c |    2 +-
- net/bridge/br_vlan.c  |    7 ++++---
- 2 files changed, 5 insertions(+), 4 deletions(-)
+ drivers/net/bonding/bond_main.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/net/bridge/br_input.c
-+++ b/net/bridge/br_input.c
-@@ -71,7 +71,7 @@ int br_handle_frame_finish(struct sk_buf
- 		goto drop;
- 
- 	if (!br_allowed_ingress(p->br, nbp_get_vlan_info(p), skb, &vid))
--		goto drop;
-+		goto out;
- 
- 	/* insert into forwarding database after filtering to avoid spoofing */
- 	br = p->br;
---- a/net/bridge/br_vlan.c
-+++ b/net/bridge/br_vlan.c
-@@ -202,7 +202,7 @@ bool br_allowed_ingress(struct net_bridg
- 	 * rejected.
- 	 */
- 	if (!v)
--		return false;
-+		goto drop;
- 
- 	if (br_vlan_get_tag(skb, vid)) {
- 		u16 pvid = br_get_pvid(v);
-@@ -212,7 +212,7 @@ bool br_allowed_ingress(struct net_bridg
- 		 * traffic belongs to.
- 		 */
- 		if (pvid == VLAN_N_VID)
--			return false;
-+			goto drop;
- 
- 		/* PVID is set on this port.  Any untagged ingress
- 		 * frame is considered to belong to this vlan.
-@@ -224,7 +224,8 @@ bool br_allowed_ingress(struct net_bridg
- 	/* Frame had a valid vlan tag.  See if vlan is allowed */
- 	if (test_bit(*vid, v->vlan_bitmap))
- 		return true;
--
-+drop:
-+	kfree_skb(skb);
- 	return false;
- }
- 
+--- a/drivers/net/bonding/bond_main.c
++++ b/drivers/net/bonding/bond_main.c
+@@ -4995,6 +4995,7 @@ static int __init bonding_init(void)
+ out:
+ 	return res;
+ err:
++	bond_destroy_debugfs();
+ 	rtnl_link_unregister(&bond_link_ops);
+ err_link:
+ 	unregister_pernet_subsys(&bond_net_ops);
 
 
