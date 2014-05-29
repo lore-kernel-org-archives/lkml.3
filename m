@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934385AbaE2FZN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 01:25:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57872 "EHLO
+	id S934393AbaE2FZn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 01:25:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57866 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932393AbaE2EfU (ORCPT
+	with ESMTP id S932370AbaE2EfT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 00:35:20 -0400
+	Thu, 29 May 2014 00:35:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Tobias Brunner <tobias@strongswan.org>,
-        Florian Westphal <fw@strlen.de>,
+        Dmitry Petukhov <dmgenp@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 068/140] net: core: dont account for udp header size when computing seglen
-Date: Wed, 28 May 2014 21:33:27 -0700
-Message-Id: <20140529043058.276202928@linuxfoundation.org>
+Subject: [PATCH 3.14 067/140] l2tp: take PMTU from tunnel UDP socket
+Date: Wed, 28 May 2014 21:33:26 -0700
+Message-Id: <20140529043058.137204243@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
 In-Reply-To: <20140529043049.661315084@linuxfoundation.org>
 References: <20140529043049.661315084@linuxfoundation.org>
@@ -29,50 +27,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Florian Westphal <fw@strlen.de>
+From: Dmitry Petukhov <dmgenp@gmail.com>
 
-[ Upstream commit 6d39d589bb76ee8a1c6cde6822006ae0053decff ]
+[ Upstream commit f34c4a35d87949fbb0e0f31eba3c054e9f8199ba ]
 
-In case of tcp, gso_size contains the tcpmss.
+When l2tp driver tries to get PMTU for the tunnel destination, it uses
+the pointer to struct sock that represents PPPoX socket, while it
+should use the pointer that represents UDP socket of the tunnel.
 
-For UFO (udp fragmentation offloading) skbs, gso_size is the fragment
-payload size, i.e. we must not account for udp header size.
-
-Otherwise, when using virtio drivers, a to-be-forwarded UFO GSO packet
-will be needlessly fragmented in the forward path, because we think its
-individual segments are too large for the outgoing link.
-
-Fixes: fe6cc55f3a9a053 ("net: ip, ipv6: handle gso skbs in forwarding path")
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Reported-by: Tobias Brunner <tobias@strongswan.org>
-Signed-off-by: Florian Westphal <fw@strlen.de>
+Signed-off-by: Dmitry Petukhov <dmgenp@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/core/skbuff.c |   12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
+ net/l2tp/l2tp_ppp.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/net/core/skbuff.c
-+++ b/net/core/skbuff.c
-@@ -3951,12 +3951,14 @@ EXPORT_SYMBOL_GPL(skb_scrub_packet);
- unsigned int skb_gso_transport_seglen(const struct sk_buff *skb)
- {
- 	const struct skb_shared_info *shinfo = skb_shinfo(skb);
--	unsigned int hdr_len;
+--- a/net/l2tp/l2tp_ppp.c
++++ b/net/l2tp/l2tp_ppp.c
+@@ -756,9 +756,9 @@ static int pppol2tp_connect(struct socke
+ 	session->deref = pppol2tp_session_sock_put;
  
- 	if (likely(shinfo->gso_type & (SKB_GSO_TCPV4 | SKB_GSO_TCPV6)))
--		hdr_len = tcp_hdrlen(skb);
--	else
--		hdr_len = sizeof(struct udphdr);
--	return hdr_len + shinfo->gso_size;
-+		return tcp_hdrlen(skb) + shinfo->gso_size;
-+
-+	/* UFO sets gso_size to the size of the fragmentation
-+	 * payload, i.e. the size of the L4 (UDP) header is already
-+	 * accounted for.
-+	 */
-+	return shinfo->gso_size;
- }
- EXPORT_SYMBOL_GPL(skb_gso_transport_seglen);
+ 	/* If PMTU discovery was enabled, use the MTU that was discovered */
+-	dst = sk_dst_get(sk);
++	dst = sk_dst_get(tunnel->sock);
+ 	if (dst != NULL) {
+-		u32 pmtu = dst_mtu(__sk_dst_get(sk));
++		u32 pmtu = dst_mtu(__sk_dst_get(tunnel->sock));
+ 		if (pmtu != 0)
+ 			session->mtu = session->mru = pmtu -
+ 				PPPOL2TP_HEADER_OVERHEAD;
 
 
