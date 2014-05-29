@@ -1,86 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932829AbaE2QEc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 12:04:32 -0400
-Received: from mail-ve0-f179.google.com ([209.85.128.179]:34697 "EHLO
-	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932640AbaE2QEb (ORCPT
+	id S933059AbaE2QFM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 12:05:12 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:47489 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932640AbaE2QFK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 12:04:31 -0400
-MIME-Version: 1.0
-In-Reply-To: <127406715.ZrfKfg88o4@x2>
-References: <cover.1401327752.git.luto@amacapital.net> <1401329367.13555.25.camel@localhost>
- <CALCETrWr+_fo=q+LBT-WLJGXLWK6vEeFa=KC=LSMYehi=c-r4A@mail.gmail.com> <127406715.ZrfKfg88o4@x2>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 29 May 2014 09:04:10 -0700
-Message-ID: <CALCETrWBzcYi3pavhr2x6u-ey_PS6Q6tvS_8TE4w_uR2raLciw@mail.gmail.com>
-Subject: Re: [PATCH v2 2/2] audit: Mark CONFIG_AUDITSYSCALL BROKEN and update
- help text
-To: Steve Grubb <sgrubb@redhat.com>
-Cc: linux-audit@redhat.com, Eric Paris <eparis@redhat.com>,
-        "H. J. Lu" <hjl.tools@gmail.com>,
-        "security@kernel.org" <security@kernel.org>,
-        Philipp Kern <pkern@google.com>, Greg Kroah-Hartman <greg@kroah.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 29 May 2014 12:05:10 -0400
+Content-Type: text/plain; charset=windows-1252
+Mime-Version: 1.0 (Mac OS X Mail 7.2 \(1874\))
+Subject: Re: [Patch v2 4/4] tty: serial: msm: Remove direct access to GSBI
+From: Kumar Gala <galak@codeaurora.org>
+In-Reply-To: <A56B810D-869A-4E4F-BC29-C9B0F6CDCE79@codeaurora.org>
+Date: Thu, 29 May 2014 11:05:06 -0500
+Cc: Andy Gross <agross@codeaurora.org>, linux-kernel@vger.kernel.org,
+        devicetree <devicetree@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <5A73A2BD-6113-4BC0-860F-BBE6A8232585@codeaurora.org>
+References: <1398357082-5102-1-git-send-email-agross@codeaurora.org> <1398357082-5102-5-git-send-email-agross@codeaurora.org> <A56B810D-869A-4E4F-BC29-C9B0F6CDCE79@codeaurora.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+X-Mailer: Apple Mail (2.1874)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 29, 2014 at 6:05 AM, Steve Grubb <sgrubb@redhat.com> wrote:
-> On Wednesday, May 28, 2014 07:40:57 PM Andy Lutomirski wrote:
->> >>  - It assumes that syscall numbers are between 0 and 2048.
->> >>
->> > There could well be a bug here.  Not questioning that.  Although that
->> > would be patch 1/2
->>
->> Even with patch 1, it still doesn't handle large syscall numbers -- it
->> just assumes they're not audited.
->
-> All syscalls must be auditable. Meaning that if an arch goes above 2048, then
-> we'll need to do some math to get it to fall back within the range.
->
 
-Off the top of my head, x32, some ARM variants, and some MIPS variants
-have syscalls above 2048.  auditsc has been disabled on the offending
-ARM variant (because I noticed that the same issue affects seccomp,
-and no one particularly wants to fix it), but I suspect that auditsc
-is enabled but completely broken on whichever MIPS ABI has the issue.
-I haven't checked.
+On May 29, 2014, at 10:14 AM, Kumar Gala <galak@codeaurora.org> wrote:
 
-TBH, I think that it's silly to let the auditsc design be heavily
-constrained by ia64 considerations -- I still think that the syscall
-entry hooks could be removed completely with some effort on most
-architectures and that performance would improve considerably.  For
-users who don't have syscall filter rules, performance might even
-improve on ia64 -- I don't care how expensive syscall_get_args is, the
-actual printk/auditd thing will dominate in cases where anything is
-written.
+> 
+> On Apr 24, 2014, at 11:31 AM, Andy Gross <agross@codeaurora.org> wrote:
+> 
+>> This patch removes direct access of the GSBI registers.  GSBI configuration
+>> should be done through the GSBI driver directly.
+>> 
+>> Signed-off-by: Andy Gross <agross@codeaurora.org>
+>> ---
+>> drivers/tty/serial/msm_serial.c |   48 ++-------------------------------------
+>> drivers/tty/serial/msm_serial.h |    5 ----
+>> 2 files changed, 2 insertions(+), 51 deletions(-)
+> 
+> Greg,
+> 
+> Any update on pulling this is for next?
+> 
+> - k
 
-I wonder whether the syscall restart mechanism can be used to
-thoroughly confused auditsc.  I don't really know how syscall restarts
-work.
+I’ll send it via arm-soc as the related patches are going via that path.
 
-My point is: I don't know what guarantees auditsc is supposed to
-provide, nor do I know how to evaluate whether the code is correct.
-For users who aren't bound by Common Criteria or related things, I
-suspect that syscall auditing (as opposed to, say, LSM-based auditing)
-will provide dubious value at best.  Keep in mind that many syscalls
-take pointer arguments, and the auditsc code can't really do anything
-sensible with them.
+- k
 
->
->> >>  - It's unclear whether it's supposed to be reliable.
->> >>
->> > Unclear to whom?
->>
->> To me.
->>
->> If some inode access or selinux rule triggers an audit, is the auditsc
->> code guaranteed to write an exit record?  And see below...
->
-> It should or indicate that it could not.
->
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
 
---Andy
