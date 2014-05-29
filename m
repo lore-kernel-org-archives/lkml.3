@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934333AbaE2FXF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 01:23:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57900 "EHLO
+	id S934318AbaE2FXD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 01:23:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57896 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932481AbaE2EfX (ORCPT
+	with ESMTP id S932466AbaE2EfW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 00:35:23 -0400
+	Thu, 29 May 2014 00:35:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chuansheng Liu <chuansheng.liu@intel.com>,
-        Zhang Dongxing <dongxing.zhang@intel.com>,
-        xiaoming wang <xiaoming.wang@intel.com>,
+        Cong Wang <amwang@redhat.com>,
+        Steffen Klassert <steffen.klassert@secunet.com>,
+        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 074/140] net: ipv4: current group_info should be put after using.
-Date: Wed, 28 May 2014 21:33:33 -0700
-Message-Id: <20140529043059.058459347@linuxfoundation.org>
+Subject: [PATCH 3.14 073/140] vti: dont allow to add the same tunnel twice
+Date: Wed, 28 May 2014 21:33:32 -0700
+Message-Id: <20140529043058.922173218@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
 In-Reply-To: <20140529043049.661315084@linuxfoundation.org>
 References: <20140529043049.661315084@linuxfoundation.org>
@@ -29,64 +29,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Wang, Xiaoming" <xiaoming.wang@intel.com>
+From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
 
-[ Upstream commit b04c46190219a4f845e46a459e3102137b7f6cac ]
+[ Upstream commit 8d89dcdf80d88007647945a753821a06eb6cc5a5 ]
 
-Plug a group_info refcount leak in ping_init.
-group_info is only needed during initialization and
-the code failed to release the reference on exit.
-While here move grabbing the reference to a place
-where it is actually needed.
+Before the patch, it was possible to add two times the same tunnel:
+ip l a vti1 type vti remote 10.16.0.121 local 10.16.0.249 key 41
+ip l a vti2 type vti remote 10.16.0.121 local 10.16.0.249 key 41
 
-Signed-off-by: Chuansheng Liu <chuansheng.liu@intel.com>
-Signed-off-by: Zhang Dongxing <dongxing.zhang@intel.com>
-Signed-off-by: xiaoming wang <xiaoming.wang@intel.com>
+It was possible, because ip_tunnel_newlink() calls ip_tunnel_find() with the
+argument dev->type, which was set only later (when calling ndo_init handler
+in register_netdevice()). Let's set this type in the setup handler, which is
+called before newlink handler.
+
+Introduced by commit b9959fd3b0fa ("vti: switch to new ip tunnel code").
+
+CC: Cong Wang <amwang@redhat.com>
+CC: Steffen Klassert <steffen.klassert@secunet.com>
+Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/ping.c |   15 +++++++++++----
- 1 file changed, 11 insertions(+), 4 deletions(-)
+ net/ipv4/ip_vti.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/ipv4/ping.c
-+++ b/net/ipv4/ping.c
-@@ -252,26 +252,33 @@ int ping_init_sock(struct sock *sk)
+--- a/net/ipv4/ip_vti.c
++++ b/net/ipv4/ip_vti.c
+@@ -207,6 +207,7 @@ static const struct net_device_ops vti_n
+ static void vti_tunnel_setup(struct net_device *dev)
  {
- 	struct net *net = sock_net(sk);
- 	kgid_t group = current_egid();
--	struct group_info *group_info = get_current_groups();
--	int i, j, count = group_info->ngroups;
-+	struct group_info *group_info;
-+	int i, j, count;
- 	kgid_t low, high;
-+	int ret = 0;
- 
- 	inet_get_ping_group_range_net(net, &low, &high);
- 	if (gid_lte(low, group) && gid_lte(group, high))
- 		return 0;
- 
-+	group_info = get_current_groups();
-+	count = group_info->ngroups;
- 	for (i = 0; i < group_info->nblocks; i++) {
- 		int cp_count = min_t(int, NGROUPS_PER_BLOCK, count);
- 		for (j = 0; j < cp_count; j++) {
- 			kgid_t gid = group_info->blocks[i][j];
- 			if (gid_lte(low, gid) && gid_lte(gid, high))
--				return 0;
-+				goto out_release_group;
- 		}
- 
- 		count -= cp_count;
- 	}
- 
--	return -EACCES;
-+	ret = -EACCES;
-+
-+out_release_group:
-+	put_group_info(group_info);
-+	return ret;
+ 	dev->netdev_ops		= &vti_netdev_ops;
++	dev->type		= ARPHRD_TUNNEL;
+ 	ip_tunnel_setup(dev, vti_net_id);
  }
- EXPORT_SYMBOL_GPL(ping_init_sock);
  
+@@ -218,7 +219,6 @@ static int vti_tunnel_init(struct net_de
+ 	memcpy(dev->dev_addr, &iph->saddr, 4);
+ 	memcpy(dev->broadcast, &iph->daddr, 4);
+ 
+-	dev->type		= ARPHRD_TUNNEL;
+ 	dev->hard_header_len	= LL_MAX_HEADER + sizeof(struct iphdr);
+ 	dev->mtu		= ETH_DATA_LEN;
+ 	dev->flags		= IFF_NOARP;
 
 
