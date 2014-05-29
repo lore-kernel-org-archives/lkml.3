@@ -1,48 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756134AbaE2UFr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 16:05:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44337 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756058AbaE2UFp (ORCPT
+	id S1756263AbaE2UJP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 16:09:15 -0400
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:49118 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755909AbaE2UJM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 16:05:45 -0400
-Date: Thu, 29 May 2014 13:05:44 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Zhang Yanfei <zhangyanfei.yes@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Andi Kleen <andi@firstfloor.org>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Richard Yao <ryao@gentoo.org>
-Subject: Re: [PATCH] vmalloc: use rcu list iterator to reduce vmap_area_lock
- contention
-Message-Id: <20140529130544.56213f048f331723329ff828@linux-foundation.org>
-In-Reply-To: <1401344554-3596-1-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1401344554-3596-1-git-send-email-iamjoonsoo.kim@lge.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 29 May 2014 16:09:12 -0400
+From: Larry Bassel <larry.bassel@linaro.org>
+To: catalin.marinas@arm.com, will.deacon@arm.com
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linaro-kernel@lists.linaro.org, khilman@linaro.org,
+        Larry Bassel <larry.bassel@linaro.org>
+Subject: [PATCH v6 1/2] arm64: adjust el0_sync so that a function can be called
+Date: Thu, 29 May 2014 13:08:58 -0700
+Message-Id: <1401394139-23469-2-git-send-email-larry.bassel@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1401394139-23469-1-git-send-email-larry.bassel@linaro.org>
+References: <1401394139-23469-1-git-send-email-larry.bassel@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 29 May 2014 15:22:34 +0900 Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
+To implement the context tracker properly on arm64,
+a function call needs to be made after debugging and
+interrupts are turned on, but before the lr is changed
+to point to ret_to_user(). If the function call
+is made after the lr is changed the function will not
+return to the correct place.
 
-> Richard Yao reported a month ago that his system have a trouble
-> with vmap_area_lock contention during performance analysis
-> by /proc/meminfo. Andrew asked why his analysis checks /proc/meminfo
-> stressfully, but he didn't answer it.
-> 
-> https://lkml.org/lkml/2014/4/10/416
-> 
-> Although I'm not sure that this is right usage or not, there is a solution
-> reducing vmap_area_lock contention with no side-effect. That is just
-> to use rcu list iterator in get_vmalloc_info(). This function only needs
-> values on vmap_area structure, so we don't need to grab a spinlock.
+For similar reasons, defer the setting of x0 so that
+it doesn't need to be saved around the function call
+(save far_el1 in x26 temporarily instead).
 
-The mixture of rcu protection and spinlock protection for
-vmap_area_list is pretty confusing.  Are you able to describe the
-overall design here?  When and why do we use one versus the other?
+Signed-off-by: Larry Bassel <larry.bassel@linaro.org>
+---
+ arch/arm64/kernel/entry.S | 19 +++++++++++++------
+ 1 file changed, 13 insertions(+), 6 deletions(-)
 
+diff --git a/arch/arm64/kernel/entry.S b/arch/arm64/kernel/entry.S
+index e8b23a3..b0101b9 100644
+--- a/arch/arm64/kernel/entry.S
++++ b/arch/arm64/kernel/entry.S
+@@ -354,7 +354,6 @@ el0_sync:
+ 	lsr	x24, x25, #ESR_EL1_EC_SHIFT	// exception class
+ 	cmp	x24, #ESR_EL1_EC_SVC64		// SVC in 64-bit state
+ 	b.eq	el0_svc
+-	adr	lr, ret_to_user
+ 	cmp	x24, #ESR_EL1_EC_DABT_EL0	// data abort in EL0
+ 	b.eq	el0_da
+ 	cmp	x24, #ESR_EL1_EC_IABT_EL0	// instruction abort in EL0
+@@ -383,7 +382,6 @@ el0_sync_compat:
+ 	lsr	x24, x25, #ESR_EL1_EC_SHIFT	// exception class
+ 	cmp	x24, #ESR_EL1_EC_SVC32		// SVC in 32-bit state
+ 	b.eq	el0_svc_compat
+-	adr	lr, ret_to_user
+ 	cmp	x24, #ESR_EL1_EC_DABT_EL0	// data abort in EL0
+ 	b.eq	el0_da
+ 	cmp	x24, #ESR_EL1_EC_IABT_EL0	// instruction abort in EL0
+@@ -426,22 +424,25 @@ el0_da:
+ 	/*
+ 	 * Data abort handling
+ 	 */
+-	mrs	x0, far_el1
+-	bic	x0, x0, #(0xff << 56)
++	mrs	x26, far_el1
+ 	// enable interrupts before calling the main handler
+ 	enable_dbg_and_irq
++	bic	x0, x26, #(0xff << 56)
+ 	mov	x1, x25
+ 	mov	x2, sp
++	adr	lr, ret_to_user
+ 	b	do_mem_abort
+ el0_ia:
+ 	/*
+ 	 * Instruction abort handling
+ 	 */
+-	mrs	x0, far_el1
++	mrs	x26, far_el1
+ 	// enable interrupts before calling the main handler
+ 	enable_dbg_and_irq
++	mov	x0, x26
+ 	orr	x1, x25, #1 << 24		// use reserved ISS bit for instruction aborts
+ 	mov	x2, sp
++	adr	lr, ret_to_user
+ 	b	do_mem_abort
+ el0_fpsimd_acc:
+ 	/*
+@@ -450,6 +451,7 @@ el0_fpsimd_acc:
+ 	enable_dbg
+ 	mov	x0, x25
+ 	mov	x1, sp
++	adr	lr, ret_to_user
+ 	b	do_fpsimd_acc
+ el0_fpsimd_exc:
+ 	/*
+@@ -458,16 +460,19 @@ el0_fpsimd_exc:
+ 	enable_dbg
+ 	mov	x0, x25
+ 	mov	x1, sp
++	adr	lr, ret_to_user
+ 	b	do_fpsimd_exc
+ el0_sp_pc:
+ 	/*
+ 	 * Stack or PC alignment exception handling
+ 	 */
+-	mrs	x0, far_el1
++	mrs	x26, far_el1
+ 	// enable interrupts before calling the main handler
+ 	enable_dbg_and_irq
++	mov	x0, x26
+ 	mov	x1, x25
+ 	mov	x2, sp
++	adr	lr, ret_to_user
+ 	b	do_sp_pc_abort
+ el0_undef:
+ 	/*
+@@ -476,6 +481,7 @@ el0_undef:
+ 	// enable interrupts before calling the main handler
+ 	enable_dbg_and_irq
+ 	mov	x0, sp
++	adr	lr, ret_to_user
+ 	b	do_undefinstr
+ el0_dbg:
+ 	/*
+@@ -493,6 +499,7 @@ el0_inv:
+ 	mov	x0, sp
+ 	mov	x1, #BAD_SYNC
+ 	mrs	x2, esr_el1
++	adr	lr, ret_to_user
+ 	b	bad_mode
+ ENDPROC(el0_sync)
+ 
+-- 
+1.8.3.2
 
