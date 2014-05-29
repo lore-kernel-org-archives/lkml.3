@@ -1,115 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754005AbaE2XM3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 19:12:29 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:54949 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751577AbaE2XM1 (ORCPT
+	id S1754074AbaE2XM4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 19:12:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46245 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751577AbaE2XMz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 19:12:27 -0400
-Message-ID: <5387BEE5.6060007@kernel.dk>
-Date: Thu, 29 May 2014 17:12:37 -0600
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Keith Busch <keith.busch@intel.com>
-CC: =?ISO-8859-1?Q?Matias_Bj=F8rling?= <m@bjorling.me>, willy@linux.intel.com,
-        sbradshaw@micron.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V3] NVMe: basic conversion to blk-mq
-References: <1401317998-8980-1-git-send-email-m@bjorling.me> <1401317998-8980-2-git-send-email-m@bjorling.me> <alpine.LRH.2.03.1405281929460.4995@AMR> <53874374.2020302@kernel.dk> <alpine.LRH.2.03.1405291601150.25112@AMR> <5387BD73.9030607@kernel.dk>
-In-Reply-To: <5387BD73.9030607@kernel.dk>
-Content-Type: multipart/mixed;
- boundary="------------070002010408080901070507"
+	Thu, 29 May 2014 19:12:55 -0400
+Date: Thu, 29 May 2014 16:12:53 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>, Li Zefan <lizefan@huawei.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Mel Gorman <mgorman@suse.de>,
+        Tejun Heo <tj@kernel.org>, Christoph Lameter <cl@linux.com>
+Subject: Re: [PATCH] page_alloc: skip cpuset enforcement for lower zone
+ allocations (v4)
+Message-Id: <20140529161253.73ff978f723972f503123fe8@linux-foundation.org>
+In-Reply-To: <alpine.DEB.2.02.1405291555120.9336@chino.kir.corp.google.com>
+References: <20140523193706.GA22854@amt.cnet>
+	<20140526185344.GA19976@amt.cnet>
+	<53858A06.8080507@huawei.com>
+	<20140528224324.GA1132@amt.cnet>
+	<20140529184303.GA20571@amt.cnet>
+	<alpine.DEB.2.02.1405291555120.9336@chino.kir.corp.google.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------070002010408080901070507
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+On Thu, 29 May 2014 16:01:55 -0700 (PDT) David Rientjes <rientjes@google.com> wrote:
 
-On 05/29/2014 05:06 PM, Jens Axboe wrote:
-> Ah I see, yes that code apparently got axed. The attached patch brings
-> it back. Totally untested, I'll try and synthetically hit it to ensure
-> that it does work. Note that it currently does unmap and iod free, so
-> the request comes back pristine. We could preserve that if we really
-> wanted to, I'm guessing it's not a big deal.
+> There are still three issues with this, two of which are only minor and 
+> one that needs more thought:
+> 
+>  (1) this doesn't affect only cpusets which the changelog indicates, it 
+>      also bypasses mempolicies for GFP_DMA and GFP_DMA32 allocations since
+>      the nodemask != NULL in the page allocator when there is an effective
+>      mempolicy.  That may be precisely what you're trying to do (do the
+>      same for mempolicies as you're doing for cpusets), but the comment 
+>      now in the code specifically refers to cpusets.  Can you make a case
+>      for the mempolicies exception as well?  Otherwise, we'll need to do
+> 
+> 	if (!nodemask && gfp_zone(gfp_mask) < policy_zone)
+> 		nodemask = &node_states[N_ONLINE];
+> 
+> And the two minors:
+> 
+>  (2) this should be &node_states[N_MEMORY], not &node_states[N_ONLINE] 
+>      since memoryless nodes should not be included.  Note that
+>      guarantee_online_mems() looks at N_MEMORY and
+>      cpuset_current_mems_allowed is defined for N_MEMORY without
+>      cpusets.
+> 
+>  (3) it's unnecessary for this to be after the "retry_cpuset" label and
+>      check the gfp mask again if we need to relook at the allowed cpuset
+>      mask.
 
-And another totally untested patch that retains the iod and dma mapping
-on the requeue event. Again, probably not a big deal, I'm assuming these
-happen rarely, but it's simple enough to do.
-
--- 
-Jens Axboe
-
-
---------------070002010408080901070507
-Content-Type: text/x-patch;
- name="nvme-retry-v2.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="nvme-retry-v2.patch"
-
-diff --git a/drivers/block/nvme-core.c b/drivers/block/nvme-core.c
-index 22d8013cd4ff..fd3f11d837bb 100644
---- a/drivers/block/nvme-core.c
-+++ b/drivers/block/nvme-core.c
-@@ -357,17 +357,22 @@ static void req_completion(struct nvme_queue *nvmeq, void *ctx,
- 
- 	u16 status = le16_to_cpup(&cqe->status) >> 1;
- 
-+	if (unlikely(status)) {
-+		if (!(status & NVME_SC_DNR || blk_noretry_request(req))
-+		    && (jiffies - req->start_time) < req->timeout) {
-+			blk_mq_requeue_request(req);
-+			return;
-+		}
-+		req->errors = -EIO;
-+	} else
-+		req->errors = 0;
-+
- 	if (iod->nents) {
- 		dma_unmap_sg(&nvmeq->dev->pci_dev->dev, iod->sg, iod->nents,
- 			rq_data_dir(req) ? DMA_TO_DEVICE : DMA_FROM_DEVICE);
- 	}
- 	nvme_free_iod(nvmeq->dev, iod);
- 
--	if (unlikely(status))
--		req->errors = -EIO;
--	else
--		req->errors = 0;
--
- 	blk_mq_complete_request(req);
- }
- 
-@@ -569,11 +574,19 @@ static int nvme_submit_req_queue(struct nvme_queue *nvmeq, struct nvme_ns *ns,
- 	enum dma_data_direction dma_dir;
- 	int psegs = req->nr_phys_segments;
- 
-+	/*
-+	 * Requeued IO has already been prepped
-+	 */
-+	iod = req->special;
-+	if (iod)
-+		goto submit_iod;
-+
- 	iod = nvme_alloc_iod(psegs, blk_rq_bytes(req), GFP_ATOMIC);
- 	if (!iod)
- 		return BLK_MQ_RQ_QUEUE_BUSY;
- 
- 	iod->private = req;
-+	req->special = iod;
- 
- 	nvme_set_info(cmd, iod, req_completion);
- 
-@@ -602,6 +615,7 @@ static int nvme_submit_req_queue(struct nvme_queue *nvmeq, struct nvme_ns *ns,
- 			goto finish_cmd;
- 	}
- 
-+ submit_iod:
- 	if (!nvme_submit_iod(nvmeq, iod, ns))
- 		return 0;
- 
-
---------------070002010408080901070507--
+OK, thanks, I made the patch go away for now.
