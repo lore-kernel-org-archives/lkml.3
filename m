@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933782AbaE2ItI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 04:49:08 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:63678 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933126AbaE2ItE (ORCPT
+	id S933864AbaE2ItP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 04:49:15 -0400
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:45239 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933449AbaE2ItI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 04:49:04 -0400
+	Thu, 29 May 2014 04:49:08 -0400
 From: Daniel Thompson <daniel.thompson@linaro.org>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-serial@vger.kernel.org,
@@ -17,9 +17,9 @@ Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-serial@vger.kernel.org,
         Jason Wessel <jason.wessel@windriver.com>,
         kgdb-bugreport@lists.sourceforge.net, Jiri Slaby <jslaby@suse.cz>,
         Dirk Behme <dirk.behme@de.bosch.com>
-Subject: [PATCH tty-next v2 2/4] serial: kgdb_nmi: Use container_of() to locate private data
-Date: Thu, 29 May 2014 09:48:44 +0100
-Message-Id: <1401353326-14148-3-git-send-email-daniel.thompson@linaro.org>
+Subject: [PATCH tty-next v2 4/4] serial: kgdb_nmi: Improve console integration with KDB I/O
+Date: Thu, 29 May 2014 09:48:46 +0100
+Message-Id: <1401353326-14148-5-git-send-email-daniel.thompson@linaro.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1401353326-14148-1-git-send-email-daniel.thompson@linaro.org>
 References: <20140528200344.GA2750@kroah.com>
@@ -28,63 +28,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This corrects a crash in kgdb_nmi_tty_shutdown() which occurs when
-the function is called with port->tty set to NULL.
-
-All conversions between struct tty_port and struct kgdb_nmi_tty_priv
-have been switched to direct calls to container_of() to improve code
-clarity and consistancy.
+kgdb_nmi_tty_enabled is used for two unrelated purposes, namely to
+suppress normal TTY input handling and to suppress console output
+(although it has no effect at all on TTY output). A much better way to
+handle muting the console is to not have to mute it in the first place!
+That's what this patch does.
 
 Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
 ---
- drivers/tty/serial/kgdb_nmi.c | 13 +++++--------
- 1 file changed, 5 insertions(+), 8 deletions(-)
+ drivers/tty/serial/kgdb_nmi.c | 16 +++++++++++++---
+ 1 file changed, 13 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/tty/serial/kgdb_nmi.c b/drivers/tty/serial/kgdb_nmi.c
-index 5f673b7..d51b2a1 100644
+index 20d21d0..cfadf29 100644
 --- a/drivers/tty/serial/kgdb_nmi.c
 +++ b/drivers/tty/serial/kgdb_nmi.c
-@@ -84,11 +84,6 @@ struct kgdb_nmi_tty_priv {
- 	STRUCT_KFIFO(char, KGDB_NMI_FIFO_SIZE) fifo;
- };
+@@ -44,13 +44,22 @@ MODULE_PARM_DESC(magic, "magic sequence to enter NMI debugger (default $3#33)");
  
--static struct kgdb_nmi_tty_priv *kgdb_nmi_port_to_priv(struct tty_port *port)
--{
--	return container_of(port, struct kgdb_nmi_tty_priv, port);
--}
+ static bool kgdb_nmi_tty_enabled;
+ 
++static int kgdb_nmi_console_setup(struct console *co, char *options)
++{
++	/* The NMI console uses the dbg_io_ops to issue console messages. To
++	 * avoid duplicate messages during kdb sessions we must inform kdb's
++	 * I/O utilities that messages sent to the console will automatically
++	 * be displayed on the dbg_io.
++	 */
++	dbg_io_ops->is_console = true;
++
++	return 0;
++}
++
+ static void kgdb_nmi_console_write(struct console *co, const char *s, uint c)
+ {
+ 	int i;
+ 
+-	if (!kgdb_nmi_tty_enabled || atomic_read(&kgdb_active) >= 0)
+-		return;
 -
- /*
-  * Our debugging console is polled in a tasklet, so we'll check for input
-  * every tick. In HZ-less mode, we should program the next tick.  We have
-@@ -118,7 +113,7 @@ static void kgdb_tty_recv(int ch)
- 	 * do that, and actually, we can't: we're in NMI context, no locks are
- 	 * possible.
- 	 */
--	priv = kgdb_nmi_port_to_priv(kgdb_nmi_port);
-+	priv = container_of(kgdb_nmi_port, struct kgdb_nmi_tty_priv, port);
- 	kfifo_in(&priv->fifo, &c, 1);
- 	kgdb_tty_poke();
+ 	for (i = 0; i < c; i++)
+ 		dbg_io_ops->write_char(s[i]);
  }
-@@ -216,7 +211,8 @@ static void kgdb_nmi_tty_receiver(unsigned long data)
+@@ -65,6 +74,7 @@ static struct tty_driver *kgdb_nmi_console_device(struct console *co, int *idx)
  
- static int kgdb_nmi_tty_activate(struct tty_port *port, struct tty_struct *tty)
- {
--	struct kgdb_nmi_tty_priv *priv = tty->driver_data;
-+	struct kgdb_nmi_tty_priv *priv =
-+	    container_of(port, struct kgdb_nmi_tty_priv, port);
- 
- 	kgdb_nmi_port = port;
- 	tasklet_schedule(&priv->tlet);
-@@ -225,7 +221,8 @@ static int kgdb_nmi_tty_activate(struct tty_port *port, struct tty_struct *tty)
- 
- static void kgdb_nmi_tty_shutdown(struct tty_port *port)
- {
--	struct kgdb_nmi_tty_priv *priv = port->tty->driver_data;
-+	struct kgdb_nmi_tty_priv *priv =
-+	    container_of(port, struct kgdb_nmi_tty_priv, port);
- 
- 	tasklet_kill(&priv->tlet);
- 	kgdb_nmi_port = NULL;
+ static struct console kgdb_nmi_console = {
+ 	.name	= "ttyNMI",
++	.setup  = kgdb_nmi_console_setup,
+ 	.write	= kgdb_nmi_console_write,
+ 	.device	= kgdb_nmi_console_device,
+ 	.flags	= CON_PRINTBUFFER | CON_ANYTIME | CON_ENABLED,
 -- 
 1.9.0
 
