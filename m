@@ -1,109 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932507AbaE2Sxc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 14:53:32 -0400
-Received: from mail-we0-f180.google.com ([74.125.82.180]:32938 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750940AbaE2Sxb (ORCPT
+	id S1755455AbaE2Szf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 14:55:35 -0400
+Received: from canardo.mork.no ([148.122.252.1]:43029 "EHLO canardo.mork.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751206AbaE2Sze convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 14:53:31 -0400
+	Thu, 29 May 2014 14:55:34 -0400
+From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
+To: Jim Baxter <jim_baxter@mentor.com>
+Cc: Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        David Laight <David.Laight@ACULAB.COM>, <netdev@vger.kernel.org>
+Subject: Re: [PATCH v1 1/3] usb: gadget: NCM: RX function support multiple NDPs
+Organization: m
+References: <jim_baxter@mentor.com>
+	<1401383543-10181-1-git-send-email-jim_baxter@mentor.com>
+	<1401383543-10181-2-git-send-email-jim_baxter@mentor.com>
+Date: Thu, 29 May 2014 20:55:16 +0200
+In-Reply-To: <1401383543-10181-2-git-send-email-jim_baxter@mentor.com> (Jim
+	Baxter's message of "Thu, 29 May 2014 18:12:21 +0100")
+Message-ID: <87d2ewbejv.fsf@nemi.mork.no>
+User-Agent: Gnus/5.130011 (Ma Gnus v0.11) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <CA+icZUWUjkp4kpsXZg+UeW5UbWU0D_aDKzh2S9_JYeLhNaWgFg@mail.gmail.com>
-References: <1400838223-30844-1-git-send-email-miklos@szeredi.hu>
-	<28592.1401382081@warthog.procyon.org.uk>
-	<CA+icZUXfzPsqZt6=o5evcQ2xO9XGKcMVYBO1zco0aEmGn_x0rA@mail.gmail.com>
-	<29026.1401383705@warthog.procyon.org.uk>
-	<CA+icZUWXjPR6wLk0+Dtmyr-VAHW2VMK-=MiZn8WX39F_qh+LHg@mail.gmail.com>
-	<29191.1401384252@warthog.procyon.org.uk>
-	<CA+icZUV64FQy4K7zx4B8NvwSXRgFfHZ_Y5D3A+zDAw9+XAwrxA@mail.gmail.com>
-	<29410.1401385296@warthog.procyon.org.uk>
-	<CA+icZUU-BcgbZ2b0-Nbu=9g57c5WTJV3Him29cDnpuOp5W62Sw@mail.gmail.com>
-	<31766.1401387746@warthog.procyon.org.uk>
-	<CA+icZUWUjkp4kpsXZg+UeW5UbWU0D_aDKzh2S9_JYeLhNaWgFg@mail.gmail.com>
-Date: Thu, 29 May 2014 20:53:29 +0200
-Message-ID: <CA+icZUWo9eD=0KqVapZ_2vWZfWrrSWauaXMRNvkmdy+4cXgAig@mail.gmail.com>
-Subject: Re: Unionmount and overlayfs testsuite
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: David Howells <dhowells@redhat.com>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, Al Viro <viro@zeniv.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>, apw@canonical.com,
-        Felix Fietkau <nbd@openwrt.org>, neilb@suse.de, jordipujolp@gmail.com,
-        ezk@fsl.cs.sunysb.edu, "J. R. Okajima" <hooanon05@yahoo.co.jp>,
-        mszeredi@suse.cz
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 29, 2014 at 8:44 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
-> On Thu, May 29, 2014 at 8:22 PM, David Howells <dhowells@redhat.com> wrote:
->> Sedat Dilek <sedat.dilek@gmail.com> wrote:
->>
->>> >         TEST_OVERLAYFS=1 ./run.sh
->>> >
->>> > right?
->>> >
->>>
->>> Yes (with my mount-patch applied).
->>>
->>> ( ...and... # umount /lower /upper /mnt )
->>
->> Can you put a couple of echo commands in settings.inc to show which side of
->> the if-statement it goes and also put:
->>
->>         echo TEST_OVERLAYFS is $TEST_OVERLAYFS
->>
->> in run.sh and mount_union.sh?
->>
->
-> I retried with the new kernel-config...
->
-> # modprobe -v overlayfs
-> insmod /lib/modules/3.15.0-rc7-58.1-iniza-lockdep/kernel/fs/overlayfs/overlayfs.ko
->
-> ...and echo-line changes...
->
-> # LC_ALL=C TEST_OVERLAYFS="1" ./run.sh
-> [ run.sh ] TEST_OVERLAYFS is 1
-> ***
-> *** ./run.sh open-plain.test
-> ***
-> [ mount_union.sh ] TEST_OVERLAYFS is 1
-> TEST100: Open O_RDONLY
->  - open_file -r /mnt/a/foo100 -R :xxx:yyy:zzz
->  - open_file -r /mnt/a/foo100 -R :xxx:yyy:zzz
-> TEST101: Open O_WRONLY
->  - open_file -w /mnt/a/foo101 -W q
-> /mnt/a/foo101: Test file not on upper filesystem  (line 30)
->
-> # LC_ALL=C df -h | egrep 'mnt|upper|lower'
-> lower_layer     1.9G  240K  1.9G   1% /lower
-> upper_layer     1.9G  4.0K  1.9G   1% /upper
-> overlayfs       1.9G  4.0K  1.9G   1% /mnt
->
-> # find /mnt/ /upper/ /lower/ -name foo101
-> /mnt/a/foo101
-> /upper/upper/a/foo101
-> /lower/a/foo101
->
-> # LC_ALL=C ll /mnt/a/foo101 /upper/upper/a/foo101 /lower/a/foo101
-> -rw-r--r-- 1 bin bin 12 May 29 20:42 /lower/a/foo101
-> -rw-r--r-- 1 bin bin 12 May 29 20:42 /mnt/a/foo101
-> -rw-r--r-- 1 bin bin 12 May 29 20:42 /upper/upper/a/foo101
->
-> # stat -c foo101 /mnt/ /upper/ /lower/
-> foo101
-> foo101
-> foo101
->
+Jim Baxter <jim_baxter@mentor.com> writes:
 
-Hmm, why is the generated binary callled "open-file" and in the
-scripts I see "open_file"?
-I created a symlink in /usr/local/bin/, but that's not fixing it.
+> The NDP was ignoring the wNextNdpIndex in the NDP which
+> means that NTBs containing multiple NDPs would have missed
+> frames.
 
-- Sedat -
+Well, just for the record: I believe this field was meant to be reserved
+and always 0 in the CDC NCM spec.  Table 3-3, describing 16bit NDPs,
+says so.  But reading the spec now, I noticed that there is an
+inconsistency between table 3-3 and table 3-4 describing 32bit NDPs.  It
+looks like the field is not reserved in the 32bit version.
+
+I am pretty sure that is a specification error, but I guess it doesn't
+harm to implement the support anyway.  And it paves the way for an MBIM
+gadget :-)
+
+
+
+
+Bjørn
