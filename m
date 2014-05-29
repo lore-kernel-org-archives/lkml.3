@@ -1,97 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934060AbaE2Ivy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 04:51:54 -0400
-Received: from mail-we0-f180.google.com ([74.125.82.180]:50322 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932814AbaE2ItD (ORCPT
+	id S934089AbaE2Iwr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 04:52:47 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:53405 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934066AbaE2Iwp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 04:49:03 -0400
-From: Daniel Thompson <daniel.thompson@linaro.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-serial@vger.kernel.org,
-        patches@linaro.org, linaro-kernel@lists.linaro.org,
-        linux-kernel@vger.kernel.org, John Stultz <john.stultz@linaro.org>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Colin Cross <ccross@android.com>, kernel-team@android.com,
-        Jason Wessel <jason.wessel@windriver.com>,
-        kgdb-bugreport@lists.sourceforge.net, Jiri Slaby <jslaby@suse.cz>,
-        Dirk Behme <dirk.behme@de.bosch.com>,
-        Doug Anderson <dianders@chromium.org>,
-        Christophe Leroy <christophe.leroy@c-s.fr>
-Subject: [PATCH tty-next v2 1/4] serial: cpm_uart: No LF conversion in put_poll_char()
-Date: Thu, 29 May 2014 09:48:43 +0100
-Message-Id: <1401353326-14148-2-git-send-email-daniel.thompson@linaro.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1401353326-14148-1-git-send-email-daniel.thompson@linaro.org>
-References: <20140528200344.GA2750@kroah.com>
- <1401353326-14148-1-git-send-email-daniel.thompson@linaro.org>
+	Thu, 29 May 2014 04:52:45 -0400
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+X-AuditID: cbfec7f4-b7fac6d000006cfe-a1-5386f55acd20
+Content-transfer-encoding: 8BIT
+Message-id: <1401353566.25628.11.camel@AMDC1943>
+Subject: Re: [PATCH 3/4] regulator: s2mps11: Set offset to voltage hexadecimal
+ code of S2MPU02 LDO regulators
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Chanwoo Choi <cw00.choi@samsung.com>
+Cc: sbkim73@samsung.com, sameo@linux.intel.com, lee.jones@linaro.org,
+        broonie@kernel.org, lgirdwood@gmail.com, linux-kernel@vger.kernel.org,
+        myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
+        jonghwa3.lee@samsung.com
+Date: Thu, 29 May 2014 10:52:46 +0200
+In-reply-to: <1401275411-21947-4-git-send-email-cw00.choi@samsung.com>
+References: <1401275411-21947-4-git-send-email-cw00.choi@samsung.com>
+X-Mailer: Evolution 3.10.4-0ubuntu1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrHLMWRmVeSWpSXmKPExsVy+t/xa7pRX9uCDZqvmVlMffiEzeL6l+es
+	Fp1nnzBbnG16w25x/+tRRotvVzqYLC7vmsNmcbtxBZvF6W5Wi4srvjA5cHnsnHWX3WPTqk42
+	jzvX9rB5zDsZ6NG3ZRWjx+dNcgFsUVw2Kak5mWWpRfp2CVwZz95OYSq4yFrxd0UXUwPjCZYu
+	Rg4OCQETiUkzJbsYOYFMMYkL99azdTFycQgJLGWUONVxhQkkwSsgKPFj8j2wemYBeYkjl7JB
+	wswC6hKT5i1ihqj/DFR/8DYbRL2BxJsp5xhBbGGBfInuox1gcTYBY4nNy5eA2SICGhIz/15h
+	BGlmFrjHKLHy7RRmkASLgKrE8dVrwWxOATeJpReOsYDYQgKuEo++rWeGuFRZYt7+Y0wTGAVm
+	IblvFsJ9s5Dct4CReRWjaGppckFxUnquoV5xYm5xaV66XnJ+7iZGSBx82cG4+JjVIUYBDkYl
+	Ht6I0LZgIdbEsuLK3EOMEhzMSiK8ny4BhXhTEiurUovy44tKc1KLDzEycXBKNTDG2Xaameyq
+	UA34o1RToiw79/ur0ub8hoJUwfiq9dPnr17HySLpmb4p4cEjsW/W09u+MGuIZQb8E2lPsdjK
+	4nZ497oTAa+Ybj9fXdUQo8meM/FJ0vY1ov8EFewdbM41frJvYOf6nh3J8zph+s0C2UqrE4vL
+	vyds51tc5SYrfEslZluezvqF15RYijMSDbWYi4oTAe7IRedhAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In (c7d44a02a serial_core: Commonalize crlf when working w/ a non open
-console port) the core was modified to make the UART poll_put_char()
-automatically convert LF to CRLF. This driver's poll_put_char() adds a
-CR itself and this was not disabled by the above patch meaning
-currently it sends two CR characters.
+On śro, 2014-05-28 at 20:10 +0900, Chanwoo Choi wrote:
+> From: Jonghwa Lee <jonghwa3.lee@samsung.com>
+> 
+> Different with s2mps1x series, s2mpus02's LDO has offset in voltage hexadecimal
+> code, which is used as in selector in regulator subsystem. It means the value of
+> minimum voltage is not start with 0x0, but has certain offset.
+> (as like BUCK regulator in both of s2mps1x and s2mpu02)
+> 
+> Signed-off-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
+> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
 
-The code to issue a character is shared by the console write code (where
-driver must do LF to CRLF conversion, although it can make use of the
-uart_console_write() helper function) and the poll_put_char (where
-driver must not do the conversion). For that reason we add a flag rather
-than simply rip out the conversion code.
+Does it mean that driver from previous patch (2/4) does not work
+correctly and the git history is not bisectable? If so than this patch
+should be squashed with 2/4.
 
-Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: Doug Anderson <dianders@chromium.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jiri Slaby <jslaby@suse.cz>
-Cc: Christophe Leroy <christophe.leroy@c-s.fr>
-Cc: linux-serial@vger.kernel.org
----
- drivers/tty/serial/cpm_uart/cpm_uart_core.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+Best regards,
+Krzysztof
 
-diff --git a/drivers/tty/serial/cpm_uart/cpm_uart_core.c b/drivers/tty/serial/cpm_uart/cpm_uart_core.c
-index 7d76214..aa60e6d 100644
---- a/drivers/tty/serial/cpm_uart/cpm_uart_core.c
-+++ b/drivers/tty/serial/cpm_uart/cpm_uart_core.c
-@@ -971,7 +971,7 @@ static void cpm_uart_config_port(struct uart_port *port, int flags)
-  * Note that this is called with interrupts already disabled
-  */
- static void cpm_uart_early_write(struct uart_cpm_port *pinfo,
--		const char *string, u_int count)
-+		const char *string, u_int count, bool handle_linefeed)
- {
- 	unsigned int i;
- 	cbd_t __iomem *bdp, *bdbase;
-@@ -1013,7 +1013,7 @@ static void cpm_uart_early_write(struct uart_cpm_port *pinfo,
- 			bdp++;
- 
- 		/* if a LF, also do CR... */
--		if (*string == 10) {
-+		if (handle_linefeed && *string == 10) {
- 			while ((in_be16(&bdp->cbd_sc) & BD_SC_READY) != 0)
- 				;
- 
-@@ -1111,7 +1111,7 @@ static void cpm_put_poll_char(struct uart_port *port,
- 	static char ch[2];
- 
- 	ch[0] = (char)c;
--	cpm_uart_early_write(pinfo, ch, 1);
-+	cpm_uart_early_write(pinfo, ch, 1, false);
- }
- #endif /* CONFIG_CONSOLE_POLL */
- 
-@@ -1275,7 +1275,7 @@ static void cpm_uart_console_write(struct console *co, const char *s,
- 		spin_lock_irqsave(&pinfo->port.lock, flags);
- 	}
- 
--	cpm_uart_early_write(pinfo, s, count);
-+	cpm_uart_early_write(pinfo, s, count, true);
- 
- 	if (unlikely(nolock)) {
- 		local_irq_restore(flags);
--- 
-1.9.0
+
 
