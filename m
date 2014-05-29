@@ -1,67 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756189AbaE2UJM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 16:09:12 -0400
-Received: from mail-oa0-f44.google.com ([209.85.219.44]:57899 "EHLO
-	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755215AbaE2UJK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 16:09:10 -0400
-From: Larry Bassel <larry.bassel@linaro.org>
-To: catalin.marinas@arm.com, will.deacon@arm.com
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linaro-kernel@lists.linaro.org, khilman@linaro.org,
-        Larry Bassel <larry.bassel@linaro.org>
-Subject: [PATCH v6 0/2] context tracker support for arm64
-Date: Thu, 29 May 2014 13:08:57 -0700
-Message-Id: <1401394139-23469-1-git-send-email-larry.bassel@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
+	id S932698AbaE2UXx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 16:23:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23996 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755805AbaE2UXw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 16:23:52 -0400
+Subject: [PATCH] iommu/intel: GAW only gets smaller by adding devices
+From: Alex Williamson <alex.williamson@redhat.com>
+To: iommu@lists.linux-foundation.org
+Cc: David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
+        mspeder@users.sourceforge.net
+Date: Thu, 29 May 2014 14:23:17 -0600
+Message-ID: <20140529202304.10925.20871.stgit@bling.home>
+User-Agent: StGit/0.17-dirty
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implement and enable context tracking for arm64 (which is
-a prerequisite for FULL_NOHZ support). This patchset
-builds upon earlier work by Kevin Hilman and is based on
-Will Deacon's tree.
+As analyzed in https://bugzilla.kernel.org/show_bug.cgi?id=76331
+we can have multiple DRHDs in a system and each may support different
+guest address widths.  We can add a device behind a less capable DRHD
+to a domain so long as the lesser DRHD can map the existing domain
+page table.  We should never increase the address width as a result
+of adding a device to the domain.  The current code simply updates
+the width to the last added device.  Change to keep it at the
+minumum DRHD width.
 
-Changes v5 to v6:
+Reported-by: mspeder@users.sourceforge.net
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+Cc: David Woodhouse <dwmw2@infradead.org>
+---
+ drivers/iommu/intel-iommu.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-* Don't save far_el1 in x26 in el0_dbg path (not needed)
-* TIF_NOHZ processes go through the slow path (so no register
-save/restore is needed in ct_user_enter)
-
-Changes v4 to v5:
-
-* Improvement to code restoring far_el1 (suggested by Christopher Covington)
-* Improvement to register save/restore in ct_user_enter
-
-Changes v3 to v4:
-
-* Rename parameter of ct_user_exit from save to restore
-* Rebased patch to Will Deacon's tree (branch remotes/origin/aarch64
-of git://git.kernel.org/pub/scm/linux/kernel/git/will/linux.git)
-
-Changes v2 to v3:
-
-* Save/restore necessary registers in ct_user_enter and ct_user_exit
-* Annotate "error paths" out of el0_sync with ct_user_exit
-
-Changes v1 to v2:
-
-* Save far_el1 in x26 temporarily
-
-*** BLURB HERE ***
-
-Larry Bassel (2):
-  arm64: adjust el0_sync so that a function can be called
-  arm64: enable context tracking
-
- arch/arm64/Kconfig                   |  1 +
- arch/arm64/include/asm/thread_info.h |  4 +++
- arch/arm64/kernel/entry.S            | 58 +++++++++++++++++++++++++++++++-----
- 3 files changed, 56 insertions(+), 7 deletions(-)
-
--- 
-1.8.3.2
+diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
+index e68f44b..cd41d8d 100644
+--- a/drivers/iommu/intel-iommu.c
++++ b/drivers/iommu/intel-iommu.c
+@@ -4276,7 +4276,7 @@ static int intel_iommu_attach_device(struct iommu_domain *domain,
+ 		       __func__, addr_width, dmar_domain->max_addr);
+ 		return -EFAULT;
+ 	}
+-	dmar_domain->gaw = addr_width;
++	dmar_domain->gaw = min(addr_width, dmar_domain->gaw);
+ 
+ 	/*
+ 	 * Knock out extra levels of page tables if necessary
 
