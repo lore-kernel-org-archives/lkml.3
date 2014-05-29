@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933762AbaE2FCb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 01:02:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58389 "EHLO
+	id S932974AbaE2EiH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 00:38:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58352 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932948AbaE2EiI (ORCPT
+	with ESMTP id S932948AbaE2EiE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 00:38:08 -0400
+	Thu, 29 May 2014 00:38:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stefan Richter <stefanr@s5r6.in-berlin.de>
-Subject: [PATCH 3.10 08/86] firewire: ohci: beautify some macro definitions
-Date: Wed, 28 May 2014 21:36:43 -0700
-Message-Id: <20140529043514.617802953@linuxfoundation.org>
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [PATCH 3.10 02/86] SCSI: dual scan thread bug fix
+Date: Wed, 28 May 2014 21:36:37 -0700
+Message-Id: <20140529043513.804967960@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.rc3.2.g998f840
 In-Reply-To: <20140529043513.451722422@linuxfoundation.org>
 References: <20140529043513.451722422@linuxfoundation.org>
@@ -26,61 +27,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+From: James Bottomley <JBottomley@Parallels.com>
 
-commit 0dbe15f88be5b2cdf4ca4145797861dfb0d583a5 upstream.
+commit f2495e228fce9f9cec84367547813cbb0d6db15a upstream.
 
-a) Sort device IDs by vendor -- device -- revision.
+In the highly unusual case where two threads are running concurrently through
+the scanning code scanning the same target, we run into the situation where
+one may allocate the target while the other is still using it.  In this case,
+because the reap checks for STARGET_CREATED and kills the target without
+reference counting, the second thread will do the wrong thing on reap.
 
-b) Write quirk flags in hexadecimal.  This affects the user-visible
-output of "modinfo firewire-ohci".  Since more flags have been added
-recently, it is now easier to cope with them in hexadecimal represen-
-tation.  Besides, the device-specific combination of quirk flags is
-shown in hexadecimal in the kernel log too.  (And firewire-sbp2
-presents its own quirk flags in modinfo as hexadecimals as well.)
+Fix this by reference counting even creates and doing the STARGET_CREATED
+check in the final put.
 
-Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Tested-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/firewire/ohci.c |   18 +++++++++---------
- 1 file changed, 9 insertions(+), 9 deletions(-)
+ drivers/scsi/scsi_scan.c |   23 ++++++++++++++++-------
+ 1 file changed, 16 insertions(+), 7 deletions(-)
 
---- a/drivers/firewire/ohci.c
-+++ b/drivers/firewire/ohci.c
-@@ -271,6 +271,7 @@ static inline struct fw_ohci *fw_ohci(st
+--- a/drivers/scsi/scsi_scan.c
++++ b/drivers/scsi/scsi_scan.c
+@@ -320,6 +320,7 @@ static void scsi_target_destroy(struct s
+ 	struct Scsi_Host *shost = dev_to_shost(dev->parent);
+ 	unsigned long flags;
  
- static char ohci_driver_name[] = KBUILD_MODNAME;
++	starget->state = STARGET_DEL;
+ 	transport_destroy_device(dev);
+ 	spin_lock_irqsave(shost->host_lock, flags);
+ 	if (shost->hostt->target_destroy)
+@@ -384,9 +385,15 @@ static void scsi_target_reap_ref_release
+ 	struct scsi_target *starget
+ 		= container_of(kref, struct scsi_target, reap_ref);
  
-+#define PCI_VENDOR_ID_PINNACLE_SYSTEMS	0x11bd
- #define PCI_DEVICE_ID_AGERE_FW643	0x5901
- #define PCI_DEVICE_ID_CREATIVE_SB1394	0x4001
- #define PCI_DEVICE_ID_JMICRON_JMB38X_FW	0x2380
-@@ -278,17 +279,16 @@ static char ohci_driver_name[] = KBUILD_
- #define PCI_DEVICE_ID_TI_TSB12LV26	0x8020
- #define PCI_DEVICE_ID_TI_TSB82AA2	0x8025
- #define PCI_DEVICE_ID_VIA_VT630X	0x3044
--#define PCI_VENDOR_ID_PINNACLE_SYSTEMS	0x11bd
- #define PCI_REV_ID_VIA_VT6306		0x46
+-	transport_remove_device(&starget->dev);
+-	device_del(&starget->dev);
+-	starget->state = STARGET_DEL;
++	/*
++	 * if we get here and the target is still in the CREATED state that
++	 * means it was allocated but never made visible (because a scan
++	 * turned up no LUNs), so don't call device_del() on it.
++	 */
++	if (starget->state != STARGET_CREATED) {
++		transport_remove_device(&starget->dev);
++		device_del(&starget->dev);
++	}
+ 	scsi_target_destroy(starget);
+ }
  
--#define QUIRK_CYCLE_TIMER		1
--#define QUIRK_RESET_PACKET		2
--#define QUIRK_BE_HEADERS		4
--#define QUIRK_NO_1394A			8
--#define QUIRK_NO_MSI			16
--#define QUIRK_TI_SLLZ059		32
--#define QUIRK_IR_WAKE			64
--#define QUIRK_PHY_LCTRL_TIMEOUT		128
-+#define QUIRK_CYCLE_TIMER		0x1
-+#define QUIRK_RESET_PACKET		0x2
-+#define QUIRK_BE_HEADERS		0x4
-+#define QUIRK_NO_1394A			0x8
-+#define QUIRK_NO_MSI			0x10
-+#define QUIRK_TI_SLLZ059		0x20
-+#define QUIRK_IR_WAKE			0x40
-+#define QUIRK_PHY_LCTRL_TIMEOUT		0x80
+@@ -506,11 +513,13 @@ static struct scsi_target *scsi_alloc_ta
+  */
+ void scsi_target_reap(struct scsi_target *starget)
+ {
++	/*
++	 * serious problem if this triggers: STARGET_DEL is only set in the if
++	 * the reap_ref drops to zero, so we're trying to do another final put
++	 * on an already released kref
++	 */
+ 	BUG_ON(starget->state == STARGET_DEL);
+-	if (starget->state == STARGET_CREATED)
+-		scsi_target_destroy(starget);
+-	else
+-		scsi_target_reap_ref_put(starget);
++	scsi_target_reap_ref_put(starget);
+ }
  
- /* In case of multiple matches in ohci_quirks[], only the first one is used. */
- static const struct {
+ /**
 
 
