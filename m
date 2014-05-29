@@ -1,98 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934552AbaE2Nvf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 09:51:35 -0400
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:44207 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933630AbaE2Nva (ORCPT
+	id S934355AbaE2NvE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 09:51:04 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:59532 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933636AbaE2Nte (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 09:51:30 -0400
-MIME-Version: 1.0
-In-Reply-To: <1401348092-24468-1-git-send-email-lejun.zhu@linux.intel.com>
-References: <1401348092-24468-1-git-send-email-lejun.zhu@linux.intel.com>
-Date: Thu, 29 May 2014 15:51:30 +0200
-Message-ID: <CACRpkdbWtj7FqTr2QqCoKQh_u5OEZN1Vwx0UTP+sJ9S5NwCiwg@mail.gmail.com>
-Subject: Re: [PATCH] gpio: Add support for Intel Crystal Cove PMIC
-From: Linus Walleij <linus.walleij@linaro.org>
-To: "Zhu, Lejun" <lejun.zhu@linux.intel.com>
-Cc: Alexandre Courbot <gnurou@gmail.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        jacob.jun.pan@linux.intel.com, bin.yang@intel.com
-Content-Type: text/plain; charset=UTF-8
+	Thu, 29 May 2014 09:49:34 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Xufeng Zhang <xufeng.zhang@windriver.com>,
+        Julian Anastasov <ja@ssi.bg>, "David S. Miller" <davem@davemloft.net>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 078/103] sctp: reset flowi4_oif parameter on route lookup
+Date: Thu, 29 May 2014 15:49:03 +0200
+Message-Id: <90f00d5dfb56e03ffc41652ec75e76201bc3a3c7.1401371259.git.jslaby@suse.cz>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <bcbac220dab16a4038ac1a7c5cfe3e7f034b3836.1401371258.git.jslaby@suse.cz>
+References: <bcbac220dab16a4038ac1a7c5cfe3e7f034b3836.1401371258.git.jslaby@suse.cz>
+In-Reply-To: <cover.1401371258.git.jslaby@suse.cz>
+References: <cover.1401371258.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 29, 2014 at 9:21 AM, Zhu, Lejun <lejun.zhu@linux.intel.com> wrote:
+From: Xufeng Zhang <xufeng.zhang@windriver.com>
 
-> Devices based on Intel SoC products such as Baytrail have a Power
-> Management IC. In the PMIC there are subsystems for voltage regulation,
-> A/D conversion, GPIO and PWMs. The PMIC in Baytrail-T platform is
-> called Crystal Cove.
->
-> This patch adds support for the GPIO function in Crystal Cove.
->
-> Signed-off-by: Yang, Bin <bin.yang@intel.com>
-> Signed-off-by: Zhu, Lejun <lejun.zhu@linux.intel.com>
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-You have gotten several Reviewed-by and Acked-by tags for this
-driver have you not? Please collect them here so I don't have to
-do it.
+===============
 
-> ---
-> v2:
-> - Use IRQ chip helper to provide irqdomain.
-> - Implement .remove and can now build as a module.
-> - Various fix for unreadable or ugly code pieces.
-> v3:
-> - More fix in irq_handler and probe.
-> v4:
-> - Minor fix of one return statement.
-> v5:
-> - intel_soc_pmic_readb/writeb/setb/clearb are removed from the MFD
->   driver, so use regmap_* API here instead.
-> - Check for unsupported IRQ type and return -EINVAL.
-> - Create to_cg() and to_reg() inline functions to make the code
->   readable.
+[ Upstream commit 85350871317a5adb35519d9dc6fc9e80809d42ad ]
 
-Pretty cool eh? :-)
+commit 813b3b5db83 (ipv4: Use caller's on-stack flowi as-is
+in output route lookups.) introduces another regression which
+is very similar to the problem of commit e6b45241c (ipv4: reset
+flowi parameters on route connect) wants to fix:
+Before we call ip_route_output_key() in sctp_v4_get_dst() to
+get a dst that matches a bind address as the source address,
+we have already called this function previously and the flowi
+parameters have been initialized including flowi4_oif, so when
+we call this function again, the process in __ip_route_output_key()
+will be different because of the setting of flowi4_oif, and we'll
+get a networking device which corresponds to the inputted flowi4_oif
+as the output device, this is wrong because we'll never hit this
+place if the previously returned source address of dst match one
+of the bound addresses.
 
-> +#include <linux/mfd/intel_soc_pmic.h>
+To reproduce this problem, a vlan setting is enough:
+  # ifconfig eth0 up
+  # route del default
+  # vconfig add eth0 2
+  # vconfig add eth0 3
+  # ifconfig eth0.2 10.0.1.14 netmask 255.255.255.0
+  # route add default gw 10.0.1.254 dev eth0.2
+  # ifconfig eth0.3 10.0.0.14 netmask 255.255.255.0
+  # ip rule add from 10.0.0.14 table 4
+  # ip route add table 4 default via 10.0.0.254 src 10.0.0.14 dev eth0.3
+  # sctp_darn -H 10.0.0.14 -P 36422 -h 10.1.4.134 -p 36422 -s -I
+You'll detect that all the flow are routed to eth0.2(10.0.1.254).
 
-As you realize I cannot merge this patch until that
-header file exists, so the MFD core patch needs to go
-in first.
+Signed-off-by: Xufeng Zhang <xufeng.zhang@windriver.com>
+Signed-off-by: Julian Anastasov <ja@ssi.bg>
+Acked-by: Vlad Yasevich <vyasevich@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ net/sctp/protocol.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-> +
-> +#define NUM_GPIO               16
+diff --git a/net/sctp/protocol.c b/net/sctp/protocol.c
+index 5e17092f4ada..2b216f1f6b23 100644
+--- a/net/sctp/protocol.c
++++ b/net/sctp/protocol.c
+@@ -492,8 +492,13 @@ static void sctp_v4_get_dst(struct sctp_transport *t, union sctp_addr *saddr,
+ 			continue;
+ 		if ((laddr->state == SCTP_ADDR_SRC) &&
+ 		    (AF_INET == laddr->a.sa.sa_family)) {
+-			fl4->saddr = laddr->a.v4.sin_addr.s_addr;
+ 			fl4->fl4_sport = laddr->a.v4.sin_port;
++			flowi4_update_output(fl4,
++					     asoc->base.sk->sk_bound_dev_if,
++					     RT_CONN_FLAGS(asoc->base.sk),
++					     daddr->v4.sin_addr.s_addr,
++					     laddr->a.v4.sin_addr.s_addr);
++
+ 			rt = ip_route_output_key(sock_net(sk), fl4);
+ 			if (!IS_ERR(rt)) {
+ 				dst = &rt->dst;
+-- 
+1.9.3
 
-Too generic name, say CRYSTAL_NUM_GPIO or something.
-
-> +       gpiochip_irqchip_add(&cg->chip, &crystalcove_irqchip, 0,
-> +                            handle_simple_irq, IRQ_TYPE_NONE);
-> +
-> +       retval = request_threaded_irq(irq, NULL, crystalcove_gpio_irq_handler,
-> +                                     IRQF_ONESHOT, KBUILD_MODNAME, cg);
-> +
-> +       if (retval) {
-> +               dev_warn(&pdev->dev, "request irq failed: %d\n", retval);
-> +               goto out;
-> +       }
-> +
-> +       retval = gpiochip_add(&cg->chip);
-> +       if (retval) {
-> +               dev_warn(&pdev->dev, "add gpio chip error: %d\n", retval);
-> +               goto out_free_irq;
-> +       }
-
-As mentioned, swap these around.
-
-But the driver is looking real good now, if you just fix the above
-you have my Reviewed-by so you can merge it along with the
-MFD patch in the MFD tree if you like.
-
-Yours,
-Linus Walleij
