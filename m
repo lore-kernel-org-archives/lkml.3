@@ -1,57 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932941AbaE2Npv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 09:45:51 -0400
-Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:56551 "EHLO
-	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932605AbaE2Npt (ORCPT
+	id S933086AbaE2Nre (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 09:47:34 -0400
+Received: from mail-ve0-f169.google.com ([209.85.128.169]:53683 "EHLO
+	mail-ve0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932646AbaE2Nrc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 09:45:49 -0400
-Message-ID: <1401371147.22923.4.camel@x220>
-Subject: Re: [PATCH] remove duplicate checking code
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Joerg Roedel <joro@8bytes.org>
-Cc: Vaughan Cao <vaughan.cao@oracle.com>, iommu@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 29 May 2014 15:45:47 +0200
-In-Reply-To: <20140526093959.GH17056@8bytes.org>
-References: <1400225980-12797-1-git-send-email-vaughan.cao@oracle.com>
-	 <20140526093959.GH17056@8bytes.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-OriginalArrivalTime: 29 May 2014 13:45:48.0047 (UTC) FILETIME=[4C05B9F0:01CF7B44]
-X-RcptDomain: vger.kernel.org
+	Thu, 29 May 2014 09:47:32 -0400
+MIME-Version: 1.0
+In-Reply-To: <5386F0FE.7040003@ti.com>
+References: <1401267437-22489-1-git-send-email-satish.patel@ti.com>
+	<1401267437-22489-2-git-send-email-satish.patel@ti.com>
+	<20140528185334.GA30763@kroah.com>
+	<5386F0FE.7040003@ti.com>
+Date: Thu, 29 May 2014 08:47:31 -0500
+Message-ID: <CAL_Jsq+E7a=wh_yzQyaSEVAwfa34BYZ4DxvLOfJGFVDsf1dZ+A@mail.gmail.com>
+Subject: Re: [PATCH v3 1/5] sc_phy:SmartCard(SC) PHY interface to SC controller
+From: Rob Herring <robherring2@gmail.com>
+To: Satish Patel <satish.patel@ti.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-omap <linux-omap@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Rob Landley <rob@landley.net>, Tony Lindgren <tony@atomide.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-05-26 at 11:39 +0200, Joerg Roedel wrote:
-> On Fri, May 16, 2014 at 03:39:40PM +0800, Vaughan Cao wrote:
-> > amd_iommu_rlookup_table[devid] != NULL is already guaranteed by check_device
-> > called before, it's fine to attach device at this point.
-> > 
-> > Signed-off-by: Vaughan Cao <vaughan.cao@oracle.com>
-> > ---
-> >  drivers/iommu/amd_iommu.c | 6 ------
-> >  1 file changed, 6 deletions(-)
-> 
-> Applied, thanks.
+On Thu, May 29, 2014 at 3:34 AM, Satish Patel <satish.patel@ti.com> wrote:
+>
+>
+> On 5/29/2014 12:23 AM, Greg KH wrote:
+>>
+>> On Wed, May 28, 2014 at 02:27:13PM +0530, Satish Patel wrote:
+>>>
+>>> SmartCard controller uses this interface to communicate with
+>>> SmartCard via PHY
+>>>
+>>> Some SmartCard PHY has multiple slots for cards.
+>>> This inerface also enables controller to communicate
+>>> with one or more SmartCard connected over phy.
+>>>
+>>> interface structure includes following APIs
+>>> - set/get config
+>>> - activate/deactivate smart card
+>>> - warm reset
+>>> - register_notify (for card insert/remove/overheat)
+>>> - unregister_notify
+>>>
+>>> Signed-off-by: Satish Patel <satish.patel@ti.com>
+>>> ---
+>>>   Documentation/sc_phy.txt |  171
+>>> ++++++++++++++++++++++++++++++++++++++++++++++
+>>>   include/linux/sc_phy.h   |  136 ++++++++++++++++++++++++++++++++++++
+>>>   2 files changed, 307 insertions(+)
+>>>   create mode 100644 Documentation/sc_phy.txt
+>>>   create mode 100644 include/linux/sc_phy.h
+>>
+>>
+>> These are .h files, but where is the "api" functions that use
+>> these structures defined at?
+>>
+> This is like template/wrappers, smart card phy driver will write API
+> functions. And smartcard controller will call these functions.
+> With proposed approach, smartcard controller can communicate with any smart
+> card phy (TI/NxP) without change in code. Using DT entry smartcard and PHY
+> will gets connected with each other.
+> Refer diagram given @Documentation/sc_phy.txt.
+>
+>
+>> confused,
 
-This one entered linux-next, as of next-20142527, in commit ecef115d4540
-("iommu/amd: Remove duplicate checking code"). It triggers an obviously
-correct warning:
-    drivers/iommu/amd_iommu.c: In function ‘amd_iommu_init_passthrough’:
-    drivers/iommu/amd_iommu.c:3503:6: warning: unused variable ‘devid’ [-Wunused-variable]
-      u16 devid;
-          ^
-    drivers/iommu/amd_iommu.c:3502:20: warning: unused variable ‘iommu’ [-Wunused-variable]
-      struct amd_iommu *iommu;
-                        ^
+I believe the api Greg is wondering about is the notifier which as I
+commented is not a good design.
 
-Is the trivial fix for this queued somewhere?
+There is now a phy subsystem. I don't know if it has what you need,
+but you should look at it to determine if it will work or could be
+extended to work.
 
-
-Paul Bolle
-
+Rob
