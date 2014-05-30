@@ -1,109 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030247AbaE3UFZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 16:05:25 -0400
-Received: from mout.kundenserver.de ([212.227.17.24]:57716 "EHLO
+	id S1030227AbaE3UFU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 16:05:20 -0400
+Received: from mout.kundenserver.de ([212.227.17.13]:58009 "EHLO
 	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030222AbaE3UFV (ORCPT
+	with ESMTP id S1751687AbaE3UFQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 16:05:21 -0400
+	Fri, 30 May 2014 16:05:16 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-kernel@vger.kernel.org
 Cc: linux-arch@vger.kernel.org, joseph@codesourcery.com,
         john.stultz@linaro.org, hch@infradead.org, tglx@linutronix.de,
         geert@linux-m68k.org, lftan@altera.com, hpa@zytor.com,
         linux-fsdevel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        "Theodore Ts'o" <tytso@mit.edu>,
+        Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
         Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org
-Subject: [RFC 14/32] ext4: convert to struct inode_time
-Date: Fri, 30 May 2014 22:01:38 +0200
-Message-Id: <1401480116-1973111-15-git-send-email-arnd@arndb.de>
+Subject: [RFC 13/32] ext3: convert to struct inode_time
+Date: Fri, 30 May 2014 22:01:37 +0200
+Message-Id: <1401480116-1973111-14-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1401480116-1973111-1-git-send-email-arnd@arndb.de>
 References: <1401480116-1973111-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:6KwkiRMM+u7RTAVkTxPAavm1u/cl2XHHAqAwOPT5cIN
- ZfjvX8roP1PUGM0AG7xrKGA4X+jwWZDB4Kanvd4DXH0TEisi8O
- aOf/hFVjO9GjfOgdprjYnSnOEOq9iD7kUMWdTuuHuDFEzOOe8o
- gDnPH0rvXz/KqXfQXn3sOq0MpqrHjb4GJXjHMzXRXnbjvJfS/U
- s4dphLhRX/Ac0qxofpOMLbtMhMxCZQDEWcqor9oYz/Ca+KepaW
- Euwu6csgGv2QxNbt8Uif5O8MBmAquzb7Nhu7Gy41T88u1zJE+1
- wTW5/CxzIP2FdwOM1OvqBj9jaNgyrj38GKTv66TcO0VbcigZwa
- H9OWPxc4TQKOzbTNG6Mhs6roB5nS2g7hToNA7vVbb
+X-Provags-ID: V02:K0:KsBg1RqtWGcuF7ePO9nJjfv/iZruKjuMqSL8y+4WJ9A
+ /jzmediKMU3qvrwuXzf59bXIndM/Xi3KF4JP/ogdFVINLqfuqT
+ 4DWCKF382MWxgvLncTnUabXiM7SoN7gT8DrqTw4wh+xoU6BE8B
+ l3o/w7Feg9K6CRBT83S6yu6vBA6hm4eILv7OA6LvFT5Z3pndvZ
+ cN4nMjF4pVM98Opu/4ub4LouNTip6E0eOILG08Pc+5JJifIs52
+ vtq7j9XCLdzfTbAJw91n1/Z7Cq/7/vhlRvsBgn54fQLqWuF/ar
+ PCHT9XsOVvFVxfQSN+XFYN5Asy9voR14Pi+uhL7O6k7Todm0jb
+ Obzt7hm8yIPSMNRF0bbG96wINzDGlzwxsZvjUNSG5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ext4fs uses unsigned 34-bit seconds for inode timestamps, which will work
-for the next 500 years, but the VFS uses struct timespec for timestamps,
+ext3fs uses unsigned 32-bit seconds for inode timestamps, which will work
+for the next 92 years, but the VFS uses struct timespec for timestamps,
 which is only good until 2038 on 32-bit CPUs.
 
 This gets us one small step closer to lifting the VFS limit by using
-struct inode_time in ext4.
+struct inode_time in ext3. The on-disk format limit is lifted in ext4,
+which will work until 2514.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Jan Kara <jack@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Andreas Dilger <adilger.kernel@dilger.ca>
 Cc: linux-ext4@vger.kernel.org
 ---
- fs/ext4/ext4.h    | 10 +++++-----
- fs/ext4/extents.c |  2 +-
- 2 files changed, 6 insertions(+), 6 deletions(-)
+ fs/ext3/inode.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
-index 92d9f1a..b60adc9 100644
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -726,14 +726,14 @@ struct move_extent {
- 	<= (EXT4_GOOD_OLD_INODE_SIZE +			\
- 	    (einode)->i_extra_isize))			\
+diff --git a/fs/ext3/inode.c b/fs/ext3/inode.c
+index 4d32133..8b76f80 100644
+--- a/fs/ext3/inode.c
++++ b/fs/ext3/inode.c
+@@ -752,7 +752,7 @@ static int ext3_splice_branch(handle_t *handle, struct inode *inode,
+ 	struct ext3_block_alloc_info *block_i;
+ 	ext3_fsblk_t current_block;
+ 	struct ext3_inode_info *ei = EXT3_I(inode);
+-	struct timespec now;
++	struct inode_time now;
  
--static inline __le32 ext4_encode_extra_time(struct timespec *time)
-+static inline __le32 ext4_encode_extra_time(struct inode_time *time)
- {
-        return cpu_to_le32((sizeof(time->tv_sec) > 4 ?
- 			   (time->tv_sec >> 32) & EXT4_EPOCH_MASK : 0) |
-                           ((time->tv_nsec << EXT4_EPOCH_BITS) & EXT4_NSEC_MASK));
- }
- 
--static inline void ext4_decode_extra_time(struct timespec *time, __le32 extra)
-+static inline void ext4_decode_extra_time(struct inode_time *time, __le32 extra)
- {
-        if (sizeof(time->tv_sec) > 4)
- 	       time->tv_sec |= (__u64)(le32_to_cpu(extra) & EXT4_EPOCH_MASK)
-@@ -879,9 +879,9 @@ struct ext4_inode_info {
- 
+ 	block_i = ei->i_block_alloc_info;
  	/*
- 	 * File creation time. Its function is same as that of
--	 * struct timespec i_{a,c,m}time in the generic inode.
-+	 * struct inode_time i_{a,c,m}time in the generic inode.
- 	 */
--	struct timespec i_crtime;
-+	struct inode_time i_crtime;
+@@ -793,7 +793,7 @@ static int ext3_splice_branch(handle_t *handle, struct inode *inode,
  
- 	/* mballoc */
- 	struct list_head i_prealloc_list;
-@@ -1354,7 +1354,7 @@ static inline struct ext4_inode_info *EXT4_I(struct inode *inode)
- 	return container_of(inode, struct ext4_inode_info, vfs_inode);
- }
- 
--static inline struct timespec ext4_current_time(struct inode *inode)
-+static inline struct inode_time ext4_current_time(struct inode *inode)
- {
- 	return (inode->i_sb->s_time_gran < NSEC_PER_SEC) ?
- 		current_fs_time(inode->i_sb) : CURRENT_TIME_SEC;
-diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
-index ee14768..ed11d79 100644
---- a/fs/ext4/extents.c
-+++ b/fs/ext4/extents.c
-@@ -4894,7 +4894,7 @@ long ext4_fallocate(struct file *file, int mode, loff_t offset, loff_t len)
- 	int ret = 0;
- 	int flags;
- 	ext4_lblk_t lblk;
--	struct timespec tv;
-+	struct inode_time tv;
- 	unsigned int blkbits = inode->i_blkbits;
- 
- 	/* Return error if mode is not supported */
+ 	/* We are done with atomic stuff, now do the rest of housekeeping */
+ 	now = CURRENT_TIME_SEC;
+-	if (!timespec_equal(&inode->i_ctime, &now) || !where->bh) {
++	if (!inode_time_equal(&inode->i_ctime, &now) || !where->bh) {
+ 		inode->i_ctime = now;
+ 		ext3_mark_inode_dirty(handle, inode);
+ 	}
 -- 
 1.8.3.2
 
