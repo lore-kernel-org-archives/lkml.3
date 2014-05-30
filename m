@@ -1,179 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933957AbaE3QVX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 12:21:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52727 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933202AbaE3QVW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 12:21:22 -0400
-Date: Fri, 30 May 2014 12:20:42 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: jolsa@redhat.com, Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>, namhyung@gmail.com,
-        eranian@google.com, Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH 6/7 V2] perf: Add support to dynamically get cacheline
- size
-Message-ID: <20140530162042.GI191965@redhat.com>
-References: <1401208087-181977-7-git-send-email-dzickus@redhat.com>
- <1401461425-209679-1-git-send-email-dzickus@redhat.com>
- <20140530152830.GB1202@kernel.org>
+	id S933704AbaE3QZV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 12:25:21 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:48328 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752136AbaE3QZT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 May 2014 12:25:19 -0400
+Message-ID: <5388AF2D.4060909@wwwdotorg.org>
+Date: Fri, 30 May 2014 10:17:49 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140530152830.GB1202@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: Russell King <linux@arm.linux.org.uk>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Wolfram Sang <wsa@the-dreams.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v5 0/5] efuse driver for Tegra
+References: <1401281677-32110-1-git-send-email-pdeschrijver@nvidia.com> <53878407.3050409@wwwdotorg.org> <20140530082356.GP5961@tbergstrom-lnx.Nvidia.com>
+In-Reply-To: <20140530082356.GP5961@tbergstrom-lnx.Nvidia.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 30, 2014 at 12:28:30PM -0300, Arnaldo Carvalho de Melo wrote:
-> Em Fri, May 30, 2014 at 10:50:25AM -0400, Don Zickus escreveu:
-> > Different arches may have different cacheline sizes.  Look it up and set
-> > a global variable for reference.
+On 05/30/2014 02:23 AM, Peter De Schrijver wrote:
+> On Thu, May 29, 2014 at 09:01:27PM +0200, Stephen Warren wrote:
+>> On 05/28/2014 06:54 AM, Peter De Schrijver wrote:
+>>> This driver allows userspace to read the raw efuse data. Its userspace
+>>> interface is modelled after the sunxi_sid driver which provides similar
+>>> functionality for some Allwinner SoCs. It has been tested on
+>>> Tegra20 (ventana), Tegra30 (beaverboard), Tegra114 (dalmore) and
+>>> Tegra124 (jetson TK1).
+>>
+>>> Changes since v4:
+>>>
+>>> * Provide fallback to hardcoded 0x70000800 in case the apbmisc DT node is
+>>>   missing. This is exactly what the current code does and prevents a system
+>>>   crash in that case due to an invalid memory access by tegra_read_chipid()
+>>
+>> Wouldn't it be better to simply return an error?
 > 
-> [acme@zoo linux]$ strings `which getconf` | grep LINESIZE
-> LEVEL1_ICACHE_LINESIZE
-> LEVEL1_DCACHE_LINESIZE
-> LEVEL2_CACHE_LINESIZE
-> LEVEL3_CACHE_LINESIZE
-> LEVEL4_CACHE_LINESIZE
-> [acme@zoo linux]$
-> 
-> man sysconf
-> 
-> That is what I use in pahole, for instance:
-> 
-> [acme@zoo pahole]$ grep sysconf *.c
-> dwarves_fprintf.c:		long sys_cacheline_size =
-> sysconf(_SC_LEVEL1_DCACHE_LINESIZE);
-> [acme@zoo pahole]$
+> This would mean you can't boot a system with these patches applied unless you
+> also update the device tree. The system would crash during boot because CCF
+> relies on tegra_read_chipid() as an APB barrier. Also tegra_boot_secondary()
+> relies on the chipid to select the correct method for booting secondary cores.
 
-Well that does look easier.  I'll hack that up to see if it gives me the
-same answer.
-
-Thanks!
-
-Cheers,
-Don
-
-> 
-> - Arnaldo
->  
-> > Signed-off-by: Don Zickus <dzickus@redhat.com>
-> > 
-> > ---
-> > V3: remove unneeded cpumap.h (Namhyung Kim)
-> > V2: change to be global and setup in perf.c
-> >     use filename__read_int for setup
-> > ---
-> >  tools/perf/perf.c        |  5 +++++
-> >  tools/perf/util/cpumap.c | 27 +++++++++++++++++++++++++++
-> >  tools/perf/util/cpumap.h |  3 +++
-> >  tools/perf/util/util.c   |  1 +
-> >  tools/perf/util/util.h   |  1 +
-> >  5 files changed, 37 insertions(+)
-> > 
-> > diff --git a/tools/perf/perf.c b/tools/perf/perf.c
-> > index 431798a..dabf08b 100644
-> > --- a/tools/perf/perf.c
-> > +++ b/tools/perf/perf.c
-> > @@ -13,6 +13,7 @@
-> >  #include "util/quote.h"
-> >  #include "util/run-command.h"
-> >  #include "util/parse-events.h"
-> > +#include "util/cpumap.h"
-> >  #include <api/fs/debugfs.h>
-> >  #include <pthread.h>
-> >  
-> > @@ -459,6 +460,10 @@ int main(int argc, const char **argv)
-> >  	/* The page_size is placed in util object. */
-> >  	page_size = sysconf(_SC_PAGE_SIZE);
-> >  
-> > +	/* The cacheline_size is placed in util objet */
-> > +	if (cpu__setup_cacheline_size() < 0) 
-> > +		goto out;
-> > +
-> >  	cmd = perf_extract_argv0_path(argv[0]);
-> >  	if (!cmd)
-> >  		cmd = "perf-help";
-> > diff --git a/tools/perf/util/cpumap.c b/tools/perf/util/cpumap.c
-> > index c4e55b7..1029982 100644
-> > --- a/tools/perf/util/cpumap.c
-> > +++ b/tools/perf/util/cpumap.c
-> > @@ -477,3 +477,30 @@ int cpu__setup_cpunode_map(void)
-> >  	closedir(dir1);
-> >  	return 0;
-> >  }
-> > +
-> > +int cpu__setup_cacheline_size(void)
-> > +{
-> > +	const char *mnt;
-> > +	char path[PATH_MAX];
-> > +	int n, size;
-> > +	
-> > +
-> > +	mnt = sysfs__mountpoint();
-> > +	if (!mnt)
-> > +		return -1;
-> > +
-> > +	n = snprintf(path, PATH_MAX, "%s/devices/system/cpu/cpu0/cache/index0/coherency_line_size", mnt);
-> > +	if (n == PATH_MAX) {
-> > +		pr_err("sysfs path crossed PATH_MAX(%d) size\n", PATH_MAX);
-> > +		return -1;
-> > +	}
-> > +
-> > +	if (filename__read_int(path, &size)) {
-> > +		pr_err("Can not read cacheline size\n");
-> > +		return -1;
-> > +	}
-> > +
-> > +	cacheline_size = size;
-> > +
-> > +	return 0;
-> > +}
-> > diff --git a/tools/perf/util/cpumap.h b/tools/perf/util/cpumap.h
-> > index 61a6548..507d7fd 100644
-> > --- a/tools/perf/util/cpumap.h
-> > +++ b/tools/perf/util/cpumap.h
-> > @@ -5,6 +5,7 @@
-> >  #include <stdbool.h>
-> >  
-> >  #include "perf.h"
-> > +#include "util/util.h"
-> >  #include "util/debug.h"
-> >  
-> >  struct cpu_map {
-> > @@ -81,4 +82,6 @@ static inline int cpu__get_node(int cpu)
-> >  	return cpunode_map[cpu];
-> >  }
-> >  
-> > +int cpu__setup_cacheline_size(void);
-> > +
-> >  #endif /* __PERF_CPUMAP_H */
-> > diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
-> > index 7fff6be..95aefa7 100644
-> > --- a/tools/perf/util/util.c
-> > +++ b/tools/perf/util/util.c
-> > @@ -17,6 +17,7 @@
-> >   * XXX We need to find a better place for these things...
-> >   */
-> >  unsigned int page_size;
-> > +int cacheline_size;
-> >  
-> >  bool test_attr__enabled;
-> >  
-> > diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
-> > index b03da44..6686436 100644
-> > --- a/tools/perf/util/util.h
-> > +++ b/tools/perf/util/util.h
-> > @@ -304,6 +304,7 @@ char *rtrim(char *s);
-> >  void dump_stack(void);
-> >  
-> >  extern unsigned int page_size;
-> > +extern int cacheline_size;
-> >  
-> >  void get_term_dimensions(struct winsize *ws);
-> >  
-> > -- 
-> > 1.7.11.7
+Is this series really backwards-compatible anyway? tegra_init_fuse()
+contains a whole bunch of places where resources are pulled out of DT,
+and only one of those has a fallback to use APBMISC_BASE if the DT entry
+isn't present.
