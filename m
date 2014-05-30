@@ -1,71 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755185AbaE3INM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 04:13:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10544 "EHLO mx1.redhat.com"
+	id S932718AbaE3INk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 04:13:40 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58524 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753792AbaE3INI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 04:13:08 -0400
-Message-ID: <53883D8E.10009@redhat.com>
-Date: Fri, 30 May 2014 10:13:02 +0200
-From: Hans de Goede <hdegoede@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1752069AbaE3INg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 May 2014 04:13:36 -0400
+Date: Fri, 30 May 2014 10:13:28 +0200
+From: Jan Kara <jack@suse.cz>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, Petr Mladek <pmladek@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Dave Anderson <anderson@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Kay Sievers <kay@vrfy.org>, Michal Hocko <mhocko@suse.cz>,
+        Jan Kara <jack@suse.cz>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 00/11] printk: safe printing in NMI context
+Message-ID: <20140530081328.GA2419@quack.suse.cz>
+References: <1399626665-29817-1-git-send-email-pmladek@suse.cz>
+ <alpine.LNX.2.00.1405290000350.17241@pobox.suse.cz>
+ <20140529000909.GC6507@localhost.localdomain>
 MIME-Version: 1.0
-To: Sachin Kamat <sachin.kamat@linaro.org>, linux-kernel@vger.kernel.org
-CC: kishon@ti.com, Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: Re: [PATCH 3/3] phy: sun4i-usb: Use PTR_ERR_OR_ZERO
-References: <1401345049-14779-1-git-send-email-sachin.kamat@linaro.org> <1401345049-14779-3-git-send-email-sachin.kamat@linaro.org>
-In-Reply-To: <1401345049-14779-3-git-send-email-sachin.kamat@linaro.org>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140529000909.GC6507@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On 05/29/2014 08:30 AM, Sachin Kamat wrote:
-> PTR_ERR_OR_ZERO simplifies the code.
+On Thu 29-05-14 02:09:11, Frederic Weisbecker wrote:
+> On Thu, May 29, 2014 at 12:02:30AM +0200, Jiri Kosina wrote:
+> > On Fri, 9 May 2014, Petr Mladek wrote:
+> > 
+> > > printk() cannot be used safely in NMI context because it uses internal locks
+> > > and thus could cause a deadlock. Unfortunately there are circumstances when
+> > > calling printk from NMI is very useful. For example, all WARN.*(in_nmi())
+> > > would be much more helpful if they didn't lockup the machine.
+> > > 
+> > > Another example would be arch_trigger_all_cpu_backtrace for x86 which uses NMI
+> > > to dump traces on all CPU (either triggered by sysrq+l or from RCU stall
+> > > detector).
+> > 
+> > I am rather surprised that this patchset hasn't received a single review 
+> > comment for 3 weeks.
+> > 
+> > Let me point out that the issues Petr is talking about in the cover letter 
+> > are real -- we've actually seen the lockups triggered by RCU stall 
+> > detector trying to dump stacks on all CPUs, and hard-locking machine up 
+> > while doing so.
+> > 
+> > So this really needs to be solved.
 > 
-> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
-> Cc: Hans de Goede <hdegoede@redhat.com>
-> Cc: Maxime Ripard <maxime.ripard@free-electrons.com>
-> ---
->  drivers/phy/phy-sun4i-usb.c |    5 ++---
->  1 file changed, 2 insertions(+), 3 deletions(-)
+> The lack of review may be partly due to a not very appealing changestat on an
+> old codebase that is already unpopular:
 > 
-> diff --git a/drivers/phy/phy-sun4i-usb.c b/drivers/phy/phy-sun4i-usb.c
-> index 115d8d5190d5..7a4ea552f621 100644
-> --- a/drivers/phy/phy-sun4i-usb.c
-> +++ b/drivers/phy/phy-sun4i-usb.c
-> @@ -22,6 +22,7 @@
->   */
->  
->  #include <linux/clk.h>
-> +#include <linux/err.h>
->  #include <linux/io.h>
->  #include <linux/kernel.h>
->  #include <linux/module.h>
-> @@ -306,10 +307,8 @@ static int sun4i_usb_phy_probe(struct platform_device *pdev)
->  
->  	dev_set_drvdata(dev, data);
->  	phy_provider = devm_of_phy_provider_register(dev, sun4i_usb_phy_xlate);
-> -	if (IS_ERR(phy_provider))
-> -		return PTR_ERR(phy_provider);
->  
-> -	return 0;
-> +	return PTR_ERR_OR_ZERO(phy_provider);
->  }
->  
->  static const struct of_device_id sun4i_usb_phy_of_match[] = {
+>  Documentation/kernel-parameters.txt |   19 +-
+>  kernel/printk/printk.c              | 1218 +++++++++++++++++++++++++----------
+>  2 files changed, 878 insertions(+), 359 deletions(-)
 > 
+> 
+> Your patches look clean and pretty nice actually. They must be seriously
+> considered if we want to keep the current locked ring buffer design and
+> extend it to multiple per context buffers. But I wonder if it's worth to
+> continue that way with the printk ancient design.
+> 
+> If it takes more than 1000 line changes (including 500 added) to make it
+> finally work correctly with NMIs by working around its fundamental flaws,
+> shouldn't we rather redesign it to use a lockless ring buffer like ftrace
+> or perf ones?
+  I agree that lockless ringbuffer would be a more elegant solution but a
+much more intrusive one and complex as well. Petr's patch set basically
+leaves ordinary printk path intact to avoid concerns about regressions
+there.
 
+Given how difficult / time consuming is it to push any complex changes to
+printk I'd push for fixing printk from NMI in this inelegant but relatively
+non-contentious way and work on converting printk to lockless
+implementation long term. But before spending huge amount of time on that
+I'd like to get some wider concensus that this is really the way we want to
+go - at least AKPM and Steven - something for discussion in the KS topic I'd
+proposed I think [1].
 
-Looks good:
+							Honza
 
-Acked-by: Hans de Goede <hdegoede@redhat.com>
-
-Regards,
-
-Hans
+[1]
+http://lists.linuxfoundation.org/pipermail/ksummit-discuss/2014-May/000598.html
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
