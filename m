@@ -1,94 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756232AbaE3UuH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 16:50:07 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:58528 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751776AbaE3UuF (ORCPT
+	id S934193AbaE3Uum (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 16:50:42 -0400
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:38275 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756251AbaE3Uuk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 16:50:05 -0400
-From: Andy Gross <agross@codeaurora.org>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: dmaengine@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
-        Andy Gross <agross@codeaurora.org>
-Subject: [PATCH] dmaengine: qcom_bam_dma: Add descriptor flags
-Date: Fri, 30 May 2014 15:49:50 -0500
-Message-Id: <1401482990-26486-1-git-send-email-agross@codeaurora.org>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 30 May 2014 16:50:40 -0400
+MIME-Version: 1.0
+In-Reply-To: <53888FF0.4020403@arm.com>
+References: <1400860385-14555-1-git-send-email-vincent.guittot@linaro.org>
+ <1400860385-14555-5-git-send-email-vincent.guittot@linaro.org> <53888FF0.4020403@arm.com>
+From: Vincent Guittot <vincent.guittot@linaro.org>
+Date: Fri, 30 May 2014 22:50:20 +0200
+Message-ID: <CAKfTPtB+2dsHjZw=KkYgbP4EnPebLjfdNeVDAStXFJ2h8wbm+g@mail.gmail.com>
+Subject: Re: [PATCH v2 04/11] sched: Allow all archs to set the power_orig
+To: Dietmar Eggemann <dietmar.eggemann@arm.com>
+Cc: "peterz@infradead.org" <peterz@infradead.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        "efault@gmx.de" <efault@gmx.de>,
+        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for end of transaction (EOT) and notify when done (NWD)
-hardware descriptor flags.
+On 30 May 2014 16:04, Dietmar Eggemann <dietmar.eggemann@arm.com> wrote:
+> On 23/05/14 16:52, Vincent Guittot wrote:
+>> power_orig is only changed for system with a SMT sched_domain level in order to
+>> reflect the lower capacity of CPUs. Heterogenous system also have to reflect an
+>> original capacity that is different from the default value.
+>>
+>> Create a more generic function arch_scale_cpu_power that can be also used by
+>> non SMT platform to set power_orig.
+>>
+>> The weak behavior of arch_scale_cpu_power is the previous SMT one in order to
+>> keep backward compatibility in the use of power_orig.
+>>
+>> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+>
+> As you know, besides uarch scaled cpu power for HMP, freq scaled cpu
+> power is important for energy-aware scheduling to achieve freq scale
+> invariance for task load.
+>
+> I know that your patch-set is not about introducing freq scaled cpu
+> power, but we were discussing how this can be achieved w/ your patch-set
+> in place, so maybe you can share your opinion regarding the easiest way
+> to achieve freq scale invariance with us?
+>
+> (1) We assume that the current way (update_cpu_power() calls
+> arch_scale_freq_power() to get the avg power(freq) over the time period
+> since the last call to arch_scale_freq_power()) is suitable
+> for us. Do you have another opinion here?
 
-The EOT flag requests that the peripheral assert an end of transaction interrupt
-when that descriptor is complete.  It also results in special signaling protocol
-that is used between the attached peripheral and the core using the DMA
-controller.  Clients will specify DMA_PREP_INTERRUPT to enable this flag.
+Using power (or power_freq as you mentioned below) is probably the
+easiest and more straight forward solution. You can use it to scale
+each element when updating entity runnable.
+Nevertheless, I see to 2 potential issues:
+- is power updated often enough to correctly follow the frequency
+scaling ? we need to compare power update frequency with
+runnable_avg_sum variation speed and the rate at which we will change
+the CPU's frequency.
+- the max value of runnable_avg_sum will be also scaled so a task
+running on a CPU with less capacity could be seen as a "low" load even
+if it's an always running tasks. So we need to find a way to reach the
+max value for such situation
 
-The NWD flag requests that the peripheral wait until the data has been fully
-processed by the peripheral before moving on to the next descriptor.  Clients
-will specify DMA_PREP_FENCE to enable this flag.
+>
+> (2) Is the current layout of update_cpu_power() adequate for this, where
+> we scale power_orig related to freq and then related to rt/(irq):
+>
+>   power_orig = scale_cpu(SCHED_POWER_SCALE)
+>   power = scale_rt(scale_freq(power_orig))
+>
+> or do we need an extra power_freq data member on the rq and do:
+>
+>   power_orig = scale_cpu(SCHED_POWER_SCALE)
+>   power_freq = scale_freq(power_orig))
+>   power = scale_rt(power_orig))
 
-Signed-off-by: Andy Gross <agross@codeaurora.org>
----
- drivers/dma/qcom_bam_dma.c |   20 ++++++++++++++++++--
- 1 file changed, 18 insertions(+), 2 deletions(-)
+do you really mean power = scale_rt(power_orig) or power=scale_rt(power_freq) ?
 
-diff --git a/drivers/dma/qcom_bam_dma.c b/drivers/dma/qcom_bam_dma.c
-index e01c2d106..4635224 100644
---- a/drivers/dma/qcom_bam_dma.c
-+++ b/drivers/dma/qcom_bam_dma.c
-@@ -61,12 +61,17 @@ struct bam_desc_hw {
- #define DESC_FLAG_INT BIT(15)
- #define DESC_FLAG_EOT BIT(14)
- #define DESC_FLAG_EOB BIT(13)
-+#define DESC_FLAG_NWD BIT(12)
- 
- struct bam_async_desc {
- 	struct virt_dma_desc vd;
- 
- 	u32 num_desc;
- 	u32 xfer_len;
-+
-+	/* transaction flags, EOT|EOB|NWD */
-+	u16 flags;
-+
- 	struct bam_desc_hw *curr_desc;
- 
- 	enum dma_transfer_direction dir;
-@@ -490,6 +495,14 @@ static struct dma_async_tx_descriptor *bam_prep_slave_sg(struct dma_chan *chan,
- 	if (!async_desc)
- 		goto err_out;
- 
-+	if (flags & DMA_PREP_FENCE)
-+		async_desc->flags |= DESC_FLAG_NWD;
-+
-+	if (flags & DMA_PREP_INTERRUPT)
-+		async_desc->flags |= DESC_FLAG_EOT;
-+	else
-+		async_desc->flags |= DESC_FLAG_INT;
-+
- 	async_desc->num_desc = num_alloc;
- 	async_desc->curr_desc = async_desc->desc;
- 	async_desc->dir = direction;
-@@ -795,8 +808,11 @@ static void bam_start_dma(struct bam_chan *bchan)
- 	else
- 		async_desc->xfer_len = async_desc->num_desc;
- 
--	/* set INT on last descriptor */
--	desc[async_desc->xfer_len - 1].flags |= DESC_FLAG_INT;
-+	/* set any special flags on the last descriptor */
-+	if (async_desc->num_desc == async_desc->xfer_len)
-+		desc[async_desc->xfer_len - 1].flags = async_desc->flags;
-+	else
-+		desc[async_desc->xfer_len - 1].flags |= DESC_FLAG_INT;
- 
- 	if (bchan->tail + async_desc->xfer_len > MAX_DESCRIPTORS) {
- 		u32 partial = MAX_DESCRIPTORS - bchan->tail;
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+>
+> In other words, do we consider rt/(irq) pressure when calculating freq
+> scale invariant task load or not?
 
+we should take power_freq which implies a new field
+
+Thanks,
+Vincent
+>
+> Thanks,
+>
+> -- Dietmar
+> [...]
+>
