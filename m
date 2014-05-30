@@ -1,102 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964826AbaE3TNE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 15:13:04 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:34140 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933467AbaE3TNC (ORCPT
+	id S964968AbaE3TOV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 15:14:21 -0400
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:46436 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753146AbaE3TOU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 15:13:02 -0400
-Message-ID: <1401477177.2295.4.camel@dhcp-9-2-203-236.watson.ibm.com>
-Subject: Re: [RFC PATCH v4 1/4] KEYS: special dot prefixed keyring name bug
- fix
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, keyrings <keyrings@linux-nfs.org>,
-        Josh Boyer <jwboyer@redhat.com>,
-        linux-security-module <linux-security-module@vger.kernel.org>,
-        Dmitry Kasatkin <d.kasatkin@samsung.com>,
-        David Howells <dhowells@redhat.com>
-Date: Fri, 30 May 2014 15:12:57 -0400
-In-Reply-To: <CACE9dm-n4R9CSjfzpzCaYrSWDxCOsgX7w2Cvn4gkR6-Z82Qypg@mail.gmail.com>
-References: <1401289784-31340-1-git-send-email-zohar@linux.vnet.ibm.com>
-	 <1401289784-31340-2-git-send-email-zohar@linux.vnet.ibm.com>
-	 <CACE9dm8OMGH5V19iRkytPtQXt9qNha9Ca81P6dpy-cqE2s5NYg@mail.gmail.com>
-	 <1401472704.15365.4.camel@dhcp-9-2-203-236.watson.ibm.com>
-	 <CACE9dm-n4R9CSjfzpzCaYrSWDxCOsgX7w2Cvn4gkR6-Z82Qypg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14053019-3532-0000-0000-00000221296C
+	Fri, 30 May 2014 15:14:20 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140530063402.GB11096@twins.programming.kicks-ass.net>
+References: <1400860385-14555-1-git-send-email-vincent.guittot@linaro.org>
+ <1400860385-14555-12-git-send-email-vincent.guittot@linaro.org>
+ <20140529140204.GH11074@laptop.programming.kicks-ass.net> <CAKfTPtACXf+c01O+dCU2ZTc-Mrs+nTKYsu0_aBt8awxSg5WD=g@mail.gmail.com>
+ <20140530063402.GB11096@twins.programming.kicks-ass.net>
+From: Vincent Guittot <vincent.guittot@linaro.org>
+Date: Fri, 30 May 2014 21:13:59 +0200
+Message-ID: <CAKfTPtDDMT84k+gJ2qmw9ApVmiJAgP_E5xGu0qTwj84p7XJQjw@mail.gmail.com>
+Subject: Re: [PATCH v2 11/11] sched: replace capacity by activity
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Mike Galbraith <efault@gmx.de>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-05-30 at 21:24 +0300, Dmitry Kasatkin wrote: 
-> On 30 May 2014 20:58, "Mimi Zohar" <zohar@linux.vnet.ibm.com> wrote:
-> >
-> > On Fri, 2014-05-30 at 18:58 +0300, Dmitry Kasatkin wrote:
-> > > On 28 May 2014 18:09, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
-> > > > Dot prefixed keyring names are supposed to be reserved for the
-> > > > kernel, but add_key() calls key_get_type_from_user(), which
-> > > > incorrectly verifies the 'type' field, not the 'description' field.
-> > > > This patch verifies the 'description' field isn't dot prefixed,
-> > > > when creating a new keyring, and removes the dot prefix test in
-> > > > key_get_type_from_user().
-> > > >
-> > > > Reported-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
-> > > > Cc: David Howells <dhowells@redhat.com>
-> > > > Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
-> > > > ---
-> > > >  security/keys/keyctl.c | 6 ++++--
-> > > >  1 file changed, 4 insertions(+), 2 deletions(-)
-> > > >
-> > > > diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
-> > > > index cd5bd0c..9e9a762 100644
-> > > > --- a/security/keys/keyctl.c
-> > > > +++ b/security/keys/keyctl.c
-> > > > @@ -37,8 +37,6 @@ static int key_get_type_from_user(char *type,
-> > > >                 return ret;
-> > > >         if (ret == 0 || ret >= len)
-> > > >                 return -EINVAL;
-> > > > -       if (type[0] == '.')
-> > > > -               return -EPERM;
-> > > >         type[len - 1] = '\0';
-> > > >         return 0;
-> > > >  }
-> > > > @@ -87,6 +85,10 @@ SYSCALL_DEFINE5(add_key, const char __user *,
-> _type,
-> > > >                         kfree(description);
-> > > >                         description = NULL;
-> > > >                 }
-> > > > +               if (description[0] == '.') {
-> > > > +                       ret = -EPERM;
-> > > > +                       goto error2;
-> > > > +               }
-> > >
-> > > 1. 3 lines above "discription = NULL" will cause kernel oops...
-> > > It happens when using empty description... like:
-> > >
-> > > cat x509_ima.der | keyctl padd asymmetric "" keyid
-> >
-> > Right, that should be 'else if'.
-> >
-> > > 2. It prevents adding trusted keys to ".ima" from user space...
-> > > This is NOT what we want... right?
-> >
-> > It prevents creating a dot prefixed keyring.
-> >
-> 
-> May be. But it prevents also adding the key....
-> It needs to distinguish key adding and keyring adding then...
+On 30 May 2014 08:34, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Thu, May 29, 2014 at 09:56:24PM +0200, Vincent Guittot wrote:
+>> On 29 May 2014 16:02, Peter Zijlstra <peterz@infradead.org> wrote:
+>> > On Fri, May 23, 2014 at 05:53:05PM +0200, Vincent Guittot wrote:
+>> >> @@ -6052,8 +6006,8 @@ static inline void update_sd_lb_stats(struct lb_env *env, struct sd_lb_stats *sd
+>> >>                * with a large weight task outweighs the tasks on the system).
+>> >>                */
+>> >>               if (prefer_sibling && sds->local &&
+>> >> -                 sds->local_stat.group_has_capacity)
+>> >> -                     sgs->group_capacity = min(sgs->group_capacity, 1U);
+>> >> +                 sds->local_stat.group_capacity > 0)
+>> >> +                     sgs->group_capacity = min(sgs->group_capacity, 1L);
+>> >>
+>> >>               if (update_sd_pick_busiest(env, sds, sg, sgs)) {
+>> >>                       sds->busiest = sg;
+>> >> @@ -6228,7 +6182,7 @@ static inline void calculate_imbalance(struct lb_env *env, struct sd_lb_stats *s
+>> >>                * have to drop below capacity to reach cpu-load equilibrium.
+>> >>                */
+>> >>               load_above_capacity =
+>> >> -                     (busiest->sum_nr_running - busiest->group_capacity);
+>> >> +                     (busiest->sum_nr_running - busiest->group_weight);
+>> >>
+>> >>               load_above_capacity *= (SCHED_LOAD_SCALE * SCHED_POWER_SCALE);
+>> >>               load_above_capacity /= busiest->group_power;
+>> >
+>> > I think you just broke PREFER_SIBLING here..
+>>
+>> you mean by replacing the capacity which was reflecting the number of
+>> core for SMT by the group_weight ?
+>
+> Right to in the first hunk we lower group_capacity to 1 when prefer_sibling,
+> then in the second hunk, you replace that group_capacity usage with
+> group_weight.
+>
+> With the end result that prefer_sibling is now ineffective.
 
-Perhaps, but assuming you created a keyring on @u, you would still need
-to look up the keyid and use it.  The same is true here.  Instead of
-using "keyctl search @u keyring _ima", you would use "keyctl describe %
-keyring:.ima".  The first field is the keyring id.
+ok
 
-Mimi
+>
+> That said, I fudged the prefer_sibling usage into the capacity logic,
+> mostly because I could and it was already how the SMT stuff was working.
+> But there is no reason we should continue to intertwine these two
+> things.
+>
+> So I think it would be good to have a patch that implements
+> prefer_sibling on nr_running separate from the existing capacity bits,
+> and then convert the remaining capacity bits to utilization (or activity
+> or whatever you did call it, see Morton's comments etc.).
 
+ok, i'm going to prepare such change
+
+>
+>
