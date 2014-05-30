@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933530AbaE3Nvd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 09:51:33 -0400
-Received: from relay.parallels.com ([195.214.232.42]:41516 "EHLO
+	id S933506AbaE3Nvb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 09:51:31 -0400
+Received: from relay.parallels.com ([195.214.232.42]:41526 "EHLO
 	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933275AbaE3NvT (ORCPT
+	with ESMTP id S933271AbaE3NvT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 30 May 2014 09:51:19 -0400
 From: Vladimir Davydov <vdavydov@parallels.com>
 To: <akpm@linux-foundation.org>
 CC: <cl@linux.com>, <hannes@cmpxchg.org>, <mhocko@suse.cz>,
         <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
-Subject: [PATCH -mm 3/8] memcg: mark caches that belong to offline memcgs as dead
-Date: Fri, 30 May 2014 17:51:06 +0400
-Message-ID: <2cb0d48c06a57586606deec0e368b4a3ecbc0b91.1401457502.git.vdavydov@parallels.com>
+Subject: [PATCH -mm 6/8] slub: do not use cmpxchg for adding cpu partials when irqs disabled
+Date: Fri, 30 May 2014 17:51:09 +0400
+Message-ID: <620d4218dd5ea0d12e77396209c5108de6fd4634.1401457502.git.vdavydov@parallels.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <cover.1401457502.git.vdavydov@parallels.com>
 References: <cover.1401457502.git.vdavydov@parallels.com>
@@ -24,75 +24,132 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This will be used by the next patches.
+We add slabs to per cpu partial lists on both objects allocation (see
+get_partial_node) and free (see __slab_free). We use the same function,
+put_cpu_partial, in both cases.
+
+Since __slab_free can be executed with preempt/irqs enabled, we have to
+use cmpxchg for adding a new element to a partial list in order to avoid
+races in case we are moved to another cpu or an irq hits while we are in
+the middle of put_cpu_partial.
+
+However, get_partial_node is always called with irqs disabled, which
+grants us exclusive access to the current cpu's partial list, so there
+is no need in any synchronization and therefore cmpxchg is redundant
+there.
+
+Let's get rid of this redundancy and access/set per cpu partial list
+from get_partial_node w/o cmpxchg-based synchronization.
 
 Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
 ---
- include/linux/slab.h |    2 ++
- mm/memcontrol.c      |    1 +
- mm/slab.h            |   10 ++++++++++
- 3 files changed, 13 insertions(+)
+ mm/slub.c |   46 +++++++++++++++++++++++++++-------------------
+ 1 file changed, 27 insertions(+), 19 deletions(-)
 
-diff --git a/include/linux/slab.h b/include/linux/slab.h
-index d9716fdc8211..d99d5212b815 100644
---- a/include/linux/slab.h
-+++ b/include/linux/slab.h
-@@ -527,6 +527,7 @@ static __always_inline void *kmalloc_node(size_t size, gfp_t flags, int node)
-  * @list: list_head for the list of all caches in this memcg
-  * @root_cache: pointer to the global, root cache, this cache was derived from
-  * @refcnt: reference counter
-+ * @dead: set to true when owner memcg is turned offline
-  * @unregister_work: worker to destroy the cache
+diff --git a/mm/slub.c b/mm/slub.c
+index 2fc84853bffb..ac39cc9b6849 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -1603,7 +1603,7 @@ static inline void *acquire_slab(struct kmem_cache *s,
+ 	return freelist;
+ }
+ 
+-static void put_cpu_partial(struct kmem_cache *s, struct page *page, int drain);
++static void prepare_cpu_partial(struct page *page, struct page *oldpage);
+ static inline bool pfmemalloc_match(struct page *page, gfp_t gfpflags);
+ 
+ /*
+@@ -1643,7 +1643,8 @@ static void *get_partial_node(struct kmem_cache *s, struct kmem_cache_node *n,
+ 			stat(s, ALLOC_FROM_PARTIAL);
+ 			object = t;
+ 		} else {
+-			put_cpu_partial(s, page, 0);
++			prepare_cpu_partial(page, c->partial);
++			c->partial = page;
+ 			stat(s, CPU_PARTIAL_NODE);
+ 		}
+ 		if (!kmem_cache_has_cpu_partial(s)
+@@ -2015,6 +2016,26 @@ static void unfreeze_partials(struct kmem_cache *s,
+ #endif
+ }
+ 
++static void prepare_cpu_partial(struct page *page, struct page *oldpage)
++{
++#ifdef CONFIG_SLUB_CPU_PARTIAL
++	int pages = 0;
++	int pobjects = 0;
++
++	if (oldpage) {
++		pages = oldpage->pages;
++		pobjects = oldpage->pobjects;
++	}
++
++	pages++;
++	pobjects += page->objects - page->inuse;
++
++	page->pages = pages;
++	page->pobjects = pobjects;
++	page->next = oldpage;
++#endif
++}
++
+ /*
+  * Put a page that was just frozen (in __slab_free) into a partial page
+  * slot if available. This is done without interrupts disabled and without
+@@ -2024,22 +2045,16 @@ static void unfreeze_partials(struct kmem_cache *s,
+  * If we did not find a slot then simply move all the partials to the
+  * per node partial list.
   */
- struct memcg_cache_params {
-@@ -541,6 +542,7 @@ struct memcg_cache_params {
- 			struct list_head list;
- 			struct kmem_cache *root_cache;
- 			atomic_long_t refcnt;
-+			bool dead;
- 			struct work_struct unregister_work;
- 		};
- 	};
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 886b5b414958..ed42fd1105a5 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -3294,6 +3294,7 @@ static void memcg_unregister_all_caches(struct mem_cgroup *memcg)
- 	mutex_lock(&memcg_slab_mutex);
- 	list_for_each_entry_safe(params, tmp, &memcg->memcg_slab_caches, list) {
- 		cachep = memcg_params_to_cache(params);
-+		cachep->memcg_params->dead = true;
- 		kmem_cache_shrink(cachep);
- 		if (atomic_long_dec_and_test(&cachep->memcg_params->refcnt))
- 			memcg_unregister_cache(cachep);
-diff --git a/mm/slab.h b/mm/slab.h
-index 961a3fb1f5a2..9515cc520bf8 100644
---- a/mm/slab.h
-+++ b/mm/slab.h
-@@ -121,6 +121,11 @@ static inline bool is_root_cache(struct kmem_cache *s)
- 	return !s->memcg_params || s->memcg_params->is_root_cache;
- }
- 
-+static inline bool memcg_cache_dead(struct kmem_cache *s)
-+{
-+	return !is_root_cache(s) && s->memcg_params->dead;
-+}
-+
- static inline bool slab_equal_or_root(struct kmem_cache *s,
- 					struct kmem_cache *p)
+-static void put_cpu_partial(struct kmem_cache *s, struct page *page, int drain)
++static void put_cpu_partial(struct kmem_cache *s, struct page *page)
  {
-@@ -203,6 +208,11 @@ static inline bool is_root_cache(struct kmem_cache *s)
- 	return true;
- }
+ #ifdef CONFIG_SLUB_CPU_PARTIAL
+ 	struct page *oldpage;
+-	int pages;
+-	int pobjects;
  
-+static inline bool memcg_cache_dead(struct kmem_cache *s)
-+{
-+	return false;
-+}
-+
- static inline bool slab_equal_or_root(struct kmem_cache *s,
- 				      struct kmem_cache *p)
- {
+ 	do {
+-		pages = 0;
+-		pobjects = 0;
+ 		oldpage = this_cpu_read(s->cpu_slab->partial);
+ 
+ 		if (oldpage) {
+-			pobjects = oldpage->pobjects;
+-			pages = oldpage->pages;
+-			if (drain && pobjects > s->cpu_partial) {
++			if (oldpage->pobjects > s->cpu_partial) {
+ 				unsigned long flags;
+ 				/*
+ 				 * partial array is full. Move the existing
+@@ -2049,18 +2064,11 @@ static void put_cpu_partial(struct kmem_cache *s, struct page *page, int drain)
+ 				unfreeze_partials(s, this_cpu_ptr(s->cpu_slab));
+ 				local_irq_restore(flags);
+ 				oldpage = NULL;
+-				pobjects = 0;
+-				pages = 0;
+ 				stat(s, CPU_PARTIAL_DRAIN);
+ 			}
+ 		}
+ 
+-		pages++;
+-		pobjects += page->objects - page->inuse;
+-
+-		page->pages = pages;
+-		page->pobjects = pobjects;
+-		page->next = oldpage;
++		prepare_cpu_partial(page, oldpage);
+ 
+ 	} while (this_cpu_cmpxchg(s->cpu_slab->partial, oldpage, page)
+ 								!= oldpage);
+@@ -2608,7 +2616,7 @@ static void __slab_free(struct kmem_cache *s, struct page *page,
+ 		 * per cpu partial list.
+ 		 */
+ 		if (new.frozen && !was_frozen) {
+-			put_cpu_partial(s, page, 1);
++			put_cpu_partial(s, page);
+ 			stat(s, CPU_PARTIAL_FREE);
+ 		}
+ 		/*
 -- 
 1.7.10.4
 
