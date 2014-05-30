@@ -1,75 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754158AbaE3CUY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 22:20:24 -0400
-Received: from g5t1625.atlanta.hp.com ([15.192.137.8]:27379 "EHLO
-	g5t1625.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750775AbaE3CUX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 22:20:23 -0400
-Message-ID: <1401416415.2618.14.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH 0/5] mm: i_mmap_mutex to rwsem
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: akpm@linux-foundation.org
-Cc: mingo@kernel.org, peterz@infradead.org, riel@redhat.com, mgorman@suse.de,
-        aswin@hp.com, linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 29 May 2014 19:20:15 -0700
-In-Reply-To: <1400816006-3083-1-git-send-email-davidlohr@hp.com>
-References: <1400816006-3083-1-git-send-email-davidlohr@hp.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754344AbaE3CXa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 22:23:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9899 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751538AbaE3CX3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 22:23:29 -0400
+Date: Fri, 30 May 2014 10:24:38 +0800
+From: Dave Young <dyoung@redhat.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: matt.fleming@intel.com, bp@alien8.de, linux-kernel@vger.kernel.org,
+        linux-efi@vger.kernel.org
+Subject: Re: [PATCH] export efi.flags to sysfs
+Message-ID: <20140530022438.GC1985@darkstar.nay.redhat.com>
+References: <20140526083935.GA19682@dhcp-16-198.nay.redhat.com>
+ <20140527133411.GG10994@redhat.com>
+ <20140528021359.GC2820@darkstar.nay.redhat.com>
+ <20140528124029.GF14863@redhat.com>
+ <20140529020837.GB2068@darkstar.nay.redhat.com>
+ <20140529124520.GC14570@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140529124520.GC14570@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ping? Andrew any chance of getting this in -next?
+On 05/29/14 at 08:45am, Vivek Goyal wrote:
+> On Thu, May 29, 2014 at 10:08:37AM +0800, Dave Young wrote:
+> > On 05/28/14 at 08:40am, Vivek Goyal wrote:
+> > > On Wed, May 28, 2014 at 10:13:59AM +0800, Dave Young wrote:
+> > > > On 05/27/14 at 09:34am, Vivek Goyal wrote:
+> > > > > On Mon, May 26, 2014 at 04:39:35PM +0800, Dave Young wrote:
+> > > > > > 
+> > > > > > For efi=old_map and any old_map quirks like SGI UV in current
+> > > > > > tree kexec/kdump will fail because it depends on the new 1:1 mapping.
+> > > > > > 
+> > > > > > Thus export the mapping method to sysfs so kexec tools can switch
+> > > > > > to original way to boot.
+> > > > > > 
+> > > > > > Since we have efi.flags for all efi facilities so let's just export the
+> > > > > > efi.flags itself, it maybe useful for other arches and use cases.
+> > > > > > 
+> > > > > 
+> > > > > Does it require any documentation in Documentation/ABI/..
+> > > > 
+> > > > Yes, it's necessary. Will do in next version.
+> > > > 
+> > > > I'm still discussing with Matt, exporting efi.flags seems not a good way
+> > > > because they are more internal interfaces. 
+> > > > 
+> > > > Probably I should export only a file 'old_map' instead.
+> > > 
+> > > How does /sys/firmware/efi/runtime-map/* look like with old mapping? Can't
+> > > we look at it and figure out if it is 1:1 or not.
+> > 
+> > There's phys_addr and virt_addr, (virt_addr - phys_addr) will always be
+> > -64G for 1:1 map, ioremapped addresses space is different.
 
-On Thu, 2014-05-22 at 20:33 -0700, Davidlohr Bueso wrote:
-> This patchset extends the work started by Ingo Molnar in late 2012,
-> optimizing the anon-vma mutex lock, converting it from a exclusive mutex
-> to a rwsem, and sharing the lock for read-only paths when walking the
-> the vma-interval tree. More specifically commits 5a505085 and 4fc3f1d6.
-> 
-> The i_mmap_mutex has similar responsibilities with the anon-vma, protecting
-> file backed pages. Therefore we can use similar locking techniques: covert
-> the mutex to a rwsem and share the lock when possible.
-> 
-> With the new optimistic spinning property we have in rwsems, we no longer
-> take a hit in performance when using this lock, and we can therefore
-> safely do the conversion. Tests show no throughput regressions in aim7 or
-> pgbench runs, and we can see gains from sharing the lock, in disk workloads
-> ~+15% for over 1000 users on a 8-socket Westmere system.
-> 
-> This patchset applies on linux-next-20140522.
-> 
-> Thanks!
-> 
-> Davidlohr Bueso (5):
->   mm,fs: introduce helpers around i_mmap_mutex
->   mm: use new helper functions around the i_mmap_mutex
->   mm: convert i_mmap_mutex to rwsem
->   mm/rmap: share the i_mmap_rwsem
->   mm: rename leftover i_mmap_mutex
-> 
->  fs/hugetlbfs/inode.c         | 14 +++++++-------
->  fs/inode.c                   |  2 +-
->  include/linux/fs.h           | 23 ++++++++++++++++++++++-
->  include/linux/mmu_notifier.h |  2 +-
->  kernel/events/uprobes.c      |  6 +++---
->  kernel/fork.c                |  4 ++--
->  mm/filemap.c                 | 10 +++++-----
->  mm/filemap_xip.c             |  4 ++--
->  mm/hugetlb.c                 | 22 +++++++++++-----------
->  mm/memory-failure.c          |  4 ++--
->  mm/memory.c                  |  8 ++++----
->  mm/mmap.c                    | 22 +++++++++++-----------
->  mm/mremap.c                  |  6 +++---
->  mm/nommu.c                   | 14 +++++++-------
->  mm/rmap.c                    | 10 +++++-----
->  15 files changed, 86 insertions(+), 65 deletions(-)
-> 
+Correct myself it's top to down (-4G - -64G) instead of down to top. 
 
+> 
+> I am curious that what's the meaning of 1:1 mapping here? So far I thought
+> that means virt and physical addresses are same but that does not seem
+> to be the case. So what does it mean?
 
+while doing the mapping, we will iterate the memory ranges (md[])
+
+Like below without considering alignment:
+Virt addr   (down) <------------------------------> (top)
+md0 (size0)                                 <-----> 
+                                             (size0)
+md1 (size1)                        <------->
+                                    (size1)
+...
+
+Boris can correct me if I'm wrong.
+
+Thanks
+Dave
