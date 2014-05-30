@@ -1,64 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933647AbaE3SHf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 14:07:35 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:40694 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751339AbaE3SHe convert rfc822-to-8bit (ORCPT
+	id S933897AbaE3SIX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 14:08:23 -0400
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:49849 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932473AbaE3SIU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 14:07:34 -0400
-Content-Type: text/plain; charset=windows-1252
-Mime-Version: 1.0 (Mac OS X Mail 7.2 \(1874\))
-Subject: Re: [PATCH] ARM: qcom: Enable GSBI driver in defconfig
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <5388BFAF.1050204@codeaurora.org>
-Date: Fri, 30 May 2014 13:07:28 -0500
-Cc: David Brown <davidb@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <81F038DE-9849-4510-86F4-EF41169418FA@codeaurora.org>
-References: <1401380804-16108-1-git-send-email-galak@codeaurora.org> <5388BFAF.1050204@codeaurora.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-X-Mailer: Apple Mail (2.1874)
+	Fri, 30 May 2014 14:08:20 -0400
+Message-ID: <5388C90B.605@samsung.com>
+Date: Sat, 31 May 2014 03:08:11 +0900
+From: Kukjin Kim <kgene.kim@samsung.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
+MIME-Version: 1.0
+To: Tomasz Figa <tomasz.figa@gmail.com>
+CC: Chanwoo Choi <cw00.choi@samsung.com>, kgene.kim@samsung.com,
+        t.figa@samsung.com, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, rdunlap@infradead.org, ben-linux@fluff.org,
+        linux@arm.linux.org.uk, l.krishna@samsung.com,
+        chanho61.park@samsung.com, kyungmin.park@samsung.com,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org
+Subject: Re: [PATCH] ARM: dts: Add pmu sysreg node to Exynos3250
+References: <1401085776-14212-1-git-send-email-cw00.choi@samsung.com> <538870F8.9090507@gmail.com>
+In-Reply-To: <538870F8.9090507@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On May 30, 2014, at 12:28 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
-
-> On 05/29/14 09:26, Kumar Gala wrote:
->> Signed-off-by: Kumar Gala <galak@codeaurora.org>
+On 05/30/14 20:52, Tomasz Figa wrote:
+> On 26.05.2014 08:29, Chanwoo Choi wrote:
+>> This patch add pmusysreg node for Exynos3250 to access PMU (Power Management Unit)
+>> register in a centralized way using syscon driver.
+>>
+>> Signed-off-by: Chanwoo Choi<cw00.choi@samsung.com>
+>> Acked-by: Kyungmin Park<kyungmin.park@samsung.com>
 >> ---
->> arch/arm/configs/qcom_defconfig | 1 +
->> 1 file changed, 1 insertion(+)
->> 
->> diff --git a/arch/arm/configs/qcom_defconfig b/arch/arm/configs/qcom_defconfig
->> index bfed753..42ebd72 100644
->> --- a/arch/arm/configs/qcom_defconfig
->> +++ b/arch/arm/configs/qcom_defconfig
->> @@ -131,6 +131,7 @@ CONFIG_RTC_CLASS=y
->> CONFIG_DMADEVICES=y
->> CONFIG_QCOM_BAM_DMA=y
->> CONFIG_STAGING=y
->> +CONFIG_QCOM_GSBI=y
->> CONFIG_COMMON_CLK_QCOM=y
->> CONFIG_MSM_GCC_8660=y
->> CONFIG_MSM_MMCC_8960=y
-> 
-> It would be good to do this in the multi-platform defconfig as well.
-> Otherwise users of that defconfig (i.e. khilman's boot tester) will
-> start failing to boot once the DT changes land.
-> 
-> — 
+>>   Documentation/devicetree/bindings/arm/samsung/pmu.txt | 1 +
+>>   arch/arm/boot/dts/exynos3250.dtsi                     | 5 +++++
+>>   2 files changed, 6 insertions(+)
+>
+> Reviewed-by: Tomasz Figa<t.figa@samsung.com>
+>
+Applied, thanks.
 
-Will do after 3.16-rc1, as nothing Kevin is booting uses the GSBI.
-
-Trying to decide if we should have some Kconfig dependency here.
-
-- k
-
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
-
+- Kukjin
