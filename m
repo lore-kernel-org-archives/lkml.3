@@ -1,63 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964935AbaE3RGf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 13:06:35 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:58656 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933751AbaE3RGe (ORCPT
+	id S965002AbaE3RHi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 13:07:38 -0400
+Received: from mailrelay004.isp.belgacom.be ([195.238.6.170]:22341 "EHLO
+	mailrelay004.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754082AbaE3RHg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 13:06:34 -0400
-Message-ID: <5388BA8D.3010707@infradead.org>
-Date: Fri, 30 May 2014 10:06:21 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: =?UTF-8?B?TWFudWVsIFNjaMO2bGxpbmc=?= <manuel.schoelling@gmx.de>,
-        plagnioj@jcrosoft.com
-CC: tomi.valkeinen@ti.com, geert@linux-m68k.org, broonie@linaro.org,
-        dh.herrmann@gmail.com, airlied@redhat.com, mtosatti@redhat.com,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] console: Add persistent scrollback buffers for all VGA
- consoles
-References: <1401456425-15931-1-git-send-email-manuel.schoelling@gmx.de>
-In-Reply-To: <1401456425-15931-1-git-send-email-manuel.schoelling@gmx.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Fri, 30 May 2014 13:07:36 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AskNAI65iFNXQxV9/2dsb2JhbABZgwerRgaYGoEJF3SCUy8jgRo3iEYB1nYXhVWIfR2EKgEDmX6LG4gSgXiBQjs
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>, linux-scsi@vger.kernel.org,
+        Anil Gurumurthy <anil.gurumurthy@qlogic.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>
+Subject: [RFC 1/1] drivers/scsi/bfa/bfad_debugfs.c: replace 2 kzalloc/copy_from_user to memdup_user
+Date: Fri, 30 May 2014 19:07:36 +0200
+Message-Id: <1401469656-10332-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/30/2014 06:27 AM, Manuel Schölling wrote:
-> ---
->  drivers/video/console/Kconfig  |    6 +-
->  drivers/video/console/vgacon.c |  124 ++++++++++++++++++++++++----------------
->  2 files changed, 79 insertions(+), 51 deletions(-)
-> 
-> diff --git a/drivers/video/console/Kconfig b/drivers/video/console/Kconfig
-> index fe1cd01..d7ec96c 100644
-> --- a/drivers/video/console/Kconfig
-> +++ b/drivers/video/console/Kconfig
-> @@ -38,14 +38,14 @@ config VGACON_SOFT_SCROLLBACK
->  	 RAM to allocate for this buffer.  If unsure, say 'N'.
->  
->  config VGACON_SOFT_SCROLLBACK_SIZE
-> -       int "Scrollback Buffer Size (in KB)"
-> +       int "Scrollback Buffer Size per console (in KB)"
->         depends on VGACON_SOFT_SCROLLBACK
->         range 1 1024
->         default "64"
->         help
->           Enter the amount of System RAM to allocate for the scrollback
-> -	 buffer.  Each 64KB will give you approximately 16 80x25
-> -	 screenfuls of scrollback buffer
-> +	 buffer for each VGA console. Each 64KB will give you approximately
-> +	 16 80x25 screenfuls of scrollback buffer.
+(memdup_user can be used to replace kmalloc/copy_from_user. Not sure if it's ok with kzalloc ...)
 
-Nitpick: CodingStyle says to indent help text 1 tab + 2 spaces.
+Cc: linux-scsi@vger.kernel.org
+Cc: Anil Gurumurthy <anil.gurumurthy@qlogic.com>
+Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ drivers/scsi/bfa/bfad_debugfs.c | 30 ++++++++++--------------------
+ 1 file changed, 10 insertions(+), 20 deletions(-)
 
->  
->  config MDA_CONSOLE
->  	depends on !M68K && !PARISC && ISA
-
+diff --git a/drivers/scsi/bfa/bfad_debugfs.c b/drivers/scsi/bfa/bfad_debugfs.c
+index 8e83d04..07b9e36 100644
+--- a/drivers/scsi/bfa/bfad_debugfs.c
++++ b/drivers/scsi/bfa/bfad_debugfs.c
+@@ -260,17 +260,12 @@ bfad_debugfs_write_regrd(struct file *file, const char __user *buf,
+ 	unsigned long flags;
+ 	void *kern_buf;
+ 
+-	kern_buf = kzalloc(nbytes, GFP_KERNEL);
++	kern_buf = memdup_user((void __user *)buf, nbytes);
+ 
+-	if (!kern_buf) {
+-		printk(KERN_INFO "bfad[%d]: Failed to allocate buffer\n",
+-				bfad->inst_no);
+-		return -ENOMEM;
+-	}
+-
+-	if (copy_from_user(kern_buf, (void  __user *)buf, nbytes)) {
+-		kfree(kern_buf);
+-		return -ENOMEM;
++	if (IS_ERR(kern_buf)) {
++		printk(KERN_INFO "bfad[%d]: Failed to copy buffer\n",
++		       bfad->inst_no);
++		return PTR_ERR(kern_buf);
+ 	}
+ 
+ 	rc = sscanf(kern_buf, "%x:%x", &addr, &len);
+@@ -336,17 +331,12 @@ bfad_debugfs_write_regwr(struct file *file, const char __user *buf,
+ 	unsigned long flags;
+ 	void *kern_buf;
+ 
+-	kern_buf = kzalloc(nbytes, GFP_KERNEL);
++	kern_buf = memdup_user((void __user *)buf, nbytes);
+ 
+-	if (!kern_buf) {
+-		printk(KERN_INFO "bfad[%d]: Failed to allocate buffer\n",
+-				bfad->inst_no);
+-		return -ENOMEM;
+-	}
+-
+-	if (copy_from_user(kern_buf, (void  __user *)buf, nbytes)) {
+-		kfree(kern_buf);
+-		return -ENOMEM;
++	if (IS_ERR(kern_buf)) {
++		printk(KERN_INFO "bfad[%d]: Failed to copy buffer\n",
++		       bfad->inst_no);
++		return PTR_ERR(kern_buf);
+ 	}
+ 
+ 	rc = sscanf(kern_buf, "%x:%x", &addr, &val);
 -- 
-~Randy
+1.8.4.5
+
