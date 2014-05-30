@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934126AbaE3Q4X (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 12:56:23 -0400
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:46988 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933077AbaE3Q4U (ORCPT
+	id S934421AbaE3Q7F (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 12:59:05 -0400
+Received: from mail-we0-f172.google.com ([74.125.82.172]:53294 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933077AbaE3Q4Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 12:56:20 -0400
+	Fri, 30 May 2014 12:56:25 -0400
 From: Matthias Brugger <matthias.bgg@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
@@ -21,9 +21,9 @@ Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
         maxime.ripard@free-electrons.com, soren.brinkmann@xilinx.com,
         devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v6 3/6] vendor-prefixes: add prefix for Mediaktek Inc.
-Date: Fri, 30 May 2014 18:56:01 +0200
-Message-Id: <1401468964-5307-4-git-send-email-matthias.bgg@gmail.com>
+Subject: [PATCH v6 5/6] dt-bindings: add documentation for Mediatek SoC
+Date: Fri, 30 May 2014 18:56:03 +0200
+Message-Id: <1401468964-5307-6-git-send-email-matthias.bgg@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1401468964-5307-1-git-send-email-matthias.bgg@gmail.com>
 References: <1401468964-5307-1-git-send-email-matthias.bgg@gmail.com>
@@ -31,23 +31,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This adds a DT binding documentation for the MT6589 SoC from Mediatek.
+
 Signed-off-by: Matthias Brugger <matthias.bgg@gmail.com>
 ---
- .../devicetree/bindings/vendor-prefixes.txt        |    1 +
- 1 file changed, 1 insertion(+)
+ .../devicetree/bindings/arm/mediatek-mt65xx.txt    |    8 ++++++++
+ 1 file changed, 8 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/arm/mediatek-mt65xx.txt
 
-diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
-index abc3080..73f9e4c 100644
---- a/Documentation/devicetree/bindings/vendor-prefixes.txt
-+++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
-@@ -75,6 +75,7 @@ linux	Linux-specific binding
- lsi	LSI Corp. (LSI Logic)
- marvell	Marvell Technology Group Ltd.
- maxim	Maxim Integrated Products
-+mediatek	MediaTek Inc.
- microchip	Microchip Technology Inc.
- mosaixtech	Mosaix Technologies, Inc.
- moxa	Moxa
+diff --git a/Documentation/devicetree/bindings/arm/mediatek-mt65xx.txt b/Documentation/devicetree/bindings/arm/mediatek-mt65xx.txt
+new file mode 100644
+index 0000000..d6ac71f
+--- /dev/null
++++ b/Documentation/devicetree/bindings/arm/mediatek-mt65xx.txt
+@@ -0,0 +1,8 @@
++Mediatek MT6589 Platforms Device Tree Bindings
++
++Boards with a SoC of the Mediatek MT6589 shall have the following property:
++
++Required root node property:
++
++compatible: must contain "mediatek,mt6589"
++
 -- 
 1.7.9.5
 
