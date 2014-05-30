@@ -1,110 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932641AbaE3IM6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 04:12:58 -0400
-Received: from mga03.intel.com ([143.182.124.21]:49909 "EHLO mga03.intel.com"
+	id S1755185AbaE3INM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 04:13:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10544 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753393AbaE3IMy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 04:12:54 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,939,1392192000"; 
-   d="scan'208";a="438915349"
-Date: Fri, 30 May 2014 11:12:38 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Miklos Szeredi <mszeredi@suse.cz>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: fs/dcache.c - BUG: soft lockup - CPU#5 stuck for 22s!
- [systemd-udevd:1667]
-Message-ID: <20140530081238.GA1957@lahna.fi.intel.com>
-References: <20140529053444.GI18016@ZenIV.linux.org.uk>
- <20140529105107.GB1938@lahna.fi.intel.com>
- <20140529110439.GA2006@lahna.fi.intel.com>
- <20140529133036.GJ18016@ZenIV.linux.org.uk>
- <CA+55aFzYjRrvSaF=wGimrgtEqR7GHbu1ku1qn1wQs5wgQrCZdg@mail.gmail.com>
- <20140529154454.GK18016@ZenIV.linux.org.uk>
- <20140529162307.GL18016@ZenIV.linux.org.uk>
- <CA+55aFyRDJpm2Wfg9jvXCsKYgt36=6A_++bX+Q=C4MvQRbqh_A@mail.gmail.com>
- <20140529165351.GM18016@ZenIV.linux.org.uk>
- <20140529185201.GN18016@ZenIV.linux.org.uk>
+	id S1753792AbaE3INI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 May 2014 04:13:08 -0400
+Message-ID: <53883D8E.10009@redhat.com>
+Date: Fri, 30 May 2014 10:13:02 +0200
+From: Hans de Goede <hdegoede@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140529185201.GN18016@ZenIV.linux.org.uk>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Sachin Kamat <sachin.kamat@linaro.org>, linux-kernel@vger.kernel.org
+CC: kishon@ti.com, Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: Re: [PATCH 3/3] phy: sun4i-usb: Use PTR_ERR_OR_ZERO
+References: <1401345049-14779-1-git-send-email-sachin.kamat@linaro.org> <1401345049-14779-3-git-send-email-sachin.kamat@linaro.org>
+In-Reply-To: <1401345049-14779-3-git-send-email-sachin.kamat@linaro.org>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 29, 2014 at 07:52:01PM +0100, Al Viro wrote:
-> On Thu, May 29, 2014 at 05:53:51PM +0100, Al Viro wrote:
-> > On Thu, May 29, 2014 at 09:29:42AM -0700, Linus Torvalds wrote:
-> > > On Thu, May 29, 2014 at 9:23 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> > > >
-> > > > BTW, lock_parent() might be better off if in contended case it would not
-> > > > bother with rename_lock and did something like this:
-> > > > again:
-> > > 
-> > > Ack. I think that's much better.
-> > 
-> > Pushed to #for-linus (with dumb braino fixed - it's if (parent != dentry),
-> > not if (parent)).  I'll wait with folding it back into the commit that
-> > introduces lock_parent() until we get testing results...
+Hi,
+
+On 05/29/2014 08:30 AM, Sachin Kamat wrote:
+> PTR_ERR_OR_ZERO simplifies the code.
 > 
-> Grrr...  Sadly, that's not good enough.  Leaking rcu_read_lock() on
-> success is trivial, but there's more serious problem: suppose dentries
-> involved get moved before we get to locking what we thought was parent.
-> We end up taking ->d_lock on two dentries that might be nowhere near each
-> other in the tree, with obvious nasty implications.  Would be _very_ hard
-> to reproduce ;-/
+> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+> Cc: Hans de Goede <hdegoede@redhat.com>
+> Cc: Maxime Ripard <maxime.ripard@free-electrons.com>
+> ---
+>  drivers/phy/phy-sun4i-usb.c |    5 ++---
+>  1 file changed, 2 insertions(+), 3 deletions(-)
 > 
-> AFAICS, the following would be safe, but I'd really appreciate any extra
-> eyes on that sucker:
+> diff --git a/drivers/phy/phy-sun4i-usb.c b/drivers/phy/phy-sun4i-usb.c
+> index 115d8d5190d5..7a4ea552f621 100644
+> --- a/drivers/phy/phy-sun4i-usb.c
+> +++ b/drivers/phy/phy-sun4i-usb.c
+> @@ -22,6 +22,7 @@
+>   */
+>  
+>  #include <linux/clk.h>
+> +#include <linux/err.h>
+>  #include <linux/io.h>
+>  #include <linux/kernel.h>
+>  #include <linux/module.h>
+> @@ -306,10 +307,8 @@ static int sun4i_usb_phy_probe(struct platform_device *pdev)
+>  
+>  	dev_set_drvdata(dev, data);
+>  	phy_provider = devm_of_phy_provider_register(dev, sun4i_usb_phy_xlate);
+> -	if (IS_ERR(phy_provider))
+> -		return PTR_ERR(phy_provider);
+>  
+> -	return 0;
+> +	return PTR_ERR_OR_ZERO(phy_provider);
+>  }
+>  
+>  static const struct of_device_id sun4i_usb_phy_of_match[] = {
 > 
-> static inline struct dentry *lock_parent(struct dentry *dentry)
-> {
->         struct dentry *parent = dentry->d_parent;
->         if (IS_ROOT(dentry))
->                 return NULL;
->         if (likely(spin_trylock(&parent->d_lock)))
->                 return parent;
->         spin_unlock(&dentry->d_lock);
->         rcu_read_lock();
-> again:
->         parent = ACCESS_ONCE(dentry->d_parent);
->         spin_lock(&parent->d_lock);
->         /*
->          * We can't blindly lock dentry until we are sure
->          * that we won't violate the locking order.
->          * While parent->d_lock is not enough to stabilize
-> 	 * dentry->d_parent, it *is* enough to stabilize
-> 	 * dentry->d_parent == parent.
->          */
->         if (unlikely(parent != dentry->d_parent)) {
->                 spin_unlock(&parent->d_lock);
->                 goto again;
->         }
->         rcu_read_unlock();
->         if (parent != dentry)
->                 spin_lock(&dentry->d_lock);
->         else
->                 parent = NULL;
->         return parent;
-> }
-> 
-> That variant got force-pushed in place of the previous one, again at the
-> head of #for-linus.  And I'm definitely not folding it in until it gets
-> more review and testing.
 
-Tested your latest #for-linus from here:
 
-https://git.kernel.org/cgit/linux/kernel/git/viro/vfs.git/log/?h=for-linus
+Looks good:
 
-and the livelock is gone,
+Acked-by: Hans de Goede <hdegoede@redhat.com>
 
-Tested-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Regards,
 
-Thanks again!
+Hans
