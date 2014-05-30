@@ -1,126 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934435AbaE3R0R (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 13:26:17 -0400
-Received: from mail-qg0-f48.google.com ([209.85.192.48]:42843 "EHLO
-	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933239AbaE3R0N (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 13:26:13 -0400
-Date: Fri, 30 May 2014 13:26:09 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: paolo <paolo.valente@unimore.it>, Jens Axboe <axboe@kernel.dk>,
-        Li Zefan <lizefan@huawei.com>, Fabio Checconi <fchecconi@gmail.com>,
-        Arianna Avanzini <avanzini.arianna@gmail.com>,
-        Paolo Valente <posta_paolo@yahoo.it>, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org
-Subject: Re: [PATCH RFC RESEND 00/14] New version of the BFQ I/O Scheduler
-Message-ID: <20140530172609.GI24871@htj.dyndns.org>
-References: <1401194558-5283-1-git-send-email-paolo.valente@unimore.it>
- <20140530153228.GE16605@redhat.com>
- <20140530161650.GH24871@htj.dyndns.org>
- <20140530170958.GF16605@redhat.com>
+	id S934323AbaE3R0F (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 13:26:05 -0400
+Received: from p3plex2out03.prod.phx3.secureserver.net ([184.168.131.16]:36152
+	"EHLO p3plex2out03.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932413AbaE3R0C convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 May 2014 13:26:02 -0400
+From: Hartley Sweeten <HartleyS@visionengravers.com>
+To: Chase Southwood <chase.southwood@gmail.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "abbotti@mev.co.uk" <abbotti@mev.co.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 6/6] staging: comedi: addi_apci_1564: cleanup
+ v_ADDI_Interrupt()
+Thread-Topic: [PATCH 6/6] staging: comedi: addi_apci_1564: cleanup
+ v_ADDI_Interrupt()
+Thread-Index: AQHPe8HO+UDOSHpGLESrgTAiDXwtOptZWmKw
+Date: Fri, 30 May 2014 17:26:00 +0000
+Message-ID: <DC148C5AA1CEBA4E87973D432B1C2D8825E8405F@P3PWEX4MB008.ex4.secureserver.net>
+References: <1401424853-21683-1-git-send-email-chase.southwood@gmail.com>
+ <1401425032-22721-1-git-send-email-chase.southwood@gmail.com>
+In-Reply-To: <1401425032-22721-1-git-send-email-chase.southwood@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [184.183.19.121]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140530170958.GF16605@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Thursday, May 29, 2014 9:44 PM, Chase Southwood wrote:
+> Move the function apci1564_interrupt() from hwdrv_apci1564.c to
+> addi_apci_1564.c.  On moving, for now just strip out all of the
+> code for interrupts that the driver does not yet support at this
+> time.
+>
+> Rename the variable ui_InterruptStatus_1564 to ctrl, and change the return
+> from IRQ_RETVAL(1) to IRQ_HANDLED.
+>
+> We also check the device is asserting the shared interrupt line and check
+> that interrupts have been enabled.
+>
+> Signed-off-by: Chase Southwood <chase.southwood@gmail.com>
+> Cc: Ian Abbott <abbotti@mev.co.uk>
+> Cc: H Hartley Sweeten <hsweeten@visionengravers.com>
+> ---
+>
+> Admittedly, I am not sure if what I have done in the interrupt handler is
+> quite sufficient.  Am I missing anything that should be there due to the
+> fact that the handler does not yet support all of the types of interrupt
+> that the board is capable of issuing (i.e. does the interrupt handler need
+> to clear the other interrupts just in case they get triggered, etc?)
 
-On Fri, May 30, 2014 at 01:09:58PM -0400, Vivek Goyal wrote:
-> Are you referring to BFQ paper. I had read one in the past and it was
-> all about how to achieve more accurate fairness. At this point of time
-> I don't think that smarter algorithm is the problem. Until and unless
-> somebody can show me that how algorithm is a problem.
+This one is a bit of a mess, not your fault, the existing code is pretty ugly.
 
-Because cfq rr's with heuristically guessed slices and bfq calculates
-where each one is supposed to end and then schedules the slices
-accordingly.  With a lot of slices to serve, cfq loses track of which
-one should come first to adhere to desired latency guarantees while
-bfq doesn't, which in turn allows more latitude in using longer slices
-for bfq allowing for better throughput.  It's all in the paper and
-backed by numbers.  What more do you want?
+>  .../comedi/drivers/addi-data/hwdrv_apci1564.c      | 130 ---------------------
+>  drivers/staging/comedi/drivers/addi_apci_1564.c    |  34 +++++-
+>  2 files changed, 30 insertions(+), 134 deletions(-)
+>
+> diff --git a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c
+> index 41aa889..ebd763b 100644
+> --- a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c
+> +++ b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c
+> @@ -90,7 +90,6 @@
+>  #define APCI1564_TCW_WARN_TIMEBASE_REG(x)		(0x1c + ((x) * 0x20))
+>  
+>  /* Global variables */
+> -static unsigned int ui_InterruptStatus_1564;
+>  static unsigned int ui_InterruptData, ui_Type;
+ 
+These static globals need to away.
 
-> Apart from algorithm, one thing BFQ did different in the past was provide
-> fairness based on amount of IO done *and not in terms of time slice*. I
-> don't know if that's still the case. If it is the case I am wondering
-> why CFQ was converted from amount of IO based fairness to time slice
-> based fairness.
+ui_InterruptStatus_1564 is only used in the interrupt handler. It's also not really used
+in the existing code. You fixed this in your patch but I'm not sure it deserves mentioning
+in the commit other than maybe "remove unnecessary static global foo".
 
-Rotating rusts being rotating rusts, either measure isn't perfect.
-Bandwidth tracking gets silly with seeky workloads while pure time
-slice tracking unfairly treats users of inner and outer tracks.  BFQ
-uses bw tracking for sequential workload while basically switches to
-time slice tracking for seeky workloads.  These were pretty clearly
-discussed in the paper.
+ui_InterruptData is set in apci1564_do_config() but it is never used. That function is also
+broke since it does not follow the comedi API.
 
-> I am all for a better algorithm. I just want to somebody to explain it
-> to me that what magic they have done to achieve better throughput as
-> well as better latency.
+ui_Type is set in the interrupt handler but you patch strips it out. The variable is then
+used in apci1564_do_read() but that function also abuses the comedi API since it is
+returning the diagnostic status in the digital output (*insn_read) operation.
 
-It feels more like you're actively refusing to understand it even when
-the algorithm and heristics involved are as clearly presented as it
-could be.  This is one of the best documented piece of work in this
-area of the kernel.  Just read the papers.
+Ugh...
 
-> Do you think that CFQ's problems come from round robin algorithms. No,
-> they don't. Most of the time we don't even honor the allocated time
+You might want to rework this patch to:
 
-Oh yes, why do you think we bother with preemption at all?  bfq
-reportedly achieves sufficient fairness and responsiveness without the
-need for preemption.  This is a lot clearer model.
+1) Move the static globals into the private data.
+2) Merge the existing interrupt handler from hwrdv_apci1564.c into the driver.
+   You could tidy up the existing code a bit during the move. Hint, the counters
+   could be handled with a for () loop.
+3) Now "fix" the digital input interrupt handling.
 
-> slice (except sequential IO) and preempt the allocated slice. That's
-> why I think implementing a more fair algorithm is probably not the
-> solution.
+Since you still have the timer subdevice I would leave the timer/counter handling
+in the interrupt handler.
 
-If you actually study what has been presented, you'd immediately
-recognize that a lot of what bfq does is clarification and
-improvements of the buried heuristics.
+For now, hold off and see if Ian has any comments.
 
-Look at it this way: RR + preemption becomes the basic timestamp based
-scheduling and other heuristics are extracted and clarified.  That's
-what it is.
+I'll try to apply your series and take a better look at this later today.
 
-> CFQ's throughput problems come from idling and driving lower queue depth.
-> And CFQ's throughput problems arise due to suppressing buffered write
-> very actively in presence of sync IO. 
-> 
-> I want to know what has BFQ done fundamentally different to take care of
-> above issues. 
+Regards,
+Hartley
 
-Yeah, read the paper.  They also analyzed why some things behave
-certain ways.  A lot of them are pretty spot-on.
-
-> Remember CFQ had started with a simple algorith. Just start allocating
-> time slice in proportion to ioprio. That simple scheme did not work in
-> real world and then it became more complicated.
-
-Yes, this is another refinement step.  WTF is that so hard to warp
-your head around it?  It doesn't throw away much.  It builds upon cfq
-and clarifies and improves what it has been doing.
-
-> What's the guarantee that same thing will not happen to BFQ. There is
-> no point in getting fairness if overall performance sucks. That's what
-> happens even with block IO cgroups. Create more than 4 cgroups, put some
-> workload in that and with CFQ your performance will be so bad that you
-> will drop the idea of getting fairness.
-
-Dude, just go read the paper.
-
-> Can you please provide me the link to the paper. I had read one few
-> years back. I am not sure if it is still the same paper of a new one.
-> And after experimenting with their implementation and playing with 
-> CFQ, my impression was that fairness algorithm is not the core problem.
-
-The references are in the frigging head message and in the head
-comment of the implementation.  Are you even reading stuff?  You're
-just wasting other people's time.
-
--- 
-tejun
