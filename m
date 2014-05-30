@@ -1,203 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934662AbaE3UQy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 16:16:54 -0400
-Received: from smtpfb1-g21.free.fr ([212.27.42.9]:53446 "EHLO
-	smtpfb1-g21.free.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030222AbaE3UF2 (ORCPT
+	id S1030247AbaE3UFZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 16:05:25 -0400
+Received: from mout.kundenserver.de ([212.227.17.24]:57716 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030222AbaE3UFV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 16:05:28 -0400
-From: Yann Droneaud <ydroneaud@opteya.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: Yann Droneaud <ydroneaud@opteya.com>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        Emil Goode <emilgoode@gmail.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Shawn Guo <shawn.guo@freescale.com>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [PATCH] driver core/platform: remove unused implicit padding in platform_object
-Date: Fri, 30 May 2014 22:02:47 +0200
-Message-Id: <1401480167-15091-1-git-send-email-ydroneaud@opteya.com>
-X-Mailer: git-send-email 1.9.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Fri, 30 May 2014 16:05:21 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-kernel@vger.kernel.org
+Cc: linux-arch@vger.kernel.org, joseph@codesourcery.com,
+        john.stultz@linaro.org, hch@infradead.org, tglx@linutronix.de,
+        geert@linux-m68k.org, lftan@altera.com, hpa@zytor.com,
+        linux-fsdevel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org
+Subject: [RFC 14/32] ext4: convert to struct inode_time
+Date: Fri, 30 May 2014 22:01:38 +0200
+Message-Id: <1401480116-1973111-15-git-send-email-arnd@arndb.de>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1401480116-1973111-1-git-send-email-arnd@arndb.de>
+References: <1401480116-1973111-1-git-send-email-arnd@arndb.de>
+X-Provags-ID: V02:K0:6KwkiRMM+u7RTAVkTxPAavm1u/cl2XHHAqAwOPT5cIN
+ ZfjvX8roP1PUGM0AG7xrKGA4X+jwWZDB4Kanvd4DXH0TEisi8O
+ aOf/hFVjO9GjfOgdprjYnSnOEOq9iD7kUMWdTuuHuDFEzOOe8o
+ gDnPH0rvXz/KqXfQXn3sOq0MpqrHjb4GJXjHMzXRXnbjvJfS/U
+ s4dphLhRX/Ac0qxofpOMLbtMhMxCZQDEWcqor9oYz/Ca+KepaW
+ Euwu6csgGv2QxNbt8Uif5O8MBmAquzb7Nhu7Gy41T88u1zJE+1
+ wTW5/CxzIP2FdwOM1OvqBj9jaNgyrj38GKTv66TcO0VbcigZwa
+ H9OWPxc4TQKOzbTNG6Mhs6roB5nS2g7hToNA7vVbb
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Up to 7 bytes are wasted at the end of struct platform_object
-in the form of padding after name field: unfortunately this
-padding is not used when allocating the memory to hold the
-name.
+ext4fs uses unsigned 34-bit seconds for inode timestamps, which will work
+for the next 500 years, but the VFS uses struct timespec for timestamps,
+which is only good until 2038 on 32-bit CPUs.
 
-This patch converts name array from name[1] to C99 flexible
-array name[] (equivalent to name[0]) so that no padding is
-required by the presence of this field. Memory allocation
-is updated to take care of allocating an additional byte for
-the NUL terminating character.
+This gets us one small step closer to lifting the VFS limit by using
+struct inode_time in ext4.
 
-Built on Fedora 20, using GCC 4.8, for ARM, i386, SPARC64 and
-x86_64 architectures, the data structure layout can be reported
-with following command:
-
-  $ pahole drivers/base/platform.o \
-           --recursive             \
-           --class_name device,pdev_archdata,platform_device,platform_object
-
-Please find below some comparisons of structure layout for arm,
-i386, sparc64 and x86_64 architecture before and after the patch.
-
-  --- obj-arm/drivers/base/platform.o.pahole.v3.15-rc7-79-gfe45736f4134	2014-05-30 10:32:06.290960701 +0200
-  +++ obj-arm/drivers/base/platform.o.pahole.v3.15-rc7-80-g2cdb06858d71	2014-05-30 11:26:20.851988347 +0200
-  @@ -81,10 +81,9 @@
-     /* XXX last struct has 4 bytes of padding */
-
-  	/* --- cacheline 6 boundary (384 bytes) was 8 bytes ago --- */
-  -	char                       name[1];              /*   392     1 */
-  +	char                       name[0];              /*   392     0 */
-
-  -	/* size: 400, cachelines: 7, members: 2 */
-  -	/* padding: 7 */
-  +	/* size: 392, cachelines: 7, members: 2 */
-   	/* paddings: 1, sum paddings: 4 */
-  -	/* last cacheline: 16 bytes */
-  +	/* last cacheline: 8 bytes */
-   };
-
-  --- obj-i386/drivers/base/platform.o.pahole.v3.15-rc7-79-gfe45736f4134 2014-05-30 10:32:06.305960691 +0200
-  +++ obj-i386/drivers/base/platform.o.pahole.v3.15-rc7-80-g2cdb06858d71 2014-05-30 11:26:20.875988332 +0200
-  @@ -73,9 +73,8 @@
-   struct platform_object {
-   	struct platform_device     pdev;                 /*     0   396 */
-   	/* --- cacheline 6 boundary (384 bytes) was 12 bytes ago --- */
-  -	char                       name[1];              /*   396     1 */
-  +	char                       name[0];              /*   396     0 */
-
-  -	/* size: 400, cachelines: 7, members: 2 */
-  -	/* padding: 3 */
-  -	/* last cacheline: 16 bytes */
-  +	/* size: 396, cachelines: 7, members: 2 */
-  +	/* last cacheline: 12 bytes */
-   };
-
-  --- obj-sparc64/drivers/base/platform.o.pahole.v3.15-rc7-79-gfe45736f4134 2014-05-30 10:32:06.406960625 +0200
-  +++ obj-sparc64/drivers/base/platform.o.pahole.v3.15-rc7-80-g2cdb06858d71 2014-05-30 11:26:20.971988269 +0200
-  @@ -94,9 +94,8 @@
-   struct platform_object {
-   	struct platform_device     pdev;                 /*     0  2208 */
-   	/* --- cacheline 34 boundary (2176 bytes) was 32 bytes ago --- */
-  -	char                       name[1];              /*  2208     1 */
-  +	char                       name[0];              /*  2208     0 */
-
-  -	/* size: 2216, cachelines: 35, members: 2 */
-  -	/* padding: 7 */
-  -	/* last cacheline: 40 bytes */
-  +	/* size: 2208, cachelines: 35, members: 2 */
-  +	/* last cacheline: 32 bytes */
-   };
-
-  --- obj-x86_64/drivers/base/platform.o.pahole.v3.15-rc7-79-gfe45736f4134 2014-05-30 10:32:06.432960608 +0200
-  +++ obj-x86_64/drivers/base/platform.o.pahole.v3.15-rc7-80-g2cdb06858d71 2014-05-30 11:26:21.000988250 +0200
-  @@ -84,9 +84,8 @@
-   struct platform_object {
-   	struct platform_device     pdev;                 /*     0   720 */
-   	/* --- cacheline 11 boundary (704 bytes) was 16 bytes ago --- */
-  -	char                       name[1];              /*   720     1 */
-  +	char                       name[0];              /*   720     0 */
-
-  -	/* size: 728, cachelines: 12, members: 2 */
-  -	/* padding: 7 */
-  -	/* last cacheline: 24 bytes */
-  +	/* size: 720, cachelines: 12, members: 2 */
-  +	/* last cacheline: 16 bytes */
-   };
-
-Changes from v5 [1]:
-- dropped dma_mask allocation changes and only kept padding
-  removal changes (name array length set to 0).
-
-Changes from v4 [2]:
-[by Emil Goode <emilgoode@gmail.com>:]
-- Split v4 of the patch into two separate patches.
-- Generated new object file size and data structure layout info.
-- Updated the changelog message.
-
-Changes from v3 [3]:
-- fixed commit message so that git am doesn't fail.
-
-Changes from v2 [4]:
-- move 'dma_mask' to platform_object so that it's always
-  allocated and won't leak on release; remove all previously
-  added support functions.
-- use C99 flexible array member for 'name' to remove padding
-  at the end of platform_object.
-
-Changes from v1 [5]:
-- remove unneeded kfree() from error path
-- add reference to author/commit adding allocation of dmamask
-
-Changes from v0 [6]:
-- small rewrite to squeeze the patch to a bare minimal
-
-[1] http://lkml.kernel.org/r/1401122483-31603-2-git-send-email-emilgoode@gmail.com
-    http://lkml.kernel.org/r/1401122483-31603-1-git-send-email-emilgoode@gmail.com
-    http://lkml.kernel.org/r/1401122483-31603-3-git-send-email-emilgoode@gmail.com
-
-[2] http://lkml.kernel.org/r/1390817152-30898-1-git-send-email-ydroneaud@opteya.com
-    https://patchwork.kernel.org/patch/3541871/
-
-[3] http://lkml.kernel.org/r/1390771138-28348-1-git-send-email-ydroneaud@opteya.com
-    https://patchwork.kernel.org/patch/3540081/
-
-[4] http://lkml.kernel.org/r/1389683909-17495-1-git-send-email-ydroneaud@opteya.com
-    https://patchwork.kernel.org/patch/3484411/
-
-[5] http://lkml.kernel.org/r/1389649085-7365-1-git-send-email-ydroneaud@opteya.com
-    https://patchwork.kernel.org/patch/3480961/
-
-[6] http://lkml.kernel.org/r/1386886207-2735-1-git-send-email-ydroneaud@opteya.com
-
-Cc: Emil Goode <emilgoode@gmail.com>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Shawn Guo <shawn.guo@freescale.com>
-Cc: Sascha Hauer <kernel@pengutronix.de>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Olof Johansson <olof@lixom.net>
-Cc: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Andreas Dilger <adilger.kernel@dilger.ca>
+Cc: linux-ext4@vger.kernel.org
 ---
- drivers/base/platform.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/ext4/ext4.h    | 10 +++++-----
+ fs/ext4/extents.c |  2 +-
+ 2 files changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/base/platform.c b/drivers/base/platform.c
-index 5b47210889e0..b126c9363f53 100644
---- a/drivers/base/platform.c
-+++ b/drivers/base/platform.c
-@@ -162,7 +162,7 @@ EXPORT_SYMBOL_GPL(platform_add_devices);
+diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
+index 92d9f1a..b60adc9 100644
+--- a/fs/ext4/ext4.h
++++ b/fs/ext4/ext4.h
+@@ -726,14 +726,14 @@ struct move_extent {
+ 	<= (EXT4_GOOD_OLD_INODE_SIZE +			\
+ 	    (einode)->i_extra_isize))			\
  
- struct platform_object {
- 	struct platform_device pdev;
--	char name[1];
-+	char name[];
- };
- 
- /**
-@@ -203,7 +203,7 @@ struct platform_device *platform_device_alloc(const char *name, int id)
+-static inline __le32 ext4_encode_extra_time(struct timespec *time)
++static inline __le32 ext4_encode_extra_time(struct inode_time *time)
  {
- 	struct platform_object *pa;
+        return cpu_to_le32((sizeof(time->tv_sec) > 4 ?
+ 			   (time->tv_sec >> 32) & EXT4_EPOCH_MASK : 0) |
+                           ((time->tv_nsec << EXT4_EPOCH_BITS) & EXT4_NSEC_MASK));
+ }
  
--	pa = kzalloc(sizeof(struct platform_object) + strlen(name), GFP_KERNEL);
-+	pa = kzalloc(sizeof(*pa) + strlen(name) + 1, GFP_KERNEL);
- 	if (pa) {
- 		strcpy(pa->name, name);
- 		pa->pdev.name = pa->name;
+-static inline void ext4_decode_extra_time(struct timespec *time, __le32 extra)
++static inline void ext4_decode_extra_time(struct inode_time *time, __le32 extra)
+ {
+        if (sizeof(time->tv_sec) > 4)
+ 	       time->tv_sec |= (__u64)(le32_to_cpu(extra) & EXT4_EPOCH_MASK)
+@@ -879,9 +879,9 @@ struct ext4_inode_info {
+ 
+ 	/*
+ 	 * File creation time. Its function is same as that of
+-	 * struct timespec i_{a,c,m}time in the generic inode.
++	 * struct inode_time i_{a,c,m}time in the generic inode.
+ 	 */
+-	struct timespec i_crtime;
++	struct inode_time i_crtime;
+ 
+ 	/* mballoc */
+ 	struct list_head i_prealloc_list;
+@@ -1354,7 +1354,7 @@ static inline struct ext4_inode_info *EXT4_I(struct inode *inode)
+ 	return container_of(inode, struct ext4_inode_info, vfs_inode);
+ }
+ 
+-static inline struct timespec ext4_current_time(struct inode *inode)
++static inline struct inode_time ext4_current_time(struct inode *inode)
+ {
+ 	return (inode->i_sb->s_time_gran < NSEC_PER_SEC) ?
+ 		current_fs_time(inode->i_sb) : CURRENT_TIME_SEC;
+diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
+index ee14768..ed11d79 100644
+--- a/fs/ext4/extents.c
++++ b/fs/ext4/extents.c
+@@ -4894,7 +4894,7 @@ long ext4_fallocate(struct file *file, int mode, loff_t offset, loff_t len)
+ 	int ret = 0;
+ 	int flags;
+ 	ext4_lblk_t lblk;
+-	struct timespec tv;
++	struct inode_time tv;
+ 	unsigned int blkbits = inode->i_blkbits;
+ 
+ 	/* Return error if mode is not supported */
 -- 
-1.9.3
+1.8.3.2
 
