@@ -1,67 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933670AbaE3PlT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 11:41:19 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:51230 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932126AbaE3PlP (ORCPT
+	id S933698AbaE3Pla (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 11:41:30 -0400
+Received: from mail-qg0-f50.google.com ([209.85.192.50]:50446 "EHLO
+	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932126AbaE3Pl1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 11:41:15 -0400
-Date: Fri, 30 May 2014 21:10:48 +0530
-From: Himangi Saraogi <himangi774@gmail.com>
-To: "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: julia.lawall@lip6.fr
-Subject: [PATCH] ipmr: Replace comma with semicolon
-Message-ID: <20140530154048.GA3949@himangi-Dell>
+	Fri, 30 May 2014 11:41:27 -0400
+Date: Fri, 30 May 2014 11:41:23 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Paolo Valente <paolo.valente@unimore.it>
+Cc: Jens Axboe <axboe@kernel.dk>, Li Zefan <lizefan@huawei.com>,
+        Fabio Checconi <fchecconi@gmail.com>,
+        Arianna Avanzini <avanzini.arianna@gmail.com>,
+        Paolo Valente <posta_paolo@yahoo.it>, linux-kernel@vger.kernel.org,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org
+Subject: Re: [PATCH RFC - TAKE TWO - 06/12] block, bfq: improve responsiveness
+Message-ID: <20140530154123.GD24871@htj.dyndns.org>
+References: <20140528221929.GG1419@htj.dyndns.org>
+ <1401354343-5527-1-git-send-email-paolo.valente@unimore.it>
+ <1401354343-5527-7-git-send-email-paolo.valente@unimore.it>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1401354343-5527-7-git-send-email-paolo.valente@unimore.it>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch replaces a comma between expression statements by a semicolon.
+On Thu, May 29, 2014 at 11:05:37AM +0200, Paolo Valente wrote:
+> @@ -281,7 +323,8 @@ static inline unsigned long bfq_serv_to_charge(struct request *rq,
+>  					       struct bfq_queue *bfqq)
+>  {
+>  	return blk_rq_sectors(rq) *
+> -		(1 + ((!bfq_bfqq_sync(bfqq)) * bfq_async_charge_factor));
+> +		(1 + ((!bfq_bfqq_sync(bfqq)) * (bfqq->wr_coeff == 1) *
+> +		bfq_async_charge_factor));
 
-A simplified version of the semantic patch that performs this
-transformation is as follows:
+Ah, okay, so you actually use it later.  Please disregard my previous
+comment about dropping the wrapper.
 
-// <smpl>
-@r@
-expression e1,e2,e;
-type T;
-identifier i;
-@@
+Thanks.
 
- e1
--,
-+;
- e2;
-// </smpl>
-
-Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
----
- net/ipv4/ipmr.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/net/ipv4/ipmr.c b/net/ipv4/ipmr.c
-index d84dc8d..2bc9cc4 100644
---- a/net/ipv4/ipmr.c
-+++ b/net/ipv4/ipmr.c
-@@ -484,7 +484,7 @@ static void reg_vif_setup(struct net_device *dev)
- 	dev->type		= ARPHRD_PIMREG;
- 	dev->mtu		= ETH_DATA_LEN - sizeof(struct iphdr) - 8;
- 	dev->flags		= IFF_NOARP;
--	dev->netdev_ops		= &reg_vif_netdev_ops,
-+	dev->netdev_ops		= &reg_vif_netdev_ops;
- 	dev->destructor		= free_netdev;
- 	dev->features		|= NETIF_F_NETNS_LOCAL;
- }
 -- 
-1.9.1
-
+tejun
