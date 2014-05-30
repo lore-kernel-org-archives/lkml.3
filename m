@@ -1,145 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933401AbaE3OvJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 10:51:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32780 "EHLO mx1.redhat.com"
+	id S933224AbaE3Oyt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 10:54:49 -0400
+Received: from mga02.intel.com ([134.134.136.20]:30766 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933086AbaE3OvH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 10:51:07 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: jolsa@redhat.com
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>, namhyung@gmail.com,
-        eranian@google.com, Andi Kleen <andi@firstfloor.org>,
-        Don Zickus <dzickus@redhat.com>
-Subject: [PATCH 6/7 V2] perf: Add support to dynamically get cacheline size
-Date: Fri, 30 May 2014 10:50:25 -0400
-Message-Id: <1401461425-209679-1-git-send-email-dzickus@redhat.com>
-In-Reply-To: <1401208087-181977-7-git-send-email-dzickus@redhat.com>
-References: <1401208087-181977-7-git-send-email-dzickus@redhat.com>
+	id S1752856AbaE3Oys (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 May 2014 10:54:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,941,1392192000"; 
+   d="scan'208";a="548951716"
+Date: Fri, 30 May 2014 10:54:46 -0400
+From: Matthew Wilcox <willy@linux.intel.com>
+To: Matias =?iso-8859-1?Q?Bj=F8rling?= <m@bjorling.me>
+Cc: keith.busch@intel.com, sbradshaw@micron.com, axboe@kernel.dk,
+        linux-kernel@vger.kernel.org, linux-nvme@lists.infradead.org
+Subject: Re: [PATCH v4] NVMe: basic conversion to blk-mq
+Message-ID: <20140530145446.GC5499@linux.intel.com>
+References: <1401400285-25003-1-git-send-email-m@bjorling.me>
+ <1401400285-25003-2-git-send-email-m@bjorling.me>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1401400285-25003-2-git-send-email-m@bjorling.me>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Different arches may have different cacheline sizes.  Look it up and set
-a global variable for reference.
+On Thu, May 29, 2014 at 11:51:25PM +0200, Matias Bjørling wrote:
+> @@ -816,9 +671,7 @@ static irqreturn_t nvme_irq(int irq, void *data)
+>  	irqreturn_t result;
+>  	struct nvme_queue *nvmeq = data;
+>  	spin_lock(&nvmeq->q_lock);
+> -	nvme_process_cq(nvmeq);
+> -	result = nvmeq->cqe_seen ? IRQ_HANDLED : IRQ_NONE;
+> -	nvmeq->cqe_seen = 0;
+> +	result = nvme_process_cq(nvmeq) ? IRQ_HANDLED : IRQ_NONE;
+>  	spin_unlock(&nvmeq->q_lock);
+>  	return result;
+>  }
 
-Signed-off-by: Don Zickus <dzickus@redhat.com>
-
----
-V3: remove unneeded cpumap.h (Namhyung Kim)
-V2: change to be global and setup in perf.c
-    use filename__read_int for setup
----
- tools/perf/perf.c        |  5 +++++
- tools/perf/util/cpumap.c | 27 +++++++++++++++++++++++++++
- tools/perf/util/cpumap.h |  3 +++
- tools/perf/util/util.c   |  1 +
- tools/perf/util/util.h   |  1 +
- 5 files changed, 37 insertions(+)
-
-diff --git a/tools/perf/perf.c b/tools/perf/perf.c
-index 431798a..dabf08b 100644
---- a/tools/perf/perf.c
-+++ b/tools/perf/perf.c
-@@ -13,6 +13,7 @@
- #include "util/quote.h"
- #include "util/run-command.h"
- #include "util/parse-events.h"
-+#include "util/cpumap.h"
- #include <api/fs/debugfs.h>
- #include <pthread.h>
- 
-@@ -459,6 +460,10 @@ int main(int argc, const char **argv)
- 	/* The page_size is placed in util object. */
- 	page_size = sysconf(_SC_PAGE_SIZE);
- 
-+	/* The cacheline_size is placed in util objet */
-+	if (cpu__setup_cacheline_size() < 0) 
-+		goto out;
-+
- 	cmd = perf_extract_argv0_path(argv[0]);
- 	if (!cmd)
- 		cmd = "perf-help";
-diff --git a/tools/perf/util/cpumap.c b/tools/perf/util/cpumap.c
-index c4e55b7..1029982 100644
---- a/tools/perf/util/cpumap.c
-+++ b/tools/perf/util/cpumap.c
-@@ -477,3 +477,30 @@ int cpu__setup_cpunode_map(void)
- 	closedir(dir1);
- 	return 0;
- }
-+
-+int cpu__setup_cacheline_size(void)
-+{
-+	const char *mnt;
-+	char path[PATH_MAX];
-+	int n, size;
-+	
-+
-+	mnt = sysfs__mountpoint();
-+	if (!mnt)
-+		return -1;
-+
-+	n = snprintf(path, PATH_MAX, "%s/devices/system/cpu/cpu0/cache/index0/coherency_line_size", mnt);
-+	if (n == PATH_MAX) {
-+		pr_err("sysfs path crossed PATH_MAX(%d) size\n", PATH_MAX);
-+		return -1;
-+	}
-+
-+	if (filename__read_int(path, &size)) {
-+		pr_err("Can not read cacheline size\n");
-+		return -1;
-+	}
-+
-+	cacheline_size = size;
-+
-+	return 0;
-+}
-diff --git a/tools/perf/util/cpumap.h b/tools/perf/util/cpumap.h
-index 61a6548..507d7fd 100644
---- a/tools/perf/util/cpumap.h
-+++ b/tools/perf/util/cpumap.h
-@@ -5,6 +5,7 @@
- #include <stdbool.h>
- 
- #include "perf.h"
-+#include "util/util.h"
- #include "util/debug.h"
- 
- struct cpu_map {
-@@ -81,4 +82,6 @@ static inline int cpu__get_node(int cpu)
- 	return cpunode_map[cpu];
- }
- 
-+int cpu__setup_cacheline_size(void);
-+
- #endif /* __PERF_CPUMAP_H */
-diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
-index 7fff6be..95aefa7 100644
---- a/tools/perf/util/util.c
-+++ b/tools/perf/util/util.c
-@@ -17,6 +17,7 @@
-  * XXX We need to find a better place for these things...
-  */
- unsigned int page_size;
-+int cacheline_size;
- 
- bool test_attr__enabled;
- 
-diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
-index b03da44..6686436 100644
---- a/tools/perf/util/util.h
-+++ b/tools/perf/util/util.h
-@@ -304,6 +304,7 @@ char *rtrim(char *s);
- void dump_stack(void);
- 
- extern unsigned int page_size;
-+extern int cacheline_size;
- 
- void get_term_dimensions(struct winsize *ws);
- 
--- 
-1.7.11.7
-
+Put cqe_seen back.  I already told Sam this was wrong.
+http://lists.infradead.org/pipermail/linux-nvme/2014-May/000856.html
