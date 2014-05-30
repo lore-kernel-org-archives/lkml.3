@@ -1,58 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754740AbaE3Mfh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 08:35:37 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:59051 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751115AbaE3Mfg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 08:35:36 -0400
-Date: Fri, 30 May 2014 14:35:33 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Miguel Oliveira <cmroliv@gmail.com>
-Cc: gregkh@linuxfoundation.org, gulsah.1004@gmail.com, pali.rohar@gmail.com,
-        peter.p.waskiewicz.jr@intel.com, kristina.martsenko@gmail.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: nokia_h4: nokia_core.c: use usleep_range()
- instead of msleep()
-Message-ID: <20140530123533.GB10549@amd.pavel.ucw.cz>
-References: <1401445633-5290-1-git-send-email-cmroliv@gmail.com>
- <20140530113418.GA9670@amd.pavel.ucw.cz>
- <CAMGgR5swX-cp4navRBu8CxYnL5fRSxkBVRcu-xKXkr0oyBXP+A@mail.gmail.com>
+	id S1755234AbaE3MhL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 08:37:11 -0400
+Received: from mga11.intel.com ([192.55.52.93]:36925 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752093AbaE3MhI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 May 2014 08:37:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,941,1392192000"; 
+   d="scan'208";a="547266381"
+Message-ID: <53887B77.7060907@intel.com>
+Date: Fri, 30 May 2014 20:37:11 +0800
+From: Lan Tianyu <tianyu.lan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMGgR5swX-cp4navRBu8CxYnL5fRSxkBVRcu-xKXkr0oyBXP+A@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Wolfram Sang <wsa@the-dreams.de>, "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: mika.westerberg@linux.intel.com, awilliam@redhat.com, lenb@kernel.org,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [Patch V3 0/5] I2C ACPI operation region handler
+References: <1400590764-11108-1-git-send-email-tianyu.lan@intel.com> <53881E87.9070706@intel.com> <10091506.iBigojlNVE@vostro.rjw.lan> <20140530121046.GB2742@katana>
+In-Reply-To: <20140530121046.GB2742@katana>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
-
-> So the /Documentation/timers/timers-howto.txt stats:
-> 
-> SLEEPING FOR ~USECS OR SMALL MSECS ( 10us - 20ms):
-> * Use usleep_range
-> 
-> - Why not msleep for (1ms - 20ms)?
-> Explained originally here:
-> http://lkml.org/lkml/2007/8/3/250
-> msleep(1~20) may not do what the caller intends, and
-> will often sleep longer (~20 ms actual sleep for any
-> value given in the 1~20ms range). In many cases this
-> is not the desired behavior.
-...
-> Should the documentation should be ignored?
-
-Caller wants to sleep for 10ms; docs said it may sleep for 10-20msec;
-that sounds reasonable. You replaced it with busy-loop for 10-15msec.
-
-That does not sound like improvement.
-
-Thanks,
-								Pavel
-
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+On 05/30/2014 08:10 PM, Wolfram Sang wrote:
+>>> Hi Wolfram:
+>>> 	Since this version resolved all comments, it's ok for you?
+>
+> Sorry, I misunderstood. I thought a V4 was needed, but it isn't. I'll
+> try to have a look this weekend.
+>
+OK. Thanks.
