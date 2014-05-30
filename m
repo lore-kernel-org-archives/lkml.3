@@ -1,54 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932229AbaE3Hvk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 03:51:40 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:52676 "EHLO extserv.mm-sol.com"
+	id S1755135AbaE3Hw3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 03:52:29 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:60937 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751665AbaE3Hvi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 03:51:38 -0400
-Message-ID: <1401436256.13544.7.camel@iivanov-dev>
-Subject: Re: [PATCH v2 4/4] ARM: debug: qcom: add UART addresses to Kconfig
- help
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Matthias Brugger <matthias.bgg@gmail.com>
-Cc: Georgi Djakov <gdjakov@mm-sol.com>, Russell King <linux@arm.linux.org.uk>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, sboyd@codeaurora.org,
-        rvaswani@codeaurora.org, davidb@codeaurora.org,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-arm-msm@vger.kernel.org
-Date: Fri, 30 May 2014 10:50:56 +0300
-In-Reply-To: <CABuKBeLHOKK+DsVPBGPDmeSqceSTMGZeOd74-Jp4Z9vUWDZ_yQ@mail.gmail.com>
-References: <1400857952-6963-1-git-send-email-gdjakov@mm-sol.com>
-	 <1400857952-6963-5-git-send-email-gdjakov@mm-sol.com>
-	 <CABuKBe+B_Ga-w4aA4dApDTa26rCuhetRTJku27Madm+fHtDcLA@mail.gmail.com>
-	 <53834578.9090305@mm-sol.com>
-	 <CABuKBeJXqSi=6XY5Fg7mg_daQ4D8ornS-kn7NDPktCtro7yNNw@mail.gmail.com>
-	 <53847FA1.60509@mm-sol.com>
-	 <CABuKBeLHOKK+DsVPBGPDmeSqceSTMGZeOd74-Jp4Z9vUWDZ_yQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.1-2ubuntu2~saucy1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752272AbaE3Hw1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 May 2014 03:52:27 -0400
+Date: Fri, 30 May 2014 09:52:19 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Dave Young <dyoung@redhat.com>
+Cc: matt.fleming@intel.com, linux-kernel@vger.kernel.org,
+        linux-efi@vger.kernel.org, vgoyal@redhat.com
+Subject: Re: [PATCH]x86 efi: do not export efi runtime map in case old map
+Message-ID: <20140530075219.GC28131@pd.tnic>
+References: <20140530032010.GA29906@dhcp-16-198.nay.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140530032010.GA29906@dhcp-16-198.nay.redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-05-29 at 17:26 +0200, Matthias Brugger wrote:
+On Fri, May 30, 2014 at 11:20:10AM +0800, Dave Young wrote:
+> 
+> For ioremapped efi memory aka old_map the virt addresses are not persistant
+> across kexec reboot. kexec-tools will read the runtime maps from sysfs then
+> pass them to 2nd kernel and assuming kexec efi boot is ok. This will cause
+> kexec boot failure.
+> 
+> To address this issue do not export runtime maps in case efi old_map so
+> userspace can use no efi boot instead.
+> 
+> Signed-off-by: Dave Young <dyoung@redhat.com>
 
-> IMHO the dependancy is that DEBUG_LL uses the uart device, and this is
-> added when you add the dts.
-> AFAIK there can arise problems with multi-platform kernels if the uart
-> is not present.
+Acked-by: Borislav Petkov <bp@suse.de>
 
-Once DEBUG_LL is enabled you don't have multi-platform kernel anymore,
-so this should not be an issue here.
+-- 
+Regards/Gruss,
+    Boris.
 
-Regards,
-Ivan
-
+Sent from a fat crate under my desk. Formatting is fine.
+--
