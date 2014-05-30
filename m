@@ -1,63 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932973AbaE3Lp7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 07:45:59 -0400
-Received: from relay1.mentorg.com ([192.94.38.131]:39899 "EHLO
-	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755221AbaE3Lp4 (ORCPT
+	id S932788AbaE3Lp6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 07:45:58 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:52408 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752074AbaE3Lp4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 30 May 2014 07:45:56 -0400
-Message-ID: <53886F6C.7090509@mentor.com>
-Date: Fri, 30 May 2014 12:45:48 +0100
-From: Jim Baxter <jim_baxter@mentor.com>
+Message-ID: <53886F61.7070900@gmail.com>
+Date: Fri, 30 May 2014 13:45:37 +0200
+From: Tomasz Figa <tomasz.figa@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: =?UTF-8?B?QmrDuHJuIE1vcms=?= <bjorn@mork.no>
-CC: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        David Laight <David.Laight@ACULAB.COM>, <netdev@vger.kernel.org>
-Subject: Re: [PATCH v1 1/3] usb: gadget: NCM: RX function support multiple
- NDPs
-References: <jim_baxter@mentor.com>	<1401383543-10181-1-git-send-email-jim_baxter@mentor.com>	<1401383543-10181-2-git-send-email-jim_baxter@mentor.com> <87d2ewbejv.fsf@nemi.mork.no>
-In-Reply-To: <87d2ewbejv.fsf@nemi.mork.no>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [137.202.0.76]
-X-OriginalArrivalTime: 30 May 2014 11:45:51.0093 (UTC) FILETIME=[B4B77250:01CF7BFC]
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+CC: Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>
+Subject: Re: [PATCH] ARM: EXYNOS: SWRESET is needed to boot secondary CPU
+ on Exynos3250
+References: <1400152691-29705-1-git-send-email-k.kozlowski@samsung.com>
+In-Reply-To: <1400152691-29705-1-git-send-email-k.kozlowski@samsung.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29/05/14 19:55, Bjørn Mork wrote:
-> Jim Baxter <jim_baxter@mentor.com> writes:
-> 
->> The NDP was ignoring the wNextNdpIndex in the NDP which
->> means that NTBs containing multiple NDPs would have missed
->> frames.
-> 
-> Well, just for the record: I believe this field was meant to be reserved
-> and always 0 in the CDC NCM spec.  Table 3-3, describing 16bit NDPs,
-> says so.  But reading the spec now, I noticed that there is an
-> inconsistency between table 3-3 and table 3-4 describing 32bit NDPs.  It
-> looks like the field is not reserved in the 32bit version.
-> 
-> I am pretty sure that is a specification error, but I guess it doesn't
-> harm to implement the support anyway.  And it paves the way for an MBIM
-> gadget :-)
-> 
-> 
-> 
-> 
-> Bjørn
-> 
+Hi Krzysztof,
 
-Yes I was looking at Figure 3-1, Figure 3-2 which all state it is a
-link. I must have been reading Table 3-4.
+On 15.05.2014 13:18, Krzysztof Kozlowski wrote:
+> Without software reset the secondary CPU does not power up and
+> exynos_boot_secondary() ends with pen_release equal to 1. This can be
+> observed in dmesg:
+> 	CPU1: failed to come online
+> 	Brought up 1 CPUs
+> 	SMP: Total of 1 processors activated.
+> 	CPU: All CPU(s) started in SVC mode.
+> 
+> When booting the secondary CPU on Exynos3250 execute also software
+> reset for core 1.
+> 
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> ---
+>  arch/arm/mach-exynos/platsmp.c  | 22 ++++++++++++++++++++++
+>  arch/arm/mach-exynos/regs-pmu.h |  3 +++
+>  2 files changed, 25 insertions(+)
+> 
+> diff --git a/arch/arm/mach-exynos/platsmp.c b/arch/arm/mach-exynos/platsmp.c
+> index 8b88eb2f077b..64ec5ca18f60 100644
+> --- a/arch/arm/mach-exynos/platsmp.c
+> +++ b/arch/arm/mach-exynos/platsmp.c
+> @@ -76,6 +76,25 @@ static inline void __iomem *cpu_boot_reg(int cpu)
+>  }
+>  
+>  /*
+> + * Set wake up by local power mode and execute software reset for given core.
+> + *
+> + * Currently this is needed only when booting secondary CPU on Exynos3250.
+> + */
+> +static inline void exynos_core_restart(u32 core_id)
 
-I am glad to see it helps with the MBIM specification :-) .
+nit: AFAIK when not strictly necessary, it's preferable to let the
+compiler decide to inline a function or not, instead of adding the
+inline keyword.
 
-Jim
+> +{
+> +	if (of_machine_is_compatible("samsung,exynos3250")) {
 
+nit: This could be probably changed into
 
+	if (!of_machine_is_compatible("samsung,exynos3250"))
+		return;
+
+Other than these two minor nitpicks the patch looks good, so if there is
+no reason to resend, feel free to ignore them. Although I think it might
+be necessary to rebase it on Kukjin's for-next.
+
+Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+
+Best regards,
+Tomasz
