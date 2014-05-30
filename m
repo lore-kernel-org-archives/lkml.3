@@ -1,91 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755498AbaE3JfF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 05:35:05 -0400
-Received: from mail-qg0-f45.google.com ([209.85.192.45]:60718 "EHLO
-	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755160AbaE3JfC (ORCPT
+	id S1755519AbaE3Jgo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 05:36:44 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33391 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755156AbaE3Jgn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 05:35:02 -0400
+	Fri, 30 May 2014 05:36:43 -0400
+Date: Fri, 30 May 2014 10:36:38 +0100
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+To: Chanwoo Choi <cw00.choi@samsung.com>
+Cc: linux-kernel@vger.kernel.org, myungjoo.ham@samsung.com,
+        kyungmin.park@samsung.com, Mark Brown <broonie@kernel.org>,
+        Graeme Gregory <gg@slimlogic.co.uk>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: Re: [PATCH] extcon: Set parent device of extcon device using
+	prameter of devm_extcon_dev_allocate
+Message-ID: <20140530093638.GA11951@opensource.wolfsonmicro.com>
+References: <1401414099-10937-1-git-send-email-cw00.choi@samsung.com>
 MIME-Version: 1.0
-In-Reply-To: <1401284807-16686-1-git-send-email-srinivas.kandagatla@linaro.org>
-References: <1401284608-16428-1-git-send-email-srinivas.kandagatla@linaro.org>
-	<1401284807-16686-1-git-send-email-srinivas.kandagatla@linaro.org>
-Date: Fri, 30 May 2014 11:35:01 +0200
-Message-ID: <CAPDyKFraGdp2QUHzhjoe5mO6ZyuS08notgkxpRB5A_GpYtyXTw@mail.gmail.com>
-Subject: Re: [PATCH v4 06/13] mmc: mmci: add ddrmode mask to variant data
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        linux-mmc <linux-mmc@vger.kernel.org>, Chris Ball <chris@printf.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1401414099-10937-1-git-send-email-cw00.choi@samsung.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28 May 2014 15:46,  <srinivas.kandagatla@linaro.org> wrote:
-> From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
->
-> This patch adds ddrmode mask to variant structure giving more flexibility
-> to the driver to support more SOCs which have different datactrl register
-> layout.
->
-> Without this patch datactrl register is updated with wrong ddrmode mask on non
-> ST SOCs, resulting in card detection failures.
-
-The above statement seems not correct. We don't have any issues
-currently, right. :-)
-
-Kind regards
-Ulf Hansson
-
->
-> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-> Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
+On Fri, May 30, 2014 at 10:41:39AM +0900, Chanwoo Choi wrote:
+> This patch set the parent device of extcon device using first parameter of
+> devm_extco_dev_allocate() to remove duplicate code on all of extcon provider
+> drivers.
+> 
+> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+> Reported-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+> Cc: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+> Cc: Mark Brown <broonie@kernel.org>
+> Cc: Graeme Gregory <gg@slimlogic.co.uk>
+> Cc: Kishon Vijay Abraham I <kishon@ti.com>
+> Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 > ---
->  drivers/mmc/host/mmci.c | 5 ++++-
->  1 file changed, 4 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/mmc/host/mmci.c b/drivers/mmc/host/mmci.c
-> index 23401b0..729105b 100644
-> --- a/drivers/mmc/host/mmci.c
-> +++ b/drivers/mmc/host/mmci.c
-> @@ -59,6 +59,7 @@ static unsigned int fmax = 515633;
->   *               is asserted (likewise for RX)
->   * @sdio: variant supports SDIO
->   * @st_clkdiv: true if using a ST-specific clock divider algorithm
-> + * @datactrl_mask_ddrmode: ddr mode mask in datactrl register.
->   * @blksz_datactrl16: true if Block size is at b16..b30 position in datactrl register
->   * @blksz_datactrl4: true if Block size is at b4..b16 position in datactrl
->   *                  register
-> @@ -74,6 +75,7 @@ struct variant_data {
->         unsigned int            datalength_bits;
->         unsigned int            fifosize;
->         unsigned int            fifohalfsize;
-> +       unsigned int            datactrl_mask_ddrmode;
->         bool                    sdio;
->         bool                    st_clkdiv;
->         bool                    blksz_datactrl16;
-> @@ -152,6 +154,7 @@ static struct variant_data variant_ux500v2 = {
->         .fifohalfsize           = 8 * 4,
->         .clkreg                 = MCI_CLK_ENABLE,
->         .clkreg_enable          = MCI_ST_UX500_HWFCEN,
-> +       .datactrl_mask_ddrmode  = MCI_ST_DPSM_DDRMODE,
->         .datalength_bits        = 24,
->         .sdio                   = true,
->         .st_clkdiv              = true,
-> @@ -779,7 +782,7 @@ static void mmci_start_data(struct mmci_host *host, struct mmc_data *data)
->                 }
->
->         if (host->mmc->ios.timing == MMC_TIMING_UHS_DDR50)
-> -               datactrl |= MCI_ST_DPSM_DDRMODE;
-> +               datactrl |= variant->datactrl_mask_ddrmode;
->
->         /*
->          * Attempt to use DMA operation mode, if this
-> --
-> 1.9.1
->
+>  drivers/extcon/extcon-adc-jack.c | 1 -
+>  drivers/extcon/extcon-arizona.c  | 1 -
+>  drivers/extcon/extcon-class.c    | 2 ++
+>  drivers/extcon/extcon-gpio.c     | 1 -
+>  drivers/extcon/extcon-max77693.c | 1 -
+>  drivers/extcon/extcon-max8997.c  | 1 -
+>  drivers/extcon/extcon-palmas.c   | 1 -
+>  7 files changed, 2 insertions(+), 6 deletions(-)
+> 
+> diff --git a/drivers/extcon/extcon-adc-jack.c b/drivers/extcon/extcon-adc-jack.c
+> index e18f95b..d860229 100644
+> --- a/drivers/extcon/extcon-adc-jack.c
+> +++ b/drivers/extcon/extcon-adc-jack.c
+> @@ -112,7 +112,6 @@ static int adc_jack_probe(struct platform_device *pdev)
+>  		dev_err(&pdev->dev, "failed to allocate extcon device\n");
+>  		return -ENOMEM;
+>  	}
+> -	data->edev->dev.parent = &pdev->dev;
+>  	data->edev->name = pdata->name;
+>  
+>  	/* Check the length of array and set num_cables */
+> diff --git a/drivers/extcon/extcon-arizona.c b/drivers/extcon/extcon-arizona.c
+> index c634796..d9bd3c3 100644
+> --- a/drivers/extcon/extcon-arizona.c
+> +++ b/drivers/extcon/extcon-arizona.c
+> @@ -1165,7 +1165,6 @@ static int arizona_extcon_probe(struct platform_device *pdev)
+>  		return -ENOMEM;
+>  	}
+>  	info->edev->name = "Headset Jack";
+> -	info->edev->dev.parent = arizona->dev;
+>  
+>  	ret = devm_extcon_dev_register(&pdev->dev, info->edev);
+
+This changes the parent device for the Arizona stuff, I don't
+think this is a problem but I should probably test here first.
+
+Thanks,
+Charles
