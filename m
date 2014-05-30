@@ -1,181 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755051AbaE3MS1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 08:18:27 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:59825 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751140AbaE3MS0 (ORCPT
+	id S1754489AbaE3MUq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 08:20:46 -0400
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:57356 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751782AbaE3MUo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 08:18:26 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Zhang Rui <rui.zhang@intel.com>
-Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        matthew.garrett@nebula.com, mika.westerberg@linux.intel.com
-Subject: [Update][PATCH 10/10] ACPI / scan: use platform bus type by default for _HID enumeration
-Date: Fri, 30 May 2014 14:35:34 +0200
-Message-ID: <7971916.hcjclMBqJX@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <6979141.yBBhMfGMhk@vostro.rjw.lan>
-References: <1400781753-2682-1-git-send-email-rui.zhang@intel.com> <35042328.kk6ZUUdfyN@vostro.rjw.lan> <6979141.yBBhMfGMhk@vostro.rjw.lan>
+	Fri, 30 May 2014 08:20:44 -0400
+Date: Fri, 30 May 2014 14:18:08 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Trond Myklebust <trond.myklebust@primarydata.com>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] NFS: Use smp_mb__{before,after}_atomic()
+Message-ID: <20140530121807.GA19178@ulmo>
+References: <1401440815-4227-1-git-send-email-thierry.reding@gmail.com>
+ <1401449890.4645.1.camel@leira.trondhjem.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="h31gzZEtNLTqOjlF"
+Content-Disposition: inline
+In-Reply-To: <1401449890.4645.1.camel@leira.trondhjem.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zhang Rui <rui.zhang@intel.com>
 
-Because of the growing demand for enumerating ACPI devices to
-platform bus, change the code to enumerate ACPI device objects to
-platform bus by default.  Namely, create platform devices for the
-ACPI device objects that
- 1. Have pnp.type.platform_id set (device objects with _HID currently).
- 2. Do not have a scan handler attached.
- 3. Are not SPI/I2C slave devices (that should be enumerated to the
-    appropriate buses bus by their parent).
+--h31gzZEtNLTqOjlF
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Zhang Rui <rui.zhang@intel.com>
-[rjw: Subject and changelog, rebase and code cleanup]
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
+On Fri, May 30, 2014 at 06:38:10AM -0500, Trond Myklebust wrote:
+> On Fri, 2014-05-30 at 11:06 +0200, Thierry Reding wrote:
+> > From: Thierry Reding <treding@nvidia.com>
+> >=20
+> > Commit febdbfe8a91c (arch: Prepare for smp_mb__{before,after}_atomic())
+> > deprecated the smp_mb__{before,after}_{atomic,clear}_{dec,inc,bit}*()
+> > functions in favour of the unified smp_mb__{before,after}_atomic().
+>=20
+> Where is this commit? It doesn't seem to have hit upstream yet.
 
-Changelog rework and minor cleanups.
+It's been in linux-next for over 5 weeks now, so I'd expect it to hit
+3.16 during the merge window.
 
-Thanks!
+Thierry
 
----
- drivers/acpi/acpi_platform.c |   40 ++++++++--------------------------------
- drivers/acpi/scan.c          |   42 +++++++++++++++++++++++++++++++++++++++++-
- 2 files changed, 49 insertions(+), 33 deletions(-)
+--h31gzZEtNLTqOjlF
+Content-Type: application/pgp-signature
 
-Index: linux-pm/drivers/acpi/acpi_platform.c
-===================================================================
---- linux-pm.orig/drivers/acpi/acpi_platform.c
-+++ linux-pm/drivers/acpi/acpi_platform.c
-@@ -22,21 +22,11 @@
- 
- ACPI_MODULE_NAME("platform");
- 
--/*
-- * The following ACPI IDs are known to be suitable for representing as
-- * platform devices.
-- */
--static const struct acpi_device_id acpi_platform_device_ids[] = {
--
--	{ "PNP0D40" },
--	{ "VPC2004" },
--	{ "BCM4752" },
--
--	/* Intel Smart Sound Technology */
--	{ "INT33C8" },
--	{ "80860F28" },
--
--	{ }
-+static const struct acpi_device_id forbidden_id_list[] = {
-+	{"PNP0000", 0},	/* PIC */
-+	{"PNP0100", 0},	/* Timer */
-+	{"PNP0200", 0},	/* AT DMA Controller */
-+	{"", 0},
- };
- 
- /**
-@@ -63,6 +53,9 @@ struct platform_device *acpi_create_plat
- 	if (adev->physical_node_count)
- 		return NULL;
- 
-+	if (!acpi_match_device_ids(adev, forbidden_id_list))
-+		return ERR_PTR(-EINVAL);
-+
- 	INIT_LIST_HEAD(&resource_list);
- 	count = acpi_dev_get_resources(adev, &resource_list, NULL, NULL);
- 	if (count < 0) {
-@@ -120,20 +113,3 @@ struct platform_device *acpi_create_plat
- 	kfree(resources);
- 	return pdev;
- }
--
--static int acpi_platform_attach(struct acpi_device *adev,
--				const struct acpi_device_id *id)
--{
--	acpi_create_platform_device(adev);
--	return 1;
--}
--
--static struct acpi_scan_handler platform_handler = {
--	.ids = acpi_platform_device_ids,
--	.attach = acpi_platform_attach,
--};
--
--void __init acpi_platform_init(void)
--{
--	acpi_scan_add_handler(&platform_handler);
--}
-Index: linux-pm/drivers/acpi/scan.c
-===================================================================
---- linux-pm.orig/drivers/acpi/scan.c
-+++ linux-pm/drivers/acpi/scan.c
-@@ -2070,6 +2070,44 @@ static acpi_status acpi_bus_check_add(ac
- 	return AE_OK;
- }
- 
-+static int acpi_check_spi_i2c_slave(struct acpi_resource *ares, void *data)
-+{
-+	bool *is_spi_i2c_slave_p = data;
-+
-+	if (ares->type != ACPI_RESOURCE_TYPE_SERIAL_BUS)
-+		return 1;
-+
-+	/*
-+	 * devices that are connected to UART still need to be enumerated to
-+	 * platform bus
-+	 */
-+	if (ares->data.common_serial_bus.type != ACPI_RESOURCE_SERIAL_TYPE_UART)
-+		*is_spi_i2c_slave_p = true;
-+
-+	 /* no need to do more checking */
-+	return -1;
-+}
-+
-+static void acpi_default_enumeration(struct acpi_device *device)
-+{
-+	struct list_head resource_list;
-+	bool is_spi_i2c_slave = false;
-+
-+	if (!device->pnp.type.platform_id || device->handler)
-+		return;
-+
-+	/*
-+	 * Do not enemerate SPI/I2C slaves as they will be enuerated by their
-+	 * respective parents.
-+	 */
-+	INIT_LIST_HEAD(&resource_list);
-+	acpi_dev_get_resources(device, &resource_list, acpi_check_spi_i2c_slave,
-+			       &is_spi_i2c_slave);
-+	acpi_dev_free_resource_list(&resource_list);
-+	if (!is_spi_i2c_slave)
-+		acpi_create_platform_device(device);
-+}
-+
- static int acpi_scan_attach_handler(struct acpi_device *device)
- {
- 	struct acpi_hardware_id *hwid;
-@@ -2095,6 +2133,9 @@ static int acpi_scan_attach_handler(stru
- 				break;
- 		}
- 	}
-+	if (!ret)
-+		acpi_default_enumeration(device);
-+
- 	return ret;
- }
- 
-@@ -2254,7 +2295,6 @@ int __init acpi_scan_init(void)
- 	acpi_pci_root_init();
- 	acpi_pci_link_init();
- 	acpi_processor_init();
--	acpi_platform_init();
- 	acpi_lpss_init();
- 	acpi_cmos_rtc_init();
- 	acpi_container_init();
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
+iQIcBAEBAgAGBQJTiHb/AAoJEN0jrNd/PrOhxwUQAKU3rpMrEeBP+ntJRmwatmSL
+RpJSxIq6zQ2J+8cWjM/C5wHPaUpviKLUFGGFQQr4iBXkWdLczKN7ODEwzSN5bCWh
+e64Y8RR7XhBcL3SD7how5o1ysNvP10y3OON66/8TmnodbtM9bix+j+Zt3jM2kdgn
+8jnKmxMeX0yO3rU+yB+raE9rAAARUFJrdZRSFz1mo++8CcqN2QFRsZZ2TWDUf8PZ
+p66drcV0YDbUYYUB1q1DJxqfLbxe44tDYlZoYnb1qY/JHPVuPk9Q1HQQtA8IpeUA
+E4cL+N0oRlC6UF2TVblF9oJXPIEEQL8v8tt12Sw4VoaTGdUXzg62yTkAFToC4/k2
+3ew6cxInQPv67TlBp+clZMFvFkBF/WG5aEWfKnSLUygA8LmgX8LW6ZusLW9GQk/V
+lMzqkph/a5OJL9NsIdUyBoRRWdvDA/sn+I1FhkuUWESmDB1vT/M+xP9jbdndiSek
+HdfX0Vi8xcgSCctoP/EDVe/dx59MxC0Y5YH8VZVrZSnI4DXgln1+FXwUE3X2qezD
+Ey1MC4uFrDLkgnHgbcP6pWGbWMDtXrNZCHqt+UPLDx8PKWgZaydpteyfkFesqQPG
+j7Se66v1phC0TTatGgLITM6CFmFfaDHQtfbVeTlLHRekdq5Z3n5fKcJIv+y8p08/
+WL6VnyLgFYWok155uUQx
+=I8Y+
+-----END PGP SIGNATURE-----
+
+--h31gzZEtNLTqOjlF--
