@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754812AbaE3MQ7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 08:16:59 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:53394 "HELO
+	id S1755051AbaE3MS1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 08:18:27 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:59825 "HELO
 	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752579AbaE3MQ5 (ORCPT
+	with SMTP id S1751140AbaE3MS0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 08:16:57 -0400
+	Fri, 30 May 2014 08:18:26 -0400
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
 To: Zhang Rui <rui.zhang@intel.com>
 Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
         matthew.garrett@nebula.com, mika.westerberg@linux.intel.com
-Subject: [Update][PATCH 9/10] ACPI / scan: always register ACPI LPSS scan handler
-Date: Fri, 30 May 2014 14:34:05 +0200
-Message-ID: <3179821.jDG3aYfPjD@vostro.rjw.lan>
+Subject: [Update][PATCH 10/10] ACPI / scan: use platform bus type by default for _HID enumeration
+Date: Fri, 30 May 2014 14:35:34 +0200
+Message-ID: <7971916.hcjclMBqJX@vostro.rjw.lan>
 User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <8202338.Lrn5CAprz1@vostro.rjw.lan>
-References: <1400781753-2682-1-git-send-email-rui.zhang@intel.com> <35042328.kk6ZUUdfyN@vostro.rjw.lan> <8202338.Lrn5CAprz1@vostro.rjw.lan>
+In-Reply-To: <6979141.yBBhMfGMhk@vostro.rjw.lan>
+References: <1400781753-2682-1-git-send-email-rui.zhang@intel.com> <35042328.kk6ZUUdfyN@vostro.rjw.lan> <6979141.yBBhMfGMhk@vostro.rjw.lan>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -24,159 +24,158 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+From: Zhang Rui <rui.zhang@intel.com>
 
-Prevent platform devices from being created for ACPI LPSS devices
-if CONFIG_X86_INTEL_LPSS is unset by compiling out the LPSS scan
-handler's callbacks only in that case and still compiling its device
-ID list in and registering the scan handler in either case.
+Because of the growing demand for enumerating ACPI devices to
+platform bus, change the code to enumerate ACPI device objects to
+platform bus by default.  Namely, create platform devices for the
+ACPI device objects that
+ 1. Have pnp.type.platform_id set (device objects with _HID currently).
+ 2. Do not have a scan handler attached.
+ 3. Are not SPI/I2C slave devices (that should be enumerated to the
+    appropriate buses bus by their parent).
 
-This change is based on a prototype from Zhang Rui.
-
+Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+[rjw: Subject and changelog, rebase and code cleanup]
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-
 ---
 
-The LPSS_PTR macro has been renamed to LPSS_ADDR (because it returns a number,
-not a pointer) and the "trivial" version is now (OUL).
+Changelog rework and minor cleanups.
 
 Thanks!
 
 ---
-drivers/acpi/Makefile    |  2 +-
- drivers/acpi/Makefile    |    2 -
- drivers/acpi/acpi_lpss.c |   65 ++++++++++++++++++++++++++++++++---------------
- drivers/acpi/internal.h  |    4 --
- 3 files changed, 46 insertions(+), 25 deletions(-)
+ drivers/acpi/acpi_platform.c |   40 ++++++++--------------------------------
+ drivers/acpi/scan.c          |   42 +++++++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 49 insertions(+), 33 deletions(-)
 
-Index: linux-pm/drivers/acpi/Makefile
+Index: linux-pm/drivers/acpi/acpi_platform.c
 ===================================================================
---- linux-pm.orig/drivers/acpi/Makefile
-+++ linux-pm/drivers/acpi/Makefile
-@@ -39,7 +39,7 @@ acpi-y				+= processor_core.o
- acpi-y				+= ec.o
- acpi-$(CONFIG_ACPI_DOCK)	+= dock.o
- acpi-y				+= pci_root.o pci_link.o pci_irq.o
--acpi-$(CONFIG_X86_INTEL_LPSS)	+= acpi_lpss.o
-+acpi-y				+= acpi_lpss.o
- acpi-y				+= acpi_platform.o
- acpi-y				+= acpi_pnp.o
- acpi-y				+= power.o
-Index: linux-pm/drivers/acpi/acpi_lpss.c
-===================================================================
---- linux-pm.orig/drivers/acpi/acpi_lpss.c
-+++ linux-pm/drivers/acpi/acpi_lpss.c
-@@ -25,6 +25,10 @@
+--- linux-pm.orig/drivers/acpi/acpi_platform.c
++++ linux-pm/drivers/acpi/acpi_platform.c
+@@ -22,21 +22,11 @@
  
- ACPI_MODULE_NAME("acpi_lpss");
+ ACPI_MODULE_NAME("platform");
  
-+#ifdef CONFIG_X86_INTEL_LPSS
-+
-+#define LPSS_ADDR(desc) ((unsigned long)&desc)
-+
- #define LPSS_CLK_SIZE	0x04
- #define LPSS_LTR_SIZE	0x18
- 
-@@ -168,40 +172,48 @@ static struct lpss_device_desc byt_i2c_d
- 	.shared_clock = &i2c_clock,
+-/*
+- * The following ACPI IDs are known to be suitable for representing as
+- * platform devices.
+- */
+-static const struct acpi_device_id acpi_platform_device_ids[] = {
+-
+-	{ "PNP0D40" },
+-	{ "VPC2004" },
+-	{ "BCM4752" },
+-
+-	/* Intel Smart Sound Technology */
+-	{ "INT33C8" },
+-	{ "80860F28" },
+-
+-	{ }
++static const struct acpi_device_id forbidden_id_list[] = {
++	{"PNP0000", 0},	/* PIC */
++	{"PNP0100", 0},	/* Timer */
++	{"PNP0200", 0},	/* AT DMA Controller */
++	{"", 0},
  };
  
-+#else
+ /**
+@@ -63,6 +53,9 @@ struct platform_device *acpi_create_plat
+ 	if (adev->physical_node_count)
+ 		return NULL;
+ 
++	if (!acpi_match_device_ids(adev, forbidden_id_list))
++		return ERR_PTR(-EINVAL);
 +
-+#define LPSS_ADDR(desc) (0UL)
-+
-+#endif /* CONFIG_X86_INTEL_LPSS */
-+
- static const struct acpi_device_id acpi_lpss_device_ids[] = {
- 	/* Generic LPSS devices */
--	{ "INTL9C60", (unsigned long)&lpss_dma_desc },
-+	{ "INTL9C60", LPSS_ADDR(lpss_dma_desc) },
- 
- 	/* Lynxpoint LPSS devices */
--	{ "INT33C0", (unsigned long)&lpt_dev_desc },
--	{ "INT33C1", (unsigned long)&lpt_dev_desc },
--	{ "INT33C2", (unsigned long)&lpt_dev_desc },
--	{ "INT33C3", (unsigned long)&lpt_dev_desc },
--	{ "INT33C4", (unsigned long)&lpt_uart_dev_desc },
--	{ "INT33C5", (unsigned long)&lpt_uart_dev_desc },
--	{ "INT33C6", (unsigned long)&lpt_sdio_dev_desc },
-+	{ "INT33C0", LPSS_ADDR(lpt_dev_desc) },
-+	{ "INT33C1", LPSS_ADDR(lpt_dev_desc) },
-+	{ "INT33C2", LPSS_ADDR(lpt_dev_desc) },
-+	{ "INT33C3", LPSS_ADDR(lpt_dev_desc) },
-+	{ "INT33C4", LPSS_ADDR(lpt_uart_dev_desc) },
-+	{ "INT33C5", LPSS_ADDR(lpt_uart_dev_desc) },
-+	{ "INT33C6", LPSS_ADDR(lpt_sdio_dev_desc) },
- 	{ "INT33C7", },
- 
- 	/* BayTrail LPSS devices */
--	{ "80860F09", (unsigned long)&byt_pwm_dev_desc },
--	{ "80860F0A", (unsigned long)&byt_uart_dev_desc },
--	{ "80860F0E", (unsigned long)&byt_spi_dev_desc },
--	{ "80860F14", (unsigned long)&byt_sdio_dev_desc },
--	{ "80860F41", (unsigned long)&byt_i2c_dev_desc },
-+	{ "80860F09", LPSS_ADDR(byt_pwm_dev_desc) },
-+	{ "80860F0A", LPSS_ADDR(byt_uart_dev_desc) },
-+	{ "80860F0E", LPSS_ADDR(byt_spi_dev_desc) },
-+	{ "80860F14", LPSS_ADDR(byt_sdio_dev_desc) },
-+	{ "80860F41", LPSS_ADDR(byt_i2c_dev_desc) },
- 	{ "INT33B2", },
- 
--	{ "INT3430", (unsigned long)&lpt_dev_desc },
--	{ "INT3431", (unsigned long)&lpt_dev_desc },
--	{ "INT3432", (unsigned long)&lpt_dev_desc },
--	{ "INT3433", (unsigned long)&lpt_dev_desc },
--	{ "INT3434", (unsigned long)&lpt_uart_dev_desc },
--	{ "INT3435", (unsigned long)&lpt_uart_dev_desc },
--	{ "INT3436", (unsigned long)&lpt_sdio_dev_desc },
-+	{ "INT3430", LPSS_ADDR(lpt_dev_desc) },
-+	{ "INT3431", LPSS_ADDR(lpt_dev_desc) },
-+	{ "INT3432", LPSS_ADDR(lpt_dev_desc) },
-+	{ "INT3433", LPSS_ADDR(lpt_dev_desc) },
-+	{ "INT3434", LPSS_ADDR(lpt_uart_dev_desc) },
-+	{ "INT3435", LPSS_ADDR(lpt_uart_dev_desc) },
-+	{ "INT3436", LPSS_ADDR(lpt_sdio_dev_desc) },
- 	{ "INT3437", },
- 
- 	{ }
- };
- 
-+#ifdef CONFIG_X86_INTEL_LPSS
-+
- static int is_memory(struct acpi_resource *res, void *not_used)
- {
- 	struct resource r;
-@@ -666,3 +678,16 @@ void __init acpi_lpss_init(void)
- 		acpi_scan_add_handler(&lpss_handler);
- 	}
+ 	INIT_LIST_HEAD(&resource_list);
+ 	count = acpi_dev_get_resources(adev, &resource_list, NULL, NULL);
+ 	if (count < 0) {
+@@ -120,20 +113,3 @@ struct platform_device *acpi_create_plat
+ 	kfree(resources);
+ 	return pdev;
  }
-+
-+#else
-+
-+static struct acpi_scan_handler lpss_handler = {
-+	.ids = acpi_lpss_device_ids,
-+};
-+
-+void __init acpi_lpss_init(void)
+-
+-static int acpi_platform_attach(struct acpi_device *adev,
+-				const struct acpi_device_id *id)
+-{
+-	acpi_create_platform_device(adev);
+-	return 1;
+-}
+-
+-static struct acpi_scan_handler platform_handler = {
+-	.ids = acpi_platform_device_ids,
+-	.attach = acpi_platform_attach,
+-};
+-
+-void __init acpi_platform_init(void)
+-{
+-	acpi_scan_add_handler(&platform_handler);
+-}
+Index: linux-pm/drivers/acpi/scan.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/scan.c
++++ linux-pm/drivers/acpi/scan.c
+@@ -2070,6 +2070,44 @@ static acpi_status acpi_bus_check_add(ac
+ 	return AE_OK;
+ }
+ 
++static int acpi_check_spi_i2c_slave(struct acpi_resource *ares, void *data)
 +{
-+	acpi_scan_add_handler(&lpss_handler);
++	bool *is_spi_i2c_slave_p = data;
++
++	if (ares->type != ACPI_RESOURCE_TYPE_SERIAL_BUS)
++		return 1;
++
++	/*
++	 * devices that are connected to UART still need to be enumerated to
++	 * platform bus
++	 */
++	if (ares->data.common_serial_bus.type != ACPI_RESOURCE_SERIAL_TYPE_UART)
++		*is_spi_i2c_slave_p = true;
++
++	 /* no need to do more checking */
++	return -1;
 +}
 +
-+#endif /* CONFIG_X86_INTEL_LPSS */
-Index: linux-pm/drivers/acpi/internal.h
-===================================================================
---- linux-pm.orig/drivers/acpi/internal.h
-+++ linux-pm/drivers/acpi/internal.h
-@@ -65,11 +65,7 @@ int acpi_debugfs_init(void);
- #else
- static inline void acpi_debugfs_init(void) { return; }
- #endif
--#ifdef CONFIG_X86_INTEL_LPSS
- void acpi_lpss_init(void);
--#else
--static inline void acpi_lpss_init(void) {}
--#endif
++static void acpi_default_enumeration(struct acpi_device *device)
++{
++	struct list_head resource_list;
++	bool is_spi_i2c_slave = false;
++
++	if (!device->pnp.type.platform_id || device->handler)
++		return;
++
++	/*
++	 * Do not enemerate SPI/I2C slaves as they will be enuerated by their
++	 * respective parents.
++	 */
++	INIT_LIST_HEAD(&resource_list);
++	acpi_dev_get_resources(device, &resource_list, acpi_check_spi_i2c_slave,
++			       &is_spi_i2c_slave);
++	acpi_dev_free_resource_list(&resource_list);
++	if (!is_spi_i2c_slave)
++		acpi_create_platform_device(device);
++}
++
+ static int acpi_scan_attach_handler(struct acpi_device *device)
+ {
+ 	struct acpi_hardware_id *hwid;
+@@ -2095,6 +2133,9 @@ static int acpi_scan_attach_handler(stru
+ 				break;
+ 		}
+ 	}
++	if (!ret)
++		acpi_default_enumeration(device);
++
+ 	return ret;
+ }
  
- acpi_status acpi_hotplug_schedule(struct acpi_device *adev, u32 src);
- bool acpi_queue_hotplug_work(struct work_struct *work);
+@@ -2254,7 +2295,6 @@ int __init acpi_scan_init(void)
+ 	acpi_pci_root_init();
+ 	acpi_pci_link_init();
+ 	acpi_processor_init();
+-	acpi_platform_init();
+ 	acpi_lpss_init();
+ 	acpi_cmos_rtc_init();
+ 	acpi_container_init();
 
