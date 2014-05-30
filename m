@@ -1,72 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755506AbaE3Qho (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 12:37:44 -0400
-Received: from p3plex2out02.prod.phx3.secureserver.net ([184.168.131.14]:52617
-	"EHLO p3plex2out02.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754547AbaE3Qhn convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 12:37:43 -0400
-From: Hartley Sweeten <HartleyS@visionengravers.com>
-To: Chase Southwood <chase.southwood@gmail.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-CC: "abbotti@mev.co.uk" <abbotti@mev.co.uk>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 1/6] staging: comedi: addi_apci_1564: remove send_sig()
- use
-Thread-Topic: [PATCH 1/6] staging: comedi: addi_apci_1564: remove send_sig()
- use
-Thread-Index: AQHPe8GHCwIkVDLH30WQavPmVUyFaZtZT/sw
-Date: Fri, 30 May 2014 16:37:41 +0000
-Message-ID: <DC148C5AA1CEBA4E87973D432B1C2D8825E83D2B@P3PWEX4MB008.ex4.secureserver.net>
-References: <1401424853-21683-1-git-send-email-chase.southwood@gmail.com>
- <1401424913-21859-1-git-send-email-chase.southwood@gmail.com>
-In-Reply-To: <1401424913-21859-1-git-send-email-chase.southwood@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [184.183.19.121]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S933469AbaE3QiX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 12:38:23 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:59646 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754547AbaE3QiW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 May 2014 12:38:22 -0400
+Date: Fri, 30 May 2014 11:38:13 -0500 (CDT)
+From: Kumar Gala <galak@codeaurora.org>
+X-X-Sender: galak@galak-ubuntu.qualcomm.com
+To: arm@kernel.org
+cc: Kevin Hilman <khilman@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, Olof Johansson <olof@lixom.net>,
+        David Brown <davidb@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Georgi Djakov <gdjakov@mm-sol.com>
+Subject: [GIT PULL] qcom DT changes for v3.16-2
+Message-ID: <alpine.DEB.2.00.1405301137040.5291@galak-ubuntu.qualcomm.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, May 29, 2014 9:42 PM, Chase Southwood wrote:
-> The addi-data drivers use send_sig() to let the user know when an
-> interrupt has occurred. The "standard" way to do this in the comedi
-> subsystem is to have a subdevice that supports asynchronous commands
-> and use comedi_event() to signal the user.
->
-> Remove the send_sig() usage in this driver.
->
-> Signed-off-by: Chase Southwood <chase.southwood@gmail.com>
-> Cc: Ian Abbott <abbotti@mev.co.uk>
-> Cc: H Hartley Sweeten <hsweeten@visionengravers.com>
-> ---
->  .../comedi/drivers/addi-data/hwdrv_apci1564.c      | 23 ----------------------
->  1 file changed, 23 deletions(-)
+The following changes since commit 08f9234ad6b0b8bc51046346eabf5b92e631e62a:
 
-Chase,
+   soc: qcom: Add device tree binding for GSBI (2014-05-23 11:38:53 -0500)
 
-Normally this patch might be a problem.
+are available in the git repository at:
 
-With this patch you remove the mechanism that the driver uses to signal the
-user that an event has occurred without providing a new mechanism. In theory
-this "breaks" the driver.
+   git://git.kernel.org/pub/scm/linux/kernel/git/galak/linux-qcom.git tags/qcom-dt-for-3.16-2
 
-In reality, the driver is already "broke" since the interrupts are currently enabled
-using the digital input subdevice (*insn_config) callback and that callback does not
-follow the comedi API. Currently the apci1564_di_config() function is using the
-data[0] value as a flag to enable/disable the interrupt instead of using it as the
-comedi configuration instruction. It is expecting data[0] to be 1 or 0, when it is 1
-it expects the data to include 3 additional parameters but the core will sanity check
-the instruction length and return -EINVAL if insn->n != 1. You fix this in patch 5/6.
+for you to fetch changes up to f46d23f6f3676720de2a3f195413a5e69f202238:
 
-Because the driver is already "broke" I guess this patch is ok.
+   ARM: dts: qcom: Add APQ8084-MTP board support (2014-05-29 11:16:45 -0500)
 
-Reviewed-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+----------------------------------------------------------------
+Qualcomm ARM Based Device Tree Updates for v3.16-2
 
+* Updated MSM8660/MSM8960/MSM8974 dts for various updates or conformitity
+   to binding specs
+* Added APQ8064 SoC and IFC6410 board device tree support
+* Added APQ8084 SoC and APQ8084-MTP board device tree support
+
+----------------------------------------------------------------
+Georgi Djakov (2):
+       ARM: dts: qcom: Add APQ8084 SoC support
+       ARM: dts: qcom: Add APQ8084-MTP board support
+
+Kumar Gala (4):
+       ARM: dts: qcom: Update msm8974/apq8074 device trees
+       ARM: dts: qcom: Update msm8960 device trees
+       ARM: dts: qcom: Update msm8660 device trees
+       ARM: dts: qcom: Add initial APQ8064 SoC and IFC6410 board device trees
+
+  arch/arm/boot/dts/Makefile                     |   9 +-
+  arch/arm/boot/dts/qcom-apq8064-ifc6410.dts     |  16 +++
+  arch/arm/boot/dts/qcom-apq8064-v2.0.dtsi       |   1 +
+  arch/arm/boot/dts/qcom-apq8064.dtsi            | 170 +++++++++++++++++++++++
+  arch/arm/boot/dts/qcom-apq8074-dragonboard.dts |  28 +++-
+  arch/arm/boot/dts/qcom-apq8084-mtp.dts         |   6 +
+  arch/arm/boot/dts/qcom-apq8084.dtsi            | 179 +++++++++++++++++++++++++
+  arch/arm/boot/dts/qcom-msm8660-surf.dts        |  10 ++
+  arch/arm/boot/dts/qcom-msm8660.dtsi            | 115 +++++++++-------
+  arch/arm/boot/dts/qcom-msm8960-cdp.dts         |  10 ++
+  arch/arm/boot/dts/qcom-msm8960.dtsi            | 176 +++++++++++++-----------
+  arch/arm/boot/dts/qcom-msm8974.dtsi            |  49 +++----
+  arch/arm/mach-qcom/board.c                     |   4 +-
+  13 files changed, 612 insertions(+), 161 deletions(-)
+  create mode 100644 arch/arm/boot/dts/qcom-apq8064-ifc6410.dts
+  create mode 100644 arch/arm/boot/dts/qcom-apq8064-v2.0.dtsi
+  create mode 100644 arch/arm/boot/dts/qcom-apq8064.dtsi
+  create mode 100644 arch/arm/boot/dts/qcom-apq8084-mtp.dts
+  create mode 100644 arch/arm/boot/dts/qcom-apq8084.dtsi
+
+--
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
