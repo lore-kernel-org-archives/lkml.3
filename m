@@ -1,147 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933880AbaE3QVC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 12:21:02 -0400
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:34893 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933692AbaE3QU7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 12:20:59 -0400
-Message-ID: <5388AFE3.4@linaro.org>
-Date: Fri, 30 May 2014 17:20:51 +0100
-From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S933957AbaE3QVX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 12:21:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52727 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933202AbaE3QVW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 May 2014 12:21:22 -0400
+Date: Fri, 30 May 2014 12:20:42 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: jolsa@redhat.com, Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, namhyung@gmail.com,
+        eranian@google.com, Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH 6/7 V2] perf: Add support to dynamically get cacheline
+ size
+Message-ID: <20140530162042.GI191965@redhat.com>
+References: <1401208087-181977-7-git-send-email-dzickus@redhat.com>
+ <1401461425-209679-1-git-send-email-dzickus@redhat.com>
+ <20140530152830.GB1202@kernel.org>
 MIME-Version: 1.0
-To: Ulf Hansson <ulf.hansson@linaro.org>
-CC: Russell King <linux@arm.linux.org.uk>,
-        linux-mmc <linux-mmc@vger.kernel.org>, Chris Ball <chris@printf.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH v4 13/13] mmc: mmci: Add Qcom specific pio_read function.
-References: <1401284608-16428-1-git-send-email-srinivas.kandagatla@linaro.org>	<1401284886-16978-1-git-send-email-srinivas.kandagatla@linaro.org> <CAPDyKFpto10x7ZFbozkmnPhmTH3dkENEJetD_c08bgzytKa_xw@mail.gmail.com> <53886F25.8060509@linaro.org>
-In-Reply-To: <53886F25.8060509@linaro.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140530152830.GB1202@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ulf,
+On Fri, May 30, 2014 at 12:28:30PM -0300, Arnaldo Carvalho de Melo wrote:
+> Em Fri, May 30, 2014 at 10:50:25AM -0400, Don Zickus escreveu:
+> > Different arches may have different cacheline sizes.  Look it up and set
+> > a global variable for reference.
+> 
+> [acme@zoo linux]$ strings `which getconf` | grep LINESIZE
+> LEVEL1_ICACHE_LINESIZE
+> LEVEL1_DCACHE_LINESIZE
+> LEVEL2_CACHE_LINESIZE
+> LEVEL3_CACHE_LINESIZE
+> LEVEL4_CACHE_LINESIZE
+> [acme@zoo linux]$
+> 
+> man sysconf
+> 
+> That is what I use in pahole, for instance:
+> 
+> [acme@zoo pahole]$ grep sysconf *.c
+> dwarves_fprintf.c:		long sys_cacheline_size =
+> sysconf(_SC_LEVEL1_DCACHE_LINESIZE);
+> [acme@zoo pahole]$
 
-Managed to reuse the existing mmci_pio_read function with some minor 
-modifications, Issue was with reading full fifo sizes which was creating 
-the issue.
+Well that does look easier.  I'll hack that up to see if it gives me the
+same answer.
 
-On 30/05/14 12:44, Srinivas Kandagatla wrote:
-> That sounds sensible.. I will try it.
->>
->>> +                       *ptr = readl(host->base + MMCIFIFO + (count %
->>> fsize));
->>
->> This looks strange. :-) Depending on the count you will read an offset
->> into the FIFO? Seems like a very awkward implementation of a FIFO in
->> the HW. :-)
->>
-> I got into weird issues when I tried using the mmci_pio_read, the fifo
-> implementation seems to be different. I dont have full details on the
-> fifo behaviour.
->
-> Most of this logic is inherited from 3.4 qcom andriod kernel.
->
->> BTW, what does "MCI_RXDATAAVLBL" actually mean for the Qcom variant?
->
-> It means, At least 1 word in the RX FIFO. SW can read 1 word only from
-> the FIFO.
->
->> How much data could you expect in the FIFO when this status is
->> triggered?
->
->> Are there no option of reading a number of words, depending on what
->> type FIFO IRQ that was raised?
-> There are RXFIFO_HALF_FULL and RXFIFO_FULL bits in status register, but
-> I never tried to use them. Might be worth a try before I send next
-> version patches.
->
---- a/drivers/mmc/host/mmci.c
-+++ b/drivers/mmc/host/mmci.c
-@@ -73,6 +73,7 @@ static unsigned int fmax = 515633;
-   * @busy_detect: true if busy detection on dat0 is supported
-   * @pwrreg_nopower: bits in MMCIPOWER don't controls ext. power supply
-   * @explicit_mclk_control: enable explicit mclk control in driver.
-+ * @qcom_fifo: enables qcom specific fifo pio read logic.
-   */
-  struct variant_data {
-         unsigned int            clkreg;
-@@ -95,6 +96,7 @@ struct variant_data {
-         bool                    busy_detect;
-         bool                    pwrreg_nopower;
-         bool                    explicit_mclk_control;
-+       bool                    qcom_fifo;
-  };
+Thanks!
 
-  static struct variant_data variant_arm = {
-@@ -990,15 +992,33 @@ mmci_cmd_irq(struct mmci_host *host, struct 
-mmc_command *cmd,
-         }
-  }
+Cheers,
+Don
 
-+static int mmci_get_rx_fifocnt(struct mmci_host *host, u32 status, int 
-remain)
-+{
-+       return remain - (readl(host->base + MMCIFIFOCNT) << 2);
-+}
-+
-+static int mmci_qcom_get_rx_fifocnt(struct mmci_host *host, u32 status, 
-int r)
-+{
-+       /*
-+        * on qcom SDCC4 only 8 words are used in each burst so only 8 
-addresses
-+        * from the fifo range should be used
-+        */
-+       if (status & MCI_RXFIFOHALFFULL)
-+               return host->variant->fifohalfsize;
-+       else
-+               return 4;
-+}
-+
-  static int mmci_pio_read(struct mmci_host *host, char *buffer, 
-unsigned int remain)
-  {
-         void __iomem *base = host->base;
-         char *ptr = buffer;
--       u32 status;
-+       int hf = host->variant->fifohalfsize;
-         int host_remain = host->size;
-+       u32 status = readl(host->base + MMCISTATUS);
-
-         do {
--               int count = host_remain - (readl(base + MMCIFIFOCNT) << 2);
-+               int count = host->get_rx_fifocnt(host, status, host_remain);
-
-                 if (count > remain)
-                         count = remain;
-@@ -1488,6 +1508,11 @@ static int mmci_probe(struct amba_device *dev,
-         if (ret)
-                 goto host_free;
-
-+       if (variant->qcom_fifo)
-+               host->get_rx_fifocnt = mmci_qcom_get_rx_fifocnt;
-+       else
-+               host->get_rx_fifocnt = mmci_get_rx_fifocnt;
-+
-         host->plat = plat;
-         host->variant = variant;
-         host->mclk = clk_get_rate(host->clk);
-diff --git a/drivers/mmc/host/mmci.h b/drivers/mmc/host/mmci.h
-index b5f0810..5f76670 100644
---- a/drivers/mmc/host/mmci.h
-+++ b/drivers/mmc/host/mmci.h
-@@ -229,6 +229,7 @@ struct mmci_host {
-         /* pio stuff */
-         struct sg_mapping_iter  sg_miter;
-         unsigned int            size;
-+       int (*get_rx_fifocnt)(struct mmci_host *h, u32 status, int remain);
-
-  #ifdef CONFIG_DMA_ENGINE
+> 
+> - Arnaldo
+>  
+> > Signed-off-by: Don Zickus <dzickus@redhat.com>
+> > 
+> > ---
+> > V3: remove unneeded cpumap.h (Namhyung Kim)
+> > V2: change to be global and setup in perf.c
+> >     use filename__read_int for setup
+> > ---
+> >  tools/perf/perf.c        |  5 +++++
+> >  tools/perf/util/cpumap.c | 27 +++++++++++++++++++++++++++
+> >  tools/perf/util/cpumap.h |  3 +++
+> >  tools/perf/util/util.c   |  1 +
+> >  tools/perf/util/util.h   |  1 +
+> >  5 files changed, 37 insertions(+)
+> > 
+> > diff --git a/tools/perf/perf.c b/tools/perf/perf.c
+> > index 431798a..dabf08b 100644
+> > --- a/tools/perf/perf.c
+> > +++ b/tools/perf/perf.c
+> > @@ -13,6 +13,7 @@
+> >  #include "util/quote.h"
+> >  #include "util/run-command.h"
+> >  #include "util/parse-events.h"
+> > +#include "util/cpumap.h"
+> >  #include <api/fs/debugfs.h>
+> >  #include <pthread.h>
+> >  
+> > @@ -459,6 +460,10 @@ int main(int argc, const char **argv)
+> >  	/* The page_size is placed in util object. */
+> >  	page_size = sysconf(_SC_PAGE_SIZE);
+> >  
+> > +	/* The cacheline_size is placed in util objet */
+> > +	if (cpu__setup_cacheline_size() < 0) 
+> > +		goto out;
+> > +
+> >  	cmd = perf_extract_argv0_path(argv[0]);
+> >  	if (!cmd)
+> >  		cmd = "perf-help";
+> > diff --git a/tools/perf/util/cpumap.c b/tools/perf/util/cpumap.c
+> > index c4e55b7..1029982 100644
+> > --- a/tools/perf/util/cpumap.c
+> > +++ b/tools/perf/util/cpumap.c
+> > @@ -477,3 +477,30 @@ int cpu__setup_cpunode_map(void)
+> >  	closedir(dir1);
+> >  	return 0;
+> >  }
+> > +
+> > +int cpu__setup_cacheline_size(void)
+> > +{
+> > +	const char *mnt;
+> > +	char path[PATH_MAX];
+> > +	int n, size;
+> > +	
+> > +
+> > +	mnt = sysfs__mountpoint();
+> > +	if (!mnt)
+> > +		return -1;
+> > +
+> > +	n = snprintf(path, PATH_MAX, "%s/devices/system/cpu/cpu0/cache/index0/coherency_line_size", mnt);
+> > +	if (n == PATH_MAX) {
+> > +		pr_err("sysfs path crossed PATH_MAX(%d) size\n", PATH_MAX);
+> > +		return -1;
+> > +	}
+> > +
+> > +	if (filename__read_int(path, &size)) {
+> > +		pr_err("Can not read cacheline size\n");
+> > +		return -1;
+> > +	}
+> > +
+> > +	cacheline_size = size;
+> > +
+> > +	return 0;
+> > +}
+> > diff --git a/tools/perf/util/cpumap.h b/tools/perf/util/cpumap.h
+> > index 61a6548..507d7fd 100644
+> > --- a/tools/perf/util/cpumap.h
+> > +++ b/tools/perf/util/cpumap.h
+> > @@ -5,6 +5,7 @@
+> >  #include <stdbool.h>
+> >  
+> >  #include "perf.h"
+> > +#include "util/util.h"
+> >  #include "util/debug.h"
+> >  
+> >  struct cpu_map {
+> > @@ -81,4 +82,6 @@ static inline int cpu__get_node(int cpu)
+> >  	return cpunode_map[cpu];
+> >  }
+> >  
+> > +int cpu__setup_cacheline_size(void);
+> > +
+> >  #endif /* __PERF_CPUMAP_H */
+> > diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
+> > index 7fff6be..95aefa7 100644
+> > --- a/tools/perf/util/util.c
+> > +++ b/tools/perf/util/util.c
+> > @@ -17,6 +17,7 @@
+> >   * XXX We need to find a better place for these things...
+> >   */
+> >  unsigned int page_size;
+> > +int cacheline_size;
+> >  
+> >  bool test_attr__enabled;
+> >  
+> > diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
+> > index b03da44..6686436 100644
+> > --- a/tools/perf/util/util.h
+> > +++ b/tools/perf/util/util.h
+> > @@ -304,6 +304,7 @@ char *rtrim(char *s);
+> >  void dump_stack(void);
+> >  
+> >  extern unsigned int page_size;
+> > +extern int cacheline_size;
+> >  
+> >  void get_term_dimensions(struct winsize *ws);
+> >  
+> > -- 
+> > 1.7.11.7
