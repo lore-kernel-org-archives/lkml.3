@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934829AbaE3W3J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 18:29:09 -0400
-Received: from mail-ig0-f171.google.com ([209.85.213.171]:42575 "EHLO
-	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756272AbaE3W3G (ORCPT
+	id S934857AbaE3W3b (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 18:29:31 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:62982 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934761AbaE3W3H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 18:29:06 -0400
+	Fri, 30 May 2014 18:29:07 -0400
 From: Alex Elder <elder@linaro.org>
 To: mporter@linaro.org, bcm@fixthebug.org, linux@arm.linux.org.uk,
         devicetree@vger.kernel.org, arnd@arndb.de, sboyd@codeaurora.org
@@ -17,9 +17,9 @@ Cc: bcm-kernel-feedback-list@broadcom.com,
         lorenzo.pieralisi@arm.com, mark.rutland@arm.com, pawel.moll@arm.com,
         rdunlap@infradead.org, rjui@broadcom.com, robh+dt@kernel.org,
         rvaswani@codeaurora.org
-Subject: [PATCH v4 RESEND 4/5] ARM: dts: enable SMP support for bcm28155
-Date: Fri, 30 May 2014 17:28:55 -0500
-Message-Id: <1401488936-21186-5-git-send-email-elder@linaro.org>
+Subject: [PATCH v4 RESEND 5/5] ARM: dts: enable SMP support for bcm21664
+Date: Fri, 30 May 2014 17:28:56 -0500
+Message-Id: <1401488936-21186-6-git-send-email-elder@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1401488936-21186-1-git-send-email-elder@linaro.org>
 References: <1401488936-21186-1-git-send-email-elder@linaro.org>
@@ -27,27 +27,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Define nodes representing the two Cortex A9 CPUs in a bcm28155 SoC.
+Define nodes representing the two Cortex A9 CPUs in a bcm21644 SoC.
 
-Signed-off-by: Ray Jui <rjui@broadcom.com>
 Signed-off-by: Alex Elder <elder@linaro.org>
 ---
- arch/arm/boot/dts/bcm11351.dtsi | 19 +++++++++++++++++++
+ arch/arm/boot/dts/bcm21664.dtsi | 19 +++++++++++++++++++
  1 file changed, 19 insertions(+)
 
-diff --git a/arch/arm/boot/dts/bcm11351.dtsi b/arch/arm/boot/dts/bcm11351.dtsi
-index 64d069b..61372a6 100644
---- a/arch/arm/boot/dts/bcm11351.dtsi
-+++ b/arch/arm/boot/dts/bcm11351.dtsi
-@@ -27,6 +27,25 @@
+diff --git a/arch/arm/boot/dts/bcm21664.dtsi b/arch/arm/boot/dts/bcm21664.dtsi
+index 08a44d4..a37ded1 100644
+--- a/arch/arm/boot/dts/bcm21664.dtsi
++++ b/arch/arm/boot/dts/bcm21664.dtsi
+@@ -25,6 +25,25 @@
  		bootargs = "console=ttyS0,115200n8";
  	};
  
-+	cpus {
++       cpus {
 +		#address-cells = <1>;
 +		#size-cells = <0>;
 +		enable-method = "brcm,bcm11351-cpu-method";
-+		secondary-boot-reg = <0x3500417c>;
++		secondary-boot-reg = <0x35004178>;
 +
 +		cpu0: cpu@0 {
 +			device_type = "cpu";
