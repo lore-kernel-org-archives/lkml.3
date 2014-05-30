@@ -1,46 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933809AbaE3PtX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 11:49:23 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:48782 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932189AbaE3Psy (ORCPT
+	id S933836AbaE3Ptd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 11:49:33 -0400
+Received: from eddie.linux-mips.org ([78.24.191.182]:42858 "EHLO
+	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932189AbaE3Pt2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 11:48:54 -0400
-From: Andy Lutomirski <luto@amacapital.net>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Cc: Josh Boyer <jwboyer@fedoraproject.org>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH v2 0/2] x86,vdso: vdso build fixes and improvements
-Date: Fri, 30 May 2014 08:48:47 -0700
-Message-Id: <cover.1401464755.git.luto@amacapital.net>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <CALCETrXef77JLoEp5hCXSdMAk7usWsL-sUG6NrcgLgrz3krfag@mail.gmail.com>
-References: <CALCETrXef77JLoEp5hCXSdMAk7usWsL-sUG6NrcgLgrz3krfag@mail.gmail.com>
+	Fri, 30 May 2014 11:49:28 -0400
+Date: Fri, 30 May 2014 17:48:59 +0200
+From: Ralf Baechle <ralf@linux-mips.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: abdoulaye berthe <berthe.ab@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>, m@bues.ch,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        patches@opensource.wolfsonmicro.com,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        linux-samsungsoc@vger.kernel.org, spear-devel@list.st.com,
+        platform-driver-x86@vger.kernel.org,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        driverdevel <devel@driverdev.osuosl.org>
+Subject: Re: [PATCH 2/2] gpio: gpiolib: set gpiochip_remove retval to void
+Message-ID: <20140530154859.GK17197@linux-mips.org>
+References: <20140530094025.3b78301e@canb.auug.org.au>
+ <1401449454-30895-1-git-send-email-berthe.ab@gmail.com>
+ <1401449454-30895-2-git-send-email-berthe.ab@gmail.com>
+ <CAMuHMdV6AtjD2aqO3buzj8Eo7A7xc_+ROYnxEi2sdjMaqFiAuA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMuHMdV6AtjD2aqO3buzj8Eo7A7xc_+ROYnxEi2sdjMaqFiAuA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Patch 1 causes make;make to behave similarly to make if vdso2c fails.
-Patch 2 hopefully fixes x86 crossbuilds on big-endian machines.  I don't
-have a big-endian machine to test on, though.
+On Fri, May 30, 2014 at 01:39:15PM +0200, Geert Uytterhoeven wrote:
 
-Changes from v1: Add two missing endian fixes
+> > +               if (test_bit(FLAG_REQUESTED, &chip->desc[id].flags))
+> > +                       panic("gpio: removing gpiochip with gpios still requested\n");
+> 
+> panic?
+> 
+> Is this likely to happen?
 
-Andy Lutomirski (2):
-  x86,vdso: When vdso2c fails, unlink the output
-  x86,vdso: Fix cross-compilation from big-endian architectures
+And while we're at it - panic() is going to add a \n itself so don't pass a
+string ending in \n to panic().
 
- arch/x86/vdso/vdso2c.c | 35 +++++++++++++++++-------
- arch/x86/vdso/vdso2c.h | 73 ++++++++++++++++++++++++++------------------------
- 2 files changed, 64 insertions(+), 44 deletions(-)
-
--- 
-1.9.3
-
+  Ralf
