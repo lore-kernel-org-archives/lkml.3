@@ -1,82 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755001AbaE3GAI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 02:00:08 -0400
-Received: from mga03.intel.com ([143.182.124.21]:56836 "EHLO mga03.intel.com"
+	id S1755014AbaE3GCp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 02:02:45 -0400
+Received: from ozlabs.org ([103.22.144.67]:36915 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754810AbaE3GAG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 02:00:06 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,939,1392192000"; 
-   d="scan'208";a="438879121"
-Message-ID: <53881E87.9070706@intel.com>
-Date: Fri, 30 May 2014 14:00:39 +0800
-From: Lan Tianyu <tianyu.lan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1751955AbaE3GCo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 May 2014 02:02:44 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Chinner <david@fromorbit.com>, Jens Axboe <axboe@kernel.dk>,
+        Minchan Kim <minchan@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm <linux-mm@kvack.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave.hansen@intel.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH 4/4] virtio_ring: unify direct/indirect code paths.
+In-Reply-To: <20140529112905.GD30210@redhat.com>
+References: <87oayh6s3s.fsf@rustcorp.com.au> <1401348405-18614-1-git-send-email-rusty@rustcorp.com.au> <1401348405-18614-5-git-send-email-rusty@rustcorp.com.au> <20140529112905.GD30210@redhat.com>
+User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
+Date: Fri, 30 May 2014 12:07:44 +0930
+Message-ID: <87d2ew6lfr.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-To: wsa@the-dreams.de, rjw@rjwysocki.net, mika.westerberg@linux.intel.com,
-        awilliam@redhat.com, lenb@kernel.org
-CC: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Subject: Re: [Patch V3 0/5] I2C ACPI operation region handler
-References: <1400590764-11108-1-git-send-email-tianyu.lan@intel.com>
-In-Reply-To: <1400590764-11108-1-git-send-email-tianyu.lan@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/20/2014 08:59 PM, Lan Tianyu wrote:
-> ACPI 5.0 spec(5.5.2.4.5) defines GenericSerialBus(i2c, spi, uart) operation
-> region. It allows ACPI aml code able to access such kind of devices to
-> implement some ACPI standard method.
+"Michael S. Tsirkin" <mst@redhat.com> writes:
+> On Thu, May 29, 2014 at 04:56:45PM +0930, Rusty Russell wrote:
+>> virtqueue_add() populates the virtqueue descriptor table from the sgs
+>> given.  If it uses an indirect descriptor table, then it puts a single
+>> descriptor in the descriptor table pointing to the kmalloc'ed indirect
+>> table where the sg is populated.
+>> +	for (i = 0; i < total_sg; i++)
+>> +		desc[i].next = i+1;
+>> +	return desc;
 >
-> On the Asus T100TA, Bios use GenericSerialBus operation region to access
-> i2c device to get battery info. So battery function depends on the I2C
-> operation region support. Here is the bug link.
-> https://bugzilla.kernel.org/show_bug.cgi?id=69011
->
+> Hmm we are doing an extra walk over descriptors here.
+> This might hurt performance esp for big descriptors.
 
-Hi Wolfram:
-	Since this version resolved all comments, it's ok for you?
+Yes, this needs to be benchmarked; since it's cache hot my gut feel is
+that it's a NOOP, but on modern machines my gut feel is always wrong.
 
-> Change since V2:
->          Drop patchs of adding I2C smbus quick read/write and word/block
-> process call functions because not find machines supporting such protocols
-> so far and can't test these functions.
->          Merge patchs of "I2C ACPI related code clear up" and "Add CONFIG_I2C_ACPI
-> config"
-> 	Patch 2: Add acpi_bus_detach_private_data() function to detach data from
-> ACPI handle and replace ACPI_ERROR() with acpi_handle_debug() to avoid some redundant
-> error log.
+>> +	if (vq->indirect && total_sg > 1 && vq->vq.num_free)
+>> +		desc = alloc_indirect(total_sg, gfp);
 >
-> Change since V1:
->         Fix some code style issues. Change prefix i2c_acpi to acpi_i2c.
-> Move ACPI related code in the i2c core to i2c-acpi.c. Add CONFIG_I2C_ACPI
-> and make i2c core built-in when it's set to avoid i2c ACPI operation region
-> being removed.
->
-> Lan Tianyu (5):
->    ACPICA: Export acpi_buffer_to_resource symbol
->    ACPI: Add acpi_bus_attach_private_data() to facilitate to attach data
->      to ACPI handle
->    ACPI/Thermal: Use acpi_bus_attach_private_data() to attach private
->      data
->    I2C/ACPI: Add i2c ACPI operation region support
->    I2C/ACPI: Clean up I2C ACPI code and Add CONFIG_I2C_ACPI config
->
->   drivers/acpi/acpica/rscreate.c |   1 +
->   drivers/acpi/bus.c             |  28 +++-
->   drivers/acpi/thermal.c         |  11 +-
->   drivers/i2c/Kconfig            |  18 +-
->   drivers/i2c/Makefile           |   5 +-
->   drivers/i2c/i2c-acpi.c         | 362 +++++++++++++++++++++++++++++++++++++++++
->   drivers/i2c/i2c-core.c         |  97 +----------
->   include/acpi/acpi_bus.h        |   2 +
->   include/linux/acpi.h           |  11 ++
->   include/linux/i2c.h            |  12 ++
->   10 files changed, 439 insertions(+), 108 deletions(-)
->   create mode 100644 drivers/i2c/i2c-acpi.c
->
+> else desc = NULL will be a bit clearer won't it?
 
+Agreed.
+
+>>  	/* Update free pointer */
+>> -	vq->free_head = i;
+>> +	if (desc == vq->vring.desc)
+>> +		vq->free_head = i;
+>> +	else
+>> +		vq->free_head = vq->vring.desc[head].next;
+>
+> This one is slightly ugly isn't it?
+
+Yes, but it avoided another variable, and I was originally aiming
+at stack conservation.  Turns out adding 'bool indirect' adds 32 bytes
+more stack for gcc 4.6.4 :(
+
+virtio_ring: minor neating
+
+Before:
+	gcc 4.8.2: virtio_blk: stack used = 408
+	gcc 4.6.4: virtio_blk: stack used = 432
+
+After:
+	gcc 4.8.2: virtio_blk: stack used = 408
+	gcc 4.6.4: virtio_blk: stack used = 464
+
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+
+diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
+index 3adf5978b92b..7a7849bc26af 100644
+--- a/drivers/virtio/virtio_ring.c
++++ b/drivers/virtio/virtio_ring.c
+@@ -141,9 +141,10 @@ static inline int virtqueue_add(struct virtqueue *_vq,
+ {
+ 	struct vring_virtqueue *vq = to_vvq(_vq);
+ 	struct scatterlist *sg;
+-	struct vring_desc *desc = NULL;
++	struct vring_desc *desc;
+ 	unsigned int i, n, avail, uninitialized_var(prev);
+ 	int head;
++	bool indirect;
+ 
+ 	START_USE(vq);
+ 
+@@ -176,21 +177,25 @@ static inline int virtqueue_add(struct virtqueue *_vq,
+ 	 * buffers, then go indirect. FIXME: tune this threshold */
+ 	if (vq->indirect && total_sg > 1 && vq->vq.num_free)
+ 		desc = alloc_indirect(total_sg, gfp);
++	else
++		desc = NULL;
+ 
+ 	if (desc) {
+ 		/* Use a single buffer which doesn't continue */
+ 		vq->vring.desc[head].flags = VRING_DESC_F_INDIRECT;
+ 		vq->vring.desc[head].addr = virt_to_phys(desc);
+-		/* avoid kmemleak false positive (tis hidden by virt_to_phys) */
++		/* avoid kmemleak false positive (hidden by virt_to_phys) */
+ 		kmemleak_ignore(desc);
+ 		vq->vring.desc[head].len = total_sg * sizeof(struct vring_desc);
+ 
+ 		/* Set up rest to use this indirect table. */
+ 		i = 0;
+ 		total_sg = 1;
++		indirect = true;
+ 	} else {
+ 		desc = vq->vring.desc;
+ 		i = head;
++		indirect = false;
+ 	}
+ 
+ 	if (vq->vq.num_free < total_sg) {
+@@ -230,10 +235,10 @@ static inline int virtqueue_add(struct virtqueue *_vq,
+ 	desc[prev].flags &= ~VRING_DESC_F_NEXT;
+ 
+ 	/* Update free pointer */
+-	if (desc == vq->vring.desc)
+-		vq->free_head = i;
+-	else
++	if (indirect)
+ 		vq->free_head = vq->vring.desc[head].next;
++	else
++		vq->free_head = i;
+ 
+ 	/* Set token. */
+ 	vq->data[head] = data;
