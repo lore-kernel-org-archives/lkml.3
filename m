@@ -1,84 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933101AbaE3Jl1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 05:41:27 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:58174 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755354AbaE3JlX (ORCPT
+	id S1755485AbaE3Jmq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 05:42:46 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33411 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755160AbaE3Jmp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 05:41:23 -0400
-Date: Fri, 30 May 2014 11:41:18 +0200
-From: Dongsu Park <dongsu.park@profitbricks.com>
-To: Ming Lei <tom.leiming@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Jens Axboe <axboe@kernel.dk>, Jet Chen <jet.chen@intel.com>,
-        Maurizio Lombardi <mlombard@redhat.com>
-Subject: Re: [PATCH] bio: decrease bi_iter.bi_size by len in the fail path
-Message-ID: <20140530094118.GA5207@gmail.com>
-References: <20140527112459.GF2205@dhcp-27-189.brq.redhat.com>
- <1401289778-9840-1-git-send-email-dongsu.park@profitbricks.com>
- <CACVXFVO6uW3KoVPoeb+O0txuY2Ji6BO1Sob1e-g7NmZBv9MPBQ@mail.gmail.com>
- <CACVXFVNNc3dRshmMYNgS+pn54RC2dyQkJFOy1=HJdXfUfuhAMQ@mail.gmail.com>
+	Fri, 30 May 2014 05:42:45 -0400
+Date: Fri, 30 May 2014 10:42:43 +0100
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+To: Chanwoo Choi <cw00.choi@samsung.com>
+Cc: myungjoo.ham@samsung.com, patches@opensource.wolfsonmicro.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4] extcon: arizona: Update manual headphone detection
+	calculation
+Message-ID: <20140530094243.GB11951@opensource.wolfsonmicro.com>
+References: <1401377274-10249-1-git-send-email-ckeepax@opensource.wolfsonmicro.com> <1401377274-10249-3-git-send-email-ckeepax@opensource.wolfsonmicro.com> <5387DE87.5090009@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CACVXFVNNc3dRshmMYNgS+pn54RC2dyQkJFOy1=HJdXfUfuhAMQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5387DE87.5090009@samsung.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ming,
-
-On 29.05.2014 00:59, Ming Lei wrote:
-> On Wed, May 28, 2014 at 11:42 PM, Ming Lei <tom.leiming@gmail.com> wrote:
-> > Would you mind explaining why bi_iter.bi_size need to be
-> > decreased by 'len'? In the failure path, it wasn't added by
-> > 'len', was it?
+On Fri, May 30, 2014 at 10:27:35AM +0900, Chanwoo Choi wrote:
+> Hi Charles,
 > 
-> Actually, the correct thing may be like what did in the
-> attached patch, as Maurizio discussed with me[1].
+> On 05/30/2014 12:27 AM, Charles Keepax wrote:
+> > The higher levels of impedance have a higher minimum value than the
+> > first level. As the same value was used for all levels, higher impedances
+> > were reported with a very low level of accuracy. This patch applies the
+> > approriate lower threshold for each level.
+> > 
+> > Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+> > ---
+> >  drivers/extcon/extcon-arizona.c |   13 ++++++++-----
+> >  1 files changed, 8 insertions(+), 5 deletions(-)
+> > 
+> > diff --git a/drivers/extcon/extcon-arizona.c b/drivers/extcon/extcon-arizona.c
+> > index f2c36b1..c1c8647 100644
+> > --- a/drivers/extcon/extcon-arizona.c
+> > +++ b/drivers/extcon/extcon-arizona.c
+> > @@ -329,12 +329,13 @@ static void arizona_stop_mic(struct arizona_extcon_info *info)
+> >  }
+> >  
+> >  static struct {
+> > +	unsigned int threshold;
+> >  	unsigned int factor_a;
+> >  	unsigned int factor_b;
+> >  } arizona_hpdet_b_ranges[] = {
+> > -	{  5528,   362464 },
+> > -	{ 11084,  6186851 },
+> > -	{ 11065, 65460395 },
+> > +	{ 100,  5528,   362464 },
+> > +	{ 169, 11084,  6186851 },
+> > +	{ 169, 11065, 65460395 },
+> 
+> If you possible, I want to know the 'unit' of the variable(factor_a, factor_b).
 
-Yes, I agree. Your patch is the correct fix.
-Please ignore my patch, and take yours,
-<https://lkml.org/lkml/2014/5/29/370>
+I am not sure there are really especially sensible units to give.
 
-> Very interestingly, I have reproduced the problem one time
-> with ext4/271 ext4/301 ext4/305, but won't with the attached
-> patch after running it for 3 rounds.
+> 
+> >  };
+> >  
+> >  static struct {
+> > @@ -391,7 +392,8 @@ static int arizona_hpdet_read(struct arizona_extcon_info *info)
+> >  			   >> ARIZONA_HP_IMPEDANCE_RANGE_SHIFT;
+> >  
+> >  		if (range < ARRAY_SIZE(arizona_hpdet_b_ranges) - 1 &&
+> > -		    (val < 100 || val >= 0x3fb)) {
+> > +		    (val < arizona_hpdet_b_ranges[range].threshold ||
+> > +		     val >= 0x3fb)) {
+> 
+> I don't understand the meaning of 0x3fb hex value.
+> I prefer to define constant variable for readability.
 
-I also had a trouble with reproducing this bug on my home desktop,
-while I can reliably reproduce the bug on my office workstation.
-I'm not quite sure what makes the difference.
-(The same kernel, the same qemu version, the same xfstests version, etc.)
-
-Anyway, coming back to my office, now I can confirm that your patch
-fixes the bug. You can add:
-
-Tested-by: Dongsu Park <dongsu.park@profitbricks.com>
+Thats fine I can add a define as part of this patch.
 
 Thanks,
-Dongsu
-
-> [tom@localhost xfstests]$ sudo ./check ext4/271 ext4/301 ext4/305
-> FSTYP         -- ext4
-> PLATFORM      -- Linux/x86_64 localhost 3.15.0-rc7-next-20140527+
-> MKFS_OPTIONS  -- /dev/vdc
-> MOUNT_OPTIONS -- -o acl,user_xattr /dev/vdc /mnt/scratch
-> 
-> ext4/271 1s ... 1s
-> ext4/301 31s ... 32s
-> ext4/305 181s ... 180s
-> Ran: ext4/271 ext4/301 ext4/305
-> Passed all 3 tests
-> 
-> Jet, could you test the attached patch?
-> 
-> [1], https://lkml.org/lkml/2014/5/27/327
-> 
-> 
-> Thanks,
-> -- 
-> Ming Lei
-
-
+Charles
