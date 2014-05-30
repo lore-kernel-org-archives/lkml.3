@@ -1,76 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932679AbaE3IuV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 04:50:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47489 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932549AbaE3IuR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 04:50:17 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <11446.1401420931@jrobl>
-References: <11446.1401420931@jrobl> <1400838223-30844-1-git-send-email-miklos@szeredi.hu> <28592.1401382081@warthog.procyon.org.uk>
-To: "J. R. Okajima" <hooanon05g@gmail.com>
-Cc: dhowells@redhat.com, Miklos Szeredi <miklos@szeredi.hu>,
-        viro@ZenIV.linux.org.uk, torvalds@linux-foundation.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hch@infradead.org, akpm@linux-foundation.org, apw@canonical.com,
-        nbd@openwrt.org, neilb@suse.de, jordipujolp@gmail.com,
-        ezk@fsl.cs.sunysb.edu, sedat.dilek@gmail.com, mszeredi@suse.cz
-Subject: Re: Unionmount and overlayfs testsuite
-Date: Fri, 30 May 2014 09:49:33 +0100
-Message-ID: <7184.1401439773@warthog.procyon.org.uk>
+	id S1755366AbaE3JAV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 05:00:21 -0400
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:46154 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755228AbaE3JAM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 May 2014 05:00:12 -0400
+MIME-Version: 1.0
+In-Reply-To: <5387DF42.5020506@codeaurora.org>
+References: <1400849362-7007-1-git-send-email-srinivas.kandagatla@linaro.org>
+	<1400849589-7626-1-git-send-email-srinivas.kandagatla@linaro.org>
+	<537FD9A7.3010100@codeaurora.org>
+	<5385EB42.1060604@linaro.org>
+	<CACRpkdb_ozxL3wAVf7FJr-0A2tWGHkfXeXf5sWaW6h_yzK4QvA@mail.gmail.com>
+	<5387DF42.5020506@codeaurora.org>
+Date: Fri, 30 May 2014 11:00:11 +0200
+Message-ID: <CACRpkdaEEYYfE8adDKjU7j4onnExQD2z3S+DOh5KnrKhNOHW9Q@mail.gmail.com>
+Subject: Re: [PATCH v3 13/13] mmc: mmci: Add Qcom specific pio_read function.
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        Chris Ball <chris@printf.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-J. R. Okajima <hooanon05g@gmail.com> wrote:
+On Fri, May 30, 2014 at 3:30 AM, Stephen Boyd <sboyd@codeaurora.org> wrote:
 
-> I've found some interesting cases.
-> 
-> - impermissible.test,
-> 	open_file_as_bin -t -w $file -E EACCES
->   When $termslash is "/", a '/' is appended to the expanded $file, such
->   as "/path/fileA/". If fileA is a regular file, that path is obviously
->   wrong. Does UnionMount expect EACCES in this case too?
->   Should it be ENOTDIR?
->   It might be better to change
-> 	errcode=EACCES
-> 	test ! "$termslash" = "" && errcode=ENOTDIR
-> 	open_file_as_bin -t -w $file -E $errcode
+> Hm... that doesn't sound right. Please see this thread on lkml[1], and
+> also this video from Ben H.[2]
 
-I'd never got to the end of the impermissible test because the utimes test
-fails on both unionmount and overlayfs.  I'll have to address the termslash
-alterations at some point.
+But Benji is talking about the *PCI BUS*, and this is raw register
+access. He just says that "This is how a BE CPU is normally
+wired to a LE bus" we have no idea whether that is actually the
+case on any existing system with this peripheral. Such things
+have to be tested.
 
-> - readlink.test,
-> 	fs_op readlink $file -R $testdir/direct_dir_sym100 ${termslash:+-E EINVAL}
->   It expects "$testdir/direct_dir_sym100". Does it mean UnionMount
->   converts the target path?
->   For example,
->   - /u = /rw + /ro
->   - /rw/symlinkA doesn't exist
->   - /ro/symlinkA points to /ro/fileA
+> My understanding is that this is a fifo
+> so I would think we want to use the ioread32_rep() function here (or
+> other "string" io functionality). Otherwise we're going to byteswap the
+> data that we're trying to interpret as a buffer and big endian CPUs
+> won't work.
 
-No.  Unionmount unions are constructed by mounting the lower layers all on the
-same mountpoint and then mounting the union over them, also on the same
-mountpoint.  So their paths are coincident.
+You don't know that until you have tested on real BE ARM
+hardware with this PrimeCell. How do you know the SoC
+designers will have been smart enough to insert byte swap
+logic?
 
->   Does readlink(2) return "/u/fileA" instead of /ro/fileA?"
+>> You are right. readsl() or ioread32_rep() isn't used for this reason.
+>
+> We could always use a size of 1 right?
 
-No.
+What do you mean? Do you mean using:
 
-The test suite sets the lower symlink to point to the union path for its target.
+ioread32_rep(io, buf, 1)?
 
-[root@andromeda union-testsuite]# readlink /lower/a/indirect_dir_sym100 
-/mnt/a/direct_dir_sym100
+Notice this is totally equivalent to readsl() in arm/include/asm/io.h:
 
-> And all tests should be done by a superuser?
+#define readsl(p,d,l)           __raw_readsl(p,d,l)
+#define ioread32_rep(p,d,c)     __raw_readsl(p,d,c)
 
-Yes.  It also will test things like mknod at some point and runs things as
-other users to test permissions.
+The semantic effect is switching from readl() -> readsl() or
+conversely ioread32 -> ioread32_rep() which will use
+__raw accessors in native endianness rather than LE access.
 
-David
+Which is what you want if the bus will do byte swapping. Which
+we don't know if it does, because noone has such a system and
+can verify.
+
+If the native bus is not byte swapping this will just force you to
+use cpu_to_le32() on the result. That is not helpful at all.
+
+We need to experiment with real BE hardware with this
+PrimeCell to determine whether to do this, and until that is
+done just don't try to outsmart the hardware by thinking ahead
+and designing for the unknown, that will just fail.
+
+Yours,
+Linus Walleij
