@@ -1,170 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754718AbaE3FbL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 01:31:11 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:59934 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754512AbaE3FbI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 01:31:08 -0400
-Message-ID: <53881759.2070905@ti.com>
-Date: Fri, 30 May 2014 11:00:01 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1754793AbaE3Fb5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 01:31:57 -0400
+Received: from mail-qg0-f52.google.com ([209.85.192.52]:43717 "EHLO
+	mail-qg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751286AbaE3Fbz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 May 2014 01:31:55 -0400
 MIME-Version: 1.0
-To: Murali Karicheri <m-karicheri2@ti.com>
-CC: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "arnd@arndb.de" <arnd@arndb.de>, "tony@atomide.com" <tony@atomide.com>,
-        "jg1.han@samsung.com" <jg1.han@samsung.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, Mohit Kumar <mohit.kumar@st.com>,
-        Marek Vasut <marex@denx.de>
-Subject: Re: [PATCH v2 03/18] PCI: designware: Configuration space should
- be specified in 'reg'
-References: <1401345500-20188-1-git-send-email-kishon@ti.com> <1401345500-20188-4-git-send-email-kishon@ti.com> <53876116.90504@ti.com>
-In-Reply-To: <53876116.90504@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140529154348.GH32082@beef>
+References: <1400134105-3847-1-git-send-email-jaswinder.singh@linaro.org>
+	<1400134260-3962-1-git-send-email-jaswinder.singh@linaro.org>
+	<7978295.UBGxYvcnvH@wuerfel>
+	<CAJe_Zhe_VFTpPW0sKBsqit347MR7QmEDvzvQTyh1DWr3v991tg@mail.gmail.com>
+	<20140529154348.GH32082@beef>
+Date: Fri, 30 May 2014 11:01:55 +0530
+Message-ID: <CABb+yY2PiGpqy2uevCFexAKeS4aZxJxZHEDJTRN1SW6VVjBzGQ@mail.gmail.com>
+Subject: Re: [PATCHv5 2/4] mailbox: Introduce framework for mailbox
+From: Jassi Brar <jassisinghbrar@gmail.com>
+To: Matt Porter <mporter@linaro.org>
+Cc: Jassi Brar <jaswinder.singh@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Anna, Suman" <s-anna@ti.com>, Loic Pallardy <loic.pallardy@st.com>,
+        LeyFoon Tan <lftan.linux@gmail.com>,
+        Craig McGeachie <slapdau@yahoo.com.au>,
+        Courtney Cavin <courtney.cavin@sonymobile.com>,
+        Rob Herring <robherring2@gmail.com>,
+        Josh Cartwright <joshc@codeaurora.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Kumar Gala <galak@codeaurora.org>,
+        "ks.giri@samsung.com" <ks.giri@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Thursday 29 May 2014 10:02 PM, Murali Karicheri wrote:
-> On 5/29/2014 2:38 AM, ABRAHAM, KISHON VIJAY wrote:
->> The configuration address space has so far been specified in *ranges*,
->> however it should be specified in *reg* making it a platform MEM resource.
->> Hence used 'platform_get_resource_*' API to get configuration address
->> space in the designware driver.
+On Thu, May 29, 2014 at 9:13 PM, Matt Porter <mporter@linaro.org> wrote:
+> On Fri, May 16, 2014 at 07:03:25PM +0530, Jassi Brar wrote:
+>> On 15 May 2014 19:57, Arnd Bergmann <arnd@arndb.de> wrote:
+>> > On Thursday 15 May 2014 11:41:00 Jassi Brar wrote:
+>
+> ...
+>
+>> >> +struct mbox_controller {
+>> >> +     struct device *dev;
+>> >> +     struct mbox_chan_ops *ops;
+>> >> +     struct mbox_chan *chans;
+>> >> +     int num_chans;
+>> >> +     bool txdone_irq;
+>> >> +     bool txdone_poll;
+>> >> +     unsigned txpoll_period;
+>> >> +     struct mbox_chan *(*of_xlate)(struct mbox_controller *mbox,
+>> >> +                                     const struct of_phandle_args *sp);
+>> >> +     /*
+>> >> +      * If the controller supports only TXDONE_BY_POLL,
+>> >> +      * this timer polls all the links for txdone.
+>> >> +      */
+>> >> +     struct timer_list poll;
+>> >> +     unsigned period;
+>> >> +     /* Hook to add to the global controller list */
+>> >> +     struct list_head node;
+>> >> +} __aligned(32);
+>> >
+>> > What is the __aligned(32) for?
+>> >
+>> Attempt to align access to mailbox?
 >>
->> Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
->> Cc: Bjorn Helgaas <bhelgaas@google.com>
->> Cc: Mohit Kumar <mohit.kumar@st.com>
->> Cc: Jingoo Han <jg1.han@samsung.com>
->> Cc: Marek Vasut <marex@denx.de>
->> Cc: Arnd Bergmann <arnd@arndb.de>
->> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
->> ---
->>   .../devicetree/bindings/pci/designware-pcie.txt    |    1 +
->>   drivers/pci/host/pcie-designware.c                 |   17 +++++++++++++++--
->>   2 files changed, 16 insertions(+), 2 deletions(-)
->>
->> diff --git a/Documentation/devicetree/bindings/pci/designware-pcie.txt
->> b/Documentation/devicetree/bindings/pci/designware-pcie.txt
->> index d6fae13..8314360 100644
->> --- a/Documentation/devicetree/bindings/pci/designware-pcie.txt
->> +++ b/Documentation/devicetree/bindings/pci/designware-pcie.txt
->> @@ -6,6 +6,7 @@ Required properties:
->>       as "samsung,exynos5440-pcie" or "fsl,imx6q-pcie".
->>   - reg: base addresses and lengths of the pcie controller,
->>       the phy controller, additional register for the phy controller.
->> +    The configuration address space should also be specified here.
-> Kishon,
-> 
-> I am working on the Keystone PCI driver for which v1 is already posted. Want to
-> clarify
-> following.
-> 1. Original text for reg states "base addresses and lengths of the pcie
-> controller,
->         the phy controller, additional register for the phy controller" and you
-> added
->         "The configuration address space should also be specified here"
-> 
->    and the code below added resource name "config"
-> 
-> Does PCI designware follow some convention? Does it mean after applying this patch
-> config name is mandatory or optional? Below code you are not returning error.
-> Can you
-> or author of PCI designware clarify what is expected to be present as mandatory
-> and
-> what is optional.
+>> I am still open to opinion about whether the mailbox ownership should
+>> be exclusive or shared among clients. Need to handle async messages
+>> from remote is one reason one might want more than one client to own a
+>> channel. Allowing for RX via notifiers might be one option but that
+>> breaks semantics of 'ownership' of a mailbox channel.
+>
+> This is the case we have on a new family of Broadcom SoCs. One mailbox
+> channel is the "system" channel and is shared amongst many clients for
+> reception of unsolicited events from the coprocessor. The same channel
+> is also used commonly in drivers for debug/inspection of the M0 state.
+> Functionality for clock, pmu, pinmux, and cpu idle/suspend is implemented
+> via IPC with the M0 so all of those drivers need to share one mailbox.
+>
+OK, so you have a single mailbox channel used for communication with
+the remote master.
 
->From whatever I could make out from the comments for my previous version,
-'config' is mandatory for all new platforms adding support for PCIe DW. However
-since there already exists platforms that use 'ranges', I'm not returning
-error. Once all the platforms that use DW is modified to use 'reg', will return
-error.
-> 
-> Does config refers to RC's config space or EP's config space or both? The code
-> below divide
+> There's a lot of common code necessary to construct/parse IPCs for
+> each of the drivers. I suppose this IPC driver/api could be the
+> sole owner of that system channel. However, we'd need to develop some
+> binding to represent IPC resources that devices need to operate. Coming
+> into this late...I wonder if I missed something about where these vendor
+> specific IPC layers should live and how, if it makes sense, they should
+> be represented in DT. In our case, the IPC is an integral part of the
+> hardware as it's loaded from ROM.
+>
+Like other platforms, the IPC protocol is going to be very specific to
+Broadcom, even if the mailbox controller is some popular third party
+IP like PL320. So you/Broadcom have to implement parser code for IPC
+(client) above the mailbox common api and the controller driver below
+it. Any resource/feature specific to your client and your controller
+should be passed via some Broadcom specific DT bindings. The common
+mailbox api DT bindings provide only for channel-client mapping.
 
-In the case of DRA7, it's the space from where you read the configuration space
-contents of the EP (we have separate address space for the configuration space
-of RC denoted by *rc_dbics* in this patch series). But there are other
-platforms where RC does not have a separate configuration address space.
-> the size by 2. So it appears to be RC's + EP's config space. Please clarify.
+ Being more specific to your platform, I think you need some server
+code (mailbox's client) that every driver (like clock, pmu, pinmux
+etc) registers with to send messages to remote and receive commands
+from remote ... perhaps by registering some filter to sort out
+messages for each driver.
 
-No. divide by 2 is for cfg1 and cfg1 is used by PCIe bridges.
-> 
->>   - interrupts: interrupt values for level interrupt,
->>       pulse interrupt, special interrupt.
->>   - clocks: from common clock binding: handle to pci clock.
->> diff --git a/drivers/pci/host/pcie-designware.c
->> b/drivers/pci/host/pcie-designware.c
->> index c4e3732..603b386 100644
->> --- a/drivers/pci/host/pcie-designware.c
->> +++ b/drivers/pci/host/pcie-designware.c
->> @@ -20,6 +20,7 @@
->>   #include <linux/of_pci.h>
->>   #include <linux/pci.h>
->>   #include <linux/pci_regs.h>
->> +#include <linux/platform_device.h>
->>   #include <linux/types.h>
->>     #include "pcie-designware.h"
->> @@ -392,11 +393,23 @@ static const struct irq_domain_ops msi_domain_ops = {
->>   int __init dw_pcie_host_init(struct pcie_port *pp)
->>   {
->>       struct device_node *np = pp->dev->of_node;
->> +    struct platform_device *pdev = to_platform_device(pp->dev);
->>       struct of_pci_range range;
->>       struct of_pci_range_parser parser;
->> +    struct resource *cfg_res;
->>       u32 val;
->>       int i;
->>   +    cfg_res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "config");
->> +    if (cfg_res) {
->> +        pp->config.cfg0_size = resource_size(cfg_res)/2;
->> +        pp->config.cfg1_size = resource_size(cfg_res)/2;
->> +        pp->cfg0_base = cfg_res->start;
->> +        pp->cfg1_base = cfg_res->start + pp->config.cfg0_size;
->> +    } else {
->> +        dev_err(pp->dev, "missing *config* reg space\n");
-> This should return error -EINVAL.
-
-ah.. it'll break for other platforms. It should be part of a different patch
-once we convert all users to 8reg*.
-> 
->> +    }
->> +
->>       if (of_pci_range_parser_init(&parser, np)) {
->>           dev_err(pp->dev, "missing ranges property\n");
->>           return -EINVAL;
->> @@ -429,6 +442,8 @@ int __init dw_pcie_host_init(struct pcie_port *pp)
->>               of_pci_range_to_resource(&range, np, &pp->cfg);
->>               pp->config.cfg0_size = resource_size(&pp->cfg)/2;
->>               pp->config.cfg1_size = resource_size(&pp->cfg)/2;
->> +            pp->cfg0_base = pp->cfg.start;
->> +            pp->cfg1_base = pp->cfg.start + pp->config.cfg0_size;
->>           }
->>       }
->>   @@ -441,8 +456,6 @@ int __init dw_pcie_host_init(struct pcie_port *pp)
->>           }
->>       }
->>   -    pp->cfg0_base = pp->cfg.start;
->> -    pp->cfg1_base = pp->cfg.start + pp->config.cfg0_size;
->>       pp->mem_base = pp->mem.start;
->>         pp->va_cfg0_base = devm_ioremap(pp->dev, pp->cfg0_base,
-> BTW, Please also review my Keystone series so that we could discuss this topic
-> in that context
-> as well.
-
-sure..
-
-Cheers
-Kishon
+-Jassi
