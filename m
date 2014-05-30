@@ -1,63 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935026AbaEaBJG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 21:09:06 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40519 "EHLO
+	id S935038AbaEaBJh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 21:09:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40424 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934981AbaEaBJE (ORCPT
+	with ESMTP id S934753AbaEaBIz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 21:09:04 -0400
-Date: Fri, 30 May 2014 16:57:20 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Kumar Gala <galak@codeaurora.org>
-Cc: arm@kernel.org, Kevin Hilman <khilman@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, Olof Johansson <olof@lixom.net>,
-        David Brown <davidb@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Andy Gross <agross@codeaurora.org>
-Subject: Re: [GIT PULL] qcom driver changes for v3.16-2
-Message-ID: <20140530235720.GA27752@kroah.com>
-References: <alpine.DEB.2.00.1405301138220.5291@galak-ubuntu.qualcomm.com>
+	Fri, 30 May 2014 21:08:55 -0400
+Date: Fri, 30 May 2014 16:20:44 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Shuah Khan <shuah.kh@samsung.com>
+Cc: linux-kernel@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        satoru.takeuchi@gmail.com, stable@vger.kernel.org
+Subject: Re: [PATCH 3.10 00/86] 3.10.41-stable review
+Message-ID: <20140530232044.GC25854@kroah.com>
+References: <20140529043513.451722422@linuxfoundation.org>
+ <538744FD.4080709@roeck-us.net>
+ <5388DF82.6000805@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1405301138220.5291@galak-ubuntu.qualcomm.com>
+In-Reply-To: <5388DF82.6000805@samsung.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 30, 2014 at 11:41:01AM -0500, Kumar Gala wrote:
-> The following changes since commit 5d144e36b7c51612922fa05d37ff3a869261cc82:
+On Fri, May 30, 2014 at 01:44:02PM -0600, Shuah Khan wrote:
+> On 05/29/2014 08:32 AM, Guenter Roeck wrote:
+> >On 05/28/2014 09:36 PM, Greg Kroah-Hartman wrote:
+> >>This is the start of the stable review cycle for the 3.10.41 release.
+> >>There are 86 patches in this series, all will be posted as a response
+> >>to this one.  If anyone has any issues with these being applied, please
+> >>let me know.
+> >>
+> >>Responses should be made by Sat May 31 04:34:49 UTC 2014.
+> >>Anything received after that time might be too late.
+> >>
+> >
+> >Build results:
+> >     total: 143 pass: 134 skipped: 6 fail: 3
+> >
+> >Qemu tests all passed.
+> >
+> >For reference, failing builds are
+> >
+> >unicore32:defconfig        - still fails for all releases
+> >powerpc:ppc64e_defconfig    - fail if built with binutils 2.4; patch
+> >pending
+> >powerpc:chroma_defconfig    - fail if built with binutils 2.4; patch
+> >pending
+> >
+> >Results are as expected. Details are available at
+> >http://server.roeck-us.net:8010/builders.
+> >
 > 
->   soc: qcom: Add GSBI driver (2014-05-23 11:38:04 -0500)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/galak/linux-qcom.git tags/qcom-drivers-for-3.16-2
-> 
-> for you to fetch changes up to 31964ffebbb958c6cf289c7c12edd7530d6221b9:
-> 
->   tty: serial: msm: Remove direct access to GSBI (2014-05-29 11:06:20 -0500)
-> 
-> ----------------------------------------------------------------
-> Qualcomm ARM Based driver Updates for v3.16-2
-> 
-> * Updated MSM uart driver to not access GSBI control registers
-> 
-> ----------------------------------------------------------------
-> Andy Gross (1):
->       tty: serial: msm: Remove direct access to GSBI
-> 
->  drivers/tty/serial/msm_serial.c | 48 ++---------------------------------------
->  drivers/tty/serial/msm_serial.h |  5 -----
->  2 files changed, 2 insertions(+), 51 deletions(-)
+> Compiled and booted on my test systems. No dmesg regressions.
 
-Do you want me to take these in the tty tree?  Or are they going to go
-through the arm tree(s) for other reasons (dependancies)?
-
-thanks,
+Thanks for testing.
 
 greg k-h
