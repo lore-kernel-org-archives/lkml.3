@@ -1,317 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755881AbaE3N62 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 09:58:28 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:56553 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752856AbaE3N61 (ORCPT
+	id S1755979AbaE3OA2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 10:00:28 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:44303 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755506AbaE3OA1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 09:58:27 -0400
-Message-ID: <53888E76.5040101@hurleysoftware.com>
-Date: Fri, 30 May 2014 09:58:14 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Fri, 30 May 2014 10:00:27 -0400
+Message-ID: <53888EF5.5090800@collabora.co.uk>
+Date: Fri, 30 May 2014 16:00:21 +0200
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-To: Sasha Levin <sasha.levin@oracle.com>, Jan Kara <jack@suse.cz>,
-        pmladek@suse.cz, Andrew Morton <akpm@linux-foundation.org>,
-        Jet Chen <jet.chen@intel.com>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: console: lockup on boot
-References: <5388838B.8070802@oracle.com>
-In-Reply-To: <5388838B.8070802@oracle.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Doug Anderson <dianders@chromium.org>, Tomasz Figa <t.figa@samsung.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>
+CC: olof@lixom.net, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] clk: exynos5420: Keep aclk66_peric enabled during boot
+References: <1401398496-4624-1-git-send-email-dianders@chromium.org>
+In-Reply-To: <1401398496-4624-1-git-send-email-dianders@chromium.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/30/2014 09:11 AM, Sasha Levin wrote:
-> Hi all,
->
-> I sometime see lockups when booting my KVM guest with the latest -next kernel,
-> it basically hangs right when it should start 'init', and after a while I get
-> the following spew:
->
-> [   30.790833] BUG: spinlock lockup suspected on CPU#1, swapper/1/0
+Hello Doug,
 
-Maybe related to this report: https://lkml.org/lkml/2014/5/30/26
-from Jet Chen which was bisected to
+On 05/29/2014 11:21 PM, Doug Anderson wrote:
+> Right now if you've got earlyprintk enabled on exynos5420-peach-pit
+> then you'll get a hang on boot.  Here's why:
+> 
+> 1. The i2c-s3c2410 driver will probe at subsys_initcall.  It will
+>    enable its clock and disable it.  This is the clock "i2c2".
+> 2. The act of disabling "i2c2" will disable its parents.  In this case
+>    the parent is "aclk66_peric".  There are no other children of
+>    "aclk66_peric" officially enabled, so "aclk66_peric" will be turned
+>    off (despite being CLK_IGNORE_UNUSED, but that's by design).
+> 3. The next time you try to earlyprintk you'll do so without the UART
+>    clock enabled.  That's because the UART clocks are also children of
+>    "aclk66_peric".  You'll hang.
+> 
+> There's no good place to put a clock enable for earlyprintk, which is
+> handled by a bunch of assembly code.  The best we can do is to handle
+> this in the clock driver.
+> 
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> ---
+>  drivers/clk/samsung/clk-exynos5420.c | 24 ++++++++++++++++++++++++
+>  1 file changed, 24 insertions(+)
+> 
 
-commit bafe980f5afc7ccc693fd8c81c8aa5a02fbb5ae0
-Author:     Jan Kara <jack@suse.cz>
-AuthorDate: Thu May 22 10:43:35 2014 +1000
-Commit:     Stephen Rothwell <sfr@canb.auug.org.au>
-CommitDate: Thu May 22 10:43:35 2014 +1000
+I tested your patch and it solves the issue for me, so feel free to add
 
-     printk: enable interrupts before calling console_trylock_for_printk()
-         We need interrupts disabled when calling console_trylock_for_printk() only
-     so that cpu id we pass to can_use_console() remains valid (for other
-     things console_sem provides all the exclusion we need and deadlocks on
-     console_sem due to interrupts are impossible because we use
-     down_trylock()).  However if we are rescheduled, we are guaranteed to run
-     on an online cpu so we can easily just get the cpu id in
-     can_use_console().
-         We can lose a bit of performance when we enable interrupts in
-     vprintk_emit() and then disable them again in console_unlock() but OTOH it
-     can somewhat reduce interrupt latency caused by console_unlock()
-     especially since later in the patch series we will want to spin on
-     console_sem in console_trylock_for_printk().
-         Signed-off-by: Jan Kara <jack@suse.cz>
-     Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Tested-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 
-?
+Just one trivial comment below:
 
-> [   30.770667] BUG: spinlock lockup suspected on CPU#0, kworker/u101:1/484
-> [   30.790833] BUG: spinlock lockup suspected on CPU#1, swapper/1/0
-> [   30.770667] BUG: spinlock lockup suspected on CPU#0, kworker/u101:1/484
-> [  320.541585] kworker/dying (172) used greatest stack depth: 3656 bytes left
-> [  321.761422] BUG: spinlock lockup suspected on CPU#0, kworker/u101:1/484
-> [   30.790833] BUG: spinlock lockup suspected on CPU#1, swapper/1/0
-> [  408.010589] INFO: task swapper/0:1 blocked for more than 200 seconds.
-> [  321.761422] BUG: spinlock lockup suspected on CPU#0, kworker/u101:1/484
-> [  320.551104] BUG: spinlock lockup suspected on CPU#33, kworker/dying/172
-> [   30.790833] BUG: spinlock lockup suspected on CPU#1, swapper/1/0
-> [  321.761422] BUG: spinlock lockup suspected on CPU#0, kworker/u101:1/484
-> [  408.020558] BUG: spinlock lockup suspected on CPU#43, khungtaskd/3760
-> [   30.790833] BUG: spinlock lockup suspected on CPU#1, swapper/1/0
-> [  320.551104] BUG: spinlock lockup suspected on CPU#33, kworker/dying/172
-> [  408.020558] BUG: spinlock lockup suspected on CPU#43, khungtaskd/3760
-> [  321.761422] BUG: spinlock lockup suspected on CPU#0, kworker/u101:1/484
-> [   30.790833] BUG: spinlock lockup suspected on CPU#1, swapper/1/0
-> [  320.551104] BUG: spinlock lockup suspected on CPU#33, kworker/dying/172
-> [  408.020558] BUG: spinlock lockup suspected on CPU#43, khungtaskd/3760
-> [  321.761422] BUG: spinlock lockup suspected on CPU#0, kworker/u101:1/484
-> [  320.551104] BUG: spinlock lockup suspected on CPU#33, kworker/dying/172
-> [   30.790833] BUG: spinlock lockup suspected on CPU#1, swapper/1/0
-> [  408.020558] BUG: spinlock lockup suspected on CPU#43, khungtaskd/3760
-> [  321.761422] BUG: spinlock lockup suspected on CPU#0, kworker/u101:1/484
-> [  320.551104] BUG: spinlock lockup suspected on CPU#33, kworker/dying/172
-> [   30.790833] BUG: spinlock lockup suspected on CPU#1, swapper/1/0
-> [  408.020558] BUG: spinlock lockup suspected on CPU#43, khungtaskd/3760
-> [  321.761422] BUG: spinlock lockup suspected on CPU#0, kworker/u101:1/484
-> [  320.551104] BUG: spinlock lockup suspected on CPU#33, kworker/dying/172
-> [   30.790833] BUG: spinlock lockup suspected on CPU#1, swapper/1/0
-> [  408.020558] BUG: spinlock lockup suspected on CPU#43, khungtaskd/3760
-> [  321.761422] BUG: spinlock lockup suspected on CPU#0, kworker/u101:1/484
-> [  320.551104] BUG: spinlock lockup suspected on CPU#33, kworker/dying/172
-> [   30.790833] BUG: spinlock lockup suspected on CPU#1, swapper/1/0
-> [  408.020558] BUG: spinlock lockup suspected on CPU#43, khungtaskd/3760
-> [  321.761422] BUG: spinlock lockup suspected on CPU#0, kworker/u101:1/484
-> [  320.551104] BUG: spinlock lockup suspected on CPU#33, kworker/dying/172
-> [   30.790833] BUG: spinlock lockup suspected on CPU#1, swapper/1/0
-> [  408.020558] BUG: spinlock lockup suspected on CPU#43, khungtaskd/3760
-> [  321.761422] BUG: spinlock lockup suspected on CPU#0, kworker/u101:1/484
-> [  320.551104] BUG: spinlock lockup suspected on CPU#33, kworker/dying/172
-> [   30.790833] BUG: spinlock lockup suspected on CPU#1, swapper/1/0
-> [  408.020558] BUG: spinlock lockup suspected on CPU#43, khungtaskd/3760
-> [  321.761422] BUG: spinlock lockup suspected on CPU#0, kworker/u101:1/484
-> [  320.551104] BUG: spinlock lockup suspected on CPU#33, kworker/dying/172
-> [   30.790833] BUG: spinlock lockup suspected on CPU#1, swapper/1/0
-> [  408.020558] BUG: spinlock lockup suspected on CPU#43, khungtaskd/3760
-> [  321.761422] BUG: spinlock lockup suspected on CPU#0, kworker/u101:1/484
-> [  320.551104] BUG: spinlock lockup suspected on CPU#33, kworker/dying/172
-> [   30.790833] BUG: spinlock lockup suspected on CPU#1, swapper/1/0
-> [  408.020558] BUG: spinlock lockup suspected on CPU#43, khungtaskd/3760
-> [  321.761422] BUG: spinlock lockup suspected on CPU#0, kworker/u101:1/484
-> [  320.551104] BUG: spinlock lockup suspected on CPU#33, kworker/dying/172
-> [   30.790833] BUG: spinlock lockup suspected on CPU#1, swapper/1/0
-> [  408.020558] BUG: spinlock lockup suspected on CPU#43, khungtaskd/3760
-> [  321.761422] BUG: spinlock lockup suspected on CPU#0, kworker/u101:1/484
-> [  320.551104] BUG: spinlock lockup suspected on CPU#33, kworker/dying/172
-> [   30.790833] BUG: spinlock lockup suspected on CPU#1, swapper/1/0
-> [  408.020558] BUG: spinlock lockup suspected on CPU#43, khungtaskd/3760
-> [  321.761422] BUG: spinlock lockup suspected on CPU#0, kworker/u101:1/484
-> [  320.551104] BUG: spinlock lockup suspected on CPU#33, kworker/dying/172
-> [   30.790833] BUG: spinlock lockup suspected on CPU#1, swapper/1/0
-> [  408.020558] BUG: spinlock lockup suspected on CPU#43, khungtaskd/3760
-> [  321.761422] BUG: spinlock lockup suspected on CPU#0, kworker/u101:1/484
-> [  320.551104] BUG: spinlock lockup suspected on CPU#33, kworker/dying/172
-> [   30.790833] BUG: spinlock lockup suspected on CPU#1, swapper/1/0
-> [  408.020558] BUG: spinlock lockup suspected on CPU#43, khungtaskd/3760
-> [  321.761422] BUG: spinlock lockup suspected on CPU#0, kworker/u101:1/484
-> [  320.551104] BUG: spinlock lockup suspected on CPU#33, kworker/dying/172
-> [   30.790833] BUG: spinlock lockup suspected on CPU#1, swapper/1/0
-> [  408.020558] BUG: spinlock lockup suspected on CPU#43, khungtaskd/3760
-> [  321.761422] general protection fault: 0000 [#1]
-> [  321.761422] BUG: spinlock lockup suspected on CPU#0, kworker/u101:1/484
-> [  320.551104] BUG: spinlock lockup suspected on CPU#33, kworker/dying/172
-> [   30.790833] BUG: spinlock lockup suspected on CPU#1, swapper/1/0
-> [ 2950.759251] BUG: spinlock lockup suspected on CPU#32, swapper/32/0
-> [  408.020558] BUG: spinlock lockup suspected on CPU#43, khungtaskd/3760
-> [  321.761422] BUG: spinlock lockup suspected on CPU#0, kworker/u101:1/484
-> [   30.790833] BUG: spinlock lockup suspected on CPU#1, swapper/1/0
-> [  320.551104] BUG: spinlock lockup suspected on CPU#33, kworker/dying/172
-> [ 3109.224481] BUG: spinlock lockup suspected on CPU#32, swapper/32/0
-> [  408.020558] BUG: spinlock lockup suspected on CPU#43, khungtaskd/3760
-> [  321.761422] BUG: spinlock lockup suspected on CPU#0, kworker/u101:1/484
-> [   30.790833] BUG: spinlock lockup suspected on CPU#1, swapper/1/0
-> [  320.551104] BUG: spinlock lockup suspected on CPU#33, kworker/dying/172
-> [ 3251.771402] BUG: spinlock lockup suspected on CPU#32, swapper/32/0
-> [  408.020558] BUG: spinlock lockup suspected on CPU#43, khungtaskd/3760
-> [  321.761422] BUG: spinlock lockup suspected on CPU#0, kworker/u101:1/484
-> [   30.790833] BUG: spinlock lockup suspected on CPU#1, swapper/1/0
-> [  320.551104] BUG: spinlock lockup suspected on CPU#33, kworker/dying/172
-> [ 3401.522129] BUG: spinlock lockup suspected on CPU#32, swapper/32/0
-> [  408.020558] BUG: spinlock lockup suspected on CPU#43, khungtaskd/3760
-> [   30.790833] BUG: spinlock lockup suspected on CPU#1, swapper/1/0
-> [  321.761422] BUG: spinlock lockup suspected on CPU#0, kworker/u101:1/484
-> [  320.551104] BUG: spinlock lockup suspected on CPU#33, kworker/dying/172
-> [ 3568.564422] BUG: spinlock lockup suspected on CPU#32, swapper/32/0
-> [  408.020558] BUG: spinlock lockup suspected on CPU#43, khungtaskd/3760
-> [   30.790833] BUG: spinlock lockup suspected on CPU#1, swapper/1/0
-> [  321.761422] BUG: spinlock lockup suspected on CPU#0, kworker/u101:1/484
-> [  320.551104] BUG: spinlock lockup suspected on CPU#33, kworker/dying/172
-> [ 3754.638392] BUG: spinlock lockup suspected on CPU#32, swapper/32/0
-> [  408.020558] BUG: spinlock lockup suspected on CPU#43, khungtaskd/3760
-> [  321.761422] BUG: spinlock lockup suspected on CPU#0, kworker/u101:1/484
-> [   30.790833] BUG: spinlock lockup suspected on CPU#1, swapper/1/0
-> [  320.551104] BUG: spinlock lockup suspected on CPU#33, kworker/dying/172
-> [ 3941.597288] BUG: spinlock lockup suspected on CPU#32, swapper/32/0
-> [  408.020558] BUG: spinlock lockup suspected on CPU#43, khungtaskd/3760
-> [  321.761422] BUG: spinlock lockup suspected on CPU#0, kworker/u101:1/484
-> [   30.790833] BUG: spinlock lockup suspected on CPU#1, swapper/1/0
-> [  320.551104] BUG: spinlock lockup suspected on CPU#33, kworker/dying/172
-> [ 4114.243312] BUG: spinlock lockup suspected on CPU#32, swapper/32/0
-> [  408.020558] BUG: spinlock lockup suspected on CPU#43, khungtaskd/3760
-> [  321.761422] BUG: spinlock lockup suspected on CPU#0, kworker/u101:1/484
-> [   30.790833] BUG: spinlock lockup suspected on CPU#1, swapper/1/0
-> [  320.551104] BUG: spinlock lockup suspected on CPU#33, kworker/dying/172
-> [ 4287.428963] BUG: spinlock lockup suspected on CPU#32, swapper/32/0
-> [  408.020558] BUG: spinlock lockup suspected on CPU#43, khungtaskd/3760
-> [   30.790833] BUG: spinlock lockup suspected on CPU#1, swapper/1/0
-> [  321.761422] BUG: spinlock lockup suspected on CPU#0, kworker/u101:1/484
-> [  320.551104] BUG: spinlock lockup suspected on CPU#33, kworker/dying/172
-> [ 4458.566115] BUG: spinlock lockup suspected on CPU#32, swapper/32/0
-> [  408.020558] BUG: spinlock lockup suspected on CPU#43, khungtaskd/3760
-> [   30.790833] PANIC: double fault, error_code: 0x0
-> [  320.551104]  lock: console_sem+0x0/0x60, .magic: dead4ead, .owner: kworker/u101:1/484, .owner_cpu: -1
-> [  408.020558]  lock: console_sem+0x0/0x60, .magic: dead4ead, .owner: kworker/u101:1/484, .owner_cpu: 33
-> [  321.761422]  lock: console_sem+0x0/0x60, .magic: dead4ead, .owner: kworker/u101:1/484, .owner_cpu: -1
-> [  320.551104] CPU: 33 PID: 172 Comm: kworker/dying Tainted: G        W     3.15.0-rc7-next-20140529-sasha-00017-gd239c90-dirty #550
-> [  320.551104]  ffffffff8e087060 ffff88012a800b38 ffffffff8c4e92e3 0000000000000001
-> [   30.790833]  ffff88007bdd3000
-> [   30.790833] CPU: 1 PID: 0 Comm: swapper/1 Tainted: G        W     3.15.0-rc7-next-20140529-sasha-00017-gd239c90-dirty #550
-> [   30.790833]  ffff88012a800b58
-> [   30.790833] task: ffff880a2b3f0000 ti: ffff88007c1d0000 task.ti: ffff88007c1d0000
-> [   30.790833]  ffffffff8c4dc9fe
-> [  320.551104] RIP:  (??:?)
-> [  320.551104]  ffffffff8e087060
-> [   30.790833]  0000000086c41770
-> [   30.790833] string.isra.5 (lib/vsprintf.c:506)
-> [   30.790833]  ffff88012a800b88
-> [   30.790833] RSP: 0000:ffff88012ba00000  EFLAGS: 00010092
-> [   30.790833]  ffffffff891d08b4
-> [   30.790833] RAX: ffffffff8d6ee711 RBX: ffffffff906949f0 RCX: 0000000000000000
-> [   30.790833]  ffffffff8e087078
-> [   30.790833] RDX: ffffffff8d6eb246 RSI: ffffffffffffffff RDI: ffffffff906949f0
-> [  320.551104]
-> [   30.790833] RBP: ffff88012ba00018 R08: 000000000000ffff R09: 000000000000ffff
-> [  320.551104] Call Trace:
-> [   30.790833] R10: 73203a4755423001 R11: 206b636f6c6e6970 R12: ffffffff90694dc0
-> [   30.790833] R13: ffffffff90694dc0 R14: 000000000000ffff R15: 0000000000000000
-> [   30.790833]  <UNK>
-> [   30.790833] FS:  0000000000000000(0000) GS:ffff88012ba00000(0000) knlGS:0000000000000000
-> [  321.761422] CPU: 0 PID: 484 Comm: kworker/u101:1 Tainted: G        W     3.15.0-rc7-next-20140529-sasha-00017-gd239c90-dirty #550
-> [   30.790833] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> [  320.551104] sending NMI to all CPUs:
-> [   30.790833] CR2: ffff88012b9ffff8 CR3: 000000000e02c000 CR4: 00000000000006a0
-> [  321.761422] BUG: spinlock lockup suspected on CPU#0, kworker/u101:1/484
-> [  321.761422]  lock: logbuf_lock+0x0/0x48, .magic: dead4ead, .owner: kworker/u101:1/484, .owner_cpu: -1
-> [  321.761422] CPU: 0 PID: 484 Comm: kworker/u101:1 Tainted: G        W     3.15.0-rc7-next-20140529-sasha-00017-gd239c90-dirty #550
-> [  321.761422] Workqueue: events_power_efficient fb_flashcursor
-> [  321.761422]  ffffffff8e087000 ffff88007da06c78 ffffffff8c4e92e3 0000000000000000
-> [  321.761422]  ffff88007bdd3000 ffff88007da06c98 ffffffff8c4dc9fe ffffffff8e087000
-> [  321.761422]  0000000086c41770 ffff88007da06cc8 ffffffff891d08b4 ffffffff8e087018
-> [  321.761422] Call Trace:
-> [  321.761422] <NMI> dump_stack (lib/dump_stack.c:52)
-> [  321.761422] spin_dump (kernel/locking/spinlock_debug.c:68 (discriminator 6))
-> [  321.761422] do_raw_spin_lock (include/linux/nmi.h:35 kernel/locking/spinlock_debug.c:119 kernel/locking/spinlock_debug.c:137)
-> [  321.761422] _raw_spin_lock (include/linux/spinlock_api_smp.h:143 kernel/locking/spinlock.c:151)
-> [  321.761422] ? vprintk_emit (kernel/printk/printk.c:1620)
-> [  321.761422] vprintk_emit (kernel/printk/printk.c:1620)
-> [  321.761422] printk (kernel/printk/printk.c:1806)
-> [  321.761422] arch_trigger_all_cpu_backtrace_handler (arch/x86/kernel/apic/hw_nmi.c:85)
-> [  321.761422] nmi_handle (arch/x86/kernel/nmi.c:133)
-> [  321.761422] ? nmi_handle (arch/x86/kernel/nmi.c:114)
-> [  321.761422] default_do_nmi (arch/x86/kernel/nmi.c:336)
-> [  321.761422] ? get_color.isra.12 (drivers/video/console/fbcon.c:369)
-> [  321.761422] do_nmi (./arch/x86/include/asm/current.h:14 arch/x86/kernel/nmi.c:540)
-> [  321.761422] end_repeat_nmi (arch/x86/kernel/entry_64.S:1701)
-> [  321.761422] ? get_color.isra.12 (drivers/video/console/fbcon.c:369)
-> [  321.761422] ? get_color.isra.12 (drivers/video/console/fbcon.c:369)
-> [  321.761422] ? get_symbol_pos (kernel/kallsyms.c:230)
-> [  321.761422] ? get_symbol_pos (kernel/kallsyms.c:230)
-> [  321.761422] ? get_symbol_pos (kernel/kallsyms.c:230)
-> [  321.761422]  <<EOE>>  <UNK>
-> [  321.761422] NMI backtrace for cpu 0
-> [  321.761422] CPU: 0 PID: 484 Comm: kworker/u101:1 Tainted: G        W     3.15.0-rc7-next-20140529-sasha-00017-gd239c90-dirty #550
-> [  321.761422] Workqueue: events_power_efficient fb_flashcursor
-> [  321.761422] task: ffff88007bdd3000 ti: ffff88007bde8000 task.ti: ffff88007bde8000
-> [  321.761422] RIP: get_symbol_pos (kernel/kallsyms.c:230)
-> [  321.761422] RSP: 0000:ffff88007bde5c78  EFLAGS: 00000006
-> [  321.761422] RAX: 0000000000008c7c RBX: ffff88007bde5cd0 RCX: 0000000000009831
-> [  321.761422] RDX: ffff88007bde5cd8 RSI: ffff88007bde5ce0 RDI: ffffffff89bba9c0
-> [  321.761422] RBP: ffff88007bde5c78 R08: 000000000000a3e6 R09: 000000000000ffff
-> [  321.761422] R10: 000000000005da8d R11: 3a6d6d6f43203438 R12: ffff88007bde5d41
-> [  321.761422] R13: ffffffff89bba9c0 R14: 0000000000000000 R15: ffffffff8d6e8c47
-> [  321.761422] FS:  0000000000000000(0000) GS:ffff88007da00000(0000) knlGS:0000000000000000
-> [  321.761422] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> [  321.761422] CR2: 00000000ffffffff CR3: 000000000e02c000 CR4: 00000000000006b0
-> [  321.761422] Stack:
-> [  321.761422]  ffff88007bde5cb8 ffffffff8920eb4e 70202c786c383025 ffff88007bde5e31
-> [  321.761422]  ffff8800fbde5e2b ffff88007bde5d41 ffffffff89bba9c0 0000000000000000
-> [  321.761422]  ffff88007bde5d08 ffffffff8920ec42 522829676e6fffff 296e656c3e2d4345
-> [  321.761422] Call Trace:
-> [  321.761422]  <UNK>
-> [ 321.761422] Code: 30 0e f7 8c 55 48 85 c0 48 89 e5 75 02 0f 0b 4c 8b 15 ca fc 04 04 31 c0 4d 89 d0 eb 16 48 d1 e9 48 01 c1 48 39 3c cd 30 0e f7 8c <4c> 0f 47 c1 48 0f 46 c1 4c 89 c1 48 29 c1 48 83 f9 01 77 de 48
-> All code
-> ========
->     0:	30 0e                	xor    %cl,(%rsi)
->     2:	f7                   	(bad)
->     3:	8c 55 48             	mov    %ss,0x48(%rbp)
->     6:	85 c0                	test   %eax,%eax
->     8:	48 89 e5             	mov    %rsp,%rbp
->     b:	75 02                	jne    0xf
->     d:	0f 0b                	ud2
->     f:	4c 8b 15 ca fc 04 04 	mov    0x404fcca(%rip),%r10        # 0x404fce0
->    16:	31 c0                	xor    %eax,%eax
->    18:	4d 89 d0             	mov    %r10,%r8
->    1b:	eb 16                	jmp    0x33
->    1d:	48 d1 e9             	shr    %rcx
->    20:	48 01 c1             	add    %rax,%rcx
->    23:	48 39 3c cd 30 0e f7 	cmp    %rdi,-0x7308f1d0(,%rcx,8)
->    2a:	8c
->    2b:*	4c 0f 47 c1          	cmova  %rcx,%r8		<-- trapping instruction
->    2f:	48 0f 46 c1          	cmovbe %rcx,%rax
->    33:	4c 89 c1             	mov    %r8,%rcx
->    36:	48 29 c1             	sub    %rax,%rcx
->    39:	48 83 f9 01          	cmp    $0x1,%rcx
->    3d:	77 de                	ja     0x1d
->    3f:	48                   	rex.W
-> 	...
->
-> Code starting with the faulting instruction
-> ===========================================
->     0:	4c 0f 47 c1          	cmova  %rcx,%r8
->     4:	48 0f 46 c1          	cmovbe %rcx,%rax
->     8:	4c 89 c1             	mov    %r8,%rcx
->     b:	48 29 c1             	sub    %rax,%rcx
->     e:	48 83 f9 01          	cmp    $0x1,%rcx
->    12:	77 de                	ja     0xfffffffffffffff2
->    14:	48                   	rex.W
-> 	...
-> [   30.790833] NMI backtrace for cpu 1
-> [hang]
->
->
-> Thanks,
-> Sasha
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+> diff --git a/drivers/clk/samsung/clk-exynos5420.c b/drivers/clk/samsung/clk-exynos5420.c
+> index 9d7d7ee..1e586be 100644
+> --- a/drivers/clk/samsung/clk-exynos5420.c
+> +++ b/drivers/clk/samsung/clk-exynos5420.c
+> @@ -1172,11 +1172,17 @@ static struct of_device_id ext_clk_match[] __initdata = {
+>  	{ },
+>  };
+>  
+> +/* Keep these clocks on until late_initcall */
+> +static const char *boot_clocks[] __initconst = {
+> +	"aclk66_peric",
+> +};
+> +
+>  /* register exynos5420 clocks */
+>  static void __init exynos5x_clk_init(struct device_node *np,
+>  		enum exynos5x_soc soc)
+>  {
+>  	struct samsung_clk_provider *ctx;
+> +	int i;
+>  
+>  	if (np) {
+>  		reg_base = of_iomap(np, 0);
+> @@ -1226,6 +1232,12 @@ static void __init exynos5x_clk_init(struct device_node *np,
+>  	}
+>  
+>  	exynos5420_clk_sleep_init();
+> +
+> +	for (i = 0; i < ARRAY_SIZE(boot_clocks); i++) {
+> +		struct clk *to_enable = __clk_lookup(boot_clocks[i]);
+> +
+> +		clk_prepare_enable(to_enable);
+> +	}
+>  }
+>  
+>  static void __init exynos5420_clk_init(struct device_node *np)
+> @@ -1239,3 +1251,15 @@ static void __init exynos5800_clk_init(struct device_node *np)
+>  	exynos5x_clk_init(np, EXYNOS5800);
+>  }
+>  CLK_OF_DECLARE(exynos5800_clk, "samsung,exynos5800-clock", exynos5800_clk_init);
+> +
+> +static int __init exynos5420_clk_late_init(void)
+> +{
+> +	int i;
+> +
+> +	for (i = 0; i < ARRAY_SIZE(boot_clocks); i++) {
+> +		struct clk *to_disable = __clk_lookup(boot_clocks[i]);
+> +
+> +		clk_disable_unprepare(to_disable);
+> +	}
+> +}
+> +late_initcall(exynos5420_clk_late_init);
+> 
 
+You should return 0 here.
+
+Best regards,
+Javier
