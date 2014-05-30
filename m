@@ -1,141 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753989AbaE3Cr4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 22:47:56 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:58799 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750775AbaE3Crw (ORCPT
+	id S1754259AbaE3Cts (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 22:49:48 -0400
+Received: from mail-yk0-f179.google.com ([209.85.160.179]:59427 "EHLO
+	mail-yk0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752163AbaE3Ctr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 22:47:52 -0400
-Message-ID: <5387F150.5000307@hitachi.com>
-Date: Fri, 30 May 2014 11:47:44 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: "Suzuki K. Poulose" <suzuki@in.ibm.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Tony Luck <tony.luck@gmail.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>, linux-ia64@vger.kernel.org,
-        sparse@chrisli.org, "H. Peter Anvin" <hpa@zytor.com>,
-        akataria@vmware.com, linux-tip-commits@vger.kernel.org,
-        anil.s.keshavamurthy@intel.com, Ingo Molnar <mingo@kernel.org>,
-        Fenghua Yu <fenghua.yu@intel.com>, Arnd Bergmann <arnd@arndb.de>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Chris Wright <chrisw@sous-sol.org>, yrl.pp-manager.tt@hitachi.com,
-        Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
-        Kevin Hao <haokexin@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>, rdunlap@infradead.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, dl9pf@gmx.de,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linuxppc-dev@lists.ozlabs.org, "David S. Miller" <davem@davemloft.net>
-Subject: Re: [RFT PATCH -next v2] [BUGFIX] kprobes: Fix "Failed to find blacklist"
- error on ia64 and ppc64
-References: <5383249A.6060407@in.ibm.com> <20140527063121.4399.38014.stgit@ltc230.yrl.intra.hitachi.co.jp> <538786D8.1070303@in.ibm.com>
-In-Reply-To: <538786D8.1070303@in.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Thu, 29 May 2014 22:49:47 -0400
+From: Ming Lei <ming.lei@canonical.com>
+To: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
+Cc: Ming Lei <ming.lei@canonical.com>, Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        virtualization@lists.linux-foundation.org
+Subject: [PATCH] block: virtio_blk: don't hold spin lock during world switch
+Date: Fri, 30 May 2014 10:49:29 +0800
+Message-Id: <1401418169-3361-1-git-send-email-ming.lei@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/05/30 4:13), Suzuki K. Poulose wrote:
->> @@ -2042,7 +2043,8 @@ static int __init populate_kprobe_blacklist(unsigned long *start,
->>  	unsigned long offset = 0, size = 0;
->>  
->>  	for (iter = start; iter < end; iter++) {
->> -		if (!kallsyms_lookup_size_offset(*iter, &size, &offset)) {
->> +		if (!kallsyms_lookup_size_offset(function_entry(*iter),
->> +						 &size, &offset)) {
-> 
-> On powerpc we will be able to resolve the *iter to func_descr and won't
-> get the below error with/without this patch. So we have to actually
-> verify the kprobe_blacklist contents to make sure everything is alright.
-> 
->>  			pr_err("Failed to find blacklist %p\n", (void *)*iter);
->>  			continue;
->>  		}
->>
-> 
-> There is a bug here.
-> You need to set the ent->start using the function_entry(*iter) and not
-> *iter. Or else you just avoid the 'Warning' and still have an invalid
-> black list. As shown below :
-> 
->     2e:mon> ls kprobe_blacklist
->     kprobe_blacklist: c00000000104dad0
->     2e:mon> d c00000000104dad0 10
->     c00000000104dad0: c0000003aff800a0 c0000003aff809a0
->     2e:mon> d c0000003aff800a0 20 (struct kprobe_blacklist *)
->     c0000003aff800a0: c0000003aff800c0 c00000000104dad0
->     c0000003aff800b0: c0000000010ef138 c0000000010ef188
->                       start ^^         end ^^
->     2e:mon> la c0000000010ef138 (start)
->     c0000000010ef138: notify_die+0x0/0x10 <- still points to the
-> function descriptor
->     2e:mon> la c0000000010ef188 (end)
->     c0000000010ef188: __blocking_notifier_call_chain+0x0/0x10
-> 
-> 
-> Following patch fixes the issue, with the patch :
-> 
-> 1:mon> ls kprobe_blacklist
-> kprobe_blacklist: c00000000104dad0
-> 1:mon> d c00000000104dad0 10
-> c00000000104dad0: c0000003ae1a00a0 c0000003ae1a09a0
-> 1:mon> d c0000003ae1a00a0 20 (struct kprobe_blacklist *)
-> c0000003ae1a00a0: c0000003ae1a00c0 c00000000104dad0
-> c0000003ae1a00b0: c0000000000b14d0 c0000000000b1520
->                       start ^^         end ^^
-> 1:mon> la c0000000000b14d0
-> c0000000000b14d0: .notify_die+0x0/0x50
-> 1:mon> la c0000000000b1520
-> c0000000000b1520: .atomic_notifier_chain_register+0x0/0xa0
-> 
-> 1:mon> di c0000000000b14d0 10 (.notify_die)
-> c0000000000b14d0  7c0802a6	mflr	r0
-> c0000000000b14d4  7c691b78	mr	r9,r3
-> 
-> commit ed51674aca8e0496641f565421ab6691a873e80a
-> Author: Suzuki K. Poulose <suzuki@in.ibm.com>
-> Date:   Fri May 30 00:23:01 2014 +0530
-> 
-> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-> index 3859c88..b81d626 100644
-> --- a/kernel/kprobes.c
-> +++ b/kernel/kprobes.c
-> @@ -2043,7 +2043,8 @@ static int __init
-> populate_kprobe_blacklist(unsigned long *start,
->         unsigned long offset = 0, size = 0;
-> 
->         for (iter = start; iter < end; iter++) {
-> -               if (!kallsyms_lookup_size_offset(function_entry(*iter),
-> +               unsigned long entry = function_entry(*iter);
-> +               if (!kallsyms_lookup_size_offset(entry,
->                                                  &size, &offset)) {
->                         pr_err("Failed to find blacklist %p\n", (void
-> *)*iter);
->                         continue;
-> @@ -2052,8 +2053,8 @@ static int __init
-> populate_kprobe_blacklist(unsigned long *start,
->                 ent = kmalloc(sizeof(*ent), GFP_KERNEL);
->                 if (!ent)
->                         return -ENOMEM;
-> -               ent->start_addr = *iter;
-> -               ent->end_addr = *iter + size;
-> +               ent->start_addr = entry;
-> +               ent->end_addr = entry + size;
+Firstly, it isn't necessary to hold lock of vblk->vq_lock
+when notifying hypervisor about queued I/O.
 
-Oops! right, I missed it :(
-I'll update the patch including your fix and signed-off-by.
+Secondly, virtqueue_notify() will cause world switch and
+it may take long time on some hypervisors(such as, qemu-arm),
+so it isn't good to hold the lock and block other vCPUs.
 
-thank you!
+On arm64 quad core VM(qemu-kvm), the patch can increase I/O
+performance a lot with VIRTIO_RING_F_EVENT_IDX enabled:
+	- without the patch: 14K IOPS
+	- with the patch: 34K IOPS
 
+fio script:
+	[global]
+	direct=1
+	bsrange=4k-4k
+	timeout=10
+	numjobs=4
+	ioengine=libaio
+	iodepth=64
 
+	filename=/dev/vdc
+	group_reporting=1
+
+	[f1]
+	rw=randread
+
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: virtualization@lists.linux-foundation.org
+Signed-off-by: Ming Lei <ming.lei@canonical.com>
+---
+ drivers/block/virtio_blk.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
+index 9f340fa..a6f5424 100644
+--- a/drivers/block/virtio_blk.c
++++ b/drivers/block/virtio_blk.c
+@@ -162,6 +162,7 @@ static int virtio_queue_rq(struct blk_mq_hw_ctx *hctx, struct request *req)
+ 	unsigned int num;
+ 	const bool last = (req->cmd_flags & REQ_END) != 0;
+ 	int err;
++	bool notify = false;
+ 
+ 	BUG_ON(req->nr_phys_segments + 2 > vblk->sg_elems);
+ 
+@@ -214,10 +215,12 @@ static int virtio_queue_rq(struct blk_mq_hw_ctx *hctx, struct request *req)
+ 		return BLK_MQ_RQ_QUEUE_ERROR;
+ 	}
+ 
+-	if (last)
+-		virtqueue_kick(vblk->vq);
+-
++	if (last && virtqueue_kick_prepare(vblk->vq))
++		notify = true;
+ 	spin_unlock_irqrestore(&vblk->vq_lock, flags);
++
++	if (notify)
++		virtqueue_notify(vblk->vq);
+ 	return BLK_MQ_RQ_QUEUE_OK;
+ }
+ 
 -- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
+1.7.9.5
 
