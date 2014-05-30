@@ -1,49 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753885AbaE3C5L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 22:57:11 -0400
-Received: from mail-oa0-f65.google.com ([209.85.219.65]:40073 "EHLO
-	mail-oa0-f65.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751304AbaE3C5J (ORCPT
+	id S1754094AbaE3DIg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 23:08:36 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:2685 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751919AbaE3DIf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 22:57:09 -0400
+	Thu, 29 May 2014 23:08:35 -0400
+Date: Thu, 29 May 2014 23:08:28 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+Cc: Namhyung Kim <namhyung@kernel.org>, linux-kernel@vger.kernel.org,
+        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ingo Molnar <mingo@redhat.com>, yrl.pp-manager.tt@hitachi.com
+Subject: Re: [PATCH V2 1/2] ftrace: Make saved_cmdlines use seq_read
+Message-ID: <20140529230828.4d10eb3d@gandalf.local.home>
+In-Reply-To: <20140220084431.3839.51793.stgit@yunodevel>
+References: <20140220084428.3839.59555.stgit@yunodevel>
+	<20140220084431.3839.51793.stgit@yunodevel>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Date: Fri, 30 May 2014 10:57:08 +0800
-Message-ID: <CAGO-9moQrepikUk198XjgiE=hC2W6u_Wsup8yK=ooBfPNg1PfQ@mail.gmail.com>
-Subject: Ask for help on the memory allocation for process shared mutex
- (resend with plain text)
-From: yang ben <benyangfsl@gmail.com>
-To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear experts,
+On Thu, 20 Feb 2014 17:44:31 +0900
+Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com> wrote:
 
-I came across a memory/mutex issue. Would you kindly shed some light on it?
+> Current tracing_saved_cmdlines_read() implementation is naive;
+> simply allocate a big buffer, construct output data on the
+> buffer for each read operation, and then copy a portion of
+> the buffer to the user space buffer.  This can cause a couple of
+> issues such as a slow memory allocation, high cpu usage, and a
+> corruption of the output data.
+> 
+> To address these issues, make saved_cmdlines use seq_read.
 
-I use pthread_mutex_xxx API to protect processes in user space. Since
-it should be process shared, I allocated a shared memory to store
-pthread_mutex_t structure.
+I changed the subject and change log to the following. The patch is
+untouched:
 
-The shared memory is allocated using vmalloc_user() and mapped using
-remap_vmalloc_range() in driver. However, get_futex_key() will always
-return -EFAULT, because page_head->mapping==0.
+    tracing: Have saved_cmdlines use the seq_read infrastructure
+    
+    Current tracing_saved_cmdlines_read() implementation is naive; It
+    allocates a large buffer, constructs output data to that buffer for
+    each read operation, and then copies a portion of the buffer to the
+    user space buffer. This has several issues such as slow memory
+    allocation, high CPU usage, and even corruption of the output data.
+    
+    The seq_read infrastructure is made to handle this type of work.
+    By converting it to use seq_read() the code becomes smaller,
+    simplified, as well as correct.
 
-futex.c (Linux-3.10.31)
-         if (!page_head->mapping) {
-                 int shmem_swizzled = PageSwapCache(page_head);
-                 unlock_page(page_head);
-                 put_page(page_head);
-                 if (shmem_swizzled)
-                         goto again;
-                 return -EFAULT;
-         }
 
-Is there special requirement on the memory to store mutex? What's the
-correct way to allocate such memory in driver?
-Thanks in advance!
-
-Regards,
-Ben
+-- Steve
