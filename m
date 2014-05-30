@@ -1,94 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932857AbaE3Jte (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 05:49:34 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:59064 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932804AbaE3Jtd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 05:49:33 -0400
-Message-ID: <53885427.5090509@linaro.org>
-Date: Fri, 30 May 2014 10:49:27 +0100
-From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S932906AbaE3JuW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 05:50:22 -0400
+Received: from mga02.intel.com ([134.134.136.20]:40711 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932685AbaE3JuU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 May 2014 05:50:20 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,940,1392192000"; 
+   d="asc'?scan'208";a="548835410"
+Date: Fri, 30 May 2014 05:22:32 -0400
+From: "Chen, Gong" <gong.chen@linux.intel.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Borislav Petkov <bp@alien8.de>, tony.luck@intel.com, m.chehab@samsung.com,
+        linux-acpi@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/7 v6] trace, RAS: Add eMCA trace event interface
+Message-ID: <20140530092232.GA13495@gchen.bj.intel.com>
+Mail-Followup-To: Steven Rostedt <rostedt@goodmis.org>,
+	Borislav Petkov <bp@alien8.de>, tony.luck@intel.com,
+	m.chehab@samsung.com, linux-acpi@vger.kernel.org,
+	LKML <linux-kernel@vger.kernel.org>
+References: <1400142646-10127-1-git-send-email-gong.chen@linux.intel.com>
+ <1401247938-22125-1-git-send-email-gong.chen@linux.intel.com>
+ <1401247938-22125-2-git-send-email-gong.chen@linux.intel.com>
+ <20140528112832.5f83c66b@gandalf.local.home>
+ <20140528163452.GF17196@pd.tnic>
+ <20140528125625.6f6dcf7f@gandalf.local.home>
 MIME-Version: 1.0
-To: Ulf Hansson <ulf.hansson@linaro.org>
-CC: Russell King <linux@arm.linux.org.uk>,
-        linux-mmc <linux-mmc@vger.kernel.org>, Chris Ball <chris@printf.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH v4 03/13] mmc: mmci: Add Qualcomm Id to amba id table
-References: <1401284608-16428-1-git-send-email-srinivas.kandagatla@linaro.org>	<1401284779-16563-1-git-send-email-srinivas.kandagatla@linaro.org> <CAPDyKFqf-=WJ7RRpk-n4zc6rm1gEuW42Jc3zzCkWSL6mdYFh1g@mail.gmail.com>
-In-Reply-To: <CAPDyKFqf-=WJ7RRpk-n4zc6rm1gEuW42Jc3zzCkWSL6mdYFh1g@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="mYCpIKhGyMATD0i+"
+Content-Disposition: inline
+In-Reply-To: <20140528125625.6f6dcf7f@gandalf.local.home>
+X-PGP-Key-ID: A43922C7
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+--mYCpIKhGyMATD0i+
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On 30/05/14 10:39, Ulf Hansson wrote:
-> On 28 May 2014 15:46,  <srinivas.kandagatla@linaro.org> wrote:
->> From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
->>
->> This patch adds a fake Qualcomm ID 0x00051180 to the amba_ids, as Qualcomm
->> SDCC controller is pl180, but amba id registers read 0x0's.
->> The plan is to remove SDCC driver totally and use mmci as the main SD
->> controller driver for Qualcomm SOCs.
->>
->> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
->> Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
->> ---
->>   drivers/mmc/host/mmci.c | 14 ++++++++++++++
->>   1 file changed, 14 insertions(+)
->>
->> diff --git a/drivers/mmc/host/mmci.c b/drivers/mmc/host/mmci.c
->> index a38e714..86f25a9 100644
->> --- a/drivers/mmc/host/mmci.c
->> +++ b/drivers/mmc/host/mmci.c
->> @@ -160,6 +160,14 @@ static struct variant_data variant_ux500v2 = {
->>          .pwrreg_nopower         = true,
->>   };
->>
->> +static struct variant_data variant_qcom = {
->> +       .fifosize               = 16 * 4,
->> +       .fifohalfsize           = 8 * 4,
->> +       .clkreg                 = MCI_CLK_ENABLE,
->> +       .datalength_bits        = 24,
->> +       .pwrreg_powerup         = MCI_PWR_UP,
->> +};
->> +
->>   static int mmci_card_busy(struct mmc_host *mmc)
->>   {
->>          struct mmci_host *host = mmc_priv(mmc);
->> @@ -1750,6 +1758,12 @@ static struct amba_id mmci_ids[] = {
->>                  .mask   = 0xf0ffffff,
->>                  .data   = &variant_ux500v2,
->>          },
->> +       /* Qualcomm variants */
->> +       {
->> +               .id     = 0x00051180,
->> +               .mask   = 0x000fffff,
->> +               .data   = &variant_qcom,
->> +       },
->>          { 0, 0 },
->>   };
->
-> Shouldn't this patch be moved to very end of this patchset?
->
-> If we would apply this patch on it's own - the Qcom variant wouldn't
-> work, right?
-Yes, I would not work. I will move it to the end of the patchset.
+On Wed, May 28, 2014 at 12:56:25PM -0400, Steven Rostedt wrote:
+> Instead of making that a huge string, what about a dynamic array of
+> special structures?
+>=20
+>=20
+> struct __attribute__((__packed__)) cper_sec_mem_rec {
+> 	short type;
+> 	int data;
+> };
+>=20
+>=20
+HI, Steven & Boris
 
-Thanks,
-srini
->
-> Kind regards
-> Ulf Hansson
->
->>
->> --
->> 1.9.1
->>
+We have two big chunk string. One for memory error location, the other
+for DIMM error location. Since DIMM error location depends on some
+other conditions, how about just converting memory error location
+to a compact mode but leaving DIMM error location alone?=20
+
+For memory error location, I will utilize type offset to save one
+more byte, furthermore, I want to drop requestor_id, responder_id
+and target_id. 1) They are very rare (I've never seen them by now)
+2) They are u64 but not u16. So to keep whole struct clean I want
+to use following struct. We can extend it later when necessary.
+
+struct __attribute__((__packed__)) cper_sec_mem_rec {
+	u8 type;
+	u16 data;
+};
+
+So whole struct is just 3 bytes. Even if all fields are valid, we
+have 3 * 9 =3D 27 bytes in total for a record in the ring buffer.
+
+Make sense?
+
+--mYCpIKhGyMATD0i+
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTiE3YAAoJEI01n1+kOSLH6XkP/3xmspuz1m4VaEux5kkIiiP3
+TD7xiE7GCFDOK50amJ61VGyI8HvMwG6zEHUj6ntPv070SddgCK6P36QF0OmbHiSa
+FwsZanT/ie/O7nqnvzLwB+XH48nf+k4mbR4e3hfCsx8+2UfEEVePpHlnETMWiU80
+h7Huy2ECSNIk7rJpc/bJusEB7vVNSa9gIUIUSULl3q7ulfdmraKd7TFsKOnR8KgA
+FEOuCs8qjrYiiBlzwPGyd2UmXLrQrArKknVvhkAxBDA9Ng2DVSgLCYVsUhoJreqy
+F3YdtB3KT4kWJPuR2sur7U3W/Q3pZ9ivdvhTsxCXOK5eXinlYpu7eOuv+NhB/W+/
+8TSFAmHX8D/jKf9fi/xDJnCdHY5q8bPK3uBrvm11F6wILxKZuCQywlvyVLsNqPZj
+qrK5BilDzPsnR4LvYi2Zq3p7p9+1HJLUJFyOaNTTasfbkIcXHYljfhN3b1EkZBqk
+n2OWj8oWM83toC2nakMUMZFqNOzO5x2WQTCUJyPqyYjQOthhmP+QTz01mPcLWC5/
+D0ZuiTXfulR1mkwz4WOoCYm+myBNoLpRl8uyYb4L1KJ7GBWudTTaqMgJH3IyYDOg
+0s6Zm4qkPWgxHDFkETw72fOP0nKN073NBrOClb57tCzGk8w0L4VZk+yQdsUMXVIz
+jPE4rcUjz9siPfFWXIcO
+=DaMg
+-----END PGP SIGNATURE-----
+
+--mYCpIKhGyMATD0i+--
