@@ -1,59 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753549AbaE3Dex (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 23:34:53 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43931 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751919AbaE3Dew (ORCPT
+	id S1754512AbaE3Dfg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 23:35:36 -0400
+Received: from mail01-md.ns.itscom.net ([175.177.155.111]:52155 "EHLO
+	mail01-md.ns.itscom.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754225AbaE3Dfe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 23:34:52 -0400
-MIME-Version: 1.0
-In-Reply-To: <5387F8B2.1070509@kernel.dk>
-References: <1401418169-3361-1-git-send-email-ming.lei@canonical.com>
-	<5387F8B2.1070509@kernel.dk>
-Date: Fri, 30 May 2014 11:34:49 +0800
-Message-ID: <CACVXFVPoG6_fL_MTRF+616W7UdHpSgjtMLBLeBn4OGR63haw3w@mail.gmail.com>
-Subject: Re: [PATCH] block: virtio_blk: don't hold spin lock during world switch
-From: Ming Lei <ming.lei@canonical.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        virtualization@lists.linux-foundation.org
-Content-Type: text/plain; charset=UTF-8
+	Thu, 29 May 2014 23:35:34 -0400
+From: "J. R. Okajima" <hooanon05g@gmail.com>
+Subject: Re: Unionmount and overlayfs testsuite
+To: David Howells <dhowells@redhat.com>
+Cc: Miklos Szeredi <miklos@szeredi.hu>, viro@ZenIV.linux.org.uk,
+        torvalds@linux-foundation.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, hch@infradead.org,
+        akpm@linux-foundation.org, apw@canonical.com, nbd@openwrt.org,
+        neilb@suse.de, jordipujolp@gmail.com, ezk@fsl.cs.sunysb.edu,
+        sedat.dilek@gmail.com, mszeredi@suse.cz
+In-Reply-To: <28592.1401382081@warthog.procyon.org.uk>
+References: <1400838223-30844-1-git-send-email-miklos@szeredi.hu> <28592.1401382081@warthog.procyon.org.uk>
+Date: Fri, 30 May 2014 12:35:31 +0900
+Message-ID: <11446.1401420931@jrobl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 30, 2014 at 11:19 AM, Jens Axboe <axboe@kernel.dk> wrote:
-> On 2014-05-29 20:49, Ming Lei wrote:
->>
->> Firstly, it isn't necessary to hold lock of vblk->vq_lock
->> when notifying hypervisor about queued I/O.
->>
->> Secondly, virtqueue_notify() will cause world switch and
->> it may take long time on some hypervisors(such as, qemu-arm),
->> so it isn't good to hold the lock and block other vCPUs.
->>
->> On arm64 quad core VM(qemu-kvm), the patch can increase I/O
->> performance a lot with VIRTIO_RING_F_EVENT_IDX enabled:
->>         - without the patch: 14K IOPS
->>         - with the patch: 34K IOPS
->
->
-> Patch looks good to me. I don't see a hit on my qemu-kvm testing, but it
-> definitely makes sense and I can see it hurting in other places.
 
-It isn't easy to observe the improvement on x86 VM, especially
-with few vCPUs, because qemu-system-x86_64 only takes
-several microseconds to handle the notification, but on arm64, it
-may take hundreds of microseconds, so the improvement is
-obvious on arm VM.
+David Howells:
+> http://git.infradead.org/users/dhowells/unionmount-testsuite.git
 
-I hope this patch can be merged, at least arm VM can benefit
-from it.
+I've found some interesting cases.
+
+- impermissible.test,
+	open_file_as_bin -t -w $file -E EACCES
+  When $termslash is "/", a '/' is appended to the expanded $file, such
+  as "/path/fileA/". If fileA is a regular file, that path is obviously
+  wrong. Does UnionMount expect EACCES in this case too?
+  Should it be ENOTDIR?
+  It might be better to change
+	errcode=EACCES
+	test ! "$termslash" = "" && errcode=ENOTDIR
+	open_file_as_bin -t -w $file -E $errcode
+
+- readlink.test,
+	fs_op readlink $file -R $testdir/direct_dir_sym100 ${termslash:+-E EINVAL}
+  It expects "$testdir/direct_dir_sym100". Does it mean UnionMount
+  converts the target path?
+  For example,
+  - /u = /rw + /ro
+  - /rw/symlinkA doesn't exist
+  - /ro/symlinkA points to /ro/fileA
+  Does readlink(2) return "/u/fileA" instead of "/u/fileA"?
+
+And all tests should be done by a superuser?
 
 
-Thanks,
---
-Ming Lei
+J. R. Okajima
