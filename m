@@ -1,16 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753467AbaE3A3t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 20:29:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64405 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751158AbaE3A3r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 20:29:47 -0400
-Date: Thu, 29 May 2014 20:29:19 -0400
-From: Dave Jones <davej@redhat.com>
+	id S1754123AbaE3Abq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 20:31:46 -0400
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:44542 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753712AbaE3Abp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 20:31:45 -0400
+X-Original-SENDERIP: 10.177.220.169
+X-Original-MAILFROM: minchan@kernel.org
+Date: Fri, 30 May 2014 09:32:19 +0900
+From: Minchan Kim <minchan@kernel.org>
 To: Dave Chinner <david@fromorbit.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>, Minchan Kim <minchan@kernel.org>,
+Cc: Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jens Axboe <axboe@kernel.dk>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         linux-mm <linux-mm@kvack.org>, "H. Peter Anvin" <hpa@zytor.com>,
@@ -22,23 +26,7 @@ Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Dave Hansen <dave.hansen@intel.com>,
         Steven Rostedt <rostedt@goodmis.org>
 Subject: Re: [RFC 2/2] x86_64: expand kernel stack to 16K
-Message-ID: <20140530002919.GA30913@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Dave Chinner <david@fromorbit.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Jens Axboe <axboe@kernel.dk>, Minchan Kim <minchan@kernel.org>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	linux-mm <linux-mm@kvack.org>, "H. Peter Anvin" <hpa@zytor.com>,
-	Ingo Molnar <mingo@kernel.org>,
-	Peter Zijlstra <a.p.zijlstra@chello.nl>,
-	Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-	Johannes Weiner <hannes@cmpxchg.org>,
-	Hugh Dickins <hughd@google.com>,
-	Rusty Russell <rusty@rustcorp.com.au>,
-	"Michael S. Tsirkin" <mst@redhat.com>,
-	Dave Hansen <dave.hansen@intel.com>,
-	Steven Rostedt <rostedt@goodmis.org>
+Message-ID: <20140530003219.GN10092@bbox>
 References: <CA+55aFxXdc22dirnE49UbQP_2s2vLQpjQFL+NptuyK7Xry6c=g@mail.gmail.com>
  <20140528223142.GO8554@dastard>
  <CA+55aFyRk6_v6COPGVvu6hvt=i2A8-dPcs1X3Ydn1g24AxbPkg@mail.gmail.com>
@@ -53,31 +41,53 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 In-Reply-To: <20140530002113.GC14410@dastard>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Fri, May 30, 2014 at 10:21:13AM +1000, Dave Chinner wrote:
- > On Thu, May 29, 2014 at 08:06:49PM -0400, Dave Jones wrote:
- > > On Fri, May 30, 2014 at 09:53:08AM +1000, Dave Chinner wrote:
- > > 
- > >  > That sounds like a plan. Perhaps it would be useful to add a
- > >  > WARN_ON_ONCE(stack_usage > 8k) (or some other arbitrary depth beyond
- > >  > 8k) so that we get some indication that we're hitting a deep stack
- > >  > but the system otherwise keeps functioning. That gives us some
- > >  > motivation to keep stack usage down but isn't a fatal problem like
- > >  > it is now....
- > > 
- > > We have check_stack_usage() and DEBUG_STACK_USAGE for this.
- > > Though it needs some tweaking if we move to 16K
- > 
- > Right, but it doesn't throw loud warnings when a specific threshold
- > is reached - it just issues a quiet message when a process exits
- > telling you what the maximum was without giving us a stack to chew
- > on....
+> On Thu, May 29, 2014 at 08:06:49PM -0400, Dave Jones wrote:
+> > On Fri, May 30, 2014 at 09:53:08AM +1000, Dave Chinner wrote:
+> > 
+> >  > That sounds like a plan. Perhaps it would be useful to add a
+> >  > WARN_ON_ONCE(stack_usage > 8k) (or some other arbitrary depth beyond
+> >  > 8k) so that we get some indication that we're hitting a deep stack
+> >  > but the system otherwise keeps functioning. That gives us some
+> >  > motivation to keep stack usage down but isn't a fatal problem like
+> >  > it is now....
+> > 
+> > We have check_stack_usage() and DEBUG_STACK_USAGE for this.
+> > Though it needs some tweaking if we move to 16K
+> 
+> Right, but it doesn't throw loud warnings when a specific threshold
+> is reached - it just issues a quiet message when a process exits
+> telling you what the maximum was without giving us a stack to chew
+> on....
 
-ah, right good point. That would be more useful.
+But we could enhance the inform so notice the risk to the user.
+as follow
 
-	Dave
+...
+"kworker/u24:1 (94) used greatest stack depth: 8K bytes left, it means
+there is some horrible stack hogger in your kernel. Please report it
+the LKML and enable stacktrace to investigate who is culprit"
 
+
+> 
+> Cheers,
+> 
+> Dave.
+> -- 
+> Dave Chinner
+> david@fromorbit.com
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+-- 
+Kind regards,
+Minchan Kim
