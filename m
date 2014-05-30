@@ -1,88 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965002AbaE3RHi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 13:07:38 -0400
-Received: from mailrelay004.isp.belgacom.be ([195.238.6.170]:22341 "EHLO
-	mailrelay004.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754082AbaE3RHg (ORCPT
+	id S965051AbaE3RIs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 13:08:48 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:61101 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S933527AbaE3RIr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 13:07:36 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AskNAI65iFNXQxV9/2dsb2JhbABZgwerRgaYGoEJF3SCUy8jgRo3iEYB1nYXhVWIfR2EKgEDmX6LG4gSgXiBQjs
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>, linux-scsi@vger.kernel.org,
-        Anil Gurumurthy <anil.gurumurthy@qlogic.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>
-Subject: [RFC 1/1] drivers/scsi/bfa/bfad_debugfs.c: replace 2 kzalloc/copy_from_user to memdup_user
-Date: Fri, 30 May 2014 19:07:36 +0200
-Message-Id: <1401469656-10332-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.8.4.5
+	Fri, 30 May 2014 13:08:47 -0400
+Date: Fri, 30 May 2014 13:08:41 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
+        Namhyung Kim <namhyung@kernel.org>, linux-kernel@vger.kernel.org,
+        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ingo Molnar <mingo@redhat.com>, yrl.pp-manager.tt@hitachi.com
+Subject: Re: [PATCH V2 2/2] ftrace: Introduce nr_saved_cmdlines I/F
+Message-ID: <20140530130841.57b3042f@gandalf.local.home>
+In-Reply-To: <20140530100223.150a1ea2@gandalf.local.home>
+References: <20140220084428.3839.59555.stgit@yunodevel>
+	<20140220084433.3839.49609.stgit@yunodevel>
+	<20140530100223.150a1ea2@gandalf.local.home>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(memdup_user can be used to replace kmalloc/copy_from_user. Not sure if it's ok with kzalloc ...)
+On Fri, 30 May 2014 10:02:23 -0400
+Steven Rostedt <rostedt@goodmis.org> wrote:
 
-Cc: linux-scsi@vger.kernel.org
-Cc: Anil Gurumurthy <anil.gurumurthy@qlogic.com>
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- drivers/scsi/bfa/bfad_debugfs.c | 30 ++++++++++--------------------
- 1 file changed, 10 insertions(+), 20 deletions(-)
+> This last part conflicts with my current 3.16 queue. You can see how it
+> does in my for-next repo. But I'll be pushing my latest with the
+> updates I mentioned above soon and will let you know where to get them.
 
-diff --git a/drivers/scsi/bfa/bfad_debugfs.c b/drivers/scsi/bfa/bfad_debugfs.c
-index 8e83d04..07b9e36 100644
---- a/drivers/scsi/bfa/bfad_debugfs.c
-+++ b/drivers/scsi/bfa/bfad_debugfs.c
-@@ -260,17 +260,12 @@ bfad_debugfs_write_regrd(struct file *file, const char __user *buf,
- 	unsigned long flags;
- 	void *kern_buf;
- 
--	kern_buf = kzalloc(nbytes, GFP_KERNEL);
-+	kern_buf = memdup_user((void __user *)buf, nbytes);
- 
--	if (!kern_buf) {
--		printk(KERN_INFO "bfad[%d]: Failed to allocate buffer\n",
--				bfad->inst_no);
--		return -ENOMEM;
--	}
--
--	if (copy_from_user(kern_buf, (void  __user *)buf, nbytes)) {
--		kfree(kern_buf);
--		return -ENOMEM;
-+	if (IS_ERR(kern_buf)) {
-+		printk(KERN_INFO "bfad[%d]: Failed to copy buffer\n",
-+		       bfad->inst_no);
-+		return PTR_ERR(kern_buf);
- 	}
- 
- 	rc = sscanf(kern_buf, "%x:%x", &addr, &len);
-@@ -336,17 +331,12 @@ bfad_debugfs_write_regwr(struct file *file, const char __user *buf,
- 	unsigned long flags;
- 	void *kern_buf;
- 
--	kern_buf = kzalloc(nbytes, GFP_KERNEL);
-+	kern_buf = memdup_user((void __user *)buf, nbytes);
- 
--	if (!kern_buf) {
--		printk(KERN_INFO "bfad[%d]: Failed to allocate buffer\n",
--				bfad->inst_no);
--		return -ENOMEM;
--	}
--
--	if (copy_from_user(kern_buf, (void  __user *)buf, nbytes)) {
--		kfree(kern_buf);
--		return -ENOMEM;
-+	if (IS_ERR(kern_buf)) {
-+		printk(KERN_INFO "bfad[%d]: Failed to copy buffer\n",
-+		       bfad->inst_no);
-+		return PTR_ERR(kern_buf);
- 	}
- 
- 	rc = sscanf(kern_buf, "%x:%x", &addr, &val);
--- 
-1.8.4.5
+I just pushed my updates to my repo, which includes your first patch
+plus a fix. This may still rebase, I only solidify my "for-next"
+branch. But if you rewrite your patch against this branch with my
+updates, then I can take it and test it for 3.16. Still have one week
+left, but the earlier the better.
 
+ git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+
+ftrace/core
+
+SHA1: 4c27e756bc019ec1c11232893af036fdae720a97
+
+-- Steve
