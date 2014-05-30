@@ -1,59 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934321AbaE3UIR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 16:08:17 -0400
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:64123 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030517AbaE3UHj (ORCPT
+	id S934371AbaE3UIv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 16:08:51 -0400
+Received: from mout.kundenserver.de ([212.227.17.24]:49521 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934266AbaE3UH3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 16:07:39 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.11.1405301528530.17310@knanqh.ubzr>
-References: <1400860385-14555-1-git-send-email-vincent.guittot@linaro.org>
- <1400860385-14555-11-git-send-email-vincent.guittot@linaro.org>
- <53888719.70604@arm.com> <CAKfTPtDWd5FKqSemFMFMMPz+t+aEnHWL_WH5grRoegtGnfD+bw@mail.gmail.com>
- <alpine.LFD.2.11.1405301528530.17310@knanqh.ubzr>
-From: Vincent Guittot <vincent.guittot@linaro.org>
-Date: Fri, 30 May 2014 22:07:18 +0200
-Message-ID: <CAKfTPtCuw4Gs5g-ujWzK3LEKz3UO7kd4tKsbXruE69md6iF60g@mail.gmail.com>
-Subject: Re: [PATCH v2 10/11] sched: move cfs task on a CPU with higher capacity
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-Cc: Dietmar Eggemann <dietmar.eggemann@arm.com>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        "efault@gmx.de" <efault@gmx.de>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 30 May 2014 16:07:29 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-kernel@vger.kernel.org
+Cc: linux-arch@vger.kernel.org, joseph@codesourcery.com,
+        john.stultz@linaro.org, hch@infradead.org, tglx@linutronix.de,
+        geert@linux-m68k.org, lftan@altera.com, hpa@zytor.com,
+        linux-fsdevel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        ocfs2-devel@oss.oracle.com
+Subject: [RFC 18/32] ocfs2: convert to struct inode_time
+Date: Fri, 30 May 2014 22:01:42 +0200
+Message-Id: <1401480116-1973111-19-git-send-email-arnd@arndb.de>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1401480116-1973111-1-git-send-email-arnd@arndb.de>
+References: <1401480116-1973111-1-git-send-email-arnd@arndb.de>
+X-Provags-ID: V02:K0:sFUluYm6sTJie2D9U1Qd6Kk029jWf5lAXCL1grsHt70
+ yC5EUNYMX9pNF8ycp3WF1PXcYJNIUqMDC7t8hwSv8WDZDWT1fd
+ WMPt+fvRye7pDx+/UmN1QoR5RoCIqgkDDepZQVd7LcqeyisXUu
+ iZ2oa6ioM4qRJ74UADYRJYitNQWuKH+FtkGS3dbE6pxD04I8DM
+ z4M0Rhs8AbhHlHlxL03+lwSLrDM3rGXcLrcyExy7wuX0XdYKwb
+ tnp7xnQFc9yYDE5y0y62KHdbXSoPO1N9ulWSQjeawsWDwHaa9r
+ HLBmACggGrtfrvMZnYJ4Su+76rBNumv3r5dFaB5XYTG49Z2aJx
+ kCa5KLYT60dJSc9v7LkKZacZfR7yhy0pL97KYJOdW
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30 May 2014 21:45, Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
-> On Fri, 30 May 2014, Vincent Guittot wrote:
->
->> On 30 May 2014 15:26, Dietmar Eggemann <dietmar.eggemann@arm.com> wrote:
->> >> +     /*
->> >> +      * The group capacity is reduced probably because of activity from other
->> >
->> > Here 'group capacity' refers to sgs->group_power and not to
->> > sgs->group_capacity, right?
->>
->> yes, you're right it's cpu_power, i will correct the comment
->
-> Note that peterz applied my rename patches so sgs->group_power has
-> become sgs->group_capacity.
+ocfs2 uses unsigned 34-bit seconds for inode timestamps, which will work
+for the next 500 years, but the VFS uses struct timespec for timestamps,
+which is only good until 2038 on 32-bit CPUs.
 
-I will update the naming in the next version when i will rebase
+This gets us one small step closer to lifting the VFS limit by using
+struct inode_time in ocfs2.
 
-Vincent
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Mark Fasheh <mfasheh@suse.com>
+Cc: Joel Becker <jlbec@evilplan.org>
+Cc: ocfs2-devel@oss.oracle.com
+---
+ fs/ocfs2/dlmglue.c | 16 ++++++++--------
+ fs/ocfs2/file.c    |  6 +++---
+ fs/ocfs2/ocfs2.h   |  2 +-
+ 3 files changed, 12 insertions(+), 12 deletions(-)
 
->
->
-> Nicolas
+diff --git a/fs/ocfs2/dlmglue.c b/fs/ocfs2/dlmglue.c
+index 6bd690b..26913ae 100644
+--- a/fs/ocfs2/dlmglue.c
++++ b/fs/ocfs2/dlmglue.c
+@@ -2010,7 +2010,7 @@ static void ocfs2_downconvert_on_unlock(struct ocfs2_super *osb,
+ 
+ /* LVB only has room for 64 bits of time here so we pack it for
+  * now. */
+-static u64 ocfs2_pack_timespec(struct timespec *spec)
++static u64 ocfs2_pack_inode_time(struct inode_time *spec)
+ {
+ 	u64 res;
+ 	u64 sec = spec->tv_sec;
+@@ -2050,11 +2050,11 @@ static void __ocfs2_stuff_meta_lvb(struct inode *inode)
+ 	lvb->lvb_imode     = cpu_to_be16(inode->i_mode);
+ 	lvb->lvb_inlink    = cpu_to_be16(inode->i_nlink);
+ 	lvb->lvb_iatime_packed  =
+-		cpu_to_be64(ocfs2_pack_timespec(&inode->i_atime));
++		cpu_to_be64(ocfs2_pack_inode_time(&inode->i_atime));
+ 	lvb->lvb_ictime_packed =
+-		cpu_to_be64(ocfs2_pack_timespec(&inode->i_ctime));
++		cpu_to_be64(ocfs2_pack_inode_time(&inode->i_ctime));
+ 	lvb->lvb_imtime_packed =
+-		cpu_to_be64(ocfs2_pack_timespec(&inode->i_mtime));
++		cpu_to_be64(ocfs2_pack_inode_time(&inode->i_mtime));
+ 	lvb->lvb_iattr    = cpu_to_be32(oi->ip_attr);
+ 	lvb->lvb_idynfeatures = cpu_to_be16(oi->ip_dyn_features);
+ 	lvb->lvb_igeneration = cpu_to_be32(inode->i_generation);
+@@ -2063,7 +2063,7 @@ out:
+ 	mlog_meta_lvb(0, lockres);
+ }
+ 
+-static void ocfs2_unpack_timespec(struct timespec *spec,
++static void ocfs2_unpack_inode_time(struct inode_time *spec,
+ 				  u64 packed_time)
+ {
+ 	spec->tv_sec = packed_time >> OCFS2_SEC_SHIFT;
+@@ -2099,11 +2099,11 @@ static void ocfs2_refresh_inode_from_lvb(struct inode *inode)
+ 	i_gid_write(inode, be32_to_cpu(lvb->lvb_igid));
+ 	inode->i_mode    = be16_to_cpu(lvb->lvb_imode);
+ 	set_nlink(inode, be16_to_cpu(lvb->lvb_inlink));
+-	ocfs2_unpack_timespec(&inode->i_atime,
++	ocfs2_unpack_inode_time(&inode->i_atime,
+ 			      be64_to_cpu(lvb->lvb_iatime_packed));
+-	ocfs2_unpack_timespec(&inode->i_mtime,
++	ocfs2_unpack_inode_time(&inode->i_mtime,
+ 			      be64_to_cpu(lvb->lvb_imtime_packed));
+-	ocfs2_unpack_timespec(&inode->i_ctime,
++	ocfs2_unpack_inode_time(&inode->i_ctime,
+ 			      be64_to_cpu(lvb->lvb_ictime_packed));
+ 	spin_unlock(&oi->ip_lock);
+ }
+diff --git a/fs/ocfs2/file.c b/fs/ocfs2/file.c
+index 2930e23..88deaa6 100644
+--- a/fs/ocfs2/file.c
++++ b/fs/ocfs2/file.c
+@@ -216,7 +216,7 @@ static int ocfs2_sync_file(struct file *file, loff_t start, loff_t end,
+ int ocfs2_should_update_atime(struct inode *inode,
+ 			      struct vfsmount *vfsmnt)
+ {
+-	struct timespec now;
++	struct inode_time now;
+ 	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+ 
+ 	if (ocfs2_is_hard_readonly(osb) || ocfs2_is_soft_readonly(osb))
+@@ -242,8 +242,8 @@ int ocfs2_should_update_atime(struct inode *inode,
+ 		return 0;
+ 
+ 	if (vfsmnt->mnt_flags & MNT_RELATIME) {
+-		if ((timespec_compare(&inode->i_atime, &inode->i_mtime) <= 0) ||
+-		    (timespec_compare(&inode->i_atime, &inode->i_ctime) <= 0))
++		if ((inode_time_compare(&inode->i_atime, &inode->i_mtime) <= 0) ||
++		    (inode_time_compare(&inode->i_atime, &inode->i_ctime) <= 0))
+ 			return 1;
+ 
+ 		return 0;
+diff --git a/fs/ocfs2/ocfs2.h b/fs/ocfs2/ocfs2.h
+index bbec539..11a06e7 100644
+--- a/fs/ocfs2/ocfs2.h
++++ b/fs/ocfs2/ocfs2.h
+@@ -213,7 +213,7 @@ struct ocfs2_orphan_scan {
+ 	struct ocfs2_super 	*os_osb;
+ 	struct ocfs2_lock_res 	os_lockres;     /* lock to synchronize scans */
+ 	struct delayed_work 	os_orphan_scan_work;
+-	struct timespec		os_scantime;  /* time this node ran the scan */
++	struct inode_time	os_scantime;  /* time this node ran the scan */
+ 	u32			os_count;      /* tracks node specific scans */
+ 	u32  			os_seqno;       /* tracks cluster wide scans */
+ 	atomic_t		os_state;              /* ACTIVE or INACTIVE */
+-- 
+1.8.3.2
+
