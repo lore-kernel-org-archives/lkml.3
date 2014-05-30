@@ -1,233 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934353AbaE3UPv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 16:15:51 -0400
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:42938 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932413AbaE3UPu (ORCPT
+	id S934491AbaE3UQc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 16:16:32 -0400
+Received: from mout.kundenserver.de ([212.227.17.10]:50322 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030266AbaE3UFc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 16:15:50 -0400
-Message-ID: <5388E6F2.1010603@gmail.com>
-Date: Fri, 30 May 2014 13:15:46 -0700
-From: Dirk Brandewie <dirk.brandewie@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Tim Chen <tim.c.chen@linux.intel.com>
-CC: dirk.brandewie@gmail.com, Dave Jones <davej@redhat.com>,
-        George Spelvin <linux@horizon.com>, herbert@gondor.apana.org.au,
-        james.guilford@intel.com, JBeulich@suse.com,
-        linux-kernel@vger.kernel.org, Jacob jun Pan <jacob.jun.pan@intel.com>
-Subject: Re: [RFC PATCH] crypto: crc32c-pclmul - Use pmovzxdq to shrink K_table
-References: <20140529235432.19207.qmail@ns.horizon.com>	 <1401412036.2970.459.camel@schen9-DESK> <20140530011636.GA31694@redhat.com>	 <1401472592.2970.483.camel@schen9-DESK> <5388D1BF.6090503@gmail.com>	 <1401478326.2970.504.camel@schen9-DESK>  <5388DE3A.7060406@gmail.com> <1401480439.2970.507.camel@schen9-DESK>
-In-Reply-To: <1401480439.2970.507.camel@schen9-DESK>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Fri, 30 May 2014 16:05:32 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-kernel@vger.kernel.org
+Cc: linux-arch@vger.kernel.org, joseph@codesourcery.com,
+        john.stultz@linaro.org, hch@infradead.org, tglx@linutronix.de,
+        geert@linux-m68k.org, lftan@altera.com, hpa@zytor.com,
+        linux-fsdevel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
+Subject: [RFC 06/32] isofs: fix timestamps beyond 2027
+Date: Fri, 30 May 2014 22:01:30 +0200
+Message-Id: <1401480116-1973111-7-git-send-email-arnd@arndb.de>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1401480116-1973111-1-git-send-email-arnd@arndb.de>
+References: <1401480116-1973111-1-git-send-email-arnd@arndb.de>
+X-Provags-ID: V02:K0:dEYKnO6oSDMHKTJg9WJNLRPad6u3U9SijQ8PiYW6MNw
+ 1+QCvlddesXeh43lZ3Lfb8iWW7UTrbsjkBcGpAM8a7LI/uX2ca
+ Mhe+1kXfOZtzGPHNXB1j7EvX9CPZdHakVtQH6imcBtUUUIdFui
+ jp+uFhUaAbhvKYtLj8b6dmWnwmPoDVBmL8isw9R+8aMGKh7wmk
+ IuJPKx6O5QaqUXhIyBjx55zq4j1PmGPZoXdfHu+VyLDMZKa+6y
+ FZBKyy71RuVlVozGT77TpsE3i2laQ2R9KlMzoHBg4jDABhf7cQ
+ ZlfLSCi8B1pexgJrVfOoClQFDfsSKc3bZWKqihCX93PVXdOVeB
+ hfm9LLBjc2K8Bskxw41ktbuKC3wY2lazQHdMtxflc
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/30/2014 01:07 PM, Tim Chen wrote:
-> On Fri, 2014-05-30 at 12:38 -0700, Dirk Brandewie wrote:
->
->>> Dirk,
->>>
->>> Thanks for checking things out.
->>>
->>> I tested on a Haswell system, and I see that the frequency
->>> can dip below the max even when I set the min_perf_pct to 100.
->>> Let me know if you want to log on to my system and check if
->>> there's something I missed. It is odd that the package 1's
->>> cores are at a much higher frequency and close to
->>> max than package 0, once min_perf_pct is set to 100.
->>>
->>
->> Can you run turbostat for a few samples it reports an average over the sample
->> time.
->>
->
-> Here it is.
->
+isofs uses a 'char' variable to load the number of years since
+1900 for an inode timestamp. On architectures that use a signed
+char type by default, this results in an invalid date for
+anything beyond 2027.
 
-You have me at a loss here I can come in on Monday if you are around and
-we can try to figure out what is happening.
+This adds a cast to 'u8' for the year number, which should extend
+the shelf life of the file system until 2155.
 
---Dirk
-> Tim
->
-> Package     Core     CPU Avg_MHz   %Busy Bzy_MHz TSC_MHz     SMI  CPU%c1  CPU%c3  CPU%c6  CPU%c7 CoreTmp  PkgTmp Pkg%pc2 Pkg%pc3 Pkg%pc6 Pkg%pc7 PkgWatt RAMWatt   PKG_%   RAM_%
->         -       -       -       0    0.02    2048    2594       0    0.23    0.00   99.75    0.00      33      42    5.93    0.00   91.52    0.00   23.22    4.15    0.12    0.00
->         0       0       0       1    0.06    1997    2594       0    0.16    0.00   99.78    0.00      32      42    7.92    0.00   91.55    0.00   16.88    1.95    0.06    0.00
->         0       0      28       0    0.01    1338    2594       0    0.21
->         0       1       1       0    0.02    1696    2594       0    0.11    0.00   99.87    0.00      33
->         0       1      29       0    0.01    1455    2594       0    0.11
->         0       2       2       0    0.01    1618    2594       0    0.07    0.00   99.91    0.00      30
->         0       2      30       0    0.01    1513    2594       0    0.07
->         0       3       3       0    0.01    1724    2594       0    0.08    0.00   99.91    0.00      31
->         0       3      31       0    0.01    1447    2594       0    0.08
->         0       4       4       0    0.01    1769    2594       0    0.06    0.00   99.92    0.00      32
->         0       4      32       0    0.01    1483    2594       0    0.06
->         0       5       5       0    0.01    1670    2594       0    0.07    0.00   99.92    0.00      29
->         0       5      33       0    0.01    1515    2594       0    0.07
->         0       6       6       0    0.01    1600    2594       0    0.07    0.00   99.92    0.00      33
->         0       6      34       0    0.01    1412    2594       0    0.07
->         0       8       7       0    0.01    1588    2594       0    0.07    0.00   99.92    0.00      30
->         0       8      35       0    0.01    1432    2594       0    0.07
->         0       9       8       0    0.01    1662    2594       0    0.11    0.00   99.88    0.00      32
->         0       9      36       0    0.02    1658    2594       0    0.10
->         0      10       9       0    0.01    1570    2594       0    0.07    0.00   99.91    0.00      32
->         0      10      37       0    0.01    1468    2594       0    0.07
->         0      11      10       0    0.01    1680    2594       0    0.07    0.00   99.92    0.00      31
->         0      11      38       0    0.01    1511    2594       0    0.07
->         0      12      11       0    0.01    1690    2594       0    0.08    0.00   99.91    0.00      30
->         0      12      39       0    0.01    1560    2594       0    0.08
->         0      13      12       0    0.02    1604    2594       0    0.11    0.00   99.87    0.00      29
->         0      13      40       0    0.02    1436    2594       0    0.11
->         0      14      13       0    0.02    1620    2594       0    0.09    0.00   99.89    0.00      29
->         0      14      41       0    0.02    1440    2594       0    0.09
->         1       0      14       0    0.03    1666    2594       0    0.16    0.00   99.82    0.00      28      36    3.94    0.00   91.50    0.00    6.34    2.20    0.06    0.00
->         1       0      42       3    0.08    3263    2594       0    0.11
->         1       1      15       0    0.01    2194    2594       0    0.09    0.00   99.90    0.00      30
->         1       1      43       0    0.01    2358    2594       0    0.09
->         1       2      16       0    0.01    2650    2594       0    0.08    0.00   99.91    0.00      28
->         1       2      44       0    0.01    2032    2594       0    0.08
->         1       3      17       1    0.03    2305    2594       0    4.11    0.00   95.86    0.00      30
->         1       3      45       0    0.01    2290    2594       0    4.13
->         1       4      18       0    0.01    2362    2594       0    0.09    0.00   99.90    0.00      28
->         1       4      46       0    0.01    2325    2594       0    0.09
->         1       5      19       0    0.01    2374    2594       0    0.07    0.00   99.92    0.00      30
->         1       5      47       0    0.01    2442    2594       0    0.07
->         1       6      20       0    0.01    2476    2594       0    0.08    0.00   99.91    0.00      30
->         1       6      48       0    0.01    2382    2594       0    0.07
->         1       8      21       0    0.01    2669    2594       0    0.09    0.00   99.90    0.00      29
->         1       8      49       0    0.02    1953    2594       0    0.09
->         1       9      22       0    0.01    2537    2594       0    0.10    0.00   99.89    0.00      31
->         1       9      50       0    0.01    2117    2594       0    0.10
->         1      10      23       0    0.01    2531    2594       0    0.07    0.00   99.92    0.00      27
->         1      10      51       0    0.01    2404    2594       0    0.08
->         1      11      24       0    0.01    2315    2594       0    0.08    0.00   99.91    0.00      28
->         1      11      52       0    0.01    2210    2594       0    0.08
->         1      12      25       0    0.01    2434    2594       0    0.07    0.00   99.91    0.00      28
->         1      12      53       0    0.01    2113    2594       0    0.08
->         1      13      26       0    0.01    2070    2594       0    0.07    0.00   99.91    0.00      27
->         1      13      54       0    0.01    2114    2594       0    0.08
->         1      14      27       0    0.01    2324    2594       0    0.10    0.00   99.89    0.00      27
->         1      14      55       1    0.03    2991    2594       0    0.08
-> Package     Core     CPU Avg_MHz   %Busy Bzy_MHz TSC_MHz     SMI  CPU%c1  CPU%c3  CPU%c6  CPU%c7 CoreTmp  PkgTmp Pkg%pc2 Pkg%pc3 Pkg%pc6 Pkg%pc7 PkgWatt RAMWatt   PKG_%   RAM_%
->         -       -       -       0    0.01    2138    2594       0    0.10    0.01   99.88    0.00      33      42    4.32    0.09   94.88    0.00   22.45    3.56    0.12    0.00
->         0       0       0       1    0.07    2106    2594       0    0.25    0.00   99.68    0.00      31      42    4.20    0.00   95.00    0.00   16.72    1.73    0.06    0.00
->         0       0      28       0    0.01    2163    2594       0    0.31
->         0       1       1       0    0.02    2005    2594       0    0.11    0.00   99.87    0.00      33
->         0       1      29       0    0.01    1823    2594       0    0.12
->         0       2       2       0    0.02    2008    2594       0    0.10    0.00   99.88    0.00      30
->         0       2      30       0    0.01    1903    2594       0    0.10
->         0       3       3       0    0.02    1953    2594       0    0.10    0.00   99.88    0.00      31
->         0       3      31       0    0.01    1840    2594       0    0.11
->         0       4       4       0    0.02    2220    2594       0    0.09    0.01   99.89    0.00      33
->         0       4      32       0    0.01    1806    2594       0    0.09
->         0       5       5       0    0.01    1723    2594       0    0.09    0.00   99.89    0.00      28
->         0       5      33       0    0.01    1904    2594       0    0.09
->         0       6       6       0    0.01    1806    2594       0    0.08    0.00   99.91    0.00      33
->         0       6      34       0    0.01    1824    2594       0    0.08
->         0       8       7       0    0.01    1910    2594       0    0.10    0.00   99.89    0.00      30
->         0       8      35       0    0.01    1847    2594       0    0.10
->         0       9       8       0    0.02    2204    2594       0    0.11    0.00   99.88    0.00      30
->         0       9      36       0    0.02    1899    2594       0    0.11
->         0      10       9       0    0.01    1967    2594       0    0.09    0.00   99.90    0.00      33
->         0      10      37       0    0.01    1838    2594       0    0.09
->         0      11      10       0    0.01    1696    2594       0    0.08    0.00   99.90    0.00      31
->         0      11      38       0    0.01    1728    2594       0    0.08
->         0      12      11       0    0.02    1863    2594       0    0.09    0.00   99.90    0.00      30
->         0      12      39       0    0.01    1838    2594       0    0.09
->         0      13      12       0    0.02    1856    2594       0    0.11    0.00   99.87    0.00      29
->         0      13      40       0    0.01    1741    2594       0    0.12
->         0      14      13       0    0.02    1887    2594       0    0.10    0.00   99.88    0.00      30
->         0      14      41       0    0.01    1860    2594       0    0.11
->         1       0      14       0    0.03    1875    2594       0    0.09    0.00   99.88    0.00      28      38    4.44    0.18   94.75    0.00    5.72    1.82    0.06    0.00
->         1       0      42       0    0.01    2363    2594       0    0.11
->         1       1      15       0    0.01    2368    2594       0    0.09    0.00   99.90    0.00      31
->         1       1      43       0    0.01    2403    2594       0    0.09
->         1       2      16       0    0.01    2501    2594       0    0.07    0.00   99.91    0.00      27
->         1       2      44       0    0.01    2469    2594       0    0.07
->         1       3      17       1    0.04    2674    2594       0    0.10    0.19   99.66    0.00      30
->         1       3      45       0    0.01    2374    2594       0    0.13
->         1       4      18       0    0.01    2446    2594       0    0.08    0.00   99.91    0.00      28
->         1       4      46       0    0.01    2372    2594       0    0.08
->         1       5      19       0    0.01    2479    2594       0    0.08    0.00   99.91    0.00      29
->         1       5      47       0    0.01    2352    2594       0    0.08
->         1       6      20       0    0.01    2436    2594       0    0.07    0.00   99.91    0.00      30
->         1       6      48       0    0.01    2381    2594       0    0.08
->         1       8      21       0    0.01    2377    2594       0    0.08    0.00   99.91    0.00      29
->         1       8      49       0    0.01    2629    2594       0    0.08
->         1       9      22       0    0.01    2407    2594       0    0.09    0.00   99.90    0.00      30
->         1       9      50       0    0.01    2547    2594       0    0.09
->         1      10      23       0    0.01    2254    2594       0    0.09    0.00   99.90    0.00      28
->         1      10      51       0    0.01    2514    2594       0    0.09
->         1      11      24       0    0.01    2204    2594       0    0.10    0.00   99.89    0.00      29
->         1      11      52       0    0.01    2187    2594       0    0.09
->         1      12      25       0    0.01    2310    2594       0    0.09    0.00   99.90    0.00      27
->         1      12      53       0    0.01    2636    2594       0    0.09
->         1      13      26       0    0.01    2325    2594       0    0.09    0.00   99.89    0.00      29
->         1      13      54       0    0.02    1959    2594       0    0.09
->         1      14      27       0    0.01    2273    2594       0    0.11    0.00   99.88    0.00      28
->         1      14      55       1    0.02    2678    2594       0    0.10
-> Package     Core     CPU Avg_MHz   %Busy Bzy_MHz TSC_MHz     SMI  CPU%c1  CPU%c3  CPU%c6  CPU%c7 CoreTmp  PkgTmp Pkg%pc2 Pkg%pc3 Pkg%pc6 Pkg%pc7 PkgWatt RAMWatt   PKG_%   RAM_%
->         -       -       -       0    0.02    2223    2594       0    0.12    0.00   99.86    0.00      34      41    4.47    0.00   94.54    0.00   22.70    3.64    0.14    0.00
->         0       0       0       1    0.05    2251    2594       0    0.18    0.00   99.77    0.00      32      41    4.81    0.00   94.56    0.00   16.89    1.78    0.06    0.00
->         0       0      28       0    0.01    1846    2594       0    0.22
->         0       1       1       0    0.02    1758    2594       0    0.12    0.00   99.86    0.00      33
->         0       1      29       0    0.02    1945    2594       0    0.12
->         0       2       2       0    0.02    1635    2594       0    0.09    0.00   99.89    0.00      29
->         0       2      30       0    0.01    1939    2594       0    0.10
->         0       3       3       0    0.01    1834    2594       0    0.08    0.00   99.90    0.00      31
->         0       3      31       0    0.01    1554    2594       0    0.09
->         0       4       4       0    0.02    1827    2594       0    0.08    0.00   99.91    0.00      33
->         0       4      32       0    0.01    1824    2594       0    0.08
->         0       5       5       0    0.02    1925    2594       0    0.08    0.00   99.90    0.00      29
->         0       5      33       0    0.01    1796    2594       0    0.08
->         0       6       6       0    0.02    1801    2594       0    0.07    0.00   99.91    0.00      34
->         0       6      34       0    0.01    1874    2594       0    0.08
->         0       8       7       0    0.02    1930    2594       0    0.08    0.00   99.91    0.00      30
->         0       8      35       0    0.01    1901    2594       0    0.08
->         0       9       8       0    0.02    1874    2594       0    0.10    0.00   99.88    0.00      30
->         0       9      36       0    0.02    1915    2594       0    0.10
->         0      10       9       0    0.02    1779    2594       0    0.08    0.00   99.90    0.00      32
->         0      10      37       0    0.01    1983    2594       0    0.09
->         0      11      10       0    0.02    1754    2594       0    0.08    0.00   99.90    0.00      31
->         0      11      38       0    0.01    1722    2594       0    0.09
->         0      12      11       0    0.02    1730    2594       0    0.08    0.00   99.90    0.00      29
->         0      12      39       0    0.01    1892    2594       0    0.09
->         0      13      12       0    0.02    1943    2594       0    0.10    0.00   99.88    0.00      30
->         0      13      40       0    0.02    2016    2594       0    0.10
->         0      14      13       0    0.02    1893    2594       0    0.10    0.00   99.87    0.00      31
->         0      14      41       0    0.01    1790    2594       0    0.11
->         1       0      14       1    0.03    1998    2594       0    0.16    0.00   99.81    0.00      28      37    4.13    0.00   94.52    0.00    5.81    1.86    0.08    0.00
->         1       0      42       3    0.08    3493    2594       0    0.11
->         1       1      15       0    0.01    2483    2594       0    0.08    0.00   99.90    0.00      31
->         1       1      43       0    0.01    2279    2594       0    0.09
->         1       2      16       0    0.01    2454    2594       0    0.07    0.00   99.92    0.00      27
->         1       2      44       0    0.01    2405    2594       0    0.07
->         1       3      17       1    0.03    3069    2594       0    0.29    0.00   99.68    0.00      31
->         1       3      45       0    0.01    2298    2594       0    0.31
->         1       4      18       0    0.01    2515    2594       0    0.08    0.00   99.91    0.00      28
->         1       4      46       0    0.01    2193    2594       0    0.08
->         1       5      19       0    0.01    2547    2594       0    0.06    0.00   99.93    0.00      28
->         1       5      47       0    0.01    2327    2594       0    0.06
->         1       6      20       0    0.01    2315    2594       0    0.07    0.00   99.92    0.00      29
->         1       6      48       0    0.01    2120    2594       0    0.07
->         1       8      21       0    0.01    2482    2594       0    0.07    0.00   99.92    0.00      29
->         1       8      49       0    0.01    2311    2594       0    0.07
->         1       9      22       0    0.01    2372    2594       0    0.09    0.00   99.90    0.00      30
->         1       9      50       0    0.01    2509    2594       0    0.09
->         1      10      23       0    0.02    2147    2594       0    0.08    0.00   99.91    0.00      27
->         1      10      51       0    0.01    2477    2594       0    0.08
->         1      11      24       0    0.01    2138    2594       0    0.08    0.00   99.90    0.00      29
->         1      11      52       0    0.01    2365    2594       0    0.09
->         1      12      25       0    0.01    1965    2594       0    0.07    0.00   99.91    0.00      28
->         1      12      53       0    0.01    2447    2594       0    0.08
->         1      13      26       0    0.01    2476    2594       0    0.08    0.00   99.91    0.00      28
->         1      13      54       0    0.01    2282    2594       0    0.08
->         1      14      27       0    0.01    2386    2594       0    0.76    0.00   99.22    0.00      28
->         1      14      55       1    0.02    3065    2594       0    0.75
->
->
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+---
+ fs/isofs/util.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/fs/isofs/util.c b/fs/isofs/util.c
+index 01e1ee7..28e7ff1 100644
+--- a/fs/isofs/util.c
++++ b/fs/isofs/util.c
+@@ -19,7 +19,7 @@ int iso_date(char * p, int flag)
+ 	int year, month, day, hour, minute, second, tz;
+ 	int crtime, days, i;
+ 
+-	year = p[0] - 70;
++	year = (int)(u8)p[0] - 70;
+ 	month = p[1];
+ 	day = p[2];
+ 	hour = p[3];
+-- 
+1.8.3.2
 
