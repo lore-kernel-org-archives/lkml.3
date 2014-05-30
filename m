@@ -1,94 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755083AbaE3MHJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 08:07:09 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:52588 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751115AbaE3MHE (ORCPT
+	id S1754810AbaE3MKG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 08:10:06 -0400
+Received: from mail-la0-f43.google.com ([209.85.215.43]:52029 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751272AbaE3MKE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 08:07:04 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Lan Tianyu <tianyu.lan@intel.com>
-Cc: wsa@the-dreams.de, mika.westerberg@linux.intel.com, awilliam@redhat.com,
-        lenb@kernel.org, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Subject: Re: [Patch V3 0/5] I2C ACPI operation region handler
-Date: Fri, 30 May 2014 14:24:12 +0200
-Message-ID: <10091506.iBigojlNVE@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <53881E87.9070706@intel.com>
-References: <1400590764-11108-1-git-send-email-tianyu.lan@intel.com> <53881E87.9070706@intel.com>
+	Fri, 30 May 2014 08:10:04 -0400
+Date: Fri, 30 May 2014 14:09:36 +0200
+From: Johan Hovold <jhovold@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Johan Hovold <johan@hovold.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Bryan Evenson <bevenson@melinkcorp.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: at91: fix rtc irq mask for sam9x5 SoCs
+Message-ID: <20140530120936.GB2044@localhost>
+References: <957b209589094df48ddedbc57c6ccdfd@BLUPR05MB037.namprd05.prod.outlook.com>
+ <1399479649-3247-1-git-send-email-boris.brezillon@free-electrons.com>
+ <20140508154912.GA6776@localhost>
+ <536BBEA4.6080908@free-electrons.com>
+ <20140509163652.GE6776@localhost>
+ <20140529160948.a63fa268a37d985189837a85@linux-foundation.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140529160948.a63fa268a37d985189837a85@linux-foundation.org>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, May 30, 2014 02:00:39 PM Lan Tianyu wrote:
-> On 05/20/2014 08:59 PM, Lan Tianyu wrote:
-> > ACPI 5.0 spec(5.5.2.4.5) defines GenericSerialBus(i2c, spi, uart) operation
-> > region. It allows ACPI aml code able to access such kind of devices to
-> > implement some ACPI standard method.
-> >
-> > On the Asus T100TA, Bios use GenericSerialBus operation region to access
-> > i2c device to get battery info. So battery function depends on the I2C
-> > operation region support. Here is the bug link.
-> > https://bugzilla.kernel.org/show_bug.cgi?id=69011
-> >
+On Thu, May 29, 2014 at 04:09:48PM -0700, Andrew Morton wrote:
+> On Fri, 9 May 2014 18:36:52 +0200 Johan Hovold <johan@hovold.com> wrote:
 > 
-> Hi Wolfram:
-> 	Since this version resolved all comments, it's ok for you?
-
-BTW, patches [2-3/5] are already queued up for 3.16 as they are independent of
-the i2c changes.
-
+> > On Thu, May 08, 2014 at 07:28:04PM +0200, Boris BREZILLON wrote:
+> > 
+> > > > You should also keep the flush (read of IMR) regardless (to make sure
+> > > > the write has reached the peripheral), and remember to remove the now
+> > > > unused mask variable.
+> > > 
+> > > Does it has something to do with memory barriers ?
+> > > If so, why not using writel instead of writel_relaxed ?
+> > 
+> > You only need to use the non-relaxed version when synchronising with DMA
+> > operations.
+> > 
+> > The read-back of a register on the same device is a common technique to
+> > make sure that preceding write has actually reached the peripheral
+> > (write posting or flushing). In this case, it is used to make
+> > (reasonably) sure that interrupts have actually been masked before
+> > returning. (In the general case, you'd even need to verify the read-back
+> > value to be certain that the device has changed its state.)
 > 
-> > Change since V2:
-> >          Drop patchs of adding I2C smbus quick read/write and word/block
-> > process call functions because not find machines supporting such protocols
-> > so far and can't test these functions.
-> >          Merge patchs of "I2C ACPI related code clear up" and "Add CONFIG_I2C_ACPI
-> > config"
-> > 	Patch 2: Add acpi_bus_detach_private_data() function to detach data from
-> > ACPI handle and replace ACPI_ERROR() with acpi_handle_debug() to avoid some redundant
-> > error log.
-> >
-> > Change since V1:
-> >         Fix some code style issues. Change prefix i2c_acpi to acpi_i2c.
-> > Move ACPI related code in the i2c core to i2c-acpi.c. Add CONFIG_I2C_ACPI
-> > and make i2c core built-in when it's set to avoid i2c ACPI operation region
-> > being removed.
-> >
-> > Lan Tianyu (5):
-> >    ACPICA: Export acpi_buffer_to_resource symbol
-> >    ACPI: Add acpi_bus_attach_private_data() to facilitate to attach data
-> >      to ACPI handle
-> >    ACPI/Thermal: Use acpi_bus_attach_private_data() to attach private
-> >      data
-> >    I2C/ACPI: Add i2c ACPI operation region support
-> >    I2C/ACPI: Clean up I2C ACPI code and Add CONFIG_I2C_ACPI config
-> >
-> >   drivers/acpi/acpica/rscreate.c |   1 +
-> >   drivers/acpi/bus.c             |  28 +++-
-> >   drivers/acpi/thermal.c         |  11 +-
-> >   drivers/i2c/Kconfig            |  18 +-
-> >   drivers/i2c/Makefile           |   5 +-
-> >   drivers/i2c/i2c-acpi.c         | 362 +++++++++++++++++++++++++++++++++++++++++
-> >   drivers/i2c/i2c-core.c         |  97 +----------
-> >   include/acpi/acpi_bus.h        |   2 +
-> >   include/linux/acpi.h           |  11 ++
-> >   include/linux/i2c.h            |  12 ++
-> >   10 files changed, 439 insertions(+), 108 deletions(-)
-> >   create mode 100644 drivers/i2c/i2c-acpi.c
-> >
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> So I grabbed this patch as it's tied to "rtc: rtc-at91rm9200: fix
+> uninterruptible wait for ACKUPD" and is not in linux-next.  Someone
+> shout at me if that was a mistake.
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+The patch is needed, but it seems you got the wrong version. There was
+an updated v4 posted the next day in this thread:
+
+	http://marc.info/?l=linux-kernel&m=139964712229420&w=2
+
+Johan
