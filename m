@@ -1,320 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934357AbaE3Q6A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 12:58:00 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:47644 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934081AbaE3Q4i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 12:56:38 -0400
-From: Rostislav Lisovy <lisovy@gmail.com>
-X-Google-Original-From: Rostislav Lisovy <rostislav.lisovy@fel.cvut.cz>
-To: Johannes Berg <johannes@sipsolutions.net>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Michal Sojka <sojkam1@fel.cvut.cz>, s.sander@nordsys.de,
-        jan-niklas.meier@volkswagen.de,
-        Rostislav Lisovy <rostislav.lisovy@fel.cvut.cz>
-Subject: [RFC 2/4] cfg80211: Add new interface type for OCB mode
-Date: Fri, 30 May 2014 18:56:22 +0200
-Message-Id: <1401468984-24575-3-git-send-email-rostislav.lisovy@fel.cvut.cz>
-X-Mailer: git-send-email 2.0.0.rc4
-In-Reply-To: <1401468984-24575-1-git-send-email-rostislav.lisovy@fel.cvut.cz>
-References: <1401468984-24575-1-git-send-email-rostislav.lisovy@fel.cvut.cz>
+	id S934375AbaE3Q6T (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 12:58:19 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39391 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934054AbaE3Q6P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 May 2014 12:58:15 -0400
+Date: Fri, 30 May 2014 18:58:10 +0200
+From: Jan Kara <jack@suse.cz>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Jan Kara <jack@suse.cz>, Jet Chen <jet.chen@intel.com>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Yuanhan Liu <yuanhan.liu@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [prink]  BUG: spinlock lockup suspected on CPU#0, swapper/1
+Message-ID: <20140530165810.GE2419@quack.suse.cz>
+References: <538808FD.3060707@intel.com>
+ <20140530155051.GD2419@quack.suse.cz>
+ <20140530161647.GD11096@twins.programming.kicks-ass.net>
+ <20140530161948.GZ13658@twins.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140530161948.GZ13658@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add new OCB mode (outside the context of the BSS) interface
-type as well as functions necessary to configure the interface
-when 'joining' such network.
+On Fri 30-05-14 18:19:48, Peter Zijlstra wrote:
+> On Fri, May 30, 2014 at 06:16:47PM +0200, Peter Zijlstra wrote:
+> > On Fri, May 30, 2014 at 05:50:51PM +0200, Jan Kara wrote:
+> > > > [    7.492350] ======================================================
+> > > > [    7.492350] [ INFO: possible circular locking dependency detected ]
+> > > > [    7.492350] 3.15.0-rc5-00567-gbafe980 #1 Not tainted
+> > > > [    7.492350] -------------------------------------------------------
+> > > > [    7.492350] swapper/1 is trying to acquire lock:
+> > > > [    7.492350]  (&irq_desc_lock_class){-.-...}, at: [<8107dc8c>] __irq_get_desc_lock+0x3c/0x70
+> > > > [    7.492350] 
+> > > > [    7.492350] but task is already holding lock:
+> > > > [    7.492350]  (&port_lock_key){......}, at: [<815f5b27>] serial8250_startup+0x337/0x720
+> > > > [    7.492350] 
+> > > > [    7.492350] which lock already depends on the new lock.
+> > > > [    7.492350] 
+> > > > [    7.492350] 
+> > > > [    7.492350] the existing dependency chain (in reverse order) is:
+> > > > [    7.492350] 
+> > > > -> #2 (&port_lock_key){......}:
+> > > > [    7.492350]        [<810750e5>] lock_acquire+0x85/0x190
+> > > > [    7.492350]        [<81baed9d>] _raw_spin_lock_irqsave+0x4d/0x60
+> > > > [    7.492350]        [<8106eb1c>] down_trylock+0xc/0x30
+> > > > [    7.492350]        [<8107b795>] console_trylock+0x15/0xb0
+> > > > [    7.492350]        [<8107be8f>] vprintk_emit+0x14f/0x4d0
+> > > > [    7.492350]        [<81b969b9>] printk+0x38/0x3a
+> > > > [    7.492350]        [<82137f78>] print_ICs+0x5b/0x3e7
+> > > > [    7.492350]        [<8212bb41>] do_one_initcall+0x8b/0x128
+> > > > [    7.492350]        [<8212bd7d>] kernel_init_freeable+0x19f/0x236
+> > > > [    7.492350]        [<81b9238b>] kernel_init+0xb/0xd0
+> > > > [    7.492350]        [<81bb0080>] ret_from_kernel_thread+0x20/0x30
+> > >
+> > >   But this looks really strange. How can we possibly get port_lock_key in
+> > > down_trylock() which calls raw_spin_lock_irqsave() on console_sem->lock?
+> > > That looks like some strange lockdep key aliasing issue? Peter do you have
+> > > any idea?
+> > 
+> > No, strange that, I can't say I've ever seen a bogus stracktrace in
+> > lockdep reports like this.
+> > 
+> > So this is through: check_prev_add()->save_trace(). And that doesn't
+> > reuse entries, at worst it can truncate a trace when we run out of
+> > entries, but the above looks complete since it terminates in
+> > lock_acquire(), which is the right place to be.
+> > 
+> > But its worse than that, the above trace should link i8259A_lock to
+> > port_lock_key, and I can't see where we would have taken i8259A_lock
+> > either.
+> 
+> Oh, wait, I missed it, that would be: print_ICs()->print_PIC(), it takes
+> that lock there.
+  Yeah, so as much as the lockdep reported stack trace looks strange I can
+now see how a locking problem lockdep reports can happen. We really do call
+printk() under i8259A_lock in print_PIC() and so the locking chain lockdep
+found is real. Luckily it likely cannot lead to any real problems because
+printk only happens during early init.
 
-Signed-off-by: Rostislav Lisovy <rostislav.lisovy@fel.cvut.cz>
----
- include/net/cfg80211.h       |  7 +++++
- include/uapi/linux/nl80211.h |  3 ++
- net/wireless/Makefile        |  2 +-
- net/wireless/chan.c          |  2 ++
- net/wireless/core.h          |  8 +++++
- net/wireless/nl80211.c       |  1 +
- net/wireless/ocb.c           | 75 ++++++++++++++++++++++++++++++++++++++++++++
- net/wireless/rdev-ops.h      | 11 +++++++
- net/wireless/trace.h         | 17 ++++++++++
- net/wireless/util.c          |  5 ++-
- 10 files changed, 129 insertions(+), 2 deletions(-)
- create mode 100644 net/wireless/ocb.c
+In any case it is another example of a problem that was just uncovered by
+my change which increased lockdep coverage of printk code. I'll send a fix
+to x86 maintainers.
 
-diff --git a/include/net/cfg80211.h b/include/net/cfg80211.h
-index 6722ab2..c3879b8 100644
---- a/include/net/cfg80211.h
-+++ b/include/net/cfg80211.h
-@@ -1314,6 +1314,11 @@ struct mesh_setup {
- 	u32 basic_rates;
- };
- 
-+struct ocb_setup {
-+	struct cfg80211_chan_def chandef;
-+	u32 basic_rates;
-+};
-+
- /**
-  * struct ieee80211_txq_params - TX queue parameters
-  * @ac: AC identifier
-@@ -2371,6 +2376,8 @@ struct cfg80211_ops {
- 			     const struct mesh_setup *setup);
- 	int	(*leave_mesh)(struct wiphy *wiphy, struct net_device *dev);
- 
-+	int	(*join_ocb)(struct wiphy *wiphy, struct net_device *dev,
-+			    struct ocb_setup *setup);
- 	int	(*change_bss)(struct wiphy *wiphy, struct net_device *dev,
- 			      struct bss_parameters *params);
- 
-diff --git a/include/uapi/linux/nl80211.h b/include/uapi/linux/nl80211.h
-index 970c5df..250b8d8 100644
---- a/include/uapi/linux/nl80211.h
-+++ b/include/uapi/linux/nl80211.h
-@@ -1994,6 +1994,8 @@ enum nl80211_attrs {
-  *	and therefore can't be created in the normal ways, use the
-  *	%NL80211_CMD_START_P2P_DEVICE and %NL80211_CMD_STOP_P2P_DEVICE
-  *	commands to create and destroy one
-+ * @NL80211_IF_TYPE_OCB: outside context of a bss
-+ *	this mode corresponds to the MIB variable dot11OCBActivated=true
-  * @NL80211_IFTYPE_MAX: highest interface type number currently defined
-  * @NUM_NL80211_IFTYPES: number of defined interface types
-  *
-@@ -2013,6 +2015,7 @@ enum nl80211_iftype {
- 	NL80211_IFTYPE_P2P_CLIENT,
- 	NL80211_IFTYPE_P2P_GO,
- 	NL80211_IFTYPE_P2P_DEVICE,
-+	NL80211_IFTYPE_OCB,
- 
- 	/* keep last */
- 	NUM_NL80211_IFTYPES,
-diff --git a/net/wireless/Makefile b/net/wireless/Makefile
-index a761670..4c9e39f 100644
---- a/net/wireless/Makefile
-+++ b/net/wireless/Makefile
-@@ -10,7 +10,7 @@ obj-$(CONFIG_WEXT_SPY) += wext-spy.o
- obj-$(CONFIG_WEXT_PRIV) += wext-priv.o
- 
- cfg80211-y += core.o sysfs.o radiotap.o util.o reg.o scan.o nl80211.o
--cfg80211-y += mlme.o ibss.o sme.o chan.o ethtool.o mesh.o ap.o trace.o
-+cfg80211-y += mlme.o ibss.o sme.o chan.o ethtool.o mesh.o ap.o trace.o ocb.o
- cfg80211-$(CONFIG_CFG80211_DEBUGFS) += debugfs.o
- cfg80211-$(CONFIG_CFG80211_WEXT) += wext-compat.o wext-sme.o
- cfg80211-$(CONFIG_CFG80211_INTERNAL_REGDB) += regdb.o
-diff --git a/net/wireless/chan.c b/net/wireless/chan.c
-index 84d686e..a457085 100644
---- a/net/wireless/chan.c
-+++ b/net/wireless/chan.c
-@@ -370,6 +370,7 @@ int cfg80211_chandef_dfs_required(struct wiphy *wiphy,
- 	case NL80211_IFTYPE_AP_VLAN:
- 	case NL80211_IFTYPE_WDS:
- 	case NL80211_IFTYPE_P2P_DEVICE:
-+	case NL80211_IFTYPE_OCB:
- 	case NL80211_IFTYPE_UNSPECIFIED:
- 		break;
- 	case NUM_NL80211_IFTYPES:
-@@ -892,6 +893,7 @@ cfg80211_get_chan_state(struct wireless_dev *wdev,
- 				*radar_detect |= BIT(wdev->chandef.width);
- 		}
- 		return;
-+	case NL80211_IFTYPE_OCB:
- 	case NL80211_IFTYPE_MONITOR:
- 	case NL80211_IFTYPE_AP_VLAN:
- 	case NL80211_IFTYPE_WDS:
-diff --git a/net/wireless/core.h b/net/wireless/core.h
-index e9afbf1..3d8fde5 100644
---- a/net/wireless/core.h
-+++ b/net/wireless/core.h
-@@ -290,6 +290,14 @@ int cfg80211_set_mesh_channel(struct cfg80211_registered_device *rdev,
- 			      struct wireless_dev *wdev,
- 			      struct cfg80211_chan_def *chandef);
- 
-+/* OCB */
-+int __cfg80211_join_ocb(struct cfg80211_registered_device *rdev,
-+			struct net_device *dev,
-+			struct ocb_setup *setup);
-+int cfg80211_join_ocb(struct cfg80211_registered_device *rdev,
-+		      struct net_device *dev,
-+		      struct ocb_setup *setup);
-+
- /* AP */
- int __cfg80211_stop_ap(struct cfg80211_registered_device *rdev,
- 		       struct net_device *dev, bool notify);
-diff --git a/net/wireless/nl80211.c b/net/wireless/nl80211.c
-index c766c31..79bae31 100644
---- a/net/wireless/nl80211.c
-+++ b/net/wireless/nl80211.c
-@@ -1859,6 +1859,7 @@ static bool nl80211_can_set_dev_channel(struct wireless_dev *wdev)
- 	 * operation to set the monitor channel if possible.
- 	 */
- 	return !wdev ||
-+		wdev->iftype == NL80211_IFTYPE_OCB ||
- 		wdev->iftype == NL80211_IFTYPE_AP ||
- 		wdev->iftype == NL80211_IFTYPE_MESH_POINT ||
- 		wdev->iftype == NL80211_IFTYPE_MONITOR ||
-diff --git a/net/wireless/ocb.c b/net/wireless/ocb.c
-new file mode 100644
-index 0000000..66da583
---- /dev/null
-+++ b/net/wireless/ocb.c
-@@ -0,0 +1,75 @@
-+/* OCB mode implementation
-+ * Copyright 2014, Czech Technical University in Prague, Rostislav Lisovy
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include <linux/ieee80211.h>
-+#include <net/cfg80211.h>
-+#include "nl80211.h"
-+#include "core.h"
-+#include "rdev-ops.h"
-+
-+
-+int __cfg80211_join_ocb(struct cfg80211_registered_device *rdev,
-+			struct net_device *dev,
-+			struct ocb_setup *setup)
-+{
-+	struct wireless_dev *wdev = dev->ieee80211_ptr;
-+	int err;
-+
-+	ASSERT_WDEV_LOCK(wdev);
-+
-+	if (dev->ieee80211_ptr->iftype != NL80211_IFTYPE_OCB)
-+		return -EOPNOTSUPP;
-+
-+	if (!setup->chandef.chan)
-+		WARN_ON(!setup->chandef.chan);
-+
-+	 /* In OCB mode only those channels flagged with 'CHAN_OCB_ONLY'
-+	  * may be used
-+	  */
-+	if (dev->ieee80211_ptr->iftype == NL80211_IFTYPE_OCB &&
-+	    !(setup->chandef.chan->flags & IEEE80211_CHAN_OCB_ONLY))
-+		return -EINVAL;
-+
-+	 /* check if basic rates are available otherwise use mandatory
-+	  * rates as basic rates
-+	  */
-+	if (!setup->basic_rates) {
-+		enum nl80211_bss_scan_width scan_width;
-+		struct ieee80211_supported_band *sband =
-+				rdev->wiphy.bands[setup->chandef.chan->band];
-+		scan_width = cfg80211_chandef_to_scan_width(&setup->chandef);
-+		setup->basic_rates = ieee80211_mandatory_rates(sband,
-+							       scan_width);
-+	}
-+
-+	err = cfg80211_can_use_iftype_chan(rdev, wdev, wdev->iftype,
-+					   setup->chandef.chan,
-+					   CHAN_MODE_EXCLUSIVE, 0);
-+	if (err)
-+		return err;
-+
-+	err = rdev_join_ocb(rdev, dev, setup);
-+	if (!err)
-+		wdev->chandef = setup->chandef;
-+
-+	return err;
-+}
-+
-+int cfg80211_join_ocb(struct cfg80211_registered_device *rdev,
-+		      struct net_device *dev,
-+		      struct ocb_setup *setup)
-+{
-+	struct wireless_dev *wdev = dev->ieee80211_ptr;
-+	int err;
-+
-+	wdev_lock(wdev);
-+	err = __cfg80211_join_ocb(rdev, dev, setup);
-+	wdev_unlock(wdev);
-+
-+	return err;
-+}
-diff --git a/net/wireless/rdev-ops.h b/net/wireless/rdev-ops.h
-index 00cdf73..2f2fa14 100644
---- a/net/wireless/rdev-ops.h
-+++ b/net/wireless/rdev-ops.h
-@@ -322,6 +322,17 @@ static inline int rdev_leave_mesh(struct cfg80211_registered_device *rdev,
- 	return ret;
- }
- 
-+static inline int rdev_join_ocb(struct cfg80211_registered_device *rdev,
-+				struct net_device *dev,
-+				struct ocb_setup *setup)
-+{
-+	int ret;
-+	trace_rdev_join_ocb(&rdev->wiphy, dev, setup);
-+	ret = rdev->ops->join_ocb(&rdev->wiphy, dev, setup);
-+	trace_rdev_return_int(&rdev->wiphy, ret);
-+	return ret;
-+}
-+
- static inline int rdev_change_bss(struct cfg80211_registered_device *rdev,
- 				  struct net_device *dev,
- 				  struct bss_parameters *params)
-diff --git a/net/wireless/trace.h b/net/wireless/trace.h
-index cdfbb00..f4e2cc3 100644
---- a/net/wireless/trace.h
-+++ b/net/wireless/trace.h
-@@ -1256,6 +1256,23 @@ TRACE_EVENT(rdev_join_ibss,
- 		  WIPHY_PR_ARG, NETDEV_PR_ARG, MAC_PR_ARG(bssid), __entry->ssid)
- );
- 
-+TRACE_EVENT(rdev_join_ocb,
-+	TP_PROTO(struct wiphy *wiphy, struct net_device *netdev,
-+		 const struct ocb_setup *setup),
-+	TP_ARGS(wiphy, netdev, setup),
-+	TP_STRUCT__entry(
-+		WIPHY_ENTRY
-+		NETDEV_ENTRY
-+	),
-+	TP_fast_assign(
-+		WIPHY_ASSIGN;
-+		NETDEV_ASSIGN;
-+	),
-+	TP_printk(WIPHY_PR_FMT ", " NETDEV_PR_FMT,
-+		  WIPHY_PR_ARG, NETDEV_PR_ARG)
-+);
-+
-+
- TRACE_EVENT(rdev_set_wiphy_params,
- 	TP_PROTO(struct wiphy *wiphy, u32 changed),
- 	TP_ARGS(wiphy, changed),
-diff --git a/net/wireless/util.c b/net/wireless/util.c
-index a756429..019e34c 100644
---- a/net/wireless/util.c
-+++ b/net/wireless/util.c
-@@ -441,7 +441,8 @@ int ieee80211_data_to_8023(struct sk_buff *skb, const u8 *addr,
- 		break;
- 	case cpu_to_le16(0):
- 		if (iftype != NL80211_IFTYPE_ADHOC &&
--		    iftype != NL80211_IFTYPE_STATION)
-+		    iftype != NL80211_IFTYPE_STATION &&
-+		    iftype != NL80211_IFTYPE_OCB)
- 				return -1;
- 		break;
- 	}
-@@ -517,6 +518,7 @@ int ieee80211_data_from_8023(struct sk_buff *skb, const u8 *addr,
- 		memcpy(hdr.addr3, skb->data, ETH_ALEN);
- 		hdrlen = 24;
- 		break;
-+	case NL80211_IFTYPE_OCB:
- 	case NL80211_IFTYPE_ADHOC:
- 		/* DA SA BSSID */
- 		memcpy(hdr.addr1, skb->data, ETH_ALEN);
-@@ -935,6 +937,7 @@ int cfg80211_change_iface(struct cfg80211_registered_device *rdev,
- 			if (dev->ieee80211_ptr->use_4addr)
- 				break;
- 			/* fall through */
-+		case NL80211_IFTYPE_OCB:
- 		case NL80211_IFTYPE_P2P_CLIENT:
- 		case NL80211_IFTYPE_ADHOC:
- 			dev->priv_flags |= IFF_DONT_BRIDGE;
+								Honza
 -- 
-2.0.0.rc4
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
