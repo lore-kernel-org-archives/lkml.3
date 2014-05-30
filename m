@@ -1,79 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753992AbaE3AKf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 20:10:35 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:47685 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753405AbaE3AKe (ORCPT
+	id S1753620AbaE3AQE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 20:16:04 -0400
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:51929 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751682AbaE3AQC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 20:10:34 -0400
-Date: Thu, 29 May 2014 17:10:30 -0700 (PDT)
-Message-Id: <20140529.171030.2160766520049624641.davem@davemloft.net>
-To: will.deacon@arm.com
-Cc: sam@ravnborg.org, linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, monstr@monstr.eu, dhowells@redhat.com,
-        broonie@linaro.org, benh@kernel.crashing.org, peterz@infradead.org,
-        paulmck@linux.vnet.ibm.com
-Subject: Re: [PATCH v2 14/18] sparc: io: implement dummy relaxed accessor
- macros for writes
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20140523143810.GE21319@arm.com>
-References: <1400777250-17335-15-git-send-email-will.deacon@arm.com>
-	<20140522181838.GA30632@ravnborg.org>
-	<20140523143810.GE21319@arm.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 29 May 2014 17:10:33 -0700 (PDT)
+	Thu, 29 May 2014 20:16:02 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AsBZAK3Mh1N5LL1sPGdsb2JhbABZgweDRIUIonEBAQEBAQEGmBgBgQgXAwEBAQE4NYIlAQEEAScTHCMFCwgDFAQJJQ8FJQMHGhOIOgfXVhcWhT+IfQeDK4EVBJl0ixqLWis
+Date: Fri, 30 May 2014 10:15:58 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm <linux-mm@kvack.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Hugh Dickins <hughd@google.com>, Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [RFC 2/2] x86_64: expand kernel stack to 16K
+Message-ID: <20140530001558.GB14410@dastard>
+References: <1401260039-18189-1-git-send-email-minchan@kernel.org>
+ <1401260039-18189-2-git-send-email-minchan@kernel.org>
+ <CA+55aFxXdc22dirnE49UbQP_2s2vLQpjQFL+NptuyK7Xry6c=g@mail.gmail.com>
+ <20140528223142.GO8554@dastard>
+ <CA+55aFyRk6_v6COPGVvu6hvt=i2A8-dPcs1X3Ydn1g24AxbPkg@mail.gmail.com>
+ <20140529013007.GF6677@dastard>
+ <20140529015830.GG6677@dastard>
+ <20140529233638.GJ10092@bbox>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140529233638.GJ10092@bbox>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Will Deacon <will.deacon@arm.com>
-Date: Fri, 23 May 2014 15:38:10 +0100
-
-> On Thu, May 22, 2014 at 07:18:38PM +0100, Sam Ravnborg wrote:
->> On Thu, May 22, 2014 at 05:47:26PM +0100, Will Deacon wrote:
->> > write{b,w,l,q}_relaxed are implemented by some architectures in order to
->> > permit memory-mapped I/O accesses with weaker barrier semantics than the
->> > non-relaxed variants.
->> > 
->> > This patch adds dummy macros for the write accessors to sparc, in the
->> > same vein as the dummy definitions for the relaxed read accessors. The
->> > existing relaxed read{b,w,l} accessors are moved into asm/io.h, since
->> > they are identical between 32-bit and 64-bit machines.
->> > 
->> > Cc: "David S. Miller" <davem@davemloft.net>
->> > Signed-off-by: Will Deacon <will.deacon@arm.com>
->> Look good:
->> Acked-by: Sam Ravnborg <sam@ravnborg.org>
+On Fri, May 30, 2014 at 08:36:38AM +0900, Minchan Kim wrote:
+> Hello Dave,
 > 
-> Thanks, Sam.
+> On Thu, May 29, 2014 at 11:58:30AM +1000, Dave Chinner wrote:
+> > On Thu, May 29, 2014 at 11:30:07AM +1000, Dave Chinner wrote:
+> > > On Wed, May 28, 2014 at 03:41:11PM -0700, Linus Torvalds wrote:
+> > > commit a237c1c5bc5dc5c76a21be922dca4826f3eca8ca
+> > > Author: Jens Axboe <jaxboe@fusionio.com>
+> > > Date:   Sat Apr 16 13:27:55 2011 +0200
+> > > 
+> > >     block: let io_schedule() flush the plug inline
+> > >     
+> > >     Linus correctly observes that the most important dispatch cases
+> > >     are now done from kblockd, this isn't ideal for latency reasons.
+> > >     The original reason for switching dispatches out-of-line was to
+> > >     avoid too deep a stack, so by _only_ letting the "accidental"
+> > >     flush directly in schedule() be guarded by offload to kblockd,
+> > >     we should be able to get the best of both worlds.
+> > >     
+> > >     So add a blk_schedule_flush_plug() that offloads to kblockd,
+> > >     and only use that from the schedule() path.
+> > >     
+> > >     Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
+> > > 
+> > > And now we have too deep a stack due to unplugging from io_schedule()...
+> > 
+> > So, if we make io_schedule() push the plug list off to the kblockd
+> > like is done for schedule()....
+....
+> I did below hacky test to apply your idea and the result is overflow again.
+> So, again it would second stack expansion. Otherwise, we should prevent
+> swapout in direct reclaim.
 > 
->> But you should wait for David's ack too.
-> 
-> Yeah, I still need to get buy-in on the semantics from the PPC folks
-> anyway.
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index f5c6635b806c..95f169e85dbe 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -4241,10 +4241,13 @@ EXPORT_SYMBOL_GPL(yield_to);
+>  void __sched io_schedule(void)
+>  {
+>  	struct rq *rq = raw_rq();
+> +	struct blk_plug *plug = current->plug;
+>  
+>  	delayacct_blkio_start();
+>  	atomic_inc(&rq->nr_iowait);
+> -	blk_flush_plug(current);
+> +	if (plug)
+> +		blk_flush_plug_list(plug, true);
+> +
+>  	current->in_iowait = 1;
+>  	schedule();
+>  	current->in_iowait = 0;
 
-I'm fine with these changes so:
+.....
 
-Acked-by: David S. Miller <davem@davemloft.net>
+>         Depth    Size   Location    (46 entries)
+>
+>   0)     7200       8   _raw_spin_lock_irqsave+0x51/0x60
+>   1)     7192     296   get_page_from_freelist+0x886/0x920
+>   2)     6896     352   __alloc_pages_nodemask+0x5e1/0xb20
+>   3)     6544       8   alloc_pages_current+0x10f/0x1f0
+>   4)     6536     168   new_slab+0x2c5/0x370
+>   5)     6368       8   __slab_alloc+0x3a9/0x501
+>   6)     6360      80   __kmalloc+0x1cb/0x200
+>   7)     6280     376   vring_add_indirect+0x36/0x200
+>   8)     5904     144   virtqueue_add_sgs+0x2e2/0x320
+>   9)     5760     288   __virtblk_add_req+0xda/0x1b0
+>  10)     5472      96   virtio_queue_rq+0xd3/0x1d0
+>  11)     5376     128   __blk_mq_run_hw_queue+0x1ef/0x440
+>  12)     5248      16   blk_mq_run_hw_queue+0x35/0x40
+>  13)     5232      96   blk_mq_insert_requests+0xdb/0x160
+>  14)     5136     112   blk_mq_flush_plug_list+0x12b/0x140
+>  15)     5024     112   blk_flush_plug_list+0xc7/0x220
+>  16)     4912     128   blk_mq_make_request+0x42a/0x600
+>  17)     4784      48   generic_make_request+0xc0/0x100
+>  18)     4736     112   submit_bio+0x86/0x160
+>  19)     4624     160   __swap_writepage+0x198/0x230
+>  20)     4464      32   swap_writepage+0x42/0x90
+>  21)     4432     320   shrink_page_list+0x676/0xa80
+>  22)     4112     208   shrink_inactive_list+0x262/0x4e0
+>  23)     3904     304   shrink_lruvec+0x3e1/0x6a0
 
-Unfortunately, whilst sparc64 could support the relaxed variants, there is
-no easy way to implement this.
+The device is supposed to be plugged here in shrink_lruvec().
 
-I/O addrs are simply physical addresses on sparc64, and we therefore do
-loads and stores via the ASY_PHYS_BYPASS_EC_E* address spaces.  What
-this address space means is "physical address", "bypass caches", "side
-effect".
+Oh, a plug can only hold 16 individual bios, and then it does a
+synchronous flush. Hmmm - perhaps that should also defer the flush
+to the kblockd, because if we are overrunning a plug then we've
+already surrendered IO dispatch latency....
 
-To do a relaxed variant we'd need something without the "side effect"
-part, but no such ASI exists.
+So, in blk_mq_make_request(), can you do:
 
-These are all page protection bits, so we could move to using virtual
-mappings on I/O things, but that's so much overkill just for this I
-think.
+			if (list_empty(&plug->mq_list))
+				trace_block_plug(q);
+			else if (request_count >= BLK_MAX_REQUEST_COUNT) {
+-				blk_flush_plug_list(plug, false);
++				blk_flush_plug_list(plug, true);
+				trace_block_plug(q);
+			}
+			list_add_tail(&rq->queuelist, &plug->mq_list);
 
-Besides there are bigger fish to fry on sparc64 :-)
+To see if that defers all the swap IO to kblockd?
 
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
