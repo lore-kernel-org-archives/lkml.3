@@ -1,58 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756154AbaE3T61 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 15:58:27 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:51048 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752209AbaE3T60 (ORCPT
+	id S933982AbaE3UBK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 16:01:10 -0400
+Received: from mail-vc0-f175.google.com ([209.85.220.175]:49956 "EHLO
+	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754167AbaE3UBI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 15:58:26 -0400
-Date: Fri, 30 May 2014 12:58:21 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Sebastian Reichel <sre@kernel.org>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv4 0/4] tsc2005 DT binding
-Message-ID: <20140530195821.GA27692@core.coreip.homeip.net>
-References: <1400693774-21306-1-git-send-email-sre@kernel.org>
- <20140529133356.GA4716@earth.universe>
+	Fri, 30 May 2014 16:01:08 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140529133356.GA4716@earth.universe>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <538658EE.8030809@zytor.com>
+References: <CALCETrX4-qooSyLw3=zHGcMoWqQ2ozPB_WtKU2AtkMei-XZOUA@mail.gmail.com>
+ <537EB60E.40204@1h.com> <CALCETrWgtQCRiHt+am8+DoOMVvTuxy05AB6zzg3iAheGs13L6A@mail.gmail.com>
+ <538658EE.8030809@zytor.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Fri, 30 May 2014 13:00:46 -0700
+Message-ID: <CALCETrUhZp+edRCx2SEzuJup0HWhV5WSiheCiZWuUjVueTJHfQ@mail.gmail.com>
+Subject: Re: Pondering per-process vsyscall disablement
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Marian Marinov <mm@1h.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        X86 ML <x86@kernel.org>, Linux API <linux-api@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 29, 2014 at 03:33:57PM +0200, Sebastian Reichel wrote:
-> On Wed, May 21, 2014 at 07:36:10PM +0200, Sebastian Reichel wrote:
-> > This adds device tree support for the tsc2005 touchscreen
-> > controller, which is currently only used by the Nokia N900
-> > board.
-> > 
-> > The patch does not update the reset pin handling for platform
-> > data based probe to avoid merge conflicts. The n900 platform
-> > code will be removed in the near future (3.17?) and the driver
-> > can be simplified once that has happened.
-> > 
-> > Changes since v3 [0]:
-> >  * Move common touchscreen DT handling code into its own file
-> >  * Add regulator support to tsc2005 driver
-> >  * Added N900 DTS patch for completeness. It should go via
-> >    Tony's Tree of course.
-> 
-> ping! It would be nice to have this in 3.16, since it makes
-> the N900 usable with the mainline kernel when booted in DT
-> mode. The DT bindings haven't changed for more than 3 weeks,
-> so we don't need to wait longer for feedback from the DT
-> maintainers AFAIK.
+On Wed, May 28, 2014 at 2:45 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 05/23/2014 09:40 AM, Andy Lutomirski wrote:
+>>
+>> I don't think this should be something configured by the
+>> administrator, unless the administrator is the builder of a kiosky
+>> thing like Chromium OS.  In that case, the administrator can use
+>> vsyscall=none.
+>>
+>> I think this should be handled by either libc or the toolchain, hence
+>> the suggestions of a syscall or an ELF header.
+>>
+>
+> We could mimic the NX stack stuff, but it would have a lot of false
+> negatives, simply because very few things would actually poke at the
+> vsyscall page.
+>
+> The NX stuff uses a dummy program header in the ELF image.
+>
+> On the other hand, you could make the argument that anything compiled
+> with a new toolchain simply should not use the vsyscall page, and just
+> unconditionally set the opt-out bit (header) in question.
+>
+> It might be better to have some kind of flags field (which a number of
+> architectures use) than keep using dummy program headers, though.
 
-Sebastian,
+Do the flags go in the ELF loader or in the executable we're running?
+Or both (and, if both, do we and them or or them)?
 
-I applied the series, could you please take a peek at my 'next' branch
-to make sure I did not miss anything?
+I think the interpreter makes a little more sense in general: for the
+most part, use of vsyscalls is a property of the runtime environment,
+not of the program being run.  But maybe this is naive.
 
-Thanks.
-
--- 
-Dmitry
+--Andy
