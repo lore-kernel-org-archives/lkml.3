@@ -1,53 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932260AbaE3DUe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 23:20:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13316 "EHLO mx1.redhat.com"
+	id S1754485AbaE3DXe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 23:23:34 -0400
+Received: from ozlabs.org ([103.22.144.67]:43504 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754404AbaE3DUc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 23:20:32 -0400
-Date: Fri, 30 May 2014 11:20:10 +0800
-From: Dave Young <dyoung@redhat.com>
-To: matt.fleming@intel.com, bp@alien8.de, linux-kernel@vger.kernel.org,
-        linux-efi@vger.kernel.org, vgoyal@redhat.com
-Subject: [PATCH]x86 efi: do not export efi runtime map in case old map
-Message-ID: <20140530032010.GA29906@dhcp-16-198.nay.redhat.com>
+	id S1751543AbaE3DXc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 23:23:32 -0400
+Date: Fri, 30 May 2014 13:23:24 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Chris Ball <chris@printf.net>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David =?UTF-8?B?TGFuemVuZMO2cmZlcg==?= 
+	<david.lanzendoerfer@o2s.ch>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Mike Turquette <mturquette@linaro.org>
+Subject: linux-next: build failure after merge of the mmc tree
+Message-ID: <20140530132324.757076ca@canb.auug.org.au>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/75Pg84MoVKxTgJg=.EQ_ATJ"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Sig_/75Pg84MoVKxTgJg=.EQ_ATJ
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-For ioremapped efi memory aka old_map the virt addresses are not persistant
-across kexec reboot. kexec-tools will read the runtime maps from sysfs then
-pass them to 2nd kernel and assuming kexec efi boot is ok. This will cause
-kexec boot failure.
+Hi Chris,
 
-To address this issue do not export runtime maps in case efi old_map so
-userspace can use no efi boot instead.
+After merging the mmc tree, today's linux-next build (arm multi_v7_defconfi=
+g)
+failed like this:
 
-Signed-off-by: Dave Young <dyoung@redhat.com>
----
- arch/x86/platform/efi/efi.c | 3 +++
- 1 file changed, 3 insertions(+)
+drivers/mmc/host/sunxi-mmc.c:25:29: fatal error: linux/clk/sunxi.h: No such=
+ file or directory
 
-diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-index 3781dd3..4d36932 100644
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -919,6 +919,9 @@ static void __init save_runtime_map(void)
- 	void *tmp, *p, *q = NULL;
- 	int count = 0;
- 
-+	if (efi_enabled(EFI_OLD_MEMMAP))
-+		return;
-+
- 	for (p = memmap.map; p < memmap.map_end; p += memmap.desc_size) {
- 		md = p;
- 
--- 
-1.8.3.1
+Caused by commit 19b7f796c375 ("mmc: sunxi: Add driver for SD/MMC hosts
+found on Allwinner sunxi SoCs").  Something has changed to turn on
+CONFIG_ARCH_SUNXI in the arm multi_v7_defconfig build since yesterday.
 
+linux/clk/sunxi.h is created by a commit in the clk tree
+(git://git.linaro.org/people/mturquette/linux.git#clk-next) which I
+don't include in linux-next until much later than the mmc tree.
+
+I have reverted that commit for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/75Pg84MoVKxTgJg=.EQ_ATJ
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTh/mxAAoJEMDTa8Ir7ZwVJPsP/RDhZ2hsuABYExENx1XSnR0p
+MDfRNH7WBII0NKmniWGMtXeA/XfLwLry9j5yRPblaoAZbzcMbmoKDarTwOXW1LId
+3j5jRyEbS5MgjBk86Gwy/dzK5M0S/oU1+QwR+ApaNfwphtRVRoqaP33CCHdVAGRk
+5OJwu2y2WaSRURifVdVqdNvuUUXnCSMN5JWc4Sn9VIm4/L33Nb9/srL7sVwlG1wQ
+xHLYG/Yr1xeTIUMTpShPL/A1c3NSAqamQMHrXLcMKbby4YYYBZ8zYLgTIwmBYPws
+HhWBty1WzhaFGGiROjfvNWejQUmfGgWEu4khi9cyfzlj0xcDJuUOoj5p0HnLMOrD
+V9uMibIRvWVUlkIfPZbhkfxHxpsi1F/DefchwTRMAmLJLmu8myHoBp1vdo1oLh6y
+bKjvvwEvO0wSpsoOnheKfZOk/7vYU9L11gkta3WXHvZCwXgRu2zok1JYIEPjpIuU
+qaMfEDnUebAJia/nzEObO9RYgQQf5c7385z5LD065jzGkgLzseBIK0xRT3oLa3QY
+TctCgRBj/rJvIBZ+EsYlgO2Z4kpisujAI/xbK7i9XQOt+pjgjMkX3TjRE+qCRmgb
+blNFKIXLpW8eUnxIxMifXWsyolbKI4Fn2mlU03w+gvuRJzrZ4ttOwiVQPsOyzZvu
+yzdRTnudBs2XtsihTIWD
+=jzGX
+-----END PGP SIGNATURE-----
+
+--Sig_/75Pg84MoVKxTgJg=.EQ_ATJ--
