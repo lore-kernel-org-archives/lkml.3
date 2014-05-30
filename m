@@ -1,87 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754288AbaE3C14 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 22:27:56 -0400
-Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:28707 "EHLO
-	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753972AbaE3C1z (ORCPT
+	id S1753989AbaE3Cr4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 22:47:56 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:58799 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750775AbaE3Crw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 22:27:55 -0400
-Message-ID: <5387ECA3.6090405@marvell.com>
-Date: Fri, 30 May 2014 10:27:47 +0800
-From: FanWu <fwu@marvell.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Thu, 29 May 2014 22:47:52 -0400
+Message-ID: <5387F150.5000307@hitachi.com>
+Date: Fri, 30 May 2014 11:47:44 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "swarren@nvidia.com" <swarren@nvidia.com>,
-        Chao Xie <cxie4@marvell.com>, Yilu Mao <ylmao@marvell.com>,
-        Ning Jiang <njiang1@marvell.com>, Xiaofan Tian <tianxf@marvell.com>,
-        Fangsuo Wu <fswu@marvell.com>
-Subject: Re: [PATCH v3] pinctrl: to avoid duplicated calling enable_pinmux_setting
- for a pin
-References: <1401072217-3180-1-git-send-email-fwu@marvell.com> <53878829.4050703@wwwdotorg.org>
-In-Reply-To: <53878829.4050703@wwwdotorg.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: "Suzuki K. Poulose" <suzuki@in.ibm.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Tony Luck <tony.luck@gmail.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>, linux-ia64@vger.kernel.org,
+        sparse@chrisli.org, "H. Peter Anvin" <hpa@zytor.com>,
+        akataria@vmware.com, linux-tip-commits@vger.kernel.org,
+        anil.s.keshavamurthy@intel.com, Ingo Molnar <mingo@kernel.org>,
+        Fenghua Yu <fenghua.yu@intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Chris Wright <chrisw@sous-sol.org>, yrl.pp-manager.tt@hitachi.com,
+        Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
+        Kevin Hao <haokexin@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>, rdunlap@infradead.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, dl9pf@gmx.de,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linuxppc-dev@lists.ozlabs.org, "David S. Miller" <davem@davemloft.net>
+Subject: Re: [RFT PATCH -next v2] [BUGFIX] kprobes: Fix "Failed to find blacklist"
+ error on ia64 and ppc64
+References: <5383249A.6060407@in.ibm.com> <20140527063121.4399.38014.stgit@ltc230.yrl.intra.hitachi.co.jp> <538786D8.1070303@in.ibm.com>
+In-Reply-To: <538786D8.1070303@in.ibm.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
- definitions=2014-05-29_07:2014-05-29,2014-05-29,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1402240000 definitions=main-1405300024
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/30/2014 03:19 AM, Stephen Warren wrote:
-> On 05/25/2014 08:43 PM, fwu@marvell.com wrote:
->> From: Fan Wu <fwu@marvell.com>
+(2014/05/30 4:13), Suzuki K. Poulose wrote:
+>> @@ -2042,7 +2043,8 @@ static int __init populate_kprobe_blacklist(unsigned long *start,
+>>  	unsigned long offset = 0, size = 0;
+>>  
+>>  	for (iter = start; iter < end; iter++) {
+>> -		if (!kallsyms_lookup_size_offset(*iter, &size, &offset)) {
+>> +		if (!kallsyms_lookup_size_offset(function_entry(*iter),
+>> +						 &size, &offset)) {
+> 
+> On powerpc we will be able to resolve the *iter to func_descr and won't
+> get the below error with/without this patch. So we have to actually
+> verify the kprobe_blacklist contents to make sure everything is alright.
+> 
+>>  			pr_err("Failed to find blacklist %p\n", (void *)*iter);
+>>  			continue;
+>>  		}
 >>
->> What the patch did:
->> 1.To call pinmux_disable_setting ahead of pinmux_enable_setting in each time of
->>    calling pinctrl_select_state
->> 2.Remove the HW disable operation in in pinmux_disable_setting function.
-> ...
->
-> This commit description is way too long for such a simple change. A much
-> shorter summary would be better.
->
->> Signed-off-by: Fan Wu <fwu@marvell.com>
->> Signed-off-by: Stephen Warren <swarren@nvidia.com>
->
-> I'm pretty sure I never signed off on this patch. How come my s-o-b line
-> is there?
->
-> This patch still doesn't remove ops->disable from the struct pinmux_ops,
-> nor any of its implementations. Shouldn't it?
->
+> 
+> There is a bug here.
+> You need to set the ent->start using the function_entry(*iter) and not
+> *iter. Or else you just avoid the 'Warning' and still have an invalid
+> black list. As shown below :
+> 
+>     2e:mon> ls kprobe_blacklist
+>     kprobe_blacklist: c00000000104dad0
+>     2e:mon> d c00000000104dad0 10
+>     c00000000104dad0: c0000003aff800a0 c0000003aff809a0
+>     2e:mon> d c0000003aff800a0 20 (struct kprobe_blacklist *)
+>     c0000003aff800a0: c0000003aff800c0 c00000000104dad0
+>     c0000003aff800b0: c0000000010ef138 c0000000010ef188
+>                       start ^^         end ^^
+>     2e:mon> la c0000000010ef138 (start)
+>     c0000000010ef138: notify_die+0x0/0x10 <- still points to the
+> function descriptor
+>     2e:mon> la c0000000010ef188 (end)
+>     c0000000010ef188: __blocking_notifier_call_chain+0x0/0x10
+> 
+> 
+> Following patch fixes the issue, with the patch :
+> 
+> 1:mon> ls kprobe_blacklist
+> kprobe_blacklist: c00000000104dad0
+> 1:mon> d c00000000104dad0 10
+> c00000000104dad0: c0000003ae1a00a0 c0000003ae1a09a0
+> 1:mon> d c0000003ae1a00a0 20 (struct kprobe_blacklist *)
+> c0000003ae1a00a0: c0000003ae1a00c0 c00000000104dad0
+> c0000003ae1a00b0: c0000000000b14d0 c0000000000b1520
+>                       start ^^         end ^^
+> 1:mon> la c0000000000b14d0
+> c0000000000b14d0: .notify_die+0x0/0x50
+> 1:mon> la c0000000000b1520
+> c0000000000b1520: .atomic_notifier_chain_register+0x0/0xa0
+> 
+> 1:mon> di c0000000000b14d0 10 (.notify_die)
+> c0000000000b14d0  7c0802a6	mflr	r0
+> c0000000000b14d4  7c691b78	mr	r9,r3
+> 
+> commit ed51674aca8e0496641f565421ab6691a873e80a
+> Author: Suzuki K. Poulose <suzuki@in.ibm.com>
+> Date:   Fri May 30 00:23:01 2014 +0530
+> 
+> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+> index 3859c88..b81d626 100644
+> --- a/kernel/kprobes.c
+> +++ b/kernel/kprobes.c
+> @@ -2043,7 +2043,8 @@ static int __init
+> populate_kprobe_blacklist(unsigned long *start,
+>         unsigned long offset = 0, size = 0;
+> 
+>         for (iter = start; iter < end; iter++) {
+> -               if (!kallsyms_lookup_size_offset(function_entry(*iter),
+> +               unsigned long entry = function_entry(*iter);
+> +               if (!kallsyms_lookup_size_offset(entry,
+>                                                  &size, &offset)) {
+>                         pr_err("Failed to find blacklist %p\n", (void
+> *)*iter);
+>                         continue;
+> @@ -2052,8 +2053,8 @@ static int __init
+> populate_kprobe_blacklist(unsigned long *start,
+>                 ent = kmalloc(sizeof(*ent), GFP_KERNEL);
+>                 if (!ent)
+>                         return -ENOMEM;
+> -               ent->start_addr = *iter;
+> -               ent->end_addr = *iter + size;
+> +               ent->start_addr = entry;
+> +               ent->end_addr = entry + size;
 
-Dear Stephen,
+Oops! right, I missed it :(
+I'll update the patch including your fix and signed-off-by.
 
-For your comments 1: The reason why I want to put a lot of info into the 
-patch comments is that the long term discussion about the topic and the 
-patch is not that easy to understand for a patch reader, or maybe is not 
-easy for us to understand in far future.
+thank you!
 
-For your comments 2: I accepted your suggestion of inline code comments 
-and some other suggestions from our discussion, so I added your signed 
-off tailing in the patch comments.
-If you think it is not fine, I can remove it in the new patch version.
 
-For your comments 3:
-I think I have made myself clear in the last mail:
-1) If I remove the ops->disable from the struct pinmux_ops in this 
-patch, the pinctrl-single user will got build error immediately.
-2) Thus, I want to merge this patch first and then make other two 
-patches later:
-One is to remove the ops->disable registration in pinctrl-single driver.
-And the other is to remove ops->disable in struct pinmux_ops.
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
-Could you please give your final suggestion about this and then I will 
-give new patch?
 
-Great thanks about this! :)
-
-Looking forward your reply !
