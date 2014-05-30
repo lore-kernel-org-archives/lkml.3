@@ -1,104 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934096AbaE3Rdn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 13:33:43 -0400
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:48924 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754389AbaE3Rdl (ORCPT
+	id S934194AbaE3Rf2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 13:35:28 -0400
+Received: from g9t1613g.houston.hp.com ([15.240.0.71]:60026 "EHLO
+	g9t1613g.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752209AbaE3Rf1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 13:33:41 -0400
-Message-ID: <5388C0F1.90503@gmail.com>
-Date: Fri, 30 May 2014 10:33:37 -0700
-From: David Daney <ddaney.cavm@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: abdoulaye berthe <berthe.ab@gmail.com>
-CC: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>, m@bues.ch,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        patches@opensource.wolfsonmicro.com,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        linux-samsungsoc@vger.kernel.org, spear-devel@list.st.com,
-        platform-driver-x86@vger.kernel.org,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        driverdevel <devel@driverdev.osuosl.org>
-Subject: Re: [PATCH 2/2] gpio: gpiolib: set gpiochip_remove retval to void
-References: <20140530094025.3b78301e@canb.auug.org.au>        <1401449454-30895-1-git-send-email-berthe.ab@gmail.com>        <1401449454-30895-2-git-send-email-berthe.ab@gmail.com> <CAMuHMdV6AtjD2aqO3buzj8Eo7A7xc_+ROYnxEi2sdjMaqFiAuA@mail.gmail.com>
-In-Reply-To: <CAMuHMdV6AtjD2aqO3buzj8Eo7A7xc_+ROYnxEi2sdjMaqFiAuA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Fri, 30 May 2014 13:35:27 -0400
+From: T Makphaibulchoke <tmac@hp.com>
+To: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, tytso@mit.edu
+Cc: T Makphaibulchoke <tmac@hp.com>
+Subject: [PATCH] fs/mbcache.c: replacing __builtin_log2() with ilog2()
+Date: Fri, 30 May 2014 11:35:04 -0600
+Message-Id: <1401471304-37479-1-git-send-email-tmac@hp.com>
+X-Mailer: git-send-email 1.7.11.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/30/2014 04:39 AM, Geert Uytterhoeven wrote:
-> On Fri, May 30, 2014 at 1:30 PM, abdoulaye berthe <berthe.ab@gmail.com> wrote:
->> --- a/drivers/gpio/gpiolib.c
->> +++ b/drivers/gpio/gpiolib.c
->> @@ -1263,10 +1263,9 @@ static void gpiochip_irqchip_remove(struct gpio_chip *gpiochip);
->>    *
->>    * A gpio_chip with any GPIOs still requested may not be removed.
->>    */
->> -int gpiochip_remove(struct gpio_chip *chip)
->> +void gpiochip_remove(struct gpio_chip *chip)
->>   {
->>          unsigned long   flags;
->> -       int             status = 0;
->>          unsigned        id;
->>
->>          acpi_gpiochip_remove(chip);
->> @@ -1278,24 +1277,15 @@ int gpiochip_remove(struct gpio_chip *chip)
->>          of_gpiochip_remove(chip);
->>
->>          for (id = 0; id < chip->ngpio; id++) {
->> -               if (test_bit(FLAG_REQUESTED, &chip->desc[id].flags)) {
->> -                       status = -EBUSY;
->> -                       break;
->> -               }
->> -       }
->> -       if (status == 0) {
->> -               for (id = 0; id < chip->ngpio; id++)
->> -                       chip->desc[id].chip = NULL;
->> -
->> -               list_del(&chip->list);
->> +               if (test_bit(FLAG_REQUESTED, &chip->desc[id].flags))
->> +                       panic("gpio: removing gpiochip with gpios still requested\n");
->
-> panic?
+Fixing compiler error with some gcc version(s) that do not
+support __builtin_log2().  Replacing __builtin_log2() with
+ilog2().
 
-NACK to the patch for this reason.  The strongest thing you should do 
-here is WARN.
+Signed-off-by: T. Makphaibulchoke <tmac@hp.com>
+---
+ fs/mbcache.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-That said, I am not sure why we need this whole patch set in the first 
-place.
-
-David Daney
-
-
-
->
-> Is this likely to happen?
->
-> Gr{oetje,eeting}s,
->
->                          Geert
->
-> --
-> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
->
-> In personal conversations with technical people, I call myself a hacker. But
-> when I'm talking to journalists I just say "programmer" or something like that.
->                                  -- Linus Torvalds
->
->
+diff --git a/fs/mbcache.c b/fs/mbcache.c
+index bf166e3..187477d 100644
+--- a/fs/mbcache.c
++++ b/fs/mbcache.c
+@@ -73,6 +73,7 @@
+ #include <linux/mbcache.h>
+ #include <linux/init.h>
+ #include <linux/blockgroup_lock.h>
++#include <linux/log2.h>
+ 
+ #ifdef MB_CACHE_DEBUG
+ # define mb_debug(f...) do { \
+@@ -93,7 +94,7 @@
+ 
+ #define MB_CACHE_WRITER ((unsigned short)~0U >> 1)
+ 
+-#define MB_CACHE_ENTRY_LOCK_BITS	__builtin_log2(NR_BG_LOCKS)
++#define MB_CACHE_ENTRY_LOCK_BITS	ilog2(NR_BG_LOCKS)
+ #define	MB_CACHE_ENTRY_LOCK_INDEX(ce)			\
+ 	(hash_long((unsigned long)ce, MB_CACHE_ENTRY_LOCK_BITS))
+ 
+-- 
+1.7.11.3
 
