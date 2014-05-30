@@ -1,83 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754344AbaE3CXa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 22:23:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9899 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751538AbaE3CX3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 22:23:29 -0400
-Date: Fri, 30 May 2014 10:24:38 +0800
-From: Dave Young <dyoung@redhat.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: matt.fleming@intel.com, bp@alien8.de, linux-kernel@vger.kernel.org,
-        linux-efi@vger.kernel.org
-Subject: Re: [PATCH] export efi.flags to sysfs
-Message-ID: <20140530022438.GC1985@darkstar.nay.redhat.com>
-References: <20140526083935.GA19682@dhcp-16-198.nay.redhat.com>
- <20140527133411.GG10994@redhat.com>
- <20140528021359.GC2820@darkstar.nay.redhat.com>
- <20140528124029.GF14863@redhat.com>
- <20140529020837.GB2068@darkstar.nay.redhat.com>
- <20140529124520.GC14570@redhat.com>
+	id S1753522AbaE3C1h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 22:27:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48450 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751149AbaE3C1f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 22:27:35 -0400
+Date: Thu, 29 May 2014 19:27:34 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Johan Hovold <jhovold@gmail.com>
+Cc: Dirk Brandewie <dirk.brandewie@gmail.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>, dirk.j.brandewie@intel.com,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Doug Smythies <dsmythies@telus.net>, Yuyang Du <yuyang.du@intel.com>,
+        Stratos Karafotis <stratosk@semaphore.gr>
+Subject: Re: Performance regression in v3.14
+Message-ID: <20140530022734.GC19080@kroah.com>
+References: <20140506163559.GA5308@localhost>
+ <CAKohpokYEvazxm0-JJXPzq-4OgLXmROfaCMcgHDZwugChOxtsQ@mail.gmail.com>
+ <536A3EE9.5050409@intel.com>
+ <20140521090051.GO21412@localhost>
+ <20140528075945.GA21705@localhost>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140529124520.GC14570@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140528075945.GA21705@localhost>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/29/14 at 08:45am, Vivek Goyal wrote:
-> On Thu, May 29, 2014 at 10:08:37AM +0800, Dave Young wrote:
-> > On 05/28/14 at 08:40am, Vivek Goyal wrote:
-> > > On Wed, May 28, 2014 at 10:13:59AM +0800, Dave Young wrote:
-> > > > On 05/27/14 at 09:34am, Vivek Goyal wrote:
-> > > > > On Mon, May 26, 2014 at 04:39:35PM +0800, Dave Young wrote:
-> > > > > > 
-> > > > > > For efi=old_map and any old_map quirks like SGI UV in current
-> > > > > > tree kexec/kdump will fail because it depends on the new 1:1 mapping.
-> > > > > > 
-> > > > > > Thus export the mapping method to sysfs so kexec tools can switch
-> > > > > > to original way to boot.
-> > > > > > 
-> > > > > > Since we have efi.flags for all efi facilities so let's just export the
-> > > > > > efi.flags itself, it maybe useful for other arches and use cases.
-> > > > > > 
-> > > > > 
-> > > > > Does it require any documentation in Documentation/ABI/..
-> > > > 
-> > > > Yes, it's necessary. Will do in next version.
-> > > > 
-> > > > I'm still discussing with Matt, exporting efi.flags seems not a good way
-> > > > because they are more internal interfaces. 
-> > > > 
-> > > > Probably I should export only a file 'old_map' instead.
-> > > 
-> > > How does /sys/firmware/efi/runtime-map/* look like with old mapping? Can't
-> > > we look at it and figure out if it is 1:1 or not.
-> > 
-> > There's phys_addr and virt_addr, (virt_addr - phys_addr) will always be
-> > -64G for 1:1 map, ioremapped addresses space is different.
-
-Correct myself it's top to down (-4G - -64G) instead of down to top. 
-
+On Wed, May 28, 2014 at 09:59:45AM +0200, Johan Hovold wrote:
+> [ +CC: Greg, Doug, Stratos, Yuyang ]
 > 
-> I am curious that what's the meaning of 1:1 mapping here? So far I thought
-> that means virt and physical addresses are same but that does not seem
-> to be the case. So what does it mean?
+> On Wed, May 21, 2014 at 11:00:51AM +0200, Johan Hovold wrote:
+> > On Wed, May 07, 2014 at 07:10:49AM -0700, Dirk Brandewie wrote:
+> > > On 05/06/2014 10:40 PM, Viresh Kumar wrote:
+> > > > Cc'ing Dirk who is taking care of intel-pstate driver.
+> > > >
+> > > 
+> > > Thanks Viresh I had seen this thread.
+> > > 
+> > > I am looking into it
+> > 
+> > Any updates on this, Dirk? 3.14 is still basically unusable with the
+> > intel_pstate driver.
+> > 
+> > Any fixes or workarounds posted elsewhere that I can apply in the
+> > meantime?
+> 
+> Another week and still no reply, Dirk?
+> 
+> I tried applying your (rejected) patch "intel_pstate: Remove C0
+> tracking" posted here:
+> 
+> 	https://lkml.org/lkml/2014/5/8/574
+> 
+> to v3.14.4 and it fixes the problem as expected.
+> 
+> So we have a commit fcb6a15c2e7e ("intel_pstate: Take core C0 time into
+> account for core busy calculation") that went into v3.14-rc2 (and was
+> even marked for *stable*) that first broke Greg KH's system:
+> 
+> 	https://lkml.org/lkml/2014/2/19/626
+> 
+> That was apparently fixed by e66c17683746 ("intel_pstate: Change
+> busy calculation to use fixed point math."), but still left v3.14
+> basically unusable for lower-intensity workloads such as my
+> bash-completion example and other reported regressions:
+> 
+> 	https://bugzilla.kernel.org/show_bug.cgi?id=75121
+> 
+> Sure there may be issues with v3.13 not hitting the lowest frequencies
+> but at least the system was *usable*.
+> 
+> In my opinion there's really no other option than to restore the 3.13
+> behaviour by effectively reverting fcb6a15c2e7e ("intel_pstate: Take
+> core C0 time into account for core busy calculation") until you have
+> figured out a way to take C0 into account without breaking things too
+> badly.
 
-while doing the mapping, we will iterate the memory ranges (md[])
+Dirk has posted some patches, do they fix the problem for you?
 
-Like below without considering alignment:
-Virt addr   (down) <------------------------------> (top)
-md0 (size0)                                 <-----> 
-                                             (size0)
-md1 (size1)                        <------->
-                                    (size1)
-...
+thanks,
 
-Boris can correct me if I'm wrong.
-
-Thanks
-Dave
+greg k-h
