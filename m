@@ -1,52 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932549AbaE3Jic (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 05:38:32 -0400
-Received: from mail-we0-f181.google.com ([74.125.82.181]:38504 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755156AbaE3Jib (ORCPT
+	id S932761AbaE3JjE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 05:39:04 -0400
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:47112 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932623AbaE3JjA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 05:38:31 -0400
-Message-ID: <538851B0.7090609@gmail.com>
-Date: Fri, 30 May 2014 11:38:56 +0200
-From: Federico Di Pierro <nierro92@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: [PATCH] Remove an unnecessary blank line in drivers/staging/xillybus/xillybus_of.c
-Content-Type: multipart/mixed;
- boundary="------------000505040707020509080808"
+	Fri, 30 May 2014 05:39:00 -0400
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: lee.jones@linaro.org, kernel@stlinux.com, rui.zhang@intel.com,
+        eduardo.valentin@ti.com, ajitpal.singh@st.com,
+        linux-pm@vger.kernel.org, devicetree@vger.kernel.org,
+        maxime.coquelin@st.com, patrice.chotard@st.com
+Subject: [PATCH 0/6] thermal: sti: Add new Thermal driver
+Date: Fri, 30 May 2014 10:38:29 +0100
+Message-Id: <1401442715-6350-1-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------000505040707020509080808
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+This patchset adds full support for 2 types of Thermal Controllers
+produced by STMicroelectronics.  One is a more traditional memory
+mapped variant, the other is controlled solely by system configuration
+registers.
 
-Hi!
-This is my latest task of the eudyptula challenge.
-Just a very small patch!
+ Documentation/devicetree/bindings/thermal/st-thermal.txt |  42 ++++++++++++++++
+ arch/arm/boot/dts/stih416.dtsi                           |  18 +++++++
+ arch/arm/configs/multi_v7_defconfig                      |   2 +
+ drivers/thermal/Kconfig                                  |   5 ++
+ drivers/thermal/Makefile                                 |   1 +
+ drivers/thermal/st/Kconfig                               |  12 +++++
+ drivers/thermal/st/Makefile                              |   3 ++
+ drivers/thermal/st/st_thermal.c                          | 313 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ drivers/thermal/st/st_thermal.h                          | 104 ++++++++++++++++++++++++++++++++++++++
+ drivers/thermal/st/st_thermal_memmap.c                   | 209 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ drivers/thermal/st/st_thermal_syscfg.c                   | 179 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 11 files changed, 888 insertions(+)
 
---------------000505040707020509080808
-Content-Type: text/x-patch;
- name="eudyptula.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="eudyptula.patch"
-
-Signed-off-by: Federico Di Pierro <nierro92@gmail.com>
-
---- xillybus_of.c	2014-05-30 11:27:18.160063074 +0200
-+++ /home/federico/xillybus_of.c	2014-05-30 11:27:10.030063570 +0200
-@@ -69,7 +69,6 @@
- 				      int direction
- 	)
- {
--	
- 	dma_addr_t addr = 0;
- 	struct xilly_dma *this;
- 
-
---------------000505040707020509080808--
