@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755965AbaE3Noq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 09:44:46 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:43218 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932868AbaE3NoG (ORCPT
+	id S933350AbaE3NpS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 09:45:18 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:54782 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933286AbaE3NoE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 09:44:06 -0400
+	Fri, 30 May 2014 09:44:04 -0400
 From: mathieu.poirier@linaro.org
 To: linus.walleij@linaro.org, will.deacon@arm.com
 Cc: mathieu.poirier@linaro.org, arve@android.com, john.stultz@linaro.org,
@@ -17,9 +17,9 @@ Cc: mathieu.poirier@linaro.org, arve@android.com, john.stultz@linaro.org,
         robbelibobban@gmail.com, patches@linaro.org, linux@arm.linux.org.uk,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         daniel.thompson@linaro.org
-Subject: [RFC PATCH 10/11] coresight: adding support for beagleXM
-Date: Fri, 30 May 2014 07:43:10 -0600
-Message-Id: <1401457391-12242-11-git-send-email-mathieu.poirier@linaro.org>
+Subject: [RFC PATCH 09/11] coresight: adding basic support for Vexpress TC2
+Date: Fri, 30 May 2014 07:43:09 -0600
+Message-Id: <1401457391-12242-10-git-send-email-mathieu.poirier@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1401457391-12242-1-git-send-email-mathieu.poirier@linaro.org>
 References: <1401457391-12242-1-git-send-email-mathieu.poirier@linaro.org>
@@ -29,33 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mathieu Poirier <mathieu.poirier@linaro.org>
 
-Currently supporting ETM and ETB.  Support for TPIU
-and SDTI are yet to be added.
+Support for the 2 PTMs, 3 ETMs, funnel, TPIU and replicator
+connected to the ETB are included.  Proper handling of the
+ITM and the replicator linked to it along with the CTIs
+and SWO are not included.
 
 Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
 ---
- arch/arm/boot/dts/omap3-beagle-xm.dts | 30 ++++++++++++++++++++++++++++++
- 1 file changed, 30 insertions(+)
+ arch/arm/boot/dts/vexpress-v2p-ca15_a7.dts | 122 +++++++++++++++++++++++++++++
+ 1 file changed, 122 insertions(+)
 
-diff --git a/arch/arm/boot/dts/omap3-beagle-xm.dts b/arch/arm/boot/dts/omap3-beagle-xm.dts
-index 447e714..b39bede 100644
---- a/arch/arm/boot/dts/omap3-beagle-xm.dts
-+++ b/arch/arm/boot/dts/omap3-beagle-xm.dts
-@@ -86,6 +86,36 @@
- 		reset-gpios = <&gpio5 19 GPIO_ACTIVE_LOW>; /* gpio_147 */
- 		vcc-supply = <&hsusb2_power>;
+diff --git a/arch/arm/boot/dts/vexpress-v2p-ca15_a7.dts b/arch/arm/boot/dts/vexpress-v2p-ca15_a7.dts
+index 15f98cb..18de06e 100644
+--- a/arch/arm/boot/dts/vexpress-v2p-ca15_a7.dts
++++ b/arch/arm/boot/dts/vexpress-v2p-ca15_a7.dts
+@@ -334,6 +334,128 @@
+ 		};
  	};
-+
+ 
 +	coresight {
 +		compatible = "arm,coresight";
 +		#address-cells = <1>;
 +		#size-cells = <1>;
-+		clocks = <&emu_src_ck>;
-+		ranges;
++		ranges = <0x20010000 0 0x20010000 0x1000
++			  0x20030000 0 0x20030000 0x1000
++			  0x20040000 0 0x20040000 0x1000
++			  0x2201c000 0 0x2201c000 0x1000
++			  0x2201d000 0 0x2201d000 0x1000
++			  0x2203c000 0 0x2203c000 0x1000
++			  0x2203d000 0 0x2203d000 0x1000
++			  0x2203e000 0 0x2203e000 0x1000>;
 +
-+		etb: etb@540000000 {
++		etb: etb@20010000 {
 +			compatible = "arm,coresight-etb";
-+			reg = <0x5401b000 0x1000>;
++			reg = <0x20010000 0x1000>;
 +
 +			coresight-id = <0>;
 +			coresight-name = "coresight-etb";
@@ -63,21 +70,108 @@ index 447e714..b39bede 100644
 +			coresight-default-sink;
 +		};
 +
-+		etm@54010000 {
-+			compatible = "arm,coresight-etm";
-+			reg = <0x54010000 0x1000>;
++		etb_replicator: replicator {
++			compatible = "arm,coresight-replicator";
 +
 +			coresight-id = <1>;
-+			coresight-name = "coresight-etm";
-+			coresight-nr-inports = <0>;
++			coresight-name = "coresight-etb-replicator";
++			coresight-nr-inports = <1>;
++			coresight-outports = <0 1>;
++			coresight-child-list = <&etb &tpiu>;
++			coresight-child-ports = <0 0>;
++		};
++
++		tpiu: tpiu@20030000 {
++			compatible = "arm,coresight-tpiu";
++			reg = <0x20030000 0x1000>;
++
++			coresight-id = <2>;
++			coresight-name = "coresight-tpiu";
++			coresight-nr-inports = <1>;
++		};
++
++		funnel: funnel@20040000 {
++			compatible = "arm,coresight-funnel";
++			reg = <0x20040000 0x1000>;
++
++			coresight-id = <3>;
++			coresight-name = "coresight-funnel";
++			coresight-nr-inports = <1>;
 +			coresight-outports = <0>;
-+			coresight-child-list = <&etb>;
++			coresight-child-list = <&etb_replicator>;
 +			coresight-child-ports = <0>;
 +		};
++
++		ptm0: ptm@2201c000 {
++			compatible = "arm,coresight-etm";
++			reg = <0x2201c000 0x1000>;
++
++			coresight-id = <4>;
++			coresight-name = "coresight-ptm0";
++			cpu = <&cpu0>;
++			coresight-nr-inports = <0>;
++			coresight-outports = <0>;
++			coresight-child-list = <&funnel>;
++			coresight-child-ports = <0>;
++		};
++
++		ptm1: ptm@2201d000 {
++			compatible = "arm,coresight-etm";
++			reg = <0x2201d000 0x1000>;
++
++			coresight-id = <5>;
++			coresight-name = "coresight-ptm1";
++			cpu = <&cpu1>;
++			coresight-nr-inports = <0>;
++			coresight-outports = <0>;
++			coresight-child-list = <&funnel>;
++			coresight-child-ports = <1>;
++		};
++
++		etm0: etm@2203c000 {
++			compatible = "arm,coresight-etm";
++			reg = <0x2203c000 0x1000>;
++
++			coresight-id = <6>;
++			coresight-name = "coresight-etm0";
++			cpu = <&cpu2>;
++			coresight-nr-inports = <0>;
++			coresight-outports = <0>;
++			coresight-child-list = <&funnel>;
++			coresight-child-ports = <2>;
++		};
++
++		etm1: etm@2203d000 {
++			compatible = "arm,coresight-etm";
++			reg = <0x2203d000 0x1000>;
++
++			coresight-id = <7>;
++			coresight-name = "coresight-etm1";
++			cpu = <&cpu3>;
++			coresight-nr-inports = <0>;
++			coresight-outports = <0>;
++			coresight-child-list = <&funnel>;
++			coresight-child-ports = <4>;
++		};
++
++		etm2: etm@2203e000 {
++			compatible = "arm,coresight-etm";
++			reg = <0x2203e000 0x1000>;
++
++			coresight-id = <8>;
++			coresight-name = "coresight-etm2";
++			cpu = <&cpu4>;
++			coresight-nr-inports = <0>;
++			coresight-outports = <0>;
++			coresight-child-list = <&funnel>;
++			coresight-child-ports = <5>;
++		};
++
 +	};
- };
++
+ 	smb {
+ 		compatible = "simple-bus";
  
- &omap3_pmx_wkup {
 -- 
 1.9.1
 
