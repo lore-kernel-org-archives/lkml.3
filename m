@@ -1,92 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754873AbaE3F6W (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 01:58:22 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44499 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752679AbaE3F6U (ORCPT
+	id S1754926AbaE3F71 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 01:59:27 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:35198 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752679AbaE3F7Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 01:58:20 -0400
+	Fri, 30 May 2014 01:59:25 -0400
+Message-ID: <53881D2A.7060001@linux.vnet.ibm.com>
+Date: Fri, 30 May 2014 11:24:50 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-In-Reply-To: <5387FC96.4030508@kernel.dk>
-References: <1401418169-3361-1-git-send-email-ming.lei@canonical.com>
-	<5387F8B2.1070509@kernel.dk>
-	<CACVXFVPoG6_fL_MTRF+616W7UdHpSgjtMLBLeBn4OGR63haw3w@mail.gmail.com>
-	<5387FC96.4030508@kernel.dk>
-Date: Fri, 30 May 2014 13:58:17 +0800
-Message-ID: <CACVXFVMN7do7WaHGQCwy=nkpCm1Vp2ZrCuAHmnXhbANPEqvQyg@mail.gmail.com>
-Subject: Re: [PATCH] block: virtio_blk: don't hold spin lock during world switch
-From: Ming Lei <ming.lei@canonical.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        virtualization@lists.linux-foundation.org
-Content-Type: text/plain; charset=UTF-8
+To: Mark Rutland <mark.rutland@arm.com>
+CC: Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Will Deacon <Will.Deacon@arm.com>
+Subject: Re: [PATCH] arm64: kernel: initialize broadcast hrtimer based clock
+ event device
+References: <1401355381-11446-1-git-send-email-lorenzo.pieralisi@arm.com> <53871444.3080206@linux.vnet.ibm.com> <20140529123929.GF24233@leverpostej>
+In-Reply-To: <20140529123929.GF24233@leverpostej>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14053005-0928-0000-0000-00000253B8DD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 30, 2014 at 11:35 AM, Jens Axboe <axboe@kernel.dk> wrote:
-> On 2014-05-29 21:34, Ming Lei wrote:
+On 05/29/2014 06:09 PM, Mark Rutland wrote:
+> Hi Preeti,
+> 
+> On Thu, May 29, 2014 at 12:04:36PM +0100, Preeti U Murthy wrote:
+>> Hi Lorenzo,
 >>
->> On Fri, May 30, 2014 at 11:19 AM, Jens Axboe <axboe@kernel.dk> wrote:
+>> On 05/29/2014 02:53 PM, Lorenzo Pieralisi wrote:
+>>> On platforms implementing CPU power management, the CPUidle subsystem
+>>> can allow CPUs to enter idle states where local timers logic is lost on power
+>>> down. To keep the software timers functional the kernel relies on an
+>>> always-on broadcast timer to be present in the platform to relay the
+>>> interrupt signalling the timer expiries.
 >>>
->>> On 2014-05-29 20:49, Ming Lei wrote:
->>>>
->>>>
->>>> Firstly, it isn't necessary to hold lock of vblk->vq_lock
->>>> when notifying hypervisor about queued I/O.
->>>>
->>>> Secondly, virtqueue_notify() will cause world switch and
->>>> it may take long time on some hypervisors(such as, qemu-arm),
->>>> so it isn't good to hold the lock and block other vCPUs.
->>>>
->>>> On arm64 quad core VM(qemu-kvm), the patch can increase I/O
->>>> performance a lot with VIRTIO_RING_F_EVENT_IDX enabled:
->>>>          - without the patch: 14K IOPS
->>>>          - with the patch: 34K IOPS
->>>
->>>
->>>
->>> Patch looks good to me. I don't see a hit on my qemu-kvm testing, but it
->>> definitely makes sense and I can see it hurting in other places.
+>>> For platforms implementing CPU core gating that do not implement an always-on
+>>> HW timer or implement it in a broken way, this patch adds code to initialize
+>>> the kernel software broadcast hrtimer upon boot. It relies on a dynamically
 >>
+>> It would be best to use the term "hrtimer based broadcast device"
+>> throughout the changelog for uniformity and to avoid confusion instead
+>> of mixing it with "software broadcast".
 >>
->> It isn't easy to observe the improvement on x86 VM, especially
->> with few vCPUs, because qemu-system-x86_64 only takes
->> several microseconds to handle the notification, but on arm64, it
->> may take hundreds of microseconds, so the improvement is
->> obvious on arm VM.
+>>> chosen CPU to be always powered-up. This CPU then relays the timer interrupt
+>>> to CPUs in deep-idle states through its HW local timer device.
+>>>
+>>> On systems with power management capabilities but no functional HW broadcast
+>>> tick device, the hrtimer based clock event device allows the kernel to
+>>> enter high-resolution timer mode, which improves system latencies and saves
+>>> dynamic power.
 >>
->> I hope this patch can be merged, at least arm VM can benefit
->> from it.
->
->
-> If Rusty agrees, I'd like to add it for 3.16 with a stable marker.
+>> Sorry but I do not understand the above paragraph. What do you mean by
+>> "allows the kernel to enter high resolution timer mode" ? And how does
+>> it improve system latency? I understand that the hrtimer based
+>> clockevent device saves dynamic power since it provides a mechanism in
+>> which cpus can enter deeper idle states.
+> 
+> When there's no oneshot-capable broadcast device and the CPU-local
+> clock_event_device has the CLK_EVT_FEAT_C3STOP flag,
+> tick_is_oneshot_available will return false. Thus
+> tick_check_oneshot_change will return false, and hrtimer_switch_to_hres
+> will never switch to high resolution mode (and we can also never enter
+> NOHZ mode), leaving us stuck in periodic mode.
+> 
+> In periodic mode ticks occur at fixed intervals, and any timer wakeup
+> will occur after the tick following the requested wakeup time, adding
+> some amount of latency over what would be possible with high resolution
+> mode. Additionally, as we can only wake up at said ticks and not between
+> them, it's possible that several timers for intervals shorter than that
+> tick interval will fire at once upon a timer tick. Any tasks which
+> requested these wakeups will fight for CPU time, and some will see
+> additional latency because of this.
 
-Interesting, even on x86, I still can observe the improvement
-when the numjobs is set as 2 in the fio script(see commit log), but
-when numjobs is set as 4, 8, 12, the difference isn't obvious between
-patched kernel and non-patched kernel.
+Ah ok I see now. Thanks for the explanation :)
 
-1, environment
-- host: 2sockets, each CPU(4cores, 2 threads), total 16 logical cores
-- guest: 16cores, 8GB ram
-- guest kernel: 3.15-rc7-next with patch[1]
-- fio: the script in commit log with numjobs set as 2
+> 
+>>>
+>>> The side effect of having a CPU always-on has implications on power management
+>>> platform capabilities and makes CPUidle suboptimal, since at least a CPU is
+>>> kept always in a shallow idle state by the kernel to relay timer interrupts,
+>>> but at least leaves the kernel with a functional system with some working power
+>>> management capabilities.
+>>>
+>>> The hrtimer based clock event device has lowest possible rating so that,
+>>> if a platform contains a functional HW clock event device with broadcast
+>>> capabilities, that device is always chosen as a tick broadcast device instead
+>>> of the software based one, now present by default.
+>>
+>> I think this statement "instead of the software based one, now present
+>> by default" is incorrect. The hrtimer based clock event device will come
+>> into picture only when the arch calls tick_setup_hrtimer_broadcast()
+>> explicitly. Otherwise either the arch should register a real clock
+>> device which does broadcast or should disable deep idle states where the
+>> local timers stop. So I would suggest skipping the last paragraph as it
+>> is not conveying anything in specific. The fact that a clock device with
+>> the highest rating will be chosen is already known and need not be
+>> mentioned explicitly IMHO.
+> 
+> I think it is worth keeping the paragraph to allay anyone's fear that
+> the hrtimer based broadcast device might be selected in preference to a
+> real suitable clock. I would otherwise not be aware that the hrtimer
+> based broadcast device had the lowest rating (and would have to go and
+> look that up separately).
+> 
+> As the arch code has delegated timer registration to
+> clocksoruce_of_init, it doesn't know whether any of the real devices
+> that may have been registered are suitable as a broadcast source for
+> oneshot events. So we can't conditionally register the hrtimer based
+> broadcast device.
+> 
+> Perhaps we could replace "now present by default" with "which is
+> unconditionally registered in case no suitable hardware device is
+> present"?
 
-2, result
-- without the patch: ~104K IOPS
-- with the patch: ~140K IOPS
+Yes I would say "which gets registered in case no suitable hardware
+devices is present." This would make it clearer.
 
+Regards
+Preeti U Murthy
+> 
+> Cheers,
+> Mark.
+> 
 
-Rusty, considered the same trick has been applied in virt-scsi,
-do you agree to take the same approach in virt-blk too?
-
-
-[1], http://marc.info/?l=linux-kernel&m=140135041423441&w=2
-
-Thanks,
---
-Ming Lei
