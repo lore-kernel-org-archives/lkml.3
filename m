@@ -1,176 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932584AbaE3Gwh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 02:52:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21701 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932379AbaE3GwD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 02:52:03 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Tony Luck <tony.luck@intel.com>, Andi Kleen <andi@firstfloor.org>,
-        Kamil Iskra <iskra@mcs.anl.gov>, Borislav Petkov <bp@suse.de>,
-        Chen Gong <gong.chen@linux.jf.intel.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: [PATCH 3/3] mm/memory-failure.c: support dedicated thread to handle SIGBUS(BUS_MCEERR_AO)
-Date: Fri, 30 May 2014 02:51:10 -0400
-Message-Id: <1401432670-24664-4-git-send-email-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1401432670-24664-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-References: <53877e9c.8b2cdc0a.1604.ffffea43SMTPIN_ADDED_BROKEN@mx.google.com>
- <1401432670-24664-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+	id S932670AbaE3Gxp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 02:53:45 -0400
+Received: from [207.46.163.140] ([207.46.163.140]:13666 "EHLO
+	na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932378AbaE3Gxn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 May 2014 02:53:43 -0400
+From: Xiubo Li <Li.Xiubo@freescale.com>
+To: <wim@iguana.be>, <linux-watchdog@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+CC: Xiubo Li <Li.Xiubo@freescale.com>
+Subject: [PATCH] watchdog: imx2_wdt: adds big endianness support.
+Date: Fri, 30 May 2014 14:10:17 +0800
+Message-ID: <1401430217-29543-1-git-send-email-Li.Xiubo@freescale.com>
+X-Mailer: git-send-email 1.8.0
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(199002)(189002)(21056001)(77982001)(84676001)(26826002)(46102001)(48376002)(83322001)(4396001)(76482001)(6806004)(20776003)(64706001)(79102001)(47776003)(80022001)(77096999)(85852003)(74502001)(77156001)(50986999)(99396002)(92726001)(93916002)(104166001)(97736001)(87286001)(89996001)(104016001)(87936001)(74662001)(62966002)(92566001)(88136002)(31966008)(2201001)(86362001)(81542001)(50466002)(50226001)(68736004)(36756003)(44976005)(83072002)(19580405001)(81342001)(19580395003)(102836001);DIR:OUT;SFP:;SCL:1;SRVR:BL2PR03MB498;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Microsoft-Antispam: BL:0;ACTION:Default;RISK:Low;SCL:0;SPMLVL:NotSpam;PCL:0;RULEID:
+X-Forefront-PRVS: 02272225C5
+Authentication-Results: spf=fail (sender IP is 192.88.168.50)
+ smtp.mailfrom=Li.Xiubo@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently memory error handler handles action optional errors in the deferred
-manner by default. And if a recovery aware application wants to handle it
-immediately, it can do it by setting PF_MCE_EARLY flag. However, such signal
-can be sent only to the main thread, so it's problematic if the application
-wants to have a dedicated thread to handler such signals.
+This watchdog driver will be working on IMX2+, Vybrid, LS1, LS2+
+platforms, and will be in different endianness mode in those SoCs:
 
-So this patch adds dedicated thread support to memory error handler. We have
-PF_MCE_EARLY flags for each thread separately, so with this patch AO signal
-is sent to the thread with PF_MCE_EARLY flag set, not the main thread. If
-you want to implement a dedicated thread, you call prctl() to set PF_MCE_EARLY
-on the thread.
+SoCs         CPU endian mode      WDT endian mode
+------------------------------------------------
+IMX2+            LE                    LE
+Vybird           LE                    LE
+LS1              LE                    BE
+LS2              LE                    LE
 
-Memory error handler collects processes to be killed, so this patch lets it
-check PF_MCE_EARLY flag on each thread in the collecting routines.
-
-No behavioral change for all non-early kill cases.
-
-ChangeLog:
-- document more specifically
-- add parenthesis in find_early_kill_thread()
-- move position of find_early_kill_thread() and task_early_kill()
-
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Reviewed-by: Tony Luck <tony.luck@intel.com>
-Cc: Kamil Iskra <iskra@mcs.anl.gov>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Borislav Petkov <bp@suse.de>
-Cc: Chen Gong <gong.chen@linux.jf.intel.com>
+Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
 ---
- Documentation/vm/hwpoison.txt |  5 ++++
- mm/memory-failure.c           | 58 ++++++++++++++++++++++++++++++++-----------
- 2 files changed, 48 insertions(+), 15 deletions(-)
+ drivers/watchdog/imx2_wdt.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-diff --git mmotm-2014-05-21-16-57.orig/Documentation/vm/hwpoison.txt mmotm-2014-05-21-16-57/Documentation/vm/hwpoison.txt
-index 550068466605..6ae89a9edf2a 100644
---- mmotm-2014-05-21-16-57.orig/Documentation/vm/hwpoison.txt
-+++ mmotm-2014-05-21-16-57/Documentation/vm/hwpoison.txt
-@@ -84,6 +84,11 @@ PR_MCE_KILL
- 		PR_MCE_KILL_EARLY: Early kill
- 		PR_MCE_KILL_LATE:  Late kill
- 		PR_MCE_KILL_DEFAULT: Use system global default
-+	Note that if you want to have a dedicated thread which handles
-+	the SIGBUS(BUS_MCEERR_AO) on behalf of the process, you should
-+	call prctl(PR_MCE_KILL_EARLY) on the designated thread. Otherwise,
-+	the SIGBUS is sent to the main thread.
-+
- PR_MCE_KILL_GET
- 	return current mode
+diff --git a/drivers/watchdog/imx2_wdt.c b/drivers/watchdog/imx2_wdt.c
+index 9d4874f..68c3d37 100644
+--- a/drivers/watchdog/imx2_wdt.c
++++ b/drivers/watchdog/imx2_wdt.c
+@@ -28,6 +28,7 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/moduleparam.h>
++#include <linux/of_address.h>
+ #include <linux/platform_device.h>
+ #include <linux/regmap.h>
+ #include <linux/timer.h>
+@@ -190,10 +191,12 @@ static struct regmap_config imx2_wdt_regmap_config = {
  
-diff --git mmotm-2014-05-21-16-57.orig/mm/memory-failure.c mmotm-2014-05-21-16-57/mm/memory-failure.c
-index fbcdb1d54c55..9751e19ab13b 100644
---- mmotm-2014-05-21-16-57.orig/mm/memory-failure.c
-+++ mmotm-2014-05-21-16-57/mm/memory-failure.c
-@@ -380,15 +380,44 @@ static void kill_procs(struct list_head *to_kill, int forcekill, int trapno,
- 	}
- }
- 
--static int task_early_kill(struct task_struct *tsk, int force_early)
-+/*
-+ * Find a dedicated thread which is supposed to handle SIGBUS(BUS_MCEERR_AO)
-+ * on behalf of the thread group. Return task_struct of the (first found)
-+ * dedicated thread if found, and return NULL otherwise.
-+ */
-+static struct task_struct *find_early_kill_thread(struct task_struct *tsk)
-+{
-+	struct task_struct *t;
-+	rcu_read_lock();
-+	for_each_thread(tsk, t)
-+		if ((t->flags & PF_MCE_PROCESS) && (t->flags & PF_MCE_EARLY))
-+			goto found;
-+	t = NULL;
-+found:
-+	rcu_read_unlock();
-+	return t;
-+}
-+
-+/*
-+ * Determine whether a given process is "early kill" process which expects
-+ * to be signaled when some page under the process is hwpoisoned.
-+ * Return task_struct of the dedicated thread (main thread unless explicitly
-+ * specified) if the process is "early kill," and otherwise returns NULL.
-+ */
-+static struct task_struct *task_early_kill(struct task_struct *tsk,
-+					   int force_early)
+ static int __init imx2_wdt_probe(struct platform_device *pdev)
  {
-+	struct task_struct *t;
- 	if (!tsk->mm)
--		return 0;
-+		return NULL;
- 	if (force_early)
--		return 1;
--	if (tsk->flags & PF_MCE_PROCESS)
--		return !!(tsk->flags & PF_MCE_EARLY);
--	return sysctl_memory_failure_early_kill;
-+		return tsk;
-+	t = find_early_kill_thread(tsk);
-+	if (t)
-+		return t;
-+	if (sysctl_memory_failure_early_kill)
-+		return tsk;
-+	return NULL;
- }
++	struct device_node *np = pdev->dev.of_node;
+ 	struct imx2_wdt_device *wdev;
+ 	struct watchdog_device *wdog;
+ 	struct resource *res;
+ 	void __iomem *base;
++	bool big_endian;
+ 	int ret;
+ 	u32 val;
  
- /*
-@@ -410,16 +439,16 @@ static void collect_procs_anon(struct page *page, struct list_head *to_kill,
- 	read_lock(&tasklist_lock);
- 	for_each_process (tsk) {
- 		struct anon_vma_chain *vmac;
--
--		if (!task_early_kill(tsk, force_early))
-+		struct task_struct *t = task_early_kill(tsk, force_early);
-+		if (!t)
- 			continue;
- 		anon_vma_interval_tree_foreach(vmac, &av->rb_root,
- 					       pgoff, pgoff) {
- 			vma = vmac->vma;
- 			if (!page_mapped_in_vma(page, vma))
- 				continue;
--			if (vma->vm_mm == tsk->mm)
--				add_to_kill(tsk, page, vma, to_kill, tkc);
-+			if (vma->vm_mm == t->mm)
-+				add_to_kill(t, page, vma, to_kill, tkc);
- 		}
- 	}
- 	read_unlock(&tasklist_lock);
-@@ -440,10 +469,9 @@ static void collect_procs_file(struct page *page, struct list_head *to_kill,
- 	read_lock(&tasklist_lock);
- 	for_each_process(tsk) {
- 		pgoff_t pgoff = page_pgoff(page);
--
--		if (!task_early_kill(tsk, force_early))
-+		struct task_struct *t = task_early_kill(tsk, force_early);
-+		if (!t)
- 			continue;
--
- 		vma_interval_tree_foreach(vma, &mapping->i_mmap, pgoff,
- 				      pgoff) {
- 			/*
-@@ -453,8 +481,8 @@ static void collect_procs_file(struct page *page, struct list_head *to_kill,
- 			 * Assume applications who requested early kill want
- 			 * to be informed of all such data corruptions.
- 			 */
--			if (vma->vm_mm == tsk->mm)
--				add_to_kill(tsk, page, vma, to_kill, tkc);
-+			if (vma->vm_mm == t->mm)
-+				add_to_kill(t, page, vma, to_kill, tkc);
- 		}
- 	}
- 	read_unlock(&tasklist_lock);
+@@ -201,6 +204,10 @@ static int __init imx2_wdt_probe(struct platform_device *pdev)
+ 	if (!wdev)
+ 		return -ENOMEM;
+ 
++	big_endian = of_property_read_bool(np, "big-endian");
++	if (big_endian)
++		imx2_wdt_regmap_config.val_format_endian = REGMAP_ENDIAN_BIG;
++
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	base = devm_ioremap_resource(&pdev->dev, res);
+ 	if (IS_ERR(base))
 -- 
-1.9.3
+1.8.4
 
