@@ -1,70 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934138AbaE3Udg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 16:33:36 -0400
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:51120 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751811AbaE3Udf (ORCPT
+	id S1756227AbaE3UfA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 16:35:00 -0400
+Received: from mail-ve0-f169.google.com ([209.85.128.169]:52730 "EHLO
+	mail-ve0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754614AbaE3Ue6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 16:33:35 -0400
-Date: Sat, 31 May 2014 00:33:32 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Pavel Emelyanov <xemul@parallels.com>
-Subject: [PATCH -next] fs: pipe -- Take into account requested @len in
- iter_file_splice_write
-Message-ID: <20140530203332.GA23463@moon>
+	Fri, 30 May 2014 16:34:58 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <5388E83A.5000500@zytor.com>
+References: <CALCETrXef77JLoEp5hCXSdMAk7usWsL-sUG6NrcgLgrz3krfag@mail.gmail.com>
+ <cover.1401464755.git.luto@amacapital.net> <2cf258df123cb24bad63c274c8563c050547d99d.1401464755.git.luto@amacapital.net>
+ <5388E3EF.6030700@zytor.com> <CALCETrVvR3SaYX7jvoX_q7m=HSzt1xvrDurrOpm2XT5SG3JVqw@mail.gmail.com>
+ <5388E83A.5000500@zytor.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Fri, 30 May 2014 13:34:37 -0700
+Message-ID: <CALCETrWgfRiknJTQtDSAavF1695NDy-h-DW1big+65-HmEOtwg@mail.gmail.com>
+Subject: Re: [PATCH v2 2/2] x86,vdso: Fix cross-compilation from big-endian architectures
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Josh Boyer <jwboyer@fedoraproject.org>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently iter_file_splice_write pushes into the output IOVs as much
-as it can, so that if one previously pushed into pipe 8K of data and
-then try to fetch 4K -- he get the complete 8K instead.
+On Fri, May 30, 2014 at 1:21 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 05/30/2014 01:09 PM, Andy Lutomirski wrote:
+>>>
+>>> I came up with the following, it seems like a reasonable simplification:
+>>>
+>>>> #define _LE(x, bits, ifnot)                                           \
+>>>>       __builtin_choose_expr(                                          \
+>>>>               (sizeof(x) == bits/8),                                  \
+>>>>               (__typeof__(x))le##bits##toh(x), ifnot)
+>>
+>> This will do awful things if x is a floating-point type, and, for
+>> integers, the cast is probably unnecessary.  But it should be okay.
+>>
+>
+> I mostly wanted to preserve the signedness.  Yes, if we care about
+> floating-point it gets trickier.
+>
+> At some point hopefully there will be a native C feature to handle this
+> crap.
+>
+>>>> extern void bad_le(uint64_t);
+>>
+>> If this ever goes in a common header, then we should do the
+>> __attribute__((error)) thing.  I wonder if it would ever make sense to
+>> have __LINUX_HOSTPROG__ and make some of the basic headers work.  Hmm.
+>>
+>>>> #define _LAST_LE(x)                                                   \
+>>>>       __builtin_choose_expr(sizeof(x) == 1, (x), bad_le(x))
+>>>>
+>>>> #define LE(x)                                                         \
+>>>>       _LE(x, 64, _LE(x, 32, _LE(x, 16, _LAST_LE(x))))
+>>>
+>>> What do you think?
+>>
+>> My only real real objection is that _LE sounds like converting *to*
+>> little-endian to me.  Admittedly, that's the same thing on any
+>> remotely sane architecture, but still.
+>
+> GET_LE() then?
 
-Lest count how many bytes were requested by a caller and
-stop looping once request is complete.
+Sounds good.
 
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-CC: Al Viro <viro@ZenIV.linux.org.uk>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-CC: Pavel Emelyanov <xemul@parallels.com>
----
+Are you planning on writing the patch?
 
-Al, take a look please, hope I didn't do something stupid.
-Here was a testcase https://lkml.org/lkml/2014/5/27/167
+I think my v2 is good -- the only diff I could find in my image.c
+files and Stephen's was in the alt_xyz output, and I think I fixed
+that in v2.
 
- fs/splice.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
-
-Index: linux-2.6.git/fs/splice.c
-===================================================================
---- linux-2.6.git.orig/fs/splice.c
-+++ linux-2.6.git/fs/splice.c
-@@ -979,14 +979,14 @@ iter_file_splice_write(struct pipe_inode
- 				break;
- 			}
- 		}
--				
-+
- 		/* build the vector */
--		for (n = 0, idx = pipe->curbuf; n < pipe->nrbufs; n++, idx++) {
-+		for (n = 0, idx = pipe->curbuf; count < sd.total_len && n < pipe->nrbufs; n++, idx++) {
- 			struct pipe_buffer *buf = pipe->bufs + idx;
- 			size_t this_len = buf->len;
- 
--			if (this_len > sd.total_len)
--				this_len = sd.total_len;
-+			if (this_len + count > sd.total_len)
-+				this_len = sd.total_len - count;
- 
- 			if (idx == pipe->buffers - 1)
- 				idx = -1;
+--Andy
