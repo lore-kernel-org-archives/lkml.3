@@ -1,73 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934715AbaE3UK7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 16:10:59 -0400
-Received: from mout.kundenserver.de ([212.227.17.13]:58881 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934432AbaE3UKy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 16:10:54 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-kernel@vger.kernel.org
-Cc: linux-arch@vger.kernel.org, joseph@codesourcery.com,
-        john.stultz@linaro.org, hch@infradead.org, tglx@linutronix.de,
-        geert@linux-m68k.org, lftan@altera.com, hpa@zytor.com,
-        linux-fsdevel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Jaegeuk Kim <jaegeuk.kim@samsung.com>,
-        linux-f2fs-devel@lists.sourceforge.net
-Subject: [RFC 29/32] f2fs: convert to struct inode_time
-Date: Fri, 30 May 2014 22:01:53 +0200
-Message-Id: <1401480116-1973111-30-git-send-email-arnd@arndb.de>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1401480116-1973111-1-git-send-email-arnd@arndb.de>
-References: <1401480116-1973111-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:8jYKt+6KB+WZdmmdOlua3+Q5ej9UGy9BUiIak5x3b1G
- lTRxWWZI6nEmNst46IXyarlTxv+yO69+3VaOrOQg//TRp/RFh2
- y8jM1yrN6yp6+ZoSL8wcjlAhggoRM3GpFK187j2dL3Ci3AUOLq
- g/YuiqXIEGQQC2fMWnk5JtlaF6eYtNOIChtDaXyZrOJ9kCZfU2
- 6FolrrXaQBYkic0byGUDXoKDrQ8ULYcjSJjE36h5MGBvXjlOvJ
- dm1vchYeKAxXZwmxclHL1DVfLQhWBUg5xN7yFNkSDZuoZECKJC
- vizDP0dQN/zr8D5g6Zo6ZJdBKkK/fRj+fJpE8vDiW8NRqGCSkF
- 93NOktQSaoRvjgXYy0kUyyUV1ALEKImN7mvOW1F/r
+	id S934735AbaE3ULJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 16:11:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29374 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752209AbaE3ULG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 May 2014 16:11:06 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: jolsa@redhat.com
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, namhyung@gmail.com,
+        eranian@google.com, Andi Kleen <andi@firstfloor.org>,
+        Don Zickus <dzickus@redhat.com>
+Subject: [PATCH 6/7 V3] perf: Add support to dynamically get cacheline size
+Date: Fri, 30 May 2014 16:10:05 -0400
+Message-Id: <1401480605-97442-1-git-send-email-dzickus@redhat.com>
+In-Reply-To: <1401208087-181977-7-git-send-email-dzickus@redhat.com>
+References: <1401208087-181977-7-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-f2fs uses unsigned 40-bit seconds for inode timestamps, which will work
-basically forever, but the VFS uses struct timespec for timestamps,
-which is only good until 2038 on 32-bit CPUs.
+Different arches may have different cacheline sizes.  Look it up and set
+a global variable for reference.
 
-This gets us one small step closer to lifting the VFS limit by using
-struct inode_time in f2fs.
+Signed-off-by: Don Zickus <dzickus@redhat.com>
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Cc: linux-f2fs-devel@lists.sourceforge.net
 ---
- fs/f2fs/file.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+V4: make it super simple using a sysconf (Arnaldo)
+V3: remove unneeded cpumap.h (Namhyung Kim)
+V2: change to be global and setup in perf.c
+    use filename__read_int for setup
 
-diff --git a/fs/f2fs/file.c b/fs/f2fs/file.c
-index 37d0e1f..6ff6e5b 100644
---- a/fs/f2fs/file.c
-+++ b/fs/f2fs/file.c
-@@ -474,13 +474,13 @@ static void __setattr_copy(struct inode *inode, const struct iattr *attr)
- 	if (ia_valid & ATTR_GID)
- 		inode->i_gid = attr->ia_gid;
- 	if (ia_valid & ATTR_ATIME)
--		inode->i_atime = timespec_trunc(attr->ia_atime,
-+		inode->i_atime = inode_time_trunc(attr->ia_atime,
- 						inode->i_sb->s_time_gran);
- 	if (ia_valid & ATTR_MTIME)
--		inode->i_mtime = timespec_trunc(attr->ia_mtime,
-+		inode->i_mtime = inode_time_trunc(attr->ia_mtime,
- 						inode->i_sb->s_time_gran);
- 	if (ia_valid & ATTR_CTIME)
--		inode->i_ctime = timespec_trunc(attr->ia_ctime,
-+		inode->i_ctime = inode_time_trunc(attr->ia_ctime,
- 						inode->i_sb->s_time_gran);
- 	if (ia_valid & ATTR_MODE) {
- 		umode_t mode = attr->ia_mode;
+revert cacheline size stuff
+---
+ tools/perf/perf.c      | 1 +
+ tools/perf/util/util.c | 1 +
+ tools/perf/util/util.h | 1 +
+ 3 files changed, 3 insertions(+)
+
+diff --git a/tools/perf/perf.c b/tools/perf/perf.c
+index 431798a..d0374d4 100644
+--- a/tools/perf/perf.c
++++ b/tools/perf/perf.c
+@@ -458,6 +458,7 @@ int main(int argc, const char **argv)
+ 
+ 	/* The page_size is placed in util object. */
+ 	page_size = sysconf(_SC_PAGE_SIZE);
++	cacheline_size = sysconf(_SC_LEVEL1_DCACHE_LINESIZE);
+ 
+ 	cmd = perf_extract_argv0_path(argv[0]);
+ 	if (!cmd)
+diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
+index 7fff6be..95aefa7 100644
+--- a/tools/perf/util/util.c
++++ b/tools/perf/util/util.c
+@@ -17,6 +17,7 @@
+  * XXX We need to find a better place for these things...
+  */
+ unsigned int page_size;
++int cacheline_size;
+ 
+ bool test_attr__enabled;
+ 
+diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
+index b03da44..6686436 100644
+--- a/tools/perf/util/util.h
++++ b/tools/perf/util/util.h
+@@ -304,6 +304,7 @@ char *rtrim(char *s);
+ void dump_stack(void);
+ 
+ extern unsigned int page_size;
++extern int cacheline_size;
+ 
+ void get_term_dimensions(struct winsize *ws);
+ 
 -- 
-1.8.3.2
+1.7.11.7
 
