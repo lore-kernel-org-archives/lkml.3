@@ -1,27 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932249AbaE3MFt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 08:05:49 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:59046 "HELO
+	id S1755083AbaE3MHJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 08:07:09 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:52588 "HELO
 	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751955AbaE3MFr (ORCPT
+	with SMTP id S1751115AbaE3MHE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 08:05:47 -0400
+	Fri, 30 May 2014 08:07:04 -0400
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Sachin Kamat <sachin.kamat@linaro.org>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, arvind.chauhan@arm.com,
-        inderpal.s@samsung.com, Nishanth Menon <nm@ti.com>,
-        Chander Kashyap <chander.kashyap@linaro.org>,
-        Pavel Machek <pavel@ucw.cz>, len.brown@intel.com, sudeep.holla@arm.com
-Subject: Re: [PATCH V4 2/8] opp: call of_node_{get|put}() from of_init_opp_table()
-Date: Fri, 30 May 2014 14:22:55 +0200
-Message-ID: <2049073.iShziF2J0h@vostro.rjw.lan>
+To: Lan Tianyu <tianyu.lan@intel.com>
+Cc: wsa@the-dreams.de, mika.westerberg@linux.intel.com, awilliam@redhat.com,
+        lenb@kernel.org, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
+Subject: Re: [Patch V3 0/5] I2C ACPI operation region handler
+Date: Fri, 30 May 2014 14:24:12 +0200
+Message-ID: <10091506.iBigojlNVE@vostro.rjw.lan>
 User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAK9yfHw1HSX_idrFGO5P0bxxwf8iyd1J7MfNyqHGa45E-ZbZww@mail.gmail.com>
-References: <cover.1401191054.git.viresh.kumar@linaro.org> <4139797fe7501ba99adf63ec8e5cf9fa9b24c197.1401191054.git.viresh.kumar@linaro.org> <CAK9yfHw1HSX_idrFGO5P0bxxwf8iyd1J7MfNyqHGa45E-ZbZww@mail.gmail.com>
+In-Reply-To: <53881E87.9070706@intel.com>
+References: <1400590764-11108-1-git-send-email-tianyu.lan@intel.com> <53881E87.9070706@intel.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -29,45 +25,69 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, May 30, 2014 12:03:08 PM Sachin Kamat wrote:
-> Hi Viresh,
+On Friday, May 30, 2014 02:00:39 PM Lan Tianyu wrote:
+> On 05/20/2014 08:59 PM, Lan Tianyu wrote:
+> > ACPI 5.0 spec(5.5.2.4.5) defines GenericSerialBus(i2c, spi, uart) operation
+> > region. It allows ACPI aml code able to access such kind of devices to
+> > implement some ACPI standard method.
+> >
+> > On the Asus T100TA, Bios use GenericSerialBus operation region to access
+> > i2c device to get battery info. So battery function depends on the I2C
+> > operation region support. Here is the bug link.
+> > https://bugzilla.kernel.org/show_bug.cgi?id=69011
+> >
 > 
-> On 27 May 2014 17:20, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> > All callers of of_init_opp_table() are required to take reference of
-> > dev->of_node, by initiating calls to of_node_{get|put}(), before and after
-> > calling of_init_opp_table().
-> >
-> > Its better to call these from within of_init_opp_table(), no fun adding
-> > redundant code to every caller.
-> >
-> > Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-> > ---
-> >  drivers/base/power/opp.c | 4 ++++
-> >  1 file changed, 4 insertions(+)
-> >
-> > diff --git a/drivers/base/power/opp.c b/drivers/base/power/opp.c
-> > index faae9cf..2b615b9 100644
-> > --- a/drivers/base/power/opp.c
-> > +++ b/drivers/base/power/opp.c
-> > @@ -622,6 +622,9 @@ int of_init_opp_table(struct device *dev)
-> >         const __be32 *val;
-> >         int nr;
-> >
-> > +       if (!of_node_get(dev->of_node))
-> > +               return -ENODEV;
-> > +
-> >         prop = of_find_property(dev->of_node, "operating-points", NULL);
-> >         if (!prop)
-> >                 return -ENODEV;
+> Hi Wolfram:
+> 	Since this version resolved all comments, it's ok for you?
+
+BTW, patches [2-3/5] are already queued up for 3.16 as they are independent of
+the i2c changes.
+
 > 
-> What about of_node_put before returning here and other places in this function?
-
-Yeah, that needs to be fixed.
-
-The rest of the series looks good to me, so Viresh, please fix this one ASAP and
-send an update (of this particular patch only).
-
-Thanks!
+> > Change since V2:
+> >          Drop patchs of adding I2C smbus quick read/write and word/block
+> > process call functions because not find machines supporting such protocols
+> > so far and can't test these functions.
+> >          Merge patchs of "I2C ACPI related code clear up" and "Add CONFIG_I2C_ACPI
+> > config"
+> > 	Patch 2: Add acpi_bus_detach_private_data() function to detach data from
+> > ACPI handle and replace ACPI_ERROR() with acpi_handle_debug() to avoid some redundant
+> > error log.
+> >
+> > Change since V1:
+> >         Fix some code style issues. Change prefix i2c_acpi to acpi_i2c.
+> > Move ACPI related code in the i2c core to i2c-acpi.c. Add CONFIG_I2C_ACPI
+> > and make i2c core built-in when it's set to avoid i2c ACPI operation region
+> > being removed.
+> >
+> > Lan Tianyu (5):
+> >    ACPICA: Export acpi_buffer_to_resource symbol
+> >    ACPI: Add acpi_bus_attach_private_data() to facilitate to attach data
+> >      to ACPI handle
+> >    ACPI/Thermal: Use acpi_bus_attach_private_data() to attach private
+> >      data
+> >    I2C/ACPI: Add i2c ACPI operation region support
+> >    I2C/ACPI: Clean up I2C ACPI code and Add CONFIG_I2C_ACPI config
+> >
+> >   drivers/acpi/acpica/rscreate.c |   1 +
+> >   drivers/acpi/bus.c             |  28 +++-
+> >   drivers/acpi/thermal.c         |  11 +-
+> >   drivers/i2c/Kconfig            |  18 +-
+> >   drivers/i2c/Makefile           |   5 +-
+> >   drivers/i2c/i2c-acpi.c         | 362 +++++++++++++++++++++++++++++++++++++++++
+> >   drivers/i2c/i2c-core.c         |  97 +----------
+> >   include/acpi/acpi_bus.h        |   2 +
+> >   include/linux/acpi.h           |  11 ++
+> >   include/linux/i2c.h            |  12 ++
+> >   10 files changed, 439 insertions(+), 108 deletions(-)
+> >   create mode 100644 drivers/i2c/i2c-acpi.c
+> >
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
 -- 
 I speak only for myself.
