@@ -1,104 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754682AbaE3EvG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 00:51:06 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:60196 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754615AbaE3EvD (ORCPT
+	id S1752666AbaE3E6I (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 00:58:08 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:35478 "EHLO
+	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750892AbaE3E6H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 00:51:03 -0400
-Date: Fri, 30 May 2014 05:50:59 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Miklos Szeredi <mszeredi@suse.cz>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: fs/dcache.c - BUG: soft lockup - CPU#5 stuck for 22s!
- [systemd-udevd:1667]
-Message-ID: <20140530045059.GP18016@ZenIV.linux.org.uk>
-References: <20140529105107.GB1938@lahna.fi.intel.com>
- <20140529110439.GA2006@lahna.fi.intel.com>
- <20140529133036.GJ18016@ZenIV.linux.org.uk>
- <CA+55aFzYjRrvSaF=wGimrgtEqR7GHbu1ku1qn1wQs5wgQrCZdg@mail.gmail.com>
- <20140529154454.GK18016@ZenIV.linux.org.uk>
- <20140529162307.GL18016@ZenIV.linux.org.uk>
- <CA+55aFyRDJpm2Wfg9jvXCsKYgt36=6A_++bX+Q=C4MvQRbqh_A@mail.gmail.com>
- <20140529165351.GM18016@ZenIV.linux.org.uk>
- <20140529185201.GN18016@ZenIV.linux.org.uk>
- <CA+55aFwNv2-9=uXxzYH9UpN_x209Cv_BBu-9j2prSh2xVmmsAg@mail.gmail.com>
+	Fri, 30 May 2014 00:58:07 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>, Arun Sharma <asharma@fb.com>,
+        Rodrigo Campos <rodrigo@sdfg.com.ar>, Don Zickus <dzickus@redhat.com>
+Subject: Re: [PATCHSET 00/27] perf tools: Add support to accumulate hist periods (v11)
+References: <1401335910-16832-1-git-send-email-namhyung@kernel.org>
+	<20140529135859.GF1177@krava.brq.redhat.com>
+Date: Fri, 30 May 2014 13:58:04 +0900
+In-Reply-To: <20140529135859.GF1177@krava.brq.redhat.com> (Jiri Olsa's message
+	of "Thu, 29 May 2014 15:59:00 +0200")
+Message-ID: <87fvjrg8wz.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFwNv2-9=uXxzYH9UpN_x209Cv_BBu-9j2prSh2xVmmsAg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 29, 2014 at 12:14:51PM -0700, Linus Torvalds wrote:
-> Yeah, I don't think you can reproduce that, but I guess renaming
-> directories into each other (two renames needed) could trigger an ABBA
-> deadlock by changing the topological order of dentry/parent.
-> 
-> I suspect there's no way in hell that tiny race will ever happen in
-> practice, but let's not risk it.
-> 
-> And your solution (to re-check after just taking the parent lock)
-> seems sufficient and sane, since dentry_lock_for_move() will always
-> take the parent lock(s) before we move a dentry.
-> 
-> So that looks good to me.
+On Thu, 29 May 2014 15:59:00 +0200, Jiri Olsa wrote:
+> On Thu, May 29, 2014 at 12:58:03PM +0900, Namhyung Kim wrote:
+>> Hello,
+>> 
+>> This is a new attempt to implement cumulative hist period report.
+>> This work begins from Arun's SORT_INCLUSIVE patch [1] but I completely
+>> rewrote it from scratch.
+>> 
+>> This patchset basically adds period in a sample to every node in the
+>> callchain.  A hist_entry now has an additional fields to keep the
+>> cumulative period if --children option is given on perf report.
+>> 
+>> I changed the option as a separate --children and added a new
+>> "Children" column (and renamed the default "Overhead" column into
+>> "Self").  The output will be sorted by children (cumulative) overhead
+>> for now.  It also adds 'overhead_children' field to -F/--fields option
+>> to be selected by user and it'll show you "N/A" if the cumulation is
+>> not supported (due to missing callchain).
+>> 
+>> I added Tested-by from Rodrigo Campos since this version is basically
+>> rebase of previous series + bugfix.  But it still needs to be tested
+>> more intensively IMHO.  Also note that, this will change default
+>> behavior of perf report/top if callchain is recorded, so might confuse
+>> old users.  Let's see how many of them come to shout. :)  I think we
+>> need to merge Jiri's TUI column header patch at least.
+>> 
+>> 
+>>  * changes in v11:
+>>   - factor out hists__inc_nr_samples  (Jiri)
+>>   - remove unrelated change  (Jiri)
+>>   - disable accumulation on branch or mem mode
+>>   - slightly refactor hist_iter code
+>
+> apart from that comment I sent, I think it's ready to go in
 
-BTW, how serious is the problem with __lockref_is_dead(&dentry->d_lockref)
-with only ->d_parent->d_lock held?  From my reading of lib/lockref.c it
-should be safe - we only do lockref_mark_dead() with ->d_parent->d_lock
-held, and it'll provide all the serialization and barriers we need.
+Thanks!  As I said, I've pushed v12 to korg with change you commented.
 
-If I'm right, we could get rid of DCACHE_DENTRY_KILLED completely and replace
-checking for it with checking for negative ->d_lockref.count.  There are two
-places where we check for it; in shrink_dentry_list() we definitely can go
-that way (we are holding ->d_lock there) and it simplifies the code nicely.
-In d_walk(), though (in the bit that used to be try_to_ascend() we only hold
-->d_parent->d_lock.  It looks like that ought to be safe to replace
-                if (this_parent != child->d_parent ||  
-                         (child->d_flags & DCACHE_DENTRY_KILLED) ||
-                         need_seqretry(&rename_lock, seq)) {
-with
-                if (this_parent != child->d_parent ||  
-                         __lockref_is_dead(&child->d_lockref) ||
-                         need_seqretry(&rename_lock, seq)) {
-and remove DCACHE_DENTRY_KILLED completely...
+And I also found that the overhead in perf_hpp__should_skip() is
+strangely high.. will check your patch.
 
-The other user (in shrink_dentry_list()) simplifies to
-                if (dentry->d_lockref.count != 0) {
-                        bool can_free = dentry->d_flags & DCACHE_MAY_FREE;
-                        spin_unlock(&dentry->d_lock);
-                        if (parent)
-                                spin_unlock(&parent->d_lock);
-                        if (can_free)
-                                dentry_free(dentry);
-                        continue;
-                }
-taking care of both the DCACHE_DENTRY_KILLED case and simple "lazy dget"
-one, and that one's definitely safe and worth doing.
-
-Would be nice if we could switch d_walk() one as well and kill that flag off,
-though...
-
-Basically, we have
-spin_lock(&A);
-spin_lock(&R.lock);
-V = 1;
-lockref_mark_dead(&R);
-...
-as the only place where R goes dead and we want to replace
-spin_lock(&A);
-if (V)
-	...
-with
-spin_lock(&A);
-if (__lockref_is_dead(&R))
-	...
-Unless I'm missing something subtle in lockref.c, that should be safe...
-Comments?
+Thanks,
+Namhyung
