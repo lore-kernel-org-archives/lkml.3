@@ -1,120 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933832AbaE3SS6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 14:18:58 -0400
-Received: from g4t3427.houston.hp.com ([15.201.208.55]:12729 "EHLO
-	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932473AbaE3SS5 (ORCPT
+	id S933966AbaE3SUx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 14:20:53 -0400
+Received: from smtp-out-147.synserver.de ([212.40.185.147]:1323 "EHLO
+	smtp-out-141.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754341AbaE3SUv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 14:18:57 -0400
-Message-ID: <1401473921.2539.2.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH v3] zram: remove global tb_lock with fine grain lock
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Weijie Yang <weijie.yang@samsung.com>
-Cc: "'Minchan Kim'" <minchan@kernel.org>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'Nitin Gupta'" <ngupta@vflare.org>,
-        "'Sergey Senozhatsky'" <sergey.senozhatsky@gmail.com>,
-        "'Bob Liu'" <bob.liu@oracle.com>,
-        "'Dan Streetman'" <ddstreet@ieee.org>,
-        "'Weijie Yang'" <weijie.yang.kh@gmail.com>,
-        "'Heesub Shin'" <heesub.shin@samsung.com>,
-        "'Joonsoo Kim'" <js1304@gmail.com>,
-        "'linux-kernel'" <linux-kernel@vger.kernel.org>,
-        "'Linux-MM'" <linux-mm@kvack.org>
-Date: Fri, 30 May 2014 11:18:41 -0700
-In-Reply-To: <000001cf7be2$385f9fd0$a91edf70$%yang@samsung.com>
-References: <000001cf7be2$385f9fd0$a91edf70$%yang@samsung.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
+	Fri, 30 May 2014 14:20:51 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 29400
+Message-ID: <5388CB1B.3090802@metafoo.de>
+Date: Fri, 30 May 2014 20:16:59 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
+MIME-Version: 1.0
+To: David Daney <ddaney.cavm@gmail.com>
+CC: abdoulaye berthe <berthe.ab@gmail.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>, m@bues.ch,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        patches@opensource.wolfsonmicro.com,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        linux-samsungsoc@vger.kernel.org, spear-devel@list.st.com,
+        platform-driver-x86@vger.kernel.org,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        driverdevel <devel@driverdev.osuosl.org>
+Subject: Re: [PATCH 2/2] gpio: gpiolib: set gpiochip_remove retval to void
+References: <20140530094025.3b78301e@canb.auug.org.au>        <1401449454-30895-1-git-send-email-berthe.ab@gmail.com>        <1401449454-30895-2-git-send-email-berthe.ab@gmail.com> <CAMuHMdV6AtjD2aqO3buzj8Eo7A7xc_+ROYnxEi2sdjMaqFiAuA@mail.gmail.com> <5388C0F1.90503@gmail.com>
+In-Reply-To: <5388C0F1.90503@gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-05-30 at 16:34 +0800, Weijie Yang wrote:
-> Currently, we use a rwlock tb_lock to protect concurrent access to
-> the whole zram meta table. However, according to the actual access model,
-> there is only a small chance for upper user to access the same table[index],
-> so the current lock granularity is too big.
-> 
-> The idea of optimization is to change the lock granularity from whole
-> meta table to per table entry (table -> table[index]), so that we can
-> protect concurrent access to the same table[index], meanwhile allow
-> the maximum concurrency.
-> With this in mind, several kinds of locks which could be used as a
-> per-entry lock were tested and compared:
-> 
-> Test environment:
-> x86-64 Intel Core2 Q8400, system memory 4GB, Ubuntu 12.04,
-> kernel v3.15.0-rc3 as base, zram with 4 max_comp_streams LZO.
-> 
-> iozone test:
-> iozone -t 4 -R -r 16K -s 200M -I +Z
-> (1GB zram with ext4 filesystem, take the average of 10 tests, KB/s)
-> 
->       Test       base      CAS    spinlock    rwlock   bit_spinlock
-> -------------------------------------------------------------------
->  Initial write  1381094   1425435   1422860   1423075   1421521
->        Rewrite  1529479   1641199   1668762   1672855   1654910
->           Read  8468009  11324979  11305569  11117273  10997202
->        Re-read  8467476  11260914  11248059  11145336  10906486
->   Reverse Read  6821393   8106334   8282174   8279195   8109186
->    Stride read  7191093   8994306   9153982   8961224   9004434
->    Random read  7156353   8957932   9167098   8980465   8940476
-> Mixed workload  4172747   5680814   5927825   5489578   5972253
->   Random write  1483044   1605588   1594329   1600453   1596010
->         Pwrite  1276644   1303108   1311612   1314228   1300960
->          Pread  4324337   4632869   4618386   4457870   4500166
-> 
-> To enhance the possibility of access the same table[index] concurrently,
-> set zram a small disksize(10MB) and let threads run with large loop count.
-> 
-> fio test:
-> fio --bs=32k --randrepeat=1 --randseed=100 --refill_buffers
-> --scramble_buffers=1 --direct=1 --loops=3000 --numjobs=4
-> --filename=/dev/zram0 --name=seq-write --rw=write --stonewall
-> --name=seq-read --rw=read --stonewall --name=seq-readwrite
-> --rw=rw --stonewall --name=rand-readwrite --rw=randrw --stonewall
-> (10MB zram raw block device, take the average of 10 tests, KB/s)
-> 
->     Test     base     CAS    spinlock    rwlock  bit_spinlock
-> -------------------------------------------------------------
-> seq-write   933789   999357   1003298    995961   1001958
->  seq-read  5634130  6577930   6380861   6243912   6230006
->    seq-rw  1405687  1638117   1640256   1633903   1634459
->   rand-rw  1386119  1614664   1617211   1609267   1612471
-> 
-> All the optimization methods show a higher performance than the base,
-> however, it is hard to say which method is the most appropriate.
-> 
-> On the other hand, zram is mostly used on small embedded system, so we
-> don't want to increase any memory footprint.
-> 
-> This patch pick the bit_spinlock method, pack object size and page_flag
-> into an unsigned long table.value, so as to not increase any memory
-> overhead on both 32-bit and 64-bit system.
-> 
-> On the third hand, even though different kinds of locks have different
-> performances, we can ignore this difference, because:
-> if zram is used as zram swapfile, the swap subsystem can prevent concurrent
-> access to the same swapslot;
-> if zram is used as zram-blk for set up filesystem on it, the upper filesystem
-> and the page cache also prevent concurrent access of the same block mostly.
-> So we can ignore the different performances among locks.
-> 
-> Changes since v1: https://lkml.org/lkml/2014/5/5/1
->   - replace CAS method with bit_spinlock method
->   - rename zram_test_flag() to zram_test_zero()
->   - add some comments
-> 
-> Changes since v2: https://lkml.org/lkml/2014/5/15/113
->   - change size type from int to size_t in zram_set_obj_size()
->   - refactor zram_set_obj_size() to make it readable
->   - add comments
-> 
-> Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
+On 05/30/2014 07:33 PM, David Daney wrote:
+> On 05/30/2014 04:39 AM, Geert Uytterhoeven wrote:
+>> On Fri, May 30, 2014 at 1:30 PM, abdoulaye berthe <berthe.ab@gmail.com>
+>> wrote:
+>>> --- a/drivers/gpio/gpiolib.c
+>>> +++ b/drivers/gpio/gpiolib.c
+>>> @@ -1263,10 +1263,9 @@ static void gpiochip_irqchip_remove(struct
+>>> gpio_chip *gpiochip);
+>>>    *
+>>>    * A gpio_chip with any GPIOs still requested may not be removed.
+>>>    */
+>>> -int gpiochip_remove(struct gpio_chip *chip)
+>>> +void gpiochip_remove(struct gpio_chip *chip)
+>>>   {
+>>>          unsigned long   flags;
+>>> -       int             status = 0;
+>>>          unsigned        id;
+>>>
+>>>          acpi_gpiochip_remove(chip);
+>>> @@ -1278,24 +1277,15 @@ int gpiochip_remove(struct gpio_chip *chip)
+>>>          of_gpiochip_remove(chip);
+>>>
+>>>          for (id = 0; id < chip->ngpio; id++) {
+>>> -               if (test_bit(FLAG_REQUESTED, &chip->desc[id].flags)) {
+>>> -                       status = -EBUSY;
+>>> -                       break;
+>>> -               }
+>>> -       }
+>>> -       if (status == 0) {
+>>> -               for (id = 0; id < chip->ngpio; id++)
+>>> -                       chip->desc[id].chip = NULL;
+>>> -
+>>> -               list_del(&chip->list);
+>>> +               if (test_bit(FLAG_REQUESTED, &chip->desc[id].flags))
+>>> +                       panic("gpio: removing gpiochip with gpios still
+>>> requested\n");
+>>
+>> panic?
+>
+> NACK to the patch for this reason.  The strongest thing you should do here
+> is WARN.
+>
+> That said, I am not sure why we need this whole patch set in the first place.
 
-Reviewed-by: Davidlohr Bueso <davidlohr@hp.com>
+Well, what currently happens when you remove a device that is a provider of 
+a gpio_chip which is still in use, is that the kernel crashes. Probably with 
+a rather cryptic error message. So this patch doesn't really change the 
+behavior, but makes it more explicit what is actually wrong. And even if you 
+replace the panic() by a WARN() it will again just crash slightly later.
 
+This is a design flaw in the GPIO subsystem that needs to be fixed.
+
+- Lars
