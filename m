@@ -1,113 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934272AbaE3UkM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 16:40:12 -0400
-Received: from mout.kundenserver.de ([212.227.17.13]:61283 "EHLO
+	id S934367AbaE3UkW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 16:40:22 -0400
+Received: from mout.kundenserver.de ([212.227.17.24]:51131 "EHLO
 	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751776AbaE3UkK (ORCPT
+	with ESMTP id S934289AbaE3UkS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 16:40:10 -0400
+	Fri, 30 May 2014 16:40:18 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-kernel@vger.kernel.org
 Cc: linux-arch@vger.kernel.org, joseph@codesourcery.com,
         john.stultz@linaro.org, hch@infradead.org, tglx@linutronix.de,
         geert@linux-m68k.org, lftan@altera.com, hpa@zytor.com,
         linux-fsdevel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Joel Becker <jlbec@evilplan.org>
-Subject: [RFC 22/32] fs: convert simple fs to inode_time
-Date: Fri, 30 May 2014 22:01:46 +0200
-Message-Id: <1401480116-1973111-23-git-send-email-arnd@arndb.de>
+        Joern Engel <joern@logfs.org>,
+        Prasad Joshi <prasadjoshi.linux@gmail.com>, logfs@logfs.org
+Subject: [RFC 23/32] logfs: convert to struct inode_time
+Date: Fri, 30 May 2014 22:01:47 +0200
+Message-Id: <1401480116-1973111-24-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1401480116-1973111-1-git-send-email-arnd@arndb.de>
 References: <1401480116-1973111-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:7/7ESxnrftKiOaNnAVrMEuttADdWPhTNYAPXKJaXPOE
- EDuw6AGdimWbH4H2xER+SwxxDXwiEn2xzPCUirALuHsjEfQMhZ
- sHzMEE7oeh1kOGsMw34s/bpAxPagrGGUSloAzzWltr6sXHAbEe
- skZddDTjRxv93eijbes4Eyhp2wr6lUvY1Y04tBuin6tL9qZVKX
- 93bpA5WRozsUSmN6FV+o6WPWJuhcSvcgXdrQVWclLi3LZNvYoQ
- bWkhRGqxWBem1H3KfkLTRS3cPoFbYqlkT24Qg08gC5XxuXmQwV
- MZGvsCQdcoIIndSuTu086WGt7gKnifB5cKaFcNx79dWuPjDz2d
- um3NxTSjc/FCTxV69P49ulgHIenxL+i9BUOMvWDCW
+X-Provags-ID: V02:K0:m6JSSQ7elUstDWdzMdFzYGY0edS+y6tmJ/32teMVBiX
+ bk9MicDMNxKCBMKTXeB7u3A6pQ1YsBxLDDbdk+craZkthjAdD0
+ 0VoCNMCUwT6un/L47HykITIgmZv+UOx/RmehLUbrKJu/lnIFiw
+ V0LICvG0icWYD8JoVByqUVqtJlRjKdvnAFqOtCxbVPaMRpSZAS
+ tplhETq3XZg22GgxiY9ozkVpDQ0HcE1jAn7VbruDtgiZz5tm/L
+ 8ojeAy8tEqsrEsRJzLCAThTzHYgzquQo2nAqPdgxtxCryow8Op
+ xJongwc9U5jwEqy/9F6IJUkPLJWEzo4enCex1q3u5geZTk3fFW
+ 7kDsXJdwwl34LOMbMBe64JjQmB1nxiru+4TKahmSr
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-tty, usbgadgetfs, configfs and cramfs do not store inode timestamps
-permanently, but they use code that interacts with the VFS inode
-times. In order to change over VFS to a struct inode_time, we
-have to make trivial changes to these file systems as well.
+logfs uses 64-bit integers for inode timestamps, which will work
+for the next 550 years, but the VFS uses struct timespec for timestamps,
+which is only good until 2038 on 32-bit CPUs.
+
+This gets us one small step closer to lifting the VFS limit by using
+struct inode_time in logfs.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Joel Becker <jlbec@evilplan.org>
+Cc: Joern Engel <joern@logfs.org>
+Cc: Prasad Joshi <prasadjoshi.linux@gmail.com>
+Cc: logfs@logfs.org
 ---
- drivers/tty/tty_io.c      | 2 +-
- drivers/usb/gadget/f_fs.c | 2 +-
- fs/configfs/inode.c       | 6 +++---
- fs/cramfs/inode.c         | 2 +-
- 4 files changed, 6 insertions(+), 6 deletions(-)
+ fs/logfs/readwrite.c | 18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
-index 3411071..c2c63e5 100644
---- a/drivers/tty/tty_io.c
-+++ b/drivers/tty/tty_io.c
-@@ -994,7 +994,7 @@ void start_tty(struct tty_struct *tty)
- EXPORT_SYMBOL(start_tty);
- 
- /* We limit tty time update visibility to every 8 seconds or so. */
--static void tty_update_time(struct timespec *time)
-+static void tty_update_time(struct inode_time *time)
+diff --git a/fs/logfs/readwrite.c b/fs/logfs/readwrite.c
+index 4814031..df44698 100644
+--- a/fs/logfs/readwrite.c
++++ b/fs/logfs/readwrite.c
+@@ -101,12 +101,12 @@ void logfs_unpack_index(pgoff_t index, u64 *bix, level_t *level)
+ /*
+  * Time is stored as nanoseconds since the epoch.
+  */
+-static struct timespec be64_to_timespec(__be64 betime)
++static struct inode_time be64_to_inode_time(__be64 betime)
  {
- 	unsigned long sec = get_seconds() & ~7;
- 	if ((long)(sec - time->tv_sec) > 0)
-diff --git a/drivers/usb/gadget/f_fs.c b/drivers/usb/gadget/f_fs.c
-index 74202d6..3947655 100644
---- a/drivers/usb/gadget/f_fs.c
-+++ b/drivers/usb/gadget/f_fs.c
-@@ -1069,7 +1069,7 @@ ffs_sb_make_inode(struct super_block *sb, void *data,
- 	inode = new_inode(sb);
+-	return ns_to_timespec(be64_to_cpu(betime));
++	return ns_to_inode_time(be64_to_cpu(betime));
+ }
  
- 	if (likely(inode)) {
--		struct timespec current_time = CURRENT_TIME;
-+		struct inode_time current_time = CURRENT_TIME;
- 
- 		inode->i_ino	 = get_next_ino();
- 		inode->i_mode    = perms->mode;
-diff --git a/fs/configfs/inode.c b/fs/configfs/inode.c
-index 5946ad9..62f10c0 100644
---- a/fs/configfs/inode.c
-+++ b/fs/configfs/inode.c
-@@ -95,13 +95,13 @@ int configfs_setattr(struct dentry * dentry, struct iattr * iattr)
- 	if (ia_valid & ATTR_GID)
- 		sd_iattr->ia_gid = iattr->ia_gid;
- 	if (ia_valid & ATTR_ATIME)
--		sd_iattr->ia_atime = timespec_trunc(iattr->ia_atime,
-+		sd_iattr->ia_atime = inode_time_trunc(iattr->ia_atime,
- 						inode->i_sb->s_time_gran);
- 	if (ia_valid & ATTR_MTIME)
--		sd_iattr->ia_mtime = timespec_trunc(iattr->ia_mtime,
-+		sd_iattr->ia_mtime = inode_time_trunc(iattr->ia_mtime,
- 						inode->i_sb->s_time_gran);
- 	if (ia_valid & ATTR_CTIME)
--		sd_iattr->ia_ctime = timespec_trunc(iattr->ia_ctime,
-+		sd_iattr->ia_ctime = inode_time_trunc(iattr->ia_ctime,
- 						inode->i_sb->s_time_gran);
- 	if (ia_valid & ATTR_MODE) {
- 		umode_t mode = iattr->ia_mode;
-diff --git a/fs/cramfs/inode.c b/fs/cramfs/inode.c
-index ddcfe59..1b9ed3b 100644
---- a/fs/cramfs/inode.c
-+++ b/fs/cramfs/inode.c
-@@ -79,7 +79,7 @@ static struct inode *get_cramfs_inode(struct super_block *sb,
- 	const struct cramfs_inode *cramfs_inode, unsigned int offset)
+-static __be64 timespec_to_be64(struct timespec tsp)
++static __be64 inode_time_to_be64(struct inode_time tsp)
  {
- 	struct inode *inode;
--	static struct timespec zerotime;
-+	static struct inode_time zerotime;
+ 	return cpu_to_be64((u64)tsp.tv_sec * NSEC_PER_SEC + tsp.tv_nsec);
+ }
+@@ -123,9 +123,9 @@ static void logfs_disk_to_inode(struct logfs_disk_inode *di, struct inode*inode)
+ 	i_gid_write(inode, be32_to_cpu(di->di_gid));
+ 	inode->i_size	= be64_to_cpu(di->di_size);
+ 	logfs_set_blocks(inode, be64_to_cpu(di->di_used_bytes));
+-	inode->i_atime	= be64_to_timespec(di->di_atime);
+-	inode->i_ctime	= be64_to_timespec(di->di_ctime);
+-	inode->i_mtime	= be64_to_timespec(di->di_mtime);
++	inode->i_atime	= be64_to_inode_time(di->di_atime);
++	inode->i_ctime	= be64_to_inode_time(di->di_ctime);
++	inode->i_mtime	= be64_to_inode_time(di->di_mtime);
+ 	set_nlink(inode, be32_to_cpu(di->di_refcount));
+ 	inode->i_generation = be32_to_cpu(di->di_generation);
  
- 	inode = iget_locked(sb, cramino(cramfs_inode, offset));
- 	if (!inode)
+@@ -160,9 +160,9 @@ static void logfs_inode_to_disk(struct inode *inode, struct logfs_disk_inode*di)
+ 	di->di_gid	= cpu_to_be32(i_gid_read(inode));
+ 	di->di_size	= cpu_to_be64(i_size_read(inode));
+ 	di->di_used_bytes = cpu_to_be64(li->li_used_bytes);
+-	di->di_atime	= timespec_to_be64(inode->i_atime);
+-	di->di_ctime	= timespec_to_be64(inode->i_ctime);
+-	di->di_mtime	= timespec_to_be64(inode->i_mtime);
++	di->di_atime	= inode_time_to_be64(inode->i_atime);
++	di->di_ctime	= inode_time_to_be64(inode->i_ctime);
++	di->di_mtime	= inode_time_to_be64(inode->i_mtime);
+ 	di->di_refcount	= cpu_to_be32(inode->i_nlink);
+ 	di->di_generation = cpu_to_be32(inode->i_generation);
+ 
 -- 
 1.8.3.2
 
