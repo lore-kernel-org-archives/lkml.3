@@ -1,30 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932968AbaE3LvG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 07:51:06 -0400
-Received: from mail-we0-f176.google.com ([74.125.82.176]:36412 "EHLO
-	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751413AbaE3LvD (ORCPT
+	id S933024AbaE3Lwp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 07:52:45 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:45108 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752059AbaE3Lwm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 07:51:03 -0400
-Message-ID: <53887095.7090108@gmail.com>
-Date: Fri, 30 May 2014 13:50:45 +0200
+	Fri, 30 May 2014 07:52:42 -0400
+Message-ID: <538870F8.9090507@gmail.com>
+Date: Fri, 30 May 2014 13:52:24 +0200
 From: Tomasz Figa <tomasz.figa@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-CC: Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>
-Subject: Re: [PATCH] ARM: exynos4212: hotplug: Fix CPU idle clock down after
- CPU1 off
-References: <1399990378-7023-1-git-send-email-k.kozlowski@samsung.com>
-In-Reply-To: <1399990378-7023-1-git-send-email-k.kozlowski@samsung.com>
+To: Chanwoo Choi <cw00.choi@samsung.com>, kgene.kim@samsung.com
+CC: t.figa@samsung.com, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, rdunlap@infradead.org, ben-linux@fluff.org,
+        linux@arm.linux.org.uk, l.krishna@samsung.com,
+        chanho61.park@samsung.com, kyungmin.park@samsung.com,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org
+Subject: Re: [PATCH] ARM: dts: Add pmu sysreg node to Exynos3250
+References: <1401085776-14212-1-git-send-email-cw00.choi@samsung.com>
+In-Reply-To: <1401085776-14212-1-git-send-email-cw00.choi@samsung.com>
 X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
@@ -32,65 +31,18 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Krzysztof,
-
-On 13.05.2014 16:12, Krzysztof Kozlowski wrote:
-> On Exynos4212 USE_DELAYED_RESET_ASSERTION must be set in
-> ARM_CORE1_OPTION register during CPU power down. This is the proper way
-> of powering down CPU. Additionally without this the CPU clock down won't
-> work after powering down CPU1 and CPU will work at full frequency chosen
-> by CPUfreq governor.
+On 26.05.2014 08:29, Chanwoo Choi wrote:
+> This patch add pmusysreg node for Exynos3250 to access PMU (Power Management Unit)
+> register in a centralized way using syscon driver.
 > 
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
 > ---
->  arch/arm/mach-exynos/hotplug.c  | 28 +++++++++++++++++++++++++---
->  arch/arm/mach-exynos/regs-pmu.h |  2 ++
->  2 files changed, 27 insertions(+), 3 deletions(-)
-> 
-> diff --git a/arch/arm/mach-exynos/hotplug.c b/arch/arm/mach-exynos/hotplug.c
-> index 5eead530c6f8..59b813e74558 100644
-> --- a/arch/arm/mach-exynos/hotplug.c
-> +++ b/arch/arm/mach-exynos/hotplug.c
-> @@ -74,7 +74,7 @@ static inline void cpu_enter_lowpower_a15(void)
->  	dsb();
->  }
->  
-> -static inline void cpu_leave_lowpower(void)
-> +static inline void cpu_leave_lowpower(unsigned int cpu)
->  {
->  	unsigned int v;
->  
-> @@ -88,6 +88,14 @@ static inline void cpu_leave_lowpower(void)
->  	  : "=&r" (v)
->  	  : "Ir" (CR_C), "Ir" (0x40)
->  	  : "cc");
-> +
-> +	if (cpu == 1 && soc_is_exynos4212()) {
+>  Documentation/devicetree/bindings/arm/samsung/pmu.txt | 1 +
+>  arch/arm/boot/dts/exynos3250.dtsi                     | 5 +++++
+>  2 files changed, 6 insertions(+)
 
-AFAIK this is needed not only on Exynos4x12, but at least also on 4412.
-Also I don't think the (cpu == 1) condition is necessary. See below.
-
-> +		unsigned int tmp;
-> +
-> +		tmp = __raw_readl(S5P_ARM_CORE1_OPTION);
-> +		tmp &= ~(S5P_USE_DELAYED_RESET_ASSERTION);
-> +		__raw_writel(tmp, S5P_ARM_CORE1_OPTION);
-> +	}
->  }
->  
->  static inline void platform_do_lowpower(unsigned int cpu, int *spurious)
-> @@ -95,8 +103,22 @@ static inline void platform_do_lowpower(unsigned int cpu, int *spurious)
->  	for (;;) {
->  
->  		/* make cpu1 to be turned off at next WFI command */
-> -		if (cpu == 1)
-> +		if (cpu == 1) {
-
-I think this patch should be rebased on top of my "[PATCH] ARM: EXYNOS:
-Fix core ID used by platsmp and hotplug code". Then instead of if (cpu
-== 1) you would just use EXYNOS_ARM_CORE_OPTION(core_id).
-
-Also same comment as above, I believe this is also needed on Exynos4412.
+Reviewed-by: Tomasz Figa <t.figa@samsung.com>
 
 Best regards,
 Tomasz
