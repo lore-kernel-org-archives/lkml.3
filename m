@@ -1,84 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030297AbaE3UFk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 16:05:40 -0400
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:56668 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030248AbaE3UFh (ORCPT
+	id S1030348AbaE3UFx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 16:05:53 -0400
+Received: from mout.kundenserver.de ([212.227.17.13]:56957 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030303AbaE3UFs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 16:05:37 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140530062937.GA11096@twins.programming.kicks-ass.net>
-References: <1400860385-14555-1-git-send-email-vincent.guittot@linaro.org>
- <1400860385-14555-11-git-send-email-vincent.guittot@linaro.org>
- <20140529095024.GF11074@laptop.programming.kicks-ass.net> <CAKfTPtCHhxyugMOCeS0hZoEXWhgRec4uOBexZ2aB2A+Eycgi8w@mail.gmail.com>
- <20140530062937.GA11096@twins.programming.kicks-ass.net>
-From: Vincent Guittot <vincent.guittot@linaro.org>
-Date: Fri, 30 May 2014 22:05:17 +0200
-Message-ID: <CAKfTPtDh_tm6m53N+sXftcWF5fwPFXkDWrb96Xj9iLpu+E1yYQ@mail.gmail.com>
-Subject: Re: [PATCH v2 10/11] sched: move cfs task on a CPU with higher capacity
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        Mike Galbraith <efault@gmx.de>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 30 May 2014 16:05:48 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-kernel@vger.kernel.org
+Cc: linux-arch@vger.kernel.org, joseph@codesourcery.com,
+        john.stultz@linaro.org, hch@infradead.org, tglx@linutronix.de,
+        geert@linux-m68k.org, lftan@altera.com, hpa@zytor.com,
+        linux-fsdevel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
+Subject: [RFC 04/32] fs: introduce sys_newfstat64/sys_newfstatat64
+Date: Fri, 30 May 2014 22:01:28 +0200
+Message-Id: <1401480116-1973111-5-git-send-email-arnd@arndb.de>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1401480116-1973111-1-git-send-email-arnd@arndb.de>
+References: <1401480116-1973111-1-git-send-email-arnd@arndb.de>
+X-Provags-ID: V02:K0:xNBeO36rwAcgTdh52YyANCadDzGwoF5TgKXxsg4D/Sv
+ 37YmHccoxjzMFvWi0TTxqqNUtijefSfSjXEsKzbZQjVacfA6ps
+ n1p/9CzYurR0lKCVAFLoUBSrwPmiIa60wOJrsKGF6EE8/xcryQ
+ gX/2G3RfUdxXHTw8m6PObYN7WjdeJ9XChPM3RhBljGXEQ4z6jw
+ o6IkOMUtvgDjID5Xt51ipqhn1XigyzMMiGmIHweq3kLITt4iOc
+ +T65Rbce4tsYTJCR3cM3hwe8lpnU13pZLvqRt/hMOILkw2B/v3
+ u6ON9rdjkGk5QSHDSVBnKkyWaJBQLbqbp1UAfybMbYm+HXfubN
+ 8+6kRja1cVQPiOIrC6ysWrlOmLbquUgVDuJgtX4oz
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30 May 2014 08:29, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Thu, May 29, 2014 at 09:37:39PM +0200, Vincent Guittot wrote:
->> On 29 May 2014 11:50, Peter Zijlstra <peterz@infradead.org> wrote:
->> > On Fri, May 23, 2014 at 05:53:04PM +0200, Vincent Guittot wrote:
->> >> If the CPU is used for handling lot of IRQs, trig a load balance to check if
->> >> it's worth moving its tasks on another CPU that has more capacity
->> >>
->> >> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
->> >> ---
->> >>  kernel/sched/fair.c | 13 +++++++++++++
->> >>  1 file changed, 13 insertions(+)
->> >>
->> >> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
->> >> index e8a30f9..2501e49 100644
->> >> --- a/kernel/sched/fair.c
->> >> +++ b/kernel/sched/fair.c
->> >> @@ -5948,6 +5948,13 @@ static bool update_sd_pick_busiest(struct lb_env *env,
->> >>       if (sgs->sum_nr_running > sgs->group_capacity)
->> >>               return true;
->> >>
->> >> +     /*
->> >> +      * The group capacity is reduced probably because of activity from other
->> >> +      * sched class or interrupts which use part of the available capacity
->> >> +      */
->> >> +     if ((sg->sgp->power_orig * 100) > (sgs->group_power * env->sd->imbalance_pct))
->> >> +             return true;
->> >> +
->> >>       if (sgs->group_imb)
->> >>               return true;
->> >>
->> >
->> > But we should already do this because the load numbers are scaled with
->> > the power/capacity figures. If one CPU gets significant less time to run
->> > fair tasks, its effective load would spike and it'd get to be selected
->> > here anyway.
->> >
->> > Or am I missing something?
->>
->> The CPU could have been picked when the capacity becomes null (which
->> occurred when the cpu_power goes below half the default
->> SCHED_POWER_SCALE). And even after that, there were some conditions in
->> find_busiest_group that was bypassing this busiest group
->
-> Could you detail those conditions? FWIW those make excellent Changelog
-> material.
+We want to be able to read file system timestamps beyond year 2038,
+which is currently impossibly on 32-bit systems, since none of the
+various stat syscall interfaces (oldstat, stat, stat64) handles
+correctly.
 
-I need to go back to my traces and use case to be sure that I point
-the right culprit but IIRC, the imbalance was null. I will come back
-with more details once i'll be back in front of the boards.
+This introduces a fourth version of the syscalls, called newfstat64
+and newfstatat64, which operate on struct newstat64. Each 32-bit
+architecture needs to define a version of this structure.
+Architectures that have a 64-bit CPU should use the native 64-bit
+'struct stat' if possible, so we can avoid adding a compat_newfstatat64
+syscall. Note that there is no sys_newlstat64 or sys_newstat64,
+as both can be trivially emulated from libc using newfstatat64.
+
+This approach might not be the best solution, as there have been
+proposals in the past to add a new 'struct xstat' interface that
+would not only solve the y2038 problem but provide a number of
+other extensions as well. I have chickened out and avoided reviving
+that discussion for now. This new set of syscalls is a much simpler
+addition and is hopefully less controversial.
+If we end up merging xstat first, we won't need this patch.
+
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+---
+ fs/stat.c | 55 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 55 insertions(+)
+
+diff --git a/fs/stat.c b/fs/stat.c
+index ae0c3ce..77fd219 100644
+--- a/fs/stat.c
++++ b/fs/stat.c
+@@ -445,6 +445,61 @@ SYSCALL_DEFINE4(fstatat64, int, dfd, const char __user *, filename,
+ }
+ #endif /* __ARCH_WANT_STAT64 || __ARCH_WANT_COMPAT_STAT64 */
+ 
++#ifdef __ARCH_HAS_NEWSTAT64
++/*
++ * we only need this for the native 32-bit path, all architectures should
++ * define the 32-bit newstat64 as compatible with the 64-bit stat or
++ * stat64.
++ */
++static long cp_new_newstat64(struct kstat *stat, struct newstat64 __user *statbuf)
++{
++	struct newstat64 tmp;
++
++	memset(&tmp, 0, sizeof(tmp));
++	tmp.st_dev = huge_encode_dev(stat->dev);
++	tmp.st_rdev = huge_encode_dev(stat->rdev);
++	tmp.st_ino = stat->ino;
++	tmp.st_mode = stat->mode;
++	tmp.st_nlink = stat->nlink;
++	tmp.st_uid = from_kuid_munged(current_user_ns(), stat->uid);
++	tmp.st_gid = from_kgid_munged(current_user_ns(), stat->gid);
++	tmp.st_atime = stat->atime.tv_sec;
++	tmp.st_atime_nsec = stat->atime.tv_nsec;
++	tmp.st_mtime = stat->mtime.tv_sec;
++	tmp.st_mtime_nsec = stat->mtime.tv_nsec;
++	tmp.st_ctime = stat->ctime.tv_sec;
++	tmp.st_ctime_nsec = stat->ctime.tv_nsec;
++	tmp.st_size = stat->size;
++	tmp.st_blocks = stat->blocks;
++	tmp.st_blksize = stat->blksize;
++	return copy_to_user(statbuf,&tmp,sizeof(tmp)) ? -EFAULT : 0;
++}
++
++SYSCALL_DEFINE2(newfstat64, unsigned long, fd, struct newstat64 __user *, statbuf)
++{
++	struct kstat stat;
++	int error;
++
++	error = vfs_fstat(fd, &stat);
++	if (error)
++		return error;
++
++	return cp_new_newstat64(&stat, statbuf);
++}
++
++SYSCALL_DEFINE4(newfstatat64, int, dfd, const char __user *, filename,
++		struct newstat64 __user *, statbuf, int, flag)
++{
++	struct kstat stat;
++	int error;
++
++	error = vfs_fstatat(dfd, filename, &stat, flag);
++	if (error)
++		return error;
++	return cp_new_newstat64(&stat, statbuf);
++}
++#endif
++
+ /* Caller is here responsible for sufficient locking (ie. inode->i_lock) */
+ void __inode_add_bytes(struct inode *inode, loff_t bytes)
+ {
+-- 
+1.8.3.2
+
