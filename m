@@ -1,118 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932272AbaE3BNO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 21:13:14 -0400
-Received: from mga02.intel.com ([134.134.136.20]:62494 "EHLO mga02.intel.com"
+	id S1754110AbaE3BRo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 21:17:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9369 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932121AbaE3BMj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 21:12:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,937,1392192000"; 
-   d="scan'208";a="519983923"
-From: Andi Kleen <andi@firstfloor.org>
-To: peterz@infradead.org
-Cc: gleb@kernel.org, pbonzini@redhat.com, eranian@google.com,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 3/4] perf: Handle guest PEBS events with a fake event
-Date: Thu, 29 May 2014 18:12:06 -0700
-Message-Id: <1401412327-14810-4-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1401412327-14810-1-git-send-email-andi@firstfloor.org>
-References: <1401412327-14810-1-git-send-email-andi@firstfloor.org>
+	id S1753306AbaE3BRm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 21:17:42 -0400
+Date: Thu, 29 May 2014 21:16:36 -0400
+From: Dave Jones <davej@redhat.com>
+To: Tim Chen <tim.c.chen@linux.intel.com>
+Cc: George Spelvin <linux@horizon.com>, herbert@gondor.apana.org.au,
+        james.guilford@intel.com, JBeulich@suse.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] crypto: crc32c-pclmul - Use pmovzxdq to shrink
+ K_table
+Message-ID: <20140530011636.GA31694@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Tim Chen <tim.c.chen@linux.intel.com>,
+	George Spelvin <linux@horizon.com>, herbert@gondor.apana.org.au,
+	james.guilford@intel.com, JBeulich@suse.com,
+	linux-kernel@vger.kernel.org
+References: <20140529235432.19207.qmail@ns.horizon.com>
+ <1401412036.2970.459.camel@schen9-DESK>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1401412036.2970.459.camel@schen9-DESK>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
-
-With PEBS virtualization the PEBS record gets delivered to the guest,
-but the host sees the PMI. This would normally result in a spurious
-PEBS PMI that is ignored. But we need to inject the PMI into the guest,
-so that the guest PMI handler can handle the PEBS record.
-
-Check for this case in the perf PEBS handler.  When any guest PEBS
-counters are active always check the counters explicitely for
-overflow. If a guest PEBs counter overflowed trigger a fake event. The
-fake event results in calling the KVM PMI callback, which injects
-the PMI into the guest. The guest handler then retrieves the correct
-information from its own PEBS record and the guest state.
-
-Note: in very rare cases with exotic events this may lead to spurious PMIs
-in the guest.
-
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- arch/x86/kernel/cpu/perf_event_intel_ds.c | 49 +++++++++++++++++++++++++++++++
- 1 file changed, 49 insertions(+)
-
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-index 29622a7..0267174 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-@@ -998,6 +998,53 @@ static void intel_pmu_drain_pebs_core(struct pt_regs *iregs)
- 	__intel_pmu_pebs_event(event, iregs, at);
- }
+On Thu, May 29, 2014 at 06:07:16PM -0700, Tim Chen wrote:
+ > On Thu, 2014-05-29 at 19:54 -0400, George Spelvin wrote:
+ > > Sorry for the delay; my Ivy Bridge test machine isn't in my
+ > > office and getting to the console to tweak the BIOS is a
+ > > bit of a bother.
+ > > 
+ > > Anyway, i7-4930K, turbo boost & hyperthreading disabled,
+ > > $ cat /sys/devices/system/cpu/cpu?/cpufreq/scaling_governor
+ > > performance
+ > > performance
+ > > performance
+ > > performance
+ > > performance
+ > > performance
+ > > 
+ > > Oddly, though, CPU speed still seems to be fluctuating:
+ > > $ grep MHz /proc/cpuinfo
+ > > cpu MHz         : 1255.875
+ > > cpu MHz         : 3168.375
+ > > cpu MHz         : 3062.125
+ > > cpu MHz         : 1468.375
+ > > cpu MHz         : 1309.000
+ > > cpu MHz         : 2212.125
+ > > $ grep MHz /proc/cpuinfo
+ > > cpu MHz         : 1255.875
+ > > cpu MHz         : 2690.250
+ > > cpu MHz         : 1255.875
+ > > cpu MHz         : 2530.875
+ > > cpu MHz         : 2212.125
+ > > cpu MHz         : 1521.500
+ > 
+ > This is odd.  On my Ivy Bridge system the CPU speed from /proc/cpuinfo 
+ > is at max freq once I set the performance governor.  
+ > The numbers above almost look like
+ > the cpu frequency is fluctuating and an average is taken.
+ > What version of the kernel are you running?  Is 
+ > CONFIG_CPU_FREQ_GOV_PERFORMANCE compiled in?
+ > 
+ > Does /sys/devices/system/cpu/cpu?/cpufreq/scaling_cur_freq
+ > also changes?
+ > 
+ > Can you check what are the available governors in your system
+ > and available frequencies?
+ > 
+ > cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors
+ > cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_frequencies
+ > 
+ > If userspace governor is available, you can try set the governor
+ > to userspace, then pin frequency to 3400 MHz (assuming that's your
+ > max) with command like:
  
-+/*
-+ * We may be running with virtualized PEBS, so the PEBS record
-+ * was logged into the guest's DS and is invisible to us.
-+ *
-+ * For guest-owned counters we always have to check the counter
-+ * and see if they are overflowed, because PEBS thresholds
-+ * are not reported in the GLOBAL_STATUS.
-+ *
-+ * In this case just trigger a fake event for KVM to forward
-+ * to the guest as PMI.  The guest will then see the real PEBS
-+ * record and read the counter values.
-+ *
-+ * The contents of the event do not matter.
-+ */
-+static void intel_pmu_handle_guest_pebs(struct cpu_hw_events *cpuc,
-+					struct pt_regs *iregs)
-+{
-+	int bit;
-+	struct perf_event *event;
-+
-+	if (!cpuc->intel_ctrl_guest_owned)
-+		return;
-+
-+	for_each_set_bit(bit, (unsigned long *)&cpuc->intel_ctrl_guest_owned,
-+			 x86_pmu.max_pebs_events) {
-+		struct perf_sample_data data;
-+		s64 count;
-+		int shift;
-+
-+		event = cpuc->events[bit];
-+		if (!event->attr.precise_ip)
-+			continue;
-+		rdpmcl(event->hw.event_base_rdpmc, count);
-+
-+		/* sign extend */
-+		shift = 64 - x86_pmu.cntval_bits;
-+		count = ((s64)((u64)count << shift)) >> shift;
-+
-+		if (count < 0)
-+			continue;
-+
-+		perf_sample_data_init(&data, 0, event->hw.last_period);
-+		if (perf_event_overflow(event, &data, iregs))
-+			x86_pmu_stop(event, 0);
-+	}
-+}
-+
- static void intel_pmu_drain_pebs_nhm(struct pt_regs *iregs)
- {
- 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-@@ -1010,6 +1057,8 @@ static void intel_pmu_drain_pebs_nhm(struct pt_regs *iregs)
- 	if (!x86_pmu.pebs_active)
- 		return;
- 
-+	intel_pmu_handle_guest_pebs(cpuc, iregs);
-+
- 	at  = (struct pebs_record_nhm *)(unsigned long)ds->pebs_buffer_base;
- 	top = (struct pebs_record_nhm *)(unsigned long)ds->pebs_index;
- 
--- 
-1.9.0
+intel_pstate overrides any governor choice you make through sysfs.
+
+	Dave
 
