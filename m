@@ -1,86 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934503AbaE3UJt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 16:09:49 -0400
-Received: from mail-ve0-f173.google.com ([209.85.128.173]:56514 "EHLO
-	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754324AbaE3UJq (ORCPT
+	id S934575AbaE3UKU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 16:10:20 -0400
+Received: from mout.kundenserver.de ([212.227.17.13]:61424 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932699AbaE3UKR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 16:09:46 -0400
-MIME-Version: 1.0
-In-Reply-To: <5388E3EF.6030700@zytor.com>
-References: <CALCETrXef77JLoEp5hCXSdMAk7usWsL-sUG6NrcgLgrz3krfag@mail.gmail.com>
- <cover.1401464755.git.luto@amacapital.net> <2cf258df123cb24bad63c274c8563c050547d99d.1401464755.git.luto@amacapital.net>
- <5388E3EF.6030700@zytor.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Fri, 30 May 2014 13:09:25 -0700
-Message-ID: <CALCETrVvR3SaYX7jvoX_q7m=HSzt1xvrDurrOpm2XT5SG3JVqw@mail.gmail.com>
-Subject: Re: [PATCH v2 2/2] x86,vdso: Fix cross-compilation from big-endian architectures
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Josh Boyer <jwboyer@fedoraproject.org>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 30 May 2014 16:10:17 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-kernel@vger.kernel.org
+Cc: linux-arch@vger.kernel.org, joseph@codesourcery.com,
+        john.stultz@linaro.org, hch@infradead.org, tglx@linutronix.de,
+        geert@linux-m68k.org, lftan@altera.com, hpa@zytor.com,
+        linux-fsdevel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
+Subject: [RFC 32/32] fs: use new inode_time definition unconditionally
+Date: Fri, 30 May 2014 22:01:56 +0200
+Message-Id: <1401480116-1973111-33-git-send-email-arnd@arndb.de>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1401480116-1973111-1-git-send-email-arnd@arndb.de>
+References: <1401480116-1973111-1-git-send-email-arnd@arndb.de>
+X-Provags-ID: V02:K0:91SpbqRvMwm9UF1GbTzCanH8GHUDg5C3A9gphg51N46
+ 39aqXUULhsO4JulRaMnFzkODR3yCpd2A3iHU8Simqg8UB9FE+Y
+ 6R16UwXDwORoAS4+/iFr50QDZuCgYx6ifHHnmQkM1DjcVmBke9
+ XNBepiRDdbJMW7S/tJ8UQWUeS7vUV2WCo4de7OTmmCLfz+Ez48
+ IyiKSeftpBiLD0212y8EJ3jjmK8+NCOzyJJypvq3WLKjWxMwls
+ Iz0vA0fPc66BFb6L3AlzHJI2u9Bvgw3GF3d7xCF9cyy4uXJI7+
+ g01EUAijMp0C/5OaInnIzcJFSzA0YbLbEX84c97arjNEKQ0NVv
+ OkJ4CKZARj4saSXtJtDpzq6U0YsQsA7H48H3PzipN
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 30, 2014 at 1:02 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 05/30/2014 08:48 AM, Andy Lutomirski wrote:
->> This adds a macro GET(x) to convert x from big-endian to
->> little-endian.  Hopefully I put it everywhere it needs to go and got
->> all the cases needed for everyone's linux/elf.h.
->>
->> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
->> ---
->>  arch/x86/vdso/vdso2c.c | 15 ++++++++++++
->>  arch/x86/vdso/vdso2c.h | 63 ++++++++++++++++++++++++++++----------------------
->>  2 files changed, 50 insertions(+), 28 deletions(-)
->
-> A couple of observations:
->
-> 1. We shouldn't use double-underscore in host C code.
->
-> 2. It would be nice if we can take these sort of things (host-build
->    helper macros) and move them to some common file in the Linux kernel
->    eventually, so it would be a good thing to make the naming a little
->    less general.
->
-> 3. Even though it isn't necessary, making it work on 8-bit values so
->    one doesn't have to worry about the type would seem like a good
->    thing.
->
-> I came up with the following, it seems like a reasonable simplification:
->
->> #define _LE(x, bits, ifnot)                                           \
->>       __builtin_choose_expr(                                          \
->>               (sizeof(x) == bits/8),                                  \
->>               (__typeof__(x))le##bits##toh(x), ifnot)
+After all file systems have been converted to use 'struct inode_time'
+for timestamps, we can remove the compatibility definition for this
+structure.
 
-This will do awful things if x is a floating-point type, and, for
-integers, the cast is probably unnecessary.  But it should be okay.
+This patch picks the first of the three variants I defined, but we
+could pick one of the others as well.
 
->>
->> extern void bad_le(uint64_t);
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+---
+ include/linux/time.h | 31 ++-----------------------------
+ 1 file changed, 2 insertions(+), 29 deletions(-)
 
-If this ever goes in a common header, then we should do the
-__attribute__((error)) thing.  I wonder if it would ever make sense to
-have __LINUX_HOSTPROG__ and make some of the basic headers work.  Hmm.
+diff --git a/include/linux/time.h b/include/linux/time.h
+index f431263..00d2f14 100644
+--- a/include/linux/time.h
++++ b/include/linux/time.h
+@@ -6,44 +6,17 @@
+ # include <linux/math64.h>
+ #include <uapi/linux/time.h>
+ 
+-#ifdef CONFIG_NEW_INODE_TIME
+ /*
+  * This is the type we use internally in the kernel to represent
+- * absolute times in file system metadata.
++ * absolute times in file system metadata using unsigned seconds
++ * lets us extend the life span for another 69 years beyond 2038.
+  * This structure must not leak out to user space, and new interfaces
+  * should be using 64-bit types right away.
+  */
+-
+-/*
+- * Variant a) using unsigned seconds lets us extend the life span
+- * for another 69 years beyond 2038.
+- */
+ struct inode_time {
+ 	unsigned long	tv_sec;
+ 	long		tv_nsec;
+ };
+-#elif 0
+-/*
+- * This variant can represent the widest range of times, but also
+- * bloats 'struct inode' a little more.
+- */
+-struct inode_time {
+-	long long	tv_sec __attribute__((packed));
+-	int		tv_nsec;
+-};
+-#elif 0
+-/*
+- * The variant using bit fields is less efficient to access, but
+- * small and has a wider range as the 32-bit one, plus it keeps
+- * the signedness of the original timespec.
+- */
+-struct inode_time {
+-	long long	tv_sec	: 34;
+-	int		tv_nsec : 30;
+-};
+-#else
+-#define inode_time timespec
+-#endif
+ 
+ extern struct timezone sys_tz;
+ 
+-- 
+1.8.3.2
 
->> #define _LAST_LE(x)                                                   \
->>       __builtin_choose_expr(sizeof(x) == 1, (x), bad_le(x))
->>
->> #define LE(x)                                                         \
->>       _LE(x, 64, _LE(x, 32, _LE(x, 16, _LAST_LE(x))))
->
-> What do you think?
-
-My only real real objection is that _LE sounds like converting *to*
-little-endian to me.  Admittedly, that's the same thing on any
-remotely sane architecture, but still.
-
---Andy
