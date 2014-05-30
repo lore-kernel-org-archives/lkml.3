@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934585AbaE3UTj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 16:19:39 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:47631 "EHLO mail.zytor.com"
+	id S934539AbaE3UUt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 16:20:49 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:47652 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755035AbaE3UTi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 16:19:38 -0400
-Message-ID: <5388E7A5.90308@zytor.com>
-Date: Fri, 30 May 2014 13:18:45 -0700
+	id S1752209AbaE3UUr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 May 2014 16:20:47 -0400
+Message-ID: <5388E814.1080504@zytor.com>
+Date: Fri, 30 May 2014 13:20:36 -0700
 From: "H. Peter Anvin" <hpa@zytor.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org
-CC: linux-arch@vger.kernel.org, joseph@codesourcery.com,
-        john.stultz@linaro.org, hch@infradead.org, tglx@linutronix.de,
-        geert@linux-m68k.org, lftan@altera.com, linux-fsdevel@vger.kernel.org
-Subject: Re: [RFC 02/32] uapi: add struct __kernel_timespec{32,64}
-References: <1401480116-1973111-1-git-send-email-arnd@arndb.de> <1401480116-1973111-3-git-send-email-arnd@arndb.de>
-In-Reply-To: <1401480116-1973111-3-git-send-email-arnd@arndb.de>
+To: Andy Lutomirski <luto@amacapital.net>
+CC: Marian Marinov <mm@1h.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        X86 ML <x86@kernel.org>, Linux API <linux-api@vger.kernel.org>
+Subject: Re: Pondering per-process vsyscall disablement
+References: <CALCETrX4-qooSyLw3=zHGcMoWqQ2ozPB_WtKU2AtkMei-XZOUA@mail.gmail.com> <537EB60E.40204@1h.com> <CALCETrWgtQCRiHt+am8+DoOMVvTuxy05AB6zzg3iAheGs13L6A@mail.gmail.com> <538658EE.8030809@zytor.com> <CALCETrUhZp+edRCx2SEzuJup0HWhV5WSiheCiZWuUjVueTJHfQ@mail.gmail.com> <5388E499.6080101@zytor.com> <CALCETrX9s7xJRddB26ZiyjMEGbupbDj2qDHhio=80XSQ+staDA@mail.gmail.com>
+In-Reply-To: <CALCETrX9s7xJRddB26ZiyjMEGbupbDj2qDHhio=80XSQ+staDA@mail.gmail.com>
 X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
@@ -25,55 +25,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/30/2014 01:01 PM, Arnd Bergmann wrote:
-> We cannot use time_t or any derived structures beyond the year
-> 2038 in interfaces between kernel and user space, on 32-bit
-> machines.
+On 05/30/2014 01:11 PM, Andy Lutomirski wrote:
+> On Fri, May 30, 2014 at 1:05 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>> On 05/30/2014 01:00 PM, Andy Lutomirski wrote:
+>>>
+>>> Do the flags go in the ELF loader or in the executable we're running?
+>>> Or both (and, if both, do we and them or or them)?
+>>>
+>>> I think the interpreter makes a little more sense in general: for the
+>>> most part, use of vsyscalls is a property of the runtime environment,
+>>> not of the program being run.  But maybe this is naive.
+>>>
+>>
+>> They go into each object which becomes part of the running program, i.e.
+>> executable, dynamic libraries, and dynamic linker.
 > 
-> This is my suggestion for how to migrate syscall and ioctl
-> interfaces: We completely phase out time_t, timeval and timespec
-> from the uapi header files and replace them with types that are
-> either explicitly safe (__kernel_timespec64), or explicitly
-> unsafe (e.g. __kernel_timespec32). For each unsafe interface,
-> there needs to be a safe replacement interface.
+> Well, sure, but the kernel is not about to start reading ELF headers
+> in dynamic libraries.  So we need to make a decision based on the
+> interpreter and the executable.  The conservative approach is to
+> require both to have the flag set *and* to offer a prctl to twiddle
+> the flags.  Then userspace loaders can do whatever they want, and
+> distros get to rebuild the world :)
 > 
 
-This gets really messy for structures where this is ABI-dependent.  I'm
-not sure this is a net win.
-
-> +/*
-> + * __kernel_timespec64 is the general type to be used for
-> + * new user space interfaces passing a time argument.
-> + * 64-bit nanoseconds is a bit silly, but the advantage is
-> + * that it is compatible with the native 'struct timespec'
-> + * on 64-bit user space. This simplifies the compat code.
-> + */
-> +struct __kernel_timespec64 {
-> +	long long tv_sec;
-> +	long long tv_nsec;
-> +};
-
-So it seems that it is not just POSIX that is drain bramaged with this,
-but the "long" type for tv_nsec idiocy has made it into the C11
-standard.  This unfortunately means that now there are two standards
-bodies involved, at least one of which moves very slowly.
-
-This makes me wonder if we don't need to deal with the problem in the
-case of 32-bit ABIs with 64-bit time_t.  The logical thing seems to be
-to EITHER:
-
-a. ALWAYS ignore the upper 32 bits of tv_nsec when read from user space,
-   but always set them to zero, or
-b. Only ignore the upper 32 bits of tv_nsec when we are known to come
-   from a 32-bit ABI context, but still always return zero.  These bits
-   are already only used for validity checking.
-
-   This most likely introduces a whole lot of new tests in deep paths,
-   although we probably can centralize this in a single function, which
-   otherwise ends up looking a lot like compat_get_timespec().
-
-Getting rid of struct timespec on the kernel/user boundary is probably
-not really feasible.
+Yes, something like that.
 
 	-hpa
 
