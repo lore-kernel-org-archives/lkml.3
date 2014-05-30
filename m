@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933379AbaE3Oud (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 10:50:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18560 "EHLO mx1.redhat.com"
+	id S933401AbaE3OvJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 10:51:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32780 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933239AbaE3Oub (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 10:50:31 -0400
+	id S933086AbaE3OvH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 May 2014 10:51:07 -0400
 From: Don Zickus <dzickus@redhat.com>
 To: jolsa@redhat.com
 Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
@@ -13,148 +13,133 @@ Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
         LKML <linux-kernel@vger.kernel.org>, namhyung@gmail.com,
         eranian@google.com, Andi Kleen <andi@firstfloor.org>,
         Don Zickus <dzickus@redhat.com>
-Subject: [PATCH 2/7 V2] Revert "perf: Disable PERF_RECORD_MMAP2 support"
-Date: Fri, 30 May 2014 10:49:42 -0400
-Message-Id: <1401461382-209586-1-git-send-email-dzickus@redhat.com>
-In-Reply-To: <1401208087-181977-3-git-send-email-dzickus@redhat.com>
-References: <1401208087-181977-3-git-send-email-dzickus@redhat.com>
+Subject: [PATCH 6/7 V2] perf: Add support to dynamically get cacheline size
+Date: Fri, 30 May 2014 10:50:25 -0400
+Message-Id: <1401461425-209679-1-git-send-email-dzickus@redhat.com>
+In-Reply-To: <1401208087-181977-7-git-send-email-dzickus@redhat.com>
+References: <1401208087-181977-7-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This reverts commit 3090ffb5a2515990182f3f55b0688a7817325488.
-
-Re-enable the mmap2 interface as we will have a user soon.
-
-Since things have changed since perf disabled mmap2, small tweaks
-to the revert had to be done:
-
-o commit 9d4ecc88 forced (n!=8) to become (n<7)
-o a new libunwind test needed updating to use mmap2 interface
+Different arches may have different cacheline sizes.  Look it up and set
+a global variable for reference.
 
 Signed-off-by: Don Zickus <dzickus@redhat.com>
----
-v3: restore comment (Namhyung Kim)
-    move ino assignment (Namhyung Kim)
-v2: added a better changelog
-    fix a unwind test (thanks Jiri)
----
- kernel/events/core.c            |  4 ----
- tools/perf/tests/dwarf-unwind.c |  2 +-
- tools/perf/util/event.c         | 34 ++++++++++++++++++++--------------
- tools/perf/util/evsel.c         |  1 +
- 4 files changed, 22 insertions(+), 19 deletions(-)
 
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 0711cc9..c793cb0 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -6882,10 +6882,6 @@ static int perf_copy_attr(struct perf_event_attr __user *uattr,
- 	if (ret)
- 		return -EFAULT;
+---
+V3: remove unneeded cpumap.h (Namhyung Kim)
+V2: change to be global and setup in perf.c
+    use filename__read_int for setup
+---
+ tools/perf/perf.c        |  5 +++++
+ tools/perf/util/cpumap.c | 27 +++++++++++++++++++++++++++
+ tools/perf/util/cpumap.h |  3 +++
+ tools/perf/util/util.c   |  1 +
+ tools/perf/util/util.h   |  1 +
+ 5 files changed, 37 insertions(+)
+
+diff --git a/tools/perf/perf.c b/tools/perf/perf.c
+index 431798a..dabf08b 100644
+--- a/tools/perf/perf.c
++++ b/tools/perf/perf.c
+@@ -13,6 +13,7 @@
+ #include "util/quote.h"
+ #include "util/run-command.h"
+ #include "util/parse-events.h"
++#include "util/cpumap.h"
+ #include <api/fs/debugfs.h>
+ #include <pthread.h>
  
--	/* disabled for now */
--	if (attr->mmap2)
--		return -EINVAL;
--
- 	if (attr->__reserved_1)
- 		return -EINVAL;
+@@ -459,6 +460,10 @@ int main(int argc, const char **argv)
+ 	/* The page_size is placed in util object. */
+ 	page_size = sysconf(_SC_PAGE_SIZE);
  
-diff --git a/tools/perf/tests/dwarf-unwind.c b/tools/perf/tests/dwarf-unwind.c
-index 108f0cd..96adb73 100644
---- a/tools/perf/tests/dwarf-unwind.c
-+++ b/tools/perf/tests/dwarf-unwind.c
-@@ -15,7 +15,7 @@ static int mmap_handler(struct perf_tool *tool __maybe_unused,
- 			struct perf_sample *sample __maybe_unused,
- 			struct machine *machine)
- {
--	return machine__process_mmap_event(machine, event, NULL);
-+	return machine__process_mmap2_event(machine, event, NULL);
++	/* The cacheline_size is placed in util objet */
++	if (cpu__setup_cacheline_size() < 0) 
++		goto out;
++
+ 	cmd = perf_extract_argv0_path(argv[0]);
+ 	if (!cmd)
+ 		cmd = "perf-help";
+diff --git a/tools/perf/util/cpumap.c b/tools/perf/util/cpumap.c
+index c4e55b7..1029982 100644
+--- a/tools/perf/util/cpumap.c
++++ b/tools/perf/util/cpumap.c
+@@ -477,3 +477,30 @@ int cpu__setup_cpunode_map(void)
+ 	closedir(dir1);
+ 	return 0;
+ }
++
++int cpu__setup_cacheline_size(void)
++{
++	const char *mnt;
++	char path[PATH_MAX];
++	int n, size;
++	
++
++	mnt = sysfs__mountpoint();
++	if (!mnt)
++		return -1;
++
++	n = snprintf(path, PATH_MAX, "%s/devices/system/cpu/cpu0/cache/index0/coherency_line_size", mnt);
++	if (n == PATH_MAX) {
++		pr_err("sysfs path crossed PATH_MAX(%d) size\n", PATH_MAX);
++		return -1;
++	}
++
++	if (filename__read_int(path, &size)) {
++		pr_err("Can not read cacheline size\n");
++		return -1;
++	}
++
++	cacheline_size = size;
++
++	return 0;
++}
+diff --git a/tools/perf/util/cpumap.h b/tools/perf/util/cpumap.h
+index 61a6548..507d7fd 100644
+--- a/tools/perf/util/cpumap.h
++++ b/tools/perf/util/cpumap.h
+@@ -5,6 +5,7 @@
+ #include <stdbool.h>
+ 
+ #include "perf.h"
++#include "util/util.h"
+ #include "util/debug.h"
+ 
+ struct cpu_map {
+@@ -81,4 +82,6 @@ static inline int cpu__get_node(int cpu)
+ 	return cpunode_map[cpu];
  }
  
- static int init_live_machine(struct machine *machine)
-diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-index 65795b8..0a594fd 100644
---- a/tools/perf/util/event.c
-+++ b/tools/perf/util/event.c
-@@ -178,13 +178,14 @@ int perf_event__synthesize_mmap_events(struct perf_tool *tool,
- 		return -1;
- 	}
- 
--	event->header.type = PERF_RECORD_MMAP;
-+	event->header.type = PERF_RECORD_MMAP2;
- 
- 	while (1) {
- 		char bf[BUFSIZ];
- 		char prot[5];
- 		char execname[PATH_MAX];
- 		char anonstr[] = "//anon";
-+		unsigned int ino;
- 		size_t size;
- 		ssize_t n;
- 
-@@ -195,15 +196,20 @@ int perf_event__synthesize_mmap_events(struct perf_tool *tool,
- 		strcpy(execname, "");
- 
- 		/* 00400000-0040c000 r-xp 00000000 fd:01 41038  /bin/cat */
--		n = sscanf(bf, "%"PRIx64"-%"PRIx64" %s %"PRIx64" %*x:%*x %*u %s\n",
--		       &event->mmap.start, &event->mmap.len, prot,
--		       &event->mmap.pgoff,
--		       execname);
-+		n = sscanf(bf, "%"PRIx64"-%"PRIx64" %s %"PRIx64" %x:%x %u %s\n",
-+		       &event->mmap2.start, &event->mmap2.len, prot,
-+		       &event->mmap2.pgoff, &event->mmap2.maj,
-+		       &event->mmap2.min,
-+		       &ino, execname);
++int cpu__setup_cacheline_size(void);
 +
- 		/*
-  		 * Anon maps don't have the execname.
-  		 */
--		if (n < 4)
-+		if (n < 7)
- 			continue;
-+
-+		event->mmap2.ino = (u64)ino;
-+
- 		/*
- 		 * Just like the kernel, see __perf_event_mmap in kernel/perf_event.c
- 		 */
-@@ -223,15 +229,15 @@ int perf_event__synthesize_mmap_events(struct perf_tool *tool,
- 			strcpy(execname, anonstr);
+ #endif /* __PERF_CPUMAP_H */
+diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
+index 7fff6be..95aefa7 100644
+--- a/tools/perf/util/util.c
++++ b/tools/perf/util/util.c
+@@ -17,6 +17,7 @@
+  * XXX We need to find a better place for these things...
+  */
+ unsigned int page_size;
++int cacheline_size;
  
- 		size = strlen(execname) + 1;
--		memcpy(event->mmap.filename, execname, size);
-+		memcpy(event->mmap2.filename, execname, size);
- 		size = PERF_ALIGN(size, sizeof(u64));
--		event->mmap.len -= event->mmap.start;
--		event->mmap.header.size = (sizeof(event->mmap) -
--					(sizeof(event->mmap.filename) - size));
--		memset(event->mmap.filename + size, 0, machine->id_hdr_size);
--		event->mmap.header.size += machine->id_hdr_size;
--		event->mmap.pid = tgid;
--		event->mmap.tid = pid;
-+		event->mmap2.len -= event->mmap.start;
-+		event->mmap2.header.size = (sizeof(event->mmap2) -
-+					(sizeof(event->mmap2.filename) - size));
-+		memset(event->mmap2.filename + size, 0, machine->id_hdr_size);
-+		event->mmap2.header.size += machine->id_hdr_size;
-+		event->mmap2.pid = tgid;
-+		event->mmap2.tid = pid;
+ bool test_attr__enabled;
  
- 		if (process(tool, event, &synth_sample, machine) != 0) {
- 			rc = -1;
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 5c28d82..21154da 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -659,6 +659,7 @@ void perf_evsel__config(struct perf_evsel *evsel, struct record_opts *opts)
- 		perf_evsel__set_sample_bit(evsel, WEIGHT);
+diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
+index b03da44..6686436 100644
+--- a/tools/perf/util/util.h
++++ b/tools/perf/util/util.h
+@@ -304,6 +304,7 @@ char *rtrim(char *s);
+ void dump_stack(void);
  
- 	attr->mmap  = track;
-+	attr->mmap2 = track && !perf_missing_features.mmap2;
- 	attr->comm  = track;
+ extern unsigned int page_size;
++extern int cacheline_size;
  
- 	if (opts->sample_transaction)
+ void get_term_dimensions(struct winsize *ws);
+ 
 -- 
 1.7.11.7
 
