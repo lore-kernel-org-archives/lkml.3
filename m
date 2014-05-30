@@ -1,122 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932300AbaE3GeR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 02:34:17 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:43225 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752110AbaE3GeP (ORCPT
+	id S1754489AbaE3Gt1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 02:49:27 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:60324 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751782AbaE3GtZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 02:34:15 -0400
-Date: Fri, 30 May 2014 08:34:02 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        Mike Galbraith <efault@gmx.de>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>
-Subject: Re: [PATCH v2 11/11] sched: replace capacity by activity
-Message-ID: <20140530063402.GB11096@twins.programming.kicks-ass.net>
-References: <1400860385-14555-1-git-send-email-vincent.guittot@linaro.org>
- <1400860385-14555-12-git-send-email-vincent.guittot@linaro.org>
- <20140529140204.GH11074@laptop.programming.kicks-ass.net>
- <CAKfTPtACXf+c01O+dCU2ZTc-Mrs+nTKYsu0_aBt8awxSg5WD=g@mail.gmail.com>
+	Fri, 30 May 2014 02:49:25 -0400
+Date: Fri, 30 May 2014 07:49:22 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Miklos Szeredi <mszeredi@suse.cz>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: fs/dcache.c - BUG: soft lockup - CPU#5 stuck for 22s!
+ [systemd-udevd:1667]
+Message-ID: <20140530064922.GQ18016@ZenIV.linux.org.uk>
+References: <20140529133036.GJ18016@ZenIV.linux.org.uk>
+ <CA+55aFzYjRrvSaF=wGimrgtEqR7GHbu1ku1qn1wQs5wgQrCZdg@mail.gmail.com>
+ <20140529154454.GK18016@ZenIV.linux.org.uk>
+ <20140529162307.GL18016@ZenIV.linux.org.uk>
+ <CA+55aFyRDJpm2Wfg9jvXCsKYgt36=6A_++bX+Q=C4MvQRbqh_A@mail.gmail.com>
+ <20140529165351.GM18016@ZenIV.linux.org.uk>
+ <20140529185201.GN18016@ZenIV.linux.org.uk>
+ <CA+55aFwNv2-9=uXxzYH9UpN_x209Cv_BBu-9j2prSh2xVmmsAg@mail.gmail.com>
+ <20140530045059.GP18016@ZenIV.linux.org.uk>
+ <CA+55aFxGYDX6PTcMjYO3bsXTj+M0yF76Xtf_BCPmU+DrZ9hfzQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="PPcTO7KkkZ/DEnPS"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAKfTPtACXf+c01O+dCU2ZTc-Mrs+nTKYsu0_aBt8awxSg5WD=g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <CA+55aFxGYDX6PTcMjYO3bsXTj+M0yF76Xtf_BCPmU+DrZ9hfzQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, May 29, 2014 at 10:00:49PM -0700, Linus Torvalds wrote:
 
---PPcTO7KkkZ/DEnPS
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> Yeah, I think that would be good. Except I think you should create a
+> "dentry_is_dead()" helper function that then has that "if you hold the
+> dentry or parent lock, this is safe" comment, because for lockref in
+> general you do need to have the lock in the lockref itself. The fact
+> that dentries have more locking is very much dentry-specific.
 
-On Thu, May 29, 2014 at 09:56:24PM +0200, Vincent Guittot wrote:
-> On 29 May 2014 16:02, Peter Zijlstra <peterz@infradead.org> wrote:
-> > On Fri, May 23, 2014 at 05:53:05PM +0200, Vincent Guittot wrote:
-> >> @@ -6052,8 +6006,8 @@ static inline void update_sd_lb_stats(struct lb_=
-env *env, struct sd_lb_stats *sd
-> >>                * with a large weight task outweighs the tasks on the s=
-ystem).
-> >>                */
-> >>               if (prefer_sibling && sds->local &&
-> >> -                 sds->local_stat.group_has_capacity)
-> >> -                     sgs->group_capacity =3D min(sgs->group_capacity,=
- 1U);
-> >> +                 sds->local_stat.group_capacity > 0)
-> >> +                     sgs->group_capacity =3D min(sgs->group_capacity,=
- 1L);
-> >>
-> >>               if (update_sd_pick_busiest(env, sds, sg, sgs)) {
-> >>                       sds->busiest =3D sg;
-> >> @@ -6228,7 +6182,7 @@ static inline void calculate_imbalance(struct lb=
-_env *env, struct sd_lb_stats *s
-> >>                * have to drop below capacity to reach cpu-load equilib=
-rium.
-> >>                */
-> >>               load_above_capacity =3D
-> >> -                     (busiest->sum_nr_running - busiest->group_capaci=
-ty);
-> >> +                     (busiest->sum_nr_running - busiest->group_weight=
-);
-> >>
-> >>               load_above_capacity *=3D (SCHED_LOAD_SCALE * SCHED_POWER=
-_SCALE);
-> >>               load_above_capacity /=3D busiest->group_power;
-> >
-> > I think you just broke PREFER_SIBLING here..
->=20
-> you mean by replacing the capacity which was reflecting the number of
-> core for SMT by the group_weight ?
+With how many callers?  There literally are only two places where we look
+at that bit; one of them very tempting to convert to ->d_lockref.count != 0,
+since reactions to positive and negative are very similar.  We also have
+that bogus BUG_ON() you've mentioned (that one simply should die) and only
+one place where we check it for being negative - autofs4_lookup_active().
+And that one is better dealt with by taking removal from their active
+list from ->d_release() to ->d_prune() (if not turning their ->d_release()
+into ->d_prune() wholesale) and making ->d_prune() called for hashed and
+unhashed alike (the only instance *already* checks for d_unhashed() and does
+nothing in that case; no need to check that in fs/dcache.c).  With that done,
+the check will be gone - all it does is filtering out the ones that are
+already on the way out, but still hadn't reached ->d_release()).
 
-Right to in the first hunk we lower group_capacity to 1 when prefer_sibling,
-then in the second hunk, you replace that group_capacity usage with
-group_weight.
+IOW, it's not a widely used functionality and it's really not something
+that should be ever needed outside of fs/dcache.c.  And in fs/dcache.c
+we have one call site, so I'm not sure if even mentioning __lockref_not_dead()
+would make much sense - (int)child->d_lockref.count < 0 might be better,
+along with a comment about ->d_parent->d_lock serializing it against
+lockref_mark_dead() in __dentry_kill() just as well as ->d_lock would...
 
-With the end result that prefer_sibling is now ineffective.
+Note that the only reason why autofs is playing those games is that they
+keep references to dentries that do not contribute to refcount, rip them
+out when dentry is killed and do that in the wrong method, which opens the
+window when ->d_lock is already dropped and ->d_release() is inevitable
+but yet to be called.  Solution: rip those references out before dropping
+->d_lock, which is what ->d_prune() gives us.  To be fair, that code
+predates ->d_prune() by several years (Jul 2008 and Oct 2011, resp.)
 
-That said, I fudged the prefer_sibling usage into the capacity logic,
-mostly because I could and it was already how the SMT stuff was working.
-But there is no reason we should continue to intertwine these two
-things.
+And "vfs: call d_op->d_prune() before unhashing dentry" has added very
+odd checks for !d_unhashed(), despite ceph ->d_prune() being an explicit
+no-op in other cases...
 
-So I think it would be good to have a patch that implements
-prefer_sibling on nr_running separate from the existing capacity bits,
-and then convert the remaining capacity bits to utilization (or activity
-or whatever you did call it, see Morton's comments etc.).
-
-
-
---PPcTO7KkkZ/DEnPS
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTiCZaAAoJEHZH4aRLwOS68ukP/RMuhl0AYELgaRJVg/ByQcZT
-9NpmPwjagVpGtjykYl6fz83In2IpM2+2+nURydh4LqjgxxGhoOmTK/RqTpLyvsl6
-vdut8LKHU7wOfZHPLQn2uip0evShSHXhxVDE7ZXxwhUxHGGOr6jfHNRcxtBkCP7r
-U54ERxHlu43SW5sdyGayOOwyBxJacO3HEcIWqB/LtSfsvC49nn0IR4u3+EfwmbWN
-j8+GqNE9EvE3+0/shRRnSDyWMOpNWVKOflpT9PNn7osngYJ0e2BeIGsHkOkwU96d
-3ptShz57N+CF9HoGoLBM0Ks8IjZ5AhFyRqXgNopdzKRgin8UJOEGRwokm1V/WqNU
-lyHqkIPScpXGmn8jwh1VcEEaQO0yjD6FVapD065Qb1jbgtp+XCo6RXBO6sf73io6
-qsypZTA8IJW9W2FI7wMmR7aNGbtS9PHidpuZsR5IkjiDolJzlrBJMfVEp8MYWEVN
-swMO3H3Nx5UyBrN8psB/Owsdc0V4TQjFxoCfFB2SWWMGXmZDf+rNuyFO/7adJKMr
-JeEKsf2a+/T5ILsfim1yPDuPXOylLvt2ELr5GZzNSzd8vPdxEJNzYy/QFw0FX45f
-LmhJT2Hfr/AsJ43ThqEmy+XHyN4/Ke+d+IHe4ZpHnK/iGOxvbrcZC8v1lG28xyRE
-zlVejxzBSx9+SoJ9eNbf
-=eYIM
------END PGP SIGNATURE-----
-
---PPcTO7KkkZ/DEnPS--
+While we are at it, what the devil is d_prune_aliases() doing?  OK, we
+grab ->d_lock and see that refcount is 0.  Then we call ->d_prune(),
+bump refcount to 1, forcibly unhash the sucker, drop ->d_lock and ->i_lock
+and call dput().  Which seems to be far too convoluted...  AFAICS, what we
+want to do is
+                spin_lock(&dentry->d_lock);
+                if (!dentry->d_lockref.count) {
+			parent = lock_parent(dentry);
+			if (likely(!dentry->d_lockref.count)) {
+				__dentry_kill(dentry);
+				goto restart;
+			}
+			if (parent)
+				spin_unlock(&parent->d_lock);
+		}
+		spin_unlock(&dentry->d_lock);
+(which means that pulling ->i_lock trylock into __dentry_kill() is
+probably not a good plan, more's the pity...)  And there goes this second
+call site of ->d_prune() - after that it would be called exactly in one place,
+right after __dentry_kill() has done lockref_mark_dead().  The whole reason
+for calling it there was that forcible unhash used to force dput() to kill
+the sucker has a side effect of messing ceph ->d_prune()...
