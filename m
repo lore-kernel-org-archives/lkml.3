@@ -1,88 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030202AbaE3ROL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 13:14:11 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:33486 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934422AbaE3ROH (ORCPT
+	id S964998AbaE3ROV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 13:14:21 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:34567 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964810AbaE3ROP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 13:14:07 -0400
-From: srinivas.kandagatla@linaro.org
-To: Russell King <linux@arm.linux.org.uk>,
-        Ulf Hansson <ulf.hansson@linaro.org>, linux-mmc@vger.kernel.org
-Cc: Chris Ball <chris@printf.net>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linus.walleij@linaro.org,
-        Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-Subject: [PATCH v5 08/13] mmc: mmci: add edge support to data and command out in variant data.
-Date: Fri, 30 May 2014 18:14:01 +0100
-Message-Id: <1401470041-27154-1-git-send-email-srinivas.kandagatla@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1401469918-26817-1-git-send-email-srinivas.kandagatla@linaro.org>
-References: <1401469918-26817-1-git-send-email-srinivas.kandagatla@linaro.org>
+	Fri, 30 May 2014 13:14:15 -0400
+Date: Fri, 30 May 2014 18:14:08 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Miklos Szeredi <mszeredi@suse.cz>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [git pull] Re: fs/dcache.c - BUG: soft lockup - CPU#5 stuck for
+ 22s! [systemd-udevd:1667]
+Message-ID: <20140530171408.GT18016@ZenIV.linux.org.uk>
+References: <CA+55aFzYjRrvSaF=wGimrgtEqR7GHbu1ku1qn1wQs5wgQrCZdg@mail.gmail.com>
+ <20140529154454.GK18016@ZenIV.linux.org.uk>
+ <20140529162307.GL18016@ZenIV.linux.org.uk>
+ <CA+55aFyRDJpm2Wfg9jvXCsKYgt36=6A_++bX+Q=C4MvQRbqh_A@mail.gmail.com>
+ <20140529165351.GM18016@ZenIV.linux.org.uk>
+ <20140529185201.GN18016@ZenIV.linux.org.uk>
+ <20140530081238.GA1957@lahna.fi.intel.com>
+ <20140530152151.GR18016@ZenIV.linux.org.uk>
+ <CA+55aFxLNvBDYtiq92DvuVqUk7byWeYiL1svbNQdXg7MRtbBcQ@mail.gmail.com>
+ <20140530164815.GS18016@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140530164815.GS18016@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+On Fri, May 30, 2014 at 05:48:16PM +0100, Al Viro wrote:
+> On Fri, May 30, 2014 at 08:31:30AM -0700, Linus Torvalds wrote:
+> > On Fri, May 30, 2014 at 8:21 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> > >
+> > > Linus, how would you prefer it to be handled?
+> > 
+> > I'll just have to do an rc8. I really hoped to avoid it, because we're
+> > going on our family vacation when school is out in two weeks, and it
+> > causes problems for the merge window, but it's not like there is much
+> > choice - I can't do a 3.15 release with a known regression like that.
+> 
+> Sorry about that... ;-/
+> 
+> > So just send me the pull request, and I'll pull it. I'll probably do
+> > the "let's increase the x86-64 stack size to 16kB" too, to close
+> > _that_ issue as well.
+> 
+> OK, here it is:
+> 
+> Fixes for livelocks in shrink_dentry_list() introduced by fixes to shrink
+> list corruption; the root cause was that trylock of parent's ->d_lock could
+> be disrupted by d_walk() happening on other CPUs, resulting in
+> shrink_dentry_list() making no progress *and* the same d_walk() being called
+> again and again for as long as shrink_dentry_list() doesn't get past that
+> mess.  Solution is to have shrink_dentry_list() treat that trylock failure not
+> as "try to do the same thing again", but "lock them in the right order".
+> Please, pull from
+> git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs.git for-linus-2
 
-This patch adds edge support for data and command out to variant structure
-giving more flexibility to the driver to support more SOCs which have
-different clock register layout.
+*GYAH*
 
-Without this patch other new SOCs like Qcom will have to add more code to
-special case them
+Shortlog and diffstat are from the local branch that has two more cleanups
+on top what's been pushed to vfs.git (and what had been tested).  Ones
+matching what's really in that branch are here:
+Shortlog:
+Al Viro (6):
+      lift the "already marked killed" case into shrink_dentry_list()
+      split dentry_kill()
+      expand dentry_kill(dentry, 0) in shrink_dentry_list()
+      shrink_dentry_list(): take parent's ->d_lock earlier
+      dealing with the rest of shrink_dentry_list() livelock
+      dentry_kill() doesn't need the second argument now
 
-Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
----
- drivers/mmc/host/mmci.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+Diffstat:
+ fs/dcache.c |  153 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++------------------------------
+ 1 file changed, 107 insertions(+), 46 deletions(-)
 
-diff --git a/drivers/mmc/host/mmci.c b/drivers/mmc/host/mmci.c
-index fa3ad83..4c95a9b 100644
---- a/drivers/mmc/host/mmci.c
-+++ b/drivers/mmc/host/mmci.c
-@@ -53,6 +53,7 @@ static unsigned int fmax = 515633;
-  * @clkreg: default value for MCICLOCK register
-  * @clkreg_enable: enable value for MMCICLOCK register
-  * @clkreg_8bit_bus_enable: enable value for 8 bit bus
-+ * @clkreg_neg_edge_enable: enable value for inverted data/cmd output
-  * @datalength_bits: number of bits in the MMCIDATALENGTH register
-  * @fifosize: number of bytes that can be written when MMCI_TXFIFOEMPTY
-  *	      is asserted (likewise for RX)
-@@ -74,6 +75,7 @@ struct variant_data {
- 	unsigned int		clkreg;
- 	unsigned int		clkreg_enable;
- 	unsigned int		clkreg_8bit_bus_enable;
-+	unsigned int		clkreg_neg_edge_enable;
- 	unsigned int		datalength_bits;
- 	unsigned int		fifosize;
- 	unsigned int		fifohalfsize;
-@@ -143,6 +145,7 @@ static struct variant_data variant_ux500 = {
- 	.clkreg			= MCI_CLK_ENABLE,
- 	.clkreg_enable		= MCI_ST_UX500_HWFCEN,
- 	.clkreg_8bit_bus_enable = MCI_ST_8BIT_BUS,
-+	.clkreg_neg_edge_enable	= MCI_ST_UX500_NEG_EDGE,
- 	.datalength_bits	= 24,
- 	.sdio			= true,
- 	.st_clkdiv		= true,
-@@ -159,6 +162,7 @@ static struct variant_data variant_ux500v2 = {
- 	.clkreg			= MCI_CLK_ENABLE,
- 	.clkreg_enable		= MCI_ST_UX500_HWFCEN,
- 	.clkreg_8bit_bus_enable = MCI_ST_8BIT_BUS,
-+	.clkreg_neg_edge_enable	= MCI_ST_UX500_NEG_EDGE,
- 	.datactrl_mask_ddrmode	= MCI_ST_DPSM_DDRMODE,
- 	.datalength_bits	= 24,
- 	.sdio			= true,
-@@ -313,7 +317,7 @@ static void mmci_set_clkreg(struct mmci_host *host, unsigned int desired)
- 		clk |= variant->clkreg_8bit_bus_enable;
- 
- 	if (host->mmc->ios.timing == MMC_TIMING_UHS_DDR50)
--		clk |= MCI_ST_UX500_NEG_EDGE;
-+		clk |= variant->clkreg_neg_edge_enable;
- 
- 	mmci_write_clkreg(host, clk);
- }
--- 
-1.9.1
-
+My apologies - the script I'm using to generate shortlogs takes branch
+name as an argument, defaulting to HEAD, which was two commits past
+vfs/for-linus-2.  And no, I'm _not_ planning to push that followup stuff
+until the merge window.  Just to make sure: the branch to pull should have
+head at 8cbf74da435d1bd13dbb790f94c7ff67b2fb6af4 and have the same tree
+as vfs.git#for-linus, which is what got testing.
