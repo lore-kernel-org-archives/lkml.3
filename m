@@ -1,91 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964998AbaE3ROV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 13:14:21 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:34567 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964810AbaE3ROP (ORCPT
+	id S1030233AbaE3ROi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 13:14:38 -0400
+Received: from mail-we0-f177.google.com ([74.125.82.177]:49233 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965050AbaE3ROe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 13:14:15 -0400
-Date: Fri, 30 May 2014 18:14:08 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Miklos Szeredi <mszeredi@suse.cz>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [git pull] Re: fs/dcache.c - BUG: soft lockup - CPU#5 stuck for
- 22s! [systemd-udevd:1667]
-Message-ID: <20140530171408.GT18016@ZenIV.linux.org.uk>
-References: <CA+55aFzYjRrvSaF=wGimrgtEqR7GHbu1ku1qn1wQs5wgQrCZdg@mail.gmail.com>
- <20140529154454.GK18016@ZenIV.linux.org.uk>
- <20140529162307.GL18016@ZenIV.linux.org.uk>
- <CA+55aFyRDJpm2Wfg9jvXCsKYgt36=6A_++bX+Q=C4MvQRbqh_A@mail.gmail.com>
- <20140529165351.GM18016@ZenIV.linux.org.uk>
- <20140529185201.GN18016@ZenIV.linux.org.uk>
- <20140530081238.GA1957@lahna.fi.intel.com>
- <20140530152151.GR18016@ZenIV.linux.org.uk>
- <CA+55aFxLNvBDYtiq92DvuVqUk7byWeYiL1svbNQdXg7MRtbBcQ@mail.gmail.com>
- <20140530164815.GS18016@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140530164815.GS18016@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 30 May 2014 13:14:34 -0400
+From: srinivas.kandagatla@linaro.org
+To: Russell King <linux@arm.linux.org.uk>,
+        Ulf Hansson <ulf.hansson@linaro.org>, linux-mmc@vger.kernel.org
+Cc: Chris Ball <chris@printf.net>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linus.walleij@linaro.org,
+        Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+Subject: [PATCH v5 10/13] mmc: mmci: add f_max to variant structure
+Date: Fri, 30 May 2014 18:14:26 +0100
+Message-Id: <1401470066-27236-1-git-send-email-srinivas.kandagatla@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1401469918-26817-1-git-send-email-srinivas.kandagatla@linaro.org>
+References: <1401469918-26817-1-git-send-email-srinivas.kandagatla@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 30, 2014 at 05:48:16PM +0100, Al Viro wrote:
-> On Fri, May 30, 2014 at 08:31:30AM -0700, Linus Torvalds wrote:
-> > On Fri, May 30, 2014 at 8:21 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> > >
-> > > Linus, how would you prefer it to be handled?
-> > 
-> > I'll just have to do an rc8. I really hoped to avoid it, because we're
-> > going on our family vacation when school is out in two weeks, and it
-> > causes problems for the merge window, but it's not like there is much
-> > choice - I can't do a 3.15 release with a known regression like that.
-> 
-> Sorry about that... ;-/
-> 
-> > So just send me the pull request, and I'll pull it. I'll probably do
-> > the "let's increase the x86-64 stack size to 16kB" too, to close
-> > _that_ issue as well.
-> 
-> OK, here it is:
-> 
-> Fixes for livelocks in shrink_dentry_list() introduced by fixes to shrink
-> list corruption; the root cause was that trylock of parent's ->d_lock could
-> be disrupted by d_walk() happening on other CPUs, resulting in
-> shrink_dentry_list() making no progress *and* the same d_walk() being called
-> again and again for as long as shrink_dentry_list() doesn't get past that
-> mess.  Solution is to have shrink_dentry_list() treat that trylock failure not
-> as "try to do the same thing again", but "lock them in the right order".
-> Please, pull from
-> git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs.git for-linus-2
+From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
 
-*GYAH*
+Some of the controller have maximum supported frequency, This patch adds
+support in variant data structure to specify such restrictions. This
+gives more flexibility in calculating the f_max before passing it to
+mmc-core.
 
-Shortlog and diffstat are from the local branch that has two more cleanups
-on top what's been pushed to vfs.git (and what had been tested).  Ones
-matching what's really in that branch are here:
-Shortlog:
-Al Viro (6):
-      lift the "already marked killed" case into shrink_dentry_list()
-      split dentry_kill()
-      expand dentry_kill(dentry, 0) in shrink_dentry_list()
-      shrink_dentry_list(): take parent's ->d_lock earlier
-      dealing with the rest of shrink_dentry_list() livelock
-      dentry_kill() doesn't need the second argument now
+Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+---
+ drivers/mmc/host/mmci.c | 13 +++++++++++--
+ 1 file changed, 11 insertions(+), 2 deletions(-)
 
-Diffstat:
- fs/dcache.c |  153 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++------------------------------
- 1 file changed, 107 insertions(+), 46 deletions(-)
+diff --git a/drivers/mmc/host/mmci.c b/drivers/mmc/host/mmci.c
+index 8534c29..55d39d2 100644
+--- a/drivers/mmc/host/mmci.c
++++ b/drivers/mmc/host/mmci.c
+@@ -67,6 +67,7 @@ static unsigned int fmax = 515633;
+  * @blksz_datactrl4: true if Block size is at b4..b16 position in datactrl
+  *		     register
+  * @pwrreg_powerup: power up value for MMCIPOWER register
++ * @f_max: maximum clk frequency supported by the controller.
+  * @signal_direction: input/out direction of bus signals can be indicated
+  * @pwrreg_clkgate: MMCIPOWER register must be used to gate the clock
+  * @busy_detect: true if busy detection on dat0 is supported
+@@ -87,6 +88,7 @@ struct variant_data {
+ 	bool			blksz_datactrl16;
+ 	bool			blksz_datactrl4;
+ 	u32			pwrreg_powerup;
++	u32			f_max;
+ 	bool			signal_direction;
+ 	bool			pwrreg_clkgate;
+ 	bool			busy_detect;
+@@ -98,6 +100,7 @@ static struct variant_data variant_arm = {
+ 	.fifohalfsize		= 8 * 4,
+ 	.datalength_bits	= 16,
+ 	.pwrreg_powerup		= MCI_PWR_UP,
++	.f_max			= 100000000,
+ };
+ 
+ static struct variant_data variant_arm_extended_fifo = {
+@@ -105,6 +108,7 @@ static struct variant_data variant_arm_extended_fifo = {
+ 	.fifohalfsize		= 64 * 4,
+ 	.datalength_bits	= 16,
+ 	.pwrreg_powerup		= MCI_PWR_UP,
++	.f_max			= 100000000,
+ };
+ 
+ static struct variant_data variant_arm_extended_fifo_hwfc = {
+@@ -113,6 +117,7 @@ static struct variant_data variant_arm_extended_fifo_hwfc = {
+ 	.clkreg_enable		= MCI_ARM_HWFCEN,
+ 	.datalength_bits	= 16,
+ 	.pwrreg_powerup		= MCI_PWR_UP,
++	.f_max			= 100000000,
+ };
+ 
+ static struct variant_data variant_u300 = {
+@@ -123,6 +128,7 @@ static struct variant_data variant_u300 = {
+ 	.datalength_bits	= 16,
+ 	.sdio			= true,
+ 	.pwrreg_powerup		= MCI_PWR_ON,
++	.f_max			= 100000000,
+ 	.signal_direction	= true,
+ 	.pwrreg_clkgate		= true,
+ 	.pwrreg_nopower		= true,
+@@ -136,6 +142,7 @@ static struct variant_data variant_nomadik = {
+ 	.sdio			= true,
+ 	.st_clkdiv		= true,
+ 	.pwrreg_powerup		= MCI_PWR_ON,
++	.f_max			= 100000000,
+ 	.signal_direction	= true,
+ 	.pwrreg_clkgate		= true,
+ 	.pwrreg_nopower		= true,
+@@ -152,6 +159,7 @@ static struct variant_data variant_ux500 = {
+ 	.sdio			= true,
+ 	.st_clkdiv		= true,
+ 	.pwrreg_powerup		= MCI_PWR_ON,
++	.f_max			= 100000000,
+ 	.signal_direction	= true,
+ 	.pwrreg_clkgate		= true,
+ 	.busy_detect		= true,
+@@ -171,6 +179,7 @@ static struct variant_data variant_ux500v2 = {
+ 	.st_clkdiv		= true,
+ 	.blksz_datactrl16	= true,
+ 	.pwrreg_powerup		= MCI_PWR_ON,
++	.f_max			= 100000000,
+ 	.signal_direction	= true,
+ 	.pwrreg_clkgate		= true,
+ 	.busy_detect		= true,
+@@ -1471,8 +1480,8 @@ static int mmci_probe(struct amba_device *dev,
+ 	 * so we try to adjust the clock down to this,
+ 	 * (if possible).
+ 	 */
+-	if (host->mclk > 100000000) {
+-		ret = clk_set_rate(host->clk, 100000000);
++	if (host->mclk > variant->f_max) {
++		ret = clk_set_rate(host->clk, variant->f_max);
+ 		if (ret < 0)
+ 			goto clk_disable;
+ 		host->mclk = clk_get_rate(host->clk);
+-- 
+1.9.1
 
-My apologies - the script I'm using to generate shortlogs takes branch
-name as an argument, defaulting to HEAD, which was two commits past
-vfs/for-linus-2.  And no, I'm _not_ planning to push that followup stuff
-until the merge window.  Just to make sure: the branch to pull should have
-head at 8cbf74da435d1bd13dbb790f94c7ff67b2fb6af4 and have the same tree
-as vfs.git#for-linus, which is what got testing.
