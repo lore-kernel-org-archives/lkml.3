@@ -1,48 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932771AbaE3IOM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 04:14:12 -0400
-Received: from mail-ig0-f180.google.com ([209.85.213.180]:51695 "EHLO
-	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751968AbaE3IOJ (ORCPT
+	id S932809AbaE3IPB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 04:15:01 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:65331 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932208AbaE3IO7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 04:14:09 -0400
-Date: Fri, 30 May 2014 09:14:03 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: "'Inki Dae'" <inki.dae@samsung.com>, dri-devel@lists.freedesktop.org,
-        "'Seung-Woo Kim'" <sw0312.kim@samsung.com>,
-        "'Dave Airlie'" <airlied@redhat.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, kernel@stlinux.com,
-        "'Tomasz Figa'" <tomasz.figa@gmail.com>
-Subject: Re: [PATCH] drm/exynos: remove unnecessary exynos_hdmi.h file
-Message-ID: <20140530081403.GD2619@lee--X1>
-References: <000a01cf7bac$8f805f60$ae811e20$%han@samsung.com>
+	Fri, 30 May 2014 04:14:59 -0400
+Message-ID: <53883DE9.6090705@huawei.com>
+Date: Fri, 30 May 2014 16:14:33 +0800
+From: Liu hua <sdu.liu@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <000a01cf7bac$8f805f60$ae811e20$%han@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Simon Horman <horms@verge.net.au>
+CC: <wangnan0@huawei.com>, <peifeiyue@huawei.com>, <liusdu@126.com>,
+        <kexec@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <hui.geng@huawei.com>, <kumagai-atsushi@mxc.nes.nec.co.jp>,
+        <ebiederm@xmission.com>, <anderson@redhat.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RESEND PATCH] kexec : add sparse memory related values to vmcore
+References: <1401284996-44873-1-git-send-email-sdu.liu@huawei.com> <20140529001328.GD22705@verge.net.au>
+In-Reply-To: <20140529001328.GD22705@verge.net.au>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.111.58.238]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The exynos_hdmi.h has been used for the dedicated i2c drivers
-> that were already removed. Thus, the unnecessary exynos_hdmi.h
-> should be removed.
+On 2014/5/29 8:13, Simon Horman wrote:
+> On Wed, May 28, 2014 at 09:49:56PM +0800, Liu Hua wrote:
+>> This patch deales with sparse memory model.
+>>
+>> For ARM32 platforms, different vendors may define different
+>> SECTION_SIZE_BITS, which we did not write to vmcore.
+>>
+>> For example:
+>>
+>>   1 arch/arm/mach-clps711x/include/mach/memory.h
+>>     #define SECTION_SIZE_BITS 24
+>>   2 arch/arm/mach-exynos/include/mach/memory.h
+>>     #define SECTION_SIZE_BITS 28
+>>   3 arch/arm/mach-sa1100/include/mach/memory.h
+>>     #define SECTION_SIZE_BITS 27
 > 
-> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
-> ---
->  drivers/gpu/drm/exynos/exynos_hdmi.h |   23 -----------------------
->  1 file changed, 23 deletions(-)
->  delete mode 100644 drivers/gpu/drm/exynos/exynos_hdmi.h
+> I wonder if this problem will eventually go away, or at least only
+> apply to older platforms, as ARM moves towards multiplatform: a single
+> kernel for more than one platform.
 
-https://lkml.org/lkml/2014/5/29/810
+For ARM32 platform, it may cost a long time. And when glancing over
+the commit log of kernel, we can find this macro changed several times.
+The user space tools must take care of all these changed for compatibility.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+> 
+>> It is really a bad news for user space tools such as
+>> makedumpfile and crash, who have to defines them as
+>> macros. So for the same architecture, we may need to
+>> recomile them to parse vmcores with different
+>> SECTION_SIZE_BITS.
+>>
+>> And if we enable LPAE, MAX_PHYSMEM_SIZE can alse
+>> be variable.
+>>
+>> This patch adds these SECTION_SIZE_BITS and MAX_PHYSMEM_SIZE
+>> to vmcore. which makes user space tools more compatible.
+>>
+>> BTW, makedumpfile has queued the related patch.
+>>
+>> Signed-off-by: Liu Hua <sdu.liu@huawei.com>
+>> ---
+>>  kernel/kexec.c | 2 ++
+>>  1 file changed, 2 insertions(+)
+>>
+>> diff --git a/kernel/kexec.c b/kernel/kexec.c
+>> index bf0b929e..8b1a193 100644
+>> --- a/kernel/kexec.c
+>> +++ b/kernel/kexec.c
+>> @@ -1577,6 +1577,8 @@ static int __init crash_save_vmcoreinfo_init(void)
+>>  	VMCOREINFO_LENGTH(mem_section, NR_SECTION_ROOTS);
+>>  	VMCOREINFO_STRUCT_SIZE(mem_section);
+>>  	VMCOREINFO_OFFSET(mem_section, section_mem_map);
+>> +	VMCOREINFO_NUMBER(MAX_PHYSMEM_BITS);
+>> +	VMCOREINFO_NUMBER(SECTION_SIZE_BITS);
+>>  #endif
+>>  	VMCOREINFO_STRUCT_SIZE(page);
+>>  	VMCOREINFO_STRUCT_SIZE(pglist_data);
+>> -- 
+>> 1.9.0
+>>
+>>
+>> _______________________________________________
+>> kexec mailing list
+>> kexec@lists.infradead.org
+>> http://lists.infradead.org/mailman/listinfo/kexec
+>>
+> 
+> _______________________________________________
+> kexec mailing list
+> kexec@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/kexec
+> 
+> .
+> 
+
+
