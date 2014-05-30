@@ -1,62 +1,251 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934224AbaE3RZI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 13:25:08 -0400
-Received: from mga09.intel.com ([134.134.136.24]:36675 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933239AbaE3RZG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 13:25:06 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,942,1392192000"; 
-   d="scan'208";a="549024601"
-Message-ID: <5388BEDF.3000202@intel.com>
-Date: Fri, 30 May 2014 10:24:47 -0700
-From: Dave Hansen <dave.hansen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S934273AbaE3RZo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 13:25:44 -0400
+Received: from mail-vc0-f181.google.com ([209.85.220.181]:43564 "EHLO
+	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933239AbaE3RZn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 May 2014 13:25:43 -0400
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-CC: Dave Chinner <david@fromorbit.com>, Minchan Kim <minchan@kernel.org>,
-        Dave Jones <davej@redhat.com>, Jens Axboe <axboe@kernel.dk>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm <linux-mm@kvack.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Hugh Dickins <hughd@google.com>, Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        PJ Waskiewicz <pjwaskiewicz@gmail.com>
-Subject: Re: [RFC 2/2] x86_64: expand kernel stack to 16K
-References: <20140528223142.GO8554@dastard>	<CA+55aFyRk6_v6COPGVvu6hvt=i2A8-dPcs1X3Ydn1g24AxbPkg@mail.gmail.com>	<20140529013007.GF6677@dastard>	<CA+55aFzdq2V-Q3WUV7hQJG8jBSAvBqdYLVTNtbD4ObVZ5yDRmw@mail.gmail.com>	<20140529072633.GH6677@dastard>	<CA+55aFx+j4104ZFmA-YnDtyfmV4FuejwmGnD5shfY0WX4fN+Kg@mail.gmail.com>	<20140529235308.GA14410@dastard>	<20140530000649.GA3477@redhat.com>	<20140530002113.GC14410@dastard>	<20140530003219.GN10092@bbox>	<20140530013414.GF14410@dastard>	<5388A2D9.3080708@zytor.com>	<CA+55aFycqAw2AqQGv8aTPs_RxyKZqMdoyeSxWRSDk2N-PiBZeg@mail.gmail.com>	<5388A935.9050506@zytor.com> <CA+55aFwHS2xErW6TgBHGR9JP0QZW9W7GSLec5WzbV+GGYFUu6A@mail.gmail.com>
-In-Reply-To: <CA+55aFwHS2xErW6TgBHGR9JP0QZW9W7GSLec5WzbV+GGYFUu6A@mail.gmail.com>
+In-Reply-To: <1401457391-12242-2-git-send-email-mathieu.poirier@linaro.org>
+References: <1401457391-12242-1-git-send-email-mathieu.poirier@linaro.org>
+	<1401457391-12242-2-git-send-email-mathieu.poirier@linaro.org>
+Date: Fri, 30 May 2014 12:25:42 -0500
+Message-ID: <CAL_Jsq+U+H7cPDALQHzLV0aT7EQjKcR74eoFWFP_HuLePi73Ag@mail.gmail.com>
+Subject: Re: [RFC PATCH 01/11] coresight: add CoreSight core layer framework
+From: Rob Herring <robherring2@gmail.com>
+To: Mathieu Poirier <mathieu.poirier@linaro.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Daniel Thompson <daniel.thompson@linaro.org>, robbelibobban@gmail.com,
+        Al.Grant@arm.com, Linaro Patches <patches@linaro.org>,
+        marcin.jabrzyk@gmail.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        arnd@linaro.org, panchaxari.prasannamurthy@linaro.org,
+        r.sengupta@samsung.com, arve@android.com,
+        John Stultz <john.stultz@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        james.king@linaro.org,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        pratikp@codeaurora.org, varshney@ti.com,
+        jonas.svennebring@avagotech.com
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/30/2014 09:06 AM, Linus Torvalds wrote:
-> On Fri, May 30, 2014 at 8:52 AM, H. Peter Anvin <hpa@zytor.com> wrote:
->>> That said, it's still likely a non-production option due to the page
->>> table games we'd have to play at fork/clone time.
->>
->> Still, seems much more tractable.
-> 
-> We might be able to make it more attractive by having a small
-> front-end cache of the 16kB allocations with the second page unmapped.
-> That would at least capture the common "lots of short-lived processes"
-> case without having to do kernel page table work.
+On Fri, May 30, 2014 at 8:43 AM,  <mathieu.poirier@linaro.org> wrote:
+> From: Pratik Patel <pratikp@codeaurora.org>
+>
+> CoreSight components are compliant with the ARM CoreSight
+> architecture specification and can be connected in various
+> topologies to suite a particular SoCs tracing needs. These trace
+> components can generally be classified as sources, links and
+> sinks. Trace data produced by one or more sources flows through
+> the intermediate links connecting the source to the currently
+> selected sink.
+>
+> CoreSight framework provides an interface for the CoreSight trace
+> drivers to register themselves with. It's intended to build up a
+> topological view of the CoreSight components and configure the
+> right series of components on user input via debugfs.
+>
+> For eg., when enabling a source, framework builds up a path
+> consisting of all the components connecting the source to the
+> currently selected sink and enables all of them.
+>
+> Framework also supports switching between available sinks and
+> also provides status information to user space applications
+> through sysfs interface.
+>
+> Signed-off-by: Pratik Patel <pratikp@codeaurora.org>
+> Signed-off-by: Panchaxari Prasannamurthy <panchaxari.prasannamurthy@linaro.org>
+> Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
+> ---
+>  .../devicetree/bindings/arm/coresight.txt          | 138 ++++
+>  drivers/Kconfig                                    |   2 +
+>  drivers/Makefile                                   |   1 +
+>  drivers/coresight/Kconfig                          |   9 +
+>  drivers/coresight/Makefile                         |   5 +
+>  drivers/coresight/coresight-priv.h                 |  46 ++
+>  drivers/coresight/coresight.c                      | 739 +++++++++++++++++++++
+>  drivers/coresight/of_coresight.c                   | 124 ++++
+>  include/linux/coresight.h                          | 181 +++++
+>  include/linux/of_coresight.h                       |  27 +
+>  10 files changed, 1272 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/arm/coresight.txt
+>  create mode 100644 drivers/coresight/Kconfig
+>  create mode 100644 drivers/coresight/Makefile
+>  create mode 100644 drivers/coresight/coresight-priv.h
+>  create mode 100644 drivers/coresight/coresight.c
+>  create mode 100644 drivers/coresight/of_coresight.c
+>  create mode 100644 include/linux/coresight.h
+>  create mode 100644 include/linux/of_coresight.h
+>
+> diff --git a/Documentation/devicetree/bindings/arm/coresight.txt b/Documentation/devicetree/bindings/arm/coresight.txt
+> new file mode 100644
+> index 0000000..3e21665
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/arm/coresight.txt
+> @@ -0,0 +1,138 @@
+> +* CoreSight Components
+> +
+> +CoreSight components are compliant with the ARM CoreSight architecture
+> +specification and can be connected in various topologies to suite a particular
+> +SoCs tracing needs. These trace components can generally be classified as sinks,
+> +links and sources. Trace data produced by one or more sources flows through the
+> +intermediate links connecting the source to the currently selected sink. Each
+> +CoreSight component device should use these properties to describe its hardware
+> +characteristcs.
+> +
+> +Required properties:
+> +
+> +- compatible : name of the component used for driver matching
 
-If we want to use 4k mappings, we'd need to move the stack over to using
-vmalloc() (or at least be out of the linear mapping) to avoid breaking
-up the linear map's page tables too much.  Doing that, we'd actually not
-_have_ to worry about fragmentation, and we could actually utilize the
-per-cpu-pageset code since we'd could be back to using order-0 pages.
-So it's at least not all a loss.  Although, I do remember playing with
-4k stacks back in the 32-bit days and not getting much of a win with it.
+Where are the specific strings for components?
 
-We'd definitely that cache, if for no other reason than the vmalloc/vmap
-code as-is isn't super-scalable.
+> +- reg : physical base address and length of the register set(s) of the component
+> +- coresight-id : unique integer identifier for the component
 
+compatible + reg is a unique id.
 
+> +- coresight-name : unique descriptive name of the component
+
+compatible is a descriptive name.
+
+> +- coresight-nr-inports : number of input ports on the component
+> +
+> +coresight-outports, coresight-child-list and coresight-child-ports lists will
+> +be of the same length and will have a one to one correspondence among the
+> +elements at the same list index.
+> +
+> +coresight-default-sink must be specified for one of the sink devices that is
+> +intended to be made the default sink. Other sink devices must not have this
+> +specified. Not specifying this property on any of the sinks is invalid.
+
+Why do you need the default-sink in DT? Isn't the configuration going
+to depend on the user?
+
+> +
+> +Optional properties:
+> +
+> +- coresight-outports : list of output port numbers of this component
+> +- coresight-child-list : list of phandles pointing to the children of this
+> +                        component
+> +- coresight-child-ports : list of input port numbers of the children
+> +- coresight-default-sink : represents the default compile time CoreSight sink
+
+Seems like the OF graph helpers being defined for V4L2 could be useful
+here to describe the connections. We should not invent something new
+to describe arbitrary connections.
+
+> +- arm,buffer-size : size of contiguous buffer space for TMC ETR
+
+TMC ETR?
+
+> +- arm,cp14 : cp14 access to ETM registers is implemented and should be used
+> +- clocks : the clock associated to the coresight entity.
+> +- cpu: only valid for ETM/PTMs - the cpu this ETM/PTM is affined to.
+
+I think you need some separation of bindings by component rather than
+saying which components certain properties apply to.
+
+> +
+> +Example:
+> +
+> +1. Bus declaration:
+> +       coresight {
+> +               compatible = "arm,coresight";
+> +               #address-cells = <1>;
+> +               #size-cells = <1>;
+> +               ranges;
+> +               ...
+> +               ...
+> +               ...
+> +        };
+> +
+> +        coresight {
+> +               compatible = "arm,coresight";
+> +               #address-cells = <1>;
+> +               #size-cells = <1>;
+> +               ranges = <0x20010000 0 0x20010000 0x1000
+> +                         0x20030000 0 0x20030000 0x1000
+> +                         0x20040000 0 0x20040000 0x1000
+> +                         0x2201c000 0 0x2201c000 0x1000
+> +                         0x2201d000 0 0x2201d000 0x1000
+> +                         0x2203c000 0 0x2203c000 0x1000
+> +                         0x2203d000 0 0x2203d000 0x1000
+> +                         0x2203e000 0 0x2203e000 0x1000>;
+
+This is not how ranges generally work. For no translation, use just
+"ranges;". Otherwise you should have base address and reg properties
+are just offsets from the base. Anyway, it's not really pertinent to
+your example.
+
+> +               ...
+> +               ...
+> +               ...
+> +       };
+> +
+> +2. Sinks
+> +       etb: etb@20010000 {
+> +               compatible = "arm,coresight-etb";
+> +               reg = <0x20010000 0x1000>;
+> +
+> +               coresight-id = <0>;
+> +               coresight-name = "coresight-etb";
+> +               coresight-nr-inports = <1>;
+> +               coresight-default-sink;
+> +       };
+> +
+> +       tpiu: tpiu@20030000 {
+> +               compatible = "arm,coresight-tpiu";
+> +               reg = <0x20030000 0x1000>;
+> +
+> +               coresight-id = <1>;
+> +               coresight-name = "coresight-tpiu";
+> +               coresight-nr-inports = <1>;
+> +       };
+> +
+> +3. Links
+> +       replicator: replicator {
+> +               compatible = "arm,coresight-replicator";
+> +
+> +               coresight-id = <2>;
+> +               coresight-name = "coresight-replicator";
+> +               coresight-nr-inports = <1>;
+> +               coresight-outports = <0 1>;
+> +               coresight-child-list = <&etb &tpiu>;
+> +               coresight-child-ports = <0 0>;
+
+This could be one property instead of 2: <&etb 0>, <&tpiu 0>;
+
+Then add a #coresight-cells.
+
+> +       };
+> +
+> +       funnel: funnel@20040000 {
+> +               compatible = "arm,coresight-funnel";
+> +               reg = <0x20040000 0x1000>;
+> +
+> +               coresight-id = <3>;
+> +               coresight-name = "coresight-funnel";
+> +               coresight-nr-inports = <8>;
+> +               coresight-outports = <0>;
+> +               coresight-child-list = <&replicator>;
+> +               coresight-child-ports = <0>;
+> +       };
+> +
+> +4. Sources
+> +       ptm0: ptm@2201c000 {
+> +               compatible = "arm,coresight-etm";
+> +               reg = <0x2201c000 0x1000>;
+> +
+> +               coresight-id = <9>;
+> +               coresight-name = "coresight-ptm0";
+> +               cpu = <&cpu0>;
+> +               coresight-nr-inports = <0>;
+
+A source can be implied by no inports property. Likewise for a sink.
