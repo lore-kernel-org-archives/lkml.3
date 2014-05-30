@@ -1,293 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933030AbaE3N1R (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 09:27:17 -0400
-Received: from mout.gmx.net ([212.227.15.15]:57720 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751529AbaE3N1P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 09:27:15 -0400
-From: =?UTF-8?q?Manuel=20Sch=C3=B6lling?= <manuel.schoelling@gmx.de>
-To: plagnioj@jcrosoft.com
-Cc: tomi.valkeinen@ti.com, geert@linux-m68k.org, broonie@linaro.org,
-        rdunlap@infradead.org, dh.herrmann@gmail.com, airlied@redhat.com,
-        mtosatti@redhat.com, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        =?UTF-8?q?Manuel=20Sch=C3=B6lling?= <manuel.schoelling@gmx.de>
-Subject: [PATCH] console: Add persistent scrollback buffers for all VGA consoles
-Date: Fri, 30 May 2014 15:27:05 +0200
-Message-Id: <1401456425-15931-1-git-send-email-manuel.schoelling@gmx.de>
-X-Mailer: git-send-email 1.7.10.4
+	id S932953AbaE3Ndv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 09:33:51 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:41019 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751529AbaE3Ndm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 May 2014 09:33:42 -0400
+Date: Fri, 30 May 2014 15:33:34 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>, Jacob Shin <jacob.w.shin@gmail.com>,
+        Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, xiakaixu <xiakaixu@huawei.com>
+Subject: Re: [PATCH 1/4] perf/x86/amd: AMD support for bp_len >
+ HW_BREAKPOINT_LEN_8
+Message-ID: <20140530133332.GC25555@localhost.localdomain>
+References: <1401377213-24551-1-git-send-email-fweisbec@gmail.com>
+ <1401377213-24551-2-git-send-email-fweisbec@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Provags-ID: V03:K0:f0swfU95vNTqOHBS8hC0v4p7gjeZKIs9uydIPOMzMnr8U4JTM4h
- wMWm9qfQ5FdAhNnqNWTRlqMCqJOUEv3zVtU4EzawhRVqTYsviHujlycBJ8Qct1zaDLwQR4S
- FHGfqHOkBm+fuRp8rxgZ75zPP1pt96fARaJPr42rqik3barV3v7hw8yLY31rrxDX3Cdwtrc
- /UKUQzbXEQHrkLRB+UYSg==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1401377213-24551-2-git-send-email-fweisbec@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a scrollback buffers for each VGA console. The benefit is that
-the scrollback history is not flushed when switching between consoles
-but is persistent.
-The buffers are allocated on demand when a new console is opened.
+Hi Jacob, Suravee,
 
-Signed-off-by: Manuel Schölling <manuel.schoelling@gmx.de>
----
- drivers/video/console/Kconfig  |    6 +-
- drivers/video/console/vgacon.c |  124 ++++++++++++++++++++++++----------------
- 2 files changed, 79 insertions(+), 51 deletions(-)
+On Thu, May 29, 2014 at 05:26:50PM +0200, Frederic Weisbecker wrote:
+> From: Jacob Shin <jacob.w.shin@gmail.com>
+> 
+> Implement hardware breakpoint address mask for AMD Family 16h and
+> above processors. CPUID feature bit indicates hardware support for
+> DRn_ADDR_MASK MSRs. These masks further qualify DRn/DR7 hardware
+> breakpoint addresses to allow matching of larger addresses ranges.
+> 
+> Valuable advice and pseudo code from Oleg Nesterov <oleg@redhat.com>
+> 
+> Signed-off-by: Jacob Shin <jacob.w.shin@gmail.com>
+> Signed-off-by: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
+> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Jiri Olsa <jolsa@redhat.com>
+> Cc: Namhyung Kim <namhyung@kernel.org>
+> Cc: Oleg Nesterov <oleg@redhat.com>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: xiakaixu <xiakaixu@huawei.com>
+> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> ---
+>  arch/x86/include/asm/cpufeature.h     |  2 ++
+>  arch/x86/include/asm/debugreg.h       |  5 +++++
+>  arch/x86/include/asm/hw_breakpoint.h  |  1 +
+>  arch/x86/include/uapi/asm/msr-index.h |  4 ++++
+>  arch/x86/kernel/cpu/amd.c             | 19 +++++++++++++++++++
+>  arch/x86/kernel/hw_breakpoint.c       | 20 ++++++++++++++++----
+>  6 files changed, 47 insertions(+), 4 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
+> index e265ff9..6bd564d 100644
+> --- a/arch/x86/include/asm/cpufeature.h
+> +++ b/arch/x86/include/asm/cpufeature.h
+> @@ -170,6 +170,7 @@
+>  #define X86_FEATURE_TOPOEXT	(6*32+22) /* topology extensions CPUID leafs */
+>  #define X86_FEATURE_PERFCTR_CORE (6*32+23) /* core performance counter extensions */
+>  #define X86_FEATURE_PERFCTR_NB  (6*32+24) /* NB performance counter extensions */
+> +#define X86_FEATURE_BPEXT	(6*32+26) /* data breakpoint extension */
+>  #define X86_FEATURE_PERFCTR_L2	(6*32+28) /* L2 performance counter extensions */
+>  
+>  /*
+> @@ -338,6 +339,7 @@ extern const char * const x86_power_flags[32];
+>  #define cpu_has_cx16		boot_cpu_has(X86_FEATURE_CX16)
+>  #define cpu_has_eager_fpu	boot_cpu_has(X86_FEATURE_EAGER_FPU)
+>  #define cpu_has_topoext		boot_cpu_has(X86_FEATURE_TOPOEXT)
+> +#define cpu_has_bpext		boot_cpu_has(X86_FEATURE_BPEXT)
+>  
+>  #ifdef CONFIG_X86_64
+>  
+> diff --git a/arch/x86/include/asm/debugreg.h b/arch/x86/include/asm/debugreg.h
+> index 4b528a9..145b009 100644
+> --- a/arch/x86/include/asm/debugreg.h
+> +++ b/arch/x86/include/asm/debugreg.h
+> @@ -114,5 +114,10 @@ static inline void debug_stack_usage_inc(void) { }
+>  static inline void debug_stack_usage_dec(void) { }
+>  #endif /* X86_64 */
+>  
+> +#ifdef CONFIG_CPU_SUP_AMD
+> +extern void set_dr_addr_mask(unsigned long mask, int dr);
+> +#else
+> +static inline void set_dr_addr_mask(unsigned long mask, int dr) { }
+> +#endif
 
-diff --git a/drivers/video/console/Kconfig b/drivers/video/console/Kconfig
-index fe1cd01..d7ec96c 100644
---- a/drivers/video/console/Kconfig
-+++ b/drivers/video/console/Kconfig
-@@ -38,14 +38,14 @@ config VGACON_SOFT_SCROLLBACK
- 	 RAM to allocate for this buffer.  If unsure, say 'N'.
- 
- config VGACON_SOFT_SCROLLBACK_SIZE
--       int "Scrollback Buffer Size (in KB)"
-+       int "Scrollback Buffer Size per console (in KB)"
-        depends on VGACON_SOFT_SCROLLBACK
-        range 1 1024
-        default "64"
-        help
-          Enter the amount of System RAM to allocate for the scrollback
--	 buffer.  Each 64KB will give you approximately 16 80x25
--	 screenfuls of scrollback buffer
-+	 buffer for each VGA console. Each 64KB will give you approximately
-+	 16 80x25 screenfuls of scrollback buffer.
- 
- config MDA_CONSOLE
- 	depends on !M68K && !PARISC && ISA
-diff --git a/drivers/video/console/vgacon.c b/drivers/video/console/vgacon.c
-index 9d8feac..215eafb 100644
---- a/drivers/video/console/vgacon.c
-+++ b/drivers/video/console/vgacon.c
-@@ -181,75 +181,101 @@ static inline void vga_set_mem_top(struct vc_data *c)
- 
- #ifdef CONFIG_VGACON_SOFT_SCROLLBACK
- /* software scrollback */
--static void *vgacon_scrollback;
--static int vgacon_scrollback_tail;
--static int vgacon_scrollback_size;
--static int vgacon_scrollback_rows;
--static int vgacon_scrollback_cnt;
--static int vgacon_scrollback_cur;
--static int vgacon_scrollback_save;
--static int vgacon_scrollback_restore;
--
--static void vgacon_scrollback_init(int pitch)
-+struct vgacon_scrollback_info {
-+	void *data;
-+	int tail;
-+	int size;
-+	int rows;
-+	int cnt;
-+	int cur;
-+	int save;
-+	int restore;
-+} vgacon_scrollbacks[MAX_NR_CONSOLES];
-+
-+static void vgacon_scrollback_init(int vc_num)
- {
-+	int pitch = vga_video_num_columns * 2;
- 	int rows = CONFIG_VGACON_SOFT_SCROLLBACK_SIZE * 1024/pitch;
-+	void *data;
- 
--	if (vgacon_scrollback) {
--		vgacon_scrollback_cnt  = 0;
--		vgacon_scrollback_tail = 0;
--		vgacon_scrollback_cur  = 0;
--		vgacon_scrollback_rows = rows - 1;
--		vgacon_scrollback_size = rows * pitch;
-+	data = kcalloc(CONFIG_VGACON_SOFT_SCROLLBACK_SIZE, 1024, GFP_NOWAIT);
-+	if (!data) {
-+		pr_warn("VGAcon: failed to allocate memory for scrollback.\n");
-+		vgacon_scrollbacks[vc_num].data = NULL;
-+		return;
- 	}
-+
-+	vgacon_scrollbacks[vc_num].data = data;
-+	vgacon_scrollbacks[vc_num].cnt  = 0;
-+	vgacon_scrollbacks[vc_num].tail = 0;
-+	vgacon_scrollbacks[vc_num].cur  = 0;
-+	vgacon_scrollbacks[vc_num].rows = rows - 1;
-+	vgacon_scrollbacks[vc_num].size = rows * pitch;
-+}
-+
-+static void vgacon_switch_scrollback(int vc_num)
-+{
-+	if (!vgacon_scrollbacks[vc_num].data)
-+		vgacon_scrollback_init(vc_num);
- }
- 
- static void vgacon_scrollback_startup(void)
- {
--	vgacon_scrollback = kcalloc(CONFIG_VGACON_SOFT_SCROLLBACK_SIZE, 1024, GFP_NOWAIT);
--	vgacon_scrollback_init(vga_video_num_columns * 2);
-+	int i;
-+
-+	for (i = 0; i < MAX_NR_CONSOLES; ++i)
-+		vgacon_scrollbacks[i].data = NULL;
-+
-+	vgacon_scrollback_init(0);
- }
- 
- static void vgacon_scrollback_update(struct vc_data *c, int t, int count)
- {
-+	struct vgacon_scrollback_info *scrollback;
- 	void *p;
- 
--	if (!vgacon_scrollback_size || c->vc_num != fg_console)
-+	scrollback = &vgacon_scrollbacks[c->vc_num];
-+	if (!scrollback->data || !scrollback->size)
- 		return;
- 
- 	p = (void *) (c->vc_origin + t * c->vc_size_row);
- 
- 	while (count--) {
--		scr_memcpyw(vgacon_scrollback + vgacon_scrollback_tail,
-+		scr_memcpyw(scrollback->data + scrollback->tail,
- 			    p, c->vc_size_row);
--		vgacon_scrollback_cnt++;
-+		scrollback->cnt++;
- 		p += c->vc_size_row;
--		vgacon_scrollback_tail += c->vc_size_row;
-+		scrollback->tail += c->vc_size_row;
- 
--		if (vgacon_scrollback_tail >= vgacon_scrollback_size)
--			vgacon_scrollback_tail = 0;
-+		if (scrollback->tail >= scrollback->size)
-+			scrollback->tail = 0;
- 
--		if (vgacon_scrollback_cnt > vgacon_scrollback_rows)
--			vgacon_scrollback_cnt = vgacon_scrollback_rows;
-+		if (scrollback->cnt > scrollback->rows)
-+			scrollback->cnt = scrollback->rows;
- 
--		vgacon_scrollback_cur = vgacon_scrollback_cnt;
-+		scrollback->cur = scrollback->cnt;
- 	}
- }
- 
- static void vgacon_restore_screen(struct vc_data *c)
- {
--	vgacon_scrollback_save = 0;
-+	struct vgacon_scrollback_info *scrollback;
-+
-+	scrollback = &vgacon_scrollbacks[c->vc_num];
-+	scrollback->save = 0;
- 
--	if (!vga_is_gfx && !vgacon_scrollback_restore) {
-+	if (!vga_is_gfx && !scrollback->restore) {
- 		scr_memcpyw((u16 *) c->vc_origin, (u16 *) c->vc_screenbuf,
- 			    c->vc_screenbuf_size > vga_vram_size ?
- 			    vga_vram_size : c->vc_screenbuf_size);
--		vgacon_scrollback_restore = 1;
--		vgacon_scrollback_cur = vgacon_scrollback_cnt;
-+		scrollback->restore = 1;
-+		scrollback->cur = scrollback->cnt;
- 	}
- }
- 
- static int vgacon_scrolldelta(struct vc_data *c, int lines)
- {
-+	struct vgacon_scrollback_info *scrollback;
- 	int start, end, count, soff;
- 
- 	if (!lines) {
-@@ -258,41 +284,42 @@ static int vgacon_scrolldelta(struct vc_data *c, int lines)
- 		return 1;
- 	}
- 
--	if (!vgacon_scrollback)
-+	scrollback = &vgacon_scrollbacks[c->vc_num];
-+	if (!scrollback->data)
- 		return 1;
- 
--	if (!vgacon_scrollback_save) {
-+	if (!scrollback->save) {
- 		vgacon_cursor(c, CM_ERASE);
- 		vgacon_save_screen(c);
--		vgacon_scrollback_save = 1;
-+		scrollback->save = 1;
- 	}
- 
--	vgacon_scrollback_restore = 0;
--	start = vgacon_scrollback_cur + lines;
-+	scrollback->restore = 0;
-+	start = scrollback->cur + lines;
- 	end = start + abs(lines);
- 
- 	if (start < 0)
- 		start = 0;
- 
--	if (start > vgacon_scrollback_cnt)
--		start = vgacon_scrollback_cnt;
-+	if (start > scrollback->cnt)
-+		start = scrollback->cnt;
- 
- 	if (end < 0)
- 		end = 0;
- 
--	if (end > vgacon_scrollback_cnt)
--		end = vgacon_scrollback_cnt;
-+	if (end > scrollback->cnt)
-+		end = scrollback->cnt;
- 
--	vgacon_scrollback_cur = start;
-+	scrollback->cur = start;
- 	count = end - start;
--	soff = vgacon_scrollback_tail - ((vgacon_scrollback_cnt - end) *
-+	soff = scrollback->tail - ((scrollback->cnt - end) *
- 					 c->vc_size_row);
- 	soff -= count * c->vc_size_row;
- 
- 	if (soff < 0)
--		soff += vgacon_scrollback_size;
-+		soff += scrollback->size;
- 
--	count = vgacon_scrollback_cnt - start;
-+	count = scrollback->cnt - start;
- 
- 	if (count > c->vc_rows)
- 		count = c->vc_rows;
-@@ -306,13 +333,13 @@ static int vgacon_scrolldelta(struct vc_data *c, int lines)
- 
- 		count *= c->vc_size_row;
- 		/* how much memory to end of buffer left? */
--		copysize = min(count, vgacon_scrollback_size - soff);
--		scr_memcpyw(d, vgacon_scrollback + soff, copysize);
-+		copysize = min(count, scrollback->size - soff);
-+		scr_memcpyw(d, scrollback->data + soff, copysize);
- 		d += copysize;
- 		count -= copysize;
- 
- 		if (count) {
--			scr_memcpyw(d, vgacon_scrollback, count);
-+			scr_memcpyw(d, scrollback->data, count);
- 			d += count;
- 		}
- 
-@@ -327,6 +354,7 @@ static int vgacon_scrolldelta(struct vc_data *c, int lines)
- #define vgacon_scrollback_startup(...) do { } while (0)
- #define vgacon_scrollback_init(...)    do { } while (0)
- #define vgacon_scrollback_update(...)  do { } while (0)
-+#define vgacon_switch_scrollback(...)  do { } while (0)
- 
- static void vgacon_restore_screen(struct vc_data *c)
- {
-@@ -842,7 +870,7 @@ static int vgacon_switch(struct vc_data *c)
- 			vgacon_doresize(c, c->vc_cols, c->vc_rows);
- 	}
- 
--	vgacon_scrollback_init(c->vc_size_row);
-+	vgacon_switch_scrollback(c->vc_num);
- 	return 0;		/* Redrawing not needed */
- }
- 
--- 
-1.7.10.4
+I see this symbol in the code but it's not defined anywhere in a Kconfig file.
+Maybe you (or I) forgot to include a file in your patches?
 
+Thanks.
