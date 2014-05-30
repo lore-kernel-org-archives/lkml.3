@@ -1,53 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934411AbaE3VQJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 17:16:09 -0400
-Received: from mail-vc0-f173.google.com ([209.85.220.173]:38265 "EHLO
-	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754324AbaE3VQH (ORCPT
+	id S934497AbaE3VSg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 17:18:36 -0400
+Received: from one.firstfloor.org ([193.170.194.197]:37025 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933058AbaE3VSe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 17:16:07 -0400
+	Fri, 30 May 2014 17:18:34 -0400
+Date: Fri, 30 May 2014 23:18:31 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Christoph Lameter <cl@gentwo.org>
+Cc: David Rientjes <rientjes@google.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Li Zefan <lizefan@huawei.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Mel Gorman <mgorman@suse.de>,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH] page_alloc: skip cpuset enforcement for lower zone
+ allocations (v5)
+Message-ID: <20140530211831.GN25366@two.firstfloor.org>
+References: <20140523193706.GA22854@amt.cnet>
+ <20140526185344.GA19976@amt.cnet>
+ <53858A06.8080507@huawei.com>
+ <20140528224324.GA1132@amt.cnet>
+ <20140529184303.GA20571@amt.cnet>
+ <alpine.DEB.2.02.1405291555120.9336@chino.kir.corp.google.com>
+ <20140529232819.GA29803@amt.cnet>
+ <alpine.DEB.2.02.1405291638300.9336@chino.kir.corp.google.com>
+ <alpine.DEB.2.10.1405300849190.8240@gentwo.org>
 MIME-Version: 1.0
-In-Reply-To: <20140530100716.GE28131@pd.tnic>
-References: <1400142646-10127-1-git-send-email-gong.chen@linux.intel.com>
-	<1401247938-22125-1-git-send-email-gong.chen@linux.intel.com>
-	<1401247938-22125-2-git-send-email-gong.chen@linux.intel.com>
-	<20140528112832.5f83c66b@gandalf.local.home>
-	<20140528163452.GF17196@pd.tnic>
-	<20140528125625.6f6dcf7f@gandalf.local.home>
-	<20140530092232.GA13495@gchen.bj.intel.com>
-	<20140530100716.GE28131@pd.tnic>
-Date: Fri, 30 May 2014 14:16:06 -0700
-Message-ID: <CA+8MBbK7JO=+adEAuAQSBroL5133bA0U6J+yfx4sqVhzR4iVBA@mail.gmail.com>
-Subject: Re: [PATCH 5/7 v6] trace, RAS: Add eMCA trace event interface
-From: Tony Luck <tony.luck@gmail.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: "Chen, Gong" <gong.chen@linux.intel.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "m.chehab@samsung.com" <m.chehab@samsung.com>,
-        linux-acpi <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.10.1405300849190.8240@gentwo.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 30, 2014 at 3:07 AM, Borislav Petkov <bp@alien8.de> wrote:
-> Please elaborate, what conditions? DIMM silk screen labels or so? Maybe
-> we can generate a mapping between text labels and indices and we can
-> dump the indices in the tracepoint and do the mapping back to strings in
-> userspace...?
+On Fri, May 30, 2014 at 08:50:56AM -0500, Christoph Lameter wrote:
+> On Thu, 29 May 2014, David Rientjes wrote:
+> 
+> > When I said that my point about mempolicies needs more thought, I wasn't
+> > expecting that there would be no discussion -- at least _something_ that
+> > would say why we don't care about the mempolicy case.
+> 
+> Lets get Andi involved here too.
 
-The UEFI error record gives us the SMBIOS "handle" (2-byte index). We
-use that to look up the bank and device locator strings ... which should be
-the silk-screen labels (in a correctly written BIOS).
+I'm not fully sure about the use case for this. On the NUMA systems
+I'm aware of usually only node 0 has <4GB, so mem policy
+is pointless.
 
-So we could just have the tracepoint save the "handle" and do the
-decode later.  If we want to keep doing mappings in the kernel (so console
-logs can say "DIMM location: CPU 0 DIMM_C1" rather than
-"SMBIOS handle 0x0015") - and would like to make things easier
-for ourselves - we could have dmi_memdev_walk() do a bit more
-work so we can just index an allocated array of strings that are
-the concatenation of the bank/device locators.
+But anyways it seems ok to me to ignore mempolicies. Mempolicies
+are primarily for user space, which doesn't use GFP_DMA32.
 
--Tony
+-ANdi
