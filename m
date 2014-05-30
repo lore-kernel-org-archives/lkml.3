@@ -1,49 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754541AbaE3CAu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 22:00:50 -0400
-Received: from fed1rmfepi102.cox.net ([68.230.241.133]:43067 "EHLO
-	fed1rmfepi102.cox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753549AbaE3CAt (ORCPT
+	id S1754110AbaE3CLY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 22:11:24 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:54567 "EHLO
+	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751745AbaE3CLX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 22:00:49 -0400
-X-Greylist: delayed 5662 seconds by postgrey-1.27 at vger.kernel.org; Thu, 29 May 2014 22:00:48 EDT
-X-CT-Class: Clean
-X-CT-Score: 0.00
-X-CT-RefID: str=0001.0A020206.5387D031.0100,ss=1,re=0.000,fgs=0
-X-CT-Spam: 0
-X-Authority-Analysis: v=2.0 cv=fKfnK+me c=1 sm=1 p=Hl222LfvAAAA:8
- p=lMXRZudTnTjC0EcnqWIA:9 p=_1mhue3XqPMA:10 p=qXAp7QcDfgzriFHy:21
- p=uVJkLots_Tt_Le4P:21 a=Hbzx7V8dPE2Mt6bTsP3Oww==:17 a=9cW_t1CCXrUA:10
- a=5VyufiYDUq8A:10 a=G8Uczd0VNMoA:10 a=cNg9cBnk6L0A:10 a=WHsXhg87phMA:10
- a=cYrLq3oF1ooA:10 a=IkcTkHD0fZMA:10 a=kviXuzpPAAAA:8 a=69EAbJreAAAA:8
- a=QEXdDO2ut3YA:10 a=vcXDM6c9pO8A:10 a=iWnUA4O102sA:10 a=dSxo5354XHQA:10
- a=UFkputssuxcA:10 a=gxKZFfPZVJsA:10 a=yEcZx8X3ZOIA:10
- a=Hbzx7V8dPE2Mt6bTsP3Oww==:117
-X-CM-Score: 100.00
-Authentication-Results: cox.net; none
-Message-ID: <20140529202625.NM4JH.662443.imail@fed1rmwml213>
-Date: Thu, 29 May 2014 17:26:25 -0700
-From: UNITED NATIONS <unprz003@cox.net>
-Reply-To: un-trustfunds@hotmail.com
-Subject: United Nations Poverty Threshold 2014 Grant Award Winners!!!
+	Thu, 29 May 2014 22:11:23 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 13/14] perf tests: Add test for caching dso file descriptors
+References: <1400174615-2121-1-git-send-email-jolsa@kernel.org>
+	<1400174615-2121-14-git-send-email-jolsa@kernel.org>
+	<87d2f0huj7.fsf@sejong.aot.lge.com>
+	<20140527075436.GE12920@krava.brq.redhat.com>
+	<87oayhh2j6.fsf@sejong.aot.lge.com>
+	<20140529083732.GA1177@krava.brq.redhat.com>
+Date: Fri, 30 May 2014 11:11:20 +0900
+In-Reply-To: <20140529083732.GA1177@krava.brq.redhat.com> (Jiri Olsa's message
+	of "Thu, 29 May 2014 10:37:32 +0200")
+Message-ID: <87oaygf22f.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Priority: 3 (Normal)
-Sensitivity: Normal
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Sir/Madam,
+Hi Jiri,
 
-I am directed to inform you that a Grant Award have been approved by the United Nations Development Programmed (UNDP) under your watch. Kindly establish communication to know more about your approval details with the contact information 
+On Thu, 29 May 2014 10:37:32 +0200, Jiri Olsa wrote:
+> On Thu, May 29, 2014 at 09:06:05AM +0900, Namhyung Kim wrote:
+>> On Tue, 27 May 2014 09:54:36 +0200, Jiri Olsa wrote:
+>> > On Tue, May 27, 2014 at 10:36:44AM +0900, Namhyung Kim wrote:
+>> >> On Thu, 15 May 2014 19:23:34 +0200, Jiri Olsa wrote:
+>> >> > Adding test that setup test_dso_data__fd_limit and test
+>> >> > dso data file descriptors are cached appropriately.
+>> >> 
+>> >> [SNIP]
+>> >> > +static long open_files_cnt(void)
+>> >> > +{
+>> >> > +	char path[PATH_MAX];
+>> >> > +	struct dirent *dent;
+>> >> > +	DIR *dir;
+>> >> > +	long nr = 0;
+>> >> > +	int n;
+>> >> > +
+>> >> > +	n = scnprintf(path, PATH_MAX, "%s/self/fd", procfs__mountpoint());
+>> >> > +	TEST_ASSERT_VAL("couldn't get fd path", n < PATH_MAX);
+>> >> 
+>> >> Looks like an unnecessary check since the scnprintf() cannot return more
+>> >> than (or equal to) PATH_MAX.
+>> >
+>> > once it's equal it's bad.. as the man says:
+>> > "return value of size or more means that the output was  truncated"
+>> 
+>> Did you see "sn"printf?
+>
+> yes, I just double checked.. jirka
 
-Sincerely, 
-Mr. Jan Knutsson
-For: United Nations Trust Funds.
-Phone: 1-877-780-2010
-Fax:     1-800-886-7298
-Email: UN@un-trustfunds.org
+Please see "scn"printf then. :)  It does something like below..
+
+  i = snprintf(buf, size, ...);
+  return (i >= size) ? : size - 1 : i;
+
+
+Thanks,
+Namhyung
