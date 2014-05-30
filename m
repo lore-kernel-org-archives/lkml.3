@@ -1,80 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756325AbaE3X2M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 19:28:12 -0400
-Received: from mail-qg0-f42.google.com ([209.85.192.42]:50664 "EHLO
-	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751491AbaE3X2J (ORCPT
+	id S934865AbaE3X22 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 19:28:28 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:63474 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934345AbaE3X21 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 19:28:09 -0400
-Date: Fri, 30 May 2014 19:28:04 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Paolo Valente <paolo.valente@unimore.it>
-Cc: Jens Axboe <axboe@kernel.dk>, Li Zefan <lizefan@huawei.com>,
-        Fabio Checconi <fchecconi@gmail.com>,
-        Arianna Avanzini <avanzini.arianna@gmail.com>,
-        linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org
-Subject: Re: [PATCH RFC - TAKE TWO - 00/12] New version of the BFQ I/O
- Scheduler
-Message-ID: <20140530232804.GA5057@htj.dyndns.org>
-References: <20140528221929.GG1419@htj.dyndns.org>
- <1401354343-5527-1-git-send-email-paolo.valente@unimore.it>
- <20140530160712.GG24871@htj.dyndns.org>
- <464F6CBE-A63E-46EF-A90D-BF8450430444@unimore.it>
+	Fri, 30 May 2014 19:28:27 -0400
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <464F6CBE-A63E-46EF-A90D-BF8450430444@unimore.it>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8BIT
+To: Alex Elder <elder@linaro.org>, mporter@linaro.org, bcm@fixthebug.org
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <1401483188-5395-2-git-send-email-elder@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+References: <1401483188-5395-1-git-send-email-elder@linaro.org>
+ <1401483188-5395-2-git-send-email-elder@linaro.org>
+Message-ID: <20140530232822.10062.26597@quantum>
+User-Agent: alot/0.3.5
+Subject: Re: [PATCH v4 1/7] clk: kona: allow nested ccu_write_enable() requests
+Date: Fri, 30 May 2014 16:28:22 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Quoting Alex Elder (2014-05-30 13:53:02)
+> Use a counter rather than a Boolean to track whether write access to
+> a CCU has been enabled or not.  This will allow more than one of
+> these requests to be nested.
+> 
+> Note that __ccu_write_enable() and __ccu_write_disable() calls all
+> come in pairs, and they are always surrounded immediately by calls
+> to ccu_lock() and ccu_unlock().
+> 
+> Signed-off-by: Alex Elder <elder@linaro.org>
+> ---
+>  drivers/clk/bcm/clk-kona.c | 14 ++++----------
+>  drivers/clk/bcm/clk-kona.h |  2 +-
+>  2 files changed, 5 insertions(+), 11 deletions(-)
+> 
+> diff --git a/drivers/clk/bcm/clk-kona.c b/drivers/clk/bcm/clk-kona.c
+> index 95af2e6..ee8e988 100644
+> --- a/drivers/clk/bcm/clk-kona.c
+> +++ b/drivers/clk/bcm/clk-kona.c
+> @@ -170,13 +170,8 @@ static inline void ccu_unlock(struct ccu_data *ccu, unsigned long flags)
+>   */
+>  static inline void __ccu_write_enable(struct ccu_data *ccu)
 
-On Sat, May 31, 2014 at 12:23:01AM +0200, Paolo Valente wrote:
-> I do agree that bfq has essentially the same purpose as cfq. I am
-> not sure that it is what you are proposing, but, in my opinion,
-> since both the engine and all the new heuristics of bfq differ from
-> those of cfq, a replacement would be most certainly a much easier
-> solution than any other transformation of cfq into bfq (needless to
-> say, leaving the same name for the scheduler would not be a problem
-> for me). Of course, before that we are willing to improve what has
-> to be improved in bfq.
+Per Documentation/CodingStyle, chapter 15, "the inline disease", it
+might be best to not inline these functions.
 
-Well, it's all about how to actually route the changes and in general
-whenever avoidable we try to avoid whole-sale code replacement
-especially when most of the structural code is similar like in this
-case.  Gradually evolving cfq to bfq is likely to take more work but
-I'm very positive that it'd definitely be a lot easier to merge the
-changes that way and people involved, including the developers and
-reviewers, would acquire a lot clearer picture of what's going on in
-the process.  For example, AFAICS, most of the heuristics added by the
-later patches are refined versions of what's already in cfq and at
-least some are applicable regardless of the underlying scheduling
-algorithm.  It all depends on the details but, for example, steps like
-the following would be it a lot easier to get merged.
+>  {
+> -       if (ccu->write_enabled) {
+> -               pr_err("%s: access already enabled for %s\n", __func__,
+> -                       ccu->name);
+> -               return;
+> -       }
+> -       ccu->write_enabled = true;
+> -       __ccu_write(ccu, 0, CCU_ACCESS_PASSWORD | 1);
+> +       if (!ccu->write_enabled++)
+> +               __ccu_write(ccu, 0, CCU_ACCESS_PASSWORD | 1);
+>  }
+>  
+>  static inline void __ccu_write_disable(struct ccu_data *ccu)
+> @@ -186,9 +181,8 @@ static inline void __ccu_write_disable(struct ccu_data *ccu)
+>                         ccu->name);
+>                 return;
+>         }
+> -
+> -       __ccu_write(ccu, 0, CCU_ACCESS_PASSWORD);
+> -       ccu->write_enabled = false;
+> +       if (!--ccu->write_enabled)
+> +               __ccu_write(ccu, 0, CCU_ACCESS_PASSWORD);
 
-* Identify the improvements which can be applied to cfq as-is or with
-  some adaptation and apply those improvements to cfq.
+What happens if calls to __ccu_write_enable and __ccu_write_disable are
+unbalanced? It would be better to catch that case and throw a WARN:
 
-* Make prepatory changes to make transition to new base scheduling
-  algorithm easier.
+	if (WARN_ON(ccu->write_enabled == 0))
+		return;
 
-* Strip out or disable cfq features which get in the way of
-  conversion.
+	if (--ccu->write_enabled > 0)
+		return;
 
-* Switch the base algorithm to the timestamp based one.
+	__ccu_write(ccu, 0, CCU_ACCESS_PASSWORD);
 
-* Rebuild stripped down features and apply new heuristics,
-  optimizations and follow-up changes.
+>  }
+>  
+>  /*
+> diff --git a/drivers/clk/bcm/clk-kona.h b/drivers/clk/bcm/clk-kona.h
+> index 2537b30..e9a8466 100644
+> --- a/drivers/clk/bcm/clk-kona.h
+> +++ b/drivers/clk/bcm/clk-kona.h
+> @@ -478,7 +478,7 @@ struct ccu_policy {
+>  struct ccu_data {
+>         void __iomem *base;     /* base of mapped address space */
+>         spinlock_t lock;        /* serialization lock */
+> -       bool write_enabled;     /* write access is currently enabled */
+> +       u32 write_enabled;      /* write access enable count */
 
-I understand that this might be non-significant amount of work but at
-the same time it's not something which is inherently difficult.  It's
-mostly logistical after all and I'd be happy to help where I can.
+Why u32? An unsigned int will do just nicely here.
 
-Thanks.
+Regards,
+Mike
 
--- 
-tejun
+>         struct ccu_policy policy;
+>         struct list_head links; /* for ccu_list */
+>         struct device_node *node;
+> -- 
+> 1.9.1
+> 
