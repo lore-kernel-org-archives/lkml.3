@@ -1,65 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965401AbaE3Prd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 11:47:33 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:43579 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932189AbaE3Pra (ORCPT
+	id S965318AbaE3PrE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 11:47:04 -0400
+Received: from mail-qg0-f51.google.com ([209.85.192.51]:58928 "EHLO
+	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965295AbaE3Pq6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 11:47:30 -0400
-Date: Fri, 30 May 2014 21:17:13 +0530
-From: Himangi Saraogi <himangi774@gmail.com>
-To: Chien Yen <chien.yen@oracle.com>, "David S. Miller" <davem@davemloft.net>,
-        rds-devel@oss.oracle.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: julia.lawall@lip6.fr
-Subject: [PATCH] rds/tcp_listen: Replace comma with semicolon
-Message-ID: <20140530154713.GA4079@himangi-Dell>
+	Fri, 30 May 2014 11:46:58 -0400
+Date: Fri, 30 May 2014 11:46:54 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Paolo Valente <paolo.valente@unimore.it>
+Cc: Jens Axboe <axboe@kernel.dk>, Li Zefan <lizefan@huawei.com>,
+        Fabio Checconi <fchecconi@gmail.com>,
+        Arianna Avanzini <avanzini.arianna@gmail.com>,
+        Paolo Valente <posta_paolo@yahoo.it>, linux-kernel@vger.kernel.org,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org
+Subject: Re: [PATCH RFC - TAKE TWO - 11/12] block, bfq: boost the throughput
+ on NCQ-capable flash-based devices
+Message-ID: <20140530154654.GE24871@htj.dyndns.org>
+References: <20140528221929.GG1419@htj.dyndns.org>
+ <1401354343-5527-1-git-send-email-paolo.valente@unimore.it>
+ <1401354343-5527-12-git-send-email-paolo.valente@unimore.it>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1401354343-5527-12-git-send-email-paolo.valente@unimore.it>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch replaces a comma between expression statements by a semicolon.
+On Thu, May 29, 2014 at 11:05:42AM +0200, Paolo Valente wrote:
+> This patch boosts the throughput on NCQ-capable flash-based devices,
+> while still preserving latency guarantees for interactive and soft
+> real-time applications. The throughput is boosted by just not idling
+> the device when the in-service queue remains empty, even if the queue
+> is sync and has a non-null idle window. This helps to keep the drive's
+> internal queue full, which is necessary to achieve maximum
+> performance. This solution to boost the throughput is a port of
+> commits a68bbdd and f7d7b7a for CFQ.
+> 
+> As already highlighted in patch 10, allowing the device to prefetch
+> and internally reorder requests trivially causes loss of control on
+> the request service order, and hence on service guarantees.
+> Fortunately, as discussed in detail in the comments to the function
+> bfq_bfqq_must_not_expire(), if every process has to receive the same
+> fraction of the throughput, then the service order enforced by the
+> internal scheduler of a flash-based device is relatively close to that
+> enforced by BFQ. In particular, it is close enough to let service
+> guarantees be substantially preserved.
+> 
+> Things change in an asymmetric scenario, i.e., if not every process
+> has to receive the same fraction of the throughput. In this case, to
+> guarantee the desired throughput distribution, the device must be
+> prevented from prefetching requests. This is exactly what this patch
+> does in asymmetric scenarios.
 
-A simplified version of the semantic patch that performs this
-transformation is as follows:
+Does it even make sense to use this type of heavy iosched on ssds?
+It's highly likely that ssds will soon be served through blk-mq
+bypassing all these.  I don't feel too enthused about adding code to
+support ssds to ioscheds.  A lot better approach would be just default
+to deadline for them anyway.
 
-// <smpl>
-@r@
-expression e1,e2,e;
-type T;
-identifier i;
-@@
+Thanks.
 
- e1
--,
-+;
- e2;
-// </smpl>
-
-Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-Acked-by: Julia Lawall <julia.lawall@lip6.fr>
----
- net/rds/tcp_listen.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/net/rds/tcp_listen.c b/net/rds/tcp_listen.c
-index 4e638f8..23ab4dcd 100644
---- a/net/rds/tcp_listen.c
-+++ b/net/rds/tcp_listen.c
-@@ -153,7 +153,7 @@ int rds_tcp_listen_init(void)
- 	sock->sk->sk_data_ready = rds_tcp_listen_data_ready;
- 	write_unlock_bh(&sock->sk->sk_callback_lock);
- 
--	sin.sin_family = PF_INET,
-+	sin.sin_family = PF_INET;
- 	sin.sin_addr.s_addr = (__force u32)htonl(INADDR_ANY);
- 	sin.sin_port = (__force u16)htons(RDS_TCP_PORT);
- 
 -- 
-1.9.1
-
+tejun
