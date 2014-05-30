@@ -1,76 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934446AbaE3Q7N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 12:59:13 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:54723 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754104AbaE3Q7I (ORCPT
+	id S934078AbaE3Q4U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 12:56:20 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:32798 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933182AbaE3Q4R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 12:59:08 -0400
-Message-ID: <5388B8D7.1020907@wwwdotorg.org>
-Date: Fri, 30 May 2014 10:59:03 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Vlastimil Babka <vbabka@suse.cz>, Shawn Guo <shawn.guo@linaro.org>,
-        Kevin Hilman <khilman@linaro.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: Joonsoo Kim <iamjoonsoo.kim@lge.com>, David Rientjes <rientjes@google.com>,
-        Hugh Dickins <hughd@google.com>, Greg Thelen <gthelen@google.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        Minchan Kim <minchan@kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Olof Johansson <olof@lixom.net>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2] mm, compaction: properly signal and act upon lock
- and need_sched() contention
-References: <1399904111-23520-1-git-send-email-vbabka@suse.cz>	<1400233673-11477-1-git-send-email-vbabka@suse.cz>	<CAGa+x87-NRyK6kUiXNL_bRNEGm+DR6M3HPSLYEoq4t6Nrtnd_g@mail.gmail.com> <CAAQ0ZWQDVxAzZVm86ATXd1JGUVoLXj_Y5Ske7htxH_6a4GPKRg@mail.gmail.com> <537F082F.50501@suse.cz>
-In-Reply-To: <537F082F.50501@suse.cz>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Fri, 30 May 2014 12:56:17 -0400
+From: Matthias Brugger <matthias.bgg@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        rdunlap@infradead.org, linux@arm.linux.org.uk,
+        daniel.lezcano@linaro.org, tglx@linutronix.de, matthias.bgg@gmail.com,
+        thierry.reding@gmail.com, florian.vaussard@epfl.ch, jic23@kernel.org,
+        jason@lakedaemon.net, andrew@lunn.ch, silvio.fricke@gmail.com,
+        heiko.stuebner@bq.com, olof@lixom.net, sebastian.hesselbarth@gmail.com,
+        sboyd@codeaurora.org, gregory.clement@free-electrons.com,
+        arnd@arndb.de, robherring2@gmail.com, marc.zyngier@arm.com,
+        maxime.ripard@free-electrons.com, soren.brinkmann@xilinx.com,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v6 0/6] arm: Add basic support for Mediatek Cortex-A7 SoCs
+Date: Fri, 30 May 2014 18:55:58 +0200
+Message-Id: <1401468964-5307-1-git-send-email-matthias.bgg@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/23/2014 02:34 AM, Vlastimil Babka wrote:
-> On 05/23/2014 04:48 AM, Shawn Guo wrote:
->> On 23 May 2014 07:49, Kevin Hilman <khilman@linaro.org> wrote:
->>> On Fri, May 16, 2014 at 2:47 AM, Vlastimil Babka <vbabka@suse.cz> wrote:
->>>> Compaction uses compact_checklock_irqsave() function to periodically check for
->>>> lock contention and need_resched() to either abort async compaction, or to
->>>> free the lock, schedule and retake the lock. When aborting, cc->contended is
->>>> set to signal the contended state to the caller. Two problems have been
->>>> identified in this mechanism.
->>>
->>> This patch (or later version) has hit next-20140522 (in the form
->>> commit 645ceea9331bfd851bc21eea456dda27862a10f4) and according to my
->>> bisect, appears to be the culprit of several boot failures on ARM
->>> platforms.
->>
->> On i.MX6 where CMA is enabled, the commit causes the drivers calling
->> dma_alloc_coherent() fail to probe.  Tracing it a little bit, it seems
->> dma_alloc_from_contiguous() always return page as NULL after this
->> commit.
->>
->> Shawn
->>
-> 
-> Really sorry, guys :/
-> 
-> -----8<-----
-> From: Vlastimil Babka <vbabka@suse.cz>
-> Date: Fri, 23 May 2014 10:18:56 +0200
-> Subject: mm-compaction-properly-signal-and-act-upon-lock-and-need_sched-contention-fix2
-> 
-> Step 1: Change function name and comment between v1 and v2 so that the return
->         value signals the opposite thing.
-> Step 2: Change the call sites to reflect the opposite return value.
-> Step 3: ???
-> Step 4: Make a complete fool of yourself.
+Sixth round for the Mediatek basic support patches.
 
-Tested-by: Stephen Warren <swarren@nvidia.com>
+I encapsulated the setup of the timer and the interrupt in seperate
+functions.
+Apart I fixed the compatibily string to be consisten throughout the
+whole system (from mediatek,mtk6577 to mediatek,mt6577) and added
+the address to the bindings documentation.
 
-This fix doesn't seem to be in linux-next yet:-(
+---
+This patch set adds basic support for the Mediatek Cortex-A7 SoCs.
+Support is quite basic, as the only component working up to now are the
+timers.
+
+The patch series is build against torvalds/master tree.
+
+Signed-off-by: Matthias Brugger <matthias.bgg@gmail.com>
+
+Changes for v6:
+- fix compatible string of the timer
+- encapsulate timer setup in function
+- add more information to the timer commit message
+- add address in timer DTS bindings documentation
+
+
+Changes for v5:
+1. Clocksource timer
+- Change the compatible string to mt6577
+
+2. Timer DT bindings
+- Change compatible string to mt6577
+
+
+Changes for v4:
+1. Clocksource timer
+- use cpu_possible_mask
+
+2. Timer DT bindings
+- Delete comments about the frequency of the clocks
+- Add clock-names for the input clocks
+
+3. Basic SoC support
+- add clock-names for the timer
+- rename the label of the clocks nodes
+
+
+Changes for v3:
+1. Clocksource timer
+- Set cpu_mask_all and irq in clock_event_device
+- Use device private structure for driver specific values
+
+2. Timer DT bindings
+- Define order of the clock phandles
+- Fix typos
+
+3. Basic SoC support
+- DTS: set gic to a15-gic
+- DTS: order by physical address
+- Remove call to dt_init function
+
+
+Changes for v2:
+1. Clocksource timer
+- Delete unused parts for sched_clock_source
+- Use irq_request instead of setup_irq
+- Remove unused SMP parts
+- Fix some style issues
+- use of_address_to resource and request_mem_region
+- delete use of named clock
+- select CLKSRC_MMIO in driver Kconfig
+
+2. DT bindings
+- delete named clock bindings
+
+3. Basic SoC support
+- Clean-up Kconfig
+- Add documentation of the SoC compatible property 
+- DTS: rename SoC file to mt6589.dts
+- DTS: Delete not present cache controller
+- DTS: Add missing GICv2 properties
+- DTS: Change clock names
+- DTS: Add Aquaris5 board
+
+4. Add earlyprintk
+- patch droped until serial driver is available
+
+5. Add support for Aquaris5 mobile phone
+
+
+
+Matthias Brugger (6):
+  clocksource: Add support for the Mediatek SoCs
+  dt-bindings: add mtk-timer bindings
+  vendor-prefixes: add prefix for Mediaktek Inc.
+  arm: add basic support for Mediatek MT6589 boards
+  dt-bindings: add documentation for Mediatek SoC
+  arm: mediatek: add dts for Aquaris5 mobile phone
+
+ .../devicetree/bindings/arm/mediatek-mt65xx.txt    |    8 +
+ .../bindings/timer/mediatek,mtk-timer.txt          |   18 ++
+ .../devicetree/bindings/vendor-prefixes.txt        |    1 +
+ arch/arm/Kconfig                                   |    2 +
+ arch/arm/Makefile                                  |    1 +
+ arch/arm/boot/dts/mt6589-aquaris5.dts              |   25 ++
+ arch/arm/boot/dts/mt6589.dtsi                      |   94 ++++++++
+ arch/arm/mach-mediatek/Kconfig                     |    6 +
+ arch/arm/mach-mediatek/Makefile                    |    1 +
+ arch/arm/mach-mediatek/mediatek.c                  |   27 +++
+ drivers/clocksource/Kconfig                        |    4 +
+ drivers/clocksource/Makefile                       |    1 +
+ drivers/clocksource/mtk_timer.c                    |  242 ++++++++++++++++++++
+ 13 files changed, 430 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/arm/mediatek-mt65xx.txt
+ create mode 100644 Documentation/devicetree/bindings/timer/mediatek,mtk-timer.txt
+ create mode 100644 arch/arm/boot/dts/mt6589-aquaris5.dts
+ create mode 100644 arch/arm/boot/dts/mt6589.dtsi
+ create mode 100644 arch/arm/mach-mediatek/Kconfig
+ create mode 100644 arch/arm/mach-mediatek/Makefile
+ create mode 100644 arch/arm/mach-mediatek/mediatek.c
+ create mode 100644 drivers/clocksource/mtk_timer.c
+
+-- 
+1.7.9.5
+
