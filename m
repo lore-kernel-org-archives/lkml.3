@@ -1,76 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754485AbaE3DXe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 23:23:34 -0400
-Received: from ozlabs.org ([103.22.144.67]:43504 "EHLO ozlabs.org"
+	id S1754522AbaE3DYU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 23:24:20 -0400
+Received: from mga14.intel.com ([192.55.52.115]:32114 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751543AbaE3DXc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 23:23:32 -0400
-Date: Fri, 30 May 2014 13:23:24 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Chris Ball <chris@printf.net>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David =?UTF-8?B?TGFuemVuZMO2cmZlcg==?= 
-	<david.lanzendoerfer@o2s.ch>,
-        Hans de Goede <hdegoede@redhat.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Mike Turquette <mturquette@linaro.org>
-Subject: linux-next: build failure after merge of the mmc tree
-Message-ID: <20140530132324.757076ca@canb.auug.org.au>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
+	id S1752421AbaE3DYT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 23:24:19 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="asc'?scan'208";a="349799276"
+Date: Thu, 29 May 2014 22:56:32 -0400
+From: "Chen, Gong" <gong.chen@linux.intel.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Borislav Petkov <bp@alien8.de>, tony.luck@intel.com, m.chehab@samsung.com,
+        linux-acpi@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/7 v6] trace, RAS: Add eMCA trace event interface
+Message-ID: <20140530025632.GA16788@gchen.bj.intel.com>
+Mail-Followup-To: Steven Rostedt <rostedt@goodmis.org>,
+	Borislav Petkov <bp@alien8.de>, tony.luck@intel.com,
+	m.chehab@samsung.com, linux-acpi@vger.kernel.org,
+	LKML <linux-kernel@vger.kernel.org>
+References: <1400142646-10127-1-git-send-email-gong.chen@linux.intel.com>
+ <1401247938-22125-1-git-send-email-gong.chen@linux.intel.com>
+ <1401247938-22125-2-git-send-email-gong.chen@linux.intel.com>
+ <20140528112832.5f83c66b@gandalf.local.home>
+ <20140528163452.GF17196@pd.tnic>
+ <20140528125625.6f6dcf7f@gandalf.local.home>
+ <20140529074345.GA23484@gchen.bj.intel.com>
+ <20140529091251.70178abe@gandalf.local.home>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/75Pg84MoVKxTgJg=.EQ_ATJ"; protocol="application/pgp-signature"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="BOKacYhQ+x31HxR3"
+Content-Disposition: inline
+In-Reply-To: <20140529091251.70178abe@gandalf.local.home>
+X-PGP-Key-ID: A43922C7
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/75Pg84MoVKxTgJg=.EQ_ATJ
-Content-Type: text/plain; charset=US-ASCII
+
+--BOKacYhQ+x31HxR3
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi Chris,
+On Thu, May 29, 2014 at 09:12:51AM -0400, Steven Rostedt wrote:
+> What do you think gets recorded in the ring buffer? The pointer to the
+> string? No! You copy the entire string into the ring buffer, with
+> markers and all. How big is that string? 60 chars? 80? I see you
+> recording meta data there too:
+I'm not the expert of trace. If I am wrong please fix me. So it looks
+like all trace data shhould be pushed into the ring buffer as raw
+material and when it is needed to be printed via TP_printk, these
+raw data will be expanded(unzip them as you told) into another
+temp buffer, maybe kernel printk buffer directly.
 
-After merging the mmc tree, today's linux-next build (arm multi_v7_defconfi=
-g)
-failed like this:
+[...]
+> > #define show_dimm_location(type)                                \
+> >         __print_symbolic(type,                                  \
+> >         { CPER_MEM_VALID_NODE,          "node" },               \
+> >         { CPER_MEM_VALID_CARD,          "card" },               \
+> >         { CPER_MEM_VALID_MODULE,        "module" },             \
+> >         ...
+> >=20
+>=20
+> I'm not sure you could use that, as you save an array of data. The
+> print_symbolic() wont work with an array.
+Just FWIW, call it again and again. But it looks too awkward I will
+use other style.
 
-drivers/mmc/host/sunxi-mmc.c:25:29: fatal error: linux/clk/sunxi.h: No such=
- file or directory
+>=20
+> You can still use the same code for both the tracepoint (perf and
+> ftrace) and for dmesg. You need to write a packed array that is
+> returned as well as a way to convert that array into a human readable
+> string for later processing. The dmesg version would just have them
+> both together where as the tracepoint records the packed version on the
+> ring buffer and the TP_printk() will use the extraction.
+>=20
+> That is, dmesg has the compress and extraction in one place where the
+> tracepoint has them in two different places.
+>=20
+> Understand?
+Yes, I feel the same way. Zip/unzip is unavoidable.
 
-Caused by commit 19b7f796c375 ("mmc: sunxi: Add driver for SD/MMC hosts
-found on Allwinner sunxi SoCs").  Something has changed to turn on
-CONFIG_ARCH_SUNXI in the arm multi_v7_defconfig build since yesterday.
-
-linux/clk/sunxi.h is created by a commit in the clk tree
-(git://git.linaro.org/people/mturquette/linux.git#clk-next) which I
-don't include in linux-next until much later than the mmc tree.
-
-I have reverted that commit for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/75Pg84MoVKxTgJg=.EQ_ATJ
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+--BOKacYhQ+x31HxR3
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Version: GnuPG v1
 
-iQIcBAEBCAAGBQJTh/mxAAoJEMDTa8Ir7ZwVJPsP/RDhZ2hsuABYExENx1XSnR0p
-MDfRNH7WBII0NKmniWGMtXeA/XfLwLry9j5yRPblaoAZbzcMbmoKDarTwOXW1LId
-3j5jRyEbS5MgjBk86Gwy/dzK5M0S/oU1+QwR+ApaNfwphtRVRoqaP33CCHdVAGRk
-5OJwu2y2WaSRURifVdVqdNvuUUXnCSMN5JWc4Sn9VIm4/L33Nb9/srL7sVwlG1wQ
-xHLYG/Yr1xeTIUMTpShPL/A1c3NSAqamQMHrXLcMKbby4YYYBZ8zYLgTIwmBYPws
-HhWBty1WzhaFGGiROjfvNWejQUmfGgWEu4khi9cyfzlj0xcDJuUOoj5p0HnLMOrD
-V9uMibIRvWVUlkIfPZbhkfxHxpsi1F/DefchwTRMAmLJLmu8myHoBp1vdo1oLh6y
-bKjvvwEvO0wSpsoOnheKfZOk/7vYU9L11gkta3WXHvZCwXgRu2zok1JYIEPjpIuU
-qaMfEDnUebAJia/nzEObO9RYgQQf5c7385z5LD065jzGkgLzseBIK0xRT3oLa3QY
-TctCgRBj/rJvIBZ+EsYlgO2Z4kpisujAI/xbK7i9XQOt+pjgjMkX3TjRE+qCRmgb
-blNFKIXLpW8eUnxIxMifXWsyolbKI4Fn2mlU03w+gvuRJzrZ4ttOwiVQPsOyzZvu
-yzdRTnudBs2XtsihTIWD
-=jzGX
+iQIcBAEBAgAGBQJTh/NgAAoJEI01n1+kOSLHBgEP/03l+cSTiUrtyZbnCA0Zm3Xo
+ZxRjhzuDpB35j8uny8TnXgDUsfYFConwyk7n4/GCejzWSN16jQ1HgxC4pgP3HFY+
+bdBWKuaSCo03Lg/zc1Y6JoOcBAmYdZbGzbQmTqrGJ56cOoS/KSP7gbyND1bt3Gp7
+8aY9qfo2fxmtr/OPN5G/px4hCP46UZMWWcZGW7NwoMbjetGWnS0whF8jO6XfIPH+
+bxCwMEkmMxkuaNdlOL272tenw9zRj0mTKaVuc4MdACoUMHz1KPuLyEIcyaKItg9F
+i+flHBquixyKtiad97YNA9NA4ECmL1XpmwEl0ZLp3rqh+5cp/ERDd3+s4B0mkJTI
+VQF5vF4v5RFWKrqp0mn9Y6kYT/yPM9xbHfy2LE8Jt81EdxdzcAjH/8LHa03YfWs5
+Iul6C9quzMoj8J3MqSla6JGQVnRyPbSS/lWtK5r+ZeUUh5UO9xWfRQgpOGrwquMe
+LdYfOWLM6wjvVhc5WpnVs7uHvhI7mycyHj0GFXsH0zzXaTbObQNwnwAmMrysXJ68
+ly+7ozWuPrv9cTWcZCTAw7E+fEWHI5gRbjuYw94RK8Q/4cXNSwHI3tYek/5x3C9S
+9GmELUvKIQzKW6eE+KXckK+kGFS3oEEcBftWMFrxDJCGg6e7CiNqc27SwXoIw134
+Q/XuKE+mpx4u5AKFPNEG
+=+rFN
 -----END PGP SIGNATURE-----
 
---Sig_/75Pg84MoVKxTgJg=.EQ_ATJ--
+--BOKacYhQ+x31HxR3--
