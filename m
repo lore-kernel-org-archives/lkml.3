@@ -1,61 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755327AbaE3IYH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 04:24:07 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:16074 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752545AbaE3IYA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 04:24:00 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Fri, 30 May 2014 01:16:47 -0700
-Date: Fri, 30 May 2014 11:23:56 +0300
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Russell King <linux@arm.linux.org.uk>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Linus Walleij" <linus.walleij@linaro.org>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v5 0/5] efuse driver for Tegra
-Message-ID: <20140530082356.GP5961@tbergstrom-lnx.Nvidia.com>
-References: <1401281677-32110-1-git-send-email-pdeschrijver@nvidia.com>
- <53878407.3050409@wwwdotorg.org>
+	id S1755202AbaE3IZM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 04:25:12 -0400
+Received: from mga11.intel.com ([192.55.52.93]:18399 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751782AbaE3IZJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 May 2014 04:25:09 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,939,1392192000"; 
+   d="scan'208";a="539937445"
+Date: Fri, 30 May 2014 11:25:03 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Grygorii Strashko <grygorii.strashko@ti.com>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        "Zhu, Lejun" <lejun.zhu@linux.intel.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        jacob.jun.pan@linux.intel.com, bin.yang@intel.com
+Subject: Re: [PATCH v4] gpio: Add support for Intel SoC PMIC (Crystal Cove)
+Message-ID: <20140530082503.GA1645@lahna.fi.intel.com>
+References: <1400810423-14067-1-git-send-email-lejun.zhu@linux.intel.com>
+ <CAAVeFu+F=nHDCpL6Vfmq26QNr74mfRD5p9at_osB3R97v7xBSA@mail.gmail.com>
+ <538459E8.6010701@ti.com>
+ <20140527084615.GC1801@lahna.fi.intel.com>
+ <53847F39.2010503@ti.com>
+ <CACRpkdbe1=Yt3UDm9f4ZmZ+K2ZB9nVL+RNr7eU_TbnK-CmNY+A@mail.gmail.com>
+ <20140529150058.GB6263@lahna.fi.intel.com>
+ <53875A4B.2060604@ti.com>
+ <CACRpkdZk9hFUZCoWci15EGFsJ7gOWNyFH13gJjHB9EcQT4ONRQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53878407.3050409@wwwdotorg.org>
-X-NVConfidentiality: public
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CACRpkdZk9hFUZCoWci15EGFsJ7gOWNyFH13gJjHB9EcQT4ONRQ@mail.gmail.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 29, 2014 at 09:01:27PM +0200, Stephen Warren wrote:
-> On 05/28/2014 06:54 AM, Peter De Schrijver wrote:
-> > This driver allows userspace to read the raw efuse data. Its userspace
-> > interface is modelled after the sunxi_sid driver which provides similar
-> > functionality for some Allwinner SoCs. It has been tested on
-> > Tegra20 (ventana), Tegra30 (beaverboard), Tegra114 (dalmore) and
-> > Tegra124 (jetson TK1).
+On Thu, May 29, 2014 at 05:22:05PM +0200, Linus Walleij wrote:
+> On Thu, May 29, 2014 at 6:03 PM, Grygorii Strashko
+> <grygorii.strashko@ti.com> wrote:
 > 
-> > Changes since v4:
-> > 
-> > * Provide fallback to hardcoded 0x70000800 in case the apbmisc DT node is
-> >   missing. This is exactly what the current code does and prevents a system
-> >   crash in that case due to an invalid memory access by tegra_read_chipid()
+> > Also, I'd like to note that GPIO IRQs can be accessible not only
+> > when GPIO chips is added, but also when IRQ domain is registered
+> > (at least it's valid for DT cases). In these cases gpiod_to_irq()
+> > might be not used at all.
 > 
-> Wouldn't it be better to simply return an error?
+> Yes. We concluded some time back that gpio_chip:s and
+> irq_chip:s are orthogonal abstractions: you should be able
+> to use one of them without paying any respect to the other.
+> 
+> We only added the ability to flag GPIO lines as used for
+> IRQs so they would not be set to output by mistake...
+> (Straightening up the semantics.)
+> 
+> The only real semantic dependence that really makes sense
+> is .to_irq() which leads to this semantic registration ordering.
 
-This would mean you can't boot a system with these patches applied unless you
-also update the device tree. The system would crash during boot because CCF
-relies on tegra_read_chipid() as an APB barrier. Also tegra_boot_secondary()
-relies on the chipid to select the correct method for booting secondary cores.
+acpi_gpiochip_request_interrupts() depends on ->to_irq() to be set
+before acpi_gpiochip_add() is called. Since the ordering changes this
+won't work anymore.
 
-Cheers,
-
-Peter.
+I'm thinking that could we solve this so that we call
+acpi_gpiochip_request_interrupts() at the end of gpiochip_irqchip_add()
+and convert both pinctrl-baytrail and gpio-lynxpoint to use
+gpiochip_irqchip_add()?
