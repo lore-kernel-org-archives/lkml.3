@@ -1,82 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933469AbaE3QiX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 12:38:23 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:59646 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754547AbaE3QiW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 12:38:22 -0400
-Date: Fri, 30 May 2014 11:38:13 -0500 (CDT)
-From: Kumar Gala <galak@codeaurora.org>
-X-X-Sender: galak@galak-ubuntu.qualcomm.com
-To: arm@kernel.org
-cc: Kevin Hilman <khilman@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, Olof Johansson <olof@lixom.net>,
-        David Brown <davidb@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Georgi Djakov <gdjakov@mm-sol.com>
-Subject: [GIT PULL] qcom DT changes for v3.16-2
-Message-ID: <alpine.DEB.2.00.1405301137040.5291@galak-ubuntu.qualcomm.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S933802AbaE3Qij (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 12:38:39 -0400
+Received: from p3plex2out02.prod.phx3.secureserver.net ([184.168.131.14]:52617
+	"EHLO p3plex2out02.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932451AbaE3Qii convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 May 2014 12:38:38 -0400
+From: Hartley Sweeten <HartleyS@visionengravers.com>
+To: Chase Southwood <chase.southwood@gmail.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: "abbotti@mev.co.uk" <abbotti@mev.co.uk>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 2/6] staging: comedi: addi_apci_1564: remove use of
+ devpriv->b_OutputMemoryStatus
+Thread-Topic: [PATCH 2/6] staging: comedi: addi_apci_1564: remove use of
+ devpriv->b_OutputMemoryStatus
+Thread-Index: AQHPe8GU8BIktyhF60+xCF9373wfrptZU0FQ
+Date: Fri, 30 May 2014 16:38:37 +0000
+Message-ID: <DC148C5AA1CEBA4E87973D432B1C2D8825E83D58@P3PWEX4MB008.ex4.secureserver.net>
+References: <1401424853-21683-1-git-send-email-chase.southwood@gmail.com>
+ <1401424943-22029-1-git-send-email-chase.southwood@gmail.com>
+In-Reply-To: <1401424943-22029-1-git-send-email-chase.southwood@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [184.183.19.121]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 08f9234ad6b0b8bc51046346eabf5b92e631e62a:
+On Thursday, May 29, 2014 9:42 PM, Chase Southwood wrote:
+> This member of the private data struct is only set at one location in the
+> entire driver, and then never even used for anything.  Let's just remove
+> its use.
+>
+> Signed-off-by: Chase Southwood <chase.southwood@gmail.com>
+> Cc: Ian Abbott <abbotti@mev.co.uk>
+> Cc: H Hartley Sweeeten <hsweeten@visionengravers.com>
+> ---
+>  drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c | 5 -----
+>  1 file changed, 5 deletions(-)
 
-   soc: qcom: Add device tree binding for GSBI (2014-05-23 11:38:53 -0500)
+Reviewed-by: H Hartley Sweeten <hsweeten@visionengravers.com>
 
-are available in the git repository at:
-
-   git://git.kernel.org/pub/scm/linux/kernel/git/galak/linux-qcom.git tags/qcom-dt-for-3.16-2
-
-for you to fetch changes up to f46d23f6f3676720de2a3f195413a5e69f202238:
-
-   ARM: dts: qcom: Add APQ8084-MTP board support (2014-05-29 11:16:45 -0500)
-
-----------------------------------------------------------------
-Qualcomm ARM Based Device Tree Updates for v3.16-2
-
-* Updated MSM8660/MSM8960/MSM8974 dts for various updates or conformitity
-   to binding specs
-* Added APQ8064 SoC and IFC6410 board device tree support
-* Added APQ8084 SoC and APQ8084-MTP board device tree support
-
-----------------------------------------------------------------
-Georgi Djakov (2):
-       ARM: dts: qcom: Add APQ8084 SoC support
-       ARM: dts: qcom: Add APQ8084-MTP board support
-
-Kumar Gala (4):
-       ARM: dts: qcom: Update msm8974/apq8074 device trees
-       ARM: dts: qcom: Update msm8960 device trees
-       ARM: dts: qcom: Update msm8660 device trees
-       ARM: dts: qcom: Add initial APQ8064 SoC and IFC6410 board device trees
-
-  arch/arm/boot/dts/Makefile                     |   9 +-
-  arch/arm/boot/dts/qcom-apq8064-ifc6410.dts     |  16 +++
-  arch/arm/boot/dts/qcom-apq8064-v2.0.dtsi       |   1 +
-  arch/arm/boot/dts/qcom-apq8064.dtsi            | 170 +++++++++++++++++++++++
-  arch/arm/boot/dts/qcom-apq8074-dragonboard.dts |  28 +++-
-  arch/arm/boot/dts/qcom-apq8084-mtp.dts         |   6 +
-  arch/arm/boot/dts/qcom-apq8084.dtsi            | 179 +++++++++++++++++++++++++
-  arch/arm/boot/dts/qcom-msm8660-surf.dts        |  10 ++
-  arch/arm/boot/dts/qcom-msm8660.dtsi            | 115 +++++++++-------
-  arch/arm/boot/dts/qcom-msm8960-cdp.dts         |  10 ++
-  arch/arm/boot/dts/qcom-msm8960.dtsi            | 176 +++++++++++++-----------
-  arch/arm/boot/dts/qcom-msm8974.dtsi            |  49 +++----
-  arch/arm/mach-qcom/board.c                     |   4 +-
-  13 files changed, 612 insertions(+), 161 deletions(-)
-  create mode 100644 arch/arm/boot/dts/qcom-apq8064-ifc6410.dts
-  create mode 100644 arch/arm/boot/dts/qcom-apq8064-v2.0.dtsi
-  create mode 100644 arch/arm/boot/dts/qcom-apq8064.dtsi
-  create mode 100644 arch/arm/boot/dts/qcom-apq8084-mtp.dts
-  create mode 100644 arch/arm/boot/dts/qcom-apq8084.dtsi
-
---
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
