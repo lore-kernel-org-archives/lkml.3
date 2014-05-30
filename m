@@ -1,76 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933723AbaE3Ply (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 11:41:54 -0400
-Received: from mail-ve0-f178.google.com ([209.85.128.178]:52332 "EHLO
-	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933500AbaE3PlS (ORCPT
+	id S933638AbaE3PoJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 11:44:09 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:53112 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752136AbaE3PoG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 11:41:18 -0400
+	Fri, 30 May 2014 11:44:06 -0400
+Date: Fri, 30 May 2014 08:44:01 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
+Subject: [git pull] Input updates for 3.15-rc7
+Message-ID: <20140530154401.GA23857@core.coreip.homeip.net>
 MIME-Version: 1.0
-In-Reply-To: <20140530154229.46d76630@canb.auug.org.au>
-References: <CALCETrXef77JLoEp5hCXSdMAk7usWsL-sUG6NrcgLgrz3krfag@mail.gmail.com>
- <cover.1401400316.git.luto@amacapital.net> <5387B7A0.3030302@windriver.com>
- <CALCETrVSG7-=Q3sG87YTzDYOLXzEbkvW9Ws=HeJ5cAUGxQhdJA@mail.gmail.com> <20140530154229.46d76630@canb.auug.org.au>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Fri, 30 May 2014 08:40:57 -0700
-Message-ID: <CALCETrVooEK9beWde6b5rRO3OV995J+VHEQaJ=xzxTmJLT+ciA@mail.gmail.com>
-Subject: Re: [PATCH 0/2] x86,vdso: vdso build fixes and improvements
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Josh Boyer <jwboyer@fedoraproject.org>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="TB36FDmn/VVEgNH/"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 29, 2014 at 10:42 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi Andy,
->
-> On Thu, 29 May 2014 15:49:52 -0700 Andy Lutomirski <luto@amacapital.net> wrote:
->>
->> On Thu, May 29, 2014 at 3:41 PM, Paul Gortmaker
->> <paul.gortmaker@windriver.com> wrote:
->> > On 14-05-29 05:57 PM, Andy Lutomirski wrote:
->> >> Patch 1 causes make;make to behave similarly to make if vdso2c fails.
->> >> Patch 2 hopefully fixes x86 crossbuilds on big-endian machines.  I don't
->> >> have a big-endian machine to test on, though.
->> >
->> > Since the x86 builds are unconditionally failing as-is now in
->> > linux-next, perhaps Stephen [Cc'd] can layer these on the top of
->> > the tree he'll be making within the next couple of hours to give
->> > them a big-endian test.
->
-> I added them just after the merge of the tip tree today and will keep
-> them there until they (or somo other solution) turn up some other way.
->
->> Stephen, if you do this, could you also send me some of the build outputs:
->>
->> arch/x86/vdso/*.so.dbg
->> arch/x86/vdso/*-image-*.c
->>
->> I'd like to verify that the output is correct.  It would be
->> unfortunate if the cross-built kernel had some subtle error.
->
-> OK, I will send them in a separate email.
 
-For the benefit of the archives: the patches are bad.  New ones coming.
+--TB36FDmn/VVEgNH/
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
---Andy
+Hi Linus,
 
->
-> --
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
+Please pull from:
 
+	git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git for-linus
+or
+	master.kernel.org:/pub/scm/linux/kernel/git/dtor/input.git for-linus
+
+to receive updates for the input subsystem. You will get a couple of
+driver/build fixups and also redone quirk for Synaptics touchpads on
+Lenovo boxes (now using PNP IDs instead of DMI data to limit number of
+quirks).
+
+Changelog:
+---------
+
+Arnd Bergmann (2):
+      Input: fix ps2/serio module dependency
+      Input: atmel-wm97xx - only build for AVR32
+
+Chao Xie (1):
+      Input: pxa27x-keypad - fix generating scancode
+
+Hans de Goede (4):
+      Input: synaptics - add min/max quirk for the ThinkPad W540
+      Input: synaptics - T540p - unify with other LEN0034 models
+      Input: synaptics - add a matches_pnp_id helper function
+      Input: synaptics - change min/max quirk table to pnp-id matching
+
+Liviu Dudau (1):
+      Input: ambakmi - request a shared interrupt for AMBA KMI devices
 
 
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+Diffstat:
+--------
+
+ drivers/input/keyboard/Kconfig         |   2 +-
+ drivers/input/keyboard/pxa27x_keypad.c |   7 +-
+ drivers/input/mouse/Kconfig            |   2 +-
+ drivers/input/mouse/synaptics.c        | 166 ++++++++++-------------------=
+----
+ drivers/input/serio/ambakmi.c          |   3 +-
+ drivers/input/touchscreen/Kconfig      |   2 +-
+ 6 files changed, 61 insertions(+), 121 deletions(-)
+
+--=20
+Dmitry
+
+
+--TB36FDmn/VVEgNH/
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTiKdBAAoJEH70+W8r6ZYqPEEP/3i1vPSjrSF1YmyxnSwJkvmg
+/A+mj5G3hNzBGIdkqkegBQFILQiwSGkxAg48yoiTYQCYc258nRp6v0PBJdnWq1Vx
+aa59+c07CV0wd9HRjapQ1HQ17+fC9lSi2apPV8NPZYnCVDdfa3o6iVIqV2AWnOld
+6EDxiVsuCa2Dfbg2KRsKclcQQA17C0lRRPq7c+ZrksXJ/Ir7iigkMkI9PttE85vi
+8eSjXhy2OrzhIr6vNEtflFiy5+SnD4cUrjpLFtTasXBxHlTlF8y4P80XgcNCYidC
+DtCKBo1mEXcfyPT7WBIHIpJDOcqmAyZItc2iRvvRolfvTVgeUB0VJ15QQEZWDT0/
+WaK1Wu5++TvngzpE3oCs4LSJNWFtgUlfbKhebqrgFpO3VIA0SNugWOXjIT/7G4sx
+k07y51UnXM/xkKlHOFu1UTdv4xDxMTC26ibIh+2uDUwM10XhVGysH7WIINitnlW4
+dIVEksvMcYy/LJDYA/MzYyz/FYiM4f6mEQpHLW+mTWNvWIjm41NHWsdFzmOH4ryJ
+L+LOFKN19mM2OWtkcKzBaLBrUEnjbJG2xeS7E7Se3zP/vSX5xR/KnY9oonUvEMvG
+5qg59j4dcshp90RGA4PCq10naLcy/D+DUL6uM0LA8GSM/A2lDam7ppuecaFMXmtP
+Xu9rVN6nS1v3CwksMnBK
+=2/5/
+-----END PGP SIGNATURE-----
+
+--TB36FDmn/VVEgNH/--
