@@ -1,93 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932375AbaE3GZN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 02:25:13 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:40246 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932152AbaE3GZL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 02:25:11 -0400
-From: Kiran Kumar Raparthy <kiran.kumar@linaro.org>
+	id S1755100AbaE3G0b (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 02:26:31 -0400
+Received: from quechua.inka.de ([193.197.184.2]:57732 "EHLO mail.inka.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751286AbaE3G0a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 May 2014 02:26:30 -0400
+X-Greylist: delayed 1151 seconds by postgrey-1.27 at vger.kernel.org; Fri, 30 May 2014 02:26:30 EDT
+Date: Fri, 30 May 2014 08:07:13 +0200
 To: linux-kernel@vger.kernel.org
-Cc: "hyungseoung.yoo" <hyungseoung.yoo@samsung.com>,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Gustavo Padovan <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
-        Android Kernel Team <kernel-team@android.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Jaikumar Ganesh <jaikumarg@android.com>,
-        Kiran Raparthy <kiran.kumar@linaro.org>
-Subject: [RFC v2] Bluetooth: Keep master role when SCO or eSCO is active
-Date: Fri, 30 May 2014 11:54:54 +0530
-Message-Id: <1401431094-2833-1-git-send-email-kiran.kumar@linaro.org>
-X-Mailer: git-send-email 1.8.2.1
+Subject: Re: [RFC][PATCH] tracing: Print nasty banner when trace_printk() is in use
+References: <20140528131440.2283213c@gandalf.local.home> <20140528172618.GB17220@pd.tnic> <20140528134120.3328605e@gandalf.local.home>
+Organization: private Linux site, southern Germany
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+From: Olaf Titz <olaf@bigred.inka.de>
+Message-ID: <E1WqFyD-0005jp-76@bigred.inka.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "hyungseoung.yoo" <hyungseoung.yoo@samsung.com>
+>   *********************************************************
+>   ** NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE    **
 
-Preserve the master role when SCO or eSCO is active
-as this improves compatability with lots of
-headset and chipset combinations.
+Is it really that bad to warrant this kind of warning? Not knowing
+about the issue at all, I read from the original description that the
+wastage is four pages of memory times number of CPU cores, which
+shouldn't matter much except for small embedded systems.
 
-This is one of the number of patches from the Android AOSP
-common.git tree, which is used on almost all Android devices.
-It looks like it would improve support for compatibility with
-lot of headset,so I wanted to submit it for review to see
-if it should go upstream.
+Or does this something much scarier, like considerably slowing down
+fast paths?
 
-v2: Fixed formatting issues pointed by Sergei
-
-Cc: Marcel Holtmann <marcel@holtmann.org>
-Cc: Gustavo Padovan <gustavo@padovan.org>
-Cc: Johan Hedberg <johan.hedberg@gmail.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: linux-bluetooth@vger.kernel.org
-Cc: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Cc: Android Kernel Team <kernel-team@android.com>
-Cc: John Stultz <john.stultz@linaro.org>
-Signed-off-by: hyungseoung.yoo <hyungseoung.yoo@samsung.com>
-Signed-off-by: Jaikumar Ganesh <jaikumarg@android.com>
-[kiran: Added context to commit message]
-Signed-off-by: Kiran Raparthy <kiran.kumar@linaro.org>
----
- net/bluetooth/hci_event.c | 12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
-
-diff --git a/net/bluetooth/hci_event.c b/net/bluetooth/hci_event.c
-index 15010a2..48bc772 100644
---- a/net/bluetooth/hci_event.c
-+++ b/net/bluetooth/hci_event.c
-@@ -1915,6 +1915,14 @@ unlock:
- 	hci_conn_check_pending(hdev);
- }
- 
-+static inline bool is_sco_active(struct hci_dev *hdev)
-+{
-+	if (hci_conn_hash_lookup_state(hdev, SCO_LINK, BT_CONNECTED) ||
-+		hci_conn_hash_lookup_state(hdev, ESCO_LINK, BT_CONNECTED))
-+		return true;
-+	return false;
-+}
-+
- static void hci_conn_request_evt(struct hci_dev *hdev, struct sk_buff *skb)
- {
- 	struct hci_ev_conn_request *ev = (void *) skb->data;
-@@ -1961,7 +1969,9 @@ static void hci_conn_request_evt(struct hci_dev *hdev, struct sk_buff *skb)
- 
- 			bacpy(&cp.bdaddr, &ev->bdaddr);
- 
--			if (lmp_rswitch_capable(hdev) && (mask & HCI_LM_MASTER))
-+			if (lmp_rswitch_capable(hdev) &&
-+				((mask & HCI_LM_MASTER) ||
-+				is_sco_active(hdev)))
- 				cp.role = 0x00; /* Become master */
- 			else
- 				cp.role = 0x01; /* Remain slave */
--- 
-1.8.2.1
-
+Olaf
