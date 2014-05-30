@@ -1,82 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933834AbaE3QZf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 12:25:35 -0400
-Received: from www.linutronix.de ([62.245.132.108]:56055 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933500AbaE3QZe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 12:25:34 -0400
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: acme@kernel.org
-Cc: namhyung.kim@lge.com, linux-kernel@vger.kernel.org, tzanussi@gmail.com,
-        jolsa@redhat.com, a.p.zijlstra@chello.nl, mingo@kernel.org,
-        paulus@samba.org, Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: [PATCH] perf script: pass more arguments to the python event handler
-Date: Fri, 30 May 2014 18:25:23 +0200
-Message-Id: <1401467123-12773-1-git-send-email-bigeasy@linutronix.de>
-X-Mailer: git-send-email 2.0.0.rc4
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	id S933925AbaE3Q0Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 12:26:16 -0400
+Received: from mga03.intel.com ([143.182.124.21]:64667 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933500AbaE3Q0P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 May 2014 12:26:15 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,942,1392192000"; 
+   d="scan'208";a="439064826"
+Date: Fri, 30 May 2014 09:24:24 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: Gleb Natapov <gleb@kernel.org>
+Cc: Andi Kleen <andi@firstfloor.org>, peterz@infradead.org,
+        pbonzini@redhat.com, eranian@google.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] kvm: Implement PEBS virtualization
+Message-ID: <20140530162424.GC8876@tassilo.jf.intel.com>
+References: <1401412327-14810-1-git-send-email-andi@firstfloor.org>
+ <1401412327-14810-5-git-send-email-andi@firstfloor.org>
+ <20140530082136.GA4715@minantech.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140530082136.GA4715@minantech.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch extends the current argument list in case of events by
-- IP / addr of the event. Currently only the function name is passed.
-- seconds and ns as the timestamp. Split into two value to stay close to
-  what the trace handler passes.
-- the pid of the proccess
+> > To avoid any problems with guest pages being swapped by the host we
+> > pin the pages when the PEBS buffer is setup, by intercepting
+> > that MSR.
+> It will avoid guest page to be swapped, but shadow paging code may still drop
+> shadow PT pages that build a mapping from DS virtual address to the guest page.
 
-I added a common_ prefix to stay close to the naming of the "trace"
-handler. Currently I don't mind dropping it since "comm" isn't named
-"common_comm". Any suggestions?
+You're saying the EPT code could tear down the EPT mappings?
 
-All items I added here are already exposed by the generic output i.e.
-"perf script"
+OK that would need to be prevented too. Any suggestions how?
 
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
----
- tools/perf/util/scripting-engines/trace-event-python.c | 11 +++++++++++
- 1 file changed, 11 insertions(+)
+> With EPT it is less likely to happen (but still possible IIRC depending on memory
+> pressure and how much memory shadow paging code is allowed to use), without EPT
+> it will happen for sure.
 
-diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
-index 40a815a..591bd97 100644
---- a/tools/perf/util/scripting-engines/trace-event-python.c
-+++ b/tools/perf/util/scripting-engines/trace-event-python.c
-@@ -381,6 +381,8 @@ static void python_process_general_event(struct perf_sample *sample,
- {
- 	PyObject *handler, *retval, *t, *dict;
- 	static char handler_name[64];
-+	unsigned long long nsecs = sample->time;
-+	unsigned long s, ns;
- 	unsigned n = 0;
- 
- 	/*
-@@ -401,6 +403,9 @@ static void python_process_general_event(struct perf_sample *sample,
- 	if (!handler || !PyCallable_Check(handler))
- 		goto exit;
- 
-+	s = nsecs / NSECS_PER_SEC;
-+	ns = nsecs - s * NSECS_PER_SEC;
-+
- 	pydict_set_item_string_decref(dict, "ev_name", PyString_FromString(perf_evsel__name(evsel)));
- 	pydict_set_item_string_decref(dict, "attr", PyString_FromStringAndSize(
- 			(const char *)&evsel->attr, sizeof(evsel->attr)));
-@@ -410,6 +415,12 @@ static void python_process_general_event(struct perf_sample *sample,
- 			(const char *)sample->raw_data, sample->raw_size));
- 	pydict_set_item_string_decref(dict, "comm",
- 			PyString_FromString(thread__comm_str(thread)));
-+	pydict_set_item_string_decref(dict, "addr",
-+			PyLong_FromUnsignedLongLong(sample->ip));
-+	pydict_set_item_string_decref(dict, "common_s", PyInt_FromLong(s));
-+	pydict_set_item_string_decref(dict, "common_ns", PyInt_FromLong(ns));
-+	pydict_set_item_string_decref(dict, "common_pid",
-+			PyInt_FromLong(sample->pid));
- 	if (al->map) {
- 		pydict_set_item_string_decref(dict, "dso",
- 			PyString_FromString(al->map->dso->name));
--- 
-2.0.0.rc4
+Don't care about the non EPT case, this is white listed only for EPT supporting 
+CPUs.
 
+> There is nothing, as far as I can see, that says what will happen if the
+> condition is not met. I always interpreted it as undefined behaviour so
+> anything can happen including CPU dies completely.  You are saying above
+> on one hand that CPU cannot handle any kinds of faults during write to
+> DS area, but on the other hand a guest could only crash itself. Is this
+> architecturally guarantied?
+
+You essentially would get random page faults, and the PEBS event will
+be cancelled. No hangs.
+
+It's not architecturally guaranteed, but we white list anyways so 
+we only care about the white listed CPUs at this point. For them
+I have confirmation that it works.
+
+-Andi
