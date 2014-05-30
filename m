@@ -1,127 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934216AbaE3Q4k (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 12:56:40 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:47270 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934161AbaE3Q4h (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 12:56:37 -0400
-From: Rostislav Lisovy <lisovy@gmail.com>
-X-Google-Original-From: Rostislav Lisovy <rostislav.lisovy@fel.cvut.cz>
-To: Johannes Berg <johannes@sipsolutions.net>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Michal Sojka <sojkam1@fel.cvut.cz>, s.sander@nordsys.de,
-        jan-niklas.meier@volkswagen.de,
-        Rostislav Lisovy <rostislav.lisovy@fel.cvut.cz>
-Subject: [RFC 1/4] cfg80211: Add channel flags limiting availability to OCB mode only
-Date: Fri, 30 May 2014 18:56:21 +0200
-Message-Id: <1401468984-24575-2-git-send-email-rostislav.lisovy@fel.cvut.cz>
-X-Mailer: git-send-email 2.0.0.rc4
-In-Reply-To: <1401468984-24575-1-git-send-email-rostislav.lisovy@fel.cvut.cz>
-References: <1401468984-24575-1-git-send-email-rostislav.lisovy@fel.cvut.cz>
+	id S934307AbaE3Q5U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 12:57:20 -0400
+Received: from p3plex2out03.prod.phx3.secureserver.net ([184.168.131.16]:56113
+	"EHLO p3plex2out03.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933745AbaE3Q5P convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 May 2014 12:57:15 -0400
+From: Hartley Sweeten <HartleyS@visionengravers.com>
+To: Chase Southwood <chase.southwood@gmail.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: "abbotti@mev.co.uk" <abbotti@mev.co.uk>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 5/6] staging: comedi: addi_apci_1564: hook-up the
+ interrupt subdevice
+Thread-Topic: [PATCH 5/6] staging: comedi: addi_apci_1564: hook-up the
+ interrupt subdevice
+Thread-Index: AQHPe8HEojo9AYwBUk2s24XPSyRPGJtZVoig
+Date: Fri, 30 May 2014 16:57:14 +0000
+Message-ID: <DC148C5AA1CEBA4E87973D432B1C2D8825E83E2A@P3PWEX4MB008.ex4.secureserver.net>
+References: <1401424853-21683-1-git-send-email-chase.southwood@gmail.com>
+ <1401425014-22548-1-git-send-email-chase.southwood@gmail.com>
+In-Reply-To: <1401425014-22548-1-git-send-email-chase.southwood@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [184.183.19.121]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-IEEE 802.11p operates in its own 5.9GHz band. When there will
-be a record for the 5.9GHz band in the regulatory daemon,
-it must be limited to the OCB mode only -- using the newly
-added flags.
+On Thursday, May 29, 2014 9:44 PM, Chase Southwood wrote:
+> The board supported by this driver can generate an interrupt based
+> on the state of input channels 0-15.
+>
+> The apci1564_di_config() function is used to configure which
+> inputs are used to generate the interrupt. Currently this function
+> is broken since it does not follow the comedi API for insn_config
+> functions. Fix this function by implementing the config instruction
+> INSN_CONFIG_DIGITAL_TRIG.
+>
+> Add the remaining subdevice operations necessary for the interrupt
+> subdevice to support async commands.
+>
+> Signed-off-by: Chase Southwood <chase.southwood@gmail.com>
+> Cc: Ian Abbott <abbotti@mev.co.uk>
+> Cc: H Hartley Sweeten <hsweeten@visionengravers.com>
+> ---
+>
+> The structure of _much_ of this code was taken from/based on the similar
+> code found in addi_apci_1032.c.  As such, I would appreciate as much
+> review I can get to make sure what I've done here actually makes sense
+> for this driver :)
+>
+>  .../comedi/drivers/addi-data/hwdrv_apci1564.c      |  37 +---
+>  drivers/staging/comedi/drivers/addi_apci_1564.c    | 228 +++++++++++++++++++--
+>  2 files changed, 210 insertions(+), 55 deletions(-)
+>
+> diff --git a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c
+> index 054e731..41aa889 100644
+> --- a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c
+> +++ b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c
+> @@ -95,45 +95,14 @@ static unsigned int ui_InterruptData, ui_Type;
+>  
+>  struct apci1564_private {
+>  	unsigned int amcc_iobase;	/* base of AMCC I/O registers */
+> +	unsigned int mode1;		/* riding-edge/high level channels */
+> +	unsigned int mode2;		/* falling-edge/low level channels */
+> +	unsigned int ctrl;		/* interrupt mode OR (edge) . AND (level) */
+>  	unsigned char timer_select_mode;
+>  	unsigned char mode_select_register;
+>  };
 
-Signed-off-by: Rostislav Lisovy <rostislav.lisovy@fel.cvut.cz>
----
- include/net/cfg80211.h       | 2 ++
- include/uapi/linux/nl80211.h | 5 +++++
- net/wireless/nl80211.c       | 3 +++
- net/wireless/reg.c           | 2 ++
- 4 files changed, 12 insertions(+)
+[snip]
 
-diff --git a/include/net/cfg80211.h b/include/net/cfg80211.h
-index 5c7169b..6722ab2 100644
---- a/include/net/cfg80211.h
-+++ b/include/net/cfg80211.h
-@@ -115,6 +115,7 @@ enum ieee80211_band {
-  *	on this channel.
-  * @IEEE80211_CHAN_NO_10MHZ: 10 MHz bandwidth is not permitted
-  *	on this channel.
-+ * @IEEE80211_CHAN_OCB_ONLY: only OCB is allowed on this channel.
-  *
-  */
- enum ieee80211_channel_flags {
-@@ -131,6 +132,7 @@ enum ieee80211_channel_flags {
- 	IEEE80211_CHAN_GO_CONCURRENT	= 1<<10,
- 	IEEE80211_CHAN_NO_20MHZ		= 1<<11,
- 	IEEE80211_CHAN_NO_10MHZ		= 1<<12,
-+	IEEE80211_CHAN_OCB_ONLY         = 1<<13,
- };
+> diff --git a/drivers/staging/comedi/drivers/addi_apci_1564.c b/drivers/staging/comedi/drivers/addi_apci_1564.c
+> index 183fdc3..cf58f90 100644
+> --- a/drivers/staging/comedi/drivers/addi_apci_1564.c
+> +++ b/drivers/staging/comedi/drivers/addi_apci_1564.c
+> @@ -8,6 +8,42 @@
+>  
+>  #include "addi-data/hwdrv_apci1564.c"
+>  
+> +#define APCI1564_CTRL_INT_OR		(0 << 1)
+> +#define APCI1564_CTRL_INT_AND		(1 << 1)
+> +#define APCI1564_CTRL_INT_ENA		(1 << 2)
+> +
+> +static int apci1564_reset(struct comedi_device *dev)
+> +{
+> +	struct apci1564_private *devpriv = dev->private;
+> +
+> +	ui_Type = 0;
+> +
+> +	/* Disable the input interrupts and reset status register */
+> +	outl(0x0, devpriv->amcc_iobase + APCI1564_DI_IRQ_REG);
+> +	inl(devpriv->amcc_iobase + APCI1564_DI_INT_STATUS_REG);
+> +	outl(0x0, devpriv->amcc_iobase + APCI1564_DI_INT_MODE1_REG);
+> +	outl(0x0, devpriv->amcc_iobase + APCI1564_DI_INT_MODE2_REG);
+> +
+> +	/* Reset the output channels and disable interrupts */
+> +	outl(0x0, devpriv->amcc_iobase + APCI1564_DO_REG);
+> +	outl(0x0, devpriv->amcc_iobase + APCI1564_DO_INT_CTRL_REG);
+> +
+> +	/* Reset the watchdog registers */
+> +	addi_watchdog_reset(devpriv->amcc_iobase + APCI1564_WDOG_REG);
+> +
+> +	/* Reset the timer registers */
+> +	outl(0x0, devpriv->amcc_iobase + APCI1564_TIMER_CTRL_REG);
+> +	outl(0x0, devpriv->amcc_iobase + APCI1564_TIMER_RELOAD_REG);
+> +
+> +	/* Reset the counter registers */
+> +	outl(0x0, dev->iobase + APCI1564_TCW_CTRL_REG(APCI1564_COUNTER1));
+> +	outl(0x0, dev->iobase + APCI1564_TCW_CTRL_REG(APCI1564_COUNTER2));
+> +	outl(0x0, dev->iobase + APCI1564_TCW_CTRL_REG(APCI1564_COUNTER3));
+> +	outl(0x0, dev->iobase + APCI1564_TCW_CTRL_REG(APCI1564_COUNTER4));
+> +
+> +	return 0;
+> +}
+
+You are using this 'board reset' function as the (*cancel) operation for the interrupt
+subdevice. I think this is a bit too aggressive for the (*cancel) since it also resets all
+the outputs, the watchdog, and timer/counters.
+
+Pull out the first chunk of this function that disables the interrupts and use that for
+the (*cancel) operation.
  
- #define IEEE80211_CHAN_NO_HT40 \
-diff --git a/include/uapi/linux/nl80211.h b/include/uapi/linux/nl80211.h
-index 406010d..970c5df 100644
---- a/include/uapi/linux/nl80211.h
-+++ b/include/uapi/linux/nl80211.h
-@@ -2362,6 +2362,8 @@ enum nl80211_band_attr {
-  *	on this channel in current regulatory domain.
-  * @NL80211_FREQUENCY_ATTR_NO_10MHZ: 10 MHz operation is not allowed
-  *	on this channel in current regulatory domain.
-+ * @NL80211_FREQUENCY_ATTR_OCB_ONLY: no other than OCB networks are
-+ *	permitted on this channel in current regulatory domain.
-  * @NL80211_FREQUENCY_ATTR_MAX: highest frequency attribute number
-  *	currently defined
-  * @__NL80211_FREQUENCY_ATTR_AFTER_LAST: internal use
-@@ -2390,6 +2392,7 @@ enum nl80211_frequency_attr {
- 	NL80211_FREQUENCY_ATTR_GO_CONCURRENT,
- 	NL80211_FREQUENCY_ATTR_NO_20MHZ,
- 	NL80211_FREQUENCY_ATTR_NO_10MHZ,
-+	NL80211_FREQUENCY_ATTR_OCB_ONLY,
- 
- 	/* keep last */
- 	__NL80211_FREQUENCY_ATTR_AFTER_LAST,
-@@ -2558,6 +2561,7 @@ enum nl80211_sched_scan_match_attr {
-  * @NL80211_RRF_AUTO_BW: maximum available bandwidth should be calculated
-  *	base on contiguous rules and wider channels will be allowed to cross
-  *	multiple contiguous/overlapping frequency ranges.
-+ * @NL80211_RRF_OCB_ONLY: no other than OCB is allowed
-  */
- enum nl80211_reg_rule_flags {
- 	NL80211_RRF_NO_OFDM		= 1<<0,
-@@ -2570,6 +2574,7 @@ enum nl80211_reg_rule_flags {
- 	NL80211_RRF_NO_IR		= 1<<7,
- 	__NL80211_RRF_NO_IBSS		= 1<<8,
- 	NL80211_RRF_AUTO_BW		= 1<<11,
-+	NL80211_RRF_OCB_ONLY            = 1<<12,
- };
- 
- #define NL80211_RRF_PASSIVE_SCAN	NL80211_RRF_NO_IR
-diff --git a/net/wireless/nl80211.c b/net/wireless/nl80211.c
-index 0f1b18f2..c766c31 100644
---- a/net/wireless/nl80211.c
-+++ b/net/wireless/nl80211.c
-@@ -633,6 +633,9 @@ static int nl80211_msg_put_channel(struct sk_buff *msg,
- 		if ((chan->flags & IEEE80211_CHAN_NO_10MHZ) &&
- 		    nla_put_flag(msg, NL80211_FREQUENCY_ATTR_NO_10MHZ))
- 			goto nla_put_failure;
-+		if ((chan->flags & IEEE80211_CHAN_OCB_ONLY) &&
-+		    nla_put_flag(msg, NL80211_FREQUENCY_ATTR_OCB_ONLY))
-+			goto nla_put_failure;
- 	}
- 
- 	if (nla_put_u32(msg, NL80211_FREQUENCY_ATTR_MAX_TX_POWER,
-diff --git a/net/wireless/reg.c b/net/wireless/reg.c
-index e78f532..74e41f7 100644
---- a/net/wireless/reg.c
-+++ b/net/wireless/reg.c
-@@ -906,6 +906,8 @@ static u32 map_regdom_flags(u32 rd_flags)
- 		channel_flags |= IEEE80211_CHAN_NO_OFDM;
- 	if (rd_flags & NL80211_RRF_NO_OUTDOOR)
- 		channel_flags |= IEEE80211_CHAN_INDOOR_ONLY;
-+	if (rd_flags & NL80211_RRF_OCB_ONLY)
-+		channel_flags |= IEEE80211_CHAN_OCB_ONLY;
- 	return channel_flags;
- }
- 
--- 
-2.0.0.rc4
+The reset seems to look ok.
+
+Regards,
+Hartley
 
