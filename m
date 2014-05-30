@@ -1,125 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933993AbaE3RKM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 13:10:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28462 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932378AbaE3RKJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 13:10:09 -0400
-Date: Fri, 30 May 2014 13:09:58 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: paolo <paolo.valente@unimore.it>, Jens Axboe <axboe@kernel.dk>,
-        Li Zefan <lizefan@huawei.com>, Fabio Checconi <fchecconi@gmail.com>,
-        Arianna Avanzini <avanzini.arianna@gmail.com>,
-        Paolo Valente <posta_paolo@yahoo.it>, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org
-Subject: Re: [PATCH RFC RESEND 00/14] New version of the BFQ I/O Scheduler
-Message-ID: <20140530170958.GF16605@redhat.com>
-References: <1401194558-5283-1-git-send-email-paolo.valente@unimore.it>
- <20140530153228.GE16605@redhat.com>
- <20140530161650.GH24871@htj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140530161650.GH24871@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S934113AbaE3RMj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 13:12:39 -0400
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:43336 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934029AbaE3RMh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 May 2014 13:12:37 -0400
+From: srinivas.kandagatla@linaro.org
+To: Russell King <linux@arm.linux.org.uk>,
+        Ulf Hansson <ulf.hansson@linaro.org>, linux-mmc@vger.kernel.org
+Cc: Chris Ball <chris@printf.net>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linus.walleij@linaro.org,
+        Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+Subject: [PATCH v5 00/13] Add Qualcomm SD Card Controller support
+Date: Fri, 30 May 2014 18:11:58 +0100
+Message-Id: <1401469918-26817-1-git-send-email-srinivas.kandagatla@linaro.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 30, 2014 at 12:16:50PM -0400, Tejun Heo wrote:
-> Hello, Vivek.
-> 
-> On Fri, May 30, 2014 at 11:32:28AM -0400, Vivek Goyal wrote:
-> > I don't think most of the people care about strong fairness guarantee.
-> > As an algorithm round robin is not bad for ensuring fairness. CFQ had
-> > started with that but then it stopped focussing on fairness and rather
-> > focussed on trying to address various real issues.
-> 
-> Oh, I widely disagree.  Have you looked at the test results in the
-> paper?  Unless the results are completely bogus, which it probably
-> isn't, this is awesome.  This is a *lot* more clearly characterized
-> algorithm which shows significantly better behavior especially in use
-> cases where scheduling matters.  I mean, it even reaches higher
-> throughput while achieving lower latency.  Why wouldn't we want it?
-> 
+From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
 
-Of everybody wants "higher throughput while achieving lower latency". Most
-of the time these are contradictory goals.
+Thankyou Linus W, Ulf H and everyone for reviewing RFC to v4 patches.
 
-Instead of just looking at numbers, I am keen on knowing what's the
-fundamental design change which allows this. What is CFQ doing wrong
-which BFQ gets right.
+This patch series adds Qualcomm SD Card Controller support in pl180 mmci
+driver. QCom SDCC is basically a pl180, but bit more customized, some of the
+register layouts and offsets are different to the ones mentioned in pl180
+datasheet. The plan is to totally remove the standalone SDCC driver
+drivers/mmc/host/msm_sdcc.* and start using generic mmci driver for all
+Qualcomm parts, as we get chance to test on other Qcom boards.
 
-Are you referring to BFQ paper. I had read one in the past and it was
-all about how to achieve more accurate fairness. At this point of time
-I don't think that smarter algorithm is the problem. Until and unless
-somebody can show me that how algorithm is a problem.
+To start using the existing mmci driver, a fake amba id for Qualcomm is added
+in patches:
+ mmc: mmci: Add Qualcomm specific register defines.
+ mmc: mmci: Add Qualcomm Id to amba id table.
 
-Apart from algorithm, one thing BFQ did different in the past was provide
-fairness based on amount of IO done *and not in terms of time slice*. I
-don't know if that's still the case. If it is the case I am wondering
-why CFQ was converted from amount of IO based fairness to time slice
-based fairness.
+Second change is, adding a 3 clock cycle delay in between writes to
+CLKCTRL/POWER/DATACTRL/COMMAND registers. Most of the delays are taken care with
+the existing driver except delay for the COMMAND register was too small. 
+This patch fixes it.
+  mmc: mmci: Add enough delay between writes to CMD register.
 
-I am all for a better algorithm. I just want to somebody to explain it
-to me that what magic they have done to achieve better throughput as
-well as better latency.
+Third change is to accommodate CLK, DATCTRL and MMCICLK register layout changes
+in Qcom SDCC and provide more flexibity in driver to specify these changes via
+variant datastructure. Which are done in patches:
+  mmc: mmci: Add Qcom datactrl register variant
+  mmc: mmci: add ddrmode mask to variant data
+  mmc: mmci: add 8bit bus support in variant data
+  mmc: mmci: add edge support to data and command out in variant data.
+  mmc: mmci: add Qcom specifics of clk and datactrl registers.
+  mmc: mmci: Add support to data commands via variant structure.
+  mmc: mmci: add f_max to variant structure
+  mmc: mmci: add explicit clk control
 
-Do you think that CFQ's problems come from round robin algorithms. No,
-they don't. Most of the time we don't even honor the allocated time
-slice (except sequential IO) and preempt the allocated slice. That's
-why I think implementing a more fair algorithm is probably not the
-solution.
+Fourth change was to add qcom specfic fifocnt logic, the need for
+this is because the way MCIFIFOCNT register behaved in QCOM SDCC is very
+ different to the one in pl180. This change is done in patch:
+  mmc: mmci: Add Qcom specific rx_fifocnt logic.
 
-CFQ's throughput problems come from idling and driving lower queue depth.
-And CFQ's throughput problems arise due to suppressing buffered write
-very actively in presence of sync IO. 
+Last some Qcom unrelated changes/cleanup to driver are done in patches:
+  mmc: mmci: use NSEC_PER_SEC macro
+  mmc: mmci: convert register bits to use BIT() macro.
 
-I want to know what has BFQ done fundamentally different to take care of
-above issues. 
+This patches are tested in PIO mode on IFC8064 board with both eMMC and
+external SD card. I would like to get this support in v3.16.
 
-> > And CFQ's problems don't arise from not having a good fairness algorithm.
-> > So I don't think this should be the reason for taking a new scheduler.
-> 
-> In comparison, cfq's fairness behavior is a lot worse but even
-> ignoring thing, one of the major problems of cfq is that the behavior
-> is hardly characterized.  It's really difficult to anticipate what
-> it'd do and understand why, which makes it very difficult to maintain
-> and improve.  Even just for the latter point, it'd be worthwhile to
-> adopt bfq.
+Changes from v4:
+	- moved the amba id table addition to the end of the patchset as suggested by Ulf.
+	- reused the mmci_pio_read function after experimenting with the fifo behaviour.
+	- simplify f_max/f_min calculation logic as suggested by Ulf.
+	- created a new patch for the register defination as suggested by Ulf.
 
-Remember CFQ had started with a simple algorith. Just start allocating
-time slice in proportion to ioprio. That simple scheme did not work in
-real world and then it became more complicated.
+Changes from v3:
+	- moved pio_read to a function pointer so as to reduce additional cycles
+	in hot-path, suggested by Ulf.
+	- simplify the flags used for explicit mclk control, suggested by Ulf.
+	- fixed issues in cacluating f_max and f_min pointed and suggested by Ulf.
+	- removed unessary DDR flags on un-supported STE variants.
+	- used BIT macros as suggested by Ulf.
+	- removed the read/write wrappers with delays, and used most optimal way
+	to introduce the delays to the only registers that require delays.
 
-What's the guarantee that same thing will not happen to BFQ. There is
-no point in getting fairness if overall performance sucks. That's what
-happens even with block IO cgroups. Create more than 4 cgroups, put some
-workload in that and with CFQ your performance will be so bad that you
-will drop the idea of getting fairness.
+Changes from v2:
+	- merged fbclk latch patch with clkreg_enable patch as suggested by Linus W.
+	- remove qcom prefix for explicit clk control pointed by Linus W.
+	- cleaned up mmci_qcom_pio_read and consider SDIO as suggested by Linus W.
 
-Why performance is bad, again due to idling. In an attmept to provide
-isolation between IO of two cgroups, we idle. You want to dilute the
-the isolation, sure you will get better throughput and CFQ can do that
-too.
+Changes from v1:
+	- moved most of the SOC specifics to variant parameters as suggested
+	  by Linus W.
+	- renamed registers as suggested by Linus W.
+	- Added comments in the code as suggested by Linus W.
+	- moved out AMBA ID addition patch from this series.
+	- rebased the patches to 
+		git://git.linaro.org/people/ulf.hansson/mmc.git next 
+	  as suggested by Ulf H.
 
-> 
-> > I think instead of numbers, what would help is a short description
-> > that what's the fundamental problem with CFQ which BFQ does not
-> > have and how did you solve that issue.
-> 
-> The papers are pretty clear and not too long.  Have you read them?
+Changes from RFC:
+	- moved out clk setup out of spinlock as pointed by Stephen B.
 
-Can you please provide me the link to the paper. I had read one few
-years back. I am not sure if it is still the same paper of a new one.
-And after experimenting with their implementation and playing with 
-CFQ, my impression was that fairness algorithm is not the core problem.
+Am hoping to get this for v3.16.
 
-I will be more than happy to be proven wrong. Just I need somebody to
-not throw just numbers at me but rather explain to me that why BFQ
-performs better and why CFQ can't do the same thing.
+All these patches are tested on IF6410 board on both eMMC and external SD card.
 
-Thanks
-Vivek
+Thanks,
+srini
+
+Srinivas Kandagatla (13):
+  mmc: mmci: use NSEC_PER_SEC macro
+  mmc: mmci: convert register bits to use BIT() macro.
+  mmc: mmci: Add Qualcomm specific register defines.
+  mmc: mmci: Add enough delay between writes to CMD register.
+  mmc: mmci: Add Qcom datactrl register variant
+  mmc: mmci: add ddrmode mask to variant data
+  mmc: mmci: add 8bit bus support in variant data
+  mmc: mmci: add edge support to data and command out in variant data.
+  mmc: mmci: Add support to data commands via variant structure.
+  mmc: mmci: add f_max to variant structure
+  mmc: mmci: add explicit clk control
+  mmc: mmci: Add Qcom specific rx_fifocnt logic.
+  mmc: mmci: Add Qualcomm Id to amba id table
+
+ drivers/mmc/host/mmci.c | 129 ++++++++++++++++++++++++---
+ drivers/mmc/host/mmci.h | 228 ++++++++++++++++++++++++++----------------------
+ 2 files changed, 241 insertions(+), 116 deletions(-)
+
+-- 
+1.9.1
+
