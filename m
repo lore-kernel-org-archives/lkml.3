@@ -1,321 +1,264 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754155AbaE3BAw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 21:00:52 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:60982 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751037AbaE3BAu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 21:00:50 -0400
-Message-ID: <5387D834.7080105@ti.com>
-Date: Thu, 29 May 2014 20:00:36 -0500
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1753403AbaE3BFr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 21:05:47 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:36578 "EHLO
+	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750912AbaE3BFp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 21:05:45 -0400
+X-Original-SENDERIP: 10.177.220.169
+X-Original-MAILFROM: minchan@kernel.org
+Date: Fri, 30 May 2014 10:06:19 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Chinner <david@fromorbit.com>, Jens Axboe <axboe@kernel.dk>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm <linux-mm@kvack.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Hugh Dickins <hughd@google.com>, "Michael S. Tsirkin" <mst@redhat.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: virtio ring cleanups, which save stack on older gcc
+Message-ID: <20140530010619.GP10092@bbox>
+References: <87oayh6s3s.fsf@rustcorp.com.au>
+ <1401348405-18614-1-git-send-email-rusty@rustcorp.com.au>
+ <20140529074117.GI10092@bbox>
+ <87fvjs7sge.fsf@rustcorp.com.au>
+ <20140529234522.GL10092@bbox>
 MIME-Version: 1.0
-To: Inderpal Singh <inderpal.s@samsung.com>, <linux-pm@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-CC: <rjw@rjwysocki.net>, <pavel@ucw.cz>, <viresh.kumar@linaro.org>
-Subject: Re: [PATCH v2] PM / OPP: Implement opp_remove and free_opp_table
- functions
-References: <1400231366-1221-1-git-send-email-inderpal.s@samsung.com> <1400651502-23703-1-git-send-email-inderpal.s@samsung.com>
-In-Reply-To: <1400651502-23703-1-git-send-email-inderpal.s@samsung.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140529234522.GL10092@bbox>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/21/2014 12:51 AM, Inderpal Singh wrote:
-Apologies on a delayed response.
-
-> At the driver unloading time the associated opps and its table may need
-s/opps/OPPs/
-> to be deleted. Otherwise it amounts to memory leak. The existing
-> OPP library does not have provision to do so.
+On Fri, May 30, 2014 at 08:45:22AM +0900, Minchan Kim wrote:
+> On Thu, May 29, 2014 at 08:38:33PM +0930, Rusty Russell wrote:
+> > Minchan Kim <minchan@kernel.org> writes:
+> > > Hello Rusty,
+> > >
+> > > On Thu, May 29, 2014 at 04:56:41PM +0930, Rusty Russell wrote:
+> > >> They don't make much difference: the easier fix is use gcc 4.8
+> > >> which drops stack required across virtio block's virtio_queue_rq
+> > >> down to that kmalloc in virtio_ring from 528 to 392 bytes.
+> > >> 
+> > >> Still, these (*lightly tested*) patches reduce to 432 bytes,
+> > >> even for gcc 4.6.4.  Posted here FYI.
+> > >
+> > > I am testing with below which was hack for Dave's idea so don't have
+> > > a machine to test your patches until tomorrow.
+> > > So, I will queue your patches into testing machine tomorrow morning.
+> > 
+> > More interesting would be updating your compiler to 4.8, I think.
+> > Saving <100 bytes on virtio is not going to save you, right?
 > 
-> Hence this patch implements the required functions to free the same.
-
-I might state the following (based on my naive understanding of b.L
-discussions so far):
-Original design intent of OPP tables have been to populate OPP table
-one time for the device active life time. This held true for older
-SoCs where devices like CPUs would not disappear once SoC had booted
-up. However, with newer technologies such as ARM b.L, this is no
-longer true. .... some explanation why a one time instantiation does
-not make sense anymore could be such that the device node itself might
-be unregistered from the system depending on SoC activity and the
-tables are no longer valid.
-
-
+> But in my report, virtio_ring consumes more than yours.
+> As I mentioned other thread to Steven, I don't know why stacktrace report
+> vring_add_indirect consumes 376-byte. Apparently, objdump says it didn't
+> consume too much so I'd like to test your patches and see the result.
 > 
-> Signed-off-by: Inderpal Singh <inderpal.s@samsung.com>
-> ---
-> Changes in v2:
-> 	- As suggested by Nishanth, added support to remove a single OPP
-> 	  for non-DT users
-> 	- Added an internal helper function to avoid the code duplication
-> 	  between opp_remove and free_opp_table functions
->  
->  drivers/base/power/opp.c | 122 ++++++++++++++++++++++++++++++++++++++++++++++-
->  include/linux/pm_opp.h   |  14 +++++-
->  2 files changed, 134 insertions(+), 2 deletions(-)
+> Thanks.
 > 
-> diff --git a/drivers/base/power/opp.c b/drivers/base/power/opp.c
-> index faae9cf..22adef3 100644
-> --- a/drivers/base/power/opp.c
-> +++ b/drivers/base/power/opp.c
-> @@ -89,6 +89,7 @@ struct device_opp {
->  	struct device *dev;
->  	struct srcu_notifier_head head;
->  	struct list_head opp_list;
-> +	struct rcu_head head_rcu;
-
-hmm.. I wonder if we should rename the "head" in struct dev_pm_opp to
-head_rcu as well.. kinda better naming (but may be done as a separate
-patch) and the "head" for notifier as head_notifier or so.. will make
-code readable.
-
-That said - please ensure kernel doc is updated as well.
-I now get the following with this patch:
-$ ./scripts/kernel-doc drivers/base/power/opp.c>/dev/null
-Warning(drivers/base/power/opp.c:93): No description found for
-parameter 'head_rcu'
-
-
->  };
->  
->  /*
-> @@ -427,7 +428,6 @@ int dev_pm_opp_add(struct device *dev, unsigned long freq, unsigned long u_volt)
->  				__func__);
->  			return -ENOMEM;
->  		}
-> -
-viresh already pointed the spurious change.
-
->  		dev_opp->dev = dev;
->  		srcu_init_notifier_head(&dev_opp->head);
->  		INIT_LIST_HEAD(&dev_opp->opp_list);
-> @@ -464,6 +464,82 @@ int dev_pm_opp_add(struct device *dev, unsigned long freq, unsigned long u_volt)
->  EXPORT_SYMBOL_GPL(dev_pm_opp_add);
->  
->  /**
-> + * opp_remove_and_free()  - Internal helper to remove and free an OPP
-> + * @dev_opp:	device_opp for which we do this operation
-> + * @opp:	OPP to be removed
-> + *
-> + * This function removes an opp from the opp list and frees it. And, if the
-> + * list is empty, it also removes the device_opp from the root list and
-> + * frees it.
-> + *
-> + * Locking: The internal device_opp and opp structures are RCU protected.
-> + * The callers need to use RCU updater strategy with mutex locks to keep the
-> + * integrity of the internal data structures.
-> + */
-> +static void opp_remove_and_free(struct device_opp *dev_opp,
-> +						struct dev_pm_opp *opp)
-> +{
-> +	list_del_rcu(&opp->node);
-> +	/*
-> +	 * Notify the removal of the opp
-> +	 */
-> +	srcu_notifier_call_chain(&dev_opp->head, OPP_EVENT_REMOVE, opp);
-Do this before list_del_rcu?
-
-> +	kfree_rcu(opp, head);
-> +
-> +	if (list_empty(&dev_opp->opp_list)) {
-> +		list_del_rcu(&dev_opp->node);
-> +		kfree_rcu(dev_opp, head_rcu);
-> +	}
-> +}
-> +
-> +/**
-> + * dev_pm_opp_remove() - remove a specific OPP
-> + * @dev:	device for which we do this operation
-> + * @freq:	OPP frequency to remove
-> + *
-> + * Removes a provided opp.
-> + *
-> + * Locking: The internal device_opp and opp structures are RCU protected.
-> + * Hence this function internally uses RCU updater strategy with mutex locks to
-> + * keep the integrity of the internal data structures. Callers should ensure
-> + * that this function is *NOT* called under RCU protection or in contexts where
-> + * mutex locking cannot be used.
-> + */
-> +void dev_pm_opp_remove(struct device *dev, unsigned long freq)
-Debatable: Should'nt we do an int return here? if a frequency not in
-the list is attempted to be deleted, bad pointer passed?
-Ofcourse, what does the caller do with it? maybe find a logic bug a
-print or something to the effect? It might be little hard a few years
-down the line to know why we never returned an error value.. just my 2
-cents..
-
-> +{
-> +	struct device_opp *dev_opp = ERR_PTR(-ENODEV);
-not necessary to initialize?
-
-> +	struct dev_pm_opp *temp_opp, *opp = ERR_PTR(-ERANGE);
-> +
-> +	if (IS_ERR_OR_NULL(dev))
-You don't need this? -> find_device_opp will do required check for
-you. Lets leave these checks centralized.
-
-> +		return;
-> +
-> +	/* Hold our list modification lock here */
-> +	mutex_lock(&dev_opp_list_lock);
-> +
-> +	/* Check for existing list for 'dev' */
-> +	dev_opp = find_device_opp(dev);
-> +	if (IS_ERR(dev_opp))
-> +		goto unlock;
-> +
-> +	/* Do we have the frequency? */
-> +	list_for_each_entry(temp_opp, &dev_opp->opp_list, node)
-> +		if (temp_opp->rate == freq) {
-> +			opp = temp_opp;
-> +			break;
-> +		}
-> +
-> +	if (IS_ERR(opp)) {
-> +		dev_warn(dev, "%s: OPP freq not found\n", __func__);
-> +		goto unlock;
-> +	}
-> +
-> +	opp_remove_and_free(dev_opp, opp);
-> +unlock:
-> +	mutex_unlock(&dev_opp_list_lock);
-> +}
-> +EXPORT_SYMBOL_GPL(dev_pm_opp_remove);
-> +
-> +/**
->   * opp_set_availability() - helper to set the availability of an opp
->   * @dev:		device for which we do this operation
->   * @freq:		OPP frequency to modify availability
-> @@ -653,3 +729,47 @@ int of_init_opp_table(struct device *dev)
->  }
->  EXPORT_SYMBOL_GPL(of_init_opp_table);
->  #endif
-> +
-> +/**
-> + * dev_pm_opp_free_opp_table() - free the opp table
-> + * @dev:	device for which we do this operation
-> + *
-> + * Free up the allocated opp table
-> + *
-> + * Locking: The internal device_opp and opp structures are RCU protected.
-> + * Hence this function internally uses RCU updater strategy with mutex locks to
-> + * keep the integrity of the internal data structures. Callers should ensure
-> + * that this function is *NOT* called under RCU protection or in contexts where
-> + * mutex locking cannot be used.
-> + */
-> +void dev_pm_opp_free_opp_table(struct device *dev)
-I understand this can be a generic function without of dependencies..
-but, in general I like symmetry. of_init_opp_table -->
-of_free_opp_table (the OPPs added by init is freed here) - and if
-platform code such as iMX6/others do opp_add on top of of_init_opp,
-they are not impacted. if the platform code did opp_add, then the
-platform code has responsibility for doing opp_remove where needed.
-
-Now, this function does more than that - it will go and remove all
-OPPs for a device whether added by opp_add or added by of_opp_init.
-That will bite us unexpectedly as platform code might have to deal
-with that weirdness against driver/generic logic that deals with
-of_opp_init. I would rather see an equivalent of_opp_deinit/free
-function that handles just the OPPs that were added by the
-corresponding of_opp_init and let opp_remove be used by others.
-
-That also means that of_opp_deinit/free should be done as patch #2.
-
-> +{
-> +	struct device_opp *dev_opp = ERR_PTR(-ENODEV);
-same comment.
-> +	struct dev_pm_opp *opp;
-> +	int count = 0;
-> +
-> +	if (IS_ERR_OR_NULL(dev))
-> +		return;
-Same comment.
-> +
-> +	/* Hold our list modification lock here */
-> +	mutex_lock(&dev_opp_list_lock);
-> +
-> +	/* Check for existing list for 'dev' */
-> +	dev_opp = find_device_opp(dev);
-> +	if (IS_ERR(dev_opp)) {
-> +		dev_warn(dev, "%s: OPP list not found\n", __func__);
-> +		goto unlock;
-> +	}
-> +
-> +	list_for_each_entry_rcu(opp, &dev_opp->opp_list, node)
-> +		count++;
-> +
-> +	while (count--) {
-> +		opp = list_entry_rcu(dev_opp->opp_list.next,
-> +					struct dev_pm_opp, node);
-> +		opp_remove_and_free(dev_opp, opp);
-
-if we use of_, then you have the option of using integrating logic of
-of_init_opp_table and of_free_opp_table and just differentiating
-opp_add Vs opp_remove
-something like http://slexy.org/view/s21rWJzUTm (just a indicative
-diff..) - we'd endup with lesser LoC and duplication of logic.
-
-> +	}
-> +unlock:
-> +	mutex_unlock(&dev_opp_list_lock);
-> +}
-> +EXPORT_SYMBOL_GPL(dev_pm_opp_free_opp_table);
-> diff --git a/include/linux/pm_opp.h b/include/linux/pm_opp.h
-> index 0330217..13e6956 100644
-> --- a/include/linux/pm_opp.h
-> +++ b/include/linux/pm_opp.h
-> @@ -21,7 +21,7 @@ struct dev_pm_opp;
->  struct device;
->  
->  enum dev_pm_opp_event {
-> -	OPP_EVENT_ADD, OPP_EVENT_ENABLE, OPP_EVENT_DISABLE,
-> +	OPP_EVENT_ADD, OPP_EVENT_REMOVE, OPP_EVENT_ENABLE, OPP_EVENT_DISABLE,
->  };
->  
->  #if defined(CONFIG_PM_OPP)
-> @@ -49,7 +49,11 @@ int dev_pm_opp_enable(struct device *dev, unsigned long freq);
->  
->  int dev_pm_opp_disable(struct device *dev, unsigned long freq);
->  
-> +void dev_pm_opp_remove(struct device *dev, unsigned long freq);
-> +
-Lets put this next to add?
-
->  struct srcu_notifier_head *dev_pm_opp_get_notifier(struct device *dev);
-> +
-> +void dev_pm_opp_free_opp_table(struct device *dev);
-
->  #else
->  static inline unsigned long dev_pm_opp_get_voltage(struct dev_pm_opp *opp)
->  {
-> @@ -100,11 +104,19 @@ static inline int dev_pm_opp_disable(struct device *dev, unsigned long freq)
->  	return 0;
->  }
->  
-> +static inline void dev_pm_opp_remove(struct device *dev, unsigned long freq)
-> +{
-> +}
-> +
->  static inline struct srcu_notifier_head *dev_pm_opp_get_notifier(
->  							struct device *dev)
->  {
->  	return ERR_PTR(-EINVAL);
->  }
-> +
-> +static inline void dev_pm_opp_free_opp_table(struct device *dev)
-> +{
-> +}
->  #endif		/* CONFIG_PM_OPP */
->  
->  #if defined(CONFIG_PM_OPP) && defined(CONFIG_OF)
+> [ 1065.604404] kworker/-5766    0d..2 1071625993us : stack_trace_call:  10)     6376     376   vring_add_indirect+0x36/0x200
+> [ 1065.604404] kworker/-5766    0d..2 1071625993us : stack_trace_call:  11)     6000     144   virtqueue_add_sgs+0x2e2/0x320
+> [ 1065.604404] kworker/-5766    0d..2 1071625993us : stack_trace_call:  12)     5856     288   __virtblk_add_req+0xda/0x1b0
+> [ 1065.604404] kworker/-5766    0d..2 1071625993us : stack_trace_call:  13)     5568      96   virtio_queue_rq+0xd3/0x1d0
 > 
 
+As you expected, virtio_ring consumes less than before but not enough but
+interesting thing is consumption of stack usage of __kmalloc and __slab_alloc
+works right in this time. Hmm....
+
+In my previous report,
+
+[ 1065.604404] kworker/-5766    0d..2 1071625992us : stack_trace_call:   6)     6640       8   alloc_pages_current+0x10f/0x1f0
+[ 1065.604404] kworker/-5766    0d..2 1071625992us : stack_trace_call:   7)     6632     168   new_slab+0x2c5/0x370
+[ 1065.604404] kworker/-5766    0d..2 1071625992us : stack_trace_call:   8)     6464       8   __slab_alloc+0x3a9/0x501
+[ 1065.604404] kworker/-5766    0d..2 1071625993us : stack_trace_call:   9)     6456      80   __kmalloc+0x1cb/0x200
+[ 1065.604404] kworker/-5766    0d..2 1071625993us : stack_trace_call:  10)     6376     376   vring_add_indirect+0x36/0x200
+[ 1065.604404] kworker/-5766    0d..2 1071625993us : stack_trace_call:  11)     6000     144   virtqueue_add_sgs+0x2e2/0x320
+[ 1065.604404] kworker/-5766    0d..2 1071625993us : stack_trace_call:  12)     5856     288   __virtblk_add_req+0xda/0x1b0
+[ 1065.604404] kworker/-5766    0d..2 1071625993us : stack_trace_call:  13)     5568      96   virtio_queue_rq+0xd3/0x1d0
+[ 1065.604404] kworker/-5766    0d..2 1071625994us : stack_trace_call:  14)     5472     128   __blk_mq_run_hw_queue+0x1ef/0x440
+[ 1065.604404] kworker/-5766    0d..2 1071625994us : stack_trace_call:  15)     5344      16   blk_mq_run_hw_queue+0x35/0x40
+
+In this time,
+
+[ 2069.135929] kworker/u24:2 (26991) used greatest stack depth: 408 bytes left
+[ 2580.413428] ------------[ cut here ]------------
+[ 2580.413926] kernel BUG at kernel/trace/trace_stack.c:177!
+[ 2580.414479] invalid opcode: 0000 [#1] SMP DEBUG_PAGEALLOC
+[ 2580.415073] Dumping ftrace buffer:
+[ 2580.415465] ---------------------------------
+[ 2580.415763]    <...>-18634   9d..2 2598341673us : stack_trace_call:         Depth    Size   Location    (49 entries)
+[ 2580.415763]         -----    ----   --------
+[ 2580.415763]    <...>-18634   9d..2 2598341697us : stack_trace_call:   0)     7280       8   __alloc_pages_nodemask+0x199/0xb20
+[ 2580.415763]    <...>-18634   9d..2 2598341698us : stack_trace_call:   1)     7272     352   alloc_pages_current+0x10f/0x1f0
+[ 2580.415763]    <...>-18634   9d..2 2598341698us : stack_trace_call:   2)     6920     168   new_slab+0x2c5/0x370
+[ 2580.415763]    <...>-18634   9d..2 2598341698us : stack_trace_call:   3)     6752     256   __slab_alloc+0x3a9/0x501
+[ 2580.415763]    <...>-18634   9d..2 2598341699us : stack_trace_call:   4)     6496     112   __kmalloc+0x1cb/0x200
+[ 2580.415763]    <...>-18634   9d..2 2598341699us : stack_trace_call:   5)     6384      32   alloc_indirect+0x1e/0x50
+[ 2580.415763]    <...>-18634   9d..2 2598341699us : stack_trace_call:   6)     6352     112   virtqueue_add_sgs+0xc7/0x300
+[ 2580.415763]    <...>-18634   9d..2 2598341699us : stack_trace_call:   7)     6240     288   __virtblk_add_req+0xda/0x1b0
+[ 2580.415763]    <...>-18634   9d..2 2598341699us : stack_trace_call:   8)     5952      96   virtio_queue_rq+0xd3/0x1d0
+[ 2580.415763]    <...>-18634   9d..2 2598341699us : stack_trace_call:   9)     5856     128   __blk_mq_run_hw_queue+0x1ef/0x440
+[ 2580.415763]    <...>-18634   9d..2 2598341700us : stack_trace_call:  10)     5728      16   blk_mq_run_hw_queue+0x35/0x40
+[ 2580.415763]    <...>-18634   9d..2 2598341700us : stack_trace_call:  11)     5712      96   blk_mq_insert_requests+0xdb/0x160
+[ 2580.415763]    <...>-18634   9d..2 2598341700us : stack_trace_call:  12)     5616     112   blk_mq_flush_plug_list+0x12b/0x140
+[ 2580.415763]    <...>-18634   9d..2 2598341700us : stack_trace_call:  13)     5504     112   blk_flush_plug_list+0xc7/0x220
+[ 2580.415763]    <...>-18634   9d..2 2598341700us : stack_trace_call:  14)     5392      64   io_schedule_timeout+0x88/0x100
+[ 2580.415763]    <...>-18634   9d..2 2598341701us : stack_trace_call:  15)     5328     128   mempool_alloc+0x145/0x170
+[ 2580.415763]    <...>-18634   9d..2 2598341701us : stack_trace_call:  16)     5200      96   bio_alloc_bioset+0x10b/0x1d0
+[ 2580.415763]    <...>-18634   9d..2 2598341701us : stack_trace_call:  17)     5104      48   get_swap_bio+0x30/0x90
+[ 2580.415763]    <...>-18634   9d..2 2598341701us : stack_trace_call:  18)     5056     160   __swap_writepage+0x150/0x230
+[ 2580.415763]    <...>-18634   9d..2 2598341701us : stack_trace_call:  19)     4896      32   swap_writepage+0x42/0x90
+[ 2580.415763]    <...>-18634   9d..2 2598341701us : stack_trace_call:  20)     4864     320   shrink_page_list+0x676/0xa80
+[ 2580.415763]    <...>-18634   9d..2 2598341702us : stack_trace_call:  21)     4544     208   shrink_inactive_list+0x262/0x4e0
+[ 2580.415763]    <...>-18634   9d..2 2598341702us : stack_trace_call:  22)     4336     304   shrink_lruvec+0x3e1/0x6a0
+[ 2580.415763]    <...>-18634   9d..2 2598341702us : stack_trace_call:  23)     4032      80   shrink_zone+0x3f/0x110
+[ 2580.415763]    <...>-18634   9d..2 2598341702us : stack_trace_call:  24)     3952     128   do_try_to_free_pages+0x156/0x4c0
+[ 2580.415763]    <...>-18634   9d..2 2598341702us : stack_trace_call:  25)     3824     208   try_to_free_pages+0xf7/0x1e0
+[ 2580.415763]    <...>-18634   9d..2 2598341703us : stack_trace_call:  26)     3616     352   __alloc_pages_nodemask+0x783/0xb20
+[ 2580.415763]    <...>-18634   9d..2 2598341703us : stack_trace_call:  27)     3264       8   alloc_pages_current+0x10f/0x1f0
+[ 2580.415763]    <...>-18634   9d..2 2598341703us : stack_trace_call:  28)     3256     200   __page_cache_alloc+0x13f/0x160
+[ 2580.415763]    <...>-18634   9d..2 2598341703us : stack_trace_call:  29)     3056      80   find_or_create_page+0x4c/0xb0
+[ 2580.415763]    <...>-18634   9d..2 2598341703us : stack_trace_call:  30)     2976     112   __getblk+0x109/0x2f0
+[ 2580.415763]    <...>-18634   9d..2 2598341703us : stack_trace_call:  31)     2864      80   ext4_read_block_bitmap_nowait+0x5e/0x330
+[ 2580.415763]    <...>-18634   9d..2 2598341704us : stack_trace_call:  32)     2784     192   ext4_mb_init_cache+0x158/0x780
+[ 2580.415763]    <...>-18634   9d..2 2598341704us : stack_trace_call:  33)     2592      80   ext4_mb_load_buddy+0x28a/0x370
+[ 2580.415763]    <...>-18634   9d..2 2598341704us : stack_trace_call:  34)     2512     176   ext4_mb_regular_allocator+0x1b7/0x460
+[ 2580.415763]    <...>-18634   9d..2 2598341704us : stack_trace_call:  35)     2336     128   ext4_mb_new_blocks+0x458/0x5f0
+[ 2580.415763]    <...>-18634   9d..2 2598341704us : stack_trace_call:  36)     2208     256   ext4_ext_map_blocks+0x70b/0x1010
+[ 2580.415763]    <...>-18634   9d..2 2598341704us : stack_trace_call:  37)     1952     160   ext4_map_blocks+0x325/0x530
+[ 2580.415763]    <...>-18634   9d..2 2598341705us : stack_trace_call:  38)     1792     384   ext4_writepages+0x6d1/0xce0
+[ 2580.415763]    <...>-18634   9d..2 2598341705us : stack_trace_call:  39)     1408      16   do_writepages+0x23/0x40
+[ 2580.415763]    <...>-18634   9d..2 2598341705us : stack_trace_call:  40)     1392      96   __writeback_single_inode+0x45/0x2e0
+[ 2580.415763]    <...>-18634   9d..2 2598341705us : stack_trace_call:  41)     1296     176   writeback_sb_inodes+0x2ad/0x500
+[ 2580.415763]    <...>-18634   9d..2 2598341705us : stack_trace_call:  42)     1120      80   __writeback_inodes_wb+0x9e/0xd0
+[ 2580.415763]    <...>-18634   9d..2 2598341706us : stack_trace_call:  43)     1040     160   wb_writeback+0x29b/0x350
+[ 2580.415763]    <...>-18634   9d..2 2598341706us : stack_trace_call:  44)      880     208   bdi_writeback_workfn+0x11c/0x480
+[ 2580.415763]    <...>-18634   9d..2 2598341706us : stack_trace_call:  45)      672     144   process_one_work+0x1d2/0x570
+[ 2580.415763]    <...>-18634   9d..2 2598341706us : stack_trace_call:  46)      528     112   worker_thread+0x116/0x370
+[ 2580.415763]    <...>-18634   9d..2 2598341706us : stack_trace_call:  47)      416     240   kthread+0xf3/0x110
+[ 2580.415763]    <...>-18634   9d..2 2598341706us : stack_trace_call:  48)      176     176   ret_from_fork+0x7c/0xb0
+[ 2580.415763] ---------------------------------
+[ 2580.415763] Modules linked in:
+[ 2580.415763] CPU: 9 PID: 18634 Comm: kworker/u24:1 Not tainted 3.14.0+ #202
+[ 2580.415763] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+[ 2580.415763] Workqueue: writeback bdi_writeback_workfn (flush-253:0)
+[ 2580.415763] task: ffff88001e9ca0e0 ti: ffff880029c52000 task.ti: ffff880029c52000
+[ 2580.415763] RIP: 0010:[<ffffffff8112340f>]  [<ffffffff8112340f>] stack_trace_call+0x37f/0x390
+[ 2580.415763] RSP: 0000:ffff880029c52270  EFLAGS: 00010096
+[ 2580.415763] RAX: ffff880029c52000 RBX: 0000000000000009 RCX: 0000000000000002
+[ 2580.415763] RDX: 0000000000000006 RSI: 0000000000000002 RDI: ffff88003780be00
+[ 2580.415763] RBP: ffff880029c522d0 R08: 00000000000009e8 R09: ffffffffffffffff
+[ 2580.415763] R10: ffff880029c53fd8 R11: 0000000000000001 R12: 000000000000f2e8
+[ 2580.415763] R13: 0000000000000009 R14: ffffffff82768dfc R15: 00000000000000f8
+[ 2580.415763] FS:  0000000000000000(0000) GS:ffff880037d20000(0000) knlGS:0000000000000000
+[ 2580.415763] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[ 2580.415763] CR2: 00002aea5db57000 CR3: 0000000001c0b000 CR4: 00000000000006e0
+[ 2580.415763] Stack:
+[ 2580.415763]  0000000000000009 ffffffff81150819 0000000000000083 0000000000001c70
+[ 2580.415763]  ffff880029c52300 ffffffff81005e11 ffffffff81c55ef0 0000000000000000
+[ 2580.415763]  0000000000000002 ffff88001e9ca0e0 ffff88001e9cb108 0000000000000000
+[ 2580.415763] Call Trace:
+[ 2580.415763]  [<ffffffff81150819>] ? __alloc_pages_nodemask+0x199/0xb20
+[ 2580.415763]  [<ffffffff81005e11>] ? print_context_stack+0x81/0x140
+[ 2580.415763]  [<ffffffff816eedbf>] ftrace_call+0x5/0x2f
+[ 2580.415763]  [<ffffffff8119097f>] ? alloc_pages_current+0x10f/0x1f0
+[ 2580.415763]  [<ffffffff8119097f>] ? alloc_pages_current+0x10f/0x1f0
+[ 2580.415763]  [<ffffffff811650b5>] ? next_zones_zonelist+0x5/0x70
+[ 2580.415763]  [<ffffffff810a22dd>] ? trace_hardirqs_off+0xd/0x10
+[ 2580.415763]  [<ffffffff811650b5>] ? next_zones_zonelist+0x5/0x70
+[ 2580.415763]  [<ffffffff81150819>] ? __alloc_pages_nodemask+0x199/0xb20
+[ 2580.415763]  [<ffffffff8119097f>] ? alloc_pages_current+0x10f/0x1f0
+[ 2580.415763]  [<ffffffff810a22dd>] ? trace_hardirqs_off+0xd/0x10
+[ 2580.415763]  [<ffffffff811231a9>] ? stack_trace_call+0x119/0x390
+[ 2580.415763]  [<ffffffff816eedbf>] ? ftrace_call+0x5/0x2f
+[ 2580.415763]  [<ffffffff8119097f>] alloc_pages_current+0x10f/0x1f0
+[ 2580.415763]  [<ffffffff81199d25>] ? new_slab+0x2c5/0x370
+[ 2580.415763]  [<ffffffff81199d25>] new_slab+0x2c5/0x370
+[ 2580.415763]  [<ffffffff816dafb2>] __slab_alloc+0x3a9/0x501
+[ 2580.415763]  [<ffffffff8141daee>] ? alloc_indirect+0x1e/0x50
+[ 2580.415763]  [<ffffffff8141daee>] ? alloc_indirect+0x1e/0x50
+[ 2580.415763]  [<ffffffff8141daee>] ? alloc_indirect+0x1e/0x50
+[ 2580.415763]  [<ffffffff8119afdb>] __kmalloc+0x1cb/0x200
+[ 2580.415763]  [<ffffffff8141daee>] alloc_indirect+0x1e/0x50
+[ 2580.415763]  [<ffffffff8141e297>] virtqueue_add_sgs+0xc7/0x300
+[ 2580.415763]  [<ffffffff8148e2fa>] __virtblk_add_req+0xda/0x1b0
+[ 2580.415763]  [<ffffffff8148e4a3>] virtio_queue_rq+0xd3/0x1d0
+[ 2580.415763]  [<ffffffff8134aa5f>] __blk_mq_run_hw_queue+0x1ef/0x440
+[ 2580.415763]  [<ffffffff8134b125>] blk_mq_run_hw_queue+0x35/0x40
+[ 2580.415763]  [<ffffffff8134b80b>] blk_mq_insert_requests+0xdb/0x160
+[ 2580.415763]  [<ffffffff8134beab>] blk_mq_flush_plug_list+0x12b/0x140
+[ 2580.415763]  [<ffffffff81342287>] blk_flush_plug_list+0xc7/0x220
+[ 2580.415763]  [<ffffffff816e609f>] ? _raw_spin_unlock_irqrestore+0x3f/0x70
+[ 2580.415763]  [<ffffffff816e1698>] io_schedule_timeout+0x88/0x100
+[ 2580.415763]  [<ffffffff816e1615>] ? io_schedule_timeout+0x5/0x100
+[ 2580.415763]  [<ffffffff81149465>] mempool_alloc+0x145/0x170
+[ 2580.415763]  [<ffffffff8109baf0>] ? __init_waitqueue_head+0x60/0x60
+[ 2580.415763]  [<ffffffff811e24bb>] bio_alloc_bioset+0x10b/0x1d0
+[ 2580.415763]  [<ffffffff81184280>] ? end_swap_bio_read+0xc0/0xc0
+[ 2580.415763]  [<ffffffff81184280>] ? end_swap_bio_read+0xc0/0xc0
+[ 2580.415763]  [<ffffffff81184160>] get_swap_bio+0x30/0x90
+[ 2580.415763]  [<ffffffff81184280>] ? end_swap_bio_read+0xc0/0xc0
+[ 2580.415763]  [<ffffffff811846b0>] __swap_writepage+0x150/0x230
+[ 2580.415763]  [<ffffffff810ab405>] ? do_raw_spin_unlock+0x5/0xa0
+[ 2580.415763]  [<ffffffff81184280>] ? end_swap_bio_read+0xc0/0xc0
+[ 2580.415763]  [<ffffffff81184565>] ? __swap_writepage+0x5/0x230
+[ 2580.415763]  [<ffffffff811847d2>] swap_writepage+0x42/0x90
+[ 2580.415763]  [<ffffffff8115aee6>] shrink_page_list+0x676/0xa80
+[ 2580.415763]  [<ffffffff816eedbf>] ? ftrace_call+0x5/0x2f
+[ 2580.415763]  [<ffffffff8115b8c2>] shrink_inactive_list+0x262/0x4e0
+[ 2580.415763]  [<ffffffff8115c211>] shrink_lruvec+0x3e1/0x6a0
+[ 2580.415763]  [<ffffffff8115c50f>] shrink_zone+0x3f/0x110
+[ 2580.415763]  [<ffffffff816eedbf>] ? ftrace_call+0x5/0x2f
+[ 2580.415763]  [<ffffffff8115ca36>] do_try_to_free_pages+0x156/0x4c0
+[ 2580.415763]  [<ffffffff8115cf97>] try_to_free_pages+0xf7/0x1e0
+[ 2580.415763]  [<ffffffff81150e03>] __alloc_pages_nodemask+0x783/0xb20
+[ 2580.415763]  [<ffffffff8119097f>] alloc_pages_current+0x10f/0x1f0
+[ 2580.415763]  [<ffffffff81145c5f>] ? __page_cache_alloc+0x13f/0x160
+[ 2580.415763]  [<ffffffff81145c5f>] __page_cache_alloc+0x13f/0x160
+[ 2580.415763]  [<ffffffff81146cbc>] find_or_create_page+0x4c/0xb0
+[ 2580.415763]  [<ffffffff811ded09>] __getblk+0x109/0x2f0
+[ 2580.415763]  [<ffffffff8124629e>] ext4_read_block_bitmap_nowait+0x5e/0x330
+[ 2580.415763]  [<ffffffff81282bf8>] ext4_mb_init_cache+0x158/0x780
+[ 2580.415763]  [<ffffffff816eedbf>] ? ftrace_call+0x5/0x2f
+[ 2580.415763]  [<ffffffff81155d15>] ? __lru_cache_add+0x5/0x90
+[ 2580.415763]  [<ffffffff81146435>] ? find_get_page+0x5/0x130
+[ 2580.415763]  [<ffffffff812838aa>] ext4_mb_load_buddy+0x28a/0x370
+[ 2580.415763]  [<ffffffff81284c57>] ext4_mb_regular_allocator+0x1b7/0x460
+[ 2580.415763]  [<ffffffff812810c0>] ? ext4_mb_use_preallocated+0x40/0x360
+[ 2580.415763]  [<ffffffff816eedbf>] ? ftrace_call+0x5/0x2f
+[ 2580.415763]  [<ffffffff81287f08>] ext4_mb_new_blocks+0x458/0x5f0
+[ 2580.415763]  [<ffffffff8127d88b>] ext4_ext_map_blocks+0x70b/0x1010
+[ 2580.415763]  [<ffffffff8124e725>] ext4_map_blocks+0x325/0x530
+[ 2580.415763]  [<ffffffff812538c1>] ext4_writepages+0x6d1/0xce0
+[ 2580.415763]  [<ffffffff812531f0>] ? ext4_journalled_write_end+0x330/0x330
+[ 2580.415763]  [<ffffffff81153a03>] do_writepages+0x23/0x40
+[ 2580.415763]  [<ffffffff811d23b5>] __writeback_single_inode+0x45/0x2e0
+[ 2580.415763]  [<ffffffff811d373d>] writeback_sb_inodes+0x2ad/0x500
+[ 2580.415763]  [<ffffffff811d3a2e>] __writeback_inodes_wb+0x9e/0xd0
+[ 2580.415763]  [<ffffffff811d410b>] wb_writeback+0x29b/0x350
+[ 2580.415763]  [<ffffffff81057c3d>] ? __local_bh_enable_ip+0x6d/0xd0
+[ 2580.415763]  [<ffffffff811d6eec>] bdi_writeback_workfn+0x11c/0x480
+[ 2580.415763]  [<ffffffff81070610>] ? process_one_work+0x170/0x570
+[ 2580.415763]  [<ffffffff81070672>] process_one_work+0x1d2/0x570
+[ 2580.415763]  [<ffffffff81070610>] ? process_one_work+0x170/0x570
+[ 2580.415763]  [<ffffffff81071bb6>] worker_thread+0x116/0x370
+[ 2580.415763]  [<ffffffff81071aa0>] ? manage_workers.isra.19+0x2e0/0x2e0
+[ 2580.415763]  [<ffffffff81078e53>] kthread+0xf3/0x110
+[ 2580.415763]  [<ffffffff81078d60>] ? flush_kthread_worker+0x150/0x150
+[ 2580.415763]  [<ffffffff816ef06c>] ret_from_fork+0x7c/0xb0
+[ 2580.415763]  [<ffffffff81078d60>] ? flush_kthread_worker+0x150/0x150
 
 -- 
-Regards,
-Nishanth Menon
+Kind regards,
+Minchan Kim
