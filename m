@@ -1,53 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932490AbaE3JJc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 05:09:32 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:60132 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752272AbaE3JJa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 05:09:30 -0400
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Trond Myklebust <trond.myklebust@primarydata.com>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] NFS: Use smp_mb__{before,after}_atomic()
-Date: Fri, 30 May 2014 11:06:55 +0200
-Message-Id: <1401440815-4227-1-git-send-email-thierry.reding@gmail.com>
-X-Mailer: git-send-email 1.9.2
+	id S1755337AbaE3JP1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 05:15:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37136 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753393AbaE3JPZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 May 2014 05:15:25 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <7184.1401439773@warthog.procyon.org.uk>
+References: <7184.1401439773@warthog.procyon.org.uk> <11446.1401420931@jrobl> <1400838223-30844-1-git-send-email-miklos@szeredi.hu> <28592.1401382081@warthog.procyon.org.uk>
+Cc: dhowells@redhat.com, "J. R. Okajima" <hooanon05g@gmail.com>,
+        Miklos Szeredi <miklos@szeredi.hu>, viro@ZenIV.linux.org.uk,
+        torvalds@linux-foundation.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, hch@infradead.org,
+        akpm@linux-foundation.org, apw@canonical.com, nbd@openwrt.org,
+        neilb@suse.de, jordipujolp@gmail.com, ezk@fsl.cs.sunysb.edu,
+        sedat.dilek@gmail.com, mszeredi@suse.cz
+Subject: Re: Unionmount and overlayfs testsuite
+Date: Fri, 30 May 2014 10:14:45 +0100
+Message-ID: <7708.1401441285@warthog.procyon.org.uk>
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thierry Reding <treding@nvidia.com>
+David Howells <dhowells@redhat.com> wrote:
 
-Commit febdbfe8a91c (arch: Prepare for smp_mb__{before,after}_atomic())
-deprecated the smp_mb__{before,after}_{atomic,clear}_{dec,inc,bit}*()
-functions in favour of the unified smp_mb__{before,after}_atomic().
+> I'll have to address the termslash alterations at some point.
 
-While at it, convert the smb_mb__before_atomic()/clear_bit() pattern to
-the more idiomatic clear_bit_unlock().
+Okay.  Done and pushed.
 
-Signed-off-by: Thierry Reding <treding@nvidia.com>
----
- fs/nfs/pagelist.c | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
-
-diff --git a/fs/nfs/pagelist.c b/fs/nfs/pagelist.c
-index 353331969626..c00d4f1de8ef 100644
---- a/fs/nfs/pagelist.c
-+++ b/fs/nfs/pagelist.c
-@@ -173,9 +173,8 @@ nfs_page_group_unlock(struct nfs_page *req)
- 
- 	WARN_ON_ONCE(head != head->wb_head);
- 
--	smp_mb__before_clear_bit();
--	clear_bit(PG_HEADLOCK, &head->wb_flags);
--	smp_mb__after_clear_bit();
-+	clear_bit_unlock(PG_HEADLOCK, &head->wb_flags);
-+	smp_mb__after_atomic();
- 	wake_up_bit(&head->wb_flags, PG_HEADLOCK);
- }
- 
--- 
-1.9.2
-
+David
