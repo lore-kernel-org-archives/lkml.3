@@ -1,122 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754467AbaE3B45 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 21:56:57 -0400
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:41663 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751037AbaE3B44 (ORCPT
+	id S1754498AbaE3B7h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 21:59:37 -0400
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:51722 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751538AbaE3B7g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 21:56:56 -0400
-MIME-Version: 1.0
-In-Reply-To: <53877103.8070604@wwwdotorg.org>
-References: <cover.1400662383.git.viresh.kumar@linaro.org>
-	<dc2702973028425e3ded689a6da227658fb914c4.1400662383.git.viresh.kumar@linaro.org>
-	<53877103.8070604@wwwdotorg.org>
-Date: Fri, 30 May 2014 07:26:55 +0530
-Message-ID: <CAKohponsZOpV74+SLMDLy0oCV-j896wA9--bwbwk4GUL59m1ug@mail.gmail.com>
-Subject: Re: [PATCH V4 3/3] cpufreq: Tegra: implement intermediate frequency callbacks
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+	Thu, 29 May 2014 21:59:36 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Ar1ZAIHlh1N5LL1sPGdsb2JhbABZgweDRIUIonABAQEBAQEGmBgBgQYXAwEBAQE4NYIlAQEFOhwjEAgDGAklDwUlAwcaExuIJtdjFxaFP4h9B4RABJl0ixqLWis
+Date: Fri, 30 May 2014 11:58:52 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Minchan Kim <minchan@kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arvind Chauhan <arvind.chauhan@arm.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        Doug Anderson <dianders@chromium.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>
-Content-Type: text/plain; charset=UTF-8
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm <linux-mm@kvack.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Hugh Dickins <hughd@google.com>, Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [RFC 2/2] x86_64: expand kernel stack to 16K
+Message-ID: <20140530015852.GG14410@dastard>
+References: <20140528223142.GO8554@dastard>
+ <CA+55aFyRk6_v6COPGVvu6hvt=i2A8-dPcs1X3Ydn1g24AxbPkg@mail.gmail.com>
+ <20140529013007.GF6677@dastard>
+ <20140529015830.GG6677@dastard>
+ <20140529233638.GJ10092@bbox>
+ <CA+55aFyvn_fTnWEmTCSGgfM18c21-YDU_s=FJP=grDDLQe+aDA@mail.gmail.com>
+ <20140530002021.GM10092@bbox>
+ <CA+55aFxjXf5xLKGFBjUWimn8-=rj0=g3pku9O1MvGSoDUcEQAw@mail.gmail.com>
+ <20140530005042.GO10092@bbox>
+ <CA+55aFz84toJOqnuphA99c0av1nLzxcxfjiTwhBbxzaNs3J6NQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFz84toJOqnuphA99c0av1nLzxcxfjiTwhBbxzaNs3J6NQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29 May 2014 23:10, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> This patch breaks Tegra. The reason is below.
+On Thu, May 29, 2014 at 06:24:02PM -0700, Linus Torvalds wrote:
+> On Thu, May 29, 2014 at 5:50 PM, Minchan Kim <minchan@kernel.org> wrote:
+> >>
+> >> You could also try Dave's patch, and _not_ do my mm/vmscan.c part.
+> >
+> > Sure. While I write this, Rusty's test was crached so I will try Dave's patch,
+> > them yours except vmscan.c part.
+> 
+> Looking more at Dave's patch (well, description), I don't think there
+> is any way in hell we can ever apply it. If I read it right, it will
+> cause all IO that overflows the max request count to go through the
+> scheduler to get it flushed. Maybe I misread it, but that's definitely
+> not acceptable. Maybe it's not noticeable with a slow rotational
+> device, but modern ssd hardware? No way.
+> 
+> I'd *much* rather slow down the swap side. Not "real IO". So I think
+> my mm/vmscan.c patch is preferable (but yes, it might require some
+> work to make kswapd do better).
+> 
+> So you can try Dave's patch just to see what it does for stack depth,
+> but other than that it looks unacceptable unless I misread things.
 
-Lets see what blunder I made :)
+Yeah, it's a hack, not intended as a potential solution.
 
->> diff --git a/drivers/cpufreq/tegra-cpufreq.c b/drivers/cpufreq/tegra-cpufreq.c
->
->> -static int tegra_cpu_clk_set_rate(unsigned long rate)
->> +static unsigned int
->> +tegra_get_intermediate(struct cpufreq_policy *policy, unsigned int index)
->
-> (BTW, can we please not put the return type on a separate line; it's
-> inconsistent with the rest of the code in this file)
+I'm thinking, though, that plug flushing behaviour is actually
+dependent on plugger context and there is no one "correct"
+behaviour. If we are doing process driven IO, then we want to do
+immediate dispatch, but for IO where stack is an issue or is for
+bulk throughput (e.g. background writeback) async dispatch through
+kblockd is desirable.
 
-Sure.
+If the patch I sent solves the swap stack usage issue, then perhaps
+we should look towards adding "blk_plug_start_async()" to pass such
+hints to the plug flushing. I'd want to use the same behaviour in
+__xfs_buf_delwri_submit() for bulk metadata writeback in XFS, and
+probably also in mpage_writepages() for bulk data writeback in
+WB_SYNC_NONE context....
 
->> +{
->> +     unsigned int ifreq = clk_get_rate(pll_p_clk) / 1000;
->> +
->> +     /*
->> +      * Don't switch to intermediate freq if:
->> +      * - we are already at it, i.e. policy->cur == ifreq
->> +      * - index corresponds to ifreq
->> +      */
->> +     if ((freq_table[index].frequency == ifreq) || (policy->cur == ifreq))
->> +             return 0;
->
-> If policy->cur == ifreq here, then tegra_target_intermediate() isn't
-> called by the cpufreq core, so ...
->
->> +static int
->> +tegra_target_intermediate(struct cpufreq_policy *policy, unsigned int index)
->>  {
->>       int ret;
->>
->>       /*
->>        * Take an extra reference to the main pll so it doesn't turn
->>        * off when we move the cpu off of it
->>        */
->>       clk_prepare_enable(pll_x_clk);
->
-> ... that reference isn't added...
->
->> @@ -98,10 +96,23 @@ static int tegra_target(struct cpufreq_policy *policy, unsigned int index)
->>       else
->>               clk_set_rate(emc_clk, 100000000);  /* emc 50Mhz */
->>
->> -     ret = tegra_cpu_clk_set_rate(rate * 1000);
->> +     /* target freq == pll_p */
->> +     if (rate * 1000 == clk_get_rate(pll_p_clk)) {
->> +             ret = tegra_target_intermediate(policy, index);
->> +             goto disable_pll_x;
->> +     }
->
-> ... and this code doesn't call it either, since we could be switching
-> from the pll_p rate to something faster ...
->
->> +
->> +     ret = clk_set_rate(pll_x_clk, rate * 1000);
->> +     /* Restore to earlier frequency on error, i.e. pll_x */
->>       if (ret)
->> -             pr_err("cpu-tegra: Failed to set cpu frequency to %lu kHz\n",
->> -                     rate);
->> +             pr_err("Failed to change pll_x to %lu\n", rate);
->> +
->> +     ret = clk_set_parent(cpu_clk, pll_x_clk);
->> +     /* This shouldn't fail while changing or restoring */
->> +     WARN_ON(ret);
->> +
->> +disable_pll_x:
->> +     clk_disable_unprepare(pll_x_clk);
->
-> ... so this turns off pll_x even though we're running from it.
+Cheers,
 
-Can you describe the role of the enable/disable of this pll_x_clk please?
-Which all clocks depend on it, etc? So that I understand why its important
-to enable it and for which clocks. And also if we need to disable it after
-changing to any freq..
-
-> It would be simpler if Tegra *always* used an intermediate frequency,
-> and hence the core *always* called tegra_target_intermediate().
-> Admittedly, this would result in tegra_target() sometimes (when
-> switching CPU clock rate to the pll_p rate) doing nothing other than
-> removing the extra reference on pll_x, but I think that the code would
-> be simpler to follow and more robust.
-
-Ok, will check what suits best.
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
