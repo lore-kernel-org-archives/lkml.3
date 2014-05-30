@@ -1,93 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934742AbaE3WAk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 18:00:40 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:39568 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934403AbaE3WAi (ORCPT
+	id S934804AbaE3WB0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 18:01:26 -0400
+Received: from srv01.voixit.com ([78.47.68.188]:37922 "EHLO srv01.voixit.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756132AbaE3WBZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 18:00:38 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140530214643.GL28131@pd.tnic>
-References: <1367969371-27414-1-git-send-email-yinghai@kernel.org>
- <20140530170103.GE4607@google.com> <20140530214643.GL28131@pd.tnic>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Fri, 30 May 2014 16:00:17 -0600
-Message-ID: <CAErSpo4kQViCtaG9Fs_Amyr0pp96fsmdX2puJueK6Jf_XXdm1Q@mail.gmail.com>
-Subject: Re: [PATCH] PCI, EDAC: fix ordering assign resource and bus_add
-To: Borislav Petkov <bp@alien8.de>
-Cc: Yinghai Lu <yinghai@kernel.org>, Doug Thompson <dougthompson@xmission.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        linux-edac@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 30 May 2014 18:01:25 -0400
+Subject: Re: [PATCH RFC - TAKE TWO - 11/12] block, bfq: boost the throughput on NCQ-capable flash-based devices
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.2\))
+Content-Type: text/plain; charset=us-ascii
+From: Paolo Valente <paolo.valente@unimore.it>
+In-Reply-To: <20140530154654.GE24871@htj.dyndns.org>
+Date: Sat, 31 May 2014 00:01:21 +0200
+Cc: Jens Axboe <axboe@kernel.dk>, Li Zefan <lizefan@huawei.com>,
+        Fabio Checconi <fchecconi@gmail.com>,
+        Arianna Avanzini <avanzini.arianna@gmail.com>,
+        linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <2BC999D0-F9FC-427B-A371-B9B4D951B693@unimore.it>
+References: <20140528221929.GG1419@htj.dyndns.org> <1401354343-5527-1-git-send-email-paolo.valente@unimore.it> <1401354343-5527-12-git-send-email-paolo.valente@unimore.it> <20140530154654.GE24871@htj.dyndns.org>
+To: Tejun Heo <tj@kernel.org>
+X-Mailer: Apple Mail (2.1878.2)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 30, 2014 at 3:46 PM, Borislav Petkov <bp@alien8.de> wrote:
-> On Fri, May 30, 2014 at 11:01:03AM -0600, Bjorn Helgaas wrote:
->> On Tue, May 07, 2013 at 04:29:31PM -0700, Yinghai Lu wrote:
->> > We should assign unassigned resource before pci_bus_add_device.
->> >
->> > as late one will enable driver and create sysfs file that will need
->> > pci io resources from assign unassigned code.
->> >
->> > Signed-off-by: Yinghai Lu <yinghai@kernel.org>
->>
->> Applied to pci/resource for v3.16, thanks!
->
-> This is touching drivers/edac/ and I guess I'm fine with it,
->
-> Acked-by: Borislav Petkov <bp@suse.de>
 
-Thanks, I should have waited for you.  I was assuming the merge window
-would open on Monday, and I hoped for a day or two in -next, but now
-it sounds like we might have an -rc8, so I needn't have been in such a
-hurry.
+Il giorno 30/mag/2014, alle ore 17:46, Tejun Heo <tj@kernel.org> ha scritto:
 
->> > ---
->> >  drivers/edac/i82875p_edac.c |    3 ++-
->> >  1 file changed, 2 insertions(+), 1 deletion(-)
->> >
->> > Index: linux-2.6/drivers/edac/i82875p_edac.c
->> > ===================================================================
->> > --- linux-2.6.orig/drivers/edac/i82875p_edac.c
->> > +++ linux-2.6/drivers/edac/i82875p_edac.c
->> > @@ -293,13 +293,14 @@ static int i82875p_setup_overfl_dev(stru
->> >             if (dev == NULL)
->> >                     return 1;
->> >
->> > +           pci_bus_assign_resources(dev->bus);
->> > +
->> >             err = pci_bus_add_device(dev);
->> >             if (err) {
->> >                     i82875p_printk(KERN_ERR,
->> >                             "%s(): pci_bus_add_device() Failed\n",
->> >                             __func__);
->> >             }
->> > -           pci_bus_assign_resources(dev->bus);a
->
->
-> ... one question though: how are people using those pci_bus*
-> functions supposed to know that pci_bus_assign_resources needs to
-> go before pci_bus_add_device? The comment in pci_bus_add_device()
-> mentions something about it but wouldn't it be possible to call
-> pci_bus_assign_resources() in pci_bus_add_device() when resources are
-> not assigned?
+> On Thu, May 29, 2014 at 11:05:42AM +0200, Paolo Valente wrote:
+>> This patch boosts the throughput on NCQ-capable flash-based devices,
+>> while still preserving latency guarantees for interactive and soft
+>> real-time applications. The throughput is boosted by just not idling
+>> the device when the in-service queue remains empty, even if the queue
+>> is sync and has a non-null idle window. This helps to keep the drive's
+>> internal queue full, which is necessary to achieve maximum
+>> performance. This solution to boost the throughput is a port of
+>> commits a68bbdd and f7d7b7a for CFQ.
+>> 
+>> As already highlighted in patch 10, allowing the device to prefetch
+>> and internally reorder requests trivially causes loss of control on
+>> the request service order, and hence on service guarantees.
+>> Fortunately, as discussed in detail in the comments to the function
+>> bfq_bfqq_must_not_expire(), if every process has to receive the same
+>> fraction of the throughput, then the service order enforced by the
+>> internal scheduler of a flash-based device is relatively close to that
+>> enforced by BFQ. In particular, it is close enough to let service
+>> guarantees be substantially preserved.
+>> 
+>> Things change in an asymmetric scenario, i.e., if not every process
+>> has to receive the same fraction of the throughput. In this case, to
+>> guarantee the desired throughput distribution, the device must be
+>> prevented from prefetching requests. This is exactly what this patch
+>> does in asymmetric scenarios.
+> 
+> Does it even make sense to use this type of heavy iosched on ssds?
+> It's highly likely that ssds will soon be served through blk-mq
+> bypassing all these.  I don't feel too enthused about adding code to
+> support ssds to ioscheds.  A lot better approach would be just default
+> to deadline for them anyway.
+> 
 
-Yeah, this is really a mess.  The pci_bus_*() functions (at least
-pci_bus_add_device() and pci_bus_assign_resources()) are not really
-intended to be called by drivers at all -- they should only be used by
-the arch code that drives PCI enumeration.  Eventually I'd like to
-even move them out of the arch code and into the PCI core.
+This was basically my opinion before I started running test also with SSDs. As you can see from, e.g., Figure 8 in
+http://algogroup.unimore.it/people/paolo/disk_sched/extra_results.php
+or Figure 9 in
+http://algogroup.unimore.it/people/paolo/disk_sched/results.php
+with deadline, as with NOOP and even worse with CFQ, start-up times become unbearably high while some files are being read sequentially. I have got even higher latencies on Intel SSDs.
 
-In this i82875p case, it looks like this is basically a quirk that
-unhides a device.  I think it's sort of dubious to poke at things the
-BIOS has explicitly hidden from the OS, but apart from that, if we
-turned this into an actual DECLARE_PCI_FIXUP_CLASS_EARLY() quirk on
-the 82875_0 device, I think the normal PCI enumeration process would
-find the 82875_6 device, and we could get rid of the whole "if (dev ==
-NULL)" chunk.
+One of the main reasons is that these schedulers allow the drive to queue more than one request. Maybe adding some of the low-latency heuristics of bfq to deadline may help, but it should be investigated.
 
-Bjorn
+Paolo
+
+
+> Thanks.
+> 
+> -- 
+> tejun
+
+
+--
+Paolo Valente                                                 
+Algogroup
+Dipartimento di Fisica, Informatica e Matematica		
+Via Campi, 213/B
+41125 Modena - Italy        				  
+homepage:  http://algogroup.unimore.it/people/paolo/
+
