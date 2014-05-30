@@ -1,50 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752416AbaE3E3c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 00:29:32 -0400
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:48687 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932065AbaE3E31 (ORCPT
+	id S1752102AbaE3EhG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 00:37:06 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:60146 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751082AbaE3EhD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 00:29:27 -0400
+	Fri, 30 May 2014 00:37:03 -0400
 MIME-Version: 1.0
-In-Reply-To: <1400970182-20196-1-git-send-email-chase.southwood@gmail.com>
-References: <1400970182-20196-1-git-send-email-chase.southwood@gmail.com>
-Date: Thu, 29 May 2014 23:29:27 -0500
-Message-ID: <CA+jnaaV4gE+1eN8TR=rRT4nekiGDOzXw9PqTTsPAkA+qrAJpCg@mail.gmail.com>
-Subject: Re: [PATCH 0/3] staging: comedi: addi_apci_1564: prepare for adding
- Change-of-State interrupt support
-From: Chase Southwood <chase.southwood@gmail.com>
-To: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-Cc: Ian Abbott <abbotti@mev.co.uk>, hsweeten@visionengravers.com,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chase Southwood <chase.southwood@gmail.com>
+In-Reply-To: <20140530021247.GR10092@bbox>
+References: <1401260039-18189-1-git-send-email-minchan@kernel.org>
+	<1401260039-18189-2-git-send-email-minchan@kernel.org>
+	<CA+55aFxXdc22dirnE49UbQP_2s2vLQpjQFL+NptuyK7Xry6c=g@mail.gmail.com>
+	<20140528223142.GO8554@dastard>
+	<CA+55aFyRk6_v6COPGVvu6hvt=i2A8-dPcs1X3Ydn1g24AxbPkg@mail.gmail.com>
+	<20140529013007.GF6677@dastard>
+	<20140529015830.GG6677@dastard>
+	<20140529233638.GJ10092@bbox>
+	<20140530001558.GB14410@dastard>
+	<20140530021247.GR10092@bbox>
+Date: Thu, 29 May 2014 21:37:02 -0700
+X-Google-Sender-Auth: sOsLsuvg4IakFOCrsIThQ5he2EI
+Message-ID: <CA+55aFzzHS9YSzZpxMoF1vwoBh+NxLE26Tr2OC38=PsB8Mjwig@mail.gmail.com>
+Subject: Re: [RFC 2/2] x86_64: expand kernel stack to 16K
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Dave Chinner <david@fromorbit.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm <linux-mm@kvack.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Hugh Dickins <hughd@google.com>, Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Steven Rostedt <rostedt@goodmis.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
-
-On Sat, May 24, 2014 at 5:23 PM, Chase Southwood
-<chase.southwood@gmail.com> wrote:
-> This patchset adds the required subdevice for supporting DI COS interrupts,
-> as well as introducing a driver-specific private data struct that will
-> make the COS interrupt operations much more straightforward and clean.
+On Thu, May 29, 2014 at 7:12 PM, Minchan Kim <minchan@kernel.org> wrote:
 >
-> Chase Southwood (3):
->   staging: comedi: addi_apci_1564: add a subdevice for Change-of-State
->     interrupt support
->   staging: comedi: addi_apci_1564: remove send_sig() use
->   staging: comedi: addi_apci_1564: introduce apci1564_private struct
+> Interim report,
 >
->  .../comedi/drivers/addi-data/hwdrv_apci1564.c      | 200 ++++++++++-----------
->  drivers/staging/comedi/drivers/addi_apci_1564.c    |  54 +++---
->  2 files changed, 126 insertions(+), 128 deletions(-)
+> And result is as follows, It reduce about 800-byte compared to
+> my first report but still stack usage seems to be high.
+> Really needs diet of VM functions.
 
-Please ignore this patchset completely, I am sending one out
-momentarily that serves as its replacement.
+Yes. And in this case uninlining things might actually help, because
+the it's not actually performing reclaim in the second case, so
+inlining the reclaim code into that huge __alloc_pages_nodemask()
+function means that it has the stack frame for all those cases even if
+they don't actually get used.
 
-Thanks,
-Chase
+That said, the way those functions are set up (with lots of arguments
+passed from one to the other), not inlining will cause huge costs too
+for the argument setup.
+
+It really might be very good to create a "struct alloc_info" that
+contains those shared arguments, and just pass a (const) pointer to
+that around. Gcc would likely tend to be *much* better at generating
+code for that, because it avoids a tons of temporaries being created
+by function calls. Even when it's inlined, the argument itself ends up
+being a new temporary internally, and I suspect one reason gcc
+(especially your 4.6.3 version, apparently) generates those big spill
+frames is because there's tons of these duplicate temporaries that
+apparently don't get merged properly.
+
+Ugh. I think I'll try looking at that tomorrow.
+
+                Linus
