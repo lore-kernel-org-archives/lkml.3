@@ -1,42 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753183AbaE3HPo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 03:15:44 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:61270 "EHLO
-	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751917AbaE3HPn (ORCPT
+	id S1752905AbaE3H1t (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 03:27:49 -0400
+Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:62890 "EHLO
+	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751202AbaE3H1s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 03:15:43 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@gmail.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: jolsa@redhat.com, Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>, eranian@google.com,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH 0/7 V4] perf: Enable mmap2 and add dcacheline sorting
-References: <1401208087-181977-1-git-send-email-dzickus@redhat.com>
-Date: Fri, 30 May 2014 16:15:40 +0900
-In-Reply-To: <1401208087-181977-1-git-send-email-dzickus@redhat.com> (Don
-	Zickus's message of "Tue, 27 May 2014 12:28:00 -0400")
-Message-ID: <87r43benz7.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	Fri, 30 May 2014 03:27:48 -0400
+Message-ID: <1401434866.6101.3.camel@x220>
+Subject: [PATCH] ncr53c8xx: remove remnants of integrity checking
+From: Paul Bolle <pebolle@tiscali.nl>
+To: "James E.J. Bottomley" <JBottomley@parallels.com>
+Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Fri, 30 May 2014 09:27:46 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 30 May 2014 07:27:46.0440 (UTC) FILETIME=[A724E880:01CF7BD8]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 May 2014 12:28:00 -0400, Don Zickus wrote:
-> These patches enable mmap2 support in the kernel and perf to
-> allow support for data cacheline sorting.
->
-> Note: I haven't been able to reproduce Jiri's perf hang yet, so I don't
-> have a patch for that particular problem yet.
+The code for integrity checking was removed in v2.6.10. Remove its
+remnants now.
 
-I have no idea what the hang case is, but from a quick look, the code
-for the tooling part (beside few nitpicks) looks good to me.
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+Untested.
 
-Thanks,
-Namhyung
+ drivers/scsi/ncr53c8xx.h | 8 --------
+ 1 file changed, 8 deletions(-)
+
+diff --git a/drivers/scsi/ncr53c8xx.h b/drivers/scsi/ncr53c8xx.h
+index 0e008dacf679..736a9df68d58 100644
+--- a/drivers/scsi/ncr53c8xx.h
++++ b/drivers/scsi/ncr53c8xx.h
+@@ -63,14 +63,6 @@
+ #define SCSI_NCR_BOOT_COMMAND_LINE_SUPPORT
+ #define SCSI_NCR_DEBUG_INFO_SUPPORT
+ 
+-/*
+-**	To disable integrity checking, do not define the 
+-**	following option.
+-*/
+-#ifdef	CONFIG_SCSI_NCR53C8XX_INTEGRITY_CHECK
+-#	define SCSI_NCR_ENABLE_INTEGRITY_CHECK
+-#endif
+-
+ /* ---------------------------------------------------------------------
+ ** Take into account kernel configured parameters.
+ ** Most of these options can be overridden at startup by a command line.
+-- 
+1.9.3
+
