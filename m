@@ -1,56 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756114AbaE3QlH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 12:41:07 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:59862 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754107AbaE3QlF (ORCPT
+	id S933968AbaE3Qlp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 12:41:45 -0400
+Received: from mailrelay004.isp.belgacom.be ([195.238.6.170]:41511 "EHLO
+	mailrelay004.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754053AbaE3Qlo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 12:41:05 -0400
-Date: Fri, 30 May 2014 11:41:01 -0500 (CDT)
-From: Kumar Gala <galak@codeaurora.org>
-X-X-Sender: galak@galak-ubuntu.qualcomm.com
-To: arm@kernel.org
-cc: Kevin Hilman <khilman@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, Olof Johansson <olof@lixom.net>,
-        David Brown <davidb@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Andy Gross <agross@codeaurora.org>, gregkh@linuxfoundation.org
-Subject: [GIT PULL] qcom driver changes for v3.16-2
-Message-ID: <alpine.DEB.2.00.1405301138220.5291@galak-ubuntu.qualcomm.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+	Fri, 30 May 2014 12:41:44 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AskNAPOziFNXQxV9/2dsb2JhbABZgwerRgaYGoEJF3SDAiOBGjeIRgHXCBeFVYgZZB2EKgSPRYo5ky2DOjuBMA
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Vivek Goyal <vgoyal@redhat.com>
+Subject: [PATCH 1/1] fs/proc/vmcore.c: remove NULL assignment on static
+Date: Fri, 30 May 2014 18:41:38 +0200
+Message-Id: <1401468098-7727-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 5d144e36b7c51612922fa05d37ff3a869261cc82:
+static values are automatically initialized to NULL
 
-   soc: qcom: Add GSBI driver (2014-05-23 11:38:04 -0500)
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Vivek Goyal <vgoyal@redhat.com>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ fs/proc/vmcore.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-are available in the git repository at:
+diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
+index 6a8e785..382aa89 100644
+--- a/fs/proc/vmcore.c
++++ b/fs/proc/vmcore.c
+@@ -42,7 +42,7 @@ static size_t elfnotes_sz;
+ /* Total size of vmcore file. */
+ static u64 vmcore_size;
+ 
+-static struct proc_dir_entry *proc_vmcore = NULL;
++static struct proc_dir_entry *proc_vmcore;
+ 
+ /*
+  * Returns > 0 for RAM pages, 0 for non-RAM pages, < 0 on error
+-- 
+1.8.4.5
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/galak/linux-qcom.git tags/qcom-drivers-for-3.16-2
-
-for you to fetch changes up to 31964ffebbb958c6cf289c7c12edd7530d6221b9:
-
-   tty: serial: msm: Remove direct access to GSBI (2014-05-29 11:06:20 -0500)
-
-----------------------------------------------------------------
-Qualcomm ARM Based driver Updates for v3.16-2
-
-* Updated MSM uart driver to not access GSBI control registers
-
-----------------------------------------------------------------
-Andy Gross (1):
-       tty: serial: msm: Remove direct access to GSBI
-
-  drivers/tty/serial/msm_serial.c | 48 ++---------------------------------------
-  drivers/tty/serial/msm_serial.h |  5 -----
-  2 files changed, 2 insertions(+), 51 deletions(-)
-
---
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
