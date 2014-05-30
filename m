@@ -1,69 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934356AbaE3RAR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 13:00:17 -0400
-Received: from mail-we0-f171.google.com ([74.125.82.171]:42076 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933798AbaE3Q4S (ORCPT
+	id S934265AbaE3RBK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 13:01:10 -0400
+Received: from mail-ig0-f169.google.com ([209.85.213.169]:47535 "EHLO
+	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933798AbaE3RBG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 12:56:18 -0400
-From: Matthias Brugger <matthias.bgg@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        rdunlap@infradead.org, linux@arm.linux.org.uk,
-        daniel.lezcano@linaro.org, tglx@linutronix.de, matthias.bgg@gmail.com,
-        thierry.reding@gmail.com, florian.vaussard@epfl.ch, jic23@kernel.org,
-        jason@lakedaemon.net, andrew@lunn.ch, silvio.fricke@gmail.com,
-        heiko.stuebner@bq.com, olof@lixom.net, sebastian.hesselbarth@gmail.com,
-        sboyd@codeaurora.org, gregory.clement@free-electrons.com,
-        arnd@arndb.de, robherring2@gmail.com, marc.zyngier@arm.com,
-        maxime.ripard@free-electrons.com, soren.brinkmann@xilinx.com,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v6 2/6] dt-bindings: add mtk-timer bindings
-Date: Fri, 30 May 2014 18:56:00 +0200
-Message-Id: <1401468964-5307-3-git-send-email-matthias.bgg@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1401468964-5307-1-git-send-email-matthias.bgg@gmail.com>
-References: <1401468964-5307-1-git-send-email-matthias.bgg@gmail.com>
+	Fri, 30 May 2014 13:01:06 -0400
+Date: Fri, 30 May 2014 11:01:03 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Doug Thompson <dougthompson@xmission.com>, linux-pci@vger.kernel.org,
+        linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] PCI, EDAC: fix ordering assign resource and bus_add
+Message-ID: <20140530170103.GE4607@google.com>
+References: <1367969371-27414-1-git-send-email-yinghai@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1367969371-27414-1-git-send-email-yinghai@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add binding documentation for the General Porpose Timer driver of
-the Mediatek SoCs.
+On Tue, May 07, 2013 at 04:29:31PM -0700, Yinghai Lu wrote:
+> We should assign unassigned resource before pci_bus_add_device.
+> 
+> as late one will enable driver and create sysfs file that will need
+> pci io resources from assign unassigned code.
+> 
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 
-Signed-off-by: Matthias Brugger <matthias.bgg@gmail.com>
----
- .../bindings/timer/mediatek,mtk-timer.txt          |   18 ++++++++++++++++++
- 1 file changed, 18 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/timer/mediatek,mtk-timer.txt
+Applied to pci/resource for v3.16, thanks!
 
-diff --git a/Documentation/devicetree/bindings/timer/mediatek,mtk-timer.txt b/Documentation/devicetree/bindings/timer/mediatek,mtk-timer.txt
-new file mode 100644
-index 0000000..0558ddd0
---- /dev/null
-+++ b/Documentation/devicetree/bindings/timer/mediatek,mtk-timer.txt
-@@ -0,0 +1,18 @@
-+Mediatek MT6577, MT6572 and MT6589 Timers
-+---------------------------------------
-+
-+Required properties:
-+- compatible: Should be "mediatek,mt6577-timer"
-+- reg: Should contain location and length for timers register.
-+- clocks: Clocks driving the timer hardware. This list shoud include two
-+	clocks. The order is system clock and as second clock the RTC clock.
-+
-+Examples:
-+
-+	timer@10008000 {
-+		compatible = "mediatek,mt6577-timer";
-+		reg = <0x10008000 0x80>;
-+		interrupts = <GIC_SPI 113 IRQ_TYPE_LEVEL_LOW>;
-+		clocks = <&system_clk>, <&rtc_clk>;
-+		clock-names = "system-clk", "rtc-clk";
-+	};
--- 
-1.7.9.5
-
+> ---
+>  drivers/edac/i82875p_edac.c |    3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> Index: linux-2.6/drivers/edac/i82875p_edac.c
+> ===================================================================
+> --- linux-2.6.orig/drivers/edac/i82875p_edac.c
+> +++ linux-2.6/drivers/edac/i82875p_edac.c
+> @@ -293,13 +293,14 @@ static int i82875p_setup_overfl_dev(stru
+>  		if (dev == NULL)
+>  			return 1;
+>  
+> +		pci_bus_assign_resources(dev->bus);
+> +
+>  		err = pci_bus_add_device(dev);
+>  		if (err) {
+>  			i82875p_printk(KERN_ERR,
+>  				"%s(): pci_bus_add_device() Failed\n",
+>  				__func__);
+>  		}
+> -		pci_bus_assign_resources(dev->bus);
+>  	}
+>  
+>  	*ovrfl_pdev = dev;
