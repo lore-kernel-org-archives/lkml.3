@@ -1,82 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932311AbaE3GIO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 02:08:14 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:56164 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932093AbaE3GIN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 02:08:13 -0400
-Date: Fri, 30 May 2014 15:08:10 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Dave Young <dyoung@redhat.com>
-Cc: matt.fleming@intel.com, bp@alien8.de, linux-kernel@vger.kernel.org,
-        linux-efi@vger.kernel.org, vgoyal@redhat.com
-Subject: Re: [PATCH]x86 efi: do not export efi runtime map in case old map
-Message-ID: <20140530060810.GA31868@verge.net.au>
-References: <20140530032010.GA29906@dhcp-16-198.nay.redhat.com>
- <20140530055447.GB2187@darkstar.nay.redhat.com>
+	id S932388AbaE3GJJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 02:09:09 -0400
+Received: from ozlabs.org ([103.22.144.67]:42549 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932093AbaE3GJH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 May 2014 02:09:07 -0400
+Date: Fri, 30 May 2014 16:08:59 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build failure after merge of the pinctrl tree
+Message-ID: <20140530160859.54642243@canb.auug.org.au>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140530055447.GB2187@darkstar.nay.redhat.com>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/7LC5eY8ElYYZ+ADJHoroyDA"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 30, 2014 at 01:54:47PM +0800, Dave Young wrote:
-> Ccing Simon.
-> 
-> Simon, appologize for not ccing you about this kernel patch. I see you have
-> applied the userspace patch for checking sysfs runtime existance.
-> 
-> The userspace patch depends on this patch but it is not harmful even without
-> this kernel patch. So applying the userspace patch before this one is still
-> safe.
+--Sig_/7LC5eY8ElYYZ+ADJHoroyDA
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Thanks, I understand.
+Hi Linus,
 
-If the kernel side ends up being rejected or modified please
-send an update for kexec-tools accordingly.
+After merging the pinctrl tree, today's linux-next build (arm multi_v7_defc=
+onfig)
+failed like this:
 
-> 
-> On 05/30/14 at 11:20am, Dave Young wrote:
-> > 
-> > For ioremapped efi memory aka old_map the virt addresses are not persistant
-> > across kexec reboot. kexec-tools will read the runtime maps from sysfs then
-> > pass them to 2nd kernel and assuming kexec efi boot is ok. This will cause
-> > kexec boot failure.
-> > 
-> > To address this issue do not export runtime maps in case efi old_map so
-> > userspace can use no efi boot instead.
-> > 
-> > Signed-off-by: Dave Young <dyoung@redhat.com>
-> > ---
-> >  arch/x86/platform/efi/efi.c | 3 +++
-> >  1 file changed, 3 insertions(+)
-> > 
-> > diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-> > index 3781dd3..4d36932 100644
-> > --- a/arch/x86/platform/efi/efi.c
-> > +++ b/arch/x86/platform/efi/efi.c
-> > @@ -919,6 +919,9 @@ static void __init save_runtime_map(void)
-> >  	void *tmp, *p, *q = NULL;
-> >  	int count = 0;
-> >  
-> > +	if (efi_enabled(EFI_OLD_MEMMAP))
-> > +		return;
-> > +
-> >  	for (p = memmap.map; p < memmap.map_end; p += memmap.desc_size) {
-> >  		md = p;
-> >  
-> > -- 
-> > 1.8.3.1
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> 
+drivers/pinctrl/sirf/pinctrl-sirf.c: In function 'sirfsoc_gpio_handle_irq':
+drivers/pinctrl/sirf/pinctrl-sirf.c:578:11: error: 'sgpio_chip' undeclared =
+(first use in this function)
+
+
+Caused by commit 294d1351ff47 ("pinctrl: sirf: switch to using
+allocated state container").
+
+I have used the pinctrl tree from next-20140529 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/7LC5eY8ElYYZ+ADJHoroyDA
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTiCCAAAoJEMDTa8Ir7ZwVhroP/3JgKEjdcaTekiewTaRbH/BL
+PKfCb+MiU+K1ACMotkRZzhRoxw47Ku326gZy4lExptv1+UA9LmQt9A0c5Q35kBGo
+Sx8arLm4YfhFyHJuDqJg0vYBQEFswXXHlQYVoM+u5kL3HqAajOjkyf2kUnKyE/fQ
+Y0YZCtlNbQip13f5qunzHCoNhIE7dtYNyXbten5YZVQPzUVtFwRfCH3tvbAv2bmS
+RtLJ+k15QtyEd+TPuySBPuitjQ0yvR+bL7JTUH2/kM51Ngj0sJfShUXGt162CRDC
+f+ccyS48XH5jniaZ8Tl6IMtkleCA31jiYsTuFXapqQOQqzEpwtULx7688LT2y9Mx
+sskaxHjxyMX4jkgTBPIb8JFB8egit7kzfj7sz7xe7dolBu0BPqX8s1NgowIarnvS
+D1BvnflNuH3uIj/80x60LK5yYCDtpuw4PdSs2CibYWXsV73Qik0AKNWg1uja8RjP
+JFRSpWO1bmf1wwbdtykTLoJesl0kfkkRFgMHIdW8q3Va0QnbCLiGqwhRCiJ/fNer
+g5B8xMqDfQW6rpSI29G2b0X7lsGDZKbqJ6ECSTaDhnE+NsDEQW0FHXD9hAa/EDOP
+FMjrbfeBZcriJq7e5hXptjuqRZC5XW1yZDLWskkOdtyrRqY57Ed6hh4apw56Pzrl
++9aEbEkq65+08uprtlbj
+=JPCl
+-----END PGP SIGNATURE-----
+
+--Sig_/7LC5eY8ElYYZ+ADJHoroyDA--
