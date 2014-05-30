@@ -1,110 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933954AbaE3Tyz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 15:54:55 -0400
-Received: from mout.kundenserver.de ([212.227.17.10]:65231 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751525AbaE3Tyx (ORCPT
+	id S1756154AbaE3T61 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 15:58:27 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:51048 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752209AbaE3T60 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 15:54:53 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Hiroshi Doyu <hdoyu@nvidia.com>
-Cc: Rob Herring <robherring2@gmail.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Cho KyongHo <pullip.cho@samsung.com>,
-        Grant Grundler <grundler@chromium.org>,
-        Dave Martin <Dave.Martin@arm.com>, Marc Zyngier <marc.zyngier@arm.com>,
-        Will Deacon <will.deacon@arm.com>, Joerg Roedel <joro@8bytes.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Linux IOMMU <iommu@lists.linux-foundation.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] devicetree: Add generic IOMMU device tree bindings
-Date: Fri, 30 May 2014 21:54:37 +0200
-Message-ID: <4462924.8iRbdkOPp7@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <87tx87rrp2.fsf@nvidia.com>
-References: <1400877218-4113-1-git-send-email-thierry.reding@gmail.com> <4545972.cM7IP1qTXQ@wuerfel> <87tx87rrp2.fsf@nvidia.com>
+	Fri, 30 May 2014 15:58:26 -0400
+Date: Fri, 30 May 2014 12:58:21 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Sebastian Reichel <sre@kernel.org>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv4 0/4] tsc2005 DT binding
+Message-ID: <20140530195821.GA27692@core.coreip.homeip.net>
+References: <1400693774-21306-1-git-send-email-sre@kernel.org>
+ <20140529133356.GA4716@earth.universe>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:H5r2Gwa0A1MwpkhE6Ck6wUn/WcLjP7HBGGNIUPIn7Bq
- qGoIzytQUz+3F+5A8A8Yp63u3DiioJXa7NIUM3gPu7Y7o9KqOQ
- Al6wRYNnsdtHpyncg3Oeah3Y43oy6MV3Sra+pIYDD8SOqQJ2y+
- g+ZZFfgEoG96KVVAmZzQWpi1brziVmwDiRx+lenH3O/qRz8bOq
- vTKRyv53n4Gx8YHBQxaEFLABJYKOC/UY+n3bMwMgUL8NTedUhL
- F6Zn1HqDASa/hBxdqLdxlFrRx0dle/U9XC/DAP1qMUo9yR9WR0
- D/fFcMZLQVZZzPx6kOVzi5NETHQa809NUzF5en6L6H02ZJ7dI/
- k8go3syH4SW5hERRAwOs=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140529133356.GA4716@earth.universe>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 30 May 2014 22:29:13 Hiroshi Doyu wrote:
+On Thu, May 29, 2014 at 03:33:57PM +0200, Sebastian Reichel wrote:
+> On Wed, May 21, 2014 at 07:36:10PM +0200, Sebastian Reichel wrote:
+> > This adds device tree support for the tsc2005 touchscreen
+> > controller, which is currently only used by the Nokia N900
+> > board.
+> > 
+> > The patch does not update the reset pin handling for platform
+> > data based probe to avoid merge conflicts. The n900 platform
+> > code will be removed in the near future (3.17?) and the driver
+> > can be simplified once that has happened.
+> > 
+> > Changes since v3 [0]:
+> >  * Move common touchscreen DT handling code into its own file
+> >  * Add regulator support to tsc2005 driver
+> >  * Added N900 DTS patch for completeness. It should go via
+> >    Tony's Tree of course.
 > 
-> IIUC the original problem, "a master with 8 streamIDs" means something
-> like below, where some devices have multiple IDs but some have a
-> single. A sinle #address-cells cannot afford those 2 masters at once.
-> 
->        iommu {
->                /* the specifier represents the ID of the master */
->                #address-cells = <1>;
->                #size-cells = <0>;
->        };
-> 
->         master@a {
->                 ...
->                 iommus = <&smmu 1 2 3>; # 3 IDs
->         };
-> 
->         master@b {
->                 ...
->                 iommus = <&smmu 4>;     # 1 ID
->         };
+> ping! It would be nice to have this in 3.16, since it makes
+> the N900 usable with the mainline kernel when booted in DT
+> mode. The DT bindings haven't changed for more than 3 weeks,
+> so we don't need to wait longer for feedback from the DT
+> maintainers AFAIK.
 
-This would not be the usual format really. It should instead be
+Sebastian,
 
-		iommus = <&smmu 1>, <&smmu 2>, <&smmu 3>;
+I applied the series, could you please take a peek at my 'next' branch
+to make sure I did not miss anything?
 
-which can be tedious to type.
+Thanks.
 
-> Tegra,SMMU has a similar problem and we have used a fixed size bitmap(64
-> bit) to afford 64 stream IDs so that a single device can hold multiple
-> IDs. If we apply the same bitmap to the above exmaple:
-> 
->        iommu {
->                /* the specifier represents the ID of the master */
->                #address-cells = <1>;
->                #size-cells = <0>;
->        };
-> 
->         master@a {
->                 ...
->                 iommus = <&smmu (BIT(1) | BIT(2) | BIT(3))>; # IDs 1 2 3
->         };
-> 
->         master@b {
->                 ...
->                 iommus = <&smmu BIT(4)>;     # ID 4
->         };
-> 
-> The disadvantage of this is that this limits the max number of streamIDs
-> to support. If # of streamID is increased later more than 64, this
-> format cannot cover any more. You have to predict the max # of streamIDs
-> in advance if steamID is statically assigned.
-> 
-
-Well, the iommu specific binding could allow a variable #address-cells.
-That way, you just need to know the number of stream IDs for that instance
-of the iommu.
-
-	Arnd
+-- 
+Dmitry
