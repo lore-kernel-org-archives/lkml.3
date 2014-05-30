@@ -1,120 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933928AbaE3Qc1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 12:32:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33282 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933148AbaE3Qc0 (ORCPT
+	id S964811AbaE3Qcy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 12:32:54 -0400
+Received: from mail-oa0-f74.google.com ([209.85.219.74]:37925 "EHLO
+	mail-oa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933247AbaE3Qcx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 12:32:26 -0400
-Date: Fri, 30 May 2014 09:36:04 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-Cc: Pavel Machek <pavel@ucw.cz>, Marcel Holtmann <marcel@holtmann.org>,
-        Miguel Oliveira <cmroliv@gmail.com>, gulsah.1004@gmail.com,
-        peter.p.waskiewicz.jr@intel.com, kristina.martsenko@gmail.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: nokia_h4: nokia_core.c: use usleep_range()
- instead of msleep()
-Message-ID: <20140530163604.GA11943@kroah.com>
-References: <1401445633-5290-1-git-send-email-cmroliv@gmail.com>
- <20140530123023.GA10549@amd.pavel.ucw.cz>
- <20140530155959.GA10682@kroah.com>
- <201405301815.10811@pali>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201405301815.10811@pali>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Fri, 30 May 2014 12:32:53 -0400
+From: Doug Anderson <dianders@chromium.org>
+To: Tomasz Figa <t.figa@samsung.com>, Mike Turquette <mturquette@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>
+Cc: olof@lixom.net, javier.martinez@collabora.co.uk,
+        Doug Anderson <dianders@chromium.org>,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v2] clk: exynos5420: Keep aclk66_peric enabled during boot
+Date: Fri, 30 May 2014 09:32:42 -0700
+Message-Id: <1401467562-5585-1-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 1.9.1.423.g4596e3a
+In-Reply-To: <1401398496-4624-1-git-send-email-dianders@chromium.org>
+References: <1401398496-4624-1-git-send-email-dianders@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 30, 2014 at 06:15:09PM +0200, Pali Rohár wrote:
-> Hi Greg,
-> 
-> On Friday 30 May 2014 17:59:59 Greg KH wrote:
-> > On Fri, May 30, 2014 at 02:30:23PM +0200, Pavel Machek wrote:
-> > > Hi!
-> > > 
-> > > > >> Creating this patch for the Eudyptula Challenge.
-> > > > >> Replaced msleep() for a delay < 20ms with a
-> > > > >> usleep_range() between 10000us and 15000us. Also
-> > > > >> inserted a blank line after adeclaration.
-> > > > > 
-> > > > > So you are changing timings without testing. Plus,
-> > > > > burning CPU power instead of sleeping.
-> > > > > 
-> > > > > Seems you'll need another patch for the challenge :-).
-> > > > 
-> > > > I actually wonder if anybody is seriously working on this
-> > > > driver. My concern with the staging drivers has always
-> > > > been that we are quick with merging them when the work on
-> > > > getting them into upstream shape is actually hard.
-> > > > However reality is once they are in staging nobody is
-> > > > doing the work to clean them up and fix the issues.
-> > > 
-> > > There is active work on merging n900 changes.
-> > 
-> > Really?  Where?
-> > 
-> 
-> You can look at elinux wiki where is table how process is going:
-> http://elinux.org/N900
-> 
-> Also look at planed future list and its progress:
-> http://elinux.org/N900/Changelog
-> 
-> You can see that drivers are including step by step.
+Right now if you've got earlyprintk enabled on exynos5420-peach-pit
+then you'll get a hang on boot.  Here's why:
 
-I'm not going to dig through random web pages, sorry.  If patches aren't
-sent to me for a driver, I consider it dead, that's only fair for me
-given my workload, don't you think?
+1. The i2c-s3c2410 driver will probe at subsys_initcall.  It will
+   enable its clock and disable it.  This is the clock "i2c2".
+2. The act of disabling "i2c2" will disable its parents.  In this case
+   the parent is "aclk66_peric".  There are no other children of
+   "aclk66_peric" officially enabled, so "aclk66_peric" will be turned
+   off (despite being CLK_IGNORE_UNUSED, but that's by design).
+3. The next time you try to earlyprintk you'll do so without the UART
+   clock enabled.  That's because the UART clocks are also children of
+   "aclk66_peric".  You'll hang.
 
-> > > And no, it does not progress as quickly as I'd like, but
-> > > we'll get there. It is also requirement for n900 FM radio
-> > > receiving...
-> > > 
-> > > > Greg, instead of wasting our time with this, can we just
-> > > > remove this driver from staging.
-> > > 
-> > > Please don't.
-> > 
-> > As there has not been any real work on it since it has been
-> > merged, I don't see why I shouldn't remove it.  If you do get
-> > some work done on it, you can always revert the removal and
-> > continue on.  But the existance of code in staging that is
-> > not progressing forward at all is something that I don't like
-> > at all, and will be doing a large sweep of soon to remove.
-> > 
-> > thanks,
-> > 
-> > greg k-h
-> 
-> Just look how much time took to include my patch for radio-
-> bcm2048 (fm radio part of this chip) which fixing wrong overflow 
-> check. I sent it at the end of December and... yes it is still 
-> not included in linus tree. Now it is somethere in media tree and 
-> probably will be pulled in next merge window.
-> 
-> This means that it takes about half of year to include patches 
-> for these drivers.
+There's no good place to put a clock enable for earlyprintk, which is
+handled by a bunch of assembly code.  The best we can do is to handle
+this in the clock driver.
 
-Just because the media drivers take a long time to get fixes merged,
-don't use that as an excuse to not fix up the staging drivers.
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+Tested-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+---
+Changes in v2:
+- Use GATE_A and clk_get().  Save the clock for putting later.
+- Return 0 from exynos5420_clk_late_init().
 
-In fact, it sounds like you have lots of time while that patch is
-getting merged, why not work on fixing up the staging driver?  :)
+ drivers/clk/samsung/clk-exynos5420.c | 33 +++++++++++++++++++++++++++++++--
+ 1 file changed, 31 insertions(+), 2 deletions(-)
 
-> So why now you want to very quickly remove this driver from 
-> staging but you did not wanted to take my above patch?
+diff --git a/drivers/clk/samsung/clk-exynos5420.c b/drivers/clk/samsung/clk-exynos5420.c
+index 9d7d7ee..70b607a 100644
+--- a/drivers/clk/samsung/clk-exynos5420.c
++++ b/drivers/clk/samsung/clk-exynos5420.c
+@@ -890,8 +890,8 @@ static struct samsung_gate_clock exynos5x_gate_clks[] __initdata = {
+ 			GATE_BUS_TOP, 9, CLK_IGNORE_UNUSED, 0),
+ 	GATE(0, "aclk66_psgen", "mout_user_aclk66_psgen",
+ 			GATE_BUS_TOP, 10, CLK_IGNORE_UNUSED, 0),
+-	GATE(CLK_ACLK66_PERIC, "aclk66_peric", "mout_user_aclk66_peric",
+-			GATE_BUS_TOP, 11, CLK_IGNORE_UNUSED, 0),
++	GATE_A(CLK_ACLK66_PERIC, "aclk66_peric", "mout_user_aclk66_peric",
++			GATE_BUS_TOP, 11, CLK_IGNORE_UNUSED, 0, "aclk66_peric"),
+ 	GATE(0, "aclk266_isp", "mout_user_aclk266_isp",
+ 			GATE_BUS_TOP, 13, 0, 0),
+ 	GATE(0, "aclk166", "mout_user_aclk166",
+@@ -1172,11 +1172,22 @@ static struct of_device_id ext_clk_match[] __initdata = {
+ 	{ },
+ };
+ 
++/* Keep these clocks on until late_initcall */
++struct boot_clock {
++	char *name;
++	struct clk *clk;
++};
++
++static struct boot_clock boot_clocks[] __initdata = {
++	{ .name = "aclk66_peric", },
++};
++
+ /* register exynos5420 clocks */
+ static void __init exynos5x_clk_init(struct device_node *np,
+ 		enum exynos5x_soc soc)
+ {
+ 	struct samsung_clk_provider *ctx;
++	int i;
+ 
+ 	if (np) {
+ 		reg_base = of_iomap(np, 0);
+@@ -1226,6 +1237,11 @@ static void __init exynos5x_clk_init(struct device_node *np,
+ 	}
+ 
+ 	exynos5420_clk_sleep_init();
++
++	for (i = 0; i < ARRAY_SIZE(boot_clocks); i++) {
++		boot_clocks[i].clk = clk_get(NULL, boot_clocks[i].name);
++		clk_prepare_enable(boot_clocks[i].clk);
++	}
+ }
+ 
+ static void __init exynos5420_clk_init(struct device_node *np)
+@@ -1239,3 +1255,16 @@ static void __init exynos5800_clk_init(struct device_node *np)
+ 	exynos5x_clk_init(np, EXYNOS5800);
+ }
+ CLK_OF_DECLARE(exynos5800_clk, "samsung,exynos5800-clock", exynos5800_clk_init);
++
++static int __init exynos5420_clk_late_init(void)
++{
++	int i;
++
++	for (i = 0; i < ARRAY_SIZE(boot_clocks); i++) {
++		clk_disable_unprepare(boot_clocks[i].clk);
++		clk_put(boot_clocks[i].clk);
++	}
++
++	return 0;
++}
++late_initcall(exynos5420_clk_late_init);
+-- 
+1.9.1.423.g4596e3a
 
-I'm not the maintainer of drivers/staging/media/ and have no insight
-into what goes on there at all, nor do I care.  I'm not the one
-responsible for taking your patch, so I did not "want" to take your
-patch at all.
-
-thanks,
-
-greg k-h
