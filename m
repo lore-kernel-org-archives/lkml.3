@@ -1,90 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934804AbaE3WB0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 18:01:26 -0400
-Received: from srv01.voixit.com ([78.47.68.188]:37922 "EHLO srv01.voixit.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756132AbaE3WBZ convert rfc822-to-8bit (ORCPT
+	id S934289AbaE3WIx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 18:08:53 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:51267 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754614AbaE3WIv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 18:01:25 -0400
-Subject: Re: [PATCH RFC - TAKE TWO - 11/12] block, bfq: boost the throughput on NCQ-capable flash-based devices
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.2\))
-Content-Type: text/plain; charset=us-ascii
-From: Paolo Valente <paolo.valente@unimore.it>
-In-Reply-To: <20140530154654.GE24871@htj.dyndns.org>
-Date: Sat, 31 May 2014 00:01:21 +0200
-Cc: Jens Axboe <axboe@kernel.dk>, Li Zefan <lizefan@huawei.com>,
-        Fabio Checconi <fchecconi@gmail.com>,
-        Arianna Avanzini <avanzini.arianna@gmail.com>,
-        linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <2BC999D0-F9FC-427B-A371-B9B4D951B693@unimore.it>
-References: <20140528221929.GG1419@htj.dyndns.org> <1401354343-5527-1-git-send-email-paolo.valente@unimore.it> <1401354343-5527-12-git-send-email-paolo.valente@unimore.it> <20140530154654.GE24871@htj.dyndns.org>
-To: Tejun Heo <tj@kernel.org>
-X-Mailer: Apple Mail (2.1878.2)
+	Fri, 30 May 2014 18:08:51 -0400
+Date: Fri, 30 May 2014 18:08:48 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>
+Subject: Re: [patch 3/6] rtmutex: Cleanup deadlock detector debug logic
+Message-ID: <20140530180848.44937ea8@gandalf.local.home>
+In-Reply-To: <20140522031949.947264874@linutronix.de>
+References: <20140522031841.797415507@linutronix.de>
+	<20140522031949.947264874@linutronix.de>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 22 May 2014 03:25:47 -0000
+Thomas Gleixner <tglx@linutronix.de> wrote:
 
-Il giorno 30/mag/2014, alle ore 17:46, Tejun Heo <tj@kernel.org> ha scritto:
 
-> On Thu, May 29, 2014 at 11:05:42AM +0200, Paolo Valente wrote:
->> This patch boosts the throughput on NCQ-capable flash-based devices,
->> while still preserving latency guarantees for interactive and soft
->> real-time applications. The throughput is boosted by just not idling
->> the device when the in-service queue remains empty, even if the queue
->> is sync and has a non-null idle window. This helps to keep the drive's
->> internal queue full, which is necessary to achieve maximum
->> performance. This solution to boost the throughput is a port of
->> commits a68bbdd and f7d7b7a for CFQ.
->> 
->> As already highlighted in patch 10, allowing the device to prefetch
->> and internally reorder requests trivially causes loss of control on
->> the request service order, and hence on service guarantees.
->> Fortunately, as discussed in detail in the comments to the function
->> bfq_bfqq_must_not_expire(), if every process has to receive the same
->> fraction of the throughput, then the service order enforced by the
->> internal scheduler of a flash-based device is relatively close to that
->> enforced by BFQ. In particular, it is close enough to let service
->> guarantees be substantially preserved.
->> 
->> Things change in an asymmetric scenario, i.e., if not every process
->> has to receive the same fraction of the throughput. In this case, to
->> guarantee the desired throughput distribution, the device must be
->> prevented from prefetching requests. This is exactly what this patch
->> does in asymmetric scenarios.
+> Index: tip/kernel/locking/rtmutex.c
+> ===================================================================
+> --- tip.orig/kernel/locking/rtmutex.c
+> +++ tip/kernel/locking/rtmutex.c
+> @@ -256,6 +256,25 @@ static void rt_mutex_adjust_prio(struct
+>  }
+>  
+>  /*
+> + * Deadlock detection is conditional:
+> + *
+> + * If CONFIG_DEBUG_RT_MUTEXES=n, deadlock detection is only conducted
+> + * if the detect argument is != 0.
+
+"if the detect argument is not RT_MUTEX_MIN_CHAINWALK."
+
+We want to get rid of magic numbers right?
+
+> + *
+> + * If CONFIG_DEBUG_RT_MUTEXES=y, deadlock detection is always
+> + * conducted independent of the detect argument.
+> + *
+> + * If the waiter argument is NULL this indicates the deboost path and
+> + * deadlock detection is disabled independent of the detect argument
+> + * and the config settings.
+> + */
+> +static int
+> +rt_mutex_cond_detect_deadlock(struct rt_mutex_waiter *waiter, int detect)
+> +{
+> +	return debug_rt_mutex_detect_deadlock(waiter, detect);
+> +}
+> +
+> +/*
+
+
+>  /*
+> + * Constants for rt mutex functions which have a selectable deadlock
+> + * detection.
+> + *
+> + * RT_MUTEX_MIN_CHAINWALK:	Stops the lock chain walk when there are
+> + *				no further PI adjustments to be made.
+> + *
+> + * RT_MUTEX_FULL_CHAINWALK:	Invoke deadlock detection with a full
+> + *				walk of the lock chain.
+> + */
+> +enum {
+> +	RT_MUTEX_MIN_CHAINWALK,
+> +	RT_MUTEX_FULL_CHAINWALK,
+> +};
+
+Why not name this enum and instead of passing in int into the
+functions, pass the enum in. That way, in the future, people looking at
+this code can see what parameters are permitted.
+
+-- Steve
+
+
+> +
+> +/*
+>   * PI-futex support (proxy locking functions, etc.):
+>   */
+>  extern struct task_struct *rt_mutex_next_owner(struct rt_mutex *lock);
 > 
-> Does it even make sense to use this type of heavy iosched on ssds?
-> It's highly likely that ssds will soon be served through blk-mq
-> bypassing all these.  I don't feel too enthused about adding code to
-> support ssds to ioscheds.  A lot better approach would be just default
-> to deadline for them anyway.
-> 
-
-This was basically my opinion before I started running test also with SSDs. As you can see from, e.g., Figure 8 in
-http://algogroup.unimore.it/people/paolo/disk_sched/extra_results.php
-or Figure 9 in
-http://algogroup.unimore.it/people/paolo/disk_sched/results.php
-with deadline, as with NOOP and even worse with CFQ, start-up times become unbearably high while some files are being read sequentially. I have got even higher latencies on Intel SSDs.
-
-One of the main reasons is that these schedulers allow the drive to queue more than one request. Maybe adding some of the low-latency heuristics of bfq to deadline may help, but it should be investigated.
-
-Paolo
-
-
-> Thanks.
-> 
-> -- 
-> tejun
-
-
---
-Paolo Valente                                                 
-Algogroup
-Dipartimento di Fisica, Informatica e Matematica		
-Via Campi, 213/B
-41125 Modena - Italy        				  
-homepage:  http://algogroup.unimore.it/people/paolo/
 
