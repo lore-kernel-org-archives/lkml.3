@@ -1,58 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754586AbaE3Pjs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 11:39:48 -0400
-Received: from mail-qg0-f52.google.com ([209.85.192.52]:47984 "EHLO
-	mail-qg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752136AbaE3Pjr (ORCPT
+	id S933477AbaE3PlG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 11:41:06 -0400
+Received: from mail-ve0-f178.google.com ([209.85.128.178]:49820 "EHLO
+	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932126AbaE3PlB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 11:39:47 -0400
-Date: Fri, 30 May 2014 11:39:43 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Paolo Valente <paolo.valente@unimore.it>
-Cc: Jens Axboe <axboe@kernel.dk>, Li Zefan <lizefan@huawei.com>,
-        Fabio Checconi <fchecconi@gmail.com>,
-        Arianna Avanzini <avanzini.arianna@gmail.com>,
-        Paolo Valente <posta_paolo@yahoo.it>, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org
-Subject: Re: [PATCH RFC - TAKE TWO - 02/12] block, bfq: add full hierarchical
- scheduling and cgroups support
-Message-ID: <20140530153943.GC24871@htj.dyndns.org>
-References: <20140528221929.GG1419@htj.dyndns.org>
- <1401354343-5527-1-git-send-email-paolo.valente@unimore.it>
- <1401354343-5527-3-git-send-email-paolo.valente@unimore.it>
- <20140530153718.GB24871@htj.dyndns.org>
+	Fri, 30 May 2014 11:41:01 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140530153718.GB24871@htj.dyndns.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <5388A2D9.3080708@zytor.com>
+References: <20140528223142.GO8554@dastard>
+	<CA+55aFyRk6_v6COPGVvu6hvt=i2A8-dPcs1X3Ydn1g24AxbPkg@mail.gmail.com>
+	<20140529013007.GF6677@dastard>
+	<CA+55aFzdq2V-Q3WUV7hQJG8jBSAvBqdYLVTNtbD4ObVZ5yDRmw@mail.gmail.com>
+	<20140529072633.GH6677@dastard>
+	<CA+55aFx+j4104ZFmA-YnDtyfmV4FuejwmGnD5shfY0WX4fN+Kg@mail.gmail.com>
+	<20140529235308.GA14410@dastard>
+	<20140530000649.GA3477@redhat.com>
+	<20140530002113.GC14410@dastard>
+	<20140530003219.GN10092@bbox>
+	<20140530013414.GF14410@dastard>
+	<5388A2D9.3080708@zytor.com>
+Date: Fri, 30 May 2014 08:41:00 -0700
+X-Google-Sender-Auth: AZvUJJW8RdOz_1z_D87RFPJN7AE
+Message-ID: <CA+55aFycqAw2AqQGv8aTPs_RxyKZqMdoyeSxWRSDk2N-PiBZeg@mail.gmail.com>
+Subject: Re: [RFC 2/2] x86_64: expand kernel stack to 16K
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Dave Chinner <david@fromorbit.com>, Minchan Kim <minchan@kernel.org>,
+        Dave Jones <davej@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm <linux-mm@kvack.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Hugh Dickins <hughd@google.com>, Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 30, 2014 at 11:37:18AM -0400, Tejun Heo wrote:
-> On Thu, May 29, 2014 at 11:05:33AM +0200, Paolo Valente wrote:
-> > diff --git a/include/linux/cgroup_subsys.h b/include/linux/cgroup_subsys.h
-> > index 768fe44..cdd2528 100644
-> > --- a/include/linux/cgroup_subsys.h
-> > +++ b/include/linux/cgroup_subsys.h
-> > @@ -39,6 +39,10 @@ SUBSYS(net_cls)
-> >  SUBSYS(blkio)
-> >  #endif
-> >  
-> > +#if IS_ENABLED(CONFIG_CGROUP_BFQIO)
-> > +SUBSYS(bfqio)
-> > +#endif
-> 
-> So, ummm, I don't think this is a good idea.  Why aren't you plugging
-> into the blkcg infrastructure as cfq does?  Why does it need to be a
-> separate controller?
+On Fri, May 30, 2014 at 8:25 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+>
+> If we removed struct thread_info from the stack allocation then one
+> could do a guard page below the stack.  Of course, we'd have to use IST
+> for #PF in that case, which makes it a non-production option.
 
-If there's something which doesn't work for bfq in blkcg, please let
-me know.  I'd be happy to make it work.
+We could just have the guard page in between the stack and the
+thread_info, take a double fault, and then just map it back in on
+double fault.
 
-Thanks.
+That would give us 8kB of "normal" stack, with a very loud fault - and
+then an extra 7kB or so of stack (whatever the size of thread-info is)
+- after the first time it traps.
 
--- 
-tejun
+That said, it's still likely a non-production option due to the page
+table games we'd have to play at fork/clone time.
+
+               Linus
