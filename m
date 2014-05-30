@@ -1,85 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933296AbaE3OFb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 10:05:31 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:35574 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932803AbaE3OFa (ORCPT
+	id S933320AbaE3OGU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 10:06:20 -0400
+Received: from qmta15.emeryville.ca.mail.comcast.net ([76.96.27.228]:57878
+	"EHLO qmta15.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932873AbaE3OGT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 10:05:30 -0400
-Message-ID: <5388902B.9080302@linaro.org>
-Date: Fri, 30 May 2014 09:05:31 -0500
-From: Alex Elder <elder@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Mike Turquette <mturquette@linaro.org>, mporter@linaro.org,
-        bcm@fixthebug.org, devicetree@vger.kernel.org
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/5] clk: bcm281xx: implement prerequisite clocks
-References: <1400590362-11177-1-git-send-email-elder@linaro.org> <1400590362-11177-3-git-send-email-elder@linaro.org> <20140524005358.23136.8918@quantum> <5387F8EF.3030607@linaro.org>
-In-Reply-To: <5387F8EF.3030607@linaro.org>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Fri, 30 May 2014 10:06:19 -0400
+X-Greylist: delayed 365 seconds by postgrey-1.27 at vger.kernel.org; Fri, 30 May 2014 10:06:19 EDT
+Date: Fri, 30 May 2014 09:00:11 -0500 (CDT)
+From: Christoph Lameter <cl@gentwo.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Gilad Ben-Yossef <gilad@benyossef.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>,
+        John Stultz <johnstul@us.ibm.com>, Hakan Akkan <hakanakkan@gmail.com>,
+        Max Krasnyansky <maxk@qualcomm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, hughd@google.com,
+        viresh.kumar@linaro.org, hpa@zytor.com, mingo@kernel.org,
+        peterz@infradead.org, Mike Frysinger <vapier@gentoo.org>,
+        Minchan Kim <minchan.kim@gmail.com>
+Subject: Re: [PATCH] vmstat: on demand updates from differentials V7
+In-Reply-To: <20140529235530.GA25555@localhost.localdomain>
+Message-ID: <alpine.DEB.2.10.1405300859290.8240@gentwo.org>
+References: <alpine.DEB.2.10.1405291453260.2899@gentwo.org> <20140529235530.GA25555@localhost.localdomain>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/29/2014 10:20 PM, Alex Elder wrote:
-> On 05/23/2014 07:53 PM, Mike Turquette wrote:
->> Quoting Alex Elder (2014-05-20 05:52:39)
->>> @@ -743,11 +746,16 @@ struct clk *kona_clk_setup(struct kona_clk *bcm_clk)
->>>         clk = clk_register(NULL, &bcm_clk->hw);
->>>         if (IS_ERR(clk)) {
->>>                 pr_err("%s: error registering clock %s (%ld)\n", __func__,
->>> -                       init_data->name, PTR_ERR(clk));
->>> +                       name, PTR_ERR(clk));
->>>                 goto out_teardown;
->>>         }
->>>         BUG_ON(!clk);
->>>  
->>> +       /*  Make it so we can look the clock up using clk_find() */
->>
->> s/clk_find/clk_get/ ?
->>
->>> +       bcm_clk->cl.con_id = name;
->>> +       bcm_clk->cl.clk = clk;
->>> +       clkdev_add(&bcm_clk->cl);
->>
->> This is not so nice. I'll explain more below.
-> 
-> OK, despite what I said before, I do need this, or
-> something like it, so I can look up clocks by name.
-> (Continued below.)
-...
+On Fri, 30 May 2014, Frederic Weisbecker wrote:
 
-I've been thinking this morning about ways to at least
-improve this.  The problem is worse than just prerequisite
-clocks polluting the global name space.  Right now *all*
-clocks get their name registered this way, because any one
-of them could be tagged as a prerequisite, and therefore
-in need of lookup by name.
+> On Thu, May 29, 2014 at 02:56:15PM -0500, Christoph Lameter wrote:
+> > -static void start_cpu_timer(int cpu)
+> > +static void __init start_shepherd_timer(void)
+> >  {
+> > -	struct delayed_work *work = &per_cpu(vmstat_work, cpu);
+> > +	int cpu;
+> > +
+> > +	for_each_possible_cpu(cpu)
+> > +		INIT_DEFERRABLE_WORK(per_cpu_ptr(&vmstat_work, cpu),
+> > +			vmstat_update);
+> > +
+> > +	cpu_stat_off = kmalloc(cpumask_size(), GFP_KERNEL);
+>
+> Now you're open coding alloc_cpumask_var() ?
 
-If I had a device structure to associate the clock names
-with it would help, but I don't have one.  There is no
-other way to define a separate name space, it's either
-associated with a device, or it's global.
+Subject: on demand vmstat: Do not open code alloc_cpumask_var
 
-Given all that, I could prefix or suffix the clock names
-with some special string, in order to sort of carve out a
-reserved portion of the global name space.
+Signed-off-by: Christoph Lameter <cl@linux.com>
 
-I could specify the prerequisite clock by its index in
-its CCU's clocks array.  I could then manufacture a
-of_phandle_args structure and use of_clk_get_from_provider()
-to look up what we need, but that seems kind of kludgy.
-Maybe a new function could encapsulate the messy details
-of that.
+Index: linux/mm/vmstat.c
+===================================================================
+--- linux.orig/mm/vmstat.c	2014-05-29 14:43:26.439163942 -0500
++++ linux/mm/vmstat.c	2014-05-30 08:58:42.909697898 -0500
+@@ -1238,7 +1238,7 @@
+ #ifdef CONFIG_SMP
+ static DEFINE_PER_CPU(struct delayed_work, vmstat_work);
+ int sysctl_stat_interval __read_mostly = HZ;
+-struct cpumask *cpu_stat_off;
++cpumask_var_t cpu_stat_off;
 
-Do you have any suggestions?  I can create some new
-common code if appropriate, but only if it represents
-missing functionality that's generally useful.
+ static void vmstat_update(struct work_struct *w)
+ {
+@@ -1332,7 +1332,8 @@
+ 		INIT_DEFERRABLE_WORK(per_cpu_ptr(&vmstat_work, cpu),
+ 			vmstat_update);
 
-					-Alex
+-	cpu_stat_off = kmalloc(cpumask_size(), GFP_KERNEL);
++	if (!alloc_cpumask_var(&cpu_stat_off, GFP_KERNEL))
++		BUG();
+ 	cpumask_copy(cpu_stat_off, cpu_online_mask);
 
-
+ 	schedule_delayed_work(&shepherd,
