@@ -1,54 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755157AbaE3GYN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 02:24:13 -0400
-Received: from zougloub.eu ([198.27.83.45]:51847 "EHLO zougloub.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754730AbaE3GYL convert rfc822-to-8bit (ORCPT
+	id S932375AbaE3GZN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 02:25:13 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:40246 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932152AbaE3GZL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 02:24:11 -0400
-X-Greylist: delayed 438 seconds by postgrey-1.27 at vger.kernel.org; Fri, 30 May 2014 02:24:10 EDT
-Date: Fri, 30 May 2014 02:18:33 -0400
-From: =?UTF-8?B?SsOpcsO0bWU=?= Carretero <cJ-ko@zougloub.eu>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alex Williamson <alex.williamson@redhat.com>
-Subject: [PATCH] ahci: Add Device ID for HighPoint RocketRaid 642L
-Message-ID: <20140530021833.746efa6b@Vantage.cJ>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Fri, 30 May 2014 02:25:11 -0400
+From: Kiran Kumar Raparthy <kiran.kumar@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: "hyungseoung.yoo" <hyungseoung.yoo@samsung.com>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Gustavo Padovan <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
+        Android Kernel Team <kernel-team@android.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Jaikumar Ganesh <jaikumarg@android.com>,
+        Kiran Raparthy <kiran.kumar@linaro.org>
+Subject: [RFC v2] Bluetooth: Keep master role when SCO or eSCO is active
+Date: Fri, 30 May 2014 11:54:54 +0530
+Message-Id: <1401431094-2833-1-git-send-email-kiran.kumar@linaro.org>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This device normally comes with a proprietary driver, using a web GUI
-to configure RAID:
- http://www.highpoint-tech.com/USA_new/series_rr600-download.htm
-But thankfully it also works out of the box with the AHCI driver,
-being just a Marvell 88SE9235.
+From: "hyungseoung.yoo" <hyungseoung.yoo@samsung.com>
 
-Devices 640L, 644L, 644LS should also be supported but not tested here.
+Preserve the master role when SCO or eSCO is active
+as this improves compatability with lots of
+headset and chipset combinations.
 
-Signed-off-by: Jérôme Carretero <cJ-ko@zougloub.eu>
+This is one of the number of patches from the Android AOSP
+common.git tree, which is used on almost all Android devices.
+It looks like it would improve support for compatibility with
+lot of headset,so I wanted to submit it for review to see
+if it should go upstream.
+
+v2: Fixed formatting issues pointed by Sergei
+
+Cc: Marcel Holtmann <marcel@holtmann.org>
+Cc: Gustavo Padovan <gustavo@padovan.org>
+Cc: Johan Hedberg <johan.hedberg@gmail.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: linux-bluetooth@vger.kernel.org
+Cc: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: Android Kernel Team <kernel-team@android.com>
+Cc: John Stultz <john.stultz@linaro.org>
+Signed-off-by: hyungseoung.yoo <hyungseoung.yoo@samsung.com>
+Signed-off-by: Jaikumar Ganesh <jaikumarg@android.com>
+[kiran: Added context to commit message]
+Signed-off-by: Kiran Raparthy <kiran.kumar@linaro.org>
 ---
- drivers/ata/ahci.c | 2 ++
- 1 file changed, 2 insertions(+)
+ net/bluetooth/hci_event.c | 12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
-index 6070781..ff5543f 100644
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -449,6 +449,8 @@ static const struct pci_device_id ahci_pci_tbl[] = {
- 	  .driver_data = board_ahci_yes_fbs },
- 	{ PCI_DEVICE(PCI_VENDOR_ID_MARVELL_EXT, 0x9230),
- 	  .driver_data = board_ahci_yes_fbs },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_TTI, 0x0642,
-+	  .driver_data = board_ahci_yes_fbs },
+diff --git a/net/bluetooth/hci_event.c b/net/bluetooth/hci_event.c
+index 15010a2..48bc772 100644
+--- a/net/bluetooth/hci_event.c
++++ b/net/bluetooth/hci_event.c
+@@ -1915,6 +1915,14 @@ unlock:
+ 	hci_conn_check_pending(hdev);
+ }
  
- 	/* Promise */
- 	{ PCI_VDEVICE(PROMISE, 0x3f20), board_ahci },	/* PDC42819 */
++static inline bool is_sco_active(struct hci_dev *hdev)
++{
++	if (hci_conn_hash_lookup_state(hdev, SCO_LINK, BT_CONNECTED) ||
++		hci_conn_hash_lookup_state(hdev, ESCO_LINK, BT_CONNECTED))
++		return true;
++	return false;
++}
++
+ static void hci_conn_request_evt(struct hci_dev *hdev, struct sk_buff *skb)
+ {
+ 	struct hci_ev_conn_request *ev = (void *) skb->data;
+@@ -1961,7 +1969,9 @@ static void hci_conn_request_evt(struct hci_dev *hdev, struct sk_buff *skb)
+ 
+ 			bacpy(&cp.bdaddr, &ev->bdaddr);
+ 
+-			if (lmp_rswitch_capable(hdev) && (mask & HCI_LM_MASTER))
++			if (lmp_rswitch_capable(hdev) &&
++				((mask & HCI_LM_MASTER) ||
++				is_sco_active(hdev)))
+ 				cp.role = 0x00; /* Become master */
+ 			else
+ 				cp.role = 0x01; /* Remain slave */
 -- 
-1.9.3
+1.8.2.1
 
