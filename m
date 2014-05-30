@@ -1,50 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754110AbaE3AZS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 20:25:18 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:44272 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751861AbaE3AZP (ORCPT
+	id S1753956AbaE3AZQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 20:25:16 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:30449 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751304AbaE3AZN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 20:25:15 -0400
-X-AuditID: cbfee68d-b7fd46d000005f36-ca-5387cfe875fd
+	Thu, 29 May 2014 20:25:13 -0400
+X-AuditID: cbfee691-b7f2f6d0000040c4-3c-5387cfe886ca
 From: Chanwoo Choi <cw00.choi@samsung.com>
 To: sbkim73@samsung.com, sameo@linux.intel.com, lee.jones@linaro.org,
         broonie@kernel.org, lgirdwood@gmail.com, linux-kernel@vger.kernel.org
 Cc: myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
         jonghwa3.lee@samsung.com, k.kozlowski@samsung.com,
         Chanwoo Choi <cw00.choi@samsung.com>
-Subject: [PATCHv2 1/3] mfd: sec-core: Add support for S2MPU02 device
-Date: Fri, 30 May 2014 09:25:08 +0900
-Message-id: <1401409510-28238-2-git-send-email-cw00.choi@samsung.com>
+Subject: [PATCHv2 0/3] regulator: s2mps11: Add support S2MPU02 PMIC device
+Date: Fri, 30 May 2014 09:25:07 +0900
+Message-id: <1401409510-28238-1-git-send-email-cw00.choi@samsung.com>
 X-Mailer: git-send-email 1.8.0
-In-reply-to: <1401409510-28238-1-git-send-email-cw00.choi@samsung.com>
-References: <1401409510-28238-1-git-send-email-cw00.choi@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupjkeLIzCtJLcpLzFFi42JZI2JSpPvyfHuwwY/HLBZTHz5hs7j+5Tmr
-	RefZJ8wWr18YWpxtesNucf/rUUaLb1c6mCwu75rDZnG7cQWbxeluVouLK74wOXB77Jx1l91j
-	06pONo871/awecw7GejRt2UVo8fnTXIBbFFcNimpOZllqUX6dglcGQubtrAX9OlXHP86kb2B
-	sVWti5GTQ0LAROJAzy82CFtM4sK99UA2F4eQwFJGic1Nu5lhivZ9+AaVWMQocW/fdxYIp4lJ
-	Yv2eV4wgVWwCWhL7X9wAqxIR6GWU6J/ZzwTiMAtMYZT42NkEtkRYwEXi59ep7CA2i4CqRMfK
-	aWBxXgFXiRPt11gh9slJfNjzCKyGU8BNYn/3bRYQWwio5vzRnSwQNfvYJebc9YCYIyDxbfIh
-	oDgHUFxWYtMBqLMlJQ6uuMEygVF4ASPDKkbR1ILkguKk9CJDveLE3OLSvHS95PzcTYzAuDj9
-	71nvDsbbB6wPMSYDjZvILCWanA+Mq7ySeENjMyMLUxNTYyNzSzPShJXEeZMeJgUJCaQnlqRm
-	p6YWpBbFF5XmpBYfYmTi4JRqYDziqRyp8OGJ7pNrDR1Xt6btlb2hvPXIz80Vf75teL1C2WnP
-	Lfv5VQJVjvuW1ve+81shVJDx3/cCv+I+m66e0ozeW81duXlbNu6/pdqy+LTNUre21GKDoKjS
-	6VOERNb3Rwt/EOJS+HmouLjj+Kav27WuZN49l7A+m/XwCnHmtb1vFn8+dvLu7QwlluKMREMt
-	5qLiRABhg+KWoQIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrDIsWRmVeSWpSXmKPExsVy+t9jAd0X59uDDR59NLeY+vAJm8X1L89Z
-	LTrPPmG2eP3C0OJs0xt2i/tfjzJafLvSwWRxedccNovbjSvYLE53s1pcXPGFyYHbY+esu+we
-	m1Z1snncubaHzWPeyUCPvi2rGD0+b5ILYItqYLTJSE1MSS1SSM1Lzk/JzEu3VfIOjneONzUz
-	MNQ1tLQwV1LIS8xNtVVy8QnQdcvMAbpOSaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5vSBBc
-	j5EBGkhYw5ixsGkLe0GffsXxrxPZGxhb1boYOTkkBEwk9n34xgZhi0lcuLceyObiEBJYxChx
-	b993FginiUli/Z5XjCBVbAJaEvtf3ACrEhHoZZTon9nPBOIwC0xhlPjY2QQ2S1jAReLn16ns
-	IDaLgKpEx8ppYHFeAVeJE+3XWCH2yUl82PMIrIZTwE1if/dtFhBbCKjm/NGdLBMYeRcwMqxi
-	FE0tSC4oTkrPNdIrTswtLs1L10vOz93ECI67Z9I7GFc1WBxiFOBgVOLhnZDeHizEmlhWXJl7
-	iFGCg1lJhNfxMFCINyWxsiq1KD++qDQntfgQYzLQVROZpUST84EpIa8k3tDYxMzI0sjc0MLI
-	2Jw0YSVx3oOt1oFCAumJJanZqakFqUUwW5g4OKUaGHnmtH8uKt2Rx149/dRxdb+MZ+HXX82W
-	+Pm57V7QlWSbfJuaxbIPL2tOvWjTLnq4stbS6djTwl33G423OX/dKfLHMEdp2cIKGzFRvpKd
-	pf+tOu0mLs5v2blxr9sht2Ov2VgUOjcZzONsfj3p2ca8mcy1Fls3fEjm3PY1Ly5uJ3trwrpv
-	hyTrFiixFGckGmoxFxUnAgAKsuVh/wIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrGLMWRmVeSWpSXmKPExsWyRsSkRPfF+fZgg1//+SymPnzCZnH9y3NW
+	i86zT5gtXr8wtDjb9Ibd4v7Xo4wW3650MFlc3jWHzeJ24wo2i9PdrBYXV3xhcuD22DnrLrvH
+	plWdbB53ru1h85h3MtCjb8sqRo/Pm+QC2KK4bFJSczLLUov07RK4MrZdOM9S0MRVMeXwS9YG
+	xv3sXYycHBICJhLv1t5kg7DFJC7cWw9kc3EICSxllLhz4CEzTNHqaa/AGoQEFjFKrD2SCFHU
+	xCTx8fZDFpAEm4CWxP4XN8C6RQR6GSX6Z/YzgTjMAlMYJT52NoHtEBbwkph1YDeYzSKgKtFy
+	5y4TiM0r4CpxuWEjE8Q6OYkPex6xgzRLCCxil3jy+DUTRIOAxLfJh4DWcQAlZCU2HYA6T1Li
+	4IobLBMYBRcwMqxiFE0tSC4oTkovMtUrTswtLs1L10vOz93ECAzz0/+eTdzBeP+A9SHGZKBx
+	E5mlRJPzgXGSVxJvaGxmZGFqYmpsZG5pRpqwkjhv+qOkICGB9MSS1OzU1ILUovii0pzU4kOM
+	TBycUg2MrjaMF70MN8vMEJsz4y1nx8qWXpnZAjWyEgdtmH6fVJ96S1UgkfWQogFvk3Uy12+x
+	GB9O24MlCz+73Zb+ee92ac4Va50CdTnOv97tl2OjrD5svKRbqtTIPc09c8b0BZ+vfnt+oOKd
+	y9dae8ljJ3aUBKrrc2aGBcrP2eGS/Hrr6aJ1k6816eQpsRRnJBpqMRcVJwIAmwlaDIkCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMIsWRmVeSWpSXmKPExsVy+t9jAd0X59uDDZrusVpMffiEzeL6l+es
+	Fp1nnzBbvH5haHG26Q27xf2vRxktvl3pYLK4vGsOm8XtxhVsFqe7WS0urvjC5MDtsXPWXXaP
+	Tas62TzuXNvD5jHvZKBH35ZVjB6fN8kFsEU1MNpkpCampBYppOYl56dk5qXbKnkHxzvHm5oZ
+	GOoaWlqYKynkJeam2iq5+AToumXmAF2npFCWmFMKFApILC5W0rfDNCE0xE3XAqYxQtc3JAiu
+	x8gADSSsYczYduE8S0ETV8WUwy9ZGxj3s3cxcnJICJhIrJ72CsoWk7hwbz0biC0ksIhRYu2R
+	xC5GLiC7iUni4+2HLCAJNgEtif0vbrCBJEQEehkl+mf2M4E4zAJTGCU+djaBtQsLeEnMOrAb
+	zGYRUJVouXOXCcTmFXCVuNywkQlinZzEhz2P2Ccwci9gZFjFKJpakFxQnJSea6hXnJhbXJqX
+	rpecn7uJERxFz6R2MK5ssDjEKMDBqMTD2xjZHizEmlhWXJl7iFGCg1lJhNfxMFCINyWxsiq1
+	KD++qDQntfgQYzLQ9onMUqLJ+cAIzyuJNzQ2MTOyNDI3tDAyNidNWEmc90CrdaCQQHpiSWp2
+	ampBahHMFiYOTqkGRv15wdtsQh3ehMrYvqh8dkcl8PWN6/MT5WL1mB9H1sgvsf+Slbj6Y8h8
+	A65T7cs3XMgs9GLXWfO3v93CWO2CCpOsdiqHgFPCJ0aLeS/vr17U3x5Rk97J1bP758q8GTJ/
+	Jfd8mFS1wEn6f0ObhuJL0aOpjrtfGaTdi3+fuU0wT2jChNoM0+BgJZbijERDLeai4kQACxSH
+	guYCAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -52,229 +49,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for Samsung S2MPU02 PMIC device to the MFD sec-core driver.
-The S2MPU02 device includes PMIC/RTC/Clock devices.
+This patch add Samsung S2MPU02 PMIC device driver in exiting S2MPS11 PMIC
+driver because S2MPU02 has a little different between S2MPU02 and S2MPS1x.
+The S2MPU02 PMIC has LDO[1-28] and BUCK[1-7] regulators.
 
-Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
----
- drivers/mfd/sec-core.c           | 19 +++++++++
- drivers/mfd/sec-irq.c            | 88 ++++++++++++++++++++++++++++++++++++++++
- include/linux/mfd/samsung/core.h |  1 +
- include/linux/mfd/samsung/irq.h  | 24 +++++++++++
- 4 files changed, 132 insertions(+)
+Changes from v1:
+- Fix typo about patch description
+- Use existing suspend_state variable instead of defining new variable for S2MPU02
+- Remove unnecessary parameter of s2mps11_pmic_dt_parse()
+- Remove unfit comment of s2mpu02.h file
+- Both patch2 and patch3 should be squashed on patch2
 
-diff --git a/drivers/mfd/sec-core.c b/drivers/mfd/sec-core.c
-index 1cf2752..317b157 100644
---- a/drivers/mfd/sec-core.c
-+++ b/drivers/mfd/sec-core.c
-@@ -90,6 +90,17 @@ static const struct mfd_cell s2mpa01_devs[] = {
- 	},
- };
- 
-+static const struct mfd_cell s2mpu02_devs[] = {
-+	{
-+		.name = "s2mpu02-pmic",
-+	}, {
-+		.name = "s2mpu02-rtc",
-+	}, {
-+		.name = "s2mpu02-clk",
-+		.of_compatible = "samsung,s2mpu02-clk",
-+	}
-+};
-+
- #ifdef CONFIG_OF
- static struct of_device_id sec_dt_match[] = {
- 	{	.compatible = "samsung,s5m8767-pmic",
-@@ -104,6 +115,9 @@ static struct of_device_id sec_dt_match[] = {
- 		.compatible = "samsung,s2mpa01-pmic",
- 		.data = (void *)S2MPA01,
- 	}, {
-+		.compatible = "samsung,s2mpu02-pmic",
-+		.data = (void *)S2MPU02,
-+	}, {
- 		/* Sentinel */
- 	},
- };
-@@ -389,6 +403,11 @@ static int sec_pmic_probe(struct i2c_client *i2c,
- 		ret = mfd_add_devices(sec_pmic->dev, -1, s2mps14_devs,
- 				      ARRAY_SIZE(s2mps14_devs), NULL, 0, NULL);
- 		break;
-+	case S2MPU02:
-+		ret = mfd_add_devices(sec_pmic->dev, -1, s2mpu02_devs,
-+				      ARRAY_SIZE(s2mpu02_devs), NULL, 0, NULL);
-+		break;
-+
- 	default:
- 		/* If this happens the probe function is problem */
- 		BUG();
-diff --git a/drivers/mfd/sec-irq.c b/drivers/mfd/sec-irq.c
-index 64e7913..c25cccc 100644
---- a/drivers/mfd/sec-irq.c
-+++ b/drivers/mfd/sec-irq.c
-@@ -20,6 +20,7 @@
- #include <linux/mfd/samsung/irq.h>
- #include <linux/mfd/samsung/s2mps11.h>
- #include <linux/mfd/samsung/s2mps14.h>
-+#include <linux/mfd/samsung/s2mpu02.h>
- #include <linux/mfd/samsung/s5m8763.h>
- #include <linux/mfd/samsung/s5m8767.h>
- 
-@@ -161,6 +162,77 @@ static const struct regmap_irq s2mps14_irqs[] = {
- 	},
- };
- 
-+static const struct regmap_irq s2mpu02_irqs[] = {
-+	[S2MPU02_IRQ_PWRONF] = {
-+		.reg_offset = 0,
-+		.mask = S2MPS11_IRQ_PWRONF_MASK,
-+	},
-+	[S2MPU02_IRQ_PWRONR] = {
-+		.reg_offset = 0,
-+		.mask = S2MPS11_IRQ_PWRONR_MASK,
-+	},
-+	[S2MPU02_IRQ_JIGONBF] = {
-+		.reg_offset = 0,
-+		.mask = S2MPS11_IRQ_JIGONBF_MASK,
-+	},
-+	[S2MPU02_IRQ_JIGONBR] = {
-+		.reg_offset = 0,
-+		.mask = S2MPS11_IRQ_JIGONBR_MASK,
-+	},
-+	[S2MPU02_IRQ_ACOKBF] = {
-+		.reg_offset = 0,
-+		.mask = S2MPS11_IRQ_ACOKBF_MASK,
-+	},
-+	[S2MPU02_IRQ_ACOKBR] = {
-+		.reg_offset = 0,
-+		.mask = S2MPS11_IRQ_ACOKBR_MASK,
-+	},
-+	[S2MPU02_IRQ_PWRON1S] = {
-+		.reg_offset = 0,
-+		.mask = S2MPS11_IRQ_PWRON1S_MASK,
-+	},
-+	[S2MPU02_IRQ_MRB] = {
-+		.reg_offset = 0,
-+		.mask = S2MPS11_IRQ_MRB_MASK,
-+	},
-+	[S2MPU02_IRQ_RTC60S] = {
-+		.reg_offset = 1,
-+		.mask = S2MPS11_IRQ_RTC60S_MASK,
-+	},
-+	[S2MPU02_IRQ_RTCA1] = {
-+		.reg_offset = 1,
-+		.mask = S2MPS11_IRQ_RTCA1_MASK,
-+	},
-+	[S2MPU02_IRQ_RTCA0] = {
-+		.reg_offset = 1,
-+		.mask = S2MPS11_IRQ_RTCA0_MASK,
-+	},
-+	[S2MPU02_IRQ_SMPL] = {
-+		.reg_offset = 1,
-+		.mask = S2MPS11_IRQ_SMPL_MASK,
-+	},
-+	[S2MPU02_IRQ_RTC1S] = {
-+		.reg_offset = 1,
-+		.mask = S2MPS11_IRQ_RTC1S_MASK,
-+	},
-+	[S2MPU02_IRQ_WTSR] = {
-+		.reg_offset = 1,
-+		.mask = S2MPS11_IRQ_WTSR_MASK,
-+	},
-+	[S2MPU02_IRQ_INT120C] = {
-+		.reg_offset = 2,
-+		.mask = S2MPS11_IRQ_INT120C_MASK,
-+	},
-+	[S2MPU02_IRQ_INT140C] = {
-+		.reg_offset = 2,
-+		.mask = S2MPS11_IRQ_INT140C_MASK,
-+	},
-+	[S2MPU02_IRQ_TSD] = {
-+		.reg_offset = 2,
-+		.mask = S2MPS14_IRQ_TSD_MASK,
-+	},
-+};
-+
- static const struct regmap_irq s5m8767_irqs[] = {
- 	[S5M8767_IRQ_PWRR] = {
- 		.reg_offset = 0,
-@@ -327,6 +399,16 @@ static const struct regmap_irq_chip s2mps14_irq_chip = {
- 	.ack_base = S2MPS14_REG_INT1,
- };
- 
-+static const struct regmap_irq_chip s2mpu02_irq_chip = {
-+	.name = "s2mpu02",
-+	.irqs = s2mpu02_irqs,
-+	.num_irqs = ARRAY_SIZE(s2mpu02_irqs),
-+	.num_regs = 3,
-+	.status_base = S2MPU02_REG_INT1,
-+	.mask_base = S2MPU02_REG_INT1M,
-+	.ack_base = S2MPU02_REG_INT1,
-+};
-+
- static const struct regmap_irq_chip s5m8767_irq_chip = {
- 	.name = "s5m8767",
- 	.irqs = s5m8767_irqs,
-@@ -384,6 +466,12 @@ int sec_irq_init(struct sec_pmic_dev *sec_pmic)
- 				  sec_pmic->irq_base, &s2mps14_irq_chip,
- 				  &sec_pmic->irq_data);
- 		break;
-+	case S2MPU02:
-+		ret = regmap_add_irq_chip(sec_pmic->regmap_pmic, sec_pmic->irq,
-+				  IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
-+				  sec_pmic->irq_base, &s2mpu02_irq_chip,
-+				  &sec_pmic->irq_data);
-+		break;
- 	default:
- 		dev_err(sec_pmic->dev, "Unknown device type %d\n",
- 			sec_pmic->device_type);
-diff --git a/include/linux/mfd/samsung/core.h b/include/linux/mfd/samsung/core.h
-index 157e32b..cb89442 100644
---- a/include/linux/mfd/samsung/core.h
-+++ b/include/linux/mfd/samsung/core.h
-@@ -21,6 +21,7 @@ enum sec_device_type {
- 	S2MPA01,
- 	S2MPS11X,
- 	S2MPS14X,
-+	S2MPU02,
- };
- 
- /**
-diff --git a/include/linux/mfd/samsung/irq.h b/include/linux/mfd/samsung/irq.h
-index 1224f44..f35af73 100644
---- a/include/linux/mfd/samsung/irq.h
-+++ b/include/linux/mfd/samsung/irq.h
-@@ -129,6 +129,30 @@ enum s2mps14_irq {
- 	S2MPS14_IRQ_NR,
- };
- 
-+enum s2mpu02_irq {
-+	S2MPU02_IRQ_PWRONF,
-+	S2MPU02_IRQ_PWRONR,
-+	S2MPU02_IRQ_JIGONBF,
-+	S2MPU02_IRQ_JIGONBR,
-+	S2MPU02_IRQ_ACOKBF,
-+	S2MPU02_IRQ_ACOKBR,
-+	S2MPU02_IRQ_PWRON1S,
-+	S2MPU02_IRQ_MRB,
-+
-+	S2MPU02_IRQ_RTC60S,
-+	S2MPU02_IRQ_RTCA1,
-+	S2MPU02_IRQ_RTCA0,
-+	S2MPU02_IRQ_SMPL,
-+	S2MPU02_IRQ_RTC1S,
-+	S2MPU02_IRQ_WTSR,
-+
-+	S2MPU02_IRQ_INT120C,
-+	S2MPU02_IRQ_INT140C,
-+	S2MPU02_IRQ_TSD,
-+
-+	S2MPU02_IRQ_NR,
-+};
-+
- /* Masks for interrupts are the same as in s2mps11 */
- #define S2MPS14_IRQ_TSD_MASK		(1 << 2)
- 
+Chanwoo Choi (3):
+  mfd: sec-core: Add support for S2MPU02 device
+  regulator: s2mps11: Add support S2MPU02 regulator device
+  dt-bindings: mfd: s2mps11: Add support S2MPU02 PMIC
+
+ Documentation/devicetree/bindings/mfd/s2mps11.txt |   7 +-
+ drivers/mfd/sec-core.c                            |  45 +++
+ drivers/mfd/sec-irq.c                             |  88 ++++++
+ drivers/regulator/s2mps11.c                       | 319 ++++++++++++++++++++--
+ include/linux/mfd/samsung/core.h                  |   1 +
+ include/linux/mfd/samsung/irq.h                   |  24 ++
+ include/linux/mfd/samsung/s2mpu02.h               | 200 ++++++++++++++
+ 7 files changed, 662 insertions(+), 22 deletions(-)
+ create mode 100644 include/linux/mfd/samsung/s2mpu02.h
+
 -- 
 1.8.0
 
