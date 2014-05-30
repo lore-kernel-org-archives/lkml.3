@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030252AbaE3ROw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 13:14:52 -0400
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:48204 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030238AbaE3ROu (ORCPT
+	id S1030268AbaE3RPG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 13:15:06 -0400
+Received: from mail-we0-f179.google.com ([74.125.82.179]:37399 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964810AbaE3RPE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 13:14:50 -0400
+	Fri, 30 May 2014 13:15:04 -0400
 From: srinivas.kandagatla@linaro.org
 To: Russell King <linux@arm.linux.org.uk>,
         Ulf Hansson <ulf.hansson@linaro.org>, linux-mmc@vger.kernel.org
 Cc: Chris Ball <chris@printf.net>, linux-kernel@vger.kernel.org,
         linux-arm-msm@vger.kernel.org, linus.walleij@linaro.org,
         Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-Subject: [PATCH v5 11/13] mmc: mmci: add explicit clk control
-Date: Fri, 30 May 2014 18:14:40 +0100
-Message-Id: <1401470080-27277-1-git-send-email-srinivas.kandagatla@linaro.org>
+Subject: [PATCH v5 12/13] mmc: mmci: Add Qcom specific rx_fifocnt logic.
+Date: Fri, 30 May 2014 18:14:55 +0100
+Message-Id: <1401470095-27318-1-git-send-email-srinivas.kandagatla@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1401469918-26817-1-git-send-email-srinivas.kandagatla@linaro.org>
 References: <1401469918-26817-1-git-send-email-srinivas.kandagatla@linaro.org>
@@ -25,113 +25,108 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
 
-On Controllers like Qcom SD card controller where cclk is mclk and mclk should
-be directly controlled by the driver.
+MCIFIFOCNT register behaviour on Qcom chips is very different than the other
+pl180 integrations. MCIFIFOCNT register contains the number of
+words that are still waiting to be transferred through the FIFO. It keeps
+decrementing once the host CPU reads the MCIFIFO. With the existing logic and
+the MCIFIFOCNT behaviour, mmci_pio_read will loop forever, as the FIFOCNT
+register will always return transfer size before reading the FIFO.
 
-This patch adds support to control mclk directly in the driver, and also
-adds explicit_mclk_control flag in variant structure giving more flexibility
-to the driver.
+Also the data sheet states that "This register is only useful for debug
+purposes and should not be used for normal operation since it does not reflect
+data which may or may not be in the pipeline".
+
+This patch implements a qcom specific get_rx_fifocnt function which is
+implemented based on status register flags. Based on qcom_fifo flag in
+variant data structure, the corresponding get_rx_fifocnt function is selected.
 
 Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
 ---
- drivers/mmc/host/mmci.c | 31 ++++++++++++++++++++++++++++---
- drivers/mmc/host/mmci.h |  2 ++
- 2 files changed, 30 insertions(+), 3 deletions(-)
+ drivers/mmc/host/mmci.c | 30 ++++++++++++++++++++++++++++--
+ drivers/mmc/host/mmci.h |  1 +
+ 2 files changed, 29 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/mmc/host/mmci.c b/drivers/mmc/host/mmci.c
-index 55d39d2..8b23368 100644
+index 8b23368..7a11522 100644
 --- a/drivers/mmc/host/mmci.c
 +++ b/drivers/mmc/host/mmci.c
-@@ -72,6 +72,7 @@ static unsigned int fmax = 515633;
-  * @pwrreg_clkgate: MMCIPOWER register must be used to gate the clock
+@@ -73,6 +73,7 @@ static unsigned int fmax = 515633;
   * @busy_detect: true if busy detection on dat0 is supported
   * @pwrreg_nopower: bits in MMCIPOWER don't controls ext. power supply
-+ * @explicit_mclk_control: enable explicit mclk control in driver.
+  * @explicit_mclk_control: enable explicit mclk control in driver.
++ * @qcom_fifo: enables qcom specific fifo pio read logic.
   */
  struct variant_data {
  	unsigned int		clkreg;
-@@ -93,6 +94,7 @@ struct variant_data {
- 	bool			pwrreg_clkgate;
+@@ -95,6 +96,7 @@ struct variant_data {
  	bool			busy_detect;
  	bool			pwrreg_nopower;
-+	bool			explicit_mclk_control;
+ 	bool			explicit_mclk_control;
++	bool			qcom_fifo;
  };
  
  static struct variant_data variant_arm = {
-@@ -286,7 +288,9 @@ static void mmci_set_clkreg(struct mmci_host *host, unsigned int desired)
- 	host->cclk = 0;
+@@ -990,15 +992,34 @@ mmci_cmd_irq(struct mmci_host *host, struct mmc_command *cmd,
+ 	}
+ }
  
- 	if (desired) {
--		if (desired >= host->mclk) {
-+		if (variant->explicit_mclk_control) {
-+			host->cclk = host->mclk;
-+		} else if (desired >= host->mclk) {
- 			clk = MCI_CLK_BYPASS;
- 			if (variant->st_clkdiv)
- 				clk |= MCI_ST_UX500_NEG_EDGE;
-@@ -1325,6 +1329,18 @@ static void mmci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
- 	if (!ios->clock && variant->pwrreg_clkgate)
- 		pwr &= ~MCI_PWR_ON;
- 
-+	if ((host->variant->explicit_mclk_control) &&
-+	    (ios->clock != host->clock_cache)) {
-+		int rc = clk_set_rate(host->clk, ios->clock);
-+		if (rc < 0) {
-+			dev_err(mmc_dev(host->mmc),
-+				"Error setting clock rate (%d)\n", rc);
-+		} else {
-+			host->mclk = clk_get_rate(host->clk);
-+			host->clock_cache = ios->clock;
-+		}
-+	}
++static int mmci_get_rx_fifocnt(struct mmci_host *host, u32 status, int remain)
++{
++	return remain - (readl(host->base + MMCIFIFOCNT) << 2);
++}
 +
- 	spin_lock_irqsave(&host->lock, flags);
- 
- 	mmci_set_clkreg(host, ios->clock);
-@@ -1500,9 +1516,12 @@ static int mmci_probe(struct amba_device *dev,
- 	 * The ARM and ST versions of the block have slightly different
- 	 * clock divider equations which means that the minimum divider
- 	 * differs too.
-+	 * on Qualcomm like controllers get the nearest minimum clock to 100Khz
- 	 */
- 	if (variant->st_clkdiv)
- 		mmc->f_min = DIV_ROUND_UP(host->mclk, 257);
-+	else if (variant->explicit_mclk_control)
-+		mmc->f_min = clk_round_rate(host->clk, 100000);
- 	else
- 		mmc->f_min = DIV_ROUND_UP(host->mclk, 512);
- 	/*
-@@ -1512,9 +1531,15 @@ static int mmci_probe(struct amba_device *dev,
- 	 * the block, of course.
- 	 */
- 	if (mmc->f_max)
--		mmc->f_max = min(host->mclk, mmc->f_max);
-+		mmc->f_max = variant->explicit_mclk_control ?
-+				min(variant->f_max, mmc->f_max) :
-+				min(host->mclk, mmc->f_max);
- 	else
--		mmc->f_max = min(host->mclk, fmax);
-+		mmc->f_max = variant->explicit_mclk_control ?
-+				min(variant->f_max, fmax) :
-+				min(host->mclk, fmax);
++static int mmci_qcom_get_rx_fifocnt(struct mmci_host *host, u32 status, int r)
++{
++	/*
++	 * on qcom SDCC4 only 8 words are used in each burst so only 8 addresses
++	 * from the fifo range should be used
++	 */
++	if (status & MCI_RXFIFOHALFFULL)
++		return host->variant->fifohalfsize;
++	else if (status & MCI_RXDATAAVLBL)
++		return 4;
 +
++	return 0;
++}
 +
- 	dev_dbg(mmc_dev(mmc), "clocking block at %u Hz\n", mmc->f_max);
+ static int mmci_pio_read(struct mmci_host *host, char *buffer, unsigned int remain)
+ {
+ 	void __iomem *base = host->base;
+ 	char *ptr = buffer;
+-	u32 status;
++	u32 status = readl(host->base + MMCISTATUS);
+ 	int host_remain = host->size;
  
- 	/* Get regulators and the supported OCR mask */
+ 	do {
+-		int count = host_remain - (readl(base + MMCIFIFOCNT) << 2);
++		int count = host->get_rx_fifocnt(host, status, host_remain);
+ 
+ 		if (count > remain)
+ 			count = remain;
+@@ -1488,6 +1509,11 @@ static int mmci_probe(struct amba_device *dev,
+ 	if (ret)
+ 		goto host_free;
+ 
++	if (variant->qcom_fifo)
++		host->get_rx_fifocnt = mmci_qcom_get_rx_fifocnt;
++	else
++		host->get_rx_fifocnt = mmci_get_rx_fifocnt;
++
+ 	host->plat = plat;
+ 	host->variant = variant;
+ 	host->mclk = clk_get_rate(host->clk);
 diff --git a/drivers/mmc/host/mmci.h b/drivers/mmc/host/mmci.h
-index 706eb513..b5f0810 100644
+index b5f0810..5f76670 100644
 --- a/drivers/mmc/host/mmci.h
 +++ b/drivers/mmc/host/mmci.h
-@@ -208,6 +208,8 @@ struct mmci_host {
- 	spinlock_t		lock;
+@@ -229,6 +229,7 @@ struct mmci_host {
+ 	/* pio stuff */
+ 	struct sg_mapping_iter	sg_miter;
+ 	unsigned int		size;
++	int (*get_rx_fifocnt)(struct mmci_host *h, u32 status, int remain);
  
- 	unsigned int		mclk;
-+	/* cached value of requested clk in set_ios */
-+	unsigned int		clock_cache;
- 	unsigned int		cclk;
- 	u32			pwr_reg;
- 	u32			pwr_reg_add;
+ #ifdef CONFIG_DMA_ENGINE
+ 	/* DMA stuff */
 -- 
 1.9.1
 
