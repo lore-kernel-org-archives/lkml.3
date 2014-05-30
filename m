@@ -1,253 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755531AbaE3Kjc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 06:39:32 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:45714 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751562AbaE3Kja (ORCPT
+	id S1755590AbaE3Kk4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 06:40:56 -0400
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:40656 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752186AbaE3Kkz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 06:39:30 -0400
-Message-ID: <53885FD7.8070406@linaro.org>
-Date: Fri, 30 May 2014 11:39:19 +0100
-From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Fri, 30 May 2014 06:40:55 -0400
 MIME-Version: 1.0
-To: Ulf Hansson <ulf.hansson@linaro.org>
-CC: Russell King <linux@arm.linux.org.uk>,
-        linux-mmc <linux-mmc@vger.kernel.org>, Chris Ball <chris@printf.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH v4 12/13] mmc: mmci: add explicit clk control
-References: <1401284608-16428-1-git-send-email-srinivas.kandagatla@linaro.org>	<1401284878-16937-1-git-send-email-srinivas.kandagatla@linaro.org> <CAPDyKFoGB=0QPTOWMFvP2riLbJK=Mn1__nafJQky0f41Zo+i8g@mail.gmail.com>
-In-Reply-To: <CAPDyKFoGB=0QPTOWMFvP2riLbJK=Mn1__nafJQky0f41Zo+i8g@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+X-Google-Sender-Delegation: ritesh.harjani@gmail.com
+In-Reply-To: <1401260672-28339-4-git-send-email-iamjoonsoo.kim@lge.com>
+References: <1401260672-28339-1-git-send-email-iamjoonsoo.kim@lge.com>
+	<1401260672-28339-4-git-send-email-iamjoonsoo.kim@lge.com>
+Date: Fri, 30 May 2014 16:10:54 +0530
+X-Google-Sender-Auth: 9KJFaHCMhMl-RuprNkvnnySg-4w
+Message-ID: <CALk7dXr4c53boGMaM160ssoomToZvq8q5pUKkTxLtTVVpXGc1A@mail.gmail.com>
+Subject: Re: [PATCH v2 3/3] CMA: always treat free cma pages as non-free on
+ watermark checking
+From: Ritesh Harjani <ritesh.list@gmail.com>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mgorman@suse.de>,
+        Laura Abbott <lauraa@codeaurora.org>, Minchan Kim <minchan@kernel.org>,
+        Heesub Shin <heesub.shin@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Ritesh Harjani <ritesh.harjani@gmail.com>,
+        Nagachandra P <nagachandra@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks Ulf for reviewing.
+Hi Joonsoo,
 
-On 30/05/14 11:25, Ulf Hansson wrote:
-> On 28 May 2014 15:47,  <srinivas.kandagatla@linaro.org> wrote:
->> From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
->>
->> On Controllers like Qcom SD card controller where cclk is mclk and mclk should
->> be directly controlled by the driver.
->>
->> This patch adds support to control mclk directly in the driver, and also
->> adds explicit_mclk_control flag in variant structure giving more flexibility
->> to the driver.
->>
->> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
->> ---
->>   drivers/mmc/host/mmci.c | 96 ++++++++++++++++++++++++++++++++-----------------
->>   drivers/mmc/host/mmci.h |  2 ++
->>   2 files changed, 65 insertions(+), 33 deletions(-)
->>
->> diff --git a/drivers/mmc/host/mmci.c b/drivers/mmc/host/mmci.c
->> index 202f2d5..6eb0a29 100644
->> --- a/drivers/mmc/host/mmci.c
->> +++ b/drivers/mmc/host/mmci.c
->> @@ -72,6 +72,7 @@ static unsigned int fmax = 515633;
->>    * @pwrreg_clkgate: MMCIPOWER register must be used to gate the clock
->>    * @busy_detect: true if busy detection on dat0 is supported
->>    * @pwrreg_nopower: bits in MMCIPOWER don't controls ext. power supply
->> + * @explicit_mclk_control: enable explicit mclk control in driver.
->>    */
->>   struct variant_data {
->>          unsigned int            clkreg;
->> @@ -93,6 +94,7 @@ struct variant_data {
->>          bool                    pwrreg_clkgate;
->>          bool                    busy_detect;
->>          bool                    pwrreg_nopower;
->> +       bool                    explicit_mclk_control;
->>   };
->>
->>   static struct variant_data variant_arm = {
->> @@ -199,6 +201,7 @@ static struct variant_data variant_qcom = {
->>          .datalength_bits        = 24,
->>          .pwrreg_powerup         = MCI_PWR_UP,
->>          .f_max                  = 208000000,
->> +       .explicit_mclk_control  = true,
->
-> This should go in patch3 instead.
+I think you will be loosing the benefit of below patch with your changes.
+I am no expert here so please bear with me. I tried explaining in the
+inline comments, let me know if I am wrong.
 
-yes.. will get this in to the patch3 too.
+commit 026b08147923142e925a7d0aaa39038055ae0156
+Author: Tomasz Stanislawski <t.stanislaws@samsung.com>
+Date:   Wed Jun 12 14:05:02 2013 -0700
 
+
+On Wed, May 28, 2014 at 12:34 PM, Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
+> commit d95ea5d1('cma: fix watermark checking') introduces ALLOC_CMA flag
+> for alloc flag and treats free cma pages as free pages if this flag is
+> passed to watermark checking. Intention of that patch is that movable page
+> allocation can be be handled from cma reserved region without starting
+> kswapd. Now, previous patch changes the behaviour of allocator that
+> movable allocation uses the page on cma reserved region aggressively,
+> so this watermark hack isn't needed anymore. Therefore remove it.
 >
->>   };
->>
->>   static int mmci_card_busy(struct mmc_host *mmc)
->> @@ -301,7 +304,9 @@ static void mmci_set_clkreg(struct mmci_host *host, unsigned int desired)
->>          host->cclk = 0;
->>
->>          if (desired) {
->> -               if (desired >= host->mclk) {
->> +               if (variant->explicit_mclk_control) {
->> +                       host->cclk = host->mclk;
->> +               } else if (desired >= host->mclk) {
->>                          clk = MCI_CLK_BYPASS;
->>                          if (variant->st_clkdiv)
->>                                  clk |= MCI_ST_UX500_NEG_EDGE;
->> @@ -1340,6 +1345,18 @@ static void mmci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
->>          if (!ios->clock && variant->pwrreg_clkgate)
->>                  pwr &= ~MCI_PWR_ON;
->>
->> +       if ((host->variant->explicit_mclk_control) &&
->> +           (ios->clock != host->mclk_req)) {
->> +               int rc = clk_set_rate(host->clk, ios->clock);
->> +               if (rc < 0) {
->> +                       dev_err(mmc_dev(host->mmc),
->> +                               "Error setting clock rate (%d)\n", rc);
->> +               } else {
->> +                       host->mclk = clk_get_rate(host->clk);
->> +                       host->mclk_req = ios->clock;
->> +               }
->> +       }
->> +
->>          spin_lock_irqsave(&host->lock, flags);
->>
->>          mmci_set_clkreg(host, ios->clock);
->> @@ -1490,19 +1507,6 @@ static int mmci_probe(struct amba_device *dev,
->>          host->plat = plat;
->>          host->variant = variant;
->>          host->mclk = clk_get_rate(host->clk);
->> -       /*
->> -        * According to the spec, mclk is max 100 MHz,
->> -        * so we try to adjust the clock down to this,
->> -        * (if possible).
->> -        */
->> -       if (host->mclk > host->variant->f_max) {
->> -               ret = clk_set_rate(host->clk, host->variant->f_max);
->> -               if (ret < 0)
->> -                       goto clk_disable;
->> -               host->mclk = clk_get_rate(host->clk);
->> -               dev_dbg(mmc_dev(mmc), "eventual mclk rate: %u Hz\n",
->> -                       host->mclk);
->> -       }
+> Acked-by: Michal Nazarewicz <mina86@mina86.com>
+> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 >
-> The above code is relevant for Qcom as well, I don't think you need
-> change/move it.
-Yes, you are right. I will fix it in next version.
+> diff --git a/mm/compaction.c b/mm/compaction.c
+> index 627dc2e..36e2fcd 100644
+> --- a/mm/compaction.c
+> +++ b/mm/compaction.c
+> @@ -1117,10 +1117,6 @@ unsigned long try_to_compact_pages(struct zonelist *zonelist,
 >
->>
->>          host->phybase = dev->res.start;
->>          host->base = devm_ioremap_resource(&dev->dev, &dev->res);
->> @@ -1511,25 +1515,51 @@ static int mmci_probe(struct amba_device *dev,
->>                  goto clk_disable;
->>          }
->>
->> -       /*
->> -        * The ARM and ST versions of the block have slightly different
->> -        * clock divider equations which means that the minimum divider
->> -        * differs too.
->> -        */
->> -       if (variant->st_clkdiv)
->> -               mmc->f_min = DIV_ROUND_UP(host->mclk, 257);
+>         count_compact_event(COMPACTSTALL);
 >
-> I think you could simplify the change of fixing with f_min and f_max.
+> -#ifdef CONFIG_CMA
+> -       if (allocflags_to_migratetype(gfp_mask) == MIGRATE_MOVABLE)
+> -               alloc_flags |= ALLOC_CMA;
+> -#endif
+>         /* Compact each zone in the list */
+>         for_each_zone_zonelist_nodemask(zone, z, zonelist, high_zoneidx,
+>                                                                 nodemask) {
+> diff --git a/mm/internal.h b/mm/internal.h
+> index 07b6736..a121762 100644
+> --- a/mm/internal.h
+> +++ b/mm/internal.h
+> @@ -384,7 +384,6 @@ unsigned long reclaim_clean_pages_from_list(struct zone *zone,
+>  #define ALLOC_HARDER           0x10 /* try to alloc harder */
+>  #define ALLOC_HIGH             0x20 /* __GFP_HIGH set */
+>  #define ALLOC_CPUSET           0x40 /* check for correct cpuset */
+> -#define ALLOC_CMA              0x80 /* allow allocations from CMA areas */
+> -#define ALLOC_FAIR             0x100 /* fair zone allocation */
+> +#define ALLOC_FAIR             0x80 /* fair zone allocation */
 >
-> Start by, just add another statement here "else if
-> (variant->explicit_mclk_control)" and do the clk_round_rate()
+>  #endif /* __MM_INTERNAL_H */
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index ca678b6..83a8021 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -1764,20 +1764,22 @@ static bool __zone_watermark_ok(struct zone *z, int order, unsigned long mark,
+>         long min = mark;
+>         long lowmem_reserve = z->lowmem_reserve[classzone_idx];
+>         int o;
+> -       long free_cma = 0;
 >
->> -       else
->> -               mmc->f_min = DIV_ROUND_UP(host->mclk, 512);
->> -       /*
->> -        * If no maximum operating frequency is supplied, fall back to use
->> -        * the module parameter, which has a (low) default value in case it
->> -        * is not specified. Either value must not exceed the clock rate into
->> -        * the block, of course.
->> -        */
->> -       if (mmc->f_max)
->> -               mmc->f_max = min(host->mclk, mmc->f_max);
->> -       else
->> -               mmc->f_max = min(host->mclk, fmax);
->
-> Further replace the above with:
-> if (mmc->f_max)
->       mmc->f_max = variant->explicit_mclk_control ? min(mmc->f_max,
-> variant->f_max) : min(host->mclk, mmc->f_max);
-> else
->       mmc->f_max = variant->explicit_mclk_control ? fmax : min(host->mclk, fmax);
->
-> That should do it, right?
-yes, that will work. It simplifies the logic too.
+>         free_pages -= (1 << order) - 1;
+>         if (alloc_flags & ALLOC_HIGH)
+>                 min -= min / 2;
+>         if (alloc_flags & ALLOC_HARDER)
+>                 min -= min / 4;
+> -#ifdef CONFIG_CMA
+> -       /* If allocation can't use CMA areas don't use free CMA pages */
+> -       if (!(alloc_flags & ALLOC_CMA))
+> -               free_cma = zone_page_state(z, NR_FREE_CMA_PAGES);
+> -#endif
+> +       /*
+> +        * We don't want to regard the pages on CMA region as free
+> +        * on watermark checking, since they cannot be used for
+> +        * unmovable/reclaimable allocation and they can suddenly
+> +        * vanish through CMA allocation
+> +        */
+> +       if (IS_ENABLED(CONFIG_CMA) && z->managed_cma_pages)
+> +               free_pages -= zone_page_state(z, NR_FREE_CMA_PAGES);
+
+make this free_cma instead of free_pages.
 
 >
->> +       if (variant->explicit_mclk_control) {
->> +               /* get the nearest minimum clock to 100Khz */
->> +               mmc->f_min = clk_round_rate(host->clk, 100000);
->> +
->> +               if (mmc->f_max)
->> +                       mmc->f_max = min(host->variant->f_max, mmc->f_max);
->> +               else
->> +                       mmc->f_max = min(host->variant->f_max, fmax);
->> +
->> +       } else {
->> +               /*
->> +                * According to the spec, mclk is max 100 MHz,
->> +                * so we try to adjust the clock down to this,
->> +                * (if possible).
->> +                */
->> +               if (host->mclk > host->variant->f_max) {
->> +                       ret = clk_set_rate(host->clk, host->variant->f_max);
->> +                       if (ret < 0)
->> +                               goto clk_disable;
->> +                       host->mclk = clk_get_rate(host->clk);
->> +                       dev_dbg(mmc_dev(mmc), "eventual mclk rate: %u Hz\n",
->> +                               host->mclk);
->> +               }
->> +               /*
->> +                * The ARM and ST versions of the block have slightly different
->> +                * clock divider equations which means that the minimum divider
->> +                * differs too.
->> +                */
->> +               if (variant->st_clkdiv)
->> +                       mmc->f_min = DIV_ROUND_UP(host->mclk, 257);
->> +               else
->> +                       mmc->f_min = DIV_ROUND_UP(host->mclk, 512);
->> +               /*
->> +                * If no maximum operating frequency is supplied, fall back to
->> +                * use the module parameter, which has a (low) default value in
->> +                * case it is not specified. Either value must not exceed the
->> +                * clock rate into the block, of course.
->> +                */
->> +               if (mmc->f_max)
->> +                       mmc->f_max = min(host->mclk, mmc->f_max);
->> +               else
->> +                       mmc->f_max = min(host->mclk, fmax);
->> +
->> +       }
->> +
->>          dev_dbg(mmc_dev(mmc), "clocking block at %u Hz\n", mmc->f_max);
->>
->>          /* Get regulators and the supported OCR mask */
->> diff --git a/drivers/mmc/host/mmci.h b/drivers/mmc/host/mmci.h
->> index 706eb513..1882e20 100644
->> --- a/drivers/mmc/host/mmci.h
->> +++ b/drivers/mmc/host/mmci.h
->> @@ -208,6 +208,8 @@ struct mmci_host {
->>          spinlock_t              lock;
->>
->>          unsigned int            mclk;
->> +       /* cached value of requested clk in set_ios */
->> +       unsigned int            mclk_req;
->
-> How about "clock_cache" instead?
-Sounds ok to me, I will change it in next version.
+> -       if (free_pages - free_cma <= min + lowmem_reserve)
+> +       if (free_pages <= min + lowmem_reserve)
+free_pages - free_cma <= min + lowmem_reserve
 
-Thanks,
-srini
+Because in for loop you subtract nr_free which includes the CMA pages.
+So if you have subtracted NR_FREE_CMA_PAGES
+from free_pages above then you will be subtracting cma pages again in
+nr_free (below in for loop).
+
+>                 return false;
+>         for (o = 0; o < order; o++) {
+>                 /* At the next order, this order's pages become unavailable */
+> @@ -2545,10 +2547,6 @@ gfp_to_alloc_flags(gfp_t gfp_mask)
+>                                  unlikely(test_thread_flag(TIF_MEMDIE))))
+>                         alloc_flags |= ALLOC_NO_WATERMARKS;
+>         }
+> -#ifdef CONFIG_CMA
+> -       if (allocflags_to_migratetype(gfp_mask) == MIGRATE_MOVABLE)
+> -               alloc_flags |= ALLOC_CMA;
+> -#endif
+>         return alloc_flags;
+>  }
 >
->>          unsigned int            cclk;
->>          u32                     pwr_reg;
->>          u32                     pwr_reg_add;
->> --
->> 1.9.1
->>
+> @@ -2818,10 +2816,6 @@ retry_cpuset:
+>         if (!preferred_zone)
+>                 goto out;
 >
-> Kind regards
-> Ulf Hansson
+> -#ifdef CONFIG_CMA
+> -       if (allocflags_to_migratetype(gfp_mask) == MIGRATE_MOVABLE)
+> -               alloc_flags |= ALLOC_CMA;
+> -#endif
+>  retry:
+>         /* First allocation attempt */
+>         page = get_page_from_freelist(gfp_mask|__GFP_HARDWALL, nodemask, order,
+> --
+> 1.7.9.5
 >
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+
+Thanks
+Ritesh
