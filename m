@@ -1,135 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754926AbaE3F71 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 01:59:27 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:35198 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752679AbaE3F7Z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 01:59:25 -0400
-Message-ID: <53881D2A.7060001@linux.vnet.ibm.com>
-Date: Fri, 30 May 2014 11:24:50 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1755001AbaE3GAI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 02:00:08 -0400
+Received: from mga03.intel.com ([143.182.124.21]:56836 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754810AbaE3GAG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 May 2014 02:00:06 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,939,1392192000"; 
+   d="scan'208";a="438879121"
+Message-ID: <53881E87.9070706@intel.com>
+Date: Fri, 30 May 2014 14:00:39 +0800
+From: Lan Tianyu <tianyu.lan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Mark Rutland <mark.rutland@arm.com>
-CC: Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Will Deacon <Will.Deacon@arm.com>
-Subject: Re: [PATCH] arm64: kernel: initialize broadcast hrtimer based clock
- event device
-References: <1401355381-11446-1-git-send-email-lorenzo.pieralisi@arm.com> <53871444.3080206@linux.vnet.ibm.com> <20140529123929.GF24233@leverpostej>
-In-Reply-To: <20140529123929.GF24233@leverpostej>
-Content-Type: text/plain; charset=ISO-8859-1
+To: wsa@the-dreams.de, rjw@rjwysocki.net, mika.westerberg@linux.intel.com,
+        awilliam@redhat.com, lenb@kernel.org
+CC: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [Patch V3 0/5] I2C ACPI operation region handler
+References: <1400590764-11108-1-git-send-email-tianyu.lan@intel.com>
+In-Reply-To: <1400590764-11108-1-git-send-email-tianyu.lan@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14053005-0928-0000-0000-00000253B8DD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/29/2014 06:09 PM, Mark Rutland wrote:
-> Hi Preeti,
-> 
-> On Thu, May 29, 2014 at 12:04:36PM +0100, Preeti U Murthy wrote:
->> Hi Lorenzo,
->>
->> On 05/29/2014 02:53 PM, Lorenzo Pieralisi wrote:
->>> On platforms implementing CPU power management, the CPUidle subsystem
->>> can allow CPUs to enter idle states where local timers logic is lost on power
->>> down. To keep the software timers functional the kernel relies on an
->>> always-on broadcast timer to be present in the platform to relay the
->>> interrupt signalling the timer expiries.
->>>
->>> For platforms implementing CPU core gating that do not implement an always-on
->>> HW timer or implement it in a broken way, this patch adds code to initialize
->>> the kernel software broadcast hrtimer upon boot. It relies on a dynamically
->>
->> It would be best to use the term "hrtimer based broadcast device"
->> throughout the changelog for uniformity and to avoid confusion instead
->> of mixing it with "software broadcast".
->>
->>> chosen CPU to be always powered-up. This CPU then relays the timer interrupt
->>> to CPUs in deep-idle states through its HW local timer device.
->>>
->>> On systems with power management capabilities but no functional HW broadcast
->>> tick device, the hrtimer based clock event device allows the kernel to
->>> enter high-resolution timer mode, which improves system latencies and saves
->>> dynamic power.
->>
->> Sorry but I do not understand the above paragraph. What do you mean by
->> "allows the kernel to enter high resolution timer mode" ? And how does
->> it improve system latency? I understand that the hrtimer based
->> clockevent device saves dynamic power since it provides a mechanism in
->> which cpus can enter deeper idle states.
-> 
-> When there's no oneshot-capable broadcast device and the CPU-local
-> clock_event_device has the CLK_EVT_FEAT_C3STOP flag,
-> tick_is_oneshot_available will return false. Thus
-> tick_check_oneshot_change will return false, and hrtimer_switch_to_hres
-> will never switch to high resolution mode (and we can also never enter
-> NOHZ mode), leaving us stuck in periodic mode.
-> 
-> In periodic mode ticks occur at fixed intervals, and any timer wakeup
-> will occur after the tick following the requested wakeup time, adding
-> some amount of latency over what would be possible with high resolution
-> mode. Additionally, as we can only wake up at said ticks and not between
-> them, it's possible that several timers for intervals shorter than that
-> tick interval will fire at once upon a timer tick. Any tasks which
-> requested these wakeups will fight for CPU time, and some will see
-> additional latency because of this.
+On 05/20/2014 08:59 PM, Lan Tianyu wrote:
+> ACPI 5.0 spec(5.5.2.4.5) defines GenericSerialBus(i2c, spi, uart) operation
+> region. It allows ACPI aml code able to access such kind of devices to
+> implement some ACPI standard method.
+>
+> On the Asus T100TA, Bios use GenericSerialBus operation region to access
+> i2c device to get battery info. So battery function depends on the I2C
+> operation region support. Here is the bug link.
+> https://bugzilla.kernel.org/show_bug.cgi?id=69011
+>
 
-Ah ok I see now. Thanks for the explanation :)
+Hi Wolfram:
+	Since this version resolved all comments, it's ok for you?
 
-> 
->>>
->>> The side effect of having a CPU always-on has implications on power management
->>> platform capabilities and makes CPUidle suboptimal, since at least a CPU is
->>> kept always in a shallow idle state by the kernel to relay timer interrupts,
->>> but at least leaves the kernel with a functional system with some working power
->>> management capabilities.
->>>
->>> The hrtimer based clock event device has lowest possible rating so that,
->>> if a platform contains a functional HW clock event device with broadcast
->>> capabilities, that device is always chosen as a tick broadcast device instead
->>> of the software based one, now present by default.
->>
->> I think this statement "instead of the software based one, now present
->> by default" is incorrect. The hrtimer based clock event device will come
->> into picture only when the arch calls tick_setup_hrtimer_broadcast()
->> explicitly. Otherwise either the arch should register a real clock
->> device which does broadcast or should disable deep idle states where the
->> local timers stop. So I would suggest skipping the last paragraph as it
->> is not conveying anything in specific. The fact that a clock device with
->> the highest rating will be chosen is already known and need not be
->> mentioned explicitly IMHO.
-> 
-> I think it is worth keeping the paragraph to allay anyone's fear that
-> the hrtimer based broadcast device might be selected in preference to a
-> real suitable clock. I would otherwise not be aware that the hrtimer
-> based broadcast device had the lowest rating (and would have to go and
-> look that up separately).
-> 
-> As the arch code has delegated timer registration to
-> clocksoruce_of_init, it doesn't know whether any of the real devices
-> that may have been registered are suitable as a broadcast source for
-> oneshot events. So we can't conditionally register the hrtimer based
-> broadcast device.
-> 
-> Perhaps we could replace "now present by default" with "which is
-> unconditionally registered in case no suitable hardware device is
-> present"?
-
-Yes I would say "which gets registered in case no suitable hardware
-devices is present." This would make it clearer.
-
-Regards
-Preeti U Murthy
-> 
-> Cheers,
-> Mark.
-> 
+> Change since V2:
+>          Drop patchs of adding I2C smbus quick read/write and word/block
+> process call functions because not find machines supporting such protocols
+> so far and can't test these functions.
+>          Merge patchs of "I2C ACPI related code clear up" and "Add CONFIG_I2C_ACPI
+> config"
+> 	Patch 2: Add acpi_bus_detach_private_data() function to detach data from
+> ACPI handle and replace ACPI_ERROR() with acpi_handle_debug() to avoid some redundant
+> error log.
+>
+> Change since V1:
+>         Fix some code style issues. Change prefix i2c_acpi to acpi_i2c.
+> Move ACPI related code in the i2c core to i2c-acpi.c. Add CONFIG_I2C_ACPI
+> and make i2c core built-in when it's set to avoid i2c ACPI operation region
+> being removed.
+>
+> Lan Tianyu (5):
+>    ACPICA: Export acpi_buffer_to_resource symbol
+>    ACPI: Add acpi_bus_attach_private_data() to facilitate to attach data
+>      to ACPI handle
+>    ACPI/Thermal: Use acpi_bus_attach_private_data() to attach private
+>      data
+>    I2C/ACPI: Add i2c ACPI operation region support
+>    I2C/ACPI: Clean up I2C ACPI code and Add CONFIG_I2C_ACPI config
+>
+>   drivers/acpi/acpica/rscreate.c |   1 +
+>   drivers/acpi/bus.c             |  28 +++-
+>   drivers/acpi/thermal.c         |  11 +-
+>   drivers/i2c/Kconfig            |  18 +-
+>   drivers/i2c/Makefile           |   5 +-
+>   drivers/i2c/i2c-acpi.c         | 362 +++++++++++++++++++++++++++++++++++++++++
+>   drivers/i2c/i2c-core.c         |  97 +----------
+>   include/acpi/acpi_bus.h        |   2 +
+>   include/linux/acpi.h           |  11 ++
+>   include/linux/i2c.h            |  12 ++
+>   10 files changed, 439 insertions(+), 108 deletions(-)
+>   create mode 100644 drivers/i2c/i2c-acpi.c
+>
 
