@@ -1,88 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964968AbaE3TOV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 15:14:21 -0400
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:46436 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753146AbaE3TOU (ORCPT
+	id S1755338AbaE3TPu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 15:15:50 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:52831 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754215AbaE3TPs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 15:14:20 -0400
+	Fri, 30 May 2014 15:15:48 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140530063402.GB11096@twins.programming.kicks-ass.net>
-References: <1400860385-14555-1-git-send-email-vincent.guittot@linaro.org>
- <1400860385-14555-12-git-send-email-vincent.guittot@linaro.org>
- <20140529140204.GH11074@laptop.programming.kicks-ass.net> <CAKfTPtACXf+c01O+dCU2ZTc-Mrs+nTKYsu0_aBt8awxSg5WD=g@mail.gmail.com>
- <20140530063402.GB11096@twins.programming.kicks-ass.net>
-From: Vincent Guittot <vincent.guittot@linaro.org>
-Date: Fri, 30 May 2014 21:13:59 +0200
-Message-ID: <CAKfTPtDDMT84k+gJ2qmw9ApVmiJAgP_E5xGu0qTwj84p7XJQjw@mail.gmail.com>
-Subject: Re: [PATCH v2 11/11] sched: replace capacity by activity
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        Mike Galbraith <efault@gmx.de>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <CAK9yfHwatFrQ9ssjJXi=eR3mz95xWQeRJ4-vkteR_Npksa3+tg@mail.gmail.com>
+References: <1401074613-29227-1-git-send-email-t.dakhran@samsung.com>
+	<7hr43f9mmn.fsf@paris.lan>
+	<538737CA.4070709@suse.de>
+	<53874862.5080809@samsung.com>
+	<538775AB.3000604@suse.de>
+	<CAC5m3Bz53QO5tTTvk7qnBQtwtjMvSgYZ15prAvnLjdogQRsfMQ@mail.gmail.com>
+	<CAK9yfHwatFrQ9ssjJXi=eR3mz95xWQeRJ4-vkteR_Npksa3+tg@mail.gmail.com>
+Date: Fri, 30 May 2014 23:15:46 +0400
+Message-ID: <CANhyOUf0coACaziesgSXsL3Vy-sypxS_Eo=Cb-2OEAaBodep=w@mail.gmail.com>
+Subject: Re: [PATCH v11 0/3] Exynos 5410 support
+From: Tarek Dakhran <t.dakhran@gmail.com>
+To: Sachin Kamat <sachin.kamat@linaro.org>, Tomasz Figa <t.figa@samsung.com>,
+        Tarek Dakhran <t.dakhran@gmail.com>
+Cc: Tushar Behera <trblinux@gmail.com>,
+        =?UTF-8?Q?Andreas_F=C3=A4rber?= <afaerber@suse.de>,
+        Tarek Dakhran <t.dakhran@samsung.com>,
+        Kevin Hilman <khilman@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30 May 2014 08:34, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Thu, May 29, 2014 at 09:56:24PM +0200, Vincent Guittot wrote:
->> On 29 May 2014 16:02, Peter Zijlstra <peterz@infradead.org> wrote:
->> > On Fri, May 23, 2014 at 05:53:05PM +0200, Vincent Guittot wrote:
->> >> @@ -6052,8 +6006,8 @@ static inline void update_sd_lb_stats(struct lb_env *env, struct sd_lb_stats *sd
->> >>                * with a large weight task outweighs the tasks on the system).
->> >>                */
->> >>               if (prefer_sibling && sds->local &&
->> >> -                 sds->local_stat.group_has_capacity)
->> >> -                     sgs->group_capacity = min(sgs->group_capacity, 1U);
->> >> +                 sds->local_stat.group_capacity > 0)
->> >> +                     sgs->group_capacity = min(sgs->group_capacity, 1L);
->> >>
->> >>               if (update_sd_pick_busiest(env, sds, sg, sgs)) {
->> >>                       sds->busiest = sg;
->> >> @@ -6228,7 +6182,7 @@ static inline void calculate_imbalance(struct lb_env *env, struct sd_lb_stats *s
->> >>                * have to drop below capacity to reach cpu-load equilibrium.
->> >>                */
->> >>               load_above_capacity =
->> >> -                     (busiest->sum_nr_running - busiest->group_capacity);
->> >> +                     (busiest->sum_nr_running - busiest->group_weight);
->> >>
->> >>               load_above_capacity *= (SCHED_LOAD_SCALE * SCHED_POWER_SCALE);
->> >>               load_above_capacity /= busiest->group_power;
->> >
->> > I think you just broke PREFER_SIBLING here..
+Hi all,
+
+On Fri, May 30, 2014 at 10:16 PM, Sachin Kamat <sachin.kamat@linaro.org> wrote:
+>
+>
+> On Friday, 30 May 2014, Tushar Behera <trblinux@gmail.com> wrote:
 >>
->> you mean by replacing the capacity which was reflecting the number of
->> core for SMT by the group_weight ?
->
-> Right to in the first hunk we lower group_capacity to 1 when prefer_sibling,
-> then in the second hunk, you replace that group_capacity usage with
-> group_weight.
->
-> With the end result that prefer_sibling is now ineffective.
+>> On Thu, May 29, 2014 at 11:30 PM, Andreas Färber <afaerber@suse.de> wrote:
+>> > Hi Tarek,
+>> >
+>> >
+>> > And I reproducibly get failures for CPUs 1-3, resulting in only one CPU
+>> > in /proc/cpuinfo (compared to 4 on downstream 3.14):
+>> >
+>> > [    0.045778] CPU: Testing write buffer coherency: ok
+>> > [    0.045968] /cpus/cpu@0 missing clock-frequency property
+>> > [    0.045993] /cpus/cpu@1 missing clock-frequency property
+>> > [    0.046016] /cpus/cpu@2 missing clock-frequency property
+>> > [    0.046040] /cpus/cpu@3 missing clock-frequency property
+>> > [    0.046059] CPU0: thread -1, cpu 0, socket 0, mpidr 80000000
+>> > [    0.046135] Setting up static identity map for 0x403a8920 -
+>> > 0x403a8978
+>> > [    2.075052] CPU1: failed to come online
+>> > [    4.085095] CPU2: failed to come online
+>> > [    6.095142] CPU3: failed to come online
+>> > [    6.095237] Brought up 1 CPUs
+>> > [    6.095269] SMP: Total of 1 processors activated.
+>> > [    6.095303] CPU: All CPU(s) started in HYP mode.
+>> > [    6.095336] CPU: Virtualization extensions available.
+>> >
+>> > I also notice another apparent device tree issue:
+>> >
+>> > [    7.341814] of_get_named_gpiod_flags: can't parse gpios property of
+>> > node '/soc/mmc@12220000/slot@0[0]'
+>> > [    7.341850] of_get_named_gpiod_flags: can't parse gpios property of
+>> > node '/soc/mmc@12220000/slot@0[0]'
+>> >
+>> > Are any of those known issues and being worked on?
+>> > (The CPU failures affected 5420 Arndale Octa as well iirc.)
+>> >
 
-ok
+[snip]
 
+>>
+>> [1] http://www.spinics.net/lists/linux-samsung-soc/msg31776.html
+>>
+>> [PATCH v2 Resend 1/2] ARM: EXYNOS: Update secondary boot addr for secure
+>> mode
+>>
+>> [2] http://www.spinics.net/lists/linux-samsung-soc/msg31777.html
+>>
+>> [PATCH v2 Resend 2/2] ARM: dts: Add secure firmware support for
+>> Arndale-octa
+>>
+>>
+>> Kukjin,
 >
-> That said, I fudged the prefer_sibling usage into the capacity logic,
-> mostly because I could and it was already how the SMT stuff was working.
-> But there is no reason we should continue to intertwine these two
-> things.
+> Can you please apply the above patches?
 >
-> So I think it would be good to have a patch that implements
-> prefer_sibling on nr_running separate from the existing capacity bits,
-> and then convert the remaining capacity bits to utilization (or activity
-> or whatever you did call it, see Morton's comments etc.).
 
-ok, i'm going to prepare such change
+Patches [1], [2] tested on ODROID-XU, SMDK5410 and Arndale Octa boards.
 
->
->
+Tested-by: Tarek Dakhran <t.dakhran@samsung.com>
+
+Best regards,
+     Tarek
