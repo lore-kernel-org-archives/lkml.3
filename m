@@ -1,79 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754509AbaE3MPP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 08:15:15 -0400
-Received: from mail-yh0-f43.google.com ([209.85.213.43]:33551 "EHLO
-	mail-yh0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751115AbaE3MPN (ORCPT
+	id S1754812AbaE3MQ7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 08:16:59 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:53394 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752579AbaE3MQ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 08:15:13 -0400
+	Fri, 30 May 2014 08:16:57 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Zhang Rui <rui.zhang@intel.com>
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        matthew.garrett@nebula.com, mika.westerberg@linux.intel.com
+Subject: [Update][PATCH 9/10] ACPI / scan: always register ACPI LPSS scan handler
+Date: Fri, 30 May 2014 14:34:05 +0200
+Message-ID: <3179821.jDG3aYfPjD@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <8202338.Lrn5CAprz1@vostro.rjw.lan>
+References: <1400781753-2682-1-git-send-email-rui.zhang@intel.com> <35042328.kk6ZUUdfyN@vostro.rjw.lan> <8202338.Lrn5CAprz1@vostro.rjw.lan>
 MIME-Version: 1.0
-X-Google-Sender-Delegation: migueloliv@gmail.com
-In-Reply-To: <20140530113418.GA9670@amd.pavel.ucw.cz>
-References: <1401445633-5290-1-git-send-email-cmroliv@gmail.com>
-	<20140530113418.GA9670@amd.pavel.ucw.cz>
-Date: Fri, 30 May 2014 13:15:12 +0100
-X-Google-Sender-Auth: 4VaHZxQDdoNap9QLAaYblKA4n90
-Message-ID: <CAMGgR5swX-cp4navRBu8CxYnL5fRSxkBVRcu-xKXkr0oyBXP+A@mail.gmail.com>
-Subject: Re: [PATCH] staging: nokia_h4: nokia_core.c: use usleep_range()
- instead of msleep()
-From: Miguel Oliveira <cmroliv@gmail.com>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: gregkh@linuxfoundation.org, gulsah.1004@gmail.com, pali.rohar@gmail.com,
-        peter.p.waskiewicz.jr@intel.com, kristina.martsenko@gmail.com,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So the /Documentation/timers/timers-howto.txt stats:
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-SLEEPING FOR ~USECS OR SMALL MSECS ( 10us - 20ms):
-* Use usleep_range
+Prevent platform devices from being created for ACPI LPSS devices
+if CONFIG_X86_INTEL_LPSS is unset by compiling out the LPSS scan
+handler's callbacks only in that case and still compiling its device
+ID list in and registering the scan handler in either case.
 
-- Why not msleep for (1ms - 20ms)?
-Explained originally here:
-http://lkml.org/lkml/2007/8/3/250
-msleep(1~20) may not do what the caller intends, and
-will often sleep longer (~20 ms actual sleep for any
-value given in the 1~20ms range). In many cases this
-is not the desired behavior.
+This change is based on a prototype from Zhang Rui.
 
-- Why is there no "usleep" / What is a good range?
-Since usleep_range is built on top of hrtimers, the
-wakeup will be very precise (ish), thus a simple
-usleep function would likely introduce a large number
-of undesired interrupts.
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-With the introduction of a range, the scheduler is
-free to coalesce your wakeup with any other wakeup
-that may have happened for other reasons, or at the
-worst case, fire an interrupt for your upper bound.
+---
 
-The larger a range you supply, the greater a chance
-that you will not trigger an interrupt; this should
-be balanced with what is an acceptable upper bound on
-delay / performance for your specific code path. Exact
-tolerances here are very situation specific, thus it
-is left to the caller to determine a reasonable range.
+The LPSS_PTR macro has been renamed to LPSS_ADDR (because it returns a number,
+not a pointer) and the "trivial" version is now (OUL).
 
-Should the documentation should be ignored?
+Thanks!
 
-Regards
+---
+drivers/acpi/Makefile    |  2 +-
+ drivers/acpi/Makefile    |    2 -
+ drivers/acpi/acpi_lpss.c |   65 ++++++++++++++++++++++++++++++++---------------
+ drivers/acpi/internal.h  |    4 --
+ 3 files changed, 46 insertions(+), 25 deletions(-)
 
-2014-05-30 12:34 GMT+01:00 Pavel Machek <pavel@ucw.cz>:
-> On Fri 2014-05-30 11:27:13, Miguel Oliveira wrote:
->> Creating this patch for the Eudyptula Challenge.
->> Replaced msleep() for a delay < 20ms with a usleep_range() between 10000us and 15000us.
->> Also inserted a blank line after adeclaration.
->
-> So you are changing timings without testing. Plus, burning CPU power
-> instead of sleeping.
->
-> Seems you'll need another patch for the challenge :-).
->                                                                         Pavel
->
-> --
-> (english) http://www.livejournal.com/~pavelmachek
-> (cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Index: linux-pm/drivers/acpi/Makefile
+===================================================================
+--- linux-pm.orig/drivers/acpi/Makefile
++++ linux-pm/drivers/acpi/Makefile
+@@ -39,7 +39,7 @@ acpi-y				+= processor_core.o
+ acpi-y				+= ec.o
+ acpi-$(CONFIG_ACPI_DOCK)	+= dock.o
+ acpi-y				+= pci_root.o pci_link.o pci_irq.o
+-acpi-$(CONFIG_X86_INTEL_LPSS)	+= acpi_lpss.o
++acpi-y				+= acpi_lpss.o
+ acpi-y				+= acpi_platform.o
+ acpi-y				+= acpi_pnp.o
+ acpi-y				+= power.o
+Index: linux-pm/drivers/acpi/acpi_lpss.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/acpi_lpss.c
++++ linux-pm/drivers/acpi/acpi_lpss.c
+@@ -25,6 +25,10 @@
+ 
+ ACPI_MODULE_NAME("acpi_lpss");
+ 
++#ifdef CONFIG_X86_INTEL_LPSS
++
++#define LPSS_ADDR(desc) ((unsigned long)&desc)
++
+ #define LPSS_CLK_SIZE	0x04
+ #define LPSS_LTR_SIZE	0x18
+ 
+@@ -168,40 +172,48 @@ static struct lpss_device_desc byt_i2c_d
+ 	.shared_clock = &i2c_clock,
+ };
+ 
++#else
++
++#define LPSS_ADDR(desc) (0UL)
++
++#endif /* CONFIG_X86_INTEL_LPSS */
++
+ static const struct acpi_device_id acpi_lpss_device_ids[] = {
+ 	/* Generic LPSS devices */
+-	{ "INTL9C60", (unsigned long)&lpss_dma_desc },
++	{ "INTL9C60", LPSS_ADDR(lpss_dma_desc) },
+ 
+ 	/* Lynxpoint LPSS devices */
+-	{ "INT33C0", (unsigned long)&lpt_dev_desc },
+-	{ "INT33C1", (unsigned long)&lpt_dev_desc },
+-	{ "INT33C2", (unsigned long)&lpt_dev_desc },
+-	{ "INT33C3", (unsigned long)&lpt_dev_desc },
+-	{ "INT33C4", (unsigned long)&lpt_uart_dev_desc },
+-	{ "INT33C5", (unsigned long)&lpt_uart_dev_desc },
+-	{ "INT33C6", (unsigned long)&lpt_sdio_dev_desc },
++	{ "INT33C0", LPSS_ADDR(lpt_dev_desc) },
++	{ "INT33C1", LPSS_ADDR(lpt_dev_desc) },
++	{ "INT33C2", LPSS_ADDR(lpt_dev_desc) },
++	{ "INT33C3", LPSS_ADDR(lpt_dev_desc) },
++	{ "INT33C4", LPSS_ADDR(lpt_uart_dev_desc) },
++	{ "INT33C5", LPSS_ADDR(lpt_uart_dev_desc) },
++	{ "INT33C6", LPSS_ADDR(lpt_sdio_dev_desc) },
+ 	{ "INT33C7", },
+ 
+ 	/* BayTrail LPSS devices */
+-	{ "80860F09", (unsigned long)&byt_pwm_dev_desc },
+-	{ "80860F0A", (unsigned long)&byt_uart_dev_desc },
+-	{ "80860F0E", (unsigned long)&byt_spi_dev_desc },
+-	{ "80860F14", (unsigned long)&byt_sdio_dev_desc },
+-	{ "80860F41", (unsigned long)&byt_i2c_dev_desc },
++	{ "80860F09", LPSS_ADDR(byt_pwm_dev_desc) },
++	{ "80860F0A", LPSS_ADDR(byt_uart_dev_desc) },
++	{ "80860F0E", LPSS_ADDR(byt_spi_dev_desc) },
++	{ "80860F14", LPSS_ADDR(byt_sdio_dev_desc) },
++	{ "80860F41", LPSS_ADDR(byt_i2c_dev_desc) },
+ 	{ "INT33B2", },
+ 
+-	{ "INT3430", (unsigned long)&lpt_dev_desc },
+-	{ "INT3431", (unsigned long)&lpt_dev_desc },
+-	{ "INT3432", (unsigned long)&lpt_dev_desc },
+-	{ "INT3433", (unsigned long)&lpt_dev_desc },
+-	{ "INT3434", (unsigned long)&lpt_uart_dev_desc },
+-	{ "INT3435", (unsigned long)&lpt_uart_dev_desc },
+-	{ "INT3436", (unsigned long)&lpt_sdio_dev_desc },
++	{ "INT3430", LPSS_ADDR(lpt_dev_desc) },
++	{ "INT3431", LPSS_ADDR(lpt_dev_desc) },
++	{ "INT3432", LPSS_ADDR(lpt_dev_desc) },
++	{ "INT3433", LPSS_ADDR(lpt_dev_desc) },
++	{ "INT3434", LPSS_ADDR(lpt_uart_dev_desc) },
++	{ "INT3435", LPSS_ADDR(lpt_uart_dev_desc) },
++	{ "INT3436", LPSS_ADDR(lpt_sdio_dev_desc) },
+ 	{ "INT3437", },
+ 
+ 	{ }
+ };
+ 
++#ifdef CONFIG_X86_INTEL_LPSS
++
+ static int is_memory(struct acpi_resource *res, void *not_used)
+ {
+ 	struct resource r;
+@@ -666,3 +678,16 @@ void __init acpi_lpss_init(void)
+ 		acpi_scan_add_handler(&lpss_handler);
+ 	}
+ }
++
++#else
++
++static struct acpi_scan_handler lpss_handler = {
++	.ids = acpi_lpss_device_ids,
++};
++
++void __init acpi_lpss_init(void)
++{
++	acpi_scan_add_handler(&lpss_handler);
++}
++
++#endif /* CONFIG_X86_INTEL_LPSS */
+Index: linux-pm/drivers/acpi/internal.h
+===================================================================
+--- linux-pm.orig/drivers/acpi/internal.h
++++ linux-pm/drivers/acpi/internal.h
+@@ -65,11 +65,7 @@ int acpi_debugfs_init(void);
+ #else
+ static inline void acpi_debugfs_init(void) { return; }
+ #endif
+-#ifdef CONFIG_X86_INTEL_LPSS
+ void acpi_lpss_init(void);
+-#else
+-static inline void acpi_lpss_init(void) {}
+-#endif
+ 
+ acpi_status acpi_hotplug_schedule(struct acpi_device *adev, u32 src);
+ bool acpi_queue_hotplug_work(struct work_struct *work);
+
