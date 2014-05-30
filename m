@@ -1,63 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933689AbaE3PMY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 11:12:24 -0400
-Received: from zougloub.eu ([198.27.83.45]:55546 "EHLO zougloub.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933669AbaE3PMV convert rfc822-to-8bit (ORCPT
+	id S933712AbaE3PMd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 11:12:33 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:44150 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933505AbaE3PMb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 11:12:21 -0400
-Date: Fri, 30 May 2014 11:14:00 -0400
-From: =?UTF-8?B?SsOpcsO0bWU=?= Carretero <cJ-ko@zougloub.eu>
-To: Roger Heflin <rogerheflin@gmail.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Tejun Heo <tj@kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        linux-ide <linux-ide@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Alex Williamson <alex.williamson@redhat.com>
-Subject: Re: Bad DMA from Marvell 9230
-Message-ID: <20140530111400.5d7292ab@Vantage>
-In-Reply-To: <CAAMCDecAgn=FX4Lw4YK_z4OKZsKqaj3scXe2cg0HN9tSj_FokA@mail.gmail.com>
-References: <1395903457.5569.89.camel@pasglop>
-	<20140530030618.5ad4f447@Vantage>
-	<1401446278.14938.26.camel@pasglop>
-	<20140530095822.3588a6ff@Vantage>
-	<CAAMCDecAgn=FX4Lw4YK_z4OKZsKqaj3scXe2cg0HN9tSj_FokA@mail.gmail.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Fri, 30 May 2014 11:12:31 -0400
+Date: Fri, 30 May 2014 08:12:15 -0700
+From: tip-bot for Fenghua Yu <tipbot@zytor.com>
+Message-ID: <tip-f9de314b340f4816671f037e79ed01f685ac9787@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        fenghua.yu@intel.com, tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        fenghua.yu@intel.com, tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <1401387164-43416-10-git-send-email-fenghua.yu@intel.com>
+References: <1401387164-43416-10-git-send-email-fenghua.yu@intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/xsave] x86/xsaves: Use xsaves/xrstors for context switch
+Git-Commit-ID: f9de314b340f4816671f037e79ed01f685ac9787
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 30 May 2014 09:13:43 -0500
-Roger Heflin <rogerheflin@gmail.com> wrote:
+Commit-ID:  f9de314b340f4816671f037e79ed01f685ac9787
+Gitweb:     http://git.kernel.org/tip/f9de314b340f4816671f037e79ed01f685ac9787
+Author:     Fenghua Yu <fenghua.yu@intel.com>
+AuthorDate: Thu, 29 May 2014 11:12:37 -0700
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Thu, 29 May 2014 14:31:25 -0700
 
-> I had a 9230...
-> [...]
-> Supplier support "claimed" it to be a Linux AHCI bug as the "claim"
-> that their board correctly supports AHCI, even though all other AHCI
-> boards work right in this exact same use case in the exact same
-> machine.
+x86/xsaves: Use xsaves/xrstors for context switch
 
-Does somebody know about another supplier that provides equivalent
-SATA adapters that behave well, are robust and support FIS switching,
-and don't come with proprietary drivers/utilities but rather *support*
-their linux driver?
+If xsaves is eanbled, use xsaves/xrstors for context switch to support
+compacted format xsave area to occupy less memory and modified optimization
+to improve saving performance.
 
-I'd bite the bullet and get a better, more expensive device, but it
-doesn't seem to come with appropriate software support either.
+Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
+Link: http://lkml.kernel.org/r/1401387164-43416-10-git-send-email-fenghua.yu@intel.com
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/include/asm/xsave.h | 37 ++++++++++++-------------------------
+ 1 file changed, 12 insertions(+), 25 deletions(-)
 
-There are some RAID adapters that don't expose the disks if we're
-not creating RAID volumes... with an ugly CLI, and where we don't know
-what's written where on the disk in case we are to create one volume
-per disk, and do software RAID later.
-Not tempted to use that.
-
-Or waste PCIe slots and use more el-cheapo ASMedia 1061 PCIe-1x
-devices... do these work well?
-
--- 
-Jérôme
+diff --git a/arch/x86/include/asm/xsave.h b/arch/x86/include/asm/xsave.h
+index f9177a2..8b75824 100644
+--- a/arch/x86/include/asm/xsave.h
++++ b/arch/x86/include/asm/xsave.h
+@@ -129,22 +129,20 @@ static inline int xrstor_state(struct xsave_struct *fx, u64 mask)
+ 	return err;
+ }
+ 
+-static inline int fpu_xrstor_checking(struct xsave_struct *fx)
++/*
++ * Save xstate context for old process during context switch.
++ */
++static inline void fpu_xsave(struct fpu *fpu)
+ {
+-	int err;
+-
+-	asm volatile("1: .byte " REX_PREFIX "0x0f,0xae,0x2f\n\t"
+-		     "2:\n"
+-		     ".section .fixup,\"ax\"\n"
+-		     "3:  movl $-1,%[err]\n"
+-		     "    jmp  2b\n"
+-		     ".previous\n"
+-		     _ASM_EXTABLE(1b, 3b)
+-		     : [err] "=r" (err)
+-		     : "D" (fx), "m" (*fx), "a" (-1), "d" (-1), "0" (0)
+-		     : "memory");
++	xsave_state(&fpu->state->xsave, -1);
++}
+ 
+-	return err;
++/*
++ * Restore xstate context for new process during context switch.
++ */
++static inline int fpu_xrstor_checking(struct xsave_struct *fx)
++{
++	return xrstor_state(fx, -1);
+ }
+ 
+ static inline int xsave_user(struct xsave_struct __user *buf)
+@@ -194,15 +192,4 @@ static inline int xrestore_user(struct xsave_struct __user *buf, u64 mask)
+ 	return err;
+ }
+ 
+-static inline void fpu_xsave(struct fpu *fpu)
+-{
+-	/* This, however, we can work around by forcing the compiler to select
+-	   an addressing mode that doesn't require extended registers. */
+-	alternative_input(
+-		".byte " REX_PREFIX "0x0f,0xae,0x27",
+-		".byte " REX_PREFIX "0x0f,0xae,0x37",
+-		X86_FEATURE_XSAVEOPT,
+-		[fx] "D" (&fpu->state->xsave), "a" (-1), "d" (-1) :
+-		"memory");
+-}
+ #endif
