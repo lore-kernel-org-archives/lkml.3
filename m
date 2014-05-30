@@ -1,123 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964811AbaE3Qcy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 12:32:54 -0400
-Received: from mail-oa0-f74.google.com ([209.85.219.74]:37925 "EHLO
-	mail-oa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933247AbaE3Qcx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 12:32:53 -0400
-From: Doug Anderson <dianders@chromium.org>
-To: Tomasz Figa <t.figa@samsung.com>, Mike Turquette <mturquette@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Cc: olof@lixom.net, javier.martinez@collabora.co.uk,
-        Doug Anderson <dianders@chromium.org>,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v2] clk: exynos5420: Keep aclk66_peric enabled during boot
-Date: Fri, 30 May 2014 09:32:42 -0700
-Message-Id: <1401467562-5585-1-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 1.9.1.423.g4596e3a
-In-Reply-To: <1401398496-4624-1-git-send-email-dianders@chromium.org>
-References: <1401398496-4624-1-git-send-email-dianders@chromium.org>
+	id S1755506AbaE3Qho (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 12:37:44 -0400
+Received: from p3plex2out02.prod.phx3.secureserver.net ([184.168.131.14]:52617
+	"EHLO p3plex2out02.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754547AbaE3Qhn convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 May 2014 12:37:43 -0400
+From: Hartley Sweeten <HartleyS@visionengravers.com>
+To: Chase Southwood <chase.southwood@gmail.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: "abbotti@mev.co.uk" <abbotti@mev.co.uk>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 1/6] staging: comedi: addi_apci_1564: remove send_sig()
+ use
+Thread-Topic: [PATCH 1/6] staging: comedi: addi_apci_1564: remove send_sig()
+ use
+Thread-Index: AQHPe8GHCwIkVDLH30WQavPmVUyFaZtZT/sw
+Date: Fri, 30 May 2014 16:37:41 +0000
+Message-ID: <DC148C5AA1CEBA4E87973D432B1C2D8825E83D2B@P3PWEX4MB008.ex4.secureserver.net>
+References: <1401424853-21683-1-git-send-email-chase.southwood@gmail.com>
+ <1401424913-21859-1-git-send-email-chase.southwood@gmail.com>
+In-Reply-To: <1401424913-21859-1-git-send-email-chase.southwood@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [184.183.19.121]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Right now if you've got earlyprintk enabled on exynos5420-peach-pit
-then you'll get a hang on boot.  Here's why:
+On Thursday, May 29, 2014 9:42 PM, Chase Southwood wrote:
+> The addi-data drivers use send_sig() to let the user know when an
+> interrupt has occurred. The "standard" way to do this in the comedi
+> subsystem is to have a subdevice that supports asynchronous commands
+> and use comedi_event() to signal the user.
+>
+> Remove the send_sig() usage in this driver.
+>
+> Signed-off-by: Chase Southwood <chase.southwood@gmail.com>
+> Cc: Ian Abbott <abbotti@mev.co.uk>
+> Cc: H Hartley Sweeten <hsweeten@visionengravers.com>
+> ---
+>  .../comedi/drivers/addi-data/hwdrv_apci1564.c      | 23 ----------------------
+>  1 file changed, 23 deletions(-)
 
-1. The i2c-s3c2410 driver will probe at subsys_initcall.  It will
-   enable its clock and disable it.  This is the clock "i2c2".
-2. The act of disabling "i2c2" will disable its parents.  In this case
-   the parent is "aclk66_peric".  There are no other children of
-   "aclk66_peric" officially enabled, so "aclk66_peric" will be turned
-   off (despite being CLK_IGNORE_UNUSED, but that's by design).
-3. The next time you try to earlyprintk you'll do so without the UART
-   clock enabled.  That's because the UART clocks are also children of
-   "aclk66_peric".  You'll hang.
+Chase,
 
-There's no good place to put a clock enable for earlyprintk, which is
-handled by a bunch of assembly code.  The best we can do is to handle
-this in the clock driver.
+Normally this patch might be a problem.
 
-Signed-off-by: Doug Anderson <dianders@chromium.org>
-Tested-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
----
-Changes in v2:
-- Use GATE_A and clk_get().  Save the clock for putting later.
-- Return 0 from exynos5420_clk_late_init().
+With this patch you remove the mechanism that the driver uses to signal the
+user that an event has occurred without providing a new mechanism. In theory
+this "breaks" the driver.
 
- drivers/clk/samsung/clk-exynos5420.c | 33 +++++++++++++++++++++++++++++++--
- 1 file changed, 31 insertions(+), 2 deletions(-)
+In reality, the driver is already "broke" since the interrupts are currently enabled
+using the digital input subdevice (*insn_config) callback and that callback does not
+follow the comedi API. Currently the apci1564_di_config() function is using the
+data[0] value as a flag to enable/disable the interrupt instead of using it as the
+comedi configuration instruction. It is expecting data[0] to be 1 or 0, when it is 1
+it expects the data to include 3 additional parameters but the core will sanity check
+the instruction length and return -EINVAL if insn->n != 1. You fix this in patch 5/6.
 
-diff --git a/drivers/clk/samsung/clk-exynos5420.c b/drivers/clk/samsung/clk-exynos5420.c
-index 9d7d7ee..70b607a 100644
---- a/drivers/clk/samsung/clk-exynos5420.c
-+++ b/drivers/clk/samsung/clk-exynos5420.c
-@@ -890,8 +890,8 @@ static struct samsung_gate_clock exynos5x_gate_clks[] __initdata = {
- 			GATE_BUS_TOP, 9, CLK_IGNORE_UNUSED, 0),
- 	GATE(0, "aclk66_psgen", "mout_user_aclk66_psgen",
- 			GATE_BUS_TOP, 10, CLK_IGNORE_UNUSED, 0),
--	GATE(CLK_ACLK66_PERIC, "aclk66_peric", "mout_user_aclk66_peric",
--			GATE_BUS_TOP, 11, CLK_IGNORE_UNUSED, 0),
-+	GATE_A(CLK_ACLK66_PERIC, "aclk66_peric", "mout_user_aclk66_peric",
-+			GATE_BUS_TOP, 11, CLK_IGNORE_UNUSED, 0, "aclk66_peric"),
- 	GATE(0, "aclk266_isp", "mout_user_aclk266_isp",
- 			GATE_BUS_TOP, 13, 0, 0),
- 	GATE(0, "aclk166", "mout_user_aclk166",
-@@ -1172,11 +1172,22 @@ static struct of_device_id ext_clk_match[] __initdata = {
- 	{ },
- };
- 
-+/* Keep these clocks on until late_initcall */
-+struct boot_clock {
-+	char *name;
-+	struct clk *clk;
-+};
-+
-+static struct boot_clock boot_clocks[] __initdata = {
-+	{ .name = "aclk66_peric", },
-+};
-+
- /* register exynos5420 clocks */
- static void __init exynos5x_clk_init(struct device_node *np,
- 		enum exynos5x_soc soc)
- {
- 	struct samsung_clk_provider *ctx;
-+	int i;
- 
- 	if (np) {
- 		reg_base = of_iomap(np, 0);
-@@ -1226,6 +1237,11 @@ static void __init exynos5x_clk_init(struct device_node *np,
- 	}
- 
- 	exynos5420_clk_sleep_init();
-+
-+	for (i = 0; i < ARRAY_SIZE(boot_clocks); i++) {
-+		boot_clocks[i].clk = clk_get(NULL, boot_clocks[i].name);
-+		clk_prepare_enable(boot_clocks[i].clk);
-+	}
- }
- 
- static void __init exynos5420_clk_init(struct device_node *np)
-@@ -1239,3 +1255,16 @@ static void __init exynos5800_clk_init(struct device_node *np)
- 	exynos5x_clk_init(np, EXYNOS5800);
- }
- CLK_OF_DECLARE(exynos5800_clk, "samsung,exynos5800-clock", exynos5800_clk_init);
-+
-+static int __init exynos5420_clk_late_init(void)
-+{
-+	int i;
-+
-+	for (i = 0; i < ARRAY_SIZE(boot_clocks); i++) {
-+		clk_disable_unprepare(boot_clocks[i].clk);
-+		clk_put(boot_clocks[i].clk);
-+	}
-+
-+	return 0;
-+}
-+late_initcall(exynos5420_clk_late_init);
--- 
-1.9.1.423.g4596e3a
+Because the driver is already "broke" I guess this patch is ok.
+
+Reviewed-by: H Hartley Sweeten <hsweeten@visionengravers.com>
 
