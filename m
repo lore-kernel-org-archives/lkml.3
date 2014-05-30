@@ -1,155 +1,235 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933951AbaE3Tb7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 15:31:59 -0400
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:61506 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751525AbaE3Tb5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 15:31:57 -0400
-MIME-Version: 1.0
-In-Reply-To: <4545972.cM7IP1qTXQ@wuerfel>
-References: <1400877218-4113-1-git-send-email-thierry.reding@gmail.com>
-	<CAL_JsqKumG1PSFoVfeGpLLG+MjXFeF4aUjun=vv1BJpaxk0Byg@mail.gmail.com>
-	<4545972.cM7IP1qTXQ@wuerfel>
-Date: Fri, 30 May 2014 14:31:55 -0500
-Message-ID: <CAL_Jsq+tkFNpjSEZboT+o69B_Z3a8e-ZVKaYDmLwtkyYoPy6VQ@mail.gmail.com>
-Subject: Re: [PATCH v2] devicetree: Add generic IOMMU device tree bindings
-From: Rob Herring <robherring2@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Thierry Reding <thierry.reding@gmail.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Cho KyongHo <pullip.cho@samsung.com>,
-        Grant Grundler <grundler@chromium.org>,
-        Dave Martin <Dave.Martin@arm.com>, Marc Zyngier <marc.zyngier@arm.com>,
-        Will Deacon <will.deacon@arm.com>, Joerg Roedel <joro@8bytes.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Hiroshi Doyu <hdoyu@nvidia.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Linux IOMMU <iommu@lists.linux-foundation.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1756193AbaE3TcL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 15:32:11 -0400
+Received: from mga02.intel.com ([134.134.136.20]:13389 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753955AbaE3TcJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 May 2014 15:32:09 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,943,1392192000"; 
+   d="scan'208";a="520394422"
+Subject: Re: [RFC PATCH] crypto: crc32c-pclmul - Use pmovzxdq to shrink
+ K_table
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Dirk Brandewie <dirk.brandewie@gmail.com>
+Cc: Dave Jones <davej@redhat.com>, George Spelvin <linux@horizon.com>,
+        herbert@gondor.apana.org.au, james.guilford@intel.com,
+        JBeulich@suse.com, linux-kernel@vger.kernel.org,
+        Jacob jun Pan <jacob.jun.pan@intel.com>
+In-Reply-To: <5388D1BF.6090503@gmail.com>
+References: <20140529235432.19207.qmail@ns.horizon.com>
+	 <1401412036.2970.459.camel@schen9-DESK> <20140530011636.GA31694@redhat.com>
+	 <1401472592.2970.483.camel@schen9-DESK> <5388D1BF.6090503@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 30 May 2014 12:32:06 -0700
+Message-ID: <1401478326.2970.504.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 30, 2014 at 2:06 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Friday 30 May 2014 08:16:05 Rob Herring wrote:
->> On Fri, May 23, 2014 at 3:33 PM, Thierry Reding
->> <thierry.reding@gmail.com> wrote:
->> > From: Thierry Reding <treding@nvidia.com>
->> > +IOMMU master node:
->> > +==================
->> > +
->> > +Devices that access memory through an IOMMU are called masters. A device can
->> > +have multiple master interfaces (to one or more IOMMU devices).
->> > +
->> > +Required properties:
->> > +--------------------
->> > +- iommus: A list of phandle and IOMMU specifier pairs that describe the IOMMU
->> > +  master interfaces of the device. One entry in the list describes one master
->> > +  interface of the device.
->> > +
->> > +When an "iommus" property is specified in a device tree node, the IOMMU will
->> > +be used for address translation. If a "dma-ranges" property exists in the
->> > +device's parent node it will be ignored. An exception to this rule is if the
->> > +referenced IOMMU is disabled, in which case the "dma-ranges" property of the
->> > +parent shall take effect.
->>
->> Just thinking out loud, could you have dma-ranges in the iommu node
->> for the case when the iommu is enabled rather than putting the DMA
->> window information into the iommus property?
->>
->> This would probably mean that you need both #iommu-cells and #address-cells.
->
-> The reason for doing like this was that you may need a different window
-> for each device, while there can only be one dma-ranges property in
-> an iommu node.
+On Fri, 2014-05-30 at 11:45 -0700, Dirk Brandewie wrote:
 
-My suggestion was that you also put the IDs in the dma-ranges as the
-first cell much as ranges for PCI encodes other information in the
-first cell. Then you can have an entry for each ID. The downside is
-another special case like PCI.
+> 
+> With turbostat from rc7.
+> [root@echolake turbostat]# ./turbostat 
+>     Core     CPU Avg_MHz   %Busy Bzy_MHz TSC_MHz     SMI  CPU%c1  CPU%c3  CPU%c6  CPU%c7 CoreTmp  PkgTmp Pkg%pc2 Pkg%pc3 Pkg%pc6 Pkg%pc7 PkgWatt CorWatt GFXWatt 
+>        -       -       1    0.08    1178    3492       0    0.12    0.08    0.01   99.71      29      29   99.23    0.00    0.00    0.00    2.18    0.00    0.00
+>        0       0       2    0.19    1189    3492       0    0.22    0.30    0.00   99.29      29      29   99.24    0.00    0.00    0.00    2.18    0.00    0.00
+>        0       4       1    0.12    1253    3492       0    0.29
+>        1       1       0    0.03    1065    3492       0    0.03    0.00    0.00   99.93      23
+>        1       5       0    0.01    1104    3492       0    0.05
+>        2       2       0    0.02    1275    3492       0    0.22    0.00    0.03   99.73      24
+>        2       6       2    0.18    1220    3492       0    0.06
+>        3       3       0    0.01     992    3492       0    0.07    0.00    0.01   99.90      23
+>        3       7       0    0.05     915    3492       0    0.04
+>     Core     CPU Avg_MHz   %Busy Bzy_MHz TSC_MHz     SMI  CPU%c1  CPU%c3  CPU%c6  CPU%c7 CoreTmp  PkgTmp Pkg%pc2 Pkg%pc3 Pkg%pc6 Pkg%pc7 PkgWatt CorWatt GFXWatt 
+>        -       -       1    0.06    1034    3492       0    0.09    5.15    0.00   94.70      28      28   99.49    0.00    0.00    0.00    2.48    0.01    0.00
+>        0       0       1    0.09    1066    3492       0    0.17    0.01    0.00   99.73      28      28   99.49    0.00    0.00    0.00    2.48    0.01    0.00
+>        0       4       1    0.12    1036    3492       0    0.14
+>        1       1       0    0.04    1009    3492       0    0.05   20.59    0.00   79.32      24
+>        1       5       0    0.02     922    3492       0    0.07
+>        2       2       0    0.03     924    3492       0    0.15    0.00    0.00   99.82      25
+>        2       6       1    0.12    1117    3492       0    0.06
+>        3       3       0    0.01     911    3492       0    0.04    0.01    0.00   99.94      22
+>        3       7       0    0.03     856    3492       0    0.02
+>     Core     CPU Avg_MHz   %Busy Bzy_MHz TSC_MHz     SMI  CPU%c1  CPU%c3  CPU%c6  CPU%c7 CoreTmp  PkgTmp Pkg%pc2 Pkg%pc3 Pkg%pc6 Pkg%pc7 PkgWatt CorWatt GFXWatt 
+>        -       -       1    0.08     889    3492       0    0.12    0.03    0.06   99.71      29      29   99.32    0.00    0.00    0.00    2.21    0.00    0.00
+>        0       0       1    0.11     867    3492       0    0.20    0.02    0.22   99.44      29      29   99.32    0.00    0.00    0.00    2.21    0.00    0.00
+>        0       4       1    0.14     907    3492       0    0.17
+>        1       1       1    0.12     809    3492       0    0.04    0.11    0.01   99.73      24
+>        1       5       0    0.01     798    3492       0    0.14
+>        2       2       0    0.03     863    3492       0    0.18    0.00    0.01   99.78      24
+>        2       6       1    0.14    1013    3492       0    0.07
+>        3       3       0    0.02     853    3492       0    0.09    0.00    0.00   99.89      23
+>        3       7       1    0.06     815    3492       0    0.05
+> ^C
+> [root@echolake turbostat]# echo 100 > /sys/devices/system/cpu/intel_pstate/min_perf_pct 
+> [root@echolake turbostat]# ./turbostat 
+>     Core     CPU Avg_MHz   %Busy Bzy_MHz TSC_MHz     SMI  CPU%c1  CPU%c3  CPU%c6  CPU%c7 CoreTmp  PkgTmp Pkg%pc2 Pkg%pc3 Pkg%pc6 Pkg%pc7 PkgWatt CorWatt GFXWatt 
+>        -       -       1    0.03    3489    3492       0    2.43    0.01    0.00   97.53      30      30   90.20    0.00    0.00    0.00    2.85    0.06    0.00
+>        0       0       1    0.04    3470    3492       0    0.09    0.00    0.00   99.88      30      30   90.20    0.00    0.00    0.00    2.85    0.06    0.00
+>        0       4       2    0.06    3492    3492       0    0.07
+>        1       1       1    0.02    3495    3492       0    0.05    0.03    0.00   99.90      25
+>        1       5       0    0.00    3494    3492       0    0.07
+>        2       2       0    0.01    3492    3492       0    9.53    0.00    0.01   90.45      25
+>        2       6       1    0.04    3492    3492       0    9.50
+>        3       3       1    0.03    3492    3492       0    0.05    0.01    0.00   99.91      23
+>        3       7       1    0.02    3493    3492       0    0.06
+>     Core     CPU Avg_MHz   %Busy Bzy_MHz TSC_MHz     SMI  CPU%c1  CPU%c3  CPU%c6  CPU%c7 CoreTmp  PkgTmp Pkg%pc2 Pkg%pc3 Pkg%pc6 Pkg%pc7 PkgWatt CorWatt GFXWatt 
+>        -       -       1    0.02    3492    3492       0    4.93    0.00    0.00   95.04      30      30   80.19    0.00    0.00    0.00    3.54    0.10    0.00
+>        0       0       1    0.02    3491    3492       0    0.08    0.01    0.00   99.89      30      30   80.19    0.00    0.00    0.00    3.54    0.10    0.00
+>        0       4       2    0.05    3492    3492       0    0.05
+>        1       1       0    0.01    3492    3492       0    0.02    0.00    0.00   99.97      24
+>        1       5       0    0.01    3493    3492       0    0.02
+>        2       2       0    0.01    3493    3492       0   19.65    0.01    0.00   80.34      24
+>        2       6       2    0.05    3493    3492       0   19.61
+>        3       3       1    0.01    3492    3492       0    0.02    0.00    0.00   99.97      23
+>        3       7       0    0.01    3494    3492       0    0.02
+>     Core     CPU Avg_MHz   %Busy Bzy_MHz TSC_MHz     SMI  CPU%c1  CPU%c3  CPU%c6  CPU%c7 CoreTmp  PkgTmp Pkg%pc2 Pkg%pc3 Pkg%pc6 Pkg%pc7 PkgWatt CorWatt GFXWatt 
+>        -       -       2    0.05    3493    3492       0    1.64    0.01    0.00   98.29      30      30   93.25    0.00    0.00    0.00    2.64    0.04    0.00
+>        0       0       4    0.12    3492    3492       0    0.13    0.01    0.00   99.74      30      30   93.25    0.00    0.00    0.00    2.64    0.04    0.00
+>        0       4       2    0.06    3493    3492       0    0.19
+>        1       1       1    0.02    3492    3492       0    0.03    0.04    0.00   99.91      23
+>        1       5       0    0.01    3494    3492       0    0.04
+>        2       2       0    0.01    3492    3492       0    6.42    0.00    0.00   93.57      25
+>        2       6       6    0.16    3492    3492       0    6.27
+>        3       3       0    0.01    3501    3492       0    0.05    0.01    0.00   99.93      22
+>        3       7       1    0.03    3492    3492       0    0.03
+> [root@echolake turbostat]# grep MH /proc/cpuinfo
+> cpu MHz		: 997.089
+> cpu MHz		: 797.480
+> cpu MHz		: 998.320
+> cpu MHz		: 800.078
+> cpu MHz		: 845.878
+> cpu MHz		: 801.445
+> cpu MHz		: 800.078
+> cpu MHz		: 800.351
+> [root@echolake turbostat]# echo 100 > /sys/devices/system/cpu/intel_pstate/min_perf_pct 
+> [root@echolake turbostat]# grep MH /proc/cpuinfo
+> cpu MHz		: 3497.128
+> cpu MHz		: 3506.699
+> cpu MHz		: 3500.273
+> cpu MHz		: 3500.273
+> cpu MHz		: 3500.000
+> cpu MHz		: 3500.000
+> cpu MHz		: 3500.000
+> cpu MHz		: 3495.898
+> 
 
-The argument for using #address-cells and #size-cells seems to be to
-align with how ranges work. If that's the route we want to go, then I
-say we should not stop there and actually use dma-ranges as well.
-Otherwise, I don't see the advantage over #iommu-cells.
+Dirk,
 
->> > +
->> > +Optional properties:
->> > +--------------------
->> > +- iommu-names: A list of names identifying each entry in the "iommus"
->> > +  property.
->>
->> Do we really need a name here? I would not expect that you have
->> clearly documented names here from the datasheet like you would for
->> interrupts or clocks, so you'd just be making up names. Sorry, but I'm
->> not a fan of names properties in general.
->
-> Good point, this was really overdesign by modeling it after other
-> subsystems that can have a use for names.
->
->> > +Multiple-master IOMMU:
->> > +----------------------
->> > +
->> > +       iommu {
->> > +               /* the specifier represents the ID of the master */
->> > +               #address-cells = <1>;
->> > +               #size-cells = <0>;
->> > +       };
->> > +
->> > +       master {
->> > +               /* device has master ID 42 in the IOMMU */
->> > +               iommus = <&/iommu 42>;
->> > +       };
->>
->> Presumably the ID would be the streamID on ARM's SMMU. How would a
->> master with 8 streamIDs be described? This is what Calxeda midway has
->> for SATA and I would expect that to be somewhat common. Either you
->> need some ID masking or you'll have lots of duplication when you have
->> windows.
->
-> I don't understand the problem. If you have stream IDs 0 through 7,
-> you would have
->
->         master@a {
->                 ...
->                 iommus = <&smmu 0>;
->         };
->
->         master@b {
->                 ...
->                 iommus = <&smmu 1;
->         };
->
->         ...
->
->         master@12 {
->                 ...
->                 iommus = <&smmu 7;
->         };
->
-> and you don't need a window at all. Why would you need a mask of
-> some sort?
+Thanks for checking things out.
 
-1 master with 7 IDs like this:
+I tested on a Haswell system, and I see that the frequency
+can dip below the max even when I set the min_perf_pct to 100. 
+Let me know if you want to log on to my system and check if 
+there's something I missed. It is odd that the package 1's
+cores are at a much higher frequency and close to
+max than package 0, once min_perf_pct is set to 100.
 
-         master@a {
-                 ...
-                 iommus = <&smmu 0> <&smmu 1> <&smmu 2> <&smmu 3>
-<&smmu 4> <&smmu 5> <&smmu 6> <&smmu 7>;
-         };
+Tim
 
-If there was any sort of window, then it is almost certainly the same
-window for each ID.
+[root@otc-grantly-02 ~]# cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq 
+3600000
+[root@otc-grantly-02 ~]# cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq 
+1200000
+[root@otc-grantly-02 ~]# echo 100 > /sys/devices/system/cpu/intel_pstate/min_perf_pct
+[root@otc-grantly-02 ~]# cat /sys/devices/system/cpu/intel_pstate/min_perf_pct
+100
+[root@otc-grantly-02 ~]# uname -a
+Linux otc-grantly-02 3.15.0-rc7+ #3 SMP Thu May 29 11:34:39 EDT 2014 x86_64 x86_64 x86_64 GNU/Linux
+[root@otc-grantly-02 ~]# cpupower -c 0-1 frequency-info 
+analyzing CPU 0:
+  driver: intel_pstate
+  CPUs which run at the same hardware frequency: 0
+  CPUs which need to have their frequency coordinated by software: 0
+  maximum transition latency: 0.97 ms.
+  hardware limits: 1.20 GHz - 3.60 GHz
+  available cpufreq governors: performance, powersave
+  current policy: frequency should be within 1.20 GHz and 3.60 GHz.
+                  The governor "powersave" may decide which speed to use
+                  within this range.
+  current CPU frequency is 1.20 GHz (asserted by call to hardware).
+  boost state support:
+    Supported: yes
+    Active: yes
+analyzing CPU 1:
+  driver: intel_pstate
+  CPUs which run at the same hardware frequency: 1
+  CPUs which need to have their frequency coordinated by software: 1
+  maximum transition latency: 0.97 ms.
+  hardware limits: 1.20 GHz - 3.60 GHz
+  available cpufreq governors: performance, powersave
+  current policy: frequency should be within 1.20 GHz and 3.60 GHz.
+                  The governor "powersave" may decide which speed to use
+                  within this range.
+  current CPU frequency is 2.02 GHz (asserted by call to hardware).
+  boost state support:
+    Supported: yes
+    Active: yes
+[root@otc-grantly-02 ~]# turbostat
+Package     Core     CPU Avg_MHz   %Busy Bzy_MHz TSC_MHz     SMI  CPU%c1  CPU%c3  CPU%c6  CPU%c7 CoreTmp  PkgTmp Pkg%pc2 Pkg%pc3 Pkg%pc6 Pkg%pc7 PkgWatt RAMWatt   PKG_%   RAM_% 
+       -       -       -       0    0.02    1964    2594       0    0.13    0.00   99.85    0.00      33      41    4.92    0.00   93.99    0.00   23.04    3.60    0.18    0.00
+       0       0       0       1    0.07    2154    2594       0    0.21    0.00   99.72    0.00      32      41    4.42    0.00   94.00    0.00   17.16    1.73    0.10    0.00
+       0       0      28       0    0.01    1465    2594       0    0.26
+       0       1       1       1    0.04    1941    2594       0    0.18    0.00   99.78    0.00      33
+       0       1      29       0    0.02    1587    2594       0    0.20
+       0       2       2       1    0.04    1586    2594       0    0.15    0.00   99.81    0.00      28
+       0       2      30       0    0.01    1539    2594       0    0.17
+       0       3       3       1    0.04    1656    2594       0    0.17    0.00   99.79    0.00      31
+       0       3      31       0    0.01    1723    2594       0    0.19
+       0       4       4       1    0.06    1800    2594       0    0.21    0.00   99.74    0.00      33
+       0       4      32       0    0.02    1725    2594       0    0.24
+       0       5       5       1    0.04    1917    2594       0    0.15    0.00   99.81    0.00      29
+       0       5      33       0    0.02    1707    2594       0    0.17
+       0       6       6       1    0.04    1820    2594       0    0.17    0.00   99.79    0.00      33
+       0       6      34       0    0.01    1564    2594       0    0.20
+       0       8       7       0    0.02    1655    2594       0    0.11    0.00   99.86    0.00      29
+       0       8      35       0    0.01    1687    2594       0    0.12
+       0       9       8       0    0.03    1748    2594       0    0.15    0.00   99.83    0.00      32
+       0       9      36       0    0.02    2001    2594       0    0.15
+       0      10       9       1    0.06    1604    2594       0    0.20    0.00   99.74    0.00      32
+       0      10      37       0    0.02    1679    2594       0    0.24
+       0      11      10       1    0.04    1644    2594       0    0.12    0.00   99.84    0.00      30
+       0      11      38       0    0.01    1509    2594       0    0.14
+       0      12      11       1    0.04    1773    2594       0    0.13    0.00   99.83    0.00      30
+       0      12      39       0    0.01    1529    2594       0    0.16
+       0      13      12       0    0.02    1907    2594       0    0.11    0.00   99.87    0.00      30
+       0      13      40       0    0.01    1574    2594       0    0.12
+       0      14      13       1    0.04    1831    2594       0    0.19    0.00   99.77    0.00      31
+       0      14      41       0    0.01    1735    2594       0    0.22
+       1       0      14       1    0.04    1831    2594       0    0.11    0.00   99.85    0.00      28      37    5.43    0.00   93.98    0.00    5.88    1.87    0.08    0.00
+       1       0      42       0    0.01    2238    2594       0    0.14
+       1       1      15       1    0.04    1869    2594       0    0.15    0.00   99.81    0.00      31
+       1       1      43       0    0.01    2407    2594       0    0.18
+       1       2      16       0    0.02    2164    2594       0    0.10    0.00   99.88    0.00      28
+       1       2      44       0    0.01    2326    2594       0    0.11
+       1       3      17       1    0.04    2101    2594       0    0.10    0.00   99.86    0.00      30
+       1       3      45       0    0.01    2355    2594       0    0.13
+       1       4      18       0    0.01    2429    2594       0    0.08    0.00   99.90    0.00      29
+       1       4      46       0    0.01    2545    2594       0    0.08
+       1       5      19       0    0.01    2412    2594       0    0.08    0.00   99.91    0.00      29
+       1       5      47       0    0.01    2392    2594       0    0.08
+       1       6      20       0    0.01    2448    2594       0    0.08    0.00   99.90    0.00      29
+       1       6      48       0    0.01    2430    2594       0    0.08
+       1       8      21       0    0.01    2574    2594       0    0.08    0.00   99.90    0.00      29
+       1       8      49       0    0.01    2450    2594       0    0.09
+       1       9      22       0    0.02    2470    2594       0    0.08    0.00   99.90    0.00      31
+       1       9      50       0    0.01    2555    2594       0    0.08
+       1      10      23       0    0.01    2540    2594       0    0.07    0.00   99.92    0.00      26
+       1      10      51       0    0.01    2672    2594       0    0.07
+       1      11      24       0    0.01    2472    2594       0    0.08    0.00   99.91    0.00      28
+       1      11      52       0    0.01    2461    2594       0    0.08
+       1      12      25       0    0.01    2438    2594       0    0.07    0.00   99.92    0.00      29
+       1      12      53       0    0.01    2316    2594       0    0.07
+       1      13      26       0    0.01    2363    2594       0    0.08    0.00   99.90    0.00      28
+       1      13      54       0    0.01    2586    2594       0    0.09
+       1      14      27       0    0.01    2459    2594       0    0.09    0.00   99.90    0.00      27
+       1      14      55       1    0.02    2939    2594       0    0.08
 
-Rob
+Tim
+
