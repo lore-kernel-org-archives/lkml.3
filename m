@@ -1,83 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934559AbaE3Vqy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 17:46:54 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:52203 "EHLO mail.skyhub.de"
+	id S934484AbaE3VuU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 17:50:20 -0400
+Received: from mga14.intel.com ([192.55.52.115]:61506 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751525AbaE3Vqx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 17:46:53 -0400
-Date: Fri, 30 May 2014 23:46:43 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Yinghai Lu <yinghai@kernel.org>, Doug Thompson <dougthompson@xmission.com>,
-        linux-pci@vger.kernel.org, linux-edac@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] PCI, EDAC: fix ordering assign resource and bus_add
-Message-ID: <20140530214643.GL28131@pd.tnic>
-References: <1367969371-27414-1-git-send-email-yinghai@kernel.org>
- <20140530170103.GE4607@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140530170103.GE4607@google.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1751525AbaE3VuT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 May 2014 17:50:19 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,943,1392192000"; 
+   d="scan'208";a="540241626"
+From: Andi Kleen <andi@firstfloor.org>
+To: jolsa@redhat.com
+Cc: linux-kernel@vger.kernel.org, namhyung@kernel.org, acme@infradead.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 6/9] perf, tools: Allow events with dot
+Date: Fri, 30 May 2014 14:50:12 -0700
+Message-Id: <1401486615-21374-7-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1401486615-21374-1-git-send-email-andi@firstfloor.org>
+References: <1401486615-21374-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 30, 2014 at 11:01:03AM -0600, Bjorn Helgaas wrote:
-> On Tue, May 07, 2013 at 04:29:31PM -0700, Yinghai Lu wrote:
-> > We should assign unassigned resource before pci_bus_add_device.
-> > 
-> > as late one will enable driver and create sysfs file that will need
-> > pci io resources from assign unassigned code.
-> > 
-> > Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> 
-> Applied to pci/resource for v3.16, thanks!
+From: Andi Kleen <ak@linux.intel.com>
 
-This is touching drivers/edac/ and I guess I'm fine with it,
+The Intel events use a dot to separate event name and unit mask.
+Allow dot in names in the scanner, and remove special handling
+of dot as EOF. Also remove the hack in jevents to replace dot
+with underscore. This way dotted events can be specified
+directly by the user.
 
-Acked-by: Borislav Petkov <bp@suse.de>
+I'm not fully sure this change to the scanner is correct
+(what was the dot special case good for?), but I haven't
+found anything that breaks with it so far at least.
 
-> > ---
-> >  drivers/edac/i82875p_edac.c |    3 ++-
-> >  1 file changed, 2 insertions(+), 1 deletion(-)
-> > 
-> > Index: linux-2.6/drivers/edac/i82875p_edac.c
-> > ===================================================================
-> > --- linux-2.6.orig/drivers/edac/i82875p_edac.c
-> > +++ linux-2.6/drivers/edac/i82875p_edac.c
-> > @@ -293,13 +293,14 @@ static int i82875p_setup_overfl_dev(stru
-> >  		if (dev == NULL)
-> >  			return 1;
-> >  
-> > +		pci_bus_assign_resources(dev->bus);
-> > +
-> >  		err = pci_bus_add_device(dev);
-> >  		if (err) {
-> >  			i82875p_printk(KERN_ERR,
-> >  				"%s(): pci_bus_add_device() Failed\n",
-> >  				__func__);
-> >  		}
-> > -		pci_bus_assign_resources(dev->bus);a
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ tools/perf/util/jevents.c      | 9 +--------
+ tools/perf/util/parse-events.l | 3 +--
+ 2 files changed, 2 insertions(+), 10 deletions(-)
 
-
-... one question though: how are people using those pci_bus*
-functions supposed to know that pci_bus_assign_resources needs to
-go before pci_bus_add_device? The comment in pci_bus_add_device()
-mentions something about it but wouldn't it be possible to call
-pci_bus_assign_resources() in pci_bus_add_device() when resources are
-not assigned?
-
-Sorry if my question is completely dumb - I have no presumption of
-knowing pci and haven't looked either. Just asking with my user hat on.
-
-Thanks.
-
+diff --git a/tools/perf/util/jevents.c b/tools/perf/util/jevents.c
+index b26c0b6..fe51dc8 100644
+--- a/tools/perf/util/jevents.c
++++ b/tools/perf/util/jevents.c
+@@ -90,15 +90,8 @@ static void addfield(char *map, char **dst, const char *sep,
+ 
+ static void fixname(char *s)
+ {
+-	for (; *s; s++) {
++	for (; *s; s++)
+ 		*s = tolower(*s);
+-		/*
+-		 * Remove '.' for now, until the parser
+-		 * can deal with it.
+-		 */
+-		if (*s == '.')
+-			*s = '_';
+-	}
+ }
+ 
+ static void fixdesc(char *s)
+diff --git a/tools/perf/util/parse-events.l b/tools/perf/util/parse-events.l
+index 3432995..709fa3b 100644
+--- a/tools/perf/util/parse-events.l
++++ b/tools/perf/util/parse-events.l
+@@ -81,7 +81,7 @@ num_dec		[0-9]+
+ num_hex		0x[a-fA-F0-9]+
+ num_raw_hex	[a-fA-F0-9]+
+ name		[a-zA-Z_*?][a-zA-Z0-9_*?]*
+-name_minus	[a-zA-Z_*?][a-zA-Z0-9\-_*?]*
++name_minus	[a-zA-Z_*?][a-zA-Z0-9\-_*?.]*
+ /* If you add a modifier you need to update check_modifier() */
+ modifier_event	[ukhpGHSD]+
+ modifier_bp	[rwx]{1,3}
+@@ -119,7 +119,6 @@ modifier_bp	[rwx]{1,3}
+ 			return PE_EVENT_NAME;
+ 		}
+ 
+-.		|
+ <<EOF>>		{
+ 			BEGIN(INITIAL); yyless(0);
+ 		}
 -- 
-Regards/Gruss,
-    Boris.
+1.9.0
 
-Sent from a fat crate under my desk. Formatting is fine.
---
