@@ -1,174 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755456AbaE3JRP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 05:17:15 -0400
-Received: from mail-bn1lp0141.outbound.protection.outlook.com ([207.46.163.141]:45104
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753504AbaE3JRM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 05:17:12 -0400
-From: Varun Sethi <Varun.Sethi@freescale.com>
-To: Alex Williamson <alex.williamson@redhat.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "acooks@gmail.com" <acooks@gmail.com>,
-        "linux@horizon.com" <linux@horizon.com>,
-        "bhelgaas@google.com" <bhelgaas@google.com>,
-        "eddy0596@gmail.com" <eddy0596@gmail.com>
-Subject: RE: [PATCH v4 13/16] iommu/fsl: Use iommu_group_get_for_dev() for
- IOMMU groups
-Thread-Topic: [PATCH v4 13/16] iommu/fsl: Use iommu_group_get_for_dev() for
- IOMMU groups
-Thread-Index: AQHPdhLKbrGLndB8FEaNPuniipoNSptY42sw
-Date: Fri, 30 May 2014 09:17:07 +0000
-Message-ID: <878ea3496f194c6ab6198bdc3e0a413c@BL2PR03MB468.namprd03.prod.outlook.com>
-References: <20140522230230.2856.40017.stgit@bling.home>
- <20140522230845.2856.95844.stgit@bling.home>
-In-Reply-To: <20140522230845.2856.95844.stgit@bling.home>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
+	id S1755360AbaE3J1c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 05:27:32 -0400
+Received: from relay1.mentorg.com ([192.94.38.131]:63191 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755029AbaE3J13 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 May 2014 05:27:29 -0400
+From: "Wang, Jiada (ESD)" <Jiada_Wang@mentor.com>
+To: Huang Shijie <b32955@freescale.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        "Behme, Dirk - Bosch" <dirk.behme@de.bosch.com>
+Subject: RE: [PATCH 1/2] serial: imx: remove the DMA wait queue
+Thread-Topic: [PATCH 1/2] serial: imx: remove the DMA wait queue
+Thread-Index: AQHPdktjQjLgiywSm02dMUAQiefQ6ZtYv2xw
+Date: Fri, 30 May 2014 09:27:20 +0000
+Message-ID: <857E9EDCA6C0904DB3357321AA9123EBE14B5A2C@NA-MBX-03.mgc.mentorg.com>
+References: <1400819575-20435-1-git-send-email-b32955@freescale.com>
+In-Reply-To: <1400819575-20435-1-git-send-email-b32955@freescale.com>
+Accept-Language: en-US
+Content-Language: ja-JP
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-x-originating-ip: [192.88.169.1]
-x-microsoft-antispam: BL:0;ACTION:Default;RISK:Low;SCL:0;SPMLVL:NotSpam;PCL:0;RULEID:
-x-forefront-prvs: 02272225C5
-x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(428001)(51704005)(377454003)(13464003)(199002)(189002)(74316001)(2201001)(81342001)(86362001)(46102001)(76176999)(92566001)(21056001)(79102001)(20776003)(76482001)(80022001)(77982001)(33646001)(99396002)(81542001)(54356999)(2656002)(87936001)(76576001)(66066001)(64706001)(74502001)(50986999)(83322001)(77096999)(85852003)(99286001)(31966008)(19580395003)(19580405001)(74662001)(101416001)(4396001)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BL2PR03MB468;H:BL2PR03MB468.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-authentication-results: spf=none (sender IP is )
- smtp.mailfrom=Varun.Sethi@freescale.com; 
-Content-Type: text/plain; charset="utf-8"
+x-originating-ip: [147.34.91.1]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+X-OriginalArrivalTime: 30 May 2014 09:27:21.0597 (UTC) FILETIME=[5BDEFAD0:01CF7BE9]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s4U9HQ9W015363
+
+Hi Shijie
+
+After apply this patch into our kernel,
+We are facing data hang issue when sending big size file (2M used in test) to uart port
+Note: Rx port is also keep receiving data.
+
+After read the implementation of uart_stop(),
+I feel like, stop_tx() is used to perform flow control when like a XOFF is received.
+Which means no data should be dropped, as they may need to be sent out,
+When next start_tx() is called.
+
+But by calling dmaengine_termiate_all(), the data already be submitted to DMA engine,
+May be lost, thus cause data hang.
+
+What do you think?
+
+Thanks,
+Jiada
+
+-----Original Message-----
+From: linux-arm-kernel [mailto:linux-arm-kernel-bounces@lists.infradead.org] On Behalf Of Huang Shijie
+Sent: Friday, May 23, 2014 1:33 PM
+To: gregkh@linuxfoundation.org
+Cc: linux-arm-kernel@lists.infradead.org; Huang Shijie; linux-kernel@vger.kernel.org; linux-serial@vger.kernel.org
+Subject: [PATCH 1/2] serial: imx: remove the DMA wait queue
+
+The DMA wait queue makes the code very complicated:
+  For RX, the @->stop_rx hook does not really stop the RX;
+  For TX, the @->stop_tx hook does not really stop the TX.
+
+The above make the imx_shutdown has to wait the RX/TX DMA to be finished.
+
+In order to make code more simple, this patch removes the DMA wait queue.
+By calling the dmaengine_terminate_all, this patch makes the RX stops immediately after we call the @->stop_rx hook, so does the TX.
+
+Signed-off-by: Huang Shijie <b32955@freescale.com>
+---
+ drivers/tty/serial/imx.c |   42 ++++++++++++++----------------------------
+ 1 files changed, 14 insertions(+), 28 deletions(-)
+
+diff --git a/drivers/tty/serial/imx.c b/drivers/tty/serial/imx.c index d1f16d3..ed6cdf7 100644
+--- a/drivers/tty/serial/imx.c
++++ b/drivers/tty/serial/imx.c
+@@ -225,7 +225,6 @@ struct imx_port {
+ 	void			*rx_buf;
+ 	unsigned int		tx_bytes;
+ 	unsigned int		dma_tx_nents;
+-	wait_queue_head_t	dma_wait;
+ 	unsigned int            saved_reg[11];
+ };
+ 
+@@ -417,12 +416,10 @@ static void imx_stop_tx(struct uart_port *port)
+ 		return;
+ 	}
+ 
+-	/*
+-	 * We are maybe in the SMP context, so if the DMA TX thread is running
+-	 * on other cpu, we have to wait for it to finish.
+-	 */
+-	if (sport->dma_is_enabled && sport->dma_is_txing)
+-		return;
++	if (sport->dma_is_enabled && sport->dma_is_txing) {
++		dmaengine_terminate_all(sport->dma_chan_tx);
++		sport->dma_is_txing = 0;
++	}
+ 
+ 	temp = readl(sport->port.membase + UCR1);
+ 	writel(temp & ~UCR1_TXMPTYEN, sport->port.membase + UCR1); @@ -436,12 +433,10 @@ static void imx_stop_rx(struct uart_port *port)
+ 	struct imx_port *sport = (struct imx_port *)port;
+ 	unsigned long temp;
+ 
+-	/*
+-	 * We are maybe in the SMP context, so if the DMA TX thread is running
+-	 * on other cpu, we have to wait for it to finish.
+-	 */
+-	if (sport->dma_is_enabled && sport->dma_is_rxing)
+-		return;
++	if (sport->dma_is_enabled && sport->dma_is_rxing) {
++		dmaengine_terminate_all(sport->dma_chan_rx);
++		sport->dma_is_rxing = 0;
++	}
+ 
+ 	temp = readl(sport->port.membase + UCR2);
+ 	writel(temp & ~UCR2_RXEN, sport->port.membase + UCR2); @@ -498,12 +493,6 @@ static void dma_tx_callback(void *data)
+ 	dev_dbg(sport->port.dev, "we finish the TX DMA.\n");
+ 
+ 	uart_write_wakeup(&sport->port);
+-
+-	if (waitqueue_active(&sport->dma_wait)) {
+-		wake_up(&sport->dma_wait);
+-		dev_dbg(sport->port.dev, "exit in %s.\n", __func__);
+-		return;
+-	}
+ }
+ 
+ static void imx_dma_tx(struct imx_port *sport) @@ -876,10 +865,6 @@ static void imx_rx_dma_done(struct imx_port *sport)
+ 	writel(temp, sport->port.membase + UCR1);
+ 
+ 	sport->dma_is_rxing = 0;
+-
+-	/* Is the shutdown waiting for us? */
+-	if (waitqueue_active(&sport->dma_wait))
+-		wake_up(&sport->dma_wait);
+ }
+ 
+ /*
+@@ -1026,8 +1011,6 @@ static void imx_enable_dma(struct imx_port *sport)  {
+ 	unsigned long temp;
+ 
+-	init_waitqueue_head(&sport->dma_wait);
+-
+ 	/* set UCR1 */
+ 	temp = readl(sport->port.membase + UCR1);
+ 	temp |= UCR1_RDMAEN | UCR1_TDMAEN | UCR1_ATDMAEN | @@ -1219,10 +1202,13 @@ static void imx_shutdown(struct uart_port *port)
+ 	unsigned long flags;
+ 
+ 	if (sport->dma_is_enabled) {
+-		/* We have to wait for the DMA to finish. */
+-		wait_event(sport->dma_wait,
+-			!sport->dma_is_rxing && !sport->dma_is_txing);
++		/*
++		 * The upper layer may does not call the @->stop_tx and
++		 * @->stop_rx, so we call them ourselves.
++		 */
++		imx_stop_tx(port);
+ 		imx_stop_rx(port);
++
+ 		imx_disable_dma(sport);
+ 		imx_uart_dma_exit(sport);
+ 	}
+--
+1.7.8
 
 
-
-> -----Original Message-----
-> From: Alex Williamson [mailto:alex.williamson@redhat.com]
-> Sent: Friday, May 23, 2014 4:39 AM
-> To: linux-pci@vger.kernel.org; iommu@lists.linux-foundation.org
-> Cc: linux-kernel@vger.kernel.org; acooks@gmail.com; linux@horizon.com;
-> bhelgaas@google.com; Sethi Varun-B16395; eddy0596@gmail.com
-> Subject: [PATCH v4 13/16] iommu/fsl: Use iommu_group_get_for_dev() for
-> IOMMU groups
-> 
-> Drop custom code and use IOMMU provided grouping support for PCI.
-> 
-> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> Cc: Varun Sethi <varun.sethi@freescale.com>
-> ---
->  drivers/iommu/fsl_pamu_domain.c |   66 +--------------------------------
-> ------
->  1 file changed, 1 insertion(+), 65 deletions(-)
-> 
-> diff --git a/drivers/iommu/fsl_pamu_domain.c
-> b/drivers/iommu/fsl_pamu_domain.c index 93072ba..d02d668 100644
-> --- a/drivers/iommu/fsl_pamu_domain.c
-> +++ b/drivers/iommu/fsl_pamu_domain.c
-> @@ -38,7 +38,6 @@
->  #include <sysdev/fsl_pci.h>
-> 
->  #include "fsl_pamu_domain.h"
-> -#include "pci.h"
-> 
->  /*
->   * Global spinlock that needs to be held while @@ -892,8 +891,6 @@
-> static int fsl_pamu_get_domain_attr(struct iommu_domain *domain,
->  	return ret;
->  }
-> 
-> -#define REQ_ACS_FLAGS	(PCI_ACS_SV | PCI_ACS_RR | PCI_ACS_CR |
-> PCI_ACS_UF)
-> -
->  static struct iommu_group *get_device_iommu_group(struct device *dev)  {
->  	struct iommu_group *group;
-> @@ -950,74 +947,13 @@ static struct iommu_group
-> *get_pci_device_group(struct pci_dev *pdev)
->  	struct pci_controller *pci_ctl;
->  	bool pci_endpt_partioning;
->  	struct iommu_group *group = NULL;
-> -	struct pci_dev *bridge, *dma_pdev = NULL;
-> 
->  	pci_ctl = pci_bus_to_host(pdev->bus);
->  	pci_endpt_partioning = check_pci_ctl_endpt_part(pci_ctl);
->  	/* We can partition PCIe devices so assign device group to the
-> device */
->  	if (pci_endpt_partioning) {
-> -		bridge = pci_find_upstream_pcie_bridge(pdev);
-> -		if (bridge) {
-> -			if (pci_is_pcie(bridge))
-> -				dma_pdev = pci_get_domain_bus_and_slot(
-> -						pci_domain_nr(pdev->bus),
-> -						bridge->subordinate->number, 0);
-> -			if (!dma_pdev)
-> -				dma_pdev = pci_dev_get(bridge);
-> -		} else
-> -			dma_pdev = pci_dev_get(pdev);
-> -
-> -		/* Account for quirked devices */
-> -		swap_pci_ref(&dma_pdev, pci_get_dma_source(dma_pdev));
-> -
-> -		/*
-> -		 * If it's a multifunction device that does not support our
-> -		 * required ACS flags, add to the same group as lowest
-> numbered
-> -		 * function that also does not suport the required ACS flags.
-> -		 */
-> -		if (dma_pdev->multifunction &&
-> -		    !pci_acs_enabled(dma_pdev, REQ_ACS_FLAGS)) {
-> -			u8 i, slot = PCI_SLOT(dma_pdev->devfn);
-> -
-> -			for (i = 0; i < 8; i++) {
-> -				struct pci_dev *tmp;
-> -
-> -				tmp = pci_get_slot(dma_pdev->bus, PCI_DEVFN(slot,
-> i));
-> -				if (!tmp)
-> -					continue;
-> -
-> -				if (!pci_acs_enabled(tmp, REQ_ACS_FLAGS)) {
-> -					swap_pci_ref(&dma_pdev, tmp);
-> -					break;
-> -				}
-> -				pci_dev_put(tmp);
-> -			}
-> -		}
-> -
-> -		/*
-> -		 * Devices on the root bus go through the iommu.  If that's
-> not us,
-> -		 * find the next upstream device and test ACS up to the root
-> bus.
-> -		 * Finding the next device may require skipping virtual
-> buses.
-> -		 */
-> -		while (!pci_is_root_bus(dma_pdev->bus)) {
-> -			struct pci_bus *bus = dma_pdev->bus;
-> -
-> -			while (!bus->self) {
-> -				if (!pci_is_root_bus(bus))
-> -					bus = bus->parent;
-> -				else
-> -					goto root_bus;
-> -			}
-> -
-> -			if (pci_acs_path_enabled(bus->self, NULL,
-> REQ_ACS_FLAGS))
-> -				break;
-> -
-> -			swap_pci_ref(&dma_pdev, pci_dev_get(bus->self));
-> -		}
-> +		group = iommu_group_get_for_dev(&pdev->dev);
-> 
-> -root_bus:
-> -		group = get_device_iommu_group(&dma_pdev->dev);
-> -		pci_dev_put(dma_pdev);
->  		/*
->  		 * PCIe controller is not a paritionable entity
->  		 * free the controller device iommu_group.
-Acknowledged-by: Varun Sethi <varun.sethi@freescale.com>
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+_______________________________________________
+linux-arm-kernel mailing list
+linux-arm-kernel@lists.infradead.org
+http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
