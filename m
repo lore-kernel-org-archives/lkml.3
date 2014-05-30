@@ -1,64 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932269AbaE3CNb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 22:13:31 -0400
-Received: from mail-ve0-f178.google.com ([209.85.128.178]:34434 "EHLO
-	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752099AbaE3CNa (ORCPT
+	id S1754635AbaE3COf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 22:14:35 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:60111 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932298AbaE3COc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 22:13:30 -0400
+	Thu, 29 May 2014 22:14:32 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Zhang Rui <rui.zhang@intel.com>
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        matthew.garrett@nebula.com, mika.westerberg@linux.intel.com
+Subject: [PATCH 5/10] ACPI / scan: introduce platform_id device PNP type flag
+Date: Fri, 30 May 2014 04:26:18 +0200
+Message-ID: <1831678.FWIeOcOJpB@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <35042328.kk6ZUUdfyN@vostro.rjw.lan>
+References: <1400781753-2682-1-git-send-email-rui.zhang@intel.com> <35042328.kk6ZUUdfyN@vostro.rjw.lan>
 MIME-Version: 1.0
-In-Reply-To: <20140530015852.GG14410@dastard>
-References: <20140528223142.GO8554@dastard>
-	<CA+55aFyRk6_v6COPGVvu6hvt=i2A8-dPcs1X3Ydn1g24AxbPkg@mail.gmail.com>
-	<20140529013007.GF6677@dastard>
-	<20140529015830.GG6677@dastard>
-	<20140529233638.GJ10092@bbox>
-	<CA+55aFyvn_fTnWEmTCSGgfM18c21-YDU_s=FJP=grDDLQe+aDA@mail.gmail.com>
-	<20140530002021.GM10092@bbox>
-	<CA+55aFxjXf5xLKGFBjUWimn8-=rj0=g3pku9O1MvGSoDUcEQAw@mail.gmail.com>
-	<20140530005042.GO10092@bbox>
-	<CA+55aFz84toJOqnuphA99c0av1nLzxcxfjiTwhBbxzaNs3J6NQ@mail.gmail.com>
-	<20140530015852.GG14410@dastard>
-Date: Thu, 29 May 2014 19:13:29 -0700
-X-Google-Sender-Auth: w4UhUaUQoATvJ38IEnjSAQgJsLI
-Message-ID: <CA+55aFy+Qx2f9SSoy18ou9xehL=TFdro4tc1_64v1jQmpXYKrg@mail.gmail.com>
-Subject: Re: [RFC 2/2] x86_64: expand kernel stack to 16K
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Minchan Kim <minchan@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm <linux-mm@kvack.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Hugh Dickins <hughd@google.com>, Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 29, 2014 at 6:58 PM, Dave Chinner <david@fromorbit.com> wrote:
->
-> If the patch I sent solves the swap stack usage issue, then perhaps
-> we should look towards adding "blk_plug_start_async()" to pass such
-> hints to the plug flushing. I'd want to use the same behaviour in
-> __xfs_buf_delwri_submit() for bulk metadata writeback in XFS, and
-> probably also in mpage_writepages() for bulk data writeback in
-> WB_SYNC_NONE context...
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-Yeah, adding a flag to the plug about what kind of plug it is does
-sound quite reasonable. It already has that "magic" field, it could
-easily be extended to have a "async" vs "sync" bit to it..
+Only certain types of ACPI device objects can be enumerated as
+platform devices, so in order to distinguish them from the others
+introduce a new ACPI device PNP type flag, platform_id, and set it
+for devices with a valid _HID to start with.
 
-Of course, it's also possible that the unplugging code could just look
-at the actual requests that are plugged to determine that, and maybe
-we wouldn't even need to mark things specially. I don't think we ever
-end up mixing reads and writes under the same plug, so "first request
-is a write" is probably a good approximation for "async".
+This change is based on a Zhang Rui's prototype.
 
-             Linus
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+
+---
+drivers/acpi/scan.c     | 9 ++++++++-
+ drivers/acpi/scan.c     |    4 +++-
+ include/acpi/acpi_bus.h |    3 ++-
+ 2 files changed, 5 insertions(+), 2 deletions(-)
+
+Index: linux-pm/drivers/acpi/scan.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/scan.c
++++ linux-pm/drivers/acpi/scan.c
+@@ -1797,8 +1797,10 @@ static void acpi_set_pnp_ids(acpi_handle
+ 			return;
+ 		}
+ 
+-		if (info->valid & ACPI_VALID_HID)
++		if (info->valid & ACPI_VALID_HID) {
+ 			acpi_add_id(pnp, info->hardware_id.string);
++			pnp->type.platform_id = 1;
++		}
+ 		if (info->valid & ACPI_VALID_CID) {
+ 			cid_list = &info->compatible_id_list;
+ 			for (i = 0; i < cid_list->count; i++)
+Index: linux-pm/include/acpi/acpi_bus.h
+===================================================================
+--- linux-pm.orig/include/acpi/acpi_bus.h
++++ linux-pm/include/acpi/acpi_bus.h
+@@ -233,7 +233,8 @@ struct acpi_hardware_id {
+ struct acpi_pnp_type {
+ 	u32 hardware_id:1;
+ 	u32 bus_address:1;
+-	u32 reserved:30;
++	u32 platform_id:1;
++	u32 reserved:29;
+ };
+ 
+ struct acpi_device_pnp {
+
