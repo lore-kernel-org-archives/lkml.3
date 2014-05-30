@@ -1,75 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934256AbaE3UgM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 16:36:12 -0400
-Received: from mail-ve0-f182.google.com ([209.85.128.182]:48303 "EHLO
-	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754004AbaE3UgL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 16:36:11 -0400
-MIME-Version: 1.0
-In-Reply-To: <5388E814.1080504@zytor.com>
-References: <CALCETrX4-qooSyLw3=zHGcMoWqQ2ozPB_WtKU2AtkMei-XZOUA@mail.gmail.com>
- <537EB60E.40204@1h.com> <CALCETrWgtQCRiHt+am8+DoOMVvTuxy05AB6zzg3iAheGs13L6A@mail.gmail.com>
- <538658EE.8030809@zytor.com> <CALCETrUhZp+edRCx2SEzuJup0HWhV5WSiheCiZWuUjVueTJHfQ@mail.gmail.com>
- <5388E499.6080101@zytor.com> <CALCETrX9s7xJRddB26ZiyjMEGbupbDj2qDHhio=80XSQ+staDA@mail.gmail.com>
- <5388E814.1080504@zytor.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Fri, 30 May 2014 13:35:49 -0700
-Message-ID: <CALCETrVLeUaPRxYu=1-eFVgYDDppAG1DbkQvCKpaUO8NpRWifA@mail.gmail.com>
-Subject: Re: Pondering per-process vsyscall disablement
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Marian Marinov <mm@1h.com>,
+	id S1756244AbaE3Uh6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 16:37:58 -0400
+Received: from quartz.orcorp.ca ([184.70.90.242]:40355 "EHLO quartz.orcorp.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751338AbaE3Uh4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 May 2014 16:37:56 -0400
+Date: Fri, 30 May 2014 14:37:41 -0600
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Bjorn Helgaas <bhelgaas@google.com>, Kumar Gala <galak@codeaurora.org>,
+        Rob Herring <robherring2@gmail.com>, Rob Herring <robh+dt@kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        X86 ML <x86@kernel.org>, Linux API <linux-api@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Kishon Vijay Abraham I <kishon@ti.com>
+Subject: Re: [PATCH] of: treat PCI config space as IORESOURCE_MEM type
+Message-ID: <20140530203741.GA30134@obsidianresearch.com>
+References: <1401379426-9701-1-git-send-email-galak@codeaurora.org>
+ <CAL_JsqLPFDwtd-QYDqCwx1JVj1Aa8=nof-e0P6R9CZra+fXHfw@mail.gmail.com>
+ <47B1E3D0-4336-4529-80B0-172F4ACA5C97@codeaurora.org>
+ <20140530005602.GE1677@bart.dudau.co.uk>
+ <CAErSpo7qEhJyUAu58R8g6+AEhRGo_+Vv0EMgkK+3ZQOU9+jmhg@mail.gmail.com>
+ <20140530014116.GF1677@bart.dudau.co.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140530014116.GF1677@bart.dudau.co.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 30, 2014 at 1:20 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 05/30/2014 01:11 PM, Andy Lutomirski wrote:
->> On Fri, May 30, 2014 at 1:05 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->>> On 05/30/2014 01:00 PM, Andy Lutomirski wrote:
->>>>
->>>> Do the flags go in the ELF loader or in the executable we're running?
->>>> Or both (and, if both, do we and them or or them)?
->>>>
->>>> I think the interpreter makes a little more sense in general: for the
->>>> most part, use of vsyscalls is a property of the runtime environment,
->>>> not of the program being run.  But maybe this is naive.
->>>>
->>>
->>> They go into each object which becomes part of the running program, i.e.
->>> executable, dynamic libraries, and dynamic linker.
->>
->> Well, sure, but the kernel is not about to start reading ELF headers
->> in dynamic libraries.  So we need to make a decision based on the
->> interpreter and the executable.  The conservative approach is to
->> require both to have the flag set *and* to offer a prctl to twiddle
->> the flags.  Then userspace loaders can do whatever they want, and
->> distros get to rebuild the world :)
->>
->
-> Yes, something like that.
+On Fri, May 30, 2014 at 02:41:17AM +0100, Liviu Dudau wrote:
 
-I'll hack something up once the merge window closes.  Or maybe sooner
-if you commit my vsyscall patches from a few days ago.  Otherwise I'm
-just going to confuse my git tree too much :)
+> Agree, I'm only concerned that if this ECAM config space gets added to
+> the list of pci_host_bridge windows it will be indistinguishable from
+> IORESOURCE_MEM resources and pci_create_root_bus() will add it to the
+> bus and allow devices present on that bus to be assigned addresses from
+> that range. Which might not be what one wants for certain BARs.
 
---Andy
+I wouldn't worry about supporting config in ranges. ECAM is the
+logical use for config ranges, but it isn't specified and probably
+will never be.
 
->
->         -hpa
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-api" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Will's driver the is the only driver I've seen to support ECAM and it
+didn't use ranges.
 
-
-
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+Jason
