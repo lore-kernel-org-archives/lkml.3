@@ -1,303 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934316AbaE3Vmj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 17:42:39 -0400
-Received: from mga09.intel.com ([134.134.136.24]:16919 "EHLO mga09.intel.com"
+	id S934527AbaE3Voh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 17:44:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62140 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933855AbaE3Vmh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 17:42:37 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,943,1392192000"; 
-   d="scan'208";a="549136881"
-From: Andi Kleen <andi@firstfloor.org>
-To: jolsa@redhat.com
-Cc: linux-kernel@vger.kernel.org, namhyung@kernel.org, acme@infradead.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH] perf, tools: Support spark lines in perf stat v5
-Date: Fri, 30 May 2014 14:42:16 -0700
-Message-Id: <1401486136-20892-1-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.9.0
+	id S932299AbaE3Vog (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 May 2014 17:44:36 -0400
+Date: Fri, 30 May 2014 18:43:45 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Christoph Lameter <cl@gentwo.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, Li Zefan <lizefan@huawei.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Mel Gorman <mgorman@suse.de>,
+        Tejun Heo <tj@kernel.org>, Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH] page_alloc: skip cpuset enforcement for lower zone
+ allocations (v4)
+Message-ID: <20140530214344.GA14720@amt.cnet>
+References: <20140523193706.GA22854@amt.cnet>
+ <20140526185344.GA19976@amt.cnet>
+ <53858A06.8080507@huawei.com>
+ <20140528224324.GA1132@amt.cnet>
+ <20140529184303.GA20571@amt.cnet>
+ <alpine.DEB.2.02.1405291555120.9336@chino.kir.corp.google.com>
+ <20140529161253.73ff978f723972f503123fe8@linux-foundation.org>
+ <alpine.DEB.2.10.1405300841390.8240@gentwo.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.10.1405300841390.8240@gentwo.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+On Fri, May 30, 2014 at 08:48:41AM -0500, Christoph Lameter wrote:
+> On Thu, 29 May 2014, Andrew Morton wrote:
+> 
+> > >
+> > > 	if (!nodemask && gfp_zone(gfp_mask) < policy_zone)
+> > > 		nodemask = &node_states[N_ONLINE];
+> >
+> > OK, thanks, I made the patch go away for now.
+> >
+> 
+> And another issue is that the policy_zone may be highmem on 32 bit
+> platforms which will result in ZONE_NORMAL to be exempted.
+> 
+> policy zone can actually even be ZONE_DMA for some platforms. The
+> check would not be useful at all on those.
+> 
+> Ignoring the containing cpuset only makes sense for GFP_DMA32 on
+> 64 bit platforms and for GFP_DMA on platforms where there is an actual
+> difference in the address spaces supported by GFP_DMA (such as x86).
+> 
+> Generally I think this is only useful for platforms that attempt to
+> support legacy devices only able to DMA to a portion of the memory address
+> space and that at the same time support NUMA for large address spaces.
+> This is a contradiction on the one hand this is a high end system and on
+> the other hand it attempts to support crippled DMA devices?
 
-perf stat -rX prints the stddev for multiple measurements.
-Just looking at the stddev for judging the quality of the data
-is a bit dangerous The simplest sanity check is to just look
-at a simple plot. This patchs add a sparkline to the end
-of the measurements to make it simple to judge the data.
-
-The sparkline only uses UTF-8, so should be readable
-in all modern tools and terminals.
-
-The sparkline is between the minimum and maximum of the data,
-so it's mainly a indicator of variance. To keep the code
-simple and make the output not too wide only the first
-8 values are printed. If more values are there it adds '..'
-
-The code is inspired by Zach Holman's spark shell script.
-
-Example output (view in non-proportial font):
-
- Performance counter stats for 'true' (10 runs):
-
-          0.175672      task-clock (msec)         #    0.555 CPUs utilized            ( +-  1.77% ) █▄▁▁▁▁▁▁..
-                 0      context-switches          #    0.000 K/sec
-                 0      cpu-migrations            #    0.000 K/sec
-               114      page-faults               #    0.647 M/sec                    ( +-  0.14% ) ▁█▁▁████..
-           520,798      cycles                    #    2.965 GHz                      ( +-  1.75% ) █▄▁▁▁▁▁▁..
-           433,525      instructions              #    0.83  insns per cycle          ( +-  0.28% ) ▅▇▅▄▇█▁▆..
-            83,012      branches                  #  472.537 M/sec                    ( +-  0.31% ) ▅▇▆▄▇█▁▆..
-             3,157      branch-misses             #    3.80% of all branches          ( +-  2.55% ) ▇█▃▅▁▃▁▂..
-
-       0.000316660 seconds time elapsed                                          ( +-  1.78% ) █▅▁▁▁▁▁▁..
-
-As you can see even in the most simple run there are quite interesting
-patterns. The time sparkline suggests it would be also useful to have an option
-to throw the first measurement away.
-
-Known issues:
-- Makes the perf stat output wider. Could be adjust by shrinking
-some white space. Not done so far.
-- No output for -A/--per-socket/--per-core with -rX. This code
-is missing the basic noise detection code. Once it's added there
-sparklines could be shown too.
-
-v2: Avoid printing spark lines for normal CSV case (Jiri)
-v3: LONG->ULONG, random changes
-v4: Add some missing changes from the forked v2: checks value is not
-zero instead of all the same. Update documentation. Remove n variable.
-Remove #pragma once
-v5: Add overflow fixes from Jiri.
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- tools/perf/Documentation/perf-stat.txt |  4 ++++
- tools/perf/Makefile.perf               |  1 +
- tools/perf/builtin-stat.c              | 12 ++++++++++++
- tools/perf/util/spark.c                | 31 +++++++++++++++++++++++++++++++
- tools/perf/util/spark.h                |  4 ++++
- tools/perf/util/stat.c                 | 34 ++++++++++++++++++++++++++++++++++
- tools/perf/util/stat.h                 | 10 ++++++++++
- 7 files changed, 96 insertions(+)
- create mode 100644 tools/perf/util/spark.c
- create mode 100644 tools/perf/util/spark.h
-
-diff --git a/tools/perf/Documentation/perf-stat.txt b/tools/perf/Documentation/perf-stat.txt
-index 29ee857..840c1db 100644
---- a/tools/perf/Documentation/perf-stat.txt
-+++ b/tools/perf/Documentation/perf-stat.txt
-@@ -53,6 +53,10 @@ OPTIONS
- -r::
- --repeat=<n>::
- 	repeat command and print average + stddev (max: 100). 0 means forever.
-+	In addition it prints a spark line (when not in CSV mode), which visualizes the
-+	variance between minimum and maximum of the measurements. This allows a simple sanity
-+	check of the measurements. Only 8 values are printed, when more are available
-+	it adds ..
- 
- -B::
- --big-num::
-diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index 7257e7e..432d099 100644
---- a/tools/perf/Makefile.perf
-+++ b/tools/perf/Makefile.perf
-@@ -359,6 +359,7 @@ LIB_OBJS += $(OUTPUT)util/trace-event-scripting.o
- LIB_OBJS += $(OUTPUT)util/trace-event.o
- LIB_OBJS += $(OUTPUT)util/svghelper.o
- LIB_OBJS += $(OUTPUT)util/sort.o
-+LIB_OBJS += $(OUTPUT)util/spark.o
- LIB_OBJS += $(OUTPUT)util/hist.o
- LIB_OBJS += $(OUTPUT)util/probe-event.o
- LIB_OBJS += $(OUTPUT)util/util.o
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index 65a151e..cb0f7c5 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -1176,6 +1176,9 @@ static void print_aggr(char *prefix)
- 				if (run != ena)
- 					fprintf(output, "  (%.2f%%)",
- 						100.0 * run / ena);
-+
-+				fputc(' ', output);
-+				print_stat_spark(output, counter->priv);
- 			}
- 			fputc('\n', output);
- 		}
-@@ -1229,6 +1232,9 @@ static void print_counter_aggr(struct perf_evsel *counter, char *prefix)
- 		return;
- 	}
- 
-+	fputc(' ', output);
-+	print_stat_spark(output, counter->priv);
-+
- 	if (scaled) {
- 		double avg_enabled, avg_running;
- 
-@@ -1295,6 +1301,9 @@ static void print_counter(struct perf_evsel *counter, char *prefix)
- 			if (run != ena)
- 				fprintf(output, "  (%.2f%%)",
- 					100.0 * run / ena);
-+
-+			fputc(' ', output);
-+			print_stat_spark(output, counter->priv);
- 		}
- 		fputc('\n', output);
- 	}
-@@ -1355,6 +1364,9 @@ static void print_stat(int argc, const char **argv)
- 			fprintf(output, "                                        ");
- 			print_noise_pct(stddev_stats(&walltime_nsecs_stats),
- 					avg_stats(&walltime_nsecs_stats));
-+
-+			fputc(' ', output);
-+			print_stat_spark(output, &walltime_nsecs_stats);
- 		}
- 		fprintf(output, "\n\n");
- 	}
-diff --git a/tools/perf/util/spark.c b/tools/perf/util/spark.c
-new file mode 100644
-index 0000000..3a3b5e7
---- /dev/null
-+++ b/tools/perf/util/spark.c
-@@ -0,0 +1,31 @@
-+#include <stdio.h>
-+#include <limits.h>
-+#include "spark.h"
-+
-+#define NUM_SPARKS 8
-+#define SPARK_SHIFT 8
-+
-+/* Print spark lines on outf for numval values in val. */
-+void print_spark(FILE *outf, unsigned long *val, int numval)
-+{
-+	static const char *ticks[NUM_SPARKS] = {
-+		"▁",  "▂", "▃", "▄", "▅", "▆", "▇", "█"
-+	};
-+	int i;
-+	unsigned long long min = ULLONG_MAX, max = 0, f;
-+
-+	for (i = 0; i < numval; i++) {
-+		if (val[i] < min)
-+			min = val[i];
-+		if (val[i] > max)
-+			max = val[i];
-+	}
-+	f = ((max - min) << SPARK_SHIFT) / (NUM_SPARKS - 1);
-+	if (f < 1)
-+		f = 1;
-+	for (i = 0; i < numval; i++) {
-+		int index = ((val[i] - min) << SPARK_SHIFT) / f;
-+		if (index >= 0 && index < NUM_SPARKS)
-+			fputs(ticks[index], outf);
-+	}
-+}
-diff --git a/tools/perf/util/spark.h b/tools/perf/util/spark.h
-new file mode 100644
-index 0000000..59b04ad
---- /dev/null
-+++ b/tools/perf/util/spark.h
-@@ -0,0 +1,4 @@
-+#ifndef SPARK_H
-+#define SPARK_H 1
-+void print_spark(FILE *outf, unsigned long *val, int numval);
-+#endif
-diff --git a/tools/perf/util/stat.c b/tools/perf/util/stat.c
-index 6506b3d..2e76d9c 100644
---- a/tools/perf/util/stat.c
-+++ b/tools/perf/util/stat.c
-@@ -1,10 +1,16 @@
- #include <math.h>
-+#include <stdio.h>
- 
- #include "stat.h"
-+#include "spark.h"
- 
- void update_stats(struct stats *stats, u64 val)
- {
- 	double delta;
-+	int n = stats->n;
-+
-+	if (n < NUM_SPARK_VALS)
-+		stats->svals[n] = val;
- 
- 	stats->n++;
- 	delta = val - stats->mean;
-@@ -61,3 +67,31 @@ double rel_stddev_stats(double stddev, double avg)
- 
- 	return pct;
- }
-+
-+static int all_zero(unsigned long *vals, int len)
-+{
-+	int i;
-+
-+	for (i = 0; i < len; i++)
-+		if (vals[i] != 0)
-+			return 0;
-+	return 1;
-+}
-+
-+void print_stat_spark(FILE *f, struct stats *stat)
-+{
-+	int len;
-+
-+	if (stat->n <= 1)
-+		return;
-+
-+	len = stat->n;
-+	if (len > NUM_SPARK_VALS)
-+		len = NUM_SPARK_VALS;
-+	if (all_zero(stat->svals, len))
-+		return;
-+
-+	print_spark(f, stat->svals, len);
-+	if (stat->n > NUM_SPARK_VALS)
-+		fputs("..", f);
-+}
-diff --git a/tools/perf/util/stat.h b/tools/perf/util/stat.h
-index ae8ccd7..a115ceb 100644
---- a/tools/perf/util/stat.h
-+++ b/tools/perf/util/stat.h
-@@ -1,12 +1,16 @@
- #ifndef __PERF_STATS_H
- #define __PERF_STATS_H
- 
-+#include <stdio.h>
- #include "types.h"
- 
-+#define NUM_SPARK_VALS 8 /* support spark line on first N items */
-+
- struct stats
- {
- 	double n, mean, M2;
- 	u64 max, min;
-+	u64 svals[NUM_SPARK_VALS];
- };
- 
- void update_stats(struct stats *stats, u64 val);
-@@ -14,12 +18,18 @@ double avg_stats(struct stats *stats);
- double stddev_stats(struct stats *stats);
- double rel_stddev_stats(double stddev, double avg);
- 
-+void print_stat_spark(FILE *f, struct stats *stat);
-+
- static inline void init_stats(struct stats *stats)
- {
-+	int i;
-+
- 	stats->n    = 0.0;
- 	stats->mean = 0.0;
- 	stats->M2   = 0.0;
- 	stats->min  = (u64) -1;
- 	stats->max  = 0;
-+	for (i = 0; i < NUM_SPARK_VALS; i++)
-+		stats->svals[i] = 0;
- }
- #endif
--- 
-1.9.0
+OK we will handle this in userspace.
 
