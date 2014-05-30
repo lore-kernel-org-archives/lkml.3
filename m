@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933207AbaE3Nv1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 09:51:27 -0400
-Received: from relay.parallels.com ([195.214.232.42]:41532 "EHLO
+	id S933419AbaE3Nv0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 09:51:26 -0400
+Received: from relay.parallels.com ([195.214.232.42]:41520 "EHLO
 	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933273AbaE3NvT (ORCPT
+	with ESMTP id S933279AbaE3NvT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 30 May 2014 09:51:19 -0400
 From: Vladimir Davydov <vdavydov@parallels.com>
 To: <akpm@linux-foundation.org>
 CC: <cl@linux.com>, <hannes@cmpxchg.org>, <mhocko@suse.cz>,
         <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
-Subject: [PATCH -mm 8/8] slab: reap dead memcg caches aggressively
-Date: Fri, 30 May 2014 17:51:11 +0400
-Message-ID: <23a736c90a81e13a2252d35d9fc3dc04a9ed7d7c.1401457502.git.vdavydov@parallels.com>
+Subject: [PATCH -mm 2/8] memcg: destroy kmem caches when last slab is freed
+Date: Fri, 30 May 2014 17:51:05 +0400
+Message-ID: <ec6f290739074232ce1eeddc455ee14d471a70db.1401457502.git.vdavydov@parallels.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <cover.1401457502.git.vdavydov@parallels.com>
 References: <cover.1401457502.git.vdavydov@parallels.com>
@@ -24,75 +24,103 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is no use in keeping free objects/slabs on dead memcg caches,
-because they will never be allocated. So let's make cache_reap() shrink
-as many free objects from such caches as possible.
+When the memcg_cache_params->refcnt goes to 0, schedule the worker that
+will unregister the cache. To prevent this from happening when the owner
+memcg is alive, keep the refcnt incremented during memcg lifetime.
 
-Note the difference between SLAB and SLUB handling of dead memcg caches.
-For SLUB, dead cache destruction is scheduled as soon as the last object
-is freed, because dead caches do not cache free objects. For SLAB, dead
-caches can keep some free objects on per cpu arrays, so that an empty
-dead cache will be hanging around until cache_reap() drains it.
-
-We don't disable free objects caching for SLAB, because it would force
-kfree to always take a spin lock, which would degrade performance
-significantly.
-
-Since cache_reap() drains all caches once ~4 secs on each CPU, empty
-dead caches will die quickly.
+Note, this doesn't guarantee that the cache that belongs to a dead memcg
+will go away as soon as the last object is freed, because SL[AU]B
+implementation can cache empty slabs for performance reasons. Hence the
+cache may be hanging around indefinitely after memcg offline. This is to
+be resolved by the next patches.
 
 Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
 ---
- mm/slab.c |   17 ++++++++++++-----
- 1 file changed, 12 insertions(+), 5 deletions(-)
+ include/linux/slab.h |    2 ++
+ mm/memcontrol.c      |   22 ++++++++++++++++++++--
+ 2 files changed, 22 insertions(+), 2 deletions(-)
 
-diff --git a/mm/slab.c b/mm/slab.c
-index cecc01bba389..d81e46316c99 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -3985,6 +3985,11 @@ static void cache_reap(struct work_struct *w)
- 		goto out;
+diff --git a/include/linux/slab.h b/include/linux/slab.h
+index 1985bd9bec7d..d9716fdc8211 100644
+--- a/include/linux/slab.h
++++ b/include/linux/slab.h
+@@ -527,6 +527,7 @@ static __always_inline void *kmalloc_node(size_t size, gfp_t flags, int node)
+  * @list: list_head for the list of all caches in this memcg
+  * @root_cache: pointer to the global, root cache, this cache was derived from
+  * @refcnt: reference counter
++ * @unregister_work: worker to destroy the cache
+  */
+ struct memcg_cache_params {
+ 	bool is_root_cache;
+@@ -540,6 +541,7 @@ struct memcg_cache_params {
+ 			struct list_head list;
+ 			struct kmem_cache *root_cache;
+ 			atomic_long_t refcnt;
++			struct work_struct unregister_work;
+ 		};
+ 	};
+ };
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 98a24e5ea4b5..886b5b414958 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -3114,6 +3114,8 @@ int memcg_update_cache_size(struct kmem_cache *s, int num_groups)
+ 	return 0;
+ }
  
- 	list_for_each_entry(searchp, &slab_caches, list) {
-+		int force = 0;
++static void memcg_unregister_cache_func(struct work_struct *work);
 +
-+		if (memcg_cache_dead(searchp))
-+			force = 1;
+ int memcg_alloc_cache_params(struct mem_cgroup *memcg, struct kmem_cache *s,
+ 			     struct kmem_cache *root_cache)
+ {
+@@ -3135,6 +3137,9 @@ int memcg_alloc_cache_params(struct mem_cgroup *memcg, struct kmem_cache *s,
+ 	if (memcg) {
+ 		s->memcg_params->memcg = memcg;
+ 		s->memcg_params->root_cache = root_cache;
++		atomic_long_set(&s->memcg_params->refcnt, 1);
++		INIT_WORK(&s->memcg_params->unregister_work,
++			  memcg_unregister_cache_func);
+ 		css_get(&memcg->css);
+ 	} else
+ 		s->memcg_params->is_root_cache = true;
+@@ -3216,6 +3221,17 @@ static void memcg_unregister_cache(struct kmem_cache *cachep)
+ 	kmem_cache_destroy(cachep);
+ }
+ 
++static void memcg_unregister_cache_func(struct work_struct *work)
++{
++	struct memcg_cache_params *params =
++		container_of(work, struct memcg_cache_params, unregister_work);
++	struct kmem_cache *cachep = memcg_params_to_cache(params);
 +
- 		check_irq_on();
- 
- 		/*
-@@ -3996,7 +4001,7 @@ static void cache_reap(struct work_struct *w)
- 
- 		reap_alien(searchp, n);
- 
--		drain_array(searchp, n, cpu_cache_get(searchp), 0, node);
-+		drain_array(searchp, n, cpu_cache_get(searchp), force, node);
- 
- 		/*
- 		 * These are racy checks but it does not matter
-@@ -4007,15 +4012,17 @@ static void cache_reap(struct work_struct *w)
- 
- 		n->next_reap = jiffies + REAPTIMEOUT_NODE;
- 
--		drain_array(searchp, n, n->shared, 0, node);
-+		drain_array(searchp, n, n->shared, force, node);
- 
- 		if (n->free_touched)
- 			n->free_touched = 0;
- 		else {
--			int freed;
-+			int freed, tofree;
++	mutex_lock(&memcg_slab_mutex);
++	memcg_unregister_cache(cachep);
++	mutex_unlock(&memcg_slab_mutex);
++}
 +
-+			tofree = force ? slabs_tofree(searchp, n) :
-+				DIV_ROUND_UP(n->free_limit, 5 * searchp->num);
+ /*
+  * During the creation a new cache, we need to disable our accounting mechanism
+  * altogether. This is true even if we are not creating, but rather just
+@@ -3279,7 +3295,7 @@ static void memcg_unregister_all_caches(struct mem_cgroup *memcg)
+ 	list_for_each_entry_safe(params, tmp, &memcg->memcg_slab_caches, list) {
+ 		cachep = memcg_params_to_cache(params);
+ 		kmem_cache_shrink(cachep);
+-		if (atomic_long_read(&cachep->memcg_params->refcnt) == 0)
++		if (atomic_long_dec_and_test(&cachep->memcg_params->refcnt))
+ 			memcg_unregister_cache(cachep);
+ 	}
+ 	mutex_unlock(&memcg_slab_mutex);
+@@ -3360,7 +3376,9 @@ int __memcg_charge_slab(struct kmem_cache *cachep, gfp_t gfp, int order)
+ void __memcg_uncharge_slab(struct kmem_cache *cachep, int order)
+ {
+ 	memcg_uncharge_kmem(cachep->memcg_params->memcg, PAGE_SIZE << order);
+-	atomic_long_dec(&cachep->memcg_params->refcnt);
++
++	if (unlikely(atomic_long_dec_and_test(&cachep->memcg_params->refcnt)))
++		schedule_work(&cachep->memcg_params->unregister_work);
+ }
  
--			freed = drain_freelist(searchp, n, (n->free_limit +
--				5 * searchp->num - 1) / (5 * searchp->num));
-+			freed = drain_freelist(searchp, n, tofree);
- 			STATS_ADD_REAPED(searchp, freed);
- 		}
- next:
+ /*
 -- 
 1.7.10.4
 
