@@ -1,77 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755137AbaE3GRM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 02:17:12 -0400
-Received: from mail-bl2lp0209.outbound.protection.outlook.com ([207.46.163.209]:36994
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754812AbaE3GRI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 02:17:08 -0400
-Date: Fri, 30 May 2014 12:53:46 +0800
-From: Huang Shijie <b32955@freescale.com>
-To: Dirk Behme <dirk.behme@gmail.com>
-CC: <gregkh@linuxfoundation.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <linux-serial@vger.kernel.org>
-Subject: Re: [PATCH 2/2] serial: imx: disable the receiver ready interrupt
- for imx_stop_rx
-Message-ID: <20140530045344.GA13338@shlinux1.ap.freescale.net>
-References: <1400819575-20435-1-git-send-email-b32955@freescale.com>
- <1400819575-20435-2-git-send-email-b32955@freescale.com>
- <53881C99.1090207@gmail.com>
+	id S1754752AbaE3GUi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 02:20:38 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:42239 "EHLO
+	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751926AbaE3GUh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 May 2014 02:20:37 -0400
+X-Original-SENDERIP: 10.177.220.169
+X-Original-MAILFROM: minchan@kernel.org
+Date: Fri, 30 May 2014 15:21:05 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Dave Chinner <david@fromorbit.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm <linux-mm@kvack.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Hugh Dickins <hughd@google.com>, Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [RFC 2/2] x86_64: expand kernel stack to 16K
+Message-ID: <20140530062105.GT10092@bbox>
+References: <20140528223142.GO8554@dastard>
+ <CA+55aFyRk6_v6COPGVvu6hvt=i2A8-dPcs1X3Ydn1g24AxbPkg@mail.gmail.com>
+ <20140529013007.GF6677@dastard>
+ <20140529015830.GG6677@dastard>
+ <20140529233638.GJ10092@bbox>
+ <CA+55aFyvn_fTnWEmTCSGgfM18c21-YDU_s=FJP=grDDLQe+aDA@mail.gmail.com>
+ <20140530002021.GM10092@bbox>
+ <CA+55aFxjXf5xLKGFBjUWimn8-=rj0=g3pku9O1MvGSoDUcEQAw@mail.gmail.com>
+ <20140530005042.GO10092@bbox>
+ <CA+55aFz84toJOqnuphA99c0av1nLzxcxfjiTwhBbxzaNs3J6NQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53881C99.1090207@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(24454002)(51704005)(199002)(189002)(77982001)(99396002)(54356999)(47776003)(80022001)(46102001)(33656002)(92566001)(77096999)(81542001)(76482001)(76176999)(50986999)(4396001)(6806004)(31966008)(81342001)(83506001)(92726001)(79102001)(85852003)(74502001)(97756001)(20776003)(97736001)(44976005)(74662001)(23726002)(46406003)(102836001)(19580395003)(84676001)(68736004)(83322001)(83072002)(19580405001)(64706001)(87936001)(26826002)(50466002)(104016001)(21056001)(42262001);DIR:OUT;SFP:;SCL:1;SRVR:BLUPR03MB360;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: BL:0;ACTION:Default;RISK:Low;SCL:0;SPMLVL:NotSpam;PCL:0;RULEID:
-X-Forefront-PRVS: 02272225C5
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=shijie.huang@freescale.com; 
-X-OriginatorOrg: freescale.com
+In-Reply-To: <CA+55aFz84toJOqnuphA99c0av1nLzxcxfjiTwhBbxzaNs3J6NQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 30, 2014 at 07:52:25AM +0200, Dirk Behme wrote:
-> On 23.05.2014 06:32, Huang Shijie wrote:
-> >This patch disables the receiver ready interrupt for imx_stop_rx.
-> >It reduces the interrupt numbers when the uart is going to close
-> >or suspend.
+On Thu, May 29, 2014 at 06:24:02PM -0700, Linus Torvalds wrote:
+> On Thu, May 29, 2014 at 5:50 PM, Minchan Kim <minchan@kernel.org> wrote:
+> >>
+> >> You could also try Dave's patch, and _not_ do my mm/vmscan.c part.
 > >
-> >Signed-off-by: Huang Shijie <b32955@freescale.com>
-> >---
-> >  drivers/tty/serial/imx.c |    4 ++++
-> >  1 files changed, 4 insertions(+), 0 deletions(-)
-> >
-> >diff --git a/drivers/tty/serial/imx.c b/drivers/tty/serial/imx.c
-> >index ed6cdf7..6026101 100644
-> >--- a/drivers/tty/serial/imx.c
-> >+++ b/drivers/tty/serial/imx.c
-> >@@ -440,6 +440,10 @@ static void imx_stop_rx(struct uart_port *port)
-> >
-> >  	temp = readl(sport->port.membase + UCR2);
-> >  	writel(temp & ~UCR2_RXEN, sport->port.membase + UCR2);
-> >+
-> >+	/* disable the `Receiver Ready Interrrupt` */
-> >+	temp = readl(sport->port.membase + UCR1);
-> >+	writel(temp & ~UCR1_RRDYEN, sport->port.membase + UCR1);
+> > Sure. While I write this, Rusty's test was crached so I will try Dave's patch,
+> > them yours except vmscan.c part.
 > 
-> Will this change cause a loss or a processing delay of RX characters
-> pending in the RX FIFO ?
+> Looking more at Dave's patch (well, description), I don't think there
+> is any way in hell we can ever apply it. If I read it right, it will
+> cause all IO that overflows the max request count to go through the
+> scheduler to get it flushed. Maybe I misread it, but that's definitely
+> not acceptable. Maybe it's not noticeable with a slow rotational
+> device, but modern ssd hardware? No way.
 > 
-> It is not clear whether disabling the receiver will clear the RX
-> FIFO. My guess is that the contents of the RX FIFO will remain
-> intact when the receiver is disabled. The RX interrupt has an
-> opportunity to mop up these pending characters in the RX FIFO but
-> disabling the RX interrupt has potential to leave those characters
-> in the RX FIFO. Does it matter ?
-When the @stop_rx() is called, the system(or the application) is closing
-or suspending, and it has decided to abandon the RX data. 
+> I'd *much* rather slow down the swap side. Not "real IO". So I think
+> my mm/vmscan.c patch is preferable (but yes, it might require some
+> work to make kswapd do better).
+> 
+> So you can try Dave's patch just to see what it does for stack depth,
+> but other than that it looks unacceptable unless I misread things.
+> 
+>              Linus
 
-So i think it do not matter the RX FIFO has some left data.
-We will reset the RX FIFO when the UART port is re-started again.
+I tested below patch and the result is endless OOM although there are
+lots of anon pages and empty space of swap.
 
-thanks
-Huang Shijie
+I guess __alloc_pages_direct_reclaim couldn't proceed due to anon pages
+once VM drop most of file-backed pages, then go to OOM.
+
+---
+ mm/backing-dev.c | 25 +++++++++++++++----------
+ mm/vmscan.c      |  4 +---
+ 2 files changed, 16 insertions(+), 13 deletions(-)
+
+diff --git a/mm/backing-dev.c b/mm/backing-dev.c
+index ce682f7a4f29..2762b16404bd 100644
+--- a/mm/backing-dev.c
++++ b/mm/backing-dev.c
+@@ -11,6 +11,7 @@
+ #include <linux/writeback.h>
+ #include <linux/device.h>
+ #include <trace/events/writeback.h>
++#include <linux/blkdev.h>
+ 
+ static atomic_long_t bdi_seq = ATOMIC_LONG_INIT(0);
+ 
+@@ -565,6 +566,18 @@ void set_bdi_congested(struct backing_dev_info *bdi, int sync)
+ }
+ EXPORT_SYMBOL(set_bdi_congested);
+ 
++static long congestion_timeout(int sync, long timeout)
++{
++	long ret;
++	DEFINE_WAIT(wait);
++
++	wait_queue_head_t *wqh = &congestion_wqh[sync];
++	prepare_to_wait(wqh, &wait, TASK_UNINTERRUPTIBLE);
++	ret = schedule_timeout(timeout);
++	finish_wait(wqh, &wait);
++	return ret;
++}
++
+ /**
+  * congestion_wait - wait for a backing_dev to become uncongested
+  * @sync: SYNC or ASYNC IO
+@@ -578,12 +591,8 @@ long congestion_wait(int sync, long timeout)
+ {
+ 	long ret;
+ 	unsigned long start = jiffies;
+-	DEFINE_WAIT(wait);
+-	wait_queue_head_t *wqh = &congestion_wqh[sync];
+ 
+-	prepare_to_wait(wqh, &wait, TASK_UNINTERRUPTIBLE);
+-	ret = io_schedule_timeout(timeout);
+-	finish_wait(wqh, &wait);
++	ret = congestion_timeout(sync,timeout);
+ 
+ 	trace_writeback_congestion_wait(jiffies_to_usecs(timeout),
+ 					jiffies_to_usecs(jiffies - start));
+@@ -614,8 +623,6 @@ long wait_iff_congested(struct zone *zone, int sync, long timeout)
+ {
+ 	long ret;
+ 	unsigned long start = jiffies;
+-	DEFINE_WAIT(wait);
+-	wait_queue_head_t *wqh = &congestion_wqh[sync];
+ 
+ 	/*
+ 	 * If there is no congestion, or heavy congestion is not being
+@@ -635,9 +642,7 @@ long wait_iff_congested(struct zone *zone, int sync, long timeout)
+ 	}
+ 
+ 	/* Sleep until uncongested or a write happens */
+-	prepare_to_wait(wqh, &wait, TASK_UNINTERRUPTIBLE);
+-	ret = io_schedule_timeout(timeout);
+-	finish_wait(wqh, &wait);
++	ret = congestion_timeout(sync, timeout);
+ 
+ out:
+ 	trace_writeback_wait_iff_congested(jiffies_to_usecs(timeout),
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index a9c74b409681..e4ad7cd1885b 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -975,9 +975,7 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+ 			 * avoid risk of stack overflow but only writeback
+ 			 * if many dirty pages have been encountered.
+ 			 */
+-			if (page_is_file_cache(page) &&
+-					(!current_is_kswapd() ||
+-					 !zone_is_reclaim_dirty(zone))) {
++			if (!current_is_kswapd() || !zone_is_reclaim_dirty(zone)) {
+ 				/*
+ 				 * Immediately reclaim when written back.
+ 				 * Similar in principal to deactivate_page()
+-- 
+1.9.2
+
+-- 
+Kind regards,
+Minchan Kim
