@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754415AbaE3BZY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 21:25:24 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:46030 "EHLO
+	id S932175AbaE3BZx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 21:25:53 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:46151 "EHLO
 	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754123AbaE3BZW (ORCPT
+	with ESMTP id S1754094AbaE3BZw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 21:25:22 -0400
-X-AuditID: cbfee691-b7f2f6d0000040c4-6b-5387de01fec5
-Message-id: <5387DE01.3000204@samsung.com>
-Date: Fri, 30 May 2014 10:25:21 +0900
+	Thu, 29 May 2014 21:25:52 -0400
+X-AuditID: cbfee68d-b7fd46d000005f36-6a-5387de1fa140
+Message-id: <5387DE1E.3010309@samsung.com>
+Date: Fri, 30 May 2014 10:25:50 +0900
 From: Chanwoo Choi <cw00.choi@samsung.com>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
  Thunderbird/17.0.2
@@ -17,36 +17,37 @@ MIME-version: 1.0
 To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 Cc: myungjoo.ham@samsung.com, patches@opensource.wolfsonmicro.com,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] extcon: arizona: Remove duplicate set of input parent
- device
+Subject: Re: [PATCH 2/4] extcon: arizona: Use extcon cable API
 References: <1401377274-10249-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-In-reply-to: <1401377274-10249-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+ <1401377274-10249-2-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+In-reply-to: <1401377274-10249-2-git-send-email-ckeepax@opensource.wolfsonmicro.com>
 Content-type: text/plain; charset=ISO-8859-1
 Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrGIsWRmVeSWpSXmKPExsWyRsSkSJfxXnuwwYkl2hb/ptxgt7i8aw6b
-	xe3GFWwWy9/+Z3Ng8Xg58TebR9+WVYwenzfJBTBHcdmkpOZklqUW6dslcGVs/nSKveA8e8WF
-	l5vYGxjXsXUxcnJICJhIdE47wQhhi0lcuLceKM7FISSwlFFi+vf5zDBFHw48ZoJITGeUuP/2
-	DFTVa0aJL82vmUCqeAW0JCZeaWQBsVkEVCUuLJ8MtoINKL7/xQ0wW1QgTGLl9CssEPWCEj8m
-	3wOzRQQsJKYsuQW2jVkgUWLOuS/sILawQLjEsZ59rCC2kECoxNcXD8FsTqA593+vYIGo15HY
-	3zqNDcKWl9i85i0zyHESAovYJU6/3cYOcZCAxLfJh4AaOIASshKbDkB9JilxcMUNlgmMYrOQ
-	nDQLydhZSMYuYGRexSiaWpBcUJyUXmSqV5yYW1yal66XnJ+7iREYR6f/PZu4g/H+AetDjMlA
-	KycyS4km5wPjMK8k3tDYzMjC1MTU2Mjc0ow0YSVx3vRHSUFCAumJJanZqakFqUXxRaU5qcWH
-	GJk4OKUaGH1W2B2afPtIrsiVrx8vZhXpuGpvjNv9z2Hj4uMrDu+Xvay4UeDJEolwv++Tczir
-	P5Zta3xx2sSOj/2kje+qR+6M2ta/Pla5eFmzlrFF8LyXZfav/XpwnllVsDf33ExeTcFSjh++
-	3GyuEr0+5dXuXtP71jP9SBY5z+My8VV9BN+ynoOtjF1LlViKMxINtZiLihMBzs9DVrkCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpmleLIzCtJLcpLzFFi42I5/e+xoC7jvfZggyvzVCz+TbnBbnF51xw2
-	i9uNK9gslr/9z+bA4vFy4m82j74tqxg9Pm+SC2COamC0yUhNTEktUkjNS85PycxLt1XyDo53
-	jjc1MzDUNbS0MFdSyEvMTbVVcvEJ0HXLzAFap6RQlphTChQKSCwuVtK3wzQhNMRN1wKmMULX
-	NyQIrsfIAA0krGHM2PzpFHvBefaKCy83sTcwrmPrYuTkkBAwkfhw4DEThC0mceHeeqA4F4eQ
-	wHRGiftvz0A5rxklvjS/BqviFdCSmHilkQXEZhFQlbiwfDLYJDag+P4XN8BsUYEwiZXTr7BA
-	1AtK/Jh8D8wWEbCQmLLkFjOIzSyQKDHn3Bd2EFtYIFziWM8+VhBbSCBU4uuLh2A2J9Cc+79X
-	sEDU60jsb53GBmHLS2xe85Z5AqPALCQrZiEpm4WkbAEj8ypG0dSC5ILipPRcI73ixNzi0rx0
-	veT83E2M4Ch9Jr2DcVWDxSFGAQ5GJR7eCentwUKsiWXFlbmHGCU4mJVEeB0PA4V4UxIrq1KL
-	8uOLSnNSiw8xJgNDYCKzlGhyPjCB5JXEGxqbmBlZGpkbWhgZm5MmrCTOe7DVOlBIID2xJDU7
-	NbUgtQhmCxMHp1QDY8COQI5TcW99qs7ksVhGyFzu/mzot1vlomHD5S28ld6XJdfWVln2h5/j
-	C8g98KXs4uo7rq8sd0jVTBDm5/k70/937BOzldnFPtLHTJXm6UjZr+bwLFk9+66Ra+RhyWse
-	nTrXfhQrRrb3nlGxb6v5r1HaqL45dqfG2+NlHdaTax8Xl2kV+jEosRRnJBpqMRcVJwIAnr2R
-	ShYDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrKIsWRmVeSWpSXmKPExsWyRsSkRFf+XnuwwbWpPBb/ptxgt7i8aw6b
+	xe3GFWwWy9/+Z3Ng8Xg58TebR9+WVYwenzfJBTBHcdmkpOZklqUW6dslcGW0L97AWvCbueLi
+	hFNMDYwLmbsYOTkkBEwktp5dzQZhi0lcuLceyObiEBJYyiix4/AiVpiimecXMIHYQgLTGSUO
+	zTCCKHrNKPHhxSd2kASvgJZEz9dVjF2MHBwsAqoSe/+4gITZgML7X9wAWyAqECaxcvoVFohy
+	QYkfk++B2SICFhJTltwCO4hZIFFizrkvYCOFBewkfh7cwQyxaz6jxL4jDYwgCU6gQdPfXGaF
+	aNCR2N86jQ3ClpfYvOYtWIOEwCp2iUfrv4I1sAgISHybfIgF5DgJAVmJTQegvpeUOLjiBssE
+	RrFZSG6ahWTsLCRjFzAyr2IUTS1ILihOSi8y1CtOzC0uzUvXS87P3cQIjKLT/5717mC8fcD6
+	EGMy0MqJzFKiyfnAKMwriTc0NjOyMDUxNTYytzQjTVhJnDfpYVKQkEB6YklqdmpqQWpRfFFp
+	TmrxIUYmDk6pBsbYhlm8fqtYA87/if95ZPkG4e/vpvQE7z6sHST+YW/s/og7RSxOlhV3JJwE
+	bCb2n5fosrayEeiKYbUylWVmf37j87nMFb5h6Q+M+Bc07jzctlfA7qbRLEH/Hh8tnSOqOQcT
+	hLznTPxZEzR7W9j6fQ+F5M1yuxaL5e51e7g4+MLkxB8N39TM3yuxFGckGmoxFxUnAgD9BJAr
+	uAIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpileLIzCtJLcpLzFFi42I5/e+xoK78vfZggyudrBb/ptxgt7i8aw6b
+	xe3GFWwWy9/+Z3Ng8Xg58TebR9+WVYwenzfJBTBHNTDaZKQmpqQWKaTmJeenZOal2yp5B8c7
+	x5uaGRjqGlpamCsp5CXmptoqufgE6Lpl5gCtU1IoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHr
+	GxIE12NkgAYS1jBmtC/ewFrwm7ni4oRTTA2MC5m7GDk5JARMJGaeX8AEYYtJXLi3ng3EFhKY
+	zihxaIZRFyMXkP2aUeLDi0/sIAleAS2Jnq+rGLsYOThYBFQl9v5xAQmzAYX3v7gB1isqECax
+	cvoVFohyQYkfk++B2SICFhJTltwC28sskCgx59wXsJHCAnYSPw/uYIbYNZ9RYt+RBkaQBCfQ
+	oOlvLrNCNOhI7G+dxgZhy0tsXvOWeQKjwCwkO2YhKZuFpGwBI/MqRtHUguSC4qT0XEO94sTc
+	4tK8dL3k/NxNjOAYfSa1g3Flg8UhRgEORiUe3sbI9mAh1sSy4srcQ4wSHMxKIryOh4FCvCmJ
+	lVWpRfnxRaU5qcWHGJOBITCRWUo0OR+YPvJK4g2NTcyMLI3MDS2MjM1JE1YS5z3Qah0oJJCe
+	WJKanZpakFoEs4WJg1OqgfH4xNWH/85omXvow8G325MCK5ef+ZMXsShM4Pzc6qs56q7/f/LE
+	BkaeUld5raboHqBW2/crWucNQ77BTMPou5fmhlxtWRzpv1J49gZ/1uWT7nDuXrS2xG5ieM0j
+	Lbn+Q3uSLc67HMr8UH1W96zpbPXS4pnvbDf0Zk/i5Jiw/DI/C19FwiRv3W1KLMUZiYZazEXF
+	iQDUYejRFQMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -55,29 +56,19 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 05/30/2014 12:27 AM, Charles Keepax wrote:
-> devm_input_allocate_device already sets the parent device to be that
-> passed to it, we also set this manually in arizona_extcon_probe. This
-> patch removes the redundant set from arizona_extcon_probe.
+> From: Nikesh Oswal <Nikesh.Oswal@wolfsonmicro.com>
 > 
+> Use extcon cable API instead of state API as it is much more
+> idiomatic.
+> 
+> Signed-off-by: Nikesh Oswal <Nikesh.Oswal@wolfsonmicro.com>
 > Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 > ---
->  drivers/extcon/extcon-arizona.c |    1 -
->  1 files changed, 0 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/extcon/extcon-arizona.c b/drivers/extcon/extcon-arizona.c
-> index cf90743..21ee055 100644
-> --- a/drivers/extcon/extcon-arizona.c
-> +++ b/drivers/extcon/extcon-arizona.c
-> @@ -1186,7 +1186,6 @@ static int arizona_extcon_probe(struct platform_device *pdev)
->  
->  	info->input->name = "Headset";
->  	info->input->phys = "arizona/extcon";
-> -	info->input->dev.parent = &pdev->dev;
->  
->  	if (pdata->num_micd_configs) {
->  		info->micd_modes = pdata->micd_configs;
-> 
-Applied.
+>  drivers/extcon/extcon-arizona.c |   15 ++++++---------
+>  1 files changed, 6 insertions(+), 9 deletions(-)
+
+Applied after modified patch title.
 
 Thanks,
-Chanwoo Choi
+Chanwoo Choi 
+
