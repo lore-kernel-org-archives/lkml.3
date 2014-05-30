@@ -1,56 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934497AbaE3VSg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 17:18:36 -0400
-Received: from one.firstfloor.org ([193.170.194.197]:37025 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933058AbaE3VSe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 17:18:34 -0400
-Date: Fri, 30 May 2014 23:18:31 +0200
+	id S964921AbaE3VXJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 17:23:09 -0400
+Received: from mga09.intel.com ([134.134.136.24]:42876 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751525AbaE3VXI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 May 2014 17:23:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,943,1392192000"; 
+   d="scan'208";a="549130494"
 From: Andi Kleen <andi@firstfloor.org>
-To: Christoph Lameter <cl@gentwo.org>
-Cc: David Rientjes <rientjes@google.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Li Zefan <lizefan@huawei.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Mel Gorman <mgorman@suse.de>,
-        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH] page_alloc: skip cpuset enforcement for lower zone
- allocations (v5)
-Message-ID: <20140530211831.GN25366@two.firstfloor.org>
-References: <20140523193706.GA22854@amt.cnet>
- <20140526185344.GA19976@amt.cnet>
- <53858A06.8080507@huawei.com>
- <20140528224324.GA1132@amt.cnet>
- <20140529184303.GA20571@amt.cnet>
- <alpine.DEB.2.02.1405291555120.9336@chino.kir.corp.google.com>
- <20140529232819.GA29803@amt.cnet>
- <alpine.DEB.2.02.1405291638300.9336@chino.kir.corp.google.com>
- <alpine.DEB.2.10.1405300849190.8240@gentwo.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Minchan Kim <minchan@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm <linux-mm@kvack.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Hugh Dickins <hughd@google.com>, Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [RFC 2/2] x86_64: expand kernel stack to 16K
+References: <1401260039-18189-1-git-send-email-minchan@kernel.org>
+	<1401260039-18189-2-git-send-email-minchan@kernel.org>
+	<CA+55aFxXdc22dirnE49UbQP_2s2vLQpjQFL+NptuyK7Xry6c=g@mail.gmail.com>
+Date: Fri, 30 May 2014 14:23:04 -0700
+In-Reply-To: <CA+55aFxXdc22dirnE49UbQP_2s2vLQpjQFL+NptuyK7Xry6c=g@mail.gmail.com>
+	(Linus Torvalds's message of "Wed, 28 May 2014 09:09:23 -0700")
+Message-ID: <8738frt0zr.fsf@tassilo.jf.intel.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.10.1405300849190.8240@gentwo.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 30, 2014 at 08:50:56AM -0500, Christoph Lameter wrote:
-> On Thu, 29 May 2014, David Rientjes wrote:
-> 
-> > When I said that my point about mempolicies needs more thought, I wasn't
-> > expecting that there would be no discussion -- at least _something_ that
-> > would say why we don't care about the mempolicy case.
-> 
-> Lets get Andi involved here too.
+Linus Torvalds <torvalds@linux-foundation.org> writes:
 
-I'm not fully sure about the use case for this. On the NUMA systems
-I'm aware of usually only node 0 has <4GB, so mem policy
-is pointless.
+> From a quick glance at the frame usage, some of it seems to be gcc
+> being rather bad at stack allocation, but lots of it is just nasty
+> spilling around the disgusting call-sites with tons or arguments. A
+> _lot_ of the stack slots are marked as "%sfp" (which is gcc'ese for
+> "spill frame pointer", afaik).
 
-But anyways it seems ok to me to ignore mempolicies. Mempolicies
-are primarily for user space, which doesn't use GFP_DMA32.
+> Avoiding some inlining, and using a single flag value rather than the
+> collection of "bool"s would probably help. But nothing really
+> trivially obvious stands out.
 
--ANdi
+One thing that may be worth playing around with gcc's
+--param large-stack-frame and --param large-stack-frame-growth
+
+This tells the inliner when to stop inlining when too much
+stack would be used.
+
+We use conserve stack I believe. So perhaps smaller values than 100
+and 400 would make sense to try.
+
+       -fconserve-stack
+           Attempt to minimize stack usage.  The compiler attempts to
+           use less stack space, even if that makes the program slower.
+           This option
+           implies setting the large-stack-frame parameter to 100 and
+           the large-stack-frame-growth parameter to 400.
+
+
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only
