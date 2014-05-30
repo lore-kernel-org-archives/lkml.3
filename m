@@ -1,264 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933244AbaE3PEG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 11:04:06 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:18893 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752856AbaE3PED (ORCPT
+	id S933308AbaE3PLD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 11:11:03 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:44082 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755388AbaE3PLA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 11:04:03 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Fri, 30 May 2014 07:58:59 -0700
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-tegra@vger.kernel.org>,
-        Mike Turquette <mturquette@linaro.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH RESEND] clk: flatten clk tree in debugfs
-Date: Fri, 30 May 2014 18:03:57 +0300
-Message-ID: <1401462237-14954-1-git-send-email-pdeschrijver@nvidia.com>
-X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
-X-NVConfidentiality: public
+	Fri, 30 May 2014 11:11:00 -0400
+Date: Fri, 30 May 2014 08:10:39 -0700
+From: tip-bot for Fenghua Yu <tipbot@zytor.com>
+Message-ID: <tip-6229ad278ca74acdbc8bd3a3d469322a3de91039@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        fenghua.yu@intel.com, tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        fenghua.yu@intel.com, tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <1401387164-43416-3-git-send-email-fenghua.yu@intel.com>
+References: <1401387164-43416-3-git-send-email-fenghua.yu@intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/xsave] x86/xsaves: Detect xsaves/xrstors feature
+Git-Commit-ID: 6229ad278ca74acdbc8bd3a3d469322a3de91039
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch flattens the clk tree in CCF debugfs. Instead of representing the
-clocks and their hierarchy as a directory structure under
-/sys/kernel/debug/clk, each clock gets a single directory directly under
-/sys/kernel/debug/clk. The orphans directory is replaced by a file called
-clk_orphan_summary.
+Commit-ID:  6229ad278ca74acdbc8bd3a3d469322a3de91039
+Gitweb:     http://git.kernel.org/tip/6229ad278ca74acdbc8bd3a3d469322a3de91039
+Author:     Fenghua Yu <fenghua.yu@intel.com>
+AuthorDate: Thu, 29 May 2014 11:12:30 -0700
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Thu, 29 May 2014 14:24:28 -0700
 
-Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
+x86/xsaves: Detect xsaves/xrstors feature
+
+Detect the xsaveopt, xsavec, xgetbv, and xsaves features in processor extended
+state enumberation sub-leaf (eax=0x0d, ecx=1):
+Bit 00: XSAVEOPT is available
+Bit 01: Supports XSAVEC and the compacted form of XRSTOR if set
+Bit 02: Supports XGETBV with ECX = 1 if set
+Bit 03: Supports XSAVES/XRSTORS and IA32_XSS if set
+
+The above features are defined in the new word 10 in cpu features.
+
+The IA32_XSS MSR (index DA0H) contains a state-component bitmap that specifies
+the state components that software has enabled xsaves and xrstors to manage.
+If the bit corresponding to a state component is clear in XCR0 | IA32_XSS,
+xsaves and xrstors will not operate on that state component, regardless of
+the value of the instruction mask.
+
+Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
+Link: http://lkml.kernel.org/r/1401387164-43416-3-git-send-email-fenghua.yu@intel.com
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
-Apologies for the noise. I missed linux-arm-kernel@lists.infradead.org in the
-first post.
+ arch/x86/include/asm/cpufeature.h     | 10 ++++++++--
+ arch/x86/include/uapi/asm/msr-index.h |  2 ++
+ arch/x86/kernel/cpu/common.c          |  9 +++++++++
+ arch/x86/kernel/cpu/scattered.c       |  1 -
+ 4 files changed, 19 insertions(+), 3 deletions(-)
 
----
- drivers/clk/clk.c |  114 ++++++++++++++++------------------------------------
- 1 files changed, 35 insertions(+), 79 deletions(-)
-
-diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index dff0373..453ff3b0 100644
---- a/drivers/clk/clk.c
-+++ b/drivers/clk/clk.c
-@@ -36,6 +36,17 @@ static HLIST_HEAD(clk_root_list);
- static HLIST_HEAD(clk_orphan_list);
- static LIST_HEAD(clk_notifier_list);
+diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
+index 2837b92..b82f951 100644
+--- a/arch/x86/include/asm/cpufeature.h
++++ b/arch/x86/include/asm/cpufeature.h
+@@ -8,7 +8,7 @@
+ #include <asm/required-features.h>
+ #endif
  
-+static struct hlist_head *all_lists[] = {
-+	&clk_root_list,
-+	&clk_orphan_list,
-+	NULL,
-+};
+-#define NCAPINTS	10	/* N 32-bit words worth of info */
++#define NCAPINTS	11	/* N 32-bit words worth of info */
+ #define NBUGINTS	1	/* N 32-bit bug flags */
+ 
+ /*
+@@ -180,7 +180,6 @@
+ #define X86_FEATURE_ARAT	( 7*32+ 1) /* Always Running APIC Timer */
+ #define X86_FEATURE_CPB		( 7*32+ 2) /* AMD Core Performance Boost */
+ #define X86_FEATURE_EPB		( 7*32+ 3) /* IA32_ENERGY_PERF_BIAS support */
+-#define X86_FEATURE_XSAVEOPT	( 7*32+ 4) /* Optimized Xsave */
+ #define X86_FEATURE_PLN		( 7*32+ 5) /* Intel Power Limit Notification */
+ #define X86_FEATURE_PTS		( 7*32+ 6) /* Intel Package Thermal Status */
+ #define X86_FEATURE_DTHERM	( 7*32+ 7) /* Digital Thermal Sensor */
+@@ -226,6 +225,12 @@
+ #define X86_FEATURE_AVX512ER	( 9*32+27) /* AVX-512 Exponential and Reciprocal */
+ #define X86_FEATURE_AVX512CD	( 9*32+28) /* AVX-512 Conflict Detection */
+ 
++/* Extended state features, CPUID level 0x0000000d:1 (eax), word 10 */
++#define X86_FEATURE_XSAVEOPT	(10*32+ 0) /* XSAVEOPT */
++#define X86_FEATURE_XSAVEC	(10*32+ 1) /* XSAVEC */
++#define X86_FEATURE_XGETBV1	(10*32+ 2) /* XGETBV with ECX = 1 */
++#define X86_FEATURE_XSAVES	(10*32+ 3) /* XSAVES/XRSTORS */
 +
-+static struct hlist_head *orphan_list[] = {
-+	&clk_orphan_list,
-+	NULL,
-+};
-+
- /***           locking             ***/
- static void clk_prepare_lock(void)
- {
-@@ -98,7 +109,6 @@ static void clk_enable_unlock(unsigned long flags)
- #include <linux/debugfs.h>
- 
- static struct dentry *rootdir;
--static struct dentry *orphandir;
- static int inited = 0;
- 
- static void clk_summary_show_one(struct seq_file *s, struct clk *c, int level)
-@@ -131,17 +141,16 @@ static void clk_summary_show_subtree(struct seq_file *s, struct clk *c,
- static int clk_summary_show(struct seq_file *s, void *data)
- {
- 	struct clk *c;
-+	struct hlist_head **lists = (struct hlist_head **)s->private;
- 
- 	seq_printf(s, "   clock                        enable_cnt  prepare_cnt  rate        accuracy\n");
- 	seq_printf(s, "---------------------------------------------------------------------------------\n");
- 
- 	clk_prepare_lock();
- 
--	hlist_for_each_entry(c, &clk_root_list, child_node)
--		clk_summary_show_subtree(s, c, 0);
--
--	hlist_for_each_entry(c, &clk_orphan_list, child_node)
--		clk_summary_show_subtree(s, c, 0);
-+	for (; *lists; lists++)
-+		hlist_for_each_entry(c, *lists, child_node)
-+			clk_summary_show_subtree(s, c, 0);
- 
- 	clk_prepare_unlock();
- 
-@@ -194,21 +203,19 @@ static int clk_dump(struct seq_file *s, void *data)
- {
- 	struct clk *c;
- 	bool first_node = true;
-+	struct hlist_head **lists = (struct hlist_head **)s->private;
- 
- 	seq_printf(s, "{");
- 
- 	clk_prepare_lock();
- 
--	hlist_for_each_entry(c, &clk_root_list, child_node) {
--		if (!first_node)
--			seq_printf(s, ",");
--		first_node = false;
--		clk_dump_subtree(s, c, 0);
--	}
--
--	hlist_for_each_entry(c, &clk_orphan_list, child_node) {
--		seq_printf(s, ",");
--		clk_dump_subtree(s, c, 0);
-+	for (; *lists; lists++) {
-+		hlist_for_each_entry(c, *lists, child_node) {
-+			if (!first_node)
-+				seq_puts(s, ",");
-+			first_node = false;
-+			clk_dump_subtree(s, c, 0);
-+		}
- 	}
- 
- 	clk_prepare_unlock();
-@@ -306,7 +313,7 @@ static int clk_debug_create_subtree(struct clk *clk, struct dentry *pdentry)
- 		goto out;
- 
- 	hlist_for_each_entry(child, &clk->children, child_node)
--		clk_debug_create_subtree(child, clk->dentry);
-+		clk_debug_create_subtree(child, pdentry);
- 
- 	ret = 0;
- out:
-@@ -326,31 +333,12 @@ out:
+ /*
+  * BUG word(s)
   */
- static int clk_debug_register(struct clk *clk)
- {
--	struct clk *parent;
--	struct dentry *pdentry;
- 	int ret = 0;
+@@ -328,6 +333,7 @@ extern const char * const x86_power_flags[32];
+ #define cpu_has_x2apic		boot_cpu_has(X86_FEATURE_X2APIC)
+ #define cpu_has_xsave		boot_cpu_has(X86_FEATURE_XSAVE)
+ #define cpu_has_xsaveopt	boot_cpu_has(X86_FEATURE_XSAVEOPT)
++#define cpu_has_xsaves		boot_cpu_has(X86_FEATURE_XSAVES)
+ #define cpu_has_osxsave		boot_cpu_has(X86_FEATURE_OSXSAVE)
+ #define cpu_has_hypervisor	boot_cpu_has(X86_FEATURE_HYPERVISOR)
+ #define cpu_has_pclmulqdq	boot_cpu_has(X86_FEATURE_PCLMULQDQ)
+diff --git a/arch/x86/include/uapi/asm/msr-index.h b/arch/x86/include/uapi/asm/msr-index.h
+index fcf2b3a..5cd1569 100644
+--- a/arch/x86/include/uapi/asm/msr-index.h
++++ b/arch/x86/include/uapi/asm/msr-index.h
+@@ -297,6 +297,8 @@
+ #define MSR_IA32_TSC_ADJUST             0x0000003b
+ #define MSR_IA32_BNDCFGS		0x00000d90
  
- 	if (!inited)
- 		goto out;
- 
--	parent = clk->parent;
--
--	/*
--	 * Check to see if a clk is a root clk.  Also check that it is
--	 * safe to add this clk to debugfs
--	 */
--	if (!parent)
--		if (clk->flags & CLK_IS_ROOT)
--			pdentry = rootdir;
--		else
--			pdentry = orphandir;
--	else
--		if (parent->dentry)
--			pdentry = parent->dentry;
--		else
--			goto out;
--
--	ret = clk_debug_create_subtree(clk, pdentry);
-+	ret = clk_debug_create_subtree(clk, rootdir);
- 
- out:
- 	return ret;
-@@ -372,39 +360,6 @@ static void clk_debug_unregister(struct clk *clk)
- }
- 
- /**
-- * clk_debug_reparent - reparent clk node in the debugfs clk tree
-- * @clk: the clk being reparented
-- * @new_parent: the new clk parent, may be NULL
-- *
-- * Rename clk entry in the debugfs clk tree if debugfs has been
-- * initialized.  Otherwise it bails out early since the debugfs clk tree
-- * will be created lazily by clk_debug_init as part of a late_initcall.
-- *
-- * Caller must hold prepare_lock.
-- */
--static void clk_debug_reparent(struct clk *clk, struct clk *new_parent)
--{
--	struct dentry *d;
--	struct dentry *new_parent_d;
--
--	if (!inited)
--		return;
--
--	if (new_parent)
--		new_parent_d = new_parent->dentry;
--	else
--		new_parent_d = orphandir;
--
--	d = debugfs_rename(clk->dentry->d_parent, clk->dentry,
--			new_parent_d, clk->name);
--	if (d)
--		clk->dentry = d;
--	else
--		pr_debug("%s: failed to rename debugfs entry for %s\n",
--				__func__, clk->name);
--}
--
--/**
-  * clk_debug_init - lazily create the debugfs clk tree visualization
-  *
-  * clks are often initialized very early during boot before memory can
-@@ -426,19 +381,24 @@ static int __init clk_debug_init(void)
- 	if (!rootdir)
- 		return -ENOMEM;
- 
--	d = debugfs_create_file("clk_summary", S_IRUGO, rootdir, NULL,
-+	d = debugfs_create_file("clk_summary", S_IRUGO, rootdir, &all_lists,
- 				&clk_summary_fops);
- 	if (!d)
- 		return -ENOMEM;
- 
--	d = debugfs_create_file("clk_dump", S_IRUGO, rootdir, NULL,
-+	d = debugfs_create_file("clk_dump", S_IRUGO, rootdir, &all_lists,
- 				&clk_dump_fops);
- 	if (!d)
- 		return -ENOMEM;
- 
--	orphandir = debugfs_create_dir("orphans", rootdir);
-+	d = debugfs_create_file("clk_orphan_summary", S_IRUGO, rootdir,
-+				&orphan_list, &clk_summary_fops);
-+	if (!d)
-+		return -ENOMEM;
- 
--	if (!orphandir)
-+	d = debugfs_create_file("clk_orphan_dump", S_IRUGO, rootdir,
-+				&orphan_list, &clk_dump_fops);
-+	if (!d)
- 		return -ENOMEM;
- 
- 	clk_prepare_lock();
-@@ -447,7 +407,7 @@ static int __init clk_debug_init(void)
- 		clk_debug_create_subtree(clk, rootdir);
- 
- 	hlist_for_each_entry(clk, &clk_orphan_list, child_node)
--		clk_debug_create_subtree(clk, orphandir);
-+		clk_debug_create_subtree(clk, rootdir);
- 
- 	inited = 1;
- 
-@@ -1277,9 +1237,6 @@ static void __clk_set_parent_after(struct clk *clk, struct clk *parent,
- 		clk_disable(old_parent);
- 		__clk_unprepare(old_parent);
++#define MSR_IA32_XSS			0x00000da0
++
+ #define FEATURE_CONTROL_LOCKED				(1<<0)
+ #define FEATURE_CONTROL_VMXON_ENABLED_INSIDE_SMX	(1<<1)
+ #define FEATURE_CONTROL_VMXON_ENABLED_OUTSIDE_SMX	(1<<2)
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index a135239..e7c4b97 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -632,6 +632,15 @@ void get_cpu_cap(struct cpuinfo_x86 *c)
+ 		c->x86_capability[9] = ebx;
  	}
--
--	/* update debugfs with new clk tree topology */
--	clk_debug_reparent(clk, parent);
- }
  
- static int __clk_set_parent(struct clk *clk, struct clk *parent, u8 p_index)
-@@ -1685,7 +1642,6 @@ out:
- void __clk_reparent(struct clk *clk, struct clk *new_parent)
- {
- 	clk_reparent(clk, new_parent);
--	clk_debug_reparent(clk, new_parent);
- 	__clk_recalc_accuracies(clk);
- 	__clk_recalc_rates(clk, POST_RATE_CHANGE);
- }
--- 
-1.7.7.rc0.72.g4b5ea.dirty
-
++	/* Extended state features: level 0x0000000d */
++	if (c->cpuid_level >= 0x0000000d) {
++		u32 eax, ebx, ecx, edx;
++
++		cpuid_count(0x0000000d, 1, &eax, &ebx, &ecx, &edx);
++
++		c->x86_capability[10] = eax;
++	}
++
+ 	/* AMD-defined flags: level 0x80000001 */
+ 	xlvl = cpuid_eax(0x80000000);
+ 	c->extended_cpuid_level = xlvl;
+diff --git a/arch/x86/kernel/cpu/scattered.c b/arch/x86/kernel/cpu/scattered.c
+index b6f794a..4a8013d 100644
+--- a/arch/x86/kernel/cpu/scattered.c
++++ b/arch/x86/kernel/cpu/scattered.c
+@@ -38,7 +38,6 @@ void init_scattered_cpuid_features(struct cpuinfo_x86 *c)
+ 		{ X86_FEATURE_PTS,		CR_EAX, 6, 0x00000006, 0 },
+ 		{ X86_FEATURE_APERFMPERF,	CR_ECX, 0, 0x00000006, 0 },
+ 		{ X86_FEATURE_EPB,		CR_ECX, 3, 0x00000006, 0 },
+-		{ X86_FEATURE_XSAVEOPT,		CR_EAX,	0, 0x0000000d, 1 },
+ 		{ X86_FEATURE_HW_PSTATE,	CR_EDX, 7, 0x80000007, 0 },
+ 		{ X86_FEATURE_CPB,		CR_EDX, 9, 0x80000007, 0 },
+ 		{ X86_FEATURE_PROC_FEEDBACK,	CR_EDX,11, 0x80000007, 0 },
