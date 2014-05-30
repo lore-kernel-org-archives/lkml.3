@@ -1,111 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934865AbaE3X22 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 19:28:28 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:63474 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934345AbaE3X21 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 19:28:27 -0400
-Content-Type: text/plain; charset="utf-8"
+	id S934901AbaE3X2r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 19:28:47 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:56477 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934345AbaE3X2q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 May 2014 19:28:46 -0400
+Date: Sat, 31 May 2014 00:28:42 +0100 (IST)
+From: Dave Airlie <airlied@linux.ie>
+X-X-Sender: airlied@skynet.skynet.ie
+To: torvalds@linux-foundation.org
+cc: linux-kernel@vger.kernel.org,
+        DRI mailing list <dri-devel@lists.freedesktop.org>
+Subject: [git pull] drm i915 and radeon fixes
+Message-ID: <alpine.DEB.2.00.1405310026540.29993@skynet.skynet.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Alex Elder <elder@linaro.org>, mporter@linaro.org, bcm@fixthebug.org
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <1401483188-5395-2-git-send-email-elder@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-References: <1401483188-5395-1-git-send-email-elder@linaro.org>
- <1401483188-5395-2-git-send-email-elder@linaro.org>
-Message-ID: <20140530232822.10062.26597@quantum>
-User-Agent: alot/0.3.5
-Subject: Re: [PATCH v4 1/7] clk: kona: allow nested ccu_write_enable() requests
-Date: Fri, 30 May 2014 16:28:22 -0700
+Content-Type: MULTIPART/MIXED; BOUNDARY="29444707-268084354-1401492522=:29993"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Alex Elder (2014-05-30 13:53:02)
-> Use a counter rather than a Boolean to track whether write access to
-> a CCU has been enabled or not.  This will allow more than one of
-> these requests to be nested.
-> 
-> Note that __ccu_write_enable() and __ccu_write_disable() calls all
-> come in pairs, and they are always surrounded immediately by calls
-> to ccu_lock() and ccu_unlock().
-> 
-> Signed-off-by: Alex Elder <elder@linaro.org>
-> ---
->  drivers/clk/bcm/clk-kona.c | 14 ++++----------
->  drivers/clk/bcm/clk-kona.h |  2 +-
->  2 files changed, 5 insertions(+), 11 deletions(-)
-> 
-> diff --git a/drivers/clk/bcm/clk-kona.c b/drivers/clk/bcm/clk-kona.c
-> index 95af2e6..ee8e988 100644
-> --- a/drivers/clk/bcm/clk-kona.c
-> +++ b/drivers/clk/bcm/clk-kona.c
-> @@ -170,13 +170,8 @@ static inline void ccu_unlock(struct ccu_data *ccu, unsigned long flags)
->   */
->  static inline void __ccu_write_enable(struct ccu_data *ccu)
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Per Documentation/CodingStyle, chapter 15, "the inline disease", it
-might be best to not inline these functions.
+--29444707-268084354-1401492522=:29993
+Content-Type: TEXT/PLAIN; charset=ISO-8859-15
+Content-Transfer-Encoding: 8BIT
 
->  {
-> -       if (ccu->write_enabled) {
-> -               pr_err("%s: access already enabled for %s\n", __func__,
-> -                       ccu->name);
-> -               return;
-> -       }
-> -       ccu->write_enabled = true;
-> -       __ccu_write(ccu, 0, CCU_ACCESS_PASSWORD | 1);
-> +       if (!ccu->write_enabled++)
-> +               __ccu_write(ccu, 0, CCU_ACCESS_PASSWORD | 1);
->  }
->  
->  static inline void __ccu_write_disable(struct ccu_data *ccu)
-> @@ -186,9 +181,8 @@ static inline void __ccu_write_disable(struct ccu_data *ccu)
->                         ccu->name);
->                 return;
->         }
-> -
-> -       __ccu_write(ccu, 0, CCU_ACCESS_PASSWORD);
-> -       ccu->write_enabled = false;
-> +       if (!--ccu->write_enabled)
-> +               __ccu_write(ccu, 0, CCU_ACCESS_PASSWORD);
 
-What happens if calls to __ccu_write_enable and __ccu_write_disable are
-unbalanced? It would be better to catch that case and throw a WARN:
+Hi Linus,
 
-	if (WARN_ON(ccu->write_enabled == 0))
-		return;
+Mostly quiet now,
 
-	if (--ccu->write_enabled > 0)
-		return;
+i915: fixing userspace visiblie issues, all stable marked
+radeon: one more pll fix, two crashers, one suspend/resume regression.
 
-	__ccu_write(ccu, 0, CCU_ACCESS_PASSWORD);
+Dave.
 
->  }
->  
->  /*
-> diff --git a/drivers/clk/bcm/clk-kona.h b/drivers/clk/bcm/clk-kona.h
-> index 2537b30..e9a8466 100644
-> --- a/drivers/clk/bcm/clk-kona.h
-> +++ b/drivers/clk/bcm/clk-kona.h
-> @@ -478,7 +478,7 @@ struct ccu_policy {
->  struct ccu_data {
->         void __iomem *base;     /* base of mapped address space */
->         spinlock_t lock;        /* serialization lock */
-> -       bool write_enabled;     /* write access is currently enabled */
-> +       u32 write_enabled;      /* write access enable count */
+The following changes since commit c7208164e66f63e3ec1759b98087849286410741:
 
-Why u32? An unsigned int will do just nicely here.
+  Linux 3.15-rc7 (2014-05-25 16:06:00 -0700)
 
-Regards,
-Mike
+are available in the git repository at:
 
->         struct ccu_policy policy;
->         struct list_head links; /* for ccu_list */
->         struct device_node *node;
-> -- 
-> 1.9.1
-> 
+  git://people.freedesktop.org/~airlied/linux drm-fixes
+
+for you to fetch changes up to 18ee37a485653aa635cfab9a3710e9bcf5fbca01:
+
+  drm/radeon: Resume fbcon last (2014-05-31 09:19:51 +1000)
+
+----------------------------------------------------------------
+Chris Wilson (3):
+      drm/i915: Fix dynamic allocation of physical handles
+      drm/i915: Only copy back the modified fields to userspace from execbuffer
+      drm/i915: Prevent negative relocation deltas from wrapping
+
+Christian König (3):
+      drm/radeon: lower the ref * post PLL maximum once more
+      drm/radeon: avoid crash if VM command submission isn't available
+      drm/radeon: only allocate necessary size for vm bo list
+
+Daniel Vetter (1):
+      drm/radeon: Resume fbcon last
+
+Dave Airlie (2):
+      Merge tag 'drm-intel-fixes-2014-05-27' of git://anongit.freedesktop.org/drm-intel into drm-fixes
+      Merge branch 'drm-fixes-3.15' of git://people.freedesktop.org/~deathsimple/linux into drm-fixes
+
+Marek Ol¨ák (1):
+      drm/radeon: don't allow RADEON_GEM_DOMAIN_CPU for command submission
+
+ drivers/gpu/drm/i915/i915_dma.c            |   1 -
+ drivers/gpu/drm/i915/i915_drv.h            |  30 +--
+ drivers/gpu/drm/i915/i915_gem.c            | 365 +++++++++++++----------------
+ drivers/gpu/drm/i915/i915_gem_evict.c      |   9 +-
+ drivers/gpu/drm/i915/i915_gem_execbuffer.c | 130 ++++++----
+ drivers/gpu/drm/i915/i915_gem_gtt.c        |   4 +-
+ drivers/gpu/drm/i915/intel_display.c       |  11 +-
+ drivers/gpu/drm/i915/intel_overlay.c       |  12 +-
+ drivers/gpu/drm/radeon/radeon_cs.c         |  21 +-
+ drivers/gpu/drm/radeon/radeon_device.c     |  11 +-
+ drivers/gpu/drm/radeon/radeon_display.c    |   2 +-
+ drivers/gpu/drm/radeon/radeon_vm.c         |   6 +-
+ 12 files changed, 298 insertions(+), 304 deletions(-)
+--29444707-268084354-1401492522=:29993--
