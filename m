@@ -1,119 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753504AbaE3Oqw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 10:46:52 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:59241 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932162AbaE3Oqv (ORCPT
+	id S964976AbaE3OrF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 10:47:05 -0400
+Received: from mail-ve0-f169.google.com ([209.85.128.169]:41984 "EHLO
+	mail-ve0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932162AbaE3OrB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 10:46:51 -0400
-Date: Fri, 30 May 2014 16:46:35 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Dietmar Eggemann <dietmar.eggemann@arm.com>
-Cc: Vincent Guittot <vincent.guittot@linaro.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        "efault@gmx.de" <efault@gmx.de>,
-        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>
-Subject: Re: [PATCH v2 04/11] sched: Allow all archs to set the power_orig
-Message-ID: <20140530144635.GE30445@twins.programming.kicks-ass.net>
-References: <1400860385-14555-1-git-send-email-vincent.guittot@linaro.org>
- <1400860385-14555-5-git-send-email-vincent.guittot@linaro.org>
- <53888FF0.4020403@arm.com>
+	Fri, 30 May 2014 10:47:01 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="FUBn+A0X9P+7IcSo"
-Content-Disposition: inline
-In-Reply-To: <53888FF0.4020403@arm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <CALk7dXr4c53boGMaM160ssoomToZvq8q5pUKkTxLtTVVpXGc1A@mail.gmail.com>
+References: <1401260672-28339-1-git-send-email-iamjoonsoo.kim@lge.com>
+	<1401260672-28339-4-git-send-email-iamjoonsoo.kim@lge.com>
+	<CALk7dXr4c53boGMaM160ssoomToZvq8q5pUKkTxLtTVVpXGc1A@mail.gmail.com>
+Date: Fri, 30 May 2014 23:46:59 +0900
+Message-ID: <CAAmzW4OKO0005+-MuTrENHnMZKkJjk9aOx2vBDNoXN8==TWTew@mail.gmail.com>
+Subject: Re: [PATCH v2 3/3] CMA: always treat free cma pages as non-free on
+ watermark checking
+From: Joonsoo Kim <js1304@gmail.com>
+To: Ritesh Harjani <ritesh.list@gmail.com>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Mel Gorman <mgorman@suse.de>, Laura Abbott <lauraa@codeaurora.org>,
+        Minchan Kim <minchan@kernel.org>,
+        Heesub Shin <heesub.shin@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Ritesh Harjani <ritesh.harjani@gmail.com>,
+        Nagachandra P <nagachandra@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2014-05-30 19:40 GMT+09:00 Ritesh Harjani <ritesh.list@gmail.com>:
+> Hi Joonsoo,
+>
+> I think you will be loosing the benefit of below patch with your changes.
+> I am no expert here so please bear with me. I tried explaining in the
+> inline comments, let me know if I am wrong.
+>
+> commit 026b08147923142e925a7d0aaa39038055ae0156
+> Author: Tomasz Stanislawski <t.stanislaws@samsung.com>
+> Date:   Wed Jun 12 14:05:02 2013 -0700
 
---FUBn+A0X9P+7IcSo
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hello, Ritesh.
 
-On Fri, May 30, 2014 at 03:04:32PM +0100, Dietmar Eggemann wrote:
-> On 23/05/14 16:52, Vincent Guittot wrote:
-> > power_orig is only changed for system with a SMT sched_domain level in =
-order to
-> > reflect the lower capacity of CPUs. Heterogenous system also have to re=
-flect an
-> > original capacity that is different from the default value.
-> >=20
-> > Create a more generic function arch_scale_cpu_power that can be also us=
-ed by
-> > non SMT platform to set power_orig.
-> >=20
-> > The weak behavior of arch_scale_cpu_power is the previous SMT one in or=
-der to
-> > keep backward compatibility in the use of power_orig.
-> >=20
-> > Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
->=20
-> As you know, besides uarch scaled cpu power for HMP, freq scaled cpu
-> power is important for energy-aware scheduling to achieve freq scale
-> invariance for task load.
->=20
-> I know that your patch-set is not about introducing freq scaled cpu
-> power, but we were discussing how this can be achieved w/ your patch-set
-> in place, so maybe you can share your opinion regarding the easiest way
-> to achieve freq scale invariance with us?
->=20
-> (1) We assume that the current way (update_cpu_power() calls
-> arch_scale_freq_power() to get the avg power(freq) over the time period
-> since the last call to arch_scale_freq_power()) is suitable
-> for us. Do you have another opinion here?
->=20
-> (2) Is the current layout of update_cpu_power() adequate for this, where
-> we scale power_orig related to freq and then related to rt/(irq):
->=20
->   power_orig =3D scale_cpu(SCHED_POWER_SCALE)
->   power =3D scale_rt(scale_freq(power_orig))
->=20
-> or do we need an extra power_freq data member on the rq and do:
->=20
->   power_orig =3D scale_cpu(SCHED_POWER_SCALE)
->   power_freq =3D scale_freq(power_orig))
->   power =3D scale_rt(power_orig))
->=20
-> In other words, do we consider rt/(irq) pressure when calculating freq
-> scale invariant task load or not?
+Thanks for notifying that.
 
-I don't think you should. The work done depends on the frequency, not on
-other tasks present on the cpu. The same is true for an over-utilized
-cpu, a task will run less than the desired amount of time, this is no
-different from a RT/irq preempting the task and taking its time.
+>
+> On Wed, May 28, 2014 at 12:34 PM, Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
+>> commit d95ea5d1('cma: fix watermark checking') introduces ALLOC_CMA flag
+>> for alloc flag and treats free cma pages as free pages if this flag is
+>> passed to watermark checking. Intention of that patch is that movable page
+>> allocation can be be handled from cma reserved region without starting
+>> kswapd. Now, previous patch changes the behaviour of allocator that
+>> movable allocation uses the page on cma reserved region aggressively,
+>> so this watermark hack isn't needed anymore. Therefore remove it.
+>>
+>> Acked-by: Michal Nazarewicz <mina86@mina86.com>
+>> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+>>
+>> diff --git a/mm/compaction.c b/mm/compaction.c
+>> index 627dc2e..36e2fcd 100644
+>> --- a/mm/compaction.c
+>> +++ b/mm/compaction.c
+>> @@ -1117,10 +1117,6 @@ unsigned long try_to_compact_pages(struct zonelist *zonelist,
+>>
+>>         count_compact_event(COMPACTSTALL);
+>>
+>> -#ifdef CONFIG_CMA
+>> -       if (allocflags_to_migratetype(gfp_mask) == MIGRATE_MOVABLE)
+>> -               alloc_flags |= ALLOC_CMA;
+>> -#endif
+>>         /* Compact each zone in the list */
+>>         for_each_zone_zonelist_nodemask(zone, z, zonelist, high_zoneidx,
+>>                                                                 nodemask) {
+>> diff --git a/mm/internal.h b/mm/internal.h
+>> index 07b6736..a121762 100644
+>> --- a/mm/internal.h
+>> +++ b/mm/internal.h
+>> @@ -384,7 +384,6 @@ unsigned long reclaim_clean_pages_from_list(struct zone *zone,
+>>  #define ALLOC_HARDER           0x10 /* try to alloc harder */
+>>  #define ALLOC_HIGH             0x20 /* __GFP_HIGH set */
+>>  #define ALLOC_CPUSET           0x40 /* check for correct cpuset */
+>> -#define ALLOC_CMA              0x80 /* allow allocations from CMA areas */
+>> -#define ALLOC_FAIR             0x100 /* fair zone allocation */
+>> +#define ALLOC_FAIR             0x80 /* fair zone allocation */
+>>
+>>  #endif /* __MM_INTERNAL_H */
+>> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+>> index ca678b6..83a8021 100644
+>> --- a/mm/page_alloc.c
+>> +++ b/mm/page_alloc.c
+>> @@ -1764,20 +1764,22 @@ static bool __zone_watermark_ok(struct zone *z, int order, unsigned long mark,
+>>         long min = mark;
+>>         long lowmem_reserve = z->lowmem_reserve[classzone_idx];
+>>         int o;
+>> -       long free_cma = 0;
+>>
+>>         free_pages -= (1 << order) - 1;
+>>         if (alloc_flags & ALLOC_HIGH)
+>>                 min -= min / 2;
+>>         if (alloc_flags & ALLOC_HARDER)
+>>                 min -= min / 4;
+>> -#ifdef CONFIG_CMA
+>> -       /* If allocation can't use CMA areas don't use free CMA pages */
+>> -       if (!(alloc_flags & ALLOC_CMA))
+>> -               free_cma = zone_page_state(z, NR_FREE_CMA_PAGES);
+>> -#endif
+>> +       /*
+>> +        * We don't want to regard the pages on CMA region as free
+>> +        * on watermark checking, since they cannot be used for
+>> +        * unmovable/reclaimable allocation and they can suddenly
+>> +        * vanish through CMA allocation
+>> +        */
+>> +       if (IS_ENABLED(CONFIG_CMA) && z->managed_cma_pages)
+>> +               free_pages -= zone_page_state(z, NR_FREE_CMA_PAGES);
+>
+> make this free_cma instead of free_pages.
+>
+>>
+>> -       if (free_pages - free_cma <= min + lowmem_reserve)
+>> +       if (free_pages <= min + lowmem_reserve)
+> free_pages - free_cma <= min + lowmem_reserve
+>
+> Because in for loop you subtract nr_free which includes the CMA pages.
+> So if you have subtracted NR_FREE_CMA_PAGES
+> from free_pages above then you will be subtracting cma pages again in
+> nr_free (below in for loop).
 
---FUBn+A0X9P+7IcSo
-Content-Type: application/pgp-signature
+Yes, I understand the problem you mentioned.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+I think that this is complicated issue.
 
-iQIcBAEBAgAGBQJTiJnHAAoJEHZH4aRLwOS6fGMP/34qNHFYeKs5A/VRq6Syo7KZ
-FyUJHXPO6PjROwAiLzTTQLJOXXy61cUjr0jjogpqqEWpHcGmijDFMeA0bI4Z/mWQ
-zib6QLxOabp14lChPrvBpQTK/sKdwiLvQcGMfw1n1paYs1ikfgu1FP7C6nE5L7dB
-xnN7WvctvfHDLR6ynityZp4rwi7nHVni2L83PFORPo+MEEIdAxeSjm7B3lt9he8t
-hMAytyM7ux/KXAvwbAfRYCxo+ewaxUi2tNkSalhXsscIUyrIiYCPjJT0FxRXpKV+
-ZKjLIZlO9y5gU50YlCn1u6U3ZriST3kpo1AIdS2NV5O72/YWBXYmCxFQQAfxi9FV
-KM3HXhPiD3q/jDc4ixfbyspyXnFItXn4CGeHGNZixwG9+9dXbM3KCLUM2/g/WOcH
-OQexPTQRrS2XKyeDf1rHhEfJkzwn9eqMgsf+Lw9PVeDsrWYS20SsljmW/PgvcbS0
-P0yljycKihrAUJWmddh+5etBuVftN+JQzDrhD56aie20KdoloGiqtHvXH7maHr2X
-hC6low1Co1hn02bQ9/6GEkVmLHjMBJICP+kUtzVGCONBeVzPBJWOks46GxoUr65z
-mEFGhQdypJ3WD2IhUNtIQFrHciBK1vplhpBfGXbQp+WBcCQ630l2iwBxcAbkLCZv
-0mxUAINyhMEux5PP5uF/
-=7c+Z
------END PGP SIGNATURE-----
+Comit '026b081' you mentioned makes watermark_ok() loose for high order
+allocation compared to kernel that CMA isn't enabled, since free_pages includes
+free_cma pages and most of high order allocation except THP would be
+non-movable allocation. This non-movable allocation can't use cma pages,
+so we shouldn't include free_cma pages.
 
---FUBn+A0X9P+7IcSo--
+If most of free cma pages are 0 order, that commit works correctly. We subtract
+nr of free cma pages at the first loop, so there is no problem. But,
+if the system
+have some free high-order cma pages, watermark checking allow high-order
+allocation more easily.
+
+I think that loosing the watermark check is right solution so will takes your
+comment on v2. But I want to know other developer's opinion.
+If needed, I can implement to track free_area[o].nr_cma_free and use it for
+precise freepage calculation in watermark check.
+
+Thanks.
