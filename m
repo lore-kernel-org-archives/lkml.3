@@ -1,79 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755439AbaE3J2d (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 05:28:33 -0400
-Received: from mail-ig0-f169.google.com ([209.85.213.169]:60636 "EHLO
-	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755156AbaE3J2b (ORCPT
+	id S1755506AbaE3J3z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 05:29:55 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:35732 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754750AbaE3J3x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 05:28:31 -0400
-Date: Fri, 30 May 2014 10:28:25 +0100
+	Fri, 30 May 2014 05:29:53 -0400
+Date: Fri, 30 May 2014 10:29:47 +0100
 From: Lee Jones <lee.jones@linaro.org>
-To: "Zhu, Lejun" <lejun.zhu@linux.intel.com>
-Cc: broonie@kernel.org, sameo@linux.intel.com, linux-kernel@vger.kernel.org,
-        jacob.jun.pan@linux.intel.com, bin.yang@intel.com
-Subject: Re: [PATCH v4 1/3] mfd: intel_soc_pmic: Core driver
-Message-ID: <20140530092825.GG2619@lee--X1>
-References: <1401347968-24410-1-git-send-email-lejun.zhu@linux.intel.com>
- <1401347968-24410-2-git-send-email-lejun.zhu@linux.intel.com>
- <20140529114052.GI1954@lee--X1>
- <53880FF5.8070500@linux.intel.com>
- <20140530080848.GB2619@lee--X1>
- <5388497C.3000106@linux.intel.com>
+To: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
+Cc: sameo@linux.intel.com, ckeepax@opensource.wolfsonmicro.com,
+        broonie@linaro.org, patches@opensource.wolfsonmicro.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mfd: wm5102: Correct default for LDO Control 2 register
+Message-ID: <20140530092947.GH2619@lee--X1>
+References: <20140529161115.GA8799@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <5388497C.3000106@linux.intel.com>
+In-Reply-To: <20140529161115.GA8799@opensource.wolfsonmicro.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >>>> +static const struct i2c_device_id intel_soc_pmic_i2c_id[] = {
-> >>>> +	{"INT33FD:00", (kernel_ulong_t)&intel_soc_pmic_config_crc},
-> >>>> +	{ }
-> >>>> +};
-> >>>> +MODULE_DEVICE_TABLE(i2c, intel_soc_pmic_i2c_id);
-> >>>> +
-> >>>> +static struct acpi_device_id intel_soc_pmic_acpi_match[] = {
-> >>>> +	{"INT33FD", (kernel_ulong_t)&intel_soc_pmic_config_crc},
-> >>>> +	{ },
-> >>>> +};
-> >>>> +MODULE_DEVICE_TABLE(acpi, intel_soc_pmic_acpi_match);
-> >>>
-> >>> Does ACPI have a match function to extact it's .driver_data attribute?
-> >>>
-> >>> If so, are you using it here? If not, why not?
-> >>>
-> >>
-> >> The ACPI table is used in i2c_device_match(), and the i2c table is used
-> >> in i2c_device_probe(), so the id in the i2c table is actually fed to
-> >> intel_soc_pmic_probe(). But I only found out now that having the i2c
-> >> table alone is enough, because i2c_device_match will fallback to the i2c
-> >> table if there's no ACPI table. So to keep it simple, I'll remove the
-> >> ACPI table completely.
-> > 
-> > Actually, can you do it the other way round?  Minimise the i2c table
-> > and populate the ACPI one.  I'm just about to work on a separate
-> > patch-set which deprecates the use of the i2c table on DT and/or ACPI
-> > only registered devices.
+> Update the default value to match the patch.
 > 
-> Current i2c_device_probe will only feed driver_data from i2c_device_id
-> table to intel_soc_pmic_probe(), because it uses i2c_match_id(). So if I
-> remove "&intel_soc_pmic_config_crc" from the i2c table, I will get NULL
-> from id->driver_data until your new patch fixes it.
+> Signed-off-by: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
+> ---
+>  drivers/mfd/wm5102-tables.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 
-Right, which is why I asked if ACPI has a match function - I just
-looked and it does.  So what you need to do is supply a very simple
-i2c_device_id struct (just until my patch lands, then there'll be no
-reason to supply one at all) and use  acpi_match_device() instead of
-using id->driver_data.
+Applied, thanks.
 
-> So for the driver to work for the i2c code both today and in the future,
-> I think it's best to keep the driver_data populated in both tables. What
-> do you think?
-
+> diff --git a/drivers/mfd/wm5102-tables.c b/drivers/mfd/wm5102-tables.c
+> index 9b9923c..02c44fd 100644
+> --- a/drivers/mfd/wm5102-tables.c
+> +++ b/drivers/mfd/wm5102-tables.c
+> @@ -333,7 +333,7 @@ static const struct reg_default wm5102_reg_default[] = {
+>  	{ 0x000001AA, 0x0004 },   /* R426   - FLL2 GPIO Clock */ 
+>  	{ 0x00000200, 0x0006 },   /* R512   - Mic Charge Pump 1 */ 
+>  	{ 0x00000210, 0x00D4 },   /* R528   - LDO1 Control 1 */ 
+> -	{ 0x00000212, 0x0001 },   /* R530   - LDO1 Control 2 */
+> +	{ 0x00000212, 0x0000 },   /* R530   - LDO1 Control 2 */
+>  	{ 0x00000213, 0x0344 },   /* R531   - LDO2 Control 1 */ 
+>  	{ 0x00000218, 0x01A6 },   /* R536   - Mic Bias Ctrl 1 */ 
+>  	{ 0x00000219, 0x01A6 },   /* R537   - Mic Bias Ctrl 2 */ 
 
 -- 
 Lee Jones
