@@ -1,250 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932134AbaE3CMP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 22:12:15 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:55740 "EHLO
-	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754200AbaE3CMM (ORCPT
+	id S1754317AbaE3CMN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 22:12:13 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:14844 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754160AbaE3CML (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 22:12:12 -0400
-X-Original-SENDERIP: 10.177.220.169
-X-Original-MAILFROM: minchan@kernel.org
-Date: Fri, 30 May 2014 11:12:47 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm <linux-mm@kvack.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Hugh Dickins <hughd@google.com>, Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [RFC 2/2] x86_64: expand kernel stack to 16K
-Message-ID: <20140530021247.GR10092@bbox>
-References: <1401260039-18189-1-git-send-email-minchan@kernel.org>
- <1401260039-18189-2-git-send-email-minchan@kernel.org>
- <CA+55aFxXdc22dirnE49UbQP_2s2vLQpjQFL+NptuyK7Xry6c=g@mail.gmail.com>
- <20140528223142.GO8554@dastard>
- <CA+55aFyRk6_v6COPGVvu6hvt=i2A8-dPcs1X3Ydn1g24AxbPkg@mail.gmail.com>
- <20140529013007.GF6677@dastard>
- <20140529015830.GG6677@dastard>
- <20140529233638.GJ10092@bbox>
- <20140530001558.GB14410@dastard>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140530001558.GB14410@dastard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 29 May 2014 22:12:11 -0400
+X-AuditID: cbfee68d-b7fd46d000005f36-2e-5387e8f9bc3e
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Inki Dae'" <inki.dae@samsung.com>, dri-devel@lists.freedesktop.org
+Cc: "'Seung-Woo Kim'" <sw0312.kim@samsung.com>,
+        "'Dave Airlie'" <airlied@redhat.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, kernel@stlinux.com,
+        "'Tomasz Figa'" <tomasz.figa@gmail.com>,
+        "'Lee Jones'" <lee.jones@linaro.org>,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+Subject: [PATCH] drm/exynos: remove unnecessary exynos_hdmi.h file
+Date: Fri, 30 May 2014 11:12:08 +0900
+Message-id: <000a01cf7bac$8f805f60$ae811e20$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac97rI9cJVgyXR9gRCaMD23ADLppmg==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrLIsWRmVeSWpSXmKPExsVy+t8zY92fL9qDDdr+CVtcvbWAyeLK1/ds
+	FpPuT2CxuLzwEqvFhxvHWC3ufz3KaLHp8TVWi8u75rBZzDi/j8lixuSXbBardv1hdOD22Dnr
+	LrvHnWt72Dzudx9n8ti8pN7j/b6rbB59W1Yxeux+9ovR4/MmuQCOKC6blNSczLLUIn27BK6M
+	639/sBYs4Kr48nITawPjYY4uRk4OCQETifb9c5ghbDGJC/fWs3UxcnEICSxjlDjcP4sRpujD
+	jitQiemMEs2XjzJDOL8ZJe59Pc0CUsUmoCbx5cthdhBbRMBN4vXj/ywgRcwCh5gkXq/pBEsI
+	CzhJbDgPsY9FQFVi5tIvYM28ArYSUycvYIawBSV+TL4HFmcW0JLYvK2JFcKWl9i85i1QDQfQ
+	SeoSj/7qQuzSkzh3ZR8zRImIxL4X7xhB9koItHJIfGmYwg6xS0Di2+RDLBC9shKbDkC9LClx
+	cMUNlgmMYrOQbJ6FZPMsJJtnIVmxgJFlFaNoakFyQXFSepGhXnFibnFpXrpecn7uJkZIVPfu
+	YLx9wPoQYzLQ+onMUqLJ+cCkkFcSb2hsZmRhamJqbGRuaUaasJI4b9LDpCAhgfTEktTs1NSC
+	1KL4otKc1OJDjEwcnFINjE3i4V8ENh1wvBhzZNrCM9s+2V8u1hI3O25vGph8peLhhZeTEw7N
+	4pGVZp7pJvrB4Z9ZNVtig4nNcc50jgcTioO3/dnkpmlzwOtA91aLrEr9mVYTr7qKv97qlCLC
+	G+z8ZP9j5vdNIVtey9TJ29TmNclHcP5J2SypuSii6sTfuOyVXzbNMb36SYmlOCPRUIu5qDgR
+	AICNg8EAAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFKsWRmVeSWpSXmKPExsVy+t9jQd2fL9qDDZZs5Le4emsBk8WVr+/Z
+	LCbdn8BicXnhJVaLDzeOsVrc/3qU0WLT42usFpd3zWGzmHF+H5PFjMkv2SxW7frD6MDtsXPW
+	XXaPO9f2sHnc7z7O5LF5Sb3H+31X2Tz6tqxi9Nj97Bejx+dNcgEcUQ2MNhmpiSmpRQqpecn5
+	KZl56bZK3sHxzvGmZgaGuoaWFuZKCnmJuam2Si4+AbpumTlAlyoplCXmlAKFAhKLi5X07TBN
+	CA1x07WAaYzQ9Q0JgusxMkADCesYM67//cFasICr4svLTawNjIc5uhg5OSQETCQ+7LjCBmGL
+	SVy4tx7I5uIQEpjOKNF8+SgzhPObUeLe19MsIFVsAmoSX74cZgexRQTcJF4//s8CUsQscIhJ
+	4vWaTrCEsICTxIbzc5hBbBYBVYmZS7+ANfMK2EpMnbyAGcIWlPgx+R5YnFlAS2LztiZWCFte
+	YvOat0A1HEAnqUs8+qsLsUtP4tyVfcwQJSIS+168Y5zAKDALyaRZSCbNQjJpFpKWBYwsqxhF
+	UwuSC4qT0nON9IoTc4tL89L1kvNzNzGCU8Yz6R2MqxosDjEKcDAq8fBOSG8PFmJNLCuuzD3E
+	KMHBrCTCm/UAKMSbklhZlVqUH19UmpNafIgxGejRicxSosn5wHSWVxJvaGxiZmRpZGZhZGJu
+	TpqwkjjvwVbrQCGB9MSS1OzU1ILUIpgtTBycUg2MFl4PDmXJ893hvN7HeWHOkZSnyq7XJD/F
+	3bqw5WCnvpbAHsFdvbfi11WnHV+2Oe1CYNgGZs6Jbo0N3D+0d35RE/q7LUxGK+/X1DJ288eZ
+	FlaKD8w3Jx1Uu7+E44h0e/3tVZ7y/q9rygqOvLS21BX7Xxrtt3FHnr7jj8S+5wFKq4VerEja
+	ExahxFKckWioxVxUnAgARVqCAV0DAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 30, 2014 at 10:15:58AM +1000, Dave Chinner wrote:
-> On Fri, May 30, 2014 at 08:36:38AM +0900, Minchan Kim wrote:
-> > Hello Dave,
-> > 
-> > On Thu, May 29, 2014 at 11:58:30AM +1000, Dave Chinner wrote:
-> > > On Thu, May 29, 2014 at 11:30:07AM +1000, Dave Chinner wrote:
-> > > > On Wed, May 28, 2014 at 03:41:11PM -0700, Linus Torvalds wrote:
-> > > > commit a237c1c5bc5dc5c76a21be922dca4826f3eca8ca
-> > > > Author: Jens Axboe <jaxboe@fusionio.com>
-> > > > Date:   Sat Apr 16 13:27:55 2011 +0200
-> > > > 
-> > > >     block: let io_schedule() flush the plug inline
-> > > >     
-> > > >     Linus correctly observes that the most important dispatch cases
-> > > >     are now done from kblockd, this isn't ideal for latency reasons.
-> > > >     The original reason for switching dispatches out-of-line was to
-> > > >     avoid too deep a stack, so by _only_ letting the "accidental"
-> > > >     flush directly in schedule() be guarded by offload to kblockd,
-> > > >     we should be able to get the best of both worlds.
-> > > >     
-> > > >     So add a blk_schedule_flush_plug() that offloads to kblockd,
-> > > >     and only use that from the schedule() path.
-> > > >     
-> > > >     Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
-> > > > 
-> > > > And now we have too deep a stack due to unplugging from io_schedule()...
-> > > 
-> > > So, if we make io_schedule() push the plug list off to the kblockd
-> > > like is done for schedule()....
-> ....
-> > I did below hacky test to apply your idea and the result is overflow again.
-> > So, again it would second stack expansion. Otherwise, we should prevent
-> > swapout in direct reclaim.
-> > 
-> > diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> > index f5c6635b806c..95f169e85dbe 100644
-> > --- a/kernel/sched/core.c
-> > +++ b/kernel/sched/core.c
-> > @@ -4241,10 +4241,13 @@ EXPORT_SYMBOL_GPL(yield_to);
-> >  void __sched io_schedule(void)
-> >  {
-> >  	struct rq *rq = raw_rq();
-> > +	struct blk_plug *plug = current->plug;
-> >  
-> >  	delayacct_blkio_start();
-> >  	atomic_inc(&rq->nr_iowait);
-> > -	blk_flush_plug(current);
-> > +	if (plug)
-> > +		blk_flush_plug_list(plug, true);
-> > +
-> >  	current->in_iowait = 1;
-> >  	schedule();
-> >  	current->in_iowait = 0;
-> 
-> .....
-> 
-> >         Depth    Size   Location    (46 entries)
-> >
-> >   0)     7200       8   _raw_spin_lock_irqsave+0x51/0x60
-> >   1)     7192     296   get_page_from_freelist+0x886/0x920
-> >   2)     6896     352   __alloc_pages_nodemask+0x5e1/0xb20
-> >   3)     6544       8   alloc_pages_current+0x10f/0x1f0
-> >   4)     6536     168   new_slab+0x2c5/0x370
-> >   5)     6368       8   __slab_alloc+0x3a9/0x501
-> >   6)     6360      80   __kmalloc+0x1cb/0x200
-> >   7)     6280     376   vring_add_indirect+0x36/0x200
-> >   8)     5904     144   virtqueue_add_sgs+0x2e2/0x320
-> >   9)     5760     288   __virtblk_add_req+0xda/0x1b0
-> >  10)     5472      96   virtio_queue_rq+0xd3/0x1d0
-> >  11)     5376     128   __blk_mq_run_hw_queue+0x1ef/0x440
-> >  12)     5248      16   blk_mq_run_hw_queue+0x35/0x40
-> >  13)     5232      96   blk_mq_insert_requests+0xdb/0x160
-> >  14)     5136     112   blk_mq_flush_plug_list+0x12b/0x140
-> >  15)     5024     112   blk_flush_plug_list+0xc7/0x220
-> >  16)     4912     128   blk_mq_make_request+0x42a/0x600
-> >  17)     4784      48   generic_make_request+0xc0/0x100
-> >  18)     4736     112   submit_bio+0x86/0x160
-> >  19)     4624     160   __swap_writepage+0x198/0x230
-> >  20)     4464      32   swap_writepage+0x42/0x90
-> >  21)     4432     320   shrink_page_list+0x676/0xa80
-> >  22)     4112     208   shrink_inactive_list+0x262/0x4e0
-> >  23)     3904     304   shrink_lruvec+0x3e1/0x6a0
-> 
-> The device is supposed to be plugged here in shrink_lruvec().
-> 
-> Oh, a plug can only hold 16 individual bios, and then it does a
-> synchronous flush. Hmmm - perhaps that should also defer the flush
-> to the kblockd, because if we are overrunning a plug then we've
-> already surrendered IO dispatch latency....
-> 
-> So, in blk_mq_make_request(), can you do:
-> 
-> 			if (list_empty(&plug->mq_list))
-> 				trace_block_plug(q);
-> 			else if (request_count >= BLK_MAX_REQUEST_COUNT) {
-> -				blk_flush_plug_list(plug, false);
-> +				blk_flush_plug_list(plug, true);
-> 				trace_block_plug(q);
-> 			}
-> 			list_add_tail(&rq->queuelist, &plug->mq_list);
-> 
-> To see if that defers all the swap IO to kblockd?
-> 
+The exynos_hdmi.h has been used for the dedicated i2c drivers
+that were already removed. Thus, the unnecessary exynos_hdmi.h
+should be removed.
 
-Interim report,
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+---
+ drivers/gpu/drm/exynos/exynos_hdmi.h |   23 -----------------------
+ 1 file changed, 23 deletions(-)
+ delete mode 100644 drivers/gpu/drm/exynos/exynos_hdmi.h
 
-I applied below(we need to fix io_schedule_timeout due to mempool_alloc)
-
-diff --git a/block/blk-core.c b/block/blk-core.c
-index bfe16d5af9f9..0c81aacec75b 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -1585,7 +1585,7 @@ get_rq:
- 			trace_block_plug(q);
- 		else {
- 			if (request_count >= BLK_MAX_REQUEST_COUNT) {
--				blk_flush_plug_list(plug, false);
-+				blk_flush_plug_list(plug, true);
- 				trace_block_plug(q);
- 			}
- 		}
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index f5c6635b806c..ebca9e1f200f 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -4244,7 +4244,7 @@ void __sched io_schedule(void)
- 
- 	delayacct_blkio_start();
- 	atomic_inc(&rq->nr_iowait);
--	blk_flush_plug(current);
-+	blk_schedule_flush_plug(current);
- 	current->in_iowait = 1;
- 	schedule();
- 	current->in_iowait = 0;
-@@ -4260,7 +4260,7 @@ long __sched io_schedule_timeout(long timeout)
- 
- 	delayacct_blkio_start();
- 	atomic_inc(&rq->nr_iowait);
--	blk_flush_plug(current);
-+	blk_schedule_flush_plug(current);
- 	current->in_iowait = 1;
- 	ret = schedule_timeout(timeout);
- 	current->in_iowait = 0;
-
-And result is as follows, It reduce about 800-byte compared to
-my first report but still stack usage seems to be high.
-Really needs diet of VM functions.
-
-        -----    ----   --------
-  0)     6896      16   lookup_address+0x28/0x30
-  1)     6880      16   _lookup_address_cpa.isra.3+0x3b/0x40
-  2)     6864     304   __change_page_attr_set_clr+0xe0/0xb50
-  3)     6560     112   kernel_map_pages+0x6c/0x120
-  4)     6448     256   get_page_from_freelist+0x489/0x920
-  5)     6192     352   __alloc_pages_nodemask+0x5e1/0xb20
-  6)     5840       8   alloc_pages_current+0x10f/0x1f0
-  7)     5832     168   new_slab+0x35d/0x370
-  8)     5664       8   __slab_alloc+0x3a9/0x501
-  9)     5656      80   kmem_cache_alloc+0x1ac/0x1c0
- 10)     5576     296   mempool_alloc_slab+0x15/0x20
- 11)     5280     128   mempool_alloc+0x5e/0x170
- 12)     5152      96   bio_alloc_bioset+0x10b/0x1d0
- 13)     5056      48   get_swap_bio+0x30/0x90
- 14)     5008     160   __swap_writepage+0x150/0x230
- 15)     4848      32   swap_writepage+0x42/0x90
- 16)     4816     320   shrink_page_list+0x676/0xa80
- 17)     4496     208   shrink_inactive_list+0x262/0x4e0
- 18)     4288     304   shrink_lruvec+0x3e1/0x6a0
- 19)     3984      80   shrink_zone+0x3f/0x110
- 20)     3904     128   do_try_to_free_pages+0x156/0x4c0
- 21)     3776     208   try_to_free_pages+0xf7/0x1e0
- 22)     3568     352   __alloc_pages_nodemask+0x783/0xb20
- 23)     3216       8   alloc_pages_current+0x10f/0x1f0
- 24)     3208     168   new_slab+0x2c5/0x370
- 25)     3040       8   __slab_alloc+0x3a9/0x501
- 26)     3032      80   kmem_cache_alloc+0x1ac/0x1c0
- 27)     2952     296   mempool_alloc_slab+0x15/0x20
- 28)     2656     128   mempool_alloc+0x5e/0x170
- 29)     2528      96   bio_alloc_bioset+0x10b/0x1d0
- 30)     2432      48   mpage_alloc+0x38/0xa0
- 31)     2384     208   do_mpage_readpage+0x49b/0x5d0
- 32)     2176     224   mpage_readpages+0xcf/0x120
- 33)     1952      48   ext4_readpages+0x45/0x60
- 34)     1904     224   __do_page_cache_readahead+0x222/0x2d0
- 35)     1680      16   ra_submit+0x21/0x30
- 36)     1664     112   filemap_fault+0x2d7/0x4f0
- 37)     1552     144   __do_fault+0x6d/0x4c0
- 38)     1408     160   handle_mm_fault+0x1a6/0xaf0
- 39)     1248     272   __do_page_fault+0x18a/0x590
- 40)      976      16   do_page_fault+0xc/0x10
- 41)      960     208   page_fault+0x22/0x30
- 42)      752      16   clear_user+0x2e/0x40
- 43)      736      16   padzero+0x2d/0x40
- 44)      720     304   load_elf_binary+0xa47/0x1a40
- 45)      416      48   search_binary_handler+0x9c/0x1a0
- 46)      368     144   do_execve_common.isra.25+0x58d/0x700
- 47)      224      16   do_execve+0x18/0x20
- 48)      208      32   SyS_execve+0x2e/0x40
- 49)      176     176   stub_execve+0x69/0xa0
-
-
-
+diff --git a/drivers/gpu/drm/exynos/exynos_hdmi.h b/drivers/gpu/drm/exynos/exynos_hdmi.h
+deleted file mode 100644
+index 0ddf395..0000000
+--- a/drivers/gpu/drm/exynos/exynos_hdmi.h
++++ /dev/null
+@@ -1,23 +0,0 @@
+-/*
+- *
+- * Copyright (c) 2011 Samsung Electronics Co., Ltd.
+- * Authors:
+- *	Inki Dae <inki.dae@samsung.com>
+- *	Seung-Woo Kim <sw0312.kim@samsung.com>
+- *
+- * This program is free software; you can redistribute  it and/or modify it
+- * under  the terms of  the GNU General  Public License as published by the
+- * Free Software Foundation;  either version 2 of the  License, or (at your
+- * option) any later version.
+- */
+-
+-#ifndef _EXYNOS_HDMI_H_
+-#define _EXYNOS_HDMI_H_
+-
+-void hdmi_attach_ddc_client(struct i2c_client *ddc);
+-void hdmi_attach_hdmiphy_client(struct i2c_client *hdmiphy);
+-
+-extern struct i2c_driver hdmiphy_driver;
+-extern struct i2c_driver ddc_driver;
+-
+-#endif
 -- 
-Kind regards,
-Minchan Kim
+1.7.10.4
+
+
