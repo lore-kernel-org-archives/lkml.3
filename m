@@ -1,63 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934877AbaE3XLY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 19:11:24 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:39558 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751983AbaE3XLW (ORCPT
+	id S934639AbaE3XRF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 19:17:05 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:46246 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751983AbaE3XRC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 19:11:22 -0400
-From: Thomas Wood <tommyandrena@gmail.com>
-To: zbr@ioremap.net
-Cc: linux-kernel@vger.kernel.org, Thomas Wood <tommyandrena@gmail.com>
-Subject: [PATCH] drivers/w1/w1_int.c: Fix style errors.
-Date: Fri, 30 May 2014 16:10:20 -0700
-Message-Id: <1401491420-6953-1-git-send-email-tommyandrena@gmail.com>
+	Fri, 30 May 2014 19:17:02 -0400
+From: Andrea Adami <andrea.adami@gmail.com>
+X-Google-Original-From: Andrea Adami <andrea.adami@gmail.com
+To: linux-mtd@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        Jingoo Han <jg1.han@samsung.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Christian Riesch <christian.riesch@omicron.at>,
+        Andrea Adami <andrea.adami@gmail.com>
+Subject: [PATCH] mtd: cfi_cmdset_0001.c: add support for Sharp LH28F640BF NOR
+Date: Sat, 31 May 2014 01:16:58 +0200
+Message-Id: <1401491818-19646-1-git-send-email-andrea.adami@gmail.com>
 X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace spaces at beginning of the string with tabs, and replace foo * bar with foo *bar in a pointer declaration.
+From: Andrea Adami <andrea.adami@gmail.com>
 
-Signed-off-by: Thomas Wood <tommyandrena@gmail.com>
+This family of chips was long ago supported by the pre-cfi driver.
+CFI code tested on several Zaurus SL-5500 (Collie) 2x16 on 32 bit bus.
+
+Function is_LH28F640BF() mimics is_m29ew() from cmdset_0002.c
+
+Buffer write fixes as seen in 2007 patch c/o
+Anti Sullin <anti.sullin <at> artecdesign.ee>
+http://comments.gmane.org/gmane.linux.ports.arm.kernel/36733
+
+Signed-off-by: Andrea Adami <andrea.adami@gmail.com>
 ---
-This time using linux-next!
+ drivers/mtd/chips/cfi_cmdset_0001.c | 43 +++++++++++++++++++++++++++++++++++++
+ 1 file changed, 43 insertions(+)
 
- drivers/w1/w1_int.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/w1/w1_int.c b/drivers/w1/w1_int.c
-index ec3fc93..3c26a58 100644
---- a/drivers/w1/w1_int.c
-+++ b/drivers/w1/w1_int.c
-@@ -38,7 +38,7 @@ module_param_named(search_count, w1_search_count, int, 0);
- static int w1_enable_pullup = 1;
- module_param_named(enable_pullup, w1_enable_pullup, int, 0);
+diff --git a/drivers/mtd/chips/cfi_cmdset_0001.c b/drivers/mtd/chips/cfi_cmdset_0001.c
+index e4ec355..a7543ba 100644
+--- a/drivers/mtd/chips/cfi_cmdset_0001.c
++++ b/drivers/mtd/chips/cfi_cmdset_0001.c
+@@ -52,6 +52,11 @@
+ /* Atmel chips */
+ #define AT49BV640D	0x02de
+ #define AT49BV640DT	0x02db
++/* Sharp chips */
++#define LH28F640BFHE_PTTL90	0x00b0
++#define LH28F640BFHE_PBTL90	0x00b1
++#define LH28F640BFHE_PTTL70A	0x00b2
++#define LH28F640BFHE_PBTL70A	0x00b3
  
--static struct w1_master * w1_alloc_dev(u32 id, int slave_count, int slave_ttl,
-+static struct w1_master *w1_alloc_dev(u32 id, int slave_count, int slave_ttl,
- 				       struct device_driver *driver,
- 				       struct device *device)
- {
-@@ -115,13 +115,13 @@ int w1_add_master_device(struct w1_bus_master *master)
- 	struct w1_netlink_msg msg;
- 	int id, found;
+ static int cfi_intelext_read (struct mtd_info *, loff_t, size_t, size_t *, u_char *);
+ static int cfi_intelext_write_words(struct mtd_info *, loff_t, size_t, size_t *, const u_char *);
+@@ -258,6 +263,36 @@ static void fixup_st_m28w320cb(struct mtd_info *mtd)
+ 		(cfi->cfiq->EraseRegionInfo[1] & 0xffff0000) | 0x3e;
+ };
  
--        /* validate minimum functionality */
--        if (!(master->touch_bit && master->reset_bus) &&
--            !(master->write_bit && master->read_bit) &&
-+	/* validate minimum functionality */
-+	if (!(master->touch_bit && master->reset_bus) &&
-+	    !(master->write_bit && master->read_bit) &&
- 	    !(master->write_byte && master->read_byte && master->reset_bus)) {
- 		printk(KERN_ERR "w1_add_master_device: invalid function set\n");
- 		return(-EINVAL);
--        }
++static int is_LH28F640BF(struct cfi_private *cfi)
++{
++	/* Sharp LH28F640BF Family */
++	if (cfi->mfr == CFI_MFR_SHARP && (
++	    cfi->id == LH28F640BFHE_PTTL90 || cfi->id == LH28F640BFHE_PBTL90 ||
++	    cfi->id == LH28F640BFHE_PTTL70A || cfi->id == LH28F640BFHE_PBTL70A))
++		return 1;
++	return 0;
++}
++
++static void fixup_LH28F640BF(struct mtd_info *mtd)
++{
++	struct map_info *map = mtd->priv;
++	struct cfi_private *cfi = map->fldrv_priv;
++	struct cfi_pri_intelext *extp = cfi->cmdset_priv;
++
++	/* Reset the Partition Configuration Register on LH28F640BF
++	 * to a single partition (PCR = 0x000): PCR is embedded into A0-A15. */
++	if (is_LH28F640BF(cfi)) {
++		printk(KERN_INFO "Reset Partition Config. Register: 1 Partition of 4 planes\n");
++		map_write(map, CMD(0x60), 0);
++		map_write(map, CMD(0x04), 0);
++
++		/* We have set one single partition thus
++		 * Simultaneous Operations are not allowed */
++		printk(KERN_INFO "cfi_cmdset_0001: Simultaneous Operations disabled\n");
++		extp->FeatureSupport &= ~512;
 +	}
++}
++
+ static void fixup_use_point(struct mtd_info *mtd)
+ {
+ 	struct map_info *map = mtd->priv;
+@@ -309,6 +344,8 @@ static struct cfi_fixup cfi_fixup_table[] = {
+ 	{ CFI_MFR_ST, 0x00ba, /* M28W320CT */ fixup_st_m28w320ct },
+ 	{ CFI_MFR_ST, 0x00bb, /* M28W320CB */ fixup_st_m28w320cb },
+ 	{ CFI_MFR_INTEL, CFI_ID_ANY, fixup_unlock_powerup_lock },
++	{ CFI_MFR_SHARP, CFI_ID_ANY, fixup_unlock_powerup_lock },
++	{ CFI_MFR_SHARP, CFI_ID_ANY, fixup_LH28F640BF },
+ 	{ 0, 0, NULL }
+ };
  
- 	/* Lock until the device is added (or not) to w1_masters. */
- 	mutex_lock(&w1_mlock);
+@@ -1649,6 +1686,12 @@ static int __xipram do_write_buffer(struct map_info *map, struct flchip *chip,
+ 	initial_adr = adr;
+ 	cmd_adr = adr & ~(wbufsize-1);
+ 
++	/* Sharp LH28F640BF chips need the first address for the
++	 * Page Buffer Program command. See Table 5 of
++	 * LH28F320BF, LH28F640BF, LH28F128BF Series (Appendix FUM00701) */
++	if (is_LH28F640BF(cfi))
++		cmd_adr = adr;
++
+ 	/* Let's determine this according to the interleave only once */
+ 	write_cmd = (cfi->cfiq->P_ID != P_ID_INTEL_PERFORMANCE) ? CMD(0xe8) : CMD(0xe9);
+ 
 -- 
 1.9.1
 
