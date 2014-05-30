@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933349AbaE3NvZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 09:51:25 -0400
-Received: from relay.parallels.com ([195.214.232.42]:41517 "EHLO
+	id S933312AbaE3NvX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 09:51:23 -0400
+Received: from relay.parallels.com ([195.214.232.42]:41515 "EHLO
 	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933276AbaE3NvT (ORCPT
+	with ESMTP id S933289AbaE3NvT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 30 May 2014 09:51:19 -0400
 From: Vladimir Davydov <vdavydov@parallels.com>
 To: <akpm@linux-foundation.org>
 CC: <cl@linux.com>, <hannes@cmpxchg.org>, <mhocko@suse.cz>,
         <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
-Subject: [PATCH -mm 1/8] memcg: cleanup memcg_cache_params refcnt usage
-Date: Fri, 30 May 2014 17:51:04 +0400
-Message-ID: <3c02e9f973fcce5691fbf4b6d33665174326c4d5.1401457502.git.vdavydov@parallels.com>
+Subject: [PATCH -mm 4/8] slub: never fail kmem_cache_shrink
+Date: Fri, 30 May 2014 17:51:07 +0400
+Message-ID: <ac8907cace921c3209aa821649349106f4f70b34.1401457502.git.vdavydov@parallels.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <cover.1401457502.git.vdavydov@parallels.com>
 References: <cover.1401457502.git.vdavydov@parallels.com>
@@ -24,73 +24,106 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, we count the number of pages allocated to a per memcg cache
-in memcg_cache_params->nr_pages. We only use this counter to find out if
-the cache is empty and can be destroyed. So let's rename it to refcnt
-and make it count not pages, but slabs so that we can use atomic_inc/dec
-instead of atomic_add/sub in memcg_charge/uncharge_slab.
+SLUB's kmem_cache_shrink not only removes empty slabs from the cache,
+but also sorts slabs by the number of objects in-use to cope with
+fragmentation. To achieve that, it tries to allocate a temporary array.
+If it fails, it will abort the whole procedure.
 
-Also, as the number of slabs theoretically can be greater than INT_MAX,
-let's use atomic_long for the counter.
+This is unacceptable for kmemcg, where we want to be sure that all empty
+slabs are removed from the cache on memcg offline, so let's just skip
+the de-fragmentation step if the allocation fails, but still get rid of
+empty slabs.
 
 Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
 ---
- include/linux/slab.h |    4 ++--
- mm/memcontrol.c      |    6 +++---
- 2 files changed, 5 insertions(+), 5 deletions(-)
+ mm/slub.c |   39 +++++++++++++++++++++------------------
+ 1 file changed, 21 insertions(+), 18 deletions(-)
 
-diff --git a/include/linux/slab.h b/include/linux/slab.h
-index 1d9abb7d22a0..1985bd9bec7d 100644
---- a/include/linux/slab.h
-+++ b/include/linux/slab.h
-@@ -526,7 +526,7 @@ static __always_inline void *kmalloc_node(size_t size, gfp_t flags, int node)
-  * @memcg: pointer to the memcg this cache belongs to
-  * @list: list_head for the list of all caches in this memcg
-  * @root_cache: pointer to the global, root cache, this cache was derived from
-- * @nr_pages: number of pages that belongs to this cache.
-+ * @refcnt: reference counter
-  */
- struct memcg_cache_params {
- 	bool is_root_cache;
-@@ -539,7 +539,7 @@ struct memcg_cache_params {
- 			struct mem_cgroup *memcg;
- 			struct list_head list;
- 			struct kmem_cache *root_cache;
--			atomic_t nr_pages;
-+			atomic_long_t refcnt;
- 		};
- 	};
- };
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 15bda8133ff9..98a24e5ea4b5 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -3279,7 +3279,7 @@ static void memcg_unregister_all_caches(struct mem_cgroup *memcg)
- 	list_for_each_entry_safe(params, tmp, &memcg->memcg_slab_caches, list) {
- 		cachep = memcg_params_to_cache(params);
- 		kmem_cache_shrink(cachep);
--		if (atomic_read(&cachep->memcg_params->nr_pages) == 0)
-+		if (atomic_long_read(&cachep->memcg_params->refcnt) == 0)
- 			memcg_unregister_cache(cachep);
+diff --git a/mm/slub.c b/mm/slub.c
+index d96faa2464c3..d9976ea93710 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -3404,12 +3404,16 @@ int __kmem_cache_shrink(struct kmem_cache *s)
+ 	struct page *page;
+ 	struct page *t;
+ 	int objects = oo_objects(s->max);
+-	struct list_head *slabs_by_inuse =
+-		kmalloc(sizeof(struct list_head) * objects, GFP_KERNEL);
++	LIST_HEAD(empty_slabs);
++	struct list_head *slabs_by_inuse;
+ 	unsigned long flags;
+ 
+-	if (!slabs_by_inuse)
+-		return -ENOMEM;
++	slabs_by_inuse = kcalloc(objects - 1, sizeof(struct list_head),
++				 GFP_KERNEL);
++	if (slabs_by_inuse) {
++		for (i = 0; i < objects - 1; i++)
++			INIT_LIST_HEAD(slabs_by_inuse + i);
++	}
+ 
+ 	flush_all(s);
+ 	for_each_node_state(node, N_NORMAL_MEMORY) {
+@@ -3418,9 +3422,6 @@ int __kmem_cache_shrink(struct kmem_cache *s)
+ 		if (!n->nr_partial)
+ 			continue;
+ 
+-		for (i = 0; i < objects; i++)
+-			INIT_LIST_HEAD(slabs_by_inuse + i);
+-
+ 		spin_lock_irqsave(&n->list_lock, flags);
+ 
+ 		/*
+@@ -3430,22 +3431,28 @@ int __kmem_cache_shrink(struct kmem_cache *s)
+ 		 * list_lock. page->inuse here is the upper limit.
+ 		 */
+ 		list_for_each_entry_safe(page, t, &n->partial, lru) {
+-			list_move(&page->lru, slabs_by_inuse + page->inuse);
+-			if (!page->inuse)
++			if (!page->inuse) {
++				list_move(&page->lru, &empty_slabs);
+ 				n->nr_partial--;
++			} else if (slabs_by_inuse)
++				list_move(&page->lru,
++					  slabs_by_inuse + page->inuse - 1);
+ 		}
+ 
+ 		/*
+ 		 * Rebuild the partial list with the slabs filled up most
+ 		 * first and the least used slabs at the end.
+ 		 */
+-		for (i = objects - 1; i > 0; i--)
+-			list_splice(slabs_by_inuse + i, n->partial.prev);
++		if (slabs_by_inuse) {
++			for (i = objects - 2; i >= 0; i--)
++				list_splice_tail_init(slabs_by_inuse + i,
++						      &n->partial);
++		}
+ 
+ 		spin_unlock_irqrestore(&n->list_lock, flags);
+ 
+ 		/* Release empty slabs */
+-		list_for_each_entry_safe(page, t, slabs_by_inuse, lru)
++		list_for_each_entry_safe(page, t, &empty_slabs, lru)
+ 			discard_slab(s, page);
  	}
- 	mutex_unlock(&memcg_slab_mutex);
-@@ -3353,14 +3353,14 @@ int __memcg_charge_slab(struct kmem_cache *cachep, gfp_t gfp, int order)
- 	res = memcg_charge_kmem(cachep->memcg_params->memcg, gfp,
- 				PAGE_SIZE << order);
- 	if (!res)
--		atomic_add(1 << order, &cachep->memcg_params->nr_pages);
-+		atomic_long_inc(&cachep->memcg_params->refcnt);
- 	return res;
- }
  
- void __memcg_uncharge_slab(struct kmem_cache *cachep, int order)
+@@ -4780,13 +4787,9 @@ static ssize_t shrink_show(struct kmem_cache *s, char *buf)
+ static ssize_t shrink_store(struct kmem_cache *s,
+ 			const char *buf, size_t length)
  {
- 	memcg_uncharge_kmem(cachep->memcg_params->memcg, PAGE_SIZE << order);
--	atomic_sub(1 << order, &cachep->memcg_params->nr_pages);
-+	atomic_long_dec(&cachep->memcg_params->refcnt);
+-	if (buf[0] == '1') {
+-		int rc = kmem_cache_shrink(s);
+-
+-		if (rc)
+-			return rc;
+-	} else
++	if (buf[0] != '1')
+ 		return -EINVAL;
++	kmem_cache_shrink(s);
+ 	return length;
  }
- 
- /*
+ SLAB_ATTR(shrink);
 -- 
 1.7.10.4
 
