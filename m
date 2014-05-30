@@ -1,100 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753584AbaE3AuK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 20:50:10 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:59364 "EHLO
-	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750912AbaE3AuI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 20:50:08 -0400
-X-Original-SENDERIP: 10.177.220.169
-X-Original-MAILFROM: minchan@kernel.org
-Date: Fri, 30 May 2014 09:50:42 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Dave Chinner <david@fromorbit.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm <linux-mm@kvack.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Hugh Dickins <hughd@google.com>, Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [RFC 2/2] x86_64: expand kernel stack to 16K
-Message-ID: <20140530005042.GO10092@bbox>
-References: <1401260039-18189-2-git-send-email-minchan@kernel.org>
- <CA+55aFxXdc22dirnE49UbQP_2s2vLQpjQFL+NptuyK7Xry6c=g@mail.gmail.com>
- <20140528223142.GO8554@dastard>
- <CA+55aFyRk6_v6COPGVvu6hvt=i2A8-dPcs1X3Ydn1g24AxbPkg@mail.gmail.com>
- <20140529013007.GF6677@dastard>
- <20140529015830.GG6677@dastard>
- <20140529233638.GJ10092@bbox>
- <CA+55aFyvn_fTnWEmTCSGgfM18c21-YDU_s=FJP=grDDLQe+aDA@mail.gmail.com>
- <20140530002021.GM10092@bbox>
- <CA+55aFxjXf5xLKGFBjUWimn8-=rj0=g3pku9O1MvGSoDUcEQAw@mail.gmail.com>
+	id S1753992AbaE3Ayo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 20:54:44 -0400
+Received: from dliviu.plus.com ([80.229.23.120]:39346 "EHLO smtp.dudau.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752220AbaE3Aym (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 20:54:42 -0400
+From: "Liviu Dudau" <liviu@dudau.co.uk>
+Date: Fri, 30 May 2014 01:56:03 +0100
+To: Kumar Gala <galak@codeaurora.org>
+Cc: Rob Herring <robherring2@gmail.com>, Rob Herring <robh+dt@kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Kishon Vijay Abraham I <kishon@ti.com>
+Subject: Re: [PATCH] of: treat PCI config space as IORESOURCE_MEM type
+Message-ID: <20140530005602.GE1677@bart.dudau.co.uk>
+Mail-Followup-To: Kumar Gala <galak@codeaurora.org>,
+	Rob Herring <robherring2@gmail.com>,
+	Rob Herring <robh+dt@kernel.org>,
+	Grant Likely <grant.likely@linaro.org>,
+	Pawel Moll <pawel.moll@arm.com>,
+	Mark Rutland <mark.rutland@arm.com>,
+	Ian Campbell <ijc+devicetree@hellion.org.uk>,
+	Bjorn Helgaas <bhelgaas@google.com>,
+	"devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	"linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+	linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+	"linux-arm-kernel@lists.infradead.org" <linux-arm-kernel@lists.infradead.org>,
+	Kishon Vijay Abraham I <kishon@ti.com>
+References: <1401379426-9701-1-git-send-email-galak@codeaurora.org>
+ <CAL_JsqLPFDwtd-QYDqCwx1JVj1Aa8=nof-e0P6R9CZra+fXHfw@mail.gmail.com>
+ <47B1E3D0-4336-4529-80B0-172F4ACA5C97@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <CA+55aFxjXf5xLKGFBjUWimn8-=rj0=g3pku9O1MvGSoDUcEQAw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <47B1E3D0-4336-4529-80B0-172F4ACA5C97@codeaurora.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-DSPAM-Result: Innocent
+X-DSPAM-Processed: Fri May 30 01:54:40 2014
+X-DSPAM-Confidence: 0.9899
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 13,5387d6d03031380315221
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 29, 2014 at 05:31:42PM -0700, Linus Torvalds wrote:
-> On Thu, May 29, 2014 at 5:20 PM, Minchan Kim <minchan@kernel.org> wrote:
-> >
-> > I guess this part which avoid swapout in direct reclaim would be key
-> > if this patch were successful. But it could make anon pages rotate back
-> > into inactive's head from tail in direct reclaim path until kswapd can
-> > catch up. And kswapd kswapd can swap out anon pages from tail of inactive
-> > LRU so I suspect it could make side-effect LRU churning.
+On Thu, May 29, 2014 at 03:51:28PM -0500, Kumar Gala wrote:
 > 
-> Oh, it could make bad things happen, no question about that.
+> On May 29, 2014, at 3:44 PM, Rob Herring <robherring2@gmail.com> wrote:
 > 
-> That said, those bad things are what happens to shared mapped pages
-> today, so in that sense it's not new. But large dirty shared mmap's
-> have traditionally been a great way to really hurt out VM, so "it
-> should work as well as shared mapping pages" is definitely not a
-> ringing endorsement!
+> > On Thu, May 29, 2014 at 11:03 AM, Kumar Gala <galak@codeaurora.org> wrote:
+> >> If we have a PCI config space specified in something like a ranges
+> >> property we should treat it as memory type resource.
+> > 
+> > Config space should not be in ranges[1]. We have some cases that are,
+> > but we don't want new ones.
+> 
+> For the cases we have I agree, however an ECAM based cfg seems completely legit.
+> 
+> >> Signed-off-by: Kumar Gala <galak@codeaurora.org>
+> >> ---
+> >> drivers/of/address.c | 3 +++
+> >> 1 file changed, 3 insertions(+)
+> >> 
+> >> diff --git a/drivers/of/address.c b/drivers/of/address.c
+> >> index cb4242a..4e7ee59 100644
+> >> --- a/drivers/of/address.c
+> >> +++ b/drivers/of/address.c
+> >> @@ -122,6 +122,9 @@ static unsigned int of_bus_pci_get_flags(const __be32 *addr)
+> >>        u32 w = be32_to_cpup(addr);
+> >> 
+> >>        switch((w >> 24) & 0x03) {
+> >> +       case 0x00: /* cfg space */
+> >> +               flags |= IORESOURCE_MEM;
+> >> +               break;
+> > 
+> > How would you then distinguish actual memory ranges?
+> 
+> One assumes you are still looking at pci_space as part of of_pci_range
 
-True.
+That doesn't happen when you start scanning the bus. The existing code will
+use the IORESOURCE_MEM for allocating memory space for devices, which is
+not what you want. Did you test your patch on any PCI system? I'm pretty
+sure that with my patch series that tries to make a generic framework for
+host controllers this will fail.
+
+We really need a IORESOURCE_CFG flag for this space.
+
+Best regards,
+Liviu
 
 > 
-> (Of course, *if* we can improve kswapd behavior for both swap-out and
-> shared dirty pages, that would then be a double win, so there is
-> _some_ argument for saying that we should aim to handle both kinds of
-> pages equally).
-
-Just an idea for preventing LRU churn.
-We can return back the pages to tail of inactive instead of head if it's
-not proper pages in this context and reclaimer uses the cursor as list_head
-instead of LRU head to scan victim page and record the cursor in somewhere
-like lruvec after shrinking is done. It makes VM code more complicated but
-is worthy to try if we approach that way.
-
+> > 
+> > Rob
+> > 
+> > [1] http://www.spinics.net/lists/linux-pci/msg30585.html
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-arm-msm" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
 > 
-> > Anyway, I will queue it into testing machine since Rusty's test is done.
-> 
-> You could also try Dave's patch, and _not_ do my mm/vmscan.c part.
-
-Sure. While I write this, Rusty's test was crached so I will try Dave's patch,
-them yours except vmscan.c part.
-
-Thanks.
-
-> 
->             Linus
+> -- 
+> Employee of Qualcomm Innovation Center, Inc.
+> Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
 > 
 > --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
 -- 
-Kind regards,
-Minchan Kim
+-------------------
+   .oooO
+   (   )
+    \ (  Oooo.
+     \_) (   )
+          ) /
+         (_/
+
+ One small step
+   for me ...
+
