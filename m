@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932332AbaE3CRG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 22:17:06 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:51609 "HELO
+	id S932379AbaE3CRe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 22:17:34 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:51630 "HELO
 	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754398AbaE3COa (ORCPT
+	with SMTP id S1753989AbaE3CO3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 22:14:30 -0400
+	Thu, 29 May 2014 22:14:29 -0400
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
 To: Zhang Rui <rui.zhang@intel.com>
 Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
         matthew.garrett@nebula.com, mika.westerberg@linux.intel.com
-Subject: [PATCH 8/10] ACPI / scan: always register memory hotplug scan handler
-Date: Fri, 30 May 2014 04:29:14 +0200
-Message-ID: <3467205.0cf3CnYQpp@vostro.rjw.lan>
+Subject: [PATCH 9/10] ACPI / scan: always register ACPI LPSS scan handler
+Date: Fri, 30 May 2014 04:30:12 +0200
+Message-ID: <8202338.Lrn5CAprz1@vostro.rjw.lan>
 User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
 In-Reply-To: <35042328.kk6ZUUdfyN@vostro.rjw.lan>
 References: <1400781753-2682-1-git-send-email-rui.zhang@intel.com> <35042328.kk6ZUUdfyN@vostro.rjw.lan>
@@ -26,124 +26,150 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-Prevent platform devices from being created for ACPI memory device
-objects if CONFIG_ACPI_HOTPLUG_MEMORY is unset by compiling out the
-memory hotplug scan handler's callbacks only in that case and still
-compiling its device ID list in and registering the scan handler in
-either case.
-
-Also unset the memory hotplug scan handler's .attach() callback
-if acpi_no_memhotplug is set, but still register the scan handler to
-avoid creating platform devices for ACPI memory devices in that case
-too.
+Prevent platform devices from being created for ACPI LPSS devices
+if CONFIG_X86_INTEL_LPSS is unset by compiling out the LPSS scan
+handler's callbacks only in that case and still compiling its device
+ID list in and registering the scan handler in either case.
 
 This change is based on a prototype from Zhang Rui.
 
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
 ---
-drivers/acpi/Makefile          |  2 +-
- drivers/acpi/Makefile          |    2 +-
- drivers/acpi/acpi_memhotplug.c |   31 ++++++++++++++++++++++++-------
- drivers/acpi/internal.h        |    6 +-----
- 3 files changed, 26 insertions(+), 13 deletions(-)
+drivers/acpi/Makefile    |  2 +-
+ drivers/acpi/Makefile    |    2 -
+ drivers/acpi/acpi_lpss.c |   65 ++++++++++++++++++++++++++++++++---------------
+ drivers/acpi/internal.h  |    4 --
+ 3 files changed, 46 insertions(+), 25 deletions(-)
 
 Index: linux-pm/drivers/acpi/Makefile
 ===================================================================
 --- linux-pm.orig/drivers/acpi/Makefile
 +++ linux-pm/drivers/acpi/Makefile
-@@ -66,7 +66,7 @@ obj-$(CONFIG_ACPI_PCI_SLOT)	+= pci_slot.
- obj-$(CONFIG_ACPI_PROCESSOR)	+= processor.o
- obj-y				+= container.o
- obj-$(CONFIG_ACPI_THERMAL)	+= thermal.o
--obj-$(CONFIG_ACPI_HOTPLUG_MEMORY) += acpi_memhotplug.o
-+obj-y				+= acpi_memhotplug.o
- obj-$(CONFIG_ACPI_BATTERY)	+= battery.o
- obj-$(CONFIG_ACPI_SBS)		+= sbshc.o
- obj-$(CONFIG_ACPI_SBS)		+= sbs.o
+@@ -39,7 +39,7 @@ acpi-y				+= processor_core.o
+ acpi-y				+= ec.o
+ acpi-$(CONFIG_ACPI_DOCK)	+= dock.o
+ acpi-y				+= pci_root.o pci_link.o pci_irq.o
+-acpi-$(CONFIG_X86_INTEL_LPSS)	+= acpi_lpss.o
++acpi-y				+= acpi_lpss.o
+ acpi-y				+= acpi_platform.o
+ acpi-y				+= acpi_pnp.o
+ acpi-y				+= power.o
+Index: linux-pm/drivers/acpi/acpi_lpss.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/acpi_lpss.c
++++ linux-pm/drivers/acpi/acpi_lpss.c
+@@ -25,6 +25,10 @@
+ 
+ ACPI_MODULE_NAME("acpi_lpss");
+ 
++#ifdef CONFIG_X86_INTEL_LPSS
++
++#define LPSS_PTR(desc) ((unsigned long)&desc)
++
+ #define LPSS_CLK_SIZE	0x04
+ #define LPSS_LTR_SIZE	0x18
+ 
+@@ -168,40 +172,48 @@ static struct lpss_device_desc byt_i2c_d
+ 	.shared_clock = &i2c_clock,
+ };
+ 
++#else
++
++#define LPSS_PTR(desc) (NULL)
++
++#endif /* CONFIG_X86_INTEL_LPSS */
++
+ static const struct acpi_device_id acpi_lpss_device_ids[] = {
+ 	/* Generic LPSS devices */
+-	{ "INTL9C60", (unsigned long)&lpss_dma_desc },
++	{ "INTL9C60", LPSS_PTR(lpss_dma_desc) },
+ 
+ 	/* Lynxpoint LPSS devices */
+-	{ "INT33C0", (unsigned long)&lpt_dev_desc },
+-	{ "INT33C1", (unsigned long)&lpt_dev_desc },
+-	{ "INT33C2", (unsigned long)&lpt_dev_desc },
+-	{ "INT33C3", (unsigned long)&lpt_dev_desc },
+-	{ "INT33C4", (unsigned long)&lpt_uart_dev_desc },
+-	{ "INT33C5", (unsigned long)&lpt_uart_dev_desc },
+-	{ "INT33C6", (unsigned long)&lpt_sdio_dev_desc },
++	{ "INT33C0", LPSS_PTR(lpt_dev_desc) },
++	{ "INT33C1", LPSS_PTR(lpt_dev_desc) },
++	{ "INT33C2", LPSS_PTR(lpt_dev_desc) },
++	{ "INT33C3", LPSS_PTR(lpt_dev_desc) },
++	{ "INT33C4", LPSS_PTR(lpt_uart_dev_desc) },
++	{ "INT33C5", LPSS_PTR(lpt_uart_dev_desc) },
++	{ "INT33C6", LPSS_PTR(lpt_sdio_dev_desc) },
+ 	{ "INT33C7", },
+ 
+ 	/* BayTrail LPSS devices */
+-	{ "80860F09", (unsigned long)&byt_pwm_dev_desc },
+-	{ "80860F0A", (unsigned long)&byt_uart_dev_desc },
+-	{ "80860F0E", (unsigned long)&byt_spi_dev_desc },
+-	{ "80860F14", (unsigned long)&byt_sdio_dev_desc },
+-	{ "80860F41", (unsigned long)&byt_i2c_dev_desc },
++	{ "80860F09", LPSS_PTR(byt_pwm_dev_desc) },
++	{ "80860F0A", LPSS_PTR(byt_uart_dev_desc) },
++	{ "80860F0E", LPSS_PTR(byt_spi_dev_desc) },
++	{ "80860F14", LPSS_PTR(byt_sdio_dev_desc) },
++	{ "80860F41", LPSS_PTR(byt_i2c_dev_desc) },
+ 	{ "INT33B2", },
+ 
+-	{ "INT3430", (unsigned long)&lpt_dev_desc },
+-	{ "INT3431", (unsigned long)&lpt_dev_desc },
+-	{ "INT3432", (unsigned long)&lpt_dev_desc },
+-	{ "INT3433", (unsigned long)&lpt_dev_desc },
+-	{ "INT3434", (unsigned long)&lpt_uart_dev_desc },
+-	{ "INT3435", (unsigned long)&lpt_uart_dev_desc },
+-	{ "INT3436", (unsigned long)&lpt_sdio_dev_desc },
++	{ "INT3430", LPSS_PTR(lpt_dev_desc) },
++	{ "INT3431", LPSS_PTR(lpt_dev_desc) },
++	{ "INT3432", LPSS_PTR(lpt_dev_desc) },
++	{ "INT3433", LPSS_PTR(lpt_dev_desc) },
++	{ "INT3434", LPSS_PTR(lpt_uart_dev_desc) },
++	{ "INT3435", LPSS_PTR(lpt_uart_dev_desc) },
++	{ "INT3436", LPSS_PTR(lpt_sdio_dev_desc) },
+ 	{ "INT3437", },
+ 
+ 	{ }
+ };
+ 
++#ifdef CONFIG_X86_INTEL_LPSS
++
+ static int is_memory(struct acpi_resource *res, void *not_used)
+ {
+ 	struct resource r;
+@@ -666,3 +678,16 @@ void __init acpi_lpss_init(void)
+ 		acpi_scan_add_handler(&lpss_handler);
+ 	}
+ }
++
++#else
++
++static struct acpi_scan_handler lpss_handler = {
++	.ids = acpi_lpss_device_ids,
++};
++
++void __init acpi_lpss_init(void)
++{
++	acpi_scan_add_handler(&lpss_handler);
++}
++
++#endif /* CONFIG_X86_INTEL_LPSS */
 Index: linux-pm/drivers/acpi/internal.h
 ===================================================================
 --- linux-pm.orig/drivers/acpi/internal.h
 +++ linux-pm/drivers/acpi/internal.h
-@@ -33,6 +33,7 @@ void acpi_platform_init(void);
- void acpi_pnp_init(void);
- int acpi_sysfs_init(void);
- void acpi_container_init(void);
-+void acpi_memory_hotplug_init(void);
- #ifdef CONFIG_ACPI_DOCK
- void register_dock_dependent_device(struct acpi_device *adev,
- 				    acpi_handle dshandle);
-@@ -44,11 +45,6 @@ static inline void register_dock_depende
- static inline int dock_notify(struct acpi_device *adev, u32 event) { return -ENODEV; }
- static inline void acpi_dock_add(struct acpi_device *adev) {}
- #endif
--#ifdef CONFIG_ACPI_HOTPLUG_MEMORY
--void acpi_memory_hotplug_init(void);
--#else
--static inline void acpi_memory_hotplug_init(void) {}
--#endif
- #ifdef CONFIG_X86
- void acpi_cmos_rtc_init(void);
+@@ -65,11 +65,7 @@ int acpi_debugfs_init(void);
  #else
-Index: linux-pm/drivers/acpi/acpi_memhotplug.c
-===================================================================
---- linux-pm.orig/drivers/acpi/acpi_memhotplug.c
-+++ linux-pm/drivers/acpi/acpi_memhotplug.c
-@@ -44,6 +44,13 @@
+ static inline void acpi_debugfs_init(void) { return; }
+ #endif
+-#ifdef CONFIG_X86_INTEL_LPSS
+ void acpi_lpss_init(void);
+-#else
+-static inline void acpi_lpss_init(void) {}
+-#endif
  
- ACPI_MODULE_NAME("acpi_memhotplug");
- 
-+static const struct acpi_device_id memory_device_ids[] = {
-+	{ACPI_MEMORY_DEVICE_HID, 0},
-+	{"", 0},
-+};
-+
-+#ifdef CONFIG_ACPI_HOTPLUG_MEMORY
-+
- /* Memory Device States */
- #define MEMORY_INVALID_STATE	0
- #define MEMORY_POWER_ON_STATE	1
-@@ -53,11 +60,6 @@ static int acpi_memory_device_add(struct
- 				  const struct acpi_device_id *not_used);
- static void acpi_memory_device_remove(struct acpi_device *device);
- 
--static const struct acpi_device_id memory_device_ids[] = {
--	{ACPI_MEMORY_DEVICE_HID, 0},
--	{"", 0},
--};
--
- static struct acpi_scan_handler memory_device_handler = {
- 	.ids = memory_device_ids,
- 	.attach = acpi_memory_device_add,
-@@ -364,9 +366,11 @@ static bool __initdata acpi_no_memhotplu
- 
- void __init acpi_memory_hotplug_init(void)
- {
--	if (acpi_no_memhotplug)
-+	if (acpi_no_memhotplug) {
-+		memory_device_handler.attach = NULL;
-+		acpi_scan_add_handler(&memory_device_handler);
- 		return;
--
-+	}
- 	acpi_scan_add_handler_with_hotplug(&memory_device_handler, "memory");
- }
- 
-@@ -376,3 +380,16 @@ static int __init disable_acpi_memory_ho
- 	return 1;
- }
- __setup("acpi_no_memhotplug", disable_acpi_memory_hotplug);
-+
-+#else
-+
-+static struct acpi_scan_handler memory_device_handler = {
-+	.ids = memory_device_ids,
-+};
-+
-+void __init acpi_memory_hotplug_init(void)
-+{
-+	acpi_scan_add_handler(&memory_device_handler);
-+}
-+
-+#endif /* CONFIG_ACPI_HOTPLUG_MEMORY */
+ acpi_status acpi_hotplug_schedule(struct acpi_device *adev, u32 src);
+ bool acpi_queue_hotplug_work(struct work_struct *work);
 
