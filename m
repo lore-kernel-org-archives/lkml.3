@@ -1,53 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933300AbaE3RjX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 13:39:23 -0400
-Received: from mail-qg0-f53.google.com ([209.85.192.53]:61463 "EHLO
-	mail-qg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754107AbaE3RjU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 13:39:20 -0400
-Date: Fri, 30 May 2014 13:39:17 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: paolo <paolo.valente@unimore.it>, Jens Axboe <axboe@kernel.dk>,
-        Li Zefan <lizefan@huawei.com>, Fabio Checconi <fchecconi@gmail.com>,
-        Arianna Avanzini <avanzini.arianna@gmail.com>,
-        Paolo Valente <posta_paolo@yahoo.it>, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org
-Subject: Re: [PATCH RFC RESEND 00/14] New version of the BFQ I/O Scheduler
-Message-ID: <20140530173917.GJ24871@htj.dyndns.org>
-References: <1401194558-5283-1-git-send-email-paolo.valente@unimore.it>
- <20140530173146.GG16605@redhat.com>
+	id S964795AbaE3RsM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 13:48:12 -0400
+Received: from sauhun.de ([89.238.76.85]:47909 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754107AbaE3RsK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 May 2014 13:48:10 -0400
+Date: Fri, 30 May 2014 19:48:00 +0200
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        grant.likely@linaro.org, linus.walleij@linaro.org,
+        linux-i2c@vger.kernel.org
+Subject: Re: [PATCH] i2c: Make I2C ID tables non-mandatory for DT'ed and/or
+ ACPI'ed devices
+Message-ID: <20140530174800.GA4917@katana>
+References: <1401452797-29521-1-git-send-email-lee.jones@linaro.org>
+ <1401452797-29521-2-git-send-email-lee.jones@linaro.org>
+ <20140530123656.GC2742@katana>
+ <20140530133405.GB29731@lee--X1>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="yrj/dFKFPuw6o+aM"
 Content-Disposition: inline
-In-Reply-To: <20140530173146.GG16605@redhat.com>
+In-Reply-To: <20140530133405.GB29731@lee--X1>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 30, 2014 at 01:31:46PM -0400, Vivek Goyal wrote:
-> > What allows BFQ to provide the above features is its accurate
-> > scheduling engine (patches 1-4), combined with a set of simple
-> > heuristics and improvements (patches 5-14). 
-> 
-> This is very hard to understand. This puzzle need to be broken down
-> into small pieces and explained in simple design terms so that even
-> 5 years down the line I can explain why BFQ was better.
 
-Vivek, stop wasting people's time and just go study the paper.  Let's
-*please* talk after that.  What do you expect him to do?  Copy & paste
-the whole paper here and walk you through each step of it?  He
-presented as much information as he could and then provided sufficient
-summary in the head message and as comments in the implementation.
-It's now *your* turn to study what has been presented.  Sure, if you
-have further questions or think that the implementation and patches
-need more documentation, that's completely fine but I find it
-ridiculous that you're demanding to be spoon-fed information which is
-readily available in an easily consumable form.  Seriously, this is
-the best documentation we've had in this area *EVER*.
+--yrj/dFKFPuw6o+aM
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
--- 
-tejun
+Hi Lee,
+
+sorry for the delay.
+
+> Would you mind telling me what I have changed that affects drivers
+> registering via Sysfs?
+
+Check Documentation/i2c/instantiating-devices, method 4. If a driver
+does not have i2c_device_id, then this method won't work because the
+newly created device has no of_node or ACPI_node and nothing will match.
+Looking at the bigger picture, I'd really like to keep this feature.
+People use it.
+
+Regards,
+
+   Wolfram
+
+
+--yrj/dFKFPuw6o+aM
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTiMRQAAoJEBQN5MwUoCm2LocP/A0XFXT2tw/77Isv3MUreh0Q
+1lVLFqiVnIAg8Bc8MIsvgCfY2LRpz8xHoAuUYSCPX+8S2Y+6jb/xLfBTM8s5/p5d
+rmIYR6P6pyw4kqAcUZrDebUTrU8YJKoH7FHwlMCE8g2opMOROgxlMLMFM7Rm1cve
+1X1981IojV6rBtHchKn+X0nZgRgCeFA7bnIoMqvscvojWrZ7oKgBRhR4RUlYfut1
+BNqP4fHVS6lKYcCHy15ISgcfwigSJ3H9iq2I+PbdSOGcRkOflEo6bmn6b0X/srf+
+wqwsC/E6mhbxVm5DSXNE+8/bmipdp1wrq0eLJdg+p+qTd4FKcdJ3PWHO1njduKsd
+DP6lFcQInmqIiXq66YlraNVoy66YyMG6gHWTHbDFufM/rVTe+1xlRo6cNrtdGT29
+O6Nk62nwP6DWGWQa66IQmX/zeS6KTzqCy7Lm6ucNEzcdnNrUk1Ne3NpathUKZd2t
+ixY8L6+71bxUhWghSiwavw6ZkUtMc1GcgosuQYdeAjwvBCJLmt3/mVkTMGP8NT39
+jSg15XtXs5tZToQ5GZRsBZYSiwHPsZLvxGi5Gdf/kOo1TgQUqlFmF8qnXnjjcBL+
+281b9rcumw+atpI7+Qg0Sz/K0N1JaYbGO7mKCIhgADQk66df3MynXj+6BTCkOQ4B
+HTXKMMvD+jmWYL0jos/G
+=E+8a
+-----END PGP SIGNATURE-----
+
+--yrj/dFKFPuw6o+aM--
