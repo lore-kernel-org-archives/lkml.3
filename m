@@ -1,63 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932890AbaE3M7Q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 08:59:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58966 "EHLO mx1.redhat.com"
+	id S1755410AbaE3NHK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 09:07:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35144 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932205AbaE3M7P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 08:59:15 -0400
-Date: Fri, 30 May 2014 08:59:00 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Dave Young <dyoung@redhat.com>
-Cc: matt.fleming@intel.com, bp@alien8.de, linux-kernel@vger.kernel.org,
-        linux-efi@vger.kernel.org
-Subject: Re: [PATCH]x86 efi: do not export efi runtime map in case old map
-Message-ID: <20140530125900.GB16605@redhat.com>
-References: <20140530032010.GA29906@dhcp-16-198.nay.redhat.com>
+	id S1752615AbaE3NHH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 May 2014 09:07:07 -0400
+Date: Fri, 30 May 2014 15:06:27 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Jacob Shin <jacob.w.shin@gmail.com>,
+        Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        xiakaixu <xiakaixu@huawei.com>
+Subject: Re: [PATCH 0/4] perf: Support AMD range breakpoints
+Message-ID: <20140530130627.GB7427@krava.brq.redhat.com>
+References: <1401377213-24551-1-git-send-email-fweisbec@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140530032010.GA29906@dhcp-16-198.nay.redhat.com>
+In-Reply-To: <1401377213-24551-1-git-send-email-fweisbec@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 30, 2014 at 11:20:10AM +0800, Dave Young wrote:
+On Thu, May 29, 2014 at 05:26:49PM +0200, Frederic Weisbecker wrote:
+> Hi,
 > 
-> For ioremapped efi memory aka old_map the virt addresses are not persistant
-> across kexec reboot. kexec-tools will read the runtime maps from sysfs then
-> pass them to 2nd kernel and assuming kexec efi boot is ok. This will cause
-> kexec boot failure.
+> I've made it wait too much so I'm posting that for review now. This
+> implements range breakpoints on some AMD machine by extending the length
+> field.
 > 
-> To address this issue do not export runtime maps in case efi old_map so
-> userspace can use no efi boot instead.
-> 
-> Signed-off-by: Dave Young <dyoung@redhat.com>
+> Any comment?
+hi,
+perf tools patches look ok to me.. let me know
+if I should queue them
 
-Looks good to me.
-
-Acked-by: Vivek Goyal <vgoyal@redhat.com>
-
-Vivek
-
-> ---
->  arch/x86/platform/efi/efi.c | 3 +++
->  1 file changed, 3 insertions(+)
-> 
-> diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-> index 3781dd3..4d36932 100644
-> --- a/arch/x86/platform/efi/efi.c
-> +++ b/arch/x86/platform/efi/efi.c
-> @@ -919,6 +919,9 @@ static void __init save_runtime_map(void)
->  	void *tmp, *p, *q = NULL;
->  	int count = 0;
->  
-> +	if (efi_enabled(EFI_OLD_MEMMAP))
-> +		return;
-> +
->  	for (p = memmap.map; p < memmap.map_end; p += memmap.desc_size) {
->  		md = p;
->  
-> -- 
-> 1.8.3.1
+thanks,
+jirka
