@@ -1,77 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752666AbaE3E6I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 00:58:08 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:35478 "EHLO
-	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750892AbaE3E6H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 00:58:07 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>, Arun Sharma <asharma@fb.com>,
-        Rodrigo Campos <rodrigo@sdfg.com.ar>, Don Zickus <dzickus@redhat.com>
-Subject: Re: [PATCHSET 00/27] perf tools: Add support to accumulate hist periods (v11)
-References: <1401335910-16832-1-git-send-email-namhyung@kernel.org>
-	<20140529135859.GF1177@krava.brq.redhat.com>
-Date: Fri, 30 May 2014 13:58:04 +0900
-In-Reply-To: <20140529135859.GF1177@krava.brq.redhat.com> (Jiri Olsa's message
-	of "Thu, 29 May 2014 15:59:00 +0200")
-Message-ID: <87fvjrg8wz.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1754590AbaE3E6d (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 00:58:33 -0400
+Received: from mga02.intel.com ([134.134.136.20]:55729 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752875AbaE3E6c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 May 2014 00:58:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,938,1392192000"; 
+   d="scan'208";a="548723765"
+Message-ID: <53880FF5.8070500@linux.intel.com>
+Date: Fri, 30 May 2014 12:58:29 +0800
+From: "Zhu, Lejun" <lejun.zhu@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Lee Jones <lee.jones@linaro.org>
+CC: broonie@kernel.org, sameo@linux.intel.com, linux-kernel@vger.kernel.org,
+        jacob.jun.pan@linux.intel.com, bin.yang@intel.com
+Subject: Re: [PATCH v4 1/3] mfd: intel_soc_pmic: Core driver
+References: <1401347968-24410-1-git-send-email-lejun.zhu@linux.intel.com> <1401347968-24410-2-git-send-email-lejun.zhu@linux.intel.com> <20140529114052.GI1954@lee--X1>
+In-Reply-To: <20140529114052.GI1954@lee--X1>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 29 May 2014 15:59:00 +0200, Jiri Olsa wrote:
-> On Thu, May 29, 2014 at 12:58:03PM +0900, Namhyung Kim wrote:
->> Hello,
->> 
->> This is a new attempt to implement cumulative hist period report.
->> This work begins from Arun's SORT_INCLUSIVE patch [1] but I completely
->> rewrote it from scratch.
->> 
->> This patchset basically adds period in a sample to every node in the
->> callchain.  A hist_entry now has an additional fields to keep the
->> cumulative period if --children option is given on perf report.
->> 
->> I changed the option as a separate --children and added a new
->> "Children" column (and renamed the default "Overhead" column into
->> "Self").  The output will be sorted by children (cumulative) overhead
->> for now.  It also adds 'overhead_children' field to -F/--fields option
->> to be selected by user and it'll show you "N/A" if the cumulation is
->> not supported (due to missing callchain).
->> 
->> I added Tested-by from Rodrigo Campos since this version is basically
->> rebase of previous series + bugfix.  But it still needs to be tested
->> more intensively IMHO.  Also note that, this will change default
->> behavior of perf report/top if callchain is recorded, so might confuse
->> old users.  Let's see how many of them come to shout. :)  I think we
->> need to merge Jiri's TUI column header patch at least.
->> 
->> 
->>  * changes in v11:
->>   - factor out hists__inc_nr_samples  (Jiri)
->>   - remove unrelated change  (Jiri)
->>   - disable accumulation on branch or mem mode
->>   - slightly refactor hist_iter code
->
-> apart from that comment I sent, I think it's ready to go in
 
-Thanks!  As I said, I've pushed v12 to korg with change you commented.
 
-And I also found that the overhead in perf_hpp__should_skip() is
-strangely high.. will check your patch.
+On 5/29/2014 7:40 PM, Lee Jones wrote:
+> [...]
+> 
+>> +static int intel_soc_pmic_find_gpio_irq(struct device *dev)
+>> +{
+>> +	struct gpio_desc *desc;
+>> +	int irq;
+>> +
+>> +	desc = devm_gpiod_get_index(dev, KBUILD_MODNAME, 0);
+> 
+> What does "KBUILD_MODNAME" translate to?
 
-Thanks,
-Namhyung
+It translates into "intel_soc_pmic".
+
+> 
+>> +	if (IS_ERR(desc)) {
+>> +		dev_dbg(dev, "Not using GPIO as interrupt.\n");
+> 
+> You can't have a debug print, then return an err - use dev_err().
+
+Actually returning ENOENT here is just a hardware difference. On some
+boards the PMIC interrupt is from a GPIO line exposed by the CPU, on the
+rest (e.g. Asus T100TA) it's not. When -ENOENT is returned, probe() will
+simply use the IRQ provided by the I2C.
+
+I will remove this line completely, and put a comment before the function.
+
+> 
+> [...]
+> 
+>> +static int intel_soc_pmic_i2c_probe(struct i2c_client *i2c,
+>> +				    const struct i2c_device_id *id)
+>> +{
+>> +	struct device *dev = &i2c->dev;
+>> +	struct intel_soc_pmic_config *config =
+>> +		(struct intel_soc_pmic_config *)id->driver_data;
+>> +	struct intel_soc_pmic *pmic;
+>> +	int ret;
+>> +	int irq;
+>> +
+>> +	pmic = devm_kzalloc(dev, sizeof(*pmic), GFP_KERNEL);
+>> +	dev_set_drvdata(dev, pmic);
+>> +
+>> +	pmic->regmap = devm_regmap_init_i2c(i2c, config->regmap_config);
+>> +
+>> +	irq = intel_soc_pmic_find_gpio_irq(dev);
+>> +	if (irq < 0)
+>> +		pmic->irq = i2c->irq;
+>> +	else
+>> +		pmic->irq = irq;
+> 
+> pmic->irq = (irq < 0) ? i2c->irq : irq;
+
+I'll fix it.
+
+>> +	ret = regmap_add_irq_chip(pmic->regmap, pmic->irq,
+>> +				  config->irq_flags | IRQF_ONESHOT,
+>> +				  0, config->irq_chip,
+>> +				  &pmic->irq_chip_data);
+>> +	if (ret)
+>> +		goto err;
+> 
+> Just return ret here and remove the 'err:' label.
+
+I'll fix it.
+
+> 
+> [...]
+> 
+>> +static const struct i2c_device_id intel_soc_pmic_i2c_id[] = {
+>> +	{"INT33FD:00", (kernel_ulong_t)&intel_soc_pmic_config_crc},
+>> +	{ }
+>> +};
+>> +MODULE_DEVICE_TABLE(i2c, intel_soc_pmic_i2c_id);
+>> +
+>> +static struct acpi_device_id intel_soc_pmic_acpi_match[] = {
+>> +	{"INT33FD", (kernel_ulong_t)&intel_soc_pmic_config_crc},
+>> +	{ },
+>> +};
+>> +MODULE_DEVICE_TABLE(acpi, intel_soc_pmic_acpi_match);
+> 
+> Does ACPI have a match function to extact it's .driver_data attribute?
+> 
+> If so, are you using it here? If not, why not?
+> 
+
+The ACPI table is used in i2c_device_match(), and the i2c table is used
+in i2c_device_probe(), so the id in the i2c table is actually fed to
+intel_soc_pmic_probe(). But I only found out now that having the i2c
+table alone is enough, because i2c_device_match will fallback to the i2c
+table if there's no ACPI table. So to keep it simple, I'll remove the
+ACPI table completely.
+
+By the way, the GPIO child driver got reviewed-by from Linus Walleij,
+but can't be merged because it depends on intel_soc_pmic.h. May I
+include it in next version of the patch set and have it merged along
+with the MFD driver?
+
+Best Regards
+Lejun
