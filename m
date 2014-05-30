@@ -1,71 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934442AbaE3RQh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 13:16:37 -0400
-Received: from mail-we0-f178.google.com ([74.125.82.178]:39267 "EHLO
-	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964830AbaE3ROU (ORCPT
+	id S934485AbaE3RQw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 13:16:52 -0400
+Received: from mail-we0-f182.google.com ([74.125.82.182]:35937 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934081AbaE3RQt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 13:14:20 -0400
-From: srinivas.kandagatla@linaro.org
-To: Russell King <linux@arm.linux.org.uk>,
-        Ulf Hansson <ulf.hansson@linaro.org>, linux-mmc@vger.kernel.org
-Cc: Chris Ball <chris@printf.net>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linus.walleij@linaro.org,
-        Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-Subject: [PATCH v5 09/13] mmc: mmci: Add support to data commands via variant structure.
-Date: Fri, 30 May 2014 18:14:13 +0100
-Message-Id: <1401470053-27195-1-git-send-email-srinivas.kandagatla@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1401469918-26817-1-git-send-email-srinivas.kandagatla@linaro.org>
-References: <1401469918-26817-1-git-send-email-srinivas.kandagatla@linaro.org>
+	Fri, 30 May 2014 13:16:49 -0400
+From: Jes Sorensen <jes.sorensen@gmail.com>
+X-Google-Original-From: Jes Sorensen <Jes.Sorensen@gmail.com>
+Message-ID: <5388BCFD.5070606@gmail.com>
+Date: Fri, 30 May 2014 19:16:45 +0200
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Paolo Bonzini <pbonzini@redhat.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>, kvm-ia64@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-ia64@vger.kernel.org, Gleb Natapov <gleb@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>
+Subject: Re: does anybody still care about kvm-ia64?
+References: <53888B65.40806@redhat.com>
+In-Reply-To: <53888B65.40806@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+On 05/30/14 15:45, Paolo Bonzini wrote:
+> I was thinking of removing it in Linux 3.17.  I'm not even sure it
+> compiles right now, hasn't seen any action in years, and all open-source
+> userspace code to use it has been dead for years.
+> 
+> If you disagree, please speak up loudly in the next month.
 
-On some SOCs like Qcom there are explicit bits in the command register
-to specify if its a data transfer command or not. So this patch adds
-support to such bits in variant data, giving more flexibility to the
-driver.
+I'd say take it out back and show it mercy!
 
-Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
----
- drivers/mmc/host/mmci.c | 5 +++++
- 1 file changed, 5 insertions(+)
-
-diff --git a/drivers/mmc/host/mmci.c b/drivers/mmc/host/mmci.c
-index 4c95a9b..8534c29 100644
---- a/drivers/mmc/host/mmci.c
-+++ b/drivers/mmc/host/mmci.c
-@@ -59,6 +59,7 @@ static unsigned int fmax = 515633;
-  *	      is asserted (likewise for RX)
-  * @fifohalfsize: number of bytes that can be written when MCI_TXFIFOHALFEMPTY
-  *		  is asserted (likewise for RX)
-+ * @data_cmd_enable: enable value for data commands.
-  * @sdio: variant supports SDIO
-  * @st_clkdiv: true if using a ST-specific clock divider algorithm
-  * @datactrl_mask_ddrmode: ddr mode mask in datactrl register.
-@@ -79,6 +80,7 @@ struct variant_data {
- 	unsigned int		datalength_bits;
- 	unsigned int		fifosize;
- 	unsigned int		fifohalfsize;
-+	unsigned int		data_cmd_enable;
- 	unsigned int		datactrl_mask_ddrmode;
- 	bool			sdio;
- 	bool			st_clkdiv;
-@@ -839,6 +841,9 @@ mmci_start_command(struct mmci_host *host, struct mmc_command *cmd, u32 c)
- 	if (/*interrupt*/0)
- 		c |= MCI_CPSM_INTERRUPT;
- 
-+	if (mmc_cmd_type(cmd) == MMC_CMD_ADTC)
-+		c |= host->variant->data_cmd_enable;
-+
- 	host->cmd = cmd;
- 
- 	writel(cmd->arg, base + MMCIARGUMENT);
--- 
-1.9.1
+Jes
 
