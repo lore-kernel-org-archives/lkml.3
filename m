@@ -1,83 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933063AbaE3JlB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 05:41:01 -0400
-Received: from mail-ig0-f176.google.com ([209.85.213.176]:54022 "EHLO
-	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932685AbaE3JjD (ORCPT
+	id S933136AbaE3Jl3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 05:41:29 -0400
+Received: from mail-qg0-f44.google.com ([209.85.192.44]:35836 "EHLO
+	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932639AbaE3JjA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 05:39:03 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: lee.jones@linaro.org, kernel@stlinux.com, rui.zhang@intel.com,
-        eduardo.valentin@ti.com, ajitpal.singh@st.com,
-        linux-pm@vger.kernel.org, devicetree@vger.kernel.org,
-        maxime.coquelin@st.com, patrice.chotard@st.com
-Subject: [PATCH 1/6] thermal: sti: Supply Device Tree documentation
-Date: Fri, 30 May 2014 10:38:30 +0100
-Message-Id: <1401442715-6350-2-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1401442715-6350-1-git-send-email-lee.jones@linaro.org>
-References: <1401442715-6350-1-git-send-email-lee.jones@linaro.org>
+	Fri, 30 May 2014 05:39:00 -0400
+MIME-Version: 1.0
+In-Reply-To: <1401284779-16563-1-git-send-email-srinivas.kandagatla@linaro.org>
+References: <1401284608-16428-1-git-send-email-srinivas.kandagatla@linaro.org>
+	<1401284779-16563-1-git-send-email-srinivas.kandagatla@linaro.org>
+Date: Fri, 30 May 2014 11:39:00 +0200
+Message-ID: <CAPDyKFqf-=WJ7RRpk-n4zc6rm1gEuW42Jc3zzCkWSL6mdYFh1g@mail.gmail.com>
+Subject: Re: [PATCH v4 03/13] mmc: mmci: Add Qualcomm Id to amba id table
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        linux-mmc <linux-mmc@vger.kernel.org>, Chris Ball <chris@printf.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Ajit Pal Singh <ajitpal.singh@st.com>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- .../devicetree/bindings/thermal/st-thermal.txt     | 42 ++++++++++++++++++++++
- 1 file changed, 42 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/thermal/st-thermal.txt
+On 28 May 2014 15:46,  <srinivas.kandagatla@linaro.org> wrote:
+> From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+>
+> This patch adds a fake Qualcomm ID 0x00051180 to the amba_ids, as Qualcomm
+> SDCC controller is pl180, but amba id registers read 0x0's.
+> The plan is to remove SDCC driver totally and use mmci as the main SD
+> controller driver for Qualcomm SOCs.
+>
+> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+> Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
+> ---
+>  drivers/mmc/host/mmci.c | 14 ++++++++++++++
+>  1 file changed, 14 insertions(+)
+>
+> diff --git a/drivers/mmc/host/mmci.c b/drivers/mmc/host/mmci.c
+> index a38e714..86f25a9 100644
+> --- a/drivers/mmc/host/mmci.c
+> +++ b/drivers/mmc/host/mmci.c
+> @@ -160,6 +160,14 @@ static struct variant_data variant_ux500v2 = {
+>         .pwrreg_nopower         = true,
+>  };
+>
+> +static struct variant_data variant_qcom = {
+> +       .fifosize               = 16 * 4,
+> +       .fifohalfsize           = 8 * 4,
+> +       .clkreg                 = MCI_CLK_ENABLE,
+> +       .datalength_bits        = 24,
+> +       .pwrreg_powerup         = MCI_PWR_UP,
+> +};
+> +
+>  static int mmci_card_busy(struct mmc_host *mmc)
+>  {
+>         struct mmci_host *host = mmc_priv(mmc);
+> @@ -1750,6 +1758,12 @@ static struct amba_id mmci_ids[] = {
+>                 .mask   = 0xf0ffffff,
+>                 .data   = &variant_ux500v2,
+>         },
+> +       /* Qualcomm variants */
+> +       {
+> +               .id     = 0x00051180,
+> +               .mask   = 0x000fffff,
+> +               .data   = &variant_qcom,
+> +       },
+>         { 0, 0 },
+>  };
 
-diff --git a/Documentation/devicetree/bindings/thermal/st-thermal.txt b/Documentation/devicetree/bindings/thermal/st-thermal.txt
-new file mode 100644
-index 0000000..8537fdc
---- /dev/null
-+++ b/Documentation/devicetree/bindings/thermal/st-thermal.txt
-@@ -0,0 +1,42 @@
-+Binding for Thermal Sensor driver for STMicroelectronics STi series of SoCs.
-+
-+Required parameters:
-+-------------------
-+
-+compatible : 	st,<SoC>-<module>-thermal; should be one of:
-+		  "st,stih415-sas-thermal",
-+		  "st,stih415-mpe-thermal",
-+		  "st,stih416-sas-thermal"
-+		  "st,stih416-mpe-thermal"
-+		  "st,stid127-thermal" or
-+		  "st,stih407-thermal"
-+		according to the SoC type (stih415, stih416, stid127, stih407)
-+		and module type (sas or mpe). On stid127 & stih407 there is only
-+		one die/module, so there is no module type in the compatible
-+		string.
-+clock-names : 	Should be "thermal".
-+		  See: Documentation/devicetree/bindings/resource-names.txt
-+clocks : 	Phandle of the clock used by the thermal sensor.
-+		  See: Documentation/devicetree/bindings/clock/clock-bindings.txt
-+
-+Optional parameters:
-+-------------------
-+
-+reg : 		For non-sysconf based sensors, this should be the physical base
-+		address and length of the sensor's registers.
-+interrupts :	Standard way to define interrupt number.
-+		Interrupt is mandatory to be defined when compatible is
-+		"stih416-mpe-thermal".
-+		  NB: For thermal sensor's for which no interrupt has been
-+		  defined, a polling delay of 1000ms will be used to read the
-+		  temperature from device.
-+
-+Example:
-+
-+	temp1@fdfe8000 {
-+		compatible	= "st,stih416-mpe-thermal";
-+		reg		= <0xfdfe8000 0x10>;
-+		clock-names	= "thermal";
-+		clocks		= <&CLK_M_MPETHSENS>;
-+		interrupts	= <GIC_SPI 23 IRQ_TYPE_NONE>;
-+	};
--- 
-1.8.3.2
+Shouldn't this patch be moved to very end of this patchset?
 
+If we would apply this patch on it's own - the Qcom variant wouldn't
+work, right?
+
+Kind regards
+Ulf Hansson
+
+>
+> --
+> 1.9.1
+>
