@@ -1,291 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965336AbaE3PrG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 11:47:06 -0400
-Received: from g4t3426.houston.hp.com ([15.201.208.54]:3863 "EHLO
-	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965026AbaE3Pq6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 11:46:58 -0400
-From: Waiman Long <Waiman.Long@hp.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Cc: linux-arch@vger.kernel.org, x86@kernel.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
-        Paolo Bonzini <paolo.bonzini@gmail.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Oleg Nesterov <oleg@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        Scott J Norton <scott.norton@hp.com>, Chegu Vinod <chegu_vinod@hp.com>,
-        Waiman Long <Waiman.Long@hp.com>
-Subject: [PATCH v11 15/16] pvqspinlock, x86: Enable PV qspinlock PV for KVM
-Date: Fri, 30 May 2014 11:44:01 -0400
-Message-Id: <1401464642-33890-16-git-send-email-Waiman.Long@hp.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1401464642-33890-1-git-send-email-Waiman.Long@hp.com>
-References: <1401464642-33890-1-git-send-email-Waiman.Long@hp.com>
+	id S965381AbaE3PrT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 11:47:19 -0400
+Received: from mail.kernel.org ([198.145.19.201]:47669 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965326AbaE3PrP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 May 2014 11:47:15 -0400
+Date: Fri, 30 May 2014 12:47:09 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Jean Delvare <jdelvare@suse.de>, zhangdianfang <zhangdianfang@huawei.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        David Binderman <dcb314@hotmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] toosl/perf: convert "==" into "="
+Message-ID: <20140530154709.GC1202@kernel.org>
+References: <5387D6A6.20703@huawei.com>
+ <20140530144446.1b4586f5@endymion.delvare>
+ <20140530152011.GA1202@kernel.org>
+ <20140530153729.GE7427@krava.brq.redhat.com>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="4Ckj6UjgE2iN1+kY"
+Content-Disposition: inline
+In-Reply-To: <20140530153729.GE7427@krava.brq.redhat.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the necessary KVM specific code to allow KVM to
-support the CPU halting and kicking operations needed by the queue
-spinlock PV code.
 
-Two KVM guests of 20 CPU cores (2 nodes) were created for performance
-testing in one of the following three configurations:
- 1) Only 1 VM is active
- 2) Both VMs are active and they share the same 20 physical CPUs
-   (200% overcommit)
+--4Ckj6UjgE2iN1+kY
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-The tests run included the disk workload of the AIM7 benchmark on both
-ext4 and xfs RAM disks at 3000 users on a 3.15-rc7 based kernel. The
-"ebizzy -m" test was was also run and its performance data were
-recorded.  With two VMs running, the "idle=poll" kernel option was
-added to simulate a busy guest. The entry "unfair + PV qspinlock"
-below means that both the unfair lock and PV spinlock configuration
-options were turned on.
+Em Fri, May 30, 2014 at 05:37:29PM +0200, Jiri Olsa escreveu:
+> On Fri, May 30, 2014 at 12:20:11PM -0300, Arnaldo Carvalho de Melo wrote:
+> > Em Fri, May 30, 2014 at 02:44:46PM +0200, Jean Delvare escreveu:
+> > > I don't have anything to do with this, I'm not the author of the code
+> > > nor the maintainer and I don't know anything about it. Arnaldo Carvalho
+> > > de Melo is the right person to handle this bug.
+> > 
+> > Jiri,
 
-                AIM7 XFS Disk Test (no overcommit)
-  kernel                 JPM    Real Time   Sys Time    Usr Time
-  -----                  ---    ---------   --------    --------
-  PV ticketlock         2521008    7.24      101.02       5.24
-  qspinlock             2571429    7.00       99.10       5.49
-  PV qspinlock          2535211    7.10      100.32       5.45
-  unfair qspinlock      2571429    7.00       99.25       5.40
-  unfair + PV qspinlock 2549575    7.06       99.81       5.31
+> > 	Please take this patch, you can stick my:
 
-                AIM7 XFS Disk Test (200% overcommit)
-  kernel                 JPM    Real Time   Sys Time    Usr Time
-  -----                  ---    ---------   --------    --------
-  PV ticketlock         768902    23.41      341.71       3.07
-  qspinlock             784656    22.94      346.22       2.90
-  PV qspinlock          773861    23.26      352.47       2.30
-  unfair qspinlock      835655    21.54      316.52       1.57
-  unfair + PV qspinlock 797165    22.58      323.95       3.58
+> > Acked-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-                AIM7 EXT4 Disk Test (no overcommit)
-  kernel                 JPM    Real Time   Sys Time    Usr Time
-  -----                  ---    ---------   --------    --------
-  PV ticketlock         1956522    9.20      106.58       5.35
-  qspinlock             1995565    9.02      103.19       5.37
-  PV qspinlock          1958651    9.19      106.57       5.30
-  unfair qspinlock      2022472    8.90      103.58       5.37
-  unfair + PV qspinlock 1991150    9.04      104.41       5.46
+> sure, but I dont see the patch on the lkml.. any chance of resend?
+ 
+> I guess I could dig the patch from above.. if you confirm it's
+> the only change ;-)
 
-                AIM7 EXT4 Disk Test (200% overcommit)
-  kernel                 JPM    Real Time   Sys Time    Usr Time
-  -----                  ---    ---------   --------    --------
-  PV ticketlock         576553    31.22      407.44       1.51
-  qspinlock             609550    29.53      407.14       1.69
-  PV qspinlock          592105    30.40      410.51       1.67
-  unfair qspinlock      672897    26.75      359.78       1.66
-  unfair + PV qspinlock 670391    26.85      357.09       0.63
+Hey, no need to go to such great lenghts, submitters must try and make
+it easier to maintainers! :-)
 
-                EBIZZY-M Test (no overcommit)
-  kernel                Rec/s   Real Time   Sys Time    Usr Time
-  -----                 -----   ---------   --------    --------
-  PV ticketlock         1328      10.00      82.82        1.46
-  qspinlock             1679      10.00      65.37        1.80
-  PV qspinlock          1470      10.00      75.54        1.54
-  unfair qspinlock      1518      10.00      70.80        1.71
-  unfair + PV qspinlock 1585      10.00      69.02        1.76
+Find it attached, zhangdianfang, please send it as an attachment next
+time, also please CC lkml as well.
 
-                EBIZZY-M Test (200% overcommit)
-  kernel                Rec/s   Real Time   Sys Time    Usr Time
-  -----                 -----   ---------   --------    --------
-  PV ticketlock          453      10.00      77.11        0.00
-  qspinlock              459      10.00      77.50        0.00
-  PV qspinlock           402      10.00      91.55        0.00
-  unfair qspinlock       570      10.00      62.98        0.00
-  unfair + PV qspinlock  586      10.00      59.68        0.00
+Thanks,
 
-Signed-off-by: Waiman Long <Waiman.Long@hp.com>
-Tested-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+- Arnaldo
+
+--4Ckj6UjgE2iN1+kY
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: attachment; filename="ui_browser.patch"
+
+>From acme  Thu May 29 22:31:47 2014
+Delivered-To: arnaldo.melo@gmail.com
+Received: from gmail-imap.l.google.com [74.125.131.109]
+	by zoo.ghostprotocols.net with IMAP (fetchmail-6.3.26)
+	for <acme@localhost> (single-drop); Thu, 29 May 2014 22:31:47 -0300 (BRT)
+Received: by 10.170.63.135 with SMTP id f129csp73227ykf; Thu, 29 May 2014
+ 17:54:50 -0700 (PDT)
+X-Received: by 10.66.148.98 with SMTP id tr2mr13825805pab.33.1401411289441;
+ Thu, 29 May 2014 17:54:49 -0700 (PDT)
+Return-Path: <zhangdianfang@huawei.com>
+Received: from mail.kernel.org (mail.kernel.org. [198.145.19.201]) by
+ mx.google.com with ESMTP id we6si3163030pac.143.2014.05.29.17.54.49 for
+ <arnaldo.melo@gmail.com>; Thu, 29 May 2014 17:54:49 -0700 (PDT)
+Received-SPF: softfail (google.com: domain of transitioning
+ zhangdianfang@huawei.com does not designate 198.145.19.201 as permitted
+ sender) client-ip=198.145.19.201;
+Authentication-Results: mx.google.com; spf=softfail (google.com: domain of
+ transitioning zhangdianfang@huawei.com does not designate 198.145.19.201 as
+ permitted sender) smtp.mail=zhangdianfang@huawei.com
+Received: by mail.kernel.org (Postfix) id E533120142; Fri, 30 May 2014
+ 00:54:48 +0000 (UTC)
+Delivered-To: acme@kernel.org
+Received: from mail.kernel.org (localhost [127.0.0.1]) by mail.kernel.org
+ (Postfix) with ESMTP id 3937E2035E for <acme@kernel.org>; Fri, 30 May 2014
+ 00:54:48 +0000 (UTC)
+Received: from szxga03-in.huawei.com (szxga03-in.huawei.com [119.145.14.66])
+ (using TLSv1 with cipher DES-CBC3-SHA (168/168 bits)) (No client certificate
+ requested) by mail.kernel.org (Postfix) with ESMTPS id 88E0D20142 for
+ <acme@kernel.org>; Fri, 30 May 2014 00:54:43 +0000 (UTC)
+Received: from 172.24.2.119 (EHLO szxeml207-edg.china.huawei.com)
+ ([172.24.2.119]) by szxrg03-dlp.huawei.com (MOS 4.4.3-GA FastPath queued)
+ with ESMTP id API05293; Fri, 30 May 2014 08:54:04 +0800 (CST)
+Received: from SZXEML422-HUB.china.huawei.com (10.82.67.161) by
+ szxeml207-edg.china.huawei.com (172.24.2.56) with Microsoft SMTP Server (TLS)
+ id 14.3.158.1; Fri, 30 May 2014 08:54:02 +0800
+Received: from [127.0.0.1] (10.177.27.190) by szxeml422-hub.china.huawei.com
+ (10.82.67.161) with Microsoft SMTP Server id 14.3.158.1; Fri, 30 May 2014
+ 08:53:59 +0800
+Message-ID: <5387D6A6.20703@huawei.com>
+Date: Fri, 30 May 2014 08:53:58 +0800
+From: zhangdianfang <zhangdianfang@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130509
+ Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>, Arnaldo
+ Carvalho de Melo <acme@kernel.org>, David Binderman <dcb314@hotmail.com>,
+ Jean Delvare <jdelvare@suse.de>
+Subject: [PATCH] toosl/perf: convert "==" into "="
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.27.190]
+X-CFilter-Loop: Reflected
+X-Spam-Status: No, score=-3.2 required=5.0 tests=BAYES_00,RCVD_IN_DNSWL_LOW,
+ RP_MATCHES_RCVD,UNPARSEABLE_RELAY autolearn=unavailable version=3.3.1
+X-Spam-Checker-Version: SpamAssassin 3.3.1 (2010-03-16) on mail.kernel.org
+X-Virus-Scanned: ClamAV using ClamSMTP
+Status: RO
+
+convert "==" into "="
+
+Bug description: https://bugzilla.kernel.org/show_bug.cgi?id=76751
+
+Cc: Jean Delvare <jdelvare@suse.de>
+Reported-by: David Binderman <dcb314@hotmail.com>
+Signed-off-by: Dianfang Zhang <zhangdianfang@huawei.com>
 ---
- arch/x86/kernel/kvm.c |  135 +++++++++++++++++++++++++++++++++++++++++++++++++
- kernel/Kconfig.locks  |    2 +-
- 2 files changed, 136 insertions(+), 1 deletions(-)
+ tools/perf/ui/browser.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
-index 7ab8ab3..eef427b 100644
---- a/arch/x86/kernel/kvm.c
-+++ b/arch/x86/kernel/kvm.c
-@@ -567,6 +567,7 @@ static void kvm_kick_cpu(int cpu)
- 	kvm_hypercall2(KVM_HC_KICK_CPU, flags, apicid);
- }
- 
-+#ifndef CONFIG_QUEUE_SPINLOCK
- enum kvm_contention_stat {
- 	TAKEN_SLOW,
- 	TAKEN_SLOW_PICKUP,
-@@ -794,6 +795,134 @@ static void kvm_unlock_kick(struct arch_spinlock *lock, __ticket_t ticket)
- 		}
- 	}
- }
-+#else /* !CONFIG_QUEUE_SPINLOCK */
-+
-+#ifdef CONFIG_KVM_DEBUG_FS
-+static struct dentry *d_spin_debug;
-+static struct dentry *d_kvm_debug;
-+static u32 kick_nohlt_stats;	/* Kick but not halt count	*/
-+static u32 halt_qhead_stats;	/* Queue head halting count	*/
-+static u32 halt_qnode_stats;	/* Queue node halting count	*/
-+static u32 halt_abort_stats;	/* Halting abort count		*/
-+static u32 wake_kick_stats;	/* Wakeup by kicking count	*/
-+static u32 wake_spur_stats;	/* Spurious wakeup count	*/
-+static u64 time_blocked;	/* Total blocking time		*/
-+
-+static int __init kvm_spinlock_debugfs(void)
-+{
-+	d_kvm_debug = debugfs_create_dir("kvm-guest", NULL);
-+	if (!d_kvm_debug) {
-+		printk(KERN_WARNING
-+		       "Could not create 'kvm' debugfs directory\n");
-+		return -ENOMEM;
-+	}
-+	d_spin_debug = debugfs_create_dir("spinlocks", d_kvm_debug);
-+
-+	debugfs_create_u32("kick_nohlt_stats",
-+			   0644, d_spin_debug, &kick_nohlt_stats);
-+	debugfs_create_u32("halt_qhead_stats",
-+			   0644, d_spin_debug, &halt_qhead_stats);
-+	debugfs_create_u32("halt_qnode_stats",
-+			   0644, d_spin_debug, &halt_qnode_stats);
-+	debugfs_create_u32("halt_abort_stats",
-+			   0644, d_spin_debug, &halt_abort_stats);
-+	debugfs_create_u32("wake_kick_stats",
-+			   0644, d_spin_debug, &wake_kick_stats);
-+	debugfs_create_u32("wake_spur_stats",
-+			   0644, d_spin_debug, &wake_spur_stats);
-+	debugfs_create_u64("time_blocked",
-+			   0644, d_spin_debug, &time_blocked);
-+	return 0;
-+}
-+
-+static inline void kvm_halt_stats(enum pv_lock_stats type)
-+{
-+	if (type == PV_HALT_QHEAD)
-+		add_smp(&halt_qhead_stats, 1);
-+	else if (type == PV_HALT_QNODE)
-+		add_smp(&halt_qnode_stats, 1);
-+	else /* type == PV_HALT_ABORT */
-+		add_smp(&halt_abort_stats, 1);
-+}
-+
-+static inline void kvm_lock_stats(enum pv_lock_stats type)
-+{
-+	if (type == PV_WAKE_KICKED)
-+		add_smp(&wake_kick_stats, 1);
-+	else if (type == PV_WAKE_SPURIOUS)
-+		add_smp(&wake_spur_stats, 1);
-+	else /* type == PV_KICK_NOHALT */
-+		add_smp(&kick_nohlt_stats, 1);
-+}
-+
-+static inline u64 spin_time_start(void)
-+{
-+	return sched_clock();
-+}
-+
-+static inline void spin_time_accum_blocked(u64 start)
-+{
-+	u64 delta;
-+
-+	delta = sched_clock() - start;
-+	add_smp(&time_blocked, delta);
-+}
-+
-+fs_initcall(kvm_spinlock_debugfs);
-+
-+#else /* CONFIG_KVM_DEBUG_FS */
-+static inline void kvm_halt_stats(enum pv_lock_stats type)
-+{
-+}
-+
-+static inline void kvm_lock_stats(enum pv_lock_stats type)
-+{
-+}
-+
-+static inline u64 spin_time_start(void)
-+{
-+	return 0;
-+}
-+
-+static inline void spin_time_accum_blocked(u64 start)
-+{
-+}
-+#endif /* CONFIG_KVM_DEBUG_FS */
-+
-+/*
-+ * Halt the current CPU & release it back to the host
-+ */
-+static void kvm_halt_cpu(enum pv_lock_stats type, s8 *state, s8 sval)
-+{
-+	unsigned long flags;
-+	u64 start;
-+
-+	if (in_nmi())
-+		return;
-+
-+	/*
-+	 * Make sure an interrupt handler can't upset things in a
-+	 * partially setup state.
-+	 */
-+	local_irq_save(flags);
-+	/*
-+	 * Don't halt if the CPU state has been changed.
-+	 */
-+	if (ACCESS_ONCE(*state) != sval) {
-+		kvm_halt_stats(PV_HALT_ABORT);
-+		goto out;
-+	}
-+	start = spin_time_start();
-+	kvm_halt_stats(type);
-+	if (arch_irqs_disabled_flags(flags))
-+		halt();
-+	else
-+		safe_halt();
-+	spin_time_accum_blocked(start);
-+out:
-+	local_irq_restore(flags);
-+}
-+#endif /* !CONFIG_QUEUE_SPINLOCK */
- 
- /*
-  * Setup pv_lock_ops to exploit KVM_FEATURE_PV_UNHALT if present.
-@@ -806,8 +935,14 @@ void __init kvm_spinlock_init(void)
- 	if (!kvm_para_has_feature(KVM_FEATURE_PV_UNHALT))
- 		return;
- 
-+#ifdef CONFIG_QUEUE_SPINLOCK
-+	pv_lock_ops.kick_cpu = kvm_kick_cpu;
-+	pv_lock_ops.halt_cpu = kvm_halt_cpu;
-+	pv_lock_ops.lockstat = kvm_lock_stats;
-+#else
- 	pv_lock_ops.lock_spinning = PV_CALLEE_SAVE(kvm_lock_spinning);
- 	pv_lock_ops.unlock_kick = kvm_unlock_kick;
-+#endif
- }
- 
- static __init int kvm_spinlock_init_jump(void)
-diff --git a/kernel/Kconfig.locks b/kernel/Kconfig.locks
-index f185584..a70fdeb 100644
---- a/kernel/Kconfig.locks
-+++ b/kernel/Kconfig.locks
-@@ -229,4 +229,4 @@ config ARCH_USE_QUEUE_SPINLOCK
- 
- config QUEUE_SPINLOCK
- 	def_bool y if ARCH_USE_QUEUE_SPINLOCK
--	depends on SMP && !PARAVIRT_SPINLOCKS
-+	depends on SMP && (!PARAVIRT_SPINLOCKS || !XEN)
+diff --git a/tools/perf/ui/browser.c b/tools/perf/ui/browser.c
+index d11541d..3ccf6e1 100644
+--- a/tools/perf/ui/browser.c
++++ b/tools/perf/ui/browser.c
+@@ -194,7 +194,7 @@ int ui_browser__warning(struct ui_browser *browser, int timeout,
+ 		ui_helpline__vpush(format, args);
+ 		va_end(args);
+ 	} else {
+-		while ((key == ui__question_window("Warning!", text,
++		while ((key = ui__question_window("Warning!", text,
+ 						   "Press any key...",
+ 						   timeout)) == K_RESIZE)
+ 			ui_browser__handle_resize(browser);
 -- 
 1.7.1
 
+
+--4Ckj6UjgE2iN1+kY--
