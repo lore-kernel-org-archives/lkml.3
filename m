@@ -1,62 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755120AbaE3Hqz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 03:46:55 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:57607 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751665AbaE3Hqy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 03:46:54 -0400
-Date: Fri, 30 May 2014 15:41:45 +0800
-From: Shaohua Li <shli@kernel.org>
-To: Hugh Dickins <hughd@google.com>
-Cc: Chen Yucong <slaoub@gmail.com>, akpm@linux-foundation.org,
-        ddstreet@ieee.org, mgorman@suse.de, k.kozlowski@samsung.com,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] swap: Avoid scanning invalidated region for cheap seek
-Message-ID: <20140530074145.GA2688@kernel.org>
-References: <1401069659-29589-1-git-send-email-slaoub@gmail.com>
- <alpine.LSU.2.11.1405272037080.1126@eggly.anvils>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.11.1405272037080.1126@eggly.anvils>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932229AbaE3Hvk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 03:51:40 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:52676 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751665AbaE3Hvi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 May 2014 03:51:38 -0400
+Message-ID: <1401436256.13544.7.camel@iivanov-dev>
+Subject: Re: [PATCH v2 4/4] ARM: debug: qcom: add UART addresses to Kconfig
+ help
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Matthias Brugger <matthias.bgg@gmail.com>
+Cc: Georgi Djakov <gdjakov@mm-sol.com>, Russell King <linux@arm.linux.org.uk>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, sboyd@codeaurora.org,
+        rvaswani@codeaurora.org, davidb@codeaurora.org,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-arm-msm@vger.kernel.org
+Date: Fri, 30 May 2014 10:50:56 +0300
+In-Reply-To: <CABuKBeLHOKK+DsVPBGPDmeSqceSTMGZeOd74-Jp4Z9vUWDZ_yQ@mail.gmail.com>
+References: <1400857952-6963-1-git-send-email-gdjakov@mm-sol.com>
+	 <1400857952-6963-5-git-send-email-gdjakov@mm-sol.com>
+	 <CABuKBe+B_Ga-w4aA4dApDTa26rCuhetRTJku27Madm+fHtDcLA@mail.gmail.com>
+	 <53834578.9090305@mm-sol.com>
+	 <CABuKBeJXqSi=6XY5Fg7mg_daQ4D8ornS-kn7NDPktCtro7yNNw@mail.gmail.com>
+	 <53847FA1.60509@mm-sol.com>
+	 <CABuKBeLHOKK+DsVPBGPDmeSqceSTMGZeOd74-Jp4Z9vUWDZ_yQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.1-2ubuntu2~saucy1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 27, 2014 at 08:53:00PM -0700, Hugh Dickins wrote:
-> On Mon, 26 May 2014, Chen Yucong wrote:
-> 
-> > For cheap seek, when we scan the region between si->lowset_bit
-> > and scan_base, if san_base is greater than si->highest_bit, the
-> > scan operation between si->highest_bit and scan_base is not
-> > unnecessary.
-> > 
-> > This patch can be used to avoid scanning invalidated region for
-> > cheap seek.
-> > 
-> > Signed-off-by: Chen Yucong <slaoub@gmail.com>
-> 
-> I was going to suggest that you are adding a little code to a common
-> path, in order to optimize a very unlikely case: which does not seem
-> worthwhile to me.
-> 
-> But digging a little deeper, I think you have hit upon something more
-> interesting (though still in no need of your patch): it looks to me
-> like that is not even a common path, but dead code.
-> 
-> Shaohua, am I missing something, or does all SWP_SOLIDSTATE "seek is
-> cheap" now go your si->cluster_info scan_swap_map_try_ssd_cluster()
-> route?  So that the "last_in_cluster < scan_base" loop in the body
-> of scan_swap_map() is just redundant, and should have been deleted?
+On Thu, 2014-05-29 at 17:26 +0200, Matthias Brugger wrote:
 
-Sorry for the delay, you are right. SSD case always goes
-scan_swap_map_try_ssd_cluster, otherwise we just scan from lowest_bit to
-highest_bit, so the "last_in_cluster < scan_base" loop is dead.
+> IMHO the dependancy is that DEBUG_LL uses the uart device, and this is
+> added when you add the dts.
+> AFAIK there can arise problems with multi-platform kernels if the uart
+> is not present.
 
-Yucong, can you resent a patch to delete it as Hugh suggested?
+Once DEBUG_LL is enabled you don't have multi-platform kernel anymore,
+so this should not be an issue here.
 
-Thanks,
-Shaohua
+Regards,
+Ivan
+
