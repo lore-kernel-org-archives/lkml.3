@@ -1,84 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755317AbaE3Isp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 04:48:45 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:45301 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751665AbaE3Isk (ORCPT
+	id S932498AbaE3IuA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 04:50:00 -0400
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:53545 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754888AbaE3It4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 04:48:40 -0400
-Message-ID: <538846F1.3030303@linux.vnet.ibm.com>
-Date: Fri, 30 May 2014 14:23:05 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Fri, 30 May 2014 04:49:56 -0400
+Date: Fri, 30 May 2014 10:49:26 +0200
+From: Johan Hovold <jhovold@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Johan Hovold <jhovold@gmail.com>,
+        Dirk Brandewie <dirk.brandewie@gmail.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>, dirk.j.brandewie@intel.com,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Doug Smythies <dsmythies@telus.net>, Yuyang Du <yuyang.du@intel.com>,
+        Stratos Karafotis <stratosk@semaphore.gr>
+Subject: Re: Performance regression in v3.14
+Message-ID: <20140530084926.GA2044@localhost>
+References: <20140506163559.GA5308@localhost>
+ <CAKohpokYEvazxm0-JJXPzq-4OgLXmROfaCMcgHDZwugChOxtsQ@mail.gmail.com>
+ <536A3EE9.5050409@intel.com>
+ <20140521090051.GO21412@localhost>
+ <20140528075945.GA21705@localhost>
+ <20140530022734.GC19080@kroah.com>
 MIME-Version: 1.0
-To: Waiman Long <waiman.long@hp.com>
-CC: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        konrad.wilk@oracle.com, pbonzini@redhat.com, gleb@redhat.com,
-        peterz@infradead.org, paulmck@linux.vnet.ibm.com,
-        torvalds@linux-foundation.org, davej@redhat.com, oleg@redhat.com,
-        x86@kernel.org, jeremy@goop.org, paul.gortmaker@windriver.com,
-        ak@linux.intel.com, jasowang@redhat.com, fernando_b1@lab.ntt.co.jp,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        xen-devel@lists.xenproject.org, riel@redhat.com, mtosatti@redhat.com,
-        chegu_vinod@hp.com
-Subject: Re: [RFC] Implement Batched (group) ticket lock
-References: <1401279399-23854-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com> <5387B87E.2010609@hp.com>
-In-Reply-To: <5387B87E.2010609@hp.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14053008-7014-0000-0000-000004FABAE9
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140530022734.GC19080@kroah.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/30/2014 04:15 AM, Waiman Long wrote:
-> On 05/28/2014 08:16 AM, Raghavendra K T wrote:
->> - we need an intelligent way to nullify the effect of batching for
->> baremetal
->>   (because extra cmpxchg is not required).
->
-> To do this, you will need to have 2 slightly different algorithms
-> depending on the paravirt_ticketlocks_enabled jump label.
+On Thu, May 29, 2014 at 07:27:34PM -0700, Greg Kroah-Hartman wrote:
+> On Wed, May 28, 2014 at 09:59:45AM +0200, Johan Hovold wrote:
+> > [ +CC: Greg, Doug, Stratos, Yuyang ]
+> > 
+> > On Wed, May 21, 2014 at 11:00:51AM +0200, Johan Hovold wrote:
+> > > On Wed, May 07, 2014 at 07:10:49AM -0700, Dirk Brandewie wrote:
+> > > > On 05/06/2014 10:40 PM, Viresh Kumar wrote:
+> > > > > Cc'ing Dirk who is taking care of intel-pstate driver.
+> > > > >
+> > > > 
+> > > > Thanks Viresh I had seen this thread.
+> > > > 
+> > > > I am looking into it
+> > > 
+> > > Any updates on this, Dirk? 3.14 is still basically unusable with the
+> > > intel_pstate driver.
+> > > 
+> > > Any fixes or workarounds posted elsewhere that I can apply in the
+> > > meantime?
+> > 
+> > Another week and still no reply, Dirk?
+> > 
+> > I tried applying your (rejected) patch "intel_pstate: Remove C0
+> > tracking" posted here:
+> > 
+> > 	https://lkml.org/lkml/2014/5/8/574
+> > 
+> > to v3.14.4 and it fixes the problem as expected.
+> > 
+> > So we have a commit fcb6a15c2e7e ("intel_pstate: Take core C0 time into
+> > account for core busy calculation") that went into v3.14-rc2 (and was
+> > even marked for *stable*) that first broke Greg KH's system:
+> > 
+> > 	https://lkml.org/lkml/2014/2/19/626
+> > 
+> > That was apparently fixed by e66c17683746 ("intel_pstate: Change
+> > busy calculation to use fixed point math."), but still left v3.14
+> > basically unusable for lower-intensity workloads such as my
+> > bash-completion example and other reported regressions:
+> > 
+> > 	https://bugzilla.kernel.org/show_bug.cgi?id=75121
+> > 
+> > Sure there may be issues with v3.13 not hitting the lowest frequencies
+> > but at least the system was *usable*.
+> > 
+> > In my opinion there's really no other option than to restore the 3.13
+> > behaviour by effectively reverting fcb6a15c2e7e ("intel_pstate: Take
+> > core C0 time into account for core busy calculation") until you have
+> > figured out a way to take C0 into account without breaking things too
+> > badly.
+> 
+> Dirk has posted some patches, do they fix the problem for you?
 
-Thanks for the hint Waiman.
+Thanks for letting me know.
 
-[...]
->> +spin:
->> +    for (;;) {
->> +        inc.head = ACCESS_ONCE(lock->tickets.head);
->> +        if (!(inc.head&  TICKET_LOCK_HEAD_INC)) {
->> +            new.head = inc.head | TICKET_LOCK_HEAD_INC;
->> +            if (cmpxchg(&lock->tickets.head, inc.head, new.head)
->> +                    == inc.head)
->> +                goto out;
->> +        }
->> +        cpu_relax();
->> +    }
->> +
->
-> It had taken me some time to figure out the the LSB of inc.head is used
-> as a bit lock for the contending tasks in the spin loop. I would suggest
-> adding some comment here to make it easier to look at.
+As the series posted yesterday includes the effective revert
+"intel_pstate: Remove C0 tracking" mentioned above, they do.  
 
-Agree. 'll add a comment.
+The series does not apply at all to v3.14.4, and I choose to include
+d37e2b764499 ("intel_pstate: remove unneeded sample buffers") in order
+to ease backporting slightly.
 
-[...]
->> +#define TICKET_BATCH    0x4 /* 4 waiters can contend simultaneously */
->> +#define TICKET_LOCK_BATCH_MASK
->> (~(TICKET_BATCH<<TICKET_LOCK_INC_SHIFT) + \
->> +                  TICKET_LOCK_TAIL_INC - 1)
->
-> I don't think TAIL_INC has anything to do with setting the BATCH_MASK.
-> It works here because TAIL_INC is 2. I think it is clearer to define it
-> as either "(~(TICKET_BATCH<<TICKET_LOCK_INC_SHIFT) + 1)" or
-> (~((TICKET_BATCH<<TICKET_LOCK_INC_SHIFT) - 1)).
+I don't see much difference from applying only the revert patch or all
+of them. I've included turbostat output from when running my
+bash-construct on an idle system (running X, though) below.
 
-You are right.
-Thanks for pointing out. Your expression is simple and clearer. 'll use
-one of them.
+With 3.14.4 all cores appear stuck at minimum frequency. With the
+revert patch (with or without the remaining patches) frequencies are
+around 3.7Ghz for all cores.
 
+As at least one of the new patches has already raised some discussion:
+
+	http://marc.info/?l=linux-pm&m=140141648726863&w=2
+
+perhaps we should consider simply applying and backporting the revert
+(and fixed-point rounding fix) to restore v3.13 behaviour and un-break
+v3.14 in the meantime?
+
+Thanks,
+Johan
+
+
+v3.14.4 (with "intel_pstate: Remove C0 tracking" and a version of
+"intel_pstate: Fix fixed point rounding macro" from two weeks ago):
+
+cor CPU    %c0  GHz  TSC SMI    %c1    %c3    %c6    %c7 CTMP PTMP   %pc2   %pc3   %pc6   %pc7  Pkg_W  Cor_W GFX_W
+         12.63 3.88 3.39   0  13.32   0.02   0.06  73.96   41   41   0.00   0.00   0.00   0.00  18.69  10.70  0.00
+  0   0   0.50 3.88 3.39   0   3.28   0.10   0.24  95.88   31   41   0.00   0.00   0.00   0.00  18.69  10.70  0.00
+  0   4   0.57 3.87 3.39   0   3.22
+  1   1   0.09 3.61 3.39   0   0.03   0.00   0.00  99.88   31
+  1   5   0.01 3.74 3.39   0   0.11
+  2   2   0.02 3.61 3.39   0   0.02   0.00   0.00  99.96   31
+  2   6   0.01 3.80 3.39   0   0.04
+  3   3  99.85 3.89 3.39   0   0.04   0.00   0.00   0.12   41
+  3   7   0.01 3.81 3.39   0  99.87
+1.194291 sec
+
+v3.14.4 (with patches from yesterday):
+
+cor CPU    %c0  GHz  TSC SMI    %c1    %c3    %c6    %c7 CTMP PTMP   %pc2   %pc3   %pc6   %pc7  Pkg_W  Cor_W GFX_W
+         12.63 3.88 3.39   0  13.33   0.04   0.04  73.95   44   45   0.00   0.00   0.00   0.00  18.65  10.70  0.00
+  0   0   0.52 3.88 3.39   0   3.28   0.17   0.16  95.88   33   45   0.00   0.00   0.00   0.00  18.65  10.70  0.00
+  0   4   0.58 3.87 3.39   0   3.22
+  1   1   0.10 3.45 3.39   0   0.05   0.00   0.00  99.85   34
+  1   5   0.01 3.67 3.39   0   0.14
+  2   2   0.02 3.56 3.39   0   0.04   0.00   0.00  99.94   34
+  2   6   0.01 3.63 3.39   0   0.05
+  3   3  99.82 3.89 3.39   0   0.05   0.00   0.00   0.13   44
+  3   7   0.01 3.70 3.39   0  99.86
+1.197190 sec
+
+v3.14.4 (current stable):
+
+cor CPU    %c0  GHz  TSC SMI    %c1    %c3    %c6    %c7 CTMP PTMP   %pc2   %pc3   %pc6   %pc7  Pkg_W  Cor_W GFX_W
+         12.86 0.82 3.39   0  14.16   0.00   0.00  72.97   32   32   0.00   0.00   0.00   0.00   5.55   0.61  0.00
+  0   0   2.26 0.82 3.39   0   5.74   0.01   0.02  91.98   32   32   0.00   0.00   0.00   0.00   5.55   0.61  0.00
+  0   4   0.58 0.82 3.39   0   7.42
+  1   1   0.09 0.82 3.39   0   0.03   0.00   0.00  99.88   31
+  1   5   0.01 0.85 3.39   0   0.10
+  2   2   0.02 0.83 3.39   0   0.06   0.00   0.00  99.92   31
+  2   6   0.03 0.86 3.39   0   0.05
+  3   3  99.89 0.82 3.39   0   0.01   0.00   0.00   0.09   31
+  3   7   0.02 0.89 3.39   0  99.89
+5.675564 sec
