@@ -1,68 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756172AbaE3TwM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 15:52:12 -0400
-Received: from mailrelay.anl.gov ([130.202.101.22]:57168 "EHLO
-	mailrelay.anl.gov" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754167AbaE3TwK (ORCPT
+	id S933954AbaE3Tyz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 15:54:55 -0400
+Received: from mout.kundenserver.de ([212.227.17.10]:65231 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751525AbaE3Tyx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 15:52:10 -0400
-X-IronPort-AV: E=Sophos;i="4.98,943,1392184800"; 
-   d="scan'208";a="45589633"
-Date: Fri, 30 May 2014 14:52:08 -0500
-From: Kamil Iskra <iskra@mcs.anl.gov>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-CC: <tony.luck@gmail.com>, <linux-kernel@vger.kernel.org>,
-        <linux-mm@kvack.org>, Andi Kleen <andi@firstfloor.org>,
-        Borislav Petkov <bp@suse.de>, <gong.chen@linux.jf.intel.com>
-Subject: Re: [PATCH] mm/memory-failure.c: support dedicated thread to handle
- SIGBUS(BUS_MCEERR_AO) thread
-Message-ID: <20140530195208.GB4067@mcs.anl.gov>
-References: <20140523033438.GC16945@gchen.bj.intel.com>
- <CA+8MBb+Una+Z5Q-Pn0OoMYaaSx9sPJ3fdriMRMgN=CE1Jdp7Cg@mail.gmail.com>
- <20140527161613.GC4108@mcs.anl.gov>
- <5384d07e.4504e00a.2680.ffff8c31SMTPIN_ADDED_BROKEN@mx.google.com>
- <CA+8MBbKuBo4c2v-Y0TOk-LUJuyJsGG=twqQyAPG5WOa8Aj4GyA@mail.gmail.com>
- <53852abb.867ce00a.3cef.3c7eSMTPIN_ADDED_BROKEN@mx.google.com>
- <FDBACF11-D9F6-4DE5-A0D4-800903A243B7@gmail.com>
- <53862f6c.91148c0a.5fb0.2d0cSMTPIN_ADDED_BROKEN@mx.google.com>
- <CA+8MBbKdKy+sbov-f+1xNnj=syEM5FWR1BV85AgRJ9S+qPbWEg@mail.gmail.com>
- <1401327939-cvm7qh0m@n-horiguchi@ah.jp.nec.com>
+	Fri, 30 May 2014 15:54:53 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Hiroshi Doyu <hdoyu@nvidia.com>
+Cc: Rob Herring <robherring2@gmail.com>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Cho KyongHo <pullip.cho@samsung.com>,
+        Grant Grundler <grundler@chromium.org>,
+        Dave Martin <Dave.Martin@arm.com>, Marc Zyngier <marc.zyngier@arm.com>,
+        Will Deacon <will.deacon@arm.com>, Joerg Roedel <joro@8bytes.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Linux IOMMU <iommu@lists.linux-foundation.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] devicetree: Add generic IOMMU device tree bindings
+Date: Fri, 30 May 2014 21:54:37 +0200
+Message-ID: <4462924.8iRbdkOPp7@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <87tx87rrp2.fsf@nvidia.com>
+References: <1400877218-4113-1-git-send-email-thierry.reding@gmail.com> <4545972.cM7IP1qTXQ@wuerfel> <87tx87rrp2.fsf@nvidia.com>
 MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1401327939-cvm7qh0m@n-horiguchi@ah.jp.nec.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Provags-ID: V02:K0:H5r2Gwa0A1MwpkhE6Ck6wUn/WcLjP7HBGGNIUPIn7Bq
+ qGoIzytQUz+3F+5A8A8Yp63u3DiioJXa7NIUM3gPu7Y7o9KqOQ
+ Al6wRYNnsdtHpyncg3Oeah3Y43oy6MV3Sra+pIYDD8SOqQJ2y+
+ g+ZZFfgEoG96KVVAmZzQWpi1brziVmwDiRx+lenH3O/qRz8bOq
+ vTKRyv53n4Gx8YHBQxaEFLABJYKOC/UY+n3bMwMgUL8NTedUhL
+ F6Zn1HqDASa/hBxdqLdxlFrRx0dle/U9XC/DAP1qMUo9yR9WR0
+ D/fFcMZLQVZZzPx6kOVzi5NETHQa809NUzF5en6L6H02ZJ7dI/
+ k8go3syH4SW5hERRAwOs=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 28, 2014 at 21:45:41 -0400, Naoya Horiguchi wrote:
-
-> >  The user could also mark more than
-> > one thread in this way - in which case the kernel will pick
-> > the first one it sees (is that oldest, or newest?) that is marked.
-> > Not sure if this would ever be useful unless you want to pass
-> > responsibility around in an application that is dynamically
-> > creating and removing threads.
+On Friday 30 May 2014 22:29:13 Hiroshi Doyu wrote:
 > 
-> I'm not sure which is better to send signal to first-found marked thread
-> or to all marked threads. If we have a good reason to do the latter,
-> I'm ok about it. Any idea?
+> IIUC the original problem, "a master with 8 streamIDs" means something
+> like below, where some devices have multiple IDs but some have a
+> single. A sinle #address-cells cannot afford those 2 masters at once.
+> 
+>        iommu {
+>                /* the specifier represents the ID of the master */
+>                #address-cells = <1>;
+>                #size-cells = <0>;
+>        };
+> 
+>         master@a {
+>                 ...
+>                 iommus = <&smmu 1 2 3>; # 3 IDs
+>         };
+> 
+>         master@b {
+>                 ...
+>                 iommus = <&smmu 4>;     # 1 ID
+>         };
 
-Well, it would be more flexible if the signal were sent to all marked
-threads, but I don't know if that constitutes a good enough reason to add
-the extra complexity involved.  Sometimes better is the enemy of good, and
-in this case the patch you proposed should be good enough for any practical
-case I can think of.
+This would not be the usual format really. It should instead be
 
-Naoya, Tony, thank you for taking the leadership on this issue and seeing
-it through, and for the courtesy of keeping me in the loop!
+		iommus = <&smmu 1>, <&smmu 2>, <&smmu 3>;
 
-Kamil
+which can be tedious to type.
 
--- 
-Kamil Iskra, PhD
-Argonne National Laboratory, Mathematics and Computer Science Division
-9700 South Cass Avenue, Building 240, Argonne, IL 60439, USA
-phone: +1-630-252-7197  fax: +1-630-252-5986
+> Tegra,SMMU has a similar problem and we have used a fixed size bitmap(64
+> bit) to afford 64 stream IDs so that a single device can hold multiple
+> IDs. If we apply the same bitmap to the above exmaple:
+> 
+>        iommu {
+>                /* the specifier represents the ID of the master */
+>                #address-cells = <1>;
+>                #size-cells = <0>;
+>        };
+> 
+>         master@a {
+>                 ...
+>                 iommus = <&smmu (BIT(1) | BIT(2) | BIT(3))>; # IDs 1 2 3
+>         };
+> 
+>         master@b {
+>                 ...
+>                 iommus = <&smmu BIT(4)>;     # ID 4
+>         };
+> 
+> The disadvantage of this is that this limits the max number of streamIDs
+> to support. If # of streamID is increased later more than 64, this
+> format cannot cover any more. You have to predict the max # of streamIDs
+> in advance if steamID is statically assigned.
+> 
+
+Well, the iommu specific binding could allow a variable #address-cells.
+That way, you just need to know the number of stream IDs for that instance
+of the iommu.
+
+	Arnd
