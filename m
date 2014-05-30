@@ -1,51 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933440AbaE3Pbd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 11:31:33 -0400
-Received: from mail-ve0-f170.google.com ([209.85.128.170]:39341 "EHLO
-	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753393AbaE3Pbb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 11:31:31 -0400
+	id S933597AbaE3Pcz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 11:32:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35906 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933122AbaE3Pcx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 May 2014 11:32:53 -0400
+Date: Fri, 30 May 2014 11:32:28 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: paolo <paolo.valente@unimore.it>
+Cc: Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>,
+        Li Zefan <lizefan@huawei.com>, Fabio Checconi <fchecconi@gmail.com>,
+        Arianna Avanzini <avanzini.arianna@gmail.com>,
+        Paolo Valente <posta_paolo@yahoo.it>, linux-kernel@vger.kernel.org,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org
+Subject: Re: [PATCH RFC RESEND 00/14] New version of the BFQ I/O Scheduler
+Message-ID: <20140530153228.GE16605@redhat.com>
+References: <1401194558-5283-1-git-send-email-paolo.valente@unimore.it>
 MIME-Version: 1.0
-In-Reply-To: <20140530152151.GR18016@ZenIV.linux.org.uk>
-References: <20140529105107.GB1938@lahna.fi.intel.com>
-	<20140529110439.GA2006@lahna.fi.intel.com>
-	<20140529133036.GJ18016@ZenIV.linux.org.uk>
-	<CA+55aFzYjRrvSaF=wGimrgtEqR7GHbu1ku1qn1wQs5wgQrCZdg@mail.gmail.com>
-	<20140529154454.GK18016@ZenIV.linux.org.uk>
-	<20140529162307.GL18016@ZenIV.linux.org.uk>
-	<CA+55aFyRDJpm2Wfg9jvXCsKYgt36=6A_++bX+Q=C4MvQRbqh_A@mail.gmail.com>
-	<20140529165351.GM18016@ZenIV.linux.org.uk>
-	<20140529185201.GN18016@ZenIV.linux.org.uk>
-	<20140530081238.GA1957@lahna.fi.intel.com>
-	<20140530152151.GR18016@ZenIV.linux.org.uk>
-Date: Fri, 30 May 2014 08:31:30 -0700
-X-Google-Sender-Auth: 6gF7be3_t-KJU1RJ-aLFGAR3yy0
-Message-ID: <CA+55aFxLNvBDYtiq92DvuVqUk7byWeYiL1svbNQdXg7MRtbBcQ@mail.gmail.com>
-Subject: Re: fs/dcache.c - BUG: soft lockup - CPU#5 stuck for 22s! [systemd-udevd:1667]
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Miklos Szeredi <mszeredi@suse.cz>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1401194558-5283-1-git-send-email-paolo.valente@unimore.it>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 30, 2014 at 8:21 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
->
-> Linus, how would you prefer it to be handled?
+On Tue, May 27, 2014 at 02:42:24PM +0200, paolo wrote:
 
-I'll just have to do an rc8. I really hoped to avoid it, because we're
-going on our family vacation when school is out in two weeks, and it
-causes problems for the merge window, but it's not like there is much
-choice - I can't do a 3.15 release with a known regression like that.
+[..]
+> Strong fairness guarantees (already provided by BFQ-v0)
+> 
+> As for long-term guarantees, BFQ distributes the device throughput
+> (and not just the device time) as desired to I/O-bound applications,
+> with any workload and regardless of the device parameters.
 
-So just send me the pull request, and I'll pull it. I'll probably do
-the "let's increase the x86-64 stack size to 16kB" too, to close
-_that_ issue as well.
+I don't think most of the people care about strong fairness guarantee.
+As an algorithm round robin is not bad for ensuring fairness. CFQ had
+started with that but then it stopped focussing on fairness and rather
+focussed on trying to address various real issues.
 
-                   Linus
+And CFQ's problems don't arise from not having a good fairness algorithm.
+So I don't think this should be the reason for taking a new scheduler.
+
+I think instead of numbers, what would help is a short description
+that what's the fundamental problem with CFQ which BFQ does not
+have and how did you solve that issue.
+
+One issue you seemed to mention is that write is a problem. CFQ 
+suppresses buffered writes very actively in an attempt to improve
+read latencies. How did you make it even better with BFQ.
+
+Last time I had looked at BFQ, it looked pretty similar to CFQ except
+that core round robin algorithm had been replaced by a more fair
+algo and more things done like less preemption etc.
+
+But personally I don't think using a more accurate fairness algorithm
+is the problem to begin with most of the time.
+
+So I fail to understand that why do we need BFQ.
+
+Thanks
+Vivek
