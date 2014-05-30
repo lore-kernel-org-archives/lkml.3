@@ -1,70 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755202AbaE3IZM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 04:25:12 -0400
-Received: from mga11.intel.com ([192.55.52.93]:18399 "EHLO mga11.intel.com"
+	id S1755168AbaE3Idb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 04:33:31 -0400
+Received: from mga01.intel.com ([192.55.52.88]:2927 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751782AbaE3IZJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 04:25:09 -0400
+	id S1753792AbaE3Id3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 May 2014 04:33:29 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.98,939,1392192000"; 
-   d="scan'208";a="539937445"
-Date: Fri, 30 May 2014 11:25:03 +0300
+   d="scan'208";a="539940117"
+Date: Fri, 30 May 2014 11:33:25 +0300
 From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Grygorii Strashko <grygorii.strashko@ti.com>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        "Zhu, Lejun" <lejun.zhu@linux.intel.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        jacob.jun.pan@linux.intel.com, bin.yang@intel.com
-Subject: Re: [PATCH v4] gpio: Add support for Intel SoC PMIC (Crystal Cove)
-Message-ID: <20140530082503.GA1645@lahna.fi.intel.com>
-References: <1400810423-14067-1-git-send-email-lejun.zhu@linux.intel.com>
- <CAAVeFu+F=nHDCpL6Vfmq26QNr74mfRD5p9at_osB3R97v7xBSA@mail.gmail.com>
- <538459E8.6010701@ti.com>
- <20140527084615.GC1801@lahna.fi.intel.com>
- <53847F39.2010503@ti.com>
- <CACRpkdbe1=Yt3UDm9f4ZmZ+K2ZB9nVL+RNr7eU_TbnK-CmNY+A@mail.gmail.com>
- <20140529150058.GB6263@lahna.fi.intel.com>
- <53875A4B.2060604@ti.com>
- <CACRpkdZk9hFUZCoWci15EGFsJ7gOWNyFH13gJjHB9EcQT4ONRQ@mail.gmail.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Zhang Rui <rui.zhang@intel.com>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, matthew.garrett@nebula.com
+Subject: Re: [PATCH 0/10] ACPI enumeration rework (was: Re: [PATCH V7 00/11]
+ ACPI: ACPI enumeration rework)
+Message-ID: <20140530083325.GB1645@lahna.fi.intel.com>
+References: <1400781753-2682-1-git-send-email-rui.zhang@intel.com>
+ <35042328.kk6ZUUdfyN@vostro.rjw.lan>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CACRpkdZk9hFUZCoWci15EGFsJ7gOWNyFH13gJjHB9EcQT4ONRQ@mail.gmail.com>
+In-Reply-To: <35042328.kk6ZUUdfyN@vostro.rjw.lan>
 Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 29, 2014 at 05:22:05PM +0200, Linus Walleij wrote:
-> On Thu, May 29, 2014 at 6:03 PM, Grygorii Strashko
-> <grygorii.strashko@ti.com> wrote:
+On Fri, May 30, 2014 at 04:20:41AM +0200, Rafael J. Wysocki wrote:
+> On Friday, May 23, 2014 02:02:22 AM Zhang Rui wrote:
+> > Hi, all,
+> > 
+> > Currently, PNP bus is used as the default bus for for enumerating ACPI
+> > devices with _HID/_CID.
+> > For a device that needs to be enumerated to platform bus, we need to add
+> > its id string to the platform scan handler white list explicitly.
+> > 
+> > This becomes a problem as more and more _HID devices need to be
+> > enumerated to platform bus nowadays, thus the list is continuously growing.
+> > 
+> > So, a solution that uses platform bus for _HID enumeration by default
+> > is preferred.
+> > 
 > 
-> > Also, I'd like to note that GPIO IRQs can be accessible not only
-> > when GPIO chips is added, but also when IRQ domain is registered
-> > (at least it's valid for DT cases). In these cases gpiod_to_irq()
-> > might be not used at all.
+> OK, this has had several rounds of review already and we're really starting
+> to run out of time with it, so my version of this patchset follows.
 > 
-> Yes. We concluded some time back that gpio_chip:s and
-> irq_chip:s are orthogonal abstractions: you should be able
-> to use one of them without paying any respect to the other.
-> 
-> We only added the ability to flag GPIO lines as used for
-> IRQs so they would not be set to output by mistake...
-> (Straightening up the semantics.)
-> 
-> The only real semantic dependence that really makes sense
-> is .to_irq() which leads to this semantic registration ordering.
+> It is mostly based on your patches, but reordered and with some major
+> changes.  Compiled only for now, so please let me know if there's any
+> breakage in it.  [The last patch will not apply without update of the
+> device list being removed, but generally this is on top of linux-next
+> material.]
 
-acpi_gpiochip_request_interrupts() depends on ->to_irq() to be set
-before acpi_gpiochip_add() is called. Since the ordering changes this
-won't work anymore.
+The series looks good to me now.
 
-I'm thinking that could we solve this so that we call
-acpi_gpiochip_request_interrupts() at the end of gpiochip_irqchip_add()
-and convert both pinctrl-baytrail and gpio-lynxpoint to use
-gpiochip_irqchip_add()?
+You can add
+
+Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+
+to all the patches if you like.
