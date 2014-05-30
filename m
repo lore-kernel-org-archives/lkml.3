@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933509AbaE3PB3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 11:01:29 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:18815 "EHLO
+	id S933244AbaE3PEG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 11:04:06 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:18893 "EHLO
 	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932413AbaE3PB2 (ORCPT
+	with ESMTP id S1752856AbaE3PED (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 11:01:28 -0400
+	Fri, 30 May 2014 11:04:03 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Fri, 30 May 2014 07:56:24 -0700
+	by hqnvupgp08.nvidia.com on Fri, 30 May 2014 07:58:59 -0700
 From: Peter De Schrijver <pdeschrijver@nvidia.com>
 To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: <linux-tegra@vger.kernel.org>, Mike Turquette <mturquette@linaro.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH] clk: flatten clk tree in debugfs
-Date: Fri, 30 May 2014 18:01:20 +0300
-Message-ID: <1401462080-14848-1-git-send-email-pdeschrijver@nvidia.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-tegra@vger.kernel.org>,
+        Mike Turquette <mturquette@linaro.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH RESEND] clk: flatten clk tree in debugfs
+Date: Fri, 30 May 2014 18:03:57 +0300
+Message-ID: <1401462237-14954-1-git-send-email-pdeschrijver@nvidia.com>
 X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
 X-NVConfidentiality: public
 MIME-Version: 1.0
@@ -31,6 +31,10 @@ clocks and their hierarchy as a directory structure under
 clk_orphan_summary.
 
 Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
+---
+Apologies for the noise. I missed linux-arm-kernel@lists.infradead.org in the
+first post.
+
 ---
  drivers/clk/clk.c |  114 ++++++++++++++++------------------------------------
  1 files changed, 35 insertions(+), 79 deletions(-)
