@@ -1,67 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933819AbaE3Pz0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 11:55:26 -0400
-Received: from casper.infradead.org ([85.118.1.10]:53289 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932413AbaE3PzU (ORCPT
+	id S965144AbaE3P4W (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 11:56:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60906 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964845AbaE3P4V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 11:55:20 -0400
-Date: Fri, 30 May 2014 17:55:09 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>, Jean Delvare <jdelvare@suse.de>,
-        zhangdianfang <zhangdianfang@huawei.com>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        David Binderman <dcb314@hotmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] toosl/perf: convert "==" into "="
-Message-ID: <20140530155509.GC11096@twins.programming.kicks-ass.net>
-References: <5387D6A6.20703@huawei.com>
- <20140530144446.1b4586f5@endymion.delvare>
- <20140530152011.GA1202@kernel.org>
- <20140530153729.GE7427@krava.brq.redhat.com>
- <20140530154709.GC1202@kernel.org>
+	Fri, 30 May 2014 11:56:21 -0400
+Date: Fri, 30 May 2014 08:59:59 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Marcel Holtmann <marcel@holtmann.org>, Miguel Oliveira <cmroliv@gmail.com>,
+        gulsah.1004@gmail.com,
+        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+        peter.p.waskiewicz.jr@intel.com, kristina.martsenko@gmail.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: nokia_h4: nokia_core.c: use usleep_range()
+ instead of msleep()
+Message-ID: <20140530155959.GA10682@kroah.com>
+References: <1401445633-5290-1-git-send-email-cmroliv@gmail.com>
+ <20140530113418.GA9670@amd.pavel.ucw.cz>
+ <7447FAB3-E22D-44C5-AD79-E366FEE57879@holtmann.org>
+ <20140530123023.GA10549@amd.pavel.ucw.cz>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="dbdikjxO6Hyl7qA/"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140530154709.GC1202@kernel.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20140530123023.GA10549@amd.pavel.ucw.cz>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, May 30, 2014 at 02:30:23PM +0200, Pavel Machek wrote:
+> Hi!
+> 
+> > >> Creating this patch for the Eudyptula Challenge.
+> > >> Replaced msleep() for a delay < 20ms with a usleep_range() between 10000us and 15000us.
+> > >> Also inserted a blank line after adeclaration.
+> > > 
+> > > So you are changing timings without testing. Plus, burning CPU power
+> > > instead of sleeping.
+> > > 
+> > > Seems you'll need another patch for the challenge :-).
+> > 
+> > I actually wonder if anybody is seriously working on this driver. My concern with the staging drivers has always been that we are quick with merging them when the work on getting them into upstream shape is actually hard. However reality is once they are in staging nobody is doing the work to clean them up and fix the issues.
+> >
+> 
+> There is active work on merging n900 changes.
 
---dbdikjxO6Hyl7qA/
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Really?  Where?
 
-On Fri, May 30, 2014 at 12:47:09PM -0300, Arnaldo Carvalho de Melo wrote:
-> Find it attached, zhangdianfang, please send it as an attachment next
-> time, also please CC lkml as well.
+> And no, it does not progress as quickly as I'd like, but we'll get
+> there. It is also requirement for n900 FM radio receiving...
+> 
+> > Greg, instead of wasting our time with this, can we just remove this driver from staging.
+> 
+> Please don't.
 
-And here I thought attachments were frowned upon ;-)
+As there has not been any real work on it since it has been merged, I
+don't see why I shouldn't remove it.  If you do get some work done on
+it, you can always revert the removal and continue on.  But the
+existance of code in staging that is not progressing forward at all is
+something that I don't like at all, and will be doing a large sweep of
+soon to remove.
 
---dbdikjxO6Hyl7qA/
-Content-Type: application/pgp-signature
+thanks,
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIbBAEBAgAGBQJTiKndAAoJEHZH4aRLwOS6YQkP92exBfYwBrPF7vvKwRaL/esh
-AkA0w6YgitNu9sua0zRc1y3nOGCR5xle8ShUuwi/Oo1Ay0VL8AbYuR/EoSW7NK9f
-U7HLzN/Hvz8UjrukgWL371QHLTiaHN07dyrmCXT7PSO2qKrUfp6EeP/cZYk57DXU
-S/8P/gFdItTnqWb4efeMzYnfxdSn/+TEq0IBQLdwn/KIoH7OxVpUPqRU7/IOKF4z
-aDZc0qVpBlaBKDgm8e0qYaTbl3bBCGSnofOZdMsUiAgjp9JX+4me+Lcyer3z94IJ
-HBlQoxVzkVtVvtxfeBmebWjFUpCnp+vo7lMX+0Gy6okYK2LNhsPGAVACJvZgv4Sh
-FfJ5H0DOKDI8sA0/txF/xDGYn+OI6bXb3PeNKqBjLN1KDG/Tz9258xWm5FHwNVhC
-dHuVUqCgyl5CNqeRw4GtgNVbRvjGYjrP5Y4uvs/YieHaY9H1NHbqiXfmNbpPR/Ve
-E+xHpnu9wM2ja8iSsN5oG+MSqEm1Jdeh6+4Xfz52r6Tzt8qpYQidI1lgpwIPZ//2
-WhWTCsEpa5VzflyKLf1UNM0V9VqUuVImuFKvoSm6uBL1OhBt1nPK61aqh09sfQc0
-/zhVV787pfm0mGwdQe8hbDW/5luyd0oLX/JljLCHwjwmfYwkr087D+KxdSgSiV9f
-Z+dNJMQRI56ktY/X7+k=
-=2lK7
------END PGP SIGNATURE-----
-
---dbdikjxO6Hyl7qA/--
+greg k-h
