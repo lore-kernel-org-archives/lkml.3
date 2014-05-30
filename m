@@ -1,70 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933738AbaE3QGA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 12:06:00 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:55192 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932378AbaE3QF5 (ORCPT
+	id S933772AbaE3QGJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 12:06:09 -0400
+Received: from mail-ve0-f176.google.com ([209.85.128.176]:50832 "EHLO
+	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932378AbaE3QGE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 12:05:57 -0400
-X-Sasl-enc: 6fab5p2zXpzclKrxkdofOqmwmnHT04+QWVa1CvbZrHPs 1401465956
-Date: Fri, 30 May 2014 09:09:33 -0700
-From: Greg KH <greg@kroah.com>
-To: Andreas Noever <andreas.noever@gmail.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: Re: [PATCH v3 12/15] pci: Add pci_fixup_suspend_late quirk pass.
-Message-ID: <20140530160933.GA11279@kroah.com>
-References: <1401117492-2870-1-git-send-email-andreas.noever@gmail.com>
- <1401117492-2870-13-git-send-email-andreas.noever@gmail.com>
- <20140528223637.GY11907@google.com>
- <CAMxnaaVwSev1EuEUghxFFzp0M2mMy3qYHgJA+rXpLhiJQH7Psg@mail.gmail.com>
+	Fri, 30 May 2014 12:06:04 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMxnaaVwSev1EuEUghxFFzp0M2mMy3qYHgJA+rXpLhiJQH7Psg@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <5388A935.9050506@zytor.com>
+References: <20140528223142.GO8554@dastard>
+	<CA+55aFyRk6_v6COPGVvu6hvt=i2A8-dPcs1X3Ydn1g24AxbPkg@mail.gmail.com>
+	<20140529013007.GF6677@dastard>
+	<CA+55aFzdq2V-Q3WUV7hQJG8jBSAvBqdYLVTNtbD4ObVZ5yDRmw@mail.gmail.com>
+	<20140529072633.GH6677@dastard>
+	<CA+55aFx+j4104ZFmA-YnDtyfmV4FuejwmGnD5shfY0WX4fN+Kg@mail.gmail.com>
+	<20140529235308.GA14410@dastard>
+	<20140530000649.GA3477@redhat.com>
+	<20140530002113.GC14410@dastard>
+	<20140530003219.GN10092@bbox>
+	<20140530013414.GF14410@dastard>
+	<5388A2D9.3080708@zytor.com>
+	<CA+55aFycqAw2AqQGv8aTPs_RxyKZqMdoyeSxWRSDk2N-PiBZeg@mail.gmail.com>
+	<5388A935.9050506@zytor.com>
+Date: Fri, 30 May 2014 09:06:03 -0700
+X-Google-Sender-Auth: qmK36jLgyaTh5ND5BosZdOvUBtQ
+Message-ID: <CA+55aFwHS2xErW6TgBHGR9JP0QZW9W7GSLec5WzbV+GGYFUu6A@mail.gmail.com>
+Subject: Re: [RFC 2/2] x86_64: expand kernel stack to 16K
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Dave Chinner <david@fromorbit.com>, Minchan Kim <minchan@kernel.org>,
+        Dave Jones <davej@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm <linux-mm@kvack.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Hugh Dickins <hughd@google.com>, Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        PJ Waskiewicz <pjwaskiewicz@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 30, 2014 at 04:33:20PM +0200, Andreas Noever wrote:
-> On Thu, May 29, 2014 at 12:36 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> > On Mon, May 26, 2014 at 05:18:09PM +0200, Andreas Noever wrote:
-> >
-> > Please adjust the subject to match the drivers/pci convention, i.e., change
-> >
-> >   pci: Add pci_fixup_suspend_late quirk pass.
-> >
-> > to
-> >
-> >   PCI: Add pci_fixup_suspend_late quirk pass
-> >
-> >> Add pci_fixup_suspend_late as a new pci_fixup_pass. The pass is called
-> >> from suspend_noirq and poweroff_noirq. Using the same pass for suspend
-> >> and hibernate is consistent with resume_early which is called by
-> >> resume_noirq and restore_noirq.
-> >>
-> >> The new quirk pass is required for Thunderbolt support on Apple
-> >> hardware.
-> >>
-> >> Signed-off-by: Andreas Noever <andreas.noever@gmail.com>
-> >
-> > Acked-by: Bjorn Helgaas <bhelgaas@google.com>
-> 
-> Thanks for reading through the series. I will make those changes for
-> the next version.
-> 
-> > I assume you'll merge this along with the rest of the series, not through
-> > my PCI tree.
-> Agreed, since I am the only user of this pass. Can you tell me whose
-> tree normally carries new drivers?
+On Fri, May 30, 2014 at 8:52 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+>>
+>> That said, it's still likely a non-production option due to the page
+>> table games we'd have to play at fork/clone time.
+>
+> Still, seems much more tractable.
 
-That's mine.  But if Matthew wants to take this in his trees, I'll have
-no objection.
+We might be able to make it more attractive by having a small
+front-end cache of the 16kB allocations with the second page unmapped.
+That would at least capture the common "lots of short-lived processes"
+case without having to do kernel page table work.
 
-thanks,
-
-greg k-h
+               Linus
