@@ -1,105 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754317AbaE3CMN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 22:12:13 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:14844 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754160AbaE3CML (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 22:12:11 -0400
-X-AuditID: cbfee68d-b7fd46d000005f36-2e-5387e8f9bc3e
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Inki Dae'" <inki.dae@samsung.com>, dri-devel@lists.freedesktop.org
-Cc: "'Seung-Woo Kim'" <sw0312.kim@samsung.com>,
-        "'Dave Airlie'" <airlied@redhat.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, kernel@stlinux.com,
-        "'Tomasz Figa'" <tomasz.figa@gmail.com>,
-        "'Lee Jones'" <lee.jones@linaro.org>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-Subject: [PATCH] drm/exynos: remove unnecessary exynos_hdmi.h file
-Date: Fri, 30 May 2014 11:12:08 +0900
-Message-id: <000a01cf7bac$8f805f60$ae811e20$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac97rI9cJVgyXR9gRCaMD23ADLppmg==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrLIsWRmVeSWpSXmKPExsVy+t8zY92fL9qDDdr+CVtcvbWAyeLK1/ds
-	FpPuT2CxuLzwEqvFhxvHWC3ufz3KaLHp8TVWi8u75rBZzDi/j8lixuSXbBardv1hdOD22Dnr
-	LrvHnWt72Dzudx9n8ti8pN7j/b6rbB59W1Yxeux+9ovR4/MmuQCOKC6blNSczLLUIn27BK6M
-	639/sBYs4Kr48nITawPjYY4uRk4OCQETifb9c5ghbDGJC/fWs3UxcnEICSxjlDjcP4sRpujD
-	jitQiemMEs2XjzJDOL8ZJe59Pc0CUsUmoCbx5cthdhBbRMBN4vXj/ywgRcwCh5gkXq/pBEsI
-	CzhJbDgPsY9FQFVi5tIvYM28ArYSUycvYIawBSV+TL4HFmcW0JLYvK2JFcKWl9i85i1QDQfQ
-	SeoSj/7qQuzSkzh3ZR8zRImIxL4X7xhB9koItHJIfGmYwg6xS0Di2+RDLBC9shKbDkC9LClx
-	cMUNlgmMYrOQbJ6FZPMsJJtnIVmxgJFlFaNoakFyQXFSepGhXnFibnFpXrpecn7uJkZIVPfu
-	YLx9wPoQYzLQ+onMUqLJ+cCkkFcSb2hsZmRhamJqbGRuaUaasJI4b9LDpCAhgfTEktTs1NSC
-	1KL4otKc1OJDjEwcnFINjE3i4V8ENh1wvBhzZNrCM9s+2V8u1hI3O25vGph8peLhhZeTEw7N
-	4pGVZp7pJvrB4Z9ZNVtig4nNcc50jgcTioO3/dnkpmlzwOtA91aLrEr9mVYTr7qKv97qlCLC
-	G+z8ZP9j5vdNIVtey9TJ29TmNclHcP5J2SypuSii6sTfuOyVXzbNMb36SYmlOCPRUIu5qDgR
-	AICNg8EAAwAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFKsWRmVeSWpSXmKPExsVy+t9jQd2fL9qDDZZs5Le4emsBk8WVr+/Z
-	LCbdn8BicXnhJVaLDzeOsVrc/3qU0WLT42usFpd3zWGzmHF+H5PFjMkv2SxW7frD6MDtsXPW
-	XXaPO9f2sHnc7z7O5LF5Sb3H+31X2Tz6tqxi9Nj97Bejx+dNcgEcUQ2MNhmpiSmpRQqpecn5
-	KZl56bZK3sHxzvGmZgaGuoaWFuZKCnmJuam2Si4+AbpumTlAlyoplCXmlAKFAhKLi5X07TBN
-	CA1x07WAaYzQ9Q0JgusxMkADCesYM67//cFasICr4svLTawNjIc5uhg5OSQETCQ+7LjCBmGL
-	SVy4tx7I5uIQEpjOKNF8+SgzhPObUeLe19MsIFVsAmoSX74cZgexRQTcJF4//s8CUsQscIhJ
-	4vWaTrCEsICTxIbzc5hBbBYBVYmZS7+ANfMK2EpMnbyAGcIWlPgx+R5YnFlAS2LztiZWCFte
-	YvOat0A1HEAnqUs8+qsLsUtP4tyVfcwQJSIS+168Y5zAKDALyaRZSCbNQjJpFpKWBYwsqxhF
-	UwuSC4qT0nON9IoTc4tL89L1kvNzNzGCU8Yz6R2MqxosDjEKcDAq8fBOSG8PFmJNLCuuzD3E
-	KMHBrCTCm/UAKMSbklhZlVqUH19UmpNafIgxGejRicxSosn5wHSWVxJvaGxiZmRpZGZhZGJu
-	TpqwkjjvwVbrQCGB9MSS1OzU1ILUIpgtTBycUg2MFl4PDmXJ893hvN7HeWHOkZSnyq7XJD/F
-	3bqw5WCnvpbAHsFdvbfi11WnHV+2Oe1CYNgGZs6Jbo0N3D+0d35RE/q7LUxGK+/X1DJ288eZ
-	FlaKD8w3Jx1Uu7+E44h0e/3tVZ7y/q9rygqOvLS21BX7Xxrtt3FHnr7jj8S+5wFKq4VerEja
-	ExahxFKckWioxVxUnAgARVqCAV0DAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S932227AbaE3CMs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 22:12:48 -0400
+Received: from mga02.intel.com ([134.134.136.20]:2903 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932152AbaE3CMr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 22:12:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,938,1392192000"; 
+   d="scan'208";a="548680597"
+Message-ID: <5387E915.4000008@linux.intel.com>
+Date: Fri, 30 May 2014 10:12:37 +0800
+From: "Zhu, Lejun" <lejun.zhu@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+CC: Grygorii Strashko <grygorii.strashko@ti.com>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        jacob.jun.pan@linux.intel.com, bin.yang@intel.com
+Subject: Re: [PATCH v4] gpio: Add support for Intel SoC PMIC (Crystal Cove)
+References: <1400810423-14067-1-git-send-email-lejun.zhu@linux.intel.com>	<CAAVeFu+F=nHDCpL6Vfmq26QNr74mfRD5p9at_osB3R97v7xBSA@mail.gmail.com>	<538459E8.6010701@ti.com>	<20140527084615.GC1801@lahna.fi.intel.com>	<53847F39.2010503@ti.com> <CACRpkdbe1=Yt3UDm9f4ZmZ+K2ZB9nVL+RNr7eU_TbnK-CmNY+A@mail.gmail.com>
+In-Reply-To: <CACRpkdbe1=Yt3UDm9f4ZmZ+K2ZB9nVL+RNr7eU_TbnK-CmNY+A@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The exynos_hdmi.h has been used for the dedicated i2c drivers
-that were already removed. Thus, the unnecessary exynos_hdmi.h
-should be removed.
-
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
----
- drivers/gpu/drm/exynos/exynos_hdmi.h |   23 -----------------------
- 1 file changed, 23 deletions(-)
- delete mode 100644 drivers/gpu/drm/exynos/exynos_hdmi.h
-
-diff --git a/drivers/gpu/drm/exynos/exynos_hdmi.h b/drivers/gpu/drm/exynos/exynos_hdmi.h
-deleted file mode 100644
-index 0ddf395..0000000
---- a/drivers/gpu/drm/exynos/exynos_hdmi.h
-+++ /dev/null
-@@ -1,23 +0,0 @@
--/*
-- *
-- * Copyright (c) 2011 Samsung Electronics Co., Ltd.
-- * Authors:
-- *	Inki Dae <inki.dae@samsung.com>
-- *	Seung-Woo Kim <sw0312.kim@samsung.com>
-- *
-- * This program is free software; you can redistribute  it and/or modify it
-- * under  the terms of  the GNU General  Public License as published by the
-- * Free Software Foundation;  either version 2 of the  License, or (at your
-- * option) any later version.
-- */
--
--#ifndef _EXYNOS_HDMI_H_
--#define _EXYNOS_HDMI_H_
--
--void hdmi_attach_ddc_client(struct i2c_client *ddc);
--void hdmi_attach_hdmiphy_client(struct i2c_client *hdmiphy);
--
--extern struct i2c_driver hdmiphy_driver;
--extern struct i2c_driver ddc_driver;
--
--#endif
--- 
-1.7.10.4
 
 
+On 5/29/2014 9:37 PM, Linus Walleij wrote:
+> On Tue, May 27, 2014 at 2:04 PM, Grygorii Strashko
+> <grygorii.strashko@ti.com> wrote:
+>> On 05/27/2014 11:46 AM, Mika Westerberg wrote:
+(...)
+> 
+> My idea is that you should call gpiochip_add() *first* and then
+> add the IRQs to the chip. In succession.
+> 
+> Rationale: with dynamic GPIO numbers, gpio_to_irq()
+> cannot reasonably be working before the gpiochip is added,
+> so it should be added first, then the irqchip. Since irq_to_gpio()
+> is *NOT* to be used (rather obliterated), this is the sequence
+> we mandate.
+> 
+> This is how the new irqchip helpers work by the way. As I
+> introduce this to more and more drivers it will look more and
+> more like this. And attack patches tagged RFT switching the
+> semantics of drivers are appreciated.
+> 
+> Yours,
+> Linus Walleij
+> 
+
+Thanks. I'll use this sequence during probe().
+
+(...)
+	cg->regmap = pmic->regmap;
+
+	retval = gpiochip_add(&cg->chip);
+	if (retval) {
+		dev_warn(&pdev->dev, "add gpio chip error: %d\n", retval);
+		return ret;
+	}
+
+	gpiochip_irqchip_add(&cg->chip, &crystalcove_irqchip, 0,
+			     handle_simple_irq, IRQ_TYPE_NONE);
+
+	retval = request_threaded_irq(irq, NULL, crystalcove_gpio_irq_handler,
+				      IRQF_ONESHOT, KBUILD_MODNAME, cg);
+
+	if (retval) {
+		dev_warn(&pdev->dev, "request irq failed: %d\n", retval);
+		WARN_ON(gpiochip_remove(&cg->chip));
+		return retval;
+	}
+
+	return 0;
+}
+
+Is the code above OK?
+
+But this code will trigger a crash in gpiolib-acpi. Currently at the end
+of gpiochip_add(), it calls:
+
+gpiochip_add() -> acpi_gpiochip_add() -> acpi_gpiochip_request_interrupts()
+
+acpi_gpiochip_request_interrupts() needs ->to_irq to work. Without having
+called gpiochip_irqchip_add() already, this will be NULL:
+
+        if (!chip->to_irq)
+                return;    <-- It will return here.
+
+        INIT_LIST_HEAD(&acpi_gpio->events);
+
+In the tear down path, acpi_gpiochip_free_interrupts() will find to_irq is
+no longer NULL, then it will walk an uninitialized list.
+
+So, should this be fixed in gpiolib-acpi?
+
+Best Regards
+Lejun
