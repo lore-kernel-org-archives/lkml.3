@@ -1,131 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030277AbaE3UFd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 16:05:33 -0400
-Received: from mout.kundenserver.de ([212.227.17.13]:58250 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030248AbaE3UF0 (ORCPT
+	id S1030297AbaE3UFk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 16:05:40 -0400
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:56668 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030248AbaE3UFh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 16:05:26 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-kernel@vger.kernel.org
-Cc: linux-arch@vger.kernel.org, joseph@codesourcery.com,
-        john.stultz@linaro.org, hch@infradead.org, tglx@linutronix.de,
-        geert@linux-m68k.org, lftan@altera.com, hpa@zytor.com,
-        linux-fsdevel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Jan Kara <jack@suse.cz>
-Subject: [RFC 21/32] udf: convert to struct inode_time
-Date: Fri, 30 May 2014 22:01:45 +0200
-Message-Id: <1401480116-1973111-22-git-send-email-arnd@arndb.de>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1401480116-1973111-1-git-send-email-arnd@arndb.de>
-References: <1401480116-1973111-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:8vZo5qoZae4kUvnPEvcLaxrlGxvw/1w2XjBOmYn/bFk
- vh5ZWgef+hSJFaSprfUsh5sdukhcwUrm+d1WJEMF0AOZBUCASY
- NA6ellJGdas+7Fjf2+U+4oaxNR2mo8/qZKjGG0LbYCOLyLkwrN
- iyu2UW+YI0hwVgic6iuhzfRnE3ZlOpXEfoP4uBeA/a8RQZOgIp
- OqeCUINFHQSOizTzpc4TCBq8fdj/qSL9X/+B93jpSJSyMi3r96
- r1ZakpJ9VSDs9dpYTplXw+0wjSuIWoLJAUhL0LQ5cFANZHfy/Z
- hZeejr2f42x3N7G1XQRbl3S+06EYxkEDf0hyk2QbbU4POonWUd
- fvnvIoCnsDDmmmA+nhZzzfyVRDboC5WD22ife6m7B
+	Fri, 30 May 2014 16:05:37 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140530062937.GA11096@twins.programming.kicks-ass.net>
+References: <1400860385-14555-1-git-send-email-vincent.guittot@linaro.org>
+ <1400860385-14555-11-git-send-email-vincent.guittot@linaro.org>
+ <20140529095024.GF11074@laptop.programming.kicks-ass.net> <CAKfTPtCHhxyugMOCeS0hZoEXWhgRec4uOBexZ2aB2A+Eycgi8w@mail.gmail.com>
+ <20140530062937.GA11096@twins.programming.kicks-ass.net>
+From: Vincent Guittot <vincent.guittot@linaro.org>
+Date: Fri, 30 May 2014 22:05:17 +0200
+Message-ID: <CAKfTPtDh_tm6m53N+sXftcWF5fwPFXkDWrb96Xj9iLpu+E1yYQ@mail.gmail.com>
+Subject: Re: [PATCH v2 10/11] sched: move cfs task on a CPU with higher capacity
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Mike Galbraith <efault@gmx.de>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-udf uses 16-bit year numbers for inode timestamps, which will work
-for the 15000 years, but the VFS uses struct timespec for timestamps,
-and the Linux udf implementation internally uses a time_t, both of
-which are only good until 2038 on 32-bit CPUs.
+On 30 May 2014 08:29, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Thu, May 29, 2014 at 09:37:39PM +0200, Vincent Guittot wrote:
+>> On 29 May 2014 11:50, Peter Zijlstra <peterz@infradead.org> wrote:
+>> > On Fri, May 23, 2014 at 05:53:04PM +0200, Vincent Guittot wrote:
+>> >> If the CPU is used for handling lot of IRQs, trig a load balance to check if
+>> >> it's worth moving its tasks on another CPU that has more capacity
+>> >>
+>> >> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+>> >> ---
+>> >>  kernel/sched/fair.c | 13 +++++++++++++
+>> >>  1 file changed, 13 insertions(+)
+>> >>
+>> >> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+>> >> index e8a30f9..2501e49 100644
+>> >> --- a/kernel/sched/fair.c
+>> >> +++ b/kernel/sched/fair.c
+>> >> @@ -5948,6 +5948,13 @@ static bool update_sd_pick_busiest(struct lb_env *env,
+>> >>       if (sgs->sum_nr_running > sgs->group_capacity)
+>> >>               return true;
+>> >>
+>> >> +     /*
+>> >> +      * The group capacity is reduced probably because of activity from other
+>> >> +      * sched class or interrupts which use part of the available capacity
+>> >> +      */
+>> >> +     if ((sg->sgp->power_orig * 100) > (sgs->group_power * env->sd->imbalance_pct))
+>> >> +             return true;
+>> >> +
+>> >>       if (sgs->group_imb)
+>> >>               return true;
+>> >>
+>> >
+>> > But we should already do this because the load numbers are scaled with
+>> > the power/capacity figures. If one CPU gets significant less time to run
+>> > fair tasks, its effective load would spike and it'd get to be selected
+>> > here anyway.
+>> >
+>> > Or am I missing something?
+>>
+>> The CPU could have been picked when the capacity becomes null (which
+>> occurred when the cpu_power goes below half the default
+>> SCHED_POWER_SCALE). And even after that, there were some conditions in
+>> find_busiest_group that was bypassing this busiest group
+>
+> Could you detail those conditions? FWIW those make excellent Changelog
+> material.
 
-This gets us one small step closer to lifting the VFS limit by using
-struct inode_time in udf, but the implementation still depends on
-the 'year_seconds' array that needs to be extended or replaced by
-an algorithm that calculates the correct time for every year.
-
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Jan Kara <jack@suse.cz>
----
- fs/udf/udf_i.h   | 2 +-
- fs/udf/udf_sb.h  | 2 +-
- fs/udf/udfdecl.h | 7 ++++---
- fs/udf/udftime.c | 7 ++++---
- 4 files changed, 10 insertions(+), 8 deletions(-)
-
-diff --git a/fs/udf/udf_i.h b/fs/udf/udf_i.h
-index b5cd8ed..ba12313 100644
---- a/fs/udf/udf_i.h
-+++ b/fs/udf/udf_i.h
-@@ -27,7 +27,7 @@ struct udf_ext_cache {
-  */
- 
- struct udf_inode_info {
--	struct timespec		i_crtime;
-+	struct inode_time	i_crtime;
- 	/* Physical address of inode */
- 	struct kernel_lb_addr		i_location;
- 	__u64			i_unique;
-diff --git a/fs/udf/udf_sb.h b/fs/udf/udf_sb.h
-index 1f32c7b..20ab0ca 100644
---- a/fs/udf/udf_sb.h
-+++ b/fs/udf/udf_sb.h
-@@ -135,7 +135,7 @@ struct udf_sb_info {
- 	rwlock_t		s_cred_lock;
- 
- 	/* Root Info */
--	struct timespec		s_record_time;
-+	struct inode_time	s_record_time;
- 
- 	/* Fileset Info */
- 	__u16			s_serial_number;
-diff --git a/fs/udf/udfdecl.h b/fs/udf/udfdecl.h
-index be7dabb..88320da 100644
---- a/fs/udf/udfdecl.h
-+++ b/fs/udf/udfdecl.h
-@@ -237,8 +237,9 @@ extern struct long_ad *udf_get_filelongad(uint8_t *, int, uint32_t *, int);
- extern struct short_ad *udf_get_fileshortad(uint8_t *, int, uint32_t *, int);
- 
- /* udftime.c */
--extern struct timespec *udf_disk_stamp_to_time(struct timespec *dest,
--						struct timestamp src);
--extern struct timestamp *udf_time_to_disk_stamp(struct timestamp *dest, struct timespec src);
-+extern struct inode_time *udf_disk_stamp_to_time(struct inode_time *dest,
-+						 struct timestamp src);
-+extern struct timestamp *udf_time_to_disk_stamp(struct timestamp *dest,
-+						struct inode_time src);
- 
- #endif				/* __UDF_DECL_H */
-diff --git a/fs/udf/udftime.c b/fs/udf/udftime.c
-index 1f11483..1ab6fe7 100644
---- a/fs/udf/udftime.c
-+++ b/fs/udf/udftime.c
-@@ -60,6 +60,7 @@ static const unsigned short int __mon_yday[2][13] = {
- #define SPD			0x15180	/*3600*24 */
- #define SPY(y, l, s)		(SPD * (365 * y + l) + s)
- 
-+/* FIXME: convert this to a 64-bit type */
- static time_t year_seconds[MAX_YEAR_SECONDS] = {
- /*1970*/ SPY(0,   0, 0), SPY(1,   0, 0), SPY(2,   0, 0), SPY(3,   1, 0),
- /*1974*/ SPY(4,   1, 0), SPY(5,   1, 0), SPY(6,   1, 0), SPY(7,   2, 0),
-@@ -86,8 +87,8 @@ extern struct timezone sys_tz;
- #define SECS_PER_HOUR	(60 * 60)
- #define SECS_PER_DAY	(SECS_PER_HOUR * 24)
- 
--struct timespec *
--udf_disk_stamp_to_time(struct timespec *dest, struct timestamp src)
-+struct inode_time *
-+udf_disk_stamp_to_time(struct inode_time *dest, struct timestamp src)
- {
- 	int yday;
- 	u16 typeAndTimezone = le16_to_cpu(src.typeAndTimezone);
-@@ -119,7 +120,7 @@ udf_disk_stamp_to_time(struct timespec *dest, struct timestamp src)
- }
- 
- struct timestamp *
--udf_time_to_disk_stamp(struct timestamp *dest, struct timespec ts)
-+udf_time_to_disk_stamp(struct timestamp *dest, struct inode_time ts)
- {
- 	long int days, rem, y;
- 	const unsigned short int *ip;
--- 
-1.8.3.2
-
+I need to go back to my traces and use case to be sure that I point
+the right culprit but IIRC, the imbalance was null. I will come back
+with more details once i'll be back in front of the boards.
