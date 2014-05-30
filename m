@@ -1,141 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933247AbaE3TBc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 15:01:32 -0400
-Received: from mout.kundenserver.de ([212.227.17.24]:60646 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751339AbaE3TBa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 15:01:30 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Dave Martin <Dave.Martin@arm.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Grant Grundler <grundler@chromium.org>, Joerg Roedel <joro@8bytes.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
-        Marc Zyngier <marc.zyngier@arm.com>, iommu@lists.linux-foundation.org,
-        Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
-        linux-tegra@vger.kernel.org, Cho KyongHo <pullip.cho@samsung.com>,
-        Hiroshi Doyu <hdoyu@nvidia.com>
-Subject: Re: [PATCH v2] devicetree: Add generic IOMMU device tree bindings
-Date: Fri, 30 May 2014 21:01:19 +0200
-Message-ID: <4830064.JvgTAs8Xty@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140530112226.GA3949@e103592.cambridge.arm.com>
-References: <1400877395-4235-1-git-send-email-thierry.reding@gmail.com> <20140530112226.GA3949@e103592.cambridge.arm.com>
+	id S933644AbaE3TFO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 15:05:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27354 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932303AbaE3TFM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 May 2014 15:05:12 -0400
+Date: Fri, 30 May 2014 15:05:02 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: daniel.vetter@ffwll.ch
+Subject: 3.15-rc7 i915 related dma-debug warning.
+Message-ID: <20140530190502.GA15360@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>, daniel.vetter@ffwll.ch
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:u7oFGS+G3L0gcgDegrJjMN+c+ON8VeIHX6Pc1o7iT3W
- ujrFmdraoatHq6ASMgZ1QUPV6Qhc0HPXuEyvY2XcoMRttdQeMx
- VeNb6iKkVW2FYMXxEx4/+zMMHiTcya+s8qZKQWE646kuucrIFF
- 8IUDnVcPyWzxUqTE2HZDK5jLAVuJQGNYYxrihVI8oAy6CUtNYI
- oqICe85/H2hguZDmC+r1Ygs5Bx6iMnUoewjzqMCFkXUZzyPjWa
- 2yX7DXY5dH+gjSm4HLKsXuEKSV8MmyaN4jgxXPAOH9X6npeVe+
- lmnB1gtRNDsOjF8RqSunzPTdTsVqwKapQVtmqxRMa6nzWfYPpt
- y322VotljLuWzBe6xOCA=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 30 May 2014 12:22:32 Dave Martin wrote:
-> > +
-> > +Examples:
-> > +=========
-> > +
-> > +Single-master IOMMU:
-> > +--------------------
-> > +
-> > +	iommu {
-> > +		#address-cells = <0>;
-> > +		#size-cells = <0>;
-> > +	};
-> > +
-> > +	master {
-> > +		iommus = <&/iommu>;
-> > +	};
-> > +
-> > +Multiple-master IOMMU with fixed associations:
-> > +----------------------------------------------
-> > +
-> > +	/* multiple-master IOMMU */
-> > +	iommu {
-> > +		/*
-> > +		 * Masters are statically associated with this IOMMU and
-> > +		 * address translation is always enabled.
-> > +		 */
-> > +		#address-cells = <0>;
-> > +		#size-cells = <0>;
-> 
-> In this example, can different translations be set up for the different
-> masters?
-> 
-> With no cells available to contain any sort of ID, it looks like this
-> is not possible.
+WARNING: CPU: 1 PID: 24000 at lib/dma-debug.c:593 debug_dma_assert_idle+0x1a4/0x220()
+i915 0000:00:02.0: DMA-API: cpu touching an active dma mapped cacheline [cln=0x0000000004401d40]
+Modules linked in: ccm ip6t_rpfilter ip6t_REJECT xt_conntrack ebtable_nat ebtable_broute bridge stp llc ebtable_filter ebtables ip6table_nat nf_conntrack_ipv6 nf_defrag_ipv6 nf_nat_ipv6 ip6table_mangle ip6table_security ip6table_raw ip6table_filter ip6_tables iptable_nat nf_conntrack_ipv4 nf_defrag_ipv4 nf_nat_ipv4 nf_nat nf_conntrack iptable_mangle iptable_security iptable_raw iTCO_wdt iTCO_vendor_support arc4 x86_pkg_temp_thermal coretemp iwldvm kvm_intel mac80211 kvm snd_hda_codec_hdmi uvcvideo videobuf2_vmalloc snd_hda_codec_realtek videobuf2_memops snd_hda_codec_generic btusb videobuf2_core bluetooth videodev iwlwifi snd_hda_intel sdhci_pci microcode snd_hda_controller snd_hda_codec sdhci serio_raw media snd_hwdep snd_seq snd_seq_device mmc_core snd_pcm lpc_ich mfd_core cfg80211
+ i2c_i801 mei_me snd_timer mei thinkpad_acpi snd soundcore rfkill shpchp nfsd auth_rpcgss nfs_acl lockd sunrpc xfs libcrc32c dm_crypt nouveau crct10dif_pclmul crc32_pclmul crc32c_intel mxm_wmi ghash_clmulni_intel i915 ttm i2c_algo_bit drm_kms_helper drm e1000e i2c_core ptp wmi pps_core video
+CPU: 1 PID: 24000 Comm: bash Not tainted 3.15.0-0.rc7.git2.1.fc21.x86_64 #1
+Hardware name: LENOVO 2356JK8/2356JK8, BIOS G7ET94WW (2.54 ) 04/30/2013
+ 0000000000000000 000000002464519d ffff880113655c58 ffffffff817ea4ea
+ ffff880113655ca0 ffff880113655c90 ffffffff81095cbd ffff8801372ed150
+ ffff8801363456c0 0000000001ffa1f0 ffffea000450c880 ffff88011b3b9078
+Call Trace:
+ [<ffffffff817ea4ea>] dump_stack+0x4d/0x66
+ [<ffffffff81095cbd>] warn_slowpath_common+0x7d/0xa0
+ [<ffffffff81095d3c>] warn_slowpath_fmt+0x5c/0x80
+ [<ffffffff814006d4>] debug_dma_assert_idle+0x1a4/0x220
+ [<ffffffff811e28b5>] do_wp_page+0xe5/0x960
+ [<ffffffff811e5e44>] handle_mm_fault+0x924/0x1110
+ [<ffffffff817f7c9c>] ? __do_page_fault+0x16c/0x600
+ [<ffffffff817f7d06>] __do_page_fault+0x1d6/0x600
+ [<ffffffff810addfb>] ? __set_current_blocked+0x2b/0x50
+ [<ffffffff810f951d>] ? trace_hardirqs_on+0xd/0x10
+ [<ffffffff817f2e2c>] ? _raw_spin_unlock_irq+0x2c/0x40
+ [<ffffffff817f8152>] do_page_fault+0x22/0x30
+ [<ffffffff817f3ef8>] page_fault+0x28/0x30
+---[ end trace 301c1ffd35eb28d9 ]---
+Mapped at:
+ [<ffffffff813feca2>] debug_dma_map_sg+0x52/0x190
+ [<ffffffffa0177eeb>] i915_gem_gtt_prepare_object+0xdb/0x110 [i915]
+ [<ffffffffa017f05d>] i915_gem_object_pin+0x42d/0x780 [i915]
+ [<ffffffffa0181a5f>] i915_gem_fault+0x2ff/0x410 [i915]
+ [<ffffffff811e0cfc>] __do_fault+0x4c/0x120
 
-Correct, this example is for an IOMMU that does not use IDs but has a
-shared address space for all devices.
-
-> > +Multiple-master IOMMU with configurable DMA window:
-> > +---------------------------------------------------
-> > +
-> > +	/ {
-> > +		#address-cells = <1>;
-> > +		#size-cells = <1>;
-> > +
-> > +		iommu {
-> > +			/* master ID, address of DMA window */
-> > +			#address-cells = <2>;
-> > +			#size-cells = <2>;
-> > +		};
-> > +
-> > +		master {
-> > +			/* master ID 42, 4 GiB DMA window starting at 0 */
-> > +			iommus = <&/iommu  42 0  0x1 0x0>;
-> 
-> I'm still concerned that in order to deal with future cases we will have
-> to invent multiple ways to parse the "iommus" property.  For example, if
-> we have a PCEe RC mastering through an IOMMU, it will pass a huge set
-> of possible master IDs to the IOMMU, not just noe or two.
-> 
-> Do you have a solution in mind for that which doesn't break backwards
-> compatibility?
-
-I think we can treat PCI as a special case here and have an interface
-that gets used by the PCI core code to talk to the IOMMU core code
-when setting up a the dma_map_ops for a PCI function. As long as the
-IOMMU driver understands what PCI is, we don't have to describe the
-mapping in detail.
-
-> One option is to include an extra cell to the IOMMUs property
-> that indicates how to parse it.  For now, only a single value would
-> be defined.  For example:
-> 
-> 	iommus = <&/iommu IOMMU_SIMPLE 42>;
-> 
-> Then maybe later
-> 
-> 	iommus = <&/iommu IOMMU_RANGE 0x10000 0x10000>;
-> 
-> (I'm not suggesting what IOMMU_RANGE might mean.)
-> 
-
-This can really be left up to the specific IOMMU driver itself.
-We can have drivers that support both #address-cells=<1>
-and #address-cells=<2> and behave differently based on that.
-I don't see a reason to define that across IOMMU implementations.
-
-> Other options are to introduce a new property name
-> 
-> 	range-iommus = <&/iommu 0x10000 0x10000>;
-> 
-> or control the parsing of incompatible iommus properties via a compatible
-> string somewhere.
-
-Introducing a new compatible string is always an option as the last resort.
-
-	Arnd
