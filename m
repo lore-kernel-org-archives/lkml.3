@@ -1,123 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754068AbaE3AQn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 20:16:43 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:60881 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753789AbaE3AQl (ORCPT
+	id S1753588AbaE3ATt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 20:19:49 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:51823 "EHLO
+	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751745AbaE3ATs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 20:16:41 -0400
-X-AuditID: cbfee68d-b7fd46d000005f36-32-5387cde6c34d
-Message-id: <5387CDE6.8030801@samsung.com>
-Date: Fri, 30 May 2014 09:16:38 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
- Thunderbird/17.0.2
-MIME-version: 1.0
-To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>, devicetree@vger.kernel.org
-Cc: Chanwoo Choi <cw00.choi@samsung.com>, linux-kernel@vger.kernel.org,
-        myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
-        linux-doc@vger.kernel.org
-Subject: Re: [PATCH 4/4] dt-bindings: extcon: Add support for SM5502 MUIC device
-References: <1401269976-12754-1-git-send-email-cw00.choi@samsung.com>
- <1401269976-12754-5-git-send-email-cw00.choi@samsung.com>
-In-reply-to: <1401269976-12754-5-git-send-email-cw00.choi@samsung.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrEIsWRmVeSWpSXmKPExsWyRsSkSPfZ2fZggxcztS2uf3nOajH/yDlW
-	i/43C1ktzr1ayWhxtukNu8XCtiUsFpd3zWGzWHr9IpPF7cYVbBYTpq9lsXh7ZzqLReveI+wO
-	PB5r5q1h9Ljc18vksXL5FzaPzSu0PDat6mTz6NuyitHj8ya5APYoLpuU1JzMstQifbsErowH
-	M9YxF0wUrHhzagZbA+Ncvi5GTg4JAROJ7bt3sUHYYhIX7q0Hsrk4hASWMkqcX/CHEaZoU/Nx
-	dojEIkaJ/8uaoapeM0o83PSNuYuRg4NXQEti1UoHkAYWAVWJT7svgzWzAYX3v7gBtkFUIExi
-	5fQrLCA2r4CgxI/J91hA5ogItDJJ9E98BbaBWWAGo0Tb/RNgHcICAUCTdrOD2EICjYwSm3/Y
-	g9icAm4Sbdfvg21gFtCR2N86jQ3ClpfYvOYtM8ggCYFODomzPy4wQZwkIPFt8iEWkEslBGQl
-	Nh1ghnhNUuLgihssExjFZiE5ahaSsbOQjF3AyLyKUTS1ILmgOCm9yFCvODG3uDQvXS85P3cT
-	IzB+T/971ruD8fYB60OMyUArJzJLiSbnA+M/ryTe0NjMyMLUxNTYyNzSjDRhJXHepIdJQUIC
-	6YklqdmpqQWpRfFFpTmpxYcYmTg4pRoY2YuXS594xPil39fo3DKGwKAT95eXaxZceD7d9fjZ
-	6/Pn/Nv4u3z5VJ3jn9w+OV3kPDePJczGsmBWd0bdKsa3d/9O2/F/w0we/U3VjY5ndBsU71vo
-	G4htmL2em1W+8q7H9pI1k6L1018Z2BoXZr+PPX+qnLcmboJ89fNnU07/ag9tf70xaa1TgBJL
-	cUaioRZzUXEiAANu0A31AgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrPKsWRmVeSWpSXmKPExsVy+t9jAd1nZ9uDDXoeS1tc//Kc1WL+kXOs
-	Fv1vFrJanHu1ktHibNMbdouFbUtYLC7vmsNmsfT6RSaL240r2CwmTF/LYvH2znQWi9a9R9gd
-	eDzWzFvD6HG5r5fJY+XyL2wem1doeWxa1cnm0bdlFaPH501yAexRDYw2GamJKalFCql5yfkp
-	mXnptkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUCXKimUJeaUAoUCEouLlfTtME0I
-	DXHTtYBpjND1DQmC6zEyQAMJaxgzHsxYx1wwUbDizakZbA2Mc/m6GDk5JARMJDY1H2eHsMUk
-	Ltxbz9bFyMUhJLCIUeL/smYo5zWjxMNN35i7GDk4eAW0JFatdABpYBFQlfi0+zIjiM0GFN7/
-	4gYbiC0qECaxcvoVFhCbV0BQ4sfkeywgc0QEWpkk+ie+YgdxmAVmMEq03T8B1iEsEAA0aTfY
-	GUICjYwSm3/Yg9icAm4Sbdfvg21gFtCR2N86jQ3ClpfYvOYt8wRGgVlIlsxCUjYLSdkCRuZV
-	jKKpBckFxUnpuUZ6xYm5xaV56XrJ+bmbGMHJ4Zn0DsZVDRaHGAU4GJV4eCektwcLsSaWFVfm
-	HmKU4GBWEuF1PAwU4k1JrKxKLcqPLyrNSS0+xJgMDIOJzFKiyfnAxJVXEm9obGJmZGlkbmhh
-	ZGxOmrCSOO/BVutAIYH0xJLU7NTUgtQimC1MHJxSDYzev9pT635Zpb5R/6TjuN5gfkyauaov
-	5+w/iz6sSLYKDOZ+GjTnc8iJvVVn2XQtvNKdd+5yWhVo3TV3ammj3+ljgfdmyD7dmSxR8MVG
-	k2GCkHGD+690Sz67Fc9XzuTax6zxsMBy3X8/91qx8zzPN2to3731xn67+cuIC6051+6fMb/b
-	77Q77JISS3FGoqEWc1FxIgBubCypUgMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Thu, 29 May 2014 20:19:48 -0400
+X-Original-SENDERIP: 10.177.220.169
+X-Original-MAILFROM: minchan@kernel.org
+Date: Fri, 30 May 2014 09:20:21 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Dave Chinner <david@fromorbit.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm <linux-mm@kvack.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Hugh Dickins <hughd@google.com>, Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [RFC 2/2] x86_64: expand kernel stack to 16K
+Message-ID: <20140530002021.GM10092@bbox>
+References: <1401260039-18189-1-git-send-email-minchan@kernel.org>
+ <1401260039-18189-2-git-send-email-minchan@kernel.org>
+ <CA+55aFxXdc22dirnE49UbQP_2s2vLQpjQFL+NptuyK7Xry6c=g@mail.gmail.com>
+ <20140528223142.GO8554@dastard>
+ <CA+55aFyRk6_v6COPGVvu6hvt=i2A8-dPcs1X3Ydn1g24AxbPkg@mail.gmail.com>
+ <20140529013007.GF6677@dastard>
+ <20140529015830.GG6677@dastard>
+ <20140529233638.GJ10092@bbox>
+ <CA+55aFyvn_fTnWEmTCSGgfM18c21-YDU_s=FJP=grDDLQe+aDA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFyvn_fTnWEmTCSGgfM18c21-YDU_s=FJP=grDDLQe+aDA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear DT Maintainer,
+Hello Linus,
 
-Could you please review this patch?
+On Thu, May 29, 2014 at 05:05:17PM -0700, Linus Torvalds wrote:
+> On Thu, May 29, 2014 at 4:36 PM, Minchan Kim <minchan@kernel.org> wrote:
+> >
+> > I did below hacky test to apply your idea and the result is overflow again.
+> > So, again it would second stack expansion. Otherwise, we should prevent
+> > swapout in direct reclaim.
+> 
+> So changing io_schedule() is bad, for the reasons I outlined elsewhere
+> (we use it for wait_for_page*() - see sleep_on_page().
+> 
+> It's the congestion waiting where the io_schedule() should be avoided.
+> 
+> So maybe test a patch something like the attached.
+> 
+> NOTE! This is absolutely TOTALLY UNTESTED! It might do horrible
+> horrible things. It seems to compile, but I have absolutely no reason
+> to believe that it would work. I didn't actually test that this moves
+> anything at all to kblockd. So think of it as a concept patch that
+> *might* work, but as Dave said, there might also be other things that
+> cause unplugging and need some tough love.
+> 
+>                    Linus
 
-Best Regards,
-Chanwoo Choi
+>  mm/backing-dev.c | 28 ++++++++++++++++++----------
+>  mm/vmscan.c      |  4 +---
+>  2 files changed, 19 insertions(+), 13 deletions(-)
+> 
+> diff --git a/mm/backing-dev.c b/mm/backing-dev.c
+> index 09d9591b7708..cb26b24c2da2 100644
+> --- a/mm/backing-dev.c
+> +++ b/mm/backing-dev.c
+> @@ -11,6 +11,7 @@
+>  #include <linux/writeback.h>
+>  #include <linux/device.h>
+>  #include <trace/events/writeback.h>
+> +#include <linux/blkdev.h>
+>  
+>  static atomic_long_t bdi_seq = ATOMIC_LONG_INIT(0);
+>  
+> @@ -573,6 +574,21 @@ void set_bdi_congested(struct backing_dev_info *bdi, int sync)
+>  }
+>  EXPORT_SYMBOL(set_bdi_congested);
+>  
+> +static long congestion_timeout(int sync, long timeout)
+> +{
+> +	long ret;
+> +	DEFINE_WAIT(wait);
+> +	struct blk_plug *plug = current->plug;
+> +	wait_queue_head_t *wqh = &congestion_wqh[sync];
+> +
+> +	prepare_to_wait(wqh, &wait, TASK_UNINTERRUPTIBLE);
+> +	if (plug)
+> +		blk_flush_plug_list(plug, true);
+> +	ret = schedule_timeout(timeout);
+> +	finish_wait(wqh, &wait);
+> +	return ret;
+> +}
+> +
+>  /**
+>   * congestion_wait - wait for a backing_dev to become uncongested
+>   * @sync: SYNC or ASYNC IO
+> @@ -586,12 +602,8 @@ long congestion_wait(int sync, long timeout)
+>  {
+>  	long ret;
+>  	unsigned long start = jiffies;
+> -	DEFINE_WAIT(wait);
+> -	wait_queue_head_t *wqh = &congestion_wqh[sync];
+>  
+> -	prepare_to_wait(wqh, &wait, TASK_UNINTERRUPTIBLE);
+> -	ret = io_schedule_timeout(timeout);
+> -	finish_wait(wqh, &wait);
+> +	ret = congestion_timeout(sync,timeout);
+>  
+>  	trace_writeback_congestion_wait(jiffies_to_usecs(timeout),
+>  					jiffies_to_usecs(jiffies - start));
+> @@ -622,8 +634,6 @@ long wait_iff_congested(struct zone *zone, int sync, long timeout)
+>  {
+>  	long ret;
+>  	unsigned long start = jiffies;
+> -	DEFINE_WAIT(wait);
+> -	wait_queue_head_t *wqh = &congestion_wqh[sync];
+>  
+>  	/*
+>  	 * If there is no congestion, or heavy congestion is not being
+> @@ -643,9 +653,7 @@ long wait_iff_congested(struct zone *zone, int sync, long timeout)
+>  	}
+>  
+>  	/* Sleep until uncongested or a write happens */
+> -	prepare_to_wait(wqh, &wait, TASK_UNINTERRUPTIBLE);
+> -	ret = io_schedule_timeout(timeout);
+> -	finish_wait(wqh, &wait);
+> +	ret = congestion_timeout(sync, timeout);
+>  
+>  out:
+>  	trace_writeback_wait_iff_congested(jiffies_to_usecs(timeout),
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index 32c661d66a45..1e524000b83e 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -989,9 +989,7 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+>  			 * avoid risk of stack overflow but only writeback
+>  			 * if many dirty pages have been encountered.
+>  			 */
+> -			if (page_is_file_cache(page) &&
+> -					(!current_is_kswapd() ||
+> -					 !zone_is_reclaim_dirty(zone))) {
+> +			if (!current_is_kswapd() || !zone_is_reclaim_dirty(zone)) {
+>  				/*
+>  				 * Immediately reclaim when written back.
+>  				 * Similar in principal to deactivate_page()
 
-On 05/28/2014 06:39 PM, Chanwoo Choi wrote:
-> This patch add documentation for binding of SM5502 MUIC (Micro-USB Interface
-> Controller) device which is using EXTCON subsystem. The SM5502 MUIC device
-> can detect various external accessories when external accessories is attached
-> or detached.
-> 
-> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-> Cc: Rob Herring <robh+dt@kernel.org>
-> Cc: Pawel Moll <pawel.moll@arm.com>
-> Cc: Mark Rutland <mark.rutland@arm.com>
-> Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
-> Cc: Kumar Gala <galak@codeaurora.org>
-> Cc: Randy Dunlap <rdunlap@infradead.org>
-> Cc: devicetree@vger.kernel.org
-> Cc: linux-doc@vger.kernel.org
-> 
-> ---
->  .../devicetree/bindings/extcon/extcon-sm5502.txt   | 23 ++++++++++++++++++++++
->  1 file changed, 23 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/extcon/extcon-sm5502.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/extcon/extcon-sm5502.txt b/Documentation/devicetree/bindings/extcon/extcon-sm5502.txt
-> new file mode 100644
-> index 0000000..4ecda22
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/extcon/extcon-sm5502.txt
-> @@ -0,0 +1,23 @@
-> +
-> +* SM5502 MUIC (Micro-USB Interface Controller) device
-> +
-> +The Silicon Mitus SM5502 is a MUIC (Micro-USB Interface Controller) device
-> +which can detect the state of external accessory when external accessory is
-> +attached or detached and button is pressed or released. It is interfaced to
-> +the host controller using an I2C interface.
-> +
-> +Required properties:
-> +- compatible: Should be "siliconmitus,sm5502-muic"
-> +- reg: Specifies the I2C slave address of the MUIC block. It should be 0x25
-> +- interrupt-parent: Specifies the phandle of the interrupt controller to which
-> +  the interrupts from sm5502 are delivered to.
-> +- interrupts: Interrupt specifiers for detection interrupt sources.
-> +
-> +Example:
-> +
-> +	sm5502@25 {
-> +		compatible = "siliconmitus,sm5502-muic";
-> +		interrupt-parent = <&gpx1>;
-> +		interrupts = <5 0>;
-> +		reg = <0x25>;
-> +	};
-> 
+I guess this part which avoid swapout in direct reclaim would be key
+if this patch were successful. But it could make anon pages rotate back
+into inactive's head from tail in direct reclaim path until kswapd can
+catch up. And kswapd kswapd can swap out anon pages from tail of inactive
+LRU so I suspect it could make side-effect LRU churning.
 
+Anyway, I will queue it into testing machine since Rusty's test is done.
+Thanks!
+
+-- 
+Kind regards,
+Minchan Kim
