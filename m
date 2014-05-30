@@ -1,87 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933110AbaE3R6b (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 13:58:31 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:57829 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752978AbaE3R63 (ORCPT
+	id S933242AbaE3R7n (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 13:59:43 -0400
+Received: from mail-qg0-f51.google.com ([209.85.192.51]:62471 "EHLO
+	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751758AbaE3R7l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 13:58:29 -0400
-Message-ID: <1401472704.15365.4.camel@dhcp-9-2-203-236.watson.ibm.com>
-Subject: Re: [RFC PATCH v4 1/4] KEYS: special dot prefixed keyring name bug
- fix
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
-Cc: linux-security-module <linux-security-module@vger.kernel.org>,
-        Dmitry Kasatkin <d.kasatkin@samsung.com>,
-        David Howells <dhowells@redhat.com>, Josh Boyer <jwboyer@redhat.com>,
-        keyrings <keyrings@linux-nfs.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Date: Fri, 30 May 2014 13:58:24 -0400
-In-Reply-To: <CACE9dm8OMGH5V19iRkytPtQXt9qNha9Ca81P6dpy-cqE2s5NYg@mail.gmail.com>
-References: <1401289784-31340-1-git-send-email-zohar@linux.vnet.ibm.com>
-	 <1401289784-31340-2-git-send-email-zohar@linux.vnet.ibm.com>
-	 <CACE9dm8OMGH5V19iRkytPtQXt9qNha9Ca81P6dpy-cqE2s5NYg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14053017-0928-0000-0000-0000024B101B
+	Fri, 30 May 2014 13:59:41 -0400
+Date: Fri, 30 May 2014 13:59:37 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: paolo <paolo.valente@unimore.it>, Jens Axboe <axboe@kernel.dk>,
+        Li Zefan <lizefan@huawei.com>, Fabio Checconi <fchecconi@gmail.com>,
+        Arianna Avanzini <avanzini.arianna@gmail.com>,
+        Paolo Valente <posta_paolo@yahoo.it>, linux-kernel@vger.kernel.org,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org
+Subject: Re: [PATCH RFC RESEND 00/14] New version of the BFQ I/O Scheduler
+Message-ID: <20140530175937.GK24871@htj.dyndns.org>
+References: <1401194558-5283-1-git-send-email-paolo.valente@unimore.it>
+ <20140530153228.GE16605@redhat.com>
+ <20140530161650.GH24871@htj.dyndns.org>
+ <20140530170958.GF16605@redhat.com>
+ <20140530172609.GI24871@htj.dyndns.org>
+ <20140530175527.GH16605@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140530175527.GH16605@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-05-30 at 18:58 +0300, Dmitry Kasatkin wrote: 
-> On 28 May 2014 18:09, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
-> > Dot prefixed keyring names are supposed to be reserved for the
-> > kernel, but add_key() calls key_get_type_from_user(), which
-> > incorrectly verifies the 'type' field, not the 'description' field.
-> > This patch verifies the 'description' field isn't dot prefixed,
-> > when creating a new keyring, and removes the dot prefix test in
-> > key_get_type_from_user().
-> >
-> > Reported-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
-> > Cc: David Howells <dhowells@redhat.com>
-> > Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
-> > ---
-> >  security/keys/keyctl.c | 6 ++++--
-> >  1 file changed, 4 insertions(+), 2 deletions(-)
-> >
-> > diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
-> > index cd5bd0c..9e9a762 100644
-> > --- a/security/keys/keyctl.c
-> > +++ b/security/keys/keyctl.c
-> > @@ -37,8 +37,6 @@ static int key_get_type_from_user(char *type,
-> >                 return ret;
-> >         if (ret == 0 || ret >= len)
-> >                 return -EINVAL;
-> > -       if (type[0] == '.')
-> > -               return -EPERM;
-> >         type[len - 1] = '\0';
-> >         return 0;
-> >  }
-> > @@ -87,6 +85,10 @@ SYSCALL_DEFINE5(add_key, const char __user *, _type,
-> >                         kfree(description);
-> >                         description = NULL;
-> >                 }
-> > +               if (description[0] == '.') {
-> > +                       ret = -EPERM;
-> > +                       goto error2;
-> > +               }
+Hey, Vivek.
+
+On Fri, May 30, 2014 at 01:55:27PM -0400, Vivek Goyal wrote:
+> Now CFQ also dynamically adjusts the slice length based on the how
+> many queues are ready to do IO. One problem with fixed slice lenth
+> round robin was that if there are lot of queues doing IO, then after
+> serving one queue, same queue will get time slice after a long time.
 > 
-> 1. 3 lines above "discription = NULL" will cause kernel oops...
-> It happens when using empty description... like:
-> 
-> cat x509_ima.der | keyctl padd asymmetric "" keyid
+> Corrado Zoccolo did work in this area in an attempt to improve latency.
+> Now slice length is calculated dynamically in an attempt to achieve
+> better latency.
 
-Right, that should be 'else if'. 
+Consdier it a better version of that.
 
-> 2. It prevents adding trusted keys to ".ima" from user space...
-> This is NOT what we want... right?
+> Ok, so you prefer to have another IO scheduler instead of improving
+> CFQ?
 
-It prevents creating a dot prefixed keyring.
+As I wrote in another reply, I think the best approach would be
+morphing cfq to accomodate the scheduling algorithm and heristics of
+bfq.
 
-Mimi
+> Tejun, I have spent significant amount of time on BFQ few years ago. And
+> that's the reason I have not read it again yet. My understanding was
+> that there was nothing which would not be done in CFQ (atleast things
+> which mattered).
 
+THERE IS A NEW PAPER.
+
+> Looks like you prefer introducing a new scheduler instead of improving
+> CFQ. My preference is to improve CFQ. Borrow good ideas from BFQ and
+> implement them in CFQ.
+
+LOOKS LIKE YOU ARE NOT READING ANYTHING AND JUST WRITING IRRELEVANT
+SHIT.
+
+> So why not improve CFQ instead of carrying and maintaining another 
+> scheduler. And then have a discussion that what's the default scheduler.
+
+For fuck's sake, I'm out.  This is total waste of time.  You don't
+read what others are writing and refuse to study what's right there.
+What are you doing?
+
+-- 
+tejun
