@@ -1,51 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933251AbaE3NvL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 09:51:11 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:39615 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755963AbaE3NvI (ORCPT
+	id S933559AbaE3Nvf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 09:51:35 -0400
+Received: from relay.parallels.com ([195.214.232.42]:41521 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932769AbaE3NvT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 09:51:08 -0400
-Date: Fri, 30 May 2014 14:49:15 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: mathieu.poirier@linaro.org
-Cc: linus.walleij@linaro.org, will.deacon@arm.com, arve@android.com,
-        john.stultz@linaro.org, pratikp@codeaurora.org, varshney@ti.com,
-        Al.Grant@arm.com, jonas.svennebring@avagotech.com,
-        james.king@linaro.org, panchaxari.prasannamurthy@linaro.org,
-        arnd@linaro.org, marcin.jabrzyk@gmail.com, r.sengupta@samsung.com,
-        robbelibobban@gmail.com, patches@linaro.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        daniel.thompson@linaro.org
-Subject: Re: [RFC PATCH 11/11] ARM: moving support for etb/etm to the
-	"drivers" directory
-Message-ID: <20140530134915.GP3693@n2100.arm.linux.org.uk>
-References: <1401457391-12242-1-git-send-email-mathieu.poirier@linaro.org> <1401457391-12242-12-git-send-email-mathieu.poirier@linaro.org>
+	Fri, 30 May 2014 09:51:19 -0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: <akpm@linux-foundation.org>
+CC: <cl@linux.com>, <hannes@cmpxchg.org>, <mhocko@suse.cz>,
+        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
+Subject: [PATCH -mm 0/8] memcg/slab: reintroduce dead cache self-destruction
+Date: Fri, 30 May 2014 17:51:03 +0400
+Message-ID: <cover.1401457502.git.vdavydov@parallels.com>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1401457391-12242-12-git-send-email-mathieu.poirier@linaro.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: text/plain
+X-Originating-IP: [10.30.16.96]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 30, 2014 at 07:43:11AM -0600, mathieu.poirier@linaro.org wrote:
-> From: Mathieu Poirier <mathieu.poirier@linaro.org>
-> 
-> Removing minimal support for etb/etm to favour an implentation
-> that is more flexible, extensible and capable of handling more
-> platforms.
-> 
-> Also removing the only client of the old driver.  That code can
-> easily be replaced by entries for etb/etm in the device tree.
-> 
-> Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
+Hi,
 
-You say "moving" in the subject, but you are *re*moving it.  This is
-misleading.
+When a memcg is turned offline, some of its kmem caches can still have
+active objects and therefore cannot be destroyed immediately. Currently,
+we simply leak such caches along with the owner memcg, which is bad and
+should be resolved.
+
+It would be perfect if we could move all slab pages of such dead caches
+to the root/parent cache on memcg offline. However, when I tried to
+implement such re-parenting, I was pointed out by Christoph that the
+overhead of this would be unacceptable, at least for SLUB (see
+https://lkml.org/lkml/2014/5/13/446)
+
+The problem with re-parenting of individual slabs is that it requires
+tracking of all slabs allocated to a cache, but SLUB doesn't track full
+slabs if !debug. Changing this behavior would result in significant
+performance degradation of regular alloc/free paths, because it would
+make alloc/free take per node list locks more often.
+
+After pondering about this problem for some time, I think we should
+return to dead caches self-destruction, i.e. scheduling cache
+destruction work when the last slab page is freed.
+
+This is the behavior we had before commit 5bd93da9917f ("memcg, slab:
+simplify synchronization scheme"). The reason why it was removed was that
+it simply didn't work, because SL[AU]B are implemented in such a way
+that they don't discard empty slabs immediately, but prefer keeping them
+cached for indefinite time to speed up further allocations.
+
+However, we can change this w/o noticeable performance impact for both
+SLAB and SLUB. For SLAB, we can make internal cache reaper shrink dead
+caches aggressively so that they will die quickly after the last object
+is freed. For SLUB, we can make free path drop free slabs as soon as
+they become empty. Since dead caches should never be allocated from,
+removing empty slabs from them shouldn't degrade performance.
+
+So, this patch set reintroduces dead cache self-destruction and adds
+some tweaks to SL[AU]B to prevent dead caches from hanging around
+indefinitely. It is organized as follows:
+
+ - patches 1-3 reintroduce dead memcg cache self-destruction;
+ - patches 4-5 do some cleanup in kmem_cache_shrink;
+ - patch 6 is a minor optimization for SLUB, which makes the following
+   work a bit easier for me;
+ - patches 7 and 8 solves the problem with dead memcg caches for SLUB
+   and SLAB respectively.
+
+Even if the whole approach is NAK'ed, patches 4, 5, and 6 are worth
+applying, IMO, provided Christoph doesn't mind, of course. They don't
+depend on the rest of the set, BTW.
+
+Note, this doesn't resolve the problem of memcgs pinned by dead kmem
+caches. I'm planning to solve this by re-parenting dead kmem caches to
+the parent memcg.
+
+Thanks,
+
+Vladimir Davydov (8):
+  memcg: cleanup memcg_cache_params refcnt usage
+  memcg: destroy kmem caches when last slab is freed
+  memcg: mark caches that belong to offline memcgs as dead
+  slub: never fail kmem_cache_shrink
+  slab: remove kmem_cache_shrink retval
+  slub: do not use cmpxchg for adding cpu partials when irqs disabled
+  slub: make dead caches discard free slabs immediately
+  slab: reap dead memcg caches aggressively
+
+ include/linux/slab.h |   10 ++-
+ mm/memcontrol.c      |   25 +++++-
+ mm/slab.c            |   28 +++++--
+ mm/slab.h            |   12 ++-
+ mm/slab_common.c     |    8 +-
+ mm/slob.c            |    3 +-
+ mm/slub.c            |  212 ++++++++++++++++++++++++++++++++++----------------
+ 7 files changed, 207 insertions(+), 91 deletions(-)
 
 -- 
-FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
-improving, and getting towards what was expected from it.
+1.7.10.4
+
