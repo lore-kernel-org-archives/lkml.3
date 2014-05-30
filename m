@@ -1,157 +1,265 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965381AbaE3PrT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 11:47:19 -0400
-Received: from mail.kernel.org ([198.145.19.201]:47669 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965326AbaE3PrP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 11:47:15 -0400
-Date: Fri, 30 May 2014 12:47:09 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Jean Delvare <jdelvare@suse.de>, zhangdianfang <zhangdianfang@huawei.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        David Binderman <dcb314@hotmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] toosl/perf: convert "==" into "="
-Message-ID: <20140530154709.GC1202@kernel.org>
-References: <5387D6A6.20703@huawei.com>
- <20140530144446.1b4586f5@endymion.delvare>
- <20140530152011.GA1202@kernel.org>
- <20140530153729.GE7427@krava.brq.redhat.com>
-MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="4Ckj6UjgE2iN1+kY"
-Content-Disposition: inline
-In-Reply-To: <20140530153729.GE7427@krava.brq.redhat.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S965357AbaE3PrM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 11:47:12 -0400
+Received: from g4t3427.houston.hp.com ([15.201.208.55]:45650 "EHLO
+	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965326AbaE3PrG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 May 2014 11:47:06 -0400
+From: Waiman Long <Waiman.Long@hp.com>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: linux-arch@vger.kernel.org, x86@kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
+        Paolo Bonzini <paolo.bonzini@gmail.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Oleg Nesterov <oleg@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Scott J Norton <scott.norton@hp.com>, Chegu Vinod <chegu_vinod@hp.com>,
+        Waiman Long <Waiman.Long@hp.com>
+Subject: [PATCH v11 16/16] pvqspinlock, x86: Enable PV qspinlock for XEN
+Date: Fri, 30 May 2014 11:44:02 -0400
+Message-Id: <1401464642-33890-17-git-send-email-Waiman.Long@hp.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1401464642-33890-1-git-send-email-Waiman.Long@hp.com>
+References: <1401464642-33890-1-git-send-email-Waiman.Long@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch adds the necessary XEN specific code to allow XEN to
+support the CPU halting and kicking operations needed by the queue
+spinlock PV code.
 
---4Ckj6UjgE2iN1+kY
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-Em Fri, May 30, 2014 at 05:37:29PM +0200, Jiri Olsa escreveu:
-> On Fri, May 30, 2014 at 12:20:11PM -0300, Arnaldo Carvalho de Melo wrote:
-> > Em Fri, May 30, 2014 at 02:44:46PM +0200, Jean Delvare escreveu:
-> > > I don't have anything to do with this, I'm not the author of the code
-> > > nor the maintainer and I don't know anything about it. Arnaldo Carvalho
-> > > de Melo is the right person to handle this bug.
-> > 
-> > Jiri,
-
-> > 	Please take this patch, you can stick my:
-
-> > Acked-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-
-> sure, but I dont see the patch on the lkml.. any chance of resend?
- 
-> I guess I could dig the patch from above.. if you confirm it's
-> the only change ;-)
-
-Hey, no need to go to such great lenghts, submitters must try and make
-it easier to maintainers! :-)
-
-Find it attached, zhangdianfang, please send it as an attachment next
-time, also please CC lkml as well.
-
-Thanks,
-
-- Arnaldo
-
---4Ckj6UjgE2iN1+kY
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: attachment; filename="ui_browser.patch"
-
->From acme  Thu May 29 22:31:47 2014
-Delivered-To: arnaldo.melo@gmail.com
-Received: from gmail-imap.l.google.com [74.125.131.109]
-	by zoo.ghostprotocols.net with IMAP (fetchmail-6.3.26)
-	for <acme@localhost> (single-drop); Thu, 29 May 2014 22:31:47 -0300 (BRT)
-Received: by 10.170.63.135 with SMTP id f129csp73227ykf; Thu, 29 May 2014
- 17:54:50 -0700 (PDT)
-X-Received: by 10.66.148.98 with SMTP id tr2mr13825805pab.33.1401411289441;
- Thu, 29 May 2014 17:54:49 -0700 (PDT)
-Return-Path: <zhangdianfang@huawei.com>
-Received: from mail.kernel.org (mail.kernel.org. [198.145.19.201]) by
- mx.google.com with ESMTP id we6si3163030pac.143.2014.05.29.17.54.49 for
- <arnaldo.melo@gmail.com>; Thu, 29 May 2014 17:54:49 -0700 (PDT)
-Received-SPF: softfail (google.com: domain of transitioning
- zhangdianfang@huawei.com does not designate 198.145.19.201 as permitted
- sender) client-ip=198.145.19.201;
-Authentication-Results: mx.google.com; spf=softfail (google.com: domain of
- transitioning zhangdianfang@huawei.com does not designate 198.145.19.201 as
- permitted sender) smtp.mail=zhangdianfang@huawei.com
-Received: by mail.kernel.org (Postfix) id E533120142; Fri, 30 May 2014
- 00:54:48 +0000 (UTC)
-Delivered-To: acme@kernel.org
-Received: from mail.kernel.org (localhost [127.0.0.1]) by mail.kernel.org
- (Postfix) with ESMTP id 3937E2035E for <acme@kernel.org>; Fri, 30 May 2014
- 00:54:48 +0000 (UTC)
-Received: from szxga03-in.huawei.com (szxga03-in.huawei.com [119.145.14.66])
- (using TLSv1 with cipher DES-CBC3-SHA (168/168 bits)) (No client certificate
- requested) by mail.kernel.org (Postfix) with ESMTPS id 88E0D20142 for
- <acme@kernel.org>; Fri, 30 May 2014 00:54:43 +0000 (UTC)
-Received: from 172.24.2.119 (EHLO szxeml207-edg.china.huawei.com)
- ([172.24.2.119]) by szxrg03-dlp.huawei.com (MOS 4.4.3-GA FastPath queued)
- with ESMTP id API05293; Fri, 30 May 2014 08:54:04 +0800 (CST)
-Received: from SZXEML422-HUB.china.huawei.com (10.82.67.161) by
- szxeml207-edg.china.huawei.com (172.24.2.56) with Microsoft SMTP Server (TLS)
- id 14.3.158.1; Fri, 30 May 2014 08:54:02 +0800
-Received: from [127.0.0.1] (10.177.27.190) by szxeml422-hub.china.huawei.com
- (10.82.67.161) with Microsoft SMTP Server id 14.3.158.1; Fri, 30 May 2014
- 08:53:59 +0800
-Message-ID: <5387D6A6.20703@huawei.com>
-Date: Fri, 30 May 2014 08:53:58 +0800
-From: zhangdianfang <zhangdianfang@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130509
- Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>, Arnaldo
- Carvalho de Melo <acme@kernel.org>, David Binderman <dcb314@hotmail.com>,
- Jean Delvare <jdelvare@suse.de>
-Subject: [PATCH] toosl/perf: convert "==" into "="
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.27.190]
-X-CFilter-Loop: Reflected
-X-Spam-Status: No, score=-3.2 required=5.0 tests=BAYES_00,RCVD_IN_DNSWL_LOW,
- RP_MATCHES_RCVD,UNPARSEABLE_RELAY autolearn=unavailable version=3.3.1
-X-Spam-Checker-Version: SpamAssassin 3.3.1 (2010-03-16) on mail.kernel.org
-X-Virus-Scanned: ClamAV using ClamSMTP
-Status: RO
-
-convert "==" into "="
-
-Bug description: https://bugzilla.kernel.org/show_bug.cgi?id=76751
-
-Cc: Jean Delvare <jdelvare@suse.de>
-Reported-by: David Binderman <dcb314@hotmail.com>
-Signed-off-by: Dianfang Zhang <zhangdianfang@huawei.com>
+Signed-off-by: Waiman Long <Waiman.Long@hp.com>
 ---
- tools/perf/ui/browser.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ arch/x86/xen/spinlock.c |  147 +++++++++++++++++++++++++++++++++++++++++++++--
+ kernel/Kconfig.locks    |    2 +-
+ 2 files changed, 143 insertions(+), 6 deletions(-)
 
-diff --git a/tools/perf/ui/browser.c b/tools/perf/ui/browser.c
-index d11541d..3ccf6e1 100644
---- a/tools/perf/ui/browser.c
-+++ b/tools/perf/ui/browser.c
-@@ -194,7 +194,7 @@ int ui_browser__warning(struct ui_browser *browser, int timeout,
- 		ui_helpline__vpush(format, args);
- 		va_end(args);
- 	} else {
--		while ((key == ui__question_window("Warning!", text,
-+		while ((key = ui__question_window("Warning!", text,
- 						   "Press any key...",
- 						   timeout)) == K_RESIZE)
- 			ui_browser__handle_resize(browser);
+diff --git a/arch/x86/xen/spinlock.c b/arch/x86/xen/spinlock.c
+index d1b6a32..2a259bb 100644
+--- a/arch/x86/xen/spinlock.c
++++ b/arch/x86/xen/spinlock.c
+@@ -17,6 +17,12 @@
+ #include "xen-ops.h"
+ #include "debugfs.h"
+ 
++static DEFINE_PER_CPU(int, lock_kicker_irq) = -1;
++static DEFINE_PER_CPU(char *, irq_name);
++static bool xen_pvspin = true;
++
++#ifndef CONFIG_QUEUE_SPINLOCK
++
+ enum xen_contention_stat {
+ 	TAKEN_SLOW,
+ 	TAKEN_SLOW_PICKUP,
+@@ -100,12 +106,9 @@ struct xen_lock_waiting {
+ 	__ticket_t want;
+ };
+ 
+-static DEFINE_PER_CPU(int, lock_kicker_irq) = -1;
+-static DEFINE_PER_CPU(char *, irq_name);
+ static DEFINE_PER_CPU(struct xen_lock_waiting, lock_waiting);
+ static cpumask_t waiting_cpus;
+ 
+-static bool xen_pvspin = true;
+ __visible void xen_lock_spinning(struct arch_spinlock *lock, __ticket_t want)
+ {
+ 	int irq = __this_cpu_read(lock_kicker_irq);
+@@ -213,6 +216,118 @@ static void xen_unlock_kick(struct arch_spinlock *lock, __ticket_t next)
+ 	}
+ }
+ 
++#else /* CONFIG_QUEUE_SPINLOCK */
++
++#ifdef CONFIG_XEN_DEBUG_FS
++static u32 kick_nohlt_stats;		/* Kick but not halt count	*/
++static u32 halt_qhead_stats;		/* Queue head halting count	*/
++static u32 halt_qnode_stats;		/* Queue node halting count	*/
++static u32 halt_abort_stats;		/* Halting abort count		*/
++static u32 wake_kick_stats;		/* Wakeup by kicking count	*/
++static u32 wake_spur_stats;		/* Spurious wakeup count	*/
++static u64 time_blocked;		/* Total blocking time		*/
++
++static inline void xen_halt_stats(enum pv_lock_stats type)
++{
++	if (type == PV_HALT_QHEAD)
++		add_smp(&halt_qhead_stats, 1);
++	else if (type == PV_HALT_QNODE)
++		add_smp(&halt_qnode_stats, 1);
++	else /* type == PV_HALT_ABORT */
++		add_smp(&halt_abort_stats, 1);
++}
++
++static inline void xen_lock_stats(enum pv_lock_stats type)
++{
++	if (type == PV_WAKE_KICKED)
++		add_smp(&wake_kick_stats, 1);
++	else if (type == PV_WAKE_SPURIOUS)
++		add_smp(&wake_spur_stats, 1);
++	else /* type == PV_KICK_NOHALT */
++		add_smp(&kick_nohlt_stats, 1);
++}
++
++static inline u64 spin_time_start(void)
++{
++	return sched_clock();
++}
++
++static inline void spin_time_accum_blocked(u64 start)
++{
++	u64 delta;
++
++	delta = sched_clock() - start;
++	add_smp(&time_blocked, delta);
++}
++#else /* CONFIG_XEN_DEBUG_FS */
++static inline void xen_halt_stats(enum pv_lock_stats type)
++{
++}
++
++static inline void xen_lock_stats(enum pv_lock_stats type)
++{
++}
++
++static inline u64 spin_time_start(void)
++{
++	return 0;
++}
++
++static inline void spin_time_accum_blocked(u64 start)
++{
++}
++#endif /* CONFIG_XEN_DEBUG_FS */
++
++static void xen_kick_cpu(int cpu)
++{
++	xen_send_IPI_one(cpu, XEN_SPIN_UNLOCK_VECTOR);
++}
++
++/*
++ * Halt the current CPU & release it back to the host
++ */
++static void xen_halt_cpu(enum pv_lock_stats type, s8 *state, s8 sval)
++{
++	int irq = __this_cpu_read(lock_kicker_irq);
++	unsigned long flags;
++	u64 start;
++
++	/* If kicker interrupts not initialized yet, just spin */
++	if (irq == -1)
++		return;
++
++	/*
++	 * Make sure an interrupt handler can't upset things in a
++	 * partially setup state.
++	 */
++	local_irq_save(flags);
++	start = spin_time_start();
++
++	xen_halt_stats(type);
++	/* clear pending */
++	xen_clear_irq_pending(irq);
++
++	/* Allow interrupts while blocked */
++	local_irq_restore(flags);
++	/*
++	 * Don't halt if the CPU state has been changed.
++	 */
++	if (ACCESS_ONCE(*state) != sval) {
++		xen_halt_stats(PV_HALT_ABORT);
++		return;
++	}
++	/*
++	 * If an interrupt happens here, it will leave the wakeup irq
++	 * pending, which will cause xen_poll_irq() to return
++	 * immediately.
++	 */
++
++	/* Block until irq becomes pending (or perhaps a spurious wakeup) */
++	xen_poll_irq(irq);
++	spin_time_accum_blocked(start);
++}
++#endif /* CONFIG_QUEUE_SPINLOCK */
++
+ static irqreturn_t dummy_handler(int irq, void *dev_id)
+ {
+ 	BUG();
+@@ -258,7 +373,6 @@ void xen_uninit_lock_cpu(int cpu)
+ 	per_cpu(irq_name, cpu) = NULL;
+ }
+ 
+-
+ /*
+  * Our init of PV spinlocks is split in two init functions due to us
+  * using paravirt patching and jump labels patching and having to do
+@@ -275,8 +389,15 @@ void __init xen_init_spinlocks(void)
+ 		return;
+ 	}
+ 	printk(KERN_DEBUG "xen: PV spinlocks enabled\n");
++
++#ifdef CONFIG_QUEUE_SPINLOCK
++	pv_lock_ops.kick_cpu = xen_kick_cpu;
++	pv_lock_ops.halt_cpu = xen_halt_cpu;
++	pv_lock_ops.lockstat = xen_lock_stats;
++#else
+ 	pv_lock_ops.lock_spinning = PV_CALLEE_SAVE(xen_lock_spinning);
+ 	pv_lock_ops.unlock_kick = xen_unlock_kick;
++#endif
+ }
+ 
+ /*
+@@ -321,6 +442,7 @@ static int __init xen_spinlock_debugfs(void)
+ 
+ 	d_spin_debug = debugfs_create_dir("spinlocks", d_xen);
+ 
++#ifndef CONFIG_QUEUE_SPINLOCK
+ 	debugfs_create_u8("zero_stats", 0644, d_spin_debug, &zero_stats);
+ 
+ 	debugfs_create_u32("taken_slow", 0444, d_spin_debug,
+@@ -340,7 +462,22 @@ static int __init xen_spinlock_debugfs(void)
+ 
+ 	debugfs_create_u32_array("histo_blocked", 0444, d_spin_debug,
+ 				spinlock_stats.histo_spin_blocked, HISTO_BUCKETS + 1);
+-
++#else /* CONFIG_QUEUE_SPINLOCK */
++	debugfs_create_u32("kick_nohlt_stats",
++			   0644, d_spin_debug, &kick_nohlt_stats);
++	debugfs_create_u32("halt_qhead_stats",
++			   0644, d_spin_debug, &halt_qhead_stats);
++	debugfs_create_u32("halt_qnode_stats",
++			   0644, d_spin_debug, &halt_qnode_stats);
++	debugfs_create_u32("halt_abort_stats",
++			   0644, d_spin_debug, &halt_abort_stats);
++	debugfs_create_u32("wake_kick_stats",
++			   0644, d_spin_debug, &wake_kick_stats);
++	debugfs_create_u32("wake_spur_stats",
++			   0644, d_spin_debug, &wake_spur_stats);
++	debugfs_create_u64("time_blocked",
++			   0644, d_spin_debug, &time_blocked);
++#endif /* CONFIG_QUEUE_SPINLOCK */
+ 	return 0;
+ }
+ fs_initcall(xen_spinlock_debugfs);
+diff --git a/kernel/Kconfig.locks b/kernel/Kconfig.locks
+index a70fdeb..451e392 100644
+--- a/kernel/Kconfig.locks
++++ b/kernel/Kconfig.locks
+@@ -229,4 +229,4 @@ config ARCH_USE_QUEUE_SPINLOCK
+ 
+ config QUEUE_SPINLOCK
+ 	def_bool y if ARCH_USE_QUEUE_SPINLOCK
+-	depends on SMP && (!PARAVIRT_SPINLOCKS || !XEN)
++	depends on SMP
 -- 
 1.7.1
 
-
---4Ckj6UjgE2iN1+kY--
