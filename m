@@ -1,56 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755351AbaE3Kco (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 06:32:44 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:42342 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751353AbaE3Kcn (ORCPT
+	id S1755438AbaE3Kdo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 06:33:44 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:21463 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751562AbaE3Kdn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 06:32:43 -0400
-X-AuditID: cbfee690-b7fb56d000003439-c5-53885e44cdc8
-Message-id: <53885E43.2000000@samsung.com>
-Date: Fri, 30 May 2014 19:32:35 +0900
+	Fri, 30 May 2014 06:33:43 -0400
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+X-AuditID: cbfee68f-b7fef6d000003970-a7-53885e840708
+Content-transfer-encoding: 8BIT
+Message-id: <53885E84.3020407@samsung.com>
+Date: Fri, 30 May 2014 19:33:40 +0900
 From: Chanwoo Choi <cw00.choi@samsung.com>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
  Thunderbird/17.0.2
-MIME-version: 1.0
-To: lee.jones@linaro.org, broonie@kernel.org
-Cc: Chanwoo Choi <cw00.choi@samsung.com>, sbkim73@samsung.com,
-        sameo@linux.intel.com, lgirdwood@gmail.com,
-        linux-kernel@vger.kernel.org, myungjoo.ham@samsung.com,
-        kyungmin.park@samsung.com, jonghwa3.lee@samsung.com,
-        k.kozlowski@samsung.com
-Subject: Re: [PATCHv2 0/3] regulator: s2mps11: Add support S2MPU02 PMIC device
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: sbkim73@samsung.com, sameo@linux.intel.com, lee.jones@linaro.org,
+        broonie@kernel.org, lgirdwood@gmail.com, linux-kernel@vger.kernel.org,
+        myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
+        jonghwa3.lee@samsung.com
+Subject: Re: [PATCHv2 2/3] regulator: s2mps11: Add support S2MPU02 regulator
+ device
 References: <1401409510-28238-1-git-send-email-cw00.choi@samsung.com>
-In-reply-to: <1401409510-28238-1-git-send-email-cw00.choi@samsung.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMIsWRmVeSWpSXmKPExsWyRsSkSNclriPYYMERDoupD5+wWVz/8pzV
-	ovPsE2aL1y8MLc42vWG3uP/1KKPFtysdTBaXd81hs7jduILN4nQ3q8XFFV+YHLg9ds66y+6x
-	aVUnm8eda3vYPOadDPTo27KK0ePzJrkAtigum5TUnMyy1CJ9uwSujDd7ZzMVdIpVvLlX08B4
-	QrCLkZNDQsBEYt++v0wQtpjEhXvr2boYuTiEBJYySmxtu84CU7Rwyi12EFtIYDqjxOJJNhBF
-	rxklph6cxgaS4BXQktjbtZgRxGYRUJV4+fYlM4jNBhTf/+IGWI2oQJjEyulXWCDqBSV+TL4H
-	ZHNwiAjoSFy/kQ4yk1ngK6PEl5bPYBcJC/hJ9Kz7ygKx2FXi/NGdYDangJvE/u7bYDYzUO/+
-	VogbmAXkJTavecsMMkhC4C27RPep3UwQBwlIfJt8CGyZhICsxKYDzBCPSUocXHGDZQKj2Cwk
-	J81CMnYWkrELGJlXMYqmFiQXFCelF5noFSfmFpfmpesl5+duYgRG6Ol/zybsYLx3wPoQYzLQ
-	yonMUqLJ+cAIzyuJNzQ2M7IwNTE1NjK3NCNNWEmcV+1RUpCQQHpiSWp2ampBalF8UWlOavEh
-	RiYOTqkGRkXXUC/Py6fyi48nN/9WeDRFia14X4b5C2WWopMhYWkvZmXX71pyUpT9Y+WZlIKq
-	iPXLghnYjHZztMsofn7F/kz06M4FAZfZ338yFpWwK3wZ4XR3CvcKjVdJvK370qpbH00t8d67
-	beHLc1vLuAts/uae3X9x2kfh6NhLr5c/bOLa+f3Euf377JVYijMSDbWYi4oTAePaxR3mAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrPKsWRmVeSWpSXmKPExsVy+t9jQV2XuI5ggw+hFlMfPmGzuP7lOatF
-	59knzBavXxhanG16w25x/+tRRotvVzqYLC7vmsNmcbtxBZvF6W5Wi4srvjA5cHvsnHWX3WPT
-	qk42jzvX9rB5zDsZ6NG3ZRWjx+dNcgFsUQ2MNhmpiSmpRQqpecn5KZl56bZK3sHxzvGmZgaG
-	uoaWFuZKCnmJuam2Si4+AbpumTlAxykplCXmlAKFAhKLi5X07TBNCA1x07WAaYzQ9Q0Jgusx
-	MkADCWsYM97snc1U0ClW8eZeTQPjCcEuRk4OCQETiYVTbrFD2GISF+6tZwOxhQSmM0osnmTT
-	xcgFZL9mlJh6cBpYgldAS2Jv12JGEJtFQFXi5duXzCA2G1B8/4sbYDWiAmESK6dfYYGoF5T4
-	MfkekM3BISKgI3H9RjrITGaBr4wSX1o+M4HUCAv4SfSs+8oCsdhV4vzRnWA2p4CbxP7u22A2
-	M1Dv/laIG5gF5CU2r3nLPIFRYBaSFbOQlM1CUraAkXkVo2hqQXJBcVJ6rpFecWJucWleul5y
-	fu4mRnD0P5PewbiqweIQowAHoxIP74T09mAh1sSy4srcQ4wSHMxKIrwOMR3BQrwpiZVVqUX5
-	8UWlOanFhxiTgSEwkVlKNDkfmJjySuINjU3MjCyNzA0tjIzNSRNWEuc92GodKCSQnliSmp2a
-	WpBaBLOFiYNTqoHR5xq3Vd2idFG1iY3ft12VuhyX+urU9+lzdnF9mmup3qW5vChQ965jlOfM
-	xrayf29CLW77/+55rsG9v0fUK2aGKPv0K2Hnzj+6s1vkSoTxxIkxtkWLfBZtuM3qmLR30uZ3
-	iSvt/555spR/oseW7G91nPeZnFYWOovofpx2xvZZ5IvPNROW+a1SVGIpzkg01GIuKk4EADeY
-	IrdCAwAA
+ <1401409510-28238-3-git-send-email-cw00.choi@samsung.com>
+ <1401438205.9323.4.camel@AMDC1943>
+In-reply-to: <1401438205.9323.4.camel@AMDC1943>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrPIsWRmVeSWpSXmKPExsWyRsSkSLclriPYYM09c4upD5+wWXSefcJs
+	8fqFocXZpjfsFve/HmW0+Halg8ni8q45bBa3G1ewWZzuZrW4uOILkwOXx85Zd9k9Nq3qZPO4
+	c20Pm8e8k4EefVtWMXp83iQXwBbFZZOSmpNZllqkb5fAlbHuSxtrwVOVipkTWlgbGI/LdjFy
+	ckgImEjs2HCHFcIWk7hwbz1bFyMXh5DAUkaJ208a2GCKVn95ygqRmM4o8ffXebAOXgFBiR+T
+	77F0MXJwMAvISxy5lA0SZhZQl5g0bxEziC0k8JpR4s9VJ4hyLYkZnw+yg9gsAqoSv5+0gNWw
+	AcX3v7gBtktUIExi5fQrLCC2iIChxMHd25lA9jIL3GOUWPl2CliDsECoRPP730wQBy1jlNh6
+	9iwTSIJTQF/i7vmzLCAJCYGv7BIX9i5mhlgnIPFt8iGwSyUEZCU2HWCG+ExS4uCKGywTGMVm
+	IflnFsI/s5D8s4CReRWjaGpBckFxUnqRsV5xYm5xaV66XnJ+7iZGYGSe/vesfwfj3QPWhxiT
+	gTZOZJYSTc4HRnZeSbyhsZmRhamJqbGRuaUZacJK4rz3HyYFCQmkJ5akZqemFqQWxReV5qQW
+	H2Jk4uCUamAsTSyurt7UeuvF1vBrUioqhXYt72qaU5Zpnr4b0neqfAvDjilqN6u+JWntkbhz
+	750uXw+3q8MDvbVyAsvWXpzPf/ENK49iZowsg+u/LXdnHO41cyy6+16qaZVOD+O6KO/Z6e8D
+	9t9LtHoYcf6jXNRF3o/HxDL1Fq5//conuSV3R8mdiKuc3VeVWIozEg21mIuKEwGKNXbP4gIA	AA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrDKsWRmVeSWpSXmKPExsVy+t9jQd2WuI5ggyVt+hZTHz5hs+g8+4TZ
+	4vULQ4uzTW/YLe5/Pcpo8e1KB5PF5V1z2CxuN65gszjdzWpxccUXJgcuj52z7rJ7bFrVyeZx
+	59oeNo95JwM9+rasYvT4vEkugC2qgdEmIzUxJbVIITUvOT8lMy/dVsk7ON453tTMwFDX0NLC
+	XEkhLzE31VbJxSdA1y0zB+gwJYWyxJxSoFBAYnGxkr4dpgmhIW66FjCNEbq+IUFwPUYGaCBh
+	DWPGui9trAVPVSpmTmhhbWA8LtvFyMkhIWAisfrLU1YIW0ziwr31bF2MXBxCAtMZJf7+Og+W
+	4BUQlPgx+R5LFyMHB7OAvMSRS9kgYWYBdYlJ8xYxg9hCAq8ZJf5cdYIo15KY8fkgO4jNIqAq
+	8ftJC1gNG1B8/4sbbCC2qECYxMrpV1hAbBEBQ4mDu7czgexlFrjHKLHy7RSwBmGBUInm97+Z
+	IA5axiix9exZJpAEp4C+xN3zZ1kmMArMQnLfLIT7ZiG5bwEj8ypG0dSC5ILipPRcQ73ixNzi
+	0rx0veT83E2M4Lh/JrWDcWWDxSFGAQ5GJR7exsj2YCHWxLLiytxDjBIczEoivA4xHcFCvCmJ
+	lVWpRfnxRaU5qcWHGJOB3pvILCWanA9MSXkl8YbGJmZGlkbmhhZGxuakCSuJ8x5otQ4UEkhP
+	LEnNTk0tSC2C2cLEwSnVwGgxj1s3WCzqb+iG9/17Kw9MjJhuvPzyi20VRW8PulzJEErXMqy/
+	pXfi3yLFFSInFJT2Pdt/VPSb2pwbRd53ZT+/kzK7WXAqhkPElvnZRSWum/2+C2UdT3ku73jZ
+	x6T5OsFaMP6Kae06A4eQzlv7Zrg8Wsn8ku/trbVL5nBITq84U+U69ezBJhUlluKMREMt5qLi
+	RACH8tGJPwMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -58,56 +60,147 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Lee Jones and Mark Brown,
+Hi Krzysztof,
 
-The patch[1] has dependency on both mfd.git and regulator.git.
-[1] regulator: s2mps11: Add support S2MPU02 regulator device
+On 05/30/2014 05:23 PM, Krzysztof Kozlowski wrote:
+> On pią, 2014-05-30 at 09:25 +0900, Chanwoo Choi wrote:
+>> This patch add S2MPU02 regulator device to existing S2MPS11 device driver
+>> because of little difference between S2MPS1x and S2MPU02. The S2MPU02
+>> regulator device includes LDO[1-28] and BUCK[1-7].
+>>
+>> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+>> [Add missing linear_min_sel of S2MPU02 LDO regulators by Jonghwa Lee]
+>> Signed-off-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
+>> ---
+>>  drivers/mfd/sec-core.c              |  26 +++
+>>  drivers/regulator/s2mps11.c         | 319 +++++++++++++++++++++++++++++++++---
+>>  include/linux/mfd/samsung/s2mpu02.h | 200 ++++++++++++++++++++++
+>>  3 files changed, 525 insertions(+), 20 deletions(-)
+>>  create mode 100644 include/linux/mfd/samsung/s2mpu02.h
+>>
+> 
+> (...)
+> 
+>> diff --git a/drivers/regulator/s2mps11.c b/drivers/regulator/s2mps11.c
+>> index 02e2fb2..f7e5dab3d 100644
+>> --- a/drivers/regulator/s2mps11.c
+>> +++ b/drivers/regulator/s2mps11.c
+>> @@ -31,6 +31,7 @@
+>>  #include <linux/mfd/samsung/core.h>
+>>  #include <linux/mfd/samsung/s2mps11.h>
+>>  #include <linux/mfd/samsung/s2mps14.h>
+>> +#include <linux/mfd/samsung/s2mpu02.h>
+>>  
+>>  struct s2mps11_info {
+>>  	unsigned int rdev_num;
+>> @@ -40,11 +41,15 @@ struct s2mps11_info {
+>>  	int ramp_delay16;
+>>  	int ramp_delay7810;
+>>  	int ramp_delay9;
+>> +
+>> +	enum sec_device_type dev_type;
+>> +
+>>  	/*
+>> -	 * One bit for each S2MPS14 regulator whether the suspend mode
+>> +	 * One bit for each S2MPS14/S2MPU02 regulator whether the suspend mode
+>>  	 * was enabled.
+>>  	 */
+>> -	unsigned int s2mps14_suspend_state:30;
+>> +	unsigned long long s2mps14_suspend_state:35;
+>> +
+>>  	/* Array of size rdev_num with GPIO-s for external sleep control */
+>>  	int *ext_control_gpio;
+>>  };
+>> @@ -415,12 +420,24 @@ static int s2mps14_regulator_enable(struct regulator_dev *rdev)
+>>  	struct s2mps11_info *s2mps11 = rdev_get_drvdata(rdev);
+>>  	unsigned int val;
+>>  
+>> -	if (s2mps11->s2mps14_suspend_state & (1 << rdev_get_id(rdev)))
+>> -		val = S2MPS14_ENABLE_SUSPEND;
+>> -	else if (gpio_is_valid(s2mps11->ext_control_gpio[rdev_get_id(rdev)]))
+>> -		val = S2MPS14_ENABLE_EXT_CONTROL;
+>> -	else
+>> -		val = rdev->desc->enable_mask;
+>> +	switch (s2mps11->dev_type) {
+>> +	case S2MPS14X:
+>> +		if (s2mps11->s2mps14_suspend_state & (1 << rdev_get_id(rdev)))
+>> +			val = S2MPS14_ENABLE_SUSPEND;
+>> +		else if (gpio_is_valid(s2mps11->ext_control_gpio[rdev_get_id(rdev)]))
+>> +			val = S2MPS14_ENABLE_EXT_CONTROL;
+>> +		else
+>> +			val = rdev->desc->enable_mask;
+>> +		break;
+>> +	case S2MPU02:
+>> +		if (s2mps11->s2mps14_suspend_state & (1 << rdev_get_id(rdev)))
+>> +			val = S2MPU02_ENABLE_SUSPEND;
+>> +		else
+>> +			val = rdev->desc->enable_mask;
+>> +		break;
+>> +	default:
+>> +		return -EINVAL;
+>> +	};
+>>  
+>>  	return regmap_update_bits(rdev->regmap, rdev->desc->enable_reg,
+>>  			rdev->desc->enable_mask, val);
+>> @@ -431,16 +448,42 @@ static int s2mps14_regulator_set_suspend_disable(struct regulator_dev *rdev)
+>>  	int ret;
+>>  	unsigned int val;
+>>  	struct s2mps11_info *s2mps11 = rdev_get_drvdata(rdev);
+>> +	int rdev_id = rdev_get_id(rdev);
+>>  
+>> -	/* LDO3 should be always on and does not support suspend mode */
+>> -	if (rdev_get_id(rdev) == S2MPS14_LDO3)
+>> -		return 0;
+>> +	/* Below LDO should be always on or does not support suspend mode. */
+>> +	switch (s2mps11->dev_type) {
+>> +	case S2MPS14X:
+>> +		switch (rdev_id) {
+>> +		case S2MPS14_LDO3:
+>> +			return 0;
+>> +		};
+>> +	case S2MPU02:
+>> +		switch (rdev_id) {
+>> +		case S2MPU02_LDO13:
+>> +		case S2MPU02_LDO14:
+>> +		case S2MPU02_LDO15:
+>> +		case S2MPU02_LDO16:
+>> +		case S2MPU02_LDO17:
+>> +		case S2MPU02_BUCK7:
+>> +			return 0;
+>> +		};
+>> +	default:
+>> +		return -EINVAL;
+>> +	};
+>>  
+>>  	ret = regmap_read(rdev->regmap, rdev->desc->enable_reg, &val);
+>>  	if (ret < 0)
+>>  		return ret;
+>>  
+>> -	s2mps11->s2mps14_suspend_state |= (1 << rdev_get_id(rdev));
+>> +	switch (s2mps11->dev_type) {
+>> +	case S2MPS14X:
+>> +	case S2MPU02:
+>> +		s2mps11->s2mps14_suspend_state |= (1 << rdev_get_id(rdev));
+>> +		break;
+>> +	default:
+>> +		return -EINVAL;
+>> +	};
+>> +
+> 
+> I think this change is not needed. You are actually returning EINVAL on
+> wrong devices in switch above so:
+> 	s2mps11->s2mps14_suspend_state |= (1 << rdev_get_id(rdev));
+> would be safe and sufficient.
 
-The mfd.git(for-mfd-next branch) has only following patchset[2] without patchset[3] about drivers/mfd/sec-core.c.
-The regulaotr.git (for-next branch) has only following patchset[3] without patchset[2] about driver/regulator/s2mps11.c.
+OK I'll modify it as your comment.
 
-[2] patchset for drivers/mfd/sec-core.c
-2014-05-13 12:58 Krzysztof Kozlows~ o mfd: sec-core: Make of_device_id array const
-2014-04-22 16:00 Krzysztof Kozlows~ o mfd: sec-core: Fix IRQ handling after resume if this is not a wakeup source
-2014-04-23 16:13 Krzysztof Kozlows~ o mfd: sec-core: Remove duplicated device type from sec_pmic_dev
-2014-04-14 09:40 Krzysztof Kozlows~ o mfd/rtc: s5m: Do not allocate RTC I2C dummy and regmap for unsupported chipsets
+> 
+> Anyway:
+> Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
-[3] patchset for drivers/regulator/s2mps11.c
-2014-05-06 08:37 Krzysztof Kozlows~ o regulator: s2mps11: Fix accidental enable of buck6 ramp delay
-2014-04-30 10:40 Krzysztof Kozlows~ o regulator: s2mps11: Allow GPIO 0 to be used as external control on S2MPS14
-2014-04-14 10:09 Krzysztof Kozlows~ o regulator: s2mps11: Add external GPIO control for S2MPS14
-2014-04-14 10:09 Krzysztof Kozlows~ o regulator: s2mps11: Move DTS parsing code to separate function
 
-Should I divide patch[1] into two patches to remove dependency on both mfd.git and regulator.git?
+Thanks for your review.
 
 Best Regards,
 Chanwoo Choi
-
-On 05/30/2014 09:25 AM, Chanwoo Choi wrote:
-> This patch add Samsung S2MPU02 PMIC device driver in exiting S2MPS11 PMIC
-> driver because S2MPU02 has a little different between S2MPU02 and S2MPS1x.
-> The S2MPU02 PMIC has LDO[1-28] and BUCK[1-7] regulators.
-> 
-> Changes from v1:
-> - Fix typo about patch description
-> - Use existing suspend_state variable instead of defining new variable for S2MPU02
-> - Remove unnecessary parameter of s2mps11_pmic_dt_parse()
-> - Remove unfit comment of s2mpu02.h file
-> - Both patch2 and patch3 should be squashed on patch2
-> 
-> Chanwoo Choi (3):
->   mfd: sec-core: Add support for S2MPU02 device
->   regulator: s2mps11: Add support S2MPU02 regulator device
->   dt-bindings: mfd: s2mps11: Add support S2MPU02 PMIC
-> 
->  Documentation/devicetree/bindings/mfd/s2mps11.txt |   7 +-
->  drivers/mfd/sec-core.c                            |  45 +++
->  drivers/mfd/sec-irq.c                             |  88 ++++++
->  drivers/regulator/s2mps11.c                       | 319 ++++++++++++++++++++--
->  include/linux/mfd/samsung/core.h                  |   1 +
->  include/linux/mfd/samsung/irq.h                   |  24 ++
->  include/linux/mfd/samsung/s2mpu02.h               | 200 ++++++++++++++
->  7 files changed, 662 insertions(+), 22 deletions(-)
->  create mode 100644 include/linux/mfd/samsung/s2mpu02.h
-> 
 
