@@ -1,108 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755972AbaE3R4g (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 13:56:36 -0400
-Received: from mga09.intel.com ([134.134.136.24]:41025 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751525AbaE3R4f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 13:56:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,942,1392192000"; 
-   d="scan'208";a="549040344"
-Subject: Re: [RFC PATCH] crypto: crc32c-pclmul - Use pmovzxdq to shrink
- K_table
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Dave Jones <davej@redhat.com>,
-        "dirk.brandewie@gmail.com" <dirk.brandewie@gmail.com>
-Cc: George Spelvin <linux@horizon.com>, herbert@gondor.apana.org.au,
-        james.guilford@intel.com, JBeulich@suse.com,
-        linux-kernel@vger.kernel.org, Jacob jun Pan <jacob.jun.pan@intel.com>
-In-Reply-To: <20140530011636.GA31694@redhat.com>
-References: <20140529235432.19207.qmail@ns.horizon.com>
-	 <1401412036.2970.459.camel@schen9-DESK> <20140530011636.GA31694@redhat.com>
+	id S933110AbaE3R6b (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 13:58:31 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:57829 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752978AbaE3R63 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 May 2014 13:58:29 -0400
+Message-ID: <1401472704.15365.4.camel@dhcp-9-2-203-236.watson.ibm.com>
+Subject: Re: [RFC PATCH v4 1/4] KEYS: special dot prefixed keyring name bug
+ fix
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
+Cc: linux-security-module <linux-security-module@vger.kernel.org>,
+        Dmitry Kasatkin <d.kasatkin@samsung.com>,
+        David Howells <dhowells@redhat.com>, Josh Boyer <jwboyer@redhat.com>,
+        keyrings <keyrings@linux-nfs.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Date: Fri, 30 May 2014 13:58:24 -0400
+In-Reply-To: <CACE9dm8OMGH5V19iRkytPtQXt9qNha9Ca81P6dpy-cqE2s5NYg@mail.gmail.com>
+References: <1401289784-31340-1-git-send-email-zohar@linux.vnet.ibm.com>
+	 <1401289784-31340-2-git-send-email-zohar@linux.vnet.ibm.com>
+	 <CACE9dm8OMGH5V19iRkytPtQXt9qNha9Ca81P6dpy-cqE2s5NYg@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 30 May 2014 10:56:32 -0700
-Message-ID: <1401472592.2970.483.camel@schen9-DESK>
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14053017-0928-0000-0000-0000024B101B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-05-29 at 21:16 -0400, Dave Jones wrote:
-> On Thu, May 29, 2014 at 06:07:16PM -0700, Tim Chen wrote:
->  > On Thu, 2014-05-29 at 19:54 -0400, George Spelvin wrote:
->  > > Sorry for the delay; my Ivy Bridge test machine isn't in my
->  > > office and getting to the console to tweak the BIOS is a
->  > > bit of a bother.
->  > > 
->  > > Anyway, i7-4930K, turbo boost & hyperthreading disabled,
->  > > $ cat /sys/devices/system/cpu/cpu?/cpufreq/scaling_governor
->  > > performance
->  > > performance
->  > > performance
->  > > performance
->  > > performance
->  > > performance
->  > > 
->  > > Oddly, though, CPU speed still seems to be fluctuating:
->  > > $ grep MHz /proc/cpuinfo
->  > > cpu MHz         : 1255.875
->  > > cpu MHz         : 3168.375
->  > > cpu MHz         : 3062.125
->  > > cpu MHz         : 1468.375
->  > > cpu MHz         : 1309.000
->  > > cpu MHz         : 2212.125
->  > > $ grep MHz /proc/cpuinfo
->  > > cpu MHz         : 1255.875
->  > > cpu MHz         : 2690.250
->  > > cpu MHz         : 1255.875
->  > > cpu MHz         : 2530.875
->  > > cpu MHz         : 2212.125
->  > > cpu MHz         : 1521.500
->  > 
->  > This is odd.  On my Ivy Bridge system the CPU speed from /proc/cpuinfo 
->  > is at max freq once I set the performance governor.  
->  > The numbers above almost look like
->  > the cpu frequency is fluctuating and an average is taken.
->  > What version of the kernel are you running?  Is 
->  > CONFIG_CPU_FREQ_GOV_PERFORMANCE compiled in?
->  > 
->  > Does /sys/devices/system/cpu/cpu?/cpufreq/scaling_cur_freq
->  > also changes?
->  > 
->  > Can you check what are the available governors in your system
->  > and available frequencies?
->  > 
->  > cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors
->  > cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_frequencies
->  > 
->  > If userspace governor is available, you can try set the governor
->  > to userspace, then pin frequency to 3400 MHz (assuming that's your
->  > max) with command like:
->  
-> intel_pstate overrides any governor choice you make through sysfs.
+On Fri, 2014-05-30 at 18:58 +0300, Dmitry Kasatkin wrote: 
+> On 28 May 2014 18:09, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+> > Dot prefixed keyring names are supposed to be reserved for the
+> > kernel, but add_key() calls key_get_type_from_user(), which
+> > incorrectly verifies the 'type' field, not the 'description' field.
+> > This patch verifies the 'description' field isn't dot prefixed,
+> > when creating a new keyring, and removes the dot prefix test in
+> > key_get_type_from_user().
+> >
+> > Reported-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
+> > Cc: David Howells <dhowells@redhat.com>
+> > Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
+> > ---
+> >  security/keys/keyctl.c | 6 ++++--
+> >  1 file changed, 4 insertions(+), 2 deletions(-)
+> >
+> > diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
+> > index cd5bd0c..9e9a762 100644
+> > --- a/security/keys/keyctl.c
+> > +++ b/security/keys/keyctl.c
+> > @@ -37,8 +37,6 @@ static int key_get_type_from_user(char *type,
+> >                 return ret;
+> >         if (ret == 0 || ret >= len)
+> >                 return -EINVAL;
+> > -       if (type[0] == '.')
+> > -               return -EPERM;
+> >         type[len - 1] = '\0';
+> >         return 0;
+> >  }
+> > @@ -87,6 +85,10 @@ SYSCALL_DEFINE5(add_key, const char __user *, _type,
+> >                         kfree(description);
+> >                         description = NULL;
+> >                 }
+> > +               if (description[0] == '.') {
+> > +                       ret = -EPERM;
+> > +                       goto error2;
+> > +               }
 > 
-> 	Dave
+> 1. 3 lines above "discription = NULL" will cause kernel oops...
+> It happens when using empty description... like:
 > 
+> cat x509_ima.der | keyctl padd asymmetric "" keyid
 
-Dirk,
+Right, that should be 'else if'. 
 
-Wonder if this the right behavior for intel_pstate that when I set the 
-governor to performance, intel_pstate driver still adjusts 
-the cpu frequencies around?
+> 2. It prevents adding trusted keys to ".ima" from user space...
+> This is NOT what we want... right?
 
-Turbotstat also confirms that the frequencies are not at max,
-even though the max_perf_pct and min_perf_pct are both set at 100.  
+It prevents creating a dot prefixed keyring.
 
-I ran on my HSW system with 3.15-rc7 kernel and see similar
-issue that Geroge reported.
-
-It is really a pain when we need to do performance benchmarking and 
-need to have a constant cpu frequency.  
-
-Thanks.
-
-Tim
+Mimi
 
