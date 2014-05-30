@@ -1,46 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933047AbaE3NMb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 09:12:31 -0400
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:19956 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932923AbaE3NMa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 09:12:30 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Fri, 30 May 2014 06:05:15 -0700
-Date: Fri, 30 May 2014 16:12:26 +0300
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH 0/2] debugfs entries for Tegra clocks
-Message-ID: <20140530131226.GR5961@tbergstrom-lnx.Nvidia.com>
-References: <1401295868-18697-1-git-send-email-pdeschrijver@nvidia.com>
- <538773C0.30906@wwwdotorg.org>
+	id S933101AbaE3NNU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 09:13:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41133 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932205AbaE3NNS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 May 2014 09:13:18 -0400
+Date: Fri, 30 May 2014 10:12:43 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Li Zefan <lizefan@huawei.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Tejun Heo <tj@kernel.org>,
+        Christoph Lameter <cl@linux.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] page_alloc: skip cpuset enforcement for lower zone
+ allocations (v5)
+Message-ID: <20140530131243.GA30110@amt.cnet>
+References: <20140523193706.GA22854@amt.cnet>
+ <20140526185344.GA19976@amt.cnet>
+ <53858A06.8080507@huawei.com>
+ <20140528224324.GA1132@amt.cnet>
+ <20140529184303.GA20571@amt.cnet>
+ <alpine.DEB.2.02.1405291555120.9336@chino.kir.corp.google.com>
+ <20140529232819.GA29803@amt.cnet>
+ <alpine.DEB.2.02.1405291638300.9336@chino.kir.corp.google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <538773C0.30906@wwwdotorg.org>
-X-NVConfidentiality: public
+In-Reply-To: <alpine.DEB.2.02.1405291638300.9336@chino.kir.corp.google.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 29, 2014 at 07:52:00PM +0200, Stephen Warren wrote:
-> On 05/28/2014 10:51 AM, Peter De Schrijver wrote:
-> > This patch set introduces the 'regs' debugfs entry which shows the
-> > contents of all registers related to a clock.
+On Thu, May 29, 2014 at 04:54:00PM -0700, David Rientjes wrote:
+> On Thu, 29 May 2014, Marcelo Tosatti wrote:
 > 
-> Would it be better to create a regmap object for the entire clock module
-> register space, and then get all the debugfs stuff for free?
+> > diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+> > index 3d54c41..3bbc23f 100644
+> > --- a/kernel/cpuset.c
+> > +++ b/kernel/cpuset.c
+> > @@ -2374,6 +2374,7 @@ static struct cpuset *nearest_hardwall_ancestor(struct cpuset *cs)
+> >   * variable 'wait' is not set, and the bit ALLOC_CPUSET is not set
+> >   * in alloc_flags.  That logic and the checks below have the combined
+> >   * affect that:
+> > + *	gfp_zone(mask) < policy_zone - any node ok
+> >   *	in_interrupt - any node ok (current task context irrelevant)
+> >   *	GFP_ATOMIC   - any node ok
+> >   *	TIF_MEMDIE   - any node ok
+> > @@ -2392,6 +2393,10 @@ int __cpuset_node_allowed_softwall(int node, gfp_t gfp_mask)
+> >  
+> >  	if (in_interrupt() || (gfp_mask & __GFP_THISNODE))
+> >  		return 1;
+> > +#ifdef CONFIG_NUMA
+> > +	if (gfp_zone(gfp_mask) < policy_zone)
+> > +		return 1;
+> > +#endif
+> >  	might_sleep_if(!(gfp_mask & __GFP_HARDWALL));
+> >  	if (node_isset(node, current->mems_allowed))
+> >  		return 1;
+> > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> > index 5dba293..0fd6923 100644
+> > --- a/mm/page_alloc.c
+> > +++ b/mm/page_alloc.c
+> > @@ -2723,6 +2723,11 @@ __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order,
+> >  	if (!memcg_kmem_newpage_charge(gfp_mask, &memcg, order))
+> >  		return NULL;
+> >  
+> > +#ifdef CONFIG_NUMA
+> > +	if (!nodemask && gfp_zone(gfp_mask) < policy_zone)
+> > +		nodemask = &node_states[N_MEMORY];
+> > +#endif
+> > +
+> >  retry_cpuset:
+> >  	cpuset_mems_cookie = read_mems_allowed_begin();
+> >  
+> 
+> When I said that my point about mempolicies needs more thought, I wasn't 
+> expecting that there would be no discussion -- at least _something_ that 
+> would say why we don't care about the mempolicy case.
 
-Maybe. You wouldn't get the register names though.
+We care about the mempolicy case, and that is taken care of by
+apply_policy_zone.
 
-Cheers,
+Or does that code fail to handle a particular case ?
 
-Peter.
+> The motivation here is identical for both cpusets and mempolicies.  What 
+> is the significant difference between attaching a process to a cpuset 
+> without access to lowmem and a process doing set_mempolicy(MPOL_BIND) 
+> without access to lowmem?  Is it because the process should know what it's 
+> doing if it asks for a mempolicy that doesn't include lowmem?  If so, is 
+> the cpusets case different because the cpuset attacher isn't held to the 
+> same standard?
+> 
+> I'd argue that an application may never know if it needs to allocate 
+> GFP_DMA32 or not since its a property of the hardware that its running on 
+> and my driver may need to access lowmem while yours may not.  I may even 
+> configure CONFIG_ZONE_DMA=n and CONFIG_ZONE_DMA32=n because I know the 
+> _hardware_ requirements of my platforms.
+> 
+> If there is no difference, then why are we allowing the exception for 
+> cpusets and not mempolicies?
+> 
+> I really think you want to allow both cpusets and mempolicies.  I'd like 
+> to hear Christoph's thoughts on it as well, though.
+> 
+> Furthermore, I don't know why you're opposed to the comments that Andrew 
+> added here.  In the first version of this patch, I suggested a comment and 
+> you referred to a kernel/cpuset.c comment.  Nowhere in the above change to 
+> the page allocator would make anyone think of cpusets or what it is trying 
+> to do.  Please comment the code accordingly so your intention is 
+> understood for everybody else who happens upon your code.
