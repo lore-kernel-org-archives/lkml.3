@@ -1,331 +1,291 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934896AbaE3WaQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 18:30:16 -0400
-Received: from mail-ig0-f172.google.com ([209.85.213.172]:34497 "EHLO
-	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756180AbaE3W3D (ORCPT
+	id S934556AbaE3WhG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 18:37:06 -0400
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:58260 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755157AbaE3WhD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 18:29:03 -0400
-From: Alex Elder <elder@linaro.org>
-To: mporter@linaro.org, bcm@fixthebug.org, linux@arm.linux.org.uk,
-        devicetree@vger.kernel.org, arnd@arndb.de, sboyd@codeaurora.org
-Cc: bcm-kernel-feedback-list@broadcom.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, galak@codeaurora.org,
-        ijc+devicetree@hellion.org.uk, jason@lakedaemon.net,
-        lorenzo.pieralisi@arm.com, mark.rutland@arm.com, pawel.moll@arm.com,
-        rdunlap@infradead.org, rjui@broadcom.com, robh+dt@kernel.org,
-        rvaswani@codeaurora.org
-Subject: [PATCH v4 RESEND 2/5] ARM: add SMP support for Broadcom mobile SoCs
-Date: Fri, 30 May 2014 17:28:53 -0500
-Message-Id: <1401488936-21186-3-git-send-email-elder@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1401488936-21186-1-git-send-email-elder@linaro.org>
-References: <1401488936-21186-1-git-send-email-elder@linaro.org>
+	Fri, 30 May 2014 18:37:03 -0400
+MIME-Version: 1.0
+In-Reply-To: <1401289784-31340-5-git-send-email-zohar@linux.vnet.ibm.com>
+References: <1401289784-31340-1-git-send-email-zohar@linux.vnet.ibm.com>
+	<1401289784-31340-5-git-send-email-zohar@linux.vnet.ibm.com>
+Date: Sat, 31 May 2014 01:37:01 +0300
+Message-ID: <CACE9dm-CwB=wPffdg7UMKWw1LBaePBgxXPYd9E51dZK+kpFKBw@mail.gmail.com>
+Subject: Re: [RFC PATCH v4 4/4] KEYS: define an owner trusted keyring
+From: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: linux-security-module <linux-security-module@vger.kernel.org>,
+        Dmitry Kasatkin <d.kasatkin@samsung.com>,
+        David Howells <dhowells@redhat.com>, Josh Boyer <jwboyer@redhat.com>,
+        keyrings <keyrings@linux-nfs.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds SMP support for BCM281XX and BCM21664 family SoCs.
+On 28 May 2014 18:09, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+> (UEFI) secure boot provides a signature chain of trust rooted in
+> hardware. The signature chain of trust includes the Machine Owner
+> Keys(MOKs), which cannot be modified without physical presence.
+>
+> Instead of allowing public keys, with certificates signed by any
+> key on the system trusted keyring, to be added to a trusted
+> keyring, this patch further restricts the certificates to those
+> signed by the machine owner's key or chosen key.
+>
+> This patch defines an owner trusted keyring, defines a new boot
+> command line option 'keyring=' to designate the machine owner's
+> chosen key, and renames the function get_system_trusted_keyring()
+> to get_system_or_owner_trusted_keyring().
+>
+> This patch permits the machine owner to safely identify their own
+> or chosen key, without requiring it to be builtin the kernel.
+>
+> Signed-off-by: Mimi Zohar<zohar@linux.vnet.ibm.com>
+> ---
+>  crypto/asymmetric_keys/x509_public_key.c |  3 +-
+>  include/keys/system_keyring.h            | 15 ++++--
+>  include/linux/key.h                      |  4 ++
+>  kernel/system_keyring.c                  | 85 ++++++++++++++++++++++++++++++++
+>  security/keys/key.c                      | 20 ++++++++
+>  5 files changed, 121 insertions(+), 6 deletions(-)
+>
+> diff --git a/crypto/asymmetric_keys/x509_public_key.c b/crypto/asymmetric_keys/x509_public_key.c
+> index 1af8a30..6d52790 100644
+> --- a/crypto/asymmetric_keys/x509_public_key.c
+> +++ b/crypto/asymmetric_keys/x509_public_key.c
+> @@ -237,7 +237,8 @@ static int x509_key_preparse(struct key_preparsed_payload *prep)
+>                 if (ret < 0)
+>                         goto error_free_cert;
+>         } else {
+> -               ret = x509_validate_trust(cert, get_system_trusted_keyring());
+> +               ret = x509_validate_trust(cert,
+> +                                         get_system_or_owner_trusted_keyring());
+>                 if (!ret)
+>                         prep->trusted = 1;
+>         }
+> diff --git a/include/keys/system_keyring.h b/include/keys/system_keyring.h
+> index 72665eb..f665c33 100644
+> --- a/include/keys/system_keyring.h
+> +++ b/include/keys/system_keyring.h
+> @@ -17,15 +17,20 @@
+>  #include <linux/key.h>
+>
+>  extern struct key *system_trusted_keyring;
+> -static inline struct key *get_system_trusted_keyring(void)
+> -{
+> -       return system_trusted_keyring;
+> -}
+> +extern struct key *owner_trusted_keyring;
+> +
+> +extern struct key *get_system_or_owner_trusted_keyring(void);
+> +extern void load_owner_identified_uefi_key(key_ref_t key);
+> +
+>  #else
+> -static inline struct key *get_system_trusted_keyring(void)
+> +static inline struct key *get_system_or_owner_trusted_keyring(void)
+>  {
+>         return NULL;
+>  }
+> +
+> +static void load_owner_identified_uefi_key(key_ref_t key)
+> +{
+> +}
+>  #endif
+>
+>  #endif /* _KEYS_SYSTEM_KEYRING_H */
+> diff --git a/include/linux/key.h b/include/linux/key.h
+> index cd0abb8..861843a 100644
+> --- a/include/linux/key.h
+> +++ b/include/linux/key.h
+> @@ -267,6 +267,10 @@ extern int wait_for_key_construction(struct key *key, bool intr);
+>
+>  extern int key_validate(const struct key *key);
+>
+> +extern int key_match(key_ref_t key,
+> +                    const char *type,
+> +                    const char *description);
+> +
+>  extern key_ref_t key_create_or_update(key_ref_t keyring,
+>                                       const char *type,
+>                                       const char *description,
+> diff --git a/kernel/system_keyring.c b/kernel/system_keyring.c
+> index 52ebc70..e9b14ac 100644
+> --- a/kernel/system_keyring.c
+> +++ b/kernel/system_keyring.c
+> @@ -19,11 +19,75 @@
+>  #include "module-internal.h"
+>
+>  struct key *system_trusted_keyring;
+> +struct key *owner_trusted_keyring;
+>  EXPORT_SYMBOL_GPL(system_trusted_keyring);
+>
+>  extern __initconst const u8 system_certificate_list[];
+>  extern __initconst const unsigned long system_certificate_list_size;
+>
+> +static int use_owner_trusted_keyring;
+> +
+> +static char *owner_keyid;
+> +static int builtin_keyring;
+> +static int __init default_keyring_set(char *str)
+> +{
+> +       if (!str)       /* default: builtin */
+> +               return 1;
+> +
+> +       if (strcmp(str, "system") == 0)  /* use system keyring */
+> +               ;
+> +       else if (strcmp(str, "builtin") == 0)  /* only builtin keys */
+> +               builtin_keyring = 1;
+> +       else
+> +               owner_keyid = str;   /* owner local key 'id:xxxxxx' */
+> +       return 1;
+> +}
+> +__setup("keyring=", default_keyring_set);
+> +
+> +/*
+> + * Load the owner identified key on the 'owner' trusted keyring.
+> + */
+> +void load_owner_identified_uefi_key(key_ref_t key)
+> +{
+> +       if (!owner_keyid || use_owner_trusted_keyring)
+> +               return;
+> +
+> +       if (!key_match(key, "asymmetric", owner_keyid))
+> +               return;
+> +
+> +       if (key_link(owner_trusted_keyring, key_ref_to_ptr(key)) == 0) {
+> +               set_bit(KEY_FLAG_TRUSTED_ONLY, &owner_trusted_keyring->flags);
+> +               use_owner_trusted_keyring = 1;
 
-This feature is controlled with a distinct config option such that
-an SMP-enabled multi-v7 binary can be configured to run these SoCs
-in uniprocessor mode.  Since this SMP functionality is used for
-multiple Broadcom mobile chip families the config option is called
-ARCH_BCM_MOBILE_SMP (for lack of a better name).
+This is a bit strange...
+Linking any key forces to use owner trusted keyring...
 
-On SoCs of this type, the secondary core is not held in reset on
-power-on.  Instead it loops in a ROM-based holding pen.  To release
-it, one must write into a special register a jump address whose
-low-order bits have been replaced with a secondary core's id, then
-trigger an event with SEV.  On receipt of an event, the ROM code
-will examine the register's contents, and if the low-order bits
-match its cpu id, it will clear them and write the value back to the
-register just prior to jumping to the address specified.
+> +               pr_notice("Loaded X.509 cert '%s' on .owner_keyring\n",
+> +                                 key_ref_to_ptr(key)->description);
+> +       }
+> +}
+> +
+> +static void load_owner_identified_builtin_key(key_ref_t key)
+> +{
+> +       if (!owner_keyid && !builtin_keyring)
+> +               return;
+> +
 
-The location of the special register is defined in the device tree
-using a "secondary-boot-reg" property in a node whose "enable-method"
-matches.
+It looks like builtin_keyring is useless...
+Is it like linking all .system keys to owners keyring???
 
-Derived from code originally provided by Ray Jui <rjui@broadcom.com>
+Why not just to return .system keyring in get_system_or_owner_trusted_keyring()
+based on owner_keyid?
 
-Signed-off-by: Alex Elder <elder@linaro.org>
----
- arch/arm/mach-bcm/Kconfig    |  18 +++-
- arch/arm/mach-bcm/Makefile   |   3 +
- arch/arm/mach-bcm/kona_smp.c | 202 +++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 220 insertions(+), 3 deletions(-)
- create mode 100644 arch/arm/mach-bcm/kona_smp.c
 
-diff --git a/arch/arm/mach-bcm/Kconfig b/arch/arm/mach-bcm/Kconfig
-index 5f5740f..336fc6f 100644
---- a/arch/arm/mach-bcm/Kconfig
-+++ b/arch/arm/mach-bcm/Kconfig
-@@ -14,7 +14,6 @@ config ARCH_BCM_MOBILE
- 	depends on MMU
- 	select ARCH_REQUIRE_GPIOLIB
- 	select ARM_ERRATA_754322
--	select ARM_ERRATA_764369 if SMP
- 	select ARM_GIC
- 	select GPIO_BCM_KONA
- 	select TICK_ONESHOT
-@@ -31,18 +30,31 @@ menu "Broadcom Mobile SoC Selection"
- config ARCH_BCM_281XX
- 	bool "Broadcom BCM281XX SoC family"
- 	default y
-+	select HAVE_SMP
- 	help
--	  Enable support for the the BCM281XX family, which includes
-+	  Enable support for the BCM281XX family, which includes
- 	  BCM11130, BCM11140, BCM11351, BCM28145 and BCM28155
- 	  variants.
- 
- config ARCH_BCM_21664
- 	bool "Broadcom BCM21664 SoC family"
- 	default y
-+	select HAVE_SMP
- 	help
--	  Enable support for the the BCM21664 family, which includes
-+	  Enable support for the BCM21664 family, which includes
- 	  BCM21663 and BCM21664 variants.
- 
-+config ARCH_BCM_MOBILE_SMP
-+	bool "Broadcom mobile SoC SMP support"
-+	depends on (ARCH_BCM_281XX || ARCH_BCM_21664) && SMP
-+	default y
-+	select HAVE_ARM_SCU
-+	select ARM_ERRATA_764369
-+	help
-+	  SMP support for the BCM281XX and BCM21664 SoC families.
-+	  Provided as an option so SMP support for SoCs of this type
-+	  can be disabled for an SMP-enabled kernel.
-+
- endmenu
- 
- endif
-diff --git a/arch/arm/mach-bcm/Makefile b/arch/arm/mach-bcm/Makefile
-index 7fb9b04..d8c0dcf 100644
---- a/arch/arm/mach-bcm/Makefile
-+++ b/arch/arm/mach-bcm/Makefile
-@@ -16,6 +16,9 @@ obj-$(CONFIG_ARCH_BCM_281XX)	+= board_bcm281xx.o
- # BCM21664
- obj-$(CONFIG_ARCH_BCM_21664)	+= board_bcm21664.o
- 
-+# BCM281XX and BCM21664 SMP support
-+obj-$(CONFIG_ARCH_BCM_MOBILE_SMP) += kona_smp.o
-+
- # BCM281XX and BCM21664 L2 cache control
- obj-$(CONFIG_ARCH_BCM_MOBILE)	+= bcm_kona_smc.o bcm_kona_smc_asm.o kona.o
- plus_sec := $(call as-instr,.arch_extension sec,+sec)
-diff --git a/arch/arm/mach-bcm/kona_smp.c b/arch/arm/mach-bcm/kona_smp.c
-new file mode 100644
-index 0000000..66a0465
---- /dev/null
-+++ b/arch/arm/mach-bcm/kona_smp.c
-@@ -0,0 +1,202 @@
-+/*
-+ * Copyright (C) 2014 Broadcom Corporation
-+ * Copyright 2014 Linaro Limited
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation version 2.
-+ *
-+ * This program is distributed "as is" WITHOUT ANY WARRANTY of any
-+ * kind, whether express or implied; without even the implied warranty
-+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#include <linux/init.h>
-+#include <linux/errno.h>
-+#include <linux/io.h>
-+#include <linux/of.h>
-+#include <linux/sched.h>
-+
-+#include <asm/smp.h>
-+#include <asm/smp_plat.h>
-+#include <asm/smp_scu.h>
-+
-+/* Size of mapped Cortex A9 SCU address space */
-+#define CORTEX_A9_SCU_SIZE	0x58
-+
-+#define SECONDARY_TIMEOUT_NS	NSEC_PER_MSEC	/* 1 msec (in nanoseconds) */
-+#define BOOT_ADDR_CPUID_MASK	0x3
-+
-+/* Name of device node property defining secondary boot register location */
-+#define OF_SECONDARY_BOOT	"secondary-boot-reg"
-+
-+/* I/O address of register used to coordinate secondary core startup */
-+static u32	secondary_boot;
-+
-+/*
-+ * Enable the Cortex A9 Snoop Control Unit
-+ *
-+ * By the time this is called we already know there are multiple
-+ * cores present.  We assume we're running on a Cortex A9 processor,
-+ * so any trouble getting the base address register or getting the
-+ * SCU base is a problem.
-+ *
-+ * Return 0 if successful or an error code otherwise.
-+ */
-+static int __init scu_a9_enable(void)
-+{
-+	unsigned long config_base;
-+	void __iomem *scu_base;
-+
-+	if (!scu_a9_has_base()) {
-+		pr_err("no configuration base address register!\n");
-+		return -ENXIO;
-+	}
-+
-+	/* Config base address register value is zero for uniprocessor */
-+	config_base = scu_a9_get_base();
-+	if (!config_base) {
-+		pr_err("hardware reports only one core\n");
-+		return -ENOENT;
-+	}
-+
-+	scu_base = ioremap((phys_addr_t)config_base, CORTEX_A9_SCU_SIZE);
-+	if (!scu_base) {
-+		pr_err("failed to remap config base (%lu/%u) for SCU\n",
-+			config_base, CORTEX_A9_SCU_SIZE);
-+		return -ENOMEM;
-+	}
-+
-+	scu_enable(scu_base);
-+
-+	iounmap(scu_base);	/* That's the last we'll need of this */
-+
-+	return 0;
-+}
-+
-+static void __init bcm_smp_prepare_cpus(unsigned int max_cpus)
-+{
-+	static cpumask_t only_cpu_0 = { CPU_BITS_CPU0 };
-+	struct device_node *node;
-+	int ret;
-+
-+	BUG_ON(secondary_boot);		/* We're called only once */
-+
-+	/*
-+	 * This function is only called via smp_ops->smp_prepare_cpu().
-+	 * That only happens if a "/cpus" device tree node exists
-+	 * and has an "enable-method" property that selects the SMP
-+	 * operations defined herein.
-+	 */
-+	node = of_find_node_by_path("/cpus");
-+	BUG_ON(!node);
-+
-+	/*
-+	 * Our secondary enable method requires a "secondary-boot-reg"
-+	 * property to specify a register address used to request the
-+	 * ROM code boot a secondary code.  If we have any trouble
-+	 * getting this we fall back to uniprocessor mode.
-+	 */
-+	if (of_property_read_u32(node, OF_SECONDARY_BOOT, &secondary_boot)) {
-+		pr_err("%s: missing/invalid " OF_SECONDARY_BOOT " property\n",
-+			node->name);
-+		ret = -ENOENT;		/* Arrange to disable SMP */
-+		goto out;
-+	}
-+
-+	/*
-+	 * Enable the SCU on Cortex A9 based SoCs.  If -ENOENT is
-+	 * returned, the SoC reported a uniprocessor configuration.
-+	 * We bail on any other error.
-+	 */
-+	ret = scu_a9_enable();
-+out:
-+	of_node_put(node);
-+	if (ret) {
-+		/* Update the CPU present map to reflect uniprocessor mode */
-+		BUG_ON(ret != -ENOENT);
-+		pr_warn("disabling SMP\n");
-+		init_cpu_present(&only_cpu_0);
-+	}
-+}
-+
-+/*
-+ * The ROM code has the secondary cores looping, waiting for an event.
-+ * When an event occurs each core examines the bottom two bits of the
-+ * secondary boot register.  When a core finds those bits contain its
-+ * own core id, it performs initialization, including computing its boot
-+ * address by clearing the boot register value's bottom two bits.  The
-+ * core signals that it is beginning its execution by writing its boot
-+ * address back to the secondary boot register, and finally jumps to
-+ * that address.
-+ *
-+ * So to start a core executing we need to:
-+ * - Encode the (hardware) CPU id with the bottom bits of the secondary
-+ *   start address.
-+ * - Write that value into the secondary boot register.
-+ * - Generate an event to wake up the secondary CPU(s).
-+ * - Wait for the secondary boot register to be re-written, which
-+ *   indicates the secondary core has started.
-+ */
-+static int bcm_boot_secondary(unsigned int cpu, struct task_struct *idle)
-+{
-+	void __iomem *boot_reg;
-+	phys_addr_t boot_func;
-+	u64 start_clock;
-+	u32 cpu_id;
-+	u32 boot_val;
-+	bool timeout = false;
-+
-+	cpu_id = cpu_logical_map(cpu);
-+	if (cpu_id & ~BOOT_ADDR_CPUID_MASK) {
-+		pr_err("bad cpu id (%u > %u)\n", cpu_id, BOOT_ADDR_CPUID_MASK);
-+		return -EINVAL;
-+	}
-+
-+	if (!secondary_boot) {
-+		pr_err("required secondary boot register not specified\n");
-+		return -EINVAL;
-+	}
-+
-+	boot_reg = ioremap_nocache((phys_addr_t)secondary_boot, sizeof(u32));
-+	if (!boot_reg) {
-+		pr_err("unable to map boot register for cpu %u\n", cpu_id);
-+		return -ENOSYS;
-+	}
-+
-+	/*
-+	 * Secondary cores will start in secondary_startup(),
-+	 * defined in "arch/arm/kernel/head.S"
-+	 */
-+	boot_func = virt_to_phys(secondary_startup);
-+	BUG_ON(boot_func & BOOT_ADDR_CPUID_MASK);
-+	BUG_ON(boot_func > (phys_addr_t)U32_MAX);
-+
-+	/* The core to start is encoded in the low bits */
-+	boot_val = (u32)boot_func | cpu_id;
-+	writel_relaxed(boot_val, boot_reg);
-+
-+	sev();
-+
-+	/* The low bits will be cleared once the core has started */
-+	start_clock = local_clock();
-+	while (!timeout && readl_relaxed(boot_reg) == boot_val)
-+		timeout = local_clock() - start_clock > SECONDARY_TIMEOUT_NS;
-+
-+	iounmap(boot_reg);
-+
-+	if (!timeout)
-+		return 0;
-+
-+	pr_err("timeout waiting for cpu %u to start\n", cpu_id);
-+
-+	return -ENOSYS;
-+}
-+
-+static struct smp_operations bcm_smp_ops __initdata = {
-+	.smp_prepare_cpus	= bcm_smp_prepare_cpus,
-+	.smp_boot_secondary	= bcm_boot_secondary,
-+};
-+CPU_METHOD_OF_DECLARE(bcm_smp_bcm281xx, "brcm,bcm11351-cpu-method",
-+			&bcm_smp_ops);
+
+> +       if (!builtin_keyring && !key_match(key, "asymmetric", owner_keyid))
+> +               return;
+> +
+> +       if (key_link(owner_trusted_keyring, key_ref_to_ptr(key)) == 0) {
+> +               set_bit(KEY_FLAG_TRUSTED_ONLY, &owner_trusted_keyring->flags);
+> +               use_owner_trusted_keyring = 1;
+
+The same...
+Linking any key forces to use owner trusted keyring...
+
+
+> +               pr_notice("Loaded X.509 cert '%s' on .owner_keyring\n",
+> +                                 key_ref_to_ptr(key)->description);
+> +       }
+> +}
+> +
+> +/*
+> + * Use the owner_trusted_keyring if available
+> + */
+> +struct key *get_system_or_owner_trusted_keyring(void)
+> +{
+> +       return use_owner_trusted_keyring ? owner_trusted_keyring :
+> +               system_trusted_keyring;
+> +}
+> +
+>  /*
+>   * Load the compiled-in keys
+>   */
+> @@ -50,6 +114,25 @@ static __init int system_trusted_keyring_init(void)
+>  device_initcall(system_trusted_keyring_init);
+>
+>  /*
+> + * Load the owner trusted key
+> + */
+> +static __init int owner_trusted_keyring_init(void)
+> +{
+> +       pr_notice("Initialize the owner trusted keyring\n");
+> +
+> +       owner_trusted_keyring =
+> +               keyring_alloc(".owner_keyring",
+> +                             KUIDT_INIT(0), KGIDT_INIT(0), current_cred(),
+> +                             ((KEY_POS_ALL & ~KEY_POS_SETATTR) |
+> +                             KEY_USR_VIEW | KEY_USR_READ | KEY_USR_SEARCH),
+> +                             KEY_ALLOC_NOT_IN_QUOTA, NULL);
+> +       if (IS_ERR(owner_trusted_keyring))
+> +               panic("Can't allocate owner trusted keyring\n");
+> +       return 0;
+> +}
+> +device_initcall(owner_trusted_keyring_init);
+> +
+> +/*
+>   * Load the compiled-in list of X.509 certificates.
+>   */
+>  static __init int load_system_certificate_list(void)
+> @@ -91,6 +174,8 @@ static __init int load_system_certificate_list(void)
+>                 } else {
+>                         pr_notice("Loaded X.509 cert '%s'\n",
+>                                   key_ref_to_ptr(key)->description);
+> +
+> +                       load_owner_identified_builtin_key(key);
+>                         key_ref_put(key);
+>                 }
+>                 p += plen;
+> diff --git a/security/keys/key.c b/security/keys/key.c
+> index 2048a11..b448ab1 100644
+> --- a/security/keys/key.c
+> +++ b/security/keys/key.c
+> @@ -701,6 +701,26 @@ void key_type_put(struct key_type *ktype)
+>         up_read(&key_types_sem);
+>  }
+>
+> +/*
+> + * Use the key type's match function to compare the key's id.
+> + */
+> +int key_match(key_ref_t key, const char *type, const char *description)
+> +{
+> +       struct keyring_index_key index_key;
+> +       int ret = 0;
+> +
+> +       index_key.type = key_type_lookup(type);
+> +       if (IS_ERR(index_key.type))
+> +               goto out;
+> +
+> +       if (index_key.type->match &&
+> +           index_key.type->match(key_ref_to_ptr(key), description))
+> +               ret = 1;
+> +       key_type_put(index_key.type);
+> +out:
+> +       return ret;
+> +}
+> +
+>  /*
+>   * Attempt to update an existing key.
+>   *
+> --
+> 1.8.1.4
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
+
 -- 
-1.9.1
-
+Thanks,
+Dmitry
