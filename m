@@ -1,60 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754344AbaE3B3m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 21:29:42 -0400
-Received: from icp-osb-irony-out7.external.iinet.net.au ([203.59.1.224]:43931
-	"EHLO icp-osb-irony-out7.external.iinet.net.au" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751745AbaE3B3l (ORCPT
+	id S932300AbaE3B35 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 21:29:57 -0400
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:47949 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754046AbaE3B3x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 21:29:41 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AuoBAKXeh1OVhxBY/2dsb2JhbAANTK5DAQEBAQEBBpgYAYEegxkBAQEEJ1EBEAsNCwkWDwkDAgECAUUGDQEFAgEBuhCmExeFVYh9B4RAAQOhCo9e
-X-IronPort-AV: E=Sophos;i="4.98,937,1392134400"; 
-   d="scan'208";a="527914255"
-Message-ID: <5387DF05.1020103@uclinux.org>
-Date: Fri, 30 May 2014 11:29:41 +1000
-From: Greg Ungerer <gerg@uclinux.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Thu, 29 May 2014 21:29:53 -0400
 MIME-Version: 1.0
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-CC: Linux Kernel Development <linux-kernel@vger.kernel.org>,
-        Linux/m68k <linux-m68k@vger.kernel.org>
-Subject: Re: rcu alignment warning tripping on m68k
-References: <538696A0.5090601@uclinux.org> <20140529141151.21ed6f95@alan.etchedpixels.co.uk>
-In-Reply-To: <20140529141151.21ed6f95@alan.etchedpixels.co.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140530005602.GE1677@bart.dudau.co.uk>
+References: <1401379426-9701-1-git-send-email-galak@codeaurora.org>
+ <CAL_JsqLPFDwtd-QYDqCwx1JVj1Aa8=nof-e0P6R9CZra+fXHfw@mail.gmail.com>
+ <47B1E3D0-4336-4529-80B0-172F4ACA5C97@codeaurora.org> <20140530005602.GE1677@bart.dudau.co.uk>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 29 May 2014 19:29:31 -0600
+Message-ID: <CAErSpo7qEhJyUAu58R8g6+AEhRGo_+Vv0EMgkK+3ZQOU9+jmhg@mail.gmail.com>
+Subject: Re: [PATCH] of: treat PCI config space as IORESOURCE_MEM type
+To: Kumar Gala <galak@codeaurora.org>, Rob Herring <robherring2@gmail.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Kishon Vijay Abraham I <kishon@ti.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29/05/14 23:11, One Thousand Gnomes wrote:
-> On Thu, 29 May 2014 12:08:32 +1000
-> Greg Ungerer <gerg@uclinux.org> wrote:
-> 
->> Hi All,
+On Thu, May 29, 2014 at 6:56 PM, Liviu Dudau <liviu@dudau.co.uk> wrote:
+> On Thu, May 29, 2014 at 03:51:28PM -0500, Kumar Gala wrote:
 >>
->> Inside kernel/rcy/tree.c in __call_rcu() it does an alignment check on
->> the head pointer passed in. This trips on m68k systems, because they only
->> need alignment of 32bit quantities to 16bit boundaries.
-> 
-> __alignof perhaps ?
+>> On May 29, 2014, at 3:44 PM, Rob Herring <robherring2@gmail.com> wrote:
+>>
+>> > On Thu, May 29, 2014 at 11:03 AM, Kumar Gala <galak@codeaurora.org> wrote:
+>> >> If we have a PCI config space specified in something like a ranges
+>> >> property we should treat it as memory type resource.
+>> >
+>> > Config space should not be in ranges[1]. We have some cases that are,
+>> > but we don't want new ones.
+>>
+>> For the cases we have I agree, however an ECAM based cfg seems completely legit.
+>>
+>> >> Signed-off-by: Kumar Gala <galak@codeaurora.org>
+>> >> ---
+>> >> drivers/of/address.c | 3 +++
+>> >> 1 file changed, 3 insertions(+)
+>> >>
+>> >> diff --git a/drivers/of/address.c b/drivers/of/address.c
+>> >> index cb4242a..4e7ee59 100644
+>> >> --- a/drivers/of/address.c
+>> >> +++ b/drivers/of/address.c
+>> >> @@ -122,6 +122,9 @@ static unsigned int of_bus_pci_get_flags(const __be32 *addr)
+>> >>        u32 w = be32_to_cpup(addr);
+>> >>
+>> >>        switch((w >> 24) & 0x03) {
+>> >> +       case 0x00: /* cfg space */
+>> >> +               flags |= IORESOURCE_MEM;
+>> >> +               break;
+>> >
+>> > How would you then distinguish actual memory ranges?
+>>
+>> One assumes you are still looking at pci_space as part of of_pci_range
+>
+> That doesn't happen when you start scanning the bus. The existing code will
+> use the IORESOURCE_MEM for allocating memory space for devices, which is
+> not what you want. Did you test your patch on any PCI system? I'm pretty
+> sure that with my patch series that tries to make a generic framework for
+> host controllers this will fail.
+>
+> We really need a IORESOURCE_CFG flag for this space.
 
-That might do. Change then becomes something like:
+Maybe, but I'm not convinced yet.  The existing IORESOURCE_TYPE_BITS
+types are for things that are mutually exclusive address spaces.  I
+think this discussion is about ECAM, where the CPU side is definitely
+in the same address space (IORESOURCE_MEM) as RAM, APICs, host bridge
+apertures, device MMIO, etc.  The ECAM area must appear in the
+iomem_resource tree so we avoid it when allocating other areas.
 
---- a/kernel/rcu/tree.c
-+++ b/kernel/rcu/tree.c
-@@ -2467,7 +2467,7 @@ __call_rcu(struct rcu_head *head, void (*func)(struct rcu_
-        unsigned long flags;
-        struct rcu_data *rdp;
- 
--       WARN_ON_ONCE((unsigned long)head & 0x3); /* Misaligned rcu_head! */
-+       WARN_ON_ONCE((unsigned long)head & (__alignof__(head) - 1)); /* Misaligned rcu_head! */
-        if (debug_rcu_head_queue(head)) {
-                /* Probable double call_rcu(), so leak the callback. */
-                ACCESS_ONCE(head->func) = rcu_leak_callback;
-
-Thanks
-Greg
-
-
+>> > [1] http://www.spinics.net/lists/linux-pci/msg30585.html
