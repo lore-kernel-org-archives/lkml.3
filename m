@@ -1,213 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934830AbaE3Vvx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 17:51:53 -0400
-Received: from mga02.intel.com ([134.134.136.20]:18567 "EHLO mga02.intel.com"
+	id S934846AbaE3Vw3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 17:52:29 -0400
+Received: from mga14.intel.com ([192.55.52.115]:61506 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934636AbaE3Vui (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 17:50:38 -0400
+	id S932289AbaE3VuU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 May 2014 17:50:20 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.98,943,1392192000"; 
-   d="scan'208";a="520441043"
+   d="scan'208";a="540241627"
 From: Andi Kleen <andi@firstfloor.org>
 To: jolsa@redhat.com
 Cc: linux-kernel@vger.kernel.org, namhyung@kernel.org, acme@infradead.org,
         Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 5/9] perf, tools: Add perf download to download event files v3
-Date: Fri, 30 May 2014 14:50:11 -0700
-Message-Id: <1401486615-21374-6-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 4/9] perf, tools: Automatically look for event file name for cpu v2
+Date: Fri, 30 May 2014 14:50:10 -0700
+Message-Id: <1401486615-21374-5-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1401486615-21374-1-git-send-email-andi@firstfloor.org>
 References: <1401486615-21374-1-git-send-email-andi@firstfloor.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Add a downloader to automatically download the right
-files from a download site.
+When no JSON event file is specified automatically look
+for a suitable file in ~/.cache/pmu-events. A "perf download" can
+automatically add files there for the current CPUs.
 
-This is implemented as a script calling wget, similar to
-perf archive. The perf driver automatically calls the right
-binary. The downloader is extensible, but currently only
-implements an Intel event download.  It would be straightforward
-to add other sites too for other vendors.
+This does not include the actual event files with perf,
+but they can be automatically downloaded instead
+(implemented in the next patch)
 
-The downloaded event files are put into ~/.cache/pmu-events, where the
-builtin event parser in util/* can find them automatically.
+This has the advantage that the events can be always uptodate,
+because they are freshly downloaded. In oprofile we always
+had problems with out of date or incomplete events files.
 
-v2: Use ~/.cache
-v3: Check for wget. Some cleanups.
+The event file format is per architecture, but can be
+extended for other architectures.
+
+v2: Supports XDG_CACHE_HOME and defaults to ~/.cache/pmu-events
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- tools/perf/Documentation/perf-download.txt | 28 +++++++++++++++
- tools/perf/Documentation/perf-list.txt     | 12 ++++++-
- tools/perf/Makefile.perf                   |  5 ++-
- tools/perf/perf-download.sh                | 57 ++++++++++++++++++++++++++++++
- 4 files changed, 100 insertions(+), 2 deletions(-)
- create mode 100644 tools/perf/Documentation/perf-download.txt
- create mode 100755 tools/perf/perf-download.sh
+ tools/perf/arch/x86/Makefile      |  1 +
+ tools/perf/arch/x86/util/cpustr.c | 34 ++++++++++++++++++++++++++++++++++
+ tools/perf/util/jevents.c         | 31 +++++++++++++++++++++++++++++++
+ tools/perf/util/jevents.h         |  1 +
+ tools/perf/util/pmu.c             |  2 +-
+ 5 files changed, 68 insertions(+), 1 deletion(-)
+ create mode 100644 tools/perf/arch/x86/util/cpustr.c
 
-diff --git a/tools/perf/Documentation/perf-download.txt b/tools/perf/Documentation/perf-download.txt
+diff --git a/tools/perf/arch/x86/Makefile b/tools/perf/arch/x86/Makefile
+index 1641542..0efeb14 100644
+--- a/tools/perf/arch/x86/Makefile
++++ b/tools/perf/arch/x86/Makefile
+@@ -14,4 +14,5 @@ LIB_OBJS += $(OUTPUT)arch/$(ARCH)/tests/dwarf-unwind.o
+ endif
+ LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/header.o
+ LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/tsc.o
++LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/cpustr.o
+ LIB_H += arch/$(ARCH)/util/tsc.h
+diff --git a/tools/perf/arch/x86/util/cpustr.c b/tools/perf/arch/x86/util/cpustr.c
 new file mode 100644
-index 0000000..7af841b
+index 0000000..e1cd76c
 --- /dev/null
-+++ b/tools/perf/Documentation/perf-download.txt
-@@ -0,0 +1,28 @@
-+perf-download(1)
-+===============
++++ b/tools/perf/arch/x86/util/cpustr.c
+@@ -0,0 +1,34 @@
++#include <stdio.h>
++#include <stdlib.h>
++#include "../../util/jevents.h"
 +
-+NAME
-+----
-+perf-download - Download event files for current CPU.
++char *get_cpu_str(void)
++{
++	char *line = NULL;
++	size_t llen = 0;
++	int found = 0, n;
++	char vendor[30];
++	int model, fam;
++	char *res = NULL;
++	FILE *f = fopen("/proc/cpuinfo", "r");
 +
-+SYNOPSIS
-+--------
-+[verse]
-+'perf download' [vendor-family-model]
-+
-+DESCRIPTION
-+-----------
-+This command automatically downloads event list for the current CPU and
-+stores them in $XDG_CACHE_HOME/pmu-events (or $HOME/.cache/pmu-events).
-+The other tools automatically look for them there. The CPU can be also
-+specified at the command line.
-+
-+The downloading is done using http through wget, which needs
-+to be installed.
-+
-+The user should regularly call this to download updated event lists
-+for the current CPU.
-+
-+Note the downloaded files are stored per user, so if you use
-+perf as normal user or with sudo you have to run perf download
-+for both or specify --events-file for the users manually.
-diff --git a/tools/perf/Documentation/perf-list.txt b/tools/perf/Documentation/perf-list.txt
-index 9305a37..2b4eba0 100644
---- a/tools/perf/Documentation/perf-list.txt
-+++ b/tools/perf/Documentation/perf-list.txt
-@@ -61,6 +61,16 @@ Sampling). Examples to use IBS:
-  perf record -a -e r076:p ...          # same as -e cpu-cycles:p
-  perf record -a -e r0C1:p ...          # use ibs op counting micro-ops
++	if (!f)
++		return NULL;
++	while (getline(&line, &llen, f) > 0) {
++		if (sscanf(line, "vendor_id : %30s", vendor) == 1)
++			found++;
++		else if (sscanf(line, "model : %d", &model) == 1)
++			found++;
++		else if (sscanf(line, "cpu family : %d", &fam) == 1)
++			found++;
++		if (found == 3) {
++			n = asprintf(&res, "%s-%d-%X-core", vendor, fam, model);
++			if (n < 0)
++				res = NULL;
++			break;
++		}
++	}
++	free(line);
++	fclose(f);
++	return res;
++}
+diff --git a/tools/perf/util/jevents.c b/tools/perf/util/jevents.c
+index 943a1fc..b26c0b6 100644
+--- a/tools/perf/util/jevents.c
++++ b/tools/perf/util/jevents.c
+@@ -33,10 +33,39 @@
+ #include <errno.h>
+ #include <string.h>
+ #include <ctype.h>
++#include "cache.h"
+ #include "jsmn.h"
+ #include "json.h"
+ #include "jevents.h"
  
-+PER CPU EVENT LISTS
-+-------------------
++__attribute__((weak)) char *get_cpu_str(void)
++{
++	return NULL;
++}
 +
-+For some CPUs (particularly modern Intel CPUs) "perf download" can
-+download additional CPU specific event definitions, which then
-+become visible in perf list and available in the other perf tools.
++static const char *json_default_name(void)
++{
++	char *cache = getenv("XDG_CACHE_HOME");
++	char *idstr = get_cpu_str();
++	char *res = NULL;
++	char *home = NULL;
 +
-+This obsoletes the raw event description method described below
-+for most cases.
++	if (!cache) {
++		home = getenv("HOME");
++		if (!home || asprintf(&cache, "%s/.cache", home) < 0)
++			goto out;
++	}
++	if (cache && idstr)
++		res = mkpath("%s/pmu-events/%s.json",
++			     cache,
++			     idstr);
++	if (home)
++		free(cache);
++out:
++	free(idstr);
++	return res;
++}
 +
- RAW HARDWARE EVENT DESCRIPTOR
- -----------------------------
- Even when an event is not available in a symbolic form within perf right now,
-@@ -123,6 +133,6 @@ types specified.
- SEE ALSO
- --------
- linkperf:perf-stat[1], linkperf:perf-top[1],
--linkperf:perf-record[1],
-+linkperf:perf-record[1], linkperf:perf-download[1],
- http://www.intel.com/Assets/PDF/manual/253669.pdf[Intel® 64 and IA-32 Architectures Software Developer's Manual Volume 3B: System Programming Guide],
- http://support.amd.com/us/Processor_TechDocs/24593_APM_v2.pdf[AMD64 Architecture Programmer’s Manual Volume 2: System Programming]
-diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index b2f69cb..741d213 100644
---- a/tools/perf/Makefile.perf
-+++ b/tools/perf/Makefile.perf
-@@ -126,6 +126,7 @@ PYRF_OBJS =
- SCRIPT_SH =
+ static void addfield(char *map, char **dst, const char *sep,
+ 		     const char *a, jsmntok_t *bt)
+ {
+@@ -174,6 +203,8 @@ int json_events(const char *fn,
+ 	int i, j, len;
+ 	char *map;
  
- SCRIPT_SH += perf-archive.sh
-+SCRIPT_SH += perf-download.sh
++	if (!fn)
++		fn = json_default_name();
+ 	tokens = parse_json(fn, &map, &size, &len);
+ 	if (!tokens)
+ 		return -EIO;
+diff --git a/tools/perf/util/jevents.h b/tools/perf/util/jevents.h
+index 4c2b879..6a377a8 100644
+--- a/tools/perf/util/jevents.h
++++ b/tools/perf/util/jevents.h
+@@ -1,3 +1,4 @@
+ int json_events(const char *fn,
+ 		int (*func)(void *data, char *name, char *event, char *desc),
+ 		void *data);
++char *get_cpu_str(void);
+diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
+index 9f154af..fa21319 100644
+--- a/tools/perf/util/pmu.c
++++ b/tools/perf/util/pmu.c
+@@ -433,7 +433,7 @@ static struct perf_pmu *pmu_lookup(const char *name)
+ 	if (pmu_aliases(name, &aliases))
+ 		return NULL;
  
- grep-libs = $(filter -l%,$(1))
- strip-libs = $(filter-out -l%,$(1))
-@@ -873,6 +874,8 @@ install-bin: all install-gtk
- 		$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(perfexec_instdir_SQ)'
- 	$(call QUIET_INSTALL, perf-archive) \
- 		$(INSTALL) $(OUTPUT)perf-archive -t '$(DESTDIR_SQ)$(perfexec_instdir_SQ)'
-+	$(call QUIET_INSTALL, perf-download) \
-+		$(INSTALL) $(OUTPUT)perf-download -t '$(DESTDIR_SQ)$(perfexec_instdir_SQ)'
- ifndef NO_LIBPERL
- 	$(call QUIET_INSTALL, perl-scripts) \
- 		$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/scripts/perl/Perf-Trace-Util/lib/Perf/Trace'; \
-@@ -918,7 +921,7 @@ config-clean:
- 	@$(MAKE) -C config/feature-checks clean >/dev/null
+-	if (!strcmp(name, "cpu") && json_file)
++	if (!strcmp(name, "cpu"))
+ 		json_events(json_file, add_alias, &aliases);
  
- clean: $(LIBTRACEEVENT)-clean $(LIBAPIKFS)-clean config-clean
--	$(call QUIET_CLEAN, core-objs)  $(RM) $(LIB_OBJS) $(BUILTIN_OBJS) $(LIB_FILE) $(OUTPUT)perf-archive $(OUTPUT)perf.o $(LANG_BINDINGS) $(GTK_OBJS)
-+	$(call QUIET_CLEAN, core-objs)  $(RM) $(LIB_OBJS) $(BUILTIN_OBJS) $(LIB_FILE) $(OUTPUT)perf-archive $(OUTPUT)/perf-download $(OUTPUT)perf.o $(LANG_BINDINGS) $(GTK_OBJS)
- 	$(call QUIET_CLEAN, core-progs) $(RM) $(ALL_PROGRAMS) perf
- 	$(call QUIET_CLEAN, core-gen)   $(RM)  *.spec *.pyc *.pyo */*.pyc */*.pyo $(OUTPUT)common-cmds.h TAGS tags cscope* $(OUTPUT)PERF-VERSION-FILE $(OUTPUT)PERF-CFLAGS $(OUTPUT)PERF-FEATURES $(OUTPUT)util/*-bison* $(OUTPUT)util/*-flex*
- 	$(QUIET_SUBDIR0)Documentation $(QUIET_SUBDIR1) clean
-diff --git a/tools/perf/perf-download.sh b/tools/perf/perf-download.sh
-new file mode 100755
-index 0000000..b6e4299
---- /dev/null
-+++ b/tools/perf/perf-download.sh
-@@ -0,0 +1,57 @@
-+#!/bin/bash
-+# download event files for current cpu for perf
-+
-+WGETOPT=${WGETOPT:---no-verbose --timeout 5}
-+
-+set -e
-+
-+if ! type wget > /dev/null ; then
-+	echo "please install wget"
-+	exit 1
-+fi
-+
-+if [ "$1" == "" ] ; then
-+	S=$(awk '
-+/^vendor/     		{ V=$3 }
-+/^model/ && $2 == ":" 	{ M=$3 }
-+/^cpu family/ 		{ F = $4 }
-+END	      		{ printf("%s-%s-%X", V, F, M) }' /proc/cpuinfo)
-+else
-+	S="$1"
-+fi
-+V=$(echo $S  | ( IFS=- read v f m ; echo $v) )
-+
-+CACHEDIR=${XDG_CACHE_HOME:-~/.cache}
-+[ ! -d $CACHEDIR/pmu-events ] && mkdir -p $CACHEDIR/pmu-events
-+cd $CACHEDIR/pmu-events
-+
-+case "$V" in
-+GenuineIntel)
-+	echo "Downloading models file"
-+	URLBASE=${URLBASE:-https://download.01.org/perfmon}
-+	MAPFILE=${MAPFILE:-mapfile.csv}
-+	echo "Downloading readme.txt"
-+	wget -N $WGETOPT $URLBASE/readme.txt
-+	;;
-+
-+# Add more CPU vendors here
-+
-+*)
-+	echo "Unsupported CPU vendor $V"
-+	exit 1
-+	;;
-+esac
-+
-+wget -N $WGETOPT $URLBASE/$MAPFILE
-+
-+echo "Downloading events file"
-+awk -v urlbase=$URLBASE -v cpu="$S" -F, \
-+	'$1 == cpu && $4 == "core" { print urlbase $3; exit 0 }' \
-+	$MAPFILE > url$$
-+if [ -s url$$ ] ; then
-+	wget $WGETOPT -q -i url$$ -O $S-core.json
-+else
-+	echo "CPU $S not found"
-+fi
-+rm -f url$$
-+
+ 	if (pmu_type(name, &type))
 -- 
 1.9.0
 
