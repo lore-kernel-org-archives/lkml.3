@@ -1,104 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754531AbaE3BfV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 May 2014 21:35:21 -0400
-Received: from ozlabs.org ([103.22.144.67]:37852 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751919AbaE3BfT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 May 2014 21:35:19 -0400
-Message-ID: <1401413716.29324.2.camel@concordia>
-Subject: Re: [PATCH] hugetlb: restrict hugepage_migration_support() to
- x86_64 (Re: BUG at mm/memory.c:1489!)
-From: Michael Ellerman <mpe@ellerman.id.au>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
-        benh@kernel.crashing.org, Tony Luck <tony.luck@intel.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        trinity@vger.kernel.org
-Date: Fri, 30 May 2014 11:35:16 +1000
-In-Reply-To: <1401388474-mqnis5cp@n-horiguchi@ah.jp.nec.com>
-References: <1401265922.3355.4.camel@concordia>
-	 <alpine.LSU.2.11.1405281712310.7156@eggly.anvils>
-	 <1401353983.4930.15.camel@concordia>
-	 <1401388474-mqnis5cp@n-horiguchi@ah.jp.nec.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754558AbaE3BgJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 May 2014 21:36:09 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:10739 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753549AbaE3BgG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 May 2014 21:36:06 -0400
+X-AuditID: cbfee68d-b7fd46d000005f36-13-5387e0843640
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Tomasz Figa'" <tomasz.figa@gmail.com>,
+        "'Lee Jones'" <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, irlied@linux.ie, kernel@stlinux.com,
+        "'Seung-Woo Kim'" <sw0312.kim@samsung.com>,
+        "'Inki Dae'" <inki.dae@samsung.com>, dri-devel@lists.freedesktop.org,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+References: <1401381377-29973-1-git-send-email-lee.jones@linaro.org>
+ <53876359.8070304@gmail.com>
+In-reply-to: <53876359.8070304@gmail.com>
+Subject: Re: [PATCH] drm/exynos: hdmi: remove the i2c drivers and use devtree -
+ continued
+Date: Fri, 30 May 2014 10:36:04 +0900
+Message-id: <000701cf7ba7$85530880$8ff91980$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac97XPcbgnTW0HZpQ7uISXK6ZVr3jgASUgLA
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpmleLIzCtJLcpLzFFi42I5/e+ZsW7Lg/Zgg1eflS2ufH3PZjHp/gQW
+	i+53U5gsLi+8xGrx4cYxVov7X48yWmx6fI3V4vKuOWwWM87vY7KYMfklm8WqXX8YHbg9ds66
+	y+5x59oeNo/t3x6wetzvPs7ksXlJvUffllWMHruf/WL0+LxJLoAjissmJTUnsyy1SN8ugSvj
+	9Lt5LAUbeSqO7ZrA2sDYz9XFyMkhIWAisebuIyYIW0ziwr31bF2MXBxCAssYJW5POcUCU3Tv
+	2UomiMQiRonOtW3MEM5vRom/Z3+AtbMJqEl8+XKYvYuRg0NEwFdiRrMWSA2zwDImiZfPfjCC
+	1AgJJEss2DyXFcTmFNCUuLFmAVi9sEC0xN5Z8SBhFgFViblvZ4At5hWwlbh2ZS2ULSjxY/I9
+	MJtZQEti87YmVghbXmLzmrfMIGMkBNQlHv3VBQmLCBhJXPi+mgmiRERi34t3jCDnSAgs5JCY
+	//UlK8QuAYlvkw+xQPTKSmw6wAzxr6TEwRU3WCYwSsxCsnkWks2zkGyehWTFAkaWVYyiqQXJ
+	BcVJ6UWGesWJucWleel6yfm5mxghCaB3B+PtA9aHGJOB1k9klhJNzgcmkLySeENjMyMLUxNT
+	YyNzSzPShJXEeZMeJgUJCaQnlqRmp6YWpBbFF5XmpBYfYmTi4JRqYFTQuH19z44NxkEHNkfX
+	i3eWud7V68uRDxPf4qdyc+qJ9FneB3YJauefrXk3K32qcI+k97LN+48c2zitLqvy4sK2xCml
+	Dxo533DIBjSfmybybPPcXyfuesy8cK2i4Tz/ddto2SmH633mpv3bpDPJLtigz4ZVxJ+Z/Wzv
+	p5X2vxtCHjFdrOU4GKjEUpyRaKjFXFScCAC45pA8FgMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrAKsWRmVeSWpSXmKPExsVy+t9jAd2WB+3BBsu+yVlc+fqezWLS/Qks
+	Ft3vpjBZXF54idXiw41jrBb3vx5ltNj0+BqrxeVdc9gsZpzfx2QxY/JLNotVu/4wOnB77Jx1
+	l93jzrU9bB7bvz1g9bjffZzJY/OSeo++LasYPXY/+8Xo8XmTXABHVAOjTUZqYkpqkUJqXnJ+
+	SmZeuq2Sd3C8c7ypmYGhrqGlhbmSQl5ibqqtkotPgK5bZg7QpUoKZYk5pUChgMTiYiV9O0wT
+	QkPcdC1gGiN0fUOC4HqMDNBAwjrGjNPv5rEUbOSpOLZrAmsDYz9XFyMnh4SAicS9ZyuZIGwx
+	iQv31rN1MXJxCAksYpToXNvGDOH8ZpT4e/YHWBWbgJrEly+H2bsYOThEBHwlZjRrgdQwCyxj
+	knj57AcjSI2QQLLEgs1zWUFsTgFNiRtrFoDVCwtES+ydFQ8SZhFQlZj7dgYLiM0rYCtx7cpa
+	KFtQ4sfke2A2s4CWxOZtTawQtrzE5jVvmUHGSAioSzz6qwsSFhEwkrjwfTUTRImIxL4X7xgn
+	MArNQjJpFpJJs5BMmoWkZQEjyypG0dSC5ILipPRcI73ixNzi0rx0veT83E2M4PTyTHoH46oG
+	i0OMAhyMSjy8E9Lbg4VYE8uKK3MPMUpwMCuJ8DoeBgrxpiRWVqUW5ccXleakFh9iTAZ6dCKz
+	lGhyPjD15ZXEGxqbmBlZGplZGJmYm5MmrCTOe7DVOlBIID2xJDU7NbUgtQhmCxMHp1QDY5PV
+	UoW/d780B4rVX0p9W//M4lXr0fVqtjyCv8JZ5VL9/qkZBRqcY9L87ly/wMir0oFpMq/mtIb6
+	S34vBXeE573e7nQh5zRrwTlLi5/lfsH6185J3pq46+YMprz3x94pPeZJ5z26UsfzctENyx0u
+	ogddOk6tX//lY0r33sT+PVW+sdo3nk/3UWIpzkg01GIuKk4EALfjpUlzAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-05-29 at 14:34 -0400, Naoya Horiguchi wrote:
-> On Thu, May 29, 2014 at 06:59:43PM +1000, Michael Ellerman wrote:
-> > Applying your patch and running trinity pretty immediately results in the
-> > following, which looks related (sys_move_pages() again) ?
+On Friday, May 30, 2014 1:42 AM, Tomasz Figa wrote:
+> On 29.05.2014 18:36, Lee Jones wrote:
+> > There appears to have been a merge error on commit:
 > >
-> > Unable to handle kernel paging request for data at address 0xf2000f80000000
-> > Faulting instruction address: 0xc0000000001e29bc
-> > cpu 0x1b: Vector: 300 (Data Access) at [c0000003c70f76f0]
-> >     pc: c0000000001e29bc: .remove_migration_pte+0x9c/0x320
-> >     lr: c0000000001e29b8: .remove_migration_pte+0x98/0x320
-> >     sp: c0000003c70f7970
-> >    msr: 8000000000009032
-> >    dar: f2000f80000000
-> >  dsisr: 40000000
-> >   current = 0xc0000003f9045800
-> >   paca    = 0xc000000001dc6c00   softe: 0        irq_happened: 0x01
-> >     pid   = 3585, comm = trinity-c27
-> > enter ? for help
-> > [c0000003c70f7a20] c0000000001bce88 .rmap_walk+0x328/0x470
-> > [c0000003c70f7ae0] c0000000001e2904 .remove_migration_ptes+0x44/0x60
-> > [c0000003c70f7b80] c0000000001e4ce8 .migrate_pages+0x6d8/0xa00
-> > [c0000003c70f7cc0] c0000000001e55ec .SyS_move_pages+0x5dc/0x7d0
-> > [c0000003c70f7e30] c00000000000a1d8 syscall_exit+0x0/0x98
-> > --- Exception: c01 (System Call) at 00003fff7b2b30a8
-> > SP (3fffe09728a0) is in userspace
-> > 1b:mon>
->
-> Sorry for inconvenience on your testing.
- 
-That's fine, it's good to find bugs :)
+> >   2b76813: drm/exynos: hdmi: remove the i2c drivers and use
+> >
+> > The original submission can be found at:
+> >
+> >   https://patchwork.kernel.org/patch/3559541/
+> >
+> > It looks like the commit was only half applied.  This patch aims
+> > to finish what was started by Daniel.
 
-> Hugepage migration is enabled for archs which have pmd-level hugepage
-> (including ppc64,) but not tested except for x86_64.
-> hugepage_migration_support() controls this so the following patch should
-> help you avoid the problem, I believe.
-> Could you try to test with it?
+(+cc Inki Dae)
 
-Sure. So this patch, in addition to Hugh's patch to remove the BUG_ON(), does
-avoid the crash above (remove_migration_pte()).
+Hi Lee Jones,
 
-I dropped Hugh's patch, as he has decided he doesn't like it, and added the
-following hunk instead:
-
-diff --git a/include/linux/mempolicy.h b/include/linux/mempolicy.h
-index 3c1b968..f230a97 100644
---- a/include/linux/mempolicy.h
-+++ b/include/linux/mempolicy.h
-@@ -175,6 +175,12 @@ static inline int vma_migratable(struct vm_area_struct *vma)
- {
-        if (vma->vm_flags & (VM_IO | VM_PFNMAP))
-                return 0;
-+
-+#ifndef CONFIG_ARCH_ENABLE_HUGEPAGE_MIGRATION
-+       if (vma->vm_flags & VM_HUGETLB)
-+               return 0;
-+#endif
-+
-        /*
-         * Migration allocates pages in the highest zone. If we cannot
-         * do so then migration (at least from node to node) is not
+A similar patch was already applied to drm-exynos git. [1]
+However, 'drivers/gpu/drm/exynos/exynos_hdmi.h' was not
+removed yet. Thus, additional patch to remove this
+'exynos_hdmi.h' should be submitted. Thank you.
 
 
-Which seems to be what Hugh was referring to in his mail - correct me if I'm
-wrong Hugh.
+[1]
+http://git.kernel.org/cgit/linux/kernel/git/daeinki/drm-exynos.git/commit/?h=exynos-drm-next&id=73c0a75ca9919c12525fd02eb49f9c3a34e0
+d2d9
 
-With your patch and the above hunk I can run trinity happily for a while,
-whereas without it crashes almost immediately.
+Best regards,
+Jingoo Han
 
-So with the above hunk you can add my tested-by.
-
-cheers
-
+> >
+> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> > ---
+> >  drivers/gpu/drm/exynos/exynos_ddc.c     | 63 --------------------------------
+> >  drivers/gpu/drm/exynos/exynos_hdmi.h    | 23 ------------
+> >  drivers/gpu/drm/exynos/exynos_hdmiphy.c | 65 ---------------------------------
+> >  3 files changed, 151 deletions(-)
+> >  delete mode 100644 drivers/gpu/drm/exynos/exynos_ddc.c
+> >  delete mode 100644 drivers/gpu/drm/exynos/exynos_hdmi.h
+> >  delete mode 100644 drivers/gpu/drm/exynos/exynos_hdmiphy.c
+> >
+> 
+> Obviously there is nothing to review, but still:
+> 
+> Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+> 
+> Thanks for the patch.
+> 
+> Best regards,
+> Tomasz
 
