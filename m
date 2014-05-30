@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934771AbaE3Vuv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 17:50:51 -0400
-Received: from mga11.intel.com ([192.55.52.93]:56363 "EHLO mga11.intel.com"
+	id S934743AbaE3Vut (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 17:50:49 -0400
+Received: from mga02.intel.com ([134.134.136.20]:18572 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934712AbaE3Vus (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 17:50:48 -0400
+	id S934651AbaE3Vuj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 May 2014 17:50:39 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.98,943,1392192000"; 
-   d="scan'208";a="547492552"
+   d="scan'208";a="520441046"
 From: Andi Kleen <andi@firstfloor.org>
 To: jolsa@redhat.com
 Cc: linux-kernel@vger.kernel.org, namhyung@kernel.org, acme@infradead.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 8/9] perf, tools, test: Add test case for alias and JSON parsing v2
-Date: Fri, 30 May 2014 14:50:14 -0700
-Message-Id: <1401486615-21374-9-git-send-email-andi@firstfloor.org>
+        Andi Kleen <ak@linux.intel.com>, fweisbec@gmail.com
+Subject: [PATCH 9/9] perf, tools, record: Always allow to overide default period v2
+Date: Fri, 30 May 2014 14:50:15 -0700
+Message-Id: <1401486615-21374-10-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1401486615-21374-1-git-send-email-andi@firstfloor.org>
 References: <1401486615-21374-1-git-send-email-andi@firstfloor.org>
@@ -25,162 +25,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Add a simple test case to perf test that runs perf download and parses
-all the events. This needs adding an all event iterator to pmu.c
+Fix the logic to allow overriding event default periods with -c or -F
+on the command line.  I'm not sure I understand this if() fully, but
+this change makes all cases I tested work (tracepoint with default, default,
+,-c, -F)
 
-v2: Rename identifiers
+This fixed specifying -c / -F with json event list events,
+which have a default period. It should do the same
+for trace point events.
+
+Cc: fweisbec@gmail.com
+v2: Simplify, just change || to &&
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- tools/perf/Makefile.perf        |  1 +
- tools/perf/tests/aliases.c      | 58 +++++++++++++++++++++++++++++++++++++++++
- tools/perf/tests/builtin-test.c |  4 +++
- tools/perf/tests/tests.h        |  1 +
- tools/perf/util/pmu.c           | 18 +++++++++++++
- tools/perf/util/pmu.h           |  2 ++
- 6 files changed, 84 insertions(+)
- create mode 100644 tools/perf/tests/aliases.c
+ tools/perf/util/evsel.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index 741d213..c1ece75 100644
---- a/tools/perf/Makefile.perf
-+++ b/tools/perf/Makefile.perf
-@@ -418,6 +418,7 @@ endif
- LIB_OBJS += $(OUTPUT)tests/code-reading.o
- LIB_OBJS += $(OUTPUT)tests/sample-parsing.o
- LIB_OBJS += $(OUTPUT)tests/parse-no-sample-id-all.o
-+LIB_OBJS += $(OUTPUT)tests/aliases.o
- ifndef NO_DWARF_UNWIND
- ifeq ($(ARCH),$(filter $(ARCH),x86 arm))
- LIB_OBJS += $(OUTPUT)tests/dwarf-unwind.o
-diff --git a/tools/perf/tests/aliases.c b/tools/perf/tests/aliases.c
-new file mode 100644
-index 0000000..68396e7
---- /dev/null
-+++ b/tools/perf/tests/aliases.c
-@@ -0,0 +1,58 @@
-+/* Check if we can set up all aliases and can read JSON files */
-+#include <stdlib.h>
-+#include "tests.h"
-+#include "pmu.h"
-+#include "evlist.h"
-+#include "parse-events.h"
-+
-+static struct perf_evlist *evlist;
-+
-+static int num_events;
-+static int failed;
-+
-+static int test__event(const char *name)
-+{
-+	int ret;
-+
-+	/* Not supported for now */
-+	if (!strncmp(name, "energy-", 7))
-+		return 0;
-+
-+	ret = parse_events(evlist, name);
-+
-+	if (ret) {
-+		/*
-+		 * We only print on failure because common perf setups
-+		 * have events that cannot be parsed.
-+		 */
-+		fprintf(stderr, "invalid or unsupported event: '%s'\n", name);
-+		ret = 0;
-+		failed++;
-+	} else
-+		num_events++;
-+	return ret;
-+}
-+
-+int test__aliases(void)
-+{
-+	int err;
-+
-+	/* Download JSON files */
-+	/* XXX assumes perf is installed */
-+	/* For now user must manually download */
-+	if (0 && system("perf download > /dev/null") < 0) {
-+		/* Don't error out for this for now */
-+		fprintf(stderr, "perf download failed\n");
-+	}
-+
-+	evlist = perf_evlist__new();
-+	if (evlist == NULL)
-+		return -ENOMEM;
-+
-+	err = pmu_iterate_events(test__event);
-+	fprintf(stderr, " Parsed %d events :", num_events);
-+	if (failed > 0)
-+		pr_debug(" %d events failed", failed);
-+	perf_evlist__delete(evlist);
-+	return err;
-+}
-diff --git a/tools/perf/tests/builtin-test.c b/tools/perf/tests/builtin-test.c
-index 831f52c..23a0399 100644
---- a/tools/perf/tests/builtin-test.c
-+++ b/tools/perf/tests/builtin-test.c
-@@ -140,6 +140,10 @@ static struct test {
- 		.func = test__hists_output,
- 	},
- 	{
-+		.desc = "Test parsing JSON aliases",
-+		.func = test__aliases,
-+	},
-+	{
- 		.func = NULL,
- 	},
- };
-diff --git a/tools/perf/tests/tests.h b/tools/perf/tests/tests.h
-index d76c0e2..ddef0fc 100644
---- a/tools/perf/tests/tests.h
-+++ b/tools/perf/tests/tests.h
-@@ -45,6 +45,7 @@ int test__hists_filter(void);
- int test__mmap_thread_lookup(void);
- int test__thread_mg_share(void);
- int test__hists_output(void);
-+int test__aliases(void);
- 
- #if defined(__x86_64__) || defined(__i386__) || defined(__arm__)
- #ifdef HAVE_DWARF_UNWIND_SUPPORT
-diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
-index 8714f9a..b87f520 100644
---- a/tools/perf/util/pmu.c
-+++ b/tools/perf/util/pmu.c
-@@ -869,3 +869,21 @@ bool pmu_have_event(const char *pname, const char *name)
- 	}
- 	return false;
- }
-+
-+int pmu_iterate_events(int (*func)(const char *name))
-+{
-+	int ret = 0;
-+	struct perf_pmu *pmu;
-+	struct perf_pmu_alias *alias;
-+
-+	perf_pmu__find("cpu"); /* Load PMUs */
-+	pmu = NULL;
-+	while ((pmu = perf_pmu__scan(pmu)) != NULL) {
-+		list_for_each_entry(alias, &pmu->aliases, list) {
-+			ret = func(alias->name);
-+			if (ret != 0)
-+				break;
-+		}
-+	}
-+	return ret;
-+}
-diff --git a/tools/perf/util/pmu.h b/tools/perf/util/pmu.h
-index 583d21e..a8ed283 100644
---- a/tools/perf/util/pmu.h
-+++ b/tools/perf/util/pmu.h
-@@ -47,5 +47,7 @@ bool pmu_have_event(const char *pname, const char *name);
- 
- int perf_pmu__test(void);
- 
-+int pmu_iterate_events(int (*func)(const char *name));
-+
- extern const char *json_file;
- #endif /* __PMU_H */
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 5c28d82..d9ceede 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -592,7 +592,7 @@ void perf_evsel__config(struct perf_evsel *evsel, struct record_opts *opts)
+ 	 * We default some events to a 1 default interval. But keep
+ 	 * it a weak assumption overridable by the user.
+ 	 */
+-	if (!attr->sample_period || (opts->user_freq != UINT_MAX &&
++	if (!attr->sample_period && (opts->user_freq != UINT_MAX &&
+ 				     opts->user_interval != ULLONG_MAX)) {
+ 		if (opts->freq) {
+ 			perf_evsel__set_sample_bit(evsel, PERIOD);
 -- 
 1.9.0
 
