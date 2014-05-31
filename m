@@ -1,46 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755031AbaEaTjh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 May 2014 15:39:37 -0400
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:41664 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751687AbaEaTjf (ORCPT
+	id S1754095AbaEaTnh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 May 2014 15:43:37 -0400
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:54215 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751577AbaEaTng (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 May 2014 15:39:35 -0400
+	Sat, 31 May 2014 15:43:36 -0400
+Message-ID: <538A30E6.6010403@gmail.com>
+Date: Sat, 31 May 2014 22:43:34 +0300
+From: Tair Rzayev <tair.rzayev@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <538A1B75.5030107@gmail.com>
-References: <538A1B75.5030107@gmail.com>
-Date: Sat, 31 May 2014 12:39:34 -0700
-X-Google-Sender-Auth: Ncr07O4GS88YpjzbfTOOdfvqYek
-Message-ID: <CA+55aFzfrGYCeUgXkeVowfJY+CL6MFPo7LpWSGiZvKhGA_qroQ@mail.gmail.com>
-Subject: Re: [PATCH] fs/buffer.c: grow_buffers: fix the uncorrect check
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: mnipxh <mnipxh@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Yanmin Zhang <yanmin_zhang@linux.intel.com>, shuox.liu@intel.com
-Content-Type: text/plain; charset=UTF-8
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: swetland@google.com, linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: android: binder.c: Use more appropriate functions
+ for euid retrieval
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 31, 2014 at 11:12 AM, mnipxh <mnipxh@gmail.com> wrote:
-> When pgoff_t index is 32bit, sector_t block is 64bit, need check if block number is too big.
-> If block is bigger than (4Gb * PAGE_SIZE), index becomes a wrong value.
-> Commit e5657933863f43cc6bb76a54d659303dafaa9e58 wants to do this. But it gives an uncorrect check.
-> I think block != index << sizebits is correct. And it can detect such issue above.
+Instead of getting the reference to whole credential structure, use
+task_euid() and current_euid() to get it.
 
-I don't understand why you think the current check is incorrect.
+Signed-off-by: Tair Rzayev <tair.rzayev@gmail.com>
+---
+ drivers/staging/android/binder.c | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
-It is testing that the calculation hasn't overflowed. It is correct.
-It *should* use the same calculation, to (a) make it more obvious that
-it's double-checking the earlier calculation in a different type, and
-(b) to make it easier for the compiler to optimize it away if sector_t
-and pgoff_t are the same size.
+diff --git a/drivers/staging/android/binder.c b/drivers/staging/android/binder.c
+index e8dd7dd..989f809 100644
+--- a/drivers/staging/android/binder.c
++++ b/drivers/staging/android/binder.c
+@@ -1326,7 +1326,6 @@ static void binder_transaction(struct binder_proc *proc,
+ 	struct binder_transaction *in_reply_to = NULL;
+ 	struct binder_transaction_log_entry *e;
+ 	uint32_t return_error;
+-	const struct cred *cred = __task_cred(proc->tsk);
+ 
+ 	e = binder_transaction_log_add(&binder_transaction_log);
+ 	e->call_type = reply ? 2 : !!(tr->flags & TF_ONE_WAY);
+@@ -1468,7 +1467,7 @@ static void binder_transaction(struct binder_proc *proc,
+ 		t->from = thread;
+ 	else
+ 		t->from = NULL;
+-	t->sender_euid = cred->euid;
++	t->sender_euid = task_euid(proc->tsk);
+ 	t->to_proc = target_proc;
+ 	t->to_thread = target_thread;
+ 	t->code = tr->code;
+@@ -2602,7 +2601,7 @@ static long binder_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+ 	struct binder_thread *thread;
+ 	unsigned int size = _IOC_SIZE(cmd);
+ 	void __user *ubuf = (void __user *)arg;
+-	const struct cred *cred = current_cred();
++	kuid_t curr_euid = current_euid();
+ 
+ 	/*pr_info("binder_ioctl: %d:%d %x %lx\n", proc->pid, current->pid, cmd, arg);*/
+ 
+@@ -2688,15 +2687,16 @@ static long binder_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+ 			goto err;
+ 		}
+ 		if (uid_valid(binder_context_mgr_uid)) {
+-			if (!uid_eq(binder_context_mgr_uid, cred->euid)) {
++			if (!uid_eq(binder_context_mgr_uid, curr_euid)) {
+ 				pr_err("BINDER_SET_CONTEXT_MGR bad uid %d != %d\n",
+-				       from_kuid(&init_user_ns, cred->euid),
++				       from_kuid(&init_user_ns, curr_euid),
+ 				       from_kuid(&init_user_ns, binder_context_mgr_uid));
+ 				ret = -EPERM;
+ 				goto err;
+ 			}
+-		} else
+-			binder_context_mgr_uid = cred->euid;
++		} else {
++			binder_context_mgr_uid = curr_euid;
++		}
+ 		binder_context_mgr_node = binder_new_node(proc, 0, 0);
+ 		if (binder_context_mgr_node == NULL) {
+ 			ret = -ENOMEM;
+-- 
+1.9.1
 
-So the current code is correct, afaik. Note that "index" is "pgoff_t",
-but "block >> sizebits" is "sector_t".
 
-               Linus
