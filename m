@@ -1,71 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756655AbaEaNTv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 May 2014 09:19:51 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:45195 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756382AbaEaNTt (ORCPT
+	id S1756548AbaEaNeu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 May 2014 09:34:50 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:37135 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756390AbaEaNet (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 May 2014 09:19:49 -0400
+	Sat, 31 May 2014 09:34:49 -0400
+Date: Sat, 31 May 2014 09:34:44 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Paolo Valente <paolo.valente@unimore.it>
+Cc: Jens Axboe <axboe@kernel.dk>, Li Zefan <lizefan@huawei.com>,
+        Fabio Checconi <fchecconi@gmail.com>,
+        Arianna Avanzini <avanzini.arianna@gmail.com>,
+        Paolo Valente <posta_paolo@yahoo.it>, linux-kernel@vger.kernel.org,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org
+Subject: Re: [PATCH RFC - TAKE TWO - 12/12] block, bfq: boost the throughput
+ with random I/O on NCQ-capable HDDs
+Message-ID: <20140531133444.GA24557@mtj.dyndns.org>
+References: <20140528221929.GG1419@htj.dyndns.org>
+ <1401354343-5527-1-git-send-email-paolo.valente@unimore.it>
+ <1401354343-5527-13-git-send-email-paolo.valente@unimore.it>
 MIME-Version: 1.0
-In-Reply-To: <m2tx86l4ux.fsf@linux-m68k.org>
-References: <1401480116-1973111-1-git-send-email-arnd@arndb.de>
-	<1401480116-1973111-2-git-send-email-arnd@arndb.de>
-	<CAMuHMdVgch4REGcYWFZXVToX2b8iCinFVV10Bz3VoeiZy_yBtg@mail.gmail.com>
-	<m2tx86l4ux.fsf@linux-m68k.org>
-Date: Sat, 31 May 2014 15:19:48 +0200
-X-Google-Sender-Auth: 7ck-OTQ1iXJYNFAP2-5tI1gj8w8
-Message-ID: <CAMuHMdXPQQpu_6k+Y6o=1u-u9EkkanKdGYp6-=BavyYHUH3AuA@mail.gmail.com>
-Subject: Re: [RFC 01/32] fs: introduce new 'struct inode_time'
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Andreas Schwab <schwab@linux-m68k.org>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>,
-        "Joseph S. Myers" <joseph@codesourcery.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ley Foon Tan <lftan@altera.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1401354343-5527-13-git-send-email-paolo.valente@unimore.it>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andreas,
+Hello,
 
-On Sat, May 31, 2014 at 10:39 AM, Andreas Schwab <schwab@linux-m68k.org> wrote:
-> Geert Uytterhoeven <geert@linux-m68k.org> writes:
->
->> Hi Arnd,
->>
->> On Fri, May 30, 2014 at 10:01 PM, Arnd Bergmann <arnd@arndb.de> wrote:
->>> + * The variant using bit fields is less efficient to access, but
->>> + * small and has a wider range as the 32-bit one, plus it keeps
->>> + * the signedness of the original timespec.
->>> + */
->>> +struct inode_time {
->>> +       long long       tv_sec  : 34;
->>> +       int             tv_nsec : 30;
->>> +};
->>
->> Don't you need 31 bits for tv_nsec, to accommodate for the sign bit?
->> I know you won't really store negative numbers there, but storing a large
->> positive number will become negative on read out, won't it?
->
-> Only if the int bitfield is signed.  Bitfields are weird, aren't they? :-)
+Okay, read this one properly too.
 
-"int" is signed, right? Or do you mean a bitfield needs an explicit "signed"
-keyword to be signed?
+On Thu, May 29, 2014 at 11:05:43AM +0200, Paolo Valente wrote:
+...
+> + * As already said, things change with a rotational device, where idling
+> + * boosts the throughput with sequential I/O (even with NCQ). Hence, for
+> + * such a device the second component of the compound condition evaluates
+> + * to true also if the following additional sub-condition does not hold:
+> + * the queue is constantly seeky. Unfortunately, this different behavior
+> + * with respect to flash-based devices causes an additional asymmetry: if
+> + * some sync queues enjoy idling and some other sync queues do not, then
+> + * the latter get a low share of the device throughput, simply because the
+> + * former get many requests served after being set as in service, whereas
+> + * the latter do not. As a consequence, to guarantee the desired throughput
+> + * distribution, on HDDs the compound expression evaluates to true (and
+> + * hence device idling is performed) also if the following last symmetry
+> + * condition does not hold: no other queue is benefiting from idling. Also
 
-Gr{oetje,eeting}s,
+Ummm... doesn't the compound expression evaluating to %true prevent
+idling from taking place?  The above sentence is painful to parse.  I
+don't really think there's much point in expressing the actual
+evaulation of expressions in human language.  It sucks for that.  It'd
+be far easier to comprehend if you just state what it actually
+achieves.  ie. just say "for rotational queued devices, idling is
+allowed if such and such conditions are met" and then explain
+rationales for each.  There's no point in walking through the
+evaluation process itself.
 
-                        Geert
+>  #define cond_for_expiring_non_wr  (bfqd->hw_tag && \
+>  				   (bfqd->wr_busy_queues > 0 || \
+>  				    (symmetric_scenario && \
+> -				     blk_queue_nonrot(bfqd->queue))))
+> +				     (blk_queue_nonrot(bfqd->queue) || \
+> +				      cond_for_seeky_on_ncq_hdd))))
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+So, the addition is that for rotational queued devices, idling is
+inhibited if all queues are symmetric and all the busy ones are
+constantly seeky, right?  Everybody being seeky is probably the only
+use case where allowing queued operation is desirable for rotational
+devices.  In these cases, do we even care whether every queue is
+symmetric?  If we really want this tagged operation optimization,
+wouldn't it be far easier to simply charge everybody by bandwidth if
+everybody is seeky with idling disabled whether queues are symmetric
+or not?  The whole point of charging full slice to seeky queues is
+making sure they don't starve non-seeky ones.  If everybody is seeky,
+bandwidth charging should be enough for fairness among them, right?
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Also, can we please try to avoid double negations where possible?  The
+function could easily have been named should_idle() instead of
+must_not_expire().  Combined with the complex logic expressions, it
+makes things unnecessarily difficult to follow.  Just say yes for not
+not.
+
+Thanks.
+
+-- 
+tejun
