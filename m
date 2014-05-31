@@ -1,69 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935035AbaEaCKG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 22:10:06 -0400
-Received: from mail1-ar.fullrate.dk ([90.185.3.41]:53686 "EHLO
-	mail1-ar.fullrate.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932771AbaEaCKE (ORCPT
+	id S933793AbaEaCT6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 22:19:58 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:21460 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932229AbaEaCT5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 22:10:04 -0400
-X-Greylist: delayed 355 seconds by postgrey-1.27 at vger.kernel.org; Fri, 30 May 2014 22:10:04 EDT
-Message-ID: <53893895.3040202@molgaard.org>
-Date: Sat, 31 May 2014 04:04:05 +0200
-From: =?UTF-8?B?U3VuZSBNw7hsZ2FhcmQ=?= <sune@molgaard.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:32.0) Gecko/20100101 Firefox/32.0 SeaMonkey/2.29a1
+	Fri, 30 May 2014 22:19:57 -0400
+Date: Fri, 30 May 2014 22:19:55 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>
+Subject: Re: [patch 5/6] rtmutex: Clarify the lock chain walk
+Message-ID: <20140530221955.620e2b61@gandalf.local.home>
+In-Reply-To: <20140522031950.168005692@linutronix.de>
+References: <20140522031841.797415507@linutronix.de>
+	<20140522031950.168005692@linutronix.de>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: gregkh@linuxfoundation.org
-Subject: [RFC] Summarizing deprecations
-X-Enigmail-Version: 1.7a1pre
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear list,
+On Thu, 22 May 2014 03:25:54 -0000
+Thomas Gleixner <tglx@linutronix.de> wrote:
 
-In order to keep this non-code RFC brief, allow me to list a few
-observations and then a proposal, that I shall be happy to engage in,
-but for which I'd like a bit of guidance:
+> Add a separate local variable for the boost/deboost logic to make the
+> code more readable. Add comments where appropriate.
+> 
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> ---
+>  kernel/locking/rtmutex.c |   50 +++++++++++++++++++++++++++++++++++++++--------
+>  1 file changed, 42 insertions(+), 8 deletions(-)
+> 
+> Index: tip/kernel/locking/rtmutex.c
+> ===================================================================
+> --- tip.orig/kernel/locking/rtmutex.c
+> +++ tip/kernel/locking/rtmutex.c
+> @@ -302,9 +302,10 @@ static int rt_mutex_adjust_prio_chain(st
+>  				      struct rt_mutex_waiter *orig_waiter,
+>  				      struct task_struct *top_task)
+>  {
+> -	struct rt_mutex *lock;
+>  	struct rt_mutex_waiter *waiter, *top_waiter = orig_waiter;
+> +	struct rt_mutex_waiter *prerequeue_top_waiter;
+>  	int detect_deadlock, ret = 0, depth = 0;
+> +	struct rt_mutex *lock;
+>  	unsigned long flags;
+>  
+>  	detect_deadlock = rt_mutex_cond_detect_deadlock(orig_waiter,
+> @@ -379,6 +380,11 @@ static int rt_mutex_adjust_prio_chain(st
+>  	}
+>  
+>  	lock = waiter->lock;
+> +	/*
+> +	 * We need to trylock here as we are holding task->pi_lock,
+> +	 * which is the reverse lock order versus the other rtmutex
+> +	 * operations.
+> +	 */
+>  	if (!raw_spin_trylock(&lock->wait_lock)) {
+>  		raw_spin_unlock_irqrestore(&task->pi_lock, flags);
+>  		cpu_relax();
+> @@ -398,7 +404,11 @@ static int rt_mutex_adjust_prio_chain(st
+>  		goto out_unlock_pi;
+>  	}
+>  
+> -	top_waiter = rt_mutex_top_waiter(lock);
+> +	/*
+> +	 * Store the top waiter before doing any requeue operation. We
+> +	 * need it for the boost/deboost decision below.
+> +	 */
+> +	prerequeue_top_waiter = rt_mutex_top_waiter(lock);
+>  
+>  	/* Requeue the waiter */
+>  	rt_mutex_dequeue(lock, waiter);
+> @@ -407,13 +417,18 @@ static int rt_mutex_adjust_prio_chain(st
+>  
+>  	/* Release the task */
+>  	raw_spin_unlock_irqrestore(&task->pi_lock, flags);
+> +
+> +	/*
+> +	 * We must abort the chain walk if there is no lock owner even
+> +	 * in the dead lock detection case, as we have nothing to
+> +	 * follow here.
 
-1) System calls get superseded and deprecated on a regular basis
-2) Keeping track of deprecations can be difficult
-3) HW vendors with out-of-tree drivers allocate too few resources to
-handle 1) and 2)
-4) Out-of-tree drivers usually fail to take deprecations into
-consideration, and then breaking when deprecation leads to removal
+You could mention that this is the end of the chain. That is, the chain
+is lock->owner->lock->owner->lock->...  Once you have a lock without
+owner, or a owner not blocked on a lock, that's it. Pretty self
+explanatory. Don't Need to change anything. Just add "This is the end
+of the chain that we are walking."
 
-A knee-jerk reaction to 3) might be that they all need to shape up, but
-experience seems to relegate that reaction to the pile of wishful
-thoughts that lead nowhere.
 
-IIRC, Greg K-H once tried to extend an offer to HW vendors to the effect
-of helping with opening their code base, with the reward of helping
-write drivers. I don't know what came of it, but I imagine that I would
-have heard, if it was a roaring success.
+> +	 */
+>  	if (!rt_mutex_owner(lock)) {
+>  		/*
+>  		 * If the requeue above changed the top waiter, then we need
+>  		 * to wake the new top waiter up to try to get the lock.
+>  		 */
+> -
+> -		if (top_waiter != rt_mutex_top_waiter(lock))
+> +		if (prerequeue_top_waiter != rt_mutex_top_waiter(lock))
+>  			wake_up_process(rt_mutex_top_waiter(lock)->task);
+>  		raw_spin_unlock(&lock->wait_lock);
+>  		goto out_put_task;
+> @@ -426,17 +441,31 @@ static int rt_mutex_adjust_prio_chain(st
+>  	raw_spin_lock_irqsave(&task->pi_lock, flags);
+>  
+>  	if (waiter == rt_mutex_top_waiter(lock)) {
+> -		/* Boost the owner */
+> -		rt_mutex_dequeue_pi(task, top_waiter);
+> +		/*
+> +		 * The waiter became the top waiter on the
+> +		 * lock. Remove the previous top waiter from the tasks
+> +		 * pi waiters list and add waiter to it.
 
-As a user first, and only secondly a developer, I'd like my HW to work,
-and finding fully supported gear can still be hard if not impossible,
-but I imagine that if we had a central place to list deprecations (and,
-possibly, "victims" of them), a lot of grief could be avoided by simply
-pointing vendors to that central resource and saying "here is what you
-need to know for your driver to keep working - now get to it".
+Just to be a bit more verbose:
 
-As said, I'm more of a user, so I may be unaware of practices already in
-place to mark commits as causing deprecation, but if such practices
-exist, I should be able to whip up some sort of script that periodically
-does a "git log" and collates deprecations into some format that could
-then be parsed by a bash script grepping various out-of-tree code bases
-and notifies the relevant parties.
+ The waiter became the new top waiter on the lock. Replace the previous
+ top waiter from the tasks pi waiters list with this waiter.
 
-I'd be willing to have a go at such functionality as well as hosting the
-info (at least until some vendor realizes the value and donates to it),
-but I'd hate to go off into too many wrong directions, if those can be
-avoided by feedback here.
+If anything, I like to use "Replace .. with" instead of "Remove .. add"
+as for me, it gives a better idea of what is actually being done
+instead of just stating how it is being implemented.
 
-Best regards,
 
-Sune Mølgaard
+> +		 */
+> +		rt_mutex_dequeue_pi(task, prerequeue_top_waiter);
+>  		rt_mutex_enqueue_pi(task, waiter);
+>  		__rt_mutex_adjust_prio(task);
+>  
+> -	} else if (top_waiter == waiter) {
+> -		/* Deboost the owner */
+> +	} else if (prerequeue_top_waiter == waiter) {
+> +		/*
+> +		 * The waiter was the top waiter on the lock. Remove
+> +		 * waiter from the tasks pi waiters list and add the
+> +		 * new top waiter to it.
+
+Again, I would prefer to use "Replace .. with":
+
+ The waiter was the top waiter on the lock but it is no longer the
+ highest priority waiter. Replace the waiter from the tasks pi waiters
+ list with the new top waiter (the highest priority one).
+
+
+> +		 */
+>  		rt_mutex_dequeue_pi(task, waiter);
+>  		waiter = rt_mutex_top_waiter(lock);
+>  		rt_mutex_enqueue_pi(task, waiter);
+>  		__rt_mutex_adjust_prio(task);
+> +
+> +	} else {
+> +		/*
+> +		 * Nothing changed. No need to do any priority
+> +		 * adjustment.
+> +		 */
+>  	}
+>  
+>  	raw_spin_unlock_irqrestore(&task->pi_lock, flags);
+> @@ -444,6 +473,11 @@ static int rt_mutex_adjust_prio_chain(st
+>  	top_waiter = rt_mutex_top_waiter(lock);
+>  	raw_spin_unlock(&lock->wait_lock);
+>  
+> +	/*
+> +	 * If the current waiter is not the top waiter on the lock,
+> +	 * then we can stop the chain walk here if we are not in full
+> +	 * deadlock detection mode.
+> +	 */
+>  	if (!detect_deadlock && waiter != top_waiter)
+>  		goto out_put_task;
+>  
+> 
+
+Rest looks good.
+
+-- Steve
