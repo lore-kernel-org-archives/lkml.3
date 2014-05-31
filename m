@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935050AbaEaO3S (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 May 2014 10:29:18 -0400
-Received: from mail-qa0-f47.google.com ([209.85.216.47]:57150 "EHLO
-	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933107AbaEaO3K (ORCPT
+	id S934318AbaEaO3P (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 May 2014 10:29:15 -0400
+Received: from mail-qa0-f45.google.com ([209.85.216.45]:50788 "EHLO
+	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932311AbaEaO3F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 May 2014 10:29:10 -0400
+	Sat, 31 May 2014 10:29:05 -0400
 From: Andreas Noever <andreas.noever@gmail.com>
 To: linux-kernel@vger.kernel.org, Matthew Garrett <matthew.garrett@nebula.com>,
         Greg KH <greg@kroah.com>, Bjorn Helgaas <bhelgaas@google.com>,
         linux-pci@vger.kernel.org
 Cc: Andreas Noever <andreas.noever@gmail.com>
-Subject: [PATCH v4 14/15] thunderbolt: Read switch uid from EEPROM
-Date: Sat, 31 May 2014 16:27:59 +0200
-Message-Id: <1401546480-2071-15-git-send-email-andreas.noever@gmail.com>
+Subject: [PATCH v4 12/15] PCI: Add pci_fixup_suspend_late quirk pass
+Date: Sat, 31 May 2014 16:27:57 +0200
+Message-Id: <1401546480-2071-13-git-send-email-andreas.noever@gmail.com>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1401546480-2071-1-git-send-email-andreas.noever@gmail.com>
 References: <1401546480-2071-1-git-send-email-andreas.noever@gmail.com>
@@ -22,259 +22,172 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add eeprom access code and read the uid during switch initialization.
-The UID will be used to check device identity after suspend.
+Add pci_fixup_suspend_late as a new pci_fixup_pass. The pass is called
+from suspend_noirq and poweroff_noirq. Using the same pass for suspend
+and hibernate is consistent with resume_early which is called by
+resume_noirq and restore_noirq.
+
+The new quirk pass is required for Thunderbolt support on Apple
+hardware.
 
 Signed-off-by: Andreas Noever <andreas.noever@gmail.com>
+Acked-by: Bjorn Helgaas <bhelgaas@google.com>
 ---
- drivers/thunderbolt/Makefile |   2 +-
- drivers/thunderbolt/eeprom.c | 189 +++++++++++++++++++++++++++++++++++++++++++
- drivers/thunderbolt/switch.c |   5 ++
- drivers/thunderbolt/tb.h     |   3 +
- 4 files changed, 198 insertions(+), 1 deletion(-)
- create mode 100644 drivers/thunderbolt/eeprom.c
+ drivers/pci/pci-driver.c          | 18 ++++++++++++++----
+ drivers/pci/quirks.c              |  7 +++++++
+ include/asm-generic/vmlinux.lds.h |  3 +++
+ include/linux/pci.h               | 12 +++++++++++-
+ 4 files changed, 35 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/thunderbolt/Makefile b/drivers/thunderbolt/Makefile
-index 0122ca6..5d1053c 100644
---- a/drivers/thunderbolt/Makefile
-+++ b/drivers/thunderbolt/Makefile
-@@ -1,3 +1,3 @@
- obj-${CONFIG_THUNDERBOLT} := thunderbolt.o
--thunderbolt-objs := nhi.o ctl.o tb.o switch.o cap.o path.o tunnel_pci.o
-+thunderbolt-objs := nhi.o ctl.o tb.o switch.o cap.o path.o tunnel_pci.o eeprom.o
- 
-diff --git a/drivers/thunderbolt/eeprom.c b/drivers/thunderbolt/eeprom.c
-new file mode 100644
-index 0000000..f28e402
---- /dev/null
-+++ b/drivers/thunderbolt/eeprom.c
-@@ -0,0 +1,189 @@
-+/*
-+ * Thunderbolt Cactus Ridge driver - eeprom access
-+ *
-+ * Copyright (c) 2014 Andreas Noever <andreas.noever@gmail.com>
-+ */
-+
-+#include "tb.h"
-+
-+/**
-+ * tb_eeprom_ctl_write() - write control word
-+ */
-+static int tb_eeprom_ctl_write(struct tb_switch *sw, struct tb_eeprom_ctl *ctl)
-+{
-+	return tb_sw_write(sw, ctl, TB_CFG_SWITCH, sw->cap_plug_events + 4, 1);
-+}
-+
-+/**
-+ * tb_eeprom_ctl_write() - read control word
-+ */
-+static int tb_eeprom_ctl_read(struct tb_switch *sw, struct tb_eeprom_ctl *ctl)
-+{
-+	return tb_sw_read(sw, ctl, TB_CFG_SWITCH, sw->cap_plug_events + 4, 1);
-+}
-+
-+enum tb_eeprom_transfer {
-+	TB_EEPROM_IN,
-+	TB_EEPROM_OUT,
-+};
-+
-+/**
-+ * tb_eeprom_active - enable rom access
-+ *
-+ * WARNING: Always disable access after usage. Otherwise the controller will
-+ * fail to reprobe.
-+ */
-+static int tb_eeprom_active(struct tb_switch *sw, bool enable)
-+{
-+	struct tb_eeprom_ctl ctl;
-+	int res = tb_eeprom_ctl_read(sw, &ctl);
-+	if (res)
-+		return res;
-+	if (enable) {
-+		ctl.access_high = 1;
-+		res = tb_eeprom_ctl_write(sw, &ctl);
-+		if (res)
-+			return res;
-+		ctl.access_low = 0;
-+		return tb_eeprom_ctl_write(sw, &ctl);
-+	} else {
-+		ctl.access_low = 1;
-+		res = tb_eeprom_ctl_write(sw, &ctl);
-+		if (res)
-+			return res;
-+		ctl.access_high = 0;
-+		return tb_eeprom_ctl_write(sw, &ctl);
-+	}
-+}
-+
-+/**
-+ * tb_eeprom_transfer - transfer one bit
-+ *
-+ * If TB_EEPROM_IN is passed, then the bit can be retrieved from ctl->data_in.
-+ * If TB_EEPROM_OUT is passed, then ctl->data_out will be written.
-+ */
-+static int tb_eeprom_transfer(struct tb_switch *sw, struct tb_eeprom_ctl *ctl,
-+			      enum tb_eeprom_transfer direction)
-+{
-+	int res;
-+	if (direction == TB_EEPROM_OUT) {
-+		res = tb_eeprom_ctl_write(sw, ctl);
-+		if (res)
-+			return res;
-+	}
-+	ctl->clock = 1;
-+	res = tb_eeprom_ctl_write(sw, ctl);
-+	if (res)
-+		return res;
-+	if (direction == TB_EEPROM_IN) {
-+		res = tb_eeprom_ctl_read(sw, ctl);
-+		if (res)
-+			return res;
-+	}
-+	ctl->clock = 0;
-+	return tb_eeprom_ctl_write(sw, ctl);
-+}
-+
-+/**
-+ * tb_eeprom_out - write one byte to the bus
-+ */
-+static int tb_eeprom_out(struct tb_switch *sw, u8 val)
-+{
-+	struct tb_eeprom_ctl ctl;
-+	int i;
-+	int res = tb_eeprom_ctl_read(sw, &ctl);
-+	if (res)
-+		return res;
-+	for (i = 0; i < 8; i++) {
-+		ctl.data_out = val & 0x80;
-+		res = tb_eeprom_transfer(sw, &ctl, TB_EEPROM_OUT);
-+		if (res)
-+			return res;
-+		val <<= 1;
-+	}
-+	return 0;
-+}
-+
-+/**
-+ * tb_eeprom_in - read one byte from the bus
-+ */
-+static int tb_eeprom_in(struct tb_switch *sw, u8 *val)
-+{
-+	struct tb_eeprom_ctl ctl;
-+	int i;
-+	int res = tb_eeprom_ctl_read(sw, &ctl);
-+	if (res)
-+		return res;
-+	*val = 0;
-+	for (i = 0; i < 8; i++) {
-+		*val <<= 1;
-+		res = tb_eeprom_transfer(sw, &ctl, TB_EEPROM_IN);
-+		if (res)
-+			return res;
-+		*val |= ctl.data_in;
-+	}
-+	return 0;
-+}
-+
-+/**
-+ * tb_eeprom_read_n - read count bytes from offset into val
-+ */
-+static int tb_eeprom_read_n(struct tb_switch *sw, u16 offset, u8 *val,
-+		size_t count)
-+{
-+	int i, res;
-+	res = tb_eeprom_active(sw, true);
-+	if (res)
-+		return res;
-+	res = tb_eeprom_out(sw, 3);
-+	if (res)
-+		return res;
-+	res = tb_eeprom_out(sw, offset >> 8);
-+	if (res)
-+		return res;
-+	res = tb_eeprom_out(sw, offset);
-+	if (res)
-+		return res;
-+	for (i = 0; i < count; i++) {
-+		res = tb_eeprom_in(sw, val + i);
-+		if (res)
-+			return res;
-+	}
-+	return tb_eeprom_active(sw, false);
-+}
-+
-+int tb_eeprom_read_uid(struct tb_switch *sw, u64 *uid)
-+{
-+	u8 data[9];
-+	struct tb_cap_plug_events cap;
-+	int res;
-+	if (!sw->cap_plug_events) {
-+		tb_sw_warn(sw, "no TB_CAP_PLUG_EVENTS, cannot read eeprom\n");
-+		return -ENOSYS;
-+	}
-+	res = tb_sw_read(sw, &cap, TB_CFG_SWITCH, sw->cap_plug_events,
-+			     sizeof(cap) / 4);
-+	if (res)
-+		return res;
-+	if (!cap.eeprom_ctl.present || cap.eeprom_ctl.not_present) {
-+		tb_sw_warn(sw, "no NVM\n");
-+		return -ENOSYS;
-+	}
-+
-+	if (cap.drom_offset > 0xffff) {
-+		tb_sw_warn(sw, "drom offset is larger than 0xffff: %#x\n",
-+				cap.drom_offset);
-+		return -ENXIO;
-+	}
-+
-+	/* read uid */
-+	res = tb_eeprom_read_n(sw, cap.drom_offset, data, 9);
-+	if (res)
-+		return res;
-+	/* TODO: check checksum in data[0] */
-+	*uid = *(u64 *)(data+1);
-+	return 0;
-+}
-+
-+
-+
-diff --git a/drivers/thunderbolt/switch.c b/drivers/thunderbolt/switch.c
-index a6968cc..eef5f1c 100644
---- a/drivers/thunderbolt/switch.c
-+++ b/drivers/thunderbolt/switch.c
-@@ -370,6 +370,11 @@ struct tb_switch *tb_switch_alloc(struct tb *tb, u64 route)
+diff --git a/drivers/pci/pci-driver.c b/drivers/pci/pci-driver.c
+index d911e0c..55dc1b8 100644
+--- a/drivers/pci/pci-driver.c
++++ b/drivers/pci/pci-driver.c
+@@ -542,7 +542,7 @@ static int pci_legacy_suspend_late(struct device *dev, pm_message_t state)
+ 			WARN_ONCE(pci_dev->current_state != prev,
+ 				"PCI PM: Device state not saved by %pF\n",
+ 				drv->suspend_late);
+-			return 0;
++			goto Fixup;
+ 		}
  	}
- 	sw->cap_plug_events = cap;
  
-+	if (tb_eeprom_read_uid(sw, &sw->uid))
-+		tb_sw_warn(sw, "could not read uid from eeprom\n");
-+	else
-+		tb_sw_info(sw, "uid: %#llx\n", sw->uid);
+@@ -551,6 +551,9 @@ static int pci_legacy_suspend_late(struct device *dev, pm_message_t state)
+ 
+ 	pci_pm_set_unknown_state(pci_dev);
+ 
++Fixup:
++	pci_fixup_device(pci_fixup_suspend_late, pci_dev);
 +
- 	if (tb_plug_events_active(sw, true))
- 		goto err;
+ 	return 0;
+ }
  
-diff --git a/drivers/thunderbolt/tb.h b/drivers/thunderbolt/tb.h
-index 508abc4..a89087f 100644
---- a/drivers/thunderbolt/tb.h
-+++ b/drivers/thunderbolt/tb.h
-@@ -19,6 +19,7 @@ struct tb_switch {
- 	struct tb_regs_switch_header config;
- 	struct tb_port *ports;
- 	struct tb *tb;
-+	u64 uid;
- 	int cap_plug_events; /* offset, zero if not found */
- 	bool is_unplugged; /* unplugged, will go away */
+@@ -694,7 +697,7 @@ static int pci_pm_suspend_noirq(struct device *dev)
+ 
+ 	if (!pm) {
+ 		pci_save_state(pci_dev);
+-		return 0;
++		goto Fixup;
+ 	}
+ 
+ 	if (pm->suspend_noirq) {
+@@ -711,7 +714,7 @@ static int pci_pm_suspend_noirq(struct device *dev)
+ 			WARN_ONCE(pci_dev->current_state != prev,
+ 				"PCI PM: State of device not saved by %pF\n",
+ 				pm->suspend_noirq);
+-			return 0;
++			goto Fixup;
+ 		}
+ 	}
+ 
+@@ -735,6 +738,9 @@ static int pci_pm_suspend_noirq(struct device *dev)
+ 	if (pci_dev->class == PCI_CLASS_SERIAL_USB_EHCI)
+ 		pci_write_config_word(pci_dev, PCI_COMMAND, 0);
+ 
++Fixup:
++	pci_fixup_device(pci_fixup_suspend_late, pci_dev);
++
+ 	return 0;
+ }
+ 
+@@ -959,8 +965,10 @@ static int pci_pm_poweroff_noirq(struct device *dev)
+ 	if (pci_has_legacy_pm_support(to_pci_dev(dev)))
+ 		return pci_legacy_suspend_late(dev, PMSG_HIBERNATE);
+ 
+-	if (!drv || !drv->pm)
++	if (!drv || !drv->pm) {
++		pci_fixup_device(pci_fixup_suspend_late, pci_dev);
+ 		return 0;
++	}
+ 
+ 	if (drv->pm->poweroff_noirq) {
+ 		int error;
+@@ -981,6 +989,8 @@ static int pci_pm_poweroff_noirq(struct device *dev)
+ 	if (pci_dev->class == PCI_CLASS_SERIAL_USB_EHCI)
+ 		pci_write_config_word(pci_dev, PCI_COMMAND, 0);
+ 
++	pci_fixup_device(pci_fixup_suspend_late, pci_dev);
++
+ 	if (pcibios_pm_ops.poweroff_noirq)
+ 		return pcibios_pm_ops.poweroff_noirq(dev);
+ 
+diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+index e729206..af2eba1 100644
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -3024,6 +3024,8 @@ extern struct pci_fixup __start_pci_fixups_resume_early[];
+ extern struct pci_fixup __end_pci_fixups_resume_early[];
+ extern struct pci_fixup __start_pci_fixups_suspend[];
+ extern struct pci_fixup __end_pci_fixups_suspend[];
++extern struct pci_fixup __start_pci_fixups_suspend_late[];
++extern struct pci_fixup __end_pci_fixups_suspend_late[];
+ 
+ static bool pci_apply_fixup_final_quirks;
+ 
+@@ -3069,6 +3071,11 @@ void pci_fixup_device(enum pci_fixup_pass pass, struct pci_dev *dev)
+ 		end = __end_pci_fixups_suspend;
+ 		break;
+ 
++	case pci_fixup_suspend_late:
++		start = __start_pci_fixups_suspend_late;
++		end = __end_pci_fixups_suspend_late;
++		break;
++
+ 	default:
+ 		/* stupid compiler warning, you would think with an enum... */
+ 		return;
+diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
+index 146e4ff..2dea636 100644
+--- a/include/asm-generic/vmlinux.lds.h
++++ b/include/asm-generic/vmlinux.lds.h
+@@ -288,6 +288,9 @@
+ 		VMLINUX_SYMBOL(__start_pci_fixups_suspend) = .;		\
+ 		*(.pci_fixup_suspend)					\
+ 		VMLINUX_SYMBOL(__end_pci_fixups_suspend) = .;		\
++		VMLINUX_SYMBOL(__start_pci_fixups_suspend_late) = .;	\
++		*(.pci_fixup_suspend_late)				\
++		VMLINUX_SYMBOL(__end_pci_fixups_suspend_late) = .;	\
+ 	}								\
+ 									\
+ 	/* Built-in firmware blobs */					\
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index aab57b4..4724806 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -1458,8 +1458,9 @@ enum pci_fixup_pass {
+ 	pci_fixup_final,	/* Final phase of device fixups */
+ 	pci_fixup_enable,	/* pci_enable_device() time */
+ 	pci_fixup_resume,	/* pci_device_resume() */
+-	pci_fixup_suspend,	/* pci_device_suspend */
++	pci_fixup_suspend,	/* pci_device_suspend() */
+ 	pci_fixup_resume_early, /* pci_device_resume_early() */
++	pci_fixup_suspend_late,	/* pci_device_suspend_late() */
  };
-@@ -231,6 +232,8 @@ int tb_path_activate(struct tb_path *path);
- void tb_path_deactivate(struct tb_path *path);
- bool tb_path_is_invalid(struct tb_path *path);
  
-+int tb_eeprom_read_uid(struct tb_switch *sw, u64 *uid);
-+
+ /* Anonymous variables would be nice... */
+@@ -1500,6 +1501,11 @@ enum pci_fixup_pass {
+ 	DECLARE_PCI_FIXUP_SECTION(.pci_fixup_suspend,			\
+ 		suspend##hook, vendor, device, class,	\
+ 		class_shift, hook)
++#define DECLARE_PCI_FIXUP_CLASS_SUSPEND_LATE(vendor, device, class,	\
++					 class_shift, hook)		\
++	DECLARE_PCI_FIXUP_SECTION(.pci_fixup_suspend_late,		\
++		suspend_late##hook, vendor, device,	\
++		class, class_shift, hook)
  
- static inline int tb_route_length(u64 route)
- {
+ #define DECLARE_PCI_FIXUP_EARLY(vendor, device, hook)			\
+ 	DECLARE_PCI_FIXUP_SECTION(.pci_fixup_early,			\
+@@ -1525,6 +1531,10 @@ enum pci_fixup_pass {
+ 	DECLARE_PCI_FIXUP_SECTION(.pci_fixup_suspend,			\
+ 		suspend##hook, vendor, device,		\
+ 		PCI_ANY_ID, 0, hook)
++#define DECLARE_PCI_FIXUP_SUSPEND_LATE(vendor, device, hook)		\
++	DECLARE_PCI_FIXUP_SECTION(.pci_fixup_suspend_late,		\
++		suspend_late##hook, vendor, device,	\
++		PCI_ANY_ID, 0, hook)
+ 
+ #ifdef CONFIG_PCI_QUIRKS
+ void pci_fixup_device(enum pci_fixup_pass pass, struct pci_dev *dev);
 -- 
 1.9.3
 
