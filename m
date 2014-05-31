@@ -1,44 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755180AbaEaJWp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 May 2014 05:22:45 -0400
-Received: from mail-out.m-online.net ([212.18.0.9]:44093 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753026AbaEaJWn (ORCPT
+	id S1755874AbaEaJts (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 May 2014 05:49:48 -0400
+Received: from mout.gmx.net ([212.227.17.21]:61129 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752917AbaEaJtq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 May 2014 05:22:43 -0400
-X-Auth-Info: naRiWOkvsvO0Kwtqbqszq0/k9zdRPGVM6XIbKtw632s=
-From: Andreas Schwab <schwab@linux-m68k.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        joseph@codesourcery.com, john.stultz@linaro.org, hch@infradead.org,
-        tglx@linutronix.de, geert@linux-m68k.org, lftan@altera.com,
-        hpa@zytor.com, linux-fsdevel@vger.kernel.org
-Subject: Re: [RFC 03/32] fs: introduce sys_utimens64at
-References: <1401480116-1973111-1-git-send-email-arnd@arndb.de>
-	<1401480116-1973111-4-git-send-email-arnd@arndb.de>
-X-Yow: I will invent "TIDY BOWL"...
-Date: Sat, 31 May 2014 11:22:38 +0200
-In-Reply-To: <1401480116-1973111-4-git-send-email-arnd@arndb.de> (Arnd
-	Bergmann's message of "Fri, 30 May 2014 22:01:27 +0200")
-Message-ID: <m2ppiul2u9.fsf@linux-m68k.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.91 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	Sat, 31 May 2014 05:49:46 -0400
+Message-ID: <1401529764.4646.12.camel@schoellingm.dzne.de>
+Subject: Re: [PATCH] console: Add persistent scrollback buffers for all VGA
+ consoles
+From: Manuel Schoelling <manuel.schoelling@gmx.de>
+To: Jakub Wilk <jwilk@debian.org>
+Cc: plagnioj@jcrosoft.com, tomi.valkeinen@ti.com, geert@linux-m68k.org,
+        broonie@linaro.org, rdunlap@infradead.org, dh.herrmann@gmail.com,
+        airlied@redhat.com, mtosatti@redhat.com, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Sat, 31 May 2014 11:49:24 +0200
+In-Reply-To: <20140530222622.GA1385@jwilk.net>
+References: <1401456425-15931-1-git-send-email-manuel.schoelling@gmx.de>
+	 <20140530222622.GA1385@jwilk.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+X-Provags-ID: V03:K0:mCxjNQaQ/DbhQGtgKOmgDMs9XMYi83VmfNMUdSxZulZbb+kyJVb
+ TteC5dpg82VO0308s7gDdRLfbgxSuDA2Uf571tHtQRWi6MwIb1APM5L3lRA2+iBd1TH/0Zq
+ sE36vEYPejB9Kg7iyQyUpRymt/8mNOG2DSg1IbcHDWSTUspeIheGa+PwwrrCwdU9qy4RaOh
+ D9URrap0nnpC6Uby+HFUw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd Bergmann <arnd@arndb.de> writes:
+On Sa, 2014-05-31 at 00:26 +0200, Jakub Wilk wrote:
+> * Manuel Schölling <manuel.schoelling@gmx.de>, 2014-05-30, 15:27:
+> >Add a scrollback buffers for each VGA console. The benefit is that the 
+> >scrollback history is not flushed when switching between consoles but 
+> >is persistent.
+> 
+> Some people rely on this scrollback flushing as a security feature. Is 
+> there even another way to clear the scrollback, than to switch to 
+> another vt and then back again?
+Thanks for raising this security issue! Maybe we should add something
+like VT_FLUSH_SCROLLBACK to vt_ioctl()? [1]
+I'm open for better ways to flush the scrollback history.
 
-> +asmlinkage long sys_utimens64at(int dfd, const char __user *filename,
+[1] http://lxr.free-electrons.com/source/drivers/tty/vt/vt_ioctl.c#L334
 
-All existing syscall names have the 64 suffix last, including the *at
-variants, so sys_utimensat64 would be more in line.
+> Debian ships this:
+> http://manpages.debian.org/cgi-bin/man.cgi?query=clear_console
+> https://sources.debian.net/src/bash/4.2%2Bdfsg-0.1/debian/clear_console.c
+> 
 
-Andreas.
 
--- 
-Andreas Schwab, schwab@linux-m68k.org
-GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
-"And now for something completely different."
