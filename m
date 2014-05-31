@@ -1,215 +1,330 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756396AbaEaKkr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 May 2014 06:40:47 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:53975 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754118AbaEaKkp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 May 2014 06:40:45 -0400
-Date: Sat, 31 May 2014 03:40:19 -0700
-From: "tip-bot for H. Peter Anvin" <tipbot@zytor.com>
-Message-ID: <tip-c191920f737a09a7252088f018f6747f0d2f484d@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, luto@amacapital.net, hpa@zytor.com,
-        mingo@kernel.org, tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, luto@amacapital.net,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <2cf258df123cb24bad63c274c8563c050547d99d.1401464755.git.luto@amacapital.net>
-References: <2cf258df123cb24bad63c274c8563c050547d99d.1401464755.git.luto@amacapital.net>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/vdso] x86/vdso, build: Make LE access macros clearer,
-  host-safe
-Git-Commit-ID: c191920f737a09a7252088f018f6747f0d2f484d
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1756395AbaEaK57 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 May 2014 06:57:59 -0400
+Received: from mout.gmx.net ([212.227.15.18]:53493 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754118AbaEaK55 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 31 May 2014 06:57:57 -0400
+From: =?UTF-8?q?Manuel=20Sch=C3=B6lling?= <manuel.schoelling@gmx.de>
+To: plagnioj@jcrosoft.com
+Cc: tomi.valkeinen@ti.com, geert@linux-m68k.org, broonie@linaro.org,
+        rdunlap@infradead.org, dh.herrmann@gmail.com, airlied@redhat.com,
+        mtosatti@redhat.com, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Manuel=20Sch=C3=B6lling?= <manuel.schoelling@gmx.de>
+Subject: [PATCH v2] console: Add persistent scrollback buffers for all VGA consoles
+Date: Sat, 31 May 2014 12:57:36 +0200
+Message-Id: <1401533856-4067-1-git-send-email-manuel.schoelling@gmx.de>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <CAMuHMdXP47kf1sSfx1NLpGb1eGsepVvMPQjVg9XzfFYWpwBaTQ@mail.gmail.com>
+References: <CAMuHMdXP47kf1sSfx1NLpGb1eGsepVvMPQjVg9XzfFYWpwBaTQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+X-Provags-ID: V03:K0:Bk/SzOPEXw+VTx/xmkLOrBJodz5XkXWwRe10a9NOf2/8etmcocO
+ 8QX14j4huoBR7o+7ZXsQKLN1lO4Y7hBEnFSI8PK5XeSeHGpMcg+O+cPh4CgFRwUDp5I3Vuk
+ kg1Z8MvVtLJC355lPRVZLHtwZ/HJ4O3DExIZ2l26z29kYrLK9eTmQmkKETjXFj7MdysCRza
+ 6DFr6DyCXYH+9NlqOnkPA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c191920f737a09a7252088f018f6747f0d2f484d
-Gitweb:     http://git.kernel.org/tip/c191920f737a09a7252088f018f6747f0d2f484d
-Author:     H. Peter Anvin <hpa@linux.intel.com>
-AuthorDate: Fri, 30 May 2014 17:03:22 -0700
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Sat, 31 May 2014 03:35:27 -0700
+Add a scrollback buffers for each VGA console. The benefit is that
+the scrollback history is not flushed when switching between consoles
+but is persistent.
+The buffers are allocated on demand when a new console is opened.
 
-x86/vdso, build: Make LE access macros clearer, host-safe
-
-Make it a little clearer what the littleendian access macros in
-vdso2c.[ch] actually do.  This way they can probably also be moved to
-a central location (e.g. tools/include) for the benefit of other host
-tools.
-
-We should avoid implementation namespace symbols when writing code
-that is compiling for the compiler host, so avoid names starting with
-double underscore or underscore-capital.
-
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Cc: Andy Lutomirski <luto@amacapital.net>
-Link: http://lkml.kernel.org/r/2cf258df123cb24bad63c274c8563c050547d99d.1401464755.git.luto@amacapital.net
+Signed-off-by: Manuel Schölling <manuel.schoelling@gmx.de>
 ---
- arch/x86/vdso/vdso2c.c | 16 ++++++-------
- arch/x86/vdso/vdso2c.h | 65 ++++++++++++++++++++++++++------------------------
- 2 files changed, 42 insertions(+), 39 deletions(-)
+ drivers/video/console/Kconfig  |   19 ++++-
+ drivers/video/console/vgacon.c |  159 +++++++++++++++++++++++++++-------------
+ 2 files changed, 124 insertions(+), 54 deletions(-)
 
-diff --git a/arch/x86/vdso/vdso2c.c b/arch/x86/vdso/vdso2c.c
-index de19ced..deabaf5 100644
---- a/arch/x86/vdso/vdso2c.c
-+++ b/arch/x86/vdso/vdso2c.c
-@@ -54,17 +54,17 @@ static void fail(const char *format, ...)
- /*
-  * Evil macros to do a little-endian read.
-  */
--#define __GET_TYPE(x, type, bits, ifnot)				\
-+#define GLE(x, bits, ifnot)						\
- 	__builtin_choose_expr(						\
--		__builtin_types_compatible_p(typeof(x), type),		\
--		le##bits##toh((x)), ifnot)
-+		(sizeof(x) == bits/8),					\
-+		(__typeof__(x))le##bits##toh(x), ifnot)
+diff --git a/drivers/video/console/Kconfig b/drivers/video/console/Kconfig
+index fe1cd01..05fdc2c 100644
+--- a/drivers/video/console/Kconfig
++++ b/drivers/video/console/Kconfig
+@@ -43,9 +43,22 @@ config VGACON_SOFT_SCROLLBACK_SIZE
+        range 1 1024
+        default "64"
+        help
+-         Enter the amount of System RAM to allocate for the scrollback
+-	 buffer.  Each 64KB will give you approximately 16 80x25
+-	 screenfuls of scrollback buffer
++	  Enter the amount of System RAM to allocate for scrollback
++	  buffers of VGA consoles. Each 64KB will give you approximately
++	  16 80x25 screenfuls of scrollback buffer.
++
++config VGACON_SOFT_SCROLLBACK_FOR_EACH_CONSOLE
++	bool "Persistent Scrollback History for each console"
++	depends on VGACON_SOFT_SCROLLBACK
++	default y
++	help
++	  Say Y here if for each VGA console a scrollback buffer should
++	  be allocated. The scrollback history will persist when switching
++	  between consoles. If you say N here, scrollback is only supported
++	  for the active VGA console and scrollback history will be flushed
++	  when switching between consoles.
++
++	  If you use a RAM-constrained system, say N here.
  
--extern void bad_get(uint64_t);
-+extern void bad_get_le(uint64_t);
-+#define LAST_LE(x)							\
-+	__builtin_choose_expr(sizeof(x) == 1, (x), bad_get_le(x))
+ config MDA_CONSOLE
+ 	depends on !M68K && !PARISC && ISA
+diff --git a/drivers/video/console/vgacon.c b/drivers/video/console/vgacon.c
+index 9d8feac..652131d 100644
+--- a/drivers/video/console/vgacon.c
++++ b/drivers/video/console/vgacon.c
+@@ -181,70 +181,126 @@ static inline void vga_set_mem_top(struct vc_data *c)
  
--#define GET(x)								\
--	__GET_TYPE((x), __u32, 32, __GET_TYPE((x), __u64, 64,		\
--	__GET_TYPE((x), __s32, 32, __GET_TYPE((x), __s64, 64,		\
--	__GET_TYPE((x), __u16, 16, bad_get(x))))))
-+#define GET_LE(x)							\
-+	GLE(x, 64, GLE(x, 32, GLE(x, 16, LAST_LE(x))))
+ #ifdef CONFIG_VGACON_SOFT_SCROLLBACK
+ /* software scrollback */
+-static void *vgacon_scrollback;
+-static int vgacon_scrollback_tail;
+-static int vgacon_scrollback_size;
+-static int vgacon_scrollback_rows;
+-static int vgacon_scrollback_cnt;
+-static int vgacon_scrollback_cur;
+-static int vgacon_scrollback_save;
+-static int vgacon_scrollback_restore;
+-
+-static void vgacon_scrollback_init(int pitch)
++struct vgacon_scrollback_info {
++	void *data;
++	int tail;
++	int size;
++	int rows;
++	int cnt;
++	int cur;
++	int save;
++	int restore;
++};
++static struct vgacon_scrollback_info *vgacon_scrollback_cur;
++#ifdef CONFIG_VGACON_SOFT_SCROLLBACK_FOR_EACH_CONSOLE
++static struct vgacon_scrollback_info vgacon_scrollbacks[MAX_NR_CONSOLES];
++#else
++static struct vgacon_scrollback_info vgacon_scrollbacks[1];
++#endif
++
++static void vgacon_scrollback_reset(size_t reset_size)
+ {
+-	int rows = CONFIG_VGACON_SOFT_SCROLLBACK_SIZE * 1024/pitch;
+-
+-	if (vgacon_scrollback) {
+-		vgacon_scrollback_cnt  = 0;
+-		vgacon_scrollback_tail = 0;
+-		vgacon_scrollback_cur  = 0;
+-		vgacon_scrollback_rows = rows - 1;
+-		vgacon_scrollback_size = rows * pitch;
++	if (vgacon_scrollback_cur->data && reset_size > 0)
++		memset(vgacon_scrollback_cur->data, 0, reset_size);
++
++	vgacon_scrollback_cur->cnt  = 0;
++	vgacon_scrollback_cur->tail = 0;
++	vgacon_scrollback_cur->cur  = 0;
++}
++
++static void vgacon_scrollback_init(int vc_num)
++{
++	int pitch = vga_video_num_columns * 2;
++	size_t size = CONFIG_VGACON_SOFT_SCROLLBACK_SIZE * 1024;
++	int rows = size/pitch;
++	void *data;
++
++	data = kcalloc(CONFIG_VGACON_SOFT_SCROLLBACK_SIZE, 1024, GFP_NOWAIT);
++	if (data) {
++		vgacon_scrollbacks[vc_num].data = data;
++		vgacon_scrollback_cur = &vgacon_scrollbacks[vc_num];
++
++		vgacon_scrollback_cur->rows = rows - 1;
++		vgacon_scrollback_cur->size = rows * pitch;
++
++		vgacon_scrollback_reset(0);
++	} else {
++		pr_warn("VGAcon: failed to allocate memory for scrollback. Trying to reuse previous buffer.\n");
++		/* leave vgacon_scrollback_cur untouched
++		   but reset its content */
++		vgacon_scrollback_reset(size);
+ 	}
+ }
  
- #define NSYMS (sizeof(required_syms) / sizeof(required_syms[0]))
++static void vgacon_switch_scrollback(int vc_num)
++{
++#ifdef CONFIG_VGACON_SOFT_SCROLLBACK_FOR_EACH_CONSOLE
++	if (!vgacon_scrollbacks[vc_num].data)
++		vgacon_scrollback_init(vc_num);
++	else
++		vgacon_scrollback_cur = &vgacon_scrollbacks[vc_num];
++#else
++	vc_num = 0;
++
++	if (!vgacon_scrollbacks[vc_num].data)
++		vgacon_scrollback_init(vc_num);
++	else {
++		size_t size = CONFIG_VGACON_SOFT_SCROLLBACK_SIZE * 1024;
++
++		vgacon_scrollback_reset(size);
++	}
++#endif
++}
++
+ static void vgacon_scrollback_startup(void)
+ {
+-	vgacon_scrollback = kcalloc(CONFIG_VGACON_SOFT_SCROLLBACK_SIZE, 1024, GFP_NOWAIT);
+-	vgacon_scrollback_init(vga_video_num_columns * 2);
++	int i;
++
++	for (i = 0; i < ARRAY_SIZE(vgacon_scrollbacks); ++i)
++		vgacon_scrollbacks[i].data = NULL;
++
++	vgacon_scrollback_cur = &vgacon_scrollbacks[0];
++	vgacon_scrollback_init(0);
+ }
  
-diff --git a/arch/x86/vdso/vdso2c.h b/arch/x86/vdso/vdso2c.h
-index f0475da..d1e99e1 100644
---- a/arch/x86/vdso/vdso2c.h
-+++ b/arch/x86/vdso/vdso2c.h
-@@ -18,27 +18,27 @@ static void GOFUNC(void *addr, size_t len, FILE *outfile, const char *name)
- 	const char *secstrings;
- 	uint64_t syms[NSYMS] = {};
+ static void vgacon_scrollback_update(struct vc_data *c, int t, int count)
+ {
+ 	void *p;
  
--	Elf_Phdr *pt = (Elf_Phdr *)(addr + GET(hdr->e_phoff));
-+	Elf_Phdr *pt = (Elf_Phdr *)(addr + GET_LE(hdr->e_phoff));
+-	if (!vgacon_scrollback_size || c->vc_num != fg_console)
++	if (!vgacon_scrollback_cur->data || !vgacon_scrollback_cur->size)
+ 		return;
  
- 	/* Walk the segment table. */
--	for (i = 0; i < GET(hdr->e_phnum); i++) {
--		if (GET(pt[i].p_type) == PT_LOAD) {
-+	for (i = 0; i < GET_LE(hdr->e_phnum); i++) {
-+		if (GET_LE(pt[i].p_type) == PT_LOAD) {
- 			if (found_load)
- 				fail("multiple PT_LOAD segs\n");
+ 	p = (void *) (c->vc_origin + t * c->vc_size_row);
  
--			if (GET(pt[i].p_offset) != 0 ||
--			    GET(pt[i].p_vaddr) != 0)
-+			if (GET_LE(pt[i].p_offset) != 0 ||
-+			    GET_LE(pt[i].p_vaddr) != 0)
- 				fail("PT_LOAD in wrong place\n");
+ 	while (count--) {
+-		scr_memcpyw(vgacon_scrollback + vgacon_scrollback_tail,
++		scr_memcpyw(vgacon_scrollback_cur->data +
++			    vgacon_scrollback_cur->tail,
+ 			    p, c->vc_size_row);
+-		vgacon_scrollback_cnt++;
++
++		vgacon_scrollback_cur->cnt++;
+ 		p += c->vc_size_row;
+-		vgacon_scrollback_tail += c->vc_size_row;
++		vgacon_scrollback_cur->tail += c->vc_size_row;
  
--			if (GET(pt[i].p_memsz) != GET(pt[i].p_filesz))
-+			if (GET_LE(pt[i].p_memsz) != GET_LE(pt[i].p_filesz))
- 				fail("cannot handle memsz != filesz\n");
+-		if (vgacon_scrollback_tail >= vgacon_scrollback_size)
+-			vgacon_scrollback_tail = 0;
++		if (vgacon_scrollback_cur->tail >= vgacon_scrollback_cur->size)
++			vgacon_scrollback_cur->tail = 0;
  
--			load_size = GET(pt[i].p_memsz);
-+			load_size = GET_LE(pt[i].p_memsz);
- 			found_load = 1;
--		} else if (GET(pt[i].p_type) == PT_DYNAMIC) {
--			dyn = addr + GET(pt[i].p_offset);
--			dyn_end = addr + GET(pt[i].p_offset) +
--				GET(pt[i].p_memsz);
-+		} else if (GET_LE(pt[i].p_type) == PT_DYNAMIC) {
-+			dyn = addr + GET_LE(pt[i].p_offset);
-+			dyn_end = addr + GET_LE(pt[i].p_offset) +
-+				GET_LE(pt[i].p_memsz);
+-		if (vgacon_scrollback_cnt > vgacon_scrollback_rows)
+-			vgacon_scrollback_cnt = vgacon_scrollback_rows;
++		if (vgacon_scrollback_cur->cnt > vgacon_scrollback_cur->rows)
++			vgacon_scrollback_cur->cnt = vgacon_scrollback_cur->rows;
+ 
+-		vgacon_scrollback_cur = vgacon_scrollback_cnt;
++		vgacon_scrollback_cur->cur = vgacon_scrollback_cur->cnt;
+ 	}
+ }
+ 
+ static void vgacon_restore_screen(struct vc_data *c)
+ {
+-	vgacon_scrollback_save = 0;
++	vgacon_scrollback_cur->save = 0;
+ 
+-	if (!vga_is_gfx && !vgacon_scrollback_restore) {
++	if (!vga_is_gfx && !vgacon_scrollback_cur->restore) {
+ 		scr_memcpyw((u16 *) c->vc_origin, (u16 *) c->vc_screenbuf,
+ 			    c->vc_screenbuf_size > vga_vram_size ?
+ 			    vga_vram_size : c->vc_screenbuf_size);
+-		vgacon_scrollback_restore = 1;
+-		vgacon_scrollback_cur = vgacon_scrollback_cnt;
++		vgacon_scrollback_cur->restore = 1;
++		vgacon_scrollback_cur->cur = vgacon_scrollback_cur->cnt;
+ 	}
+ }
+ 
+@@ -258,41 +314,41 @@ static int vgacon_scrolldelta(struct vc_data *c, int lines)
+ 		return 1;
+ 	}
+ 
+-	if (!vgacon_scrollback)
++	if (!vgacon_scrollback_cur->data)
+ 		return 1;
+ 
+-	if (!vgacon_scrollback_save) {
++	if (!vgacon_scrollback_cur->save) {
+ 		vgacon_cursor(c, CM_ERASE);
+ 		vgacon_save_screen(c);
+-		vgacon_scrollback_save = 1;
++		vgacon_scrollback_cur->save = 1;
+ 	}
+ 
+-	vgacon_scrollback_restore = 0;
+-	start = vgacon_scrollback_cur + lines;
++	vgacon_scrollback_cur->restore = 0;
++	start = vgacon_scrollback_cur->cur + lines;
+ 	end = start + abs(lines);
+ 
+ 	if (start < 0)
+ 		start = 0;
+ 
+-	if (start > vgacon_scrollback_cnt)
+-		start = vgacon_scrollback_cnt;
++	if (start > vgacon_scrollback_cur->cnt)
++		start = vgacon_scrollback_cur->cnt;
+ 
+ 	if (end < 0)
+ 		end = 0;
+ 
+-	if (end > vgacon_scrollback_cnt)
+-		end = vgacon_scrollback_cnt;
++	if (end > vgacon_scrollback_cur->cnt)
++		end = vgacon_scrollback_cur->cnt;
+ 
+-	vgacon_scrollback_cur = start;
++	vgacon_scrollback_cur->cur = start;
+ 	count = end - start;
+-	soff = vgacon_scrollback_tail - ((vgacon_scrollback_cnt - end) *
+-					 c->vc_size_row);
++	soff = vgacon_scrollback_cur->tail -
++		((vgacon_scrollback_cur->cnt - end) * c->vc_size_row);
+ 	soff -= count * c->vc_size_row;
+ 
+ 	if (soff < 0)
+-		soff += vgacon_scrollback_size;
++		soff += vgacon_scrollback_cur->size;
+ 
+-	count = vgacon_scrollback_cnt - start;
++	count = vgacon_scrollback_cur->cnt - start;
+ 
+ 	if (count > c->vc_rows)
+ 		count = c->vc_rows;
+@@ -306,13 +362,13 @@ static int vgacon_scrolldelta(struct vc_data *c, int lines)
+ 
+ 		count *= c->vc_size_row;
+ 		/* how much memory to end of buffer left? */
+-		copysize = min(count, vgacon_scrollback_size - soff);
+-		scr_memcpyw(d, vgacon_scrollback + soff, copysize);
++		copysize = min(count, vgacon_scrollback_cur->size - soff);
++		scr_memcpyw(d, vgacon_scrollback_cur->data + soff, copysize);
+ 		d += copysize;
+ 		count -= copysize;
+ 
+ 		if (count) {
+-			scr_memcpyw(d, vgacon_scrollback, count);
++			scr_memcpyw(d, vgacon_scrollback_cur->data, count);
+ 			d += count;
  		}
- 	}
- 	if (!found_load)
-@@ -46,48 +46,51 @@ static void GOFUNC(void *addr, size_t len, FILE *outfile, const char *name)
- 	data_size = (load_size + 4095) / 4096 * 4096;
  
- 	/* Walk the dynamic table */
--	for (i = 0; dyn + i < dyn_end && GET(dyn[i].d_tag) != DT_NULL; i++) {
--		typeof(dyn[i].d_tag) tag = GET(dyn[i].d_tag);
-+	for (i = 0; dyn + i < dyn_end &&
-+		     GET_LE(dyn[i].d_tag) != DT_NULL; i++) {
-+		typeof(dyn[i].d_tag) tag = GET_LE(dyn[i].d_tag);
- 		if (tag == DT_REL || tag == DT_RELSZ ||
- 		    tag == DT_RELENT || tag == DT_TEXTREL)
- 			fail("vdso image contains dynamic relocations\n");
+@@ -327,6 +383,7 @@ static int vgacon_scrolldelta(struct vc_data *c, int lines)
+ #define vgacon_scrollback_startup(...) do { } while (0)
+ #define vgacon_scrollback_init(...)    do { } while (0)
+ #define vgacon_scrollback_update(...)  do { } while (0)
++#define vgacon_switch_scrollback(...)  do { } while (0)
+ 
+ static void vgacon_restore_screen(struct vc_data *c)
+ {
+@@ -842,7 +899,7 @@ static int vgacon_switch(struct vc_data *c)
+ 			vgacon_doresize(c, c->vc_cols, c->vc_rows);
  	}
  
- 	/* Walk the section table */
--	secstrings_hdr = addr + GET(hdr->e_shoff) +
--		GET(hdr->e_shentsize)*GET(hdr->e_shstrndx);
--	secstrings = addr + GET(secstrings_hdr->sh_offset);
--	for (i = 0; i < GET(hdr->e_shnum); i++) {
--		Elf_Shdr *sh = addr + GET(hdr->e_shoff) +
--			GET(hdr->e_shentsize) * i;
--		if (GET(sh->sh_type) == SHT_SYMTAB)
-+	secstrings_hdr = addr + GET_LE(hdr->e_shoff) +
-+		GET_LE(hdr->e_shentsize)*GET_LE(hdr->e_shstrndx);
-+	secstrings = addr + GET_LE(secstrings_hdr->sh_offset);
-+	for (i = 0; i < GET_LE(hdr->e_shnum); i++) {
-+		Elf_Shdr *sh = addr + GET_LE(hdr->e_shoff) +
-+			GET_LE(hdr->e_shentsize) * i;
-+		if (GET_LE(sh->sh_type) == SHT_SYMTAB)
- 			symtab_hdr = sh;
+-	vgacon_scrollback_init(c->vc_size_row);
++	vgacon_switch_scrollback(c->vc_num);
+ 	return 0;		/* Redrawing not needed */
+ }
  
--		if (!strcmp(secstrings + GET(sh->sh_name), ".altinstructions"))
-+		if (!strcmp(secstrings + GET_LE(sh->sh_name),
-+			    ".altinstructions"))
- 			alt_sec = sh;
- 	}
- 
- 	if (!symtab_hdr)
- 		fail("no symbol table\n");
- 
--	strtab_hdr = addr + GET(hdr->e_shoff) +
--		GET(hdr->e_shentsize) * GET(symtab_hdr->sh_link);
-+	strtab_hdr = addr + GET_LE(hdr->e_shoff) +
-+		GET_LE(hdr->e_shentsize) * GET_LE(symtab_hdr->sh_link);
- 
- 	/* Walk the symbol table */
--	for (i = 0; i < GET(symtab_hdr->sh_size) / GET(symtab_hdr->sh_entsize);
-+	for (i = 0;
-+	     i < GET_LE(symtab_hdr->sh_size) / GET_LE(symtab_hdr->sh_entsize);
- 	     i++) {
- 		int k;
--		Elf_Sym *sym = addr + GET(symtab_hdr->sh_offset) +
--			GET(symtab_hdr->sh_entsize) * i;
--		const char *name = addr + GET(strtab_hdr->sh_offset) +
--			GET(sym->st_name);
-+		Elf_Sym *sym = addr + GET_LE(symtab_hdr->sh_offset) +
-+			GET_LE(symtab_hdr->sh_entsize) * i;
-+		const char *name = addr + GET_LE(strtab_hdr->sh_offset) +
-+			GET_LE(sym->st_name);
- 		for (k = 0; k < NSYMS; k++) {
- 			if (!strcmp(name, required_syms[k])) {
- 				if (syms[k]) {
- 					fail("duplicate symbol %s\n",
- 					     required_syms[k]);
- 				}
--				syms[k] = GET(sym->st_value);
-+				syms[k] = GET_LE(sym->st_value);
- 			}
- 		}
- 	}
-@@ -147,9 +150,9 @@ static void GOFUNC(void *addr, size_t len, FILE *outfile, const char *name)
- 	fprintf(outfile, "\t},\n");
- 	if (alt_sec) {
- 		fprintf(outfile, "\t.alt = %lu,\n",
--			(unsigned long)GET(alt_sec->sh_offset));
-+			(unsigned long)GET_LE(alt_sec->sh_offset));
- 		fprintf(outfile, "\t.alt_len = %lu,\n",
--			(unsigned long)GET(alt_sec->sh_size));
-+			(unsigned long)GET_LE(alt_sec->sh_size));
- 	}
- 	for (i = 0; i < NSYMS; i++) {
- 		if (syms[i])
+-- 
+1.7.10.4
+
