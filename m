@@ -1,89 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753147AbaEaF1S (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 May 2014 01:27:18 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:41001 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752437AbaEaF1K (ORCPT
+	id S1752320AbaEaF1G (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 May 2014 01:27:06 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:45058 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750734AbaEaF1E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 May 2014 01:27:10 -0400
-Message-ID: <538966B2.9030007@gmail.com>
-Date: Sat, 31 May 2014 07:20:50 +0200
+	Sat, 31 May 2014 01:27:04 -0400
+Message-ID: <53896823.1060308@gmail.com>
+Date: Sat, 31 May 2014 07:26:59 +0200
 From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Manfred Spraul <manfred@colorfullife.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Rafael Aquini <aquini@redhat.com>, Rik van Riel <riel@redhat.com>
-CC: mtk.manpages@gmail.com, LKML <linux-kernel@vger.kernel.org>, 1vier1@web.de
-Subject: Re: [PATCH 0/3] ipc: Further updates to sysv/mqueue limits
-References: <1401389200-6758-1-git-send-email-manfred@colorfullife.com>
-In-Reply-To: <1401389200-6758-1-git-send-email-manfred@colorfullife.com>
+To: Heinrich Schuchardt <xypron.glpk@gmx.de>,
+        Jeff Smith <jsmith.lkml@gmail.com>
+CC: mtk.manpages@gmail.com, linux-kernel@vger.kernel.org,
+        linux-man <linux-man@vger.kernel.org>,
+        John McCutchan <john@johnmccutchan.com>, Robert Love <rlove@rlove.org>,
+        Eric Paris <eparis@parisplace.org>, Jan Kara <jack@suse.cz>
+Subject: Re: inotify_rm_watch() user-space safety requirements?
+References: <CAAih0NjG4gC-7fkD5vOvF0CQks+DhqVZLeycsju-8RMVP6dbBw@mail.gmail.com> <5384E83B.1030209@gmx.de>
+In-Reply-To: <5384E83B.1030209@gmx.de>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/29/2014 08:46 PM, Manfred Spraul wrote:
-> Hi all,
-> 
-> a) If we increase SHMMAX/SHMALL, then it makes sense to
->    increase MSGMNI, too.
->    And: This allows to remove the automatic scaling (~300 lines)
-> 
-> b) We can also increase SEMMSL, SEMMNI and SEMOPM
-> 
-> c) I think it would make more sense if a namespace starts with the
->    limits from it's parent:
->    If an admin set the limits, then he probably wants that these limits also
->    apply for a new child namespace.
+Hi Heinrich,
 
-Hi Manfred,
+On 05/27/2014 09:32 PM, Heinrich Schuchardt wrote:
+> On 27.05.2014 19:25, Jeff Smith wrote:
+>> inotify's behavior concerning events from removed watches (they do
+>> happen) and watch descriptor reuse (beyond my knowledge) is currently
+>> undocumented.
+>>
+>> Although it mimics a standard multiplexing interface in most regards,
+>> writing a robust user-space handler is comparatively more complex due
+>> to the atypical delivery of "stale" wd events preceding an IN_IGNORE
+>> event and a lack of guarantees about how quickly a wd can be reused
+>> via inotify_add_watch(). Not being familiar with inotify/fsnotify
+>> internals, it's not trivially obvious to me how the fsnotify_group
+>> management is being done. Up to the present, I've maintained queues of
+>> "dead" wd wrappers (or at least a counter) to filter stale events, but
+>> I am clueless whether or not this is overkill.
+>>
+>> If removed descriptors are reserved until the IN_IGNORE event is
+>> drained from the read queue, could that be formally guaranteed? If
+>> it's not, is it functionality that could ever reasonably be expected
+>> to be added, short of some other form of new (optional?)
+>> queue-filter-on-rm functionality? It's my experience that the
+>> asynchronous handling of watch removals is a cost that seldom serves
+>> much user benefit.
+>>
+>  > Regards,
+>  > Jeff
+> 
+> Hello Jeff,
+> 
+> I tried to dive a bit into the code. This is what I understand:
+> 
+> Function inotify_ignored_and_remove_idr is called after the mark has 
+> been removed. This function puts an IN_IGNORED event onto the inotify 
+> queue and removes the watch descriptor from the list of used watch 
+> descriptors using function idr_remove.
+> 
+> With a test program I could receive the IN_IGNORED event. This behavior 
+> is currently not documented in the manpages (inotify.7 and 
+> inotify_rm_watch.2).
 
-This these patches change the API/ABI, could you CC linux-api [1] for future
-iterations.
+I'm a little unclear here... What behavior is not documented?
+
+> When inotify_add_watch is called it uses function idr_alloc_cyclic to 
+> assign a watch descriptor ID. This function starts looking for an unused 
+> id starting with the id after the last assigned watch descriptor.
+> 
+> This implies that in most cases inotify_add_watch will return a watch 
+> descriptor different to the one released by a prior call to 
+> inotify_rm_watch. But there is no guarantee.
+> 
+> I consider this a bug.
+> 
+> I CCed the maintainers of the inotify interface hoping that they can 
+> provide a better solution.
+> Until such a solution is provided I suggest you use the following 
+> workaround. After calling inotify_rm_watch read from the inotify file 
+> descriptor until you reach the matching IN_IGNORED event.
+> 
+> Only thereafter you can safely call inotify_add_watch again.
+
+As I wrote elsewhere (http://marc.info/?l=linux-man&m=140145559605117&w=2), 
+it's not clear to me if this is really anything more than a theoretical 
+problem. Quoting my earlier text:
+
+Background is bugs https://bugzilla.kernel.org/show_bug.cgi?id=76851
+and https://bugzilla.kernel.org/show_bug.cgi?id=77111 . The point is:
+
+1. When an inotify watch descriptor is removed, pending unread 
+   events remain pending.
+2. When allocating a new watch descriptor, a past WD may 
+   be recycled.
+3. In theory, it could happen that events left over at 1 could
+   be interpreted as though they belonged to the filesystem
+   object watch in step 2.
+
+But, in order to trigger this bug you need to
+
+0. Remove your watch descriptor (wd1),
+1. Leave some unread events for wd1 on the queue. and in the meantime,
+2. Cycle through INT_MAX watch descriptors until you reuse wd1.
+
+Unless I've missed something, the chances of that happening are 
+pretty remote. (On the other hand, user-space applications can sometimes
+be creatively zany ;_).)
 
 Cheers,
 
 Michael
-
-[1] https://www.kernel.org/doc/man-pages/linux-api-ml.html
-
-
-> All patches are RFC - they compile, but that's it.
-> 
-> TODO:
-> - check if the sysv sem limits are sane.
->   Especially the SEMOPM - if real users exist that pass > 1k ops, then
->   switch from kmalloc to vmalloc.
-> 
->   @the Redhat developers: Do you have any idea where this "often
->   recommended" comes from?
->   https://access.redhat.com/site/documentation/en-US/Red_Hat_Enterprise_Linux/5/html/Tuning_and_Optimizing_Red_Hat_Enterprise_Linux_for_Oracle_9i_and_10g_Databases/sect-Oracle_9i_and_10g_Tuning_Guide-Setting_Semaphores-The_SEMOPM_Parameter.html
-> 
-> - copy Davidlohrs explanation for the sysv shm limits to sysv msg and
->   sysv sem.
-> 
-> - check if we should also increase the limits for posix mqueue
-> 
-> - decide if it would make sense to increase IPCMNI:
-> 
->   Right now, it is 32768. This means that after 65536 pairs of
->   semget()/semctl(IPC_RMID), semget() will return the same identifier
->   again - and a semop(old_id) won't return -EINVAL, instead it will
->   access the "new" array, which is probably now what the caller
->   intended to do.
-> 
->   The split is arbitrary - we could also split it 1048576/2048 or any
->   other split we want.
-> 
-> - test everything.
-> 
-> --
-> 	Manfred
-> 
-
 
 -- 
 Michael Kerrisk
