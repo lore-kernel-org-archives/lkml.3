@@ -1,65 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755788AbaEaUTO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 May 2014 16:19:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47539 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755333AbaEaUTN (ORCPT
+	id S1756273AbaEaUYO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 May 2014 16:24:14 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:43554 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751558AbaEaUYM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 May 2014 16:19:13 -0400
-Date: Sat, 31 May 2014 13:19:11 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Tair Rzayev <tair.rzayev@gmail.com>
-Cc: swetland@google.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: android: binder.c: Use more appropriate
- functions for euid retrieval
-Message-ID: <20140531201911.GB3082@kroah.com>
-References: <538A30E6.6010403@gmail.com>
- <20140531195205.GA14077@kroah.com>
- <538A35A0.1080006@gmail.com>
- <20140531201834.GA3082@kroah.com>
+	Sat, 31 May 2014 16:24:12 -0400
+Date: Sat, 31 May 2014 23:23:51 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Peter Senna Tschudin <peter.senna@gmail.com>
+Cc: Brett Rudley <brudley@broadcom.com>, kernel-janitors@vger.kernel.org,
+        Arend van Spriel <arend@broadcom.com>,
+        "Franky (Zhenhui) Lin" <frankyl@broadcom.com>,
+        Hante Meuleman <meuleman@broadcom.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, brcm80211-dev-list@broadcom.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 6/11] net: wireless: Remove useless return variables
+Message-ID: <20140531202351.GN15585@mwanda>
+References: <1401542051-3174-6-git-send-email-peter.senna@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140531201834.GA3082@kroah.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1401542051-3174-6-git-send-email-peter.senna@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 31, 2014 at 01:18:34PM -0700, Greg KH wrote:
-> On Sat, May 31, 2014 at 11:03:44PM +0300, Tair Rzayev wrote:
-> > 
-> > 
-> > On 2014.05.31. 22:52, Greg KH wrote:
-> > > What kernel tree did you make this against?  It doesn't seem to match up
-> > > with what is in my staging-next branch to merge with Linus for the next
-> > > release, so please work against that one.
-> > 
-> > Made against staging-next branch of your linux-next staging tree.
-> 
-> Hm, it doesn't apply there:
-> 
-> checking file drivers/staging/android/binder.c
-> Reversed (or previously applied) patch detected!  Assume -R? [n]
-> Apply anyway? [n]
-> Skipping patch.
-> 4 out of 4 hunks ignored
-> 
-> Are you sure you got the right branch?
-> 
-> > > Oh, and I think this is already been done, although in a bit different
-> > > way there, please check to make sure it is correct.
-> > 
-> > Yes, I have noticed the changes after I have made the patch but I
-> > thought mine are a bit cleaner so I have rebased the patch against the
-> > changes that are already applied.
-> 
-> Something went wrong when you made this :(
+On Sat, May 31, 2014 at 10:14:06AM -0300, Peter Senna Tschudin wrote:
+> diff --git a/drivers/net/wireless/brcm80211/brcmsmac/phy/phy_cmn.c b/drivers/net/wireless/brcm80211/brcmsmac/phy/phy_cmn.c
+> index b0fd807..57ecc05 100644
+> --- a/drivers/net/wireless/brcm80211/brcmsmac/phy/phy_cmn.c
+> +++ b/drivers/net/wireless/brcm80211/brcmsmac/phy/phy_cmn.c
+> @@ -1538,11 +1538,7 @@ static s8
+>  wlc_user_txpwr_antport_to_rfport(struct brcms_phy *pi, uint chan, u32 band,
+>  				 u8 rate)
+>  {
+> -	s8 offset = 0;
+> -
+> -	if (!pi->user_txpwr_at_rfport)
+> -		return offset;
+> -	return offset;
+> +	return 0;
+>  }
 
-Oh crap, _I_ was looking at the wrong branch here, nevermind, this
-applies just fine.
+The original code looks buggy.  I wonder what it was supposed to do?
 
-Sorry for the noise...
+regards,
+dan carpenter
 
-greg k-h
