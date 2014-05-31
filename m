@@ -1,69 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752086AbaEaFQm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 May 2014 01:16:42 -0400
-Received: from mail-qg0-f41.google.com ([209.85.192.41]:38969 "EHLO
-	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750767AbaEaFQk (ORCPT
+	id S1753147AbaEaF1S (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 May 2014 01:27:18 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:41001 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752437AbaEaF1K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 May 2014 01:16:40 -0400
-Date: Sat, 31 May 2014 01:16:35 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Paolo Valente <paolo.valente@unimore.it>, Li Zefan <lizefan@huawei.com>,
-        Fabio Checconi <fchecconi@gmail.com>,
-        Arianna Avanzini <avanzini.arianna@gmail.com>,
-        Paolo Valente <posta_paolo@yahoo.it>, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org
-Subject: Re: [PATCH RFC - TAKE TWO - 00/12] New version of the BFQ I/O
- Scheduler
-Message-ID: <20140531051635.GA19925@mtj.dyndns.org>
-References: <20140528221929.GG1419@htj.dyndns.org>
- <1401354343-5527-1-git-send-email-paolo.valente@unimore.it>
- <20140530160712.GG24871@htj.dyndns.org>
- <538926F6.7080409@kernel.dk>
+	Sat, 31 May 2014 01:27:10 -0400
+Message-ID: <538966B2.9030007@gmail.com>
+Date: Sat, 31 May 2014 07:20:50 +0200
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <538926F6.7080409@kernel.dk>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Manfred Spraul <manfred@colorfullife.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Rafael Aquini <aquini@redhat.com>, Rik van Riel <riel@redhat.com>
+CC: mtk.manpages@gmail.com, LKML <linux-kernel@vger.kernel.org>, 1vier1@web.de
+Subject: Re: [PATCH 0/3] ipc: Further updates to sysv/mqueue limits
+References: <1401389200-6758-1-git-send-email-manfred@colorfullife.com>
+In-Reply-To: <1401389200-6758-1-git-send-email-manfred@colorfullife.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Jens.
+On 05/29/2014 08:46 PM, Manfred Spraul wrote:
+> Hi all,
+> 
+> a) If we increase SHMMAX/SHMALL, then it makes sense to
+>    increase MSGMNI, too.
+>    And: This allows to remove the automatic scaling (~300 lines)
+> 
+> b) We can also increase SEMMSL, SEMMNI and SEMOPM
+> 
+> c) I think it would make more sense if a namespace starts with the
+>    limits from it's parent:
+>    If an admin set the limits, then he probably wants that these limits also
+>    apply for a new child namespace.
 
-On Fri, May 30, 2014 at 06:48:54PM -0600, Jens Axboe wrote:
-> What I really like about the implementation is, as Tejun highlights, that
-> the algorithm is detailed and characterized. Nobody ever wrote any detailed
-> documentation on CFQ - I think the closest is a talk I gave at LCA in 2007
-> or so. That said, the devil is _always_ in the details when it comes to nice
-> algorithms. When theory meets practice, then the little tweaks and tunings
-> required to not drop 10% there or 20% here is when it gets ugly. And that's
-> where CFQ has the history going for it, at least. Which is another reason
+Hi Manfred,
 
-That's the thing I like about the new paper.  It looks like the
-original BFQ was the naive ideal implementation but the new paper
-basically takes most, if not all, heuristics implemented in cfq,
-properly characterizes them and applies the improved versions.  The
-end result, AFAICS, really is an evolution of cfq with the core
-round-robin + preemption scheduler replaced by something a lot firmer.
-It doesn't really lose much of what cfq has accumulated over time.
+This these patches change the API/ABI, could you CC linux-api [1] for future
+iterations.
 
-> for turning patch #2 into a series of changes for CFQ instead. We need to
-> end up with something where we can potentially bisect our way down to
-> whatever caused any given regression. The worst possible situation is "CFQ
-> works fine for this workload, but BFQ does not" or vice versa. Or hangs, or
-> whatever it might be.
+Cheers,
 
-It's likely that there will be some workloads out there which may be
-affected adversely, which is true for any change really but with both
-the core scheduling and heuristics properly characterized at least
-finding a reasonable trade-off should be much less of a crapshoot and
-the expected benefits seem to easily outweigh the risks as long as we
-can properly sequence the changes.
+Michael
 
-Thanks.
+[1] https://www.kernel.org/doc/man-pages/linux-api-ml.html
+
+
+> All patches are RFC - they compile, but that's it.
+> 
+> TODO:
+> - check if the sysv sem limits are sane.
+>   Especially the SEMOPM - if real users exist that pass > 1k ops, then
+>   switch from kmalloc to vmalloc.
+> 
+>   @the Redhat developers: Do you have any idea where this "often
+>   recommended" comes from?
+>   https://access.redhat.com/site/documentation/en-US/Red_Hat_Enterprise_Linux/5/html/Tuning_and_Optimizing_Red_Hat_Enterprise_Linux_for_Oracle_9i_and_10g_Databases/sect-Oracle_9i_and_10g_Tuning_Guide-Setting_Semaphores-The_SEMOPM_Parameter.html
+> 
+> - copy Davidlohrs explanation for the sysv shm limits to sysv msg and
+>   sysv sem.
+> 
+> - check if we should also increase the limits for posix mqueue
+> 
+> - decide if it would make sense to increase IPCMNI:
+> 
+>   Right now, it is 32768. This means that after 65536 pairs of
+>   semget()/semctl(IPC_RMID), semget() will return the same identifier
+>   again - and a semop(old_id) won't return -EINVAL, instead it will
+>   access the "new" array, which is probably now what the caller
+>   intended to do.
+> 
+>   The split is arbitrary - we could also split it 1048576/2048 or any
+>   other split we want.
+> 
+> - test everything.
+> 
+> --
+> 	Manfred
+> 
+
 
 -- 
-tejun
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Linux/UNIX System Programming Training: http://man7.org/training/
