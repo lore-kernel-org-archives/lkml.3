@@ -1,79 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751867AbaEaPIG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 May 2014 11:08:06 -0400
-Received: from mout.gmx.net ([212.227.17.22]:62189 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751514AbaEaPIE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 May 2014 11:08:04 -0400
-From: =?UTF-8?q?Manuel=20Sch=C3=B6lling?= <manuel.schoelling@gmx.de>
-To: kevin.curtis@farsite.co.uk
-Cc: davem@davemloft.net, joe@perches.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        =?UTF-8?q?Manuel=20Sch=C3=B6lling?= <manuel.schoelling@gmx.de>
-Subject: [PATCH] wan: Use usleep_range()
-Date: Sat, 31 May 2014 17:07:51 +0200
-Message-Id: <1401548871-12352-1-git-send-email-manuel.schoelling@gmx.de>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <E603DC592C92B54A89CEF6B0919A0B1CAFDE223C6D@SOLO.hq.farsitecommunications.com>
-References: <E603DC592C92B54A89CEF6B0919A0B1CAFDE223C6D@SOLO.hq.farsitecommunications.com>
+	id S1751660AbaEaPLK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 May 2014 11:11:10 -0400
+Received: from mout.kundenserver.de ([212.227.17.10]:54438 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750752AbaEaPLI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 31 May 2014 11:11:08 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        joseph@codesourcery.com, john.stultz@linaro.org, hch@infradead.org,
+        tglx@linutronix.de, geert@linux-m68k.org, lftan@altera.com,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [RFC 02/32] uapi: add struct __kernel_timespec{32,64}
+Date: Sat, 31 May 2014 17:09:25 +0200
+Message-ID: <5129309.tUSSHZWN3t@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <5388E7A5.90308@zytor.com>
+References: <1401480116-1973111-1-git-send-email-arnd@arndb.de> <1401480116-1973111-3-git-send-email-arnd@arndb.de> <5388E7A5.90308@zytor.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Provags-ID: V03:K0:ge0ulzAcUguwdAHtplv7cYp4l1Uiyf6xakEXmMIOcjGT6R5LLeC
- Xio/g7+QsC0YV5FkGVNqkiZfNEsvjoqo87fhMuhNSXi73NHFQ/xgQfQ0e6gPUof3uw5AqGb
- JSoWl7eTBh5uq6rGWOYha17Eii0BUHCwP/ft66U24ybVhbij+b1jfCn5yQan8Etd1GdPKPN
- 269+rE9bNJntGd2HsT0kQ==
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:PTLxkFYwmS63YcQxAKRXu9YlCWQF+Fp7flG4ajwRAJN
+ fOvLz8QM4SGDz6Ox1e0QxGJ5CDJWv6hjDXgnpRuSsey2dgNJAe
+ IBbkwGqkpwp3fln5QL4oASr1PuWOxhSQgnXW81diFHOdcntTBc
+ kad28T44JlUzoTqyLn+K5r3DVOrwhjs6Tji3QjHrgXAzNyt5Fe
+ aG7eV6l5FVQL6JZ0kwXm79AVbDQh5R0wwethO1hq1GzU7PzAmr
+ meiIVHvpmfUHnwcOGiErzOnY1FoY2Di0109fJCdDmNoAYOthlr
+ M/xpsW0naKJBgX34Z5dtB6/33FVy/NgOSQK4kwOCl+vod9nG92
+ /mFOV6oQbtTCB5hAMjfQ=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instead of using a jiffies hack we can use the standard api for delays.
+On Friday 30 May 2014 13:18:45 H. Peter Anvin wrote:
+> On 05/30/2014 01:01 PM, Arnd Bergmann wrote:
+> > We cannot use time_t or any derived structures beyond the year
+> > 2038 in interfaces between kernel and user space, on 32-bit
+> > machines.
+> > 
+> > This is my suggestion for how to migrate syscall and ioctl
+> > interfaces: We completely phase out time_t, timeval and timespec
+> > from the uapi header files and replace them with types that are
+> > either explicitly safe (__kernel_timespec64), or explicitly
+> > unsafe (e.g. __kernel_timespec32). For each unsafe interface,
+> > there needs to be a safe replacement interface.
+> > 
+> 
+> This gets really messy for structures where this is ABI-dependent.  I'm
+> not sure this is a net win.
 
-Signed-off-by: Manuel Schölling <manuel.schoelling@gmx.de>
----
- drivers/net/wan/farsync.c |   10 +++-------
- 1 file changed, 3 insertions(+), 7 deletions(-)
+We could have an extra '__kernel_oldtimespec' type that we can
+use for all ABIs that are today defined in terms of timespec.
 
-diff --git a/drivers/net/wan/farsync.c b/drivers/net/wan/farsync.c
-index bcfff0d..02f6d1c 100644
---- a/drivers/net/wan/farsync.c
-+++ b/drivers/net/wan/farsync.c
-@@ -26,6 +26,7 @@
- #include <linux/ioport.h>
- #include <linux/init.h>
- #include <linux/interrupt.h>
-+#include <linux/delay.h>
- #include <linux/if.h>
- #include <linux/hdlc.h>
- #include <asm/io.h>
-@@ -678,7 +679,6 @@ static inline void
- fst_cpureset(struct fst_card_info *card)
- {
- 	unsigned char interrupt_line_register;
--	unsigned long j = jiffies + 1;
- 	unsigned int regval;
- 
- 	if (card->family == FST_FAMILY_TXU) {
-@@ -696,16 +696,12 @@ fst_cpureset(struct fst_card_info *card)
- 		/*
- 		 * We are delaying here to allow the 9054 to reset itself
- 		 */
--		j = jiffies + 1;
--		while (jiffies < j)
--			/* Do nothing */ ;
-+		usleep_range(10, 20);
- 		outw(0x240f, card->pci_conf + CNTRL_9054 + 2);
- 		/*
- 		 * We are delaying here to allow the 9054 to reload its eeprom
- 		 */
--		j = jiffies + 1;
--		while (jiffies < j)
--			/* Do nothing */ ;
-+		usleep_range(10, 20);
- 		outw(0x040f, card->pci_conf + CNTRL_9054 + 2);
- 
- 		if (pci_write_config_byte
--- 
-1.7.10.4
+What I was mostly trying to avoid here is leaving any 'struct timespec'
+in header files, because glibc may define that type differently
+depending on a __TIME_BITS macro. This is more of a problem for
+ioctls than for system calls.
 
+> > +/*
+> > + * __kernel_timespec64 is the general type to be used for
+> > + * new user space interfaces passing a time argument.
+> > + * 64-bit nanoseconds is a bit silly, but the advantage is
+> > + * that it is compatible with the native 'struct timespec'
+> > + * on 64-bit user space. This simplifies the compat code.
+> > + */
+> > +struct __kernel_timespec64 {
+> > +	long long tv_sec;
+> > +	long long tv_nsec;
+> > +};
+> 
+> So it seems that it is not just POSIX that is drain bramaged with this,
+> but the "long" type for tv_nsec idiocy has made it into the C11
+> standard.  This unfortunately means that now there are two standards
+> bodies involved, at least one of which moves very slowly.
+
+My feeling is that our best hope is to completely isolate the kernel
+interfaces from what user space wants to have as time_t. glibc for
+instance may have a different idea about standards compliance than
+android or klibc.
+
+> This makes me wonder if we don't need to deal with the problem in the
+> case of 32-bit ABIs with 64-bit time_t.  The logical thing seems to be
+> to EITHER:
+> 
+> a. ALWAYS ignore the upper 32 bits of tv_nsec when read from user space,
+>    but always set them to zero, or
+> b. Only ignore the upper 32 bits of tv_nsec when we are known to come
+>    from a 32-bit ABI context, but still always return zero.  These bits
+>    are already only used for validity checking.
+> 
+>    This most likely introduces a whole lot of new tests in deep paths,
+>    although we probably can centralize this in a single function, which
+>    otherwise ends up looking a lot like compat_get_timespec().
+> 
+> Getting rid of struct timespec on the kernel/user boundary is probably
+> not really feasible.
+
+My approach was based on the discussion with Joseph, who would like glibc
+to support both 32 and 64 bit time_t using the same libc binary and 
+versioned symbols. I don't see how that could work when you build a
+user space program that sees a timespec in kernel headers and tries
+to pass that into a non-translated kernel interface (e.g. ioctl) but
+use the same timespec for a glibc-provided function like gettimeofday().
+
+	Arnd
