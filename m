@@ -1,52 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935076AbaEaD6K (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 23:58:10 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:37716 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932750AbaEaD6I (ORCPT
+	id S1751323AbaEaETv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 May 2014 00:19:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42346 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750734AbaEaETu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 23:58:08 -0400
-Date: Fri, 30 May 2014 20:58:18 -0700
-From: Olof Johansson <olof@lixom.net>
-To: Kumar Gala <galak@codeaurora.org>
-Cc: arm@kernel.org, Kevin Hilman <khilman@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, David Brown <davidb@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Andy Gross <agross@codeaurora.org>, gregkh@linuxfoundation.org
-Subject: Re: [GIT PULL] qcom driver changes for v3.16-2
-Message-ID: <20140531035818.GD14790@quad.lixom.net>
-References: <alpine.DEB.2.00.1405301138220.5291@galak-ubuntu.qualcomm.com>
+	Sat, 31 May 2014 00:19:50 -0400
+Date: Fri, 30 May 2014 21:19:48 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Scott Weir <sjw0410@gmail.com>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: android: fix Missing a blank line after
+ declarations warnings
+Message-ID: <20140531041948.GA10014@kroah.com>
+References: <1401267171-4106-1-git-send-email-sjw0410@gmail.com>
+ <20140528213027.GA15313@kroah.com>
+ <20140530055644.GA1782@lubuntuVM>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1405301138220.5291@galak-ubuntu.qualcomm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140530055644.GA1782@lubuntuVM>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 30, 2014 at 11:41:01AM -0500, Kumar Gala wrote:
-> The following changes since commit 5d144e36b7c51612922fa05d37ff3a869261cc82:
+On Fri, May 30, 2014 at 03:56:44PM +1000, Scott Weir wrote:
+> On Wed, May 28, 2014 at 02:30:27PM -0700, Greg KH wrote:
+> > On Wed, May 28, 2014 at 06:52:51PM +1000, Scott Weir wrote:
+> > > This patch corrects coding style issue:
+> > > WARNING: Missing a black line after declarations
+> > > 
+> > > Signed-off-by: Scott Weir <sjw0410@gmail.com>
+> > > ---
+> > >  drivers/staging/android/sync_debug.c | 4 ++++
+> > 
+> > This file isn't in my tree.  Always work against linux-next, not Linus's
+> > tree for new patches.
+> > 
+> > thanks,
+> > 
+> > greg k-h
 > 
->   soc: qcom: Add GSBI driver (2014-05-23 11:38:04 -0500)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/galak/linux-qcom.git tags/qcom-drivers-for-3.16-2
-> 
-> for you to fetch changes up to 31964ffebbb958c6cf289c7c12edd7530d6221b9:
-> 
->   tty: serial: msm: Remove direct access to GSBI (2014-05-29 11:06:20 -0500)
-> 
-> ----------------------------------------------------------------
-> Qualcomm ARM Based driver Updates for v3.16-2
-> 
-> * Updated MSM uart driver to not access GSBI control registers
+> This patch was made against linux-next. Is it better to use your staging tree?
 
-Ok, merged.
+Yes, but normally it should also be fine to use linux-next.
 
+I don't know where that sync_debug.c file is coming from, it's not in my
+staging branch, some other tree must be creating it, which is
+troublesome to me...
 
--Olof
+Anyway, sorry, but yes, work off of the staging-next branch of
+staging.git on git.kernel.org and you should be fine.
+
+thanks,
+
+greg k-h
