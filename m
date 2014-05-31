@@ -1,54 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933000AbaEaMgg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 May 2014 08:36:36 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:40499 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756411AbaEaMge (ORCPT
+	id S933368AbaEaNOp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 May 2014 09:14:45 -0400
+Received: from mail-vc0-f180.google.com ([209.85.220.180]:58282 "EHLO
+	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932948AbaEaNOl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 May 2014 08:36:34 -0400
-Date: Sat, 31 May 2014 13:35:02 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: srinivas.kandagatla@linaro.org
-Cc: Ulf Hansson <ulf.hansson@linaro.org>, linux-mmc@vger.kernel.org,
-        Chris Ball <chris@printf.net>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linus.walleij@linaro.org
-Subject: Re: [PATCH v5 02/13] mmc: mmci: convert register bits to use BIT()
-	macro.
-Message-ID: <20140531123502.GB20736@n2100.arm.linux.org.uk>
-References: <1401469918-26817-1-git-send-email-srinivas.kandagatla@linaro.org> <1401469980-26906-1-git-send-email-srinivas.kandagatla@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1401469980-26906-1-git-send-email-srinivas.kandagatla@linaro.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Sat, 31 May 2014 09:14:41 -0400
+From: Peter Senna Tschudin <peter.senna@gmail.com>
+To: Brett Rudley <brudley@broadcom.com>
+Cc: kernel-janitors@vger.kernel.org, Arend van Spriel <arend@broadcom.com>,
+        "Franky (Zhenhui) Lin" <frankyl@broadcom.com>,
+        Hante Meuleman <meuleman@broadcom.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, brcm80211-dev-list@broadcom.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 6/11] net: wireless: Remove useless return variables
+Date: Sat, 31 May 2014 10:14:06 -0300
+Message-Id: <1401542051-3174-6-git-send-email-peter.senna@gmail.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 30, 2014 at 06:13:00PM +0100, srinivas.kandagatla@linaro.org wrote:
-> From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-> 
-> This patch converts the register bits in the header file to use BIT(()
-> macro, which looks much neater.
-> 
-> No functional changes done.
-> 
-> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+This patch remove variables that are initialized with a constant,
+are never updated, and are only used as parameter of return.
+Return the constant instead of using a variable.
 
-This makes me wonder when we're going to get these definitions in the kernel
-source, and have people running around making the conversion:
+wl_cfg80211.c verified by compilation only.
+phy/phy_cmn.c unverified.
 
-#define ZERO 0
-#define ONE 1
-#define TWO 2
-#define THREE 3
-#define FOUR 4
-...
+The coccinelle script that find and fixes this issue is:
+// <smpl>
+@@
+type T;
+constant C;
+identifier ret;
+@@
+- T ret = C;
+... when != ret
+    when strict
+return
+- ret
++ C
+;
+// </smpl>
 
-because allegedly it makes it more "readable".  I don't see much benefit
-to this patch.
+Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
 
--- 
-FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
-improving, and getting towards what was expected from it.
+---
+ drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c |   18 ++++++------------
+ drivers/net/wireless/brcm80211/brcmsmac/phy/phy_cmn.c |    6 +-----
+ 2 files changed, 7 insertions(+), 17 deletions(-)
+
+diff --git a/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c b/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c
+index d8fa276..db3d848 100644
+--- a/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c
++++ b/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c
+@@ -1331,7 +1331,6 @@ static s32
+ brcmf_cfg80211_leave_ibss(struct wiphy *wiphy, struct net_device *ndev)
+ {
+ 	struct brcmf_if *ifp = netdev_priv(ndev);
+-	s32 err = 0;
+ 
+ 	brcmf_dbg(TRACE, "Enter\n");
+ 	if (!check_vif_up(ifp->vif))
+@@ -1341,7 +1340,7 @@ brcmf_cfg80211_leave_ibss(struct wiphy *wiphy, struct net_device *ndev)
+ 
+ 	brcmf_dbg(TRACE, "Exit\n");
+ 
+-	return err;
++	return 0;
+ }
+ 
+ static s32 brcmf_set_wpa_version(struct net_device *ndev,
+@@ -2388,7 +2387,6 @@ static s32 brcmf_inform_single_bss(struct brcmf_cfg80211_info *cfg,
+ 	struct cfg80211_bss *bss;
+ 	struct ieee80211_supported_band *band;
+ 	struct brcmu_chan ch;
+-	s32 err = 0;
+ 	u16 channel;
+ 	u32 freq;
+ 	u16 notify_capability;
+@@ -2438,7 +2436,7 @@ static s32 brcmf_inform_single_bss(struct brcmf_cfg80211_info *cfg,
+ 
+ 	cfg80211_put_bss(wiphy, bss);
+ 
+-	return err;
++	return 0;
+ }
+ 
+ static struct brcmf_bss_info_le *
+@@ -2690,7 +2688,6 @@ brcmf_cfg80211_escan_handler(struct brcmf_if *ifp,
+ {
+ 	struct brcmf_cfg80211_info *cfg = ifp->drvr->config;
+ 	s32 status;
+-	s32 err = 0;
+ 	struct brcmf_escan_result_le *escan_result_le;
+ 	struct brcmf_bss_info_le *bss_info_le;
+ 	struct brcmf_bss_info_le *bss = NULL;
+@@ -2781,7 +2778,7 @@ brcmf_cfg80211_escan_handler(struct brcmf_if *ifp,
+ 				  status);
+ 	}
+ exit:
+-	return err;
++	return 0;
+ }
+ 
+ static void brcmf_init_escan(struct brcmf_cfg80211_info *cfg)
+@@ -3507,7 +3504,6 @@ static s32
+ brcmf_parse_vndr_ies(const u8 *vndr_ie_buf, u32 vndr_ie_len,
+ 		     struct parsed_vndr_ies *vndr_ies)
+ {
+-	s32 err = 0;
+ 	struct brcmf_vs_tlv *vndrie;
+ 	struct brcmf_tlv *ie;
+ 	struct parsed_vndr_ie_info *parsed_info;
+@@ -3560,7 +3556,7 @@ next:
+ 			ie = (struct brcmf_tlv *)(((u8 *)ie) + ie->len +
+ 				TLV_HDR_LEN);
+ 	}
+-	return err;
++	return 0;
+ }
+ 
+ static u32
+@@ -4650,7 +4646,6 @@ brcmf_bss_connect_done(struct brcmf_cfg80211_info *cfg,
+ 	struct brcmf_if *ifp = netdev_priv(ndev);
+ 	struct brcmf_cfg80211_profile *profile = &ifp->vif->profile;
+ 	struct brcmf_cfg80211_connect_info *conn_info = cfg_to_conn(cfg);
+-	s32 err = 0;
+ 
+ 	brcmf_dbg(TRACE, "Enter\n");
+ 
+@@ -4676,7 +4671,7 @@ brcmf_bss_connect_done(struct brcmf_cfg80211_info *cfg,
+ 			  completed ? "succeeded" : "failed");
+ 	}
+ 	brcmf_dbg(TRACE, "Exit\n");
+-	return err;
++	return 0;
+ }
+ 
+ static s32
+@@ -4768,7 +4763,6 @@ brcmf_notify_roaming_status(struct brcmf_if *ifp,
+ 			    const struct brcmf_event_msg *e, void *data)
+ {
+ 	struct brcmf_cfg80211_info *cfg = ifp->drvr->config;
+-	s32 err = 0;
+ 	u32 event = e->event_code;
+ 	u32 status = e->status;
+ 
+@@ -4779,7 +4773,7 @@ brcmf_notify_roaming_status(struct brcmf_if *ifp,
+ 			brcmf_bss_connect_done(cfg, ifp->ndev, e, true);
+ 	}
+ 
+-	return err;
++	return 0;
+ }
+ 
+ static s32
+diff --git a/drivers/net/wireless/brcm80211/brcmsmac/phy/phy_cmn.c b/drivers/net/wireless/brcm80211/brcmsmac/phy/phy_cmn.c
+index b0fd807..57ecc05 100644
+--- a/drivers/net/wireless/brcm80211/brcmsmac/phy/phy_cmn.c
++++ b/drivers/net/wireless/brcm80211/brcmsmac/phy/phy_cmn.c
+@@ -1538,11 +1538,7 @@ static s8
+ wlc_user_txpwr_antport_to_rfport(struct brcms_phy *pi, uint chan, u32 band,
+ 				 u8 rate)
+ {
+-	s8 offset = 0;
+-
+-	if (!pi->user_txpwr_at_rfport)
+-		return offset;
+-	return offset;
++	return 0;
+ }
+ 
+ void wlc_phy_txpower_recalc_target(struct brcms_phy *pi)
+
