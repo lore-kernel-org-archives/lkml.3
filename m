@@ -1,51 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756535AbaEaLz2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 May 2014 07:55:28 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:48772 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756507AbaEaLz1 (ORCPT
+	id S1756490AbaEaMGl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 May 2014 08:06:41 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:50510 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754558AbaEaMGk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 May 2014 07:55:27 -0400
-From: Scott Weir <sjw0410@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: gdm724x: Added blank lines after declarations in gdm_lte.c
-Date: Sat, 31 May 2014 21:54:58 +1000
-Message-Id: <1401537298-13920-1-git-send-email-sjw0410@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Sat, 31 May 2014 08:06:40 -0400
+Date: Sat, 31 May 2014 15:05:27 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Yann Droneaud <ydroneaud@opteya.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org, Emil Goode <emilgoode@gmail.com>,
+        Shawn Guo <shawn.guo@freescale.com>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: Re: [PATCH] driver core/platform: remove unused implicit padding in
+ platform_object
+Message-ID: <20140531120526.GL15585@mwanda>
+References: <1401480167-15091-1-git-send-email-ydroneaud@opteya.com>
+ <20140530201054.GF17724@mwanda>
+ <1401523299.15490.6.camel@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1401523299.15490.6.camel@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes following checkpatch.pl warning:
-WARNING: Missing a blank line after declarations in gdm_lte.c
+On Sat, May 31, 2014 at 10:01:39AM +0200, Yann Droneaud wrote:
+> Hi Dan,
+> 
+> Le vendredi 30 mai 2014 à 23:10 +0300, Dan Carpenter a écrit :
+> > This changelog doesn't match the patch.
+> > 
+> 
+> Hum, let me guess .... I've failed to set the proper subject prefix
+> to add v6 suffic to PATCH: 
+> I've changed the patch title since v5 (from Emil Goode)... so it's like
+> a new one.
+> 
+> Is it really necessary to resend the patch ?
 
-Signed-off-by: Scott Weir <sjw0410@gmail.com>
----
- drivers/staging/gdm724x/gdm_lte.c | 2 ++
- 1 file changed, 2 insertions(+)
+Oh.  Sorry, I didn't understand what you were trying to say...  You're
+right.
 
-diff --git a/drivers/staging/gdm724x/gdm_lte.c b/drivers/staging/gdm724x/gdm_lte.c
-index 64c55b9..bc6d574 100644
---- a/drivers/staging/gdm724x/gdm_lte.c
-+++ b/drivers/staging/gdm724x/gdm_lte.c
-@@ -447,6 +447,7 @@ static int gdm_lte_tx(struct sk_buff *skb, struct net_device *dev)
- 	 */
- 	if (nic_type & NIC_TYPE_F_VLAN) {
- 		struct vlan_ethhdr *vlan_eth = (struct vlan_ethhdr *)skb->data;
-+
- 		nic->vlan_id = ntohs(vlan_eth->h_vlan_TCI) & VLAN_VID_MASK;
- 		data_buf = skb->data + (VLAN_ETH_HLEN - ETH_HLEN);
- 		data_len = skb->len - (VLAN_ETH_HLEN - ETH_HLEN);
-@@ -505,6 +506,7 @@ static int gdm_lte_tx(struct sk_buff *skb, struct net_device *dev)
- static struct net_device_stats *gdm_lte_stats(struct net_device *dev)
- {
- 	struct nic *nic = netdev_priv(dev);
-+
- 	return &nic->stats;
- }
+For some reason I just looked at the patch first and then I started
+reading the changelog and got to the bit about GCC on ARM and said
+thought have been describing a different change without reading the
+rest.  This was my bad.  I should have read more carefully.
 
---
-1.9.1
+Very thourough patch description.  :)
+
+regards,
+dan carpenter
 
