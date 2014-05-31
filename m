@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935145AbaEaO3w (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 May 2014 10:29:52 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:44452 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933196AbaEaO3M (ORCPT
+	id S935178AbaEaOak (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 May 2014 10:30:40 -0400
+Received: from mail-qa0-f41.google.com ([209.85.216.41]:60988 "EHLO
+	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756723AbaEaO3D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 May 2014 10:29:12 -0400
+	Sat, 31 May 2014 10:29:03 -0400
 From: Andreas Noever <andreas.noever@gmail.com>
 To: linux-kernel@vger.kernel.org, Matthew Garrett <matthew.garrett@nebula.com>,
         Greg KH <greg@kroah.com>, Bjorn Helgaas <bhelgaas@google.com>,
         linux-pci@vger.kernel.org
 Cc: Andreas Noever <andreas.noever@gmail.com>
-Subject: [PATCH v4 15/15] thunderbolt: Add suspend/hibernate support
-Date: Sat, 31 May 2014 16:28:00 +0200
-Message-Id: <1401546480-2071-16-git-send-email-andreas.noever@gmail.com>
+Subject: [PATCH v4 11/15] thunderbolt: Add support for simple pci tunnels
+Date: Sat, 31 May 2014 16:27:56 +0200
+Message-Id: <1401546480-2071-12-git-send-email-andreas.noever@gmail.com>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1401546480-2071-1-git-send-email-andreas.noever@gmail.com>
 References: <1401546480-2071-1-git-send-email-andreas.noever@gmail.com>
@@ -22,276 +22,509 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We use _noirq since we have to restore the pci tunnels before the pci
-core wakes the tunneled devices.
+A pci downstream and pci upstream port can be connected through a
+tunnel. To establish the tunnel we have to setup two unidirectional
+paths between the two ports.
+
+Right now we only support paths with two hops (i.e. no chaining) and at
+most one pci device per thunderbolt device.
 
 Signed-off-by: Andreas Noever <andreas.noever@gmail.com>
 ---
- drivers/thunderbolt/nhi.c    | 33 +++++++++++++++++
- drivers/thunderbolt/switch.c | 84 ++++++++++++++++++++++++++++++++++++++++++++
- drivers/thunderbolt/tb.c     | 61 ++++++++++++++++++++++++++++++++
- drivers/thunderbolt/tb.h     |  5 +++
- 4 files changed, 183 insertions(+)
+ drivers/thunderbolt/Makefile     |   2 +-
+ drivers/thunderbolt/tb.c         | 135 +++++++++++++++++++++++
+ drivers/thunderbolt/tb.h         |   1 +
+ drivers/thunderbolt/tunnel_pci.c | 232 +++++++++++++++++++++++++++++++++++++++
+ drivers/thunderbolt/tunnel_pci.h |  30 +++++
+ 5 files changed, 399 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/thunderbolt/tunnel_pci.c
+ create mode 100644 drivers/thunderbolt/tunnel_pci.h
 
-diff --git a/drivers/thunderbolt/nhi.c b/drivers/thunderbolt/nhi.c
-index f3a4ac2..6f666fa 100644
---- a/drivers/thunderbolt/nhi.c
-+++ b/drivers/thunderbolt/nhi.c
-@@ -7,6 +7,7 @@
-  * Copyright (c) 2014 Andreas Noever <andreas.noever@gmail.com>
-  */
+diff --git a/drivers/thunderbolt/Makefile b/drivers/thunderbolt/Makefile
+index 3532f36..0122ca6 100644
+--- a/drivers/thunderbolt/Makefile
++++ b/drivers/thunderbolt/Makefile
+@@ -1,3 +1,3 @@
+ obj-${CONFIG_THUNDERBOLT} := thunderbolt.o
+-thunderbolt-objs := nhi.o ctl.o tb.o switch.o cap.o path.o
++thunderbolt-objs := nhi.o ctl.o tb.o switch.o cap.o path.o tunnel_pci.o
  
-+#include <linux/pm_runtime.h>
- #include <linux/slab.h>
- #include <linux/errno.h>
- #include <linux/pci.h>
-@@ -492,6 +493,22 @@ static irqreturn_t nhi_msi(int irq, void *data)
- 	return IRQ_HANDLED;
- }
+diff --git a/drivers/thunderbolt/tb.c b/drivers/thunderbolt/tb.c
+index 1efcacc..177f61d 100644
+--- a/drivers/thunderbolt/tb.c
++++ b/drivers/thunderbolt/tb.c
+@@ -10,6 +10,7 @@
  
-+static int nhi_suspend_noirq(struct device *dev)
-+{
-+	struct pci_dev *pdev = to_pci_dev(dev);
-+	struct tb *tb = pci_get_drvdata(pdev);
-+	thunderbolt_suspend(tb);
-+	return 0;
-+}
-+
-+static int nhi_resume_noirq(struct device *dev)
-+{
-+	struct pci_dev *pdev = to_pci_dev(dev);
-+	struct tb *tb = pci_get_drvdata(pdev);
-+	thunderbolt_resume(tb);
-+	return 0;
-+}
-+
- static void nhi_shutdown(struct tb_nhi *nhi)
- {
- 	int i;
-@@ -600,6 +617,21 @@ static void nhi_remove(struct pci_dev *pdev)
- 	nhi_shutdown(nhi);
- }
+ #include "tb.h"
+ #include "tb_regs.h"
++#include "tunnel_pci.h"
  
-+/*
-+ * The tunneled pci bridges are siblings of us. Use resume_noirq to reenable
-+ * the tunnels asap. A corresponding pci quirk blocks the downstream bridges
-+ * resume_noirq until we are done.
-+ */
-+static const struct dev_pm_ops nhi_pm_ops = {
-+	.suspend_noirq = nhi_suspend_noirq,
-+	.resume_noirq = nhi_resume_noirq,
-+	.freeze_noirq = nhi_suspend_noirq, /*
-+					    * we just disable hotplug, the
-+					    * pci-tunnels stay alive.
-+					    */
-+	.restore_noirq = nhi_resume_noirq,
-+};
-+
- struct pci_device_id nhi_ids[] = {
- 	{
- 		/*
-@@ -621,6 +653,7 @@ static struct pci_driver nhi_driver = {
- 	.id_table = nhi_ids,
- 	.probe = nhi_probe,
- 	.remove = nhi_remove,
-+	.driver.pm = &nhi_pm_ops,
- };
  
- static int __init nhi_init(void)
-diff --git a/drivers/thunderbolt/switch.c b/drivers/thunderbolt/switch.c
-index eef5f1c..2e19045 100644
---- a/drivers/thunderbolt/switch.c
-+++ b/drivers/thunderbolt/switch.c
-@@ -229,6 +229,30 @@ static void tb_dump_switch(struct tb *tb, struct tb_regs_switch_header *sw)
- 		sw->__unknown1, sw->__unknown4);
+ /* enumeration & hot plug handling */
+@@ -51,6 +52,124 @@ static void tb_scan_port(struct tb_port *port)
+ 	tb_scan_switch(sw);
  }
  
 +/**
-+ * reset_switch() - reconfigure route, enable and send TB_CFG_PKG_RESET
++ * tb_free_invalid_tunnels() - destroy tunnels of devices that have gone away
++ */
++static void tb_free_invalid_tunnels(struct tb *tb)
++{
++	struct tb_pci_tunnel *tunnel;
++	struct tb_pci_tunnel *n;
++	list_for_each_entry_safe(tunnel, n, &tb->tunnel_list, list)
++	{
++		if (tb_pci_is_invalid(tunnel)) {
++			tb_pci_deactivate(tunnel);
++			tb_pci_free(tunnel);
++		}
++	}
++}
++
++/**
++ * find_pci_up_port() - return the first PCIe up port on @sw or NULL
++ */
++static struct tb_port *tb_find_pci_up_port(struct tb_switch *sw)
++{
++	int i;
++	for (i = 1; i <= sw->config.max_port_number; i++)
++		if (sw->ports[i].config.type == TB_TYPE_PCIE_UP)
++			return &sw->ports[i];
++	return NULL;
++}
++
++/**
++ * find_unused_down_port() - return the first inactive PCIe down port on @sw
++ */
++static struct tb_port *tb_find_unused_down_port(struct tb_switch *sw)
++{
++	int i;
++	int cap;
++	int res;
++	int data;
++	for (i = 1; i <= sw->config.max_port_number; i++) {
++		if (tb_is_upstream_port(&sw->ports[i]))
++			continue;
++		if (sw->ports[i].config.type != TB_TYPE_PCIE_DOWN)
++			continue;
++		cap = tb_find_cap(&sw->ports[i], TB_CFG_PORT, TB_CAP_PCIE);
++		if (cap <= 0)
++			continue;
++		res = tb_port_read(&sw->ports[i], &data, TB_CFG_PORT, cap, 1);
++		if (res < 0)
++			continue;
++		if (data & 0x80000000)
++			continue;
++		return &sw->ports[i];
++	}
++	return NULL;
++}
++
++/**
++ * tb_activate_pcie_devices() - scan for and activate PCIe devices
++ *
++ * This method is somewhat ad hoc. For now it only supports one device
++ * per port and only devices at depth 1.
++ */
++static void tb_activate_pcie_devices(struct tb *tb)
++{
++	int i;
++	int cap;
++	u32 data;
++	struct tb_switch *sw;
++	struct tb_port *up_port;
++	struct tb_port *down_port;
++	struct tb_pci_tunnel *tunnel;
++	/* scan for pcie devices at depth 1*/
++	for (i = 1; i <= tb->root_switch->config.max_port_number; i++) {
++		if (tb_is_upstream_port(&tb->root_switch->ports[i]))
++			continue;
++		if (tb->root_switch->ports[i].config.type != TB_TYPE_PORT)
++			continue;
++		if (!tb->root_switch->ports[i].remote)
++			continue;
++		sw = tb->root_switch->ports[i].remote->sw;
++		up_port = tb_find_pci_up_port(sw);
++		if (!up_port) {
++			tb_sw_info(sw, "no PCIe devices found, aborting\n");
++			continue;
++		}
++
++		/* check whether port is already activated */
++		cap = tb_find_cap(up_port, TB_CFG_PORT, TB_CAP_PCIE);
++		if (cap <= 0)
++			continue;
++		if (tb_port_read(up_port, &data, TB_CFG_PORT, cap, 1))
++			continue;
++		if (data & 0x80000000) {
++			tb_port_info(up_port,
++				     "PCIe port already activated, aborting\n");
++			continue;
++		}
++
++		down_port = tb_find_unused_down_port(tb->root_switch);
++		if (!down_port) {
++			tb_port_info(up_port,
++				     "All PCIe down ports are occupied, aborting\n");
++			continue;
++		}
++		tunnel = tb_pci_alloc(tb, up_port, down_port);
++		if (!tunnel) {
++			tb_port_info(up_port,
++				     "PCIe tunnel allocation failed, aborting\n");
++			continue;
++		}
++
++		if (tb_pci_activate(tunnel)) {
++			tb_port_info(up_port,
++				     "PCIe tunnel activation failed, aborting\n");
++			tb_pci_free(tunnel);
++		}
++
++	}
++}
+ 
+ /* hotplug handling */
+ 
+@@ -101,6 +220,7 @@ static void tb_handle_hotplug(struct work_struct *work)
+ 		if (port->remote) {
+ 			tb_port_info(port, "unplugged\n");
+ 			tb_sw_set_unpplugged(port->remote->sw);
++			tb_free_invalid_tunnels(tb);
+ 			tb_switch_free(port->remote->sw);
+ 			port->remote = NULL;
+ 		} else {
+@@ -118,6 +238,10 @@ static void tb_handle_hotplug(struct work_struct *work)
+ 		} else if (port->remote->sw->config.depth > 1) {
+ 			tb_sw_warn(port->remote->sw,
+ 				   "hotplug: chaining not supported\n");
++		} else {
++			tb_sw_info(port->remote->sw,
++				   "hotplug: activating pcie devices\n");
++			tb_activate_pcie_devices(tb);
+ 		}
+ 	}
+ out:
+@@ -154,8 +278,17 @@ static void tb_schedule_hotplug_handler(void *data, u64 route, u8 port,
+  */
+ void thunderbolt_shutdown_and_free(struct tb *tb)
+ {
++	struct tb_pci_tunnel *tunnel;
++	struct tb_pci_tunnel *n;
++
+ 	mutex_lock(&tb->lock);
+ 
++	/* tunnels are only present after everything has been initialized */
++	list_for_each_entry_safe(tunnel, n, &tb->tunnel_list, list) {
++		tb_pci_deactivate(tunnel);
++		tb_pci_free(tunnel);
++	}
++
+ 	if (tb->root_switch)
+ 		tb_switch_free(tb->root_switch);
+ 	tb->root_switch = NULL;
+@@ -201,6 +334,7 @@ struct tb *thunderbolt_alloc_and_start(struct tb_nhi *nhi)
+ 	tb->nhi = nhi;
+ 	mutex_init(&tb->lock);
+ 	mutex_lock(&tb->lock);
++	INIT_LIST_HEAD(&tb->tunnel_list);
+ 
+ 	tb->wq = alloc_ordered_workqueue("thunderbolt", 0);
+ 	if (!tb->wq)
+@@ -221,6 +355,7 @@ struct tb *thunderbolt_alloc_and_start(struct tb_nhi *nhi)
+ 
+ 	/* Full scan to discover devices added before the driver was loaded. */
+ 	tb_scan_switch(tb->root_switch);
++	tb_activate_pcie_devices(tb);
+ 
+ 	/* Allow tb_handle_hotplug to progress events */
+ 	tb->hotplug_active = true;
+diff --git a/drivers/thunderbolt/tb.h b/drivers/thunderbolt/tb.h
+index 8bbdc2b..508abc4 100644
+--- a/drivers/thunderbolt/tb.h
++++ b/drivers/thunderbolt/tb.h
+@@ -100,6 +100,7 @@ struct tb {
+ 	struct tb_ctl *ctl;
+ 	struct workqueue_struct *wq; /* ordered workqueue for plug events */
+ 	struct tb_switch *root_switch;
++	struct list_head tunnel_list; /* list of active PCIe tunnels */
+ 	bool hotplug_active; /*
+ 			      * tb_handle_hotplug will stop progressing plug
+ 			      * events and exit if this is not set (it needs to
+diff --git a/drivers/thunderbolt/tunnel_pci.c b/drivers/thunderbolt/tunnel_pci.c
+new file mode 100644
+index 0000000..baf1cd3
+--- /dev/null
++++ b/drivers/thunderbolt/tunnel_pci.c
+@@ -0,0 +1,232 @@
++/*
++ * Thunderbolt Cactus Ridge driver - PCIe tunnel
++ *
++ * Copyright (c) 2014 Andreas Noever <andreas.noever@gmail.com>
++ */
++
++#include <linux/slab.h>
++#include <linux/list.h>
++
++#include "tunnel_pci.h"
++#include "tb.h"
++
++#define __TB_TUNNEL_PRINT(level, tunnel, fmt, arg...)                   \
++	do {                                                            \
++		struct tb_pci_tunnel *__tunnel = (tunnel);              \
++		level(__tunnel->tb, "%llx:%x <-> %llx:%x (PCI): " fmt,  \
++		      tb_route(__tunnel->down_port->sw),                \
++		      __tunnel->down_port->port,                        \
++		      tb_route(__tunnel->up_port->sw),                  \
++		      __tunnel->up_port->port,                          \
++		      ## arg);                                          \
++	} while (0)
++
++#define tb_tunnel_WARN(tunnel, fmt, arg...) \
++	__TB_TUNNEL_PRINT(tb_WARN, tunnel, fmt, ##arg)
++#define tb_tunnel_warn(tunnel, fmt, arg...) \
++	__TB_TUNNEL_PRINT(tb_warn, tunnel, fmt, ##arg)
++#define tb_tunnel_info(tunnel, fmt, arg...) \
++	__TB_TUNNEL_PRINT(tb_info, tunnel, fmt, ##arg)
++
++static void tb_pci_init_path(struct tb_path *path)
++{
++	path->egress_fc_enable = TB_PATH_SOURCE | TB_PATH_INTERNAL;
++	path->egress_shared_buffer = TB_PATH_NONE;
++	path->ingress_fc_enable = TB_PATH_ALL;
++	path->ingress_shared_buffer = TB_PATH_NONE;
++	path->priority = 3;
++	path->weight = 1;
++	path->drop_packages = 0;
++	path->nfc_credits = 0;
++}
++
++/**
++ * tb_pci_alloc() - allocate a pci tunnel
++ *
++ * Allocate a PCI tunnel. The ports must be of type TB_TYPE_PCIE_UP and
++ * TB_TYPE_PCIE_DOWN.
++ *
++ * Currently only paths consisting of two hops are supported (that is the
++ * ports must be on "adjacent" switches).
++ *
++ * The paths are hard-coded to use hop 8 (the only working hop id available on
++ * my thunderbolt devices). Therefore at most ONE path per device may be
++ * activated.
++ *
++ * Return: Returns a tb_pci_tunnel on success or NULL on failure.
++ */
++struct tb_pci_tunnel *tb_pci_alloc(struct tb *tb, struct tb_port *up,
++				   struct tb_port *down)
++{
++	struct tb_pci_tunnel *tunnel = kzalloc(sizeof(*tunnel), GFP_KERNEL);
++	if (!tunnel)
++		goto err;
++	tunnel->tb = tb;
++	tunnel->down_port = down;
++	tunnel->up_port = up;
++	INIT_LIST_HEAD(&tunnel->list);
++	tunnel->path_to_up = tb_path_alloc(up->sw->tb, 2);
++	if (!tunnel->path_to_up)
++		goto err;
++	tunnel->path_to_down = tb_path_alloc(up->sw->tb, 2);
++	if (!tunnel->path_to_down)
++		goto err;
++	tb_pci_init_path(tunnel->path_to_up);
++	tb_pci_init_path(tunnel->path_to_down);
++
++	tunnel->path_to_up->hops[0].in_port = down;
++	tunnel->path_to_up->hops[0].in_hop_index = 8;
++	tunnel->path_to_up->hops[0].in_counter_index = -1;
++	tunnel->path_to_up->hops[0].out_port = tb_upstream_port(up->sw)->remote;
++	tunnel->path_to_up->hops[0].next_hop_index = 8;
++
++	tunnel->path_to_up->hops[1].in_port = tb_upstream_port(up->sw);
++	tunnel->path_to_up->hops[1].in_hop_index = 8;
++	tunnel->path_to_up->hops[1].in_counter_index = -1;
++	tunnel->path_to_up->hops[1].out_port = up;
++	tunnel->path_to_up->hops[1].next_hop_index = 8;
++
++	tunnel->path_to_down->hops[0].in_port = up;
++	tunnel->path_to_down->hops[0].in_hop_index = 8;
++	tunnel->path_to_down->hops[0].in_counter_index = -1;
++	tunnel->path_to_down->hops[0].out_port = tb_upstream_port(up->sw);
++	tunnel->path_to_down->hops[0].next_hop_index = 8;
++
++	tunnel->path_to_down->hops[1].in_port =
++		tb_upstream_port(up->sw)->remote;
++	tunnel->path_to_down->hops[1].in_hop_index = 8;
++	tunnel->path_to_down->hops[1].in_counter_index = -1;
++	tunnel->path_to_down->hops[1].out_port = down;
++	tunnel->path_to_down->hops[1].next_hop_index = 8;
++	return tunnel;
++
++err:
++	if (tunnel) {
++		if (tunnel->path_to_down)
++			tb_path_free(tunnel->path_to_down);
++		if (tunnel->path_to_up)
++			tb_path_free(tunnel->path_to_up);
++		kfree(tunnel);
++	}
++	return NULL;
++}
++
++/**
++ * tb_pci_free() - free a tunnel
++ *
++ * The tunnel must have been deactivated.
++ */
++void tb_pci_free(struct tb_pci_tunnel *tunnel)
++{
++	if (tunnel->path_to_up->activated || tunnel->path_to_down->activated) {
++		tb_tunnel_WARN(tunnel, "trying to free an activated tunnel\n");
++		return;
++	}
++	tb_path_free(tunnel->path_to_up);
++	tb_path_free(tunnel->path_to_down);
++	kfree(tunnel);
++}
++
++/**
++ * tb_pci_is_invalid - check whether an activated path is still valid
++ */
++bool tb_pci_is_invalid(struct tb_pci_tunnel *tunnel)
++{
++	WARN_ON(!tunnel->path_to_up->activated);
++	WARN_ON(!tunnel->path_to_down->activated);
++
++	return tb_path_is_invalid(tunnel->path_to_up)
++	       || tb_path_is_invalid(tunnel->path_to_down);
++}
++
++/**
++ * tb_pci_port_active() - activate/deactivate PCI capability
 + *
 + * Return: Returns 0 on success or an error code on failure.
 + */
-+int tb_switch_reset(struct tb *tb, u64 route)
++static int tb_pci_port_active(struct tb_port *port, bool active)
 +{
-+	struct tb_cfg_result res;
-+	struct tb_regs_switch_header header = {
-+		header.route_hi = route >> 32,
-+		header.route_lo = route,
-+		header.enabled = true,
-+	};
-+	tb_info(tb, "resetting switch at %llx\n", route);
-+	res.err = tb_cfg_write(tb->ctl, ((u32 *) &header) + 2, route,
-+			0, 2, 2, 2);
-+	if (res.err)
-+		return res.err;
-+	res = tb_cfg_reset(tb->ctl, route, TB_CFG_DEFAULT_TIMEOUT);
-+	if (res.err > 0)
-+		return -EIO;
-+	return res.err;
++	u32 word = active ? 0x80000000 : 0x0;
++	int cap = tb_find_cap(port, TB_CFG_PORT, TB_CAP_PCIE);
++	if (cap <= 0) {
++		tb_port_warn(port, "TB_CAP_PCIE not found: %d\n", cap);
++		return cap ? cap : -ENXIO;
++	}
++	return tb_port_write(port, &word, TB_CFG_PORT, cap, 1);
 +}
 +
- struct tb_switch *get_switch_at_route(struct tb_switch *sw, u64 route)
- {
- 	u8 next_port = route; /*
-@@ -406,3 +430,63 @@ void tb_sw_set_unpplugged(struct tb_switch *sw)
- 	}
- }
- 
-+int tb_switch_resume(struct tb_switch *sw)
++/**
++ * tb_pci_restart() - activate a tunnel after a hardware reset
++ */
++int tb_pci_restart(struct tb_pci_tunnel *tunnel)
 +{
-+	int i, err;
-+	u64 uid;
-+	tb_sw_info(sw, "resuming switch\n");
++	int res;
++	tunnel->path_to_up->activated = false;
++	tunnel->path_to_down->activated = false;
 +
-+	err = tb_eeprom_read_uid(sw, &uid);
-+	if (err) {
-+		tb_sw_warn(sw, "uid read failed\n");
-+		return err;
++	tb_tunnel_info(tunnel, "activating\n");
++
++	res = tb_path_activate(tunnel->path_to_up);
++	if (res)
++		goto err;
++	res = tb_path_activate(tunnel->path_to_down);
++	if (res)
++		goto err;
++
++	res = tb_pci_port_active(tunnel->down_port, true);
++	if (res)
++		goto err;
++
++	res = tb_pci_port_active(tunnel->up_port, true);
++	if (res)
++		goto err;
++	return 0;
++err:
++	tb_tunnel_warn(tunnel, "activation failed\n");
++	tb_pci_deactivate(tunnel);
++	return res;
++}
++
++/**
++ * tb_pci_activate() - activate a tunnel
++ *
++ * Return: Returns 0 on success or an error code on failure.
++ */
++int tb_pci_activate(struct tb_pci_tunnel *tunnel)
++{
++	int res;
++	if (tunnel->path_to_up->activated || tunnel->path_to_down->activated) {
++		tb_tunnel_WARN(tunnel,
++			       "trying to activate an already activated tunnel\n");
++		return -EINVAL;
 +	}
-+	if (sw->uid != uid) {
-+		tb_sw_info(sw,
-+			"changed while suspended (uid %#llx -> %#llx)\n",
-+			sw->uid, uid);
-+		return -ENODEV;
-+	}
 +
-+	/* upload configuration */
-+	err = tb_sw_write(sw, 1 + (u32 *) &sw->config, TB_CFG_SWITCH, 1, 3);
-+	if (err)
-+		return err;
++	res = tb_pci_restart(tunnel);
++	if (res)
++		return res;
 +
-+	err = tb_plug_events_active(sw, true);
-+	if (err)
-+		return err;
-+
-+	/* check for surviving downstream switches */
-+	for (i = 1; i <= sw->config.max_port_number; i++) {
-+		struct tb_port *port = &sw->ports[i];
-+		if (tb_is_upstream_port(port))
-+			continue;
-+		if (!port->remote)
-+			continue;
-+		if (tb_wait_for_port(port, true) <= 0
-+			|| tb_switch_resume(port->remote->sw)) {
-+			tb_port_warn(port,
-+				     "lost during suspend, disconnecting\n");
-+			tb_sw_set_unpplugged(port->remote->sw);
-+		}
-+	}
++	list_add(&tunnel->list, &tunnel->tb->tunnel_list);
 +	return 0;
 +}
 +
-+void tb_switch_suspend(struct tb_switch *sw)
-+{
-+	int i, err;
-+	err = tb_plug_events_active(sw, false);
-+	if (err)
-+		return;
-+
-+	for (i = 1; i <= sw->config.max_port_number; i++) {
-+		if (!tb_is_upstream_port(&sw->ports[i]) && sw->ports[i].remote)
-+			tb_switch_suspend(sw->ports[i].remote->sw);
-+	}
-+	/*
-+	 * TODO: invoke tb_cfg_prepare_to_sleep here? does not seem to have any
-+	 * effect?
-+	 */
-+}
-diff --git a/drivers/thunderbolt/tb.c b/drivers/thunderbolt/tb.c
-index 177f61d..1aa6dd7 100644
---- a/drivers/thunderbolt/tb.c
-+++ b/drivers/thunderbolt/tb.c
-@@ -69,6 +69,28 @@ static void tb_free_invalid_tunnels(struct tb *tb)
- }
- 
- /**
-+ * tb_free_unplugged_children() - traverse hierarchy and free unplugged switches
-+ */
-+static void tb_free_unplugged_children(struct tb_switch *sw)
-+{
-+	int i;
-+	for (i = 1; i <= sw->config.max_port_number; i++) {
-+		struct tb_port *port = &sw->ports[i];
-+		if (tb_is_upstream_port(port))
-+			continue;
-+		if (!port->remote)
-+			continue;
-+		if (port->remote->sw->is_unplugged) {
-+			tb_switch_free(port->remote->sw);
-+			port->remote = NULL;
-+		} else {
-+			tb_free_unplugged_children(port->remote->sw);
-+		}
-+	}
-+}
 +
 +
 +/**
-  * find_pci_up_port() - return the first PCIe up port on @sw or NULL
-  */
- static struct tb_port *tb_find_pci_up_port(struct tb_switch *sw)
-@@ -368,3 +390,42 @@ err_locked:
- 	return NULL;
- }
- 
-+void thunderbolt_suspend(struct tb *tb)
++ * tb_pci_deactivate() - deactivate a tunnel
++ */
++void tb_pci_deactivate(struct tb_pci_tunnel *tunnel)
 +{
-+	tb_info(tb, "suspending...\n");
-+	mutex_lock(&tb->lock);
-+	tb_switch_suspend(tb->root_switch);
-+	tb_ctl_stop(tb->ctl);
-+	tb->hotplug_active = false; /* signal tb_handle_hotplug to quit */
-+	mutex_unlock(&tb->lock);
-+	tb_info(tb, "suspend finished\n");
++	tb_tunnel_info(tunnel, "deactivating\n");
++	/*
++	 * TODO: enable reset by writing 0x04000000 to TB_CAP_PCIE + 1 on up
++	 * port. Seems to have no effect?
++	 */
++	tb_pci_port_active(tunnel->up_port, false);
++	tb_pci_port_active(tunnel->down_port, false);
++	if (tunnel->path_to_down->activated)
++		tb_path_deactivate(tunnel->path_to_down);
++	if (tunnel->path_to_up->activated)
++		tb_path_deactivate(tunnel->path_to_up);
++	list_del_init(&tunnel->list);
 +}
 +
-+void thunderbolt_resume(struct tb *tb)
-+{
-+	struct tb_pci_tunnel *tunnel, *n;
-+	tb_info(tb, "resuming...\n");
-+	mutex_lock(&tb->lock);
-+	tb_ctl_start(tb->ctl);
+diff --git a/drivers/thunderbolt/tunnel_pci.h b/drivers/thunderbolt/tunnel_pci.h
+new file mode 100644
+index 0000000..a67f93c
+--- /dev/null
++++ b/drivers/thunderbolt/tunnel_pci.h
+@@ -0,0 +1,30 @@
++/*
++ * Thunderbolt Cactus Ridge driver - PCIe tunnel
++ *
++ * Copyright (c) 2014 Andreas Noever <andreas.noever@gmail.com>
++ */
 +
-+	/* remove any pci devices the firmware might have setup */
-+	tb_switch_reset(tb, 0);
++#ifndef TB_PCI_H_
++#define TB_PCI_H_
 +
-+	tb_switch_resume(tb->root_switch);
-+	tb_free_invalid_tunnels(tb);
-+	tb_free_unplugged_children(tb->root_switch);
-+	list_for_each_entry_safe(tunnel, n, &tb->tunnel_list, list)
-+		tb_pci_restart(tunnel);
-+	if (!list_empty(&tb->tunnel_list)) {
-+		/*
-+		 * the pcie links need some time to get going.
-+		 * 100ms works for me...
-+		 */
-+		tb_info(tb, "tunnels restarted, sleeping for 100ms\n");
-+		msleep(100);
-+	}
-+	 /* Allow tb_handle_hotplug to progress events */
-+	tb->hotplug_active = true;
-+	mutex_unlock(&tb->lock);
-+	tb_info(tb, "resume finished\n");
-+}
-diff --git a/drivers/thunderbolt/tb.h b/drivers/thunderbolt/tb.h
-index a89087f..63e89d0 100644
---- a/drivers/thunderbolt/tb.h
-+++ b/drivers/thunderbolt/tb.h
-@@ -214,9 +214,14 @@ static inline int tb_port_write(struct tb_port *port, void *buffer,
- 
- struct tb *thunderbolt_alloc_and_start(struct tb_nhi *nhi);
- void thunderbolt_shutdown_and_free(struct tb *tb);
-+void thunderbolt_suspend(struct tb *tb);
-+void thunderbolt_resume(struct tb *tb);
- 
- struct tb_switch *tb_switch_alloc(struct tb *tb, u64 route);
- void tb_switch_free(struct tb_switch *sw);
-+void tb_switch_suspend(struct tb_switch *sw);
-+int tb_switch_resume(struct tb_switch *sw);
-+int tb_switch_reset(struct tb *tb, u64 route);
- void tb_sw_set_unpplugged(struct tb_switch *sw);
- struct tb_switch *get_switch_at_route(struct tb_switch *sw, u64 route);
- 
++#include "tb.h"
++
++struct tb_pci_tunnel {
++	struct tb *tb;
++	struct tb_port *up_port;
++	struct tb_port *down_port;
++	struct tb_path *path_to_up;
++	struct tb_path *path_to_down;
++	struct list_head list;
++};
++
++struct tb_pci_tunnel *tb_pci_alloc(struct tb *tb, struct tb_port *up,
++				   struct tb_port *down);
++void tb_pci_free(struct tb_pci_tunnel *tunnel);
++int tb_pci_activate(struct tb_pci_tunnel *tunnel);
++int tb_pci_restart(struct tb_pci_tunnel *tunnel);
++void tb_pci_deactivate(struct tb_pci_tunnel *tunnel);
++bool tb_pci_is_invalid(struct tb_pci_tunnel *tunnel);
++
++#endif
++
 -- 
 1.9.3
 
