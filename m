@@ -1,72 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934899AbaEaDIp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 23:08:45 -0400
-Received: from mail-qg0-f44.google.com ([209.85.192.44]:55985 "EHLO
-	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755805AbaEaDIn convert rfc822-to-8bit (ORCPT
+	id S935053AbaEaDJz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 23:09:55 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:50546 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755729AbaEaDJy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 23:08:43 -0400
+	Fri, 30 May 2014 23:09:54 -0400
+Date: Fri, 30 May 2014 20:09:41 -0700
+From: tip-bot for Andy Lutomirski <tipbot@zytor.com>
+Message-ID: <tip-011561837dad082a92c0537db2d134e66419c6ad@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, luto@amacapital.net, hpa@zytor.com,
+        mingo@kernel.org, tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, luto@amacapital.net,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <1764385fe9931e8940b9d001132515448ea89523.1401464755.git.luto@amacapital.net>
+References: <1764385fe9931e8940b9d001132515448ea89523.1401464755.git.luto@amacapital.net>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/vdso] x86/vdso, build: When vdso2c fails,
+  unlink the output
+Git-Commit-ID: 011561837dad082a92c0537db2d134e66419c6ad
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-X-Originating-IP: [173.13.129.225]
-In-Reply-To: <20140530235720.GA27752@kroah.com>
-References: <alpine.DEB.2.00.1405301138220.5291@galak-ubuntu.qualcomm.com>
-	<20140530235720.GA27752@kroah.com>
-Date: Fri, 30 May 2014 20:08:42 -0700
-Message-ID: <CAOesGMjhFLD=Rkz0SqSav9qfAzWBCXLf03b=5=xj0uZzz6KwdQ@mail.gmail.com>
-Subject: Re: [GIT PULL] qcom driver changes for v3.16-2
-From: Olof Johansson <olof@lixom.net>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Kumar Gala <galak@codeaurora.org>, "arm@kernel.org" <arm@kernel.org>,
-        Kevin Hilman <khilman@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Brown <davidb@codeaurora.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Andy Gross <agross@codeaurora.org>
+Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 30, 2014 at 4:57 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Fri, May 30, 2014 at 11:41:01AM -0500, Kumar Gala wrote:
->> The following changes since commit 5d144e36b7c51612922fa05d37ff3a869261cc82:
->>
->>   soc: qcom: Add GSBI driver (2014-05-23 11:38:04 -0500)
->>
->> are available in the git repository at:
->>
->>   git://git.kernel.org/pub/scm/linux/kernel/git/galak/linux-qcom.git tags/qcom-drivers-for-3.16-2
->>
->> for you to fetch changes up to 31964ffebbb958c6cf289c7c12edd7530d6221b9:
->>
->>   tty: serial: msm: Remove direct access to GSBI (2014-05-29 11:06:20 -0500)
->>
->> ----------------------------------------------------------------
->> Qualcomm ARM Based driver Updates for v3.16-2
->>
->> * Updated MSM uart driver to not access GSBI control registers
->>
->> ----------------------------------------------------------------
->> Andy Gross (1):
->>       tty: serial: msm: Remove direct access to GSBI
->>
->>  drivers/tty/serial/msm_serial.c | 48 ++---------------------------------------
->>  drivers/tty/serial/msm_serial.h |  5 -----
->>  2 files changed, 2 insertions(+), 51 deletions(-)
->
-> Do you want me to take these in the tty tree?  Or are they going to go
-> through the arm tree(s) for other reasons (dependancies)?
+Commit-ID:  011561837dad082a92c0537db2d134e66419c6ad
+Gitweb:     http://git.kernel.org/tip/011561837dad082a92c0537db2d134e66419c6ad
+Author:     Andy Lutomirski <luto@amacapital.net>
+AuthorDate: Fri, 30 May 2014 08:48:48 -0700
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Fri, 30 May 2014 16:58:39 -0700
 
-In the other thread about this patch
-(http://marc.info/?l=linux-kernel&m=140137951814522&w=2), he claimed:
+x86/vdso, build: When vdso2c fails, unlink the output
 
-"I’ll send it via arm-soc as the related patches are going via that path."
+This avoids bizarre failures if make is run again.
 
-I'm not fussed either way. I haven't touched these branches yet.
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Link: http://lkml.kernel.org/r/1764385fe9931e8940b9d001132515448ea89523.1401464755.git.luto@amacapital.net
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/vdso/vdso2c.c | 20 +++++++++++---------
+ arch/x86/vdso/vdso2c.h | 10 +++-------
+ 2 files changed, 14 insertions(+), 16 deletions(-)
 
-
--Olof
+diff --git a/arch/x86/vdso/vdso2c.c b/arch/x86/vdso/vdso2c.c
+index 81edd1e..fe8bfbf 100644
+--- a/arch/x86/vdso/vdso2c.c
++++ b/arch/x86/vdso/vdso2c.c
+@@ -14,6 +14,8 @@
+ #include <linux/elf.h>
+ #include <linux/types.h>
+ 
++const char *outfilename;
++
+ /* Symbols that we need in vdso2c. */
+ enum {
+ 	sym_vvar_page,
+@@ -44,6 +46,7 @@ static void fail(const char *format, ...)
+ 	va_start(ap, format);
+ 	fprintf(stderr, "Error: ");
+ 	vfprintf(stderr, format, ap);
++	unlink(outfilename);
+ 	exit(1);
+ 	va_end(ap);
+ }
+@@ -82,17 +85,16 @@ static void fail(const char *format, ...)
+ #undef Elf_Sym
+ #undef Elf_Dyn
+ 
+-static int go(void *addr, size_t len, FILE *outfile, const char *name)
++static void go(void *addr, size_t len, FILE *outfile, const char *name)
+ {
+ 	Elf64_Ehdr *hdr = (Elf64_Ehdr *)addr;
+ 
+ 	if (hdr->e_ident[EI_CLASS] == ELFCLASS64) {
+-		return go64(addr, len, outfile, name);
++		go64(addr, len, outfile, name);
+ 	} else if (hdr->e_ident[EI_CLASS] == ELFCLASS32) {
+-		return go32(addr, len, outfile, name);
++		go32(addr, len, outfile, name);
+ 	} else {
+-		fprintf(stderr, "Error: unknown ELF class\n");
+-		return 1;
++		fail("unknown ELF class\n");
+ 	}
+ }
+ 
+@@ -102,7 +104,6 @@ int main(int argc, char **argv)
+ 	off_t len;
+ 	void *addr;
+ 	FILE *outfile;
+-	int ret;
+ 	char *name, *tmp;
+ 	int namelen;
+ 
+@@ -143,14 +144,15 @@ int main(int argc, char **argv)
+ 	if (addr == MAP_FAILED)
+ 		err(1, "mmap");
+ 
+-	outfile = fopen(argv[2], "w");
++	outfilename = argv[2];
++	outfile = fopen(outfilename, "w");
+ 	if (!outfile)
+ 		err(1, "%s", argv[2]);
+ 
+-	ret = go(addr, (size_t)len, outfile, name);
++	go(addr, (size_t)len, outfile, name);
+ 
+ 	munmap(addr, len);
+ 	fclose(outfile);
+ 
+-	return ret;
++	return 0;
+ }
+diff --git a/arch/x86/vdso/vdso2c.h b/arch/x86/vdso/vdso2c.h
+index 3dcc61e..26a7c1f 100644
+--- a/arch/x86/vdso/vdso2c.h
++++ b/arch/x86/vdso/vdso2c.h
+@@ -4,7 +4,7 @@
+  * are built for 32-bit userspace.
+  */
+ 
+-static int GOFUNC(void *addr, size_t len, FILE *outfile, const char *name)
++static void GOFUNC(void *addr, size_t len, FILE *outfile, const char *name)
+ {
+ 	int found_load = 0;
+ 	unsigned long load_size = -1;  /* Work around bogus warning */
+@@ -62,10 +62,8 @@ static int GOFUNC(void *addr, size_t len, FILE *outfile, const char *name)
+ 			alt_sec = sh;
+ 	}
+ 
+-	if (!symtab_hdr) {
++	if (!symtab_hdr)
+ 		fail("no symbol table\n");
+-		return 1;
+-	}
+ 
+ 	strtab_hdr = addr + hdr->e_shoff +
+ 		hdr->e_shentsize * symtab_hdr->sh_link;
+@@ -112,7 +110,7 @@ static int GOFUNC(void *addr, size_t len, FILE *outfile, const char *name)
+ 
+ 	if (!name) {
+ 		fwrite(addr, load_size, 1, outfile);
+-		return 0;
++		return;
+ 	}
+ 
+ 	fprintf(outfile, "/* AUTOMATICALLY GENERATED -- DO NOT EDIT */\n\n");
+@@ -152,6 +150,4 @@ static int GOFUNC(void *addr, size_t len, FILE *outfile, const char *name)
+ 				required_syms[i], syms[i]);
+ 	}
+ 	fprintf(outfile, "};\n");
+-
+-	return 0;
+ }
