@@ -1,109 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755776AbaEaQOc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 May 2014 12:14:32 -0400
-Received: from mail-qa0-f54.google.com ([209.85.216.54]:36968 "EHLO
-	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753382AbaEaQOb (ORCPT
+	id S1756328AbaEaQPd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 May 2014 12:15:33 -0400
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:39079 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752661AbaEaQPb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 May 2014 12:14:31 -0400
+	Sat, 31 May 2014 12:15:31 -0400
 MIME-Version: 1.0
-In-Reply-To: <5389F2A0.1000903@bfs.de>
-References: <1401542051-3174-2-git-send-email-peter.senna@gmail.com>
-	<5389F2A0.1000903@bfs.de>
-Date: Sat, 31 May 2014 13:14:29 -0300
-Message-ID: <CA+MoWDopnSqszCNTghH-5wrhzR+C7Bof9NoSGVGg9AhH_kZCVg@mail.gmail.com>
-Subject: Re: [PATCH 2/11] cw1200: Remove useless return variables
-From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: walter harms <wharms@bfs.de>
-Cc: Solomon Peachy <pizza@shaftnet.org>, kernel-janitors@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <5507335.AOOTyGEum3@wuerfel>
+References: <1401480116-1973111-1-git-send-email-arnd@arndb.de>
+	<CAMuHMdVgch4REGcYWFZXVToX2b8iCinFVV10Bz3VoeiZy_yBtg@mail.gmail.com>
+	<m2tx86l4ux.fsf@linux-m68k.org>
+	<5507335.AOOTyGEum3@wuerfel>
+Date: Sat, 31 May 2014 18:15:30 +0200
+X-Google-Sender-Auth: oqNKIEU8z-wttahMSI4C4egPkB0
+Message-ID: <CAMuHMdVQJfaghsVqJJnsFahu6FGhXm2-DtOQbJTEDd7f=TO_NQ@mail.gmail.com>
+Subject: Re: [RFC 01/32] fs: introduce new 'struct inode_time'
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Andreas Schwab <schwab@linux-m68k.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        "Joseph S. Myers" <joseph@codesourcery.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ley Foon Tan <lftan@altera.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 31, 2014 at 12:17 PM, walter harms <wharms@bfs.de> wrote:
->
->
-> Am 31.05.2014 15:14, schrieb Peter Senna Tschudin:
->> This patch remove variables that are initialized with a constant,
->> are never updated, and are only used as parameter of return.
->> Return the constant instead of using a variable.
+On Sat, May 31, 2014 at 4:54 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Saturday 31 May 2014 10:39:02 Andreas Schwab wrote:
+>> Geert Uytterhoeven <geert@linux-m68k.org> writes:
 >>
->> Verified by compilation only.
+>> > Hi Arnd,
+>> >
+>> > On Fri, May 30, 2014 at 10:01 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+>> >> + * The variant using bit fields is less efficient to access, but
+>> >> + * small and has a wider range as the 32-bit one, plus it keeps
+>> >> + * the signedness of the original timespec.
+>> >> + */
+>> >> +struct inode_time {
+>> >> +       long long       tv_sec  : 34;
+>> >> +       int             tv_nsec : 30;
+>> >> +};
+>> >
+>> > Don't you need 31 bits for tv_nsec, to accommodate for the sign bit?
+>> > I know you won't really store negative numbers there, but storing a large
+>> > positive number will become negative on read out, won't it?
 >>
->> The coccinelle script that find and fixes this issue is:
->> // <smpl>
->> @@
->> type T;
->> constant C;
->> identifier ret;
->> @@
->> - T ret = C;
->> ... when != ret
->>     when strict
->> return
->> - ret
->> + C
->> ;
->> // </smpl>
->>
->> Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
->>
->> ---
->>  drivers/net/wireless/cw1200/sta.c |   19 +------------------
->>  1 file changed, 1 insertion(+), 18 deletions(-)
->>
->> diff --git a/drivers/net/wireless/cw1200/sta.c b/drivers/net/wireless/cw1200/sta.c
->> index cd0cad7..622370c 100644
->> --- a/drivers/net/wireless/cw1200/sta.c
->> +++ b/drivers/net/wireless/cw1200/sta.c
->> @@ -2289,24 +2289,7 @@ static int cw1200_upload_null(struct cw1200_common *priv)
->>
->>  static int cw1200_upload_qosnull(struct cw1200_common *priv)
->>  {
->> -     int ret = 0;
->> -     /* TODO:  This needs to be implemented
->> -
->> -     struct wsm_template_frame frame = {
->> -             .frame_type = WSM_FRAME_TYPE_QOS_NULL,
->> -             .rate = 0xFF,
->> -     };
->> -
->> -     frame.skb = ieee80211_qosnullfunc_get(priv->hw, priv->vif);
->> -     if (!frame.skb)
->> -             return -ENOMEM;
->> -
->> -     ret = wsm_set_template_frame(priv, &frame);
->> -
->> -     dev_kfree_skb(frame.skb);
->> -
->> -     */
->> -     return ret;
->> +     return 0;
->>  }
->>
->>  static int cw1200_enable_beaconing(struct cw1200_common *priv,
->
->
-> are you sure you want to remove the entire function ?
-Removing the comments was my fault. Sent V2 keeping the comments.
+>> Only if the int bitfield is signed.  Bitfields are weird, aren't they?
 
->
-> re,
->  wh
->
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>
+According to 6.7.2#5 (thanks for the reference), this is implementation defined.
 
+> It was a mistake on my side, as I didn't know about that rule and
+> meant write 'unsigned int' really. Also, I always have a bad feeling
 
+IC, but the comment said "plus it keeps the signedness".
+So it doesn't keep the signedness for the tv_nsec field.
 
--- 
-Peter
+> about using bitfields in general.
+
+Hehe...
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
