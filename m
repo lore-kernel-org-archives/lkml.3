@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756586AbaEaNOe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 May 2014 09:14:34 -0400
-Received: from mail-ve0-f179.google.com ([209.85.128.179]:64916 "EHLO
-	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756550AbaEaNOc (ORCPT
+	id S1756555AbaEaNOb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 May 2014 09:14:31 -0400
+Received: from mail-ve0-f174.google.com ([209.85.128.174]:34360 "EHLO
+	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756390AbaEaNO3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 May 2014 09:14:32 -0400
+	Sat, 31 May 2014 09:14:29 -0400
 From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: Solomon Peachy <pizza@shaftnet.org>
-Cc: kernel-janitors@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/11] cw1200: Remove useless return variables
-Date: Sat, 31 May 2014 10:14:02 -0300
-Message-Id: <1401542051-3174-2-git-send-email-peter.senna@gmail.com>
+To: Oliver Neukum <oliver@neukum.org>
+Cc: kernel-janitors@vger.kernel.org, Johan Hovold <jhovold@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/11] USB: kl5kusb105: Remove useless return variables
+Date: Sat, 31 May 2014 10:14:01 -0300
+Message-Id: <1401542051-3174-1-git-send-email-peter.senna@gmail.com>
 X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -46,37 +45,41 @@ return
 Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
 
 ---
- drivers/net/wireless/cw1200/sta.c |   19 +------------------
- 1 file changed, 1 insertion(+), 18 deletions(-)
+ drivers/usb/serial/kl5kusb105.c |   23 +----------------------
+ 1 file changed, 1 insertion(+), 22 deletions(-)
 
-diff --git a/drivers/net/wireless/cw1200/sta.c b/drivers/net/wireless/cw1200/sta.c
-index cd0cad7..622370c 100644
---- a/drivers/net/wireless/cw1200/sta.c
-+++ b/drivers/net/wireless/cw1200/sta.c
-@@ -2289,24 +2289,7 @@ static int cw1200_upload_null(struct cw1200_common *priv)
- 
- static int cw1200_upload_qosnull(struct cw1200_common *priv)
+diff --git a/drivers/usb/serial/kl5kusb105.c b/drivers/usb/serial/kl5kusb105.c
+index d7440b7..2657c00 100644
+--- a/drivers/usb/serial/kl5kusb105.c
++++ b/drivers/usb/serial/kl5kusb105.c
+@@ -605,28 +605,7 @@ static int klsi_105_tiocmget(struct tty_struct *tty)
+ static int klsi_105_tiocmset(struct tty_struct *tty,
+ 			     unsigned int set, unsigned int clear)
  {
--	int ret = 0;
--	/* TODO:  This needs to be implemented
+-	int retval = -EINVAL;
 -
--	struct wsm_template_frame frame = {
--		.frame_type = WSM_FRAME_TYPE_QOS_NULL,
--		.rate = 0xFF,
--	};
+-/* if this ever gets implemented, it should be done something like this:
+-	struct usb_serial *serial = port->serial;
+-	struct klsi_105_private *priv = usb_get_serial_port_data(port);
+-	unsigned long flags;
+-	int control;
 -
--	frame.skb = ieee80211_qosnullfunc_get(priv->hw, priv->vif);
--	if (!frame.skb)
--		return -ENOMEM;
--
--	ret = wsm_set_template_frame(priv, &frame);
--
--	dev_kfree_skb(frame.skb);
--
--	*/
--	return ret;
-+	return 0;
+-	spin_lock_irqsave (&priv->lock, flags);
+-	if (set & TIOCM_RTS)
+-		priv->control_state |= TIOCM_RTS;
+-	if (set & TIOCM_DTR)
+-		priv->control_state |= TIOCM_DTR;
+-	if (clear & TIOCM_RTS)
+-		priv->control_state &= ~TIOCM_RTS;
+-	if (clear & TIOCM_DTR)
+-		priv->control_state &= ~TIOCM_DTR;
+-	control = priv->control_state;
+-	spin_unlock_irqrestore (&priv->lock, flags);
+-	retval = mct_u232_set_modem_ctrl(serial, control);
+-*/
+-	return retval;
++	return -EINVAL;
  }
  
- static int cw1200_enable_beaconing(struct cw1200_common *priv,
+ module_usb_serial_driver(serial_drivers, id_table);
 
