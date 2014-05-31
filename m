@@ -1,69 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753986AbaEaTg6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 May 2014 15:36:58 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:58410 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751577AbaEaTgx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 May 2014 15:36:53 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20140531182237.GA5382@localhost.localdomain>
-References: <1401480116-1973111-1-git-send-email-arnd@arndb.de> <20140531145114.GA3721@localhost.localdomain> <6347520.8jMPlVsFjM@wuerfel> <20140531182237.GA5382@localhost.localdomain>
+	id S1755031AbaEaTjh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 May 2014 15:39:37 -0400
+Received: from mail-vc0-f177.google.com ([209.85.220.177]:41664 "EHLO
+	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751687AbaEaTjf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 31 May 2014 15:39:35 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain;
- charset=UTF-8
-Subject: Re: [RFC 00/32] making inode time stamps y2038 ready
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Sat, 31 May 2014 12:34:12 -0700
-To: Richard Cochran <richardcochran@gmail.com>, Arnd Bergmann <arnd@arndb.de>
-CC: linux-kernel@vger.kernel.org, hch@infradead.org,
-        linux-mtd@lists.infradead.org, logfs@logfs.org,
-        linux-afs@lists.infradead.org, joseph@codesourcery.com,
-        linux-arch@vger.kernel.org, linux-cifs@vger.kernel.org,
-        linux-scsi@vger.kernel.org, ceph-devel@vger.kernel.org,
-        codalist@TELEMANN.coda.cs.cmu.edu, cluster-devel@redhat.com,
-        coda@cs.cmu.edu, geert@linux-m68k.org, linux-ext4@vger.kernel.org,
-        fuse-devel@lists.sourceforge.net, reiserfs-devel@vger.kernel.org,
-        xfs@oss.sgi.com, john.stultz@linaro.org, tglx@linutronix.de,
-        linux-nfs@vger.kernel.org, linux-ntfs-dev@lists.sourceforge.net,
-        samba-technical@lists.samba.org,
-        linux-f2fs-devel@lists.sourceforge.net, ocfs2-devel@oss.oracle.com,
-        linux-fsdevel@vger.kernel.org, lftan@altera.com,
-        linux-btrfs@vger.kernel.org
-Message-ID: <57071155-5a08-4579-9189-92d442cd65e7@email.android.com>
+In-Reply-To: <538A1B75.5030107@gmail.com>
+References: <538A1B75.5030107@gmail.com>
+Date: Sat, 31 May 2014 12:39:34 -0700
+X-Google-Sender-Auth: Ncr07O4GS88YpjzbfTOOdfvqYek
+Message-ID: <CA+55aFzfrGYCeUgXkeVowfJY+CL6MFPo7LpWSGiZvKhGA_qroQ@mail.gmail.com>
+Subject: Re: [PATCH] fs/buffer.c: grow_buffers: fix the uncorrect check
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: mnipxh <mnipxh@gmail.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Yanmin Zhang <yanmin_zhang@linux.intel.com>, shuox.liu@intel.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Typically they are using 64-bit signed seconds.
+On Sat, May 31, 2014 at 11:12 AM, mnipxh <mnipxh@gmail.com> wrote:
+> When pgoff_t index is 32bit, sector_t block is 64bit, need check if block number is too big.
+> If block is bigger than (4Gb * PAGE_SIZE), index becomes a wrong value.
+> Commit e5657933863f43cc6bb76a54d659303dafaa9e58 wants to do this. But it gives an uncorrect check.
+> I think block != index << sizebits is correct. And it can detect such issue above.
 
-On May 31, 2014 11:22:37 AM PDT, Richard Cochran <richardcochran@gmail.com> wrote:
->On Sat, May 31, 2014 at 05:23:02PM +0200, Arnd Bergmann wrote:
->> 
->> It's an approximation:
->
->(Approximately never ;)
->
->> with 64-bit timestamps, you can represent close to 300 billion
->> years, which is way past the time that our planet can sustain
->> life of any form[1].
->
->Did you mean mean 64 bits worth of seconds?
->
->  2^64 / (3600*24*365) = 584,942,417,355
->
->That is more than 300 billion years, and still, it is not quite the
->same as "never".
->
->In any case, that term is not too helpful in the comparison table,
->IMHO. One could think that some sort of clever running count relative
->to the last mount time was implied.
->
->Thanks,
->Richard
->
->[1] You are forgetting the immortal robotic overlords.
+I don't understand why you think the current check is incorrect.
 
--- 
-Sent from my mobile phone.  Please pardon brevity and lack of formatting.
+It is testing that the calculation hasn't overflowed. It is correct.
+It *should* use the same calculation, to (a) make it more obvious that
+it's double-checking the earlier calculation in a different type, and
+(b) to make it easier for the compiler to optimize it away if sector_t
+and pgoff_t are the same size.
+
+So the current code is correct, afaik. Note that "index" is "pgoff_t",
+but "block >> sizebits" is "sector_t".
+
+               Linus
