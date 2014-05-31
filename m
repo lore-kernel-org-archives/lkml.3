@@ -1,81 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753584AbaEaGhs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 May 2014 02:37:48 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:52106 "EHLO
+	id S1753131AbaEaGq1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 May 2014 02:46:27 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:52982 "EHLO
 	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752437AbaEaGhr (ORCPT
+	with ESMTP id S1751371AbaEaGqZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 May 2014 02:37:47 -0400
-Message-ID: <53897886.3020200@ahsoftware.de>
-Date: Sat, 31 May 2014 08:36:54 +0200
+	Sat, 31 May 2014 02:46:25 -0400
+Message-ID: <53897A95.6030904@ahsoftware.de>
+Date: Sat, 31 May 2014 08:45:41 +0200
 From: Alexander Holler <holler@ahsoftware.de>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
 To: Marcel Holtmann <marcel@holtmann.org>
-CC: linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org,
+CC: LKML <linux-kernel@vger.kernel.org>,
+        linux-bluetooth <linux-bluetooth@vger.kernel.org>,
         "Gustavo F. Padovan" <gustavo@padovan.org>,
         Johan Hedberg <johan.hedberg@gmail.com>
-Subject: Re: [PATCH 2/2] bluetooth: raise HCI_CMD_TIMEOUT from 2s to 8s
-References: <1400076025-5103-1-git-send-email-holler@ahsoftware.de> <1400076025-5103-2-git-send-email-holler@ahsoftware.de> <B76D7881-8AE8-480D-A53B-B300DDEEBC47@holtmann.org>
-In-Reply-To: <B76D7881-8AE8-480D-A53B-B300DDEEBC47@holtmann.org>
+Subject: Re: [PATCH 1/2] bluetooth: don't include local processing of HCI
+ commands in the command timeout
+References: <1400076025-5103-1-git-send-email-holler@ahsoftware.de> <C2044AE9-519F-4A3D-BA6D-1076318AA4F5@holtmann.org>
+In-Reply-To: <C2044AE9-519F-4A3D-BA6D-1076318AA4F5@holtmann.org>
 Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 31.05.2014 07:32, schrieb Marcel Holtmann:
+Am 31.05.2014 07:28, schrieb Marcel Holtmann:
 > Hi Alexander,
 > 
->> The reasoning to do this is the following:
+>> I assume the timeout for processing HCI commands was originally intended to
+>> detect hung bluetooth devices and should not include the time needed locally
+>> to handle the response to an HCI command. That is important because the time
+>> needed locally (by the kernel or even userland) to process responses to HCI
+>> commands varies a lot between systems and HCI commands. That's even more true
+>> since many actions to HCI command responses are handled inside works which
+>> might be delayed quiet some time, depending on the actual system load.
 >>
->> - If a timeout occurs, the HCI-communication is broken afterwards and the
->>  dongle isn't usable anymore.
->> - If it works after e.g. waiting 4s everyone is still happy but if it
->>  just breaks after only waiting 2s nothing is gained.
->> - Having to wait some more seconds until an error occurs doesn't change
->>  anything.
+>> So stop the timeout as soon as a response to an HCI command was received.
 >>
->> So there is no disadvantage in rasing the timeout but a great advantage
->> in case the dongle needs more than 2s to process an HCI command.
->> E.g. I had sometimes HCI command timeouts at boot (but never after the BT stack
->> was successfull started). I assume the reason might be the USB-probing which
->> happend before through the bootloader, which might have confused the dongle
->> such that it needs a bit more time, but I'm not sure.
+>> This fixes various problems which resulted in HCI command timeouts and an
+>> afterwards non-working bluetooth stack, especially on slower systems like
+>> some ARM devices.
 >>
->> Together with the patch which limits the timeout only to the actual time the
->> dongle needs to process an HCI command (and doesn't include the time the
->> kernel needs to process the answer to an HCI command), my problems were gone.
+>> Drawback is that in-kernel problems like deadlocks aren't detected by HCI
+>> command timeouts anymore, but such problems should be detected and handled
+>> by other means and not by a timeout where it is hard to specify a value
+>> reasonable for all possible systems (-configurations, -loads).
+>>
+>> Furthermore, if the timeout includes local processing of HCI command
+>> responses, in-kernel errors like hung tasks might be masked by the
+>> timeout, because the hung task would be killed by the timeout before
+>> the hung task would be detected (by other means).
 >>
 >> Signed-off-by: Alexander Holler <holler@ahsoftware.de>
 >> ---
->> include/net/bluetooth/hci.h | 2 +-
->> 1 file changed, 1 insertion(+), 1 deletion(-)
+>> net/bluetooth/hci_event.c | 12 ++++++------
+>> 1 file changed, 6 insertions(+), 6 deletions(-)
 >>
->> diff --git a/include/net/bluetooth/hci.h b/include/net/bluetooth/hci.h
->> index be150cf..d50fd34 100644
->> --- a/include/net/bluetooth/hci.h
->> +++ b/include/net/bluetooth/hci.h
->> @@ -180,7 +180,7 @@ enum {
->> #define HCI_DISCONN_TIMEOUT	msecs_to_jiffies(2000)	/* 2 seconds */
->> #define HCI_PAIRING_TIMEOUT	msecs_to_jiffies(60000)	/* 60 seconds */
->> #define HCI_INIT_TIMEOUT	msecs_to_jiffies(10000)	/* 10 seconds */
->> -#define HCI_CMD_TIMEOUT		msecs_to_jiffies(2000)	/* 2 seconds */
->> +#define HCI_CMD_TIMEOUT		msecs_to_jiffies(8000)	/* 8 seconds */
->> #define HCI_ACL_TX_TIMEOUT	msecs_to_jiffies(45000)	/* 45 seconds */
->> #define HCI_AUTO_OFF_TIMEOUT	msecs_to_jiffies(2000)	/* 2 seconds */
->> #define HCI_POWER_OFF_TIMEOUT	msecs_to_jiffies(5000)	/* 5 seconds */
+>> diff --git a/net/bluetooth/hci_event.c b/net/bluetooth/hci_event.c
+>> index 15010a2..94c2dc0 100644
+>> --- a/net/bluetooth/hci_event.c
+>> +++ b/net/bluetooth/hci_event.c
+>> @@ -2338,6 +2338,9 @@ static void hci_cmd_complete_evt(struct hci_dev *hdev, struct sk_buff *skb)
+>>
+>> 	opcode = __le16_to_cpu(ev->opcode);
+>>
+>> +	if (opcode != HCI_OP_NOP)
+>> +		del_timer(&hdev->cmd_timer);
+>> +
 > 
-> I think moving the command timeout handling into a delayed work struct might actually solve this problem nicely and does not force us to increase the timeout. A chip that does not respond for 8 seconds is a pretty bad chip.
+> so I actually wonder if we should move away from timer and move to a delayed work item to handle the timeout and if that would actually fix this issue.
 
-As I said in another mail, I don't think it is the chip. On the system
-where I'm experiencing these timeouts there's still the USB-subsysten
-inbetween. And this system boots from USB too, which means there's a lot
-of other traffic on the USB-bus besides the one for the USB-BT-dongle.
-And I don't know how the USB-stack (and hw) schedules the traffic, if he
-is able to schedule that at all.
+The problem is that I have absolutely no clue where these timeouts do
+come from. They appear for different commands and almost always only at
+boot. If the machine did come up without hci command timeouts, there
+never was one afterwards. So I digged in the dark and the above patch
+was one of the results. But I still had to increase the command timeout.
+And I can't do much testing as I use this box. I just experience this
+problem almost always when I boot it (to do kernel updates) and since a
+very long time (more than a year I think).
 
 Regards,
 
-Alexander
+Alexander Holler
