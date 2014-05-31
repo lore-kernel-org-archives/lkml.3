@@ -1,66 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756374AbaEaKPR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 May 2014 06:15:17 -0400
-Received: from mail.kernel.org ([198.145.19.201]:45968 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753785AbaEaKPP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 May 2014 06:15:15 -0400
-Message-ID: <5389AC1E.9000608@kernel.org>
-Date: Sat, 31 May 2014 11:17:02 +0100
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S932670AbaEaKSf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 May 2014 06:18:35 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:59715 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753968AbaEaKSd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 31 May 2014 06:18:33 -0400
+Date: Sat, 31 May 2014 14:18:21 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Christoph Lameter <cl@gentwo.org>
+CC: <akpm@linux-foundation.org>, <hannes@cmpxchg.org>, <mhocko@suse.cz>,
+        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
+Subject: Re: [PATCH -mm 4/8] slub: never fail kmem_cache_shrink
+Message-ID: <20140531101819.GA25076@esperanza>
+References: <cover.1401457502.git.vdavydov@parallels.com>
+ <ac8907cace921c3209aa821649349106f4f70b34.1401457502.git.vdavydov@parallels.com>
+ <alpine.DEB.2.10.1405300937560.11943@gentwo.org>
 MIME-Version: 1.0
-To: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        Reyad Attiyat <reyad.attiyat@gmail.com>
-CC: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org
-Subject: Re: [PATCH] IIO: Support for True/Magnetic north
-References: <538076CA.6050809@kernel.org> <1401160821-5006-1-git-send-email-reyad.attiyat@gmail.com> <5384B099.2070808@linux.intel.com>
-In-Reply-To: <5384B099.2070808@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.10.1405300937560.11943@gentwo.org>
+X-Originating-IP: [81.5.110.170]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27/05/14 16:34, Srinivas Pandruvada wrote:
-> Hi Reyad,
->
-> On 05/26/2014 08:20 PM, Reyad Attiyat wrote:
->> Hey Jonathan and Srinivas,
->>
->> I have added in the needed magn_north iio sysfs attributes to the documentation.
->> I hope I did everything correct.
->> I noticed that the line length was very long as compensated is a  fairly long word.
->> I'm thinking I could shorten some of the sysfs paths or shorten the name.
->>
->> For updating the hid-sensor-magn-3d do you have any tips on this? I'm thinking I'll need a
->> dynamic iio_chan array that is passed to iio_register function. It would need to
->> be dynamic in the sense it would only add channels if it found x, y, z, or one of
->> the north attributes. I'll start working on this soon.
->
-> I think you mean dynamic " iio_chan_spec magn_3d_channels[]". Currently this is a
-> constant. So we can change this to add only channel, which are available.
->
-> Also your other changes must be submitted as series of patches, including the drivers using them.
-I specifically requested that Reyad get the proposal out asap so that we could discuss it
-'before' the patch series using it.  Obviously it won't get merged until there is
-a driver using this interface, but often the interface discussion takes longer
-than the review of the code so best to get it going asap!
->
-> Thanks,
-> Srinivas
->
->> Thank You,
->> Reyad Attiyat
->>
->>
->>
->> Reyad Attiyat (1):
->>    IIO: Added iio magn_north ABI documentation
->>
->>   Documentation/ABI/testing/sysfs-bus-iio | 76 +++++++++++++++++++++++++++++++++
->>   1 file changed, 76 insertions(+)
->>
->
+On Fri, May 30, 2014 at 09:46:33AM -0500, Christoph Lameter wrote:
+> On Fri, 30 May 2014, Vladimir Davydov wrote:
+> 
+> > SLUB's kmem_cache_shrink not only removes empty slabs from the cache,
+> > but also sorts slabs by the number of objects in-use to cope with
+> > fragmentation. To achieve that, it tries to allocate a temporary array.
+> > If it fails, it will abort the whole procedure.
+> 
+> If we cannot allocate a kernel structure that is mostly less than a page
+> size then we have much more important things to worry about.
 
+That's all fair, but that doesn't explain why we should fail shrinking
+unused slabs if we just couldn't do some unnecessary optimization? IMO,
+that's a behavior one wouldn't expect.
+
+> > This is unacceptable for kmemcg, where we want to be sure that all empty
+> > slabs are removed from the cache on memcg offline, so let's just skip
+> > the de-fragmentation step if the allocation fails, but still get rid of
+> > empty slabs.
+> 
+> Lets just try the shrink and log the fact that it failed? Try again later?
+
+... which means more async workers, more complication to kmemcg code :-(
+
+Sorry, but I just don't get why we can't make kmem_cache_shrink never
+fail? Is failing de-fragmentation, which is even not implied by the
+function declaration, so critical that should be noted? If so, we can
+return an error while still shrinking empty slabs...
+
+If you just don't like the code after the patch, here is another, less
+intrusive version doing practically the same. Would it be better?
+
+diff --git a/mm/slub.c b/mm/slub.c
+index d96faa2464c3..e45af8c4fb7c 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -3404,12 +3404,15 @@ int __kmem_cache_shrink(struct kmem_cache *s)
+ 	struct page *page;
+ 	struct page *t;
+ 	int objects = oo_objects(s->max);
++	struct list_head empty_slabs;
+ 	struct list_head *slabs_by_inuse =
+ 		kmalloc(sizeof(struct list_head) * objects, GFP_KERNEL);
+ 	unsigned long flags;
+ 
+-	if (!slabs_by_inuse)
+-		return -ENOMEM;
++	if (!slabs_by_inuse) {
++		slabs_by_inuse = &empty_slabs;
++		objects = 1;
++	}
+ 
+ 	flush_all(s);
+ 	for_each_node_state(node, N_NORMAL_MEMORY) {
+@@ -3430,7 +3433,9 @@ int __kmem_cache_shrink(struct kmem_cache *s)
+ 		 * list_lock. page->inuse here is the upper limit.
+ 		 */
+ 		list_for_each_entry_safe(page, t, &n->partial, lru) {
+-			list_move(&page->lru, slabs_by_inuse + page->inuse);
++			if (page->inuse < objects)
++				list_move(&page->lru,
++					  slabs_by_inuse + page->inuse);
+ 			if (!page->inuse)
+ 				n->nr_partial--;
+ 		}
