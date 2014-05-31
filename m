@@ -1,47 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756675AbaEaVYQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 May 2014 17:24:16 -0400
-Received: from mail-la0-f47.google.com ([209.85.215.47]:39165 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753352AbaEaVYP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 May 2014 17:24:15 -0400
-Message-ID: <538A4888.1040204@cogentembedded.com>
-Date: Sun, 01 Jun 2014 01:24:24 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1756520AbaEaVhu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 May 2014 17:37:50 -0400
+Received: from mout.gmx.net ([212.227.15.18]:54795 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752202AbaEaVhs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 31 May 2014 17:37:48 -0400
+From: =?UTF-8?q?Manuel=20Sch=C3=B6lling?= <manuel.schoelling@gmx.de>
+To: davem@davemloft.net
+Cc: jeffrey.t.kirsher@intel.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Manuel=20Sch=C3=B6lling?= <manuel.schoelling@gmx.de>
+Subject: [PATCH v2] dns_resolver: Do not accept domain names longer than 255 chars
+Date: Sat, 31 May 2014 23:37:40 +0200
+Message-Id: <1401572260-18973-1-git-send-email-manuel.schoelling@gmx.de>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1401554673-16311-1-git-send-email-manuel.schoelling@gmx.de>
+References: <1401554673-16311-1-git-send-email-manuel.schoelling@gmx.de>
 MIME-Version: 1.0
-To: Peter Senna Tschudin <peter.senna@gmail.com>
-CC: Oliver Neukum <oliver@neukum.org>, kernel-janitors@vger.kernel.org,
-        Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/11] USB: kl5kusb105: Remove useless return variables
-References: <1401542051-3174-1-git-send-email-peter.senna@gmail.com>	<538A46DF.1040009@cogentembedded.com> <CA+MoWDqDqwOSirh+aP72t_t_2KNajmfn8v5ywpAuLsjJssBwxw@mail.gmail.com>
-In-Reply-To: <CA+MoWDqDqwOSirh+aP72t_t_2KNajmfn8v5ywpAuLsjJssBwxw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Provags-ID: V03:K0:YB88Ncvyb3INot21v7XvZGVQOzN16k1PGn7AvX5Ef5BhL6h+Ez8
+ eSdkT+Mf37XjEgiDTiLE5QXo47ntOKUKnTArlqbTE8DSgvq+wm3VQ0Q9pZ+nQgtJoxziJ1T
+ PWn3SvI77PQhyGfe00NybqClIe+kd1fhT+JfpvUDctUQeemLlolzZbfDEJBNRlzRu5OGxVc
+ ccW/UH4fLL4E374rSu/FQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+According to RFC1035 "[...] the total length of a domain name (i.e.,
+label octets and label length octets) is restricted to 255 octets or
+less."
 
-On 06/01/2014 01:21 AM, Peter Senna Tschudin wrote:
+Signed-off-by: Manuel Schölling <manuel.schoelling@gmx.de>
+---
+ net/dns_resolver/dns_query.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
->>> This patch remove variables that are initialized with a constant,
->>> are never updated, and are only used as parameter of return.
->>> Return the constant instead of using a variable.
-
->>    The patch does more than just that, it also removes commented out code.
-
-> That was my fault. It was fixed on V2:
-> http://marc.info/?l=kernel-janitors&m=140155221232137&w=2
-
-    Yes, I forgot to look at the follow-ups before replying.
-
-WBR, Sergei
+diff --git a/net/dns_resolver/dns_query.c b/net/dns_resolver/dns_query.c
+index e7b6d53..5b49958 100644
+--- a/net/dns_resolver/dns_query.c
++++ b/net/dns_resolver/dns_query.c
+@@ -93,8 +93,8 @@ int dns_query(const char *type, const char *name, size_t namelen,
+ 	}
+ 
+ 	if (!namelen)
+-		namelen = strlen(name);
+-	if (namelen < 3)
++		namelen = strnlen(name, 256);
++	if (namelen < 3 || namelen > 255)
+ 		return -EINVAL;
+ 	desclen += namelen + 1;
+ 
+-- 
+1.7.10.4
 
