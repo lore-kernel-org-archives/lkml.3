@@ -1,111 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754082AbaEaQFK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 May 2014 12:05:10 -0400
-Received: from mail-qa0-f45.google.com ([209.85.216.45]:60946 "EHLO
-	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751884AbaEaQFI (ORCPT
+	id S1752663AbaEaQMU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 May 2014 12:12:20 -0400
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:45386 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751155AbaEaQMT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 May 2014 12:05:08 -0400
+	Sat, 31 May 2014 12:12:19 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140531145814.GA14935@localhost>
-References: <1401542051-3174-1-git-send-email-peter.senna@gmail.com>
-	<20140531145814.GA14935@localhost>
-Date: Sat, 31 May 2014 13:05:07 -0300
-Message-ID: <CA+MoWDoeJBAOE07zsSyQj6EPqr29Mt739n8+fDwNwd1WyzynkA@mail.gmail.com>
-Subject: Re: [PATCH 1/11] USB: kl5kusb105: Remove useless return variables
-From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: Johan Hovold <jhovold@gmail.com>
-Cc: Oliver Neukum <oliver@neukum.org>, kernel-janitors@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <alpine.LFD.2.11.1405310745001.10717@i7.linux-foundation.org>
+References: <CA+55aFzYjRrvSaF=wGimrgtEqR7GHbu1ku1qn1wQs5wgQrCZdg@mail.gmail.com>
+	<20140529154454.GK18016@ZenIV.linux.org.uk>
+	<20140529162307.GL18016@ZenIV.linux.org.uk>
+	<CA+55aFyRDJpm2Wfg9jvXCsKYgt36=6A_++bX+Q=C4MvQRbqh_A@mail.gmail.com>
+	<20140529165351.GM18016@ZenIV.linux.org.uk>
+	<20140529185201.GN18016@ZenIV.linux.org.uk>
+	<20140530081238.GA1957@lahna.fi.intel.com>
+	<20140530152151.GR18016@ZenIV.linux.org.uk>
+	<CA+55aFxLNvBDYtiq92DvuVqUk7byWeYiL1svbNQdXg7MRtbBcQ@mail.gmail.com>
+	<20140530164815.GS18016@ZenIV.linux.org.uk>
+	<20140530171408.GT18016@ZenIV.linux.org.uk>
+	<CA+5PVA5EmAkoZnWNUtXCPu5JZ=6Q4jFrjoqHZdtBVdbxwPe6Tw@mail.gmail.com>
+	<alpine.LFD.2.11.1405310745001.10717@i7.linux-foundation.org>
+Date: Sat, 31 May 2014 12:12:18 -0400
+X-Google-Sender-Auth: 6vT3R6ZI3Ac3yBNFsdNkMIU603I
+Message-ID: <CA+5PVA4cSTpzoqqXdxT+GqEGDqZ1X6nPXoWo8OKJc_ePBDBzbQ@mail.gmail.com>
+Subject: Re: [git pull] Re: fs/dcache.c - BUG: soft lockup - CPU#5 stuck for
+ 22s! [systemd-udevd:1667]
+From: Josh Boyer <jwboyer@fedoraproject.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Miklos Szeredi <mszeredi@suse.cz>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 31, 2014 at 11:58 AM, Johan Hovold <jhovold@gmail.com> wrote:
-> On Sat, May 31, 2014 at 10:14:01AM -0300, Peter Senna Tschudin wrote:
->> This patch remove variables that are initialized with a constant,
->> are never updated, and are only used as parameter of return.
->> Return the constant instead of using a variable.
->>
->> Verified by compilation only.
->>
->> The coccinelle script that find and fixes this issue is:
->> // <smpl>
->> @@
->> type T;
->> constant C;
->> identifier ret;
->> @@
->> - T ret = C;
->> ... when != ret
->>     when strict
->> return
->> - ret
->> + C
->> ;
->> // </smpl>
->>
->> Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
->>
->> ---
->>  drivers/usb/serial/kl5kusb105.c |   23 +----------------------
->>  1 file changed, 1 insertion(+), 22 deletions(-)
->>
->> diff --git a/drivers/usb/serial/kl5kusb105.c b/drivers/usb/serial/kl5kusb105.c
->> index d7440b7..2657c00 100644
->> --- a/drivers/usb/serial/kl5kusb105.c
->> +++ b/drivers/usb/serial/kl5kusb105.c
->> @@ -605,28 +605,7 @@ static int klsi_105_tiocmget(struct tty_struct *tty)
->>  static int klsi_105_tiocmset(struct tty_struct *tty,
->>                            unsigned int set, unsigned int clear)
->>  {
->> -     int retval = -EINVAL;
->> -
->> -/* if this ever gets implemented, it should be done something like this:
->> -     struct usb_serial *serial = port->serial;
->> -     struct klsi_105_private *priv = usb_get_serial_port_data(port);
->> -     unsigned long flags;
->> -     int control;
->> -
->> -     spin_lock_irqsave (&priv->lock, flags);
->> -     if (set & TIOCM_RTS)
->> -             priv->control_state |= TIOCM_RTS;
->> -     if (set & TIOCM_DTR)
->> -             priv->control_state |= TIOCM_DTR;
->> -     if (clear & TIOCM_RTS)
->> -             priv->control_state &= ~TIOCM_RTS;
->> -     if (clear & TIOCM_DTR)
->> -             priv->control_state &= ~TIOCM_DTR;
->> -     control = priv->control_state;
->> -     spin_unlock_irqrestore (&priv->lock, flags);
->> -     retval = mct_u232_set_modem_ctrl(serial, control);
->> -*/
->> -     return retval;
->> +     return -EINVAL;
+On Sat, May 31, 2014 at 10:48 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
 >
-> Your patch does a bit more than what the description says, although
-> removing this out-commented code would be perfectly fine.
-Sorry for that, my fault.
+>
+> On Sat, 31 May 2014, Josh Boyer wrote:
+>>
+>> One of my machines got the lockdep report below when booting a kernel
+>> that contained these patches.
+>
+> I think this is just a lacking annotation.
+>
+> We do nest dentry d_lock locking, and in order to avoid ABBA deadlocks the
+> rule is that we lock things in topological order (parent dentry first).
+> lock_parent() is very careful about that, but doesn't actually tell
+> lockdep about it.
+>
+> This trivial oneliner should fix it.
+>
+>                         Linus
+
+Built the previous kernel with just this applied and it seems to
+behave correctly on several reboots.  I think this looks good.
+Thanks!
+
+josh
 
 >
-> But please just remove the entire function (and the corresponding entry
-> in the struct usb_serial_driver) and update the commit message.
-Sent V2.
-
+> ---
+>  fs/dcache.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 >
-> Thanks,
-> Johan
->
->>  }
->>
->>  module_usb_serial_driver(serial_drivers, id_table);
->>
-
-
-
--- 
-Peter
+> diff --git a/fs/dcache.c b/fs/dcache.c
+> index bce851dc03ef..be2bea834bf4 100644
+> --- a/fs/dcache.c
+> +++ b/fs/dcache.c
+> @@ -553,7 +553,7 @@ again:
+>         }
+>         rcu_read_unlock();
+>         if (parent != dentry)
+> -               spin_lock(&dentry->d_lock);
+> +               spin_lock_nested(&dentry->d_lock, DENTRY_D_LOCK_NESTED);
+>         else
+>                 parent = NULL;
+>         return parent;
