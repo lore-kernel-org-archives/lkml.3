@@ -1,50 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751854AbaEaSMf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 May 2014 14:12:35 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:50702 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751206AbaEaSMe (ORCPT
+	id S1752268AbaEaSXS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 May 2014 14:23:18 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:33788 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751329AbaEaSXO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 May 2014 14:12:34 -0400
-Message-ID: <538A1B75.5030107@gmail.com>
-Date: Sun, 01 Jun 2014 02:12:05 +0800
-From: mnipxh <mnipxh@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Sat, 31 May 2014 14:23:14 -0400
+Date: Sat, 31 May 2014 20:22:37 +0200
+From: Richard Cochran <richardcochran@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org, hch@infradead.org,
+        linux-mtd@lists.infradead.org, hpa@zytor.com, logfs@logfs.org,
+        linux-afs@lists.infradead.org, joseph@codesourcery.com,
+        linux-arch@vger.kernel.org, linux-cifs@vger.kernel.org,
+        linux-scsi@vger.kernel.org, ceph-devel@vger.kernel.org,
+        codalist@TELEMANN.coda.cs.cmu.edu, cluster-devel@redhat.com,
+        coda@cs.cmu.edu, geert@linux-m68k.org, linux-ext4@vger.kernel.org,
+        fuse-devel@lists.sourceforge.net, reiserfs-devel@vger.kernel.org,
+        xfs@oss.sgi.com, john.stultz@linaro.org, tglx@linutronix.de,
+        linux-nfs@vger.kernel.org, linux-ntfs-dev@lists.sourceforge.net,
+        samba-technical@lists.samba.org,
+        linux-f2fs-devel@lists.sourceforge.net, ocfs2-devel@oss.oracle.com,
+        linux-fsdevel@vger.kernel.org, lftan@altera.com,
+        linux-btrfs@vger.kernel.org
+Subject: Re: [RFC 00/32] making inode time stamps y2038 ready
+Message-ID: <20140531182237.GA5382@localhost.localdomain>
+References: <1401480116-1973111-1-git-send-email-arnd@arndb.de>
+ <20140531145114.GA3721@localhost.localdomain>
+ <6347520.8jMPlVsFjM@wuerfel>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        viro@zeniv.linux.org.uk
-CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        yanmin_zhang@linux.intel.com, shuox.liu@intel.com
-Subject: [PATCH] fs/buffer.c: grow_buffers: fix the uncorrect check
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <6347520.8jMPlVsFjM@wuerfel>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When pgoff_t index is 32bit, sector_t block is 64bit, need check if block number is too big.
-If block is bigger than (4Gb * PAGE_SIZE), index becomes a wrong value.
-Commit e5657933863f43cc6bb76a54d659303dafaa9e58 wants to do this. But it gives an uncorrect check.
-I think block != index << sizebits is correct. And it can detect such issue above.
+On Sat, May 31, 2014 at 05:23:02PM +0200, Arnd Bergmann wrote:
+> 
+> It's an approximation:
 
-Signed-off-by: xinhui.pan <xinhuix.pan@intel.com>
----
- fs/buffer.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+(Approximately never ;)
 
-diff --git a/fs/buffer.c b/fs/buffer.c
-index 9ddb9fc..1a674a6 100644
---- a/fs/buffer.c
-+++ b/fs/buffer.c
-@@ -1081,7 +1081,7 @@ grow_buffers(struct block_device *bdev, sector_t block, int size)
- 	 * Check for a block which wants to lie outside our maximum possible
- 	 * pagecache index.  (this comparison is done using sector_t types).
- 	 */
--	if (unlikely(index != block >> sizebits)) {
-+	if (unlikely(block != index << sizebits)) {
- 		char b[BDEVNAME_SIZE];
- 
- 		printk(KERN_ERR "%s: requested out-of-range block %llu for "
--- 
-1.9.1
+> with 64-bit timestamps, you can represent close to 300 billion
+> years, which is way past the time that our planet can sustain
+> life of any form[1].
+
+Did you mean mean 64 bits worth of seconds?
+
+  2^64 / (3600*24*365) = 584,942,417,355
+
+That is more than 300 billion years, and still, it is not quite the
+same as "never".
+
+In any case, that term is not too helpful in the comparison table,
+IMHO. One could think that some sort of clever running count relative
+to the last mount time was implied.
+
+Thanks,
+Richard
+
+[1] You are forgetting the immortal robotic overlords.
