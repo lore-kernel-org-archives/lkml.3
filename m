@@ -1,53 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934926AbaEaBja (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 21:39:30 -0400
+	id S935047AbaEaBje (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 21:39:34 -0400
 Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:54987 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932323AbaEaBj1 (ORCPT
+	by vger.kernel.org with ESMTP id S934638AbaEaBja (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 21:39:27 -0400
-Message-Id: <20140531013857.160310242@goodmis.org>
+	Fri, 30 May 2014 21:39:30 -0400
+Message-Id: <20140531013926.322377417@goodmis.org>
 User-Agent: quilt/0.63-1
-Date: Fri, 30 May 2014 21:38:57 -0400
+Date: Fri, 30 May 2014 21:39:02 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
-Subject: [for-next][PATCH 0/7] tracing: More changes queued up for 3.16
+Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: [for-next][PATCH 5/7] tracing: Have saved_cmdlines use the seq_read infrastructure
+References: <20140531013857.160310242@goodmis.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline; filename=0004-tracing-Have-saved_cmdlines-use-the-seq_read-infrast.patch
 X-RR-Connecting-IP: 107.14.168.130:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
-for-next
+From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
 
-Head SHA1: 676412a37f248205ecadfaddb50e150a44ef2b0c
+Current tracing_saved_cmdlines_read() implementation is naive; It allocates
+a large buffer, constructs output data to that buffer for each read
+operation, and then copies a portion of the buffer to the user space
+buffer. This has several issues such as slow memory allocation, high
+CPU usage, and even corruption of the output data.
+
+The seq_read infrastructure is made to handle this type of work.
+By converting it to use seq_read() the code becomes smaller, simplified,
+as well as correct.
+
+Link: http://lkml.kernel.org/p/20140220084431.3839.51793.stgit@yunodevel
+
+Signed-off-by: Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Signed-off-by: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/trace/trace.c | 89 +++++++++++++++++++++++++++++++---------------------
+ 1 file changed, 54 insertions(+), 35 deletions(-)
+
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index eb228b9de170..1855dae73f34 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -3699,55 +3699,74 @@ static const struct file_operations tracing_readme_fops = {
+ 	.llseek		= generic_file_llseek,
+ };
+ 
+-static ssize_t
+-tracing_saved_cmdlines_read(struct file *file, char __user *ubuf,
+-				size_t cnt, loff_t *ppos)
++static void *saved_cmdlines_next(struct seq_file *m, void *v, loff_t *pos)
+ {
+-	char *buf_comm;
+-	char *file_buf;
+-	char *buf;
+-	int len = 0;
+-	int pid;
+-	int i;
++	unsigned int *ptr = v;
+ 
+-	file_buf = kmalloc(SAVED_CMDLINES*(16+TASK_COMM_LEN), GFP_KERNEL);
+-	if (!file_buf)
+-		return -ENOMEM;
++	if (*pos || m->count)
++		ptr++;
+ 
+-	buf_comm = kmalloc(TASK_COMM_LEN, GFP_KERNEL);
+-	if (!buf_comm) {
+-		kfree(file_buf);
+-		return -ENOMEM;
+-	}
++	(*pos)++;
++
++	for (; ptr < &map_cmdline_to_pid[SAVED_CMDLINES]; ptr++) {
++		if (*ptr == -1 || *ptr == NO_CMDLINE_MAP)
++			continue;
+ 
+-	buf = file_buf;
++		return ptr;
++	}
+ 
+-	for (i = 0; i < SAVED_CMDLINES; i++) {
+-		int r;
++	return NULL;
++}
+ 
+-		pid = map_cmdline_to_pid[i];
+-		if (pid == -1 || pid == NO_CMDLINE_MAP)
+-			continue;
++static void *saved_cmdlines_start(struct seq_file *m, loff_t *pos)
++{
++	void *v;
++	loff_t l = 0;
+ 
+-		trace_find_cmdline(pid, buf_comm);
+-		r = sprintf(buf, "%d %s\n", pid, buf_comm);
+-		buf += r;
+-		len += r;
++	v = &map_cmdline_to_pid[0];
++	while (l <= *pos) {
++		v = saved_cmdlines_next(m, v, &l);
++		if (!v)
++			return NULL;
+ 	}
+ 
+-	len = simple_read_from_buffer(ubuf, cnt, ppos,
+-				      file_buf, len);
++	return v;
++}
+ 
+-	kfree(file_buf);
+-	kfree(buf_comm);
++static void saved_cmdlines_stop(struct seq_file *m, void *v)
++{
++}
+ 
+-	return len;
++static int saved_cmdlines_show(struct seq_file *m, void *v)
++{
++	char buf[TASK_COMM_LEN];
++	unsigned int *pid = v;
++
++	trace_find_cmdline(*pid, buf);
++	seq_printf(m, "%d %s\n", *pid, buf);
++	return 0;
++}
++
++static const struct seq_operations tracing_saved_cmdlines_seq_ops = {
++	.start		= saved_cmdlines_start,
++	.next		= saved_cmdlines_next,
++	.stop		= saved_cmdlines_stop,
++	.show		= saved_cmdlines_show,
++};
++
++static int tracing_saved_cmdlines_open(struct inode *inode, struct file *filp)
++{
++	if (tracing_disabled)
++		return -ENODEV;
++
++	return seq_open(filp, &tracing_saved_cmdlines_seq_ops);
+ }
+ 
+ static const struct file_operations tracing_saved_cmdlines_fops = {
+-    .open       = tracing_open_generic,
+-    .read       = tracing_saved_cmdlines_read,
+-    .llseek	= generic_file_llseek,
++	.open		= tracing_saved_cmdlines_open,
++	.read		= seq_read,
++	.llseek		= seq_lseek,
++	.release	= seq_release,
+ };
+ 
+ static ssize_t
+-- 
+2.0.0.rc2
 
 
-Robert Elliott (2)
-      tracing: Eliminate duplicate TRACE_GRAPH_PRINT_xx defines
-      tracing: Add funcgraph_tail option to print function name after closing braces
-
-Steven Rostedt (1)
-      tracing: Print nasty banner when trace_printk() is in use
-
-Steven Rostedt (Red Hat) (3)
-      tracing: Add tracepoint benchmark tracepoint
-      tracing: Try again for saved cmdline if failed due to locking
-      tracing: Move locking of trace_cmdline_lock into start/stop seq calls
-
-Yoshihiro YUNOMAE (1)
-      tracing: Have saved_cmdlines use the seq_read infrastructure
-
-----
- Documentation/trace/ftrace.txt       |   26 +++++
- kernel/trace/Kconfig                 |   30 +++++
- kernel/trace/Makefile                |    3 
- kernel/trace/trace.c                 |  137 ++++++++++++++++++---------
- kernel/trace/trace.h                 |    2 
- kernel/trace/trace_benchmark.c       |  176 +++++++++++++++++++++++++++++++++++
- kernel/trace/trace_benchmark.h       |   41 ++++++++
- kernel/trace/trace_functions_graph.c |   18 +--
- 8 files changed, 375 insertions(+), 58 deletions(-)
