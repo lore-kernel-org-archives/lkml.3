@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934188AbaEaNOu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 May 2014 09:14:50 -0400
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:43463 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932948AbaEaNOq (ORCPT
+	id S1756625AbaEaNOh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 May 2014 09:14:37 -0400
+Received: from mail-ve0-f172.google.com ([209.85.128.172]:40220 "EHLO
+	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756390AbaEaNOe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 May 2014 09:14:46 -0400
+	Sat, 31 May 2014 09:14:34 -0400
 From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Cc: kernel-janitors@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 9/11] drivers/media: Remove useless return variables
-Date: Sat, 31 May 2014 10:14:09 -0300
-Message-Id: <1401542051-3174-9-git-send-email-peter.senna@gmail.com>
+To: Intel SCU Linux support <intel-linux-scu@intel.com>
+Cc: kernel-janitors@vger.kernel.org,
+        Artur Paszkiewicz <artur.paszkiewicz@intel.com>,
+        Dave Jiang <dave.jiang@intel.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 3/11] isci: Remove useless return variables
+Date: Sat, 31 May 2014 10:14:03 -0300
+Message-Id: <1401542051-3174-3-git-send-email-peter.senna@gmail.com>
 X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -44,104 +47,78 @@ return
 Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
 
 ---
- drivers/media/pci/ngene/ngene-core.c      |   11 ++---------
- drivers/media/usb/cx231xx/cx231xx-video.c |   11 +++++------
- 2 files changed, 7 insertions(+), 15 deletions(-)
+ drivers/scsi/isci/request.c |   15 ++++-----------
+ 1 file changed, 4 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/media/pci/ngene/ngene-core.c b/drivers/media/pci/ngene/ngene-core.c
-index 970e833..d8435a5 100644
---- a/drivers/media/pci/ngene/ngene-core.c
-+++ b/drivers/media/pci/ngene/ngene-core.c
-@@ -910,7 +910,6 @@ static int AllocateRingBuffers(struct pci_dev *pci_dev,
+diff --git a/drivers/scsi/isci/request.c b/drivers/scsi/isci/request.c
+index 56e3809..ecf7924 100644
+--- a/drivers/scsi/isci/request.c
++++ b/drivers/scsi/isci/request.c
+@@ -1480,8 +1480,6 @@ static enum sci_status
+ stp_request_pio_await_h2d_completion_tc_event(struct isci_request *ireq,
+ 					      u32 completion_code)
  {
- 	dma_addr_t tmp;
- 	u32 i, j;
--	int status = 0;
- 	u32 SCListMemSize = pRingBuffer->NumBuffers
- 		* ((Buffer2Length != 0) ? (NUM_SCATTER_GATHER_ENTRIES * 2) :
- 		    NUM_SCATTER_GATHER_ENTRIES)
-@@ -1010,18 +1009,12 @@ static int AllocateRingBuffers(struct pci_dev *pci_dev,
- 
- 	}
- 
--	return status;
-+	return 0;
- }
- 
- static int FillTSIdleBuffer(struct SRingBufferDescriptor *pIdleBuffer,
- 			    struct SRingBufferDescriptor *pRingBuffer)
- {
--	int status = 0;
+-	enum sci_status status = SCI_SUCCESS;
 -
--	/* Copy pointer to scatter gather list in TSRingbuffer
--	   structure for buffer 2
--	   Load number of buffer
--	*/
- 	u32 n = pRingBuffer->NumBuffers;
- 
- 	/* Point to first buffer entry */
-@@ -1038,7 +1031,7 @@ static int FillTSIdleBuffer(struct SRingBufferDescriptor *pIdleBuffer,
- 			pIdleBuffer->Head->ngeneBuffer.Number_of_entries_1;
- 		Cur = Cur->Next;
+ 	switch (SCU_GET_COMPLETION_TL_STATUS(completion_code)) {
+ 	case SCU_MAKE_COMPLETION_STATUS(SCU_TASK_DONE_GOOD):
+ 		ireq->scu_status = SCU_TASK_DONE_GOOD;
+@@ -1500,7 +1498,7 @@ stp_request_pio_await_h2d_completion_tc_event(struct isci_request *ireq,
+ 		break;
  	}
+ 
 -	return status;
++	return SCI_SUCCESS;
+ }
+ 
+ static enum sci_status
+@@ -2103,8 +2101,6 @@ sci_io_request_frame_handler(struct isci_request *ireq,
+ static enum sci_status stp_request_udma_await_tc_event(struct isci_request *ireq,
+ 						       u32 completion_code)
+ {
+-	enum sci_status status = SCI_SUCCESS;
+-
+ 	switch (SCU_GET_COMPLETION_TL_STATUS(completion_code)) {
+ 	case SCU_MAKE_COMPLETION_STATUS(SCU_TASK_DONE_GOOD):
+ 		ireq->scu_status = SCU_TASK_DONE_GOOD;
+@@ -2148,14 +2144,12 @@ static enum sci_status stp_request_udma_await_tc_event(struct isci_request *ireq
+ 		break;
+ 	}
+ 
+-	return status;
++	return SCI_SUCCESS;
+ }
+ 
+ static enum sci_status atapi_raw_completion(struct isci_request *ireq, u32 completion_code,
+ 						  enum sci_base_request_states next)
+ {
+-	enum sci_status status = SCI_SUCCESS;
+-
+ 	switch (SCU_GET_COMPLETION_TL_STATUS(completion_code)) {
+ 	case SCU_MAKE_COMPLETION_STATUS(SCU_TASK_DONE_GOOD):
+ 		ireq->scu_status = SCU_TASK_DONE_GOOD;
+@@ -2174,7 +2168,7 @@ static enum sci_status atapi_raw_completion(struct isci_request *ireq, u32 compl
+ 		break;
+ 	}
+ 
+-	return status;
++	return SCI_SUCCESS;
+ }
+ 
+ static enum sci_status atapi_data_tc_completion_handler(struct isci_request *ireq,
+@@ -3444,7 +3438,6 @@ int isci_request_execute(struct isci_host *ihost, struct isci_remote_device *ide
+ 	enum sci_status status = SCI_FAILURE_UNSUPPORTED_PROTOCOL;
+ 	struct isci_request *ireq;
+ 	unsigned long flags;
+-	int ret = 0;
+ 
+ 	/* do common allocation and init of request object. */
+ 	ireq = isci_io_request_from_tag(ihost, task, tag);
+@@ -3524,5 +3517,5 @@ int isci_request_execute(struct isci_host *ihost, struct isci_remote_device *ide
+ 		status = SCI_SUCCESS;
+ 	}
+ 
+-	return ret;
 +	return 0;
  }
- 
- static u32 RingBufferSizes[MAX_STREAM] = {
-diff --git a/drivers/media/usb/cx231xx/cx231xx-video.c b/drivers/media/usb/cx231xx/cx231xx-video.c
-index 1f87513..cba7fea 100644
---- a/drivers/media/usb/cx231xx/cx231xx-video.c
-+++ b/drivers/media/usb/cx231xx/cx231xx-video.c
-@@ -208,7 +208,7 @@ static inline void get_next_buf(struct cx231xx_dmaqueue *dma_q,
- static inline int cx231xx_isoc_copy(struct cx231xx *dev, struct urb *urb)
- {
- 	struct cx231xx_dmaqueue *dma_q = urb->context;
--	int i, rc = 1;
-+	int i;
- 	unsigned char *p_buffer;
- 	u32 bytes_parsed = 0, buffer_size = 0;
- 	u8 sav_eav = 0;
-@@ -299,13 +299,12 @@ static inline int cx231xx_isoc_copy(struct cx231xx *dev, struct urb *urb)
- 		bytes_parsed = 0;
- 
- 	}
--	return rc;
-+	return 1;
- }
- 
- static inline int cx231xx_bulk_copy(struct cx231xx *dev, struct urb *urb)
- {
- 	struct cx231xx_dmaqueue *dma_q = urb->context;
--	int rc = 1;
- 	unsigned char *p_buffer;
- 	u32 bytes_parsed = 0, buffer_size = 0;
- 	u8 sav_eav = 0;
-@@ -379,7 +378,7 @@ static inline int cx231xx_bulk_copy(struct cx231xx *dev, struct urb *urb)
- 		bytes_parsed = 0;
- 
- 	}
--	return rc;
-+	return 1;
- }
- 
- 
-@@ -1620,7 +1619,7 @@ static int radio_s_tuner(struct file *file, void *priv, const struct v4l2_tuner
-  */
- static int cx231xx_v4l2_open(struct file *filp)
- {
--	int errCode = 0, radio = 0;
-+	int radio = 0;
- 	struct video_device *vdev = video_devdata(filp);
- 	struct cx231xx *dev = video_drvdata(filp);
- 	struct cx231xx_fh *fh;
-@@ -1718,7 +1717,7 @@ static int cx231xx_v4l2_open(struct file *filp)
- 	mutex_unlock(&dev->lock);
- 	v4l2_fh_add(&fh->fh);
- 
--	return errCode;
-+	return 0;
- }
- 
- /*
 
