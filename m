@@ -1,54 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756273AbaEaUYO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 May 2014 16:24:14 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:43554 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751558AbaEaUYM (ORCPT
+	id S1755288AbaEaUaT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 May 2014 16:30:19 -0400
+Received: from mail-we0-f172.google.com ([74.125.82.172]:59109 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751558AbaEaUaR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 May 2014 16:24:12 -0400
-Date: Sat, 31 May 2014 23:23:51 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Peter Senna Tschudin <peter.senna@gmail.com>
-Cc: Brett Rudley <brudley@broadcom.com>, kernel-janitors@vger.kernel.org,
-        Arend van Spriel <arend@broadcom.com>,
-        "Franky (Zhenhui) Lin" <frankyl@broadcom.com>,
-        Hante Meuleman <meuleman@broadcom.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, brcm80211-dev-list@broadcom.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/11] net: wireless: Remove useless return variables
-Message-ID: <20140531202351.GN15585@mwanda>
-References: <1401542051-3174-6-git-send-email-peter.senna@gmail.com>
+	Sat, 31 May 2014 16:30:17 -0400
+Message-ID: <538A3BD7.7000607@gmail.com>
+Date: Sat, 31 May 2014 23:30:15 +0300
+From: Tair Rzayev <tair.rzayev@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1401542051-3174-6-git-send-email-peter.senna@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: media: solo6x10: solo6x10-jpeg.h: Fix sparse warning
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 31, 2014 at 10:14:06AM -0300, Peter Senna Tschudin wrote:
-> diff --git a/drivers/net/wireless/brcm80211/brcmsmac/phy/phy_cmn.c b/drivers/net/wireless/brcm80211/brcmsmac/phy/phy_cmn.c
-> index b0fd807..57ecc05 100644
-> --- a/drivers/net/wireless/brcm80211/brcmsmac/phy/phy_cmn.c
-> +++ b/drivers/net/wireless/brcm80211/brcmsmac/phy/phy_cmn.c
-> @@ -1538,11 +1538,7 @@ static s8
->  wlc_user_txpwr_antport_to_rfport(struct brcms_phy *pi, uint chan, u32 band,
->  				 u8 rate)
->  {
-> -	s8 offset = 0;
-> -
-> -	if (!pi->user_txpwr_at_rfport)
-> -		return offset;
-> -	return offset;
-> +	return 0;
->  }
+Make jpeg_dqt[][] static
 
-The original code looks buggy.  I wonder what it was supposed to do?
+Signed-off-by: Tair Rzayev <tair.rzayev@gmail.com>
+---
+ drivers/staging/media/solo6x10/solo6x10-jpeg.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-regards,
-dan carpenter
-
+diff --git a/drivers/staging/media/solo6x10/solo6x10-jpeg.h b/drivers/staging/media/solo6x10/solo6x10-jpeg.h
+index c5218ce..9e41185 100644
+--- a/drivers/staging/media/solo6x10/solo6x10-jpeg.h
++++ b/drivers/staging/media/solo6x10/solo6x10-jpeg.h
+@@ -110,7 +110,7 @@ static const unsigned char jpeg_header[] = {
+ /* This is the byte marker for the start of the DQT */
+ #define DQT_START	17
+ #define DQT_LEN		138
+-const unsigned char jpeg_dqt[4][DQT_LEN] = {
++static const unsigned char jpeg_dqt[4][DQT_LEN] = {
+ 	{
+ 		0xff, 0xdb, 0x00, 0x43, 0x00,
+ 		0x08, 0x06, 0x06, 0x07, 0x06, 0x05, 0x08, 0x07,
+-- 
+1.9.1
