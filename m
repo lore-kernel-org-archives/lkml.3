@@ -1,52 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935092AbaEaDe5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 23:34:57 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:37947 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932649AbaEaDez (ORCPT
+	id S935126AbaEaDgl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 23:36:41 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:50722 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932649AbaEaDgk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 23:34:55 -0400
-Date: Fri, 30 May 2014 20:35:07 -0700
-From: Olof Johansson <olof@lixom.net>
-To: Kumar Gala <galak@codeaurora.org>
-Cc: arm@kernel.org, Kevin Hilman <khilman@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, David Brown <davidb@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Georgi Djakov <gdjakov@mm-sol.com>
-Subject: Re: [GIT PULL] qcom SoC changes for v3.16-2
-Message-ID: <20140531033507.GC14790@quad.lixom.net>
-References: <alpine.DEB.2.00.1405301142280.5291@galak-ubuntu.qualcomm.com>
+	Fri, 30 May 2014 23:36:40 -0400
+Date: Fri, 30 May 2014 20:36:27 -0700
+From: "tip-bot for H. Peter Anvin" <tipbot@zytor.com>
+Message-ID: <tip-c9e5a5a7034146493386d985ff432aed8059929a@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        fenghua.yu@intel.com, tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        fenghua.yu@intel.com, tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <1401387164-43416-7-git-send-email-fenghua.yu@intel.com>
+References: <1401387164-43416-7-git-send-email-fenghua.yu@intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/xsave] x86/xsave:
+  Make it clear that the XSAVE macros use (%edi)/(%rdi)
+Git-Commit-ID: c9e5a5a7034146493386d985ff432aed8059929a
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1405301142280.5291@galak-ubuntu.qualcomm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 30, 2014 at 11:43:13AM -0500, Kumar Gala wrote:
-> The following changes since commit 87cfb00d666cca3abf36f755279cde1b27b9c377:
-> 
->   ARM: qcom: Select PINCTRL by default for ARCH_QCOM (2014-05-22 11:50:42 -0500)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/galak/linux-qcom.git tags/qcom-soc-for-3.16-2
-> 
-> for you to fetch changes up to 2f528dd3b30c4351c0ece73b8bdc39753c02003b:
-> 
->   ARM: debug: qcom: add UART addresses to Kconfig help for APQ8084 (2014-05-29 11:14:28 -0500)
-> 
-> ----------------------------------------------------------------
-> Qualcomm ARM Based SoC Updates for v3.16-2
-> 
-> * Updated Kconfig DEBUG_QCOM_UARTDM help to include APQ8084 info
+Commit-ID:  c9e5a5a7034146493386d985ff432aed8059929a
+Gitweb:     http://git.kernel.org/tip/c9e5a5a7034146493386d985ff432aed8059929a
+Author:     H. Peter Anvin <hpa@linux.intel.com>
+AuthorDate: Fri, 30 May 2014 08:19:21 -0700
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Fri, 30 May 2014 08:19:21 -0700
 
-Merged, thanks.
+x86/xsave: Make it clear that the XSAVE macros use (%edi)/(%rdi)
 
+The XSAVE instruction family takes a memory argment.  The macros use
+(%edi)/(%rdi) as that memory argument - make that clear to the reader.
 
--Olof
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
+Link: http://lkml.kernel.org/r/1401387164-43416-7-git-send-email-fenghua.yu@intel.com
+---
+ arch/x86/include/asm/xsave.h | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/x86/include/asm/xsave.h b/arch/x86/include/asm/xsave.h
+index 1ba577c..bbebd6e 100644
+--- a/arch/x86/include/asm/xsave.h
++++ b/arch/x86/include/asm/xsave.h
+@@ -52,6 +52,7 @@ extern void xsave_init(void);
+ extern void update_regset_xstate_info(unsigned int size, u64 xstate_mask);
+ extern int init_fpu(struct task_struct *child);
+ 
++/* These macros all use (%edi)/(%rdi) as the single memory argument. */
+ #define XSAVE		".byte " REX_PREFIX "0x0f,0xae,0x27"
+ #define XSAVEOPT	".byte " REX_PREFIX "0x0f,0xae,0x37"
+ #define XSAVES		".byte " REX_PREFIX "0x0f,0xc7,0x2f"
