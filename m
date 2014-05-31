@@ -1,55 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756413AbaEaK1u (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 May 2014 06:27:50 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:38121 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754118AbaEaK1t (ORCPT
+	id S1756396AbaEaKkr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 May 2014 06:40:47 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:53975 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754118AbaEaKkp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 May 2014 06:27:49 -0400
-Date: Sat, 31 May 2014 14:27:42 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Christoph Lameter <cl@gentwo.org>
-CC: <akpm@linux-foundation.org>, <hannes@cmpxchg.org>, <mhocko@suse.cz>,
-        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
-Subject: Re: [PATCH -mm 5/8] slab: remove kmem_cache_shrink retval
-Message-ID: <20140531102740.GB25076@esperanza>
-References: <cover.1401457502.git.vdavydov@parallels.com>
- <d2bbd28ae0f0c1807f9fe72d0443eccb739b8aa6.1401457502.git.vdavydov@parallels.com>
- <alpine.DEB.2.10.1405300947170.11943@gentwo.org>
+	Sat, 31 May 2014 06:40:45 -0400
+Date: Sat, 31 May 2014 03:40:19 -0700
+From: "tip-bot for H. Peter Anvin" <tipbot@zytor.com>
+Message-ID: <tip-c191920f737a09a7252088f018f6747f0d2f484d@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, luto@amacapital.net, hpa@zytor.com,
+        mingo@kernel.org, tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, luto@amacapital.net,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <2cf258df123cb24bad63c274c8563c050547d99d.1401464755.git.luto@amacapital.net>
+References: <2cf258df123cb24bad63c274c8563c050547d99d.1401464755.git.luto@amacapital.net>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/vdso] x86/vdso, build: Make LE access macros clearer,
+  host-safe
+Git-Commit-ID: c191920f737a09a7252088f018f6747f0d2f484d
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.10.1405300947170.11943@gentwo.org>
-X-Originating-IP: [81.5.110.170]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 30, 2014 at 09:49:55AM -0500, Christoph Lameter wrote:
-> On Fri, 30 May 2014, Vladimir Davydov wrote:
-> 
-> > First, nobody uses it. Second, it differs across the implementations:
-> > for SLUB it always returns 0, for SLAB it returns 0 if the cache appears
-> > to be empty. So let's get rid of it.
-> 
-> Well slub returns an error code if it fails
+Commit-ID:  c191920f737a09a7252088f018f6747f0d2f484d
+Gitweb:     http://git.kernel.org/tip/c191920f737a09a7252088f018f6747f0d2f484d
+Author:     H. Peter Anvin <hpa@linux.intel.com>
+AuthorDate: Fri, 30 May 2014 17:03:22 -0700
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Sat, 31 May 2014 03:35:27 -0700
 
-... to sort slabs by the nubmer of objects in use, which is not even
-implied by the function declaration. Why can *shrinking*, which is what
-kmem_cache_shrink must do at first place, ever fail?
+x86/vdso, build: Make LE access macros clearer, host-safe
 
-> I am all in favor of making it consistent. The indication in SLAB that
-> the slab is empty may be useful. May return error code or the number
-> of slab pages in use?
+Make it a little clearer what the littleendian access macros in
+vdso2c.[ch] actually do.  This way they can probably also be moved to
+a central location (e.g. tools/include) for the benefit of other host
+tools.
 
-We can, but why if nobody is going to use it?
+We should avoid implementation namespace symbols when writing code
+that is compiling for the compiler host, so avoid names starting with
+double underscore or underscore-capital.
 
-> Some of the code that is shared by the allocators here could be moved into
-> mm/slab_common.c. Put kmem_cache_shrink there and then have
-> __kmem_cache_shrink to the allocator specific things?
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Cc: Andy Lutomirski <luto@amacapital.net>
+Link: http://lkml.kernel.org/r/2cf258df123cb24bad63c274c8563c050547d99d.1401464755.git.luto@amacapital.net
+---
+ arch/x86/vdso/vdso2c.c | 16 ++++++-------
+ arch/x86/vdso/vdso2c.h | 65 ++++++++++++++++++++++++++------------------------
+ 2 files changed, 42 insertions(+), 39 deletions(-)
 
-Already did in scope of mm-commit 4fabfe86c4a5 ("slab: get_online_mems
-for kmem_cache_{create,destroy,shrink}") :-)
-
-Thanks.
+diff --git a/arch/x86/vdso/vdso2c.c b/arch/x86/vdso/vdso2c.c
+index de19ced..deabaf5 100644
+--- a/arch/x86/vdso/vdso2c.c
++++ b/arch/x86/vdso/vdso2c.c
+@@ -54,17 +54,17 @@ static void fail(const char *format, ...)
+ /*
+  * Evil macros to do a little-endian read.
+  */
+-#define __GET_TYPE(x, type, bits, ifnot)				\
++#define GLE(x, bits, ifnot)						\
+ 	__builtin_choose_expr(						\
+-		__builtin_types_compatible_p(typeof(x), type),		\
+-		le##bits##toh((x)), ifnot)
++		(sizeof(x) == bits/8),					\
++		(__typeof__(x))le##bits##toh(x), ifnot)
+ 
+-extern void bad_get(uint64_t);
++extern void bad_get_le(uint64_t);
++#define LAST_LE(x)							\
++	__builtin_choose_expr(sizeof(x) == 1, (x), bad_get_le(x))
+ 
+-#define GET(x)								\
+-	__GET_TYPE((x), __u32, 32, __GET_TYPE((x), __u64, 64,		\
+-	__GET_TYPE((x), __s32, 32, __GET_TYPE((x), __s64, 64,		\
+-	__GET_TYPE((x), __u16, 16, bad_get(x))))))
++#define GET_LE(x)							\
++	GLE(x, 64, GLE(x, 32, GLE(x, 16, LAST_LE(x))))
+ 
+ #define NSYMS (sizeof(required_syms) / sizeof(required_syms[0]))
+ 
+diff --git a/arch/x86/vdso/vdso2c.h b/arch/x86/vdso/vdso2c.h
+index f0475da..d1e99e1 100644
+--- a/arch/x86/vdso/vdso2c.h
++++ b/arch/x86/vdso/vdso2c.h
+@@ -18,27 +18,27 @@ static void GOFUNC(void *addr, size_t len, FILE *outfile, const char *name)
+ 	const char *secstrings;
+ 	uint64_t syms[NSYMS] = {};
+ 
+-	Elf_Phdr *pt = (Elf_Phdr *)(addr + GET(hdr->e_phoff));
++	Elf_Phdr *pt = (Elf_Phdr *)(addr + GET_LE(hdr->e_phoff));
+ 
+ 	/* Walk the segment table. */
+-	for (i = 0; i < GET(hdr->e_phnum); i++) {
+-		if (GET(pt[i].p_type) == PT_LOAD) {
++	for (i = 0; i < GET_LE(hdr->e_phnum); i++) {
++		if (GET_LE(pt[i].p_type) == PT_LOAD) {
+ 			if (found_load)
+ 				fail("multiple PT_LOAD segs\n");
+ 
+-			if (GET(pt[i].p_offset) != 0 ||
+-			    GET(pt[i].p_vaddr) != 0)
++			if (GET_LE(pt[i].p_offset) != 0 ||
++			    GET_LE(pt[i].p_vaddr) != 0)
+ 				fail("PT_LOAD in wrong place\n");
+ 
+-			if (GET(pt[i].p_memsz) != GET(pt[i].p_filesz))
++			if (GET_LE(pt[i].p_memsz) != GET_LE(pt[i].p_filesz))
+ 				fail("cannot handle memsz != filesz\n");
+ 
+-			load_size = GET(pt[i].p_memsz);
++			load_size = GET_LE(pt[i].p_memsz);
+ 			found_load = 1;
+-		} else if (GET(pt[i].p_type) == PT_DYNAMIC) {
+-			dyn = addr + GET(pt[i].p_offset);
+-			dyn_end = addr + GET(pt[i].p_offset) +
+-				GET(pt[i].p_memsz);
++		} else if (GET_LE(pt[i].p_type) == PT_DYNAMIC) {
++			dyn = addr + GET_LE(pt[i].p_offset);
++			dyn_end = addr + GET_LE(pt[i].p_offset) +
++				GET_LE(pt[i].p_memsz);
+ 		}
+ 	}
+ 	if (!found_load)
+@@ -46,48 +46,51 @@ static void GOFUNC(void *addr, size_t len, FILE *outfile, const char *name)
+ 	data_size = (load_size + 4095) / 4096 * 4096;
+ 
+ 	/* Walk the dynamic table */
+-	for (i = 0; dyn + i < dyn_end && GET(dyn[i].d_tag) != DT_NULL; i++) {
+-		typeof(dyn[i].d_tag) tag = GET(dyn[i].d_tag);
++	for (i = 0; dyn + i < dyn_end &&
++		     GET_LE(dyn[i].d_tag) != DT_NULL; i++) {
++		typeof(dyn[i].d_tag) tag = GET_LE(dyn[i].d_tag);
+ 		if (tag == DT_REL || tag == DT_RELSZ ||
+ 		    tag == DT_RELENT || tag == DT_TEXTREL)
+ 			fail("vdso image contains dynamic relocations\n");
+ 	}
+ 
+ 	/* Walk the section table */
+-	secstrings_hdr = addr + GET(hdr->e_shoff) +
+-		GET(hdr->e_shentsize)*GET(hdr->e_shstrndx);
+-	secstrings = addr + GET(secstrings_hdr->sh_offset);
+-	for (i = 0; i < GET(hdr->e_shnum); i++) {
+-		Elf_Shdr *sh = addr + GET(hdr->e_shoff) +
+-			GET(hdr->e_shentsize) * i;
+-		if (GET(sh->sh_type) == SHT_SYMTAB)
++	secstrings_hdr = addr + GET_LE(hdr->e_shoff) +
++		GET_LE(hdr->e_shentsize)*GET_LE(hdr->e_shstrndx);
++	secstrings = addr + GET_LE(secstrings_hdr->sh_offset);
++	for (i = 0; i < GET_LE(hdr->e_shnum); i++) {
++		Elf_Shdr *sh = addr + GET_LE(hdr->e_shoff) +
++			GET_LE(hdr->e_shentsize) * i;
++		if (GET_LE(sh->sh_type) == SHT_SYMTAB)
+ 			symtab_hdr = sh;
+ 
+-		if (!strcmp(secstrings + GET(sh->sh_name), ".altinstructions"))
++		if (!strcmp(secstrings + GET_LE(sh->sh_name),
++			    ".altinstructions"))
+ 			alt_sec = sh;
+ 	}
+ 
+ 	if (!symtab_hdr)
+ 		fail("no symbol table\n");
+ 
+-	strtab_hdr = addr + GET(hdr->e_shoff) +
+-		GET(hdr->e_shentsize) * GET(symtab_hdr->sh_link);
++	strtab_hdr = addr + GET_LE(hdr->e_shoff) +
++		GET_LE(hdr->e_shentsize) * GET_LE(symtab_hdr->sh_link);
+ 
+ 	/* Walk the symbol table */
+-	for (i = 0; i < GET(symtab_hdr->sh_size) / GET(symtab_hdr->sh_entsize);
++	for (i = 0;
++	     i < GET_LE(symtab_hdr->sh_size) / GET_LE(symtab_hdr->sh_entsize);
+ 	     i++) {
+ 		int k;
+-		Elf_Sym *sym = addr + GET(symtab_hdr->sh_offset) +
+-			GET(symtab_hdr->sh_entsize) * i;
+-		const char *name = addr + GET(strtab_hdr->sh_offset) +
+-			GET(sym->st_name);
++		Elf_Sym *sym = addr + GET_LE(symtab_hdr->sh_offset) +
++			GET_LE(symtab_hdr->sh_entsize) * i;
++		const char *name = addr + GET_LE(strtab_hdr->sh_offset) +
++			GET_LE(sym->st_name);
+ 		for (k = 0; k < NSYMS; k++) {
+ 			if (!strcmp(name, required_syms[k])) {
+ 				if (syms[k]) {
+ 					fail("duplicate symbol %s\n",
+ 					     required_syms[k]);
+ 				}
+-				syms[k] = GET(sym->st_value);
++				syms[k] = GET_LE(sym->st_value);
+ 			}
+ 		}
+ 	}
+@@ -147,9 +150,9 @@ static void GOFUNC(void *addr, size_t len, FILE *outfile, const char *name)
+ 	fprintf(outfile, "\t},\n");
+ 	if (alt_sec) {
+ 		fprintf(outfile, "\t.alt = %lu,\n",
+-			(unsigned long)GET(alt_sec->sh_offset));
++			(unsigned long)GET_LE(alt_sec->sh_offset));
+ 		fprintf(outfile, "\t.alt_len = %lu,\n",
+-			(unsigned long)GET(alt_sec->sh_size));
++			(unsigned long)GET_LE(alt_sec->sh_size));
+ 	}
+ 	for (i = 0; i < NSYMS; i++) {
+ 		if (syms[i])
