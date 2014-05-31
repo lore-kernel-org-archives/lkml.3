@@ -1,45 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755249AbaEaTwJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 May 2014 15:52:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47325 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752224AbaEaTwH (ORCPT
+	id S1755407AbaEaTym (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 May 2014 15:54:42 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:64350 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751577AbaEaTyl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 May 2014 15:52:07 -0400
-Date: Sat, 31 May 2014 12:52:05 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Tair Rzayev <tair.rzayev@gmail.com>
-Cc: swetland@google.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: android: binder.c: Use more appropriate
- functions for euid retrieval
-Message-ID: <20140531195205.GA14077@kroah.com>
-References: <538A30E6.6010403@gmail.com>
+	Sat, 31 May 2014 15:54:41 -0400
+Date: Sat, 31 May 2014 15:54:37 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Jason Low <jason.low2@hp.com>
+Subject: Re: [patch v2 3/5] rtmutex: Confine deadlock logic to futex
+Message-ID: <20140531155437.7cb833bf@gandalf.local.home>
+In-Reply-To: <20140531155739.340193331@linutronix.de>
+References: <20140531155229.493650009@linutronix.de>
+	<20140531155739.340193331@linutronix.de>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <538A30E6.6010403@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 31, 2014 at 10:43:34PM +0300, Tair Rzayev wrote:
-> Instead of getting the reference to whole credential structure, use
-> task_euid() and current_euid() to get it.
-> 
-> Signed-off-by: Tair Rzayev <tair.rzayev@gmail.com>
-> ---
->  drivers/staging/android/binder.c | 14 +++++++-------
->  1 file changed, 7 insertions(+), 7 deletions(-)
+On Sat, 31 May 2014 15:57:50 -0000
+Thomas Gleixner <tglx@linutronix.de> wrote:
 
-What kernel tree did you make this against?  It doesn't seem to match up
-with what is in my staging-next branch to merge with Linus for the next
-release, so please work against that one.
+> ===================================================================
+> --- tip.orig/kernel/locking/rtmutex.c
+> +++ tip/kernel/locking/rtmutex.c
+> @@ -904,16 +904,15 @@ rt_mutex_slowunlock(struct rt_mutex *loc
+>   */
+>  static inline int
+>  rt_mutex_fastlock(struct rt_mutex *lock, int state,
+> -		  enum rtmutex_chainwalk detect_deadlock,
+>  		  int (*slowfn)(struct rt_mutex *lock, int state,
+>  				struct hrtimer_sleeper *timeout,
+>  				enum rtmutex_chainwalk detect_deadlock))
+>  {
+> -	if (!detect_deadlock && likely(rt_mutex_cmpxchg(lock, NULL, current))) {
+> +	if (likely(rt_mutex_cmpxchg(lock, NULL, current))) {
+>  		rt_mutex_deadlock_account_lock(lock, current);
+>  		return 0;
+>  	} else
+> -		return slowfn(lock, state, NULL, detect_deadlock);
+> +		return slowfn(lock, state, NULL, RT_MUTEX_MIN_CHAINWALK);
+>  }
+>  
+>  static inline int
+> @@ -924,7 +923,7 @@ rt_mutex_timed_fastlock(struct rt_mutex
+>  				      struct hrtimer_sleeper *timeout,
+>  				      enum rtmutex_chainwalk detect_deadlock))
+>  {
+> -	if (!detect_deadlock && likely(rt_mutex_cmpxchg(lock, NULL, current))) {
+> +	if (detect_deadlock && likely(rt_mutex_cmpxchg(lock, NULL, current))) {
 
-Oh, and I think this is already been done, although in a bit different
-way there, please check to make sure it is correct.
+Did you mean to remove that "!"? Don't we want to call the slowfn all
+the time if detect_deadlock is FULL?
 
-thanks,
+-- Steve
 
-greg k-h
+
+>  		rt_mutex_deadlock_account_lock(lock, current);
+>  		return 0;
+>  	} else
+> @@ -961,55 +960,59 @@ void __sched rt_mutex_lock(struct rt_mut
+>  {
+>  	might_sleep();
+>  
+> -	rt_mutex_fastlock(lock, TASK_UNINTERRUPTIBLE, RT_MUTEX_MIN_CHAINWALK,
+> -			  rt_mutex_slowlock);
+> +	rt_mutex_fastlock(lock, TASK_UNINTERRUPTIBLE, rt_mutex_slowlock);
+>  }
+>  EXPORT_SYMBOL_GPL(rt_mutex_lock);
