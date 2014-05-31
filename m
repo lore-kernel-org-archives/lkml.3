@@ -1,53 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756562AbaEaNqw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 May 2014 09:46:52 -0400
-Received: from mail-out.m-online.net ([212.18.0.10]:35450 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756514AbaEaNqu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 May 2014 09:46:50 -0400
-X-Auth-Info: yC9awi808YUcBuyeVa/8/x2R/lCYMt5WOkWZiC+R5TQ=
-From: Andreas Schwab <schwab@linux-m68k.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>,
-        "Joseph S. Myers" <joseph@codesourcery.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ley Foon Tan <lftan@altera.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [RFC 01/32] fs: introduce new 'struct inode_time'
-References: <1401480116-1973111-1-git-send-email-arnd@arndb.de>
-	<1401480116-1973111-2-git-send-email-arnd@arndb.de>
-	<CAMuHMdVgch4REGcYWFZXVToX2b8iCinFVV10Bz3VoeiZy_yBtg@mail.gmail.com>
-	<m2tx86l4ux.fsf@linux-m68k.org>
-	<CAMuHMdXPQQpu_6k+Y6o=1u-u9EkkanKdGYp6-=BavyYHUH3AuA@mail.gmail.com>
-X-Yow: If elected, Zippy pledges to each and every American
- a 55-year-old houseboy...
-Date: Sat, 31 May 2014 15:46:42 +0200
-In-Reply-To: <CAMuHMdXPQQpu_6k+Y6o=1u-u9EkkanKdGYp6-=BavyYHUH3AuA@mail.gmail.com>
-	(Geert Uytterhoeven's message of "Sat, 31 May 2014 15:19:48 +0200")
-Message-ID: <87wqd2f4cd.fsf@igel.home>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.91 (gnu/linux)
+	id S1756580AbaEaNsQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 May 2014 09:48:16 -0400
+Received: from sauhun.de ([89.238.76.85]:55542 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756382AbaEaNsO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 31 May 2014 09:48:14 -0400
+Date: Sat, 31 May 2014 15:48:06 +0200
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        grant.likely@linaro.org, linus.walleij@linaro.org,
+        linux-i2c@vger.kernel.org
+Subject: Re: [PATCH] i2c: Make I2C ID tables non-mandatory for DT'ed and/or
+ ACPI'ed devices
+Message-ID: <20140531134805.GA3287@katana>
+References: <1401452797-29521-1-git-send-email-lee.jones@linaro.org>
+ <1401452797-29521-2-git-send-email-lee.jones@linaro.org>
+ <20140530123656.GC2742@katana>
+ <20140530133405.GB29731@lee--X1>
+ <20140530174800.GA4917@katana>
+ <20140530192516.GA4319@lee--X1>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="yrj/dFKFPuw6o+aM"
+Content-Disposition: inline
+In-Reply-To: <20140530192516.GA4319@lee--X1>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Geert Uytterhoeven <geert@linux-m68k.org> writes:
 
-> "int" is signed, right? Or do you mean a bitfield needs an explicit "signed"
-> keyword to be signed?
+--yrj/dFKFPuw6o+aM
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Yes, see 6.7.2#5.
 
-Andreas.
+> Right, I read the function which provides the functionality, but my
+> point is; I don't think my patch changes the semantics in a way which
+> would adversely affect this option.  If you think that it does, can you
+> specify how please?
 
--- 
-Andreas Schwab, schwab@linux-m68k.org
-GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
-"And now for something completely different."
+Currently, if a driver would be DT only and does not provide a seperate
+i2c_device_id table, then the driver is unusable with method 4. I don't
+like to have some drivers being capable of it and some not.
+
+> Does the sysfs method create a i2c_device_id table?  If not, how does
+> it probe successfully pre-patch?
+
+The sysfs method creates a device. Its name is matched against
+i2c_device_ids only since it does not have a node pointer for DT to be
+matched against.
+
+
+--yrj/dFKFPuw6o+aM
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTid2VAAoJEBQN5MwUoCm2hMYP/jKCgTIbnDG18sgyWdYlHw+I
+CLQA0Q4xnfTxoKF5CvWUbGt93a356LIqzGIZF9J6dm9U7FCZ/GB8lEZnu98APIFD
+P0bAw5OmSIg7cNNrwgeg4rNZ7AB3Hf75jVWww70BGp/p//EKMGt5IA77YRYf68DV
+TKJUY4Mxl3Q2RDtSNKwFu5uEqF1bxAsFldlTn4HJgeYDsFlQ86UC+xhvApzTolBH
+saf25xiDqb+o1AVYpWRfkORl+stK4SnDekDfxRbmo1Mczuwg1jgED1os9ARVtTJY
+SiA9aQvVrwFPKaHWkjAqoMTr2gNmqmgwUEwA0r+j/aupWQBrJ2Wu/gxM5dLLtzdc
+e2QEuQSQj+xQ4meEjETMZ/OQLE0XywYJjfYr0syFQbDBmMWH4XDqccy05rzXOWw9
+WtiuXEqP/nzE0UgbnQJztv1ldtnqoV8jWI/G6JHoYY7lq586jB/XEa73a60WCJYE
+r8ClFhbg1CPvozXgXXtyAf2MxABP9r4o5swwMW4tJxPLDNYDo36rPin3yKPHUoos
+7QcSVN60yd4tzg3WaHrg7+5o31QYuwPCKHLl21WJxKoe/Sl86DzRKtw729sjXaNB
++I4b8A46FIYU3V+8p3bzFYUL9buHOZrsHqxDBNRxdD1EmKyiesNbNXye7AEpQ66/
+6Nt6LpR/P80S0/0lJSpJ
+=DimM
+-----END PGP SIGNATURE-----
+
+--yrj/dFKFPuw6o+aM--
