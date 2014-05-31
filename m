@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755020AbaEaQn7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 May 2014 12:43:59 -0400
-Received: from mail-yk0-f174.google.com ([209.85.160.174]:36357 "EHLO
-	mail-yk0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752651AbaEaQnz (ORCPT
+	id S1755430AbaEaQoH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 May 2014 12:44:07 -0400
+Received: from mail-yh0-f50.google.com ([209.85.213.50]:51271 "EHLO
+	mail-yh0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755103AbaEaQoC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 May 2014 12:43:55 -0400
+	Sat, 31 May 2014 12:44:02 -0400
 From: Ming Lei <tom.leiming@gmail.com>
 To: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
 Cc: Ming Lei <tom.leiming@gmail.com>
-Subject: [PATCH 1/2] blk-mq: move blk_mq_get_ctx/blk_mq_put_ctx to mq private header
-Date: Sun,  1 Jun 2014 00:43:36 +0800
-Message-Id: <1401554617-10099-2-git-send-email-tom.leiming@gmail.com>
+Subject: [PATCH 2/2] blk-mq: fix schedule from atomic context
+Date: Sun,  1 Jun 2014 00:43:37 +0800
+Message-Id: <1401554617-10099-3-git-send-email-tom.leiming@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1401554617-10099-1-git-send-email-tom.leiming@gmail.com>
 References: <1401554617-10099-1-git-send-email-tom.leiming@gmail.com>
@@ -20,75 +20,264 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The blk-mq tag code need these helpers.
+blk_mq_put_ctx() has to be called before io_schedule() in
+bt_get().
+
+This patch fixes the problem by taking similar approach from
+percpu_ida allocation for the situation.
 
 Signed-off-by: Ming Lei <tom.leiming@gmail.com>
 ---
- block/blk-mq.c |   22 ----------------------
- block/blk-mq.h |   22 ++++++++++++++++++++++
- 2 files changed, 22 insertions(+), 22 deletions(-)
+ block/blk-mq-tag.c |   48 +++++++++++++++++++++++++++++++-----------------
+ block/blk-mq-tag.h |    2 +-
+ block/blk-mq.c     |   36 +++++++++++++++++++++++-------------
+ block/blk-mq.h     |   23 +++++++++++++++++++++++
+ 4 files changed, 78 insertions(+), 31 deletions(-)
 
+diff --git a/block/blk-mq-tag.c b/block/blk-mq-tag.c
+index d90c4ae..1aab39f 100644
+--- a/block/blk-mq-tag.c
++++ b/block/blk-mq-tag.c
+@@ -221,8 +221,10 @@ static struct bt_wait_state *bt_wait_ptr(struct blk_mq_bitmap_tags *bt,
+ 	return bs;
+ }
+ 
+-static int bt_get(struct blk_mq_bitmap_tags *bt, struct blk_mq_hw_ctx *hctx,
+-		  unsigned int *last_tag, gfp_t gfp)
++static int bt_get(struct blk_mq_alloc_data *data,
++		struct blk_mq_bitmap_tags *bt,
++		struct blk_mq_hw_ctx *hctx,
++		unsigned int *last_tag)
+ {
+ 	struct bt_wait_state *bs;
+ 	DEFINE_WAIT(wait);
+@@ -232,7 +234,7 @@ static int bt_get(struct blk_mq_bitmap_tags *bt, struct blk_mq_hw_ctx *hctx,
+ 	if (tag != -1)
+ 		return tag;
+ 
+-	if (!(gfp & __GFP_WAIT))
++	if (!(data->gfp & __GFP_WAIT))
+ 		return -1;
+ 
+ 	bs = bt_wait_ptr(bt, hctx);
+@@ -249,50 +251,62 @@ static int bt_get(struct blk_mq_bitmap_tags *bt, struct blk_mq_hw_ctx *hctx,
+ 		if (was_empty)
+ 			atomic_set(&bs->wait_cnt, bt->wake_cnt);
+ 
++		blk_mq_put_ctx(data->ctx);
++
+ 		io_schedule();
++
++		data->ctx = blk_mq_get_ctx(data->q);
++		data->hctx = data->q->mq_ops->map_queue(data->q,
++				data->ctx->cpu);
++		if (data->reserved) {
++			bt = &data->hctx->tags->breserved_tags;
++		} else {
++			last_tag = &data->ctx->last_tag;
++			hctx = data->hctx;
++			bt = &hctx->tags->bitmap_tags;
++		}
++		finish_wait(&bs->wait, &wait);
++		bs = bt_wait_ptr(bt, hctx);
+ 	} while (1);
+ 
+ 	finish_wait(&bs->wait, &wait);
+ 	return tag;
+ }
+ 
+-static unsigned int __blk_mq_get_tag(struct blk_mq_tags *tags,
+-				     struct blk_mq_hw_ctx *hctx,
+-				     unsigned int *last_tag, gfp_t gfp)
++static unsigned int __blk_mq_get_tag(struct blk_mq_alloc_data *data)
+ {
+ 	int tag;
+ 
+-	tag = bt_get(&tags->bitmap_tags, hctx, last_tag, gfp);
++	tag = bt_get(data, &data->hctx->tags->bitmap_tags, data->hctx,
++			&data->ctx->last_tag);
+ 	if (tag >= 0)
+-		return tag + tags->nr_reserved_tags;
++		return tag + data->hctx->tags->nr_reserved_tags;
+ 
+ 	return BLK_MQ_TAG_FAIL;
+ }
+ 
+-static unsigned int __blk_mq_get_reserved_tag(struct blk_mq_tags *tags,
+-					      gfp_t gfp)
++static unsigned int __blk_mq_get_reserved_tag(struct blk_mq_alloc_data *data)
+ {
+ 	int tag, zero = 0;
+ 
+-	if (unlikely(!tags->nr_reserved_tags)) {
++	if (unlikely(!data->hctx->tags->nr_reserved_tags)) {
+ 		WARN_ON_ONCE(1);
+ 		return BLK_MQ_TAG_FAIL;
+ 	}
+ 
+-	tag = bt_get(&tags->breserved_tags, NULL, &zero, gfp);
++	tag = bt_get(data, &data->hctx->tags->breserved_tags, NULL, &zero);
+ 	if (tag < 0)
+ 		return BLK_MQ_TAG_FAIL;
+ 
+ 	return tag;
+ }
+ 
+-unsigned int blk_mq_get_tag(struct blk_mq_hw_ctx *hctx, unsigned int *last_tag,
+-			    gfp_t gfp, bool reserved)
++unsigned int blk_mq_get_tag(struct blk_mq_alloc_data *data)
+ {
+-	if (!reserved)
+-		return __blk_mq_get_tag(hctx->tags, hctx, last_tag, gfp);
++	if (!data->reserved)
++		return __blk_mq_get_tag(data);
+ 
+-	return __blk_mq_get_reserved_tag(hctx->tags, gfp);
++	return __blk_mq_get_reserved_tag(data);
+ }
+ 
+ static struct bt_wait_state *bt_wake_ptr(struct blk_mq_bitmap_tags *bt)
+diff --git a/block/blk-mq-tag.h b/block/blk-mq-tag.h
+index c959de5..98696a6 100644
+--- a/block/blk-mq-tag.h
++++ b/block/blk-mq-tag.h
+@@ -48,7 +48,7 @@ struct blk_mq_tags {
+ extern struct blk_mq_tags *blk_mq_init_tags(unsigned int nr_tags, unsigned int reserved_tags, int node);
+ extern void blk_mq_free_tags(struct blk_mq_tags *tags);
+ 
+-extern unsigned int blk_mq_get_tag(struct blk_mq_hw_ctx *hctx, unsigned int *last_tag, gfp_t gfp, bool reserved);
++extern unsigned int blk_mq_get_tag(struct blk_mq_alloc_data *data);
+ extern void blk_mq_put_tag(struct blk_mq_hw_ctx *hctx, unsigned int tag, unsigned int *last_tag);
+ extern bool blk_mq_has_free_tags(struct blk_mq_tags *tags);
+ extern ssize_t blk_mq_tag_sysfs_show(struct blk_mq_tags *tags, char *page);
 diff --git a/block/blk-mq.c b/block/blk-mq.c
-index 0f5879c..b9230c5 100644
+index b9230c5..43eb315 100644
 --- a/block/blk-mq.c
 +++ b/block/blk-mq.c
-@@ -33,28 +33,6 @@ static LIST_HEAD(all_q_list);
+@@ -210,24 +210,23 @@ static void blk_mq_rq_ctx_init(struct request_queue *q, struct blk_mq_ctx *ctx,
+ }
  
- static void __blk_mq_run_hw_queue(struct blk_mq_hw_ctx *hctx);
+ static struct request *
+-__blk_mq_alloc_request(struct request_queue *q, struct blk_mq_hw_ctx *hctx,
+-		struct blk_mq_ctx *ctx, int rw, gfp_t gfp, bool reserved)
++__blk_mq_alloc_request(struct blk_mq_alloc_data *data, int rw)
+ {
+ 	struct request *rq;
+ 	unsigned int tag;
  
--static struct blk_mq_ctx *__blk_mq_get_ctx(struct request_queue *q,
--					   unsigned int cpu)
--{
--	return per_cpu_ptr(q->queue_ctx, cpu);
--}
--
--/*
-- * This assumes per-cpu software queueing queues. They could be per-node
-- * as well, for instance. For now this is hardcoded as-is. Note that we don't
-- * care about preemption, since we know the ctx's are persistent. This does
-- * mean that we can't rely on ctx always matching the currently running CPU.
-- */
--static struct blk_mq_ctx *blk_mq_get_ctx(struct request_queue *q)
--{
--	return __blk_mq_get_ctx(q, get_cpu());
--}
--
--static void blk_mq_put_ctx(struct blk_mq_ctx *ctx)
--{
--	put_cpu();
--}
--
- /*
-  * Check if any of the ctx's have pending work in this hardware queue
-  */
+-	tag = blk_mq_get_tag(hctx, &ctx->last_tag, gfp, reserved);
++	tag = blk_mq_get_tag(data);
+ 	if (tag != BLK_MQ_TAG_FAIL) {
+-		rq = hctx->tags->rqs[tag];
++		rq = data->hctx->tags->rqs[tag];
+ 
+ 		rq->cmd_flags = 0;
+-		if (blk_mq_tag_busy(hctx)) {
++		if (blk_mq_tag_busy(data->hctx)) {
+ 			rq->cmd_flags = REQ_MQ_INFLIGHT;
+-			atomic_inc(&hctx->nr_active);
++			atomic_inc(&data->hctx->nr_active);
+ 		}
+ 
+ 		rq->tag = tag;
+-		blk_mq_rq_ctx_init(q, ctx, rq, rw);
++		blk_mq_rq_ctx_init(data->q, data->ctx, rq, rw);
+ 		return rq;
+ 	}
+ 
+@@ -240,22 +239,27 @@ struct request *blk_mq_alloc_request(struct request_queue *q, int rw, gfp_t gfp,
+ 	struct blk_mq_ctx *ctx;
+ 	struct blk_mq_hw_ctx *hctx;
+ 	struct request *rq;
++	struct blk_mq_alloc_data alloc_data;
+ 
+ 	if (blk_mq_queue_enter(q))
+ 		return NULL;
+ 
+ 	ctx = blk_mq_get_ctx(q);
+ 	hctx = q->mq_ops->map_queue(q, ctx->cpu);
++	blk_mq_set_alloc_data(&alloc_data, q, gfp & ~__GFP_WAIT,
++			reserved, ctx, hctx);
+ 
+-	rq = __blk_mq_alloc_request(q, hctx, ctx, rw, gfp & ~__GFP_WAIT,
+-				    reserved);
++	rq = __blk_mq_alloc_request(&alloc_data, rw);
+ 	if (!rq && (gfp & __GFP_WAIT)) {
+ 		__blk_mq_run_hw_queue(hctx);
+ 		blk_mq_put_ctx(ctx);
+ 
+ 		ctx = blk_mq_get_ctx(q);
+ 		hctx = q->mq_ops->map_queue(q, ctx->cpu);
+-		rq =  __blk_mq_alloc_request(q, hctx, ctx, rw, gfp, reserved);
++		blk_mq_set_alloc_data(&alloc_data, q, gfp, reserved, ctx,
++				hctx);
++		rq =  __blk_mq_alloc_request(&alloc_data, rw);
++		ctx = alloc_data.ctx;
+ 	}
+ 	blk_mq_put_ctx(ctx);
+ 	return rq;
+@@ -1136,6 +1140,7 @@ static struct request *blk_mq_map_request(struct request_queue *q,
+ 	struct blk_mq_ctx *ctx;
+ 	struct request *rq;
+ 	int rw = bio_data_dir(bio);
++	struct blk_mq_alloc_data alloc_data;
+ 
+ 	if (unlikely(blk_mq_queue_enter(q))) {
+ 		bio_endio(bio, -EIO);
+@@ -1149,7 +1154,9 @@ static struct request *blk_mq_map_request(struct request_queue *q,
+ 		rw |= REQ_SYNC;
+ 
+ 	trace_block_getrq(q, bio, rw);
+-	rq = __blk_mq_alloc_request(q, hctx, ctx, rw, GFP_ATOMIC, false);
++	blk_mq_set_alloc_data(&alloc_data, q, GFP_ATOMIC, false, ctx,
++			hctx);
++	rq = __blk_mq_alloc_request(&alloc_data, rw);
+ 	if (unlikely(!rq)) {
+ 		__blk_mq_run_hw_queue(hctx);
+ 		blk_mq_put_ctx(ctx);
+@@ -1157,8 +1164,11 @@ static struct request *blk_mq_map_request(struct request_queue *q,
+ 
+ 		ctx = blk_mq_get_ctx(q);
+ 		hctx = q->mq_ops->map_queue(q, ctx->cpu);
+-		rq = __blk_mq_alloc_request(q, hctx, ctx, rw,
+-					    __GFP_WAIT|GFP_ATOMIC, false);
++		blk_mq_set_alloc_data(&alloc_data, q,
++				__GFP_WAIT|GFP_ATOMIC, false, ctx, hctx);
++		rq = __blk_mq_alloc_request(&alloc_data, rw);
++		ctx = alloc_data.ctx;
++		hctx = alloc_data.hctx;
+ 	}
+ 
+ 	hctx->queued++;
 diff --git a/block/blk-mq.h b/block/blk-mq.h
-index de7b3bb..57a7968 100644
+index 57a7968..2646088 100644
 --- a/block/blk-mq.h
 +++ b/block/blk-mq.h
-@@ -69,4 +69,26 @@ struct blk_align_bitmap {
- 	unsigned long depth;
- } ____cacheline_aligned_in_smp;
+@@ -91,4 +91,27 @@ static inline void blk_mq_put_ctx(struct blk_mq_ctx *ctx)
+ 	put_cpu();
+ }
  
-+static inline struct blk_mq_ctx *__blk_mq_get_ctx(struct request_queue *q,
-+					   unsigned int cpu)
-+{
-+	return per_cpu_ptr(q->queue_ctx, cpu);
-+}
++struct blk_mq_alloc_data {
++	/* input parameter */
++	struct request_queue *q;
++	gfp_t gfp;
++	bool reserved;
 +
-+/*
-+ * This assumes per-cpu software queueing queues. They could be per-node
-+ * as well, for instance. For now this is hardcoded as-is. Note that we don't
-+ * care about preemption, since we know the ctx's are persistent. This does
-+ * mean that we can't rely on ctx always matching the currently running CPU.
-+ */
-+static inline struct blk_mq_ctx *blk_mq_get_ctx(struct request_queue *q)
-+{
-+	return __blk_mq_get_ctx(q, get_cpu());
-+}
++	/* input & output parameter */
++	struct blk_mq_ctx *ctx;
++	struct blk_mq_hw_ctx *hctx;
++};
 +
-+static inline void blk_mq_put_ctx(struct blk_mq_ctx *ctx)
++static inline void blk_mq_set_alloc_data(struct blk_mq_alloc_data *data,
++		struct request_queue *q, gfp_t gfp, bool reserved,
++		struct blk_mq_ctx *ctx,
++		struct blk_mq_hw_ctx *hctx)
 +{
-+	put_cpu();
++	data->q = q;
++	data->gfp = gfp;
++	data->reserved = reserved;
++	data->ctx = ctx;
++	data->hctx = hctx;
 +}
 +
  #endif
