@@ -1,84 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935088AbaEaDAt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 23:00:49 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:34588 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935069AbaEaDAr (ORCPT
+	id S935108AbaEaDBA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 23:01:00 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:58486 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S935069AbaEaDA6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 23:00:47 -0400
-X-Nat-Received: from [202.181.97.72]:13295 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1401505245.25320
-To: konrad.wilk@oracle.com
-Cc: dchinner@redhat.com, airlied@linux.ie, glommer@openvz.org, mgorman@suse.de,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
-Subject: [PATCH 3/5] gpu/drm/ttm: Use mutex_trylock() to avoid deadlock inside shrinker functions.
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-References: <201405290647.DHI69200.HSFVFMFOJOLOQt@I-love.SAKURA.ne.jp>
-	<201405292334.EAG00503.FLOOJFStHVQMFO@I-love.SAKURA.ne.jp>
-	<20140530160824.GD3621@localhost.localdomain>
-	<201405311158.DGE64002.QLOOHJSFFMVFOt@I-love.SAKURA.ne.jp>
-	<201405311159.CHG64048.SOFLQHVtFOMFJO@I-love.SAKURA.ne.jp>
-In-Reply-To: <201405311159.CHG64048.SOFLQHVtFOMFJO@I-love.SAKURA.ne.jp>
-Message-Id: <201405311200.III57894.MLFOOFStQVHJFO@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Sat, 31 May 2014 12:00:45 +0900
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 30052014 #8090611, status: clean
+	Fri, 30 May 2014 23:00:58 -0400
+Date: Fri, 30 May 2014 23:00:56 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Sune =?iso-8859-1?Q?M=F8lgaard?= <sune@molgaard.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        gregkh@linuxfoundation.org
+Subject: Re: [RFC] Summarizing deprecations
+Message-ID: <20140531030055.GA8362@home.goodmis.org>
+References: <53893895.3040202@molgaard.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <53893895.3040202@molgaard.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 4e8d1a83629c5966bfd401c5f2187355624194f2 Mon Sep 17 00:00:00 2001
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Date: Sat, 31 May 2014 09:59:44 +0900
-Subject: [PATCH 3/5] gpu/drm/ttm: Use mutex_trylock() to avoid deadlock inside shrinker functions.
+On Sat, May 31, 2014 at 04:04:05AM +0200, Sune Mølgaard wrote:
+> 
+> As a user first, and only secondly a developer, I'd like my HW to work,
+> and finding fully supported gear can still be hard if not impossible,
+> but I imagine that if we had a central place to list deprecations (and,
+> possibly, "victims" of them), a lot of grief could be avoided by simply
+> pointing vendors to that central resource and saying "here is what you
+> need to know for your driver to keep working - now get to it".
 
-I can observe that RHEL7 environment stalls with 100% CPU usage when a
-certain type of memory pressure is given. While the shrinker functions
-are called by shrink_slab() before the OOM killer is triggered, the stall
-lasts for many minutes.
+We had that. It was in the Documentation directory called "feature-removal.txt".
+But that was always out of date and caused lots of unnecessary conflicts
+by the few that added stuff to it that it became more of a pain to have than
+it was worth. And commit 9c0ece069b32e8e122aea71aa47181c10eb85ba7 nuked it.
 
-One of reasons of this stall is that
-ttm_dma_pool_shrink_count()/ttm_dma_pool_shrink_scan() are called and
-are blocked at mutex_lock(&_manager->lock). GFP_KERNEL allocation with
-_manager->lock held causes someone (including kswapd) to deadlock when
-these functions are called due to memory pressure. This patch changes
-"mutex_lock();" to "if (!mutex_trylock()) return ...;" in order to
-avoid deadlock.
+-- Steve
 
-Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Cc: stable <stable@kernel.org> [3.3+]
----
- drivers/gpu/drm/ttm/ttm_page_alloc_dma.c |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c b/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
-index d8e59f7..620da39 100644
---- a/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
-+++ b/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
-@@ -1014,7 +1014,8 @@ ttm_dma_pool_shrink_scan(struct shrinker *shrink, struct shrink_control *sc)
- 	if (list_empty(&_manager->pools))
- 		return SHRINK_STOP;
- 
--	mutex_lock(&_manager->lock);
-+	if (!mutex_lock(&_manager->lock))
-+		return SHRINK_STOP;
- 	if (!_manager->npools)
- 		goto out;
- 	pool_offset = ++start_pool % _manager->npools;
-@@ -1047,7 +1048,8 @@ ttm_dma_pool_shrink_count(struct shrinker *shrink, struct shrink_control *sc)
- 	struct device_pools *p;
- 	unsigned long count = 0;
- 
--	mutex_lock(&_manager->lock);
-+	if (!mutex_trylock(&_manager->lock))
-+		return 0;
- 	list_for_each_entry(p, &_manager->pools, pools)
- 		count += p->pool->npages_free;
- 	mutex_unlock(&_manager->lock);
--- 
-1.7.1
