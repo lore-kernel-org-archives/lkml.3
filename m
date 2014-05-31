@@ -1,75 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935061AbaEaCVx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 22:21:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41561 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932229AbaEaCVw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 22:21:52 -0400
-Date: Fri, 30 May 2014 19:21:51 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Sune =?iso-8859-1?Q?M=F8lgaard?= <sune@molgaard.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] Summarizing deprecations
-Message-ID: <20140531022151.GA32348@kroah.com>
-References: <53893895.3040202@molgaard.org>
+	id S934914AbaEaC1v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 22:27:51 -0400
+Received: from mga03.intel.com ([143.182.124.21]:59976 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932379AbaEaC1u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 May 2014 22:27:50 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,944,1392192000"; 
+   d="scan'208";a="439234637"
+Message-ID: <53893E20.1060404@linux.intel.com>
+Date: Sat, 31 May 2014 10:27:44 +0800
+From: "Zhu, Lejun" <lejun.zhu@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <53893895.3040202@molgaard.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Lee Jones <lee.jones@linaro.org>
+CC: broonie@kernel.org, sameo@linux.intel.com, linux-kernel@vger.kernel.org,
+        jacob.jun.pan@linux.intel.com, bin.yang@intel.com
+Subject: Re: [PATCH v4 1/3] mfd: intel_soc_pmic: Core driver
+References: <1401347968-24410-1-git-send-email-lejun.zhu@linux.intel.com> <1401347968-24410-2-git-send-email-lejun.zhu@linux.intel.com> <20140529114052.GI1954@lee--X1> <53880FF5.8070500@linux.intel.com> <20140530080848.GB2619@lee--X1> <5388497C.3000106@linux.intel.com> <20140530092825.GG2619@lee--X1>
+In-Reply-To: <20140530092825.GG2619@lee--X1>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 31, 2014 at 04:04:05AM +0200, Sune Mølgaard wrote:
-> Dear list,
+
+
+On 2014/5/30 17:28, Lee Jones wrote:
+>>>>>> +static const struct i2c_device_id intel_soc_pmic_i2c_id[] = {
+>>>>>> +	{"INT33FD:00", (kernel_ulong_t)&intel_soc_pmic_config_crc},
+>>>>>> +	{ }
+>>>>>> +};
+>>>>>> +MODULE_DEVICE_TABLE(i2c, intel_soc_pmic_i2c_id);
+>>>>>> +
+>>>>>> +static struct acpi_device_id intel_soc_pmic_acpi_match[] = {
+>>>>>> +	{"INT33FD", (kernel_ulong_t)&intel_soc_pmic_config_crc},
+>>>>>> +	{ },
+>>>>>> +};
+>>>>>> +MODULE_DEVICE_TABLE(acpi, intel_soc_pmic_acpi_match);
+>>>>>
+>>>>> Does ACPI have a match function to extact it's .driver_data attribute?
+>>>>>
+>>>>> If so, are you using it here? If not, why not?
+>>>>>
+>>>>
+>>>> The ACPI table is used in i2c_device_match(), and the i2c table is used
+>>>> in i2c_device_probe(), so the id in the i2c table is actually fed to
+>>>> intel_soc_pmic_probe(). But I only found out now that having the i2c
+>>>> table alone is enough, because i2c_device_match will fallback to the i2c
+>>>> table if there's no ACPI table. So to keep it simple, I'll remove the
+>>>> ACPI table completely.
+>>>
+>>> Actually, can you do it the other way round?  Minimise the i2c table
+>>> and populate the ACPI one.  I'm just about to work on a separate
+>>> patch-set which deprecates the use of the i2c table on DT and/or ACPI
+>>> only registered devices.
+>>
+>> Current i2c_device_probe will only feed driver_data from i2c_device_id
+>> table to intel_soc_pmic_probe(), because it uses i2c_match_id(). So if I
+>> remove "&intel_soc_pmic_config_crc" from the i2c table, I will get NULL
+>> from id->driver_data until your new patch fixes it.
 > 
-> In order to keep this non-code RFC brief, allow me to list a few
-> observations and then a proposal, that I shall be happy to engage in,
-> but for which I'd like a bit of guidance:
+> Right, which is why I asked if ACPI has a match function - I just
+> looked and it does.  So what you need to do is supply a very simple
+> i2c_device_id struct (just until my patch lands, then there'll be no
+> reason to supply one at all) and use  acpi_match_device() instead of
+> using id->driver_data.
 > 
-> 1) System calls get superseded and deprecated on a regular basis
-> 2) Keeping track of deprecations can be difficult
-> 3) HW vendors with out-of-tree drivers allocate too few resources to
-> handle 1) and 2)
-> 4) Out-of-tree drivers usually fail to take deprecations into
-> consideration, and then breaking when deprecation leads to removal
-> 
-> A knee-jerk reaction to 3) might be that they all need to shape up, but
-> experience seems to relegate that reaction to the pile of wishful
-> thoughts that lead nowhere.
 
-Not true at all.
+Oh I see. You mean calling acpi_match_device() in my own probe(). I'll
+change my code to do that in next version.
 
-> IIRC, Greg K-H once tried to extend an offer to HW vendors to the effect
-> of helping with opening their code base, with the reward of helping
-> write drivers. I don't know what came of it, but I imagine that I would
-> have heard, if it was a roaring success.
+Best Regards
+Lejun
 
-It was a success.  Do you know of any hardware that Linux currently does
-not support that a vendor wants a Linux driver for it?  I do not.
-
-If you do, send them to me, I'll be glad to work on it, much like all of
-the other drivers we have worked on in this program over the years.
-
-Of course, if the vendor doesn't want a Linux driver for their hardware,
-well, there's nothing anyone of us can do about that.
-
-> As said, I'm more of a user, so I may be unaware of practices already in
-> place to mark commits as causing deprecation, but if such practices
-> exist, I should be able to whip up some sort of script that periodically
-> does a "git log" and collates deprecations into some format that could
-> then be parsed by a bash script grepping various out-of-tree code bases
-> and notifies the relevant parties.
-
-Have you looked at the kernel backport group and scripts?  They do much
-of this already, automatically, backporting newer drivers to older
-kernel versions for people stuck at those releases.  I think what you
-want is already completed...
-
-thanks,
-
-greg k-h
