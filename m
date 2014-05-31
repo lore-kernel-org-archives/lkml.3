@@ -1,62 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756681AbaEaO6G (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 May 2014 10:58:06 -0400
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:47568 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751664AbaEaO6E (ORCPT
+	id S1756573AbaEaO6o (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 May 2014 10:58:44 -0400
+Received: from mail-la0-f52.google.com ([209.85.215.52]:51560 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751664AbaEaO6m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 May 2014 10:58:04 -0400
+	Sat, 31 May 2014 10:58:42 -0400
+Date: Sat, 31 May 2014 16:58:14 +0200
+From: Johan Hovold <jhovold@gmail.com>
+To: Peter Senna Tschudin <peter.senna@gmail.com>
+Cc: Oliver Neukum <oliver@neukum.org>, kernel-janitors@vger.kernel.org,
+        Johan Hovold <jhovold@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/11] USB: kl5kusb105: Remove useless return variables
+Message-ID: <20140531145814.GA14935@localhost>
+References: <1401542051-3174-1-git-send-email-peter.senna@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.11.1405310745001.10717@i7.linux-foundation.org>
-References: <CA+55aFzYjRrvSaF=wGimrgtEqR7GHbu1ku1qn1wQs5wgQrCZdg@mail.gmail.com>
-	<20140529154454.GK18016@ZenIV.linux.org.uk>
-	<20140529162307.GL18016@ZenIV.linux.org.uk>
-	<CA+55aFyRDJpm2Wfg9jvXCsKYgt36=6A_++bX+Q=C4MvQRbqh_A@mail.gmail.com>
-	<20140529165351.GM18016@ZenIV.linux.org.uk>
-	<20140529185201.GN18016@ZenIV.linux.org.uk>
-	<20140530081238.GA1957@lahna.fi.intel.com>
-	<20140530152151.GR18016@ZenIV.linux.org.uk>
-	<CA+55aFxLNvBDYtiq92DvuVqUk7byWeYiL1svbNQdXg7MRtbBcQ@mail.gmail.com>
-	<20140530164815.GS18016@ZenIV.linux.org.uk>
-	<20140530171408.GT18016@ZenIV.linux.org.uk>
-	<CA+5PVA5EmAkoZnWNUtXCPu5JZ=6Q4jFrjoqHZdtBVdbxwPe6Tw@mail.gmail.com>
-	<alpine.LFD.2.11.1405310745001.10717@i7.linux-foundation.org>
-Date: Sat, 31 May 2014 10:58:02 -0400
-X-Google-Sender-Auth: VRTfitPuW-clVPbEG13CCoxRKDk
-Message-ID: <CA+5PVA74Tbxr_zDYUAeeZt8LHJu+MGncximjf_Yjf8WiYTO5LQ@mail.gmail.com>
-Subject: Re: [git pull] Re: fs/dcache.c - BUG: soft lockup - CPU#5 stuck for
- 22s! [systemd-udevd:1667]
-From: Josh Boyer <jwboyer@fedoraproject.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Miklos Szeredi <mszeredi@suse.cz>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1401542051-3174-1-git-send-email-peter.senna@gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 31, 2014 at 10:48 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
->
-> On Sat, 31 May 2014, Josh Boyer wrote:
->>
->> One of my machines got the lockdep report below when booting a kernel
->> that contained these patches.
->
-> I think this is just a lacking annotation.
->
-> We do nest dentry d_lock locking, and in order to avoid ABBA deadlocks the
-> rule is that we lock things in topological order (parent dentry first).
-> lock_parent() is very careful about that, but doesn't actually tell
-> lockdep about it.
->
-> This trivial oneliner should fix it.
+On Sat, May 31, 2014 at 10:14:01AM -0300, Peter Senna Tschudin wrote:
+> This patch remove variables that are initialized with a constant,
+> are never updated, and are only used as parameter of return.
+> Return the constant instead of using a variable.
+> 
+> Verified by compilation only.
+> 
+> The coccinelle script that find and fixes this issue is:
+> // <smpl>
+> @@
+> type T;
+> constant C;
+> identifier ret;
+> @@
+> - T ret = C;
+> ... when != ret
+>     when strict
+> return
+> - ret
+> + C
+> ;
+> // </smpl>
+> 
+> Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
+> 
+> ---
+>  drivers/usb/serial/kl5kusb105.c |   23 +----------------------
+>  1 file changed, 1 insertion(+), 22 deletions(-)
+> 
+> diff --git a/drivers/usb/serial/kl5kusb105.c b/drivers/usb/serial/kl5kusb105.c
+> index d7440b7..2657c00 100644
+> --- a/drivers/usb/serial/kl5kusb105.c
+> +++ b/drivers/usb/serial/kl5kusb105.c
+> @@ -605,28 +605,7 @@ static int klsi_105_tiocmget(struct tty_struct *tty)
+>  static int klsi_105_tiocmset(struct tty_struct *tty,
+>  			     unsigned int set, unsigned int clear)
+>  {
+> -	int retval = -EINVAL;
+> -
+> -/* if this ever gets implemented, it should be done something like this:
+> -	struct usb_serial *serial = port->serial;
+> -	struct klsi_105_private *priv = usb_get_serial_port_data(port);
+> -	unsigned long flags;
+> -	int control;
+> -
+> -	spin_lock_irqsave (&priv->lock, flags);
+> -	if (set & TIOCM_RTS)
+> -		priv->control_state |= TIOCM_RTS;
+> -	if (set & TIOCM_DTR)
+> -		priv->control_state |= TIOCM_DTR;
+> -	if (clear & TIOCM_RTS)
+> -		priv->control_state &= ~TIOCM_RTS;
+> -	if (clear & TIOCM_DTR)
+> -		priv->control_state &= ~TIOCM_DTR;
+> -	control = priv->control_state;
+> -	spin_unlock_irqrestore (&priv->lock, flags);
+> -	retval = mct_u232_set_modem_ctrl(serial, control);
+> -*/
+> -	return retval;
+> +	return -EINVAL;
 
-Thanks, I'll give it a spin later today.
+Your patch does a bit more than what the description says, although
+removing this out-commented code would be perfectly fine.
 
-josh
+But please just remove the entire function (and the corresponding entry
+in the struct usb_serial_driver) and update the commit message.
+
+Thanks,
+Johan
+
+>  }
+>  
+>  module_usb_serial_driver(serial_drivers, id_table);
+> 
