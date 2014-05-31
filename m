@@ -1,86 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934990AbaEaCHA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 22:07:00 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:53337 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755744AbaEaCG4 (ORCPT
+	id S935035AbaEaCKG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 22:10:06 -0400
+Received: from mail1-ar.fullrate.dk ([90.185.3.41]:53686 "EHLO
+	mail1-ar.fullrate.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932771AbaEaCKE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 22:06:56 -0400
-Message-ID: <5389393D.2030305@kernel.dk>
-Date: Fri, 30 May 2014 20:06:53 -0600
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Fri, 30 May 2014 22:10:04 -0400
+X-Greylist: delayed 355 seconds by postgrey-1.27 at vger.kernel.org; Fri, 30 May 2014 22:10:04 EDT
+Message-ID: <53893895.3040202@molgaard.org>
+Date: Sat, 31 May 2014 04:04:05 +0200
+From: =?UTF-8?B?U3VuZSBNw7hsZ2FhcmQ=?= <sune@molgaard.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:32.0) Gecko/20100101 Firefox/32.0 SeaMonkey/2.29a1
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Chinner <david@fromorbit.com>
-CC: Minchan Kim <minchan@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm <linux-mm@kvack.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Hugh Dickins <hughd@google.com>, Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [RFC 2/2] x86_64: expand kernel stack to 16K
-References: <1401260039-18189-1-git-send-email-minchan@kernel.org>	<1401260039-18189-2-git-send-email-minchan@kernel.org>	<CA+55aFxXdc22dirnE49UbQP_2s2vLQpjQFL+NptuyK7Xry6c=g@mail.gmail.com>	<20140528223142.GO8554@dastard>	<CA+55aFyRk6_v6COPGVvu6hvt=i2A8-dPcs1X3Ydn1g24AxbPkg@mail.gmail.com>	<20140529013007.GF6677@dastard> <CA+55aFzdq2V-Q3WUV7hQJG8jBSAvBqdYLVTNtbD4ObVZ5yDRmw@mail.gmail.com>
-In-Reply-To: <CA+55aFzdq2V-Q3WUV7hQJG8jBSAvBqdYLVTNtbD4ObVZ5yDRmw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: gregkh@linuxfoundation.org
+Subject: [RFC] Summarizing deprecations
+X-Enigmail-Version: 1.7a1pre
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-05-28 20:42, Linus Torvalds wrote:
->> Regardless of whether it is swap or something external queues the
->> bio on the plug, perhaps we should look at why it's done inline
->> rather than by kblockd, where it was moved because it was blowing
->> the stack from schedule():
->
-> So it sounds like we need to do this for io_schedule() too.
->
-> In fact, we've generally found it to be a mistake every time we
-> "automatically" unblock some IO queue. And I'm not saying that because
-> of stack space, but because we've _often_ had the situation that eager
-> unblocking results in IO that could have been done as bigger requests.
+Dear list,
 
-We definitely need to auto-unplug on the schedule path, otherwise we run 
-into all sorts of trouble. But making it async off the IO schedule path 
-is fine. By definition, it's not latency sensitive if we are hitting 
-unplug on schedule. I'm pretty sure it was run inline on CPU concerns 
-here, as running inline is certainly cheaper than punting to kblockd.
+In order to keep this non-code RFC brief, allow me to list a few
+observations and then a proposal, that I shall be happy to engage in,
+but for which I'd like a bit of guidance:
 
-> Looking at that callchain, I have to say that ext4 doesn't look
-> horrible compared to the whole block layer and virtio.. Yes,
-> "ext4_writepages()" is using almost 400 bytes of stack, and most of
-> that seems to be due to:
->
->          struct mpage_da_data mpd;
->          struct blk_plug plug;
+1) System calls get superseded and deprecated on a regular basis
+2) Keeping track of deprecations can be difficult
+3) HW vendors with out-of-tree drivers allocate too few resources to
+handle 1) and 2)
+4) Out-of-tree drivers usually fail to take deprecations into
+consideration, and then breaking when deprecation leads to removal
 
-Plus blk_plug is pretty tiny as it is. I queued up a patch to kill the 
-magic part of it, since that's never caught any bugs. Only saves 8 
-bytes, but may as well take that. Especially if we end up with nested plugs.
+A knee-jerk reaction to 3) might be that they all need to shape up, but
+experience seems to relegate that reaction to the pile of wishful
+thoughts that lead nowhere.
 
-> Well, we've definitely have had some issues with deeper callchains
-> with md, but I suspect virtio might be worse, and the new blk-mq code
-> is lilkely worse in this respect too.
+IIRC, Greg K-H once tried to extend an offer to HW vendors to the effect
+of helping with opening their code base, with the reward of helping
+write drivers. I don't know what came of it, but I imagine that I would
+have heard, if it was a roaring success.
 
-I don't think blk-mq is worse than the older stack, in fact it should be 
-better. The call chains are shorter, and a lot less cruft on the stack. 
-Historically the stack issues have been nested devices, however. And for 
-sync IO, we do run it inline, so if the driver chews up a lot of stack, 
-well...
+As a user first, and only secondly a developer, I'd like my HW to work,
+and finding fully supported gear can still be hard if not impossible,
+but I imagine that if we had a central place to list deprecations (and,
+possibly, "victims" of them), a lot of grief could be avoided by simply
+pointing vendors to that central resource and saying "here is what you
+need to know for your driver to keep working - now get to it".
 
-Looks like I'm late here and the decision has been made to go 16K 
-stacks, which I think is a good one. We've been living on the edge (and 
-sometimes over) for heavy dm/md setups for a while, and have been 
-patching around that fact in the IO stack for years.
+As said, I'm more of a user, so I may be unaware of practices already in
+place to mark commits as causing deprecation, but if such practices
+exist, I should be able to whip up some sort of script that periodically
+does a "git log" and collates deprecations into some format that could
+then be parsed by a bash script grepping various out-of-tree code bases
+and notifies the relevant parties.
 
+I'd be willing to have a go at such functionality as well as hosting the
+info (at least until some vendor realizes the value and donates to it),
+but I'd hate to go off into too many wrong directions, if those can be
+avoided by feedback here.
 
--- 
-Jens Axboe
+Best regards,
 
+Sune Mølgaard
