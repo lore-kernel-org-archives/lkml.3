@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422644AbaEaNPo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 May 2014 09:15:44 -0400
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:40841 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933472AbaEaNOs (ORCPT
+	id S935073AbaEaNQF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 May 2014 09:16:05 -0400
+Received: from mail-ve0-f174.google.com ([209.85.128.174]:37142 "EHLO
+	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933196AbaEaNOo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 May 2014 09:14:48 -0400
+	Sat, 31 May 2014 09:14:44 -0400
 From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: Jon Mason <jdmason@kudzu.us>
-Cc: kernel-janitors@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 10/11] vxge: Remove useless return variables
-Date: Sat, 31 May 2014 10:14:10 -0300
-Message-Id: <1401542051-3174-10-git-send-email-peter.senna@gmail.com>
+To: Hans Verkuil <hverkuil@xs4all.nl>
+Cc: kernel-janitors@vger.kernel.org,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 8/11] drivers/media/usb/usbvision/usbvision-core.c: Remove useless return variables
+Date: Sat, 31 May 2014 10:14:08 -0300
+Message-Id: <1401542051-3174-8-git-send-email-peter.senna@gmail.com>
 X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -44,126 +45,80 @@ return
 Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
 
 ---
- drivers/net/ethernet/neterion/vxge/vxge-config.c |   22 +++++++---------------
- 1 file changed, 7 insertions(+), 15 deletions(-)
+ drivers/media/usb/usbvision/usbvision-core.c |   16 +++++-----------
+ 1 file changed, 5 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/net/ethernet/neterion/vxge/vxge-config.c b/drivers/net/ethernet/neterion/vxge/vxge-config.c
-index 089b713..2bbd01f 100644
---- a/drivers/net/ethernet/neterion/vxge/vxge-config.c
-+++ b/drivers/net/ethernet/neterion/vxge/vxge-config.c
-@@ -120,7 +120,6 @@ __vxge_hw_device_register_poll(void __iomem *reg, u64 mask, u32 max_millis)
+diff --git a/drivers/media/usb/usbvision/usbvision-core.c b/drivers/media/usb/usbvision/usbvision-core.c
+index 816b1cf..302aa07 100644
+--- a/drivers/media/usb/usbvision/usbvision-core.c
++++ b/drivers/media/usb/usbvision/usbvision-core.c
+@@ -1463,8 +1463,6 @@ static int usbvision_write_reg_irq(struct usb_usbvision *usbvision, int address,
+ 
+ static int usbvision_init_compression(struct usb_usbvision *usbvision)
  {
- 	u64 val64;
- 	u32 i = 0;
--	enum vxge_hw_status ret = VXGE_HW_FAIL;
- 
- 	udelay(10);
- 
-@@ -139,7 +138,7 @@ __vxge_hw_device_register_poll(void __iomem *reg, u64 mask, u32 max_millis)
- 		mdelay(1);
- 	} while (++i <= max_millis);
- 
--	return ret;
-+	return VXGE_HW_FAIL;
- }
- 
- static inline enum vxge_hw_status
-@@ -1682,12 +1681,10 @@ enum vxge_hw_status vxge_hw_driver_stats_get(
- 			struct __vxge_hw_device *hldev,
- 			struct vxge_hw_device_stats_sw_info *sw_stats)
- {
--	enum vxge_hw_status status = VXGE_HW_OK;
+-	int err_code = 0;
 -
- 	memcpy(sw_stats, &hldev->stats.sw_dev_info_stats,
- 		sizeof(struct vxge_hw_device_stats_sw_info));
+ 	usbvision->last_isoc_frame_num = -1;
+ 	usbvision->isoc_data_count = 0;
+ 	usbvision->isoc_packet_count = 0;
+@@ -1475,7 +1473,7 @@ static int usbvision_init_compression(struct usb_usbvision *usbvision)
+ 	usbvision->request_intra = 1;
+ 	usbvision->isoc_measure_bandwidth_count = 0;
  
--	return status;
-+	return VXGE_HW_OK;
+-	return err_code;
++	return 0;
  }
  
- /*
-@@ -3228,7 +3225,6 @@ enum vxge_hw_status
- vxge_hw_vpath_strip_fcs_check(struct __vxge_hw_device *hldev, u64 vpath_mask)
+ /* this function measures the used bandwidth since last call
+@@ -1484,11 +1482,9 @@ static int usbvision_init_compression(struct usb_usbvision *usbvision)
+  */
+ static int usbvision_measure_bandwidth(struct usb_usbvision *usbvision)
  {
- 	struct vxge_hw_vpmgmt_reg       __iomem *vpmgmt_reg;
--	enum vxge_hw_status status = VXGE_HW_OK;
- 	int i = 0, j = 0;
- 
- 	for (i = 0; i < VXGE_HW_MAX_VIRTUAL_PATHS; i++) {
-@@ -3241,7 +3237,7 @@ vxge_hw_vpath_strip_fcs_check(struct __vxge_hw_device *hldev, u64 vpath_mask)
- 				return VXGE_HW_FAIL;
- 		}
+-	int err_code = 0;
+-
+ 	if (usbvision->isoc_measure_bandwidth_count < 2) { /* this gives an average bandwidth of 3 frames */
+ 		usbvision->isoc_measure_bandwidth_count++;
+-		return err_code;
++		return 0;
  	}
--	return status;
-+	return VXGE_HW_OK;
+ 	if ((usbvision->isoc_packet_size > 0) && (usbvision->isoc_packet_count > 0)) {
+ 		usbvision->used_bandwidth = usbvision->isoc_data_count /
+@@ -1499,7 +1495,7 @@ static int usbvision_measure_bandwidth(struct usb_usbvision *usbvision)
+ 	usbvision->isoc_data_count = 0;
+ 	usbvision->isoc_packet_count = 0;
+ 	usbvision->isoc_skip_count = 0;
+-	return err_code;
++	return 0;
  }
- /*
-  * vxge_hw_mgmt_reg_Write - Write Titan register.
-@@ -3979,7 +3975,6 @@ __vxge_hw_vpath_mgmt_read(
+ 
+ static int usbvision_adjust_compression(struct usb_usbvision *usbvision)
+@@ -1546,26 +1542,24 @@ static int usbvision_adjust_compression(struct usb_usbvision *usbvision)
+ 
+ static int usbvision_request_intra(struct usb_usbvision *usbvision)
  {
- 	u32 i, mtu = 0, max_pyld = 0;
- 	u64 val64;
--	enum vxge_hw_status status = VXGE_HW_OK;
+-	int err_code = 0;
+ 	unsigned char buffer[1];
  
- 	for (i = 0; i < VXGE_HW_MAC_MAX_MAC_PORT_ID; i++) {
- 
-@@ -4009,7 +4004,7 @@ __vxge_hw_vpath_mgmt_read(
- 	else
- 		VXGE_HW_DEVICE_LINK_STATE_SET(vpath->hldev, VXGE_HW_LINK_DOWN);
- 
--	return status;
-+	return VXGE_HW_OK;
+ 	PDEBUG(DBG_IRQ, "");
+ 	usbvision->request_intra = 1;
+ 	buffer[0] = 1;
+ 	usbvision_write_reg_irq(usbvision, USBVISION_FORCE_INTRA, buffer, 1);
+-	return err_code;
++	return 0;
  }
  
- /*
-@@ -4039,14 +4034,13 @@ static enum vxge_hw_status
- __vxge_hw_vpath_reset(struct __vxge_hw_device *hldev, u32 vp_id)
+ static int usbvision_unrequest_intra(struct usb_usbvision *usbvision)
  {
- 	u64 val64;
--	enum vxge_hw_status status = VXGE_HW_OK;
+-	int err_code = 0;
+ 	unsigned char buffer[1];
  
- 	val64 = VXGE_HW_CMN_RSTHDLR_CFG0_SW_RESET_VPATH(1 << (16 - vp_id));
- 
- 	__vxge_hw_pio_mem_write32_upper((u32)vxge_bVALn(val64, 0, 32),
- 				&hldev->common_reg->cmn_rsthdlr_cfg0);
- 
--	return status;
-+	return VXGE_HW_OK;
+ 	PDEBUG(DBG_IRQ, "");
+ 	usbvision->request_intra = 0;
+ 	buffer[0] = 0;
+ 	usbvision_write_reg_irq(usbvision, USBVISION_FORCE_INTRA, buffer, 1);
+-	return err_code;
++	return 0;
  }
  
- /*
-@@ -4227,7 +4221,6 @@ static enum vxge_hw_status
- __vxge_hw_vpath_mac_configure(struct __vxge_hw_device *hldev, u32 vp_id)
- {
- 	u64 val64;
--	enum vxge_hw_status status = VXGE_HW_OK;
- 	struct __vxge_hw_virtualpath *vpath;
- 	struct vxge_hw_vp_config *vp_config;
- 	struct vxge_hw_vpath_reg __iomem *vp_reg;
-@@ -4283,7 +4276,7 @@ __vxge_hw_vpath_mac_configure(struct __vxge_hw_device *hldev, u32 vp_id)
- 
- 		writeq(val64, &vp_reg->rxmac_vcfg1);
- 	}
--	return status;
-+	return VXGE_HW_OK;
- }
- 
- /*
-@@ -4295,7 +4288,6 @@ static enum vxge_hw_status
- __vxge_hw_vpath_tim_configure(struct __vxge_hw_device *hldev, u32 vp_id)
- {
- 	u64 val64;
--	enum vxge_hw_status status = VXGE_HW_OK;
- 	struct __vxge_hw_virtualpath *vpath;
- 	struct vxge_hw_vpath_reg __iomem *vp_reg;
- 	struct vxge_hw_vp_config *config;
-@@ -4545,7 +4537,7 @@ __vxge_hw_vpath_tim_configure(struct __vxge_hw_device *hldev, u32 vp_id)
- 	val64 |= VXGE_HW_TIM_WRKLD_CLC_CNT_RX_TX(3);
- 	writeq(val64, &vp_reg->tim_wrkld_clc);
- 
--	return status;
-+	return VXGE_HW_OK;
- }
- 
- /*
+ /*******************************
 
