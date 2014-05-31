@@ -1,91 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935187AbaEaObT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 May 2014 10:31:19 -0400
-Received: from gproxy4-pub.mail.unifiedlayer.com ([69.89.23.142]:55161 "HELO
-	gproxy4-pub.mail.unifiedlayer.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756760AbaEaObP (ORCPT
+	id S1756695AbaEaO25 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 May 2014 10:28:57 -0400
+Received: from mail-qg0-f43.google.com ([209.85.192.43]:41042 "EHLO
+	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756662AbaEaO2x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 May 2014 10:31:15 -0400
-X-Authority-Analysis: v=2.1 cv=CpMsLBID c=1 sm=1 tr=0
- a=yEjhGPV9XlbPNRGz7jjbow==:117 a=yEjhGPV9XlbPNRGz7jjbow==:17 a=DsvgjBjRAAAA:8
- a=f5113yIGAAAA:8 a=RxiE-YePRCkA:10 a=neHJxMmKCwgA:10 a=IkcTkHD0fZMA:10
- a=wCmvBT1CAAAA:8 a=djd9j7hWnewA:10 a=3mQisGbx5lUA:10 a=BJkoZQO876Vp20Tpy8oA:9
- a=QEXdDO2ut3YA:10
-Message-ID: <1401546649.2413.6.camel@slavad-CELSIUS-H720>
-Subject: Re: [RFC 00/32] making inode time stamps y2038 ready
-From: Vyacheslav Dubeyko <slava@dubeyko.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        joseph@codesourcery.com, john.stultz@linaro.org, hch@infradead.org,
-        tglx@linutronix.de, geert@linux-m68k.org, lftan@altera.com,
-        hpa@zytor.com, linux-fsdevel@vger.kernel.org,
-        ceph-devel@vger.kernel.org, cluster-devel@redhat.com, coda@cs.cmu.edu,
-        codalist@TELEMANN.coda.cs.cmu.edu, fuse-devel@lists.sourceforge.net,
-        linux-afs@lists.infradead.org, linux-btrfs@vger.kernel.org,
-        linux-cifs@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net, linux-mtd@lists.infradead.org,
-        linux-nfs@vger.kernel.org, linux-ntfs-dev@lists.sourceforge.net,
-        linux-scsi@vger.kernel.org, logfs@logfs.org,
-        ocfs2-devel@oss.oracle.com, reiserfs-devel@vger.kernel.org,
-        samba-technical@lists.samba.org, xfs@oss.sgi.com
-Date: Sat, 31 May 2014 18:30:49 +0400
-In-Reply-To: <1401480116-1973111-1-git-send-email-arnd@arndb.de>
-References: <1401480116-1973111-1-git-send-email-arnd@arndb.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Identified-User: {2172:host202.hostmonster.com:dubeykoc:dubeyko.com} {sentby:smtp auth 46.39.244.124 authed with slava@dubeyko.com}
+	Sat, 31 May 2014 10:28:53 -0400
+From: Andreas Noever <andreas.noever@gmail.com>
+To: linux-kernel@vger.kernel.org, Matthew Garrett <matthew.garrett@nebula.com>,
+        Greg KH <greg@kroah.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        linux-pci@vger.kernel.org
+Cc: Andreas Noever <andreas.noever@gmail.com>
+Subject: [PATCH v4 06/15] thunderbolt: Add thunderbolt capability handling
+Date: Sat, 31 May 2014 16:27:51 +0200
+Message-Id: <1401546480-2071-7-git-send-email-andreas.noever@gmail.com>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1401546480-2071-1-git-send-email-andreas.noever@gmail.com>
+References: <1401546480-2071-1-git-send-email-andreas.noever@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+Thunderbolt config areas contain capability lists similar to those found
+on pci devices. This patch introduces a tb_find_cap utility method to
+search for capabilities.
 
-On Fri, 2014-05-30 at 22:01 +0200, Arnd Bergmann wrote:
+Signed-off-by: Andreas Noever <andreas.noever@gmail.com>
+---
+ drivers/thunderbolt/Makefile |   2 +-
+ drivers/thunderbolt/cap.c    | 116 +++++++++++++++++++++++++++++++++++++++++++
+ drivers/thunderbolt/tb.h     |   2 +
+ 3 files changed, 119 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/thunderbolt/cap.c
 
-[snip]
-> 
-> Arnd Bergmann (32):
->   fs: introduce new 'struct inode_time'
->   uapi: add struct __kernel_timespec{32,64}
->   fs: introduce sys_utimens64at
->   fs: introduce sys_newfstat64/sys_newfstatat64
->   arch: hook up new stat and utimes syscalls
->   isofs: fix timestamps beyond 2027
->   fs/nfs: convert to struct inode_time
->   fs/ceph: convert to 'struct inode_time'
->   fs/pstore: convert to struct inode_time
->   fs/coda: convert to struct inode_time
->   xfs: convert to struct inode_time
->   btrfs: convert to struct inode_time
->   ext3: convert to struct inode_time
->   ext4: convert to struct inode_time
->   cifs: convert to struct inode_time
->   ntfs: convert to struct inode_time
->   ubifs: convert to struct inode_time
->   ocfs2: convert to struct inode_time
->   fs/fat: convert to struct inode_time
->   afs: convert to struct inode_time
->   udf: convert to struct inode_time
->   fs: convert simple fs to inode_time
->   logfs: convert to struct inode_time
->   hfs, hfsplus: convert to struct inode_time
->   gfs2: convert to struct inode_time
->   reiserfs: convert to struct inode_time
->   jffs2: convert to struct inode_time
->   adfs: convert to struct inode_time
->   f2fs: convert to struct inode_time
->   fuse: convert to struct inode_time
->   scsi: fnic: use current_kernel_time() for timestamp
->   fs: use new inode_time definition unconditionally
-> 
-
-By the way, what about NILFS2? Is NILFS2 ready for suggested approach
-without any changes?
-
-Thanks,
-Vyacheslav Dubeyko.
-
+diff --git a/drivers/thunderbolt/Makefile b/drivers/thunderbolt/Makefile
+index 4ac18d9..617b314 100644
+--- a/drivers/thunderbolt/Makefile
++++ b/drivers/thunderbolt/Makefile
+@@ -1,3 +1,3 @@
+ obj-${CONFIG_THUNDERBOLT} := thunderbolt.o
+-thunderbolt-objs := nhi.o ctl.o tb.o switch.o
++thunderbolt-objs := nhi.o ctl.o tb.o switch.o cap.o
+ 
+diff --git a/drivers/thunderbolt/cap.c b/drivers/thunderbolt/cap.c
+new file mode 100644
+index 0000000..a7b47e7
+--- /dev/null
++++ b/drivers/thunderbolt/cap.c
+@@ -0,0 +1,116 @@
++/*
++ * Thunderbolt Cactus Ridge driver - capabilities lookup
++ *
++ * Copyright (c) 2014 Andreas Noever <andreas.noever@gmail.com>
++ */
++
++#include <linux/slab.h>
++#include <linux/errno.h>
++
++#include "tb.h"
++
++
++struct tb_cap_any {
++	union {
++		struct tb_cap_basic basic;
++		struct tb_cap_extended_short extended_short;
++		struct tb_cap_extended_long extended_long;
++	};
++} __packed;
++
++static bool tb_cap_is_basic(struct tb_cap_any *cap)
++{
++	/* basic.cap is u8. This checks only the lower 8 bit of cap. */
++	return cap->basic.cap != 5;
++}
++
++static bool tb_cap_is_long(struct tb_cap_any *cap)
++{
++	return !tb_cap_is_basic(cap)
++	       && cap->extended_short.next == 0
++	       && cap->extended_short.length == 0;
++}
++
++static enum tb_cap tb_cap(struct tb_cap_any *cap)
++{
++	if (tb_cap_is_basic(cap))
++		return cap->basic.cap;
++	else
++		/* extended_short/long have cap at the same offset. */
++		return cap->extended_short.cap;
++}
++
++static u32 tb_cap_next(struct tb_cap_any *cap, u32 offset)
++{
++	int next;
++	if (offset == 1) {
++		/*
++		 * The first pointer is part of the switch header and always
++		 * a simple pointer.
++		 */
++		next = cap->basic.next;
++	} else {
++		/*
++		 * Somehow Intel decided to use 3 different types of capability
++		 * headers. It is not like anyone could have predicted that
++		 * single byte offsets are not enough...
++		 */
++		if (tb_cap_is_basic(cap))
++			next = cap->basic.next;
++		else if (!tb_cap_is_long(cap))
++			next = cap->extended_short.next;
++		else
++			next = cap->extended_long.next;
++	}
++	/*
++	 * "Hey, we could terminate some capability lists with a null offset
++	 *  and others with a pointer to the last element." - "Great idea!"
++	 */
++	if (next == offset)
++		return 0;
++	return next;
++}
++
++/**
++ * tb_find_cap() - find a capability
++ *
++ * Return: Returns a positive offset if the capability was found and 0 if not.
++ * Returns an error code on failure.
++ */
++int tb_find_cap(struct tb_port *port, enum tb_cfg_space space, enum tb_cap cap)
++{
++	u32 offset = 1;
++	struct tb_cap_any header;
++	int res;
++	int retries = 10;
++	while (retries--) {
++		res = tb_port_read(port, &header, space, offset, 1);
++		if (res) {
++			/* Intel needs some help with linked lists. */
++			if (space == TB_CFG_PORT && offset == 0xa
++			    && port->config.type == TB_TYPE_DP_HDMI_OUT) {
++				offset = 0x39;
++				continue;
++			}
++			return res;
++		}
++		if (offset != 1) {
++			if (tb_cap(&header) == cap)
++				return offset;
++			if (tb_cap_is_long(&header)) {
++				/* tb_cap_extended_long is 2 dwords */
++				res = tb_port_read(port, &header, space,
++						   offset, 2);
++				if (res)
++					return res;
++			}
++		}
++		offset = tb_cap_next(&header, offset);
++		if (!offset)
++			return 0;
++	}
++	tb_port_WARN(port,
++		     "run out of retries while looking for cap %#x in config space %d, last offset: %#x\n",
++		     cap, space, offset);
++	return -EIO;
++}
+diff --git a/drivers/thunderbolt/tb.h b/drivers/thunderbolt/tb.h
+index 389dbb4..38e4c23 100644
+--- a/drivers/thunderbolt/tb.h
++++ b/drivers/thunderbolt/tb.h
+@@ -159,6 +159,8 @@ void thunderbolt_shutdown_and_free(struct tb *tb);
+ struct tb_switch *tb_switch_alloc(struct tb *tb, u64 route);
+ void tb_switch_free(struct tb_switch *sw);
+ 
++int tb_find_cap(struct tb_port *port, enum tb_cfg_space space, u32 value);
++
+ 
+ static inline int tb_route_length(u64 route)
+ {
+-- 
+1.9.3
 
