@@ -1,248 +1,281 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751856AbaEaEbn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 May 2014 00:31:43 -0400
-Received: from mail-ig0-f171.google.com ([209.85.213.171]:63755 "EHLO
-	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751319AbaEaEbl (ORCPT
+	id S1752007AbaEaEqG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 May 2014 00:46:06 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:48908 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751214AbaEaEqE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 May 2014 00:31:41 -0400
-From: Daniel Dressler <danieru.dressler@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: arve@android.com, serban.constantinescu@arm.com, prtvar.b@gmail.com,
-        john.stultz@linaro.org, standby24x7@gmail.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        danieru <danieru.dressler@gmail.com>
-Subject: [PATCH] Staging: android: binder: Fix over-80-char lines
-Date: Fri, 30 May 2014 22:31:20 -0600
-Message-Id: <1401510680-13991-1-git-send-email-danieru.dressler@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Sat, 31 May 2014 00:46:04 -0400
+Date: Fri, 30 May 2014 21:44:45 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: David Herrmann <dh.herrmann@gmail.com>
+cc: Hugh Dickins <hughd@google.com>, Jan Kara <jack@suse.cz>,
+        Tony Battersby <tonyb@cybernetics.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <tj@kernel.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Christoph Lameter <clameter@sgi.com>, Mel Gorman <mgorman@suse.de>
+Subject: Re: [PATCH v2 0/3] File Sealing & memfd_create()
+In-Reply-To: <CANq1E4TDDzG+HtBz261_nid3kVRG_jwcWHizzkdZCZZE3BaLgQ@mail.gmail.com>
+Message-ID: <alpine.LSU.2.11.1405301956570.1037@eggly.anvils>
+References: <1397587118-1214-1-git-send-email-dh.herrmann@gmail.com> <alpine.LSU.2.11.1405132118330.4401@eggly.anvils> <537396A2.9090609@cybernetics.com> <alpine.LSU.2.11.1405141456420.2268@eggly.anvils> <CANq1E4QgSbD9G70H7W4QeXbZ77_Kn1wV7edwzN4k4NjQJS=36A@mail.gmail.com>
+ <20140519160942.GD3427@quack.suse.cz> <alpine.LSU.2.11.1405191403280.969@eggly.anvils> <CANq1E4TDDzG+HtBz261_nid3kVRG_jwcWHizzkdZCZZE3BaLgQ@mail.gmail.com>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: danieru <danieru.dressler@gmail.com>
+On Mon, 26 May 2014, David Herrmann wrote:
+> 
+> (CC migrate.c committers)
+> 
+> On Tue, May 20, 2014 at 12:11 AM, Hugh Dickins <hughd@google.com> wrote:
+> > On Mon, 19 May 2014, Jan Kara wrote:
+> >> On Mon 19-05-14 13:44:25, David Herrmann wrote:
+> >> > On Thu, May 15, 2014 at 12:35 AM, Hugh Dickins <hughd@google.com> wrote:
+> >> > > The aspect which really worries me is this: the maintenance burden.
+> >> > > This approach would add some peculiar new code, introducing a rare
+> >> > > special case: which we might get right today, but will very easily
+> >> > > forget tomorrow when making some other changes to mm.  If we compile
+> >> > > a list of danger areas in mm, this would surely belong on that list.
+> >> >
+> >> > I tried doing the page-replacement in the last 4 days, but honestly,
+> >> > it's far more complex than I thought. So if no-one more experienced
+> >
+> > To be honest, I'm quite glad to hear that: it is still a solution worth
+> > considering, but I'd rather continue the search for a better solution.
+> 
+> What if we set VM_IO for memory-mappings if a file supports sealing?
+> That might be a hack and quite restrictive, but we could also add a
+> VM_DONTPIN flag that just prevents any page-pinning like GUP (which is
+> also a side-effect of VM_IO). This is basically what we do to protect
+> PCI BARs from that race during hotplug (well, VM_PFNMAP ist what
+> protects those, but the code is the same). If we mention in the
+> man-page that memfd-objects don't support direct-IO, we'd be fine, I
+> think. Not sure if that hack is better than the page-replacement,
+> though. It'd be definitely much simpler.
 
-Following Greg Kroah-Hartman's newbie guide to hacking
-the linux kernel this patch addresses only coding style
-issues.
+I admire your resourcefulness, but three things put me off using
+VM_IO.
 
-Binder still has many too-long lines but I'm worried
-doing too much work in a single patch is unfair to the
-reviewers. So this patch address 20% of the file's
-issues.
+One is just a great distaste for using VM_IO in mm, when it's about
+device and memory regions unknown to mm.  You can indeed get around
+that objection by making a new VM_DONTPIN with similar restrictions.
 
-There is one change to take notice of: it merges two if
-statement's conditionals together. Then it removes a
-redundant else clause.
+Two is that I'm afraid of those restrictions which you foresee.
+Soon after putting this in, we shall have people saying "I can't
+do such-and-such on my memfd-object, can you please enable it"
+and then we shall have to find another solution.
 
-Signed-off-by: Daniel Dressler <danieru.dressler@gmail.com>
----
- drivers/staging/android/binder.c | 89 ++++++++++++++++++++++++----------------
- 1 file changed, 54 insertions(+), 35 deletions(-)
+But three, more importantly, that gives no protection against
+get_user_pages_fast() callers: as mentioned before, GUP-fast works
+on page tables, not examining vmas at all, so it is blind to VM_IO.
 
-diff --git a/drivers/staging/android/binder.c b/drivers/staging/android/binder.c
-index cfe4bc8..6e80861a 100644
---- a/drivers/staging/android/binder.c
-+++ b/drivers/staging/android/binder.c
-@@ -2211,11 +2211,14 @@ retry:
- 			binder_stats_deleted(BINDER_STAT_TRANSACTION_COMPLETE);
- 		} break;
- 		case BINDER_WORK_NODE: {
--			struct binder_node *node = container_of(w, struct binder_node, work);
-+			struct binder_node *node = container_of(w,
-+						struct binder_node, work);
- 			uint32_t cmd = BR_NOOP;
- 			const char *cmd_name;
--			int strong = node->internal_strong_refs || node->local_strong_refs;
--			int weak = !hlist_empty(&node->refs) || node->local_weak_refs || strong;
-+			int strong = node->internal_strong_refs ||
-+						node->local_strong_refs;
-+			int weak = !hlist_empty(&node->refs) ||
-+					node->local_weak_refs || strong;
- 			if (weak && !node->has_weak_ref) {
- 				cmd = BR_INCREFS;
- 				cmd_name = "BR_INCREFS";
-@@ -2311,8 +2314,10 @@ retry:
- 				binder_stats_deleted(BINDER_STAT_DEATH);
- 			} else
- 				list_move(&w->entry, &proc->delivered_death);
-+
-+			/* DEAD_BINDER notifications can cause transactions */
- 			if (cmd == BR_DEAD_BINDER)
--				goto done; /* DEAD_BINDER notifications can cause transactions */
-+				goto done;
- 		} break;
- 		}
- 
-@@ -2321,7 +2326,8 @@ retry:
- 
- 		BUG_ON(t->buffer == NULL);
- 		if (t->buffer->target_node) {
--			struct binder_node *target_node = t->buffer->target_node;
-+			struct binder_node *target_node =
-+							t->buffer->target_node;
- 			tr.target.ptr = target_node->ptr;
- 			tr.cookie =  target_node->cookie;
- 			t->saved_priority = task_nice(current);
-@@ -2344,7 +2350,7 @@ retry:
- 		if (t->from) {
- 			struct task_struct *sender = t->from->proc->tsk;
- 			tr.sender_pid = task_tgid_nr_ns(sender,
--							task_active_pid_ns(current));
-+						task_active_pid_ns(current));
- 		} else {
- 			tr.sender_pid = 0;
- 		}
-@@ -2575,11 +2581,13 @@ static long binder_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
- 	unsigned int size = _IOC_SIZE(cmd);
- 	void __user *ubuf = (void __user *)arg;
- 
--	/*pr_info("binder_ioctl: %d:%d %x %lx\n", proc->pid, current->pid, cmd, arg);*/
-+	/*pr_info("binder_ioctl: %d:%d %x %lx\n",
-+					proc->pid, current->pid, cmd, arg);*/
- 
- 	trace_binder_ioctl(cmd, arg);
- 
--	ret = wait_event_interruptible(binder_user_error_wait, binder_stop_on_user_error < 2);
-+	ret = wait_event_interruptible(binder_user_error_wait,
-+						binder_stop_on_user_error < 2);
- 	if (ret)
- 		goto err_unlocked;
- 
-@@ -2602,10 +2610,10 @@ static long binder_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
- 			goto err;
- 		}
- 		binder_debug(BINDER_DEBUG_READ_WRITE,
--			     "%d:%d write %lld at %016llx, read %lld at %016llx\n",
--			     proc->pid, thread->pid,
--			     (u64)bwr.write_size, (u64)bwr.write_buffer,
--			     (u64)bwr.read_size, (u64)bwr.read_buffer);
-+			"%d:%d write %lld at %016llx, read %lld at %016llx\n",
-+			proc->pid, thread->pid,
-+			(u64)bwr.write_size, (u64)bwr.write_buffer,
-+			(u64)bwr.read_size, (u64)bwr.read_buffer);
- 
- 		if (bwr.write_size > 0) {
- 			ret = binder_thread_write(proc, thread,
-@@ -2635,10 +2643,10 @@ static long binder_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
- 			}
- 		}
- 		binder_debug(BINDER_DEBUG_READ_WRITE,
--			     "%d:%d wrote %lld of %lld, read return %lld of %lld\n",
--			     proc->pid, thread->pid,
--			     (u64)bwr.write_consumed, (u64)bwr.write_size,
--			     (u64)bwr.read_consumed, (u64)bwr.read_size);
-+			"%d:%d wrote %lld of %lld, read return %lld of %lld\n",
-+			proc->pid, thread->pid,
-+			(u64)bwr.write_consumed, (u64)bwr.write_size,
-+			(u64)bwr.read_consumed, (u64)bwr.read_size);
- 		if (copy_to_user(ubuf, &bwr, sizeof(bwr))) {
- 			ret = -EFAULT;
- 			goto err;
-@@ -2646,7 +2654,8 @@ static long binder_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
- 		break;
- 	}
- 	case BINDER_SET_MAX_THREADS:
--		if (copy_from_user(&proc->max_threads, ubuf, sizeof(proc->max_threads))) {
-+		if (copy_from_user(&proc->max_threads, ubuf,
-+						sizeof(proc->max_threads))) {
- 			ret = -EINVAL;
- 			goto err;
- 		}
-@@ -2657,16 +2666,16 @@ static long binder_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
- 			ret = -EBUSY;
- 			goto err;
- 		}
--		if (uid_valid(binder_context_mgr_uid)) {
--			if (!uid_eq(binder_context_mgr_uid, current->cred->euid)) {
--				pr_err("BINDER_SET_CONTEXT_MGR bad uid %d != %d\n",
--				       from_kuid(&init_user_ns, current->cred->euid),
--				       from_kuid(&init_user_ns, binder_context_mgr_uid));
--				ret = -EPERM;
--				goto err;
--			}
--		} else
--			binder_context_mgr_uid = current->cred->euid;
-+		if (uid_valid(binder_context_mgr_uid) &&
-+			!uid_eq(binder_context_mgr_uid, current->cred->euid)) {
-+			pr_err("BINDER_SET_CONTEXT_MGR bad uid %d != %d\n",
-+			       from_kuid(&init_user_ns, current->cred->euid),
-+			       from_kuid(&init_user_ns, binder_context_mgr_uid)
-+			       );
-+			ret = -EPERM;
-+			goto err;
-+		}
-+		binder_context_mgr_uid = current->cred->euid;
- 		binder_context_mgr_node = binder_new_node(proc, 0, 0);
- 		if (binder_context_mgr_node == NULL) {
- 			ret = -ENOMEM;
-@@ -2688,7 +2697,8 @@ static long binder_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
- 			ret = -EINVAL;
- 			goto err;
- 		}
--		if (put_user(BINDER_CURRENT_PROTOCOL_VERSION, &((struct binder_version *)ubuf)->protocol_version)) {
-+		if (put_user(BINDER_CURRENT_PROTOCOL_VERSION,
-+			&((struct binder_version *)ubuf)->protocol_version)) {
- 			ret = -EINVAL;
- 			goto err;
- 		}
-@@ -2702,9 +2712,11 @@ err:
- 	if (thread)
- 		thread->looper &= ~BINDER_LOOPER_STATE_NEED_RETURN;
- 	binder_unlock(__func__);
--	wait_event_interruptible(binder_user_error_wait, binder_stop_on_user_error < 2);
-+	wait_event_interruptible(binder_user_error_wait,
-+						binder_stop_on_user_error < 2);
- 	if (ret && ret != -ERESTARTSYS)
--		pr_info("%d:%d ioctl %x %lx returned %d\n", proc->pid, current->pid, cmd, arg, ret);
-+		pr_info("%d:%d ioctl %x %lx returned %d\n", proc->pid,
-+						current->pid, cmd, arg, ret);
- err_unlocked:
- 	trace_binder_ioctl_done(ret);
- 	return ret;
-@@ -2784,13 +2796,18 @@ static int binder_mmap(struct file *filp, struct vm_area_struct *vma)
- 
- #ifdef CONFIG_CPU_CACHE_VIPT
- 	if (cache_is_vipt_aliasing()) {
--		while (CACHE_COLOUR((vma->vm_start ^ (uint32_t)proc->buffer))) {
--			pr_info("binder_mmap: %d %lx-%lx maps %p bad alignment\n", proc->pid, vma->vm_start, vma->vm_end, proc->buffer);
-+		uint32_t proc_buffer = (uint32_t)proc->buffer;
-+		while (CACHE_COLOUR((vma->vm_start ^ proc_buffer))) {
-+			pr_info(
-+			"binder_mmap: %d %lx-%lx maps %p bad alignment\n",
-+						proc->pid, vma->vm_start,
-+						vma->vm_end, proc->buffer);
- 			vma->vm_start += PAGE_SIZE;
- 		}
- 	}
- #endif
--	proc->pages = kzalloc(sizeof(proc->pages[0]) * ((vma->vm_end - vma->vm_start) / PAGE_SIZE), GFP_KERNEL);
-+	size_t num_pages = (vma->vm_end - vma->vm_start) / PAGE_SIZE;
-+	proc->pages = kzalloc(sizeof(proc->pages[0]) * num_pages, GFP_KERNEL);
- 	if (proc->pages == NULL) {
- 		ret = -ENOMEM;
- 		failure_string = "alloc page array";
-@@ -2801,7 +2818,8 @@ static int binder_mmap(struct file *filp, struct vm_area_struct *vma)
- 	vma->vm_ops = &binder_vm_ops;
- 	vma->vm_private_data = proc;
- 
--	if (binder_update_page_range(proc, 1, proc->buffer, proc->buffer + PAGE_SIZE, vma)) {
-+	if (binder_update_page_range(proc, 1, proc->buffer,
-+					proc->buffer + PAGE_SIZE, vma)) {
- 		ret = -ENOMEM;
- 		failure_string = "alloc small buf";
- 		goto err_alloc_small_buf_failed;
-@@ -2887,7 +2905,8 @@ static void binder_deferred_flush(struct binder_proc *proc)
- 	struct rb_node *n;
- 	int wake_count = 0;
- 	for (n = rb_first(&proc->threads); n != NULL; n = rb_next(n)) {
--		struct binder_thread *thread = rb_entry(n, struct binder_thread, rb_node);
-+		struct binder_thread *thread = rb_entry(n, struct binder_thread,
-+								rb_node);
- 		thread->looper |= BINDER_LOOPER_STATE_NEED_RETURN;
- 		if (thread->looper & BINDER_LOOPER_STATE_WAITING) {
- 			wake_up_interruptible(&thread->wait);
--- 
-1.9.1
+get_user_pages_fast() does check pte access, and pte_special bit,
+falling back to get_user_pages() if unsuitable: IIRC, pte_special
+support is important for an architecture to support GUP-fast.
+But I definitely don't want any shmem to be !vm_normal_page().
 
+> 
+> Regarding page-replacement, I tried using migrate_page(), however,
+> this obviously fails in page_freeze_refs() due to the elevated
+> ref-count and we cannot account for those, as they might vanish
+> asynchronously. Now I wonder whether we could just add a new mode
+> MIGRATE_PHASE_OUT that avoids freezing the page and forces the copy.
+> Existing refs would still operate on the old page, but any new access
+> gets the new page. This way, we could collect pages with elevated
+> ref-counts in shmem similar to do_move_page_to_node_array() and then
+> call migrate_pages(). Now migrate_pages() takes good care to prevent
+> any new refs during migration. try_to_unmap(TTU_MIGRATION) marks PTEs
+> as 'in-migration', so accesses are delayed. Page-faults wait on the
+> page-lock and retry due to mapping==NULL. lru is disabled beforehand.
+> Therefore, there cannot be any racing page-lookups as they all stall
+> on the migration. Moreover, page_freeze_refs() fails only if the page
+> is pinned by independent users (usually some form of I/O).
+> Question is what those additional ref-counts might be. Given that
+> shmem 'owns' its pages, none of these external references should pass
+> those refs around. All they use it for is I/O. Therefore, we shouldn't
+> even need an additional try_to_unmap() _after_ MIGRATE_PHASE_OUT as we
+> expect those external refs to never pass page-refs around. If that's a
+> valid assumption (and I haven't found any offenders so far), we should
+> be good with migrate_pages(MIGRATE_PHASE_OUT) as I described.
+> 
+> Comments?
+
+I have not given these details all the attention that they deserve.
+It's Tony's copy-on-seal suggestion, fleshed out to use the migration
+infrastructure; but I still feel the same way about it as I did before.
+
+It's complexity (and complexity outside of mm/shmem.c) that I would
+prefer to avoid; and I find it hard to predict the consequence of
+this copy-on-write-in-reverse, where existing users are left holding
+something that used to be part of the object and now is not.  Perhaps
+the existing sudden-truncation codepaths would handle it appropriately,
+perhaps they would not.
+
+(I wonder if Daniel Phillips's Tux3 "page fork"ing is relevant here?
+But don't want to explore that right now.  "Revoke" also comes to mind.)
+
+I do think it may turn out to be a good future way forward, if what
+we do now turns out to be too restrictive; but we don't want to turn
+mm (slightly) upside down just to get sealing in.
+
+> 
+> While skimming over migrate.c I noticed two odd behaviors:
+> 1) migration_entry_wait() is used to wait on a migration to finish,
+> before accessing PTE entries. However, we call get_page() there, which
+> increases the ref-count of the old page and causes page_freeze_refs()
+> to fail. There's no way we can know how many tasks wait on a migration
+> entry when calling page_freeze_refs(). I have no idea how that's
+> supposed to work? Why don't we store the new page in the migration-swp
+> entry so any lookups stall on the new page? We don't care for
+> ref-counts on that page and if the migration fails, new->mapping is
+> set to NULL and any lookup is retried. remove_migration_pte() can
+> restore the old page correctly.
+
+Good point.  IIRC one reason for using the old page in the migration
+pte, is that the migration may fail and the new page be discarded before
+the old ptes have been restored.  Perhaps some rearrangement could handle
+that.  As to how it works at present, I think it simply relies on the
+unlikelihood that any migration_entry_wait() will raise the page count
+before the "expected_count" is checked.  And there's a fair bit of
+-EAGAIN retrying too.
+
+But again, I've only just caught up with you here, and haven't thought
+about it much yet.  I don't remember considering migration_entry_wait()
+as counter-productive in the way you indicate: worth more thought.
+
+> 2) remove_migration_pte() calls get_page(new) before writing the PTE.
+> But who releases the ref of the old page?
+
+putback_lru_page()?  You may want a longer answer, or you may have
+worked it out for yourself meanwhile - I'm confident that we do not
+actually have a common leak there, that would have been noticed by now.
+
+
+After all that negativity, below is a function for you.  Basically,
+it's for your original idea of checking page references at sealing
+time.  I was put off by the thought of endless attempts to get every
+page of a large file accountable at the same time, but didn't think
+of radix_tree tags until a couple of nights ago: they make it much
+more palatable.
+
+This is not wonderful (possibility of -EBUSY after 150ms - even if
+pages are pinned for read only); but I think it's good enough, to
+start with anyway.  You may disagree - and please don't jump at it, 
+just because you're keen to get the sealing in.
+
+I imagine you calling this near the i_mmap_writable check, and only
+bothering to call it when the object has at some time been mapped
+VM_SHARED (note VM_SHARED in shmem_inode_info->flags).  Precisely
+the locking needed, we can see when you have i_mmap_writable right.
+
+I still have your replies on 1-3/3 to respond to: not tonight.
+Oh, before I forget, linux-api@vger.kernel.org - that's a mailing
+list that we've only recently become conscious of, good for Cc'ing
+patches such as yours to.
+
+Hugh
+
+/*
+ * We need a tag: a new tag would expand every radix_tree_node by 8 bytes,
+ * so reuse a tag which we firmly believe is never set or cleared on shmem.
+ */
+#define SHMEM_TAG_PINNED	PAGECACHE_TAG_TOWRITE
+#define LAST_SCAN		4	/* about 150ms max */
+
+static int shmem_wait_for_pins(struct address_space *mapping)
+{
+	struct radix_tree_iter iter;
+	void **slot;
+	pgoff_t start;
+	struct page *page;
+	int scan;
+	int error;
+
+	start = 0;
+	rcu_read_lock();
+restart1:
+	radix_tree_for_each_slot(slot, &mapping->page_tree, &iter, start) {
+		page = radix_tree_deref_slot(slot);
+		if (!page || radix_tree_exception(page)) {
+			if (radix_tree_deref_retry(page))
+				goto restart1;
+			goto continue1;
+		}
+
+		if (page_count(page) - page_mapcount(page) == 1)
+			goto continue1;
+
+		spin_lock_irq(&mapping->tree_lock);
+		radix_tree_tag_set(&mapping->page_tree, iter.index,
+						SHMEM_TAG_PINNED);
+		spin_unlock_irq(&mapping->tree_lock);
+continue1:
+		if (need_resched()) {
+			cond_resched_rcu();
+			start = iter.index + 1;
+			goto restart1;
+		}
+	}
+	rcu_read_unlock();
+
+	error = 0;
+	for (scan = 0; scan <= LAST_SCAN; scan++) {
+		if (!radix_tree_tagged(&mapping->page_tree, SHMEM_TAG_PINNED))
+			break;
+
+		if (!scan)
+			lru_add_drain_all();
+		else if (schedule_timeout_killable((HZ << scan) / 200))
+			scan = LAST_SCAN;
+
+		start = 0;
+		rcu_read_lock();
+restart2:
+		radix_tree_for_each_tagged(slot, &mapping->page_tree, &iter,
+						start, SHMEM_TAG_PINNED) {
+			page = radix_tree_deref_slot(slot);
+			if (radix_tree_exception(page)) {
+				if (radix_tree_deref_retry(page))
+					goto restart2;
+				page = NULL;
+			}
+
+			if (page &&
+			    page_count(page) - page_mapcount(page) != 1) {
+				if (scan < LAST_SCAN)
+					goto continue2;
+				/*
+				 * On the last scan, we should probably clean
+				 * up all those tags we inserted; but make a
+				 * note that we still found pages pinned.
+				 */
+				error = -EBUSY;
+			}
+
+			spin_lock_irq(&mapping->tree_lock);
+			radix_tree_tag_clear(&mapping->page_tree,
+						iter.index, SHMEM_TAG_PINNED);
+			spin_unlock_irq(&mapping->tree_lock);
+continue2:
+			if (need_resched()) {
+				cond_resched_rcu();
+				start = iter.index + 1;
+				goto restart2;
+			}
+		}
+		rcu_read_unlock();
+	}
+
+	return error;
+}
