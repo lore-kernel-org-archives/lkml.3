@@ -1,85 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752663AbaEaQMU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 May 2014 12:12:20 -0400
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:45386 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751155AbaEaQMT (ORCPT
+	id S1755272AbaEaQMx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 May 2014 12:12:53 -0400
+Received: from mail-ve0-f180.google.com ([209.85.128.180]:54978 "EHLO
+	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751514AbaEaQMw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 May 2014 12:12:19 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.11.1405310745001.10717@i7.linux-foundation.org>
-References: <CA+55aFzYjRrvSaF=wGimrgtEqR7GHbu1ku1qn1wQs5wgQrCZdg@mail.gmail.com>
-	<20140529154454.GK18016@ZenIV.linux.org.uk>
-	<20140529162307.GL18016@ZenIV.linux.org.uk>
-	<CA+55aFyRDJpm2Wfg9jvXCsKYgt36=6A_++bX+Q=C4MvQRbqh_A@mail.gmail.com>
-	<20140529165351.GM18016@ZenIV.linux.org.uk>
-	<20140529185201.GN18016@ZenIV.linux.org.uk>
-	<20140530081238.GA1957@lahna.fi.intel.com>
-	<20140530152151.GR18016@ZenIV.linux.org.uk>
-	<CA+55aFxLNvBDYtiq92DvuVqUk7byWeYiL1svbNQdXg7MRtbBcQ@mail.gmail.com>
-	<20140530164815.GS18016@ZenIV.linux.org.uk>
-	<20140530171408.GT18016@ZenIV.linux.org.uk>
-	<CA+5PVA5EmAkoZnWNUtXCPu5JZ=6Q4jFrjoqHZdtBVdbxwPe6Tw@mail.gmail.com>
-	<alpine.LFD.2.11.1405310745001.10717@i7.linux-foundation.org>
-Date: Sat, 31 May 2014 12:12:18 -0400
-X-Google-Sender-Auth: 6vT3R6ZI3Ac3yBNFsdNkMIU603I
-Message-ID: <CA+5PVA4cSTpzoqqXdxT+GqEGDqZ1X6nPXoWo8OKJc_ePBDBzbQ@mail.gmail.com>
-Subject: Re: [git pull] Re: fs/dcache.c - BUG: soft lockup - CPU#5 stuck for
- 22s! [systemd-udevd:1667]
-From: Josh Boyer <jwboyer@fedoraproject.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Miklos Szeredi <mszeredi@suse.cz>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 31 May 2014 12:12:52 -0400
+From: Peter Senna Tschudin <peter.senna@gmail.com>
+To: Solomon Peachy <pizza@shaftnet.org>
+Cc: kernel-janitors@vger.kernel.org,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 2/11 V2] cw1200: Remove useless return variables
+Date: Sat, 31 May 2014 13:12:26 -0300
+Message-Id: <1401552746-10615-1-git-send-email-peter.senna@gmail.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 31, 2014 at 10:48 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
->
-> On Sat, 31 May 2014, Josh Boyer wrote:
->>
->> One of my machines got the lockdep report below when booting a kernel
->> that contained these patches.
->
-> I think this is just a lacking annotation.
->
-> We do nest dentry d_lock locking, and in order to avoid ABBA deadlocks the
-> rule is that we lock things in topological order (parent dentry first).
-> lock_parent() is very careful about that, but doesn't actually tell
-> lockdep about it.
->
-> This trivial oneliner should fix it.
->
->                         Linus
+This patch remove variables that are initialized with a constant,
+are never updated, and are only used as parameter of return.
+Return the constant instead of using a variable.
 
-Built the previous kernel with just this applied and it seems to
-behave correctly on several reboots.  I think this looks good.
-Thanks!
+Verified by compilation only.
 
-josh
+The coccinelle script that find and fixes this issue is:
+// <smpl>
+@@
+type T;
+constant C;
+identifier ret;
+@@
+- T ret = C;
+... when != ret
+    when strict
+return
+- ret
++ C
+;
+// </smpl>
 
->
-> ---
->  fs/dcache.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/fs/dcache.c b/fs/dcache.c
-> index bce851dc03ef..be2bea834bf4 100644
-> --- a/fs/dcache.c
-> +++ b/fs/dcache.c
-> @@ -553,7 +553,7 @@ again:
->         }
->         rcu_read_unlock();
->         if (parent != dentry)
-> -               spin_lock(&dentry->d_lock);
-> +               spin_lock_nested(&dentry->d_lock, DENTRY_D_LOCK_NESTED);
->         else
->                 parent = NULL;
->         return parent;
+Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
+
+---
+Changes from V1:
+- Keep commented code instead of removing it
+
+ drivers/net/wireless/cw1200/sta.c |   19 +------------------
+ 1 file changed, 1 insertion(+), 18 deletions(-)
+
+diff --git a/drivers/net/wireless/cw1200/sta.c b/drivers/net/wireless/cw1200/sta.c
+index cd0cad7..5b84664 100644
+--- a/drivers/net/wireless/cw1200/sta.c
++++ b/drivers/net/wireless/cw1200/sta.c
+@@ -2289,7 +2289,6 @@ static int cw1200_upload_null(struct cw1200_common *priv)
+ 
+ static int cw1200_upload_qosnull(struct cw1200_common *priv)
+ {
+-	int ret = 0;
+ 	/* TODO:  This needs to be implemented
+ 
+ 	struct wsm_template_frame frame = {
+@@ -2306,7 +2305,7 @@ static int cw1200_upload_qosnull(struct cw1200_common *priv)
+ 	dev_kfree_skb(frame.skb);
+ 
+ 	*/
+-	return ret;
++	return 0;
+ }
+ 
+ static int cw1200_enable_beaconing(struct cw1200_common *priv,
