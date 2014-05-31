@@ -1,146 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752189AbaEaFzH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 May 2014 01:55:07 -0400
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:24885 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751100AbaEaFzE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 May 2014 01:55:04 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AgJqAJVtiVN5LL1sPGdsb2JhbABZgwerUwaYGgGBCRcDAQEBATg1giUBAQU6HCMQCAMYCSUPBSUDBxoTG4gm1wwXFoU/iCVYB4RABJl9ixyLXCuBMA
-Date: Sat, 31 May 2014 15:54:57 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, joseph@codesourcery.com,
-        john.stultz@linaro.org, hch@infradead.org, tglx@linutronix.de,
-        geert@linux-m68k.org, lftan@altera.com, linux-fsdevel@vger.kernel.org,
-        xfs@oss.sgi.com
-Subject: Re: [RFC 11/32] xfs: convert to struct inode_time
-Message-ID: <20140531055457.GK14410@dastard>
-References: <1401480116-1973111-1-git-send-email-arnd@arndb.de>
- <1401480116-1973111-12-git-send-email-arnd@arndb.de>
- <20140531003712.GH14410@dastard>
- <5389252A.5050503@zytor.com>
- <20140531011450.GJ14410@dastard>
- <c7770275-61de-4e94-9586-5ee118f77ba5@email.android.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <c7770275-61de-4e94-9586-5ee118f77ba5@email.android.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753434AbaEaF5E (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 May 2014 01:57:04 -0400
+Received: from mga02.intel.com ([134.134.136.20]:11052 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751121AbaEaF5D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 31 May 2014 01:57:03 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,945,1392192000"; 
+   d="scan'208";a="520557343"
+Message-ID: <1401515816.6021.15.camel@rzhang1-toshiba>
+Subject: Re: [Update][PATCH 10/10] ACPI / scan: use platform bus type by
+ default for _HID enumeration
+From: Zhang Rui <rui.zhang@intel.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        matthew.garrett@nebula.com, mika.westerberg@linux.intel.com
+Date: Sat, 31 May 2014 13:56:56 +0800
+In-Reply-To: <7971916.hcjclMBqJX@vostro.rjw.lan>
+References: <1400781753-2682-1-git-send-email-rui.zhang@intel.com>
+	 <35042328.kk6ZUUdfyN@vostro.rjw.lan> <6979141.yBBhMfGMhk@vostro.rjw.lan>
+	 <7971916.hcjclMBqJX@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 2014-05-30 at 14:35 +0200, Rafael J. Wysocki wrote:
+> From: Zhang Rui <rui.zhang@intel.com>
+> 
+> Because of the growing demand for enumerating ACPI devices to
+> platform bus, change the code to enumerate ACPI device objects to
+> platform bus by default.  Namely, create platform devices for the
+> ACPI device objects that
+>  1. Have pnp.type.platform_id set (device objects with _HID currently).
+>  2. Do not have a scan handler attached.
+>  3. Are not SPI/I2C slave devices (that should be enumerated to the
+>     appropriate buses bus by their parent).
+> 
+> Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+> [rjw: Subject and changelog, rebase and code cleanup]
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> ---
+> 
+> Changelog rework and minor cleanups.
+> 
+> Thanks!
+> 
+> ---
+>  drivers/acpi/acpi_platform.c |   40 ++++++++--------------------------------
+>  drivers/acpi/scan.c          |   42 +++++++++++++++++++++++++++++++++++++++++-
+>  2 files changed, 49 insertions(+), 33 deletions(-)
+> 
+> Index: linux-pm/drivers/acpi/acpi_platform.c
+> ===================================================================
+> --- linux-pm.orig/drivers/acpi/acpi_platform.c
+> +++ linux-pm/drivers/acpi/acpi_platform.c
+> @@ -22,21 +22,11 @@
+>  
+>  ACPI_MODULE_NAME("platform");
+>  
+> -/*
+> - * The following ACPI IDs are known to be suitable for representing as
+> - * platform devices.
+> - */
+> -static const struct acpi_device_id acpi_platform_device_ids[] = {
+> -
+> -	{ "PNP0D40" },
+> -	{ "VPC2004" },
+> -	{ "BCM4752" },
+> -
+> -	/* Intel Smart Sound Technology */
+> -	{ "INT33C8" },
+> -	{ "80860F28" },
+> -
+> -	{ }
+> +static const struct acpi_device_id forbidden_id_list[] = {
+> +	{"PNP0000", 0},	/* PIC */
+> +	{"PNP0100", 0},	/* Timer */
+> +	{"PNP0200", 0},	/* AT DMA Controller */
+> +	{"", 0},
+>  };
+>  
+>  /**
+> @@ -63,6 +53,9 @@ struct platform_device *acpi_create_plat
+>  	if (adev->physical_node_count)
+>  		return NULL;
+>  
+> +	if (!acpi_match_device_ids(adev, forbidden_id_list))
+> +		return ERR_PTR(-EINVAL);
+> +
+>  	INIT_LIST_HEAD(&resource_list);
+>  	count = acpi_dev_get_resources(adev, &resource_list, NULL, NULL);
+>  	if (count < 0) {
+> @@ -120,20 +113,3 @@ struct platform_device *acpi_create_plat
+>  	kfree(resources);
+>  	return pdev;
+>  }
+> -
+> -static int acpi_platform_attach(struct acpi_device *adev,
+> -				const struct acpi_device_id *id)
+> -{
+> -	acpi_create_platform_device(adev);
+> -	return 1;
+> -}
+> -
+this patch does not apply.
+we do not have the above code in drivers/acpi/acpi_platform.c.
 
-[ Please don't top post. ]
+thanks,
+rui
+> -static struct acpi_scan_handler platform_handler = {
+> -	.ids = acpi_platform_device_ids,
+> -	.attach = acpi_platform_attach,
+> -};
+> -
+> -void __init acpi_platform_init(void)
+> -{
+> -	acpi_scan_add_handler(&platform_handler);
+> -}
+> Index: linux-pm/drivers/acpi/scan.c
+> ===================================================================
+> --- linux-pm.orig/drivers/acpi/scan.c
+> +++ linux-pm/drivers/acpi/scan.c
+> @@ -2070,6 +2070,44 @@ static acpi_status acpi_bus_check_add(ac
+>  	return AE_OK;
+>  }
+>  
+> +static int acpi_check_spi_i2c_slave(struct acpi_resource *ares, void *data)
+> +{
+> +	bool *is_spi_i2c_slave_p = data;
+> +
+> +	if (ares->type != ACPI_RESOURCE_TYPE_SERIAL_BUS)
+> +		return 1;
+> +
+> +	/*
+> +	 * devices that are connected to UART still need to be enumerated to
+> +	 * platform bus
+> +	 */
+> +	if (ares->data.common_serial_bus.type != ACPI_RESOURCE_SERIAL_TYPE_UART)
+> +		*is_spi_i2c_slave_p = true;
+> +
+> +	 /* no need to do more checking */
+> +	return -1;
+> +}
+> +
+> +static void acpi_default_enumeration(struct acpi_device *device)
+> +{
+> +	struct list_head resource_list;
+> +	bool is_spi_i2c_slave = false;
+> +
+> +	if (!device->pnp.type.platform_id || device->handler)
+> +		return;
+> +
+> +	/*
+> +	 * Do not enemerate SPI/I2C slaves as they will be enuerated by their
+> +	 * respective parents.
+> +	 */
+> +	INIT_LIST_HEAD(&resource_list);
+> +	acpi_dev_get_resources(device, &resource_list, acpi_check_spi_i2c_slave,
+> +			       &is_spi_i2c_slave);
+> +	acpi_dev_free_resource_list(&resource_list);
+> +	if (!is_spi_i2c_slave)
+> +		acpi_create_platform_device(device);
+> +}
+> +
+>  static int acpi_scan_attach_handler(struct acpi_device *device)
+>  {
+>  	struct acpi_hardware_id *hwid;
+> @@ -2095,6 +2133,9 @@ static int acpi_scan_attach_handler(stru
+>  				break;
+>  		}
+>  	}
+> +	if (!ret)
+> +		acpi_default_enumeration(device);
+> +
+>  	return ret;
+>  }
+>  
+> @@ -2254,7 +2295,6 @@ int __init acpi_scan_init(void)
+>  	acpi_pci_root_init();
+>  	acpi_pci_link_init();
+>  	acpi_processor_init();
+> -	acpi_platform_init();
+>  	acpi_lpss_init();
+>  	acpi_cmos_rtc_init();
+>  	acpi_container_init();
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-On Fri, May 30, 2014 at 06:22:55PM -0700, H. Peter Anvin wrote:
-> On May 30, 2014 6:14:50 PM PDT, Dave Chinner <david@fromorbit.com> wrote:
-> >On Fri, May 30, 2014 at 05:41:14PM -0700, H. Peter Anvin wrote:
-> >> On 05/30/2014 05:37 PM, Dave Chinner wrote:
-> >> > 
-> >> > IOWs, the filesystem has to be able to reject any attempt to
-> >> > set a timestamp that is can't represent on disk otherwise Bad
-> >> > Stuff will happen,
-> >> 
-> >> Actually it is questionable if it is worse to reject a
-> >> timestamp or
-> >just
-> >> let it wrap.  Rejecting a valid timestamp is a bit like "You
-> >> don't exist, go away."
-> >
-> >I think having the new systems calls being able to return EINVAL
-> >if the value cannot be stored permanently on disk correctly is
-> >the right thing to do. Having it silently mangled by the
-> >filesystem and returning "everything is just fine, trust me" is
-> >close to the worst solution I can think of. That's exactly what
-> >leads to overflow bugs occurring....
-> >
-> >> > and filesystems have to be able to specify in their on disk
-> >> > format what timestamp encoding is being used. The solution
-> >will
-> >> > be different for every filesystem that needs to support time
-> >> > beyond 2038.
-> >> 
-> >> Actually the cutoff can be really different for each
-> >> filesystem, not necessarily 2038.  However, I maintain the
-> >> above still holds.
-> >
-> >Sure, but all filesystems are supposed to handle at least the
-> >current unix epoch.
-> >
-> >> Consider a filesystem that kept timestamps in YYMMDDHHMMSS
-> >> format. 
-> >What
-> >> would you have expected such a filesystem to do on Jan 1, 2000?
-> >
-> >Strawman.
-> >
-> >We don't need to cater for fundamentally broken designs that
-> >can't even handle the current unix epoch correctly. If such
-> >filesystems exist, then they can simple say "original unix epoch
-> >support only" and do whatever crap they are doing right now.
->
-> No, not a strawman.  Replace with Jan 26, 2038 and you have the
-> same situation.
 
-But that's not the problem I'm talking about.  The problem isn't the
-roll-over date of the epoch - the problem is that we're changing the
-in-memory meaning of time without changing what the filesystems
-store on disk or how they translate them.
-
-To use your example, what I'm actually talking about is the kernel
-switching to CCYYMMDDHHMMSS while the filesystem has YYMMDDHHMMSS on
-disk. The filesystem doesn't know the timestamp is now a different
-format, so it could mangle it writing it to disk, or it could mangle
-existing timestamps in the YY.. format reading them from disk and
-putting them into CC.. format structures. IOWs, it will
-incorrectly translate YY  format dates to CC format, or translate
-something in the CC format as though it was in YY format. And it
-wouldn't even know what was the correct format because there's
-nothing telling it on disk whether the date is in CC or YY format.
-
-Either way, you get mangled timestamps, the filesystem doesn't know
-about it because it's just storing what the kernel gives it, the
-kernel thinks they are fine because they are just opaque when read
-back, but the user says "what the fuck did a reboot do to all these
-timestamps?".
-
-Hence your example of roll-over dates is a strawman - you've
-constructed a problem that is irrelevant to the issue being pointed
-out.
-
-FWIW, we already have code in the superblock and VFS to avoid such
-problems on filesystems with limited timestamp resolution (i.e
-s_time_gran and current_fs_time()) so that what the VFS hands the
-filesystem is exactly what the VFS expects to get back from disk
-when comparing timestamps.
-
-If we are changing the in-kernel timestamp to have a greater dynamic
-range that anything we current support on disk, then we need support
-for all filesystems for similar translation and constraint. The
-filesystems need to be able to tell the kernel what they timestamp
-range they support, and then the kernel needs to follow those
-guidelines. And if the filesystem is mounted on a kernel that
-doesn't support the current filesystem's timestamp format, then at
-minimum that filesystem cannot do anything that writes a
-timestamp....
-
-Put simply: the filesystem defines the timestamp range that can be
-used safely, not the userspace API. If the filesystem can't support
-the date it is handed then that is an out-of-range error. Since
-when have we accepted that it's OK to handle out-of-range data with
-silent overflows or corruption of the data that we are attempting to
-store? We're defining a new API to support a wider date range -
-there is nothing that prevents us from saying ERANGE can be returned
-to a timestamp that the file cannot store correctly....
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
