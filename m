@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756695AbaEaO25 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 May 2014 10:28:57 -0400
-Received: from mail-qg0-f43.google.com ([209.85.192.43]:41042 "EHLO
-	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756662AbaEaO2x (ORCPT
+	id S935205AbaEaOb4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 May 2014 10:31:56 -0400
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:33017 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756674AbaEaO25 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 May 2014 10:28:53 -0400
+	Sat, 31 May 2014 10:28:57 -0400
 From: Andreas Noever <andreas.noever@gmail.com>
 To: linux-kernel@vger.kernel.org, Matthew Garrett <matthew.garrett@nebula.com>,
         Greg KH <greg@kroah.com>, Bjorn Helgaas <bhelgaas@google.com>,
         linux-pci@vger.kernel.org
 Cc: Andreas Noever <andreas.noever@gmail.com>
-Subject: [PATCH v4 06/15] thunderbolt: Add thunderbolt capability handling
-Date: Sat, 31 May 2014 16:27:51 +0200
-Message-Id: <1401546480-2071-7-git-send-email-andreas.noever@gmail.com>
+Subject: [PATCH v4 08/15] thunderbolt: Scan for downstream switches
+Date: Sat, 31 May 2014 16:27:53 +0200
+Message-Id: <1401546480-2071-9-git-send-email-andreas.noever@gmail.com>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1401546480-2071-1-git-send-email-andreas.noever@gmail.com>
 References: <1401546480-2071-1-git-send-email-andreas.noever@gmail.com>
@@ -22,162 +22,239 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thunderbolt config areas contain capability lists similar to those found
-on pci devices. This patch introduces a tb_find_cap utility method to
-search for capabilities.
+Add utility methods tb_port_state and tb_wait_for_port. Add
+tb_scan_switch which recursively checks for downstream switches.
 
 Signed-off-by: Andreas Noever <andreas.noever@gmail.com>
 ---
- drivers/thunderbolt/Makefile |   2 +-
- drivers/thunderbolt/cap.c    | 116 +++++++++++++++++++++++++++++++++++++++++++
- drivers/thunderbolt/tb.h     |   2 +
- 3 files changed, 119 insertions(+), 1 deletion(-)
- create mode 100644 drivers/thunderbolt/cap.c
+ drivers/thunderbolt/switch.c | 97 ++++++++++++++++++++++++++++++++++++++++++++
+ drivers/thunderbolt/tb.c     | 44 ++++++++++++++++++++
+ drivers/thunderbolt/tb.h     | 16 ++++++++
+ 3 files changed, 157 insertions(+)
 
-diff --git a/drivers/thunderbolt/Makefile b/drivers/thunderbolt/Makefile
-index 4ac18d9..617b314 100644
---- a/drivers/thunderbolt/Makefile
-+++ b/drivers/thunderbolt/Makefile
-@@ -1,3 +1,3 @@
- obj-${CONFIG_THUNDERBOLT} := thunderbolt.o
--thunderbolt-objs := nhi.o ctl.o tb.o switch.o
-+thunderbolt-objs := nhi.o ctl.o tb.o switch.o cap.o
+diff --git a/drivers/thunderbolt/switch.c b/drivers/thunderbolt/switch.c
+index 21457cc..279b9c5 100644
+--- a/drivers/thunderbolt/switch.c
++++ b/drivers/thunderbolt/switch.c
+@@ -53,6 +53,92 @@ static void tb_dump_port(struct tb *tb, struct tb_regs_port_header *port)
+ }
  
-diff --git a/drivers/thunderbolt/cap.c b/drivers/thunderbolt/cap.c
-new file mode 100644
-index 0000000..a7b47e7
---- /dev/null
-+++ b/drivers/thunderbolt/cap.c
-@@ -0,0 +1,116 @@
-+/*
-+ * Thunderbolt Cactus Ridge driver - capabilities lookup
+ /**
++ * tb_port_state() - get connectedness state of a port
 + *
-+ * Copyright (c) 2014 Andreas Noever <andreas.noever@gmail.com>
++ * The port must have a TB_CAP_PHY (i.e. it should be a real port).
++ *
++ * Return: Returns an enum tb_port_state on success or an error code on failure.
 + */
-+
-+#include <linux/slab.h>
-+#include <linux/errno.h>
-+
-+#include "tb.h"
-+
-+
-+struct tb_cap_any {
-+	union {
-+		struct tb_cap_basic basic;
-+		struct tb_cap_extended_short extended_short;
-+		struct tb_cap_extended_long extended_long;
-+	};
-+} __packed;
-+
-+static bool tb_cap_is_basic(struct tb_cap_any *cap)
++static int tb_port_state(struct tb_port *port)
 +{
-+	/* basic.cap is u8. This checks only the lower 8 bit of cap. */
-+	return cap->basic.cap != 5;
-+}
-+
-+static bool tb_cap_is_long(struct tb_cap_any *cap)
-+{
-+	return !tb_cap_is_basic(cap)
-+	       && cap->extended_short.next == 0
-+	       && cap->extended_short.length == 0;
-+}
-+
-+static enum tb_cap tb_cap(struct tb_cap_any *cap)
-+{
-+	if (tb_cap_is_basic(cap))
-+		return cap->basic.cap;
-+	else
-+		/* extended_short/long have cap at the same offset. */
-+		return cap->extended_short.cap;
-+}
-+
-+static u32 tb_cap_next(struct tb_cap_any *cap, u32 offset)
-+{
-+	int next;
-+	if (offset == 1) {
-+		/*
-+		 * The first pointer is part of the switch header and always
-+		 * a simple pointer.
-+		 */
-+		next = cap->basic.next;
-+	} else {
-+		/*
-+		 * Somehow Intel decided to use 3 different types of capability
-+		 * headers. It is not like anyone could have predicted that
-+		 * single byte offsets are not enough...
-+		 */
-+		if (tb_cap_is_basic(cap))
-+			next = cap->basic.next;
-+		else if (!tb_cap_is_long(cap))
-+			next = cap->extended_short.next;
-+		else
-+			next = cap->extended_long.next;
++	struct tb_cap_phy phy;
++	int res;
++	if (port->cap_phy == 0) {
++		tb_port_WARN(port, "does not have a PHY\n");
++		return -EINVAL;
 +	}
-+	/*
-+	 * "Hey, we could terminate some capability lists with a null offset
-+	 *  and others with a pointer to the last element." - "Great idea!"
-+	 */
-+	if (next == offset)
-+		return 0;
-+	return next;
++	res = tb_port_read(port, &phy, TB_CFG_PORT, port->cap_phy, 2);
++	if (res)
++		return res;
++	return phy.state;
 +}
 +
 +/**
-+ * tb_find_cap() - find a capability
++ * tb_wait_for_port() - wait for a port to become ready
 + *
-+ * Return: Returns a positive offset if the capability was found and 0 if not.
-+ * Returns an error code on failure.
++ * Wait up to 1 second for a port to reach state TB_PORT_UP. If
++ * wait_if_unplugged is set then we also wait if the port is in state
++ * TB_PORT_UNPLUGGED (it takes a while for the device to be registered after
++ * switch resume). Otherwise we only wait if a device is registered but the link
++ * has not yet been established.
++ *
++ * Return: Returns an error code on failure. Returns 0 if the port is not
++ * connected or failed to reach state TB_PORT_UP within one second. Returns 1
++ * if the port is connected and in state TB_PORT_UP.
 + */
-+int tb_find_cap(struct tb_port *port, enum tb_cfg_space space, enum tb_cap cap)
++int tb_wait_for_port(struct tb_port *port, bool wait_if_unplugged)
 +{
-+	u32 offset = 1;
-+	struct tb_cap_any header;
-+	int res;
 +	int retries = 10;
++	int state;
++	if (!port->cap_phy) {
++		tb_port_WARN(port, "does not have PHY\n");
++		return -EINVAL;
++	}
++	if (tb_is_upstream_port(port)) {
++		tb_port_WARN(port, "is the upstream port\n");
++		return -EINVAL;
++	}
++
 +	while (retries--) {
-+		res = tb_port_read(port, &header, space, offset, 1);
-+		if (res) {
-+			/* Intel needs some help with linked lists. */
-+			if (space == TB_CFG_PORT && offset == 0xa
-+			    && port->config.type == TB_TYPE_DP_HDMI_OUT) {
-+				offset = 0x39;
++		state = tb_port_state(port);
++		if (state < 0)
++			return state;
++		if (state == TB_PORT_DISABLED) {
++			tb_port_info(port, "is disabled (state: 0)\n");
++			return 0;
++		}
++		if (state == TB_PORT_UNPLUGGED) {
++			if (wait_if_unplugged) {
++				/* used during resume */
++				tb_port_info(port,
++					     "is unplugged (state: 7), retrying...\n");
++				msleep(100);
 +				continue;
 +			}
-+			return res;
-+		}
-+		if (offset != 1) {
-+			if (tb_cap(&header) == cap)
-+				return offset;
-+			if (tb_cap_is_long(&header)) {
-+				/* tb_cap_extended_long is 2 dwords */
-+				res = tb_port_read(port, &header, space,
-+						   offset, 2);
-+				if (res)
-+					return res;
-+			}
-+		}
-+		offset = tb_cap_next(&header, offset);
-+		if (!offset)
++			tb_port_info(port, "is unplugged (state: 7)\n");
 +			return 0;
++		}
++		if (state == TB_PORT_UP) {
++			tb_port_info(port,
++				     "is connected, link is up (state: 2)\n");
++			return 1;
++		}
++
++		/*
++		 * After plug-in the state is TB_PORT_CONNECTING. Give it some
++		 * time.
++		 */
++		tb_port_info(port,
++			     "is connected, link is not up (state: %d), retrying...\n",
++			     state);
++		msleep(100);
 +	}
-+	tb_port_WARN(port,
-+		     "run out of retries while looking for cap %#x in config space %d, last offset: %#x\n",
-+		     cap, space, offset);
-+	return -EIO;
++	tb_port_warn(port,
++		     "failed to reach state TB_PORT_UP. Ignoring port...\n");
++	return 0;
 +}
++
++/**
+  * tb_init_port() - initialize a port
+  *
+  * This is a helper method for tb_switch_alloc. Does not check or initialize
+@@ -63,6 +149,7 @@ static void tb_dump_port(struct tb *tb, struct tb_regs_port_header *port)
+ static int tb_init_port(struct tb_switch *sw, u8 port_nr)
+ {
+ 	int res;
++	int cap;
+ 	struct tb_port *port = &sw->ports[port_nr];
+ 	port->sw = sw;
+ 	port->port = port_nr;
+@@ -71,6 +158,16 @@ static int tb_init_port(struct tb_switch *sw, u8 port_nr)
+ 	if (res)
+ 		return res;
+ 
++	/* Port 0 is the switch itself and has no PHY. */
++	if (port->config.type == TB_TYPE_PORT && port_nr != 0) {
++		cap = tb_find_cap(port, TB_CFG_PORT, TB_CAP_PHY);
++
++		if (cap > 0)
++			port->cap_phy = cap;
++		else
++			tb_port_WARN(port, "non switch port without a PHY\n");
++	}
++
+ 	tb_dump_port(sw->tb, &port->config);
+ 
+ 	/* TODO: Read dual link port, DP port and more from EEPROM. */
+diff --git a/drivers/thunderbolt/tb.c b/drivers/thunderbolt/tb.c
+index f1b6100..3b716fd 100644
+--- a/drivers/thunderbolt/tb.c
++++ b/drivers/thunderbolt/tb.c
+@@ -11,6 +11,47 @@
+ #include "tb.h"
+ #include "tb_regs.h"
+ 
++
++/* enumeration & hot plug handling */
++
++
++static void tb_scan_port(struct tb_port *port);
++
++/**
++ * tb_scan_switch() - scan for and initialize downstream switches
++ */
++static void tb_scan_switch(struct tb_switch *sw)
++{
++	int i;
++	for (i = 1; i <= sw->config.max_port_number; i++)
++		tb_scan_port(&sw->ports[i]);
++}
++
++/**
++ * tb_scan_port() - check for and initialize switches below port
++ */
++static void tb_scan_port(struct tb_port *port)
++{
++	struct tb_switch *sw;
++	if (tb_is_upstream_port(port))
++		return;
++	if (port->config.type != TB_TYPE_PORT)
++		return;
++	if (tb_wait_for_port(port, false) <= 0)
++		return;
++	if (port->remote) {
++		tb_port_WARN(port, "port already has a remote!\n");
++		return;
++	}
++	sw = tb_switch_alloc(port->sw->tb, tb_downstream_route(port));
++	if (!sw)
++		return;
++	port->remote = tb_upstream_port(sw);
++	tb_upstream_port(sw)->remote = port;
++	tb_scan_switch(sw);
++}
++
++
+ /* hotplug handling */
+ 
+ struct tb_hotplug_event {
+@@ -134,6 +175,9 @@ struct tb *thunderbolt_alloc_and_start(struct tb_nhi *nhi)
+ 	if (!tb->root_switch)
+ 		goto err_locked;
+ 
++	/* Full scan to discover devices added before the driver was loaded. */
++	tb_scan_switch(tb->root_switch);
++
+ 	/* Allow tb_handle_hotplug to progress events */
+ 	tb->hotplug_active = true;
+ 	mutex_unlock(&tb->lock);
 diff --git a/drivers/thunderbolt/tb.h b/drivers/thunderbolt/tb.h
-index 389dbb4..38e4c23 100644
+index af123c4..70a66fe 100644
 --- a/drivers/thunderbolt/tb.h
 +++ b/drivers/thunderbolt/tb.h
-@@ -159,6 +159,8 @@ void thunderbolt_shutdown_and_free(struct tb *tb);
+@@ -29,6 +29,7 @@ struct tb_port {
+ 	struct tb_regs_port_header config;
+ 	struct tb_switch *sw;
+ 	struct tb_port *remote; /* remote port, NULL if not connected */
++	int cap_phy; /* offset, zero if not found */
+ 	u8 port; /* port number on switch */
+ };
+ 
+@@ -160,6 +161,8 @@ void thunderbolt_shutdown_and_free(struct tb *tb);
  struct tb_switch *tb_switch_alloc(struct tb *tb, u64 route);
  void tb_switch_free(struct tb_switch *sw);
  
-+int tb_find_cap(struct tb_port *port, enum tb_cfg_space space, u32 value);
++int tb_wait_for_port(struct tb_port *port, bool wait_if_unplugged);
 +
+ int tb_find_cap(struct tb_port *port, enum tb_cfg_space space, u32 value);
  
- static inline int tb_route_length(u64 route)
- {
+ 
+@@ -173,4 +176,17 @@ static inline bool tb_is_upstream_port(struct tb_port *port)
+ 	return port == tb_upstream_port(port->sw);
+ }
+ 
++/**
++ * tb_downstream_route() - get route to downstream switch
++ *
++ * Port must not be the upstream port (otherwise a loop is created).
++ *
++ * Return: Returns a route to the switch behind @port.
++ */
++static inline u64 tb_downstream_route(struct tb_port *port)
++{
++	return tb_route(port->sw)
++	       | ((u64) port->port << (port->sw->config.depth * 8));
++}
++
+ #endif
 -- 
 1.9.3
 
