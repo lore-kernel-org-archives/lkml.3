@@ -1,42 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751981AbaEaRWl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 May 2014 13:22:41 -0400
-Received: from mail-ob0-f176.google.com ([209.85.214.176]:45416 "EHLO
-	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750725AbaEaRWk (ORCPT
+	id S1752416AbaEaRZN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 May 2014 13:25:13 -0400
+Received: from mail-ve0-f181.google.com ([209.85.128.181]:48935 "EHLO
+	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751206AbaEaRZM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 May 2014 13:22:40 -0400
+	Sat, 31 May 2014 13:25:12 -0400
 MIME-Version: 1.0
-Date: Sat, 31 May 2014 18:22:39 +0100
-Message-ID: <CABGuwE=v2vbX882WVW_OzbNsY2k9y0nme-E13VNYgL6o+A73xg@mail.gmail.com>
-Subject: Block device questions
-From: Kieran Kunhya <kieran618@googlemail.com>
-To: linux-kernel@vger.kernel.org
+In-Reply-To: <20140531065120.GK15585@mwanda>
+References: <1401510680-13991-1-git-send-email-danieru.dressler@gmail.com>
+	<20140531065120.GK15585@mwanda>
+Date: Sat, 31 May 2014 11:25:10 -0600
+Message-ID: <CAGC3nLAKKGGwN8fTyoragp4YyqiHD16kocuWq-FDa3ENDNb5Fg@mail.gmail.com>
+Subject: Re: [PATCH] Staging: android: binder: Fix over-80-char lines
+From: Daniel Dressler <danieru.dressler@gmail.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
+        serban.constantinescu@arm.com, linux-kernel@vger.kernel.org,
+        arve@android.com, John Stultz <john.stultz@linaro.org>,
+        prtvar.b@gmail.com
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Thank you Neil
 
-I'm writing a driver for Sony SxS cards, which is an Expresscard based
-flash memory card used in Sony cameras with an eventual goal of
-submitting the code to mainline.
+I was not sure if space-based alignment was allowed so thank you for
+demonstrating the change. It does make the code much easier to read.
 
-The code in its current working but ugly state can be found here:
-https://github.com/kierank/sxs-linux/blob/master/sxs.c
+Similar thank you for how to indent over-long function calls. I had
+mis-understood the coding standard to mean overflow needed to be on
+the far right margin. A single indent before the first argument looks
+much nicer and consistent.
 
-I had some questions about the block device layer:
+Thank you Dan
 
-As far as I can tell from reverse engineering the device, it doesn't
-support full scatter/gather but can do multiple block reads to one
-address of DMA memory of a suitable size. Is there a way of coalescing
-adjacent segments and letting the device write to one large slab of
-DMA memory? Or do I have to handle each segment individually?
+You are right! It does break the code. Thank you for finding that and
+the name issue. I'll rewrite the patch on top of linux-next this time
+with the proper style as Neil suggested. I think git send-email added
+the danieru. I had tried fixing the name my git config and then git
+amending but send-email continued adding the danieru address so I
+assumed that it always took the current user's username. Now it sounds
+like that was some metadata git did not redo upon amend.
 
-Also how many minor numbers am I meant to allocate with alloc_disk()?
+Daniel
 
-Regards,
-
-Kieran Kunhya
+2014-05-31 0:51 GMT-06:00 Dan Carpenter <dan.carpenter@oracle.com>:
+> What Neil said.
+>
+> On Fri, May 30, 2014 at 10:31:20PM -0600, Daniel Dressler wrote:
+>> From: danieru <danieru.dressler@gmail.com>
+>
+> This is wrong and we also get your name and email address from the
+> email headers so leave this line out.
+>
+>>
+>> Following Greg Kroah-Hartman's newbie guide to hacking
+>> the linux kernel this patch addresses only coding style
+>> issues.
+>>
+>> Binder still has many too-long lines but I'm worried
+>> doing too much work in a single patch is unfair to the
+>> reviewers. So this patch address 20% of the file's
+>> issues.
+>>
+>> There is one change to take notice of: it merges two if
+>> statement's conditionals together. Then it removes a
+>> redundant else clause.
+>
+> Thanks for pointing this out, but the else statement wasn't redundant.
+> Your change introduces a bug.
+>
+> Your patch doesn't apply.  You need to work against linux-next.
+>
+> regards,
+> dan carpenter
+>
