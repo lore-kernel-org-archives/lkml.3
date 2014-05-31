@@ -1,102 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751554AbaEaPSL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 May 2014 11:18:11 -0400
-Received: from mx01-fr.bfs.de ([193.174.231.67]:56748 "EHLO mx01-fr.bfs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750752AbaEaPSJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 May 2014 11:18:09 -0400
-Message-ID: <5389F2A0.1000903@bfs.de>
-Date: Sat, 31 May 2014 17:17:52 +0200
-From: walter harms <wharms@bfs.de>
-Reply-To: wharms@bfs.de
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+	id S1752112AbaEaPX5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 May 2014 11:23:57 -0400
+Received: from mout.kundenserver.de ([212.227.126.187]:57148 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750752AbaEaPXx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 31 May 2014 11:23:53 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Richard Cochran <richardcochran@gmail.com>
+Cc: linux-kernel@vger.kernel.org, hch@infradead.org,
+        linux-mtd@lists.infradead.org, hpa@zytor.com, logfs@logfs.org,
+        linux-afs@lists.infradead.org, joseph@codesourcery.com,
+        linux-arch@vger.kernel.org, linux-cifs@vger.kernel.org,
+        linux-scsi@vger.kernel.org, ceph-devel@vger.kernel.org,
+        codalist@TELEMANN.coda.cs.cmu.edu, cluster-devel@redhat.com,
+        coda@cs.cmu.edu, geert@linux-m68k.org, linux-ext4@vger.kernel.org,
+        fuse-devel@lists.sourceforge.net, reiserfs-devel@vger.kernel.org,
+        xfs@oss.sgi.com, john.stultz@linaro.org, tglx@linutronix.de,
+        linux-nfs@vger.kernel.org, linux-ntfs-dev@lists.sourceforge.net,
+        samba-technical@lists.samba.org,
+        linux-f2fs-devel@lists.sourceforge.net, ocfs2-devel@oss.oracle.com,
+        linux-fsdevel@vger.kernel.org, lftan@altera.com,
+        linux-btrfs@vger.kernel.org
+Subject: Re: [RFC 00/32] making inode time stamps y2038 ready
+Date: Sat, 31 May 2014 17:23:02 +0200
+Message-ID: <6347520.8jMPlVsFjM@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140531145114.GA3721@localhost.localdomain>
+References: <1401480116-1973111-1-git-send-email-arnd@arndb.de> <20140531145114.GA3721@localhost.localdomain>
 MIME-Version: 1.0
-To: Peter Senna Tschudin <peter.senna@gmail.com>
-CC: Solomon Peachy <pizza@shaftnet.org>, kernel-janitors@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/11] cw1200: Remove useless return variables
-References: <1401542051-3174-2-git-send-email-peter.senna@gmail.com>
-In-Reply-To: <1401542051-3174-2-git-send-email-peter.senna@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:0ZnyMexSTMSJ2V+UkcmuG4+2P/w7nwDlmhdxuxyNPBp
+ o+SHcffrYvXjeTQ54ZZ4HsD8AeDJsSx1LALapaWVNW87lWnmp0
+ UiVnwaSH6e2JBn30W6u5ipIqeC2ZSJPs9IxChE7gGY/Ip6mb4A
+ KAkXfEjwRYV0jcZ5Vw6p5bDp90Z256o5sSbtn2ZwWojA57S+Hc
+ wc2OZj+lwEfxsIM2IQcYaWOqVFkk93vRIZYKP7nUQ+/oPlOG6G
+ jTUOV0XELWZjT3yisfvEu391tbwbkf0rrSHjx/V0uhSyBFxyZ9
+ x88tbcaXCuGEKBxaPkhNIkHubJvK6NAOsgaNIMNQzyFkRXT/xw
+ vNpH6c4rptxXABlJpmXI=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Saturday 31 May 2014 16:51:15 Richard Cochran wrote:
+> On Fri, May 30, 2014 at 10:01:24PM +0200, Arnd Bergmann wrote:
+> > 
+> > I picked this because it is a fairly isolated problem, as the
+> > inode time stamps are rarely assigned to any other time values.
+> > As a byproduct of this work, I documented for each of the file
+> > systems we support how long the on-disk format can work[1].
+> 
+> Why are some of the time stamp expiration dates marked as "never"?
 
+It's an approximation:
+with 64-bit timestamps, you can represent close to 300 billion
+years, which is way past the time that our planet can sustain
+life of any form[1].
 
-Am 31.05.2014 15:14, schrieb Peter Senna Tschudin:
-> This patch remove variables that are initialized with a constant,
-> are never updated, and are only used as parameter of return.
-> Return the constant instead of using a variable.
-> 
-> Verified by compilation only.
-> 
-> The coccinelle script that find and fixes this issue is:
-> // <smpl>
-> @@
-> type T;
-> constant C;
-> identifier ret;
-> @@
-> - T ret = C;
-> ... when != ret
->     when strict
-> return
-> - ret
-> + C
-> ;
-> // </smpl>
-> 
-> Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
-> 
-> ---
->  drivers/net/wireless/cw1200/sta.c |   19 +------------------
->  1 file changed, 1 insertion(+), 18 deletions(-)
-> 
-> diff --git a/drivers/net/wireless/cw1200/sta.c b/drivers/net/wireless/cw1200/sta.c
-> index cd0cad7..622370c 100644
-> --- a/drivers/net/wireless/cw1200/sta.c
-> +++ b/drivers/net/wireless/cw1200/sta.c
-> @@ -2289,24 +2289,7 @@ static int cw1200_upload_null(struct cw1200_common *priv)
->  
->  static int cw1200_upload_qosnull(struct cw1200_common *priv)
->  {
-> -	int ret = 0;
-> -	/* TODO:  This needs to be implemented
-> -
-> -	struct wsm_template_frame frame = {
-> -		.frame_type = WSM_FRAME_TYPE_QOS_NULL,
-> -		.rate = 0xFF,
-> -	};
-> -
-> -	frame.skb = ieee80211_qosnullfunc_get(priv->hw, priv->vif);
-> -	if (!frame.skb)
-> -		return -ENOMEM;
-> -
-> -	ret = wsm_set_template_frame(priv, &frame);
-> -
-> -	dev_kfree_skb(frame.skb);
-> -
-> -	*/
-> -	return ret;
-> +	return 0;
->  }
->  
->  static int cw1200_enable_beaconing(struct cw1200_common *priv,
+	Arnd
 
-
-are you sure you want to remove the entire function ?
-
-re,
- wh
-
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+[1] http://en.wikipedia.org/wiki/Timeline_of_the_far_future
