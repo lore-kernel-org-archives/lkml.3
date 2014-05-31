@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756544AbaEaO2q (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 May 2014 10:28:46 -0400
-Received: from mail-qg0-f54.google.com ([209.85.192.54]:53986 "EHLO
-	mail-qg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755232AbaEaO2m (ORCPT
+	id S1756663AbaEaO2w (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 May 2014 10:28:52 -0400
+Received: from mail-qg0-f41.google.com ([209.85.192.41]:58230 "EHLO
+	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756579AbaEaO2s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 May 2014 10:28:42 -0400
+	Sat, 31 May 2014 10:28:48 -0400
 From: Andreas Noever <andreas.noever@gmail.com>
 To: linux-kernel@vger.kernel.org, Matthew Garrett <matthew.garrett@nebula.com>,
         Greg KH <greg@kroah.com>, Bjorn Helgaas <bhelgaas@google.com>,
         linux-pci@vger.kernel.org
 Cc: Andreas Noever <andreas.noever@gmail.com>
-Subject: [PATCH v4 01/15] thunderbolt: Add initial cactus ridge NHI support
-Date: Sat, 31 May 2014 16:27:46 +0200
-Message-Id: <1401546480-2071-2-git-send-email-andreas.noever@gmail.com>
+Subject: [PATCH v4 04/15] thunderbolt: Add tb_regs.h
+Date: Sat, 31 May 2014 16:27:49 +0200
+Message-Id: <1401546480-2071-5-git-send-email-andreas.noever@gmail.com>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1401546480-2071-1-git-send-email-andreas.noever@gmail.com>
 References: <1401546480-2071-1-git-send-email-andreas.noever@gmail.com>
@@ -22,935 +22,260 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thunderbolt hotplug is supposed to be handled by the firmware. But Apple
-decided to implement thunderbolt at the operating system level. The
-firmare only initializes thunderbolt devices that are present at boot
-time. This driver enables hotplug of thunderbolt of non-chained
-thunderbolt devices on Apple systems with a cactus ridge controller.
+Every thunderbolt device consists (logically) of a switch with multiple
+ports. Every port contains up to four config regions (HOPS, PORT,
+SWITCH, COUNTERS) which are used to configure the device.
 
-This first patch adds the Kconfig file as well the parts of the driver
-which talk directly to the hardware (that is pci device setup, interrupt
-handling and RX/TX ring management).
+The tb_regs.h file contains all known registers and capabilities from
+these config regions.
 
 Signed-off-by: Andreas Noever <andreas.noever@gmail.com>
 ---
- drivers/Kconfig                |   2 +
- drivers/Makefile               |   1 +
- drivers/thunderbolt/Kconfig    |  12 +
- drivers/thunderbolt/Makefile   |   3 +
- drivers/thunderbolt/nhi.c      | 625 +++++++++++++++++++++++++++++++++++++++++
- drivers/thunderbolt/nhi.h      | 114 ++++++++
- drivers/thunderbolt/nhi_regs.h | 101 +++++++
- 7 files changed, 858 insertions(+)
- create mode 100644 drivers/thunderbolt/Kconfig
- create mode 100644 drivers/thunderbolt/Makefile
- create mode 100644 drivers/thunderbolt/nhi.c
- create mode 100644 drivers/thunderbolt/nhi.h
- create mode 100644 drivers/thunderbolt/nhi_regs.h
+ drivers/thunderbolt/tb.c      |   5 +
+ drivers/thunderbolt/tb_regs.h | 213 ++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 218 insertions(+)
+ create mode 100644 drivers/thunderbolt/tb_regs.h
 
-diff --git a/drivers/Kconfig b/drivers/Kconfig
-index 0a0a90f..07e3a73 100644
---- a/drivers/Kconfig
-+++ b/drivers/Kconfig
-@@ -174,4 +174,6 @@ source "drivers/powercap/Kconfig"
+diff --git a/drivers/thunderbolt/tb.c b/drivers/thunderbolt/tb.c
+index 6920979..164dea0 100644
+--- a/drivers/thunderbolt/tb.c
++++ b/drivers/thunderbolt/tb.c
+@@ -9,6 +9,7 @@
+ #include <linux/delay.h>
  
- source "drivers/mcb/Kconfig"
+ #include "tb.h"
++#include "tb_regs.h"
  
-+source "drivers/thunderbolt/Kconfig"
+ /* hotplug handling */
+ 
+@@ -100,6 +101,10 @@ struct tb *thunderbolt_alloc_and_start(struct tb_nhi *nhi)
+ {
+ 	struct tb *tb;
+ 
++	BUILD_BUG_ON(sizeof(struct tb_regs_switch_header) != 5 * 4);
++	BUILD_BUG_ON(sizeof(struct tb_regs_port_header) != 8 * 4);
++	BUILD_BUG_ON(sizeof(struct tb_regs_hop) != 2 * 4);
 +
- endmenu
-diff --git a/drivers/Makefile b/drivers/Makefile
-index 7183b6a..ce134d0 100644
---- a/drivers/Makefile
-+++ b/drivers/Makefile
-@@ -157,3 +157,4 @@ obj-$(CONFIG_NTB)		+= ntb/
- obj-$(CONFIG_FMC)		+= fmc/
- obj-$(CONFIG_POWERCAP)		+= powercap/
- obj-$(CONFIG_MCB)		+= mcb/
-+obj-$(CONFIG_THUNDERBOLT)	+= thunderbolt/
-diff --git a/drivers/thunderbolt/Kconfig b/drivers/thunderbolt/Kconfig
+ 	tb = kzalloc(sizeof(*tb), GFP_KERNEL);
+ 	if (!tb)
+ 		return NULL;
+diff --git a/drivers/thunderbolt/tb_regs.h b/drivers/thunderbolt/tb_regs.h
 new file mode 100644
-index 0000000..3a25529
+index 0000000..6577af7
 --- /dev/null
-+++ b/drivers/thunderbolt/Kconfig
-@@ -0,0 +1,12 @@
-+menuconfig THUNDERBOLT
-+	tristate "Thunderbolt support for Apple devices"
-+	default no
-+	help
-+	  Cactus Ridge Thunderbolt Controller driver
-+	  This driver is required if you want to hotplug Thunderbolt devices on
-+	  Apple hardware.
-+
-+	  Device chaining is currently not supported.
-+
-+	  To compile this driver a module, choose M here. The module will be
-+	  called thunderbolt.
-diff --git a/drivers/thunderbolt/Makefile b/drivers/thunderbolt/Makefile
-new file mode 100644
-index 0000000..d473ab9
---- /dev/null
-+++ b/drivers/thunderbolt/Makefile
-@@ -0,0 +1,3 @@
-+obj-${CONFIG_THUNDERBOLT} := thunderbolt.o
-+thunderbolt-objs := nhi.o
-+
-diff --git a/drivers/thunderbolt/nhi.c b/drivers/thunderbolt/nhi.c
-new file mode 100644
-index 0000000..d73a744
---- /dev/null
-+++ b/drivers/thunderbolt/nhi.c
-@@ -0,0 +1,625 @@
++++ b/drivers/thunderbolt/tb_regs.h
+@@ -0,0 +1,213 @@
 +/*
-+ * Thunderbolt Cactus Ridge driver - NHI driver
++ * Thunderbolt Cactus Ridge driver - Port/Switch config area registers
 + *
-+ * The NHI (native host interface) is the pci device that allows us to send and
-+ * receive frames from the thunderbolt bus.
++ * Every thunderbolt device consists (logically) of a switch with multiple
++ * ports. Every port contains up to four config regions (HOPS, PORT, SWITCH,
++ * COUNTERS) which are used to configure the device.
 + *
 + * Copyright (c) 2014 Andreas Noever <andreas.noever@gmail.com>
 + */
 +
-+#include <linux/slab.h>
-+#include <linux/errno.h>
-+#include <linux/pci.h>
-+#include <linux/interrupt.h>
-+#include <linux/module.h>
-+#include <linux/dmi.h>
-+
-+#include "nhi.h"
-+#include "nhi_regs.h"
-+
-+#define RING_TYPE(ring) ((ring)->is_tx ? "TX ring" : "RX ring")
-+
-+
-+static int ring_interrupt_index(struct tb_ring *ring)
-+{
-+	int bit = ring->hop;
-+	if (!ring->is_tx)
-+		bit += ring->nhi->hop_count;
-+	return bit;
-+}
-+
-+/**
-+ * ring_interrupt_active() - activate/deactivate interrupts for a single ring
-+ *
-+ * ring->nhi->lock must be held.
-+ */
-+static void ring_interrupt_active(struct tb_ring *ring, bool active)
-+{
-+	int reg = REG_RING_INTERRUPT_BASE + ring_interrupt_index(ring) / 32;
-+	int bit = ring_interrupt_index(ring) & 31;
-+	int mask = 1 << bit;
-+	u32 old, new;
-+	old = ioread32(ring->nhi->iobase + reg);
-+	if (active)
-+		new = old | mask;
-+	else
-+		new = old & ~mask;
-+
-+	dev_info(&ring->nhi->pdev->dev,
-+		 "%s interrupt at register %#x bit %d (%#x -> %#x)\n",
-+		 active ? "enabling" : "disabling", reg, bit, old, new);
-+
-+	if (new == old)
-+		dev_WARN(&ring->nhi->pdev->dev,
-+					 "interrupt for %s %d is already %s\n",
-+					 RING_TYPE(ring), ring->hop,
-+					 active ? "enabled" : "disabled");
-+	iowrite32(new, ring->nhi->iobase + reg);
-+}
-+
-+/**
-+ * nhi_disable_interrupts() - disable interrupts for all rings
-+ *
-+ * Use only during init and shutdown.
-+ */
-+static void nhi_disable_interrupts(struct tb_nhi *nhi)
-+{
-+	int i = 0;
-+	/* disable interrupts */
-+	for (i = 0; i < RING_INTERRUPT_REG_COUNT(nhi); i++)
-+		iowrite32(0, nhi->iobase + REG_RING_INTERRUPT_BASE + 4 * i);
-+
-+	/* clear interrupt status bits */
-+	for (i = 0; i < RING_NOTIFY_REG_COUNT(nhi); i++)
-+		ioread32(nhi->iobase + REG_RING_NOTIFY_BASE + 4 * i);
-+}
-+
-+/* ring helper methods */
-+
-+static void __iomem *ring_desc_base(struct tb_ring *ring)
-+{
-+	void __iomem *io = ring->nhi->iobase;
-+	io += ring->is_tx ? REG_TX_RING_BASE : REG_RX_RING_BASE;
-+	io += ring->hop * 16;
-+	return io;
-+}
-+
-+static void __iomem *ring_options_base(struct tb_ring *ring)
-+{
-+	void __iomem *io = ring->nhi->iobase;
-+	io += ring->is_tx ? REG_TX_OPTIONS_BASE : REG_RX_OPTIONS_BASE;
-+	io += ring->hop * 32;
-+	return io;
-+}
-+
-+static void ring_iowrite16desc(struct tb_ring *ring, u32 value, u32 offset)
-+{
-+	iowrite16(value, ring_desc_base(ring) + offset);
-+}
-+
-+static void ring_iowrite32desc(struct tb_ring *ring, u32 value, u32 offset)
-+{
-+	iowrite32(value, ring_desc_base(ring) + offset);
-+}
-+
-+static void ring_iowrite64desc(struct tb_ring *ring, u64 value, u32 offset)
-+{
-+	iowrite32(value, ring_desc_base(ring) + offset);
-+	iowrite32(value >> 32, ring_desc_base(ring) + offset + 4);
-+}
-+
-+static void ring_iowrite32options(struct tb_ring *ring, u32 value, u32 offset)
-+{
-+	iowrite32(value, ring_options_base(ring) + offset);
-+}
-+
-+static bool ring_full(struct tb_ring *ring)
-+{
-+	return ((ring->head + 1) % ring->size) == ring->tail;
-+}
-+
-+static bool ring_empty(struct tb_ring *ring)
-+{
-+	return ring->head == ring->tail;
-+}
-+
-+/**
-+ * ring_write_descriptors() - post frames from ring->queue to the controller
-+ *
-+ * ring->lock is held.
-+ */
-+static void ring_write_descriptors(struct tb_ring *ring)
-+{
-+	struct ring_frame *frame, *n;
-+	struct ring_desc *descriptor;
-+	list_for_each_entry_safe(frame, n, &ring->queue, list) {
-+		if (ring_full(ring))
-+			break;
-+		list_move_tail(&frame->list, &ring->in_flight);
-+		descriptor = &ring->descriptors[ring->head];
-+		descriptor->phys = frame->buffer_phy;
-+		descriptor->time = 0;
-+		descriptor->flags = RING_DESC_POSTED | RING_DESC_INTERRUPT;
-+		if (ring->is_tx) {
-+			descriptor->length = frame->size;
-+			descriptor->eof = frame->eof;
-+			descriptor->sof = frame->sof;
-+		}
-+		ring->head = (ring->head + 1) % ring->size;
-+		ring_iowrite16desc(ring, ring->head, ring->is_tx ? 10 : 8);
-+	}
-+}
-+
-+/**
-+ * ring_work() - progress completed frames
-+ *
-+ * If the ring is shutting down then all frames are marked as canceled and
-+ * their callbacks are invoked.
-+ *
-+ * Otherwise we collect all completed frame from the ring buffer, write new
-+ * frame to the ring buffer and invoke the callbacks for the completed frames.
-+ */
-+static void ring_work(struct work_struct *work)
-+{
-+	struct tb_ring *ring = container_of(work, typeof(*ring), work);
-+	struct ring_frame *frame;
-+	bool canceled = false;
-+	LIST_HEAD(done);
-+	mutex_lock(&ring->lock);
-+
-+	if (!ring->running) {
-+		/*  Move all frames to done and mark them as canceled. */
-+		list_splice_tail_init(&ring->in_flight, &done);
-+		list_splice_tail_init(&ring->queue, &done);
-+		canceled = true;
-+		goto invoke_callback;
-+	}
-+
-+	while (!ring_empty(ring)) {
-+		if (!(ring->descriptors[ring->tail].flags
-+				& RING_DESC_COMPLETED))
-+			break;
-+		frame = list_first_entry(&ring->in_flight, typeof(*frame),
-+					 list);
-+		list_move_tail(&frame->list, &done);
-+		if (!ring->is_tx) {
-+			frame->size = ring->descriptors[ring->tail].length;
-+			frame->eof = ring->descriptors[ring->tail].eof;
-+			frame->sof = ring->descriptors[ring->tail].sof;
-+			frame->flags = ring->descriptors[ring->tail].flags;
-+			if (frame->sof != 0)
-+				dev_WARN(&ring->nhi->pdev->dev,
-+					 "%s %d got unexpected SOF: %#x\n",
-+					 RING_TYPE(ring), ring->hop,
-+					 frame->sof);
-+			/*
-+			 * known flags:
-+			 * raw not enabled, interupt not set: 0x2=0010
-+			 * raw enabled: 0xa=1010
-+			 * raw not enabled: 0xb=1011
-+			 * partial frame (>MAX_FRAME_SIZE): 0xe=1110
-+			 */
-+			if (frame->flags != 0xa)
-+				dev_WARN(&ring->nhi->pdev->dev,
-+					 "%s %d got unexpected flags: %#x\n",
-+					 RING_TYPE(ring), ring->hop,
-+					 frame->flags);
-+		}
-+		ring->tail = (ring->tail + 1) % ring->size;
-+	}
-+	ring_write_descriptors(ring);
-+
-+invoke_callback:
-+	mutex_unlock(&ring->lock); /* allow callbacks to schedule new work */
-+	while (!list_empty(&done)) {
-+		frame = list_first_entry(&done, typeof(*frame), list);
-+		/*
-+		 * The callback may reenqueue or delete frame.
-+		 * Do not hold on to it.
-+		 */
-+		list_del_init(&frame->list);
-+		frame->callback(ring, frame, canceled);
-+	}
-+}
-+
-+int __ring_enqueue(struct tb_ring *ring, struct ring_frame *frame)
-+{
-+	int ret = 0;
-+	mutex_lock(&ring->lock);
-+	if (ring->running) {
-+		list_add_tail(&frame->list, &ring->queue);
-+		ring_write_descriptors(ring);
-+	} else {
-+		ret = -ESHUTDOWN;
-+	}
-+	mutex_unlock(&ring->lock);
-+	return ret;
-+}
-+
-+static struct tb_ring *ring_alloc(struct tb_nhi *nhi, u32 hop, int size,
-+				  bool transmit)
-+{
-+	struct tb_ring *ring = NULL;
-+	dev_info(&nhi->pdev->dev, "allocating %s ring %d of size %d\n",
-+		 transmit ? "TX" : "RX", hop, size);
-+
-+	mutex_lock(&nhi->lock);
-+	if (hop >= nhi->hop_count) {
-+		dev_WARN(&nhi->pdev->dev, "invalid hop: %d\n", hop);
-+		goto err;
-+	}
-+	if (transmit && nhi->tx_rings[hop]) {
-+		dev_WARN(&nhi->pdev->dev, "TX hop %d already allocated\n", hop);
-+		goto err;
-+	} else if (!transmit && nhi->rx_rings[hop]) {
-+		dev_WARN(&nhi->pdev->dev, "RX hop %d already allocated\n", hop);
-+		goto err;
-+	}
-+	ring = kzalloc(sizeof(*ring), GFP_KERNEL);
-+	if (!ring)
-+		goto err;
-+
-+	mutex_init(&ring->lock);
-+	INIT_LIST_HEAD(&ring->queue);
-+	INIT_LIST_HEAD(&ring->in_flight);
-+	INIT_WORK(&ring->work, ring_work);
-+
-+	ring->nhi = nhi;
-+	ring->hop = hop;
-+	ring->is_tx = transmit;
-+	ring->size = size;
-+	ring->head = 0;
-+	ring->tail = 0;
-+	ring->running = false;
-+	ring->descriptors = dma_alloc_coherent(&ring->nhi->pdev->dev,
-+			size * sizeof(*ring->descriptors),
-+			&ring->descriptors_dma, GFP_KERNEL | __GFP_ZERO);
-+	if (!ring->descriptors)
-+		goto err;
-+
-+	if (transmit)
-+		nhi->tx_rings[hop] = ring;
-+	else
-+		nhi->rx_rings[hop] = ring;
-+	mutex_unlock(&nhi->lock);
-+	return ring;
-+
-+err:
-+	if (ring)
-+		mutex_destroy(&ring->lock);
-+	kfree(ring);
-+	mutex_unlock(&nhi->lock);
-+	return NULL;
-+}
-+
-+struct tb_ring *ring_alloc_tx(struct tb_nhi *nhi, int hop, int size)
-+{
-+	return ring_alloc(nhi, hop, size, true);
-+}
-+
-+struct tb_ring *ring_alloc_rx(struct tb_nhi *nhi, int hop, int size)
-+{
-+	return ring_alloc(nhi, hop, size, false);
-+}
-+
-+/**
-+ * ring_start() - enable a ring
-+ *
-+ * Must not be invoked in parallel with ring_stop().
-+ */
-+void ring_start(struct tb_ring *ring)
-+{
-+	mutex_lock(&ring->nhi->lock);
-+	mutex_lock(&ring->lock);
-+	if (ring->running) {
-+		dev_WARN(&ring->nhi->pdev->dev, "ring already started\n");
-+		goto err;
-+	}
-+	dev_info(&ring->nhi->pdev->dev, "starting %s %d\n",
-+		 RING_TYPE(ring), ring->hop);
-+
-+	ring_iowrite64desc(ring, ring->descriptors_dma, 0);
-+	if (ring->is_tx) {
-+		ring_iowrite32desc(ring, ring->size, 12);
-+		ring_iowrite32options(ring, 0, 4); /* time releated ? */
-+		ring_iowrite32options(ring,
-+				      RING_FLAG_ENABLE | RING_FLAG_RAW, 0);
-+	} else {
-+		ring_iowrite32desc(ring,
-+				   (TB_FRAME_SIZE << 16) | ring->size, 12);
-+		ring_iowrite32options(ring, 0xffffffff, 4); /* SOF EOF mask */
-+		ring_iowrite32options(ring,
-+				      RING_FLAG_ENABLE | RING_FLAG_RAW, 0);
-+	}
-+	ring_interrupt_active(ring, true);
-+	ring->running = true;
-+err:
-+	mutex_unlock(&ring->lock);
-+	mutex_unlock(&ring->nhi->lock);
-+}
-+
-+
-+/**
-+ * ring_stop() - shutdown a ring
-+ *
-+ * Must not be invoked from a callback.
-+ *
-+ * This method will disable the ring. Further calls to ring_tx/ring_rx will
-+ * return -ESHUTDOWN until ring_stop has been called.
-+ *
-+ * All enqueued frames will be canceled and their callbacks will be executed
-+ * with frame->canceled set to true (on the callback thread). This method
-+ * returns only after all callback invocations have finished.
-+ */
-+void ring_stop(struct tb_ring *ring)
-+{
-+	mutex_lock(&ring->nhi->lock);
-+	mutex_lock(&ring->lock);
-+	dev_info(&ring->nhi->pdev->dev, "stopping %s %d\n",
-+		 RING_TYPE(ring), ring->hop);
-+	if (!ring->running) {
-+		dev_WARN(&ring->nhi->pdev->dev, "%s %d already stopped\n",
-+			 RING_TYPE(ring), ring->hop);
-+		goto err;
-+	}
-+	ring_interrupt_active(ring, false);
-+
-+	ring_iowrite32options(ring, 0, 0);
-+	ring_iowrite64desc(ring, 0, 0);
-+	ring_iowrite16desc(ring, 0, ring->is_tx ? 10 : 8);
-+	ring_iowrite32desc(ring, 0, 12);
-+	ring->head = 0;
-+	ring->tail = 0;
-+	ring->running = false;
-+
-+err:
-+	mutex_unlock(&ring->lock);
-+	mutex_unlock(&ring->nhi->lock);
-+
-+	/*
-+	 * schedule ring->work to invoke callbacks on all remaining frames.
-+	 */
-+	schedule_work(&ring->work);
-+	flush_work(&ring->work);
-+}
-+
-+/*
-+ * ring_free() - free ring
-+ *
-+ * When this method returns all invocations of ring->callback will have
-+ * finished.
-+ *
-+ * Ring must be stopped.
-+ *
-+ * Must NOT be called from ring_frame->callback!
-+ */
-+void ring_free(struct tb_ring *ring)
-+{
-+	mutex_lock(&ring->nhi->lock);
-+	/*
-+	 * Dissociate the ring from the NHI. This also ensures that
-+	 * nhi_interrupt_work cannot reschedule ring->work.
-+	 */
-+	if (ring->is_tx)
-+		ring->nhi->tx_rings[ring->hop] = NULL;
-+	else
-+		ring->nhi->rx_rings[ring->hop] = NULL;
-+
-+	if (ring->running) {
-+		dev_WARN(&ring->nhi->pdev->dev, "%s %d still running\n",
-+			 RING_TYPE(ring), ring->hop);
-+	}
-+
-+	dma_free_coherent(&ring->nhi->pdev->dev,
-+			  ring->size * sizeof(*ring->descriptors),
-+			  ring->descriptors, ring->descriptors_dma);
-+
-+	ring->descriptors = 0;
-+	ring->descriptors_dma = 0;
-+
-+
-+	dev_info(&ring->nhi->pdev->dev,
-+		 "freeing %s %d\n",
-+		 RING_TYPE(ring),
-+		 ring->hop);
-+
-+	mutex_unlock(&ring->nhi->lock);
-+	/**
-+	 * ring->work can no longer be scheduled (it is scheduled only by
-+	 * nhi_interrupt_work and ring_stop). Wait for it to finish before
-+	 * freeing the ring.
-+	 */
-+	flush_work(&ring->work);
-+	mutex_destroy(&ring->lock);
-+	kfree(ring);
-+}
-+
-+static void nhi_interrupt_work(struct work_struct *work)
-+{
-+	struct tb_nhi *nhi = container_of(work, typeof(*nhi), interrupt_work);
-+	int value = 0; /* Suppress uninitialized usage warning. */
-+	int bit;
-+	int hop = -1;
-+	int type = 0; /* current interrupt type 0: TX, 1: RX, 2: RX overflow */
-+	struct tb_ring *ring;
-+
-+	mutex_lock(&nhi->lock);
-+
-+	/*
-+	 * Starting at REG_RING_NOTIFY_BASE there are three status bitfields
-+	 * (TX, RX, RX overflow). We iterate over the bits and read a new
-+	 * dwords as required. The registers are cleared on read.
-+	 */
-+	for (bit = 0; bit < 3 * nhi->hop_count; bit++) {
-+		if (bit % 32 == 0)
-+			value = ioread32(nhi->iobase
-+					 + REG_RING_NOTIFY_BASE
-+					 + 4 * (bit / 32));
-+		if (++hop == nhi->hop_count) {
-+			hop = 0;
-+			type++;
-+		}
-+		if ((value & (1 << (bit % 32))) == 0)
-+			continue;
-+		if (type == 2) {
-+			dev_warn(&nhi->pdev->dev,
-+				 "RX overflow for ring %d\n",
-+				 hop);
-+			continue;
-+		}
-+		if (type == 0)
-+			ring = nhi->tx_rings[hop];
-+		else
-+			ring = nhi->rx_rings[hop];
-+		if (ring == NULL) {
-+			dev_warn(&nhi->pdev->dev,
-+				 "got interrupt for inactive %s ring %d\n",
-+				 type ? "RX" : "TX",
-+				 hop);
-+			continue;
-+		}
-+		/* we do not check ring->running, this is done in ring->work */
-+		schedule_work(&ring->work);
-+	}
-+	mutex_unlock(&nhi->lock);
-+}
-+
-+static irqreturn_t nhi_msi(int irq, void *data)
-+{
-+	struct tb_nhi *nhi = data;
-+	schedule_work(&nhi->interrupt_work);
-+	return IRQ_HANDLED;
-+}
-+
-+static void nhi_shutdown(struct tb_nhi *nhi)
-+{
-+	int i;
-+	dev_info(&nhi->pdev->dev, "shutdown\n");
-+
-+	for (i = 0; i < nhi->hop_count; i++) {
-+		if (nhi->tx_rings[i])
-+			dev_WARN(&nhi->pdev->dev,
-+				 "TX ring %d is still active\n", i);
-+		if (nhi->rx_rings[i])
-+			dev_WARN(&nhi->pdev->dev,
-+				 "RX ring %d is still active\n", i);
-+	}
-+	nhi_disable_interrupts(nhi);
-+	/*
-+	 * We have to release the irq before calling flush_work. Otherwise an
-+	 * already executing IRQ handler could call schedule_work again.
-+	 */
-+	devm_free_irq(&nhi->pdev->dev, nhi->pdev->irq, nhi);
-+	flush_work(&nhi->interrupt_work);
-+	mutex_destroy(&nhi->lock);
-+}
-+
-+static int nhi_probe(struct pci_dev *pdev, const struct pci_device_id *id)
-+{
-+	struct tb_nhi *nhi;
-+	int res;
-+
-+	res = pcim_enable_device(pdev);
-+	if (res) {
-+		dev_err(&pdev->dev, "cannot enable PCI device, aborting\n");
-+		return res;
-+	}
-+
-+	res = pci_enable_msi(pdev);
-+	if (res) {
-+		dev_err(&pdev->dev, "cannot enable MSI, aborting\n");
-+		return res;
-+	}
-+
-+	res = pcim_iomap_regions(pdev, 1 << 0, "thunderbolt");
-+	if (res) {
-+		dev_err(&pdev->dev, "cannot obtain PCI resources, aborting\n");
-+		return res;
-+	}
-+
-+	nhi = devm_kzalloc(&pdev->dev, sizeof(*nhi), GFP_KERNEL);
-+	if (!nhi)
-+		return -ENOMEM;
-+
-+	nhi->pdev = pdev;
-+	/* cannot fail - table is allocated bin pcim_iomap_regions */
-+	nhi->iobase = pcim_iomap_table(pdev)[0];
-+	nhi->hop_count = ioread32(nhi->iobase + REG_HOP_COUNT) & 0x3ff;
-+	if (nhi->hop_count != 12)
-+		dev_warn(&pdev->dev, "unexpected hop count: %d\n",
-+			 nhi->hop_count);
-+	INIT_WORK(&nhi->interrupt_work, nhi_interrupt_work);
-+
-+	nhi->tx_rings = devm_kzalloc(&pdev->dev,
-+				     nhi->hop_count * sizeof(struct tb_ring),
-+				     GFP_KERNEL);
-+	nhi->rx_rings = devm_kzalloc(&pdev->dev,
-+				     nhi->hop_count * sizeof(struct tb_ring),
-+				     GFP_KERNEL);
-+	if (!nhi->tx_rings || !nhi->rx_rings)
-+		return -ENOMEM;
-+
-+	nhi_disable_interrupts(nhi); /* In case someone left them on. */
-+	res = devm_request_irq(&pdev->dev, pdev->irq, nhi_msi,
-+			       IRQF_NO_SUSPEND, /* must work during _noirq */
-+			       "thunderbolt", nhi);
-+	if (res) {
-+		dev_err(&pdev->dev, "request_irq failed, aborting\n");
-+		return res;
-+	}
-+
-+	mutex_init(&nhi->lock);
-+
-+	pci_set_master(pdev);
-+
-+	/* magic value - clock related? */
-+	iowrite32(3906250 / 10000, nhi->iobase + 0x38c00);
-+
-+	pci_set_drvdata(pdev, nhi);
-+
-+	return 0;
-+}
-+
-+static void nhi_remove(struct pci_dev *pdev)
-+{
-+	struct tb_nhi *nhi = pci_get_drvdata(pdev);
-+	nhi_shutdown(nhi);
-+}
-+
-+struct pci_device_id nhi_ids[] = {
-+	{
-+		/*
-+		 * We have to specify class, the TB bridges use the same device
-+		 * and vendor (sub)id.
-+		 */
-+		.class = PCI_CLASS_SYSTEM_OTHER << 8, .class_mask = ~0,
-+		.vendor = PCI_VENDOR_ID_INTEL, .device = 0x1547,
-+		.subvendor = 0x2222, .subdevice = 0x1111,
-+	},
-+	{ 0,}
-+};
-+
-+MODULE_DEVICE_TABLE(pci, nhi_ids);
-+MODULE_LICENSE("GPL");
-+
-+static struct pci_driver nhi_driver = {
-+	.name = "thunderbolt",
-+	.id_table = nhi_ids,
-+	.probe = nhi_probe,
-+	.remove = nhi_remove,
-+};
-+
-+static int __init nhi_init(void)
-+{
-+	if (!dmi_match(DMI_BOARD_VENDOR, "Apple Inc."))
-+		return -ENOSYS;
-+	return pci_register_driver(&nhi_driver);
-+}
-+
-+static void __exit nhi_unload(void)
-+{
-+	pci_unregister_driver(&nhi_driver);
-+}
-+
-+module_init(nhi_init);
-+module_exit(nhi_unload);
-diff --git a/drivers/thunderbolt/nhi.h b/drivers/thunderbolt/nhi.h
-new file mode 100644
-index 0000000..3172429
---- /dev/null
-+++ b/drivers/thunderbolt/nhi.h
-@@ -0,0 +1,114 @@
-+/*
-+ * Thunderbolt Cactus Ridge driver - NHI driver
-+ *
-+ * Copyright (c) 2014 Andreas Noever <andreas.noever@gmail.com>
-+ */
-+
-+#ifndef DSL3510_H_
-+#define DSL3510_H_
-+
-+#include <linux/mutex.h>
-+#include <linux/workqueue.h>
-+
-+/**
-+ * struct tb_nhi - thunderbolt native host interface
-+ */
-+struct tb_nhi {
-+	struct mutex lock; /*
-+			    * Must be held during ring creation/destruction.
-+			    * Is acquired by interrupt_work when dispatching
-+			    * interrupts to individual rings.
-+			    **/
-+	struct pci_dev *pdev;
-+	void __iomem *iobase;
-+	struct tb_ring **tx_rings;
-+	struct tb_ring **rx_rings;
-+	struct work_struct interrupt_work;
-+	u32 hop_count; /* Number of rings (end point hops) supported by NHI. */
-+};
-+
-+/**
-+ * struct tb_ring - thunderbolt TX or RX ring associated with a NHI
-+ */
-+struct tb_ring {
-+	struct mutex lock; /* must be acquired after nhi->lock */
-+	struct tb_nhi *nhi;
-+	int size;
-+	int hop;
-+	int head; /* write next descriptor here */
-+	int tail; /* complete next descriptor here */
-+	struct ring_desc *descriptors;
-+	dma_addr_t descriptors_dma;
-+	struct list_head queue;
-+	struct list_head in_flight;
-+	struct work_struct work;
-+	bool is_tx:1; /* rx otherwise */
-+	bool running:1;
-+};
-+
-+struct ring_frame;
-+typedef void (*ring_cb)(struct tb_ring*, struct ring_frame*, bool canceled);
-+
-+/**
-+ * struct ring_frame - for use with ring_rx/ring_tx
-+ */
-+struct ring_frame {
-+	dma_addr_t buffer_phy;
-+	ring_cb callback;
-+	struct list_head list;
-+	u32 size:12; /* TX: in, RX: out*/
-+	u32 flags:12; /* RX: out */
-+	u32 eof:4; /* TX:in, RX: out */
-+	u32 sof:4; /* TX:in, RX: out */
-+};
-+
-+#define TB_FRAME_SIZE 0x100    /* minimum size for ring_rx */
-+
-+struct tb_ring *ring_alloc_tx(struct tb_nhi *nhi, int hop, int size);
-+struct tb_ring *ring_alloc_rx(struct tb_nhi *nhi, int hop, int size);
-+void ring_start(struct tb_ring *ring);
-+void ring_stop(struct tb_ring *ring);
-+void ring_free(struct tb_ring *ring);
-+
-+int __ring_enqueue(struct tb_ring *ring, struct ring_frame *frame);
-+
-+/**
-+ * ring_rx() - enqueue a frame on an RX ring
-+ *
-+ * frame->buffer, frame->buffer_phy and frame->callback have to be set. The
-+ * buffer must contain at least TB_FRAME_SIZE bytes.
-+ *
-+ * frame->callback will be invoked with frame->size, frame->flags, frame->eof,
-+ * frame->sof set once the frame has been received.
-+ *
-+ * If ring_stop is called after the packet has been enqueued frame->callback
-+ * will be called with canceled set to true.
-+ *
-+ * Return: Returns ESHUTDOWN if ring_stop has been called. Zero otherwise.
-+ */
-+static inline int ring_rx(struct tb_ring *ring, struct ring_frame *frame)
-+{
-+	WARN_ON(ring->is_tx);
-+	return __ring_enqueue(ring, frame);
-+}
-+
-+/**
-+ * ring_tx() - enqueue a frame on an TX ring
-+ *
-+ * frame->buffer, frame->buffer_phy, frame->callback, frame->size, frame->eof
-+ * and frame->sof have to be set.
-+ *
-+ * frame->callback will be invoked with once the frame has been transmitted.
-+ *
-+ * If ring_stop is called after the packet has been enqueued frame->callback
-+ * will be called with canceled set to true.
-+ *
-+ * Return: Returns ESHUTDOWN if ring_stop has been called. Zero otherwise.
-+ */
-+static inline int ring_tx(struct tb_ring *ring, struct ring_frame *frame)
-+{
-+	WARN_ON(!ring->is_tx);
-+	return __ring_enqueue(ring, frame);
-+}
-+
-+#endif
-diff --git a/drivers/thunderbolt/nhi_regs.h b/drivers/thunderbolt/nhi_regs.h
-new file mode 100644
-index 0000000..86b996c
---- /dev/null
-+++ b/drivers/thunderbolt/nhi_regs.h
-@@ -0,0 +1,101 @@
-+/*
-+ * Thunderbolt Cactus Ridge driver - NHI registers
-+ *
-+ * Copyright (c) 2014 Andreas Noever <andreas.noever@gmail.com>
-+ */
-+
-+#ifndef DSL3510_REGS_H_
-+#define DSL3510_REGS_H_
++#ifndef _TB_REGS
++#define _TB_REGS
 +
 +#include <linux/types.h>
 +
-+enum ring_flags {
-+	RING_FLAG_ISOCH_ENABLE = 1 << 27, /* TX only? */
-+	RING_FLAG_E2E_FLOW_CONTROL = 1 << 28,
-+	RING_FLAG_PCI_NO_SNOOP = 1 << 29,
-+	RING_FLAG_RAW = 1 << 30, /* ignore EOF/SOF mask, include checksum */
-+	RING_FLAG_ENABLE = 1 << 31,
-+};
 +
-+enum ring_desc_flags {
-+	RING_DESC_ISOCH = 0x1, /* TX only? */
-+	RING_DESC_COMPLETED = 0x2, /* set by NHI */
-+	RING_DESC_POSTED = 0x4, /* always set this */
-+	RING_DESC_INTERRUPT = 0x8, /* request an interrupt on completion */
-+};
++#define TB_ROUTE_SHIFT 8  /* number of bits in a port entry of a route */
 +
-+/**
-+ * struct ring_desc - TX/RX ring entry
-+ *
-+ * For TX set length/eof/sof.
-+ * For RX length/eof/sof are set by the NHI.
++
++/*
++ * TODO: should be 63? But we do not know how to receive frames larger than 256
++ * bytes at the frame level. (header + checksum = 16, 60*4 = 240)
 + */
-+struct ring_desc {
-+	u64 phys;
-+	u32 length:12;
-+	u32 eof:4;
-+	u32 sof:4;
-+	enum ring_desc_flags flags:12;
-+	u32 time; /* write zero */
++#define TB_MAX_CONFIG_RW_LENGTH 60
++
++enum tb_cap {
++	TB_CAP_PHY		= 0x0001,
++	TB_CAP_TIME1		= 0x0003,
++	TB_CAP_PCIE		= 0x0004,
++	TB_CAP_I2C		= 0x0005,
++	TB_CAP_PLUG_EVENTS	= 0x0105, /* also EEPROM */
++	TB_CAP_TIME2		= 0x0305,
++	TB_CAL_IECS		= 0x0405,
++	TB_CAP_LINK_CONTROLLER	= 0x0605, /* also IECS */
++};
++
++enum tb_port_state {
++	TB_PORT_DISABLED	= 0, /* tb_cap_phy.disable == 1 */
++	TB_PORT_CONNECTING	= 1, /* retry */
++	TB_PORT_UP		= 2,
++	TB_PORT_UNPLUGGED	= 7,
++};
++
++/* capability headers */
++
++struct tb_cap_basic {
++	u8 next;
++	/* enum tb_cap cap:8; prevent "narrower than values of its type" */
++	u8 cap; /* if cap == 0x05 then we have a extended capability */
 +} __packed;
 +
-+/* NHI registers in bar 0 */
++struct tb_cap_extended_short {
++	u8 next; /* if next and length are zero then we have a long cap */
++	enum tb_cap cap:16;
++	u8 length;
++} __packed;
 +
-+/*
-+ * 16 bytes per entry, one entry for every hop (REG_HOP_COUNT)
-+ * 00: physical pointer to an array of struct ring_desc
-+ * 08: ring tail (set by NHI)
-+ * 10: ring head (index of first non posted descriptor)
-+ * 12: descriptor count
-+ */
-+#define REG_TX_RING_BASE	0x00000
++struct tb_cap_extended_long {
++	u8 zero1;
++	enum tb_cap cap:16;
++	u8 zero2;
++	u16 next;
++	u16 length;
++} __packed;
 +
-+/*
-+ * 16 bytes per entry, one entry for every hop (REG_HOP_COUNT)
-+ * 00: physical pointer to an array of struct ring_desc
-+ * 08: ring head (index of first not posted descriptor)
-+ * 10: ring tail (set by NHI)
-+ * 12: descriptor count
-+ * 14: max frame sizes (anything larger than 0x100 has no effect)
-+ */
-+#define REG_RX_RING_BASE	0x08000
++/* capabilities */
 +
-+/*
-+ * 32 bytes per entry, one entry for every hop (REG_HOP_COUNT)
-+ * 00: enum_ring_flags
-+ * 04: isoch time stamp ?? (write 0)
-+ * ..: unknown
-+ */
-+#define REG_TX_OPTIONS_BASE	0x19800
++struct tb_cap_link_controller {
++	struct tb_cap_extended_long cap_header;
++	u32 count:4; /* number of link controllers */
++	u32 unknown1:4;
++	u32 base_offset:8; /*
++			    * offset (into this capability) of the configuration
++			    * area of the first link controller
++			    */
++	u32 length:12; /* link controller configuration area length */
++	u32 unknown2:4; /* TODO check that length is correct */
++} __packed;
 +
-+/*
-+ * 32 bytes per entry, one entry for every hop (REG_HOP_COUNT)
-+ * 00: enum ring_flags
-+ *     If RING_FLAG_E2E_FLOW_CONTROL is set then bits 13-23 must be set to
-+ *     the corresponding TX hop id.
-+ * 04: EOF/SOF mask (ignored for RING_FLAG_RAW rings)
-+ * ..: unknown
-+ */
-+#define REG_RX_OPTIONS_BASE	0x29800
++struct tb_cap_phy {
++	struct tb_cap_basic cap_header;
++	u32 unknown1:16;
++	u32 unknown2:14;
++	bool disable:1;
++	u32 unknown3:11;
++	enum tb_port_state state:4;
++	u32 unknown4:2;
++} __packed;
 +
-+/*
-+ * three bitfields: tx, rx, rx overflow
-+ * Every bitfield contains one bit for every hop (REG_HOP_COUNT). Registers are
-+ * cleared on read. New interrupts are fired only after ALL registers have been
-+ * read (even those containing only disabled rings).
-+ */
-+#define REG_RING_NOTIFY_BASE	0x37800
-+#define RING_NOTIFY_REG_COUNT(nhi) ((31 + 3 * nhi->hop_count) / 32)
++struct tb_eeprom_ctl {
++	bool clock:1; /* send pulse to transfer one bit */
++	bool access_low:1; /* set to 0 before access */
++	bool data_out:1; /* to eeprom */
++	bool data_in:1; /* from eeprom */
++	bool access_high:1; /* set to 1 before access */
++	bool not_present:1; /* should be 0 */
++	bool unknown1:1;
++	bool present:1; /* should be 1 */
++	u32 unknown2:24;
++} __packed;
 +
-+/*
-+ * two bitfields: rx, tx
-+ * Both bitfields contains one bit for every hop (REG_HOP_COUNT). To
-+ * enable/disable interrupts set/clear the corresponding bits.
-+ */
-+#define REG_RING_INTERRUPT_BASE	0x38200
-+#define RING_INTERRUPT_REG_COUNT(nhi) ((31 + 2 * nhi->hop_count) / 32)
++struct tb_cap_plug_events {
++	struct tb_cap_extended_short cap_header;
++	u32 __unknown1:2;
++	u32 plug_events:5;
++	u32 __unknown2:25;
++	u32 __unknown3;
++	u32 __unknown4;
++	struct tb_eeprom_ctl eeprom_ctl;
++	u32 __unknown5[7];
++	u32 drom_offset; /* 32 bit register, but eeprom addresses are 16 bit */
++} __packed;
 +
-+/* The last 11 bits contain the number of hops supported by the NHI port. */
-+#define REG_HOP_COUNT		0x39640
++/* device headers */
++
++/* Present on port 0 in TB_CFG_SWITCH at address zero. */
++struct tb_regs_switch_header {
++	/* DWORD 0 */
++	u16 vendor_id;
++	u16 device_id;
++	/* DWORD 1 */
++	u32 first_cap_offset:8;
++	u32 upstream_port_number:6;
++	u32 max_port_number:6;
++	u32 depth:3;
++	u32 __unknown1:1;
++	u32 revision:8;
++	/* DWORD 2 */
++	u32 route_lo;
++	/* DWORD 3 */
++	u32 route_hi:31;
++	bool enabled:1;
++	/* DWORD 4 */
++	u32 plug_events_delay:8; /*
++				  * RW, pause between plug events in
++				  * milliseconds. Writing 0x00 is interpreted
++				  * as 255ms.
++				  */
++	u32 __unknown4:16;
++	u32 thunderbolt_version:8;
++} __packed;
++
++enum tb_port_type {
++	TB_TYPE_INACTIVE	= 0x000000,
++	TB_TYPE_PORT		= 0x000001,
++	TB_TYPE_NHI		= 0x000002,
++	/* TB_TYPE_ETHERNET	= 0x020000, lower order bits are not known */
++	/* TB_TYPE_SATA		= 0x080000, lower order bits are not known */
++	TB_TYPE_DP_HDMI_IN	= 0x0e0101,
++	TB_TYPE_DP_HDMI_OUT	= 0x0e0102,
++	TB_TYPE_PCIE_DOWN	= 0x100101,
++	TB_TYPE_PCIE_UP		= 0x100102,
++	/* TB_TYPE_USB		= 0x200000, lower order bits are not known */
++};
++
++/* Present on every port in TB_CF_PORT at address zero. */
++struct tb_regs_port_header {
++	/* DWORD 0 */
++	u16 vendor_id;
++	u16 device_id;
++	/* DWORD 1 */
++	u32 first_cap_offset:8;
++	u32 max_counters:11;
++	u32 __unknown1:5;
++	u32 revision:8;
++	/* DWORD 2 */
++	enum tb_port_type type:24;
++	u32 thunderbolt_version:8;
++	/* DWORD 3 */
++	u32 __unknown2:20;
++	u32 port_number:6;
++	u32 __unknown3:6;
++	/* DWORD 4 */
++	u32 nfc_credits;
++	/* DWORD 5 */
++	u32 max_in_hop_id:11;
++	u32 max_out_hop_id:11;
++	u32 __unkown4:10;
++	/* DWORD 6 */
++	u32 __unknown5;
++	/* DWORD 7 */
++	u32 __unknown6;
++
++} __packed;
++
++/* Hop register from TB_CFG_HOPS. 8 byte per entry. */
++struct tb_regs_hop {
++	/* DWORD 0 */
++	u32 next_hop:11; /*
++			  * hop to take after sending the packet through
++			  * out_port (on the incoming port of the next switch)
++			  */
++	u32 out_port:6; /* next port of the path (on the same switch) */
++	u32 initial_credits:8;
++	u32 unknown1:6; /* set to zero */
++	bool enable:1;
++
++	/* DWORD 1 */
++	u32 weight:4;
++	u32 unknown2:4; /* set to zero */
++	u32 priority:3;
++	bool drop_packages:1;
++	u32 counter:11; /* index into TB_CFG_COUNTERS on this port */
++	bool counter_enable:1;
++	bool ingress_fc:1;
++	bool egress_fc:1;
++	bool ingress_shared_buffer:1;
++	bool egress_shared_buffer:1;
++	u32 unknown3:4; /* set to zero */
++} __packed;
++
 +
 +#endif
 -- 
