@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754379AbaEaH4c (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 May 2014 03:56:32 -0400
-Received: from mail-ig0-f178.google.com ([209.85.213.178]:43917 "EHLO
-	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751982AbaEaH4a (ORCPT
+	id S1755300AbaEaH77 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 May 2014 03:59:59 -0400
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:63638 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752187AbaEaH75 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 May 2014 03:56:30 -0400
+	Sat, 31 May 2014 03:59:57 -0400
 MIME-Version: 1.0
-In-Reply-To: <1401480116-1973111-2-git-send-email-arnd@arndb.de>
+In-Reply-To: <1401480116-1973111-7-git-send-email-arnd@arndb.de>
 References: <1401480116-1973111-1-git-send-email-arnd@arndb.de>
-	<1401480116-1973111-2-git-send-email-arnd@arndb.de>
-Date: Sat, 31 May 2014 09:56:29 +0200
-X-Google-Sender-Auth: VzjDMnvWK7DlZCe8yO4D_inpWtg
-Message-ID: <CAMuHMdVgch4REGcYWFZXVToX2b8iCinFVV10Bz3VoeiZy_yBtg@mail.gmail.com>
-Subject: Re: [RFC 01/32] fs: introduce new 'struct inode_time'
+	<1401480116-1973111-7-git-send-email-arnd@arndb.de>
+Date: Sat, 31 May 2014 09:59:56 +0200
+X-Google-Sender-Auth: xEIR-IEcNoxkD1t3DMppNExQdRo
+Message-ID: <CAMuHMdXn2wzhU6f-qVsFAoVZQOciRbi8ZBdjQpHQf96qRC2kww@mail.gmail.com>
+Subject: Re: [RFC 06/32] isofs: fix timestamps beyond 2027
 From: Geert Uytterhoeven <geert@linux-m68k.org>
 To: Arnd Bergmann <arnd@arndb.de>
 Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
@@ -30,21 +30,20 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
-
 On Fri, May 30, 2014 at 10:01 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> + * The variant using bit fields is less efficient to access, but
-> + * small and has a wider range as the 32-bit one, plus it keeps
-> + * the signedness of the original timespec.
-> + */
-> +struct inode_time {
-> +       long long       tv_sec  : 34;
-> +       int             tv_nsec : 30;
-> +};
+> isofs uses a 'char' variable to load the number of years since
+> 1900 for an inode timestamp. On architectures that use a signed
+> char type by default, this results in an invalid date for
+> anything beyond 2027.
+>
+> This adds a cast to 'u8' for the year number, which should extend
+> the shelf life of the file system until 2155.
 
-Don't you need 31 bits for tv_nsec, to accommodate for the sign bit?
-I know you won't really store negative numbers there, but storing a large
-positive number will become negative on read out, won't it?
+Oops, the CD archive of my scanned Napoleon manuscripts no longer has the
+right file date? ;-)
+
+Are there any practical uses of representating dates between 1772 and 1900
+on CD/DVD?
 
 Gr{oetje,eeting}s,
 
