@@ -1,49 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755530AbaEaUD3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 May 2014 16:03:29 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:18614 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752165AbaEaUD2 (ORCPT
+	id S1755827AbaEaUDs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 May 2014 16:03:48 -0400
+Received: from mail-we0-f179.google.com ([74.125.82.179]:53312 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755562AbaEaUDr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 May 2014 16:03:28 -0400
-Date: Sat, 31 May 2014 16:03:26 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Jason Low <jason.low2@hp.com>
-Subject: Re: [patch v2 4/5] rtmutex: Clarify the lock chain walk
-Message-ID: <20140531160326.3be74259@gandalf.local.home>
-In-Reply-To: <20140531155739.430525601@linutronix.de>
-References: <20140531155229.493650009@linutronix.de>
-	<20140531155739.430525601@linutronix.de>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Sat, 31 May 2014 16:03:47 -0400
+Message-ID: <538A35A0.1080006@gmail.com>
+Date: Sat, 31 May 2014 23:03:44 +0300
+From: Tair Rzayev <tair.rzayev@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: swetland@google.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: android: binder.c: Use more appropriate functions
+ for euid retrieval
+References: <538A30E6.6010403@gmail.com> <20140531195205.GA14077@kroah.com>
+In-Reply-To: <20140531195205.GA14077@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 31 May 2014 15:57:51 -0000
-Thomas Gleixner <tglx@linutronix.de> wrote:
 
-> Add a separate local variable for the boost/deboost logic to make the
-> code more readable. Add comments where appropriate.
-> 
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
 
-Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
+On 2014.05.31. 22:52, Greg KH wrote:
+> What kernel tree did you make this against?  It doesn't seem to match up
+> with what is in my staging-next branch to merge with Linus for the next
+> release, so please work against that one.
 
--- Steve
+Made against staging-next branch of your linux-next staging tree.
 
-> Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
-> Link: http://lkml.kernel.org/r/20140522031950.168005692@linutronix.de
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> ---
+> Oh, and I think this is already been done, although in a bit different
+> way there, please check to make sure it is correct.
 
+Yes, I have noticed the changes after I have made the patch but I
+thought mine are a bit cleaner so I have rebased the patch against the
+changes that are already applied.
