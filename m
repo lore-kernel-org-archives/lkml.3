@@ -1,66 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756523AbaEaOsY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 May 2014 10:48:24 -0400
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:38928 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752122AbaEaOsW (ORCPT
+	id S1756640AbaEaOv4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 May 2014 10:51:56 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:33917 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755272AbaEaOvw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 May 2014 10:48:22 -0400
-Date: Sat, 31 May 2014 07:48:19 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Josh Boyer <jwboyer@fedoraproject.org>
-cc: Al Viro <viro@zeniv.linux.org.uk>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Miklos Szeredi <mszeredi@suse.cz>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [git pull] Re: fs/dcache.c - BUG: soft lockup - CPU#5 stuck for
- 22s! [systemd-udevd:1667]
-In-Reply-To: <CA+5PVA5EmAkoZnWNUtXCPu5JZ=6Q4jFrjoqHZdtBVdbxwPe6Tw@mail.gmail.com>
-Message-ID: <alpine.LFD.2.11.1405310745001.10717@i7.linux-foundation.org>
-References: <CA+55aFzYjRrvSaF=wGimrgtEqR7GHbu1ku1qn1wQs5wgQrCZdg@mail.gmail.com> <20140529154454.GK18016@ZenIV.linux.org.uk> <20140529162307.GL18016@ZenIV.linux.org.uk> <CA+55aFyRDJpm2Wfg9jvXCsKYgt36=6A_++bX+Q=C4MvQRbqh_A@mail.gmail.com>
- <20140529165351.GM18016@ZenIV.linux.org.uk> <20140529185201.GN18016@ZenIV.linux.org.uk> <20140530081238.GA1957@lahna.fi.intel.com> <20140530152151.GR18016@ZenIV.linux.org.uk> <CA+55aFxLNvBDYtiq92DvuVqUk7byWeYiL1svbNQdXg7MRtbBcQ@mail.gmail.com>
- <20140530164815.GS18016@ZenIV.linux.org.uk> <20140530171408.GT18016@ZenIV.linux.org.uk> <CA+5PVA5EmAkoZnWNUtXCPu5JZ=6Q4jFrjoqHZdtBVdbxwPe6Tw@mail.gmail.com>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+	Sat, 31 May 2014 10:51:52 -0400
+Date: Sat, 31 May 2014 16:51:15 +0200
+From: Richard Cochran <richardcochran@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org, hch@infradead.org,
+        linux-mtd@lists.infradead.org, hpa@zytor.com, logfs@logfs.org,
+        linux-afs@lists.infradead.org, joseph@codesourcery.com,
+        linux-arch@vger.kernel.org, linux-cifs@vger.kernel.org,
+        linux-scsi@vger.kernel.org, ceph-devel@vger.kernel.org,
+        codalist@TELEMANN.coda.cs.cmu.edu, cluster-devel@redhat.com,
+        coda@cs.cmu.edu, geert@linux-m68k.org, linux-ext4@vger.kernel.org,
+        fuse-devel@lists.sourceforge.net, reiserfs-devel@vger.kernel.org,
+        xfs@oss.sgi.com, john.stultz@linaro.org, tglx@linutronix.de,
+        linux-nfs@vger.kernel.org, linux-ntfs-dev@lists.sourceforge.net,
+        samba-technical@lists.samba.org,
+        linux-f2fs-devel@lists.sourceforge.net, ocfs2-devel@oss.oracle.com,
+        linux-fsdevel@vger.kernel.org, lftan@altera.com,
+        linux-btrfs@vger.kernel.org
+Subject: Re: [RFC 00/32] making inode time stamps y2038 ready
+Message-ID: <20140531145114.GA3721@localhost.localdomain>
+References: <1401480116-1973111-1-git-send-email-arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1401480116-1973111-1-git-send-email-arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Sat, 31 May 2014, Josh Boyer wrote:
+On Fri, May 30, 2014 at 10:01:24PM +0200, Arnd Bergmann wrote:
 > 
-> One of my machines got the lockdep report below when booting a kernel
-> that contained these patches. 
+> I picked this because it is a fairly isolated problem, as the
+> inode time stamps are rarely assigned to any other time values.
+> As a byproduct of this work, I documented for each of the file
+> systems we support how long the on-disk format can work[1].
 
-I think this is just a lacking annotation.
+Why are some of the time stamp expiration dates marked as "never"?
 
-We do nest dentry d_lock locking, and in order to avoid ABBA deadlocks the 
-rule is that we lock things in topological order (parent dentry first). 
-lock_parent() is very careful about that, but doesn't actually tell 
-lockdep about it.
-
-This trivial oneliner should fix it.
-
-			Linus
-
----
- fs/dcache.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/fs/dcache.c b/fs/dcache.c
-index bce851dc03ef..be2bea834bf4 100644
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -553,7 +553,7 @@ again:
- 	}
- 	rcu_read_unlock();
- 	if (parent != dentry)
--		spin_lock(&dentry->d_lock);
-+		spin_lock_nested(&dentry->d_lock, DENTRY_D_LOCK_NESTED);
- 	else
- 		parent = NULL;
- 	return parent;
+Thanks,
+Richard
