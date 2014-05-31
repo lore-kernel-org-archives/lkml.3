@@ -1,108 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751660AbaEaPLK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 May 2014 11:11:10 -0400
-Received: from mout.kundenserver.de ([212.227.17.10]:54438 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750752AbaEaPLI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 May 2014 11:11:08 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        joseph@codesourcery.com, john.stultz@linaro.org, hch@infradead.org,
-        tglx@linutronix.de, geert@linux-m68k.org, lftan@altera.com,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [RFC 02/32] uapi: add struct __kernel_timespec{32,64}
-Date: Sat, 31 May 2014 17:09:25 +0200
-Message-ID: <5129309.tUSSHZWN3t@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <5388E7A5.90308@zytor.com>
-References: <1401480116-1973111-1-git-send-email-arnd@arndb.de> <1401480116-1973111-3-git-send-email-arnd@arndb.de> <5388E7A5.90308@zytor.com>
+	id S1751554AbaEaPSL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 May 2014 11:18:11 -0400
+Received: from mx01-fr.bfs.de ([193.174.231.67]:56748 "EHLO mx01-fr.bfs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750752AbaEaPSJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 31 May 2014 11:18:09 -0400
+Message-ID: <5389F2A0.1000903@bfs.de>
+Date: Sat, 31 May 2014 17:17:52 +0200
+From: walter harms <wharms@bfs.de>
+Reply-To: wharms@bfs.de
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:PTLxkFYwmS63YcQxAKRXu9YlCWQF+Fp7flG4ajwRAJN
- fOvLz8QM4SGDz6Ox1e0QxGJ5CDJWv6hjDXgnpRuSsey2dgNJAe
- IBbkwGqkpwp3fln5QL4oASr1PuWOxhSQgnXW81diFHOdcntTBc
- kad28T44JlUzoTqyLn+K5r3DVOrwhjs6Tji3QjHrgXAzNyt5Fe
- aG7eV6l5FVQL6JZ0kwXm79AVbDQh5R0wwethO1hq1GzU7PzAmr
- meiIVHvpmfUHnwcOGiErzOnY1FoY2Di0109fJCdDmNoAYOthlr
- M/xpsW0naKJBgX34Z5dtB6/33FVy/NgOSQK4kwOCl+vod9nG92
- /mFOV6oQbtTCB5hAMjfQ=
+To: Peter Senna Tschudin <peter.senna@gmail.com>
+CC: Solomon Peachy <pizza@shaftnet.org>, kernel-janitors@vger.kernel.org,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/11] cw1200: Remove useless return variables
+References: <1401542051-3174-2-git-send-email-peter.senna@gmail.com>
+In-Reply-To: <1401542051-3174-2-git-send-email-peter.senna@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 30 May 2014 13:18:45 H. Peter Anvin wrote:
-> On 05/30/2014 01:01 PM, Arnd Bergmann wrote:
-> > We cannot use time_t or any derived structures beyond the year
-> > 2038 in interfaces between kernel and user space, on 32-bit
-> > machines.
-> > 
-> > This is my suggestion for how to migrate syscall and ioctl
-> > interfaces: We completely phase out time_t, timeval and timespec
-> > from the uapi header files and replace them with types that are
-> > either explicitly safe (__kernel_timespec64), or explicitly
-> > unsafe (e.g. __kernel_timespec32). For each unsafe interface,
-> > there needs to be a safe replacement interface.
-> > 
+
+
+Am 31.05.2014 15:14, schrieb Peter Senna Tschudin:
+> This patch remove variables that are initialized with a constant,
+> are never updated, and are only used as parameter of return.
+> Return the constant instead of using a variable.
 > 
-> This gets really messy for structures where this is ABI-dependent.  I'm
-> not sure this is a net win.
-
-We could have an extra '__kernel_oldtimespec' type that we can
-use for all ABIs that are today defined in terms of timespec.
-
-What I was mostly trying to avoid here is leaving any 'struct timespec'
-in header files, because glibc may define that type differently
-depending on a __TIME_BITS macro. This is more of a problem for
-ioctls than for system calls.
-
-> > +/*
-> > + * __kernel_timespec64 is the general type to be used for
-> > + * new user space interfaces passing a time argument.
-> > + * 64-bit nanoseconds is a bit silly, but the advantage is
-> > + * that it is compatible with the native 'struct timespec'
-> > + * on 64-bit user space. This simplifies the compat code.
-> > + */
-> > +struct __kernel_timespec64 {
-> > +	long long tv_sec;
-> > +	long long tv_nsec;
-> > +};
+> Verified by compilation only.
 > 
-> So it seems that it is not just POSIX that is drain bramaged with this,
-> but the "long" type for tv_nsec idiocy has made it into the C11
-> standard.  This unfortunately means that now there are two standards
-> bodies involved, at least one of which moves very slowly.
-
-My feeling is that our best hope is to completely isolate the kernel
-interfaces from what user space wants to have as time_t. glibc for
-instance may have a different idea about standards compliance than
-android or klibc.
-
-> This makes me wonder if we don't need to deal with the problem in the
-> case of 32-bit ABIs with 64-bit time_t.  The logical thing seems to be
-> to EITHER:
+> The coccinelle script that find and fixes this issue is:
+> // <smpl>
+> @@
+> type T;
+> constant C;
+> identifier ret;
+> @@
+> - T ret = C;
+> ... when != ret
+>     when strict
+> return
+> - ret
+> + C
+> ;
+> // </smpl>
 > 
-> a. ALWAYS ignore the upper 32 bits of tv_nsec when read from user space,
->    but always set them to zero, or
-> b. Only ignore the upper 32 bits of tv_nsec when we are known to come
->    from a 32-bit ABI context, but still always return zero.  These bits
->    are already only used for validity checking.
+> Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
 > 
->    This most likely introduces a whole lot of new tests in deep paths,
->    although we probably can centralize this in a single function, which
->    otherwise ends up looking a lot like compat_get_timespec().
+> ---
+>  drivers/net/wireless/cw1200/sta.c |   19 +------------------
+>  1 file changed, 1 insertion(+), 18 deletions(-)
 > 
-> Getting rid of struct timespec on the kernel/user boundary is probably
-> not really feasible.
+> diff --git a/drivers/net/wireless/cw1200/sta.c b/drivers/net/wireless/cw1200/sta.c
+> index cd0cad7..622370c 100644
+> --- a/drivers/net/wireless/cw1200/sta.c
+> +++ b/drivers/net/wireless/cw1200/sta.c
+> @@ -2289,24 +2289,7 @@ static int cw1200_upload_null(struct cw1200_common *priv)
+>  
+>  static int cw1200_upload_qosnull(struct cw1200_common *priv)
+>  {
+> -	int ret = 0;
+> -	/* TODO:  This needs to be implemented
+> -
+> -	struct wsm_template_frame frame = {
+> -		.frame_type = WSM_FRAME_TYPE_QOS_NULL,
+> -		.rate = 0xFF,
+> -	};
+> -
+> -	frame.skb = ieee80211_qosnullfunc_get(priv->hw, priv->vif);
+> -	if (!frame.skb)
+> -		return -ENOMEM;
+> -
+> -	ret = wsm_set_template_frame(priv, &frame);
+> -
+> -	dev_kfree_skb(frame.skb);
+> -
+> -	*/
+> -	return ret;
+> +	return 0;
+>  }
+>  
+>  static int cw1200_enable_beaconing(struct cw1200_common *priv,
 
-My approach was based on the discussion with Joseph, who would like glibc
-to support both 32 and 64 bit time_t using the same libc binary and 
-versioned symbols. I don't see how that could work when you build a
-user space program that sees a timespec in kernel headers and tries
-to pass that into a non-translated kernel interface (e.g. ioctl) but
-use the same timespec for a glibc-provided function like gettimeofday().
 
-	Arnd
+are you sure you want to remove the entire function ?
+
+re,
+ wh
+
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
