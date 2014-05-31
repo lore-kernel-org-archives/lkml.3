@@ -1,38 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756502AbaEaMZ1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 May 2014 08:25:27 -0400
-Received: from forward4m.mail.yandex.net ([37.140.138.4]:43257 "EHLO
-	forward4m.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755560AbaEaMZZ (ORCPT
+	id S932649AbaEaMbV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 May 2014 08:31:21 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:40491 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756382AbaEaMbT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 May 2014 08:25:25 -0400
-From: Evgeniy Polyakov <zbr@ioremap.net>
-Envelope-From: drustafa@yandex.ru
-To: Thomas Wood <tommyandrena@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        GregKH <greg@kroah.com>
-In-Reply-To: <1401491420-6953-1-git-send-email-tommyandrena@gmail.com>
-References: <1401491420-6953-1-git-send-email-tommyandrena@gmail.com>
-Subject: Re: [PATCH] drivers/w1/w1_int.c: Fix style errors.
+	Sat, 31 May 2014 08:31:19 -0400
+Date: Sat, 31 May 2014 13:29:45 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: srinivas.kandagatla@linaro.org
+Cc: Ulf Hansson <ulf.hansson@linaro.org>, linux-mmc@vger.kernel.org,
+        Chris Ball <chris@printf.net>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linus.walleij@linaro.org
+Subject: Re: [PATCH v5 11/13] mmc: mmci: add explicit clk control
+Message-ID: <20140531122945.GA20736@n2100.arm.linux.org.uk>
+References: <1401469918-26817-1-git-send-email-srinivas.kandagatla@linaro.org> <1401470080-27277-1-git-send-email-srinivas.kandagatla@linaro.org>
 MIME-Version: 1.0
-Message-Id: <2069611401539121@web10m.yandex.ru>
-X-Mailer: Yamail [ http://yandex.ru ] 5.0
-Date: Sat, 31 May 2014 16:25:21 +0400
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1401470080-27277-1-git-send-email-srinivas.kandagatla@linaro.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thomas
+On Fri, May 30, 2014 at 06:14:40PM +0100, srinivas.kandagatla@linaro.org wrote:
+> @@ -1325,6 +1329,18 @@ static void mmci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
+>  	if (!ios->clock && variant->pwrreg_clkgate)
+>  		pwr &= ~MCI_PWR_ON;
+>  
+> +	if ((host->variant->explicit_mclk_control) &&
+> +	    (ios->clock != host->clock_cache)) {
 
-31.05.2014, 03:11, "Thomas Wood" <tommyandrena@gmail.com>:
-> Replace spaces at beginning of the string with tabs, and replace foo * bar with foo *bar in a pointer declaration.
->
-> Signed-off-by: Thomas Wood <tommyandrena@gmail.com>
+Please explain what use these parens have (or just get rid of them as
+they're completely unnecessary - they do nothing for readability.)
 
-Looks good, thank you.
-Greg, please pull it into your tree or suggest appropriate.
+In fact, additional useless parens result in readability being harmed.
 
-Acked-by: Evgeniy Polyakov <zbr@ioremap.net>
+If you don't know the C precedence rules and as a result feel the need
+to litter your code with additional parens, then you really shouldn't
+be touching C code in the first place. :)
+
+-- 
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
