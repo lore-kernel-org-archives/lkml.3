@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935073AbaEaNQF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 May 2014 09:16:05 -0400
-Received: from mail-ve0-f174.google.com ([209.85.128.174]:37142 "EHLO
-	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933196AbaEaNOo (ORCPT
+	id S935138AbaEaNQj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 May 2014 09:16:39 -0400
+Received: from mail-vc0-f182.google.com ([209.85.220.182]:45744 "EHLO
+	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932951AbaEaNOn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 May 2014 09:14:44 -0400
+	Sat, 31 May 2014 09:14:43 -0400
 From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: Hans Verkuil <hverkuil@xs4all.nl>
-Cc: kernel-janitors@vger.kernel.org,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 8/11] drivers/media/usb/usbvision/usbvision-core.c: Remove useless return variables
-Date: Sat, 31 May 2014 10:14:08 -0300
-Message-Id: <1401542051-3174-8-git-send-email-peter.senna@gmail.com>
+To: Ariel Elior <ariele@broadcom.com>
+Cc: kernel-janitors@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 7/11] bnx2x: Remove useless return variables
+Date: Sat, 31 May 2014 10:14:07 -0300
+Message-Id: <1401542051-3174-7-git-send-email-peter.senna@gmail.com>
 X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -45,80 +44,63 @@ return
 Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
 
 ---
- drivers/media/usb/usbvision/usbvision-core.c |   16 +++++-----------
- 1 file changed, 5 insertions(+), 11 deletions(-)
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_link.c |   10 ++++------
+ 1 file changed, 4 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/media/usb/usbvision/usbvision-core.c b/drivers/media/usb/usbvision/usbvision-core.c
-index 816b1cf..302aa07 100644
---- a/drivers/media/usb/usbvision/usbvision-core.c
-+++ b/drivers/media/usb/usbvision/usbvision-core.c
-@@ -1463,8 +1463,6 @@ static int usbvision_write_reg_irq(struct usb_usbvision *usbvision, int address,
+diff --git a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_link.c b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_link.c
+index 9b6b3d7..4fef1e1 100644
+--- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_link.c
++++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_link.c
+@@ -2218,7 +2218,6 @@ int bnx2x_update_pfc(struct link_params *params,
+ 	 */
+ 	u32 val;
+ 	struct bnx2x *bp = params->bp;
+-	int bnx2x_status = 0;
+ 	u8 bmac_loopback = (params->loopback_mode == LOOPBACK_BMAC);
  
- static int usbvision_init_compression(struct usb_usbvision *usbvision)
- {
--	int err_code = 0;
--
- 	usbvision->last_isoc_frame_num = -1;
- 	usbvision->isoc_data_count = 0;
- 	usbvision->isoc_packet_count = 0;
-@@ -1475,7 +1473,7 @@ static int usbvision_init_compression(struct usb_usbvision *usbvision)
- 	usbvision->request_intra = 1;
- 	usbvision->isoc_measure_bandwidth_count = 0;
+ 	if (params->feature_config_flags & FEATURE_CONFIG_PFC_ENABLED)
+@@ -2232,7 +2231,7 @@ int bnx2x_update_pfc(struct link_params *params,
+ 	bnx2x_update_pfc_nig(params, vars, pfc_params);
  
--	return err_code;
-+	return 0;
- }
- 
- /* this function measures the used bandwidth since last call
-@@ -1484,11 +1482,9 @@ static int usbvision_init_compression(struct usb_usbvision *usbvision)
-  */
- static int usbvision_measure_bandwidth(struct usb_usbvision *usbvision)
- {
--	int err_code = 0;
--
- 	if (usbvision->isoc_measure_bandwidth_count < 2) { /* this gives an average bandwidth of 3 frames */
- 		usbvision->isoc_measure_bandwidth_count++;
--		return err_code;
+ 	if (!vars->link_up)
+-		return bnx2x_status;
 +		return 0;
+ 
+ 	DP(NETIF_MSG_LINK, "About to update PFC in BMAC\n");
+ 
+@@ -2246,7 +2245,7 @@ int bnx2x_update_pfc(struct link_params *params,
+ 		    == 0) {
+ 			DP(NETIF_MSG_LINK, "About to update PFC in EMAC\n");
+ 			bnx2x_emac_enable(params, vars, 0);
+-			return bnx2x_status;
++			return 0;
+ 		}
+ 		if (CHIP_IS_E2(bp))
+ 			bnx2x_update_pfc_bmac2(params, vars, bmac_loopback);
+@@ -2260,7 +2259,7 @@ int bnx2x_update_pfc(struct link_params *params,
+ 			val = 1;
+ 		REG_WR(bp, NIG_REG_BMAC0_PAUSE_OUT_EN + params->port*4, val);
  	}
- 	if ((usbvision->isoc_packet_size > 0) && (usbvision->isoc_packet_count > 0)) {
- 		usbvision->used_bandwidth = usbvision->isoc_data_count /
-@@ -1499,7 +1495,7 @@ static int usbvision_measure_bandwidth(struct usb_usbvision *usbvision)
- 	usbvision->isoc_data_count = 0;
- 	usbvision->isoc_packet_count = 0;
- 	usbvision->isoc_skip_count = 0;
--	return err_code;
+-	return bnx2x_status;
 +	return 0;
  }
  
- static int usbvision_adjust_compression(struct usb_usbvision *usbvision)
-@@ -1546,26 +1542,24 @@ static int usbvision_adjust_compression(struct usb_usbvision *usbvision)
- 
- static int usbvision_request_intra(struct usb_usbvision *usbvision)
+ static int bnx2x_bmac1_enable(struct link_params *params,
+@@ -6473,7 +6472,6 @@ int bnx2x_test_link(struct link_params *params, struct link_vars *vars,
+ static int bnx2x_link_initialize(struct link_params *params,
+ 				 struct link_vars *vars)
  {
--	int err_code = 0;
- 	unsigned char buffer[1];
- 
- 	PDEBUG(DBG_IRQ, "");
- 	usbvision->request_intra = 1;
- 	buffer[0] = 1;
- 	usbvision_write_reg_irq(usbvision, USBVISION_FORCE_INTRA, buffer, 1);
--	return err_code;
+-	int rc = 0;
+ 	u8 phy_index, non_ext_phy;
+ 	struct bnx2x *bp = params->bp;
+ 	/* In case of external phy existence, the line speed would be the
+@@ -6546,7 +6544,7 @@ static int bnx2x_link_initialize(struct link_params *params,
+ 			NIG_STATUS_XGXS0_LINK_STATUS |
+ 			NIG_STATUS_SERDES0_LINK_STATUS |
+ 			NIG_MASK_MI_INT));
+-	return rc;
 +	return 0;
  }
  
- static int usbvision_unrequest_intra(struct usb_usbvision *usbvision)
- {
--	int err_code = 0;
- 	unsigned char buffer[1];
- 
- 	PDEBUG(DBG_IRQ, "");
- 	usbvision->request_intra = 0;
- 	buffer[0] = 0;
- 	usbvision_write_reg_irq(usbvision, USBVISION_FORCE_INTRA, buffer, 1);
--	return err_code;
-+	return 0;
- }
- 
- /*******************************
+ static void bnx2x_int_link_reset(struct bnx2x_phy *phy,
 
