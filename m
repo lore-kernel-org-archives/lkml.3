@@ -1,188 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935142AbaEaDCW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 23:02:22 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:62020 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932649AbaEaDCV (ORCPT
+	id S934899AbaEaDIp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 23:08:45 -0400
+Received: from mail-qg0-f44.google.com ([209.85.192.44]:55985 "EHLO
+	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755805AbaEaDIn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 23:02:21 -0400
-X-Nat-Received: from [202.181.97.72]:50391 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1401505339.24970
-To: konrad.wilk@oracle.com
-Cc: dchinner@redhat.com, airlied@linux.ie, glommer@openvz.org, mgorman@suse.de,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, penguin-kernel@I-love.SAKURA.ne.jp
-Subject: [PATCH 5/5] gpu/drm/ttm: Pass GFP flags in order to avoid deadlock.
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-References: <20140530160824.GD3621@localhost.localdomain>
-	<201405311158.DGE64002.QLOOHJSFFMVFOt@I-love.SAKURA.ne.jp>
-	<201405311159.CHG64048.SOFLQHVtFOMFJO@I-love.SAKURA.ne.jp>
-	<201405311200.III57894.MLFOOFStQVHJFO@I-love.SAKURA.ne.jp>
-	<201405311201.FEG92893.FQSJOFFVOLOtHM@I-love.SAKURA.ne.jp>
-In-Reply-To: <201405311201.FEG92893.FQSJOFFVOLOtHM@I-love.SAKURA.ne.jp>
-Message-Id: <201405311202.FJB95834.FOVtMQSFOLJFHO@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Sat, 31 May 2014 12:02:19 +0900
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 30052014 #8090611, status: clean
+	Fri, 30 May 2014 23:08:43 -0400
+MIME-Version: 1.0
+X-Originating-IP: [173.13.129.225]
+In-Reply-To: <20140530235720.GA27752@kroah.com>
+References: <alpine.DEB.2.00.1405301138220.5291@galak-ubuntu.qualcomm.com>
+	<20140530235720.GA27752@kroah.com>
+Date: Fri, 30 May 2014 20:08:42 -0700
+Message-ID: <CAOesGMjhFLD=Rkz0SqSav9qfAzWBCXLf03b=5=xj0uZzz6KwdQ@mail.gmail.com>
+Subject: Re: [GIT PULL] qcom driver changes for v3.16-2
+From: Olof Johansson <olof@lixom.net>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Kumar Gala <galak@codeaurora.org>, "arm@kernel.org" <arm@kernel.org>,
+        Kevin Hilman <khilman@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Brown <davidb@codeaurora.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Andy Gross <agross@codeaurora.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 357d4ba36284eee4c2a99085450a9039735767c6 Mon Sep 17 00:00:00 2001
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Date: Sat, 31 May 2014 10:22:17 +0900
-Subject: [PATCH 5/5] gpu/drm/ttm: Pass GFP flags in order to avoid deadlock.
+On Fri, May 30, 2014 at 4:57 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Fri, May 30, 2014 at 11:41:01AM -0500, Kumar Gala wrote:
+>> The following changes since commit 5d144e36b7c51612922fa05d37ff3a869261cc82:
+>>
+>>   soc: qcom: Add GSBI driver (2014-05-23 11:38:04 -0500)
+>>
+>> are available in the git repository at:
+>>
+>>   git://git.kernel.org/pub/scm/linux/kernel/git/galak/linux-qcom.git tags/qcom-drivers-for-3.16-2
+>>
+>> for you to fetch changes up to 31964ffebbb958c6cf289c7c12edd7530d6221b9:
+>>
+>>   tty: serial: msm: Remove direct access to GSBI (2014-05-29 11:06:20 -0500)
+>>
+>> ----------------------------------------------------------------
+>> Qualcomm ARM Based driver Updates for v3.16-2
+>>
+>> * Updated MSM uart driver to not access GSBI control registers
+>>
+>> ----------------------------------------------------------------
+>> Andy Gross (1):
+>>       tty: serial: msm: Remove direct access to GSBI
+>>
+>>  drivers/tty/serial/msm_serial.c | 48 ++---------------------------------------
+>>  drivers/tty/serial/msm_serial.h |  5 -----
+>>  2 files changed, 2 insertions(+), 51 deletions(-)
+>
+> Do you want me to take these in the tty tree?  Or are they going to go
+> through the arm tree(s) for other reasons (dependancies)?
 
-Commit 7dc19d5a "drivers: convert shrinkers to new count/scan API" added
-deadlock warnings that ttm_page_pool_free() and ttm_dma_page_pool_free()
-are currently doing GFP_KERNEL allocation.
+In the other thread about this patch
+(http://marc.info/?l=linux-kernel&m=140137951814522&w=2), he claimed:
 
-But these functions did not get updated to receive gfp_t argument.
-This patch explicitly passes sc->gfp_mask or GFP_KERNEL to these functions,
-and removes the deadlock warning.
+"I’ll send it via arm-soc as the related patches are going via that path."
 
-Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Cc: stable <stable@kernel.org> [2.6.35+]
----
- drivers/gpu/drm/ttm/ttm_page_alloc.c     |   19 ++++++++++---------
- drivers/gpu/drm/ttm/ttm_page_alloc_dma.c |   19 +++++++++----------
- 2 files changed, 19 insertions(+), 19 deletions(-)
+I'm not fussed either way. I haven't touched these branches yet.
 
-diff --git a/drivers/gpu/drm/ttm/ttm_page_alloc.c b/drivers/gpu/drm/ttm/ttm_page_alloc.c
-index deba59b..cf4bad2 100644
---- a/drivers/gpu/drm/ttm/ttm_page_alloc.c
-+++ b/drivers/gpu/drm/ttm/ttm_page_alloc.c
-@@ -297,8 +297,10 @@ static void ttm_pool_update_free_locked(struct ttm_page_pool *pool,
-  *
-  * @pool: to free the pages from
-  * @free_all: If set to true will free all pages in pool
-+ * @gfp: GFP flags.
-  **/
--static int ttm_page_pool_free(struct ttm_page_pool *pool, unsigned nr_free)
-+static int ttm_page_pool_free(struct ttm_page_pool *pool, unsigned nr_free,
-+			      gfp_t gfp)
- {
- 	unsigned long irq_flags;
- 	struct page *p;
-@@ -309,8 +311,7 @@ static int ttm_page_pool_free(struct ttm_page_pool *pool, unsigned nr_free)
- 	if (NUM_PAGES_TO_ALLOC < nr_free)
- 		npages_to_free = NUM_PAGES_TO_ALLOC;
- 
--	pages_to_free = kmalloc(npages_to_free * sizeof(struct page *),
--			GFP_KERNEL);
-+	pages_to_free = kmalloc(npages_to_free * sizeof(struct page *), gfp);
- 	if (!pages_to_free) {
- 		pr_err("Failed to allocate memory for pool free operation\n");
- 		return 0;
-@@ -382,9 +383,7 @@ out:
-  *
-  * XXX: (dchinner) Deadlock warning!
-  *
-- * ttm_page_pool_free() does memory allocation using GFP_KERNEL.  that means
-- * this can deadlock when called a sc->gfp_mask that is not equal to
-- * GFP_KERNEL.
-+ * We need to pass sc->gfp_mask to ttm_page_pool_free().
-  *
-  * This code is crying out for a shrinker per pool....
-  */
-@@ -408,7 +407,8 @@ ttm_pool_shrink_scan(struct shrinker *shrink, struct shrink_control *sc)
- 		if (shrink_pages == 0)
- 			break;
- 		pool = &_manager->pools[(i + pool_offset)%NUM_POOLS];
--		shrink_pages = ttm_page_pool_free(pool, nr_free);
-+		shrink_pages = ttm_page_pool_free(pool, nr_free,
-+						  sc->gfp_mask);
- 		freed += nr_free - shrink_pages;
- 	}
- 	mutex_unlock(&lock);
-@@ -710,7 +710,7 @@ static void ttm_put_pages(struct page **pages, unsigned npages, int flags,
- 	}
- 	spin_unlock_irqrestore(&pool->lock, irq_flags);
- 	if (npages)
--		ttm_page_pool_free(pool, npages);
-+		ttm_page_pool_free(pool, npages, GFP_KERNEL);
- }
- 
- /*
-@@ -850,7 +850,8 @@ void ttm_page_alloc_fini(void)
- 	ttm_pool_mm_shrink_fini(_manager);
- 
- 	for (i = 0; i < NUM_POOLS; ++i)
--		ttm_page_pool_free(&_manager->pools[i], FREE_ALL_PAGES);
-+		ttm_page_pool_free(&_manager->pools[i], FREE_ALL_PAGES,
-+				   GFP_KERNEL);
- 
- 	kobject_put(&_manager->kobj);
- 	_manager = NULL;
-diff --git a/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c b/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
-index 620da39..d008cf4 100644
---- a/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
-+++ b/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
-@@ -411,8 +411,10 @@ static void ttm_dma_page_put(struct dma_pool *pool, struct dma_page *d_page)
-  *
-  * @pool: to free the pages from
-  * @nr_free: If set to true will free all pages in pool
-+ * @gfp: GFP flags.
-  **/
--static unsigned ttm_dma_page_pool_free(struct dma_pool *pool, unsigned nr_free)
-+static unsigned ttm_dma_page_pool_free(struct dma_pool *pool, unsigned nr_free,
-+				       gfp_t gfp)
- {
- 	unsigned long irq_flags;
- 	struct dma_page *dma_p, *tmp;
-@@ -430,8 +432,7 @@ static unsigned ttm_dma_page_pool_free(struct dma_pool *pool, unsigned nr_free)
- 			 npages_to_free, nr_free);
- 	}
- #endif
--	pages_to_free = kmalloc(npages_to_free * sizeof(struct page *),
--			GFP_KERNEL);
-+	pages_to_free = kmalloc(npages_to_free * sizeof(struct page *), gfp);
- 
- 	if (!pages_to_free) {
- 		pr_err("%s: Failed to allocate memory for pool free operation\n",
-@@ -530,7 +531,7 @@ static void ttm_dma_free_pool(struct device *dev, enum pool_type type)
- 		if (pool->type != type)
- 			continue;
- 		/* Takes a spinlock.. */
--		ttm_dma_page_pool_free(pool, FREE_ALL_PAGES);
-+		ttm_dma_page_pool_free(pool, FREE_ALL_PAGES, GFP_KERNEL);
- 		WARN_ON(((pool->npages_in_use + pool->npages_free) != 0));
- 		/* This code path is called after _all_ references to the
- 		 * struct device has been dropped - so nobody should be
-@@ -983,7 +984,7 @@ void ttm_dma_unpopulate(struct ttm_dma_tt *ttm_dma, struct device *dev)
- 
- 	/* shrink pool if necessary (only on !is_cached pools)*/
- 	if (npages)
--		ttm_dma_page_pool_free(pool, npages);
-+		ttm_dma_page_pool_free(pool, npages, GFP_KERNEL);
- 	ttm->state = tt_unpopulated;
- }
- EXPORT_SYMBOL_GPL(ttm_dma_unpopulate);
-@@ -993,10 +994,7 @@ EXPORT_SYMBOL_GPL(ttm_dma_unpopulate);
-  *
-  * XXX: (dchinner) Deadlock warning!
-  *
-- * ttm_dma_page_pool_free() does GFP_KERNEL memory allocation, and so attention
-- * needs to be paid to sc->gfp_mask to determine if this can be done or not.
-- * GFP_KERNEL memory allocation in a GFP_ATOMIC reclaim context woul dbe really
-- * bad.
-+ * We need to pass sc->gfp_mask to ttm_dma_page_pool_free().
-  *
-  * I'm getting sadder as I hear more pathetical whimpers about needing per-pool
-  * shrinkers
-@@ -1030,7 +1028,8 @@ ttm_dma_pool_shrink_scan(struct shrinker *shrink, struct shrink_control *sc)
- 		if (++idx < pool_offset)
- 			continue;
- 		nr_free = shrink_pages;
--		shrink_pages = ttm_dma_page_pool_free(p->pool, nr_free);
-+		shrink_pages = ttm_dma_page_pool_free(p->pool, nr_free,
-+						      sc->gfp_mask);
- 		freed += nr_free - shrink_pages;
- 
- 		pr_debug("%s: (%s:%d) Asked to shrink %d, have %d more to go\n",
--- 
-1.7.1
+
+-Olof
