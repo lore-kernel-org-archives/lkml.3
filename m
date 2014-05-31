@@ -1,42 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934970AbaEaAMX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 May 2014 20:12:23 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:48303 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755519AbaEaAMW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 May 2014 20:12:22 -0400
-Message-ID: <53891E3F.7060508@oracle.com>
-Date: Fri, 30 May 2014 20:11:43 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S934984AbaEaAPT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 May 2014 20:15:19 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:49388 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932699AbaEaAPR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 May 2014 20:15:17 -0400
+Message-ID: <53891F02.50702@zytor.com>
+Date: Fri, 30 May 2014 17:14:58 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Jan Kara <jack@suse.cz>, Jet Chen <jet.chen@intel.com>
-CC: Fengguang Wu <fengguang.wu@intel.com>, Yuanhan Liu <yuanhan.liu@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [prink]  BUG: spinlock lockup suspected on CPU#0, swapper/1
-References: <538808FD.3060707@intel.com> <20140530155051.GD2419@quack.suse.cz> <20140530161647.GD11096@twins.programming.kicks-ass.net> <20140530161948.GZ13658@twins.programming.kicks-ass.net> <20140530165810.GE2419@quack.suse.cz> <20140530172327.GF2419@quack.suse.cz> <20140530172420.GA28291@quack.suse.cz>
-In-Reply-To: <20140530172420.GA28291@quack.suse.cz>
+To: Andy Lutomirski <luto@amacapital.net>
+CC: Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Josh Boyer <jwboyer@fedoraproject.org>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
+Subject: Re: [PATCH v2 2/2] x86,vdso: Fix cross-compilation from big-endian
+ architectures
+References: <CALCETrXef77JLoEp5hCXSdMAk7usWsL-sUG6NrcgLgrz3krfag@mail.gmail.com> <cover.1401464755.git.luto@amacapital.net> <2cf258df123cb24bad63c274c8563c050547d99d.1401464755.git.luto@amacapital.net> <5388E3EF.6030700@zytor.com> <CALCETrVvR3SaYX7jvoX_q7m=HSzt1xvrDurrOpm2XT5SG3JVqw@mail.gmail.com> <5388E83A.5000500@zytor.com> <CALCETrWgfRiknJTQtDSAavF1695NDy-h-DW1big+65-HmEOtwg@mail.gmail.com>
+In-Reply-To: <CALCETrWgfRiknJTQtDSAavF1695NDy-h-DW1big+65-HmEOtwg@mail.gmail.com>
 X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/30/2014 01:24 PM, Jan Kara wrote:
->   Now with the attachment... :)
+On 05/30/2014 01:34 PM, Andy Lutomirski wrote:
+>>
+>> GET_LE() then?
+> 
+> Sounds good.
+> 
+> Are you planning on writing the patch?
+> 
+> I think my v2 is good -- the only diff I could find in my image.c
+> files and Stephen's was in the alt_xyz output, and I think I fixed
+> that in v2.
+> 
 
-Jan, I suspect that the issue Jet has reported is different from mine.
+Build testing one now.
 
-Your patch (or even removing all of print_PIC() didn't solve the issue
-I've reported.
+	-hpa
 
-
-Thanks,
-Sasha
