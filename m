@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757745AbaFAMTp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jun 2014 08:19:45 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:56940 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757715AbaFAMTn (ORCPT
+	id S1757788AbaFAMTw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jun 2014 08:19:52 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:35599 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757755AbaFAMTu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jun 2014 08:19:43 -0400
+	Sun, 1 Jun 2014 08:19:50 -0400
 From: navin patidar <navin.patidar@gmail.com>
 To: gregkh@linuxfoundation.org
 Cc: Larry.Finger@lwfinger.net, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org, navin patidar <navin.patidar@gmail.com>
-Subject: [PATCH 18/26] staging: rtl8188eu: Remove DriverState from struct adapter
-Date: Sun,  1 Jun 2014 17:46:44 +0530
-Message-Id: <1401625013-11208-18-git-send-email-navin.patidar@gmail.com>
+Subject: [PATCH 19/26] staging: rtl8188eu: Remove unused function rtl8188e_clone_haldata()
+Date: Sun,  1 Jun 2014 17:46:45 +0530
+Message-Id: <1401625013-11208-19-git-send-email-navin.patidar@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1401625013-11208-1-git-send-email-navin.patidar@gmail.com>
 References: <1401625013-11208-1-git-send-email-navin.patidar@gmail.com>
@@ -24,22 +24,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: navin patidar <navin.patidar@gmail.com>
 ---
- drivers/staging/rtl8188eu/include/drv_types.h |    2 --
- 1 file changed, 2 deletions(-)
+ drivers/staging/rtl8188eu/hal/rtl8188e_hal_init.c |    5 -----
+ drivers/staging/rtl8188eu/include/rtl8188e_hal.h  |    1 -
+ 2 files changed, 6 deletions(-)
 
-diff --git a/drivers/staging/rtl8188eu/include/drv_types.h b/drivers/staging/rtl8188eu/include/drv_types.h
-index 5fa2e17..de3b70c 100644
---- a/drivers/staging/rtl8188eu/include/drv_types.h
-+++ b/drivers/staging/rtl8188eu/include/drv_types.h
-@@ -188,8 +188,6 @@ static inline struct device *dvobj_to_dev(struct dvobj_priv *dvobj)
- };
+diff --git a/drivers/staging/rtl8188eu/hal/rtl8188e_hal_init.c b/drivers/staging/rtl8188eu/hal/rtl8188e_hal_init.c
+index 6a9c8e2..208b373 100644
+--- a/drivers/staging/rtl8188eu/hal/rtl8188e_hal_init.c
++++ b/drivers/staging/rtl8188eu/hal/rtl8188e_hal_init.c
+@@ -1815,11 +1815,6 @@ static void rtl8188e_SetHalODMVar(struct adapter *Adapter, enum hal_odm_variable
+ 	}
+ }
  
- struct adapter {
--	int	DriverState;/* for disable driver using module, use dongle toi
--			     * replace module. */
- 	int	pid[3];/* process id from UI, 0:wps, 1:hostapd, 2:dhcpcd */
- 	int	bDongle;/* build-in module or external dongle */
- 	u16	chip_type;
+-void rtl8188e_clone_haldata(struct adapter *dst_adapter, struct adapter *src_adapter)
+-{
+-	memcpy(dst_adapter->HalData, src_adapter->HalData, dst_adapter->hal_data_sz);
+-}
+-
+ void rtl8188e_start_thread(struct adapter *padapter)
+ {
+ }
+diff --git a/drivers/staging/rtl8188eu/include/rtl8188e_hal.h b/drivers/staging/rtl8188eu/include/rtl8188e_hal.h
+index c7fef7a..4b59c8e 100644
+--- a/drivers/staging/rtl8188eu/include/rtl8188e_hal.h
++++ b/drivers/staging/rtl8188eu/include/rtl8188e_hal.h
+@@ -463,7 +463,6 @@ void rtl8188e_set_hal_ops(struct hal_ops *pHalFunc);
+ /*  register */
+ void SetBcnCtrlReg(struct adapter *padapter, u8 SetBits, u8 ClearBits);
+ 
+-void rtl8188e_clone_haldata(struct adapter *dst, struct adapter *src);
+ void rtl8188e_start_thread(struct adapter *padapter);
+ void rtl8188e_stop_thread(struct adapter *padapter);
+ 
 -- 
 1.7.10.4
 
