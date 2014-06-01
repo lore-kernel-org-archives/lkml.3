@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757558AbaFANcJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jun 2014 09:32:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48346 "EHLO mx1.redhat.com"
+	id S1758093AbaFANge (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jun 2014 09:36:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4142 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752145AbaFANcD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jun 2014 09:32:03 -0400
+	id S1757546AbaFANcI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Jun 2014 09:32:08 -0400
 From: Jiri Olsa <jolsa@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@kernel.org>
-Subject: [PATCH 10/27] perf ui/hist: Add support to accumulated hist stat
-Date: Sun,  1 Jun 2014 15:31:21 +0200
-Message-Id: <1401629498-8726-11-git-send-email-jolsa@kernel.org>
+Subject: [PATCH 14/27] perf tools: Add more hpp helper functions
+Date: Sun,  1 Jun 2014 15:31:25 +0200
+Message-Id: <1401629498-8726-15-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1401629498-8726-1-git-send-email-jolsa@kernel.org>
 References: <1401629498-8726-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -21,251 +21,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung@kernel.org>
 
-Print accumulated stat of a hist entry if requested.
-
-To do that, add new HPP_PERCENT_ACC_FNS macro and generate a
-perf_hpp_fmt using it.  The __hpp__sort_acc() function sorts entries
-by accumulated period value.  When accumulated periods of two entries
-are same (i.e. single path callchain) put the caller above since
-accumulation tends to put callers on higher position for obvious
-reason.
-
-Also add "overhead_children" output field to be selected by user.
+Sometimes it needs to disable some columns at runtime.  Add help
+functions to support that.
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 Tested-by: Arun Sharma <asharma@fb.com>
 Tested-by: Rodrigo Campos <rodrigo@sdfg.com.ar>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Link: http://lkml.kernel.org/r/1401335910-16832-11-git-send-email-namhyung@kernel.org
+Link: http://lkml.kernel.org/r/1401335910-16832-15-git-send-email-namhyung@kernel.org
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/ui/hist.c   | 99 ++++++++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/hist.h |  4 ++
- tools/perf/util/sort.c |  1 +
- 3 files changed, 104 insertions(+)
+ tools/perf/ui/hist.c   | 17 +++++++++++++++++
+ tools/perf/util/hist.h |  4 ++++
+ 2 files changed, 21 insertions(+)
 
 diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
-index 4484f5b..0ce3e79 100644
+index 0ce3e79..8ca6387 100644
 --- a/tools/perf/ui/hist.c
 +++ b/tools/perf/ui/hist.c
-@@ -104,6 +104,18 @@ int __hpp__fmt(struct perf_hpp *hpp, struct hist_entry *he,
- 	return ret;
+@@ -489,6 +489,11 @@ void perf_hpp__column_register(struct perf_hpp_fmt *format)
+ 	list_add_tail(&format->list, &perf_hpp__list);
  }
  
-+int __hpp__fmt_acc(struct perf_hpp *hpp, struct hist_entry *he,
-+		   hpp_field_fn get_field, const char *fmt,
-+		   hpp_snprint_fn print_fn, bool fmt_percent)
++void perf_hpp__column_unregister(struct perf_hpp_fmt *format)
 +{
-+	if (!symbol_conf.cumulate_callchain) {
-+		return snprintf(hpp->buf, hpp->size, "%*s",
-+				fmt_percent ? 8 : 12, "N/A");
-+	}
-+
-+	return __hpp__fmt(hpp, he, get_field, fmt, print_fn, fmt_percent);
++	list_del(&format->list);
 +}
 +
- static int field_cmp(u64 field_a, u64 field_b)
+ void perf_hpp__register_sort_field(struct perf_hpp_fmt *format)
  {
- 	if (field_a > field_b)
-@@ -160,6 +172,24 @@ out:
- 	return ret;
+ 	list_add_tail(&format->sort_list, &perf_hpp__sort_list);
+@@ -500,6 +505,18 @@ void perf_hpp__column_enable(unsigned col)
+ 	perf_hpp__column_register(&perf_hpp__format[col]);
  }
  
-+static int __hpp__sort_acc(struct hist_entry *a, struct hist_entry *b,
-+			   hpp_field_fn get_field)
++void perf_hpp__column_disable(unsigned col)
 +{
-+	s64 ret = 0;
-+
-+	if (symbol_conf.cumulate_callchain) {
-+		/*
-+		 * Put caller above callee when they have equal period.
-+		 */
-+		ret = field_cmp(get_field(a), get_field(b));
-+		if (ret)
-+			return ret;
-+
-+		ret = b->callchain->max_depth - a->callchain->max_depth;
-+	}
-+	return ret;
++	BUG_ON(col >= PERF_HPP__MAX_INDEX);
++	perf_hpp__column_unregister(&perf_hpp__format[col]);
 +}
 +
- #define __HPP_HEADER_FN(_type, _str, _min_width, _unit_width) 		\
- static int hpp__header_##_type(struct perf_hpp_fmt *fmt __maybe_unused,	\
- 			       struct perf_hpp *hpp,			\
-@@ -242,6 +272,34 @@ static int64_t hpp__sort_##_type(struct hist_entry *a, struct hist_entry *b)	\
- 	return __hpp__sort(a, b, he_get_##_field);				\
- }
- 
-+#define __HPP_COLOR_ACC_PERCENT_FN(_type, _field)				\
-+static u64 he_get_acc_##_field(struct hist_entry *he)				\
-+{										\
-+	return he->stat_acc->_field;						\
-+}										\
-+										\
-+static int hpp__color_##_type(struct perf_hpp_fmt *fmt __maybe_unused,		\
-+			      struct perf_hpp *hpp, struct hist_entry *he) 	\
-+{										\
-+	return __hpp__fmt_acc(hpp, he, he_get_acc_##_field, " %6.2f%%",		\
-+			      hpp_color_scnprintf, true);			\
++void perf_hpp__cancel_cumulate(void)
++{
++	perf_hpp__column_disable(PERF_HPP__OVERHEAD_ACC);
++	perf_hpp__format[PERF_HPP__OVERHEAD].header = hpp__header_overhead;
 +}
 +
-+#define __HPP_ENTRY_ACC_PERCENT_FN(_type, _field)				\
-+static int hpp__entry_##_type(struct perf_hpp_fmt *_fmt __maybe_unused,		\
-+			      struct perf_hpp *hpp, struct hist_entry *he) 	\
-+{										\
-+	const char *fmt = symbol_conf.field_sep ? " %.2f" : " %6.2f%%";		\
-+	return __hpp__fmt_acc(hpp, he, he_get_acc_##_field, fmt,		\
-+			      hpp_entry_scnprintf, true);			\
-+}
-+
-+#define __HPP_SORT_ACC_FN(_type, _field)					\
-+static int64_t hpp__sort_##_type(struct hist_entry *a, struct hist_entry *b)	\
-+{										\
-+	return __hpp__sort_acc(a, b, he_get_acc_##_field);			\
-+}
-+
- #define __HPP_ENTRY_RAW_FN(_type, _field)					\
- static u64 he_get_raw_##_field(struct hist_entry *he)				\
- {										\
-@@ -270,18 +328,27 @@ __HPP_COLOR_PERCENT_FN(_type, _field)					\
- __HPP_ENTRY_PERCENT_FN(_type, _field)					\
- __HPP_SORT_FN(_type, _field)
- 
-+#define HPP_PERCENT_ACC_FNS(_type, _str, _field, _min_width, _unit_width)\
-+__HPP_HEADER_FN(_type, _str, _min_width, _unit_width)			\
-+__HPP_WIDTH_FN(_type, _min_width, _unit_width)				\
-+__HPP_COLOR_ACC_PERCENT_FN(_type, _field)				\
-+__HPP_ENTRY_ACC_PERCENT_FN(_type, _field)				\
-+__HPP_SORT_ACC_FN(_type, _field)
-+
- #define HPP_RAW_FNS(_type, _str, _field, _min_width, _unit_width)	\
- __HPP_HEADER_FN(_type, _str, _min_width, _unit_width)			\
- __HPP_WIDTH_FN(_type, _min_width, _unit_width)				\
- __HPP_ENTRY_RAW_FN(_type, _field)					\
- __HPP_SORT_RAW_FN(_type, _field)
- 
-+__HPP_HEADER_FN(overhead_self, "Self", 8, 8)
- 
- HPP_PERCENT_FNS(overhead, "Overhead", period, 8, 8)
- HPP_PERCENT_FNS(overhead_sys, "sys", period_sys, 8, 8)
- HPP_PERCENT_FNS(overhead_us, "usr", period_us, 8, 8)
- HPP_PERCENT_FNS(overhead_guest_sys, "guest sys", period_guest_sys, 9, 8)
- HPP_PERCENT_FNS(overhead_guest_us, "guest usr", period_guest_us, 9, 8)
-+HPP_PERCENT_ACC_FNS(overhead_acc, "Children", period, 8, 8)
- 
- HPP_RAW_FNS(samples, "Samples", nr_events, 12, 12)
- HPP_RAW_FNS(period, "Period", period, 12, 12)
-@@ -303,6 +370,17 @@ static int64_t hpp__nop_cmp(struct hist_entry *a __maybe_unused,
- 		.sort	= hpp__sort_ ## _name,		\
- 	}
- 
-+#define HPP__COLOR_ACC_PRINT_FNS(_name)			\
-+	{						\
-+		.header	= hpp__header_ ## _name,	\
-+		.width	= hpp__width_ ## _name,		\
-+		.color	= hpp__color_ ## _name,		\
-+		.entry	= hpp__entry_ ## _name,		\
-+		.cmp	= hpp__nop_cmp,			\
-+		.collapse = hpp__nop_cmp,		\
-+		.sort	= hpp__sort_ ## _name,		\
-+	}
-+
- #define HPP__PRINT_FNS(_name)				\
- 	{						\
- 		.header	= hpp__header_ ## _name,	\
-@@ -319,6 +397,7 @@ struct perf_hpp_fmt perf_hpp__format[] = {
- 	HPP__COLOR_PRINT_FNS(overhead_us),
- 	HPP__COLOR_PRINT_FNS(overhead_guest_sys),
- 	HPP__COLOR_PRINT_FNS(overhead_guest_us),
-+	HPP__COLOR_ACC_PRINT_FNS(overhead_acc),
- 	HPP__PRINT_FNS(samples),
- 	HPP__PRINT_FNS(period)
- };
-@@ -328,16 +407,23 @@ LIST_HEAD(perf_hpp__sort_list);
- 
- 
- #undef HPP__COLOR_PRINT_FNS
-+#undef HPP__COLOR_ACC_PRINT_FNS
- #undef HPP__PRINT_FNS
- 
- #undef HPP_PERCENT_FNS
-+#undef HPP_PERCENT_ACC_FNS
- #undef HPP_RAW_FNS
- 
- #undef __HPP_HEADER_FN
- #undef __HPP_WIDTH_FN
- #undef __HPP_COLOR_PERCENT_FN
- #undef __HPP_ENTRY_PERCENT_FN
-+#undef __HPP_COLOR_ACC_PERCENT_FN
-+#undef __HPP_ENTRY_ACC_PERCENT_FN
- #undef __HPP_ENTRY_RAW_FN
-+#undef __HPP_SORT_FN
-+#undef __HPP_SORT_ACC_FN
-+#undef __HPP_SORT_RAW_FN
- 
- 
- void perf_hpp__init(void)
-@@ -361,6 +447,13 @@ void perf_hpp__init(void)
- 	if (field_order)
- 		return;
- 
-+	if (symbol_conf.cumulate_callchain) {
-+		perf_hpp__column_enable(PERF_HPP__OVERHEAD_ACC);
-+
-+		perf_hpp__format[PERF_HPP__OVERHEAD].header =
-+						hpp__header_overhead_self;
-+	}
-+
- 	perf_hpp__column_enable(PERF_HPP__OVERHEAD);
- 
- 	if (symbol_conf.show_cpu_utilization) {
-@@ -383,6 +476,12 @@ void perf_hpp__init(void)
- 	list = &perf_hpp__format[PERF_HPP__OVERHEAD].sort_list;
- 	if (list_empty(list))
- 		list_add(list, &perf_hpp__sort_list);
-+
-+	if (symbol_conf.cumulate_callchain) {
-+		list = &perf_hpp__format[PERF_HPP__OVERHEAD_ACC].sort_list;
-+		if (list_empty(list))
-+			list_add(list, &perf_hpp__sort_list);
-+	}
- }
- 
- void perf_hpp__column_register(struct perf_hpp_fmt *format)
+ void perf_hpp__setup_output_field(void)
+ {
+ 	struct perf_hpp_fmt *fmt;
 diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index 78409f9..efd73e4 100644
+index efd73e4..99ad3cb 100644
 --- a/tools/perf/util/hist.h
 +++ b/tools/perf/util/hist.h
-@@ -228,6 +228,7 @@ enum {
- 	PERF_HPP__OVERHEAD_US,
- 	PERF_HPP__OVERHEAD_GUEST_SYS,
- 	PERF_HPP__OVERHEAD_GUEST_US,
-+	PERF_HPP__OVERHEAD_ACC,
- 	PERF_HPP__SAMPLES,
- 	PERF_HPP__PERIOD,
+@@ -237,7 +237,11 @@ enum {
  
-@@ -254,6 +255,9 @@ typedef int (*hpp_snprint_fn)(struct perf_hpp *hpp, const char *fmt, ...);
- int __hpp__fmt(struct perf_hpp *hpp, struct hist_entry *he,
- 	       hpp_field_fn get_field, const char *fmt,
- 	       hpp_snprint_fn print_fn, bool fmt_percent);
-+int __hpp__fmt_acc(struct perf_hpp *hpp, struct hist_entry *he,
-+		   hpp_field_fn get_field, const char *fmt,
-+		   hpp_snprint_fn print_fn, bool fmt_percent);
- 
- static inline void advance_hpp(struct perf_hpp *hpp, int inc)
- {
-diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index 901b9be..9da8931 100644
---- a/tools/perf/util/sort.c
-+++ b/tools/perf/util/sort.c
-@@ -1061,6 +1061,7 @@ static struct hpp_dimension hpp_sort_dimensions[] = {
- 	DIM(PERF_HPP__OVERHEAD_US, "overhead_us"),
- 	DIM(PERF_HPP__OVERHEAD_GUEST_SYS, "overhead_guest_sys"),
- 	DIM(PERF_HPP__OVERHEAD_GUEST_US, "overhead_guest_us"),
-+	DIM(PERF_HPP__OVERHEAD_ACC, "overhead_children"),
- 	DIM(PERF_HPP__SAMPLES, "sample"),
- 	DIM(PERF_HPP__PERIOD, "period"),
- };
+ void perf_hpp__init(void);
+ void perf_hpp__column_register(struct perf_hpp_fmt *format);
++void perf_hpp__column_unregister(struct perf_hpp_fmt *format);
+ void perf_hpp__column_enable(unsigned col);
++void perf_hpp__column_disable(unsigned col);
++void perf_hpp__cancel_cumulate(void);
++
+ void perf_hpp__register_sort_field(struct perf_hpp_fmt *format);
+ void perf_hpp__setup_output_field(void);
+ void perf_hpp__reset_output_field(void);
 -- 
 1.8.3.1
 
