@@ -1,88 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753161AbaFATJ2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jun 2014 15:09:28 -0400
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:50555 "EHLO
-	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752340AbaFATJ0 (ORCPT
+	id S1752863AbaFATUg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jun 2014 15:20:36 -0400
+Received: from casper.infradead.org ([85.118.1.10]:33396 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751507AbaFATUf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jun 2014 15:09:26 -0400
-Message-ID: <538B7A64.1000306@cogentembedded.com>
-Date: Sun, 01 Jun 2014 23:09:24 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Sun, 1 Jun 2014 15:20:35 -0400
+Date: Sun, 1 Jun 2014 21:20:26 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mikulas Patocka <mpatocka@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, jejb@parisc-linux.org,
+        deller@gmx.de, John David Anglin <dave.anglin@bell.net>,
+        linux-parisc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        chegu_vinod@hp.com, paulmck@linux.vnet.ibm.com, Waiman.Long@hp.com,
+        tglx@linutronix.de, riel@redhat.com, akpm@linux-foundation.org,
+        davidlohr@hp.com, hpa@zytor.com, andi@firstfloor.org, aswin@hp.com,
+        scott.norton@hp.com, Jason Low <jason.low2@hp.com>
+Subject: Re: [PATCH] fix a race condition in cancelable mcs spinlocks
+Message-ID: <20140601192026.GE16155@laptop.programming.kicks-ass.net>
+References: <alpine.LRH.2.02.1406011342470.20831@file01.intranet.prod.int.rdu2.redhat.com>
 MIME-Version: 1.0
-To: Michael Braun <michael-dev@fami-braun.de>,
-        Ivo van Doorn <IvDoorn@gmail.com>,
-        Helmut Schaa <helmut.schaa@googlemail.com>
-CC: netdev@vger.kernel.org, users@rt2x00.serialmonkey.com,
-        linux-wireless@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] rt2800usb:fix hang during firmware load
-References: <20140601174736.7980.18330.stgit@charlie.fem.tu-ilmenau.de> <20140601175252.7980.64143.stgit@charlie.fem.tu-ilmenau.de>
-In-Reply-To: <20140601175252.7980.64143.stgit@charlie.fem.tu-ilmenau.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LRH.2.02.1406011342470.20831@file01.intranet.prod.int.rdu2.redhat.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/01/2014 09:52 PM, Michael Braun wrote:
+On Sun, Jun 01, 2014 at 01:53:11PM -0400, Mikulas Patocka wrote:
+> PA-RISC doesn't have xchg or cmpxchg atomic instructions like other
+> processors. It only has ldcw and ldcd instructions that load a word (or
+> doubleword) from memory and atomically store zero at the same location.
+> These instructions can only be used to implement spinlocks, direct
+> implementation of other atomic operations is impossible.
+> 
+> Consequently, Linux xchg and cmpxchg functions are implemented in such a
+> way that they hash the address, use the hash to index a spinlock, take the
+> spinlock, perform the xchg or cmpxchg operation non-atomically and drop
+> the spinlock.
+> 
+> If you write to some variable with ACCESS_ONCE and use cmpxchg or xchg at
+> the same time, you break it. ACCESS_ONCE doesn't take the hashed spinlock,
+> so, in this case, cmpxchg or xchg isn't really atomic at all.
 
-> The device 057c:8501 (AVM Fritz! WLAN v2 rev. B) boots into a state that does not actually require loading a firmware file.
+And this is really the first place in the kernel that breaks like this?
+I've been using xchg() and cmpxchg() without such consideration for
+quite a while.
 
-    Wrap the changelog lines on at least 80 chars please.
+Doesn't sparc32 have similarly broken atomic ops?
 
-> The vendors driver finds out about this by checking a firmware state
-> register, so this patch adopts this here.
+Ideally, if we really want to preserve such broken-ness, we'd add some
+debugging infrastructure to detect such nonsense.
 
-> Finally, with this patch applied, my wifi dongle actually becomes
-> usefull (scan + connect to wpa network works).
+> This patch fixes the bug by introducing a new type atomic_pointer_t 
+> (backed by atomic_long_t) and replacing the offending pointer with it. 
+> atomic_long_set takes the hashed spinlock, so it avoids the race 
+> condition.
 
-    s/usefull/useful/.
-
-> Signed-off-by: Michael Braun <michael-dev@fami-braun.de>
-> ---
->   drivers/net/wireless/rt2x00/rt2800usb.c |   14 ++++++++++++--
->   1 file changed, 12 insertions(+), 2 deletions(-)
-
-> diff --git a/drivers/net/wireless/rt2x00/rt2800usb.c b/drivers/net/wireless/rt2x00/rt2800usb.c
-> index b601422..71bf101 100644
-> --- a/drivers/net/wireless/rt2x00/rt2800usb.c
-> +++ b/drivers/net/wireless/rt2x00/rt2800usb.c
-> @@ -240,6 +240,7 @@ static int rt2800usb_write_firmware(struct rt2x00_dev *rt2x00dev,
->   	int status;
->   	u32 offset;
->   	u32 length;
-> +	__le32 fwMode;
->
->   	/*
->   	 * Check which section of the firmware we need.
-> @@ -257,8 +258,17 @@ static int rt2800usb_write_firmware(struct rt2x00_dev *rt2x00dev,
->   	/*
->   	 * Write firmware to device.
->   	 */
-> -	rt2x00usb_register_multiwrite(rt2x00dev, FIRMWARE_IMAGE_BASE,
-> -				      data + offset, length);
-> +	rt2x00usb_vendor_request(rt2x00dev, USB_DEVICE_MODE,
-> +				 USB_VENDOR_REQUEST_IN, 0, 0x11, &fwMode,
-> +				 sizeof(fwMode), REGISTER_TIMEOUT_FIRMWARE);
-> +
-> +	if ((fwMode & 0x00000003) == 2) {
-
-    Same comment as for the patch #1.
-
-> +		rt2x00_info(rt2x00dev,
-> +		      "Firmware loading not required - NIC in AutoRun mode\n");
-
-    This line should start under 'rt2xx00dev', like below.
-
-> +	} else {
-> +		rt2x00usb_register_multiwrite(rt2x00dev, FIRMWARE_IMAGE_BASE,
-> +					      data + offset, length);
-> +	}
-
-WBR, Sergei
+So I hate that twice, once since xchg() and cmpxchg() do not share the
+atomic_ prefix, its inappropriate and misleading here, and secondly,
+non of this is specific to pointers, xchg() and cmpxchg() take any
+(naturally aligned) 'native' size type.
 
