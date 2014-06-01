@@ -1,102 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753288AbaFAUms (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jun 2014 16:42:48 -0400
-Received: from mail-we0-f173.google.com ([74.125.82.173]:43711 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751401AbaFAUmq (ORCPT
+	id S1753404AbaFAUn2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jun 2014 16:43:28 -0400
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:65222 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752766AbaFAUn1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jun 2014 16:42:46 -0400
+	Sun, 1 Jun 2014 16:43:27 -0400
+Date: Mon, 2 Jun 2014 02:13:21 +0530
+From: Himangi Saraogi <himangi774@gmail.com>
+To: Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: julia.lawall@lip6.fr
+Subject: [PATCH] usb: musb/backfin: Introduce the use of the managed version
+ of kzalloc
+Message-ID: <20140601204321.GA29473@himangi-Dell>
 MIME-Version: 1.0
-In-Reply-To: <1401639223-3441-1-git-send-email-matthew.garrett@nebula.com>
-References: <1401639223-3441-1-git-send-email-matthew.garrett@nebula.com>
-From: Andreas Noever <andreas.noever@gmail.com>
-Date: Sun, 1 Jun 2014 22:42:25 +0200
-Message-ID: <CAMxnaaUh0s5A6x=N9VEeHGFkATDsYAtfz3JoLOLYA5jKSVyFwA@mail.gmail.com>
-Subject: Re: [PATCH] Thunderbolt: Add support for Thunderbolt 2 host controllers
-To: Matthew Garrett <matthew.garrett@nebula.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Greg Kroah-Hartman <greg@kroah.com>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 1, 2014 at 6:13 PM, Matthew Garrett
-<matthew.garrett@nebula.com> wrote:
-> Adding extra device IDs is enough to get this working on the second-gen
-> Thunderbolt controller in the Mac Pro.
->
-> Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
-> ---
->  drivers/pci/quirks.c         | 2 ++
->  drivers/thunderbolt/nhi.c    | 5 +++++
->  drivers/thunderbolt/switch.c | 5 ++++-
->  3 files changed, 11 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-> index c3170d4..20e76d0 100644
-> --- a/drivers/pci/quirks.c
-> +++ b/drivers/pci/quirks.c
-> @@ -3083,6 +3083,8 @@ out:
->  }
->  DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_INTEL, 0x1547,
->                                quirk_apple_wait_for_thunderbolt);
-> +DECLARE_PCI_FIXUP_SUSPEND_LATE(PCI_VENDOR_ID_INTEL, 0x156d,
-> +                              quirk_apple_wait_for_thunderbolt);
->  #endif
-Just to check: Did they split up the device ids? Is 0x156d for the
-bridges and 0x156c for the NHI?
+This patch moves data allocated using kzalloc to managed data allocated
+using devm_kzalloc and cleans now unnecessary kfrees in probe and remove
+functions. Also, a label is done away with and err2 and err3 renamed.
 
->
->  static void pci_do_fixups(struct pci_dev *dev, struct pci_fixup *f,
-> diff --git a/drivers/thunderbolt/nhi.c b/drivers/thunderbolt/nhi.c
-> index 6f666fa..85b11d6 100644
-> --- a/drivers/thunderbolt/nhi.c
-> +++ b/drivers/thunderbolt/nhi.c
-> @@ -642,6 +642,11 @@ struct pci_device_id nhi_ids[] = {
->                 .vendor = PCI_VENDOR_ID_INTEL, .device = 0x1547,
->                 .subvendor = 0x2222, .subdevice = 0x1111,
->         },
-> +       {
-> +               .class = PCI_CLASS_SYSTEM_OTHER << 8, .class_mask = ~0,
-> +               .vendor = PCI_VENDOR_ID_INTEL, .device = 0x156c,
-> +               .subvendor = 0x2222, .subdevice = 0x1111,
-> +       },
->         { 0,}
->  };
->
-> diff --git a/drivers/thunderbolt/switch.c b/drivers/thunderbolt/switch.c
-> index 2e19045..1fccdbf 100644
-> --- a/drivers/thunderbolt/switch.c
-> +++ b/drivers/thunderbolt/switch.c
-> @@ -294,8 +294,11 @@ static int tb_plug_events_active(struct tb_switch *sw, bool active)
->
->         if (active) {
->                 data = data & 0xFFFFFF83;
-> -               if (sw->config.device_id == 0x1547)
-> +               switch (sw->config.device_id) {
-> +               case 0x1547:
-> +               case 0x156d:
->                         data |= 4;
-> +               }
->         } else {
->                 data = data | 0x7c;
->         }
-> --
-> 2.0.0
->
+The following Coccinelle semantic patch was used for making the change:
 
-I have had a look at what os x does. They split between:
-1513, 151a, 1549 and 1547, 1548, 1567, 1569, 156b, 156d (the latter
-group gets bit 3 set)
+@platform@
+identifier p, probefn, removefn;
+@@
+struct platform_driver p = {
+  .probe = probefn,
+  .remove = removefn,
+};
 
-It looks like the first 3 are legacy devices, so maybe reverse the check?
+@prb@
+identifier platform.probefn, pdev;
+expression e, e1, e2;
+@@
+probefn(struct platform_device *pdev, ...) {
+  <+...
+- e = kzalloc(e1, e2)
++ e = devm_kzalloc(&pdev->dev, e1, e2)
+  ...
+?-kfree(e);
+  ...+>
+}
 
-So far I could decode:
-1547: cactus ridge (2 and 4 port?)
-1549: ethernet adapter
-156b: 2 port falcon ridge
-156d: 4 port falcon ridge
+@rem depends on prb@
+identifier platform.removefn;
+expression e;
+@@
+removefn(...) {
+  <...
+- kfree(e);
+  ...>
+}
+
+Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+---
+Not compile tested due to incompatible architechture.
+
+why is platform_device_alloc called for allocating musb from within the
+platform driver probe function where presumably the platform device structure
+is already available? I would like to know whether the incoming pdev structure
+is somehow not usable or it is a parent device of the device to be used.
+
+ drivers/usb/musb/blackfin.c | 20 ++++++++------------
+ 1 file changed, 8 insertions(+), 12 deletions(-)
+
+diff --git a/drivers/usb/musb/blackfin.c b/drivers/usb/musb/blackfin.c
+index d40d5f0..ac4422b 100644
+--- a/drivers/usb/musb/blackfin.c
++++ b/drivers/usb/musb/blackfin.c
+@@ -455,7 +455,7 @@ static int bfin_probe(struct platform_device *pdev)
+ 
+ 	int				ret = -ENOMEM;
+ 
+-	glue = kzalloc(sizeof(*glue), GFP_KERNEL);
++	glue = devm_kzalloc(&pdev->dev, sizeof(*glue), GFP_KERNEL);
+ 	if (!glue) {
+ 		dev_err(&pdev->dev, "failed to allocate glue context\n");
+ 		goto err0;
+@@ -464,7 +464,7 @@ static int bfin_probe(struct platform_device *pdev)
+ 	musb = platform_device_alloc("musb-hdrc", PLATFORM_DEVID_AUTO);
+ 	if (!musb) {
+ 		dev_err(&pdev->dev, "failed to allocate musb device\n");
+-		goto err1;
++		goto err0;
+ 	}
+ 
+ 	musb->dev.parent		= &pdev->dev;
+@@ -478,7 +478,7 @@ static int bfin_probe(struct platform_device *pdev)
+ 
+ 	glue->phy = usb_phy_generic_register();
+ 	if (IS_ERR(glue->phy))
+-		goto err2;
++		goto err1;
+ 	platform_set_drvdata(pdev, glue);
+ 
+ 	memset(musb_resources, 0x00, sizeof(*musb_resources) *
+@@ -498,31 +498,28 @@ static int bfin_probe(struct platform_device *pdev)
+ 			ARRAY_SIZE(musb_resources));
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "failed to add resources\n");
+-		goto err3;
++		goto err2;
+ 	}
+ 
+ 	ret = platform_device_add_data(musb, pdata, sizeof(*pdata));
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "failed to add platform_data\n");
+-		goto err3;
++		goto err2;
+ 	}
+ 
+ 	ret = platform_device_add(musb);
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "failed to register musb device\n");
+-		goto err3;
++		goto err2;
+ 	}
+ 
+ 	return 0;
+ 
+-err3:
+-	usb_phy_generic_unregister(glue->phy);
+-
+ err2:
+-	platform_device_put(musb);
++	usb_phy_generic_unregister(glue->phy);
+ 
+ err1:
+-	kfree(glue);
++	platform_device_put(musb);
+ 
+ err0:
+ 	return ret;
+@@ -534,7 +531,6 @@ static int bfin_remove(struct platform_device *pdev)
+ 
+ 	platform_device_unregister(glue->musb);
+ 	usb_phy_generic_unregister(glue->phy);
+-	kfree(glue);
+ 
+ 	return 0;
+ }
+-- 
+1.9.1
+
