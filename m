@@ -1,60 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756971AbaFANHr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jun 2014 09:07:47 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:36162 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752100AbaFANHp (ORCPT
+	id S1757287AbaFANIZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jun 2014 09:08:25 -0400
+Received: from mailrelay008.isp.belgacom.be ([195.238.6.174]:65047 "EHLO
+	mailrelay008.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757187AbaFANIY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jun 2014 09:07:45 -0400
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Nagalakshmi Nandigama <Nagalakshmi.Nandigama@lsi.com>,
-        Sreekanth Reddy <Sreekanth.Reddy@lsi.com>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        support@lsi.com, "James E.J. Bottomley" <JBottomley@parallels.com>,
-        DL-MPTFusionLinux@lsi.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] scsi: mpt3sas: mpt3sas_transport.c:  Cleaning up uninitialized variables
-Date: Sun,  1 Jun 2014 15:08:37 +0200
-Message-Id: <1401628118-17506-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	Sun, 1 Jun 2014 09:08:24 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AlsQAAcli1NXQzKE/2dsb2JhbABYgwerUQQBAQEBAQEGmBuBBxd0glMvI4EaN4hGAdVtF4VViH0dhCoEmgCLG4gSgzo7
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>
+Subject: [PATCH 1/1] drivers/misc/carma/carma-fpga.c: use PTR_ERR_OR_ZERO
+Date: Sun,  1 Jun 2014 15:07:03 +0200
+Message-Id: <1401628023-18888-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a risk that the variable will be used without being initialized.
+replace IS_ERR/PTR_ERR
 
-This was largely found by using a static code analysis program called cppcheck.
-
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: Grant Likely <grant.likely@linaro.org>
+Cc: Rob Herring <robh+dt@kernel.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
 ---
- drivers/scsi/mpt3sas/mpt3sas_transport.c |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+This is untested.
 
-diff --git a/drivers/scsi/mpt3sas/mpt3sas_transport.c b/drivers/scsi/mpt3sas/mpt3sas_transport.c
-index 65170cb..f648dc4 100644
---- a/drivers/scsi/mpt3sas/mpt3sas_transport.c
-+++ b/drivers/scsi/mpt3sas/mpt3sas_transport.c
-@@ -305,8 +305,8 @@ _transport_expander_report_manufacture(struct MPT3SAS_ADAPTER *ioc,
- 	void *data_out = NULL;
- 	dma_addr_t data_out_dma;
- 	dma_addr_t data_in_dma;
--	size_t data_in_sz;
--	size_t data_out_sz;
-+	size_t data_in_sz = sizeof(struct rep_manu_reply);
-+	size_t data_out_sz = sizeof(struct rep_manu_request);
- 	u16 wait_state_count;
+ drivers/misc/carma/carma-fpga.c | 5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
+
+diff --git a/drivers/misc/carma/carma-fpga.c b/drivers/misc/carma/carma-fpga.c
+index 14d90ea..55e913b 100644
+--- a/drivers/misc/carma/carma-fpga.c
++++ b/drivers/misc/carma/carma-fpga.c
+@@ -954,10 +954,7 @@ static int data_debugfs_init(struct fpga_device *priv)
+ {
+ 	priv->dbg_entry = debugfs_create_file(drv_name, S_IRUGO, NULL, priv,
+ 					      &data_debug_fops);
+-	if (IS_ERR(priv->dbg_entry))
+-		return PTR_ERR(priv->dbg_entry);
+-
+-	return 0;
++	return PTR_ERR_OR_ZERO(priv->dbg_entry);
+ }
  
- 	if (ioc->shost_recovery || ioc->pci_error_recovery) {
-@@ -357,8 +357,6 @@ _transport_expander_report_manufacture(struct MPT3SAS_ADAPTER *ioc,
- 	mpi_request = mpt3sas_base_get_msg_frame(ioc, smid);
- 	ioc->transport_cmds.smid = smid;
- 
--	data_out_sz = sizeof(struct rep_manu_request);
--	data_in_sz = sizeof(struct rep_manu_reply);
- 	data_out = pci_alloc_consistent(ioc->pdev, data_out_sz + data_in_sz,
- 	    &data_out_dma);
- 
+ static void data_debugfs_exit(struct fpga_device *priv)
 -- 
-1.7.10.4
+1.8.4.5
 
