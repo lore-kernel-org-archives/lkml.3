@@ -1,121 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752755AbaFAXU0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jun 2014 19:20:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11716 "EHLO mx1.redhat.com"
+	id S1752664AbaFAX3Q (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jun 2014 19:29:16 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:52997 "EHLO smtp.gentoo.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752411AbaFAXUZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jun 2014 19:20:25 -0400
-Message-ID: <538BB511.1020709@redhat.com>
-Date: Sun, 01 Jun 2014 19:19:45 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131028 Thunderbird/17.0.10
+	id S1751058AbaFAX3P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Jun 2014 19:29:15 -0400
+Date: Sun, 1 Jun 2014 23:29:09 +0000
+From: "Robin H. Johnson" <robbat2@gentoo.org>
+To: Ken Moffat <zarniwhoop@ntlworld.com>
+Cc: linux-kernel@vger.kernel.org, robbat2@gentoo.org
+Subject: Re: Licensing & copyright of kernel .config files (defconfig,
+ *config)
+Message-ID: <robbat2-20140601T231524-149301602Z@orbis-terrarum.net>
+Reply-To: linux-kernel@vger.kernel.org, robbat2@gentoo.org,
+        zarniwhoop@ntlworld.com
+References: <robbat2-20140601T012929-356267352Z@orbis-terrarum.net>
+ <20140601230146.GB31939@milliways>
 MIME-Version: 1.0
-To: Oren Twaig <oren@scalemp.com>
-CC: linux-kernel@vger.kernel.org, pbonzini@redhat.com,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Borislav Petkov <bp@suse.de>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <ak@linux.intel.com>, Dave Jones <davej@redhat.com>,
-        Torsten Kaiser <just.for.lkml@googlemail.com>,
-        Jan Beulich <JBeulich@suse.com>, Jan Kiszka <jan.kiszka@siemens.com>,
-        Toshi Kani <toshi.kani@hp.com>, Andrew Jones <drjones@redhat.com>,
-        "Shai (Shai@ScaleMP.com)" <Shai@scalemp.com>
-Subject: Re: [PATCH 1/2] x86, Clean up smp_num_siblings calculation
-References: <1401450185-23061-1-git-send-email-prarit@redhat.com> <1401450185-23061-2-git-send-email-prarit@redhat.com> <538AF11F.8060802@scalemp.com>
-In-Reply-To: <538AF11F.8060802@scalemp.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140601230146.GB31939@milliways>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jun 02, 2014 at 12:01:46AM +0100, Ken Moffat wrote:
+> > Naively, since the defconfigs are bundled with the kernel, that could
+> > fall under GPLv2-only implicitly, but lacking any explicit copyright
+> > headers makes this interesting (arch/*/configs/* contain lots of files,
+> > no copyright headers on them).
+>  I am not a lawyer, but surely _many_ of the kernel files do not
+> contain any explicit copyright information ?
+On closer inspection, more files than I thought don't have any explicit
+copyrights on them. ~67% of files in v3.13 had the text 'Copyright' or
+'Licens' appear in them.
+
+>  Why does your editor put a default license on anything ? 
+It's my stock header, customized by per-directory vimrc. The
+non-project-specific default one actually has a CHANGEME string it in,
+to help remind me that it needs an edit before I release that file.
+I was just using the BSD license on the file as an example. Submissions
+to other open source projects are generally bound by the license of the
+project, with a few exceptions (I've put patches into public domain to
+avoid signing some CLA-like agreements).
+
+>  If I was being awkward, I would suggest that the config would not
+> be useful until you had run it through "make oldconfig" or similar,
+> and that therefore the kernel license of GPL-2 applies.
+That's the case I was interested in :-).
+
+> > If the files are to be marked with a copyright header, who is the holder
+> > of it that it should be attributed to?
+>  Iff the work is copyrightable (I do not have an opinion on that),
+> surely the license only matters if you breach it ? ;-)  If you
+> distribute a compiled kernel with the source, and all of that source
+> is GPL-2, then I assume you are in the clear.  For "extras" which
+> include binaries without source, my understanding is that you would
+> always be vulnerable to kernel copyright holders.  So, I suspect
+> that the attribution of a config file is not particularly important.
+I agree with your reasoning if I was distributing kernel sources or
+compiled kernels, but this is going to be a package of kernel
+configurations only.
+
+> > Background:
+> > Gentoo has a bunch of "stock" kernel configurations for release
+> > engineering, our initramfs tool (genkernel), and other endeavors over
+> > the years. These projects claim BSD, GPL2, LGPL2 on various pieces, and
+> > I don't think they can all be correct. I'm working on getting them into
+> > one place, because some of them have been getting stale, but the
+> > differing licenses raised a red flag to me.
+>  To the extent that GPL-2 can include LGPL-2 and BSD, I suggest that
+> you label them all as GPL-2.  That is the licence of the kernel, and
+> for practical reasons it will not change (this was discussed when
+> somebody asked about GPL-3 : even if the main copyright holders
+> wanted to make the change (and many do not), some copyright holders
+> are no longer contactable).  You might be able to dual-license some
+> of these distro files, but I have no idea if that would be appropriate.
+If the rest of the logic is correct, then the non-GPL2 license on these
+files was never valid in the first place; they inherited GPL2 from the
+kernel from the get go, and I don't need to be concerned about the
+hassle of formally relicensing them by contacting the authors of the
+configs (which again, aren't always contactable anymore).
 
 
-On 06/01/2014 05:23 AM, Oren Twaig wrote:
-> Hi Prarit,
-> 
-> See below,
-> 
-> On 05/30/2014 02:43 PM, Prarit Bhargava wrote:
->> I have a system on which I have disabled threading in the BIOS, and I am booting
->> the kernel with the option "idle=poll".
->>
->> The kernel displays
->>
->> process: WARNING: polling idle and HT enabled, performance may degrade
->>
->> which is incorrect -- I've already disabled HT.
->>
->> This warning is issued here:
->>
->> void select_idle_routine(const struct cpuinfo_x86 *c)
->> {
->>         if (boot_option_idle_override == IDLE_POLL && smp_num_siblings > 1)
->>                 pr_warn_once("WARNING: polling idle and HT enabled, performance may degrade\n");
->>
->> >From my understanding of the other ares of kernel that use
->> smp_num_siblings, the value is supposed to be the the number of threads
->> per core.
->>
->> The value of smp_num_siblings is incorrect.  In theory, it should be 1 but it
->> is reported as 2.  When I looked into how smp_num_siblings is calculated I
->> found the following call sequence in the kernel:
->>
->> start_kernel ->
->>         check_bugs ->
->>                 identify_boot_cpu ->
->>                                 identify_cpu ->
->>                                         c_init = init_intel
->>                                                 init_intel ->
->>                                                         detect_extended_topology
->>                                                         (sets value)
->>
->>                                         OR
->>
->>                                         c_init = init_amd
->>                                                 init_amd -> amd_detect_cmp
->>                                                              -> amd_get_topology
->>                                                                 (sets value)
->>                                                          -> detect_ht()
->>                                         ...            (sets value)
->>                                         detect_ht()
->>                                         (also sets value)
->>
->> ie) it is set three times in some cases and is overwritten by the call
->> to detect_ht() from identify_cpu() in all cases.
->>
->> It should be noted that nothing in the identify_cpu() path or the cpu_up()
->> path requires smp_num_siblings to be set, prior to the final call to
->> detect_ht().
->>
->> For x86 boxes, smp_num_siblings is set to a value read in a CPUID call in
->> detect_ht(). This value is the *factory defined* value in all cases; even
->> if HT is disabled in BIOS the value still returns 2 if the CPU supports
->> HT.  AMD also reports the factory defined value in all cases.
-> 
-> The above is incorrect in case of X-TOPOLOGY mode. I such a case the information
-> about number of siblings comes from the LEVEL_MAX_SIBLINGS() macro and the
-> X86_FEATURE_XTOPOLOGY flag is set to skip detect_ht() work :
-> void detect_ht(struct cpuinfo_x86 *c)
-> ...
->     if (cpu_has(c, X86_FEATURE_XTOPOLOGY))
->             return;
-> 
-> In addition, the information about the number of sibling no longer comes from
-> CPUID(0x1)->ebx but rather from the 0xb leaf of CPUID.
-> 
-> I've marked below the problematic code change.
-
-I will do a [v2] of the patchset that omits this change
-
->> -    core_level_siblings = smp_num_siblings = LEVEL_MAX_SIBLINGS(ebx);
->> +    core_level_siblings = LEVEL_MAX_SIBLINGS(ebx);
-
-and then removes the setting of smp_num_siblings in 2/2.
-
-Thanks,
-
-P.
+-- 
+Robin Hugh Johnson
+Gentoo Linux: Developer, Infrastructure Lead
+E-Mail     : robbat2@gentoo.org
+GnuPG FP   : 11ACBA4F 4778E3F6 E4EDF38E B27B944E 34884E85
