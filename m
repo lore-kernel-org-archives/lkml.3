@@ -1,37 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752743AbaFAR6K (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jun 2014 13:58:10 -0400
-Received: from mga03.intel.com ([143.182.124.21]:15639 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751668AbaFAR6H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jun 2014 13:58:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,952,1392192000"; 
-   d="scan'208";a="439595043"
-Date: Sun, 1 Jun 2014 23:10:43 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Geert Uytterhoeven <geert+renesas@glider.be>
-Cc: Jiri Kosina <trivial@kernel.org>, devicetree@vger.kernel.org,
-        dmaengine@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH trivial] of: dma: Grammar s/requests/request/, s/used
- required/required/
-Message-ID: <20140601174043.GT21128@intel.com>
-References: <1400834075-21278-1-git-send-email-geert+renesas@glider.be>
+	id S1752925AbaFAR7p (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jun 2014 13:59:45 -0400
+Received: from mail.fem.tu-ilmenau.de ([141.24.220.54]:40585 "EHLO
+	mail.fem.tu-ilmenau.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752147AbaFAR7m (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Jun 2014 13:59:42 -0400
+Subject: [PATCH 2/2] rt2800usb:fix hang during firmware load
+To: Ivo van Doorn <IvDoorn@gmail.com>,
+        Helmut Schaa <helmut.schaa@googlemail.com>
+From: Michael Braun <michael-dev@fami-braun.de>
+Cc: netdev@vger.kernel.org, users@rt2x00.serialmonkey.com,
+        linux-wireless@vger.kernel.org,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-kernel@vger.kernel.org
+Date: Sun, 01 Jun 2014 19:52:52 +0200
+Message-ID: <20140601175252.7980.64143.stgit@charlie.fem.tu-ilmenau.de>
+In-Reply-To: <20140601174736.7980.18330.stgit@charlie.fem.tu-ilmenau.de>
+References: <20140601174736.7980.18330.stgit@charlie.fem.tu-ilmenau.de>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1400834075-21278-1-git-send-email-geert+renesas@glider.be>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 23, 2014 at 10:34:35AM +0200, Geert Uytterhoeven wrote:
-> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+The device 057c:8501 (AVM Fritz! WLAN v2 rev. B) boots into a state that does not actually require loading a firmware file.
+The vendors driver finds out about this by checking a firmware state
+register, so this patch adopts this here.
 
-Applied, thanks
+Finally, with this patch applied, my wifi dongle actually becomes
+usefull (scan + connect to wpa network works).
 
--- 
-~Vinod
+Signed-off-by: Michael Braun <michael-dev@fami-braun.de>
+---
+ drivers/net/wireless/rt2x00/rt2800usb.c |   14 ++++++++++++--
+ 1 file changed, 12 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/wireless/rt2x00/rt2800usb.c b/drivers/net/wireless/rt2x00/rt2800usb.c
+index b601422..71bf101 100644
+--- a/drivers/net/wireless/rt2x00/rt2800usb.c
++++ b/drivers/net/wireless/rt2x00/rt2800usb.c
+@@ -240,6 +240,7 @@ static int rt2800usb_write_firmware(struct rt2x00_dev *rt2x00dev,
+ 	int status;
+ 	u32 offset;
+ 	u32 length;
++	__le32 fwMode;
+ 
+ 	/*
+ 	 * Check which section of the firmware we need.
+@@ -257,8 +258,17 @@ static int rt2800usb_write_firmware(struct rt2x00_dev *rt2x00dev,
+ 	/*
+ 	 * Write firmware to device.
+ 	 */
+-	rt2x00usb_register_multiwrite(rt2x00dev, FIRMWARE_IMAGE_BASE,
+-				      data + offset, length);
++	rt2x00usb_vendor_request(rt2x00dev, USB_DEVICE_MODE,
++				 USB_VENDOR_REQUEST_IN, 0, 0x11, &fwMode,
++				 sizeof(fwMode), REGISTER_TIMEOUT_FIRMWARE);
++
++	if ((fwMode & 0x00000003) == 2) {
++		rt2x00_info(rt2x00dev,
++		      "Firmware loading not required - NIC in AutoRun mode\n");
++	} else {
++		rt2x00usb_register_multiwrite(rt2x00dev, FIRMWARE_IMAGE_BASE,
++					      data + offset, length);
++	}
+ 
+ 	rt2x00usb_register_write(rt2x00dev, H2M_MAILBOX_CID, ~0);
+ 	rt2x00usb_register_write(rt2x00dev, H2M_MAILBOX_STATUS, ~0);
 
