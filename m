@@ -1,103 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757151AbaFAMKR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jun 2014 08:10:17 -0400
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:37979 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756934AbaFAMKP (ORCPT
+	id S1757269AbaFAMMI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jun 2014 08:12:08 -0400
+Received: from mailrelay009.isp.belgacom.be ([195.238.6.176]:43244 "EHLO
+	mailrelay009.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757166AbaFAMMG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jun 2014 08:10:15 -0400
-MIME-Version: 1.0
-In-Reply-To: <538B167E.9030902@metafoo.de>
-References: <1401577904-4764-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-	<538AEF16.5070904@metafoo.de>
-	<CAFo99gaTK__WX4oTr_jF6PZuTOsX8qbR9kRJbgamZPO4iGz53w@mail.gmail.com>
-	<538B167E.9030902@metafoo.de>
-Date: Sun, 1 Jun 2014 14:10:14 +0200
-Message-ID: <CAFo99gbqVjTXXaDQRqQHLK5+4OLXL1oup_M4dN=cup+JTTzSXA@mail.gmail.com>
-Subject: Re: [PATCH] iio: adc: ad_sigma_delta.c: Cleaning up uninitialized variables
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Jonathan Cameron <jic23@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Wolfram Sang <wsa@the-dreams.de>, linux-iio@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Sun, 1 Jun 2014 08:12:06 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AlsQAOIXi1NXQzKE/2dsb2JhbABYgwerUAQBAQEBAQEGmBuBCRd0glMvI4EaN4hGAdVrF4VViBlkHYQqBJoAixuIEoM6O4Ew
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>, Yehuda Sadeh <yehuda@inktank.com>,
+        Sage Weil <sage@inktank.com>
+Subject: [PATCH 1/1] drivers/block/rbd.c: use PTR_ERR_OR_ZERO
+Date: Sun,  1 Jun 2014 14:10:52 +0200
+Message-Id: <1401624652-23255-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Aaa, that is true!  Sorry my mistake :(
+replace IS_ERR/PTR_ERR
 
+Cc: Yehuda Sadeh <yehuda@inktank.com>
+Cc: Sage Weil <sage@inktank.com>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ drivers/block/rbd.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Best regards
-Rickard Strandqvist
+diff --git a/drivers/block/rbd.c b/drivers/block/rbd.c
+index 4c95b50..552a2ed 100644
+--- a/drivers/block/rbd.c
++++ b/drivers/block/rbd.c
+@@ -4752,7 +4752,7 @@ static int rbd_dev_image_id(struct rbd_device *rbd_dev)
+ 
+ 		image_id = ceph_extract_encoded_string(&p, p + ret,
+ 						NULL, GFP_NOIO);
+-		ret = IS_ERR(image_id) ? PTR_ERR(image_id) : 0;
++		ret = PTR_ERR_OR_ZERO(image_id);
+ 		if (!ret)
+ 			rbd_dev->image_format = 2;
+ 	} else {
+-- 
+1.8.4.5
 
-
-2014-06-01 14:03 GMT+02:00 Lars-Peter Clausen <lars@metafoo.de>:
-> On 06/01/2014 01:51 PM, Rickard Strandqvist wrote:
->>
->> Hi
->>
->> Believe it reacted to the code below.
->>
->> If raw_sample = 0 is the correct starting value, I am not sure. But
->> leaving it uninitialized, I think is the worst choice.
->>
->>
->>      if (ret < 0)
->>          goto out;
->>
->>      ret = ad_sd_read_reg(sigma_delta, AD_SD_REG_DATA,
->>          DIV_ROUND_UP(chan->scan_type.realbits + chan->scan_type.shift,
->> 8),
->>          &raw_sample);
->> ....
->> out:
->> ....
->
->
-> you skipped the:
->
->     if (ret)
->         return ret;
->
-> that is here.
->
->
->>      sample = raw_sample >> chan->scan_type.shift;
->>
->
-> The code is a bit confusing and it is understandable that a static checker
-> might generate a false positive. The fix though is not to silence the false
-> positive as this will hide actual problems if they should come up by future
-> modifications of the code.
->
->
->>
->> Best regards
->> Rickard Strandqvist
->>
->>
->> 2014-06-01 11:15 GMT+02:00 Lars-Peter Clausen <lars@metafoo.de>:
->>>
->>> On 06/01/2014 01:11 AM, Rickard Strandqvist wrote:
->>>>
->>>>
->>>> There is a risk that the variable will be used without being
->>>> initialized.
->>>>
->>>> This was largely found by using a static code analysis program called
->>>> cppcheck.
->>>
->>>
->>>
->>> This looks like a false positive. And if it was not a false positive the
->>> correct fix certainly is not to initialize the variable to some random
->>> value
->>> to silence the warning.
->>>
->>> - Lars
->>>
->
