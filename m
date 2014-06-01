@@ -1,43 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756913AbaFAAOb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 May 2014 20:14:31 -0400
-Received: from donald.hachti.de ([188.40.85.216]:37227 "EHLO donald.hachti.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752609AbaFAAOa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 May 2014 20:14:30 -0400
-Message-ID: <538A7063.8010205@hachti.de>
-Date: Sun, 01 Jun 2014 02:14:27 +0200
-From: Philipp Hachtmann <hachti@hachti.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
-MIME-Version: 1.0
-To: jhovold@gmail.com, gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] usb/ftdi_sio: Add support for setting CBUS pins on
- FT232H
-References: <1401579066-8298-1-git-send-email-hachti@hachti.de> <1401579066-8298-3-git-send-email-hachti@hachti.de> <20140601000059.27360.qmail@stuge.se>
-In-Reply-To: <20140601000059.27360.qmail@stuge.se>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1756794AbaFAAYh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 May 2014 20:24:37 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:44772 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752609AbaFAAYg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 31 May 2014 20:24:36 -0400
+From: Real Name <enjoymindful@gmail.com>
+To: user-mode-linux-devel@lists.sourceforge.net
+Cc: richard@nod.at, linux-kernel@vger.kernel.org,
+        Real Name <enjoymindful@gmail.com>
+Subject: [PATCH] delete unnecessary bootmem struct page array
+Date: Sun,  1 Jun 2014 08:24:06 +0800
+Message-Id: <1401582246-30025-1-git-send-email-enjoymindful@gmail.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01.06.2014 02:00, Peter Stuge wrote:
-> Philipp Hachtmann wrote:
->> This patch adds a sysfs attribute "cbus" which allows to set the
->> four CBUS pins on the FT232H.
->
-> I think this should be implemented with the gpio subsystem instead.
-The GPIO subsystem seems to be made for GPIO pins connected directly to the 
-computer. The Beaglebone with its AM335x SoC seems to be a good example of
-a computer with many GPIOs in the sense of the GPIO subsystem.
-And the GPIO pins have fixed unique numbers. No, I don't think that the GPIO 
-subsystem has anything to do with the additional pins on some USB device.
-Please correct me if I'm completely wrong.
+1) uml kernel bootmem managed through bootmem_data->node_bootmem_map,
+not struct page array, so it is unnecessary.
 
-Kind regards,
+2) the struct page array allocate has been pointer by a *loacl* pointer
+struct page *map in init_maps function. The array can't be access after
+the init_maps exit. As a result, there is about 1% of total memory leak.
+---
+ arch/um/kernel/um_arch.c | 6 ------
+ 1 file changed, 6 deletions(-)
 
-Philipp
-
+diff --git a/arch/um/kernel/um_arch.c b/arch/um/kernel/um_arch.c
+index 016adf0..d4c98d1 100644
+--- a/arch/um/kernel/um_arch.c
++++ b/arch/um/kernel/um_arch.c
+@@ -348,12 +348,6 @@ int __init linux_main(int argc, char **argv)
+ 	start_vm = VMALLOC_START;
+ 
+ 	setup_physmem(uml_physmem, uml_reserved, physmem_size, highmem);
+-	if (init_maps(physmem_size, iomem_size, highmem)) {
+-		printf("Failed to allocate mem_map for %Lu bytes of physical "
+-		       "memory and %Lu bytes of highmem\n", physmem_size,
+-		       highmem);
+-		exit(1);
+-	}
+ 
+ 	virtmem_size = physmem_size;
+ 	stack = (unsigned long) argv;
+-- 
+1.8.3.1
 
