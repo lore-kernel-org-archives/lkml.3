@@ -1,57 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752632AbaFAPqy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jun 2014 11:46:54 -0400
-Received: from 78-32-181-23.static.enta.net ([78.32.181.23]:48373 "EHLO
-	mail.linicks.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752250AbaFAPqx (ORCPT
+	id S1752567AbaFAQN5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jun 2014 12:13:57 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:59804 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752335AbaFAQN4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jun 2014 11:46:53 -0400
-Message-ID: <538B4AEC.7010108@linicks.net>
-Date: Sun, 01 Jun 2014 16:46:52 +0100
-From: Nick Warne <nick@linicks.net>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Re: Linux 3.14.5
-References: <538B16C8.8090900@linicks.net>
-In-Reply-To: <538B16C8.8090900@linicks.net>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 8bit
+	Sun, 1 Jun 2014 12:13:56 -0400
+From: Matthew Garrett <matthew.garrett@nebula.com>
+To: andreas.noever@gmail.com
+Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org, greg@kroah.com,
+        bhelgaas@google.com, Matthew Garrett <matthew.garrett@nebula.com>
+Date: Sun,  1 Jun 2014 12:13:43 -0400
+Message-Id: <1401639223-3441-1-git-send-email-matthew.garrett@nebula.com>
+X-Mailer: git-send-email 2.0.0
+X-SA-Do-Not-Run: Yes
+X-SA-Exim-Connect-IP: 209.6.207.143
+X-SA-Exim-Mail-From: matthew.garrett@nebula.com
+X-Spam-ASN: 
+Subject: [PATCH] Thunderbolt: Add support for Thunderbolt 2 host controllers
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:54:46 +0000)
+X-SA-Exim-Scanned: Yes (on cavan.codon.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/06/14 13:04, Nick Warne wrote:
-> I am getting hundreds of the same build warnings on this release -
-> usually I get none - typical warnings:
->
-> include/linux/sched.h:1691: warning: ‘pid_alive’ declared inline after
-> being called
-> include/linux/sched.h:1691: warning: previous declaration of ‘pid_alive’
-> was here
->
-> Info:
->
-> Machine AMD64
-> gcc version 4.2.4
->
-> Any more info required please CC me.
+Adding extra device IDs is enough to get this working on the second-gen
+Thunderbolt controller in the Mac Pro.
 
-OK, revisiting this between decorating, changing line 1691 in 
-include/linux/sched.h to reflect 'inline':
+Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
+---
+ drivers/pci/quirks.c         | 2 ++
+ drivers/thunderbolt/nhi.c    | 5 +++++
+ drivers/thunderbolt/switch.c | 5 ++++-
+ 3 files changed, 11 insertions(+), 1 deletion(-)
 
-from:
-static int pid_alive(const struct task_struct *p);
-
-to:
-static inline int pid_alive(const struct task_struct *p);
-
-stops GCC yelling at me.
-
-Nick
+diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+index c3170d4..20e76d0 100644
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -3083,6 +3083,8 @@ out:
+ }
+ DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_INTEL, 0x1547,
+ 			       quirk_apple_wait_for_thunderbolt);
++DECLARE_PCI_FIXUP_SUSPEND_LATE(PCI_VENDOR_ID_INTEL, 0x156d,
++			       quirk_apple_wait_for_thunderbolt);
+ #endif
+ 
+ static void pci_do_fixups(struct pci_dev *dev, struct pci_fixup *f,
+diff --git a/drivers/thunderbolt/nhi.c b/drivers/thunderbolt/nhi.c
+index 6f666fa..85b11d6 100644
+--- a/drivers/thunderbolt/nhi.c
++++ b/drivers/thunderbolt/nhi.c
+@@ -642,6 +642,11 @@ struct pci_device_id nhi_ids[] = {
+ 		.vendor = PCI_VENDOR_ID_INTEL, .device = 0x1547,
+ 		.subvendor = 0x2222, .subdevice = 0x1111,
+ 	},
++	{
++		.class = PCI_CLASS_SYSTEM_OTHER << 8, .class_mask = ~0,
++		.vendor = PCI_VENDOR_ID_INTEL, .device = 0x156c,
++		.subvendor = 0x2222, .subdevice = 0x1111,
++	},
+ 	{ 0,}
+ };
+ 
+diff --git a/drivers/thunderbolt/switch.c b/drivers/thunderbolt/switch.c
+index 2e19045..1fccdbf 100644
+--- a/drivers/thunderbolt/switch.c
++++ b/drivers/thunderbolt/switch.c
+@@ -294,8 +294,11 @@ static int tb_plug_events_active(struct tb_switch *sw, bool active)
+ 
+ 	if (active) {
+ 		data = data & 0xFFFFFF83;
+-		if (sw->config.device_id == 0x1547)
++		switch (sw->config.device_id) {
++		case 0x1547:
++		case 0x156d:
+ 			data |= 4;
++		}
+ 	} else {
+ 		data = data | 0x7c;
+ 	}
 -- 
-"A bug in the code is worth two in the documentation."
-FSF Associate Member 5508
-http://linicks.net/
-http://pi.linicks.net/
+2.0.0
+
