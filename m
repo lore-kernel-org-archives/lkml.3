@@ -1,71 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752650AbaFARqF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jun 2014 13:46:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56549 "EHLO
+	id S1752713AbaFARrf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jun 2014 13:47:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56552 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750965AbaFARqC (ORCPT
+	with ESMTP id S1751668AbaFARre (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jun 2014 13:46:02 -0400
-Date: Sun, 1 Jun 2014 10:45:59 -0700
+	Sun, 1 Jun 2014 13:47:34 -0400
+Date: Sun, 1 Jun 2014 10:47:31 -0700
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Johan Hovold <jhovold@gmail.com>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] MAINTAINERS: drop two usb-serial subdriver entries
-Message-ID: <20140601174559.GB1281@kroah.com>
-References: <1401615137-11862-1-git-send-email-jhovold@gmail.com>
+To: Yann Droneaud <ydroneaud@opteya.com>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org, Emil Goode <emilgoode@gmail.com>,
+        Shawn Guo <shawn.guo@freescale.com>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: Re: [PATCH] driver core/platform: remove unused implicit padding in
+ platform_object
+Message-ID: <20140601174731.GC1281@kroah.com>
+References: <1401480167-15091-1-git-send-email-ydroneaud@opteya.com>
+ <20140530201054.GF17724@mwanda>
+ <1401523299.15490.6.camel@localhost.localdomain>
+ <20140531120526.GL15585@mwanda>
+ <1401609616.17059.2.camel@localhost.localdomain>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1401615137-11862-1-git-send-email-jhovold@gmail.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1401609616.17059.2.camel@localhost.localdomain>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 01, 2014 at 11:32:17AM +0200, Johan Hovold wrote:
-> Remove the remaining two obsolete usb-serial subdriver entries from
-> MAINTAINERS, which were missed in the recent purge by commit
-> f896b7968b62 ("USB: Maintainers change for usb serial drivers").
+On Sun, Jun 01, 2014 at 10:00:16AM +0200, Yann Droneaud wrote:
+> Hi Dan,
 > 
-> Signed-off-by: Johan Hovold <jhovold@gmail.com>
-> ---
->  MAINTAINERS | 12 ------------
->  1 file changed, 12 deletions(-)
+> Le samedi 31 mai 2014 à 15:05 +0300, Dan Carpenter a écrit :
+> > On Sat, May 31, 2014 at 10:01:39AM +0200, Yann Droneaud wrote:
+> > > Le vendredi 30 mai 2014 à 23:10 +0300, Dan Carpenter a écrit :
+> > > > This changelog doesn't match the patch.
+> > > > 
+> > > 
+> > > Hum, let me guess .... I've failed to set the proper subject prefix
+> > > to add v6 suffic to PATCH: 
+> > > I've changed the patch title since v5 (from Emil Goode)... so it's like
+> > > a new one.
+> > > 
+> > > Is it really necessary to resend the patch ?
+> > 
+> > Oh.  Sorry, I didn't understand what you were trying to say...  You're
+> > right.
+> > 
 > 
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index 51ebb779c5f3..68599b26f514 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -9298,12 +9298,6 @@ S:	Maintained
->  F:	drivers/usb/host/isp116x*
->  F:	include/linux/usb/isp116x.h
->  
-> -USB KAWASAKI LSI DRIVER
-> -M:	Oliver Neukum <oliver@neukum.org>
-> -L:	linux-usb@vger.kernel.org
-> -S:	Maintained
-> -F:	drivers/usb/serial/kl5kusb105.*
-> -
->  USB MASS STORAGE DRIVER
->  M:	Matthew Dharm <mdharm-usb@one-eyed-alien.net>
->  L:	linux-usb@vger.kernel.org
-> @@ -9331,12 +9325,6 @@ S:	Maintained
->  F:	Documentation/usb/ohci.txt
->  F:	drivers/usb/host/ohci*
->  
-> -USB OPTION-CARD DRIVER
-> -M:	Matthias Urlichs <smurf@smurf.noris.de>
-> -L:	linux-usb@vger.kernel.org
-> -S:	Maintained
-> -F:	drivers/usb/serial/option.c
+> Sorry about that.
+> 
+> If it's unclear, I should modify the commit message.
 
-
-Why are we taking away the maintainership of these individual drivers
-from these developers?  I had no problem giving you the drivers I was
-supposed to be in charge of, but I need a signed-off-by from Matthias
-and Oliver for these if they want to do the same.
-
-thanks,
+Nah, it looks good, I'll queue it up this week, thanks.
 
 greg k-h
