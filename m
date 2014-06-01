@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757345AbaFAQex (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jun 2014 12:34:53 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:59934 "EHLO
+	id S1752808AbaFAQeW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jun 2014 12:34:22 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:59916 "EHLO
 	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752852AbaFAQeX (ORCPT
+	with ESMTP id S1752505AbaFAQeT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jun 2014 12:34:23 -0400
+	Sun, 1 Jun 2014 12:34:19 -0400
 From: Matthew Garrett <matthew.garrett@nebula.com>
 To: rjw@rjwysocki.net
 Cc: lenb@kernel.org, robert.moore@intel.com, lv.zheng@intel.com,
         linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-pci@vger.kernel.org, bhelgaas@google.com,
         Matthew Garrett <matthew.garrett@nebula.com>
-Date: Sun,  1 Jun 2014 12:33:55 -0400
-Message-Id: <1401640436-1947-4-git-send-email-matthew.garrett@nebula.com>
+Date: Sun,  1 Jun 2014 12:33:53 -0400
+Message-Id: <1401640436-1947-2-git-send-email-matthew.garrett@nebula.com>
 X-Mailer: git-send-email 1.8.5.3
 In-Reply-To: <1401640436-1947-1-git-send-email-matthew.garrett@nebula.com>
 References: <1401640436-1947-1-git-send-email-matthew.garrett@nebula.com>
@@ -22,91 +22,107 @@ X-SA-Do-Not-Run: Yes
 X-SA-Exim-Connect-IP: 209.6.207.143
 X-SA-Exim-Mail-From: matthew.garrett@nebula.com
 X-Spam-ASN: 
-Subject: [PATCH 3/4] ACPI: Don't assume the existence of an SBS charger
+Subject: [PATCH 1/4] ACPI: Support _OSI("Darwin") correctly
 X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:54:46 +0000)
 X-SA-Exim-Scanned: Yes (on cavan.codon.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Apple hardware continues to expose an ACPI AC charger even when using SBS
-to report battery state. The charger status byte returns all 0s in this case.
-Since the spec requires that bit 4 be 1 at all times, assume that there's not
-really a charger if it's set to zero.
+Apple hardware queries _OSI("Darwin") in order to determine whether the
+system is running OS X, and changes firmware behaviour based on the answer.
+The most obvious difference in behaviour is that Thunderbolt hardware is
+forcibly powered down unless the system is running OS X. The obvious solution
+would be to simply add Darwin to the list of supported _OSI strings, but this
+causes problems.
+
+Recent Apple hardware includes two separate methods for checking _OSI
+strings. The first will check whether Darwin is supported, and if so will
+exit. The second will check whether Darwin is supported, but will then
+continue to check for further operating systems. If a further operating
+system is found then later firmware code will assume that the OS is not OS X.
+This results in the unfortunate situation where the Thunderbolt controller is
+available at boot time but remains powered down after suspend.
+
+The easiest way to handle this is to special-case it in the Linux-specific
+OSI handling code. If we see Darwin, we should answer true and then disable
+all other _OSI vendor strings.
 
 Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
 ---
- drivers/acpi/sbs.c | 29 ++++++++++++++++++++++-------
- 1 file changed, 22 insertions(+), 7 deletions(-)
+ drivers/acpi/acpica/utosi.c |  1 +
+ drivers/acpi/osl.c          | 10 ++++++++++
+ include/acpi/actypes.h      | 25 +++++++++++++------------
+ 3 files changed, 24 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/acpi/sbs.c b/drivers/acpi/sbs.c
-index 366ca40..b1df4ee 100644
---- a/drivers/acpi/sbs.c
-+++ b/drivers/acpi/sbs.c
-@@ -109,6 +109,7 @@ struct acpi_sbs {
- 	u8 batteries_supported:4;
- 	u8 manager_present:1;
- 	u8 charger_present:1;
-+	u8 charger_exists:1;
- };
+diff --git a/drivers/acpi/acpica/utosi.c b/drivers/acpi/acpica/utosi.c
+index 685766f..63b0a3b 100644
+--- a/drivers/acpi/acpica/utosi.c
++++ b/drivers/acpi/acpica/utosi.c
+@@ -87,6 +87,7 @@ ACPI_MODULE_NAME("utosi")
+ static struct acpi_interface_info acpi_default_supported_interfaces[] = {
+ 	/* Operating System Vendor Strings */
  
- #define to_acpi_sbs(x) container_of(x, struct acpi_sbs, charger)
-@@ -429,9 +430,19 @@ static int acpi_ac_get_present(struct acpi_sbs *sbs)
++	{"Darwin", NULL, 0, ACPI_OSI_DARWIN},	/* OS X */
+ 	{"Windows 2000", NULL, 0, ACPI_OSI_WIN_2000},	/* Windows 2000 */
+ 	{"Windows 2001", NULL, 0, ACPI_OSI_WIN_XP},	/* Windows XP */
+ 	{"Windows 2001 SP1", NULL, 0, ACPI_OSI_WIN_XP_SP1},	/* Windows XP SP1 */
+diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
+index 6776c59..312ab5c 100644
+--- a/drivers/acpi/osl.c
++++ b/drivers/acpi/osl.c
+@@ -152,6 +152,16 @@ static u32 acpi_osi_handler(acpi_string interface, u32 supported)
+ 			osi_linux.dmi ? " via DMI" : "");
+ 	}
  
- 	result = acpi_smbus_read(sbs->hc, SMBUS_READ_WORD, ACPI_SBS_CHARGER,
- 				 0x13, (u8 *) & status);
--	if (!result)
--		sbs->charger_present = (status >> 15) & 0x1;
--	return result;
++	if (!strcmp("Darwin", interface)) {
++		/*
++		 * Apple firmware will behave poorly if it receives positive
++		 * answers to "Darwin" and any other OS. Respond positively
++		 * to Darwin and then disable all other vendor strings.
++		 */
++		acpi_update_interfaces(ACPI_DISABLE_ALL_VENDOR_STRINGS);
++		supported = ACPI_UINT32_MAX;
++	}
 +
-+	if (result)
-+		return result;
-+
-+	/*
-+	 * The spec requires that bit 4 always be 1. If it's not set, assume
-+	 * that the implementation doesn't support an SBS charger
-+	 */
-+	if (!(status >> 4) & 0x1)
-+		return -ENODEV;
-+
-+	sbs->charger_present = (status >> 15) & 0x1;
-+	return 0;
+ 	return supported;
  }
  
- static ssize_t acpi_battery_alarm_show(struct device *dev,
-@@ -554,6 +565,7 @@ static int acpi_charger_add(struct acpi_sbs *sbs)
- 	if (result)
- 		goto end;
+diff --git a/include/acpi/actypes.h b/include/acpi/actypes.h
+index e763565..1c2ef56 100644
+--- a/include/acpi/actypes.h
++++ b/include/acpi/actypes.h
+@@ -1210,17 +1210,18 @@ struct acpi_memory_list {
+ #define ACPI_ENABLE_ALL_FEATURE_STRINGS     (ACPI_ENABLE_INTERFACES | ACPI_FEATURE_STRINGS)
+ #define ACPI_ENABLE_ALL_STRINGS             (ACPI_ENABLE_INTERFACES | ACPI_VENDOR_STRINGS | ACPI_FEATURE_STRINGS)
  
-+	sbs->charger_exists = 1;
- 	sbs->charger.name = "sbs-charger";
- 	sbs->charger.type = POWER_SUPPLY_TYPE_MAINS;
- 	sbs->charger.properties = sbs_ac_props;
-@@ -580,9 +592,12 @@ static void acpi_sbs_callback(void *context)
- 	struct acpi_battery *bat;
- 	u8 saved_charger_state = sbs->charger_present;
- 	u8 saved_battery_state;
--	acpi_ac_get_present(sbs);
--	if (sbs->charger_present != saved_charger_state)
--		kobject_uevent(&sbs->charger.dev->kobj, KOBJ_CHANGE);
-+
-+	if (sbs->charger_exists) {
-+		acpi_ac_get_present(sbs);
-+		if (sbs->charger_present != saved_charger_state)
-+			kobject_uevent(&sbs->charger.dev->kobj, KOBJ_CHANGE);
-+	}
+-#define ACPI_OSI_WIN_2000               0x01
+-#define ACPI_OSI_WIN_XP                 0x02
+-#define ACPI_OSI_WIN_XP_SP1             0x03
+-#define ACPI_OSI_WINSRV_2003            0x04
+-#define ACPI_OSI_WIN_XP_SP2             0x05
+-#define ACPI_OSI_WINSRV_2003_SP1        0x06
+-#define ACPI_OSI_WIN_VISTA              0x07
+-#define ACPI_OSI_WINSRV_2008            0x08
+-#define ACPI_OSI_WIN_VISTA_SP1          0x09
+-#define ACPI_OSI_WIN_VISTA_SP2          0x0A
+-#define ACPI_OSI_WIN_7                  0x0B
+-#define ACPI_OSI_WIN_8                  0x0C
++#define ACPI_OSI_DARWIN                 0x01
++#define ACPI_OSI_WIN_2000               0x02
++#define ACPI_OSI_WIN_XP                 0x03
++#define ACPI_OSI_WIN_XP_SP1             0x04
++#define ACPI_OSI_WINSRV_2003            0x05
++#define ACPI_OSI_WIN_XP_SP2             0x06
++#define ACPI_OSI_WINSRV_2003_SP1        0x07
++#define ACPI_OSI_WIN_VISTA              0x08
++#define ACPI_OSI_WINSRV_2008            0x09
++#define ACPI_OSI_WIN_VISTA_SP1          0x0A
++#define ACPI_OSI_WIN_VISTA_SP2          0x0B
++#define ACPI_OSI_WIN_7                  0x0C
++#define ACPI_OSI_WIN_8                  0x0D
  
- 	if (sbs->manager_present) {
- 		for (id = 0; id < MAX_SBS_BAT; ++id) {
-@@ -619,7 +634,7 @@ static int acpi_sbs_add(struct acpi_device *device)
- 	device->driver_data = sbs;
- 
- 	result = acpi_charger_add(sbs);
--	if (result)
-+	if (result && result != -ENODEV)
- 		goto end;
- 
- 	result = acpi_manager_get_info(sbs);
+ #endif				/* __ACTYPES_H__ */
 -- 
 1.8.5.3
 
