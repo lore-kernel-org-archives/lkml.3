@@ -1,63 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752551AbaFAHyZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jun 2014 03:54:25 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
+	id S1753583AbaFAIAk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jun 2014 04:00:40 -0400
+Received: from smtp6-g21.free.fr ([212.27.42.6]:5860 "EHLO smtp6-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750939AbaFAHyY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jun 2014 03:54:24 -0400
-Message-ID: <538ADC2C.6060902@nod.at>
-Date: Sun, 01 Jun 2014 09:54:20 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Real Name <enjoymindful@gmail.com>,
-        user-mode-linux-devel@lists.sourceforge.net
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] delete unnecessary bootmem struct page array
-References: <1401582246-30025-1-git-send-email-enjoymindful@gmail.com>
-In-Reply-To: <1401582246-30025-1-git-send-email-enjoymindful@gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+	id S1750998AbaFAIAi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Jun 2014 04:00:38 -0400
+Message-ID: <1401609616.17059.2.camel@localhost.localdomain>
+Subject: Re: [PATCH] driver core/platform: remove unused implicit padding in
+ platform_object
+From: Yann Droneaud <ydroneaud@opteya.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org, Emil Goode <emilgoode@gmail.com>,
+        Shawn Guo <shawn.guo@freescale.com>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Yann Droneaud <ydroneaud@opteya.com>
+Date: Sun, 01 Jun 2014 10:00:16 +0200
+In-Reply-To: <20140531120526.GL15585@mwanda>
+References: <1401480167-15091-1-git-send-email-ydroneaud@opteya.com>
+	 <20140530201054.GF17724@mwanda>
+	 <1401523299.15490.6.camel@localhost.localdomain>
+	 <20140531120526.GL15585@mwanda>
+Organization: OPTEYA
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+Hi Dan,
 
-Am 01.06.2014 02:24, schrieb Real Name:
-> 1) uml kernel bootmem managed through bootmem_data->node_bootmem_map,
-> not struct page array, so it is unnecessary.
+Le samedi 31 mai 2014 à 15:05 +0300, Dan Carpenter a écrit :
+> On Sat, May 31, 2014 at 10:01:39AM +0200, Yann Droneaud wrote:
+> > Le vendredi 30 mai 2014 à 23:10 +0300, Dan Carpenter a écrit :
+> > > This changelog doesn't match the patch.
+> > > 
+> > 
+> > Hum, let me guess .... I've failed to set the proper subject prefix
+> > to add v6 suffic to PATCH: 
+> > I've changed the patch title since v5 (from Emil Goode)... so it's like
+> > a new one.
+> > 
+> > Is it really necessary to resend the patch ?
 > 
-> 2) the struct page array allocate has been pointer by a *loacl* pointer
-> struct page *map in init_maps function. The array can't be access after
-> the init_maps exit. As a result, there is about 1% of total memory leak.
-
-Please add a Signed-off-by tag using your real name.
-
-Thanks,
-//richard
-
-> ---
->  arch/um/kernel/um_arch.c | 6 ------
->  1 file changed, 6 deletions(-)
+> Oh.  Sorry, I didn't understand what you were trying to say...  You're
+> right.
 > 
-> diff --git a/arch/um/kernel/um_arch.c b/arch/um/kernel/um_arch.c
-> index 016adf0..d4c98d1 100644
-> --- a/arch/um/kernel/um_arch.c
-> +++ b/arch/um/kernel/um_arch.c
-> @@ -348,12 +348,6 @@ int __init linux_main(int argc, char **argv)
->  	start_vm = VMALLOC_START;
->  
->  	setup_physmem(uml_physmem, uml_reserved, physmem_size, highmem);
-> -	if (init_maps(physmem_size, iomem_size, highmem)) {
-> -		printf("Failed to allocate mem_map for %Lu bytes of physical "
-> -		       "memory and %Lu bytes of highmem\n", physmem_size,
-> -		       highmem);
-> -		exit(1);
-> -	}
->  
->  	virtmem_size = physmem_size;
->  	stack = (unsigned long) argv;
+
+Sorry about that.
+
+If it's unclear, I should modify the commit message.
+
+> For some reason I just looked at the patch first and then I started
+> reading the changelog and got to the bit about GCC on ARM and said
+> thought have been describing a different change without reading the
+> rest.  This was my bad.  I should have read more carefully.
 > 
+> Very thourough patch description.  :)
+> 
+
+Thank you.
+
+Regards.
+
+-- 
+Yann Droneaud
+OPTEYA
+
+
