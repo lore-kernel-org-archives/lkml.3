@@ -1,37 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756854AbaFAAIY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 May 2014 20:08:24 -0400
-Received: from foo.stuge.se ([212.116.89.98]:53323 "EHLO foo.stuge.se"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756815AbaFAAIX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 May 2014 20:08:23 -0400
-X-Greylist: delayed 441 seconds by postgrey-1.27 at vger.kernel.org; Sat, 31 May 2014 20:08:23 EDT
-Message-ID: <20140601000059.27360.qmail@stuge.se>
-Date: Sun, 1 Jun 2014 02:00:59 +0200
-From: Peter Stuge <peter@stuge.se>
-To: Philipp Hachtmann <hachti@hachti.de>
-Cc: jhovold@gmail.com, gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] usb/ftdi_sio: Add support for setting CBUS pins on
-	FT232H
-Mail-Followup-To: Philipp Hachtmann <hachti@hachti.de>, jhovold@gmail.com,
-	gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-References: <1401579066-8298-1-git-send-email-hachti@hachti.de> <1401579066-8298-3-git-send-email-hachti@hachti.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1401579066-8298-3-git-send-email-hachti@hachti.de>
+	id S1756882AbaFAAJc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 May 2014 20:09:32 -0400
+Received: from mail-qg0-f54.google.com ([209.85.192.54]:53826 "EHLO
+	mail-qg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755481AbaFAAJb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 31 May 2014 20:09:31 -0400
+From: James A Shackleford <shack@linux.com>
+To: forest@alittletooquiet.net, gregkh@linuxfoundation.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Cc: James A Shackleford <shack@linux.com>
+Subject: [PATCH] staging: vt6655: fix sparse warning "cast removes address space of expression"
+Date: Sat, 31 May 2014 20:09:05 -0400
+Message-Id: <1401581345-13564-1-git-send-email-shack@linux.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Philipp Hachtmann wrote:
-> This patch adds a sysfs attribute "cbus" which allows to set the
-> four CBUS pins on the FT232H.
+Add missing __user macro to second parameter of ethtool_ioctl().
+This removes the need for the offending (void *) cast of the user space pointer
+rq->ifr_data.
 
-I think this should be implemented with the gpio subsystem instead.
+Signed-off-by: James A Shackleford <shack@linux.com>
+---
+ drivers/staging/vt6655/device_main.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
+diff --git a/drivers/staging/vt6655/device_main.c b/drivers/staging/vt6655/device_main.c
+index 1d3908d..2327386 100644
+--- a/drivers/staging/vt6655/device_main.c
++++ b/drivers/staging/vt6655/device_main.c
+@@ -302,7 +302,7 @@ static int  device_dma0_tx_80211(struct sk_buff *skb, struct net_device *dev);
+ //2008-0714<Add>by Mike Liu
+ static bool device_release_WPADEV(PSDevice pDevice);
+ 
+-static int  ethtool_ioctl(struct net_device *dev, void *useraddr);
++static int  ethtool_ioctl(struct net_device *dev, void __user *useraddr);
+ static int  device_rx_srv(PSDevice pDevice, unsigned int uIdx);
+ static int  device_tx_srv(PSDevice pDevice, unsigned int uIdx);
+ static bool device_alloc_rx_buf(PSDevice pDevice, PSRxDesc pDesc);
+@@ -3067,7 +3067,7 @@ static int  device_ioctl(struct net_device *dev, struct ifreq *rq, int cmd) {
+ 		break;
+ 
+ 	case SIOCETHTOOL:
+-		return ethtool_ioctl(dev, (void *)rq->ifr_data);
++		return ethtool_ioctl(dev, rq->ifr_data);
+ 		// All other calls are currently unsupported
+ 
+ 	default:
+@@ -3103,7 +3103,7 @@ static int  device_ioctl(struct net_device *dev, struct ifreq *rq, int cmd) {
+ 	return rc;
+ }
+ 
+-static int ethtool_ioctl(struct net_device *dev, void *useraddr)
++static int ethtool_ioctl(struct net_device *dev, void __user *useraddr)
+ {
+ 	u32 ethcmd;
+ 
+-- 
+1.7.9.5
 
-//Peter
