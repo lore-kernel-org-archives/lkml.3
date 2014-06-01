@@ -1,121 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756282AbaFABmt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 May 2014 21:42:49 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:33116 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753727AbaFABmo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 May 2014 21:42:44 -0400
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH net-next 2/2] net: filter: split BPF out of core networking
-Date: Sat, 31 May 2014 18:42:21 -0700
-Message-Id: <1401586941-4274-3-git-send-email-ast@plumgrid.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1401586941-4274-1-git-send-email-ast@plumgrid.com>
-References: <1401586941-4274-1-git-send-email-ast@plumgrid.com>
+	id S1752619AbaFABw4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 May 2014 21:52:56 -0400
+Received: from mail.lang.hm ([64.81.33.126]:59944 "EHLO bifrost.lang.hm"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751123AbaFABwz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 31 May 2014 21:52:55 -0400
+Date: Sat, 31 May 2014 18:52:45 -0700 (PDT)
+From: David Lang <david@lang.hm>
+X-X-Sender: dlang@asgard.lang.hm
+To: linux-kernel@vger.kernel.org, robbat2@gentoo.org
+Subject: Re: Licensing & copyright of kernel .config files (defconfig,
+ *config)
+In-Reply-To: <robbat2-20140601T012929-356267352Z@orbis-terrarum.net>
+Message-ID: <alpine.DEB.2.02.1405311848450.14084@nftneq.ynat.uz>
+References: <robbat2-20140601T012929-356267352Z@orbis-terrarum.net>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-seccomp selects BPF only instead of whole NET
-Other BPF users (like tracing filters) will select BPF only too
+I am not a Lawyer
 
-Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
----
- arch/Kconfig   |    3 ++-
- net/Kconfig    |    4 ++++
- net/Makefile   |    2 +-
- net/bpf/core.c |   21 +++++++++++++++++++++
- 4 files changed, 28 insertions(+), 2 deletions(-)
+But I would start asking the same questions about these files that we ask about 
+header files.
 
-diff --git a/arch/Kconfig b/arch/Kconfig
-index 97ff872c7acc..92f43a16eccc 100644
---- a/arch/Kconfig
-+++ b/arch/Kconfig
-@@ -324,7 +324,8 @@ config HAVE_ARCH_SECCOMP_FILTER
- 
- config SECCOMP_FILTER
- 	def_bool y
--	depends on HAVE_ARCH_SECCOMP_FILTER && SECCOMP && NET
-+	depends on HAVE_ARCH_SECCOMP_FILTER && SECCOMP
-+	select BPF
- 	help
- 	  Enable tasks to build secure computing environments defined
- 	  in terms of Berkeley Packet Filter programs which implement
-diff --git a/net/Kconfig b/net/Kconfig
-index d92afe4204d9..e8dca9f836d9 100644
---- a/net/Kconfig
-+++ b/net/Kconfig
-@@ -6,6 +6,7 @@ menuconfig NET
- 	bool "Networking support"
- 	select NLATTR
- 	select GENERIC_NET_UTILS
-+	select BPF
- 	---help---
- 	  Unless you really know what you are doing, you should say Y here.
- 	  The reason is that some programs need kernel networking support even
-@@ -370,6 +371,9 @@ source "net/nfc/Kconfig"
- 
- endif   # if NET
- 
-+config BPF
-+	boolean
-+
- # Used by archs to tell that they support BPF_JIT
- config HAVE_BPF_JIT
- 	bool
-diff --git a/net/Makefile b/net/Makefile
-index d0e89323aee3..d56447bca1aa 100644
---- a/net/Makefile
-+++ b/net/Makefile
-@@ -8,7 +8,7 @@
- obj-y	:= nonet.o
- 
- obj-$(CONFIG_NET)		:= socket.o core/
--obj-$(CONFIG_NET)		+= bpf/
-+obj-$(CONFIG_BPF)		+= bpf/
- 
- tmp-$(CONFIG_COMPAT) 		:= compat.o
- obj-$(CONFIG_NET)		+= $(tmp-y)
-diff --git a/net/bpf/core.c b/net/bpf/core.c
-index 22c2d99414c0..8ca1b37ddc28 100644
---- a/net/bpf/core.c
-+++ b/net/bpf/core.c
-@@ -1040,3 +1040,24 @@ void sk_filter_free(struct sk_filter *fp)
- 	bpf_jit_free(fp);
- }
- EXPORT_SYMBOL_GPL(sk_filter_free);
-+
-+/* kernel configuration that do not enable NET are not using
-+ * classic BPF extensions
-+ */
-+bool __weak sk_convert_bpf_extensions(struct sock_filter *fp,
-+				      struct sock_filter_int **insnp)
-+{
-+	return false;
-+}
-+
-+/* To emulate LD_ABS/LD_IND instructions __sk_run_filter() may call
-+ * skb_copy_bits(), so provide a weak definition for it in NET-less config.
-+ * seccomp_check_filter() verifies that seccomp filters are not using
-+ * LD_ABS/LD_IND instructions. Other BPF users (like tracing filters)
-+ * must not use these instructions unless ctx==skb
-+ */
-+int __weak skb_copy_bits(const struct sk_buff *skb, int offset, void *to,
-+			 int len)
-+{
-+	return -EFAULT;
-+}
--- 
-1.7.9.5
+Is there anything in the file that is not functionally required? (I believe the 
+answer is no, everything there is required to be what it is to make the kernel 
+work)
 
+The only possible grounds for copyright would be a claim that deciding which 
+things to select and which things to not select is a "creative" work.
+
+Given that the only value in selecting or not selecting something is to make 
+things in the kernel work, I'm not sure that would pass muster. But if it did, 
+that would make the copyright be owned by the person who made those selections.
+
+David Lang
+
+
+On Sun, 1 Jun 2014, Robin H. Johnson wrote:
+
+> (Please CC me on replies, not subscribed to LKML)
+>
+> Hi,
+>
+> Somewhat of an odd question, but none of the files in question seem to
+> have a copyright header on them...
+>
+> For a kernel .config file, either from one of the defconfig or any other
+> *config option that automates the answer:
+> 1. What license does the file fall under?
+> 2. Who are the copyright holders?
+>
+> Naively, since the defconfigs are bundled with the kernel, that could
+> fall under GPLv2-only implicitly, but lacking any explicit copyright
+> headers makes this interesting (arch/*/configs/* contain lots of files,
+> no copyright headers on them).
+>
+> If I manually write the names of some configuration options to a new
+> .config file, at that point I logically am the only author and have
+> copyright of it. My editor slaps a default license on it of BSD-2.
+> Thereafter I run olddefconfig, and now it's a combined work of the
+> kernel's defconfig and my manual settings. If GPL-2 was inherited from
+> the kernel tree, this is now a combined BSD-GPL2 work, or is it? The
+> kernel config tools did consider my file as input, possibly overrode the
+> settings if they didn't work with others, and re-output everything.
+>
+> If the files are to be marked with a copyright header, who is the holder
+> of it that it should be attributed to?
+>
+> Alternatively, is this a case where the work is not copyrightable, and
+> the files should have a notice to that effect?
+>
+> Background:
+> Gentoo has a bunch of "stock" kernel configurations for release
+> engineering, our initramfs tool (genkernel), and other endeavors over
+> the years. These projects claim BSD, GPL2, LGPL2 on various pieces, and
+> I don't think they can all be correct. I'm working on getting them into
+> one place, because some of them have been getting stale, but the
+> differing licenses raised a red flag to me.
+>
+>
