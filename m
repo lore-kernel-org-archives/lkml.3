@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752478AbaFANWt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jun 2014 09:22:49 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:62019 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752095AbaFANWs (ORCPT
+	id S1756937AbaFAN1p (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jun 2014 09:27:45 -0400
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:36850 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752095AbaFAN1o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jun 2014 09:22:48 -0400
+	Sun, 1 Jun 2014 09:27:44 -0400
 From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Larry Finger <Larry.Finger@lwfinger.net>
+        Xenia Ragiadakou <burzalodowa@gmail.com>
 Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Manu Gupta <manugupt1@gmail.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>, devel@driverdev.osuosl.org,
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
+        Ana Rey <anarey@gmail.com>, Dan Carpenter <dan.carpenter@oracle.com>,
+        Teodora Baluta <teobaluta@gmail.com>,
+        Andrea Merello <andrea.merello@gmail.com>, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: rtl8188eu: os_dep: usb_intf.c:  Cleaning up uninitialized variables
-Date: Sun,  1 Jun 2014 15:23:40 +0200
-Message-Id: <1401629020-18518-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Subject: [PATCH] staging: rtl8192u: r8192U_core.c:  Cleaning up uninitialized variables
+Date: Sun,  1 Jun 2014 15:28:35 +0200
+Message-Id: <1401629315-18843-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,22 +30,26 @@ This was largely found by using a static code analysis program called cppcheck.
 
 Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- drivers/staging/rtl8188eu/os_dep/usb_intf.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/staging/rtl8192u/r8192U_core.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/staging/rtl8188eu/os_dep/usb_intf.c b/drivers/staging/rtl8188eu/os_dep/usb_intf.c
-index 2e49cd5..fd37360 100644
---- a/drivers/staging/rtl8188eu/os_dep/usb_intf.c
-+++ b/drivers/staging/rtl8188eu/os_dep/usb_intf.c
-@@ -776,7 +776,7 @@ static void rtw_usb_if1_deinit(struct adapter *if1)
- static int rtw_drv_init(struct usb_interface *pusb_intf, const struct usb_device_id *pdid)
- {
- 	struct adapter *if1 = NULL;
--	int status;
-+	int status = _FAIL;
- 	struct dvobj_priv *dvobj;
+diff --git a/drivers/staging/rtl8192u/r8192U_core.c b/drivers/staging/rtl8192u/r8192U_core.c
+index 1bb6143..b88fb6d 100644
+--- a/drivers/staging/rtl8192u/r8192U_core.c
++++ b/drivers/staging/rtl8192u/r8192U_core.c
+@@ -4695,9 +4695,10 @@ static void rtl8192_rx_nomal(struct sk_buff *skb)
+ 	u32  PacketShiftBytes = 0;
+ 	rx_desc_819x_usb_aggr_subframe *RxDescr = NULL;
+ 	u8  PaddingBytes = 0;
++#ifdef USB_RX_AGGREGATION_SUPPORT
+ 	//add just for testing
+-	u8   testing;
+-
++	u8   testing = 0;
++#endif
+ #endif
  
- 	RT_TRACE(_module_hci_intfs_c_, _drv_err_, ("+rtw_drv_init\n"));
+ 	/* 20 is for ps-poll */
 -- 
 1.7.10.4
 
