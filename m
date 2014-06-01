@@ -1,92 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752638AbaFAPlP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jun 2014 11:41:15 -0400
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:38195 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752351AbaFAPlN (ORCPT
+	id S1752697AbaFAPmT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jun 2014 11:42:19 -0400
+Received: from mail-oa0-f67.google.com ([209.85.219.67]:64000 "EHLO
+	mail-oa0-f67.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752267AbaFAPmS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jun 2014 11:41:13 -0400
+	Sun, 1 Jun 2014 11:42:18 -0400
 MIME-Version: 1.0
-In-Reply-To: <AB19A214-D495-44EE-87E0-45332F156767@holtmann.org>
-References: <1401631076-20818-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-	<AB19A214-D495-44EE-87E0-45332F156767@holtmann.org>
-Date: Sun, 1 Jun 2014 17:41:12 +0200
-Message-ID: <CAFo99gZVJ3D-f_j8C4zYBod4yaLveq8X5__URyTuOAKcffN-Cg@mail.gmail.com>
-Subject: Re: [PATCH] net: bluetooth: hci_core.c: Cleaning up uninitialized variables
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Marcel Holtmann <marcel@holtmann.org>
-Cc: "Gustavo F. Padovan" <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-bluetooth <linux-bluetooth@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Reply-To: kahawai.whelkk@gmail.com
+Date: Sun, 1 Jun 2014 08:42:17 -0700
+Message-ID: <CAFJWpgBCQzB3jvgb560X3QhWYupAEm=paK4hr9Hgx0e9A4uD0g@mail.gmail.com>
+Subject: Hello Dear
+From: "kahawai.whelkk" <mrsnm0033@gmail.com>
+To: undisclosed-recipients:;
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Marcel!
+Hello,							
 
+I am Mr. Kahawai Whelk, from Burkina Faso in West African region. I
+work with the bank of Africa here in the nation. I am writing you from
+my office that which will be of an immense benefit to both of us. Inmy
+department, being the account manager I discovered an abandoned sum
+of $18 million USA Dollars (Eighteen million Us Dollars) in an account
+that belongs to one of the bank late foreign customers, a German
+citizen who unfortunately lost his life in a plane crash.
 
-Sorry sorry!! This is obviously not necessary!
+The choice of contacting you is aroused from the geographical natureof
+where you live, particularly due to the senility of the transaction
+and the confidentiality herein. Now our bank has been waiting for any
+of the relatives to come-up for the claim but nobody has done that.
+ I
+personally have been unsuccessful in locating the relatives for many
+years now, I seek your consent to present you as the next of kin /
+beneficiary to the deceased so that the proceeds of this account
+valued at 18 Million Dollars can be done and paid to you for both of
+us.
 
-This is code that was left when I tried to split up my original big patch.
+This will be disbursed or shared between the both of us in these
+percentages, 55% to me and 35% to you while 10% will be for expenses
+both parties might have incurred during the process of transferring. I
+have secured necessary information's and the certificate of deposit
+that can be used to back up this claim we are making.
 
-This was part of code trying to solve a possible divided by 0.
+All I require now is your honest Co-operation, Confidentiality and
+trust to enable us sees this transaction through. I guarantee you that
+this will be executed under a legitimate arrangement that will protect
+you from any breach of the law.Having gone through a methodical
+search, I decided tocontact   that you will find this proposal
+interesting. Please on your confirmation of this message and
+indicating your interest, I will furnish you with more and you can
+contact me through this my private E-mail address (
+kahawai.whelkk@gmail.com )
 
-
-    int q = 0;
-
-...
-
-    if (num)
-        q = cnt / num;
-    *quote = q ? q : 1;
-
-
-But I'm not sure if it can happen in reality...
-Guessing it will be caught by in that case by:
-
-    if (!chan)
-        return NULL;
-
-
-
-I had actually not planned to submit this divided by 0 patch at all :-/
-
-
-Best regards
-Rickard Strandqvist
-
-
-2014-06-01 16:24 GMT+02:00 Marcel Holtmann <marcel@holtmann.org>:
-> Hi Rickard,
->
->> There is a risk that the variable will be used without being initialized.
->>
->> This was largely found by using a static code analysis program called cppcheck.
->>
->> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
->> ---
->> net/bluetooth/hci_core.c |    2 +-
->> 1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/net/bluetooth/hci_core.c b/net/bluetooth/hci_core.c
->> index 1c6ffaa..1d93d2f 100644
->> --- a/net/bluetooth/hci_core.c
->> +++ b/net/bluetooth/hci_core.c
->> @@ -4603,7 +4603,7 @@ static struct hci_chan *hci_chan_sent(struct hci_dev *hdev, __u8 type,
->>       struct hci_chan *chan = NULL;
->>       unsigned int num = 0, min = ~0, cur_prio = 0;
->>       struct hci_conn *conn;
->> -     int cnt, q, conn_num = 0;
->> +     int cnt, q = 0, conn_num = 0;
->
-> I have no idea on how the variable will be used without being initialized. Have you actually looked through that function. The only thing we do with q is assign it and then use it. That is it.
->
-> Regards
->
-> Marcel
->
+Endeavour to let me know your decision rather than to keep me waiting
+or exposing me.
+Regards,
+Mr. Kahawai Whelk.
