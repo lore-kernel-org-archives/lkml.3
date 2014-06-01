@@ -1,113 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758090AbaFANgA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jun 2014 09:36:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28331 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757579AbaFANcM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757588AbaFANcM (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 1 Jun 2014 09:32:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2867 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752145AbaFANcJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Jun 2014 09:32:09 -0400
 From: Jiri Olsa <jolsa@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@kernel.org>
-Subject: [PATCH 15/27] perf report: Add --children option
-Date: Sun,  1 Jun 2014 15:31:26 +0200
-Message-Id: <1401629498-8726-16-git-send-email-jolsa@kernel.org>
-In-Reply-To: <1401629498-8726-1-git-send-email-jolsa@kernel.org>
-References: <1401629498-8726-1-git-send-email-jolsa@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Arun Sharma <asharma@fb.com>, David Ahern <dsahern@gmail.com>,
+        Don Zickus <dzickus@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rodrigo Campos <rodrigo@sdfg.com.ar>,
+        Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@kernel.org>
+Subject: [GIT PULL 00/27] perf/core improvements and fixes
+Date: Sun,  1 Jun 2014 15:31:11 +0200
+Message-Id: <1401629498-8726-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung@kernel.org>
+hi Ingo,
+please consider pulling
 
-The --children option is for showing accumulated overhead (period)
-value as well as self overhead.
+thanks,
+jirka
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Tested-by: Arun Sharma <asharma@fb.com>
-Tested-by: Rodrigo Campos <rodrigo@sdfg.com.ar>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Link: http://lkml.kernel.org/r/1401335910-16832-16-git-send-email-namhyung@kernel.org
+
+The following changes since commit e450f90e8c7d0bf70519223c1b848446ae63f313:
+
+  Merge tag 'perf-core-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf into perf/core (2014-05-22 11:37:40 +0200)
+
+are available in the git repository at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git tags/perf-core-for-mingo
+
+for you to fetch changes up to 0506aecce999d4370b979892f88cf1118cfe8dcb:
+
+  perf tests: Add a test case for cumulating callchains (2014-06-01 14:35:11 +0200)
+
+----------------------------------------------------------------
+perf/core improvements and fixes:
+
+. Add support to accumulate hist periods (Namhyung Kim)
+
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
----
- tools/perf/Documentation/perf-report.txt |  7 ++++++-
- tools/perf/builtin-report.c              | 15 ++++++++++++++-
- 2 files changed, 20 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
-index a1b5185..cefdf43 100644
---- a/tools/perf/Documentation/perf-report.txt
-+++ b/tools/perf/Documentation/perf-report.txt
-@@ -111,7 +111,7 @@ OPTIONS
- --fields=::
- 	Specify output field - multiple keys can be specified in CSV format.
- 	Following fields are available:
--	overhead, overhead_sys, overhead_us, sample and period.
-+	overhead, overhead_sys, overhead_us, overhead_children, sample and period.
- 	Also it can contain any sort key(s).
- 
- 	By default, every sort keys not specified in -F will be appended
-@@ -163,6 +163,11 @@ OPTIONS
- 
- 	Default: fractal,0.5,callee,function.
- 
-+--children::
-+	Accumulate callchain of children to parent entry so that then can
-+	show up in the output.  The output will have a new "Children" column
-+	and will be sorted on the data.  It requires callchains are recorded.
-+
- --max-stack::
- 	Set the stack depth limit when parsing the callchain, anything
- 	beyond the specified depth will be ignored. This is a trade-off
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index e8fa9fe..f27a8aa 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -185,6 +185,14 @@ static int report__setup_sample_type(struct report *rep)
- 			}
- 	}
- 
-+	if (symbol_conf.cumulate_callchain) {
-+		/* Silently ignore if callchain is missing */
-+		if (!(sample_type & PERF_SAMPLE_CALLCHAIN)) {
-+			symbol_conf.cumulate_callchain = false;
-+			perf_hpp__cancel_cumulate();
-+		}
-+	}
-+
- 	if (sort__mode == SORT_MODE__BRANCH) {
- 		if (!is_pipe &&
- 		    !(sample_type & PERF_SAMPLE_BRANCH_STACK)) {
-@@ -568,6 +576,8 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
- 	OPT_CALLBACK_DEFAULT('g', "call-graph", &report, "output_type,min_percent[,print_limit],call_order",
- 		     "Display callchains using output_type (graph, flat, fractal, or none) , min percent threshold, optional print limit, callchain order, key (function or address). "
- 		     "Default: fractal,0.5,callee,function", &report_parse_callchain_opt, callchain_default_opt),
-+	OPT_BOOLEAN(0, "children", &symbol_conf.cumulate_callchain,
-+		    "Accumulate callchains of children and show total overhead as well"),
- 	OPT_INTEGER(0, "max-stack", &report.max_stack,
- 		    "Set the maximum stack depth when parsing the callchain, "
- 		    "anything beyond the specified depth will be ignored. "
-@@ -660,8 +670,10 @@ repeat:
- 	has_br_stack = perf_header__has_feat(&session->header,
- 					     HEADER_BRANCH_STACK);
- 
--	if (branch_mode == -1 && has_br_stack)
-+	if (branch_mode == -1 && has_br_stack) {
- 		sort__mode = SORT_MODE__BRANCH;
-+		symbol_conf.cumulate_callchain = false;
-+	}
- 
- 	if (report.mem_mode) {
- 		if (sort__mode == SORT_MODE__BRANCH) {
-@@ -669,6 +681,7 @@ repeat:
- 			goto error;
- 		}
- 		sort__mode = SORT_MODE__MEMORY;
-+		symbol_conf.cumulate_callchain = false;
- 	}
- 
- 	if (setup_sorting() < 0) {
--- 
-1.8.3.1
+----------------------------------------------------------------
+Namhyung Kim (27):
+      perf tools: Introduce hists__inc_nr_samples()
+      perf tools: Introduce struct hist_entry_iter
+      perf hists: Add support for accumulated stat of hist entry
+      perf hists: Check if accumulated when adding a hist entry
+      perf hists: Accumulate hist entry stat based on the callchain
+      perf tools: Update cpumode for each cumulative entry
+      perf report: Cache cumulative callchains
+      perf callchain: Add callchain_cursor_snapshot()
+      perf tools: Save callchain info for each cumulative entry
+      perf ui/hist: Add support to accumulated hist stat
+      perf ui/browser: Add support to accumulated hist stat
+      perf ui/gtk: Add support to accumulated hist stat
+      perf tools: Apply percent-limit to cumulative percentage
+      perf tools: Add more hpp helper functions
+      perf report: Add --children option
+      perf report: Add report.children config option
+      perf tools: Do not auto-remove Children column if --fields given
+      perf tools: Add callback function to hist_entry_iter
+      perf top: Convert to hist_entry_iter
+      perf top: Add --children option
+      perf top: Add top.children config option
+      perf tools: Enable --children option by default
+      perf ui/stdio: Fix invalid percentage value of cumulated hist entries
+      perf ui/gtk: Fix callchain display
+      perf tools: Reset output/sort order to default
+      perf tests: Define and use symbolic names for fake symbols
+      perf tests: Add a test case for cumulating callchains
 
+ tools/perf/Documentation/perf-report.txt |   7 +-
+ tools/perf/Documentation/perf-top.txt    |   8 +-
+ tools/perf/Makefile.perf                 |   1 +
+ tools/perf/builtin-annotate.c            |   5 +-
+ tools/perf/builtin-diff.c                |   2 +-
+ tools/perf/builtin-report.c              | 210 +++------
+ tools/perf/builtin-sched.c               |   2 +-
+ tools/perf/builtin-top.c                 |  90 ++--
+ tools/perf/tests/builtin-test.c          |   4 +
+ tools/perf/tests/hists_common.c          |  52 ++-
+ tools/perf/tests/hists_common.h          |  32 +-
+ tools/perf/tests/hists_cumulate.c        | 726 +++++++++++++++++++++++++++++++
+ tools/perf/tests/hists_filter.c          |  39 +-
+ tools/perf/tests/hists_link.c            |  36 +-
+ tools/perf/tests/hists_output.c          |  31 +-
+ tools/perf/tests/tests.h                 |   1 +
+ tools/perf/ui/browsers/hists.c           |  65 +--
+ tools/perf/ui/gtk/hists.c                |  33 +-
+ tools/perf/ui/hist.c                     | 119 +++++
+ tools/perf/ui/stdio/hist.c               |   8 +-
+ tools/perf/util/callchain.c              |  45 +-
+ tools/perf/util/callchain.h              |  11 +
+ tools/perf/util/hist.c                   | 481 +++++++++++++++++++-
+ tools/perf/util/hist.h                   |  49 ++-
+ tools/perf/util/sort.c                   |   4 +
+ tools/perf/util/sort.h                   |  18 +-
+ tools/perf/util/symbol.c                 |  11 +-
+ tools/perf/util/symbol.h                 |   1 +
+ 28 files changed, 1768 insertions(+), 323 deletions(-)
+ create mode 100644 tools/perf/tests/hists_cumulate.c
