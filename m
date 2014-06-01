@@ -1,60 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755711AbaFAIkU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jun 2014 04:40:20 -0400
-Received: from mail-we0-f169.google.com ([74.125.82.169]:38164 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751380AbaFAIkS (ORCPT
+	id S1756651AbaFAJP3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jun 2014 05:15:29 -0400
+Received: from smtp-out-124.synserver.de ([212.40.185.124]:1316 "EHLO
+	smtp-out-124.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751903AbaFAJP1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jun 2014 04:40:18 -0400
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Richard Weinberger <richard@nod.at>
-Cc: user-mode-linux-devel@lists.sourceforge.net, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH] um: Generate "generic-y" header files for $(HEADER_ARCH)
-Date: Sun,  1 Jun 2014 10:40:09 +0200
-Message-Id: <1401612009-9572-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.9.1
+	Sun, 1 Jun 2014 05:15:27 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 19602
+Message-ID: <538AEF16.5070904@metafoo.de>
+Date: Sun, 01 Jun 2014 11:15:02 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
+MIME-Version: 1.0
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+CC: Jonathan Cameron <jic23@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Wolfram Sang <wsa@the-dreams.de>, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] iio: adc: ad_sigma_delta.c:  Cleaning up uninitialized
+ variables
+References: <1401577904-4764-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+In-Reply-To: <1401577904-4764-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-UM needs to perform header file generation for $(HEADER_ARCH), in addition
-to the standard $(ARCH).
+On 06/01/2014 01:11 AM, Rickard Strandqvist wrote:
+> There is a risk that the variable will be used without being initialized.
+>
+> This was largely found by using a static code analysis program called cppcheck.
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
-Prerequisite for "x86/uapi: Use Kbuild logic to include <asm-generic/types.h>"
-https://lkml.org/lkml/2013/11/25/229
+This looks like a false positive. And if it was not a false positive the 
+correct fix certainly is not to initialize the variable to some random value 
+to silence the warning.
 
-Else it fails with:
-
-In file included from include/linux/types.h:5:0,
-                 from include/linux/page-flags.h:8,
-                 from kernel/bounds.c:9:
-include/uapi/linux/types.h:4:23: fatal error: asm/types.h: No such file or directory
-
- arch/um/Makefile | 6 ++++++
- 1 file changed, 6 insertions(+)
-
-diff --git a/arch/um/Makefile b/arch/um/Makefile
-index 36e658a4291c..4a6caa4bc633 100644
---- a/arch/um/Makefile
-+++ b/arch/um/Makefile
-@@ -113,6 +113,12 @@ KBUILD_KCONFIG := $(HOST_DIR)/um/Kconfig
- archheaders:
- 	$(Q)$(MAKE) -C '$(srctree)' KBUILD_SRC= \
- 		ARCH=$(HEADER_ARCH) O='$(objtree)' archheaders
-+	$(Q)$(MAKE) -f $(srctree)/scripts/Makefile.asm-generic \
-+		    SRCARCH=$(HEADER_ARCH) src=asm \
-+		    obj=arch/$(HEADER_ARCH)/include/generated/asm
-+	$(Q)$(MAKE) -f $(srctree)/scripts/Makefile.asm-generic \
-+		    SRCARCH=$(HEADER_ARCH) src=uapi/asm \
-+		    obj=arch/$(HEADER_ARCH)/include/generated/uapi/asm
- 
- archprepare: include/generated/user_constants.h
- 
--- 
-1.9.1
+- Lars
 
