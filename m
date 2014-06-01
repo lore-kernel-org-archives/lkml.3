@@ -1,66 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752713AbaFARrf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jun 2014 13:47:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56552 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751668AbaFARre (ORCPT
+	id S1752770AbaFARrp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jun 2014 13:47:45 -0400
+Received: from mail-vc0-f180.google.com ([209.85.220.180]:46385 "EHLO
+	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751740AbaFARrn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jun 2014 13:47:34 -0400
-Date: Sun, 1 Jun 2014 10:47:31 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Yann Droneaud <ydroneaud@opteya.com>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org, Emil Goode <emilgoode@gmail.com>,
-        Shawn Guo <shawn.guo@freescale.com>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: Re: [PATCH] driver core/platform: remove unused implicit padding in
- platform_object
-Message-ID: <20140601174731.GC1281@kroah.com>
-References: <1401480167-15091-1-git-send-email-ydroneaud@opteya.com>
- <20140530201054.GF17724@mwanda>
- <1401523299.15490.6.camel@localhost.localdomain>
- <20140531120526.GL15585@mwanda>
- <1401609616.17059.2.camel@localhost.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1401609616.17059.2.camel@localhost.localdomain>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Sun, 1 Jun 2014 13:47:43 -0400
+From: Peter Senna Tschudin <peter.senna@gmail.com>
+To: Julia.Lawall@lip6.fr, Gilles.Muller@lip6.fr, nicolas.palix@imag.fr,
+        mmarek@suse.cz, linux-kernel@vger.kernel.org, cocci@systeme.lip6.fr
+Cc: Peter Senna Tschudin <peter.senna@gmail.com>
+Subject: [PATCH] coccicheck: Add unneeded return variable test
+Date: Sun,  1 Jun 2014 14:47:26 -0300
+Message-Id: <1401644846-11962-1-git-send-email-peter.senna@gmail.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 01, 2014 at 10:00:16AM +0200, Yann Droneaud wrote:
-> Hi Dan,
-> 
-> Le samedi 31 mai 2014 à 15:05 +0300, Dan Carpenter a écrit :
-> > On Sat, May 31, 2014 at 10:01:39AM +0200, Yann Droneaud wrote:
-> > > Le vendredi 30 mai 2014 à 23:10 +0300, Dan Carpenter a écrit :
-> > > > This changelog doesn't match the patch.
-> > > > 
-> > > 
-> > > Hum, let me guess .... I've failed to set the proper subject prefix
-> > > to add v6 suffic to PATCH: 
-> > > I've changed the patch title since v5 (from Emil Goode)... so it's like
-> > > a new one.
-> > > 
-> > > Is it really necessary to resend the patch ?
-> > 
-> > Oh.  Sorry, I didn't understand what you were trying to say...  You're
-> > right.
-> > 
-> 
-> Sorry about that.
-> 
-> If it's unclear, I should modify the commit message.
+This semantic patch looks for variables that are initialized with a
+constant, are never updated, and are only used as parameter of return.
+Return the constant instead of using a variable.
 
-Nah, it looks good, I'll queue it up this week, thanks.
+There are 8 patches accepted reported by this semantic patch and more
+than 300 fixes to be applied.
 
-greg k-h
+Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
+---
+ scripts/coccinelle/misc/returnvar.cocci | 66 +++++++++++++++++++++++++++++++++
+ 1 file changed, 66 insertions(+)
+ create mode 100644 scripts/coccinelle/misc/returnvar.cocci
+
+diff --git a/scripts/coccinelle/misc/returnvar.cocci b/scripts/coccinelle/misc/returnvar.cocci
+new file mode 100644
+index 0000000..605955a
+--- /dev/null
++++ b/scripts/coccinelle/misc/returnvar.cocci
+@@ -0,0 +1,66 @@
++///
++/// Removes unneeded variable used to store return value.
++///
++// Confidence: Moderate
++// Copyright: (C) 2012 Peter Senna Tschudin, INRIA/LIP6.  GPLv2.
++// URL: http://coccinelle.lip6.fr/
++// Comments: Comments on code can be deleted if near code that is removed.
++//           "when strict" can be removed to get more hits, but adds false
++//           positives
++// Options: --no-includes --include-headers
++
++virtual patch
++virtual report
++virtual context
++virtual org
++
++@depends on patch@
++type T;
++constant C;
++identifier ret;
++@@
++- T ret = C;
++... when != ret
++    when strict
++return
++- ret
+++ C
++;
++
++@depends on context@
++type T;
++constant C;
++identifier ret;
++@@
++* T ret = C;
++... when != ret
++    when strict
++* return ret;
++
++@r1 depends on report || org@
++type T;
++constant C;
++identifier ret;
++position p1, p2;
++@@
++T ret@p1 = C;
++... when != ret
++    when strict
++return ret@p2;
++
++@script:python depends on report@
++p1 << r1.p1;
++p2 << r1.p2;
++C << r1.C;
++ret << r1.ret;
++@@
++coccilib.report.print_report(p1[0], "Unneeded variable: \"" + ret + "\". Return \"" + C + "\" on line " + p2[0].line)
++
++@script:python depends on org@
++p1 << r1.p1;
++p2 << r1.p2;
++C << r1.C;
++ret << r1.ret;
++@@
++cocci.print_main("unneeded \"" + ret + "\" variable", p1)
++cocci.print_sec("return " + C + " here", p2)
+-- 
+1.8.3.1
+
