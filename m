@@ -1,69 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752806AbaFASUP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jun 2014 14:20:15 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:50152 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751668AbaFASUN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jun 2014 14:20:13 -0400
-Date: Sun, 1 Jun 2014 19:19:59 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Alban Bedel <alban.bedel@avionic-design.de>
-Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lgirdwood@gmail.com>
-Message-ID: <20140601181959.GL5099@sirena.org.uk>
-References: <1400580736-29410-1-git-send-email-alban.bedel@avionic-design.de>
+	id S1752679AbaFASX3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jun 2014 14:23:29 -0400
+Received: from mail-bn1blp0184.outbound.protection.outlook.com ([207.46.163.184]:26252
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750965AbaFASX1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Jun 2014 14:23:27 -0400
+X-WSS-ID: 0N6I5QX-08-LHO-02
+X-M-MSG: 
+Message-ID: <538B6F92.7010009@amd.com>
+Date: Sun, 1 Jun 2014 13:23:14 -0500
+From: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="4Cwqj9FHWD4ffUzp"
-Content-Disposition: inline
-In-Reply-To: <1400580736-29410-1-git-send-email-alban.bedel@avionic-design.de>
-X-Cookie: Ditat Deus.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2] regulator: core: Fix the init of DT defined fixed
- regulators
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: <tj@kernel.org>
+CC: <linux-ide@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/1] ata: Check and set 64-bit DMA mask for platform AHCI
+ driver
+References: <1400866510-3130-1-git-send-email-suravee.suthikulpanit@amd.com>
+In-Reply-To: <1400866510-3130-1-git-send-email-suravee.suthikulpanit@amd.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(428001)(24454002)(479174003)(51704005)(377454003)(199002)(189002)(36756003)(21056001)(77982001)(76482001)(86362001)(79102001)(68736004)(33656002)(19580395003)(81342001)(44976005)(102836001)(83506001)(101416001)(83322001)(19580405001)(64126003)(81542001)(92726001)(92566001)(23756003)(64706001)(59896001)(46102001)(47776003)(20776003)(80022001)(65956001)(83072002)(85852003)(50466002)(84676001)(87936001)(77096999)(87266999)(50986999)(54356999)(76176999)(97736001)(99396002)(31966008)(4396001)(74502001)(74662001)(61793002);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR02MB201;H:atltwp02.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: BL:0;ACTION:Default;RISK:Low;SCL:0;SPMLVL:NotSpam;PCL:0;RULEID:
+X-Forefront-PRVS: 02296943FF
+Authentication-Results: spf=none (sender IP is 165.204.84.222)
+ smtp.mailfrom=Suravee.Suthikulpanit@amd.com; 
+X-Microsoft-Antispam: BL:0;ACTION:Default;RISK:Low;SCL:0;SPMLVL:NotSpam;PCL:0;RULEID:
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Tejun,
 
---4Cwqj9FHWD4ffUzp
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+I am following up on this patch.
 
-On Tue, May 20, 2014 at 12:12:16PM +0200, Alban Bedel wrote:
-> When a regulator is defined using DT and it has a single voltage the
-> regulator init always tries to apply this voltage. However it fails if
-> the regulator isn't settable because it is using an internal low level
-> function. To overcome this we now first query the regulator and only
-> set it if needed.
+Thank you,
 
-Applied, thanks.
+Suravee
 
---4Cwqj9FHWD4ffUzp
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTi27LAAoJELSic+t+oim9hRIP/3M2ew5EkdxfE++6nRFQSmqN
-bmtSuCZ7WsVVVgQfwGfdQouqU7w+h7vDCjNTus5kC36NIvCFsqDITo+gFEKjawX4
-hwlCOqL7UKxFhqgs5Q/4u1xLz/pn1jfoMLblqauUzvML2NqDmb4ywd8d8KPSJOQx
-9lllCUPniuVa7l9hAS3ZvZdRlnglibEQM/FbIbQNAWsaqrfkqXr5jbX5ES4cafIm
-JMhKuFVIdanFh7nSdBJsqSLcCRuaN/q/1YsAsFLVhZ1Os1fmF9oiSRCE0Oii5Pao
-XWPZ1EgXmkmNxZcTAbMWqSsuKKsYTgz44mtLgw+oHsWsi3SjHKuYXHyg8I4/dyAx
-TXv71yb4Vdkrsq5RdQH71zrX1zxGsiZlmfGkBtMvh90g1kQ3EsmZXgYTQQtDPQ8n
-PULX32sHxVMgb5Y3DLRFxxYiwAA95JM8INbOhvoFIcS9OD4BOUN65kZTd1OKNYNf
-+BRBu9vPXI8G2GK7T6hwn8QuSlIA9ewOClsW0r59l4jE5kdo5o/c/s8ktrqiYMWE
-EbWoZWC6LzJmheLBRCFHQ0W9IZQRaki08B3s1dwJFUQdNIofipHnVZRCFKxBWAdp
-QAg3t9yLbo0PE6TReoFknm6oK4S0A2S/Udf+ZRGtCav6MIbnBmkWQFsz5tKHUwRn
-7RRY1NsepWS4Odfbd+1a
-=pC7F
------END PGP SIGNATURE-----
-
---4Cwqj9FHWD4ffUzp--
+On 05/23/2014 12:35 PM, suravee.suthikulpanit@amd.com wrote:
+> From: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+>
+> The current platform AHCI drier does not set the dma_mask correctly
+> for 64-bit DMA capable AHCI controller.  This patch checks the AHCI
+> capability bit and set the dma_mask and coherent_dma_mask accordingly.
+>
+> Signed-off-by: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+> ---
+>   drivers/ata/libahci_platform.c | 9 +++++++++
+>   1 file changed, 9 insertions(+)
+>
+> diff --git a/drivers/ata/libahci_platform.c b/drivers/ata/libahci_platform.c
+> index 7cb3a85..85049ef 100644
+> --- a/drivers/ata/libahci_platform.c
+> +++ b/drivers/ata/libahci_platform.c
+> @@ -368,6 +368,15 @@ int ahci_platform_init_host(struct platform_device *pdev,
+>   	ahci_init_controller(host);
+>   	ahci_print_info(host, "platform");
+>
+> +	if (hpriv->cap & HOST_CAP_64) {
+> +		if (!dev->dma_mask)
+> +			dev->dma_mask = &dev->coherent_dma_mask;
+> +
+> +		rc = dma_set_mask_and_coherent(dev, DMA_BIT_MASK(64));
+> +		if (rc)
+> +			return rc;
+> +	}
+> +
+>   	return ata_host_activate(host, irq, ahci_interrupt, IRQF_SHARED,
+>   				 &ahci_platform_sht);
+>   }
+>
