@@ -1,49 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751945AbaFAEqt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jun 2014 00:46:49 -0400
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:57265 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750718AbaFAEqo (ORCPT
+	id S1751197AbaFAFX0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jun 2014 01:23:26 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:50607 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750728AbaFAFXY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jun 2014 00:46:44 -0400
-Date: Sun, 1 Jun 2014 06:46:09 +0200
-From: Richard Cochran <richardcochran@gmail.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        hch@infradead.org, linux-mtd@lists.infradead.org, logfs@logfs.org,
-        linux-afs@lists.infradead.org, joseph@codesourcery.com,
-        linux-arch@vger.kernel.org, linux-cifs@vger.kernel.org,
-        linux-scsi@vger.kernel.org, ceph-devel@vger.kernel.org,
-        codalist@TELEMANN.coda.cs.cmu.edu, cluster-devel@redhat.com,
-        coda@cs.cmu.edu, geert@linux-m68k.org, linux-ext4@vger.kernel.org,
-        fuse-devel@lists.sourceforge.net, reiserfs-devel@vger.kernel.org,
-        xfs@oss.sgi.com, john.stultz@linaro.org, tglx@linutronix.de,
-        linux-nfs@vger.kernel.org, linux-ntfs-dev@lists.sourceforge.net,
-        samba-technical@lists.samba.org,
-        linux-f2fs-devel@lists.sourceforge.net, ocfs2-devel@oss.oracle.com,
-        linux-fsdevel@vger.kernel.org, lftan@altera.com,
-        linux-btrfs@vger.kernel.org
-Subject: Re: [RFC 00/32] making inode time stamps y2038 ready
-Message-ID: <20140601044609.GD3722@localhost.localdomain>
-References: <1401480116-1973111-1-git-send-email-arnd@arndb.de>
- <20140531145114.GA3721@localhost.localdomain>
- <6347520.8jMPlVsFjM@wuerfel>
- <20140531182237.GA5382@localhost.localdomain>
- <57071155-5a08-4579-9189-92d442cd65e7@email.android.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <57071155-5a08-4579-9189-92d442cd65e7@email.android.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 1 Jun 2014 01:23:24 -0400
+From: Kiran Kumar Raparthy <kiran.kumar@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: "hyungseoung.yoo" <hyungseoung.yoo@samsung.com>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Gustavo Padovan <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
+        Android Kernel Team <kernel-team@android.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Jaikumar Ganesh <jaikumarg@android.com>,
+        Kiran Raparthy <kiran.kumar@linaro.org>
+Subject: [RFC v3] Bluetooth: Keep master role when SCO or eSCO is active
+Date: Sun,  1 Jun 2014 10:50:34 +0530
+Message-Id: <1401600034-16687-1-git-send-email-kiran.kumar@linaro.org>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 31, 2014 at 12:34:12PM -0700, H. Peter Anvin wrote:
-> Typically they are using 64-bit signed seconds.
+From: "hyungseoung.yoo" <hyungseoung.yoo@samsung.com>
 
-Okay, that is what I wanted to know.
+Preserve the master role when SCO or eSCO is active
+as this improves compatability with lots of
+headset and chipset combinations.
 
-Thanks,
-Richard
+This is one of the number of patches from the Android AOSP
+common.git tree, which is used on almost all Android devices.
+It looks like it would improve support for compatibility with
+lot of headset,so I wanted to submit it for review to see
+if it should go upstream.
+
+v3: Fixed formatting issues pointed by Sergei
+
+Cc: Marcel Holtmann <marcel@holtmann.org>
+Cc: Gustavo Padovan <gustavo@padovan.org>
+Cc: Johan Hedberg <johan.hedberg@gmail.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: linux-bluetooth@vger.kernel.org
+Cc: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: Android Kernel Team <kernel-team@android.com>
+Cc: John Stultz <john.stultz@linaro.org>
+Signed-off-by: hyungseoung.yoo <hyungseoung.yoo@samsung.com>
+Signed-off-by: Jaikumar Ganesh <jaikumarg@android.com>
+[kiran: Added context to commit message]
+Signed-off-by: Kiran Raparthy <kiran.kumar@linaro.org>
+---
+ net/bluetooth/hci_event.c | 12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
+
+diff --git a/net/bluetooth/hci_event.c b/net/bluetooth/hci_event.c
+index 15010a2..cfb1355 100644
+--- a/net/bluetooth/hci_event.c
++++ b/net/bluetooth/hci_event.c
+@@ -1915,6 +1915,14 @@ unlock:
+ 	hci_conn_check_pending(hdev);
+ }
+ 
++static inline bool is_sco_active(struct hci_dev *hdev)
++{
++	if (hci_conn_hash_lookup_state(hdev, SCO_LINK, BT_CONNECTED) ||
++	    hci_conn_hash_lookup_state(hdev, ESCO_LINK, BT_CONNECTED))
++		return true;
++	return false;
++}
++
+ static void hci_conn_request_evt(struct hci_dev *hdev, struct sk_buff *skb)
+ {
+ 	struct hci_ev_conn_request *ev = (void *) skb->data;
+@@ -1961,7 +1969,9 @@ static void hci_conn_request_evt(struct hci_dev *hdev, struct sk_buff *skb)
+ 
+ 			bacpy(&cp.bdaddr, &ev->bdaddr);
+ 
+-			if (lmp_rswitch_capable(hdev) && (mask & HCI_LM_MASTER))
++			if (lmp_rswitch_capable(hdev) &&
++			    ((mask & HCI_LM_MASTER) ||
++			    is_sco_active(hdev)))
+ 				cp.role = 0x00; /* Become master */
+ 			else
+ 				cp.role = 0x01; /* Remain slave */
+-- 
+1.8.2.1
+
