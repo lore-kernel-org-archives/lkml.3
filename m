@@ -1,49 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757269AbaFAMMI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jun 2014 08:12:08 -0400
-Received: from mailrelay009.isp.belgacom.be ([195.238.6.176]:43244 "EHLO
-	mailrelay009.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757166AbaFAMMG (ORCPT
+	id S1757167AbaFAMRq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jun 2014 08:17:46 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:47733 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756935AbaFAMRp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jun 2014 08:12:06 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AlsQAOIXi1NXQzKE/2dsb2JhbABYgwerUAQBAQEBAQEGmBuBCRd0glMvI4EaN4hGAdVrF4VViBlkHYQqBJoAixuIEoM6O4Ew
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>, Yehuda Sadeh <yehuda@inktank.com>,
-        Sage Weil <sage@inktank.com>
-Subject: [PATCH 1/1] drivers/block/rbd.c: use PTR_ERR_OR_ZERO
-Date: Sun,  1 Jun 2014 14:10:52 +0200
-Message-Id: <1401624652-23255-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.8.4.5
+	Sun, 1 Jun 2014 08:17:45 -0400
+From: navin patidar <navin.patidar@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: Larry.Finger@lwfinger.net, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, navin patidar <navin.patidar@gmail.com>
+Subject: [PATCH 01/26] staging: rtl8188eu: Remove function with empty defination ODM_ResetIQKResult()
+Date: Sun,  1 Jun 2014 17:46:27 +0530
+Message-Id: <1401625013-11208-1-git-send-email-navin.patidar@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-replace IS_ERR/PTR_ERR
-
-Cc: Yehuda Sadeh <yehuda@inktank.com>
-Cc: Sage Weil <sage@inktank.com>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
+Signed-off-by: navin patidar <navin.patidar@gmail.com>
 ---
- drivers/block/rbd.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/staging/rtl8188eu/hal/HalPhyRf.c       |    8 --------
+ drivers/staging/rtl8188eu/hal/HalPhyRf_8188e.c |    2 --
+ drivers/staging/rtl8188eu/include/HalPhyRf.h   |    2 --
+ 3 files changed, 12 deletions(-)
 
-diff --git a/drivers/block/rbd.c b/drivers/block/rbd.c
-index 4c95b50..552a2ed 100644
---- a/drivers/block/rbd.c
-+++ b/drivers/block/rbd.c
-@@ -4752,7 +4752,7 @@ static int rbd_dev_image_id(struct rbd_device *rbd_dev)
+diff --git a/drivers/staging/rtl8188eu/hal/HalPhyRf.c b/drivers/staging/rtl8188eu/hal/HalPhyRf.c
+index 980f7da..5dd25e5 100644
+--- a/drivers/staging/rtl8188eu/hal/HalPhyRf.c
++++ b/drivers/staging/rtl8188eu/hal/HalPhyRf.c
+@@ -20,14 +20,6 @@
  
- 		image_id = ceph_extract_encoded_string(&p, p + ret,
- 						NULL, GFP_NOIO);
--		ret = IS_ERR(image_id) ? PTR_ERR(image_id) : 0;
-+		ret = PTR_ERR_OR_ZERO(image_id);
- 		if (!ret)
- 			rbd_dev->image_format = 2;
- 	} else {
+  #include "odm_precomp.h"
+ 
+-/* 3============================================================ */
+-/* 3 IQ Calibration */
+-/* 3============================================================ */
+-
+-void ODM_ResetIQKResult(struct odm_dm_struct *pDM_Odm)
+-{
+-}
+-
+ u8 ODM_GetRightChnlPlaceforIQK(u8 chnl)
+ {
+ 	u8	channel_all[ODM_TARGET_CHNL_NUM_2G_5G] = {
+diff --git a/drivers/staging/rtl8188eu/hal/HalPhyRf_8188e.c b/drivers/staging/rtl8188eu/hal/HalPhyRf_8188e.c
+index 7c22658..2bcb39f 100644
+--- a/drivers/staging/rtl8188eu/hal/HalPhyRf_8188e.c
++++ b/drivers/staging/rtl8188eu/hal/HalPhyRf_8188e.c
+@@ -455,8 +455,6 @@ odm_TXPowerTrackingCallback_ThermalMeter_8188E(
+ 		}
+ 
+ 		if (delta_IQK >= 8) { /*  Delta temperature is equal to or larger than 20 centigrade. */
+-			ODM_ResetIQKResult(dm_odm);
+-
+ 			dm_odm->RFCalibrateInfo.ThermalValue_IQK = ThermalValue;
+ 			PHY_IQCalibrate_8188E(Adapter, false);
+ 		}
+diff --git a/drivers/staging/rtl8188eu/include/HalPhyRf.h b/drivers/staging/rtl8188eu/include/HalPhyRf.h
+index 1ec4971..8ca6ce6 100644
+--- a/drivers/staging/rtl8188eu/include/HalPhyRf.h
++++ b/drivers/staging/rtl8188eu/include/HalPhyRf.h
+@@ -23,8 +23,6 @@
+ 
+ #define ODM_TARGET_CHNL_NUM_2G_5G	59
+ 
+-void ODM_ResetIQKResult(struct odm_dm_struct *pDM_Odm);
+-
+ u8 ODM_GetRightChnlPlaceforIQK(u8 chnl);
+ 
+ #endif	/*  #ifndef __HAL_PHY_RF_H__ */
 -- 
-1.8.4.5
+1.7.10.4
 
