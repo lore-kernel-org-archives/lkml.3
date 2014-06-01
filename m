@@ -1,85 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756908AbaFAJ4F (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jun 2014 05:56:05 -0400
-Received: from mail-vc0-f170.google.com ([209.85.220.170]:39126 "EHLO
-	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751346AbaFAJ4A (ORCPT
+	id S1756867AbaFAKCX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jun 2014 06:02:23 -0400
+Received: from mail-qg0-f44.google.com ([209.85.192.44]:55144 "EHLO
+	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751691AbaFAKCV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jun 2014 05:56:00 -0400
+	Sun, 1 Jun 2014 06:02:21 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140531110628.GA30443@shodan.fritz.box>
-References: <20140531110628.GA30443@shodan.fritz.box>
-Date: Sun, 1 Jun 2014 11:55:59 +0200
-Message-ID: <CAFLxGvwZ4b14CLA7DtqWT9Y4aRZtVePiUx_qVXFNiTz8nXO-MQ@mail.gmail.com>
-Subject: Re: [PATCH] driver/netfilter/nfnetlink: removed unused variable
-From: Richard Weinberger <richard.weinberger@gmail.com>
-To: Robin Schroer <sulamiification@gmail.com>
-Cc: Pablo Neira Ayuso <pablo@netfilter.org>,
-        "netfilter-devel@vger.kernel.org" <netfilter-devel@vger.kernel.org>,
-        netfilter@vger.kernel.org, coreteam@netfilter.org,
-        LKML <linux-kernel@vger.kernel.org>
+Date: Sun, 1 Jun 2014 07:02:20 -0300
+Message-ID: <CA+MoWDqj33fEmsppxqSE4LSu9C40mam=UAouHweDBwTD_BMfpg@mail.gmail.com>
+Subject: toshiba_acpi: Unknown key 14b
+From: Peter Senna Tschudin <peter.senna@gmail.com>
+To: Matthew Garrett <matthew.garrett@nebula.com>,
+        platform-driver-x86@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 31, 2014 at 1:06 PM, Robin Schroer
-<sulamiification@gmail.com> wrote:
-> Removes the unused struct net *net = sock_net(skb->sk);
->
-> Signed-off-by: Robin Schroer <sulamiification@gmail.com>
+Hi,
 
-Against which tree is that patch?
-net-next.git still uses net in nfnetlink_rcv_batch() AFAICT.
+I'm using:
 
----cut---
-if (err < 0)
-goto ack;
+3.15.0-rc7-next-20140530
 
-if (nc->call_batch) {
-err = nc->call_batch(net->nfnl, skb, nlh,
-    (const struct nlattr **)cda);
-}
+On a:
 
-/* The lock was released to autoload some module, we
-* have to abort and start from scratch using the
-* original skb.
-*/
----cut---
+Toshiba R830-10p
 
-> ---
->  net/netfilter/nfnetlink.c | 1 -
->  1 file changed, 1 deletion(-)
->
-> diff --git a/net/netfilter/nfnetlink.c b/net/netfilter/nfnetlink.c
-> index c138b8f..5cc9db2 100644
-> --- a/net/netfilter/nfnetlink.c
-> +++ b/net/netfilter/nfnetlink.c
-> @@ -226,7 +226,6 @@ static void nfnetlink_rcv_batch(struct sk_buff *skb, struct nlmsghdr *nlh,
->                                 u_int16_t subsys_id)
->  {
->         struct sk_buff *nskb, *oskb = skb;
-> -       struct net *net = sock_net(skb->sk);
->         const struct nfnetlink_subsystem *ss;
->         const struct nfnl_callback *nc;
->         bool success = true, done = false;
-> --
-> 1.9.3
->
->
-> --
->
-> Robin Schroer
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+And dmesg started to show:
 
+toshiba_acpi: Unknown key 14b
+toshiba_acpi: Unknown key 14d
 
+How can I help make this useful?
 
 -- 
-Thanks,
-//richard
+Peter
