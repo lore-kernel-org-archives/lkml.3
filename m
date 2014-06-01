@@ -1,150 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756874AbaFAAZX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 May 2014 20:25:23 -0400
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:11944 "EHLO
+	id S1756823AbaFAAkb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 May 2014 20:40:31 -0400
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:30516 "EHLO
 	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755770AbaFAAZV (ORCPT
+	by vger.kernel.org with ESMTP id S1751659AbaFAAk2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 May 2014 20:25:21 -0400
-Date: Sun, 1 Jun 2014 10:24:37 +1000
+	Sat, 31 May 2014 20:40:28 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av0PACp2ilN5LL1s/2dsb2JhbABZgwerVAEBAQEBAQaYGwGBBhd0giUBAQQBOhwjBQsIAxgJJQ8FJQMhE4g6B9U/FxaFP4h9B4RABJl/ixyIEoNKKw
+Date: Sun, 1 Jun 2014 10:39:54 +1000
 From: Dave Chinner <david@fromorbit.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
         linux-arch@vger.kernel.org, joseph@codesourcery.com,
         john.stultz@linaro.org, hch@infradead.org, tglx@linutronix.de,
         geert@linux-m68k.org, lftan@altera.com, linux-fsdevel@vger.kernel.org,
         xfs@oss.sgi.com
 Subject: Re: [RFC 11/32] xfs: convert to struct inode_time
-Message-ID: <20140601002437.GL14410@dastard>
+Message-ID: <20140601003954.GM14410@dastard>
 References: <1401480116-1973111-1-git-send-email-arnd@arndb.de>
+ <1401480116-1973111-12-git-send-email-arnd@arndb.de>
+ <20140531003712.GH14410@dastard>
  <5389252A.5050503@zytor.com>
  <20140531011450.GJ14410@dastard>
- <5507340.nVBP5LFtqn@wuerfel>
+ <c7770275-61de-4e94-9586-5ee118f77ba5@email.android.com>
+ <20140531055457.GK14410@dastard>
+ <538995D4.9050702@zytor.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5507340.nVBP5LFtqn@wuerfel>
+In-Reply-To: <538995D4.9050702@zytor.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 31, 2014 at 05:37:52PM +0200, Arnd Bergmann wrote:
-> On Saturday 31 May 2014 11:14:50 Dave Chinner wrote:
-> > On Fri, May 30, 2014 at 05:41:14PM -0700, H. Peter Anvin wrote:
-> > > On 05/30/2014 05:37 PM, Dave Chinner wrote:
-> > > > 
-> > > > IOWs, the filesystem has to be able to reject any attempt to set a
-> > > > timestamp that is can't represent on disk otherwise Bad Stuff will
-> > > > happen,
-> > > 
-> > > Actually it is questionable if it is worse to reject a timestamp or just
-> > > let it wrap.  Rejecting a valid timestamp is a bit like "You don't
-> > > exist, go away."
+On Sat, May 31, 2014 at 01:41:56AM -0700, H. Peter Anvin wrote:
+> On 05/30/2014 10:54 PM, Dave Chinner wrote:
 > > 
-> > I think having the new systems calls being able to
-> > return EINVAL if the value cannot be stored permanently on disk
-> > correctly is the right thing to do. Having it silently mangled
-> > by the filesystem and returning "everything is just fine, trust me"
-> > is close to the worst solution I can think of. That's exactly what
-> > leads to overflow bugs occurring....
-> 
-> While going through the file systems, I was wondering whether
-> we should have the times stop at the end of each file systems
-> epoch rather than wrap around.
-> 
-> > > > and filesystems have to be able to specify in their on
-> > > > disk format what timestamp encoding is being used. The solution will
-> > > > be different for every filesystem that needs to support time beyond
-> > > > 2038.
-> > > 
-> > > Actually the cutoff can be really different for each filesystem, not
-> > > necessarily 2038.  However, I maintain the above still holds.
+> > If we are changing the in-kernel timestamp to have a greater dynamic
+> > range that anything we current support on disk, then we need support
+> > for all filesystems for similar translation and constraint. The
+> > filesystems need to be able to tell the kernel what they timestamp
+> > range they support, and then the kernel needs to follow those
+> > guidelines. And if the filesystem is mounted on a kernel that
+> > doesn't support the current filesystem's timestamp format, then at
+> > minimum that filesystem cannot do anything that writes a
+> > timestamp....
 > > 
-> > Sure, but all filesystems are supposed to handle at least the
-> > current unix epoch.
+> > Put simply: the filesystem defines the timestamp range that can be
+> > used safely, not the userspace API. If the filesystem can't support
+> > the date it is handed then that is an out-of-range error. Since
+> > when have we accepted that it's OK to handle out-of-range data with
+> > silent overflows or corruption of the data that we are attempting to
+> > store? We're defining a new API to support a wider date range -
+> > there is nothing that prevents us from saying ERANGE can be returned
+> > to a timestamp that the file cannot store correctly....
+> > 
 > 
-> In my list at http://kernelnewbies.org/y2038, I found that almost
-> all file systems at least times until 2106, because they treat
-> the on-disk value as unsigned on 64-bit systems, or they use
-> a completely different representation. My guess is that somebody
-> earlier spent a lot of work on making that happen.
+> I'm still puzzled.
 > 
-> The exceptions are:
+> Are you saying that you want a program that does:
 > 
-> * exofs uses signed values, which can probably be changed to be
->   consistent with the others.
-> * isofs has a bug that limits it until 2027 on architectures with
->   a signed 'char' type (otherwise it's 2155).
-> * udf can represent times for many thousands of years through a
->   16-bit year representation, but the code to convert to epoch
->   uses a const array that ends at 2038.
-> * afs uses signed seconds and can probably be fixed
-> * coda relies on user space time representation getting passed
->   through an ioctl.
-> * I miscategorized xfs/ext2/ext3 as having unsigned 32-bit seconds,
->   where they really use signed.
+> 	/* Deliberately simplified */
+> 	gettimeofdayns(&now ...);
+> 	utimensat(... now);
 > 
-> I was confused about XFS since I didn't noticed that there are
-> separate xfs_ictimestamp_t and xfs_timestamp_t types, so I expected
-> XFS to also use the 1970-2106 time range on 64-bit systems today.
+> ... to suddenly start failing on Jan 19, 2038 (for a filesystem with
+> 32-bit timestamps),
 
-You've missed an awful lot more than just the implications for the
-core kernel code.
+Yes. Hard fail so overflows are in your face and we know exactly
+what is going to cause silent timestamp screwups when the epoch
 
-There's a good chance such changes propagate to APIs elsewhere in
-the filesystems, because something you haven't realised is that XFS
-effectively exposes the on-disk timestamp format directly to
-userspace via the bulkstat interface (see struct xfs_bstat). It also
-affects the XFS open-by-handle ioctl and the swap extent ioctl used
-by the online defragmenter.
+> or would you propose some ways for the filesystems
+> in question to extend the range of the timestamps?
 
-IOWs, if we are changing the on-disk timestamp format then this
-affects several ioctl()s and hence quite a few of the XFS userspace
-utilities. The hardest to fix will be xfsdump which would need a new
-dump format to store the extended timestamp ranges, and then
-xfs_restore will need to be able to handle restoring such timestamps
-on filesystems that don't have extended timestamp support...
+Filesystems are going to have to change their on-disk formats, so
+we'd do that just like we do every other on-disk format change. With
+feature bits and translation layers, new ioctl structures, etc.
+Depending on the amount of work necessary, some filesystems could do
+this in 3.16, others it might be 3.20 before everything is sorted
+out across the kernel and userspace code...
 
-Put simply, changing the structure of system time isn't as straight
-forward as changing the kernel structures. System time gets stored
-permanently, and that has a cascade effect through the kernel all
-to all of the filesystem utilities that know about that permanent
-storage in some way....
+Either way, the hard fail problem goes away as each filesystem is
+converted. Further, if we have regression tests then new filesystems
+are guaranteed to be designed to handle 2038 epoch rollover, and so
+in a year of two this "hard fail" is effectively a non-problem. If
+someone breaks something in future, then we'll know about it pretty
+quickly.
 
-So yes, you can change the kernel definition, but until the
-permanent storage of system time can be extended to support the same
-range as the kernel the *system* will still have nasty, silent epoch
-overflow, truncation or corruption issues.
+> What you seem to propose also seems to imply that on Jan 19, 2038
+> anything that writes a timestamp with the current date (which logically
+> ends up being almost every write operation) would be dead and frozen on
+> such a filesystem -- pretty much meaning the filesystem would become
+> readonly if not in reality than in practice.
 
-> If we are using the variant of my patch that extends
-> indode_time->tv_sec to s64, nothing should change for XFS
-> at all, the main difference is that we if it gets extended
-> to wider on-disk timestamps, they will work the same way on
-> 32-bit and 64-bit kernels. 
+Yup. If we can't do what the user wants without the user thinking
+corruption has occurred, then the only thing we are left with is
+"shut down the filesystem" error handling. Kind of like using BUG()
+rather than returning an error. That's why we need to be able to
+hard fail and return an error.
 
-"nothing should change" except for the fact that a 64 bit timestamp
-gets silently truncated to 32 bits and the timestamp is not what the
-user expects it to be. The user does not find out until the inode
-passes out of cache and is re-read from disk, and then it's wrong.
+However, we've got 20+ years to fix our current filesystems and all
+their support code to ensure this doesn't happen. In the mean time,
+having stuff hard fail is a great way to ensure that filesystems get
+fixed sooner rather than later...
 
-To put it politely: that is broken, obnoxious behaviour and we don't
-design new interfaces with such ugly warts anymore. Define an
-EOVERFLOW, EINVAL or ERANGE error in the new syscalls to handle this
-case and *hard fail* if the storage cannot support the extended
-timestamp being passed in. There is no excuse for silently mangling
-out-of-range data, especially as we have plenty of time to add
-support to the filesystems so that such errors don't occur. It might
-take us a year to implement, but it will be done long before the
-epoch overflows.
+> I strongly suspect that that would be a more catastrophic failure than
+> incorrect timestamps, as you suddenly have all kinds of machines
+> embedded in $DEITY knows what places just stop and refuse to run.
 
-And, FWIW, this patchset needs a set of regression tests that ensure
-timestamps beyond 2038 and 2106 don't change across unmount/mount.
-Written for xfstests, preferably, so that it's run as part of every
-filesystem developer's daily workflow. This is the only way we are
-going to ensure that the filesystem and VFS code works correctly and
-continues to work correctly up to the end of the current epoch....
+Yup, that's a great way of flushing out problems 20 years before
+they really matter.
 
 Cheers,
 
