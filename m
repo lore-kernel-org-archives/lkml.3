@@ -1,112 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752889AbaFASNP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jun 2014 14:13:15 -0400
-Received: from mail-ve0-f178.google.com ([209.85.128.178]:52143 "EHLO
-	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752526AbaFASNO (ORCPT
+	id S1753012AbaFASNf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jun 2014 14:13:35 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:40556 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752906AbaFASNd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jun 2014 14:13:14 -0400
-From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: Julia.Lawall@lip6.fr, Gilles.Muller@lip6.fr, nicolas.palix@imag.fr,
-        mmarek@suse.cz, linux-kernel@vger.kernel.org, cocci@systeme.lip6.fr
-Cc: Peter Senna Tschudin <peter.senna@gmail.com>
-Subject: [PATCH V2] coccicheck: Add unneeded return variable test
-Date: Sun,  1 Jun 2014 15:12:31 -0300
-Message-Id: <1401646351-12474-1-git-send-email-peter.senna@gmail.com>
-X-Mailer: git-send-email 1.8.3.1
+	Sun, 1 Jun 2014 14:13:33 -0400
+Message-ID: <538B6D48.9060502@linaro.org>
+Date: Sun, 01 Jun 2014 19:13:28 +0100
+From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Ulf Hansson <ulf.hansson@linaro.org>, linux-mmc@vger.kernel.org,
+        Chris Ball <chris@printf.net>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linus.walleij@linaro.org
+Subject: Re: [PATCH v5 11/13] mmc: mmci: add explicit clk control
+References: <1401469918-26817-1-git-send-email-srinivas.kandagatla@linaro.org> <1401470080-27277-1-git-send-email-srinivas.kandagatla@linaro.org> <20140531122945.GA20736@n2100.arm.linux.org.uk>
+In-Reply-To: <20140531122945.GA20736@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This semantic patch looks for variables that are initialized with a
-constant, are never updated, and are only used as parameter of return.
-Return the constant instead of using a variable.
+Thanks Russell,
 
-Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
----
-Changes from V1:
- - Move the comment about coverage and acceptance to after the --- line
+On 31/05/14 13:29, Russell King - ARM Linux wrote:
+>>
+>> >+	if ((host->variant->explicit_mclk_control) &&
+>> >+	    (ios->clock != host->clock_cache)) {
+> Please explain what use these parens have (or just get rid of them as
+> they're completely unnecessary - they do nothing for readability.)
+I agree, will fix this in next version, It was a left over from my 
+previous patches which had one more variable in that first check.
 
-There are 8 patches accepted reported by this semantic patch and more
-than 300 fixes to be applied.
-
- scripts/coccinelle/misc/returnvar.cocci | 66 +++++++++++++++++++++++++++++++++
- 1 file changed, 66 insertions(+)
- create mode 100644 scripts/coccinelle/misc/returnvar.cocci
-
-diff --git a/scripts/coccinelle/misc/returnvar.cocci b/scripts/coccinelle/misc/returnvar.cocci
-new file mode 100644
-index 0000000..605955a
---- /dev/null
-+++ b/scripts/coccinelle/misc/returnvar.cocci
-@@ -0,0 +1,66 @@
-+///
-+/// Removes unneeded variable used to store return value.
-+///
-+// Confidence: Moderate
-+// Copyright: (C) 2012 Peter Senna Tschudin, INRIA/LIP6.  GPLv2.
-+// URL: http://coccinelle.lip6.fr/
-+// Comments: Comments on code can be deleted if near code that is removed.
-+//           "when strict" can be removed to get more hits, but adds false
-+//           positives
-+// Options: --no-includes --include-headers
-+
-+virtual patch
-+virtual report
-+virtual context
-+virtual org
-+
-+@depends on patch@
-+type T;
-+constant C;
-+identifier ret;
-+@@
-+- T ret = C;
-+... when != ret
-+    when strict
-+return
-+- ret
-++ C
-+;
-+
-+@depends on context@
-+type T;
-+constant C;
-+identifier ret;
-+@@
-+* T ret = C;
-+... when != ret
-+    when strict
-+* return ret;
-+
-+@r1 depends on report || org@
-+type T;
-+constant C;
-+identifier ret;
-+position p1, p2;
-+@@
-+T ret@p1 = C;
-+... when != ret
-+    when strict
-+return ret@p2;
-+
-+@script:python depends on report@
-+p1 << r1.p1;
-+p2 << r1.p2;
-+C << r1.C;
-+ret << r1.ret;
-+@@
-+coccilib.report.print_report(p1[0], "Unneeded variable: \"" + ret + "\". Return \"" + C + "\" on line " + p2[0].line)
-+
-+@script:python depends on org@
-+p1 << r1.p1;
-+p2 << r1.p2;
-+C << r1.C;
-+ret << r1.ret;
-+@@
-+cocci.print_main("unneeded \"" + ret + "\" variable", p1)
-+cocci.print_sec("return " + C + " here", p2)
--- 
-1.8.3.1
-
+Thanks,
+srini
