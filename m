@@ -1,60 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756832AbaFAJfo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jun 2014 05:35:44 -0400
-Received: from smtprelay0186.hostedemail.com ([216.40.44.186]:49649 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752101AbaFAJfn (ORCPT
+	id S1756786AbaFAJzz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jun 2014 05:55:55 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:59621 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751346AbaFAJzx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jun 2014 05:35:43 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::,RULES_HIT:41:355:379:541:599:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3866:3867:3870:3871:3873:4321:4605:5007:7652:10004:10400:10848:11026:11232:11657:11658:11914:12043:12114:12438:12517:12519:12740:13069:13311:13357:13618,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: knife80_31872c8a5d751
-X-Filterd-Recvd-Size: 1911
-Message-ID: <1401615337.15125.7.camel@joe-AO725>
-Subject: Re: [PATCH] staging/wlan-ng: use ether_addr_equal_unaligned
-From: Joe Perches <joe@perches.com>
-To: Denis Pithon <denis.pithon@gmail.com>
-Cc: gregkh@linuxfoundation.org, vitaly.osipov@gmail.com, ztugcesirin@gmail.com,
-        josh@joshtriplett.org, himangi774@gmail.com, superna9999@gmail.com,
-        paul.gortmaker@windriver.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Date: Sun, 01 Jun 2014 02:35:37 -0700
-In-Reply-To: <1401607325-32733-1-git-send-email-denis.pithon@gmail.com>
-References: <1401607325-32733-1-git-send-email-denis.pithon@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sun, 1 Jun 2014 05:55:53 -0400
+Date: Sun, 1 Jun 2014 10:55:46 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Hiroshi Doyu <hdoyu@nvidia.com>, Rob Herring <robherring2@gmail.com>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Cho KyongHo <pullip.cho@samsung.com>,
+        Grant Grundler <grundler@chromium.org>,
+        Dave P Martin <Dave.Martin@arm.com>,
+        Marc Zyngier <Marc.Zyngier@arm.com>, Joerg Roedel <joro@8bytes.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Linux IOMMU <iommu@lists.linux-foundation.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] devicetree: Add generic IOMMU device tree bindings
+Message-ID: <20140601095546.GA8625@arm.com>
+References: <1400877218-4113-1-git-send-email-thierry.reding@gmail.com>
+ <4545972.cM7IP1qTXQ@wuerfel>
+ <87tx87rrp2.fsf@nvidia.com>
+ <4462924.8iRbdkOPp7@wuerfel>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4462924.8iRbdkOPp7@wuerfel>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2014-06-01 at 09:22 +0200, Denis Pithon wrote:
-> This patch get rid of all memcmp() on ethernet addresses in wlan-ng.
-> Replaced with ether_addr_equal_unaligned().
+On Fri, May 30, 2014 at 08:54:37PM +0100, Arnd Bergmann wrote:
+> On Friday 30 May 2014 22:29:13 Hiroshi Doyu wrote:
+> > Tegra,SMMU has a similar problem and we have used a fixed size bitmap(64
+> > bit) to afford 64 stream IDs so that a single device can hold multiple
+> > IDs. If we apply the same bitmap to the above exmaple:
+> > 
+> >        iommu {
+> >                /* the specifier represents the ID of the master */
+> >                #address-cells = <1>;
+> >                #size-cells = <0>;
+> >        };
+> > 
+> >         master@a {
+> >                 ...
+> >                 iommus = <&smmu (BIT(1) | BIT(2) | BIT(3))>; # IDs 1 2 3
+> >         };
+> > 
+> >         master@b {
+> >                 ...
+> >                 iommus = <&smmu BIT(4)>;     # ID 4
+> >         };
+> > 
+> > The disadvantage of this is that this limits the max number of streamIDs
+> > to support. If # of streamID is increased later more than 64, this
+> > format cannot cover any more. You have to predict the max # of streamIDs
+> > in advance if steamID is statically assigned.
+> > 
+> 
+> Well, the iommu specific binding could allow a variable #address-cells.
+> That way, you just need to know the number of stream IDs for that instance
+> of the iommu.
 
-ether_addr_equal_unaligned is only useful for
-code symmetry when some uses are known to be
-ether_addr_equal.
+In general, though, the SMMU will be able to support a large number of
+stream IDs (say a 16-bit space). The restriction we're interested in here is
+how many different stream IDs can be emitted by a single master device
+coming into the SMMU. *That* is a property of the master, not the SMMU.
 
-At least one of these conversions could/should be
-ether_addr_equal.
+In the current arm,smmu binding I have a #stream-id-cells property in each
+master. I can then feed that straight into of_parse_phandle_with_args to
+enumerate the IDs for that master. The problem with that is we're
+artificially restricted by MAX_PHANDLE_ARGS.
 
-Have you checked or did you just do a global
-s/memcpy/ether_addr_equal_unaligned/ ?
-
-> diff --git a/drivers/staging/wlan-ng/prism2sta.c b/drivers/staging/wlan-ng/prism2sta.c
-[]
-> @@ -1505,7 +1506,8 @@ static void prism2sta_inf_assocstatus(wlandevice_t *wlandev,
->  	 */
->  
->  	for (i = 0; i < hw->authlist.cnt; i++)
-> -		if (memcmp(rec.sta_addr, hw->authlist.addr[i], ETH_ALEN) == 0)
-> +		if (ether_addr_equal_unaligned(rec.sta_addr,
-> +					       hw->authlist.addr[i]))
-
-I looked at this one, both are __aligned(2)
-I didn't look at any others.
-
-
+Will
