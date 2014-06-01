@@ -1,67 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756985AbaFALv4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jun 2014 07:51:56 -0400
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:40954 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753005AbaFALvz (ORCPT
+	id S1756982AbaFAL5l (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jun 2014 07:57:41 -0400
+Received: from mailrelay002.isp.belgacom.be ([195.238.6.175]:40179 "EHLO
+	mailrelay002.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753005AbaFAL5k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jun 2014 07:51:55 -0400
-MIME-Version: 1.0
-In-Reply-To: <538AEF16.5070904@metafoo.de>
-References: <1401577904-4764-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-	<538AEF16.5070904@metafoo.de>
-Date: Sun, 1 Jun 2014 13:51:54 +0200
-Message-ID: <CAFo99gaTK__WX4oTr_jF6PZuTOsX8qbR9kRJbgamZPO4iGz53w@mail.gmail.com>
-Subject: Re: [PATCH] iio: adc: ad_sigma_delta.c: Cleaning up uninitialized variables
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Jonathan Cameron <jic23@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Wolfram Sang <wsa@the-dreams.de>, linux-iio@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Sun, 1 Jun 2014 07:57:40 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AlsQANUUi1NXQzKE/2dsb2JhbABYgwerUAQBAQEBAQEGmBuBCBd0gwIjgRo3iEYB1WwXhVWIGWQdhCoEmgCLG4gSgzo7gTA
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>, Chris Metcalf <cmetcalf@tilera.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH 1/1 linux-next] drivers/tty/hvc/hvc_tile.c: use PTR_ERR_OR_ZERO
+Date: Sun,  1 Jun 2014 13:56:23 +0200
+Message-Id: <1401623783-3271-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+replace IS_ERR/PTR_ERR
 
-Believe it reacted to the code below.
+Cc: Chris Metcalf <cmetcalf@tilera.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+This is untested.
 
-If raw_sample = 0 is the correct starting value, I am not sure. But
-leaving it uninitialized, I think is the worst choice.
+ drivers/tty/hvc/hvc_tile.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
+diff --git a/drivers/tty/hvc/hvc_tile.c b/drivers/tty/hvc/hvc_tile.c
+index 147d49e..df37486 100644
+--- a/drivers/tty/hvc/hvc_tile.c
++++ b/drivers/tty/hvc/hvc_tile.c
+@@ -196,7 +196,7 @@ static int __init hvc_tile_init(void)
+ #ifndef __tilegx__
+ 	struct hvc_struct *hp;
+ 	hp = hvc_alloc(0, 0, &hvc_tile_get_put_ops, 128);
+-	return IS_ERR(hp) ? PTR_ERR(hp) : 0;
++	return PTR_ERR_OR_ZERO(hp);
+ #else
+ 	platform_device_register(&hvc_tile_pdev);
+ 	return platform_driver_register(&hvc_tile_driver);
+-- 
+1.8.4.5
 
-    if (ret < 0)
-        goto out;
-
-    ret = ad_sd_read_reg(sigma_delta, AD_SD_REG_DATA,
-        DIV_ROUND_UP(chan->scan_type.realbits + chan->scan_type.shift, 8),
-        &raw_sample);
-....
-out:
-....
-    sample = raw_sample >> chan->scan_type.shift;
-
-
-Best regards
-Rickard Strandqvist
-
-
-2014-06-01 11:15 GMT+02:00 Lars-Peter Clausen <lars@metafoo.de>:
-> On 06/01/2014 01:11 AM, Rickard Strandqvist wrote:
->>
->> There is a risk that the variable will be used without being initialized.
->>
->> This was largely found by using a static code analysis program called
->> cppcheck.
->
->
-> This looks like a false positive. And if it was not a false positive the
-> correct fix certainly is not to initialize the variable to some random value
-> to silence the warning.
->
-> - Lars
->
