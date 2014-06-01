@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751080AbaFAEpT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jun 2014 00:45:19 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:36029 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750708AbaFAEpO (ORCPT
+	id S1751945AbaFAEqt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jun 2014 00:46:49 -0400
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:57265 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750718AbaFAEqo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jun 2014 00:45:14 -0400
-Date: Sun, 1 Jun 2014 06:44:36 +0200
+	Sun, 1 Jun 2014 00:46:44 -0400
+Date: Sun, 1 Jun 2014 06:46:09 +0200
 From: Richard Cochran <richardcochran@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-kernel@vger.kernel.org, hch@infradead.org,
-        linux-mtd@lists.infradead.org, hpa@zytor.com, logfs@logfs.org,
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+        hch@infradead.org, linux-mtd@lists.infradead.org, logfs@logfs.org,
         linux-afs@lists.infradead.org, joseph@codesourcery.com,
         linux-arch@vger.kernel.org, linux-cifs@vger.kernel.org,
         linux-scsi@vger.kernel.org, ceph-devel@vger.kernel.org,
@@ -25,28 +25,25 @@ Cc: linux-kernel@vger.kernel.org, hch@infradead.org,
         linux-fsdevel@vger.kernel.org, lftan@altera.com,
         linux-btrfs@vger.kernel.org
 Subject: Re: [RFC 00/32] making inode time stamps y2038 ready
-Message-ID: <20140601044436.GC3722@localhost.localdomain>
+Message-ID: <20140601044609.GD3722@localhost.localdomain>
 References: <1401480116-1973111-1-git-send-email-arnd@arndb.de>
  <20140531145114.GA3721@localhost.localdomain>
  <6347520.8jMPlVsFjM@wuerfel>
+ <20140531182237.GA5382@localhost.localdomain>
+ <57071155-5a08-4579-9189-92d442cd65e7@email.android.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <6347520.8jMPlVsFjM@wuerfel>
+In-Reply-To: <57071155-5a08-4579-9189-92d442cd65e7@email.android.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 31, 2014 at 05:23:02PM +0200, Arnd Bergmann wrote:
-> On Saturday 31 May 2014 16:51:15 Richard Cochran wrote:
-> > 
-> > Why are some of the time stamp expiration dates marked as "never"?
-> 
-> It's an approximation:
+On Sat, May 31, 2014 at 12:34:12PM -0700, H. Peter Anvin wrote:
+> Typically they are using 64-bit signed seconds.
 
-Also, the term "never" might mean using arbitrarily long integers
-as in ASN.1.
+Okay, that is what I wanted to know.
 
 Thanks,
 Richard
