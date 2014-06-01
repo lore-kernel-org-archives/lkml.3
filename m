@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757629AbaFAMTZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jun 2014 08:19:25 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:62311 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757046AbaFAMTV (ORCPT
+	id S1757664AbaFAMTd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jun 2014 08:19:33 -0400
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:44567 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757608AbaFAMT2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jun 2014 08:19:21 -0400
+	Sun, 1 Jun 2014 08:19:28 -0400
 From: navin patidar <navin.patidar@gmail.com>
 To: gregkh@linuxfoundation.org
 Cc: Larry.Finger@lwfinger.net, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org, navin patidar <navin.patidar@gmail.com>
-Subject: [PATCH 15/26] staging: rtl8188eu: Remove unused enum _ADAPTER_TYPE
-Date: Sun,  1 Jun 2014 17:46:41 +0530
-Message-Id: <1401625013-11208-15-git-send-email-navin.patidar@gmail.com>
+Subject: [PATCH 16/26] staging: rtl8188eu: Remove unused enum _IFACE_TYPE
+Date: Sun,  1 Jun 2014 17:46:42 +0530
+Message-Id: <1401625013-11208-16-git-send-email-navin.patidar@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1401625013-11208-1-git-send-email-navin.patidar@gmail.com>
 References: <1401625013-11208-1-git-send-email-navin.patidar@gmail.com>
@@ -28,17 +28,17 @@ Signed-off-by: navin patidar <navin.patidar@gmail.com>
  1 file changed, 6 deletions(-)
 
 diff --git a/drivers/staging/rtl8188eu/include/drv_types.h b/drivers/staging/rtl8188eu/include/drv_types.h
-index 7586de71..f7db553 100644
+index f7db553..9195cf3 100644
 --- a/drivers/staging/rtl8188eu/include/drv_types.h
 +++ b/drivers/staging/rtl8188eu/include/drv_types.h
-@@ -193,12 +193,6 @@ enum _IFACE_TYPE {
- 	MAX_IFACE_PORT,
+@@ -187,12 +187,6 @@ static inline struct device *dvobj_to_dev(struct dvobj_priv *dvobj)
+ 	return &dvobj->pusbintf->dev;
  };
  
--enum _ADAPTER_TYPE {
--	PRIMARY_ADAPTER,
--	SECONDARY_ADAPTER,
--	MAX_ADAPTER,
+-enum _IFACE_TYPE {
+-	IFACE_PORT0, /* mapping to port0 for C/D series chips */
+-	IFACE_PORT1, /* mapping to port1 for C/D series chip */
+-	MAX_IFACE_PORT,
 -};
 -
  enum driver_state {
