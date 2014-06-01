@@ -1,51 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757239AbaFAM3v (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jun 2014 08:29:51 -0400
-Received: from mailrelay004.isp.belgacom.be ([195.238.6.170]:56554 "EHLO
-	mailrelay004.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756936AbaFAM3u (ORCPT
+	id S1757198AbaFAMdY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jun 2014 08:33:24 -0400
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:49629 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756931AbaFAMdX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jun 2014 08:29:50 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AlsQAFYci1NXQzKE/2dsb2JhbABYgwerUAQBAQEBAQEGmBuBCRd0gwIjgRo3iEYB1V8XhVWIGWQdhCoEj0WKO4sbiBKDOjuBMA
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>, Wolfram Sang <wsa@the-dreams.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 1/1] drivers/parport/parport_ip32.c: use PTR_ERR_OR_ZERO
-Date: Sun,  1 Jun 2014 14:28:36 +0200
-Message-Id: <1401625716-302-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.8.4.5
+	Sun, 1 Jun 2014 08:33:23 -0400
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Dimitris Michailidis <dm@chelsio.com>, netdev@vger.kernel.org
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] net: ethernet: chelsio: cxgb4: t4_hw.c:  Cleaning up uninitialized variables
+Date: Sun,  1 Jun 2014 14:34:15 +0200
+Message-Id: <1401626055-15144-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-replace IS_ERR/PTR_ERR
+There is a risk that the variable will be used without being initialized.
 
-Cc: Wolfram Sang <wsa@the-dreams.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
+This was largely found by using a static code analysis program called cppcheck.
+
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
-This is untested.
-
- drivers/parport/parport_ip32.c | 2 +-
+ drivers/net/ethernet/chelsio/cxgb4/t4_hw.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/parport/parport_ip32.c b/drivers/parport/parport_ip32.c
-index c864f82..30e981b 100644
---- a/drivers/parport/parport_ip32.c
-+++ b/drivers/parport/parport_ip32.c
-@@ -2204,7 +2204,7 @@ static int __init parport_ip32_init(void)
+diff --git a/drivers/net/ethernet/chelsio/cxgb4/t4_hw.c b/drivers/net/ethernet/chelsio/cxgb4/t4_hw.c
+index bba6768..326c005 100644
+--- a/drivers/net/ethernet/chelsio/cxgb4/t4_hw.c
++++ b/drivers/net/ethernet/chelsio/cxgb4/t4_hw.c
+@@ -571,7 +571,7 @@ int t4_seeprom_wp(struct adapter *adapter, bool enable)
+  */
+ int get_vpd_params(struct adapter *adapter, struct vpd_params *p)
  {
- 	pr_info(PPIP32 "SGI IP32 built-in parallel port driver v0.6\n");
- 	this_port = parport_ip32_probe_port();
--	return IS_ERR(this_port) ? PTR_ERR(this_port) : 0;
-+	return PTR_ERR_OR_ZERO(this_port);
- }
- 
- /**
+-	u32 cclk_param, cclk_val;
++	u32 cclk_param, cclk_val = 0;
+ 	int i, ret, addr;
+ 	int ec, sn, pn;
+ 	u8 *vpd, csum;
 -- 
-1.8.4.5
+1.7.10.4
 
