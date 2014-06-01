@@ -1,58 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757334AbaFANJQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jun 2014 09:09:16 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:54440 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757294AbaFANJM (ORCPT
+	id S1757125AbaFANMj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jun 2014 09:12:39 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:62979 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752246AbaFANMh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jun 2014 09:09:12 -0400
-From: Real Name <enjoymindful@gmail.com>
-To: user-mode-linux-devel@lists.sourceforge.net
-Cc: richard@nod.at, linux-kernel@vger.kernel.org,
-        Honggang Li <enjoymindful@gmail.com>
-Subject: [PATCH] delete unnecessary bootmem struct page array
-Date: Sun,  1 Jun 2014 21:08:51 +0800
-Message-Id: <1401628131-1948-2-git-send-email-enjoymindful@gmail.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1401628131-1948-1-git-send-email-enjoymindful@gmail.com>
-References: <1401628131-1948-1-git-send-email-enjoymindful@gmail.com>
+	Sun, 1 Jun 2014 09:12:37 -0400
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: xjtuwjp@gmail.com, lindar_liu@usish.com
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] scsi: pm8001: pm80xx_hwi.c:  Cleaning up uninitialized variables
+Date: Sun,  1 Jun 2014 15:13:30 +0200
+Message-Id: <1401628410-17824-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Honggang Li <enjoymindful@gmail.com>
+There is a risk that the variable will be used without being initialized.
 
-1) uml kernel bootmem managed through bootmem_data->node_bootmem_map,
-not the struct page array, so the array is unnecessary.
+This was largely found by using a static code analysis program called cppcheck.
 
-2) the bootmem struct page array has been pointed by a *local* pointer,
-struct page *map, in init_maps function. The array can be accessed only
-in init_maps's scope. As a result, uml kernel wastes about 1% of total
-memory.
-
-Signed-off-by: Honggang Li <enjoymindful@gmail.com>
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- arch/um/kernel/um_arch.c | 6 ------
- 1 file changed, 6 deletions(-)
+ drivers/scsi/pm8001/pm80xx_hwi.c |    6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/arch/um/kernel/um_arch.c b/arch/um/kernel/um_arch.c
-index 6043c76..5aa2d82 100644
---- a/arch/um/kernel/um_arch.c
-+++ b/arch/um/kernel/um_arch.c
-@@ -338,12 +338,6 @@ int __init linux_main(int argc, char **argv)
- 	start_vm = VMALLOC_START;
+diff --git a/drivers/scsi/pm8001/pm80xx_hwi.c b/drivers/scsi/pm8001/pm80xx_hwi.c
+index d70587f..add019b 100644
+--- a/drivers/scsi/pm8001/pm80xx_hwi.c
++++ b/drivers/scsi/pm8001/pm80xx_hwi.c
+@@ -948,7 +948,7 @@ static int
+ pm80xx_get_encrypt_info(struct pm8001_hba_info *pm8001_ha)
+ {
+ 	u32 scratch3_value;
+-	int ret;
++	int ret = -1;
  
- 	setup_physmem(uml_physmem, uml_reserved, physmem_size, highmem);
--	if (init_maps(physmem_size, iomem_size, highmem)) {
--		printf("Failed to allocate mem_map for %Lu bytes of physical "
--		       "memory and %Lu bytes of highmem\n", physmem_size,
--		       highmem);
--		exit(1);
--	}
+ 	/* Read encryption status from SCRATCH PAD 3 */
+ 	scratch3_value = pm8001_cr32(pm8001_ha, 0, MSGU_SCRATCH_PAD_3);
+@@ -982,7 +982,7 @@ pm80xx_get_encrypt_info(struct pm8001_hba_info *pm8001_ha)
+ 		pm8001_ha->encrypt_info.status = 0xFFFFFFFF;
+ 		pm8001_ha->encrypt_info.cipher_mode = 0;
+ 		pm8001_ha->encrypt_info.sec_mode = 0;
+-		return 0;
++		ret = 0;
+ 	} else if ((scratch3_value & SCRATCH_PAD3_ENC_MASK) ==
+ 				SCRATCH_PAD3_ENC_DIS_ERR) {
+ 		pm8001_ha->encrypt_info.status =
+@@ -1004,7 +1004,6 @@ pm80xx_get_encrypt_info(struct pm8001_hba_info *pm8001_ha)
+ 			scratch3_value, pm8001_ha->encrypt_info.cipher_mode,
+ 			pm8001_ha->encrypt_info.sec_mode,
+ 			pm8001_ha->encrypt_info.status));
+-		ret = -1;
+ 	} else if ((scratch3_value & SCRATCH_PAD3_ENC_MASK) ==
+ 				 SCRATCH_PAD3_ENC_ENA_ERR) {
  
- 	virtmem_size = physmem_size;
- 	stack = (unsigned long) argv;
+@@ -1028,7 +1027,6 @@ pm80xx_get_encrypt_info(struct pm8001_hba_info *pm8001_ha)
+ 			scratch3_value, pm8001_ha->encrypt_info.cipher_mode,
+ 			pm8001_ha->encrypt_info.sec_mode,
+ 			pm8001_ha->encrypt_info.status));
+-		ret = -1;
+ 	}
+ 	return ret;
+ }
 -- 
-1.8.3.1
+1.7.10.4
 
