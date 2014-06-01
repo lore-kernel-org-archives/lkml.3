@@ -1,86 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751989AbaFAG0P (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jun 2014 02:26:15 -0400
-Received: from tango.0pointer.de ([85.214.72.216]:34508 "EHLO
-	tango.0pointer.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751528AbaFAG0N (ORCPT
+	id S1751728AbaFAHCI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jun 2014 03:02:08 -0400
+Received: from si-002-i42.relay.mailchannels.net ([184.154.112.207]:51301 "EHLO
+	relay.mailchannels.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751009AbaFAHCG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jun 2014 02:26:13 -0400
-X-Greylist: delayed 621 seconds by postgrey-1.27 at vger.kernel.org; Sun, 01 Jun 2014 02:26:12 EDT
-Date: Sun, 1 Jun 2014 08:15:47 +0200
-From: Lennart Poettering <mzxreary@0pointer.de>
-To: "Luis R. Rodriguez" <mcgrof@suse.com>
-Cc: Ian Campbell <Ian.Campbell@citrix.com>, luto@mit.edu,
-        Keir Fraser <keir@xen.org>, Tim Deegan <tim@xen.org>,
-        Ian Jackson <ian.jackson@eu.citrix.com>, linux-kernel@vger.kernel.org,
-        systemd-devel@lists.freedesktop.org,
-        linux-security-module@vger.kernel.org, ebiederm@xmission.com,
-        Jan Beulich <jbeulich@suse.com>, xen-devel@lists.xenproject.org,
-        morgan@kernel.org
-Subject: Re: [systemd-devel] [PATCH v5 12/14] autoconf: xen: enable
- explicit 	preference	option for xenstored preference
-Message-ID: <20140601061547.GC16257@tango.0pointer.de>
-References: <1400589095-3872-1-git-send-email-mcgrof@do-not-panic.com>
- <1400589095-3872-13-git-send-email-mcgrof@do-not-panic.com>
- <1400687040.7272.28.camel@kazak.uk.xensource.com>
- <20140521230233.GA13289@wotan.suse.de>
- <1400753147.14637.10.camel@kazak.uk.xensource.com>
- <20140523232031.GA26450@wotan.suse.de>
- <1401269449.24800.7.camel@kazak.uk.xensource.com>
- <20140529232918.GG26450@wotan.suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140529232918.GG26450@wotan.suse.de>
-Organization: Red Hat, Inc.
-X-Campaign-1: ()  ASCII Ribbon Campaign
-X-Campaign-2: /  Against HTML Email & vCards - Against Microsoft Attachments
-User-Agent: Leviathan/19.8.0 [zh] (Cray 3; I; Solaris 4.711; Console)
+	Sun, 1 Jun 2014 03:02:06 -0400
+X-Sender-Id: totalchoicehosting|x-authuser|billaue
+X-Sender-Id: totalchoicehosting|x-authuser|billaue
+X-MC-Relay: Neutral
+X-MailChannels-SenderId: totalchoicehosting%7Cx-authuser%7Cbillaue
+X-MailChannels-Auth-Id: totalchoicehosting
+From: Eli Billauer <eli.billauer@gmail.com>
+To: tj@kernel.org
+Cc: devel@driverdev.osuosl.org, gregkh@linuxfoundation.org,
+        bhelgaas@google.com, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, shuah.kh@samsung.com,
+        iommu@lists.linux-foundation.org, discuss@x86-64.org,
+        Eli Billauer <eli.billauer@gmail.com>
+Subject: [PATCH v2 0/4] devres: dma-mapping: Introducing new functions
+Date: Sun,  1 Jun 2014 10:01:13 +0300
+Message-Id: <1401606077-1739-1-git-send-email-eli.billauer@gmail.com>
+X-Mailer: git-send-email 1.7.2.3
+X-AuthUser: billaue
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 30.05.14 01:29, Luis R. Rodriguez (mcgrof@suse.com) wrote:
+This patchset consists of new functions to the managed device resource
+API, followed by a patch for the Xillybus driver, which is my motivation
+and what I tested with.
 
-> I'm cc'ing a few security folks as I'd appreciate review on the ideas here,
-> in particular that of a launcher idea on system to replace alternatives on the
-> ExecStart= line of a systemd service unit file, alternative ideas are of
-> course welcomed. I'm also Cc'ing systemd-devel as this subject was reviewed
-> a little while ago with nothing concrete being recommended but instead a few
-> options being now archived as possibilities. I'm looking for a bit wider
-> review of the approaches and recomendations.
-> 
-> Some general background for non xen folks: old xen requires the launch of
-> a daemon which implements supports of the xenstore, which is the database
-> that xen uses for information about guests / dom0. There are two supported
-> daemons, xenstored (C version) and oxenstored (Ocaml version) but they do the
-> same thing. Right now old init lets you override which one you pick through
-> an environment variable on /etc/{sysconfig,default}/xencommons, the script
-> will use the appropriate on there. Systemd doesn't let you use variables on
-> the ExecStart line of a service unit file so alternatives are required.
-> 
-> The reason I'm being very careful here this could set a precedent and at
-> least for the launcher idea it'd require the usage of getenv() and execve(),
-> and secure alternatives for these (secure_getenv(), execve_nosecurity())
-> have either been merged or suggested before for Linux. The systemd discussion
-> is only specific to Linux but if we have a launcher we could consider it for
-> other supported OSes. All that said I'd like proper review of the security
-> implications of *all* strategies but obviously in particular the launcher
-> idea. I want to tread carefuly before setting precedents.
+This is a resubmission after changing the API slightly.
 
-You can also just invoke a shell script from ExecStart=. I mean, we try
-to deemphesize them in the boot process, but there's nothing wrong with
-using shell, if you need to parse shell configuraiton fragments and just
-want to execute on ot another program...
+Rationale: While migrating the staging/xillybus driver to rely completely on
+managed resources, some functionalities were missing, and hence added:
 
-That said, I'd certainly make a clean cut and drop support for
-/etc/sysconfig from any project I see, earlier rather than later, since
-it's just cruft, a bad idea and should really just go away. But then
-again, I would also just not do the thing with supporting two
-implementations at the same time... 
+* dmam_map_single()
+* dmam_unmap_single()
+* pcim_map_single()
+* pcim_unmap_single()
 
-Lennart
+Tejun suggested that dma_map_single_attrs() should have a managed version as
+well. The second patch in this set turns dmam_map_single() into
+dma_map_single_attrs(), and implements the former as a macro. Functions added:
+
+* dmam_map_single_attrs()
+* dmam_unmap_single_attrs()
+
+Xillybus' driver works with and without this patch (depends on patches #1 and #3
+only).
+
+Thanks,
+   Eli
+
+Eli Billauer (4):
+  dma-mapping: Add devm_ interface for dma_map_single()
+  dma-mapping: Add devm_ interface for dma_map_single_attrs()
+  dma-mapping: pci: Add devm_ interface for pci_map_single
+  staging: xillybus: Use devm_ API for memory allocation and DMA
+    mapping
+
+ Documentation/driver-model/devres.txt    |    6 +
+ drivers/base/dma-mapping.c               |  106 +++++++++++++++++
+ drivers/staging/xillybus/xillybus.h      |   38 +------
+ drivers/staging/xillybus/xillybus_core.c |  186 +++++++++---------------------
+ drivers/staging/xillybus/xillybus_of.c   |   61 +---------
+ drivers/staging/xillybus/xillybus_pcie.c |   54 ++--------
+ include/asm-generic/dma-mapping-common.h |    3 +
+ include/asm-generic/pci-dma-compat.h     |   18 +++
+ include/linux/dma-mapping.h              |    8 +-
+ 9 files changed, 214 insertions(+), 266 deletions(-)
 
 -- 
-Lennart Poettering, Red Hat
+1.7.2.3
+
