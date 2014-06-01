@@ -1,113 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752945AbaFAXBv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jun 2014 19:01:51 -0400
-Received: from know-smtprelay-omc-10.server.virginmedia.net ([80.0.253.74]:34636
-	"EHLO know-smtprelay-omc-10.server.virginmedia.net"
+	id S1752755AbaFAXU0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jun 2014 19:20:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11716 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751058AbaFAXBt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jun 2014 19:01:49 -0400
-X-Originating-IP: [81.106.150.188]
-X-Spam: 0
-X-Authority: v=2.1 cv=FZq5xfO6 c=1 sm=1 tr=0 a=DGj713NdaxKrsjjgQne7PA==:117
- a=DGj713NdaxKrsjjgQne7PA==:17 a=J0QyKEt1u0cA:10 a=_LNj2pMP9rQA:10
- a=uObrxnre4hsA:10 a=IkcTkHD0fZMA:10 a=NLZqzBF-AAAA:8 a=YRTPxWTwSe1K2sfPLp8A:9
- a=aEs1wHJ5MpNIBc6f:21 a=6umvBD7X8iIOkED9:21 a=QEXdDO2ut3YA:10
-Date: Mon, 2 Jun 2014 00:01:46 +0100
-From: Ken Moffat <zarniwhoop@ntlworld.com>
-To: linux-kernel@vger.kernel.org, robbat2@gentoo.org
-Subject: Re: Licensing & copyright of kernel .config files (defconfig,
- *config)
-Message-ID: <20140601230146.GB31939@milliways>
-References: <robbat2-20140601T012929-356267352Z@orbis-terrarum.net>
+	id S1752411AbaFAXUZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Jun 2014 19:20:25 -0400
+Message-ID: <538BB511.1020709@redhat.com>
+Date: Sun, 01 Jun 2014 19:19:45 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131028 Thunderbird/17.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <robbat2-20140601T012929-356267352Z@orbis-terrarum.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Oren Twaig <oren@scalemp.com>
+CC: linux-kernel@vger.kernel.org, pbonzini@redhat.com,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Borislav Petkov <bp@suse.de>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <ak@linux.intel.com>, Dave Jones <davej@redhat.com>,
+        Torsten Kaiser <just.for.lkml@googlemail.com>,
+        Jan Beulich <JBeulich@suse.com>, Jan Kiszka <jan.kiszka@siemens.com>,
+        Toshi Kani <toshi.kani@hp.com>, Andrew Jones <drjones@redhat.com>,
+        "Shai (Shai@ScaleMP.com)" <Shai@scalemp.com>
+Subject: Re: [PATCH 1/2] x86, Clean up smp_num_siblings calculation
+References: <1401450185-23061-1-git-send-email-prarit@redhat.com> <1401450185-23061-2-git-send-email-prarit@redhat.com> <538AF11F.8060802@scalemp.com>
+In-Reply-To: <538AF11F.8060802@scalemp.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 01, 2014 at 01:43:01AM +0000, Robin H. Johnson wrote:
-> (Please CC me on replies, not subscribed to LKML)
-> 
-> Hi,
-> 
-> Somewhat of an odd question, but none of the files in question seem to
-> have a copyright header on them...
-> 
-> For a kernel .config file, either from one of the defconfig or any other
-> *config option that automates the answer:
-> 1. What license does the file fall under?
-> 2. Who are the copyright holders?
-> 
-> Naively, since the defconfigs are bundled with the kernel, that could
-> fall under GPLv2-only implicitly, but lacking any explicit copyright
-> headers makes this interesting (arch/*/configs/* contain lots of files,
-> no copyright headers on them).
-> 
 
- I am not a lawyer, but surely _many_ of the kernel files do not
-contain any explicit copyright information ?
 
-> If I manually write the names of some configuration options to a new
-> .config file, at that point I logically am the only author and have
-> copyright of it. My editor slaps a default license on it of BSD-2.
-> Thereafter I run olddefconfig, and now it's a combined work of the
-> kernel's defconfig and my manual settings. If GPL-2 was inherited from
-> the kernel tree, this is now a combined BSD-GPL2 work, or is it? The
-> kernel config tools did consider my file as input, possibly overrode the
-> settings if they didn't work with others, and re-output everything.
+On 06/01/2014 05:23 AM, Oren Twaig wrote:
+> Hi Prarit,
 > 
-
- Why does your editor put a default license on anything ?  In some
-cases, it is bound to be wrong.  For example, if you were to ever
-submit a kernel patch, in the kernel the license would be GPL-2
-although, if you created a new file, you could also license that as
-BSD-2 if it was not a derivative of existing kernel code.
-Similarly, if you ever create a patch for any other project which
-does not use a BSD license, then your patch will have uncertain
-status.
-
- If I was being awkward, I would suggest that the config would not
-be useful until you had run it through "make oldconfig" or similar,
-and that therefore the kernel license of GPL-2 applies.
-
-> If the files are to be marked with a copyright header, who is the holder
-> of it that it should be attributed to?
+> See below,
 > 
-
- Iff the work is copyrightable (I do not have an opinion on that),
-surely the license only matters if you breach it ? ;-)  If you
-distribute a compiled kernel with the source, and all of that source
-is GPL-2, then I assume you are in the clear.  For "extras" which
-include binaries without source, my understanding is that you would
-always be vulnerable to kernel copyright holders.  So, I suspect
-that the attribution of a config file is not particularly important.
-
-> Alternatively, is this a case where the work is not copyrightable, and
-> the files should have a notice to that effect?
+> On 05/30/2014 02:43 PM, Prarit Bhargava wrote:
+>> I have a system on which I have disabled threading in the BIOS, and I am booting
+>> the kernel with the option "idle=poll".
+>>
+>> The kernel displays
+>>
+>> process: WARNING: polling idle and HT enabled, performance may degrade
+>>
+>> which is incorrect -- I've already disabled HT.
+>>
+>> This warning is issued here:
+>>
+>> void select_idle_routine(const struct cpuinfo_x86 *c)
+>> {
+>>         if (boot_option_idle_override == IDLE_POLL && smp_num_siblings > 1)
+>>                 pr_warn_once("WARNING: polling idle and HT enabled, performance may degrade\n");
+>>
+>> >From my understanding of the other ares of kernel that use
+>> smp_num_siblings, the value is supposed to be the the number of threads
+>> per core.
+>>
+>> The value of smp_num_siblings is incorrect.  In theory, it should be 1 but it
+>> is reported as 2.  When I looked into how smp_num_siblings is calculated I
+>> found the following call sequence in the kernel:
+>>
+>> start_kernel ->
+>>         check_bugs ->
+>>                 identify_boot_cpu ->
+>>                                 identify_cpu ->
+>>                                         c_init = init_intel
+>>                                                 init_intel ->
+>>                                                         detect_extended_topology
+>>                                                         (sets value)
+>>
+>>                                         OR
+>>
+>>                                         c_init = init_amd
+>>                                                 init_amd -> amd_detect_cmp
+>>                                                              -> amd_get_topology
+>>                                                                 (sets value)
+>>                                                          -> detect_ht()
+>>                                         ...            (sets value)
+>>                                         detect_ht()
+>>                                         (also sets value)
+>>
+>> ie) it is set three times in some cases and is overwritten by the call
+>> to detect_ht() from identify_cpu() in all cases.
+>>
+>> It should be noted that nothing in the identify_cpu() path or the cpu_up()
+>> path requires smp_num_siblings to be set, prior to the final call to
+>> detect_ht().
+>>
+>> For x86 boxes, smp_num_siblings is set to a value read in a CPUID call in
+>> detect_ht(). This value is the *factory defined* value in all cases; even
+>> if HT is disabled in BIOS the value still returns 2 if the CPU supports
+>> HT.  AMD also reports the factory defined value in all cases.
 > 
-> Background:
-> Gentoo has a bunch of "stock" kernel configurations for release
-> engineering, our initramfs tool (genkernel), and other endeavors over
-> the years. These projects claim BSD, GPL2, LGPL2 on various pieces, and
-> I don't think they can all be correct. I'm working on getting them into
-> one place, because some of them have been getting stale, but the
-> differing licenses raised a red flag to me.
+> The above is incorrect in case of X-TOPOLOGY mode. I such a case the information
+> about number of siblings comes from the LEVEL_MAX_SIBLINGS() macro and the
+> X86_FEATURE_XTOPOLOGY flag is set to skip detect_ht() work :
+> void detect_ht(struct cpuinfo_x86 *c)
+> ...
+>     if (cpu_has(c, X86_FEATURE_XTOPOLOGY))
+>             return;
 > 
+> In addition, the information about the number of sibling no longer comes from
+> CPUID(0x1)->ebx but rather from the 0xb leaf of CPUID.
+> 
+> I've marked below the problematic code change.
 
- To the extent that GPL-2 can include LGPL-2 and BSD, I suggest that
-you label them all as GPL-2.  That is the licence of the kernel, and
-for practical reasons it will not change (this was discussed when
-somebody asked about GPL-3 : even if the main copyright holders
-wanted to make the change (and many do not), some copyright holders
-are no longer contactable).  You might be able to dual-license some
-of these distro files, but I have no idea if that would be appropriate.
+I will do a [v2] of the patchset that omits this change
 
-ĸen
--- 
-Nanny Ogg usually went to bed early. After all, she was an old lady.
-Sometimes she went to bed as early as 6 a.m.
+>> -    core_level_siblings = smp_num_siblings = LEVEL_MAX_SIBLINGS(ebx);
+>> +    core_level_siblings = LEVEL_MAX_SIBLINGS(ebx);
+
+and then removes the setting of smp_num_siblings in 2/2.
+
+Thanks,
+
+P.
