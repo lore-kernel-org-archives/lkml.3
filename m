@@ -1,107 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757141AbaFALiy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jun 2014 07:38:54 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:49741 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756899AbaFALix (ORCPT
+	id S1757210AbaFALjm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jun 2014 07:39:42 -0400
+Received: from mail-qa0-f41.google.com ([209.85.216.41]:63037 "EHLO
+	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751929AbaFALjk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jun 2014 07:38:53 -0400
-Date: Sun, 1 Jun 2014 12:38:34 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Lucas Stach <l.stach@pengutronix.de>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
-        kernel@pengutronix.de
-Message-ID: <20140601113834.GG5099@sirena.org.uk>
-References: <1400691239-21987-1-git-send-email-l.stach@pengutronix.de>
+	Sun, 1 Jun 2014 07:39:40 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="CDSQlumANh/CoDwR"
-Content-Disposition: inline
-In-Reply-To: <1400691239-21987-1-git-send-email-l.stach@pengutronix.de>
-X-Cookie: Ditat Deus.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regulator: core: allow non-exact matches in
- regulator_set_voltage_time()
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Date: Sun, 1 Jun 2014 14:39:39 +0300
+Message-ID: <CAKyyzSRfO_Hw4bDimfzV9+-8damc9RwoqA_RLkBBa_gMw9e62Q@mail.gmail.com>
+Subject: Re: [PATCH] Fixed zero copy GSO without orphaning the fragments
+From: Igor Royzis <igorr@swortex.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <edumazet@google.com>, Tom Herbert <therbert@google.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
+        Simon Horman <horms@verge.net.au>, Joe Perches <joe@perches.com>,
+        Jiri Pirko <jiri@resnulli.us>, Florian Westphal <fw@strlen.de>,
+        Paul Durrant <Paul.Durrant@citrix.com>, Thomas Graf <tgraf@suug.ch>,
+        Jan Beulich <JBeulich@suse.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        Miklos Szeredi <mszeredi@suse.cz>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>, Anton Nayshtut <anton@swortex.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The patch discussion seems got lost due to a delay it took us to get
+the numbers. We believe that a 24% improvement in VM's network
+performance (and probably the better improvement the more guests are
+running on a host) is worth commenting and getting to some conclusion.
 
---CDSQlumANh/CoDwR
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> Before your patch :
+>
+> sizeof(struct skb_shared_info)=0x140
+> offsetof(struct skb_shared_info, frags[1])=0x40
+>
+> SKB_DATA_ALIGN(sizeof(struct skb_shared_info)) -> 0x140
+>
+> After your patch :
+>
+> sizeof(struct skb_shared_info)=0x148
+> offsetof(struct skb_shared_info, frags[1])=0x48
+>
+> SKB_DATA_ALIGN(sizeof(struct skb_shared_info)) -> 0x180
+>
+> Thats a serious bump, because it increases all skb truesizes, and
+> typical skb with one fragment will use 2 cache lines instead of one in
+> struct skb_shared_info, so this adds memory pressure in fast path.
+>
+> So while this patch might increase performance for some workloads,
+> it generally decreases performance on many others.
 
-On Wed, May 21, 2014 at 06:53:59PM +0200, Lucas Stach wrote:
-> Currently this function only provides a valid output if both
-> old_uV and new_uV are exact voltages that can be provided by the
-> regulator.
-> This is almost impossible to achive as the consumer has
-> no way to know the exact voltages provided by the regulator.
+Would moving  the parent fragment pointer from skb_shared_info to
+skbuff solve this issue?
 
-Yes it does - this is what regulator_list_voltage() is there for.
-Drivers can enumerate all the voltages supported by a regulator.
+Regards,
+-Igor
 
-> This breaks the current cpufreq users of this function, as they
-> stick in the raw voltages retrieved from their operating points,
-> which may or may not match one of the regulator voltages.
-
-At least the code in cpufreq-cpu0 looks a bit confused here.  The use of
-min_uV and max_uV is a bit unclear but probably correct however for some
-reason it appears that what it's doing is stepping through each single
-step transition between two adjacent frequencies, getting the transition
-latency for that and then summing those.  Given that it needs a single
-number I'd expect it to instead be getting the minimum and maximum
-voltages and then working out the highest latency for transitioning
-between those, what it's doing at the minute will be overestimating any
-fixed component of transition latency (from the time taken to issue
-commands to the device for example).
-
-Incidentally the clock API ought to have a similar thing - at the minute
-the driver just has a fixed number stuffed into it from DT but it really
-ought to be able to ask the clock API in the same way as it asks the
-regulator API.
-
-> To make this function behave as expected employ the same logic
-> as used when calling set_voltage() and round the voltages to
-> the closest matching voltage supported by the regulator.
-
-That's not what the set_voltage() code does - what it does is find the
-lowest voltage in the requested range. =20
-
-Your code won't actually do quite what cpufreq-cpu0 is doing since it
-uses set_voltage_tol() which will ask for a range around the voltage
-it's trying to set so the query in cpufreq-cpu0 will come out as
-something different to what the driver actually ends up doing when it
-does transitions.  We should probably add functions to query what the
-actual voltage selected for a given set_voltage() and set_voltage_tol()
-will be then let that be fed into requesting the transition times.
-
---CDSQlumANh/CoDwR
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTixC3AAoJELSic+t+oim9nIsP/0PlM8N4UlwH1MSoCJ+1BDfn
-YQv4SEJaPcenz7AcZLx3gPxn9eEwM9IVm3Rtt4rm5Los1UN3mpQHUsl6TSFKvNnL
-mYXbSYgvAOTMFq829oG2JJQLDauXcAhRDw6+k8o7cwKfsxkAJKfbjarzfucScedC
-X7XdNY7fmjLn1bATXc1rqzSLvgMyxEOdKngvKHxKaUgTvEpdFu74Olw95Dy2fF5b
-yTAPNWyMfAVm+BgE9wAlsRLOJlF3mashD224XTAPMij1MGuz6cS3AfV53bvFuM1A
-yJ5VI8W0vCJVHqAWQSGaj2/JWn3wOxGS4Hx0BhlZCnkMzSRwR2lRqeRcRz6Z6WCm
-vAw68yXdHB67xl62dcyj7ZtNZONp2dzp9us0xpFbl3lfCJDti0I+FBDO8OnRV4Y/
-K+3pwNnueLIak4dVgPXFDw8B3uX3PtdLoKlgMeo+Bdbd1pVwb6A9l+QAbtKdJy0O
-dybR5RUR5jnsv7Z+3RceqAZXXJyDny2T8za7JN77r/9At6wessdnzAmpGYLvuN5R
-pC/k9yfDG+xwA7iELi+fEgwPHi64ZzEgwnIVqc9jXLKY3lnKa0m7AmamKuymsxMc
-4k/IX8k40TbiNEOpnj51+pQfZaU989Ii+mAArNBQffZcZibQyDp6IpMytBgz+Bzf
-rfCH2b8D/LqjviemQoE7
-=Z9Ha
------END PGP SIGNATURE-----
-
---CDSQlumANh/CoDwR--
+On Sun, May 25, 2014 at 1:54 PM, Igor Royzis <igorr@swortex.com> wrote:
+>> If true, I'd like to see some performance numbers please.
+>
+> The numbers have been obtained by running iperf between 2 QEMU Win2012
+> VMs, 4 vCPU/ 4GB RAM each.
+> iperf parameters: -w 256K -l 256K -t 300
+> Original kernel 3.15.0-rc5:           34.4 Gbytes transferred, 984
+> Mbits/sec bandwidth.
+> Kernel 3.15.0-rc5 with our patch: 42.5 Gbytes transferred, 1.22
+> Gbits/sec bandwidth.
+>
+> Overall improvement is about 24%.
+> Below are raw iperf outputs.
+>
+> kernel 3.15.0-rc5:
+> C:\iperf>iperf -c 192.168.11.2 -w 256K -l 256K -t 300
+> ------------------------------------------------------------
+> Client connecting to 192.168.11.2, TCP port 5001
+> TCP window size:  256 KByte
+> ------------------------------------------------------------
+> [  3] local 192.168.11.1 port 49167 connected with 192.168.11.2 port 5001
+> [ ID] Interval       Transfer     Bandwidth
+> [  3]  0.0-300.7 sec  34.4 GBytes   984 Mbits/sec
+>
+> kernel 3.15.0-rc5-patched:
+> C:\iperf>iperf -c 192.168.11.2 -w 256K -l 256K -t 300
+> ------------------------------------------------------------
+> Client connecting to 192.168.11.2, TCP port 5001
+> TCP window size:  256 KByte
+> ------------------------------------------------------------
+> [  3] local 192.168.11.1 port 49167 connected with 192.168.11.2 port 5001
+> [ ID] Interval       Transfer     Bandwidth
+> [  3]  0.0-300.7 sec  42.5 GBytes   1.22 Gbits/sec
+>
+> On Tue, May 20, 2014 at 2:50 PM, Michael S. Tsirkin <mst@redhat.com> wrote:
+>>
+>> On Tue, May 20, 2014 at 02:24:21PM +0300, Igor Royzis wrote:
+>> > Fix accessing GSO fragments memory (and a possible corruption therefore) after
+>> > reporting completion in a zero copy callback. The previous fix in the commit 1fd819ec
+>> > orphaned frags which eliminates zero copy advantages. The fix makes the completion
+>> > called after all the fragments were processed avoiding unnecessary orphaning/copying
+>> > from userspace.
+>> >
+>> > The GSO fragments corruption issue was observed in a typical QEMU/KVM VM setup that
+>> > hosts a Windows guest (since QEMU virtio-net Windows driver doesn't support GRO).
+>> > The fix has been verified by running the HCK OffloadLSO test.
+>> >
+>> > Signed-off-by: Igor Royzis <igorr@swortex.com>
+>> > Signed-off-by: Anton Nayshtut <anton@swortex.com>
+>>
+>> OK but with 1fd819ec there's no corruption, correct?
+>> So this patch is in fact an optimization?
+>> If true, I'd like to see some performance numbers please.
+>>
+>> Thanks!
+>>
+>> > ---
+>> >  include/linux/skbuff.h |    1 +
+>> >  net/core/skbuff.c      |   18 +++++++++++++-----
+>> >  2 files changed, 14 insertions(+), 5 deletions(-)
+>> >
+>> > diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
+>> > index 08074a8..8c49edc 100644
+>> > --- a/include/linux/skbuff.h
+>> > +++ b/include/linux/skbuff.h
+>> > @@ -287,6 +287,7 @@ struct skb_shared_info {
+>> >       struct sk_buff  *frag_list;
+>> >       struct skb_shared_hwtstamps hwtstamps;
+>> >       __be32          ip6_frag_id;
+>> > +     struct sk_buff  *zcopy_src;
+>> >
+>> >       /*
+>> >        * Warning : all fields before dataref are cleared in __alloc_skb()
+>> > diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+>> > index 1b62343..6fa6342 100644
+>> > --- a/net/core/skbuff.c
+>> > +++ b/net/core/skbuff.c
+>> > @@ -610,14 +610,18 @@ EXPORT_SYMBOL(__kfree_skb);
+>> >   */
+>> >  void kfree_skb(struct sk_buff *skb)
+>> >  {
+>> > +     struct sk_buff *zcopy_src;
+>> >       if (unlikely(!skb))
+>> >               return;
+>> >       if (likely(atomic_read(&skb->users) == 1))
+>> >               smp_rmb();
+>> >       else if (likely(!atomic_dec_and_test(&skb->users)))
+>> >               return;
+>> > +     zcopy_src = skb_shinfo(skb)->zcopy_src;
+>> >       trace_kfree_skb(skb, __builtin_return_address(0));
+>> >       __kfree_skb(skb);
+>> > +     if (unlikely(zcopy_src))
+>> > +             kfree_skb(zcopy_src);
+>> >  }
+>> >  EXPORT_SYMBOL(kfree_skb);
+>> >
+>> > @@ -662,14 +666,18 @@ EXPORT_SYMBOL(skb_tx_error);
+>> >   */
+>> >  void consume_skb(struct sk_buff *skb)
+>> >  {
+>> > +     struct sk_buff *zcopy_src;
+>> >       if (unlikely(!skb))
+>> >               return;
+>> >       if (likely(atomic_read(&skb->users) == 1))
+>> >               smp_rmb();
+>> >       else if (likely(!atomic_dec_and_test(&skb->users)))
+>> >               return;
+>> > +     zcopy_src = skb_shinfo(skb)->zcopy_src;
+>> >       trace_consume_skb(skb);
+>> >       __kfree_skb(skb);
+>> > +     if (unlikely(zcopy_src))
+>> > +             consume_skb(zcopy_src);
+>> >  }
+>> >  EXPORT_SYMBOL(consume_skb);
+>> >
+>> > @@ -2867,7 +2875,6 @@ struct sk_buff *skb_segment(struct sk_buff *head_skb,
+>> >       skb_frag_t *frag = skb_shinfo(head_skb)->frags;
+>> >       unsigned int mss = skb_shinfo(head_skb)->gso_size;
+>> >       unsigned int doffset = head_skb->data - skb_mac_header(head_skb);
+>> > -     struct sk_buff *frag_skb = head_skb;
+>> >       unsigned int offset = doffset;
+>> >       unsigned int tnl_hlen = skb_tnl_header_len(head_skb);
+>> >       unsigned int headroom;
+>> > @@ -2913,7 +2920,6 @@ struct sk_buff *skb_segment(struct sk_buff *head_skb,
+>> >                       i = 0;
+>> >                       nfrags = skb_shinfo(list_skb)->nr_frags;
+>> >                       frag = skb_shinfo(list_skb)->frags;
+>> > -                     frag_skb = list_skb;
+>> >                       pos += skb_headlen(list_skb);
+>> >
+>> >                       while (pos < offset + len) {
+>> > @@ -2975,6 +2981,11 @@ struct sk_buff *skb_segment(struct sk_buff *head_skb,
+>> >                                                nskb->data - tnl_hlen,
+>> >                                                doffset + tnl_hlen);
+>> >
+>> > +             if (skb_shinfo(head_skb)->tx_flags & SKBTX_DEV_ZEROCOPY) {
+>> > +                     skb_shinfo(nskb)->zcopy_src = head_skb;
+>> > +                     atomic_inc(&head_skb->users);
+>> > +             }
+>> > +
+>> >               if (nskb->len == len + doffset)
+>> >                       goto perform_csum_check;
+>> >
+>> > @@ -3001,7 +3012,6 @@ struct sk_buff *skb_segment(struct sk_buff *head_skb,
+>> >                               i = 0;
+>> >                               nfrags = skb_shinfo(list_skb)->nr_frags;
+>> >                               frag = skb_shinfo(list_skb)->frags;
+>> > -                             frag_skb = list_skb;
+>> >
+>> >                               BUG_ON(!nfrags);
+>> >
+>> > @@ -3016,8 +3026,6 @@ struct sk_buff *skb_segment(struct sk_buff *head_skb,
+>> >                               goto err;
+>> >                       }
+>> >
+>> > -                     if (unlikely(skb_orphan_frags(frag_skb, GFP_ATOMIC)))
+>> > -                             goto err;
+>> >
+>> >                       *nskb_frag = *frag;
+>> >                       __skb_frag_ref(nskb_frag);
+>> > --
+>> > 1.7.9.5
