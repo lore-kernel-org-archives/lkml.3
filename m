@@ -1,65 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752881AbaFAS7W (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jun 2014 14:59:22 -0400
-Received: from smtp3-g21.free.fr ([212.27.42.3]:61033 "EHLO smtp3-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752134AbaFAS7V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jun 2014 14:59:21 -0400
-From: Yann Droneaud <ydroneaud@opteya.com>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Yann Droneaud <ydroneaud@opteya.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCHv7 6/6] file: remove macro get_unused_fd()
-Date: Sun,  1 Jun 2014 16:00:48 +0200
-Message-Id: <f5c8d0d7f243a67f1ecd1978dd45d57b1b81d07a.1401630396.git.ydroneaud@opteya.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <cover.1401630396.git.ydroneaud@opteya.com>
-References: <cover.1401630396.git.ydroneaud@opteya.com>
-In-Reply-To: <cover.1401630396.git.ydroneaud@opteya.com>
-References: <cover.1401630396.git.ydroneaud@opteya.com>
+	id S1755787AbaFATBz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jun 2014 15:01:55 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:50176 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750965AbaFATBy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Jun 2014 15:01:54 -0400
+Date: Sun, 1 Jun 2014 20:01:41 +0100
+From: Mark Brown <broonie@kernel.org>
+To: "Opensource [James Seong-Won Ban]" <james.ban.opensource@diasemi.com>
+Cc: Liam Girdwood <lgirdwood@gmail.com>,
+        Support Opensource <support.opensource@diasemi.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        David Dajun Chen <david.chen@diasemi.com>
+Message-ID: <20140601190141.GM5099@sirena.org.uk>
+References: <201405190656.s4J6uMCD015467@swsrvapps-01.diasemi.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="5TZBROn01cl7bgIF"
+Content-Disposition: inline
+In-Reply-To: <201405190656.s4J6uMCD015467@swsrvapps-01.diasemi.com>
+X-Cookie: Ditat Deus.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH V2] regulator: DA9211 : new regulator driver
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Macro get_unused_fd() allocates a file descriptor without enabling
-close-on-exec: it calls function get_unused_fd_flags() without
-O_CLOEXEC flag.
 
-This can be seen as an unsafe default: in most case close-on-exec
-should be enabled to not leak file descriptor across exec().
+--5TZBROn01cl7bgIF
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-This patch removes get_unused_fd() instead of updating it to use
-O_CLOEXEC so that out of tree modules won't be affect by a runtime
-behavor change which might introduce other kind of bug. It's better
-to catch the change at build time, making it easier to fix.
+On Mon, May 19, 2014 at 02:45:51AM +0100, Opensource [James Seong-Won Ban] wrote:
 
-Removing the macro will also promote use of get_unused_fd_flags()
-(or anon_inode_getfd()) with flags provided by userspace. Or, if
-flags cannot be given by userspace, with flags set to O_CLOEXEC set
-by default.
+> This is the driver for the Dialog DA9211 Multi-phase 12A DC-DC Buck
+> Converter regulator. It communicates via an I2C bus to the device.
 
-Link: http://lkml.kernel.org/r/cover.1401630396.git.ydroneaud@opteya.com
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
----
- include/linux/file.h | 1 -
- 1 file changed, 1 deletion(-)
+I'm still really not convinced that the whole handling of the A and B
+settings is doing what it's supposed to be doing.  Like I said before I
+know another one of your drivers is doing something similar (and not
+sharing the code!) but still...
 
-diff --git a/include/linux/file.h b/include/linux/file.h
-index 4d69123377a2..f87d30882a24 100644
---- a/include/linux/file.h
-+++ b/include/linux/file.h
-@@ -66,7 +66,6 @@ extern void set_close_on_exec(unsigned int fd, int flag);
- extern bool get_close_on_exec(unsigned int fd);
- extern void put_filp(struct file *);
- extern int get_unused_fd_flags(unsigned flags);
--#define get_unused_fd() get_unused_fd_flags(0)
- extern void put_unused_fd(unsigned int fd);
- 
- extern void fd_install(unsigned int fd, struct file *file);
--- 
-1.9.3
+It looks like the driver is basically written so that register set A
+must be used when Linux is running and set B must be used in suspend
+mode but not everything seems joined up and consistent.
 
+> Signed-off-by: Opensource [James Seong-Won Ban] <james.ban.opensource@diasemi.com>
+
+Please just use your name in signoffs, the "Opensource []" garbage that
+your mail system inserts isn't helping.
+
+> +static int da9211_regulator_get_voltage_sel(struct regulator_dev *rdev)
+> +{
+
+> +	/*
+> +	 * There are two voltage register set A & B for voltage ramping but
+> +	 * either one of then can be active therefore we first determine
+> +	 * the active register set.
+> +	 */
+> +	ret = regmap_read(chip->regmap, info->conf.reg, &data);
+> +	if (ret < 0)
+> +		return ret;
+
+This appears to be picking the active register set...
+
+> +	/*
+> +	 * Regulator register set A/B is not selected through GPIO therefore
+> +	 * we use default register set A for voltage ramping.
+> +	 */
+> +	if (regulator->reg_rselect == DA9211_RSEL_NO_GPIO) {
+> +		/* Select register set A */
+> +		ret = regmap_update_bits(chip->regmap, info->conf.reg,
+> +					info->conf.sel_mask,
+> +					DA9211_VBUCKA_SEL_A);
+> +		if (ret < 0)
+> +			return ret;
+> +
+> +		/* Set the voltage */
+> +		return regmap_update_bits(chip->regmap, info->volt.reg_a,
+> +					 info->volt.v_mask, selector);
+> +	}
+
+This forces to register set A.
+
+> +	/*
+> +	 * Here regulator register set A/B is selected through GPIO.
+> +	 * Therefore we first determine the selected register set A/B and
+> +	 * then set the desired voltage for that register set A/B.
+> +	 */
+> +	ret = regmap_read(chip->regmap, info->conf.reg, &data);
+> +	if (ret < 0)
+> +		return ret;
+
+We don't appear to be controlling this GPIO - this then assumes that the
+GPIO can only be used for selecting suspend mode but doesn't impose any
+restrictions on this.
+
+> +static int da9211_regulator_set_suspend_voltage(struct regulator_dev *rdev,
+> +						int uV)
+> +{
+> +	struct da9211_regulator *regulator = rdev_get_drvdata(rdev);
+> +	struct da9211_regulator_info *info = regulator->info;
+> +	struct da9211 *chip = regulator->da9211;
+> +	int ret;
+> +
+> +	/* Select register set B for suspend voltage ramping. */
+> +	if (regulator->reg_rselect == DA9211_RSEL_NO_GPIO) {
+> +		ret = regmap_update_bits(chip->regmap, info->conf.reg,
+> +					info->conf.sel_mask,
+> +					DA9211_VBUCKA_SEL_B);
+> +		if (ret < 0)
+> +			return ret;
+> +	}
+
+This appears to immediately change the active register set to set B
+which as I said previously is broken; we may not be suspended yet and
+clearly we haven't actually applied the desired setting yet either.
+
+--5TZBROn01cl7bgIF
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTi3iSAAoJELSic+t+oim9BuIP/Aor2CEynJfJAR/MitcinnvV
+PDTWDx9HlZNCk6ntHrvlRNI2T2f8glZ3h5Ef1mAbAFyRc98QJWWsPZdECvwAJMKk
+2GfzclABTIvk8ido1y67WNyB1egJ32IaIDrVh9Tx4/yvTMgX7IFOBn3Mx0R7vsPC
+LKkFGyvQ3uhBGIpj0Gpvm2q+6GnANSsJoNOogeW1a1lN513nIAaAYsLFf6NWpKZs
+BP2RcLF9WcwQ4/TS9NJxLwoVa1lA42m/ATtWFPaV6o11/lv7L3kaqzKaX8ryrAY3
+XdUrakLB55FVOufv9yPF10OUwMxZI9lMVLWh9Z4+aAGDhUi8QzBAAy/r3rFFLd6+
+mbhjexLtFTaA/gegLa8R+Ll5VFhvI/d8diptW9gOd60T/teNsf+UrF7muGq1qS66
+lM9IYq6MSQwhhTxSOR7T7Gev8abhqVt6MIdqeW4m3Ytx5qU/lPdDMs1AYrwxKu1v
+KzjjK12pQbhFjjNPI+9Zw+ug2eDEiGAkwf+WQOzCM0TTdJUEgxsA4iP+Uybv4bRh
+mpXPK1GHvNMHtVhZOo7DC0cqPNznh9IHWdceo9MS1kuh70kPdLROiIoa4rV7bdLN
+RVKg9VCJsE70zgkvxwQPMSVERpFM7MX0aJWENIm/iDJlkgUr0LG15Pv7ryL4uO6W
+HU8dLK6hU0IroIgi7T7d
+=8QF+
+-----END PGP SIGNATURE-----
+
+--5TZBROn01cl7bgIF--
