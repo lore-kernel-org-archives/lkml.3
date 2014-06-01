@@ -1,33 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756809AbaFAAEd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 May 2014 20:04:33 -0400
-Received: from donald.hachti.de ([188.40.85.216]:37160 "EHLO donald.hachti.de"
+	id S1756854AbaFAAIY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 May 2014 20:08:24 -0400
+Received: from foo.stuge.se ([212.116.89.98]:53323 "EHLO foo.stuge.se"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756749AbaFAAEc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 May 2014 20:04:32 -0400
-Message-ID: <538A6E0D.2040208@hachti.de>
-Date: Sun, 01 Jun 2014 02:04:29 +0200
-From: Philipp Hachtmann <hachti@hachti.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
-MIME-Version: 1.0
-To: jhovold@gmail.com, gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+	id S1756815AbaFAAIX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 31 May 2014 20:08:23 -0400
+X-Greylist: delayed 441 seconds by postgrey-1.27 at vger.kernel.org; Sat, 31 May 2014 20:08:23 EDT
+Message-ID: <20140601000059.27360.qmail@stuge.se>
+Date: Sun, 1 Jun 2014 02:00:59 +0200
+From: Peter Stuge <peter@stuge.se>
+To: Philipp Hachtmann <hachti@hachti.de>
+Cc: jhovold@gmail.com, gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
         linux-kernel@vger.kernel.org
 Subject: Re: [PATCH 2/2] usb/ftdi_sio: Add support for setting CBUS pins on
- FT232H
+	FT232H
+Mail-Followup-To: Philipp Hachtmann <hachti@hachti.de>, jhovold@gmail.com,
+	gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+	linux-kernel@vger.kernel.org
 References: <1401579066-8298-1-git-send-email-hachti@hachti.de> <1401579066-8298-3-git-send-email-hachti@hachti.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 In-Reply-To: <1401579066-8298-3-git-send-email-hachti@hachti.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01.06.2014 01:31, Philipp Hachtmann wrote:
-> This patch adds a sysfs attribute "cbus" which allows to set the four CBUS
-> pins on the FT232H.
-The patch contains a *small* error that happened when splitting up my 
-modifications. Next series will contain the clean variant.
+Philipp Hachtmann wrote:
+> This patch adds a sysfs attribute "cbus" which allows to set the
+> four CBUS pins on the FT232H.
+
+I think this should be implemented with the gpio subsystem instead.
 
 
-
+//Peter
