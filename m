@@ -1,58 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752618AbaFAOJD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jun 2014 10:09:03 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:45227 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752172AbaFAOJB (ORCPT
+	id S1752429AbaFAOY2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jun 2014 10:24:28 -0400
+Received: from senator.holtmann.net ([87.106.208.187]:33919 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751947AbaFAOY0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jun 2014 10:09:01 -0400
-Message-ID: <538B33D5.8070002@oracle.com>
-Date: Sun, 01 Jun 2014 10:08:21 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Jan Kara <jack@suse.cz>
-CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: mm,console: circular dependency between console_sem and zone
- lock
-References: <536AE5DC.6070307@oracle.com> <20140512162811.GD3685@quack.suse.cz>
-In-Reply-To: <20140512162811.GD3685@quack.suse.cz>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Sun, 1 Jun 2014 10:24:26 -0400
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.2\))
+Subject: Re: [PATCH] net: bluetooth: hci_core.c:  Cleaning up uninitialized variables
+From: Marcel Holtmann <marcel@holtmann.org>
+In-Reply-To: <1401631076-20818-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Date: Sun, 1 Jun 2014 16:24:21 +0200
+Cc: "Gustavo F. Padovan" <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-bluetooth <linux-bluetooth@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <AB19A214-D495-44EE-87E0-45332F156767@holtmann.org>
+References: <1401631076-20818-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+X-Mailer: Apple Mail (2.1878.2)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/12/2014 12:28 PM, Jan Kara wrote:
-> On Wed 07-05-14 22:03:08, Sasha Levin wrote:
->> > Hi all,
->> > 
->> > While fuzzing with trinity inside a KVM tools guest running the latest -next
->> > kernel I've stumbled on the following spew:
->   Thanks for report. So the problem seems to be maginally valid but I'm not
-> 100% sure whom to blame :). So printk() code calls up() which calls
-> try_to_wake_up() under console_sem.lock spinlock. That function can take
-> rq->lock which is all expected.
+Hi Rickard,
+
+> There is a risk that the variable will be used without being initialized.
 > 
-> The next part of the chain is that during CPU initialization we call
-> __sched_fork() with rq->lock which calls into hrtimer_init() which can
-> allocate memory which creates a dependency rq->lock => zone.lock.rlock.
+> This was largely found by using a static code analysis program called cppcheck.
 > 
-> And memory management code calls printk() which zone.lock.rlock held which
-> closes the loop. Now I suspect the second link in the chain can happen only
-> while CPU is booting and might even happen only if some debug options are
-> enabled. But I don't really know scheduler code well enough. Steven?
+> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+> ---
+> net/bluetooth/hci_core.c |    2 +-
+> 1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/net/bluetooth/hci_core.c b/net/bluetooth/hci_core.c
+> index 1c6ffaa..1d93d2f 100644
+> --- a/net/bluetooth/hci_core.c
+> +++ b/net/bluetooth/hci_core.c
+> @@ -4603,7 +4603,7 @@ static struct hci_chan *hci_chan_sent(struct hci_dev *hdev, __u8 type,
+> 	struct hci_chan *chan = NULL;
+> 	unsigned int num = 0, min = ~0, cur_prio = 0;
+> 	struct hci_conn *conn;
+> -	int cnt, q, conn_num = 0;
+> +	int cnt, q = 0, conn_num = 0;
 
-I've cc'ed Peter and Ingo who may be able to answer that, as it still happens
-on -next.
+I have no idea on how the variable will be used without being initialized. Have you actually looked through that function. The only thing we do with q is assign it and then use it. That is it.
 
+Regards
 
-Thanks,
-Sasha
+Marcel
+
