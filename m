@@ -1,43 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752488AbaFARmJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jun 2014 13:42:09 -0400
-Received: from violet.fr.zoreil.com ([92.243.8.30]:41150 "EHLO
-	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751740AbaFARmH (ORCPT
+	id S1752650AbaFARqF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jun 2014 13:46:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56549 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750965AbaFARqC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jun 2014 13:42:07 -0400
-Date: Sun, 1 Jun 2014 19:42:05 +0200
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: Udo van den Heuvel <udovdh@xs4all.nl>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: 3.14.1 network issue with rtl81xx chip
-Message-ID: <20140601174205.GA2027@electric-eye.fr.zoreil.com>
-References: <538B2502.5070707@xs4all.nl>
+	Sun, 1 Jun 2014 13:46:02 -0400
+Date: Sun, 1 Jun 2014 10:45:59 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Johan Hovold <jhovold@gmail.com>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] MAINTAINERS: drop two usb-serial subdriver entries
+Message-ID: <20140601174559.GB1281@kroah.com>
+References: <1401615137-11862-1-git-send-email-jhovold@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <538B2502.5070707@xs4all.nl>
-X-Organisation: Land of Sunshine Inc.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1401615137-11862-1-git-send-email-jhovold@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Udo van den Heuvel <udovdh@xs4all.nl> :
-[...]
-> On two boxes with rtl network chip I see connections going down.
+On Sun, Jun 01, 2014 at 11:32:17AM +0200, Johan Hovold wrote:
+> Remove the remaining two obsolete usb-serial subdriver entries from
+> MAINTAINERS, which were missed in the recent purge by commit
+> f896b7968b62 ("USB: Maintainers change for usb serial drivers").
+> 
+> Signed-off-by: Johan Hovold <jhovold@gmail.com>
+> ---
+>  MAINTAINERS | 12 ------------
+>  1 file changed, 12 deletions(-)
+> 
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index 51ebb779c5f3..68599b26f514 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -9298,12 +9298,6 @@ S:	Maintained
+>  F:	drivers/usb/host/isp116x*
+>  F:	include/linux/usb/isp116x.h
+>  
+> -USB KAWASAKI LSI DRIVER
+> -M:	Oliver Neukum <oliver@neukum.org>
+> -L:	linux-usb@vger.kernel.org
+> -S:	Maintained
+> -F:	drivers/usb/serial/kl5kusb105.*
+> -
+>  USB MASS STORAGE DRIVER
+>  M:	Matthew Dharm <mdharm-usb@one-eyed-alien.net>
+>  L:	linux-usb@vger.kernel.org
+> @@ -9331,12 +9325,6 @@ S:	Maintained
+>  F:	Documentation/usb/ohci.txt
+>  F:	drivers/usb/host/ohci*
+>  
+> -USB OPTION-CARD DRIVER
+> -M:	Matthias Urlichs <smurf@smurf.noris.de>
+> -L:	linux-usb@vger.kernel.org
+> -S:	Maintained
+> -F:	drivers/usb/serial/option.c
 
-Do you notice netdev watchdog messages in the kernel log ?
 
-[...]
-> 3.14.1 has the issue.
+Why are we taking away the maintainership of these individual drivers
+from these developers?  I had no problem giving you the drivers I was
+supposed to be in charge of, but I need a signed-off-by from Matthias
+and Oliver for these if they want to do the same.
 
-Does it qualify as a (recent ?) regression or is it a fresh new setup ?
+thanks,
 
-> How can I fix this more elegantly ?
-
-No suggestion yet.
-
--- 
-Ueimor
+greg k-h
