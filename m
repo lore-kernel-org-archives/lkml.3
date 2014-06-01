@@ -1,331 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757074AbaFAMBB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jun 2014 08:01:01 -0400
-Received: from mail.eperm.de ([89.247.134.16]:45706 "EHLO mail.eperm.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750810AbaFAMBA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jun 2014 08:01:00 -0400
-X-AuthUser: sm@eperm.de
-From: Stephan Mueller <smueller@chronox.de>
-To: linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org
-Cc: herbert@gondor.apana.org.au, aquini@redhat.com, joe@perches.com,
-        pwalten@au1.ibm.com, jeremy.wayne.powell@gmail.com, clemens@ladisch.de
-Subject: [PATCH v9 6/6] Add DRBG test code to testmgr
-Date: Sat, 31 May 2014 17:25:36 +0200
-Message-ID: <4475600.bmUR6kBdJr@myon.chronox.de>
-User-Agent: KMail/4.12.5 (Linux/3.14.4-200.fc20.x86_64; KDE/4.12.5; x86_64; ; )
-In-Reply-To: <22272963.fKEMicLVWl@myon.chronox.de>
-References: <22272963.fKEMicLVWl@myon.chronox.de>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	id S1757135AbaFAMCG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jun 2014 08:02:06 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:46684 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756933AbaFAMCE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Jun 2014 08:02:04 -0400
+From: Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>
+To: grant.likely@linaro.org
+Cc: robh+dt@kernel.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>
+Subject: [PATCH] of/base: Replace alias if it already exists
+Date: Sun,  1 Jun 2014 15:01:23 +0300
+Message-Id: <1401624083-30796-1-git-send-email-ivo.g.dimitrov.75@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The DRBG test code implements the CAVS test approach.
+The current code unconditionally adds aliases without check if it already
+exists, so it is not possible to alter an alias, from board DT file for
+example. Fix that by replacing an alias if it already exists
 
-As discussed for the test vectors, all DRBG types are covered with
-testing. However, not every backend cipher is covered with testing. To
-prevent the testmgr from logging missing testing, the NULL test is
-registered for all backend ciphers not covered with specific test cases.
-
-All currently implemented DRBG types and backend ciphers are defined
-in SP800-90A. Therefore, the fips_allowed flag is set for all.
-
-Signed-off-by: Stephan Mueller <smueller@chronox.de>
+Signed-off-by: Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>
 ---
- crypto/testmgr.c | 247 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 247 insertions(+)
+ drivers/of/base.c |   34 +++++++++++++++++++++++++++-------
+ 1 file changed, 27 insertions(+), 7 deletions(-)
 
-diff --git a/crypto/testmgr.c b/crypto/testmgr.c
-index dc3cf35..4b1f512 100644
---- a/crypto/testmgr.c
-+++ b/crypto/testmgr.c
-@@ -27,6 +27,7 @@
- #include <linux/slab.h>
- #include <linux/string.h>
- #include <crypto/rng.h>
-+#include <crypto/drbg.h>
- 
- #include "internal.h"
- 
-@@ -108,6 +109,11 @@ struct cprng_test_suite {
- 	unsigned int count;
- };
- 
-+struct drbg_test_suite {
-+	struct drbg_testvec *vecs;
-+	unsigned int count;
-+};
-+
- struct alg_test_desc {
- 	const char *alg;
- 	int (*test)(const struct alg_test_desc *desc, const char *driver,
-@@ -121,6 +127,7 @@ struct alg_test_desc {
- 		struct pcomp_test_suite pcomp;
- 		struct hash_test_suite hash;
- 		struct cprng_test_suite cprng;
-+		struct drbg_test_suite drbg;
- 	} suite;
- };
- 
-@@ -1712,6 +1719,100 @@ static int alg_test_cprng(const struct alg_test_desc *desc, const char *driver,
- 	return err;
+diff --git a/drivers/of/base.c b/drivers/of/base.c
+index 03e7fc6..99215f0 100644
+--- a/drivers/of/base.c
++++ b/drivers/of/base.c
+@@ -2036,6 +2036,23 @@ static void of_alias_add(struct alias_prop *ap, struct device_node *np,
+ 		 ap->alias, ap->stem, ap->id, of_node_full_name(np));
  }
  
-+
-+static int drbg_cavs_test(struct drbg_testvec *test, int pr,
-+			  const char *driver, u32 type, u32 mask)
++static int of_alias_replace(struct device_node *np, int id, const char *stem,
++			    int stem_len)
 +{
-+	int ret = -EAGAIN;
-+	struct crypto_rng *drng;
-+	struct drbg_test_data test_data;
-+	struct drbg_string addtl, pers, testentropy;
-+	unsigned char *buf = kzalloc(test->expectedlen, GFP_KERNEL);
++	struct alias_prop *ap;
 +
-+	if (!buf)
-+		return -ENOMEM;
++	list_for_each_entry(ap, &aliases_lookup, link) {
++		if (strncmp(ap->stem, stem, stem_len))
++			continue;
 +
-+	drng = crypto_alloc_rng(driver, type, mask);
-+	if (IS_ERR(drng)) {
-+		printk(KERN_ERR "alg: drbg: could not allocate DRNG handle for"
-+		       "%s\n", driver);
-+		kzfree(buf);
-+		return -ENOMEM;
++		if (np == ap->np) {
++			ap->id = id;
++			return 0;
++		}
 +	}
 +
-+	test_data.testentropy = &testentropy;
-+	drbg_string_fill(&testentropy, test->entropy, test->entropylen);
-+	drbg_string_fill(&pers, test->pers, test->perslen);
-+	ret = crypto_drbg_reset_test(drng, &pers, &test_data);
-+	if (ret) {
-+		printk(KERN_ERR "alg: drbg: Failed to reset rng\n");
-+		goto outbuf;
-+	}
-+
-+	drbg_string_fill(&addtl, test->addtla, test->addtllen);
-+	if (pr) {
-+		drbg_string_fill(&testentropy, test->entpra, test->entprlen);
-+		ret = crypto_drbg_get_bytes_addtl_test(drng,
-+			buf, test->expectedlen, &addtl,	&test_data);
-+	} else {
-+		ret = crypto_drbg_get_bytes_addtl(drng,
-+			buf, test->expectedlen, &addtl);
-+	}
-+	if (ret <= 0) {
-+		printk(KERN_ERR "alg: drbg: could not obtain random data for"
-+		       "driver %s\n", driver);
-+		goto outbuf;
-+	}
-+
-+	drbg_string_fill(&addtl, test->addtlb, test->addtllen);
-+	if (pr) {
-+		drbg_string_fill(&testentropy, test->entprb, test->entprlen);
-+		ret = crypto_drbg_get_bytes_addtl_test(drng,
-+			buf, test->expectedlen, &addtl, &test_data);
-+	} else {
-+		ret = crypto_drbg_get_bytes_addtl(drng,
-+			buf, test->expectedlen, &addtl);
-+	}
-+	if (ret <= 0) {
-+		printk(KERN_ERR "alg: drbg: could not obtain random data for"
-+		       "driver %s\n", driver);
-+		goto outbuf;
-+	}
-+
-+	ret = memcmp(test->expected, buf, test->expectedlen);
-+
-+outbuf:
-+	crypto_free_rng(drng);
-+	kzfree(buf);
-+	return ret;
++	return -ENODEV;
 +}
-+
-+
-+static int alg_test_drbg(const struct alg_test_desc *desc, const char *driver,
-+			 u32 type, u32 mask)
-+{
-+	int err = 0;
-+	int pr = 0;
-+	int i = 0;
-+	struct drbg_testvec *template = desc->suite.drbg.vecs;
-+	unsigned int tcount = desc->suite.drbg.count;
-+
-+	if (0 == memcmp(driver, "drbg_pr_", 8))
-+		pr = 1;
-+
-+	for (i = 0; i < tcount; i++) {
-+		err = drbg_cavs_test(&template[i], pr, driver, type, mask);
-+		if (err) {
-+			printk(KERN_ERR "alg: drbg: Test %d failed for %s\n",
-+			       i, driver);
-+			err = -EINVAL;
-+			break;
+ /**
+  * of_alias_scan - Scan all properties of 'aliases' node
+  *
+@@ -2092,13 +2109,16 @@ void of_alias_scan(void * (*dt_alloc)(u64 size, u64 align))
+ 		if (kstrtoint(end, 10, &id) < 0)
+ 			continue;
+ 
+-		/* Allocate an alias_prop with enough space for the stem */
+-		ap = dt_alloc(sizeof(*ap) + len + 1, 4);
+-		if (!ap)
+-			continue;
+-		memset(ap, 0, sizeof(*ap) + len + 1);
+-		ap->alias = start;
+-		of_alias_add(ap, np, id, start, len);
++		if (of_alias_replace(np, id, start, len)) {
++			/* Allocate an alias_prop with enough space for the stem
++			 */
++			ap = dt_alloc(sizeof(*ap) + len + 1, 4);
++			if (!ap)
++				continue;
++			memset(ap, 0, sizeof(*ap) + len + 1);
++			ap->alias = start;
++			of_alias_add(ap, np, id, start, len);
 +		}
-+	}
-+	return err;
-+
-+}
-+
- static int alg_test_null(const struct alg_test_desc *desc,
- 			     const char *driver, u32 type, u32 mask)
- {
-@@ -2305,6 +2406,152 @@ static const struct alg_test_desc alg_test_descs[] = {
- 		.alg = "digest_null",
- 		.test = alg_test_null,
- 	}, {
-+		.alg = "drbg_nopr_ctr_aes128",
-+		.test = alg_test_drbg,
-+		.fips_allowed = 1,
-+		.suite = {
-+			.drbg = {
-+				.vecs = drbg_nopr_ctr_aes128_tv_template,
-+				.count = ARRAY_SIZE(drbg_nopr_ctr_aes128_tv_template)
-+			}
-+		}
-+	}, {
-+		.alg = "drbg_nopr_ctr_aes192",
-+		.test = alg_test_drbg,
-+		.fips_allowed = 1,
-+		.suite = {
-+			.drbg = {
-+				.vecs = drbg_nopr_ctr_aes192_tv_template,
-+				.count = ARRAY_SIZE(drbg_nopr_ctr_aes192_tv_template)
-+			}
-+		}
-+	}, {
-+		.alg = "drbg_nopr_ctr_aes256",
-+		.test = alg_test_drbg,
-+		.fips_allowed = 1,
-+		.suite = {
-+			.drbg = {
-+				.vecs = drbg_nopr_ctr_aes256_tv_template,
-+				.count = ARRAY_SIZE(drbg_nopr_ctr_aes256_tv_template)
-+			}
-+		}
-+	}, {
-+		/*
-+		 * There is no need to specifically test the DRBG with every
-+		 * backend cipher -- covered by drbg_nopr_hmac_sha256 test
-+		 */
-+		.alg = "drbg_nopr_hmac_sha1",
-+		.fips_allowed = 1,
-+		.test = alg_test_null,
-+	}, {
-+		.alg = "drbg_nopr_hmac_sha256",
-+		.test = alg_test_drbg,
-+		.fips_allowed = 1,
-+		.suite = {
-+			.drbg = {
-+				.vecs = drbg_nopr_hmac_sha256_tv_template,
-+				.count =
-+				ARRAY_SIZE(drbg_nopr_hmac_sha256_tv_template)
-+			}
-+		}
-+	}, {
-+		/* covered by drbg_nopr_hmac_sha256 test */
-+		.alg = "drbg_nopr_hmac_sha384",
-+		.fips_allowed = 1,
-+		.test = alg_test_null,
-+	}, {
-+		.alg = "drbg_nopr_hmac_sha512",
-+		.test = alg_test_null,
-+		.fips_allowed = 1,
-+	}, {
-+		.alg = "drbg_nopr_sha1",
-+		.fips_allowed = 1,
-+		.test = alg_test_null,
-+	}, {
-+		.alg = "drbg_nopr_sha256",
-+		.test = alg_test_drbg,
-+		.fips_allowed = 1,
-+		.suite = {
-+			.drbg = {
-+				.vecs = drbg_nopr_sha256_tv_template,
-+				.count = ARRAY_SIZE(drbg_nopr_sha256_tv_template)
-+			}
-+		}
-+	}, {
-+		/* covered by drbg_nopr_sha256 test */
-+		.alg = "drbg_nopr_sha384",
-+		.fips_allowed = 1,
-+		.test = alg_test_null,
-+	}, {
-+		.alg = "drbg_nopr_sha512",
-+		.fips_allowed = 1,
-+		.test = alg_test_null,
-+	}, {
-+		.alg = "drbg_pr_ctr_aes128",
-+		.test = alg_test_drbg,
-+		.fips_allowed = 1,
-+		.suite = {
-+			.drbg = {
-+				.vecs = drbg_pr_ctr_aes128_tv_template,
-+				.count = ARRAY_SIZE(drbg_pr_ctr_aes128_tv_template)
-+			}
-+		}
-+	}, {
-+		/* covered by drbg_pr_ctr_aes128 test */
-+		.alg = "drbg_pr_ctr_aes192",
-+		.fips_allowed = 1,
-+		.test = alg_test_null,
-+	}, {
-+		.alg = "drbg_pr_ctr_aes256",
-+		.fips_allowed = 1,
-+		.test = alg_test_null,
-+	}, {
-+		.alg = "drbg_pr_hmac_sha1",
-+		.fips_allowed = 1,
-+		.test = alg_test_null,
-+	}, {
-+		.alg = "drbg_pr_hmac_sha256",
-+		.test = alg_test_drbg,
-+		.fips_allowed = 1,
-+		.suite = {
-+			.drbg = {
-+				.vecs = drbg_pr_hmac_sha256_tv_template,
-+				.count = ARRAY_SIZE(drbg_pr_hmac_sha256_tv_template)
-+			}
-+		}
-+	}, {
-+		/* covered by drbg_pr_hmac_sha256 test */
-+		.alg = "drbg_pr_hmac_sha384",
-+		.fips_allowed = 1,
-+		.test = alg_test_null,
-+	}, {
-+		.alg = "drbg_pr_hmac_sha512",
-+		.test = alg_test_null,
-+		.fips_allowed = 1,
-+	}, {
-+		.alg = "drbg_pr_sha1",
-+		.fips_allowed = 1,
-+		.test = alg_test_null,
-+	}, {
-+		.alg = "drbg_pr_sha256",
-+		.test = alg_test_drbg,
-+		.fips_allowed = 1,
-+		.suite = {
-+			.drbg = {
-+				.vecs = drbg_pr_sha256_tv_template,
-+				.count = ARRAY_SIZE(drbg_pr_sha256_tv_template)
-+			}
-+		}
-+	}, {
-+		/* covered by drbg_pr_sha256 test */
-+		.alg = "drbg_pr_sha384",
-+		.fips_allowed = 1,
-+		.test = alg_test_null,
-+	}, {
-+		.alg = "drbg_pr_sha512",
-+		.fips_allowed = 1,
-+		.test = alg_test_null,
-+	}, {
- 		.alg = "ecb(__aes-aesni)",
- 		.test = alg_test_null,
- 		.fips_allowed = 1,
+ 	}
+ }
+ 
 -- 
-1.9.3
-
+1.7.9.5
 
