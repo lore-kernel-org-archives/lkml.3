@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757802AbaFANcb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jun 2014 09:32:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6115 "EHLO mx1.redhat.com"
+	id S1757763AbaFANc3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jun 2014 09:32:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23665 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752172AbaFANcZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jun 2014 09:32:25 -0400
+	id S1757718AbaFANc0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Jun 2014 09:32:26 -0400
 From: Jiri Olsa <jolsa@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
         Arun Sharma <asharma@fb.com>, Frederic Weisbecker <fweisbec@gmail.com>,
         Jiri Olsa <jolsa@kernel.org>
-Subject: [PATCH 23/27] perf ui/stdio: Fix invalid percentage value of cumulated hist entries
-Date: Sun,  1 Jun 2014 15:31:34 +0200
-Message-Id: <1401629498-8726-24-git-send-email-jolsa@kernel.org>
+Subject: [PATCH 24/27] perf ui/gtk: Fix callchain display
+Date: Sun,  1 Jun 2014 15:31:35 +0200
+Message-Id: <1401629498-8726-25-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1401629498-8726-1-git-send-email-jolsa@kernel.org>
 References: <1401629498-8726-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -22,69 +22,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung@kernel.org>
 
-On stdio, there's a problem that it shows invalid values for
-callchains in cumulated hist entries.  It's because it only cares
-about the self period.  But with --children behavior, we always add
-callchain info to the cumulated entries so it should use the value in
-that case.
+With current output field change, GTK browser cannot display callchain
+information correctly since it couldn't determine where the symbol
+column is.  This is a problem - just for now I changed to use the last
+column since it'll work for most cases.
 
-Before:
-
-  # Children      Self  Command      Shared Object            Symbol
-  # ........  ........  .......  .................  ................
-  #
-      61.22%     0.32%  swapper  [kernel.kallsyms]      [k] cpu_idle
-                    |
-                    --- cpu_idle
-                       |
-                       |--16530.76%-- start_secondary
-                       |
-                       |--2758.70%-- rest_init
-                       |          start_kernel
-                       |          x86_64_start_reservations
-                       |          x86_64_start_kernel
-                        --6837850969203030.00%-- [...]
-
-After:
-
-  # Children      Self  Command      Shared Object            Symbol
-  # ........  ........  .......  .................  ................
-  #
-      61.22%     0.32%  swapper  [kernel.kallsyms]      [k] cpu_idle
-                    |
-                    --- cpu_idle
-                       |
-                       |--85.70%-- start_secondary
-                       |
-                        --14.30%-- rest_init
-                                  start_kernel
-                                  x86_64_start_reservations
-                                  x86_64_start_kernel
+Also it has a same problem of the percentage as stdio code.
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 Cc: Arun Sharma <asharma@fb.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Link: http://lkml.kernel.org/r/1401335910-16832-24-git-send-email-namhyung@kernel.org
+Link: http://lkml.kernel.org/r/1401335910-16832-25-git-send-email-namhyung@kernel.org
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/ui/stdio/hist.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ tools/perf/ui/gtk/hists.c | 10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
-diff --git a/tools/perf/ui/stdio/hist.c b/tools/perf/ui/stdio/hist.c
-index 475d2f5..90122ab 100644
---- a/tools/perf/ui/stdio/hist.c
-+++ b/tools/perf/ui/stdio/hist.c
-@@ -271,7 +271,9 @@ static size_t hist_entry_callchain__fprintf(struct hist_entry *he,
- {
- 	switch (callchain_param.mode) {
- 	case CHAIN_GRAPH_REL:
--		return callchain__fprintf_graph(fp, &he->sorted_chain, he->stat.period,
-+		return callchain__fprintf_graph(fp, &he->sorted_chain,
-+						symbol_conf.cumulate_callchain ?
-+						he->stat_acc->period : he->stat.period,
- 						left_margin);
- 		break;
- 	case CHAIN_GRAPH_ABS:
+diff --git a/tools/perf/ui/gtk/hists.c b/tools/perf/ui/gtk/hists.c
+index 03d6812..6ca60e4 100644
+--- a/tools/perf/ui/gtk/hists.c
++++ b/tools/perf/ui/gtk/hists.c
+@@ -198,6 +198,13 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists,
+ 		if (perf_hpp__should_skip(fmt))
+ 			continue;
+ 
++		/*
++		 * XXX no way to determine where symcol column is..
++		 *     Just use last column for now.
++		 */
++		if (perf_hpp__is_sort_entry(fmt))
++			sym_col = col_idx;
++
+ 		fmt->header(fmt, &hpp, hists_to_evsel(hists));
+ 
+ 		gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(view),
+@@ -253,7 +260,8 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists,
+ 
+ 		if (symbol_conf.use_callchain && sort__has_sym) {
+ 			if (callchain_param.mode == CHAIN_GRAPH_REL)
+-				total = h->stat.period;
++				total = symbol_conf.cumulate_callchain ?
++					h->stat_acc->period : h->stat.period;
+ 
+ 			perf_gtk__add_callchain(&h->sorted_chain, store, &iter,
+ 						sym_col, total);
 -- 
 1.8.3.1
 
