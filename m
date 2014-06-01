@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757690AbaFAN7n (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jun 2014 09:59:43 -0400
-Received: from smtp1-g21.free.fr ([212.27.42.1]:45972 "EHLO smtp1-g21.free.fr"
+	id S1757617AbaFAN7k (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jun 2014 09:59:40 -0400
+Received: from smtp1-g21.free.fr ([212.27.42.1]:45770 "EHLO smtp1-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757453AbaFAN7l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jun 2014 09:59:41 -0400
+	id S1757453AbaFAN7h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Jun 2014 09:59:37 -0400
 From: Yann Droneaud <ydroneaud@opteya.com>
 To: Al Viro <viro@zeniv.linux.org.uk>
 Cc: Yann Droneaud <ydroneaud@opteya.com>, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org,
         Andrew Morton <akpm@linux-foundation.org>, trivial@kernel.org
-Subject: [PATCHv7 4/6] file: use get_unused_fd_flags(0) instead of get_unused_fd()
-Date: Sun,  1 Jun 2014 15:58:45 +0200
-Message-Id: <65a2618acc6a6f55e4d9aedd89292b0378dac37b.1401630396.git.ydroneaud@opteya.com>
+Subject: [PATCHv7 3/6] binfmt_misc: use get_unused_fd_flags(0) instead of get_unused_fd()
+Date: Sun,  1 Jun 2014 15:58:44 +0200
+Message-Id: <1b727f379b7196c0854c41776a2d90261140274a.1401630396.git.ydroneaud@opteya.com>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <cover.1401630396.git.ydroneaud@opteya.com>
 References: <cover.1401630396.git.ydroneaud@opteya.com>
@@ -25,37 +25,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Macro get_unused_fd() is used to allocate a file descriptor with
 default flags. Those default flags (0) can be "unsafe":
-O_CLOEXEC must be made the default to not leak file descriptor
+O_CLOEXEC must be used by default to not leak file descriptor
 across exec().
 
-In a further patch, get_unused_fd() will be removed so that
-new code start using get_unused_fd_flags() (or anon_inode_getfd())
-with correct flags.
+Instead of macro get_unused_fd(), function get_unused_fd_flags()
+(or anon_inode_getfd()) should be used with flags given by userspace.
+If not possible, flags should be set to O_CLOEXEC to provide userspace
+with a default safe behavor.
+
+In a further patch, get_unused_fd() will be removed so that new code
+start using get_unused_fd_flags() (or anon_inode_getfd()) with correct
+flags.
 
 This patch replaces calls to get_unused_fd() with equivalent call to
-get_unused_fd_flags(0).
+get_unused_fd_flags(0) to preserve current behavor for existing code.
+
+The hard coded flag value (0) should be reviewed on a per-subsystem
+basis, and, if possible, set to O_CLOEXEC.
 
 Link: http://lkml.kernel.org/r/cover.1401630396.git.ydroneaud@opteya.com
 Cc: Al Viro <viro@zeniv.linux.org.uk>
 Cc: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
 ---
- fs/file.c | 2 +-
+ fs/binfmt_misc.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/fs/file.c b/fs/file.c
-index 66923fe3176e..4186f81cd9f1 100644
---- a/fs/file.c
-+++ b/fs/file.c
-@@ -868,7 +868,7 @@ SYSCALL_DEFINE1(dup, unsigned int, fildes)
- 	struct file *file = fget_raw(fildes);
- 
- 	if (file) {
--		ret = get_unused_fd();
-+		ret = get_unused_fd_flags(0);
- 		if (ret >= 0)
- 			fd_install(ret, file);
- 		else
+diff --git a/fs/binfmt_misc.c b/fs/binfmt_misc.c
+index b60500300dd7..3c9fcc08aec9 100644
+--- a/fs/binfmt_misc.c
++++ b/fs/binfmt_misc.c
+@@ -138,7 +138,7 @@ static int load_misc_binary(struct linux_binprm *bprm)
+ 		/* if the binary should be opened on behalf of the
+ 		 * interpreter than keep it open and assign descriptor
+ 		 * to it */
+- 		fd_binary = get_unused_fd();
++		fd_binary = get_unused_fd_flags(0);
+  		if (fd_binary < 0) {
+  			retval = fd_binary;
+  			goto _ret;
 -- 
 1.9.3
 
