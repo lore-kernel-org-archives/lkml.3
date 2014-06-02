@@ -1,68 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932224AbaFBOa0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 10:30:26 -0400
-Received: from mout.gmx.net ([212.227.17.20]:63318 "EHLO mout.gmx.net"
+	id S1755177AbaFBOdt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 10:33:49 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47602 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755013AbaFBO36 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 10:29:58 -0400
-Message-ID: <538C8A59.2070907@gmx.de>
-Date: Mon, 02 Jun 2014 16:29:45 +0200
-From: Michael Lawnick <ml.lawnick@gmx.de>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1754041AbaFBOds (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 10:33:48 -0400
+Message-ID: <538C8B45.6070803@suse.cz>
+Date: Mon, 02 Jun 2014 16:33:41 +0200
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>, Wolfram Sang <wsa@the-dreams.de>,
-        Grant Likely <grant.likely@linaro.org>
-CC: Lee Jones <lee.jones@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>
-Subject: Re: [PATCH] i2c: Make I2C ID tables non-mandatory for DT'ed and/or
- ACPI'ed devices
-References: <1401452797-29521-1-git-send-email-lee.jones@linaro.org>	<1401452797-29521-2-git-send-email-lee.jones@linaro.org>	<20140530123656.GC2742@katana>	<20140530133405.GB29731@lee--X1>	<20140530174800.GA4917@katana>	<20140530192516.GA4319@lee--X1>	<20140531134805.GA3287@katana> <CACRpkdZvyfA0aaJe3YuevXfA2pTZLRPZ3mQpitL6qD7=qE0Xyg@mail.gmail.com>
-In-Reply-To: <CACRpkdZvyfA0aaJe3YuevXfA2pTZLRPZ3mQpitL6qD7=qE0Xyg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Fabio Estevam <festevam@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: Shawn Guo <shawn.guo@linaro.org>, Kevin Hilman <khilman@linaro.org>,
+        Rik van Riel <riel@redhat.com>, Stephen Warren <swarren@wwwdotorg.org>,
+        Minchan Kim <minchan@kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Hugh Dickins <hughd@google.com>, LKML <linux-kernel@vger.kernel.org>,
+        Michal Nazarewicz <mina86@mina86.com>, linux-mm@kvack.org,
+        Mel Gorman <mgorman@suse.de>, David Rientjes <rientjes@google.com>,
+        Olof Johansson <olof@lixom.net>, Greg Thelen <gthelen@google.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Christoph Lameter <cl@linux.com>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
+Subject: [PATCH -mm] mm, compaction: properly signal and act upon lock and
+ need_sched() contention - fix
+References: <1399904111-23520-1-git-send-email-vbabka@suse.cz>	<1400233673-11477-1-git-send-email-vbabka@suse.cz>	<CAGa+x87-NRyK6kUiXNL_bRNEGm+DR6M3HPSLYEoq4t6Nrtnd_g@mail.gmail.com>	<CAAQ0ZWQDVxAzZVm86ATXd1JGUVoLXj_Y5Ske7htxH_6a4GPKRg@mail.gmail.com>	<537F082F.50501@suse.cz> <CAOMZO5BKaicq7NkoJO4vU5W3hiDike6kSdH+2eD=h0B5BsDjTg@mail.gmail.com>
+In-Reply-To: <CAOMZO5BKaicq7NkoJO4vU5W3hiDike6kSdH+2eD=h0B5BsDjTg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:RAu86f+/iUC3o9KwDvULdQ2sCEAN1CSI6gxSV+V8NnzT8dpp+AW
- ETKRmymnhyq7g9jlOdnPgRZhC3VbwKt3IE1ibkYb100KY4Xpq3hDIuQW4aP21dZfkIwC0PB
- RQXIWBbkTzWyW/XWfDIOpv6IQXTPf6TIPkQphhOuTEfccqO6EW7a7fv3tWnSvVUTfSjBnmp
- 1bEeVLhXFGSOiMFt+K9+g==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 02.06.2014 14:16, schrieb Linus Walleij:
-> On Sat, May 31, 2014 at 3:48 PM, Wolfram Sang <wsa@the-dreams.de> wrote:
->>
->>> Right, I read the function which provides the functionality, but my
->>> point is; I don't think my patch changes the semantics in a way which
->>> would adversely affect this option.  If you think that it does, can you
->>> specify how please?
->>
->> Currently, if a driver would be DT only and does not provide a seperate
->> i2c_device_id table, then the driver is unusable with method 4. I don't
->> like to have some drivers being capable of it and some not.
->>
->>> Does the sysfs method create a i2c_device_id table?  If not, how does
->>> it probe successfully pre-patch?
->>
->> The sysfs method creates a device. Its name is matched against
->> i2c_device_ids only since it does not have a node pointer for DT to be
->> matched against.
->
-> Is this really so useful on embedded systems?
->
-> I was under the impression that this method was something used
-> on say PC desktops with temperature monitors and EEPROMs
-> on some I2C link on the PCB, usage entirely optional and fun
-> for userspace hacks.
->
-We use it for dynamic instantiating whole subsystems with multiplexers, 
-sensors, controllers in an embedded system. The device list is taken 
-from an I2C eeprom which gets read on hotplug.
+compact_should_abort() returns true instead of false and vice versa
+due to changes between v1 and v2 of the patch. This makes both async
+and sync compaction abort with high probability, and has been reported
+to cause e.g. soft lockups on some ARM boards, or drivers calling
+dma_alloc_coherent() fail to probe with CMA enabled on different boards.
 
-KR
-Michael
+This patch fixes the return value to match comments and callers expecations.
 
+Reported-and-tested-by: Kevin Hilman <khilman@linaro.org>
+Reported-and-tested-by: Shawn Guo <shawn.guo@linaro.org>
+Tested-by: Stephen Warren <swarren@nvidia.com>
+Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+---
+ mm/compaction.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
+diff --git a/mm/compaction.c b/mm/compaction.c
+index a525cd4..5175019 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -237,13 +237,13 @@ static inline bool compact_should_abort(struct compact_control *cc)
+ 	if (need_resched()) {
+ 		if (cc->mode == MIGRATE_ASYNC) {
+ 			cc->contended = true;
+-			return false;
++			return true;
+ 		}
+ 
+ 		cond_resched();
+ 	}
+ 
+-	return true;
++	return false;
+ }
+ 
+ /* Returns true if the page is within a block suitable for migration to */
+-- 1.8.4.5 
