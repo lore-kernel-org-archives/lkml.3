@@ -1,175 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755920AbaFBQua (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 12:50:30 -0400
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:44666 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754996AbaFBQu1 (ORCPT
+	id S1755256AbaFBQwf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 12:52:35 -0400
+Received: from one.firstfloor.org ([193.170.194.197]:52288 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752278AbaFBQwe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 12:50:27 -0400
-Date: Mon, 2 Jun 2014 18:49:57 +0200
-From: Johan Hovold <jhovold@gmail.com>
-To: Mike Remski <mremski@mutualink.net>
-Cc: Johan Hovold <jhovold@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: Re: ftdi_sio BUG: NULL pointer dereference
-Message-ID: <20140602164957.GC13790@localhost>
-References: <538C8963.4010909@mutualink.net>
- <20140602143347.GA1902@localhost>
- <538C953B.9020304@mutualink.net>
- <20140602154036.GA8662@localhost>
- <538CA020.4070204@mutualink.net>
- <20140602162027.GB13790@localhost>
- <538CA54C.4040803@mutualink.net>
+	Mon, 2 Jun 2014 12:52:34 -0400
+Date: Mon, 2 Jun 2014 18:52:31 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Gleb Natapov <gleb@kernel.org>
+Cc: Andi Kleen <ak@linux.intel.com>, Andi Kleen <andi@firstfloor.org>,
+        peterz@infradead.org, pbonzini@redhat.com, eranian@google.com,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org, mtosatti@redhat.com
+Subject: Re: [PATCH 4/4] kvm: Implement PEBS virtualization
+Message-ID: <20140602165231.GP25366@two.firstfloor.org>
+References: <1401412327-14810-1-git-send-email-andi@firstfloor.org>
+ <1401412327-14810-5-git-send-email-andi@firstfloor.org>
+ <20140530082136.GA4715@minantech.com>
+ <20140530162424.GC8876@tassilo.jf.intel.com>
+ <20140602164534.GD4715@minantech.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <538CA54C.4040803@mutualink.net>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <20140602164534.GD4715@minantech.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 02, 2014 at 12:24:44PM -0400, Mike Remski wrote:
-> On 06/02/2014 12:20 PM, Johan Hovold wrote:
-> > On Mon, Jun 02, 2014 at 12:02:40PM -0400, Mike Remski wrote:
-> >> On 06/02/2014 11:40 AM, Johan Hovold wrote:
-> >>> [ Please avoid top-posting. ]
-> >>>
-> >>> On Mon, Jun 02, 2014 at 11:16:11AM -0400, Mike Remski wrote:
 
-> >> lsusb -v cut for the device in question.
-> >>
-> >> Bus 005 Device 003: ID 1fdf:1001
-> >> Device Descriptor:
-> >>     bLength                18
-> >>     bDescriptorType         1
-> >>     bcdUSB               2.00
-> >>     bDeviceClass          239 Miscellaneous Device
-> >>     bDeviceSubClass         2 ?
-> >>     bDeviceProtocol         1 Interface Association
-> >>     bMaxPacketSize0        64
-> >>     idVendor           0x1fdf
-> >>     idProduct          0x1001
-> >>     bcdDevice            0.03
-> >>     iManufacturer           1 Sepura
-> >>     iProduct                2 Colour Console
-> >>     iSerial                 0
-> >>     bNumConfigurations      1
-> >>     Configuration Descriptor:
-> >>       bLength                 9
-> >>       bDescriptorType         2
-> >>       wTotalLength          134
-> >>       bNumInterfaces          4
-> >>       bConfigurationValue     1
-> >>       iConfiguration          0
-> >>       bmAttributes         0xc0
-> >>         Self Powered
-> >>       MaxPower              100mA
-> >>       Interface Association:
-> >>         bLength                 8
-> >>         bDescriptorType        11
-> >>         bFirstInterface         0
-> >>         bInterfaceCount         2
-> >>         bFunctionClass          2 Communications
-> >>         bFunctionSubClass       2 Abstract (modem)
-> > Is this indeed the right device? Then you seem to be using the wrong
-> > driver as this is no FTDI device, but a CDC-ACM modem-class device which
-> > should be driven by the cdc-acm driver.
-> >
-> >>         bFunctionProtocol       0 None
-> >>         iFunction               0
-> >>       Interface Descriptor:
-> >>         bLength                 9
-> >>         bDescriptorType         4
-> >>         bInterfaceNumber        0
-> >>         bAlternateSetting       0
-> >>         bNumEndpoints           1
-> >>         bInterfaceClass         2 Communications
-> >>         bInterfaceSubClass      2 Abstract (modem)
-> >>         bInterfaceProtocol      0 None
-> >>         iInterface              0
-> >>         CDC Header:
-> >>           bcdCDC               1.10
-> >>         CDC Call Management:
-> >>           bmCapabilities       0x01
-> >>             call management
-> >>           bDataInterface          1
-> >>         CDC ACM:
-> >>           bmCapabilities       0x02
-> >>             line coding and serial state
-> >>         CDC Union:
-> >>           bMasterInterface        0
-> >>           bSlaveInterface         1
-> >>         Endpoint Descriptor:
-> >>           bLength                 7
-> >>           bDescriptorType         5
-> >>           bEndpointAddress     0x83  EP 3 IN
-> >>           bmAttributes            3
-> >>             Transfer Type            Interrupt
-> >>             Synch Type               None
-> >>             Usage Type               Data
-> >>           wMaxPacketSize     0x0040  1x 64 bytes
-> >>           bInterval              10
-> >>       Interface Descriptor:
-> >>         bLength                 9
-> >>         bDescriptorType         4
-> >>         bInterfaceNumber        1
-> >>         bAlternateSetting       0
-> >>         bNumEndpoints           2
-> >>         bInterfaceClass        10 CDC Data
-> >>         bInterfaceSubClass      0 Unused
-> >>         bInterfaceProtocol      0
-> >>         iInterface              0
-> >>         Endpoint Descriptor:
-> >>           bLength                 7
-> >>           bDescriptorType         5
-> >>           bEndpointAddress     0x01  EP 1 OUT
-> >>           bmAttributes            2
-> >>             Transfer Type            Bulk
-> >>             Synch Type               None
-> >>             Usage Type               Data
-> >>           wMaxPacketSize     0x0040  1x 64 bytes
-> >>           bInterval               0
-> >>         Endpoint Descriptor:
-> >>           bLength                 7
-> >>           bDescriptorType         5
-> >>           bEndpointAddress     0x82  EP 2 IN
-> >>           bmAttributes            2
-> >>             Transfer Type            Bulk
-> >>             Synch Type               None
-> >>             Usage Type               Data
-> >>           wMaxPacketSize     0x0040  1x 64 bytes
-> >>           bInterval               0
-> >>       Interface Association:
-> >>         bLength                 8
-> >>         bDescriptorType        11
-> >>         bFirstInterface         2
-> >>         bInterfaceCount         2
-> >>         bFunctionClass          2 Communications
-> >>         bFunctionSubClass       2 Abstract (modem)
-> >>         bFunctionProtocol       0 None
-> >>         iFunction               0
-> >>       Interface Descriptor:
-> >>         bLength                 9
-> >>         bDescriptorType         4
-> >>         bInterfaceNumber        2
-> >>         bAlternateSetting       0
-> >>         bNumEndpoints           0
-> > The third interface lacks endpoints and crashes the ftdi_sio driver.
-> > This shouldn't happen (even if you're forcing the wrong driver to bind),
-> > so I'll fix it up if still broken in v3.15-rc.
-> >
-> > Thanks,
-> > Johan
-> Johan,
-> Thanks again.  Yes, the device does indeed have an FTDI embedded in it;  
-> they've programmed in their own ids.  They supply a Windows driver for 
-> it, but that doesn't do me any good.  :)
+BTW I found some more problems in the v1 version.
 
-Not just their own ID's it seems.
+> > > With EPT it is less likely to happen (but still possible IIRC depending on memory
+> > > pressure and how much memory shadow paging code is allowed to use), without EPT
+> > > it will happen for sure.
+> > 
+> > Don't care about the non EPT case, this is white listed only for EPT supporting 
+> > CPUs.
+> User may still disable EPT during module load, so pebs should be dropped
+> from a guest's cpuid in this case.
 
-Have you tried just using the cdc-acm driver? The ports should up as
-/dev/ttyACMx instead of ttyUSBx.
+Ok.
 
-Johan
+> 
+> > 
+> > > There is nothing, as far as I can see, that says what will happen if the
+> > > condition is not met. I always interpreted it as undefined behaviour so
+> > > anything can happen including CPU dies completely.  You are saying above
+> > > on one hand that CPU cannot handle any kinds of faults during write to
+> > > DS area, but on the other hand a guest could only crash itself. Is this
+> > > architecturally guarantied?
+> > 
+> > You essentially would get random page faults, and the PEBS event will
+> > be cancelled. No hangs.
+> Is this a guest who will get those random page faults or a host?
+
+The guest (on the white listed CPU models)
+
+-Andi
