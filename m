@@ -1,68 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753154AbaFBJaU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 05:30:20 -0400
-Received: from mail-la0-f54.google.com ([209.85.215.54]:37284 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751442AbaFBJaS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 05:30:18 -0400
-From: Emil Goode <emilgoode@gmail.com>
-To: Yang Wei <Wei.Yang@windriver.com>, David Miller <davem@davemloft.net>,
-        Giuseppe Cavallaro <peppe.cavallaro@st.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org, Emil Goode <emilgoode@gmail.com>
-Subject: [PATCH] stmmac: Remove spin_lock call in stmmac_get_pauseparam()
-Date: Mon,  2 Jun 2014 11:30:50 +0200
-Message-Id: <1401701450-1203-1-git-send-email-emilgoode@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1753476AbaFBJaj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 05:30:39 -0400
+Received: from ozlabs.org ([103.22.144.67]:59349 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753327AbaFBJah (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 05:30:37 -0400
+Date: Mon, 2 Jun 2014 19:30:18 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: linux-next@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: linux-next: Tree for Jun 2
+Message-ID: <20140602193018.79d4933b@canb.auug.org.au>
+In-Reply-To: <20140602192743.00f59f80@canb.auug.org.au>
+References: <20140602192743.00f59f80@canb.auug.org.au>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/s5UBzE.WCrSnP8GOP2jfc77"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following patch removed unnecessary spin_lock/unlock calls
-in ethtool_ops callback functions. In the second and final version
-of the patch one spin_lock call was left behind.
+--Sig_/s5UBzE.WCrSnP8GOP2jfc77
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-commit cab6715c3e8029e98b0b5d4056ceda007c0f6380
-Author: Yang Wei <Wei.Yang@windriver.com>
-Date:   Sun May 25 09:53:44 2014 +0800
+Hi all,
 
-    net: driver: stmicro: Remove some useless the lock protection
+On Mon, 2 Jun 2014 19:27:43 +1000 Stephen Rothwell <sfr@canb.auug.org.au> w=
+rote:
+>=20
+> Status of my local build tests will be at
+> http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
+> advice about cross compilers/configs that work, we are always open to add
+> more builds.
 
-This introduced the following sparse warning:
+Our build server is down today, so this linux-next will not get the
+usual builds done, sorry.
 
-drivers/net/ethernet/stmicro/stmmac/stmmac_ethtool.c:424:1: warning:
-	context imbalance in 'stmmac_get_pauseparam' -
-	different lock contexts for basic block
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Signed-off-by: Emil Goode <emilgoode@gmail.com>
----
-Hello,
+--Sig_/s5UBzE.WCrSnP8GOP2jfc77
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-Some spin_lock/unlock calls where also left behind in
-stmmac_ethtool_setsettings(), I'm not sure if it was intentional?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-Best regards,
+iQIcBAEBCAAGBQJTjEQvAAoJEMDTa8Ir7ZwVd6gP/iLZKFyzeeEJWlGLYkIDdcWf
+P7eAn8NGYwoqXdkMqeElWynktRHvqHX5lSTviG3bSfMPDVZI0l3MYxTG/G+z0uKw
+OOKo2jy6lbz1gpnYSIj782QBj5+EXFOgrAsH2iOZLIzRIf4A/UlQB8ud/6TrXWTa
+a4Safqaq9653/YB1Hou5Q0895P39tVP8AIcZq+VpwuwQYnPYMBKRv9q+LT61AnSq
+JgzGDhavZGtWYvYu0WCvp1tDgshq7tpxaFo3SB9slm+Jh/Xeb4o5ApkCIubdqU/F
+GjKzcDiCidf42Y9UvUwURCxtHNjwtdAIKBcwrGdrwsm3mS3Yw70bk1SjGMMCVViR
+Wo0TV1+ug12fZ3GB+aBjLDWYz7/Xt0woXBh3QkJ5N0k4JzKo6mGbqMFzGzmxxG6y
+iPP6GX41RD5Lee3SJii0QIGN4VTFI18g75R44bfWA6BaJYe2WyDlfKYmbh6wp+Ya
+dF/xAD5h+4qIWg9CuLtGLyMtrwgEKpG4S4UW2hL5TQaBgNuqIcvsvLyn/QJRdhu1
+3MQ+XS441wKexJD1vAlL1l+zXvY1Gw/zDvpI6S1ywtLXr8JEqIQg39Zb9586VFvR
+A1Zh55ppP/1gqZObfrxKy183XBpMznWAlD2lpWiLOhZ3qzMAIoYu+eHeKVf9Tu4T
+Kzk15fmB2pFLTjxEhiJt
+=8+Ra
+-----END PGP SIGNATURE-----
 
-Emil Goode
-
- drivers/net/ethernet/stmicro/stmmac/stmmac_ethtool.c |    2 --
- 1 file changed, 2 deletions(-)
-
-diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_ethtool.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_ethtool.c
-index 7892666..c62e67f 100644
---- a/drivers/net/ethernet/stmicro/stmmac/stmmac_ethtool.c
-+++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_ethtool.c
-@@ -429,8 +429,6 @@ stmmac_get_pauseparam(struct net_device *netdev,
- 	if (priv->pcs)	/* FIXME */
- 		return;
- 
--	spin_lock(&priv->lock);
--
- 	pause->rx_pause = 0;
- 	pause->tx_pause = 0;
- 	pause->autoneg = priv->phydev->autoneg;
--- 
-1.7.10.4
-
+--Sig_/s5UBzE.WCrSnP8GOP2jfc77--
