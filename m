@@ -1,102 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753530AbaFBBLw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jun 2014 21:11:52 -0400
-Received: from mga03.intel.com ([143.182.124.21]:3614 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752518AbaFBBLv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jun 2014 21:11:51 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,954,1392192000"; 
-   d="asc'?scan'208";a="439660266"
-Message-ID: <1401671508.19767.11.camel@jtkirshe-mobl>
-Subject: Re: [PATCH 11/11] drivers/net/ethernet/intel: Remove useless return
- variables
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-To: Peter Senna Tschudin <peter.senna@gmail.com>
-Cc: kernel-janitors@vger.kernel.org,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        Carolyn Wyborny <carolyn.wyborny@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        Greg Rose <gregory.v.rose@intel.com>,
-        Alex Duyck <alexander.h.duyck@intel.com>,
-        John Ronciak <john.ronciak@intel.com>,
-        Mitch Williams <mitch.a.williams@intel.com>,
-        Linux NICS <linux.nics@intel.com>, e1000-devel@lists.sourceforge.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Sun, 01 Jun 2014 18:11:48 -0700
-In-Reply-To: <1401542051-3174-11-git-send-email-peter.senna@gmail.com>
-References: <1401542051-3174-11-git-send-email-peter.senna@gmail.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-2z8KW5XLcMh0yKC1wqgB"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
+	id S1753507AbaFBB37 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jun 2014 21:29:59 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:40036 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752550AbaFBB36 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Jun 2014 21:29:58 -0400
+Message-ID: <538BD38F.2020504@hitachi.com>
+Date: Mon, 02 Jun 2014 10:29:51 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Denys Vlasenko <dvlasenk@redhat.com>,
+        Jim Keniston <jkenisto@us.ibm.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] uprobes/x86: Rename arch_uprobe->def into ->dflt, minor
+ comment updates
+References: <20140601192520.GA14539@redhat.com>
+In-Reply-To: <20140601192520.GA14539@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+(2014/06/02 4:25), Oleg Nesterov wrote:
+> Purely cosmetic, no changes in .o,
+> 
+> 1. As Jim pointed out arch_uprobe->def looks ambiguous, rename it to
+>    ->dflt.
+> 
+> 2. Add the comment into default_post_xol_op() to explain "regs->sp +=".
+> 
+> 3. Remove the stale part of the comment in arch_uprobe_analyze_insn().
+> 
+> Suggested-by: Jim Keniston <jkenisto@us.ibm.com>
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
---=-2z8KW5XLcMh0yKC1wqgB
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Looks OK for me :)
 
-On Sat, 2014-05-31 at 10:14 -0300, Peter Senna Tschudin wrote:
-> This patch remove variables that are initialized with a constant,
-> are never updated, and are only used as parameter of return.
-> Return the constant instead of using a variable.
->=20
-> Verified by compilation only.
->=20
-> The coccinelle script that find and fixes this issue is:
-> // <smpl>
-> @@
-> type T;
-> constant C;
-> identifier ret;
-> @@
-> - T ret =3D C;
-> ... when !=3D ret
->     when strict
-> return
-> - ret
-> + C
-> ;
-> // </smpl>
->=20
-> Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
->=20
+Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+
 > ---
->  drivers/net/ethernet/intel/i40e/i40e_adminq.c   |   12 +++---------
->  drivers/net/ethernet/intel/i40evf/i40e_adminq.c |   12 +++---------
->  drivers/net/ethernet/intel/igb/e1000_82575.c    |   22
-> ++++++++--------------
->  3 files changed, 14 insertions(+), 32 deletions(-)
+>  arch/x86/include/asm/uprobes.h |    2 +-
+>  arch/x86/kernel/uprobes.c      |   37 ++++++++++++++++++-------------------
+>  2 files changed, 19 insertions(+), 20 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/uprobes.h b/arch/x86/include/asm/uprobes.h
+> index 7be3c07..b3d9442 100644
+> --- a/arch/x86/include/asm/uprobes.h
+> +++ b/arch/x86/include/asm/uprobes.h
+> @@ -52,7 +52,7 @@ struct arch_uprobe {
+>  		struct {
+>  			u8	fixups;
+>  			u8	ilen;
+> -		} 			def;
+> +		} 			dflt;
+>  	};
+>  };
+>  
+> diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
+> index fcf6279..33e239f 100644
+> --- a/arch/x86/kernel/uprobes.c
+> +++ b/arch/x86/kernel/uprobes.c
+> @@ -254,7 +254,7 @@ static inline bool is_64bit_mm(struct mm_struct *mm)
+>   * If arch_uprobe->insn doesn't use rip-relative addressing, return
+>   * immediately.  Otherwise, rewrite the instruction so that it accesses
+>   * its memory operand indirectly through a scratch register.  Set
+> - * def->fixups accordingly. (The contents of the scratch register
+> + * dflt->fixups accordingly. (The contents of the scratch register
+>   * will be saved before we single-step the modified instruction,
+>   * and restored afterward).
+>   *
+> @@ -372,14 +372,14 @@ static void riprel_analyze(struct arch_uprobe *auprobe, struct insn *insn)
+>  	 */
+>  	if (reg != 6 && reg2 != 6) {
+>  		reg2 = 6;
+> -		auprobe->def.fixups |= UPROBE_FIX_RIP_SI;
+> +		auprobe->dflt.fixups |= UPROBE_FIX_RIP_SI;
+>  	} else if (reg != 7 && reg2 != 7) {
+>  		reg2 = 7;
+> -		auprobe->def.fixups |= UPROBE_FIX_RIP_DI;
+> +		auprobe->dflt.fixups |= UPROBE_FIX_RIP_DI;
+>  		/* TODO (paranoia): force maskmovq to not use di */
+>  	} else {
+>  		reg2 = 3;
+> -		auprobe->def.fixups |= UPROBE_FIX_RIP_BX;
+> +		auprobe->dflt.fixups |= UPROBE_FIX_RIP_BX;
+>  	}
+>  	/*
+>  	 * Point cursor at the modrm byte.  The next 4 bytes are the
+> @@ -398,9 +398,9 @@ static void riprel_analyze(struct arch_uprobe *auprobe, struct insn *insn)
+>  static inline unsigned long *
+>  scratch_reg(struct arch_uprobe *auprobe, struct pt_regs *regs)
+>  {
+> -	if (auprobe->def.fixups & UPROBE_FIX_RIP_SI)
+> +	if (auprobe->dflt.fixups & UPROBE_FIX_RIP_SI)
+>  		return &regs->si;
+> -	if (auprobe->def.fixups & UPROBE_FIX_RIP_DI)
+> +	if (auprobe->dflt.fixups & UPROBE_FIX_RIP_DI)
+>  		return &regs->di;
+>  	return &regs->bx;
+>  }
+> @@ -411,18 +411,18 @@ scratch_reg(struct arch_uprobe *auprobe, struct pt_regs *regs)
+>   */
+>  static void riprel_pre_xol(struct arch_uprobe *auprobe, struct pt_regs *regs)
+>  {
+> -	if (auprobe->def.fixups & UPROBE_FIX_RIP_MASK) {
+> +	if (auprobe->dflt.fixups & UPROBE_FIX_RIP_MASK) {
+>  		struct uprobe_task *utask = current->utask;
+>  		unsigned long *sr = scratch_reg(auprobe, regs);
+>  
+>  		utask->autask.saved_scratch_register = *sr;
+> -		*sr = utask->vaddr + auprobe->def.ilen;
+> +		*sr = utask->vaddr + auprobe->dflt.ilen;
+>  	}
+>  }
+>  
+>  static void riprel_post_xol(struct arch_uprobe *auprobe, struct pt_regs *regs)
+>  {
+> -	if (auprobe->def.fixups & UPROBE_FIX_RIP_MASK) {
+> +	if (auprobe->dflt.fixups & UPROBE_FIX_RIP_MASK) {
+>  		struct uprobe_task *utask = current->utask;
+>  		unsigned long *sr = scratch_reg(auprobe, regs);
+>  
+> @@ -499,16 +499,16 @@ static int default_post_xol_op(struct arch_uprobe *auprobe, struct pt_regs *regs
+>  	struct uprobe_task *utask = current->utask;
+>  
+>  	riprel_post_xol(auprobe, regs);
+> -	if (auprobe->def.fixups & UPROBE_FIX_IP) {
+> +	if (auprobe->dflt.fixups & UPROBE_FIX_IP) {
+>  		long correction = utask->vaddr - utask->xol_vaddr;
+>  		regs->ip += correction;
+> -	} else if (auprobe->def.fixups & UPROBE_FIX_CALL) {
+> -		regs->sp += sizeof_long();
+> -		if (push_ret_address(regs, utask->vaddr + auprobe->def.ilen))
+> +	} else if (auprobe->dflt.fixups & UPROBE_FIX_CALL) {
+> +		regs->sp += sizeof_long(); /* Pop incorrect return address */
+> +		if (push_ret_address(regs, utask->vaddr + auprobe->dflt.ilen))
+>  			return -ERESTART;
+>  	}
+>  	/* popf; tell the caller to not touch TF */
+> -	if (auprobe->def.fixups & UPROBE_FIX_SETF)
+> +	if (auprobe->dflt.fixups & UPROBE_FIX_SETF)
+>  		utask->autask.saved_tf = true;
+>  
+>  	return 0;
+> @@ -711,12 +711,11 @@ int arch_uprobe_analyze_insn(struct arch_uprobe *auprobe, struct mm_struct *mm,
+>  
+>  	/*
+>  	 * Figure out which fixups default_post_xol_op() will need to perform,
+> -	 * and annotate def->fixups accordingly. To start with, ->fixups is
+> -	 * either zero or it reflects rip-related fixups.
+> +	 * and annotate dflt->fixups accordingly.
+>  	 */
+>  	switch (OPCODE1(&insn)) {
+>  	case 0x9d:		/* popf */
+> -		auprobe->def.fixups |= UPROBE_FIX_SETF;
+> +		auprobe->dflt.fixups |= UPROBE_FIX_SETF;
+>  		break;
+>  	case 0xc3:		/* ret or lret -- ip is correct */
+>  	case 0xcb:
+> @@ -742,8 +741,8 @@ int arch_uprobe_analyze_insn(struct arch_uprobe *auprobe, struct mm_struct *mm,
+>  		riprel_analyze(auprobe, &insn);
+>  	}
+>  
+> -	auprobe->def.ilen = insn.length;
+> -	auprobe->def.fixups |= fix_ip_or_call;
+> +	auprobe->dflt.ilen = insn.length;
+> +	auprobe->dflt.fixups |= fix_ip_or_call;
+>  
+>  	auprobe->ops = &default_xol_ops;
+>  	return 0;
+> 
 
-I have added this patch to my queue, thanks.
 
---=-2z8KW5XLcMh0yKC1wqgB
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAABCgAGBQJTi89UAAoJEOVv75VaS+3OFjAP/iqXeKfP56T3jvOgmAzAAWP2
-xxuBj+4gmB18NMC2ExusnfmpxWLgjS+sXMssLE0RxzDkJIEHkPk7EVe+l2ZuIfop
-zJW+368LZy5EKS+R1TNz/dgiIvSddLcS96JjkzeD1ufVUvYVqQPMzOKArVPQdsxp
-Vw/Sc9yAlyl8fLd7uwUCGnrZeql/CWsf1+OymlgUjyLUCL4XPmTGzz6gnlDR4tEK
-mnEjlf/8vMMDZ1TemIfRd4E7zKKWsRetbbQg/z4VQ0qZZHG+hN6ArtCu8fIiPujo
-stokUNAODVjSaptN51Odeej2ehIltk7RcaUKtwtqpWgiHeqeeh5ydhNSyVrrHnUG
-tHKseLi85A87FEWlvyaDOLSbi6FQEjePPglYYK/QuYwvBe4CgTi//zhEPMyDNjxH
-5dpmC356s7rmia7hVYC7GnBUJaVI9aA1KatsCEVAgJd/CyLdUbr3suL3JghtNtBb
-RryBiEhRh4zHRfgVL1qi0JCD0DJeoCxBT4ChyfAjuHPLnBevNl2VZMjsYBj5/xhy
-hFeAvc01ltb7DQEFux850SPF4CaNwLRnps/tS6ZFF4kJQZhVLiQ90JJf5y1vYLwk
-eTh8Isxv6lwe1mBEUbPr2YQu9kAdR/QadmCIEK8NGkJCJPv/JWpczKviKA/w8wF+
-ydPmtoURR4HK5vAeG2iF
-=o1Vg
------END PGP SIGNATURE-----
-
---=-2z8KW5XLcMh0yKC1wqgB--
 
