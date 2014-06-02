@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753230AbaFBJI7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 05:08:59 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:53849 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753104AbaFBJIy (ORCPT
+	id S1753292AbaFBJJJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 05:09:09 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:45557 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753104AbaFBJJE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 05:08:54 -0400
+	Mon, 2 Jun 2014 05:09:04 -0400
 From: srinivas.kandagatla@linaro.org
 To: Russell King <linux@arm.linux.org.uk>,
         Ulf Hansson <ulf.hansson@linaro.org>, linux-mmc@vger.kernel.org
 Cc: Chris Ball <chris@printf.net>, linux-kernel@vger.kernel.org,
         linux-arm-msm@vger.kernel.org, linus.walleij@linaro.org,
         Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-Subject: [PATCH v6 02/12] mmc: mmci: Add Qualcomm specific register defines.
-Date: Mon,  2 Jun 2014 10:08:48 +0100
-Message-Id: <1401700128-11506-1-git-send-email-srinivas.kandagatla@linaro.org>
+Subject: [PATCH v6 03/12] mmc: mmci: Add enough delay between writes to CMD register.
+Date: Mon,  2 Jun 2014 10:08:57 +0100
+Message-Id: <1401700137-11547-1-git-send-email-srinivas.kandagatla@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1401699818-11329-1-git-send-email-srinivas.kandagatla@linaro.org>
 References: <1401699818-11329-1-git-send-email-srinivas.kandagatla@linaro.org>
@@ -25,50 +25,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
 
-This patch adds a Qualcomm SD Card controller specific register variations
-to header file. Qualcomm SDCC controller is pl180, with slight changes in
-the register layout from standard pl180 register set.
+On Qcom SD Card controller POWER, CLKCTRL, DATACTRL and COMMAND registers
+should be updated in MCLK domain, and writes to these registers must be
+separated by three MCLK cycles. This resitriction is not applicable for
+other registers. Any subsequent writes to these register will be ignored
+until 3 MCLK have passed.
+
+One usec delay between two CMD register writes is not sufficient in the
+card identification phase where the CCLK is very low. This patch replaces
+a static 1 usec delay to use mmci_reg_delay function which can provide
+correct delay depending on the cclk frequency.
+
+Without this patch the card is not detected.
 
 Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
 ---
- drivers/mmc/host/mmci.h | 17 +++++++++++++++++
- 1 file changed, 17 insertions(+)
+ drivers/mmc/host/mmci.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/mmc/host/mmci.h b/drivers/mmc/host/mmci.h
-index 347d942..d38a99d 100644
---- a/drivers/mmc/host/mmci.h
-+++ b/drivers/mmc/host/mmci.h
-@@ -41,6 +41,15 @@
- /* Modified PL180 on Versatile Express platform */
- #define MCI_ARM_HWFCEN		(1 << 12)
+diff --git a/drivers/mmc/host/mmci.c b/drivers/mmc/host/mmci.c
+index a38e714..ed20bf5 100644
+--- a/drivers/mmc/host/mmci.c
++++ b/drivers/mmc/host/mmci.c
+@@ -810,7 +810,7 @@ mmci_start_command(struct mmci_host *host, struct mmc_command *cmd, u32 c)
  
-+/* Modified on Qualcomm Integrations */
-+#define MCI_QCOM_CLK_WIDEBUS_8	(BIT(10) | BIT(11))
-+#define MCI_QCOM_CLK_FLOWENA	BIT(12)
-+#define MCI_QCOM_CLK_INVERTOUT	BIT(13)
-+
-+/* select in latch data and command in */
-+#define MCI_QCOM_CLK_SELECT_IN_FBCLK	BIT(15)
-+#define MCI_QCOM_CLK_SELECT_IN_DDR_MODE	(BIT(14) | BIT(15))
-+
- #define MMCIARGUMENT		0x008
- #define MMCICOMMAND		0x00c
- #define MCI_CPSM_RESPONSE	(1 << 6)
-@@ -54,6 +63,14 @@
- #define MCI_ST_NIEN		(1 << 13)
- #define MCI_ST_CE_ATACMD	(1 << 14)
+ 	if (readl(base + MMCICOMMAND) & MCI_CPSM_ENABLE) {
+ 		writel(0, base + MMCICOMMAND);
+-		udelay(1);
++		mmci_reg_delay(host);
+ 	}
  
-+/* Modified on Qualcomm Integrations */
-+#define MCI_QCOM_CSPM_DATCMD		BIT(12)
-+#define MCI_QCOM_CSPM_MCIABORT		BIT(13)
-+#define MCI_QCOM_CSPM_CCSENABLE		BIT(14)
-+#define MCI_QCOM_CSPM_CCSDISABLE	BIT(15)
-+#define MCI_QCOM_CSPM_AUTO_CMD19	BIT(16)
-+#define MCI_QCOM_CSPM_AUTO_CMD21	BIT(21)
-+
- #define MMCIRESPCMD		0x010
- #define MMCIRESPONSE0		0x014
- #define MMCIRESPONSE1		0x018
+ 	c |= cmd->opcode | MCI_CPSM_ENABLE;
 -- 
 1.9.1
 
