@@ -1,78 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753401AbaFBRIn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 13:08:43 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:33766 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752742AbaFBRIm (ORCPT
+	id S1753683AbaFBRJi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 13:09:38 -0400
+Received: from mail-ve0-f169.google.com ([209.85.128.169]:33892 "EHLO
+	mail-ve0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751917AbaFBRJg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 13:08:42 -0400
-From: "Javi Merino" <javi.merino@arm.com>
-To: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
-Cc: Javi Merino <javi.merino@arm.com>,
-        Jacob Pan <jacob.jun.pan@linux.intel.com>,
-        Zhang Rui <rui.zhang@intel.com>
-Subject: [PATCH] tools/thermal: tmon: fix compilation errors when building statically
-Date: Mon,  2 Jun 2014 18:08:17 +0100
-Message-Id: <1401728897-25188-1-git-send-email-javi.merino@arm.com>
-X-Mailer: git-send-email 1.9.1
-X-OriginalArrivalTime: 02 Jun 2014 17:08:34.0966 (UTC) FILETIME=[49B93B60:01CF7E85]
-X-MC-Unique: 114060218084001901
-Content-Type: text/plain; charset=WINDOWS-1252
+	Mon, 2 Jun 2014 13:09:36 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140602162525.GH16155@laptop.programming.kicks-ass.net>
+References: <alpine.LRH.2.02.1406011342470.20831@file01.intranet.prod.int.rdu2.redhat.com>
+	<alpine.LRH.2.02.1406021158360.20627@file01.intranet.prod.int.rdu2.redhat.com>
+	<20140602162525.GH16155@laptop.programming.kicks-ass.net>
+Date: Mon, 2 Jun 2014 10:09:35 -0700
+X-Google-Sender-Auth: eZCqBCT2_JqgxUitgnJ4rPnD7SI
+Message-ID: <CA+55aFzwrqkwD=G=w2m7TdXTpsMFjV7XUMXv5DMPGr=5x5YGCQ@mail.gmail.com>
+Subject: Re: [PATCH v2] introduce atomic_pointer to fix a race condition in
+ cancelable mcs spinlocks
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Mikulas Patocka <mpatocka@redhat.com>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Helge Deller <deller@gmx.de>, John David Anglin <dave.anglin@bell.net>,
+        Parisc List <linux-parisc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        "Vinod, Chegu" <chegu_vinod@hp.com>, Waiman Long <Waiman.Long@hp.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Davidlohr Bueso <davidlohr@hp.com>, Peter Anvin <hpa@zytor.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>, Jason Low <jason.low2@hp.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id s52H8re1030872
 
-tmon fails to build statically with the following error:
+On Mon, Jun 2, 2014 at 9:25 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+>
+> And I can't say I'm a particular fan of these ops either, as alternative
+> I'm almost inclined to just exclude parisc from using opt spinning.
 
-$ make LDFLAGS=-static
-gcc -O1 -Wall -Wshadow -W -Wformat -Wimplicit-function-declaration -Wimplicit-int -fstack-protector -D VERSION=\"1.0\" -static tmon.o tui.o sysfs.o pid.o   -o tmon -lm -lpanel -lncursesw  -lpthread
-tmon.o: In function `tmon_sig_handler':
-tmon.c:(.text+0x21): undefined reference to `stdscr'
-tmon.o: In function `tmon_cleanup':
-tmon.c:(.text+0xb9): undefined reference to `stdscr'
-tmon.c:(.text+0x11e): undefined reference to `stdscr'
-tmon.c:(.text+0x123): undefined reference to `keypad'
-tmon.c:(.text+0x12d): undefined reference to `nocbreak'
-tmon.o: In function `main':
-tmon.c:(.text+0x785): undefined reference to `stdscr'
-tmon.c:(.text+0x78a): undefined reference to `nodelay'
-tui.o: In function `setup_windows':
-tui.c:(.text+0x131): undefined reference to `stdscr'
-tui.c:(.text+0x176): undefined reference to `stdscr'
-tui.c:(.text+0x19f): undefined reference to `stdscr'
-tui.c:(.text+0x1cc): undefined reference to `stdscr'
-tui.c:(.text+0x1ff): undefined reference to `stdscr'
-tui.o:tui.c:(.text+0x229): more undefined references to `stdscr' follow
-tui.o: In function `show_cooling_device':
-[...]
+Please do.
 
-stdscr() and friends are in libtinfo (part of ncurses) so add it to
-the libraries that are linked in when compiling tmon to fix it.
+There is no way in hell that we should introduce a magic new
+atomic_pointer thing for parisc. And the idea somebody had to change
+ACCESS_ONCE() for PA-RISC (I'm not going to go back to find who to
+blame) is just horribly wrong too, since it's not even necessary for
+any normal use: the special "load-and-store-zero" instruction isn't
+actually used for "real" data, it's used only for the special
+spinlocks afaik, so doing it for all ACCESS_ONCE() users would be
+wrong even on PA-RISC. For any normal data, the usual "just load the
+value, making sure the compiler doesn't reload it" is perfectly fine -
+even on PA-RISC.
 
-Cc: Jacob Pan <jacob.jun.pan@linux.intel.com>
-Cc: Zhang Rui <rui.zhang@intel.com>
-Signed-off-by: Javi Merino <javi.merino@arm.com>
----
- tools/thermal/tmon/Makefile | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Now, if PA-RISC was a major architecture, we'd have to figure this
+out. But as it is, PA-RISC is just about the shittiest RISC ever
+invented (with original sparc being a strong contender), and let's
+face it, nobody really uses it.  It's a "fun project", but it is not
+something that we should use to mess up either ACCESS_ONCE() or the
+MCS locks.
 
-diff --git a/tools/thermal/tmon/Makefile b/tools/thermal/tmon/Makefile
-index 447321104ec0..e775adcbd29f 100644
---- a/tools/thermal/tmon/Makefile
-+++ b/tools/thermal/tmon/Makefile
-@@ -21,7 +21,7 @@ OBJS = tmon.o tui.o sysfs.o pid.o
- OBJS +=
- 
- tmon: $(OBJS) Makefile tmon.h
--	$(CC) ${CFLAGS} $(LDFLAGS) $(OBJS)  -o $(TARGET) -lm -lpanel -lncursesw  -lpthread
-+	$(CC) ${CFLAGS} $(LDFLAGS) $(OBJS)  -o $(TARGET) -lm -lpanel -lncursesw -ltinfo -lpthread
- 
- valgrind: tmon
- 	 sudo valgrind -v --track-origins=yes --tool=memcheck --leak-check=yes --show-reachable=yes --num-callers=20 --track-fds=yes ./$(TARGET)  1> /dev/null
--- 
-1.9.1
+Just make PA-RISC use its own locks, not any of the new fancy ones.
 
-
+              Linus
