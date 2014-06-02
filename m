@@ -1,104 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755283AbaFBOGn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 10:06:43 -0400
-Received: from mail-yh0-f44.google.com ([209.85.213.44]:45036 "EHLO
-	mail-yh0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753958AbaFBOGl (ORCPT
+	id S1755144AbaFBOIP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 10:08:15 -0400
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:38693 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754128AbaFBOIN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 10:06:41 -0400
-Date: Mon, 2 Jun 2014 11:06:36 -0300
-From: Gustavo Padovan <gustavo@padovan.org>
-To: linville@tuxdriver.com
-Cc: linux-wireless@vger.kernel.org, linux-bluetooth@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: pull request: bluetooth-next 2014-06-01
-Message-ID: <20140602140636.GA1659@joana>
-Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
-	linville@tuxdriver.com, linux-wireless@vger.kernel.org,
-	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+	Mon, 2 Jun 2014 10:08:13 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="wRRV7LY7NUeQGEoC"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <538B0F90.8090902@arm.com>
+References: <1400860385-14555-1-git-send-email-vincent.guittot@linaro.org>
+ <1400860385-14555-9-git-send-email-vincent.guittot@linaro.org>
+ <5388546E.5070007@arm.com> <CAKfTPtA04sQ4ox7yAU8Wxn_1DLuAxmm9UgER_-Nidtd6sNEEMQ@mail.gmail.com>
+ <538B0F90.8090902@arm.com>
+From: Vincent Guittot <vincent.guittot@linaro.org>
+Date: Mon, 2 Jun 2014 16:07:52 +0200
+Message-ID: <CAKfTPtAurF0sxHmA+hK++NKwJfPWZuv3n2OrKtZYtcKRZbnOjw@mail.gmail.com>
+Subject: Re: [PATCH v2 08/11] sched: get CPU's activity statistic
+To: Dietmar Eggemann <dietmar.eggemann@arm.com>
+Cc: "peterz@infradead.org" <peterz@infradead.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        "efault@gmx.de" <efault@gmx.de>,
+        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 1 June 2014 13:33, Dietmar Eggemann <dietmar.eggemann@arm.com> wrote:
+> On 30/05/14 20:20, Vincent Guittot wrote:
+>>
+>> On 30 May 2014 11:50, Dietmar Eggemann <dietmar.eggemann@arm.com> wrote:
+>>>
+>>> On 23/05/14 16:53, Vincent Guittot wrote:
+>>>>
+>>>> Monitor the activity level of each group of each sched_domain level. The
+>>>> activity is the amount of cpu_power that is currently used on a CPU or
+>>>> group
+>>>> of CPUs. We use the runnable_avg_sum and _period to evaluate this
+>>>> activity
+>>>> level. In the special use case where the CPU is fully loaded by more
+>>>> than 1
+>>>> task, the activity level is set above the cpu_power in order to reflect
+>>>> the
+>>>> overload of the CPU
+>>>>
+>>>> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+>>>
+>>>
+>>> [...]
+>>>
+>>>>   /*
+>>>>    * select_task_rq_fair: Select target runqueue for the waking task in
+>>>> domains
+>>>>    * that have the 'sd_flag' flag set. In practice, this is
+>>>> SD_BALANCE_WAKE,
+>>>> @@ -5518,6 +5535,7 @@ struct sg_lb_stats {
+>>>>        unsigned long sum_weighted_load; /* Weighted load of group's
+>>>> tasks */
+>>>>        unsigned long load_per_task;
+>>>>        unsigned long group_power;
+>>>> +     unsigned long group_activity; /* Total activity of the group */
+>>>>        unsigned int sum_nr_running; /* Nr tasks running in the group */
+>>>>        unsigned int group_capacity;
+>>>>        unsigned int idle_cpus;
+>>>> @@ -5538,6 +5556,7 @@ struct sd_lb_stats {
+>>>>        struct sched_group *busiest;    /* Busiest group in this sd */
+>>>>        struct sched_group *local;      /* Local group in this sd */
+>>>>        unsigned long total_load;       /* Total load of all groups in sd
+>>>> */
+>>>> +     unsigned long total_activity;  /* Total activity of all groups in
+>>>> sd */
+>>>>        unsigned long total_pwr;        /* Total power of all groups in
+>>>> sd */
+>>>>        unsigned long avg_load; /* Average load across all groups in sd
+>>>> */
+>>>>
+>>>> @@ -5557,6 +5576,7 @@ static inline void init_sd_lb_stats(struct
+>>>> sd_lb_stats *sds)
+>>>>                .busiest = NULL,
+>>>>                .local = NULL,
+>>>>                .total_load = 0UL,
+>>>> +             .total_activity = 0UL,
+>>>
+>>>
+>>> AFAICS, total_activity is not used right now. Do you intend to use it to
+>>> calculate something like avg_activity later (like total_load/avg_load)?
+>>
+>>
+>> this patch only creates group_activity and total_activity.The use of
+>> these statistics appears on the next patches. I have not planned to
+>> compute such avg_activity for the moment mainly because i have need it
+>> yet.
+>>
+>> Do you have in mind any use of such avg_activity ?
+>
+>
+> No, not really but I still don't see (taken all your patches) where
+> sds->total_activity is used.
+>
+> $ find . -name "*.[ch]" | xargs grep total_activity
+> ./kernel/sched/fair.c:  unsigned long total_activity;  /* Total activity of
+> all groups in sd */
+> ./kernel/sched/fair.c:          .total_activity = 0UL,
+> ./kernel/sched/fair.c:          sds->total_activity += sgs->group_activity;
+>
+> OOTH, sgs->group_activity is used to set sgs->group_capacity which is then
+> used in if conditions in update_sd_pick_busiest(), update_sd_lb_stats() and
+> find_busiest_group().
 
---wRRV7LY7NUeQGEoC
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Sorry, i misread you 1st email and haven't understood that you were
+specifically speaking about total_activity.
+When i created the activity statistic, i have added both sg and sd
+fields but i finally only use the sg one. If i don't need the sd field
+after updating my patches, i will remove it
 
-Hi John,
+Thanks
+Vincent
 
-Here some more patches for 3.16. We know that Linus already opened the merge
-window, but this is fix only pull request, and most of the patches here are
-also tagged for stable.
-
-Please pull! or let me know of any issues. Thanks!
-
-	Gustavo
-
----
-The following changes since commit d7b2545023ecfde94d3ea9c03c5480ac18da96c9:
-
-  Bluetooth: Clearly distinguish mgmt LTK type from authenticated property (2014-05-23 11:24:04 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth-next.git for-upstream
-
-for you to fetch changes up to 8a96f3cd22878fc0bb564a8478a6e17c0b8dca73:
-
-  Bluetooth: Fix L2CAP deadlock (2014-06-02 13:38:19 +0300)
-
-----------------------------------------------------------------
-Adam Lee (1):
-      Bluetooth: ath3k: no need to set same pipe multiple times
-
-Johan Hedberg (4):
-      Bluetooth: Fix properly ignoring LTKs of unknown types
-      Bluetooth: Fix authentication check for FIPS security level
-      Bluetooth: Fix requiring SMP MITM for outgoing connections
-      Bluetooth: Fix missing check for FIPS security level
-
-Jukka Rissanen (2):
-      Bluetooth: 6LoWPAN: Fix MAC address universal/local bit handling
-      Bluetooth: l2cap: Set more channel defaults
-
-Jukka Taimisto (1):
-      Bluetooth: Fix L2CAP deadlock
-
- drivers/bluetooth/ath3k.c  |  3 ++-
- net/bluetooth/6lowpan.c    | 65 +++++++++++++++++++++++++++++-------------------------
- net/bluetooth/hci_event.c  |  4 +++-
- net/bluetooth/l2cap_core.c |  6 +++++
- net/bluetooth/l2cap_sock.c |  5 ++++-
- net/bluetooth/mgmt.c       | 10 +++++++--
- net/bluetooth/smp.c        |  7 +++---
- 7 files changed, 62 insertions(+), 38 deletions(-)
-
---wRRV7LY7NUeQGEoC
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTjITsAAoJEPs3PUX4s20oFSEQAKpJqns+h74NOPIqHPOfv+pr
-hGvKvstASH9IeuA+km+BHDFSS0Eqwkc1M8AnS8sZIrVq8sML+89bpBMyhYSIOzwM
-sugpDuGXn0rMQ4Ia24gEwjgLBs94j0NcG1Q5/AjsaJcQ/8JOo7Or19lcB/yASZ1b
-gHQ9H9niF6kpQnxfConkfT+UvhSxtSFro1/wFoM1+9kyiMujFXxLgFQcEo32xHdE
-2NycQWRJe81fB7m1USuzBtBbMPp0DL0qTOPDR/i6K4TmEOgCgPvT/RReJxLTVm+J
-jZBrh7q5UPXF7NG9A7+Vu2heKh1jcXrrkSzLQ1jRDM2Wy77JRsaQ+RITgnRHKmCm
-KyAa/oRobEtx8sCv8465klw33LoVKtbuN6nDmNzFLBXYrA5A5I+v6IvqoQEtsklP
-uCqxLDswRkdg3xbOiad5bxd3X5cLEQ2S158yqi+UQEO84kN33ylsaEfxVAlxnzEJ
-4ehhsOZVOkTPUhSQzwyVEy4iq4d3urgQwTlH2aj7RQS4DzZ5Tfow8uth7jUAOpFW
-k6Qj59UZsR2aOCiPZgIpQzaHWI7L8mT0nraOq2Bqq2dcbOucHAqFX3pyt7+c3Kqc
-QSrX2zrowJ5S1J4LkaMa8HsKHH2DBusbBelLth6q6JxP9AnWczOHeP3rySMNjrxT
-9XWfb9s6lAIiDKbN2cvo
-=Gn+6
------END PGP SIGNATURE-----
-
---wRRV7LY7NUeQGEoC--
+>
+> [...]
+>
+>
