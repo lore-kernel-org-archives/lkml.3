@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753155AbaFBVlZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 17:41:25 -0400
+	id S1752016AbaFBVgu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 17:36:50 -0400
 Received: from mga09.intel.com ([134.134.136.24]:47039 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751581AbaFBVgv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 17:36:51 -0400
+	id S1751581AbaFBVgs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 17:36:48 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.98,959,1392192000"; 
-   d="scan'208";a="521668160"
-Subject: [PATCH 04/10] mm: pagewalk: add page walker for mincore()
+   d="scan'208";a="521668140"
+Subject: [PATCH 02/10] mm: pagewalk: always skip hugetlbfs except when explicitly handled
 To: linux-kernel@vger.kernel.org
 Cc: linux-mm@kvack.org, kirill.shutemov@linux.intel.com,
         Dave Hansen <dave@sr71.net>
 From: Dave Hansen <dave@sr71.net>
-Date: Mon, 02 Jun 2014 14:36:50 -0700
+Date: Mon, 02 Jun 2014 14:36:47 -0700
 References: <20140602213644.925A26D0@viggo.jf.intel.com>
 In-Reply-To: <20140602213644.925A26D0@viggo.jf.intel.com>
-Message-Id: <20140602213650.417E9C67@viggo.jf.intel.com>
+Message-Id: <20140602213647.E5C5D134@viggo.jf.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,221 +25,162 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dave Hansen <dave.hansen@linux.intel.com>
 
-This converts the sys_mincore() code over to use the
-walk_page_range() infrastructure.  This provides some pretty
-nice code savings.
+The short story:
 
-Note that the (now removed) comment:
+The walk_page_range() code is fragile for hugetlbfs VMAs.  Each
+walker instance must either exclude hugetlbfs from being walked,
+or add a ->hugetlb_entry handler.  If this is not done, the code
+will go off the rails and start clearing huge page table entries.
 
-       /*
-	* Huge pages are always in RAM for now, but
-	* theoretically it needs to be checked.
-	*/
+This patch removes that requirement on the walkers.  They can
+merrily call walk_page_range() on hugetlbfs areas, and those
+areas will simply be skipped inside the page walker code if they
+have not set up a handler.
 
-is bogus and has been for years.  We started demand-faulting them
-long ago.  Thank goodness theory matters!
+This makes the code more robust, shorter, and makes it more
+intuitive to write a page table walker.  Yay.
+
+Long story:
+
+I was looking at the page walker code and thought I found a bug.
+If the walker hits a hugetlbfs VMA where walk->hugetlb_entry was
+not set, it would hit the if(), and the clear out the pgd
+thinking it was bad.
+
+This essentially means that *EVERY* page walker has to *KNOW* to
+either exclude hugetlbfs VMAs, or set a ->hugetlb_entry handler.
+The good news is that all 9 users of walk_page_range() do this
+implicitly or explicitly.  The bad news is that it took me an
+hour to convince myself of this, and future walk_page_range()
+instances are vulnerable to making this mistake.  I think the
+madvise() use was probably just lucky (details below).
+
+Here's the code trimmed down.  Note what happens if we have a
+is_vm_hugetlb_page(), !walk->hugetlb_entry, and a huge page pgd
+entry in 'pgd' (or any of the lower levels).
+
+int walk_page_range(unsigned long addr, unsigned long end, ...
+{
+...
+	vma = find_vma(walk->mm, addr);
+        if (vma) {
+		if (walk->hugetlb_entry && is_vm_hugetlb_page(vma)) {
+			walk_hugetlb_range(vma, addr, next, walk);
+			...
+			continue;
+		}
+	}
+	if (pgd_none_or_clear_bad(pgd)) {
+
+
+There are currently 9 users of walk_page_range().  They handle
+hugetlbfs pages in 5 ways:
+
+/proc/$pid/smaps:
+/proc/$pid/clear_refs:
+cgroup precharge:
+cgroup move charge:
+	checks VMA explicitly for hugetblfs and skips, does not set
+	->hugetlb_entry (this patch removes the now unnecessary
+	hugetlbfs checks for these)
+
+openrisc dma alloc:
+	works on kernel memory, so no hugetlbfs, also arch does not
+	even support hugetlbfs
+
+powerpc subpage protection:
+	uses arch-specific is_hugepage_only_range() check
+
+/proc/$pid/pagemap:
+/proc/$pid/numa_map:
+	sets ->hugetlb_entry
+	(these are unaffected by this patch)
+
+MADV_WILLNEED:
+	does not set ->hugetlb_entry
+	only called via:
+	madvise_willneed() {
+		if (!vma->file)
+			force_swapin_readahead(...) {
+				walk_page_range(...)
+			}
+	}
+	That !vma->file check just _happens_ to cover hugetlbfs
+  	vmas since they are always file-backed (or at least have
+	vma->file set as far as I can tell)
+
+	(this case is unaffected by this patch)
 
 Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
 ---
 
- b/mm/mincore.c |  123 +++++++++++++++++----------------------------------------
- 1 file changed, 37 insertions(+), 86 deletions(-)
+ b/fs/proc/task_mmu.c |    4 +---
+ b/mm/memcontrol.c    |    4 ----
+ b/mm/pagewalk.c      |    5 ++++-
+ 3 files changed, 5 insertions(+), 8 deletions(-)
 
-diff -puN mm/mincore.c~mincore-page-walker-0 mm/mincore.c
---- a/mm/mincore.c~mincore-page-walker-0	2014-06-02 14:20:19.879833634 -0700
-+++ b/mm/mincore.c	2014-06-02 14:20:19.883833814 -0700
-@@ -19,38 +19,29 @@
- #include <asm/uaccess.h>
- #include <asm/pgtable.h>
+diff -puN fs/proc/task_mmu.c~pagewalk-always-skip-hugetlbfs-except-when-explicitly-handled-1 fs/proc/task_mmu.c
+--- a/fs/proc/task_mmu.c~pagewalk-always-skip-hugetlbfs-except-when-explicitly-handled-1	2014-06-02 14:20:19.210803615 -0700
++++ b/fs/proc/task_mmu.c	2014-06-02 14:20:19.218803974 -0700
+@@ -590,7 +590,7 @@ static int show_smap(struct seq_file *m,
+ 	memset(&mss, 0, sizeof mss);
+ 	mss.vma = vma;
+ 	/* mmap_sem is held in m_start */
+-	if (vma->vm_mm && !is_vm_hugetlb_page(vma))
++	if (vma->vm_mm)
+ 		walk_page_range(vma->vm_start, vma->vm_end, &smaps_walk);
  
--static void mincore_hugetlb_page_range(struct vm_area_struct *vma,
--				unsigned long addr, unsigned long end,
--				unsigned char *vec)
-+static int mincore_hugetlb_page_range(pte_t *ptep, unsigned long hmask,
-+					unsigned long addr, unsigned long end,
-+					struct mm_walk *walk)
- {
- #ifdef CONFIG_HUGETLB_PAGE
--	struct hstate *h;
--
--	h = hstate_vma(vma);
-+	unsigned char *vec = walk->private;
- 	while (1) {
--		unsigned char present;
--		pte_t *ptep;
--		/*
--		 * Huge pages are always in RAM for now, but
--		 * theoretically it needs to be checked.
--		 */
--		ptep = huge_pte_offset(current->mm,
--				       addr & huge_page_mask(h));
--		present = ptep && !huge_pte_none(huge_ptep_get(ptep));
-+		int present = !huge_pte_none(huge_ptep_get(ptep));
- 		while (1) {
- 			*vec = present;
- 			vec++;
- 			addr += PAGE_SIZE;
- 			if (addr == end)
--				return;
-+				return 0;
- 			/* check hugepage border */
--			if (!(addr & ~huge_page_mask(h)))
-+			if (!(addr & hmask))
- 				break;
- 		}
- 	}
- #else
- 	BUG();
- #endif
-+	return 0;
- }
- 
- /*
-@@ -94,10 +85,11 @@ static unsigned char mincore_page(struct
- 	return present;
- }
- 
--static void mincore_unmapped_range(struct vm_area_struct *vma,
--				unsigned long addr, unsigned long end,
--				unsigned char *vec)
-+static int mincore_unmapped_range(unsigned long addr, unsigned long end,
-+				struct mm_walk *walk)
- {
-+	struct vm_area_struct *vma = walk->vma;
-+	unsigned char *vec = walk->private;
- 	unsigned long nr = (end - addr) >> PAGE_SHIFT;
- 	int i;
- 
-@@ -111,27 +103,35 @@ static void mincore_unmapped_range(struc
- 		for (i = 0; i < nr; i++)
- 			vec[i] = 0;
- 	}
-+	return 0;
- }
- 
--static void mincore_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
--			unsigned long addr, unsigned long end,
--			unsigned char *vec)
-+static int mincore_pte_range(pmd_t *pmd,
-+			     unsigned long addr, unsigned long end,
-+			     struct mm_walk *walk)
- {
-+	struct vm_area_struct *vma = walk->vma;
-+	unsigned char *vec = walk->private;
- 	unsigned long next;
- 	spinlock_t *ptl;
- 	pte_t *ptep;
- 
-+	if (pmd_trans_huge(*pmd)) {
-+		int success = mincore_huge_pmd(vma, pmd, addr, end, vec);
-+		if (success)
-+			return 0;
-+		/* the trans huge pmd just split, handle as small */
-+	}
-+
- 	ptep = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
- 	do {
- 		pte_t pte = *ptep;
- 		pgoff_t pgoff;
- 
- 		next = addr + PAGE_SIZE;
--		if (pte_none(pte))
--			mincore_unmapped_range(vma, addr, next, vec);
--		else if (pte_present(pte))
-+		if (pte_present(pte)) {
- 			*vec = 1;
--		else if (pte_file(pte)) {
-+		} else if (pte_file(pte)) {
- 			pgoff = pte_to_pgoff(pte);
- 			*vec = mincore_page(vma->vm_file->f_mapping, pgoff);
- 		} else { /* pte is a swap entry */
-@@ -154,67 +154,21 @@ static void mincore_pte_range(struct vm_
- 		vec++;
- 	} while (ptep++, addr = next, addr != end);
- 	pte_unmap_unlock(ptep - 1, ptl);
--}
--
--static void mincore_pmd_range(struct vm_area_struct *vma, pud_t *pud,
--			unsigned long addr, unsigned long end,
--			unsigned char *vec)
--{
--	unsigned long next;
--	pmd_t *pmd;
--
--	pmd = pmd_offset(pud, addr);
--	do {
--		next = pmd_addr_end(addr, end);
--		if (pmd_trans_huge(*pmd)) {
--			if (mincore_huge_pmd(vma, pmd, addr, next, vec)) {
--				vec += (next - addr) >> PAGE_SHIFT;
+ 	show_map_vma(m, vma, is_pid);
+@@ -829,8 +829,6 @@ static ssize_t clear_refs_write(struct f
+ 			mmu_notifier_invalidate_range_start(mm, 0, -1);
+ 		for (vma = mm->mmap; vma; vma = vma->vm_next) {
+ 			cp.vma = vma;
+-			if (is_vm_hugetlb_page(vma))
 -				continue;
--			}
--			/* fall through */
--		}
--		if (pmd_none_or_trans_huge_or_clear_bad(pmd))
--			mincore_unmapped_range(vma, addr, next, vec);
--		else
--			mincore_pte_range(vma, pmd, addr, next, vec);
--		vec += (next - addr) >> PAGE_SHIFT;
--	} while (pmd++, addr = next, addr != end);
--}
--
--static void mincore_pud_range(struct vm_area_struct *vma, pgd_t *pgd,
--			unsigned long addr, unsigned long end,
--			unsigned char *vec)
--{
--	unsigned long next;
--	pud_t *pud;
--
--	pud = pud_offset(pgd, addr);
--	do {
--		next = pud_addr_end(addr, end);
--		if (pud_none_or_clear_bad(pud))
--			mincore_unmapped_range(vma, addr, next, vec);
--		else
--			mincore_pmd_range(vma, pud, addr, next, vec);
--		vec += (next - addr) >> PAGE_SHIFT;
--	} while (pud++, addr = next, addr != end);
-+	return 0;
- }
+ 			/*
+ 			 * Writing 1 to /proc/pid/clear_refs affects all pages.
+ 			 *
+diff -puN mm/memcontrol.c~pagewalk-always-skip-hugetlbfs-except-when-explicitly-handled-1 mm/memcontrol.c
+--- a/mm/memcontrol.c~pagewalk-always-skip-hugetlbfs-except-when-explicitly-handled-1	2014-06-02 14:20:19.212803706 -0700
++++ b/mm/memcontrol.c	2014-06-02 14:20:19.220804064 -0700
+@@ -6821,8 +6821,6 @@ static unsigned long mem_cgroup_count_pr
+ 			.mm = mm,
+ 			.private = vma,
+ 		};
+-		if (is_vm_hugetlb_page(vma))
+-			continue;
+ 		walk_page_range(vma->vm_start, vma->vm_end,
+ 					&mem_cgroup_count_precharge_walk);
+ 	}
+@@ -7087,8 +7085,6 @@ retry:
+ 			.mm = mm,
+ 			.private = vma,
+ 		};
+-		if (is_vm_hugetlb_page(vma))
+-			continue;
+ 		ret = walk_page_range(vma->vm_start, vma->vm_end,
+ 						&mem_cgroup_move_charge_walk);
+ 		if (ret)
+diff -puN mm/pagewalk.c~pagewalk-always-skip-hugetlbfs-except-when-explicitly-handled-1 mm/pagewalk.c
+--- a/mm/pagewalk.c~pagewalk-always-skip-hugetlbfs-except-when-explicitly-handled-1	2014-06-02 14:20:19.214803794 -0700
++++ b/mm/pagewalk.c	2014-06-02 14:20:19.220804064 -0700
+@@ -115,6 +115,9 @@ static int walk_hugetlb_range(struct vm_
+ 	pte_t *pte;
+ 	int err = 0;
  
- static void mincore_page_range(struct vm_area_struct *vma,
- 			unsigned long addr, unsigned long end,
- 			unsigned char *vec)
- {
--	unsigned long next;
--	pgd_t *pgd;
--
--	pgd = pgd_offset(vma->vm_mm, addr);
--	do {
--		next = pgd_addr_end(addr, end);
--		if (pgd_none_or_clear_bad(pgd))
--			mincore_unmapped_range(vma, addr, next, vec);
--		else
--			mincore_pud_range(vma, pgd, addr, next, vec);
--		vec += (next - addr) >> PAGE_SHIFT;
--	} while (pgd++, addr = next, addr != end);
-+	struct mm_walk mincore_walk = {
-+		.pte_hole      = mincore_unmapped_range,
-+		.pmd_entry     = mincore_pte_range,
-+		.hugetlb_entry = mincore_hugetlb_page_range,
-+		.private = vec,
-+		.mm = vma->vm_mm,
-+	};
-+	walk_page_range(vma->vm_start, vma->vm_end, &mincore_walk);
- }
- 
- /*
-@@ -233,10 +187,7 @@ static long do_mincore(unsigned long add
- 
- 	end = min(vma->vm_end, addr + (pages << PAGE_SHIFT));
- 
--	if (is_vm_hugetlb_page(vma))
--		mincore_hugetlb_page_range(vma, addr, end, vec);
--	else
--		mincore_page_range(vma, addr, end, vec);
-+	mincore_page_range(vma, addr, end, vec);
- 
- 	return (end - addr) >> PAGE_SHIFT;
- }
++	if (!walk->hugetlb_entry)
++		return 0;
++
+ 	do {
+ 		next = hugetlb_entry_end(h, addr, end);
+ 		pte = huge_pte_offset(walk->mm, addr & hmask);
+@@ -208,7 +211,7 @@ int walk_page_range(unsigned long addr,
+ 			 * architecture and we can't handled it in the same
+ 			 * manner as non-huge pages.
+ 			 */
+-			if (walk->hugetlb_entry && is_vm_hugetlb_page(vma)) {
++			if (is_vm_hugetlb_page(vma)) {
+ 				if (vma->vm_end < next)
+ 					next = vma->vm_end;
+ 				/*
 _
