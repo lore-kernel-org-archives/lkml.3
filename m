@@ -1,85 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754165AbaFBMro (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 08:47:44 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:50861 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752201AbaFBMrn (ORCPT
+	id S1754364AbaFBMsq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 08:48:46 -0400
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:33810 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752412AbaFBMsp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 08:47:43 -0400
-Date: Mon, 2 Jun 2014 13:46:38 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Chew Chiau Ee <chiau.ee.chew@intel.com>
-Cc: Eric Miao <eric.y.miao@gmail.com>, Russell King <linux@arm.linux.org.uk>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Darren Hart <dvhart@linux.intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org, linux-spi@vger.kernel.org,
-        devicetree@vger.kernel.org
-Message-ID: <20140602124638.GD31751@sirena.org.uk>
-References: <1401738379-4107-1-git-send-email-chiau.ee.chew@intel.com>
- <1401738379-4107-2-git-send-email-chiau.ee.chew@intel.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="BRE3mIcgqKzpedwo"
-Content-Disposition: inline
-In-Reply-To: <1401738379-4107-2-git-send-email-chiau.ee.chew@intel.com>
-X-Cookie: Big book, big bore.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 92.40.249.174
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/2] spi/pxa2xx-pci: Add common clock framework support
- in PCI glue layer
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Mon, 2 Jun 2014 08:48:45 -0400
+From: Vinayak Menon <vinayakm.list@gmail.com>
+To: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Cc: arve@android.com, john.stultz@linaro.org, serban.constantinescu@arm.com,
+        Vinayak Menon <vinayakm.list@gmail.com>
+Subject: [PATCH] staging: binder: add vm_fault handler
+Date: Mon,  2 Jun 2014 18:17:59 +0530
+Message-Id: <1401713279-5612-1-git-send-email-vinayakm.list@gmail.com>
+X-Mailer: git-send-email 1.9.2.msysgit.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+An issue was observed when a userspace task exits.
+The page which hits error here is the zero page.
+In binder mmap, the whole of vma is not mapped.
+On a task crash, when debuggerd reads the binder regions,
+the unmapped areas fall to do_anonymous_page in handle_pte_fault,
+due to the absence of a vm_fault handler. This results in
+zero page being mapped. Later in zap_pte_range, vm_normal_page
+returns zero page in the case of VM_MIXEDMAP and it results in the
+error.
 
---BRE3mIcgqKzpedwo
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+BUG: Bad page map in process mediaserver  pte:9dff379f pmd:9bfbd831
+page:c0ed8e60 count:1 mapcount:-1 mapping:  (null) index:0x0
+page flags: 0x404(referenced|reserved)
+addr:40c3f000 vm_flags:10220051 anon_vma:  (null) mapping:d9fe0764 index:fd
+vma->vm_ops->fault:   (null)
+vma->vm_file->f_op->mmap: binder_mmap+0x0/0x274
+CPU: 0 PID: 1463 Comm: mediaserver Tainted: G        W    3.10.17+ #1
+[<c001549c>] (unwind_backtrace+0x0/0x11c) from [<c001200c>] (show_stack+0x10/0x14)
+[<c001200c>] (show_stack+0x10/0x14) from [<c0103d78>] (print_bad_pte+0x158/0x190)
+[<c0103d78>] (print_bad_pte+0x158/0x190) from [<c01055f0>] (unmap_single_vma+0x2e4/0x598)
+[<c01055f0>] (unmap_single_vma+0x2e4/0x598) from [<c010618c>] (unmap_vmas+0x34/0x50)
+[<c010618c>] (unmap_vmas+0x34/0x50) from [<c010a9e4>] (exit_mmap+0xc8/0x1e8)
+[<c010a9e4>] (exit_mmap+0xc8/0x1e8) from [<c00520f0>] (mmput+0x54/0xd0)
+[<c00520f0>] (mmput+0x54/0xd0) from [<c005972c>] (do_exit+0x360/0x990)
+[<c005972c>] (do_exit+0x360/0x990) from [<c0059ef0>] (do_group_exit+0x84/0xc0)
+[<c0059ef0>] (do_group_exit+0x84/0xc0) from [<c0066de0>] (get_signal_to_deliver+0x4d4/0x548)
+[<c0066de0>] (get_signal_to_deliver+0x4d4/0x548) from [<c0011500>] (do_signal+0xa8/0x3b8)
 
-On Tue, Jun 03, 2014 at 03:46:18AM +0800, Chew Chiau Ee wrote:
+Add a vm_fault handler which returns VM_FAULT_SIGBUS, and prevents the
+wrong fallback to do_anonymous_page.
 
-> ---
->  drivers/spi/spi-pxa2xx-pci.c |   20 ++++++++++++++++++++
->  1 files changed, 20 insertions(+), 0 deletions(-)
+Signed-off-by: Vinayak Menon <vinayakm.list@gmail.com>
+---
+ drivers/staging/android/binder.c |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
 
-> +	clk = clk_register_fixed_rate(&dev->dev, "spi_pxa2xx_clk", NULL,
-> +					CLK_IS_ROOT, c->max_clk_rate);
-> +	 if (IS_ERR(clk))
-> +		return PTR_ERR(clk);
+diff --git a/drivers/staging/android/binder.c b/drivers/staging/android/binder.c
+index cfe4bc8..4d9c3cc 100644
+--- a/drivers/staging/android/binder.c
++++ b/drivers/staging/android/binder.c
+@@ -2733,9 +2733,15 @@ static void binder_vma_close(struct vm_area_struct *vma)
+ 	binder_defer_work(proc, BINDER_DEFERRED_PUT_FILES);
+ }
+ 
++static int binder_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
++{
++	return VM_FAULT_SIGBUS;
++}
++
+ static struct vm_operations_struct binder_vm_ops = {
+ 	.open = binder_vma_open,
+ 	.close = binder_vma_close,
++	.fault = binder_vm_fault,
+ };
+ 
+ static int binder_mmap(struct file *filp, struct vm_area_struct *vma)
+-- 
+1.7.6
 
-This is pretty much fine code wise but I'd expect to see some Kconfig
-updates adding dependencies on the clock API - clk_register_fixed_rate()
-is only provided if the fixed rate driver is present.  I'm also not
-seeing any changes to unregister the fixed rate clock as the device is
-removed.
-
---BRE3mIcgqKzpedwo
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTjHIrAAoJELSic+t+oim9/7EP/1Pbt4XAJ5TpW6TYrXPk+sMS
-NZftP4t9eQPYSH46P8RRpqilmZ2dFOQZwKoDgmAFVt/tKJx34Vdmr5ZUE0FVn+TV
-ud/YKjTN6fvDd38ESKstpKpYE8Qg/oAWosoLsAWGRj+2smU1k6ezQVLM69Q1D3y5
-2gP0QR3XQw7MGYZ9k1BXVCjvTZbSdyHCqVJ8/hvjpJ2MZAfSqmvIeiHFF2weCnea
-ty9jis54P5HqCjnL76UpnruiJKZNB7+ZmfajuHCBJxfgiOGqYlsfIihH1I6aunYo
-t6l66UUdQjamjEsBlyWkFRBS6HgjIuOiCAb7QUGzFyK/yhAsWe5zgM59eCNSjBiH
-NgChnAml7Phl2gPisMg0Rl5CfzB4fA1zd3aq9FsZ+7FL3GsReJAlQCOWYNGe5LBK
-nmd47AcgIndDTgeNPGQImraspBSxnYs4dC1UgBY2s3OLvvhZV+E3sNWmtIkPvYvE
-huKeIh9Ey8RqJjFR+TVn2K+EEfJm20QSQeD5et2SLKxMQ/suSUKdFvgoB+sB2JKX
-reGSMxsQc97iWA4r2VlOljWsYe0nze+umBvgpT0dTug+yzHdpsMHUhWEEwoGQ6sL
-YVYvmpuK7jvYuZfzX12w4Oct3zk2dMziECg0Tz5/gBWSagUBL3MWYm7PZR8JLo+X
-ZWhJtknrJDlTIYDdMEX0
-=/dfd
------END PGP SIGNATURE-----
-
---BRE3mIcgqKzpedwo--
