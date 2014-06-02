@@ -1,85 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753062AbaFBIng (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 04:43:36 -0400
-Received: from mail-we0-f179.google.com ([74.125.82.179]:42319 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752397AbaFBInd (ORCPT
+	id S1753013AbaFBInc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 04:43:32 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:39405 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752397AbaFBInb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 04:43:33 -0400
-Message-ID: <538C3931.6060300@6wind.com>
-Date: Mon, 02 Jun 2014 10:43:29 +0200
-From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
-Reply-To: nicolas.dichtel@6wind.com
-Organization: 6WIND
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Mon, 2 Jun 2014 04:43:31 -0400
+Date: Mon, 2 Jun 2014 11:41:22 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: Larry Finger <Larry.Finger@lwfinger.net>,
+        Florian Schilhabel <florian.c.schilhabel@googlemail.com>,
+        devel@driverdev.osuosl.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Thomas Cort <linuxgeek@gmail.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Subject: Re: [PATCH] staging: rtl8712: rtl871x_ioctl_linux.c: Cleaning up
+ memory leak
+Message-ID: <20140602084122.GT15585@mwanda>
+References: <1401622243-13364-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-CC: stable@vger.kernel.org, Cong Wang <amwang@redhat.com>,
-        Steffen Klassert <steffen.klassert@secunet.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH 3.10 47/86] vti: dont allow to add the same tunnel twice
-References: <20140529043513.451722422@linuxfoundation.org> <20140529043519.840388349@linuxfoundation.org>
-In-Reply-To: <20140529043519.840388349@linuxfoundation.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1401622243-13364-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 29/05/2014 06:37, Greg Kroah-Hartman a écrit :
-> 3.10-stable review patch.  If anyone has any objections, please let me know.
->
-> ------------------
->
-> From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
->
-> [ Upstream commit 8d89dcdf80d88007647945a753821a06eb6cc5a5 ]
->
-> Before the patch, it was possible to add two times the same tunnel:
-> ip l a vti1 type vti remote 10.16.0.121 local 10.16.0.249 key 41
-> ip l a vti2 type vti remote 10.16.0.121 local 10.16.0.249 key 41
->
-> It was possible, because ip_tunnel_newlink() calls ip_tunnel_find() with the
-> argument dev->type, which was set only later (when calling ndo_init handler
-> in register_netdevice()). Let's set this type in the setup handler, which is
-> called before newlink handler.
->
-> Introduced by commit b9959fd3b0fa ("vti: switch to new ip tunnel code").
-Not sure to understand why this patch is backported:
-$ git describe --contains b9959fd3b0fa
-v3.12-rc1~132^2~479
-
-In fact, the patch does not change anything.
-
-
-Regards,
-Nicolas
-
->
-> CC: Cong Wang <amwang@redhat.com>
-> CC: Steffen Klassert <steffen.klassert@secunet.com>
-> Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
-> Signed-off-by: David S. Miller <davem@davemloft.net>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+On Sun, Jun 01, 2014 at 01:30:43PM +0200, Rickard Strandqvist wrote:
+> There is a risk for memory leak in when something unexpected happens
+> and the function returns.
+> 
+> This was largely found by using a static code analysis program called cppcheck.
+> 
+> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 > ---
->   net/ipv4/ip_vti.c |    2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
->
-> --- a/net/ipv4/ip_vti.c
-> +++ b/net/ipv4/ip_vti.c
-> @@ -579,9 +579,9 @@ static void vti_dev_free(struct net_devi
->   static void vti_tunnel_setup(struct net_device *dev)
->   {
->   	dev->netdev_ops		= &vti_netdev_ops;
-> +	dev->type		= ARPHRD_TUNNEL;
->   	dev->destructor		= vti_dev_free;
->
-> -	dev->type		= ARPHRD_TUNNEL;
->   	dev->hard_header_len	= LL_MAX_HEADER + sizeof(struct iphdr);
->   	dev->mtu		= ETH_DATA_LEN;
->   	dev->flags		= IFF_NOARP;
->
->
+>  drivers/staging/rtl8712/rtl871x_ioctl_linux.c |    1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/drivers/staging/rtl8712/rtl871x_ioctl_linux.c b/drivers/staging/rtl8712/rtl871x_ioctl_linux.c
+> index 23d539d..27e0243 100644
+> --- a/drivers/staging/rtl8712/rtl871x_ioctl_linux.c
+> +++ b/drivers/staging/rtl8712/rtl871x_ioctl_linux.c
+> @@ -1822,6 +1822,7 @@ static int r871x_wx_set_enc_ext(struct net_device *dev,
+>  		alg_name = "CCMP";
+>  		break;
+>  	default:
+> +		kfree(param);
+
+Wat?  Param isn't even allocated at this point.  It gets allocated a
+couple lines later.
+
+regards,
+dan carpenter
 
