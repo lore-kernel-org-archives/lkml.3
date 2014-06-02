@@ -1,118 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754769AbaFBQ2m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 12:28:42 -0400
-Received: from mail-we0-f178.google.com ([74.125.82.178]:59974 "EHLO
-	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753816AbaFBQ2k (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 12:28:40 -0400
-Message-ID: <538CA647.8040207@linaro.org>
-Date: Mon, 02 Jun 2014 18:28:55 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1755734AbaFBQ2y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 12:28:54 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:52365 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753816AbaFBQ2w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 12:28:52 -0400
+Message-ID: <538CA63B.6000703@ti.com>
+Date: Mon, 2 Jun 2014 12:28:43 -0400
+From: Murali Karicheri <m-karicheri2@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>
-CC: Tomasz Figa <t.figa@samsung.com>, Sachin Kamat <sachin.kamat@linaro.org>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org
-Subject: Re: [PATCH v2 7/7] ARM: EXYNOS: cpuidle: add secure firmware support
- to AFTR mode code
-References: <1401712543-14281-1-git-send-email-b.zolnierkie@samsung.com> <1401712543-14281-8-git-send-email-b.zolnierkie@samsung.com>
-In-Reply-To: <1401712543-14281-8-git-send-email-b.zolnierkie@samsung.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+To: Wolfram Sang <wsa@the-dreams.de>
+CC: "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Ding, Garrett" <g-ding@ti.com>, "Nori, Sekhar" <nsekhar@ti.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
+Subject: Re: [PATCH] i2c: davinci: Add block read functionality for IPMI
+References: <1398970186-12204-1-git-send-email-m-karicheri2@ti.com> <3E54258959B69E4282D79E01AB1F32B70472F6AC@DFLE11.ent.ti.com> <20140522090041.GA2573@katana>
+In-Reply-To: <20140522090041.GA2573@katana>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/02/2014 02:35 PM, Bartlomiej Zolnierkiewicz wrote:
-> * Use do_idle firmware method instead of cpu_do_idle() on boards with
->    secure firmware enabled.
+On 5/22/2014 5:00 AM, Wolfram Sang wrote:
+> Hi,
 >
-> * Use sysram_ns_base_addr + 0x24 address for exynos_boot_vector_addr()
->    and sysram_ns_base_addr + 0x20 one for exynos_boot_vector_flag() on
->    boards with secure firmware enabled.
+> thanks for the patch.
 >
-> This patch fixes hang on an attempt to enter AFTR mode for TRATS2
-> board (which uses EXYNOS4412 SoC with secure firmware enabled).
+>>> +/* capabilities */
+>>> +#define I2C_CAPABILITIES	(I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL | \
+>>> +				 I2C_FUNC_SMBUS_READ_BLOCK_DATA)
+> I don't see the need for a seperate define.
 >
-> This patch shouldn't cause any functionality changes on boards that
-> don't use secure firmware.
+>>> +
+>>> struct davinci_i2c_dev {
+>>> 	struct device           *dev;
+>>> 	void __iomem		*base;
+>>> @@ -318,7 +322,13 @@ i2c_davinci_xfer_msg(struct i2c_adapter *adap, struct i2c_msg
+>>> *msg, int stop)
+>>> 	davinci_i2c_write_reg(dev, DAVINCI_I2C_SAR_REG, msg->addr);
+>>>
+>>> 	dev->buf = msg->buf;
+>>> -	dev->buf_len = msg->len;
+>>> +
+>>> +	 /* if first received byte is length, set buf_len = 0xffff as flag */
+>>> +	if (msg->flags & I2C_M_RECV_LEN)
+>>> +		dev->buf_len = 0xffff;
+> a) this magic value should be a define instead of a comment
+> b) i2c messages easily have a 16 bit range, so 0xffff is a troublesome
+> choice.
 >
-> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
-> ---
->   arch/arm/mach-exynos/pm.c        | 8 ++++++--
->   drivers/cpuidle/cpuidle-exynos.c | 7 ++++++-
->   2 files changed, 12 insertions(+), 3 deletions(-)
+>>> +	else
+>>> +		dev->buf_len = msg->len;
+>>> +
+>>> 	dev->stop = stop;
+>>>
+>>> 	davinci_i2c_write_reg(dev, DAVINCI_I2C_CNT_REG, dev->buf_len); @@ -456,7
+>>> +466,7 @@ i2c_davinci_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[], int num)
+>>>
+>>> static u32 i2c_davinci_func(struct i2c_adapter *adap)  {
+>>> -	return I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL;
+>>> +	return I2C_CAPABILITIES;
+>>> }
+>>>
+>>> static void terminate_read(struct davinci_i2c_dev *dev) @@ -528,10 +538,32 @@ static
+>>> irqreturn_t i2c_davinci_isr(int this_irq, void *dev_id)
+>>>
+>>> 		case DAVINCI_I2C_IVR_RDR:
+>>> 			if (dev->buf_len) {
+>>> -				*dev->buf++ =
+>>> -				    davinci_i2c_read_reg(dev,
+>>> -							 DAVINCI_I2C_DRR_REG);
+>>> +				*dev->buf++ = davinci_i2c_read_reg(dev,
+>>> +							DAVINCI_I2C_DRR_REG);
+>>> +				/*
+>>> +				 * check if the first received byte is message
+>>> +				 * length, i.e, I2C_M_RECV_LEN
+>>> +				 */
+>>> +				if (dev->buf_len == 0xffff)
+>>> +					dev->buf_len = *(dev->buf - 1) + 1;
+> Please rework the code to get rid of the '- 1' and '+ 1'. They look
+> hackish and make the code less readable.
 >
-> diff --git a/arch/arm/mach-exynos/pm.c b/arch/arm/mach-exynos/pm.c
-> index 0fb9a5a..62a0a5e 100644
-> --- a/arch/arm/mach-exynos/pm.c
-> +++ b/arch/arm/mach-exynos/pm.c
-> @@ -169,7 +169,9 @@ int exynos_cluster_power_state(int cluster)
+>>> +
+>>> 				dev->buf_len--;
+>>> +				/*
+>>> +				 * send NACK/STOP bits BEFORE last byte is
+>>> +				 * received
+>>> +				 */
+>>> +				if (dev->buf_len == 1) {
+>>> +					w = davinci_i2c_read_reg(dev,
+>>> +							DAVINCI_I2C_MDR_REG);
+>>> +					w |= DAVINCI_I2C_MDR_NACK;
+>>> +					davinci_i2c_write_reg(dev,
+>>> +							DAVINCI_I2C_MDR_REG, w);
+>>> +
+>>> +					w |= DAVINCI_I2C_MDR_STP;
+>>> +					davinci_i2c_write_reg(dev,
+>>> +							DAVINCI_I2C_MDR_REG, w);
+>>> +				}
+>>> +
+> Looks like an unreleated change to me? Why is this I2C_M_RECV_LEN
+> specific?
 >
->   static inline void __iomem *exynos_boot_vector_addr(void)
->   {
-> -	if (samsung_rev() == EXYNOS4210_REV_1_1)
-> +	if (firmware_run())
-> +		return sysram_ns_base_addr + 0x24;
-> +	else if (samsung_rev() == EXYNOS4210_REV_1_1)
->   		return S5P_INFORM7;
->   	else if (samsung_rev() == EXYNOS4210_REV_1_0)
->   		return sysram_base_addr + 0x24;
-> @@ -178,7 +180,9 @@ static inline void __iomem *exynos_boot_vector_addr(void)
+> Kind regards,
 >
->   static inline void __iomem *exynos_boot_vector_flag(void)
->   {
-> -	if (samsung_rev() == EXYNOS4210_REV_1_1)
-> +	if (firmware_run())
-> +		return sysram_ns_base_addr + 0x20;
-> +	else if (samsung_rev() == EXYNOS4210_REV_1_1)
->   		return S5P_INFORM6;
->   	else if (samsung_rev() == EXYNOS4210_REV_1_0)
->   		return sysram_base_addr + 0x20;
-> diff --git a/drivers/cpuidle/cpuidle-exynos.c b/drivers/cpuidle/cpuidle-exynos.c
-> index 7c01512..f90a4a0 100644
-> --- a/drivers/cpuidle/cpuidle-exynos.c
-> +++ b/drivers/cpuidle/cpuidle-exynos.c
-> @@ -17,13 +17,18 @@
->   #include <asm/proc-fns.h>
->   #include <asm/suspend.h>
->   #include <asm/cpuidle.h>
-> +#include <asm/firmware.h>
->
->   static void (*exynos_enter_aftr)(void);
->
->   static int idle_finisher(unsigned long flags)
->   {
->   	exynos_enter_aftr();
-> -	cpu_do_idle();
-> +	if (firmware_run())
-> +		/* no need to check the return value on EXYNOS SoCs */
-> +		call_firmware_op(do_idle, FW_DO_IDLE_AFTR);
-> +	else
-> +		cpu_do_idle();
+>     Wolfram
+Wolfram,
 
-Why not move this code into the exynos_enter_aftr() function, so 
-preventing more dependency ?
+Thanks for reviewing the patch. I will review your comments and get back 
+to you. This patch
+is tested on a customer board and thus it might be a while before I can 
+incorporate these changes
+and provide an updated patch to the list. Meanwhile I will be reviewing 
+the comment in the
+next few weeks and get back to you in case I have questions.
 
+Thanks and regards,
 
->   	return 1;
->   }
->
-
-
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+Murali
