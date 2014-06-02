@@ -1,205 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754424AbaFBLpu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 07:45:50 -0400
-Received: from mout.kundenserver.de ([212.227.17.10]:52307 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754387AbaFBLpr (ORCPT
+	id S1754475AbaFBLq6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 07:46:58 -0400
+Received: from mail-la0-f42.google.com ([209.85.215.42]:38791 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754179AbaFBLq5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 07:45:47 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Dave Chinner <david@fromorbit.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, joseph@codesourcery.com,
-        john.stultz@linaro.org, hch@infradead.org, tglx@linutronix.de,
-        geert@linux-m68k.org, lftan@altera.com, linux-fsdevel@vger.kernel.org,
-        xfs@oss.sgi.com
-Subject: Re: [RFC 11/32] xfs: convert to struct inode_time
-Date: Mon, 02 Jun 2014 13:43:44 +0200
-Message-ID: <7106937.MLk03lftzD@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140602002822.GQ14410@dastard>
-References: <1401480116-1973111-1-git-send-email-arnd@arndb.de> <20140601002437.GL14410@dastard> <20140602002822.GQ14410@dastard>
+	Mon, 2 Jun 2014 07:46:57 -0400
+Message-ID: <538C642B.3000107@bjorling.me>
+Date: Mon, 02 Jun 2014 13:46:51 +0200
+From: =?ISO-8859-1?Q?Matias_Bj=F8rling?= <m@bjorling.me>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:fRAV9wDDOcEBbFybEsLcMyqv/ZBAftOBgtS3iQf+ECG
- rrUdoe9Xm0FA2ZhUDN+zhYmwGmXMe1BSZich9WINlfbDsp5EBl
- NhfdoELzAFf2QMS0K6aArK2IdXk3swnxvvFKVzxDiUI3aVrK9J
- 6fLp+y6ZjM/IfZuA4S1KHYZlHntSgMyBRwWjBW1kpqgfgGsZvQ
- 2FWszLtnoiWw/BFId+GbBkF0ckpRh/AKGhf6cVXMJcxb4PpJAU
- NnjLF/rH1NLjVuI+fa2hZHMR5MpuiplkabmgT7xtN2UeLed+a4
- miWtJOsyCLhnWig3Jt2YFHcYaMz/EiYhA7Gg2DcE+MctqLvsVq
- wDY5pc+y3j3JloKLGyWI=
+To: Christoph Hellwig <hch@infradead.org>
+CC: willy@linux.intel.com, keith.busch@intel.com, sbradshaw@micron.com,
+        axboe@kernel.dk, linux-kernel@vger.kernel.org,
+        linux-nvme@lists.infradead.org
+Subject: Re: [PATCH v4] NVMe: basic conversion to blk-mq
+References: <1401400285-25003-1-git-send-email-m@bjorling.me> <1401400285-25003-2-git-send-email-m@bjorling.me> <20140602100821.GB30612@infradead.org>
+In-Reply-To: <20140602100821.GB30612@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 02 June 2014 10:28:22 Dave Chinner wrote:
-> On Sun, Jun 01, 2014 at 10:24:37AM +1000, Dave Chinner wrote:
-> > On Sat, May 31, 2014 at 05:37:52PM +0200, Arnd Bergmann wrote:
-> > > In my list at http://kernelnewbies.org/y2038, I found that almost
-> > > all file systems at least times until 2106, because they treat
-> > > the on-disk value as unsigned on 64-bit systems, or they use
-> > > a completely different representation. My guess is that somebody
-> > > earlier spent a lot of work on making that happen.
-> > > 
-> > > The exceptions are:
-> > > 
-> > > * exofs uses signed values, which can probably be changed to be
-> > >   consistent with the others.
-> > > * isofs has a bug that limits it until 2027 on architectures with
-> > >   a signed 'char' type (otherwise it's 2155).
-> > > * udf can represent times for many thousands of years through a
-> > >   16-bit year representation, but the code to convert to epoch
-> > >   uses a const array that ends at 2038.
-> > > * afs uses signed seconds and can probably be fixed
-> > > * coda relies on user space time representation getting passed
-> > >   through an ioctl.
-> > > * I miscategorized xfs/ext2/ext3 as having unsigned 32-bit seconds,
-> > >   where they really use signed.
-> > > 
-> > > I was confused about XFS since I didn't noticed that there are
-> > > separate xfs_ictimestamp_t and xfs_timestamp_t types, so I expected
-> > > XFS to also use the 1970-2106 time range on 64-bit systems today.
-> > 
-> > You've missed an awful lot more than just the implications for the
-> > core kernel code.
-> > 
-> > There's a good chance such changes propagate to APIs elsewhere in
-> > the filesystems, because something you haven't realised is that XFS
-> > effectively exposes the on-disk timestamp format directly to
-> > userspace via the bulkstat interface (see struct xfs_bstat). It also
-> > affects the XFS open-by-handle ioctl and the swap extent ioctl used
-> > by the online defragmenter.
+On 06/02/2014 12:08 PM, Christoph Hellwig wrote:
+>> +static int nvme_map_rq(struct nvme_queue *nvmeq, struct nvme_iod *iod,
+>> +		struct request *req, enum dma_data_direction dma_dir,
+>> +		int psegs)
+>>   {
+>>   	sg_init_table(iod->sg, psegs);
+>> +	iod->nents = blk_rq_map_sg(req->q, req, iod->sg);
+>>
+>> +	if (!dma_map_sg(nvmeq->q_dmadev, iod->sg, iod->nents, dma_dir))
+>>   		return -ENOMEM;
+>>
+>> +	return iod->nents;
+>
+> Given how simple I'd suggest merging this into the only caller.
 
-I really didn't look at them at all, as ioctl is very late on my
-mental list of things to change. I do realize that a lot of drivers
-and file systems do have ioctls that pass time values and we need to
-address them one by one.
+Ok
 
-I just looked at the ioctls you mentioned but don't see how open-by-handle
-is affected by this. Can you point me to what you mean?
+>
+>> +static int nvme_submit_iod(struct nvme_queue *nvmeq, struct nvme_iod *iod,
+>> +							struct nvme_ns *ns)
+>>   {
+>> +	struct request *req = iod->private;
+>>   	struct nvme_command *cmnd;
+>> +	u16 control = 0;
+>> +	u32 dsmgmt = 0;
+>>
+>> +	spin_lock_irq(&nvmeq->q_lock);
+>> +	if (nvmeq->q_suspended) {
+>> +		spin_unlock_irq(&nvmeq->q_lock);
+>> +		return -EBUSY;
+>> +	}
+>>
+>> +	if (req->cmd_flags & REQ_DISCARD) {
+>> +		nvme_submit_discard(nvmeq, ns, req, iod);
+>> +		goto end_submit;
+>> +	}
+>> +	if (req->cmd_flags & REQ_FLUSH) {
+>> +		nvme_submit_flush(nvmeq, ns, req->tag);
+>> +		goto end_submit;
+>> +	}
+>
+> It would be nicer to have the locking and the the suspend check
+> in the caller, and then branch out to one function for each type
+> of request, especially as the caller already has special cases for
+> discard and zero-payload requests anyway.
+>
 
-> Just to put that in context, here's the kernel patch to add extended
-> epoch support to XFS. It's completely untested as I haven't done any
-> userspace code changes to enable the feature. However, it should
-> give you an indication of how far the simple act of changing the
-> kernel time representation spread through the filesystem. This does
-> not include any of the VFS infrastructure to specifying the range of
-> supported timestamps.  It survives some smoke testing, but dies when
-> the online defragmenter starts using the bulkstat and swap extent
-> ioctls (the assert in xfs_inode_time_from_epoch() fires), so I
-> probably don't have that all sorted correctly yet...
-> 
-> To test extended epoch support, however, I need to some fstests that
-> define and validate the behaviour of the new syscalls - until we get
-> those we can't validate that the filesystem follows the spec
-> properly. I also suspect we are going to need an interface to query
-> the supported range of timestamps from a filesystem so that we can
-> test boundary conditions in an automated fashion....
+Ok, good idea.
 
-Thanks a lot for having an initial look at this yourself!
+>> +static int nvme_queue_request(struct blk_mq_hw_ctx *hctx, struct request *req)
+>> +{
+>
+> Can you call this nvme_queue_rq to match the method name?  Makes
+> grepping so much easier..  (ditto for the admin queue).
+>
 
-I'd still consider the two problems largely orthogonal. My patch set
-(at least with the 64-bit tv_sec) just gets 32-bit kernels to behave
-more like 64-bit kernels regarding inode time stamps, which does
-impact all the file systems that the a 64-bit time or the NFS
-unsigned epoch (1970-2106), while your patch extends the file
-system internal epoch (1901-2038 for XFS) so it can be used by
-anything that knows how to handle larger than 32-bit second values
-(either 64-bit kernel or 32-bit with inode_time patch).
+Yes
 
-> diff --git a/fs/xfs/xfs_dinode.h b/fs/xfs/xfs_dinode.h
-> index 623bbe8..79f94722 100644
-> --- a/fs/xfs/xfs_dinode.h
-> +++ b/fs/xfs/xfs_dinode.h
-> @@ -21,11 +21,53 @@
->  #define        XFS_DINODE_MAGIC                0x494e  /* 'IN' */
->  #define XFS_DINODE_GOOD_VERSION(v)     ((v) >= 1 && (v) <= 3)
->  
-> +/*
-> + * Inode timestamps get more complex when we consider supporting times beyond
-> + * the standard unix epoch of Jan 2038. The struct xfs_timestamp cannot support
-> + * more than a single extension by playing sign games, and that is still not
-> + * reliable. We also can't extend the timestamp structure because there is no
-> + * free space around them in the on-disk inode.
-> + *
-> + * Hence the simplest thing to do is to add an epoch counter for each timestamp
-> + * in the inode. This can be a single byte for each timestamp and make use of
-> + * a hole we currently pad. This gives us another 255 epochs range for the
-> + * timestamps, but requires a superblock feature bit to indicate that these
-> + * fields have meaning and can be non-zero.
+>> +	struct nvme_ns *ns = hctx->queue->queuedata;
+>> +	struct nvme_queue *nvmeq = hctx->driver_data;
+>>
+>> +	return nvme_submit_req_queue(nvmeq, ns, req);
+>
+> What's the point of the serparate nvme_submit_req_queue function?
+>
 
-Nice trick!
+Removed
 
-> +static inline __uint8_t
-> +xfs_timestamp_epoch(
-> +       struct timespec         *time)
-> +{
-> +       /* will be zero until the extended struct inode_time is introduced */
-> +       return 0;
-> +}
-> +
-> +static inline __int32_t
-> +xfs_timestamp_sec(
-> +       struct timespec         *time)
-> +{
-> +       return time->tv_sec;
-> +}
-> +
-> +static inline __kernel_time_t
-> +xfs_inode_time_from_epoch(
-> +       __uint8_t       epoch,
-> +       __int32_t       seconds)
-> +{
-> +       /* need to handle non-zero epoch when struct inode_time is introduced */
-> +       ASSERT(epoch == 0);
-> +       return seconds;
-> +}
+>>   	spin_lock(&nvmeq->q_lock);
+>> -	nvme_process_cq(nvmeq);
+>> -	result = nvmeq->cqe_seen ? IRQ_HANDLED : IRQ_NONE;
+>> -	nvmeq->cqe_seen = 0;
+>> +	result = nvme_process_cq(nvmeq) ? IRQ_HANDLED : IRQ_NONE;
+>
+> No other caller checks the nvme_process_cq return value, so it might
+> as well return the IRQ_ values directly.
 
-Why don't you already implement epoch conversion for 64-bit kernels that
-are able to represent the time today? This is how ext4 does it (I mean
-the sizeof() trick, not the bit stuffing they do):
+Ok (it's been changed as cqe_seen had been mistakenly removed.)
+>
+>> +static struct blk_mq_ops nvme_mq_admin_ops = {
+>> +	.queue_rq	= nvme_queue_admin_request,
+>> +	.map_queue	= blk_mq_map_queue,
+>> +	.init_hctx	= nvme_init_admin_hctx,
+>> +	.init_request	= nvme_init_admin_request,
+>> +	.timeout	= nvme_timeout,
+>
+> Care to name these nvme_admin_<methodname> for easier grep-ability?
 
-static inline __le32 ext4_encode_extra_time(struct inode_time *time)
-{
-       return cpu_to_le32((sizeof(time->tv_sec) > 4 ?
-                           (time->tv_sec >> 32) & EXT4_EPOCH_MASK : 0) |
-                          ((time->tv_nsec << EXT4_EPOCH_BITS) & EXT4_NSEC_MASK));
-}
+Yes
 
-static inline void ext4_decode_extra_time(struct inode_time *time, __le32 extra)
-{
-       if (sizeof(time->tv_sec) > 4)
-               time->tv_sec |= (__u64)(le32_to_cpu(extra) & EXT4_EPOCH_MASK)
-                               << 32;
-       time->tv_nsec = (le32_to_cpu(extra) & EXT4_NSEC_MASK) >> EXT4_EPOCH_BITS;
-}
+>
+>> +static int nvme_alloc_admin_tags(struct nvme_dev *dev)
+>> +{
+>> +	if (!dev->admin_rq) {
+>
+> Why do you need the NULL check here?
 
-I guess if there is general agreement on introducing 'struct inode_time',
-we can skip that intermediate step.
+the nvme_alloc_admin_tags is called both in nvme_dev_start and 
+nvme_dev_resume. To make sure we don't double allocated it check if its 
+already been allocated.
 
-> @@ -509,8 +509,11 @@ xfs_sb_has_ro_compat_feature(
->  }
->  
->  #define XFS_SB_FEAT_INCOMPAT_FTYPE     (1 << 0)        /* filetype in dirent */
-> +#define XFS_SB_FEAT_INCOMPAT_EPOCH     (1 << 1)        /* Time beyond 2038 */
->  #define XFS_SB_FEAT_INCOMPAT_ALL \
-> -               (XFS_SB_FEAT_INCOMPAT_FTYPE)
-> +               (XFS_SB_FEAT_INCOMPAT_FTYPE | \
-> +                XFS_SB_FEAT_INCOMPAT_EPOCH | \
-> +                0)
->  
->  #define XFS_SB_FEAT_INCOMPAT_UNKNOWN   ~XFS_SB_FEAT_INCOMPAT_ALL
+>
+>> +		dev->admin_tagset.reserved_tags = 1;
+>
+> What is the reserved tag for?
 
-How does this flag get set? Do you have to manually change it in the
-superblock? Since most of the time I'd suspect you wouldn't actually
-use it for the foreseeable future, would it make sense to have a mount
-option that allows it to be set, but doesn't actually change the
-superblock until the first inode gets written with a nonzero epoch?
+It was for flush. However, this way to do it has been removed in the 
+later series.
 
-That way, you'd still be able to mount it with an older kernel but
-also be forward compatible with time moving on.
+>
+>> +		dev->admin_rq = blk_mq_init_queue(&dev->admin_tagset);
+>> +		if (!dev->admin_rq) {
+>> +			memset(&dev->admin_tagset, 0,
+>> +						sizeof(dev->admin_tagset));
+>> +			blk_mq_free_tag_set(&dev->admin_tagset);
+>
+> Why do you zero the tagset here before freeing it?
+>
 
-	Arnd
+Removed.
+
+Thanks!
+
