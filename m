@@ -1,37 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753956AbaFBUkk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 16:40:40 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:36552 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751616AbaFBUkj (ORCPT
+	id S1754005AbaFBUlh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 16:41:37 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:59567 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752423AbaFBUlf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 16:40:39 -0400
-Date: Mon, 02 Jun 2014 13:40:37 -0700 (PDT)
-Message-Id: <20140602.134037.340629330868591957.davem@davemloft.net>
-To: teg@jklm.no
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, kaber@trash.net,
-        yoshfuji@linux-ipv6.org, jmorris@namei.org, kuznet@ms2.inr.ac.ru
-Subject: Re: [PATCH v2] net: tunnels - enable module autoloading
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <CAG-2HqUEqz26YMTDHNVHUEtWDcaVrq3EKX-e8-9wnm4Y1XCUag@mail.gmail.com>
-References: <1400188890-2038-1-git-send-email-teg@jklm.no>
-	<20140521.154744.124910385161203311.davem@davemloft.net>
-	<CAG-2HqUEqz26YMTDHNVHUEtWDcaVrq3EKX-e8-9wnm4Y1XCUag@mail.gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 02 Jun 2014 13:40:38 -0700 (PDT)
+	Mon, 2 Jun 2014 16:41:35 -0400
+Content-Type: text/plain; charset=windows-1252
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.2\))
+Subject: Re: [PATCH v2 3/4] ARM: dts: qcom: Add APQ8084 Global Clock Controller DT node
+From: Kumar Gala <galak@codeaurora.org>
+In-Reply-To: <1401551134-28485-4-git-send-email-gdjakov@mm-sol.com>
+Date: Mon, 2 Jun 2014 15:41:24 -0500
+Cc: Mike Turquette <mturquette@linaro.org>, linux@arm.linux.org.uk,
+        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, sboyd@codeaurora.org,
+        rdunlap@infradead.org, linux-doc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <DDE79254-2F56-47AC-A689-5A0E8E131126@codeaurora.org>
+References: <1401551134-28485-1-git-send-email-gdjakov@mm-sol.com> <1401551134-28485-4-git-send-email-gdjakov@mm-sol.com>
+To: Georgi Djakov <gdjakov@mm-sol.com>
+X-Mailer: Apple Mail (2.1878.2)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tom Gundersen <teg@jklm.no>
-Date: Mon, 2 Jun 2014 20:57:02 +0200
 
-> Would this patch be suitable for stable? While it does not fix a
-> regression, it appears to fix the intended behaviour of
-> MODULE_ALIAS_RTNL_LINK?
+On May 31, 2014, at 10:45 AM, Georgi Djakov <gdjakov@mm-sol.com> wrote:
 
-It probably is suitable... I'll queue it up, thanks.
+> This patch adds the necessary node to probe the global clock
+> controller on APQ8084 platforms.
+> 
+> Signed-off-by: Georgi Djakov <gdjakov@mm-sol.com>
+> ---
+> arch/arm/boot/dts/qcom-apq8084.dtsi |   10 ++++++++++
+> 1 file changed, 10 insertions(+)
+
+Can you split the 2 DT patches into their own patchset since they will go via the qcom/arm-soc tree and not Mike’s clk tree.
+
+thanks
+
+- k
+
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
+
