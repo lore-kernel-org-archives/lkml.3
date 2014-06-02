@@ -1,98 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932265AbaFBVTE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 17:19:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25524 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753920AbaFBVTB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 17:19:01 -0400
-From: Jiri Olsa <jolsa@kernel.org>
-To: linux-kernel@vger.kernel.org
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Jiri Olsa <jolsa@kernel.org>
-Subject: [PATCHv3 00/13] perf tools: Speedup DWARF unwind
-Date: Mon,  2 Jun 2014 23:18:34 +0200
-Message-Id: <1401743927-398-1-git-send-email-jolsa@kernel.org>
+	id S1754086AbaFBVYl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 17:24:41 -0400
+Received: from mail-we0-f169.google.com ([74.125.82.169]:56291 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752833AbaFBVYj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 17:24:39 -0400
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Eduardo Valentin <eduardo.valentin@ti.com>,
+        Zhang Rui <rui.zhang@intel.com>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Subject: [PATCH] thermal: ti-soc-thermal: ti-bandgap.c:  Cleaning up wrong address is checked
+Date: Mon,  2 Jun 2014 23:25:30 +0200
+Message-Id: <1401744330-25966-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi,
-trying to speedup DWARF unwind report code by factoring
-related code:
-  - caching sample's registers access
-  - keep dso data file descriptor open for the
-    life of the dso object
-  - replace dso cache code by mapping dso data file
-    directly for the life of the dso object
+Wrong address is checked after memory allocation.
 
-The speedup is mainly for libunwind unwind. The libdw will benefit
-mainly from cached registers access, because it handles dso data
-accesses by itself.. and anyway it's still faster ;-).
-
-v3 changes:
-  - moved the cache logic into dso__data_fd (Namhyung Kim)
-  - omited test_dso_data__fd_limit variable,
-    dso data cache test changed accordingly (Namhyung Kim)
-  - several small fixies from review (Namhyung Kim)
-
-v2 changes:
-  - adding limit for open dso objects with sort of LRU
-    mechanism to pick up and close dso objects if we
-    are over the limit
-  - file mmaping changes are omitted, because I couldn't prove
-    the improvement exactly, will resubmit later
-  - added dso close logic in case of no memory
-  - added tests
-
-On 10GB perf data file with dwarf unwind data I've got
-around 30% speed up.
-
-Also reachable in here:
-  git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git
-  perf/core_unwind_speedup
-
-thanks,
-jirka
-
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jean Pihet <jean.pihet@linaro.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
-Jiri Olsa (13):
-      perf tools: Cache register accesses for unwind processing
-      perf tools: Separate dso data related variables
-      perf tools: Add data_fd into dso object
-      perf tools: Add global list of opened dso objects
-      perf tools: Add global count of opened dso objects
-      perf tools: Cache dso data file descriptor
-      perf tools: Add file size check and factor dso__data_read_offset
-      perf tools: Allow to close dso fd in case of open failure
-      perf tools: Add dso__data_* interface descriptons
-      perf tests: Spawn child for each test
-      perf tests: Allow reuse of test_file function
-      perf tests: Add test for caching dso file descriptors
-      perf tests: Add test for closing dso objects on EMFILE error
+ drivers/thermal/ti-soc-thermal/ti-bandgap.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
- tools/perf/tests/builtin-test.c    |  42 ++++++++++++++-
- tools/perf/tests/dso-data.c        | 214 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++--
- tools/perf/tests/tests.h           |   2 +
- tools/perf/util/dso.c              | 279 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++---------
- tools/perf/util/dso.h              |  50 +++++++++++++++++-
- tools/perf/util/event.h            |   5 ++
- tools/perf/util/perf_regs.c        |  10 +++-
- tools/perf/util/perf_regs.h        |   4 +-
- tools/perf/util/unwind-libunwind.c |   2 -
- 9 files changed, 572 insertions(+), 36 deletions(-)
+diff --git a/drivers/thermal/ti-soc-thermal/ti-bandgap.c b/drivers/thermal/ti-soc-thermal/ti-bandgap.c
+index 3ab12ee..43c0f83 100644
+--- a/drivers/thermal/ti-soc-thermal/ti-bandgap.c
++++ b/drivers/thermal/ti-soc-thermal/ti-bandgap.c
+@@ -1155,7 +1155,7 @@ static struct ti_bandgap *ti_bandgap_build(struct platform_device *pdev)
+ 	/* register shadow for context save and restore */
+ 	bgp->regval = devm_kzalloc(&pdev->dev, sizeof(*bgp->regval) *
+ 				   bgp->conf->sensor_count, GFP_KERNEL);
+-	if (!bgp) {
++	if (!bgp->regval) {
+ 		dev_err(&pdev->dev, "Unable to allocate mem for driver ref\n");
+ 		return ERR_PTR(-ENOMEM);
+ 	}
+-- 
+1.7.10.4
+
