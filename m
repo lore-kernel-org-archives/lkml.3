@@ -1,233 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753698AbaFBQBv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 12:01:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48105 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752132AbaFBQBt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 12:01:49 -0400
-Date: Mon, 2 Jun 2014 12:00:45 -0400 (EDT)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, jejb@parisc-linux.org,
-        deller@gmx.de, John David Anglin <dave.anglin@bell.net>,
-        linux-parisc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        paulmck@linux.vnet.ibm.com
-cc: chegu_vinod@hp.com, Waiman.Long@hp.com, tglx@linutronix.de,
-        riel@redhat.com, akpm@linux-foundation.org, davidlohr@hp.com,
-        hpa@zytor.com, andi@firstfloor.org, aswin@hp.com, scott.norton@hp.com,
-        Jason Low <jason.low2@hp.com>
-Subject: [PATCH v2] introduce atomic_pointer to fix a race condition in
- cancelable mcs spinlocks
-In-Reply-To: <alpine.LRH.2.02.1406011342470.20831@file01.intranet.prod.int.rdu2.redhat.com>
-Message-ID: <alpine.LRH.2.02.1406021158360.20627@file01.intranet.prod.int.rdu2.redhat.com>
-References: <alpine.LRH.2.02.1406011342470.20831@file01.intranet.prod.int.rdu2.redhat.com>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+	id S1753976AbaFBQCb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 12:02:31 -0400
+Received: from mail-ve0-f171.google.com ([209.85.128.171]:58523 "EHLO
+	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752554AbaFBQC3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 12:02:29 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20140602104948.4faf0bc2@tlielax.poochiereds.net>
+References: <20140602104948.4faf0bc2@tlielax.poochiereds.net>
+Date: Mon, 2 Jun 2014 12:02:28 -0400
+Message-ID: <CAHQdGtRR6SvEhXiqWo24hoUh9AU9cL82Z8Z-d8-7u951F_d+5g@mail.gmail.com>
+Subject: Re: nfs4_do_reclaim lockdep pop in v3.15.0-rc1
+From: Trond Myklebust <trond.myklebust@primarydata.com>
+To: Jeff Layton <jeff.layton@primarydata.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
+        Linux Kernel mailing list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The cancelable MCS spinlocks introduced in
-fb0527bd5ea99bfeb2dd91e3c1433ecf745d6b99 break the kernel on PA-RISC.
+On Mon, Jun 2, 2014 at 10:49 AM, Jeff Layton
+<jeff.layton@primarydata.com> wrote:
+> I've been working on the patchset to break up the client_mutex in nfsd.
+> While doing some debugging, I had mounted my kernel git tree with
+> NFSv4.1, and was running crash on the vmlinux image in it.
+>
+> A little while later, I saw the following lockdep inversion pop.
+> Unfortunately, I couldn't get the whole log, but I think it's enough to
+> show that there's a potential problem?
+>
+> I've not had time to give it a hard look yet, but thought I'd post it
+> here in the hopes that it might look familiar to someone:
+>
+> [ 2581.104687] ======================================================
+> [ 2581.104716] [ INFO: possible circular locking dependency detected ]
+> [ 2581.104716] 3.15.0-rc1.jlayton.1+ #2 Tainted: G           OE
+> [ 2581.104716] -------------------------------------------------------
+> [ 2581.104716] 2001:470:8:d63:/5622 is trying to acquire lock:
+> [ 2581.104716]  (&(&sp->so_lock)->rlock){+.+...}, at: [<ffffffffa036dbdd>] nfs4_do_reclaim+0x5bd/0x7f0 [nfsv4]
+> [ 2581.104716]
+> [ 2581.104716] but task is already holding lock:
+> [ 2581.104716]  (&sp->so_reclaim_seqcount){+.+...}, at: [<ffffffffa036e5fe>] nfs4_run_state_manager+0x7ee/0xc00 [nfsv4]
+> [ 2581.104716]
+> [ 2581.104716] which lock already depends on the new lock.
+> [ 2581.104716]
+> [ 2581.104716]
+> [ 2581.104716] the existing dependency chain (in reverse order) is:
+> [ 2581.104716]
+> -> #1 (&sp->so_reclaim_seqcount){+.+...}:
+> [ 2581.104716]        [<ffffffff810f9aa2>] lock_acquire+0xa2/0x1d0
+> [ 2581.104716]        [<ffffffffa036d8b0>] nfs4_do_reclaim+0x290/0x7f0 [nfsv4]
+> [ 2581.104716]        [<ffffffffa036e5fe>] nfs4_run_state_manager+0x7ee/0xc00 [nfsv4]
+> [ 2581.104716]        [<ffffffff810c260f>] kthread+0xff/0x120
+> [ 2581.104716]        [<ffffffff817e6bfc>] ret_from_fork+0x7c/0xb0
+> [ 2581.104716]
+> -> #0 (&(&sp->so_lock)->rlock){+.+...}:
+> [ 2581.104716]        [<ffffffff810f919f>] __lock_acquire+0x1b8f/0x1ca0
+> [ 2581.104716]        [<ffffffff810f9aa2>] lock_acquire+0xa2/0x1d0
+> [ 2581.104716]        [<ffffffff817dbdae>] _raw_spin_lock+0x3e/0x80
+> [ 2581.104716]        [<ffffffffa036dbdd>] nfs4_do_reclaim+0x5bd/0x7f0 [nfsv4]
+> [ 2581.104716]        [<ffffffffa036e5fe>] nfs4_run_state_manager+0x7ee/0xc00 [nfsv4]
+> [ 2581.104716]        [<ffffffff810c260f>] kthread+0xff/0x120
+> [ 2581.104716]        [<ffffffff817e6bfc>] ret_from_fork+0x7c/0xb0
+> [ 2581.104716]
+> [ 2581.104716] other info that might help us debug this:
+> [ 2581.104716]
+> [ 2581.104716]  Possible unsafe locking scenario:
+> [ 2581.104716]
+> [ 2581.104716]        CPU0                    CPU1
+> [ 2581.104716]        ----                    ----
+> [ 2581.104716]   lock(&sp->so_reclaim_seqcount);
+> [ 2581.104716]                                lock(&(&sp->so_lock)->rlock);
+> [ 2581.104716]                                lock(&sp->so_reclaim_seqcount);
+> [ 2581.104716]   lock(&(&sp->so_lock)->rlock);
+> [ 2581.104716]
+> [ 2581.104716]  *** DEADLOCK ***
+> [ 2581.104716]
+> [ 2581.104716] 1 lock held by 2001:470:8:d63:/5622:
+> [ 2581.104716]  #0:  (&sp->so_reclaim_seqcount){+.+...}, at: [<ffffffffa036e5fe>] nfs4_run_state_manager+0x7ee/0xc00 [nfsv4]
+> [ 2581.104716]
+> [ 2581.104716] stack backtrace:
+> [ 2581.104716] CPU: 2 PID: 5622 Comm: 2001:470:8:d63: Tainted: G           OE 3.15.0-rc1.jlayton.1+ #2
+> [ 2581.104716] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+> [ 2581.104716]  0000000000000000 00000000d29e16c4 ffff8800d8d8fba8 ffffffff817d318e
+> [ 2581.104716]  ffffffff8262d5e0 ffff8800d8d8fbe8 ffffffff817ce525 ffff8800d8d8fc40
+> [ 2581.104716]  ffff8800362a8b98 ffff8800362a8b98 0000000000000001 ffff8800362a8000
+> [ 2581.104716] Call Trace:
+> [ 2581.104716]  [<ffffffff817d318e>] dump_stack+0x4d/0x66
+> [ 2581.104716]  [<ffffffff817ce525>] print_circular_bug+0x201/0x20f
+> [ 2581.104716]  [<ffffffff810f919f>] __lock_acquire+0x1b8f/0x1ca0
+> [ 2581.104716]  [<ffffffff813dbe9e>] ? debug_check_no_obj_freed+0x17e/0x270
+> [ 2581.104716]  [<ffffffff810f9aa2>] lock_acquire+0xa2/0x1d0
+> [ 2581.104716]  [<ffffffffa036dbdd>] ? nfs4_do_reclaim+0x5bd/0x7f0 [nfsv4]
+> [ 2581.104716]  [<ffffffff817dbdae>] _raw_spin_lock+0x3e/0x80
+> [ 2581.104716]  [<ffffffffa036dbdd>] ? nfs4_do_reclaim+0x5bd/0x7f0 [nfsv4]
+> [ 2581.104716]  [<ffffffffa036dbdd>] nfs4_do_reclaim+0x5bd/0x7f0 [nfsv4]
+> [ 2581.104716]  [<ffffffffa036e5fe>] ? nfs4_run_state_manager+0x7ee/0xc00 [nfsv4]
+> [ 2581.104716]  [<ffffffffa036e5fe>] nfs4_run_state_manager+0x7ee/0xc00 [nfsv4]
+> [ 2581.104716]  [<ffffffffa036de10>] ? nfs4_do_reclaim+0x7f0/0x7f0 [nfsv4]
+> [ 2581.104716]  [<ffffffff810c260f>] kthread+0xff/0x120
+> [ 2581.104716]  [<ffffffff810c2510>] ? insert_kthread_work+0x80/0x80
+> [ 2581.104716]  [<ffffffff817e6bfc>] ret_from_fork+0x7c/0xb0
+> [ 2581.104716]  [<ffffffff810c2510>] ? insert_kthread_work+0x80/0x80
 
-How to reproduce:
-* Use a machine with two dual-core PA-8900 processors.
-* Run the LVM testsuite and compile the kernel in an endless loop at the
-  same time.
-* Wait for an hour or two and the kernel locks up.
+OK. So now that lockdep has been added to raw_seqcount_begin() (commit
+1ca7d67cf5d5a), exactly what are we supposed to use when we DON'T want
+lockdep to "sanity check" our locking here?
 
-You see some process locked up in osd_lock and osq_unlock:
-INFO: rcu_sched self-detected stall on CPU { 2}  (t=18000 jiffies g=247335 c=247334 q=101)
-CPU: 2 PID: 21006 Comm: lvm Tainted: G           O  3.15.0-rc7 #9
-Backtrace:
- [<000000004013e8a4>] show_stack+0x14/0x20
- [<00000000403016f0>] dump_stack+0x88/0x100
- [<00000000401b8738>] rcu_check_callbacks+0x4a8/0x900
- [<00000000401714c4>] update_process_times+0x64/0xc0
- [<000000004013fa24>] timer_interrupt+0x19c/0x200
- [<00000000401ad8d8>] handle_irq_event_percpu+0xa8/0x238
- [<00000000401b2454>] handle_percpu_irq+0x9c/0xd0
- [<00000000401acc40>] generic_handle_irq+0x40/0x50
- [<00000000401408cc>] do_cpu_irq_mask+0x1ac/0x298
- [<000000004012c074>] intr_return+0x0/0xc
- [<00000000401a609c>] osq_lock+0xc4/0x178
- [<0000000040138d24>] __mutex_lock_slowpath+0x1cc/0x290
- [<0000000040138e78>] mutex_lock+0x90/0x98
- [<00000000402a5614>] kernfs_activate+0x6c/0x1a0
- [<00000000402a59e0>] kernfs_add_one+0x140/0x190
- [<00000000402a75ec>] __kernfs_create_file+0xa4/0xf8
+As far as we're concerned, the above check is completely bogus, and
+there is no deadlock. At best it would be a livelock, and it would be
+because the server is rebooting over and over again (in which case the
+client behaviour of retrying is _correct_).
 
-INFO: rcu_sched self-detected stall on CPU { 3}  (t=18473 jiffies g=247335 c=247334 q=101)
-CPU: 3 PID: 21051 Comm: udevd Tainted: G           O  3.15.0-rc7 #9
-Backtrace:
- [<000000004013e8a4>] show_stack+0x14/0x20
- [<00000000403016f0>] dump_stack+0x88/0x100
- [<00000000401b8738>] rcu_check_callbacks+0x4a8/0x900
- [<00000000401714c4>] update_process_times+0x64/0xc0
- [<000000004013fa24>] timer_interrupt+0x19c/0x200
- [<00000000401ad8d8>] handle_irq_event_percpu+0xa8/0x238
- [<00000000401b2454>] handle_percpu_irq+0x9c/0xd0
- [<00000000401acc40>] generic_handle_irq+0x40/0x50
- [<00000000401408cc>] do_cpu_irq_mask+0x1ac/0x298
- [<000000004012c074>] intr_return+0x0/0xc
- [<00000000401a6220>] osq_unlock+0xd0/0xf8
- [<0000000040138dcc>] __mutex_lock_slowpath+0x274/0x290
- [<0000000040138e78>] mutex_lock+0x90/0x98
- [<00000000402a3a90>] kernfs_dop_revalidate+0x48/0x108
- [<0000000040233310>] lookup_fast+0x320/0x348
- [<0000000040234600>] link_path_walk+0x190/0x9d8
+Trond
 
+-- 
+Trond Myklebust
 
-The code in kernel/locking/mcs_spinlock.c is broken.
+Linux NFS client maintainer, PrimaryData
 
-PA-RISC doesn't have xchg or cmpxchg atomic instructions like other
-processors. It only has ldcw and ldcd instructions that load a word (or
-doubleword) from memory and atomically store zero at the same location.
-These instructions can only be used to implement spinlocks, direct
-implementation of other atomic operations is impossible.
-
-Consequently, Linux xchg and cmpxchg functions are implemented in such a
-way that they hash the address, use the hash to index a spinlock, take the
-spinlock, perform the xchg or cmpxchg operation non-atomically and drop
-the spinlock.
-
-If you write to some variable with ACCESS_ONCE and use cmpxchg or xchg at
-the same time, you break it. ACCESS_ONCE doesn't take the hashed spinlock,
-so, in this case, cmpxchg or xchg isn't really atomic at all.
-
-This patch fixes the bug by introducing a new type atomic_pointer and
-replacing the offending pointer with it. atomic_pointer_set (calling
-atomic_long_set) takes the hashed spinlock, so it avoids the race
-condition. We perform some gcc-specific compiler tricks to warn on pointer
-type mismatch.
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-
----
- include/asm-generic/atomic-long.h |   27 +++++++++++++++++++++++++++
- kernel/locking/mcs_spinlock.c     |   16 ++++++++--------
- kernel/locking/mcs_spinlock.h     |    4 +++-
- 3 files changed, 38 insertions(+), 9 deletions(-)
-
-Index: linux-3.15-rc8/kernel/locking/mcs_spinlock.c
-===================================================================
---- linux-3.15-rc8.orig/kernel/locking/mcs_spinlock.c	2014-06-02 17:11:16.000000000 +0200
-+++ linux-3.15-rc8/kernel/locking/mcs_spinlock.c	2014-06-02 17:11:50.000000000 +0200
-@@ -47,8 +47,8 @@ osq_wait_next(struct optimistic_spin_que
- 		 * wait for either @lock to point to us, through its Step-B, or
- 		 * wait for a new @node->next from its Step-C.
- 		 */
--		if (node->next) {
--			next = xchg(&node->next, NULL);
-+		if (atomic_pointer_read(&node->next)) {
-+			next = atomic_pointer_xchg(&node->next, NULL);
- 			if (next)
- 				break;
- 		}
-@@ -65,13 +65,13 @@ bool osq_lock(struct optimistic_spin_que
- 	struct optimistic_spin_queue *prev, *next;
- 
- 	node->locked = 0;
--	node->next = NULL;
-+	atomic_pointer_set(&node->next, NULL);
- 
- 	node->prev = prev = xchg(lock, node);
- 	if (likely(prev == NULL))
- 		return true;
- 
--	ACCESS_ONCE(prev->next) = node;
-+	atomic_pointer_set(&prev->next, node);
- 
- 	/*
- 	 * Normally @prev is untouchable after the above store; because at that
-@@ -103,8 +103,8 @@ unqueue:
- 	 */
- 
- 	for (;;) {
--		if (prev->next == node &&
--		    cmpxchg(&prev->next, node, NULL) == node)
-+		if (atomic_pointer_read(&prev->next) == node &&
-+		    atomic_pointer_cmpxchg(&prev->next, node, NULL) == node)
- 			break;
- 
- 		/*
-@@ -144,7 +144,7 @@ unqueue:
- 	 */
- 
- 	ACCESS_ONCE(next->prev) = prev;
--	ACCESS_ONCE(prev->next) = next;
-+	atomic_pointer_set(&prev->next, next);
- 
- 	return false;
- }
-@@ -163,7 +163,7 @@ void osq_unlock(struct optimistic_spin_q
- 	/*
- 	 * Second most likely case.
- 	 */
--	next = xchg(&node->next, NULL);
-+	next = atomic_pointer_xchg(&node->next, NULL);
- 	if (next) {
- 		ACCESS_ONCE(next->locked) = 1;
- 		return;
-Index: linux-3.15-rc8/kernel/locking/mcs_spinlock.h
-===================================================================
---- linux-3.15-rc8.orig/kernel/locking/mcs_spinlock.h	2014-06-02 17:11:16.000000000 +0200
-+++ linux-3.15-rc8/kernel/locking/mcs_spinlock.h	2014-06-02 17:11:50.000000000 +0200
-@@ -13,6 +13,7 @@
- #define __LINUX_MCS_SPINLOCK_H
- 
- #include <asm/mcs_spinlock.h>
-+#include <linux/atomic.h>
- 
- struct mcs_spinlock {
- 	struct mcs_spinlock *next;
-@@ -119,7 +120,8 @@ void mcs_spin_unlock(struct mcs_spinlock
-  */
- 
- struct optimistic_spin_queue {
--	struct optimistic_spin_queue *next, *prev;
-+	atomic_pointer(struct optimistic_spin_queue *) next;
-+	struct optimistic_spin_queue *prev;
- 	int locked; /* 1 if lock acquired */
- };
- 
-Index: linux-3.15-rc8/include/asm-generic/atomic-long.h
-===================================================================
---- linux-3.15-rc8.orig/include/asm-generic/atomic-long.h	2014-06-02 17:11:17.000000000 +0200
-+++ linux-3.15-rc8/include/asm-generic/atomic-long.h	2014-06-02 17:11:50.000000000 +0200
-@@ -255,4 +255,31 @@ static inline long atomic_long_add_unles
- 
- #endif  /*  BITS_PER_LONG == 64  */
- 
-+#define atomic_pointer(type)						\
-+union {									\
-+	atomic_long_t __a;						\
-+	type __t;							\
-+	char __check_sizeof[sizeof(type) == sizeof(long) ? 1 : -1];	\
-+}
-+
-+#define ATOMIC_POINTER_INIT(i)	{ .__t = (i) }
-+
-+#define atomic_pointer_read(v)	((typeof((v)->__t))atomic_long_read(&(v)->__a))
-+
-+#define atomic_pointer_set(v, i)		({			\
-+	typeof((v)->__t) __i = (i);					\
-+	atomic_long_set(&(v)->__a, (long)(__i));			\
-+})
-+
-+#define atomic_pointer_xchg(v, i)		({			\
-+	typeof((v)->__t) __i = (i);					\
-+	(typeof((v)->__t))atomic_long_xchg(&(v)->__a, (long)(__i));	\
-+})
-+
-+#define atomic_pointer_cmpxchg(v, old, new)	({			\
-+	typeof((v)->__t) __old = (old);					\
-+	typeof((v)->__t) __new = (new);					\
-+	(typeof((v)->__t))atomic_long_cmpxchg(&(v)->__a, (long)(__old), (long)(__new));\
-+})
-+
- #endif  /*  _ASM_GENERIC_ATOMIC_LONG_H  */
-
+trond.myklebust@primarydata.com
