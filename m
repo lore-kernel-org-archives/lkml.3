@@ -1,105 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753674AbaFBT4W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 15:56:22 -0400
-Received: from mout.kundenserver.de ([212.227.126.187]:56173 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752760AbaFBT4S (ORCPT
+	id S1753804AbaFBT4p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 15:56:45 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:55973 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753734AbaFBT4m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 15:56:18 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "Joseph S. Myers" <joseph@codesourcery.com>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, john.stultz@linaro.org, hch@infradead.org,
-        tglx@linutronix.de, geert@linux-m68k.org, lftan@altera.com,
-        linux-fsdevel@vger.kernel.org, ceph-devel@vger.kernel.org,
-        cluster-devel@redhat.com, coda@cs.cmu.edu,
-        codalist@telemann.coda.cs.cmu.edu, fuse-devel@lists.sourceforge.net,
-        linux-afs@lists.infradead.org, linux-btrfs@vger.kernel.org,
-        linux-cifs@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net, linux-mtd@lists.infradead.org,
-        linux-nfs@vger.kernel.org, linux-ntfs-dev@lists.sourceforge.net,
-        linux-scsi@vger.kernel.org, logfs@logfs.org,
-        ocfs2-devel@oss.oracle.com, reiserfs-devel@vger.kernel.org,
-        samba-technical@lists.samba.org, xfs@oss.sgi.com
-Subject: Re: [RFC 00/32] making inode time stamps y2038 ready
-Date: Mon, 02 Jun 2014 21:55:52 +0200
-Message-ID: <7175692.dpgYFMbTaP@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <538CCFDE.2010107@zytor.com>
-References: <1401480116-1973111-1-git-send-email-arnd@arndb.de> <4233989.Saca0ocOUr@wuerfel> <538CCFDE.2010107@zytor.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:uT+/Uve9SN0noSZFrkOQCUh6cef/b3abSKIoJ2DAuQe
- Qah2JguLGI1cjCxDJVwax8NuXa/GiGbEAPAesqoVT3/YPv1DST
- B1fUh0Ug+Q2O8x+yGABvPdcFUQ71Rp+b+ZRP68xdJ8XPb6ux/b
- DyDt34/79R0EcX0HTbkuX6AN8Q0bJV8FbHKQASSjRNLmD4Oe8z
- MN2lDy7mi61rRWFiqICPb5CLFDN0/Um5/f58VacqDbspxQUlBl
- 3sd1qKSRT5hQ6kFFYKJ/rBwdrCfZJ+NLWgo98MgJyOuPYQ7A2o
- TnLPuiCumxSk3Q2jkiZiDO6V18/ymPB2adR2Y5y00Ai4AMGHql
- 6oFRuoVW9HTDy+GGmRrA=
+	Mon, 2 Jun 2014 15:56:42 -0400
+Message-ID: <1401739000.12939.34.camel@dabdike.int.hansenpartnership.com>
+Subject: Re: [PATCH] fix a race condition in cancelable mcs spinlocks
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: John David Anglin <dave.anglin@bell.net>,
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>, jejb@parisc-linux.org,
+        deller@gmx.de, linux-parisc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, chegu_vinod@hp.com,
+        paulmck@linux.vnet.ibm.com, Waiman.Long@hp.com, tglx@linutronix.de,
+        riel@redhat.com, akpm@linux-foundation.org, davidlohr@hp.com,
+        hpa@zytor.com, andi@firstfloor.org, aswin@hp.com, scott.norton@hp.com,
+        Jason Low <jason.low2@hp.com>
+Date: Mon, 02 Jun 2014 12:56:40 -0700
+In-Reply-To: <20140601213003.GG16155@laptop.programming.kicks-ass.net>
+References: <alpine.LRH.2.02.1406011342470.20831@file01.intranet.prod.int.rdu2.redhat.com>
+	 <20140601192026.GE16155@laptop.programming.kicks-ass.net>
+	 <BLU0-SMTP387BD0AE22A4EAD432D65F97210@phx.gbl>
+	 <20140601213003.GG16155@laptop.programming.kicks-ass.net>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.12.2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 02 June 2014 12:26:22 H. Peter Anvin wrote:
-> On 06/02/2014 12:19 PM, Arnd Bergmann wrote:
-> > On Monday 02 June 2014 13:52:19 Joseph S. Myers wrote:
-> >> On Fri, 30 May 2014, Arnd Bergmann wrote:
-> >>
-> >>> a) is this the right approach in general? The previous discussion
-> >>>    pointed this way, but there may be other opinions.
-> >>
-> >> The syscall changes seem like the sort of thing I'd expect, although 
-> >> patches adding new syscalls or otherwise affecting the kernel/userspace 
-> >> interface (as opposed to those relating to an individual filesystem) 
-> >> should go to linux-api as well as other relevant lists.
+On Sun, 2014-06-01 at 23:30 +0200, Peter Zijlstra wrote:
+> On Sun, Jun 01, 2014 at 04:46:26PM -0400, John David Anglin wrote:
+> > On 1-Jun-14, at 3:20 PM, Peter Zijlstra wrote:
 > > 
-> > Ok. Sorry about missing linux-api, I confused it with linux-arch, which
-> > may not be as relevant here, except for the one question whether we
-> > actually want to have the new ABI on all 32-bit architectures or only
-> > as an opt-in for those that expect to stay around for another 24 years.
+> > >>If you write to some variable with ACCESS_ONCE and use cmpxchg or xchg
+> > >>at
+> > >>the same time, you break it. ACCESS_ONCE doesn't take the hashed
+> > >>spinlock,
+> > >>so, in this case, cmpxchg or xchg isn't really atomic at all.
+> > >
+> > >And this is really the first place in the kernel that breaks like this?
+> > >I've been using xchg() and cmpxchg() without such consideration for
+> > >quite a while.
 > > 
-> > Two more questions for you:
-> > 
-> > - are you (and others) happy with adding this type of stat syscall
-> >   (fstatat64/fstat64) as opposed to the more generic xstat that has
-> >   been discussed in the past and that never made it through the bike-
-> >   shedding discussion?
-> > 
-> > - once we have enough buy-in from reviewers to merge this initial
-> >   series, should we proceed to define rest of the syscall ABI
-> >   (minus driver ioctls) so glibc and kernel can do the conversion
-> >   on top of that, or should we better try to do things one syscall
-> >   family at a time and actually get the kernel to handle them
-> >   correctly internally?
-> > 
+> > I believe Mikulas is correct.  Even in a controlled situation where a
+> > cmpxchg operation
+> > is used to implement pthread_spin_lock() in userspace, we found recently
+> > that the lock
+> > must be released with a  cmpxchg operation and not a simple write on SMP
+> > systems.
+> > There is a race in the cache operations or instruction ordering that's not
+> > present with
+> > the ldcw instruction.
 > 
-> The bit that is really going to hurt is every single ioctl that uses a
-> timespec.
+> Oh, I'm not arguing that. He's quite right that its broken, but this
+> form of atomic ops is also quite insane and unusual. Most sane machines
+> don't have this problem.
 > 
-> Honestly, though, I really don't understand the point with "struct
-> inode_time".  It seems like the zeroeth-order thing is to change the
-> kernel internal version of struct timespec to have a 64-bit time... it
-> isn't just about inodes.  We then should be explicit about the external
-> uses of time, and use accessors.
+> My main concern is how are we going to avoid breaking parisc (and I
+> think sparc32, which is similarly retarded) in the future; we should
+> invest in machinery to find and detect these things.
 
-I picked these because they are fairly isolated from all other uses,
-in particular since inode times are the only things where we really
-care about times in the distant past or future (decades away as opposed
-to things that happened between boot and shutdown).
+Architecturally, there is a way we could emulate the atomic exchange
+instructions.  We could have a special section of memory that always
+triggers a page trap.  In the Q state dtlb trap handlers we could
+recognise the "atomic" section of memory and wrap the attempted
+modification in a semaphore.  This would add a bit of overhead, but not
+a huge amount if we do it in the trap handlers like the TMPALIAS
+flushes.  This involves a lot of work for us because we have to decode
+the instructions in software, recognise the operations and manually
+apply the hashed semaphores around them.  If we did it like this, all
+we'd need by way of mainline support is that variables treated as
+atomically exchangeable should be in a separate section (because it's a
+page fault handler effectively, we need them all separated from "normal"
+code).  This would probably require some type of variable marker and if
+we ever saw a xchg or cmpxchg on a variable without the marker, we could
+break the build.
 
-For other kernel-internal uses, we may be better off migrating to
-a completely different representation, such as nanoseconds since
-boot or the architecture specific ktime_t, but this is really something
-to decide for each subsystem.
+The way we'd implement is the memory region would be read and write
+protected, so all loads and stores trap to the dtlb absent handlers.
+For a ldX instruction, if it were not followed by a stX to the same
+location, we'd simply give it the value.  For stX followed by ldX for
+xchg, we'd take the lock, do the exchange and drop the lock and for stX
+not preceded by ldX, we'd take the lock, do the store and drop the lock.
+To avoid compromising the protected region, we'd actually back it by a
+different area of kernel memory where we make the real modifications,
+rather than trying to muck with temporarily inserting a TLB entry.  On
+return we'd have to nullify the instructions to avoid re-trapping.
+Effectively this has us emulating all load and store operations with a
+shadow memory region ... if you know the number of possible address
+modes for PARISC, you'll realise that's a non-trivial amount of code.
+Plus we'd either have to ensure the shadow region had a permanent TLB
+entry or do a full fault and exit the TLB handler (we can't take a
+nested TLB fault within the TLB fault handler).
 
-I just tried building an arm32 kernel with a s64 time_t, and that
-failed horribly, I get linker errors for missing 64-bit divides
-and lots of warnings for code that expects time_t pointers to
-functions taking a 'long' or vice versa. I also think the only
-way to maintain ABI compatibility is to separate the internal uses
-from the interface, which means auditing all code in the end.
+Is it worth it ... definitely not if we can just prevent mainline from
+using xchg on our architecture.
 
-	Arnd
+James
+
+
