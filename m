@@ -1,60 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754945AbaFBRPy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 13:15:54 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:54824 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752260AbaFBRPv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 13:15:51 -0400
-Message-ID: <538CB143.5020504@wwwdotorg.org>
-Date: Mon, 02 Jun 2014 11:15:47 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
+	id S1755158AbaFBRQC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 13:16:02 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:53242 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754969AbaFBRP4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 13:15:56 -0400
+Message-ID: <538CB085.5000502@zytor.com>
+Date: Mon, 02 Jun 2014 10:12:37 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Olof Johansson <olof@lixom.net>, Marcel Ziswiler <marcel@ziswiler.com>
-CC: Thierry Reding <thierry.reding@gmail.com>,
-        "arm@kernel.org" <arm@kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        stefan@agner.ch
-Subject: Re: [PATCH 1/3] arm: multi_v7: enable igb, stmpe, spidev, lm95245,
- pwm leds
-References: <cc612cd3f24f01cfc8fd3e81b1027ff94862e8b4.1401700579.git.marcel@ziswiler.com> <CAOesGMg6aBpH18VO6XF1HxbXsJy92QadT3MVT2vOY41s=oCRrw@mail.gmail.com>
-In-Reply-To: <CAOesGMg6aBpH18VO6XF1HxbXsJy92QadT3MVT2vOY41s=oCRrw@mail.gmail.com>
-X-Enigmail-Version: 1.5.2
+To: "Theodore Ts'o" <tytso@mit.edu>, Chuck Lever <chuck.lever@oracle.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Dave Chinner <david@fromorbit.com>,
+        LKML Kernel <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
+        joseph@codesourcery.com, john.stultz@linaro.org,
+        Christoph Hellwig <hch@infradead.org>, tglx@linutronix.de,
+        geert@linux-m68k.org, lftan@altera.com,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>, xfs@oss.sgi.com,
+        Linux NFS Mailing List <linux-nfs@vger.kernel.org>
+Subject: Re: [RFC 11/32] xfs: convert to struct inode_time
+References: <1401480116-1973111-1-git-send-email-arnd@arndb.de> <8618458.1EVJCoVbkH@wuerfel> <alpine.LFD.2.11.1406012121430.17310@knanqh.ubzr> <4178301.j9kWdGCRLC@wuerfel> <6868F108-F0B2-423F-AE31-90DF86A5B7DD@oracle.com> <20140602153124.GH30598@thunk.org>
+In-Reply-To: <20140602153124.GH30598@thunk.org>
+X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/02/2014 11:01 AM, Olof Johansson wrote:
-> On Mon, Jun 2, 2014 at 2:43 AM, Marcel Ziswiler <marcel@ziswiler.com> wrote:
->> The NVIDIA Tegra 3 based Apalis T30 module contains an Intel i210 resp.
->> i211 gigabit Ethernet controller, an STMPE811 ADC/touch controller,
->> SPI bus and PWM LEDs generically accessible from user space and an
->> LM95245 temperature sensor chip. The later four can also be found on
->> the Colibri T30 module.
->>
->> While at it move the NEON entry down to its proper place to have it all
->> nicely ordered again.
->>
->> Signed-off-by: Marcel Ziswiler <marcel@ziswiler.com>
->> ---
->> BTW: How about TEGRA_EMC_SCALING_ENABLE, MACH_UX500_DT, OMAP_USB3 and
->> MMC_SUNXI which I haven't found any mentioning anywhere, MTD_M25P80
->> which depends on MTD_SPI_NOR or DOVE_THERMAL which depends on the
->> legacy ARCH_DOVE (besides USE_OF of course) being not much of multi
->> compatible?
+On 06/02/2014 08:31 AM, Theodore Ts'o wrote:
 > 
-> Can you resend towards the end of the merge window, please? We should
-> make a pass and update anything new that has been merged for 3.16
-> around then.
+> I wonder if it would make sense to try to promulgate via the Austin
+> group, and possibly the C standards committee the concept of a bit
+> pattern (that might commonly be INT_MAX or UINT_MAX) that means "time
+> unknown", or "time indefinite" or "we couldn't encode the time".
+> 
 
-I think the content in this patch is for 3.17. The issues mentioned
-below --- would be worth fixing for 3.16.
+(time_t)-1 already has this meaning for some calls (e.g. time(2)).
+However, this also means Wed Dec 31 23:59:59 UTC 1969, and unfortunately
+something similar applies to all possible bit patterns, certainly within
+the range of an int.
+
+> We would then teach gmtime(3) and asctime(3) to print some appropriate
+> message, and we could teach programs like find (with the -mtime)
+> option, make, tmpwatch, et. al., that they can't make any presumption
+> about the comparibility of any timestamp which has a value of
+> TIME_UNDEFINIED.
+> 
+> It would be problematic for time(2) or gettimeofday(2) to return
+> TIME_UNDEFINED, since there are programs that care about time ticking
+> forward, but I could imagine a new interface which would be permitted
+> to return a flag indicating that we don't know the current time
+> (because the CMOS battery had run down, etc.) so instead we're going
+> to be counting the number of seconds since the system was booted.
+
+This assumes that we actually know that that is the case, which may be
+an aggressive assumption.
+
+	-hpa
+
+
