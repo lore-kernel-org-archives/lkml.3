@@ -1,70 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753342AbaFBJJR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 05:09:17 -0400
-Received: from mail-we0-f178.google.com ([74.125.82.178]:40419 "EHLO
-	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753104AbaFBJJN (ORCPT
+	id S1753446AbaFBJJX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 05:09:23 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38696 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753104AbaFBJJS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 05:09:13 -0400
-From: srinivas.kandagatla@linaro.org
-To: Russell King <linux@arm.linux.org.uk>,
-        Ulf Hansson <ulf.hansson@linaro.org>, linux-mmc@vger.kernel.org
-Cc: Chris Ball <chris@printf.net>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linus.walleij@linaro.org,
-        Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-Subject: [PATCH v6 04/12] mmc: mmci: Add Qcom datactrl register variant
-Date: Mon,  2 Jun 2014 10:09:06 +0100
-Message-Id: <1401700146-11588-1-git-send-email-srinivas.kandagatla@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1401699818-11329-1-git-send-email-srinivas.kandagatla@linaro.org>
-References: <1401699818-11329-1-git-send-email-srinivas.kandagatla@linaro.org>
+	Mon, 2 Jun 2014 05:09:18 -0400
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+To: lee.jones@linaro.org
+Cc: sameo@linux.intel.com, patches@opensource.wolfsonmicro.com,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] mfd: core: Add the option to order destruction of MFD cells
+Date: Mon,  2 Jun 2014 10:01:43 +0100
+Message-Id: <1401699704-17902-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+Sometimes MFD children will have interdependancies. For example an MFD
+device might contain a regulator cell and another cell which requires
+that regulator to function. Probe deferral will ensure that these
+devices probe in the correct order, however currently nothing ensures
+they are destroyed in the correct order. As such it is possible for a
+cell to be destroyed whilst another cell still expects it to exist. For
+example the cell mentioned earlier would attempt to do a regulator_put
+as part of its own tear-down but the regulator may have already been
+destroyed.
 
-Instance of this IP on Qualcomm's SOCs has bit different layout for datactrl
-register. Bit position datactrl[16:4] hold the true block size instead of power
-of 2.
+This patch add a field remove_level to the mfd_cell data structure which
+allows users to group the destruction of the MFD cells. Cells with a
+lower remove_level will be destroyed first. This approach also doesn't
+alter the destruction order for existing devices, so should be
+no-op for devices not explicitly using it.
 
-Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 ---
- drivers/mmc/host/mmci.c | 5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/mfd/mfd-core.c   |   33 +++++++++++++++++++++++++++++----
+ include/linux/mfd/core.h |    3 +++
+ 2 files changed, 32 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/mmc/host/mmci.c b/drivers/mmc/host/mmci.c
-index ed20bf5..72981f6 100644
---- a/drivers/mmc/host/mmci.c
-+++ b/drivers/mmc/host/mmci.c
-@@ -60,6 +60,8 @@ static unsigned int fmax = 515633;
-  * @sdio: variant supports SDIO
-  * @st_clkdiv: true if using a ST-specific clock divider algorithm
-  * @blksz_datactrl16: true if Block size is at b16..b30 position in datactrl register
-+ * @blksz_datactrl4: true if Block size is at b4..b16 position in datactrl
-+ *		     register
-  * @pwrreg_powerup: power up value for MMCIPOWER register
-  * @signal_direction: input/out direction of bus signals can be indicated
-  * @pwrreg_clkgate: MMCIPOWER register must be used to gate the clock
-@@ -75,6 +77,7 @@ struct variant_data {
- 	bool			sdio;
- 	bool			st_clkdiv;
- 	bool			blksz_datactrl16;
-+	bool			blksz_datactrl4;
- 	u32			pwrreg_powerup;
- 	bool			signal_direction;
- 	bool			pwrreg_clkgate;
-@@ -731,6 +734,8 @@ static void mmci_start_data(struct mmci_host *host, struct mmc_data *data)
+diff --git a/drivers/mfd/mfd-core.c b/drivers/mfd/mfd-core.c
+index 2676492..0c12787 100644
+--- a/drivers/mfd/mfd-core.c
++++ b/drivers/mfd/mfd-core.c
+@@ -226,11 +226,19 @@ fail:
+ }
+ EXPORT_SYMBOL(mfd_add_devices);
  
- 	if (variant->blksz_datactrl16)
- 		datactrl = MCI_DPSM_ENABLE | (data->blksz << 16);
-+	else if (variant->blksz_datactrl4)
-+		datactrl = MCI_DPSM_ENABLE | (data->blksz << 4);
- 	else
- 		datactrl = MCI_DPSM_ENABLE | blksz_bits << 4;
++struct mfd_remove_data {
++	atomic_t *cnts;
++
++	int level;
++	int next_level;
++};
++
+ static int mfd_remove_devices_fn(struct device *dev, void *c)
+ {
+ 	struct platform_device *pdev;
+ 	const struct mfd_cell *cell;
+-	atomic_t **usage_count = c;
++	struct mfd_remove_data *rd = c;
++	atomic_t **usage_count = &rd->cnts;
  
+ 	if (dev->type != &mfd_dev_type)
+ 		return 0;
+@@ -238,6 +246,15 @@ static int mfd_remove_devices_fn(struct device *dev, void *c)
+ 	pdev = to_platform_device(dev);
+ 	cell = mfd_get_cell(pdev);
+ 
++	if (rd->level < cell->remove_level) {
++		if (!rd->next_level || rd->next_level > cell->remove_level)
++			rd->next_level = cell->remove_level;
++
++		return 0;
++	}
++
++	dev_dbg(dev, "Removing from MFD\n");
++
+ 	/* find the base address of usage_count pointers (for freeing) */
+ 	if (!*usage_count || (cell->usage_count < *usage_count))
+ 		*usage_count = cell->usage_count;
+@@ -248,10 +265,18 @@ static int mfd_remove_devices_fn(struct device *dev, void *c)
+ 
+ void mfd_remove_devices(struct device *parent)
+ {
+-	atomic_t *cnts = NULL;
++	struct mfd_remove_data rd = {};
++
++	do {
++		rd.level = rd.next_level;
++		rd.next_level = 0;
++
++		dev_dbg(parent, "Running remove for level: %d\n", rd.level);
++
++		device_for_each_child(parent, &rd, mfd_remove_devices_fn);
++	} while (rd.next_level);
+ 
+-	device_for_each_child(parent, &cnts, mfd_remove_devices_fn);
+-	kfree(cnts);
++	kfree(rd.cnts);
+ }
+ EXPORT_SYMBOL(mfd_remove_devices);
+ 
+diff --git a/include/linux/mfd/core.h b/include/linux/mfd/core.h
+index bdba8c6..40586a6 100644
+--- a/include/linux/mfd/core.h
++++ b/include/linux/mfd/core.h
+@@ -65,6 +65,9 @@ struct mfd_cell {
+ 	 */
+ 	const char		**parent_supplies;
+ 	int			num_parent_supplies;
++
++	/* Cells with a lower remove level will be destroyed first */
++	int			remove_level;
+ };
+ 
+ /*
 -- 
-1.9.1
+1.7.2.5
 
