@@ -1,139 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755831AbaFBPl1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 11:41:27 -0400
-Received: from mail-we0-f173.google.com ([74.125.82.173]:34928 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755323AbaFBPlZ (ORCPT
+	id S1752897AbaFBPob (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 11:44:31 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:59661 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751933AbaFBPo3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 11:41:25 -0400
+	Mon, 2 Jun 2014 11:44:29 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 99.127.230.128
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18x3+f5p78rxN5VDwyq2V6M
+Date: Mon, 2 Jun 2014 08:44:22 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: "'Emil Goode'" <emilgoode@gmail.com>, "'Lee Jones'" <lee.jones@linaro.org>,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        "'Samuel Ortiz'" <sameo@linux.intel.com>,
+        "'Trilok Soni'" <tsoni@codeaurora.org>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>,
+        Jarkko Nikula <jarkko.nikula@bitmer.com>
+Subject: Re: [PATCH v2] mfd: fix unintentional NULL check in
+ menelaus_set_voltage()
+Message-ID: <20140602154421.GB11004@atomide.com>
+References: <1401295431-23833-1-git-send-email-emilgoode@gmail.com>
+ <000d01cf7adf$9528f9e0$bf7aeda0$%han@samsung.com>
 MIME-Version: 1.0
-In-Reply-To: <538C3C94.3080206@redhat.com>
-References: <1401692506-7796-1-git-send-email-ast@plumgrid.com>
-	<538C3C94.3080206@redhat.com>
-Date: Mon, 2 Jun 2014 08:41:24 -0700
-Message-ID: <CAMEtUuzkjZCsReWH9cZs8AU0mJjZH9YOdCBTWusxe6-NZ9mQ=g@mail.gmail.com>
-Subject: Re: [PATCH v2 net-next 0/2] split BPF out of core networking
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Daniel Borkmann <dborkman@redhat.com>
-Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <000d01cf7adf$9528f9e0$bf7aeda0$%han@samsung.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 2, 2014 at 1:57 AM, Daniel Borkmann <dborkman@redhat.com> wrote:
-> On 06/02/2014 09:01 AM, Alexei Starovoitov wrote:
->>
->> This patch set splits BPF out of core networking into generic component
->>
->> patch #1 splits filter.c into two logical pieces: generic BPF core and
->> socket
->> filters. It only moves functions around. No real changes.
->>
->> patch #2 adds hidden CONFIG_BPF that seccomp/tracing can select
->>
->> The main value of the patch is not a NET separation, but rather logical
->> boundary
->> between generic BPF core and socket filtering. All socket specific code
->> stays in
->> net/core/filter.c and kernel/bpf/core.c is for generic BPF infrastructure
->> (both
->> classic and internal).
->>
->> Note that CONFIG_BPF_JIT is still under NET, so NET-less configs cannot
->> use
->> BPF JITs yet. This can be cleaned up in the future. Also it seems to makes
->> sense
->> to split up filter.h into generic and socket specific as well to cleanup
->> the
->> boundary further.
->
->
-> Hm, I really don't like that 'ripping code and headers apart' and then we
-> believe
-> it's a generic abstraction. So far seccomp-BPF could live with the current
-> state
-> since it was introduced, the rest of users (vast majority) is in the
-> networking
-> domain (and invoked through tcpdump et al) ...
->
-> There are still parts in seccomp that show some BPF weaknesses in terms of
-> being
-> 'generic', for example shown in seccomp, we need to go once again over the
-> filter
-> instructions after doing the usual filter sanity checks, just to whitelist
-> what
-> seccomp may do in BPF.
->
-> I have not yet thought about it deeply enough, but I think we should avoid
-> something similar in other non-networking areas but abstract that cleanly
-> w/o
-> such hacks first, for example.
+* Jingoo Han <jg1.han@samsung.com> [140528 18:45]:
+> On Thursday, May 29, 2014 1:44 AM, Emil Goode wrote:
+> > 
+> > The struct menelaus_vtg pointer vtg cannot be NULL here
+> > so the condition is never true and if it ever was true
+> > it would lead to a NULL pointer dereference when we goto
+> > label set_voltage.
+> > 
+> > Before the below patch was applied the code was:
+> > 
+> > if (vtg == 0)
+> > 
+> > The intention was to check if vtg_val is 0.
+> > 
+> > commit 59a9f7a32adf6537b4e4db8ca204eeb77d7a634e
+> > ("mfd: menelaus: Use NULL instead of 0")
+> > 
+> > Signed-off-by: Emil Goode <emilgoode@gmail.com>
+> > ---
+> > v2: Changed (vtg_val == 0) to (!vtg_val)
+> > 
+> >  drivers/mfd/menelaus.c |    2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > diff --git a/drivers/mfd/menelaus.c b/drivers/mfd/menelaus.c
+> > index ad25bfa..40df76a 100644
+> > --- a/drivers/mfd/menelaus.c
+> > +++ b/drivers/mfd/menelaus.c
+> > @@ -466,7 +466,7 @@ static int menelaus_set_voltage(const struct menelaus_vtg *vtg, int mV,
+> >  	struct i2c_client *c = the_menelaus->client;
+> > 
+> >  	mutex_lock(&the_menelaus->lock);
+> > -	if (!vtg)
+> > +	if (!vtg_val)
+> >  		goto set_voltage;
+> 
+> (+cc Trilok Soni, Tony Lindgren)
+> 
+> In this case, if 'vtg_val' is 0, setting voltage as 0 for
+> registers such as MENELAUS_xxx_CTRLx will be skipped. So,
+> it is not possible to set the voltage value as 0.
+> 
+> Is it right? If not, how about just removing this check and
+> the label 'set_voltage'?
 
-Glad you brought up this point :)
-100% agree that current double verification done by seccomp is far from
-being generic and quite hard to maintain, since any change done to
-classic BPF verifier needs to be thought through from seccomp_check_filter()
-perspective as well.
-imo lack of generality in classic BPF is the main reason why we should stop
-adding extensions to classic and switch to eBPF for any new features.
-the eBPF verifier I posted now long ago is trying to be generic through
-customization. The verifier core needs to stay independent of the use case.
-BPF's input context, set of allowed calls need to be expressed in a generic way.
-Obviously this split by itself won't make classic BPF all of a sudden generic.
-It rather defines a boundary of eBPF core.
-In eBPF only two instructions are not generic. It's LD_ABS/LD_IND
-which are legacy instruction that we had to carry over from classic.
-They require input context == sk_buff. That's why core.c had to
-#include <skbuff.h> and do '__weak skb_copy_bits()'.
-Alternative to that was to #ifdef these two instructions out of interpreter
-and #ifndef NET #include <skbuff.h> and ld_abs helper functions in core.c
-IMO that would have been ugly for code style, maintenance and testing,
-but then core.c would have only one #include <filter.h> and we can
-say: 'look eBPF core.c is really generic'
+Added Aaro and Jarkko to Cc.
 
-In the next set of patches I'll repost verifier and will explain how single
-eBPF verifier core can be used for socket, seccomp, tracing and other
-things. Note I'm not saying that we should use eBPF now everywhere.
-Classic BPF has its niche and that niche we have to maintain forever.
-So let's make sure that eBPF interpreter, its instruction set and its
-verifier are staying generic.
-This split is only first step in that direction that creates a file boundary
-between eBPF core and sockets.
+Regards,
 
->
->> Tested with several NET and NET-less configs on arm and x86
->>
->> V1->V2:
->> rebase on top of net-next
->> split filter.c into kernel/bpf/core.c instead of net/bpf/core.c
->>
->> Alexei Starovoitov (2):
->>    net: filter: split filter.c into two files
->>    net: filter: split BPF out of core networking
->>
->>   arch/Kconfig           |    6 +-
->>   include/linux/filter.h |    2 +
->>   kernel/Makefile        |    1 +
->>   kernel/bpf/Makefile    |    5 +
->>   kernel/bpf/core.c      | 1063
->> ++++++++++++++++++++++++++++++++++++++++++++++++
->>   net/Kconfig            |    1 +
->>   net/core/filter.c      | 1023
->> +---------------------------------------------
->>   7 files changed, 1079 insertions(+), 1022 deletions(-)
->>   create mode 100644 kernel/bpf/Makefile
->>   create mode 100644 kernel/bpf/core.c
->>
->
+Tony
+ 
+> Best regards,
+> Jingoo Han
+> 
+> > 
+> >  	ret = menelaus_read_reg(vtg->vtg_reg);
+> > --
+> > 1.7.10.4
+> 
