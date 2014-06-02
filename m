@@ -1,66 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753006AbaFBWvl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 18:51:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42825 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752087AbaFBWvj (ORCPT
+	id S1753174AbaFBWwS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 18:52:18 -0400
+Received: from ozlabs.org ([103.22.144.67]:56203 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751875AbaFBWwR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 18:51:39 -0400
-Date: Mon, 2 Jun 2014 15:55:17 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: [GIT PULL] extcon next-v2 for v3.16
-Message-ID: <20140602225517.GB7641@kroah.com>
-References: <538C06FC.4000009@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <538C06FC.4000009@samsung.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Mon, 2 Jun 2014 18:52:17 -0400
+Message-ID: <1401749534.13479.48.camel@ale.ozlabs.ibm.com>
+Subject: Re: [V6 00/11] perf: New conditional branch filter
+From: Michael Neuling <mikey@neuling.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: Anshuman Khandual <khandual@linux.vnet.ibm.com>,
+        Linux PPC dev <linuxppc-dev@ozlabs.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>
+Date: Tue, 03 Jun 2014 08:52:14 +1000
+In-Reply-To: <CABPqkBSmuMth4KmdLw7Nigf5uQREQJ+xL=42xV9c8FjR2VPO5g@mail.gmail.com>
+References: <1399280953-31442-1-git-send-email-khandual@linux.vnet.ibm.com>
+	 <CABPqkBS+3N6PW0wJr3xnvpF4zinZM7+iwFWzwS7BDm-LTkam5Q@mail.gmail.com>
+	 <53859873.9070603@linux.vnet.ibm.com>
+	 <CABPqkBSmuMth4KmdLw7Nigf5uQREQJ+xL=42xV9c8FjR2VPO5g@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 02, 2014 at 02:09:16PM +0900, Chanwoo Choi wrote:
-> Dear Greg,
+On Mon, 2014-06-02 at 14:59 +0200, Stephane Eranian wrote:
+> On Wed, May 28, 2014 at 10:04 AM, Anshuman Khandual
+> <khandual@linux.vnet.ibm.com> wrote:
+> > On 05/27/2014 05:39 PM, Stephane Eranian wrote:
+> >> I have been looking at those patches and ran some tests.
+> >> And I found a few issues so far.
+> >>
+> >> I am running:
+> >> $ perf record -j any_ret -e cycles:u test_program
+> >> $ perf report -D
+> >>
+> >> Most entries are okay and match the filter, however some do not make sense:
+> >>
+> >> 3642586996762 0x15d0 [0x108]: PERF_RECORD_SAMPLE(IP, 2): 17921/17921:
+> >> 0x10001170 period: 613678 addr: 0
+> >> .... branch stack: nr:9
+> >> .....  0: 00000000100011cc -> 0000000010000e38
+> >> .....  1: 0000000010001150 -> 00000000100011bc
+> >> .....  2: 0000000010001208 -> 0000000010000e38
+> >> .....  3: 0000000010001160 -> 00000000100011f8
+> >> .....  4: 00000000100011cc -> 0000000010000e38
+> >> .....  5: 0000000010001150 -> 00000000100011bc
+> >> .....  6: 0000000010001208 -> 0000000010000e38
+> >> .....  7: 0000000010001160 -> 00000000100011f8
+> >> .....  8: 0000000000000000 -> 0000000010001160
+> >> ^^^^^^
+> >> Entry 8 does not make sense, unless 0x0 is a valid return branch
+> >> instruction address.
+> >> If an address is invalid, the whole entry needs to be eliminated. It
+> >> is okay to have
+> >> less than the max number of entries supported by HW.
+> >
+> > Hey Stephane,
+> >
+> > Okay. The same behaviour is also reflected in the test results what I have
+> > shared in the patchset. Here is that section.
+> >
+> > (3) perf record -j any_ret -e branch-misses:u ./cprog
+> >
+> > # Overhead  Command  Source Shared Object          Source Symbol  Target Shared Object          Target Symbol
+> > # ........  .......  ....................  .....................  ....................  .....................
+> > #
+> >     15.61%    cprog  [unknown]             [.] 00000000           cprog                 [.] sw_3_1
+> >      6.28%    cprog  cprog                 [.] symbol2            cprog                 [.] hw_1_2
+> >      6.28%    cprog  cprog                 [.] ctr_addr           cprog                 [.] sw_4_1
+> >      6.26%    cprog  cprog                 [.] success_3_1_3      cprog                 [.] sw_3_1
+> >      6.24%    cprog  cprog                 [.] symbol1            cprog                 [.] hw_1_1
+> >      6.24%    cprog  cprog                 [.] sw_4_2             cprog                 [.] callme
+> >      6.21%    cprog  [unknown]             [.] 00000000           cprog                 [.] callme
+> >      6.19%    cprog  cprog                 [.] lr_addr            cprog                 [.] sw_4_2
+> >      3.16%    cprog  cprog                 [.] hw_1_2             cprog                 [.] callme
+> >      3.15%    cprog  cprog                 [.] success_3_1_1      cprog                 [.] sw_3_1
+> >      3.15%    cprog  cprog                 [.] sw_4_1             cprog                 [.] callme
+> >      3.14%    cprog  cprog                 [.] callme             cprog                 [.] main
+> >      3.13%    cprog  cprog                 [.] hw_1_1             cprog                 [.] callme
+> >
+> > So a lot of samples above have 0x0 as the "from" address. This originates from the code
+> > section here inside the function "power_pmu_bhrb_read", where we hit two back to back
 > 
-> This is extcon-next-v2 full request for v3.16. This pull request includes
-> additional patchset after merged previous extcon-next pull request(tags/extcon-next-for-v3.16).
-> I add detailed description of this pull request on below. Please pull extcon with following update.
+> Could you explain the back-to-back case a bit more here?
+> Back-to-back returns to me means something like:
 > 
-> Best Regards,
-> Chanwoo Choi
+> int foo()
+> {
+>   ...
+>    return bar();
+> }
 > 
-> The following changes since commit 3f79a3fb5f41e8f2229e5bf8aa725eaa79686f14:
+> int bar()
+> {
+>   return 0;
+> }
 > 
->   extcon: palmas: Use devm_extcon_dev_allocate for extcon_dev (2014-04-29 09:52:12 +0900)
+> Not counting the leaf optimization here, bar return to foo which
+> immediately returns: 2 back-2-back returns.
+> Is that the case you're talking about here?
 > 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/chanwoo/extcon.git tags/extcon-next-v2-for-3.16
+> > target addresses. So we zero out the from address for the first target address and re-read
+> > the second address over again. So thats how we get zero as the from address. This is how the
+> > HW capture the samples. I was reluctant to drop these samples but I agree that these kind of
+> > samples can be dropped if we need to.
+> >
+> I think we need to make it as simple as possible for tools, i.e.,
+> avoid having to decode the
+> disassembly to figure out what happened. Here address 0 is not exploitable.
 
-I was thinking it was too late for 3.16-rc1, as the merge window is now
-open and I like to have things in my tree a week or so before that
-happens, but I figured this was nice and self-contained so I would take
-it.
+This was my fault.  I figured if we only had partial information from
+the hardware, it was best to at least export that to the tools.  If you
+disagree then we can we remove them.  There was a discussion a while
+back on this here:
+  https://lkml.org/lkml/2013/5/8/543
 
-So I pulled, and built, and then got this:
+Because of the way the branch buffer is structured, we can certainly
+lose the from address of the oldest branch in the buffer.  I've not seen
+the hardware lose the from branches in the middle of the buffer but I
+guess it's possible.  We'll have to get back to you on how or why this
+would occur (and associated bias) after talking to some hardware folk.
 
-ERROR: "regmap_irq_get_virq" [drivers/extcon/extcon-sm5502.ko] undefined!
-ERROR: "regmap_add_irq_chip" [drivers/extcon/extcon-sm5502.ko] undefined!
-ERROR: "regmap_del_irq_chip" [drivers/extcon/extcon-sm5502.ko] undefined!
+FWIW, there was some discussion on how the POWER8 branch buffer works a
+while back here (same thread as before):
+  https://lkml.org/lkml/2013/5/8/541
 
-which makes me know that you haven't done much build testing of the code
-:(
+Mikey
 
-So I can't take this now, sorry, please fix it up and make it ready for
-3.17.  If you have bugfixes for 3.16, feel free to send them in a
-separate pull request...
-
-thanks,
-
-greg k-h
