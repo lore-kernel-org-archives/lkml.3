@@ -1,113 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753112AbaFBTF1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 15:05:27 -0400
-Received: from smtprelay0021.hostedemail.com ([216.40.44.21]:43788 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751998AbaFBTFY (ORCPT
+	id S1753325AbaFBTFj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 15:05:39 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:45866 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753022AbaFBTFg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 15:05:24 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::::::::::::::,RULES_HIT:41:355:379:541:599:800:960:968:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1431:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2197:2199:2393:2559:2562:2828:3138:3139:3140:3141:3142:3
-X-HE-Tag: cloth39_85beec49f4926
-X-Filterd-Recvd-Size: 3824
-Message-ID: <1401735917.7323.23.camel@joe-AO725>
-Subject: Re: [PATCH RFC 1/2] MAINTAINERS: Add "R:" designated-reviewers tag
-From: Joe Perches <joe@perches.com>
-To: josh@joshtriplett.org
-Cc: Steven Rostedt <rostedt@goodmis.org>, paulmck@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, dhowells@redhat.com, edumazet@google.com,
-        dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
-        sbw@mit.edu
-Date: Mon, 02 Jun 2014 12:05:17 -0700
-In-Reply-To: <20140602185504.GA13569@cloud>
-References: <1401728420-3572-1-git-send-email-paulmck@linux.vnet.ibm.com>
-	 <1401729778.5770.20.camel@joe-AO725> <20140602174837.GA13257@cloud>
-	 <1401731968.7323.4.camel@joe-AO725>
-	 <20140602181658.GX22231@linux.vnet.ibm.com>
-	 <1401734669.7323.20.camel@joe-AO725>
-	 <20140602145020.400d4e0c@gandalf.local.home> <20140602185504.GA13569@cloud>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 2 Jun 2014 15:05:36 -0400
+Content-Type: text/plain; charset=windows-1252
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.2\))
+Subject: Re: [RFC 11/32] xfs: convert to struct inode_time
+From: Chuck Lever <chuck.lever@oracle.com>
+In-Reply-To: <1401735504.6065.227.camel@montana.filmlight.ltd.uk>
+Date: Mon, 2 Jun 2014 15:04:27 -0400
+Cc: Arnd Bergmann <arnd@arndb.de>, Nicolas Pitre <nicolas.pitre@linaro.org>,
+        linux-arch@vger.kernel.org,
+        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
+        LKML Kernel <linux-kernel@vger.kernel.org>, lftan@altera.com,
+        Christoph Hellwig <hch@infradead.org>, john.stultz@linaro.org,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>, geert@linux-m68k.org,
+        tglx@linutronix.de, xfs@oss.sgi.com, joseph@codesourcery.com
+Content-Transfer-Encoding: 8BIT
+Message-Id: <C57EA6CA-236A-4C93-95F8-21F46A3622DA@oracle.com>
+References: <1401480116-1973111-1-git-send-email-arnd@arndb.de> <8618458.1EVJCoVbkH@wuerfel> <alpine.LFD.2.11.1406012121430.17310@knanqh.ubzr> <4178301.j9kWdGCRLC@wuerfel> <6868F108-F0B2-423F-AE31-90DF86A5B7DD@oracle.com> <1401735504.6065.227.camel@montana.filmlight.ltd.uk>
+To: Roger Willcocks <roger@filmlight.ltd.uk>
+X-Mailer: Apple Mail (2.1878.2)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-06-02 at 11:55 -0700, josh@joshtriplett.org wrote:
-> this should go along with a change to
-> get_maintainer.pl to add those folks to the CC list.
 
-Something like this:
----
- scripts/get_maintainer.pl | 22 +++++++++++++++++++++-
- 1 file changed, 21 insertions(+), 1 deletion(-)
+On Jun 2, 2014, at 2:58 PM, Roger Willcocks <roger@filmlight.ltd.uk> wrote:
 
-diff --git a/scripts/get_maintainer.pl b/scripts/get_maintainer.pl
-index 4198788..d701627 100755
---- a/scripts/get_maintainer.pl
-+++ b/scripts/get_maintainer.pl
-@@ -21,6 +21,7 @@ my $lk_path = "./";
- my $email = 1;
- my $email_usename = 1;
- my $email_maintainer = 1;
-+my $email_reviewer = 1;
- my $email_list = 1;
- my $email_subscriber_list = 0;
- my $email_git_penguin_chiefs = 0;
-@@ -202,6 +203,7 @@ if (!GetOptions(
- 		'remove-duplicates!' => \$email_remove_duplicates,
- 		'mailmap!' => \$email_use_mailmap,
- 		'm!' => \$email_maintainer,
-+		'r!' => \$email_reviewer,
- 		'n!' => \$email_usename,
- 		'l!' => \$email_list,
- 		's!' => \$email_subscriber_list,
-@@ -260,7 +262,8 @@ if ($sections) {
- }
- 
- if ($email &&
--    ($email_maintainer + $email_list + $email_subscriber_list +
-+    ($email_maintainer + $email_reviewer +
-+     $email_list + $email_subscriber_list +
-      $email_git + $email_git_penguin_chiefs + $email_git_blame) == 0) {
-     die "$P: Please select at least 1 email option\n";
- }
-@@ -750,6 +753,7 @@ MAINTAINER field selection options:
-     --hg-since => hg history to use (default: $email_hg_since)
-     --interactive => display a menu (mostly useful if used with the --git option)
-     --m => include maintainer(s) if any
-+    --r => include reviewer(s) if any
-     --n => include name 'Full Name <addr\@domain.tld>'
-     --l => include list(s) if any
-     --s => include subscriber only list(s) if any
-@@ -1064,6 +1068,22 @@ sub add_categories {
- 		    my $role = get_maintainer_role($i);
- 		    push_email_addresses($pvalue, $role);
- 		}
-+	    } elsif ($ptype eq "R") {
-+		my ($name, $address) = parse_email($pvalue);
-+		if ($name eq "") {
-+		    if ($i > 0) {
-+			my $tv = $typevalue[$i - 1];
-+			if ($tv =~ m/^(\C):\s*(.*)/) {
-+			    if ($1 eq "P") {
-+				$name = $2;
-+				$pvalue = format_email($name, $address, $email_usename);
-+			    }
-+			}
-+		    }
-+		}
-+		if ($email_reviewer) {
-+		    push_email_addresses($pvalue, 'reviewer');
-+		}
- 	    } elsif ($ptype eq "T") {
- 		push(@scm, $pvalue);
- 	    } elsif ($ptype eq "W") {
+> 
+> On Mon, 2014-06-02 at 11:04 -0400, Chuck Lever wrote:
+> 
+>> NFSv2/3 timestamps are a pair of unsigned 32-bit values: one value for
+>> seconds since midnight GMT Jan 1, 1970, and one value for nanoseconds.
+>> (See the definition of nfstime3 in RFC 1813).
+>> 
+> 
+> nfstime3 could be extended by redefining the otherwise unused
+> nanoseconds bits{31,30} as seconds{33,32}, to give a (signed) 34-bit
+> seconds field and an unsigned 30-bit nanoseconds field.
+> 
+> This could represent 1970 +/- 272 years.
+> 
+> Servers could indicate they can understand the extended time format by
+> adding a new FSINFO capability - FSF3_CANSETTIME_EX.
+> 
+> Clients would use a new SET_TO_CLIENT_TIME_EX time_how enum when sending
+> timestamps so old servers would be protected from new clients.
+
+You would have to get the IETF’s NFSv4 working group to sign off on
+this change. Otherwise, Linux would be the only NFSv3 implementation
+that supports the extension.
+
+But I suspect the answer you’d get is “Use NFSv4.”
+
+> Old clients don't need to be protected from new servers because the
+> on-the-wire bit pattern for dates between 1970 and 2106 stays the same,
+> so they're no worse off than they were before.
+> 
+> Arguably the new server ought to clamp out-of-range timestamps before
+> sending them to old clients but that would need per-client state (and
+> nfs3 is stateless.)
+
+There’s no reliable way in NFSv3 for clients and servers to identify
+the software running on the peer.
+
+Practically speaking, you should assume that the NFSv3 protocol is never
+going to change.
+
+--
+Chuck Lever
+chuck[dot]lever[at]oracle[dot]com
 
 
 
