@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752687AbaFBWU3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 18:20:29 -0400
-Received: from mail-yh0-f42.google.com ([209.85.213.42]:35427 "EHLO
-	mail-yh0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752425AbaFBWUZ (ORCPT
+	id S1752788AbaFBWUe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 18:20:34 -0400
+Received: from mail-yk0-f176.google.com ([209.85.160.176]:47453 "EHLO
+	mail-yk0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752425AbaFBWUc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 18:20:25 -0400
+	Mon, 2 Jun 2014 18:20:32 -0400
 From: Dan Streetman <ddstreet@ieee.org>
 To: Seth Jennings <sjennings@variantweb.net>, Minchan Kim <minchan@kernel.org>,
         Weijie Yang <weijie.yang@samsung.com>, Nitin Gupta <ngupta@vflare.org>
@@ -18,9 +18,9 @@ Cc: Dan Streetman <ddstreet@ieee.org>,
         Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
         Linux-MM <linux-mm@kvack.org>,
         linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCHv4 3/6] mm/zpool: implement common zpool api to zbud/zsmalloc
-Date: Mon,  2 Jun 2014 18:19:43 -0400
-Message-Id: <1401747586-11861-4-git-send-email-ddstreet@ieee.org>
+Subject: [PATCHv4 5/6] mm/zpool: update zswap to use zpool
+Date: Mon,  2 Jun 2014 18:19:45 -0400
+Message-Id: <1401747586-11861-6-git-send-email-ddstreet@ieee.org>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1401747586-11861-1-git-send-email-ddstreet@ieee.org>
 References: <1400958369-3588-1-git-send-email-ddstreet@ieee.org>
@@ -29,552 +29,275 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add zpool api.
-
-zpool provides an interface for memory storage, typically of compressed
-memory.  Users can select what backend to use; currently the only
-implementations are zbud, a low density implementation with up to
-two compressed pages per storage page, and zsmalloc, a higher density
-implementation with multiple compressed pages per storage page.
+Change zswap to use the zpool api instead of directly using zbud.
+Add a boot-time param to allow selecting which zpool implementation
+to use, with zbud as the default.
 
 Signed-off-by: Dan Streetman <ddstreet@ieee.org>
 Cc: Seth Jennings <sjennings@variantweb.net>
-Cc: Minchan Kim <minchan@kernel.org>
-Cc: Nitin Gupta <ngupta@vflare.org>
 Cc: Weijie Yang <weijie.yang@samsung.com>
 ---
 
-Note this patch set is against the mmotm tree at
-git://git.cmpxchg.org/linux-mmotm.git
-This patch may need context changes to the -next or other trees.
+Changes since v3 : https://lkml.org/lkml/2014/5/24/131
+  -use new parameters in call to zpool_shrink()
 
-Changes since v3 : https://lkml.org/lkml/2014/5/24/135
-  -change zpool_shrink() to use # pages instead of # bytes
-  -change zpool_shrink() to update *reclaimed param with
-   number of pages actually reclaimed
+Changes since v2 : https://lkml.org/lkml/2014/5/7/894
+  -change zswap to select ZPOOL instead of ZBUD
+  -only try zbud default if not already tried
 
-Changes since v2 : https://lkml.org/lkml/2014/5/7/733
-  -Remove hardcoded zbud/zsmalloc implementations
-  -Add driver (un)register functions
+Changes since v1 https://lkml.org/lkml/2014/4/19/102
+ -since zpool fallback is removed, manually fall back to zbud if
+  specified type fails
 
-Changes since v1 https://lkml.org/lkml/2014/4/19/101
- -add some pr_info() during creation and pr_err() on errors
- -remove zpool code to call zs_shrink(), since zsmalloc shrinking
-  was removed from this patchset
- -remove fallback; only specified pool type will be tried
- -pr_fmt() is defined in zpool to prefix zpool: in any pr_XXX() calls
+ mm/Kconfig |  2 +-
+ mm/zswap.c | 76 +++++++++++++++++++++++++++++++++++++-------------------------
+ 2 files changed, 46 insertions(+), 32 deletions(-)
 
- include/linux/zpool.h | 219 ++++++++++++++++++++++++++++++++++++++++++++++++++
- mm/Kconfig            |  41 ++++++----
- mm/Makefile           |   1 +
- mm/zpool.c            | 198 +++++++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 442 insertions(+), 17 deletions(-)
- create mode 100644 include/linux/zpool.h
- create mode 100644 mm/zpool.c
-
-diff --git a/include/linux/zpool.h b/include/linux/zpool.h
-new file mode 100644
-index 0000000..a528f7c
---- /dev/null
-+++ b/include/linux/zpool.h
-@@ -0,0 +1,219 @@
-+/*
-+ * zpool memory storage api
-+ *
-+ * Copyright (C) 2014 Dan Streetman
-+ *
-+ * This is a common frontend for the zbud and zsmalloc memory
-+ * storage pool implementations.  Typically, this is used to
-+ * store compressed memory.
-+ */
-+
-+#ifndef _ZPOOL_H_
-+#define _ZPOOL_H_
-+
-+struct zpool;
-+
-+struct zpool_ops {
-+	int (*evict)(struct zpool *pool, unsigned long handle);
-+};
-+
-+/*
-+ * Control how a handle is mapped.  It will be ignored if the
-+ * implementation does not support it.  Its use is optional.
-+ * Note that this does not refer to memory protection, it
-+ * refers to how the memory will be copied in/out if copying
-+ * is necessary during mapping; read-write is the safest as
-+ * it copies the existing memory in on map, and copies the
-+ * changed memory back out on unmap.  Write-only does not copy
-+ * in the memory and should only be used for initialization.
-+ * If in doubt, use ZPOOL_MM_DEFAULT which is read-write.
-+ */
-+enum zpool_mapmode {
-+	ZPOOL_MM_RW, /* normal read-write mapping */
-+	ZPOOL_MM_RO, /* read-only (no copy-out at unmap time) */
-+	ZPOOL_MM_WO, /* write-only (no copy-in at map time) */
-+
-+	ZPOOL_MM_DEFAULT = ZPOOL_MM_RW
-+};
-+
-+/**
-+ * zpool_create_pool() - Create a new zpool
-+ * @type	The type of the zpool to create (e.g. zbud, zsmalloc)
-+ * @flags	What GFP flags should be used when the zpool allocates memory.
-+ * @ops		The optional ops callback.
-+ *
-+ * This creates a new zpool of the specified type.  The zpool will use the
-+ * given flags when allocating any memory.  If the ops param is NULL, then
-+ * the created zpool will not be shrinkable.
-+ *
-+ * Returns: New zpool on success, NULL on failure.
-+ */
-+struct zpool *zpool_create_pool(char *type, gfp_t flags,
-+			struct zpool_ops *ops);
-+
-+/**
-+ * zpool_get_type() - Get the type of the zpool
-+ * @pool	The zpool to check
-+ *
-+ * This returns the type of the pool.
-+ *
-+ * Returns: The type of zpool.
-+ */
-+char *zpool_get_type(struct zpool *pool);
-+
-+/**
-+ * zpool_destroy_pool() - Destroy a zpool
-+ * @pool	The zpool to destroy.
-+ *
-+ * This destroys an existing zpool.  The zpool should not be in use.
-+ */
-+void zpool_destroy_pool(struct zpool *pool);
-+
-+/**
-+ * zpool_malloc() - Allocate memory
-+ * @pool	The zpool to allocate from.
-+ * @size	The amount of memory to allocate.
-+ * @handle	Pointer to the handle to set
-+ *
-+ * This allocates the requested amount of memory from the pool.
-+ * The provided @handle will be set to the allocated object handle.
-+ *
-+ * Returns: 0 on success, negative value on error.
-+ */
-+int zpool_malloc(struct zpool *pool, size_t size, unsigned long *handle);
-+
-+/**
-+ * zpool_free() - Free previously allocated memory
-+ * @pool	The zpool that allocated the memory.
-+ * @handle	The handle to the memory to free.
-+ *
-+ * This frees previously allocated memory.  This does not guarantee
-+ * that the pool will actually free memory, only that the memory
-+ * in the pool will become available for use by the pool.
-+ */
-+void zpool_free(struct zpool *pool, unsigned long handle);
-+
-+/**
-+ * zpool_shrink() - Shrink the pool size
-+ * @pool	The zpool to shrink.
-+ * @pages	The number of pages to shrink the pool.
-+ * @reclaimed	The number of pages successfully evicted.
-+ *
-+ * This attempts to shrink the actual memory size of the pool
-+ * by evicting currently used handle(s).  If the pool was
-+ * created with no zpool_ops, or the evict call fails for any
-+ * of the handles, this will fail.  If non-NULL, the @reclaimed
-+ * parameter will be set to the number of pages reclaimed,
-+ * which may be more than the number of pages requested.
-+ *
-+ * Returns: 0 on success, negative value on error/failure.
-+ */
-+int zpool_shrink(struct zpool *pool, unsigned int pages,
-+			unsigned int *reclaimed);
-+
-+/**
-+ * zpool_map_handle() - Map a previously allocated handle into memory
-+ * @pool	The zpool that the handle was allocated from
-+ * @handle	The handle to map
-+ * @mm	How the memory should be mapped
-+ *
-+ * This maps a previously allocated handle into memory.  The @mm
-+ * param indicates to the implemenation how the memory will be
-+ * used, i.e. read-only, write-only, read-write.  If the
-+ * implementation does not support it, the memory will be treated
-+ * as read-write.
-+ *
-+ * This may hold locks, disable interrupts, and/or preemption,
-+ * and the zpool_unmap_handle() must be called to undo those
-+ * actions.  The code that uses the mapped handle should complete
-+ * its operatons on the mapped handle memory quickly and unmap
-+ * as soon as possible.  Multiple handles should not be mapped
-+ * concurrently on a cpu.
-+ *
-+ * Returns: A pointer to the handle's mapped memory area.
-+ */
-+void *zpool_map_handle(struct zpool *pool, unsigned long handle,
-+			enum zpool_mapmode mm);
-+
-+/**
-+ * zpool_unmap_handle() - Unmap a previously mapped handle
-+ * @pool	The zpool that the handle was allocated from
-+ * @handle	The handle to unmap
-+ *
-+ * This unmaps a previously mapped handle.  Any locks or other
-+ * actions that the implemenation took in zpool_map_handle()
-+ * will be undone here.  The memory area returned from
-+ * zpool_map_handle() should no longer be used after this.
-+ */
-+void zpool_unmap_handle(struct zpool *pool, unsigned long handle);
-+
-+/**
-+ * zpool_get_total_size() - The total size of the pool
-+ * @pool	The zpool to check
-+ *
-+ * This returns the total size in bytes of the pool.
-+ *
-+ * Returns: Total size of the zpool in bytes.
-+ */
-+u64 zpool_get_total_size(struct zpool *pool);
-+
-+
-+/**
-+ * struct zpool_driver - driver implementation for zpool
-+ * @type:	name of the driver.
-+ * @list:	entry in the list of zpool drivers.
-+ * @create:	create a new pool.
-+ * @destroy:	destroy a pool.
-+ * @malloc:	allocate mem from a pool.
-+ * @free:	free mem from a pool.
-+ * @shrink:	shrink the pool.
-+ * @map:	map a handle.
-+ * @unmap:	unmap a handle.
-+ * @total_size:	get total size of a pool.
-+ *
-+ * This is created by a zpool implementation and registered
-+ * with zpool.
-+ */
-+struct zpool_driver {
-+	char *type;
-+	struct list_head list;
-+
-+	void *(*create)(gfp_t gfp, struct zpool_ops *ops);
-+	void (*destroy)(void *pool);
-+
-+	int (*malloc)(void *pool, size_t size, unsigned long *handle);
-+	void (*free)(void *pool, unsigned long handle);
-+
-+	int (*shrink)(void *pool, unsigned int pages,
-+				unsigned int *reclaimed);
-+
-+	void *(*map)(void *pool, unsigned long handle,
-+				enum zpool_mapmode mm);
-+	void (*unmap)(void *pool, unsigned long handle);
-+
-+	u64 (*total_size)(void *pool);
-+};
-+
-+/**
-+ * zpool_register_driver() - register a zpool implementation.
-+ * @driver:	driver to register
-+ */
-+void zpool_register_driver(struct zpool_driver *driver);
-+
-+/**
-+ * zpool_unregister_driver() - unregister a zpool implementation.
-+ * @driver:	driver to unregister.
-+ */
-+void zpool_unregister_driver(struct zpool_driver *driver);
-+
-+/**
-+ * zpool_evict() - evict callback from a zpool implementation.
-+ * @pool:	pool to evict from.
-+ * @handle:	handle to evict.
-+ *
-+ * This can be used by zpool implementations to call the
-+ * user's evict zpool_ops struct evict callback.
-+ */
-+int zpool_evict(void *pool, unsigned long handle);
-+
-+#endif
 diff --git a/mm/Kconfig b/mm/Kconfig
-index 7511b4a..00f7720 100644
+index 00f7720..5ae0016 100644
 --- a/mm/Kconfig
 +++ b/mm/Kconfig
-@@ -515,15 +515,17 @@ config CMA_DEBUG
- 	  processing calls such as dma_alloc_from_contiguous().
- 	  This option does not affect warning and error messages.
- 
--config ZBUD
--	tristate
--	default n
-+config MEM_SOFT_DIRTY
-+	bool "Track memory changes"
-+	depends on CHECKPOINT_RESTORE && HAVE_ARCH_SOFT_DIRTY && PROC_FS
-+	select PROC_PAGE_MONITOR
- 	help
--	  A special purpose allocator for storing compressed pages.
--	  It is designed to store up to two compressed pages per physical
--	  page.  While this design limits storage density, it has simple and
--	  deterministic reclaim properties that make it preferable to a higher
--	  density approach when reclaim will be used.
-+	  This option enables memory changes tracking by introducing a
-+	  soft-dirty bit on pte-s. This bit it set when someone writes
-+	  into a page just as regular dirty bit, but unlike the latter
-+	  it can be cleared by hands.
-+
-+	  See Documentation/vm/soft-dirty.txt for more details.
- 
- config ZSWAP
+@@ -531,7 +531,7 @@ config ZSWAP
  	bool "Compressed cache for swap pages (EXPERIMENTAL)"
-@@ -545,17 +547,22 @@ config ZSWAP
- 	  they have not be fully explored on the large set of potential
- 	  configurations and workloads that exist.
- 
--config MEM_SOFT_DIRTY
--	bool "Track memory changes"
--	depends on CHECKPOINT_RESTORE && HAVE_ARCH_SOFT_DIRTY && PROC_FS
--	select PROC_PAGE_MONITOR
-+config ZPOOL
-+	tristate "Common API for compressed memory storage"
-+	default n
+ 	depends on FRONTSWAP && CRYPTO=y
+ 	select CRYPTO_LZO
+-	select ZBUD
++	select ZPOOL
+ 	default n
  	help
--	  This option enables memory changes tracking by introducing a
--	  soft-dirty bit on pte-s. This bit it set when someone writes
--	  into a page just as regular dirty bit, but unlike the latter
--	  it can be cleared by hands.
-+	  Compressed memory storage API.  This allows using either zbud or
-+	  zsmalloc.
- 
--	  See Documentation/vm/soft-dirty.txt for more details.
-+config ZBUD
-+	tristate "Low density storage for compressed pages"
-+	default n
-+	help
-+	  A special purpose allocator for storing compressed pages.
-+	  It is designed to store up to two compressed pages per physical
-+	  page.  While this design limits storage density, it has simple and
-+	  deterministic reclaim properties that make it preferable to a higher
-+	  density approach when reclaim will be used.
- 
- config ZSMALLOC
- 	tristate "Memory allocator for compressed pages"
-diff --git a/mm/Makefile b/mm/Makefile
-index 2b6fff2..759db04 100644
---- a/mm/Makefile
-+++ b/mm/Makefile
-@@ -61,6 +61,7 @@ obj-$(CONFIG_DEBUG_KMEMLEAK_TEST) += kmemleak-test.o
- obj-$(CONFIG_CLEANCACHE) += cleancache.o
- obj-$(CONFIG_MEMORY_ISOLATION) += page_isolation.o
- obj-$(CONFIG_PAGE_OWNER) += pageowner.o
-+obj-$(CONFIG_ZPOOL)	+= zpool.o
- obj-$(CONFIG_ZBUD)	+= zbud.o
- obj-$(CONFIG_ZSMALLOC)	+= zsmalloc.o
- obj-$(CONFIG_GENERIC_EARLY_IOREMAP) += early_ioremap.o
-diff --git a/mm/zpool.c b/mm/zpool.c
-new file mode 100644
-index 0000000..578c379
---- /dev/null
-+++ b/mm/zpool.c
-@@ -0,0 +1,198 @@
-+/*
-+ * zpool memory storage api
-+ *
-+ * Copyright (C) 2014 Dan Streetman
-+ *
-+ * This is a common frontend for memory storage pool implementations.
-+ * Typically, this is used to store compressed memory.
-+ */
-+
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
-+#include <linux/list.h>
-+#include <linux/types.h>
-+#include <linux/mm.h>
-+#include <linux/slab.h>
-+#include <linux/spinlock.h>
-+#include <linux/module.h>
+ 	  A lightweight compressed cache for swap pages.  It takes
+diff --git a/mm/zswap.c b/mm/zswap.c
+index 1cc6770..67cf9d8 100644
+--- a/mm/zswap.c
++++ b/mm/zswap.c
+@@ -34,7 +34,7 @@
+ #include <linux/swap.h>
+ #include <linux/crypto.h>
+ #include <linux/mempool.h>
+-#include <linux/zbud.h>
 +#include <linux/zpool.h>
+ 
+ #include <linux/mm_types.h>
+ #include <linux/page-flags.h>
+@@ -45,8 +45,8 @@
+ /*********************************
+ * statistics
+ **********************************/
+-/* Number of memory pages used by the compressed pool */
+-static u64 zswap_pool_pages;
++/* Total bytes used by the compressed storage */
++static u64 zswap_pool_total_size;
+ /* The number of compressed pages currently stored in zswap */
+ static atomic_t zswap_stored_pages = ATOMIC_INIT(0);
+ 
+@@ -89,8 +89,13 @@ static unsigned int zswap_max_pool_percent = 20;
+ module_param_named(max_pool_percent,
+ 			zswap_max_pool_percent, uint, 0644);
+ 
+-/* zbud_pool is shared by all of zswap backend  */
+-static struct zbud_pool *zswap_pool;
++/* Compressed storage to use */
++#define ZSWAP_ZPOOL_DEFAULT "zbud"
++static char *zswap_zpool_type = ZSWAP_ZPOOL_DEFAULT;
++module_param_named(zpool, zswap_zpool_type, charp, 0444);
 +
-+struct zpool {
-+	char *type;
++/* zpool is shared by all of zswap backend  */
++static struct zpool *zswap_pool;
+ 
+ /*********************************
+ * compression functions
+@@ -168,7 +173,7 @@ static void zswap_comp_exit(void)
+  *            be held while changing the refcount.  Since the lock must
+  *            be held, there is no reason to also make refcount atomic.
+  * offset - the swap offset for the entry.  Index into the red-black tree.
+- * handle - zbud allocation handle that stores the compressed page data
++ * handle - zpool allocation handle that stores the compressed page data
+  * length - the length in bytes of the compressed page data.  Needed during
+  *          decompression
+  */
+@@ -284,15 +289,15 @@ static void zswap_rb_erase(struct rb_root *root, struct zswap_entry *entry)
+ }
+ 
+ /*
+- * Carries out the common pattern of freeing and entry's zbud allocation,
++ * Carries out the common pattern of freeing and entry's zpool allocation,
+  * freeing the entry itself, and decrementing the number of stored pages.
+  */
+ static void zswap_free_entry(struct zswap_entry *entry)
+ {
+-	zbud_free(zswap_pool, entry->handle);
++	zpool_free(zswap_pool, entry->handle);
+ 	zswap_entry_cache_free(entry);
+ 	atomic_dec(&zswap_stored_pages);
+-	zswap_pool_pages = zbud_get_pool_size(zswap_pool);
++	zswap_pool_total_size = zpool_get_total_size(zswap_pool);
+ }
+ 
+ /* caller must hold the tree lock */
+@@ -409,7 +414,7 @@ cleanup:
+ static bool zswap_is_full(void)
+ {
+ 	return totalram_pages * zswap_max_pool_percent / 100 <
+-		zswap_pool_pages;
++		DIV_ROUND_UP(zswap_pool_total_size, PAGE_SIZE);
+ }
+ 
+ /*********************************
+@@ -525,7 +530,7 @@ static int zswap_get_swap_cache_page(swp_entry_t entry,
+  * the swap cache, the compressed version stored by zswap can be
+  * freed.
+  */
+-static int zswap_writeback_entry(struct zbud_pool *pool, unsigned long handle)
++static int zswap_writeback_entry(struct zpool *pool, unsigned long handle)
+ {
+ 	struct zswap_header *zhdr;
+ 	swp_entry_t swpentry;
+@@ -541,9 +546,9 @@ static int zswap_writeback_entry(struct zbud_pool *pool, unsigned long handle)
+ 	};
+ 
+ 	/* extract swpentry from data */
+-	zhdr = zbud_map(pool, handle);
++	zhdr = zpool_map_handle(pool, handle, ZPOOL_MM_RO);
+ 	swpentry = zhdr->swpentry; /* here */
+-	zbud_unmap(pool, handle);
++	zpool_unmap_handle(pool, handle);
+ 	tree = zswap_trees[swp_type(swpentry)];
+ 	offset = swp_offset(swpentry);
+ 
+@@ -573,13 +578,13 @@ static int zswap_writeback_entry(struct zbud_pool *pool, unsigned long handle)
+ 	case ZSWAP_SWAPCACHE_NEW: /* page is locked */
+ 		/* decompress */
+ 		dlen = PAGE_SIZE;
+-		src = (u8 *)zbud_map(zswap_pool, entry->handle) +
+-			sizeof(struct zswap_header);
++		src = (u8 *)zpool_map_handle(zswap_pool, entry->handle,
++				ZPOOL_MM_RO) + sizeof(struct zswap_header);
+ 		dst = kmap_atomic(page);
+ 		ret = zswap_comp_op(ZSWAP_COMPOP_DECOMPRESS, src,
+ 				entry->length, dst, &dlen);
+ 		kunmap_atomic(dst);
+-		zbud_unmap(zswap_pool, entry->handle);
++		zpool_unmap_handle(zswap_pool, entry->handle);
+ 		BUG_ON(ret);
+ 		BUG_ON(dlen != PAGE_SIZE);
+ 
+@@ -652,7 +657,7 @@ static int zswap_frontswap_store(unsigned type, pgoff_t offset,
+ 	/* reclaim space if needed */
+ 	if (zswap_is_full()) {
+ 		zswap_pool_limit_hit++;
+-		if (zbud_reclaim_page(zswap_pool, 8)) {
++		if (zpool_shrink(zswap_pool, 1, NULL)) {
+ 			zswap_reject_reclaim_fail++;
+ 			ret = -ENOMEM;
+ 			goto reject;
+@@ -679,7 +684,7 @@ static int zswap_frontswap_store(unsigned type, pgoff_t offset,
+ 
+ 	/* store */
+ 	len = dlen + sizeof(struct zswap_header);
+-	ret = zbud_alloc(zswap_pool, len, &handle);
++	ret = zpool_malloc(zswap_pool, len, &handle);
+ 	if (ret == -ENOSPC) {
+ 		zswap_reject_compress_poor++;
+ 		goto freepage;
+@@ -688,11 +693,11 @@ static int zswap_frontswap_store(unsigned type, pgoff_t offset,
+ 		zswap_reject_alloc_fail++;
+ 		goto freepage;
+ 	}
+-	zhdr = zbud_map(zswap_pool, handle);
++	zhdr = zpool_map_handle(zswap_pool, handle, ZPOOL_MM_RW);
+ 	zhdr->swpentry = swp_entry(type, offset);
+ 	buf = (u8 *)(zhdr + 1);
+ 	memcpy(buf, dst, dlen);
+-	zbud_unmap(zswap_pool, handle);
++	zpool_unmap_handle(zswap_pool, handle);
+ 	put_cpu_var(zswap_dstmem);
+ 
+ 	/* populate entry */
+@@ -715,7 +720,7 @@ static int zswap_frontswap_store(unsigned type, pgoff_t offset,
+ 
+ 	/* update stats */
+ 	atomic_inc(&zswap_stored_pages);
+-	zswap_pool_pages = zbud_get_pool_size(zswap_pool);
++	zswap_pool_total_size = zpool_get_total_size(zswap_pool);
+ 
+ 	return 0;
+ 
+@@ -751,13 +756,13 @@ static int zswap_frontswap_load(unsigned type, pgoff_t offset,
+ 
+ 	/* decompress */
+ 	dlen = PAGE_SIZE;
+-	src = (u8 *)zbud_map(zswap_pool, entry->handle) +
+-			sizeof(struct zswap_header);
++	src = (u8 *)zpool_map_handle(zswap_pool, entry->handle,
++			ZPOOL_MM_RO) + sizeof(struct zswap_header);
+ 	dst = kmap_atomic(page);
+ 	ret = zswap_comp_op(ZSWAP_COMPOP_DECOMPRESS, src, entry->length,
+ 		dst, &dlen);
+ 	kunmap_atomic(dst);
+-	zbud_unmap(zswap_pool, entry->handle);
++	zpool_unmap_handle(zswap_pool, entry->handle);
+ 	BUG_ON(ret);
+ 
+ 	spin_lock(&tree->lock);
+@@ -810,7 +815,7 @@ static void zswap_frontswap_invalidate_area(unsigned type)
+ 	zswap_trees[type] = NULL;
+ }
+ 
+-static struct zbud_ops zswap_zbud_ops = {
++static struct zpool_ops zswap_zpool_ops = {
+ 	.evict = zswap_writeback_entry
+ };
+ 
+@@ -868,8 +873,8 @@ static int __init zswap_debugfs_init(void)
+ 			zswap_debugfs_root, &zswap_written_back_pages);
+ 	debugfs_create_u64("duplicate_entry", S_IRUGO,
+ 			zswap_debugfs_root, &zswap_duplicate_entry);
+-	debugfs_create_u64("pool_pages", S_IRUGO,
+-			zswap_debugfs_root, &zswap_pool_pages);
++	debugfs_create_u64("pool_total_size", S_IRUGO,
++			zswap_debugfs_root, &zswap_pool_total_size);
+ 	debugfs_create_atomic_t("stored_pages", S_IRUGO,
+ 			zswap_debugfs_root, &zswap_stored_pages);
+ 
+@@ -894,17 +899,26 @@ static void __exit zswap_debugfs_exit(void) { }
+ **********************************/
+ static int __init init_zswap(void)
+ {
++	gfp_t gfp = __GFP_NORETRY | __GFP_NOWARN;
 +
-+	struct zpool_driver *driver;
-+	void *pool;
-+	struct zpool_ops *ops;
-+
-+	struct list_head list;
-+};
-+
-+static LIST_HEAD(drivers_head);
-+static DEFINE_SPINLOCK(drivers_lock);
-+
-+static LIST_HEAD(pools_head);
-+static DEFINE_SPINLOCK(pools_lock);
-+
-+void zpool_register_driver(struct zpool_driver *driver)
-+{
-+	spin_lock(&drivers_lock);
-+	list_add(&driver->list, &drivers_head);
-+	spin_unlock(&drivers_lock);
-+}
-+EXPORT_SYMBOL(zpool_register_driver);
-+
-+void zpool_unregister_driver(struct zpool_driver *driver)
-+{
-+	spin_lock(&drivers_lock);
-+	list_del(&driver->list);
-+	spin_unlock(&drivers_lock);
-+}
-+EXPORT_SYMBOL(zpool_unregister_driver);
-+
-+int zpool_evict(void *pool, unsigned long handle)
-+{
-+	struct zpool *zpool;
-+
-+	spin_lock(&pools_lock);
-+	list_for_each_entry(zpool, &pools_head, list) {
-+		if (zpool->pool == pool) {
-+			spin_unlock(&pools_lock);
-+			if (!zpool->ops || !zpool->ops->evict)
-+				return -EINVAL;
-+			return zpool->ops->evict(zpool, handle);
-+		}
+ 	if (!zswap_enabled)
+ 		return 0;
+ 
+ 	pr_info("loading zswap\n");
+ 
+-	zswap_pool = zbud_create_pool(__GFP_NORETRY | __GFP_NOWARN,
+-			&zswap_zbud_ops);
++	zswap_pool = zpool_create_pool(zswap_zpool_type, gfp, &zswap_zpool_ops);
++	if (!zswap_pool && strcmp(zswap_zpool_type, ZSWAP_ZPOOL_DEFAULT)) {
++		pr_info("%s zpool not available\n", zswap_zpool_type);
++		zswap_zpool_type = ZSWAP_ZPOOL_DEFAULT;
++		zswap_pool = zpool_create_pool(zswap_zpool_type, gfp,
++					       &zswap_zpool_ops);
 +	}
-+	spin_unlock(&pools_lock);
-+
-+	return -ENOENT;
-+}
-+EXPORT_SYMBOL(zpool_evict);
-+
-+static struct zpool_driver *zpool_get_driver(char *type)
-+{
-+	struct zpool_driver *driver;
-+
-+	assert_spin_locked(&drivers_lock);
-+	list_for_each_entry(driver, &drivers_head, list) {
-+		if (!strcmp(driver->type, type))
-+			return driver;
-+	}
-+
-+	return NULL;
-+}
-+
-+struct zpool *zpool_create_pool(char *type, gfp_t flags,
-+			struct zpool_ops *ops)
-+{
-+	struct zpool_driver *driver;
-+	struct zpool *zpool;
-+
-+	pr_info("creating pool type %s\n", type);
-+
-+	spin_lock(&drivers_lock);
-+	driver = zpool_get_driver(type);
-+	spin_unlock(&drivers_lock);
-+
-+	if (!driver) {
-+		request_module(type);
-+		spin_lock(&drivers_lock);
-+		driver = zpool_get_driver(type);
-+		spin_unlock(&drivers_lock);
-+	}
-+
-+	if (!driver) {
-+		pr_err("no driver for type %s\n", type);
-+		return NULL;
-+	}
-+
-+	zpool = kmalloc(sizeof(*zpool), GFP_KERNEL);
-+	if (!zpool) {
-+		pr_err("couldn't create zpool - out of memory\n");
-+		return NULL;
-+	}
-+
-+	zpool->type = driver->type;
-+	zpool->driver = driver;
-+	zpool->pool = driver->create(flags, ops);
-+	zpool->ops = ops;
-+
-+	if (!zpool->pool) {
-+		pr_err("couldn't create %s pool\n", type);
-+		kfree(zpool);
-+		return NULL;
-+	}
-+
-+	pr_info("created %s pool\n", type);
-+
-+	spin_lock(&pools_lock);
-+	list_add(&zpool->list, &pools_head);
-+	spin_unlock(&pools_lock);
-+
-+	return zpool;
-+}
-+
-+void zpool_destroy_pool(struct zpool *zpool)
-+{
-+	pr_info("destroying pool type %s\n", zpool->type);
-+
-+	spin_lock(&pools_lock);
-+	list_del(&zpool->list);
-+	spin_unlock(&pools_lock);
-+	zpool->driver->destroy(zpool->pool);
-+	kfree(zpool);
-+}
-+
-+char *zpool_get_type(struct zpool *zpool)
-+{
-+	return zpool->type;
-+}
-+
-+int zpool_malloc(struct zpool *zpool, size_t size, unsigned long *handle)
-+{
-+	return zpool->driver->malloc(zpool->pool, size, handle);
-+}
-+
-+void zpool_free(struct zpool *zpool, unsigned long handle)
-+{
-+	zpool->driver->free(zpool->pool, handle);
-+}
-+
-+int zpool_shrink(struct zpool *zpool, unsigned int pages,
-+			unsigned int *reclaimed)
-+{
-+	return zpool->driver->shrink(zpool->pool, pages, reclaimed);
-+}
-+
-+void *zpool_map_handle(struct zpool *zpool, unsigned long handle,
-+			enum zpool_mapmode mapmode)
-+{
-+	return zpool->driver->map(zpool->pool, handle, mapmode);
-+}
-+
-+void zpool_unmap_handle(struct zpool *zpool, unsigned long handle)
-+{
-+	zpool->driver->unmap(zpool->pool, handle);
-+}
-+
-+u64 zpool_get_total_size(struct zpool *zpool)
-+{
-+	return zpool->driver->total_size(zpool->pool);
-+}
-+
-+static int __init init_zpool(void)
-+{
-+	pr_info("loaded\n");
-+	return 0;
-+}
-+
-+static void __exit exit_zpool(void)
-+{
-+	pr_info("unloaded\n");
-+}
-+
-+module_init(init_zpool);
-+module_exit(exit_zpool);
-+
-+MODULE_LICENSE("GPL");
-+MODULE_AUTHOR("Dan Streetman <ddstreet@ieee.org>");
-+MODULE_DESCRIPTION("Common API for compressed memory storage");
+ 	if (!zswap_pool) {
+-		pr_err("zbud pool creation failed\n");
++		pr_err("%s zpool not available\n", zswap_zpool_type);
++		pr_err("zpool creation failed\n");
+ 		goto error;
+ 	}
++	pr_info("using %s pool\n", zswap_zpool_type);
+ 
+ 	if (zswap_entry_cache_create()) {
+ 		pr_err("entry cache creation failed\n");
+@@ -928,7 +942,7 @@ pcpufail:
+ compfail:
+ 	zswap_entry_cache_destory();
+ cachefail:
+-	zbud_destroy_pool(zswap_pool);
++	zpool_destroy_pool(zswap_pool);
+ error:
+ 	return -ENOMEM;
+ }
 -- 
 1.8.3.1
 
