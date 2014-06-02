@@ -1,56 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753051AbaFBA1J (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jun 2014 20:27:09 -0400
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:40659 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751434AbaFBA1H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jun 2014 20:27:07 -0400
-From: James A Shackleford <shack@linux.com>
-To: forest@alittletooquiet.net, gregkh@linuxfoundation.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Cc: James A Shackleford <shack@linux.com>
-Subject: [PATCH] staging: vt6655: fix sparse warning for static declarations
-Date: Sun,  1 Jun 2014 20:26:55 -0400
-Message-Id: <1401668815-18807-1-git-send-email-shack@linux.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1753369AbaFBA14 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jun 2014 20:27:56 -0400
+Received: from gate.crashing.org ([63.228.1.57]:36429 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751879AbaFBA1z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Jun 2014 20:27:55 -0400
+Message-ID: <1401668861.14938.125.camel@pasglop>
+Subject: [git pull] Please pull powerpc.git merge branch
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Date: Mon, 02 Jun 2014 10:27:41 +1000
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes the following sparse warnings:
+Hi Linus !
 
-dpc.c:65:21: warning: symbol 'acbyRxRate' was not declared. Should it be static?
-dpc.c:272:9: warning: symbol 'MngWorkItem' was not declared. Should it be static?
-dpc.c:288:1: warning: symbol 'device_receive_frame' was not declared. Should it be static?
+Here's just one trivial patch to wire up sys_renameat2 which I
+seem to have completely missed so far. (My test build scripts fwd me
+warnings but miss the ones generated for missing syscalls).
 
-Signed-off-by: James A Shackleford <shack@linux.com>
----
- drivers/staging/vt6655/dpc.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+Cheers,
+Ben.
 
-diff --git a/drivers/staging/vt6655/dpc.c b/drivers/staging/vt6655/dpc.c
-index 7ddaf26..696564b 100644
---- a/drivers/staging/vt6655/dpc.c
-+++ b/drivers/staging/vt6655/dpc.c
-@@ -54,6 +54,7 @@
- #include "rf.h"
- #include "iowpa.h"
- #include "aes_ccmp.h"
-+#include "dpc.h"
- 
- /*---------------------  Static Definitions -------------------------*/
- 
-@@ -62,7 +63,7 @@
- /*---------------------  Static Variables  --------------------------*/
- static int msglevel = MSG_LEVEL_INFO;
- 
--const unsigned char acbyRxRate[MAX_RATE] =
-+static const unsigned char acbyRxRate[MAX_RATE] =
- {2, 4, 11, 22, 12, 18, 24, 36, 48, 72, 96, 108};
- 
- /*---------------------  Static Functions  --------------------------*/
--- 
-1.7.9.5
+The following changes since commit 011e4b02f1da156ac7fea28a9da878f3c23af739:
+
+  powerpc, kexec: Fix "Processor X is stuck" issue during kexec from ST mode (2014-05-28 13:24:26 +1000)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git merge
+
+for you to fetch changes up to 8212f58a9b151d842fa60a70f354e43c61fad839:
+
+  powerpc: Wire renameat2() syscall (2014-06-02 09:24:27 +1000)
+
+----------------------------------------------------------------
+Benjamin Herrenschmidt (1):
+      powerpc: Wire renameat2() syscall
+
+ arch/powerpc/include/asm/systbl.h      | 1 +
+ arch/powerpc/include/asm/unistd.h      | 2 +-
+ arch/powerpc/include/uapi/asm/unistd.h | 1 +
+ 3 files changed, 3 insertions(+), 1 deletion(-)
+
 
