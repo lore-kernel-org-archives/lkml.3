@@ -1,113 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754621AbaFBMgn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 08:36:43 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:24336 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754516AbaFBMgk (ORCPT
+	id S1754579AbaFBMgh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 08:36:37 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:50830 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754516AbaFBMgf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 08:36:40 -0400
-X-AuditID: cbfee61a-b7fef6d00000200b-69-538c6fd5c7da
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: Kukjin Kim <kgene.kim@samsung.com>
-Cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        b.zolnierkie@samsung.com
-Subject: [PATCH v2 3/7] ARM: EXYNOS: add AFTR mode support to firmware do_idle
- method
-Date: Mon, 02 Jun 2014 14:35:39 +0200
-Message-id: <1401712543-14281-4-git-send-email-b.zolnierkie@samsung.com>
-X-Mailer: git-send-email 1.7.10.4
-In-reply-to: <1401712543-14281-1-git-send-email-b.zolnierkie@samsung.com>
-References: <1401712543-14281-1-git-send-email-b.zolnierkie@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCLMWRmVeSWpSXmKPExsVy+t9jQd1r+T3BBof62Sw2zljPajHvs6xF
-	74KrbBZnm96wW7w/9IzZYtPja6wWl3fNYbP43HuE0WLG+X1MFmdOX2K1OPmnl9Fi/YzXLBYb
-	v3o48HrcubaHzWPzknqP2/8eM3tsudrO4tG3ZRWjx+dNcgFsUVw2Kak5mWWpRfp2CVwZZ1eu
-	YS5Yx1+xbe5b9gbGSzxdjJwcEgImEhu6r7JA2GISF+6tZ+ti5OIQEpjOKLGg9xU7hNPFJPH8
-	33t2kCo2ASuJie2rGEFsEQE1iZ7FWxlBipgF9jJLLO3eBFTEwSEsEC5xf3EBSA2LgKrE/uXr
-	mEBsXgEPiQXnF0JtU5TofjaBDcTmFPCUWHnvISuILQRUs+/VLqYJjLwLGBlWMYqmFiQXFCel
-	5xrqFSfmFpfmpesl5+duYgSH5TOpHYwrGywOMQpwMCrx8P5U7wkWYk0sK67MPcQowcGsJMK7
-	1AIoxJuSWFmVWpQfX1Sak1p8iFGag0VJnPdAq3WgkEB6YklqdmpqQWoRTJaJg1OqgVHjRib/
-	PZ9Gi2xVc8780nXfJ/9u+GdwR+zv82dfTbMu7V4quTrr6/3ybSd4p8QenqL11o2F/2D666MC
-	Nh/9TWL2abgnKuZ4dSzMvPxh+7xyidQoPrWtqYrFmksvxd0/foxfeOlM/Txtq2nHZfUiUwtO
-	Z7in7bQ3PF/4kOfa5dlMzQc9Ent/TFBiKc5INNRiLipOBAAOMZcFRwIAAA==
+	Mon, 2 Jun 2014 08:36:35 -0400
+Date: Mon, 2 Jun 2014 13:35:22 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Chew Chiau Ee <chiau.ee.chew@intel.com>
+Cc: Eric Miao <eric.y.miao@gmail.com>, Russell King <linux@arm.linux.org.uk>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Darren Hart <dvhart@linux.intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, linux-spi@vger.kernel.org,
+        devicetree@vger.kernel.org
+Message-ID: <20140602123522.GB31751@sirena.org.uk>
+References: <1401738379-4107-1-git-send-email-chiau.ee.chew@intel.com>
+ <1401738379-4107-3-git-send-email-chiau.ee.chew@intel.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="pvezYHf7grwyp3Bc"
+Content-Disposition: inline
+In-Reply-To: <1401738379-4107-3-git-send-email-chiau.ee.chew@intel.com>
+X-Cookie: Big book, big bore.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 92.40.249.174
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 2/2] clkdev: Export clk_register_clkdev
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On some platforms (i.e. EXYNOS ones) more than one idle mode is
-available and we need to distinguish them in firmware do_idle method.
 
-Add mode parameter to do_idle firmware method and AFTR mode support
-to EXYNOS do_idle implementation.
+--pvezYHf7grwyp3Bc
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-This change is a preparation for adding secure firmware support to
-EXYNOS cpuidle driver.
+On Tue, Jun 03, 2014 at 03:46:19AM +0800, Chew Chiau Ee wrote:
+> From: Darren Hart <dvhart@linux.intel.com>
+>=20
+> Allow spi-pxa2xx-pci with common clock framework support to build as a
+> module by exporting clk_register_clkdev.
 
-This patch shouldn't cause any functionality changes (please note
-that do_idle firmware method is unused currently).
+This needs to be patch 1 in the series not patch 2 since the change to
+the driver to use the exported symbol depends on this rather than the
+other way around.
 
-Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
----
- arch/arm/include/asm/firmware.h |  7 ++++++-
- arch/arm/mach-exynos/firmware.c | 10 ++++++++--
- 2 files changed, 14 insertions(+), 3 deletions(-)
+--pvezYHf7grwyp3Bc
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-diff --git a/arch/arm/include/asm/firmware.h b/arch/arm/include/asm/firmware.h
-index 70883c7..63989c3 100644
---- a/arch/arm/include/asm/firmware.h
-+++ b/arch/arm/include/asm/firmware.h
-@@ -28,7 +28,7 @@ struct firmware_ops {
- 	/*
- 	 * Enters CPU idle mode
- 	 */
--	int (*do_idle)(void);
-+	int (*do_idle)(int mode);
- 	/*
- 	 * Sets boot address of specified physical CPU
- 	 */
-@@ -47,6 +47,11 @@ struct firmware_ops {
- 	int (*c15resume)(u32 *regs);
- };
- 
-+enum {
-+	FW_DO_IDLE_NORMAL,
-+	FW_DO_IDLE_AFTR,
-+};
-+
- /* Global pointer for current firmware_ops structure, can't be NULL. */
- extern const struct firmware_ops *firmware_ops;
- 
-diff --git a/arch/arm/mach-exynos/firmware.c b/arch/arm/mach-exynos/firmware.c
-index 195b65c..3a34132 100644
---- a/arch/arm/mach-exynos/firmware.c
-+++ b/arch/arm/mach-exynos/firmware.c
-@@ -21,9 +21,15 @@
- #include "common.h"
- #include "smc.h"
- 
--static int exynos_do_idle(void)
-+static int exynos_do_idle(int mode)
- {
--	exynos_smc(SMC_CMD_SLEEP, 0, 0, 0);
-+	switch (mode) {
-+	case FW_DO_IDLE_AFTR:
-+		exynos_smc(SMC_CMD_CPU0AFTR, 0, 0, 0);
-+		break;
-+	case FW_DO_IDLE_NORMAL:
-+		exynos_smc(SMC_CMD_SLEEP, 0, 0, 0);
-+	}
- 	return 0;
- }
- 
--- 
-1.8.2.3
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
+iQIcBAEBAgAGBQJTjG+HAAoJELSic+t+oim9HHsP/08oE9na1O2jrrSlDv/FlZfR
+jHpg1GrlAsBY3fAAZ+yjzySmCtU7Iu4poyF9uCOoJyVNXMvZB4SCKoQEKyeHeIN/
+FEemINkUJy8i3W/RFbbhi5Gu65LX9fsirHPtzfpM7Lt/ENZxjpnccOfAKeLyc3/G
+2FNh6yPC76rW7WSxAZke3pVP15cSN/F6bN/5EevJytW+OyfBILfRMpD7NQ3We3oT
+Z3NfSfHMv19nWOOWunxnJPXCBE5PjgaxntclPPxVDBkiZSQbmbsHgw9QFMfXbPx4
+5Ie4DGLB4PbNUgYaaB1O2NwnNWs5glD/w/O259EFE0fpKNcpeN1n4lYbRjyTrTx+
+HS0yA7Oq3nYWGX9z9N4IOgsiNll8E2q4EqCI4ntMwkcBTU2kzBVq6ZDoMgTVq1SI
+r8Im5ToQQpABmiL3ji12QNSazeR2rwQcoAlPSRD6A+Ca1aXNQEE0/U8+6gqL45eZ
+jCEpY0LGDsCC+vco0mOPs/OpplMcy4Q2N7CjaPQV+dJyAhFmQMNMNY2hufK62Nzv
+sg+rYtwgk2JF1f4bF+oz+YFSV0RrAM2nSszgbfPctRvKud/Ju2exLkZLxwt3O+Dp
+hro2+q422BhwtdOTHnqmqmOF78xpcef2Wh1b9WAgEsWPc9HE8YzwYoP27bmuURfA
+k78vRy+ZGFHwO3deWtF+
+=EOo3
+-----END PGP SIGNATURE-----
+
+--pvezYHf7grwyp3Bc--
