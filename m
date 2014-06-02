@@ -1,83 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932276AbaFBOPw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 10:15:52 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:43395 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932173AbaFBOPs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 10:15:48 -0400
-Message-ID: <538C8712.20809@kernel.dk>
-Date: Mon, 02 Jun 2014 08:15:46 -0600
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S932304AbaFBOQN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 10:16:13 -0400
+Received: from mail.kernel.org ([198.145.19.201]:48687 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932284AbaFBOQL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 10:16:11 -0400
+Date: Mon, 2 Jun 2014 11:16:06 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Jonathan Corbet <corbet@lwn.net>, Alexei Starovoitov <ast@plumgrid.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Ingo Molnar <mingo@kernel.org>, Daniel Borkmann <dborkman@redhat.com>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Jiri Olsa <jolsa@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 net-next 0/2] split BPF out of core networking
+Message-ID: <20140602141606.GC2544@kernel.org>
+References: <1401692506-7796-1-git-send-email-ast@plumgrid.com>
+ <20140602081545.7baf4a91@lwn.net>
+ <20140602092456.2114440a@gandalf.local.home>
 MIME-Version: 1.0
-To: Rusty Russell <rusty@rustcorp.com.au>, Ming Lei <ming.lei@canonical.com>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH] block: virtio_blk: don't hold spin lock during world
- switch
-References: <1401418169-3361-1-git-send-email-ming.lei@canonical.com> <5387F8B2.1070509@kernel.dk> <CACVXFVPoG6_fL_MTRF+616W7UdHpSgjtMLBLeBn4OGR63haw3w@mail.gmail.com> <5387FC96.4030508@kernel.dk> <877g537q6d.fsf@rustcorp.com.au> <53888D08.1050602@kernel.dk> <87sino5cl2.fsf@rustcorp.com.au>
-In-Reply-To: <87sino5cl2.fsf@rustcorp.com.au>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140602092456.2114440a@gandalf.local.home>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-06-01 19:23, Rusty Russell wrote:
-> Jens Axboe <axboe@kernel.dk> writes:
->> On 2014-05-30 00:10, Rusty Russell wrote:
->>> Jens Axboe <axboe@kernel.dk> writes:
->>>> If Rusty agrees, I'd like to add it for 3.16 with a stable marker.
->>>
->>> Really stable?  It improves performance, which is nice.  But every patch
->>> which goes into the kernel fixes a bug, improves clarity, improves
->>> performance or adds a feature.  I've now seen all four cases get CC'd
->>> into stable.
->>>
->>> Including some of mine explicitly not marked stable which get swept up
->>> by enthusiastic stable maintainers :(
->>>
->>> Is now there *any* patch short of a major rewrite which shouldn't get
->>> cc: stable?
->>
->> I agree that there's sometimes an unfortunate trend there. I didn't
->> check, but my assumption was that this is a regression after the blk-mq
->> conversion, in which case I do think it belongs in stable.
->
-> No, it's always been that way.  In the original driver the entire "issue
-> requests" function was under the lock.
- >
- > It was your mq conversion which made this optimization possible, and
- > also made it an optimization: now other the queues can continue while
- > this one is going.
+Em Mon, Jun 02, 2014 at 09:24:56AM -0400, Steven Rostedt escreveu:
+> On Mon, 2 Jun 2014 08:15:45 -0500
+> Jonathan Corbet <corbet@lwn.net> wrote:
+ 
+> > On Mon,  2 Jun 2014 00:01:44 -0700
+> > Alexei Starovoitov <ast@plumgrid.com> wrote:
 
-Ah, I stand corrected, you are right. I had this recollection that the 
-prepare and kick where separate before as well, but apparently just bad 
-memory.
+> > > This patch set splits BPF out of core networking into generic component
 
->> But in any case, I think the patch is obviously correct and the wins are
->> sufficiently large to warrant a stable inclusion even if it isn't a
->> regression.
->
-> If you're running SMP under an emulator where exits are expensive, then
-> this wins.  Under KVM it's marginal at best.
->
-> Locking changes which are "obviously correct" make me nervous, too :)
+> > Quick, probably dumb question: if you're going to split it out, why not
+> > split it out entirely, into kernel/ or (perhaps better) lib/?  The
+> > whole point seems to be that BPF is outgrowing its networking home, so
+> > it seems like it might be better to make it truly generic.
+ 
+> I believe this is what Ingo suggested as well. If it is become generic,
+> it belongs in lib/
 
-I tend to agree. But I think this one is simple enough to warrant doing 
-it, when the performance increase is as large as it is.
+Yes, that was his suggestion, which I agree with, FWIW.
 
-> But IIRC last KS the argument is that not *enough* is going into stable,
-> not that stable isn't stable enough.  So maybe it's a non-problem?
-
-In principle, pushing the patch to stable definitely isn't an issue with 
-the stable crew. And yes, they apparently do want more stuff. If you 
-look at it from the distro side, having a stable(r) repository is a no 
-brainer. And they'd want to pick this patch anyway, so...
-
--- 
-Jens Axboe
-
+- Arnaldo
