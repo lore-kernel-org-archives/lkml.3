@@ -1,72 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752198AbaFBRef (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 13:34:35 -0400
-Received: from mga14.intel.com ([192.55.52.115]:7089 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751063AbaFBRed (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 13:34:33 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,958,1392192000"; 
-   d="scan'208";a="541345755"
-Date: Mon, 2 Jun 2014 20:34:08 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: Yao Jin <yao.jin@intel.com>, Aubrey Li <aubrey.li@intel.com>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] i2c: designware: No need to disable already disabled
- controller
-Message-ID: <20140602173408.GB1730@lahna.fi.intel.com>
-References: <1400164644-3222-1-git-send-email-mika.westerberg@linux.intel.com>
- <1400164644-3222-2-git-send-email-mika.westerberg@linux.intel.com>
- <20140602161234.GG2654@katana>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140602161234.GG2654@katana>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1752273AbaFBRem (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 13:34:42 -0400
+Received: from smtprelay0076.hostedemail.com ([216.40.44.76]:60533 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751063AbaFBRek (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 13:34:40 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::::::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1431:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2198:2199:2393:2553:2559:2562:2731:2828:2892:3138:3139:3140:
+X-HE-Tag: arch21_4539527ef3d0d
+X-Filterd-Recvd-Size: 2615
+Message-ID: <1401730474.5770.24.camel@joe-AO725>
+Subject: Re: [PATCH RFC 1/2] MAINTAINERS: Add "R:" designated-reviewers tag
+From: Joe Perches <joe@perches.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, dhowells@redhat.com,
+        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
+        oleg@redhat.com, sbw@mit.edu
+Date: Mon, 02 Jun 2014 10:34:34 -0700
+In-Reply-To: <20140602132905.0bdbe49b@gandalf.local.home>
+References: <1401728420-3572-1-git-send-email-paulmck@linux.vnet.ibm.com>
+	 <1401729778.5770.20.camel@joe-AO725>
+	 <20140602132905.0bdbe49b@gandalf.local.home>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 02, 2014 at 06:12:34PM +0200, Wolfram Sang wrote:
-> On Thu, May 15, 2014 at 05:37:21PM +0300, Mika Westerberg wrote:
-> > If the controller is already in desired state (enabled/disabled) there is
-> > no point in setting its state again.
-> > 
-> > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> > ---
-> 
-> Does it have a side-effect when setting then enable bit again? Otherwise
-> it will exit the loop immediately on the first try. Not too bad IMO
-> given the additional code saved.
+On Mon, 2014-06-02 at 13:29 -0400, Steven Rostedt wrote:
+> On Mon, 02 Jun 2014 10:22:58 -0700 Joe Perches <joe@perches.com> wrote:
+> > > Paul Walmsley also noted the need for patch
+> > > submitters to know who the key reviewers are and suggested adding an
+> > > "R:" tag to the MAINTAINERS file to record this information on a
+> > > per-subsystem basis.
+[]
+> > Why not just mark the actual reviewers as maintainers?
+[]
+> If you have a person that regularly reviews a patch and wants to be
+> Cc'd on all of them, then why not add them to MAINTAINERS?
 
-AFAICT there shouldn't be any side effect. So the $subject patch just
-saves one register write in the best case. You are right, maybe it's not
-worth adding 3 extra lines of code just for that :)
+So we agree on that.
+ 
+> > > diff --git a/MAINTAINERS b/MAINTAINERS
+> > []
+> > > @@ -73,6 +73,8 @@ Descriptions of section entries:
+> > >  	L: Mailing list that is relevant to this area
+> > >  	W: Web-page with status/info
+> > >  	Q: Patchwork web based patch tracking system site
+> > > +	R: Designated reviewer, who should be CCed on patches,
+> > > +	   format: FullName <address@domain>
+> > >  	T: SCM tree type and location.
+> > >  	   Type is one of: git, hg, quilt, stgit, topgit
+> > >  	S: Status, one of the following:
+> > 
+> > If this is actually done, I suggest putting this
+> > "R" entry description immediately after the "M" entry.
+[]
+> Or perhaps after L:
 
-> 
-> >  drivers/i2c/busses/i2c-designware-core.c | 4 ++++
-> >  1 file changed, 4 insertions(+)
-> > 
-> > diff --git a/drivers/i2c/busses/i2c-designware-core.c b/drivers/i2c/busses/i2c-designware-core.c
-> > index b58ecf19e767..b0792675b970 100644
-> > --- a/drivers/i2c/busses/i2c-designware-core.c
-> > +++ b/drivers/i2c/busses/i2c-designware-core.c
-> > @@ -258,6 +258,10 @@ static void __i2c_dw_enable(struct dw_i2c_dev *dev, bool enable)
-> >  {
-> >  	int timeout = 100;
-> >  
-> > +	/* In case the controller is already in desired state */
-> > +	if ((dw_readl(dev, DW_IC_ENABLE_STATUS) & 1) == enable)
-> > +		return;
-> > +
-> >  	do {
-> >  		dw_writel(dev, enable, DW_IC_ENABLE);
-> >  		if ((dw_readl(dev, DW_IC_ENABLE_STATUS) & 1) == enable)
-> > -- 
-> > 2.0.0.rc2
-> > 
+Either would be fine as long as the order is the same
+in the actual subsystem section entries that follow.
 
 
