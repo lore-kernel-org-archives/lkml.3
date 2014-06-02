@@ -1,42 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754004AbaFBLbW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 07:31:22 -0400
-Received: from mail-qg0-f53.google.com ([209.85.192.53]:37457 "EHLO
-	mail-qg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752843AbaFBLbU convert rfc822-to-8bit (ORCPT
+	id S1754130AbaFBLcc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 07:32:32 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:46862 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752784AbaFBLcb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 07:31:20 -0400
+	Mon, 2 Jun 2014 07:32:31 -0400
+Date: Mon, 2 Jun 2014 04:32:28 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Bart Van Assche <bvanassche@acm.org>
+Cc: Jens Axboe <axboe@kernel.dk>, Kent Overstreet <kmo@daterainc.com>,
+        Shaohua Li <shli@kernel.org>, Christoph Hellwig <hch@infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RFC] block: Eliminate first argument of submit_bio()
+Message-ID: <20140602113228.GA26951@infradead.org>
+References: <538C4767.5050207@acm.org>
 MIME-Version: 1.0
-In-Reply-To: <1401705066-2808-1-git-send-email-catalin.marinas@arm.com>
-References: <1401705066-2808-1-git-send-email-catalin.marinas@arm.com>
-Date: Mon, 2 Jun 2014 12:31:20 +0100
-Message-ID: <CAL01qpuXkAw+87vZ-j4c3tu5qyj7sPdJXA+F4aP-O_XPpc=5JA@mail.gmail.com>
-Subject: Re: [PATCH] efi: Fix compiler warnings (unused, const, type)
-From: "Fleming, Matt" <matt.fleming@intel.com>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <538C4767.5050207@acm.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2 June 2014 11:31, Catalin Marinas <catalin.marinas@arm.com> wrote:
-> This patch fixes a few compiler warning in the efi code for unused
-> variable, discarding const qualifier and wrong pointer type:
->
-> drivers/firmware/efi/fdt.c|66 col 22| warning: unused variable ‘name’ [-Wunused-variable]
-> drivers/firmware/efi/efi.c|368 col 3| warning: passing argument 3 of ‘of_get_flat_dt_prop’ from incompatible pointer type [enabled by default]
-> drivers/firmware/efi/efi.c|368 col 8| warning: assignment discards ‘const’ qualifier from pointer target type [enabled by default]
->
-> Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-> ---
->
-> Matt,
->
-> Unless you have fixed these already, please consider applying (warnings in
-> latest next/master branch).
+On Mon, Jun 02, 2014 at 11:44:07AM +0200, Bart Van Assche wrote:
+> The submit_bio() API is confusing. Merge functions like
+> raid5_mergeable_bvec() can only work correctly if bi_rw is set
+> before bio_add_page() has been called. submit_bio() modifies
+> bi_rw after bio_add_page() has been called. Hence remove the
+> first argument of submit_bio() and let the caller set bi_rw.
+> Note: some but not all submit_bio() callers have been fixed
+> such that bi_rw is set before bio_add_page() is called.
 
-Thanks, applied to arm64-efi.
+I like this a lot!
+
