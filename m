@@ -1,54 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752708AbaFBROL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 13:14:11 -0400
-Received: from mailrelay004.isp.belgacom.be ([195.238.6.170]:25362 "EHLO
-	mailrelay004.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751084AbaFBROK (ORCPT
+	id S1753762AbaFBROU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 13:14:20 -0400
+Received: from smtprelay0217.hostedemail.com ([216.40.44.217]:52616 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752960AbaFBROR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 13:14:10 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApEOADGwjFNbtAfK/2dsb2JhbABZgwdSqwsBAQEBAQUBmBuBFRd0gwIjgRo3iEYBzmYXhVWIfR2EKgSaAIE+iV2IEoF4gUI7
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>, Andy Whitcroft <apw@canonical.com>,
-        Joe Perches <joe@perches.com>
-Subject: [PATCH 1/1] scripts/checkpatch.pl: device_initcall is not the only __initcall substitute
-Date: Mon,  2 Jun 2014 19:12:51 +0200
-Message-Id: <1401729171-7298-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.8.4.5
+	Mon, 2 Jun 2014 13:14:17 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:1801:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3871:3872:4321:4605:5007:7652:7903:9040:10004:10400:10848:11232:11658:11914:12043:12296:12517:12519:12663:12740:13019:13069:13071:13163:13229:13255:13311:13357:21060,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: wish08_24e6f974c975a
+X-Filterd-Recvd-Size: 1818
+Message-ID: <1401729252.5770.13.camel@joe-AO725>
+Subject: Re: [PATCH] fix some coding style problem in
+ drivers/staging/iio/frequency/ad9832.c
+From: Joe Perches <joe@perches.com>
+To: Federico Di Pierro <nierro92@gmail.com>
+Cc: jic23@kernel.org, gregkh@linuxfoundation.org, jg1.han@samsung.com,
+        sachin.kamat@linaro.org, linux-iio@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Date: Mon, 02 Jun 2014 10:14:12 -0700
+In-Reply-To: <538CAEBD.5040501@gmail.com>
+References: <538CAEBD.5040501@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a link to init.h to find accurate initcall function
-to replace obsolete __initcall
+On Mon, 2014-06-02 at 19:05 +0200, Federico Di Pierro wrote:
+> Hi!
 
-Cc: Andy Whitcroft <apw@canonical.com>
-Cc: Joe Perches <joe@perches.com>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- scripts/checkpatch.pl | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Hello Federico.
 
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 34eb216..c981298 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -4443,10 +4443,10 @@ sub process {
- 			     "$1 is obsolete, use k$3 instead\n" . $herecurr);
- 		}
+> This is my latest task of the eudyptula challenge.
+
+Your patch subject should be something like:
+
+[PATCH] staging: iio: kernel style neatening
+
+> Just a very small patch! It fixes 3 little coding style problems.
+> I'm using linux-next.
+
+linux/drivers/staging/iio/frequency/ad9832.c
+[]
+@@ -73,7 +73,7 @@ static int ad9832_write_phase(struct ad9
+ }
  
--# check for __initcall(), use device_initcall() explicitly please
-+# check for __initcall(), use device_initcall() explicitly or more accurate function please
- 		if ($line =~ /^.\s*__initcall\s*\(/) {
- 			WARN("USE_DEVICE_INITCALL",
--			     "please use device_initcall() instead of __initcall()\n" . $herecurr);
-+			     "please use device_initcall() or more accurate function instead of __initcall() (see include/linux/init.h)\n" . $herecurr);
- 		}
- 
- # check for various ops structs, ensure they are const.
--- 
-1.8.4.5
+ static ssize_t ad9832_write(struct device *dev,
+-               struct device_attribute *attr,
++                           struct device_attribute *attr,
+                const char *buf,
+                size_t len)
+
+
+checkpatch is a brainless little tool.
+
+Please make sure your own brain is engaged when
+acting on or verifying any warnings it emits.
+
+Please expand the indented line range to include
+all the arguments of the function.
+
+
 
