@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751580AbaFBFEr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 01:04:47 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:42828 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751109AbaFBFEq (ORCPT
+	id S1751870AbaFBFHF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 01:07:05 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:64135 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750702AbaFBFHD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 01:04:46 -0400
-Date: Mon, 2 Jun 2014 14:03:58 +0900
+	Mon, 2 Jun 2014 01:07:03 -0400
+Date: Mon, 2 Jun 2014 14:06:15 +0900
 From: Daeseok Youn <daeseok.youn@gmail.com>
 To: lidza.louina@gmail.com, gregkh@linuxfoundation.org
 Cc: markh@compro.net, dan.carpenter@oracle.com,
         driverdev-devel@linuxdriverproject.org, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 1/6 RESEND] staging: dgap: remove useless dgap_probe1()
- function
-Message-ID: <20140602050358.GA29799@devel.8.8.4.4>
+Subject: [PATCH 2/6 RESEND] staging: dgap: unwind on error in
+ dgap_found_board()
+Message-ID: <20140602050554.GA29895@devel.8.8.4.4>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -24,50 +24,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The dgap_probe1() function is just calling dgap_found_board().
-So it is removed and dgap_found_board() is called directly.
+Adds a label for "kfree(brd)". And also remove
+a state value as BOARD_FAILED in brd when dgap_do_remap() is failed.
+Because "brd" will free after failure.
 
 Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
 ---
-RESEND : this patch is included into newly serise of patches
-so renumbered and resend.
+RESEND: this patch is included into newly series of patches.
 
- drivers/staging/dgap/dgap.c |    8 +-------
- 1 files changed, 1 insertions(+), 7 deletions(-)
+ drivers/staging/dgap/dgap.c |   19 ++++++++++++++-----
+ 1 files changed, 14 insertions(+), 5 deletions(-)
 
 diff --git a/drivers/staging/dgap/dgap.c b/drivers/staging/dgap/dgap.c
-index 170d6f3..af78f6f 100644
+index af78f6f..5556a6e 100644
 --- a/drivers/staging/dgap/dgap.c
 +++ b/drivers/staging/dgap/dgap.c
-@@ -76,7 +76,6 @@ static void dgap_poll_handler(ulong dummy);
- static int dgap_init_pci(void);
- static int dgap_init_one(struct pci_dev *pdev, const struct pci_device_id *ent);
- static void dgap_remove_one(struct pci_dev *dev);
--static int dgap_probe1(struct pci_dev *pdev, int card_type);
- static int dgap_do_remap(struct board_t *brd);
- static irqreturn_t dgap_intr(int irq, void *voidbrd);
+@@ -673,6 +673,7 @@ static int dgap_found_board(struct pci_dev *pdev, int id)
+ 	struct board_t *brd;
+ 	unsigned int pci_irq;
+ 	int i;
++	int ret;
  
-@@ -577,7 +576,7 @@ static int dgap_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
- 	if (rc)
- 		return -EIO;
+ 	/* get the board structure and prep it */
+ 	brd = kzalloc(sizeof(struct board_t), GFP_KERNEL);
+@@ -728,8 +729,10 @@ static int dgap_found_board(struct pci_dev *pdev, int id)
+ 		brd->membase_end = pci_resource_end(pdev, 0);
+ 	}
  
--	rc = dgap_probe1(pdev, ent->driver_data);
-+	rc = dgap_found_board(pdev, ent->driver_data);
- 	if (rc)
- 		return rc;
+-	if (!brd->membase)
+-		return -ENODEV;
++	if (!brd->membase) {
++		ret = -ENODEV;
++		goto free_brd;
++	}
  
-@@ -585,11 +584,6 @@ static int dgap_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
- 	return dgap_firmware_load(pdev, ent->driver_data);
+ 	if (brd->membase & 1)
+ 		brd->membase &= ~3;
+@@ -770,14 +773,20 @@ static int dgap_found_board(struct pci_dev *pdev, int id)
+ 	tasklet_init(&brd->helper_tasklet, dgap_poll_tasklet,
+ 			(unsigned long) brd);
+ 
+-	i = dgap_do_remap(brd);
+-	if (i)
+-		brd->state = BOARD_FAILED;
++	ret = dgap_do_remap(brd);
++	if (ret)
++		goto free_brd;
+ 
+ 	pr_info("dgap: board %d: %s (rev %d), irq %ld\n",
+ 		dgap_numboards, brd->name, brd->rev, brd->irq);
+ 
+ 	return 0;
++
++free_brd:
++	kfree(brd);
++	dgap_board[dgap_numboards] = NULL;
++
++	return ret;
  }
  
--static int dgap_probe1(struct pci_dev *pdev, int card_type)
--{
--	return dgap_found_board(pdev, card_type);
--}
--
- static void dgap_remove_one(struct pci_dev *dev)
- {
- 	/* Do Nothing */
+ 
 -- 
 1.7.1
 
