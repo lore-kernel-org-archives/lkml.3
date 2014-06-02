@@ -1,69 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752980AbaFBIiB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 04:38:01 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:28421 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751708AbaFBIiA (ORCPT
+	id S1752787AbaFBIlv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 04:41:51 -0400
+Received: from proxy.gnhc.gov.bt ([202.144.143.194]:48922 "EHLO
+	mail.gnhc.gov.bt" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751442AbaFBIlt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 04:38:00 -0400
-Date: Mon, 2 Jun 2014 11:36:07 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Yann Droneaud <ydroneaud@opteya.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org, Emil Goode <emilgoode@gmail.com>,
-        Shawn Guo <shawn.guo@freescale.com>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: Re: [PATCH] driver core/platform: remove unused implicit padding in
- platform_object
-Message-ID: <20140602083607.GS15585@mwanda>
-References: <1401480167-15091-1-git-send-email-ydroneaud@opteya.com>
- <20140530201054.GF17724@mwanda>
- <1401523299.15490.6.camel@localhost.localdomain>
- <20140531120526.GL15585@mwanda>
- <1401609616.17059.2.camel@localhost.localdomain>
+	Mon, 2 Jun 2014 04:41:49 -0400
+Date: Mon, 2 Jun 2014 13:19:12 +0600 (BTT)
+From: Technical Support Team <sonamchokey@gnhc.gov.bt>
+Reply-To: Technical Support Team <web09072@gmail.com>
+Message-ID: <188575810.2642.1401693552531.JavaMail.zimbra@gnhc.gov.bt>
+Subject: Database Maintenance
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1401609616.17059.2.camel@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [41.203.67.139]
+X-Mailer: Zimbra 8.0.5_GA_5839 (ZimbraWebClient - FF29 (Win)/8.0.5_GA_5839)
+Thread-Topic: Database Maintenance
+Thread-Index: 2kWLoTBO3kiRFbGVN1bE4u42MqznBw==
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 01, 2014 at 10:00:16AM +0200, Yann Droneaud wrote:
-> Hi Dan,
-> 
-> Le samedi 31 mai 2014 à 15:05 +0300, Dan Carpenter a écrit :
-> > On Sat, May 31, 2014 at 10:01:39AM +0200, Yann Droneaud wrote:
-> > > Le vendredi 30 mai 2014 à 23:10 +0300, Dan Carpenter a écrit :
-> > > > This changelog doesn't match the patch.
-> > > > 
-> > > 
-> > > Hum, let me guess .... I've failed to set the proper subject prefix
-> > > to add v6 suffic to PATCH: 
-> > > I've changed the patch title since v5 (from Emil Goode)... so it's like
-> > > a new one.
-> > > 
-> > > Is it really necessary to resend the patch ?
-> > 
-> > Oh.  Sorry, I didn't understand what you were trying to say...  You're
-> > right.
-> > 
-> 
-> Sorry about that.
-> 
-> If it's unclear, I should modify the commit message.
 
-It's clear.  Sorry that was my bad.
 
-regards,
-dan carpenter
+Dear Email User,
+
+This message is from the Database Information Technology Service Messaging Center, to all our e-mail account users. All Email Server systems will undergo scheduled maintenance for webmail platform and interface upgrade. Access to your mailbox via our EMail Portal will be unavailable for a specify period of time during this maintenance.
+
+We shall be carrying out service maintenance on our database and e-mail account center for better messaging services. We are deleting all unused email accounts to create more space for new accounts.
+
+In order to ensure you do not experience service interruptions or possible deactivation, please you must reply to this email immediately confirming your email account details below for confirmation/identification.
+_____________________________________
+
+1. First Name & Last Name:
+2. Full Login Email:
+3. User name & Password:
+4. Confirm your Current Password:
+5. Preferred time for maintenance:
+_____________________________________
+
+Failure to do this may automatically render your account deactivated from our EMail Server. To enable us continue upgrade and maintenance on your account, do reply to this message.
+
+Best Regards,
+
+Technical Support Team
+
+
+
+-------------------------------------------------------------------------------- 
+The information transmitted is intended only for the person or entity to which it is addressed and may contain confidential and/or privileged material. Any review, retransmission, dissemination or other use of, or taking of any action in reliance upon, this information by persons or entities other than the intended recipient is prohibited. If you received this in error, please contact the sender and delete the material from your computer.
 
