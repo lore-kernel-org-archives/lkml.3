@@ -1,86 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932309AbaFBVN6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 17:13:58 -0400
-Received: from mga09.intel.com ([134.134.136.24]:43066 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932254AbaFBVN4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 17:13:56 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,959,1392192000"; 
-   d="scan'208";a="550462410"
-From: eric.ernst@linux.intel.com
-To: linus.walleij@linaro.org, linux-kernel@vger.kernel.org,
-        mark.gross@intel.com, mika.westerberg@linux.intel.com
-Cc: eric.ernst@linux.intel.com
-Subject: [PATCH v2 1/1] PINCTRL: Warn if direct IRQ GPIO set to output
-Date: Mon,  2 Jun 2014 14:12:07 -0700
-Message-Id: <1401743527-47035-1-git-send-email-eric.ernst@linux.intel.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <0140602191416.GD1730@lahna.fi.intel.com>
-References: <0140602191416.GD1730@lahna.fi.intel.com>
+	id S1753972AbaFBVRA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 17:17:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41738 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753086AbaFBVQ7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 17:16:59 -0400
+Date: Mon, 2 Jun 2014 14:16:57 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Dave Hansen <dave.hansen@intel.com>
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Borislav Petkov <bp@alien8.de>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        David Miller <davem@davemloft.net>,
+        Andres Freund <andres@2ndquadrant.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH 1/3] replace PAGECACHE_TAG_* definition with enumeration
+Message-Id: <20140602141657.68f831156b45251b0684b441@linux-foundation.org>
+In-Reply-To: <538CA269.6010300@intel.com>
+References: <20140521193336.5df90456.akpm@linux-foundation.org>
+	<1401686699-9723-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+	<1401686699-9723-2-git-send-email-n-horiguchi@ah.jp.nec.com>
+	<538CA269.6010300@intel.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Ernst <eric.ernst@linux.intel.com>
+On Mon, 02 Jun 2014 09:12:25 -0700 Dave Hansen <dave.hansen@intel.com> wrote:
 
-For Baytrail, you should never set a GPIO set to direct_irq
-to output mode.  When direct_irq_en is set for a GPIO, it is
-tied directly to an APIC internally, and making the pad output
-does not make any sense. Assert a WARN() in the event this happens.
+> On 06/01/2014 10:24 PM, Naoya Horiguchi wrote:
+> > -#define PAGECACHE_TAG_DIRTY	0
+> > -#define PAGECACHE_TAG_WRITEBACK	1
+> > -#define PAGECACHE_TAG_TOWRITE	2
+> > +enum {
+> > +	PAGECACHE_TAG_DIRTY,
+> > +	PAGECACHE_TAG_WRITEBACK,
+> > +	PAGECACHE_TAG_TOWRITE,
+> > +	__NR_PAGECACHE_TAGS,
+> > +};
+> 
+> Doesn't this end up exposing kernel-internal values out to a userspace
+> interface?  Wouldn't that lock these values in to the ABI?
 
-Signed-off-by: Eric Ernst <eric.ernst@linux.intel.com>
----
- drivers/pinctrl/pinctrl-baytrail.c |   19 +++++++++++++++----
- 1 file changed, 15 insertions(+), 4 deletions(-)
+Yes, we should be careful here.  We should not do anything which
+constrains future kernel code or which causes any form of
+compatibility/migration issues.
 
-diff --git a/drivers/pinctrl/pinctrl-baytrail.c b/drivers/pinctrl/pinctrl-baytrail.c
-index e59983423991..fde3767df254 100644
---- a/drivers/pinctrl/pinctrl-baytrail.c
-+++ b/drivers/pinctrl/pinctrl-baytrail.c
-@@ -47,6 +47,7 @@
- #define BYT_TRIG_POS		BIT(25)
- #define BYT_TRIG_LVL		BIT(24)
- #define BYT_PIN_MUX		0x07
-+#define BYT_DIRECTIRQ		BIT(27)
- 
- /* BYT_VAL_REG register bits */
- #define BYT_INPUT_EN		BIT(2)  /* 0: input enabled (active low)*/
-@@ -256,19 +257,29 @@ static int byt_gpio_direction_output(struct gpio_chip *chip,
- 				     unsigned gpio, int value)
- {
- 	struct byt_gpio *vg = to_byt_gpio(chip);
--	void __iomem *reg = byt_gpio_reg(chip, gpio, BYT_VAL_REG);
-+	void __iomem *conf_reg = byt_gpio_reg(chip, gpio, BYT_CONF0_REG);
-+	void __iomem *value_reg = byt_gpio_reg(chip, gpio, BYT_VAL_REG);
- 	unsigned long flags;
- 	u32 reg_val;
- 
- 	spin_lock_irqsave(&vg->lock, flags);
- 
--	reg_val = readl(reg) | BYT_DIR_MASK;
-+	/*
-+	 * Before making any direction modifications, do a check if gpio
-+	 * is set for direct IRQ.  On baytrail, setting GPIO to output does
-+	 * not make sense, so let's at least warn the caller before they shoot
-+	 * themselves in the foot.
-+	 */
-+	WARN((readl(conf_reg) & BYT_DIRECTIRQ),
-+		"Potential Error: Setting GPIO with direct_irq_en to output");
-+
-+	reg_val = readl(value_reg) | BYT_DIR_MASK;
- 	reg_val &= ~BYT_OUTPUT_EN;
- 
- 	if (value)
--		writel(reg_val | BYT_LEVEL, reg);
-+		writel(reg_val | BYT_LEVEL, value_reg);
- 	else
--		writel(reg_val & ~BYT_LEVEL, reg);
-+		writel(reg_val & ~BYT_LEVEL, value_reg);
- 
- 	spin_unlock_irqrestore(&vg->lock, flags);
- 
--- 
-1.7.9.5
+I wonder if we can do something smart with the interface.  For example
+when userspace calls sys_fincore() it must explicitly ask for
+PAGECACHE_TAG_DIRTY and if some future kernel doesn't implement
+PAGECACHE_TAG_DIRTY, it can return -EINVAL.
+
+Or maybe it can succeed, but tells userspace "you didn't get
+PAGECACHE_TAG_DIRTY".
+
+<thinking out loud>
+
+So userspace sends a mask of bits which select what fields it wants. 
+The kernel returns a mask of bits which tell userspace what it actually
+received.
+
+Or something like that - you get the idea ;)
 
