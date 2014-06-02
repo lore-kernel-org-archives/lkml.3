@@ -1,83 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755554AbaFBQr0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 12:47:26 -0400
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:40292 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752278AbaFBQrY convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 12:47:24 -0400
+	id S1755650AbaFBQsG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 12:48:06 -0400
+Received: from mga09.intel.com ([134.134.136.24]:58888 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753551AbaFBQsE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 12:48:04 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,957,1392192000"; 
+   d="scan'208";a="550310497"
+Message-ID: <538CAA13.2080708@intel.com>
+Date: Mon, 02 Jun 2014 09:45:07 -0700
+From: Dave Hansen <dave.hansen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <538C2C49.9060000@vodafone.de>
-References: <1401577805-4609-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-	<538C2C49.9060000@vodafone.de>
-Date: Mon, 2 Jun 2014 18:47:23 +0200
-Message-ID: <CAFo99gZNzKhYbGHksdKNb35YO4tA+4jdk4m5aBO812ujQPBz8w@mail.gmail.com>
-Subject: Re: [PATCH] gpu: drm: radeon: r600_cp.c: Cleaning up uninitialized variables
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: =?UTF-8?Q?Christian_K=C3=B6nig?= <deathsimple@vodafone.de>
-Cc: Alex Deucher <alexander.deucher@amd.com>,
-        =?UTF-8?Q?Christian_K=C3=B6nig?= <christian.koenig@amd.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+CC: akpm@linux-foundation.org, koct9i@gmail.com, fengguang.wu@intel.com,
+        acme@redhat.com, bp@alien8.de, kirill@shutemov.name,
+        hannes@cmpxchg.org, rusty@rustcorp.com.au, davem@davemloft.net,
+        andres@2ndquadrant.com, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH 1/3] replace PAGECACHE_TAG_* definition with enumeration
+References: <20140521193336.5df90456.akpm@linux-foundation.org> <1401686699-9723-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1401686699-9723-2-git-send-email-n-horiguchi@ah.jp.nec.com> <538CA269.6010300@intel.com> <1401727052-f7v7kykv@n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1401727052-f7v7kykv@n-horiguchi@ah.jp.nec.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On 06/02/2014 09:37 AM, Naoya Horiguchi wrote:
+> On Mon, Jun 02, 2014 at 09:12:25AM -0700, Dave Hansen wrote:
+>> > On 06/01/2014 10:24 PM, Naoya Horiguchi wrote:
+>>> > > -#define PAGECACHE_TAG_DIRTY	0
+>>> > > -#define PAGECACHE_TAG_WRITEBACK	1
+>>> > > -#define PAGECACHE_TAG_TOWRITE	2
+>>> > > +enum {
+>>> > > +	PAGECACHE_TAG_DIRTY,
+>>> > > +	PAGECACHE_TAG_WRITEBACK,
+>>> > > +	PAGECACHE_TAG_TOWRITE,
+>>> > > +	__NR_PAGECACHE_TAGS,
+>>> > > +};
+>> > 
+>> > Doesn't this end up exposing kernel-internal values out to a userspace
+>> > interface?  Wouldn't that lock these values in to the ABI?
+> Yes, that would. I hope these PAGECACHE_TAG_* stuff is very basic
+> things and will never change drastically in the future (only added),
+> so it's unlikely to bother people about ABI breakage things.
 
-Thanks for your response!
-
-No, it does not sound like it's worth changing anything.
-Although in the worst case with this patch you probably have a more
-consistent error :)
-
-
-
-Best regards
-Rickard Strandqvist
-
-
-2014-06-02 9:48 GMT+02:00 Christian König <deathsimple@vodafone.de>:
-> Am 01.06.2014 01:10, schrieb Rickard Strandqvist:
->
->> There is a risk that the variable will be used without being initialized.
->>
->> This was largely found by using a static code analysis program called
->> cppcheck.
->>
->> Signed-off-by: Rickard Strandqvist
->> <rickard_strandqvist@spectrumdigital.se>
->
->
-> On the one hand it looks like a valid fix to me, but on the other hand the
-> r600_cp.c code is deprecated for something like five years now.
->
-> I would like to avoid touching it in any way and just let it rest peacefully
-> until we can remove it entirely.
->
-> Christian.
->
->
->> ---
->>   drivers/gpu/drm/radeon/r600_cp.c |    2 +-
->>   1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/drivers/gpu/drm/radeon/r600_cp.c
->> b/drivers/gpu/drm/radeon/r600_cp.c
->> index 8c9b7e2..0770ad6 100644
->> --- a/drivers/gpu/drm/radeon/r600_cp.c
->> +++ b/drivers/gpu/drm/radeon/r600_cp.c
->> @@ -2615,7 +2615,7 @@ int r600_cs_legacy_ioctl(struct drm_device *dev,
->> void *data, struct drm_file *fp
->>         struct drm_radeon_cs *cs = data;
->>         struct drm_buf *buf;
->>         unsigned family;
->> -       int l, r = 0;
->> +       int l = 0, r = 0;
->>         u32 *ib, cs_id = 0;
->>         if (dev_priv == NULL) {
->
->
+OK, so if I'm writing a userspace program, which header do I include
+pull these values in to my program?
