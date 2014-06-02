@@ -1,116 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932106AbaFBTkv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 15:40:51 -0400
-Received: from exprod5og105.obsmtp.com ([64.18.0.180]:53708 "HELO
-	exprod5og105.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752924AbaFBTjD (ORCPT
+	id S932150AbaFBTk4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 15:40:56 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:40281 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932118AbaFBTky (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 15:39:03 -0400
-From: Iyappan Subramanian <isubramanian@apm.com>
-To: davem@davemloft.net, netdev@vger.kernel.org, devicetree@vger.kernel.org
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, jcm@redhat.com, patches@apm.com,
-        Iyappan Subramanian <isubramanian@apm.com>,
-        Ravi Patel <rapatel@apm.com>, Keyur Chudgar <kchudgar@apm.com>
-Subject: [PATCH v5 2/4] Documentation: dts: Add bindings for APM X-Gene SoC ethernet driver
-Date: Mon,  2 Jun 2014 12:39:12 -0700
-Message-Id: <1401737954-26152-3-git-send-email-isubramanian@apm.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1401737954-26152-1-git-send-email-isubramanian@apm.com>
-References: <1401737954-26152-1-git-send-email-isubramanian@apm.com>
+	Mon, 2 Jun 2014 15:40:54 -0400
+Message-ID: <538CD336.4080103@infradead.org>
+Date: Mon, 02 Jun 2014 12:40:38 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Joe Perches <joe@perches.com>, paulmck@linux.vnet.ibm.com
+CC: josh@joshtriplett.org, linux-kernel@vger.kernel.org, mingo@kernel.org,
+        laijs@cn.fujitsu.com, dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
+        oleg@redhat.com, sbw@mit.edu
+Subject: Re: [PATCH RFC 1/2] MAINTAINERS: Add "R:" designated-reviewers tag
+References: <1401728420-3572-1-git-send-email-paulmck@linux.vnet.ibm.com>	 <1401729778.5770.20.camel@joe-AO725> <20140602174837.GA13257@cloud>	 <1401731968.7323.4.camel@joe-AO725>	 <20140602181658.GX22231@linux.vnet.ibm.com> <20140602185635.GB13569@cloud>	 <20140602190821.GZ22231@linux.vnet.ibm.com> <20140602191155.GB13648@cloud>	 <20140602192729.GB22231@linux.vnet.ibm.com> <1401737782.7323.31.camel@joe-AO725>
+In-Reply-To: <1401737782.7323.31.camel@joe-AO725>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds documentation for APM X-Gene SoC ethernet DTS binding.
+On 06/02/2014 12:36 PM, Joe Perches wrote:
+> On Mon, 2014-06-02 at 12:27 -0700, Paul E. McKenney wrote:
+>> On Mon, Jun 02, 2014 at 12:11:55PM -0700, josh@joshtriplett.org wrote:
+>>>
+>>> I'd suggest adding Mathieu Desnoyers, Oleg Nesterov, and Lai Jiangshan
+>>> as reviewers as well, with their consent.
+>>
+>> Mathieu, Oleg, Lai, any objections?
+> 
+> I suggest not going overboard with R entries.
+> If there are more than 1 or 2, create a mailing list.
 
-Signed-off-by: Iyappan Subramanian <isubramanian@apm.com>
-Signed-off-by: Ravi Patel <rapatel@apm.com>
-Signed-off-by: Keyur Chudgar <kchudgar@apm.com>
----
- .../devicetree/bindings/net/apm-xgene-enet.txt     |   72 ++++++++++++++++++++
- 1 file changed, 72 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/net/apm-xgene-enet.txt
+Yes, much better on the patch sender(s) to Cc: 1 or 2 people or lists
+than to have to copy/paste 5 or 6 email addresses.
 
-diff --git a/Documentation/devicetree/bindings/net/apm-xgene-enet.txt b/Documentation/devicetree/bindings/net/apm-xgene-enet.txt
-new file mode 100644
-index 0000000..3e2a295
---- /dev/null
-+++ b/Documentation/devicetree/bindings/net/apm-xgene-enet.txt
-@@ -0,0 +1,72 @@
-+APM X-Gene SoC Ethernet nodes
-+
-+Ethernet nodes are defined to describe on-chip ethernet interfaces in
-+APM X-Gene SoC.
-+
-+Required properties:
-+- compatible:		Should be "apm,xgene-enet"
-+- reg: Address and length of the register set for the device. It contains the
-+       information of registers in the same order as described by reg-names
-+- reg-names: Should contain the register set names
-+  "enet_csr":		Ethernet control and status register address space
-+  "ring_csr":		Descriptor ring control and status register address space
-+  "ring_cmd":		Descriptor ring command register address space
-+- interrupts:		Ethernet main interrupt
-+- clocks:		Reference to the clock entry.
-+- local-mac-address:	MAC address assigned to this device
-+- phy-connection-type:	Interface type between ethernet device and PHY device
-+- phy-handle:		Reference to a PHY node connected to this device
-+
-+- mdio: 		Device tree subnode with the following required
-+			properties:
-+
-+	- compatible: Must be "apm,xgene-mdio".
-+	- #address-cells: Must be <1>.
-+	- #size-cells: Must be <0>.
-+
-+	For the phy on the mdio bus, there must be a node with the following
-+	fields:
-+
-+	- compatible: PHY identifier.  Please refer ./phy.txt for the format.
-+	- reg: The ID number for the phy.
-+
-+Optional properties:
-+- status		: Should be "ok" or "disabled" for enabled/disabled.
-+			  Default is "ok".
-+
-+
-+Example:
-+	menetclk: menetclk {
-+		compatible = "apm,xgene-device-clock";
-+		clock-output-names = "menetclk";
-+		status = "ok";
-+	};
-+
-+	menet: ethernet@17020000 {
-+		compatible = "apm,xgene-enet";
-+		status = "disabled";
-+		reg = <0x0 0x17020000 0x0 0xd100>,
-+		      <0x0 0X17030000 0x0 0X400>,
-+		      <0x0 0X10000000 0x0 0X200>;
-+		reg-names = "enet_csr", "ring_csr", "ring_cmd";
-+		interrupts = <0x0 0x3c 0x4>;
-+		clocks = <&menetclk 0>;
-+		local-mac-address = [00 01 73 00 00 01];
-+		phy-connection-type = "rgmii";
-+		phy-handle = <&menetphy>;
-+		mdio {
-+			compatible = "apm,xgene-mdio";
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+			menetphy: menetphy@3 {
-+				compatible = "ethernet-phy-id001c.c915";
-+				reg = <0x3>;
-+			};
-+
-+		};
-+	};
-+
-+/* Board-specific peripheral configurations */
-+&menet {
-+        status = "ok";
-+};
+> And more entries will just make the churn and name-decay
+> in MAINTAINERS that much more prevalent.
+> 
+> None of those people have any significant
+> quantities of commit entries for rcu
+
 -- 
-1.7.9.5
-
+~Randy
