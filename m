@@ -1,75 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754503AbaFBL6W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 07:58:22 -0400
-Received: from imap.thunk.org ([74.207.234.97]:45234 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754112AbaFBL6U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 07:58:20 -0400
-Date: Mon, 2 Jun 2014 07:57:37 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Nicolas Pitre <nicolas.pitre@linaro.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, joseph@codesourcery.com,
-        john.stultz@linaro.org, hch@infradead.org, tglx@linutronix.de,
-        geert@linux-m68k.org, lftan@altera.com, linux-fsdevel@vger.kernel.org,
-        xfs@oss.sgi.com
-Subject: Re: [RFC 11/32] xfs: convert to struct inode_time
-Message-ID: <20140602115737.GB14276@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Arnd Bergmann <arnd@arndb.de>,
-	Nicolas Pitre <nicolas.pitre@linaro.org>,
-	"H. Peter Anvin" <hpa@zytor.com>,
-	Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
-	linux-arch@vger.kernel.org, joseph@codesourcery.com,
-	john.stultz@linaro.org, hch@infradead.org, tglx@linutronix.de,
-	geert@linux-m68k.org, lftan@altera.com,
-	linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com
-References: <1401480116-1973111-1-git-send-email-arnd@arndb.de>
- <8618458.1EVJCoVbkH@wuerfel>
- <alpine.LFD.2.11.1406012121430.17310@knanqh.ubzr>
- <4178301.j9kWdGCRLC@wuerfel>
+	id S1754544AbaFBL6p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 07:58:45 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:52993 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754519AbaFBL6o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 07:58:44 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: linaro-kernel@lists.linaro.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, arvind.chauhan@arm.com,
+        edubezval@gmail.com, pavel@ucw.cz, lgirdwood@gmail.com,
+        broonie@kernel.org
+Subject: Re: [PATCH V2 1/3] regulator: return -EINVAL from regulator_set_voltage() for !CONFIG_REGULATOR
+Date: Mon, 02 Jun 2014 14:15:58 +0200
+Message-ID: <5936444.Yl1Pz41PpD@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <788accde56086078d69d3eba0d913114315de43a.1401693980.git.viresh.kumar@linaro.org>
+References: <788accde56086078d69d3eba0d913114315de43a.1401693980.git.viresh.kumar@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4178301.j9kWdGCRLC@wuerfel>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 02, 2014 at 12:56:42PM +0200, Arnd Bergmann wrote:
+On Monday, June 02, 2014 12:59:23 PM Viresh Kumar wrote:
+> Currently regulator_set_voltage() returns zero when support for regulators isn't
+> present in kernel, i.e. CONFIG_REGULATOR=n.
 > 
-> I think you misunderstood what I suggested: the intent is to avoid
-> seeing things break in 2038 by making them break much earlier. We have
-> a solution for ext2 file systems, it's called ext4, and we just need
-> to ensure that everybody knows they have to migrate eventually.
+> Make it return -EINVAL to propagate error instead of success here.
+> Audit of all users of this routine is done to make sure nothing breaks due to
+> this change.
 > 
-> At some point before the mid 2030ies, you should no longer be able to
-> build a kernel that has support for ext2 or any other module that will
-> run into bugs later....
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 
-Even for ext4, it's not quite so simple as that.  You only have
-support for times post 2038 if you are using an inode size > 128
-bytes.  There are a very, very large number of machines which even
-today, are using 128 byte inodes with ext4 for performance reasons.
+Well, I'd say this patch series is for Mark and I'm fine with patch [3/3].
 
-The vast majority of those machines which I know of can probably move
-to 256 byte inodes relatively easily, since hard drive replacement
-cycles are order 5-6 years tops, so I'm not that concerned, but it
-just goes to show this is a very complicated problem.
+Thanks!
 
-And even if we're talking about flash and embedded devices, the good
-news is if you assume that 10 years is enough time for people to
-update their embedded OS builds, and that the vast majority of
-deployed devices will probably only be in service for 10-15 years, we
-do have enough time to make file system format changes, although
-admittedly we can't afford to dilly-dally.
+> ---
+> V1->V2: - New patch as suggested by Mark.
+> 
+>  include/linux/regulator/consumer.h | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/include/linux/regulator/consumer.h b/include/linux/regulator/consumer.h
+> index 1a4a8c1..28fa089 100644
+> --- a/include/linux/regulator/consumer.h
+> +++ b/include/linux/regulator/consumer.h
+> @@ -394,7 +394,7 @@ static inline void regulator_bulk_free(int num_consumers,
+>  static inline int regulator_set_voltage(struct regulator *regulator,
+>  					int min_uV, int max_uV)
+>  {
+> -	return 0;
+> +	return -EINVAL;
+>  }
+>  
+>  static inline int regulator_get_voltage(struct regulator *regulator)
+> 
 
-Regards,
-
-					- Ted
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
