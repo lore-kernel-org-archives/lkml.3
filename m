@@ -1,176 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753730AbaFBJbm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 05:31:42 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:52921 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753237AbaFBJbk (ORCPT
+	id S1753812AbaFBJb6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 05:31:58 -0400
+Received: from mail-qa0-f45.google.com ([209.85.216.45]:38636 "EHLO
+	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753386AbaFBJb4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 05:31:40 -0400
-Date: Mon, 2 Jun 2014 02:30:20 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Hugh Dickins <hughd@google.com>, Dave Jones <davej@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: sleeping function warning from __put_anon_vma
-In-Reply-To: <20140601193240.GF16155@laptop.programming.kicks-ass.net>
-Message-ID: <alpine.LSU.2.11.1406020216240.1177@eggly.anvils>
-References: <20140530000944.GA29942@redhat.com> <alpine.LSU.2.11.1405311321340.10272@eggly.anvils> <20140601193240.GF16155@laptop.programming.kicks-ass.net>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+	Mon, 2 Jun 2014 05:31:56 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20140530132324.757076ca@canb.auug.org.au>
+References: <20140530132324.757076ca@canb.auug.org.au>
+Date: Mon, 2 Jun 2014 11:31:55 +0200
+Message-ID: <CAPDyKFqp=quWV17MGZfvgZA-J_KPsWkza184+bjez_MQpOx6Xg@mail.gmail.com>
+Subject: Re: linux-next: build failure after merge of the mmc tree
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Chris Ball <chris@printf.net>, Mike Turquette <mturquette@linaro.org>
+Cc: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        =?UTF-8?Q?David_Lanzend=C3=B6rfer?= <david.lanzendoerfer@o2s.ch>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Hans de Goede <hdegoede@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 1 Jun 2014, Peter Zijlstra wrote:
-> On Sat, May 31, 2014 at 01:33:13PM -0700, Hugh Dickins wrote:
-> > [PATCH] mm: fix sleeping function warning from __put_anon_vma
-> > 
-> > Trinity reports BUG:
-> > sleeping function called from invalid context at kernel/locking/rwsem.c:47
-> > in_atomic(): 0, irqs_disabled(): 0, pid: 5787, name: trinity-c27
-> > __might_sleep < down_write < __put_anon_vma < page_get_anon_vma <
-> > migrate_pages < compact_zone < compact_zone_order < try_to_compact_pages ..
-> > 
-> > Right, since conversion to mutex then rwsem, we should not put_anon_vma()
-> > from inside an rcu_read_lock()ed section: fix the two places that did so.
-> > 
-> > Fixes: 88c22088bf23 ("mm: optimize page_lock_anon_vma() fast-path")
-> > Reported-by: Dave Jones <davej@redhat.com>
-> > Signed-off-by: Hugh Dickins <hughd@google.com>
-> > Needs-Ack-from: Peter Zijlstra <peterz@infradead.org>
-> > ---
-> > 
-> >  mm/rmap.c |    8 ++++++--
-> >  1 file changed, 6 insertions(+), 2 deletions(-)
-> > 
-> > --- 3.15-rc7/mm/rmap.c	2014-04-13 17:24:36.680507189 -0700
-> > +++ linux/mm/rmap.c	2014-05-31 12:02:08.496088637 -0700
-> > @@ -426,12 +426,14 @@ struct anon_vma *page_get_anon_vma(struc
-> >  	 * above cannot corrupt).
-> >  	 */
-> >  	if (!page_mapped(page)) {
-> > +		rcu_read_unlock();
-> >  		put_anon_vma(anon_vma);
-> >  		anon_vma = NULL;
-> > +		goto outer;
-> >  	}
-> >  out:
-> >  	rcu_read_unlock();
-> > -
-> > +outer:
-> >  	return anon_vma;
-> >  }
-> 
-> I think we can do that without the goto if we write something like:
-> 
-> 	if (!page_mapped(page)) {
-> 		rcu_read_unlock();
-> 		put_anon_vma(anon_vma);
-> 		return NULL;
-> 	}
+On 30 May 2014 05:23, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi Chris,
+>
+> After merging the mmc tree, today's linux-next build (arm multi_v7_defconfig)
+> failed like this:
+>
+> drivers/mmc/host/sunxi-mmc.c:25:29: fatal error: linux/clk/sunxi.h: No such file or directory
+>
+> Caused by commit 19b7f796c375 ("mmc: sunxi: Add driver for SD/MMC hosts
+> found on Allwinner sunxi SoCs").  Something has changed to turn on
+> CONFIG_ARCH_SUNXI in the arm multi_v7_defconfig build since yesterday.
+>
+> linux/clk/sunxi.h is created by a commit in the clk tree
+> (git://git.linaro.org/people/mturquette/linux.git#clk-next) which I
+> don't include in linux-next until much later than the mmc tree.
+>
+> I have reverted that commit for today.
+> --
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
 
-Yes, that was my preference too.  Then I thought we'd be accused of
-mixing early returns and gotos, so did it the goto way.  Since we
-both prefer the early return, I'll put it back to that.
+Hi Mike, Chris,
 
-> 
-> > @@ -477,9 +479,10 @@ struct anon_vma *page_lock_anon_vma_read
-> >  	}
-> >  
-> >  	if (!page_mapped(page)) {
-> > +		rcu_read_unlock();
-> >  		put_anon_vma(anon_vma);
-> >  		anon_vma = NULL;
-> > -		goto out;
-> > +		goto outer;
-> >  	}
-> >  
-> >  	/* we pinned the anon_vma, its safe to sleep */
-> > @@ -501,6 +504,7 @@ struct anon_vma *page_lock_anon_vma_read
-> >  
-> >  out:
-> >  	rcu_read_unlock();
-> > +outer:
-> >  	return anon_vma;
-> >  }
-> 
-> Same here too, I suppose.
-> 
-> Interesting that we never managed to hit this one; it might also make
-> sense to put a might_sleep() in anon_vma_free().
+So, the proper thing would be to let Mike to carry the above patch
+though his clk tree instead.
 
-Yes, good idea, that's an excellent place for a might_sleep(): done.
+Could we arrange that?
 
-Though it does change the patch from a "push this out immediately" to a
-"let's wait a little to check we don't now see lots of new warnings".
-
-But that's okay, we've survived three years without it; and I saw no
-no warnings myself from the new patch, when running under load plus
-lots of page migration.
-
-> 
-> Other than that, I don't see anything really odd, then again, its sunday
-> evening and my thinking cap isn't exactly on proper.
-
-Thank you - shout if any worries arise once the cap is back on.
-I think it's fine, I just felt more comfortable bringing you in.
-
-[PATCH v2] mm: fix sleeping function warning from __put_anon_vma
-
-Trinity reports BUG:
-sleeping function called from invalid context at kernel/locking/rwsem.c:47
-in_atomic(): 0, irqs_disabled(): 0, pid: 5787, name: trinity-c27
-__might_sleep < down_write < __put_anon_vma < page_get_anon_vma <
-migrate_pages < compact_zone < compact_zone_order < try_to_compact_pages ..
-
-Right, since conversion to mutex then rwsem, we should not put_anon_vma()
-from inside an rcu_read_lock()ed section: fix the two places that did so.
-And add might_sleep() to anon_vma_free(), as suggested by Peter Zijlstra.
-
-Fixes: 88c22088bf23 ("mm: optimize page_lock_anon_vma() fast-path")
-Reported-by: Dave Jones <davej@redhat.com>
-Signed-off-by: Hugh Dickins <hughd@google.com>
----
-v2: use early return instead of goto
-    add might_sleep in anon_vma_free
-
- mm/rmap.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
-
---- 3.15-rc8/mm/rmap.c	2014-04-13 17:24:36.680507189 -0700
-+++ linux/mm/rmap.c	2014-06-01 13:08:24.432176737 -0700
-@@ -103,6 +103,7 @@ static inline void anon_vma_free(struct
- 	 * LOCK should suffice since the actual taking of the lock must
- 	 * happen _before_ what follows.
- 	 */
-+	might_sleep();
- 	if (rwsem_is_locked(&anon_vma->root->rwsem)) {
- 		anon_vma_lock_write(anon_vma);
- 		anon_vma_unlock_write(anon_vma);
-@@ -426,8 +427,9 @@ struct anon_vma *page_get_anon_vma(struc
- 	 * above cannot corrupt).
- 	 */
- 	if (!page_mapped(page)) {
-+		rcu_read_unlock();
- 		put_anon_vma(anon_vma);
--		anon_vma = NULL;
-+		return NULL;
- 	}
- out:
- 	rcu_read_unlock();
-@@ -477,9 +479,9 @@ struct anon_vma *page_lock_anon_vma_read
- 	}
- 
- 	if (!page_mapped(page)) {
-+		rcu_read_unlock();
- 		put_anon_vma(anon_vma);
--		anon_vma = NULL;
--		goto out;
-+		return NULL;
- 	}
- 
- 	/* we pinned the anon_vma, its safe to sleep */
+Kind regards
+Ulf Hansson
