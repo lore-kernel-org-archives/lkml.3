@@ -1,74 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755354AbaFBOfY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 10:35:24 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:49468 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755319AbaFBOfX (ORCPT
+	id S1755385AbaFBOgE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 10:36:04 -0400
+Received: from mail-la0-f48.google.com ([209.85.215.48]:57660 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754454AbaFBOgB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 10:35:23 -0400
-Date: Mon, 2 Jun 2014 15:34:17 +0100
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        wsa@the-dreams.de, linus.walleij@linaro.org, grant.likely@linaro.org,
-        linux-i2c@vger.kernel.org
-Subject: Re: [PATCH 3/3] i2c: Make I2C ID tables non-mandatory for DT'ed
- and/or ACPI'ed devices
-Message-ID: <20140602153417.2065c1a5@alan.etchedpixels.co.uk>
-In-Reply-To: <1401716463-23457-4-git-send-email-lee.jones@linaro.org>
-References: <1401716463-23457-1-git-send-email-lee.jones@linaro.org>
-	<1401716463-23457-4-git-send-email-lee.jones@linaro.org>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Mon, 2 Jun 2014 10:36:01 -0400
+Date: Mon, 2 Jun 2014 16:35:57 +0200
+From: Jiri Pirko <jiri@resnulli.us>
+To: Michal Privoznik <mprivozn@redhat.com>
+Cc: davem@davemloft.net, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH] net-sysfs: Report link speed as signed integer
+Message-ID: <20140602143557.GA2925@minipsycho.orion>
+References: <06d53256e3bf2d0deedb16249082200500da3ee6.1401718809.git.mprivozn@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <06d53256e3bf2d0deedb16249082200500da3ee6.1401718809.git.mprivozn@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon,  2 Jun 2014 14:41:03 +0100
-Lee Jones <lee.jones@linaro.org> wrote:
+Mon, Jun 02, 2014 at 04:25:15PM CEST, mprivozn@redhat.com wrote:
+>The link speed is available at /sys/class/net/$nic/speed.
+>However, the speed is printed in unsigned integer format. This
+>makes userspace applications read an incorrect value (which
+>moreover changes through several architectures) while in fact
+>'-1' should be reported.
+>
+>Before the change:
+>  # cat /sys/class/net/eth0/speed
+>  4294967295
+>
+>After the change:
+>  # cat /sys/class/net/eth0/speed
+>  -1
+>
+>Signed-off-by: Michal Privoznik <mprivozn@redhat.com>
+>---
+> net/core/net-sysfs.c | 2 +-
+> 1 file changed, 1 insertion(+), 1 deletion(-)
+>
+>diff --git a/net/core/net-sysfs.c b/net/core/net-sysfs.c
+>index 1cac29e..99afdea 100644
+>--- a/net/core/net-sysfs.c
+>+++ b/net/core/net-sysfs.c
+>@@ -173,7 +173,7 @@ static ssize_t speed_show(struct device *dev,
+> 	if (netif_running(netdev)) {
+> 		struct ethtool_cmd cmd;
+> 		if (!__ethtool_get_settings(netdev, &cmd))
+>-			ret = sprintf(buf, fmt_udec, ethtool_cmd_speed(&cmd));
+>+			ret = sprintf(buf, fmt_dec, ethtool_cmd_speed(&cmd));
 
-> Currently the I2C framework insists on devices supplying an I2C ID
-> table.  Many of the devices which do so unnecessarily adding quite a
-> few wasted lines to kernel code.  This patch allows drivers a means
-> to 'not' supply the aforementioned table and match on either DT
-> and/or ACPI match tables instead.
-> 
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> ---
->  drivers/i2c/i2c-core.c | 13 ++++++++++++-
->  1 file changed, 12 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
-> index d0c7180..811b78f 100644
-> --- a/drivers/i2c/i2c-core.c
-> +++ b/drivers/i2c/i2c-core.c
-> @@ -271,7 +271,18 @@ static int i2c_device_probe(struct device *dev)
->  		return 0;
->  
->  	driver = to_i2c_driver(dev->driver);
-> -	if (!driver->probe || !driver->id_table)
-> +	if (!driver->probe)
-> +		return -EINVAL;
-> +
-> +	/*
-> +	 * An I2C ID table is not madatory, if and only if, a suitable Device
+I wonder why this should be signed. What -1 means? What driver reports
+this?
 
-typo "madatory"..
-
-> +	 * Tree and/or ACPI match table entry is supplied for the probing
-> +	 * device.
-> +	 *
-> +	 * TODO: Provide 'device type' to 'ACPI node' call and match here.
-> +	 */
-> +	if (!driver->id_table &&
-> +	    !of_match_device(dev->driver->of_match_table, dev))
->  		return -ENODEV;
->  
-
-Looks sensible to me other than that.
-
->  	if (!device_can_wakeup(&client->dev))
+> 	}
+> 	rtnl_unlock();
+> 	return ret;
+>-- 
+>2.0.0
+>
