@@ -1,60 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932175AbaFBUug (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 16:50:36 -0400
-Received: from mail-ob0-f176.google.com ([209.85.214.176]:61649 "EHLO
-	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753395AbaFBUue (ORCPT
+	id S1753562AbaFBUxv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 16:53:51 -0400
+Received: from mail-vc0-f177.google.com ([209.85.220.177]:32832 "EHLO
+	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752385AbaFBUxt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 16:50:34 -0400
+	Mon, 2 Jun 2014 16:53:49 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140602091242.GV15585@mwanda>
-References: <1401629020-18518-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-	<20140602091242.GV15585@mwanda>
-Date: Mon, 2 Jun 2014 22:50:34 +0200
-Message-ID: <CAFo99gYOkJV7jU3cYYjSapti6Ji55Pk=VDAPFn1GmFTDera4pA@mail.gmail.com>
-Subject: Re: [PATCH] staging: rtl8188eu: os_dep: usb_intf.c: Cleaning up
- uninitialized variables
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Larry Finger <Larry.Finger@lwfinger.net>, devel@driverdev.osuosl.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Manu Gupta <manugupt1@gmail.com>
+In-Reply-To: <alpine.LRH.2.02.1406021622200.5874@file01.intranet.prod.int.rdu2.redhat.com>
+References: <alpine.LRH.2.02.1406011342470.20831@file01.intranet.prod.int.rdu2.redhat.com>
+	<alpine.LRH.2.02.1406021158360.20627@file01.intranet.prod.int.rdu2.redhat.com>
+	<20140602162525.GH16155@laptop.programming.kicks-ass.net>
+	<CA+55aFzwrqkwD=G=w2m7TdXTpsMFjV7XUMXv5DMPGr=5x5YGCQ@mail.gmail.com>
+	<alpine.LRH.2.02.1406021622200.5874@file01.intranet.prod.int.rdu2.redhat.com>
+Date: Mon, 2 Jun 2014 13:53:48 -0700
+X-Google-Sender-Auth: icH_iJYGyuz03rfEw46Hqv7Ylbc
+Message-ID: <CA+55aFwCy4-x02U6A-KbkPEpe_4pagsZ__ipBhe5HZOQt2vNmw@mail.gmail.com>
+Subject: Re: [PATCH v2] introduce atomic_pointer to fix a race condition in
+ cancelable mcs spinlocks
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Mikulas Patocka <mpatocka@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Helge Deller <deller@gmx.de>, John David Anglin <dave.anglin@bell.net>,
+        Parisc List <linux-parisc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        "Vinod, Chegu" <chegu_vinod@hp.com>, Waiman Long <Waiman.Long@hp.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Davidlohr Bueso <davidlohr@hp.com>, Peter Anvin <hpa@zytor.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>, Jason Low <jason.low2@hp.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
-
-I mail about this for the first time in early May, but ther were many
-other faults in the design of my patch then, had several different
-types of errors in the same path etc.
-
-
-So good that someone was inspired to make a real patch of it even then :)
-
-And i'm getting the linux-next to check before I send any more patches.
-
-
-Best regards
-Rickard Strandqvist
-
-
-2014-06-02 11:12 GMT+02:00 Dan Carpenter <dan.carpenter@oracle.com>:
-> On Sun, Jun 01, 2014 at 03:23:40PM +0200, Rickard Strandqvist wrote:
->> There is a risk that the variable will be used without being initialized.
->>
->> This was largely found by using a static code analysis program called cppcheck.
->>
->> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+On Mon, Jun 2, 2014 at 1:46 PM, Mikulas Patocka <mpatocka@redhat.com> wrote:
 >
-> Someone already sent this one.  You should be working against
-> linux-next.
+> And what else do you want to do?
 >
-> regards,
-> dan carpenter
->
+> Peter Zijlstra said "I've been using xchg() and cmpxchg() without such
+> consideration for quite a while." - so it basically implies that the
+> kernel is full of such races, mcs_spinlock is just the most visible one
+> that crashes the kernel first.
+
+.. so your whole argument is bogus, because it doesn't actually fix
+anything else.
+
+Now, something that *would* fix something else is (for example) to
+just make "ACCESS_ONCE()" a rvalue so that you cannot use it for
+assignments, and then trying to sort out what happens then. It's
+possible that the "atomic_pointer_t" would be a part of the solution
+to that "what happens then", but THERE IS NO WAY IN HELL we're adding
+it for just one architecture and one use that doesn't warrant even
+_existing_ on that architecture.
+
+See what I'm saying?
+
+You're not fixing the problem, you're fixing one unimportant detail
+that isn't worth fixing that way.
+
+               Linus
