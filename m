@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932397AbaFBVTV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 17:19:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35783 "EHLO mx1.redhat.com"
+	id S1754081AbaFBVTS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 17:19:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46475 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932314AbaFBVTT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 17:19:19 -0400
+	id S932314AbaFBVTP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 17:19:15 -0400
 From: Jiri Olsa <jolsa@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@kernel.org>,
@@ -15,18 +15,37 @@ Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@kernel.org>,
         Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
         Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 08/13] perf tools: Allow to close dso fd in case of open failure
-Date: Mon,  2 Jun 2014 23:18:42 +0200
-Message-Id: <1401743927-398-9-git-send-email-jolsa@kernel.org>
+Subject: [PATCH 06/13] perf tools: Cache dso data file descriptor
+Date: Mon,  2 Jun 2014 23:18:40 +0200
+Message-Id: <1401743927-398-7-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1401743927-398-1-git-send-email-jolsa@kernel.org>
 References: <1401743927-398-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding do_open function that tries to close opened
-dso objects in case we fail to open the dso due to
-to crossing the allowed RLIMIT_NOFILE limit.
+Caching dso data file descriptors to avoid expensive re-opens
+especially during DWARF unwind.
+
+We keep dsos data file descriptors open until their count reaches
+the half of the current fd open limit (RLIMIT_NOFILE). In this case
+we close file descriptor of the first opened dso object.
+
+We've got overall speedup (24% for my workload) of report:
+ 'perf report --stdio -i perf-test.data' (3 runs)
+  (perf-test.data size was around 12GB)
+
+  current code:
+   446,826,474,217      cycles                     ( +-  0.23% )
+   669,435,100,846      instructions               ( +-  0.03% )
+
+     266.380674551 seconds time elapsed            ( +-  0.37% )
+
+  change:
+   558,345,509,819      cycles                     ( +-  0.55% )
+   817,283,647,637      instructions               ( +-  0.03% )
+
+     351.564209617 seconds time elapsed            ( +-  0.89% )
 
 Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
@@ -39,50 +58,126 @@ Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/util/dso.c | 23 ++++++++++++++++++++++-
- 1 file changed, 22 insertions(+), 1 deletion(-)
+ tools/perf/util/dso.c              | 61 ++++++++++++++++++++++++++++++++++++--
+ tools/perf/util/unwind-libunwind.c |  2 --
+ 2 files changed, 59 insertions(+), 4 deletions(-)
 
 diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
-index db63438..c30752c 100644
+index 76e5c13..fbf6cc9 100644
 --- a/tools/perf/util/dso.c
 +++ b/tools/perf/util/dso.c
-@@ -159,6 +159,27 @@ static void dso__list_del(struct dso *dso)
- 	dso__data_open_cnt--;
- }
- 
-+static void close_first_dso(void);
-+
-+static int do_open(char *name)
-+{
-+	int fd;
-+
-+	do {
-+		fd = open(name, O_RDONLY);
-+		if (fd >= 0)
-+			return fd;
-+
-+		pr_debug("dso open failed, mmap: %s\n", strerror(errno));
-+		if (!dso__data_open_cnt || errno != EMFILE)
-+			break;
-+
-+		close_first_dso();
-+	} while (1);
-+
-+	return -1;
-+}
-+
- static int __open_dso(struct dso *dso, struct machine *machine)
- {
- 	int fd;
-@@ -177,7 +198,7 @@ static int __open_dso(struct dso *dso, struct machine *machine)
- 		return -EINVAL;
- 	}
- 
--	fd = open(name, O_RDONLY);
-+	fd = do_open(name);
- 	free(name);
+@@ -1,4 +1,6 @@
+ #include <asm/bug.h>
++#include <sys/time.h>
++#include <sys/resource.h>
+ #include "symbol.h"
+ #include "dso.h"
+ #include "machine.h"
+@@ -180,12 +182,20 @@ static int __open_dso(struct dso *dso, struct machine *machine)
  	return fd;
  }
+ 
++static void check_data_close(void);
++
+ static int open_dso(struct dso *dso, struct machine *machine)
+ {
+ 	int fd = __open_dso(dso, machine);
+ 
+-	if (fd > 0)
++	if (fd > 0) {
+ 		dso__list_add(dso);
++		/*
++		 * Check if we crossed the allowed number
++		 * of opened DSOs and close one if needed.
++		 */
++		check_data_close();
++	}
+ 
+ 	return fd;
+ }
+@@ -204,6 +214,54 @@ static void close_dso(struct dso *dso)
+ 	close_data_fd(dso);
+ }
+ 
++static void close_first_dso(void)
++{
++	struct dso *dso;
++
++	dso = list_first_entry(&dso__data_open, struct dso, data.open_entry);
++	close_dso(dso);
++}
++
++static rlim_t get_fd_limit(void)
++{
++	struct rlimit l;
++	rlim_t limit = 0;
++
++	/* Allow half of the current open fd limit. */
++	if (getrlimit(RLIMIT_NOFILE, &l) == 0) {
++		if (l.rlim_cur == RLIM_INFINITY)
++			limit = l.rlim_cur;
++		else
++			limit = l.rlim_cur / 2;
++	} else {
++		pr_err("failed to get fd limit\n");
++		limit = 1;
++	}
++
++	return limit;
++}
++
++static bool may_cache_fd(void)
++{
++	static rlim_t limit;
++
++	if (!limit)
++		limit = get_fd_limit();
++
++	if (limit == RLIM_INFINITY)
++		return true;
++
++	return limit > (rlim_t) dso__data_open_cnt;
++}
++
++static void check_data_close(void)
++{
++	bool cache_fd = may_cache_fd();
++
++	if (!cache_fd)
++		close_first_dso();
++}
++
+ void dso__data_close(struct dso *dso)
+ {
+ 	close_dso(dso);
+@@ -356,7 +414,6 @@ dso_cache__read(struct dso *dso, struct machine *machine,
+ 	if (ret <= 0)
+ 		free(cache);
+ 
+-	dso__data_close(dso);
+ 	return ret;
+ }
+ 
+diff --git a/tools/perf/util/unwind-libunwind.c b/tools/perf/util/unwind-libunwind.c
+index 4f8dd9e..25578b9 100644
+--- a/tools/perf/util/unwind-libunwind.c
++++ b/tools/perf/util/unwind-libunwind.c
+@@ -250,7 +250,6 @@ static int read_unwind_spec_eh_frame(struct dso *dso, struct machine *machine,
+ 
+ 	/* Check the .eh_frame section for unwinding info */
+ 	offset = elf_section_offset(fd, ".eh_frame_hdr");
+-	dso__data_close(dso);
+ 
+ 	if (offset)
+ 		ret = unwind_spec_ehframe(dso, machine, offset,
+@@ -271,7 +270,6 @@ static int read_unwind_spec_debug_frame(struct dso *dso,
+ 
+ 	/* Check the .debug_frame section for unwinding info */
+ 	*offset = elf_section_offset(fd, ".debug_frame");
+-	dso__data_close(dso);
+ 
+ 	if (*offset)
+ 		return 0;
 -- 
 1.8.3.1
 
