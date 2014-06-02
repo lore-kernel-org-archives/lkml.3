@@ -1,50 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753465AbaFBTz4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 15:55:56 -0400
-Received: from smtprelay0141.hostedemail.com ([216.40.44.141]:59705 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752760AbaFBTzz (ORCPT
+	id S1753674AbaFBT4W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 15:56:22 -0400
+Received: from mout.kundenserver.de ([212.227.126.187]:56173 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752760AbaFBT4S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 15:55:55 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::::::::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1537:1561:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:2911:3138:3139:3140:3141:3142:3622:3865:3866:38
-X-HE-Tag: tramp38_8a7639e2a045f
-X-Filterd-Recvd-Size: 1761
-Message-ID: <1401738950.7323.35.camel@joe-AO725>
-Subject: Re: [PATCH RFC 1/2] MAINTAINERS: Add "R:" designated-reviewers tag
-From: Joe Perches <joe@perches.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: josh@joshtriplett.org, linux-kernel@vger.kernel.org, mingo@kernel.org,
-        laijs@cn.fujitsu.com, dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
-        oleg@redhat.com, sbw@mit.edu
-Date: Mon, 02 Jun 2014 12:55:50 -0700
-In-Reply-To: <20140602195017.GC22231@linux.vnet.ibm.com>
-References: <1401728420-3572-1-git-send-email-paulmck@linux.vnet.ibm.com>
-	 <1401729778.5770.20.camel@joe-AO725> <20140602174837.GA13257@cloud>
-	 <1401731968.7323.4.camel@joe-AO725>
-	 <20140602181658.GX22231@linux.vnet.ibm.com> <20140602185635.GB13569@cloud>
-	 <20140602190821.GZ22231@linux.vnet.ibm.com> <20140602191155.GB13648@cloud>
-	 <20140602192729.GB22231@linux.vnet.ibm.com>
-	 <1401737782.7323.31.camel@joe-AO725>
-	 <20140602195017.GC22231@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 2 Jun 2014 15:56:18 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: "Joseph S. Myers" <joseph@codesourcery.com>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, john.stultz@linaro.org, hch@infradead.org,
+        tglx@linutronix.de, geert@linux-m68k.org, lftan@altera.com,
+        linux-fsdevel@vger.kernel.org, ceph-devel@vger.kernel.org,
+        cluster-devel@redhat.com, coda@cs.cmu.edu,
+        codalist@telemann.coda.cs.cmu.edu, fuse-devel@lists.sourceforge.net,
+        linux-afs@lists.infradead.org, linux-btrfs@vger.kernel.org,
+        linux-cifs@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net, linux-mtd@lists.infradead.org,
+        linux-nfs@vger.kernel.org, linux-ntfs-dev@lists.sourceforge.net,
+        linux-scsi@vger.kernel.org, logfs@logfs.org,
+        ocfs2-devel@oss.oracle.com, reiserfs-devel@vger.kernel.org,
+        samba-technical@lists.samba.org, xfs@oss.sgi.com
+Subject: Re: [RFC 00/32] making inode time stamps y2038 ready
+Date: Mon, 02 Jun 2014 21:55:52 +0200
+Message-ID: <7175692.dpgYFMbTaP@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <538CCFDE.2010107@zytor.com>
+References: <1401480116-1973111-1-git-send-email-arnd@arndb.de> <4233989.Saca0ocOUr@wuerfel> <538CCFDE.2010107@zytor.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:uT+/Uve9SN0noSZFrkOQCUh6cef/b3abSKIoJ2DAuQe
+ Qah2JguLGI1cjCxDJVwax8NuXa/GiGbEAPAesqoVT3/YPv1DST
+ B1fUh0Ug+Q2O8x+yGABvPdcFUQ71Rp+b+ZRP68xdJ8XPb6ux/b
+ DyDt34/79R0EcX0HTbkuX6AN8Q0bJV8FbHKQASSjRNLmD4Oe8z
+ MN2lDy7mi61rRWFiqICPb5CLFDN0/Um5/f58VacqDbspxQUlBl
+ 3sd1qKSRT5hQ6kFFYKJ/rBwdrCfZJ+NLWgo98MgJyOuPYQ7A2o
+ TnLPuiCumxSk3Q2jkiZiDO6V18/ymPB2adR2Y5y00Ai4AMGHql
+ 6oFRuoVW9HTDy+GGmRrA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-06-02 at 12:50 -0700, Paul E. McKenney wrote:
-> I sometimes review patches in areas where
-> I have no commits.
+On Monday 02 June 2014 12:26:22 H. Peter Anvin wrote:
+> On 06/02/2014 12:19 PM, Arnd Bergmann wrote:
+> > On Monday 02 June 2014 13:52:19 Joseph S. Myers wrote:
+> >> On Fri, 30 May 2014, Arnd Bergmann wrote:
+> >>
+> >>> a) is this the right approach in general? The previous discussion
+> >>>    pointed this way, but there may be other opinions.
+> >>
+> >> The syscall changes seem like the sort of thing I'd expect, although 
+> >> patches adding new syscalls or otherwise affecting the kernel/userspace 
+> >> interface (as opposed to those relating to an individual filesystem) 
+> >> should go to linux-api as well as other relevant lists.
+> > 
+> > Ok. Sorry about missing linux-api, I confused it with linux-arch, which
+> > may not be as relevant here, except for the one question whether we
+> > actually want to have the new ABI on all 32-bit architectures or only
+> > as an opt-in for those that expect to stay around for another 24 years.
+> > 
+> > Two more questions for you:
+> > 
+> > - are you (and others) happy with adding this type of stat syscall
+> >   (fstatat64/fstat64) as opposed to the more generic xstat that has
+> >   been discussed in the past and that never made it through the bike-
+> >   shedding discussion?
+> > 
+> > - once we have enough buy-in from reviewers to merge this initial
+> >   series, should we proceed to define rest of the syscall ABI
+> >   (minus driver ioctls) so glibc and kernel can do the conversion
+> >   on top of that, or should we better try to do things one syscall
+> >   family at a time and actually get the kernel to handle them
+> >   correctly internally?
+> > 
+> 
+> The bit that is really going to hurt is every single ioctl that uses a
+> timespec.
+> 
+> Honestly, though, I really don't understand the point with "struct
+> inode_time".  It seems like the zeroeth-order thing is to change the
+> kernel internal version of struct timespec to have a 64-bit time... it
+> isn't just about inodes.  We then should be explicit about the external
+> uses of time, and use accessors.
 
-Lots of people review patches all over the tree.
-That doesn't mean they want to be or should be cc'd.
+I picked these because they are fairly isolated from all other uses,
+in particular since inode times are the only things where we really
+care about times in the distant past or future (decades away as opposed
+to things that happened between boot and shutdown).
 
+For other kernel-internal uses, we may be better off migrating to
+a completely different representation, such as nanoseconds since
+boot or the architecture specific ktime_t, but this is really something
+to decide for each subsystem.
 
+I just tried building an arm32 kernel with a s64 time_t, and that
+failed horribly, I get linker errors for missing 64-bit divides
+and lots of warnings for code that expects time_t pointers to
+functions taking a 'long' or vice versa. I also think the only
+way to maintain ABI compatibility is to separate the internal uses
+from the interface, which means auditing all code in the end.
 
+	Arnd
