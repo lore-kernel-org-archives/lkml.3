@@ -1,89 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755656AbaFBDaw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jun 2014 23:30:52 -0400
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:28476 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753871AbaFBDau (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jun 2014 23:30:50 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AmB3AJfui1N5LL1sPGdsb2JhbABZgweDRagQAQEBAQEBBpgbAYEPFwMBAQEBODWCJQEBBAEnExwjBQsIAxgJJQ8FJQMHGhOIOgfUEhcWhT+IfQeEQASZf5Z4Kw
-Date: Mon, 2 Jun 2014 13:30:47 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Daniel Phillips <daniel@phunq.net>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Subject: Re: [RFC][PATCH 2/2] tux3: Use writeback hook to remove duplicated
- core code
-Message-ID: <20140602033047.GT14410@dastard>
-References: <538B9DEE.20800@phunq.net>
- <538B9E58.4000108@phunq.net>
+	id S1751736AbaFBDq2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jun 2014 23:46:28 -0400
+Received: from ozlabs.org ([103.22.144.67]:39692 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750853AbaFBDq0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Jun 2014 23:46:26 -0400
+Date: Mon, 2 Jun 2014 13:46:18 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Roland Dreier <roland@kernel.org>, linux-rdma@vger.kernel.org,
+        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Joe Perches <joe@perches.com>,
+        Jack Morgenstein <jackm@dev.mellanox.co.il>
+Subject: linux-next: manual merge of the infiniband tree with the net-next
+ tree
+Message-ID: <20140602134618.6cb5e747@canb.auug.org.au>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <538B9E58.4000108@phunq.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/mRobN0mJrb0Au./P44JdCYQ"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 01, 2014 at 02:42:48PM -0700, Daniel Phillips wrote:
-> Instead of re-implementing part of fs/fs-writeback.c, use a proposed
-> net ->writeback super operation to drive delta writeback. For each
-> inode that is cleaned, call inode_writeback_done(inode). For each
-> inode that will be kept dirty in cache, call inode_writeback_touch
-> so that the inode appears young to fs-writeback and does not trigger
-> repeated ->writeback flushes.
-> 
-> Signed-off-by: Daniel Phillips <daniel@tux3.org>
+--Sig_/mRobN0mJrb0Au./P44JdCYQ
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-I have not looked at the sanity of the tux3 writeback algorithm, so
-I'm not commenting on whether it works or not. However, this caught
-my eye:
+Hi all,
 
->  static void __tux3_clear_dirty_inode(struct inode *inode, unsigned delta)
->  {
->      struct tux3_inode *tuxnode = tux_inode(inode);
-> -    tux3_inode_wb_lock(inode);
->      spin_lock(&inode->i_lock);
->      spin_lock(&tuxnode->lock);
->      tux3_clear_dirty_inode_nolock(inode, delta, 0);
->      spin_unlock(&tuxnode->lock);
->      spin_unlock(&inode->i_lock);
-> -    tux3_inode_wb_unlock(inode);
-> +    inode_writeback_done(inode);
->  }
+Today's linux-next merge of the infiniband tree got a conflict in
+drivers/net/ethernet/mellanox/mlx4/cmd.c between commit 1a91de28831a
+("mellanox: Logging message cleanups") from the net-next tree and
+commit 97982f5a91e9 ("IB/mlx4: Preparation for VFs to issue/receive SMI
+(QP0) requests/responses") from the infiniband tree.
 
-I get very worried whenever I see locks inside inode->i_lock. In
-general, i_lock is supposed to be the innermost lock that is taken,
-and there are very few exceptions to that - the inode LRU list is
-one of the few.
+I fixed it up (the latter seems to be a superset of the former, so I
+just used that) and can carry the fix as necessary (no action is
+required).
 
-I don't know what the tuxnode->lock is, but I found this:
-
- *     inode->i_lock
- *         tuxnode->lock (to protect tuxnode data)
- *             tuxnode->dirty_inodes_lock (for i_ddc->dirty_inodes,
- *                                         Note: timestamp can be updated
- *                                         outside inode->i_mutex)
-
-and this:
-
- *     inode->i_lock
- *         tuxnode->lock
- *         sb->dirty_inodes_lock
-
-Which indicates that you take a filesystem global lock a couple of
-layers underneath the VFS per-inode i_lock. I'd suggest you want to
-separate the use of the vfs inode ilock from the locking heirarchy
-of the tux3 inode....
-
+--=20
 Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+--Sig_/mRobN0mJrb0Au./P44JdCYQ
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTi/OOAAoJEMDTa8Ir7ZwVfb4P/R5DOcfR+0KLeYvHxiNltReC
++Ypw1fr48KcayqHuLBwnwncz8t9YmOopTAgoZuoTX7YSRnrskzDW7+5Gl4uV3iqB
+bBXBpq2uAJx4FwfMHqmAVwTZYLHLo7kyeXHmemZgdqMRpqEZZgJKCbK5KwaEG2fZ
+UbRJM57DGViFqEnncoR7RpBAHFP+prd7BXWKzUYe48Z7HjtiQTCG533XMnST+hXM
+5tjNVTrd0fWoJyHp4GdUy50ymryYwmfofsharwYEEbxs4XVoNETnyWXp8cDxZMoN
+2Fdk56Xu1RX+tBNIPT/jO9wf88GAhfGJDAkwm37Gk9bz+myy2qxFf/YuDJCa80HQ
+Dhe+GDLyDV/gtI1e3xvzp/3SJ9i3NXrkxq8Yy4pxAtmCMUwatxDMieIjQs1fbOhd
+iEQyHjpSQGHY8nLrkl2E/6ULqkqVoehpY2WCk4jIaayxeD8q8Zq8C27gmsIvwWNs
+l8EUh+925pVr+XlQqA5tDnw9QhTKDNW9aenIpQY97hqdlPdKqPmLaxMPpJeok+12
+5GzyCYFeM89/aNA9tlrMx29zH26hnRZ/h1G7QVEOGjrWAvp7wgSXIwnmjZMNFIWO
+1QcgwvU+xn5C3P3ihlTPCzlXJuizMsMlIQnGdmCNDwd5cQYX26sqU/sVZ64G9/zP
+leGrj7Zu21M9oSHQ7L9+
+=aVAm
+-----END PGP SIGNATURE-----
+
+--Sig_/mRobN0mJrb0Au./P44JdCYQ--
