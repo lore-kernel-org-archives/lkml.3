@@ -1,117 +1,325 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753806AbaFBCeV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jun 2014 22:34:21 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34509 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753224AbaFBCeU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jun 2014 22:34:20 -0400
-Date: Mon, 2 Jun 2014 12:34:11 +1000
-From: NeilBrown <neilb@suse.de>
-To: "Baldysiak, Pawel" <pawel.baldysiak@intel.com>
-Cc: "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Paszkiewicz, Artur" <artur.paszkiewicz@intel.com>
-Subject: Re: [PATCH 1/1] md: Do only necessary operations when adding device
- to RO array
-Message-ID: <20140602123411.4becb274@notabene.brown>
-In-Reply-To: <84A53BEA6EAC69439B7E311E9B17A76F07918BF9@IRSMSX105.ger.corp.intel.com>
-References: <84A53BEA6EAC69439B7E311E9B17A76F07918BF9@IRSMSX105.ger.corp.intel.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/xATcL7zslM_AsVrNQ78JuvW"; protocol="application/pgp-signature"
+	id S1754124AbaFBChY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jun 2014 22:37:24 -0400
+Received: from mail-vc0-f173.google.com ([209.85.220.173]:43657 "EHLO
+	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753701AbaFBChW convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Jun 2014 22:37:22 -0400
+MIME-Version: 1.0
+Date: Sun, 1 Jun 2014 19:37:20 -0700
+X-Google-Sender-Auth: agb1CTHSOUhy_puOtwXLEGIeLT4
+Message-ID: <CA+55aFwSLmJ1kLO-zNm944Q-=oYYH2Lo0W14Dn0mbj91V5MNFA@mail.gmail.com>
+Subject: Linux 3.15-rc8 ... and merge window for 3.16
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/xATcL7zslM_AsVrNQ78JuvW
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+I was really hoping that rc7 would be the last rc, but it appears that
+reality is once against conspiring against my well-laid plans, and is
+forcing me to do an rc8. It's not like there were a lot of changes,
+but the last-minute dcache fixes in particular made it not really sane
+to just make a final release without another week of testing.
 
-On Fri, 30 May 2014 13:17:14 +0000 "Baldysiak, Pawel"
-<pawel.baldysiak@intel.com> wrote:
+Now, normally, an rc8 isn't really a big deal - 3.15 is one of the
+biggest (if not _the_ biggest) releases in a long time, and we do
+rc8's with some regularity. It may not be every release, but I think
+it's about a fifty-fifty chance whether any particular release goes to
+rc8. So I shouldn't be upset, and I'm certainly not surprised.
 
-> Commit 8313b8e57f55b15e5b7f7fc5d1630bbf686a9a97 changed
-> way of adding device to read-only array. Used routine
-> md_reap_sync_thread() which also trigger finish_reshape(),
-> can break reshape process, if it was restarted.
+No, the real reason I was hoping that we wouldn't need to do an rc8
+for 3.15 is that school is out in two weeks, and we're doing our
+family vacation immediately after that. And I'd hate to have yet
+another "Linus is traveling during the merge window" thing. Normally I
+have been luckier with my trips than that.
 
-Exactly how can it break?
+Now, I'll have internet, and I *could* do the merge window while on
+vacation with the family. I'd just prefer not to.
 
-This is probably fixed by a couple of patches in my for-next branch which I
-will be sending to Linus shortly.
+SO... Let's try something new. I suspect most people are ready to
+start the merge window, and we could try how it would be to overlap
+the first week of the merge window with the last week of the previous
+release.  Most of the submaintainers already use git branches
+actively, so I doubt anybody will find it too confusing if I end up
+having a "next" branch for a week that contains the stuff I pull for
+3.16.
 
-NeilBrown
+So let's try to see how well that works - the last weeks of the
+release tends to be me just waiting around to make sure nothing bad is
+happening, so doing this kind of overlapping development *should* work
+fine. Maybe it works so well that we'll end up doing it in the future
+even if there *isn't* some kind of scheduling conflict that makes me
+want to start the merge window before I'm 100% comfortable doing the
+release for the previous version.
 
+And it's not like I think rc8 is in any way broken. I just don't feel
+comfortable doing a real 3.15 release without a _bit_ more time for
+people to use the fixed dentry code.
 
-> This part of function should do only necessary operations, that is:
-> 1) call ->spare_active
-> 2) clear saved_raid_disk if array is no longer degraded
->=20
-> Signed-off-by: Pawel Baldysiak <pawel.baldysiak@intel.com>
-> Reviewed-by: Artur Paszkiewicz <artur.paszkiewicz@intel.com>
->=20
-> ---
-> drivers/md/md.c | 10 ++++++----
-> 1 file changed, 6 insertions(+), 4 deletions(-)
->=20
-> diff --git a/drivers/md/md.c b/drivers/md/md.c
-> index 237b7e0..cf073de2 100644
-> --- a/drivers/md/md.c
-> +++ b/drivers/md/md.c
-> @@ -7820,11 +7820,13 @@ void md_check_recovery(struct mddev *mddev)
->                                                 * As we only add devices =
-that are already in-sync,
->                                                 * we can activate the spa=
-res immediately.
->                                                 */
-> +                                             struct md_rdev *rdev;
->                                                remove_and_add_spares(mdde=
-v, NULL);
-> -                                              /* There is no thread, but=
- we need to call
-> -                                              * ->spare_active and clear=
- saved_raid_disk
-> -                                              */
-> -                                              md_reap_sync_thread(mddev);
-> +                                             mddev->pers->spare_active(m=
-ddev);
-> +                                             rdev_for_each(rdev, mddev)
-> +                                                             if (!mddev-=
->degraded ||
-> +                                                                 test_bi=
-t(In_sync, &rdev->flags))
-> +                                                                        =
-     rdev->saved_raid_disk =3D -1;
->                                                clear_bit(MD_RECOVERY_NEED=
-ED, &mddev->recovery);
->                                                goto unlock;
->                                }
-> --
-> 1.9.0
+Anyway, apart from the dcache changes, there's a lot of random smaller
+stuff. One one-liner in particular is interesting: Minchan Kim had a
+load that basically ate up all the kernel stack on x86-64, and so this
+finally does something I've been trying to delay for a long time - it
+expands the stack to 16kB. I think all other 64-bit architectures have
+done that a long time ago already, so it's not exactly shocking, but
+it's a somewhat fundamental change on one of the main architectures.
 
+               Linus
 
---Sig_/xATcL7zslM_AsVrNQ78JuvW
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+---
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Aaron Lu (1):
+      ACPI / thermal: fix workqueue destroy order
 
-iQIVAwUBU4vioznsnt1WYoG5AQJgXw/9ExzeUsgFvJdiXgBTmRUJsEFc65vlyxaa
-QZsjtaKLCdQbb7veIztS/xmxFB7EIQfwXk26MtqDEX98oISOWA37E0ioVPKgLhVH
-7OTHMbDgoua0qEbzbElY990VDwlvov7BetC3pkCHoAUpqh6GRm6V6VyhPU6wrQor
-5XfJHJw00/9bNwBBXs2j+7jhwDSEDIRzt02zLoSSjonuOeSscAFv7bI25oKEc0Qz
-tFqdJ/lrrNsCHT/ONm6ALcDJj5U/NPAYl78m+wQgbMezWo6IPug2u56PMKIBZEoG
-4Z2u35a41GvjEzTrXhnTGk1776w1I1xXlyMwKrlFkcVvOz0tdi+ur3Qwyuw3/Pkk
-gXLnTF7s7bpCbR6h9KGZov8Rlsyeoo8HGg1BBis3ZTDnQ48zHBUW1wBYMwVk3Adm
-snH7Xq3BSVP0CdiuTlrJp3Mzjfbga6IKCW0hwqHOZ0vxNKLT0RPzD3Iz8bisd1sM
-SnJE70DvJDyMEqQM+3JEJQ+t7Ft5fErMdz8xHoo+pAK5Dxloy02UJfaFByVAxrb4
-7/XBvKlBqzK3zDcpAc1HKN6PRszaYrbmIRasyZeGpPGfCURreMBXRuSpqFLDjbck
-SkwGk3dBJ6oN+8fmNscqI0pyT4vfBTazWMrs9I7TiaUZzl3qM4joP94Jc5DPNQ8g
-UML29LwbkTA=
-=Se5W
------END PGP SIGNATURE-----
+Al Viro (6):
+      lift the "already marked killed" case into shrink_dentry_list()
+      split dentry_kill()
+      expand dentry_kill(dentry, 0) in shrink_dentry_list()
+      shrink_dentry_list(): take parent's ->d_lock earlier
+      dealing with the rest of shrink_dentry_list() livelock
+      dentry_kill() doesn't need the second argument now
 
---Sig_/xATcL7zslM_AsVrNQ78JuvW--
+Alex Smith (1):
+      MIPS: ptrace: Avoid smp_processor_id() in preemptible code
+
+Alexander Graf (2):
+      KVM: PPC: Book3S: ifdef on CONFIG_KVM_BOOK3S_32_HANDLER for 32bit
+      KVM guest: Make pv trampoline code executable
+
+Alexandre Belloni (2):
+      ARM: at91/dt: sam9260: correct external trigger value
+      ARM: at91: sam9260: fix compilation issues
+
+Alexandre Courbot (1):
+      ARM: trusted_foundations: fix compile error on non-SMP
+
+Alexey Charkov (1):
+      pinctrl: vt8500: Ensure value reg is updated when setting direction
+
+Andrey Ryabinin (1):
+      ARM: 8051/1: put_user: fix possible data corruption in put_user
+
+Andy Shevchenko (1):
+      dmaengine: dw: went back to plain {request,free}_irq() calls
+
+Arnd Bergmann (4):
+      Input: fix ps2/serio module dependency
+      Input: atmel-wm97xx - only build for AVR32
+      dmaengine: omap: hide filter_fn for built-in drivers
+      dmaengine: sa11x0: remove broken #ifdef
+
+Arun Kumar K (1):
+      ARM: dts: Remove g2d_pd node for exynos5420
+
+Benjamin Herrenschmidt (1):
+      powerpc: Wire renameat2() syscall
+
+Beomho Seo (1):
+      ARM: dts: fix incorrect ak8975 compatible for exynos4412-trats2 board
+
+Bibek Basu (1):
+      cpufreq: remove race while accessing cur_policy
+
+Chao Xie (1):
+      Input: pxa27x-keypad - fix generating scancode
+
+Chris Wilson (3):
+      drm/i915: Fix dynamic allocation of physical handles
+      drm/i915: Only copy back the modified fields to userspace from execbuffer
+      drm/i915: Prevent negative relocation deltas from wrapping
+
+Christian König (3):
+      drm/radeon: lower the ref * post PLL maximum once more
+      drm/radeon: avoid crash if VM command submission isn't available
+      drm/radeon: only allocate necessary size for vm bo list
+
+Cornelia Huck (1):
+      KVM: s390: announce irqfd capability
+
+Daniel Vetter (1):
+      drm/radeon: Resume fbcon last
+
+David Jander (1):
+      clocksource: tcb_clksrc: Make tc_mode interrupt safe
+
+Emil Goode (1):
+      ARM: imx: fix error handling in ipu device registration
+
+Gabor Juhos (1):
+      MIPS: RC32434: fix broken PCI resource initialization
+
+Guenter Roeck (1):
+      powerpc: Fix 64 bit builds with binutils 2.24
+
+Hannes Reinecke (1):
+      dm mpath: really fix lockdep warning
+
+Hans de Goede (4):
+      Input: synaptics - add min/max quirk for the ThinkPad W540
+      Input: synaptics - T540p - unify with other LEN0034 models
+      Input: synaptics - add a matches_pnp_id helper function
+      Input: synaptics - change min/max quirk table to pnp-id matching
+
+Heinz Mauelshagen (1):
+      dm cache: always split discards on cache block boundaries
+
+Huacai Chen (2):
+      MIPS: Fix a typo error in AUDIT_ARCH definition
+      MIPS: Fix inconsistancy of __NR_Linux_syscalls value
+
+Juri Lelli (1):
+      sched/deadline: Restrict user params max value to 2^63 ns
+
+Kyungmin Park (1):
+      ARM: EXYNOS: fix the secondary CPU boot of exynos4212
+
+Lai Jiangshan (1):
+      sched: Fix hotplug vs. set_cpus_allowed_ptr()
+
+Laurent Pinchart (1):
+      ARM: OMAP3: clock: Back-propagate rate change from cam_mclk to
+dpll4_m5 on all OMAP3 platforms
+
+Linus Torvalds (2):
+      dcache: add missing lockdep annotation
+      Linux 3.15-rc8
+
+Liviu Dudau (1):
+      Input: ambakmi - request a shared interrupt for AMBA KMI devices
+
+Lucas Stach (1):
+      cpufreq: cpu0: drop wrong devm usage
+
+Marcelo Tosatti (1):
+      KVM: x86: disable master clock if TSC is reset during suspend
+
+Marek Olšák (1):
+      drm/radeon: don't allow RADEON_GEM_DOMAIN_CPU for command submission
+
+Markos Chandras (2):
+      MIPS: Fix typo when reporting cache and ftlb errors for ImgTec cores
+      MIPS: malta: memory.c: Initialize the 'memsize' variable
+
+Maxime COQUELIN (1):
+      clk: divider: Fix table round up function
+
+Michael Kerrisk (1):
+      sched: Make sched_setattr() correctly return -EFBIG
+
+Mike Snitzer (1):
+      dm thin: add 'no_space_timeout' dm-thin-pool module param
+
+Miklos Szeredi (1):
+      vfs: fix vmplice_to_user()
+
+Minchan Kim (1):
+      x86_64: expand kernel stack to 16K
+
+Ming Lei (1):
+      virtio_blk: fix race between start and stop queue
+
+Nicolas Pitre (1):
+      ARM: 8063/1: bL_switcher: fix individual online status reporting
+of removed CPUs
+
+Nikolay Borisov (1):
+      ARM: 8052/1: unwind: Fix handling of "Pop r4-r[4+nnn],r14" opcode
+
+Paolo Bonzini (1):
+      KVM: vmx: disable APIC virtualization in nested guests
+
+Paul Mackerras (1):
+      KVM: PPC: Book3S HV: Add missing code for transaction reclaim on
+guest exit
+
+Peter Ujfalusi (1):
+      ARM: omap5: hwmod_data: Correct IDLEMODE for McPDM
+
+Peter Zijlstra (4):
+      sched: Disallow sched_attr::sched_policy < 0
+      sched/deadline: Change sched_getparam() behaviour vs SCHED_DEADLINE
+      sched/deadline: Replace NR_CPUS arrays
+      sched/cpupri: Replace NR_CPUS arrays
+
+Philipp Zabel (1):
+      MAINTAINERS: Add reset controller framework entry
+
+Rabin Vincent (2):
+      ARM: 8048/1: fix v7-M setup stack location
+      ARM: 8064/1: fix v7-M signal return
+
+Ralf Baechle (3):
+      MIPS: Change type of asid_cache to unsigned long
+      MIPS: Fix branch emulation of branch likely instructions.
+      MIPS: SB1: Fix excessive kernel warnings.
+
+Roger Quadros (1):
+      ARM: OMAP2+: nand: Fix NAND on OMAP2 and OMAP3 boards
+
+Sachin Kamat (3):
+      ARM: exynos_defconfig: enable HS-I2C to fix for mmc partition mount
+      ARM: dts: Fix SPI interrupt numbers for exynos5420
+      ARM: dts: Keep LDO4 always ON for exynos5250-arndale board
+
+Santosh Shilimkar (1):
+      ARM: OMAP4: Fix the boot regression with CPU_IDLE enabled
+
+Sebastian Andrzej Siewior (1):
+      MIPS: Lemote 2F: cs5536: mfgpt: use raw locks
+
+Seungwon Jeon (1):
+      ARM: dts: disable MDMA1 node for exynos5420
+
+Srivatsa S. Bhat (1):
+      powerpc, kexec: Fix "Processor X is stuck" issue during kexec from ST mode
+
+Stefan Richter (1):
+      firewire: revert to 4 GB RDMA, fix protocols using Memory Space
+
+Takashi Iwai (1):
+      ALSA: hda - Fix onboard audio on Intel H97/Z97 chipsets
+
+Thierry Reding (3):
+      clk: tegra: Fix PLLE programming
+      clk: tegra: Introduce divider mask and shift helpers
+      clk: tegra: Fix enabling of PLLE
+
+Thomas Bogendoerfer (1):
+      MIPS: R46000: Fix Micro-assembler field overflow for R4600 V2
+
+Thomas Gleixner (3):
+      futex: Add another early deadlock detection check
+      futex: Prevent attaching to kernel threads
+      rtmutex: Fix deadlock detector for real
+
+Thomas Petazzoni (3):
+      ARM: mvebu: mvebu-soc-id: add missing clk_put() call
+      ARM: mvebu: mvebu-soc-id: keep clock enabled if PCIe unit is enabled
+      ARM: mvebu: fix definitions of PCIe interfaces on Armada 38x
+
+Tony Lindgren (1):
+      ARM: OMAP2+: Fix DMA hang after off-idle
+
+Tushar Behera (2):
+      ARM: dts: Remove mau_pd node for exynos5420
+      ALSA: pcm_dmaengine: Add check during device suspend
+
+Valentin Ilie (1):
+      clk: st: Fix memory leak
+
+Will Deacon (1):
+      arm64: mm: fix pmd_write CoW brokenness
+
+Zhiwu Song (1):
+      clocksource: marco: Fix the affinity set for local timer of CPU1
+
+pingfank@linux.vnet.ibm.com (1):
+      KVM: PPC: Book3S: HV: make _PAGE_NUMA take effect
+
+srinik (1):
+      ARM: 8057/1: amba: Add Qualcomm vendor ID.
