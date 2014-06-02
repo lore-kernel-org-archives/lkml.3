@@ -1,123 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754400AbaFBM7I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 08:59:08 -0400
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:46985 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752267AbaFBM7G (ORCPT
+	id S1754598AbaFBNCS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 09:02:18 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:38354 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753850AbaFBNCR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 08:59:06 -0400
+	Mon, 2 Jun 2014 09:02:17 -0400
+Message-ID: <538C75C7.4030708@gmail.com>
+Date: Mon, 02 Jun 2014 15:01:59 +0200
+From: Tomasz Figa <tomasz.figa@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <53859873.9070603@linux.vnet.ibm.com>
-References: <1399280953-31442-1-git-send-email-khandual@linux.vnet.ibm.com>
-	<CABPqkBS+3N6PW0wJr3xnvpF4zinZM7+iwFWzwS7BDm-LTkam5Q@mail.gmail.com>
-	<53859873.9070603@linux.vnet.ibm.com>
-Date: Mon, 2 Jun 2014 14:59:04 +0200
-Message-ID: <CABPqkBSmuMth4KmdLw7Nigf5uQREQJ+xL=42xV9c8FjR2VPO5g@mail.gmail.com>
-Subject: Re: [V6 00/11] perf: New conditional branch filter
-From: Stephane Eranian <eranian@google.com>
-To: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-Cc: Linux PPC dev <linuxppc-dev@ozlabs.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Michael Neuling <mikey@neuling.org>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>
-Content-Type: text/plain; charset=UTF-8
+To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>
+CC: Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org
+Subject: Re: [PATCH v2 3/7] ARM: EXYNOS: add AFTR mode support to firmware
+ do_idle method
+References: <1401712543-14281-1-git-send-email-b.zolnierkie@samsung.com> <1401712543-14281-4-git-send-email-b.zolnierkie@samsung.com>
+In-Reply-To: <1401712543-14281-4-git-send-email-b.zolnierkie@samsung.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 28, 2014 at 10:04 AM, Anshuman Khandual
-<khandual@linux.vnet.ibm.com> wrote:
-> On 05/27/2014 05:39 PM, Stephane Eranian wrote:
->> I have been looking at those patches and ran some tests.
->> And I found a few issues so far.
->>
->> I am running:
->> $ perf record -j any_ret -e cycles:u test_program
->> $ perf report -D
->>
->> Most entries are okay and match the filter, however some do not make sense:
->>
->> 3642586996762 0x15d0 [0x108]: PERF_RECORD_SAMPLE(IP, 2): 17921/17921:
->> 0x10001170 period: 613678 addr: 0
->> .... branch stack: nr:9
->> .....  0: 00000000100011cc -> 0000000010000e38
->> .....  1: 0000000010001150 -> 00000000100011bc
->> .....  2: 0000000010001208 -> 0000000010000e38
->> .....  3: 0000000010001160 -> 00000000100011f8
->> .....  4: 00000000100011cc -> 0000000010000e38
->> .....  5: 0000000010001150 -> 00000000100011bc
->> .....  6: 0000000010001208 -> 0000000010000e38
->> .....  7: 0000000010001160 -> 00000000100011f8
->> .....  8: 0000000000000000 -> 0000000010001160
->> ^^^^^^
->> Entry 8 does not make sense, unless 0x0 is a valid return branch
->> instruction address.
->> If an address is invalid, the whole entry needs to be eliminated. It
->> is okay to have
->> less than the max number of entries supported by HW.
->
-> Hey Stephane,
->
-> Okay. The same behaviour is also reflected in the test results what I have
-> shared in the patchset. Here is that section.
->
-> (3) perf record -j any_ret -e branch-misses:u ./cprog
->
-> # Overhead  Command  Source Shared Object          Source Symbol  Target Shared Object          Target Symbol
-> # ........  .......  ....................  .....................  ....................  .....................
-> #
->     15.61%    cprog  [unknown]             [.] 00000000           cprog                 [.] sw_3_1
->      6.28%    cprog  cprog                 [.] symbol2            cprog                 [.] hw_1_2
->      6.28%    cprog  cprog                 [.] ctr_addr           cprog                 [.] sw_4_1
->      6.26%    cprog  cprog                 [.] success_3_1_3      cprog                 [.] sw_3_1
->      6.24%    cprog  cprog                 [.] symbol1            cprog                 [.] hw_1_1
->      6.24%    cprog  cprog                 [.] sw_4_2             cprog                 [.] callme
->      6.21%    cprog  [unknown]             [.] 00000000           cprog                 [.] callme
->      6.19%    cprog  cprog                 [.] lr_addr            cprog                 [.] sw_4_2
->      3.16%    cprog  cprog                 [.] hw_1_2             cprog                 [.] callme
->      3.15%    cprog  cprog                 [.] success_3_1_1      cprog                 [.] sw_3_1
->      3.15%    cprog  cprog                 [.] sw_4_1             cprog                 [.] callme
->      3.14%    cprog  cprog                 [.] callme             cprog                 [.] main
->      3.13%    cprog  cprog                 [.] hw_1_1             cprog                 [.] callme
->
-> So a lot of samples above have 0x0 as the "from" address. This originates from the code
-> section here inside the function "power_pmu_bhrb_read", where we hit two back to back
+Hi,
 
-Could you explain the back-to-back case a bit more here?
-Back-to-back returns to me means something like:
+On 02.06.2014 14:35, Bartlomiej Zolnierkiewicz wrote:
+> On some platforms (i.e. EXYNOS ones) more than one idle mode is
+> available and we need to distinguish them in firmware do_idle method.
+> 
+> Add mode parameter to do_idle firmware method and AFTR mode support
+> to EXYNOS do_idle implementation.
+> 
+> This change is a preparation for adding secure firmware support to
+> EXYNOS cpuidle driver.
+> 
+> This patch shouldn't cause any functionality changes (please note
+> that do_idle firmware method is unused currently).
+> 
+> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+> ---
+>  arch/arm/include/asm/firmware.h |  7 ++++++-
+>  arch/arm/mach-exynos/firmware.c | 10 ++++++++--
+>  2 files changed, 14 insertions(+), 3 deletions(-)
+> 
+> diff --git a/arch/arm/include/asm/firmware.h b/arch/arm/include/asm/firmware.h
+> index 70883c7..63989c3 100644
+> --- a/arch/arm/include/asm/firmware.h
+> +++ b/arch/arm/include/asm/firmware.h
+> @@ -28,7 +28,7 @@ struct firmware_ops {
+>  	/*
+>  	 * Enters CPU idle mode
+>  	 */
+> -	int (*do_idle)(void);
+> +	int (*do_idle)(int mode);
+>  	/*
+>  	 * Sets boot address of specified physical CPU
+>  	 */
+> @@ -47,6 +47,11 @@ struct firmware_ops {
+>  	int (*c15resume)(u32 *regs);
+>  };
+>  
+> +enum {
 
-int foo()
-{
-  ...
-   return bar();
-}
+What about making this enum named and using it instead of int for mode
+argument of do_idle operation?
 
-int bar()
-{
-  return 0;
-}
+> +	FW_DO_IDLE_NORMAL,
 
-Not counting the leaf optimization here, bar return to foo which
-immediately returns: 2 back-2-back returns.
-Is that the case you're talking about here?
+IMHO this should be called FW_DO_IDLE_SLEEP, as this is how it is used
+on Exynos4x12.
 
-> target addresses. So we zero out the from address for the first target address and re-read
-> the second address over again. So thats how we get zero as the from address. This is how the
-> HW capture the samples. I was reluctant to drop these samples but I agree that these kind of
-> samples can be dropped if we need to.
->
-I think we need to make it as simple as possible for tools, i.e.,
-avoid having to decode the
-disassembly to figure out what happened. Here address 0 is not exploitable.
+OR (which is probably a better idea)
 
-> if (val & BHRB_TARGET) {
->         /* Shouldn't have two targets in a
->            row.. Reset index and try again */
->         r_index--;
->         addr = 0;
-> }
+This is probably too Exynos-specific, so mode argument could be kept int
+or maybe unsigned long to make it more universal and this enum defined
+in an Exynos-specific header instead.
+
+Best regards,
+Tomasz
