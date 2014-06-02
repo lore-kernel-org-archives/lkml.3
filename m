@@ -1,58 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754831AbaFBPjx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 11:39:53 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:46840 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753871AbaFBPju (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 11:39:50 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/XDYCrcz1OwGzscZCG7v5i
-Date: Mon, 2 Jun 2014 08:39:41 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: FanWu <fwu@marvell.com>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "swarren@nvidia.com" <swarren@nvidia.com>,
-        Chao Xie <cxie4@marvell.com>, Yilu Mao <ylmao@marvell.com>,
-        Ning Jiang <njiang1@marvell.com>, Xiaofan Tian <tianxf@marvell.com>,
-        Fangsuo Wu <fswu@marvell.com>
-Subject: Re: [PATCH v2] pinctrl: add params in disable_setting for different
- usage
-Message-ID: <20140602153941.GA11004@atomide.com>
-References: <1400728210-17863-1-git-send-email-fwu@marvell.com>
- <537E848C.5010204@wwwdotorg.org>
- <537EAA46.8010409@marvell.com>
- <537F7407.5080404@wwwdotorg.org>
+	id S1753819AbaFBPjq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 11:39:46 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:46302 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751933AbaFBPjp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 11:39:45 -0400
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+To: Linus Walleij <linus.walleij@linaro.org>, Lee Jones <lee.jones@linaro.org>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Rob Herring <robh@kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Thierry Reding <thierry.reding@gmail.com>
+Subject: [PATCH-next] mfd: ab8500: fix dt irq mapping
+Date: Mon, 2 Jun 2014 19:27:58 +0300
+Message-ID: <1401726478-14879-1-git-send-email-grygorii.strashko@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <537F7407.5080404@wwwdotorg.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Stephen Warren <swarren@wwwdotorg.org> [140523 09:16]:
-> On 05/22/2014 07:54 PM, FanWu wrote:
-> > the pinctrl-single driver is still using ops->disable, if I remove the
-> > "disable" in ops, there will be build error in the vendor's code base
-> > who is using pinctrl-single driver.
-> 
-> I thought Tony said it was fine to simply remove pinctrl-single's
-> ops->disable code completeley.
+The AD8500 defines itself as interrupt-controller in DT,
+but it doesn't assign DT node to IRQ domain when creates it.
+As result, of_irq_xx() helpers don't work because they can't
+find necessary IRQ domain.
 
-AFAIK nobody is using it. At least we don't have any references to
-pinctrl-single,function-off property in the .dts files.
+Hence, fix it by assigning AD8500 core device DT node to IRQ
+domain when it's created.
 
-So removing pcs_disable seems safe to do, the property we probably
-want to parse and produce a warning in case somebody is using it
-out of tree.
+This patch fixes STE u8500 Snowball boot failure reported by Kevin Hilman
+https://lkml.org/lkml/2014/5/27/624
 
-Regards,
+Cc: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Lee Jones <lee.jones@linaro.org>
+Cc: Rob Herring <robh@kernel.org>
+Cc: Grant Likely <grant.likely@linaro.org>
+Cc: Thierry Reding <thierry.reding@gmail.com>
+Reported-and-tested-by: Kevin Hilman <khilman@linaro.org>
+Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+---
+ drivers/mfd/ab8500-core.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Tony
+diff --git a/drivers/mfd/ab8500-core.c b/drivers/mfd/ab8500-core.c
+index a8ee4a3..cf2e6a1 100644
+--- a/drivers/mfd/ab8500-core.c
++++ b/drivers/mfd/ab8500-core.c
+@@ -591,7 +591,7 @@ static int ab8500_irq_init(struct ab8500 *ab8500, struct device_node *np)
+ 		num_irqs = AB8500_NR_IRQS;
+ 
+ 	/* If ->irq_base is zero this will give a linear mapping */
+-	ab8500->domain = irq_domain_add_simple(NULL,
++	ab8500->domain = irq_domain_add_simple(ab8500->dev->of_node,
+ 			num_irqs, 0,
+ 			&ab8500_irq_ops, ab8500);
+ 
+-- 
+1.7.9.5
+
