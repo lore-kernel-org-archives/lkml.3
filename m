@@ -1,85 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751790AbaFBTOP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 15:14:15 -0400
-Received: from us01smtprelay-2.synopsys.com ([198.182.60.111]:51059 "EHLO
-	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750750AbaFBTON convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 15:14:13 -0400
-From: Alexey Brodkin <Alexey.Brodkin@synopsys.com>
-To: "davem@davemloft.net" <davem@davemloft.net>
-CC: "hdegoede@redhat.com" <hdegoede@redhat.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "wens@csie.org" <wens@csie.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "peppe.cavallaro@st.com" <peppe.cavallaro@st.com>,
-        "Vineet.Gupta1@synopsys.com" <Vineet.Gupta1@synopsys.com>
-Subject: Re: [PATCH] stmmac: add DMA initialization delay to device tree
-Thread-Topic: [PATCH] stmmac: add DMA initialization delay to device tree
-Thread-Index: AQHPfnKE4qF+51saAUCcKXaEmWGweptd/umAgAAQUgA=
-Date: Mon, 2 Jun 2014 19:14:09 +0000
-Message-ID: <1401736448.2430.10.camel@abrodkin-8560l>
-References: <1401720835-21507-1-git-send-email-abrodkin@synopsys.com>
-	 <20140602.111543.1026699389707378851.davem@davemloft.net>
-In-Reply-To: <20140602.111543.1026699389707378851.davem@davemloft.net>
-Accept-Language: en-US, ru-RU
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.225.15.76]
-Content-Type: text/plain; charset=US-ASCII
-Content-ID: <9DCACED16E41174CA17D0AAD6E4F2880@internal.synopsys.com>
-Content-Transfer-Encoding: 7BIT
+	id S1752242AbaFBTOc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 15:14:32 -0400
+Received: from mga09.intel.com ([134.134.136.24]:22974 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752036AbaFBTOb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 15:14:31 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,958,1392192000"; 
+   d="scan'208";a="550400895"
+Date: Mon, 2 Jun 2014 22:14:16 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: eric ernst <eric.ernst@linux.intel.com>
+Cc: linus.walleij@linaro.org, linux-kernel@vger.kernel.org,
+        mark.gross@intel.com
+Subject: Re: [PATCH 1/1] PINCTRL: Warn if direct IRQ GPIO set to output
+Message-ID: <20140602191416.GD1730@lahna.fi.intel.com>
+References: <1401218804-77997-1-git-send-email-eric.ernst@linux.intel.com>
+ <20140530084822.GC1645@lahna.fi.intel.com>
+ <538CC3E4.2080700@linux.intel.com>
+ <20140602191322.GC1730@lahna.fi.intel.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140602191322.GC1730@lahna.fi.intel.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear David,
-
-On Mon, 2014-06-02 at 11:15 -0700, David Miller wrote:
-> From: Alexey Brodkin <Alexey.Brodkin@synopsys.com>
-> Date: Mon,  2 Jun 2014 18:53:55 +0400
+On Mon, Jun 02, 2014 at 10:13:22PM +0300, Mika Westerberg wrote:
+> On Mon, Jun 02, 2014 at 11:35:16AM -0700, eric ernst wrote:
+> > On 14-05-30 01:48 AM, Mika Westerberg wrote:
+> > >On Tue, May 27, 2014 at 12:26:44PM -0700, eric.ernst@linux.intel.com wrote:
+> > >>From: Eric Ernst <eric.ernst@linux.intel.com>
+> > >>
+> > >>For Baytrail, you should never set a GPIO set to direct_irq
+> > >>to output mode.  When direct_irq_en is set for a GPIO, it is
+> > >>tied directly to an APIC internally, and making the pad output
+> > >>does not make any sense. Assert a WARN() in the event this happens.
+> > >Can't we just clear that flag when the GPIO is requested? Or is this
+> > >something which can't be done at this point?
+> > The IRQ setting for that register (the IRQ wiring via direct_irq_en) should
+> > be set statically on boot, and should not be changed, let alone allowing for
+> > multiple changes during runtime.
 > 
-> > On some platforms existing 100 msecond delay is not enough for DMA block to
-> > recover after reset.
-> > For example MAC DMA waits for all PHY input clocks are present and depending
-> > on the board reset bit deassertion may take different amount of time.
-> > 
-> > Having this parameter easily configurable allows each board to have its own
-> > value, while all exisiting boards will continue to use current default value of
-> > 100 msec.
-> > 
-> > Signed-off-by: Alexey Brodkin <abrodkin@synopsys.com>
+> OK.
 > 
-> Is there an upper bound for this you can just use?
-> 
-> It taking too long and timing out is an error condition, so just
-> using a limit value of "100" or something should be perfectly fine.
-> 
-> I don't think it's reasonable to put every conceivable nuance into
-> the DT nodes.
+> Please then follow the coding conventions documented in
+> Documentation/SubmittingPatches and also check that
 
-I understand that putting everything in DT is not a way to go.
-But a rationale for this particular patch is as follows: as I may see up
-until now everybody was happy with 100 milliseconds, but on my
-particular board connected to Gbit network I see that more than a second
-is required for DMA to initialize. If I connect the same board to 100
-Mbit network then initialization delay could be up to 2.5 seconds.
+Documentation/CodingStyle, that is.
 
-So I may definitely bump the delay to say 3 seconds, but what if another
-user needs even more?
-
-On the other hand those who are happy now with 100 msec delay may be be
-disappointed in case of failure and frozen for N seconds board waiting
-for timeout.
-
-If you think that delay for a few seconds in case of initialization
-failure is acceptable then I will submit a patch that increases delay to
-3 seconds (personally I haven't seen longer init times).
-
-Regards,
-Alexey
+> scripts/checkpatch.pl doesn't complain too much.
