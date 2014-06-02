@@ -1,89 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932071AbaFBNGZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 09:06:25 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:46648 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754139AbaFBNGU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 09:06:20 -0400
-X-AuditID: cbfee61b-b7fbb6d000001be3-72-538c76ca96bb
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: Tomasz Figa <tomasz.figa@gmail.com>
-Cc: Kukjin Kim <kgene.kim@samsung.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org
-Subject: Re: [PATCH v2 1/7] arm: firmware: Check firmware is running or not
-Date: Mon, 02 Jun 2014 15:05:54 +0200
-Message-id: <7579658.qxmXgWLkvU@amdc1032>
-User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
-In-reply-to: <538C7342.4000700@gmail.com>
-References: <1401712543-14281-1-git-send-email-b.zolnierkie@samsung.com>
- <1401712543-14281-2-git-send-email-b.zolnierkie@samsung.com>
- <538C7342.4000700@gmail.com>
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=ISO-8859-1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrPLMWRmVeSWpSXmKPExsVy+t9jAd1TZT3BBpt2SVvM+yxr0bvgKpvF
-	2aY37BbvDz1jttj0+BqrxeVdc9gsPvceYbSYcX4fk8WZ05dYLU7+6WW0WD/jNYvFql1/GC02
-	fvVw4PXYOesuu8eda3vYPDYvqfe4/e8xs8eWq+0sHn1bVjF6fN4kF8AexWWTkpqTWZZapG+X
-	wJVx85VBQQ9XxYnrK5kbGI+wdzFyckgImEh8W7WOFcIWk7hwbz0biC0ksIhR4updHwi7hUni
-	wQotEJtNwEpiYvsqRhBbREBd4tuUfqA5XBzMAseZJZ73LgRrFhbwltjzbR6YzSKgKnF2yT6w
-	BbwCmhLdf/aDxUUFPCV2bF8JZnMCxV+8WcsCsWwZo8TbmcwQ9YISPybfA4szC8hL7Ns/lRXC
-	1pHY3zqNbQKjwCwkZbOQlM1CUraAkXkVo2hqQXJBcVJ6rpFecWJucWleul5yfu4mRnC0PJPe
-	wbiqweIQowAHoxIP7w/1nmAh1sSy4srcQ4wSHMxKIrxLLYBCvCmJlVWpRfnxRaU5qcWHGKU5
-	WJTEeQ+2WgcKCaQnlqRmp6YWpBbBZJk4OKUaGPmyz76PULVadPoR37K/nVOnaBaX+grPWmyk
-	mb0j86bUJfmS+RdkDPIuTrLS4P1p7309be2ul++yI0NSFnZNl18YESN2N6OaN81E8ayTxdMt
-	1+wKRFSOK+zZ3Lkp3n59T5iEggarcsHMZx41u2YuT+qPOn96qdKOuyrBb5xXzE23sQw7rDNz
-	sxJLcUaioRZzUXEiAJotLZCSAgAA
+	id S1754725AbaFBNGh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 09:06:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2333 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753718AbaFBNGf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 09:06:35 -0400
+Date: Mon, 2 Jun 2014 15:06:13 +0200 (CEST)
+From: =?ISO-8859-15?Q?Luk=E1=A8_Czerner?= <lczerner@redhat.com>
+X-X-Sender: lczerner@localhost.localdomain
+To: Namjae Jeon <namjae.jeon@samsung.com>
+cc: "'Dave Chinner'" <david@fromorbit.com>, "'Theodore Ts'o'" <tytso@mit.edu>,
+        "'linux-ext4'" <linux-ext4@vger.kernel.org>, xfs@oss.sgi.com,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "'Ashish Sangwan'" <a.sangwan@samsung.com>
+Subject: RE: [PATCH v2 0/10] fs: Introduce FALLOC_FL_INSERT_RANGE for
+ fallocate
+In-Reply-To: <002201cf7e59$2e684c10$8b38e430$@samsung.com>
+Message-ID: <alpine.LFD.2.00.1406021450541.2231@localhost.localdomain>
+References: <003601cf6aa7$883103b0$98930b10$@samsung.com> <alpine.LFD.2.00.1405301238190.2009@localhost.localdomain> <000d01cf7ca3$98335c50$c89a14f0$@samsung.com> <alpine.LFD.2.00.1406021204540.2231@localhost.localdomain>
+ <002201cf7e59$2e684c10$8b38e430$@samsung.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-307683217-1401714377=:2231"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Hi,
+--8323328-307683217-1401714377=:2231
+Content-Type: TEXT/PLAIN; charset=iso-8859-2
+Content-Transfer-Encoding: 8BIT
 
-On Monday, June 02, 2014 02:51:14 PM Tomasz Figa wrote:
-> Hi,
+On Mon, 2 Jun 2014, Namjae Jeon wrote:
+
+> Date: Mon, 02 Jun 2014 20:52:51 +0900
+> From: Namjae Jeon <namjae.jeon@samsung.com>
+> To: 'Luká¹ Czerner' <lczerner@redhat.com>
+> Cc: 'Dave Chinner' <david@fromorbit.com>, 'Theodore Ts'o' <tytso@mit.edu>,
+>     'linux-ext4' <linux-ext4@vger.kernel.org>, xfs@oss.sgi.com,
+>     linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+>     'Ashish Sangwan' <a.sangwan@samsung.com>
+> Subject: RE: [PATCH v2 0/10] fs: Introduce FALLOC_FL_INSERT_RANGE for
+>     fallocate
 > 
-> On 02.06.2014 14:35, Bartlomiej Zolnierkiewicz wrote:
-> > From: Kyungmin Park <kyungmin.park@samsung.com>
 > > 
-> > To support multi-platform, it needs to know it's running under secure
-> > OS or not.  Sometimes it needs to access physical address by SMC calls.
+> > > Date: Sat, 31 May 2014 16:40:29 +0900
+> > > From: Namjae Jeon <namjae.jeon@samsung.com>
+> > > To: 'Luká¹ Czerner' <lczerner@redhat.com>
+> > > Cc: 'Dave Chinner' <david@fromorbit.com>, 'Theodore Ts'o' <tytso@mit.edu>,
+> > >     'linux-ext4' <linux-ext4@vger.kernel.org>, xfs@oss.sgi.com,
+> > >     linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+> > >     'Ashish Sangwan' <a.sangwan@samsung.com>
+> > > Subject: RE: [PATCH v2 0/10] fs: Introduce FALLOC_FL_INSERT_RANGE for
+> > >     fallocate
+> > >
+> > >
+> > > > > Date: Thu, 08 May 2014 19:23:19 +0900
+> > > > > From: Namjae Jeon <namjae.jeon@samsung.com>
+> > > > > To: Dave Chinner <david@fromorbit.com>, Theodore Ts'o <tytso@mit.edu>
+> > > > > Cc: linux-ext4 <linux-ext4@vger.kernel.org>, xfs@oss.sgi.com,
+> > > > >     linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+> > > > >     Ashish Sangwan <a.sangwan@samsung.com>
+> > > > > Subject: [PATCH v2 0/10] fs: Introduce FALLOC_FL_INSERT_RANGE for fallocate
+> > > > >
+> > > > > In continuation of the work of making the process of non linear editing of
+> > > > > media files faster, we introduce here the new flag FALLOC_FL_INSERT_RANGE
+> > > > > for fallocate.
+> > > > >
+> > > > > This flag will work opposite to the newly added FALLOC_FL_COLLAPSE_RANGE flag.
+> > > > > As such, specifying FALLOC_FL_INSERT_RANGE flag will insert zeroed-out space
+> > > > > in between the file within the range specified by offset and len. User can
+> > > > > write new data in this space. e.g. ads.
+> > > > > Like collapse range, currently we have the limitation that offset and len should
+> > > > > be block size aligned for both XFS and Ext4.
+> > > > >
+> > > > > The semantics of the flag are :
+> > > > > 1) It allocates new zeroed out on disk space of len bytes starting
+> > > > >    at offset byte without overwriting any existing data. All the data blocks
+> > > > >    from offset to EOF are shifted towards right to make space for inserting
+> > > > >    new blocks
+> > > >
+> > > > Hi,
+> > > >
+> > > > this sounds a little bit weird to me. I understand the reason for
+> > > > this, but this is effectively two operations masking as one. We
+> > > > shift the existing data and then we allocate unwritten extents for
+> > > > the hole we've created.
+> > > >
+> > > > What would make more sense to me is to implement only the first
+> > > > operation - the shift. And then let the user to allocate unwritten
+> > > > extents for the hole using simple fallocate.
+> > > >
+> > > > The reason is that if you succeed the first part and then fail the
+> > > > second due to ENOSPC or any other reason the file will end up in
+> > > > undefined state unnecessarily. Yes in your current implementation
+> > > > it seems that you'll always end up with the hole in the file and the
+> > > > rest is properly shifted, but that may vary from file system to file
+> > > > system. Some might choose to roll back the shift, some might not.
+> > > >
+> > > > If FALLOC_FL_INSERT_RANGE (or any name you wish to choose) would
+> > > > just simply shift the extents then you'll get rid of this and the
+> > > > only thing that user needs to do (if he chooses to) is to use
+> > > > fallocate for the hole created by the shift. If it fails, then
+> > > > well, he can try again without any consequences. As a bonus you get
+> > > > the possibility to leave the hole in the file which might be useful
+> > > > as well.
+> > > >
+> > > > With current behaviour this might get very confusing very quickly.
+> > > >
+> > > > What do you and others think ?
+> > > Hi Lukas.
+> > > Insert range inherently means inserting a real range of space into
+> > > the file to provide guaranteed space with user in the inserted area
+> > > so that further writes should not fail with an -ENOSPC at least.
+> > > If insert range cannot gurantees the above semantics, It should
+> > > return error to user space.
 > > 
-> > e.g.,
-> >         if (firmware_run()) {
-> >                 addr = physical address;
-> >         } else {
-> >                 addr = virtual address;
-> >         }
+> > So what will happen when there is not enough space when "inserting a
+> > range" ? And how should user proceed from there ?
+> If insert range fails with an ENOSPC error, user could use collapse
+> range on the same range to remove the hole.
+> And after freeing more space, he can again try inserting range.
+> Ofcourse, this type of guidance should be properly documented in
+> manpage. When updating fallocate(2) manpage, I will keep  in mind to
+> describe ENOSPC handling.
+
+Why collapse ? The hole is already there right ? Why not just use
+fallocate to allocate the space for the hole. And that's my point
+actually. Why not do it this way in the first place, because this is
+really counterintuitive.
+
 > > 
-> >         call_firmware_ops(read_address, addr, &value);
-> 
-> Hmm, I don't understand the code above. It first asks whether the
-> firmware is available and then calls a firmware operation anyway
-> (assuming that firmware is available regardless of the check above)...
-> 
-> I don't like the idea of this function, because we have designed the
-> firmware API to not require this kind of checks. Instead, you just call
-> whatever firmware operation you need and if it returns -ENOSYS you need
-> to fallback to legacy (firmware-less) way of doing it.
-> 
-> Could you provide your use case for which this doesn't work?
+> > >
+> > > If insert range has been performed on a file, It will reserve space
+> > > that write never fail in the inserted area,
+> > > In case of full partition or small available size than the range
+> > > user want, It seems odd just only left inserting a hole in the middle
+> > > of file and return success to user when no one can really write to
+> > > this hole.
+> > 
+> > There is a fallocate for allocation, so as I already said you can
+> > shift the extents to make a hole in the file and then use fallocate
+> > to allocate space for it and you'll get the same result. You are
+> > basically doing that now as well, but when the allocation fails the
+> > whole "insert range" ioct fails, however the extents are already
+> > shifter and there is already a holi in the file so freeing some
+> > space and running this ioctl again will not help you at all. While
+> > if you fail a fallocate, you can free some space and run it again
+> > without any problems. The result will be as expected.
+> > 
+> > What I am arguing about is basically that your insert range ioct is
+> > masking two operations as one. Why not to make it transparent and
+> > split it into "shift extents" and fallocate ? Then there is a
+> > question about the name because it's no longer "insert range" but
+> > rather "insert hole" which I think is better and arguably more
+> > useful semantic.
+> The same thoeory can be argued against collapse range semantics too.
+> One can argue that collapse range should not remove any data blocks
+> from the specified range as that can be done by punch hole, so user
+> should first perform punch hole and then call collapse range to
+> eliminate the hole.
 
-Please take a look at patch #7.
+That does not make any sense. The whole idea behind collapse range
+is, well collapse the range which means move the extents. And once
+you do that there is nothing to punch out. Puncing first and
+collapse later will not bring you anything at all.
 
-Best regards,
---
-Bartlomiej Zolnierkiewicz
-Samsung R&D Institute Poland
-Samsung Electronics
+> There are 2 reasons I make insert range to allocate space.
+> One is to keep insert range behavior as exactly opposite of
+> the collapse range and it is named as such so that it seems obvious
+> that it is related with collapse range.
+> Other one is that,  there will always be need of allocating space for
+> data  after making hole.  So doing this within insert range is saving
+> user from making 1 extra sys call.
 
+You're assuming that everyone will be using it the same way you
+intent to use it. That's not true however. There will be perfectly
+valid use cases for not allocating space for newly created hole.
+
+>From the top of my head, for example qemu could use it for volume
+management on top of image files - changing the size of the partitions
+without moving data around. And I bet there will be more use cases.
+With insert hole semantics it will give you more flexibility.
+
+-Lukas
+
+> That said, I agree with you that it is arguable and I am not biased
+> to this behavior.
+> Probably, need some more thoughts from other fs people.
+> 
+> Thanks for your opinion!
+> 
+> > 
+> > Thanks!
+> > -Lukas
+> > 
+> > >
+> > > Thanks!
+> > > >
+> > > > Thanks!
+> > > > -LUkas
+> > > >
+> > > >
+> > > > > 2) It should be used exclusively. No other fallocate flag in combination.
+> > > > > 3) Offset and length supplied to fallocate should be fs block size aligned
+> > > > >    in case of xfs and ext4.
+> > > > > 4) Insert range does not work for the case when offset is overlapping/beyond
+> > > > >    i_size. If the user wants to allocate space at the end of file they are
+> > > > >    advised to use either ftruncate(2) or fallocate(2) with mode 0.
+> > > > > 5) It increses the size of file by len bytes.
+> > > > >
+> > > > >
+> > > > > Namjae Jeon (10):
+> > > > >  fs: Add support FALLOC_FL_INSERT_RANGE for fallocate
+> > > > >  xfs: Add support FALLOC_FL_INSERT_RANGE for fallocate
+> > > > >  ext4: Add support FALLOC_FL_INSERT_RANGE for fallocate
+> > > > >  xfsprogs: xfs_io: add finsert command for insert range via fallocate
+> > > > >  xfstests: generic/027: Standard insert range tests
+> > > > >  xfstests: generic/028: Delayed allocation insert range
+> > > > >  xfstests: generic/029: Multi insert range tests
+> > > > >  xfstests: generic/030: Delayed allocation multi insert
+> > > > >  xfstests: fsstress: Add fallocate insert range operation
+> > > > >  xfstests: fsx: Add fallocate insert range operation
+> > > > >
+> > > > >
+> > >
+> > >
+> 
+> 
+--8323328-307683217-1401714377=:2231--
