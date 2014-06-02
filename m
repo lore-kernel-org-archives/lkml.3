@@ -1,230 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752762AbaFBSHq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 14:07:46 -0400
-Received: from mout.web.de ([212.227.15.14]:52807 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750780AbaFBSHo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 14:07:44 -0400
-From: =?UTF-8?q?Linus=20L=C3=BCssing?= <linus.luessing@web.de>
-To: netdev@vger.kernel.org
-Cc: bridge@lists.linux-foundation.org,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Herbert Xu <herbert@gondor.apana.org.au>, linux-kernel@vger.kernel.org,
-        b.a.t.m.a.n@lists.open-mesh.org,
-        =?UTF-8?q?Linus=20L=C3=BCssing?= <linus.luessing@web.de>
-Subject: [PATCHv3 net-next 4/4] bridge: memorize and export selected IGMP/MLD querier port
-Date: Mon,  2 Jun 2014 20:07:46 +0200
-Message-Id: <1401732466-3027-4-git-send-email-linus.luessing@web.de>
-X-Mailer: git-send-email 2.0.0.rc4
-In-Reply-To: <1401732466-3027-1-git-send-email-linus.luessing@web.de>
-References: <1401732466-3027-1-git-send-email-linus.luessing@web.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Provags-ID: V03:K0:hldTA0FjGsIG8lnPbXPeq3RYwRgoV7Wp9j1qL9vuh14QW+sGOAl
- SRN96x/xjsRxUQmGs1nu/Mteh6UNdaycjTsSkRcBjnwr/2ZS6GmQD8KUypJrQylmkhEF/7V
- 6P2BPr9V2YRLxcpBbaFHU0gkiLjoNYLqEx442Os4eMo8Mb9cbKNVoXLo+L8I1j7o2JyZWw0
- KNQ8JniiUoX8zFqqccIuA==
+	id S1752782AbaFBSJS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 14:09:18 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:49612 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751338AbaFBSJQ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 14:09:16 -0400
+Content-Type: text/plain; charset=windows-1252
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.2\))
+Subject: Re: [PATCH 1/2] pci: Add IORESOURCE_BIT entry for PCIe ECAM resources.
+From: Kumar Gala <galak@codeaurora.org>
+In-Reply-To: <20140602162306.4AB0FC40476@trevor.secretlab.ca>
+Date: Mon, 2 Jun 2014 13:09:08 -0500
+Cc: Arnd Bergmann <arnd@arndb.de>, Liviu Dudau <Liviu.Dudau@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Rob Herring <robherring2@gmail.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Kishon Vijay Abraham I <kishon@ti.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <2F6515B1-48FE-4ED6-908E-CC1CAD7AF403@codeaurora.org>
+References: <20140530233034.GH1677@bart.dudau.co.uk> <1401496601-31983-1-git-send-email-Liviu.Dudau@arm.com> <1401496601-31983-2-git-send-email-Liviu.Dudau@arm.com> <4756033.LkcFQN0chs@wuerfel> <20140602150945.964D4C40381@trevor.secretlab.ca> <390B3F94-C058-47D6-82CE-0393E60014FF@codeaurora.org> <20140602162306.4AB0FC40476@trevor.secretlab.ca>
+To: Grant Likely <grant.likely@linaro.org>
+X-Mailer: Apple Mail (2.1878.2)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding bridge support to the batman-adv multicast optimization requires
-batman-adv knowing about the existence of bridged-in IGMP/MLD queriers
-to be able to reliably serve any multicast listener behind this same
-bridge.
 
-Signed-off-by: Linus LÃ¼ssing <linus.luessing@web.de>
----
- include/linux/if_bridge.h |    1 +
- net/bridge/br_multicast.c |   72 +++++++++++++++++++++++++++++++++++++++++----
- net/bridge/br_private.h   |    1 +
- 3 files changed, 68 insertions(+), 6 deletions(-)
+On Jun 2, 2014, at 11:23 AM, Grant Likely <grant.likely@linaro.org> wrote:
 
-diff --git a/include/linux/if_bridge.h b/include/linux/if_bridge.h
-index 44d6eb0..fd22789 100644
---- a/include/linux/if_bridge.h
-+++ b/include/linux/if_bridge.h
-@@ -38,5 +38,6 @@ typedef int br_should_route_hook_t(struct sk_buff *skb);
- extern br_should_route_hook_t __rcu *br_should_route_hook;
- int br_multicast_list_adjacent(struct net_device *dev,
- 			       struct list_head *br_ip_list);
-+bool br_multicast_has_querier_adjacent(struct net_device *dev, int proto);
- 
- #endif
-diff --git a/net/bridge/br_multicast.c b/net/bridge/br_multicast.c
-index 772476b..cd3cf39 100644
---- a/net/bridge/br_multicast.c
-+++ b/net/bridge/br_multicast.c
-@@ -1081,6 +1081,7 @@ static int br_ip6_multicast_mld2_report(struct net_bridge *br,
- #endif
- 
- static bool br_ip4_multicast_select_querier(struct net_bridge *br,
-+					    struct net_bridge_port *port,
- 					    __be32 saddr)
- {
- 	if (!timer_pending(&br->ip4_own_query.timer) &&
-@@ -1098,11 +1099,15 @@ static bool br_ip4_multicast_select_querier(struct net_bridge *br,
- update:
- 	br->ip4_querier.addr.u.ip4 = saddr;
- 
-+	/* update protected by general multicast_lock by caller */
-+	rcu_assign_pointer(br->ip4_querier.port, port);
-+
- 	return true;
- }
- 
- #if IS_ENABLED(CONFIG_IPV6)
- static bool br_ip6_multicast_select_querier(struct net_bridge *br,
-+					    struct net_bridge_port *port,
- 					    struct in6_addr *saddr)
- {
- 	if (!timer_pending(&br->ip6_own_query.timer) &&
-@@ -1117,19 +1122,23 @@ static bool br_ip6_multicast_select_querier(struct net_bridge *br,
- update:
- 	br->ip6_querier.addr.u.ip6 = *saddr;
- 
-+	/* update protected by general multicast_lock by caller */
-+	rcu_assign_pointer(br->ip6_querier.port, port);
-+
- 	return true;
- }
- #endif
- 
- static bool br_multicast_select_querier(struct net_bridge *br,
-+					struct net_bridge_port *port,
- 					struct br_ip *saddr)
- {
- 	switch (saddr->proto) {
- 	case htons(ETH_P_IP):
--		return br_ip4_multicast_select_querier(br, saddr->u.ip4);
-+		return br_ip4_multicast_select_querier(br, port, saddr->u.ip4);
- #if IS_ENABLED(CONFIG_IPV6)
- 	case htons(ETH_P_IPV6):
--		return br_ip6_multicast_select_querier(br, &saddr->u.ip6);
-+		return br_ip6_multicast_select_querier(br, port, &saddr->u.ip6);
- #endif
- 	}
- 
-@@ -1201,7 +1210,7 @@ static void br_multicast_query_received(struct net_bridge *br,
- 					struct br_ip *saddr,
- 					unsigned long max_delay)
- {
--	if (!br_multicast_select_querier(br, saddr))
-+	if (!br_multicast_select_querier(br, port, saddr))
- 		return;
- 
- 	br_multicast_update_query_timer(br, query, max_delay);
-@@ -1804,12 +1813,14 @@ int br_multicast_rcv(struct net_bridge *br, struct net_bridge_port *port,
- }
- 
- static void br_multicast_query_expired(struct net_bridge *br,
--				       struct bridge_mcast_own_query *query)
-+				       struct bridge_mcast_own_query *query,
-+				       struct bridge_mcast_querier *querier)
- {
- 	spin_lock(&br->multicast_lock);
- 	if (query->startup_sent < br->multicast_startup_query_count)
- 		query->startup_sent++;
- 
-+	rcu_assign_pointer(querier, NULL);
- 	br_multicast_send_query(br, NULL, query);
- 	spin_unlock(&br->multicast_lock);
- }
-@@ -1818,7 +1829,7 @@ static void br_ip4_multicast_query_expired(unsigned long data)
- {
- 	struct net_bridge *br = (void *)data;
- 
--	br_multicast_query_expired(br, &br->ip4_own_query);
-+	br_multicast_query_expired(br, &br->ip4_own_query, &br->ip4_querier);
- }
- 
- #if IS_ENABLED(CONFIG_IPV6)
-@@ -1826,7 +1837,7 @@ static void br_ip6_multicast_query_expired(unsigned long data)
- {
- 	struct net_bridge *br = (void *)data;
- 
--	br_multicast_query_expired(br, &br->ip6_own_query);
-+	br_multicast_query_expired(br, &br->ip6_own_query, &br->ip6_querier);
- }
- #endif
- 
-@@ -1849,8 +1860,10 @@ void br_multicast_init(struct net_bridge *br)
- 	br->multicast_membership_interval = 260 * HZ;
- 
- 	br->ip4_other_query.delay_time = 0;
-+	br->ip4_querier.port = NULL;
- #if IS_ENABLED(CONFIG_IPV6)
- 	br->ip6_other_query.delay_time = 0;
-+	br->ip6_querier.port = NULL;
- #endif
- 
- 	spin_lock_init(&br->multicast_lock);
-@@ -2199,3 +2212,50 @@ unlock:
- 	return count;
- }
- EXPORT_SYMBOL_GPL(br_multicast_list_adjacent);
-+
-+/**
-+ * br_multicast_has_querier_adjacent - Checks for a querier behind a bridge port
-+ * @dev: The bridge port adjacent to which to check for a querier
-+ * @proto: The protocol family to check for: IGMP -> ETH_P_IP, MLD -> ETH_P_IPV6
-+ *
-+ * Checks whether the given interface has a bridge on top and if so returns
-+ * true if a selected querier is behind one of the other ports of this
-+ * bridge. Otherwise returns false.
-+ */
-+bool br_multicast_has_querier_adjacent(struct net_device *dev, int proto)
-+{
-+	struct net_bridge *br;
-+	struct net_bridge_port *port;
-+	bool ret = false;
-+
-+	rcu_read_lock();
-+	if (!br_port_exists(dev))
-+		goto unlock;
-+
-+	port = br_port_get_rcu(dev);
-+	if (!port || !port->br)
-+		goto unlock;
-+
-+	br = port->br;
-+
-+	switch (proto) {
-+	case ETH_P_IP:
-+		if (!timer_pending(&br->ip4_other_query.timer) ||
-+		    rcu_dereference(br->ip4_querier.port) == port)
-+			goto unlock;
-+		break;
-+	case ETH_P_IPV6:
-+		if (!timer_pending(&br->ip6_other_query.timer) ||
-+		    rcu_dereference(br->ip6_querier.port) == port)
-+			goto unlock;
-+		break;
-+	default:
-+		goto unlock;
-+	}
-+
-+	ret = true;
-+unlock:
-+	rcu_read_unlock();
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(br_multicast_has_querier_adjacent);
-diff --git a/net/bridge/br_private.h b/net/bridge/br_private.h
-index d7b0e04..c5e4585 100644
---- a/net/bridge/br_private.h
-+++ b/net/bridge/br_private.h
-@@ -70,6 +70,7 @@ struct bridge_mcast_other_query {
- /* selected querier */
- struct bridge_mcast_querier {
- 	struct br_ip addr;
-+	struct net_bridge_port __rcu	*port;
- };
- #endif
- 
+> On Mon, 2 Jun 2014 10:40:30 -0500, Kumar Gala <galak@codeaurora.org> wrote:
+>> 
+>> On Jun 2, 2014, at 10:09 AM, Grant Likely <grant.likely@linaro.org> wrote:
+>> 
+>>> On Sat, 31 May 2014 20:41:04 +0200, Arnd Bergmann <arnd@arndb.de> wrote:
+>>>> On Saturday 31 May 2014 01:36:40 Liviu Dudau wrote:
+>>>>> We would like to be able to describe PCIe ECAM resources as
+>>>>> IORESOURCE_MEM blocks while distinguish them from standard
+>>>>> memory resources. Add an IORESOURCE_BIT entry for this case.
+>>>>> 
+>>>>> Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
+>>>> 
+>>>> I still don't see any value in this at all. What is the advantage
+>>>> of doing this opposed to just having a standardized 'reg' property
+>>>> for a particular compatible string?
+>>> 
+>>> I'm inclined to agree. It doesn't seem appropriate to put config space
+>>> in ranges, and the host controller binding is responsible for
+>>> identifying how config space is memory mapped.
+>>> 
+>>> g.
+>> 
+>> I don’t agree when it comes to ECAM, but we can drop this for now
+>> until someone really does that.
+> 
+> Okay, humor me then. What would a ranges property look like for ECAM? Do
+> you have an example? I believe there would need to be a separate entry
+> for each and every PCI device on the bus to get the config spaces to be
+> contiguous.
+
+The definition of ECAM is a 256M linear region with each 4k being a different bus/dev/func.
+
+So the ranges would look something like:
+
+   ranges = <0x00000000 0 0x00000000 0x0ff00000 0 0x10000000>   /* configuration space */
+
+The reason I think allow an ECAM makes sense in ranges is because it allows for a direct IO read/write to CFG space (w/o any mapping) similar to what one would do for MEM space or IO.
+
+> However, what do we do with the 2 cases that exist in upstream that
+>> are using ranges for cfg space?
+> 
+> Ignore them in the core code? Make the specific host controller handle
+> them I would think.
+
+I just meant, should we ‘break’ their DTs and move them from using ranges to reg?
+
+- k
+
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-arm-msm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
 -- 
-1.7.10.4
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
 
