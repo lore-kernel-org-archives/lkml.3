@@ -1,91 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753375AbaFBI7r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 04:59:47 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38648 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752880AbaFBI6S (ORCPT
+	id S1752880AbaFBJIa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 05:08:30 -0400
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:52148 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752309AbaFBJI2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 04:58:18 -0400
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-To: lee.jones@linaro.org
-Cc: sameo@linux.intel.com, patches@opensource.wolfsonmicro.com,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 3/5] mfd: arizona: Don't use devres for DCVDD
-Date: Mon,  2 Jun 2014 09:50:41 +0100
-Message-Id: <1401699043-16835-4-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1401699043-16835-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-References: <1401699043-16835-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+	Mon, 2 Jun 2014 05:08:28 -0400
+From: srinivas.kandagatla@linaro.org
+To: Russell King <linux@arm.linux.org.uk>,
+        Ulf Hansson <ulf.hansson@linaro.org>, linux-mmc@vger.kernel.org
+Cc: Chris Ball <chris@printf.net>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linus.walleij@linaro.org,
+        Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+Subject: [PATCH v6 00/12] Qualcomm SD Card Controller support
+Date: Mon,  2 Jun 2014 10:03:38 +0100
+Message-Id: <1401699818-11329-1-git-send-email-srinivas.kandagatla@linaro.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently the Arizona core uses a devm_regulator_get against its own
-device node to obtain DCVDD. The Arizona core is an MFD device and DCVDD
-is usually supplied by a child node (arizona-ldo1) of the core. As
-devres destruction for the MFD device will run after all its children
-have been destroyed, the regulator will be destroyed before devres
-calls regulator_put. This causes a warning from both the destruction of
-the child node, as the regulator is still open, and from the put of the
-regulator as the regulator device has already been destroyed.
+From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
 
-This patch handles the regulator get and put without devres to avoid
-this issue.
+Thankyou Linus W, Ulf H, Russell K and everyone for reviewing RFC to v5 patches.
 
-Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
----
- drivers/mfd/arizona-core.c |    9 ++++++---
- 1 files changed, 6 insertions(+), 3 deletions(-)
+This patch series adds Qualcomm SD Card Controller support in pl180 mmci
+driver. QCom SDCC is basically a pl180, but bit more customized, some of the
+register layouts and offsets are different to the ones mentioned in pl180
+datasheet. The plan is to totally remove the standalone SDCC driver
+drivers/mmc/host/msm_sdcc.* and start using generic mmci driver for all
+Qualcomm parts, as we get chance to test on other Qcom boards.
 
-diff --git a/drivers/mfd/arizona-core.c b/drivers/mfd/arizona-core.c
-index 48acac6..7678e84 100644
---- a/drivers/mfd/arizona-core.c
-+++ b/drivers/mfd/arizona-core.c
-@@ -676,7 +676,7 @@ int arizona_dev_init(struct arizona *arizona)
- 		goto err_early;
- 	}
- 
--	arizona->dcvdd = devm_regulator_get(arizona->dev, "DCVDD");
-+	arizona->dcvdd = regulator_get(arizona->dev, "DCVDD");
- 	if (IS_ERR(arizona->dcvdd)) {
- 		ret = PTR_ERR(arizona->dcvdd);
- 		dev_err(dev, "Failed to request DCVDD: %d\n", ret);
-@@ -690,7 +690,7 @@ int arizona_dev_init(struct arizona *arizona)
- 				       "arizona /RESET");
- 		if (ret != 0) {
- 			dev_err(dev, "Failed to request /RESET: %d\n", ret);
--			goto err_early;
-+			goto err_dcvdd;
- 		}
- 	}
- 
-@@ -699,7 +699,7 @@ int arizona_dev_init(struct arizona *arizona)
- 	if (ret != 0) {
- 		dev_err(dev, "Failed to enable core supplies: %d\n",
- 			ret);
--		goto err_early;
-+		goto err_dcvdd;
- 	}
- 
- 	ret = regulator_enable(arizona->dcvdd);
-@@ -1016,6 +1016,8 @@ err_reset:
- err_enable:
- 	regulator_bulk_disable(arizona->num_core_supplies,
- 			       arizona->core_supplies);
-+err_dcvdd:
-+	regulator_put(arizona->dcvdd);
- err_early:
- 	mfd_remove_devices(dev);
- 	return ret;
-@@ -1027,6 +1029,7 @@ int arizona_dev_exit(struct arizona *arizona)
- 	pm_runtime_disable(arizona->dev);
- 
- 	regulator_disable(arizona->dcvdd);
-+	regulator_put(arizona->dcvdd);
- 
- 	mfd_remove_devices(arizona->dev);
- 	arizona_free_irq(arizona, ARIZONA_IRQ_UNDERCLOCKED, arizona);
+To start using the existing mmci driver, a fake amba id for Qualcomm is added
+in patches:
+ mmc: mmci: Add Qualcomm specific register defines.
+ mmc: mmci: Add Qualcomm Id to amba id table.
+
+Second change is, adding a 3 clock cycle delay in between writes to
+CLKCTRL/POWER/DATACTRL/COMMAND registers. Most of the delays are taken care with
+the existing driver except delay for the COMMAND register was too small. 
+This patch fixes it.
+  mmc: mmci: Add enough delay between writes to CMD register.
+
+Third change is to accommodate CLK, DATCTRL and MMCICLK register layout changes
+in Qcom SDCC and provide more flexibity in driver to specify these changes via
+variant datastructure. Which are done in patches:
+  mmc: mmci: Add Qcom datactrl register variant
+  mmc: mmci: add ddrmode mask to variant data
+  mmc: mmci: add 8bit bus support in variant data
+  mmc: mmci: add edge support to data and command out in variant data.
+  mmc: mmci: add Qcom specifics of clk and datactrl registers.
+  mmc: mmci: Add support to data commands via variant structure.
+  mmc: mmci: add f_max to variant structure
+  mmc: mmci: add explicit clk control
+
+Fourth change was to add qcom specfic fifocnt logic, the need for
+this is because the way MCIFIFOCNT register behaved in QCOM SDCC is very
+ different to the one in pl180. This change is done in patch:
+  mmc: mmci: Add Qcom specific rx_fifocnt logic.
+
+Last some Qcom unrelated changes/cleanup to driver are done in patches:
+  mmc: mmci: use NSEC_PER_SEC macro
+
+This patches are tested in PIO mode on IFC8064 board with both eMMC and
+external SD card. I would like to get this support in v3.16.
+
+Changes from v5:
+	- removed BIT conversion patch as suggested by Russell K.
+	- removed extra parens as pointed by Russell K.
+	- correct the f_max for explicit clk control
+
+Changes from v4:
+	- moved the amba id table addition to the end of the patchset as suggested by Ulf.
+	- reused the mmci_pio_read function after experimenting with the fifo behaviour.
+	- simplify f_max/f_min calcuation logic as suggested by Ulf.
+	- created a new patch for the register defination as suggested by Ulf.
+
+Changes from v3:
+	- moved pio_read to a function pointer so as to reduce additional cycles
+	in hot-path, suggested by Ulf.
+	- simplify the flags used for explicit mclk control, suggested by Ulf.
+	- fixed issues in cacluating f_max and f_min pointed and suggested by Ulf.
+	- removed unessary DDR flags on un-supported STE variants.
+	- used BIT macros as suggested by Ulf.
+	- removed the read/write wrappers with delays, and used most optimal way
+	to introduce the delays to the only registers that require delays.
+
+Changes from v2:
+	- merged fbclk latch patch with clkreg_enable patch as suggested by Linus W.
+	- remove qcom prefix for explicit clk control pointed by Linus W.
+	- cleaned up mmci_qcom_pio_read and consider SDIO as suggested by Linus W.
+
+Changes from v1:
+	- moved most of the SOC specifics to variant parameters as suggested
+	  by Linus W.
+	- renamed registers as suggested by Linus W.
+	- Added comments in the code as suggested by Linus W.
+	- moved out AMBA ID addition patch from this series.
+	- rebased the patches to 
+		git://git.linaro.org/people/ulf.hansson/mmc.git next 
+	  as suggested by Ulf H.
+
+Changes from RFC:
+	- moved out clk setup out of spinlock as pointed by Stephen B.
+
+Am hoping to get this for v3.16.
+
+All these patches are tested on IF6410 board on both eMMC and external SD card.
+
+Thanks,
+srini
+
+
+Srinivas Kandagatla (12):
+  mmc: mmci: use NSEC_PER_SEC macro
+  mmc: mmci: Add Qualcomm specific register defines.
+  mmc: mmci: Add enough delay between writes to CMD register.
+  mmc: mmci: Add Qcom datactrl register variant
+  mmc: mmci: add ddrmode mask to variant data
+  mmc: mmci: add 8bit bus support in variant data
+  mmc: mmci: add edge support to data and command out in variant data.
+  mmc: mmci: Add support to data commands via variant structure.
+  mmc: mmci: add f_max to variant structure
+  mmc: mmci: add explicit clk control
+  mmc: mmci: Add Qcom specific rx_fifocnt logic.
+  mmc: mmci: Add Qualcomm Id to amba id table
+
+ drivers/mmc/host/mmci.c | 128 +++++++++++++++++++++++++++++++++++++++++++-----
+ drivers/mmc/host/mmci.h |  20 ++++++++
+ 2 files changed, 136 insertions(+), 12 deletions(-)
+
 -- 
-1.7.2.5
+1.9.1
 
