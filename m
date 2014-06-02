@@ -1,74 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753824AbaFBJKU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 05:10:20 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39704 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753771AbaFBJKR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 05:10:17 -0400
-Date: Mon, 2 Jun 2014 11:10:14 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Daniel Kamil Kozar <dkk089@gmail.com>
-cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org
-Subject: Re: [PATCH] usbhid : enable NO_INIT_REPORTS quirk for Semico USB
- Keykoard
-In-Reply-To: <alpine.LNX.2.03.1406011314180.11405@gmail.com>
-Message-ID: <alpine.LNX.2.00.1406021108570.11302@pobox.suse.cz>
-References: <alpine.LNX.2.03.1406011314180.11405@gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1753861AbaFBJKo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 05:10:44 -0400
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:35489 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753780AbaFBJKS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 05:10:18 -0400
+From: srinivas.kandagatla@linaro.org
+To: Russell King <linux@arm.linux.org.uk>,
+        Ulf Hansson <ulf.hansson@linaro.org>, linux-mmc@vger.kernel.org
+Cc: Chris Ball <chris@printf.net>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linus.walleij@linaro.org,
+        Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+Subject: [PATCH v6 12/12] mmc: mmci: Add Qualcomm Id to amba id table
+Date: Mon,  2 Jun 2014 10:10:13 +0100
+Message-Id: <1401700213-11917-1-git-send-email-srinivas.kandagatla@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1401699818-11329-1-git-send-email-srinivas.kandagatla@linaro.org>
+References: <1401699818-11329-1-git-send-email-srinivas.kandagatla@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 1 Jun 2014, Daniel Kamil Kozar wrote:
+From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
 
-> The device which identifies itself as a "USB Keykoard" (no typo) with 
-> VID:PID 1a2c:0023 does not seem to be handling the reports initialization 
-> very well. This results in a "usb_submit_urb(ctrl) failed: -1" message 
-> from the kernel when connected, and a delay before its initialization. 
-> This patch adds the quirk for this device, which causes the delay to 
-> disappear.
-> Signed-off-by: Daniel Kamil Kozar <dkk089@gmail.com>
+This patch adds a fake Qualcomm ID 0x00051180 to the amba_ids, as Qualcomm
+SDCC controller is pl180, but amba id registers read 0x0's.
+The plan is to remove SDCC driver totally and use mmci as the main SD
+controller driver for Qualcomm SOCs.
 
-Please always add an empty line between the changelog and a signoff.
+Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+---
+ drivers/mmc/host/mmci.c | 23 +++++++++++++++++++++++
+ 1 file changed, 23 insertions(+)
 
-> ---
-> diff -uprN -X linux-3.15-rc7/Documentation/dontdiff linux-3.15-rc7/drivers/hid/hid-ids.h linux-3.15-rc7-mine/drivers/hid/hid-ids.h
-> --- linux-3.15-rc7/drivers/hid/hid-ids.h	2014-05-26 01:06:00.000000000 +0200
-> +++ linux-3.15-rc7-mine/drivers/hid/hid-ids.h	2014-06-01 12:30:45.910903449 +0200
-> @@ -769,6 +769,10 @@
->  #define USB_DEVICE_ID_SAMSUNG_IR_REMOTE	0x0001
->  #define USB_DEVICE_ID_SAMSUNG_WIRELESS_KBD_MOUSE	0x0600
->  
-> +/* China Resource Semico Co., Ltd */
-
-We're not putting such comments there.
-
-> +#define USB_VENDOR_ID_SEMICO			0x1a2c
-> +#define USB_DEVICE_ID_SEMICO_USB_KEYKOARD	0x0023
-> +
->  #define USB_VENDOR_ID_SENNHEISER	0x1395
->  #define USB_DEVICE_ID_SENNHEISER_BTD500USB	0x002c
->  
-> diff -uprN -X linux-3.15-rc7/Documentation/dontdiff linux-3.15-rc7/drivers/hid/usbhid/hid-quirks.c linux-3.15-rc7-mine/drivers/hid/usbhid/hid-quirks.c
-> --- linux-3.15-rc7/drivers/hid/usbhid/hid-quirks.c	2014-05-26 01:06:00.000000000 +0200
-> +++ linux-3.15-rc7-mine/drivers/hid/usbhid/hid-quirks.c	2014-06-01 12:32:01.161744987 +0200
-> @@ -120,6 +120,7 @@ static const struct hid_blacklist {
->  	{ USB_VENDOR_ID_SYNAPTICS, USB_DEVICE_ID_SYNAPTICS_HD, HID_QUIRK_NO_INIT_REPORTS },
->  	{ USB_VENDOR_ID_SYNAPTICS, USB_DEVICE_ID_SYNAPTICS_QUAD_HD, HID_QUIRK_NO_INIT_REPORTS },
->  	{ USB_VENDOR_ID_SYNAPTICS, USB_DEVICE_ID_SYNAPTICS_TP_V103, HID_QUIRK_NO_INIT_REPORTS },
-> +	{ USB_VENDOR_ID_SEMICO, USB_DEVICE_ID_SEMICO_USB_KEYKOARD, HID_QUIRK_NO_INIT_REPORTS },
-
-The list ought to be kept sorted.
-
-These were trivial to fix, so I have fixed it and applied, but please keep 
-that in mind for your future patch submissions.
-
-Thanks,
-
+diff --git a/drivers/mmc/host/mmci.c b/drivers/mmc/host/mmci.c
+index 08ff8d2..fa851d5 100644
+--- a/drivers/mmc/host/mmci.c
++++ b/drivers/mmc/host/mmci.c
+@@ -190,6 +190,23 @@ static struct variant_data variant_ux500v2 = {
+ 	.pwrreg_nopower		= true,
+ };
+ 
++static struct variant_data variant_qcom = {
++	.fifosize		= 16 * 4,
++	.fifohalfsize		= 8 * 4,
++	.clkreg			= MCI_CLK_ENABLE,
++	.clkreg_enable		= MCI_QCOM_CLK_FLOWENA |
++				  MCI_QCOM_CLK_SELECT_IN_FBCLK,
++	.clkreg_8bit_bus_enable = MCI_QCOM_CLK_WIDEBUS_8,
++	.datactrl_mask_ddrmode	= MCI_QCOM_CLK_SELECT_IN_DDR_MODE,
++	.data_cmd_enable	= MCI_QCOM_CSPM_DATCMD,
++	.blksz_datactrl4	= true,
++	.datalength_bits	= 24,
++	.pwrreg_powerup		= MCI_PWR_UP,
++	.f_max			= 208000000,
++	.explicit_mclk_control	= true,
++	.qcom_fifo		= true,
++};
++
+ static int mmci_card_busy(struct mmc_host *mmc)
+ {
+ 	struct mmci_host *host = mmc_priv(mmc);
+@@ -1831,6 +1848,12 @@ static struct amba_id mmci_ids[] = {
+ 		.mask   = 0xf0ffffff,
+ 		.data	= &variant_ux500v2,
+ 	},
++	/* Qualcomm variants */
++	{
++		.id     = 0x00051180,
++		.mask	= 0x000fffff,
++		.data	= &variant_qcom,
++	},
+ 	{ 0, 0 },
+ };
+ 
 -- 
-Jiri Kosina
-SUSE Labs
+1.9.1
+
