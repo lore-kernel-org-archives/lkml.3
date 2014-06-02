@@ -1,108 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753437AbaFBAuI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jun 2014 20:50:08 -0400
-Received: from ozlabs.org ([103.22.144.67]:46266 "EHLO ozlabs.org"
+	id S1753256AbaFBA5p (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jun 2014 20:57:45 -0400
+Received: from donald.hachti.de ([188.40.85.216]:49510 "EHLO donald.hachti.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752655AbaFBAuG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jun 2014 20:50:06 -0400
-Date: Mon, 2 Jun 2014 10:49:57 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Russell King <linux@arm.linux.org.uk>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: manual merge of the arm-soc tree with the arm tree
-Message-ID: <20140602104957.21878870@canb.auug.org.au>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
+	id S1752472AbaFBA5n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Jun 2014 20:57:43 -0400
+Message-ID: <538BCC03.3090606@hachti.de>
+Date: Mon, 02 Jun 2014 02:57:39 +0200
+From: Philipp Hachtmann <hachti@hachti.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/nR5llQ7O0t=hMvsqXqEEig7"; protocol="application/pgp-signature"
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: jhovold@gmail.com, linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] usb/ftdi_sio: Add support for setting CBUS pins on
+ FT232H
+References: <1401579066-8298-1-git-send-email-hachti@hachti.de> <1401579066-8298-3-git-send-email-hachti@hachti.de> <20140601000059.27360.qmail@stuge.se> <538A7063.8010205@hachti.de> <20140601023106.GA4961@kroah.com>
+In-Reply-To: <20140601023106.GA4961@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/nR5llQ7O0t=hMvsqXqEEig7
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On 01.06.2014 04:31, Greg KH wrote:
+> As they are GPIO pins on this device, it should be the subsystem that
+> controls it.  That way, userspace programs that are used to talk to a
+> GPIO device will "just work", and not have to be customized just for
+> this specific device and sysfs file.
 
-Hi all,
+> So please use the GPIO subsystem instead of creating your own interface.
 
-Today's linux-next merge of the arm-soc tree got a conflict in
-arch/arm/mach-exynos/exynos.c between commits dfbdd3d55403 ("ARM: l2c:
-exynos: remove cache size override"), 25a9ef63cd2b ("ARM: l2c: exynos:
-convert to common l2c310 early resume functionality") and 15b0bc4041ba
-("ARM: l2c: exynos: convert to generic l2c OF initialisation (and
-thereby fix it)") from the arm tree and commit b5b9324a6296 ("ARM:
-exynos: don't run exynos4 l2x0 setup on other platforms") from the
-arm-soc tree.
+Yes but... I should have avoided the term "GPIO".
 
-I fixed it up (the former removes the code updated by the latter) and
-can carry the fix as necessary (no action is required).
+The FT232H (and other chips of the family) are communication controller ICs that 
+support several operation modes. The usb-serial driver partially supports the 
+chips' functionalities by supplying a tty device to the system.
+At least the FT232H has something called CBUS: Four (!) bits of GPIO that 
+*might* be available depending on the device's configuration stored in an EEPROM 
+attached to the chip. For example if the chip is in sync FIFO mode, only two of 
+those bits reach the chip's surface.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+I'll try to discuss two use cases:
 
-diff --cc arch/arm/mach-exynos/exynos.c
-index a763c0862da9,bc43e22693b7..000000000000
---- a/arch/arm/mach-exynos/exynos.c
-+++ b/arch/arm/mach-exynos/exynos.c
-@@@ -305,17 -246,25 +243,6 @@@ void __init exynos_init_io(void
-  	exynos_map_io();
-  }
- =20
-- struct bus_type exynos_subsys =3D {
-- 	.name		=3D "exynos-core",
-- 	.dev_name	=3D "exynos-core",
-- };
--=20
-- static int __init exynos_core_init(void)
- -static int __init exynos4_l2x0_cache_init(void)
---{
-- 	return subsys_system_register(&exynos_subsys, NULL);
- -	int ret;
- -
- -	if (!soc_is_exynos4())
- -		return 0;
- -
- -	ret =3D l2x0_of_init(L2_AUX_VAL, L2_AUX_MASK);
- -	if (ret)
- -		return ret;
- -
- -	if (IS_ENABLED(CONFIG_S5P_SLEEP)) {
- -		l2x0_regs_phys =3D virt_to_phys(&l2x0_saved_regs);
- -		clean_dcache_area(&l2x0_regs_phys, sizeof(unsigned long));
- -	}
- -	return 0;
---}
-- core_initcall(exynos_core_init);
- -early_initcall(exynos4_l2x0_cache_init);
---
-  static void __init exynos_dt_machine_init(void)
-  {
-  	struct device_node *i2c_np;
+1. Someone builds hardware with an FT chip and some general functionality 
+attached to the four usable CBUS lines, totally unrelated to the chip's 
+FIFO/UART etc. functionality.
+In that case I would strongly recommend to register the CBUS stuff with the GPIO 
+subsystem. The user then could - as you noted - run any program used to deal 
+with official GPIO pins on top of the four lines.
+But I think that this use case is one of the less likely ones.
 
---Sig_/nR5llQ7O0t=hMvsqXqEEig7
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+2. Someone builds hardware which uses some CBUS pins to control external 
+circuitry that also uses the UART/FIFO interface. Both with tight functional 
+integration. The CBUS pins become something in the rank of modem status lines.
+An application that uses the port also wants to easily access the CBUS pins. And 
+it really knows what it does because it knows what it is doing. From my point of 
+view this is the more common use case.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Consequently the best way to cover the CBUS pins would be via the device's 
+ioctls. But as the device is driven by common tty and usb-serial code which 
+handles the ioctls I currently see how to achieve that without breaking a lot.
 
-iQIcBAEBCAAGBQJTi8o6AAoJEMDTa8Ir7ZwVxjgP/3swq+aTB7FjKQP9c+e4BPrN
-lxUE9ciGXt1R/dLxaTMZlShOzSsvzpFE1uiFlpv/MKeKuIIm6eAD/FmtuQJrHveD
-orLOww+URYgbXqtiJo5t0lqd8NeWRFl6JRKLcJREtph8TQRvPJbqogUDtT+rC3zE
-N9t96lqNFV3zlxGUnJGoOUT9/2M0uViE1lAdTfsPsyEdQoouVxplqgNb15Ts4FkU
-ccKg+qqBOfumTuWJlKdR4W8NwlMkX3YCGAen4/yFvE7H+YxTMwS34VKNfvAK2IMI
-CqN0X6UHDVlgD6Wpdi3QYv5b9+DQ7KRziODEvDu0k24njmF3x5+jXOpQboB1QUU9
-aS1RczX+DJtkBC4hTrGKo/1QqxTCGyB2DRWr21AvzL6Ij1JW6tgr4yn5HLGduWH6
-4FGuxXNge8YRjTN0f2VHZ1RfW/QSeIKHAnFv2FTsxJ7WkH2YD3yOSq/lgRTk47Aq
-jR840KNtIt6v7gtL0upmNDg4uQ36xahFvR+uIfVvgV+1zTOxEMe2+v138gvV+W4R
-ReaXHJ8Nlig8drRDVkQIwC38T+wk40auPmqICDpoCSRxy20O4aJfmQGCG4or6HgZ
-eDwb1+tKLkIgiQysHWdXGbj26/t57U28YkVdw/jqUgELIqQyTyEN247zEPM23f/5
-uEOUVqSl03uYuW0Pqa+B
-=9Neg
------END PGP SIGNATURE-----
+The second best way I see is adding a property to sysfs. This would already help 
+a lot. A program knowing about the hardware then *can* sanely play with the CBUS.
 
---Sig_/nR5llQ7O0t=hMvsqXqEEig7--
+Adding the functionality to sysfs should not interfere with a possible provision 
+of an "official" GPIO device (struct gpio_chip).
+
+For me personally it's most important to get access to CBUS in any way where the 
+relation of the tty and the CBUS is *not* lost. I see no point in exposing the 
+CBUS to any userspace application that thinks it can play blinkenlights on them. 
+But I also see no problem if someone wants the possibility and adds general GPIO 
+support. The patch will provide a stable base to do so.
+
+So please consider the patches as a starting point.
+
+
+
+
+
+
+
+
+
+
+
+
