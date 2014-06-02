@@ -1,68 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751988AbaFBSu0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 14:50:26 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:31356 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751286AbaFBSuY (ORCPT
+	id S1752571AbaFBSvn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 14:51:43 -0400
+Received: from mail-qa0-f54.google.com ([209.85.216.54]:55495 "EHLO
+	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751370AbaFBSvm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 14:50:24 -0400
-Date: Mon, 2 Jun 2014 14:50:20 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Joe Perches <joe@perches.com>
-Cc: paulmck@linux.vnet.ibm.com, josh@joshtriplett.org,
-        linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, dhowells@redhat.com, edumazet@google.com,
-        dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
-        sbw@mit.edu
-Subject: Re: [PATCH RFC 1/2] MAINTAINERS: Add "R:" designated-reviewers tag
-Message-ID: <20140602145020.400d4e0c@gandalf.local.home>
-In-Reply-To: <1401734669.7323.20.camel@joe-AO725>
-References: <1401728420-3572-1-git-send-email-paulmck@linux.vnet.ibm.com>
-	<1401729778.5770.20.camel@joe-AO725>
-	<20140602174837.GA13257@cloud>
-	<1401731968.7323.4.camel@joe-AO725>
-	<20140602181658.GX22231@linux.vnet.ibm.com>
-	<1401734669.7323.20.camel@joe-AO725>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Mon, 2 Jun 2014 14:51:42 -0400
+Date: Mon, 2 Jun 2014 14:51:38 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Paolo Valente <paolo.valente@unimore.it>, Li Zefan <lizefan@huawei.com>,
+        Fabio Checconi <fchecconi@gmail.com>,
+        Arianna Avanzini <avanzini.arianna@gmail.com>,
+        Paolo Valente <posta_paolo@yahoo.it>, linux-kernel@vger.kernel.org,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org
+Subject: Re: [PATCH RFC - TAKE TWO - 00/12] New version of the BFQ I/O
+ Scheduler
+Message-ID: <20140602185138.GD8912@htj.dyndns.org>
+References: <20140528221929.GG1419@htj.dyndns.org>
+ <1401354343-5527-1-git-send-email-paolo.valente@unimore.it>
+ <20140530160712.GG24871@htj.dyndns.org>
+ <538926F6.7080409@kernel.dk>
+ <20140531051635.GA19925@mtj.dyndns.org>
+ <538C8A47.1050502@kernel.dk>
+ <20140602172454.GA8912@htj.dyndns.org>
+ <538CB515.3090700@kernel.dk>
+ <20140602174250.GC8912@htj.dyndns.org>
+ <538CB87C.7030600@kernel.dk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <538CB87C.7030600@kernel.dk>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 02 Jun 2014 11:44:29 -0700
-Joe Perches <joe@perches.com> wrote:
+Hello,
 
-> On Mon, 2014-06-02 at 11:16 -0700, Paul E. McKenney wrote:
-> > But there have been people who have found serious issues in RCU patches
-> > who I would not trust as full maintainers.  The ability to find defects
-> > is valuable in and of itself, and should be recognized as such, even
-> > when not accompanied by the rest of the maintainership package.
-> 
-> Maybe, but odd-lot reviewers are most likely going to find
-> these same defects regardless of any "R" designation in
-> MAINTAINERS.
-> 
+On Mon, Jun 02, 2014 at 11:46:36AM -0600, Jens Axboe wrote:
+> But blk-mq will potentially drive anything, so it might not be out of
+> the question with a more expensive scheduling variant, if it makes any
+> sense to do of course. At least until there's no more rotating stuff out
+> there :-). But it's not a priority at all to me yet. As long as we have
+> coexisting IO paths, it'd be trivial to select the needed one based on
+> the device characteristics.
 
-Actually, I'm thinking the R: tag is a good idea and we should have
-people ask to be added to MAINTAINERS if they want to review certain
-subsystems. Grant you, it should be people that the maintainers trust.
-I can think of several people I would like to be added as R: in tracing.
+Hmmm... yeah, moving rotating devices over to blk-mq doesn't really
+seem beneficial to me.  I think there are fundamental behavioral
+differences for rotating rusts and newer solid state devices to share
+single code path for things like scheduling and selecting the
+appropriate path depending on the actual devices sounds like a much
+better plan even in the long term.
 
-The point is, when patches go out, it is easy to see who the Cc list
-should be. And perhaps this will get patches reviewed more. Maybe
-maintainers of other subsystems should ask to have the R: tag added for
-something they don't maintain but want to help out in.
+Thanks.
 
-I may add myself to the x86, scheduler, time keeping and perhaps even
-RCU, as I like to read those patches. I'm not at the level of
-maintaining those subsystems, but I feel comfortable enough to review
-any changes there.
-
--- Steve
+-- 
+tejun
