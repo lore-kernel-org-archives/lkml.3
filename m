@@ -1,291 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755329AbaFBOvN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 10:51:13 -0400
-Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:40490 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754438AbaFBOvL (ORCPT
+	id S1755383AbaFBOyO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 10:54:14 -0400
+Received: from smtprelay.synopsys.com ([198.182.44.111]:35503 "EHLO
+	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754627AbaFBOyM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 10:51:11 -0400
-Date: Mon, 2 Jun 2014 08:51:22 -0600
-From: Jens Axboe <axboe@fb.com>
-To: <torvalds@linux-foundation.org>
-CC: <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] Core block IO bits for 3.16
-Message-ID: <20140602145122.GA4384@kernel.dk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-X-Originating-IP: [192.168.57.29]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
- definitions=2014-06-02_02:2014-06-02,2014-06-02,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 spamscore=0
- suspectscore=11 phishscore=0 adultscore=0 bulkscore=0 classifier=spam
- adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1406020190
-X-FB-Internal: deliver
+	Mon, 2 Jun 2014 10:54:12 -0400
+From: Alexey Brodkin <Alexey.Brodkin@synopsys.com>
+To: netdev@vger.kernel.org
+Cc: Alexey Brodkin <Alexey.Brodkin@synopsys.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Giuseppe Cavallaro <peppe.cavallaro@st.com>,
+        Chen-Yu Tsai <wens@csie.org>, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>
+Subject: [PATCH] stmmac: add DMA initialization delay to device tree
+Date: Mon,  2 Jun 2014 18:53:55 +0400
+Message-Id: <1401720835-21507-1-git-send-email-abrodkin@synopsys.com>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On some platforms existing 100 msecond delay is not enough for DMA block to
+recover after reset.
+For example MAC DMA waits for all PHY input clocks are present and depending
+on the board reset bit deassertion may take different amount of time.
 
-With the merge window open, I thought I'd send off the core bits sooner
-rather than later. It's a big(ish) round this time, lots of development
-effort has gone into blk-mq in the last 3 months. Generally we're
-heading to where 3.16 will be a feature complete and performant blk-mq.
-scsi-mq is progressing nicely and will hopefully be in 3.17. A nvme port
-is in progress, and the Micron pci-e flash driver, mtip32xx, is
-converted and will be sent in with the driver pull request for 3.16.
+Having this parameter easily configurable allows each board to have its own
+value, while all exisiting boards will continue to use current default value of
+100 msec.
 
-This pull request contains:
+Signed-off-by: Alexey Brodkin <abrodkin@synopsys.com>
 
-- Lots of prep and support patches for scsi-mq have been integrated. All
-  from Christoph.
+Cc: David S. Miller <davem@davemloft.net>
+Cc: Hans de Goede <hdegoede@redhat.com>
+Cc: Giuseppe Cavallaro <peppe.cavallaro@st.com>
+Cc: Chen-Yu Tsai <wens@csie.org>
+Cc: linux-kernel@vger.kernel.org
+Cc: devicetree-discuss@lists.ozlabs.org
+Cc: Vineet Gupta <vgupta@synopsys.com>
+---
+ Documentation/devicetree/bindings/net/stmmac.txt      | 2 ++
+ drivers/net/ethernet/stmicro/stmmac/common.h          | 5 ++++-
+ drivers/net/ethernet/stmicro/stmmac/dwmac1000_dma.c   | 5 ++---
+ drivers/net/ethernet/stmicro/stmmac/dwmac100_dma.c    | 5 ++---
+ drivers/net/ethernet/stmicro/stmmac/stmmac_main.c     | 3 ++-
+ drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c | 8 ++++++++
+ include/linux/stmmac.h                                | 1 +
+ 7 files changed, 21 insertions(+), 8 deletions(-)
 
-- API and code cleanups for blk-mq from Christoph.
-
-- Lots of good corner case and error handling cleanup fixes for blk-mq
-  from Ming Lei.
-
-- A flew of blk-mq updates from me:
-
-        - Provide strict mappings so that the driver can rely on the CPU
-          to queue mapping. This enables optimizations in the driver.
-
-        - Provided a bitmap tagging instead of percpu_ida, which never
-          really worked well for blk-mq. percpu_ida relies on the fact
-          that we have a lot more tags available than we really need,
-          it fails miserably for cases where we exhaust (or are close to
-          exhausting) the tag space.
-
-        - Provide sane support for shared tag maps, as utilized by
-          scsi-mq.
-
-        - Various fixes for IO timeouts.
-
-        - API cleanups, and lots of perf tweaks and optimizations.
-
-- Remove 'buffer' from struct request. This is ancient code, from when
-  requests were always virtually mapped. Kill it, to reclaim some space
-  in struct request. From me.
-
-- Remove 'magic' from blk_plug. Since we store these on the stack and
-  since we've never caught any actual bugs with this, lets just get rid
-  of it. From me.
-
-- Only call part_in_flight() once for IO completion, as includes two
-  atomic reads. Hopefully we'll get a better implementation soon, as the
-  part IO stats are now one of the more expensive parts of doing IO on
-  blk-mq. From me.
-
-- File migration of block code from {mm,fs}/ to block/. This includes
-  bio.c, bio-integrity.c, bounce.c, and ioprio.c. From me, from a
-  discussion on lkml.
-
-
-That should describe the meat of the pull request. Also has various
-little fixes and cleanups from Dave Jones, Shaohua Li, Duan Jiong,
-Fengguang Wu, Fabian Frederick, Randy Dunlap, Robert Elliott,
-and Sam Bradshaw.
-
-Please pull! Should merge cleanly into master.
-
-
-  git://git.kernel.dk/linux-block.git for-3.16/core
-
-
-----------------------------------------------------------------
-Christoph Hellwig (27):
-      blk-mq: initialize resid_len
-      blk-mq: do not initialize req->special
-      blk-mq: make ->flush_rq fully transparent to drivers
-      blk-mq: add ->init_request and ->exit_request methods
-      blk-mq: initialize request on allocation
-      blk-mq: split out tag initialization, support shared tags
-      block: all blk-mq requests are tagged
-      blk-mq: allow drivers to hook into I/O completion
-      blk-mq: bidi support
-      blk-mq: add async parameter to blk_mq_start_stopped_hw_queues
-      blk-mq: add blk_mq_delay_queue
-      blk-mq: add blk_mq_start_hw_queues
-      blk-mq: add blk_mq_requeue_request
-      blk-mq: rename mq_flush_work struct request member
-      block: export blk_finish_request
-      blk-mq: respect rq_affinity
-      block: fold __blk_add_timer into blk_add_timer
-      random: export add_disk_randomness
-      blk-mq: initialize struct request fields individually
-      blk-mq: idle all hardware contexts before freeing a queue
-      blk-mq: add helper to insert requests from irq context
-      blk-mq: merge blk_mq_alloc_reserved_request into blk_mq_alloc_request
-      blk-mq: initialize request in __blk_mq_alloc_request
-      blk-mq: remove blk_mq_wait_for_tags
-      blk-mq: do not use blk_mq_alloc_request_pinned in blk_mq_map_request
-      blk-mq: remove blk_mq_alloc_request_pinned
-      blk-mq: remove alloc_hctx and free_hctx methods
-
-Dave Jones (1):
-      block: remove dead code in scsi_ioctl:blk_verify_command
-
-Duan Jiong (1):
-      block: replace IS_ERR and PTR_ERR with PTR_ERR_OR_ZERO
-
-Fabian Frederick (6):
-      block/blk-throttle.c: add static to blk_throtl_dispatch_work_fn
-      fs/bio: remove bs paramater in biovec_create_pool
-      fs/bio.c: remove nr_segs (unused function parameter)
-      block/blk-iopoll.c: use iop instead of iopoll
-      block/blk-throttle.c: fix return of 0/1 with return type bool
-      block/blk-lib.c: make __blkdev_issue_zeroout static
-
-Fengguang Wu (1):
-      blk-mq: blk_mq_unregister_hctx() can be static
-
-Jens Axboe (50):
-      block: remove 'q' parameter from kblockd_schedule_*_work()
-      block: add kblockd_schedule_delayed_work_on()
-      blk-mq: ensure that hardware queues are always run on the mapped CPUs
-      blk-mq: simplify blk_mq_hw_sysfs_cpus_show()
-      Merge tag 'v3.15-rc1' into for-3.16/core
-      block: remove struct request buffer member
-      gdrom: missed conversion from req->buffer
-      blk-mq: don't use preempt_count() to check for right CPU
-      blk-mq: kill preempt disable/enable in blk_mq_work_fn()
-      block: relax when to modify the timeout timer
-      jsflash: missed conversion from rq->buffer to bio_data(rq->bio)
-      sd/skd: stuff discard page in request->completion_data
-      Revert "blk-mq: initialize req->q in allocation"
-      blk-mq: fix race with timeouts and requeue events
-      blk-mq: fix waiting for reserved tags
-      blk-mq remove debug BUG_ON() when draining software queues
-      blk-mq: refactor request insertion/merging
-      blk-mq: remove extra requeue trace
-      blk-mq: add basic round-robin of what CPU to queue workqueue work on
-      blk-mq: update a hotplug comment for grammar
-      blk-mq: implement new and more efficient tagging scheme
-      blk-mq: use sparser tag layout for lower queue depth
-      blk-mq: fix race in IO start accounting
-      block: only calculate part_in_flight() once
-      Merge branch 'for-3.16/blk-mq-tagging' into for-3.16/core
-      blk-mq: improve support for shared tags maps
-      block: move bio.c and bio-integrity.c from fs/ to block/
-      block: move ioprio.c from fs/ to block/
-      blk-mq: move the cache friendly bitmap type of out blk-mq-tag
-      blk-mq: switch ctx pending map to the sparser blk_align_bitmap
-      Merge branch 'for-3.16/blk-mq-tagging' into for-3.16/core
-      block: move mm/bounce.c to block/
-      htmldocs: fix bio.c location
-      blk-mq: allow changing of queue depth through sysfs
-      blk-mq: initialize q->nr_requests after calling blk_queue_make_request()
-      blk-mq: allow the hctx cpu hotplug notifier to return errors
-      blk-mq: save memory by freeing requests on unused hardware queues
-      blk-mq: split make request handler for multi and single queue
-      blk-mq: allow setting of per-request timeouts
-      blk-mq: pass in suggested NUMA node to ->alloc_hctx()
-      blk-mq: allow non-softirq completions
-      blk-mq: remove stale comment for blk_mq_complete_request()
-      blk-mq: add file comments and update copyright notices
-      block: remove 'magic' from struct blk_plug
-      block: add queue flag for disabling SG merging
-      blk-mq: request initialization optimizations
-      blk-mq: make the sysfs mq/ layout reflect current mappings
-      block: ensure that the timer is always added
-      blk-mq: remember to start timeout handler for direct queue
-      blk-mq: push IPI or local end_io decision to __blk_mq_complete_request()
-
-Masanari Iida (1):
-      block: Fix format string mismatch in cfq-iosched.c
-
-Ming Lei (12):
-      blk-mq: free hctx->ctx_map when init failed
-      blk-mq: fix allocation of set->tags
-      blk-mq: user (1 << order) to implement order_to_size()
-      blk-mq: initialize req->q in allocation
-      blk-mq: fix leak of set->tags
-      blk-mq: bitmap tag: use clear_bit_unlock in bt_clear_tag()
-      blk-mq: bitmap tag: remove barrier in bt_clear_tag()
-      blk-mq: bitmap tag: select random tag betweet 0 and (depth - 1)
-      blk-mq: bitmap tag: cleanup blk_mq_init_tags
-      blk-mq: fix leak of hctx->ctx_map
-      blk-mq: avoid code duplication
-      block: only allocate/free mq_usage_counter in blk-mq
-
-Randy Dunlap (1):
-      fs: fix new kernel-doc warnings in fs/bio.c
-
-Robert Elliott (1):
-      blk-mq: Micro-optimize blk_queue_nomerges() check
-
-Sam Bradshaw (1):
-      blk-mq: export blk_mq_tag_busy_iter
-
-Shaohua Li (1):
-      blk-mq: blk_mq_tag_to_rq should handle flush request
-
- Documentation/DocBook/filesystems.tmpl |    2 +-
- block/Makefile                         |    7 +-
- {fs => block}/bio-integrity.c          |    2 +-
- {fs => block}/bio.c                    |   11 +-
- block/blk-core.c                       |  113 ++-
- block/blk-flush.c                      |   40 +-
- block/blk-iopoll.c                     |    4 +-
- block/blk-lib.c                        |    4 +-
- block/blk-map.c                        |    3 -
- block/blk-merge.c                      |   28 +-
- block/blk-mq-cpu.c                     |   17 +-
- block/blk-mq-cpumap.c                  |   27 +-
- block/blk-mq-sysfs.c                   |  160 ++--
- block/blk-mq-tag.c                     |  561 +++++++++++--
- block/blk-mq-tag.h                     |   71 +-
- block/blk-mq.c                         | 1421 ++++++++++++++++++++++----------
- block/blk-mq.h                         |   32 +-
- block/blk-sysfs.c                      |   47 +-
- block/blk-throttle.c                   |   10 +-
- block/blk-timeout.c                    |   60 +-
- block/blk.h                            |    9 +-
- {mm => block}/bounce.c                 |    0
- block/cfq-iosched.c                    |    4 +-
- {fs => block}/ioprio.c                 |    0
- block/scsi_ioctl.c                     |    4 -
- drivers/block/amiflop.c                |    2 +-
- drivers/block/ataflop.c                |    2 +-
- drivers/block/floppy.c                 |   18 +-
- drivers/block/hd.c                     |   10 +-
- drivers/block/mg_disk.c                |   12 +-
- drivers/block/null_blk.c               |  117 +--
- drivers/block/paride/pcd.c             |    2 +-
- drivers/block/paride/pd.c              |    4 +-
- drivers/block/paride/pf.c              |    4 +-
- drivers/block/skd_main.c               |    5 +-
- drivers/block/swim.c                   |    2 +-
- drivers/block/swim3.c                  |    6 +-
- drivers/block/virtio_blk.c             |   75 +-
- drivers/block/xen-blkfront.c           |    4 +-
- drivers/block/xsysace.c                |    4 +-
- drivers/block/z2ram.c                  |    6 +-
- drivers/cdrom/gdrom.c                  |    2 +-
- drivers/char/random.c                  |    1 +
- drivers/ide/ide-disk.c                 |    5 +-
- drivers/md/dm.c                        |    1 -
- drivers/mtd/mtd_blkdevs.c              |    3 +-
- drivers/mtd/ubi/block.c                |    2 +-
- drivers/sbus/char/jsflash.c            |    2 +-
- drivers/scsi/scsi_lib.c                |    5 +-
- drivers/scsi/sd.c                      |   13 +-
- fs/Makefile                            |    3 +-
- include/linux/bio.h                    |    2 +-
- include/linux/blk-mq.h                 |  101 ++-
- include/linux/blk_types.h              |    2 +
- include/linux/blkdev.h                 |   27 +-
- mm/Makefile                            |    1 -
- 56 files changed, 2091 insertions(+), 989 deletions(-)
- rename {fs => block}/bio-integrity.c (99%)
- rename {fs => block}/bio.c (99%)
- rename {mm => block}/bounce.c (100%)
- rename {fs => block}/ioprio.c (100%)
-
-
+diff --git a/Documentation/devicetree/bindings/net/stmmac.txt b/Documentation/devicetree/bindings/net/stmmac.txt
+index a2acd2b..1e28772 100644
+--- a/Documentation/devicetree/bindings/net/stmmac.txt
++++ b/Documentation/devicetree/bindings/net/stmmac.txt
+@@ -20,6 +20,7 @@ Required properties:
+ - snps,pbl		Programmable Burst Length
+ - snps,fixed-burst	Program the DMA to use the fixed burst mode
+ - snps,mixed-burst	Program the DMA to use the mixed burst mode
++- snps,dma-init-delay	Maximum delay for DMA initialization in milliseconds
+ - snps,force_thresh_dma_mode	Force DMA to use the threshold mode for
+ 				both tx and rx
+ - snps,force_sf_dma_mode	Force DMA to use the Store and Forward
+@@ -49,4 +50,5 @@ Examples:
+ 		phy-mode = "gmii";
+ 		clocks = <&clock>;
+ 		clock-names = "stmmaceth">;
++		dma-init-delay = <1000>;
+ 	};
+diff --git a/drivers/net/ethernet/stmicro/stmmac/common.h b/drivers/net/ethernet/stmicro/stmmac/common.h
+index 74610f3..1a17080 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/common.h
++++ b/drivers/net/ethernet/stmicro/stmmac/common.h
+@@ -294,6 +294,8 @@ struct dma_features {
+ 
+ #define JUMBO_LEN		9000
+ 
++#define DMA_INIT_DELAY	100
++
+ struct stmmac_desc_ops {
+ 	/* DMA RX descriptor ring initialization */
+ 	void (*init_rx_desc) (struct dma_desc *p, int disable_rx_ic, int mode,
+@@ -344,7 +346,8 @@ struct stmmac_desc_ops {
+ struct stmmac_dma_ops {
+ 	/* DMA core initialization */
+ 	int (*init) (void __iomem *ioaddr, int pbl, int fb, int mb,
+-		     int burst_len, u32 dma_tx, u32 dma_rx, int atds);
++		     int burst_len, u32 dma_tx, u32 dma_rx, int atds,
++		     int init_delay);
+ 	/* Dump DMA registers */
+ 	void (*dump_regs) (void __iomem *ioaddr);
+ 	/* Set tx/rx threshold in the csr6 register
+diff --git a/drivers/net/ethernet/stmicro/stmmac/dwmac1000_dma.c b/drivers/net/ethernet/stmicro/stmmac/dwmac1000_dma.c
+index 0c2058a..adaa1d3 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/dwmac1000_dma.c
++++ b/drivers/net/ethernet/stmicro/stmmac/dwmac1000_dma.c
+@@ -31,15 +31,14 @@
+ #include "dwmac_dma.h"
+ 
+ static int dwmac1000_dma_init(void __iomem *ioaddr, int pbl, int fb, int mb,
+-			      int burst_len, u32 dma_tx, u32 dma_rx, int atds)
++			      int burst_len, u32 dma_tx, u32 dma_rx, int atds,
++			      int limit)
+ {
+ 	u32 value = readl(ioaddr + DMA_BUS_MODE);
+-	int limit;
+ 
+ 	/* DMA SW reset */
+ 	value |= DMA_BUS_MODE_SFT_RESET;
+ 	writel(value, ioaddr + DMA_BUS_MODE);
+-	limit = 10;
+ 	while (limit--) {
+ 		if (!(readl(ioaddr + DMA_BUS_MODE) & DMA_BUS_MODE_SFT_RESET))
+ 			break;
+diff --git a/drivers/net/ethernet/stmicro/stmmac/dwmac100_dma.c b/drivers/net/ethernet/stmicro/stmmac/dwmac100_dma.c
+index 7d1dce9..595e450 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/dwmac100_dma.c
++++ b/drivers/net/ethernet/stmicro/stmmac/dwmac100_dma.c
+@@ -33,15 +33,14 @@
+ #include "dwmac_dma.h"
+ 
+ static int dwmac100_dma_init(void __iomem *ioaddr, int pbl, int fb, int mb,
+-			     int burst_len, u32 dma_tx, u32 dma_rx, int atds)
++			     int burst_len, u32 dma_tx, u32 dma_rx, int atds,
++			     int limit)
+ {
+ 	u32 value = readl(ioaddr + DMA_BUS_MODE);
+-	int limit;
+ 
+ 	/* DMA SW reset */
+ 	value |= DMA_BUS_MODE_SFT_RESET;
+ 	writel(value, ioaddr + DMA_BUS_MODE);
+-	limit = 10;
+ 	while (limit--) {
+ 		if (!(readl(ioaddr + DMA_BUS_MODE) & DMA_BUS_MODE_SFT_RESET))
+ 			break;
+diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+index 110ca1c..79b7d64 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
++++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+@@ -1567,7 +1567,8 @@ static int stmmac_init_dma_engine(struct stmmac_priv *priv)
+ 
+ 	return priv->hw->dma->init(priv->ioaddr, pbl, fixed_burst, mixed_burst,
+ 				   burst_len, priv->dma_tx_phy,
+-				   priv->dma_rx_phy, atds);
++				   priv->dma_rx_phy, atds,
++				   priv->plat->dma_cfg->init_delay);
+ }
+ 
+ /**
+diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
+index 46aef510..e5743c9 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
++++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
+@@ -153,6 +153,14 @@ static int stmmac_probe_config_dt(struct platform_device *pdev,
+ 			of_property_read_bool(np, "snps,fixed-burst");
+ 		dma_cfg->mixed_burst =
+ 			of_property_read_bool(np, "snps,mixed-burst");
++
++		if (of_property_read_u32(np, "dma-init-delay",
++					 &dma_cfg->init_delay))
++			dma_cfg->init_delay = DMA_INIT_DELAY;
++		dma_cfg->init_delay /= 10;
++		if (!dma_cfg->init_delay)
++			dma_cfg->init_delay = 1;
++
+ 	}
+ 	plat->force_thresh_dma_mode = of_property_read_bool(np, "snps,force_thresh_dma_mode");
+ 	if (plat->force_thresh_dma_mode) {
+diff --git a/include/linux/stmmac.h b/include/linux/stmmac.h
+index 6f27d4f..3d7f3e7 100644
+--- a/include/linux/stmmac.h
++++ b/include/linux/stmmac.h
+@@ -91,6 +91,7 @@ struct stmmac_dma_cfg {
+ 	int fixed_burst;
+ 	int mixed_burst;
+ 	int burst_len;
++	int init_delay;
+ };
+ 
+ struct plat_stmmacenet_data {
 -- 
-Jens Axboe
+1.9.3
 
