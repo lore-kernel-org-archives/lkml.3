@@ -1,48 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752748AbaFBTzF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 15:55:05 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:33787 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751413AbaFBTzB (ORCPT
+	id S1753465AbaFBTz4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 15:55:56 -0400
+Received: from smtprelay0141.hostedemail.com ([216.40.44.141]:59705 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752760AbaFBTzz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 15:55:01 -0400
-MIME-Version: 1.0
-In-Reply-To: <5389AB89.9080305@kernel.org>
-References: <1401311175-12784-1-git-send-email-reyad.attiyat@gmail.com>
- <1401311175-12784-3-git-send-email-reyad.attiyat@gmail.com> <5389AB89.9080305@kernel.org>
-From: Reyad Attiyat <reyad.attiyat@gmail.com>
-Date: Mon, 2 Jun 2014 14:54:40 -0500
-Message-ID: <CA+BWVUSHUT9r=RHX3ubn6Byq=cX4wkfHsoc4Kh1FFFuLvW6GSw@mail.gmail.com>
-Subject: Re: [PATCH 2/3] IIO: Add iio_chan modifier for True/Magnetic North
- HID usages
-To: Jonathan Cameron <jic23@kernel.org>
-Cc: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
-        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        linux-input <linux-input@vger.kernel.org>,
-        Jiri Kosina <jkosina@suse.cz>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 2 Jun 2014 15:55:55 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::::::::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1537:1561:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:2911:3138:3139:3140:3141:3142:3622:3865:3866:38
+X-HE-Tag: tramp38_8a7639e2a045f
+X-Filterd-Recvd-Size: 1761
+Message-ID: <1401738950.7323.35.camel@joe-AO725>
+Subject: Re: [PATCH RFC 1/2] MAINTAINERS: Add "R:" designated-reviewers tag
+From: Joe Perches <joe@perches.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: josh@joshtriplett.org, linux-kernel@vger.kernel.org, mingo@kernel.org,
+        laijs@cn.fujitsu.com, dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
+        oleg@redhat.com, sbw@mit.edu
+Date: Mon, 02 Jun 2014 12:55:50 -0700
+In-Reply-To: <20140602195017.GC22231@linux.vnet.ibm.com>
+References: <1401728420-3572-1-git-send-email-paulmck@linux.vnet.ibm.com>
+	 <1401729778.5770.20.camel@joe-AO725> <20140602174837.GA13257@cloud>
+	 <1401731968.7323.4.camel@joe-AO725>
+	 <20140602181658.GX22231@linux.vnet.ibm.com> <20140602185635.GB13569@cloud>
+	 <20140602190821.GZ22231@linux.vnet.ibm.com> <20140602191155.GB13648@cloud>
+	 <20140602192729.GB22231@linux.vnet.ibm.com>
+	 <1401737782.7323.31.camel@joe-AO725>
+	 <20140602195017.GC22231@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Jonathan,
->
-> I think we need the naming to explicitly mention north_magnetic instead
-> of just north.  Whilst it is obvious what north means when you have north
-> true alongside it, it won't be so obvious if one just has the north
-> attribute
-> to see in a particular driver - if anything I'd have the true as the one
-> that was simply called north (as it might not be coming from a magnetometer
-> thought obviously that's the most common source)   I'd also rather the enum
-> entries
-> were
-> IIO_MOD_NORTH_MAGN
-> IIO_MOD_NORTH_TRUE
-> IIO_MOD_NORTH_MAGN_TILT_COMP
-> IIO_MOD_NORTH_TRUE_TILT_COMP
->
-> It is definitely feasible that they will not come from magnetometers -
-> a differential bearing is common on GPS units.
+On Mon, 2014-06-02 at 12:50 -0700, Paul E. McKenney wrote:
+> I sometimes review patches in areas where
+> I have no commits.
 
-Makes sense to me. I will update the patches with your suggestions. Thanks.
+Lots of people review patches all over the tree.
+That doesn't mean they want to be or should be cc'd.
+
+
+
