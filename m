@@ -1,44 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751710AbaFBRV7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 13:21:59 -0400
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:62808 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750904AbaFBRV5 (ORCPT
+	id S1752015AbaFBRW1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 13:22:27 -0400
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:34637 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751926AbaFBRW0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 13:21:57 -0400
+	Mon, 2 Jun 2014 13:22:26 -0400
 MIME-Version: 1.0
-In-Reply-To: <538CAEBD.5040501@gmail.com>
-References: <538CAEBD.5040501@gmail.com>
-From: Jianyu Zhan <nasa4836@gmail.com>
-Date: Tue, 3 Jun 2014 01:21:16 +0800
-Message-ID: <CAHz2CGV+=eX+y6UmjbGoYzAEKwNVEHq494AWOqdKxj9JyO6OsA@mail.gmail.com>
-Subject: Re: [PATCH] fix some coding style problem in drivers/staging/iio/frequency/ad9832.c
-To: Federico Di Pierro <nierro92@gmail.com>
-Cc: jic23@kernel.org, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        jg1.han@samsung.com, sachin.kamat@linaro.org,
-        linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
-        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20140602150150.GF6295@redhat.com>
+References: <06d53256e3bf2d0deedb16249082200500da3ee6.1401718809.git.mprivozn@redhat.com>
+ <20140602143557.GA2925@minipsycho.orion> <20140602150150.GF6295@redhat.com>
+From: Florian Fainelli <f.fainelli@gmail.com>
+Date: Mon, 2 Jun 2014 10:21:43 -0700
+Message-ID: <CAGVrzcbzH2Q5Rq942hyqzGzUucBGkF+Hrxh2uZkyO-ePMQ2Hyw@mail.gmail.com>
+Subject: Re: [PATCH] net-sysfs: Report link speed as signed integer
+To: Veaceslav Falico <vfalico@redhat.com>
+Cc: Jiri Pirko <jiri@resnulli.us>, Michal Privoznik <mprivozn@redhat.com>,
+        David Miller <davem@davemloft.net>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 3, 2014 at 1:05 AM, Federico Di Pierro <nierro92@gmail.com> wrote:
-> Hi!
-> This is my latest task of the eudyptula challenge.
-> Just a very small patch! It fixes 3 little coding style problems.
-> I'm using linux-next.
+2014-06-02 8:01 GMT-07:00 Veaceslav Falico <vfalico@redhat.com>:
+> On Mon, Jun 02, 2014 at 04:35:57PM +0200, Jiri Pirko wrote:
+>>
+>> Mon, Jun 02, 2014 at 04:25:15PM CEST, mprivozn@redhat.com wrote:
+>>>
+>>> The link speed is available at /sys/class/net/$nic/speed.
+>>> However, the speed is printed in unsigned integer format. This
+>>> makes userspace applications read an incorrect value (which
+>>> moreover changes through several architectures) while in fact
+>>> '-1' should be reported.
+>>>
+>>> Before the change:
+>>>  # cat /sys/class/net/eth0/speed
+>>>  4294967295
+>>>
+>>> After the change:
+>>>  # cat /sys/class/net/eth0/speed
+>>>  -1
+>>>
+>>> Signed-off-by: Michal Privoznik <mprivozn@redhat.com>
+>>> ---
+>>> net/core/net-sysfs.c | 2 +-
+>>> 1 file changed, 1 insertion(+), 1 deletion(-)
+>>>
+>>> diff --git a/net/core/net-sysfs.c b/net/core/net-sysfs.c
+>>> index 1cac29e..99afdea 100644
+>>> --- a/net/core/net-sysfs.c
+>>> +++ b/net/core/net-sysfs.c
+>>> @@ -173,7 +173,7 @@ static ssize_t speed_show(struct device *dev,
+>>>         if (netif_running(netdev)) {
+>>>                 struct ethtool_cmd cmd;
+>>>                 if (!__ethtool_get_settings(netdev, &cmd))
+>>> -                       ret = sprintf(buf, fmt_udec,
+>>> ethtool_cmd_speed(&cmd));
+>>> +                       ret = sprintf(buf, fmt_dec,
+>>> ethtool_cmd_speed(&cmd));
+>>
+>>
+>> I wonder why this should be signed. What -1 means? What driver reports
+>> this?
+>
+>
+> My first thoughts were exactly this. There is SPEED_UNKOWN (along with
+> _10, _100, _1000 etc.) that's -1, and quite a few drivers use it/set it.
+>
+> I wonder, though, if we should document it or just output "Unknown" instead
+> of -1.
 
-Hi, Federico,
+I would document the special "Unkown" value in
+Documentation/ABI/testing/sysfs-class-net and update speed_show() to
+handle it. -1 is confusing for anyone to realize what this means.
 
-It's awesome you taking part in eudyptula challenge program. That is a
-good start
-to kernel hacking.
+>
+>>
+>>>         }
+>>>         rtnl_unlock();
+>>>         return ret;
+>>> --
+>>> 2.0.0
+>>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe netdev" in
+>>
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+>
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-But also please honour the community rule - the inline patch is preferred than
-in attachment form . Please have a look at Documentation/SubmittingPatches  file
-in kernel source directory first before submitting patches.
 
-Thanks,
-Jianyu Zhan
+
+-- 
+Florian
