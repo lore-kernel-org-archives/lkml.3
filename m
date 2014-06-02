@@ -1,109 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753171AbaFBXRj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 19:17:39 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:60136 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751800AbaFBXRh (ORCPT
+	id S932078AbaFBXTy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 19:19:54 -0400
+Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:43463 "EHLO
+	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751740AbaFBXTx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 19:17:37 -0400
-Date: Mon, 2 Jun 2014 16:17:30 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Waiman Long <waiman.long@hp.com>,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Helge Deller <deller@gmx.de>, John David Anglin <dave.anglin@bell.net>,
-        Parisc List <linux-parisc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Vinod, Chegu" <chegu_vinod@hp.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Davidlohr Bueso <davidlohr@hp.com>, Peter Anvin <hpa@zytor.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>, Jason Low <jason.low2@hp.com>
-Subject: Re: [PATCH v2] introduce atomic_pointer to fix a race condition in
- cancelable mcs spinlocks
-Message-ID: <20140602231730.GH22231@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <alpine.LRH.2.02.1406021158360.20627@file01.intranet.prod.int.rdu2.redhat.com>
- <20140602162525.GH16155@laptop.programming.kicks-ass.net>
- <20140602163032.GI16155@laptop.programming.kicks-ass.net>
- <538CB56E.5010709@hp.com>
- <20140602200525.GD13930@laptop.programming.kicks-ass.net>
- <CA+55aFwJwVf_MbcwNNWg-KrLdoOaV2xse2jzvBZTJHJgC_Htvg@mail.gmail.com>
- <20140602210227.GE22231@linux.vnet.ibm.com>
- <CA+55aFzX3oDvzqh4AfkJ7-X1Yfo8obFM+jOOmwzeN-GyqOPLJg@mail.gmail.com>
- <20140602220831.GG22231@linux.vnet.ibm.com>
- <1401749088.3645.189.camel@edumazet-glaptop2.roam.corp.google.com>
+	Mon, 2 Jun 2014 19:19:53 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AtV1ALsFjVN5LL1sPGdsb2JhbABZgwdSgnOoFwEBAQEBAQaYGwGBDxcDAQEBATg1giUBAQU6HCMQCAMYCSUPBSUDBxoTiEHQOBaFP4gsAQFPB4RABJl/lngrgTk
+Date: Tue, 3 Jun 2014 09:19:49 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Joe Perches <joe@perches.com>
+Cc: josh@joshtriplett.org, Steven Rostedt <rostedt@goodmis.org>,
+        paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
+        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
+        fweisbec@gmail.com, oleg@redhat.com, sbw@mit.edu
+Subject: Re: [PATCH RFC 1/2] MAINTAINERS: Add "R:" designated-reviewers tag
+Message-ID: <20140602231949.GV14410@dastard>
+References: <1401729778.5770.20.camel@joe-AO725>
+ <20140602174837.GA13257@cloud>
+ <1401731968.7323.4.camel@joe-AO725>
+ <20140602181658.GX22231@linux.vnet.ibm.com>
+ <1401734669.7323.20.camel@joe-AO725>
+ <20140602145020.400d4e0c@gandalf.local.home>
+ <20140602185504.GA13569@cloud>
+ <1401735917.7323.23.camel@joe-AO725>
+ <20140602190951.GA13648@cloud>
+ <1401736666.7323.25.camel@joe-AO725>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1401749088.3645.189.camel@edumazet-glaptop2.roam.corp.google.com>
+In-Reply-To: <1401736666.7323.25.camel@joe-AO725>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14060223-7164-0000-0000-0000022CAADB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 02, 2014 at 03:44:48PM -0700, Eric Dumazet wrote:
-> On Mon, 2014-06-02 at 15:08 -0700, Paul E. McKenney wrote:
+On Mon, Jun 02, 2014 at 12:17:46PM -0700, Joe Perches wrote:
+> On Mon, 2014-06-02 at 12:09 -0700, josh@joshtriplett.org wrote:
+> > On Mon, Jun 02, 2014 at 12:05:17PM -0700, Joe Perches wrote:
+> > > On Mon, 2014-06-02 at 11:55 -0700, josh@joshtriplett.org wrote:
+> > > > this should go along with a change to
+> > > > get_maintainer.pl to add those folks to the CC list.
+> > > 
+> > > Something like this:
+> > 
+> > Yes, exactly.  Given an appropriate commit message,
+> > Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 > 
-> > diff --git a/kernel/rcu/srcu.c b/kernel/rcu/srcu.c
-> > index c639556f3fa0..c0120279dead 100644
-> > --- a/kernel/rcu/srcu.c
-> > +++ b/kernel/rcu/srcu.c
-> > @@ -295,12 +295,15 @@ EXPORT_SYMBOL_GPL(cleanup_srcu_struct);
-> >  int __srcu_read_lock(struct srcu_struct *sp)
-> >  {
-> >  	int idx;
-> > +	unsigned long *lp;
-> >  
-> >  	idx = ACCESS_ONCE(sp->completed) & 0x1;
-> >  	preempt_disable();
-> > -	ACCESS_ONCE(this_cpu_ptr(sp->per_cpu_ref)->c[idx]) += 1;
-> > +	lp = this_cpu_ptr(&sp->per_cpu_ref->c[idx]);
-> > +	ACCESS_ONCE(*lp) = *lp + 1;
-> >  	smp_mb(); /* B */  /* Avoid leaking the critical section. */
-> > -	ACCESS_ONCE(this_cpu_ptr(sp->per_cpu_ref)->seq[idx]) += 1;
-> > +	lp = this_cpu_ptr(&sp->per_cpu_ref->seq[idx]);
-> > +	ACCESS_ONCE(*lp) = *lp + 1;
-> >  	preempt_enable();
-> >  	return idx;
-> >  
+> That's the sort of patch where reviewing is
+> pretty useless.
 > 
-> This probably could use the following 
+> What it needs is testing, not reviewing.
 > 
-> diff --git a/kernel/rcu/srcu.c b/kernel/rcu/srcu.c
-> index c639556f3fa0..3a97eb6f9076 100644
-> --- a/kernel/rcu/srcu.c
-> +++ b/kernel/rcu/srcu.c
-> @@ -298,9 +298,9 @@ int __srcu_read_lock(struct srcu_struct *sp)
-> 
->  	idx = ACCESS_ONCE(sp->completed) & 0x1;
->  	preempt_disable();
-> -	ACCESS_ONCE(this_cpu_ptr(sp->per_cpu_ref)->c[idx]) += 1;
-> +	this_cpu_inc(sp->per_cpu_ref->c[idx]);
->  	smp_mb(); /* B */  /* Avoid leaking the critical section. */
-> -	ACCESS_ONCE(this_cpu_ptr(sp->per_cpu_ref)->seq[idx]) += 1;
-> +	this_cpu_inc(sp->per_cpu_ref->seq[idx]);
->  	preempt_enable();
->  	return idx;
->  }
+> I tested it for all of 10 seconds.
 
-Good point!
+>From Documentation/SubmittingPatches:
 
-But given that I already have preemption disabled and given that
-__srcu_read_lock() is not to be used by irq handlers, I should be able to
-use __this_cpu_inc(), correct?  Just to avoid unnecessary irq disabling
-on non-x86 platforms...
+"         (c) While there may be things that could be improved with this
+             submission, I believe that it is, at this time, (1) a
+             worthwhile modification to the kernel, and (2) free of known
+             issues which would argue against its inclusion.
+.....
 
-Seems to pass a quick build, so trying a bit heavier testing.
+A Reviewed-by tag is a statement of opinion that the patch is an
+appropriate modification of the kernel without any remaining serious
+technical issues."
 
-							Thanx, Paul
+So, for someone to say they have reviewed the code and are able to
+say it is free of known issues and has no remaining technical
+issues, they would have had to apply, compile and test the patch,
+yes?
 
+i.e. Reviewed-by implies both Acked-by, Tested-by and that the code
+is technically sound.
+
+Anyone using Reviewed-by without having actually applied and tested
+the patch is mis-using the tag - they should be using Acked-by: if
+all they have done is read the code in their mail program....
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
