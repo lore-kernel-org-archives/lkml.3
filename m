@@ -1,74 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753972AbaFBVRA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 17:17:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41738 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753086AbaFBVQ7 (ORCPT
+	id S932200AbaFBVSL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 17:18:11 -0400
+Received: from mail-vc0-f173.google.com ([209.85.220.173]:44709 "EHLO
+	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752465AbaFBVSK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 17:16:59 -0400
-Date: Mon, 2 Jun 2014 14:16:57 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Dave Hansen <dave.hansen@intel.com>
-Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Borislav Petkov <bp@alien8.de>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        David Miller <davem@davemloft.net>,
-        Andres Freund <andres@2ndquadrant.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH 1/3] replace PAGECACHE_TAG_* definition with enumeration
-Message-Id: <20140602141657.68f831156b45251b0684b441@linux-foundation.org>
-In-Reply-To: <538CA269.6010300@intel.com>
-References: <20140521193336.5df90456.akpm@linux-foundation.org>
-	<1401686699-9723-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-	<1401686699-9723-2-git-send-email-n-horiguchi@ah.jp.nec.com>
-	<538CA269.6010300@intel.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 2 Jun 2014 17:18:10 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAGXu5j+YRW_+W8Z9S9O84ep-uUc4wQQRbtSu6_s8o5J2HLPUYg@mail.gmail.com>
+References: <1400799936-26499-1-git-send-email-keescook@chromium.org>
+ <CAGXu5jLYPbJKCBvhVxfHEUFeCPJO-OBhRFufUSNy6o1N=LJ6UQ@mail.gmail.com>
+ <CALCETrV0ZEFipU0E64n5q44LiUV4j4Qqvnz0h_QAoddg+e7V3A@mail.gmail.com> <CAGXu5j+YRW_+W8Z9S9O84ep-uUc4wQQRbtSu6_s8o5J2HLPUYg@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 2 Jun 2014 14:17:49 -0700
+Message-ID: <CALCETrXB0zp8gwpWuxXs0bgB8sQhe6JLE46BOYw3OrBx7hQYVw@mail.gmail.com>
+Subject: Re: [PATCH v5 0/6] seccomp: add PR_SECCOMP_EXT and SECCOMP_EXT_ACT_TSYNC
+To: Kees Cook <keescook@chromium.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Oleg Nesterov <oleg@redhat.com>,
+        James Morris <james.l.morris@oracle.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        LKML <linux-kernel@vger.kernel.org>, Will Drewry <wad@chromium.org>,
+        Julien Tinnes <jln@google.com>, Alexei Starovoitov <ast@plumgrid.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 02 Jun 2014 09:12:25 -0700 Dave Hansen <dave.hansen@intel.com> wrote:
+On Mon, Jun 2, 2014 at 1:06 PM, Kees Cook <keescook@chromium.org> wrote:
+> On Mon, Jun 2, 2014 at 12:59 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>> On Mon, Jun 2, 2014 at 12:47 PM, Kees Cook <keescook@chromium.org> wrote:
+>>> Hi Andrew,
+>>>
+>>> Would you be willing to carry this series? Andy Lutomirski appears
+>>> happy with it now. (Thanks again for all the feedback Andy!) If so, it
+>>> has a relatively small merge conflict with the bpf changes living in
+>>> net-next. Would you prefer I rebase against net-next, let sfr handle
+>>> it, get carried in net-next, or some other option?
+>>
+>> Well, I'm still not entirely convinced that we want to have this much
+>> multiplexing in a prctl, and I'm still a bit unconvinced that the code
+>
+> I don't want to get caught without interface argument flexibility
+> again, so that's why the prctl interface is being set up that way.
 
-> On 06/01/2014 10:24 PM, Naoya Horiguchi wrote:
-> > -#define PAGECACHE_TAG_DIRTY	0
-> > -#define PAGECACHE_TAG_WRITEBACK	1
-> > -#define PAGECACHE_TAG_TOWRITE	2
-> > +enum {
-> > +	PAGECACHE_TAG_DIRTY,
-> > +	PAGECACHE_TAG_WRITEBACK,
-> > +	PAGECACHE_TAG_TOWRITE,
-> > +	__NR_PAGECACHE_TAGS,
-> > +};
-> 
-> Doesn't this end up exposing kernel-internal values out to a userspace
-> interface?  Wouldn't that lock these values in to the ABI?
+I was thinking that a syscall might be a lot prettier.  It may pay to
+cc linux-api, too.
 
-Yes, we should be careful here.  We should not do anything which
-constrains future kernel code or which causes any form of
-compatibility/migration issues.
+I'll offer you a deal: if you try to come up with a nice, clean
+syscall, I'll try to write a fast(er) path for x86_64 to reduce
+overhead.  I bet I can save 90-100ns per syscall. :)
 
-I wonder if we can do something smart with the interface.  For example
-when userspace calls sys_fincore() it must explicitly ask for
-PAGECACHE_TAG_DIRTY and if some future kernel doesn't implement
-PAGECACHE_TAG_DIRTY, it can return -EINVAL.
+>
+>> wouldn't be better off it it were completely atomic in the sense that
+>> it would either work or fail without doing anything.
+>
+> Getting perfect atomic operation looks extremely hard given task
+> locking. If this could get fixed in the future, it would have no
+> impact on the interface. At present, the corner case of the racing
+> thread is small enough that just catching the race failure is
+> sufficient. If task locking is improved in the future, it could just
+> simply never lose a race. Userspace still needs to handle errors no
+> matter what is the non-race failure condition (mode 1 or forked
+> filter) still exists.
+>
 
-Or maybe it can succeed, but tells userspace "you didn't get
-PAGECACHE_TAG_DIRTY".
+I think it's doable -- I just replied to the other thread.
 
-<thinking out loud>
+> -Kees
+>
+> --
+> Kees Cook
+> Chrome OS Security
 
-So userspace sends a mask of bits which select what fields it wants. 
-The kernel returns a mask of bits which tell userspace what it actually
-received.
 
-Or something like that - you get the idea ;)
 
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
