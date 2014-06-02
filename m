@@ -1,50 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752886AbaFAXxL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jun 2014 19:53:11 -0400
-Received: from mail-qa0-f54.google.com ([209.85.216.54]:32821 "EHLO
-	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752441AbaFAXxK (ORCPT
+	id S1753153AbaFBABl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jun 2014 20:01:41 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:37406 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752481AbaFBABk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jun 2014 19:53:10 -0400
-From: James A Shackleford <shack@linux.com>
-To: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Cc: James A Shackleford <shack@linux.com>
-Subject: [PATCH] staging: skein: fix sparse warning for static declarations
-Date: Sun,  1 Jun 2014 19:52:49 -0400
-Message-Id: <1401666769-16582-1-git-send-email-shack@linux.com>
-X-Mailer: git-send-email 1.7.9.5
+	Sun, 1 Jun 2014 20:01:40 -0400
+Date: Mon, 2 Jun 2014 09:01:33 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Liu hua <sdu.liu@huawei.com>
+Cc: wangnan0@huawei.com, peifeiyue@huawei.com, liusdu@126.com,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        hui.geng@huawei.com, kumagai-atsushi@mxc.nes.nec.co.jp,
+        ebiederm@xmission.com, anderson@redhat.com,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RESEND PATCH] kexec : add sparse memory related values to vmcore
+Message-ID: <20140602000132.GB20022@verge.net.au>
+References: <1401284996-44873-1-git-send-email-sdu.liu@huawei.com>
+ <20140529001328.GD22705@verge.net.au>
+ <53883DE9.6090705@huawei.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53883DE9.6090705@huawei.com>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes the following sparse warnings:
+On Fri, May 30, 2014 at 04:14:33PM +0800, Liu hua wrote:
+> On 2014/5/29 8:13, Simon Horman wrote:
+> > On Wed, May 28, 2014 at 09:49:56PM +0800, Liu Hua wrote:
+> >> This patch deales with sparse memory model.
+> >>
+> >> For ARM32 platforms, different vendors may define different
+> >> SECTION_SIZE_BITS, which we did not write to vmcore.
+> >>
+> >> For example:
+> >>
+> >>   1 arch/arm/mach-clps711x/include/mach/memory.h
+> >>     #define SECTION_SIZE_BITS 24
+> >>   2 arch/arm/mach-exynos/include/mach/memory.h
+> >>     #define SECTION_SIZE_BITS 28
+> >>   3 arch/arm/mach-sa1100/include/mach/memory.h
+> >>     #define SECTION_SIZE_BITS 27
+> > 
+> > I wonder if this problem will eventually go away, or at least only
+> > apply to older platforms, as ARM moves towards multiplatform: a single
+> > kernel for more than one platform.
+> 
+> For ARM32 platform, it may cost a long time. And when glancing over
+> the commit log of kernel, we can find this macro changed several times.
+> The user space tools must take care of all these changed for compatibility.
 
-skein_block.c:43:6: warning: symbol 'skein_256_process_block' was not declared. Should it be static?
-skein_block.c:252:6: warning: symbol 'skein_512_process_block' was not declared. Should it be static?
-skein_block.c:483:6: warning: symbol 'skein_1024_process_block' was not declared. Should it be static?
+Sure, that reasoning is fine by me.
 
-by including the header skein_block.h, which contains the declarations in
-question.
-
-Signed-off-by: James A Shackleford <shack@linux.com>
----
- drivers/staging/skein/skein_block.c |    1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/staging/skein/skein_block.c b/drivers/staging/skein/skein_block.c
-index f49eb2e..04ce1d0 100644
---- a/drivers/staging/skein/skein_block.c
-+++ b/drivers/staging/skein/skein_block.c
-@@ -16,6 +16,7 @@
- 
- #include <linux/string.h>
- #include "skein.h"
-+#include "skein_block.h"
- 
- #ifndef SKEIN_USE_ASM
- #define SKEIN_USE_ASM   (0) /* default is all C code (no ASM) */
--- 
-1.7.9.5
-
+> >> It is really a bad news for user space tools such as
+> >> makedumpfile and crash, who have to defines them as
+> >> macros. So for the same architecture, we may need to
+> >> recomile them to parse vmcores with different
+> >> SECTION_SIZE_BITS.
+> >>
+> >> And if we enable LPAE, MAX_PHYSMEM_SIZE can alse
+> >> be variable.
+> >>
+> >> This patch adds these SECTION_SIZE_BITS and MAX_PHYSMEM_SIZE
+> >> to vmcore. which makes user space tools more compatible.
+> >>
+> >> BTW, makedumpfile has queued the related patch.
+> >>
+> >> Signed-off-by: Liu Hua <sdu.liu@huawei.com>
+> >> ---
+> >>  kernel/kexec.c | 2 ++
+> >>  1 file changed, 2 insertions(+)
+> >>
+> >> diff --git a/kernel/kexec.c b/kernel/kexec.c
+> >> index bf0b929e..8b1a193 100644
+> >> --- a/kernel/kexec.c
+> >> +++ b/kernel/kexec.c
+> >> @@ -1577,6 +1577,8 @@ static int __init crash_save_vmcoreinfo_init(void)
+> >>  	VMCOREINFO_LENGTH(mem_section, NR_SECTION_ROOTS);
+> >>  	VMCOREINFO_STRUCT_SIZE(mem_section);
+> >>  	VMCOREINFO_OFFSET(mem_section, section_mem_map);
+> >> +	VMCOREINFO_NUMBER(MAX_PHYSMEM_BITS);
+> >> +	VMCOREINFO_NUMBER(SECTION_SIZE_BITS);
+> >>  #endif
+> >>  	VMCOREINFO_STRUCT_SIZE(page);
+> >>  	VMCOREINFO_STRUCT_SIZE(pglist_data);
+> >> -- 
+> >> 1.9.0
+> >>
+> >>
+> >> _______________________________________________
+> >> kexec mailing list
+> >> kexec@lists.infradead.org
+> >> http://lists.infradead.org/mailman/listinfo/kexec
+> >>
+> > 
+> > _______________________________________________
+> > kexec mailing list
+> > kexec@lists.infradead.org
+> > http://lists.infradead.org/mailman/listinfo/kexec
+> > 
+> > .
+> > 
+> 
+> 
+> 
+> _______________________________________________
+> kexec mailing list
+> kexec@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/kexec
+> 
