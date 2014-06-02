@@ -1,56 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753082AbaFBPed (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 11:34:33 -0400
-Received: from mailgw12.technion.ac.il ([132.68.225.12]:7149 "EHLO
+	id S1753766AbaFBPek (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 11:34:40 -0400
+Received: from mailgw12.technion.ac.il ([132.68.225.12]:51781 "EHLO
 	mailgw12.technion.ac.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751762AbaFBPeb (ORCPT
+	with ESMTP id S1753408AbaFBPeh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 11:34:31 -0400
+	Mon, 2 Jun 2014 11:34:37 -0400
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Au0BADuZjFOERCABjGdsb2JhbABYsiiNIYc+gRQWDgEBASc8gyWKE84PhUSOUh2EKgSKH4tcmm0
-X-IPAS-Result: Au0BADuZjFOERCABjGdsb2JhbABYsiiNIYc+gRQWDgEBASc8gyWKE84PhUSOUh2EKgSKH4tcmm0
+X-IronPort-Anti-Spam-Result: AusBADuZjFOERCABjGdsb2JhbABYxwcBgRMWDgEBASc8giYBBSdSEFFXGYhCzg+FLReOUgcWhCoEih+mSQ
+X-IPAS-Result: AusBADuZjFOERCABjGdsb2JhbABYxwcBgRMWDgEBASc8giYBBSdSEFFXGYhCzg+FLReOUgcWhCoEih+mSQ
 X-IronPort-AV: E=Sophos;i="4.98,957,1392156000"; 
-   d="scan'208";a="109853125"
+   d="scan'208";a="109853186"
 From: Nadav Amit <namit@cs.technion.ac.il>
 To: pbonzini@redhat.com
 Cc: gleb@kernel.org, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
         x86@kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
         Nadav Amit <namit@cs.technion.ac.il>
-Subject: [PATCH 0/9] KVM: x86: Fixes for various emulator bugs
-Date: Mon,  2 Jun 2014 18:34:02 +0300
-Message-Id: <1401723251-8034-1-git-send-email-namit@cs.technion.ac.il>
+Subject: [PATCH 6/9] KVM: x86: movnti minimum op size of 32-bit is not kept
+Date: Mon,  2 Jun 2014 18:34:08 +0300
+Message-Id: <1401723251-8034-7-git-send-email-namit@cs.technion.ac.il>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1401723251-8034-1-git-send-email-namit@cs.technion.ac.il>
+References: <1401723251-8034-1-git-send-email-namit@cs.technion.ac.il>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The x86 emulator of KVM is buggy. This series of patches includes fixes for
-various bugs which were detected. Each patch stands on its own.  Two patches do
-not fix KVM emulation, but cause the emulator to fail more nicely by returning
-an unhandlable error, instead of performing wrong emulation (VEX-prefix and
-cmpxchg16b).  The fix for rdpmc is a bit intrusive to keep SVM behavior intact.
+If the operand-size prefix (0x66) is used in 64-bit mode, the emulator would
+assume the destination operand is 64-bit, when it should be 32-bit.
 
-Thanks for reviewing the patches.
+Reminder: movnti does not support 16-bit operands and its default operand size
+is 32-bit.
 
-Nadav Amit (9):
-  KVM: x86: Mark VEX-prefix instructions emulation as unimplemented
-  KVM: x86: Emulator ignores LDTR/TR extended base on LLDT/LTR
-  KVM: x86: Loading segments on 64-bit mode may be wrong
-  KVM: x86: sgdt and sidt are not privilaged
-  KVM: x86: cmpxchg emulation should compare in reverse order
-  KVM: x86: movnti minimum op size of 32-bit is not kept
-  KVM: x86: rdpmc emulation checks the counter incorrectly
-  KVM: x86: Return error on cmpxchg16b emulation
-  KVM: x86: smsw emulation is incorrect in 64-bit mode
+Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
+---
+ arch/x86/kvm/emulate.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
- arch/x86/include/asm/kvm_emulate.h |  1 +
- arch/x86/include/asm/kvm_host.h    |  1 +
- arch/x86/kvm/emulate.c             | 44 ++++++++++++++++++++++++++++----------
- arch/x86/kvm/pmu.c                 |  9 ++++++++
- arch/x86/kvm/x86.c                 |  7 ++++++
- 5 files changed, 51 insertions(+), 11 deletions(-)
-
+diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
+index 4cb0da6..be3f764 100644
+--- a/arch/x86/kvm/emulate.c
++++ b/arch/x86/kvm/emulate.c
+@@ -4836,8 +4836,8 @@ twobyte_insn:
+ 		break;
+ 	case 0xc3:		/* movnti */
+ 		ctxt->dst.bytes = ctxt->op_bytes;
+-		ctxt->dst.val = (ctxt->op_bytes == 4) ? (u32) ctxt->src.val :
+-							(u64) ctxt->src.val;
++		ctxt->dst.val = (ctxt->op_bytes == 8) ? (u64) ctxt->src.val :
++							(u32) ctxt->src.val;
+ 		break;
+ 	default:
+ 		goto cannot_emulate;
 -- 
 1.9.1
 
