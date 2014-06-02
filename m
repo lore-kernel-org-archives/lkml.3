@@ -1,89 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752946AbaFBT1g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 15:27:36 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:52332 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751290AbaFBT1f (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 15:27:35 -0400
-Date: Mon, 2 Jun 2014 12:27:29 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: josh@joshtriplett.org
-Cc: Joe Perches <joe@perches.com>, linux-kernel@vger.kernel.org,
-        mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
-        rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
-        dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
-        sbw@mit.edu
-Subject: Re: [PATCH RFC 1/2] MAINTAINERS: Add "R:" designated-reviewers tag
-Message-ID: <20140602192729.GB22231@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1401728420-3572-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1401729778.5770.20.camel@joe-AO725>
- <20140602174837.GA13257@cloud>
- <1401731968.7323.4.camel@joe-AO725>
- <20140602181658.GX22231@linux.vnet.ibm.com>
- <20140602185635.GB13569@cloud>
- <20140602190821.GZ22231@linux.vnet.ibm.com>
- <20140602191155.GB13648@cloud>
+	id S1753490AbaFBT2J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 15:28:09 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:55028 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751157AbaFBT2F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 15:28:05 -0400
+Message-ID: <538CCFDE.2010107@zytor.com>
+Date: Mon, 02 Jun 2014 12:26:22 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140602191155.GB13648@cloud>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14060219-1542-0000-0000-00000244BE2B
+To: Arnd Bergmann <arnd@arndb.de>, "Joseph S. Myers" <joseph@codesourcery.com>
+CC: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        john.stultz@linaro.org, hch@infradead.org, tglx@linutronix.de,
+        geert@linux-m68k.org, lftan@altera.com, linux-fsdevel@vger.kernel.org,
+        ceph-devel@vger.kernel.org, cluster-devel@redhat.com, coda@cs.cmu.edu,
+        codalist@TELEMANN.coda.cs.cmu.edu, fuse-devel@lists.sourceforge.net,
+        linux-afs@lists.infradead.org, linux-btrfs@vger.kernel.org,
+        linux-cifs@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net, linux-mtd@lists.infradead.org,
+        linux-nfs@vger.kernel.org, linux-ntfs-dev@lists.sourceforge.net,
+        linux-scsi@vger.kernel.org, logfs@logfs.org,
+        ocfs2-devel@oss.oracle.com, reiserfs-devel@vger.kernel.org,
+        samba-technical@lists.samba.org, xfs@oss.sgi.com
+Subject: Re: [RFC 00/32] making inode time stamps y2038 ready
+References: <1401480116-1973111-1-git-send-email-arnd@arndb.de> <Pine.LNX.4.64.1406021350030.19591@digraph.polyomino.org.uk> <4233989.Saca0ocOUr@wuerfel>
+In-Reply-To: <4233989.Saca0ocOUr@wuerfel>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 02, 2014 at 12:11:55PM -0700, josh@joshtriplett.org wrote:
-> On Mon, Jun 02, 2014 at 12:08:21PM -0700, Paul E. McKenney wrote:
-> > On Mon, Jun 02, 2014 at 11:56:35AM -0700, josh@joshtriplett.org wrote:
-> > > On Mon, Jun 02, 2014 at 11:16:58AM -0700, Paul E. McKenney wrote:
-> > > > On Mon, Jun 02, 2014 at 10:59:28AM -0700, Joe Perches wrote:
-> > > > > On Mon, 2014-06-02 at 10:48 -0700, josh@joshtriplett.org wrote:
-> > > > > > On Mon, Jun 02, 2014 at 10:22:58AM -0700, Joe Perches wrote:
-> > > > > > > On Mon, 2014-06-02 at 10:00 -0700, Paul E. McKenney wrote:
-> > > > > > > > A ksummit-discuss email thread looked at the difficulty recruiting
-> > > > > > > > and retaining reviewers.
-> > > > > > > 
-> > > > > > > []
-> > > > > > > 
-> > > > > > > > Paul Walmsley also noted the need for patch
-> > > > > > > > submitters to know who the key reviewers are and suggested adding an
-> > > > > > > > "R:" tag to the MAINTAINERS file to record this information on a
-> > > > > > > > per-subsystem basis.
-> > > > > > > 
-> > > > > > > I'm not sure of the value of this.
-> > > > > > > 
-> > > > > > > Why not just mark the actual reviewers as maintainers?
-> > > > > > 
-> > > > > > As discussed in the kernel summit discussion, being a regular patch
-> > > > > > reviewer isn't the same thing as being *the* maintainer.
-> > > > > 
-> > > > > I think it's not particularly important or valuable
-> > > > > here to make that distinction.
-> > > > > 
-> > > > > What real difference does it make?
-> > > > 
-> > > > In the particular case of Josh, none, at least from my viewpoint.  He of
-> > > > course might or might not want to take on additional maintainership
-> > > > responsibility at this particular point in time, in which case, I would
-> > > > be more than happy to have him as a designated maintainer.
-> > > 
-> > > For the record, I'd be happy to be listed as a co-maintainer for RCU. :)
-> > 
-> > I would be happy to put you down as maintainer and Steven down as
-> > official reviewer.  ;-)
+On 06/02/2014 12:19 PM, Arnd Bergmann wrote:
+> On Monday 02 June 2014 13:52:19 Joseph S. Myers wrote:
+>> On Fri, 30 May 2014, Arnd Bergmann wrote:
+>>
+>>> a) is this the right approach in general? The previous discussion
+>>>    pointed this way, but there may be other opinions.
+>>
+>> The syscall changes seem like the sort of thing I'd expect, although 
+>> patches adding new syscalls or otherwise affecting the kernel/userspace 
+>> interface (as opposed to those relating to an individual filesystem) 
+>> should go to linux-api as well as other relevant lists.
 > 
-> I'd suggest adding Mathieu Desnoyers, Oleg Nesterov, and Lai Jiangshan
-> as reviewers as well, with their consent.
+> Ok. Sorry about missing linux-api, I confused it with linux-arch, which
+> may not be as relevant here, except for the one question whether we
+> actually want to have the new ABI on all 32-bit architectures or only
+> as an opt-in for those that expect to stay around for another 24 years.
+> 
+> Two more questions for you:
+> 
+> - are you (and others) happy with adding this type of stat syscall
+>   (fstatat64/fstat64) as opposed to the more generic xstat that has
+>   been discussed in the past and that never made it through the bike-
+>   shedding discussion?
+> 
+> - once we have enough buy-in from reviewers to merge this initial
+>   series, should we proceed to define rest of the syscall ABI
+>   (minus driver ioctls) so glibc and kernel can do the conversion
+>   on top of that, or should we better try to do things one syscall
+>   family at a time and actually get the kernel to handle them
+>   correctly internally?
+> 
 
-Mathieu, Oleg, Lai, any objections?
+The bit that is really going to hurt is every single ioctl that uses a
+timespec.
 
-							Thanx, Paul
+Honestly, though, I really don't understand the point with "struct
+inode_time".  It seems like the zeroeth-order thing is to change the
+kernel internal version of struct timespec to have a 64-bit time... it
+isn't just about inodes.  We then should be explicit about the external
+uses of time, and use accessors.
+
+	-hpa
+
 
