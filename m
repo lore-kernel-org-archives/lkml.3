@@ -1,50 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753044AbaFBTCF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 15:02:05 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:50393 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751370AbaFBTCC (ORCPT
+	id S1753156AbaFBTCL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 15:02:11 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:45145 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753065AbaFBTCH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 15:02:02 -0400
-From: Soren Brinkmann <soren.brinkmann@xilinx.com>
-To: Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>, Kevin Hilman <khilman@linaro.org>,
-        Michal Simek <michal.simek@xilinx.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Soren Brinkmann <soren.brinkmann@xilinx.com>
-Subject: [PATCH] ARM: multi_v7_defconfig: Enable Zynq cpuidle driver
-Date: Mon,  2 Jun 2014 11:58:55 -0700
-Message-Id: <1401735535-13692-1-git-send-email-soren.brinkmann@xilinx.com>
-X-Mailer: git-send-email 2.0.0
+	Mon, 2 Jun 2014 15:02:07 -0400
 MIME-Version: 1.0
+In-Reply-To: <538CAEA6.4060307@redhat.com>
+References: <1401692506-7796-1-git-send-email-ast@plumgrid.com>
+	<538C3C94.3080206@redhat.com>
+	<CAMEtUuzkjZCsReWH9cZs8AU0mJjZH9YOdCBTWusxe6-NZ9mQ=g@mail.gmail.com>
+	<538CAEA6.4060307@redhat.com>
+Date: Mon, 2 Jun 2014 12:02:03 -0700
+Message-ID: <CAMEtUuwxJOgYgFjg9deQZOffeg6-JUGZXZ1Rj344eQmriQ0F0Q@mail.gmail.com>
+Subject: Re: [PATCH v2 net-next 0/2] split BPF out of core networking
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Daniel Borkmann <dborkman@redhat.com>
+Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        Network Development <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
----
-I overlooked this one when I enabled the peripheral drivers the other day.
+On Mon, Jun 2, 2014 at 10:04 AM, Daniel Borkmann <dborkman@redhat.com> wrote:
+> On 06/02/2014 05:41 PM, Alexei Starovoitov wrote:
+> ...
+>
+>> Glad you brought up this point :)
+>> 100% agree that current double verification done by seccomp is far from
+>> being generic and quite hard to maintain, since any change done to
+>> classic BPF verifier needs to be thought through from
+>> seccomp_check_filter()
+>> perspective as well.
+>
+>
+> Glad we're on the same page.
+>
+>
+>> BPF's input context, set of allowed calls need to be expressed in a
+>> generic way.
+>> Obviously this split by itself won't make classic BPF all of a sudden
+>> generic.
+>> It rather defines a boundary of eBPF core.
+>
+>
+> Note, I'm not at all against using it in tracing, I think it's probably
+> a good idea, but shouldn't we _first_ think about how to overcome such
+> deficits as above by improving upon its in-kernel API design, thus to
+> better prepare it to be generic? I feel this step is otherwise just
+> skipped and quickly 'hacked' around ... ;)
 
-	Sören
----
- arch/arm/configs/multi_v7_defconfig | 1 +
- 1 file changed, 1 insertion(+)
+Are you talking about classic 'deficit' or eBPF 'deficit' ?
+Classic has all sorts of hard coded assumptions. The whole
+concept of 'load from magic constant' to mean different things
+is flawed. We all got used to it and now think that it's normal
+for "ld_abs -4056" to mean "a ^= x"
+This split is not trying to make classic easier to hack.
+With eBPF underneath classic, it got a lot easier to add extensions
+to classic, but we shouldn't be doing it.
+Classic BPF is not generic and cannot become one. It's eBPF's job.
 
-diff --git a/arch/arm/configs/multi_v7_defconfig b/arch/arm/configs/multi_v7_defconfig
-index d4e8a47a2f7c..311c16243750 100644
---- a/arch/arm/configs/multi_v7_defconfig
-+++ b/arch/arm/configs/multi_v7_defconfig
-@@ -80,6 +80,7 @@ CONFIG_CPU_FREQ=y
- CONFIG_CPU_FREQ_STAT_DETAILS=y
- CONFIG_CPU_FREQ_DEFAULT_GOV_ONDEMAND=y
- CONFIG_CPU_IDLE=y
-+CONFIG_ARM_ZYNQ_CPUIDLE=y
- CONFIG_NET=y
- CONFIG_PACKET=y
- CONFIG_UNIX=y
--- 
-2.0.0
+The split is mainly helping to clearly see the boundary of eBPF core
+vs its socket use case. It doesn't change or add any API.
+We need to carefully design eBPF APIs when we expose it
+to user space. I have a proposal for that too, but that's separate
+discussion.
+In terms of in-kernel eBPF API there is nothing to be done.
+eBPF program 'prog' is generated by whatever means and then:
+      struct sk_filter *fp;
 
+      fp = kzalloc(sk_filter_size(prog_len), GFP_KERNEL);
+      memcpy(fp->insni, prog, prog_len * sizeof(fp->insni[0]));
+      fp->len = prog_len;
+
+      sk_filter_select_runtime(fp); // select interpreter or JIT
+      SK_RUN_FILTER(fp, ctx);  // run the program
+      sk_filter_free(fp); // free program
+
+that's how sockets, testsuite, seccomp, tracing are doing it.
+All have different ways of producing 'prog' and 'prog_len'.
+This in-kernel API cleanup was done in commit 5fe821a9dee2
+You even acked it back then :)
+
+If you're referring to eBPF verifier in-kernel API then yeah, it's
+missing, just like the whole eBPF verifier :)
+Ideally any kernel component that generates eBPF on the fly
+sends eBPF program to verifier first just to double check
+that generated program is valid.
