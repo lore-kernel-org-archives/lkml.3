@@ -1,65 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755248AbaFBQWo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 12:22:44 -0400
-Received: from mga03.intel.com ([143.182.124.21]:32832 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752621AbaFBQWl convert rfc822-to-8bit (ORCPT
+	id S1755330AbaFBQXO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 12:23:14 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:48566 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753897AbaFBQXL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 12:22:41 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,957,1392192000"; 
-   d="scan'208";a="439902018"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Borislav Petkov <bp@alien8.de>, "Chen, Gong" <gong.chen@linux.intel.com>,
-        "m.chehab@samsung.com" <m.chehab@samsung.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 5/7 v6] trace, RAS: Add eMCA trace event interface
-Thread-Topic: [PATCH 5/7 v6] trace, RAS: Add eMCA trace event interface
-Thread-Index: AQHPeilSOyJTIZwXt0erLrK7gz6USJtWk/0AgAASiACAAAYGgIACpdkAgAAMgACAAGDh4IAAmseAgAOtDFA=
-Date: Mon, 2 Jun 2014 16:22:19 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F3282545B@ORSMSX114.amr.corp.intel.com>
-References: <1400142646-10127-1-git-send-email-gong.chen@linux.intel.com>
-	<1401247938-22125-1-git-send-email-gong.chen@linux.intel.com>
-	<1401247938-22125-2-git-send-email-gong.chen@linux.intel.com>
-	<20140528112832.5f83c66b@gandalf.local.home>
-	<20140528163452.GF17196@pd.tnic>
-	<20140528125625.6f6dcf7f@gandalf.local.home>
-	<20140530092232.GA13495@gchen.bj.intel.com>	<20140530100716.GE28131@pd.tnic>
-	<3908561D78D1C84285E8C5FCA982C28F32823D2B@ORSMSX114.amr.corp.intel.com>
- <20140530210759.267a854e@gandalf.local.home>
-In-Reply-To: <20140530210759.267a854e@gandalf.local.home>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Mon, 2 Jun 2014 12:23:11 -0400
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCH 1/2] pci: Add IORESOURCE_BIT entry for PCIe ECAM
+ resources.
+To: Kumar Gala <galak@codeaurora.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, Liviu Dudau <Liviu.Dudau@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Rob Herring <robherring2@gmail.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Kishon Vijay Abraham I <kishon@ti.com>
+In-Reply-To: <390B3F94-C058-47D6-82CE-0393E60014FF@codeaurora.org>
+References: <20140530233034.GH1677@bart.dudau.co.uk>
+	<1401496601-31983-1-git-send-email-Liviu.Dudau@arm.com>
+	<1401496601-31983-2-git-send-email-Liviu.Dudau@arm.com>
+	<4756033.LkcFQN0chs@wuerfel>
+	<20140602150945.964D4C40381@trevor.secretlab.ca>
+	<390B3F94-C058-47D6-82CE-0393E60014FF@codeaurora.org>
+Date: Mon, 02 Jun 2014 17:23:06 +0100
+Message-Id: <20140602162306.4AB0FC40476@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> All of this stuff only applies to server systems - so quibbling over
->> a handful of *bytes* in an error record on a system that has tens,
->> hundreds or even thousands of *gigabytes* of memory seems
->> a bit pointless.
->
-> But there's still only a limited number of bytes in the ring buffer no
-> matter what the system, thus we still need to quibble over it.
+On Mon, 2 Jun 2014 10:40:30 -0500, Kumar Gala <galak@codeaurora.org> wrote:
+> 
+> On Jun 2, 2014, at 10:09 AM, Grant Likely <grant.likely@linaro.org> wrote:
+> 
+> > On Sat, 31 May 2014 20:41:04 +0200, Arnd Bergmann <arnd@arndb.de> wrote:
+> >> On Saturday 31 May 2014 01:36:40 Liviu Dudau wrote:
+> >>> We would like to be able to describe PCIe ECAM resources as
+> >>> IORESOURCE_MEM blocks while distinguish them from standard
+> >>> memory resources. Add an IORESOURCE_BIT entry for this case.
+> >>> 
+> >>> Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
+> >> 
+> >> I still don't see any value in this at all. What is the advantage
+> >> of doing this opposed to just having a standardized 'reg' property
+> >> for a particular compatible string?
+> > 
+> > I'm inclined to agree. It doesn't seem appropriate to put config space
+> > in ranges, and the host controller binding is responsible for
+> > identifying how config space is memory mapped.
+> > 
+> > g.
+> 
+> I don’t agree when it comes to ECAM, but we can drop this for now
+> until someone really does that.
 
-To which I'll counter that the trace ring buffer can handle tracing of
-events like page faults and context switches (can't it?) that happen
-at a rate of thousands per second.  Our eMCA records will normally
-happen at a rate of X per month (where X may well be less than one).
-If there is a storm of errors - we disable CMCI interrupts and revert
-to polling.  We declare a "storm" as just 15 events in a second. If we
-switch to polling, then we won't poll faster than once per second.
+Okay, humor me then. What would a ranges property look like for ECAM? Do
+you have an example? I believe there would need to be a separate entry
+for each and every PCI device on the bus to get the config spaces to be
+contiguous.
 
-So worst case is that we are seeing some steady flow of events that
-don't quite trigger the storm detector ... about 14 events per second.
+> However, what do we do with the 2 cases that exist in upstream that
+> are using ranges for cfg space?
 
--Tony
+Ignore them in the core code? Make the specific host controller handle
+them I would think.
+
+g.
+
