@@ -1,81 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752200AbaFBGeh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 02:34:37 -0400
-Received: from ozlabs.org ([103.22.144.67]:42741 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751407AbaFBGeg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 02:34:36 -0400
-Date: Mon, 2 Jun 2014 16:34:29 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Alexander Graf <agraf@suse.de>, Christoffer Dall <cdall@cs.columbia.edu>,
-        Marc Zyngier <marc.zyngier@arm.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Anup Patel <anup.patel@linaro.org>
-Subject: linux-next: manual merge of the kvm-ppc tree with the  tree
-Message-ID: <20140602163429.357cf678@canb.auug.org.au>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
+	id S1752310AbaFBGhV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 02:37:21 -0400
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:60059 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751431AbaFBGhS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 02:37:18 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/d=DQypsFZSJn/uQjH9HeZYC"; protocol="application/pgp-signature"
+In-Reply-To: <5387B7B6.70102@ti.com>
+References: <cover.1401191054.git.viresh.kumar@linaro.org>
+	<ce68a1ba333ab080a2428242d8fa4d4629064a4d.1401191054.git.viresh.kumar@linaro.org>
+	<5387B7B6.70102@ti.com>
+Date: Mon, 2 Jun 2014 12:07:17 +0530
+Message-ID: <CAKohpok__TGBnO52ALbrqpkg53p+wcZ+sXLu7fAo38R1x6GFGA@mail.gmail.com>
+Subject: Re: [PATCH V4 4/8] driver/core: cpu: initialize opp table
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Nishanth Menon <nm@ti.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arvind Chauhan <arvind.chauhan@arm.com>,
+        Ips Gandhi <inderpal.s@samsung.com>,
+        Chander Kashyap <chander.kashyap@linaro.org>,
+        Pavel Machek <pavel@ucw.cz>, "Brown, Len" <len.brown@intel.com>,
+        Sudeep Holla <sudeep.holla@arm.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Amit Daniel Kachhap <amit.daniel@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>, Shawn Guo <shawn.guo@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/d=DQypsFZSJn/uQjH9HeZYC
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On 30 May 2014 04:11, Nishanth Menon <nm@ti.com> wrote:
+> The change so far is a improvement in error handling -> which,
+> personally I find nice, but not necessarily related to the $subject or
+> covered in commit message. I suggest splitting that specific change
+> out as a patch of it's own.
 
-Hi Alexander,
+I would be required to do this here:
 
-Today's linux-next merge of the kvm-ppc tree got a conflict in
-include/uapi/linux/kvm.h between commit 717abd208dff ("KVM: Add
-capability to advertise PSCI v0.2 support") from the kvm-arm tree and
-commit f2e91042a807 ("KVM: PPC: Add CAP to indicate hcall fixes") from
-the kvm-ppc tree.
+if (!error)
+    of_init_opp_table(**);
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+And so did this change as part of this patch :), probably rafael doesn't
+feel a need of this and so has asked me to do a resend of a single patch
+(reported by Sachin) ..
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+So, will leave it as is unless he wants me to send it again :)
 
-diff --cc include/uapi/linux/kvm.h
-index 32cf446f1911,16c923de85e7..000000000000
---- a/include/uapi/linux/kvm.h
-+++ b/include/uapi/linux/kvm.h
-@@@ -756,7 -748,7 +756,8 @@@ struct kvm_ppc_smmu_info=20
-  #define KVM_CAP_S390_IRQCHIP 99
-  #define KVM_CAP_IOEVENTFD_NO_LENGTH 100
-  #define KVM_CAP_VM_ATTRIBUTES 101
- -#define KVM_CAP_PPC_FIXUP_HCALL 102
- +#define KVM_CAP_ARM_PSCI_0_2 102
-++#define KVM_CAP_PPC_FIXUP_HCALL 103
- =20
-  #ifdef KVM_CAP_IRQ_ROUTING
- =20
-
---Sig_/d=DQypsFZSJn/uQjH9HeZYC
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTjBr5AAoJEMDTa8Ir7ZwVGhQP/RS5zAlJj/XeLOSzLoZ3LdKu
-Wfr0Ful5I+L2OhLurFnlYQFSQ2ileGWb2InqBSb1Hy4GLhrJD3Q5djMLV3KY4ZzE
-DWqREXN6a+xXAhwFPpx2HHHmpVKAREIUnc4Bm8XIhXG7Fbd6Eor/SYp8KfteoXBU
-7TaACqutS6zhcpv7O+ha17XNezj+bQAo3orPsONBMZJMIAsjDV0JWENnuDLkXMXE
-MzrbQbHU/Zz6D7IT6lvxIxl0XXCIojluFlNzoijgNiaIuCqKH/L99ZyJAdkbCraC
-PNP9AycEpc+TWGypLZFQR0Xgy2lcHgOPD/okfg6ETNLKT0/pxGlI3+gTGVHMrcS7
-K4Szqv+l0w7Gsj/rbkAIo+wQ1gv4anHkpuQ6+XWMnDhmyPvnZOPQSn08MkhEfDJF
-i1xlQ+YsXTKkcugWqU+bHaDkHM37vhcNMM5wdmBB+M+ydNHl4QQ9rOaZfuNnbADu
-/NXzrYu144DTbff9r3WCR2HYAHfo441s3NLa0Jfq9dEm0paf2eYWhoYq5XSZ7PCo
-X4tzJUT5y6LSur0saHZS1mhbv7pOekfSxqbTrIodoMgrtEb0XfacW5xrujA7YFHO
-d4FF4zafP5f83Kk7aKSeHkpt80DSwRNqYUERGomcpwWVzV3BjIGVsf3c9NH29weL
-ybkI9yBMJrJbTRuRvH6M
-=Up5Y
------END PGP SIGNATURE-----
-
---Sig_/d=DQypsFZSJn/uQjH9HeZYC--
+For this and other patches, thanks for your review.
