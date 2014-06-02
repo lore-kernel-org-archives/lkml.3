@@ -1,52 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932237AbaFBUoc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 16:44:32 -0400
-Received: from mout.kundenserver.de ([212.227.17.13]:50101 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752641AbaFBUoa (ORCPT
+	id S1754066AbaFBUph (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 16:45:37 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:36590 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753318AbaFBUpg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 16:44:30 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Kumar Gala <galak@codeaurora.org>
-Cc: Grant Likely <grant.likely@linaro.org>, Liviu Dudau <Liviu.Dudau@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Rob Herring <robherring2@gmail.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Kishon Vijay Abraham I <kishon@ti.com>
-Subject: Re: [PATCH 1/2] pci: Add IORESOURCE_BIT entry for PCIe ECAM resources.
-Date: Mon, 02 Jun 2014 22:44:19 +0200
-Message-ID: <5976198.MmsV3dNjlq@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <95C66A63-9671-4AD5-9804-6647A305DB99@codeaurora.org>
-References: <20140530233034.GH1677@bart.dudau.co.uk> <4495090.ktpdXEyibD@wuerfel> <95C66A63-9671-4AD5-9804-6647A305DB99@codeaurora.org>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:w8v4E/yxQTdAhYdwJ6Npnz9QomRs4MIq7gjmGzy4jOR
- WGExJvjyhBKNEaWYB1sCLlbg25PHbC3CNcgrWfdh92RbFSbv6L
- GZByDhznIY5Zf20SNxLEdcEXg2uAM0WWBJCH5GIVFopNXIzIft
- NnaaHxKzWbej19JeZOYLpSbCtpQiVeVimQAqqLIlRdz9yZuGJO
- 98B9Ga6pmLTYJgrCLfn2Y8wTvxGArC+qLFMucUdCq69oWlPkd6
- U40qrAddQBFiE20IUg7T9ejAadewE7PypUSaHjMUuOOsMqpFM9
- FakGUl52zfCFTj8IuGn+ugYb7qSYnCF9wYuegaPYeXAAMs+q6T
- jMSX1lK4gf+JdmyhXNuQ=
+	Mon, 2 Jun 2014 16:45:36 -0400
+Date: Mon, 02 Jun 2014 13:45:35 -0700 (PDT)
+Message-Id: <20140602.134535.1968359234490945809.davem@davemloft.net>
+To: Alexey.Brodkin@synopsys.com
+Cc: hdegoede@redhat.com, netdev@vger.kernel.org, wens@csie.org,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        peppe.cavallaro@st.com, Vineet.Gupta1@synopsys.com
+Subject: Re: [PATCH] stmmac: add DMA initialization delay to device tree
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1401736448.2430.10.camel@abrodkin-8560l>
+References: <1401720835-21507-1-git-send-email-abrodkin@synopsys.com>
+	<20140602.111543.1026699389707378851.davem@davemloft.net>
+	<1401736448.2430.10.camel@abrodkin-8560l>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 02 Jun 2014 13:45:36 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 02 June 2014 15:43:02 Kumar Gala wrote:
-> Its imx6 and exynos, havent looked to see if dw-pcie is handling
-> the parsing or not for them.
+From: Alexey Brodkin <Alexey.Brodkin@synopsys.com>
+Date: Mon, 2 Jun 2014 19:14:09 +0000
 
-Ok, so they are both dw-pcie variants.
+> I understand that putting everything in DT is not a way to go.
+> But a rationale for this particular patch is as follows: as I may see up
+> until now everybody was happy with 100 milliseconds, but on my
+> particular board connected to Gbit network I see that more than a second
+> is required for DMA to initialize. If I connect the same board to 100
+> Mbit network then initialization delay could be up to 2.5 seconds.
+> 
+> So I may definitely bump the delay to say 3 seconds, but what if another
+> user needs even more?
+> 
+> On the other hand those who are happy now with 100 msec delay may be be
+> disappointed in case of failure and frozen for N seconds board waiting
+> for timeout.
+> 
+> If you think that delay for a few seconds in case of initialization
+> failure is acceptable then I will submit a patch that increases delay to
+> 3 seconds (personally I haven't seen longer init times).
 
-	Arnd 
+Stop right there.
+
+We are doing synchronous delays here, without sleeping, and if that takes
+seconds it is totally unacceptable.
+
+You'll first have to convert this code to use msleep() or similar.
+
+Second, if the chip hangs nobody cares if there is a 3 second pause, it's
+error recovery.
 
