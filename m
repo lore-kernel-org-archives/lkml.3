@@ -1,94 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754743AbaFBODn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 10:03:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21924 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754270AbaFBODl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 10:03:41 -0400
-Date: Mon, 2 Jun 2014 10:02:49 -0400 (EDT)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
-To: John David Anglin <dave.anglin@bell.net>
-cc: Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>, jejb@parisc-linux.org,
-        deller@gmx.de, linux-parisc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, chegu_vinod@hp.com,
-        paulmck@linux.vnet.ibm.com, Waiman.Long@hp.com, tglx@linutronix.de,
-        riel@redhat.com, akpm@linux-foundation.org, davidlohr@hp.com,
-        hpa@zytor.com, andi@firstfloor.org, aswin@hp.com, scott.norton@hp.com,
-        Jason Low <jason.low2@hp.com>
-Subject: Re: [PATCH] fix a race condition in cancelable mcs spinlocks
-In-Reply-To: <alpine.LRH.2.02.1406020914440.18342@file01.intranet.prod.int.rdu2.redhat.com>
-Message-ID: <alpine.LRH.2.02.1406021002090.1300@file01.intranet.prod.int.rdu2.redhat.com>
-References: <alpine.LRH.2.02.1406011342470.20831@file01.intranet.prod.int.rdu2.redhat.com> <20140601192026.GE16155@laptop.programming.kicks-ass.net> <BLU0-SMTP387BD0AE22A4EAD432D65F97210@phx.gbl>
- <alpine.LRH.2.02.1406020914440.18342@file01.intranet.prod.int.rdu2.redhat.com>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+	id S1755170AbaFBODy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 10:03:54 -0400
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:36894 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755005AbaFBODw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 10:03:52 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20140602114741.GA1039@esperanza>
+References: <cover.1401457502.git.vdavydov@parallels.com>
+	<5d2fbc894a2c62597e7196bb1ebb8357b15529ab.1401457502.git.vdavydov@parallels.com>
+	<alpine.DEB.2.10.1405300955120.11943@gentwo.org>
+	<20140531110456.GC25076@esperanza>
+	<20140602042435.GA17964@js1304-P5Q-DELUXE>
+	<20140602114741.GA1039@esperanza>
+Date: Mon, 2 Jun 2014 23:03:51 +0900
+Message-ID: <CAAmzW4P=kUAJwozBPPos+uUewzSDnE43P6NcGYKNpBjjfv1EWA@mail.gmail.com>
+Subject: Re: [PATCH -mm 7/8] slub: make dead caches discard free slabs immediately
+From: Joonsoo Kim <js1304@gmail.com>
+To: Vladimir Davydov <vdavydov@parallels.com>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>, Christoph Lameter <cl@gentwo.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux Memory Management List <linux-mm@kvack.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2014-06-02 20:47 GMT+09:00 Vladimir Davydov <vdavydov@parallels.com>:
+> Hi Joonsoo,
+>
+> On Mon, Jun 02, 2014 at 01:24:36PM +0900, Joonsoo Kim wrote:
+>> On Sat, May 31, 2014 at 03:04:58PM +0400, Vladimir Davydov wrote:
+>> > On Fri, May 30, 2014 at 09:57:10AM -0500, Christoph Lameter wrote:
+>> > > On Fri, 30 May 2014, Vladimir Davydov wrote:
+>> > >
+>> > > > (3) is a bit more difficult, because slabs are added to per-cpu partial
+>> > > > lists lock-less. Fortunately, we only have to handle the __slab_free
+>> > > > case, because, as there shouldn't be any allocation requests dispatched
+>> > > > to a dead memcg cache, get_partial_node() should never be called. In
+>> > > > __slab_free we use cmpxchg to modify kmem_cache_cpu->partial (see
+>> > > > put_cpu_partial) so that setting ->partial to a special value, which
+>> > > > will make put_cpu_partial bail out, will do the trick.
+> [...]
+>> I think that we can do (3) easily.
+>> If we check memcg_cache_dead() in the end of put_cpu_partial() rather
+>> than in the begin of put_cpu_partial(), we can avoid the race you
+>> mentioned. If someone do put_cpu_partial() before dead flag is set,
+>> it can be zapped by who set dead flag. And if someone do
+>> put_cpu_partial() after dead flag is set, it can be zapped by who
+>> do put_cpu_partial().
+>
+> After put_cpu_partial() adds a frozen slab to a per cpu partial list,
+> the slab becomes visible to other threads, which means it can be
+> unfrozen and freed. The latter can trigger cache destruction. Hence we
+> shouldn't touch the cache, in particular call memcg_cache_dead() on it,
+> after calling put_cpu_partial(), otherwise we can get use-after-free.
+>
+> However, what you propose makes sense if we disable irqs before adding a
+> slab to a partial list and enable them only after checking if the cache
+> is dead and unfreezing all partials if so, i.e.
+>
+> diff --git a/mm/slub.c b/mm/slub.c
+> index d96faa2464c3..14b9e9a8677c 100644
+> --- a/mm/slub.c
+> +++ b/mm/slub.c
+> @@ -2030,8 +2030,15 @@ static void put_cpu_partial(struct kmem_cache *s, struct page *page, int drain)
+>         struct page *oldpage;
+>         int pages;
+>         int pobjects;
+> +       unsigned long flags;
+> +       int irq_saved = 0;
+>
+>         do {
+> +               if (irq_saved) {
+> +                       local_irq_restore(flags);
+> +                       irq_saved = 0;
+> +               }
+> +
+>                 pages = 0;
+>                 pobjects = 0;
+>                 oldpage = this_cpu_read(s->cpu_slab->partial);
+> @@ -2062,8 +2069,16 @@ static void put_cpu_partial(struct kmem_cache *s, struct page *page, int drain)
+>                 page->pobjects = pobjects;
+>                 page->next = oldpage;
+>
+> +               local_irq_save(flags);
+> +               irq_saved = 1;
+> +
+>         } while (this_cpu_cmpxchg(s->cpu_slab->partial, oldpage, page)
+>                                                                 != oldpage);
+> +
+> +       if (memcg_cache_dead(s))
+> +               unfreeze_partials(s, this_cpu_ptr(s->cpu_slab));
+> +
+> +       local_irq_restore(flags);
+>  #endif
+>  }
+>
+>
+> That would be safe against possible cache destruction, because to remove
+> a slab from a per cpu partial list we have to run on the cpu it was
+> frozen on. Disabling irqs makes it impossible.
 
+Hmm... this is also a bit ugly.
+How about following change?
 
-On Mon, 2 Jun 2014, Mikulas Patocka wrote:
+Thanks.
 
-> 
-> 
-> On Sun, 1 Jun 2014, John David Anglin wrote:
-> 
-> > On 1-Jun-14, at 3:20 PM, Peter Zijlstra wrote:
-> > 
-> > > > If you write to some variable with ACCESS_ONCE and use cmpxchg or xchg at
-> > > > the same time, you break it. ACCESS_ONCE doesn't take the hashed spinlock,
-> > > > so, in this case, cmpxchg or xchg isn't really atomic at all.
-> > > 
-> > > And this is really the first place in the kernel that breaks like this?
-> > > I've been using xchg() and cmpxchg() without such consideration for
-> > > quite a while.
-> > 
-> > I believe Mikulas is correct.  Even in a controlled situation where a 
-> > cmpxchg operation is used to implement pthread_spin_lock() in userspace, 
-> > we found recently that the lock must be released with a cmpxchg 
-> > operation and not a simple write on SMP systems. There is a race in the 
-> > cache operations or instruction ordering that's not present with the 
-> > ldcw instruction.
-> > 
-> > Dave
-> > --
-> > John David Anglin	dave.anglin@bell.net
-> 
-> That is strange.
-> 
-> Spinlock with cmpxchg on lock and a single write on unlock should work,
-> assuming that cmpxchg doesn't write to the target address when it detects
-> mismatch (the cmpxchg in the kernel syscall page doesn't do it, it
-> nullifies the write instruction on mismatch).
-> 
-> Do you have some code that reproduces this misbehavior?
-> 
-> We really need to find out why does it behave this way:
-> - is PA-RISC really out of order? (we used to believe that it is in-order
->   and we have empty barrier instructions in the kernel). Does adding the
->   "SYNC" instruction before the write in pthread_spin_unlock fix it?
-> - does the processor performs nullified writes unconditionally? Does
->   moving the write in the cmpxchg implementation from the nullified slot
->   to is own branch fix it?
-> - does adding a dummy "ldcw" instruction to an unrelated address fix it?
->   Is it that "ldcw" has some magic barrier properties?
+diff --git a/mm/slub.c b/mm/slub.c
+index 2b1ce69..6adab87 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -2058,6 +2058,21 @@ static void put_cpu_partial(struct kmem_cache
+*s, struct page *page, int drain)
 
-- and there is "stw,o" instruction that does ordered store according to 
-the specification, so we should test it too...
-
-> I think we need to perform these tests and maybe some more to find out
-> what really happened there...
-> 
-> BTW. in Debian 5 libc 2.7, pthread_spin_lock uses ldcw and 
-> pthread_spin_unlock uses a single write (just like the kernel spinlock 
-> implementation). In Debian-ports libc 2.18, both pthread_spin_lock and 
-> pthread_spin_unlock call the kernel syscall page. What was the reason for 
-> switching to a less efficient implementation?
-> 
-> Mikulas
-> 
+        } while (this_cpu_cmpxchg(s->cpu_slab->partial, oldpage, page)
+                                                                != oldpage);
++
++       if (memcg_cache_dead(s)) {
++               bool done = false;
++               unsigned long flags;
++
++               local_irq_save(flags);
++               if (this_cpu_read(s->cpu_slab->partial) == page) {
++                       done = true;
++                       unfreeze_partials(s, this_cpu_ptr);
++               }
++               local_irq_restore(flags);
++
++               if (!done)
++                       flush_all(s);
++       }
+ #endif
+ }
