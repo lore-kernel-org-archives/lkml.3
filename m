@@ -1,75 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753508AbaFBTLP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 15:11:15 -0400
-Received: from mout.kundenserver.de ([212.227.126.131]:64161 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752396AbaFBTLN convert rfc822-to-8bit (ORCPT
+	id S1753559AbaFBTLZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 15:11:25 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:49690 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753519AbaFBTLW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 15:11:13 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Chuck Lever <chuck.lever@oracle.com>
-Cc: Roger Willcocks <roger@filmlight.ltd.uk>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>, linux-arch@vger.kernel.org,
-        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
-        LKML Kernel <linux-kernel@vger.kernel.org>, lftan@altera.com,
-        Christoph Hellwig <hch@infradead.org>, john.stultz@linaro.org,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>, geert@linux-m68k.org,
-        tglx@linutronix.de, xfs@oss.sgi.com, joseph@codesourcery.com
-Subject: Re: [RFC 11/32] xfs: convert to struct inode_time
-Date: Mon, 02 Jun 2014 21:10:47 +0200
-Message-ID: <5585593.Xe5bNQZW47@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <C57EA6CA-236A-4C93-95F8-21F46A3622DA@oracle.com>
-References: <1401480116-1973111-1-git-send-email-arnd@arndb.de> <1401735504.6065.227.camel@montana.filmlight.ltd.uk> <C57EA6CA-236A-4C93-95F8-21F46A3622DA@oracle.com>
+	Mon, 2 Jun 2014 15:11:22 -0400
+Date: Mon, 2 Jun 2014 22:10:53 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Federico Di Pierro <nierro92@gmail.com>
+Cc: jic23@kernel.org, gregkh@linuxfoundation.org, jg1.han@samsung.com,
+        sachin.kamat@linaro.org, linux-iio@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] fix some coding style problem in
+ drivers/staging/iio/frequency/ad9832.c
+Message-ID: <20140602191053.GA15585@mwanda>
+References: <538CAEBD.5040501@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
-X-Provags-ID: V02:K0:bXrzJyAzgEKl81TStkjWbriSWSQaIN1lXC/BVPRzOz9
- e30zFHO7wPv9NopQs9o8/IgxftJc9DDKjL53AxDp+l3XKLijd+
- upWIbCPzGW1r8f8geTxrDyIE3BE/onm56ZedlUsedp7gNMRlS6
- w7UUVdX0kK5SXmohuocp+rVbbAWlcpfN/cuR81+dIt4B6W0qsZ
- iJsankvJXyzjGgqoUrSWX7U0AJbaAZBVG96Le54OrgKAZ59QtO
- Sk4u9CXEmfLJU+6IYhUpOOzUNOfQ7zvBrjSFfQBvEf8DpVmRud
- +Rf7HefjAQWGKMtBBV2wfhMvr6ClnqxahqO9GvJQdCp2PqG369
- IJiBY9Yez2sg4pUorR+U=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <538CAEBD.5040501@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 02 June 2014 15:04:27 Chuck Lever wrote:
-> On Jun 2, 2014, at 2:58 PM, Roger Willcocks <roger@filmlight.ltd.uk> wrote:
+On Mon, Jun 02, 2014 at 07:05:01PM +0200, Federico Di Pierro wrote:
+> -		else {
+> +		} else {
+>  			ret = -EINVAL;
+>  			break;
+>  		}
 > 
-> > 
-> > On Mon, 2014-06-02 at 11:04 -0400, Chuck Lever wrote:
-> > 
-> >> NFSv2/3 timestamps are a pair of unsigned 32-bit values: one value for
-> >> seconds since midnight GMT Jan 1, 1970, and one value for nanoseconds.
-> >> (See the definition of nfstime3 in RFC 1813).
-> >> 
-> > 
-> > nfstime3 could be extended by redefining the otherwise unused
-> > nanoseconds bits{31,30} as seconds{33,32}, to give a (signed) 34-bit
-> > seconds field and an unsigned 30-bit nanoseconds field.
-> > 
-> > This could represent 1970 +/- 272 years.
-> > 
-> > Servers could indicate they can understand the extended time format by
-> > adding a new FSINFO capability - FSF3_CANSETTIME_EX.
-> > 
-> > Clients would use a new SET_TO_CLIENT_TIME_EX time_how enum when sending
-> > timestamps so old servers would be protected from new clients.
 > 
-> You would have to get the IETF’s NFSv4 working group to sign off on
-> this change. Otherwise, Linux would be the only NFSv3 implementation
-> that supports the extension.
-> 
-> But I suspect the answer you’d get is “Use NFSv4.”
+> Signed-off-by: Federico Di Pierro <nierro92@gmail.org>
 
-While I've never dealt with an NFS standardization, I'd assume this is
-a workable answer. The NFSv2 and NFSv3 definition clearly defines a valid
-range of times until 2106 using unsigned seconds, and that should really
-give enough time to migrate to something better (not necessarily NFSv4).
+This goes after the changelog and before the diff.
 
-	Arnd
+regards,
+dan carpenter
+
