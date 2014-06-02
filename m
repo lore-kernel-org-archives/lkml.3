@@ -1,80 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755496AbaFBOnk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 10:43:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42968 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754559AbaFBOnj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 10:43:39 -0400
-Message-ID: <538C8D95.2060503@redhat.com>
-Date: Mon, 02 Jun 2014 16:43:33 +0200
-From: Michal Privoznik <mprivozn@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1755148AbaFBOtF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 10:49:05 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:36697 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754454AbaFBOtD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 10:49:03 -0400
+From: Kevin Hilman <khilman@linaro.org>
+To: Grygorii Strashko <grygorii.strashko@ti.com>
+Cc: Grant Likely <grant.likely@linaro.org>, Chen-Yu Tsai <wens@csie.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Lee Jones <lee.jones@linaro.org>, Rob Herring <robh@kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "devicetree\@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Rob Herring <robh+dt@kernel.org>,
+        Olof Johansson <olof@lixom.net>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v1] of/irq: do irq resolution in platform_get_irq_byname()
+References: <1400582523-22684-1-git-send-email-grygorii.strashko@ti.com>
+	<20140523080333.66720C4176E@trevor.secretlab.ca>
+	<CAGa+x85mOHtNAj-UHgK2_z8zWAF=qwFcRcUgHTR-byNiX7heHA@mail.gmail.com>
+	<CAL_JsqLm3wfVS+au+JUbhBhxz=LuVpepH6GxabCQhPowhbw77g@mail.gmail.com>
+	<20140528071855.GJ4227@lee--X1>
+	<CACRpkdYgkEOjLamYu5uKSgs3iTNJ-w5XkbeygKjRdR-bNdETfg@mail.gmail.com>
+	<CAGb2v64f8Wju6dtVuVN2x=9YVGA-=RXozzhpJZNspKZ05f=jtA@mail.gmail.com>
+	<CACxGe6ts-TcSKk2F0-XSxAxeTxVCiyDHgh-O12v+F2OjHUsPyg@mail.gmail.com>
+	<5385B566.2050600@ti.com>
+Date: Mon, 02 Jun 2014 07:48:59 -0700
+In-Reply-To: <5385B566.2050600@ti.com> (Grygorii Strashko's message of "Wed,
+	28 May 2014 13:07:34 +0300")
+Message-ID: <7h7g4zz7s4.fsf@paris.lan>
+User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-To: Jiri Pirko <jiri@resnulli.us>
-CC: davem@davemloft.net, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH] net-sysfs: Report link speed as signed integer
-References: <06d53256e3bf2d0deedb16249082200500da3ee6.1401718809.git.mprivozn@redhat.com> <20140602143557.GA2925@minipsycho.orion>
-In-Reply-To: <20140602143557.GA2925@minipsycho.orion>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02.06.2014 16:35, Jiri Pirko wrote:
-> Mon, Jun 02, 2014 at 04:25:15PM CEST, mprivozn@redhat.com wrote:
->> The link speed is available at /sys/class/net/$nic/speed.
->> However, the speed is printed in unsigned integer format. This
->> makes userspace applications read an incorrect value (which
->> moreover changes through several architectures) while in fact
->> '-1' should be reported.
->>
->> Before the change:
->>   # cat /sys/class/net/eth0/speed
->>   4294967295
->>
->> After the change:
->>   # cat /sys/class/net/eth0/speed
->>   -1
->>
->> Signed-off-by: Michal Privoznik <mprivozn@redhat.com>
->> ---
->> net/core/net-sysfs.c | 2 +-
->> 1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/net/core/net-sysfs.c b/net/core/net-sysfs.c
->> index 1cac29e..99afdea 100644
->> --- a/net/core/net-sysfs.c
->> +++ b/net/core/net-sysfs.c
->> @@ -173,7 +173,7 @@ static ssize_t speed_show(struct device *dev,
->> 	if (netif_running(netdev)) {
->> 		struct ethtool_cmd cmd;
->> 		if (!__ethtool_get_settings(netdev, &cmd))
->> -			ret = sprintf(buf, fmt_udec, ethtool_cmd_speed(&cmd));
->> +			ret = sprintf(buf, fmt_dec, ethtool_cmd_speed(&cmd));
+Grygorii Strashko <grygorii.strashko@ti.com> writes:
+
+> Hi All,
 >
-> I wonder why this should be signed. What -1 means? What driver reports
-> this?
+> On 05/28/2014 12:03 PM, Grant Likely wrote:
 
-This is e1000e. It seems like a default value. From e1000_get_settings() 
-in drivers/net/ethernet/intel/e1000e/ethtool.c:
+[...]
 
-     speed = -1;
-     ecmd->duplex = -1;
+>> The bisected patch causes platform_get_irq() to always parse the
+>> devicetree to obtain the irq instead of using a precalculated value in
+>> the platform_device. There are two possible scenarios for this problem
+>> that I can think of:
+>> 1) Platform_get_irq() is getting called multiple times (which would
+>> happen on a deferred probe) but the setup code isn't handling it
+>> properly, like trying to request the GPIO more than once
+>> 2) the platform_device was preloaded with an irq number that differs
+>> from what is determined when parsing the tree. This would happen if a
+>> platform_device was created manually.
+>>
+>
+> Could anyone try attached patch? It has to improve situation, but it
+> might not fix all problems (see my previous e-mail).
 
-     if (netif_running(netdev)) {
-         if (netif_carrier_ok(netdev)) {
-             speed = adapter->link_speed;
-             ecmd->duplex = adapter->link_duplex - 1;
-         }
-     } else if (!pm_runtime_suspended(netdev->dev.parent)) {
-	...
-     }
+I can confirm it makes the STE Snowball boot again on top of next-20150602.
 
-     ethtool_cmd_speed_set(ecmd, speed);
+> From 4a41912dba648c935982274966426fa430fd5aa4 Mon Sep 17 00:00:00 2001
+> From: Grygorii Strashko <grygorii.strashko@ti.com>
+> Date: Wed, 28 May 2014 12:53:34 +0300
+> Subject: [PATCH] mfd: ab8500: fix dt irq mapping
+>
+> The AD8500 defines itself as interrupt-controller in DT,
+> but it doesn't assign DT node to IRQ domain when creates it.
+> As result, of_irq_xx() helpers don't work because they can't
+> find necessary IRQ domain.
+>
+> Hence, fix it by assigning AD8500 core device DT node to IRQ
+> domain when it's created.
+>
+> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
 
-If I unplug the cord, NIC is nor running nor runtime suspended.
+Tested-by: Kevin Hilman <khilman@linaro.org>
 
-Michal
+Kevin
