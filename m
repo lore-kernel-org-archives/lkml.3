@@ -1,62 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752457AbaFBTQM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 15:16:12 -0400
-Received: from mout.kundenserver.de ([212.227.17.13]:52120 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751338AbaFBTQJ convert rfc822-to-8bit (ORCPT
+	id S1752717AbaFBTRx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 15:17:53 -0400
+Received: from smtprelay0024.hostedemail.com ([216.40.44.24]:42700 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751318AbaFBTRv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 15:16:09 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Kumar Gala <galak@codeaurora.org>
-Cc: Grant Likely <grant.likely@linaro.org>, Liviu Dudau <Liviu.Dudau@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Rob Herring <robherring2@gmail.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Kishon Vijay Abraham I <kishon@ti.com>
-Subject: Re: [PATCH 1/2] pci: Add IORESOURCE_BIT entry for PCIe ECAM resources.
-Date: Mon, 02 Jun 2014 21:15:46 +0200
-Message-ID: <4495090.ktpdXEyibD@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <2F6515B1-48FE-4ED6-908E-CC1CAD7AF403@codeaurora.org>
-References: <20140530233034.GH1677@bart.dudau.co.uk> <20140602162306.4AB0FC40476@trevor.secretlab.ca> <2F6515B1-48FE-4ED6-908E-CC1CAD7AF403@codeaurora.org>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
-X-Provags-ID: V02:K0:kbANSz/rmYJN5ZcEmBjqAEJHmCob8MGiJb4VYYew7Uo
- /9YoqAcqiT5yzYKqdYBCOlQhqUPP3D8x+txv1729KqBBMqTqxK
- vqOG+DuwnBc28GODLMf3/h9oAEtSMgKTnlU8eJfjS7UukgElqs
- bKKSGD89yrUt6M6M4JC9RW2wsBa2ZffZ0n7vfygaI0W8nYFc0U
- 4jdo6w7JgGKwIfAlfSIehmcfEVMuK0+XAAJgXueBpO5IAMBA6Q
- /wfE/9ZRJJ9XjiOBHyz4I6q1nq+CzIW+ZLgQ6AMdZ9AlwG+Wm7
- p16hyrxuYYfObyIgcfRBmihYH623nz6dQ35gyQoZjAjvkts6p7
- 3BmaMIfQ/3XS7qDHFjxM=
+	Mon, 2 Jun 2014 15:17:51 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::::::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1593:1594:1711:1714:1730:1747:1777:1792:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3351:3622:3865
+X-HE-Tag: toys14_61332d8e5f64e
+X-Filterd-Recvd-Size: 2071
+Message-ID: <1401736666.7323.25.camel@joe-AO725>
+Subject: Re: [PATCH RFC 1/2] MAINTAINERS: Add "R:" designated-reviewers tag
+From: Joe Perches <joe@perches.com>
+To: josh@joshtriplett.org
+Cc: Steven Rostedt <rostedt@goodmis.org>, paulmck@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, dhowells@redhat.com, edumazet@google.com,
+        dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
+        sbw@mit.edu
+Date: Mon, 02 Jun 2014 12:17:46 -0700
+In-Reply-To: <20140602190951.GA13648@cloud>
+References: <1401728420-3572-1-git-send-email-paulmck@linux.vnet.ibm.com>
+	 <1401729778.5770.20.camel@joe-AO725> <20140602174837.GA13257@cloud>
+	 <1401731968.7323.4.camel@joe-AO725>
+	 <20140602181658.GX22231@linux.vnet.ibm.com>
+	 <1401734669.7323.20.camel@joe-AO725>
+	 <20140602145020.400d4e0c@gandalf.local.home> <20140602185504.GA13569@cloud>
+	 <1401735917.7323.23.camel@joe-AO725> <20140602190951.GA13648@cloud>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 02 June 2014 13:09:08 Kumar Gala wrote:
-> > However, what do we do with the 2 cases that exist in upstream that
-> >> are using ranges for cfg space?
+On Mon, 2014-06-02 at 12:09 -0700, josh@joshtriplett.org wrote:
+> On Mon, Jun 02, 2014 at 12:05:17PM -0700, Joe Perches wrote:
+> > On Mon, 2014-06-02 at 11:55 -0700, josh@joshtriplett.org wrote:
+> > > this should go along with a change to
+> > > get_maintainer.pl to add those folks to the CC list.
 > > 
-> > Ignore them in the core code? Make the specific host controller handle
-> > them I would think.
+> > Something like this:
 > 
-> I just meant, should we ‘break’ their DTs and move them from using ranges to reg?
+> Yes, exactly.  Given an appropriate commit message,
+> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 
-dw-pcie is used on a lot of systems, I think we should make the common
-part of that driver always handle config space in a common way, and
-move out the part that parses the ranges property into the individual
-soc-specific glue drivers that want to keep optional backwards compatibility
-with existing dtbs.
+That's the sort of patch where reviewing is
+pretty useless.
 
-Which one is the other driver?
+What it needs is testing, not reviewing.
 
-	Arnd
+I tested it for all of 10 seconds.
+
+
