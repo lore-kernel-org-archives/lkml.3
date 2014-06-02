@@ -1,100 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752838AbaFBXIx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 19:08:53 -0400
-Received: from mail-vc0-f176.google.com ([209.85.220.176]:63426 "EHLO
-	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751800AbaFBXIv (ORCPT
+	id S1753148AbaFBXM2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 19:12:28 -0400
+Received: from mail1-ar.fullrate.dk ([90.185.3.41]:40905 "EHLO
+	mail1-ar.fullrate.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752937AbaFBXM1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 19:08:51 -0400
+	Mon, 2 Jun 2014 19:12:27 -0400
+Message-ID: <538D04D4.1060906@molgaard.org>
+Date: Tue, 03 Jun 2014 01:12:20 +0200
+From: =?ISO-8859-1?Q?Sune_M=F8lgaard?= <sune@molgaard.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:32.0) Gecko/20100101 Firefox/32.0 SeaMonkey/2.29a1
 MIME-Version: 1.0
-In-Reply-To: <CAGXu5jKFte0ZvqU8RYcqjWDCoegWeu66gdwX83tiL8vprcvMgQ@mail.gmail.com>
-References: <1400799936-26499-1-git-send-email-keescook@chromium.org>
- <CAGXu5jLYPbJKCBvhVxfHEUFeCPJO-OBhRFufUSNy6o1N=LJ6UQ@mail.gmail.com>
- <CALCETrV0ZEFipU0E64n5q44LiUV4j4Qqvnz0h_QAoddg+e7V3A@mail.gmail.com>
- <CAGXu5j+YRW_+W8Z9S9O84ep-uUc4wQQRbtSu6_s8o5J2HLPUYg@mail.gmail.com>
- <CALCETrXB0zp8gwpWuxXs0bgB8sQhe6JLE46BOYw3OrBx7hQYVw@mail.gmail.com> <CAGXu5jKFte0ZvqU8RYcqjWDCoegWeu66gdwX83tiL8vprcvMgQ@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 2 Jun 2014 16:08:30 -0700
-Message-ID: <CALCETrWLNFJbwaYKkjBi7XPLBQ2=gEGmW=G==+_9jcrLPW+JdA@mail.gmail.com>
-Subject: Re: [PATCH v5 0/6] seccomp: add PR_SECCOMP_EXT and SECCOMP_EXT_ACT_TSYNC
-To: Kees Cook <keescook@chromium.org>
-Cc: Linux API <linux-api@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        James Morris <james.l.morris@oracle.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        LKML <linux-kernel@vger.kernel.org>, Will Drewry <wad@chromium.org>,
-        Julien Tinnes <jln@google.com>, Alexei Starovoitov <ast@plumgrid.com>
-Content-Type: text/plain; charset=UTF-8
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] Summarizing deprecations
+References: <53893895.3040202@molgaard.org> <20140531022151.GA32348@kroah.com> <538944E2.2070706@molgaard.org> <20140531033711.GA1697@kroah.com>
+In-Reply-To: <20140531033711.GA1697@kroah.com>
+X-Enigmail-Version: 1.7a1pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 2, 2014 at 4:05 PM, Kees Cook <keescook@chromium.org> wrote:
-> On Mon, Jun 2, 2014 at 2:17 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->> On Mon, Jun 2, 2014 at 1:06 PM, Kees Cook <keescook@chromium.org> wrote:
->>> On Mon, Jun 2, 2014 at 12:59 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->>>> On Mon, Jun 2, 2014 at 12:47 PM, Kees Cook <keescook@chromium.org> wrote:
->>>>> Hi Andrew,
->>>>>
->>>>> Would you be willing to carry this series? Andy Lutomirski appears
->>>>> happy with it now. (Thanks again for all the feedback Andy!) If so, it
->>>>> has a relatively small merge conflict with the bpf changes living in
->>>>> net-next. Would you prefer I rebase against net-next, let sfr handle
->>>>> it, get carried in net-next, or some other option?
->>>>
->>>> Well, I'm still not entirely convinced that we want to have this much
->>>> multiplexing in a prctl, and I'm still a bit unconvinced that the code
->>>
->>> I don't want to get caught without interface argument flexibility
->>> again, so that's why the prctl interface is being set up that way.
->>
->> I was thinking that a syscall might be a lot prettier.  It may pay to
->> cc linux-api, too.
->>
->> I'll offer you a deal: if you try to come up with a nice, clean
->> syscall, I'll try to write a fast(er) path for x86_64 to reduce
->> overhead.  I bet I can save 90-100ns per syscall. :)
->
-> Now added to the Cc.
->
-> Which path do you mean to improve? Neither the prctl nor a syscall for
-> this would need to be fast at all.
+Hi again, and thank you still for interacting,
 
-Non-seccomp-related syscalls when seccomp is enabled.
+Greg KH wrote:
+> What specific drivers are they?  Why are the drivers out of the tree?
+> I'll gladly add them to the drivers/staging/ directory as long as the
+> license of them allows me to do so.  That way api changes will happen
+> automatically for them.
 
->
-> I don't want to go in circles on this. I've been there before on my
-> VFS link hardening series, and my module restriction series. I would
-> like consensus from more than just one person. :)
+For at least one of the manufacturers, I have already pointed them in
+your direction with regards to the previously mentioned project. They
+lamented that they would love to take you up on your offer, but that
+their legal department was less than enthusiastic, based on fear of
+repercussions from their chip suppliers.
 
-I can't offer you anyone else's review, unfortunately :-/
+This particular company could be a candidate for positive nudging from
+stronger entities than myself, as just one guy.
 
->
-> I'd like to hear from other folks on this (akpm?). My instinct is to
-> continue using prctl since that is already where mediation for seccomp
-> happens. I don't see why prctl vs a new syscall makes a difference
-> here, frankly.
+> In other words, no matter what we do, things outside of the kernel tree
+> will break.  This is on the vendor, not us now.  They know where to find
+> us, we have no idea who they are.
 
-Aesthetics?  There's a tendency for people to get annoyed at big
-multiplexed APIs, and your patches will be doubly multiplexed.
+I do not propose to adopt backwards compatibility, but see below (as
+well as my initial proposal, with a thought to my subsequent
+clarifications).
 
-TBH, I care more about the atomicity thing than about the actual form
-of the API.
+> Then they are on their own as they are violating our license when
+> redistributing such a monstrosity.  They know the issues involved, and
+> are willing to pay the price to do such a thing.  There's nothing we can
+> do about them, sorry.  Go bug the vendor, not us.
 
---Andy
+I wish it was so simple. My experience has been that they are, as you
+say, on their own, but in a much more poignant sense that you suggested.
 
->
-> -Kees
->
-> --
-> Kees Cook
-> Chrome OS Security
+First of all, many *consumer* hardware vendors will be more than happy
+to be "on their own" wrt to Linux and keep their focus on Windows. This
+is their choice to make, but in certain circumstances, we do happen to
+have a need for interaction (OpenCL support in graphics drivers, for
+instance).
 
+What I seem to have ascertained is, that those, major, players in the
+field will, usually, assign a very low number of people to the task of
+maintaining compatibility with newer kernels, with no corporate support
+at all.
 
+This, obviously, provides the raison d'etre for the reverse-engineered
+open-source drivers, but as we stand in the here and now, those have a
+lot of work to do to come up to speed.
 
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+We agree completely, that the way to go is for the vendors to engage
+with the OSS driver hackers, but in the interim, some of us will still
+need their closed drivers, and this is where my initial RFC came from:
+
+Compilation of the closed drivers, as well as (as seen in a recent
+nVidia case) functionality, will be impacted by system call changes.
+
+You are fully correct that we shouldn't keep old and deprecated
+functionality around for the sake of those who choose to distribute
+closed drivers.
+
+It stands to reason, though, that there may not only be legal obstacles
+to supporting OSS drivers, but also that corporate resources allocated
+to keeping their "monstrosity" current may be severely lacking.
+
+As a pragmatic *interim* solution, I therefore stand by my initial
+proposal - both as a sign of being reasonably, but also for that level
+of reasonableness to be a fulcrum for expecting signs (and results) of
+good will to come from them as well.
+
+As it stands, I have authored a number of patches that I have posted to
+the nVidia forums - most based on deeper analysis by people in the same
+forums, but I happen to think that if my proposal gained traction,
+nVidia could actually do that work themselves - facilitating ease of use
+for those of us who rely on their drivers while we wait for the dawn of
+the revolution...
+
+At any rate, it should preclude a marketing drone from referring to an
+unnamed engineer classifying a problem as a bug in the kernel, which is
+obviously, in reality, caused by a failure to use a new form of ACPI call.
+
+> 
+> And buy better hardware next time :)
+
+Sure - do you think a Kickstarter campaign to entice Danish resellers to
+stock better hardware (and advertise it as having OSS Linux drivers)
+against profit margins, possibly with a secondary goal of sending such
+hardware my way, could get any traction, or did you just, unbecomingly,
+get elitist on me?
+
+Sincerely,
+
+Sune Mølgaard
