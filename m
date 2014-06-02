@@ -1,517 +1,418 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752840AbaFBTF0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 15:05:26 -0400
-Received: from mail-we0-f178.google.com ([74.125.82.178]:55654 "EHLO
-	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751390AbaFBTFW (ORCPT
+	id S1753011AbaFBTHf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 15:07:35 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:33804 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751318AbaFBTHc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 15:05:22 -0400
+	Mon, 2 Jun 2014 15:07:32 -0400
+Date: Mon, 2 Jun 2014 13:07:28 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
+Subject: [GIT PULL] PCI changes for v3.16
+Message-ID: <20140602190728.GA2436@google.com>
 MIME-Version: 1.0
-In-Reply-To: <1401412327-14810-5-git-send-email-andi@firstfloor.org>
-References: <1401412327-14810-1-git-send-email-andi@firstfloor.org>
-	<1401412327-14810-5-git-send-email-andi@firstfloor.org>
-Date: Mon, 2 Jun 2014 12:05:21 -0700
-Message-ID: <CAG7+5M2h1_h2fW1KiD-ReXuxDe_EwmBUOJRwjgAvR79sUBxtgA@mail.gmail.com>
-Subject: Re: [PATCH 4/4] kvm: Implement PEBS virtualization
-From: Eric Northup <digitaleric@google.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, gleb@kernel.org,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Stephane Eranian <eranian@google.com>, KVM <kvm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andi Kleen <ak@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 29, 2014 at 6:12 PM, Andi Kleen <andi@firstfloor.org> wrote:
-> From: Andi Kleen <ak@linux.intel.com>
->
-> PEBS (Precise Event Bases Sampling) profiling is very powerful,
-> allowing improved sampling precision and much additional information,
-> like address or TSX abort profiling. cycles:p and :pp uses PEBS.
->
-> This patch enables PEBS profiling in KVM guests.
->
-> PEBS writes profiling records to a virtual address in memory. Since
-> the guest controls the virtual address space the PEBS record
-> is directly delivered to the guest buffer. We set up the PEBS state
-> that is works correctly.The CPU cannot handle any kinds of faults during
-> these guest writes.
->
-> To avoid any problems with guest pages being swapped by the host we
-> pin the pages when the PEBS buffer is setup, by intercepting
-> that MSR.
->
-> Typically profilers only set up a single page, so pinning that is not
-> a big problem. The pinning is limited to 17 pages currently (64K+1)
->
-> In theory the guest can change its own page tables after the PEBS
-> setup. The host has no way to track that with EPT. But if a guest
-> would do that it could only crash itself. It's not expected
-> that normal profilers do that.
->
-> The patch also adds the basic glue to enable the PEBS CPUIDs
-> and other PEBS MSRs, and ask perf to enable PEBS as needed.
->
-> Due to various limitations it currently only works on Silvermont
-> based systems.
->
-> This patch doesn't implement the extended MSRs some CPUs support.
-> For example latency profiling on SLM will not work at this point.
->
-> Timing:
->
-> The emulation is somewhat more expensive than a real PMU. This
-> may trigger the expensive PMI detection in the guest.
-> Usually this can be disabled with
-> echo 0 > /proc/sys/kernel/perf_cpu_time_max_percent
->
-> Migration:
->
-> In theory it should should be possible (as long as we migrate to
-> a host with the same PEBS event and the same PEBS format), but I'm not
-> sure the basic KVM PMU code supports it correctly: no code to
-> save/restore state, unless I'm missing something. Once the PMU
-> code grows proper migration support it should be straight forward
-> to handle the PEBS state too.
->
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> ---
->  arch/x86/include/asm/kvm_host.h       |   6 ++
->  arch/x86/include/uapi/asm/msr-index.h |   4 +
->  arch/x86/kvm/cpuid.c                  |  10 +-
->  arch/x86/kvm/pmu.c                    | 184 ++++++++++++++++++++++++++++++++--
->  arch/x86/kvm/vmx.c                    |   6 ++
->  5 files changed, 196 insertions(+), 14 deletions(-)
->
-> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-> index 7de069af..d87cb66 100644
-> --- a/arch/x86/include/asm/kvm_host.h
-> +++ b/arch/x86/include/asm/kvm_host.h
-> @@ -319,6 +319,8 @@ struct kvm_pmc {
->         struct kvm_vcpu *vcpu;
->  };
->
-> +#define MAX_PINNED_PAGES 17 /* 64k buffer + ds */
-> +
->  struct kvm_pmu {
->         unsigned nr_arch_gp_counters;
->         unsigned nr_arch_fixed_counters;
-> @@ -335,6 +337,10 @@ struct kvm_pmu {
->         struct kvm_pmc fixed_counters[INTEL_PMC_MAX_FIXED];
->         struct irq_work irq_work;
->         u64 reprogram_pmi;
-> +       u64 pebs_enable;
-> +       u64 ds_area;
-> +       struct page *pinned_pages[MAX_PINNED_PAGES];
-> +       unsigned num_pinned_pages;
->  };
->
->  enum {
-> diff --git a/arch/x86/include/uapi/asm/msr-index.h b/arch/x86/include/uapi/asm/msr-index.h
-> index fcf2b3a..409a582 100644
-> --- a/arch/x86/include/uapi/asm/msr-index.h
-> +++ b/arch/x86/include/uapi/asm/msr-index.h
-> @@ -72,6 +72,10 @@
->  #define MSR_IA32_PEBS_ENABLE           0x000003f1
->  #define MSR_IA32_DS_AREA               0x00000600
->  #define MSR_IA32_PERF_CAPABILITIES     0x00000345
-> +#define PERF_CAP_PEBS_TRAP             (1U << 6)
-> +#define PERF_CAP_ARCH_REG              (1U << 7)
-> +#define PERF_CAP_PEBS_FORMAT           (0xf << 8)
-> +
->  #define MSR_PEBS_LD_LAT_THRESHOLD      0x000003f6
->
->  #define MSR_MTRRfix64K_00000           0x00000250
-> diff --git a/arch/x86/kvm/cpuid.c b/arch/x86/kvm/cpuid.c
-> index f47a104..c8cc76b 100644
-> --- a/arch/x86/kvm/cpuid.c
-> +++ b/arch/x86/kvm/cpuid.c
-> @@ -260,6 +260,10 @@ static inline int __do_cpuid_ent(struct kvm_cpuid_entry2 *entry, u32 function,
->         unsigned f_rdtscp = kvm_x86_ops->rdtscp_supported() ? F(RDTSCP) : 0;
->         unsigned f_invpcid = kvm_x86_ops->invpcid_supported() ? F(INVPCID) : 0;
->         unsigned f_mpx = kvm_x86_ops->mpx_supported() ? F(MPX) : 0;
-> +       bool pebs = perf_pebs_virtualization();
-> +       unsigned f_ds = pebs ? F(DS) : 0;
-> +       unsigned f_pdcm = pebs ? F(PDCM) : 0;
-> +       unsigned f_dtes64 = pebs ? F(DTES64) : 0;
->
->         /* cpuid 1.edx */
->         const u32 kvm_supported_word0_x86_features =
-> @@ -268,7 +272,7 @@ static inline int __do_cpuid_ent(struct kvm_cpuid_entry2 *entry, u32 function,
->                 F(CX8) | F(APIC) | 0 /* Reserved */ | F(SEP) |
->                 F(MTRR) | F(PGE) | F(MCA) | F(CMOV) |
->                 F(PAT) | F(PSE36) | 0 /* PSN */ | F(CLFLUSH) |
-> -               0 /* Reserved, DS, ACPI */ | F(MMX) |
-> +               f_ds /* Reserved, ACPI */ | F(MMX) |
->                 F(FXSR) | F(XMM) | F(XMM2) | F(SELFSNOOP) |
->                 0 /* HTT, TM, Reserved, PBE */;
->         /* cpuid 0x80000001.edx */
-> @@ -283,10 +287,10 @@ static inline int __do_cpuid_ent(struct kvm_cpuid_entry2 *entry, u32 function,
->                 0 /* Reserved */ | f_lm | F(3DNOWEXT) | F(3DNOW);
->         /* cpuid 1.ecx */
->         const u32 kvm_supported_word4_x86_features =
-> -               F(XMM3) | F(PCLMULQDQ) | 0 /* DTES64, MONITOR */ |
-> +               F(XMM3) | F(PCLMULQDQ) | f_dtes64 /* MONITOR */ |
->                 0 /* DS-CPL, VMX, SMX, EST */ |
->                 0 /* TM2 */ | F(SSSE3) | 0 /* CNXT-ID */ | 0 /* Reserved */ |
-> -               F(FMA) | F(CX16) | 0 /* xTPR Update, PDCM */ |
-> +               F(FMA) | F(CX16) | f_pdcm /* xTPR Update */ |
->                 F(PCID) | 0 /* Reserved, DCA */ | F(XMM4_1) |
->                 F(XMM4_2) | F(X2APIC) | F(MOVBE) | F(POPCNT) |
->                 0 /* Reserved*/ | F(AES) | F(XSAVE) | 0 /* OSXSAVE */ | F(AVX) |
-> diff --git a/arch/x86/kvm/pmu.c b/arch/x86/kvm/pmu.c
-> index 4c6f417..6362db7 100644
-> --- a/arch/x86/kvm/pmu.c
-> +++ b/arch/x86/kvm/pmu.c
-> @@ -15,9 +15,11 @@
->  #include <linux/types.h>
->  #include <linux/kvm_host.h>
->  #include <linux/perf_event.h>
-> +#include <linux/highmem.h>
->  #include "x86.h"
->  #include "cpuid.h"
->  #include "lapic.h"
-> +#include "mmu.h"
->
->  static struct kvm_arch_event_perf_mapping {
->         u8 eventsel;
-> @@ -36,9 +38,23 @@ static struct kvm_arch_event_perf_mapping {
->         [7] = { 0x00, 0x30, PERF_COUNT_HW_REF_CPU_CYCLES },
->  };
->
-> +struct debug_store {
-> +       u64     bts_buffer_base;
-> +       u64     bts_index;
-> +       u64     bts_absolute_maximum;
-> +       u64     bts_interrupt_threshold;
-> +       u64     pebs_buffer_base;
-> +       u64     pebs_index;
-> +       u64     pebs_absolute_maximum;
-> +       u64     pebs_interrupt_threshold;
-> +       u64     pebs_event_reset[4];
-> +};
-> +
->  /* mapping between fixed pmc index and arch_events array */
->  int fixed_pmc_events[] = {1, 0, 7};
->
-> +static u64 host_perf_cap __read_mostly;
-> +
->  static bool pmc_is_gp(struct kvm_pmc *pmc)
->  {
->         return pmc->type == KVM_PMC_GP;
-> @@ -108,7 +124,10 @@ static void kvm_perf_overflow(struct perf_event *perf_event,
->  {
->         struct kvm_pmc *pmc = perf_event->overflow_handler_context;
->         struct kvm_pmu *pmu = &pmc->vcpu->arch.pmu;
-> -       __set_bit(pmc->idx, (unsigned long *)&pmu->global_status);
-> +       if (perf_event->attr.precise_ip)
-> +               __set_bit(62, (unsigned long *)&pmu->global_status);
-> +       else
-> +               __set_bit(pmc->idx, (unsigned long *)&pmu->global_status);
->  }
->
->  static void kvm_perf_overflow_intr(struct perf_event *perf_event,
-> @@ -160,7 +179,7 @@ static void stop_counter(struct kvm_pmc *pmc)
->
->  static void reprogram_counter(struct kvm_pmc *pmc, u32 type,
->                 unsigned config, bool exclude_user, bool exclude_kernel,
-> -               bool intr, bool in_tx, bool in_tx_cp)
-> +               bool intr, bool in_tx, bool in_tx_cp, bool pebs)
->  {
->         struct perf_event *event;
->         struct perf_event_attr attr = {
-> @@ -177,18 +196,20 @@ static void reprogram_counter(struct kvm_pmc *pmc, u32 type,
->                 attr.config |= HSW_IN_TX;
->         if (in_tx_cp)
->                 attr.config |= HSW_IN_TX_CHECKPOINTED;
-> +       if (pebs)
-> +               attr.precise_ip = 1;
->
->         attr.sample_period = (-pmc->counter) & pmc_bitmask(pmc);
->
-> -       event = perf_event_create_kernel_counter(&attr, -1, current,
-> -                                                intr ? kvm_perf_overflow_intr :
-> -                                                kvm_perf_overflow, pmc);
-> +       event = __perf_event_create_kernel_counter(&attr, -1, current,
-> +                                                (intr || pebs) ?
-> +                                                kvm_perf_overflow_intr :
-> +                                                kvm_perf_overflow, pmc, true);
->         if (IS_ERR(event)) {
->                 printk_once("kvm: pmu event creation failed %ld\n",
->                                 PTR_ERR(event));
->                 return;
->         }
-> -       event->guest_owned = true;
->
->         pmc->perf_event = event;
->         clear_bit(pmc->idx, (unsigned long*)&pmc->vcpu->arch.pmu.reprogram_pmi);
-> @@ -211,7 +232,8 @@ static unsigned find_arch_event(struct kvm_pmu *pmu, u8 event_select,
->         return arch_events[i].event_type;
->  }
->
-> -static void reprogram_gp_counter(struct kvm_pmc *pmc, u64 eventsel)
-> +static void reprogram_gp_counter(struct kvm_pmu *pmu, struct kvm_pmc *pmc,
-> +                                u64 eventsel)
->  {
->         unsigned config, type = PERF_TYPE_RAW;
->         u8 event_select, unit_mask;
-> @@ -248,7 +270,8 @@ static void reprogram_gp_counter(struct kvm_pmc *pmc, u64 eventsel)
->                         !(eventsel & ARCH_PERFMON_EVENTSEL_OS),
->                         eventsel & ARCH_PERFMON_EVENTSEL_INT,
->                         (eventsel & HSW_IN_TX),
-> -                       (eventsel & HSW_IN_TX_CHECKPOINTED));
-> +                       (eventsel & HSW_IN_TX_CHECKPOINTED),
-> +                       test_bit(pmc->idx, (unsigned long *)&pmu->pebs_enable));
->  }
->
->  static void reprogram_fixed_counter(struct kvm_pmc *pmc, u8 en_pmi, int idx)
-> @@ -265,7 +288,7 @@ static void reprogram_fixed_counter(struct kvm_pmc *pmc, u8 en_pmi, int idx)
->                         arch_events[fixed_pmc_events[idx]].event_type,
->                         !(en & 0x2), /* exclude user */
->                         !(en & 0x1), /* exclude kernel */
-> -                       pmi, false, false);
-> +                       pmi, false, false, false);
->  }
->
->  static inline u8 fixed_en_pmi(u64 ctrl, int idx)
-> @@ -298,7 +321,7 @@ static void reprogram_idx(struct kvm_pmu *pmu, int idx)
->                 return;
->
->         if (pmc_is_gp(pmc))
-> -               reprogram_gp_counter(pmc, pmc->eventsel);
-> +               reprogram_gp_counter(pmu, pmc, pmc->eventsel);
->         else {
->                 int fidx = idx - INTEL_PMC_IDX_FIXED;
->                 reprogram_fixed_counter(pmc,
-> @@ -323,6 +346,12 @@ bool kvm_pmu_msr(struct kvm_vcpu *vcpu, u32 msr)
->         int ret;
->
->         switch (msr) {
-> +       case MSR_IA32_DS_AREA:
-> +       case MSR_IA32_PEBS_ENABLE:
-> +       case MSR_IA32_PERF_CAPABILITIES:
-> +               ret = perf_pebs_virtualization() ? 1 : 0;
+The most notable pieces here are
 
-Should this also check the CPUID exposed to the guest?  The KVM PMU
-module is careful to not expose PMU MSRs to the guest unless the right
-CPUID bits have been exposed.
+  - Supporting BARs up to 8GB for Xeon Phi, etc
+  - Restricting 64-bit prefetchable bridge windows to 64-bit resources to
+    make SR-IOV devices with large MMIO requirements work
+  - More control over driver binding for virtualization
+  - New generic DT and R-Car PCIe host bridge drivers
+  - Updates to i.MX6, R-Car, Exynos, DesignWare host bridge drivers
 
-It seems to me that with this patch, there is no way to expose a
-PMU-without-PEBS to the guest if the host has PEBS.
 
-It would be a bigger concern if we expected virtual PMU migration to
-work, but I think it would be nice to update kvm_pmu_cpuid_update() to
-notice the presence/absence of the new CPUID bits, and then store that
-into per-VM kvm_pmu->pebs_allowed rather than relying only on the
-per-host perf_pebs_virtualization().
+The following changes since commit c9eaa447e77efe77b7fa4c953bd62de8297fd6c5:
 
-> +               break;
-> +
->         case MSR_CORE_PERF_FIXED_CTR_CTRL:
->         case MSR_CORE_PERF_GLOBAL_STATUS:
->         case MSR_CORE_PERF_GLOBAL_CTRL:
-> @@ -356,6 +385,18 @@ int kvm_pmu_get_msr(struct kvm_vcpu *vcpu, u32 index, u64 *data)
->         case MSR_CORE_PERF_GLOBAL_OVF_CTRL:
->                 *data = pmu->global_ovf_ctrl;
->                 return 0;
-> +       case MSR_IA32_DS_AREA:
-> +               *data = pmu->ds_area;
-> +               return 0;
-> +       case MSR_IA32_PEBS_ENABLE:
-> +               *data = pmu->pebs_enable;
-> +               return 0;
-> +       case MSR_IA32_PERF_CAPABILITIES:
-> +               /* Report host PEBS format to guest */
-> +               *data = host_perf_cap &
-> +                       (PERF_CAP_PEBS_TRAP | PERF_CAP_ARCH_REG |
-> +                        PERF_CAP_PEBS_FORMAT);
-> +               return 0;
->         default:
->                 if ((pmc = get_gp_pmc(pmu, index, MSR_IA32_PERFCTR0)) ||
->                                 (pmc = get_fixed_pmc(pmu, index))) {
-> @@ -369,6 +410,109 @@ int kvm_pmu_get_msr(struct kvm_vcpu *vcpu, u32 index, u64 *data)
->         return 1;
->  }
->
-> +static void kvm_pmu_release_pin(struct kvm_vcpu *vcpu)
-> +{
-> +       struct kvm_pmu *pmu = &vcpu->arch.pmu;
-> +       int i;
-> +
-> +       for (i = 0; i < pmu->num_pinned_pages; i++)
-> +               put_page(pmu->pinned_pages[i]);
-> +       pmu->num_pinned_pages = 0;
-> +}
-> +
-> +static struct page *get_guest_page(struct kvm_vcpu *vcpu,
-> +                                  unsigned long addr)
-> +{
-> +       unsigned long pfn;
-> +       struct x86_exception exception;
-> +       gpa_t gpa = vcpu->arch.walk_mmu->gva_to_gpa(vcpu, addr,
-> +                                                   PFERR_WRITE_MASK,
-> +                                                   &exception);
-> +
-> +       if (gpa == UNMAPPED_GVA) {
-> +               printk_once("Cannot translate guest page %lx\n", addr);
-> +               return NULL;
-> +       }
-> +       pfn = gfn_to_pfn(vcpu->kvm, gpa_to_gfn(gpa));
-> +       if (is_error_noslot_pfn(pfn)) {
-> +               printk_once("gfn_to_pfn failed for %llx\n", gpa);
-> +               return NULL;
-> +       }
-> +       return pfn_to_page(pfn);
-> +}
-> +
-> +static int pin_and_copy(struct kvm_vcpu *vcpu,
-> +                       unsigned long addr, void *dst, int len,
-> +                       struct page **p)
-> +{
-> +       unsigned long offset = addr & ~PAGE_MASK;
-> +       void *map;
-> +
-> +       *p = get_guest_page(vcpu, addr);
-> +       if (!*p)
-> +               return -EIO;
-> +       map = kmap(*p);
-> +       memcpy(dst, map + offset, len);
-> +       kunmap(map);
-> +       return 0;
-> +}
-> +
-> +/*
-> + * Pin the DS area and the PEBS buffer while PEBS is active,
-> + * because the CPU cannot tolerate EPT faults for PEBS updates.
-> + *
-> + * We assume that any guest who changes the DS buffer disables
-> + * PEBS first and does not change the page tables during operation.
-> + *
-> + * When the guest violates these assumptions it may crash itself.
-> + * This is expected to not happen with standard profilers.
-> + *
-> + * No need to clean up anything, as the caller will always eventually
-> + * unpin pages.
-> + */
-> +
-> +static void kvm_pmu_pebs_pin(struct kvm_vcpu *vcpu)
-> +{
-> +       struct kvm_pmu *pmu = &vcpu->arch.pmu;
-> +       struct debug_store ds;
-> +       int pg;
-> +       unsigned len;
-> +       unsigned long offset;
-> +       unsigned long addr;
-> +
-> +       offset = pmu->ds_area & ~PAGE_MASK;
-> +       len = sizeof(struct debug_store);
-> +       len = min_t(unsigned, PAGE_SIZE - offset, len);
-> +       if (pin_and_copy(vcpu, pmu->ds_area, &ds, len,
-> +                        &pmu->pinned_pages[0]) < 0) {
-> +               printk_once("Cannot pin ds area %llx\n", pmu->ds_area);
-> +               return;
-> +       }
-> +       pmu->num_pinned_pages++;
-> +       if (len < sizeof(struct debug_store)) {
-> +               if (pin_and_copy(vcpu, pmu->ds_area + len, (void *)&ds + len,
-> +                                 sizeof(struct debug_store) - len,
-> +                                 &pmu->pinned_pages[1]) < 0)
-> +                       return;
-> +               pmu->num_pinned_pages++;
-> +       }
-> +
-> +       pg = pmu->num_pinned_pages;
-> +       for (addr = ds.pebs_buffer_base;
-> +            addr < ds.pebs_absolute_maximum && pg < MAX_PINNED_PAGES;
-> +            addr += PAGE_SIZE, pg++) {
-> +               pmu->pinned_pages[pg] = get_guest_page(vcpu, addr);
-> +               if (!pmu->pinned_pages[pg]) {
-> +                       printk_once("Cannot pin PEBS buffer %lx (%llx-%llx)\n",
-> +                                addr,
-> +                                ds.pebs_buffer_base,
-> +                                ds.pebs_absolute_maximum);
-> +                       break;
-> +               }
-> +       }
-> +       pmu->num_pinned_pages = pg;
-> +}
-> +
->  int kvm_pmu_set_msr(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
->  {
->         struct kvm_pmu *pmu = &vcpu->arch.pmu;
-> @@ -407,6 +551,20 @@ int kvm_pmu_set_msr(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
->                         return 0;
->                 }
->                 break;
-> +       case MSR_IA32_DS_AREA:
-> +               pmu->ds_area = data;
-> +               return 0;
-> +       case MSR_IA32_PEBS_ENABLE:
-> +               if (data & ~0xf0000000fULL)
-> +                       break;
-> +               if (data && data != pmu->pebs_enable) {
-> +                       kvm_pmu_release_pin(vcpu);
-> +                       kvm_pmu_pebs_pin(vcpu);
-> +               } else if (data == 0 && pmu->pebs_enable) {
-> +                       kvm_pmu_release_pin(vcpu);
-> +               }
-> +               pmu->pebs_enable = data;
-> +               return 0;
->         default:
->                 if ((pmc = get_gp_pmc(pmu, index, MSR_IA32_PERFCTR0)) ||
->                                 (pmc = get_fixed_pmc(pmu, index))) {
-> @@ -418,7 +576,7 @@ int kvm_pmu_set_msr(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
->                         if (data == pmc->eventsel)
->                                 return 0;
->                         if (!(data & pmu->reserved_bits)) {
-> -                               reprogram_gp_counter(pmc, data);
-> +                               reprogram_gp_counter(pmu, pmc, data);
->                                 return 0;
->                         }
->                 }
-> @@ -514,6 +672,9 @@ void kvm_pmu_init(struct kvm_vcpu *vcpu)
->         }
->         init_irq_work(&pmu->irq_work, trigger_pmi);
->         kvm_pmu_cpuid_update(vcpu);
-> +
-> +       if (boot_cpu_has(X86_FEATURE_PDCM))
-> +               rdmsrl_safe(MSR_IA32_PERF_CAPABILITIES, &host_perf_cap);
->  }
->
->  void kvm_pmu_reset(struct kvm_vcpu *vcpu)
-> @@ -538,6 +699,7 @@ void kvm_pmu_reset(struct kvm_vcpu *vcpu)
->  void kvm_pmu_destroy(struct kvm_vcpu *vcpu)
->  {
->         kvm_pmu_reset(vcpu);
-> +       kvm_pmu_release_pin(vcpu);
->  }
->
->  void kvm_handle_pmu_event(struct kvm_vcpu *vcpu)
-> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-> index 33e8c02..4f39917 100644
-> --- a/arch/x86/kvm/vmx.c
-> +++ b/arch/x86/kvm/vmx.c
-> @@ -7288,6 +7288,12 @@ static void __noclone vmx_vcpu_run(struct kvm_vcpu *vcpu)
->         atomic_switch_perf_msrs(vmx);
->         debugctlmsr = get_debugctlmsr();
->
-> +       /* Move this somewhere else? */
-> +       if (vcpu->arch.pmu.ds_area)
-> +               add_atomic_switch_msr(vmx, MSR_IA32_DS_AREA,
-> +                                     vcpu->arch.pmu.ds_area,
-> +                                     perf_get_ds_area());
-> +
->         vmx->__launched = vmx->loaded_vmcs->launched;
->         asm(
->                 /* Store host registers */
-> --
-> 1.9.0
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe kvm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+  Linux 3.15-rc1 (2014-04-13 14:18:35 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git pci-v3.16-changes
+
+for you to fetch changes up to 617b4157a5c82ab3e9509aa388bfd3d47e0e623a:
+
+  Merge branches 'pci/host-exynos', 'pci/host-imx6', 'pci/resource' and 'pci/misc' into next (2014-05-30 11:41:17 -0600)
+
+----------------------------------------------------------------
+
+PCI changes for the v3.16 merge window:
+
+  Enumeration
+    - Notify driver before and after device reset (Keith Busch)
+    - Use reset notification in NVMe (Keith Busch)
+
+  NUMA
+    - Warn if we have to guess host bridge node information (Myron Stowe)
+    - Work around AMD Fam15h BIOSes that fail to provide _PXM (Suravee Suthikulpanit)
+    - Clean up and mark early_root_info_init() as deprecated (Suravee Suthikulpanit)
+
+  Driver binding
+    - Add "driver_override" for force specific binding (Alex Williamson)
+    - Fail "new_id" addition for devices we already know about (Bandan Das)
+
+  Resource management
+    - Support BAR sizes up to 8GB (Nikhil Rao, Alan Cox)
+    - Don't move IORESOURCE_PCI_FIXED resources (Bjorn Helgaas)
+    - Mark SBx00 HPET BAR as IORESOURCE_PCI_FIXED (Bjorn Helgaas)
+    - Fail safely if we can't handle BARs larger than 4GB (Bjorn Helgaas)
+    - Reject BAR above 4GB if dma_addr_t is too small (Bjorn Helgaas)
+    - Don't convert BAR address to resource if dma_addr_t is too small (Bjorn Helgaas)
+    - Don't set BAR to zero if dma_addr_t is too small (Bjorn Helgaas)
+    - Don't print anything while decoding is disabled (Bjorn Helgaas)
+    - Don't add disabled subtractive decode bus resources (Bjorn Helgaas)
+    - Add resource allocation comments (Bjorn Helgaas)
+    - Restrict 64-bit prefetchable bridge windows to 64-bit resources (Yinghai Lu)
+    - Assign i82875p_edac PCI resources before adding device (Yinghai Lu)
+
+  PCI device hotplug
+    - Remove unnecessary "dev->bus" test (Bjorn Helgaas)
+    - Use PCI_EXP_SLTCAP_PSN define (Bjorn Helgaas)
+    - Fix rphahp endianess issues (Laurent Dufour)
+    - Acknowledge spurious "cmd completed" event (Rajat Jain)
+    - Allow hotplug service drivers to operate in polling mode (Rajat Jain)
+    - Fix cpqphp possible NULL dereference (Rickard Strandqvist)
+
+  MSI
+    - Replace pci_enable_msi_block() by pci_enable_msi_exact() (Alexander Gordeev)
+    - Replace pci_enable_msix() by pci_enable_msix_exact() (Alexander Gordeev)
+    - Simplify populate_msi_sysfs() (Jan Beulich)
+
+  Virtualization
+    - Add Intel Patsburg (X79) root port ACS quirk (Alex Williamson)
+    - Mark RTL8110SC INTx masking as broken (Alex Williamson)
+
+  Generic host bridge driver
+    - Add generic PCI host controller driver (Will Deacon)
+
+  Freescale i.MX6
+    - Use new clock names (Lucas Stach)
+    - Drop old IRQ mapping (Lucas Stach)
+    - Remove optional (and unused) IRQs (Lucas Stach)
+    - Add support for MSI (Lucas Stach)
+    - Fix imx6_add_pcie_port() section mismatch warning (Sachin Kamat)
+
+  Renesas R-Car
+    - Add gen2 device tree support (Ben Dooks)
+    - Use new OF interrupt mapping when possible (Lucas Stach)
+    - Add PCIe driver (Phil Edworthy)
+    - Add PCIe MSI support (Phil Edworthy)
+    - Add PCIe device tree bindings (Phil Edworthy)
+
+  Samsung Exynos
+    - Remove unnecessary OOM messages (Jingoo Han)
+    - Fix add_pcie_port() section mismatch warning (Sachin Kamat)
+
+  Synopsys DesignWare
+    - Make MSI ISR shared IRQ aware (Lucas Stach)
+
+  Miscellaneous
+    - Check for broken config space aliasing (Alex Williamson)
+    - Update email address (Ben Hutchings)
+    - Fix Broadcom CNB20LE unintended sign extension (Bjorn Helgaas)
+    - Fix incorrect vgaarb conditional in WARN_ON() (Bjorn Helgaas)
+    - Remove unnecessary __ref annotations (Bjorn Helgaas)
+    - Add arch/x86/kernel/quirks.c to MAINTAINERS PCI file patterns (Bjorn Helgaas)
+    - Fix use of uninitialized MPS value (Bjorn Helgaas)
+    - Tidy x86/gart messages (Bjorn Helgaas)
+    - Fix return value from pci_user_{read,write}_config_*() (Gavin Shan)
+    - Turn pcibios_penalize_isa_irq() into a weak function (Hanjun Guo)
+    - Remove unused serial device IDs (Jean Delvare)
+    - Use designated initialization in PCI_VDEVICE (Mark Rustad)
+    - Fix powerpc NULL dereference in pci_root_buses traversal (Mike Qiu)
+    - Configure MPS on ARM (Murali Karicheri)
+    - Remove unnecessary includes of <linux/init.h> (Paul Gortmaker)
+    - Move Open Firmware devspec attribute to PCI common code (Sebastian Ott)
+    - Use pdev->dev.groups for attribute creation on s390 (Sebastian Ott)
+    - Remove pcibios_add_platform_entries() (Sebastian Ott)
+    - Add new ID for Intel GPU "spurious interrupt" quirk (Thomas Jarosch)
+    - Rename pci_is_bridge() to pci_has_subordinate() (Yijing Wang)
+    - Add and use new pci_is_bridge() interface (Yijing Wang)
+    - Make pci_bus_add_device() void (Yijing Wang)
+
+  DMA API
+    - Clarify physical/bus address distinction in docs (Bjorn Helgaas)
+    - Fix typos in docs (Emilio López)
+    - Update dma_pool_create ()and dma_pool_alloc() descriptions (Gioh Kim)
+    - Change dma_declare_coherent_memory() CPU address to phys_addr_t (Bjorn Helgaas)
+    - Pass GAPSPCI_DMA_BASE CPU & bus address to dma_declare_coherent_memory() (Bjorn Helgaas)
+
+----------------------------------------------------------------
+Alan (1):
+      PCI: Support BAR sizes up to 8GB
+
+Alex Williamson (4):
+      PCI: Add Patsburg (X79) to Intel PCH root port ACS quirk
+      PCI: Mark RTL8110SC INTx masking as broken
+      PCI: Test for std config alias when testing extended config space
+      PCI: Introduce new device binding path using pci_dev.driver_override
+
+Alexander Gordeev (3):
+      PCI/portdrv: Use pci_enable_msix_exact() instead of pci_enable_msix()
+      GenWQE: Use pci_enable_msi_exact() instead of pci_enable_msi_block()
+      PCI/MSI: Remove pci_enable_msi_block()
+
+Bandan Das (1):
+      PCI: Fail new_id for vendor/device values already built into driver
+
+Ben Dooks (1):
+      PCI: rcar: Add gen2 device tree support
+
+Ben Hutchings (1):
+      PCI: Update my email address
+
+Bjorn Helgaas (35):
+      PCI: hotplug: Remove unnecessary "dev->bus" test
+      PCI: pciehp: Use PCI_EXP_SLTCAP_PSN define
+      x86/PCI: Fix Broadcom CNB20LE unintended sign extension
+      x86/PCI: Don't try to move IORESOURCE_PCI_FIXED resources
+      x86/PCI: Mark ATI SBx00 HPET BAR as IORESOURCE_PCI_FIXED
+      PCI: Fix incorrect vgaarb conditional in WARN_ON()
+      PCI: Remove unnecessary __ref annotations
+      MAINTAINERS: Add arch/x86/kernel/quirks.c to PCI file patterns
+      PCI: Remove dead code
+      PCI: Fix use of uninitialized MPS value
+      Merge branches 'pci/hotplug', 'pci/msi', 'pci/virtualization' and 'pci/misc' into next
+      DMA-API: Clarify physical/bus address distinction
+      DMA-API: Change dma_declare_coherent_memory() CPU address to phys_addr_t
+      sh/PCI: Pass GAPSPCI_DMA_BASE CPU & bus address to dma_declare_coherent_memory()
+      x86/PCI: Move pcibios_assign_resources() annotation to definition
+      x86/gart: Replace printk() with pr_info()
+      x86/gart: Tidy messages and add bridge device info
+      PCI: Fail safely if we can't handle BARs larger than 4GB
+      PCI: Reject BAR above 4GB if dma_addr_t is too small
+      PCI: Don't convert BAR address to resource if dma_addr_t is too small
+      PCI: Don't set BAR to zero if dma_addr_t is too small
+      PCI: Don't print anything while decoding is disabled
+      PCI: Don't add disabled subtractive decode bus resources
+      resources: Clarify sanity check message
+      PCI: Change pbus_size_mem() return values to be more conventional
+      PCI: Simplify __pci_assign_resource() coding style
+      PCI: Add resource allocation comments
+      DMA-API: Capitalize "CPU" consistently
+      iommu/exynos: Remove unnecessary "&" from function pointers
+      Merge branches 'dma-api', 'pci/virtualization', 'pci/msi', 'pci/misc' and 'pci/resource' into next
+      Merge branches 'pci/host-exynos', 'pci/host-rcar' and 'pci/amd-numa' into next
+      Merge branches 'pci/hotplug', 'pci/pci_is_bridge' and 'pci/virtualization' into next
+      Merge branch 'pci/misc' into next
+      Merge branch 'pci/host-generic' into next
+      Merge branches 'pci/host-exynos', 'pci/host-imx6', 'pci/resource' and 'pci/misc' into next
+
+Emilio López (1):
+      DMA-API: Fix duplicated word in DMA-API-HOWTO.txt
+
+Gavin Shan (1):
+      PCI: Fix return value from pci_user_{read,write}_config_*()
+
+Gioh Kim (1):
+      DMA-API: Update dma_pool_create ()and dma_pool_alloc() descriptions
+
+Hanjun Guo (1):
+      PCI: Turn pcibios_penalize_isa_irq() into a weak function
+
+Jan Beulich (1):
+      PCI/MSI: Simplify populate_msi_sysfs()
+
+Jean Delvare (1):
+      PCI: Remove old serial device IDs
+
+Jingoo Han (1):
+      PCI: exynos: Remove unnecessary OOM messages
+
+Keith Busch (2):
+      PCI: Notify driver before and after device reset
+      NVMe: Implement PCIe reset notification callback
+
+Laurent Dufour (1):
+      PCI: rphahp: Fix endianess issues
+
+Lucas Stach (6):
+      PCI: rcar: Use new OF interrupt mapping when possible
+      PCI: imx6: Use new clock names
+      PCI: imx6: Drop old IRQ mapping
+      PCI: imx6: Remove optional (and unused) IRQs
+      PCI: designware: Make MSI ISR shared IRQ aware
+      PCI: imx6: Add support for MSI
+
+Mark Rustad (1):
+      PCI: Use designated initialization in PCI_VDEVICE
+
+Mike Qiu (1):
+      powerpc/PCI: Fix NULL dereference in sys_pciconfig_iobase() list traversal
+
+Murali Karicheri (1):
+      ARM/PCI: Call pcie_bus_configure_settings() to set MPS
+
+Myron Stowe (1):
+      x86/PCI: Warn if we have to "guess" host bridge node information
+
+Paul Gortmaker (1):
+      PCI: Remove unnecessary includes of <linux/init.h>
+
+Phil Edworthy (3):
+      PCI: rcar: Add Renesas R-Car PCIe driver
+      PCI: rcar: Add MSI support for PCIe
+      PCI: rcar: Add R-Car PCIe device tree bindings
+
+Rajat Jain (2):
+      PCI: pciehp: Acknowledge spurious "cmd completed" event
+      PCI: Allow hotplug service drivers to operate in polling mode
+
+Rickard Strandqvist (1):
+      PCI: cpqphp: Fix possible null pointer dereference
+
+Sachin Kamat (2):
+      PCI: exynos: Fix add_pcie_port() section mismatch warning
+      PCI: imx6: Fix imx6_add_pcie_port() section mismatch warning
+
+Sebastian Ott (3):
+      PCI: Move Open Firmware devspec attribute to PCI common code
+      s390/pci: use pdev->dev.groups for attribute creation
+      PCI: Remove pcibios_add_platform_entries()
+
+Suravee Suthikulpanit (2):
+      x86/PCI: Work around AMD Fam15h BIOSes that fail to provide _PXM
+      x86/PCI: Clean up and mark early_root_info_init() as deprecated
+
+Thomas Jarosch (1):
+      PCI: Add new ID for Intel GPU "spurious interrupt" quirk
+
+Will Deacon (2):
+      PCI: generic: Add generic PCI host controller driver
+      MAINTAINERS: Add generic PCI host controller driver
+
+Yijing Wang (14):
+      PCI: Rename pci_is_bridge() to pci_has_subordinate()
+      PCI: Add new pci_is_bridge() interface
+      PCI: Use pci_is_bridge() to simplify code
+      x86/PCI: Use pci_is_bridge() to simplify code
+      ia64/PCI: Use pci_is_bridge() to simplify code
+      powerpc/PCI: Use pci_is_bridge() to simplify code
+      sparc/PCI: Use pci_is_bridge() to simplify code
+      PCI: rpaphp: Use pci_is_bridge() to simplify code
+      PCI: shpchp: Use pci_is_bridge() to simplify code
+      PCI: cpcihp: Use pci_is_bridge() to simplify code
+      PCI: acpiphp: Use pci_is_bridge() to simplify code
+      PCI: pciehp: Use pci_is_bridge() to simplify code
+      pcmcia: Use pci_is_bridge() to simplify code
+      PCI: Make pci_bus_add_device() void
+
+Yinghai Lu (2):
+      PCI: Restrict 64-bit prefetchable bridge windows to 64-bit resources
+      i82875p_edac: Assign PCI resources before adding device
+
+ Documentation/ABI/testing/sysfs-bus-pci            |   23 +-
+ Documentation/DMA-API-HOWTO.txt                    |  210 ++--
+ Documentation/DMA-API.txt                          |  150 +--
+ Documentation/DMA-ISA-LPC.txt                      |    4 +-
+ .../devicetree/bindings/pci/host-generic-pci.txt   |  100 ++
+ .../devicetree/bindings/pci/pci-rcar-gen2.txt      |   66 ++
+ Documentation/devicetree/bindings/pci/rcar-pci.txt |   47 +
+ MAINTAINERS                                        |    9 +
+ arch/alpha/include/asm/pci.h                       |    5 -
+ arch/arm/include/asm/pci.h                         |    5 -
+ arch/arm/kernel/bios32.c                           |   12 +
+ arch/blackfin/include/asm/pci.h                    |    5 -
+ arch/cris/include/asm/pci.h                        |    1 -
+ arch/frv/include/asm/pci.h                         |    2 -
+ arch/frv/mb93090-mb00/pci-irq.c                    |    4 -
+ arch/ia64/include/asm/pci.h                        |    6 -
+ arch/ia64/pci/fixup.c                              |    4 +-
+ arch/microblaze/include/asm/pci.h                  |    5 -
+ arch/microblaze/pci/pci-common.c                   |   20 -
+ arch/mips/include/asm/pci.h                        |    5 -
+ arch/mn10300/include/asm/pci.h                     |    1 -
+ arch/mn10300/unit-asb2305/pci-irq.c                |    4 -
+ arch/parisc/include/asm/pci.h                      |    5 -
+ arch/powerpc/include/asm/pci.h                     |    5 -
+ arch/powerpc/kernel/pci-common.c                   |   20 -
+ arch/powerpc/kernel/pci-hotplug.c                  |    3 +-
+ arch/powerpc/kernel/pci_64.c                       |   10 +-
+ arch/powerpc/kernel/pci_of_scan.c                  |    3 +-
+ arch/s390/include/asm/pci.h                        |    6 +-
+ arch/s390/pci/pci.c                                |    6 +-
+ arch/s390/pci/pci_sysfs.c                          |   44 +-
+ arch/sh/drivers/pci/fixups-dreamcast.c             |   18 +-
+ arch/sh/include/asm/pci.h                          |    5 -
+ arch/sparc/include/asm/pci_32.h                    |    5 -
+ arch/sparc/include/asm/pci_64.h                    |    5 -
+ arch/sparc/kernel/pci.c                            |    3 +-
+ arch/unicore32/include/asm/pci.h                   |    5 -
+ arch/x86/include/asm/pci.h                         |    1 -
+ arch/x86/kernel/aperture_64.c                      |   59 +-
+ arch/x86/pci/acpi.c                                |    6 +-
+ arch/x86/pci/amd_bus.c                             |   83 +-
+ arch/x86/pci/broadcom_bus.c                        |    4 +-
+ arch/x86/pci/fixup.c                               |   18 +-
+ arch/x86/pci/i386.c                                |   27 +-
+ arch/xtensa/include/asm/pci.h                      |    5 -
+ drivers/base/dma-coherent.c                        |   10 +-
+ drivers/base/dma-mapping.c                         |    6 +-
+ drivers/block/nvme-core.c                          |   11 +
+ drivers/edac/i82875p_edac.c                        |    8 +-
+ drivers/iommu/exynos-iommu.c                       |   14 +-
+ drivers/misc/genwqe/card_utils.c                   |    2 +-
+ drivers/pci/access.c                               |   12 +-
+ drivers/pci/bus.c                                  |   11 +-
+ drivers/pci/host-bridge.c                          |    1 -
+ drivers/pci/host/Kconfig                           |   13 +
+ drivers/pci/host/Makefile                          |    2 +
+ drivers/pci/host/pci-exynos.c                      |   11 +-
+ drivers/pci/host/pci-host-generic.c                |  388 ++++++++
+ drivers/pci/host/pci-imx6.c                        |  147 ++-
+ drivers/pci/host/pci-rcar-gen2.c                   |   39 +-
+ drivers/pci/host/pcie-designware.c                 |    6 +-
+ drivers/pci/host/pcie-designware.h                 |    2 +-
+ drivers/pci/host/pcie-rcar.c                       | 1008 ++++++++++++++++++++
+ drivers/pci/hotplug-pci.c                          |    2 +-
+ drivers/pci/hotplug/acpiphp_glue.c                 |    6 +-
+ drivers/pci/hotplug/cpci_hotplug_pci.c             |    5 +-
+ drivers/pci/hotplug/cpqphp_ctrl.c                  |    3 +-
+ drivers/pci/hotplug/cpqphp_nvram.c                 |    1 -
+ drivers/pci/hotplug/pciehp.h                       |    2 +-
+ drivers/pci/hotplug/pciehp_hpc.c                   |    2 +
+ drivers/pci/hotplug/pciehp_pci.c                   |    3 +-
+ drivers/pci/hotplug/pcihp_slot.c                   |    3 +-
+ drivers/pci/hotplug/rpadlpar_core.c                |    3 +-
+ drivers/pci/hotplug/rpaphp_core.c                  |   15 +-
+ drivers/pci/hotplug/s390_pci_hpc.c                 |    1 -
+ drivers/pci/hotplug/shpchp_pci.c                   |    5 +-
+ drivers/pci/iov.c                                  |    2 +-
+ drivers/pci/msi.c                                  |   96 +-
+ drivers/pci/pci-acpi.c                             |    8 +-
+ drivers/pci/pci-driver.c                           |   58 +-
+ drivers/pci/pci-sysfs.c                            |   68 +-
+ drivers/pci/pci.c                                  |   34 +-
+ drivers/pci/pci.h                                  |   10 +-
+ drivers/pci/pcie/portdrv_core.c                    |    9 +-
+ drivers/pci/probe.c                                |  101 +-
+ drivers/pci/quirks.c                               |   11 +
+ drivers/pci/search.c                               |    1 -
+ drivers/pci/setup-bus.c                            |  251 +++--
+ drivers/pci/setup-irq.c                            |    1 -
+ drivers/pci/setup-res.c                            |   42 +-
+ drivers/pcmcia/cardbus.c                           |    3 +-
+ drivers/platform/x86/asus-wmi.c                    |    3 +-
+ drivers/platform/x86/eeepc-laptop.c                |    3 +-
+ include/asm-generic/dma-coherent.h                 |   13 +-
+ include/linux/dma-mapping.h                        |   13 +-
+ include/linux/pci.h                                |   40 +-
+ include/linux/pci_ids.h                            |    3 -
+ include/linux/types.h                              |    1 +
+ kernel/resource.c                                  |    7 +-
+ 99 files changed, 2724 insertions(+), 830 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/pci/host-generic-pci.txt
+ create mode 100644 Documentation/devicetree/bindings/pci/pci-rcar-gen2.txt
+ create mode 100644 Documentation/devicetree/bindings/pci/rcar-pci.txt
+ create mode 100644 drivers/pci/host/pci-host-generic.c
+ create mode 100644 drivers/pci/host/pcie-rcar.c
