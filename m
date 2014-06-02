@@ -1,60 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752874AbaFBUaB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 16:30:01 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:57293 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751616AbaFBUaA (ORCPT
+	id S1753320AbaFBUbK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 16:31:10 -0400
+Received: from g2t2352.austin.hp.com ([15.217.128.51]:44689 "EHLO
+	g2t2352.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752169AbaFBUbI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 16:30:00 -0400
-Date: Mon, 2 Jun 2014 13:29:53 -0700
-From: josh@joshtriplett.org
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: Joe Perches <joe@perches.com>, paulmck@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
-        oleg@redhat.com, sbw@mit.edu
-Subject: Re: [PATCH RFC 1/2] MAINTAINERS: Add "R:" designated-reviewers tag
-Message-ID: <20140602202953.GA14013@cloud>
-References: <1401729778.5770.20.camel@joe-AO725>
- <20140602174837.GA13257@cloud>
- <1401731968.7323.4.camel@joe-AO725>
- <20140602181658.GX22231@linux.vnet.ibm.com>
- <20140602185635.GB13569@cloud>
- <20140602190821.GZ22231@linux.vnet.ibm.com>
- <20140602191155.GB13648@cloud>
- <20140602192729.GB22231@linux.vnet.ibm.com>
- <1401737782.7323.31.camel@joe-AO725>
- <538CD336.4080103@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <538CD336.4080103@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 2 Jun 2014 16:31:08 -0400
+Message-ID: <1401741061.5185.9.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH 0/5] mm: i_mmap_mutex to rwsem
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: mingo@kernel.org, peterz@infradead.org, riel@redhat.com, mgorman@suse.de,
+        aswin@hp.com, linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Mon, 02 Jun 2014 13:31:01 -0700
+In-Reply-To: <20140602130832.9328cfef977b7ed837d59321@linux-foundation.org>
+References: <1400816006-3083-1-git-send-email-davidlohr@hp.com>
+	 <1401416415.2618.14.camel@buesod1.americas.hpqcorp.net>
+	 <20140602130832.9328cfef977b7ed837d59321@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 02, 2014 at 12:40:38PM -0700, Randy Dunlap wrote:
-> On 06/02/2014 12:36 PM, Joe Perches wrote:
-> > On Mon, 2014-06-02 at 12:27 -0700, Paul E. McKenney wrote:
-> >> On Mon, Jun 02, 2014 at 12:11:55PM -0700, josh@joshtriplett.org wrote:
-> >>>
-> >>> I'd suggest adding Mathieu Desnoyers, Oleg Nesterov, and Lai Jiangshan
-> >>> as reviewers as well, with their consent.
-> >>
-> >> Mathieu, Oleg, Lai, any objections?
-> > 
-> > I suggest not going overboard with R entries.
-> > If there are more than 1 or 2, create a mailing list.
+On Mon, 2014-06-02 at 13:08 -0700, Andrew Morton wrote:
+> On Thu, 29 May 2014 19:20:15 -0700 Davidlohr Bueso <davidlohr@hp.com> wrote:
 > 
-> Yes, much better on the patch sender(s) to Cc: 1 or 2 people or lists
-> than to have to copy/paste 5 or 6 email addresses.
+> > On Thu, 2014-05-22 at 20:33 -0700, Davidlohr Bueso wrote:
+> > > This patchset extends the work started by Ingo Molnar in late 2012,
+> > > optimizing the anon-vma mutex lock, converting it from a exclusive mutex
+> > > to a rwsem, and sharing the lock for read-only paths when walking the
+> > > the vma-interval tree. More specifically commits 5a505085 and 4fc3f1d6.
+> > > 
+> > > The i_mmap_mutex has similar responsibilities with the anon-vma, protecting
+> > > file backed pages. Therefore we can use similar locking techniques: covert
+> > > the mutex to a rwsem and share the lock when possible.
+> > > 
+> > > With the new optimistic spinning property we have in rwsems, we no longer
+> > > take a hit in performance when using this lock, and we can therefore
+> > > safely do the conversion. Tests show no throughput regressions in aim7 or
+> > > pgbench runs, and we can see gains from sharing the lock, in disk workloads
+> > > ~+15% for over 1000 users on a 8-socket Westmere system.
+> > > 
+> > > This patchset applies on linux-next-20140522.
+> >
+> > ping? Andrew any chance of getting this in -next?
+> 
+> (top-posting repaired)
+> 
+> It was a bit late for 3.16 back on May 26, when you said "I will dig
+> deeper (probably for 3.17 now)".  So, please take another look at the
+> patch factoring and let's get this underway for -rc1.
 
-A patch sender should never need to manually copy and paste email
-addresses, given get_maintainer.pl.
+Ok, so I meant that I'd dig deeper for the additional sharing
+opportunities (which I've found a few as Hugh correctly suggested). So
+those eventual patches could come later. 
 
-- Josh Triplett
+But I see no reason for *this* patchset to be delayed, as even if it
+gets to be 3.17 material, I'd still very much want to have the same
+patch factoring I have now. I think its the correct way to handle lock
+transitioning for both correctness and bisectability.
+
+Thanks,
+Davidlohr
+
+
