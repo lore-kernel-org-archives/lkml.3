@@ -1,76 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754703AbaFBNKY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 09:10:24 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:44944 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754327AbaFBNKW (ORCPT
+	id S1754464AbaFBNMw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 09:12:52 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:44370 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753009AbaFBNMu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 09:10:22 -0400
-Message-ID: <538C77AD.1000801@gmail.com>
-Date: Mon, 02 Jun 2014 15:10:05 +0200
-From: Tomasz Figa <tomasz.figa@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>
-CC: Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org
-Subject: Re: [PATCH v2 6/7] ARM: EXYNOS: PM: fix register setup on EXYNOS4x12
- for AFTR mode code
-References: <1401712543-14281-1-git-send-email-b.zolnierkie@samsung.com> <1401712543-14281-7-git-send-email-b.zolnierkie@samsung.com>
-In-Reply-To: <1401712543-14281-7-git-send-email-b.zolnierkie@samsung.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 2 Jun 2014 09:12:50 -0400
+Message-ID: <1401714764.5757.3.camel@marge.simpson.net>
+Subject: [patchlet] rt,locking: fix __ww_mutex_lock_interruptible() lockdep
+ annotation
+From: Mike Galbraith <umgwanakikbuti@gmail.com>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: linux-rt-users <linux-rt-users@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>
+Date: Mon, 02 Jun 2014 15:12:44 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-On 02.06.2014 14:35, Bartlomiej Zolnierkiewicz wrote:
-> Add S5P_CENTRAL_SEQ_OPTION register setup for EXYNOS4x12 to AFTR
-> mode code.  Without this setup AFTR mode doesn't show any benefit
-> over WFI one.  When this setup is applied AFTR mode reduces power
-> consumption by ~12% (as measured on Trats2 board).
-> 
-> This change is a preparation for adding secure firmware support to
-> EXYNOS cpuidle driver.
-> 
-> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
-> ---
->  arch/arm/mach-exynos/pm.c | 4 ++++
->  1 file changed, 4 insertions(+)
-> 
-> diff --git a/arch/arm/mach-exynos/pm.c b/arch/arm/mach-exynos/pm.c
-> index aeff99e..0fb9a5a 100644
-> --- a/arch/arm/mach-exynos/pm.c
-> +++ b/arch/arm/mach-exynos/pm.c
-> @@ -456,6 +456,10 @@ static int exynos_cpu_pm_notifier(struct notifier_block *self,
->  	case CPU_PM_ENTER:
->  		if (cpu == 0) {
->  			exynos_pm_central_suspend();
-> +			if (soc_is_exynos4212() || soc_is_exynos4412())
-> +				__raw_writel(S5P_USE_STANDBY_WFI0 |
-> +					     S5P_USE_STANDBY_WFE0,
-> +					     S5P_CENTRAL_SEQ_OPTION);
+Using mutex_acquire_nest() as used in __ww_mutex_lock() fixes the 
+splat below.  Remove superfluous line break in __ww_mutex_lock()
+as well.
 
-I wonder whether this isn't required on any Exynos SoC in general, as
-this mask decides which STANDBY_WFI/WFE signals are considered before
-entering the lower power state.
+[   56.999063] =============================================
+[   56.999063] [ INFO: possible recursive locking detected ]
+[   56.999065] 3.14.4-rt5 #26 Not tainted
+[   56.999065] ---------------------------------------------
+[   56.999067] Xorg/4298 is trying to acquire lock:
+[   56.999107]  (reservation_ww_class_mutex){+.+.+.}, at: [<ffffffffa02b4270>] nouveau_gem_ioctl_pushbuf+0x870/0x19f0 [nouveau]
+[   56.999107] 
+               but task is already holding lock:
+[   56.999130]  (reservation_ww_class_mutex){+.+.+.}, at: [<ffffffffa02b4270>] nouveau_gem_ioctl_pushbuf+0x870/0x19f0 [nouveau]
+[   56.999131] 
+               other info that might help us debug this:
+[   56.999131]  Possible unsafe locking scenario:
+               
+[   56.999132]        CPU0
+[   56.999132]        ----
+[   56.999133]   lock(reservation_ww_class_mutex);
+[   56.999134]   lock(reservation_ww_class_mutex);
+[   56.999134] 
+                *** DEADLOCK ***
+               
+[   56.999135]  May be due to missing lock nesting notation
+               
+[   56.999136] 3 locks held by Xorg/4298:
+[   56.999160]  #0:  (&cli->mutex){+.+.+.}, at: [<ffffffffa02b597b>] nouveau_abi16_get+0x2b/0x100 [nouveau]
+[   56.999174]  #1:  (reservation_ww_class_acquire){+.+...}, at: [<ffffffffa0160cd2>] drm_ioctl+0x4d2/0x610 [drm]
+[   56.999197]  #2:  (reservation_ww_class_mutex){+.+.+.}, at: [<ffffffffa02b4270>] nouveau_gem_ioctl_pushbuf+0x870/0x19f0 [nouveau]
+[   56.999198] 
+               stack backtrace:
+[   56.999200] CPU: 1 PID: 4298 Comm: Xorg Not tainted 3.14.4-rt5 #26
+[   56.999200] Hardware name: MEDIONPC MS-7502/MS-7502, BIOS 6.00 PG 12/26/2007
+[   56.999203]  ffffffff820309b0 ffff8802217a9ac8 ffffffff8157e53e ffffffff820309b0
+[   56.999205]  ffff8802217a9b90 ffffffff810964ce ffff8802217a9b40 0000000000000246
+[   56.999207]  0000000000000003 ffffffff8204f130 0001e09300000000 0001e093347523a9
+[   56.999207] Call Trace:
+[   56.999212]  [<ffffffff8157e53e>] dump_stack+0x4f/0x9d
+[   56.999215]  [<ffffffff810964ce>] __lock_acquire+0x169e/0x1a50
+[   56.999218]  [<ffffffff81588da9>] ? preempt_count_sub+0x49/0x50
+[   56.999219]  [<ffffffff81584541>] ? _raw_spin_unlock+0x31/0x60
+[   56.999221]  [<ffffffff8109701d>] lock_acquire+0x8d/0x140
+[   56.999243]  [<ffffffffa02b4270>] ? nouveau_gem_ioctl_pushbuf+0x870/0x19f0 [nouveau]
+[   56.999246]  [<ffffffff8158313d>] __ww_mutex_lock_interruptible+0x3d/0xf0
+[   56.999268]  [<ffffffffa02b4270>] ? nouveau_gem_ioctl_pushbuf+0x870/0x19f0 [nouveau]
+[   56.999290]  [<ffffffffa02b4270>] nouveau_gem_ioctl_pushbuf+0x870/0x19f0 [nouveau]
+[   56.999298]  [<ffffffffa0160cd2>] ? drm_ioctl+0x4d2/0x610 [drm]
+[   56.999308]  [<ffffffffa0160cd2>] drm_ioctl+0x4d2/0x610 [drm]
+[   56.999311]  [<ffffffff81588da9>] ? preempt_count_sub+0x49/0x50
+[   56.999313]  [<ffffffff8107cd60>] ? migrate_enable+0xe0/0x1e0
+[   56.999335]  [<ffffffffa02aaece>] nouveau_drm_ioctl+0x4e/0x90 [nouveau]
+[   56.999338]  [<ffffffff81185ff0>] do_vfs_ioctl+0x300/0x530
+[   56.999340]  [<ffffffff8158d33b>] ? sysret_check+0x1b/0x56
+[   56.999342]  [<ffffffff81094a8d>] ? trace_hardirqs_on_caller+0x10d/0x1d0
+[   56.999344]  [<ffffffff81186261>] SyS_ioctl+0x41/0x80
+[   56.999345]  [<ffffffff8158d316>] system_call_fastpath+0x1a/0x1f
 
-Also you should check the behavior with Krzysztof's patch adding support
-for delayed reset assertion, which should cause WFI/WFE signals of CPUs
-powered down to be kept asserted.
+Signed-off-by: Mike Galbraith <umgwanakikbuti@gmail.com>
+---
+ kernel/locking/rtmutex.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
-Best regards,
-Tomasz
+--- a/kernel/locking/rtmutex.c
++++ b/kernel/locking/rtmutex.c
+@@ -1780,7 +1780,7 @@ __ww_mutex_lock_interruptible(struct ww_
+ 
+ 	might_sleep();
+ 
+-	mutex_acquire(&lock->base.dep_map, 0, 0, _RET_IP_);
++	mutex_acquire_nest(&lock->base.dep_map, 0, 0, &ww_ctx->dep_map, _RET_IP_);
+ 	ret = rt_mutex_slowlock(&lock->base.lock, TASK_INTERRUPTIBLE, NULL, 0, ww_ctx);
+ 	if (ret)
+ 		mutex_release(&lock->base.dep_map, 1, _RET_IP_);
+@@ -1798,8 +1798,7 @@ __ww_mutex_lock(struct ww_mutex *lock, s
+ 
+ 	might_sleep();
+ 
+-	mutex_acquire_nest(&lock->base.dep_map, 0, 0, &ww_ctx->dep_map,
+-			_RET_IP_);
++	mutex_acquire_nest(&lock->base.dep_map, 0, 0, &ww_ctx->dep_map, _RET_IP_);
+ 	ret = rt_mutex_slowlock(&lock->base.lock, TASK_UNINTERRUPTIBLE, NULL, 0, ww_ctx);
+ 	if (ret)
+ 		mutex_release(&lock->base.dep_map, 1, _RET_IP_);
+
+
