@@ -1,46 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752277AbaFBFPU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 01:15:20 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:56314 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751673AbaFBFPR (ORCPT
+	id S1752334AbaFBFPj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 01:15:39 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:51572 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752292AbaFBFPf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 01:15:17 -0400
-Date: Sun, 01 Jun 2014 22:15:15 -0700 (PDT)
-Message-Id: <20140601.221515.360490928652338768.davem@davemloft.net>
-To: jmaxwell37@gmail.com
-Cc: stephen@networkplumber.org, makita.toshiaki@lab.ntt.co.jp,
-        vyasevic@redhat.com, bridge@lists.linux-foundation.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jpirko@redhat.com, jmaxwell@redhat.com
-Subject: Re: [PATCH net] bridge: notify user space after fdb update
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1401348436-5187-1-git-send-email-jmaxwell37@gmail.com>
-References: <1401348436-5187-1-git-send-email-jmaxwell37@gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Sun, 01 Jun 2014 22:15:16 -0700 (PDT)
+	Mon, 2 Jun 2014 01:15:35 -0400
+Date: Mon, 2 Jun 2014 14:14:47 +0900
+From: Daeseok Youn <daeseok.youn@gmail.com>
+To: lidza.louina@gmail.com, gregkh@linuxfoundation.org
+Cc: markh@compro.net, dan.carpenter@oracle.com,
+        driverdev-devel@linuxdriverproject.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 2/6 RESEND V2] staging: dgap: unwind on error in
+ dgap_found_board()
+Message-ID: <20140602051447.GA30379@devel.8.8.4.4>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jon Maxwell <jmaxwell37@gmail.com>
-Date: Thu, 29 May 2014 17:27:16 +1000
+Adds a label for "kfree(brd)". And also remove
+a state value as BOARD_FAILED in brd when dgap_do_remap() is failed.
+Because "brd" will free after failure.
 
-> There has been a number incidents recently where customers running KVM have
-> reported that VM hosts on different Hypervisors are unreachable. Based on
-> pcap traces we found that the bridge was broadcasting the ARP request out
-> onto the network. However some NICs have an inbuilt switch which on occasions
-> were broadcasting the VMs ARP request back through the physical NIC on the
-> Hypervisor. This resulted in the bridge changing ports and incorrectly learning
-> that the VMs mac address was external. As a result the ARP reply was directed
-> back onto the external network and VM never updated it's ARP cache. This patch
-> will notify the bridge command, after a fdb has been updated to identify such
-> port toggling.
-> 
-> Signed-off-by: Jon Maxwell <jmaxwell37@gmail.com>
+Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+Reviewed-by: Dan Carpenter <dan.carpenter@oracle.com>
+---
+RESEND: this patch is included into newly series of patches.
+V2: add "Reviewed-by" line in change log.
 
-Applied, thanks.
+ drivers/staging/dgap/dgap.c |   19 ++++++++++++++-----
+ 1 files changed, 14 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/staging/dgap/dgap.c b/drivers/staging/dgap/dgap.c
+index af78f6f..5556a6e 100644
+--- a/drivers/staging/dgap/dgap.c
++++ b/drivers/staging/dgap/dgap.c
+@@ -673,6 +673,7 @@ static int dgap_found_board(struct pci_dev *pdev, int id)
+ 	struct board_t *brd;
+ 	unsigned int pci_irq;
+ 	int i;
++	int ret;
+ 
+ 	/* get the board structure and prep it */
+ 	brd = kzalloc(sizeof(struct board_t), GFP_KERNEL);
+@@ -728,8 +729,10 @@ static int dgap_found_board(struct pci_dev *pdev, int id)
+ 		brd->membase_end = pci_resource_end(pdev, 0);
+ 	}
+ 
+-	if (!brd->membase)
+-		return -ENODEV;
++	if (!brd->membase) {
++		ret = -ENODEV;
++		goto free_brd;
++	}
+ 
+ 	if (brd->membase & 1)
+ 		brd->membase &= ~3;
+@@ -770,14 +773,20 @@ static int dgap_found_board(struct pci_dev *pdev, int id)
+ 	tasklet_init(&brd->helper_tasklet, dgap_poll_tasklet,
+ 			(unsigned long) brd);
+ 
+-	i = dgap_do_remap(brd);
+-	if (i)
+-		brd->state = BOARD_FAILED;
++	ret = dgap_do_remap(brd);
++	if (ret)
++		goto free_brd;
+ 
+ 	pr_info("dgap: board %d: %s (rev %d), irq %ld\n",
+ 		dgap_numboards, brd->name, brd->rev, brd->irq);
+ 
+ 	return 0;
++
++free_brd:
++	kfree(brd);
++	dgap_board[dgap_numboards] = NULL;
++
++	return ret;
+ }
+ 
+ 
+-- 
+1.7.1
+
