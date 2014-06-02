@@ -1,89 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754588AbaFBMwt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 08:52:49 -0400
-Received: from mout.kundenserver.de ([212.227.17.10]:60636 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752267AbaFBMwr (ORCPT
+	id S1754434AbaFBM4Z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 08:56:25 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:50872 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753267AbaFBM4Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 08:52:47 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Nicolas Pitre <nicolas.pitre@linaro.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, joseph@codesourcery.com,
-        john.stultz@linaro.org, hch@infradead.org, tglx@linutronix.de,
-        geert@linux-m68k.org, lftan@altera.com, linux-fsdevel@vger.kernel.org,
-        xfs@oss.sgi.com
-Subject: Re: [RFC 11/32] xfs: convert to struct inode_time
-Date: Mon, 02 Jun 2014 14:52:13 +0200
-Message-ID: <15496653.1vSv1RUCC0@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140602115737.GB14276@thunk.org>
-References: <1401480116-1973111-1-git-send-email-arnd@arndb.de> <4178301.j9kWdGCRLC@wuerfel> <20140602115737.GB14276@thunk.org>
+	Mon, 2 Jun 2014 08:56:24 -0400
+Date: Mon, 2 Jun 2014 13:50:55 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Tim Kryger <tim.kryger@gmail.com>
+Cc: Jingoo Han <jg1.han@samsung.com>, Liam Girdwood <lgirdwood@gmail.com>,
+        linux-kernel@vger.kernel.org, Matt Porter <mporter@linaro.org>,
+        Tim Kryger <tim.kryger@linaro.org>
+Message-ID: <20140602125055.GE31751@sirena.org.uk>
+References: <000101cf7e2b$b5c9f9c0$215ded40$%han@samsung.com>
+ <CAD7vxxKT+Wq2ArH9iYLm2OUeBSqKvzORKZ1NnoyPcdcDH6wOKw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:Og6uvkG7nhSQ3FBH+zzsRjY83ZWdKEvQC6Cgd1rzE79
- LgH0wKzyn8AkTY/kJQQ2b1U/wW0ETUZgy/E0p2mJpAiy87I5mi
- OtgXeNND/vPcNTI8Oi4L4MzkfFa/yaPC38RiixMusSUJHSU6pT
- L9oW8z4Hf1R+in1vhlkdbaOQ2VLHVLlx3DRxhK7Wn9t86tdZkH
- L85M0RtSOv8exNH+ymxWV/C9Vwr9v0DjIOJXk0HEZGj7iX3ylL
- 6CYYstSCakFz/TIdH6CVCWp7uzWuPZ0u7vOSR4FEBI1PHx47e/
- BgJq68NoNSnBm71/O1I7gchdMFtaY+59jRkD2WOdMDBhDJpXWZ
- tMlVXunpEkCUlDkvgu2g=
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="wchHw8dVAp53YPj8"
+Content-Disposition: inline
+In-Reply-To: <CAD7vxxKT+Wq2ArH9iYLm2OUeBSqKvzORKZ1NnoyPcdcDH6wOKw@mail.gmail.com>
+X-Cookie: Big book, big bore.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 92.40.249.174
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/3] regulator: bcm590xx: remove unnecessary OOM messages
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 02 June 2014 07:57:37 Theodore Ts'o wrote:
-> On Mon, Jun 02, 2014 at 12:56:42PM +0200, Arnd Bergmann wrote:
-> > 
-> > I think you misunderstood what I suggested: the intent is to avoid
-> > seeing things break in 2038 by making them break much earlier. We have
-> > a solution for ext2 file systems, it's called ext4, and we just need
-> > to ensure that everybody knows they have to migrate eventually.
-> > 
-> > At some point before the mid 2030ies, you should no longer be able to
-> > build a kernel that has support for ext2 or any other module that will
-> > run into bugs later....
-> 
-> Even for ext4, it's not quite so simple as that.  You only have
-> support for times post 2038 if you are using an inode size > 128
-> bytes.  There are a very, very large number of machines which even
-> today, are using 128 byte inodes with ext4 for performance reasons.
-> 
-> The vast majority of those machines which I know of can probably move
-> to 256 byte inodes relatively easily, since hard drive replacement
-> cycles are order 5-6 years tops, so I'm not that concerned, but it
-> just goes to show this is a very complicated problem.
 
-One stupid question about the current code:
+--wchHw8dVAp53YPj8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-static inline void ext4_decode_extra_time(struct inode_time *time, __le32 extra)
-{                               
-       if (sizeof(time->tv_sec) > 4)
-               time->tv_sec |= (__u64)(le32_to_cpu(extra) & EXT4_EPOCH_MASK)
-                               << 32;
-       time->tv_nsec = (le32_to_cpu(extra) & EXT4_NSEC_MASK) >> EXT4_EPOCH_BITS;
-}       
+On Mon, Jun 02, 2014 at 12:12:20AM -0700, Tim Kryger wrote:
 
-#define EXT4_EINODE_GET_XTIME(xtime, einode, raw_inode)                        \
-do {                                                                           \
-        if (EXT4_FITS_IN_INODE(raw_inode, einode, xtime))                      \
-                (einode)->xtime.tv_sec =                                       \
-                        (signed)le32_to_cpu((raw_inode)->xtime);               \
-        else                                                                   \
-                (einode)->xtime.tv_sec = 0;                                    \
-        if (EXT4_FITS_IN_INODE(raw_inode, einode, xtime ## _extra))            \
-                ext4_decode_extra_time(&(einode)->xtime,                       \
-                                       raw_inode->xtime ## _extra);            \
-        else                                                                   \
-                (einode)->xtime.tv_nsec = 0;                                   \
-} while (0)
+> The probe method of this driver, on the other hand, performs several
+> allocations and the error messages you intend to remove conveniently
+> pinpoint which one failed.  While the offsets in the trace could be
+> used to derive the same information, I am skeptical that is enough to
+> justify removing the messages.
 
-For a time between 2038 and 2106, this looks like xtime.tv_sec is
-negative when ext4_decode_extra_time gets called, so the '|=' operator
-doesn't actually do anything. Shouldn't that be '+='?
+On the other hand how likely is anyone to care which particular
+allocation triggered the OOM?
 
-	Arnd
+--wchHw8dVAp53YPj8
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTjHMsAAoJELSic+t+oim98tMP/iVRXlV+1VKf0Qh9cS77S0RG
+NJFy90iG5KVOXMbr06ILC7ByTmDkTHmNxXw/1+Hl+GPb2AGxHJws3GyQxP9mSyBT
+jTjxxexDcX5MwyYGJcYfVlqCx+In2CjkvuDZSwwkTgZ69FjK8E2GwzhecUc4t9OK
+Eg1/IYHTp2QA91i723DuaSB+swRiPre5R2Irwl2uHmSOTYFy84RqoWNSSRwPBXWr
+KtjIyXweyrX249OkI8N5+WvOzNB2ykdz1Wu96yj+S05YJXC4u9f39jOqkx6WqJHj
+gcWIcjhd40J5ew1KRmWL8p2hMRWBCHmhd2H1hhbaUsjg4UeyKW8gtGQRNl9VwO/Y
+9Zs/tG0i0TrvZf/bfj8gK6ZymcUSnRxHRDH25JvZ1MMmPYpt87XQfztGsp1kRc2J
+H1akTq5J9ARd592ngzKb3QiRdMUbjOIa35q4eR7wfH70RtLx2ZfM+Rh3+oiXlDlE
+bdz72lOUEWzns0RYuEJdKVCpuad4wc8DUBttZ/QMgZxeOT8IMp+N6g2scbg6ojip
+M9VCJaAaYM0lcvfPKaFP7vgneL93J+L7GnLpdtabXoK0MCK4U6nCO14moAB1wLzA
+Ln0xXABm+93+onfFktSi1DDNkHQz4XWXzkQyUrFz5bU5PIqUipHXHlVN8Bcn2ye+
+2RYBkhZws74odVShKrim
+=LagZ
+-----END PGP SIGNATURE-----
+
+--wchHw8dVAp53YPj8--
