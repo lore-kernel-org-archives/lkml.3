@@ -1,55 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754752AbaFBNZD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 09:25:03 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:38243 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754399AbaFBNZB (ORCPT
+	id S1754838AbaFBNZL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 09:25:11 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:42062 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754399AbaFBNZF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 09:25:01 -0400
-Date: Mon, 2 Jun 2014 09:24:56 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Jonathan Corbet <corbet@lwn.net>
-Cc: Alexei Starovoitov <ast@plumgrid.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Ingo Molnar <mingo@kernel.org>, Daniel Borkmann <dborkman@redhat.com>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 net-next 0/2] split BPF out of core networking
-Message-ID: <20140602092456.2114440a@gandalf.local.home>
-In-Reply-To: <20140602081545.7baf4a91@lwn.net>
-References: <1401692506-7796-1-git-send-email-ast@plumgrid.com>
-	<20140602081545.7baf4a91@lwn.net>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Mon, 2 Jun 2014 09:25:05 -0400
+Date: Mon, 2 Jun 2014 06:24:54 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Mikulas Patocka <mpatocka@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        John David Anglin <dave.anglin@bell.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>, jejb@parisc-linux.org,
+        deller@gmx.de, linux-parisc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, chegu_vinod@hp.com, Waiman.Long@hp.com,
+        tglx@linutronix.de, riel@redhat.com, akpm@linux-foundation.org,
+        davidlohr@hp.com, hpa@zytor.com, andi@firstfloor.org, aswin@hp.com,
+        scott.norton@hp.com, Jason Low <jason.low2@hp.com>
+Subject: Re: [PATCH] fix a race condition in cancelable mcs spinlocks
+Message-ID: <20140602132454.GO22231@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <alpine.LRH.2.02.1406011342470.20831@file01.intranet.prod.int.rdu2.redhat.com>
+ <20140601192026.GE16155@laptop.programming.kicks-ass.net>
+ <BLU0-SMTP387BD0AE22A4EAD432D65F97210@phx.gbl>
+ <20140601213003.GG16155@laptop.programming.kicks-ass.net>
+ <alpine.LRH.2.02.1406020503000.17105@file01.intranet.prod.int.rdu2.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LRH.2.02.1406020503000.17105@file01.intranet.prod.int.rdu2.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14060213-7164-0000-0000-00000228B632
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2 Jun 2014 08:15:45 -0500
-Jonathan Corbet <corbet@lwn.net> wrote:
-
-> On Mon,  2 Jun 2014 00:01:44 -0700
-> Alexei Starovoitov <ast@plumgrid.com> wrote:
+On Mon, Jun 02, 2014 at 05:19:39AM -0400, Mikulas Patocka wrote:
 > 
-> > This patch set splits BPF out of core networking into generic component
 > 
-> Quick, probably dumb question: if you're going to split it out, why not
-> split it out entirely, into kernel/ or (perhaps better) lib/?  The
-> whole point seems to be that BPF is outgrowing its networking home, so
-> it seems like it might be better to make it truly generic.
+> On Sun, 1 Jun 2014, Peter Zijlstra wrote:
+> 
+> > On Sun, Jun 01, 2014 at 04:46:26PM -0400, John David Anglin wrote:
+> > > On 1-Jun-14, at 3:20 PM, Peter Zijlstra wrote:
+> > > 
+> > > >>If you write to some variable with ACCESS_ONCE and use cmpxchg or xchg
+> > > >>at
+> > > >>the same time, you break it. ACCESS_ONCE doesn't take the hashed
+> > > >>spinlock,
+> > > >>so, in this case, cmpxchg or xchg isn't really atomic at all.
+> > > >
+> > > >And this is really the first place in the kernel that breaks like this?
+> > > >I've been using xchg() and cmpxchg() without such consideration for
+> > > >quite a while.
+> > > 
+> > > I believe Mikulas is correct.  Even in a controlled situation where a
+> > > cmpxchg operation
+> > > is used to implement pthread_spin_lock() in userspace, we found recently
+> > > that the lock
+> > > must be released with a  cmpxchg operation and not a simple write on SMP
+> > > systems.
+> > > There is a race in the cache operations or instruction ordering that's not
+> > > present with
+> > > the ldcw instruction.
+> > 
+> > Oh, I'm not arguing that. He's quite right that its broken, but this
+> > form of atomic ops is also quite insane and unusual. Most sane machines
+> > don't have this problem.
+> > 
+> > My main concern is how are we going to avoid breaking parisc (and I
+> > think sparc32, which is similarly retarded) in the future; we should
+> > invest in machinery to find and detect these things.
+> 
+> Grep the kernel for "\<xchg\>" and "\<cmpxchg\>" and replace them with 
+> atomic types and atomic access functions.
 
-I believe this is what Ingo suggested as well. If it is become generic,
-it belongs in lib/
+Not so good for pointers, though.  Defeats type-checking, for one thing.
+An example of this is use of xchg() for atomically enqueuing RCU callbacks
+in kernel/rcu/tree_plugin.h.
 
--- Steve
+I still like the idea of PA-RISC's compiler implementing ACCESS_ONCE()
+as needed to make things work on that architecture.
+
+							Thanx, Paul
+
