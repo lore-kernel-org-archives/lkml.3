@@ -1,76 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753140AbaFBUWN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 16:22:13 -0400
-Received: from mail-ve0-f174.google.com ([209.85.128.174]:61248 "EHLO
-	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751642AbaFBUWL (ORCPT
+	id S1753328AbaFBUWV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 16:22:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40884 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751986AbaFBUWS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 16:22:11 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140602200525.GD13930@laptop.programming.kicks-ass.net>
-References: <alpine.LRH.2.02.1406011342470.20831@file01.intranet.prod.int.rdu2.redhat.com>
-	<alpine.LRH.2.02.1406021158360.20627@file01.intranet.prod.int.rdu2.redhat.com>
-	<20140602162525.GH16155@laptop.programming.kicks-ass.net>
-	<20140602163032.GI16155@laptop.programming.kicks-ass.net>
-	<538CB56E.5010709@hp.com>
-	<20140602200525.GD13930@laptop.programming.kicks-ass.net>
-Date: Mon, 2 Jun 2014 13:22:10 -0700
-X-Google-Sender-Auth: 1saDjUgmCrLlGSNKjIjEgZ29nmc
-Message-ID: <CA+55aFwJwVf_MbcwNNWg-KrLdoOaV2xse2jzvBZTJHJgC_Htvg@mail.gmail.com>
-Subject: Re: [PATCH v2] introduce atomic_pointer to fix a race condition in
- cancelable mcs spinlocks
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Waiman Long <waiman.long@hp.com>, Mikulas Patocka <mpatocka@redhat.com>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Helge Deller <deller@gmx.de>, John David Anglin <dave.anglin@bell.net>,
-        Parisc List <linux-parisc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        "Vinod, Chegu" <chegu_vinod@hp.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Davidlohr Bueso <davidlohr@hp.com>, Peter Anvin <hpa@zytor.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>, Jason Low <jason.low2@hp.com>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 2 Jun 2014 16:22:18 -0400
+Date: Mon, 2 Jun 2014 13:22:16 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        ocfs2-devel@oss.oracle.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] fs: ocfs2: dir.c:  Cleaning up uninitialized variables
+Message-Id: <20140602132216.292fd8363da83b48e90a78ba@linux-foundation.org>
+In-Reply-To: <1401630784-20493-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+References: <1401630784-20493-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 2, 2014 at 1:05 PM, Peter Zijlstra <peterz@infradead.org> wrote:
->
-> So the question is, do you prefer subtly broken code or hard compile
-> fails? Me, I go for the compile fail.
+On Sun,  1 Jun 2014 15:53:04 +0200 Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se> wrote:
 
-The thing is, parisc has a perfectly fine "cmpxchg" implementation in
-practice, and ACCESS_ONCE() and friends work fine too for reading.
+> There is a risk that the variable will be used without being initialized.
 
-What the "use a spinlock" approach cannot generally do is:
+um, no there isn't.
 
- - ACCESS_ONCE() to _write_ things doesn't work well. You really
-should use "atomic_set()".
+> --- a/fs/ocfs2/dir.c
+> +++ b/fs/ocfs2/dir.c
+> @@ -3738,7 +3738,7 @@ static int ocfs2_dx_dir_rebalance(struct ocfs2_super *osb, struct inode *dir,
+>  	int credits, ret, i, num_used, did_quota = 0;
+>  	u32 cpos, split_hash, insert_hash = hinfo->major_hash;
+>  	u64 orig_leaves_start;
+> -	int num_dx_leaves;
+> +	int num_dx_leaves = 0;
+>  	struct buffer_head **orig_dx_leaves = NULL;
+>  	struct buffer_head **new_dx_leaves = NULL;
+>  	struct ocfs2_alloc_context *data_ac = NULL, *meta_ac = NULL;
 
- - you may not necessarily be able to mix partial updates (ie
-differently sized updates to the same thing) depending on just how the
-spinlock hashing works
+If ocfs2_dx_dir_kmalloc_leaves() returns non-zero, num_dx_leaves will
+have been initialized.
 
-but both of those are really rare issues and don't affect normal code.
-
-I would not necessarily be opposed to splitting up ACCESS_ONCE() for
-reading and for writing, and maybe we could do something special for
-the writing path (which tends to be less ctitical). It's really mixing
-"ACCESS_ONCE(x)" to _set_ a value, together with atomic ops to update
-it, that ends up being problematic.
-
-Maybe there are other issues I can't think of right now. But
-basically, parisc _can_ do cmpxchg, it's just that the code needs to
-be somewhat sanitized.
-
-Side note: some of the RCU code uses "ACCESS_ONCE()" for
-read-modify-write code, which is just f*cking crazy. The semantics are
-dubious, and it generally makes gcc create bad code too.
-
-                 Linus
