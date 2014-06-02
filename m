@@ -1,66 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752365AbaFBR7c (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 13:59:32 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:62581 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750927AbaFBR7b (ORCPT
+	id S1752666AbaFBR7n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 13:59:43 -0400
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:54950 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752602AbaFBR7k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 13:59:31 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19RqF9H0LwSDV3gAsLY0P8bPP5AKZaZVm0=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 71BDB58565B
-Date: Mon, 2 Jun 2014 13:59:27 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: James A Shackleford <shack@linux.com>
-Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: skein: fix sparse warning for static arrays
-Message-ID: <20140602175927.GA8664@titan.lakedaemon.net>
-References: <1401667656-17926-1-git-send-email-shack@linux.com>
+	Mon, 2 Jun 2014 13:59:40 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1401667656-17926-1-git-send-email-shack@linux.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <538C2694.1090308@ladisch.de>
+References: <1401659019-17586-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+	<538C2694.1090308@ladisch.de>
+Date: Mon, 2 Jun 2014 19:59:39 +0200
+Message-ID: <CAFo99gaF5ax4uVn1UCxqh5S158bYsiAtV9T6h3Z=zT0ucQzSyw@mail.gmail.com>
+Subject: Re: [PATCH] arch: ia64: kernel: palinfo.c: Optimization of the Code
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Clemens Ladisch <clemens@ladisch.de>
+Cc: Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        linux-ia64@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-James,
+Hi
 
-On Sun, Jun 01, 2014 at 08:07:35PM -0400, James A Shackleford wrote:
-> This patch fixes the following sparse warnings:
-> 
-> skein_iv.h:23:11: warning: symbol 'SKEIN_256_IV_128' was not declared. Should it be static?
-> skein_iv.h:31:11: warning: symbol 'SKEIN_256_IV_160' was not declared. Should it be static?
-> skein_iv.h:39:11: warning: symbol 'SKEIN_256_IV_224' was not declared. Should it be static?
-> skein_iv.h:47:11: warning: symbol 'SKEIN_256_IV_256' was not declared. Should it be static?
-> skein_iv.h:55:11: warning: symbol 'SKEIN_512_IV_128' was not declared. Should it be static?
-> skein_iv.h:67:11: warning: symbol 'SKEIN_512_IV_160' was not declared. Should it be static?
-> skein_iv.h:79:11: warning: symbol 'SKEIN_512_IV_224' was not declared. Should it be static?
-> skein_iv.h:91:11: warning: symbol 'SKEIN_512_IV_256' was not declared. Should it be static?
-> skein_iv.h:103:11: warning: symbol 'SKEIN_512_IV_384' was not declared. Should it be static?
-> skein_iv.h:115:11: warning: symbol 'SKEIN_512_IV_512' was not declared. Should it be static?
-> skein_iv.h:127:11: warning: symbol 'SKEIN_1024_IV_384' was not declared. Should it be static?
-> skein_iv.h:147:11: warning: symbol 'SKEIN_1024_IV_512' was not declared. Should it be static?
-> skein_iv.h:167:11: warning: symbol 'SKEIN_1024_IV_1024' was not declared. Should it be static?
-> 
-> by declaring the initialization vectors in question as static.  The header
-> skein_iv.h is only included by skein.c
-> 
-> Signed-off-by: James A Shackleford <shack@linux.com>
-> ---
->  drivers/staging/skein/skein_iv.h |   26 +++++++++++++-------------
->  1 file changed, 13 insertions(+), 13 deletions(-)
+Thought I would be able to do that. But after testing, I could not
+measure any difference.
 
-Thanks for the patch.  I see the first one you sent was already merged
-by Greg.
+Thought it would make a noticeable difference, but guess gcc resolve
+this in the best way.
 
-Acked-by: Jason Cooper <jason@lakedaemon.net>
 
-thx,
+Best regards
+Rickard Strandqvist
 
-Jason.
+
+2014-06-02 9:24 GMT+02:00 Clemens Ladisch <clemens@ladisch.de>:
+> Rickard Strandqvist wrote:
+>> From what I know, AND is faster then modulo.
+>
+> Which is why the compiler does this optimization automatically,
+> if it can prove that it is correct.
+>
+>> -             if (i != 0 && (i%64) == 0)
+>> +             if (i != 0 && (i&63) == 0)
+>
+> Did you prove that i cannot be negative?
+>
+>
+> Regards,
+> Clemens
