@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932478AbaFBVTg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 17:19:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50358 "EHLO mx1.redhat.com"
+	id S1753115AbaFBVUd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 17:20:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11692 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932314AbaFBVTb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 17:19:31 -0400
+	id S932409AbaFBVTZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 17:19:25 -0400
 From: Jiri Olsa <jolsa@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@kernel.org>,
@@ -15,18 +15,18 @@ Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@kernel.org>,
         Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
         Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 13/13] perf tests: Add test for closing dso objects on EMFILE error
-Date: Mon,  2 Jun 2014 23:18:47 +0200
-Message-Id: <1401743927-398-14-git-send-email-jolsa@kernel.org>
+Subject: [PATCH 10/13] perf tests: Spawn child for each test
+Date: Mon,  2 Jun 2014 23:18:44 +0200
+Message-Id: <1401743927-398-11-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1401743927-398-1-git-send-email-jolsa@kernel.org>
 References: <1401743927-398-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Testing that perf properly closes opened dso objects
-and tries to reopen in case we run out of allowed file
-descriptors for dso data.
+In upcoming tests we will setup process limits, which
+might affect other tests. Spawning child for each test
+to prevent this.
 
 Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
@@ -39,119 +39,66 @@ Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/tests/builtin-test.c |  4 +++
- tools/perf/tests/dso-data.c     | 73 +++++++++++++++++++++++++++++++++++++++++
- tools/perf/tests/tests.h        |  1 +
- 3 files changed, 78 insertions(+)
+ tools/perf/tests/builtin-test.c | 32 +++++++++++++++++++++++++++++++-
+ 1 file changed, 31 insertions(+), 1 deletion(-)
 
 diff --git a/tools/perf/tests/builtin-test.c b/tools/perf/tests/builtin-test.c
-index b8a6358..6f8b01b 100644
+index 802e3cd..9677a5c 100644
 --- a/tools/perf/tests/builtin-test.c
 +++ b/tools/perf/tests/builtin-test.c
-@@ -60,6 +60,10 @@ static struct test {
- 		.func = test__dso_data_cache,
- 	},
- 	{
-+		.desc = "Test dso data reopen",
-+		.func = test__dso_data_reopen,
-+	},
-+	{
- 		.desc = "roundtrip evsel->name check",
- 		.func = test__perf_evsel__roundtrip_name_test,
- 	},
-diff --git a/tools/perf/tests/dso-data.c b/tools/perf/tests/dso-data.c
-index 4df4cbe..e34ed68 100644
---- a/tools/perf/tests/dso-data.c
-+++ b/tools/perf/tests/dso-data.c
-@@ -283,3 +283,76 @@ int test__dso_data_cache(void)
- 	TEST_ASSERT_VAL("failed leadking files", nr == nr_end);
- 	return 0;
+@@ -3,6 +3,8 @@
+  *
+  * Builtin regression testing command: ever growing number of sanity tests
+  */
++#include <unistd.h>
++#include <string.h>
+ #include "builtin.h"
+ #include "intlist.h"
+ #include "tests.h"
+@@ -172,6 +174,34 @@ static bool perf_test__matches(int curr, int argc, const char *argv[])
+ 	return false;
  }
-+
-+int test__dso_data_reopen(void)
+ 
++static int run_test(struct test *test)
 +{
-+	struct machine machine;
-+	long nr_end, nr = open_files_cnt();
-+	int fd, fd_extra;
++	int status, err = -1, child = fork();
 +
-+#define dso_0 (dsos[0])
-+#define dso_1 (dsos[1])
-+#define dso_2 (dsos[2])
++	if (child < 0) {
++		pr_err("failed to fork test: %s\n", strerror(errno));
++		return -1;
++	}
 +
-+	memset(&machine, 0, sizeof(machine));
++	if (!child) {
++		pr_debug("test child forked, pid %d\n", getpid());
++		err = test->func();
++		exit(err);
++	}
 +
-+	/*
-+	 * Test scenario:
-+	 * - create 3 dso objects
-+	 * - set process file descriptor limit to current
-+	 *   files count + 3
-+	 * - test that the first dso gets closed when we
-+	 *   reach the files count limit
-+	 */
++	wait(&status);
 +
-+	/* Make sure we are able to open 3 fds anyway */
-+	TEST_ASSERT_VAL("failed to set file limit",
-+			!set_fd_limit((nr + 3)));
++	if (WIFEXITED(status)) {
++		err = WEXITSTATUS(status);
++		pr_debug("test child finished with %d\n", err);
++	} else if (WIFSIGNALED(status)) {
++		err = -1;
++		pr_debug("test child interrupted\n");
++	}
 +
-+	TEST_ASSERT_VAL("failed to create dsos\n", !dsos__create(3, TEST_FILE_SIZE));
-+
-+	/* open dso_0 */
-+	fd = dso__data_fd(dso_0, &machine);
-+	TEST_ASSERT_VAL("failed to get fd", fd > 0);
-+
-+	/* open dso_1 */
-+	fd = dso__data_fd(dso_1, &machine);
-+	TEST_ASSERT_VAL("failed to get fd", fd > 0);
-+
-+	/*
-+	 * open extra file descriptor and we just
-+	 * reached the files count limit
-+	 */
-+	fd_extra = open("/dev/null", O_RDONLY);
-+	TEST_ASSERT_VAL("failed to open extra fd", fd_extra > 0);
-+
-+	/* open dso_2 */
-+	fd = dso__data_fd(dso_2, &machine);
-+	TEST_ASSERT_VAL("failed to get fd", fd > 0);
-+
-+	/*
-+	 * dso_0 should get closed, because we reached
-+	 * the file descriptor limit
-+	 */
-+	TEST_ASSERT_VAL("failed to close dso_0", dso_0->data.fd == -1);
-+
-+	/* open dso_0 */
-+	fd = dso__data_fd(dso_0, &machine);
-+	TEST_ASSERT_VAL("failed to get fd", fd > 0);
-+
-+	/*
-+	 * dso_1 should get closed, because we reached
-+	 * the file descriptor limit
-+	 */
-+	TEST_ASSERT_VAL("failed to close dso_1", dso_1->data.fd == -1);
-+
-+	/* cleanup everything */
-+	close(fd_extra);
-+	dsos__delete(3);
-+
-+	/* Make sure we did not leak any file descriptor. */
-+	nr_end = open_files_cnt();
-+	pr_debug("nr start %ld, nr stop %ld\n", nr, nr_end);
-+	TEST_ASSERT_VAL("failed leadking files", nr == nr_end);
-+	return 0;
++	return err;
 +}
-diff --git a/tools/perf/tests/tests.h b/tools/perf/tests/tests.h
-index ccc4deb..ed64790 100644
---- a/tools/perf/tests/tests.h
-+++ b/tools/perf/tests/tests.h
-@@ -29,6 +29,7 @@ int test__pmu(void);
- int test__attr(void);
- int test__dso_data(void);
- int test__dso_data_cache(void);
-+int test__dso_data_reopen(void);
- int test__parse_events(void);
- int test__hists_link(void);
- int test__python_use(void);
++
+ static int __cmd_test(int argc, const char *argv[], struct intlist *skiplist)
+ {
+ 	int i = 0;
+@@ -200,7 +230,7 @@ static int __cmd_test(int argc, const char *argv[], struct intlist *skiplist)
+ 		}
+ 
+ 		pr_debug("\n--- start ---\n");
+-		err = tests[curr].func();
++		err = run_test(&tests[curr]);
+ 		pr_debug("---- end ----\n%s:", tests[curr].desc);
+ 
+ 		switch (err) {
 -- 
 1.8.3.1
 
