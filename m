@@ -1,85 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753415AbaFBTJP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 15:09:15 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:48997 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752244AbaFBTJN (ORCPT
+	id S1753430AbaFBTJ7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 15:09:59 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:45683 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751286AbaFBTJ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 15:09:13 -0400
-Message-ID: <538CCBB1.4000209@ti.com>
-Date: Mon, 2 Jun 2014 15:08:33 -0400
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Mon, 2 Jun 2014 15:09:57 -0400
+Date: Mon, 2 Jun 2014 12:09:51 -0700
+From: josh@joshtriplett.org
+To: Joe Perches <joe@perches.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, paulmck@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, dhowells@redhat.com, edumazet@google.com,
+        dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
+        sbw@mit.edu
+Subject: Re: [PATCH RFC 1/2] MAINTAINERS: Add "R:" designated-reviewers tag
+Message-ID: <20140602190951.GA13648@cloud>
+References: <1401728420-3572-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1401729778.5770.20.camel@joe-AO725>
+ <20140602174837.GA13257@cloud>
+ <1401731968.7323.4.camel@joe-AO725>
+ <20140602181658.GX22231@linux.vnet.ibm.com>
+ <1401734669.7323.20.camel@joe-AO725>
+ <20140602145020.400d4e0c@gandalf.local.home>
+ <20140602185504.GA13569@cloud>
+ <1401735917.7323.23.camel@joe-AO725>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: <linux-arm-kernel@lists.infradead.org>,
-        Shawn Guo <shawn.guo@freescale.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "Strashko, Grygorii" <grygorii.strashko@ti.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Olof Johansson <olof@lixom.net>, Rob Herring <robh+dt@kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH v3 0/7] of: setup dma parameters using dma-ranges and
- dma-coherent
-References: <1398353407-2345-1-git-send-email-santosh.shilimkar@ti.com> <4197388.OE67ahhtqp@wuerfel> <538C9E3C.2000103@ti.com> <4328786.m38YGt2sIU@wuerfel>
-In-Reply-To: <4328786.m38YGt2sIU@wuerfel>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1401735917.7323.23.camel@joe-AO725>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 02 June 2014 03:00 PM, Arnd Bergmann wrote:
-> On Monday 02 June 2014 11:54:36 Santosh Shilimkar wrote:
->>
->> On Monday 02 June 2014 11:06 AM, Arnd Bergmann wrote:
->>> On Monday 02 June 2014 09:24:50 Santosh Shilimkar wrote:
->>>> On Monday 02 June 2014 02:37 AM, Shawn Guo wrote:
->>>>> On Thu, Apr 24, 2014 at 11:30:00AM -0400, Santosh Shilimkar wrote:
->>>>>> Here is an updated v3 of the series. Series introduces support for setting up
->>>>>> dma parameters based on device tree properties like 'dma-ranges' and
->>>>>> 'dma-coherent' and also update to ARM 32 bit port. Earlier version of the
->>>>>> series can be found here [3], [2] and [1].
->>>>>
->>>>> Are these two generic device tree properties documented somewhere under
->>>>> Documentation/devicetree/bindings?
->>>>>
->>>> These bindings have been already in use before this series. But looks like
->>>> they have not been documented. I will do a patch to add description for those
->>>> couple of parameters.
->>>
->>> dma-ranges is part of ePAPR, and was documented in some ieee-1275 addenda
->>> before that, but I agree it would be nice to have something in kernel as
->>> well, at the minimum something pointing to the relevant documents.
->>>
->> We are thinking of updating 'Documentation/devicetree/bindings/dma/dma.txt'
->> to add the information for these extra two parameters.
->>
->> Is that fine or any other suggestion ?
+On Mon, Jun 02, 2014 at 12:05:17PM -0700, Joe Perches wrote:
+> On Mon, 2014-06-02 at 11:55 -0700, josh@joshtriplett.org wrote:
+> > this should go along with a change to
+> > get_maintainer.pl to add those folks to the CC list.
 > 
-> I think that's the wrong place. That entire directory currently deals with
-> the specific case of DMA engines, as opposed to the more DMA bus mastering
-> in general. We could rename that to
-> Documentation/devicetree/bindings/dmaengine, but renames tend to cause
-> extra patch conficts, so I'd prefer finding another location for this.
+> Something like this:
+
+Yes, exactly.  Given an appropriate commit message,
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+
+> ---
+>  scripts/get_maintainer.pl | 22 +++++++++++++++++++++-
+>  1 file changed, 21 insertions(+), 1 deletion(-)
 > 
-ok.
-
-> How about a section in the top-level
-> Documentation/devicetree/booting-without-of.txt file? After all, this
-> is very generic and can impact any device that acts as a bus master.
+> diff --git a/scripts/get_maintainer.pl b/scripts/get_maintainer.pl
+> index 4198788..d701627 100755
+> --- a/scripts/get_maintainer.pl
+> +++ b/scripts/get_maintainer.pl
+> @@ -21,6 +21,7 @@ my $lk_path = "./";
+>  my $email = 1;
+>  my $email_usename = 1;
+>  my $email_maintainer = 1;
+> +my $email_reviewer = 1;
+>  my $email_list = 1;
+>  my $email_subscriber_list = 0;
+>  my $email_git_penguin_chiefs = 0;
+> @@ -202,6 +203,7 @@ if (!GetOptions(
+>  		'remove-duplicates!' => \$email_remove_duplicates,
+>  		'mailmap!' => \$email_use_mailmap,
+>  		'm!' => \$email_maintainer,
+> +		'r!' => \$email_reviewer,
+>  		'n!' => \$email_usename,
+>  		'l!' => \$email_list,
+>  		's!' => \$email_subscriber_list,
+> @@ -260,7 +262,8 @@ if ($sections) {
+>  }
+>  
+>  if ($email &&
+> -    ($email_maintainer + $email_list + $email_subscriber_list +
+> +    ($email_maintainer + $email_reviewer +
+> +     $email_list + $email_subscriber_list +
+>       $email_git + $email_git_penguin_chiefs + $email_git_blame) == 0) {
+>      die "$P: Please select at least 1 email option\n";
+>  }
+> @@ -750,6 +753,7 @@ MAINTAINER field selection options:
+>      --hg-since => hg history to use (default: $email_hg_since)
+>      --interactive => display a menu (mostly useful if used with the --git option)
+>      --m => include maintainer(s) if any
+> +    --r => include reviewer(s) if any
+>      --n => include name 'Full Name <addr\@domain.tld>'
+>      --l => include list(s) if any
+>      --s => include subscriber only list(s) if any
+> @@ -1064,6 +1068,22 @@ sub add_categories {
+>  		    my $role = get_maintainer_role($i);
+>  		    push_email_addresses($pvalue, $role);
+>  		}
+> +	    } elsif ($ptype eq "R") {
+> +		my ($name, $address) = parse_email($pvalue);
+> +		if ($name eq "") {
+> +		    if ($i > 0) {
+> +			my $tv = $typevalue[$i - 1];
+> +			if ($tv =~ m/^(\C):\s*(.*)/) {
+> +			    if ($1 eq "P") {
+> +				$name = $2;
+> +				$pvalue = format_email($name, $address, $email_usename);
+> +			    }
+> +			}
+> +		    }
+> +		}
+> +		if ($email_reviewer) {
+> +		    push_email_addresses($pvalue, 'reviewer');
+> +		}
+>  	    } elsif ($ptype eq "T") {
+>  		push(@scm, $pvalue);
+>  	    } elsif ($ptype eq "W") {
 > 
-Sounds good. I can add it a section there with heading something like below.
-
-VIII - Specifying dma bus information
-
-Regards,
-Santosh
-
-
-
+> 
+> 
