@@ -1,38 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752631AbaFBPT6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 11:19:58 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:50056 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751639AbaFBPT5 (ORCPT
+	id S1754968AbaFBPVk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 11:21:40 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:55387 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752396AbaFBPVj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 11:19:57 -0400
-Message-ID: <538C961B.6070605@kernel.dk>
-Date: Mon, 02 Jun 2014 09:19:55 -0600
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Mon, 2 Jun 2014 11:21:39 -0400
+Date: Mon, 2 Jun 2014 17:21:32 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Damien Lespiau <damien.lespiau@intel.com>
+Cc: Robin Schroer <sulamiification@gmail.com>, daniel.vetter@ffwll.ch,
+        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
+Subject: Re: [Intel-gfx] [PATCH] drivers/gpu/drm/i915/dma: style fixes
+Message-ID: <20140602152132.GT19050@phenom.ffwll.local>
+Mail-Followup-To: Damien Lespiau <damien.lespiau@intel.com>,
+	Robin Schroer <sulamiification@gmail.com>,
+	intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+	dri-devel@lists.freedesktop.org
+References: <20140602145939.GA16534@shodan.fritz.box>
+ <20140602151008.GF20418@strange.amr.corp.intel.com>
 MIME-Version: 1.0
-To: Ming Lei <tom.leiming@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] blk-mq: fix schedule from atomic context
-References: <1401554617-10099-1-git-send-email-tom.leiming@gmail.com> <1401554617-10099-3-git-send-email-tom.leiming@gmail.com>
-In-Reply-To: <1401554617-10099-3-git-send-email-tom.leiming@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140602151008.GF20418@strange.amr.corp.intel.com>
+X-Operating-System: Linux phenom 3.14.0+ 
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-05-31 10:43, Ming Lei wrote:
-> blk_mq_put_ctx() has to be called before io_schedule() in
-> bt_get().
->
-> This patch fixes the problem by taking similar approach from
-> percpu_ida allocation for the situation.
+On Mon, Jun 02, 2014 at 04:10:08PM +0100, Damien Lespiau wrote:
+> On Mon, Jun 02, 2014 at 04:59:39PM +0200, Robin Schroer wrote:
+> > Fixed several double space pointer notations, and added one newline
+> > 
+> > Signed-off-by: Robin Schroer <sulamiification@gmail.com>
+> 
+> Reviewed-by: Damien Lespiau <damien.lespiau@intel.com>
 
-Thanks, I've applied these to for post-merge integration. I do think we 
-can clean up further around 'data' for bt_get(), for instance, and 
-possibly in other places too.
+Queued for -next, thanks for the patch. Aside: If you want to do some
+janitorial tasks in drm/i915, here's a list:
 
+http://www.x.org/wiki/DRMJanitors/
+
+Imo pure coding-style fixes are fairly pointless, at least if their
+free-standing.
+-Daniel
 -- 
-Jens Axboe
-
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
