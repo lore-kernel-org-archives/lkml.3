@@ -1,91 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932156AbaFBVMd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 17:12:33 -0400
-Received: from mail-ve0-f171.google.com ([209.85.128.171]:48172 "EHLO
-	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752848AbaFBVMb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 17:12:31 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140602210227.GE22231@linux.vnet.ibm.com>
-References: <alpine.LRH.2.02.1406011342470.20831@file01.intranet.prod.int.rdu2.redhat.com>
-	<alpine.LRH.2.02.1406021158360.20627@file01.intranet.prod.int.rdu2.redhat.com>
-	<20140602162525.GH16155@laptop.programming.kicks-ass.net>
-	<20140602163032.GI16155@laptop.programming.kicks-ass.net>
-	<538CB56E.5010709@hp.com>
-	<20140602200525.GD13930@laptop.programming.kicks-ass.net>
-	<CA+55aFwJwVf_MbcwNNWg-KrLdoOaV2xse2jzvBZTJHJgC_Htvg@mail.gmail.com>
-	<20140602210227.GE22231@linux.vnet.ibm.com>
-Date: Mon, 2 Jun 2014 14:12:30 -0700
-X-Google-Sender-Auth: S6Ld09e0rC8nI5NqWjHWneWLnxw
-Message-ID: <CA+55aFzX3oDvzqh4AfkJ7-X1Yfo8obFM+jOOmwzeN-GyqOPLJg@mail.gmail.com>
-Subject: Re: [PATCH v2] introduce atomic_pointer to fix a race condition in
- cancelable mcs spinlocks
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Paul McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Waiman Long <waiman.long@hp.com>,
-        Mikulas Patocka <mpatocka@redhat.com>,
+	id S932236AbaFBVNU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 17:13:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63589 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752169AbaFBVNT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 17:13:19 -0400
+Date: Mon, 2 Jun 2014 17:12:16 -0400 (EDT)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Peter Zijlstra <peterz@infradead.org>,
         "James E.J. Bottomley" <jejb@parisc-linux.org>,
         Helge Deller <deller@gmx.de>, John David Anglin <dave.anglin@bell.net>,
         Parisc List <linux-parisc@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Vinod, Chegu" <chegu_vinod@hp.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        "Vinod, Chegu" <chegu_vinod@hp.com>, Waiman Long <Waiman.Long@hp.com>,
         Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Davidlohr Bueso <davidlohr@hp.com>, Peter Anvin <hpa@zytor.com>,
         Andi Kleen <andi@firstfloor.org>,
         "Chandramouleeswaran, Aswin" <aswin@hp.com>,
         "Norton, Scott J" <scott.norton@hp.com>, Jason Low <jason.low2@hp.com>
-Content-Type: text/plain; charset=UTF-8
+Subject: Re: [PATCH v2] introduce atomic_pointer to fix a race condition in
+ cancelable mcs spinlocks
+In-Reply-To: <CA+55aFwCy4-x02U6A-KbkPEpe_4pagsZ__ipBhe5HZOQt2vNmw@mail.gmail.com>
+Message-ID: <alpine.LRH.2.02.1406021656550.5874@file01.intranet.prod.int.rdu2.redhat.com>
+References: <alpine.LRH.2.02.1406011342470.20831@file01.intranet.prod.int.rdu2.redhat.com> <alpine.LRH.2.02.1406021158360.20627@file01.intranet.prod.int.rdu2.redhat.com> <20140602162525.GH16155@laptop.programming.kicks-ass.net>
+ <CA+55aFzwrqkwD=G=w2m7TdXTpsMFjV7XUMXv5DMPGr=5x5YGCQ@mail.gmail.com> <alpine.LRH.2.02.1406021622200.5874@file01.intranet.prod.int.rdu2.redhat.com> <CA+55aFwCy4-x02U6A-KbkPEpe_4pagsZ__ipBhe5HZOQt2vNmw@mail.gmail.com>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 2, 2014 at 2:02 PM, Paul E. McKenney
-<paulmck@linux.vnet.ibm.com> wrote:
+
+
+On Mon, 2 Jun 2014, Linus Torvalds wrote:
+
+> On Mon, Jun 2, 2014 at 1:46 PM, Mikulas Patocka <mpatocka@redhat.com> wrote:
+> >
+> > And what else do you want to do?
+> >
+> > Peter Zijlstra said "I've been using xchg() and cmpxchg() without such
+> > consideration for quite a while." - so it basically implies that the
+> > kernel is full of such races, mcs_spinlock is just the most visible one
+> > that crashes the kernel first.
+> 
+> .. so your whole argument is bogus, because it doesn't actually fix
+> anything else.
 >
-> In the ->qlen case, interrupts are disabled and the current CPU is
-> the only one who can write, so the read need not be volatile.  In the
-> ->n_barrier_done, modifications are done holding ->barrier_mutex, so again
-> the read need not be volatile.  In the sync_rcu_preempt_exp_count case,
-> modifications are done holding sync_rcu_preempt_exp_mutex, so once again,
-> the read need not be volatile.  So I could do something like:
->
->         ACCESS_ONCE(rdp->qlen) = rdp->qlen + 1;
->
-> But that still makes gcc generate bad code
->
-> The reason I was not all that worried about this is that these are not
-> in fastpaths, and the last two are especially not in fastpaths.
->
-> Suggestions?
+> Now, something that *would* fix something else is (for example) to
+> just make "ACCESS_ONCE()" a rvalue so that you cannot use it for
+> assignments, and then trying to sort out what happens then. It's
+> possible that the "atomic_pointer_t" would be a part of the solution
+> to that "what happens then", but THERE IS NO WAY IN HELL we're adding
+> it for just one architecture and one use that doesn't warrant even
+> _existing_ on that architecture.
 
-So I think it probably *works*, but even so splitting it up to use
-ACCESS_ONCE() on just the write is probably a better option, if only
-because it would then make it much easier to change if we do end up
-splitting reads and writes.
+The patch adds atomic_pointer_t for all architectures - it is in the 
+common code and it is backed by atomic_long_t (that already exists for all 
+architectures). There is no new arch-specific code at all.
 
-Because from a gcc code generation standpoint, using "volatile" will
-always be horrible, because gcc will never be able to turn it into a
-read-modify-write cycle. Arguable gcc _should_ be able to do that (it
-is certainly allowable within the virtual machine definition), but I
-understand why it doesn't ("volatile? Let's not optimize anything at
-all, because it's special").
+When we have atomic_pointer_t, we can find the instances of xchg() and 
+cmpxchg() and convert them to atomic_pointer_t (or to other atomic*_t 
+types).
 
-So "ACCESS_ONCE() + R-M-W" operation is actually pretty much
-guaranteed to be "ACCESS_TWICE()", which may well be ok (performance
-may not matter, and even when it does most architectures don't
-actually have r-m-w instructions and when they do they aren't always
-even faster), but I think it's just horribly horribly bad from a
-conceptual and readability standpoint because it's so misleading.
+When we convert them all, we can drop xchg() and cmpxchg() at all (at 
+least from architecture-neutral code).
 
-So I'd actually rather see two explicit ACCESS_ONCE() calls - once to
-read, once to write. Because that at least describes what is
-happening, unlike the current situation.
+The problem with xchg() and cmpxchg() is that they are very easy to 
+misuse. Peter Zijlstra didn't know that they are not atomic w.r.t. normal 
+stores, a lot of other people don't know it too - and if we allow these 
+functions to be used, this race condition will reappear in the future 
+again and again.
 
-Put another way: I can understand why you do it, and I can even agree
-that it is "correct" from a functionality standpoint. But even despite
-that all, I really don't like the construct very much..
+That's why I'm proposing atomic_pointer_t - it guarantees that this race 
+condition can't be made.
 
-              Linus
+> See what I'm saying?
+> 
+> You're not fixing the problem, you're fixing one unimportant detail
+> that isn't worth fixing that way.
+> 
+>                Linus
+
+Regarding reworking ACCESS_ONCE() for reads and writes - the problem is - 
+how do you make people use it? ACCESS_ONCE() is already missing at a lot 
+of places (it doesn't cause any visible bug on the condition that the 
+compiler doesn't split the load or store to multiple accesses), I can 
+assume that people will omit ATOMIC_ONCE_STORE() too even if we make it.
+
+Mikulas
