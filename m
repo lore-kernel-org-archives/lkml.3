@@ -1,86 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755673AbaFBPDV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 11:03:21 -0400
-Received: from mout.kundenserver.de ([212.227.17.24]:49310 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755631AbaFBPDS (ORCPT
+	id S1755481AbaFBPFQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 11:05:16 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:57869 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751762AbaFBPFN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 11:03:18 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Nicolas Pitre <nicolas.pitre@linaro.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, joseph@codesourcery.com,
-        john.stultz@linaro.org, hch@infradead.org, tglx@linutronix.de,
-        geert@linux-m68k.org, lftan@altera.com, linux-fsdevel@vger.kernel.org,
-        xfs@oss.sgi.com
-Subject: Re: [RFC 11/32] xfs: convert to struct inode_time
-Date: Mon, 02 Jun 2014 17:01:20 +0200
-Message-ID: <5896675.3VErDJM7s2@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140602130700.GC14276@thunk.org>
-References: <1401480116-1973111-1-git-send-email-arnd@arndb.de> <15496653.1vSv1RUCC0@wuerfel> <20140602130700.GC14276@thunk.org>
+	Mon, 2 Jun 2014 11:05:13 -0400
+From: Kevin Hilman <khilman@linaro.org>
+To: Tarek Dakhran <t.dakhran@gmail.com>
+Cc: Tushar Behera <trblinux@gmail.com>,
+        Andreas =?utf-8?Q?F=C3=A4rber?= <afaerber@suse.de>,
+        Tarek Dakhran <t.dakhran@samsung.com>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, devicetree@vger.kernel.org,
+        "linux-arm-kernel\@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-samsung-soc\@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>
+Subject: Re: [PATCH v11 0/3] Exynos 5410 support
+References: <1401074613-29227-1-git-send-email-t.dakhran@samsung.com>
+	<7hr43f9mmn.fsf@paris.lan> <538737CA.4070709@suse.de>
+	<53874862.5080809@samsung.com> <538775AB.3000604@suse.de>
+	<CAC5m3Bz53QO5tTTvk7qnBQtwtjMvSgYZ15prAvnLjdogQRsfMQ@mail.gmail.com>
+	<CANhyOUeq1MMHHn9t+Fy5gpkb43y_rS9F_OAoJ_KFyM1pL4ZJ4w@mail.gmail.com>
+Date: Mon, 02 Jun 2014 08:05:10 -0700
+In-Reply-To: <CANhyOUeq1MMHHn9t+Fy5gpkb43y_rS9F_OAoJ_KFyM1pL4ZJ4w@mail.gmail.com>
+	(Tarek Dakhran's message of "Fri, 30 May 2014 23:07:01 +0400")
+Message-ID: <7hzjhvxsgp.fsf@paris.lan>
+User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:SNdR1vrDuzzqVL0vQDRk1V2ukWgeZoI99UU1eid5LlS
- fuLI/t6HzX7M9Tnf1nuIEi1ng1T9OJqx0VoUQe6fdJBd4Ekihd
- 7N8SqHag7FfGUYfFegVzGKUZ+c9VsQO8ULEqg3Zk9v/qOPFGeZ
- 6aCS5C1gKy0EPfu8QLUDawOWTffgbh8+7IJb5frlnXHUmSfqKT
- lkL8OEZ6EJlo4ovNEJSEiS+wyGCC/toA63BIm+8lkpGyaF7tV4
- rXVucuDJW2Qg6AYdXyVxh4ddn8D6nAIHkdaFlJI9/eJ7C4eRRQ
- Zbm4ZFBfPh7frttxMCvSwnaImngDvp0ERED3X+zfqidNx8TCz0
- j/6zcgRe2CXoVVHGlz20=
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 02 June 2014 09:07:00 Theodore Ts'o wrote:
-> Yes, there are some ongoing dicussions about changing the post-2038
-> encoding of the timestamp in ext4, which is why this hasn't been fixed
-> yet.  The main thing that's been missing is time for me to review the
-> patches, and a good way of writing regression tests that will work (or
-> at least not fail) on build environments with a 32-bit time_t and
-> 32-bit-only capable versions of functions such as gmtime(3).
-> 
-> And given current discussions, I may want to think about some kind of
-> superblock flag to allow the use of a 32-bit unsigned encoding for
-> file systems using a 128-byte inode, with a way of setting that flag
-> after scanning the file system to make sure there are no times that
-> are previous to January 1, 1970.  (Or more generally, allow any epoch
-> to be defined using a 64-bit time_t offset stored in the superblock...)
+Tarek Dakhran <t.dakhran@gmail.com> writes:
 
-FWIW, I've gone through the other file system implementations once
-more. The most common pattern I've encountered is to have a read_inode
-function with
+> Hi,
+>
+> On Fri, May 30, 2014 at 7:41 AM, Tushar Behera <trblinux@gmail.com> wrote:
+>> On Thu, May 29, 2014 at 11:30 PM, Andreas Färber <afaerber@suse.de> wrote:
+>>> Hi Tarek,
+>>>
+>>>
+>>> And I reproducibly get failures for CPUs 1-3, resulting in only one CPU
+>>> in /proc/cpuinfo (compared to 4 on downstream 3.14):
+>>>
+>>> [    0.045778] CPU: Testing write buffer coherency: ok
+>>> [    0.045968] /cpus/cpu@0 missing clock-frequency property
+>>> [    0.045993] /cpus/cpu@1 missing clock-frequency property
+>>> [    0.046016] /cpus/cpu@2 missing clock-frequency property
+>>> [    0.046040] /cpus/cpu@3 missing clock-frequency property
+>>> [    0.046059] CPU0: thread -1, cpu 0, socket 0, mpidr 80000000
+>>> [    0.046135] Setting up static identity map for 0x403a8920 - 0x403a8978
+>>> [    2.075052] CPU1: failed to come online
+>>> [    4.085095] CPU2: failed to come online
+>>> [    6.095142] CPU3: failed to come online
+>>> [    6.095237] Brought up 1 CPUs
+>>> [    6.095269] SMP: Total of 1 processors activated.
+>>> [    6.095303] CPU: All CPU(s) started in HYP mode.
+>>> [    6.095336] CPU: Virtualization extensions available.
+>>>
+>>> I also notice another apparent device tree issue:
+>>>
+>>> [    7.341814] of_get_named_gpiod_flags: can't parse gpios property of
+>>> node '/soc/mmc@12220000/slot@0[0]'
+>>> [    7.341850] of_get_named_gpiod_flags: can't parse gpios property of
+>>> node '/soc/mmc@12220000/slot@0[0]'
+>>>
+>>> Are any of those known issues and being worked on?
+>>> (The CPU failures affected 5420 Arndale Octa as well iirc.)
+>>>
+>>
+>> Can you check after applying following two patches for Arndale-Octa
+>> ([1],[2])? In other words, a patch similar to [2] might be required
+>> for this board too if it is booting under secure mode.
+>
+> Firmware node already present into exynos5410-smdk5410.dts
+> So with only patch[1] 4xA15 cores will boot on ODROID-XU and SMDK5410.
 
-	inode->i_mtime = le32_to_cpu(raw_inode->mtime);
+I also confirm that with 4xA15 cores boot when adding patch [1].
 
-which results in interpreting the time as 'signed' on 32-bit
-kernels, but as 'unsigned' on 64-bit kernels. This could have been
-done intentionally to extend the valid time range to 2106 on 64-bit
-kernels, but it seems more likely that the code was written with
-no thought given to 64-bit time_t at all. I see this pattern on
-p9fs (old protocol only), afs, bfs, ceph, efs, freevxfs, hpfs, jffs2,
-jfs, minix, nfsv2/v3 (this was clearly intentional and is
-spelled out in the RFC), qnx4, qnx6, reiserfs, squashfs, sysv,
-and ufs (protocol version 1 only).
+Kevin
 
-The other behavior I see is to treat the on-disk 32-bit value
-as signed on both 32-bit and 64-bit kernels:
-
-	inode->i_mtime = (signed)le32_to_cpu(raw_inode->mtime);
-
-this seems to be done intentionally in all cases, to maintain
-compatibility between 32-bit and 64-bit kernels, but it's
-relatively rare: exofs, ext2/3/4 (good old inodes) and xfs
-are the only ones doing this.
-
-In case of ext2/3/4, the sign handlign was introduced here:
-http://www.spinics.net/lists/linux-ext4/msg01758.html
-
-exofs and xfs seem to have done it like this for all of git
-history.
-
-	Arnd
+>>
+>> [1] http://www.spinics.net/lists/linux-samsung-soc/msg31776.html
+>>
+>> [PATCH v2 Resend 1/2] ARM: EXYNOS: Update secondary boot addr for secure mode
+>>
+>> [2] http://www.spinics.net/lists/linux-samsung-soc/msg31777.html
+>>
+>> [PATCH v2 Resend 2/2] ARM: dts: Add secure firmware support for Arndale-octa
+>>
+>>
+>> --
+>> Tushar Behera
+>
+> Best regards,
+>     Tarek
