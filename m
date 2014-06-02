@@ -1,121 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751918AbaFBR0f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 13:26:35 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:38771 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751229AbaFBR0d (ORCPT
+	id S1751583AbaFBR3K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 13:29:10 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:63643 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750780AbaFBR3I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 13:26:33 -0400
-From: "Javi Merino" <javi.merino@arm.com>
-To: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
-Cc: Javi Merino <javi.merino@arm.com>, Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <edubezval@gmail.com>
-Subject: [PATCH] thermal: document struct thermal_zone_device and thermal_governor
-Date: Mon,  2 Jun 2014 18:25:56 +0100
-Message-Id: <1401729956-26122-1-git-send-email-javi.merino@arm.com>
-X-Mailer: git-send-email 1.9.1
-X-OriginalArrivalTime: 02 Jun 2014 17:26:27.0905 (UTC) FILETIME=[C93EBB10:01CF7E87]
-X-MC-Unique: 114060218263200601
-Content-Type: text/plain; charset=WINDOWS-1252
+	Mon, 2 Jun 2014 13:29:08 -0400
+Date: Mon, 2 Jun 2014 13:29:05 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Joe Perches <joe@perches.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, dhowells@redhat.com,
+        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
+        oleg@redhat.com, sbw@mit.edu
+Subject: Re: [PATCH RFC 1/2] MAINTAINERS: Add "R:" designated-reviewers tag
+Message-ID: <20140602132905.0bdbe49b@gandalf.local.home>
+In-Reply-To: <1401729778.5770.20.camel@joe-AO725>
+References: <1401728420-3572-1-git-send-email-paulmck@linux.vnet.ibm.com>
+	<1401729778.5770.20.camel@joe-AO725>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id s52HQiIZ031026
 
-Document struct thermal_zone_device and struct thermal_governor fields
-and their use by the thermal framework code.
+On Mon, 02 Jun 2014 10:22:58 -0700
+Joe Perches <joe@perches.com> wrote:
 
-Cc: Zhang Rui <rui.zhang@intel.com>
-Cc: Eduardo Valentin <edubezval@gmail.com>
-Signed-off-by: Javi Merino <javi.merino@arm.com>
+> > Paul Walmsley also noted the need for patch
+> > submitters to know who the key reviewers are and suggested adding an
+> > "R:" tag to the MAINTAINERS file to record this information on a
+> > per-subsystem basis.
+> 
+> I'm not sure of the value of this.
+> 
+> Why not just mark the actual reviewers as maintainers?
+> 
+> The lack of reviewers problem is entirely distinct from
+> the proposed solution.
+> 
+> I believe active reviewers will generally subscribe to a
+> subsystem specific mailing list.
+> 
+> Perhaps it'd be better to get a "linux-rcu@vger.kernel.org"
+> mailing list going.
 
----
+I don't think we need a linux-rcu mailing list. I much rather see the
+patches on LKML.
 
-Hi linux-pm,
+If you have a person that regularly reviews a patch and wants to be
+Cc'd on all of them, then why not add them to MAINTAINERS?
 
-I have some patches that add new fields to these structures but I
-don't have a good place to describe those fields as these structs are
-mostly undocumented so I thought I'd document them.
+> 
+> > diff --git a/MAINTAINERS b/MAINTAINERS
+> []
+> > @@ -73,6 +73,8 @@ Descriptions of section entries:
+> >  	L: Mailing list that is relevant to this area
+> >  	W: Web-page with status/info
+> >  	Q: Patchwork web based patch tracking system site
+> > +	R: Designated reviewer, who should be CCed on patches,
+> > +	   format: FullName <address@domain>
+> >  	T: SCM tree type and location.
+> >  	   Type is one of: git, hg, quilt, stgit, topgit
+> >  	S: Status, one of the following:
+> 
+> If this is actually done, I suggest putting this
+> "R" entry description immediately after the "M" entry.
+> 
 
-Changes since v1:
-  * Clarified that some parameters are currently only used by the
-    step-wise governor.
-  * Clarified that forced_passive operates on ACPI processor cooling
-    devices.
+Or perhaps after L:
 
- include/linux/thermal.h | 45 +++++++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 43 insertions(+), 2 deletions(-)
-
-diff --git a/include/linux/thermal.h b/include/linux/thermal.h
-index f7e11c7ea7d9..6fca46c82c4d 100644
---- a/include/linux/thermal.h
-+++ b/include/linux/thermal.h
-@@ -158,6 +158,41 @@ struct thermal_attr {
- 	char name[THERMAL_NAME_LENGTH];
- };
- 
-+/**
-+ * struct thermal_zone_device - structure for a thermal zone
-+ * @id:		unique id number for each thermal zone
-+ * @type:	the thermal zone device type
-+ * @device:	struct device for this thermal zone
-+ * @trip_temp_attrs:	attributes for trip points for sysfs: trip temperature
-+ * @trip_type_attrs:	attributes for trip points for sysfs: trip type
-+ * @trip_hyst_attrs:	attributes for trip points for sysfs: trip hysteresis
-+ * @devdata:	private pointer for device private data
-+ * @trips:	number of trip points the thermal zone supports
-+ * @passive_delay:	number of milliseconds to wait between polls when
-+ *			performing passive cooling.  Currenty only used by the
-+ *			step-wise governor
-+ * @polling_delay:	number of milliseconds to wait between polls when
-+ *			checking whether trip points have been crossed (0 for
-+ *			interrupt driven systems)
-+ * @temperature:	current temperature.  This is only for core code,
-+ *			drivers should use thermal_zone_get_temp() to get the
-+ *			current temperature
-+ * @last_temperature:	previous temperature read
-+ * @emul_temperature:	emulated temperature when using CONFIG_THERMAL_EMULATION
-+ * @passive:		1 if you've crossed a passive trip point, 0 otherwise.
-+ *			Currenty only used by the step-wise governor.
-+ * @forced_passive:	If > 0, temperature at which to switch on all ACPI
-+ *			processor cooling devices.  Currently only used by the
-+ *			step-wise governor.
-+ * @ops:	operations this thermal_zone_device supports
-+ * @tzp:	thermal zone parameters
-+ * @governor:	pointer to the governor for this thermal zone
-+ * @thermal_instances:	list of struct thermal_instance of this thermal zone
-+ * @idr:	struct idr to generate unique id for this zone's cooling devices
-+ * @lock:	lock to protect thermal_instances list
-+ * @node:	node in thermal_tz_list (in thermal_core.c)
-+ * @poll_queue:	delayed work for polling
-+ */
- struct thermal_zone_device {
- 	int id;
- 	char type[THERMAL_NAME_LENGTH];
-@@ -179,12 +214,18 @@ struct thermal_zone_device {
- 	struct thermal_governor *governor;
- 	struct list_head thermal_instances;
- 	struct idr idr;
--	struct mutex lock; /* protect thermal_instances list */
-+	struct mutex lock;
- 	struct list_head node;
- 	struct delayed_work poll_queue;
- };
- 
--/* Structure that holds thermal governor information */
-+/**
-+ * struct thermal_governor - structure that holds thermal governor information
-+ * @name:	name of the governor
-+ * @throttle:	callback called for every trip point even if temperature is
-+ *		below the trip point temperature
-+ * @governor_list:	node in thermal_governor_list (in thermal_core.c)
-+ */
- struct thermal_governor {
- 	char name[THERMAL_NAME_LENGTH];
- 	int (*throttle)(struct thermal_zone_device *tz, int trip);
--- 
-1.9.1
-
-
+-- Steve
