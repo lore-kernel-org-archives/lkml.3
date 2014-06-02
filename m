@@ -1,144 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754080AbaFBKcT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 06:32:19 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:51739 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754069AbaFBKcN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 06:32:13 -0400
-Date: Mon, 2 Jun 2014 03:30:28 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: David Herrmann <dh.herrmann@gmail.com>
-cc: Hugh Dickins <hughd@google.com>, Tony Battersby <tonyb@cybernetics.com>,
-        Andy Lutomirski <luto@amacapital.net>, Jan Kara <jack@suse.cz>,
-        Michael Kerrisk <mtk.manpages@gmail.com>, Ryan Lortie <desrt@desrt.ca>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <tj@kernel.org>,
-        Greg Kroah-Hartman <greg@kroah.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Kristian Hogsberg <krh@bitplanet.net>,
-        Lennart Poettering <lennart@poettering.net>,
-        Daniel Mack <zonque@gmail.com>, Kay Sievers <kay@vrfy.org>
-Subject: Re: [PATCH v2 1/3] shm: add sealing API
-In-Reply-To: <CANq1E4TBDdj9dGB9fP6KhN5Q1NXbehbSQ0SV+3Qvnn7f8+_=Cw@mail.gmail.com>
-Message-ID: <alpine.LSU.2.11.1406020235400.1259@eggly.anvils>
-References: <1397587118-1214-1-git-send-email-dh.herrmann@gmail.com> <1397587118-1214-2-git-send-email-dh.herrmann@gmail.com> <alpine.LSU.2.11.1405191911050.2970@eggly.anvils> <CANq1E4TBDdj9dGB9fP6KhN5Q1NXbehbSQ0SV+3Qvnn7f8+_=Cw@mail.gmail.com>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+	id S1753911AbaFBKfF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 06:35:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4213 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752784AbaFBKfD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 06:35:03 -0400
+Date: Mon, 2 Jun 2014 06:34:03 -0400 (EDT)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Linus Torvalds <torvalds@linux-foundation.org>, jejb@parisc-linux.org,
+        deller@gmx.de, John David Anglin <dave.anglin@bell.net>,
+        linux-parisc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        chegu_vinod@hp.com, paulmck@linux.vnet.ibm.com, Waiman.Long@hp.com,
+        tglx@linutronix.de, riel@redhat.com, akpm@linux-foundation.org,
+        davidlohr@hp.com, hpa@zytor.com, andi@firstfloor.org, aswin@hp.com,
+        scott.norton@hp.com, Jason Low <jason.low2@hp.com>
+Subject: Re: [PATCH] fix a race condition in cancelable mcs spinlocks
+In-Reply-To: <20140601192026.GE16155@laptop.programming.kicks-ass.net>
+Message-ID: <alpine.LRH.2.02.1406020622130.17105@file01.intranet.prod.int.rdu2.redhat.com>
+References: <alpine.LRH.2.02.1406011342470.20831@file01.intranet.prod.int.rdu2.redhat.com> <20140601192026.GE16155@laptop.programming.kicks-ass.net>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 23 May 2014, David Herrmann wrote:
+
+
+On Sun, 1 Jun 2014, Peter Zijlstra wrote:
+
+> On Sun, Jun 01, 2014 at 01:53:11PM -0400, Mikulas Patocka wrote:
+> > PA-RISC doesn't have xchg or cmpxchg atomic instructions like other
+> > processors. It only has ldcw and ldcd instructions that load a word (or
+> > doubleword) from memory and atomically store zero at the same location.
+> > These instructions can only be used to implement spinlocks, direct
+> > implementation of other atomic operations is impossible.
+> > 
+> > Consequently, Linux xchg and cmpxchg functions are implemented in such a
+> > way that they hash the address, use the hash to index a spinlock, take the
+> > spinlock, perform the xchg or cmpxchg operation non-atomically and drop
+> > the spinlock.
+> > 
+> > If you write to some variable with ACCESS_ONCE and use cmpxchg or xchg at
+> > the same time, you break it. ACCESS_ONCE doesn't take the hashed spinlock,
+> > so, in this case, cmpxchg or xchg isn't really atomic at all.
 > 
-> i_mmap_mutex is the only per-object lock that is taken in the mmap()
-> path and all vma_link() users can easily be changed to deal with
-> errors. So I think it should be easy to make __vma_link_file() fail if
-> no writable mappings are allowed. Testing for shmem-seals seems odd
-> here, indeed. We could instead make i_mmap_writable work like
-> i_writecount. If it's negative, no new writable mappings are allowed.
-> shmem_set_seals() could then decrement it to <0 and __vma_link_file()
-> just tests whether it's negative. Comments?
+> And this is really the first place in the kernel that breaks like this?
+> I've been using xchg() and cmpxchg() without such consideration for
+> quite a while.
 
-i_mmap_mutex is certainly the right lock, and I'm happy with making
-i_mmap_writable use the negative like i_writecount if that helps.
+It happens on a common mutex operation and it took an hour of 
+stress-testing to trigger it.
 
-But I have to confess that I'm annoyingly stalled on this.  The part
-I do not like (although I suggested it) is giving an error return to
-__vma_link_file() and hence to vma_link().
+The other cases may be buggy too, but no one has written a stress test 
+specifically tailored for them.
 
-Because successful return from file->f_op->mmap() is supposed to be
-mmap's point of no return, and if we allow vma_link() to fail, then the
-file->f_op->mmap() ought to be undone in a way never needed before.
+> Doesn't sparc32 have similarly broken atomic ops?
 
-Now, you know and I know that the vma_link() can only fail on sealed
-shmem objects, and shmem_mmap() doesn't do anything that we need to
-recover from (I don't think we need worry too much about the atime
-update in file_accessed()).  But error from vma_link() does set a
-trap (or a puzzle) for the unwary, and I'd prefer to avoid it.
-We can comment it, but it still feels dirty.
+Yes. tile32, arc and metag seem to be broken by this too. hexagon also has 
+non-standard atomic_set, so it may be broken too.
 
-I'm inclined to say that your shmem_mmap() (which already checks
-sealed against shared) ought to manage i_mmap_writable itself (under
-i_mmap_mutex); but then we need a funny little VM_flag for shmem_mmap()
-to tell __vma_link_file() that i_mmap_writable++ has already been done;
-or else some dance of ->opens and ->closes to keep its accounting right.
-
-As I say, I am annoyingly stalled on this: so I'd better just let you
-get on with it, and see how I feel about whatever you come up with.
-
-> >
-> > There is also, or may be, a small issue of sparse (holey) files.
-> > I do have a question on that in comments on your next patch, and
-> > the answer here may depend on what you want in memfd_create().
-> >
-> > What I'm thinking of here is that once a sparse file is sealed
-> > against writing, we must be sure not to give an error when reading
-> > its holes: whereas there are a few unlikely ways in which reading
-> > the holes of a sparse tmpfs file can give -ENOMEM or -ENOSPC.
-> >
-> > Most of the memory allocations here can in fact only fail when the
-> > allocating process has already been selected for OOM-kill: that is
-> > not guaranteed forever, but it is how __alloc_pages_slowpath()
-> > currently behaves on ordinary low-order allocations, and will be
-> > hard to change if we ever do so.  Though I dislike relying upon
-> > this, I think we can allow reading holes to fail, if the process
-> > is going to be forcibly killed before it returns to userspace.
-> >
-> > But there might still be an issue with vm_enough_memory(),
-> > and there might still be an issue with memcg limits.
-> >
-> > We do already use the ZERO_PAGE instead of allocating when it's a
-> > simple read; and on the face of it, we could extend that to mmap
-> > once the file is sealed.  But I am rather afraid to do so - for
-> > many years there was an mmap /dev/zero case which did that, but
-> > it was an easily forgotten case which caught us out at least
-> > once, so I'm reluctant to reintroduce it now for sealing.
-> >
-> > Anyway, I don't expect you to resolve the issue of sealed holes:
-> > that's very much my territory, to give you support on.
+> Ideally, if we really want to preserve such broken-ness, we'd add some
+> debugging infrastructure to detect such nonsense.
 > 
-> Why not require users to use mlock() if they want to protect
-> themselves against OOM situations? At least the man-page says that
-> mlock() guarantess that all pages in the specified range are loaded. I
-> didn't verify whether that includes holes, though. And if
-> RLIMIT_MEMLOCK is too small, users ought to access the object in
-> smaller chunks.
-
-Fair enough.
-mlock() does instantiate the holes, in shmem's case at least.
-mlock() is an mm operation, whereas in general we have a file here,
-which is not necessariy mmap'ed.  It's a pity to ask the user to
-mmap+mlock to achieve that effect; but okay, that does the job.
-
-> And it's not specific to sparse files. Any other page may be swapped
-> out and the swap-in can fail due to ENOMEM (page-table allocations,
-> tree-inserts, and so on). But you definitely know better what to do
-> here, so suggestions welcome.
-
-You're right that OOM can hit you, even when just swapping in a page
-that was properly instantiated before.  But those pages are better
-accounted than holes: I still feel that the holes could be seen as
-a sealed bomb, which explodes into OOM when read by the caller.
-
+> > This patch fixes the bug by introducing a new type atomic_pointer_t 
+> > (backed by atomic_long_t) and replacing the offending pointer with it. 
+> > atomic_long_set takes the hashed spinlock, so it avoids the race 
+> > condition.
 > 
-> Anyway, sealing is not meant to protect against OOM situations. I
-> mean, any mapping is subject to OOM, so processes that care should
-> have a suitable infrastructure via SIGBUS or mlock() for all mappings,
-> including sealed files. Furthermore, write-sealing is meant to prevent
-> targeted attacks that modify data while it is being parsed. We
-> properly protect users against that. OOM is an orthogonal issue, imho.
+> So I hate that twice, once since xchg() and cmpxchg() do not share the
+> atomic_ prefix, its inappropriate and misleading here, and secondly,
+> non of this is specific to pointers, xchg() and cmpxchg() take any
+> (naturally aligned) 'native' size type.
 
-But I'm happy to hear that OOM doesn't trouble you, that you see it
-as orthogonal.  Sealing does prompt me again to look into reworking
-the issue of sparse files (never well handled in shmem), but from
-what you say that's not urgent - a relief to both of us, thank you.
+I think we don't need xchg() and cmpxchg() at all, because we have atomic 
+types.
 
-Hugh
+Mikulas
