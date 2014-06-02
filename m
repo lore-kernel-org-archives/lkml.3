@@ -1,32 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754010AbaFBVWR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 17:22:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48401 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932270AbaFBVTE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932265AbaFBVTE (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 2 Jun 2014 17:19:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25524 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753920AbaFBVTB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 17:19:01 -0400
 From: Jiri Olsa <jolsa@kernel.org>
 To: linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@kernel.org>,
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
         Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         David Ahern <dsahern@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
         Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 02/13] perf tools: Separate dso data related variables
-Date: Mon,  2 Jun 2014 23:18:36 +0200
-Message-Id: <1401743927-398-3-git-send-email-jolsa@kernel.org>
-In-Reply-To: <1401743927-398-1-git-send-email-jolsa@kernel.org>
-References: <1401743927-398-1-git-send-email-jolsa@kernel.org>
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Jiri Olsa <jolsa@kernel.org>
+Subject: [PATCHv3 00/13] perf tools: Speedup DWARF unwind
+Date: Mon,  2 Jun 2014 23:18:34 +0200
+Message-Id: <1401743927-398-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add separated structure/namespace for data related
-variables. We are going to add mode of them, so this
-way they will be clearly separated.
+hi,
+trying to speedup DWARF unwind report code by factoring
+related code:
+  - caching sample's registers access
+  - keep dso data file descriptor open for the
+    life of the dso object
+  - replace dso cache code by mapping dso data file
+    directly for the life of the dso object
+
+The speedup is mainly for libunwind unwind. The libdw will benefit
+mainly from cached registers access, because it handles dso data
+accesses by itself.. and anyway it's still faster ;-).
+
+v3 changes:
+  - moved the cache logic into dso__data_fd (Namhyung Kim)
+  - omited test_dso_data__fd_limit variable,
+    dso data cache test changed accordingly (Namhyung Kim)
+  - several small fixies from review (Namhyung Kim)
+
+v2 changes:
+  - adding limit for open dso objects with sort of LRU
+    mechanism to pick up and close dso objects if we
+    are over the limit
+  - file mmaping changes are omitted, because I couldn't prove
+    the improvement exactly, will resubmit later
+  - added dso close logic in case of no memory
+  - added tests
+
+On 10GB perf data file with dwarf unwind data I've got
+around 30% speed up.
+
+Also reachable in here:
+  git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git
+  perf/core_unwind_speedup
+
+thanks,
+jirka
 
 Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
@@ -39,75 +71,28 @@ Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/util/dso.c | 8 ++++----
- tools/perf/util/dso.h | 7 ++++++-
- 2 files changed, 10 insertions(+), 5 deletions(-)
+Jiri Olsa (13):
+      perf tools: Cache register accesses for unwind processing
+      perf tools: Separate dso data related variables
+      perf tools: Add data_fd into dso object
+      perf tools: Add global list of opened dso objects
+      perf tools: Add global count of opened dso objects
+      perf tools: Cache dso data file descriptor
+      perf tools: Add file size check and factor dso__data_read_offset
+      perf tools: Allow to close dso fd in case of open failure
+      perf tools: Add dso__data_* interface descriptons
+      perf tests: Spawn child for each test
+      perf tests: Allow reuse of test_file function
+      perf tests: Add test for caching dso file descriptors
+      perf tests: Add test for closing dso objects on EMFILE error
 
-diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
-index 64453d6..1c3cdaf 100644
---- a/tools/perf/util/dso.c
-+++ b/tools/perf/util/dso.c
-@@ -292,7 +292,7 @@ dso_cache__read(struct dso *dso, struct machine *machine,
- 
- 		cache->offset = cache_offset;
- 		cache->size   = ret;
--		dso_cache__insert(&dso->cache, cache);
-+		dso_cache__insert(&dso->data.cache, cache);
- 
- 		ret = dso_cache__memcpy(cache, offset, data, size);
- 
-@@ -310,7 +310,7 @@ static ssize_t dso_cache_read(struct dso *dso, struct machine *machine,
- {
- 	struct dso_cache *cache;
- 
--	cache = dso_cache__find(&dso->cache, offset);
-+	cache = dso_cache__find(&dso->data.cache, offset);
- 	if (cache)
- 		return dso_cache__memcpy(cache, offset, data, size);
- 	else
-@@ -473,7 +473,7 @@ struct dso *dso__new(const char *name)
- 		dso__set_short_name(dso, dso->name, false);
- 		for (i = 0; i < MAP__NR_TYPES; ++i)
- 			dso->symbols[i] = dso->symbol_names[i] = RB_ROOT;
--		dso->cache = RB_ROOT;
-+		dso->data.cache = RB_ROOT;
- 		dso->symtab_type = DSO_BINARY_TYPE__NOT_FOUND;
- 		dso->binary_type = DSO_BINARY_TYPE__NOT_FOUND;
- 		dso->loaded = 0;
-@@ -506,7 +506,7 @@ void dso__delete(struct dso *dso)
- 		dso->long_name_allocated = false;
- 	}
- 
--	dso_cache__free(&dso->cache);
-+	dso_cache__free(&dso->data.cache);
- 	dso__free_a2l(dso);
- 	zfree(&dso->symsrc_filename);
- 	free(dso);
-diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
-index 38efe95..7637fdd 100644
---- a/tools/perf/util/dso.h
-+++ b/tools/perf/util/dso.h
-@@ -76,7 +76,6 @@ struct dso {
- 	struct list_head node;
- 	struct rb_root	 symbols[MAP__NR_TYPES];
- 	struct rb_root	 symbol_names[MAP__NR_TYPES];
--	struct rb_root	 cache;
- 	void		 *a2l;
- 	char		 *symsrc_filename;
- 	unsigned int	 a2l_fails;
-@@ -99,6 +98,12 @@ struct dso {
- 	const char	 *long_name;
- 	u16		 long_name_len;
- 	u16		 short_name_len;
-+
-+	/* dso data file */
-+	struct {
-+		struct rb_root	 cache;
-+	} data;
-+
- 	char		 name[0];
- };
- 
--- 
-1.8.3.1
-
+ tools/perf/tests/builtin-test.c    |  42 ++++++++++++++-
+ tools/perf/tests/dso-data.c        | 214 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++--
+ tools/perf/tests/tests.h           |   2 +
+ tools/perf/util/dso.c              | 279 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++---------
+ tools/perf/util/dso.h              |  50 +++++++++++++++++-
+ tools/perf/util/event.h            |   5 ++
+ tools/perf/util/perf_regs.c        |  10 +++-
+ tools/perf/util/perf_regs.h        |   4 +-
+ tools/perf/util/unwind-libunwind.c |   2 -
+ 9 files changed, 572 insertions(+), 36 deletions(-)
