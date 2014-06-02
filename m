@@ -1,86 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932273AbaFBVNl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 17:13:41 -0400
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:64624 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932254AbaFBVNh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 17:13:37 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140602170800.GA5198@developer>
-References: <1401622431-13554-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-	<20140602170800.GA5198@developer>
-Date: Mon, 2 Jun 2014 23:13:36 +0200
-Message-ID: <CAFo99gbVBgQWaJtzT_RT-M4yqxfua162qxCKVmazJY7th2KY0w@mail.gmail.com>
-Subject: Re: [PATCH] thermal: ti-soc-thermal: ti-bandgap.c: Cleaning up memory leak
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Eduardo Valentin <edubezval@gmail.com>
-Cc: Eduardo Valentin <eduardo.valentin@ti.com>,
-        Zhang Rui <rui.zhang@intel.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, linux-pm@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S932309AbaFBVN6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 17:13:58 -0400
+Received: from mga09.intel.com ([134.134.136.24]:43066 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932254AbaFBVN4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 17:13:56 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,959,1392192000"; 
+   d="scan'208";a="550462410"
+From: eric.ernst@linux.intel.com
+To: linus.walleij@linaro.org, linux-kernel@vger.kernel.org,
+        mark.gross@intel.com, mika.westerberg@linux.intel.com
+Cc: eric.ernst@linux.intel.com
+Subject: [PATCH v2 1/1] PINCTRL: Warn if direct IRQ GPIO set to output
+Date: Mon,  2 Jun 2014 14:12:07 -0700
+Message-Id: <1401743527-47035-1-git-send-email-eric.ernst@linux.intel.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <0140602191416.GD1730@lahna.fi.intel.com>
+References: <0140602191416.GD1730@lahna.fi.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+From: Eric Ernst <eric.ernst@linux.intel.com>
 
-Okay, then I make a new patch with only the if() part of the code.
+For Baytrail, you should never set a GPIO set to direct_irq
+to output mode.  When direct_irq_en is set for a GPIO, it is
+tied directly to an APIC internally, and making the pad output
+does not make any sense. Assert a WARN() in the event this happens.
 
+Signed-off-by: Eric Ernst <eric.ernst@linux.intel.com>
+---
+ drivers/pinctrl/pinctrl-baytrail.c |   19 +++++++++++++++----
+ 1 file changed, 15 insertions(+), 4 deletions(-)
 
-Best regards
-Rickard Strandqvist
+diff --git a/drivers/pinctrl/pinctrl-baytrail.c b/drivers/pinctrl/pinctrl-baytrail.c
+index e59983423991..fde3767df254 100644
+--- a/drivers/pinctrl/pinctrl-baytrail.c
++++ b/drivers/pinctrl/pinctrl-baytrail.c
+@@ -47,6 +47,7 @@
+ #define BYT_TRIG_POS		BIT(25)
+ #define BYT_TRIG_LVL		BIT(24)
+ #define BYT_PIN_MUX		0x07
++#define BYT_DIRECTIRQ		BIT(27)
+ 
+ /* BYT_VAL_REG register bits */
+ #define BYT_INPUT_EN		BIT(2)  /* 0: input enabled (active low)*/
+@@ -256,19 +257,29 @@ static int byt_gpio_direction_output(struct gpio_chip *chip,
+ 				     unsigned gpio, int value)
+ {
+ 	struct byt_gpio *vg = to_byt_gpio(chip);
+-	void __iomem *reg = byt_gpio_reg(chip, gpio, BYT_VAL_REG);
++	void __iomem *conf_reg = byt_gpio_reg(chip, gpio, BYT_CONF0_REG);
++	void __iomem *value_reg = byt_gpio_reg(chip, gpio, BYT_VAL_REG);
+ 	unsigned long flags;
+ 	u32 reg_val;
+ 
+ 	spin_lock_irqsave(&vg->lock, flags);
+ 
+-	reg_val = readl(reg) | BYT_DIR_MASK;
++	/*
++	 * Before making any direction modifications, do a check if gpio
++	 * is set for direct IRQ.  On baytrail, setting GPIO to output does
++	 * not make sense, so let's at least warn the caller before they shoot
++	 * themselves in the foot.
++	 */
++	WARN((readl(conf_reg) & BYT_DIRECTIRQ),
++		"Potential Error: Setting GPIO with direct_irq_en to output");
++
++	reg_val = readl(value_reg) | BYT_DIR_MASK;
+ 	reg_val &= ~BYT_OUTPUT_EN;
+ 
+ 	if (value)
+-		writel(reg_val | BYT_LEVEL, reg);
++		writel(reg_val | BYT_LEVEL, value_reg);
+ 	else
+-		writel(reg_val & ~BYT_LEVEL, reg);
++		writel(reg_val & ~BYT_LEVEL, value_reg);
+ 
+ 	spin_unlock_irqrestore(&vg->lock, flags);
+ 
+-- 
+1.7.9.5
 
-
-2014-06-02 19:08 GMT+02:00 Eduardo Valentin <edubezval@gmail.com>:
-> On Sun, Jun 01, 2014 at 01:33:51PM +0200, Rickard Strandqvist wrote:
->> There is a risk for memory leak in when something unexpected happens
->> and the function returns.
->
-> I don't think there is a risk of memory leak, but wrong address access,
-> in this case.
->
->>
->> This was largely found by using a static code analysis program called cppcheck.
->>
->> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
->> ---
->>  drivers/thermal/ti-soc-thermal/ti-bandgap.c |    3 ++-
->>  1 file changed, 2 insertions(+), 1 deletion(-)
->>
->> diff --git a/drivers/thermal/ti-soc-thermal/ti-bandgap.c b/drivers/thermal/ti-soc-thermal/ti-bandgap.c
->> index 3ab12ee..8401d2e 100644
->> --- a/drivers/thermal/ti-soc-thermal/ti-bandgap.c
->> +++ b/drivers/thermal/ti-soc-thermal/ti-bandgap.c
->> @@ -1155,8 +1155,9 @@ static struct ti_bandgap *ti_bandgap_build(struct platform_device *pdev)
->>       /* register shadow for context save and restore */
->>       bgp->regval = devm_kzalloc(&pdev->dev, sizeof(*bgp->regval) *
->>                                  bgp->conf->sensor_count, GFP_KERNEL);
->> -     if (!bgp) {
->> +     if (!bgp->regval) {
->
-> I agree with this fix.
->
->>               dev_err(&pdev->dev, "Unable to allocate mem for driver ref\n");
->> +             devm_kfree(&pdev->dev, bgp);
->
-> But I think this is unnecessary, as it has been managed allocated.
->
-> Cheers,
->
-> Eduardo
->
->>               return ERR_PTR(-ENOMEM);
->>       }
->>
->> --
->> 1.7.10.4
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
