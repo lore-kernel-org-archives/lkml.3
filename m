@@ -1,73 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753235AbaFBX4P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 19:56:15 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:49402 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751946AbaFBX4N (ORCPT
+	id S1753164AbaFBX7X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 19:59:23 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:38193 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751966AbaFBX7W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 19:56:13 -0400
-Date: Mon, 2 Jun 2014 16:54:51 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Davidlohr Bueso <davidlohr@hp.com>
-cc: Andrew Morton <akpm@linux-foundation.org>, mingo@kernel.org,
-        peterz@infradead.org, riel@redhat.com, mgorman@suse.de, aswin@hp.com,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/5] mm: i_mmap_mutex to rwsem
-In-Reply-To: <1401741061.5185.9.camel@buesod1.americas.hpqcorp.net>
-Message-ID: <alpine.LSU.2.11.1406021649570.5748@eggly.anvils>
-References: <1400816006-3083-1-git-send-email-davidlohr@hp.com> <1401416415.2618.14.camel@buesod1.americas.hpqcorp.net> <20140602130832.9328cfef977b7ed837d59321@linux-foundation.org> <1401741061.5185.9.camel@buesod1.americas.hpqcorp.net>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+	Mon, 2 Jun 2014 19:59:22 -0400
+Date: Mon, 2 Jun 2014 16:59:15 -0700
+From: josh@joshtriplett.org
+To: Dave Chinner <david@fromorbit.com>
+Cc: Joe Perches <joe@perches.com>, Steven Rostedt <rostedt@goodmis.org>,
+        paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
+        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
+        fweisbec@gmail.com, oleg@redhat.com, sbw@mit.edu
+Subject: Re: [PATCH RFC 1/2] MAINTAINERS: Add "R:" designated-reviewers tag
+Message-ID: <20140602235915.GB14801@cloud>
+References: <20140602174837.GA13257@cloud>
+ <1401731968.7323.4.camel@joe-AO725>
+ <20140602181658.GX22231@linux.vnet.ibm.com>
+ <1401734669.7323.20.camel@joe-AO725>
+ <20140602145020.400d4e0c@gandalf.local.home>
+ <20140602185504.GA13569@cloud>
+ <1401735917.7323.23.camel@joe-AO725>
+ <20140602190951.GA13648@cloud>
+ <1401736666.7323.25.camel@joe-AO725>
+ <20140602231949.GV14410@dastard>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140602231949.GV14410@dastard>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2 Jun 2014, Davidlohr Bueso wrote:
-> On Mon, 2014-06-02 at 13:08 -0700, Andrew Morton wrote:
-> > On Thu, 29 May 2014 19:20:15 -0700 Davidlohr Bueso <davidlohr@hp.com> wrote:
-> > 
-> > > On Thu, 2014-05-22 at 20:33 -0700, Davidlohr Bueso wrote:
-> > > > This patchset extends the work started by Ingo Molnar in late 2012,
-> > > > optimizing the anon-vma mutex lock, converting it from a exclusive mutex
-> > > > to a rwsem, and sharing the lock for read-only paths when walking the
-> > > > the vma-interval tree. More specifically commits 5a505085 and 4fc3f1d6.
+On Tue, Jun 03, 2014 at 09:19:49AM +1000, Dave Chinner wrote:
+> On Mon, Jun 02, 2014 at 12:17:46PM -0700, Joe Perches wrote:
+> > On Mon, 2014-06-02 at 12:09 -0700, josh@joshtriplett.org wrote:
+> > > On Mon, Jun 02, 2014 at 12:05:17PM -0700, Joe Perches wrote:
+> > > > On Mon, 2014-06-02 at 11:55 -0700, josh@joshtriplett.org wrote:
+> > > > > this should go along with a change to
+> > > > > get_maintainer.pl to add those folks to the CC list.
 > > > > 
-> > > > The i_mmap_mutex has similar responsibilities with the anon-vma, protecting
-> > > > file backed pages. Therefore we can use similar locking techniques: covert
-> > > > the mutex to a rwsem and share the lock when possible.
-> > > > 
-> > > > With the new optimistic spinning property we have in rwsems, we no longer
-> > > > take a hit in performance when using this lock, and we can therefore
-> > > > safely do the conversion. Tests show no throughput regressions in aim7 or
-> > > > pgbench runs, and we can see gains from sharing the lock, in disk workloads
-> > > > ~+15% for over 1000 users on a 8-socket Westmere system.
-> > > > 
-> > > > This patchset applies on linux-next-20140522.
-> > >
-> > > ping? Andrew any chance of getting this in -next?
+> > > > Something like this:
+> > > 
+> > > Yes, exactly.  Given an appropriate commit message,
+> > > Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 > > 
-> > (top-posting repaired)
+> > That's the sort of patch where reviewing is
+> > pretty useless.
 > > 
-> > It was a bit late for 3.16 back on May 26, when you said "I will dig
-> > deeper (probably for 3.17 now)".  So, please take another look at the
-> > patch factoring and let's get this underway for -rc1.
+> > What it needs is testing, not reviewing.
+> > 
+> > I tested it for all of 10 seconds.
 > 
-> Ok, so I meant that I'd dig deeper for the additional sharing
-> opportunities (which I've found a few as Hugh correctly suggested). So
-> those eventual patches could come later. 
+> From Documentation/SubmittingPatches:
 > 
-> But I see no reason for *this* patchset to be delayed, as even if it
-> gets to be 3.17 material, I'd still very much want to have the same
-> patch factoring I have now. I think its the correct way to handle lock
-> transitioning for both correctness and bisectability.
+> "         (c) While there may be things that could be improved with this
+>              submission, I believe that it is, at this time, (1) a
+>              worthwhile modification to the kernel, and (2) free of known
+>              issues which would argue against its inclusion.
+> .....
+> 
+> A Reviewed-by tag is a statement of opinion that the patch is an
+> appropriate modification of the kernel without any remaining serious
+> technical issues."
+> 
+> So, for someone to say they have reviewed the code and are able to
+> say it is free of known issues and has no remaining technical
+> issues, they would have had to apply, compile and test the patch,
+> yes?
+> 
+> i.e. Reviewed-by implies both Acked-by, Tested-by and that the code
+> is technically sound.
 
-I'd be glad to see it go into 3.16 if it works as well as advertized.
-And if you're attached to your current 2/5, fine, do stick with that.
-But please do a proper job on your 3/5, instead of just aping how the
-anon case worked out.
+No, not at all.  It implies Acked-by, and that the code is technically
+sound (both at the micro-level and in overall architecture/approach),
+but does not imply Tested-by; that's a separate tag for a reason.
 
-Hugh
+We should not, for instance, prevent someone from providing a
+Reviewed-by (as opposed to an Acked-by) for a driver whose hardware few
+people actually have.  There's significant value in code review even
+without the ability to test.
+
+> Anyone using Reviewed-by without having actually applied and tested
+> the patch is mis-using the tag - they should be using Acked-by: if
+> all they have done is read the code in their mail program....
+
+Acked-by and Reviewed-by mean two different things (Reviewed-by being a
+superset of Acked-by), and the difference is not "I've applied and
+tested this"; that's Tested-by.
+
+- Josh Triplett
