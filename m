@@ -1,68 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752190AbaFBRm4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 13:42:56 -0400
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:39800 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750941AbaFBRmx (ORCPT
+	id S1752336AbaFBRnE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 13:43:04 -0400
+Received: from g4t3427.houston.hp.com ([15.201.208.55]:18455 "EHLO
+	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752075AbaFBRm4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 13:42:53 -0400
-Date: Mon, 2 Jun 2014 13:42:50 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Paolo Valente <paolo.valente@unimore.it>, Li Zefan <lizefan@huawei.com>,
-        Fabio Checconi <fchecconi@gmail.com>,
-        Arianna Avanzini <avanzini.arianna@gmail.com>,
-        Paolo Valente <posta_paolo@yahoo.it>, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org
-Subject: Re: [PATCH RFC - TAKE TWO - 00/12] New version of the BFQ I/O
- Scheduler
-Message-ID: <20140602174250.GC8912@htj.dyndns.org>
-References: <20140528221929.GG1419@htj.dyndns.org>
- <1401354343-5527-1-git-send-email-paolo.valente@unimore.it>
- <20140530160712.GG24871@htj.dyndns.org>
- <538926F6.7080409@kernel.dk>
- <20140531051635.GA19925@mtj.dyndns.org>
- <538C8A47.1050502@kernel.dk>
- <20140602172454.GA8912@htj.dyndns.org>
- <538CB515.3090700@kernel.dk>
+	Mon, 2 Jun 2014 13:42:56 -0400
+Message-ID: <538CB78A.8090500@hp.com>
+Date: Mon, 02 Jun 2014 13:42:34 -0400
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <538CB515.3090700@kernel.dk>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Davidlohr Bueso <davidlohr@hp.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Mikulas Patocka <mpatocka@redhat.com>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Helge Deller <deller@gmx.de>, John David Anglin <dave.anglin@bell.net>,
+        Parisc List <linux-parisc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        "Vinod, Chegu" <chegu_vinod@hp.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Peter Anvin <hpa@zytor.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>, Jason Low <jason.low2@hp.com>
+Subject: Re: [PATCH v2] introduce atomic_pointer to fix a race condition in
+ cancelable mcs spinlocks
+References: <alpine.LRH.2.02.1406011342470.20831@file01.intranet.prod.int.rdu2.redhat.com>  <alpine.LRH.2.02.1406021158360.20627@file01.intranet.prod.int.rdu2.redhat.com>  <20140602162525.GH16155@laptop.programming.kicks-ass.net>  <CA+55aFzwrqkwD=G=w2m7TdXTpsMFjV7XUMXv5DMPGr=5x5YGCQ@mail.gmail.com> <1401729145.5185.5.camel@buesod1.americas.hpqcorp.net>
+In-Reply-To: <1401729145.5185.5.camel@buesod1.americas.hpqcorp.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Jens.
+On 06/02/2014 01:12 PM, Davidlohr Bueso wrote:
+> On Mon, 2014-06-02 at 10:09 -0700, Linus Torvalds wrote:
+>> On Mon, Jun 2, 2014 at 9:25 AM, Peter Zijlstra<peterz@infradead.org>  wrote:
+>>> And I can't say I'm a particular fan of these ops either, as alternative
+>>> I'm almost inclined to just exclude parisc from using opt spinning.
+>> Please do.
+> I agree, this is the best way out of this mess. Furthermore, it would
+> also be nice to consolidate opt spinning in a common CONFIG option --
+> right now mutexes and rwsems create their own dependencies.
+>
 
-On Mon, Jun 02, 2014 at 11:32:05AM -0600, Jens Axboe wrote:
-> For things like blkcg, I agree, it should be able to be common code and
-> reusable. But there's a need for scheduling beyond that, for people that
-> don't use control groups (ie most...). And it'd be hard to retrofit cfq
-> into blk-mq, without rewriting it. I don't believe we need anything this
-> fancy for blk-mq, hopefully. At least having simple deadline scheduling
-> would be Good Enough for the foreseeable future.
+I would suggest adding a RWSEM_SPIN_ON_OWNER to control opt spinning in 
+rwsem. Currently MUTEX_SPIN_ON_OWNER is doing that for mutex, and it is 
+disabled when mutex debugging is turned on. So I think it is better to 
+allow them to be disabled separately.
 
-Heh, looks like we're miscommunicating.  I don't think anything with
-the level of complexity of cfq is realistic for high-iops devices.  It
-has already become a liability for SATA ssds after all.  My suggestion
-is that as hierarchical scheduling tends to be logical extension of
-flat scheduling, it probably would make sense to implement both
-scheduling logics in the same framework as in the cpu scheduler or (to
-a lesser extent) cfq.  So, a new blk-mq scheduler which can work in
-hierarchical mode if blkcg is in active use.
-
-One part I was wondering about is whether we'd need to continue the
-modular multiple implementation mechanism.  For rotating disks, for
-various reasons including some historical ones, we ended up with
-multiple ioscheds and somewhat uglily layered blkcg implementations.
-Given that the expected characteristics of blk-mq devices are more
-consistent, it could be reasonable to stick with single iops and/or
-bandwidth scheme.
-
-Thanks.
-
--- 
-tejun
+-Longman
