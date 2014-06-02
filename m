@@ -1,102 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755481AbaFBPFQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 11:05:16 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:57869 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751762AbaFBPFN convert rfc822-to-8bit (ORCPT
+	id S1755779AbaFBPF1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 11:05:27 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:38411 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755508AbaFBPFY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 11:05:13 -0400
-From: Kevin Hilman <khilman@linaro.org>
-To: Tarek Dakhran <t.dakhran@gmail.com>
-Cc: Tushar Behera <trblinux@gmail.com>,
-        Andreas =?utf-8?Q?F=C3=A4rber?= <afaerber@suse.de>,
-        Tarek Dakhran <t.dakhran@samsung.com>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, devicetree@vger.kernel.org,
-        "linux-arm-kernel\@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-samsung-soc\@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>
-Subject: Re: [PATCH v11 0/3] Exynos 5410 support
-References: <1401074613-29227-1-git-send-email-t.dakhran@samsung.com>
-	<7hr43f9mmn.fsf@paris.lan> <538737CA.4070709@suse.de>
-	<53874862.5080809@samsung.com> <538775AB.3000604@suse.de>
-	<CAC5m3Bz53QO5tTTvk7qnBQtwtjMvSgYZ15prAvnLjdogQRsfMQ@mail.gmail.com>
-	<CANhyOUeq1MMHHn9t+Fy5gpkb43y_rS9F_OAoJ_KFyM1pL4ZJ4w@mail.gmail.com>
-Date: Mon, 02 Jun 2014 08:05:10 -0700
-In-Reply-To: <CANhyOUeq1MMHHn9t+Fy5gpkb43y_rS9F_OAoJ_KFyM1pL4ZJ4w@mail.gmail.com>
-	(Tarek Dakhran's message of "Fri, 30 May 2014 23:07:01 +0400")
-Message-ID: <7hzjhvxsgp.fsf@paris.lan>
-User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	Mon, 2 Jun 2014 11:05:24 -0400
+Content-Type: text/plain; charset=windows-1252
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.2\))
+Subject: Re: [RFC 11/32] xfs: convert to struct inode_time
+From: Chuck Lever <chuck.lever@oracle.com>
+In-Reply-To: <4178301.j9kWdGCRLC@wuerfel>
+Date: Mon, 2 Jun 2014 11:04:23 -0400
+Cc: Nicolas Pitre <nicolas.pitre@linaro.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Dave Chinner <david@fromorbit.com>,
+        LKML Kernel <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
+        joseph@codesourcery.com, john.stultz@linaro.org,
+        Christoph Hellwig <hch@infradead.org>, tglx@linutronix.de,
+        geert@linux-m68k.org, lftan@altera.com,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>, xfs@oss.sgi.com,
+        Linux NFS Mailing List <linux-nfs@vger.kernel.org>
 Content-Transfer-Encoding: 8BIT
+Message-Id: <6868F108-F0B2-423F-AE31-90DF86A5B7DD@oracle.com>
+References: <1401480116-1973111-1-git-send-email-arnd@arndb.de> <8618458.1EVJCoVbkH@wuerfel> <alpine.LFD.2.11.1406012121430.17310@knanqh.ubzr> <4178301.j9kWdGCRLC@wuerfel>
+To: Arnd Bergmann <arnd@arndb.de>
+X-Mailer: Apple Mail (2.1878.2)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tarek Dakhran <t.dakhran@gmail.com> writes:
 
-> Hi,
->
-> On Fri, May 30, 2014 at 7:41 AM, Tushar Behera <trblinux@gmail.com> wrote:
->> On Thu, May 29, 2014 at 11:30 PM, Andreas FÃ¤rber <afaerber@suse.de> wrote:
->>> Hi Tarek,
->>>
->>>
->>> And I reproducibly get failures for CPUs 1-3, resulting in only one CPU
->>> in /proc/cpuinfo (compared to 4 on downstream 3.14):
->>>
->>> [    0.045778] CPU: Testing write buffer coherency: ok
->>> [    0.045968] /cpus/cpu@0 missing clock-frequency property
->>> [    0.045993] /cpus/cpu@1 missing clock-frequency property
->>> [    0.046016] /cpus/cpu@2 missing clock-frequency property
->>> [    0.046040] /cpus/cpu@3 missing clock-frequency property
->>> [    0.046059] CPU0: thread -1, cpu 0, socket 0, mpidr 80000000
->>> [    0.046135] Setting up static identity map for 0x403a8920 - 0x403a8978
->>> [    2.075052] CPU1: failed to come online
->>> [    4.085095] CPU2: failed to come online
->>> [    6.095142] CPU3: failed to come online
->>> [    6.095237] Brought up 1 CPUs
->>> [    6.095269] SMP: Total of 1 processors activated.
->>> [    6.095303] CPU: All CPU(s) started in HYP mode.
->>> [    6.095336] CPU: Virtualization extensions available.
->>>
->>> I also notice another apparent device tree issue:
->>>
->>> [    7.341814] of_get_named_gpiod_flags: can't parse gpios property of
->>> node '/soc/mmc@12220000/slot@0[0]'
->>> [    7.341850] of_get_named_gpiod_flags: can't parse gpios property of
->>> node '/soc/mmc@12220000/slot@0[0]'
->>>
->>> Are any of those known issues and being worked on?
->>> (The CPU failures affected 5420 Arndale Octa as well iirc.)
->>>
->>
->> Can you check after applying following two patches for Arndale-Octa
->> ([1],[2])? In other words, a patch similar to [2] might be required
->> for this board too if it is booting under secure mode.
->
-> Firmware node already present into exynos5410-smdk5410.dts
-> So with only patch[1] 4xA15 cores will boot on ODROID-XU and SMDK5410.
+On Jun 2, 2014, at 6:56 AM, Arnd Bergmann <arnd@arndb.de> wrote:
 
-I also confirm that with 4xA15 cores boot when adding patch [1].
+> On Sunday 01 June 2014 21:36:26 Nicolas Pitre wrote:
+>> 
+>>> For actually running kernels beyond 2038, the best idea I've seen so
+>>> far is to disallow all broken code at compile time. I don't see
+>>> a choice but to audit the entire kernel for invalid uses on both
+>>> 32 and 64 bit in the next few years. A lot of code will get changed
+>>> in the process so we can actually keep running 32-bit kernels and
+>>> file systems, but other code will likely go away:
+>>> 
+>>> * any system calls that pass a time_t, timeval or timespec on
+>>>  32-bit systems return -ENOSYS, to ensure all user land uses
+>>>  the replacements we will put into place
+>>> * The definition of 'time_t', 'timval' and 'timespec' can be hidden
+>>>  from the kernel, and all code using it left out.
+>>> * ext2 and ext3 file system code will have to be disabled, but that's
+>>>  file since ext4 can mount old file systems.
+>> 
+>> Syscalls and libs can be "fixed".  Existing filesystem content might 
+>> not.  So if you need to mount some old media in read-write mode after 
+>> 2038 and that happens to content an ext2 or similarly limited filesystem 
+>> then it'd better just "work".  Having the kernel refuse to modify the 
+>> filesystem would be unacceptable.
+> 
+> I think you misunderstood what I suggested: the intent is to avoid
+> seeing things break in 2038 by making them break much earlier. We have
+> a solution for ext2 file systems, it's called ext4, and we just need
+> to ensure that everybody knows they have to migrate eventually.
+> 
+> At some point before the mid 2030ies, you should no longer be able to
+> build a kernel that has support for ext2 or any other module that will
+> run into bugs later. Until then (rather sooner than later), I'd like
+> to get to the point where you can choose whether to include those
+> modules at build time or not, and then get everybody to turn off that
+> option and fix the bugs they run into. You wouldn't need that for a
+> 2014-generation long-term support disto (rhel 7, sles 12, debian 7,
+> ubuntu 14.04, ...), but perhaps for the next generation, or the
+> one after that.
 
-Kevin
+I’m wondering what should be done about NFS. A solution for NFS should
+match any scheme that is considered for local file systems, IMO.
 
->>
->> [1] http://www.spinics.net/lists/linux-samsung-soc/msg31776.html
->>
->> [PATCH v2 Resend 1/2] ARM: EXYNOS: Update secondary boot addr for secure mode
->>
->> [2] http://www.spinics.net/lists/linux-samsung-soc/msg31777.html
->>
->> [PATCH v2 Resend 2/2] ARM: dts: Add secure firmware support for Arndale-octa
->>
->>
->> --
->> Tushar Behera
->
-> Best regards,
->     Tarek
+NFSv2/3 timestamps are a pair of unsigned 32-bit values: one value for
+seconds since midnight GMT Jan 1, 1970, and one value for nanoseconds.
+(See the definition of nfstime3 in RFC 1813).
+
+NFSv4 uses a signed 64-bit value where zero represents midnight UTC
+on January 1, 1970, and an unsigned 32-bit value for nanoseconds. (See
+the definition of nfstime4 in RFC 5661).
+
+The NFSv4 protocol is probably not problematic, and NFSv3 should be out
+of the picture by 2038. But if changes are planned for dealing _now_
+with timestamp issues, compatibility with NFSv3 is a consideration.
+
+It is already the case that, via NFSv3, the Linux NFS client transmits
+timestamps earlier than 1970 as large positive numbers. Try this with
+xfstests generic/258.
+
+Maybe nfs3_proc_setattr() should recognize pre-epoch timestamps and
+timestamps larger than can be represented in an unsigned 32-bit field
+and return an immediate error to the requesting application (like EINVAL).
+
+If the Linux NFS server encounters a local file with a timestamp that
+cannot be represented via a u32, should it also return NFS3ERR_INVAL?
+
+RFC 1813 does not provide guidance on the behavior nor does it suggest
+a particular error status code. The Solaris 11 server appears to return
+NFS3ERR_INVAL in this case.
+
+An alternative would be to “cap” the timestamps transmitted via NFSv3 by
+Linux, so that a pre-epoch timestamp is transmitted as zero, and a large
+timestamp is transmitted as UINT_MAX.
+
+--
+Chuck Lever
+chuck[dot]lever[at]oracle[dot]com
+
+
+
