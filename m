@@ -1,76 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754024AbaFBK6V (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 06:58:21 -0400
-Received: from mout.kundenserver.de ([212.227.17.24]:56706 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752784AbaFBK6T (ORCPT
+	id S1754078AbaFBLAS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 07:00:18 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:45616 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753007AbaFBLAQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 06:58:19 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Dave Chinner <david@fromorbit.com>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        joseph@codesourcery.com, john.stultz@linaro.org, hch@infradead.org,
-        tglx@linutronix.de, geert@linux-m68k.org, lftan@altera.com,
-        linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com
-Subject: Re: [RFC 11/32] xfs: convert to struct inode_time
-Date: Mon, 02 Jun 2014 12:56:42 +0200
-Message-ID: <4178301.j9kWdGCRLC@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <alpine.LFD.2.11.1406012121430.17310@knanqh.ubzr>
-References: <1401480116-1973111-1-git-send-email-arnd@arndb.de> <8618458.1EVJCoVbkH@wuerfel> <alpine.LFD.2.11.1406012121430.17310@knanqh.ubzr>
+	Mon, 2 Jun 2014 07:00:16 -0400
+Date: Mon, 2 Jun 2014 03:59:01 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: David Herrmann <dh.herrmann@gmail.com>
+cc: Hugh Dickins <hughd@google.com>, Tony Battersby <tonyb@cybernetics.com>,
+        Andy Lutomirsky <luto@amacapital.net>,
+        Al Viro <viro@zeniv.linux.org.uk>, Jan Kara <jack@suse.cz>,
+        Michael Kerrisk <mtk.manpages@gmail.com>, Ryan Lortie <desrt@desrt.ca>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <tj@kernel.org>,
+        Greg Kroah-Hartman <greg@kroah.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Kristian Hogsberg <krh@bitplanet.net>,
+        Lennart Poettering <lennart@poettering.net>,
+        Daniel Mack <zonque@gmail.com>, Kay Sievers <kay@vrfy.org>
+Subject: Re: [PATCH v2 2/3] shm: add memfd_create() syscall
+In-Reply-To: <CANq1E4TORuZU7frtR167P-GNPzEuvbjXXEfi9KdvTwGojqGruA@mail.gmail.com>
+Message-ID: <alpine.LSU.2.11.1406020331100.1259@eggly.anvils>
+References: <1397587118-1214-1-git-send-email-dh.herrmann@gmail.com> <1397587118-1214-3-git-send-email-dh.herrmann@gmail.com> <alpine.LSU.2.11.1405191916300.2970@eggly.anvils> <CANq1E4TORuZU7frtR167P-GNPzEuvbjXXEfi9KdvTwGojqGruA@mail.gmail.com>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:rc5WLQ/9j2qpMfwTsA0d0sLxGYtDN5Q90L7frf+Bkjc
- z7o7Ihk6Zig4bOCe3nDbDr8m1/GKHG9dL4ig8bggV4tUvPsW2n
- Wk1oolEllkgTXtYCEe9Iqj78J4EyLAdHt07DJKHkD4Gbqn8Ov6
- SF4zQ2pA4F7poZBUHQuPhuuefpWtjJZ+mGUjUb7erpRcRLf/E9
- uU5WD09126Dm3iPlY+1IrJL/2rM1HU77Vu0MDmNwy2MZ+mv6kH
- q7+TnOAWSFHDuGTWHswv6GoEDEtPRhThbh0gzGvin06XigZbnP
- ZYkjpKorAHKj1A+88kfEHLibIWL/CPvfQFqLFBm5b57zT2mpMK
- kboML90cXK+9Of5S7Ih8=
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 01 June 2014 21:36:26 Nicolas Pitre wrote:
+On Fri, 23 May 2014, David Herrmann wrote:
+> On Tue, May 20, 2014 at 4:20 AM, Hugh Dickins <hughd@google.com> wrote:
+> >
+> > What is a front-FD?
 > 
-> > For actually running kernels beyond 2038, the best idea I've seen so
-> > far is to disallow all broken code at compile time. I don't see
-> > a choice but to audit the entire kernel for invalid uses on both
-> > 32 and 64 bit in the next few years. A lot of code will get changed
-> > in the process so we can actually keep running 32-bit kernels and
-> > file systems, but other code will likely go away:
-> > 
-> > * any system calls that pass a time_t, timeval or timespec on
-> >   32-bit systems return -ENOSYS, to ensure all user land uses
-> >   the replacements we will put into place
-> > * The definition of 'time_t', 'timval' and 'timespec' can be hidden
-> >   from the kernel, and all code using it left out.
-> > * ext2 and ext3 file system code will have to be disabled, but that's
-> >   file since ext4 can mount old file systems.
+> With 'front-FD' I refer to things like dma-buf: They allocate a
+> file-descriptor which is just a wrapper around a kernel-internal FD.
+> For instance, DRM-gem buffers exported as dma-buf. fops on the dma-buf
+> are forwarded to the shmem-fd of the given gem-object, but any access
+> to the inode of the dma-buf fd is a no-op as the dma-buf fd uses
+> anon-inode, not the shmem-inode.
 > 
-> Syscalls and libs can be "fixed".  Existing filesystem content might 
-> not.  So if you need to mount some old media in read-write mode after 
-> 2038 and that happens to content an ext2 or similarly limited filesystem 
-> then it'd better just "work".  Having the kernel refuse to modify the 
-> filesystem would be unacceptable.
+> A previous revision of memfd used something like that, but that was
+> inherently racy.
 
-I think you misunderstood what I suggested: the intent is to avoid
-seeing things break in 2038 by making them break much earlier. We have
-a solution for ext2 file systems, it's called ext4, and we just need
-to ensure that everybody knows they have to migrate eventually.
+Thanks for explaining: then I guess you can leave "front-FD" out of the
+description next time around, in case there are others like me who are
+more mystified than enlightened by it.
 
-At some point before the mid 2030ies, you should no longer be able to
-build a kernel that has support for ext2 or any other module that will
-run into bugs later. Until then (rather sooner than later), I'd like
-to get to the point where you can choose whether to include those
-modules at build time or not, and then get everybody to turn off that
-option and fix the bugs they run into. You wouldn't need that for a
-2014-generation long-term support disto (rhel 7, sles 12, debian 7,
-ubuntu 14.04, ...), but perhaps for the next generation, or the
-one after that.
+> > But this does highlight how the "size" arg to memfd_create() is
+> > perhaps redundant.  Why give a size there, when size can be changed
+> > afterwards?  I expect your answer is that many callers want to choose
+> > the size at the beginning, and would prefer to avoid the extra call.
+> > I'm not sure if that's a good enough reason for a redundant argument.
+> 
+> At one point in time we might be required to support atomic-sealing.
+> So a memfd_create() call takes the initial seals as upper 32bits in
+> "flags" and sets them before returning the object. If these seals
+> contain SEAL_GROW/SHRINK, we must pass the size during setup (think
+> CLOEXEC with fork()).
 
-	Arnd
+That does sound like over-design to me.  You stop short of passing
+in an optional buffer of the data it's to contain, good.
+
+I think it would be a clearer interface without the size, but really
+that's an issue for the linux-api people you'll be Cc'ing next time.
+
+You say "think CLOEXEC with fork()": you have thought about this, I
+have not, please spell out for me what the atomic size guards against.
+Do you want an fd that's not shared across fork?
+
+> 
+> Note that we spent a lot of time discussing whether such
+> atomic-sealing is necessary and no-one came up with a real race so
+> far. Therefore, I didn't include that. But especially if we add new
+> seals (like SHMEM_SEAL_OPEN, which I still think is not needed and
+> just hides real problems), we might at one point be required to
+> support that. That's also the reason why "flags" is 64bits.
+> 
+> One might argue that we can just add memfd_create2() once that
+> happens, but I didn't see any harm in including "size" and making them
+> 64bit.
+
+I've not noticed another system call with 64-bit flags, it does seem
+over the top to me: the familiar ones all use int.  But again,
+a matter for linux-api not for me.
+
+Hugh
