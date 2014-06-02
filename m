@@ -1,41 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753803AbaFBJyI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 05:54:08 -0400
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:65341 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753037AbaFBJyF (ORCPT
+	id S1753867AbaFBJyd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 05:54:33 -0400
+Received: from srv01.voixit.com ([78.47.68.188]:38944 "EHLO srv01.voixit.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752976AbaFBJyc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 05:54:05 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140602095112.GV5099@sirena.org.uk>
-References: <1780c3205893be8567fa29ccd86674e2f32555b4.1401192160.git.viresh.kumar@linaro.org>
-	<20140527192923.GC12304@sirena.org.uk>
-	<CAKohpo=AnusM2FGs=JLozSyTc0N7SDXQxe+rPiLEHP6ewxY4ow@mail.gmail.com>
-	<20140528173858.GG5099@sirena.org.uk>
-	<CAKohpokk_sNQ7Be5F8NLa7pLrssPm9qPf-fDEUYkiurJ6Etrpg@mail.gmail.com>
-	<20140602095112.GV5099@sirena.org.uk>
-Date: Mon, 2 Jun 2014 15:24:05 +0530
-Message-ID: <CAKohpom7XNFJ7dBzNVW0TX3gyxo4RJdJ4yriYLa_noforhyciw@mail.gmail.com>
-Subject: Re: [PATCH 1/2] regulators: Add definition of regulator_set_voltage_time()
- for !CONFIG_REGULATOR
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arvind Chauhan <arvind.chauhan@arm.com>,
-        Eduardo Valentin <edubezval@gmail.com>, Pavel Machek <pavel@ucw.cz>,
-        Liam Girdwood <lgirdwood@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 2 Jun 2014 05:54:32 -0400
+Subject: Re: [PATCH RFC - TAKE TWO - 09/12] block, bfq: reduce latency during request-pool saturation
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.2\))
+Content-Type: text/plain; charset=us-ascii
+From: Paolo Valente <paolo.valente@unimore.it>
+In-Reply-To: <20140531135402.GC24557@mtj.dyndns.org>
+Date: Mon, 2 Jun 2014 11:54:28 +0200
+Cc: Jens Axboe <axboe@kernel.dk>, Li Zefan <lizefan@huawei.com>,
+        Fabio Checconi <fchecconi@gmail.com>,
+        Arianna Avanzini <avanzini.arianna@gmail.com>,
+        linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <949E9E1B-87D6-42D6-832C-3C73E44DF668@unimore.it>
+References: <20140528221929.GG1419@htj.dyndns.org> <1401354343-5527-1-git-send-email-paolo.valente@unimore.it> <1401354343-5527-10-git-send-email-paolo.valente@unimore.it> <20140531135402.GC24557@mtj.dyndns.org>
+To: Tejun Heo <tj@kernel.org>
+X-Mailer: Apple Mail (2.1878.2)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2 June 2014 15:21, Mark Brown <broonie@kernel.org> wrote:
-> When you say they check for a valid regulator how are they doing that?
-> The stub will come into play if there isn't a dependency on REGULATOR.
 
-I meant they fail and quit if regulator_get() failed and so the first parameter
-to regulator_set_voltage() is guaranteed to be valid.
+Il giorno 31/mag/2014, alle ore 15:54, Tejun Heo <tj@kernel.org> ha scritto:
+
+> On Thu, May 29, 2014 at 11:05:40AM +0200, Paolo Valente wrote:
+>> This patch introduces an heuristic that reduces latency when the
+>> I/O-request pool is saturated. This goal is achieved by disabling
+>> device idling, for non-weight-raised queues, when there are weight-
+>> raised queues with pending or in-flight requests. In fact, as
+>> explained in more detail in the comment to the function
+>> bfq_bfqq_must_not_expire(), this reduces the rate at which processes
+>> associated with non-weight-raised queues grab requests from the pool,
+>> thereby increasing the probability that processes associated with
+>> weight-raised queues get a request immediately (or at least soon) when
+>> they need one.
+> 
+> Wouldn't it be more straight-forward to simply control how many
+> requests each queue consume by returning ELV_MQUEUE_NO?
+
+Arianna proposed me exactly this improvement about two months ago. The problem was that our TO-ADD list already contained several other improvements. So, to avoid waiting several more years before (re)submitting bfq, I decided that it would have been better to finally freeze the code for a while and pack it for submission.
+
+If you agree, investigating and implementing this improvement will be our next step immediately after, and if the current version of bfq gets merged in some form.
+
+Thanks,
+Paolo
+
+>  Seeky ones do
+> benefit from larger number of requests in elevator but to only certain
+> number given the fifo timeout anyway and controlling that explicitly
+> would be a lot easier to anticipate the behavior of than playing
+> roulette with random request allocation failures.
+> 
+> Thanks.
+> 
+> -- 
+> tejun
+
+
+--
+Paolo Valente                                                 
+Algogroup
+Dipartimento di Fisica, Informatica e Matematica		
+Via Campi, 213/B
+41125 Modena - Italy        				  
+homepage:  http://algogroup.unimore.it/people/paolo/
+
