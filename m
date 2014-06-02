@@ -1,118 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932302AbaFBVCj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 17:02:39 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:54517 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932217AbaFBVCf (ORCPT
+	id S932277AbaFBVCi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 17:02:38 -0400
+Received: from relay1.mentorg.com ([192.94.38.131]:43565 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932214AbaFBVCe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 17:02:35 -0400
-Date: Mon, 2 Jun 2014 14:02:27 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Waiman Long <waiman.long@hp.com>,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Helge Deller <deller@gmx.de>, John David Anglin <dave.anglin@bell.net>,
-        Parisc List <linux-parisc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Vinod, Chegu" <chegu_vinod@hp.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Davidlohr Bueso <davidlohr@hp.com>, Peter Anvin <hpa@zytor.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>, Jason Low <jason.low2@hp.com>
-Subject: Re: [PATCH v2] introduce atomic_pointer to fix a race condition in
- cancelable mcs spinlocks
-Message-ID: <20140602210227.GE22231@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <alpine.LRH.2.02.1406011342470.20831@file01.intranet.prod.int.rdu2.redhat.com>
- <alpine.LRH.2.02.1406021158360.20627@file01.intranet.prod.int.rdu2.redhat.com>
- <20140602162525.GH16155@laptop.programming.kicks-ass.net>
- <20140602163032.GI16155@laptop.programming.kicks-ass.net>
- <538CB56E.5010709@hp.com>
- <20140602200525.GD13930@laptop.programming.kicks-ass.net>
- <CA+55aFwJwVf_MbcwNNWg-KrLdoOaV2xse2jzvBZTJHJgC_Htvg@mail.gmail.com>
+	Mon, 2 Jun 2014 17:02:34 -0400
+Date: Mon, 2 Jun 2014 21:02:15 +0000
+From: "Joseph S. Myers" <joseph@codesourcery.com>
+X-X-Sender: jsm28@digraph.polyomino.org.uk
+To: Arnd Bergmann <arnd@arndb.de>
+CC: <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>,
+        <john.stultz@linaro.org>, <hch@infradead.org>, <tglx@linutronix.de>,
+        <geert@linux-m68k.org>, <lftan@altera.com>, <hpa@zytor.com>,
+        <linux-fsdevel@vger.kernel.org>, <ceph-devel@vger.kernel.org>,
+        <cluster-devel@redhat.com>, <coda@cs.cmu.edu>,
+        <codalist@TELEMANN.coda.cs.cmu.edu>,
+        <fuse-devel@lists.sourceforge.net>, <linux-afs@lists.infradead.org>,
+        <linux-btrfs@vger.kernel.org>, <linux-cifs@vger.kernel.org>,
+        <linux-ext4@vger.kernel.org>, <linux-f2fs-devel@lists.sourceforge.net>,
+        <linux-mtd@lists.infradead.org>, <linux-nfs@vger.kernel.org>,
+        <linux-ntfs-dev@lists.sourceforge.net>, <linux-scsi@vger.kernel.org>,
+        <logfs@logfs.org>, <ocfs2-devel@oss.oracle.com>,
+        <reiserfs-devel@vger.kernel.org>, <samba-technical@lists.samba.org>,
+        <xfs@oss.sgi.com>
+Subject: Re: [RFC 00/32] making inode time stamps y2038 ready
+In-Reply-To: <4233989.Saca0ocOUr@wuerfel>
+Message-ID: <Pine.LNX.4.64.1406022044090.27099@digraph.polyomino.org.uk>
+References: <1401480116-1973111-1-git-send-email-arnd@arndb.de>
+ <Pine.LNX.4.64.1406021350030.19591@digraph.polyomino.org.uk>
+ <4233989.Saca0ocOUr@wuerfel>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFwJwVf_MbcwNNWg-KrLdoOaV2xse2jzvBZTJHJgC_Htvg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14060221-8236-0000-0000-000002CDE21B
+Content-Type: text/plain; charset="US-ASCII"
+X-OriginalArrivalTime: 02 Jun 2014 21:02:20.0222 (UTC) FILETIME=[F16D75E0:01CF7EA5]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 02, 2014 at 01:22:10PM -0700, Linus Torvalds wrote:
-> On Mon, Jun 2, 2014 at 1:05 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> >
-> > So the question is, do you prefer subtly broken code or hard compile
-> > fails? Me, I go for the compile fail.
+On Mon, 2 Jun 2014, Arnd Bergmann wrote:
+
+> Ok. Sorry about missing linux-api, I confused it with linux-arch, which
+> may not be as relevant here, except for the one question whether we
+> actually want to have the new ABI on all 32-bit architectures or only
+> as an opt-in for those that expect to stay around for another 24 years.
+
+For glibc I think it will make the most sense to add the support for 
+64-bit time_t across all architectures that currently have 32-bit time_t 
+(with the new interfaces having fallback support to implementation in 
+terms of the 32-bit kernel interfaces, if the 64-bit syscalls are 
+unavailable either at runtime or in the kernel headers against which glibc 
+is compiled - this fallback code will of course need to check for overflow 
+when passing a time value to the kernel, hopefully with error handling 
+consistent with whatever the kernel ends up doing when a filesystem can't 
+support a timestamp).  If some architectures don't provide the new 
+interfaces in the kernel then that will mean the fallback code in glibc 
+can't be removed until glibc support for those architectures is removed 
+(as opposed to removing it when glibc no longer supports kernels predating 
+the kernel support).
+
+> Two more questions for you:
 > 
-> The thing is, parisc has a perfectly fine "cmpxchg" implementation in
-> practice, and ACCESS_ONCE() and friends work fine too for reading.
-> 
-> What the "use a spinlock" approach cannot generally do is:
-> 
->  - ACCESS_ONCE() to _write_ things doesn't work well. You really
-> should use "atomic_set()".
-> 
->  - you may not necessarily be able to mix partial updates (ie
-> differently sized updates to the same thing) depending on just how the
-> spinlock hashing works
-> 
-> but both of those are really rare issues and don't affect normal code.
-> 
-> I would not necessarily be opposed to splitting up ACCESS_ONCE() for
-> reading and for writing, and maybe we could do something special for
-> the writing path (which tends to be less ctitical). It's really mixing
-> "ACCESS_ONCE(x)" to _set_ a value, together with atomic ops to update
-> it, that ends up being problematic.
+> - are you (and others) happy with adding this type of stat syscall
+>   (fstatat64/fstat64) as opposed to the more generic xstat that has
+>   been discussed in the past and that never made it through the bike-
+>   shedding discussion?
 
-Knowing what I know now about how ACCESS_ONCE() is used, I would have
-split it for reading and writing to begin with.  Where is that time
-machine when you need it?  ;-)
+I am.
 
-> Maybe there are other issues I can't think of right now. But
-> basically, parisc _can_ do cmpxchg, it's just that the code needs to
-> be somewhat sanitized.
-> 
-> Side note: some of the RCU code uses "ACCESS_ONCE()" for
-> read-modify-write code, which is just f*cking crazy. The semantics are
-> dubious, and it generally makes gcc create bad code too.
+> - once we have enough buy-in from reviewers to merge this initial
+>   series, should we proceed to define rest of the syscall ABI
+>   (minus driver ioctls) so glibc and kernel can do the conversion
+>   on top of that, or should we better try to do things one syscall
+>   family at a time and actually get the kernel to handle them
+>   correctly internally?
 
-A couple of the places are admittedly overkill, for example the pair of:
+I don't have any comments on that ordering question.
 
-	ACCESS_ONCE(rsp->n_force_qs_lh)++;
-
-which is just for debug statistics in any case.  I could put these back
-to "rsp->n_force_qs_lh++;" without problems, if desired.  (Yeah, I know,
-I am overly paranoid.)
-
-However, these cases need a bit more care:
-
-	ACCESS_ONCE(rdp->qlen)++;
-	ACCESS_ONCE(rsp->n_barrier_done)++;
-	ACCESS_ONCE(sync_rcu_preempt_exp_count)++;
-
-In the ->qlen case, interrupts are disabled and the current CPU is
-the only one who can write, so the read need not be volatile.  In the
-->n_barrier_done, modifications are done holding ->barrier_mutex, so again
-the read need not be volatile.  In the sync_rcu_preempt_exp_count case,
-modifications are done holding sync_rcu_preempt_exp_mutex, so once again,
-the read need not be volatile.  So I could do something like:
-
-	ACCESS_ONCE(rdp->qlen) = rdp->qlen + 1;
-
-But that still makes gcc generate bad code.
-
-The reason I was not all that worried about this is that these are not
-in fastpaths, and the last two are especially not in fastpaths.
-
-Suggestions?
-
-							Thanx, Paul
-
+-- 
+Joseph S. Myers
+joseph@codesourcery.com
