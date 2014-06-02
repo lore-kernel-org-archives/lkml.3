@@ -1,75 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932202AbaFBVCI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 17:02:08 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:51215 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752848AbaFBVCG (ORCPT
+	id S932302AbaFBVCj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 17:02:39 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:54517 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932217AbaFBVCf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 17:02:06 -0400
-Date: Mon, 2 Jun 2014 22:01:17 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Cc: lee.jones@linaro.org, sameo@linux.intel.com,
-        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
-Message-ID: <20140602210117.GO31751@sirena.org.uk>
-References: <1401699704-17902-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+	Mon, 2 Jun 2014 17:02:35 -0400
+Date: Mon, 2 Jun 2014 14:02:27 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Waiman Long <waiman.long@hp.com>,
+        Mikulas Patocka <mpatocka@redhat.com>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Helge Deller <deller@gmx.de>, John David Anglin <dave.anglin@bell.net>,
+        Parisc List <linux-parisc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Vinod, Chegu" <chegu_vinod@hp.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Davidlohr Bueso <davidlohr@hp.com>, Peter Anvin <hpa@zytor.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>, Jason Low <jason.low2@hp.com>
+Subject: Re: [PATCH v2] introduce atomic_pointer to fix a race condition in
+ cancelable mcs spinlocks
+Message-ID: <20140602210227.GE22231@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <alpine.LRH.2.02.1406011342470.20831@file01.intranet.prod.int.rdu2.redhat.com>
+ <alpine.LRH.2.02.1406021158360.20627@file01.intranet.prod.int.rdu2.redhat.com>
+ <20140602162525.GH16155@laptop.programming.kicks-ass.net>
+ <20140602163032.GI16155@laptop.programming.kicks-ass.net>
+ <538CB56E.5010709@hp.com>
+ <20140602200525.GD13930@laptop.programming.kicks-ass.net>
+ <CA+55aFwJwVf_MbcwNNWg-KrLdoOaV2xse2jzvBZTJHJgC_Htvg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="lCFQJunhLz1tFGpX"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1401699704-17902-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-X-Cookie: Big book, big bore.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 109.148.252.180
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/2] mfd: core: Add the option to order destruction of
- MFD cells
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <CA+55aFwJwVf_MbcwNNWg-KrLdoOaV2xse2jzvBZTJHJgC_Htvg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14060221-8236-0000-0000-000002CDE21B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jun 02, 2014 at 01:22:10PM -0700, Linus Torvalds wrote:
+> On Mon, Jun 2, 2014 at 1:05 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> >
+> > So the question is, do you prefer subtly broken code or hard compile
+> > fails? Me, I go for the compile fail.
+> 
+> The thing is, parisc has a perfectly fine "cmpxchg" implementation in
+> practice, and ACCESS_ONCE() and friends work fine too for reading.
+> 
+> What the "use a spinlock" approach cannot generally do is:
+> 
+>  - ACCESS_ONCE() to _write_ things doesn't work well. You really
+> should use "atomic_set()".
+> 
+>  - you may not necessarily be able to mix partial updates (ie
+> differently sized updates to the same thing) depending on just how the
+> spinlock hashing works
+> 
+> but both of those are really rare issues and don't affect normal code.
+> 
+> I would not necessarily be opposed to splitting up ACCESS_ONCE() for
+> reading and for writing, and maybe we could do something special for
+> the writing path (which tends to be less ctitical). It's really mixing
+> "ACCESS_ONCE(x)" to _set_ a value, together with atomic ops to update
+> it, that ends up being problematic.
 
---lCFQJunhLz1tFGpX
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Knowing what I know now about how ACCESS_ONCE() is used, I would have
+split it for reading and writing to begin with.  Where is that time
+machine when you need it?  ;-)
 
-On Mon, Jun 02, 2014 at 10:01:43AM +0100, Charles Keepax wrote:
-> Sometimes MFD children will have interdependancies. For example an MFD
-> device might contain a regulator cell and another cell which requires
-> that regulator to function. Probe deferral will ensure that these
-> devices probe in the correct order, however currently nothing ensures
-> they are destroyed in the correct order. As such it is possible for a
-> cell to be destroyed whilst another cell still expects it to exist. For
-> example the cell mentioned earlier would attempt to do a regulator_put
-> as part of its own tear-down but the regulator may have already been
-> destroyed.
+> Maybe there are other issues I can't think of right now. But
+> basically, parisc _can_ do cmpxchg, it's just that the code needs to
+> be somewhat sanitized.
+> 
+> Side note: some of the RCU code uses "ACCESS_ONCE()" for
+> read-modify-write code, which is just f*cking crazy. The semantics are
+> dubious, and it generally makes gcc create bad code too.
 
-Probe deferral is supposed to handle removal too, we're supposed to be
-able to walk the device list in reverse order and everything just work.
+A couple of the places are admittedly overkill, for example the pair of:
 
---lCFQJunhLz1tFGpX
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+	ACCESS_ONCE(rsp->n_force_qs_lh)++;
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+which is just for debug statistics in any case.  I could put these back
+to "rsp->n_force_qs_lh++;" without problems, if desired.  (Yeah, I know,
+I am overly paranoid.)
 
-iQIcBAEBAgAGBQJTjOYTAAoJELSic+t+oim9MjQP/3kt216TW4L9npAhn5Ng4G90
-xbl0lgrx7y2ya5KbvX9XHKMzSostGcoXKTP0dTcy/cvQJ0o+Ln0Xfnac2O024zJq
-InIFP4nHVywNS8nqRxu9Yf1FJG9vXN265ry4Nj+scRpqc2sHPTM2k/LonzCic89i
-IYIqcGSNAEoaJGSNLXTE4IrmsrJtQQy0nuifDuVhY3aSDsWXQEvuthM5Bz3bQOhd
-9ZyGT/VDHHWapEyshbypI3T7Kyy2ES2pOU1iomBIjRYv2N40wAJl2n6EebW4QNJJ
-ql52VwAYJ20Zq5d7MPkRouQVdrZqazWLrCJq7Kml0Orxo4HQxuAYvoHJgBaYvtoV
-VgrnyUfiyvdyBX4R5Ln1IYq0yHlY5STSSWIdQppy10dJhDRCFA2laL7f05kjM5yI
-N7/6pb28ZYRat9iMayH0ZwiwbwQuZW+ZhpO8HeSn83UiNzr24mEHSDapYLa7H02E
-P2XHbmh7oaAxYf3W0jdyFRqC3znRC2AEuIm3iRR7jg9YGgKq1A10SeC+eEhcvNQd
-5cOLp7Yc9rR5iUCorGoF2VO/cAiegV2AySaxa2te+B3R5SkcBvIIozqEbfIcxaOD
-JHndAOEGr/++5DLb8xIFWb0OjkGZksz4wRSW0PWHbOD5SBwxB6TasP8uLZ9PToo0
-K5Xha12kifbhleSw4DDq
-=amD3
------END PGP SIGNATURE-----
+However, these cases need a bit more care:
 
---lCFQJunhLz1tFGpX--
+	ACCESS_ONCE(rdp->qlen)++;
+	ACCESS_ONCE(rsp->n_barrier_done)++;
+	ACCESS_ONCE(sync_rcu_preempt_exp_count)++;
+
+In the ->qlen case, interrupts are disabled and the current CPU is
+the only one who can write, so the read need not be volatile.  In the
+->n_barrier_done, modifications are done holding ->barrier_mutex, so again
+the read need not be volatile.  In the sync_rcu_preempt_exp_count case,
+modifications are done holding sync_rcu_preempt_exp_mutex, so once again,
+the read need not be volatile.  So I could do something like:
+
+	ACCESS_ONCE(rdp->qlen) = rdp->qlen + 1;
+
+But that still makes gcc generate bad code.
+
+The reason I was not all that worried about this is that these are not
+in fastpaths, and the last two are especially not in fastpaths.
+
+Suggestions?
+
+							Thanx, Paul
+
