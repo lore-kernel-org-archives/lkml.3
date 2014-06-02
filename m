@@ -1,92 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932092AbaFBQMr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 12:12:47 -0400
-Received: from sauhun.de ([89.238.76.85]:46600 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754850AbaFBQMq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 12:12:46 -0400
-Date: Mon, 2 Jun 2014 18:12:34 +0200
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Yao Jin <yao.jin@intel.com>, Aubrey Li <aubrey.li@intel.com>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] i2c: designware: No need to disable already disabled
- controller
-Message-ID: <20140602161234.GG2654@katana>
-References: <1400164644-3222-1-git-send-email-mika.westerberg@linux.intel.com>
- <1400164644-3222-2-git-send-email-mika.westerberg@linux.intel.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="GdbWtwDHkcXqP16f"
-Content-Disposition: inline
-In-Reply-To: <1400164644-3222-2-git-send-email-mika.westerberg@linux.intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1754638AbaFBQLw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 12:11:52 -0400
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:59682 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754432AbaFBQLu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 12:11:50 -0400
+From: Chaitanya Hazarey <c@24.io>
+To: gregkh@linuxfoundation.org, burzalodowa@gmail.com,
+        andrea.merello@gmail.com
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Chaitanya Hazarey <c@24.io>
+Subject: [PATCH 1/4] Staging: rtl8192u: r8192U_wx.c removed some dead code
+Date: Mon,  2 Jun 2014 09:11:42 -0700
+Message-Id: <1401725505-3459-1-git-send-email-c@24.io>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Removed dead code, commented out printks and DMESG.
 
---GdbWtwDHkcXqP16f
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Chaitanya Hazarey <c@24.io>
+---
+ drivers/staging/rtl8192u/r8192U_wx.c | 10 ----------
+ 1 file changed, 10 deletions(-)
 
-On Thu, May 15, 2014 at 05:37:21PM +0300, Mika Westerberg wrote:
-> If the controller is already in desired state (enabled/disabled) there is
-> no point in setting its state again.
->=20
-> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> ---
+diff --git a/drivers/staging/rtl8192u/r8192U_wx.c b/drivers/staging/rtl8192u/r8192U_wx.c
+index 675a12d..7dc2a96 100644
+--- a/drivers/staging/rtl8192u/r8192U_wx.c
++++ b/drivers/staging/rtl8192u/r8192U_wx.c
+@@ -341,10 +341,8 @@ static int r8192_wx_set_scan(struct net_device *dev, struct iw_request_info *a,
+ 	if (wrqu->data.flags & IW_SCAN_THIS_ESSID) {
+ 		struct iw_scan_req *req = (struct iw_scan_req *)b;
+ 		if (req->essid_len) {
+-			//printk("==**&*&*&**===>scan set ssid:%s\n", req->essid);
+ 			ieee->current_network.ssid_len = req->essid_len;
+ 			memcpy(ieee->current_network.ssid, req->essid, req->essid_len);
+-			//printk("=====>network ssid:%s\n", ieee->current_network.ssid);
+ 		}
+ 	}
+ 
+@@ -703,7 +701,6 @@ static int r8192_wx_get_retry(struct net_device *dev,
+ 		wrqu->retry.flags = IW_RETRY_LIMIT | IW_RETRY_MIN;
+ 		wrqu->retry.value = priv->retry_data;
+ 	}
+-	//printk("returning %d",wrqu->retry.value);
+ 
+ 
+ 	return 0;
+@@ -730,7 +727,6 @@ static int r8192_wx_set_sens(struct net_device *dev,
+ 
+ 	short err = 0;
+ 	down(&priv->wx_sem);
+-	//DMESG("attempt to set sensivity to %ddb",wrqu->sens.value);
+ 	if (priv->rf_set_sens == NULL) {
+ 		err = -1; /* we have not this support for this radio */
+ 		goto exit;
+@@ -754,7 +750,6 @@ static int r8192_wx_set_enc_ext(struct net_device *dev,
+ 	int ret = 0;
+ 	struct r8192_priv *priv = ieee80211_priv(dev);
+ 	struct ieee80211_device *ieee = priv->ieee80211;
+-	//printk("===>%s()\n", __func__);
+ 
+ 
+ 	down(&priv->wx_sem);
+@@ -828,7 +823,6 @@ static int r8192_wx_set_auth(struct net_device *dev,
+ 					union iwreq_data *data, char *extra)
+ {
+ 	int ret = 0;
+-	//printk("====>%s()\n", __func__);
+ 	struct r8192_priv *priv = ieee80211_priv(dev);
+ 	down(&priv->wx_sem);
+ 	ret = ieee80211_wx_set_auth(priv->ieee80211, info, &(data->param), extra);
+@@ -840,7 +834,6 @@ static int r8192_wx_set_mlme(struct net_device *dev,
+ 					struct iw_request_info *info,
+ 					union iwreq_data *wrqu, char *extra)
+ {
+-	//printk("====>%s()\n", __func__);
+ 
+ 	int ret = 0;
+ 	struct r8192_priv *priv = ieee80211_priv(dev);
+@@ -855,13 +848,11 @@ static int r8192_wx_set_gen_ie(struct net_device *dev,
+ 					struct iw_request_info *info,
+ 					union iwreq_data *data, char *extra)
+ {
+-	   //printk("====>%s(), len:%d\n", __func__, data->length);
+ 	int ret = 0;
+ 	struct r8192_priv *priv = ieee80211_priv(dev);
+ 	down(&priv->wx_sem);
+ 	ret = ieee80211_wx_set_gen_ie(priv->ieee80211, extra, data->data.length);
+ 	up(&priv->wx_sem);
+-	//printk("<======%s(), ret:%d\n", __func__, ret);
+ 	return ret;
+ 
+ 
+@@ -992,7 +983,6 @@ struct iw_statistics *r8192_get_wireless_stats(struct net_device *dev)
+ 	tmp_level = (&ieee->current_network)->stats.rssi;
+ 	tmp_qual = (&ieee->current_network)->stats.signal;
+ 	tmp_noise = (&ieee->current_network)->stats.noise;
+-	//printk("level:%d, qual:%d, noise:%d\n", tmp_level, tmp_qual, tmp_noise);
+ 
+ 	wstats->qual.level = tmp_level;
+ 	wstats->qual.qual = tmp_qual;
+-- 
+1.9.1
 
-Does it have a side-effect when setting then enable bit again? Otherwise
-it will exit the loop immediately on the first try. Not too bad IMO
-given the additional code saved.
-
->  drivers/i2c/busses/i2c-designware-core.c | 4 ++++
->  1 file changed, 4 insertions(+)
->=20
-> diff --git a/drivers/i2c/busses/i2c-designware-core.c b/drivers/i2c/busse=
-s/i2c-designware-core.c
-> index b58ecf19e767..b0792675b970 100644
-> --- a/drivers/i2c/busses/i2c-designware-core.c
-> +++ b/drivers/i2c/busses/i2c-designware-core.c
-> @@ -258,6 +258,10 @@ static void __i2c_dw_enable(struct dw_i2c_dev *dev, =
-bool enable)
->  {
->  	int timeout =3D 100;
-> =20
-> +	/* In case the controller is already in desired state */
-> +	if ((dw_readl(dev, DW_IC_ENABLE_STATUS) & 1) =3D=3D enable)
-> +		return;
-> +
->  	do {
->  		dw_writel(dev, enable, DW_IC_ENABLE);
->  		if ((dw_readl(dev, DW_IC_ENABLE_STATUS) & 1) =3D=3D enable)
-> --=20
-> 2.0.0.rc2
->=20
-
---GdbWtwDHkcXqP16f
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTjKJxAAoJEBQN5MwUoCm2JwwP/jUWlMJJU92m8Xyj9gTqi0Kw
-ASi+nB+ODGjOt30rI4eGxOvzrJYAHhSP4isO6ZKv73e9nbkQh032NzKitU0cXpS5
-QESfr8r1gKdtNGGqHDYWCz6PC91T1crtS1PxrdHXFekrngzITC3gCUoQSblu6wBS
-rHafasSKIs7FnISvzJqx25roU7oAF7bharfnhkrZkWPnuladv9AyLX+v/DCE0xuY
-c5vPCSXTkGLBJlYWSGI59irVOSjCoPsuaMQrL/H9q+PCDttrhgxCEVIlesBwhosT
-cZvAojYyS0X0VwWHA9lMbrZi+d3iXSW0D38IE7X/ulxpIznrJkoEhJhUdozWCSIx
-WFqEOzKwWlVm+ifqNjJd23zeb3Rw2d5je4Zxf00pV0kCJSks9GeDwCqKHxb1b50X
-Ihpd95PShKTjXHA4i8CkJez3CeF4d2jGP8TExjEYXDcM0S3/KrgNZPkNqNb97brs
-SzZcnlDrlP8vSOdsHDfPwkCSQPjcHLTvH50mhs3nK7erIiAJNKEnaa69eC3Pgk7m
-plabCXQyJ0S9j1IZwHn767yp4goLFOeb2+tRDmOLmp2ZDZM7SEbSKpPm7ENIPvzf
-4Qup/ycnzzOS3/B8LWv00fLJxibmysIcORQr+HmOjH914+s80N3F8V6HINIU0Jxy
-/bwxx79cbAElWVf2crj9
-=FdRx
------END PGP SIGNATURE-----
-
---GdbWtwDHkcXqP16f--
