@@ -1,41 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754140AbaFBLX1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 07:23:27 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:38022 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754007AbaFBLXZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754113AbaFBLXZ (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 2 Jun 2014 07:23:25 -0400
+Received: from isis.lip6.fr ([132.227.60.2]:64827 "EHLO isis.lip6.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752843AbaFBLXX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 07:23:23 -0400
+X-pt: isis.lip6.fr
+Date: Mon, 2 Jun 2014 13:24:19 +0200
+From: Benoit Taine <benoit.taine@lip6.fr>
+To: David Miller <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: [PATCH 2/2 v2] lpc_eth: Use resource_size instead of computation
+Message-ID: <20140602112419.GA3625@lip6.fr>
+References: <1401290047-30005-1-git-send-email-benoit.taine@lip6.fr>
+ <1401290047-30005-3-git-send-email-benoit.taine@lip6.fr>
+ <20140601.192705.693805935389177182.davem@davemloft.net>
 MIME-Version: 1.0
-X-Originating-IP: [90.207.204.193]
-In-Reply-To: <20140530032010.GA29906@dhcp-16-198.nay.redhat.com>
-References: <20140530032010.GA29906@dhcp-16-198.nay.redhat.com>
-Date: Mon, 2 Jun 2014 12:23:24 +0100
-Message-ID: <CADknwL6Xh+egtg3S0JLrt2eogbWB75MWGA19oG-k97_R9LMTfQ@mail.gmail.com>
-Subject: Re: [PATCH]x86 efi: do not export efi runtime map in case old map
-From: Matt Fleming <matt@console-pimps.org>
-To: Dave Young <dyoung@redhat.com>
-Cc: matt.fleming@intel.com, bp@alien8.de, linux-kernel@vger.kernel.org,
-        linux-efi@vger.kernel.org, vgoyal@redhat.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140601.192705.693805935389177182.davem@davemloft.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.4.3 (isis.lip6.fr [132.227.60.2]); Mon, 02 Jun 2014 13:23:19 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30 May 2014 04:20, Dave Young <dyoung@redhat.com> wrote:
->
-> For ioremapped efi memory aka old_map the virt addresses are not persistant
-> across kexec reboot. kexec-tools will read the runtime maps from sysfs then
-> pass them to 2nd kernel and assuming kexec efi boot is ok. This will cause
-> kexec boot failure.
->
-> To address this issue do not export runtime maps in case efi old_map so
-> userspace can use no efi boot instead.
->
-> Signed-off-by: Dave Young <dyoung@redhat.com>
-> ---
->  arch/x86/platform/efi/efi.c | 3 +++
->  1 file changed, 3 insertions(+)
+This issue was reported by coccicheck using the semantic patch 
+at scripts/coccinelle/api/resource_size.cocci
 
-Thanks Dave, applied with acks.
+Signed-off-by: Benoit Taine <benoit.taine@lip6.fr>
+---
+Not compile tested, due incompatible architecture.
+
+diff --git a/drivers/net/ethernet/nxp/lpc_eth.c b/drivers/net/ethernet/nxp/lpc_eth.c
+index 422d9b5..645dac3 100644
+--- a/drivers/net/ethernet/nxp/lpc_eth.c
++++ b/drivers/net/ethernet/nxp/lpc_eth.c
+@@ -1361,7 +1361,7 @@ static int lpc_eth_drv_probe(struct platform_device *pdev)
+        __lpc_eth_clock_enable(pldat, true);
+ 
+        /* Map IO space */
+-       pldat->net_base = ioremap(res->start, res->end - res->start + 1);
++       pldat->net_base = ioremap(res->start, resource_size(res));
+        if (!pldat->net_base) {
+                dev_err(&pdev->dev, "failed to map registers\n");
+                ret = -ENOMEM;
+@@ -1417,10 +1417,8 @@ static int lpc_eth_drv_probe(struct platform_device *pdev)
+        }
+        pldat->dma_buff_base_p = dma_handle;
+ 
+-       netdev_dbg(ndev, "IO address start     :0x%08x\n",
+-                       res->start);
+-       netdev_dbg(ndev, "IO address size      :%d\n",
+-                       res->end - res->start + 1);
++       netdev_dbg(ndev, "IO address space     :%pR", res);
++       netdev_dbg(ndev, "IO address size      :%d\n", resource_size(res));
+        netdev_dbg(ndev, "IO address (mapped)  :0x%p\n",
+                        pldat->net_base);
+        netdev_dbg(ndev, "IRQ number           :%d\n", ndev->irq);
+
