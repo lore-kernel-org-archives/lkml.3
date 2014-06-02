@@ -1,119 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753639AbaFBKUy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 06:20:54 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:42712 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753126AbaFBKUw convert rfc822-to-8bit (ORCPT
+	id S1753614AbaFBK1T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 06:27:19 -0400
+Received: from mail-we0-f180.google.com ([74.125.82.180]:64666 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752963AbaFBK1S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 06:20:52 -0400
-From: "Javi Merino" <javi.merino@arm.com>
-Date: Mon, 2 Jun 2014 11:20:48 +0100
-To: Amit Kachhap <amit.kachhap@gmail.com>
-Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Zhang Rui <rui.zhang@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "edubezval@gmail.com" <edubezval@gmail.com>,
-        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "lenb@kernel.org" <lenb@kernel.org>
-Subject: Re: [PATCH v1 6/6] ACPI: thermal: processor: Use the generic cpufreq
- infrastructure
-Message-ID: <20140602102047.GB2795@e104805>
-References: <1401351334-11210-1-git-send-email-amit.daniel@samsung.com>
- <1401351334-11210-7-git-send-email-amit.daniel@samsung.com>
- <20140529124248.GC2593@e104805>
- <CADGdYn7FZCjhzbFMtNPFtQV_naQhVk+nR1VFNH88M92_NQmfsA@mail.gmail.com>
+	Mon, 2 Jun 2014 06:27:18 -0400
+Message-ID: <538C517C.5090702@cantab.net>
+Date: Mon, 02 Jun 2014 11:27:08 +0100
+From: David Vrabel <dvrabel@cantab.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <CADGdYn7FZCjhzbFMtNPFtQV_naQhVk+nR1VFNH88M92_NQmfsA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 02 Jun 2014 10:20:46.0935 (UTC) FILETIME=[51A3FE70:01CF7E4C]
-X-MC-Unique: 114060211205002101
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: "Xen-devel@lists.xen.org" <Xen-devel@lists.xen.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: [GIT PULL] Xen features and fixes for 3.16-rc0
+X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 02, 2014 at 10:21:48AM +0100, Amit Kachhap wrote:
-> Hi Javi,
-> 
-> On 5/29/14, Javi Merino <javi.merino@arm.com> wrote:
-> > Hi Amit,
-> >
-> > On Thu, May 29, 2014 at 09:15:34AM +0100, Amit Daniel Kachhap wrote:
-> >> This patch upgrades the ACPI cpufreq cooling portions to use the generic
-> >> cpufreq cooling infrastructure. There should not be any functionality
-> >> related changes as the same behaviour is provided by the generic
-> >> cpufreq APIs with the notifier mechanism.
-> >>
-> >> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
-> >> ---
-> >>  drivers/acpi/processor_driver.c  |    6 +-
-> >>  drivers/acpi/processor_thermal.c |  235
-> >> ++++++++++++++++++--------------------
-> >>  include/acpi/processor.h         |    3 +-
-> >>  3 files changed, 115 insertions(+), 129 deletions(-)
-> >>
-> >> diff --git a/drivers/acpi/processor_driver.c
-> >> b/drivers/acpi/processor_driver.c
-> >> index 7f70f31..10aba4a 100644
-> >> --- a/drivers/acpi/processor_driver.c
-> >> +++ b/drivers/acpi/processor_driver.c
-> >> @@ -36,6 +36,7 @@
-> >>  #include <linux/cpuidle.h>
-> >>  #include <linux/slab.h>
-> >>  #include <linux/acpi.h>
-> >> +#include <linux/cpu_cooling.h>
-> >>
-> >>  #include <acpi/processor.h>
-> >>
-> >> @@ -178,8 +179,7 @@ static int __acpi_processor_start(struct acpi_device
-> >> *device)
-> >>         if (!cpuidle_get_driver() || cpuidle_get_driver() ==
-> >> &acpi_idle_driver)
-> >>                 acpi_processor_power_init(pr);
-> >>
-> >> -       pr->cdev = thermal_cooling_device_register("Processor", device,
-> >> -
-> >> &processor_cooling_ops);
-> >> +       pr->cdev = acpi_processor_cooling_register(device);
-> >
-> > With this you have removed the only cooling device whose type was
-> > "Processor".  There's special code for dealing with this cooling
-> > device in drivers/thermal/thermal_core.c:passive_store():
-> >
-> > 		list_for_each_entry(cdev, &thermal_cdev_list, node) {
-> > 			if (!strncmp("Processor", cdev->type,
-> > 				     sizeof("Processor")))
-> > 				thermal_zone_bind_cooling_device(tz,
-> > 						THERMAL_TRIPS_NONE, cdev,
-> > 						THERMAL_NO_LIMIT,
-> > 						THERMAL_NO_LIMIT);
-> > 		}
-> > 		mutex_unlock(&thermal_list_lock);
-> > 		if (!tz->passive_delay)
-> >
-> > With your change, that code is now "dead" as it can't do anything.  No
-> > I don't know what should you do with it, either remove it or make it
-> > match the cpufreq cooling device.  But this patch should deal with
-> > that code as well.
-> nice catch. I somehow missed modifying this section.
-> I think the following changes should fix this,
-> -                       if (!strncmp("Processor", cdev->type,
-> -                                    sizeof("Processor")))
-> +                       if (!strncmp("thermal-cpufreq", cdev->type,
-> +                                    sizeof("thermal-cpufreq")))
->                                 thermal_zone_bind_cooling_device(tz,
-> 
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-That should do it.  I don't really understand why this code is
-specifically looking for ACPI processor cooling devices but I guess
-that's the least disrupting change you can make.
+Linus,
 
-Cheers,
-Javi
+Please git pull the following tag:
 
+ git://git.kernel.org/pub/scm/linux/kernel/git/xen/tip.git stable/for-linus-3.16-rc0-tag
+
+xen: features and fixes for 3.16-rc0
+
+- - Support foreign mappings in PVH domains (needed when dom0 is PVH)
+
+- - Fix mapping high MMIO regions in x86 PV guests (this is also the
+  first half of removing the PAGE_IOMAP PTE flag).
+
+- - ARM suspend/resume support.
+
+- - ARM multicall support.
+
+Thanks.
+
+David
+
+ arch/arm/include/asm/xen/hypercall.h |   16 +++-
+ arch/arm/include/asm/xen/interface.h |    2 +
+ arch/arm/xen/enlighten.c             |    9 ++
+ arch/arm/xen/hypercall.S             |    1 +
+ arch/arm64/xen/hypercall.S           |    1 +
+ arch/x86/include/asm/xen/hypercall.h |    2 +-
+ arch/x86/include/asm/xen/interface.h |    3 +
+ arch/x86/xen/enlighten.c             |    1 +
+ arch/x86/xen/mmu.c                   |  125 ++++++++++++++++++++++--
+ arch/x86/xen/p2m.c                   |  174 ++++++++++++++++++++++------------
+ arch/x86/xen/setup.c                 |   15 ++-
+ arch/x86/xen/suspend.c               |   23 ++++-
+ arch/x86/xen/xen-ops.h               |    2 +
+ drivers/xen/manage.c                 |   45 ++-------
+ drivers/xen/xen-acpi-processor.c     |    4 +-
+ drivers/xen/xen-pciback/pci_stub.c   |   25 ++++-
+ drivers/xen/xen-pciback/xenbus.c     |    4 +
+ include/xen/interface/xen.h          |    6 +-
+ include/xen/xen-ops.h                |    4 -
+ 19 files changed, 334 insertions(+), 128 deletions(-)
+
+David Vrabel (7):
+      xen: refactor suspend pre/post hooks
+      x86/xen: rename early_p2m_alloc() and early_p2m_alloc_middle()
+      x86/xen: fix set_phys_range_identity() if pfn_e > MAX_P2M_PFN
+      x86/xen: compactly store large identity ranges in the p2m
+      x86/xen: only warn once if bad MFNs are found during setup
+      x86/xen: set regions above the end of RAM as 1:1
+      x86/xen: do not use _PAGE_IOMAP in xen_remap_domain_mfn_range()
+
+Ian Campbell (2):
+      arm: xen: implement multicall hypercall support.
+      arm: xen: export HYPERVISOR_multicall to modules.
+
+Julien Grall (1):
+      arm/xen: Remove definiition of virt_to_pfn in asm/xen/page.h
+
+Konrad Rzeszutek Wilk (6):
+      xen-pciback: Cleanup up pcistub_put_pci_dev
+      xen-pciback: First reset, then free.
+      xen-pciback: Document when we FLR an PCI device.
+      xen/pciback: Document when the 'unbind' and 'bind' functions are called.
+      xen/pciback: Document the entry points for 'pcistub_put_pci_dev'
+      xen-acpi-processor: Don't display errors when we get -ENOSYS
+
+Mukesh Rathor (1):
+      x86/xen: map foreign pfns for autotranslated guests
+
+Radim Krčmář (1):
+      xen/x86: set panic notifier priority to minimum
+
+Stefano Stabellini (2):
+      arm64: introduce virt_to_pfn
+      arm,arm64/xen: introduce HYPERVISOR_suspend()
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Icedove - http://www.enigmail.net/
+
+iQEcBAEBAgAGBQJTjFFzAAoJEFxbo/MsZsTRnnwIAKvKUfmdJoF+PIeAdk7fLq6n
+scMNeZ6+Jii53+o2gbuC2P8deKCP7N9bFELdNWTkl76DROHu3YSd8h2iEgT3NmWI
+Z9iUomutX3LQAb18PLDGk01ddUY+kDGHC+DTFgKyhQtddRwEuM6J1s3o9VHApvXH
+U1HpqbuexMJZ0WRelGQB3EHoLeeW7h/LdEnCftRlNuSepXOF4QEi0psBSaDKHHRD
+JqNiNRQRfJskRwfJj3IHJUa8ajFpVNGlX8ipgdRw7WOLBTpfxzCHlithQ18eSM80
+6aDU5wK1QvO1CcGnugyZ4IGrTbW/x2b+gr3CIToUDeQcOIem5X1KHYX6jFsghbI=
+=wcRi
+-----END PGP SIGNATURE-----
