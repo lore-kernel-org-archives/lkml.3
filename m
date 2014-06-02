@@ -1,83 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754912AbaFBN5b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 09:57:31 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:63544 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754715AbaFBN53 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 09:57:29 -0400
-Date: Mon, 2 Jun 2014 14:57:22 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        wsa@the-dreams.de
-Cc: linus.walleij@linaro.org, grant.likely@linaro.org,
-        linux-i2c@vger.kernel.org
-Subject: Re: [PATCH 1/3] i2c: Provide 'device type' to 'OF device node'
- look-up
-Message-ID: <20140602135722.GC4146@lee--X1>
-References: <1401716463-23457-1-git-send-email-lee.jones@linaro.org>
- <1401716463-23457-2-git-send-email-lee.jones@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	id S1755066AbaFBN6b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 09:58:31 -0400
+Received: from mail.emea.novell.com ([130.57.118.101]:57711 "EHLO
+	mail.emea.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754968AbaFBN6a convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:2:1>);
+	Mon, 2 Jun 2014 09:58:30 -0400
+Message-Id: <538C9F210200007800016DC7@mail.emea.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 14.0.0 
+Date: Mon, 02 Jun 2014 14:58:25 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
+Cc: <linux-kernel@vger.kernel.org>
+Subject: [PATCH] swiotlb: don't assume PA 0 is invalid
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1401716463-23457-2-git-send-email-lee.jones@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> We have a problem.  There are lots of I2C device ID tables scattered
-> around the kernel which are redundant in all Device Tree and/or ACPI
-> only supported device drivers.  After recent discussions it has become
-> apparent that the only thing blocking the complete removal of these
-> tables is the continued support of 'register an I2C device via sysfs'
-> functionality.  As the sysfs method doesn't know anything about Device
-> Tree or ACPI, we can not pass any nodes in.  This patch searches all
-> known Device Tree nodes and attempts to acquire a match from the
-> device name provided via sysfs.  It can not fail, but if found assigns
-> the matching of_node to i2c_board_info prior to registering.
-> 
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> ---
->  drivers/i2c/i2c-core.c | 31 +++++++++++++++++++++++++++++++
->  1 file changed, 31 insertions(+)
+In 2.6.29 io_tlb_orig_addr[] got converted from storing virtual addresses
+to storing physical ones. While checking virtual addresses against NULL
+is a legitimate thing to catch invalid entries, checking physical ones
+against zero isn't: There's no guarantee that PFN 0 is reserved on a
+particular platform.
 
-[...]
+Since it is unclear whether the check in swiotlb_tbl_unmap_single() is
+actually needed, retain it but check against a guaranteed invalid physical
+address. This requires setting up the array in a suitable fashion. And
+since the original code failed to invalidate array entries when regions
+get unmapped, this is being fixed at once along with adding a similar
+check to swiotlb_tbl_sync_single().
 
-> +static struct device_node *of_i2c_type_to_node(char *type)
-> +{
-> +	struct device_node *np;
-> +	const char *compatible, *name;
-> +	int len;
-> +
-> +	if (!type)
-> +		return NULL;
-> +
-> +	for_each_of_allnodes(np) {
-> +		compatible = of_get_property(np, "compatible", &len);
-> +		if (!compatible)
-> +			continue;
-> +
-> +		name = strchr(compatible, ',');
-> +		if (!name)
-> +			name = compatible;
-> +		else
-> +			name++;
-> +
-> +		if (!strncmp(name, type, len - (name - compatible)))
-> +			return np;
-> +	}
-> +
-> +	return NULL;
-> +}
+Obviously the less intrusive change would be to simply drop the check in
+swiotlb_tbl_unmap_single().
 
-Ah, this _might_ not work if there are more than one devices of the
-same type.  I guess I need to check the 'reg' property too.
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+---
+ lib/swiotlb.c |   28 ++++++++++++++++++----------
+ 1 file changed, 18 insertions(+), 10 deletions(-)
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+--- 3.15-rc8/lib/swiotlb.c
++++ 3.15-rc8-swiotlb-unmap-single-phys-check/lib/swiotlb.c
+@@ -86,6 +86,7 @@ static unsigned int io_tlb_index;
+  * We need to save away the original address corresponding to a mapped entry
+  * for the sync operations.
+  */
++#define INVALID_PHYS_ADDR (~(phys_addr_t)0)
+ static phys_addr_t *io_tlb_orig_addr;
+ 
+ /*
+@@ -188,12 +189,14 @@ int __init swiotlb_init_with_tbl(char *t
+ 	io_tlb_list = memblock_virt_alloc(
+ 				PAGE_ALIGN(io_tlb_nslabs * sizeof(int)),
+ 				PAGE_SIZE);
+-	for (i = 0; i < io_tlb_nslabs; i++)
+- 		io_tlb_list[i] = IO_TLB_SEGSIZE - OFFSET(i, IO_TLB_SEGSIZE);
+-	io_tlb_index = 0;
+ 	io_tlb_orig_addr = memblock_virt_alloc(
+ 				PAGE_ALIGN(io_tlb_nslabs * sizeof(phys_addr_t)),
+ 				PAGE_SIZE);
++	for (i = 0; i < io_tlb_nslabs; i++) {
++ 		io_tlb_list[i] = IO_TLB_SEGSIZE - OFFSET(i, IO_TLB_SEGSIZE);
++ 		io_tlb_orig_addr[i] = INVALID_PHYS_ADDR;
++	}
++	io_tlb_index = 0;
+ 
+ 	if (verbose)
+ 		swiotlb_print_info();
+@@ -313,10 +316,6 @@ swiotlb_late_init_with_tbl(char *tlb, un
+ 	if (!io_tlb_list)
+ 		goto cleanup3;
+ 
+-	for (i = 0; i < io_tlb_nslabs; i++)
+- 		io_tlb_list[i] = IO_TLB_SEGSIZE - OFFSET(i, IO_TLB_SEGSIZE);
+-	io_tlb_index = 0;
+-
+ 	io_tlb_orig_addr = (phys_addr_t *)
+ 		__get_free_pages(GFP_KERNEL,
+ 				 get_order(io_tlb_nslabs *
+@@ -324,7 +323,11 @@ swiotlb_late_init_with_tbl(char *tlb, un
+ 	if (!io_tlb_orig_addr)
+ 		goto cleanup4;
+ 
+-	memset(io_tlb_orig_addr, 0, io_tlb_nslabs * sizeof(phys_addr_t));
++	for (i = 0; i < io_tlb_nslabs; i++) {
++ 		io_tlb_list[i] = IO_TLB_SEGSIZE - OFFSET(i, IO_TLB_SEGSIZE);
++ 		io_tlb_orig_addr[i] = INVALID_PHYS_ADDR;
++	}
++	io_tlb_index = 0;
+ 
+ 	swiotlb_print_info();
+ 
+@@ -556,7 +559,8 @@ void swiotlb_tbl_unmap_single(struct dev
+ 	/*
+ 	 * First, sync the memory before unmapping the entry
+ 	 */
+-	if (orig_addr && ((dir == DMA_FROM_DEVICE) || (dir == DMA_BIDIRECTIONAL)))
++	if (orig_addr != INVALID_PHYS_ADDR &&
++	    ((dir == DMA_FROM_DEVICE) || (dir == DMA_BIDIRECTIONAL)))
+ 		swiotlb_bounce(orig_addr, tlb_addr, size, DMA_FROM_DEVICE);
+ 
+ 	/*
+@@ -573,8 +577,10 @@ void swiotlb_tbl_unmap_single(struct dev
+ 		 * Step 1: return the slots to the free list, merging the
+ 		 * slots with superceeding slots
+ 		 */
+-		for (i = index + nslots - 1; i >= index; i--)
++		for (i = index + nslots - 1; i >= index; i--) {
+ 			io_tlb_list[i] = ++count;
++			io_tlb_orig_addr[i] = INVALID_PHYS_ADDR;
++		}
+ 		/*
+ 		 * Step 2: merge the returned slots with the preceding slots,
+ 		 * if available (non zero)
+@@ -593,6 +599,8 @@ void swiotlb_tbl_sync_single(struct devi
+ 	int index = (tlb_addr - io_tlb_start) >> IO_TLB_SHIFT;
+ 	phys_addr_t orig_addr = io_tlb_orig_addr[index];
+ 
++	if (orig_addr == INVALID_PHYS_ADDR)
++		return;
+ 	orig_addr += (unsigned long)tlb_addr & ((1 << IO_TLB_SHIFT) - 1);
+ 
+ 	switch (target) {
+
+
+
