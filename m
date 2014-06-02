@@ -1,57 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753812AbaFBJb6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 05:31:58 -0400
-Received: from mail-qa0-f45.google.com ([209.85.216.45]:38636 "EHLO
-	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753386AbaFBJb4 (ORCPT
+	id S1753181AbaFBJfK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 05:35:10 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:38201 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752724AbaFBJfI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 05:31:56 -0400
+	Mon, 2 Jun 2014 05:35:08 -0400
+Date: Mon, 2 Jun 2014 11:35:03 +0200
+From: Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        sebastian.hesselbarth@gmail.com, thomas.petazzoni@free-electrons.com,
+        zmxu@marvell.com, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, alexandre.belloni@free-electrons.com,
+        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/5] ARM: berlin: add SMP support
+Message-ID: <20140602093503.GA24919@kwain>
+References: <1401700866-24804-1-git-send-email-antoine.tenart@free-electrons.com>
+ <1401700866-24804-2-git-send-email-antoine.tenart@free-electrons.com>
+ <20140602092913.GA933@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <20140530132324.757076ca@canb.auug.org.au>
-References: <20140530132324.757076ca@canb.auug.org.au>
-Date: Mon, 2 Jun 2014 11:31:55 +0200
-Message-ID: <CAPDyKFqp=quWV17MGZfvgZA-J_KPsWkza184+bjez_MQpOx6Xg@mail.gmail.com>
-Subject: Re: linux-next: build failure after merge of the mmc tree
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Chris Ball <chris@printf.net>, Mike Turquette <mturquette@linaro.org>
-Cc: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        =?UTF-8?Q?David_Lanzend=C3=B6rfer?= <david.lanzendoerfer@o2s.ch>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Hans de Goede <hdegoede@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140602092913.GA933@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30 May 2014 05:23, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi Chris,
->
-> After merging the mmc tree, today's linux-next build (arm multi_v7_defconfig)
-> failed like this:
->
-> drivers/mmc/host/sunxi-mmc.c:25:29: fatal error: linux/clk/sunxi.h: No such file or directory
->
-> Caused by commit 19b7f796c375 ("mmc: sunxi: Add driver for SD/MMC hosts
-> found on Allwinner sunxi SoCs").  Something has changed to turn on
-> CONFIG_ARCH_SUNXI in the arm multi_v7_defconfig build since yesterday.
->
-> linux/clk/sunxi.h is created by a commit in the clk tree
-> (git://git.linaro.org/people/mturquette/linux.git#clk-next) which I
-> don't include in linux-next until much later than the mmc tree.
->
-> I have reverted that commit for today.
-> --
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
+On Mon, Jun 02, 2014 at 10:29:13AM +0100, Russell King - ARM Linux wrote:
+> On Mon, Jun 02, 2014 at 11:21:02AM +0200, Antoine Ténart wrote:
+> > diff --git a/arch/arm/mach-berlin/Kconfig b/arch/arm/mach-berlin/Kconfig
+> > index d3c5f14dc142..e3733692f67a 100644
+> > --- a/arch/arm/mach-berlin/Kconfig
+> > +++ b/arch/arm/mach-berlin/Kconfig
+> > @@ -4,6 +4,7 @@ config ARCH_BERLIN
+> >  	select GENERIC_IRQ_CHIP
+> >  	select DW_APB_ICTL
+> >  	select DW_APB_TIMER_OF
+> > +	select SMP
+> 
+> Please don't add selects of symbols which aren't absolutely necessary.
+> 
+> Since this has been merged without SMP support and presumably works without
+> SMP support, it would appear that SMP support is not mandatory for the
+> platform to work.
 
-Hi Mike, Chris,
+It can work without SMP, I'll remove this.
 
-So, the proper thing would be to let Mike to carry the above patch
-though his clk tree instead.
+Antoine
 
-Could we arrange that?
-
-Kind regards
-Ulf Hansson
+-- 
+Antoine Ténart, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
