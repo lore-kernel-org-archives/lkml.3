@@ -1,79 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753500AbaFBJVm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 05:21:42 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:38045 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753323AbaFBJVL (ORCPT
+	id S1753575AbaFBJVv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 05:21:51 -0400
+Received: from mail-yk0-f174.google.com ([209.85.160.174]:49851 "EHLO
+	mail-yk0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753323AbaFBJVt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 05:21:11 -0400
-From: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
-	<antoine.tenart@free-electrons.com>
-To: sebastian.hesselbarth@gmail.com
-Cc: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        alexandre.belloni@free-electrons.com,
-        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 5/5] ARM: dts: berlin: add SMP related nodes and properties for BG2Q
-Date: Mon,  2 Jun 2014 11:21:06 +0200
-Message-Id: <1401700866-24804-6-git-send-email-antoine.tenart@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1401700866-24804-1-git-send-email-antoine.tenart@free-electrons.com>
-References: <1401700866-24804-1-git-send-email-antoine.tenart@free-electrons.com>
+	Mon, 2 Jun 2014 05:21:49 -0400
 MIME-Version: 1.0
+In-Reply-To: <20140529124248.GC2593@e104805>
+References: <1401351334-11210-1-git-send-email-amit.daniel@samsung.com>
+	<1401351334-11210-7-git-send-email-amit.daniel@samsung.com>
+	<20140529124248.GC2593@e104805>
+Date: Mon, 2 Jun 2014 14:51:48 +0530
+Message-ID: <CADGdYn7FZCjhzbFMtNPFtQV_naQhVk+nR1VFNH88M92_NQmfsA@mail.gmail.com>
+Subject: Re: [PATCH v1 6/6] ACPI: thermal: processor: Use the generic cpufreq infrastructure
+From: Amit Kachhap <amit.kachhap@gmail.com>
+To: Javi Merino <javi.merino@arm.com>
+Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Zhang Rui <rui.zhang@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "edubezval@gmail.com" <edubezval@gmail.com>,
+        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "lenb@kernel.org" <lenb@kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add required nodes and properties into the Berlin BG2Q device tree to
-take advantage of the newly introduced SMP support. Add the scu and
-cpu-ctrl nodes along with the CPUs enable-method property.
+Hi Javi,
 
-Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
----
- arch/arm/boot/dts/berlin2q.dtsi | 11 +++++++++++
- 1 file changed, 11 insertions(+)
+On 5/29/14, Javi Merino <javi.merino@arm.com> wrote:
+> Hi Amit,
+>
+> On Thu, May 29, 2014 at 09:15:34AM +0100, Amit Daniel Kachhap wrote:
+>> This patch upgrades the ACPI cpufreq cooling portions to use the generic
+>> cpufreq cooling infrastructure. There should not be any functionality
+>> related changes as the same behaviour is provided by the generic
+>> cpufreq APIs with the notifier mechanism.
+>>
+>> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+>> ---
+>>  drivers/acpi/processor_driver.c  |    6 +-
+>>  drivers/acpi/processor_thermal.c |  235
+>> ++++++++++++++++++--------------------
+>>  include/acpi/processor.h         |    3 +-
+>>  3 files changed, 115 insertions(+), 129 deletions(-)
+>>
+>> diff --git a/drivers/acpi/processor_driver.c
+>> b/drivers/acpi/processor_driver.c
+>> index 7f70f31..10aba4a 100644
+>> --- a/drivers/acpi/processor_driver.c
+>> +++ b/drivers/acpi/processor_driver.c
+>> @@ -36,6 +36,7 @@
+>>  #include <linux/cpuidle.h>
+>>  #include <linux/slab.h>
+>>  #include <linux/acpi.h>
+>> +#include <linux/cpu_cooling.h>
+>>
+>>  #include <acpi/processor.h>
+>>
+>> @@ -178,8 +179,7 @@ static int __acpi_processor_start(struct acpi_device
+>> *device)
+>>         if (!cpuidle_get_driver() || cpuidle_get_driver() ==
+>> &acpi_idle_driver)
+>>                 acpi_processor_power_init(pr);
+>>
+>> -       pr->cdev = thermal_cooling_device_register("Processor", device,
+>> -
+>> &processor_cooling_ops);
+>> +       pr->cdev = acpi_processor_cooling_register(device);
+>
+> With this you have removed the only cooling device whose type was
+> "Processor".  There's special code for dealing with this cooling
+> device in drivers/thermal/thermal_core.c:passive_store():
+>
+> 		list_for_each_entry(cdev, &thermal_cdev_list, node) {
+> 			if (!strncmp("Processor", cdev->type,
+> 				     sizeof("Processor")))
+> 				thermal_zone_bind_cooling_device(tz,
+> 						THERMAL_TRIPS_NONE, cdev,
+> 						THERMAL_NO_LIMIT,
+> 						THERMAL_NO_LIMIT);
+> 		}
+> 		mutex_unlock(&thermal_list_lock);
+> 		if (!tz->passive_delay)
+>
+> With your change, that code is now "dead" as it can't do anything.  No
+> I don't know what should you do with it, either remove it or make it
+> match the cpufreq cooling device.  But this patch should deal with
+> that code as well.
+nice catch. I somehow missed modifying this section.
+I think the following changes should fix this,
+-                       if (!strncmp("Processor", cdev->type,
+-                                    sizeof("Processor")))
++                       if (!strncmp("thermal-cpufreq", cdev->type,
++                                    sizeof("thermal-cpufreq")))
+                                thermal_zone_bind_cooling_device(tz,
 
-diff --git a/arch/arm/boot/dts/berlin2q.dtsi b/arch/arm/boot/dts/berlin2q.dtsi
-index 07452a7483fa..570f12f7e9c4 100644
---- a/arch/arm/boot/dts/berlin2q.dtsi
-+++ b/arch/arm/boot/dts/berlin2q.dtsi
-@@ -17,6 +17,7 @@
- 	cpus {
- 		#address-cells = <1>;
- 		#size-cells = <0>;
-+		enable-method = "marvell,berlin-smp";
- 
- 		cpu@0 {
- 			compatible = "arm,cortex-a9";
-@@ -94,6 +95,11 @@
- 			interrupts = <GIC_PPI 13 IRQ_TYPE_LEVEL_HIGH>;
- 		};
- 
-+		scu: snoop-control-unit@ad0000 {
-+			compatible = "arm,cortex-a9-scu";
-+			reg = <0xad0000 0x58>;
-+		};
-+
- 		gic: interrupt-controller@ad1000 {
- 			compatible = "arm,cortex-a9-gic";
- 			reg = <0xad1000 0x1000>, <0xad0100 0x100>;
-@@ -101,6 +107,11 @@
- 			#interrupt-cells = <3>;
- 		};
- 
-+		cpu-ctrl@dd0000 {
-+			compatible = "marvell,berlin-cpu-ctrl";
-+			reg = <0xdd0000 0x10000>;
-+		};
-+
- 		apb@e80000 {
- 			compatible = "simple-bus";
- 			#address-cells = <1>;
--- 
-1.9.1
-
+>
+> Cheers,
+> Javi
+>
+>
+>
