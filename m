@@ -1,127 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755734AbaFBQ2y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 12:28:54 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:52365 "EHLO arroyo.ext.ti.com"
+	id S1755766AbaFBQ33 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 12:29:29 -0400
+Received: from mout.perfora.net ([74.208.4.195]:53868 "EHLO mout.perfora.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753816AbaFBQ2w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 12:28:52 -0400
-Message-ID: <538CA63B.6000703@ti.com>
-Date: Mon, 2 Jun 2014 12:28:43 -0400
-From: Murali Karicheri <m-karicheri2@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	id S1752621AbaFBQ31 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 12:29:27 -0400
+Message-ID: <538CA635.4050502@ziswiler.com>
+Date: Mon, 02 Jun 2014 18:28:37 +0200
+From: Marcel Ziswiler <marcel@ziswiler.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Wolfram Sang <wsa@the-dreams.de>
-CC: "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Ding, Garrett" <g-ding@ti.com>, "Nori, Sekhar" <nsekhar@ti.com>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
-Subject: Re: [PATCH] i2c: davinci: Add block read functionality for IPMI
-References: <1398970186-12204-1-git-send-email-m-karicheri2@ti.com> <3E54258959B69E4282D79E01AB1F32B70472F6AC@DFLE11.ent.ti.com> <20140522090041.GA2573@katana>
-In-Reply-To: <20140522090041.GA2573@katana>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Stephen Warren <swarren@wwwdotorg.org>, thierry.reding@gmail.com
+CC: linux@arm.linux.org.uk, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org, stefan@agner.ch
+Subject: Re: [PATCH 2/3] arm: tegra: enable igb, stmpe, i2c chardev, spidev,
+ lm95245, pwm leds
+References: <c5522b0efcbfc7690dcde6aaf78b9dd568f99604.1401665237.git.marcel@ziswiler.com> <39a8704a4c8170d6b0620a1e5e44042eae6d8810.1401665237.git.marcel@ziswiler.com> <538CA24B.1010602@wwwdotorg.org>
+In-Reply-To: <538CA24B.1010602@wwwdotorg.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:RNNSCaJeCh7dBLxPAB254HvPYdiAxVtjrYoftvUsDQX
+ OtPPOL58G8XlCzH6QRj8CRloGrPDQE+4QILcUD0KFR1fdy5qZe
+ PjGWSpy/JAB/RiHiIbhQIh5Bwy7lJlr39jXi0oaTSeLT84wW7G
+ WnrrdXPU9w66KCaxqgmwS4MJC6x9Ie38ghEPQcdQGuTx25Zaof
+ 6M6vVT7vx/ofXg9XCk1SU5TncUUI7b3DmvKxlTmDLW9+azOeal
+ fjh5X7aLXrw5DtDbPla8Km/gCr8mEffpMnlm3MaaYapF1cwxjc
+ FxkwYVCQllNL+X7g15MrQ4o/I9C1Ny2vGN5SvGzcyxHdxNhDh6
+ G7muq1R+Fzl19/+YDvOY=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/22/2014 5:00 AM, Wolfram Sang wrote:
-> Hi,
+On 06/02/2014 06:11 PM, Stephen Warren wrote:
+>> BTW: How about MTD_SPI_NOR,
 >
-> thanks for the patch.
+> That might only exist in linux-next.
 >
->>> +/* capabilities */
->>> +#define I2C_CAPABILITIES	(I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL | \
->>> +				 I2C_FUNC_SMBUS_READ_BLOCK_DATA)
-> I don't see the need for a seperate define.
+>> PROC_DEVICETREE and CRYPTO_DEV_TEGRA_AES
+>> which I haven't found any mentioning anywhere?
 >
->>> +
->>> struct davinci_i2c_dev {
->>> 	struct device           *dev;
->>> 	void __iomem		*base;
->>> @@ -318,7 +322,13 @@ i2c_davinci_xfer_msg(struct i2c_adapter *adap, struct i2c_msg
->>> *msg, int stop)
->>> 	davinci_i2c_write_reg(dev, DAVINCI_I2C_SAR_REG, msg->addr);
->>>
->>> 	dev->buf = msg->buf;
->>> -	dev->buf_len = msg->len;
->>> +
->>> +	 /* if first received byte is length, set buf_len = 0xffff as flag */
->>> +	if (msg->flags & I2C_M_RECV_LEN)
->>> +		dev->buf_len = 0xffff;
-> a) this magic value should be a define instead of a comment
-> b) i2c messages easily have a 16 bit range, so 0xffff is a troublesome
-> choice.
->
->>> +	else
->>> +		dev->buf_len = msg->len;
->>> +
->>> 	dev->stop = stop;
->>>
->>> 	davinci_i2c_write_reg(dev, DAVINCI_I2C_CNT_REG, dev->buf_len); @@ -456,7
->>> +466,7 @@ i2c_davinci_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[], int num)
->>>
->>> static u32 i2c_davinci_func(struct i2c_adapter *adap)  {
->>> -	return I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL;
->>> +	return I2C_CAPABILITIES;
->>> }
->>>
->>> static void terminate_read(struct davinci_i2c_dev *dev) @@ -528,10 +538,32 @@ static
->>> irqreturn_t i2c_davinci_isr(int this_irq, void *dev_id)
->>>
->>> 		case DAVINCI_I2C_IVR_RDR:
->>> 			if (dev->buf_len) {
->>> -				*dev->buf++ =
->>> -				    davinci_i2c_read_reg(dev,
->>> -							 DAVINCI_I2C_DRR_REG);
->>> +				*dev->buf++ = davinci_i2c_read_reg(dev,
->>> +							DAVINCI_I2C_DRR_REG);
->>> +				/*
->>> +				 * check if the first received byte is message
->>> +				 * length, i.e, I2C_M_RECV_LEN
->>> +				 */
->>> +				if (dev->buf_len == 0xffff)
->>> +					dev->buf_len = *(dev->buf - 1) + 1;
-> Please rework the code to get rid of the '- 1' and '+ 1'. They look
-> hackish and make the code less readable.
->
->>> +
->>> 				dev->buf_len--;
->>> +				/*
->>> +				 * send NACK/STOP bits BEFORE last byte is
->>> +				 * received
->>> +				 */
->>> +				if (dev->buf_len == 1) {
->>> +					w = davinci_i2c_read_reg(dev,
->>> +							DAVINCI_I2C_MDR_REG);
->>> +					w |= DAVINCI_I2C_MDR_NACK;
->>> +					davinci_i2c_write_reg(dev,
->>> +							DAVINCI_I2C_MDR_REG, w);
->>> +
->>> +					w |= DAVINCI_I2C_MDR_STP;
->>> +					davinci_i2c_write_reg(dev,
->>> +							DAVINCI_I2C_MDR_REG, w);
->>> +				}
->>> +
-> Looks like an unreleated change to me? Why is this I2C_M_RECV_LEN
-> specific?
->
-> Kind regards,
->
->     Wolfram
-Wolfram,
+> The TEGRA_AES driver has been removed, so the option should be removed
+> from defconfig too. I don't know what happened to PROC_DEVICTREE - it
+> doesn't seem to exist any more. Was it replaced by something else or
+> deleted? Feel free to send patches for those.
 
-Thanks for reviewing the patch. I will review your comments and get back 
-to you. This patch
-is tested on a customer board and thus it might be a while before I can 
-incorporate these changes
-and provide an updated patch to the list. Meanwhile I will be reviewing 
-the comment in the
-next few weeks and get back to you in case I have questions.
+OK, will do.
 
-Thanks and regards,
+>> diff --git a/arch/arm/configs/tegra_defconfig b/arch/arm/configs/tegra_defconfig
+>
+>> +CONFIG_SPI_SPIDEV=y
+>
+> Is this useful with DT? I thought that unlike I2C_CHARDEV, spidev needed
+> dummy devices to exist in DT for spidev to work? If so, there's not much
+> point adding the option to defconfig, since people can add it when they
+> put the dummy devices into DT.
 
-Murali
+Yes, the Apalis T30 DT I sent actually contains two of them which we 
+call generic Apalis SPI1 and SPI2 out-of-the-box configured for exactly 
+that. Without the config enabled though it probably does not make much 
+sense to include it in the DT so I would consider removing it again.
