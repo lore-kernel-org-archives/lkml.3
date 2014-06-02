@@ -1,135 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752757AbaFBHOQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 03:14:16 -0400
-Received: from mail1.bemta5.messagelabs.com ([195.245.231.150]:8513 "EHLO
-	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751442AbaFBHON (ORCPT
+	id S1752547AbaFBHQj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 03:16:39 -0400
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:47475 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751348AbaFBHQh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 03:14:13 -0400
-X-Env-Sender: Andreas.Werner@men.de
-X-Msg-Ref: server-2.tower-179.messagelabs.com!1401693249!30150236!1
-X-Originating-IP: [80.255.6.145]
-X-StarScan-Received: 
-X-StarScan-Version: 6.11.3; banners=-,-,-
-X-VirusChecked: Checked
-X-PGP-Universal: processed;
-	by keys.men.de on Mon, 02 Jun 2014 09:14:10 +0200
-Date: Mon, 2 Jun 2014 10:06:36 +0200
-From: Andreas Werner <andreas.werner@men.de>
-To: Guenter Roeck <linux@roeck-us.net>
-CC: Andreas Werner <andreas.werner@men.de>, Lee Jones <lee.jones@linaro.org>,
-        Johannes Thumshirn <johannes.thumshirn@men.de>,
-        <linux-kernel@vger.kernel.org>, <sameo@linux.intel.com>,
-        <wim@iguana.be>, <linux-watchdog@vger.kernel.org>,
-        <cooloney@gmail.com>, <rpurdie@rpsys.net>,
-        <linux-leds@vger.kernel.org>
-Subject: Re: [PATCH v2 1/3] drivers/mfd/menf21bmc: introduce MEN 14F021P00
- BMC MFD Core driver
-Message-ID: <20140602080635.GA364@awelinux>
-References: <cover.1401181010.git.andreas.werner@men.de>
- <a3cd43562effd2580d0174c56eff5584791217ac.1401181010.git.andreas.werner@men.de>
- <20140527150547.GA4227@lee--X1>
- <20140528070222.GA24101@jtlinux>
- <20140528082404.GA10803@lee--X1>
- <20140528115159.GA2090@awelinux>
- <5385E4C9.2010204@roeck-us.net>
- <5385EA38.9090200@roeck-us.net>
+	Mon, 2 Jun 2014 03:16:37 -0400
+Date: Mon, 2 Jun 2014 09:16:07 +0200
+From: Johan Hovold <jhovold@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Oliver Neukum <oliver@neukum.org>,
+        Matthias Urlichs <smurf@smurf.noris.de>
+Cc: Johan Hovold <jhovold@gmail.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] MAINTAINERS: drop two usb-serial subdriver entries
+Message-ID: <20140602071607.GD14935@localhost>
+References: <1401615137-11862-1-git-send-email-jhovold@gmail.com>
+ <20140601174559.GB1281@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5385EA38.9090200@roeck-us.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Originating-IP: [192.1.1.171]
+In-Reply-To: <20140601174559.GB1281@kroah.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 28, 2014 at 06:52:56AM -0700, Guenter Roeck wrote:
-> On 05/28/2014 06:29 AM, Guenter Roeck wrote:
-> >On 05/28/2014 04:51 AM, Andreas Werner wrote:
-> >>aOn Wed, May 28, 2014 at 09:24:05AM +0100, Lee Jones wrote:
-> >>>>>>The MEN 14F021P00 Board Management Controller provides an
-> >>>>>>I2C interface to the host to access the feature implemented in the BMC.
-> >>>>>>The BMC is a PIC Microntroller assembled on CPCI Card from MEN Mikroelektronik
-> >>>>>>and on a few Box/Display Computer.
-> >>>>>>
-> >>>>>>Added MFD Core driver, supporting the I2C communication to the device.
-> >>>>>>
-> >>>>>>The MFD driver currently supports the following features:
-> >>>>>>    - Watchdog
-> >>>>>>    - LEDs
-> >>>>>>
-> >>>>>>Signed-off-by: Andreas Werner <andreas.werner@men.de>
-> >>>>>>---
-> >>>>>>  drivers/mfd/Kconfig           |  12 +++
-> >>>>>>  drivers/mfd/Makefile          |   1 +
-> >>>>>>  drivers/mfd/menf21bmc.c       | 220 ++++++++++++++++++++++++++++++++++++++++++
-> >>>>>>  include/linux/mfd/menf21bmc.h |  31 ++++++
-> >>>>>>  4 files changed, 264 insertions(+)
-> >>>>>>  create mode 100644 drivers/mfd/menf21bmc.c
-> >>>>>>  create mode 100644 include/linux/mfd/menf21bmc.h
-> >>>
-> >>>[...]
-> >>>
-> >>>>>>+static int menf21bmc_write_byte(struct i2c_client *client, u8 val)
-> >>>>>>+{
-> >>>>>>+    int ret;
-> >>>>>>+    struct menf21bmc *data = i2c_get_clientdata(client);
-> >>>>>>+
-> >>>>>>+    mutex_lock(&data->lock);
-> >>>>>>+    ret = i2c_smbus_write_byte(client, val);
-> >>>>>>+    mutex_unlock(&data->lock);
-> >>>>>>+
-> >>>>>>+    return ret;
-> >>>>>>+}
-> >>>>>
-> >>>>>Didn't we ask you to remove these?  Just make the i2c_smbus_* calls
-> >>>>>from within the driver.  The I2C subsystem conducts its own locking.
-> >>>>>I'm really starting to frown on aggregation for the sake of
-> >>>>>aggregation.  It's just overhead.
-> >>>>>
-> >>>>
-> >>>>Correct me if I'm wrong but as far as I remember Guenther asked to retain the
-> >>>>original API, not the remove the "abstraction layer". Once we build a board with
-> >>>>one of these BMCs attached via e.g. SPI we would have to reintroduce it anyways,
-> >>>>in order to re-use these drivers.
-> >>>
-> >>>If there are two or more possible interfaces then I agree, these
-> >>>aggregations would be the best approach.  However, as it stands, that's
-> >>>not currently the case.
-> >>>
-> >>>Genuine question; are Men on the verge of building such a board, or
-> >>>are we talking about 'ifs' and 'maybes'?
-> >>>
-> >>
-> >>I think it was a missunderstanding. I also thought that i just
-> >>have to adapt the wrapper to the original API, that is what I did in the patch,
-> >>and not to delete the functions completly.
-> >>
-> >>Anayway, we currently have another project which use a STM32 MCR connected to USB.
-> >>A nice feature of this STM is to update the firmware using the USB interface.
-> >>This is easy to implement and fast.
-> >>
-> >>We want to use such a functionality in all of our MCRs to easily update the firmware
-> >>at the customer if we found a bug.
-> >>
-> >>We also plan to have a BMC connected to USB. Then we have i2c and USB.
-> >>
-> >
-> >Even more likely that you would have to change the API in that case to be less
-> >I2C centric.
-> >
+On Sun, Jun 01, 2014 at 10:45:59AM -0700, Greg Kroah-Hartman wrote:
+> On Sun, Jun 01, 2014 at 11:32:17AM +0200, Johan Hovold wrote:
+> > Remove the remaining two obsolete usb-serial subdriver entries from
+> > MAINTAINERS, which were missed in the recent purge by commit
+> > f896b7968b62 ("USB: Maintainers change for usb serial drivers").
+> > 
+> > Signed-off-by: Johan Hovold <jhovold@gmail.com>
+> > ---
+> >  MAINTAINERS | 12 ------------
+> >  1 file changed, 12 deletions(-)
+> > 
+> > diff --git a/MAINTAINERS b/MAINTAINERS
+> > index 51ebb779c5f3..68599b26f514 100644
+> > --- a/MAINTAINERS
+> > +++ b/MAINTAINERS
+> > @@ -9298,12 +9298,6 @@ S:	Maintained
+> >  F:	drivers/usb/host/isp116x*
+> >  F:	include/linux/usb/isp116x.h
+> >  
+> > -USB KAWASAKI LSI DRIVER
+> > -M:	Oliver Neukum <oliver@neukum.org>
+> > -L:	linux-usb@vger.kernel.org
+> > -S:	Maintained
+> > -F:	drivers/usb/serial/kl5kusb105.*
+> > -
+> >  USB MASS STORAGE DRIVER
+> >  M:	Matthew Dharm <mdharm-usb@one-eyed-alien.net>
+> >  L:	linux-usb@vger.kernel.org
+> > @@ -9331,12 +9325,6 @@ S:	Maintained
+> >  F:	Documentation/usb/ohci.txt
+> >  F:	drivers/usb/host/ohci*
+> >  
+> > -USB OPTION-CARD DRIVER
+> > -M:	Matthias Urlichs <smurf@smurf.noris.de>
+> > -L:	linux-usb@vger.kernel.org
+> > -S:	Maintained
+> > -F:	drivers/usb/serial/option.c
 > 
-> ... especially since you have "struct i2c_client *client" in your API function.
-> 
-> Guenter
-> 
-> 
-Ok I agree. I will change that and delete the wrapper functions completley.
-I will prepare and send a v3.
+> Why are we taking away the maintainership of these individual drivers
+> from these developers?  I had no problem giving you the drivers I was
+> supposed to be in charge of, but I need a signed-off-by from Matthias
+> and Oliver for these if they want to do the same.
 
-Thanks for the discussion.
+I honestly thought you had just missed these entries when you removed
+individual maintainership for the other usb-serial drivers with the
+motivation that the developers were not around and that maintainership
+for individual drivers did not make much sense anymore (as consolidation
+proceeds, I read). (These two entries were also not grouped with the
+others.)
 
-Regards
-Andy
+Oliver and perhaps also Mathias are still around, but the option driver
+is now down to about 200 LOC (including boilerplate) when not counting
+the id table, while the kl5kusb105 is currently at about 400 LOC
+(including boilerplate) since I converted it to use the generic
+implementation a few years ago.
+
+Oliver and Mathias, what do you think of this? Would you be willing to
+sign off on this patch?
+
+Thanks,
+Johan
