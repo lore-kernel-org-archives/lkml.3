@@ -1,95 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752897AbaFBPob (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 11:44:31 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:59661 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751933AbaFBPo3 (ORCPT
+	id S1753579AbaFBPpP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 11:45:15 -0400
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:61851 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751848AbaFBPpN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 11:44:29 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18x3+f5p78rxN5VDwyq2V6M
-Date: Mon, 2 Jun 2014 08:44:22 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: "'Emil Goode'" <emilgoode@gmail.com>, "'Lee Jones'" <lee.jones@linaro.org>,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        "'Samuel Ortiz'" <sameo@linux.intel.com>,
-        "'Trilok Soni'" <tsoni@codeaurora.org>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>,
-        Jarkko Nikula <jarkko.nikula@bitmer.com>
-Subject: Re: [PATCH v2] mfd: fix unintentional NULL check in
- menelaus_set_voltage()
-Message-ID: <20140602154421.GB11004@atomide.com>
-References: <1401295431-23833-1-git-send-email-emilgoode@gmail.com>
- <000d01cf7adf$9528f9e0$bf7aeda0$%han@samsung.com>
+	Mon, 2 Jun 2014 11:45:13 -0400
+Date: Mon, 2 Jun 2014 21:15:05 +0530
+From: Himangi Saraogi <himangi774@gmail.com>
+To: Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: julia.lawall@lip6.fr
+Subject: [PATCH] usb: musb: tusb6010: Introduce the use of the managed
+ version of kzalloc
+Message-ID: <20140602154505.GA3250@himangi-Dell>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <000d01cf7adf$9528f9e0$bf7aeda0$%han@samsung.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Jingoo Han <jg1.han@samsung.com> [140528 18:45]:
-> On Thursday, May 29, 2014 1:44 AM, Emil Goode wrote:
-> > 
-> > The struct menelaus_vtg pointer vtg cannot be NULL here
-> > so the condition is never true and if it ever was true
-> > it would lead to a NULL pointer dereference when we goto
-> > label set_voltage.
-> > 
-> > Before the below patch was applied the code was:
-> > 
-> > if (vtg == 0)
-> > 
-> > The intention was to check if vtg_val is 0.
-> > 
-> > commit 59a9f7a32adf6537b4e4db8ca204eeb77d7a634e
-> > ("mfd: menelaus: Use NULL instead of 0")
-> > 
-> > Signed-off-by: Emil Goode <emilgoode@gmail.com>
-> > ---
-> > v2: Changed (vtg_val == 0) to (!vtg_val)
-> > 
-> >  drivers/mfd/menelaus.c |    2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > 
-> > diff --git a/drivers/mfd/menelaus.c b/drivers/mfd/menelaus.c
-> > index ad25bfa..40df76a 100644
-> > --- a/drivers/mfd/menelaus.c
-> > +++ b/drivers/mfd/menelaus.c
-> > @@ -466,7 +466,7 @@ static int menelaus_set_voltage(const struct menelaus_vtg *vtg, int mV,
-> >  	struct i2c_client *c = the_menelaus->client;
-> > 
-> >  	mutex_lock(&the_menelaus->lock);
-> > -	if (!vtg)
-> > +	if (!vtg_val)
-> >  		goto set_voltage;
-> 
-> (+cc Trilok Soni, Tony Lindgren)
-> 
-> In this case, if 'vtg_val' is 0, setting voltage as 0 for
-> registers such as MENELAUS_xxx_CTRLx will be skipped. So,
-> it is not possible to set the voltage value as 0.
-> 
-> Is it right? If not, how about just removing this check and
-> the label 'set_voltage'?
+This patch moves data allocated using kzalloc to managed data allocated
+using devm_kzalloc and cleans now unnecessary kfrees in probe and remove
+functions. Also, the unnecesary labels are removed and linux/device.h is
+added to make sure the devm_*() routine declarations are unambiguously
+available.
 
-Added Aaro and Jarkko to Cc.
+The following Coccinelle semantic patch was used for making the change:
 
-Regards,
+@platform@
+identifier p, probefn, removefn;
+@@
+struct platform_driver p = {
+  .probe = probefn,
+  .remove = removefn,
+};
 
-Tony
+@prb@
+identifier platform.probefn, pdev;
+expression e, e1, e2;
+@@
+probefn(struct platform_device *pdev, ...) {
+  <+...
+- e = kzalloc(e1, e2)
++ e = devm_kzalloc(&pdev->dev, e1, e2)
+  ...
+?-kfree(e);
+  ...+>
+}
+
+@rem depends on prb@
+identifier platform.removefn;
+expression e;
+@@
+removefn(...) {
+  <...
+- kfree(e);
+  ...>
+}
+
+Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+---
+ drivers/usb/musb/tusb6010.c | 16 +++++-----------
+ 1 file changed, 5 insertions(+), 11 deletions(-)
+
+diff --git a/drivers/usb/musb/tusb6010.c b/drivers/usb/musb/tusb6010.c
+index 159ef4b..7dfc6cb 100644
+--- a/drivers/usb/musb/tusb6010.c
++++ b/drivers/usb/musb/tusb6010.c
+@@ -22,6 +22,7 @@
+ #include <linux/usb.h>
+ #include <linux/irq.h>
+ #include <linux/io.h>
++#include <linux/device.h>
+ #include <linux/platform_device.h>
+ #include <linux/dma-mapping.h>
+ #include <linux/usb/usb_phy_generic.h>
+@@ -1160,12 +1161,12 @@ static int tusb_probe(struct platform_device *pdev)
+ 	struct platform_device		*musb;
+ 	struct tusb6010_glue		*glue;
+ 	struct platform_device_info	pinfo;
+-	int				ret = -ENOMEM;
++	int				ret;
  
-> Best regards,
-> Jingoo Han
-> 
-> > 
-> >  	ret = menelaus_read_reg(vtg->vtg_reg);
-> > --
-> > 1.7.10.4
-> 
+-	glue = kzalloc(sizeof(*glue), GFP_KERNEL);
++	glue = devm_kzalloc(&pdev->dev, sizeof(*glue), GFP_KERNEL);
+ 	if (!glue) {
+ 		dev_err(&pdev->dev, "failed to allocate glue context\n");
+-		goto err0;
++		return -ENOMEM;
+ 	}
+ 
+ 	glue->dev			= &pdev->dev;
+@@ -1204,16 +1205,10 @@ static int tusb_probe(struct platform_device *pdev)
+ 	if (IS_ERR(musb)) {
+ 		ret = PTR_ERR(musb);
+ 		dev_err(&pdev->dev, "failed to register musb device: %d\n", ret);
+-		goto err3;
++		return ret;
+ 	}
+ 
+ 	return 0;
+-
+-err3:
+-	kfree(glue);
+-
+-err0:
+-	return ret;
+ }
+ 
+ static int tusb_remove(struct platform_device *pdev)
+@@ -1222,7 +1217,6 @@ static int tusb_remove(struct platform_device *pdev)
+ 
+ 	platform_device_unregister(glue->musb);
+ 	usb_phy_generic_unregister(glue->phy);
+-	kfree(glue);
+ 
+ 	return 0;
+ }
+-- 
+1.9.1
+
