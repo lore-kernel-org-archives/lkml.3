@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754653AbaFBMhJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 08:37:09 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:44626 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754516AbaFBMhG (ORCPT
+	id S1754684AbaFBMh1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 08:37:27 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:24419 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752222AbaFBMhX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 08:37:06 -0400
-X-AuditID: cbfee61a-b7fef6d00000200b-a8-538c6ff09cb4
+	Mon, 2 Jun 2014 08:37:23 -0400
+X-AuditID: cbfee61a-b7fef6d00000200b-d1-538c7001838c
 From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 To: Kukjin Kim <kgene.kim@samsung.com>
 Cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
@@ -20,86 +20,63 @@ Cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
         linux-arm-kernel@lists.infradead.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
         b.zolnierkie@samsung.com
-Subject: [PATCH v2 4/7] ARM: EXYNOS: PM: replace EXYNOS_BOOT_VECTOR_* macros by
- static inlines
-Date: Mon, 02 Jun 2014 14:35:40 +0200
-Message-id: <1401712543-14281-5-git-send-email-b.zolnierkie@samsung.com>
+Subject: [PATCH v2 5/7] ARM: EXYNOS: PM: use c15resume firmware method if
+ secure firmware is enabled
+Date: Mon, 02 Jun 2014 14:35:41 +0200
+Message-id: <1401712543-14281-6-git-send-email-b.zolnierkie@samsung.com>
 X-Mailer: git-send-email 1.7.10.4
 In-reply-to: <1401712543-14281-1-git-send-email-b.zolnierkie@samsung.com>
 References: <1401712543-14281-1-git-send-email-b.zolnierkie@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrKLMWRmVeSWpSXmKPExsVy+t9jQd0P+T3BBs9+altsnLGe1WLeZ1mL
-	3gVX2SzONr1ht3h/6BmzxabH11gtLu+aw2bxufcIo8WM8/uYLM6cvsRqcfJPL6PF+hmvWSw2
-	fvVw4PW4c20Pm8fmJfUet/89ZvbYcrWdxaNvyypGj8+b5ALYorhsUlJzMstSi/TtErgydjyf
-	yVqwXKCiac1ctgbGn7xdjJwcEgImEqcn7WKCsMUkLtxbz9bFyMUhJDCdUWLewv9QTheTxPo3
-	x9lBqtgErCQmtq9iBLFFBNQkehZvZQQpYhbYyyyxtHsTWJGwQILExWtfwGwWAVWJw3vegtm8
-	Ah4S55bOYoZYpyjR/WwCG4jNKeApsfLeQ1YQWwioZt+rXUwTGHkXMDKsYhRNLUguKE5KzzXU
-	K07MLS7NS9dLzs/dxAgOzGdSOxhXNlgcYhTgYFTi4f2p3hMsxJpYVlyZe4hRgoNZSYR3qQVQ
-	iDclsbIqtSg/vqg0J7X4EKM0B4uSOO+BVutAIYH0xJLU7NTUgtQimCwTB6dUA2PKoti2Pqbn
-	nQ/PHbjG8/aIn+qzvcvb/z2zdfnFtvsZ452+hJPcy6zl74bPtO7e++Ds/86f3ObHugxZH97j
-	8Gp4GFM67f7FvJCE1h1uVzZcLNswe65ug1FcmpGVqrS0qv8Nhq/XNqbPP9l40FhbWW2GMFOn
-	bAN3flzCsaovRSYTSzfIpL4S26/EUpyRaKjFXFScCAAIPEE5SAIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCLMWRmVeSWpSXmKPExsVy+t9jQV3Ggp5gg6ff2C02zljPajHvs6xF
+	74KrbBZnm96wW7w/9IzZYtPja6wWl3fNYbP43HuE0WLG+X1MFmdOX2K1OPmnl9Fi/YzXLBYb
+	v3o48HrcubaHzWPzknqP2/8eM3tsudrO4tG3ZRWjx+dNcgFsUVw2Kak5mWWpRfp2CVwZU853
+	MRU84aiYeKaRuYFxHXsXIyeHhICJRNOEK6wQtpjEhXvr2boYuTiEBKYzSpyevBnK6WKSaLv/
+	nwWkik3ASmJi+ypGEFtEQE2iZ/FWRpAiZoG9zBJLuzeBjRUWSJNobDnH1MXIwcEioCoxdX0N
+	SJhXwENiYXcPI8Q2RYnuZxPYQGxOAU+Jlfcegl0hBFSz79UupgmMvAsYGVYxiqYWJBcUJ6Xn
+	GuoVJ+YWl+al6yXn525iBIflM6kdjCsbLA4xCnAwKvHw/lTvCRZiTSwrrsw9xCjBwawkwrvU
+	AijEm5JYWZValB9fVJqTWnyIUZqDRUmc90CrdaCQQHpiSWp2ampBahFMlomDU6qBMWLvNevp
+	Sz/q/GXZa/H4ZNTUsL+Fat5sn/YkXa7gY/r13/FiQlP4Xpsrrw/+f+xxac0mC0bWqz7T7oUd
+	nfez9+JGwVNreQsZuVO0ky8JLmVf22Muob/F9a7DItNZhYHPsuxv6HbmvS/466bxIlxlS6mC
+	4c7fvB1ZDgtCmjxzyqqzLT6o5rDwK7EUZyQaajEXFScCAM5JirVHAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace EXYNOS_BOOT_VECTOR_ADDR and EXYNOS_BOOT_VECTOR_FLAG macros
-by exynos_boot_vector_addr() and exynos_boot_vector_flag() static
-inlines.
+Use c15resume firmware method instead of accessing the registers
+directly in exynos_cpu_restore_register() if secure firmware is
+enabled.  This affects both PM resume method and cpuidle AFTR mode.
 
-This patch shouldn't cause any functionality changes.
+This patch shouldn't cause any functionality changes on boards that
+don't use secure firmware.
 
 Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- arch/arm/mach-exynos/pm.c | 28 ++++++++++++++++++++--------
- 1 file changed, 20 insertions(+), 8 deletions(-)
+ arch/arm/mach-exynos/pm.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
 diff --git a/arch/arm/mach-exynos/pm.c b/arch/arm/mach-exynos/pm.c
-index 87c0d34..cf09383 100644
+index cf09383..aeff99e 100644
 --- a/arch/arm/mach-exynos/pm.c
 +++ b/arch/arm/mach-exynos/pm.c
-@@ -166,12 +166,23 @@ int exynos_cluster_power_state(int cluster)
- 			S5P_CORE_LOCAL_PWR_EN);
- }
+@@ -26,6 +26,7 @@
+ #include <asm/hardware/cache-l2x0.h>
+ #include <asm/smp_scu.h>
+ #include <asm/suspend.h>
++#include <asm/firmware.h>
  
--#define EXYNOS_BOOT_VECTOR_ADDR	(samsung_rev() == EXYNOS4210_REV_1_1 ? \
--			S5P_INFORM7 : (samsung_rev() == EXYNOS4210_REV_1_0 ? \
--			(sysram_base_addr + 0x24) : S5P_INFORM0))
--#define EXYNOS_BOOT_VECTOR_FLAG	(samsung_rev() == EXYNOS4210_REV_1_1 ? \
--			S5P_INFORM6 : (samsung_rev() == EXYNOS4210_REV_1_0 ? \
--			(sysram_base_addr + 0x20) : S5P_INFORM1))
-+static inline void __iomem *exynos_boot_vector_addr(void)
-+{
-+	if (samsung_rev() == EXYNOS4210_REV_1_1)
-+		return S5P_INFORM7;
-+	else if (samsung_rev() == EXYNOS4210_REV_1_0)
-+		return sysram_base_addr + 0x24;
-+	return S5P_INFORM0;
-+}
-+
-+static inline void __iomem *exynos_boot_vector_flag(void)
-+{
-+	if (samsung_rev() == EXYNOS4210_REV_1_1)
-+		return S5P_INFORM6;
-+	else if (samsung_rev() == EXYNOS4210_REV_1_0)
-+		return sysram_base_addr + 0x20;
-+	return S5P_INFORM1;
-+}
- 
- #define S5P_CHECK_AFTR  0xFCBA0D10
- #define S5P_CHECK_SLEEP 0x00000BAD
-@@ -184,8 +195,9 @@ static void exynos_set_wakeupmask(long mask)
- 
- static void exynos_cpu_set_boot_vector(long flags)
+ #include <plat/pm-common.h>
+ #include <plat/pll.h>
+@@ -232,6 +233,9 @@ static void exynos_cpu_restore_register(void)
  {
--	__raw_writel(virt_to_phys(exynos_cpu_resume), EXYNOS_BOOT_VECTOR_ADDR);
--	__raw_writel(flags, EXYNOS_BOOT_VECTOR_FLAG);
-+	__raw_writel(virt_to_phys(exynos_cpu_resume),
-+		     exynos_boot_vector_addr());
-+	__raw_writel(flags, exynos_boot_vector_flag());
- }
+ 	unsigned long tmp;
  
- void exynos_enter_aftr(void)
++	if (call_firmware_op(c15resume, save_arm_register) == 0)
++		return;
++
+ 	/* Restore Power control register */
+ 	tmp = save_arm_register[0];
+ 
 -- 
 1.8.2.3
 
