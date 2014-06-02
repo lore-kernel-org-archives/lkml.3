@@ -1,51 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752625AbaFBViC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 17:38:02 -0400
-Received: from mga01.intel.com ([192.55.52.88]:31941 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752134AbaFBVgy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 17:36:54 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,959,1392192000"; 
-   d="scan'208";a="548709697"
-Subject: [PATCH 07/10] mm: pagewalk: kill check for hugetlbfs inside /proc pagemap code
-To: linux-kernel@vger.kernel.org
-Cc: linux-mm@kvack.org, kirill.shutemov@linux.intel.com,
-        Dave Hansen <dave@sr71.net>
-From: Dave Hansen <dave@sr71.net>
-Date: Mon, 02 Jun 2014 14:36:53 -0700
-References: <20140602213644.925A26D0@viggo.jf.intel.com>
-In-Reply-To: <20140602213644.925A26D0@viggo.jf.intel.com>
-Message-Id: <20140602213653.4520DC58@viggo.jf.intel.com>
+	id S932142AbaFBVkE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 17:40:04 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:33954 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752558AbaFBViB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 17:38:01 -0400
+From: Olof Johansson <olof@lixom.net>
+To: torvalds@linux-foundation.org
+Cc: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT PULL 0/7] ARM: SoC material for 3.16, first batch
+Date: Mon,  2 Jun 2014 14:04:03 -0700
+Message-Id: <1401743050-7379-1-git-send-email-olof@lixom.net>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Linus,
 
-From: Dave Hansen <dave.hansen@linux.intel.com>
+Here's the first batch of arm-soc material for 3.16. There are a couple
+more branches but they depend on shared contents with Russell's tree,
+so we'll send that up after he has had his material merged.
 
-The page map code does not call the normal handlers for hugetlbfs
-areas.  They are handled by ->hugetlb_entry exclusively, so
-remove the check for it.
+Again, like last merge window, the bulk of contents is in device tree
+updates. We've even had a couple of SoCs go in that didn't require enough
+code changes that I noticed it when I was sifting through the material
+writing up the tags, which is good news. It's not a primary goal that we
+can do quite this much only with DT updates, but it's still good to see.
 
-Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
----
+There are a few conflicts, some due to add/add from our different branches,
+and a few of them because we've had new changes not always properly based on
+cleanups and not caught it in time. Nothing that should be too messy to fix up.
 
- b/fs/proc/task_mmu.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+We've been holding back Samsung from adding new SoC support until they
+sorted out their multiplatform support, which they now have done. We're
+very happy to be able to build an Exynos-enabled kernel together with
+the other platforms now (Tegra, i.MX, OMAP, and all the others). This
+also means that their slight backlog of SoC support is now picked up so
+we've got a bunch of clock drivers and other things for their 3250 and
+5410/5420/5800 series of chips.
 
-diff -puN fs/proc/task_mmu.c~do-not-check-for-hugetlbfs-inside-pagemap-walker fs/proc/task_mmu.c
---- a/fs/proc/task_mmu.c~do-not-check-for-hugetlbfs-inside-pagemap-walker	2014-06-02 14:20:20.693870160 -0700
-+++ b/fs/proc/task_mmu.c	2014-06-02 14:20:20.697870340 -0700
-@@ -1033,8 +1033,7 @@ static int pagemap_pte_range(pmd_t *pmd,
- 
- 		/* check that 'vma' actually covers this address,
- 		 * and that it isn't a huge page vma */
--		if (vma && (vma->vm_start <= addr) &&
--		    !is_vm_hugetlb_page(vma)) {
-+		if (vma && (vma->vm_start <= addr)) {
- 			pte = pte_offset_map(pmd, addr);
- 			pte_to_pagemap_entry(&pme, pm, vma, addr, *pte);
- 			/* unmap before userspace copy */
-_
+I've documented the conflicts in each email, and I've pushed a
+"resolved-for-3.16" branch with our proposed resolutions.
+
+
