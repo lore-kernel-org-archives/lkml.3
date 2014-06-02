@@ -1,80 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753269AbaFBTIa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 15:08:30 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:52909 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751094AbaFBTI3 (ORCPT
+	id S1753415AbaFBTJP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 15:09:15 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:48997 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752244AbaFBTJN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 15:08:29 -0400
-Date: Mon, 2 Jun 2014 12:08:21 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: josh@joshtriplett.org
-Cc: Joe Perches <joe@perches.com>, linux-kernel@vger.kernel.org,
-        mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
-        rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
-        dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
-        sbw@mit.edu
-Subject: Re: [PATCH RFC 1/2] MAINTAINERS: Add "R:" designated-reviewers tag
-Message-ID: <20140602190821.GZ22231@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1401728420-3572-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1401729778.5770.20.camel@joe-AO725>
- <20140602174837.GA13257@cloud>
- <1401731968.7323.4.camel@joe-AO725>
- <20140602181658.GX22231@linux.vnet.ibm.com>
- <20140602185635.GB13569@cloud>
+	Mon, 2 Jun 2014 15:09:13 -0400
+Message-ID: <538CCBB1.4000209@ti.com>
+Date: Mon, 2 Jun 2014 15:08:33 -0400
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140602185635.GB13569@cloud>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14060219-1344-0000-0000-000001F33DE3
+To: Arnd Bergmann <arnd@arndb.de>
+CC: <linux-arm-kernel@lists.infradead.org>,
+        Shawn Guo <shawn.guo@freescale.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "Strashko, Grygorii" <grygorii.strashko@ti.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Olof Johansson <olof@lixom.net>, Rob Herring <robh+dt@kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCH v3 0/7] of: setup dma parameters using dma-ranges and
+ dma-coherent
+References: <1398353407-2345-1-git-send-email-santosh.shilimkar@ti.com> <4197388.OE67ahhtqp@wuerfel> <538C9E3C.2000103@ti.com> <4328786.m38YGt2sIU@wuerfel>
+In-Reply-To: <4328786.m38YGt2sIU@wuerfel>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 02, 2014 at 11:56:35AM -0700, josh@joshtriplett.org wrote:
-> On Mon, Jun 02, 2014 at 11:16:58AM -0700, Paul E. McKenney wrote:
-> > On Mon, Jun 02, 2014 at 10:59:28AM -0700, Joe Perches wrote:
-> > > On Mon, 2014-06-02 at 10:48 -0700, josh@joshtriplett.org wrote:
-> > > > On Mon, Jun 02, 2014 at 10:22:58AM -0700, Joe Perches wrote:
-> > > > > On Mon, 2014-06-02 at 10:00 -0700, Paul E. McKenney wrote:
-> > > > > > A ksummit-discuss email thread looked at the difficulty recruiting
-> > > > > > and retaining reviewers.
-> > > > > 
-> > > > > []
-> > > > > 
-> > > > > > Paul Walmsley also noted the need for patch
-> > > > > > submitters to know who the key reviewers are and suggested adding an
-> > > > > > "R:" tag to the MAINTAINERS file to record this information on a
-> > > > > > per-subsystem basis.
-> > > > > 
-> > > > > I'm not sure of the value of this.
-> > > > > 
-> > > > > Why not just mark the actual reviewers as maintainers?
-> > > > 
-> > > > As discussed in the kernel summit discussion, being a regular patch
-> > > > reviewer isn't the same thing as being *the* maintainer.
-> > > 
-> > > I think it's not particularly important or valuable
-> > > here to make that distinction.
-> > > 
-> > > What real difference does it make?
-> > 
-> > In the particular case of Josh, none, at least from my viewpoint.  He of
-> > course might or might not want to take on additional maintainership
-> > responsibility at this particular point in time, in which case, I would
-> > be more than happy to have him as a designated maintainer.
+On Monday 02 June 2014 03:00 PM, Arnd Bergmann wrote:
+> On Monday 02 June 2014 11:54:36 Santosh Shilimkar wrote:
+>>
+>> On Monday 02 June 2014 11:06 AM, Arnd Bergmann wrote:
+>>> On Monday 02 June 2014 09:24:50 Santosh Shilimkar wrote:
+>>>> On Monday 02 June 2014 02:37 AM, Shawn Guo wrote:
+>>>>> On Thu, Apr 24, 2014 at 11:30:00AM -0400, Santosh Shilimkar wrote:
+>>>>>> Here is an updated v3 of the series. Series introduces support for setting up
+>>>>>> dma parameters based on device tree properties like 'dma-ranges' and
+>>>>>> 'dma-coherent' and also update to ARM 32 bit port. Earlier version of the
+>>>>>> series can be found here [3], [2] and [1].
+>>>>>
+>>>>> Are these two generic device tree properties documented somewhere under
+>>>>> Documentation/devicetree/bindings?
+>>>>>
+>>>> These bindings have been already in use before this series. But looks like
+>>>> they have not been documented. I will do a patch to add description for those
+>>>> couple of parameters.
+>>>
+>>> dma-ranges is part of ePAPR, and was documented in some ieee-1275 addenda
+>>> before that, but I agree it would be nice to have something in kernel as
+>>> well, at the minimum something pointing to the relevant documents.
+>>>
+>> We are thinking of updating 'Documentation/devicetree/bindings/dma/dma.txt'
+>> to add the information for these extra two parameters.
+>>
+>> Is that fine or any other suggestion ?
 > 
-> For the record, I'd be happy to be listed as a co-maintainer for RCU. :)
+> I think that's the wrong place. That entire directory currently deals with
+> the specific case of DMA engines, as opposed to the more DMA bus mastering
+> in general. We could rename that to
+> Documentation/devicetree/bindings/dmaengine, but renames tend to cause
+> extra patch conficts, so I'd prefer finding another location for this.
+> 
+ok.
 
-I would be happy to put you down as maintainer and Steven down as
-official reviewer.  ;-)
+> How about a section in the top-level
+> Documentation/devicetree/booting-without-of.txt file? After all, this
+> is very generic and can impact any device that acts as a bus master.
+> 
+Sounds good. I can add it a section there with heading something like below.
 
-							Thanx, Paul
+VIII - Specifying dma bus information
+
+Regards,
+Santosh
+
+
 
