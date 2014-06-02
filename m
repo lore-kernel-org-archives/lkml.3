@@ -1,73 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754436AbaFBMkN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 08:40:13 -0400
-Received: from mout.kundenserver.de ([212.227.126.131]:59125 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752682AbaFBMkL (ORCPT
+	id S1754165AbaFBMro (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 08:47:44 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:50861 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752201AbaFBMrn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 08:40:11 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Nicolas Pitre <nicolas.pitre@linaro.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, joseph@codesourcery.com,
-        john.stultz@linaro.org, hch@infradead.org, tglx@linutronix.de,
-        geert@linux-m68k.org, lftan@altera.com, linux-fsdevel@vger.kernel.org,
-        xfs@oss.sgi.com
-Subject: Re: [RFC 11/32] xfs: convert to struct inode_time
-Date: Mon, 02 Jun 2014 14:38:09 +0200
-Message-ID: <4910284.a72lauVLNV@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140602115737.GB14276@thunk.org>
-References: <1401480116-1973111-1-git-send-email-arnd@arndb.de> <4178301.j9kWdGCRLC@wuerfel> <20140602115737.GB14276@thunk.org>
+	Mon, 2 Jun 2014 08:47:43 -0400
+Date: Mon, 2 Jun 2014 13:46:38 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Chew Chiau Ee <chiau.ee.chew@intel.com>
+Cc: Eric Miao <eric.y.miao@gmail.com>, Russell King <linux@arm.linux.org.uk>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Darren Hart <dvhart@linux.intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, linux-spi@vger.kernel.org,
+        devicetree@vger.kernel.org
+Message-ID: <20140602124638.GD31751@sirena.org.uk>
+References: <1401738379-4107-1-git-send-email-chiau.ee.chew@intel.com>
+ <1401738379-4107-2-git-send-email-chiau.ee.chew@intel.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:hyHxUAEYL2K/w3t7GxaXRbyCBjx/nTbUpXXBN/9TR/3
- zyy3JU/06PnUmYxEEexsgPQEhAG6cL+sMrCMrjXu3jJVqeWdmB
- FDgeJzJUYad1c/8C8CDFHK+ndhd3VGvs+xNjk5j1LPSK4UhTTe
- xwJyF/Y8rP6djwK+mf5X/zX+WMlNn4yVvzX0Q5hBKF57Y2D2oS
- XNyoN69Z2YgulUHnLaP1/J9d3glXrSN8jqUeeW5EuSNIPm1khD
- Cj4YXutvaTIT8zvAzaOoZEnh5n0HnVV7UD1xYonl90yy9QdWY/
- eNuUUwiqys/aIp0/Ivt8/fFNL3eltbKllKWHAKy0b1Zw4QMbtw
- /ZJc81fL8H6Fcu+AXJOc=
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="BRE3mIcgqKzpedwo"
+Content-Disposition: inline
+In-Reply-To: <1401738379-4107-2-git-send-email-chiau.ee.chew@intel.com>
+X-Cookie: Big book, big bore.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 92.40.249.174
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/2] spi/pxa2xx-pci: Add common clock framework support
+ in PCI glue layer
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 02 June 2014 07:57:37 Theodore Ts'o wrote:
-> On Mon, Jun 02, 2014 at 12:56:42PM +0200, Arnd Bergmann wrote:
-> > 
-> > I think you misunderstood what I suggested: the intent is to avoid
-> > seeing things break in 2038 by making them break much earlier. We have
-> > a solution for ext2 file systems, it's called ext4, and we just need
-> > to ensure that everybody knows they have to migrate eventually.
-> > 
-> > At some point before the mid 2030ies, you should no longer be able to
-> > build a kernel that has support for ext2 or any other module that will
-> > run into bugs later....
-> 
-> Even for ext4, it's not quite so simple as that.  You only have
-> support for times post 2038 if you are using an inode size > 128
-> bytes.  There are a very, very large number of machines which even
-> today, are using 128 byte inodes with ext4 for performance reasons.
-> 
-> The vast majority of those machines which I know of can probably move
-> to 256 byte inodes relatively easily, since hard drive replacement
-> cycles are order 5-6 years tops, so I'm not that concerned, but it
-> just goes to show this is a very complicated problem.
 
-Ok, I see.
+--BRE3mIcgqKzpedwo
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-I also now noticed this comment above EXT4_FITS_IN_INODE():
+On Tue, Jun 03, 2014 at 03:46:18AM +0800, Chew Chiau Ee wrote:
 
-"For new inodes we always reserve enough space for the kernel's known
-extended fields, but for inodes created with an old kernel this might
-not have been the case. None of the extended inode fields is critical
-for correct filesystem operation."
+> ---
+>  drivers/spi/spi-pxa2xx-pci.c |   20 ++++++++++++++++++++
+>  1 files changed, 20 insertions(+), 0 deletions(-)
 
-Do we have to worry about this for inodes that contain extended
-attributes and that get updated after 2038?
+> +	clk = clk_register_fixed_rate(&dev->dev, "spi_pxa2xx_clk", NULL,
+> +					CLK_IS_ROOT, c->max_clk_rate);
+> +	 if (IS_ERR(clk))
+> +		return PTR_ERR(clk);
 
-	Arnd
+This is pretty much fine code wise but I'd expect to see some Kconfig
+updates adding dependencies on the clock API - clk_register_fixed_rate()
+is only provided if the fixed rate driver is present.  I'm also not
+seeing any changes to unregister the fixed rate clock as the device is
+removed.
+
+--BRE3mIcgqKzpedwo
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTjHIrAAoJELSic+t+oim9/7EP/1Pbt4XAJ5TpW6TYrXPk+sMS
+NZftP4t9eQPYSH46P8RRpqilmZ2dFOQZwKoDgmAFVt/tKJx34Vdmr5ZUE0FVn+TV
+ud/YKjTN6fvDd38ESKstpKpYE8Qg/oAWosoLsAWGRj+2smU1k6ezQVLM69Q1D3y5
+2gP0QR3XQw7MGYZ9k1BXVCjvTZbSdyHCqVJ8/hvjpJ2MZAfSqmvIeiHFF2weCnea
+ty9jis54P5HqCjnL76UpnruiJKZNB7+ZmfajuHCBJxfgiOGqYlsfIihH1I6aunYo
+t6l66UUdQjamjEsBlyWkFRBS6HgjIuOiCAb7QUGzFyK/yhAsWe5zgM59eCNSjBiH
+NgChnAml7Phl2gPisMg0Rl5CfzB4fA1zd3aq9FsZ+7FL3GsReJAlQCOWYNGe5LBK
+nmd47AcgIndDTgeNPGQImraspBSxnYs4dC1UgBY2s3OLvvhZV+E3sNWmtIkPvYvE
+huKeIh9Ey8RqJjFR+TVn2K+EEfJm20QSQeD5et2SLKxMQ/suSUKdFvgoB+sB2JKX
+reGSMxsQc97iWA4r2VlOljWsYe0nze+umBvgpT0dTug+yzHdpsMHUhWEEwoGQ6sL
+YVYvmpuK7jvYuZfzX12w4Oct3zk2dMziECg0Tz5/gBWSagUBL3MWYm7PZR8JLo+X
+ZWhJtknrJDlTIYDdMEX0
+=/dfd
+-----END PGP SIGNATURE-----
+
+--BRE3mIcgqKzpedwo--
