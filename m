@@ -1,427 +1,812 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755212AbaFBNy2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 09:54:28 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:45793 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754802AbaFBNyZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 09:54:25 -0400
-From: Marc Zyngier <marc.zyngier@arm.com>
-To: Eric Auger <eric.auger@linaro.org>
-Cc: "eric.auger\@st.com" <eric.auger@st.com>,
-        "christoffer.dall\@linaro.org" <christoffer.dall@linaro.org>,
-        "linux-arm-kernel\@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "kvmarm\@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
-        "kvm\@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "patches\@linaro.org" <patches@linaro.org>,
-        "christophe.barnichon\@st.com" <christophe.barnichon@st.com>
-Subject: Re: [PATCH v2] ARM: KVM: add irqfd and irq routing support
-In-Reply-To: <1401694196-30861-1-git-send-email-eric.auger@linaro.org> (Eric
-	Auger's message of "Mon, 2 Jun 2014 08:29:56 +0100")
-Organization: ARM Ltd
-References: <1401694196-30861-1-git-send-email-eric.auger@linaro.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-Date: Mon, 02 Jun 2014 14:54:12 +0100
-Message-ID: <87bnub1kor.fsf@approximate.cambridge.arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1754746AbaFBNyx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 09:54:53 -0400
+Received: from mga11.intel.com ([192.55.52.93]:22155 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753958AbaFBNyv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 09:54:51 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,957,1392192000"; 
+   d="scan'208";a="541245082"
+Message-ID: <1401717285.24954.12.camel@smile.fi.intel.com>
+Subject: Re: [PATCH] staging: rtl8712: remove _malloc()
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Vitaly Osipov <vitaly.osipov@gmail.com>
+Cc: Larry Finger <Larry.Finger@lwfinger.net>,
+        Florian Schilhabel <florian.c.schilhabel@googlemail.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Date: Mon, 02 Jun 2014 16:54:45 +0300
+In-Reply-To: <20140524081927.GA15839@witts-MacBook-Pro.local>
+References: <20140524081927.GA15839@witts-MacBook-Pro.local>
+Organization: Intel Finland Oy
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.2-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Eric,
+On Sat, 2014-05-24 at 18:19 +1000, Vitaly Osipov wrote:
+> This patch removes all usage of _malloc() and the function itself. Most
+> uses are straightforward replacements by kmalloc(..., GFP_ATOMIC),
+> because this was the definition of _malloc(). In a few places it
+> was possible to use kzalloc() or memdup_user.
+> 
+> A further improvement would be to replace GFP_ATOMIC with GFP_KERNEL
+> where possible.
 
-On Mon, Jun 02 2014 at  8:29:56 am BST, Eric Auger <eric.auger@linaro.org> wrote:
-> This patch enables irqfd and irq routing on ARM.
->
-> It turns on CONFIG_HAVE_KVM_EVENTFD and CONFIG_HAVE_KVM_IRQ_ROUTING
->
-> irqfd framework enables to assign physical IRQs to guests.
->
-> 1) user-side uses KVM_IRQFD VM ioctl to pass KVM a kvm_irqfd struct that
-> associates a VM, an eventfd, an IRQ number (aka. the GSI). When an actor
-> signals the eventfd (typically a VFIO platform driver), the irqfd subsystem
-> injects the specified IRQ into the VM (the "GSI" takes the semantic of a
-> virtual IRQ for that guest).
+I don't know if it's okay to do
 
-Just so I can understand how this works: Who EOIs (handles) the physical
-interrupt? If it is the VFIO driver, then I don't see how you prevent
-the interrupt from firing again immediately (unless this is an edge
-interrupt?).
+v = ... sizeof(struct type_of_v) -> sizeof(*v)
 
-> 2) the other use case is user-side does 1) and uses KVM_SET_GSI_ROUTING
-> VM ioctl to create an association between a VM, a physical IRQ (aka GSI) and
-> a virtual IRQ (aka irchip.pin).  This creates a so-called GSI routing entry.
-> When someone triggers the eventfd, irqfd handles it but uses the specified
-> routing and eventually injects irqchip.pin virtual IRQ into the guest. In that
-> context the GSI takes the semantic of a physical IRQ while the irqchip.pin
-> takes the semantic of a virtual IRQ.
->
-> in 1) routing is used by irqfd but an identity routing is created by default
-> making the gsi = irqchip.pin. Note on ARM there is a single interrupt
-> controller kind, the GIC.
->
-> GSI routing mostly is implemented in generic irqchip.c.
-> The tiny ARM specific part is directly implemented in the virtual interrupt
-> controller (vgic.c) as it is done for powerpc for instance. This option was
-> prefered compared to implementing other #ifdef in irq_comm.c (x86 and ia64).
-> Hence irq_comm.c is not used at all.
->
-> Routing currently is not used for anything else than irqfd IRQ injection. Only
-> SPI can be injected. This means the vgic is not totally hidden behind the
-> irqchip. There are separate discussions on PPI/SGI routing.
->
-> Only level sensitive IRQs are supported (with a registered resampler). As a
-> reminder the resampler is a second eventfd called by irqfd framework when the
-> virtual IRQ is completed by the guest. This eventfd is supposed to be handled
-> on user-side
->
-> MSI routing is not supported yet.
->
-> This work was tested with Calxeda Midway xgmac main interrupt (with and without
-> explicit user routing) with qemu-system-arm and QEMU VFIO platform device.
->
-> changes v1 -> v2:
-> 2 fixes:
-> - v1 assumed gsi/irqchip.pin was already incremented by VGIC_NR_PRIVATE_IRQS.
->   This is now vgic_set_assigned_irq that increments it before injection.
-> - v2 now handles the case where a pending assigned irq is cleared through
->   MMIO access. The irq is properly acked allowing the resamplefd handler
->   to possibly unmask the physical IRQ.
->
-> Signed-off-by: Eric Auger <eric.auger@linaro.org>
->
-> Conflicts:
->         Documentation/virtual/kvm/api.txt
->         arch/arm/kvm/Kconfig
->
-> Conflicts:
->         Documentation/virtual/kvm/api.txt
+along with these changes.
+
+And in one or couple of places you may use kcalloc(x, y) instead of
+kmalloc(x * y).
+
+> 
+> Verified by compilation only.
+> 
+> Initial replacement done by running a Coccinelle script along the lines
+> of:
+> 
+> @@
+> type T;
+> expression E;
+> identifier V;
+> @@
+> - V = (T) _malloc(E);
+> + V = kmalloc(E, GFP_ATOMIC);
+> 
+> @@
+> expression E, E1;
+> @@
+> - E1 = _malloc(E);
+> + E1 = kmalloc(E, GFP_ATOMIC);
+> 
+> Signed-off-by: Vitaly Osipov <vitaly.osipov@gmail.com>
 > ---
->  Documentation/virtual/kvm/api.txt |   4 +-
->  arch/arm/include/uapi/asm/kvm.h   |   8 +++
->  arch/arm/kvm/Kconfig              |   2 +
->  arch/arm/kvm/Makefile             |   1 +
->  arch/arm/kvm/irq.h                |  25 +++++++
->  virt/kvm/arm/vgic.c               | 141 ++++++++++++++++++++++++++++++++++++--
->  6 files changed, 174 insertions(+), 7 deletions(-)
->  create mode 100644 arch/arm/kvm/irq.h
->
-> diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
-> index b4f5365..b376334 100644
-> --- a/Documentation/virtual/kvm/api.txt
-> +++ b/Documentation/virtual/kvm/api.txt
-> @@ -1339,7 +1339,7 @@ KVM_ASSIGN_DEV_IRQ. Partial deassignment of host or guest IRQ is allowed.
->  4.52 KVM_SET_GSI_ROUTING
->
->  Capability: KVM_CAP_IRQ_ROUTING
-> -Architectures: x86 ia64 s390
-> +Architectures: x86 ia64 s390 arm
->  Type: vm ioctl
->  Parameters: struct kvm_irq_routing (in)
->  Returns: 0 on success, -1 on error
-> @@ -2126,7 +2126,7 @@ into the hash PTE second double word).
->  4.75 KVM_IRQFD
->
->  Capability: KVM_CAP_IRQFD
-> -Architectures: x86 s390
-> +Architectures: x86 s390 arm
->  Type: vm ioctl
->  Parameters: struct kvm_irqfd (in)
->  Returns: 0 on success, -1 on error
-> diff --git a/arch/arm/include/uapi/asm/kvm.h b/arch/arm/include/uapi/asm/kvm.h
-> index ef0c878..89b864d 100644
-> --- a/arch/arm/include/uapi/asm/kvm.h
-> +++ b/arch/arm/include/uapi/asm/kvm.h
-> @@ -192,6 +192,14 @@ struct kvm_arch_memory_slot {
->  /* Highest supported SPI, from VGIC_NR_IRQS */
->  #define KVM_ARM_IRQ_GIC_MAX            127
->
-> +/* needed by IRQ routing */
-> +
-> +/* One single KVM irqchip, ie. the VGIC */
-> +#define KVM_NR_IRQCHIPS          1
-> +
-> +/* virtual interrupt controller input pins (max 480 SPI, 32 SGI/PPI) */
-> +#define KVM_IRQCHIP_NUM_PINS     256
-
-Gahhhh... Please don't. We're trying hard to move away from hard-coded
-definitions such as this, since GICv3 has much higher limits. And the
-comment you've added perfectly outlines why this is such a bad idea
-(even on GICv2, we can have up to 960 SPIs).
-
-Have a look at what's brewing in my kvm-arm64/vgic-dyn branch.
-
->  /* PSCI interface */
->  #define KVM_PSCI_FN_BASE               0x95c1ba5e
->  #define KVM_PSCI_FN(n)                 (KVM_PSCI_FN_BASE + (n))
-> diff --git a/arch/arm/kvm/Kconfig b/arch/arm/kvm/Kconfig
-> index 4be5bb1..096692c 100644
-> --- a/arch/arm/kvm/Kconfig
-> +++ b/arch/arm/kvm/Kconfig
-> @@ -24,6 +24,7 @@ config KVM
->         select KVM_MMIO
->         select KVM_ARM_HOST
->         depends on ARM_VIRT_EXT && ARM_LPAE && !CPU_BIG_ENDIAN
-> +       select HAVE_KVM_EVENTFD
->         ---help---
->           Support hosting virtualized guest machines. You will also
->           need to select one or more of the processor modules below.
-> @@ -56,6 +57,7 @@ config KVM_ARM_VGIC
->         bool "KVM support for Virtual GIC"
->         depends on KVM_ARM_HOST && OF
->         select HAVE_KVM_IRQCHIP
-> +       select HAVE_KVM_IRQ_ROUTING
->         default y
->         ---help---
->           Adds support for a hardware assisted, in-kernel GIC emulation.
-> diff --git a/arch/arm/kvm/Makefile b/arch/arm/kvm/Makefile
-> index 789bca9..29de111 100644
-> --- a/arch/arm/kvm/Makefile
-> +++ b/arch/arm/kvm/Makefile
-> @@ -21,4 +21,5 @@ obj-y += kvm-arm.o init.o interrupts.o
->  obj-y += arm.o handle_exit.o guest.o mmu.o emulate.o reset.o
->  obj-y += coproc.o coproc_a15.o coproc_a7.o mmio.o psci.o perf.o
->  obj-$(CONFIG_KVM_ARM_VGIC) += $(KVM)/arm/vgic.o
-> +obj-$(CONFIG_HAVE_KVM_EVENTFD) += $(KVM)/eventfd.o $(KVM)/irqchip.o
->  obj-$(CONFIG_KVM_ARM_TIMER) += $(KVM)/arm/arch_timer.o
-> diff --git a/arch/arm/kvm/irq.h b/arch/arm/kvm/irq.h
-> new file mode 100644
-> index 0000000..4d6fcc6
-> --- /dev/null
-> +++ b/arch/arm/kvm/irq.h
-> @@ -0,0 +1,25 @@
-> +/*
-> + * Copyright (C) 2014, STMicroelectronics
-> + * Authors: Eric Auger <eric.auger@st.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License, version 2, as
-> + * published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + */
-> +
-> +#ifndef __IRQ_H
-> +#define __IRQ_H
-> +
-> +#include <linux/kvm_host.h>
-> +/*
-> + * Placeholder for irqchip and irq/msi routing declarations
-> + * included in irqchip.c
-> + */
-> +
-> +#endif
-> diff --git a/virt/kvm/arm/vgic.c b/virt/kvm/arm/vgic.c
-> index 56ff9be..39afa0d 100644
-> --- a/virt/kvm/arm/vgic.c
-> +++ b/virt/kvm/arm/vgic.c
-> @@ -93,6 +93,9 @@ static struct device_node *vgic_node;
->  #define ACCESS_WRITE_VALUE     (3 << 1)
->  #define ACCESS_WRITE_MASK(x)   ((x) & (3 << 1))
->
-> +static struct kvm_irq_routing_entry identity_table[VGIC_NR_IRQS];
-> +static int set_default_routing_table(struct kvm *kvm);
-> +
->  static void vgic_retire_disabled_irqs(struct kvm_vcpu *vcpu);
->  static void vgic_update_state(struct kvm *kvm);
->  static void vgic_kick_vcpus(struct kvm *kvm);
-> @@ -408,11 +411,27 @@ static bool handle_mmio_clear_pending_reg(struct kvm_vcpu *vcpu,
->                                           struct kvm_exit_mmio *mmio,
->                                           phys_addr_t offset)
+>  drivers/staging/rtl8712/hal_init.c            |   2 +-
+>  drivers/staging/rtl8712/mlme_linux.c          |   3 +-
+>  drivers/staging/rtl8712/osdep_service.h       |   5 --
+>  drivers/staging/rtl8712/rtl8712_recv.c        |   6 +-
+>  drivers/staging/rtl8712/rtl871x_cmd.c         | 123 +++++++++++---------------
+>  drivers/staging/rtl8712/rtl871x_io.c          |  11 +--
+>  drivers/staging/rtl8712/rtl871x_ioctl_linux.c |  35 +++-----
+>  drivers/staging/rtl8712/rtl871x_mlme.c        |  17 ++--
+>  drivers/staging/rtl8712/rtl871x_mp.c          |  10 +--
+>  drivers/staging/rtl8712/rtl871x_recv.c        |   6 +-
+>  drivers/staging/rtl8712/rtl871x_sta_mgt.c     |   4 +-
+>  drivers/staging/rtl8712/rtl871x_xmit.c        |  16 ++--
+>  drivers/staging/rtl8712/usb_ops_linux.c       |   2 +-
+>  13 files changed, 102 insertions(+), 138 deletions(-)
+> 
+> diff --git a/drivers/staging/rtl8712/hal_init.c b/drivers/staging/rtl8712/hal_init.c
+> index d801c5a..36de7e4 100644
+> --- a/drivers/staging/rtl8712/hal_init.c
+> +++ b/drivers/staging/rtl8712/hal_init.c
+> @@ -183,7 +183,7 @@ static u8 rtl8712_dl_fw(struct _adapter *padapter)
+>  		maxlen = (fwhdr.img_IMEM_size > fwhdr.img_SRAM_size) ?
+>  			  fwhdr.img_IMEM_size : fwhdr.img_SRAM_size;
+>  		maxlen += txdscp_sz;
+> -		ptmpchar = _malloc(maxlen + FWBUFF_ALIGN_SZ);
+> +		ptmpchar = kmalloc(maxlen + FWBUFF_ALIGN_SZ, GFP_ATOMIC);
+>  		if (ptmpchar == NULL)
+>  			return ret;
+>  
+> diff --git a/drivers/staging/rtl8712/mlme_linux.c b/drivers/staging/rtl8712/mlme_linux.c
+> index f569a70..377efb8 100644
+> --- a/drivers/staging/rtl8712/mlme_linux.c
+> +++ b/drivers/staging/rtl8712/mlme_linux.c
+> @@ -147,10 +147,9 @@ void r8712_report_sec_ie(struct _adapter *adapter, u8 authmode, u8 *sec_ie)
+>  
+>  	buff = NULL;
+>  	if (authmode == _WPA_IE_ID_) {
+> -		buff = _malloc(IW_CUSTOM_MAX);
+> +		buff = kzalloc(IW_CUSTOM_MAX, GFP_ATOMIC);
+>  		if (buff == NULL)
+>  			return;
+> -		memset(buff, 0, IW_CUSTOM_MAX);
+>  		p = buff;
+>  		p += sprintf(p, "ASSOCINFO(ReqIEs=");
+>  		len = sec_ie[1] + 2;
+> diff --git a/drivers/staging/rtl8712/osdep_service.h b/drivers/staging/rtl8712/osdep_service.h
+> index 566235a..09e1561 100644
+> --- a/drivers/staging/rtl8712/osdep_service.h
+> +++ b/drivers/staging/rtl8712/osdep_service.h
+> @@ -168,11 +168,6 @@ static inline void sleep_schedulable(int ms)
+>  		return;
+>  }
+>  
+> -static inline u8 *_malloc(u32 sz)
+> -{
+> -	return	kmalloc(sz, GFP_ATOMIC);
+> -}
+> -
+>  static inline unsigned char _cancel_timer_ex(struct timer_list *ptimer)
 >  {
-> -       u32 *reg = vgic_bitmap_get_reg(&vcpu->kvm->arch.vgic.irq_state,
-> +       struct vgic_dist *dist = &vcpu->kvm->arch.vgic;
-> +       unsigned int i;
-> +       bool is_assigned_irq;
-> +       DECLARE_BITMAP(old, VGIC_NR_SHARED_IRQS);
-> +       DECLARE_BITMAP(diff, VGIC_NR_SHARED_IRQS);
-> +       unsigned long *pending =
-> +               vgic_bitmap_get_shared_map(&dist->irq_state);
-> +       u32 *reg;
-> +       bitmap_copy(old, pending, VGIC_NR_SHARED_IRQS);
-
-That's really heavy. You could find out which interrupts are potentially
-affected (only 32 of them) and just handle those. Also, you do the copy
-on both the read and write paths. Not great.
-
-> +       reg = vgic_bitmap_get_reg(&vcpu->kvm->arch.vgic.irq_state,
->                                        vcpu->vcpu_id, offset);
->         vgic_reg_access(mmio, reg, offset,
->                         ACCESS_READ_VALUE | ACCESS_WRITE_CLEARBIT);
->         if (mmio->is_write) {
-> +               pending = vgic_bitmap_get_shared_map(&dist->irq_state);
-> +               bitmap_xor(diff, old, pending, VGIC_NR_SHARED_IRQS);
-> +               for_each_set_bit(i, diff, VGIC_NR_SHARED_IRQS) {
-> +                       is_assigned_irq = kvm_irq_has_notifier(vcpu->kvm, 0, i);
-> +                       if (is_assigned_irq)
-> +                               kvm_notify_acked_irq(vcpu->kvm, 0, i);
-
-Are you saying that a masked interrupt should be treated the same as an
-EOI-ed interrupt? That seems wrong from my PoV.
-
-> +               }
->                 vgic_update_state(vcpu->kvm);
->                 return true;
->         }
-> @@ -1172,6 +1191,8 @@ static bool vgic_process_maintenance(struct kvm_vcpu *vcpu)
+>  	return del_timer(ptimer);
+> diff --git a/drivers/staging/rtl8712/rtl8712_recv.c b/drivers/staging/rtl8712/rtl8712_recv.c
+> index 667398a..1f70017 100644
+> --- a/drivers/staging/rtl8712/rtl8712_recv.c
+> +++ b/drivers/staging/rtl8712/rtl8712_recv.c
+> @@ -58,12 +58,10 @@ int r8712_init_recv_priv(struct recv_priv *precvpriv, struct _adapter *padapter)
+>  
+>  	/*init recv_buf*/
+>  	_init_queue(&precvpriv->free_recv_buf_queue);
+> -	precvpriv->pallocated_recv_buf = _malloc(NR_RECVBUFF *
+> -					 sizeof(struct recv_buf) + 4);
+> +	precvpriv->pallocated_recv_buf = kzalloc(NR_RECVBUFF * sizeof(struct recv_buf) + 4,
+> +						 GFP_ATOMIC);
+>  	if (precvpriv->pallocated_recv_buf == NULL)
+>  		return _FAIL;
+> -	memset(precvpriv->pallocated_recv_buf, 0, NR_RECVBUFF *
+> -		sizeof(struct recv_buf) + 4);
+>  	precvpriv->precv_buf = precvpriv->pallocated_recv_buf + 4 -
+>  			      ((addr_t) (precvpriv->pallocated_recv_buf) & 3);
+>  	precvbuf = (struct recv_buf *)precvpriv->precv_buf;
+> diff --git a/drivers/staging/rtl8712/rtl871x_cmd.c b/drivers/staging/rtl8712/rtl871x_cmd.c
+> index a67185d..6a3cecc 100644
+> --- a/drivers/staging/rtl8712/rtl871x_cmd.c
+> +++ b/drivers/staging/rtl8712/rtl871x_cmd.c
+> @@ -64,13 +64,14 @@ static sint _init_cmd_priv(struct cmd_priv *pcmdpriv)
+>  
+>  	/* allocate DMA-able/Non-Page memory for cmd_buf and rsp_buf */
+>  	pcmdpriv->cmd_seq = 1;
+> -	pcmdpriv->cmd_allocated_buf = _malloc(MAX_CMDSZ + CMDBUFF_ALIGN_SZ);
+> +	pcmdpriv->cmd_allocated_buf = kmalloc(MAX_CMDSZ + CMDBUFF_ALIGN_SZ,
+> +					      GFP_ATOMIC);
+>  	if (pcmdpriv->cmd_allocated_buf == NULL)
+>  		return _FAIL;
+>  	pcmdpriv->cmd_buf = pcmdpriv->cmd_allocated_buf  +  CMDBUFF_ALIGN_SZ -
+>  			    ((addr_t)(pcmdpriv->cmd_allocated_buf) &
+>  			    (CMDBUFF_ALIGN_SZ-1));
+> -	pcmdpriv->rsp_allocated_buf = _malloc(MAX_RSPSZ + 4);
+> +	pcmdpriv->rsp_allocated_buf = kmalloc(MAX_RSPSZ + 4, GFP_ATOMIC);
+>  	if (pcmdpriv->rsp_allocated_buf == NULL)
+>  		return _FAIL;
+>  	pcmdpriv->rsp_buf = pcmdpriv->rsp_allocated_buf  +  4 -
+> @@ -85,7 +86,7 @@ static sint _init_evt_priv(struct evt_priv *pevtpriv)
 >  {
->         struct vgic_cpu *vgic_cpu = &vcpu->arch.vgic_cpu;
->         bool level_pending = false;
-> +       struct kvm *kvm;
-> +       int is_assigned_irq;
->
->         kvm_debug("MISR = %08x\n", vgic_cpu->vgic_misr);
->
-> @@ -1189,12 +1210,23 @@ static bool vgic_process_maintenance(struct kvm_vcpu *vcpu)
->                         vgic_irq_clear_active(vcpu, irq);
->                         vgic_cpu->vgic_lr[lr] &= ~GICH_LR_EOI;
->
-> +                       kvm = vcpu->kvm;
-> +                       is_assigned_irq =
-> +                               kvm_irq_has_notifier(kvm, 0, irq-VGIC_NR_PRIVATE_IRQS);
->                         /* Any additional pending interrupt? */
-> -                       if (vgic_dist_irq_is_pending(vcpu, irq)) {
-> -                               vgic_cpu_irq_set(vcpu, irq);
-> -                               level_pending = true;
-> -                       } else {
-> +                       if (is_assigned_irq) {
->                                 vgic_cpu_irq_clear(vcpu, irq);
-> +                               kvm_debug("EOI irqchip routed vIRQ %d\n", irq);
-> +                               kvm_notify_acked_irq(kvm, 0,
-> +                                       irq-VGIC_NR_PRIVATE_IRQS);
-> +                               vgic_dist_irq_clear(vcpu, irq);
-> +                       } else {
-> +                               if (vgic_dist_irq_is_pending(vcpu, irq)) {
-> +                                       vgic_cpu_irq_set(vcpu, irq);
-> +                                       level_pending = true;
-> +                               } else {
-> +                                       vgic_cpu_irq_clear(vcpu, irq);
-> +                               }
->                         }
->
->                         /*
-> @@ -1627,6 +1659,8 @@ int kvm_vgic_create(struct kvm *kvm)
->         kvm->arch.vgic.vgic_dist_base = VGIC_ADDR_UNDEF;
->         kvm->arch.vgic.vgic_cpu_base = VGIC_ADDR_UNDEF;
->
-> +       set_default_routing_table(kvm);
-> +
->  out_unlock:
->         for (; vcpu_lock_idx >= 0; vcpu_lock_idx--) {
->                 vcpu = kvm_get_vcpu(kvm, vcpu_lock_idx);
-> @@ -2017,3 +2051,100 @@ struct kvm_device_ops kvm_arm_vgic_v2_ops = {
->         .get_attr = vgic_get_attr,
->         .has_attr = vgic_has_attr,
->  };
-> +
-> +
-> +/*
-> + * set up a default identity routing table
-> + * The user-side can further change the routing table using
-> + * KVM_SET_GSI_ROUTING VM ioctl
-> + */
-> +
-> +static int set_default_routing_table(struct kvm *kvm)
-> +{
-> +       struct kvm_irq_routing_entry;
-> +       int i;
-> +       for (i = 0; i < VGIC_NR_IRQS; i++)      {
-> +               identity_table[i].gsi = i;
-> +               identity_table[i].type = KVM_IRQ_ROUTING_IRQCHIP;
-> +               identity_table[i].u.irqchip.irqchip = 0;
-> +               identity_table[i].u.irqchip.pin = i;
-> +       }
-> +       return kvm_set_irq_routing(kvm, identity_table,
-> +                                  ARRAY_SIZE(identity_table), 0);
-> +}
-> +
-> +
-> +/*
-> + * Functions needed for GSI routing (used by irqchip.c)
-> + * implemented in irq_comm.c for x86 and ia64
-> + * in architecture specific files for some other archictures (powerpc)
-> + */
-> +
-> +static int vgic_set_assigned_irq(struct kvm_kernel_irq_routing_entry *e,
-> +                          struct kvm *kvm, int irq_source_id, int level,
-> +                          bool line_status)
-> +{
-> +       unsigned int spi = e->irqchip.pin + VGIC_NR_PRIVATE_IRQS;
-> +
-> +       if (irq_source_id == KVM_USERSPACE_IRQ_SOURCE_ID) {
-> +               /*
-> +                * This path is not tested yet,
-> +                * only irqchip with resampler was exercised
-> +                */
-> +               kvm_vgic_inject_irq(kvm, 0, spi, level);
-> +       } else if (irq_source_id == KVM_IRQFD_RESAMPLE_IRQ_SOURCE_ID) {
-> +               if (level == 1) {
-> +                       kvm_debug("Inject irqchip routed vIRQ %d\n",
-> +                                       e->irqchip.pin);
-> +                       kvm_vgic_inject_irq(kvm, 0, spi, level);
-> +                       /*
-> +                        * toggling down vIRQ wire is directly handled in
-> +                        * process_maintenance for this reason:
-> +                        * irqfd_resampler_ack is called in
-> +                        * process_maintenance which holds the dist lock.
-> +                        * irqfd_resampler_ack calls kvm_set_irq
-> +                        * which ends_up calling kvm_vgic_inject_irq.
-> +                        * This later attempts to take the lock -> deadlock!
-> +                        */
-> +               }
-> +       }
-> +       return 0;
-> +
-> +}
-> +
-> +/* void implementation requested to compile irqchip.c */
-> +
-> +int kvm_set_msi(struct kvm_kernel_irq_routing_entry *e,
-> +               struct kvm *kvm, int irq_source_id, int level, bool line_status)
-> +{
-> +       return 0;
-> +}
-> +
-> +int kvm_set_routing_entry(struct kvm_irq_routing_table *rt,
-> +                         struct kvm_kernel_irq_routing_entry *e,
-> +                         const struct kvm_irq_routing_entry *ue)
-> +{
-> +       int r = -EINVAL;
-> +
-> +       switch (ue->type) {
-> +       case KVM_IRQ_ROUTING_IRQCHIP:
-> +               e->set = vgic_set_assigned_irq;
-> +               e->irqchip.irqchip = ue->u.irqchip.irqchip;
-> +               e->irqchip.pin = ue->u.irqchip.pin;
-> +               if (e->irqchip.pin >= KVM_IRQCHIP_NUM_PINS)
-> +                       goto out;
-> +               /* chip[0][virtualID] = physicalID  */
-> +               rt->chip[ue->u.irqchip.irqchip][e->irqchip.pin] = ue->gsi;
-> +               break;
-> +       default:
-> +               goto out;
-> +       }
-> +
-> +       r = 0;
-> +out:
-> +       return r;
-> +}
+>  	/* allocate DMA-able/Non-Page memory for cmd_buf and rsp_buf */
+>  	pevtpriv->event_seq = 0;
+> -	pevtpriv->evt_allocated_buf = _malloc(MAX_EVTSZ + 4);
+> +	pevtpriv->evt_allocated_buf = kmalloc(MAX_EVTSZ + 4, GFP_ATOMIC);
+>  
+>  	if (pevtpriv->evt_allocated_buf == NULL)
+>  		return _FAIL;
+> @@ -226,11 +227,10 @@ u8 r8712_sitesurvey_cmd(struct _adapter *padapter,
+>  	struct cmd_priv *pcmdpriv = &padapter->cmdpriv;
+>  	struct mlme_priv *pmlmepriv = &padapter->mlmepriv;
+>  
+> -	ph2c = (struct cmd_obj *)_malloc(sizeof(struct cmd_obj));
+> +	ph2c = kmalloc(sizeof(struct cmd_obj), GFP_ATOMIC);
+>  	if (ph2c == NULL)
+>  		return _FAIL;
+> -	psurveyPara = (struct sitesurvey_parm *)_malloc(
+> -		       sizeof(struct sitesurvey_parm));
+> +	psurveyPara = kmalloc(sizeof(struct sitesurvey_parm), GFP_ATOMIC);
+>  	if (psurveyPara == NULL) {
+>  		kfree((unsigned char *) ph2c);
+>  		return _FAIL;
+> @@ -259,11 +259,11 @@ u8 r8712_setdatarate_cmd(struct _adapter *padapter, u8 *rateset)
+>  	struct setdatarate_parm	*pbsetdataratepara;
+>  	struct cmd_priv		*pcmdpriv = &padapter->cmdpriv;
+>  
+> -	ph2c = (struct cmd_obj *)_malloc(sizeof(struct cmd_obj));
+> +	ph2c = kmalloc(sizeof(struct cmd_obj), GFP_ATOMIC);
+>  	if (ph2c == NULL)
+>  		return _FAIL;
+> -	pbsetdataratepara = (struct setdatarate_parm *)_malloc(
+> -			     sizeof(struct setdatarate_parm));
+> +	pbsetdataratepara = kmalloc(sizeof(struct setdatarate_parm),
+> +				    GFP_ATOMIC);
+>  	if (pbsetdataratepara == NULL) {
+>  		kfree((u8 *) ph2c);
+>  		return _FAIL;
+> @@ -282,11 +282,11 @@ u8 r8712_set_chplan_cmd(struct _adapter *padapter, int chplan)
+>  	struct SetChannelPlan_param *psetchplanpara;
+>  	struct cmd_priv *pcmdpriv = &padapter->cmdpriv;
+>  
+> -	ph2c = (struct cmd_obj *)_malloc(sizeof(struct cmd_obj));
+> +	ph2c = kmalloc(sizeof(struct cmd_obj), GFP_ATOMIC);
+>  	if (ph2c == NULL)
+>  		return _FAIL;
+> -	psetchplanpara = (struct SetChannelPlan_param *)
+> -		_malloc(sizeof(struct SetChannelPlan_param));
+> +	psetchplanpara = kmalloc(sizeof(struct SetChannelPlan_param),
+> +				 GFP_ATOMIC);
+>  	if (psetchplanpara == NULL) {
+>  		kfree((u8 *) ph2c);
+>  		return _FAIL;
+> @@ -304,11 +304,11 @@ u8 r8712_setbasicrate_cmd(struct _adapter *padapter, u8 *rateset)
+>  	struct setbasicrate_parm *pssetbasicratepara;
+>  	struct cmd_priv *pcmdpriv = &padapter->cmdpriv;
+>  
+> -	ph2c = (struct cmd_obj *)_malloc(sizeof(struct cmd_obj));
+> +	ph2c = kmalloc(sizeof(struct cmd_obj), GFP_ATOMIC);
+>  	if (ph2c == NULL)
+>  		return _FAIL;
+> -	pssetbasicratepara = (struct setbasicrate_parm *)_malloc(
+> -			      sizeof(struct setbasicrate_parm));
+> +	pssetbasicratepara = kmalloc(sizeof(struct setbasicrate_parm),
+> +				     GFP_ATOMIC);
+>  	if (pssetbasicratepara == NULL) {
+>  		kfree((u8 *) ph2c);
+>  		return _FAIL;
+> @@ -327,11 +327,10 @@ u8 r8712_setptm_cmd(struct _adapter *padapter, u8 type)
+>  	struct writePTM_parm	*pwriteptmparm;
+>  	struct cmd_priv		*pcmdpriv = &padapter->cmdpriv;
+>  
+> -	ph2c = (struct cmd_obj *)_malloc(sizeof(struct cmd_obj));
+> +	ph2c = kmalloc(sizeof(struct cmd_obj), GFP_ATOMIC);
+>  	if (ph2c == NULL)
+>  		return _FAIL;
+> -	pwriteptmparm = (struct writePTM_parm *)
+> -		_malloc(sizeof(struct writePTM_parm));
+> +	pwriteptmparm = kmalloc(sizeof(struct writePTM_parm), GFP_ATOMIC);
+>  	if (pwriteptmparm == NULL) {
+>  		kfree((u8 *) ph2c);
+>  		return _FAIL;
+> @@ -348,11 +347,10 @@ u8 r8712_setfwdig_cmd(struct _adapter *padapter, u8 type)
+>  	struct writePTM_parm *pwriteptmparm;
+>  	struct cmd_priv *pcmdpriv = &padapter->cmdpriv;
+>  
+> -	ph2c = (struct cmd_obj *)_malloc(sizeof(struct cmd_obj));
+> +	ph2c = kmalloc(sizeof(struct cmd_obj), GFP_ATOMIC);
+>  	if (ph2c == NULL)
+>  		return _FAIL;
+> -	pwriteptmparm = (struct writePTM_parm *)
+> -		_malloc(sizeof(struct setdig_parm));
+> +	pwriteptmparm = kmalloc(sizeof(struct setdig_parm), GFP_ATOMIC);
+>  	if (pwriteptmparm == NULL) {
+>  		kfree((u8 *) ph2c);
+>  		return _FAIL;
+> @@ -369,11 +367,10 @@ u8 r8712_setfwra_cmd(struct _adapter *padapter, u8 type)
+>  	struct writePTM_parm *pwriteptmparm;
+>  	struct cmd_priv *pcmdpriv = &padapter->cmdpriv;
+>  
+> -	ph2c = (struct cmd_obj *)_malloc(sizeof(struct cmd_obj));
+> +	ph2c = kmalloc(sizeof(struct cmd_obj), GFP_ATOMIC);
+>  	if (ph2c == NULL)
+>  		return _FAIL;
+> -	pwriteptmparm = (struct writePTM_parm *)
+> -		_malloc(sizeof(struct setra_parm));
+> +	pwriteptmparm = kmalloc(sizeof(struct setra_parm), GFP_ATOMIC);
+>  	if (pwriteptmparm == NULL) {
+>  		kfree((u8 *) ph2c);
+>  		return _FAIL;
+> @@ -390,11 +387,10 @@ u8 r8712_setrfreg_cmd(struct _adapter  *padapter, u8 offset, u32 val)
+>  	struct writeRF_parm *pwriterfparm;
+>  	struct cmd_priv	*pcmdpriv = &padapter->cmdpriv;
+>  
+> -	ph2c = (struct cmd_obj *)_malloc(sizeof(struct cmd_obj));
+> +	ph2c = kmalloc(sizeof(struct cmd_obj), GFP_ATOMIC);
+>  	if (ph2c == NULL)
+>  		return _FAIL;
+> -	pwriterfparm = (struct writeRF_parm *)_malloc(
+> -			sizeof(struct writeRF_parm));
+> +	pwriterfparm = kmalloc(sizeof(struct writeRF_parm), GFP_ATOMIC);
+>  	if (pwriterfparm == NULL) {
+>  		kfree((u8 *) ph2c);
+>  		return _FAIL;
+> @@ -412,10 +408,10 @@ u8 r8712_getrfreg_cmd(struct _adapter *padapter, u8 offset, u8 *pval)
+>  	struct readRF_parm *prdrfparm;
+>  	struct cmd_priv *pcmdpriv = &padapter->cmdpriv;
+>  
+> -	ph2c = (struct cmd_obj *)_malloc(sizeof(struct cmd_obj));
+> +	ph2c = kmalloc(sizeof(struct cmd_obj), GFP_ATOMIC);
+>  	if (ph2c == NULL)
+>  		return _FAIL;
+> -	prdrfparm = (struct readRF_parm *)_malloc(sizeof(struct readRF_parm));
+> +	prdrfparm = kmalloc(sizeof(struct readRF_parm), GFP_ATOMIC);
+>  	if (prdrfparm == NULL) {
+>  		kfree((u8 *) ph2c);
+>  		return _FAIL;
+> @@ -456,7 +452,7 @@ u8 r8712_createbss_cmd(struct _adapter *padapter)
+>  				 &padapter->registrypriv.dev_network;
+>  
+>  	padapter->ledpriv.LedControlHandler(padapter, LED_CTL_START_TO_LINK);
+> -	pcmd = (struct cmd_obj *)_malloc(sizeof(struct cmd_obj));
+> +	pcmd = kmalloc(sizeof(struct cmd_obj), GFP_ATOMIC);
+>  	if (pcmd == NULL)
+>  		return _FAIL;
+>  	_init_listhead(&pcmd->list);
+> @@ -490,7 +486,7 @@ u8 r8712_joinbss_cmd(struct _adapter  *padapter, struct wlan_network *pnetwork)
+>  						network.InfrastructureMode;
+>  
+>  	padapter->ledpriv.LedControlHandler(padapter, LED_CTL_START_TO_LINK);
+> -	pcmd = (struct cmd_obj *)_malloc(sizeof(struct cmd_obj));
+> +	pcmd = kmalloc(sizeof(struct cmd_obj), GFP_ATOMIC);
+>  	if (pcmd == NULL)
+>  		return _FAIL;
+>  	t_len = sizeof(u32) + 6 * sizeof(unsigned char) + 2 +
+> @@ -628,11 +624,10 @@ u8 r8712_disassoc_cmd(struct _adapter *padapter) /* for sta_mode */
+>  	struct disconnect_parm *pdisconnect;
+>  	struct cmd_priv *pcmdpriv = &padapter->cmdpriv;
+>  
+> -	pdisconnect_cmd = (struct cmd_obj *)_malloc(sizeof(struct cmd_obj));
+> +	pdisconnect_cmd = kmalloc(sizeof(struct cmd_obj), GFP_ATOMIC);
+>  	if (pdisconnect_cmd == NULL)
+>  		return _FAIL;
+> -	pdisconnect = (struct disconnect_parm *)_malloc(
+> -		      sizeof(struct disconnect_parm));
+> +	pdisconnect = kmalloc(sizeof(struct disconnect_parm), GFP_ATOMIC);
+>  	if (pdisconnect == NULL) {
+>  		kfree((u8 *)pdisconnect_cmd);
+>  		return _FAIL;
+> @@ -651,11 +646,10 @@ u8 r8712_setopmode_cmd(struct _adapter *padapter,
+>  
+>  	struct cmd_priv *pcmdpriv = &padapter->cmdpriv;
+>  
+> -	ph2c = (struct cmd_obj *)_malloc(sizeof(struct cmd_obj));
+> +	ph2c = kmalloc(sizeof(struct cmd_obj), GFP_ATOMIC);
+>  	if (ph2c == NULL)
+>  		return _FAIL;
+> -	psetop = (struct setopmode_parm *)_malloc(
+> -		  sizeof(struct setopmode_parm));
+> +	psetop = kmalloc(sizeof(struct setopmode_parm), GFP_ATOMIC);
+>  	if (psetop == NULL) {
+>  		kfree((u8 *) ph2c);
+>  		return _FAIL;
+> @@ -676,17 +670,15 @@ u8 r8712_setstakey_cmd(struct _adapter *padapter, u8 *psta, u8 unicast_key)
+>  	struct security_priv *psecuritypriv = &padapter->securitypriv;
+>  	struct sta_info *sta = (struct sta_info *)psta;
+>  
+> -	ph2c = (struct cmd_obj *)_malloc(sizeof(struct cmd_obj));
+> +	ph2c = kmalloc(sizeof(struct cmd_obj), GFP_ATOMIC);
+>  	if (ph2c == NULL)
+>  		return _FAIL;
+> -	psetstakey_para = (struct set_stakey_parm *)_malloc(
+> -			  sizeof(struct set_stakey_parm));
+> +	psetstakey_para = kmalloc(sizeof(struct set_stakey_parm), GFP_ATOMIC);
+>  	if (psetstakey_para == NULL) {
+>  		kfree((u8 *) ph2c);
+>  		return _FAIL;
+>  	}
+> -	psetstakey_rsp = (struct set_stakey_rsp *)_malloc(
+> -			  sizeof(struct set_stakey_rsp));
+> +	psetstakey_rsp = kmalloc(sizeof(struct set_stakey_rsp), GFP_ATOMIC);
+>  	if (psetstakey_rsp == NULL) {
+>  		kfree((u8 *) ph2c);
+>  		kfree((u8 *) psetstakey_para);
+> @@ -718,11 +710,10 @@ u8 r8712_setrfintfs_cmd(struct _adapter *padapter, u8 mode)
+>  	struct setrfintfs_parm *psetrfintfsparm;
+>  	struct cmd_priv *pcmdpriv = &padapter->cmdpriv;
+>  
+> -	ph2c = (struct cmd_obj *)_malloc(sizeof(struct cmd_obj));
+> +	ph2c = kmalloc(sizeof(struct cmd_obj), GFP_ATOMIC);
+>  	if (ph2c == NULL)
+>  		return _FAIL;
+> -	psetrfintfsparm = (struct setrfintfs_parm *)_malloc(
+> -			   sizeof(struct setrfintfs_parm));
+> +	psetrfintfsparm = kmalloc(sizeof(struct setrfintfs_parm), GFP_ATOMIC);
+>  	if (psetrfintfsparm == NULL) {
+>  		kfree((unsigned char *) ph2c);
+>  		return _FAIL;
+> @@ -741,11 +732,10 @@ u8 r8712_setrttbl_cmd(struct _adapter *padapter,
+>  	struct setratable_parm *psetrttblparm;
+>  	struct cmd_priv	*pcmdpriv = &padapter->cmdpriv;
+>  
+> -	ph2c = (struct cmd_obj *)_malloc(sizeof(struct cmd_obj));
+> +	ph2c = kmalloc(sizeof(struct cmd_obj), GFP_ATOMIC);
+>  	if (ph2c == NULL)
+>  		return _FAIL;
+> -	psetrttblparm = (struct setratable_parm *)_malloc(
+> -			sizeof(struct setratable_parm));
+> +	psetrttblparm = kmalloc(sizeof(struct setratable_parm), GFP_ATOMIC);
+>  	if (psetrttblparm == NULL) {
+>  		kfree((unsigned char *)ph2c);
+>  		return _FAIL;
+> @@ -763,11 +753,10 @@ u8 r8712_gettssi_cmd(struct _adapter *padapter, u8 offset, u8 *pval)
+>  	struct cmd_obj *ph2c;
+>  	struct readTSSI_parm *prdtssiparm;
+>  
+> -	ph2c = (struct cmd_obj *)_malloc(sizeof(struct cmd_obj));
+> +	ph2c = kmalloc(sizeof(struct cmd_obj), GFP_ATOMIC);
+>  	if (ph2c == NULL)
+>  		return _FAIL;
+> -	prdtssiparm = (struct readTSSI_parm *)
+> -		_malloc(sizeof(struct readTSSI_parm));
+> +	prdtssiparm = kmalloc(sizeof(struct readTSSI_parm), GFP_ATOMIC);
+>  	if (prdtssiparm == NULL) {
+>  		kfree((unsigned char *) ph2c);
+>  		return _FAIL;
+> @@ -790,11 +779,11 @@ u8 r8712_setMacAddr_cmd(struct _adapter *padapter, u8 *mac_addr)
+>  	struct cmd_obj *ph2c;
+>  	struct SetMacAddr_param	*psetMacAddr_para;
+>  
+> -	ph2c = (struct cmd_obj *)_malloc(sizeof(struct cmd_obj));
+> +	ph2c = kmalloc(sizeof(struct cmd_obj), GFP_ATOMIC);
+>  	if (ph2c == NULL)
+>  		return _FAIL;
+> -	psetMacAddr_para = (struct SetMacAddr_param *)_malloc(
+> -			   sizeof(struct SetMacAddr_param));
+> +	psetMacAddr_para = kmalloc(sizeof(struct SetMacAddr_param),
+> +				   GFP_ATOMIC);
+>  	if (psetMacAddr_para == NULL) {
+>  		kfree((u8 *) ph2c);
+>  		return _FAIL;
+> @@ -813,17 +802,17 @@ u8 r8712_setassocsta_cmd(struct _adapter *padapter, u8 *mac_addr)
+>  	struct set_assocsta_parm	*psetassocsta_para;
+>  	struct set_assocsta_rsp		*psetassocsta_rsp = NULL;
+>  
+> -	ph2c = (struct cmd_obj *)_malloc(sizeof(struct cmd_obj));
+> +	ph2c = kmalloc(sizeof(struct cmd_obj), GFP_ATOMIC);
+>  	if (ph2c == NULL)
+>  		return _FAIL;
+> -	psetassocsta_para = (struct set_assocsta_parm *)
+> -			    _malloc(sizeof(struct set_assocsta_parm));
+> +	psetassocsta_para = kmalloc(sizeof(struct set_assocsta_parm),
+> +				    GFP_ATOMIC);
+>  	if (psetassocsta_para == NULL) {
+>  		kfree((u8 *) ph2c);
+>  		return _FAIL;
+>  	}
+> -	psetassocsta_rsp = (struct set_assocsta_rsp *)_malloc(
+> -			    sizeof(struct set_assocsta_rsp));
+> +	psetassocsta_rsp = kmalloc(sizeof(struct set_assocsta_rsp),
+> +				   GFP_ATOMIC);
+>  	if (psetassocsta_rsp == NULL) {
+>  		kfree((u8 *)ph2c);
+>  		kfree((u8 *)psetassocsta_para);
+> @@ -843,11 +832,10 @@ u8 r8712_addbareq_cmd(struct _adapter *padapter, u8 tid)
+>  	struct cmd_obj		*ph2c;
+>  	struct addBaReq_parm	*paddbareq_parm;
+>  
+> -	ph2c = (struct cmd_obj *)_malloc(sizeof(struct cmd_obj));
+> +	ph2c = kmalloc(sizeof(struct cmd_obj), GFP_ATOMIC);
+>  	if (ph2c == NULL)
+>  		return _FAIL;
+> -	paddbareq_parm = (struct addBaReq_parm *)_malloc(
+> -			  sizeof(struct addBaReq_parm));
+> +	paddbareq_parm = kmalloc(sizeof(struct addBaReq_parm), GFP_ATOMIC);
+>  	if (paddbareq_parm == NULL) {
+>  		kfree((unsigned char *)ph2c);
+>  		return _FAIL;
+> @@ -865,11 +853,10 @@ u8 r8712_wdg_wk_cmd(struct _adapter *padapter)
+>  	struct drvint_cmd_parm  *pdrvintcmd_param;
+>  	struct cmd_priv	*pcmdpriv = &padapter->cmdpriv;
+>  
+> -	ph2c = (struct cmd_obj *)_malloc(sizeof(struct cmd_obj));
+> +	ph2c = kmalloc(sizeof(struct cmd_obj), GFP_ATOMIC);
+>  	if (ph2c == NULL)
+>  		return _FAIL;
+> -	pdrvintcmd_param = (struct drvint_cmd_parm *)_malloc(
+> -			   sizeof(struct drvint_cmd_parm));
+> +	pdrvintcmd_param = kmalloc(sizeof(struct drvint_cmd_parm), GFP_ATOMIC);
+>  	if (pdrvintcmd_param == NULL) {
+>  		kfree((unsigned char *)ph2c);
+>  		return _FAIL;
+> @@ -1040,16 +1027,14 @@ u8 r8712_disconnectCtrlEx_cmd(struct _adapter *adapter, u32 enableDrvCtrl,
+>  	struct DisconnectCtrlEx_param *param;
+>  	struct cmd_priv *pcmdpriv = &adapter->cmdpriv;
+>  
+> -	ph2c = (struct cmd_obj *)_malloc(sizeof(struct cmd_obj));
+> +	ph2c = kmalloc(sizeof(struct cmd_obj), GFP_ATOMIC);
+>  	if (ph2c == NULL)
+>  		return _FAIL;
+> -	param = (struct DisconnectCtrlEx_param *)
+> -		_malloc(sizeof(struct DisconnectCtrlEx_param));
+> +	param = kzalloc(sizeof(struct DisconnectCtrlEx_param), GFP_ATOMIC);
+>  	if (param == NULL) {
+>  		kfree((unsigned char *) ph2c);
+>  		return _FAIL;
+>  	}
+> -	memset(param, 0, sizeof(struct DisconnectCtrlEx_param));
+>  
+>  	param->EnableDrvCtrl = (unsigned char)enableDrvCtrl;
+>  	param->TryPktCnt = (unsigned char)tryPktCnt;
+> diff --git a/drivers/staging/rtl8712/rtl871x_io.c b/drivers/staging/rtl8712/rtl871x_io.c
+> index abc1c97..37a841a 100644
+> --- a/drivers/staging/rtl8712/rtl871x_io.c
+> +++ b/drivers/staging/rtl8712/rtl871x_io.c
+> @@ -60,8 +60,8 @@ static uint _init_intf_hdl(struct _adapter *padapter,
+>  	set_intf_funs = &(r8712_usb_set_intf_funs);
+>  	set_intf_ops = &r8712_usb_set_intf_ops;
+>  	init_intf_priv = &r8712_usb_init_intf_priv;
+> -	pintf_priv = pintf_hdl->pintfpriv = (struct intf_priv *)
+> -		     _malloc(sizeof(struct intf_priv));
+> +	pintf_priv = pintf_hdl->pintfpriv = kmalloc(sizeof(struct intf_priv),
+> +						    GFP_ATOMIC);
+>  	if (pintf_priv == NULL)
+>  		goto _init_intf_hdl_fail;
+>  	pintf_hdl->adapter = (u8 *)padapter;
+> @@ -112,15 +112,16 @@ uint r8712_alloc_io_queue(struct _adapter *adapter)
+>  	struct io_queue *pio_queue;
+>  	struct io_req *pio_req;
+>  
+> -	pio_queue = (struct io_queue *)_malloc(sizeof(struct io_queue));
+> +	pio_queue = kmalloc(sizeof(struct io_queue), GFP_ATOMIC);
+>  	if (pio_queue == NULL)
+>  		goto alloc_io_queue_fail;
+>  	_init_listhead(&pio_queue->free_ioreqs);
+>  	_init_listhead(&pio_queue->processing);
+>  	_init_listhead(&pio_queue->pending);
+>  	spin_lock_init(&pio_queue->lock);
+> -	pio_queue->pallocated_free_ioreqs_buf = (u8 *)_malloc(NUM_IOREQ *
+> -						(sizeof(struct io_req)) + 4);
+> +	pio_queue->pallocated_free_ioreqs_buf = kmalloc(NUM_IOREQ *
+> +							(sizeof(struct io_req)) + 4,
+> +							GFP_ATOMIC);
+>  	if ((pio_queue->pallocated_free_ioreqs_buf) == NULL)
+>  		goto alloc_io_queue_fail;
+>  	memset(pio_queue->pallocated_free_ioreqs_buf, 0,
+> diff --git a/drivers/staging/rtl8712/rtl871x_ioctl_linux.c b/drivers/staging/rtl8712/rtl871x_ioctl_linux.c
+> index 1eca992..e147c4b 100644
+> --- a/drivers/staging/rtl8712/rtl871x_ioctl_linux.c
+> +++ b/drivers/staging/rtl8712/rtl871x_ioctl_linux.c
+> @@ -424,10 +424,9 @@ static int wpa_set_encryption(struct net_device *dev, struct ieee_param *param,
+>  			wep_key_idx = 0;
+>  		if (wep_key_len > 0) {
+>  			wep_key_len = wep_key_len <= 5 ? 5 : 13;
+> -			pwep = (struct NDIS_802_11_WEP *)_malloc((u32)
+> -			       (wep_key_len +
+> -			       FIELD_OFFSET(struct NDIS_802_11_WEP,
+> -			       KeyMaterial)));
+> +			pwep = kmalloc((u32)(wep_key_len +
+> +				       FIELD_OFFSET(struct NDIS_802_11_WEP, KeyMaterial)),
+> +				       GFP_ATOMIC);
+>  			if (pwep == NULL)
+>  				return -ENOMEM;
+>  			memset(pwep, 0, sizeof(struct NDIS_802_11_WEP));
+> @@ -518,10 +517,9 @@ static int r871x_set_wpa_ie(struct _adapter *padapter, char *pie,
+>  	if ((ielen > MAX_WPA_IE_LEN) || (pie == NULL))
+>  		return -EINVAL;
+>  	if (ielen) {
+> -		buf = _malloc(ielen);
+> +		buf = kmemdup(pie, ielen, GFP_ATOMIC);
+>  		if (buf == NULL)
+>  			return -ENOMEM;
+> -		memcpy(buf, pie , ielen);
+>  		pos = buf;
+>  		if (ielen < RSN_HEADER_LEN) {
+>  			ret  = -EINVAL;
+> @@ -959,13 +957,9 @@ static int r871x_wx_set_priv(struct net_device *dev,
+>  	struct iw_point *dwrq = (struct iw_point *)awrq;
+>  
+>  	len = dwrq->length;
+> -	ext = _malloc(len);
+> -	if (!ext)
+> -		return -ENOMEM;
+> -	if (copy_from_user(ext, dwrq->pointer, len)) {
+> -		kfree(ext);
+> -		return -EFAULT;
+> -	}
+> +	ext = memdup_user(dwrq->pointer, len);
+> +	if (IS_ERR(ext))
+> +		return PTR_ERR(ext);
+>  
+>  	if (0 == strcasecmp(ext, "RSSI")) {
+>  		/*Return received signal strength indicator in -db for */
+> @@ -1819,10 +1813,9 @@ static int r871x_wx_set_enc_ext(struct net_device *dev,
+>  	}
+>  
+>  	param_len = sizeof(struct ieee_param) + pext->key_len;
+> -	param = (struct ieee_param *)_malloc(param_len);
+> +	param = kzalloc(param_len, GFP_ATOMIC);
+>  	if (param == NULL)
+>  		return -ENOMEM;
+> -	memset(param, 0, param_len);
+>  	param->cmd = IEEE_CMD_SET_ENCRYPTION;
+>  	memset(param->sta_addr, 0xff, ETH_ALEN);
+>  
+> @@ -1922,7 +1915,7 @@ static int r871x_mp_ioctl_hdl(struct net_device *dev,
+>  	bset = (u8)(p->flags & 0xFFFF);
+>  	len = p->length;
+>  	pparmbuf = NULL;
+> -	pparmbuf = (u8 *)_malloc(len);
+> +	pparmbuf = kmalloc(len, GFP_ATOMIC);
+>  	if (pparmbuf == NULL) {
+>  		ret = -ENOMEM;
+>  		goto _r871x_mp_ioctl_hdl_exit;
+> @@ -2195,13 +2188,9 @@ static int wpa_supplicant_ioctl(struct net_device *dev, struct iw_point *p)
+>  
+>  	if (p->length < sizeof(struct ieee_param) || !p->pointer)
+>  		return -EINVAL;
+> -	param = (struct ieee_param *)_malloc(p->length);
+> -	if (param == NULL)
+> -		return -ENOMEM;
+> -	if (copy_from_user(param, p->pointer, p->length)) {
+> -		kfree((u8 *)param);
+> -		return -EFAULT;
+> -	}
+> +	param = memdup_user(p->pointer, p->length);
+> +	if (IS_ERR(param))
+> +		return PTR_ERR(param);
+>  	switch (param->cmd) {
+>  	case IEEE_CMD_SET_WPA_PARAM:
+>  		ret = wpa_set_param(dev, param->u.wpa_param.name,
+> diff --git a/drivers/staging/rtl8712/rtl871x_mlme.c b/drivers/staging/rtl8712/rtl871x_mlme.c
+> index f8f651a..02339e1 100644
+> --- a/drivers/staging/rtl8712/rtl871x_mlme.c
+> +++ b/drivers/staging/rtl8712/rtl871x_mlme.c
+> @@ -62,7 +62,8 @@ static sint _init_mlme_priv(struct _adapter *padapter)
+>  	_init_queue(&(pmlmepriv->scanned_queue));
+>  	set_scanned_network_val(pmlmepriv, 0);
+>  	memset(&pmlmepriv->assoc_ssid, 0, sizeof(struct ndis_802_11_ssid));
+> -	pbuf = _malloc(MAX_BSS_CNT * (sizeof(struct wlan_network)));
+> +	pbuf = kmalloc(MAX_BSS_CNT * (sizeof(struct wlan_network)),
+> +		       GFP_ATOMIC);
+>  	if (pbuf == NULL)
+>  		return _FAIL;
+>  	pmlmepriv->free_bss_buf = pbuf;
+> @@ -725,8 +726,7 @@ void r8712_joinbss_event_callback(struct _adapter *adapter, u8 *pbuf)
+>  	struct wlan_network *pnetwork;
+>  
+>  	if (sizeof(struct list_head) == 4 * sizeof(u32)) {
+> -		pnetwork = (struct wlan_network *)
+> -			_malloc(sizeof(struct wlan_network));
+> +		pnetwork = kmalloc(sizeof(struct wlan_network), GFP_ATOMIC);
+>  		memcpy((u8 *)pnetwork+16, (u8 *)pbuf + 8,
+>  			sizeof(struct wlan_network) - 16);
+>  	} else
+> @@ -1212,17 +1212,15 @@ sint r8712_set_auth(struct _adapter *adapter,
+>  	struct cmd_obj *pcmd;
+>  	struct setauth_parm *psetauthparm;
+>  
+> -	pcmd = (struct cmd_obj *)_malloc(sizeof(struct cmd_obj));
+> +	pcmd = kmalloc(sizeof(struct cmd_obj), GFP_ATOMIC);
+>  	if (pcmd == NULL)
+>  		return _FAIL;
+>  
+> -	psetauthparm = (struct setauth_parm *)_malloc(
+> -			sizeof(struct setauth_parm));
+> +	psetauthparm = kzalloc(sizeof(struct setauth_parm), GFP_ATOMIC);
+>  	if (psetauthparm == NULL) {
+>  		kfree((unsigned char *)pcmd);
+>  		return _FAIL;
+>  	}
+> -	memset(psetauthparm, 0, sizeof(struct setauth_parm));
+>  	psetauthparm->mode = (u8)psecuritypriv->AuthAlgrthm;
+>  	pcmd->cmdcode = _SetAuth_CMD_;
+>  	pcmd->parmbuf = (unsigned char *)psetauthparm;
+> @@ -1244,15 +1242,14 @@ sint r8712_set_key(struct _adapter *adapter,
+>  	u8 keylen;
+>  	sint ret = _SUCCESS;
+>  
+> -	pcmd = (struct cmd_obj *)_malloc(sizeof(struct cmd_obj));
+> +	pcmd = kmalloc(sizeof(struct cmd_obj), GFP_ATOMIC);
+>  	if (pcmd == NULL)
+>  		return _FAIL;
+> -	psetkeyparm = (struct setkey_parm *)_malloc(sizeof(struct setkey_parm));
+> +	psetkeyparm = kzalloc(sizeof(struct setkey_parm), GFP_ATOMIC);
+>  	if (psetkeyparm == NULL) {
+>  		ret = _FAIL;
+>  		goto err_free_cmd;
+>  	}
+> -	memset(psetkeyparm, 0, sizeof(struct setkey_parm));
+>  	if (psecuritypriv->AuthAlgrthm == 2) { /* 802.1X */
+>  		psetkeyparm->algorithm =
+>  			 (u8)psecuritypriv->XGrpPrivacy;
+> diff --git a/drivers/staging/rtl8712/rtl871x_mp.c b/drivers/staging/rtl8712/rtl871x_mp.c
+> index 5fd60cd..389062f 100644
+> --- a/drivers/staging/rtl8712/rtl871x_mp.c
+> +++ b/drivers/staging/rtl8712/rtl871x_mp.c
+> @@ -53,8 +53,9 @@ static int init_mp_priv(struct mp_priv *pmp_priv)
+>  	_init_mp_priv_(pmp_priv);
+>  	_init_queue(&pmp_priv->free_mp_xmitqueue);
+>  	pmp_priv->pallocated_mp_xmitframe_buf = NULL;
+> -	pmp_priv->pallocated_mp_xmitframe_buf = _malloc(NR_MP_XMITFRAME *
+> -					 sizeof(struct mp_xmit_frame) + 4);
+> +	pmp_priv->pallocated_mp_xmitframe_buf = kmalloc(NR_MP_XMITFRAME *
+> +							sizeof(struct mp_xmit_frame) + 4,
+> +							GFP_ATOMIC);
+>  	if (pmp_priv->pallocated_mp_xmitframe_buf == NULL) {
+>  		res = _FAIL;
+>  		goto _exit_init_mp_priv;
+> @@ -280,11 +281,10 @@ void r8712_SetChannel(struct _adapter *pAdapter)
+>  	struct SetChannel_parm *pparm = NULL;
+>  	u16 code = GEN_CMD_CODE(_SetChannel);
+>  
+> -	pcmd = (struct cmd_obj *)_malloc(sizeof(struct cmd_obj));
+> +	pcmd = kmalloc(sizeof(struct cmd_obj), GFP_ATOMIC);
+>  	if (pcmd == NULL)
+>  		return;
+> -	pparm = (struct SetChannel_parm *)_malloc(sizeof(struct
+> -					 SetChannel_parm));
+> +	pparm = kmalloc(sizeof(struct SetChannel_parm), GFP_ATOMIC);
+>  	if (pparm == NULL) {
+>  		kfree(pcmd);
+>  		return;
+> diff --git a/drivers/staging/rtl8712/rtl871x_recv.c b/drivers/staging/rtl8712/rtl871x_recv.c
+> index 4ac4a1b..eb77587 100644
+> --- a/drivers/staging/rtl8712/rtl871x_recv.c
+> +++ b/drivers/staging/rtl8712/rtl871x_recv.c
+> @@ -72,9 +72,9 @@ sint _r8712_init_recv_priv(struct recv_priv *precvpriv,
+>  	_init_queue(&precvpriv->recv_pending_queue);
+>  	precvpriv->adapter = padapter;
+>  	precvpriv->free_recvframe_cnt = NR_RECVFRAME;
+> -	precvpriv->pallocated_frame_buf = _malloc(NR_RECVFRAME *
+> -					   sizeof(union recv_frame) +
+> -					   RXFRAME_ALIGN_SZ);
+> +	precvpriv->pallocated_frame_buf = kmalloc(NR_RECVFRAME *
+> +						  sizeof(union recv_frame) + RXFRAME_ALIGN_SZ,
+> +						  GFP_ATOMIC);
+>  	if (precvpriv->pallocated_frame_buf == NULL)
+>  		return _FAIL;
+>  	kmemleak_not_leak(precvpriv->pallocated_frame_buf);
+> diff --git a/drivers/staging/rtl8712/rtl871x_sta_mgt.c b/drivers/staging/rtl8712/rtl871x_sta_mgt.c
+> index 8db6849..6c64984 100644
+> --- a/drivers/staging/rtl8712/rtl871x_sta_mgt.c
+> +++ b/drivers/staging/rtl8712/rtl871x_sta_mgt.c
+> @@ -51,8 +51,8 @@ u32 _r8712_init_sta_priv(struct	sta_priv *pstapriv)
+>  	struct sta_info *psta;
+>  	s32 i;
+>  
+> -	pstapriv->pallocated_stainfo_buf = _malloc(sizeof(struct sta_info) *
+> -						   NUM_STA + 4);
+> +	pstapriv->pallocated_stainfo_buf = kmalloc(sizeof(struct sta_info) *
+> +						   NUM_STA + 4, GFP_ATOMIC);
+>  	if (pstapriv->pallocated_stainfo_buf == NULL)
+>  		return _FAIL;
+>  	pstapriv->pstainfo_buf = pstapriv->pallocated_stainfo_buf + 4 -
+> diff --git a/drivers/staging/rtl8712/rtl871x_xmit.c b/drivers/staging/rtl8712/rtl871x_xmit.c
+> index 78f570b..230681a 100644
+> --- a/drivers/staging/rtl8712/rtl871x_xmit.c
+> +++ b/drivers/staging/rtl8712/rtl871x_xmit.c
+> @@ -87,8 +87,8 @@ sint _r8712_init_xmit_priv(struct xmit_priv *pxmitpriv,
+>  	and initialize free_xmit_frame below.
+>  	Please also apply  free_txobj to link_up all the xmit_frames...
+>  	*/
+> -	pxmitpriv->pallocated_frame_buf = _malloc(NR_XMITFRAME *
+> -					  sizeof(struct xmit_frame) + 4);
+> +	pxmitpriv->pallocated_frame_buf = kmalloc(NR_XMITFRAME * sizeof(struct xmit_frame) + 4,
+> +						  GFP_ATOMIC);
+>  	if (pxmitpriv->pallocated_frame_buf == NULL) {
+>  		pxmitpriv->pxmit_frame_buf = NULL;
+>  		return _FAIL;
+> @@ -126,8 +126,8 @@ sint _r8712_init_xmit_priv(struct xmit_priv *pxmitpriv,
+>  	/*init xmit_buf*/
+>  	_init_queue(&pxmitpriv->free_xmitbuf_queue);
+>  	_init_queue(&pxmitpriv->pending_xmitbuf_queue);
+> -	pxmitpriv->pallocated_xmitbuf = _malloc(NR_XMITBUFF *
+> -					sizeof(struct xmit_buf) + 4);
+> +	pxmitpriv->pallocated_xmitbuf = kmalloc(NR_XMITBUFF * sizeof(struct xmit_buf) + 4,
+> +						GFP_ATOMIC);
+>  	if (pxmitpriv->pallocated_xmitbuf  == NULL)
+>  		return _FAIL;
+>  	pxmitpriv->pxmitbuf = pxmitpriv->pallocated_xmitbuf + 4 -
+> @@ -135,8 +135,8 @@ sint _r8712_init_xmit_priv(struct xmit_priv *pxmitpriv,
+>  	pxmitbuf = (struct xmit_buf *)pxmitpriv->pxmitbuf;
+>  	for (i = 0; i < NR_XMITBUFF; i++) {
+>  		_init_listhead(&pxmitbuf->list);
+> -		pxmitbuf->pallocated_buf = _malloc(MAX_XMITBUF_SZ +
+> -					   XMITBUF_ALIGN_SZ);
+> +		pxmitbuf->pallocated_buf = kmalloc(MAX_XMITBUF_SZ + XMITBUF_ALIGN_SZ,
+> +						   GFP_ATOMIC);
+>  		if (pxmitbuf->pallocated_buf == NULL)
+>  			return _FAIL;
+>  		pxmitbuf->pbuf = pxmitbuf->pallocated_buf + XMITBUF_ALIGN_SZ -
+> @@ -955,8 +955,8 @@ static void alloc_hwxmits(struct _adapter *padapter)
+>  	struct xmit_priv *pxmitpriv = &padapter->xmitpriv;
+>  
+>  	pxmitpriv->hwxmit_entry = HWXMIT_ENTRY;
+> -	pxmitpriv->hwxmits = (struct hw_xmit *)_malloc(sizeof(struct hw_xmit) *
+> -			     pxmitpriv->hwxmit_entry);
+> +	pxmitpriv->hwxmits = kmalloc(sizeof(struct hw_xmit) * pxmitpriv->hwxmit_entry,
+> +				     GFP_ATOMIC);
+>  	if (pxmitpriv->hwxmits == NULL)
+>  		return;
+>  	hwxmits = pxmitpriv->hwxmits;
+> diff --git a/drivers/staging/rtl8712/usb_ops_linux.c b/drivers/staging/rtl8712/usb_ops_linux.c
+> index dca398a..064dc10 100644
+> --- a/drivers/staging/rtl8712/usb_ops_linux.c
+> +++ b/drivers/staging/rtl8712/usb_ops_linux.c
+> @@ -495,7 +495,7 @@ int r8712_usbctrl_vendorreq(struct intf_priv *pintfpriv, u8 request, u16 value,
+>  	 */
+>  	u8 *palloc_buf, *pIo_buf;
+>  
+> -	palloc_buf = _malloc((u32) len + 16);
+> +	palloc_buf = kmalloc((u32)len + 16, GFP_ATOMIC);
+>  	if (palloc_buf == NULL) {
+>  		dev_err(&udev->dev, "%s: Can't alloc memory for vendor request\n",
+>  			__func__);
 
-I clearly need to do some more reading about all of this, but some of
-the questions/remarks I've outlined above need anwers.
 
-Also, how does this combine with the work the VOS guys are doing?
-
-Thanks,
-
-	M.
 -- 
-Jazz is not dead. It just smells funny.
+Andy Shevchenko <andriy.shevchenko@intel.com>
+Intel Finland Oy
+
