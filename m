@@ -1,68 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753809AbaFBJrb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 05:47:31 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:34003 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752745AbaFBJr3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 05:47:29 -0400
-From: Jianyu Zhan <nasa4836@gmail.com>
-To: akpm@linux-foundation.org, mhocko@suse.cz, riel@redhat.com,
-        hannes@cmpxchg.org, kosaki.motohiro@jp.fujitsu.com, cldu@marvell.com,
-        nasa4836@gmail.com, handai.szj@taobao.com,
-        paul.gortmaker@windriver.com, mpatlasov@parallels.com
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] mm/page-writeback.c: remove outdated comment
-Date: Mon,  2 Jun 2014 17:47:20 +0800
-Message-Id: <1401702440-1884-1-git-send-email-nasa4836@gmail.com>
-X-Mailer: git-send-email 2.0.0
+	id S1753139AbaFBJux (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 05:50:53 -0400
+Received: from vps0.lunn.ch ([178.209.37.122]:54497 "EHLO vps0.lunn.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752402AbaFBJuw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 05:50:52 -0400
+Date: Mon, 2 Jun 2014 11:47:15 +0200
+From: Andrew Lunn <andrew@lunn.ch>
+To: Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>
+Cc: sebastian.hesselbarth@gmail.com, thomas.petazzoni@free-electrons.com,
+        zmxu@marvell.com, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, alexandre.belloni@free-electrons.com,
+        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/5] ARM: berlin: add SMP support
+Message-ID: <20140602094715.GG28090@lunn.ch>
+References: <1401700866-24804-1-git-send-email-antoine.tenart@free-electrons.com>
+ <1401700866-24804-2-git-send-email-antoine.tenart@free-electrons.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1401700866-24804-2-git-send-email-antoine.tenart@free-electrons.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is an orphaned prehistoric comment , which used to be against
-get_dirty_limits(), the dawn of global_dirtyable_memory().
+On Mon, Jun 02, 2014 at 11:21:02AM +0200, Antoine Ténart wrote:
+> +
+> +static inline void berlin_reset_cpu(unsigned int cpu)
+> +{
+> +	u32 val;
+> +
+> +	val = readl(cpu_ctrl + CPU_RESET);
+> +	val |= BIT(cpu_logical_map(cpu));
+> +	writel(val, cpu_ctrl + CPU_RESET);
+> +}
 
-Back then, the implementation of get_dirty_limits() is complicated and
-full of magic numbers, so this comment is necessary. But we now
-use the clear and neat global_dirtyable_memory(), which renders this
-comment ambiguous and useless. Remove it.
+Hi Antoine
 
-Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
----
- mm/page-writeback.c | 18 ------------------
- 1 file changed, 18 deletions(-)
+Is this performing a reset on the CPU, or is it taking it out of reset?
 
-diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-index a4317da..f2683ac 100644
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -156,24 +156,6 @@ static unsigned long writeout_period_time = 0;
- #define VM_COMPLETIONS_PERIOD_LEN (3*HZ)
- 
- /*
-- * Work out the current dirty-memory clamping and background writeout
-- * thresholds.
-- *
-- * The main aim here is to lower them aggressively if there is a lot of mapped
-- * memory around.  To avoid stressing page reclaim with lots of unreclaimable
-- * pages.  It is better to clamp down on writers than to start swapping, and
-- * performing lots of scanning.
-- *
-- * We only allow 1/2 of the currently-unmapped memory to be dirtied.
-- *
-- * We don't permit the clamping level to fall below 5% - that is getting rather
-- * excessive.
-- *
-- * We make sure that the background writeout level is below the adjusted
-- * clamping level.
-- */
--
--/*
-  * In a memory zone, there is a certain amount of pages we consider
-  * available for the page cache, which is essentially the number of
-  * free and reclaimable pages, minus some zone reserves to protect
--- 
-2.0.0
+If you are going to implement CPU hotplug at some point, you are going
+to want to be able to put the CPU into reset, i.e. power it off, and
+take it out of reset, i.e. power it on and getting it running. So it
+might help if we get these function names clear now.
 
+      Andrew
+
+
+> +
+> +static int berlin_boot_secondary(unsigned int cpu, struct task_struct *idle)
+> +{
+> +	if (!cpu_ctrl)
+> +		return -EFAULT;
+> +
+> +	/*
+> +	 * Reset the CPU, making it to execute the instruction in the reset
+> +	 * exception register.
+> +	 */
+> +	berlin_reset_cpu(cpu);
+> +
+> +	return 0;
+> +}
+> +
+> +static void __init berlin_smp_prepare_cpus(unsigned int max_cpus)
+> +{
+> +	struct device_node *np;
+> +	void __iomem *scu_base;
+> +	void __iomem *vectors_base;
+> +
+> +	np = of_find_compatible_node(NULL, NULL, "arm,cortex-a9-scu");
+> +	scu_base = of_iomap(np, 0);
+> +	of_node_put(np);
+> +	if (!scu_base)
+> +		return;
+> +
+> +	np = of_find_compatible_node(NULL, NULL, "marvell,berlin-cpu-ctrl");
+> +	cpu_ctrl = of_iomap(np, 0);
+> +	of_node_put(np);
+> +	if (!cpu_ctrl)
+> +		goto unmap_scu;
+> +
+> +	vectors_base = ioremap(CONFIG_VECTORS_BASE, SZ_32K);
+> +	if (!vectors_base)
+> +		goto unmap_scu;
+> +
+> +	scu_enable(scu_base);
+> +	flush_cache_all();
+> +
+> +	/*
+> +	 * Write the first instruction the CPU will execute after being reseted
+> +	 * in the reset exception register.
+> +	 */
+> +	writel(boot_inst, vectors_base + RESET_VECT);
+> +
+> +	/*
+> +	 * Write the secondary startup address into the SW reset address
+> +	 * register. This is used by boot_inst.
+
+Maybe it would be better to call this the reset address vector instead
+of address register. It is in the vector space after all.
+
+   Andrew
+
+> +	 */
+> +	writel(virt_to_phys(berlin_secondary_startup), vectors_base + SW_RESET_ADDR);
+> +
+> +	iounmap(vectors_base);
+> +unmap_scu:
+> +	iounmap(scu_base);
+> +}
+> +
+> +static struct smp_operations berlin_smp_ops __initdata = {
+> +	.smp_prepare_cpus	= berlin_smp_prepare_cpus,
+> +	.smp_boot_secondary	= berlin_boot_secondary,
+> +};
+> +CPU_METHOD_OF_DECLARE(berlin_smp, "marvell,berlin-smp", &berlin_smp_ops);
+> -- 
+> 1.9.1
+> 
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
