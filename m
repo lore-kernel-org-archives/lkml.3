@@ -1,56 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932118AbaFBT5O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 15:57:14 -0400
-Received: from one.firstfloor.org ([193.170.194.197]:53413 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752065AbaFBT5N (ORCPT
+	id S1752870AbaFBT72 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 15:59:28 -0400
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:61487 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751338AbaFBT70 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 15:57:13 -0400
-Date: Mon, 2 Jun 2014 21:57:11 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Eric Northup <digitaleric@google.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Peter Zijlstra <peterz@infradead.org>,
-        gleb@kernel.org, Paolo Bonzini <pbonzini@redhat.com>,
-        Stephane Eranian <eranian@google.com>, KVM <kvm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 4/4] kvm: Implement PEBS virtualization
-Message-ID: <20140602195711.GQ25366@two.firstfloor.org>
-References: <1401412327-14810-1-git-send-email-andi@firstfloor.org>
- <1401412327-14810-5-git-send-email-andi@firstfloor.org>
- <CAG7+5M2h1_h2fW1KiD-ReXuxDe_EwmBUOJRwjgAvR79sUBxtgA@mail.gmail.com>
+	Mon, 2 Jun 2014 15:59:26 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAG7+5M2h1_h2fW1KiD-ReXuxDe_EwmBUOJRwjgAvR79sUBxtgA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CAGXu5jLYPbJKCBvhVxfHEUFeCPJO-OBhRFufUSNy6o1N=LJ6UQ@mail.gmail.com>
+References: <1400799936-26499-1-git-send-email-keescook@chromium.org> <CAGXu5jLYPbJKCBvhVxfHEUFeCPJO-OBhRFufUSNy6o1N=LJ6UQ@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 2 Jun 2014 12:59:06 -0700
+Message-ID: <CALCETrV0ZEFipU0E64n5q44LiUV4j4Qqvnz0h_QAoddg+e7V3A@mail.gmail.com>
+Subject: Re: [PATCH v5 0/6] seccomp: add PR_SECCOMP_EXT and SECCOMP_EXT_ACT_TSYNC
+To: Kees Cook <keescook@chromium.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Oleg Nesterov <oleg@redhat.com>,
+        James Morris <james.l.morris@oracle.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        LKML <linux-kernel@vger.kernel.org>, Will Drewry <wad@chromium.org>,
+        Julien Tinnes <jln@google.com>, Alexei Starovoitov <ast@plumgrid.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> It seems to me that with this patch, there is no way to expose a
-> PMU-without-PEBS to the guest if the host has PEBS.
+On Mon, Jun 2, 2014 at 12:47 PM, Kees Cook <keescook@chromium.org> wrote:
+> Hi Andrew,
+>
+> Would you be willing to carry this series? Andy Lutomirski appears
+> happy with it now. (Thanks again for all the feedback Andy!) If so, it
+> has a relatively small merge conflict with the bpf changes living in
+> net-next. Would you prefer I rebase against net-next, let sfr handle
+> it, get carried in net-next, or some other option?
 
-If you clear the CPUIDs then noone would ilikely access it.
+Well, I'm still not entirely convinced that we want to have this much
+multiplexing in a prctl, and I'm still a bit unconvinced that the code
+wouldn't be better off it it were completely atomic in the sense that
+it would either work or fail without doing anything.
 
-But fair enough, I'll add extra checks for CPUID.
-
-> It would be a bigger concern if we expected virtual PMU migration to
-> work, but I think it would be nice to update kvm_pmu_cpuid_update() to
-> notice the presence/absence of the new CPUID bits, and then store that
-> into per-VM kvm_pmu->pebs_allowed rather than relying only on the
-> per-host perf_pebs_virtualization().
-
-I hope at some point it can work. There shouldn't be any problems
-with migrating to the same CPU model, in many cases (same event 
-and same PEBS format) it'll likely even work between models or
-gracefully degrade.
-
-BTW in practice it'll likely work anyways because many profilers
-regularly re-set the PMU. 
-
--Andi
-
--- 
-ak@linux.intel.com -- Speaking for myself only.
+--Andy
