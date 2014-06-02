@@ -1,63 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752768AbaFBXFF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 19:05:05 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:58690 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751572AbaFBXFD (ORCPT
+	id S1752931AbaFBXFd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 19:05:33 -0400
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:42961 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752797AbaFBXFa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 19:05:03 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19ZXHVxBuZBX96ganxKaw7G
-Date: Mon, 2 Jun 2014 16:04:58 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Thierry Reding <thierry.reding@gmail.com>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-omap@vger.kernel.org
-Subject: Re: [PATCH 2/2] gpio: of: Allow -gpio suffix for property names
-Message-ID: <20140602230457.GE11004@atomide.com>
-References: <1398266889-17489-1-git-send-email-thierry.reding@gmail.com>
- <1398266889-17489-2-git-send-email-thierry.reding@gmail.com>
- <CACRpkdbF3N5bFY1sFkabDHO7J0F8sb1uU0xL+mjkuF-z7VocMQ@mail.gmail.com>
+	Mon, 2 Jun 2014 19:05:30 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACRpkdbF3N5bFY1sFkabDHO7J0F8sb1uU0xL+mjkuF-z7VocMQ@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CALCETrXB0zp8gwpWuxXs0bgB8sQhe6JLE46BOYw3OrBx7hQYVw@mail.gmail.com>
+References: <1400799936-26499-1-git-send-email-keescook@chromium.org>
+	<CAGXu5jLYPbJKCBvhVxfHEUFeCPJO-OBhRFufUSNy6o1N=LJ6UQ@mail.gmail.com>
+	<CALCETrV0ZEFipU0E64n5q44LiUV4j4Qqvnz0h_QAoddg+e7V3A@mail.gmail.com>
+	<CAGXu5j+YRW_+W8Z9S9O84ep-uUc4wQQRbtSu6_s8o5J2HLPUYg@mail.gmail.com>
+	<CALCETrXB0zp8gwpWuxXs0bgB8sQhe6JLE46BOYw3OrBx7hQYVw@mail.gmail.com>
+Date: Mon, 2 Jun 2014 16:05:29 -0700
+X-Google-Sender-Auth: E26drUiG60jXbPPELLldi_X79cQ
+Message-ID: <CAGXu5jKFte0ZvqU8RYcqjWDCoegWeu66gdwX83tiL8vprcvMgQ@mail.gmail.com>
+Subject: Re: [PATCH v5 0/6] seccomp: add PR_SECCOMP_EXT and SECCOMP_EXT_ACT_TSYNC
+From: Kees Cook <keescook@chromium.org>
+To: Andy Lutomirski <luto@amacapital.net>, linux-api@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, James Morris <james.l.morris@oracle.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        LKML <linux-kernel@vger.kernel.org>, Will Drewry <wad@chromium.org>,
+        Julien Tinnes <jln@google.com>, Alexei Starovoitov <ast@plumgrid.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Linus Walleij <linus.walleij@linaro.org> [140425 00:53]:
-> On Wed, Apr 23, 2014 at 5:28 PM, Thierry Reding
-> <thierry.reding@gmail.com> wrote:
-> 
-> > From: Thierry Reding <treding@nvidia.com>
-> >
-> > Many bindings use the -gpio suffix in property names. Support this in
-> > addition to the -gpios suffix when requesting GPIOs using the new
-> > descriptor-based API.
-> >
-> > Signed-off-by: Thierry Reding <treding@nvidia.com>
-> 
-> It appears this can save quite a lot of code in drivers, work that
-> I trust Thierry to persue based on this to some extent so patch is
-> tentatively applied unless something comes up.
+On Mon, Jun 2, 2014 at 2:17 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> On Mon, Jun 2, 2014 at 1:06 PM, Kees Cook <keescook@chromium.org> wrote:
+>> On Mon, Jun 2, 2014 at 12:59 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>>> On Mon, Jun 2, 2014 at 12:47 PM, Kees Cook <keescook@chromium.org> wrote:
+>>>> Hi Andrew,
+>>>>
+>>>> Would you be willing to carry this series? Andy Lutomirski appears
+>>>> happy with it now. (Thanks again for all the feedback Andy!) If so, it
+>>>> has a relatively small merge conflict with the bpf changes living in
+>>>> net-next. Would you prefer I rebase against net-next, let sfr handle
+>>>> it, get carried in net-next, or some other option?
+>>>
+>>> Well, I'm still not entirely convinced that we want to have this much
+>>> multiplexing in a prctl, and I'm still a bit unconvinced that the code
+>>
+>> I don't want to get caught without interface argument flexibility
+>> again, so that's why the prctl interface is being set up that way.
+>
+> I was thinking that a syscall might be a lot prettier.  It may pay to
+> cc linux-api, too.
+>
+> I'll offer you a deal: if you try to come up with a nice, clean
+> syscall, I'll try to write a fast(er) path for x86_64 to reduce
+> overhead.  I bet I can save 90-100ns per syscall. :)
 
-Looks like this patch causes a regression where GPIOs on I2C will
-no longer return -EPROBE_DEFER but seem to return -ENOENT instead.
+Now added to the Cc.
 
-This breaks drivers using things like devm_gpiod_get_index()
-on a GPIO that's on a I2C bus not probed yet.
+Which path do you mean to improve? Neither the prctl nor a syscall for
+this would need to be fast at all.
 
-Reverting commit dd34c37aa3e (gpio: of: Allow -gpio suffix for
-property names) fixes things.
+I don't want to go in circles on this. I've been there before on my
+VFS link hardening series, and my module restriction series. I would
+like consensus from more than just one person. :)
 
-Regards,
+I'd like to hear from other folks on this (akpm?). My instinct is to
+continue using prctl since that is already where mediation for seccomp
+happens. I don't see why prctl vs a new syscall makes a difference
+here, frankly.
 
-Tony
+-Kees
+
+-- 
+Kees Cook
+Chrome OS Security
