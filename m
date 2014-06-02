@@ -1,71 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755886AbaFBQu1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 12:50:27 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:48006 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753470AbaFBQuY (ORCPT
+	id S1755920AbaFBQua (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 12:50:30 -0400
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:44666 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754996AbaFBQu1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 12:50:24 -0400
-Message-ID: <538CAB4C.9070103@wwwdotorg.org>
-Date: Mon, 02 Jun 2014 10:50:20 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Mon, 2 Jun 2014 12:50:27 -0400
+Date: Mon, 2 Jun 2014 18:49:57 +0200
+From: Johan Hovold <jhovold@gmail.com>
+To: Mike Remski <mremski@mutualink.net>
+Cc: Johan Hovold <jhovold@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Subject: Re: ftdi_sio BUG: NULL pointer dereference
+Message-ID: <20140602164957.GC13790@localhost>
+References: <538C8963.4010909@mutualink.net>
+ <20140602143347.GA1902@localhost>
+ <538C953B.9020304@mutualink.net>
+ <20140602154036.GA8662@localhost>
+ <538CA020.4070204@mutualink.net>
+ <20140602162027.GB13790@localhost>
+ <538CA54C.4040803@mutualink.net>
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arvind Chauhan <arvind.chauhan@arm.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        Doug Anderson <dianders@chromium.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>
-Subject: Re: [PATCH V4 3/3] cpufreq: Tegra: implement intermediate frequency
- callbacks
-References: <cover.1400662383.git.viresh.kumar@linaro.org>	<dc2702973028425e3ded689a6da227658fb914c4.1400662383.git.viresh.kumar@linaro.org>	<53877103.8070604@wwwdotorg.org>	<CAKohponsZOpV74+SLMDLy0oCV-j896wA9--bwbwk4GUL59m1ug@mail.gmail.com>	<5388B134.9090307@wwwdotorg.org> <CAKohpokxnyu5qk+Jb+LAfHsoFe0iFAg55k1DPN3PO7t+0obBkg@mail.gmail.com>
-In-Reply-To: <CAKohpokxnyu5qk+Jb+LAfHsoFe0iFAg55k1DPN3PO7t+0obBkg@mail.gmail.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <538CA54C.4040803@mutualink.net>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/02/2014 04:06 AM, Viresh Kumar wrote:
-> On 30 May 2014 21:56, Stephen Warren <swarren@wwwdotorg.org> wrote:
->> ... [This patch causes issues on Tegra20] ...
->> I believe the issue is this:
-...
-> Okay, that was very helpful..
-> 
-> What about this ? (Attached for testing) :
-> 
-> Author: Viresh Kumar <viresh.kumar@linaro.org>
-> Date:   Fri May 16 14:22:40 2014 +0530
-> 
->     cpufreq: Tegra: implement intermediate frequency callbacks
-> 
->     Tegra had always been switching to intermediate frequency (pll_p_clk) since
->     ever. CPUFreq core has better support for handling notifications for these
->     frequencies and so we can adapt Tegra's driver to it.
-> 
->     Also do a WARN() if clk_set_parent() fails while moving back to pll_x as we
->     should have atleast restored to earlier frequency on error.
+On Mon, Jun 02, 2014 at 12:24:44PM -0400, Mike Remski wrote:
+> On 06/02/2014 12:20 PM, Johan Hovold wrote:
+> > On Mon, Jun 02, 2014 at 12:02:40PM -0400, Mike Remski wrote:
+> >> On 06/02/2014 11:40 AM, Johan Hovold wrote:
+> >>> [ Please avoid top-posting. ]
+> >>>
+> >>> On Mon, Jun 02, 2014 at 11:16:11AM -0400, Mike Remski wrote:
 
-Tested-by: Stephen Warren <swarren@nvidia.com>
+> >> lsusb -v cut for the device in question.
+> >>
+> >> Bus 005 Device 003: ID 1fdf:1001
+> >> Device Descriptor:
+> >>     bLength                18
+> >>     bDescriptorType         1
+> >>     bcdUSB               2.00
+> >>     bDeviceClass          239 Miscellaneous Device
+> >>     bDeviceSubClass         2 ?
+> >>     bDeviceProtocol         1 Interface Association
+> >>     bMaxPacketSize0        64
+> >>     idVendor           0x1fdf
+> >>     idProduct          0x1001
+> >>     bcdDevice            0.03
+> >>     iManufacturer           1 Sepura
+> >>     iProduct                2 Colour Console
+> >>     iSerial                 0
+> >>     bNumConfigurations      1
+> >>     Configuration Descriptor:
+> >>       bLength                 9
+> >>       bDescriptorType         2
+> >>       wTotalLength          134
+> >>       bNumInterfaces          4
+> >>       bConfigurationValue     1
+> >>       iConfiguration          0
+> >>       bmAttributes         0xc0
+> >>         Self Powered
+> >>       MaxPower              100mA
+> >>       Interface Association:
+> >>         bLength                 8
+> >>         bDescriptorType        11
+> >>         bFirstInterface         0
+> >>         bInterfaceCount         2
+> >>         bFunctionClass          2 Communications
+> >>         bFunctionSubClass       2 Abstract (modem)
+> > Is this indeed the right device? Then you seem to be using the wrong
+> > driver as this is no FTDI device, but a CDC-ACM modem-class device which
+> > should be driven by the cdc-acm driver.
+> >
+> >>         bFunctionProtocol       0 None
+> >>         iFunction               0
+> >>       Interface Descriptor:
+> >>         bLength                 9
+> >>         bDescriptorType         4
+> >>         bInterfaceNumber        0
+> >>         bAlternateSetting       0
+> >>         bNumEndpoints           1
+> >>         bInterfaceClass         2 Communications
+> >>         bInterfaceSubClass      2 Abstract (modem)
+> >>         bInterfaceProtocol      0 None
+> >>         iInterface              0
+> >>         CDC Header:
+> >>           bcdCDC               1.10
+> >>         CDC Call Management:
+> >>           bmCapabilities       0x01
+> >>             call management
+> >>           bDataInterface          1
+> >>         CDC ACM:
+> >>           bmCapabilities       0x02
+> >>             line coding and serial state
+> >>         CDC Union:
+> >>           bMasterInterface        0
+> >>           bSlaveInterface         1
+> >>         Endpoint Descriptor:
+> >>           bLength                 7
+> >>           bDescriptorType         5
+> >>           bEndpointAddress     0x83  EP 3 IN
+> >>           bmAttributes            3
+> >>             Transfer Type            Interrupt
+> >>             Synch Type               None
+> >>             Usage Type               Data
+> >>           wMaxPacketSize     0x0040  1x 64 bytes
+> >>           bInterval              10
+> >>       Interface Descriptor:
+> >>         bLength                 9
+> >>         bDescriptorType         4
+> >>         bInterfaceNumber        1
+> >>         bAlternateSetting       0
+> >>         bNumEndpoints           2
+> >>         bInterfaceClass        10 CDC Data
+> >>         bInterfaceSubClass      0 Unused
+> >>         bInterfaceProtocol      0
+> >>         iInterface              0
+> >>         Endpoint Descriptor:
+> >>           bLength                 7
+> >>           bDescriptorType         5
+> >>           bEndpointAddress     0x01  EP 1 OUT
+> >>           bmAttributes            2
+> >>             Transfer Type            Bulk
+> >>             Synch Type               None
+> >>             Usage Type               Data
+> >>           wMaxPacketSize     0x0040  1x 64 bytes
+> >>           bInterval               0
+> >>         Endpoint Descriptor:
+> >>           bLength                 7
+> >>           bDescriptorType         5
+> >>           bEndpointAddress     0x82  EP 2 IN
+> >>           bmAttributes            2
+> >>             Transfer Type            Bulk
+> >>             Synch Type               None
+> >>             Usage Type               Data
+> >>           wMaxPacketSize     0x0040  1x 64 bytes
+> >>           bInterval               0
+> >>       Interface Association:
+> >>         bLength                 8
+> >>         bDescriptorType        11
+> >>         bFirstInterface         2
+> >>         bInterfaceCount         2
+> >>         bFunctionClass          2 Communications
+> >>         bFunctionSubClass       2 Abstract (modem)
+> >>         bFunctionProtocol       0 None
+> >>         iFunction               0
+> >>       Interface Descriptor:
+> >>         bLength                 9
+> >>         bDescriptorType         4
+> >>         bInterfaceNumber        2
+> >>         bAlternateSetting       0
+> >>         bNumEndpoints           0
+> > The third interface lacks endpoints and crashes the ftdi_sio driver.
+> > This shouldn't happen (even if you're forcing the wrong driver to bind),
+> > so I'll fix it up if still broken in v3.15-rc.
+> >
+> > Thanks,
+> > Johan
+> Johan,
+> Thanks again.  Yes, the device does indeed have an FTDI embedded in it;  
+> they've programmed in their own ids.  They supply a Windows driver for 
+> it, but that doesn't do me any good.  :)
 
-I'd prefer a couple of changes though:
+Not just their own ID's it seems.
 
-a) Rename "pll_p_clk_count" to better describe what it represents. It
-represents the fact that pll_x has been prepare_enabled, so why not call
-it "pll_x_prepared"?
+Have you tried just using the cdc-acm driver? The ports should up as
+/dev/ttyACMx instead of ttyUSBx.
 
-b) I think it should be a Boolean not an integer; there should never be
-a case where the value is not 0 or 1. The only way that could happen is
-if the cpufreq core called tegra_target_intermediate() out of sequence
-too many times.
-
+Johan
