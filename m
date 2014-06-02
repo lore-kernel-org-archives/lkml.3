@@ -1,60 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752571AbaFBSvn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 14:51:43 -0400
-Received: from mail-qa0-f54.google.com ([209.85.216.54]:55495 "EHLO
-	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751370AbaFBSvm (ORCPT
+	id S1752868AbaFBSw3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 14:52:29 -0400
+Received: from mout.kundenserver.de ([212.227.126.131]:58296 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750998AbaFBSw1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 14:51:42 -0400
-Date: Mon, 2 Jun 2014 14:51:38 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Paolo Valente <paolo.valente@unimore.it>, Li Zefan <lizefan@huawei.com>,
-        Fabio Checconi <fchecconi@gmail.com>,
-        Arianna Avanzini <avanzini.arianna@gmail.com>,
-        Paolo Valente <posta_paolo@yahoo.it>, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org
-Subject: Re: [PATCH RFC - TAKE TWO - 00/12] New version of the BFQ I/O
- Scheduler
-Message-ID: <20140602185138.GD8912@htj.dyndns.org>
-References: <20140528221929.GG1419@htj.dyndns.org>
- <1401354343-5527-1-git-send-email-paolo.valente@unimore.it>
- <20140530160712.GG24871@htj.dyndns.org>
- <538926F6.7080409@kernel.dk>
- <20140531051635.GA19925@mtj.dyndns.org>
- <538C8A47.1050502@kernel.dk>
- <20140602172454.GA8912@htj.dyndns.org>
- <538CB515.3090700@kernel.dk>
- <20140602174250.GC8912@htj.dyndns.org>
- <538CB87C.7030600@kernel.dk>
+	Mon, 2 Jun 2014 14:52:27 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, Chuck Lever <chuck.lever@oracle.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Dave Chinner <david@fromorbit.com>,
+        LKML Kernel <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
+        joseph@codesourcery.com, john.stultz@linaro.org,
+        Christoph Hellwig <hch@infradead.org>, tglx@linutronix.de,
+        geert@linux-m68k.org, lftan@altera.com,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>, xfs@oss.sgi.com,
+        Linux NFS Mailing List <linux-nfs@vger.kernel.org>
+Subject: Re: [RFC 11/32] xfs: convert to struct inode_time
+Date: Mon, 02 Jun 2014 20:50:55 +0200
+Message-ID: <4548598.6TTMEpKtuS@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <538CB085.5000502@zytor.com>
+References: <1401480116-1973111-1-git-send-email-arnd@arndb.de> <20140602153124.GH30598@thunk.org> <538CB085.5000502@zytor.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <538CB87C.7030600@kernel.dk>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:/90kk+gjD6hRNXSPjut3wwHX49joKS4yC+yNNbJ86QL
+ H9umPu65m55QNquKiiF5ZtHy8rUaBi7JnahCxopnsT5iboNJ7L
+ ioxeaM8Fz6OsMphunT7VSECDJdctzFcoVZktVnl3BnN/FN8kTR
+ QT/N3VCaIzZjc+VRkehfMEcYrF5WE+TrV/bET63XFOZfWfZ5Cr
+ Y0iql5fQVRwCk/rm95AKa5rydnsvnUWOkw94YJiC3hRPm9ysbQ
+ iML2sf2ucQrF+oAs9Nw/s2joprprEZF/2XTo/hXSNHG3B4F5/0
+ +QGQGvSLmVSeIjpVMdCuoxpDcq/G5GNxPNZd7CflGHl5N+4/40
+ HaUarl+nSj7jW0wsQS04=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Monday 02 June 2014 10:12:37 H. Peter Anvin wrote:
+> On 06/02/2014 08:31 AM, Theodore Ts'o wrote:
+> > 
+> > I wonder if it would make sense to try to promulgate via the Austin
+> > group, and possibly the C standards committee the concept of a bit
+> > pattern (that might commonly be INT_MAX or UINT_MAX) that means "time
+> > unknown", or "time indefinite" or "we couldn't encode the time".
+> > 
+> 
+> (time_t)-1 already has this meaning for some calls (e.g. time(2)).
+> However, this also means Wed Dec 31 23:59:59 UTC 1969, and unfortunately
+> something similar applies to all possible bit patterns, certainly within
+> the range of an int.
 
-On Mon, Jun 02, 2014 at 11:46:36AM -0600, Jens Axboe wrote:
-> But blk-mq will potentially drive anything, so it might not be out of
-> the question with a more expensive scheduling variant, if it makes any
-> sense to do of course. At least until there's no more rotating stuff out
-> there :-). But it's not a priority at all to me yet. As long as we have
-> coexisting IO paths, it'd be trivial to select the needed one based on
-> the device characteristics.
+Worse than Wed Dec 31 23:59:59 UTC 1969, on NFSv3 it also means
+"Sun Feb  7 07:28:15 CET 2106", and that is much harder to distinguish
+from a real future date.
 
-Hmmm... yeah, moving rotating devices over to blk-mq doesn't really
-seem beneficial to me.  I think there are fundamental behavioral
-differences for rotating rusts and newer solid state devices to share
-single code path for things like scheduling and selecting the
-appropriate path depending on the actual devices sounds like a much
-better plan even in the long term.
+If we had the choice, I'd go for something like 1, i.e.
+"Thu Jan  1 01:00:01 CET 1970".
 
-Thanks.
+> > We would then teach gmtime(3) and asctime(3) to print some appropriate
+> > message, and we could teach programs like find (with the -mtime)
+> > option, make, tmpwatch, et. al., that they can't make any presumption
+> > about the comparibility of any timestamp which has a value of
+> > TIME_UNDEFINIED.
+> > 
+> > It would be problematic for time(2) or gettimeofday(2) to return
+> > TIME_UNDEFINED, since there are programs that care about time ticking
+> > forward, but I could imagine a new interface which would be permitted
+> > to return a flag indicating that we don't know the current time
+> > (because the CMOS battery had run down, etc.) so instead we're going
+> > to be counting the number of seconds since the system was booted.
+> 
+> This assumes that we actually know that that is the case, which may be
+> an aggressive assumption.
 
--- 
-tejun
+It's harder for time(2), but for the inode case, we can definitely
+detect when the file system specific representation overflows
+or underflows, which may be be at a number of very different points
+of time.
+
+	Arnd
