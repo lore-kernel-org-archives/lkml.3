@@ -1,123 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753446AbaFBJJX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 05:09:23 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38696 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753104AbaFBJJS (ORCPT
+	id S1753511AbaFBJJd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 05:09:33 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:44489 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753351AbaFBJJ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 05:09:18 -0400
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-To: lee.jones@linaro.org
-Cc: sameo@linux.intel.com, patches@opensource.wolfsonmicro.com,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] mfd: core: Add the option to order destruction of MFD cells
-Date: Mon,  2 Jun 2014 10:01:43 +0100
-Message-Id: <1401699704-17902-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.2.5
+	Mon, 2 Jun 2014 05:09:28 -0400
+From: srinivas.kandagatla@linaro.org
+To: Russell King <linux@arm.linux.org.uk>,
+        Ulf Hansson <ulf.hansson@linaro.org>, linux-mmc@vger.kernel.org
+Cc: Chris Ball <chris@printf.net>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linus.walleij@linaro.org,
+        Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+Subject: [PATCH v6 06/12] mmc: mmci: add 8bit bus support in variant data
+Date: Mon,  2 Jun 2014 10:09:23 +0100
+Message-Id: <1401700163-11670-1-git-send-email-srinivas.kandagatla@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1401699818-11329-1-git-send-email-srinivas.kandagatla@linaro.org>
+References: <1401699818-11329-1-git-send-email-srinivas.kandagatla@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sometimes MFD children will have interdependancies. For example an MFD
-device might contain a regulator cell and another cell which requires
-that regulator to function. Probe deferral will ensure that these
-devices probe in the correct order, however currently nothing ensures
-they are destroyed in the correct order. As such it is possible for a
-cell to be destroyed whilst another cell still expects it to exist. For
-example the cell mentioned earlier would attempt to do a regulator_put
-as part of its own tear-down but the regulator may have already been
-destroyed.
+From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
 
-This patch add a field remove_level to the mfd_cell data structure which
-allows users to group the destruction of the MFD cells. Cells with a
-lower remove_level will be destroyed first. This approach also doesn't
-alter the destruction order for existing devices, so should be
-no-op for devices not explicitly using it.
+This patch adds 8bit bus enable to variant structure giving more flexibility
+to the driver to support more SOCs which have different clock register layout.
 
-Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Without this patch other new SOCs like Qcom will have to add more code
+to special case them.
+
+Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- drivers/mfd/mfd-core.c   |   33 +++++++++++++++++++++++++++++----
- include/linux/mfd/core.h |    3 +++
- 2 files changed, 32 insertions(+), 4 deletions(-)
+ drivers/mmc/host/mmci.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/mfd/mfd-core.c b/drivers/mfd/mfd-core.c
-index 2676492..0c12787 100644
---- a/drivers/mfd/mfd-core.c
-+++ b/drivers/mfd/mfd-core.c
-@@ -226,11 +226,19 @@ fail:
- }
- EXPORT_SYMBOL(mfd_add_devices);
+diff --git a/drivers/mmc/host/mmci.c b/drivers/mmc/host/mmci.c
+index ad7e538..fa3ad83 100644
+--- a/drivers/mmc/host/mmci.c
++++ b/drivers/mmc/host/mmci.c
+@@ -52,6 +52,7 @@ static unsigned int fmax = 515633;
+  * struct variant_data - MMCI variant-specific quirks
+  * @clkreg: default value for MCICLOCK register
+  * @clkreg_enable: enable value for MMCICLOCK register
++ * @clkreg_8bit_bus_enable: enable value for 8 bit bus
+  * @datalength_bits: number of bits in the MMCIDATALENGTH register
+  * @fifosize: number of bytes that can be written when MMCI_TXFIFOEMPTY
+  *	      is asserted (likewise for RX)
+@@ -72,6 +73,7 @@ static unsigned int fmax = 515633;
+ struct variant_data {
+ 	unsigned int		clkreg;
+ 	unsigned int		clkreg_enable;
++	unsigned int		clkreg_8bit_bus_enable;
+ 	unsigned int		datalength_bits;
+ 	unsigned int		fifosize;
+ 	unsigned int		fifohalfsize;
+@@ -113,6 +115,7 @@ static struct variant_data variant_u300 = {
+ 	.fifosize		= 16 * 4,
+ 	.fifohalfsize		= 8 * 4,
+ 	.clkreg_enable		= MCI_ST_U300_HWFCEN,
++	.clkreg_8bit_bus_enable = MCI_ST_8BIT_BUS,
+ 	.datalength_bits	= 16,
+ 	.sdio			= true,
+ 	.pwrreg_powerup		= MCI_PWR_ON,
+@@ -139,6 +142,7 @@ static struct variant_data variant_ux500 = {
+ 	.fifohalfsize		= 8 * 4,
+ 	.clkreg			= MCI_CLK_ENABLE,
+ 	.clkreg_enable		= MCI_ST_UX500_HWFCEN,
++	.clkreg_8bit_bus_enable = MCI_ST_8BIT_BUS,
+ 	.datalength_bits	= 24,
+ 	.sdio			= true,
+ 	.st_clkdiv		= true,
+@@ -154,6 +158,7 @@ static struct variant_data variant_ux500v2 = {
+ 	.fifohalfsize		= 8 * 4,
+ 	.clkreg			= MCI_CLK_ENABLE,
+ 	.clkreg_enable		= MCI_ST_UX500_HWFCEN,
++	.clkreg_8bit_bus_enable = MCI_ST_8BIT_BUS,
+ 	.datactrl_mask_ddrmode	= MCI_ST_DPSM_DDRMODE,
+ 	.datalength_bits	= 24,
+ 	.sdio			= true,
+@@ -305,7 +310,7 @@ static void mmci_set_clkreg(struct mmci_host *host, unsigned int desired)
+ 	if (host->mmc->ios.bus_width == MMC_BUS_WIDTH_4)
+ 		clk |= MCI_4BIT_BUS;
+ 	if (host->mmc->ios.bus_width == MMC_BUS_WIDTH_8)
+-		clk |= MCI_ST_8BIT_BUS;
++		clk |= variant->clkreg_8bit_bus_enable;
  
-+struct mfd_remove_data {
-+	atomic_t *cnts;
-+
-+	int level;
-+	int next_level;
-+};
-+
- static int mfd_remove_devices_fn(struct device *dev, void *c)
- {
- 	struct platform_device *pdev;
- 	const struct mfd_cell *cell;
--	atomic_t **usage_count = c;
-+	struct mfd_remove_data *rd = c;
-+	atomic_t **usage_count = &rd->cnts;
- 
- 	if (dev->type != &mfd_dev_type)
- 		return 0;
-@@ -238,6 +246,15 @@ static int mfd_remove_devices_fn(struct device *dev, void *c)
- 	pdev = to_platform_device(dev);
- 	cell = mfd_get_cell(pdev);
- 
-+	if (rd->level < cell->remove_level) {
-+		if (!rd->next_level || rd->next_level > cell->remove_level)
-+			rd->next_level = cell->remove_level;
-+
-+		return 0;
-+	}
-+
-+	dev_dbg(dev, "Removing from MFD\n");
-+
- 	/* find the base address of usage_count pointers (for freeing) */
- 	if (!*usage_count || (cell->usage_count < *usage_count))
- 		*usage_count = cell->usage_count;
-@@ -248,10 +265,18 @@ static int mfd_remove_devices_fn(struct device *dev, void *c)
- 
- void mfd_remove_devices(struct device *parent)
- {
--	atomic_t *cnts = NULL;
-+	struct mfd_remove_data rd = {};
-+
-+	do {
-+		rd.level = rd.next_level;
-+		rd.next_level = 0;
-+
-+		dev_dbg(parent, "Running remove for level: %d\n", rd.level);
-+
-+		device_for_each_child(parent, &rd, mfd_remove_devices_fn);
-+	} while (rd.next_level);
- 
--	device_for_each_child(parent, &cnts, mfd_remove_devices_fn);
--	kfree(cnts);
-+	kfree(rd.cnts);
- }
- EXPORT_SYMBOL(mfd_remove_devices);
- 
-diff --git a/include/linux/mfd/core.h b/include/linux/mfd/core.h
-index bdba8c6..40586a6 100644
---- a/include/linux/mfd/core.h
-+++ b/include/linux/mfd/core.h
-@@ -65,6 +65,9 @@ struct mfd_cell {
- 	 */
- 	const char		**parent_supplies;
- 	int			num_parent_supplies;
-+
-+	/* Cells with a lower remove level will be destroyed first */
-+	int			remove_level;
- };
- 
- /*
+ 	if (host->mmc->ios.timing == MMC_TIMING_UHS_DDR50)
+ 		clk |= MCI_ST_UX500_NEG_EDGE;
 -- 
-1.7.2.5
+1.9.1
 
