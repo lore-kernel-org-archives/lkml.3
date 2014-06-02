@@ -1,67 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752354AbaFBX1s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 19:27:48 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:46224 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751010AbaFBX1q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 19:27:46 -0400
-Date: Mon, 2 Jun 2014 16:26:13 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Chen Yucong <slaoub@gmail.com>
-cc: shli@kernel.org, hughd@google.com, akpm@linux-foundation.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] swap: Delete  the "last_in_cluster < scan_base" loop in
- the body of scan_swap_map()
-In-Reply-To: <1401710053-8460-1-git-send-email-slaoub@gmail.com>
-Message-ID: <alpine.LSU.2.11.1406021603330.2584@eggly.anvils>
-References: <1401710053-8460-1-git-send-email-slaoub@gmail.com>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+	id S1752201AbaFBXck (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 19:32:40 -0400
+Received: from imap.thunk.org ([74.207.234.97]:46687 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751318AbaFBXch (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 19:32:37 -0400
+Date: Mon, 2 Jun 2014 19:32:12 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Chuck Lever <chuck.lever@oracle.com>, Arnd Bergmann <arnd@arndb.de>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Dave Chinner <david@fromorbit.com>,
+        LKML Kernel <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
+        joseph@codesourcery.com, john.stultz@linaro.org,
+        Christoph Hellwig <hch@infradead.org>, tglx@linutronix.de,
+        geert@linux-m68k.org, lftan@altera.com,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>, xfs@oss.sgi.com,
+        Linux NFS Mailing List <linux-nfs@vger.kernel.org>
+Subject: Re: [RFC 11/32] xfs: convert to struct inode_time
+Message-ID: <20140602233212.GA2060@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	"H. Peter Anvin" <hpa@zytor.com>,
+	Chuck Lever <chuck.lever@oracle.com>, Arnd Bergmann <arnd@arndb.de>,
+	Nicolas Pitre <nicolas.pitre@linaro.org>,
+	Dave Chinner <david@fromorbit.com>,
+	LKML Kernel <linux-kernel@vger.kernel.org>,
+	linux-arch@vger.kernel.org, joseph@codesourcery.com,
+	john.stultz@linaro.org, Christoph Hellwig <hch@infradead.org>,
+	tglx@linutronix.de, geert@linux-m68k.org, lftan@altera.com,
+	linux-fsdevel <linux-fsdevel@vger.kernel.org>, xfs@oss.sgi.com,
+	Linux NFS Mailing List <linux-nfs@vger.kernel.org>
+References: <1401480116-1973111-1-git-send-email-arnd@arndb.de>
+ <8618458.1EVJCoVbkH@wuerfel>
+ <alpine.LFD.2.11.1406012121430.17310@knanqh.ubzr>
+ <4178301.j9kWdGCRLC@wuerfel>
+ <6868F108-F0B2-423F-AE31-90DF86A5B7DD@oracle.com>
+ <20140602153124.GH30598@thunk.org>
+ <538CB085.5000502@zytor.com>
+ <20140602222954.GA29690@thunk.org>
+ <538CFB83.20703@zytor.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <538CFB83.20703@zytor.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2 Jun 2014, Chen Yucong wrote:
-
-> From commit ebc2a1a69111, we can find that all SWP_SOLIDSTATE "seek is cheap"(SSD case) 
-> has already gone to si->cluster_info scan_swap_map_try_ssd_cluster() route. So that the
-> "last_in_cluster < scan_base" loop in the body of scan_swap_map() has already become a 
-> dead code snippet, and it should have been deleted.
+On Mon, Jun 02, 2014 at 03:32:35PM -0700, H. Peter Anvin wrote:
+> On 06/02/2014 03:29 PM, Theodore Ts'o wrote:
+> > 
+> > And since we are already returning (time_t) -1 in some cases, we might
+> > as well try to make things a bit more formal.
+> > 
 > 
-> This patch is to delete the redundant loop as Hugh and Shaohua suggested.
-> 
-> Signed-off-by: Chen Yucong <slaoub@gmail.com>
+> Are we?  I am not aware of *Linux* actually using that.
 
-That is very nice, thank you.
+Linux's time(2) can return (time_t) -1 and set errno to EFAULT, per
+the Posix specification:
 
-Acked-by: Hugh Dickins <hughd@google.com>
+SYSCALL_DEFINE1(time, time_t __user *, tloc)
+{
+	time_t i = get_seconds();
 
-But it does beg for just a little more: perhaps Andrew can kindly fold in:
----
+	if (tloc) {
+		if (put_user(i,tloc))
+			return -EFAULT;
+	}
+	force_successful_syscall_return();
+	return i;
+}
 
- mm/swapfile.c |    9 +++------
- 1 file changed, 3 insertions(+), 6 deletions(-)
+Cheers,
 
---- chen/mm/swapfile.c	2014-06-02 15:55:44.812368186 -0700
-+++ hugh/mm/swapfile.c	2014-06-02 16:15:20.344396124 -0700
-@@ -505,13 +505,10 @@ static unsigned long scan_swap_map(struc
- 		/*
- 		 * If seek is expensive, start searching for new cluster from
- 		 * start of partition, to minimize the span of allocated swap.
--		 * But if seek is cheap, search from our current position, so
--		 * that swap is allocated from all over the partition: if the
--		 * Flash Translation Layer only remaps within limited zones,
--		 * we don't want to wear out the first zone too quickly.
-+		 * If seek is cheap, that is the SWP_SOLIDSTATE si->cluster_info
-+		 * case, just handled by scan_swap_map_try_ssd_cluster() above.
- 		 */
--		if (!(si->flags & SWP_SOLIDSTATE))
--			scan_base = offset = si->lowest_bit;
-+		scan_base = offset = si->lowest_bit;
- 		last_in_cluster = offset + SWAPFILE_CLUSTER - 1;
- 
- 		/* Locate the first empty (unaligned) cluster */
+						- Ted
