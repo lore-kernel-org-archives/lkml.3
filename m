@@ -1,103 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754093AbaFBRHI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 13:07:08 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:62630 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751279AbaFBRHF (ORCPT
+	id S1752533AbaFBRIG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 13:08:06 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:40857 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751084AbaFBRIE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 13:07:05 -0400
+	Mon, 2 Jun 2014 13:08:04 -0400
+Date: Mon, 2 Jun 2014 19:07:59 +0200
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Olof Johansson <olof@lixom.net>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>, Arnd Bergmann <arnd@arndb.de>,
+        "arm@kernel.org" <arm@kernel.org>, egtvedt@samfundet.no,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
+Subject: Re: [GIT PULL] at91: drivers for 3.16 #1
+Message-ID: <20140602170758.GA17518@piout.net>
+References: <1401726901-19093-1-git-send-email-nicolas.ferre@atmel.com>
+ <CAOesGMj1FuozbydRf=J7jWFt_8GZ8ZKZReg_1BmvPC706cZ7rQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20140530062937.GA11096@twins.programming.kicks-ass.net>
-References: <1400860385-14555-1-git-send-email-vincent.guittot@linaro.org>
- <1400860385-14555-11-git-send-email-vincent.guittot@linaro.org>
- <20140529095024.GF11074@laptop.programming.kicks-ass.net> <CAKfTPtCHhxyugMOCeS0hZoEXWhgRec4uOBexZ2aB2A+Eycgi8w@mail.gmail.com>
- <20140530062937.GA11096@twins.programming.kicks-ass.net>
-From: Vincent Guittot <vincent.guittot@linaro.org>
-Date: Mon, 2 Jun 2014 19:06:44 +0200
-Message-ID: <CAKfTPtBXddNFXDuL5YNNtcW7e1Un=LqHU8bgaejJwPObSGoBhg@mail.gmail.com>
-Subject: Re: [PATCH v2 10/11] sched: move cfs task on a CPU with higher capacity
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        Mike Galbraith <efault@gmx.de>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOesGMj1FuozbydRf=J7jWFt_8GZ8ZKZReg_1BmvPC706cZ7rQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30 May 2014 08:29, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Thu, May 29, 2014 at 09:37:39PM +0200, Vincent Guittot wrote:
->> On 29 May 2014 11:50, Peter Zijlstra <peterz@infradead.org> wrote:
->> > On Fri, May 23, 2014 at 05:53:04PM +0200, Vincent Guittot wrote:
->> >> If the CPU is used for handling lot of IRQs, trig a load balance to check if
->> >> it's worth moving its tasks on another CPU that has more capacity
->> >>
->> >> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
->> >> ---
->> >>  kernel/sched/fair.c | 13 +++++++++++++
->> >>  1 file changed, 13 insertions(+)
->> >>
->> >> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
->> >> index e8a30f9..2501e49 100644
->> >> --- a/kernel/sched/fair.c
->> >> +++ b/kernel/sched/fair.c
->> >> @@ -5948,6 +5948,13 @@ static bool update_sd_pick_busiest(struct lb_env *env,
->> >>       if (sgs->sum_nr_running > sgs->group_capacity)
->> >>               return true;
->> >>
->> >> +     /*
->> >> +      * The group capacity is reduced probably because of activity from other
->> >> +      * sched class or interrupts which use part of the available capacity
->> >> +      */
->> >> +     if ((sg->sgp->power_orig * 100) > (sgs->group_power * env->sd->imbalance_pct))
->> >> +             return true;
->> >> +
->> >>       if (sgs->group_imb)
->> >>               return true;
->> >>
->> >
->> > But we should already do this because the load numbers are scaled with
->> > the power/capacity figures. If one CPU gets significant less time to run
->> > fair tasks, its effective load would spike and it'd get to be selected
->> > here anyway.
->> >
->> > Or am I missing something?
->>
->> The CPU could have been picked when the capacity becomes null (which
->> occurred when the cpu_power goes below half the default
->> SCHED_POWER_SCALE). And even after that, there were some conditions in
->> find_busiest_group that was bypassing this busiest group
->
-> Could you detail those conditions? FWIW those make excellent Changelog
-> material.
+Hi,
 
-I have looked back into my tests and traces:
+On 02/06/2014 at 09:37:01 -0700, Olof Johansson wrote :
+> On Mon, Jun 2, 2014 at 9:35 AM, Nicolas Ferre <nicolas.ferre@atmel.com> wrote:
+> > Arnd, Olof, Kevin,
+> >
+> > Here is an additional AT91 pull-request for 3.16 about drivers and
+> > particularly focused on PWM.
+> > Alexandre did a great job replacing the existing calls to the older,
+> > non-standard drivers by the use of the newer "pwm-atmel" which takes
+> > advantage of the PWM framework.
+> > In addition of removing three obsolete drivers, it also solves an issue with
+> > non existing Kconfig symbols introduced by (misc: atmel_pwm: only build for
+> > supported platforms) which was trying to avoid a build failure... so, all in
+> > all, a pretty good thing!
+> >
+> > The drawback is that this series depends on two git trees:
+> >
+> > Obviously, one from Thierry:
+> > git://git.kernel.org/pub/scm/linux/kernel/git/thierry.reding/linux-pwm
+> >
+> > And as well the one from Greg who took Arnd's patch for Kconfig:
+> > git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/char-misc
+> >
+> > Tell me if you feel it is the proper way to deal with this or if it is too late
+> > for this round (look at the diffstat, yummy ;-))
+> >
+> > Thanks, best regards,
+> >
+> > The following changes since commit fa264e615338c423e344d34621f992858b957097:
+> >
+> >   Merge branch 'char-misc-next' of git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/char-misc into at91-3.16-drivers (2014-06-02 18:02:18 +0200)
+> >
+> > are available in the git repository at:
+> >
+> >
+> >   git://github.com/at91linux/linux-at91.git tags/at91-drivers
+> 
+> The 3.16 merge window is open, please resend after -rc1.
+> 
 
-In a 1st test, the capacity of the CPU was still above half default
-value (power=538) unlike what i remembered. So it's some what "normal"
-to keep the task on CPU0 which also handles IRQ because sg_capacity
-still returns 1.
+Hopefully, this will solve our dependency issues :)
 
-In a 2nd test,the main task runs (most of the time) on CPU0 whereas
-the max power of the latter is only 623 and the cpu_power goes below
-512 (power=330) during the use case. So the sg_capacity of CPU0 is
-null but the main task still stays on CPU0.
-The use case (scp transfer) is made of a long running task (ssh) and a
-periodic short task (scp). ssh runs on CPU0 and scp runs each 6ms on
-CPU1. The newly idle load balance on CPU1 doesn't pull the long
-running task although sg_capacity is null because of
-sd->nr_balance_failed is never incremented and load_balance doesn't
-trig an active load_balance. When an idle balance occurs in the middle
-of the newly idle balance, the ssh long task migrates on CPU1 but as
-soon as it sleeps and wakes up, it goes back on CPU0 because of the
-wake affine which migrates it back on CPU0 (issue solved by patch 09).
-
-Vincent
+-- 
+Alexandre Belloni, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
