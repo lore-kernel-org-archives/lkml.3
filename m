@@ -1,61 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754311AbaFBL5M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 07:57:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3256 "EHLO mx1.redhat.com"
+	id S1754503AbaFBL6W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 07:58:22 -0400
+Received: from imap.thunk.org ([74.207.234.97]:45234 "EHLO imap.thunk.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753137AbaFBL5L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 07:57:11 -0400
-Date: Mon, 2 Jun 2014 13:56:40 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Stephane Eranian <eranian@google.com>, Yan Zheng <zheng.z.yan@intel.com>,
-        Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>, Joe Mario <jmario@redhat.com>,
-        Richard Fowles <rfowles@redhat.com>, Don Zickus <dzickus@redhat.com>
-Subject: [RFC/BUG] not working LLC-load-misses on SandyBridge (42) and Haswell
-Message-ID: <20140602115550.GA1215@krava.brq.redhat.com>
-References: <1400858147-7155-1-git-send-email-jolsa@kernel.org>
- <878upjg6lx.fsf@sejong.aot.lge.com>
- <20140601142622.GA9131@krava.brq.redhat.com>
+	id S1754112AbaFBL6U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 07:58:20 -0400
+Date: Mon, 2 Jun 2014 07:57:37 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Nicolas Pitre <nicolas.pitre@linaro.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, joseph@codesourcery.com,
+        john.stultz@linaro.org, hch@infradead.org, tglx@linutronix.de,
+        geert@linux-m68k.org, lftan@altera.com, linux-fsdevel@vger.kernel.org,
+        xfs@oss.sgi.com
+Subject: Re: [RFC 11/32] xfs: convert to struct inode_time
+Message-ID: <20140602115737.GB14276@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Arnd Bergmann <arnd@arndb.de>,
+	Nicolas Pitre <nicolas.pitre@linaro.org>,
+	"H. Peter Anvin" <hpa@zytor.com>,
+	Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
+	linux-arch@vger.kernel.org, joseph@codesourcery.com,
+	john.stultz@linaro.org, hch@infradead.org, tglx@linutronix.de,
+	geert@linux-m68k.org, lftan@altera.com,
+	linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com
+References: <1401480116-1973111-1-git-send-email-arnd@arndb.de>
+ <8618458.1EVJCoVbkH@wuerfel>
+ <alpine.LFD.2.11.1406012121430.17310@knanqh.ubzr>
+ <4178301.j9kWdGCRLC@wuerfel>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140601142622.GA9131@krava.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4178301.j9kWdGCRLC@wuerfel>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi,
-Joe asked about issues with LLC-load-misses on Haswell. I tried
-and found it non functional on SandyBridge (42) as well:
+On Mon, Jun 02, 2014 at 12:56:42PM +0200, Arnd Bergmann wrote:
+> 
+> I think you misunderstood what I suggested: the intent is to avoid
+> seeing things break in 2038 by making them break much earlier. We have
+> a solution for ext2 file systems, it's called ext4, and we just need
+> to ensure that everybody knows they have to migrate eventually.
+> 
+> At some point before the mid 2030ies, you should no longer be able to
+> build a kernel that has support for ext2 or any other module that will
+> run into bugs later....
 
-[jolsa@krava perf]$ ./perf stat -e LLC-load-misses ls
-...
+Even for ext4, it's not quite so simple as that.  You only have
+support for times post 2038 if you are using an inode size > 128
+bytes.  There are a very, very large number of machines which even
+today, are using 128 byte inodes with ext4 for performance reasons.
 
- Performance counter stats for 'ls':
+The vast majority of those machines which I know of can probably move
+to 256 byte inodes relatively easily, since hard drive replacement
+cycles are order 5-6 years tops, so I'm not that concerned, but it
+just goes to show this is a very complicated problem.
 
-   <not supported>      LLC-load-misses          
+And even if we're talking about flash and embedded devices, the good
+news is if you assume that 10 years is enough time for people to
+update their embedded OS builds, and that the vast majority of
+deployed devices will probably only be in service for 10-15 years, we
+do have enough time to make file system format changes, although
+admittedly we can't afford to dilly-dally.
 
-       0.007195547 seconds time elapsed
+Regards,
 
-
-both SandyBridge (42 and 45) share following config arrays:
-  snb_hw_cache_event_ids and snb_hw_cache_extra_regs
-
-but have different 'x86_pmu.extra_regs' which makes LLC-load-misses
-event fail (in valid_mask check) in x86_pmu_extra_regs function
-
-Haswell is sharing the same extra regs/ids config as SandyBridge (42),
-so it suffers in the same way.
-
-Not sure if thats known issue, but it looks like we need special
-set of snb_hw_cache_event_ids for SandyBridge (42) ?
-
-thanks for info,
-jirka
+					- Ted
