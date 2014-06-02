@@ -1,204 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755303AbaFBOFQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 10:05:16 -0400
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:57867 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753850AbaFBOFO (ORCPT
+	id S1755283AbaFBOGn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 10:06:43 -0400
+Received: from mail-yh0-f44.google.com ([209.85.213.44]:45036 "EHLO
+	mail-yh0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753958AbaFBOGl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 10:05:14 -0400
+	Mon, 2 Jun 2014 10:06:41 -0400
+Date: Mon, 2 Jun 2014 11:06:36 -0300
+From: Gustavo Padovan <gustavo@padovan.org>
+To: linville@tuxdriver.com
+Cc: linux-wireless@vger.kernel.org, linux-bluetooth@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: pull request: bluetooth-next 2014-06-01
+Message-ID: <20140602140636.GA1659@joana>
+Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
+	linville@tuxdriver.com, linux-wireless@vger.kernel.org,
+	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-In-Reply-To: <4424609.WQEPaWUrpH@amdc1032>
-References: <1401260672-28339-1-git-send-email-iamjoonsoo.kim@lge.com>
-	<CAAmzW4OKO0005+-MuTrENHnMZKkJjk9aOx2vBDNoXN8==TWTew@mail.gmail.com>
-	<CALk7dXo6M1op0q2xiEW=9dEwOm1pK8C+gSTadJiAL071xJycCQ@mail.gmail.com>
-	<4424609.WQEPaWUrpH@amdc1032>
-Date: Mon, 2 Jun 2014 23:05:13 +0900
-Message-ID: <CAAmzW4P1g2ZsPBjdqPOgsNLkzD5z16i5MjjHJcKc=U7eW9pMvw@mail.gmail.com>
-Subject: Re: [PATCH v2 3/3] CMA: always treat free cma pages as non-free on
- watermark checking
-From: Joonsoo Kim <js1304@gmail.com>
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: Ritesh Harjani <ritesh.list@gmail.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Mel Gorman <mgorman@suse.de>, Laura Abbott <lauraa@codeaurora.org>,
-        Minchan Kim <minchan@kernel.org>,
-        Heesub Shin <heesub.shin@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Nagachandra P <nagachandra@gmail.com>,
-        Vinayak Menon <menon.vinayak@gmail.com>,
-        Ritesh Harjani <ritesh.harjani@gmail.com>, t.stanislaws@samsung.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="wRRV7LY7NUeQGEoC"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-06-02 19:47 GMT+09:00 Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>:
->
-> Hi,
->
-> On Monday, June 02, 2014 09:37:49 AM Ritesh Harjani wrote:
->> Hi Joonsoo,
->>
->> CC'ing the developer of the patch (Tomasz Stanislawski)
->>
->>
->> On Fri, May 30, 2014 at 8:16 PM, Joonsoo Kim <js1304@gmail.com> wrote:
->> > 2014-05-30 19:40 GMT+09:00 Ritesh Harjani <ritesh.list@gmail.com>:
->> >> Hi Joonsoo,
->> >>
->> >> I think you will be loosing the benefit of below patch with your changes.
->> >> I am no expert here so please bear with me. I tried explaining in the
->> >> inline comments, let me know if I am wrong.
->> >>
->> >> commit 026b08147923142e925a7d0aaa39038055ae0156
->> >> Author: Tomasz Stanislawski <t.stanislaws@samsung.com>
->> >> Date:   Wed Jun 12 14:05:02 2013 -0700
->> >
->> > Hello, Ritesh.
->> >
->> > Thanks for notifying that.
->> >
->> >>
->> >> On Wed, May 28, 2014 at 12:34 PM, Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
->> >>> commit d95ea5d1('cma: fix watermark checking') introduces ALLOC_CMA flag
->
-> It is a bit of shame that the author of commit d95ea5d1 (happens to be me :)
-> was not on cc:.
 
-Sorry about that.
-I will add you on cc in next spin. :)
+--wRRV7LY7NUeQGEoC
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
->> >>> for alloc flag and treats free cma pages as free pages if this flag is
->> >>> passed to watermark checking. Intention of that patch is that movable page
->> >>> allocation can be be handled from cma reserved region without starting
->> >>> kswapd. Now, previous patch changes the behaviour of allocator that
->> >>> movable allocation uses the page on cma reserved region aggressively,
->> >>> so this watermark hack isn't needed anymore. Therefore remove it.
->> >>>
->> >>> Acked-by: Michal Nazarewicz <mina86@mina86.com>
->> >>> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
->> >>>
->> >>> diff --git a/mm/compaction.c b/mm/compaction.c
->> >>> index 627dc2e..36e2fcd 100644
->> >>> --- a/mm/compaction.c
->> >>> +++ b/mm/compaction.c
->> >>> @@ -1117,10 +1117,6 @@ unsigned long try_to_compact_pages(struct zonelist *zonelist,
->> >>>
->> >>>         count_compact_event(COMPACTSTALL);
->> >>>
->> >>> -#ifdef CONFIG_CMA
->> >>> -       if (allocflags_to_migratetype(gfp_mask) == MIGRATE_MOVABLE)
->> >>> -               alloc_flags |= ALLOC_CMA;
->> >>> -#endif
->> >>>         /* Compact each zone in the list */
->> >>>         for_each_zone_zonelist_nodemask(zone, z, zonelist, high_zoneidx,
->> >>>                                                                 nodemask) {
->> >>> diff --git a/mm/internal.h b/mm/internal.h
->> >>> index 07b6736..a121762 100644
->> >>> --- a/mm/internal.h
->> >>> +++ b/mm/internal.h
->> >>> @@ -384,7 +384,6 @@ unsigned long reclaim_clean_pages_from_list(struct zone *zone,
->> >>>  #define ALLOC_HARDER           0x10 /* try to alloc harder */
->> >>>  #define ALLOC_HIGH             0x20 /* __GFP_HIGH set */
->> >>>  #define ALLOC_CPUSET           0x40 /* check for correct cpuset */
->> >>> -#define ALLOC_CMA              0x80 /* allow allocations from CMA areas */
->> >>> -#define ALLOC_FAIR             0x100 /* fair zone allocation */
->> >>> +#define ALLOC_FAIR             0x80 /* fair zone allocation */
->> >>>
->> >>>  #endif /* __MM_INTERNAL_H */
->> >>> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
->> >>> index ca678b6..83a8021 100644
->> >>> --- a/mm/page_alloc.c
->> >>> +++ b/mm/page_alloc.c
->> >>> @@ -1764,20 +1764,22 @@ static bool __zone_watermark_ok(struct zone *z, int order, unsigned long mark,
->> >>>         long min = mark;
->> >>>         long lowmem_reserve = z->lowmem_reserve[classzone_idx];
->> >>>         int o;
->> >>> -       long free_cma = 0;
->> >>>
->> >>>         free_pages -= (1 << order) - 1;
->> >>>         if (alloc_flags & ALLOC_HIGH)
->> >>>                 min -= min / 2;
->> >>>         if (alloc_flags & ALLOC_HARDER)
->> >>>                 min -= min / 4;
->> >>> -#ifdef CONFIG_CMA
->> >>> -       /* If allocation can't use CMA areas don't use free CMA pages */
->> >>> -       if (!(alloc_flags & ALLOC_CMA))
->> >>> -               free_cma = zone_page_state(z, NR_FREE_CMA_PAGES);
->> >>> -#endif
->> >>> +       /*
->> >>> +        * We don't want to regard the pages on CMA region as free
->> >>> +        * on watermark checking, since they cannot be used for
->> >>> +        * unmovable/reclaimable allocation and they can suddenly
->> >>> +        * vanish through CMA allocation
->> >>> +        */
->> >>> +       if (IS_ENABLED(CONFIG_CMA) && z->managed_cma_pages)
->> >>> +               free_pages -= zone_page_state(z, NR_FREE_CMA_PAGES);
->> >>
->> >> make this free_cma instead of free_pages.
->> >>
->> >>>
->> >>> -       if (free_pages - free_cma <= min + lowmem_reserve)
->> >>> +       if (free_pages <= min + lowmem_reserve)
->> >> free_pages - free_cma <= min + lowmem_reserve
->> >>
->> >> Because in for loop you subtract nr_free which includes the CMA pages.
->> >> So if you have subtracted NR_FREE_CMA_PAGES
->> >> from free_pages above then you will be subtracting cma pages again in
->> >> nr_free (below in for loop).
->> >
->> > Yes, I understand the problem you mentioned.
->> >
->> > I think that this is complicated issue.
->> >
->> > Comit '026b081' you mentioned makes watermark_ok() loose for high order
->> > allocation compared to kernel that CMA isn't enabled, since free_pages includes
->> > free_cma pages and most of high order allocation except THP would be
->> > non-movable allocation. This non-movable allocation can't use cma pages,
->> > so we shouldn't include free_cma pages.
->> >
->> > If most of free cma pages are 0 order, that commit works correctly. We subtract
->> > nr of free cma pages at the first loop, so there is no problem. But,
->> > if the system
->> > have some free high-order cma pages, watermark checking allow high-order
->> > allocation more easily.
->> >
->> > I think that loosing the watermark check is right solution so will takes your
->> > comment on v2. But I want to know other developer's opinion.
->>
->> Thanks for giving this a thought for your v2 patch.
->>
->>
->> > If needed, I can implement to track free_area[o].nr_cma_free and use it for
->> > precise freepage calculation in watermark check.
->> >
->> I guess implementing nr_cma_free would be the correct solution.
->> Because currently for other than 0 order allocation
->> we still consider high order free_cma pages as free pages in the for
->> loop which from the code looks incorrect.
->>
->> This can lead to situation when we have more high order free CMA pages
->> but very less unmovable pages, but zone_watermark returns
->> ok for unmovable page, thus leading to allocation failure every time
->> instead of recovering from this situation.
->>
->> But its better if experts comment on this.
->
-> I think that implementing free_area[].nr_cma_free is a correct long-term
-> solution and it should be done before the current patch gets applied.
+Hi John,
 
-Okay.
+Here some more patches for 3.16. We know that Linus already opened the merge
+window, but this is fix only pull request, and most of the patches here are
+also tagged for stable.
 
-> [ Tomasz is on holiday currently but he should be back tomorrow so he can
->   also take a look at the issue. ]
+Please pull! or let me know of any issues. Thanks!
 
-Okay.
+	Gustavo
 
-Thanks.
+---
+The following changes since commit d7b2545023ecfde94d3ea9c03c5480ac18da96c9:
+
+  Bluetooth: Clearly distinguish mgmt LTK type from authenticated property (2014-05-23 11:24:04 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth-next.git for-upstream
+
+for you to fetch changes up to 8a96f3cd22878fc0bb564a8478a6e17c0b8dca73:
+
+  Bluetooth: Fix L2CAP deadlock (2014-06-02 13:38:19 +0300)
+
+----------------------------------------------------------------
+Adam Lee (1):
+      Bluetooth: ath3k: no need to set same pipe multiple times
+
+Johan Hedberg (4):
+      Bluetooth: Fix properly ignoring LTKs of unknown types
+      Bluetooth: Fix authentication check for FIPS security level
+      Bluetooth: Fix requiring SMP MITM for outgoing connections
+      Bluetooth: Fix missing check for FIPS security level
+
+Jukka Rissanen (2):
+      Bluetooth: 6LoWPAN: Fix MAC address universal/local bit handling
+      Bluetooth: l2cap: Set more channel defaults
+
+Jukka Taimisto (1):
+      Bluetooth: Fix L2CAP deadlock
+
+ drivers/bluetooth/ath3k.c  |  3 ++-
+ net/bluetooth/6lowpan.c    | 65 +++++++++++++++++++++++++++++-------------------------
+ net/bluetooth/hci_event.c  |  4 +++-
+ net/bluetooth/l2cap_core.c |  6 +++++
+ net/bluetooth/l2cap_sock.c |  5 ++++-
+ net/bluetooth/mgmt.c       | 10 +++++++--
+ net/bluetooth/smp.c        |  7 +++---
+ 7 files changed, 62 insertions(+), 38 deletions(-)
+
+--wRRV7LY7NUeQGEoC
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTjITsAAoJEPs3PUX4s20oFSEQAKpJqns+h74NOPIqHPOfv+pr
+hGvKvstASH9IeuA+km+BHDFSS0Eqwkc1M8AnS8sZIrVq8sML+89bpBMyhYSIOzwM
+sugpDuGXn0rMQ4Ia24gEwjgLBs94j0NcG1Q5/AjsaJcQ/8JOo7Or19lcB/yASZ1b
+gHQ9H9niF6kpQnxfConkfT+UvhSxtSFro1/wFoM1+9kyiMujFXxLgFQcEo32xHdE
+2NycQWRJe81fB7m1USuzBtBbMPp0DL0qTOPDR/i6K4TmEOgCgPvT/RReJxLTVm+J
+jZBrh7q5UPXF7NG9A7+Vu2heKh1jcXrrkSzLQ1jRDM2Wy77JRsaQ+RITgnRHKmCm
+KyAa/oRobEtx8sCv8465klw33LoVKtbuN6nDmNzFLBXYrA5A5I+v6IvqoQEtsklP
+uCqxLDswRkdg3xbOiad5bxd3X5cLEQ2S158yqi+UQEO84kN33ylsaEfxVAlxnzEJ
+4ehhsOZVOkTPUhSQzwyVEy4iq4d3urgQwTlH2aj7RQS4DzZ5Tfow8uth7jUAOpFW
+k6Qj59UZsR2aOCiPZgIpQzaHWI7L8mT0nraOq2Bqq2dcbOucHAqFX3pyt7+c3Kqc
+QSrX2zrowJ5S1J4LkaMa8HsKHH2DBusbBelLth6q6JxP9AnWczOHeP3rySMNjrxT
+9XWfb9s6lAIiDKbN2cvo
+=Gn+6
+-----END PGP SIGNATURE-----
+
+--wRRV7LY7NUeQGEoC--
