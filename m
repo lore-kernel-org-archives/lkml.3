@@ -1,16 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752868AbaFBSw3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 14:52:29 -0400
-Received: from mout.kundenserver.de ([212.227.126.131]:58296 "EHLO
+	id S1752956AbaFBSwx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 14:52:53 -0400
+Received: from mout.kundenserver.de ([212.227.17.24]:55760 "EHLO
 	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750998AbaFBSw1 (ORCPT
+	with ESMTP id S1751189AbaFBSwv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 14:52:27 -0400
+	Mon, 2 Jun 2014 14:52:51 -0400
 From: Arnd Bergmann <arnd@arndb.de>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Chuck Lever <chuck.lever@oracle.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
+To: Chuck Lever <chuck.lever@oracle.com>
+Cc: Nicolas Pitre <nicolas.pitre@linaro.org>, "H. Peter Anvin" <hpa@zytor.com>,
         Dave Chinner <david@fromorbit.com>,
         LKML Kernel <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
         joseph@codesourcery.com, john.stultz@linaro.org,
@@ -19,66 +18,56 @@ Cc: "Theodore Ts'o" <tytso@mit.edu>, Chuck Lever <chuck.lever@oracle.com>,
         linux-fsdevel <linux-fsdevel@vger.kernel.org>, xfs@oss.sgi.com,
         Linux NFS Mailing List <linux-nfs@vger.kernel.org>
 Subject: Re: [RFC 11/32] xfs: convert to struct inode_time
-Date: Mon, 02 Jun 2014 20:50:55 +0200
-Message-ID: <4548598.6TTMEpKtuS@wuerfel>
+Date: Mon, 02 Jun 2014 20:52:43 +0200
+Message-ID: <5109660.teHoOW5tSd@wuerfel>
 User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <538CB085.5000502@zytor.com>
-References: <1401480116-1973111-1-git-send-email-arnd@arndb.de> <20140602153124.GH30598@thunk.org> <538CB085.5000502@zytor.com>
+In-Reply-To: <6868F108-F0B2-423F-AE31-90DF86A5B7DD@oracle.com>
+References: <1401480116-1973111-1-git-send-email-arnd@arndb.de> <4178301.j9kWdGCRLC@wuerfel> <6868F108-F0B2-423F-AE31-90DF86A5B7DD@oracle.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:/90kk+gjD6hRNXSPjut3wwHX49joKS4yC+yNNbJ86QL
- H9umPu65m55QNquKiiF5ZtHy8rUaBi7JnahCxopnsT5iboNJ7L
- ioxeaM8Fz6OsMphunT7VSECDJdctzFcoVZktVnl3BnN/FN8kTR
- QT/N3VCaIzZjc+VRkehfMEcYrF5WE+TrV/bET63XFOZfWfZ5Cr
- Y0iql5fQVRwCk/rm95AKa5rydnsvnUWOkw94YJiC3hRPm9ysbQ
- iML2sf2ucQrF+oAs9Nw/s2joprprEZF/2XTo/hXSNHG3B4F5/0
- +QGQGvSLmVSeIjpVMdCuoxpDcq/G5GNxPNZd7CflGHl5N+4/40
- HaUarl+nSj7jW0wsQS04=
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
+X-Provags-ID: V02:K0:PqaOK9Awxac+bE3z+cHQbCBldAtgnWxKwUCukAmCyyh
+ CITZVSLsBDEbL/f4qUCVRtn/fRfAESAy80V0cuv7lc7LllCqLd
+ t28Kynz6XiXml7tFjZLCB4v06yM4aNnt+Ucm6NCkbH8NA2OX6p
+ p266NC2T1tIdiPFnJyj3BkJVpw0KlWEQ0HV1tgS6wiLfYglxsK
+ x5WxS/DMI/SlfOZED/bzw2D7yhNhkKiBpuVzJYpxiYtV6LF278
+ +YY7bckwSH3/LUdd8tSbwCyJOCcdJV+OLcaf/oYhi0pQkDMZ0X
+ pIwd0gmNpPxA2UjgTuq8VqP2NHk8VbD/JwG0Iuo68v/2BuCTyu
+ bpSndfOg7nhdms+B5jU4=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 02 June 2014 10:12:37 H. Peter Anvin wrote:
-> On 06/02/2014 08:31 AM, Theodore Ts'o wrote:
-> > 
-> > I wonder if it would make sense to try to promulgate via the Austin
-> > group, and possibly the C standards committee the concept of a bit
-> > pattern (that might commonly be INT_MAX or UINT_MAX) that means "time
-> > unknown", or "time indefinite" or "we couldn't encode the time".
-> > 
+On Monday 02 June 2014 11:04:23 Chuck Lever wrote:
+> I’m wondering what should be done about NFS. A solution for NFS should
+> match any scheme that is considered for local file systems, IMO.
 > 
-> (time_t)-1 already has this meaning for some calls (e.g. time(2)).
-> However, this also means Wed Dec 31 23:59:59 UTC 1969, and unfortunately
-> something similar applies to all possible bit patterns, certainly within
-> the range of an int.
-
-Worse than Wed Dec 31 23:59:59 UTC 1969, on NFSv3 it also means
-"Sun Feb  7 07:28:15 CET 2106", and that is much harder to distinguish
-from a real future date.
-
-If we had the choice, I'd go for something like 1, i.e.
-"Thu Jan  1 01:00:01 CET 1970".
-
-> > We would then teach gmtime(3) and asctime(3) to print some appropriate
-> > message, and we could teach programs like find (with the -mtime)
-> > option, make, tmpwatch, et. al., that they can't make any presumption
-> > about the comparibility of any timestamp which has a value of
-> > TIME_UNDEFINIED.
-> > 
-> > It would be problematic for time(2) or gettimeofday(2) to return
-> > TIME_UNDEFINED, since there are programs that care about time ticking
-> > forward, but I could imagine a new interface which would be permitted
-> > to return a flag indicating that we don't know the current time
-> > (because the CMOS battery had run down, etc.) so instead we're going
-> > to be counting the number of seconds since the system was booted.
+> NFSv2/3 timestamps are a pair of unsigned 32-bit values: one value for
+> seconds since midnight GMT Jan 1, 1970, and one value for nanoseconds.
+> (See the definition of nfstime3 in RFC 1813).
 > 
-> This assumes that we actually know that that is the case, which may be
-> an aggressive assumption.
+> NFSv4 uses a signed 64-bit value where zero represents midnight UTC
+> on January 1, 1970, and an unsigned 32-bit value for nanoseconds. (See
+> the definition of nfstime4 in RFC 5661).
+> 
+> The NFSv4 protocol is probably not problematic, and NFSv3 should be out
+> of the picture by 2038. But if changes are planned for dealing _now_
+> with timestamp issues, compatibility with NFSv3 is a consideration.
+> 
+> It is already the case that, via NFSv3, the Linux NFS client transmits
+> timestamps earlier than 1970 as large positive numbers. Try this with
+> xfstests generic/258.
 
-It's harder for time(2), but for the inode case, we can definitely
-detect when the file system specific representation overflows
-or underflows, which may be be at a number of very different points
-of time.
+If I read the code correctly, a pre-1970 timestamp will be sent as
+a large unsigned integer, but received as a post-2038 timestamp on
+64-bit kernels, both in the nfs client and server code.
+
+This behavior is clearly wrong, but it's the same bug that we have
+in lots of other file systems, and it makes sense to have the
+same fix everywhere, at lease the cases where we know what interpretation
+we actually want. NFS has the luxury of having an actual specification
+saying that the value is unsigned. For most of the legacy file systems,
+we can only make a guess at how other OSs would interpret the same
+numbers.
 
 	Arnd
