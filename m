@@ -1,139 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755170AbaFBODy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 10:03:54 -0400
-Received: from mail-vc0-f176.google.com ([209.85.220.176]:36894 "EHLO
-	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755005AbaFBODw (ORCPT
+	id S1755377AbaFBOF1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 10:05:27 -0400
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:42870 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755062AbaFBOFW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 10:03:52 -0400
+	Mon, 2 Jun 2014 10:05:22 -0400
+Message-ID: <538C849B.8080108@gmail.com>
+Date: Mon, 02 Jun 2014 10:05:15 -0400
+From: Kyle Evans <kvans32@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <20140602114741.GA1039@esperanza>
-References: <cover.1401457502.git.vdavydov@parallels.com>
-	<5d2fbc894a2c62597e7196bb1ebb8357b15529ab.1401457502.git.vdavydov@parallels.com>
-	<alpine.DEB.2.10.1405300955120.11943@gentwo.org>
-	<20140531110456.GC25076@esperanza>
-	<20140602042435.GA17964@js1304-P5Q-DELUXE>
-	<20140602114741.GA1039@esperanza>
-Date: Mon, 2 Jun 2014 23:03:51 +0900
-Message-ID: <CAAmzW4P=kUAJwozBPPos+uUewzSDnE43P6NcGYKNpBjjfv1EWA@mail.gmail.com>
-Subject: Re: [PATCH -mm 7/8] slub: make dead caches discard free slabs immediately
-From: Joonsoo Kim <js1304@gmail.com>
-To: Vladimir Davydov <vdavydov@parallels.com>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>, Christoph Lameter <cl@gentwo.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux Memory Management List <linux-mm@kvack.org>
-Content-Type: text/plain; charset=UTF-8
+To: Peter Senna Tschudin <peter.senna@gmail.com>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        platform-driver-x86@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: toshiba_acpi: Unknown key 14b
+References: <CA+MoWDqj33fEmsppxqSE4LSu9C40mam=UAouHweDBwTD_BMfpg@mail.gmail.com>
+In-Reply-To: <CA+MoWDqj33fEmsppxqSE4LSu9C40mam=UAouHweDBwTD_BMfpg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-06-02 20:47 GMT+09:00 Vladimir Davydov <vdavydov@parallels.com>:
-> Hi Joonsoo,
->
-> On Mon, Jun 02, 2014 at 01:24:36PM +0900, Joonsoo Kim wrote:
->> On Sat, May 31, 2014 at 03:04:58PM +0400, Vladimir Davydov wrote:
->> > On Fri, May 30, 2014 at 09:57:10AM -0500, Christoph Lameter wrote:
->> > > On Fri, 30 May 2014, Vladimir Davydov wrote:
->> > >
->> > > > (3) is a bit more difficult, because slabs are added to per-cpu partial
->> > > > lists lock-less. Fortunately, we only have to handle the __slab_free
->> > > > case, because, as there shouldn't be any allocation requests dispatched
->> > > > to a dead memcg cache, get_partial_node() should never be called. In
->> > > > __slab_free we use cmpxchg to modify kmem_cache_cpu->partial (see
->> > > > put_cpu_partial) so that setting ->partial to a special value, which
->> > > > will make put_cpu_partial bail out, will do the trick.
-> [...]
->> I think that we can do (3) easily.
->> If we check memcg_cache_dead() in the end of put_cpu_partial() rather
->> than in the begin of put_cpu_partial(), we can avoid the race you
->> mentioned. If someone do put_cpu_partial() before dead flag is set,
->> it can be zapped by who set dead flag. And if someone do
->> put_cpu_partial() after dead flag is set, it can be zapped by who
->> do put_cpu_partial().
->
-> After put_cpu_partial() adds a frozen slab to a per cpu partial list,
-> the slab becomes visible to other threads, which means it can be
-> unfrozen and freed. The latter can trigger cache destruction. Hence we
-> shouldn't touch the cache, in particular call memcg_cache_dead() on it,
-> after calling put_cpu_partial(), otherwise we can get use-after-free.
->
-> However, what you propose makes sense if we disable irqs before adding a
-> slab to a partial list and enable them only after checking if the cache
-> is dead and unfreezing all partials if so, i.e.
->
-> diff --git a/mm/slub.c b/mm/slub.c
-> index d96faa2464c3..14b9e9a8677c 100644
-> --- a/mm/slub.c
-> +++ b/mm/slub.c
-> @@ -2030,8 +2030,15 @@ static void put_cpu_partial(struct kmem_cache *s, struct page *page, int drain)
->         struct page *oldpage;
->         int pages;
->         int pobjects;
-> +       unsigned long flags;
-> +       int irq_saved = 0;
->
->         do {
-> +               if (irq_saved) {
-> +                       local_irq_restore(flags);
-> +                       irq_saved = 0;
-> +               }
-> +
->                 pages = 0;
->                 pobjects = 0;
->                 oldpage = this_cpu_read(s->cpu_slab->partial);
-> @@ -2062,8 +2069,16 @@ static void put_cpu_partial(struct kmem_cache *s, struct page *page, int drain)
->                 page->pobjects = pobjects;
->                 page->next = oldpage;
->
-> +               local_irq_save(flags);
-> +               irq_saved = 1;
-> +
->         } while (this_cpu_cmpxchg(s->cpu_slab->partial, oldpage, page)
->                                                                 != oldpage);
-> +
-> +       if (memcg_cache_dead(s))
-> +               unfreeze_partials(s, this_cpu_ptr(s->cpu_slab));
-> +
-> +       local_irq_restore(flags);
->  #endif
->  }
->
->
-> That would be safe against possible cache destruction, because to remove
-> a slab from a per cpu partial list we have to run on the cpu it was
-> frozen on. Disabling irqs makes it impossible.
+What symbols go with the keys? Is it just one key, or two? I'm helping 
+out another guy who has key 160 unknown and was planning on putting up a 
+patch for that.
 
-Hmm... this is also a bit ugly.
-How about following change?
-
-Thanks.
-
-diff --git a/mm/slub.c b/mm/slub.c
-index 2b1ce69..6adab87 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -2058,6 +2058,21 @@ static void put_cpu_partial(struct kmem_cache
-*s, struct page *page, int drain)
-
-        } while (this_cpu_cmpxchg(s->cpu_slab->partial, oldpage, page)
-                                                                != oldpage);
-+
-+       if (memcg_cache_dead(s)) {
-+               bool done = false;
-+               unsigned long flags;
-+
-+               local_irq_save(flags);
-+               if (this_cpu_read(s->cpu_slab->partial) == page) {
-+                       done = true;
-+                       unfreeze_partials(s, this_cpu_ptr);
-+               }
-+               local_irq_restore(flags);
-+
-+               if (!done)
-+                       flush_all(s);
-+       }
- #endif
- }
+On 06/01/2014 06:02 AM, Peter Senna Tschudin wrote:
+> Hi,
+>
+> I'm using:
+>
+> 3.15.0-rc7-next-20140530
+>
+> On a:
+>
+> Toshiba R830-10p
+>
+> And dmesg started to show:
+>
+> toshiba_acpi: Unknown key 14b
+> toshiba_acpi: Unknown key 14d
+>
+> How can I help make this useful?
+>
