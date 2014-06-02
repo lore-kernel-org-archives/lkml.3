@@ -1,85 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753543AbaFBJvg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 05:51:36 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:50682 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753277AbaFBJve (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 05:51:34 -0400
-Date: Mon, 2 Jun 2014 10:51:12 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arvind Chauhan <arvind.chauhan@arm.com>,
-        Eduardo Valentin <edubezval@gmail.com>, Pavel Machek <pavel@ucw.cz>,
-        Liam Girdwood <lgirdwood@gmail.com>
-Message-ID: <20140602095112.GV5099@sirena.org.uk>
-References: <1780c3205893be8567fa29ccd86674e2f32555b4.1401192160.git.viresh.kumar@linaro.org>
- <20140527192923.GC12304@sirena.org.uk>
- <CAKohpo=AnusM2FGs=JLozSyTc0N7SDXQxe+rPiLEHP6ewxY4ow@mail.gmail.com>
- <20140528173858.GG5099@sirena.org.uk>
- <CAKohpokk_sNQ7Be5F8NLa7pLrssPm9qPf-fDEUYkiurJ6Etrpg@mail.gmail.com>
+	id S1753694AbaFBJxc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 05:53:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44080 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753009AbaFBJx3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 05:53:29 -0400
+Message-ID: <538C496C.1030203@redhat.com>
+Date: Mon, 02 Jun 2014 10:52:44 +0100
+From: Steven Whitehouse <swhiteho@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="E/fydkOSwztHu2te"
-Content-Disposition: inline
-In-Reply-To: <CAKohpokk_sNQ7Be5F8NLa7pLrssPm9qPf-fDEUYkiurJ6Etrpg@mail.gmail.com>
-X-Cookie: Ditat Deus.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/2] regulators: Add definition of
- regulator_set_voltage_time() for !CONFIG_REGULATOR
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org
+CC: linux-arch@vger.kernel.org, joseph@codesourcery.com,
+        john.stultz@linaro.org, hch@infradead.org, tglx@linutronix.de,
+        geert@linux-m68k.org, lftan@altera.com, hpa@zytor.com,
+        linux-fsdevel@vger.kernel.org, cluster-devel@redhat.com
+Subject: Re: [RFC 25/32] gfs2: convert to struct inode_time
+References: <1401480116-1973111-1-git-send-email-arnd@arndb.de> <1401480116-1973111-26-git-send-email-arnd@arndb.de>
+In-Reply-To: <1401480116-1973111-26-git-send-email-arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
---E/fydkOSwztHu2te
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On 30/05/14 21:01, Arnd Bergmann wrote:
+> gfs2 uses 64-bit integers for inode timestamps, which will work
+> basically forever, but the VFS uses struct timespec for timestamps,
+> which is only good until 2038 on 32-bit CPUs.
+>
+> This gets us one small step closer to lifting the VFS limit by using
+> struct inode_time in gfs2.
+>
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: Steven Whitehouse <swhiteho@redhat.com>
+> Cc: cluster-devel@redhat.com
+> ---
+>   fs/gfs2/dir.c   | 6 +++---
+>   fs/gfs2/glops.c | 4 ++--
+>   2 files changed, 5 insertions(+), 5 deletions(-)
+Subject to deciding the internal representation of struct inode_time, 
+this looks good to me.
+Acked-by: Steven Whitehouse <swhiteho@redhat.com>
 
-On Mon, Jun 02, 2014 at 12:50:59PM +0530, Viresh Kumar wrote:
-> On 28 May 2014 23:08, Mark Brown <broonie@kernel.org> wrote:
-> > Whatever - I don't think the particular code makes any practical
-> > difference.  We would need to audit existing users who don't have a
-> > REGULATOR dependency for breakage though.
+Steve.
+> diff --git a/fs/gfs2/dir.c b/fs/gfs2/dir.c
+> index 1a349f9..ec57538 100644
+> --- a/fs/gfs2/dir.c
+> +++ b/fs/gfs2/dir.c
+> @@ -835,7 +835,7 @@ static struct gfs2_leaf *new_leaf(struct inode *inode, struct buffer_head **pbh,
+>   	struct gfs2_leaf *leaf;
+>   	struct gfs2_dirent *dent;
+>   	struct qstr name = { .name = "" };
+> -	struct timespec tv = CURRENT_TIME;
+> +	struct inode_time tv = CURRENT_TIME;
+>   
+>   	error = gfs2_alloc_blocks(ip, &bn, &n, 0, NULL);
+>   	if (error)
+> @@ -1716,7 +1716,7 @@ int gfs2_dir_add(struct inode *inode, const struct qstr *name,
+>   	struct gfs2_inode *ip = GFS2_I(inode);
+>   	struct buffer_head *bh = da->bh;
+>   	struct gfs2_dirent *dent = da->dent;
+> -	struct timespec tv;
+> +	struct inode_time tv;
+>   	struct gfs2_leaf *leaf;
+>   	int error;
+>   
+> @@ -1794,7 +1794,7 @@ int gfs2_dir_del(struct gfs2_inode *dip, const struct dentry *dentry)
+>   	const struct qstr *name = &dentry->d_name;
+>   	struct gfs2_dirent *dent, *prev = NULL;
+>   	struct buffer_head *bh;
+> -	struct timespec tv = CURRENT_TIME;
+> +	struct inode_time tv = CURRENT_TIME;
+>   
+>   	/* Returns _either_ the entry (if its first in block) or the
+>   	   previous entry otherwise */
+> diff --git a/fs/gfs2/glops.c b/fs/gfs2/glops.c
+> index fc11007..b55308f 100644
+> --- a/fs/gfs2/glops.c
+> +++ b/fs/gfs2/glops.c
+> @@ -318,7 +318,7 @@ static void gfs2_set_nlink(struct inode *inode, u32 nlink)
+>   static int gfs2_dinode_in(struct gfs2_inode *ip, const void *buf)
+>   {
+>   	const struct gfs2_dinode *str = buf;
+> -	struct timespec atime;
+> +	struct inode_time atime;
+>   	u16 height, depth;
+>   
+>   	if (unlikely(ip->i_no_addr != be64_to_cpu(str->di_num.no_addr)))
+> @@ -341,7 +341,7 @@ static int gfs2_dinode_in(struct gfs2_inode *ip, const void *buf)
+>   	gfs2_set_inode_blocks(&ip->i_inode, be64_to_cpu(str->di_blocks));
+>   	atime.tv_sec = be64_to_cpu(str->di_atime);
+>   	atime.tv_nsec = be32_to_cpu(str->di_atime_nsec);
+> -	if (timespec_compare(&ip->i_inode.i_atime, &atime) < 0)
+> +	if (inode_time_compare(&ip->i_inode.i_atime, &atime) < 0)
+>   		ip->i_inode.i_atime = atime;
+>   	ip->i_inode.i_mtime.tv_sec = be64_to_cpu(str->di_mtime);
+>   	ip->i_inode.i_mtime.tv_nsec = be32_to_cpu(str->di_mtime_nsec);
 
-> I tried auditing all 29 files which had this symbol: regulator_set_voltage
-> and couldn't find anything which might break with the proposed change.
-
-> Either these are making sure that we have a valid regulator or they have
-> code inside #ifdef CONFIG_REGULATOR ..
-
-When you say they check for a valid regulator how are they doing that?
-The stub will come into play if there isn't a dependency on REGULATOR.
-
---E/fydkOSwztHu2te
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTjEkNAAoJELSic+t+oim9yi8P/2OE21qPypEX7bRroMjlSRCv
-o2eibMvSm2DhSrxqrx75x0wp4ykDGlZbc4NsKJXVFkU1zzJL2H4LDir13R7mhh+j
-ghP04uLzdvTp53VzNut8Ig0TKDI2liN1vTv/RDlamQiWhd+uw/UPA0FrPraFebJq
-F0fP9mJKAR9IidmlR8MrctRBkiNsAM7Kk9F3mx8pPiZKGvIRvyCnTUbxdCVL3c1o
-RmihWFd5wVOX1i5oWYfHep9D60LxJMXc13TfjI9oIGfz1RYpI9jXq/9ggLifgrhf
-jvo6nSqCBBQkwo60lusFWIKKrGLml3Pp3dspbYDRpCjvkRiHz9alGgWaAuJR2jKa
-apPsNfyBFJHtc2HFOcxIwY68iI9nibt92jYFqDpvVOey9MmHwW1iAOUZPilH3bEO
-0XreXDeob1UIMCfoUgIipWKdVK2/QzDDVVNiAcz2AQbN/oMHHI46dtF3FMCBkH+m
-27IUDaeau34YJc/7tOuSBDgJBfhw5ZyPH/2TxTJpZWH/SVdI9wA82MbAarpTLrzA
-iRaM8Tt+jO2QlB4T+ZSl8boeEoTzsXhyVNfvGasJBCbxnLmO8DRUB/Jny+K+dwEq
-nX3GfgUiPzBSWbkIStGLnrhVueJd6kWnQpOrZupNGNLEcVemwtsT2JBaHAx+DDVE
-ZdzdBDvXKCzFlr+iaBSg
-=a4Mr
------END PGP SIGNATURE-----
-
---E/fydkOSwztHu2te--
