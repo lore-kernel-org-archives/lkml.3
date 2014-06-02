@@ -1,52 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753353AbaFBTjT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 15:39:19 -0400
-Received: from smtprelay0131.hostedemail.com ([216.40.44.131]:42397 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751996AbaFBTjP (ORCPT
+	id S1753484AbaFBTkJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 15:40:09 -0400
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:41949 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751978AbaFBTkG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 15:39:15 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:599:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1714:1730:1747:1777:1792:2197:2199:2393:2559:2562:2828:2902:3138:3139:3140:3141:3142:3351:3622:3653:3866:3867:3871:4321:5007:7652:10004:10400:10848:11026:11232:11473:11658:11914:12517:12519:12740:13019:13069:13255:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: tub47_8ab3c7a803f42
-X-Filterd-Recvd-Size: 1695
-Message-ID: <1401737951.7323.32.camel@joe-AO725>
-Subject: Re: [PATCH 1/1] scripts/checkpatch.pl: device_initcall is not the
- only __initcall substitute
-From: Joe Perches <joe@perches.com>
-To: Fabian Frederick <fabf@skynet.be>
-Cc: linux-kernel@vger.kernel.org, Andy Whitcroft <apw@canonical.com>
-Date: Mon, 02 Jun 2014 12:39:11 -0700
-In-Reply-To: <1401729171-7298-1-git-send-email-fabf@skynet.be>
-References: <1401729171-7298-1-git-send-email-fabf@skynet.be>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 2 Jun 2014 15:40:06 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAOesGMi4SGRP6_WMgv3xz_QrGScktYGQEK-muCrE=ohFBfeBeQ@mail.gmail.com>
+References: <1401577712-4447-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+	<CAOesGMi4SGRP6_WMgv3xz_QrGScktYGQEK-muCrE=ohFBfeBeQ@mail.gmail.com>
+Date: Mon, 2 Jun 2014 21:40:05 +0200
+Message-ID: <CAFo99gbpPjobGmEgWcJLRMV29NO1msHooGiQdQRh6hKQ9OPCBw@mail.gmail.com>
+Subject: Re: [PATCH] atm: fore200e.c: Cleaning up uninitialized variables
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Olof Johansson <olof@lixom.net>
+Cc: Chas Williams <chas@cmf.nrl.navy.mil>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        linux-atm-general@lists.sourceforge.net,
+        Network Development <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-06-02 at 19:12 +0200, Fabian Frederick wrote:
-> This patch adds a link to init.h to find accurate initcall function
-> to replace obsolete __initcall
+Hi
 
-maybe s/accurate/appropriate/
+No, regardless if it is a program that cppcheck or myself with limited
+experience of kernel programming is not so easy to figure out.
 
-> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-[]
-> @@ -4443,10 +4443,10 @@ sub process {
->  			     "$1 is obsolete, use k$3 instead\n" . $herecurr);
->  		}
->  
-> -# check for __initcall(), use device_initcall() explicitly please
-> +# check for __initcall(), use device_initcall() explicitly or more accurate function please
->  		if ($line =~ /^.\s*__initcall\s*\(/) {
->  			WARN("USE_DEVICE_INITCALL",
-> -			     "please use device_initcall() instead of __initcall()\n" . $herecurr);
-> +			     "please use device_initcall() or more accurate function instead of __initcall() (see include/linux/init.h)\n" . $herecurr);
->  		}
+But then I know that there is nothing wrong in this case, and that is
+the main thing :-)
+
+Best regards
+Rickard Strandqvist
 
 
-
+2014-06-02 2:10 GMT+02:00 Olof Johansson <olof@lixom.net>:
+> On Sat, May 31, 2014 at 4:08 PM, Rickard Strandqvist
+> <rickard_strandqvist@spectrumdigital.se> wrote:
+>> There is a risk that the variable will be used without being initialized.
+>>
+>> This was largely found by using a static code analysis program called cppcheck.
+>>
+>> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+>> ---
+>>  drivers/atm/fore200e.c |    2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/atm/fore200e.c b/drivers/atm/fore200e.c
+>> index 204814e..d4725fc 100644
+>> --- a/drivers/atm/fore200e.c
+>> +++ b/drivers/atm/fore200e.c
+>> @@ -2780,7 +2780,7 @@ static struct pci_driver fore200e_pca_driver = {
+>>
+>>  static int __init fore200e_module_init(void)
+>>  {
+>> -       int err;
+>> +       int err = 0;
+>>
+>>         printk(FORE200E "FORE Systems 200E-series ATM driver - version " FORE200E_VERSION "\n");
+>
+>
+> I can see how a tool that doesn't know about Kconfig dependencies
+> might think so, but if you look at Kconfig you'll see that for this
+> driver to be enabled for building either CONFIG_SBUS or CONFIG_PCI
+> must be set, and if either of them is then this variable will not be
+> used without first being set.
+>
+>
+> -Olof
