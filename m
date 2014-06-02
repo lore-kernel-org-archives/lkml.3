@@ -1,118 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753673AbaFBQGk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 12:06:40 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:34405 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752949AbaFBQGi (ORCPT
+	id S1754706AbaFBQGv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 12:06:51 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:37886 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752676AbaFBQGj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 12:06:38 -0400
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH 1/3] i2c: Provide 'device type' to 'OF device node'
- look-up
-To: Lee Jones <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, wsa@the-dreams.de
-Cc: linus.walleij@linaro.org, linux-i2c@vger.kernel.org,
-        Lee Jones <lee.jones@linaro.org>
-In-Reply-To: <1401716463-23457-2-git-send-email-lee.jones@linaro.org>
-References: <1401716463-23457-1-git-send-email-lee.jones@linaro.org>
-	<1401716463-23457-2-git-send-email-lee.jones@linaro.org>
-Date: Mon, 02 Jun 2014 17:06:31 +0100
-Message-Id: <20140602160631.F2F6DC40476@trevor.secretlab.ca>
+	Mon, 2 Jun 2014 12:06:39 -0400
+Message-ID: <538CA096.20709@linux.vnet.ibm.com>
+Date: Mon, 02 Jun 2014 21:34:38 +0530
+From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Stephane Eranian <eranian@google.com>
+CC: Michael Neuling <mikey@neuling.org>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Linux PPC dev <linuxppc-dev@ozlabs.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [V6 00/11] perf: New conditional branch filter
+References: <1399280953-31442-1-git-send-email-khandual@linux.vnet.ibm.com> <CABPqkBS+3N6PW0wJr3xnvpF4zinZM7+iwFWzwS7BDm-LTkam5Q@mail.gmail.com> <53859873.9070603@linux.vnet.ibm.com> <CABPqkBSmuMth4KmdLw7Nigf5uQREQJ+xL=42xV9c8FjR2VPO5g@mail.gmail.com>
+In-Reply-To: <CABPqkBSmuMth4KmdLw7Nigf5uQREQJ+xL=42xV9c8FjR2VPO5g@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14060216-5564-0000-0000-00000E13E26E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon,  2 Jun 2014 14:41:01 +0100, Lee Jones <lee.jones@linaro.org> wrote:
-> We have a problem.  There are lots of I2C device ID tables scattered
-> around the kernel which are redundant in all Device Tree and/or ACPI
-> only supported device drivers.  After recent discussions it has become
-> apparent that the only thing blocking the complete removal of these
-> tables is the continued support of 'register an I2C device via sysfs'
-> functionality.  As the sysfs method doesn't know anything about Device
-> Tree or ACPI, we can not pass any nodes in.  This patch searches all
-> known Device Tree nodes and attempts to acquire a match from the
-> device name provided via sysfs.  It can not fail, but if found assigns
-> the matching of_node to i2c_board_info prior to registering.
-
-Ummm... blech!  :-)
-
-It shouldn't actually be necessary to have a node when instantiating an
-i2c_device... in fact, there /shouldn't/ be a node if the device is
-getting instantiated by had via sysfs. If there was a node, then I would
-expect a device to have been created at the same time.
-
-I think panto's overlays solve the problem where a node actually is
-required to instantiate the device by actually adding a node and letting
-the i2c subsystem create the associated device automatically.
-
-g.
-
+On 06/02/2014 06:29 PM, Stephane Eranian wrote:
+> On Wed, May 28, 2014 at 10:04 AM, Anshuman Khandual
+> <khandual@linux.vnet.ibm.com> wrote:
+>> On 05/27/2014 05:39 PM, Stephane Eranian wrote:
+>>> I have been looking at those patches and ran some tests.
+>>> And I found a few issues so far.
+>>>
+>>> I am running:
+>>> $ perf record -j any_ret -e cycles:u test_program
+>>> $ perf report -D
+>>>
+>>> Most entries are okay and match the filter, however some do not make sense:
+>>>
+>>> 3642586996762 0x15d0 [0x108]: PERF_RECORD_SAMPLE(IP, 2): 17921/17921:
+>>> 0x10001170 period: 613678 addr: 0
+>>> .... branch stack: nr:9
+>>> .....  0: 00000000100011cc -> 0000000010000e38
+>>> .....  1: 0000000010001150 -> 00000000100011bc
+>>> .....  2: 0000000010001208 -> 0000000010000e38
+>>> .....  3: 0000000010001160 -> 00000000100011f8
+>>> .....  4: 00000000100011cc -> 0000000010000e38
+>>> .....  5: 0000000010001150 -> 00000000100011bc
+>>> .....  6: 0000000010001208 -> 0000000010000e38
+>>> .....  7: 0000000010001160 -> 00000000100011f8
+>>> .....  8: 0000000000000000 -> 0000000010001160
+>>> ^^^^^^
+>>> Entry 8 does not make sense, unless 0x0 is a valid return branch
+>>> instruction address.
+>>> If an address is invalid, the whole entry needs to be eliminated. It
+>>> is okay to have
+>>> less than the max number of entries supported by HW.
+>>
+>> Hey Stephane,
+>>
+>> Okay. The same behaviour is also reflected in the test results what I have
+>> shared in the patchset. Here is that section.
+>>
+>> (3) perf record -j any_ret -e branch-misses:u ./cprog
+>>
+>> # Overhead  Command  Source Shared Object          Source Symbol  Target Shared Object          Target Symbol
+>> # ........  .......  ....................  .....................  ....................  .....................
+>> #
+>>     15.61%    cprog  [unknown]             [.] 00000000           cprog                 [.] sw_3_1
+>>      6.28%    cprog  cprog                 [.] symbol2            cprog                 [.] hw_1_2
+>>      6.28%    cprog  cprog                 [.] ctr_addr           cprog                 [.] sw_4_1
+>>      6.26%    cprog  cprog                 [.] success_3_1_3      cprog                 [.] sw_3_1
+>>      6.24%    cprog  cprog                 [.] symbol1            cprog                 [.] hw_1_1
+>>      6.24%    cprog  cprog                 [.] sw_4_2             cprog                 [.] callme
+>>      6.21%    cprog  [unknown]             [.] 00000000           cprog                 [.] callme
+>>      6.19%    cprog  cprog                 [.] lr_addr            cprog                 [.] sw_4_2
+>>      3.16%    cprog  cprog                 [.] hw_1_2             cprog                 [.] callme
+>>      3.15%    cprog  cprog                 [.] success_3_1_1      cprog                 [.] sw_3_1
+>>      3.15%    cprog  cprog                 [.] sw_4_1             cprog                 [.] callme
+>>      3.14%    cprog  cprog                 [.] callme             cprog                 [.] main
+>>      3.13%    cprog  cprog                 [.] hw_1_1             cprog                 [.] callme
+>>
+>> So a lot of samples above have 0x0 as the "from" address. This originates from the code
+>> section here inside the function "power_pmu_bhrb_read", where we hit two back to back
 > 
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> ---
->  drivers/i2c/i2c-core.c | 31 +++++++++++++++++++++++++++++++
->  1 file changed, 31 insertions(+)
+> Could you explain the back-to-back case a bit more here?
+> Back-to-back returns to me means something like:
 > 
-> diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
-> index 7c7f4b8..2e47641 100644
-> --- a/drivers/i2c/i2c-core.c
-> +++ b/drivers/i2c/i2c-core.c
-> @@ -64,6 +64,7 @@ static DEFINE_IDR(i2c_adapter_idr);
->  
->  static struct device_type i2c_client_type;
->  static int i2c_detect(struct i2c_adapter *adapter, struct i2c_driver *driver);
-> +static struct device_node *of_i2c_type_to_node(char *type);
->  
->  static struct static_key i2c_trace_msg = STATIC_KEY_INIT_FALSE;
->  
-> @@ -863,6 +864,8 @@ i2c_sysfs_new_device(struct device *dev, struct device_attribute *attr,
->  		return -EINVAL;
->  	}
->  
-> +	info.of_node = of_i2c_type_to_node(info.type);
-> +
->  	client = i2c_new_device(adap, &info);
->  	if (!client)
->  		return -EINVAL;
-> @@ -1088,8 +1091,36 @@ struct i2c_adapter *of_find_i2c_adapter_by_node(struct device_node *node)
->  	return i2c_verify_adapter(dev);
->  }
->  EXPORT_SYMBOL(of_find_i2c_adapter_by_node);
-> +
-> +static struct device_node *of_i2c_type_to_node(char *type)
-> +{
-> +	struct device_node *np;
-> +	const char *compatible, *name;
-> +	int len;
-> +
-> +	if (!type)
-> +		return NULL;
-> +
-> +	for_each_of_allnodes(np) {
-> +		compatible = of_get_property(np, "compatible", &len);
-> +		if (!compatible)
-> +			continue;
-> +
-> +		name = strchr(compatible, ',');
-> +		if (!name)
-> +			name = compatible;
-> +		else
-> +			name++;
-> +
-> +		if (!strncmp(name, type, len - (name - compatible)))
-> +			return np;
-> +	}
-> +
-> +	return NULL;
-> +}
->  #else
->  static void of_i2c_register_devices(struct i2c_adapter *adap) { }
-> +static struct device_node *of_i2c_type_to_node(char *type) { return NULL; }
->  #endif /* CONFIG_OF */
->  
->  /* ACPI support code */
-> -- 
-> 1.8.3.2
+> int foo()
+> {
+>   ...
+>    return bar();
+> }
 > 
+> int bar()
+> {
+>   return 0;
+> }
+> 
+> Not counting the leaf optimization here, bar return to foo which
+> immediately returns: 2 back-2-back returns.
+> Is that the case you're talking about here?
+> 
+
+No. Filtering of return branches has been implemented in SW only. So PMU as such does not capture
+return only branches. It captures all the branches what it encounters. During the capture process
+PMU might *record* two back to back "target addresses" (without capturing the from address for the
+first one) for which we are unable to figure out the "from address". This leaves us with one branch
+record where we have the target address not from address and so we make it zero. With the current
+logic all branch records with "from address" as zero get filtered through and become the part of the
+final set. I was not too sure how to deal with these cases.
+
+>> target addresses. So we zero out the from address for the first target address and re-read
+>> the second address over again. So thats how we get zero as the from address. This is how the
+>> HW capture the samples. I was reluctant to drop these samples but I agree that these kind of
+>> samples can be dropped if we need to.
+>>
+> I think we need to make it as simple as possible for tools, i.e.,
+> avoid having to decode the
+> disassembly to figure out what happened. Here address 0 is not exploitable.
+
+Thats right. Dropping the branch record where we have only the target address not the from address
+might just solve this problem.
 
