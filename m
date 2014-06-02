@@ -1,63 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753461AbaFBAKm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jun 2014 20:10:42 -0400
-Received: from mail-qa0-f43.google.com ([209.85.216.43]:62736 "EHLO
-	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752481AbaFBAKk (ORCPT
+	id S1753051AbaFBA1J (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jun 2014 20:27:09 -0400
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:40659 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751434AbaFBA1H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jun 2014 20:10:40 -0400
-MIME-Version: 1.0
-X-Originating-IP: [173.13.129.225]
-In-Reply-To: <1401577712-4447-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-References: <1401577712-4447-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-Date: Sun, 1 Jun 2014 17:10:39 -0700
-Message-ID: <CAOesGMi4SGRP6_WMgv3xz_QrGScktYGQEK-muCrE=ohFBfeBeQ@mail.gmail.com>
-Subject: Re: [PATCH] atm: fore200e.c: Cleaning up uninitialized variables
-From: Olof Johansson <olof@lixom.net>
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Cc: Chas Williams <chas@cmf.nrl.navy.mil>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        linux-atm-general@lists.sourceforge.net,
-        Network Development <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Sun, 1 Jun 2014 20:27:07 -0400
+From: James A Shackleford <shack@linux.com>
+To: forest@alittletooquiet.net, gregkh@linuxfoundation.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Cc: James A Shackleford <shack@linux.com>
+Subject: [PATCH] staging: vt6655: fix sparse warning for static declarations
+Date: Sun,  1 Jun 2014 20:26:55 -0400
+Message-Id: <1401668815-18807-1-git-send-email-shack@linux.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 31, 2014 at 4:08 PM, Rickard Strandqvist
-<rickard_strandqvist@spectrumdigital.se> wrote:
-> There is a risk that the variable will be used without being initialized.
->
-> This was largely found by using a static code analysis program called cppcheck.
->
-> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-> ---
->  drivers/atm/fore200e.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/atm/fore200e.c b/drivers/atm/fore200e.c
-> index 204814e..d4725fc 100644
-> --- a/drivers/atm/fore200e.c
-> +++ b/drivers/atm/fore200e.c
-> @@ -2780,7 +2780,7 @@ static struct pci_driver fore200e_pca_driver = {
->
->  static int __init fore200e_module_init(void)
->  {
-> -       int err;
-> +       int err = 0;
->
->         printk(FORE200E "FORE Systems 200E-series ATM driver - version " FORE200E_VERSION "\n");
+This patch fixes the following sparse warnings:
 
+dpc.c:65:21: warning: symbol 'acbyRxRate' was not declared. Should it be static?
+dpc.c:272:9: warning: symbol 'MngWorkItem' was not declared. Should it be static?
+dpc.c:288:1: warning: symbol 'device_receive_frame' was not declared. Should it be static?
 
-I can see how a tool that doesn't know about Kconfig dependencies
-might think so, but if you look at Kconfig you'll see that for this
-driver to be enabled for building either CONFIG_SBUS or CONFIG_PCI
-must be set, and if either of them is then this variable will not be
-used without first being set.
+Signed-off-by: James A Shackleford <shack@linux.com>
+---
+ drivers/staging/vt6655/dpc.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
+diff --git a/drivers/staging/vt6655/dpc.c b/drivers/staging/vt6655/dpc.c
+index 7ddaf26..696564b 100644
+--- a/drivers/staging/vt6655/dpc.c
++++ b/drivers/staging/vt6655/dpc.c
+@@ -54,6 +54,7 @@
+ #include "rf.h"
+ #include "iowpa.h"
+ #include "aes_ccmp.h"
++#include "dpc.h"
+ 
+ /*---------------------  Static Definitions -------------------------*/
+ 
+@@ -62,7 +63,7 @@
+ /*---------------------  Static Variables  --------------------------*/
+ static int msglevel = MSG_LEVEL_INFO;
+ 
+-const unsigned char acbyRxRate[MAX_RATE] =
++static const unsigned char acbyRxRate[MAX_RATE] =
+ {2, 4, 11, 22, 12, 18, 24, 36, 48, 72, 96, 108};
+ 
+ /*---------------------  Static Functions  --------------------------*/
+-- 
+1.7.9.5
 
--Olof
