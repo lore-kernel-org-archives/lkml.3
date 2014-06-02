@@ -1,63 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755766AbaFBQ33 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 12:29:29 -0400
-Received: from mout.perfora.net ([74.208.4.195]:53868 "EHLO mout.perfora.net"
+	id S1755134AbaFBQaF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 12:30:05 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:48625 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752621AbaFBQ31 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 12:29:27 -0400
-Message-ID: <538CA635.4050502@ziswiler.com>
-Date: Mon, 02 Jun 2014 18:28:37 +0200
-From: Marcel Ziswiler <marcel@ziswiler.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1751871AbaFBQaD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 12:30:03 -0400
+Message-ID: <538CA683.40108@ti.com>
+Date: Mon, 2 Jun 2014 12:29:55 -0400
+From: Murali Karicheri <m-karicheri2@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>, thierry.reding@gmail.com
-CC: linux@arm.linux.org.uk, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org, stefan@agner.ch
-Subject: Re: [PATCH 2/3] arm: tegra: enable igb, stmpe, i2c chardev, spidev,
- lm95245, pwm leds
-References: <c5522b0efcbfc7690dcde6aaf78b9dd568f99604.1401665237.git.marcel@ziswiler.com> <39a8704a4c8170d6b0620a1e5e44042eae6d8810.1401665237.git.marcel@ziswiler.com> <538CA24B.1010602@wwwdotorg.org>
-In-Reply-To: <538CA24B.1010602@wwwdotorg.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Sekhar Nori <nsekhar@ti.com>
+CC: <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux-i2c@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Garrett Ding <g-ding@ti.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Wolfram Sang <wsa@the-dreams.de>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>
+Subject: Re: [PATCH] i2c: davinci: Add block read functionality for IPMI
+References: <1398970186-12204-1-git-send-email-m-karicheri2@ti.com> <537DD6B1.9010200@ti.com>
+In-Reply-To: <537DD6B1.9010200@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:RNNSCaJeCh7dBLxPAB254HvPYdiAxVtjrYoftvUsDQX
- OtPPOL58G8XlCzH6QRj8CRloGrPDQE+4QILcUD0KFR1fdy5qZe
- PjGWSpy/JAB/RiHiIbhQIh5Bwy7lJlr39jXi0oaTSeLT84wW7G
- WnrrdXPU9w66KCaxqgmwS4MJC6x9Ie38ghEPQcdQGuTx25Zaof
- 6M6vVT7vx/ofXg9XCk1SU5TncUUI7b3DmvKxlTmDLW9+azOeal
- fjh5X7aLXrw5DtDbPla8Km/gCr8mEffpMnlm3MaaYapF1cwxjc
- FxkwYVCQllNL+X7g15MrQ4o/I9C1Ny2vGN5SvGzcyxHdxNhDh6
- G7muq1R+Fzl19/+YDvOY=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/02/2014 06:11 PM, Stephen Warren wrote:
->> BTW: How about MTD_SPI_NOR,
+On 5/22/2014 6:51 AM, Sekhar Nori wrote:
+> On Friday 02 May 2014 12:19 AM, Murali Karicheri wrote:
+>> Intelligent Plaform Management Interface (IPMI) requires I2C driver
+>> to support block read, where the first byte received from slave is
+>> the length of following data:-
+>>   Added length check if the read type is block read (I2C_M_RECV_LEN)
+>>   Send NACK/STOP bits before last byte is received
+>>
+>> Signed-off-by: Garrett Ding <g-ding@ti.com>
+>> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+> I tested this on a DA850 using i2cdetect and it did not seem to break
+> anything so:
 >
-> That might only exist in linux-next.
+> Tested-by: Sekhar Nori <nsekhar@ti.com>
 >
->> PROC_DEVICETREE and CRYPTO_DEV_TEGRA_AES
->> which I haven't found any mentioning anywhere?
+> There are some checks that were triggered in checkpatch. You may want
+> to fix them up.
 >
-> The TEGRA_AES driver has been removed, so the option should be removed
-> from defconfig too. I don't know what happened to PROC_DEVICTREE - it
-> doesn't seem to exist any more. Was it replaced by something else or
-> deleted? Feel free to send patches for those.
+> Thanks,
+> Sekhar
+>
+> CHECK: Alignment should match open parenthesis
+> #112: FILE: drivers/i2c/busses/i2c-davinci.c:557:
+> +					w = davinci_i2c_read_reg(dev,
+> +							DAVINCI_I2C_MDR_REG);
+>
+> CHECK: Alignment should match open parenthesis
+> #115: FILE: drivers/i2c/busses/i2c-davinci.c:560:
+> +					davinci_i2c_write_reg(dev,
+> +							DAVINCI_I2C_MDR_REG, w);
+>
+> CHECK: Alignment should match open parenthesis
+> #119: FILE: drivers/i2c/busses/i2c-davinci.c:564:
+> +					davinci_i2c_write_reg(dev,
+> +							DAVINCI_I2C_MDR_REG, w);
+>
+> total: 0 errors, 0 warnings, 3 checks, 67 lines checked
+>
+Sekhar,
 
-OK, will do.
+Thanks for testing this. I have other comments against this patch and 
+will be sending an
+updated patch in few weeks.
 
->> diff --git a/arch/arm/configs/tegra_defconfig b/arch/arm/configs/tegra_defconfig
->
->> +CONFIG_SPI_SPIDEV=y
->
-> Is this useful with DT? I thought that unlike I2C_CHARDEV, spidev needed
-> dummy devices to exist in DT for spidev to work? If so, there's not much
-> point adding the option to defconfig, since people can add it when they
-> put the dummy devices into DT.
+Thanks and regards,
 
-Yes, the Apalis T30 DT I sent actually contains two of them which we 
-call generic Apalis SPI1 and SPI2 out-of-the-box configured for exactly 
-that. Without the config enabled though it probably does not make much 
-sense to include it in the DT so I would consider removing it again.
+Murali
