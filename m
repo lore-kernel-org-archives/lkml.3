@@ -1,67 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752928AbaFBIgL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 04:36:11 -0400
-Received: from ozlabs.org ([103.22.144.67]:46984 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751641AbaFBIgK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 04:36:10 -0400
-Date: Mon, 2 Jun 2014 18:36:01 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Daniel Mack <zonque@gmail.com>
-Subject: linux-next: build failure after merge of the net-next tree
-Message-ID: <20140602183601.65742dfa@canb.auug.org.au>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
+	id S1752980AbaFBIiB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 04:38:01 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:28421 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751708AbaFBIiA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 04:38:00 -0400
+Date: Mon, 2 Jun 2014 11:36:07 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Yann Droneaud <ydroneaud@opteya.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org, Emil Goode <emilgoode@gmail.com>,
+        Shawn Guo <shawn.guo@freescale.com>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: Re: [PATCH] driver core/platform: remove unused implicit padding in
+ platform_object
+Message-ID: <20140602083607.GS15585@mwanda>
+References: <1401480167-15091-1-git-send-email-ydroneaud@opteya.com>
+ <20140530201054.GF17724@mwanda>
+ <1401523299.15490.6.camel@localhost.localdomain>
+ <20140531120526.GL15585@mwanda>
+ <1401609616.17059.2.camel@localhost.localdomain>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/cJNPMS80ZHeOaELJrIHw7ig"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1401609616.17059.2.camel@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/cJNPMS80ZHeOaELJrIHw7ig
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Sun, Jun 01, 2014 at 10:00:16AM +0200, Yann Droneaud wrote:
+> Hi Dan,
+> 
+> Le samedi 31 mai 2014 à 15:05 +0300, Dan Carpenter a écrit :
+> > On Sat, May 31, 2014 at 10:01:39AM +0200, Yann Droneaud wrote:
+> > > Le vendredi 30 mai 2014 à 23:10 +0300, Dan Carpenter a écrit :
+> > > > This changelog doesn't match the patch.
+> > > > 
+> > > 
+> > > Hum, let me guess .... I've failed to set the proper subject prefix
+> > > to add v6 suffic to PATCH: 
+> > > I've changed the patch title since v5 (from Emil Goode)... so it's like
+> > > a new one.
+> > > 
+> > > Is it really necessary to resend the patch ?
+> > 
+> > Oh.  Sorry, I didn't understand what you were trying to say...  You're
+> > right.
+> > 
+> 
+> Sorry about that.
+> 
+> If it's unclear, I should modify the commit message.
 
-Hi all,
+It's clear.  Sorry that was my bad.
 
-After merging the net-next tree, today's linux-next build (sparc64
-defconfig) failed like this:
+regards,
+dan carpenter
 
-ERROR: "of_mdiobus_link_phydev" [drivers/net/phy/libphy.ko] undefined!
-
-Caused by commit 86f6cf41272d ("net: of_mdio: add
-of_mdiobus_link_phydev()") from te net-next tree.
-
-CONFIG_PHYLIB=3Dm for this build.
-
-I have reverted that commit for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/cJNPMS80ZHeOaELJrIHw7ig
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTjDd3AAoJEMDTa8Ir7ZwVy6UP/1PiE3Q3x3Uy8/0yykAM/jm5
-io0m0YSsjoraoi9sYoPgFTAH88hK9CTJed0KEiCm36ZdJ0xxbl77XGC/dU5wJNyO
-bJuvLiJ0b/Mcx/ZjIMA1UhRa8DBjHohcnbl2Enc3IzJohc+1782u41xU4kC11u2N
-6G1as2BHz2ZFL0YxkepcGXYkQ6czfyLx/v4NxH4dJeBjpH0ZKty2xwUot2i6/WNu
-uLJKL6osTl9BhBIVOWe2L9uJfyOFVTCUXgqgF2mJhHD3KSg+wpToc/zoPnPVyxZh
-kZAQ8hpuUCb35kiBHQGGX1f2TXLIxRWSOKUBX3dVnkNhuR3VVFaQcheirNGU42s8
-MLTTQe2HY2HhwBVXt8klK9m5hO5yp0CdRPRxdGxVRKa7gV9R3gzwyOG3Tp4w4qbL
-GbjHBk1/pa8nKn7MzHkqRsG0GptPaxiaWTR+sHLgKLw7nIYWoBUpOwVWsQWXvb/i
-buWTIpIRwpAr0Srwjvd6ByczZeIQVyidWpacxSGtCwjUvEgS7r0wxxwEQxMN6IyN
-2WKxs3qVZZEghcJnRA1omjwrRULTczbOADXNUWdL42B6gr54rFJ6lau35PJazPOL
-2nsuYmOnFvvizcDt5A+ZPw5xaHU5EOIVoh/rd/sz7ecgIQUmldFcbQBxdWuaPLsO
-s9pfBQ6jUhoL7H719SsU
-=5UMp
------END PGP SIGNATURE-----
-
---Sig_/cJNPMS80ZHeOaELJrIHw7ig--
