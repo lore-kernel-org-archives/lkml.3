@@ -1,62 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752523AbaFBHAo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 03:00:44 -0400
-Received: from mail-qg0-f45.google.com ([209.85.192.45]:50404 "EHLO
-	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752462AbaFBHAn (ORCPT
+	id S1752590AbaFBHBz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 03:01:55 -0400
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:41122 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752001AbaFBHBy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 03:00:43 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: rjw@rjwysocki.net
-Cc: linaro-kernel@lists.linaro.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, arvind.chauhan@arm.com,
-        inderpal.s@samsung.com, nm@ti.com, chander.kashyap@linaro.org,
-        pavel@ucw.cz, len.brown@intel.com, sudeep.holla@arm.com,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH V5 3/8] opp: Enhance debug messages in of_init_opp_table()
-Date: Mon,  2 Jun 2014 12:30:33 +0530
-Message-Id: <7373788d1dd01bd99cd22fbfaf94327d42e58935.1401691974.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 2.0.0.rc2
-In-Reply-To: <2a9d8e2954166e47d7cdcf9c540dea572b080e7b.1401191054.git.viresh.kumar@linaro.org>
-References: <2a9d8e2954166e47d7cdcf9c540dea572b080e7b.1401191054.git.viresh.kumar@linaro.org>
+	Mon, 2 Jun 2014 03:01:54 -0400
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2 net-next 0/2] split BPF out of core networking
+Date: Mon,  2 Jun 2014 00:01:44 -0700
+Message-Id: <1401692506-7796-1-git-send-email-ast@plumgrid.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enhance print messages for debugging purposes. Add a dev_err() whenever we fail
-to initialize OPP table due to some error in the table present in dts and add a
-dev_dbg() for success case.
+This patch set splits BPF out of core networking into generic component
 
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
-V4->V5: Fix rebase conflict as 2/8 has changed a bit
+patch #1 splits filter.c into two logical pieces: generic BPF core and socket
+filters. It only moves functions around. No real changes.
 
- drivers/base/power/opp.c | 4 ++++
- 1 file changed, 4 insertions(+)
+patch #2 adds hidden CONFIG_BPF that seccomp/tracing can select
 
-diff --git a/drivers/base/power/opp.c b/drivers/base/power/opp.c
-index 28696af..ba20510 100644
---- a/drivers/base/power/opp.c
-+++ b/drivers/base/power/opp.c
-@@ -655,6 +655,8 @@ int of_init_opp_table(struct device *dev)
- 	}
- 
- 	if (!prop->value) {
-+		dev_err(dev, "%s: failed to init OPP: prop->value is NULL\n",
-+			__func__);
- 		ret = -ENODATA;
- 		goto out;
- 	}
-@@ -681,6 +683,8 @@ int of_init_opp_table(struct device *dev)
- 		nr -= 2;
- 	}
- 
-+	dev_dbg(dev, "%s: successfully created OPP table\n", __func__);
-+
- out:
- 	of_node_put(dev->of_node);
- 	return 0;
+The main value of the patch is not a NET separation, but rather logical boundary
+between generic BPF core and socket filtering. All socket specific code stays in
+net/core/filter.c and kernel/bpf/core.c is for generic BPF infrastructure (both
+classic and internal).
+
+Note that CONFIG_BPF_JIT is still under NET, so NET-less configs cannot use
+BPF JITs yet. This can be cleaned up in the future. Also it seems to makes sense
+to split up filter.h into generic and socket specific as well to cleanup the
+boundary further.
+
+Tested with several NET and NET-less configs on arm and x86
+
+V1->V2:
+rebase on top of net-next
+split filter.c into kernel/bpf/core.c instead of net/bpf/core.c
+
+Alexei Starovoitov (2):
+  net: filter: split filter.c into two files
+  net: filter: split BPF out of core networking
+
+ arch/Kconfig           |    6 +-
+ include/linux/filter.h |    2 +
+ kernel/Makefile        |    1 +
+ kernel/bpf/Makefile    |    5 +
+ kernel/bpf/core.c      | 1063 ++++++++++++++++++++++++++++++++++++++++++++++++
+ net/Kconfig            |    1 +
+ net/core/filter.c      | 1023 +---------------------------------------------
+ 7 files changed, 1079 insertions(+), 1022 deletions(-)
+ create mode 100644 kernel/bpf/Makefile
+ create mode 100644 kernel/bpf/core.c
+
 -- 
-2.0.0.rc2
+1.7.9.5
 
