@@ -1,81 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751583AbaFBR3K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 13:29:10 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:63643 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750780AbaFBR3I (ORCPT
+	id S1751901AbaFBRaT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 13:30:19 -0400
+Received: from g4t3427.houston.hp.com ([15.201.208.55]:13764 "EHLO
+	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750933AbaFBRaQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 13:29:08 -0400
-Date: Mon, 2 Jun 2014 13:29:05 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Joe Perches <joe@perches.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, dhowells@redhat.com,
-        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
-        oleg@redhat.com, sbw@mit.edu
-Subject: Re: [PATCH RFC 1/2] MAINTAINERS: Add "R:" designated-reviewers tag
-Message-ID: <20140602132905.0bdbe49b@gandalf.local.home>
-In-Reply-To: <1401729778.5770.20.camel@joe-AO725>
-References: <1401728420-3572-1-git-send-email-paulmck@linux.vnet.ibm.com>
-	<1401729778.5770.20.camel@joe-AO725>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Mon, 2 Jun 2014 13:30:16 -0400
+Message-ID: <538CB492.9090201@hp.com>
+Date: Mon, 02 Jun 2014 13:29:54 -0400
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: paulmck@linux.vnet.ibm.com
+CC: Peter Zijlstra <peterz@infradead.org>,
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>, jejb@parisc-linux.org,
+        deller@gmx.de, John David Anglin <dave.anglin@bell.net>,
+        linux-parisc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        chegu_vinod@hp.com, tglx@linutronix.de, riel@redhat.com,
+        akpm@linux-foundation.org, davidlohr@hp.com, hpa@zytor.com,
+        andi@firstfloor.org, aswin@hp.com, scott.norton@hp.com,
+        Jason Low <jason.low2@hp.com>
+Subject: Re: [PATCH v2] introduce atomic_pointer to fix a race condition in
+ cancelable mcs spinlocks
+References: <alpine.LRH.2.02.1406011342470.20831@file01.intranet.prod.int.rdu2.redhat.com> <alpine.LRH.2.02.1406021158360.20627@file01.intranet.prod.int.rdu2.redhat.com> <20140602162525.GH16155@laptop.programming.kicks-ass.net> <20140602164339.GS22231@linux.vnet.ibm.com>
+In-Reply-To: <20140602164339.GS22231@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 02 Jun 2014 10:22:58 -0700
-Joe Perches <joe@perches.com> wrote:
+On 06/02/2014 12:43 PM, Paul E. McKenney wrote:
+> On Mon, Jun 02, 2014 at 06:25:25PM +0200, Peter Zijlstra wrote:
+>> On Mon, Jun 02, 2014 at 12:00:45PM -0400, Mikulas Patocka wrote:
+>>>   struct optimistic_spin_queue {
+>>> -	struct optimistic_spin_queue *next, *prev;
+>>> +	atomic_pointer(struct optimistic_spin_queue *) next;
+>>> +	struct optimistic_spin_queue *prev;
+>>>   	int locked; /* 1 if lock acquired */
+>>>   };
+>>>
+>>> Index: linux-3.15-rc8/include/asm-generic/atomic-long.h
+>>> ===================================================================
+>>> --- linux-3.15-rc8.orig/include/asm-generic/atomic-long.h	2014-06-02 17:11:17.000000000 +0200
+>>> +++ linux-3.15-rc8/include/asm-generic/atomic-long.h	2014-06-02 17:11:50.000000000 +0200
+>>> @@ -255,4 +255,31 @@ static inline long atomic_long_add_unles
+>>>
+>>>   #endif  /*  BITS_PER_LONG == 64  */
+>>>
+>>> +#define atomic_pointer(type)						\
+>>> +union {									\
+>>> +	atomic_long_t __a;						\
+>>> +	type __t;							\
+>>> +	char __check_sizeof[sizeof(type) == sizeof(long) ? 1 : -1];	\
+>>> +}
+>> That's still entirely disgusting, and afaict entirely redundant. You can
+>> do that test in the operators below just fine.
+>>
+>>> +#define ATOMIC_POINTER_INIT(i)	{ .__t = (i) }
+>>> +
+>>> +#define atomic_pointer_read(v)	((typeof((v)->__t))atomic_long_read(&(v)->__a))
+>>> +
+>>> +#define atomic_pointer_set(v, i)		({			\
+>>> +	typeof((v)->__t) __i = (i);					\
+>>> +	atomic_long_set(&(v)->__a, (long)(__i));			\
+>>> +})
+>>> +
+>>> +#define atomic_pointer_xchg(v, i)		({			\
+>>> +	typeof((v)->__t) __i = (i);					\
+>>> +	(typeof((v)->__t))atomic_long_xchg(&(v)->__a, (long)(__i));	\
+>>> +})
+>>> +
+>>> +#define atomic_pointer_cmpxchg(v, old, new)	({			\
+>>> +	typeof((v)->__t) __old = (old);					\
+>>> +	typeof((v)->__t) __new = (new);					\
+>>> +	(typeof((v)->__t))atomic_long_cmpxchg(&(v)->__a, (long)(__old), (long)(__new));\
+>>> +})
+>> And I can't say I'm a particular fan of these ops either, as alternative
+>> I'm almost inclined to just exclude parisc from using opt spinning.
+> That is an excellent point for this particular issue.  Do parisc systems
+> really support enough CPUs to make queued spinlocks worthwhile?  If not,
+> maybe we should just have parisc stick with traditional spinlocks.
 
-> > Paul Walmsley also noted the need for patch
-> > submitters to know who the key reviewers are and suggested adding an
-> > "R:" tag to the MAINTAINERS file to record this information on a
-> > per-subsystem basis.
-> 
-> I'm not sure of the value of this.
-> 
-> Why not just mark the actual reviewers as maintainers?
-> 
-> The lack of reviewers problem is entirely distinct from
-> the proposed solution.
-> 
-> I believe active reviewers will generally subscribe to a
-> subsystem specific mailing list.
-> 
-> Perhaps it'd be better to get a "linux-rcu@vger.kernel.org"
-> mailing list going.
+The operation in question is the optimistic spinning code of mutex which 
+is currently active, I think, for all architectures. It is not related 
+to the queued spinlock, though it will have the same problem.
 
-I don't think we need a linux-rcu mailing list. I much rather see the
-patches on LKML.
+Yes, by disabling the MUTEX_SPIN_ON_OWNER config variable from PA-RISC, 
+we can disable optimistic spinning.
 
-If you have a person that regularly reviews a patch and wants to be
-Cc'd on all of them, then why not add them to MAINTAINERS?
-
-> 
-> > diff --git a/MAINTAINERS b/MAINTAINERS
-> []
-> > @@ -73,6 +73,8 @@ Descriptions of section entries:
-> >  	L: Mailing list that is relevant to this area
-> >  	W: Web-page with status/info
-> >  	Q: Patchwork web based patch tracking system site
-> > +	R: Designated reviewer, who should be CCed on patches,
-> > +	   format: FullName <address@domain>
-> >  	T: SCM tree type and location.
-> >  	   Type is one of: git, hg, quilt, stgit, topgit
-> >  	S: Status, one of the following:
-> 
-> If this is actually done, I suggest putting this
-> "R" entry description immediately after the "M" entry.
-> 
-
-Or perhaps after L:
-
--- Steve
+-Longman
