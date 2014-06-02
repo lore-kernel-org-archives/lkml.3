@@ -1,96 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932236AbaFBVNU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 17:13:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63589 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752169AbaFBVNT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 17:13:19 -0400
-Date: Mon, 2 Jun 2014 17:12:16 -0400 (EDT)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Peter Zijlstra <peterz@infradead.org>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Helge Deller <deller@gmx.de>, John David Anglin <dave.anglin@bell.net>,
-        Parisc List <linux-parisc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        "Vinod, Chegu" <chegu_vinod@hp.com>, Waiman Long <Waiman.Long@hp.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Davidlohr Bueso <davidlohr@hp.com>, Peter Anvin <hpa@zytor.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>, Jason Low <jason.low2@hp.com>
-Subject: Re: [PATCH v2] introduce atomic_pointer to fix a race condition in
- cancelable mcs spinlocks
-In-Reply-To: <CA+55aFwCy4-x02U6A-KbkPEpe_4pagsZ__ipBhe5HZOQt2vNmw@mail.gmail.com>
-Message-ID: <alpine.LRH.2.02.1406021656550.5874@file01.intranet.prod.int.rdu2.redhat.com>
-References: <alpine.LRH.2.02.1406011342470.20831@file01.intranet.prod.int.rdu2.redhat.com> <alpine.LRH.2.02.1406021158360.20627@file01.intranet.prod.int.rdu2.redhat.com> <20140602162525.GH16155@laptop.programming.kicks-ass.net>
- <CA+55aFzwrqkwD=G=w2m7TdXTpsMFjV7XUMXv5DMPGr=5x5YGCQ@mail.gmail.com> <alpine.LRH.2.02.1406021622200.5874@file01.intranet.prod.int.rdu2.redhat.com> <CA+55aFwCy4-x02U6A-KbkPEpe_4pagsZ__ipBhe5HZOQt2vNmw@mail.gmail.com>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+	id S932273AbaFBVNl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 17:13:41 -0400
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:64624 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932254AbaFBVNh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 17:13:37 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20140602170800.GA5198@developer>
+References: <1401622431-13554-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+	<20140602170800.GA5198@developer>
+Date: Mon, 2 Jun 2014 23:13:36 +0200
+Message-ID: <CAFo99gbVBgQWaJtzT_RT-M4yqxfua162qxCKVmazJY7th2KY0w@mail.gmail.com>
+Subject: Re: [PATCH] thermal: ti-soc-thermal: ti-bandgap.c: Cleaning up memory leak
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Eduardo Valentin <edubezval@gmail.com>
+Cc: Eduardo Valentin <eduardo.valentin@ti.com>,
+        Zhang Rui <rui.zhang@intel.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, linux-pm@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi
+
+Okay, then I make a new patch with only the if() part of the code.
 
 
-On Mon, 2 Jun 2014, Linus Torvalds wrote:
+Best regards
+Rickard Strandqvist
 
-> On Mon, Jun 2, 2014 at 1:46 PM, Mikulas Patocka <mpatocka@redhat.com> wrote:
-> >
-> > And what else do you want to do?
-> >
-> > Peter Zijlstra said "I've been using xchg() and cmpxchg() without such
-> > consideration for quite a while." - so it basically implies that the
-> > kernel is full of such races, mcs_spinlock is just the most visible one
-> > that crashes the kernel first.
-> 
-> .. so your whole argument is bogus, because it doesn't actually fix
-> anything else.
+
+2014-06-02 19:08 GMT+02:00 Eduardo Valentin <edubezval@gmail.com>:
+> On Sun, Jun 01, 2014 at 01:33:51PM +0200, Rickard Strandqvist wrote:
+>> There is a risk for memory leak in when something unexpected happens
+>> and the function returns.
 >
-> Now, something that *would* fix something else is (for example) to
-> just make "ACCESS_ONCE()" a rvalue so that you cannot use it for
-> assignments, and then trying to sort out what happens then. It's
-> possible that the "atomic_pointer_t" would be a part of the solution
-> to that "what happens then", but THERE IS NO WAY IN HELL we're adding
-> it for just one architecture and one use that doesn't warrant even
-> _existing_ on that architecture.
-
-The patch adds atomic_pointer_t for all architectures - it is in the 
-common code and it is backed by atomic_long_t (that already exists for all 
-architectures). There is no new arch-specific code at all.
-
-When we have atomic_pointer_t, we can find the instances of xchg() and 
-cmpxchg() and convert them to atomic_pointer_t (or to other atomic*_t 
-types).
-
-When we convert them all, we can drop xchg() and cmpxchg() at all (at 
-least from architecture-neutral code).
-
-The problem with xchg() and cmpxchg() is that they are very easy to 
-misuse. Peter Zijlstra didn't know that they are not atomic w.r.t. normal 
-stores, a lot of other people don't know it too - and if we allow these 
-functions to be used, this race condition will reappear in the future 
-again and again.
-
-That's why I'm proposing atomic_pointer_t - it guarantees that this race 
-condition can't be made.
-
-> See what I'm saying?
-> 
-> You're not fixing the problem, you're fixing one unimportant detail
-> that isn't worth fixing that way.
-> 
->                Linus
-
-Regarding reworking ACCESS_ONCE() for reads and writes - the problem is - 
-how do you make people use it? ACCESS_ONCE() is already missing at a lot 
-of places (it doesn't cause any visible bug on the condition that the 
-compiler doesn't split the load or store to multiple accesses), I can 
-assume that people will omit ATOMIC_ONCE_STORE() too even if we make it.
-
-Mikulas
+> I don't think there is a risk of memory leak, but wrong address access,
+> in this case.
+>
+>>
+>> This was largely found by using a static code analysis program called cppcheck.
+>>
+>> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+>> ---
+>>  drivers/thermal/ti-soc-thermal/ti-bandgap.c |    3 ++-
+>>  1 file changed, 2 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/thermal/ti-soc-thermal/ti-bandgap.c b/drivers/thermal/ti-soc-thermal/ti-bandgap.c
+>> index 3ab12ee..8401d2e 100644
+>> --- a/drivers/thermal/ti-soc-thermal/ti-bandgap.c
+>> +++ b/drivers/thermal/ti-soc-thermal/ti-bandgap.c
+>> @@ -1155,8 +1155,9 @@ static struct ti_bandgap *ti_bandgap_build(struct platform_device *pdev)
+>>       /* register shadow for context save and restore */
+>>       bgp->regval = devm_kzalloc(&pdev->dev, sizeof(*bgp->regval) *
+>>                                  bgp->conf->sensor_count, GFP_KERNEL);
+>> -     if (!bgp) {
+>> +     if (!bgp->regval) {
+>
+> I agree with this fix.
+>
+>>               dev_err(&pdev->dev, "Unable to allocate mem for driver ref\n");
+>> +             devm_kfree(&pdev->dev, bgp);
+>
+> But I think this is unnecessary, as it has been managed allocated.
+>
+> Cheers,
+>
+> Eduardo
+>
+>>               return ERR_PTR(-ENOMEM);
+>>       }
+>>
+>> --
+>> 1.7.10.4
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
