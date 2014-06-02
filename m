@@ -1,46 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752823AbaFBPZK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 11:25:10 -0400
-Received: from one.firstfloor.org ([193.170.194.197]:51698 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752139AbaFBPZI (ORCPT
+	id S1752839AbaFBP1n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 11:27:43 -0400
+Received: from g2t2352.austin.hp.com ([15.217.128.51]:19156 "EHLO
+	g2t2352.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751639AbaFBP1m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 11:25:08 -0400
-Date: Mon, 2 Jun 2014 17:25:06 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Stephane Eranian <eranian@google.com>, Yan Zheng <zheng.z.yan@intel.com>,
-        Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Joe Mario <jmario@redhat.com>,
-        Richard Fowles <rfowles@redhat.com>, Don Zickus <dzickus@redhat.com>,
-        liang.kan@intel.com
-Subject: Re: [RFC/BUG] not working LLC-load-misses on SandyBridge (42) and
- Haswell
-Message-ID: <20140602152506.GO25366@two.firstfloor.org>
-References: <1400858147-7155-1-git-send-email-jolsa@kernel.org>
- <878upjg6lx.fsf@sejong.aot.lge.com>
- <20140601142622.GA9131@krava.brq.redhat.com>
- <20140602115550.GA1215@krava.brq.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140602115550.GA1215@krava.brq.redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 2 Jun 2014 11:27:42 -0400
+Message-ID: <1401722858.7440.27.camel@j-VirtualBox>
+Subject: Re: [PATCH] fix a race condition in cancelable mcs spinlocks
+From: Jason Low <jason.low2@hp.com>
+To: Waiman Long <waiman.long@hp.com>
+Cc: Mikulas Patocka <mpatocka@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, jejb@parisc-linux.org,
+        deller@gmx.de, John David Anglin <dave.anglin@bell.net>,
+        linux-parisc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        chegu_vinod@hp.com, paulmck@linux.vnet.ibm.com, tglx@linutronix.de,
+        riel@redhat.com, akpm@linux-foundation.org, davidlohr@hp.com,
+        hpa@zytor.com, andi@firstfloor.org, aswin@hp.com, scott.norton@hp.com
+Date: Mon, 02 Jun 2014 08:27:38 -0700
+In-Reply-To: <538C86E2.1070806@hp.com>
+References: <alpine.LRH.2.02.1406011342470.20831@file01.intranet.prod.int.rdu2.redhat.com>
+	 <538C86E2.1070806@hp.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Joe asked about issues with LLC-load-misses on Haswell. I tried
-> and found it non functional on SandyBridge (42) as well:
+On Mon, 2014-06-02 at 10:14 -0400, Waiman Long wrote:
+> On 06/01/2014 01:53 PM, Mikulas Patocka wrote:
+> >   struct optimistic_spin_queue {
+> > -	struct optimistic_spin_queue *next, *prev;
+> > +	atomic_pointer_t next;
+> > +	struct optimistic_spin_queue *prev;
+> >   	int locked; /* 1 if lock acquired */
+> >   };
+> 
+> Is there a way to do it without changing the pointer type? It will make 
+> the code harder to read and understand.
 
-There are lots of issues with the event tables. They need a large
-scale revamp.
+I agree that it would be nice if there is a way to fix this without
+changing the pointer type of "next". The change of the type to
+atomic_pointer_t might make it less obvious what "next" is for. This is
+then compounded with "prev" being kept as a pointer to
+optimistic_spin_queue, which can further make it appear as if "next" may
+potentially point to something different.
 
-I have some changes already, but they need more
 
--Andi
