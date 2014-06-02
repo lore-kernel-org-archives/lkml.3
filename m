@@ -1,61 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754194AbaFBLm0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 07:42:26 -0400
-Received: from b.mx.filmlight.ltd.uk ([77.107.81.251]:38414 "HELO
-	b.mx.filmlight.ltd.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753101AbaFBLmY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 07:42:24 -0400
-X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Mon, 02 Jun 2014 07:42:23 EDT
-Subject: Re: [RFC 11/32] xfs: convert to struct inode_time
-From: Roger Willcocks <roger@filmlight.ltd.uk>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org, lftan@altera.com, hch@infradead.org,
-        john.stultz@linaro.org, "H. Peter Anvin" <hpa@zytor.com>,
-        linux-fsdevel@vger.kernel.org, geert@linux-m68k.org,
-        tglx@linutronix.de, xfs@oss.sgi.com, joseph@codesourcery.com
-In-Reply-To: <20140602002822.GQ14410@dastard>
-References: <1401480116-1973111-1-git-send-email-arnd@arndb.de>
-	 <5389252A.5050503@zytor.com> <20140531011450.GJ14410@dastard>
-	 <5507340.nVBP5LFtqn@wuerfel> <20140601002437.GL14410@dastard>
-	 <20140602002822.GQ14410@dastard>
-Content-Type: text/plain
-Date: Mon, 02 Jun 2014 12:35:41 +0100
-Message-Id: <1401708941.6065.51.camel@montana.filmlight.ltd.uk>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.12.3 (2.12.3-19.el5) 
-Content-Transfer-Encoding: 7bit
+	id S1754222AbaFBLn6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 07:43:58 -0400
+Received: from mga03.intel.com ([143.182.124.21]:30273 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753921AbaFBLn4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 07:43:56 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,956,1392192000"; 
+   d="scan'208";a="439803169"
+From: Chew Chiau Ee <chiau.ee.chew@intel.com>
+To: Eric Miao <eric.y.miao@gmail.com>, Russell King <linux@arm.linux.org.uk>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Mark Brown <broonie@kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>
+Cc: Darren Hart <dvhart@linux.intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, linux-spi@vger.kernel.org,
+        devicetree@vger.kernel.org, Chew Chiau Ee <chiau.ee.chew@intel.com>
+Subject: [PATCH 0/2] Add common clk framework support for PCI mode SPI PXA2XX
+Date: Tue,  3 Jun 2014 03:46:17 +0800
+Message-Id: <1401738379-4107-1-git-send-email-chiau.ee.chew@intel.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Chew, Chiau Ee <chiau.ee.chew@intel.com>
 
-On Mon, 2014-06-02 at 10:28 +1000, Dave Chinner wrote:
+SPI PXA2XX core layer depends on common clock framework to obtain
+information on host supported clock rate. Thus, we setup and register
+clock device for PCI mode host in SPI PXA2XX pci glue layer using
+common clock APIs.
 
-> 
-> The 32 bit second counters in timestamps are too small to represent
-> time beyond the unix epoch (jan 2038) correctly. Extend the on-disk
-> format for a timestamp to include an 8-bit epoch counter so that we
-> can extend time for up to 255 Unix epochs. This should be good for
-> representing timestamps from 1970 to somewhere around 19,000 A.D....
-> 
+In addition, in order for PCI mode SPI PXA2XX with common clock framework
+support to be built as module, we need to export clk_register_clkdev().
 
-I assume you're using an 'epoch' variable and not simply using the
-padding byte as an eight-bit prefix to the existing 32-bit counter
-because the existing counter is signed ?
+Chew, Chiau Ee (1):
+  spi/pxa2xx-pci: Add common clock framework support in PCI glue layer
 
-For long term sanity it might make more sense for the eight-bit value to
-be a simple (sign-extended) prefix from 1970.
+Darren Hart (1):
+  clkdev: Export clk_register_clkdev
 
-So if the feature bit is set it's a 40-bit signed time, which is good
-for 1970 +/- 17400 years or so.
+ drivers/clk/clkdev.c         |    1
+ drivers/spi/spi-pxa2xx-pci.c |   20 ++++++++++++++++++++
+ 2 files changed, 21 insertions(+), 0 deletions(-)
 
---
-Roger
-
-
-
-
+-- 
+1.7.4.4
 
