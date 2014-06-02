@@ -1,111 +1,334 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755275AbaFBOZq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 10:25:46 -0400
-Received: from mail-qg0-f43.google.com ([209.85.192.43]:42018 "EHLO
-	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754292AbaFBOZn (ORCPT
+	id S932126AbaFBO2p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 10:28:45 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:35279 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754454AbaFBO2n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 10:25:43 -0400
-Message-ID: <538C8963.4010909@mutualink.net>
-Date: Mon, 02 Jun 2014 10:25:39 -0400
-From: Mike Remski <mremski@mutualink.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Mon, 2 Jun 2014 10:28:43 -0400
+Message-ID: <538C89F5.1010605@ti.com>
+Date: Mon, 2 Jun 2014 10:28:05 -0400
+From: Murali Karicheri <m-karicheri2@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: ftdi_sio BUG: NULL pointer dereference
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Mohit Kumar <mohit.kumar@st.com>,
+        Jingoo Han <jg1.han@samsung.com>, Bjorn Helgaas <bhelgaas@google.com>
+Subject: Re: [PATCH v1 3/5] phy: pci serdes phy driver for keystone
+References: <1400169692-9677-1-git-send-email-m-karicheri2@ti.com> <1400169692-9677-4-git-send-email-m-karicheri2@ti.com> <538C16DB.7060002@ti.com>
+In-Reply-To: <538C16DB.7060002@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please CC me as not subscribed to list.
-Third party device, with FTDI chip on it.  Get this when plugging device 
-in.  Discovered in kernel 2.6.32, comparing ftdi_sio.c in 2.6.32 to 
-latest 3.14 code is fundamentally unchanged.   Crash looks to be 
-occurring in ftdi_set_max_packet_size, at the point where 
-priv->max_packet_size is being set off of ep_desc (about line 1503).  It 
-looks like ep_desc is probably NULL since priv should be nonzero (set in 
-ftdi_sio_port_probe() which calls ftdi_set_max_packet_size()) The 
-num_endpoints detected for this device is 0;  is this valid?  Tracing 
-use of priv->max_packet_size in the driver it it looks like doing 
-something like:
+On 6/2/2014 2:16 AM, ABRAHAM, KISHON VIJAY wrote:
+> Hi,
+>
+> On Thursday 15 May 2014 09:31 PM, Murali Karicheri wrote:
+>> This phy driver is used by keystone PCI driver. The hw vendor that
+>> provides the phy hw published only registers and their values. So
+>> this driver uses these hard coded values to initialize the phy.
+>>
+>> CC: Grant Likely <grant.likely@linaro.org>
+>> CC: Rob Herring <robh+dt@kernel.org>
+>> CC: Mohit Kumar <mohit.kumar@st.com>
+>> CC: Jingoo Han <jg1.han@samsung.com>
+>> CC: Bjorn Helgaas <bhelgaas@google.com>
+>>
+>> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+>> ---
+>>   drivers/phy/Kconfig        |    6 ++
+>>   drivers/phy/Makefile       |    1 +
+>>   drivers/phy/phy-keystone.c |  230 ++++++++++++++++++++++++++++++++++++++++++++
+>>   3 files changed, 237 insertions(+)
+>>   create mode 100644 drivers/phy/phy-keystone.c
+>>
+>> diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
+>> index 4906c27..e5f4b5a 100644
+>> --- a/drivers/phy/Kconfig
+>> +++ b/drivers/phy/Kconfig
+>> @@ -167,4 +167,10 @@ config PHY_XGENE
+>>   	help
+>>   	  This option enables support for APM X-Gene SoC multi-purpose PHY.
+>>   
+>> +config PHY_TI_KEYSTONE
+>> +	bool "TI Keystone PHY support"
+>> +	depends on ARCH_KEYSTONE
+>> +	select GENERIC_PHY
+>> +	help
+>> +	  This option enables support for TI Keystone PHY (serdes).
+>>   endmenu
+>> diff --git a/drivers/phy/Makefile b/drivers/phy/Makefile
+>> index 7728518..bd306a7 100644
+>> --- a/drivers/phy/Makefile
+>> +++ b/drivers/phy/Makefile
+>> @@ -19,3 +19,4 @@ phy-exynos-usb2-$(CONFIG_PHY_EXYNOS4210_USB2)	+= phy-exynos4210-usb2.o
+>>   phy-exynos-usb2-$(CONFIG_PHY_EXYNOS4X12_USB2)	+= phy-exynos4x12-usb2.o
+>>   phy-exynos-usb2-$(CONFIG_PHY_EXYNOS5250_USB2)	+= phy-exynos5250-usb2.o
+>>   obj-$(CONFIG_PHY_XGENE)			+= phy-xgene.o
+>> +obj-$(CONFIG_PHY_TI_KEYSTONE)		+= phy-keystone.o
+>> diff --git a/drivers/phy/phy-keystone.c b/drivers/phy/phy-keystone.c
+>> new file mode 100644
+>> index 0000000..ba1b9fa
+>> --- /dev/null
+>> +++ b/drivers/phy/phy-keystone.c
+>> @@ -0,0 +1,230 @@
+>> +/*
+>> + * PCIe Keystone platform specific driver code
+>> + *
+>> + * Copyright (C) 2013-2014 Texas Instruments, Inc.
+>> + *		http://www.ti.com
+>> + *
+>> + * Author: Murali Karicheri <m-karicheri2@ti.com>
+>> + *
+>> + * This program is free software; you can redistribute it and/or modify
+>> + * it under the terms of the GNU General Public License version 2 as
+>> + * published by the Free Software Foundation.
+>> + */
+>> +
+>> +#include <linux/clk.h>
+>> +#include <linux/delay.h>
+>> +#include <linux/err.h>
+>> +#include <linux/io.h>
+>> +#include <linux/module.h>
+>> +#include <linux/of.h>
+>> +#include <linux/of_address.h>
+>> +#include <linux/of_platform.h>
+>> +#include <linux/phy/phy.h>
+>> +#include <linux/platform_device.h>
+>> +
+>> +#define reg_dump(addr, mask) \
+>> +		pr_debug("reg %p has value %x\n", (void *)addr, \
+>> +			(readl(addr) & ~mask))
+>> +
+>> +/* mask bits point to bits being modified */
+>> +#define reg_rmw(addr, value, mask) \
+>> +		writel(((readl(addr) & (~(mask))) | \
+>> +			(value & (mask))), (addr))
+>> +struct serdes_config {
+>> +	u32 reg;
+>> +	u32 val;
+>> +	u32 mask;
+>> +};
+>> +
+>> +struct phy_keystone {
+>> +	struct device *dev;
+>> +	void __iomem *base;
+>> +};
+>> +
+>> +static struct serdes_config ks_100mhz_pcie_5gbps_serdes[] = {
+>> +	{0x0000, 0x00000800, 0x0000ff00},
+>> +	{0x0060, 0x00041c5c, 0x00ffffff},
+>> +	{0x0064, 0x0343c700, 0xffffff00},
+>> +	{0x006c, 0x00000012, 0x000000ff},
+>> +	{0x0068, 0x00070000, 0x00ff0000},
+>> +	{0x0078, 0x0000c000, 0x0000ff00},
+>> +
+>> +	{0x0200, 0x00000000, 0x000000ff},
+>> +	{0x0204, 0x5e000080, 0xff0000ff},
+>> +	{0x0208, 0x00000006, 0x000000ff},
+>> +	{0x0210, 0x00000023, 0x000000ff},
+>> +	{0x0214, 0x2e003060, 0xff00ffff},
+>> +	{0x0218, 0x76000000, 0xff000000},
+>> +	{0x022c, 0x00200002, 0x00ff00ff},
+>> +	{0x02a0, 0xffee0000, 0xffff0000},
+>> +	{0x02a4, 0x0000000f, 0x000000ff},
+>> +	{0x0204, 0x5e000000, 0xff000000},
+>> +	{0x0208, 0x00000006, 0x000000ff},
+>> +	{0x0278, 0x00002000, 0x0000ff00},
+>> +	{0x0280, 0x00280028, 0x00ff00ff},
+>> +	{0x0284, 0x2d0f0385, 0xffffffff},
+>> +	{0x0250, 0xd0000000, 0xff000000},
+>> +	{0x0284, 0x00000085, 0x000000ff},
+>> +	{0x0294, 0x20000000, 0xff000000},
+>> +
+>> +	{0x0400, 0x00000000, 0x000000ff},
+>> +	{0x0404, 0x5e000080, 0xff0000ff},
+>> +	{0x0408, 0x00000006, 0x000000ff},
+>> +	{0x0410, 0x00000023, 0x000000ff},
+>> +	{0x0414, 0x2e003060, 0xff00ffff},
+>> +	{0x0418, 0x76000000, 0xff000000},
+>> +	{0x042c, 0x00200002, 0x00ff00ff},
+>> +	{0x04a0, 0xffee0000, 0xffff0000},
+>> +	{0x04a4, 0x0000000f, 0x000000ff},
+>> +	{0x0404, 0x5e000000, 0xff000000},
+>> +	{0x0408, 0x00000006, 0x000000ff},
+>> +	{0x0478, 0x00002000, 0x0000ff00},
+>> +	{0x0480, 0x00280028, 0x00ff00ff},
+>> +	{0x0484, 0x2d0f0385, 0xffffffff},
+>> +	{0x0450, 0xd0000000, 0xff000000},
+>> +	{0x0494, 0x20000000, 0xff000000},
+>> +
+>> +	{0x0604, 0x00000080, 0x000000ff},
+>> +	{0x0600, 0x00000000, 0x000000ff},
+>> +	{0x0604, 0x5e000000, 0xff000000},
+>> +	{0x0608, 0x00000006, 0x000000ff},
+>> +	{0x0610, 0x00000023, 0x000000ff},
+>> +	{0x0614, 0x2e003060, 0xff00ffff},
+>> +	{0x0618, 0x76000000, 0xff000000},
+>> +	{0x062c, 0x00200002, 0x00ff00ff},
+>> +	{0x06a0, 0xffee0000, 0xffff0000},
+>> +	{0x06a4, 0x0000000f, 0x000000ff},
+>> +	{0x0604, 0x5e000000, 0xff000000},
+>> +	{0x0608, 0x00000006, 0x000000ff},
+>> +	{0x0678, 0x00002000, 0x0000ff00},
+>> +	{0x0680, 0x00280028, 0x00ff00ff},
+>> +	{0x0684, 0x2d0f0385, 0xffffffff},
+>> +	{0x0650, 0xd0000000, 0xff000000},
+>> +	{0x0694, 0x20000000, 0xff000000},
+>> +
+>> +	{0x0800, 0x00000000, 0x000000ff},
+>> +	{0x0804, 0x5e000080, 0xff0000ff},
+>> +	{0x0808, 0x00000006, 0x000000ff},
+>> +	{0x0810, 0x00000023, 0x000000ff},
+>> +	{0x0814, 0x2e003060, 0xff00ffff},
+>> +	{0x0818, 0x76000000, 0xff000000},
+>> +	{0x082c, 0x00200002, 0x00ff00ff},
+>> +	{0x08a0, 0xffee0000, 0xffff0000},
+>> +	{0x08a4, 0x0000000f, 0x000000ff},
+>> +	{0x0804, 0x5e000000, 0xff000000},
+>> +	{0x0808, 0x00000006, 0x000000ff},
+>> +	{0x0878, 0x00002000, 0x0000ff00},
+>> +	{0x0880, 0x00280028, 0x00ff00ff},
+>> +	{0x0884, 0x2d0f0385, 0xffffffff},
+>> +	{0x0850, 0xd0000000, 0xff000000},
+>> +	{0x0894, 0x20000000, 0xff000000},
+>> +
+>> +	{0x0a00, 0x00000100, 0x0000ff00},
+>> +	{0x0a08, 0x00e12c08, 0x00ffffff},
+>> +	{0x0a0c, 0x00000081, 0x000000ff},
+>> +	{0x0a18, 0x00e80000, 0x00ff0000},
+>> +	{0x0a30, 0x002f2f00, 0x00ffff00},
+>> +	{0x0a4c, 0xac820000, 0xffff0000},
+>> +	{0x0a54, 0xc0000000, 0xff000000},
+>> +	{0x0a58, 0x00001441, 0x0000ffff},
+>> +	{0x0a84, 0x00000301, 0x0000ffff},
+>> +
+>> +	{0x0a8c, 0x81030000, 0xffff0000},
+>> +	{0x0a90, 0x00006001, 0x0000ffff},
+>> +	{0x0a94, 0x01000000, 0xff000000},
+>> +	{0x0aa0, 0x81000000, 0xff000000},
+>> +	{0x0abc, 0xff000000, 0xff000000},
+>> +	{0x0ac0, 0x0000008b, 0x000000ff},
+>> +
+>> +	{0x0000, 0x00000003, 0x000000ff},
+>> +	{0x0a00, 0x0000009f, 0x000000ff},
+>> +
+>> +	{0x0a44, 0x5f733d00, 0xffffff00},
+>> +	{0x0a48, 0x00fdca00, 0x00ffff00},
+>> +	{0x0a5c, 0x00000000, 0xffff0000},
+>> +	{0x0a60, 0x00008000, 0xffffffff},
+>> +	{0x0a64, 0x0c581220, 0xffffffff},
+>> +	{0x0a68, 0xe13b0602, 0xffffffff},
+>> +	{0x0a6c, 0xb8074cc1, 0xffffffff},
+>> +	{0x0a70, 0x3f02e989, 0xffffffff},
+>> +	{0x0a74, 0x00000001, 0x000000ff},
+>> +	{0x0b14, 0x00370000, 0x00ff0000},
+>> +	{0x0b10, 0x37000000, 0xff000000},
+>> +	{0x0b14, 0x0000005d, 0x000000ff},
+> Which of these is powering on/off the PHY? Which of these is for clocks? Which
+> of these is for TX or RX? Which of these is for lane configuration?...
+>
+> Imagining how would it be if all peripherals are programmed this way in linux..
+>
+> -Kishon
+Kishon, Jingoo,
 
-     priv->max_packet_size = (ep_desc) ? 
-le16_to_cpu(ep_desc->wMaxPacketSize) : 0x40;
+You are right and I also agree with you. This was originally discussed 
+with Arnd on the list.
+There is a NDA between TI and owner of the IP not to disclose the 
+register details. So we
+have to keep the driver the way it is. Once we have permission to 
+disclose the details, this
+driver will be updated. As per Arnd's request I have also checked the 
+existing drivers for
+similar register map and couldn't find any. So there is no duplication.
 
-would alleviate the crash, I'd like to verify that this would be valid 
-to do.
-
-thanks
-
-Jun  2 08:22:23 evoc-rnic45 kernel: ftdi_sio 2-1:1.2: FTDI USB Serial 
-Device converter detected
-Jun  2 08:22:23 evoc-rnic45 kernel: usb 2-1: Detected FT2232C
-Jun  2 08:22:23 evoc-rnic45 kernel: usb 2-1: Number of endpoints 0
-Jun  2 08:22:23 evoc-rnic45 kernel: BUG: unable to handle kernel NULL 
-pointer dereference at 00000030
-Jun  2 08:22:23 evoc-rnic45 kernel: IP: [<f8abd4a7>] 
-ftdi_sio_port_probe+0x267/0x730 [ftdi_sio]
-Jun  2 08:22:23 evoc-rnic45 kernel: *pdpt = 0000000035e4a001 *pde = 
-000000003dd29067
-Jun  2 08:22:23 evoc-rnic45 kernel: Oops: 0000 [#1] SMP
-Jun  2 08:22:23 evoc-rnic45 kernel: last sysfs file: 
-/sys/devices/pci0000:00/0000:00:1d.0/usb2/2-1/manufacturer
-Jun  2 08:22:23 evoc-rnic45 kernel: Modules linked in: ftdi_sio 
-usbserial mlSysLeds(U) coretemp hwmon sunrpc cpufreq_ondemand 
-acpi_cpufreq ipv6 ipt_REJECT nf_conntrack_ipv4 nf_defrag_ipv4 xt_state 
-nf_conntrack iptable_filter ip_tables snd_usb_audio snd_seq snd_pcm 
-snd_timer snd_page_alloc snd_usb_lib snd_rawmidi snd_seq_device 
-snd_hwdep snd soundcore serio_raw i2c_i801 sg iTCO_wdt 
-iTCO_vendor_support r8169 mii ext4 jbd2 ext3 jbd mbcache sd_mod 
-crc_t10dif pata_acpi ata_generic ata_piix i915 drm_kms_helper drm 
-i2c_algo_bit i2c_core video output dm_mod [last unloaded: scsi_wait_scan]
-Jun  2 08:22:23 evoc-rnic45 kernel:
-Jun  2 08:22:23 evoc-rnic45 kernel: Pid: 29, comm: khubd Not tainted 
-(2.6.32-71.29.1.el6.i686 #1) To Be Filled By O.E.M.
-Jun  2 08:22:23 evoc-rnic45 kernel: EIP: 0060:[<f8abd4a7>] EFLAGS: 
-00010246 CPU: 1
-Jun  2 08:22:23 evoc-rnic45 kernel: EIP is at 
-ftdi_sio_port_probe+0x267/0x730 [ftdi_sio]
-Jun  2 08:22:23 evoc-rnic45 kernel: EAX: 0000002c EBX: f5dbb400 ECX: 
-f5df5864 EDX: f5c1f440
-Jun  2 08:22:23 evoc-rnic45 kernel: ESI: f5df5800 EDI: f5dbb4f0 EBP: 
-00000000 ESP: f716da58
-Jun  2 08:22:23 evoc-rnic45 kernel: DS: 007b ES: 007b FS: 00d8 GS: 00e0 
-SS: 0068
-Jun  2 08:22:23 evoc-rnic45 kernel: Process khubd (pid: 29, ti=f716c000 
-task=f70f9030 task.ti=f716c000)
-Jun  2 08:22:23 evoc-rnic45 kernel: Stack:
-Jun  2 08:22:23 evoc-rnic45 kernel: f8abef40 c0976b2a f61e1d00 00000000 
-00000004 c057a904 f716da9c f6206c00
-Jun  2 08:22:23 evoc-rnic45 kernel: <0> f6206c00 f5df5864 0000002c 
-00000000 f5c1f440 f6205458 f5de4ed4 00000000
-Jun  2 08:22:23 evoc-rnic45 kernel: <0> c057b236 00000000 f5dbb4f0 
-f5dbb400 f8ac1ea0 f8a93c7c f5dbb4f8 00000000
-Jun  2 08:22:23 evoc-rnic45 kernel: Call Trace:
-Jun  2 08:22:23 evoc-rnic45 kernel: [<c057a904>] ? 
-sysfs_addrm_finish+0x14/0x200
-Jun  2 08:22:23 evoc-rnic45 kernel: [<c057b236>] ? 
-sysfs_do_create_link+0xa6/0x120
-Jun  2 08:22:23 evoc-rnic45 kernel: [<f8a93c7c>] ? 
-usb_serial_device_probe+0x5c/0xd0 [usbserial]
-Jun  2 08:22:23 evoc-rnic45 kernel: [<c057b2df>] ? 
-sysfs_create_link+0xf/0x20
-Jun  2 08:22:23 evoc-rnic45 kernel: [<c06a1c77>] ? 
-driver_probe_device+0x87/0x290
-Jun  2 08:22:23 evoc-rnic45 kernel: [<c07f7e62>] ? klist_next+0x62/0xd0
-Jun  2 08:22:23 evoc-rnic45 kernel: [<c06a1f00>] ? __device_attach+0x0/0x50
-Jun  2 08:22:23 evoc-rnic45 kernel: [<c06a0db2>] ? 
-bus_for_each_drv+0x52/0x80
-Jun  2 08:22:23 evoc-rnic45 kernel: [<c06a1ff2>] ? device_attach+0x72/0x90
-Jun  2 08:22:23 evoc-rnic45 kernel: [<c06a1f00>] ? __device_attach+0x0/0x50
-Jun  2 08:22:23 evoc-rnic45 kernel: [<c06a0b7d>] ? 
-bus_probe_device+0x1d/0x40
-Jun  2 08:22:23 evoc-rnic45 kernel: [<c069f336>] ? device_add+0
-
--- 
-Office: (978)401-4032 (x123 internally)
-Cell: (603) 759-6953
+Murali
+>> +};
+>> +
+>> +static int ks_phy_init(struct phy *phy)
+>> +{
+>> +	struct serdes_config *p;
+>> +	struct phy_keystone *ks_phy = phy_get_drvdata(phy);
+>> +
+>> +	int i;
+>> +
+>> +	for (i = 0, p = &ks_100mhz_pcie_5gbps_serdes[0];
+>> +		i < ARRAY_SIZE(ks_100mhz_pcie_5gbps_serdes);
+>> +		i++, p++) {
+>> +		reg_rmw((ks_phy->base + p->reg), p->val, p->mask);
+>> +		reg_dump((ks_phy->base + p->reg), p->mask);
+>> +	}
+>> +	udelay(2000);
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +static struct phy_ops ks_phy_ops = {
+>> +	.init		= ks_phy_init,
+>> +	.owner		= THIS_MODULE,
+>> +};
+>> +
+>> +static int ks_phy_probe(struct platform_device *pdev)
+>> +{
+>> +	struct phy_provider *phy_provider;
+>> +	struct device *dev = &pdev->dev;
+>> +	struct phy_keystone *ks_phy;
+>> +	struct phy *phy;
+>> +	struct resource *res;
+>> +
+>> +	ks_phy = devm_kzalloc(dev, sizeof(*ks_phy), GFP_KERNEL);
+>> +	if (!ks_phy)
+>> +		return -ENOMEM;
+>> +
+>> +	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "reg_serdes");
+>> +	ks_phy->base = devm_ioremap_resource(dev, res);
+>> +	if (IS_ERR(ks_phy->base))
+>> +		return PTR_ERR(ks_phy->base);
+>> +
+>> +	ks_phy->dev = dev;
+>> +	phy = devm_phy_create(dev, &ks_phy_ops, NULL);
+>> +	if (IS_ERR(phy))
+>> +		return PTR_ERR(phy);
+>> +
+>> +	phy_set_drvdata(phy, ks_phy);
+>> +	phy_provider = devm_of_phy_provider_register(ks_phy->dev,
+>> +				of_phy_simple_xlate);
+>> +
+>> +	if (IS_ERR(phy_provider))
+>> +		return PTR_ERR(phy_provider);
+>> +
+>> +	dev_info(dev, "keystone phy initialized\n");
+>> +	return 0;
+>> +}
+>> +
+>> +static const struct of_device_id ks_phy_of_match[] = {
+>> +	{ .compatible = "ti,keystone-phy" },
+>> +	{ },
+>> +};
+>> +MODULE_DEVICE_TABLE(of, ks_phy_of_match);
+>> +
+>> +static struct platform_driver ks_phy_driver = {
+>> +	.probe	= ks_phy_probe,
+>> +	.driver = {
+>> +		.of_match_table	= ks_phy_of_match,
+>> +		.name  = "ti,keystone-phy",
+>> +		.owner = THIS_MODULE,
+>> +	}
+>> +};
+>> +module_platform_driver(ks_phy_driver);
+>> +
+>> +MODULE_DESCRIPTION("TI Keystone SerDes PHY driver");
+>> +MODULE_LICENSE("GPL V2");
+>> +MODULE_AUTHOR("Murali Karicheri <m-karicheri2@ti.com>");
+>>
 
