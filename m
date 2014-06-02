@@ -1,112 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754816AbaFBMjA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 08:39:00 -0400
-Received: from sauhun.de ([89.238.76.85]:45242 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753958AbaFBMi6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 08:38:58 -0400
-Date: Mon, 2 Jun 2014 14:38:51 +0200
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Grant Likely <grant.likely@linaro.org>, Lee Jones <lee.jones@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>
-Subject: Re: [PATCH] i2c: Make I2C ID tables non-mandatory for DT'ed and/or
- ACPI'ed devices
-Message-ID: <20140602123851.GB2654@katana>
-References: <1401452797-29521-1-git-send-email-lee.jones@linaro.org>
- <1401452797-29521-2-git-send-email-lee.jones@linaro.org>
- <20140530123656.GC2742@katana>
- <20140530133405.GB29731@lee--X1>
- <20140530174800.GA4917@katana>
- <20140530192516.GA4319@lee--X1>
- <20140531134805.GA3287@katana>
- <CACRpkdZvyfA0aaJe3YuevXfA2pTZLRPZ3mQpitL6qD7=qE0Xyg@mail.gmail.com>
+	id S1754436AbaFBMkN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 08:40:13 -0400
+Received: from mout.kundenserver.de ([212.227.126.131]:59125 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752682AbaFBMkL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 08:40:11 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Nicolas Pitre <nicolas.pitre@linaro.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, joseph@codesourcery.com,
+        john.stultz@linaro.org, hch@infradead.org, tglx@linutronix.de,
+        geert@linux-m68k.org, lftan@altera.com, linux-fsdevel@vger.kernel.org,
+        xfs@oss.sgi.com
+Subject: Re: [RFC 11/32] xfs: convert to struct inode_time
+Date: Mon, 02 Jun 2014 14:38:09 +0200
+Message-ID: <4910284.a72lauVLNV@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140602115737.GB14276@thunk.org>
+References: <1401480116-1973111-1-git-send-email-arnd@arndb.de> <4178301.j9kWdGCRLC@wuerfel> <20140602115737.GB14276@thunk.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="cvVnyQ+4j833TQvp"
-Content-Disposition: inline
-In-Reply-To: <CACRpkdZvyfA0aaJe3YuevXfA2pTZLRPZ3mQpitL6qD7=qE0Xyg@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:hyHxUAEYL2K/w3t7GxaXRbyCBjx/nTbUpXXBN/9TR/3
+ zyy3JU/06PnUmYxEEexsgPQEhAG6cL+sMrCMrjXu3jJVqeWdmB
+ FDgeJzJUYad1c/8C8CDFHK+ndhd3VGvs+xNjk5j1LPSK4UhTTe
+ xwJyF/Y8rP6djwK+mf5X/zX+WMlNn4yVvzX0Q5hBKF57Y2D2oS
+ XNyoN69Z2YgulUHnLaP1/J9d3glXrSN8jqUeeW5EuSNIPm1khD
+ Cj4YXutvaTIT8zvAzaOoZEnh5n0HnVV7UD1xYonl90yy9QdWY/
+ eNuUUwiqys/aIp0/Ivt8/fFNL3eltbKllKWHAKy0b1Zw4QMbtw
+ /ZJc81fL8H6Fcu+AXJOc=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Monday 02 June 2014 07:57:37 Theodore Ts'o wrote:
+> On Mon, Jun 02, 2014 at 12:56:42PM +0200, Arnd Bergmann wrote:
+> > 
+> > I think you misunderstood what I suggested: the intent is to avoid
+> > seeing things break in 2038 by making them break much earlier. We have
+> > a solution for ext2 file systems, it's called ext4, and we just need
+> > to ensure that everybody knows they have to migrate eventually.
+> > 
+> > At some point before the mid 2030ies, you should no longer be able to
+> > build a kernel that has support for ext2 or any other module that will
+> > run into bugs later....
+> 
+> Even for ext4, it's not quite so simple as that.  You only have
+> support for times post 2038 if you are using an inode size > 128
+> bytes.  There are a very, very large number of machines which even
+> today, are using 128 byte inodes with ext4 for performance reasons.
+> 
+> The vast majority of those machines which I know of can probably move
+> to 256 byte inodes relatively easily, since hard drive replacement
+> cycles are order 5-6 years tops, so I'm not that concerned, but it
+> just goes to show this is a very complicated problem.
 
---cvVnyQ+4j833TQvp
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Ok, I see.
 
-On Mon, Jun 02, 2014 at 02:16:59PM +0200, Linus Walleij wrote:
-> On Sat, May 31, 2014 at 3:48 PM, Wolfram Sang <wsa@the-dreams.de> wrote:
-> >
-> >> Right, I read the function which provides the functionality, but my
-> >> point is; I don't think my patch changes the semantics in a way which
-> >> would adversely affect this option.  If you think that it does, can you
-> >> specify how please?
-> >
-> > Currently, if a driver would be DT only and does not provide a seperate
-> > i2c_device_id table, then the driver is unusable with method 4. I don't
-> > like to have some drivers being capable of it and some not.
-> >
-> >> Does the sysfs method create a i2c_device_id table?  If not, how does
-> >> it probe successfully pre-patch?
-> >
-> > The sysfs method creates a device. Its name is matched against
-> > i2c_device_ids only since it does not have a node pointer for DT to be
-> > matched against.
->=20
-> Is this really so useful on embedded systems?
+I also now noticed this comment above EXT4_FITS_IN_INODE():
 
-Well, this feature is at least nice with embedded:
+"For new inodes we always reserve enough space for the kernel's known
+extended fields, but for inodes created with an old kernel this might
+not have been the case. None of the extended inode fields is critical
+for correct filesystem operation."
 
----
+Do we have to worry about this for inodes that contain extended
+attributes and that get updated after 2038?
 
-* You are developing a driver on a test board, where you soldered the I2C
-  device yourself.
-
----
-
-Or during HW bringup, you this or that driver for a device (out-of-tree
-vs. in-kernel), and hey, the RTC even has an EEPROM at another address,
-let's try. Such things are the use cases I have mostly seen and those
-customers liked it.
-
-The problem is that we are talking about matching against I2C slave
-drivers. I can't see a line between embedded and non-embedded when it
-comes to slaves. They are just slaves and could be on any hardware.
-Keeping the bigger picture in mind, IMO it is cumbersome if some drivers
-support user-space instantiation and some not.
-
-Though, I wouldn't mind if compatible entries could be passed to the
-'new_device' file, in addition to i2c_device_ids. Yet, this needs some
-extra handling I haven't found the time for, yet.
-
-
---cvVnyQ+4j833TQvp
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTjHBbAAoJEBQN5MwUoCm2kYAP/1A/KzgGsKX2iPIq1X/hOail
-29YA26NCl2jXu6mVchlNZAjfY3+4XiGNIaIAu1ULHj9wPIicW4JqC3iwEXoC1Ds5
-8baCPVMq5GgMZ5r/wOplZVd7SsBsH75BpQJDILVjGBq4aSS1zeXFyf+1aGVewrnE
-78SDEXBO/d+qo6QiD1UwJKIAdksPyK7LN+Stq68e9jgXOysM3E8OKE93A/L30SjR
-xXYvB1f9rF1qtXP2hTc6AClWrE2FTuKh+XRb/OzR9FaB+L6PWQm/iaTqEXeQAh/1
-nMRDZ+BAIzb9MR7kWUkYTxFSZrQCFJN0VQQxAOATdrKBTxf7KHZYAuUpBBxZxwkr
-9SsK1rxb1avYKph1jdaAfzhe/qQ/ZMAD99MUkNkH6lASzA94wX1xpAsf8fRPSZgI
-v4/f8rWEV4DQs/GjFLrrtf+MaQgDBy6yGYVJ+4Il+1A9UIpdl49kuoQM/7zBxuSU
-1rBAFaTey8FFc4KT1LLnhYyUDYhZuxgNlennNQ2tJdA5KvOaogJ3JuR98318upSN
-XFSpXd591mGrvlLDtH2fVZZyZlT0gMuvnWXiGHajrK7CexlRyPM98bYbtv7f67FF
-eYB9exzomP4s85yrEgDGOy3vuVgErBh/LiGTJ2QD3s/9oufrU4PHzVtn6xzvf/RO
-yWHh639wbGnXp1LByCBs
-=cf3z
------END PGP SIGNATURE-----
-
---cvVnyQ+4j833TQvp--
+	Arnd
