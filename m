@@ -1,70 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753244AbaFBJUl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 05:20:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40995 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753175AbaFBJUj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 05:20:39 -0400
-Date: Mon, 2 Jun 2014 05:19:39 -0400 (EDT)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
-To: Peter Zijlstra <peterz@infradead.org>
-cc: John David Anglin <dave.anglin@bell.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>, jejb@parisc-linux.org,
-        deller@gmx.de, linux-parisc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, chegu_vinod@hp.com,
-        paulmck@linux.vnet.ibm.com, Waiman.Long@hp.com, tglx@linutronix.de,
-        riel@redhat.com, akpm@linux-foundation.org, davidlohr@hp.com,
-        hpa@zytor.com, andi@firstfloor.org, aswin@hp.com, scott.norton@hp.com,
-        Jason Low <jason.low2@hp.com>
-Subject: Re: [PATCH] fix a race condition in cancelable mcs spinlocks
-In-Reply-To: <20140601213003.GG16155@laptop.programming.kicks-ass.net>
-Message-ID: <alpine.LRH.2.02.1406020503000.17105@file01.intranet.prod.int.rdu2.redhat.com>
-References: <alpine.LRH.2.02.1406011342470.20831@file01.intranet.prod.int.rdu2.redhat.com> <20140601192026.GE16155@laptop.programming.kicks-ass.net> <BLU0-SMTP387BD0AE22A4EAD432D65F97210@phx.gbl> <20140601213003.GG16155@laptop.programming.kicks-ass.net>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+	id S1753464AbaFBJVP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 05:21:15 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:38031 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753139AbaFBJVJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 05:21:09 -0400
+From: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
+	<antoine.tenart@free-electrons.com>
+To: sebastian.hesselbarth@gmail.com
+Cc: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        alexandre.belloni@free-electrons.com,
+        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 2/5] Documentation: bindings: document the Marvell Berlin enable-method
+Date: Mon,  2 Jun 2014 11:21:03 +0200
+Message-Id: <1401700866-24804-3-git-send-email-antoine.tenart@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1401700866-24804-1-git-send-email-antoine.tenart@free-electrons.com>
+References: <1401700866-24804-1-git-send-email-antoine.tenart@free-electrons.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The SMP support for Marvell Berlin SoCs introduce a new enable-method.
+Document it.
 
+Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
+---
+ Documentation/devicetree/bindings/arm/cpus.txt | 1 +
+ 1 file changed, 1 insertion(+)
 
-On Sun, 1 Jun 2014, Peter Zijlstra wrote:
+diff --git a/Documentation/devicetree/bindings/arm/cpus.txt b/Documentation/devicetree/bindings/arm/cpus.txt
+index 333f4aea3029..50ec9ae6de28 100644
+--- a/Documentation/devicetree/bindings/arm/cpus.txt
++++ b/Documentation/devicetree/bindings/arm/cpus.txt
+@@ -185,6 +185,7 @@ nodes to be present and contain the properties described below.
+ 			    "qcom,gcc-msm8660"
+ 			    "qcom,kpss-acc-v1"
+ 			    "qcom,kpss-acc-v2"
++			    "marvell,berlin-smp"
+ 
+ 	- cpu-release-addr
+ 		Usage: required for systems that have an "enable-method"
+-- 
+1.9.1
 
-> On Sun, Jun 01, 2014 at 04:46:26PM -0400, John David Anglin wrote:
-> > On 1-Jun-14, at 3:20 PM, Peter Zijlstra wrote:
-> > 
-> > >>If you write to some variable with ACCESS_ONCE and use cmpxchg or xchg
-> > >>at
-> > >>the same time, you break it. ACCESS_ONCE doesn't take the hashed
-> > >>spinlock,
-> > >>so, in this case, cmpxchg or xchg isn't really atomic at all.
-> > >
-> > >And this is really the first place in the kernel that breaks like this?
-> > >I've been using xchg() and cmpxchg() without such consideration for
-> > >quite a while.
-> > 
-> > I believe Mikulas is correct.  Even in a controlled situation where a
-> > cmpxchg operation
-> > is used to implement pthread_spin_lock() in userspace, we found recently
-> > that the lock
-> > must be released with a  cmpxchg operation and not a simple write on SMP
-> > systems.
-> > There is a race in the cache operations or instruction ordering that's not
-> > present with
-> > the ldcw instruction.
-> 
-> Oh, I'm not arguing that. He's quite right that its broken, but this
-> form of atomic ops is also quite insane and unusual. Most sane machines
-> don't have this problem.
-> 
-> My main concern is how are we going to avoid breaking parisc (and I
-> think sparc32, which is similarly retarded) in the future; we should
-> invest in machinery to find and detect these things.
-
-Grep the kernel for "\<xchg\>" and "\<cmpxchg\>" and replace them with 
-atomic types and atomic access functions.
-
-Mikulas
