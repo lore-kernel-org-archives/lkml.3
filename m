@@ -1,76 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752554AbaFBTVA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 15:21:00 -0400
-Received: from mout.kundenserver.de ([212.227.126.131]:52444 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751094AbaFBTUy (ORCPT
+	id S1753366AbaFBTXV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 15:23:21 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:61552 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753285AbaFBTXT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 15:20:54 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Joseph S. Myers" <joseph@codesourcery.com>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        john.stultz@linaro.org, hch@infradead.org, tglx@linutronix.de,
-        geert@linux-m68k.org, lftan@altera.com, hpa@zytor.com,
-        linux-fsdevel@vger.kernel.org, ceph-devel@vger.kernel.org,
-        cluster-devel@redhat.com, coda@cs.cmu.edu,
-        codalist@TELEMANN.coda.cs.cmu.edu, fuse-devel@lists.sourceforge.net,
-        linux-afs@lists.infradead.org, linux-btrfs@vger.kernel.org,
-        linux-cifs@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net, linux-mtd@lists.infradead.org,
-        linux-nfs@vger.kernel.org, linux-ntfs-dev@lists.sourceforge.net,
-        linux-scsi@vger.kernel.org, logfs@logfs.org,
-        ocfs2-devel@oss.oracle.com, reiserfs-devel@vger.kernel.org,
-        samba-technical@lists.samba.org, xfs@oss.sgi.com
-Subject: Re: [RFC 00/32] making inode time stamps y2038 ready
-Date: Mon, 02 Jun 2014 21:19:55 +0200
-Message-ID: <4233989.Saca0ocOUr@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <Pine.LNX.4.64.1406021350030.19591@digraph.polyomino.org.uk>
-References: <1401480116-1973111-1-git-send-email-arnd@arndb.de> <Pine.LNX.4.64.1406021350030.19591@digraph.polyomino.org.uk>
+	Mon, 2 Jun 2014 15:23:19 -0400
+Message-ID: <538CCF24.1030800@gmail.com>
+Date: Mon, 02 Jun 2014 12:23:16 -0700
+From: Thomas Wood <tommyandrena@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:N1Yd64vWkAjM0ROp+kC8egeIF6ETH0wOeYwjA9O2LDZ
- 7+sVunCrTZKbjtMgR+4sz6lrwmAVoVXd2YAJBNRlsfu8UWnTu5
- 2YtsEbwNSs64Yj7gNWu9PjFoxw4MBlxq7YNfg0UdwbvswKATut
- fo6WPS1bnedmxBtIe9Eaw1NbQXNIu4jaOFqvSZAzi7K+gsdj5E
- M8U54R4vSX46+RmOldxpOJ+8QO4ssxBbbctn0wrkJuX0J1ksF5
- tFn3fTKnxB8oWQ06Q2ll3fW8IYUABqZdRV8za9QKBzcQZAQpq9
- ud4pys4kK+EPg8pDWRUZcgdS0pRSwT5EgJq+bxQjqLwrRcug0v
- 2/91O6iRgrww9ivAg99c=
+To: Dan Carpenter <dan.carpenter@oracle.com>
+CC: marek.belisko@gmail.com, devel@driverdev.osuosl.org,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: ft1000: ft1000-usb: ft1000_debug.c: Fix style
+ errors and some warnings.
+References: <1401675978-25765-1-git-send-email-tommyandrena@gmail.com> <20140602103056.GY15585@mwanda>
+In-Reply-To: <20140602103056.GY15585@mwanda>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 02 June 2014 13:52:19 Joseph S. Myers wrote:
-> On Fri, 30 May 2014, Arnd Bergmann wrote:
+
+
+On 06/02/2014 03:30 AM, Dan Carpenter wrote:
+> On Sun, Jun 01, 2014 at 07:26:18PM -0700, Thomas Wood wrote:
+>> Don't use spaces as tabs, and fix other style errors and warnings.
+>>
+>> Signed-off-by: Thomas Wood <tommyandrena@gmail.com>
 > 
-> > a) is this the right approach in general? The previous discussion
-> >    pointed this way, but there may be other opinions.
+> Too much in one patch.  Break it up into one type of fix per patch and
+> send a series of patches.
 > 
-> The syscall changes seem like the sort of thing I'd expect, although 
-> patches adding new syscalls or otherwise affecting the kernel/userspace 
-> interface (as opposed to those relating to an individual filesystem) 
-> should go to linux-api as well as other relevant lists.
-
-Ok. Sorry about missing linux-api, I confused it with linux-arch, which
-may not be as relevant here, except for the one question whether we
-actually want to have the new ABI on all 32-bit architectures or only
-as an opt-in for those that expect to stay around for another 24 years.
-
-Two more questions for you:
-
-- are you (and others) happy with adding this type of stat syscall
-  (fstatat64/fstat64) as opposed to the more generic xstat that has
-  been discussed in the past and that never made it through the bike-
-  shedding discussion?
-
-- once we have enough buy-in from reviewers to merge this initial
-  series, should we proceed to define rest of the syscall ABI
-  (minus driver ioctls) so glibc and kernel can do the conversion
-  on top of that, or should we better try to do things one syscall
-  family at a time and actually get the kernel to handle them
-  correctly internally?
-
-	Arnd
+> [patch 1] use tabs
+> [patch 2] fix braces style
+> [patch 3] remove parens from return values
+> [patch 4] reverse an if statement
+> 
+> patch 3 and 4 are small enough that you could get away with pushing them
+> into a single "misc fixes" patch and we wouldn't have complained but the
+> first two patches are very big.
+> 
+> regards,
+> dan carpenter
+> 
+> 
+Ah, thank you. I will do so.
