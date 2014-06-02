@@ -1,59 +1,285 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751685AbaFBTYz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 15:24:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17269 "EHLO mx1.redhat.com"
+	id S1752456AbaFBTZT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 15:25:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2103 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750750AbaFBTYy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 15:24:54 -0400
-Date: Mon, 2 Jun 2014 21:23:44 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Denys Vlasenko <dvlasenk@redhat.com>,
-        Hugh Dickins <hughd@google.com>, Jim Keniston <jkenisto@us.ibm.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] uprobes: tmpfs support
-Message-ID: <20140602192344.GA30792@redhat.com>
-References: <20140602141406.GA17863@redhat.com> <20140602183028.GA9372@infradead.org>
+	id S1752074AbaFBTZR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 15:25:17 -0400
+Date: Mon, 2 Jun 2014 21:23:20 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Yann Droneaud <ydroneaud@opteya.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>, Andi Kleen <ak@linux.intel.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Stephane Eranian <eranian@google.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCHv5] perf tools: enable close-on-exec flag on perf file
+ descriptor
+Message-ID: <20140602192320.GD7861@krava.brq.redhat.com>
+References: <1389005485-12778-1-git-send-email-ydroneaud@opteya.com>
+ <20140106112436.GF31570@twins.programming.kicks-ass.net>
+ <20140106144347.GA13500@ghostprotocols.net>
+ <20140106142220.GB1183@krava.brq.redhat.com>
+ <1389463628-24869-1-git-send-email-ydroneaud@opteya.com>
+ <1389607770-4485-1-git-send-email-ydroneaud@opteya.com>
+ <20140115185026.GA14248@ghostprotocols.net>
+ <1390771203-28415-1-git-send-email-ydroneaud@opteya.com>
+ <1394527147-7010-1-git-send-email-ydroneaud@opteya.com>
+ <1401706594-4995-1-git-send-email-ydroneaud@opteya.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140602183028.GA9372@infradead.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1401706594-4995-1-git-send-email-ydroneaud@opteya.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/02, Christoph Hellwig wrote:
->
-> On Mon, Jun 02, 2014 at 04:14:06PM +0200, Oleg Nesterov wrote:
-> > Ingo, please pull from
-> >
-> >   git://git.kernel.org/pub/scm/linux/kernel/git/oleg/misc uprobes/core
-> >
-> > Based on tip:perf/uprobes
->
-> Eww, adding tmpfs-specific code to uprobes screams layering violation.
->
-> Hugh, what is the problem with implementing ->readpage for tmpfs again?
+On Mon, Jun 02, 2014 at 12:56:34PM +0200, Yann Droneaud wrote:
 
-I leave this to you and Hugh.
+SNIP
 
-But I hope you are not arguing with this patch, it is very simple and we
-do want to support tmpfs. If tmpfs has ->readpage again we can revert this
-patch.
+> 
+> Hi,
+> 
+> Quite the same patch from v4. I'm interested in some
+> feedback so that I could improve the patch if needed.
+> 
+> Regards.
+> 
+> Changes from v4 [1]:
+> - rebase on next-20140530 and update commit message.
 
+hi,
+I wasn't following on this one before.. so please shut me up
+if my comments were already discussed ;-)
 
+SNIP
 
-BTW. Is it safe to pass file == NULL to read_mapping_page() and ->readpage()?
-Last time I tried to check this looked safe but this is not documented. We
-need to call read_mapping_page() from uprobe_register() but it doesn't have
-"struct file *" and thus we need to delay arch_uprobe_analyze_insn() until
-we find the first mapping, too bad.
+> index d7176830b9b2..bb4afc9fae54 100644
+> --- a/tools/perf/builtin-sched.c
+> +++ b/tools/perf/builtin-sched.c
+> @@ -10,6 +10,7 @@
+>  #include "util/header.h"
+>  #include "util/session.h"
+>  #include "util/tool.h"
+> +#include "util/cloexec.h"
+>  
+>  #include "util/parse-options.h"
+>  #include "util/trace-event.h"
+> @@ -434,7 +435,8 @@ static int self_open_counters(void)
+>  	attr.type = PERF_TYPE_SOFTWARE;
+>  	attr.config = PERF_COUNT_SW_TASK_CLOCK;
+>  
+> -	fd = sys_perf_event_open(&attr, 0, -1, -1, 0);
+> +	fd = sys_perf_event_open(&attr, 0, -1, -1,
+> +				 perf_event_open_cloexec_flag());
+>  
+>  	if (fd < 0)
+>  		pr_err("Error: sys_perf_event_open() syscall returned "
+> diff --git a/tools/perf/tests/bp_signal.c b/tools/perf/tests/bp_signal.c
+> index aba095489193..fdc0d3e185f9 100644
+> --- a/tools/perf/tests/bp_signal.c
+> +++ b/tools/perf/tests/bp_signal.c
+> @@ -25,6 +25,7 @@
+>  #include "tests.h"
+>  #include "debug.h"
+>  #include "perf.h"
+> +#include "../util/cloexec.h"
 
-And why read_mapping_page() has "void *data" but not "struct file *file"...
+#include "cloexec.h" should be enough
 
-Oleg.
+>  
+>  static int fd1;
+>  static int fd2;
+> @@ -78,7 +79,8 @@ static int bp_event(void *fn, int setup_signal)
+>  	pe.exclude_kernel = 1;
+>  	pe.exclude_hv = 1;
+>  
+> -	fd = sys_perf_event_open(&pe, 0, -1, -1, 0);
+> +	fd = sys_perf_event_open(&pe, 0, -1, -1,
+> +				 perf_event_open_cloexec_flag());
+>  	if (fd < 0) {
+>  		pr_debug("failed opening event %llx\n", pe.config);
+>  		return TEST_FAIL;
+> diff --git a/tools/perf/tests/bp_signal_overflow.c b/tools/perf/tests/bp_signal_overflow.c
+> index 44ac82179708..b0b17415f18c 100644
+> --- a/tools/perf/tests/bp_signal_overflow.c
+> +++ b/tools/perf/tests/bp_signal_overflow.c
+> @@ -24,6 +24,7 @@
+>  #include "tests.h"
+>  #include "debug.h"
+>  #include "perf.h"
+> +#include "../util/cloexec.h"
 
+ditto
+
+>  
+>  static int overflows;
+>  
+> @@ -91,7 +92,8 @@ int test__bp_signal_overflow(void)
+>  	pe.exclude_kernel = 1;
+>  	pe.exclude_hv = 1;
+>  
+> -	fd = sys_perf_event_open(&pe, 0, -1, -1, 0);
+> +	fd = sys_perf_event_open(&pe, 0, -1, -1,
+> +				 perf_event_open_cloexec_flag());
+>  	if (fd < 0) {
+>  		pr_debug("failed opening event %llx\n", pe.config);
+>  		return TEST_FAIL;
+> diff --git a/tools/perf/tests/rdpmc.c b/tools/perf/tests/rdpmc.c
+> index e59143fd9e71..8432bfcffed6 100644
+> --- a/tools/perf/tests/rdpmc.c
+> +++ b/tools/perf/tests/rdpmc.c
+> @@ -6,6 +6,7 @@
+>  #include "perf.h"
+>  #include "debug.h"
+>  #include "tests.h"
+> +#include "../util/cloexec.h"
+
+ditto
+
+SNIP
+
+> +
+> +static int perf_flag_probe(void)
+> +{
+> +	/* use 'safest' configuration as used in perf_evsel__fallback() */
+> +	struct perf_event_attr attr = {
+> +		.type = PERF_COUNT_SW_CPU_CLOCK,
+> +		.config = PERF_COUNT_SW_CPU_CLOCK,
+> +	};
+> +	int fd;
+> +	int err;
+> +
+> +	/* check cloexec flag */
+> +	fd = sys_perf_event_open(&attr, 0, -1, -1,
+> +				 PERF_FLAG_FD_CLOEXEC);
+> +	if (fd >= 0) {
+> +		close(fd);
+> +		return 1;
+> +	}
+> +
+> +	if (errno != EINVAL) {
+> +		err = errno;
+> +		pr_warning("sys_perf_event_open() syscall returned "
+> +			   "%d (%d: %s)\n", fd, err, strerror(err));
+> +	}
+> +
+> +	/* not supported, confirm error related to PERF_FLAG_FD_CLOEXEC */
+> +	fd = sys_perf_event_open(&attr, 0, -1, -1, 0);
+> +	if (fd >= 0) {
+> +		close(fd);
+> +		return 0;
+> +	}
+> +
+> +	err = errno;
+> +	die("sys_perf_event_open() syscall returned "
+> +	    "%d (%d: %s)\n", fd, err, strerror(err));
+
+I think we have a strategy of not using die in new code..
+please just use WARN_ONCE.. and let the code fail in the
+standard way
+
+SNIP
+
+>  
+>  #define FD(e, x, y) (*(int *)xyarray__entry(e->fd, x, y))
+> @@ -988,7 +989,7 @@ static int __perf_evsel__open(struct perf_evsel *evsel, struct cpu_map *cpus,
+>  			      struct thread_map *threads)
+>  {
+>  	int cpu, thread;
+> -	unsigned long flags = 0;
+> +	unsigned long flags = PERF_FLAG_FD_CLOEXEC;
+>  	int pid = -1, err;
+>  	enum { NO_CHANGE, SET_TO_MAX, INCREASED_MAX } set_rlimit = NO_CHANGE;
+>  
+> @@ -997,11 +998,13 @@ static int __perf_evsel__open(struct perf_evsel *evsel, struct cpu_map *cpus,
+>  		return -ENOMEM;
+>  
+>  	if (evsel->cgrp) {
+> -		flags = PERF_FLAG_PID_CGROUP;
+> +		flags |= PERF_FLAG_PID_CGROUP;
+>  		pid = evsel->cgrp->fd;
+>  	}
+>  
+>  fallback_missing_features:
+> +	if (perf_missing_features.cloexec)
+> +		flags &= ~(unsigned long)PERF_FLAG_FD_CLOEXEC;
+>  	if (perf_missing_features.mmap2)
+>  		evsel->attr.mmap2 = 0;
+>  	if (perf_missing_features.exclude_guest)
+> @@ -1070,7 +1073,10 @@ try_fallback:
+>  	if (err != -EINVAL || cpu > 0 || thread > 0)
+>  		goto out_close;
+>  
+> -	if (!perf_missing_features.mmap2 && evsel->attr.mmap2) {
+> +	if (!perf_missing_features.cloexec && (flags & PERF_FLAG_FD_CLOEXEC)) {
+> +		perf_missing_features.cloexec = true;
+> +		goto fallback_missing_features;
+
+I think it does not fit in here, because we check latest perf_event_attr
+bits and removing one after another, to see if miracle happens.
+(also looks like we miss exclude_callchain_(kernel|user) bits)
+
+Wouldn't it be better just to use perf_event_open_cloexec_flag() function
+as you did in the rest of the code? I think we dont need 2 detection codes
+for this.
+
+> +	} else if (!perf_missing_features.mmap2 && evsel->attr.mmap2) {
+>  		perf_missing_features.mmap2 = true;
+>  		goto fallback_missing_features;
+>  	} else if (!perf_missing_features.exclude_guest &&
+> diff --git a/tools/perf/util/record.c b/tools/perf/util/record.c
+> index 049e0a09ccd3..9a8d622809f6 100644
+> --- a/tools/perf/util/record.c
+> +++ b/tools/perf/util/record.c
+> @@ -4,6 +4,7 @@
+>  #include "parse-events.h"
+>  #include <api/fs/fs.h>
+>  #include "util.h"
+> +#include "cloexec.h"
+>  
+>  typedef void (*setup_probe_fn_t)(struct perf_evsel *evsel);
+>  
+> @@ -11,6 +12,7 @@ static int perf_do_probe_api(setup_probe_fn_t fn, int cpu, const char *str)
+>  {
+>  	struct perf_evlist *evlist;
+>  	struct perf_evsel *evsel;
+> +	unsigned long flags = perf_event_open_cloexec_flag();
+>  	int err = -EAGAIN, fd;
+>  
+>  	evlist = perf_evlist__new();
+> @@ -22,14 +24,14 @@ static int perf_do_probe_api(setup_probe_fn_t fn, int cpu, const char *str)
+>  
+>  	evsel = perf_evlist__first(evlist);
+>  
+> -	fd = sys_perf_event_open(&evsel->attr, -1, cpu, -1, 0);
+> +	fd = sys_perf_event_open(&evsel->attr, -1, cpu, -1, flags);
+>  	if (fd < 0)
+>  		goto out_delete;
+>  	close(fd);
+>  
+>  	fn(evsel);
+>  
+> -	fd = sys_perf_event_open(&evsel->attr, -1, cpu, -1, 0);
+> +	fd = sys_perf_event_open(&evsel->attr, -1, cpu, -1, flags);
+>  	if (fd < 0) {
+>  		if (errno == EINVAL)
+>  			err = -EINVAL;
+> @@ -203,7 +205,8 @@ bool perf_evlist__can_select_event(struct perf_evlist *evlist, const char *str)
+>  		cpu = evlist->cpus->map[0];
+>  	}
+
+hum... no one calls this exported function ^^^ :-) I wonder why it's there.. cool
+
+thanks,
+jirka
