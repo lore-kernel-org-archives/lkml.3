@@ -1,42 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753783AbaFBUhq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 16:37:46 -0400
-Received: from mail.centurylink.net ([205.219.233.9]:27660 "EHLO
-	smtp.centurylink.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751642AbaFBUhp (ORCPT
+	id S932134AbaFBUiv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 16:38:51 -0400
+Received: from mail.sigma-star.at ([95.130.255.111]:62408 "EHLO
+	mail.sigma-star.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752169AbaFBUiu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 16:37:45 -0400
-X_CMAE_Category: , ,
-X-CNFS-Analysis: v=2.0 cv=aJZyWMBm c=1 sm=1 a=FKkrIqjQGGEA:10 a=1poGYrevpj8A:10 a=B71IphBFwy0A:10 a=d3ZwFMNkyaEA:10 a=nhVEQYUhrNQA:10 a=IkcTkHD0fZMA:10 a=1oqGTYSLAAAA:8 a=pGLkceISAAAA:8 a=I2NCxiStgioMRPJmAvkA:9 a=QEXdDO2ut3YA:10 a=rhdwzgJJdREA:10 a=yRiv1_wUNPQA:10 a=l6kr58q5OVNX6ROD:21 a=mRsp1ejArNvzMyiO:21 a=HyTsFQj1w0D9KE9dhx6zqw==:117
-X-CM-Score: 0
-X-Authed-Username: a25mZ2hvd0BlbWJhcnFtYWlsLmNvbQ==
-Authentication-Results: smtp03.agate.dfw.synacor.com header.from=knfghow@embarqmail.com; sender-id=neutral
-Authentication-Results: smtp03.agate.dfw.synacor.com smtp.mail=knfghow@embarqmail.com; spf=neutral; sender-id=neutral
-Date: Mon, 2 Jun 2014 16:37:20 -0400 (EDT)
-From: i ii <knfghow@embarqmail.com>
-Reply-To: mglpi2014@gmail.com
-To: info@weds.com
-Message-ID: <1588112300.344094.1401741440491.JavaMail.root@embarqmail.com>
-Subject: approve
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.40.0.32]
-X-Mailer: Zimbra 7.2.2_GA_2852 (zclient/7.2.2_GA_2852)
+	Mon, 2 Jun 2014 16:38:50 -0400
+From: Richard Weinberger <richard@nod.at>
+To: peterz@infradead.org
+Cc: linux-kernel@vger.kernel.org, Richard Weinberger <richard@nod.at>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH] sched: Fix sched_policy < 0 comparison
+Date: Mon,  2 Jun 2014 22:38:34 +0200
+Message-Id: <1401741514-7045-1-git-send-email-richard@nod.at>
+X-Mailer: git-send-email 1.8.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+attr.sched_policy is u32, therefore a comparison against < 0 is never true.
+Fix this by casting sched_policy to int.
 
+This issue was reported by coverity CID 1219934.
 
+Cc: Michael Kerrisk <mtk.manpages@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Richard Weinberger <richard@nod.at>
+---
+ kernel/sched/core.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index b8cd08f..d579476 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -3726,7 +3726,7 @@ SYSCALL_DEFINE3(sched_setattr, pid_t, pid, struct sched_attr __user *, uattr,
+ 	if (retval)
+ 		return retval;
+ 
+-	if (attr.sched_policy < 0)
++	if ((int)attr.sched_policy < 0)
+ 		return -EINVAL;
+ 
+ 	rcu_read_lock();
 -- 
-Mahindra India approve your email, to receive Eight Hundred Thousand Pounds Sterlings.
-Provide:
+1.8.1.4
 
-Name---
-Address---
-Mobile -----
-Age-----
-Occupation-----
-Thank You
