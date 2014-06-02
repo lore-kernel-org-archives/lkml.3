@@ -1,91 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752334AbaFBFPj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 01:15:39 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:51572 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752292AbaFBFPf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 01:15:35 -0400
-Date: Mon, 2 Jun 2014 14:14:47 +0900
-From: Daeseok Youn <daeseok.youn@gmail.com>
-To: lidza.louina@gmail.com, gregkh@linuxfoundation.org
-Cc: markh@compro.net, dan.carpenter@oracle.com,
-        driverdev-devel@linuxdriverproject.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/6 RESEND V2] staging: dgap: unwind on error in
- dgap_found_board()
-Message-ID: <20140602051447.GA30379@devel.8.8.4.4>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1752094AbaFBF0A (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 01:26:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41623 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750702AbaFBFZ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 01:25:58 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Konstantin Khlebnikov <koct9i@gmail.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Borislav Petkov <bp@alien8.de>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        David Miller <davem@davemloft.net>,
+        Andres Freund <andres@2ndquadrant.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: [RFC][PATCH 0/3] mm: introduce fincore()
+Date: Mon,  2 Jun 2014 01:24:56 -0400
+Message-Id: <1401686699-9723-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <20140521193336.5df90456.akpm@linux-foundation.org>
+References: <20140521193336.5df90456.akpm@linux-foundation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds a label for "kfree(brd)". And also remove
-a state value as BOARD_FAILED in brd when dgap_do_remap() is failed.
-Because "brd" will free after failure.
+Due to the previous discussion[1], I learned that you people have discussed
+this system call a few times (but not conclusion) and it can solve my problem
+about pagecache scanning (see[2] for my motivation.) So I try it now.
 
-Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
-Reviewed-by: Dan Carpenter <dan.carpenter@oracle.com>
+The main patch of this patchset is patch 2, and this is based on Johannes's
+previous version[3], so I CCed people who joined that discussion. While there
+might be controversies about the format of data copied from kernel to userspace,
+I take the Kirill's suggestion[4] which uses a flag to choose the data format,
+which is extensible and flexible (you can cut off some info if you don't need it.)
+
+And I added simple tests at patch 3, and patch 2 passes all the tests.
+
+Any comments are welcomed.
+
+[1] http://marc.info/?l=linux-kernel&m=140072606903894&w=2
+[2] http://marc.info/?l=linux-mm&m=140072522603776&w=2
+[3] http://thread.gmane.org/gmane.linux.kernel/1439212/focus=1441919
+[4] http://marc.info/?l=linux-kernel&m=140075509611532&w=2
+
+Thanks,
+Naoya Horiguchi
 ---
-RESEND: this patch is included into newly series of patches.
-V2: add "Reviewed-by" line in change log.
+Summary:
 
- drivers/staging/dgap/dgap.c |   19 ++++++++++++++-----
- 1 files changed, 14 insertions(+), 5 deletions(-)
+Naoya Horiguchi (3):
+      replace PAGECACHE_TAG_* definition with enumeration
+      mm: introduce fincore()
+      selftest: add test code for fincore()
 
-diff --git a/drivers/staging/dgap/dgap.c b/drivers/staging/dgap/dgap.c
-index af78f6f..5556a6e 100644
---- a/drivers/staging/dgap/dgap.c
-+++ b/drivers/staging/dgap/dgap.c
-@@ -673,6 +673,7 @@ static int dgap_found_board(struct pci_dev *pdev, int id)
- 	struct board_t *brd;
- 	unsigned int pci_irq;
- 	int i;
-+	int ret;
- 
- 	/* get the board structure and prep it */
- 	brd = kzalloc(sizeof(struct board_t), GFP_KERNEL);
-@@ -728,8 +729,10 @@ static int dgap_found_board(struct pci_dev *pdev, int id)
- 		brd->membase_end = pci_resource_end(pdev, 0);
- 	}
- 
--	if (!brd->membase)
--		return -ENODEV;
-+	if (!brd->membase) {
-+		ret = -ENODEV;
-+		goto free_brd;
-+	}
- 
- 	if (brd->membase & 1)
- 		brd->membase &= ~3;
-@@ -770,14 +773,20 @@ static int dgap_found_board(struct pci_dev *pdev, int id)
- 	tasklet_init(&brd->helper_tasklet, dgap_poll_tasklet,
- 			(unsigned long) brd);
- 
--	i = dgap_do_remap(brd);
--	if (i)
--		brd->state = BOARD_FAILED;
-+	ret = dgap_do_remap(brd);
-+	if (ret)
-+		goto free_brd;
- 
- 	pr_info("dgap: board %d: %s (rev %d), irq %ld\n",
- 		dgap_numboards, brd->name, brd->rev, brd->irq);
- 
- 	return 0;
-+
-+free_brd:
-+	kfree(brd);
-+	dgap_board[dgap_numboards] = NULL;
-+
-+	return ret;
- }
- 
- 
--- 
-1.7.1
-
+ arch/x86/syscalls/syscall_64.tbl                   |   1 +
+ include/linux/fs.h                                 |   9 +-
+ include/linux/syscalls.h                           |   2 +
+ mm/Makefile                                        |   2 +-
+ mm/fincore.c                                       | 362 +++++++++++++++++++++
+ tools/testing/selftests/Makefile                   |   1 +
+ tools/testing/selftests/fincore/Makefile           |  31 ++
+ .../selftests/fincore/create_hugetlbfs_file.c      |  49 +++
+ tools/testing/selftests/fincore/fincore.c          | 153 +++++++++
+ tools/testing/selftests/fincore/run_fincoretests   | 355 ++++++++++++++++++++
+ 10 files changed, 961 insertions(+), 4 deletions(-)
