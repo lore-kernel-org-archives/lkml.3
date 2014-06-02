@@ -1,218 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753656AbaFBJbW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 05:31:22 -0400
-Received: from mail-yh0-f49.google.com ([209.85.213.49]:33605 "EHLO
-	mail-yh0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752784AbaFBJbU (ORCPT
+	id S1753730AbaFBJbm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 05:31:42 -0400
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:52921 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753237AbaFBJbk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 05:31:20 -0400
+	Mon, 2 Jun 2014 05:31:40 -0400
+Date: Mon, 2 Jun 2014 02:30:20 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Hugh Dickins <hughd@google.com>, Dave Jones <davej@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: sleeping function warning from __put_anon_vma
+In-Reply-To: <20140601193240.GF16155@laptop.programming.kicks-ass.net>
+Message-ID: <alpine.LSU.2.11.1406020216240.1177@eggly.anvils>
+References: <20140530000944.GA29942@redhat.com> <alpine.LSU.2.11.1405311321340.10272@eggly.anvils> <20140601193240.GF16155@laptop.programming.kicks-ass.net>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-In-Reply-To: <20140529122438.GB2593@e104805>
-References: <1401351334-11210-1-git-send-email-amit.daniel@samsung.com>
-	<1401351334-11210-4-git-send-email-amit.daniel@samsung.com>
-	<20140529122438.GB2593@e104805>
-Date: Mon, 2 Jun 2014 15:01:19 +0530
-Message-ID: <CADGdYn4+dA=vDV23bx7dDz2j9k9RFW1Apa153-FrtWgbVqEGYw@mail.gmail.com>
-Subject: Re: [PATCH v1 3/6] thermal: thermal-core: Add notifications support
- for the cooling states
-From: Amit Kachhap <amit.kachhap@gmail.com>
-To: Javi Merino <javi.merino@arm.com>
-Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Zhang Rui <rui.zhang@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "edubezval@gmail.com" <edubezval@gmail.com>,
-        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "lenb@kernel.org" <lenb@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/29/14, Javi Merino <javi.merino@arm.com> wrote:
-> Hi Amit,
->
-> On Thu, May 29, 2014 at 09:15:31AM +0100, Amit Daniel Kachhap wrote:
->> This patch adds notification infrastructure for any requests related to
->> cooling
->> states. The notifier structure passed is of both Get/Set type. So the
->> receiver
->> of these can sense the new/cur/max cooling state as decided by thermal
->> governor.
->> In addition to that it can also override the cooling state and may do
->> something
->> interesting after receiving these CPU cooling events such as masking some
->> states, enabling some extra conditional states or perform any extra
->> operation
->> for aggressive thermal cooling.
->> The notfications events can be of type,
->>
->> 1. COOLING_SET_STATE_PRE
->> 2. COOLING_SET_STATE_POST
->> 3. COOLING_GET_CUR_STATE
->> 4. COOLING_GET_MAX_STATE
->>
->> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
->> ---
->>  Documentation/thermal/sysfs-api.txt |   21 +++++++++++
->>  drivers/thermal/thermal_core.c      |   69
->> ++++++++++++++++++++++++++++++++++-
->>  include/linux/thermal.h             |   21 +++++++++++
->>  3 files changed, 109 insertions(+), 2 deletions(-)
->>
->> diff --git a/Documentation/thermal/sysfs-api.txt
->> b/Documentation/thermal/sysfs-api.txt
->> index 87519cb..5f45e03 100644
->> --- a/Documentation/thermal/sysfs-api.txt
->> +++ b/Documentation/thermal/sysfs-api.txt
->> @@ -92,6 +92,27 @@ temperature) and throttle appropriate devices.
->>      It deletes the corresponding entry form /sys/class/thermal folder
->> and
->>      unbind itself from all the thermal zone devices using it.
->>
->> +1.2.3 int thermal_cooling_register_notifier(struct notifier_block *nb)
->> +
->> +    This interface function registers the client notifier handler. The
->> notifier
->> +    handler can use this to monitor or update any cooling state
->> requests.
->> +    nb: notifier structure containing client notifier handler.
->> +
->> +1.2.4 int thermal_cooling_unregister_notifier(struct notifier_block *nb)
->> +
->> +    This interface function unregisters the client notifier handler.
->> +    nb: notifier structure containing client notifier handler.
->> +
->> +1.2.5 int thermal_cooling_notify_states(struct thermal_cooling_status
->> *request,enum cooling_state_ops op)
->> +
->> +    This interface function invokes the earlier registered cooling states
->> handler.
->> +    request: holds the relevant cooling state value.
->> +	.cur_state: current cooling state.
->> +	.new_state: new cooling state to be set.
->> +	.max_state: max cooling state.
->> +	.devdata: driver private data pointer.
->> +    op: describes various operation supported.
->> +
->>  1.3 interface for binding a thermal zone device with a thermal cooling
->> device
->>  1.3.1 int thermal_zone_bind_cooling_device(struct thermal_zone_device
->> *tz,
->>  	int trip, struct thermal_cooling_device *cdev,
->> diff --git a/drivers/thermal/thermal_core.c
->> b/drivers/thermal/thermal_core.c
->> index 71b0ec0..1a60f83 100644
->> --- a/drivers/thermal/thermal_core.c
->> +++ b/drivers/thermal/thermal_core.c
->> @@ -52,6 +52,8 @@ static DEFINE_MUTEX(thermal_idr_lock);
->>  static LIST_HEAD(thermal_tz_list);
->>  static LIST_HEAD(thermal_cdev_list);
->>  static LIST_HEAD(thermal_governor_list);
->> +/* Notfier list to validates/updates the cpufreq cooling states */
->> +static BLOCKING_NOTIFIER_HEAD(cooling_state_notifier_list);
->>
->>  static DEFINE_MUTEX(thermal_list_lock);
->>  static DEFINE_MUTEX(thermal_governor_lock);
->> @@ -1073,8 +1075,71 @@ static struct class thermal_class = {
->>  };
->>
->>  /**
->> - * __thermal_cooling_device_register() - register a new thermal cooling
->> device
->> - * @np:		a pointer to a device tree node.
->> + * thermal_cooling_notify_states - Invoke the necessary cooling states
->> handler.
->> + * @request: holds the relevant cooling state value. say if the cooling
->> state
->> + * operation is of type COOLING_GET_MAX_STATE, then request holds
->> + * the current max cooling state value.
->> + * @op: different operations supported
->> + *
->> + * This API allows the registered user to recieve the different cooling
->> + * notifications like current state, max state and set state.
->> + *
->> + * Return: 0 (success)
->> + */
->> +int thermal_cooling_notify_states(struct thermal_cooling_status
->> *request,
->> +				enum cooling_state_ops op)
->> +{
->> +	/* Invoke the notifiers which have registered for this state change */
->> +	if (op == COOLING_SET_STATE_PRE ||
->> +		op == COOLING_SET_STATE_POST ||
->> +		op == COOLING_GET_MAX_STATE ||
->> +		op == COOLING_GET_CUR_STATE) {
->> +		blocking_notifier_call_chain(
->> +			&cooling_state_notifier_list, op, request);
->> +	}
->> +	return 0;
->> +}
->> +EXPORT_SYMBOL_GPL(thermal_cooling_notify_states);
->> +
->> +/**
->> + * thermal_cooling_register_notifier - registers a notifier with thermal
->> cooling.
->> + * @nb:	notifier function to register.
->> + *
->> + * Add a driver to receive all cooling notifications like current state,
->> + * max state and set state. The drivers after reading the events can
->> perform
->> + * some mapping like grouping some P states into 1 cooling state.
->> + *
->> + * Return: 0 (success)
->> + */
->> +int thermal_cooling_register_notifier(struct notifier_block *nb)
->> +{
->> +	int ret = 0;
->> +	ret = blocking_notifier_chain_register(
->> +				&cooling_state_notifier_list, nb);
->> +	return ret;
->> +}
->> +EXPORT_SYMBOL_GPL(thermal_cooling_register_notifier);
->> +
->> +/**
->> + * thermal_cooling_unregister_notifier - unregisters a notifier with
->> thermal
->> + * cooling.
->> + * @nb:	notifier function to unregister.
->> + *
->> + * Removes a driver to receive further cooling notifications.
->> + *
->> + * Return: 0 (success)
->
-> Or %-ENOENT if the notifier is not registered.
->
->> + */
->> +int thermal_cooling_unregister_notifier(struct notifier_block *nb)
->> +{
->> +	int ret = 0;
->> +	ret = blocking_notifier_chain_unregister(
->> +				&cooling_state_notifier_list, nb);
->> +	return ret;
->> +}
->> +EXPORT_SYMBOL_GPL(thermal_cooling_unregister_notifier);
->> +
->> +/**
->> + * thermal_cooling_device_register() - register a new thermal cooling
->> device
->
-> This is wrong, the function below this comment is still
-> __thermal_cooling_device_register() whose first parameter is np, not
-> type.
-I did not add this. This seems wrong. Will modify this as a fix in the version.
+On Sun, 1 Jun 2014, Peter Zijlstra wrote:
+> On Sat, May 31, 2014 at 01:33:13PM -0700, Hugh Dickins wrote:
+> > [PATCH] mm: fix sleeping function warning from __put_anon_vma
+> > 
+> > Trinity reports BUG:
+> > sleeping function called from invalid context at kernel/locking/rwsem.c:47
+> > in_atomic(): 0, irqs_disabled(): 0, pid: 5787, name: trinity-c27
+> > __might_sleep < down_write < __put_anon_vma < page_get_anon_vma <
+> > migrate_pages < compact_zone < compact_zone_order < try_to_compact_pages ..
+> > 
+> > Right, since conversion to mutex then rwsem, we should not put_anon_vma()
+> > from inside an rcu_read_lock()ed section: fix the two places that did so.
+> > 
+> > Fixes: 88c22088bf23 ("mm: optimize page_lock_anon_vma() fast-path")
+> > Reported-by: Dave Jones <davej@redhat.com>
+> > Signed-off-by: Hugh Dickins <hughd@google.com>
+> > Needs-Ack-from: Peter Zijlstra <peterz@infradead.org>
+> > ---
+> > 
+> >  mm/rmap.c |    8 ++++++--
+> >  1 file changed, 6 insertions(+), 2 deletions(-)
+> > 
+> > --- 3.15-rc7/mm/rmap.c	2014-04-13 17:24:36.680507189 -0700
+> > +++ linux/mm/rmap.c	2014-05-31 12:02:08.496088637 -0700
+> > @@ -426,12 +426,14 @@ struct anon_vma *page_get_anon_vma(struc
+> >  	 * above cannot corrupt).
+> >  	 */
+> >  	if (!page_mapped(page)) {
+> > +		rcu_read_unlock();
+> >  		put_anon_vma(anon_vma);
+> >  		anon_vma = NULL;
+> > +		goto outer;
+> >  	}
+> >  out:
+> >  	rcu_read_unlock();
+> > -
+> > +outer:
+> >  	return anon_vma;
+> >  }
+> 
+> I think we can do that without the goto if we write something like:
+> 
+> 	if (!page_mapped(page)) {
+> 		rcu_read_unlock();
+> 		put_anon_vma(anon_vma);
+> 		return NULL;
+> 	}
 
-Thanks,
-Amit
->
->>   * @type:	the thermal cooling device type.
->>   * @devdata:	device private data.
->>   * @ops:		standard thermal cooling devices callbacks.
->
-> Cheers,
-> Javi
->
->
+Yes, that was my preference too.  Then I thought we'd be accused of
+mixing early returns and gotos, so did it the goto way.  Since we
+both prefer the early return, I'll put it back to that.
+
+> 
+> > @@ -477,9 +479,10 @@ struct anon_vma *page_lock_anon_vma_read
+> >  	}
+> >  
+> >  	if (!page_mapped(page)) {
+> > +		rcu_read_unlock();
+> >  		put_anon_vma(anon_vma);
+> >  		anon_vma = NULL;
+> > -		goto out;
+> > +		goto outer;
+> >  	}
+> >  
+> >  	/* we pinned the anon_vma, its safe to sleep */
+> > @@ -501,6 +504,7 @@ struct anon_vma *page_lock_anon_vma_read
+> >  
+> >  out:
+> >  	rcu_read_unlock();
+> > +outer:
+> >  	return anon_vma;
+> >  }
+> 
+> Same here too, I suppose.
+> 
+> Interesting that we never managed to hit this one; it might also make
+> sense to put a might_sleep() in anon_vma_free().
+
+Yes, good idea, that's an excellent place for a might_sleep(): done.
+
+Though it does change the patch from a "push this out immediately" to a
+"let's wait a little to check we don't now see lots of new warnings".
+
+But that's okay, we've survived three years without it; and I saw no
+no warnings myself from the new patch, when running under load plus
+lots of page migration.
+
+> 
+> Other than that, I don't see anything really odd, then again, its sunday
+> evening and my thinking cap isn't exactly on proper.
+
+Thank you - shout if any worries arise once the cap is back on.
+I think it's fine, I just felt more comfortable bringing you in.
+
+[PATCH v2] mm: fix sleeping function warning from __put_anon_vma
+
+Trinity reports BUG:
+sleeping function called from invalid context at kernel/locking/rwsem.c:47
+in_atomic(): 0, irqs_disabled(): 0, pid: 5787, name: trinity-c27
+__might_sleep < down_write < __put_anon_vma < page_get_anon_vma <
+migrate_pages < compact_zone < compact_zone_order < try_to_compact_pages ..
+
+Right, since conversion to mutex then rwsem, we should not put_anon_vma()
+from inside an rcu_read_lock()ed section: fix the two places that did so.
+And add might_sleep() to anon_vma_free(), as suggested by Peter Zijlstra.
+
+Fixes: 88c22088bf23 ("mm: optimize page_lock_anon_vma() fast-path")
+Reported-by: Dave Jones <davej@redhat.com>
+Signed-off-by: Hugh Dickins <hughd@google.com>
+---
+v2: use early return instead of goto
+    add might_sleep in anon_vma_free
+
+ mm/rmap.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
+
+--- 3.15-rc8/mm/rmap.c	2014-04-13 17:24:36.680507189 -0700
++++ linux/mm/rmap.c	2014-06-01 13:08:24.432176737 -0700
+@@ -103,6 +103,7 @@ static inline void anon_vma_free(struct
+ 	 * LOCK should suffice since the actual taking of the lock must
+ 	 * happen _before_ what follows.
+ 	 */
++	might_sleep();
+ 	if (rwsem_is_locked(&anon_vma->root->rwsem)) {
+ 		anon_vma_lock_write(anon_vma);
+ 		anon_vma_unlock_write(anon_vma);
+@@ -426,8 +427,9 @@ struct anon_vma *page_get_anon_vma(struc
+ 	 * above cannot corrupt).
+ 	 */
+ 	if (!page_mapped(page)) {
++		rcu_read_unlock();
+ 		put_anon_vma(anon_vma);
+-		anon_vma = NULL;
++		return NULL;
+ 	}
+ out:
+ 	rcu_read_unlock();
+@@ -477,9 +479,9 @@ struct anon_vma *page_lock_anon_vma_read
+ 	}
+ 
+ 	if (!page_mapped(page)) {
++		rcu_read_unlock();
+ 		put_anon_vma(anon_vma);
+-		anon_vma = NULL;
+-		goto out;
++		return NULL;
+ 	}
+ 
+ 	/* we pinned the anon_vma, its safe to sleep */
