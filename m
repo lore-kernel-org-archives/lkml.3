@@ -1,62 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752509AbaFBHJ2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 03:09:28 -0400
-Received: from mail-ig0-f172.google.com ([209.85.213.172]:52686 "EHLO
-	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751431AbaFBHJY (ORCPT
+	id S1752575AbaFBHK5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 03:10:57 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:56984 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751431AbaFBHKz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 03:09:24 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140602022211.GN6677@dastard>
-References: <1401480116-1973111-1-git-send-email-arnd@arndb.de>
-	<538995D4.9050702@zytor.com>
-	<alpine.LFD.2.11.1405311055410.17310@knanqh.ubzr>
-	<8618458.1EVJCoVbkH@wuerfel>
-	<alpine.LFD.2.11.1406012121430.17310@knanqh.ubzr>
-	<20140602022211.GN6677@dastard>
-Date: Mon, 2 Jun 2014 09:09:23 +0200
-X-Google-Sender-Auth: ucJLYpLDnEBNYh8KUivO1xla42g
-Message-ID: <CAMuHMdX=5WEpySgtd5xvt=4ZVNesonJc7k3=GJmuVS9KEiwrMA@mail.gmail.com>
-Subject: Re: [RFC 11/32] xfs: convert to struct inode_time
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Nicolas Pitre <nicolas.pitre@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>,
-        "Joseph S. Myers" <joseph@codesourcery.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ley Foon Tan <lftan@altera.com>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>, xfs@oss.sgi.com
-Content-Type: text/plain; charset=UTF-8
+	Mon, 2 Jun 2014 03:10:55 -0400
+Date: Mon, 02 Jun 2014 00:10:53 -0700 (PDT)
+Message-Id: <20140602.001053.1333842492033184886.davem@davemloft.net>
+To: eric.dumazet@gmail.com
+Cc: amirv@mellanox.com, ogerlitz@mellanox.com, netdev@vger.kernel.org,
+        yevgenyp@mellanox.com, yuvala@mellanox.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH net-next V6 2/2] net/mlx4_en: Use affinity hint
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1401685992.3645.173.camel@edumazet-glaptop2.roam.corp.google.com>
+References: <1401683831.3645.169.camel@edumazet-glaptop2.roam.corp.google.com>
+	<20140601.215650.2131746246978305213.davem@davemloft.net>
+	<1401685992.3645.173.camel@edumazet-glaptop2.roam.corp.google.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 02 Jun 2014 00:10:55 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 2, 2014 at 4:22 AM, Dave Chinner <david@fromorbit.com> wrote:
-> Filesystems place all sorts of userspace visible limits on storage -
-> ever tried to create a file >16TB on ext4? The on-disk format
-> doesn't support it, so it returns an out of range error (E2BIG, I
-> think) if you try. XFS, OTOH, handles this just fine and so it
-> continues to work. It's exactly the same with timestamps - there's a
-> physical limit to what can sanely be stored in any given filesystem
-> and it's an *error condition* to go beyond that limit....
+From: Eric Dumazet <eric.dumazet@gmail.com>
+Date: Sun, 01 Jun 2014 22:13:12 -0700
 
-This comparison doesn't fly.
-File sizes do not depend on the current time (except for the increase of
-megapixels in your new camera ;-).
-Writing a 15 GiB file to ext4 is not something that magically stops working
-tomorrow.
+> On Sun, 2014-06-01 at 21:56 -0700, David Miller wrote:
+> 
+>> Indeed you have to provide a dummy version for a non-SMP build etc.
+>> 
+>> I'm reverting.
+>> 
+> 
+> Hi David. I think your revert took one wrong commit.
 
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Thanks I'll fix it up.
