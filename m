@@ -1,61 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752961AbaFBUFr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 16:05:47 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:57081 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752040AbaFBUFq (ORCPT
+	id S1753141AbaFBUGw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 16:06:52 -0400
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:48447 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751642AbaFBUGv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 16:05:46 -0400
-Date: Mon, 2 Jun 2014 22:05:25 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Waiman Long <waiman.long@hp.com>
-Cc: Mikulas Patocka <mpatocka@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>, jejb@parisc-linux.org,
-        deller@gmx.de, John David Anglin <dave.anglin@bell.net>,
-        linux-parisc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        paulmck@linux.vnet.ibm.com, chegu_vinod@hp.com, tglx@linutronix.de,
-        riel@redhat.com, akpm@linux-foundation.org, davidlohr@hp.com,
-        hpa@zytor.com, andi@firstfloor.org, aswin@hp.com, scott.norton@hp.com,
-        Jason Low <jason.low2@hp.com>
-Subject: Re: [PATCH v2] introduce atomic_pointer to fix a race condition in
- cancelable mcs spinlocks
-Message-ID: <20140602200525.GD13930@laptop.programming.kicks-ass.net>
-References: <alpine.LRH.2.02.1406011342470.20831@file01.intranet.prod.int.rdu2.redhat.com>
- <alpine.LRH.2.02.1406021158360.20627@file01.intranet.prod.int.rdu2.redhat.com>
- <20140602162525.GH16155@laptop.programming.kicks-ass.net>
- <20140602163032.GI16155@laptop.programming.kicks-ass.net>
- <538CB56E.5010709@hp.com>
+	Mon, 2 Jun 2014 16:06:51 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <538CB56E.5010709@hp.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <CALCETrV0ZEFipU0E64n5q44LiUV4j4Qqvnz0h_QAoddg+e7V3A@mail.gmail.com>
+References: <1400799936-26499-1-git-send-email-keescook@chromium.org>
+	<CAGXu5jLYPbJKCBvhVxfHEUFeCPJO-OBhRFufUSNy6o1N=LJ6UQ@mail.gmail.com>
+	<CALCETrV0ZEFipU0E64n5q44LiUV4j4Qqvnz0h_QAoddg+e7V3A@mail.gmail.com>
+Date: Mon, 2 Jun 2014 13:06:51 -0700
+X-Google-Sender-Auth: Ukh6Jxukjfp1SFDGVjfnscVP0Rw
+Message-ID: <CAGXu5j+YRW_+W8Z9S9O84ep-uUc4wQQRbtSu6_s8o5J2HLPUYg@mail.gmail.com>
+Subject: Re: [PATCH v5 0/6] seccomp: add PR_SECCOMP_EXT and SECCOMP_EXT_ACT_TSYNC
+From: Kees Cook <keescook@chromium.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Oleg Nesterov <oleg@redhat.com>,
+        James Morris <james.l.morris@oracle.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        LKML <linux-kernel@vger.kernel.org>, Will Drewry <wad@chromium.org>,
+        Julien Tinnes <jln@google.com>, Alexei Starovoitov <ast@plumgrid.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 02, 2014 at 01:33:34PM -0400, Waiman Long wrote:
-> On 06/02/2014 12:30 PM, Peter Zijlstra wrote:
-> >On Mon, Jun 02, 2014 at 06:25:25PM +0200, Peter Zijlstra wrote:
-> >>I'm almost inclined to just exclude parisc from using opt spinning.
-> >>
-> >>That said, this patch still doesn't address the far more interesting
-> >>problem of actually finding these issues for these few weird archs.
-> >So why do these archs provide xchg() and cmpxchg() at all? Wouldn't it
-> >be much simpler if archs that cannot sanely do this, not provide these
-> >primitives at all?
-> 
-> I believe xchg() and cmpxchg() are used in quite a number of places within
-> the generic kernel code. So kernel compilation will fail if those APIs
-> aren't provided by an architecture.
+On Mon, Jun 2, 2014 at 12:59 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> On Mon, Jun 2, 2014 at 12:47 PM, Kees Cook <keescook@chromium.org> wrote:
+>> Hi Andrew,
+>>
+>> Would you be willing to carry this series? Andy Lutomirski appears
+>> happy with it now. (Thanks again for all the feedback Andy!) If so, it
+>> has a relatively small merge conflict with the bpf changes living in
+>> net-next. Would you prefer I rebase against net-next, let sfr handle
+>> it, get carried in net-next, or some other option?
+>
+> Well, I'm still not entirely convinced that we want to have this much
+> multiplexing in a prctl, and I'm still a bit unconvinced that the code
 
-Yep.. so this is going to be painful for a while. But given their
-(parisc, sparc32, metag-lock1) constraints, who knows how many of those
-uses are actually broken.
+I don't want to get caught without interface argument flexibility
+again, so that's why the prctl interface is being set up that way.
 
-So the question is, do you prefer subtly broken code or hard compile
-fails? Me, I go for the compile fail.
+> wouldn't be better off it it were completely atomic in the sense that
+> it would either work or fail without doing anything.
 
-In any case, this all goes towards what hpa said, what are the minimal
-requirements we have for running Linux.
+Getting perfect atomic operation looks extremely hard given task
+locking. If this could get fixed in the future, it would have no
+impact on the interface. At present, the corner case of the racing
+thread is small enough that just catching the race failure is
+sufficient. If task locking is improved in the future, it could just
+simply never lose a race. Userspace still needs to handle errors no
+matter what is the non-race failure condition (mode 1 or forked
+filter) still exists.
+
+-Kees
+
+-- 
+Kees Cook
+Chrome OS Security
