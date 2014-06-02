@@ -1,67 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753691AbaFBKBX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 06:01:23 -0400
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:57916 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753033AbaFBKBV (ORCPT
+	id S1753870AbaFBKBa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 06:01:30 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:50695 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753716AbaFBKB0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 06:01:21 -0400
+	Mon, 2 Jun 2014 06:01:26 -0400
+Date: Mon, 2 Jun 2014 11:01:01 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Stanimir Varbanov <svarbanov@mm-sol.com>
+Cc: Bjorn Andersson <bjorn@kryo.se>, Kumar Gala <galak@codeaurora.org>,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Josh Cartwright <joshc@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        Jassi Brar <jaswinder.singh@linaro.org>
+Message-ID: <20140602100101.GW5099@sirena.org.uk>
+References: <1401211721-19712-1-git-send-email-bjorn.andersson@sonymobile.com>
+ <F773CDFB-2957-49C0-99D3-E9CDCE33C378@codeaurora.org>
+ <CAJAp7Ojb7PvuNYJkPyKx+iehi0bF6rdYvYmfrDz21mebxMN1qg@mail.gmail.com>
+ <538C329C.8060009@mm-sol.com>
 MIME-Version: 1.0
-In-Reply-To: <53877199.5090009@wwwdotorg.org>
-References: <cover.1400662383.git.viresh.kumar@linaro.org>
-	<dc2702973028425e3ded689a6da227658fb914c4.1400662383.git.viresh.kumar@linaro.org>
-	<537E285C.6060608@wwwdotorg.org>
-	<CAKohpomdOEspgfxNR5p=PVLCeSUYcUWZ2cWGGQo0b__ptKiYtw@mail.gmail.com>
-	<53877199.5090009@wwwdotorg.org>
-Date: Mon, 2 Jun 2014 15:31:20 +0530
-Message-ID: <CAKohpokeHPfKHBEVqAtm7d+nSDTWM+HwOQt_6BCgU=DCY=trXg@mail.gmail.com>
-Subject: Re: [PATCH V4 3/3] cpufreq: Tegra: implement intermediate frequency callbacks
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arvind Chauhan <arvind.chauhan@arm.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        Doug Anderson <dianders@chromium.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="BxNWZcw0TMazIwHZ"
+Content-Disposition: inline
+In-Reply-To: <538C329C.8060009@mm-sol.com>
+X-Cookie: Ditat Deus.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 0/3] Qualcomm Resource Power Manager driver
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29 May 2014 23:12, Stephen Warren <swarren@wwwdotorg.org> wrote:
 
-> E.g. in the following code after the series is applied:
->
->>       ret = clk_set_rate(pll_x_clk, rate * 1000);
->>       /* Restore to earlier frequency on error, i.e. pll_x */
->>       if (ret)
->>               pr_err("Failed to change pll_x to %lu\n", rate);
->>
->>       ret = clk_set_parent(cpu_clk, pll_x_clk);
->
-> If the clk_set_rate() failed, we have no idea what the pll_x rate is; I
-> don't think the clock API guarantees that zero HW changes have been made
-> if the function fails. Yet the code switches the CPU clock back to pll_x
-> without attempting to fix the pll_x rate to be the old rate. Perhaps
-> there's not much that can be done here though, since if one
-> clk_set_rate() failed, perhaps the one to fix it will too.
+--BxNWZcw0TMazIwHZ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-This was the case here with the existing driver as well. CPUFreq core
-expects this today as well and so sends reverse notification in case of
-failures.
+On Mon, Jun 02, 2014 at 11:15:24AM +0300, Stanimir Varbanov wrote:
 
-> I suspect there are other issues, like switching between pll_p/pllx
-> might not be restored on error
+> > Lately I've been working on rpm, rpm-smd, smem, smd, smsm, smp2p
+> > patches for mainline.
+> > It could be argued that smd is a bus and should go in drivers/bus, but
+> > for the rest I fear that we just created drivers/soc/qcom as another
+> > dumping ground for things; a "Qualcomm specific drivers/mfd".
 
-Another example would be useful..
+> Do we have some obstacles to not use a "common mailbox framework" for
+> this IPC (shared memory) communication. It looks that it fits very well
+> with our needs for this rpm-regulator and future submitting of smd driver?
 
-> and the EMC frequency isn't switched back, etc.
+Jassi (CCed) has been working on just such a thing.
 
-It wasn't in the existing code as well and so left it as is..
+--BxNWZcw0TMazIwHZ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTjEtaAAoJELSic+t+oim9HhgQAIXhDbMgOyUQm2sJGGoCDL+l
+ET91x9w0swFNkNfyNo59eLfekMRmGvJZ1eQ7IfDDUCTASIA5caYXL1uoFJ4zJlvF
+87Pfx1qORk7h3zsh5ozCo++jsm9Ac/U945lrSniOomezVVeFYf31gbXORV+NRAIX
+YVNNiKpyJU0t/sylgIoaOuaX+yhwxQR0L7j1vCOc5smROQZt81sBAbHnZK2iwAwT
+B7pKOPNTqOmp/wR5x6ukvV4BVKrLDLfh7cxfjEXB5iJjSWHYdSe4Fc6zmCsX0oM1
+pUDz2G+1PRJe3QUZB+Dm27T/72e4uFxBK9XTkmKjE6Ai9DIaR9TTkoYLDk44awfD
+BqIK6GNsnaXR4KH0O6/p/09dMJqamm+t6YeSVTeNoIvFHKL69VHBjO0yCUvMHAFe
+lKPojFazne+JFgEaXAwTzgEvukWRRqizv+T5c2ZLj/uSqJnrDVMzPpwizvWYTr0x
+gYlGPRYFjH+SagB8d1hKBJy/o8Ue/l8XsRengQwBR7JJkeROSjCHMdMqm+9T/SHn
+xGeUT+Lai1kmi7LmpFxzSxKzuI4L4hLWTRwAENABIx/DQrpPily9b5hjHNftKjwo
+eArzqLarFpdgY5cWlju6ydk63Np7pfvQZjJ99QhN3ksoiuWL/LPuH+oG3qr5ELu/
+0G5UrDkTOeNrVcXWp7hs
+=zHKl
+-----END PGP SIGNATURE-----
+
+--BxNWZcw0TMazIwHZ--
