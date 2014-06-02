@@ -1,182 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753059AbaFBP2H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 11:28:07 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:45206 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751493AbaFBP2F (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 11:28:05 -0400
-Subject: Re: [PATCH] uprobes/x86: Rename arch_uprobe->def into ->dflt,
- minor comment updates
-From: Jim Keniston <jkenisto@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Denys Vlasenko <dvlasenk@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20140601192520.GA14539@redhat.com>
-References: <20140601192520.GA14539@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 02 Jun 2014 08:27:59 -0700
-Message-ID: <1401722879.6113.0.camel@oc7886638347.ibm.com.usor.ibm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14060215-7164-0000-0000-000002299ECF
+	id S1752737AbaFBPbr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 11:31:47 -0400
+Received: from imap.thunk.org ([74.207.234.97]:45729 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752132AbaFBPbn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 11:31:43 -0400
+Date: Mon, 2 Jun 2014 11:31:24 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Chuck Lever <chuck.lever@oracle.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Nicolas Pitre <nicolas.pitre@linaro.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Dave Chinner <david@fromorbit.com>,
+        LKML Kernel <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
+        joseph@codesourcery.com, john.stultz@linaro.org,
+        Christoph Hellwig <hch@infradead.org>, tglx@linutronix.de,
+        geert@linux-m68k.org, lftan@altera.com,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>, xfs@oss.sgi.com,
+        Linux NFS Mailing List <linux-nfs@vger.kernel.org>
+Subject: Re: [RFC 11/32] xfs: convert to struct inode_time
+Message-ID: <20140602153124.GH30598@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Chuck Lever <chuck.lever@oracle.com>, Arnd Bergmann <arnd@arndb.de>,
+	Nicolas Pitre <nicolas.pitre@linaro.org>,
+	"H. Peter Anvin" <hpa@zytor.com>,
+	Dave Chinner <david@fromorbit.com>,
+	LKML Kernel <linux-kernel@vger.kernel.org>,
+	linux-arch@vger.kernel.org, joseph@codesourcery.com,
+	john.stultz@linaro.org, Christoph Hellwig <hch@infradead.org>,
+	tglx@linutronix.de, geert@linux-m68k.org, lftan@altera.com,
+	linux-fsdevel <linux-fsdevel@vger.kernel.org>, xfs@oss.sgi.com,
+	Linux NFS Mailing List <linux-nfs@vger.kernel.org>
+References: <1401480116-1973111-1-git-send-email-arnd@arndb.de>
+ <8618458.1EVJCoVbkH@wuerfel>
+ <alpine.LFD.2.11.1406012121430.17310@knanqh.ubzr>
+ <4178301.j9kWdGCRLC@wuerfel>
+ <6868F108-F0B2-423F-AE31-90DF86A5B7DD@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <6868F108-F0B2-423F-AE31-90DF86A5B7DD@oracle.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2014-06-01 at 21:25 +0200, Oleg Nesterov wrote:
-> Purely cosmetic, no changes in .o,
+On Mon, Jun 02, 2014 at 11:04:23AM -0400, Chuck Lever wrote:
+> I’m wondering what should be done about NFS. A solution for NFS should
+> match any scheme that is considered for local file systems, IMO.
 > 
-> 1. As Jim pointed out arch_uprobe->def looks ambiguous, rename it to
->    ->dflt.
-> 
-> 2. Add the comment into default_post_xol_op() to explain "regs->sp +=".
-> 
-> 3. Remove the stale part of the comment in arch_uprobe_analyze_insn().
-> 
-> Suggested-by: Jim Keniston <jkenisto@us.ibm.com>
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-
-Looks good.  Thanks.
-
-Reviewed-by: Jim Keniston <jkenisto@us.ibm.com>
-
-> ---
->  arch/x86/include/asm/uprobes.h |    2 +-
->  arch/x86/kernel/uprobes.c      |   37 ++++++++++++++++++-------------------
->  2 files changed, 19 insertions(+), 20 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/uprobes.h b/arch/x86/include/asm/uprobes.h
-> index 7be3c07..b3d9442 100644
-> --- a/arch/x86/include/asm/uprobes.h
-> +++ b/arch/x86/include/asm/uprobes.h
-> @@ -52,7 +52,7 @@ struct arch_uprobe {
->  		struct {
->  			u8	fixups;
->  			u8	ilen;
-> -		} 			def;
-> +		} 			dflt;
->  	};
->  };
-> 
-> diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
-> index fcf6279..33e239f 100644
-> --- a/arch/x86/kernel/uprobes.c
-> +++ b/arch/x86/kernel/uprobes.c
-> @@ -254,7 +254,7 @@ static inline bool is_64bit_mm(struct mm_struct *mm)
->   * If arch_uprobe->insn doesn't use rip-relative addressing, return
->   * immediately.  Otherwise, rewrite the instruction so that it accesses
->   * its memory operand indirectly through a scratch register.  Set
-> - * def->fixups accordingly. (The contents of the scratch register
-> + * dflt->fixups accordingly. (The contents of the scratch register
->   * will be saved before we single-step the modified instruction,
->   * and restored afterward).
->   *
-> @@ -372,14 +372,14 @@ static void riprel_analyze(struct arch_uprobe *auprobe, struct insn *insn)
->  	 */
->  	if (reg != 6 && reg2 != 6) {
->  		reg2 = 6;
-> -		auprobe->def.fixups |= UPROBE_FIX_RIP_SI;
-> +		auprobe->dflt.fixups |= UPROBE_FIX_RIP_SI;
->  	} else if (reg != 7 && reg2 != 7) {
->  		reg2 = 7;
-> -		auprobe->def.fixups |= UPROBE_FIX_RIP_DI;
-> +		auprobe->dflt.fixups |= UPROBE_FIX_RIP_DI;
->  		/* TODO (paranoia): force maskmovq to not use di */
->  	} else {
->  		reg2 = 3;
-> -		auprobe->def.fixups |= UPROBE_FIX_RIP_BX;
-> +		auprobe->dflt.fixups |= UPROBE_FIX_RIP_BX;
->  	}
->  	/*
->  	 * Point cursor at the modrm byte.  The next 4 bytes are the
-> @@ -398,9 +398,9 @@ static void riprel_analyze(struct arch_uprobe *auprobe, struct insn *insn)
->  static inline unsigned long *
->  scratch_reg(struct arch_uprobe *auprobe, struct pt_regs *regs)
->  {
-> -	if (auprobe->def.fixups & UPROBE_FIX_RIP_SI)
-> +	if (auprobe->dflt.fixups & UPROBE_FIX_RIP_SI)
->  		return &regs->si;
-> -	if (auprobe->def.fixups & UPROBE_FIX_RIP_DI)
-> +	if (auprobe->dflt.fixups & UPROBE_FIX_RIP_DI)
->  		return &regs->di;
->  	return &regs->bx;
->  }
-> @@ -411,18 +411,18 @@ scratch_reg(struct arch_uprobe *auprobe, struct pt_regs *regs)
->   */
->  static void riprel_pre_xol(struct arch_uprobe *auprobe, struct pt_regs *regs)
->  {
-> -	if (auprobe->def.fixups & UPROBE_FIX_RIP_MASK) {
-> +	if (auprobe->dflt.fixups & UPROBE_FIX_RIP_MASK) {
->  		struct uprobe_task *utask = current->utask;
->  		unsigned long *sr = scratch_reg(auprobe, regs);
-> 
->  		utask->autask.saved_scratch_register = *sr;
-> -		*sr = utask->vaddr + auprobe->def.ilen;
-> +		*sr = utask->vaddr + auprobe->dflt.ilen;
->  	}
->  }
-> 
->  static void riprel_post_xol(struct arch_uprobe *auprobe, struct pt_regs *regs)
->  {
-> -	if (auprobe->def.fixups & UPROBE_FIX_RIP_MASK) {
-> +	if (auprobe->dflt.fixups & UPROBE_FIX_RIP_MASK) {
->  		struct uprobe_task *utask = current->utask;
->  		unsigned long *sr = scratch_reg(auprobe, regs);
-> 
-> @@ -499,16 +499,16 @@ static int default_post_xol_op(struct arch_uprobe *auprobe, struct pt_regs *regs
->  	struct uprobe_task *utask = current->utask;
-> 
->  	riprel_post_xol(auprobe, regs);
-> -	if (auprobe->def.fixups & UPROBE_FIX_IP) {
-> +	if (auprobe->dflt.fixups & UPROBE_FIX_IP) {
->  		long correction = utask->vaddr - utask->xol_vaddr;
->  		regs->ip += correction;
-> -	} else if (auprobe->def.fixups & UPROBE_FIX_CALL) {
-> -		regs->sp += sizeof_long();
-> -		if (push_ret_address(regs, utask->vaddr + auprobe->def.ilen))
-> +	} else if (auprobe->dflt.fixups & UPROBE_FIX_CALL) {
-> +		regs->sp += sizeof_long(); /* Pop incorrect return address */
-> +		if (push_ret_address(regs, utask->vaddr + auprobe->dflt.ilen))
->  			return -ERESTART;
->  	}
->  	/* popf; tell the caller to not touch TF */
-> -	if (auprobe->def.fixups & UPROBE_FIX_SETF)
-> +	if (auprobe->dflt.fixups & UPROBE_FIX_SETF)
->  		utask->autask.saved_tf = true;
-> 
->  	return 0;
-> @@ -711,12 +711,11 @@ int arch_uprobe_analyze_insn(struct arch_uprobe *auprobe, struct mm_struct *mm,
-> 
->  	/*
->  	 * Figure out which fixups default_post_xol_op() will need to perform,
-> -	 * and annotate def->fixups accordingly. To start with, ->fixups is
-> -	 * either zero or it reflects rip-related fixups.
-> +	 * and annotate dflt->fixups accordingly.
->  	 */
->  	switch (OPCODE1(&insn)) {
->  	case 0x9d:		/* popf */
-> -		auprobe->def.fixups |= UPROBE_FIX_SETF;
-> +		auprobe->dflt.fixups |= UPROBE_FIX_SETF;
->  		break;
->  	case 0xc3:		/* ret or lret -- ip is correct */
->  	case 0xcb:
-> @@ -742,8 +741,8 @@ int arch_uprobe_analyze_insn(struct arch_uprobe *auprobe, struct mm_struct *mm,
->  		riprel_analyze(auprobe, &insn);
->  	}
-> 
-> -	auprobe->def.ilen = insn.length;
-> -	auprobe->def.fixups |= fix_ip_or_call;
-> +	auprobe->dflt.ilen = insn.length;
-> +	auprobe->dflt.fixups |= fix_ip_or_call;
-> 
->  	auprobe->ops = &default_xol_ops;
->  	return 0;
+> An alternative would be to “cap” the timestamps transmitted via NFSv3 by
+> Linux, so that a pre-epoch timestamp is transmitted as zero, and a large
+> timestamp is transmitted as UINT_MAX.
 
 
+I wonder if it would make sense to try to promulgate via the Austin
+group, and possibly the C standards committee the concept of a bit
+pattern (that might commonly be INT_MAX or UINT_MAX) that means "time
+unknown", or "time indefinite" or "we couldn't encode the time".
+
+We would then teach gmtime(3) and asctime(3) to print some appropriate
+message, and we could teach programs like find (with the -mtime)
+option, make, tmpwatch, et. al., that they can't make any presumption
+about the comparibility of any timestamp which has a value of
+TIME_UNDEFINIED.
+
+It would be problematic for time(2) or gettimeofday(2) to return
+TIME_UNDEFINED, since there are programs that care about time ticking
+forward, but I could imagine a new interface which would be permitted
+to return a flag indicating that we don't know the current time
+(because the CMOS battery had run down, etc.) so instead we're going
+to be counting the number of seconds since the system was booted.
+
+    	      	      	    	       - Ted
