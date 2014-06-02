@@ -1,72 +1,272 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751617AbaFBEVS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 00:21:18 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:56605 "EHLO
+	id S1751364AbaFBEce (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 00:32:34 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:33138 "EHLO
 	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750702AbaFBEVQ (ORCPT
+	with ESMTP id S1750724AbaFBEcc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 00:21:16 -0400
-X-Original-SENDERIP: 10.177.220.145
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Mon, 2 Jun 2014 13:24:36 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Vladimir Davydov <vdavydov@parallels.com>
-Cc: Christoph Lameter <cl@gentwo.org>, akpm@linux-foundation.org,
-        hannes@cmpxchg.org, mhocko@suse.cz, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH -mm 7/8] slub: make dead caches discard free slabs
- immediately
-Message-ID: <20140602042435.GA17964@js1304-P5Q-DELUXE>
-References: <cover.1401457502.git.vdavydov@parallels.com>
- <5d2fbc894a2c62597e7196bb1ebb8357b15529ab.1401457502.git.vdavydov@parallels.com>
- <alpine.DEB.2.10.1405300955120.11943@gentwo.org>
- <20140531110456.GC25076@esperanza>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140531110456.GC25076@esperanza>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 2 Jun 2014 00:32:32 -0400
+X-Original-SENDERIP: 10.177.220.169
+X-Original-MAILFROM: minchan@kernel.org
+From: Minchan Kim <minchan@kernel.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Ingo Molnar <mingo@kernel.org>, fweisbec@gmail.com,
+        linux-kernel@vger.kernel.org, Minchan Kim <minchan@kernel.org>
+Subject: [PATCH v2] ftrace: print max callstack
+Date: Mon,  2 Jun 2014 13:33:12 +0900
+Message-Id: <1401683592-1651-1-git-send-email-minchan@kernel.org>
+X-Mailer: git-send-email 1.9.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 31, 2014 at 03:04:58PM +0400, Vladimir Davydov wrote:
-> On Fri, May 30, 2014 at 09:57:10AM -0500, Christoph Lameter wrote:
-> > On Fri, 30 May 2014, Vladimir Davydov wrote:
-> > 
-> > > (3) is a bit more difficult, because slabs are added to per-cpu partial
-> > > lists lock-less. Fortunately, we only have to handle the __slab_free
-> > > case, because, as there shouldn't be any allocation requests dispatched
-> > > to a dead memcg cache, get_partial_node() should never be called. In
-> > > __slab_free we use cmpxchg to modify kmem_cache_cpu->partial (see
-> > > put_cpu_partial) so that setting ->partial to a special value, which
-> > > will make put_cpu_partial bail out, will do the trick.
-> > >
-> > > Note, this shouldn't affect performance, because keeping empty slabs on
-> > > per node lists as well as using per cpu partials are only worthwhile if
-> > > the cache is used for allocations, which isn't the case for dead caches.
-> > 
-> > This all sounds pretty good to me but we still have some pretty extensive
-> > modifications that I would rather avoid.
-> > 
-> > In put_cpu_partial you can simply check that the memcg is dead right? This
-> > would avoid all the other modifications I would think and will not require
-> > a special value for the per cpu partial pointer.
-> 
-> That would be racy. The check if memcg is dead and the write to per cpu
-> partial ptr wouldn't proceed as one atomic operation. If we set the dead
-> flag from another thread between these two operations, put_cpu_partial
-> will add a slab to a per cpu partial list *after* the cache was zapped.
+While I played with my own feature(ex, something on the way to reclaim),
+kernel went to oops easily. I guessed reason would be stack overflow
+and wanted to prove it.
 
-Hello, Vladimir.
+I found stack tracer which would be very useful for me but kernel went
+oops before my user program gather the information via
+"watch cat /sys/kernel/debug/tracing/stack_trace" so I couldn't get any
+message from that. What I want was that emit the kernel stack usage
+when kernel goes oops so I could find what's the stack hogger.
 
-I think that we can do (3) easily.
-If we check memcg_cache_dead() in the end of put_cpu_partial() rather
-than in the begin of put_cpu_partial(), we can avoid the race you 
-mentioned. If someone do put_cpu_partial() before dead flag is set,
-it can be zapped by who set dead flag. And if someone do
-put_cpu_partial() after dead flag is set, it can be zapped by who
-do put_cpu_partial().
+This patch shows callstack of max stack usage right before oops so
+we can find a culprit.
 
-Thanks.
+So, the result is as follows.
+
+[ 1116.522206] init: lightdm main process (1246) terminated with status 1
+[ 1119.922916] init: failsafe-x main process (1272) terminated with status 1
+[ 3887.728131] kworker/u24:1 (6637) used greatest stack depth: 256 bytes left
+[ 6397.629227] cc1 (9554) used greatest stack depth: 128 bytes left
+[ 7174.467392]         Depth    Size   Location    (47 entries)
+[ 7174.467392]         -----    ----   --------
+[ 7174.467785]   0)     7248     256   get_page_from_freelist+0xa7/0x920
+[ 7174.468506]   1)     6992     352   __alloc_pages_nodemask+0x1cd/0xb20
+[ 7174.469224]   2)     6640       8   alloc_pages_current+0x10f/0x1f0
+[ 7174.469413]   3)     6632     168   new_slab+0x2c5/0x370
+[ 7174.469413]   4)     6464       8   __slab_alloc+0x3a9/0x501
+[ 7174.469413]   5)     6456      80   __kmalloc+0x1cb/0x200
+[ 7174.469413]   6)     6376     376   vring_add_indirect+0x36/0x200
+[ 7174.469413]   7)     6000     144   virtqueue_add_sgs+0x2e2/0x320
+[ 7174.469413]   8)     5856     288   __virtblk_add_req+0xda/0x1b0
+[ 7174.469413]   9)     5568      96   virtio_queue_rq+0xd3/0x1d0
+[ 7174.469413]  10)     5472     128   __blk_mq_run_hw_queue+0x1ef/0x440
+[ 7174.469413]  11)     5344      16   blk_mq_run_hw_queue+0x35/0x40
+[ 7174.469413]  12)     5328      96   blk_mq_insert_requests+0xdb/0x160
+[ 7174.469413]  13)     5232     112   blk_mq_flush_plug_list+0x12b/0x140
+[ 7174.469413]  14)     5120     112   blk_flush_plug_list+0xc7/0x220
+[ 7174.469413]  15)     5008      64   io_schedule_timeout+0x88/0x100
+[ 7174.469413]  16)     4944     128   mempool_alloc+0x145/0x170
+[ 7174.469413]  17)     4816      96   bio_alloc_bioset+0x10b/0x1d0
+[ 7174.469413]  18)     4720      48   get_swap_bio+0x30/0x90
+[ 7174.469413]  19)     4672     160   __swap_writepage+0x150/0x230
+[ 7174.469413]  20)     4512      32   swap_writepage+0x42/0x90
+[ 7174.469413]  21)     4480     320   shrink_page_list+0x676/0xa80
+[ 7174.469413]  22)     4160     208   shrink_inactive_list+0x262/0x4e0
+[ 7174.469413]  23)     3952     304   shrink_lruvec+0x3e1/0x6a0
+[ 7174.469413]  24)     3648      80   shrink_zone+0x3f/0x110
+[ 7174.469413]  25)     3568     128   do_try_to_free_pages+0x156/0x4c0
+[ 7174.469413]  26)     3440     208   try_to_free_pages+0xf7/0x1e0
+[ 7174.469413]  27)     3232     352   __alloc_pages_nodemask+0x783/0xb20
+[ 7174.469413]  28)     2880       8   alloc_pages_current+0x10f/0x1f0
+[ 7174.469413]  29)     2872     200   __page_cache_alloc+0x13f/0x160
+[ 7174.469413]  30)     2672      80   find_or_create_page+0x4c/0xb0
+[ 7174.469413]  31)     2592      80   ext4_mb_load_buddy+0x1e9/0x370
+[ 7174.469413]  32)     2512     176   ext4_mb_regular_allocator+0x1b7/0x460
+[ 7174.469413]  33)     2336     128   ext4_mb_new_blocks+0x458/0x5f0
+[ 7174.469413]  34)     2208     256   ext4_ext_map_blocks+0x70b/0x1010
+[ 7174.469413]  35)     1952     160   ext4_map_blocks+0x325/0x530
+[ 7174.469413]  36)     1792     384   ext4_writepages+0x6d1/0xce0
+[ 7174.469413]  37)     1408      16   do_writepages+0x23/0x40
+[ 7174.469413]  38)     1392      96   __writeback_single_inode+0x45/0x2e0
+[ 7174.469413]  39)     1296     176   writeback_sb_inodes+0x2ad/0x500
+[ 7174.469413]  40)     1120      80   __writeback_inodes_wb+0x9e/0xd0
+[ 7174.469413]  41)     1040     160   wb_writeback+0x29b/0x350
+[ 7174.469413]  42)      880     208   bdi_writeback_workfn+0x11c/0x480
+[ 7174.469413]  43)      672     144   process_one_work+0x1d2/0x570
+[ 7174.469413]  44)      528     112   worker_thread+0x116/0x370
+[ 7174.469413]  45)      416     240   kthread+0xf3/0x110
+[ 7174.469413]  46)      176     176   ret_from_fork+0x7c/0xb0
+[ 7174.469413] ------------[ cut here ]------------
+[ 7174.469413] kernel BUG at kernel/trace/trace_stack.c:174!
+[ 7174.469413] invalid opcode: 0000 [#1] SMP DEBUG_PAGEALLOC
+[ 7174.469413] Dumping ftrace buffer:
+[ 7174.469413]    (ftrace buffer empty)
+[ 7174.469413] Modules linked in:
+[ 7174.469413] CPU: 0 PID: 440 Comm: kworker/u24:0 Not tainted 3.14.0+ #212
+[ 7174.469413] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+[ 7174.469413] Workqueue: writeback bdi_writeback_workfn (flush-253:0)
+[ 7174.469413] task: ffff880034170000 ti: ffff880029518000 task.ti: ffff880029518000
+[ 7174.469413] RIP: 0010:[<ffffffff8112336e>]  [<ffffffff8112336e>] stack_trace_call+0x2de/0x340
+[ 7174.469413] RSP: 0000:ffff880029518290  EFLAGS: 00010046
+[ 7174.469413] RAX: 0000000000000030 RBX: 000000000000002f RCX: 0000000000000000
+[ 7174.469413] RDX: 0000000000000000 RSI: 000000000000002f RDI: ffffffff810b7159
+[ 7174.469413] RBP: ffff8800295182f0 R08: ffffffffffffffff R09: 0000000000000000
+[ 7174.469413] R10: 0000000000000001 R11: 0000000000000001 R12: ffffffff82768dfc
+[ 7174.469413] R13: 000000000000f2e8 R14: ffff8800295182b8 R15: 00000000000000f8
+[ 7174.469413] FS:  0000000000000000(0000) GS:ffff880037c00000(0000) knlGS:0000000000000000
+[ 7174.469413] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[ 7174.469413] CR2: 00002acd0b994000 CR3: 0000000001c0b000 CR4: 00000000000006f0
+[ 7174.469413] Stack:
+[ 7174.469413]  0000000000000000 ffffffff8114fdb7 0000000000000087 0000000000001c50
+[ 7174.469413]  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+[ 7174.469413]  0000000000000002 ffff880034170000 ffff880034171028 0000000000000000
+[ 7174.469413] Call Trace:
+[ 7174.469413]  [<ffffffff8114fdb7>] ? get_page_from_freelist+0xa7/0x920
+[ 7174.469413]  [<ffffffff816eee3f>] ftrace_call+0x5/0x2f
+[ 7174.469413]  [<ffffffff81165065>] ? next_zones_zonelist+0x5/0x70
+[ 7174.469413]  [<ffffffff810a23fa>] ? __bfs+0x11a/0x270
+[ 7174.469413]  [<ffffffff81165065>] ? next_zones_zonelist+0x5/0x70
+[ 7174.469413]  [<ffffffff8114fdb7>] ? get_page_from_freelist+0xa7/0x920
+[ 7174.469413]  [<ffffffff8119092f>] ? alloc_pages_current+0x10f/0x1f0
+[ 7174.469413]  [<ffffffff811507fd>] __alloc_pages_nodemask+0x1cd/0xb20
+[ 7174.469413]  [<ffffffff810a4de6>] ? check_irq_usage+0x96/0xe0
+[ 7174.469413]  [<ffffffff816eee3f>] ? ftrace_call+0x5/0x2f
+[ 7174.469413]  [<ffffffff8119092f>] alloc_pages_current+0x10f/0x1f0
+[ 7174.469413]  [<ffffffff81199cd5>] ? new_slab+0x2c5/0x370
+[ 7174.469413]  [<ffffffff81199cd5>] new_slab+0x2c5/0x370
+[ 7174.469413]  [<ffffffff816eee3f>] ? ftrace_call+0x5/0x2f
+[ 7174.469413]  [<ffffffff816db002>] __slab_alloc+0x3a9/0x501
+[ 7174.469413]  [<ffffffff8119af8b>] ? __kmalloc+0x1cb/0x200
+[ 7174.469413]  [<ffffffff8141dc46>] ? vring_add_indirect+0x36/0x200
+[ 7174.469413]  [<ffffffff8141dc46>] ? vring_add_indirect+0x36/0x200
+[ 7174.469413]  [<ffffffff8141dc46>] ? vring_add_indirect+0x36/0x200
+[ 7174.469413]  [<ffffffff8119af8b>] __kmalloc+0x1cb/0x200
+[ 7174.469413]  [<ffffffff8141de10>] ? vring_add_indirect+0x200/0x200
+[ 7174.469413]  [<ffffffff8141dc46>] vring_add_indirect+0x36/0x200
+[ 7174.469413]  [<ffffffff8141e402>] virtqueue_add_sgs+0x2e2/0x320
+[ 7174.469413]  [<ffffffff8148e35a>] __virtblk_add_req+0xda/0x1b0
+[ 7174.469413]  [<ffffffff8148e503>] virtio_queue_rq+0xd3/0x1d0
+[ 7174.469413]  [<ffffffff8134aa0f>] __blk_mq_run_hw_queue+0x1ef/0x440
+[ 7174.469413]  [<ffffffff8134b0d5>] blk_mq_run_hw_queue+0x35/0x40
+[ 7174.469413]  [<ffffffff8134b7bb>] blk_mq_insert_requests+0xdb/0x160
+[ 7174.469413]  [<ffffffff8134be5b>] blk_mq_flush_plug_list+0x12b/0x140
+[ 7174.469413]  [<ffffffff81342237>] blk_flush_plug_list+0xc7/0x220
+[ 7174.469413]  [<ffffffff816e60ef>] ? _raw_spin_unlock_irqrestore+0x3f/0x70
+[ 7174.469413]  [<ffffffff816e16e8>] io_schedule_timeout+0x88/0x100
+[ 7174.469413]  [<ffffffff816e1665>] ? io_schedule_timeout+0x5/0x100
+[ 7174.469413]  [<ffffffff81149415>] mempool_alloc+0x145/0x170
+[ 7174.469413]  [<ffffffff8109baf0>] ? __init_waitqueue_head+0x60/0x60
+[ 7174.469413]  [<ffffffff811e246b>] bio_alloc_bioset+0x10b/0x1d0
+[ 7174.469413]  [<ffffffff81184230>] ? end_swap_bio_read+0xc0/0xc0
+[ 7174.469413]  [<ffffffff81184230>] ? end_swap_bio_read+0xc0/0xc0
+[ 7174.469413]  [<ffffffff81184110>] get_swap_bio+0x30/0x90
+[ 7174.469413]  [<ffffffff81184230>] ? end_swap_bio_read+0xc0/0xc0
+[ 7174.469413]  [<ffffffff81184660>] __swap_writepage+0x150/0x230
+[ 7174.469413]  [<ffffffff810ab405>] ? do_raw_spin_unlock+0x5/0xa0
+[ 7174.469413]  [<ffffffff81184230>] ? end_swap_bio_read+0xc0/0xc0
+[ 7174.469413]  [<ffffffff81184515>] ? __swap_writepage+0x5/0x230
+[ 7174.469413]  [<ffffffff81184782>] swap_writepage+0x42/0x90
+[ 7174.469413]  [<ffffffff8115ae96>] shrink_page_list+0x676/0xa80
+[ 7174.469413]  [<ffffffff816eee3f>] ? ftrace_call+0x5/0x2f
+[ 7174.469413]  [<ffffffff8115b872>] shrink_inactive_list+0x262/0x4e0
+[ 7174.469413]  [<ffffffff8115c1c1>] shrink_lruvec+0x3e1/0x6a0
+[ 7174.469413]  [<ffffffff8115c4bf>] shrink_zone+0x3f/0x110
+[ 7174.469413]  [<ffffffff816eee3f>] ? ftrace_call+0x5/0x2f
+[ 7174.469413]  [<ffffffff8115c9e6>] do_try_to_free_pages+0x156/0x4c0
+[ 7174.469413]  [<ffffffff8115cf47>] try_to_free_pages+0xf7/0x1e0
+[ 7174.469413]  [<ffffffff81150db3>] __alloc_pages_nodemask+0x783/0xb20
+[ 7174.469413]  [<ffffffff8119092f>] alloc_pages_current+0x10f/0x1f0
+[ 7174.469413]  [<ffffffff81145c0f>] ? __page_cache_alloc+0x13f/0x160
+[ 7174.469413]  [<ffffffff81145c0f>] __page_cache_alloc+0x13f/0x160
+[ 7174.469413]  [<ffffffff81146c6c>] find_or_create_page+0x4c/0xb0
+[ 7174.469413]  [<ffffffff811463e5>] ? find_get_page+0x5/0x130
+[ 7174.469413]  [<ffffffff812837b9>] ext4_mb_load_buddy+0x1e9/0x370
+[ 7174.469413]  [<ffffffff81284c07>] ext4_mb_regular_allocator+0x1b7/0x460
+[ 7174.469413]  [<ffffffff81281070>] ? ext4_mb_use_preallocated+0x40/0x360
+[ 7174.469413]  [<ffffffff816eee3f>] ? ftrace_call+0x5/0x2f
+[ 7174.469413]  [<ffffffff81287eb8>] ext4_mb_new_blocks+0x458/0x5f0
+[ 7174.469413]  [<ffffffff8127d83b>] ext4_ext_map_blocks+0x70b/0x1010
+[ 7174.469413]  [<ffffffff8124e6d5>] ext4_map_blocks+0x325/0x530
+[ 7174.469413]  [<ffffffff81253871>] ext4_writepages+0x6d1/0xce0
+[ 7174.469413]  [<ffffffff812531a0>] ? ext4_journalled_write_end+0x330/0x330
+[ 7174.469413]  [<ffffffff811539b3>] do_writepages+0x23/0x40
+[ 7174.469413]  [<ffffffff811d2365>] __writeback_single_inode+0x45/0x2e0
+[ 7174.469413]  [<ffffffff811d36ed>] writeback_sb_inodes+0x2ad/0x500
+[ 7174.469413]  [<ffffffff811d39de>] __writeback_inodes_wb+0x9e/0xd0
+[ 7174.469413]  [<ffffffff811d40bb>] wb_writeback+0x29b/0x350
+[ 7174.469413]  [<ffffffff81057c3d>] ? __local_bh_enable_ip+0x6d/0xd0
+[ 7174.469413]  [<ffffffff811d6e9c>] bdi_writeback_workfn+0x11c/0x480
+[ 7174.469413]  [<ffffffff81070610>] ? process_one_work+0x170/0x570
+[ 7174.469413]  [<ffffffff81070672>] process_one_work+0x1d2/0x570
+[ 7174.469413]  [<ffffffff81070610>] ? process_one_work+0x170/0x570
+[ 7174.469413]  [<ffffffff81071bb6>] worker_thread+0x116/0x370
+[ 7174.469413]  [<ffffffff81071aa0>] ? manage_workers.isra.19+0x2e0/0x2e0
+[ 7174.469413]  [<ffffffff81078e53>] kthread+0xf3/0x110
+[ 7174.469413]  [<ffffffff81078d60>] ? flush_kthread_worker+0x150/0x150
+[ 7174.469413]  [<ffffffff816ef0ec>] ret_from_fork+0x7c/0xb0
+[ 7174.469413]  [<ffffffff81078d60>] ? flush_kthread_worker+0x150/0x150
+[ 7174.469413] Code: c0 49 bc fc 8d 76 82 ff ff ff ff e8 44 5a 5b 00 31 f6 8b 05 95 2b b3 00 48 39 c6 7d 0e 4c 8b 04 f5 20 5f c5 81 49 83 f8 ff 75 11 <0f> 0b 48 63 05 71 5a 64 01 48 29 c3 e9 d0 fd ff ff 48 8d 5e 01
+[ 7174.469413] RIP  [<ffffffff8112336e>] stack_trace_call+0x2de/0x340
+[ 7174.469413]  RSP <ffff880029518290>
+[ 7174.469413] ---[ end trace c97d325b36b718f3 ]---
+
+* from v1
+  - Use printk - Steve
+  - Do not break strings due to silly 80 character - Steve
+
+Signed-off-by: Minchan Kim <minchan@kernel.org>
+---
+ kernel/trace/trace_stack.c | 34 ++++++++++++++++++++++++++++++----
+ 1 file changed, 30 insertions(+), 4 deletions(-)
+
+diff --git a/kernel/trace/trace_stack.c b/kernel/trace/trace_stack.c
+index 21b320e5d163..0e312d7347b9 100644
+--- a/kernel/trace/trace_stack.c
++++ b/kernel/trace/trace_stack.c
+@@ -51,11 +51,33 @@ static DEFINE_MUTEX(stack_sysctl_mutex);
+ int stack_tracer_enabled;
+ static int last_stack_tracer_enabled;
+ 
++static inline void print_max_stack(void)
++{
++	long i;
++	int size;
++
++	pr_emerg("        Depth    Size   Location    (%d entries)\n"
++			   "        -----    ----   --------\n",
++			   max_stack_trace.nr_entries - 1);
++
++	for (i = 0; i < max_stack_trace.nr_entries; i++) {
++		if (stack_dump_trace[i] == ULONG_MAX)
++			break;
++		if (i+1 == max_stack_trace.nr_entries ||
++				stack_dump_trace[i+1] == ULONG_MAX)
++			size = stack_dump_index[i];
++		else
++			size = stack_dump_index[i] - stack_dump_index[i+1];
++
++		pr_emerg("%3ld) %8d   %5d   %pS\n", i, stack_dump_index[i],
++				size, (void *)stack_dump_trace[i]);
++	}
++}
++
+ static inline void
+ check_stack(unsigned long ip, unsigned long *stack)
+ {
+-	unsigned long this_size, flags;
+-	unsigned long *p, *top, *start;
++	unsigned long this_size, flags; unsigned long *p, *top, *start;
+ 	static int tracer_frame;
+ 	int frame_size = ACCESS_ONCE(tracer_frame);
+ 	int i;
+@@ -145,8 +167,12 @@ check_stack(unsigned long ip, unsigned long *stack)
+ 			i++;
+ 	}
+ 
+-	BUG_ON(current != &init_task &&
+-		*(end_of_stack(current)) != STACK_END_MAGIC);
++	if ((current != &init_task &&
++		*(end_of_stack(current)) != STACK_END_MAGIC)) {
++		print_max_stack();
++		BUG();
++	}
++
+  out:
+ 	arch_spin_unlock(&max_stack_lock);
+ 	local_irq_restore(flags);
+-- 
+1.9.2
+
