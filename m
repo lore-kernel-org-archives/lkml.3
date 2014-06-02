@@ -1,264 +1,224 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754266AbaFBLwE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 07:52:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33147 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753242AbaFBLwB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 07:52:01 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Prarit Bhargava <prarit@redhat.com>, Oren Twaig <oren@scalemp.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Borislav Petkov <bp@suse.de>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <ak@linux.intel.com>, Dave Jones <davej@redhat.com>,
-        Torsten Kaiser <just.for.lkml@googlemail.com>,
-        Jan Beulich <JBeulich@suse.com>, Jan Kiszka <jan.kiszka@siemens.com>,
-        Toshi Kani <toshi.kani@hp.com>, Andrew Jones <drjones@redhat.com>
-Subject: [PATCH] x86, Clean up smp_num_siblings calculation
-Date: Mon,  2 Jun 2014 07:51:32 -0400
-Message-Id: <1401709892-9586-1-git-send-email-prarit@redhat.com>
+	id S1754336AbaFBLw4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 07:52:56 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:20463 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753137AbaFBLwy convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 07:52:54 -0400
+X-AuditID: cbfee690-b7fb56d000003439-db-538c65934f20
+From: Namjae Jeon <namjae.jeon@samsung.com>
+To: "=?iso-8859-2?Q?'Luk=E1=B9_Czerner'?=" <lczerner@redhat.com>
+Cc: "'Dave Chinner'" <david@fromorbit.com>, "'Theodore Ts'o'" <tytso@mit.edu>,
+        "'linux-ext4'" <linux-ext4@vger.kernel.org>, xfs@oss.sgi.com,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "'Ashish Sangwan'" <a.sangwan@samsung.com>
+References: <003601cf6aa7$883103b0$98930b10$@samsung.com>
+ <alpine.LFD.2.00.1405301238190.2009@localhost.localdomain>
+ <000d01cf7ca3$98335c50$c89a14f0$@samsung.com>
+ <alpine.LFD.2.00.1406021204540.2231@localhost.localdomain>
+In-reply-to: <alpine.LFD.2.00.1406021204540.2231@localhost.localdomain>
+Subject: RE: [PATCH v2 0/10] fs: Introduce FALLOC_FL_INSERT_RANGE for fallocate
+Date: Mon, 02 Jun 2014 20:52:51 +0900
+Message-id: <002201cf7e59$2e684c10$8b38e430$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=iso-8859-2
+Content-transfer-encoding: 8BIT
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQOcBKJD5lk5ojpc7FDcCMzPaSWP+QCjXdQQAXmE8b8CRXdbEJehkH8A
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrFIsWRmVeSWpSXmKPExsWyRsSkQHdyak+wwe+JKhZLJ15itthy7B6j
+	xbIHm1ksZs67w2axZ+9JFovLu+awWbT2/GS3WNR3i9GBw+PUIgmPpjNHmT1WX9jK6PF+31U2
+	j74tqxg9Pm+SC2CL4rJJSc3JLEst0rdL4Mo429PNWPDEtmLhzOVsDYy/9bsYOTkkBEwkPh/7
+	ygphi0lcuLeerYuRi0NIYCmjxPP7h1hhirYsameBSCxilHjwYh8rhPOXUeLw4hVALRwcbALa
+	En+2iII0iAjYScyd08IEUsMs8IlR4nzfa6ixjxkles+fBhvLKeAuMfHLFCaQZmEBf4kd6/xA
+	wiwCqhKrHn1jBLF5BSwlPhw8wQ5hC0r8mHyPBaScWUBH4uukCJAwM9DaJ+8uQB2qILHj7GtG
+	iBvcJI5uecoKUSMise/FO0aQEyQE/rJLtE9pYYTYJSDxbfIhsJkSArISmw4wQ8yRlDi44gbL
+	BEaJWUg2z0LYPAvJ5llINixgZFnFKJpakFxQnJReZKJXnJhbXJqXrpecn7uJERjPp/89m7CD
+	8d4B60OMyUDbJzJLiSbnA9NBXkm8obGZkYWpiamxkbmlGWnCSuK8ao+SgoQE0hNLUrNTUwtS
+	i+KLSnNSiw8xMnFwSjUwpmiY7J8mo2Cy/Vn8RV6eXA7DRQ8Z1TbNZRAvP9oauTskX/vmA+XV
+	ialBXjq2i24/uilYo6Z7VXXZ4pfpv6cdNmpf9r16UcydbZxfuzaKONj4ZGoqrVKu1Dyo4Cd4
+	kneybmrLZ8nPQT7chXON/WrO9Mg/np6gV/NHWXrXvPv9xh8VlfkzGYOVWIozEg21mIuKEwGJ
+	xq6+/QIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrOKsWRmVeSWpSXmKPExsVy+t9jAd3JqT3BBk9OS1osnXiJ2WLLsXuM
+	FssebGaxmDnvDpvFnr0nWSwu75rDZtHa85PdYlHfLUYHDo9TiyQ8ms4cZfZYfWEro8f7fVfZ
+	PPq2rGL0+LxJLoAtqoHRJiM1MSW1SCE1Lzk/JTMv3VbJOzjeOd7UzMBQ19DSwlxJIS8xN9VW
+	ycUnQNctMwfoICWFssScUqBQQGJxsZK+HaYJoSFuuhYwjRG6viFBcD1GBmggYQ1jxtmebsaC
+	J7YVC2cuZ2tg/K3fxcjJISFgIrFlUTsLhC0mceHeerYuRi4OIYFFjBIPXuxjhXD+MkocXrwC
+	KMPBwSagLfFniyhIg4iAncTcOS1MIDXMAp8YJc73vYbqfswo0Xv+NCtIFaeAu8TEL1OYQJqF
+	BfwldqzzAwmzCKhKrHr0jRHE5hWwlPhw8AQ7hC0o8WPyPRaQcmYBHYmvkyJAwsxAa5+8u8AK
+	caiCxI6zrxkhbnCTOLrlKStEjYjEvhfvGCcwCs1CMmkWwqRZSCbNQtKxgJFlFaNoakFyQXFS
+	eq6hXnFibnFpXrpecn7uJkZwsngmtYNxZYPFIUYBDkYlHt6f6j3BQqyJZcWVuYcYJTiYlUR4
+	l1oAhXhTEiurUovy44tKc1KLDzEmA/05kVlKNDkfmMjySuINjU3MjCyNzA0tjIzNSRNWEuc9
+	0GodKCSQnliSmp2aWpBaBLOFiYNTqoGx4pLnv1czLVdxqL9Pafz+raXhcZ+BznfxoNYwTTfJ
+	v5FPFW5PkmmZH+f0xehl7ab+iRv3efPX7dj6xJ5v79NHNt0moRpVy8P+suZ9L1stt2WG0rVz
+	sl/v2TtWr3rgbn4/u7judvHqKoW9DAtyGFIsDUyWm37sYTx8Tu2Xzby5W3Mzr6i6uYgpsRRn
+	JBpqMRcVJwIAo9SKYloDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have a system on which I have disabled threading in the BIOS, and I am booting
-the kernel with the option "idle=poll".
+> 
+> > Date: Sat, 31 May 2014 16:40:29 +0900
+> > From: Namjae Jeon <namjae.jeon@samsung.com>
+> > To: 'Luká¹ Czerner' <lczerner@redhat.com>
+> > Cc: 'Dave Chinner' <david@fromorbit.com>, 'Theodore Ts'o' <tytso@mit.edu>,
+> >     'linux-ext4' <linux-ext4@vger.kernel.org>, xfs@oss.sgi.com,
+> >     linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+> >     'Ashish Sangwan' <a.sangwan@samsung.com>
+> > Subject: RE: [PATCH v2 0/10] fs: Introduce FALLOC_FL_INSERT_RANGE for
+> >     fallocate
+> >
+> >
+> > > > Date: Thu, 08 May 2014 19:23:19 +0900
+> > > > From: Namjae Jeon <namjae.jeon@samsung.com>
+> > > > To: Dave Chinner <david@fromorbit.com>, Theodore Ts'o <tytso@mit.edu>
+> > > > Cc: linux-ext4 <linux-ext4@vger.kernel.org>, xfs@oss.sgi.com,
+> > > >     linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+> > > >     Ashish Sangwan <a.sangwan@samsung.com>
+> > > > Subject: [PATCH v2 0/10] fs: Introduce FALLOC_FL_INSERT_RANGE for fallocate
+> > > >
+> > > > In continuation of the work of making the process of non linear editing of
+> > > > media files faster, we introduce here the new flag FALLOC_FL_INSERT_RANGE
+> > > > for fallocate.
+> > > >
+> > > > This flag will work opposite to the newly added FALLOC_FL_COLLAPSE_RANGE flag.
+> > > > As such, specifying FALLOC_FL_INSERT_RANGE flag will insert zeroed-out space
+> > > > in between the file within the range specified by offset and len. User can
+> > > > write new data in this space. e.g. ads.
+> > > > Like collapse range, currently we have the limitation that offset and len should
+> > > > be block size aligned for both XFS and Ext4.
+> > > >
+> > > > The semantics of the flag are :
+> > > > 1) It allocates new zeroed out on disk space of len bytes starting
+> > > >    at offset byte without overwriting any existing data. All the data blocks
+> > > >    from offset to EOF are shifted towards right to make space for inserting
+> > > >    new blocks
+> > >
+> > > Hi,
+> > >
+> > > this sounds a little bit weird to me. I understand the reason for
+> > > this, but this is effectively two operations masking as one. We
+> > > shift the existing data and then we allocate unwritten extents for
+> > > the hole we've created.
+> > >
+> > > What would make more sense to me is to implement only the first
+> > > operation - the shift. And then let the user to allocate unwritten
+> > > extents for the hole using simple fallocate.
+> > >
+> > > The reason is that if you succeed the first part and then fail the
+> > > second due to ENOSPC or any other reason the file will end up in
+> > > undefined state unnecessarily. Yes in your current implementation
+> > > it seems that you'll always end up with the hole in the file and the
+> > > rest is properly shifted, but that may vary from file system to file
+> > > system. Some might choose to roll back the shift, some might not.
+> > >
+> > > If FALLOC_FL_INSERT_RANGE (or any name you wish to choose) would
+> > > just simply shift the extents then you'll get rid of this and the
+> > > only thing that user needs to do (if he chooses to) is to use
+> > > fallocate for the hole created by the shift. If it fails, then
+> > > well, he can try again without any consequences. As a bonus you get
+> > > the possibility to leave the hole in the file which might be useful
+> > > as well.
+> > >
+> > > With current behaviour this might get very confusing very quickly.
+> > >
+> > > What do you and others think ?
+> > Hi Lukas.
+> > Insert range inherently means inserting a real range of space into
+> > the file to provide guaranteed space with user in the inserted area
+> > so that further writes should not fail with an -ENOSPC at least.
+> > If insert range cannot gurantees the above semantics, It should
+> > return error to user space.
+> 
+> So what will happen when there is not enough space when "inserting a
+> range" ? And how should user proceed from there ?
+If insert range fails with an ENOSPC error, user could use collapse
+range on the same range to remove the hole.
+And after freeing more space, he can again try inserting range.
+Ofcourse, this type of guidance should be properly documented in
+manpage. When updating fallocate(2) manpage, I will keep  in mind to
+describe ENOSPC handling.
+> 
+> >
+> > If insert range has been performed on a file, It will reserve space
+> > that write never fail in the inserted area,
+> > In case of full partition or small available size than the range
+> > user want, It seems odd just only left inserting a hole in the middle
+> > of file and return success to user when no one can really write to
+> > this hole.
+> 
+> There is a fallocate for allocation, so as I already said you can
+> shift the extents to make a hole in the file and then use fallocate
+> to allocate space for it and you'll get the same result. You are
+> basically doing that now as well, but when the allocation fails the
+> whole "insert range" ioct fails, however the extents are already
+> shifter and there is already a holi in the file so freeing some
+> space and running this ioctl again will not help you at all. While
+> if you fail a fallocate, you can free some space and run it again
+> without any problems. The result will be as expected.
+> 
+> What I am arguing about is basically that your insert range ioct is
+> masking two operations as one. Why not to make it transparent and
+> split it into "shift extents" and fallocate ? Then there is a
+> question about the name because it's no longer "insert range" but
+> rather "insert hole" which I think is better and arguably more
+> useful semantic.
+The same thoeory can be argued against collapse range semantics too.
+One can argue that collapse range should not remove any data blocks
+from the specified range as that can be done by punch hole, so user
+should first perform punch hole and then call collapse range to
+eliminate the hole.
+There are 2 reasons I make insert range to allocate space.
+One is to keep insert range behavior as exactly opposite of
+the collapse range and it is named as such so that it seems obvious
+that it is related with collapse range.
+Other one is that,  there will always be need of allocating space for
+data  after making hole.  So doing this within insert range is saving
+user from making 1 extra sys call.
+That said, I agree with you that it is arguable and I am not biased
+to this behavior.
+Probably, need some more thoughts from other fs people.
 
-The kernel displays
+Thanks for your opinion!
 
-process: WARNING: polling idle and HT enabled, performance may degrade
-
-which is incorrect -- I've already disabled HT.
-
-This warning is issued here:
-
-void select_idle_routine(const struct cpuinfo_x86 *c)
-{
-        if (boot_option_idle_override == IDLE_POLL && smp_num_siblings > 1)
-                pr_warn_once("WARNING: polling idle and HT enabled, performance may degrade\n");
-
->From my understanding of the other areas of kernel that use smp_num_siblings,
-the value is supposed to be the actual number of threads per core, and
-this value of smp_num_siblings is incorrect.  In theory, it should be 1 but it
-is reported as 2.  When I looked into how smp_num_siblings is calculated I
-found the following call sequence in the kernel:
-
-start_kernel ->
-        check_bugs ->
-                identify_boot_cpu ->
-                                identify_cpu ->
-                                        c_init = init_intel
-                                                init_intel ->
-                                                        detect_extended_topology
-                                                        (sets value)
-
-                                        OR
-
-                                        c_init = init_amd
-                                                init_amd -> amd_detect_cmp
-                                                             -> amd_get_topology
-                                                                (sets value)
-                                                         -> detect_ht()
-                                        ...		    (sets value)
-                                        detect_ht()
-                                        (also sets value)
-
-ie) it is set three times in some cases and overwritten in other cases.
-
-It should be noted that nothing in the identify_cpu() path or the cpu_up()
-path requires smp_num_siblings to be set, prior to the final call to
-detect_ht().
-
-For x86 boxes without X86_FEATURE_XTOPOLOGY, smp_num_siblings is set to a
-value read in a CPUID call in detect_ht().  This value is the *factory
-defined* value in all cases; even if HT is disabled in BIOS the value
-still returns 2 if the CPU supports HT.  AMD also reports the factory
-defined value in all cases.
-
-For Intel x86 boxes with X86_FEATURE_XTOPOLOGY, smp_num_siblings is set to a
-value read from the 0xb leaf of CPUID.  This value is also the *factory
-defined* value in all cases.
-
-For new-ish AMD x86 boxes, smp_num_siblings is also set to the *factory*
-defined value.
-
-That is, even with threading disabled in BIOSes on these systems,
-
-crash> p smp_num_siblings
-smp_num_siblings = $1 = 0x2
-
-smp_num_siblings should be calculated a single time on cpu 0 to determine
-whether or not the system is multi-threaded or not.  We can easily do
-this by examining the boot cpu's cpu_sibling_mask after the mask has been
-setup in the boot up code path.
-
-After the patch, on a system with HT enabled,
-
-crash> p smp_num_siblings
-smp_num_siblings = $1 = 0x2
-
-On a system with HT disabled,
-
-crash> p smp_num_siblings
-smp_num_siblings = $1 = 0x1
-
-Other uses of smp_num_siblings involve oprofile (used after boot), and
-the perf code which is done well after the initial cpus are brought online.
-
-[v2]: After comment from Oren Twaig, rework to single patch.
-Unfortunately there was no easy way to take into account the various
-settings of smp_num_siblings and fix it in two patches.
-
-Cc: Oren Twaig <oren@scalemp.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: x86@kernel.org
-Cc: Borislav Petkov <bp@suse.de>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: Dave Jones <davej@redhat.com>
-Cc: Torsten Kaiser <just.for.lkml@googlemail.com>
-Cc: Jan Beulich <JBeulich@suse.com>
-Cc: Jan Kiszka <jan.kiszka@siemens.com>
-Cc: Toshi Kani <toshi.kani@hp.com>
-Cc: Andrew Jones <drjones@redhat.com>
----
- arch/x86/kernel/cpu/amd.c      |    1 -
- arch/x86/kernel/cpu/common.c   |   23 +++++++++++------------
- arch/x86/kernel/cpu/topology.c |    2 +-
- arch/x86/kernel/smpboot.c      |   10 +++++++---
- 4 files changed, 19 insertions(+), 17 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-index ce8b8ff..6aca2b6 100644
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -304,7 +304,6 @@ static void amd_get_topology(struct cpuinfo_x86 *c)
- 		node_id = ecx & 7;
- 
- 		/* get compute unit information */
--		smp_num_siblings = ((ebx >> 8) & 3) + 1;
- 		c->compute_unit_id = ebx & 0xff;
- 		cores_per_cu += ((ebx >> 8) & 3);
- 	} else if (cpu_has(c, X86_FEATURE_NODEID_MSR)) {
-diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-index a135239..81a5aac 100644
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -507,42 +507,41 @@ void detect_ht(struct cpuinfo_x86 *c)
- 	u32 eax, ebx, ecx, edx;
- 	int index_msb, core_bits;
- 	static bool printed;
-+	int threads_per_core;
- 
- 	if (!cpu_has(c, X86_FEATURE_HT))
- 		return;
- 
--	if (cpu_has(c, X86_FEATURE_CMP_LEGACY))
-+	if (cpu_has(c, X86_FEATURE_CMP_LEGACY)) {
-+		threads_per_core = 1;
- 		goto out;
-+	}
- 
- 	if (cpu_has(c, X86_FEATURE_XTOPOLOGY))
- 		return;
- 
- 	cpuid(1, &eax, &ebx, &ecx, &edx);
- 
--	smp_num_siblings = (ebx & 0xff0000) >> 16;
-+	threads_per_core = (ebx & 0xff0000) >> 16;
- 
--	if (smp_num_siblings == 1) {
--		printk_once(KERN_INFO "CPU0: Hyper-Threading is disabled\n");
-+	if (threads_per_core <= 1) {
-+		pr_info_once("CPU: Hyper-Threading is unsupported on this processor.\n");
- 		goto out;
- 	}
- 
--	if (smp_num_siblings <= 1)
--		goto out;
--
--	index_msb = get_count_order(smp_num_siblings);
-+	index_msb = get_count_order(threads_per_core);
- 	c->phys_proc_id = apic->phys_pkg_id(c->initial_apicid, index_msb);
- 
--	smp_num_siblings = smp_num_siblings / c->x86_max_cores;
-+	threads_per_core = threads_per_core / c->x86_max_cores;
- 
--	index_msb = get_count_order(smp_num_siblings);
-+	index_msb = get_count_order(threads_per_core);
- 
- 	core_bits = get_count_order(c->x86_max_cores);
- 
- 	c->cpu_core_id = apic->phys_pkg_id(c->initial_apicid, index_msb) &
- 				       ((1 << core_bits) - 1);
--
- out:
--	if (!printed && (c->x86_max_cores * smp_num_siblings) > 1) {
-+	if (!printed && (c->x86_max_cores * threads_per_core) > 1) {
- 		printk(KERN_INFO  "CPU: Physical Processor ID: %d\n",
- 		       c->phys_proc_id);
- 		printk(KERN_INFO  "CPU: Processor Core ID: %d\n",
-diff --git a/arch/x86/kernel/cpu/topology.c b/arch/x86/kernel/cpu/topology.c
-index 4c60eaf..a9b837e 100644
---- a/arch/x86/kernel/cpu/topology.c
-+++ b/arch/x86/kernel/cpu/topology.c
-@@ -55,7 +55,7 @@ void detect_extended_topology(struct cpuinfo_x86 *c)
- 	/*
- 	 * Populate HT related information from sub-leaf level 0.
- 	 */
--	core_level_siblings = smp_num_siblings = LEVEL_MAX_SIBLINGS(ebx);
-+	core_level_siblings = LEVEL_MAX_SIBLINGS(ebx);
- 	core_plus_mask_width = ht_mask_width = BITS_SHIFT_NEXT_LEVEL(eax);
- 
- 	sub_index = 1;
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index 3482693..9eb96d2 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -351,8 +351,7 @@ static bool match_mc(struct cpuinfo_x86 *c, struct cpuinfo_x86 *o)
- 
- void set_cpu_sibling_map(int cpu)
- {
--	bool has_smt = smp_num_siblings > 1;
--	bool has_mp = has_smt || boot_cpu_data.x86_max_cores > 1;
-+	bool has_mp = boot_cpu_data.x86_max_cores > 1;
- 	struct cpuinfo_x86 *c = &cpu_data(cpu);
- 	struct cpuinfo_x86 *o;
- 	int i;
-@@ -364,13 +363,14 @@ void set_cpu_sibling_map(int cpu)
- 		cpumask_set_cpu(cpu, cpu_llc_shared_mask(cpu));
- 		cpumask_set_cpu(cpu, cpu_core_mask(cpu));
- 		c->booted_cores = 1;
-+		smp_num_siblings = 1;
- 		return;
- 	}
- 
- 	for_each_cpu(i, cpu_sibling_setup_mask) {
- 		o = &cpu_data(i);
- 
--		if ((i == cpu) || (has_smt && match_smt(c, o)))
-+		if ((i == cpu) || match_smt(c, o))
- 			link_mask(sibling, cpu, i);
- 
- 		if ((i == cpu) || (has_mp && match_llc(c, o)))
-@@ -408,6 +408,10 @@ void set_cpu_sibling_map(int cpu)
- 				c->booted_cores = cpu_data(i).booted_cores;
- 		}
- 	}
-+
-+	/* Only need to check this on the boot cpu, o/w it is disabled */
-+	if (cpu == 0)
-+		smp_num_siblings = cpumask_weight(cpu_sibling_mask(cpu));
- }
- 
- /* maps the cpu to the sched domain representing multi-core */
--- 
-1.7.9.3
+> 
+> Thanks!
+> -Lukas
+> 
+> >
+> > Thanks!
+> > >
+> > > Thanks!
+> > > -LUkas
+> > >
+> > >
+> > > > 2) It should be used exclusively. No other fallocate flag in combination.
+> > > > 3) Offset and length supplied to fallocate should be fs block size aligned
+> > > >    in case of xfs and ext4.
+> > > > 4) Insert range does not work for the case when offset is overlapping/beyond
+> > > >    i_size. If the user wants to allocate space at the end of file they are
+> > > >    advised to use either ftruncate(2) or fallocate(2) with mode 0.
+> > > > 5) It increses the size of file by len bytes.
+> > > >
+> > > >
+> > > > Namjae Jeon (10):
+> > > >  fs: Add support FALLOC_FL_INSERT_RANGE for fallocate
+> > > >  xfs: Add support FALLOC_FL_INSERT_RANGE for fallocate
+> > > >  ext4: Add support FALLOC_FL_INSERT_RANGE for fallocate
+> > > >  xfsprogs: xfs_io: add finsert command for insert range via fallocate
+> > > >  xfstests: generic/027: Standard insert range tests
+> > > >  xfstests: generic/028: Delayed allocation insert range
+> > > >  xfstests: generic/029: Multi insert range tests
+> > > >  xfstests: generic/030: Delayed allocation multi insert
+> > > >  xfstests: fsstress: Add fallocate insert range operation
+> > > >  xfstests: fsx: Add fallocate insert range operation
+> > > >
+> > > >
+> >
+> >
 
