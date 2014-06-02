@@ -1,71 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753603AbaFBUZT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 16:25:19 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:56146 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751616AbaFBUZR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 16:25:17 -0400
-Message-ID: <1401740685.12939.49.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: [PATCH v2] introduce atomic_pointer to fix a race condition in
- cancelable mcs spinlocks
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Waiman Long <waiman.long@hp.com>, Mikulas Patocka <mpatocka@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>, jejb@parisc-linux.org,
-        deller@gmx.de, John David Anglin <dave.anglin@bell.net>,
-        linux-parisc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        paulmck@linux.vnet.ibm.com, chegu_vinod@hp.com, tglx@linutronix.de,
-        riel@redhat.com, akpm@linux-foundation.org, davidlohr@hp.com,
-        hpa@zytor.com, andi@firstfloor.org, aswin@hp.com, scott.norton@hp.com,
-        Jason Low <jason.low2@hp.com>
-Date: Mon, 02 Jun 2014 13:24:45 -0700
-In-Reply-To: <20140602200525.GD13930@laptop.programming.kicks-ass.net>
-References: <alpine.LRH.2.02.1406011342470.20831@file01.intranet.prod.int.rdu2.redhat.com>
-	 <alpine.LRH.2.02.1406021158360.20627@file01.intranet.prod.int.rdu2.redhat.com>
-	 <20140602162525.GH16155@laptop.programming.kicks-ass.net>
-	 <20140602163032.GI16155@laptop.programming.kicks-ass.net>
-	 <538CB56E.5010709@hp.com>
-	 <20140602200525.GD13930@laptop.programming.kicks-ass.net>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.12.2 
-Mime-Version: 1.0
+	id S932095AbaFBUZb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 16:25:31 -0400
+Received: from mout.perfora.net ([74.208.4.194]:60846 "EHLO mout.perfora.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753703AbaFBUZ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 16:25:28 -0400
+Message-ID: <538CDD89.6080605@ziswiler.com>
+Date: Mon, 02 Jun 2014 22:24:41 +0200
+From: Marcel Ziswiler <marcel@ziswiler.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Stephen Warren <swarren@wwwdotorg.org>, thierry.reding@gmail.com
+CC: linux@arm.linux.org.uk, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org, stefan@agner.ch
+Subject: Re: [PATCH 3/3] arm: tegra: initial support for apalis t30
+References: <c5522b0efcbfc7690dcde6aaf78b9dd568f99604.1401665237.git.marcel@ziswiler.com> <b470c9c8631a6ef021d140192eb07006de3cfd93.1401665237.git.marcel@ziswiler.com> <538CA749.3010106@wwwdotorg.org>
+In-Reply-To: <538CA749.3010106@wwwdotorg.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:dEk1pUB0i1ZmHI7WXoBO4Ql6JvB+NJACuf9cBwDEQQr
+ rNXEYbWKFNLPsZ2YIycLs73GT/5uWI9zCcZ3MQZGXvwk7A1F5I
+ Tqb0vzlBnbncCRxFD9NVVnM2HK/2XvF5mbz3xE7qfqUvoouLaf
+ og9CWyOMwq6AzEKPgMmRsXIxBcTD5/x/DyGd/AzTHPv5dlVUkE
+ AyhkJIWpw7sb+/BnzT8+nByyhLZWCq3bh+Spvk7B0H3zn13uBZ
+ jAI8wc1WT6Ksasf3vZFFdr/jdLOf/O5slf+qNYd6ihPak9U/Nl
+ mdEjWnSv09nJQvSrbPtWkofkev7Dz/c0YXuLY4lJmCrDP0nLxt
+ oj27vqwR6u88/HSf69qc=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-06-02 at 22:05 +0200, Peter Zijlstra wrote:
-> On Mon, Jun 02, 2014 at 01:33:34PM -0400, Waiman Long wrote:
-> > On 06/02/2014 12:30 PM, Peter Zijlstra wrote:
-> > >On Mon, Jun 02, 2014 at 06:25:25PM +0200, Peter Zijlstra wrote:
-> > >>I'm almost inclined to just exclude parisc from using opt spinning.
-> > >>
-> > >>That said, this patch still doesn't address the far more interesting
-> > >>problem of actually finding these issues for these few weird archs.
-> > >So why do these archs provide xchg() and cmpxchg() at all? Wouldn't it
-> > >be much simpler if archs that cannot sanely do this, not provide these
-> > >primitives at all?
-> > 
-> > I believe xchg() and cmpxchg() are used in quite a number of places within
-> > the generic kernel code. So kernel compilation will fail if those APIs
-> > aren't provided by an architecture.
-> 
-> Yep.. so this is going to be painful for a while. But given their
-> (parisc, sparc32, metag-lock1) constraints, who knows how many of those
-> uses are actually broken.
-> 
-> So the question is, do you prefer subtly broken code or hard compile
-> fails? Me, I go for the compile fail.
+On 06/02/2014 06:33 PM, Stephen Warren wrote:
+> I vaguely recall people speaking out against including "spidev" devices
+> in DT because they don't represent actual HW, but rather a way to
+> request that the SPI bus be exposed to user-space, which is a pure SW
+> issue. Wouldn't it be better if the spidev interface worked like
+> I2C_CHARDEV, where fake devices weren't actually required?
 
-The failure is only when a variable that will have an atomic exchange
-done on it is updated by a simple operation.  To do this properly, we'd
-probably need an update macro we could supply the locking to, and a way
-of marking the variable to get the compiler to cause a build error if it
-was ever updated improperly, but that's starting to look very similar to
-Mikulas' proposal.
-
-James
-
-
+Well, there is one important difference. While I2C indeed does not have 
+any further hardware dependency apart from the clock (SCL) and data 
+(SDA) lines SPI actually requires dedicated hardware chip-select lines 
+as well. But I guess NVIDIA has been rather ignorant about any of this 
+in the past...
