@@ -1,173 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752099AbaFBFO4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 01:14:56 -0400
-Received: from mail-qa0-f41.google.com ([209.85.216.41]:64036 "EHLO
-	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750724AbaFBFOz (ORCPT
+	id S1752277AbaFBFPU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 01:15:20 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:56314 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751673AbaFBFPR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 01:14:55 -0400
-MIME-Version: 1.0
-In-Reply-To: <53679F96.3020300@redhat.com>
-References: <1398703176-17812-1-git-send-email-pbonzini@redhat.com>
-	<53679E6A.3060807@de.ibm.com>
-	<53679F96.3020300@redhat.com>
-Date: Mon, 2 Jun 2014 13:14:54 +0800
-Message-ID: <CADZi59yTM=-H7o5z0+GjJCJFsT_pUJzHwME+P+gnkG3bF6ZBqA@mail.gmail.com>
-Subject: Re: [PATCH v4] kvm/irqchip: Speed up KVM_SET_GSI_ROUTING
-From: hrg <hrgstephen@gmail.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Christian Borntraeger <borntraeger@de.ibm.com>,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 2 Jun 2014 01:15:17 -0400
+Date: Sun, 01 Jun 2014 22:15:15 -0700 (PDT)
+Message-Id: <20140601.221515.360490928652338768.davem@davemloft.net>
+To: jmaxwell37@gmail.com
+Cc: stephen@networkplumber.org, makita.toshiaki@lab.ntt.co.jp,
+        vyasevic@redhat.com, bridge@lists.linux-foundation.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jpirko@redhat.com, jmaxwell@redhat.com
+Subject: Re: [PATCH net] bridge: notify user space after fdb update
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1401348436-5187-1-git-send-email-jmaxwell37@gmail.com>
+References: <1401348436-5187-1-git-send-email-jmaxwell37@gmail.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Sun, 01 Jun 2014 22:15:16 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Jon Maxwell <jmaxwell37@gmail.com>
+Date: Thu, 29 May 2014 17:27:16 +1000
 
-I think you missed a cleanup_srcu_struct(&kvm->irq_srcu) in kvm_destroy_vm().
+> There has been a number incidents recently where customers running KVM have
+> reported that VM hosts on different Hypervisors are unreachable. Based on
+> pcap traces we found that the bridge was broadcasting the ARP request out
+> onto the network. However some NICs have an inbuilt switch which on occasions
+> were broadcasting the VMs ARP request back through the physical NIC on the
+> Hypervisor. This resulted in the bridge changing ports and incorrectly learning
+> that the VMs mac address was external. As a result the ARP reply was directed
+> back onto the external network and VM never updated it's ARP cache. This patch
+> will notify the bridge command, after a fdb has been updated to identify such
+> port toggling.
+> 
+> Signed-off-by: Jon Maxwell <jmaxwell37@gmail.com>
 
-On Mon, May 5, 2014 at 10:26 PM, Paolo Bonzini <pbonzini@redhat.com> wrote:
-> Il 05/05/2014 16:21, Christian Borntraeger ha scritto:
->
->> On 28/04/14 18:39, Paolo Bonzini wrote:
->>>
->>> From: Christian Borntraeger <borntraeger@de.ibm.com>
->>
->>
->> Given all your work, What about From: Paolo Bonzini <pbonzini@redhat.com>
->> plus "Based on an inital patch from Christian Borntraeger"
->
->
-> No big deal, I don't care about authorship that much.
->
->
->>> @@ -221,17 +225,18 @@ irqfd_wakeup(wait_queue_t *wait, unsigned mode, int
->>> sync, void *key)
->>>         unsigned long flags = (unsigned long)key;
->>>         struct kvm_kernel_irq_routing_entry *irq;
->>>         struct kvm *kvm = irqfd->kvm;
->>> +       int idx;
->>>
->>>         if (flags & POLLIN) {
->>> -               rcu_read_lock();
->>> -               irq = rcu_dereference(irqfd->irq_entry);
->>> +               idx = srcu_read_lock(&kvm->irq_srcu);
->>> +               irq = srcu_dereference(irqfd->irq_entry, &kvm->irq_srcu);
->>>                 /* An event has been signaled, inject an interrupt */
->>>                 if (irq)
->>>                         kvm_set_msi(irq, kvm,
->>> KVM_USERSPACE_IRQ_SOURCE_ID, 1,
->>>                                         false);
->>>                 else
->>>                         schedule_work(&irqfd->inject);
->>> -               rcu_read_unlock();
->>> +               srcu_read_unlock(&kvm->irq_srcu, idx);
->>>         }
->>>
->>>         if (flags & POLLHUP) {
->>> @@ -363,7 +368,7 @@ kvm_irqfd_assign(struct kvm *kvm, struct kvm_irqfd
->>> *args)
->>>                 }
->>>
->>>                 list_add_rcu(&irqfd->resampler_link,
->>> &irqfd->resampler->list);
->>> -               synchronize_rcu();
->>> +               synchronize_srcu(&kvm->irq_srcu);
->>
->>
->> No idea what resampler is, can this become time critical as well - iow do
->> we need expedited here?
->
->
-> It's for level-triggered interrupts.  I decided that if synchronize_rcu was
-> good enough before, synchronize_srcu will do after the patch.
->
->
->>> @@ -85,7 +86,7 @@ void kvm_unregister_irq_ack_notifier(struct kvm *kvm,
->>>         mutex_lock(&kvm->irq_lock);
->>>         hlist_del_init_rcu(&kian->link);
->>>         mutex_unlock(&kvm->irq_lock);
->>> -       synchronize_rcu();
->>> +       synchronize_srcu_expedited(&kvm->irq_srcu);
->>
->>
->> Hmm, looks like all callers are slow path (shutdown, deregister assigned
->> dev). Couldnt
->> we use the non expedited variant?
->
->
-> ... but I have screwed up this one.  Thanks, I'll change it.
->
->
->>>         r = kvm_arch_init_vm(kvm, type);
->>>         if (r)
->>> -               goto out_err_nodisable;
->>> +               goto out_err_no_disable;
->>>
->>>         r = hardware_enable_all();
->>>         if (r)
->>> -               goto out_err_nodisable;
->>> +               goto out_err_no_disable;
->>>
->>>  #ifdef CONFIG_HAVE_KVM_IRQCHIP
->>>         INIT_HLIST_HEAD(&kvm->mask_notifier_list);
->>> @@ -473,10 +473,12 @@ static struct kvm *kvm_create_vm(unsigned long
->>> type)
->>>         r = -ENOMEM;
->>>         kvm->memslots = kzalloc(sizeof(struct kvm_memslots), GFP_KERNEL);
->>>         if (!kvm->memslots)
->>> -               goto out_err_nosrcu;
->>> +               goto out_err_no_srcu;
->>>         kvm_init_memslots_id(kvm);
->>>         if (init_srcu_struct(&kvm->srcu))
->>> -               goto out_err_nosrcu;
->>> +               goto out_err_no_srcu;
->>> +       if (init_srcu_struct(&kvm->irq_srcu))
->>> +               goto out_err_no_irq_srcu;
->>>         for (i = 0; i < KVM_NR_BUSES; i++) {
->>>                 kvm->buses[i] = kzalloc(sizeof(struct kvm_io_bus),
->>>                                         GFP_KERNEL);
->>> @@ -505,10 +507,12 @@ static struct kvm *kvm_create_vm(unsigned long
->>> type)
->>>         return kvm;
->>>
->>>  out_err:
->>> +       cleanup_srcu_struct(&kvm->irq_srcu);
->>> +out_err_no_irq_srcu:
->>>         cleanup_srcu_struct(&kvm->srcu);
->>> -out_err_nosrcu:
->>> +out_err_no_srcu:
->>>         hardware_disable_all();
->>> -out_err_nodisable:
->>> +out_err_no_disable:
->>
->>
->>
->> the patch would be smaller without this change, but it makes the naming
->> more consistent, so ok.
->
->
-> Yeah, out_err_noirq_srcu or out_err_noirqsrcu are both very ugly.
->
-> Thanks for the review, I'm making the small change to remove expedited and
-> applying to kvm/queue.
->
-> Paolo
->
->
->>
->>>         for (i = 0; i < KVM_NR_BUSES; i++)
->>>                 kfree(kvm->buses[i]);
->>>         kfree(kvm->memslots);
->>>
->>
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Applied, thanks.
