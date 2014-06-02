@@ -1,132 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755144AbaFBOIP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 10:08:15 -0400
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:38693 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754128AbaFBOIN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 10:08:13 -0400
-MIME-Version: 1.0
-In-Reply-To: <538B0F90.8090902@arm.com>
-References: <1400860385-14555-1-git-send-email-vincent.guittot@linaro.org>
- <1400860385-14555-9-git-send-email-vincent.guittot@linaro.org>
- <5388546E.5070007@arm.com> <CAKfTPtA04sQ4ox7yAU8Wxn_1DLuAxmm9UgER_-Nidtd6sNEEMQ@mail.gmail.com>
- <538B0F90.8090902@arm.com>
-From: Vincent Guittot <vincent.guittot@linaro.org>
-Date: Mon, 2 Jun 2014 16:07:52 +0200
-Message-ID: <CAKfTPtAurF0sxHmA+hK++NKwJfPWZuv3n2OrKtZYtcKRZbnOjw@mail.gmail.com>
-Subject: Re: [PATCH v2 08/11] sched: get CPU's activity statistic
-To: Dietmar Eggemann <dietmar.eggemann@arm.com>
-Cc: "peterz@infradead.org" <peterz@infradead.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        "efault@gmx.de" <efault@gmx.de>,
-        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755347AbaFBOJV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 10:09:21 -0400
+Received: from mail.emea.novell.com ([130.57.118.101]:58289 "EHLO
+	mail.emea.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754041AbaFBOJT convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
+	Mon, 2 Jun 2014 10:09:19 -0400
+Message-Id: <538CA1AC0200007800016DE9@mail.emea.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 14.0.0 
+Date: Mon, 02 Jun 2014 15:09:16 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: <a.zummo@towertech.it>
+Cc: <rtc-linux@googlegroups.com>, "Raymund Will" <rw@suse.de>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH] rtc-efi: check for invalid data coming back from UEFI
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1 June 2014 13:33, Dietmar Eggemann <dietmar.eggemann@arm.com> wrote:
-> On 30/05/14 20:20, Vincent Guittot wrote:
->>
->> On 30 May 2014 11:50, Dietmar Eggemann <dietmar.eggemann@arm.com> wrote:
->>>
->>> On 23/05/14 16:53, Vincent Guittot wrote:
->>>>
->>>> Monitor the activity level of each group of each sched_domain level. The
->>>> activity is the amount of cpu_power that is currently used on a CPU or
->>>> group
->>>> of CPUs. We use the runnable_avg_sum and _period to evaluate this
->>>> activity
->>>> level. In the special use case where the CPU is fully loaded by more
->>>> than 1
->>>> task, the activity level is set above the cpu_power in order to reflect
->>>> the
->>>> overload of the CPU
->>>>
->>>> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
->>>
->>>
->>> [...]
->>>
->>>>   /*
->>>>    * select_task_rq_fair: Select target runqueue for the waking task in
->>>> domains
->>>>    * that have the 'sd_flag' flag set. In practice, this is
->>>> SD_BALANCE_WAKE,
->>>> @@ -5518,6 +5535,7 @@ struct sg_lb_stats {
->>>>        unsigned long sum_weighted_load; /* Weighted load of group's
->>>> tasks */
->>>>        unsigned long load_per_task;
->>>>        unsigned long group_power;
->>>> +     unsigned long group_activity; /* Total activity of the group */
->>>>        unsigned int sum_nr_running; /* Nr tasks running in the group */
->>>>        unsigned int group_capacity;
->>>>        unsigned int idle_cpus;
->>>> @@ -5538,6 +5556,7 @@ struct sd_lb_stats {
->>>>        struct sched_group *busiest;    /* Busiest group in this sd */
->>>>        struct sched_group *local;      /* Local group in this sd */
->>>>        unsigned long total_load;       /* Total load of all groups in sd
->>>> */
->>>> +     unsigned long total_activity;  /* Total activity of all groups in
->>>> sd */
->>>>        unsigned long total_pwr;        /* Total power of all groups in
->>>> sd */
->>>>        unsigned long avg_load; /* Average load across all groups in sd
->>>> */
->>>>
->>>> @@ -5557,6 +5576,7 @@ static inline void init_sd_lb_stats(struct
->>>> sd_lb_stats *sds)
->>>>                .busiest = NULL,
->>>>                .local = NULL,
->>>>                .total_load = 0UL,
->>>> +             .total_activity = 0UL,
->>>
->>>
->>> AFAICS, total_activity is not used right now. Do you intend to use it to
->>> calculate something like avg_activity later (like total_load/avg_load)?
->>
->>
->> this patch only creates group_activity and total_activity.The use of
->> these statistics appears on the next patches. I have not planned to
->> compute such avg_activity for the moment mainly because i have need it
->> yet.
->>
->> Do you have in mind any use of such avg_activity ?
->
->
-> No, not really but I still don't see (taken all your patches) where
-> sds->total_activity is used.
->
-> $ find . -name "*.[ch]" | xargs grep total_activity
-> ./kernel/sched/fair.c:  unsigned long total_activity;  /* Total activity of
-> all groups in sd */
-> ./kernel/sched/fair.c:          .total_activity = 0UL,
-> ./kernel/sched/fair.c:          sds->total_activity += sgs->group_activity;
->
-> OOTH, sgs->group_activity is used to set sgs->group_capacity which is then
-> used in if conditions in update_sd_pick_busiest(), update_sd_lb_stats() and
-> find_busiest_group().
+In particular seeing zero in eft->month is problematic, as it results
+in -1 (converted to unsigned int, i.e. yielding 0xffffffff) getting
+passed to rtc_year_days(), where the value gets used as an array index
+(normally resulting in a crash). This was observed with the driver
+enabled on x86 on some Fujitsu system (with possibly not up to date
+firmware, but anyway).
 
-Sorry, i misread you 1st email and haven't understood that you were
-specifically speaking about total_activity.
-When i created the activity statistic, i have added both sg and sd
-fields but i finally only use the sg one. If i don't need the sd field
-after updating my patches, i will remove it
+Perhaps efi_read_alarm() should not fail if neither enabled nor pending
+are set, but the returned time is invalid?
 
-Thanks
-Vincent
+Reported-by: Raymund Will <rw@suse.de>
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+---
+ drivers/rtc/rtc-efi.c |   32 +++++++++++++++++++++++++++-----
+ 1 file changed, 27 insertions(+), 5 deletions(-)
 
->
-> [...]
->
->
+--- 3.15-rc8/drivers/rtc/rtc-efi.c
++++ 3.15-rc8-EFI-RTC-check-time/drivers/rtc/rtc-efi.c
+@@ -17,6 +17,7 @@
+ 
+ #include <linux/kernel.h>
+ #include <linux/module.h>
++#include <linux/stringify.h>
+ #include <linux/time.h>
+ #include <linux/platform_device.h>
+ #include <linux/rtc.h>
+@@ -48,8 +49,8 @@ compute_wday(efi_time_t *eft)
+ 	int y;
+ 	int ndays = 0;
+ 
+-	if (eft->year < 1998) {
+-		pr_err("EFI year < 1998, invalid date\n");
++	if (eft->year < EFI_RTC_EPOCH) {
++		pr_err("EFI year < " __stringify(EFI_RTC_EPOCH) ", invalid date\n");
+ 		return -1;
+ 	}
+ 
+@@ -78,19 +79,36 @@ convert_to_efi_time(struct rtc_time *wti
+ 	eft->timezone	= EFI_UNSPECIFIED_TIMEZONE;
+ }
+ 
+-static void
++static bool
+ convert_from_efi_time(efi_time_t *eft, struct rtc_time *wtime)
+ {
+ 	memset(wtime, 0, sizeof(*wtime));
++
++	if (eft->second >= 60)
++		return false;
+ 	wtime->tm_sec  = eft->second;
++
++	if (eft->minute >= 60)
++		return false;
+ 	wtime->tm_min  = eft->minute;
++
++	if (eft->hour >= 24)
++		return false;
+ 	wtime->tm_hour = eft->hour;
++
++	if (!eft->day || eft->day > 31)
++		return false;
+ 	wtime->tm_mday = eft->day;
++
++	if (!eft->month || eft->month > 12)
++		return false;
+ 	wtime->tm_mon  = eft->month - 1;
+ 	wtime->tm_year = eft->year - 1900;
+ 
+ 	/* day of the week [0-6], Sunday=0 */
+ 	wtime->tm_wday = compute_wday(eft);
++	if (wtime->tm_wday < 0)
++		return false;
+ 
+ 	/* day in the year [1-365]*/
+ 	wtime->tm_yday = compute_yday(eft);
+@@ -106,6 +124,8 @@ convert_from_efi_time(efi_time_t *eft, s
+ 	default:
+ 		wtime->tm_isdst = -1;
+ 	}
++
++	return true;
+ }
+ 
+ static int efi_read_alarm(struct device *dev, struct rtc_wkalrm *wkalrm)
+@@ -122,7 +142,8 @@ static int efi_read_alarm(struct device
+ 	if (status != EFI_SUCCESS)
+ 		return -EINVAL;
+ 
+-	convert_from_efi_time(&eft, &wkalrm->time);
++	if (!convert_from_efi_time(&eft, &wkalrm->time))
++		return -EIO;
+ 
+ 	return rtc_valid_tm(&wkalrm->time);
+ }
+@@ -163,7 +184,8 @@ static int efi_read_time(struct device *
+ 		return -EINVAL;
+ 	}
+ 
+-	convert_from_efi_time(&eft, tm);
++	if (!convert_from_efi_time(&eft, tm))
++		return -EIO;
+ 
+ 	return rtc_valid_tm(tm);
+ }
+
+
+
