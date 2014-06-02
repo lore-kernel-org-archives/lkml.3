@@ -1,60 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753126AbaFBXyA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 19:54:00 -0400
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:57559 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751955AbaFBXxq (ORCPT
+	id S1753235AbaFBX4P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 19:56:15 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:49402 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751946AbaFBX4N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 19:53:46 -0400
-Message-ID: <1401753224.3645.190.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: [PATCH v2] introduce atomic_pointer to fix a race condition in
- cancelable mcs spinlocks
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Waiman Long <waiman.long@hp.com>,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Helge Deller <deller@gmx.de>, John David Anglin <dave.anglin@bell.net>,
-        Parisc List <linux-parisc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Vinod, Chegu" <chegu_vinod@hp.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Davidlohr Bueso <davidlohr@hp.com>, Peter Anvin <hpa@zytor.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>, Jason Low <jason.low2@hp.com>
-Date: Mon, 02 Jun 2014 16:53:44 -0700
-In-Reply-To: <20140602231730.GH22231@linux.vnet.ibm.com>
-References: <alpine.LRH.2.02.1406021158360.20627@file01.intranet.prod.int.rdu2.redhat.com>
-	 <20140602162525.GH16155@laptop.programming.kicks-ass.net>
-	 <20140602163032.GI16155@laptop.programming.kicks-ass.net>
-	 <538CB56E.5010709@hp.com>
-	 <20140602200525.GD13930@laptop.programming.kicks-ass.net>
-	 <CA+55aFwJwVf_MbcwNNWg-KrLdoOaV2xse2jzvBZTJHJgC_Htvg@mail.gmail.com>
-	 <20140602210227.GE22231@linux.vnet.ibm.com>
-	 <CA+55aFzX3oDvzqh4AfkJ7-X1Yfo8obFM+jOOmwzeN-GyqOPLJg@mail.gmail.com>
-	 <20140602220831.GG22231@linux.vnet.ibm.com>
-	 <1401749088.3645.189.camel@edumazet-glaptop2.roam.corp.google.com>
-	 <20140602231730.GH22231@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 2 Jun 2014 19:56:13 -0400
+Date: Mon, 2 Jun 2014 16:54:51 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Davidlohr Bueso <davidlohr@hp.com>
+cc: Andrew Morton <akpm@linux-foundation.org>, mingo@kernel.org,
+        peterz@infradead.org, riel@redhat.com, mgorman@suse.de, aswin@hp.com,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/5] mm: i_mmap_mutex to rwsem
+In-Reply-To: <1401741061.5185.9.camel@buesod1.americas.hpqcorp.net>
+Message-ID: <alpine.LSU.2.11.1406021649570.5748@eggly.anvils>
+References: <1400816006-3083-1-git-send-email-davidlohr@hp.com> <1401416415.2618.14.camel@buesod1.americas.hpqcorp.net> <20140602130832.9328cfef977b7ed837d59321@linux-foundation.org> <1401741061.5185.9.camel@buesod1.americas.hpqcorp.net>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-06-02 at 16:17 -0700, Paul E. McKenney wrote:
+On Mon, 2 Jun 2014, Davidlohr Bueso wrote:
+> On Mon, 2014-06-02 at 13:08 -0700, Andrew Morton wrote:
+> > On Thu, 29 May 2014 19:20:15 -0700 Davidlohr Bueso <davidlohr@hp.com> wrote:
+> > 
+> > > On Thu, 2014-05-22 at 20:33 -0700, Davidlohr Bueso wrote:
+> > > > This patchset extends the work started by Ingo Molnar in late 2012,
+> > > > optimizing the anon-vma mutex lock, converting it from a exclusive mutex
+> > > > to a rwsem, and sharing the lock for read-only paths when walking the
+> > > > the vma-interval tree. More specifically commits 5a505085 and 4fc3f1d6.
+> > > > 
+> > > > The i_mmap_mutex has similar responsibilities with the anon-vma, protecting
+> > > > file backed pages. Therefore we can use similar locking techniques: covert
+> > > > the mutex to a rwsem and share the lock when possible.
+> > > > 
+> > > > With the new optimistic spinning property we have in rwsems, we no longer
+> > > > take a hit in performance when using this lock, and we can therefore
+> > > > safely do the conversion. Tests show no throughput regressions in aim7 or
+> > > > pgbench runs, and we can see gains from sharing the lock, in disk workloads
+> > > > ~+15% for over 1000 users on a 8-socket Westmere system.
+> > > > 
+> > > > This patchset applies on linux-next-20140522.
+> > >
+> > > ping? Andrew any chance of getting this in -next?
+> > 
+> > (top-posting repaired)
+> > 
+> > It was a bit late for 3.16 back on May 26, when you said "I will dig
+> > deeper (probably for 3.17 now)".  So, please take another look at the
+> > patch factoring and let's get this underway for -rc1.
+> 
+> Ok, so I meant that I'd dig deeper for the additional sharing
+> opportunities (which I've found a few as Hugh correctly suggested). So
+> those eventual patches could come later. 
+> 
+> But I see no reason for *this* patchset to be delayed, as even if it
+> gets to be 3.17 material, I'd still very much want to have the same
+> patch factoring I have now. I think its the correct way to handle lock
+> transitioning for both correctness and bisectability.
 
-> But given that I already have preemption disabled and given that
-> __srcu_read_lock() is not to be used by irq handlers, I should be able to
-> use __this_cpu_inc(), correct?  Just to avoid unnecessary irq disabling
-> on non-x86 platforms...
+I'd be glad to see it go into 3.16 if it works as well as advertized.
+And if you're attached to your current 2/5, fine, do stick with that.
+But please do a proper job on your 3/5, instead of just aping how the
+anon case worked out.
 
-Absolutely, __this_cpu_inc() is OK here.
-
-
+Hugh
