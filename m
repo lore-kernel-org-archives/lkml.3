@@ -1,59 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932151AbaFBO5j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 10:57:39 -0400
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:42935 "EHLO
+	id S1755328AbaFBO7o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 10:59:44 -0400
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:44794 "EHLO
 	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755255AbaFBO5g (ORCPT
+	with ESMTP id S1752013AbaFBO7n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 10:57:36 -0400
+	Mon, 2 Jun 2014 10:59:43 -0400
+Date: Mon, 2 Jun 2014 16:59:39 +0200
+From: Robin Schroer <sulamiification@gmail.com>
+To: daniel.vetter@ffwll.ch
+Cc: intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] drivers/gpu/drm/i915/dma: style fixes
+Message-ID: <20140602145939.GA16534@shodan.fritz.box>
 MIME-Version: 1.0
-In-Reply-To: <20140602141606.GC2544@kernel.org>
-References: <1401692506-7796-1-git-send-email-ast@plumgrid.com>
-	<20140602081545.7baf4a91@lwn.net>
-	<20140602092456.2114440a@gandalf.local.home>
-	<20140602141606.GC2544@kernel.org>
-Date: Mon, 2 Jun 2014 07:57:33 -0700
-Message-ID: <CAMEtUuxZQuyJaTfoNECnZCJ=q8A_aMpncGwUgWNm9Huxm=bynw@mail.gmail.com>
-Subject: Re: [PATCH v2 net-next 0/2] split BPF out of core networking
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Jonathan Corbet <corbet@lwn.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        Ingo Molnar <mingo@kernel.org>, Daniel Borkmann <dborkman@redhat.com>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Jiri Olsa <jolsa@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 2, 2014 at 7:16 AM, Arnaldo Carvalho de Melo
-<acme@kernel.org> wrote:
-> Em Mon, Jun 02, 2014 at 09:24:56AM -0400, Steven Rostedt escreveu:
->> On Mon, 2 Jun 2014 08:15:45 -0500
->> Jonathan Corbet <corbet@lwn.net> wrote:
->
->> > On Mon,  2 Jun 2014 00:01:44 -0700
->> > Alexei Starovoitov <ast@plumgrid.com> wrote:
->
->> > > This patch set splits BPF out of core networking into generic component
->
->> > Quick, probably dumb question: if you're going to split it out, why not
->> > split it out entirely, into kernel/ or (perhaps better) lib/?  The
->> > whole point seems to be that BPF is outgrowing its networking home, so
->> > it seems like it might be better to make it truly generic.
->
->> I believe this is what Ingo suggested as well. If it is become generic,
->> it belongs in lib/
->
-> Yes, that was his suggestion, which I agree with, FWIW.
+Fixed several double space pointer notations, and added one newline
 
-I guess I posted v2 too quickly :) v2 splits filter.c into kernel/bpf/.
-I think it's a better location than lib/bpf, since lib feels too constrained
-by definition of 'library'. bpf is more than a set of library calls.
+Signed-off-by: Robin Schroer <sulamiification@gmail.com>
+---
+ drivers/gpu/drm/i915/i915_dma.c | 30 ++++++++++++++++--------------
+ 1 file changed, 16 insertions(+), 14 deletions(-)
+
+diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
+index b9159ad..f3ae664 100644
+--- a/drivers/gpu/drm/i915/i915_dma.c
++++ b/drivers/gpu/drm/i915/i915_dma.c
+@@ -136,7 +136,7 @@ static void i915_free_hws(struct drm_device *dev)
+ 	I915_WRITE(HWS_PGA, 0x1ffff000);
+ }
+ 
+-void i915_kernel_lost_context(struct drm_device * dev)
++void i915_kernel_lost_context(struct drm_device *dev)
+ {
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+ 	struct drm_i915_master_private *master_priv;
+@@ -164,7 +164,7 @@ void i915_kernel_lost_context(struct drm_device * dev)
+ 		master_priv->sarea_priv->perf_boxes |= I915_BOX_RING_EMPTY;
+ }
+ 
+-static int i915_dma_cleanup(struct drm_device * dev)
++static int i915_dma_cleanup(struct drm_device *dev)
+ {
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+ 	int i;
+@@ -188,7 +188,7 @@ static int i915_dma_cleanup(struct drm_device * dev)
+ 	return 0;
+ }
+ 
+-static int i915_initialize(struct drm_device * dev, drm_i915_init_t * init)
++static int i915_initialize(struct drm_device *dev, drm_i915_init_t *init)
+ {
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+ 	struct drm_i915_master_private *master_priv = dev->primary->master->driver_priv;
+@@ -233,7 +233,7 @@ static int i915_initialize(struct drm_device * dev, drm_i915_init_t * init)
+ 	return 0;
+ }
+ 
+-static int i915_dma_resume(struct drm_device * dev)
++static int i915_dma_resume(struct drm_device *dev)
+ {
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+ 	struct intel_engine_cs *ring = LP_RING(dev_priv);
+@@ -357,7 +357,7 @@ static int validate_cmd(int cmd)
+ 	return 0;
+ }
+ 
+-static int i915_emit_cmds(struct drm_device * dev, int *buffer, int dwords)
++static int i915_emit_cmds(struct drm_device *dev, int *buffer, int dwords)
+ {
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+ 	int i, ret;
+@@ -367,6 +367,7 @@ static int i915_emit_cmds(struct drm_device * dev, int *buffer, int dwords)
+ 
+ 	for (i = 0; i < dwords;) {
+ 		int sz = validate_cmd(buffer[i]);
++
+ 		if (sz == 0 || i + sz > dwords)
+ 			return -EINVAL;
+ 		i += sz;
+@@ -451,7 +452,7 @@ static void i915_emit_breadcrumb(struct drm_device *dev)
+ 	}
+ }
+ 
+-static int i915_dispatch_cmdbuffer(struct drm_device * dev,
++static int i915_dispatch_cmdbuffer(struct drm_device *dev,
+ 				   drm_i915_cmdbuffer_t *cmd,
+ 				   struct drm_clip_rect *cliprects,
+ 				   void *cmdbuf)
+@@ -485,8 +486,8 @@ static int i915_dispatch_cmdbuffer(struct drm_device * dev,
+ 	return 0;
+ }
+ 
+-static int i915_dispatch_batchbuffer(struct drm_device * dev,
+-				     drm_i915_batchbuffer_t * batch,
++static int i915_dispatch_batchbuffer(struct drm_device *dev,
++				     drm_i915_batchbuffer_t *batch,
+ 				     struct drm_clip_rect *cliprects)
+ {
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+@@ -547,7 +548,7 @@ static int i915_dispatch_batchbuffer(struct drm_device * dev,
+ 	return 0;
+ }
+ 
+-static int i915_dispatch_flip(struct drm_device * dev)
++static int i915_dispatch_flip(struct drm_device *dev)
+ {
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+ 	struct drm_i915_master_private *master_priv =
+@@ -753,7 +754,7 @@ fail_batch_free:
+ 	return ret;
+ }
+ 
+-static int i915_emit_irq(struct drm_device * dev)
++static int i915_emit_irq(struct drm_device *dev)
+ {
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+ 	struct drm_i915_master_private *master_priv = dev->primary->master->driver_priv;
+@@ -779,7 +780,7 @@ static int i915_emit_irq(struct drm_device * dev)
+ 	return dev_priv->dri1.counter;
+ }
+ 
+-static int i915_wait_irq(struct drm_device * dev, int irq_nr)
++static int i915_wait_irq(struct drm_device *dev, int irq_nr)
+ {
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+ 	struct drm_i915_master_private *master_priv = dev->primary->master->driver_priv;
+@@ -1264,6 +1265,7 @@ static void i915_switcheroo_set_state(struct pci_dev *pdev, enum vga_switcheroo_
+ {
+ 	struct drm_device *dev = pci_get_drvdata(pdev);
+ 	pm_message_t pmm = { .event = PM_EVENT_SUSPEND };
++
+ 	if (state == VGA_SWITCHEROO_ON) {
+ 		pr_info("switched on\n");
+ 		dev->switch_power_state = DRM_SWITCH_POWER_CHANGING;
+@@ -1895,7 +1897,7 @@ int i915_driver_open(struct drm_device *dev, struct drm_file *file)
+  * and DMA structures, since the kernel won't be using them, and clea
+  * up any GEM state.
+  */
+-void i915_driver_lastclose(struct drm_device * dev)
++void i915_driver_lastclose(struct drm_device *dev)
+ {
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+ 
+@@ -1916,7 +1918,7 @@ void i915_driver_lastclose(struct drm_device * dev)
+ 	i915_dma_cleanup(dev);
+ }
+ 
+-void i915_driver_preclose(struct drm_device * dev, struct drm_file *file_priv)
++void i915_driver_preclose(struct drm_device *dev, struct drm_file *file_priv)
+ {
+ 	mutex_lock(&dev->struct_mutex);
+ 	i915_gem_context_close(dev, file_priv);
+@@ -1993,7 +1995,7 @@ int i915_max_ioctl = DRM_ARRAY_SIZE(i915_ioctls);
+  * manage the gtt, we need to claim that all intel devices are agp.  For
+  * otherwise the drm core refuses to initialize the agp support code.
+  */
+-int i915_driver_device_is_agp(struct drm_device * dev)
++int i915_driver_device_is_agp(struct drm_device *dev)
+ {
+ 	return 1;
+ }
+-- 
+1.9.3
+
+
+-- 
+
+Robin Schroer
+
