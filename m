@@ -1,85 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752418AbaFBGas (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 02:30:48 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:43871 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752238AbaFBGar (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 02:30:47 -0400
-X-AuditID: cbfee690-b7fb56d000003439-06-538c1a14fb22
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Mark Brown'" <broonie@kernel.org>
-Cc: "'Liam Girdwood'" <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
-        "'Jingoo Han'" <jg1.han@samsung.com>, "'Balaji T K'" <balajitk@ti.com>
-References: <000101cf7e2b$b5c9f9c0$215ded40$%han@samsung.com>
-In-reply-to: <000101cf7e2b$b5c9f9c0$215ded40$%han@samsung.com>
-Subject: [PATCH 3/3] regulator: pbias: remove unnecessary OOM messages
-Date: Mon, 02 Jun 2014 15:30:44 +0900
-Message-id: <000301cf7e2c$2ec50b80$8c4f2280$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac9+K7WAMnl298jeROKabyh9CsMnMAAAF7Lw
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrKIsWRmVeSWpSXmKPExsVy+t8zfV0RqZ5gg/eb9CymTt7OZjH14RM2
-	i8sLL7FafLvSwWRxedccNgdWj52z7rJ7bFrVyebRt2UVo8fxG9uZPD5vkgtgjeKySUnNySxL
-	LdK3S+DK2PrgE1NBG3vFo6/PmBoYP7B2MXJwSAiYSHy/a9DFyAlkiklcuLeeDcQWEljGKPH4
-	dTBE3ETiyZu7QOVcQPHpjBJtq3tYIJzfjBLfJ35lBKliE1CT+PLlMDvIUBEBVYn/r9xBapgF
-	ehklDi3byggx1VZi88Ir7CA2p4CdxMT7l5hAbGEBN4mZnYfB4ixAvRMfvmMBmcMLVD/5gDdI
-	mFdAUOLH5HssIDazgJbE+p3HmSBseYnNa94yQ/yiLvHory5IWETASKK74QlUuYjEvhfvGEHO
-	kRB4xC5xZttNFohVAhLfJh9igeiVldh0gBniX0mJgytusExglJiFZPMsJJtnIdk8C8mKBYws
-	qxhFUwuSC4qT0otM9IoTc4tL89L1kvNzNzFConTCDsZ7B6wPMSYDrZ/ILCWanA+M8rySeENj
-	MyMLUxNTYyNzSzPShJXEedUeJQUJCaQnlqRmp6YWpBbFF5XmpBYfYmTi4JRqYJx6y69MYcHt
-	imuPF0kXRKnNnp67oKj1Y9/y25vqP2XvXWPE1LRSvVgkesMhtzd9XaoHfVY0nHz9tjdr3pu/
-	FzRVdt7Ovrwv2vawv77OMb2Fd8/M7QjJaLLcvmj7zO/f7KTu/FKYbSi1rpf959rEfw4z+ngX
-	zgvyjW7Off6c6cW5UusrPe5LX9opsRRnJBpqMRcVJwIANwbqxegCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCKsWRmVeSWpSXmKPExsVy+t9jQV0RqZ5ggz37tCymTt7OZjH14RM2
-	i8sLL7FafLvSwWRxedccNgdWj52z7rJ7bFrVyebRt2UVo8fxG9uZPD5vkgtgjWpgtMlITUxJ
-	LVJIzUvOT8nMS7dV8g6Od443NTMw1DW0tDBXUshLzE21VXLxCdB1y8wB2q6kUJaYUwoUCkgs
-	LlbSt8M0ITTETdcCpjFC1zckCK7HyAANJKxjzNj64BNTQRt7xaOvz5gaGD+wdjFyckgImEg8
-	eXMXyhaTuHBvPVsXIxeHkMB0Rom21T0sEM5vRonvE78yglSxCahJfPlymL2LkYNDREBV4v8r
-	d5AaZoFeRolDy7aC1QgJ2EpsXniFHcTmFLCTmHj/EhOILSzgJjGz8zBYnAWod+LDdywgc3iB
-	6icf8AYJ8woISvyYfI8FxGYW0JJYv/M4E4QtL7F5zVtmkHIJAXWJR391QcIiAkYS3Q1PoMpF
-	JPa9eMc4gVFoFpJJs5BMmoVk0iwkLQsYWVYxiqYWJBcUJ6XnGukVJ+YWl+al6yXn525iBKeB
-	Z9I7GFc1WBxiFOBgVOLhvdDbFSzEmlhWXJl7iFGCg1lJhPfo2e5gId6UxMqq1KL8+KLSnNTi
-	Q4zJQH9OZJYSTc4Hpqi8knhDYxMzI0sjMwsjE3Nz0oSVxHkPtloHCgmkJ5akZqemFqQWwWxh
-	4uCUamA0WjRrnerCPwp57w99y7Hf+MnlmHnQjGdtGss23tlXGG31/NGUb5+K+9guTGP7czPH
-	dD3Pc8WIrDbN6gMyX2+az3G2E674L+l28XirwaUnbVd3fWkIuZ7weNm28zU/hEKkRTlsP/C8
-	n1sqkK7EembpC6/cxurl2ueW/Zyh5rjm6s3LMu+iD3zqUmIpzkg01GIuKk4EAF+PKeNHAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1752200AbaFBGeh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 02:34:37 -0400
+Received: from ozlabs.org ([103.22.144.67]:42741 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751407AbaFBGeg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 02:34:36 -0400
+Date: Mon, 2 Jun 2014 16:34:29 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Alexander Graf <agraf@suse.de>, Christoffer Dall <cdall@cs.columbia.edu>,
+        Marc Zyngier <marc.zyngier@arm.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Anup Patel <anup.patel@linaro.org>
+Subject: linux-next: manual merge of the kvm-ppc tree with the  tree
+Message-ID: <20140602163429.357cf678@canb.auug.org.au>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/d=DQypsFZSJn/uQjH9HeZYC"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The site-specific OOM messages are unnecessary, because they
-duplicate the MM subsystem generic OOM message.
+--Sig_/d=DQypsFZSJn/uQjH9HeZYC
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
----
- drivers/regulator/pbias-regulator.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+Hi Alexander,
 
-diff --git a/drivers/regulator/pbias-regulator.c b/drivers/regulator/pbias-regulator.c
-index 708ddbb..6d02d68 100644
---- a/drivers/regulator/pbias-regulator.c
-+++ b/drivers/regulator/pbias-regulator.c
-@@ -122,10 +122,8 @@ static int pbias_regulator_probe(struct platform_device *pdev)
- 
- 	drvdata = devm_kzalloc(&pdev->dev, sizeof(struct pbias_regulator_data)
- 			       * count, GFP_KERNEL);
--	if (drvdata == NULL) {
--		dev_err(&pdev->dev, "Failed to allocate device data\n");
-+	if (!drvdata)
- 		return -ENOMEM;
--	}
- 
- 	syscon = syscon_regmap_lookup_by_phandle(np, "syscon");
- 	if (IS_ERR(syscon))
--- 
-1.7.10.4
+Today's linux-next merge of the kvm-ppc tree got a conflict in
+include/uapi/linux/kvm.h between commit 717abd208dff ("KVM: Add
+capability to advertise PSCI v0.2 support") from the kvm-arm tree and
+commit f2e91042a807 ("KVM: PPC: Add CAP to indicate hcall fixes") from
+the kvm-ppc tree.
 
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc include/uapi/linux/kvm.h
+index 32cf446f1911,16c923de85e7..000000000000
+--- a/include/uapi/linux/kvm.h
++++ b/include/uapi/linux/kvm.h
+@@@ -756,7 -748,7 +756,8 @@@ struct kvm_ppc_smmu_info=20
+  #define KVM_CAP_S390_IRQCHIP 99
+  #define KVM_CAP_IOEVENTFD_NO_LENGTH 100
+  #define KVM_CAP_VM_ATTRIBUTES 101
+ -#define KVM_CAP_PPC_FIXUP_HCALL 102
+ +#define KVM_CAP_ARM_PSCI_0_2 102
+++#define KVM_CAP_PPC_FIXUP_HCALL 103
+ =20
+  #ifdef KVM_CAP_IRQ_ROUTING
+ =20
+
+--Sig_/d=DQypsFZSJn/uQjH9HeZYC
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTjBr5AAoJEMDTa8Ir7ZwVGhQP/RS5zAlJj/XeLOSzLoZ3LdKu
+Wfr0Ful5I+L2OhLurFnlYQFSQ2ileGWb2InqBSb1Hy4GLhrJD3Q5djMLV3KY4ZzE
+DWqREXN6a+xXAhwFPpx2HHHmpVKAREIUnc4Bm8XIhXG7Fbd6Eor/SYp8KfteoXBU
+7TaACqutS6zhcpv7O+ha17XNezj+bQAo3orPsONBMZJMIAsjDV0JWENnuDLkXMXE
+MzrbQbHU/Zz6D7IT6lvxIxl0XXCIojluFlNzoijgNiaIuCqKH/L99ZyJAdkbCraC
+PNP9AycEpc+TWGypLZFQR0Xgy2lcHgOPD/okfg6ETNLKT0/pxGlI3+gTGVHMrcS7
+K4Szqv+l0w7Gsj/rbkAIo+wQ1gv4anHkpuQ6+XWMnDhmyPvnZOPQSn08MkhEfDJF
+i1xlQ+YsXTKkcugWqU+bHaDkHM37vhcNMM5wdmBB+M+ydNHl4QQ9rOaZfuNnbADu
+/NXzrYu144DTbff9r3WCR2HYAHfo441s3NLa0Jfq9dEm0paf2eYWhoYq5XSZ7PCo
+X4tzJUT5y6LSur0saHZS1mhbv7pOekfSxqbTrIodoMgrtEb0XfacW5xrujA7YFHO
+d4FF4zafP5f83Kk7aKSeHkpt80DSwRNqYUERGomcpwWVzV3BjIGVsf3c9NH29weL
+ybkI9yBMJrJbTRuRvH6M
+=Up5Y
+-----END PGP SIGNATURE-----
+
+--Sig_/d=DQypsFZSJn/uQjH9HeZYC--
