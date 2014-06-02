@@ -1,137 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754156AbaFBLkg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 07:40:36 -0400
-Received: from mail.kernel.org ([198.145.19.201]:40762 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752784AbaFBLkd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 07:40:33 -0400
-Date: Mon, 2 Jun 2014 13:40:28 +0200
-From: Sebastian Reichel <sre@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
-Subject: [GIT PULL] HSI changes for 3.16
-Message-ID: <20140602114028.GA23504@earth.universe>
+	id S1754045AbaFBLkb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 07:40:31 -0400
+Received: from mail-we0-f176.google.com ([74.125.82.176]:56782 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752784AbaFBLka (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 07:40:30 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="FL5UXtIhxfXey3p5"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1401708833.15098.26.camel@dhcp-9-2-203-236.watson.ibm.com>
+References: <1401289784-31340-1-git-send-email-zohar@linux.vnet.ibm.com>
+	<1401289784-31340-5-git-send-email-zohar@linux.vnet.ibm.com>
+	<CACE9dm-CwB=wPffdg7UMKWw1LBaePBgxXPYd9E51dZK+kpFKBw@mail.gmail.com>
+	<1401588848.22476.33.camel@dhcp-9-2-203-236.watson.ibm.com>
+	<CACE9dm_9QQapE=NiPF+vL=RpuoVAFLotOyzObcRRZ=+rqeuCOw@mail.gmail.com>
+	<1401708833.15098.26.camel@dhcp-9-2-203-236.watson.ibm.com>
+Date: Mon, 2 Jun 2014 14:40:28 +0300
+Message-ID: <CACE9dm-bqp-a3yogxEDk3M1c-XByuYki+7jZK3=U=VtqDMkCRQ@mail.gmail.com>
+Subject: Re: [RFC PATCH v4 4/4] KEYS: define an owner trusted keyring
+From: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: linux-security-module <linux-security-module@vger.kernel.org>,
+        Dmitry Kasatkin <d.kasatkin@samsung.com>,
+        David Howells <dhowells@redhat.com>, Josh Boyer <jwboyer@redhat.com>,
+        keyrings <keyrings@linux-nfs.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 2 June 2014 14:33, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+> On Mon, 2014-06-02 at 13:48 +0300, Dmitry Kasatkin wrote:
+>> On 1 June 2014 05:14, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+>> > On Sat, 2014-05-31 at 01:37 +0300, Dmitry Kasatkin wrote:
+>> >> On 28 May 2014 18:09, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+>> >> > (UEFI) secure boot provides a signature chain of trust rooted in
+>> >> > hardware. The signature chain of trust includes the Machine Owner
+>> >> > Keys(MOKs), which cannot be modified without physical presence.
+>> >> >
+>> >> > Instead of allowing public keys, with certificates signed by any
+>> >> > key on the system trusted keyring, to be added to a trusted
+>> >> > keyring, this patch further restricts the certificates to those
+>> >> > signed by the machine owner's key or chosen key.
+>> >> >
+>> >> > This patch defines an owner trusted keyring, defines a new boot
+>> >> > command line option 'keyring=' to designate the machine owner's
+>> >> > chosen key, and renames the function get_system_trusted_keyring()
+>> >> > to get_system_or_owner_trusted_keyring().
+>> >> >
+>> >> > This patch permits the machine owner to safely identify their own
+>> >> > or chosen key, without requiring it to be builtin the kernel.
+>> >> >
+>> >> > Signed-off-by: Mimi Zohar<zohar@linux.vnet.ibm.com>
+>> >> > ---
+>> >> >  crypto/asymmetric_keys/x509_public_key.c |  3 +-
+>> >> >  include/keys/system_keyring.h            | 15 ++++--
+>> >> >  include/linux/key.h                      |  4 ++
+>> >> >  kernel/system_keyring.c                  | 85 ++++++++++++++++++++++++++++++++
+>> >> >  security/keys/key.c                      | 20 ++++++++
+>> >> >  5 files changed, 121 insertions(+), 6 deletions(-)
+>> >> >
+>> >> > diff --git a/crypto/asymmetric_keys/x509_public_key.c b/crypto/asymmetric_keys/x509_public_key.c
+>> >> > index 1af8a30..6d52790 100644
+>> >> > --- a/crypto/asymmetric_keys/x509_public_key.c
+>> >> > +++ b/crypto/asymmetric_keys/x509_public_key.c
+>> >> > @@ -237,7 +237,8 @@ static int x509_key_preparse(struct key_preparsed_payload *prep)
+>> >> >                 if (ret < 0)
+>> >> >                         goto error_free_cert;
+>> >> >         } else {
+>> >> > -               ret = x509_validate_trust(cert, get_system_trusted_keyring());
+>> >> > +               ret = x509_validate_trust(cert,
+>> >> > +                                         get_system_or_owner_trusted_keyring());
+>> >> >                 if (!ret)
+>> >> >                         prep->trusted = 1;
+>> >> >         }
+>> >> > diff --git a/include/keys/system_keyring.h b/include/keys/system_keyring.h
+>> >> > index 72665eb..f665c33 100644
+>> >> > --- a/include/keys/system_keyring.h
+>> >> > +++ b/include/keys/system_keyring.h
+>> >> > @@ -17,15 +17,20 @@
+>> >> >  #include <linux/key.h>
+>> >> >
+>> >> >  extern struct key *system_trusted_keyring;
+>> >> > -static inline struct key *get_system_trusted_keyring(void)
+>> >> > -{
+>> >> > -       return system_trusted_keyring;
+>> >> > -}
+>> >> > +extern struct key *owner_trusted_keyring;
+>> >> > +
+>> >> > +extern struct key *get_system_or_owner_trusted_keyring(void);
+>> >> > +extern void load_owner_identified_uefi_key(key_ref_t key);
+>> >> > +
+>> >> >  #else
+>> >> > -static inline struct key *get_system_trusted_keyring(void)
+>> >> > +static inline struct key *get_system_or_owner_trusted_keyring(void)
+>> >> >  {
+>> >> >         return NULL;
+>> >> >  }
+>> >> > +
+>> >> > +static void load_owner_identified_uefi_key(key_ref_t key)
+>> >> > +{
+>> >> > +}
+>> >> >  #endif
+>> >> >
+>> >> >  #endif /* _KEYS_SYSTEM_KEYRING_H */
+>> >> > diff --git a/include/linux/key.h b/include/linux/key.h
+>> >> > index cd0abb8..861843a 100644
+>> >> > --- a/include/linux/key.h
+>> >> > +++ b/include/linux/key.h
+>> >> > @@ -267,6 +267,10 @@ extern int wait_for_key_construction(struct key *key, bool intr);
+>> >> >
+>> >> >  extern int key_validate(const struct key *key);
+>> >> >
+>> >> > +extern int key_match(key_ref_t key,
+>> >> > +                    const char *type,
+>> >> > +                    const char *description);
+>> >> > +
+>> >> >  extern key_ref_t key_create_or_update(key_ref_t keyring,
+>> >> >                                       const char *type,
+>> >> >                                       const char *description,
+>> >> > diff --git a/kernel/system_keyring.c b/kernel/system_keyring.c
+>> >> > index 52ebc70..e9b14ac 100644
+>> >> > --- a/kernel/system_keyring.c
+>> >> > +++ b/kernel/system_keyring.c
+>> >> > @@ -19,11 +19,75 @@
+>> >> >  #include "module-internal.h"
+>> >> >
+>> >> >  struct key *system_trusted_keyring;
+>> >> > +struct key *owner_trusted_keyring;
+>> >> >  EXPORT_SYMBOL_GPL(system_trusted_keyring);
+>> >> >
+>> >> >  extern __initconst const u8 system_certificate_list[];
+>> >> >  extern __initconst const unsigned long system_certificate_list_size;
+>> >> >
+>> >> > +static int use_owner_trusted_keyring;
+>> >> > +
+>> >> > +static char *owner_keyid;
+>> >> > +static int builtin_keyring;
+>> >> > +static int __init default_keyring_set(char *str)
+>> >> > +{
+>> >> > +       if (!str)       /* default: builtin */
+>> >> > +               return 1;
+>> >> > +
+>> >> > +       if (strcmp(str, "system") == 0)  /* use system keyring */
+>> >> > +               ;
+>> >> > +       else if (strcmp(str, "builtin") == 0)  /* only builtin keys */
+>> >> > +               builtin_keyring = 1;
+>> >> > +       else
+>> >> > +               owner_keyid = str;   /* owner local key 'id:xxxxxx' */
+>> >> > +       return 1;
+>> >> > +}
+>> >> > +__setup("keyring=", default_keyring_set);
+>> >> > +
+>> >> > +/*
+>> >> > + * Load the owner identified key on the 'owner' trusted keyring.
+>> >> > + */
+>> >> > +void load_owner_identified_uefi_key(key_ref_t key)
+>> >> > +{
+>> >> > +       if (!owner_keyid || use_owner_trusted_keyring)
+>> >> > +               return;
+>> >> > +
+>> >> > +       if (!key_match(key, "asymmetric", owner_keyid))
+>> >> > +               return;
+>> >> > +
+>> >> > +       if (key_link(owner_trusted_keyring, key_ref_to_ptr(key)) == 0) {
+>> >> > +               set_bit(KEY_FLAG_TRUSTED_ONLY, &owner_trusted_keyring->flags);
+>> >> > +               use_owner_trusted_keyring = 1;
+>> >>
+>> >> This is a bit strange...
+>> >> Linking any key forces to use owner trusted keyring...
+>> >
+>> > Wouldn't it be stranger to identify a specific key on the system keyring
+>> > and add it to the owner keyring, but then not use it?   I don't
+>> > understand your concern.  What is the problem?
+>>
+>> This patch technically specifies to use all keys from the system
+>> keyring or the one specified
+>> by the owner_keyid. Why the owner keyring is needed then at all?
+>> owner_keyid can identify the key to use from the system keyring....
+>
+> Currently only the builtin keys are on the system keyring, but once
+> David and Josh's UEFI patches are upstreamed, the UEFI keys will also be
+> on the system keyring.  At that point, we would want to differentiate
+> between the builtin keys and the remaining keys on the system keyring.
+> Splitting this patch definitely helps clarify what's happening and, more
+> importantly, why.
+>
+> Mimi
+>
 
---FL5UXtIhxfXey3p5
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Ok. May be would should focus on patches for existing functionality.
+If something new comes from other side, it can be addressed by new
+another set of patches.
 
-Hi Linus,
-
-Please pull the following changes for the HSI subsystem, which I
-have taken over from Carlos Chinea <carlos.chinea@nokia.com>.
-
-The below patches have been worked on in the linux-omap mailinglist
-for 10 months and are well tested in linux-next (have been in there
-for more than two weeks) without any problems arising. Apart from
-that potential regressions are very limited, because the subsystem
-is not yet used by any platform in the mainline kernel.
-
--- Sebastian
-
-The following changes since commit d1db0eea852497762cab43b905b879dfcd3b8987:
-
-  Linux 3.15-rc3 (2014-04-27 19:29:27 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/sre/linux-hsi.git tags/hsi-for-3.16
-
-for you to fetch changes up to eafaebd987fcd001e2c123c050939a29c625d673:
-
-  HSI: Introduce Nokia N900 modem driver (2014-05-16 00:55:42 +0200)
-
-----------------------------------------------------------------
-HSI changes for the v3.16 series:
-
- - Add some documentation for the HSI subsystem
-
- - Add Device Tree support for the HSI subsystem
-
- - Add OMAP3 SSI driver (SSI is a legacy variant of HSI)
-
- - Add Nokia N900 Modem driver (without speech support for now)
-
-----------------------------------------------------------------
-Sebastian Reichel (11):
-      Documentation: HSI: Add some general description for the HSI subsystem
-      MAINTAINERS: update HSI entry
-      HSI: hsi-char: fix driver for multiport scenarios
-      HSI: method to unregister clients from an hsi port
-      HSI: Add channel resource support to HSI clients
-      HSI: export method to (un)register clients
-      HSI: Add common DT binding for HSI client devices
-      HSI: Introduce OMAP SSI driver
-      Documentation: DT: omap-ssi binding documentation
-      HSI: Introduce driver for SSI Protocol
-      HSI: Introduce Nokia N900 modem driver
-
- Documentation/devicetree/bindings/hsi/client-devices.txt |   44 +++
- Documentation/devicetree/bindings/hsi/nokia-modem.txt    |   57 ++++
- Documentation/devicetree/bindings/hsi/omap-ssi.txt       |   97 ++++++
- Documentation/hsi.txt                                    |   75 +++++
- MAINTAINERS                                              |    4 +-
- drivers/hsi/Kconfig                                      |    1 +
- drivers/hsi/Makefile                                     |    1 +
- drivers/hsi/clients/Kconfig                              |   17 ++
- drivers/hsi/clients/Makefile                             |    4 +-
- drivers/hsi/clients/hsi_char.c                           |   14 +-
- drivers/hsi/clients/nokia-modem.c                        |  285 ++++++++++++++++++
- drivers/hsi/clients/ssi_protocol.c                       | 1191 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- drivers/hsi/controllers/Kconfig                          |   19 ++
- drivers/hsi/controllers/Makefile                         |    6 +
- drivers/hsi/controllers/omap_ssi.c                       |  625 +++++++++++++++++++++++++++++++++++++++
- drivers/hsi/controllers/omap_ssi.h                       |  166 +++++++++++
- drivers/hsi/controllers/omap_ssi_port.c                  | 1399 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- drivers/hsi/controllers/omap_ssi_regs.h                  |  171 +++++++++++
- drivers/hsi/hsi.c                                        |  275 ++++++++++++++++-
- include/linux/hsi/hsi.h                                  |   39 ++-
- include/linux/hsi/ssi_protocol.h                         |   42 +++
- 21 files changed, 4513 insertions(+), 19 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/hsi/client-devices.txt
- create mode 100644 Documentation/devicetree/bindings/hsi/nokia-modem.txt
- create mode 100644 Documentation/devicetree/bindings/hsi/omap-ssi.txt
- create mode 100644 Documentation/hsi.txt
- create mode 100644 drivers/hsi/clients/nokia-modem.c
- create mode 100644 drivers/hsi/clients/ssi_protocol.c
- create mode 100644 drivers/hsi/controllers/Kconfig
- create mode 100644 drivers/hsi/controllers/Makefile
- create mode 100644 drivers/hsi/controllers/omap_ssi.c
- create mode 100644 drivers/hsi/controllers/omap_ssi.h
- create mode 100644 drivers/hsi/controllers/omap_ssi_port.c
- create mode 100644 drivers/hsi/controllers/omap_ssi_regs.h
- create mode 100644 include/linux/hsi/ssi_protocol.h
-
---FL5UXtIhxfXey3p5
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBCgAGBQJTjGKsAAoJENju1/PIO/qaJ6AQAIHlotUwIfHXkjrLvPjKlkNt
-IhoAWaOq+4DwXx84WHCa5HxgYBc39vlJrQxAHMAuCSFv126hOOiO5Kwgmjs9Brj3
-jRUXAFgAcIfTObRmOsnNyIg2Zug3l1V6t8oMxvFUZCTRbz0M9NoOCtMuQlQKasKJ
-dyUBrDUy10HU20qqstcnoyV/utAd1a2LY8Z8DVgoq/ga7LxSbJ73TCozGDN5fUL9
-WELlKPZy2NMKppYeOB8YEZyvTOg9BwUjrznE9Xi3d0ZgqJ54WX/hZ6n58/se/7vq
-OUAKczz6zMFB3wvP9aMUyiDmlYUxqxxzpS92RwMSSlBJ5hw8Ha34RzBgtjTrLIdB
-02Xcsm3QIMLkkqU4AnHESfrmofXQGui3uDN+Su0Kb7f4wUtT1D8pJkEjpI/whkeB
-F9j8hXPil6eTHSz9LeRUOMKeBK685+T061+fId150SOfIPPOLGRDyPQRzCp5D27i
-eVigN5HOOhz/PX3cCydijzM/5/0jgqQvI26VH6Lpnr5BwxbD+VDRJfN7MD2/EcHY
-93Sncr1d48q7weDr2AqAmFTItTjGCi56Z1xPaqkPlKSWwvW2ZnG/Q/xFo78Pa7B8
-S1kO33dTld5BVqSWUnpws6IN+Zc4cH2ZXK/cPDNxN1z5epvH5in5NOX5YOGA4K2b
-fXwNNc0JyLX4Tdb1tynA
-=spgt
------END PGP SIGNATURE-----
-
---FL5UXtIhxfXey3p5--
+- Dmitry
