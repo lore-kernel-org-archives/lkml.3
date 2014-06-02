@@ -1,81 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752533AbaFBRIG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 13:08:06 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:40857 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751084AbaFBRIE (ORCPT
+	id S1753401AbaFBRIn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 13:08:43 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:33766 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752742AbaFBRIm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 13:08:04 -0400
-Date: Mon, 2 Jun 2014 19:07:59 +0200
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Olof Johansson <olof@lixom.net>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>, Arnd Bergmann <arnd@arndb.de>,
-        "arm@kernel.org" <arm@kernel.org>, egtvedt@samfundet.no,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>
-Subject: Re: [GIT PULL] at91: drivers for 3.16 #1
-Message-ID: <20140602170758.GA17518@piout.net>
-References: <1401726901-19093-1-git-send-email-nicolas.ferre@atmel.com>
- <CAOesGMj1FuozbydRf=J7jWFt_8GZ8ZKZReg_1BmvPC706cZ7rQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAOesGMj1FuozbydRf=J7jWFt_8GZ8ZKZReg_1BmvPC706cZ7rQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 2 Jun 2014 13:08:42 -0400
+From: "Javi Merino" <javi.merino@arm.com>
+To: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
+Cc: Javi Merino <javi.merino@arm.com>,
+        Jacob Pan <jacob.jun.pan@linux.intel.com>,
+        Zhang Rui <rui.zhang@intel.com>
+Subject: [PATCH] tools/thermal: tmon: fix compilation errors when building statically
+Date: Mon,  2 Jun 2014 18:08:17 +0100
+Message-Id: <1401728897-25188-1-git-send-email-javi.merino@arm.com>
+X-Mailer: git-send-email 1.9.1
+X-OriginalArrivalTime: 02 Jun 2014 17:08:34.0966 (UTC) FILETIME=[49B93B60:01CF7E85]
+X-MC-Unique: 114060218084001901
+Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id s52H8re1030872
 
-Hi,
+tmon fails to build statically with the following error:
 
-On 02/06/2014 at 09:37:01 -0700, Olof Johansson wrote :
-> On Mon, Jun 2, 2014 at 9:35 AM, Nicolas Ferre <nicolas.ferre@atmel.com> wrote:
-> > Arnd, Olof, Kevin,
-> >
-> > Here is an additional AT91 pull-request for 3.16 about drivers and
-> > particularly focused on PWM.
-> > Alexandre did a great job replacing the existing calls to the older,
-> > non-standard drivers by the use of the newer "pwm-atmel" which takes
-> > advantage of the PWM framework.
-> > In addition of removing three obsolete drivers, it also solves an issue with
-> > non existing Kconfig symbols introduced by (misc: atmel_pwm: only build for
-> > supported platforms) which was trying to avoid a build failure... so, all in
-> > all, a pretty good thing!
-> >
-> > The drawback is that this series depends on two git trees:
-> >
-> > Obviously, one from Thierry:
-> > git://git.kernel.org/pub/scm/linux/kernel/git/thierry.reding/linux-pwm
-> >
-> > And as well the one from Greg who took Arnd's patch for Kconfig:
-> > git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/char-misc
-> >
-> > Tell me if you feel it is the proper way to deal with this or if it is too late
-> > for this round (look at the diffstat, yummy ;-))
-> >
-> > Thanks, best regards,
-> >
-> > The following changes since commit fa264e615338c423e344d34621f992858b957097:
-> >
-> >   Merge branch 'char-misc-next' of git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/char-misc into at91-3.16-drivers (2014-06-02 18:02:18 +0200)
-> >
-> > are available in the git repository at:
-> >
-> >
-> >   git://github.com/at91linux/linux-at91.git tags/at91-drivers
-> 
-> The 3.16 merge window is open, please resend after -rc1.
-> 
+$ make LDFLAGS=-static
+gcc -O1 -Wall -Wshadow -W -Wformat -Wimplicit-function-declaration -Wimplicit-int -fstack-protector -D VERSION=\"1.0\" -static tmon.o tui.o sysfs.o pid.o   -o tmon -lm -lpanel -lncursesw  -lpthread
+tmon.o: In function `tmon_sig_handler':
+tmon.c:(.text+0x21): undefined reference to `stdscr'
+tmon.o: In function `tmon_cleanup':
+tmon.c:(.text+0xb9): undefined reference to `stdscr'
+tmon.c:(.text+0x11e): undefined reference to `stdscr'
+tmon.c:(.text+0x123): undefined reference to `keypad'
+tmon.c:(.text+0x12d): undefined reference to `nocbreak'
+tmon.o: In function `main':
+tmon.c:(.text+0x785): undefined reference to `stdscr'
+tmon.c:(.text+0x78a): undefined reference to `nodelay'
+tui.o: In function `setup_windows':
+tui.c:(.text+0x131): undefined reference to `stdscr'
+tui.c:(.text+0x176): undefined reference to `stdscr'
+tui.c:(.text+0x19f): undefined reference to `stdscr'
+tui.c:(.text+0x1cc): undefined reference to `stdscr'
+tui.c:(.text+0x1ff): undefined reference to `stdscr'
+tui.o:tui.c:(.text+0x229): more undefined references to `stdscr' follow
+tui.o: In function `show_cooling_device':
+[...]
 
-Hopefully, this will solve our dependency issues :)
+stdscr() and friends are in libtinfo (part of ncurses) so add it to
+the libraries that are linked in when compiling tmon to fix it.
 
+Cc: Jacob Pan <jacob.jun.pan@linux.intel.com>
+Cc: Zhang Rui <rui.zhang@intel.com>
+Signed-off-by: Javi Merino <javi.merino@arm.com>
+---
+ tools/thermal/tmon/Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/tools/thermal/tmon/Makefile b/tools/thermal/tmon/Makefile
+index 447321104ec0..e775adcbd29f 100644
+--- a/tools/thermal/tmon/Makefile
++++ b/tools/thermal/tmon/Makefile
+@@ -21,7 +21,7 @@ OBJS = tmon.o tui.o sysfs.o pid.o
+ OBJS +=
+ 
+ tmon: $(OBJS) Makefile tmon.h
+-	$(CC) ${CFLAGS} $(LDFLAGS) $(OBJS)  -o $(TARGET) -lm -lpanel -lncursesw  -lpthread
++	$(CC) ${CFLAGS} $(LDFLAGS) $(OBJS)  -o $(TARGET) -lm -lpanel -lncursesw -ltinfo -lpthread
+ 
+ valgrind: tmon
+ 	 sudo valgrind -v --track-origins=yes --tool=memcheck --leak-check=yes --show-reachable=yes --num-callers=20 --track-fds=yes ./$(TARGET)  1> /dev/null
 -- 
-Alexandre Belloni, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+1.9.1
+
+
