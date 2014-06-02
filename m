@@ -1,79 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752299AbaFBRDe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 13:03:34 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:59699 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751796AbaFBRDc (ORCPT
+	id S1753036AbaFBREm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 13:04:42 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:37538 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752636AbaFBREl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 13:03:32 -0400
-Date: Mon, 2 Jun 2014 10:03:27 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Jason Low <jason.low2@hp.com>
-Cc: Mikulas Patocka <mpatocka@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, jejb@parisc-linux.org,
-        deller@gmx.de, John David Anglin <dave.anglin@bell.net>,
-        linux-parisc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        chegu_vinod@hp.com, Waiman.Long@hp.com, tglx@linutronix.de,
-        riel@redhat.com, akpm@linux-foundation.org, davidlohr@hp.com,
-        hpa@zytor.com, andi@firstfloor.org, aswin@hp.com, scott.norton@hp.com
-Subject: Re: [PATCH v2] introduce atomic_pointer to fix a race condition in
- cancelable mcs spinlocks
-Message-ID: <20140602170327.GV22231@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <alpine.LRH.2.02.1406011342470.20831@file01.intranet.prod.int.rdu2.redhat.com>
- <alpine.LRH.2.02.1406021158360.20627@file01.intranet.prod.int.rdu2.redhat.com>
- <1401727810.7440.34.camel@j-VirtualBox>
+	Mon, 2 Jun 2014 13:04:41 -0400
+Message-ID: <538CAEBD.5040501@gmail.com>
+Date: Mon, 02 Jun 2014 19:05:01 +0200
+From: Federico Di Pierro <nierro92@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1401727810.7440.34.camel@j-VirtualBox>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14060217-9332-0000-0000-000000F81A4F
+To: jic23@kernel.org, jic23@kernel.org, gregkh@linuxfoundation.org,
+        jg1.han@samsung.com, sachin.kamat@linaro.org
+CC: linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] fix some coding style problem in drivers/staging/iio/frequency/ad9832.c
+Content-Type: multipart/mixed;
+ boundary="------------020707000505080700040902"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 02, 2014 at 09:50:10AM -0700, Jason Low wrote:
-> On Mon, 2014-06-02 at 12:00 -0400, Mikulas Patocka wrote:
-> > If you write to some variable with ACCESS_ONCE and use cmpxchg or xchg at
-> > the same time, you break it. ACCESS_ONCE doesn't take the hashed spinlock,
-> > so, in this case, cmpxchg or xchg isn't really atomic at all.
-> 
-> So if the problem is using ACCESS_ONCE writes with cmpxchg and xchg at
-> the same time, would the below change address this problem?
+This is a multi-part message in MIME format.
+--------------020707000505080700040902
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 
-And one could use cmpxchg() or atomic_add_return(..., 0) to read a value
-out.  Probably at the cost of some performance impact, though.
+Hi!
+This is my latest task of the eudyptula challenge.
+Just a very small patch! It fixes 3 little coding style problems.
+I'm using linux-next.
 
-							Thanx, Paul
+--------------020707000505080700040902
+Content-Type: text/plain; charset=UTF-8;
+ name="patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="patch"
 
-> -----
-> diff --git a/kernel/locking/mcs_spinlock.c b/kernel/locking/mcs_spinlock.c
-> index 838dc9e..8396721 100644
-> --- a/kernel/locking/mcs_spinlock.c
-> +++ b/kernel/locking/mcs_spinlock.c
-> @@ -71,7 +71,7 @@ bool osq_lock(struct optimistic_spin_queue **lock)
->  	if (likely(prev == NULL))
->  		return true;
-> 
-> -	ACCESS_ONCE(prev->next) = node;
-> +	xchg(&prev->next, node);
-> 
->  	/*
->  	 * Normally @prev is untouchable after the above store; because at that
-> @@ -144,7 +144,7 @@ unqueue:
->  	 */
-> 
->  	ACCESS_ONCE(next->prev) = prev;
-> -	ACCESS_ONCE(prev->next) = next;
-> +	xchg(&prev->next, next);
-> 
->  	return false;
->  }
-> 
-> 
+--- linux/drivers/staging/iio/frequency/ad9832.c.orig	2014-06-02 17:26:12.929978122 +0200
++++ linux/drivers/staging/iio/frequency/ad9832.c	2014-06-02 17:28:10.389970947 +0200
+@@ -57,7 +57,7 @@ static int ad9832_write_frequency(struct
+ }
+ 
+ static int ad9832_write_phase(struct ad9832_state *st,
+-				  unsigned long addr, unsigned long phase)
++			      unsigned long addr, unsigned long phase)
+ {
+ 	if (phase > (1 << AD9832_PHASE_BITS))
+ 		return -EINVAL;
+@@ -73,7 +73,7 @@ static int ad9832_write_phase(struct ad9
+ }
+ 
+ static ssize_t ad9832_write(struct device *dev,
+-		struct device_attribute *attr,
++			    struct device_attribute *attr,
+ 		const char *buf,
+ 		size_t len)
+ {
+@@ -109,11 +109,11 @@ static ssize_t ad9832_write(struct devic
+ 		ret = spi_sync(st->spi, &st->msg);
+ 		break;
+ 	case AD9832_FREQ_SYM:
+-		if (val == 1)
++		if (val == 1) {
+ 			st->ctrl_fp |= AD9832_FREQ;
+-		else if (val == 0)
++		} else if (val == 0) {
+ 			st->ctrl_fp &= ~AD9832_FREQ;
+-		else {
++		} else {
+ 			ret = -EINVAL;
+ 			break;
+ 		}
 
+
+Signed-off-by: Federico Di Pierro <nierro92@gmail.org>
+--------------020707000505080700040902--
