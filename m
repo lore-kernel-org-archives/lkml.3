@@ -1,88 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754838AbaFBNZL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 09:25:11 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:42062 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754399AbaFBNZF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 09:25:05 -0400
-Date: Mon, 2 Jun 2014 06:24:54 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Mikulas Patocka <mpatocka@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        John David Anglin <dave.anglin@bell.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>, jejb@parisc-linux.org,
-        deller@gmx.de, linux-parisc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, chegu_vinod@hp.com, Waiman.Long@hp.com,
-        tglx@linutronix.de, riel@redhat.com, akpm@linux-foundation.org,
-        davidlohr@hp.com, hpa@zytor.com, andi@firstfloor.org, aswin@hp.com,
-        scott.norton@hp.com, Jason Low <jason.low2@hp.com>
-Subject: Re: [PATCH] fix a race condition in cancelable mcs spinlocks
-Message-ID: <20140602132454.GO22231@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <alpine.LRH.2.02.1406011342470.20831@file01.intranet.prod.int.rdu2.redhat.com>
- <20140601192026.GE16155@laptop.programming.kicks-ass.net>
- <BLU0-SMTP387BD0AE22A4EAD432D65F97210@phx.gbl>
- <20140601213003.GG16155@laptop.programming.kicks-ass.net>
- <alpine.LRH.2.02.1406020503000.17105@file01.intranet.prod.int.rdu2.redhat.com>
+	id S1754880AbaFBNZy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 09:25:54 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:40022 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754399AbaFBNZw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 09:25:52 -0400
+Message-ID: <538C7B22.2020107@ti.com>
+Date: Mon, 2 Jun 2014 09:24:50 -0400
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LRH.2.02.1406020503000.17105@file01.intranet.prod.int.rdu2.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14060213-7164-0000-0000-00000228B632
+To: Shawn Guo <shawn.guo@freescale.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "Strashko, Grygorii" <grygorii.strashko@ti.com>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Olof Johansson <olof@lixom.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v3 0/7] of: setup dma parameters using dma-ranges and
+ dma-coherent
+References: <1398353407-2345-1-git-send-email-santosh.shilimkar@ti.com> <20140602063702.GB7834@dragon>
+In-Reply-To: <20140602063702.GB7834@dragon>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 02, 2014 at 05:19:39AM -0400, Mikulas Patocka wrote:
+On Monday 02 June 2014 02:37 AM, Shawn Guo wrote:
+> On Thu, Apr 24, 2014 at 11:30:00AM -0400, Santosh Shilimkar wrote:
+>> Here is an updated v3 of the series. Series introduces support for setting up
+>> dma parameters based on device tree properties like 'dma-ranges' and
+>> 'dma-coherent' and also update to ARM 32 bit port. Earlier version of the
+>> series can be found here [3], [2] and [1].
 > 
+> Are these two generic device tree properties documented somewhere under
+> Documentation/devicetree/bindings?
 > 
-> On Sun, 1 Jun 2014, Peter Zijlstra wrote:
-> 
-> > On Sun, Jun 01, 2014 at 04:46:26PM -0400, John David Anglin wrote:
-> > > On 1-Jun-14, at 3:20 PM, Peter Zijlstra wrote:
-> > > 
-> > > >>If you write to some variable with ACCESS_ONCE and use cmpxchg or xchg
-> > > >>at
-> > > >>the same time, you break it. ACCESS_ONCE doesn't take the hashed
-> > > >>spinlock,
-> > > >>so, in this case, cmpxchg or xchg isn't really atomic at all.
-> > > >
-> > > >And this is really the first place in the kernel that breaks like this?
-> > > >I've been using xchg() and cmpxchg() without such consideration for
-> > > >quite a while.
-> > > 
-> > > I believe Mikulas is correct.  Even in a controlled situation where a
-> > > cmpxchg operation
-> > > is used to implement pthread_spin_lock() in userspace, we found recently
-> > > that the lock
-> > > must be released with a  cmpxchg operation and not a simple write on SMP
-> > > systems.
-> > > There is a race in the cache operations or instruction ordering that's not
-> > > present with
-> > > the ldcw instruction.
-> > 
-> > Oh, I'm not arguing that. He's quite right that its broken, but this
-> > form of atomic ops is also quite insane and unusual. Most sane machines
-> > don't have this problem.
-> > 
-> > My main concern is how are we going to avoid breaking parisc (and I
-> > think sparc32, which is similarly retarded) in the future; we should
-> > invest in machinery to find and detect these things.
-> 
-> Grep the kernel for "\<xchg\>" and "\<cmpxchg\>" and replace them with 
-> atomic types and atomic access functions.
+These bindings have been already in use before this series. But looks like
+they have not been documented. I will do a patch to add description for those
+couple of parameters.
 
-Not so good for pointers, though.  Defeats type-checking, for one thing.
-An example of this is use of xchg() for atomically enqueuing RCU callbacks
-in kernel/rcu/tree_plugin.h.
-
-I still like the idea of PA-RISC's compiler implementing ACCESS_ONCE()
-as needed to make things work on that architecture.
-
-							Thanx, Paul
+Regards,
+Santosh
 
