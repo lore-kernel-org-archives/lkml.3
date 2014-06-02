@@ -1,132 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755347AbaFBOJV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 10:09:21 -0400
-Received: from mail.emea.novell.com ([130.57.118.101]:58289 "EHLO
-	mail.emea.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754041AbaFBOJT convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
-	Mon, 2 Jun 2014 10:09:19 -0400
-Message-Id: <538CA1AC0200007800016DE9@mail.emea.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 14.0.0 
-Date: Mon, 02 Jun 2014 15:09:16 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: <a.zummo@towertech.it>
-Cc: <rtc-linux@googlegroups.com>, "Raymund Will" <rw@suse.de>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH] rtc-efi: check for invalid data coming back from UEFI
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S1754636AbaFBOMv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 10:12:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42522 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753301AbaFBOMu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 10:12:50 -0400
+Date: Mon, 2 Jun 2014 16:12:20 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        David Ahern <dsahern@gmail.com>, Namhyung Kim <namhyung@kernel.org>
+Subject: Re: Fw: Re: [PATCH 1/1] powerpc/perf: Adjust callchain based on
+ DWARF debug info
+Message-ID: <20140602141219.GB7861@krava.brq.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140530155925.GF7427@krava.brq.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In particular seeing zero in eft->month is problematic, as it results
-in -1 (converted to unsigned int, i.e. yielding 0xffffffff) getting
-passed to rtc_year_days(), where the value gets used as an array index
-(normally resulting in a crash). This was observed with the driver
-enabled on x86 on some Fujitsu system (with possibly not up to date
-firmware, but anyway).
+On Fri, May 30, 2014 at 05:59:25PM +0200, Jiri Olsa wrote:
+> On Fri, May 30, 2014 at 08:50:19AM -0700, Sukadev Bhattiprolu wrote:
+> > Jiri Olsa [jolsa@redhat.com] wrote:
+> > | On Fri, May 16, 2014 at 02:03:33PM -0700, Sukadev Bhattiprolu wrote:
+> > | > Hi Arnaldo, Jiri
+> > | > 
+> > | > Do you have any comments on this patch ? Pls let me know if you need
+> > | > me to resend this. The TODO is for a less frequent case and can be
+> > | > addressed independently.
+> > | 
+> > | hi,
+> > | I can take it, but it does not apply to my perf/core,
+> > | there're some ARM related unwind changes already:
+> > |   git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git
+> > | 
+> > | please resend updated patch
+> > 
+> > Jiri,
+> > 
+> > I resent the patch. Can you please let me know if you have any
+> > comments ?
+> > 
+> > 	https://lkml.org/lkml/2014/5/22/695
+> 
+> sry, got distracted.. yep, that one seems looks ok now, I'll queue it
+> 
 
-Perhaps efi_read_alarm() should not fail if neither enabled nor pending
-are set, but the returned time is invalid?
+so.. I tried some performance test and looks like this
+adds some considerable penalty also for archs != powerpc
 
-Reported-by: Raymund Will <rw@suse.de>
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
----
- drivers/rtc/rtc-efi.c |   32 +++++++++++++++++++++++++++-----
- 1 file changed, 27 insertions(+), 5 deletions(-)
+test data:
+  $ sudo ./perf record -a -g -F 50000 # perf.data size is ~1.1GB
 
---- 3.15-rc8/drivers/rtc/rtc-efi.c
-+++ 3.15-rc8-EFI-RTC-check-time/drivers/rtc/rtc-efi.c
-@@ -17,6 +17,7 @@
- 
- #include <linux/kernel.h>
- #include <linux/module.h>
-+#include <linux/stringify.h>
- #include <linux/time.h>
- #include <linux/platform_device.h>
- #include <linux/rtc.h>
-@@ -48,8 +49,8 @@ compute_wday(efi_time_t *eft)
- 	int y;
- 	int ndays = 0;
- 
--	if (eft->year < 1998) {
--		pr_err("EFI year < 1998, invalid date\n");
-+	if (eft->year < EFI_RTC_EPOCH) {
-+		pr_err("EFI year < " __stringify(EFI_RTC_EPOCH) ", invalid date\n");
- 		return -1;
- 	}
- 
-@@ -78,19 +79,36 @@ convert_to_efi_time(struct rtc_time *wti
- 	eft->timezone	= EFI_UNSPECIFIED_TIMEZONE;
- }
- 
--static void
-+static bool
- convert_from_efi_time(efi_time_t *eft, struct rtc_time *wtime)
- {
- 	memset(wtime, 0, sizeof(*wtime));
-+
-+	if (eft->second >= 60)
-+		return false;
- 	wtime->tm_sec  = eft->second;
-+
-+	if (eft->minute >= 60)
-+		return false;
- 	wtime->tm_min  = eft->minute;
-+
-+	if (eft->hour >= 24)
-+		return false;
- 	wtime->tm_hour = eft->hour;
-+
-+	if (!eft->day || eft->day > 31)
-+		return false;
- 	wtime->tm_mday = eft->day;
-+
-+	if (!eft->month || eft->month > 12)
-+		return false;
- 	wtime->tm_mon  = eft->month - 1;
- 	wtime->tm_year = eft->year - 1900;
- 
- 	/* day of the week [0-6], Sunday=0 */
- 	wtime->tm_wday = compute_wday(eft);
-+	if (wtime->tm_wday < 0)
-+		return false;
- 
- 	/* day in the year [1-365]*/
- 	wtime->tm_yday = compute_yday(eft);
-@@ -106,6 +124,8 @@ convert_from_efi_time(efi_time_t *eft, s
- 	default:
- 		wtime->tm_isdst = -1;
- 	}
-+
-+	return true;
- }
- 
- static int efi_read_alarm(struct device *dev, struct rtc_wkalrm *wkalrm)
-@@ -122,7 +142,8 @@ static int efi_read_alarm(struct device
- 	if (status != EFI_SUCCESS)
- 		return -EINVAL;
- 
--	convert_from_efi_time(&eft, &wkalrm->time);
-+	if (!convert_from_efi_time(&eft, &wkalrm->time))
-+		return -EIO;
- 
- 	return rtc_valid_tm(&wkalrm->time);
- }
-@@ -163,7 +184,8 @@ static int efi_read_time(struct device *
- 		return -EINVAL;
- 	}
- 
--	convert_from_efi_time(&eft, tm);
-+	if (!convert_from_efi_time(&eft, tm))
-+		return -EIO;
- 
- 	return rtc_valid_tm(tm);
- }
+before your patch:
+
+ Performance counter stats for './perf.old report --stdio' (5 runs):
+
+    60,345,248,146      cycles                     ( +-  0.50% ) █▁▁▂▂
+    72,766,496,819      instructions              #    1.21  insns per cycle          ( +-  0.00% ) █▁▄▁▅
+
+      19.930324523 seconds time elapsed                                          ( +-  1.07% ) █▄▁▁▁
+
+with your patch:
+    62,559,079,470      cycles                     ( +-  2.10% ) ▁▁▂▁█
+    72,649,781,930      instructions              #    1.16  insns per cycle          ( +-  0.00% ) ▄▃▅█▁
+
+      23.355028944 seconds time elapsed                                          ( +-  9.85% ) ▁▁▁▂█
 
 
+I think the issue is following hunk (I havent verified with record/report):
 
+@@ -1300,14 +1301,25 @@ static int machine__resolve_callchain_sample(struct machine *machine,
+                return 0;
+        }
+ 
++       /*
++        * Based on DWARF debug information, some architectures skip
++        * some of the callchain entries saved by the kernel.
++        */
++       skip_slot = arch_skip_callchain_idx(machine, thread, chain);
++
+        for (i = 0; i < chain_nr; i++) {
+                u64 ip;
+                struct addr_location al;
+ 
+-               if (callchain_param.order == ORDER_CALLEE)
++               if (callchain_param.order == ORDER_CALLEE) {
++                       if (i == skip_slot)
++                               continue;
+                        ip = chain->ips[i];
+-               else
++               } else {
++                       if ((int)(chain->nr - i - 1) == skip_slot)
++                               continue;
+                        ip = chain->ips[chain->nr - i - 1];
++               }
+
+
+could you please change this, so it's nop for arch != powerpc
+via #ifdef I guess.. or some other smart way ;-)
+
+adding some other folks and lkml to the loop
+
+thanks,
+jirka
