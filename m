@@ -1,376 +1,598 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752072AbaFBSFz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 14:05:55 -0400
-Received: from mout.gmx.net ([212.227.17.21]:56150 "EHLO mout.gmx.net"
+	id S1752292AbaFBSH3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 14:07:29 -0400
+Received: from mout.web.de ([212.227.17.12]:65175 "EHLO mout.web.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750723AbaFBSFy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 14:05:54 -0400
-From: Heinrich Schuchardt <xypron.glpk@gmx.de>
-To: John McCutchan <john@johnmccutchan.com>, Robert Love <rlove@rlove.org>,
-        Eric Paris <eparis@parisplace.org>
-Cc: Jan Kara <jack@suse.cz>, Michael Kerrisk <mtk.manpages@gmail.com>,
-        linux-kernel@vger.kernel.org, Heinrich Schuchardt <xypron.glpk@gmx.de>
-Subject: [PATCH 1/1] inotify: bug 77111 - fix reusage of watch descriptors
-Date: Mon,  2 Jun 2014 20:03:42 +0200
-Message-Id: <1401732222-7707-1-git-send-email-xypron.glpk@gmx.de>
-X-Mailer: git-send-email 2.0.0.rc2
-X-Provags-ID: V03:K0:WYKnqQDPwLsqUeXbPfzT8UyX1ZeeWMl2d853+A9QfJhFTaoz27Y
- prZO8m6vCA5jIRCBFDGoVPWBGZo9nhLWubrZ1Kswup14qOwOekrzYRiVlEGAr7o+Cj5M6o5
- jJvjl8AckZFVH124VTtvJoXzz+wEaHxOMs29fHFQC1LNG7RkwMZhUi7RtplYelg5QDlAM3z
- ve5xb+lb09svT5nRP+TWw==
+	id S1751128AbaFBSH1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 14:07:27 -0400
+From: =?UTF-8?q?Linus=20L=C3=BCssing?= <linus.luessing@web.de>
+To: netdev@vger.kernel.org
+Cc: bridge@lists.linux-foundation.org,
+        Stephen Hemminger <stephen@networkplumber.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Herbert Xu <herbert@gondor.apana.org.au>, linux-kernel@vger.kernel.org,
+        b.a.t.m.a.n@lists.open-mesh.org,
+        =?UTF-8?q?Linus=20L=C3=BCssing?= <linus.luessing@web.de>
+Subject: [PATCHv3 net-next 1/4] bridge: rename struct bridge_mcast_query/querier
+Date: Mon,  2 Jun 2014 20:07:43 +0200
+Message-Id: <1401732466-3027-1-git-send-email-linus.luessing@web.de>
+X-Mailer: git-send-email 2.0.0.rc4
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Provags-ID: V03:K0:sCqPfUuPn600K9EaTNVRW8CTxbdpSt9nqMDRtOro6eqtoFvsiX5
+ CHJt5Z4npAwLlhx0puzgxIArrPW+FMyR3R7pI0R5TeQlp4oo62pRvyTJimoiCywD4ZZm7iY
+ KxBVzR1Oca+RWfqTe83Wj22cRgFNTguetwqRtPKzcxe6WwPfglGaodI+B43ay/ijxfVNipc
+ 3EpJSN8YIAF6dO7Sh16IA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Without the patch inotify watch descriptors may be reused by
-inotify_add_watch before all events for the previous usage
-of the watch descriptor have been read.
+The current naming of these two structs is very random, in that
+reversing their naming would not make any semantical difference.
 
-With the patch watch descriptors are removed from the idr only
-after the IN_IGNORED event has been read.
+This patch tries to make the naming less confusing by giving them a more
+specific, distinguishable naming.
 
-The sequence of some static routines is rearranged.
+This is also useful for the upcoming patches reintroducing the
+"struct bridge_mcast_querier" but for storing information about the
+selected querier (no matter if our own or a foreign querier).
 
-The significant change moving the call of
-inotify_remove_from_idr form inotify_ignored_and_remove_idr to
-to copy_event_to_user and renaming inotify_ignored_and_remove_idr
-to inotify_ignored.
-
-cf.
-https://bugzilla.kernel.org/show_bug.cgi?id=77111
-
-Signed-off-by: Heinrich Schuchardt <xypron.glpk@gmx.de>
+Signed-off-by: Linus Lüssing <linus.luessing@web.de>
 ---
- fs/notify/inotify/inotify.h          |   4 +-
- fs/notify/inotify/inotify_fsnotify.c |   2 +-
- fs/notify/inotify/inotify_user.c     | 257 ++++++++++++++++++-----------------
- 3 files changed, 135 insertions(+), 128 deletions(-)
+ net/bridge/br_mdb.c       |    4 +-
+ net/bridge/br_multicast.c |  169 +++++++++++++++++++++++----------------------
+ net/bridge/br_private.h   |   22 +++---
+ 3 files changed, 100 insertions(+), 95 deletions(-)
 
-diff --git a/fs/notify/inotify/inotify.h b/fs/notify/inotify/inotify.h
-index ed855ef..596c513 100644
---- a/fs/notify/inotify/inotify.h
-+++ b/fs/notify/inotify/inotify.h
-@@ -20,8 +20,8 @@ static inline struct inotify_event_info *INOTIFY_E(struct fsnotify_event *fse)
- 	return container_of(fse, struct inotify_event_info, fse);
+diff --git a/net/bridge/br_mdb.c b/net/bridge/br_mdb.c
+index b7b1914..5df0526 100644
+--- a/net/bridge/br_mdb.c
++++ b/net/bridge/br_mdb.c
+@@ -418,13 +418,13 @@ static int __br_mdb_del(struct net_bridge *br, struct br_mdb_entry *entry)
+ 
+ 	ip.proto = entry->addr.proto;
+ 	if (ip.proto == htons(ETH_P_IP)) {
+-		if (timer_pending(&br->ip4_querier.timer))
++		if (timer_pending(&br->ip4_other_query.timer))
+ 			return -EBUSY;
+ 
+ 		ip.u.ip4 = entry->addr.u.ip4;
+ #if IS_ENABLED(CONFIG_IPV6)
+ 	} else {
+-		if (timer_pending(&br->ip6_querier.timer))
++		if (timer_pending(&br->ip6_other_query.timer))
+ 			return -EBUSY;
+ 
+ 		ip.u.ip6 = entry->addr.u.ip6;
+diff --git a/net/bridge/br_multicast.c b/net/bridge/br_multicast.c
+index 7b757b5..5ccac62 100644
+--- a/net/bridge/br_multicast.c
++++ b/net/bridge/br_multicast.c
+@@ -35,7 +35,7 @@
+ #include "br_private.h"
+ 
+ static void br_multicast_start_querier(struct net_bridge *br,
+-				       struct bridge_mcast_query *query);
++				       struct bridge_mcast_own_query *query);
+ unsigned int br_mdb_rehash_seq;
+ 
+ static inline int br_ip_equal(const struct br_ip *a, const struct br_ip *b)
+@@ -761,7 +761,7 @@ static void br_multicast_local_router_expired(unsigned long data)
  }
  
--extern void inotify_ignored_and_remove_idr(struct fsnotify_mark *fsn_mark,
--					   struct fsnotify_group *group);
-+extern void inotify_ignored(struct fsnotify_mark *fsn_mark,
-+			    struct fsnotify_group *group);
- extern int inotify_handle_event(struct fsnotify_group *group,
- 				struct inode *inode,
- 				struct fsnotify_mark *inode_mark,
-diff --git a/fs/notify/inotify/inotify_fsnotify.c b/fs/notify/inotify/inotify_fsnotify.c
-index 43ab1e1..68729dd 100644
---- a/fs/notify/inotify/inotify_fsnotify.c
-+++ b/fs/notify/inotify/inotify_fsnotify.c
-@@ -122,7 +122,7 @@ int inotify_handle_event(struct fsnotify_group *group,
- 
- static void inotify_freeing_mark(struct fsnotify_mark *fsn_mark, struct fsnotify_group *group)
+ static void br_multicast_querier_expired(struct net_bridge *br,
+-					 struct bridge_mcast_query *query)
++					 struct bridge_mcast_own_query *query)
  {
--	inotify_ignored_and_remove_idr(fsn_mark, group);
-+	inotify_ignored(fsn_mark, group);
+ 	spin_lock(&br->multicast_lock);
+ 	if (!netif_running(br->dev) || br->multicast_disabled)
+@@ -777,7 +777,7 @@ static void br_ip4_multicast_querier_expired(unsigned long data)
+ {
+ 	struct net_bridge *br = (void *)data;
+ 
+-	br_multicast_querier_expired(br, &br->ip4_query);
++	br_multicast_querier_expired(br, &br->ip4_own_query);
+ }
+ 
+ #if IS_ENABLED(CONFIG_IPV6)
+@@ -785,7 +785,7 @@ static void br_ip6_multicast_querier_expired(unsigned long data)
+ {
+ 	struct net_bridge *br = (void *)data;
+ 
+-	br_multicast_querier_expired(br, &br->ip6_query);
++	br_multicast_querier_expired(br, &br->ip6_own_query);
+ }
+ #endif
+ 
+@@ -810,11 +810,11 @@ static void __br_multicast_send_query(struct net_bridge *br,
+ 
+ static void br_multicast_send_query(struct net_bridge *br,
+ 				    struct net_bridge_port *port,
+-				    struct bridge_mcast_query *query)
++				    struct bridge_mcast_own_query *own_query)
+ {
+ 	unsigned long time;
+ 	struct br_ip br_group;
+-	struct bridge_mcast_querier *querier = NULL;
++	struct bridge_mcast_other_query *other_query = NULL;
+ 
+ 	if (!netif_running(br->dev) || br->multicast_disabled ||
+ 	    !br->multicast_querier)
+@@ -822,31 +822,32 @@ static void br_multicast_send_query(struct net_bridge *br,
+ 
+ 	memset(&br_group.u, 0, sizeof(br_group.u));
+ 
+-	if (port ? (query == &port->ip4_query) :
+-		   (query == &br->ip4_query)) {
+-		querier = &br->ip4_querier;
++	if (port ? (own_query == &port->ip4_own_query) :
++		   (own_query == &br->ip4_own_query)) {
++		other_query = &br->ip4_other_query;
+ 		br_group.proto = htons(ETH_P_IP);
+ #if IS_ENABLED(CONFIG_IPV6)
+ 	} else {
+-		querier = &br->ip6_querier;
++		other_query = &br->ip6_other_query;
+ 		br_group.proto = htons(ETH_P_IPV6);
+ #endif
+ 	}
+ 
+-	if (!querier || timer_pending(&querier->timer))
++	if (!other_query || timer_pending(&other_query->timer))
+ 		return;
+ 
+ 	__br_multicast_send_query(br, port, &br_group);
+ 
+ 	time = jiffies;
+-	time += query->startup_sent < br->multicast_startup_query_count ?
++	time += own_query->startup_sent < br->multicast_startup_query_count ?
+ 		br->multicast_startup_query_interval :
+ 		br->multicast_query_interval;
+-	mod_timer(&query->timer, time);
++	mod_timer(&own_query->timer, time);
+ }
+ 
+-static void br_multicast_port_query_expired(struct net_bridge_port *port,
+-					    struct bridge_mcast_query *query)
++static void
++br_multicast_port_query_expired(struct net_bridge_port *port,
++				struct bridge_mcast_own_query *query)
+ {
+ 	struct net_bridge *br = port->br;
+ 
+@@ -868,7 +869,7 @@ static void br_ip4_multicast_port_query_expired(unsigned long data)
+ {
+ 	struct net_bridge_port *port = (void *)data;
+ 
+-	br_multicast_port_query_expired(port, &port->ip4_query);
++	br_multicast_port_query_expired(port, &port->ip4_own_query);
+ }
+ 
+ #if IS_ENABLED(CONFIG_IPV6)
+@@ -876,7 +877,7 @@ static void br_ip6_multicast_port_query_expired(unsigned long data)
+ {
+ 	struct net_bridge_port *port = (void *)data;
+ 
+-	br_multicast_port_query_expired(port, &port->ip6_query);
++	br_multicast_port_query_expired(port, &port->ip6_own_query);
+ }
+ #endif
+ 
+@@ -886,11 +887,11 @@ void br_multicast_add_port(struct net_bridge_port *port)
+ 
+ 	setup_timer(&port->multicast_router_timer, br_multicast_router_expired,
+ 		    (unsigned long)port);
+-	setup_timer(&port->ip4_query.timer, br_ip4_multicast_port_query_expired,
+-		    (unsigned long)port);
++	setup_timer(&port->ip4_own_query.timer,
++		    br_ip4_multicast_port_query_expired, (unsigned long)port);
+ #if IS_ENABLED(CONFIG_IPV6)
+-	setup_timer(&port->ip6_query.timer, br_ip6_multicast_port_query_expired,
+-		    (unsigned long)port);
++	setup_timer(&port->ip6_own_query.timer,
++		    br_ip6_multicast_port_query_expired, (unsigned long)port);
+ #endif
+ }
+ 
+@@ -899,7 +900,7 @@ void br_multicast_del_port(struct net_bridge_port *port)
+ 	del_timer_sync(&port->multicast_router_timer);
+ }
+ 
+-static void br_multicast_enable(struct bridge_mcast_query *query)
++static void br_multicast_enable(struct bridge_mcast_own_query *query)
+ {
+ 	query->startup_sent = 0;
+ 
+@@ -916,9 +917,9 @@ void br_multicast_enable_port(struct net_bridge_port *port)
+ 	if (br->multicast_disabled || !netif_running(br->dev))
+ 		goto out;
+ 
+-	br_multicast_enable(&port->ip4_query);
++	br_multicast_enable(&port->ip4_own_query);
+ #if IS_ENABLED(CONFIG_IPV6)
+-	br_multicast_enable(&port->ip6_query);
++	br_multicast_enable(&port->ip6_own_query);
+ #endif
+ 
+ out:
+@@ -938,9 +939,9 @@ void br_multicast_disable_port(struct net_bridge_port *port)
+ 	if (!hlist_unhashed(&port->rlist))
+ 		hlist_del_init_rcu(&port->rlist);
+ 	del_timer(&port->multicast_router_timer);
+-	del_timer(&port->ip4_query.timer);
++	del_timer(&port->ip4_own_query.timer);
+ #if IS_ENABLED(CONFIG_IPV6)
+-	del_timer(&port->ip6_query.timer);
++	del_timer(&port->ip6_own_query.timer);
+ #endif
+ 	spin_unlock(&br->multicast_lock);
+ }
+@@ -1065,14 +1066,14 @@ static int br_ip6_multicast_mld2_report(struct net_bridge *br,
+ #endif
+ 
+ static void
+-br_multicast_update_querier_timer(struct net_bridge *br,
+-				  struct bridge_mcast_querier *querier,
+-				  unsigned long max_delay)
++br_multicast_update_query_timer(struct net_bridge *br,
++				struct bridge_mcast_other_query *query,
++				unsigned long max_delay)
+ {
+-	if (!timer_pending(&querier->timer))
+-		querier->delay_time = jiffies + max_delay;
++	if (!timer_pending(&query->timer))
++		query->delay_time = jiffies + max_delay;
+ 
+-	mod_timer(&querier->timer, jiffies + br->multicast_querier_interval);
++	mod_timer(&query->timer, jiffies + br->multicast_querier_interval);
  }
  
  /*
-diff --git a/fs/notify/inotify/inotify_user.c b/fs/notify/inotify/inotify_user.c
-index 78a2ca3..7a354b0 100644
---- a/fs/notify/inotify/inotify_user.c
-+++ b/fs/notify/inotify/inotify_user.c
-@@ -164,115 +164,6 @@ static struct fsnotify_event *get_one_event(struct fsnotify_group *group,
- 	return event;
- }
+@@ -1125,14 +1126,14 @@ timer:
  
--/*
-- * Copy an event to user space, returning how much we copied.
-- *
-- * We already checked that the event size is smaller than the
-- * buffer we had in "get_one_event()" above.
-- */
--static ssize_t copy_event_to_user(struct fsnotify_group *group,
--				  struct fsnotify_event *fsn_event,
--				  char __user *buf)
--{
--	struct inotify_event inotify_event;
--	struct inotify_event_info *event;
--	size_t event_size = sizeof(struct inotify_event);
--	size_t name_len;
--	size_t pad_name_len;
--
--	pr_debug("%s: group=%p event=%p\n", __func__, group, fsn_event);
--
--	event = INOTIFY_E(fsn_event);
--	name_len = event->name_len;
--	/*
--	 * round up name length so it is a multiple of event_size
--	 * plus an extra byte for the terminating '\0'.
--	 */
--	pad_name_len = round_event_name_len(fsn_event);
--	inotify_event.len = pad_name_len;
--	inotify_event.mask = inotify_mask_to_arg(fsn_event->mask);
--	inotify_event.wd = event->wd;
--	inotify_event.cookie = event->sync_cookie;
--
--	/* send the main event */
--	if (copy_to_user(buf, &inotify_event, event_size))
--		return -EFAULT;
--
--	buf += event_size;
--
--	/*
--	 * fsnotify only stores the pathname, so here we have to send the pathname
--	 * and then pad that pathname out to a multiple of sizeof(inotify_event)
--	 * with zeros.
--	 */
--	if (pad_name_len) {
--		/* copy the path name */
--		if (copy_to_user(buf, event->name, name_len))
--			return -EFAULT;
--		buf += name_len;
--
--		/* fill userspace with 0's */
--		if (clear_user(buf, pad_name_len - name_len))
--			return -EFAULT;
--		event_size += pad_name_len;
--	}
--
--	return event_size;
--}
--
--static ssize_t inotify_read(struct file *file, char __user *buf,
--			    size_t count, loff_t *pos)
--{
--	struct fsnotify_group *group;
--	struct fsnotify_event *kevent;
--	char __user *start;
--	int ret;
--	DEFINE_WAIT(wait);
--
--	start = buf;
--	group = file->private_data;
--
--	while (1) {
--		prepare_to_wait(&group->notification_waitq, &wait, TASK_INTERRUPTIBLE);
--
--		mutex_lock(&group->notification_mutex);
--		kevent = get_one_event(group, count);
--		mutex_unlock(&group->notification_mutex);
--
--		pr_debug("%s: group=%p kevent=%p\n", __func__, group, kevent);
--
--		if (kevent) {
--			ret = PTR_ERR(kevent);
--			if (IS_ERR(kevent))
--				break;
--			ret = copy_event_to_user(group, kevent, buf);
--			fsnotify_destroy_event(group, kevent);
--			if (ret < 0)
--				break;
--			buf += ret;
--			count -= ret;
--			continue;
--		}
--
--		ret = -EAGAIN;
--		if (file->f_flags & O_NONBLOCK)
--			break;
--		ret = -ERESTARTSYS;
--		if (signal_pending(current))
--			break;
--
--		if (start != buf)
--			break;
--
--		schedule();
--	}
--
--	finish_wait(&group->notification_waitq, &wait);
--	if (start != buf && ret != -EFAULT)
--		ret = buf - start;
--	return ret;
--}
--
- static int inotify_release(struct inode *ignored, struct file *file)
+ static void br_multicast_query_received(struct net_bridge *br,
+ 					struct net_bridge_port *port,
+-					struct bridge_mcast_querier *querier,
++					struct bridge_mcast_other_query *query,
+ 					int saddr,
+ 					bool is_general_query,
+ 					unsigned long max_delay)
  {
- 	struct fsnotify_group *group = file->private_data;
-@@ -315,18 +206,6 @@ static long inotify_ioctl(struct file *file, unsigned int cmd,
- 	return ret;
- }
+ 	if (saddr && is_general_query)
+-		br_multicast_update_querier_timer(br, querier, max_delay);
+-	else if (timer_pending(&querier->timer))
++		br_multicast_update_query_timer(br, query, max_delay);
++	else if (timer_pending(&query->timer))
+ 		return;
  
--static const struct file_operations inotify_fops = {
--	.show_fdinfo	= inotify_show_fdinfo,
--	.poll		= inotify_poll,
--	.read		= inotify_read,
--	.fasync		= fsnotify_fasync,
--	.release	= inotify_release,
--	.unlocked_ioctl	= inotify_ioctl,
--	.compat_ioctl	= inotify_ioctl,
--	.llseek		= noop_llseek,
--};
--
--
- /*
-  * find_inode - resolve a user-given path to a specific inode
-  */
-@@ -488,8 +367,8 @@ out:
- /*
-  * Send IN_IGNORED for this wd, remove this wd from the idr.
-  */
--void inotify_ignored_and_remove_idr(struct fsnotify_mark *fsn_mark,
--				    struct fsnotify_group *group)
-+void inotify_ignored(struct fsnotify_mark *fsn_mark,
-+		     struct fsnotify_group *group)
+ 	br_multicast_mark_router(br, port);
+@@ -1190,8 +1191,8 @@ static int br_ip4_multicast_query(struct net_bridge *br,
+ 		goto out;
+ 	}
+ 
+-	br_multicast_query_received(br, port, &br->ip4_querier, !!iph->saddr,
+-				    !group, max_delay);
++	br_multicast_query_received(br, port, &br->ip4_other_query,
++				    !!iph->saddr, !group, max_delay);
+ 
+ 	if (!group)
+ 		goto out;
+@@ -1282,7 +1283,7 @@ static int br_ip6_multicast_query(struct net_bridge *br,
+ 		goto out;
+ 	}
+ 
+-	br_multicast_query_received(br, port, &br->ip6_querier,
++	br_multicast_query_received(br, port, &br->ip6_other_query,
+ 				    !ipv6_addr_any(&ip6h->saddr),
+ 				    is_general_query, max_delay);
+ 
+@@ -1315,11 +1316,12 @@ out:
+ }
+ #endif
+ 
+-static void br_multicast_leave_group(struct net_bridge *br,
+-				     struct net_bridge_port *port,
+-				     struct br_ip *group,
+-				     struct bridge_mcast_querier *querier,
+-				     struct bridge_mcast_query *query)
++static void
++br_multicast_leave_group(struct net_bridge *br,
++			 struct net_bridge_port *port,
++			 struct br_ip *group,
++			 struct bridge_mcast_other_query *other_query,
++			 struct bridge_mcast_own_query *own_query)
  {
- 	struct inotify_inode_mark *i_mark;
+ 	struct net_bridge_mdb_htable *mdb;
+ 	struct net_bridge_mdb_entry *mp;
+@@ -1330,7 +1332,7 @@ static void br_multicast_leave_group(struct net_bridge *br,
+ 	spin_lock(&br->multicast_lock);
+ 	if (!netif_running(br->dev) ||
+ 	    (port && port->state == BR_STATE_DISABLED) ||
+-	    timer_pending(&querier->timer))
++	    timer_pending(&other_query->timer))
+ 		goto out;
  
-@@ -498,8 +377,6 @@ void inotify_ignored_and_remove_idr(struct fsnotify_mark *fsn_mark,
- 			     NULL, FSNOTIFY_EVENT_NONE, NULL, 0);
+ 	mdb = mlock_dereference(br->mdb, br);
+@@ -1344,7 +1346,7 @@ static void br_multicast_leave_group(struct net_bridge *br,
+ 		time = jiffies + br->multicast_last_member_count *
+ 				 br->multicast_last_member_interval;
  
- 	i_mark = container_of(fsn_mark, struct inotify_inode_mark, fsn_mark);
--	/* remove this mark from the idr */
--	inotify_remove_from_idr(group, i_mark);
+-		mod_timer(&query->timer, time);
++		mod_timer(&own_query->timer, time);
  
- 	atomic_dec(&group->inotify_data.user->inotify_watches);
+ 		for (p = mlock_dereference(mp->ports, br);
+ 		     p != NULL;
+@@ -1425,17 +1427,19 @@ static void br_ip4_multicast_leave_group(struct net_bridge *br,
+ 					 __u16 vid)
+ {
+ 	struct br_ip br_group;
+-	struct bridge_mcast_query *query = port ? &port->ip4_query :
+-						  &br->ip4_query;
++	struct bridge_mcast_own_query *own_query;
+ 
+ 	if (ipv4_is_local_multicast(group))
+ 		return;
+ 
++	own_query = port ? &port->ip4_own_query : &br->ip4_own_query;
++
+ 	br_group.u.ip4 = group;
+ 	br_group.proto = htons(ETH_P_IP);
+ 	br_group.vid = vid;
+ 
+-	br_multicast_leave_group(br, port, &br_group, &br->ip4_querier, query);
++	br_multicast_leave_group(br, port, &br_group, &br->ip4_other_query,
++				 own_query);
  }
-@@ -665,6 +542,136 @@ static struct fsnotify_group *inotify_new_group(unsigned int max_events)
- 	return group;
+ 
+ #if IS_ENABLED(CONFIG_IPV6)
+@@ -1445,18 +1449,19 @@ static void br_ip6_multicast_leave_group(struct net_bridge *br,
+ 					 __u16 vid)
+ {
+ 	struct br_ip br_group;
+-	struct bridge_mcast_query *query = port ? &port->ip6_query :
+-						  &br->ip6_query;
+-
++	struct bridge_mcast_own_query *own_query;
+ 
+ 	if (ipv6_addr_is_ll_all_nodes(group))
+ 		return;
+ 
++	own_query = port ? &port->ip6_own_query : &br->ip6_own_query;
++
+ 	br_group.u.ip6 = *group;
+ 	br_group.proto = htons(ETH_P_IPV6);
+ 	br_group.vid = vid;
+ 
+-	br_multicast_leave_group(br, port, &br_group, &br->ip6_querier, query);
++	br_multicast_leave_group(br, port, &br_group, &br->ip6_other_query,
++				 own_query);
+ }
+ #endif
+ 
+@@ -1723,7 +1728,7 @@ int br_multicast_rcv(struct net_bridge *br, struct net_bridge_port *port,
  }
  
-+/*
-+ * Copy an event to user space, returning how much we copied.
-+ *
-+ * We already checked that the event size is smaller than the
-+ * buffer we had in "get_one_event()" above.
-+ */
-+static ssize_t copy_event_to_user(struct fsnotify_group *group,
-+				  struct fsnotify_event *fsn_event,
-+				  char __user *buf)
-+{
-+	struct inotify_event inotify_event;
-+	struct inotify_event_info *event;
-+	struct inotify_inode_mark *found_i_mark = NULL;
-+	size_t event_size = sizeof(struct inotify_event);
-+	size_t name_len;
-+	size_t pad_name_len;
-+
-+	pr_debug("%s: group=%p event=%p\n", __func__, group, fsn_event);
-+
-+	event = INOTIFY_E(fsn_event);
-+	name_len = event->name_len;
-+	/*
-+	 * round up name length so it is a multiple of event_size
-+	 * plus an extra byte for the terminating '\0'.
-+	 */
-+	pad_name_len = round_event_name_len(fsn_event);
-+	inotify_event.len = pad_name_len;
-+	inotify_event.mask = inotify_mask_to_arg(fsn_event->mask);
-+	inotify_event.wd = event->wd;
-+	inotify_event.cookie = event->sync_cookie;
-+
-+	/* send the main event */
-+	if (copy_to_user(buf, &inotify_event, event_size))
-+		return -EFAULT;
-+
-+	if (inotify_event.mask & IN_IGNORED) {
-+		found_i_mark = inotify_idr_find(group, inotify_event.wd);
-+		if (found_i_mark) {
-+			/* remove this mark from the idr */
-+			inotify_remove_from_idr(group, found_i_mark);
-+			/* match ref taken by inotify_idr_find */
-+			fsnotify_put_mark(&found_i_mark->fsn_mark);
-+		}
-+	}
-+
-+	buf += event_size;
-+
-+	/*
-+	 * fsnotify only stores the pathname, so here we have to send the pathname
-+	 * and then pad that pathname out to a multiple of sizeof(inotify_event)
-+	 * with zeros.
-+	 */
-+	if (pad_name_len) {
-+		/* copy the path name */
-+		if (copy_to_user(buf, event->name, name_len))
-+			return -EFAULT;
-+		buf += name_len;
-+
-+		/* fill userspace with 0's */
-+		if (clear_user(buf, pad_name_len - name_len))
-+			return -EFAULT;
-+		event_size += pad_name_len;
-+	}
-+
-+	return event_size;
-+}
-+
-+static ssize_t inotify_read(struct file *file, char __user *buf,
-+			    size_t count, loff_t *pos)
-+{
-+	struct fsnotify_group *group;
-+	struct fsnotify_event *kevent;
-+	char __user *start;
-+	int ret;
-+	DEFINE_WAIT(wait);
-+
-+	start = buf;
-+	group = file->private_data;
-+
-+	while (1) {
-+		prepare_to_wait(&group->notification_waitq, &wait, TASK_INTERRUPTIBLE);
-+
-+		mutex_lock(&group->notification_mutex);
-+		kevent = get_one_event(group, count);
-+		mutex_unlock(&group->notification_mutex);
-+
-+		pr_debug("%s: group=%p kevent=%p\n", __func__, group, kevent);
-+
-+		if (kevent) {
-+			ret = PTR_ERR(kevent);
-+			if (IS_ERR(kevent))
-+				break;
-+			ret = copy_event_to_user(group, kevent, buf);
-+			fsnotify_destroy_event(group, kevent);
-+			if (ret < 0)
-+				break;
-+			buf += ret;
-+			count -= ret;
-+			continue;
-+		}
-+
-+		ret = -EAGAIN;
-+		if (file->f_flags & O_NONBLOCK)
-+			break;
-+		ret = -ERESTARTSYS;
-+		if (signal_pending(current))
-+			break;
-+
-+		if (start != buf)
-+			break;
-+
-+		schedule();
-+	}
-+
-+	finish_wait(&group->notification_waitq, &wait);
-+	if (start != buf && ret != -EFAULT)
-+		ret = buf - start;
-+	return ret;
-+}
-+
-+static const struct file_operations inotify_fops = {
-+	.show_fdinfo	= inotify_show_fdinfo,
-+	.poll		= inotify_poll,
-+	.read		= inotify_read,
-+	.fasync		= fsnotify_fasync,
-+	.release	= inotify_release,
-+	.unlocked_ioctl	= inotify_ioctl,
-+	.compat_ioctl	= inotify_ioctl,
-+	.llseek		= noop_llseek,
-+};
+ static void br_multicast_query_expired(struct net_bridge *br,
+-				       struct bridge_mcast_query *query)
++				       struct bridge_mcast_own_query *query)
+ {
+ 	spin_lock(&br->multicast_lock);
+ 	if (query->startup_sent < br->multicast_startup_query_count)
+@@ -1737,7 +1742,7 @@ static void br_ip4_multicast_query_expired(unsigned long data)
+ {
+ 	struct net_bridge *br = (void *)data;
  
- /* inotify syscalls */
- SYSCALL_DEFINE1(inotify_init1, int, flags)
+-	br_multicast_query_expired(br, &br->ip4_query);
++	br_multicast_query_expired(br, &br->ip4_own_query);
+ }
+ 
+ #if IS_ENABLED(CONFIG_IPV6)
+@@ -1745,7 +1750,7 @@ static void br_ip6_multicast_query_expired(unsigned long data)
+ {
+ 	struct net_bridge *br = (void *)data;
+ 
+-	br_multicast_query_expired(br, &br->ip6_query);
++	br_multicast_query_expired(br, &br->ip6_own_query);
+ }
+ #endif
+ 
+@@ -1767,28 +1772,28 @@ void br_multicast_init(struct net_bridge *br)
+ 	br->multicast_querier_interval = 255 * HZ;
+ 	br->multicast_membership_interval = 260 * HZ;
+ 
+-	br->ip4_querier.delay_time = 0;
++	br->ip4_other_query.delay_time = 0;
+ #if IS_ENABLED(CONFIG_IPV6)
+-	br->ip6_querier.delay_time = 0;
++	br->ip6_other_query.delay_time = 0;
+ #endif
+ 
+ 	spin_lock_init(&br->multicast_lock);
+ 	setup_timer(&br->multicast_router_timer,
+ 		    br_multicast_local_router_expired, 0);
+-	setup_timer(&br->ip4_querier.timer, br_ip4_multicast_querier_expired,
+-		    (unsigned long)br);
+-	setup_timer(&br->ip4_query.timer, br_ip4_multicast_query_expired,
++	setup_timer(&br->ip4_other_query.timer,
++		    br_ip4_multicast_querier_expired, (unsigned long)br);
++	setup_timer(&br->ip4_own_query.timer, br_ip4_multicast_query_expired,
+ 		    (unsigned long)br);
+ #if IS_ENABLED(CONFIG_IPV6)
+-	setup_timer(&br->ip6_querier.timer, br_ip6_multicast_querier_expired,
+-		    (unsigned long)br);
+-	setup_timer(&br->ip6_query.timer, br_ip6_multicast_query_expired,
++	setup_timer(&br->ip6_other_query.timer,
++		    br_ip6_multicast_querier_expired, (unsigned long)br);
++	setup_timer(&br->ip6_own_query.timer, br_ip6_multicast_query_expired,
+ 		    (unsigned long)br);
+ #endif
+ }
+ 
+ static void __br_multicast_open(struct net_bridge *br,
+-				struct bridge_mcast_query *query)
++				struct bridge_mcast_own_query *query)
+ {
+ 	query->startup_sent = 0;
+ 
+@@ -1800,9 +1805,9 @@ static void __br_multicast_open(struct net_bridge *br,
+ 
+ void br_multicast_open(struct net_bridge *br)
+ {
+-	__br_multicast_open(br, &br->ip4_query);
++	__br_multicast_open(br, &br->ip4_own_query);
+ #if IS_ENABLED(CONFIG_IPV6)
+-	__br_multicast_open(br, &br->ip6_query);
++	__br_multicast_open(br, &br->ip6_own_query);
+ #endif
+ }
+ 
+@@ -1815,11 +1820,11 @@ void br_multicast_stop(struct net_bridge *br)
+ 	int i;
+ 
+ 	del_timer_sync(&br->multicast_router_timer);
+-	del_timer_sync(&br->ip4_querier.timer);
+-	del_timer_sync(&br->ip4_query.timer);
++	del_timer_sync(&br->ip4_other_query.timer);
++	del_timer_sync(&br->ip4_own_query.timer);
+ #if IS_ENABLED(CONFIG_IPV6)
+-	del_timer_sync(&br->ip6_querier.timer);
+-	del_timer_sync(&br->ip6_query.timer);
++	del_timer_sync(&br->ip6_other_query.timer);
++	del_timer_sync(&br->ip6_own_query.timer);
+ #endif
+ 
+ 	spin_lock_bh(&br->multicast_lock);
+@@ -1923,7 +1928,7 @@ unlock:
+ }
+ 
+ static void br_multicast_start_querier(struct net_bridge *br,
+-				       struct bridge_mcast_query *query)
++				       struct bridge_mcast_own_query *query)
+ {
+ 	struct net_bridge_port *port;
+ 
+@@ -1934,11 +1939,11 @@ static void br_multicast_start_querier(struct net_bridge *br,
+ 		    port->state == BR_STATE_BLOCKING)
+ 			continue;
+ 
+-		if (query == &br->ip4_query)
+-			br_multicast_enable(&port->ip4_query);
++		if (query == &br->ip4_own_query)
++			br_multicast_enable(&port->ip4_own_query);
+ #if IS_ENABLED(CONFIG_IPV6)
+ 		else
+-			br_multicast_enable(&port->ip6_query);
++			br_multicast_enable(&port->ip6_own_query);
+ #endif
+ 	}
+ }
+@@ -1974,9 +1979,9 @@ rollback:
+ 			goto rollback;
+ 	}
+ 
+-	br_multicast_start_querier(br, &br->ip4_query);
++	br_multicast_start_querier(br, &br->ip4_own_query);
+ #if IS_ENABLED(CONFIG_IPV6)
+-	br_multicast_start_querier(br, &br->ip6_query);
++	br_multicast_start_querier(br, &br->ip6_own_query);
+ #endif
+ 
+ unlock:
+@@ -2001,16 +2006,16 @@ int br_multicast_set_querier(struct net_bridge *br, unsigned long val)
+ 
+ 	max_delay = br->multicast_query_response_interval;
+ 
+-	if (!timer_pending(&br->ip4_querier.timer))
+-		br->ip4_querier.delay_time = jiffies + max_delay;
++	if (!timer_pending(&br->ip4_other_query.timer))
++		br->ip4_other_query.delay_time = jiffies + max_delay;
+ 
+-	br_multicast_start_querier(br, &br->ip4_query);
++	br_multicast_start_querier(br, &br->ip4_own_query);
+ 
+ #if IS_ENABLED(CONFIG_IPV6)
+-	if (!timer_pending(&br->ip6_querier.timer))
+-		br->ip6_querier.delay_time = jiffies + max_delay;
++	if (!timer_pending(&br->ip6_other_query.timer))
++		br->ip6_other_query.delay_time = jiffies + max_delay;
+ 
+-	br_multicast_start_querier(br, &br->ip6_query);
++	br_multicast_start_querier(br, &br->ip6_own_query);
+ #endif
+ 
+ unlock:
+diff --git a/net/bridge/br_private.h b/net/bridge/br_private.h
+index 53d6e32..caed7b1 100644
+--- a/net/bridge/br_private.h
++++ b/net/bridge/br_private.h
+@@ -68,13 +68,13 @@ struct br_ip
+ 
+ #ifdef CONFIG_BRIDGE_IGMP_SNOOPING
+ /* our own querier */
+-struct bridge_mcast_query {
++struct bridge_mcast_own_query {
+ 	struct timer_list	timer;
+ 	u32			startup_sent;
+ };
+ 
+ /* other querier */
+-struct bridge_mcast_querier {
++struct bridge_mcast_other_query {
+ 	struct timer_list		timer;
+ 	unsigned long			delay_time;
+ };
+@@ -178,9 +178,9 @@ struct net_bridge_port
+ #define BR_PROMISC		0x00000080
+ 
+ #ifdef CONFIG_BRIDGE_IGMP_SNOOPING
+-	struct bridge_mcast_query	ip4_query;
++	struct bridge_mcast_own_query	ip4_own_query;
+ #if IS_ENABLED(CONFIG_IPV6)
+-	struct bridge_mcast_query	ip6_query;
++	struct bridge_mcast_own_query	ip6_own_query;
+ #endif /* IS_ENABLED(CONFIG_IPV6) */
+ 	unsigned char			multicast_router;
+ 	struct timer_list		multicast_router_timer;
+@@ -282,11 +282,11 @@ struct net_bridge
+ 	struct hlist_head		router_list;
+ 
+ 	struct timer_list		multicast_router_timer;
+-	struct bridge_mcast_querier	ip4_querier;
+-	struct bridge_mcast_query	ip4_query;
++	struct bridge_mcast_other_query	ip4_other_query;
++	struct bridge_mcast_own_query	ip4_own_query;
+ #if IS_ENABLED(CONFIG_IPV6)
+-	struct bridge_mcast_querier	ip6_querier;
+-	struct bridge_mcast_query	ip6_query;
++	struct bridge_mcast_other_query	ip6_other_query;
++	struct bridge_mcast_own_query	ip6_own_query;
+ #endif /* IS_ENABLED(CONFIG_IPV6) */
+ #endif
+ 
+@@ -493,7 +493,7 @@ static inline bool br_multicast_is_router(struct net_bridge *br)
+ 
+ static inline bool
+ __br_multicast_querier_exists(struct net_bridge *br,
+-			      struct bridge_mcast_querier *querier)
++			      struct bridge_mcast_other_query *querier)
+ {
+ 	return time_is_before_jiffies(querier->delay_time) &&
+ 	       (br->multicast_querier || timer_pending(&querier->timer));
+@@ -504,10 +504,10 @@ static inline bool br_multicast_querier_exists(struct net_bridge *br,
+ {
+ 	switch (eth->h_proto) {
+ 	case (htons(ETH_P_IP)):
+-		return __br_multicast_querier_exists(br, &br->ip4_querier);
++		return __br_multicast_querier_exists(br, &br->ip4_other_query);
+ #if IS_ENABLED(CONFIG_IPV6)
+ 	case (htons(ETH_P_IPV6)):
+-		return __br_multicast_querier_exists(br, &br->ip6_querier);
++		return __br_multicast_querier_exists(br, &br->ip6_other_query);
+ #endif
+ 	default:
+ 		return false;
 -- 
-2.0.0.rc2
+1.7.10.4
 
