@@ -1,82 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932277AbaFBVCi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 17:02:38 -0400
-Received: from relay1.mentorg.com ([192.94.38.131]:43565 "EHLO
-	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932214AbaFBVCe (ORCPT
+	id S932324AbaFBVDR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 17:03:17 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:36763 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932087AbaFBVDN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 17:02:34 -0400
-Date: Mon, 2 Jun 2014 21:02:15 +0000
-From: "Joseph S. Myers" <joseph@codesourcery.com>
-X-X-Sender: jsm28@digraph.polyomino.org.uk
-To: Arnd Bergmann <arnd@arndb.de>
-CC: <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>,
-        <john.stultz@linaro.org>, <hch@infradead.org>, <tglx@linutronix.de>,
-        <geert@linux-m68k.org>, <lftan@altera.com>, <hpa@zytor.com>,
-        <linux-fsdevel@vger.kernel.org>, <ceph-devel@vger.kernel.org>,
-        <cluster-devel@redhat.com>, <coda@cs.cmu.edu>,
-        <codalist@TELEMANN.coda.cs.cmu.edu>,
-        <fuse-devel@lists.sourceforge.net>, <linux-afs@lists.infradead.org>,
-        <linux-btrfs@vger.kernel.org>, <linux-cifs@vger.kernel.org>,
-        <linux-ext4@vger.kernel.org>, <linux-f2fs-devel@lists.sourceforge.net>,
-        <linux-mtd@lists.infradead.org>, <linux-nfs@vger.kernel.org>,
-        <linux-ntfs-dev@lists.sourceforge.net>, <linux-scsi@vger.kernel.org>,
-        <logfs@logfs.org>, <ocfs2-devel@oss.oracle.com>,
-        <reiserfs-devel@vger.kernel.org>, <samba-technical@lists.samba.org>,
-        <xfs@oss.sgi.com>
-Subject: Re: [RFC 00/32] making inode time stamps y2038 ready
-In-Reply-To: <4233989.Saca0ocOUr@wuerfel>
-Message-ID: <Pine.LNX.4.64.1406022044090.27099@digraph.polyomino.org.uk>
-References: <1401480116-1973111-1-git-send-email-arnd@arndb.de>
- <Pine.LNX.4.64.1406021350030.19591@digraph.polyomino.org.uk>
- <4233989.Saca0ocOUr@wuerfel>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-OriginalArrivalTime: 02 Jun 2014 21:02:20.0222 (UTC) FILETIME=[F16D75E0:01CF7EA5]
+	Mon, 2 Jun 2014 17:03:13 -0400
+Date: Mon, 02 Jun 2014 14:03:12 -0700 (PDT)
+Message-Id: <20140602.140312.98558447285279661.davem@davemloft.net>
+To: mst@redhat.com
+Cc: kvm@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        arei.gonglei@huawei.com, mimu@linux.vnet.ibm.com, romain@orebokech.com
+Subject: Re: [PULL net-next] vhost enhancements for 3.16
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20140602205515.GA10287@redhat.com>
+References: <20140602205515.GA10287@redhat.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 02 Jun 2014 14:03:13 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2 Jun 2014, Arnd Bergmann wrote:
+From: "Michael S. Tsirkin" <mst@redhat.com>
+Date: Mon, 2 Jun 2014 23:55:15 +0300
 
-> Ok. Sorry about missing linux-api, I confused it with linux-arch, which
-> may not be as relevant here, except for the one question whether we
-> actually want to have the new ABI on all 32-bit architectures or only
-> as an opt-in for those that expect to stay around for another 24 years.
-
-For glibc I think it will make the most sense to add the support for 
-64-bit time_t across all architectures that currently have 32-bit time_t 
-(with the new interfaces having fallback support to implementation in 
-terms of the 32-bit kernel interfaces, if the 64-bit syscalls are 
-unavailable either at runtime or in the kernel headers against which glibc 
-is compiled - this fallback code will of course need to check for overflow 
-when passing a time value to the kernel, hopefully with error handling 
-consistent with whatever the kernel ends up doing when a filesystem can't 
-support a timestamp).  If some architectures don't provide the new 
-interfaces in the kernel then that will mean the fallback code in glibc 
-can't be removed until glibc support for those architectures is removed 
-(as opposed to removing it when glibc no longer supports kernels predating 
-the kernel support).
-
-> Two more questions for you:
+> The following changes since commit 96b2e73c5471542cb9c622c4360716684f8797ed:
 > 
-> - are you (and others) happy with adding this type of stat syscall
->   (fstatat64/fstat64) as opposed to the more generic xstat that has
->   been discussed in the past and that never made it through the bike-
->   shedding discussion?
+>   Revert "net/mlx4_en: Use affinity hint" (2014-06-02 00:18:48 -0700)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/mst/vhost.git vhost-next
+> 
+> for you to fetch changes up to 2ae76693b8bcabf370b981cd00c36cd41d33fabc:
+> 
+>   vhost: replace rcu with mutex (2014-06-02 23:47:59 +0300)
 
-I am.
+Can you please post the actual patches as part of your pull request just
+like the other maintainers do?
 
-> - once we have enough buy-in from reviewers to merge this initial
->   series, should we proceed to define rest of the syscall ABI
->   (minus driver ioctls) so glibc and kernel can do the conversion
->   on top of that, or should we better try to do things one syscall
->   family at a time and actually get the kernel to handle them
->   correctly internally?
-
-I don't have any comments on that ordering question.
-
--- 
-Joseph S. Myers
-joseph@codesourcery.com
+Thanks.
