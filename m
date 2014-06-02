@@ -1,40 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754130AbaFBLcc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 07:32:32 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:46862 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752784AbaFBLcb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 07:32:31 -0400
-Date: Mon, 2 Jun 2014 04:32:28 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: Bart Van Assche <bvanassche@acm.org>
-Cc: Jens Axboe <axboe@kernel.dk>, Kent Overstreet <kmo@daterainc.com>,
-        Shaohua Li <shli@kernel.org>, Christoph Hellwig <hch@infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RFC] block: Eliminate first argument of submit_bio()
-Message-ID: <20140602113228.GA26951@infradead.org>
-References: <538C4767.5050207@acm.org>
+	id S1754196AbaFBLdj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 07:33:39 -0400
+Received: from isis.lip6.fr ([132.227.60.2]:64057 "EHLO isis.lip6.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754167AbaFBLdg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 07:33:36 -0400
+X-pt: isis.lip6.fr
+Date: Mon, 2 Jun 2014 13:34:30 +0200
+From: Benoit Taine <benoit.taine@lip6.fr>
+To: David Miller <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH 2/2 v3] lpc_eth: Use resource_size instead of computation
+Message-ID: <20140602113430.GA3823@lip6.fr>
+References: <1401290047-30005-1-git-send-email-benoit.taine@lip6.fr>
+ <1401290047-30005-3-git-send-email-benoit.taine@lip6.fr>
+ <20140601.192705.693805935389177182.davem@davemloft.net>
+ <20140602112419.GA3625@lip6.fr>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <538C4767.5050207@acm.org>
+In-Reply-To: <20140602112419.GA3625@lip6.fr>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.4.3 (isis.lip6.fr [132.227.60.2]); Mon, 02 Jun 2014 13:33:32 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 02, 2014 at 11:44:07AM +0200, Bart Van Assche wrote:
-> The submit_bio() API is confusing. Merge functions like
-> raid5_mergeable_bvec() can only work correctly if bi_rw is set
-> before bio_add_page() has been called. submit_bio() modifies
-> bi_rw after bio_add_page() has been called. Hence remove the
-> first argument of submit_bio() and let the caller set bi_rw.
-> Note: some but not all submit_bio() callers have been fixed
-> such that bi_rw is set before bio_add_page() is called.
+This issue was reported by coccicheck using the semantic patch 
+at scripts/coccinelle/api/resource_size.cocci
 
-I like this a lot!
+Signed-off-by: Benoit Taine <benoit.taine@lip6.fr>
+---
+Not compile tested, due incompatible architecture.
+
+Changes from V2:
+ - added line break to debug message
+
+Changes from V1:
+ - Use %pR format type with the debug message (Thanks to Joe Perches)
+
+diff --git a/drivers/net/ethernet/nxp/lpc_eth.c b/drivers/net/ethernet/nxp/lpc_eth.c
+index 422d9b5..645dac3 100644
+--- a/drivers/net/ethernet/nxp/lpc_eth.c
++++ b/drivers/net/ethernet/nxp/lpc_eth.c
+@@ -1361,7 +1361,7 @@ static int lpc_eth_drv_probe(struct platform_device *pdev)
+        __lpc_eth_clock_enable(pldat, true);
+ 
+        /* Map IO space */
+-       pldat->net_base = ioremap(res->start, res->end - res->start + 1);
++       pldat->net_base = ioremap(res->start, resource_size(res));
+        if (!pldat->net_base) {
+                dev_err(&pdev->dev, "failed to map registers\n");
+                ret = -ENOMEM;
+@@ -1417,10 +1417,8 @@ static int lpc_eth_drv_probe(struct platform_device *pdev)
+        }
+        pldat->dma_buff_base_p = dma_handle;
+ 
+-       netdev_dbg(ndev, "IO address start     :0x%08x\n",
+-                       res->start);
+-       netdev_dbg(ndev, "IO address size      :%d\n",
+-                       res->end - res->start + 1);
++       netdev_dbg(ndev, "IO address space     :%pR\n", res);
++       netdev_dbg(ndev, "IO address size      :%d\n", resource_size(res));
+        netdev_dbg(ndev, "IO address (mapped)  :0x%p\n",
+                        pldat->net_base);
+        netdev_dbg(ndev, "IRQ number           :%d\n", ndev->irq);
 
