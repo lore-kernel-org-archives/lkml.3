@@ -1,51 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753142AbaFBJjH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 05:39:07 -0400
-Received: from mail-ig0-f171.google.com ([209.85.213.171]:42729 "EHLO
-	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752402AbaFBJjG (ORCPT
+	id S1753443AbaFBJkF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 05:40:05 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:38246 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752976AbaFBJkE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 05:39:06 -0400
+	Mon, 2 Jun 2014 05:40:04 -0400
+Date: Mon, 2 Jun 2014 11:39:44 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linus.walleij@linaro.org
+Subject: Re: [PATCH 1/1] pinctrl: sunxi: Fix potential null pointer
+ dereference
+Message-ID: <20140602093944.GA27722@lukather>
+References: <1401445252-21413-1-git-send-email-sachin.kamat@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <20140602080022.GT17724@mwanda>
-References: <20140602051447.GA30379@devel.8.8.4.4>
-	<20140602080022.GT17724@mwanda>
-Date: Mon, 2 Jun 2014 18:39:04 +0900
-Message-ID: <CAHb8M2BhK3hCXRvpEaW1R3-BRhnK6weXwGJpgaNsCe+gGD7=cg@mail.gmail.com>
-Subject: Re: [PATCH 2/6 RESEND V2] staging: dgap: unwind on error in dgap_found_board()
-From: DaeSeok Youn <daeseok.youn@gmail.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Lidza Louina <lidza.louina@gmail.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Mark Hounschell <markh@compro.net>,
-        driverdev-devel@linuxdriverproject.org,
-        devel <devel@driverdev.osuosl.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="XsQoSWH+UP9D9v3l"
+Content-Disposition: inline
+In-Reply-To: <1401445252-21413-1-git-send-email-sachin.kamat@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-06-02 17:00 GMT+09:00 Dan Carpenter <dan.carpenter@oracle.com>:
-> On Mon, Jun 02, 2014 at 02:14:47PM +0900, Daeseok Youn wrote:
->> Adds a label for "kfree(brd)". And also remove
->> a state value as BOARD_FAILED in brd when dgap_do_remap() is failed.
->> Because "brd" will free after failure.
->>
->> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
->> Reviewed-by: Dan Carpenter <dan.carpenter@oracle.com>
->> ---
->> RESEND: this patch is included into newly series of patches.
->> V2: add "Reviewed-by" line in change log.
->
-> Don't worry about this stuff, Greg's scripts pick it up, or if they
-> don't, I don't care.
-OK. I got that.
 
-Thanks.
-Daeseok Youn.
->
-> regards,
-> dan carpenter
->
+--XsQoSWH+UP9D9v3l
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Fri, May 30, 2014 at 03:50:52PM +0530, Sachin Kamat wrote:
+> kzalloc can fail. Add a null check to avoid null pointer
+> dereference error while accessing the pointer later.
+>=20
+> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+
+Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+
+Thanks!
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--XsQoSWH+UP9D9v3l
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTjEZgAAoJEBx+YmzsjxAg0lwQAIfuOt+dLpGtDXM28wcpf+LZ
+JNgHnMMzafW40iReGG9CN8fHflPaCMCAZoSMrUZEPz7+qj3TUeT3iFw2FbeSB1po
+KPJSXrYutqMJ6U5rdx2qifiWuf/Hl0XXAb6KSbBQl2Wg1pv7AlmYOekdDnouGOWv
+3t9JUY9m5F6WpJeGDVCM0XP2d/CK3zC+DLMZYuPhI2Y2QZu1wDnhWGpohVQnWhPb
+87KsA3MHqo6sq80cywcqqFsgk9dR/uaFfqiTps8VAUu1qQzXRgJM7gl2NFYCGXPD
+lv3G5jNpG0356KFo3jUa4Nn1bhTXfpjka3yu3Tq8YBWI9tYMyHB1dPoXveQl/7G/
+AhRInHC9lTog+SZ9nK2IS6nUjOQUk0gBGVDglSHYw6CzqohsokNJPdtr3irDhyNR
+f2FdbYhsmpS0L41pSlyvcJR3Yex+MEQ8ilrVneP/1dvyx3GAAwfJycPKb+I89+Jw
+UXgC25H4fclEZP3DklnorkZ1klmwOnJ1cjA2q/pCM0LfLORlxqpivvV4x1L2ISdQ
+EHwpe1EtPwy+8friE5A2Q2Nqu9ptoaEd3I+1pk4HQSRjHkSe/NzQTwP+4RgwAXCM
+wKaM9LwbNnZ1GBEKTgmoVjaQutWlVGA8p/Dv2oqbuA/B6kh2LDt+Hq/KagCxAr6k
+aNnmp9PdyfH8Q1hSHNlT
+=2BZJ
+-----END PGP SIGNATURE-----
+
+--XsQoSWH+UP9D9v3l--
