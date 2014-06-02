@@ -1,69 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753474AbaFBTKJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 15:10:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20168 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751286AbaFBTKG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 15:10:06 -0400
-Date: Mon, 2 Jun 2014 16:09:07 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Gleb Natapov <gleb@kernel.org>
-Cc: Andi Kleen <ak@linux.intel.com>, Andi Kleen <andi@firstfloor.org>,
-        peterz@infradead.org, pbonzini@redhat.com, eranian@google.com,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] kvm: Implement PEBS virtualization
-Message-ID: <20140602190907.GA7590@amt.cnet>
-References: <1401412327-14810-1-git-send-email-andi@firstfloor.org>
- <1401412327-14810-5-git-send-email-andi@firstfloor.org>
- <20140530082136.GA4715@minantech.com>
- <20140530162424.GC8876@tassilo.jf.intel.com>
- <20140602164534.GD4715@minantech.com>
+	id S1753508AbaFBTLP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 15:11:15 -0400
+Received: from mout.kundenserver.de ([212.227.126.131]:64161 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752396AbaFBTLN convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 15:11:13 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Chuck Lever <chuck.lever@oracle.com>
+Cc: Roger Willcocks <roger@filmlight.ltd.uk>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>, linux-arch@vger.kernel.org,
+        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
+        LKML Kernel <linux-kernel@vger.kernel.org>, lftan@altera.com,
+        Christoph Hellwig <hch@infradead.org>, john.stultz@linaro.org,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>, geert@linux-m68k.org,
+        tglx@linutronix.de, xfs@oss.sgi.com, joseph@codesourcery.com
+Subject: Re: [RFC 11/32] xfs: convert to struct inode_time
+Date: Mon, 02 Jun 2014 21:10:47 +0200
+Message-ID: <5585593.Xe5bNQZW47@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <C57EA6CA-236A-4C93-95F8-21F46A3622DA@oracle.com>
+References: <1401480116-1973111-1-git-send-email-arnd@arndb.de> <1401735504.6065.227.camel@montana.filmlight.ltd.uk> <C57EA6CA-236A-4C93-95F8-21F46A3622DA@oracle.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140602164534.GD4715@minantech.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
+X-Provags-ID: V02:K0:bXrzJyAzgEKl81TStkjWbriSWSQaIN1lXC/BVPRzOz9
+ e30zFHO7wPv9NopQs9o8/IgxftJc9DDKjL53AxDp+l3XKLijd+
+ upWIbCPzGW1r8f8geTxrDyIE3BE/onm56ZedlUsedp7gNMRlS6
+ w7UUVdX0kK5SXmohuocp+rVbbAWlcpfN/cuR81+dIt4B6W0qsZ
+ iJsankvJXyzjGgqoUrSWX7U0AJbaAZBVG96Le54OrgKAZ59QtO
+ Sk4u9CXEmfLJU+6IYhUpOOzUNOfQ7zvBrjSFfQBvEf8DpVmRud
+ +Rf7HefjAQWGKMtBBV2wfhMvr6ClnqxahqO9GvJQdCp2PqG369
+ IJiBY9Yez2sg4pUorR+U=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 02, 2014 at 07:45:35PM +0300, Gleb Natapov wrote:
-> On Fri, May 30, 2014 at 09:24:24AM -0700, Andi Kleen wrote:
-> > > > To avoid any problems with guest pages being swapped by the host we
-> > > > pin the pages when the PEBS buffer is setup, by intercepting
-> > > > that MSR.
-> > > It will avoid guest page to be swapped, but shadow paging code may still drop
-> > > shadow PT pages that build a mapping from DS virtual address to the guest page.
+On Monday 02 June 2014 15:04:27 Chuck Lever wrote:
+> On Jun 2, 2014, at 2:58 PM, Roger Willcocks <roger@filmlight.ltd.uk> wrote:
+> 
 > > 
-> > You're saying the EPT code could tear down the EPT mappings?
+> > On Mon, 2014-06-02 at 11:04 -0400, Chuck Lever wrote:
+> > 
+> >> NFSv2/3 timestamps are a pair of unsigned 32-bit values: one value for
+> >> seconds since midnight GMT Jan 1, 1970, and one value for nanoseconds.
+> >> (See the definition of nfstime3 in RFC 1813).
+> >> 
+> > 
+> > nfstime3 could be extended by redefining the otherwise unused
+> > nanoseconds bits{31,30} as seconds{33,32}, to give a (signed) 34-bit
+> > seconds field and an unsigned 30-bit nanoseconds field.
+> > 
+> > This could represent 1970 +/- 272 years.
+> > 
+> > Servers could indicate they can understand the extended time format by
+> > adding a new FSINFO capability - FSF3_CANSETTIME_EX.
+> > 
+> > Clients would use a new SET_TO_CLIENT_TIME_EX time_how enum when sending
+> > timestamps so old servers would be protected from new clients.
 > 
-> Under memory pressure yes. mmu_shrink_scan() calls
-> prepare_zap_oldest_mmu_page() which destroys oldest mmu pages like its
-> name says. As far as I can tell running nested guest can also result in
-> EPT mapping to be dropped since it will create a lot of shadow pages and
-> this will cause make_mmu_pages_available() to destroy some shadow pages
-> and it may choose EPT pages to destroy.
+> You would have to get the IETF’s NFSv4 working group to sign off on
+> this change. Otherwise, Linux would be the only NFSv3 implementation
+> that supports the extension.
 > 
-> CCing Marcelo to confirm/correct.
+> But I suspect the answer you’d get is “Use NFSv4.”
 
-Yes. Given SLAB pressure any shadow pages can be deleted except pinned 
-via root_count=1 ones.
+While I've never dealt with an NFS standardization, I'd assume this is
+a workable answer. The NFSv2 and NFSv3 definition clearly defines a valid
+range of times until 2106 using unsigned seconds, and that should really
+give enough time to migrate to something better (not necessarily NFSv4).
 
-> > OK that would need to be prevented too. Any suggestions how?
-> Only high level. Mark shadow pages involved in translation we want to keep and skip them in
-> prepare_zap_oldest_mmu_page().
-
-Should special case such translations so that they are not zapped
-(either via page deletion or single entry EPT deletion). Them
-and any other their parents, bummer.
-
-Maybe its cleaner to check that DS area is EPT mapped before VM-entry.
-
-No way the processor can generate VM-exits ?
-
-Is it not an option to fake a DS-save area in the host (and trap
-any accesses to the DS_AREA MSR from the guest) ? 
-Then before notifying the PEBS event, copy from that host area to 
-guests address. Slow probably.
-
+	Arnd
