@@ -1,54 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752066AbaFBGaA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 02:30:00 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:43696 "EHLO
+	id S1752418AbaFBGas (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 02:30:48 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:43871 "EHLO
 	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751431AbaFBG37 (ORCPT
+	with ESMTP id S1752238AbaFBGar (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 02:29:59 -0400
-X-AuditID: cbfee68e-b7fb96d000004bfc-cf-538c19e5911b
+	Mon, 2 Jun 2014 02:30:47 -0400
+X-AuditID: cbfee690-b7fb56d000003439-06-538c1a14fb22
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Mark Brown'" <broonie@kernel.org>
 Cc: "'Liam Girdwood'" <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
-        "'Jingoo Han'" <jg1.han@samsung.com>,
-        "'Haojian Zhuang'" <haojian.zhuang@gmail.com>
+        "'Jingoo Han'" <jg1.han@samsung.com>, "'Balaji T K'" <balajitk@ti.com>
 References: <000101cf7e2b$b5c9f9c0$215ded40$%han@samsung.com>
 In-reply-to: <000101cf7e2b$b5c9f9c0$215ded40$%han@samsung.com>
-Subject: [PATCH 2/3] regulator: max8649: remove unnecessary OOM messages
-Date: Mon, 02 Jun 2014 15:29:57 +0900
-Message-id: <000201cf7e2c$129996b0$37ccc410$%han@samsung.com>
+Subject: [PATCH 3/3] regulator: pbias: remove unnecessary OOM messages
+Date: Mon, 02 Jun 2014 15:30:44 +0900
+Message-id: <000301cf7e2c$2ec50b80$8c4f2280$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac9+K7WAMnl298jeROKabyh9CsMnMAAACi3w
+Thread-index: Ac9+K7WAMnl298jeROKabyh9CsMnMAAAF7Lw
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrIIsWRmVeSWpSXmKPExsVy+t8zQ92nkj3BBi97ZCymPnzCZnFhnbnF
-	5YWXWC2+Xelgsri8aw6bA6vHzll32T02repk8+jbsorR4/MmuQCWKC6blNSczLLUIn27BK6M
-	5Y9mMRacZ6v41nGCrYHxIGsXIyeHhICJxLn+i1C2mMSFe+vZuhi5OIQEljFKtJ7cxg5TdGLd
-	TEaIxHRGiX+T77BDOL8ZJT6t3ccEUsUmoCbx5cthoAQHh4iAqsT/V+4gNcwCsxglGhb9ZQGp
-	ERKwldi88ArYVE4BO4mJ9y8xgdQLC3hIrF4vDRJmAWrtbl/MDGLzApXvevaZBcIWlPgx+R6Y
-	zSygJbF+53EmCFteYvOat8wgYyQE1CUe/dUFCYsIGEn8mLMWqlxEYt+Ld2D3SwhcY5d4N2E1
-	E8QuAYlvkw+xQPTKSmw6wAzxr6TEwRU3WCYwSsxCsnkWks2zkGyehWTFAkaWVYyiqQXJBcVJ
-	6UVGesWJucWleel6yfm5mxgh0dm3g/HmAetDjMlA6ycyS4km5wOjO68k3tDYzMjC1MTU2Mjc
-	0ow0YSVx3kUPk4KEBNITS1KzU1MLUovii0pzUosPMTJxcEo1MJaunrToaW7D5jzPsk+8LXES
-	huJCaqcnS9W5/Ldzq5Gd1Cl9fRF/29ywqIl1KWv811rnWtzcI7q6qeVfr3HruTWxOmJbNr71
-	aVj07OV75b+r9wl8uxVc4LNx6mpZJr9nV2pN3c8sdmcV/u8ntycjJMZsx6uGxfZ1R9bYda9n
-	Vebmufuzk7H0rBJLcUaioRZzUXEiABeEuCDkAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrHKsWRmVeSWpSXmKPExsVy+t9jQd2nkj3BBp9mS1hMffiEzeLCOnOL
-	ywsvsVp8u9LBZHF51xw2B1aPnbPusntsWtXJ5tG3ZRWjx+dNcgEsUQ2MNhmpiSmpRQqpecn5
-	KZl56bZK3sHxzvGmZgaGuoaWFuZKCnmJuam2Si4+AbpumTlAe5UUyhJzSoFCAYnFxUr6dpgm
-	hIa46VrANEbo+oYEwfUYGaCBhHWMGcsfzWIsOM9W8a3jBFsD40HWLkZODgkBE4kT62YyQthi
-	EhfurWfrYuTiEBKYzijxb/IddgjnN6PEp7X7mECq2ATUJL58OQyU4OAQEVCV+P/KHaSGWWAW
-	o0TDor8sIDVCArYSmxdeYQexOQXsJCbev8QEUi8s4CGxer00SJgFqLW7fTEziM0LVL7r2WcW
-	CFtQ4sfke2A2s4CWxPqdx5kgbHmJzWveMoOMkRBQl3j0VxckLCJgJPFjzlqochGJfS/eMU5g
-	FJqFZNIsJJNmIZk0C0nLAkaWVYyiqQXJBcVJ6bmGesWJucWleel6yfm5mxjBsf9MagfjygaL
-	Q4wCHIxKPLwTFnQFC7EmlhVX5h5ilOBgVhLhPXq2O1iINyWxsiq1KD++qDQntfgQYzLQoxOZ
-	pUST84FpKa8k3tDYxMzI0sjMwsjE3Jw0YSVx3gOt1oFCAumJJanZqakFqUUwW5g4OKUaGHW9
-	6zJDuq8J7tQ2mPXcMOGAjf3DcKMHjlNKFrjFFvuwGa8Wfaa4QjCHZ9cti8Qta0K4FdZsWDar
-	wCb4/WPHNe5ut5jOT7kc1NXH9q4zfd8S65LdE5ezfWXJKcoOK7rg3LBgU6Xj9XeMfBNfP59s
-	ovBwI0+Z/nNl7ZSbPfeuSL+Lk85aXPRVQYmlOCPRUIu5qDgRAAb+LxtBAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrKIsWRmVeSWpSXmKPExsVy+t8zfV0RqZ5gg/eb9CymTt7OZjH14RM2
+	i8sLL7FafLvSwWRxedccNgdWj52z7rJ7bFrVyebRt2UVo8fxG9uZPD5vkgtgjeKySUnNySxL
+	LdK3S+DK2PrgE1NBG3vFo6/PmBoYP7B2MXJwSAiYSHy/a9DFyAlkiklcuLeeDcQWEljGKPH4
+	dTBE3ETiyZu7QOVcQPHpjBJtq3tYIJzfjBLfJ35lBKliE1CT+PLlMDvIUBEBVYn/r9xBapgF
+	ehklDi3byggx1VZi88Ir7CA2p4CdxMT7l5hAbGEBN4mZnYfB4ixAvRMfvmMBmcMLVD/5gDdI
+	mFdAUOLH5HssIDazgJbE+p3HmSBseYnNa94yQ/yiLvHory5IWETASKK74QlUuYjEvhfvGEHO
+	kRB4xC5xZttNFohVAhLfJh9igeiVldh0gBniX0mJgytusExglJiFZPMsJJtnIdk8C8mKBYws
+	qxhFUwuSC4qT0otM9IoTc4tL89L1kvNzNzFConTCDsZ7B6wPMSYDrZ/ILCWanA+M8rySeENj
+	MyMLUxNTYyNzSzPShJXEedUeJQUJCaQnlqRmp6YWpBbFF5XmpBYfYmTi4JRqYJx6y69MYcHt
+	imuPF0kXRKnNnp67oKj1Y9/y25vqP2XvXWPE1LRSvVgkesMhtzd9XaoHfVY0nHz9tjdr3pu/
+	FzRVdt7Ovrwv2vawv77OMb2Fd8/M7QjJaLLcvmj7zO/f7KTu/FKYbSi1rpf959rEfw4z+ngX
+	zgvyjW7Off6c6cW5UusrPe5LX9opsRRnJBpqMRcVJwIANwbqxegCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCKsWRmVeSWpSXmKPExsVy+t9jQV0RqZ5ggz37tCymTt7OZjH14RM2
+	i8sLL7FafLvSwWRxedccNgdWj52z7rJ7bFrVyebRt2UVo8fxG9uZPD5vkgtgjWpgtMlITUxJ
+	LVJIzUvOT8nMS7dV8g6Od443NTMw1DW0tDBXUshLzE21VXLxCdB1y8wB2q6kUJaYUwoUCkgs
+	LlbSt8M0ITTETdcCpjFC1zckCK7HyAANJKxjzNj64BNTQRt7xaOvz5gaGD+wdjFyckgImEg8
+	eXMXyhaTuHBvPVsXIxeHkMB0Rom21T0sEM5vRonvE78yglSxCahJfPlymL2LkYNDREBV4v8r
+	d5AaZoFeRolDy7aC1QgJ2EpsXniFHcTmFLCTmHj/EhOILSzgJjGz8zBYnAWod+LDdywgc3iB
+	6icf8AYJ8woISvyYfI8FxGYW0JJYv/M4E4QtL7F5zVtmkHIJAXWJR391QcIiAkYS3Q1PoMpF
+	JPa9eMc4gVFoFpJJs5BMmoVk0iwkLQsYWVYxiqYWJBcUJ6XnGukVJ+YWl+al6yXn525iBKeB
+	Z9I7GFc1WBxiFOBgVOLhvdDbFSzEmlhWXJl7iFGCg1lJhPfo2e5gId6UxMqq1KL8+KLSnNTi
+	Q4zJQH9OZJYSTc4Hpqi8knhDYxMzI0sjMwsjE3Nz0oSVxHkPtloHCgmkJ5akZqemFqQWwWxh
+	4uCUamA0WjRrnerCPwp57w99y7Hf+MnlmHnQjGdtGss23tlXGG31/NGUb5+K+9guTGP7czPH
+	dD3Pc8WIrDbN6gMyX2+az3G2E674L+l28XirwaUnbVd3fWkIuZ7weNm28zU/hEKkRTlsP/C8
+	n1sqkK7EembpC6/cxurl2ueW/Zyh5rjm6s3LMu+iD3zqUmIpzkg01GIuKk4EAF+PKeNHAwAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -61,25 +60,25 @@ duplicate the MM subsystem generic OOM message.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/regulator/max8649.c |    4 +---
+ drivers/regulator/pbias-regulator.c |    4 +---
  1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/drivers/regulator/max8649.c b/drivers/regulator/max8649.c
-index 3172da8..c8bddcc 100644
---- a/drivers/regulator/max8649.c
-+++ b/drivers/regulator/max8649.c
-@@ -161,10 +161,8 @@ static int max8649_regulator_probe(struct i2c_client *client,
+diff --git a/drivers/regulator/pbias-regulator.c b/drivers/regulator/pbias-regulator.c
+index 708ddbb..6d02d68 100644
+--- a/drivers/regulator/pbias-regulator.c
++++ b/drivers/regulator/pbias-regulator.c
+@@ -122,10 +122,8 @@ static int pbias_regulator_probe(struct platform_device *pdev)
  
- 	info = devm_kzalloc(&client->dev, sizeof(struct max8649_regulator_info),
- 			    GFP_KERNEL);
--	if (!info) {
--		dev_err(&client->dev, "No enough memory\n");
-+	if (!info)
+ 	drvdata = devm_kzalloc(&pdev->dev, sizeof(struct pbias_regulator_data)
+ 			       * count, GFP_KERNEL);
+-	if (drvdata == NULL) {
+-		dev_err(&pdev->dev, "Failed to allocate device data\n");
++	if (!drvdata)
  		return -ENOMEM;
 -	}
  
- 	info->regmap = devm_regmap_init_i2c(client, &max8649_regmap_config);
- 	if (IS_ERR(info->regmap)) {
+ 	syscon = syscon_regmap_lookup_by_phandle(np, "syscon");
+ 	if (IS_ERR(syscon))
 -- 
 1.7.10.4
 
