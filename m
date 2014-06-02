@@ -1,81 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754364AbaFBMsq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 08:48:46 -0400
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:33810 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752412AbaFBMsp (ORCPT
+	id S1754560AbaFBMvb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 08:51:31 -0400
+Received: from mail-we0-f180.google.com ([74.125.82.180]:61730 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752267AbaFBMv3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 08:48:45 -0400
-From: Vinayak Menon <vinayakm.list@gmail.com>
-To: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Cc: arve@android.com, john.stultz@linaro.org, serban.constantinescu@arm.com,
-        Vinayak Menon <vinayakm.list@gmail.com>
-Subject: [PATCH] staging: binder: add vm_fault handler
-Date: Mon,  2 Jun 2014 18:17:59 +0530
-Message-Id: <1401713279-5612-1-git-send-email-vinayakm.list@gmail.com>
-X-Mailer: git-send-email 1.9.2.msysgit.0
+	Mon, 2 Jun 2014 08:51:29 -0400
+Message-ID: <538C7342.4000700@gmail.com>
+Date: Mon, 02 Jun 2014 14:51:14 +0200
+From: Tomasz Figa <tomasz.figa@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>
+CC: Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org
+Subject: Re: [PATCH v2 1/7] arm: firmware: Check firmware is running or not
+References: <1401712543-14281-1-git-send-email-b.zolnierkie@samsung.com> <1401712543-14281-2-git-send-email-b.zolnierkie@samsung.com>
+In-Reply-To: <1401712543-14281-2-git-send-email-b.zolnierkie@samsung.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-An issue was observed when a userspace task exits.
-The page which hits error here is the zero page.
-In binder mmap, the whole of vma is not mapped.
-On a task crash, when debuggerd reads the binder regions,
-the unmapped areas fall to do_anonymous_page in handle_pte_fault,
-due to the absence of a vm_fault handler. This results in
-zero page being mapped. Later in zap_pte_range, vm_normal_page
-returns zero page in the case of VM_MIXEDMAP and it results in the
-error.
+Hi,
 
-BUG: Bad page map in process mediaserver  pte:9dff379f pmd:9bfbd831
-page:c0ed8e60 count:1 mapcount:-1 mapping:  (null) index:0x0
-page flags: 0x404(referenced|reserved)
-addr:40c3f000 vm_flags:10220051 anon_vma:  (null) mapping:d9fe0764 index:fd
-vma->vm_ops->fault:   (null)
-vma->vm_file->f_op->mmap: binder_mmap+0x0/0x274
-CPU: 0 PID: 1463 Comm: mediaserver Tainted: G        W    3.10.17+ #1
-[<c001549c>] (unwind_backtrace+0x0/0x11c) from [<c001200c>] (show_stack+0x10/0x14)
-[<c001200c>] (show_stack+0x10/0x14) from [<c0103d78>] (print_bad_pte+0x158/0x190)
-[<c0103d78>] (print_bad_pte+0x158/0x190) from [<c01055f0>] (unmap_single_vma+0x2e4/0x598)
-[<c01055f0>] (unmap_single_vma+0x2e4/0x598) from [<c010618c>] (unmap_vmas+0x34/0x50)
-[<c010618c>] (unmap_vmas+0x34/0x50) from [<c010a9e4>] (exit_mmap+0xc8/0x1e8)
-[<c010a9e4>] (exit_mmap+0xc8/0x1e8) from [<c00520f0>] (mmput+0x54/0xd0)
-[<c00520f0>] (mmput+0x54/0xd0) from [<c005972c>] (do_exit+0x360/0x990)
-[<c005972c>] (do_exit+0x360/0x990) from [<c0059ef0>] (do_group_exit+0x84/0xc0)
-[<c0059ef0>] (do_group_exit+0x84/0xc0) from [<c0066de0>] (get_signal_to_deliver+0x4d4/0x548)
-[<c0066de0>] (get_signal_to_deliver+0x4d4/0x548) from [<c0011500>] (do_signal+0xa8/0x3b8)
+On 02.06.2014 14:35, Bartlomiej Zolnierkiewicz wrote:
+> From: Kyungmin Park <kyungmin.park@samsung.com>
+> 
+> To support multi-platform, it needs to know it's running under secure
+> OS or not.  Sometimes it needs to access physical address by SMC calls.
+> 
+> e.g.,
+>         if (firmware_run()) {
+>                 addr = physical address;
+>         } else {
+>                 addr = virtual address;
+>         }
+> 
+>         call_firmware_ops(read_address, addr, &value);
 
-Add a vm_fault handler which returns VM_FAULT_SIGBUS, and prevents the
-wrong fallback to do_anonymous_page.
+Hmm, I don't understand the code above. It first asks whether the
+firmware is available and then calls a firmware operation anyway
+(assuming that firmware is available regardless of the check above)...
 
-Signed-off-by: Vinayak Menon <vinayakm.list@gmail.com>
----
- drivers/staging/android/binder.c |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
+I don't like the idea of this function, because we have designed the
+firmware API to not require this kind of checks. Instead, you just call
+whatever firmware operation you need and if it returns -ENOSYS you need
+to fallback to legacy (firmware-less) way of doing it.
 
-diff --git a/drivers/staging/android/binder.c b/drivers/staging/android/binder.c
-index cfe4bc8..4d9c3cc 100644
---- a/drivers/staging/android/binder.c
-+++ b/drivers/staging/android/binder.c
-@@ -2733,9 +2733,15 @@ static void binder_vma_close(struct vm_area_struct *vma)
- 	binder_defer_work(proc, BINDER_DEFERRED_PUT_FILES);
- }
- 
-+static int binder_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
-+{
-+	return VM_FAULT_SIGBUS;
-+}
-+
- static struct vm_operations_struct binder_vm_ops = {
- 	.open = binder_vma_open,
- 	.close = binder_vma_close,
-+	.fault = binder_vm_fault,
- };
- 
- static int binder_mmap(struct file *filp, struct vm_area_struct *vma)
--- 
-1.7.6
+Could you provide your use case for which this doesn't work?
 
+Best regards,
+Tomasz
