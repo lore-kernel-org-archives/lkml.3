@@ -1,78 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754579AbaFBMgh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 08:36:37 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:50830 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754516AbaFBMgf (ORCPT
+	id S1754653AbaFBMhJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 08:37:09 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:44626 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754516AbaFBMhG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 08:36:35 -0400
-Date: Mon, 2 Jun 2014 13:35:22 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Chew Chiau Ee <chiau.ee.chew@intel.com>
-Cc: Eric Miao <eric.y.miao@gmail.com>, Russell King <linux@arm.linux.org.uk>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Darren Hart <dvhart@linux.intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org, linux-spi@vger.kernel.org,
-        devicetree@vger.kernel.org
-Message-ID: <20140602123522.GB31751@sirena.org.uk>
-References: <1401738379-4107-1-git-send-email-chiau.ee.chew@intel.com>
- <1401738379-4107-3-git-send-email-chiau.ee.chew@intel.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="pvezYHf7grwyp3Bc"
-Content-Disposition: inline
-In-Reply-To: <1401738379-4107-3-git-send-email-chiau.ee.chew@intel.com>
-X-Cookie: Big book, big bore.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 92.40.249.174
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 2/2] clkdev: Export clk_register_clkdev
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Mon, 2 Jun 2014 08:37:06 -0400
+X-AuditID: cbfee61a-b7fef6d00000200b-a8-538c6ff09cb4
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        b.zolnierkie@samsung.com
+Subject: [PATCH v2 4/7] ARM: EXYNOS: PM: replace EXYNOS_BOOT_VECTOR_* macros by
+ static inlines
+Date: Mon, 02 Jun 2014 14:35:40 +0200
+Message-id: <1401712543-14281-5-git-send-email-b.zolnierkie@samsung.com>
+X-Mailer: git-send-email 1.7.10.4
+In-reply-to: <1401712543-14281-1-git-send-email-b.zolnierkie@samsung.com>
+References: <1401712543-14281-1-git-send-email-b.zolnierkie@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrKLMWRmVeSWpSXmKPExsVy+t9jQd0P+T3BBs9+altsnLGe1WLeZ1mL
+	3gVX2SzONr1ht3h/6BmzxabH11gtLu+aw2bxufcIo8WM8/uYLM6cvsRqcfJPL6PF+hmvWSw2
+	fvVw4PW4c20Pm8fmJfUet/89ZvbYcrWdxaNvyypGj8+b5ALYorhsUlJzMstSi/TtErgydjyf
+	yVqwXKCiac1ctgbGn7xdjJwcEgImEqcn7WKCsMUkLtxbz9bFyMUhJDCdUWLewv9QTheTxPo3
+	x9lBqtgErCQmtq9iBLFFBNQkehZvZQQpYhbYyyyxtHsTWJGwQILExWtfwGwWAVWJw3vegtm8
+	Ah4S55bOYoZYpyjR/WwCG4jNKeApsfLeQ1YQWwioZt+rXUwTGHkXMDKsYhRNLUguKE5KzzXU
+	K07MLS7NS9dLzs/dxAgOzGdSOxhXNlgcYhTgYFTi4f2p3hMsxJpYVlyZe4hRgoNZSYR3qQVQ
+	iDclsbIqtSg/vqg0J7X4EKM0B4uSOO+BVutAIYH0xJLU7NTUgtQimCwTB6dUA2PKoti2Pqbn
+	nQ/PHbjG8/aIn+qzvcvb/z2zdfnFtvsZ452+hJPcy6zl74bPtO7e++Ds/86f3ObHugxZH97j
+	8Gp4GFM67f7FvJCE1h1uVzZcLNswe65ug1FcmpGVqrS0qv8Nhq/XNqbPP9l40FhbWW2GMFOn
+	bAN3flzCsaovRSYTSzfIpL4S26/EUpyRaKjFXFScCAAIPEE5SAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Replace EXYNOS_BOOT_VECTOR_ADDR and EXYNOS_BOOT_VECTOR_FLAG macros
+by exynos_boot_vector_addr() and exynos_boot_vector_flag() static
+inlines.
 
---pvezYHf7grwyp3Bc
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This patch shouldn't cause any functionality changes.
 
-On Tue, Jun 03, 2014 at 03:46:19AM +0800, Chew Chiau Ee wrote:
-> From: Darren Hart <dvhart@linux.intel.com>
->=20
-> Allow spi-pxa2xx-pci with common clock framework support to build as a
-> module by exporting clk_register_clkdev.
+Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+ arch/arm/mach-exynos/pm.c | 28 ++++++++++++++++++++--------
+ 1 file changed, 20 insertions(+), 8 deletions(-)
 
-This needs to be patch 1 in the series not patch 2 since the change to
-the driver to use the exported symbol depends on this rather than the
-other way around.
+diff --git a/arch/arm/mach-exynos/pm.c b/arch/arm/mach-exynos/pm.c
+index 87c0d34..cf09383 100644
+--- a/arch/arm/mach-exynos/pm.c
++++ b/arch/arm/mach-exynos/pm.c
+@@ -166,12 +166,23 @@ int exynos_cluster_power_state(int cluster)
+ 			S5P_CORE_LOCAL_PWR_EN);
+ }
+ 
+-#define EXYNOS_BOOT_VECTOR_ADDR	(samsung_rev() == EXYNOS4210_REV_1_1 ? \
+-			S5P_INFORM7 : (samsung_rev() == EXYNOS4210_REV_1_0 ? \
+-			(sysram_base_addr + 0x24) : S5P_INFORM0))
+-#define EXYNOS_BOOT_VECTOR_FLAG	(samsung_rev() == EXYNOS4210_REV_1_1 ? \
+-			S5P_INFORM6 : (samsung_rev() == EXYNOS4210_REV_1_0 ? \
+-			(sysram_base_addr + 0x20) : S5P_INFORM1))
++static inline void __iomem *exynos_boot_vector_addr(void)
++{
++	if (samsung_rev() == EXYNOS4210_REV_1_1)
++		return S5P_INFORM7;
++	else if (samsung_rev() == EXYNOS4210_REV_1_0)
++		return sysram_base_addr + 0x24;
++	return S5P_INFORM0;
++}
++
++static inline void __iomem *exynos_boot_vector_flag(void)
++{
++	if (samsung_rev() == EXYNOS4210_REV_1_1)
++		return S5P_INFORM6;
++	else if (samsung_rev() == EXYNOS4210_REV_1_0)
++		return sysram_base_addr + 0x20;
++	return S5P_INFORM1;
++}
+ 
+ #define S5P_CHECK_AFTR  0xFCBA0D10
+ #define S5P_CHECK_SLEEP 0x00000BAD
+@@ -184,8 +195,9 @@ static void exynos_set_wakeupmask(long mask)
+ 
+ static void exynos_cpu_set_boot_vector(long flags)
+ {
+-	__raw_writel(virt_to_phys(exynos_cpu_resume), EXYNOS_BOOT_VECTOR_ADDR);
+-	__raw_writel(flags, EXYNOS_BOOT_VECTOR_FLAG);
++	__raw_writel(virt_to_phys(exynos_cpu_resume),
++		     exynos_boot_vector_addr());
++	__raw_writel(flags, exynos_boot_vector_flag());
+ }
+ 
+ void exynos_enter_aftr(void)
+-- 
+1.8.2.3
 
---pvezYHf7grwyp3Bc
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTjG+HAAoJELSic+t+oim9HHsP/08oE9na1O2jrrSlDv/FlZfR
-jHpg1GrlAsBY3fAAZ+yjzySmCtU7Iu4poyF9uCOoJyVNXMvZB4SCKoQEKyeHeIN/
-FEemINkUJy8i3W/RFbbhi5Gu65LX9fsirHPtzfpM7Lt/ENZxjpnccOfAKeLyc3/G
-2FNh6yPC76rW7WSxAZke3pVP15cSN/F6bN/5EevJytW+OyfBILfRMpD7NQ3We3oT
-Z3NfSfHMv19nWOOWunxnJPXCBE5PjgaxntclPPxVDBkiZSQbmbsHgw9QFMfXbPx4
-5Ie4DGLB4PbNUgYaaB1O2NwnNWs5glD/w/O259EFE0fpKNcpeN1n4lYbRjyTrTx+
-HS0yA7Oq3nYWGX9z9N4IOgsiNll8E2q4EqCI4ntMwkcBTU2kzBVq6ZDoMgTVq1SI
-r8Im5ToQQpABmiL3ji12QNSazeR2rwQcoAlPSRD6A+Ca1aXNQEE0/U8+6gqL45eZ
-jCEpY0LGDsCC+vco0mOPs/OpplMcy4Q2N7CjaPQV+dJyAhFmQMNMNY2hufK62Nzv
-sg+rYtwgk2JF1f4bF+oz+YFSV0RrAM2nSszgbfPctRvKud/Ju2exLkZLxwt3O+Dp
-hro2+q422BhwtdOTHnqmqmOF78xpcef2Wh1b9WAgEsWPc9HE8YzwYoP27bmuURfA
-k78vRy+ZGFHwO3deWtF+
-=EOo3
------END PGP SIGNATURE-----
-
---pvezYHf7grwyp3Bc--
