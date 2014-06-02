@@ -1,129 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753139AbaFBJux (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 05:50:53 -0400
-Received: from vps0.lunn.ch ([178.209.37.122]:54497 "EHLO vps0.lunn.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752402AbaFBJuw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 05:50:52 -0400
-Date: Mon, 2 Jun 2014 11:47:15 +0200
-From: Andrew Lunn <andrew@lunn.ch>
-To: Antoine =?iso-8859-1?Q?T=E9nart?= 
-	<antoine.tenart@free-electrons.com>
-Cc: sebastian.hesselbarth@gmail.com, thomas.petazzoni@free-electrons.com,
-        zmxu@marvell.com, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, alexandre.belloni@free-electrons.com,
-        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/5] ARM: berlin: add SMP support
-Message-ID: <20140602094715.GG28090@lunn.ch>
-References: <1401700866-24804-1-git-send-email-antoine.tenart@free-electrons.com>
- <1401700866-24804-2-git-send-email-antoine.tenart@free-electrons.com>
+	id S1753543AbaFBJvg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 05:51:36 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:50682 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753277AbaFBJve (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 05:51:34 -0400
+Date: Mon, 2 Jun 2014 10:51:12 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arvind Chauhan <arvind.chauhan@arm.com>,
+        Eduardo Valentin <edubezval@gmail.com>, Pavel Machek <pavel@ucw.cz>,
+        Liam Girdwood <lgirdwood@gmail.com>
+Message-ID: <20140602095112.GV5099@sirena.org.uk>
+References: <1780c3205893be8567fa29ccd86674e2f32555b4.1401192160.git.viresh.kumar@linaro.org>
+ <20140527192923.GC12304@sirena.org.uk>
+ <CAKohpo=AnusM2FGs=JLozSyTc0N7SDXQxe+rPiLEHP6ewxY4ow@mail.gmail.com>
+ <20140528173858.GG5099@sirena.org.uk>
+ <CAKohpokk_sNQ7Be5F8NLa7pLrssPm9qPf-fDEUYkiurJ6Etrpg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="E/fydkOSwztHu2te"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1401700866-24804-2-git-send-email-antoine.tenart@free-electrons.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAKohpokk_sNQ7Be5F8NLa7pLrssPm9qPf-fDEUYkiurJ6Etrpg@mail.gmail.com>
+X-Cookie: Ditat Deus.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/2] regulators: Add definition of
+ regulator_set_voltage_time() for !CONFIG_REGULATOR
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 02, 2014 at 11:21:02AM +0200, Antoine Ténart wrote:
-> +
-> +static inline void berlin_reset_cpu(unsigned int cpu)
-> +{
-> +	u32 val;
-> +
-> +	val = readl(cpu_ctrl + CPU_RESET);
-> +	val |= BIT(cpu_logical_map(cpu));
-> +	writel(val, cpu_ctrl + CPU_RESET);
-> +}
 
-Hi Antoine
+--E/fydkOSwztHu2te
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Is this performing a reset on the CPU, or is it taking it out of reset?
+On Mon, Jun 02, 2014 at 12:50:59PM +0530, Viresh Kumar wrote:
+> On 28 May 2014 23:08, Mark Brown <broonie@kernel.org> wrote:
+> > Whatever - I don't think the particular code makes any practical
+> > difference.  We would need to audit existing users who don't have a
+> > REGULATOR dependency for breakage though.
 
-If you are going to implement CPU hotplug at some point, you are going
-to want to be able to put the CPU into reset, i.e. power it off, and
-take it out of reset, i.e. power it on and getting it running. So it
-might help if we get these function names clear now.
+> I tried auditing all 29 files which had this symbol: regulator_set_voltage
+> and couldn't find anything which might break with the proposed change.
 
-      Andrew
+> Either these are making sure that we have a valid regulator or they have
+> code inside #ifdef CONFIG_REGULATOR ..
 
+When you say they check for a valid regulator how are they doing that?
+The stub will come into play if there isn't a dependency on REGULATOR.
 
-> +
-> +static int berlin_boot_secondary(unsigned int cpu, struct task_struct *idle)
-> +{
-> +	if (!cpu_ctrl)
-> +		return -EFAULT;
-> +
-> +	/*
-> +	 * Reset the CPU, making it to execute the instruction in the reset
-> +	 * exception register.
-> +	 */
-> +	berlin_reset_cpu(cpu);
-> +
-> +	return 0;
-> +}
-> +
-> +static void __init berlin_smp_prepare_cpus(unsigned int max_cpus)
-> +{
-> +	struct device_node *np;
-> +	void __iomem *scu_base;
-> +	void __iomem *vectors_base;
-> +
-> +	np = of_find_compatible_node(NULL, NULL, "arm,cortex-a9-scu");
-> +	scu_base = of_iomap(np, 0);
-> +	of_node_put(np);
-> +	if (!scu_base)
-> +		return;
-> +
-> +	np = of_find_compatible_node(NULL, NULL, "marvell,berlin-cpu-ctrl");
-> +	cpu_ctrl = of_iomap(np, 0);
-> +	of_node_put(np);
-> +	if (!cpu_ctrl)
-> +		goto unmap_scu;
-> +
-> +	vectors_base = ioremap(CONFIG_VECTORS_BASE, SZ_32K);
-> +	if (!vectors_base)
-> +		goto unmap_scu;
-> +
-> +	scu_enable(scu_base);
-> +	flush_cache_all();
-> +
-> +	/*
-> +	 * Write the first instruction the CPU will execute after being reseted
-> +	 * in the reset exception register.
-> +	 */
-> +	writel(boot_inst, vectors_base + RESET_VECT);
-> +
-> +	/*
-> +	 * Write the secondary startup address into the SW reset address
-> +	 * register. This is used by boot_inst.
+--E/fydkOSwztHu2te
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Maybe it would be better to call this the reset address vector instead
-of address register. It is in the vector space after all.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-   Andrew
+iQIcBAEBAgAGBQJTjEkNAAoJELSic+t+oim9yi8P/2OE21qPypEX7bRroMjlSRCv
+o2eibMvSm2DhSrxqrx75x0wp4ykDGlZbc4NsKJXVFkU1zzJL2H4LDir13R7mhh+j
+ghP04uLzdvTp53VzNut8Ig0TKDI2liN1vTv/RDlamQiWhd+uw/UPA0FrPraFebJq
+F0fP9mJKAR9IidmlR8MrctRBkiNsAM7Kk9F3mx8pPiZKGvIRvyCnTUbxdCVL3c1o
+RmihWFd5wVOX1i5oWYfHep9D60LxJMXc13TfjI9oIGfz1RYpI9jXq/9ggLifgrhf
+jvo6nSqCBBQkwo60lusFWIKKrGLml3Pp3dspbYDRpCjvkRiHz9alGgWaAuJR2jKa
+apPsNfyBFJHtc2HFOcxIwY68iI9nibt92jYFqDpvVOey9MmHwW1iAOUZPilH3bEO
+0XreXDeob1UIMCfoUgIipWKdVK2/QzDDVVNiAcz2AQbN/oMHHI46dtF3FMCBkH+m
+27IUDaeau34YJc/7tOuSBDgJBfhw5ZyPH/2TxTJpZWH/SVdI9wA82MbAarpTLrzA
+iRaM8Tt+jO2QlB4T+ZSl8boeEoTzsXhyVNfvGasJBCbxnLmO8DRUB/Jny+K+dwEq
+nX3GfgUiPzBSWbkIStGLnrhVueJd6kWnQpOrZupNGNLEcVemwtsT2JBaHAx+DDVE
+ZdzdBDvXKCzFlr+iaBSg
+=a4Mr
+-----END PGP SIGNATURE-----
 
-> +	 */
-> +	writel(virt_to_phys(berlin_secondary_startup), vectors_base + SW_RESET_ADDR);
-> +
-> +	iounmap(vectors_base);
-> +unmap_scu:
-> +	iounmap(scu_base);
-> +}
-> +
-> +static struct smp_operations berlin_smp_ops __initdata = {
-> +	.smp_prepare_cpus	= berlin_smp_prepare_cpus,
-> +	.smp_boot_secondary	= berlin_boot_secondary,
-> +};
-> +CPU_METHOD_OF_DECLARE(berlin_smp, "marvell,berlin-smp", &berlin_smp_ops);
-> -- 
-> 1.9.1
-> 
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+--E/fydkOSwztHu2te--
