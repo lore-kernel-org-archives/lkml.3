@@ -1,59 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754299AbaFBLoh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 07:44:37 -0400
-Received: from mga03.intel.com ([143.182.124.21]:30334 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754075AbaFBLoY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 07:44:24 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,956,1392192000"; 
-   d="scan'208";a="439803208"
-From: Chew Chiau Ee <chiau.ee.chew@intel.com>
-To: Eric Miao <eric.y.miao@gmail.com>, Russell King <linux@arm.linux.org.uk>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Mark Brown <broonie@kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>
-Cc: Darren Hart <dvhart@linux.intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org, linux-spi@vger.kernel.org,
-        devicetree@vger.kernel.org, Chew Chiau Ee <chiau.ee.chew@intel.com>
-Subject: [PATCH 2/2] clkdev: Export clk_register_clkdev
-Date: Tue,  3 Jun 2014 03:46:19 +0800
-Message-Id: <1401738379-4107-3-git-send-email-chiau.ee.chew@intel.com>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1401738379-4107-1-git-send-email-chiau.ee.chew@intel.com>
-References: <1401738379-4107-1-git-send-email-chiau.ee.chew@intel.com>
+	id S1754356AbaFBLpV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 07:45:21 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:50976 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753384AbaFBLpT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 07:45:19 -0400
+Date: Mon, 2 Jun 2014 12:44:51 +0100
+From: Dave Martin <Dave.Martin@arm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, Mark Rutland <mark.rutland@arm.com>,
+        devicetree@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Grant Grundler <grundler@chromium.org>, Joerg Roedel <joro@8bytes.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
+        Rob Herring <robh+dt@kernel.org>, Marc Zyngier <marc.zyngier@arm.com>,
+        iommu@lists.linux-foundation.org,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Kumar Gala <galak@codeaurora.org>, linux-tegra@vger.kernel.org,
+        Cho KyongHo <pullip.cho@samsung.com>, Hiroshi Doyu <hdoyu@nvidia.com>
+Subject: Re: [PATCH v2] devicetree: Add generic IOMMU device tree bindings
+Message-ID: <20140602114450.GF3855@e103592.cambridge.arm.com>
+References: <1400877395-4235-1-git-send-email-thierry.reding@gmail.com>
+ <20140530112226.GA3949@e103592.cambridge.arm.com>
+ <4830064.JvgTAs8Xty@wuerfel>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4830064.JvgTAs8Xty@wuerfel>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Darren Hart <dvhart@linux.intel.com>
+On Fri, May 30, 2014 at 09:01:19PM +0200, Arnd Bergmann wrote:
+> On Friday 30 May 2014 12:22:32 Dave Martin wrote:
+> > > +
+> > > +Examples:
+> > > +=========
+> > > +
+> > > +Single-master IOMMU:
+> > > +--------------------
+> > > +
+> > > +	iommu {
+> > > +		#address-cells = <0>;
+> > > +		#size-cells = <0>;
+> > > +	};
+> > > +
+> > > +	master {
+> > > +		iommus = <&/iommu>;
+> > > +	};
+> > > +
+> > > +Multiple-master IOMMU with fixed associations:
+> > > +----------------------------------------------
+> > > +
+> > > +	/* multiple-master IOMMU */
+> > > +	iommu {
+> > > +		/*
+> > > +		 * Masters are statically associated with this IOMMU and
+> > > +		 * address translation is always enabled.
+> > > +		 */
+> > > +		#address-cells = <0>;
+> > > +		#size-cells = <0>;
+> > 
+> > In this example, can different translations be set up for the different
+> > masters?
+> > 
+> > With no cells available to contain any sort of ID, it looks like this
+> > is not possible.
+> 
+> Correct, this example is for an IOMMU that does not use IDs but has a
+> shared address space for all devices.
+> 
+> > > +Multiple-master IOMMU with configurable DMA window:
+> > > +---------------------------------------------------
+> > > +
+> > > +	/ {
+> > > +		#address-cells = <1>;
+> > > +		#size-cells = <1>;
+> > > +
+> > > +		iommu {
+> > > +			/* master ID, address of DMA window */
+> > > +			#address-cells = <2>;
+> > > +			#size-cells = <2>;
+> > > +		};
+> > > +
+> > > +		master {
+> > > +			/* master ID 42, 4 GiB DMA window starting at 0 */
+> > > +			iommus = <&/iommu  42 0  0x1 0x0>;
+> > 
+> > I'm still concerned that in order to deal with future cases we will have
+> > to invent multiple ways to parse the "iommus" property.  For example, if
+> > we have a PCEe RC mastering through an IOMMU, it will pass a huge set
+> > of possible master IDs to the IOMMU, not just noe or two.
+> > 
+> > Do you have a solution in mind for that which doesn't break backwards
+> > compatibility?
+> 
+> I think we can treat PCI as a special case here and have an interface
+> that gets used by the PCI core code to talk to the IOMMU core code
+> when setting up a the dma_map_ops for a PCI function. As long as the
+> IOMMU driver understands what PCI is, we don't have to describe the
+> mapping in detail.
 
-Allow spi-pxa2xx-pci with common clock framework support to build as a
-module by exporting clk_register_clkdev.
+PCI is only an example, but I admit it's likely to be the most important
+example of a peripheral using a huge ID space.
 
-Signed-off-by: Darren Hart <dvhart@linux.intel.com>
-Reviewed-by: Chew, Chiau Ee <chiau.ee.chew@intel.com>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>
----
- drivers/clk/clkdev.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+There may still be integration-specific parameters which would need to
+be fed in via DT regarding how IDs coming out of the RC map onto the
+IOMMU and GIC.
 
-diff --git a/drivers/clk/clkdev.c b/drivers/clk/clkdev.c
-index a360b2e..bb48348 100644
---- a/drivers/clk/clkdev.c
-+++ b/drivers/clk/clkdev.c
-@@ -310,6 +310,7 @@ int clk_register_clkdev(struct clk *clk, const char *con_id,
- 
- 	return 0;
- }
-+EXPORT_SYMBOL(clk_register_clkdev);
- 
- /**
-  * clk_register_clkdevs - register a set of clk_lookup for a struct clk
--- 
-1.7.4.4
+> 
+> > One option is to include an extra cell to the IOMMUs property
+> > that indicates how to parse it.  For now, only a single value would
+> > be defined.  For example:
+> > 
+> > 	iommus = <&/iommu IOMMU_SIMPLE 42>;
+> > 
+> > Then maybe later
+> > 
+> > 	iommus = <&/iommu IOMMU_RANGE 0x10000 0x10000>;
+> > 
+> > (I'm not suggesting what IOMMU_RANGE might mean.)
+> > 
+> 
+> This can really be left up to the specific IOMMU driver itself.
+> We can have drivers that support both #address-cells=<1>
+> and #address-cells=<2> and behave differently based on that.
+> I don't see a reason to define that across IOMMU implementations.
 
+There's a risk we have to come up with multiple solutions to the same
+problem there -- i.e., one solution per IOMMU implementation and then
+another solution for the GIC.
+
+Ideally that would be avoided, but the number of times this problem
+would need to be solved is probably not that large.
+
+Cheers
+---Dave
