@@ -1,71 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753642AbaFBUHb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 16:07:31 -0400
-Received: from mail.phunq.net ([184.71.0.62]:57835 "EHLO starbase.phunq.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752396AbaFBUH2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 16:07:28 -0400
-Message-ID: <538CD97E.8020201@phunq.net>
-Date: Mon, 02 Jun 2014 13:07:26 -0700
-From: Daniel Phillips <daniel@phunq.net>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Dave Chinner <david@fromorbit.com>
-CC: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Subject: Re: [RFC][PATCH 2/2] tux3: Use writeback hook to remove duplicated
- core code
-References: <538B9DEE.20800@phunq.net> <538B9E58.4000108@phunq.net> <20140602033047.GT14410@dastard>
-In-Reply-To: <20140602033047.GT14410@dastard>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753769AbaFBUIg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 16:08:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40771 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752608AbaFBUIe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 16:08:34 -0400
+Date: Mon, 2 Jun 2014 13:08:32 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: mingo@kernel.org, peterz@infradead.org, riel@redhat.com, mgorman@suse.de,
+        aswin@hp.com, linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/5] mm: i_mmap_mutex to rwsem
+Message-Id: <20140602130832.9328cfef977b7ed837d59321@linux-foundation.org>
+In-Reply-To: <1401416415.2618.14.camel@buesod1.americas.hpqcorp.net>
+References: <1400816006-3083-1-git-send-email-davidlohr@hp.com>
+	<1401416415.2618.14.camel@buesod1.americas.hpqcorp.net>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 29 May 2014 19:20:15 -0700 Davidlohr Bueso <davidlohr@hp.com> wrote:
 
-On 06/01/2014 08:30 PM, Dave Chinner wrote:
-> I get very worried whenever I see locks inside inode->i_lock. In
-> general, i_lock is supposed to be the innermost lock that is taken,
-> and there are very few exceptions to that - the inode LRU list is
-> one of the few.
-
-I generally trust Hirofumi to ensure that our locking is sane, but please point out any specific
-issue. We are well aware of the need to get out of our critical section fast, as is apparent in
-tux3_clear_dirty_inode_nolock. Hogging our own i_locks would mainly hurt our own benchmarks.
-
-For what it is worth, the proposed writeback API improves our SMP situation with respect to other
-filesystems by moving tux3_clear_dirty_inode_nolock outside the wb list lock.
-
-> I don't know what the tuxnode->lock is, but I found this:
+> On Thu, 2014-05-22 at 20:33 -0700, Davidlohr Bueso wrote:
+> > This patchset extends the work started by Ingo Molnar in late 2012,
+> > optimizing the anon-vma mutex lock, converting it from a exclusive mutex
+> > to a rwsem, and sharing the lock for read-only paths when walking the
+> > the vma-interval tree. More specifically commits 5a505085 and 4fc3f1d6.
+> > 
+> > The i_mmap_mutex has similar responsibilities with the anon-vma, protecting
+> > file backed pages. Therefore we can use similar locking techniques: covert
+> > the mutex to a rwsem and share the lock when possible.
+> > 
+> > With the new optimistic spinning property we have in rwsems, we no longer
+> > take a hit in performance when using this lock, and we can therefore
+> > safely do the conversion. Tests show no throughput regressions in aim7 or
+> > pgbench runs, and we can see gains from sharing the lock, in disk workloads
+> > ~+15% for over 1000 users on a 8-socket Westmere system.
+> > 
+> > This patchset applies on linux-next-20140522.
 >
->  *     inode->i_lock
->  *         tuxnode->lock (to protect tuxnode data)
->  *             tuxnode->dirty_inodes_lock (for i_ddc->dirty_inodes,
->  *                                         Note: timestamp can be updated
->  *                                         outside inode->i_mutex)
->
-> and this:
->
->  *     inode->i_lock
->  *         tuxnode->lock
->  *         sb->dirty_inodes_lock
->
-> Which indicates that you take a filesystem global lock a couple of
-> layers underneath the VFS per-inode i_lock. I'd suggest you want to
-> separate the use of the vfs inode ilock from the locking heirarchy
-> of the tux3 inode....
->
+> ping? Andrew any chance of getting this in -next?
 
-Our nested locks synchronize VFS state with Tux3 state, which is not optional. Alternatively, we
-could rely on i_lock alone, which would increase contention.
+(top-posting repaired)
 
-The sb->dirty_inodes_lock is held briefly, which you can see in tux3_dirty_inode and
-tux3_clear_dirty_inode_nolock. If it shows up in a profile we could break it up.
+It was a bit late for 3.16 back on May 26, when you said "I will dig
+deeper (probably for 3.17 now)".  So, please take another look at the
+patch factoring and let's get this underway for -rc1.
 
-Regards,
-
-Daniel
