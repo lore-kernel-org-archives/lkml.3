@@ -1,42 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753359AbaFBJjL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 05:39:11 -0400
-Received: from vps0.lunn.ch ([178.209.37.122]:54486 "EHLO vps0.lunn.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753172AbaFBJjI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 05:39:08 -0400
-Date: Mon, 2 Jun 2014 11:35:32 +0200
-From: Andrew Lunn <andrew@lunn.ch>
-To: Antoine =?iso-8859-1?Q?T=E9nart?= 
-	<antoine.tenart@free-electrons.com>
-Cc: sebastian.hesselbarth@gmail.com, thomas.petazzoni@free-electrons.com,
-        zmxu@marvell.com, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, alexandre.belloni@free-electrons.com,
-        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 0/5] ARM: Berlin: SMP support
-Message-ID: <20140602093532.GF28090@lunn.ch>
-References: <1401700866-24804-1-git-send-email-antoine.tenart@free-electrons.com>
+	id S1753142AbaFBJjH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 05:39:07 -0400
+Received: from mail-ig0-f171.google.com ([209.85.213.171]:42729 "EHLO
+	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752402AbaFBJjG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 05:39:06 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1401700866-24804-1-git-send-email-antoine.tenart@free-electrons.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140602080022.GT17724@mwanda>
+References: <20140602051447.GA30379@devel.8.8.4.4>
+	<20140602080022.GT17724@mwanda>
+Date: Mon, 2 Jun 2014 18:39:04 +0900
+Message-ID: <CAHb8M2BhK3hCXRvpEaW1R3-BRhnK6weXwGJpgaNsCe+gGD7=cg@mail.gmail.com>
+Subject: Re: [PATCH 2/6 RESEND V2] staging: dgap: unwind on error in dgap_found_board()
+From: DaeSeok Youn <daeseok.youn@gmail.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Lidza Louina <lidza.louina@gmail.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Mark Hounschell <markh@compro.net>,
+        driverdev-devel@linuxdriverproject.org,
+        devel <devel@driverdev.osuosl.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 02, 2014 at 11:21:01AM +0200, Antoine Ténart wrote:
-> This series adds the SMP support for Marvell Berlin BG2 and BG2Q.
-> 
-> This implementation takes advantage of the reset exception register and
-> the software reset address register to make the CPUs execute the Berlin
-> secondary startup when being being reseted. This has the advantage of
+2014-06-02 17:00 GMT+09:00 Dan Carpenter <dan.carpenter@oracle.com>:
+> On Mon, Jun 02, 2014 at 02:14:47PM +0900, Daeseok Youn wrote:
+>> Adds a label for "kfree(brd)". And also remove
+>> a state value as BOARD_FAILED in brd when dgap_do_remap() is failed.
+>> Because "brd" will free after failure.
+>>
+>> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+>> Reviewed-by: Dan Carpenter <dan.carpenter@oracle.com>
+>> ---
+>> RESEND: this patch is included into newly series of patches.
+>> V2: add "Reviewed-by" line in change log.
+>
+> Don't worry about this stuff, Greg's scripts pick it up, or if they
+> don't, I don't care.
+OK. I got that.
 
-Hi Antoine.
-
-One of these funny rules of English is that there is no word
-'reseted'. It is just 'reset'. Also, one 'being' is enough!
-
-	   Andrew
+Thanks.
+Daeseok Youn.
+>
+> regards,
+> dan carpenter
+>
