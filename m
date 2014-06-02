@@ -1,72 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751866AbaFBRZw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 13:25:52 -0400
-Received: from g4t3425.houston.hp.com ([15.201.208.53]:24044 "EHLO
-	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750878AbaFBRZv (ORCPT
+	id S1751918AbaFBR0f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 13:26:35 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:38771 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751229AbaFBR0d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 13:25:51 -0400
-Message-ID: <538CB389.5080108@hp.com>
-Date: Mon, 02 Jun 2014 13:25:29 -0400
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
-MIME-Version: 1.0
-To: Jason Low <jason.low2@hp.com>
-CC: Mikulas Patocka <mpatocka@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, jejb@parisc-linux.org,
-        deller@gmx.de, John David Anglin <dave.anglin@bell.net>,
-        linux-parisc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        paulmck@linux.vnet.ibm.com, chegu_vinod@hp.com, tglx@linutronix.de,
-        riel@redhat.com, akpm@linux-foundation.org, davidlohr@hp.com,
-        hpa@zytor.com, andi@firstfloor.org, aswin@hp.com, scott.norton@hp.com
-Subject: Re: [PATCH v2] introduce atomic_pointer to fix a race condition in
- cancelable mcs spinlocks
-References: <alpine.LRH.2.02.1406011342470.20831@file01.intranet.prod.int.rdu2.redhat.com>  <alpine.LRH.2.02.1406021158360.20627@file01.intranet.prod.int.rdu2.redhat.com> <1401727810.7440.34.camel@j-VirtualBox>
-In-Reply-To: <1401727810.7440.34.camel@j-VirtualBox>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 2 Jun 2014 13:26:33 -0400
+From: "Javi Merino" <javi.merino@arm.com>
+To: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
+Cc: Javi Merino <javi.merino@arm.com>, Zhang Rui <rui.zhang@intel.com>,
+        Eduardo Valentin <edubezval@gmail.com>
+Subject: [PATCH] thermal: document struct thermal_zone_device and thermal_governor
+Date: Mon,  2 Jun 2014 18:25:56 +0100
+Message-Id: <1401729956-26122-1-git-send-email-javi.merino@arm.com>
+X-Mailer: git-send-email 1.9.1
+X-OriginalArrivalTime: 02 Jun 2014 17:26:27.0905 (UTC) FILETIME=[C93EBB10:01CF7E87]
+X-MC-Unique: 114060218263200601
+Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id s52HQiIZ031026
 
-On 06/02/2014 12:50 PM, Jason Low wrote:
-> On Mon, 2014-06-02 at 12:00 -0400, Mikulas Patocka wrote:
->> If you write to some variable with ACCESS_ONCE and use cmpxchg or xchg at
->> the same time, you break it. ACCESS_ONCE doesn't take the hashed spinlock,
->> so, in this case, cmpxchg or xchg isn't really atomic at all.
-> So if the problem is using ACCESS_ONCE writes with cmpxchg and xchg at
-> the same time, would the below change address this problem?
->
-> -----
-> diff --git a/kernel/locking/mcs_spinlock.c b/kernel/locking/mcs_spinlock.c
-> index 838dc9e..8396721 100644
-> --- a/kernel/locking/mcs_spinlock.c
-> +++ b/kernel/locking/mcs_spinlock.c
-> @@ -71,7 +71,7 @@ bool osq_lock(struct optimistic_spin_queue **lock)
->   	if (likely(prev == NULL))
->   		return true;
->
-> -	ACCESS_ONCE(prev->next) = node;
-> +	xchg(&prev->next, node);
->
->   	/*
->   	 * Normally @prev is untouchable after the above store; because at that
-> @@ -144,7 +144,7 @@ unqueue:
->   	 */
->
->   	ACCESS_ONCE(next->prev) = prev;
-> -	ACCESS_ONCE(prev->next) = next;
-> +	xchg(&prev->next, next);
->
->   	return false;
->   }
->
->
+Document struct thermal_zone_device and struct thermal_governor fields
+and their use by the thermal framework code.
 
-Doing an xchg is a very expensive operation compared with ACCESS_ONCE. I 
-will not suggest doing that to make it right for PA-RISC at the expense 
-of performance in other architectures.
+Cc: Zhang Rui <rui.zhang@intel.com>
+Cc: Eduardo Valentin <edubezval@gmail.com>
+Signed-off-by: Javi Merino <javi.merino@arm.com>
 
--Longman
+---
+
+Hi linux-pm,
+
+I have some patches that add new fields to these structures but I
+don't have a good place to describe those fields as these structs are
+mostly undocumented so I thought I'd document them.
+
+Changes since v1:
+  * Clarified that some parameters are currently only used by the
+    step-wise governor.
+  * Clarified that forced_passive operates on ACPI processor cooling
+    devices.
+
+ include/linux/thermal.h | 45 +++++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 43 insertions(+), 2 deletions(-)
+
+diff --git a/include/linux/thermal.h b/include/linux/thermal.h
+index f7e11c7ea7d9..6fca46c82c4d 100644
+--- a/include/linux/thermal.h
++++ b/include/linux/thermal.h
+@@ -158,6 +158,41 @@ struct thermal_attr {
+ 	char name[THERMAL_NAME_LENGTH];
+ };
+ 
++/**
++ * struct thermal_zone_device - structure for a thermal zone
++ * @id:		unique id number for each thermal zone
++ * @type:	the thermal zone device type
++ * @device:	struct device for this thermal zone
++ * @trip_temp_attrs:	attributes for trip points for sysfs: trip temperature
++ * @trip_type_attrs:	attributes for trip points for sysfs: trip type
++ * @trip_hyst_attrs:	attributes for trip points for sysfs: trip hysteresis
++ * @devdata:	private pointer for device private data
++ * @trips:	number of trip points the thermal zone supports
++ * @passive_delay:	number of milliseconds to wait between polls when
++ *			performing passive cooling.  Currenty only used by the
++ *			step-wise governor
++ * @polling_delay:	number of milliseconds to wait between polls when
++ *			checking whether trip points have been crossed (0 for
++ *			interrupt driven systems)
++ * @temperature:	current temperature.  This is only for core code,
++ *			drivers should use thermal_zone_get_temp() to get the
++ *			current temperature
++ * @last_temperature:	previous temperature read
++ * @emul_temperature:	emulated temperature when using CONFIG_THERMAL_EMULATION
++ * @passive:		1 if you've crossed a passive trip point, 0 otherwise.
++ *			Currenty only used by the step-wise governor.
++ * @forced_passive:	If > 0, temperature at which to switch on all ACPI
++ *			processor cooling devices.  Currently only used by the
++ *			step-wise governor.
++ * @ops:	operations this thermal_zone_device supports
++ * @tzp:	thermal zone parameters
++ * @governor:	pointer to the governor for this thermal zone
++ * @thermal_instances:	list of struct thermal_instance of this thermal zone
++ * @idr:	struct idr to generate unique id for this zone's cooling devices
++ * @lock:	lock to protect thermal_instances list
++ * @node:	node in thermal_tz_list (in thermal_core.c)
++ * @poll_queue:	delayed work for polling
++ */
+ struct thermal_zone_device {
+ 	int id;
+ 	char type[THERMAL_NAME_LENGTH];
+@@ -179,12 +214,18 @@ struct thermal_zone_device {
+ 	struct thermal_governor *governor;
+ 	struct list_head thermal_instances;
+ 	struct idr idr;
+-	struct mutex lock; /* protect thermal_instances list */
++	struct mutex lock;
+ 	struct list_head node;
+ 	struct delayed_work poll_queue;
+ };
+ 
+-/* Structure that holds thermal governor information */
++/**
++ * struct thermal_governor - structure that holds thermal governor information
++ * @name:	name of the governor
++ * @throttle:	callback called for every trip point even if temperature is
++ *		below the trip point temperature
++ * @governor_list:	node in thermal_governor_list (in thermal_core.c)
++ */
+ struct thermal_governor {
+ 	char name[THERMAL_NAME_LENGTH];
+ 	int (*throttle)(struct thermal_zone_device *tz, int trip);
+-- 
+1.9.1
+
+
