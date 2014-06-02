@@ -1,59 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753823AbaFBUdo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 16:33:44 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:34378 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752736AbaFBUdm (ORCPT
+	id S1753797AbaFBUfQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 16:35:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40922 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751616AbaFBUfP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 16:33:42 -0400
-Message-ID: <538CDFA2.5020704@wwwdotorg.org>
-Date: Mon, 02 Jun 2014 14:33:38 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Marcel Ziswiler <marcel@ziswiler.com>, thierry.reding@gmail.com
-CC: linux@arm.linux.org.uk, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org, stefan@agner.ch
-Subject: Re: [PATCH 3/3] arm: tegra: initial support for apalis t30
-References: <c5522b0efcbfc7690dcde6aaf78b9dd568f99604.1401665237.git.marcel@ziswiler.com> <b470c9c8631a6ef021d140192eb07006de3cfd93.1401665237.git.marcel@ziswiler.com> <538CA5C3.5050709@wwwdotorg.org> <538CDC08.7020106@ziswiler.com>
-In-Reply-To: <538CDC08.7020106@ziswiler.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 2 Jun 2014 16:35:15 -0400
+Date: Mon, 2 Jun 2014 13:35:12 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
+        oleg@redhat.com, sbw@mit.edu
+Subject: Re: [PATCH RFC 2/2] rcu: Add Josh Triplett as designated reviewer
+Message-Id: <20140602133512.6d3f584314ecc423e63ffc8e@linux-foundation.org>
+In-Reply-To: <1401728420-3572-2-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <1401728420-3572-1-git-send-email-paulmck@linux.vnet.ibm.com>
+	<1401728420-3572-2-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/02/2014 02:18 PM, Marcel Ziswiler wrote:
-> On 06/02/2014 06:26 PM, Stephen Warren wrote:
+On Mon,  2 Jun 2014 10:00:20 -0700 "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
 
->>> +    pwmleds {
->>> +        compatible = "pwm-leds";
->>> +
->>> +        pwm3 {
->>> +            label = "PWM3";
->>> +            pwms = <&pwm 1 19600>;
->>> +            max-brightness = <255>;
->>> +        };
->>> +        pwm2 {
->>> +            label = "PWM2";
->>> +            pwms = <&pwm 2 19600>;
->>> +            max-brightness = <255>;
->>> +        };
->>> +        pwm1 {
->>> +            label = "PWM1";
->>> +            pwms = <&pwm 3 19600>;
->>> +            max-brightness = <255>;
->>> +        };
->>
->> Nit: Why not sort those nodes in numerical order?
-> 
-> Sure, the only question is ordering based on what. I choose the actual
-> Tegra PWM instance while you propose to use our Apalis instance
-> numbering which in this particular case turns out to be the opposite but
-> makes us even more happy to comply.
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -7321,6 +7321,7 @@ F:	kernel/rcu/torture.c
+>  
+>  RCUTORTURE TEST FRAMEWORK
+>  M:	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> +R:	Josh Triplett <josh@joshtriplett.org>
+>  L:	linux-kernel@vger.kernel.org
+>  S:	Supported
+>  T:	git git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git
 
-Sorting by reg value, or if there is no reg value then alphanumerically,
-is what I've tried to (remember to) require for the Tegra DTs.
+I like the general principle - knowing who to poke regarding a kernel
+change is useful.
+
+I don't care much whether it's "M:" or "R:", although "R:" carries more
+meaning and hence is probably better.
+
+But why not "Cc:"?  That's meaningful too and is more copy-n-paste friendly.
