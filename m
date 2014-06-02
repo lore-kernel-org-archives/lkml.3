@@ -1,107 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753804AbaFBT4p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 15:56:45 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:55973 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753734AbaFBT4m (ORCPT
+	id S932118AbaFBT5O (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 15:57:14 -0400
+Received: from one.firstfloor.org ([193.170.194.197]:53413 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752065AbaFBT5N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 15:56:42 -0400
-Message-ID: <1401739000.12939.34.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: [PATCH] fix a race condition in cancelable mcs spinlocks
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: John David Anglin <dave.anglin@bell.net>,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>, jejb@parisc-linux.org,
-        deller@gmx.de, linux-parisc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, chegu_vinod@hp.com,
-        paulmck@linux.vnet.ibm.com, Waiman.Long@hp.com, tglx@linutronix.de,
-        riel@redhat.com, akpm@linux-foundation.org, davidlohr@hp.com,
-        hpa@zytor.com, andi@firstfloor.org, aswin@hp.com, scott.norton@hp.com,
-        Jason Low <jason.low2@hp.com>
-Date: Mon, 02 Jun 2014 12:56:40 -0700
-In-Reply-To: <20140601213003.GG16155@laptop.programming.kicks-ass.net>
-References: <alpine.LRH.2.02.1406011342470.20831@file01.intranet.prod.int.rdu2.redhat.com>
-	 <20140601192026.GE16155@laptop.programming.kicks-ass.net>
-	 <BLU0-SMTP387BD0AE22A4EAD432D65F97210@phx.gbl>
-	 <20140601213003.GG16155@laptop.programming.kicks-ass.net>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.12.2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 2 Jun 2014 15:57:13 -0400
+Date: Mon, 2 Jun 2014 21:57:11 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Eric Northup <digitaleric@google.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Peter Zijlstra <peterz@infradead.org>,
+        gleb@kernel.org, Paolo Bonzini <pbonzini@redhat.com>,
+        Stephane Eranian <eranian@google.com>, KVM <kvm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 4/4] kvm: Implement PEBS virtualization
+Message-ID: <20140602195711.GQ25366@two.firstfloor.org>
+References: <1401412327-14810-1-git-send-email-andi@firstfloor.org>
+ <1401412327-14810-5-git-send-email-andi@firstfloor.org>
+ <CAG7+5M2h1_h2fW1KiD-ReXuxDe_EwmBUOJRwjgAvR79sUBxtgA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAG7+5M2h1_h2fW1KiD-ReXuxDe_EwmBUOJRwjgAvR79sUBxtgA@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2014-06-01 at 23:30 +0200, Peter Zijlstra wrote:
-> On Sun, Jun 01, 2014 at 04:46:26PM -0400, John David Anglin wrote:
-> > On 1-Jun-14, at 3:20 PM, Peter Zijlstra wrote:
-> > 
-> > >>If you write to some variable with ACCESS_ONCE and use cmpxchg or xchg
-> > >>at
-> > >>the same time, you break it. ACCESS_ONCE doesn't take the hashed
-> > >>spinlock,
-> > >>so, in this case, cmpxchg or xchg isn't really atomic at all.
-> > >
-> > >And this is really the first place in the kernel that breaks like this?
-> > >I've been using xchg() and cmpxchg() without such consideration for
-> > >quite a while.
-> > 
-> > I believe Mikulas is correct.  Even in a controlled situation where a
-> > cmpxchg operation
-> > is used to implement pthread_spin_lock() in userspace, we found recently
-> > that the lock
-> > must be released with a  cmpxchg operation and not a simple write on SMP
-> > systems.
-> > There is a race in the cache operations or instruction ordering that's not
-> > present with
-> > the ldcw instruction.
-> 
-> Oh, I'm not arguing that. He's quite right that its broken, but this
-> form of atomic ops is also quite insane and unusual. Most sane machines
-> don't have this problem.
-> 
-> My main concern is how are we going to avoid breaking parisc (and I
-> think sparc32, which is similarly retarded) in the future; we should
-> invest in machinery to find and detect these things.
+> It seems to me that with this patch, there is no way to expose a
+> PMU-without-PEBS to the guest if the host has PEBS.
 
-Architecturally, there is a way we could emulate the atomic exchange
-instructions.  We could have a special section of memory that always
-triggers a page trap.  In the Q state dtlb trap handlers we could
-recognise the "atomic" section of memory and wrap the attempted
-modification in a semaphore.  This would add a bit of overhead, but not
-a huge amount if we do it in the trap handlers like the TMPALIAS
-flushes.  This involves a lot of work for us because we have to decode
-the instructions in software, recognise the operations and manually
-apply the hashed semaphores around them.  If we did it like this, all
-we'd need by way of mainline support is that variables treated as
-atomically exchangeable should be in a separate section (because it's a
-page fault handler effectively, we need them all separated from "normal"
-code).  This would probably require some type of variable marker and if
-we ever saw a xchg or cmpxchg on a variable without the marker, we could
-break the build.
+If you clear the CPUIDs then noone would ilikely access it.
 
-The way we'd implement is the memory region would be read and write
-protected, so all loads and stores trap to the dtlb absent handlers.
-For a ldX instruction, if it were not followed by a stX to the same
-location, we'd simply give it the value.  For stX followed by ldX for
-xchg, we'd take the lock, do the exchange and drop the lock and for stX
-not preceded by ldX, we'd take the lock, do the store and drop the lock.
-To avoid compromising the protected region, we'd actually back it by a
-different area of kernel memory where we make the real modifications,
-rather than trying to muck with temporarily inserting a TLB entry.  On
-return we'd have to nullify the instructions to avoid re-trapping.
-Effectively this has us emulating all load and store operations with a
-shadow memory region ... if you know the number of possible address
-modes for PARISC, you'll realise that's a non-trivial amount of code.
-Plus we'd either have to ensure the shadow region had a permanent TLB
-entry or do a full fault and exit the TLB handler (we can't take a
-nested TLB fault within the TLB fault handler).
+But fair enough, I'll add extra checks for CPUID.
 
-Is it worth it ... definitely not if we can just prevent mainline from
-using xchg on our architecture.
+> It would be a bigger concern if we expected virtual PMU migration to
+> work, but I think it would be nice to update kvm_pmu_cpuid_update() to
+> notice the presence/absence of the new CPUID bits, and then store that
+> into per-VM kvm_pmu->pebs_allowed rather than relying only on the
+> per-host perf_pebs_virtualization().
 
-James
+I hope at some point it can work. There shouldn't be any problems
+with migrating to the same CPU model, in many cases (same event 
+and same PEBS format) it'll likely even work between models or
+gracefully degrade.
 
+BTW in practice it'll likely work anyways because many profilers
+regularly re-set the PMU. 
 
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only.
