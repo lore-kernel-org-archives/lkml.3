@@ -1,64 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753268AbaFBJ6i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 05:58:38 -0400
-Received: from srv01.voixit.com ([78.47.68.188]:38951 "EHLO srv01.voixit.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752402AbaFBJ6g convert rfc822-to-8bit (ORCPT
+	id S1753527AbaFBKAy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 06:00:54 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:38379 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752990AbaFBKAw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 05:58:36 -0400
-Subject: Re: [PATCH RFC - TAKE TWO - 08/12] block, bfq: preserve a low latency also with NCQ-capable drives
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.2\))
-Content-Type: text/plain; charset=us-ascii
-From: Paolo Valente <paolo.valente@unimore.it>
-In-Reply-To: <20140531134823.GB24557@mtj.dyndns.org>
-Date: Mon, 2 Jun 2014 11:58:31 +0200
-Cc: Jens Axboe <axboe@kernel.dk>, Li Zefan <lizefan@huawei.com>,
-        Fabio Checconi <fchecconi@gmail.com>,
-        Arianna Avanzini <avanzini.arianna@gmail.com>,
-        linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <9390495C-885D-4C0E-9F4D-70687A1BE9C5@unimore.it>
-References: <20140528221929.GG1419@htj.dyndns.org> <1401354343-5527-1-git-send-email-paolo.valente@unimore.it> <1401354343-5527-9-git-send-email-paolo.valente@unimore.it> <20140531134823.GB24557@mtj.dyndns.org>
-To: Tejun Heo <tj@kernel.org>
-X-Mailer: Apple Mail (2.1878.2)
+	Mon, 2 Jun 2014 06:00:52 -0400
+Date: Mon, 2 Jun 2014 12:00:48 +0200
+From: Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>
+To: Andrew Lunn <andrew@lunn.ch>
+Cc: Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        sebastian.hesselbarth@gmail.com, thomas.petazzoni@free-electrons.com,
+        zmxu@marvell.com, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, alexandre.belloni@free-electrons.com,
+        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/5] ARM: berlin: add SMP support
+Message-ID: <20140602100048.GA12162@kwain>
+References: <1401700866-24804-1-git-send-email-antoine.tenart@free-electrons.com>
+ <1401700866-24804-2-git-send-email-antoine.tenart@free-electrons.com>
+ <20140602094715.GG28090@lunn.ch>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140602094715.GG28090@lunn.ch>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Andrew,
 
-Il giorno 31/mag/2014, alle ore 15:48, Tejun Heo <tj@kernel.org> ha scritto:
-
-> On Thu, May 29, 2014 at 11:05:39AM +0200, Paolo Valente wrote:
->> This patch addresses this issue by not disabling device idling for
+On Mon, Jun 02, 2014 at 11:47:15AM +0200, Andrew Lunn wrote:
+> On Mon, Jun 02, 2014 at 11:21:02AM +0200, Antoine Ténart wrote:
+> > +
+> > +static inline void berlin_reset_cpu(unsigned int cpu)
+> > +{
+> > +	u32 val;
+> > +
+> > +	val = readl(cpu_ctrl + CPU_RESET);
+> > +	val |= BIT(cpu_logical_map(cpu));
+> > +	writel(val, cpu_ctrl + CPU_RESET);
+> > +}
 > 
-> This patch addresses this issue by allowing device idling for...
+> Is this performing a reset on the CPU, or is it taking it out of reset?
 > 
->> weight-raised queues, even if the device supports NCQ. This allows BFQ
->> to start serving a new queue, and therefore allows the drive to
+> If you are going to implement CPU hotplug at some point, you are going
+> to want to be able to put the CPU into reset, i.e. power it off, and
+> take it out of reset, i.e. power it on and getting it running. So it
+> might help if we get these function names clear now.
+
+It is performing a reset on the CPU. berlin_perform_reset_cpu() then?
+
+> > +
+> > +static void __init berlin_smp_prepare_cpus(unsigned int max_cpus)
+> > +{
+> > +	struct device_node *np;
+> > +	void __iomem *scu_base;
+> > +	void __iomem *vectors_base;
+> > +
+> > +	np = of_find_compatible_node(NULL, NULL, "arm,cortex-a9-scu");
+> > +	scu_base = of_iomap(np, 0);
+> > +	of_node_put(np);
+> > +	if (!scu_base)
+> > +		return;
+> > +
+> > +	np = of_find_compatible_node(NULL, NULL, "marvell,berlin-cpu-ctrl");
+> > +	cpu_ctrl = of_iomap(np, 0);
+> > +	of_node_put(np);
+> > +	if (!cpu_ctrl)
+> > +		goto unmap_scu;
+> > +
+> > +	vectors_base = ioremap(CONFIG_VECTORS_BASE, SZ_32K);
+> > +	if (!vectors_base)
+> > +		goto unmap_scu;
+> > +
+> > +	scu_enable(scu_base);
+> > +	flush_cache_all();
+> > +
+> > +	/*
+> > +	 * Write the first instruction the CPU will execute after being reseted
+> > +	 * in the reset exception register.
+> > +	 */
+> > +	writel(boot_inst, vectors_base + RESET_VECT);
+> > +
+> > +	/*
+> > +	 * Write the secondary startup address into the SW reset address
+> > +	 * register. This is used by boot_inst.
 > 
-> This disallows BFQ to start serving a new queue, and therefore the
-> drive to prefetch new requests, until the idling timeout expires.
-> 
-> Prefetch?  Can you elaborate?
+> Maybe it would be better to call this the reset address vector instead
+> of address register. It is in the vector space after all.
 
-By prefetching I meant just queuing more than one request (by the drive). I hope that this clarifies things a little bit.
+I don't have a strong opinion on this. I can update the 'reset exception
+register' as well then.
 
-Paolo
+Antoine
 
-> 
-> Thanks.
-> 
-> -- 
-> tejun
-
-
---
-Paolo Valente                                                 
-Algogroup
-Dipartimento di Fisica, Informatica e Matematica		
-Via Campi, 213/B
-41125 Modena - Italy        				  
-homepage:  http://algogroup.unimore.it/people/paolo/
-
+-- 
+Antoine Ténart, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
