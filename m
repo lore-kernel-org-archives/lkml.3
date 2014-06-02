@@ -1,38 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752088AbaFBSln (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 14:41:43 -0400
-Received: from mout.web.de ([212.227.15.4]:50784 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750723AbaFBSlm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 14:41:42 -0400
-Date: Mon, 2 Jun 2014 20:42:15 +0200
-From: Linus =?utf-8?Q?L=C3=BCssing?= <linus.luessing@web.de>
-To: netdev@vger.kernel.org
-Cc: bridge@lists.linux-foundation.org,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Herbert Xu <herbert@gondor.apana.org.au>, linux-kernel@vger.kernel.org,
-        b.a.t.m.a.n@lists.open-mesh.org,
-        Linus =?utf-8?Q?L=C3=BCssing?= <linus.luessing@web.de>
-Subject: [PATCHv3 net-next 0/4] bridge: multicast snooping patches / exports
-Message-ID: <20140602184215.GA2460@Linus-Debian>
-References: <1401732466-3027-1-git-send-email-linus.luessing@web.de>
+	id S1752002AbaFBSoX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 14:44:23 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:40173 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751158AbaFBSoV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 14:44:21 -0400
+Message-ID: <538CC61D.2020001@oracle.com>
+Date: Mon, 02 Jun 2014 11:44:45 -0700
+From: Srinivas Eeda <srinivas.eeda@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1401732466-3027-1-git-send-email-linus.luessing@web.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Provags-ID: V03:K0:tmNS9chopq1UVb4wZcLa0wO9A0OtHK1mWtmctNcIeHewQV8VCqn
- nEo95STnSLXW4+J8dAha2E8lQxsEODNpnmEBzcDlqWzu7/4rDcDAW+zFa26/dOAu+7ozlSO
- rkKBnH7Ulj/drFN76kF/fAe/5UzOhCYB6bcb2kThZTHTLOjlb5THnkbgJJeIEmjDXDpIbjQ
- dI6/O/mxVxYTswlIISP5A==
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+CC: Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        ocfs2-devel@oss.oracle.com, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org
+Subject: Re: [PATCH] fs: ocfs2: dir.c:  Cleaning up uninitialized variables
+References: <1401630784-20493-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+In-Reply-To: <1401630784-20493-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changes in v3:
+Acked-by: Srinivas Eeda <srinivas.eeda@oracle.com>
 
-* use EXPORT_SYMBOL_GPL() instead of EXPORT_SYMBOL()
+On 06/01/2014 06:53 AM, Rickard Strandqvist wrote:
+> There is a risk that the variable will be used without being initialized.
+>
+> This was largely found by using a static code analysis program called cppcheck.
+>
+> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+> ---
+>   fs/ocfs2/dir.c |    2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/fs/ocfs2/dir.c b/fs/ocfs2/dir.c
+> index 0717662..27aa4a1 100644
+> --- a/fs/ocfs2/dir.c
+> +++ b/fs/ocfs2/dir.c
+> @@ -3738,7 +3738,7 @@ static int ocfs2_dx_dir_rebalance(struct ocfs2_super *osb, struct inode *dir,
+>   	int credits, ret, i, num_used, did_quota = 0;
+>   	u32 cpos, split_hash, insert_hash = hinfo->major_hash;
+>   	u64 orig_leaves_start;
+> -	int num_dx_leaves;
+> +	int num_dx_leaves = 0;
+>   	struct buffer_head **orig_dx_leaves = NULL;
+>   	struct buffer_head **new_dx_leaves = NULL;
+>   	struct ocfs2_alloc_context *data_ac = NULL, *meta_ac = NULL;
 
-Cheers
