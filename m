@@ -1,51 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754005AbaFBUlh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 16:41:37 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:59567 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752423AbaFBUlf convert rfc822-to-8bit (ORCPT
+	id S1754048AbaFBUlo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 16:41:44 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:55109 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753710AbaFBUlh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 16:41:35 -0400
-Content-Type: text/plain; charset=windows-1252
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.2\))
-Subject: Re: [PATCH v2 3/4] ARM: dts: qcom: Add APQ8084 Global Clock Controller DT node
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <1401551134-28485-4-git-send-email-gdjakov@mm-sol.com>
-Date: Mon, 2 Jun 2014 15:41:24 -0500
-Cc: Mike Turquette <mturquette@linaro.org>, linux@arm.linux.org.uk,
-        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, sboyd@codeaurora.org,
-        rdunlap@infradead.org, linux-doc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <DDE79254-2F56-47AC-A689-5A0E8E131126@codeaurora.org>
-References: <1401551134-28485-1-git-send-email-gdjakov@mm-sol.com> <1401551134-28485-4-git-send-email-gdjakov@mm-sol.com>
-To: Georgi Djakov <gdjakov@mm-sol.com>
-X-Mailer: Apple Mail (2.1878.2)
+	Mon, 2 Jun 2014 16:41:37 -0400
+Date: Tue, 3 Jun 2014 02:11:17 +0530
+From: Dipankar Sarma <dipankar@in.ibm.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Joe Perches <joe@perches.com>, josh@joshtriplett.org,
+        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
+        mingo@kernel.org, laijs@cn.fujitsu.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, dhowells@redhat.com, edumazet@google.com,
+        dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
+        sbw@mit.edu
+Subject: Re: [PATCH RFC 1/2] MAINTAINERS: Add "R:" designated-reviewers tag
+Message-ID: <20140602204117.GA24117@in.ibm.com>
+Reply-To: dipankar@in.ibm.com
+References: <1401728420-3572-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1401729778.5770.20.camel@joe-AO725>
+ <20140602174837.GA13257@cloud>
+ <1401731968.7323.4.camel@joe-AO725>
+ <20140602181658.GX22231@linux.vnet.ibm.com>
+ <1401734669.7323.20.camel@joe-AO725>
+ <20140602145020.400d4e0c@gandalf.local.home>
+ <20140602185504.GA13569@cloud>
+ <1401735917.7323.23.camel@joe-AO725>
+ <20140602192631.GA22231@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140602192631.GA22231@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14060220-9332-0000-0000-000000F8CB28
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On May 31, 2014, at 10:45 AM, Georgi Djakov <gdjakov@mm-sol.com> wrote:
-
-> This patch adds the necessary node to probe the global clock
-> controller on APQ8084 platforms.
+On Mon, Jun 02, 2014 at 12:26:31PM -0700, Paul E. McKenney wrote:
+> On Mon, Jun 02, 2014 at 12:05:17PM -0700, Joe Perches wrote:
+> > On Mon, 2014-06-02 at 11:55 -0700, josh@joshtriplett.org wrote:
+> > > this should go along with a change to
+> > > get_maintainer.pl to add those folks to the CC list.
+> > 
+> > Something like this:
 > 
-> Signed-off-by: Georgi Djakov <gdjakov@mm-sol.com>
-> ---
-> arch/arm/boot/dts/qcom-apq8084.dtsi |   10 ++++++++++
-> 1 file changed, 10 insertions(+)
+> To test this, I added a comment to kernel/rcu/srcu.c, then ran
+> scripts/get_maintainer.pl on the resulting diffs.  Without the
+> below change to scripts/get_maintainer.pl, I get the following:
+> 
+> Lai Jiangshan <laijs@cn.fujitsu.com> (supporter:SLEEPABLE READ-CO...)
+> "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> (supporter:SLEEPABLE READ-CO...)
+> Dipankar Sarma <dipankar@in.ibm.com> (supporter:READ-COPY UPDATE...)
+> linux-kernel@vger.kernel.org (open list:SLEEPABLE READ-CO...)
+> 
+> With the below change, it includes Josh, as expected based on the "R:"
+> entry I had previously added to MAINTAINERS in my local tree:
+> 
+> Lai Jiangshan <laijs@cn.fujitsu.com> (supporter:SLEEPABLE READ-CO...)
+> "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> (supporter:SLEEPABLE READ-CO...)
+> Josh Triplett <josh@joshtriplett.org> (reviewer)
+> Dipankar Sarma <dipankar@in.ibm.com> (supporter:READ-COPY UPDATE...)
+> linux-kernel@vger.kernel.org (open list:SLEEPABLE READ-CO...)
 
-Can you split the 2 DT patches into their own patchset since they will go via the qcom/arm-soc tree and not Mike’s clk tree.
+Paul,
 
-thanks
+Sorry, I hadn't noticed it earlier. I can be dropped. Not that I
+am not interested, just that I am working on too many itsy bitsy
+things many outside the kernel and also herding cats, to find
+time :-)
 
-- k
-
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
+Thanks
+Dipankar
 
