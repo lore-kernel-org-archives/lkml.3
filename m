@@ -1,51 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754952AbaFBNwk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 09:52:40 -0400
-Received: from relay1.mentorg.com ([192.94.38.131]:37627 "EHLO
-	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754438AbaFBNwf (ORCPT
+	id S1755096AbaFBNxL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 09:53:11 -0400
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:60885 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755024AbaFBNxI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 09:52:35 -0400
-Date: Mon, 2 Jun 2014 13:52:19 +0000
-From: "Joseph S. Myers" <joseph@codesourcery.com>
-X-X-Sender: jsm28@digraph.polyomino.org.uk
-To: Arnd Bergmann <arnd@arndb.de>
-CC: <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>,
-        <john.stultz@linaro.org>, <hch@infradead.org>, <tglx@linutronix.de>,
-        <geert@linux-m68k.org>, <lftan@altera.com>, <hpa@zytor.com>,
-        <linux-fsdevel@vger.kernel.org>, <ceph-devel@vger.kernel.org>,
-        <cluster-devel@redhat.com>, <coda@cs.cmu.edu>,
-        <codalist@TELEMANN.coda.cs.cmu.edu>,
-        <fuse-devel@lists.sourceforge.net>, <linux-afs@lists.infradead.org>,
-        <linux-btrfs@vger.kernel.org>, <linux-cifs@vger.kernel.org>,
-        <linux-ext4@vger.kernel.org>, <linux-f2fs-devel@lists.sourceforge.net>,
-        <linux-mtd@lists.infradead.org>, <linux-nfs@vger.kernel.org>,
-        <linux-ntfs-dev@lists.sourceforge.net>, <linux-scsi@vger.kernel.org>,
-        <logfs@logfs.org>, <ocfs2-devel@oss.oracle.com>,
-        <reiserfs-devel@vger.kernel.org>, <samba-technical@lists.samba.org>,
-        <xfs@oss.sgi.com>
-Subject: Re: [RFC 00/32] making inode time stamps y2038 ready
-In-Reply-To: <1401480116-1973111-1-git-send-email-arnd@arndb.de>
-Message-ID: <Pine.LNX.4.64.1406021350030.19591@digraph.polyomino.org.uk>
-References: <1401480116-1973111-1-git-send-email-arnd@arndb.de>
+	Mon, 2 Jun 2014 09:53:08 -0400
+Date: Mon, 2 Jun 2014 14:53:02 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Peter Griffin <peter.griffin@linaro.org>
+Cc: Maxime Coquelin <maxime.coquelin@st.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        patrice.chotard@st.com, srinivas.kandagatla@gmail.com,
+        chris@printf.net, ulf.hansson@linaro.org, kernel@stlinux.com,
+        linux-mmc@vger.kernel.org, devicetree@vger.kernel.org
+Subject: Re: Add SDHCI support for STMicroelectronics SoCs
+Message-ID: <20140602135302.GB4146@lee--X1>
+References: <1400771902-26553-1-git-send-email-peter.griffin@linaro.org>
+ <537E1B55.1090807@st.com>
+ <20140602102930.GB437@griffinp-ThinkPad-X1-Carbon-2nd>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-OriginalArrivalTime: 02 Jun 2014 13:52:23.0625 (UTC) FILETIME=[E1752390:01CF7E69]
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140602102930.GB437@griffinp-ThinkPad-X1-Carbon-2nd>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 30 May 2014, Arnd Bergmann wrote:
+> > >Initially it supports the stih416 and stih415 SoCs, and has
+> > >been tested on a stih416-b2020 board.
+> > 
+> > In next version, could you also add  drivers/mmc/host/sdhci-st.c in
+> > the ARM/STI ARCHITECTURE field of MAINTAINERS file?
+> 
+> Was out on hols last week. I have fixed it in v2.
 
-> a) is this the right approach in general? The previous discussion
->    pointed this way, but there may be other opinions.
-
-The syscall changes seem like the sort of thing I'd expect, although 
-patches adding new syscalls or otherwise affecting the kernel/userspace 
-interface (as opposed to those relating to an individual filesystem) 
-should go to linux-api as well as other relevant lists.
+This should be in its own patch.
 
 -- 
-Joseph S. Myers
-joseph@codesourcery.com
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
