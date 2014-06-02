@@ -1,127 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753976AbaFBQCb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 12:02:31 -0400
-Received: from mail-ve0-f171.google.com ([209.85.128.171]:58523 "EHLO
-	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752554AbaFBQC3 (ORCPT
+	id S1754096AbaFBQCp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 12:02:45 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:62523 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753149AbaFBQCn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 12:02:29 -0400
+	Mon, 2 Jun 2014 12:02:43 -0400
+Message-ID: <538CA020.4070204@mutualink.net>
+Date: Mon, 02 Jun 2014 12:02:40 -0400
+From: Mike Remski <mremski@mutualink.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <20140602104948.4faf0bc2@tlielax.poochiereds.net>
-References: <20140602104948.4faf0bc2@tlielax.poochiereds.net>
-Date: Mon, 2 Jun 2014 12:02:28 -0400
-Message-ID: <CAHQdGtRR6SvEhXiqWo24hoUh9AU9cL82Z8Z-d8-7u951F_d+5g@mail.gmail.com>
-Subject: Re: nfs4_do_reclaim lockdep pop in v3.15.0-rc1
-From: Trond Myklebust <trond.myklebust@primarydata.com>
-To: Jeff Layton <jeff.layton@primarydata.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
-        Linux Kernel mailing list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Johan Hovold <jhovold@gmail.com>
+CC: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: Re: ftdi_sio BUG: NULL pointer dereference
+References: <538C8963.4010909@mutualink.net> <20140602143347.GA1902@localhost> <538C953B.9020304@mutualink.net> <20140602154036.GA8662@localhost>
+In-Reply-To: <20140602154036.GA8662@localhost>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 2, 2014 at 10:49 AM, Jeff Layton
-<jeff.layton@primarydata.com> wrote:
-> I've been working on the patchset to break up the client_mutex in nfsd.
-> While doing some debugging, I had mounted my kernel git tree with
-> NFSv4.1, and was running crash on the vmlinux image in it.
+On 06/02/2014 11:40 AM, Johan Hovold wrote:
+> [ Please avoid top-posting. ]
 >
-> A little while later, I saw the following lockdep inversion pop.
-> Unfortunately, I couldn't get the whole log, but I think it's enough to
-> show that there's a potential problem?
+> On Mon, Jun 02, 2014 at 11:16:11AM -0400, Mike Remski wrote:
+>> Thanks Johan, that's why I looked at the cross references for ftdi_sio.c
+>> over on
+>> http://lxr.free-electrons.com/source/drivers/usb/serial/ftdi_sio.c,
+>> latest version it's showing is 3.14.  It appears that the ftdi_sio code
+>> is largely the same as in 2.6.32, particularly in the
+>> ftdi_set_max_packet_size() function.
+> Lots of things have changed since v2.6.32 and not just in the driver
+> itself but in all the infrastructure it relies on.
 >
-> I've not had time to give it a hard look yet, but thought I'd post it
-> here in the hopes that it might look familiar to someone:
+>> I'm trying to verify if the "number of endpoints is 0" is a valid
+>> situation.
+> No, that is not normal, but it should not crash the driver if it's a
+> hardware issue. What is the lsusb -v output of your device (make sure
+> the ftdi_sio driver isn't loaded when connecting the device).
 >
-> [ 2581.104687] ======================================================
-> [ 2581.104716] [ INFO: possible circular locking dependency detected ]
-> [ 2581.104716] 3.15.0-rc1.jlayton.1+ #2 Tainted: G           OE
-> [ 2581.104716] -------------------------------------------------------
-> [ 2581.104716] 2001:470:8:d63:/5622 is trying to acquire lock:
-> [ 2581.104716]  (&(&sp->so_lock)->rlock){+.+...}, at: [<ffffffffa036dbdd>] nfs4_do_reclaim+0x5bd/0x7f0 [nfsv4]
-> [ 2581.104716]
-> [ 2581.104716] but task is already holding lock:
-> [ 2581.104716]  (&sp->so_reclaim_seqcount){+.+...}, at: [<ffffffffa036e5fe>] nfs4_run_state_manager+0x7ee/0xc00 [nfsv4]
-> [ 2581.104716]
-> [ 2581.104716] which lock already depends on the new lock.
-> [ 2581.104716]
-> [ 2581.104716]
-> [ 2581.104716] the existing dependency chain (in reverse order) is:
-> [ 2581.104716]
-> -> #1 (&sp->so_reclaim_seqcount){+.+...}:
-> [ 2581.104716]        [<ffffffff810f9aa2>] lock_acquire+0xa2/0x1d0
-> [ 2581.104716]        [<ffffffffa036d8b0>] nfs4_do_reclaim+0x290/0x7f0 [nfsv4]
-> [ 2581.104716]        [<ffffffffa036e5fe>] nfs4_run_state_manager+0x7ee/0xc00 [nfsv4]
-> [ 2581.104716]        [<ffffffff810c260f>] kthread+0xff/0x120
-> [ 2581.104716]        [<ffffffff817e6bfc>] ret_from_fork+0x7c/0xb0
-> [ 2581.104716]
-> -> #0 (&(&sp->so_lock)->rlock){+.+...}:
-> [ 2581.104716]        [<ffffffff810f919f>] __lock_acquire+0x1b8f/0x1ca0
-> [ 2581.104716]        [<ffffffff810f9aa2>] lock_acquire+0xa2/0x1d0
-> [ 2581.104716]        [<ffffffff817dbdae>] _raw_spin_lock+0x3e/0x80
-> [ 2581.104716]        [<ffffffffa036dbdd>] nfs4_do_reclaim+0x5bd/0x7f0 [nfsv4]
-> [ 2581.104716]        [<ffffffffa036e5fe>] nfs4_run_state_manager+0x7ee/0xc00 [nfsv4]
-> [ 2581.104716]        [<ffffffff810c260f>] kthread+0xff/0x120
-> [ 2581.104716]        [<ffffffff817e6bfc>] ret_from_fork+0x7c/0xb0
-> [ 2581.104716]
-> [ 2581.104716] other info that might help us debug this:
-> [ 2581.104716]
-> [ 2581.104716]  Possible unsafe locking scenario:
-> [ 2581.104716]
-> [ 2581.104716]        CPU0                    CPU1
-> [ 2581.104716]        ----                    ----
-> [ 2581.104716]   lock(&sp->so_reclaim_seqcount);
-> [ 2581.104716]                                lock(&(&sp->so_lock)->rlock);
-> [ 2581.104716]                                lock(&sp->so_reclaim_seqcount);
-> [ 2581.104716]   lock(&(&sp->so_lock)->rlock);
-> [ 2581.104716]
-> [ 2581.104716]  *** DEADLOCK ***
-> [ 2581.104716]
-> [ 2581.104716] 1 lock held by 2001:470:8:d63:/5622:
-> [ 2581.104716]  #0:  (&sp->so_reclaim_seqcount){+.+...}, at: [<ffffffffa036e5fe>] nfs4_run_state_manager+0x7ee/0xc00 [nfsv4]
-> [ 2581.104716]
-> [ 2581.104716] stack backtrace:
-> [ 2581.104716] CPU: 2 PID: 5622 Comm: 2001:470:8:d63: Tainted: G           OE 3.15.0-rc1.jlayton.1+ #2
-> [ 2581.104716] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-> [ 2581.104716]  0000000000000000 00000000d29e16c4 ffff8800d8d8fba8 ffffffff817d318e
-> [ 2581.104716]  ffffffff8262d5e0 ffff8800d8d8fbe8 ffffffff817ce525 ffff8800d8d8fc40
-> [ 2581.104716]  ffff8800362a8b98 ffff8800362a8b98 0000000000000001 ffff8800362a8000
-> [ 2581.104716] Call Trace:
-> [ 2581.104716]  [<ffffffff817d318e>] dump_stack+0x4d/0x66
-> [ 2581.104716]  [<ffffffff817ce525>] print_circular_bug+0x201/0x20f
-> [ 2581.104716]  [<ffffffff810f919f>] __lock_acquire+0x1b8f/0x1ca0
-> [ 2581.104716]  [<ffffffff813dbe9e>] ? debug_check_no_obj_freed+0x17e/0x270
-> [ 2581.104716]  [<ffffffff810f9aa2>] lock_acquire+0xa2/0x1d0
-> [ 2581.104716]  [<ffffffffa036dbdd>] ? nfs4_do_reclaim+0x5bd/0x7f0 [nfsv4]
-> [ 2581.104716]  [<ffffffff817dbdae>] _raw_spin_lock+0x3e/0x80
-> [ 2581.104716]  [<ffffffffa036dbdd>] ? nfs4_do_reclaim+0x5bd/0x7f0 [nfsv4]
-> [ 2581.104716]  [<ffffffffa036dbdd>] nfs4_do_reclaim+0x5bd/0x7f0 [nfsv4]
-> [ 2581.104716]  [<ffffffffa036e5fe>] ? nfs4_run_state_manager+0x7ee/0xc00 [nfsv4]
-> [ 2581.104716]  [<ffffffffa036e5fe>] nfs4_run_state_manager+0x7ee/0xc00 [nfsv4]
-> [ 2581.104716]  [<ffffffffa036de10>] ? nfs4_do_reclaim+0x7f0/0x7f0 [nfsv4]
-> [ 2581.104716]  [<ffffffff810c260f>] kthread+0xff/0x120
-> [ 2581.104716]  [<ffffffff810c2510>] ? insert_kthread_work+0x80/0x80
-> [ 2581.104716]  [<ffffffff817e6bfc>] ret_from_fork+0x7c/0xb0
-> [ 2581.104716]  [<ffffffff810c2510>] ? insert_kthread_work+0x80/0x80
+> And what happens if you plug it into a machine running a recent kernel?
+>
+> Thanks,
+> Johan
+Thanks Johan;  sorry for top posting.
+An even more ancient kernel (2.6.18) has v1.4.3 of the ftdi_sio.c and I 
+do not see this problem.  In v1.4.3,
+ftdi_sio_attach() is doing the work that is now in 
+ftdi_sio_port_probe(), but 1.4.3 does not have the 
+ftdi_set_max_packet_size() code.  The device works fine under 2.6.18.  I 
+have to see if I can scrounge up
+a machine running a later kernel (other than my desktop).
+Should have included this earlier but its unmodified CentOs 6.0 and 6.4, 
+kernel is:
 
-OK. So now that lockdep has been added to raw_seqcount_begin() (commit
-1ca7d67cf5d5a), exactly what are we supposed to use when we DON'T want
-lockdep to "sanity check" our locking here?
+Linux nicA91A84 2.6.32-71.29.1.el6.i686 #1 SMP Tue May 10 17:35:05 CDT 
+2011 i686 i686 i386 GNU/Linux
 
-As far as we're concerned, the above check is completely bogus, and
-there is no deadlock. At best it would be a livelock, and it would be
-because the server is rebooting over and over again (in which case the
-client behaviour of retrying is _correct_).
 
-Trond
+lsusb -v cut for the device in question.
+
+Bus 005 Device 003: ID 1fdf:1001
+Device Descriptor:
+   bLength                18
+   bDescriptorType         1
+   bcdUSB               2.00
+   bDeviceClass          239 Miscellaneous Device
+   bDeviceSubClass         2 ?
+   bDeviceProtocol         1 Interface Association
+   bMaxPacketSize0        64
+   idVendor           0x1fdf
+   idProduct          0x1001
+   bcdDevice            0.03
+   iManufacturer           1 Sepura
+   iProduct                2 Colour Console
+   iSerial                 0
+   bNumConfigurations      1
+   Configuration Descriptor:
+     bLength                 9
+     bDescriptorType         2
+     wTotalLength          134
+     bNumInterfaces          4
+     bConfigurationValue     1
+     iConfiguration          0
+     bmAttributes         0xc0
+       Self Powered
+     MaxPower              100mA
+     Interface Association:
+       bLength                 8
+       bDescriptorType        11
+       bFirstInterface         0
+       bInterfaceCount         2
+       bFunctionClass          2 Communications
+       bFunctionSubClass       2 Abstract (modem)
+       bFunctionProtocol       0 None
+       iFunction               0
+     Interface Descriptor:
+       bLength                 9
+       bDescriptorType         4
+       bInterfaceNumber        0
+       bAlternateSetting       0
+       bNumEndpoints           1
+       bInterfaceClass         2 Communications
+       bInterfaceSubClass      2 Abstract (modem)
+       bInterfaceProtocol      0 None
+       iInterface              0
+       CDC Header:
+         bcdCDC               1.10
+       CDC Call Management:
+         bmCapabilities       0x01
+           call management
+         bDataInterface          1
+       CDC ACM:
+         bmCapabilities       0x02
+           line coding and serial state
+       CDC Union:
+         bMasterInterface        0
+         bSlaveInterface         1
+       Endpoint Descriptor:
+         bLength                 7
+         bDescriptorType         5
+         bEndpointAddress     0x83  EP 3 IN
+         bmAttributes            3
+           Transfer Type            Interrupt
+           Synch Type               None
+           Usage Type               Data
+         wMaxPacketSize     0x0040  1x 64 bytes
+         bInterval              10
+     Interface Descriptor:
+       bLength                 9
+       bDescriptorType         4
+       bInterfaceNumber        1
+       bAlternateSetting       0
+       bNumEndpoints           2
+       bInterfaceClass        10 CDC Data
+       bInterfaceSubClass      0 Unused
+       bInterfaceProtocol      0
+       iInterface              0
+       Endpoint Descriptor:
+         bLength                 7
+         bDescriptorType         5
+         bEndpointAddress     0x01  EP 1 OUT
+         bmAttributes            2
+           Transfer Type            Bulk
+           Synch Type               None
+           Usage Type               Data
+         wMaxPacketSize     0x0040  1x 64 bytes
+         bInterval               0
+       Endpoint Descriptor:
+         bLength                 7
+         bDescriptorType         5
+         bEndpointAddress     0x82  EP 2 IN
+         bmAttributes            2
+           Transfer Type            Bulk
+           Synch Type               None
+           Usage Type               Data
+         wMaxPacketSize     0x0040  1x 64 bytes
+         bInterval               0
+     Interface Association:
+       bLength                 8
+       bDescriptorType        11
+       bFirstInterface         2
+       bInterfaceCount         2
+       bFunctionClass          2 Communications
+       bFunctionSubClass       2 Abstract (modem)
+       bFunctionProtocol       0 None
+       iFunction               0
+     Interface Descriptor:
+       bLength                 9
+       bDescriptorType         4
+       bInterfaceNumber        2
+       bAlternateSetting       0
+       bNumEndpoints           0
+       bInterfaceClass         2 Communications
+       bInterfaceSubClass      2 Abstract (modem)
+       bInterfaceProtocol      0 None
+       iInterface              0
+       CDC Header:
+         bcdCDC               1.10
+       CDC Call Management:
+         bmCapabilities       0x01
+           call management
+         bDataInterface          3
+       CDC ACM:
+         bmCapabilities       0x02
+           line coding and serial state
+       CDC Union:
+         bMasterInterface        2
+         bSlaveInterface         3
+     Interface Descriptor:
+       bLength                 9
+       bDescriptorType         4
+       bInterfaceNumber        3
+       bAlternateSetting       0
+       bNumEndpoints           2
+       bInterfaceClass        10 CDC Data
+       bInterfaceSubClass      0 Unused
+       bInterfaceProtocol      0
+       iInterface              0
+       Endpoint Descriptor:
+         bLength                 7
+         bDescriptorType         5
+         bEndpointAddress     0x04  EP 4 OUT
+         bmAttributes            2
+           Transfer Type            Bulk
+           Synch Type               None
+           Usage Type               Data
+         wMaxPacketSize     0x0040  1x 64 bytes
+         bInterval               0
+       Endpoint Descriptor:
+         bLength                 7
+         bDescriptorType         5
+         bEndpointAddress     0x85  EP 5 IN
+         bmAttributes            2
+           Transfer Type            Bulk
+           Synch Type               None
+           Usage Type               Data
+         wMaxPacketSize     0x0040  1x 64 bytes
+         bInterval               0
+Device Status:     0x0001
+   Self Powered
 
 -- 
-Trond Myklebust
+Office: (978)401-4032 (x123 internally)
+Cell: (603) 759-6953
 
-Linux NFS client maintainer, PrimaryData
-
-trond.myklebust@primarydata.com
