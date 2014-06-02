@@ -1,97 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754640AbaFBQEu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 12:04:50 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:56202 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752912AbaFBQEt (ORCPT
+	id S1753673AbaFBQGk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 12:06:40 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:34405 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752949AbaFBQGi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 12:04:49 -0400
-Message-ID: <538CA0B0.2030200@linaro.org>
-Date: Mon, 02 Jun 2014 18:05:04 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-CC: Kukjin Kim <kgene.kim@samsung.com>, Tomasz Figa <t.figa@samsung.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org
-Subject: Re: [PATCH 6/7] ARM: EXYNOS: PM: fix register setup on EXYNOS4x12
- for AFTR mode code
-References: <1399287439-31376-1-git-send-email-b.zolnierkie@samsung.com> <1399287439-31376-7-git-send-email-b.zolnierkie@samsung.com> <5375D44F.7000505@linaro.org> <2762097.QhkViWyNLQ@amdc1032>
-In-Reply-To: <2762097.QhkViWyNLQ@amdc1032>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Mon, 2 Jun 2014 12:06:38 -0400
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCH 1/3] i2c: Provide 'device type' to 'OF device node'
+ look-up
+To: Lee Jones <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, wsa@the-dreams.de
+Cc: linus.walleij@linaro.org, linux-i2c@vger.kernel.org,
+        Lee Jones <lee.jones@linaro.org>
+In-Reply-To: <1401716463-23457-2-git-send-email-lee.jones@linaro.org>
+References: <1401716463-23457-1-git-send-email-lee.jones@linaro.org>
+	<1401716463-23457-2-git-send-email-lee.jones@linaro.org>
+Date: Mon, 02 Jun 2014 17:06:31 +0100
+Message-Id: <20140602160631.F2F6DC40476@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/02/2014 02:08 PM, Bartlomiej Zolnierkiewicz wrote:
->
-> Hi,
->
-> On Friday, May 16, 2014 11:03:11 AM Daniel Lezcano wrote:
->> On 05/05/2014 12:57 PM, Bartlomiej Zolnierkiewicz wrote:
->>> Add S5P_CENTRAL_SEQ_OPTION register setup for EXYNOS4x12 to AFTR
->>> mode code.  Without this setup AFTR mode doesn't show any benefit
->>> over WFI one.  When this setup is applied AFTR mode reduces power
->>> consumption by ~12% (as measured on Trats2 board).
->>>
->>> This change is a preparation for adding secure firmware support to
->>> EXYNOS cpuidle driver.
->>>
->>> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
->>> ---
->>>    arch/arm/mach-exynos/pm.c | 4 ++++
->>>    1 file changed, 4 insertions(+)
->>>
->>> diff --git a/arch/arm/mach-exynos/pm.c b/arch/arm/mach-exynos/pm.c
->>> index 18f6bf8..3922968 100644
->>> --- a/arch/arm/mach-exynos/pm.c
->>> +++ b/arch/arm/mach-exynos/pm.c
->>> @@ -391,6 +391,10 @@ static int exynos_cpu_pm_notifier(struct notifier_block *self,
->>>    	case CPU_PM_ENTER:
->>>    		if (cpu == 0) {
->>>    			exynos_pm_central_suspend();
->>> +			if (soc_is_exynos4212() || soc_is_exynos4412())
->>> +				__raw_writel(S5P_USE_STANDBY_WFI0 |
->>> +					     S5P_USE_STANDBY_WFE0,
->>> +					     S5P_CENTRAL_SEQ_OPTION);
->>
->> Why not put this code in the exynos_enter_aftr() ?
->
-> I would prefer to keep this code close to exynos_pm_central_suspend()
-> because exynos_pm_suspend() (which calls exynos_pm_central_suspend()
-> too) also contains S5P_USE_STANDBY_WF[I,E]0 setting code (done for all
-> SoCs).  If possible I would like to make this code common for AFTR &
-> suspend in the future (once it is tested on Exynos4210 and Exynos5250)
-> by moving S5P_USE_STANDBY_WF[I,E]0 setting to exynos_pm_central_suspend()
-> and doing it for all SoCs.  Are you okay with this?
+On Mon,  2 Jun 2014 14:41:01 +0100, Lee Jones <lee.jones@linaro.org> wrote:
+> We have a problem.  There are lots of I2C device ID tables scattered
+> around the kernel which are redundant in all Device Tree and/or ACPI
+> only supported device drivers.  After recent discussions it has become
+> apparent that the only thing blocking the complete removal of these
+> tables is the continued support of 'register an I2C device via sysfs'
+> functionality.  As the sysfs method doesn't know anything about Device
+> Tree or ACPI, we can not pass any nodes in.  This patch searches all
+> known Device Tree nodes and attempts to acquire a match from the
+> device name provided via sysfs.  It can not fail, but if found assigns
+> the matching of_node to i2c_board_info prior to registering.
 
-Yeah, no problem.
+Ummm... blech!  :-)
 
+It shouldn't actually be necessary to have a node when instantiating an
+i2c_device... in fact, there /shouldn't/ be a node if the device is
+getting instantiated by had via sysfs. If there was a node, then I would
+expect a device to have been created at the same time.
 
->>>    			exynos_cpu_save_register();
->>>    		}
->>>    		break;
->
-> Best regards,
-> --
-> Bartlomiej Zolnierkiewicz
-> Samsung R&D Institute Poland
-> Samsung Electronics
->
+I think panto's overlays solve the problem where a node actually is
+required to instantiate the device by actually adding a node and letting
+the i2c subsystem create the associated device automatically.
 
+g.
 
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+> 
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> ---
+>  drivers/i2c/i2c-core.c | 31 +++++++++++++++++++++++++++++++
+>  1 file changed, 31 insertions(+)
+> 
+> diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
+> index 7c7f4b8..2e47641 100644
+> --- a/drivers/i2c/i2c-core.c
+> +++ b/drivers/i2c/i2c-core.c
+> @@ -64,6 +64,7 @@ static DEFINE_IDR(i2c_adapter_idr);
+>  
+>  static struct device_type i2c_client_type;
+>  static int i2c_detect(struct i2c_adapter *adapter, struct i2c_driver *driver);
+> +static struct device_node *of_i2c_type_to_node(char *type);
+>  
+>  static struct static_key i2c_trace_msg = STATIC_KEY_INIT_FALSE;
+>  
+> @@ -863,6 +864,8 @@ i2c_sysfs_new_device(struct device *dev, struct device_attribute *attr,
+>  		return -EINVAL;
+>  	}
+>  
+> +	info.of_node = of_i2c_type_to_node(info.type);
+> +
+>  	client = i2c_new_device(adap, &info);
+>  	if (!client)
+>  		return -EINVAL;
+> @@ -1088,8 +1091,36 @@ struct i2c_adapter *of_find_i2c_adapter_by_node(struct device_node *node)
+>  	return i2c_verify_adapter(dev);
+>  }
+>  EXPORT_SYMBOL(of_find_i2c_adapter_by_node);
+> +
+> +static struct device_node *of_i2c_type_to_node(char *type)
+> +{
+> +	struct device_node *np;
+> +	const char *compatible, *name;
+> +	int len;
+> +
+> +	if (!type)
+> +		return NULL;
+> +
+> +	for_each_of_allnodes(np) {
+> +		compatible = of_get_property(np, "compatible", &len);
+> +		if (!compatible)
+> +			continue;
+> +
+> +		name = strchr(compatible, ',');
+> +		if (!name)
+> +			name = compatible;
+> +		else
+> +			name++;
+> +
+> +		if (!strncmp(name, type, len - (name - compatible)))
+> +			return np;
+> +	}
+> +
+> +	return NULL;
+> +}
+>  #else
+>  static void of_i2c_register_devices(struct i2c_adapter *adap) { }
+> +static struct device_node *of_i2c_type_to_node(char *type) { return NULL; }
+>  #endif /* CONFIG_OF */
+>  
+>  /* ACPI support code */
+> -- 
+> 1.8.3.2
+> 
 
