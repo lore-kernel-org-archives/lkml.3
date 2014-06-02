@@ -1,66 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752854AbaFBXgi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 19:36:38 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:57908 "EHLO mail.zytor.com"
+	id S1752888AbaFBXi0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 19:38:26 -0400
+Received: from mga02.intel.com ([134.134.136.20]:62204 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752124AbaFBXgg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 19:36:36 -0400
-Message-ID: <538D09CD.2080006@zytor.com>
-Date: Mon, 02 Jun 2014 16:33:33 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1751577AbaFBXiZ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 19:38:25 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,960,1392192000"; 
+   d="scan'208";a="521712421"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+CC: Andi Kleen <andi@firstfloor.org>, Kamil Iskra <iskra@mcs.anl.gov>,
+        Borislav Petkov <bp@suse.de>, Chen Gong <gong.chen@linux.jf.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: RE: [PATCH 0/3] HWPOISON: improve memory error handling for
+ multithread process
+Thread-Topic: [PATCH 0/3] HWPOISON: improve memory error handling for
+ multithread process
+Thread-Index: AQHPfrQO7M4wCNOfC0qg1yK0O+UIRJted7Hw
+Date: Mon, 2 Jun 2014 23:37:58 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F328268B7@ORSMSX114.amr.corp.intel.com>
+References: <53877e9c.8b2cdc0a.1604.ffffea43SMTPIN_ADDED_BROKEN@mx.google.com>
+	<1401432670-24664-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+	<3908561D78D1C84285E8C5FCA982C28F32823225@ORSMSX114.amr.corp.intel.com>
+	<5388cd0e.463edd0a.755d.6f61SMTPIN_ADDED_BROKEN@mx.google.com>
+ <20140602154302.595a54190afdffd4b50f22c2@linux-foundation.org>
+In-Reply-To: <20140602154302.595a54190afdffd4b50f22c2@linux-foundation.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: "Theodore Ts'o" <tytso@mit.edu>, Chuck Lever <chuck.lever@oracle.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Dave Chinner <david@fromorbit.com>,
-        LKML Kernel <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
-        joseph@codesourcery.com, john.stultz@linaro.org,
-        Christoph Hellwig <hch@infradead.org>, tglx@linutronix.de,
-        geert@linux-m68k.org, lftan@altera.com,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>, xfs@oss.sgi.com,
-        Linux NFS Mailing List <linux-nfs@vger.kernel.org>
-Subject: Re: [RFC 11/32] xfs: convert to struct inode_time
-References: <1401480116-1973111-1-git-send-email-arnd@arndb.de> <8618458.1EVJCoVbkH@wuerfel> <alpine.LFD.2.11.1406012121430.17310@knanqh.ubzr> <4178301.j9kWdGCRLC@wuerfel> <6868F108-F0B2-423F-AE31-90DF86A5B7DD@oracle.com> <20140602153124.GH30598@thunk.org> <538CB085.5000502@zytor.com> <20140602222954.GA29690@thunk.org> <538CFB83.20703@zytor.com> <20140602233212.GA2060@thunk.org>
-In-Reply-To: <20140602233212.GA2060@thunk.org>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/02/2014 04:32 PM, Theodore Ts'o wrote:
-> On Mon, Jun 02, 2014 at 03:32:35PM -0700, H. Peter Anvin wrote:
->> On 06/02/2014 03:29 PM, Theodore Ts'o wrote:
->>>
->>> And since we are already returning (time_t) -1 in some cases, we might
->>> as well try to make things a bit more formal.
->>>
->>
->> Are we?  I am not aware of *Linux* actually using that.
-> 
-> Linux's time(2) can return (time_t) -1 and set errno to EFAULT, per
-> the Posix specification:
-> 
-> SYSCALL_DEFINE1(time, time_t __user *, tloc)
-> {
-> 	time_t i = get_seconds();
-> 
-> 	if (tloc) {
-> 		if (put_user(i,tloc))
-> 			return -EFAULT;
-> 	}
-> 	force_successful_syscall_return();
-> 	return i;
-> }
-> 
+> I'm not sure that "[PATCH 3/3] mm/memory-failure.c: support dedicated
+> thread to handle SIGBUS(BUS_MCEERR_AO)" is a -stable thing?  That's a
+> feature addition more than a bugfix?
 
-OK, I guess I should have said... other than for -EFAULT.
+No - the old behavior was crazy - someone with a multithreaded process might
+well expect that if they call prctl(PF_MCE_EARLY) in just one thread, then that
+thread would see the SIGBUS  with si_code = BUS_MCEERR_A0 - even if that
+thread wasn't the main thread for the process.
 
-I just don't know of anyone using time(2) with an argument other than NULL.
+Perhaps the description for the commit should better reflect that?
 
-	-hpa
+-Tony
+
 
 
