@@ -1,82 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932159AbaFBQNK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 12:13:10 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:33690 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754432AbaFBQLx (ORCPT
+	id S1755313AbaFBQN3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 12:13:29 -0400
+Received: from mail-we0-f181.google.com ([74.125.82.181]:33431 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754432AbaFBQN0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 12:11:53 -0400
-From: Chaitanya Hazarey <c@24.io>
-To: gregkh@linuxfoundation.org, burzalodowa@gmail.com,
-        andrea.merello@gmail.com
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Chaitanya Hazarey <c@24.io>
-Subject: [PATCH 4/4] Staging: rtl8192u: r8192U_wx.c Removed some more commented out dead code
-Date: Mon,  2 Jun 2014 09:11:45 -0700
-Message-Id: <1401725505-3459-4-git-send-email-c@24.io>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1401725505-3459-1-git-send-email-c@24.io>
-References: <1401725505-3459-1-git-send-email-c@24.io>
+	Mon, 2 Jun 2014 12:13:26 -0400
+Message-ID: <538CA2B6.4080805@linaro.org>
+Date: Mon, 02 Jun 2014 18:13:42 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>
+CC: Tomasz Figa <t.figa@samsung.com>, Sachin Kamat <sachin.kamat@linaro.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org
+Subject: Re: [PATCH v2 4/7] ARM: EXYNOS: PM: replace EXYNOS_BOOT_VECTOR_*
+ macros by static inlines
+References: <1401712543-14281-1-git-send-email-b.zolnierkie@samsung.com> <1401712543-14281-5-git-send-email-b.zolnierkie@samsung.com>
+In-Reply-To: <1401712543-14281-5-git-send-email-b.zolnierkie@samsung.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removed dead code from the file.
+On 06/02/2014 02:35 PM, Bartlomiej Zolnierkiewicz wrote:
+> Replace EXYNOS_BOOT_VECTOR_ADDR and EXYNOS_BOOT_VECTOR_FLAG macros
+> by exynos_boot_vector_addr() and exynos_boot_vector_flag() static
+> inlines.
+>
+> This patch shouldn't cause any functionality changes.
+>
+> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
 
-Signed-off-by: Chaitanya Hazarey <c@24.io>
----
- drivers/staging/rtl8192u/r8192U_wx.c | 18 +-----------------
- 1 file changed, 1 insertion(+), 17 deletions(-)
+Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
 
-diff --git a/drivers/staging/rtl8192u/r8192U_wx.c b/drivers/staging/rtl8192u/r8192U_wx.c
-index 09b1e81..ceb06d8 100644
---- a/drivers/staging/rtl8192u/r8192U_wx.c
-+++ b/drivers/staging/rtl8192u/r8192U_wx.c
-@@ -516,12 +516,9 @@ static int r8192_wx_set_enc(struct net_device *dev,
- 	struct r8192_priv *priv = ieee80211_priv(dev);
- 	struct ieee80211_device *ieee = priv->ieee80211;
- 	int ret;
--
--	/* u32 TargetContent; */
- 	u32 hwkey[4] = {0, 0, 0, 0};
- 	u8 mask = 0xff;
- 	u32 key_idx = 0;
--	/* u8 broadcast_addr[6] ={	0xff,0xff,0xff,0xff,0xff,0xff}; */
- 	u8 zero_addr[4][6] = {	{0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
- 				{0x00, 0x00, 0x00, 0x00, 0x00, 0x01},
- 				{0x00, 0x00, 0x00, 0x00, 0x00, 0x02},
-@@ -667,14 +664,6 @@ static int r8192_wx_set_retry(struct net_device *dev,
- 	 */
- 
- 	rtl8192_commit(dev);
--	/*
--	if(priv->up){
--		rtl8180_rtx_disable(dev);
--		rtl8180_rx_enable(dev);
--		rtl8180_tx_enable(dev);
--
--	}
--	*/
- exit:
- 	up(&priv->wx_sem);
- 
-@@ -953,14 +942,9 @@ static const struct iw_priv_args r8192_private_args[] = {
- 
- 
- static iw_handler r8192_private_handler[] = {
--	/* r8192_wx_set_monitor, */ /* SIOCIWFIRSTPRIV */
--	r8192_wx_set_crcmon,   /*SIOCIWSECONDPRIV*/
--	/* r8192_wx_set_forceassociate, */
--	/* r8192_wx_set_beaconinterval, */
--	/* r8192_wx_set_monitor_type, */
-+	r8192_wx_set_crcmon, 
- 	r8192_wx_set_scan_type,
- 	r8192_wx_set_rawtx,
--	/* r8192_wx_null, */
- 	r8192_wx_force_reset,
- };
- 
+> ---
+>   arch/arm/mach-exynos/pm.c | 28 ++++++++++++++++++++--------
+>   1 file changed, 20 insertions(+), 8 deletions(-)
+>
+> diff --git a/arch/arm/mach-exynos/pm.c b/arch/arm/mach-exynos/pm.c
+> index 87c0d34..cf09383 100644
+> --- a/arch/arm/mach-exynos/pm.c
+> +++ b/arch/arm/mach-exynos/pm.c
+> @@ -166,12 +166,23 @@ int exynos_cluster_power_state(int cluster)
+>   			S5P_CORE_LOCAL_PWR_EN);
+>   }
+>
+> -#define EXYNOS_BOOT_VECTOR_ADDR	(samsung_rev() == EXYNOS4210_REV_1_1 ? \
+> -			S5P_INFORM7 : (samsung_rev() == EXYNOS4210_REV_1_0 ? \
+> -			(sysram_base_addr + 0x24) : S5P_INFORM0))
+> -#define EXYNOS_BOOT_VECTOR_FLAG	(samsung_rev() == EXYNOS4210_REV_1_1 ? \
+> -			S5P_INFORM6 : (samsung_rev() == EXYNOS4210_REV_1_0 ? \
+> -			(sysram_base_addr + 0x20) : S5P_INFORM1))
+> +static inline void __iomem *exynos_boot_vector_addr(void)
+> +{
+> +	if (samsung_rev() == EXYNOS4210_REV_1_1)
+> +		return S5P_INFORM7;
+> +	else if (samsung_rev() == EXYNOS4210_REV_1_0)
+> +		return sysram_base_addr + 0x24;
+> +	return S5P_INFORM0;
+> +}
+> +
+> +static inline void __iomem *exynos_boot_vector_flag(void)
+> +{
+> +	if (samsung_rev() == EXYNOS4210_REV_1_1)
+> +		return S5P_INFORM6;
+> +	else if (samsung_rev() == EXYNOS4210_REV_1_0)
+> +		return sysram_base_addr + 0x20;
+> +	return S5P_INFORM1;
+> +}
+>
+>   #define S5P_CHECK_AFTR  0xFCBA0D10
+>   #define S5P_CHECK_SLEEP 0x00000BAD
+> @@ -184,8 +195,9 @@ static void exynos_set_wakeupmask(long mask)
+>
+>   static void exynos_cpu_set_boot_vector(long flags)
+>   {
+> -	__raw_writel(virt_to_phys(exynos_cpu_resume), EXYNOS_BOOT_VECTOR_ADDR);
+> -	__raw_writel(flags, EXYNOS_BOOT_VECTOR_FLAG);
+> +	__raw_writel(virt_to_phys(exynos_cpu_resume),
+> +		     exynos_boot_vector_addr());
+> +	__raw_writel(flags, exynos_boot_vector_flag());
+>   }
+>
+>   void exynos_enter_aftr(void)
+>
+
+
 -- 
-1.9.1
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
