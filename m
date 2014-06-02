@@ -1,69 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753607AbaFBTLk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 15:11:40 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:51499 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752183AbaFBTLi (ORCPT
+	id S932097AbaFBTMD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 15:12:03 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:50886 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753246AbaFBTMB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 15:11:38 -0400
-Date: Mon, 2 Jun 2014 12:09:46 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Christoph Hellwig <hch@infradead.org>
-cc: Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Denys Vlasenko <dvlasenk@redhat.com>, Hugh Dickins <hughd@google.com>,
-        Jim Keniston <jkenisto@us.ibm.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] uprobes: tmpfs support
-In-Reply-To: <20140602183028.GA9372@infradead.org>
-Message-ID: <alpine.LSU.2.11.1406021141160.1531@eggly.anvils>
-References: <20140602141406.GA17863@redhat.com> <20140602183028.GA9372@infradead.org>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+	Mon, 2 Jun 2014 15:12:01 -0400
+Date: Mon, 2 Jun 2014 12:11:55 -0700
+From: josh@joshtriplett.org
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Joe Perches <joe@perches.com>, linux-kernel@vger.kernel.org,
+        mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
+        rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
+        dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
+        sbw@mit.edu
+Subject: Re: [PATCH RFC 1/2] MAINTAINERS: Add "R:" designated-reviewers tag
+Message-ID: <20140602191155.GB13648@cloud>
+References: <1401728420-3572-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1401729778.5770.20.camel@joe-AO725>
+ <20140602174837.GA13257@cloud>
+ <1401731968.7323.4.camel@joe-AO725>
+ <20140602181658.GX22231@linux.vnet.ibm.com>
+ <20140602185635.GB13569@cloud>
+ <20140602190821.GZ22231@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140602190821.GZ22231@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2 Jun 2014, Christoph Hellwig wrote:
-> On Mon, Jun 02, 2014 at 04:14:06PM +0200, Oleg Nesterov wrote:
-> > Ingo, please pull from
+On Mon, Jun 02, 2014 at 12:08:21PM -0700, Paul E. McKenney wrote:
+> On Mon, Jun 02, 2014 at 11:56:35AM -0700, josh@joshtriplett.org wrote:
+> > On Mon, Jun 02, 2014 at 11:16:58AM -0700, Paul E. McKenney wrote:
+> > > On Mon, Jun 02, 2014 at 10:59:28AM -0700, Joe Perches wrote:
+> > > > On Mon, 2014-06-02 at 10:48 -0700, josh@joshtriplett.org wrote:
+> > > > > On Mon, Jun 02, 2014 at 10:22:58AM -0700, Joe Perches wrote:
+> > > > > > On Mon, 2014-06-02 at 10:00 -0700, Paul E. McKenney wrote:
+> > > > > > > A ksummit-discuss email thread looked at the difficulty recruiting
+> > > > > > > and retaining reviewers.
+> > > > > > 
+> > > > > > []
+> > > > > > 
+> > > > > > > Paul Walmsley also noted the need for patch
+> > > > > > > submitters to know who the key reviewers are and suggested adding an
+> > > > > > > "R:" tag to the MAINTAINERS file to record this information on a
+> > > > > > > per-subsystem basis.
+> > > > > > 
+> > > > > > I'm not sure of the value of this.
+> > > > > > 
+> > > > > > Why not just mark the actual reviewers as maintainers?
+> > > > > 
+> > > > > As discussed in the kernel summit discussion, being a regular patch
+> > > > > reviewer isn't the same thing as being *the* maintainer.
+> > > > 
+> > > > I think it's not particularly important or valuable
+> > > > here to make that distinction.
+> > > > 
+> > > > What real difference does it make?
+> > > 
+> > > In the particular case of Josh, none, at least from my viewpoint.  He of
+> > > course might or might not want to take on additional maintainership
+> > > responsibility at this particular point in time, in which case, I would
+> > > be more than happy to have him as a designated maintainer.
 > > 
-> >   git://git.kernel.org/pub/scm/linux/kernel/git/oleg/misc uprobes/core
-> > 
-> > Based on tip:perf/uprobes
+> > For the record, I'd be happy to be listed as a co-maintainer for RCU. :)
 > 
-> Eww, adding tmpfs-specific code to uprobes screams layering violation.
-> 
-> Hugh, what is the problem with implementing ->readpage for tmpfs again?
+> I would be happy to put you down as maintainer and Steven down as
+> official reviewer.  ;-)
 
-The problem is that ->readpage invites the caller to allocate a page
-of their choice for pagecache, and then pass it down to the filesystem
-to fill and use thereafter.
+I'd suggest adding Mathieu Desnoyers, Oleg Nesterov, and Lai Jiangshan
+as reviewers as well, with their consent.
 
-There are several ways in which that does not suit tmpfs, 3 spring to mind:
-1. the page may already be in memory, but currently in swapcache not in
-filecache: tmpfs knows how to manage that, the ->readpage caller does not
-2. there may be a NUMA mempolicy applied to that file, which would choose
-to allocate the page differently: tmpfs knows about that, caller does not
-3. (handy side-effect) it happens to disable use of tmpfs file as swapfile
-
-It was a great relief when tmpfs could finally jettison its ->readpage
-back in v3.1 (though if you press me, I could admit to some remaining
-embarrassments).  I certainly do not want it back.
-
-Just think of tmpfs as a layering violation itself (memory as backing!
-no wonder it has peculiar demands on the allocation of its backing)
-and we're all good - there's a variety of ways in which the generic
-code already happens to accommodate it (many PageSwapBacked tests,
-or the mapping_cap_account_dirty/writeback tests, for example).
-
-IIRC, you were in on the discussion of shmem_read_mapping_page() when we
-introduced it: Oleg is simply adding a call to it to fix a uprobes bug.  
-That the name explicitly mentions shmem instead of concealing it,
-is not necessarily a bad thing.
-
-Hugh
+- Josh Triplett
