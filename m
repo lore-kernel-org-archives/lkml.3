@@ -1,40 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932084AbaFBNWE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 09:22:04 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:35799 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753627AbaFBNWB (ORCPT
+	id S1754752AbaFBNZD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 09:25:03 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:38243 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754399AbaFBNZB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 09:22:01 -0400
-Message-ID: <1401715317.5757.10.camel@marge.simpson.net>
-Subject: Re: nouveau + rt = boom
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: linux-rt-users <linux-rt-users@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-Date: Mon, 02 Jun 2014 15:21:57 +0200
-In-Reply-To: <538C79E6.4070306@linutronix.de>
-References: <1401714764.5757.3.camel@marge.simpson.net>
-	 <1401715040.5757.7.camel@marge.simpson.net>
-	 <538C79E6.4070306@linutronix.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
+	Mon, 2 Jun 2014 09:25:01 -0400
+Date: Mon, 2 Jun 2014 09:24:56 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jonathan Corbet <corbet@lwn.net>
+Cc: Alexei Starovoitov <ast@plumgrid.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Ingo Molnar <mingo@kernel.org>, Daniel Borkmann <dborkman@redhat.com>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 net-next 0/2] split BPF out of core networking
+Message-ID: <20140602092456.2114440a@gandalf.local.home>
+In-Reply-To: <20140602081545.7baf4a91@lwn.net>
+References: <1401692506-7796-1-git-send-email-ast@plumgrid.com>
+	<20140602081545.7baf4a91@lwn.net>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-06-02 at 15:19 +0200, Sebastian Andrzej Siewior wrote: 
-> On 06/02/2014 03:17 PM, Mike Galbraith wrote:
-> > TODO++: Rummage around in this nouveau -rt explosion.
+On Mon, 2 Jun 2014 08:15:45 -0500
+Jonathan Corbet <corbet@lwn.net> wrote:
+
+> On Mon,  2 Jun 2014 00:01:44 -0700
+> Alexei Starovoitov <ast@plumgrid.com> wrote:
 > 
-> https://lkml.org/lkml/2014/3/7/163
+> > This patch set splits BPF out of core networking into generic component
+> 
+> Quick, probably dumb question: if you're going to split it out, why not
+> split it out entirely, into kernel/ or (perhaps better) lib/?  The
+> whole point seems to be that BPF is outgrowing its networking home, so
+> it seems like it might be better to make it truly generic.
 
-Aha, thanks.
+I believe this is what Ingo suggested as well. If it is become generic,
+it belongs in lib/
 
--Mike
-
+-- Steve
