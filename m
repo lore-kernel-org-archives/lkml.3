@@ -1,46 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753975AbaFBK3f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 06:29:35 -0400
-Received: from mail-we0-f181.google.com ([74.125.82.181]:36210 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753716AbaFBK3e (ORCPT
+	id S1753998AbaFBKbR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 06:31:17 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:54990 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752805AbaFBKbQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 06:29:34 -0400
-Date: Mon, 2 Jun 2014 11:29:30 +0100
-From: Peter Griffin <peter.griffin@linaro.org>
-To: Maxime Coquelin <maxime.coquelin@st.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        patrice.chotard@st.com, srinivas.kandagatla@gmail.com,
-        chris@printf.net, ulf.hansson@linaro.org, kernel@stlinux.com,
-        lee.jones@linaro.org, linux-mmc@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: Re: Add SDHCI support for STMicroelectronics SoCs
-Message-ID: <20140602102930.GB437@griffinp-ThinkPad-X1-Carbon-2nd>
-References: <1400771902-26553-1-git-send-email-peter.griffin@linaro.org>
- <537E1B55.1090807@st.com>
+	Mon, 2 Jun 2014 06:31:16 -0400
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Matt Fleming <matt.fleming@intel.com>
+Cc: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] efi: Fix compiler warnings (unused, const, type)
+Date: Mon,  2 Jun 2014 11:31:06 +0100
+Message-Id: <1401705066-2808-1-git-send-email-catalin.marinas@arm.com>
+X-Mailer: git-send-email 1.9.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <537E1B55.1090807@st.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Maxime,
+This patch fixes a few compiler warning in the efi code for unused
+variable, discarding const qualifier and wrong pointer type:
 
-On Thu, 22 May 2014, Maxime Coquelin wrote:
+drivers/firmware/efi/fdt.c|66 col 22| warning: unused variable ‘name’ [-Wunused-variable]
+drivers/firmware/efi/efi.c|368 col 3| warning: passing argument 3 of ‘of_get_flat_dt_prop’ from incompatible pointer type [enabled by default]
+drivers/firmware/efi/efi.c|368 col 8| warning: assignment discards ‘const’ qualifier from pointer target type [enabled by default]
 
-> >Initially it supports the stih416 and stih415 SoCs, and has
-> >been tested on a stih416-b2020 board.
-> 
-> In next version, could you also add  drivers/mmc/host/sdhci-st.c in
-> the ARM/STI ARCHITECTURE field of MAINTAINERS file?
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+---
 
-Was out on hols last week. I have fixed it in v2.
+Matt,
 
-Cheers,
+Unless you have fixed these already, please consider applying (warnings in
+latest next/master branch).
 
-Peter
+Thanks,
 
+Catalin
+
+
+ drivers/firmware/efi/efi.c | 6 +++---
+ drivers/firmware/efi/fdt.c | 2 +-
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/firmware/efi/efi.c b/drivers/firmware/efi/efi.c
+index cd36deb619fa..eff1a2f22f09 100644
+--- a/drivers/firmware/efi/efi.c
++++ b/drivers/firmware/efi/efi.c
+@@ -353,10 +353,10 @@ static int __init fdt_find_uefi_params(unsigned long node, const char *uname,
+ 				       int depth, void *data)
+ {
+ 	struct param_info *info = data;
+-	void *prop, *dest;
+-	unsigned long len;
++	const void *prop;
++	void *dest;
+ 	u64 val;
+-	int i;
++	int i, len;
+ 
+ 	if (depth != 1 ||
+ 	    (strcmp(uname, "chosen") != 0 && strcmp(uname, "chosen@0") != 0))
+diff --git a/drivers/firmware/efi/fdt.c b/drivers/firmware/efi/fdt.c
+index 5c6a8e8a9580..82d774161cc9 100644
+--- a/drivers/firmware/efi/fdt.c
++++ b/drivers/firmware/efi/fdt.c
+@@ -63,7 +63,7 @@ static efi_status_t update_fdt(efi_system_table_t *sys_table, void *orig_fdt,
+ 	 */
+ 	prev = 0;
+ 	for (;;) {
+-		const char *type, *name;
++		const char *type;
+ 		int len;
+ 
+ 		node = fdt_next_node(fdt, prev, NULL);
