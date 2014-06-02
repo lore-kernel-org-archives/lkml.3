@@ -1,64 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754296AbaFBMRE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 08:17:04 -0400
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:61799 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754100AbaFBMRA (ORCPT
+	id S1754390AbaFBMT7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 08:19:59 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:26820 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751668AbaFBMT6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 08:17:00 -0400
+	Mon, 2 Jun 2014 08:19:58 -0400
+Date: Mon, 2 Jun 2014 15:19:18 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: John Church <sleeveroller@gmail.com>
+Cc: gregkh@linuxfoundation.org, lisa@xenapiadmin.com, bergwolf@gmail.com,
+        andreas.dilger@intel.com, oleg.drokin@intel.com,
+        doug.s.oucharek@intel.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: lustre: fix sparse warnings for undeclared
+ symbols
+Message-ID: <20140602121918.GZ15585@mwanda>
+References: <1401710628-3690-1-git-send-email-sleeveroller@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20140531134805.GA3287@katana>
-References: <1401452797-29521-1-git-send-email-lee.jones@linaro.org>
-	<1401452797-29521-2-git-send-email-lee.jones@linaro.org>
-	<20140530123656.GC2742@katana>
-	<20140530133405.GB29731@lee--X1>
-	<20140530174800.GA4917@katana>
-	<20140530192516.GA4319@lee--X1>
-	<20140531134805.GA3287@katana>
-Date: Mon, 2 Jun 2014 14:16:59 +0200
-Message-ID: <CACRpkdZvyfA0aaJe3YuevXfA2pTZLRPZ3mQpitL6qD7=qE0Xyg@mail.gmail.com>
-Subject: Re: [PATCH] i2c: Make I2C ID tables non-mandatory for DT'ed and/or
- ACPI'ed devices
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Wolfram Sang <wsa@the-dreams.de>, Grant Likely <grant.likely@linaro.org>
-Cc: Lee Jones <lee.jones@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1401710628-3690-1-git-send-email-sleeveroller@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 31, 2014 at 3:48 PM, Wolfram Sang <wsa@the-dreams.de> wrote:
->
->> Right, I read the function which provides the functionality, but my
->> point is; I don't think my patch changes the semantics in a way which
->> would adversely affect this option.  If you think that it does, can you
->> specify how please?
->
-> Currently, if a driver would be DT only and does not provide a seperate
-> i2c_device_id table, then the driver is unusable with method 4. I don't
-> like to have some drivers being capable of it and some not.
->
->> Does the sysfs method create a i2c_device_id table?  If not, how does
->> it probe successfully pre-patch?
->
-> The sysfs method creates a device. Its name is matched against
-> i2c_device_ids only since it does not have a node pointer for DT to be
-> matched against.
+On Mon, Jun 02, 2014 at 01:03:48PM +0100, John Church wrote:
+> This patch fixes the following sparse warnings for drivers/staging/lustre/lnet/lnet/router.c:
+> 
+> router.c:139:1: warning: symbol 'lnet_ni_notify_locked' was not declared. Should it be static?
+> router.c:277:1: warning: symbol 'lnet_add_route_to_rnet' was not declared. Should it be static?
+> 
 
-Is this really so useful on embedded systems?
+Why not just make them static?  They don't seem to be used outside of
+that file.  What am I missing?
 
-I was under the impression that this method was something used
-on say PC desktops with temperature monitors and EEPROMs
-on some I2C link on the PCB, usage entirely optional and fun
-for userspace hacks.
+regards,
+dan carpenter
 
-And when we say "people use it" do we mean "sensors-detect
-uses it, on desktops", really?
-
-Yours,
-Linus Walleij
