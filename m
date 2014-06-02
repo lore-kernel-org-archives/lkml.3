@@ -1,43 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752807AbaFBTSt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 15:18:49 -0400
-Received: from mail.kernel.org ([198.145.19.201]:35975 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751711AbaFBTSr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 15:18:47 -0400
-Date: Mon, 2 Jun 2014 16:18:40 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Jiri Olsa <jolsa@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH] perf record: Fix poll return value propagation
-Message-ID: <20140602191840.GI2544@kernel.org>
-References: <1401732126-19465-1-git-send-email-jolsa@kernel.org>
+	id S1752554AbaFBTVA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 15:21:00 -0400
+Received: from mout.kundenserver.de ([212.227.126.131]:52444 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751094AbaFBTUy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 15:20:54 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Joseph S. Myers" <joseph@codesourcery.com>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        john.stultz@linaro.org, hch@infradead.org, tglx@linutronix.de,
+        geert@linux-m68k.org, lftan@altera.com, hpa@zytor.com,
+        linux-fsdevel@vger.kernel.org, ceph-devel@vger.kernel.org,
+        cluster-devel@redhat.com, coda@cs.cmu.edu,
+        codalist@TELEMANN.coda.cs.cmu.edu, fuse-devel@lists.sourceforge.net,
+        linux-afs@lists.infradead.org, linux-btrfs@vger.kernel.org,
+        linux-cifs@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net, linux-mtd@lists.infradead.org,
+        linux-nfs@vger.kernel.org, linux-ntfs-dev@lists.sourceforge.net,
+        linux-scsi@vger.kernel.org, logfs@logfs.org,
+        ocfs2-devel@oss.oracle.com, reiserfs-devel@vger.kernel.org,
+        samba-technical@lists.samba.org, xfs@oss.sgi.com
+Subject: Re: [RFC 00/32] making inode time stamps y2038 ready
+Date: Mon, 02 Jun 2014 21:19:55 +0200
+Message-ID: <4233989.Saca0ocOUr@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <Pine.LNX.4.64.1406021350030.19591@digraph.polyomino.org.uk>
+References: <1401480116-1973111-1-git-send-email-arnd@arndb.de> <Pine.LNX.4.64.1406021350030.19591@digraph.polyomino.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1401732126-19465-1-git-send-email-jolsa@kernel.org>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:N1Yd64vWkAjM0ROp+kC8egeIF6ETH0wOeYwjA9O2LDZ
+ 7+sVunCrTZKbjtMgR+4sz6lrwmAVoVXd2YAJBNRlsfu8UWnTu5
+ 2YtsEbwNSs64Yj7gNWu9PjFoxw4MBlxq7YNfg0UdwbvswKATut
+ fo6WPS1bnedmxBtIe9Eaw1NbQXNIu4jaOFqvSZAzi7K+gsdj5E
+ M8U54R4vSX46+RmOldxpOJ+8QO4ssxBbbctn0wrkJuX0J1ksF5
+ tFn3fTKnxB8oWQ06Q2ll3fW8IYUABqZdRV8za9QKBzcQZAQpq9
+ ud4pys4kK+EPg8pDWRUZcgdS0pRSwT5EgJq+bxQjqLwrRcug0v
+ 2/91O6iRgrww9ivAg99c=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Jun 02, 2014 at 08:02:06PM +0200, Jiri Olsa escreveu:
-> If the perf record command is interrupted in record__mmap_read_all
-> function, the 'done' is set and err has the latest poll return
-> value, which is most likely positive number (= number of pollfds
-> ready to read).
+On Monday 02 June 2014 13:52:19 Joseph S. Myers wrote:
+> On Fri, 30 May 2014, Arnd Bergmann wrote:
 > 
-> This 'positive err' is then propagated to the exit code, resulting
-> in not finishing the perf.data header properly, causing following
-> error in report:
+> > a) is this the right approach in general? The previous discussion
+> >    pointed this way, but there may be other opinions.
 > 
->   # perf record -F 50000 -a
+> The syscall changes seem like the sort of thing I'd expect, although 
+> patches adding new syscalls or otherwise affecting the kernel/userspace 
+> interface (as opposed to those relating to an individual filesystem) 
+> should go to linux-api as well as other relevant lists.
 
-Acked-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Ok. Sorry about missing linux-api, I confused it with linux-arch, which
+may not be as relevant here, except for the one question whether we
+actually want to have the new ABI on all 32-bit architectures or only
+as an opt-in for those that expect to stay around for another 24 years.
+
+Two more questions for you:
+
+- are you (and others) happy with adding this type of stat syscall
+  (fstatat64/fstat64) as opposed to the more generic xstat that has
+  been discussed in the past and that never made it through the bike-
+  shedding discussion?
+
+- once we have enough buy-in from reviewers to merge this initial
+  series, should we proceed to define rest of the syscall ABI
+  (minus driver ioctls) so glibc and kernel can do the conversion
+  on top of that, or should we better try to do things one syscall
+  family at a time and actually get the kernel to handle them
+  correctly internally?
+
+	Arnd
