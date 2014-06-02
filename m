@@ -1,69 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754059AbaFBU5S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 16:57:18 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:63007 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752794AbaFBU5R (ORCPT
+	id S932202AbaFBVCI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 17:02:08 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:51215 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752848AbaFBVCG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 16:57:17 -0400
-Date: Mon, 2 Jun 2014 14:57:30 -0600
-From: Jens Axboe <axboe@kernel.dk>
-To: Tejun Heo <tj@kernel.org>
-Cc: Paolo Valente <paolo.valente@unimore.it>, Li Zefan <lizefan@huawei.com>,
-        Fabio Checconi <fchecconi@gmail.com>,
-        Arianna Avanzini <avanzini.arianna@gmail.com>,
-        Paolo Valente <posta_paolo@yahoo.it>, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org
-Subject: Re: [PATCH RFC - TAKE TWO - 00/12] New version of the BFQ I/O
- Scheduler
-Message-ID: <20140602205713.GB8357@kernel.dk>
-References: <1401354343-5527-1-git-send-email-paolo.valente@unimore.it>
- <20140530160712.GG24871@htj.dyndns.org>
- <538926F6.7080409@kernel.dk>
- <20140531051635.GA19925@mtj.dyndns.org>
- <538C8A47.1050502@kernel.dk>
- <20140602172454.GA8912@htj.dyndns.org>
- <538CB515.3090700@kernel.dk>
- <20140602174250.GC8912@htj.dyndns.org>
- <538CB87C.7030600@kernel.dk>
- <20140602185138.GD8912@htj.dyndns.org>
+	Mon, 2 Jun 2014 17:02:06 -0400
+Date: Mon, 2 Jun 2014 22:01:17 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Cc: lee.jones@linaro.org, sameo@linux.intel.com,
+        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
+Message-ID: <20140602210117.GO31751@sirena.org.uk>
+References: <1401699704-17902-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="lCFQJunhLz1tFGpX"
 Content-Disposition: inline
-In-Reply-To: <20140602185138.GD8912@htj.dyndns.org>
+In-Reply-To: <1401699704-17902-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+X-Cookie: Big book, big bore.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 109.148.252.180
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/2] mfd: core: Add the option to order destruction of
+ MFD cells
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 02 2014, Tejun Heo wrote:
-> Hello,
-> 
-> On Mon, Jun 02, 2014 at 11:46:36AM -0600, Jens Axboe wrote:
-> > But blk-mq will potentially drive anything, so it might not be out of
-> > the question with a more expensive scheduling variant, if it makes any
-> > sense to do of course. At least until there's no more rotating stuff out
-> > there :-). But it's not a priority at all to me yet. As long as we have
-> > coexisting IO paths, it'd be trivial to select the needed one based on
-> > the device characteristics.
-> 
-> Hmmm... yeah, moving rotating devices over to blk-mq doesn't really
-> seem beneficial to me.  I think there are fundamental behavioral
-> differences for rotating rusts and newer solid state devices to share
-> single code path for things like scheduling and selecting the
-> appropriate path depending on the actual devices sounds like a much
-> better plan even in the long term.
 
-It's not so much about it being more beneficial to run in blk-mq, as it
-is about not having two code paths. But yes, we're likely going to
-maintain that code for a long time, so it's not going anywhere anytime
-soon.
+--lCFQJunhLz1tFGpX
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-And for scsi-mq, it's already opt-in, though on a per-host basis. Doing
-finer granularity than that is going to be difficult, unless we let
-legacy-block and blk-mq share a tag map (though that would not be too
-hard).
+On Mon, Jun 02, 2014 at 10:01:43AM +0100, Charles Keepax wrote:
+> Sometimes MFD children will have interdependancies. For example an MFD
+> device might contain a regulator cell and another cell which requires
+> that regulator to function. Probe deferral will ensure that these
+> devices probe in the correct order, however currently nothing ensures
+> they are destroyed in the correct order. As such it is possible for a
+> cell to be destroyed whilst another cell still expects it to exist. For
+> example the cell mentioned earlier would attempt to do a regulator_put
+> as part of its own tear-down but the regulator may have already been
+> destroyed.
 
--- 
-Jens Axboe
+Probe deferral is supposed to handle removal too, we're supposed to be
+able to walk the device list in reverse order and everything just work.
 
+--lCFQJunhLz1tFGpX
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTjOYTAAoJELSic+t+oim9MjQP/3kt216TW4L9npAhn5Ng4G90
+xbl0lgrx7y2ya5KbvX9XHKMzSostGcoXKTP0dTcy/cvQJ0o+Ln0Xfnac2O024zJq
+InIFP4nHVywNS8nqRxu9Yf1FJG9vXN265ry4Nj+scRpqc2sHPTM2k/LonzCic89i
+IYIqcGSNAEoaJGSNLXTE4IrmsrJtQQy0nuifDuVhY3aSDsWXQEvuthM5Bz3bQOhd
+9ZyGT/VDHHWapEyshbypI3T7Kyy2ES2pOU1iomBIjRYv2N40wAJl2n6EebW4QNJJ
+ql52VwAYJ20Zq5d7MPkRouQVdrZqazWLrCJq7Kml0Orxo4HQxuAYvoHJgBaYvtoV
+VgrnyUfiyvdyBX4R5Ln1IYq0yHlY5STSSWIdQppy10dJhDRCFA2laL7f05kjM5yI
+N7/6pb28ZYRat9iMayH0ZwiwbwQuZW+ZhpO8HeSn83UiNzr24mEHSDapYLa7H02E
+P2XHbmh7oaAxYf3W0jdyFRqC3znRC2AEuIm3iRR7jg9YGgKq1A10SeC+eEhcvNQd
+5cOLp7Yc9rR5iUCorGoF2VO/cAiegV2AySaxa2te+B3R5SkcBvIIozqEbfIcxaOD
+JHndAOEGr/++5DLb8xIFWb0OjkGZksz4wRSW0PWHbOD5SBwxB6TasP8uLZ9PToo0
+K5Xha12kifbhleSw4DDq
+=amD3
+-----END PGP SIGNATURE-----
+
+--lCFQJunhLz1tFGpX--
