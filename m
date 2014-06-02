@@ -1,67 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753683AbaFBRJi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 13:09:38 -0400
-Received: from mail-ve0-f169.google.com ([209.85.128.169]:33892 "EHLO
-	mail-ve0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751917AbaFBRJg (ORCPT
+	id S1754157AbaFBRJu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 13:09:50 -0400
+Received: from mail-ve0-f171.google.com ([209.85.128.171]:37497 "EHLO
+	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753878AbaFBRJt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 13:09:36 -0400
+	Mon, 2 Jun 2014 13:09:49 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140602162525.GH16155@laptop.programming.kicks-ass.net>
-References: <alpine.LRH.2.02.1406011342470.20831@file01.intranet.prod.int.rdu2.redhat.com>
-	<alpine.LRH.2.02.1406021158360.20627@file01.intranet.prod.int.rdu2.redhat.com>
-	<20140602162525.GH16155@laptop.programming.kicks-ass.net>
-Date: Mon, 2 Jun 2014 10:09:35 -0700
-X-Google-Sender-Auth: eZCqBCT2_JqgxUitgnJ4rPnD7SI
-Message-ID: <CA+55aFzwrqkwD=G=w2m7TdXTpsMFjV7XUMXv5DMPGr=5x5YGCQ@mail.gmail.com>
-Subject: Re: [PATCH v2] introduce atomic_pointer to fix a race condition in
- cancelable mcs spinlocks
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Mikulas Patocka <mpatocka@redhat.com>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Helge Deller <deller@gmx.de>, John David Anglin <dave.anglin@bell.net>,
-        Parisc List <linux-parisc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        "Vinod, Chegu" <chegu_vinod@hp.com>, Waiman Long <Waiman.Long@hp.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Davidlohr Bueso <davidlohr@hp.com>, Peter Anvin <hpa@zytor.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>, Jason Low <jason.low2@hp.com>
+In-Reply-To: <0d75554db5eab82852470f82d984c096d93bd61f.1401486790.git.luto@amacapital.net>
+References: <cover.1401486790.git.luto@amacapital.net> <0d75554db5eab82852470f82d984c096d93bd61f.1401486790.git.luto@amacapital.net>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 2 Jun 2014 10:09:28 -0700
+Message-ID: <CALCETrV4ML3rrN3ODs2MtZstL+9_oD=YWXThFg9R+-DGpOMx0g@mail.gmail.com>
+Subject: Re: [PATCH 1/2] x86,syscall: Add syscall_in_syscall to test whether
+ we're in a syscall
+To: "H. Peter Anvin" <hpa@zytor.com>, X86 ML <x86@kernel.org>,
+        linux-audit@redhat.com, Eric Paris <eparis@redhat.com>,
+        Steve Grubb <sgrubb@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 2, 2014 at 9:25 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+On May 30, 2014 2:58 PM, "Andy Lutomirski" <luto@amacapital.net> wrote:
 >
-> And I can't say I'm a particular fan of these ops either, as alternative
-> I'm almost inclined to just exclude parisc from using opt spinning.
+> syscall_in_syscall will return true if we're in a real syscall and
+> will return false if we're not in a syscall.  If we're in a bad
+> syscall, the return value can vary.
+>
+> The idea is to use this to come up with a much simpler replacement
+> for syscall auditing.
+>
+> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+> ---
+>  arch/x86/Kconfig               |  1 +
+>  arch/x86/include/asm/syscall.h | 21 +++++++++++++++++++++
+>  init/Kconfig                   |  3 +++
+>  3 files changed, 25 insertions(+)
+>
+> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+> index 25d2c6f..e2602d4 100644
+> --- a/arch/x86/Kconfig
+> +++ b/arch/x86/Kconfig
+> @@ -130,6 +130,7 @@ config X86
+>         select HAVE_CC_STACKPROTECTOR
+>         select GENERIC_CPU_AUTOPROBE
+>         select HAVE_ARCH_AUDITSYSCALL
+> +       select HAVE_SYSCALL_IN_SYSCALL
+>
+>  config INSTRUCTION_DECODER
+>         def_bool y
+> diff --git a/arch/x86/include/asm/syscall.h b/arch/x86/include/asm/syscall.h
+> index d6a756a..91e38b3 100644
+> --- a/arch/x86/include/asm/syscall.h
+> +++ b/arch/x86/include/asm/syscall.h
+> @@ -23,6 +23,27 @@
+>  typedef void (*sys_call_ptr_t)(void);
+>  extern const sys_call_ptr_t sys_call_table[];
+>
+> +/**
+> + * syscall_in_syscall() - are we in a syscall context?
+> + * @task: The task to query.
+> + * @regs: The task's pt_regs.
+> + *
+> + * This checks whether we are in a syscall.  If it returns true, then
+> + * syscall_get_nr(), etc are usable and the current task is guaranteed
+> + * to either die or to go through the syscall exit path when the syscall
+> + * is done.
+> + *
+> + * If it returns false, no particular guarantees are made.  In
+> + * particular, a malicious task can issue a syscall that causes
+> + * syscall_in_syscall to return false.  Such a syscall won't do much,
+> + * but it can still cause tracing code and such to run.
+> + */
+> +static inline bool syscall_in_syscall(struct task_struct *task,
+> +                                     struct pt_regs *regs)
+> +{
+> +       return regs->orig_ax != -1;
 
-Please do.
+This is insufficient: anything that interrupts an errorentry too early
+will incorrectly return true.  Also, the actual IRQ entries seem to
+shove the IRQ number into orig_ax.
 
-There is no way in hell that we should introduce a magic new
-atomic_pointer thing for parisc. And the idea somebody had to change
-ACCESS_ONCE() for PA-RISC (I'm not going to go back to find who to
-blame) is just horribly wrong too, since it's not even necessary for
-any normal use: the special "load-and-store-zero" instruction isn't
-actually used for "real" data, it's used only for the special
-spinlocks afaik, so doing it for all ACCESS_ONCE() users would be
-wrong even on PA-RISC. For any normal data, the usual "just load the
-value, making sure the compiler doesn't reload it" is perfectly fine -
-even on PA-RISC.
+I'll send a new version.
 
-Now, if PA-RISC was a major architecture, we'd have to figure this
-out. But as it is, PA-RISC is just about the shittiest RISC ever
-invented (with original sparc being a strong contender), and let's
-face it, nobody really uses it.  It's a "fun project", but it is not
-something that we should use to mess up either ACCESS_ONCE() or the
-MCS locks.
-
-Just make PA-RISC use its own locks, not any of the new fancy ones.
-
-              Linus
+--Andy
