@@ -1,86 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755455AbaFBQZr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 12:25:47 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:44355 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754570AbaFBQZp (ORCPT
+	id S1755522AbaFBQ0J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 12:26:09 -0400
+Received: from mail-qg0-f42.google.com ([209.85.192.42]:33123 "EHLO
+	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754570AbaFBQ0H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 12:25:45 -0400
-Date: Mon, 2 Jun 2014 18:25:25 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mikulas Patocka <mpatocka@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, jejb@parisc-linux.org,
-        deller@gmx.de, John David Anglin <dave.anglin@bell.net>,
-        linux-parisc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        paulmck@linux.vnet.ibm.com, chegu_vinod@hp.com, Waiman.Long@hp.com,
-        tglx@linutronix.de, riel@redhat.com, akpm@linux-foundation.org,
-        davidlohr@hp.com, hpa@zytor.com, andi@firstfloor.org, aswin@hp.com,
-        scott.norton@hp.com, Jason Low <jason.low2@hp.com>
-Subject: Re: [PATCH v2] introduce atomic_pointer to fix a race condition in
- cancelable mcs spinlocks
-Message-ID: <20140602162525.GH16155@laptop.programming.kicks-ass.net>
-References: <alpine.LRH.2.02.1406011342470.20831@file01.intranet.prod.int.rdu2.redhat.com>
- <alpine.LRH.2.02.1406021158360.20627@file01.intranet.prod.int.rdu2.redhat.com>
+	Mon, 2 Jun 2014 12:26:07 -0400
+Message-ID: <538CA59C.8000302@mutualink.net>
+Date: Mon, 02 Jun 2014 12:26:04 -0400
+From: Mike Remski <mremski@mutualink.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LRH.2.02.1406021158360.20627@file01.intranet.prod.int.rdu2.redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Greg KH <greg@kroah.com>
+CC: Johan Hovold <jhovold@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Subject: Re: ftdi_sio BUG: NULL pointer dereference
+References: <538C8963.4010909@mutualink.net> <20140602143347.GA1902@localhost> <538C953B.9020304@mutualink.net> <20140602154036.GA8662@localhost> <538CA1C0.1080205@mutualink.net> <20140602162346.GA26156@kroah.com>
+In-Reply-To: <20140602162346.GA26156@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 02, 2014 at 12:00:45PM -0400, Mikulas Patocka wrote:
->  struct optimistic_spin_queue {
-> -	struct optimistic_spin_queue *next, *prev;
-> +	atomic_pointer(struct optimistic_spin_queue *) next;
-> +	struct optimistic_spin_queue *prev;
->  	int locked; /* 1 if lock acquired */
->  };
->  
-> Index: linux-3.15-rc8/include/asm-generic/atomic-long.h
-> ===================================================================
-> --- linux-3.15-rc8.orig/include/asm-generic/atomic-long.h	2014-06-02 17:11:17.000000000 +0200
-> +++ linux-3.15-rc8/include/asm-generic/atomic-long.h	2014-06-02 17:11:50.000000000 +0200
-> @@ -255,4 +255,31 @@ static inline long atomic_long_add_unles
->  
->  #endif  /*  BITS_PER_LONG == 64  */
->  
-> +#define atomic_pointer(type)						\
-> +union {									\
-> +	atomic_long_t __a;						\
-> +	type __t;							\
-> +	char __check_sizeof[sizeof(type) == sizeof(long) ? 1 : -1];	\
-> +}
+On 06/02/2014 12:23 PM, Greg KH wrote:
+> On Mon, Jun 02, 2014 at 12:09:36PM -0400, Mike Remski wrote:
+>> On 06/02/2014 11:40 AM, Johan Hovold wrote:
+>>> [ Please avoid top-posting. ]
+>>>
+>>> On Mon, Jun 02, 2014 at 11:16:11AM -0400, Mike Remski wrote:
+>>>> Thanks Johan, that's why I looked at the cross references for ftdi_sio.c
+>>>> over on
+>>>> http://lxr.free-electrons.com/source/drivers/usb/serial/ftdi_sio.c,
+>>>> latest version it's showing is 3.14.  It appears that the ftdi_sio code
+>>>> is largely the same as in 2.6.32, particularly in the
+>>>> ftdi_set_max_packet_size() function.
+>>> Lots of things have changed since v2.6.32 and not just in the driver
+>>> itself but in all the infrastructure it relies on.
+>>>
+>>>> I'm trying to verify if the "number of endpoints is 0" is a valid
+>>>> situation.
+>>> No, that is not normal, but it should not crash the driver if it's a
+>>> hardware issue. What is the lsusb -v output of your device (make sure
+>>> the ftdi_sio driver isn't loaded when connecting the device).
+>>>
+>>> And what happens if you plug it into a machine running a recent kernel?
+>>>
+>>> Thanks,
+>>> Johan
+>> Plugging device into a system running Redhat, kernel 3.3.4 crashes the
+>> system.
+> 3.3.4 is still _many_ years old.  Please try something from 2014 at the
+> latest...
 
-That's still entirely disgusting, and afaict entirely redundant. You can
-do that test in the operators below just fine.
+Understood Greg;  it was the best I had immediately available.  I am 
+working on setting up/finding a later kernel at the moment.
 
-> +#define ATOMIC_POINTER_INIT(i)	{ .__t = (i) }
-> +
-> +#define atomic_pointer_read(v)	((typeof((v)->__t))atomic_long_read(&(v)->__a))
-> +
-> +#define atomic_pointer_set(v, i)		({			\
-> +	typeof((v)->__t) __i = (i);					\
-> +	atomic_long_set(&(v)->__a, (long)(__i));			\
-> +})
-> +
-> +#define atomic_pointer_xchg(v, i)		({			\
-> +	typeof((v)->__t) __i = (i);					\
-> +	(typeof((v)->__t))atomic_long_xchg(&(v)->__a, (long)(__i));	\
-> +})
-> +
-> +#define atomic_pointer_cmpxchg(v, old, new)	({			\
-> +	typeof((v)->__t) __old = (old);					\
-> +	typeof((v)->__t) __new = (new);					\
-> +	(typeof((v)->__t))atomic_long_cmpxchg(&(v)->__a, (long)(__old), (long)(__new));\
-> +})
+thanks
 
-And I can't say I'm a particular fan of these ops either, as alternative
-I'm almost inclined to just exclude parisc from using opt spinning.
-
-That said, this patch still doesn't address the far more interesting
-problem of actually finding these issues for these few weird archs.
-
+-- 
+Office: (978)401-4032 (x123 internally)
+Cell: (603) 759-6953
 
