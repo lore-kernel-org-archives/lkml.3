@@ -1,50 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753479AbaFBQAK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 12:00:10 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:60580 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751251AbaFBQAI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 12:00:08 -0400
-Message-ID: <538C9F83.1010800@wwwdotorg.org>
-Date: Mon, 02 Jun 2014 10:00:03 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1753698AbaFBQBv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 12:01:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48105 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752132AbaFBQBt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 12:01:49 -0400
+Date: Mon, 2 Jun 2014 12:00:45 -0400 (EDT)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, jejb@parisc-linux.org,
+        deller@gmx.de, John David Anglin <dave.anglin@bell.net>,
+        linux-parisc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        paulmck@linux.vnet.ibm.com
+cc: chegu_vinod@hp.com, Waiman.Long@hp.com, tglx@linutronix.de,
+        riel@redhat.com, akpm@linux-foundation.org, davidlohr@hp.com,
+        hpa@zytor.com, andi@firstfloor.org, aswin@hp.com, scott.norton@hp.com,
+        Jason Low <jason.low2@hp.com>
+Subject: [PATCH v2] introduce atomic_pointer to fix a race condition in
+ cancelable mcs spinlocks
+In-Reply-To: <alpine.LRH.2.02.1406011342470.20831@file01.intranet.prod.int.rdu2.redhat.com>
+Message-ID: <alpine.LRH.2.02.1406021158360.20627@file01.intranet.prod.int.rdu2.redhat.com>
+References: <alpine.LRH.2.02.1406011342470.20831@file01.intranet.prod.int.rdu2.redhat.com>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-To: Marcel Ziswiler <marcel@ziswiler.com>
-CC: thierry.reding@gmail.com, arm@kernel.org, linux@arm.linux.org.uk,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
-        stefan@agner.ch
-Subject: Re: [PATCH 1/3] arm: multi_v7: enable igb, stmpe, spidev, lm95245,
- pwm leds
-References: <cc612cd3f24f01cfc8fd3e81b1027ff94862e8b4.1401700579.git.marcel@ziswiler.com>
-In-Reply-To: <cc612cd3f24f01cfc8fd3e81b1027ff94862e8b4.1401700579.git.marcel@ziswiler.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/02/2014 03:43 AM, Marcel Ziswiler wrote:
-> The NVIDIA Tegra 3 based Apalis T30 module contains an Intel i210 resp.
-> i211 gigabit Ethernet controller, an STMPE811 ADC/touch controller,
-> SPI bus and PWM LEDs generically accessible from user space and an
-> LM95245 temperature sensor chip. The later four can also be found on
-> the Colibri T30 module.
-> 
-> While at it move the NEON entry down to its proper place to have it all
-> nicely ordered again.
-> 
-> Signed-off-by: Marcel Ziswiler <marcel@ziswiler.com>
-> ---
-> BTW: How about TEGRA_EMC_SCALING_ENABLE
+The cancelable MCS spinlocks introduced in
+fb0527bd5ea99bfeb2dd91e3c1433ecf745d6b99 break the kernel on PA-RISC.
 
-I thought a patch was sent to remove that. Perhaps the patch was only
-sent to tegra_defconfig.
+How to reproduce:
+* Use a machine with two dual-core PA-8900 processors.
+* Run the LVM testsuite and compile the kernel in an endless loop at the
+  same time.
+* Wait for an hour or two and the kernel locks up.
 
-> ... MTD_M25P80 which depends on MTD_SPI_NOR
+You see some process locked up in osd_lock and osq_unlock:
+INFO: rcu_sched self-detected stall on CPU { 2}  (t=18000 jiffies g=247335 c=247334 q=101)
+CPU: 2 PID: 21006 Comm: lvm Tainted: G           O  3.15.0-rc7 #9
+Backtrace:
+ [<000000004013e8a4>] show_stack+0x14/0x20
+ [<00000000403016f0>] dump_stack+0x88/0x100
+ [<00000000401b8738>] rcu_check_callbacks+0x4a8/0x900
+ [<00000000401714c4>] update_process_times+0x64/0xc0
+ [<000000004013fa24>] timer_interrupt+0x19c/0x200
+ [<00000000401ad8d8>] handle_irq_event_percpu+0xa8/0x238
+ [<00000000401b2454>] handle_percpu_irq+0x9c/0xd0
+ [<00000000401acc40>] generic_handle_irq+0x40/0x50
+ [<00000000401408cc>] do_cpu_irq_mask+0x1ac/0x298
+ [<000000004012c074>] intr_return+0x0/0xc
+ [<00000000401a609c>] osq_lock+0xc4/0x178
+ [<0000000040138d24>] __mutex_lock_slowpath+0x1cc/0x290
+ [<0000000040138e78>] mutex_lock+0x90/0x98
+ [<00000000402a5614>] kernfs_activate+0x6c/0x1a0
+ [<00000000402a59e0>] kernfs_add_one+0x140/0x190
+ [<00000000402a75ec>] __kernfs_create_file+0xa4/0xf8
 
-I've seen patches to fix that too.
+INFO: rcu_sched self-detected stall on CPU { 3}  (t=18473 jiffies g=247335 c=247334 q=101)
+CPU: 3 PID: 21051 Comm: udevd Tainted: G           O  3.15.0-rc7 #9
+Backtrace:
+ [<000000004013e8a4>] show_stack+0x14/0x20
+ [<00000000403016f0>] dump_stack+0x88/0x100
+ [<00000000401b8738>] rcu_check_callbacks+0x4a8/0x900
+ [<00000000401714c4>] update_process_times+0x64/0xc0
+ [<000000004013fa24>] timer_interrupt+0x19c/0x200
+ [<00000000401ad8d8>] handle_irq_event_percpu+0xa8/0x238
+ [<00000000401b2454>] handle_percpu_irq+0x9c/0xd0
+ [<00000000401acc40>] generic_handle_irq+0x40/0x50
+ [<00000000401408cc>] do_cpu_irq_mask+0x1ac/0x298
+ [<000000004012c074>] intr_return+0x0/0xc
+ [<00000000401a6220>] osq_unlock+0xd0/0xf8
+ [<0000000040138dcc>] __mutex_lock_slowpath+0x274/0x290
+ [<0000000040138e78>] mutex_lock+0x90/0x98
+ [<00000000402a3a90>] kernfs_dop_revalidate+0x48/0x108
+ [<0000000040233310>] lookup_fast+0x320/0x348
+ [<0000000040234600>] link_path_walk+0x190/0x9d8
+
+
+The code in kernel/locking/mcs_spinlock.c is broken.
+
+PA-RISC doesn't have xchg or cmpxchg atomic instructions like other
+processors. It only has ldcw and ldcd instructions that load a word (or
+doubleword) from memory and atomically store zero at the same location.
+These instructions can only be used to implement spinlocks, direct
+implementation of other atomic operations is impossible.
+
+Consequently, Linux xchg and cmpxchg functions are implemented in such a
+way that they hash the address, use the hash to index a spinlock, take the
+spinlock, perform the xchg or cmpxchg operation non-atomically and drop
+the spinlock.
+
+If you write to some variable with ACCESS_ONCE and use cmpxchg or xchg at
+the same time, you break it. ACCESS_ONCE doesn't take the hashed spinlock,
+so, in this case, cmpxchg or xchg isn't really atomic at all.
+
+This patch fixes the bug by introducing a new type atomic_pointer and
+replacing the offending pointer with it. atomic_pointer_set (calling
+atomic_long_set) takes the hashed spinlock, so it avoids the race
+condition. We perform some gcc-specific compiler tricks to warn on pointer
+type mismatch.
+
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+
+---
+ include/asm-generic/atomic-long.h |   27 +++++++++++++++++++++++++++
+ kernel/locking/mcs_spinlock.c     |   16 ++++++++--------
+ kernel/locking/mcs_spinlock.h     |    4 +++-
+ 3 files changed, 38 insertions(+), 9 deletions(-)
+
+Index: linux-3.15-rc8/kernel/locking/mcs_spinlock.c
+===================================================================
+--- linux-3.15-rc8.orig/kernel/locking/mcs_spinlock.c	2014-06-02 17:11:16.000000000 +0200
++++ linux-3.15-rc8/kernel/locking/mcs_spinlock.c	2014-06-02 17:11:50.000000000 +0200
+@@ -47,8 +47,8 @@ osq_wait_next(struct optimistic_spin_que
+ 		 * wait for either @lock to point to us, through its Step-B, or
+ 		 * wait for a new @node->next from its Step-C.
+ 		 */
+-		if (node->next) {
+-			next = xchg(&node->next, NULL);
++		if (atomic_pointer_read(&node->next)) {
++			next = atomic_pointer_xchg(&node->next, NULL);
+ 			if (next)
+ 				break;
+ 		}
+@@ -65,13 +65,13 @@ bool osq_lock(struct optimistic_spin_que
+ 	struct optimistic_spin_queue *prev, *next;
+ 
+ 	node->locked = 0;
+-	node->next = NULL;
++	atomic_pointer_set(&node->next, NULL);
+ 
+ 	node->prev = prev = xchg(lock, node);
+ 	if (likely(prev == NULL))
+ 		return true;
+ 
+-	ACCESS_ONCE(prev->next) = node;
++	atomic_pointer_set(&prev->next, node);
+ 
+ 	/*
+ 	 * Normally @prev is untouchable after the above store; because at that
+@@ -103,8 +103,8 @@ unqueue:
+ 	 */
+ 
+ 	for (;;) {
+-		if (prev->next == node &&
+-		    cmpxchg(&prev->next, node, NULL) == node)
++		if (atomic_pointer_read(&prev->next) == node &&
++		    atomic_pointer_cmpxchg(&prev->next, node, NULL) == node)
+ 			break;
+ 
+ 		/*
+@@ -144,7 +144,7 @@ unqueue:
+ 	 */
+ 
+ 	ACCESS_ONCE(next->prev) = prev;
+-	ACCESS_ONCE(prev->next) = next;
++	atomic_pointer_set(&prev->next, next);
+ 
+ 	return false;
+ }
+@@ -163,7 +163,7 @@ void osq_unlock(struct optimistic_spin_q
+ 	/*
+ 	 * Second most likely case.
+ 	 */
+-	next = xchg(&node->next, NULL);
++	next = atomic_pointer_xchg(&node->next, NULL);
+ 	if (next) {
+ 		ACCESS_ONCE(next->locked) = 1;
+ 		return;
+Index: linux-3.15-rc8/kernel/locking/mcs_spinlock.h
+===================================================================
+--- linux-3.15-rc8.orig/kernel/locking/mcs_spinlock.h	2014-06-02 17:11:16.000000000 +0200
++++ linux-3.15-rc8/kernel/locking/mcs_spinlock.h	2014-06-02 17:11:50.000000000 +0200
+@@ -13,6 +13,7 @@
+ #define __LINUX_MCS_SPINLOCK_H
+ 
+ #include <asm/mcs_spinlock.h>
++#include <linux/atomic.h>
+ 
+ struct mcs_spinlock {
+ 	struct mcs_spinlock *next;
+@@ -119,7 +120,8 @@ void mcs_spin_unlock(struct mcs_spinlock
+  */
+ 
+ struct optimistic_spin_queue {
+-	struct optimistic_spin_queue *next, *prev;
++	atomic_pointer(struct optimistic_spin_queue *) next;
++	struct optimistic_spin_queue *prev;
+ 	int locked; /* 1 if lock acquired */
+ };
+ 
+Index: linux-3.15-rc8/include/asm-generic/atomic-long.h
+===================================================================
+--- linux-3.15-rc8.orig/include/asm-generic/atomic-long.h	2014-06-02 17:11:17.000000000 +0200
++++ linux-3.15-rc8/include/asm-generic/atomic-long.h	2014-06-02 17:11:50.000000000 +0200
+@@ -255,4 +255,31 @@ static inline long atomic_long_add_unles
+ 
+ #endif  /*  BITS_PER_LONG == 64  */
+ 
++#define atomic_pointer(type)						\
++union {									\
++	atomic_long_t __a;						\
++	type __t;							\
++	char __check_sizeof[sizeof(type) == sizeof(long) ? 1 : -1];	\
++}
++
++#define ATOMIC_POINTER_INIT(i)	{ .__t = (i) }
++
++#define atomic_pointer_read(v)	((typeof((v)->__t))atomic_long_read(&(v)->__a))
++
++#define atomic_pointer_set(v, i)		({			\
++	typeof((v)->__t) __i = (i);					\
++	atomic_long_set(&(v)->__a, (long)(__i));			\
++})
++
++#define atomic_pointer_xchg(v, i)		({			\
++	typeof((v)->__t) __i = (i);					\
++	(typeof((v)->__t))atomic_long_xchg(&(v)->__a, (long)(__i));	\
++})
++
++#define atomic_pointer_cmpxchg(v, old, new)	({			\
++	typeof((v)->__t) __old = (old);					\
++	typeof((v)->__t) __new = (new);					\
++	(typeof((v)->__t))atomic_long_cmpxchg(&(v)->__a, (long)(__old), (long)(__new));\
++})
++
+ #endif  /*  _ASM_GENERIC_ATOMIC_LONG_H  */
+
