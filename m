@@ -1,65 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755158AbaFBRQC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 13:16:02 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:53242 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754969AbaFBRP4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 13:15:56 -0400
-Message-ID: <538CB085.5000502@zytor.com>
-Date: Mon, 02 Jun 2014 10:12:37 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1753145AbaFBRRo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 13:17:44 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:46451 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750927AbaFBRRm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 13:17:42 -0400
+Date: Mon, 2 Jun 2014 19:17:39 +0200
+From: Robin Schroer <sulamiification@gmail.com>
+To: Damien Lespiau <damien.lespiau@intel.com>, intel-gfx@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+Subject: Re: [Intel-gfx] [PATCH] drivers/gpu/drm/i915/dma: style fixes
+Message-ID: <20140602171739.GB30448@shodan.fritz.box>
+References: <20140602145939.GA16534@shodan.fritz.box>
+ <20140602151008.GF20418@strange.amr.corp.intel.com>
+ <20140602152132.GT19050@phenom.ffwll.local>
 MIME-Version: 1.0
-To: "Theodore Ts'o" <tytso@mit.edu>, Chuck Lever <chuck.lever@oracle.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Dave Chinner <david@fromorbit.com>,
-        LKML Kernel <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
-        joseph@codesourcery.com, john.stultz@linaro.org,
-        Christoph Hellwig <hch@infradead.org>, tglx@linutronix.de,
-        geert@linux-m68k.org, lftan@altera.com,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>, xfs@oss.sgi.com,
-        Linux NFS Mailing List <linux-nfs@vger.kernel.org>
-Subject: Re: [RFC 11/32] xfs: convert to struct inode_time
-References: <1401480116-1973111-1-git-send-email-arnd@arndb.de> <8618458.1EVJCoVbkH@wuerfel> <alpine.LFD.2.11.1406012121430.17310@knanqh.ubzr> <4178301.j9kWdGCRLC@wuerfel> <6868F108-F0B2-423F-AE31-90DF86A5B7DD@oracle.com> <20140602153124.GH30598@thunk.org>
-In-Reply-To: <20140602153124.GH30598@thunk.org>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140602152132.GT19050@phenom.ffwll.local>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/02/2014 08:31 AM, Theodore Ts'o wrote:
-> 
-> I wonder if it would make sense to try to promulgate via the Austin
-> group, and possibly the C standards committee the concept of a bit
-> pattern (that might commonly be INT_MAX or UINT_MAX) that means "time
-> unknown", or "time indefinite" or "we couldn't encode the time".
-> 
+On Mon, Jun 02, 2014 at 05:21:32PM +0200, Daniel Vetter wrote:
+> On Mon, Jun 02, 2014 at 04:10:08PM +0100, Damien Lespiau wrote:
+> > On Mon, Jun 02, 2014 at 04:59:39PM +0200, Robin Schroer wrote:
+> > > Fixed several double space pointer notations, and added one newline
+> > >
+> > > Signed-off-by: Robin Schroer <sulamiification@gmail.com>
+> >
+> > Reviewed-by: Damien Lespiau <damien.lespiau@intel.com>
+>
+> Queued for -next, thanks for the patch. Aside: If you want to do some
+> janitorial tasks in drm/i915, here's a list:
+>
+> http://www.x.org/wiki/DRMJanitors/
+>
+> Imo pure coding-style fixes are fairly pointless, at least if their
+> free-standing.
+> -Daniel
+> -- 
+> Daniel Vetter
+> Software Engineer, Intel Corporation
+> +41 (0) 79 365 57 48 - http://blog.ffwll.ch
 
-(time_t)-1 already has this meaning for some calls (e.g. time(2)).
-However, this also means Wed Dec 31 23:59:59 UTC 1969, and unfortunately
-something similar applies to all possible bit patterns, certainly within
-the range of an int.
+Thanks, I'll look into it.
 
-> We would then teach gmtime(3) and asctime(3) to print some appropriate
-> message, and we could teach programs like find (with the -mtime)
-> option, make, tmpwatch, et. al., that they can't make any presumption
-> about the comparibility of any timestamp which has a value of
-> TIME_UNDEFINIED.
-> 
-> It would be problematic for time(2) or gettimeofday(2) to return
-> TIME_UNDEFINED, since there are programs that care about time ticking
-> forward, but I could imagine a new interface which would be permitted
-> to return a flag indicating that we don't know the current time
-> (because the CMOS battery had run down, etc.) so instead we're going
-> to be counting the number of seconds since the system was booted.
+-- 
 
-This assumes that we actually know that that is the case, which may be
-an aggressive assumption.
-
-	-hpa
-
+Robin Schroer
 
