@@ -1,186 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752016AbaFBVgu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 17:36:50 -0400
-Received: from mga09.intel.com ([134.134.136.24]:47039 "EHLO mga09.intel.com"
+	id S932213AbaFBVlp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 17:41:45 -0400
+Received: from mga11.intel.com ([192.55.52.93]:59062 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751581AbaFBVgs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 17:36:48 -0400
+	id S1751830AbaFBVgu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 17:36:50 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.98,959,1392192000"; 
-   d="scan'208";a="521668140"
-Subject: [PATCH 02/10] mm: pagewalk: always skip hugetlbfs except when explicitly handled
+   d="scan'208";a="548709641"
+Subject: [PATCH 00/10] mm: pagewalk: huge page cleanups and VMA passing
 To: linux-kernel@vger.kernel.org
 Cc: linux-mm@kvack.org, kirill.shutemov@linux.intel.com,
         Dave Hansen <dave@sr71.net>
 From: Dave Hansen <dave@sr71.net>
-Date: Mon, 02 Jun 2014 14:36:47 -0700
-References: <20140602213644.925A26D0@viggo.jf.intel.com>
-In-Reply-To: <20140602213644.925A26D0@viggo.jf.intel.com>
-Message-Id: <20140602213647.E5C5D134@viggo.jf.intel.com>
+Date: Mon, 02 Jun 2014 14:36:44 -0700
+Message-Id: <20140602213644.925A26D0@viggo.jf.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The hugetlbfs and THP support in the walk_page_range() code was
+mostly an afterthought.
 
-From: Dave Hansen <dave.hansen@linux.intel.com>
+We also _tried_ to have the pagewalk code be concerned only with
+page tables and *NOT* VMAs.  We lost that battle since 80% of
+the page walkers just pass the VMA along anyway.
 
-The short story:
-
-The walk_page_range() code is fragile for hugetlbfs VMAs.  Each
-walker instance must either exclude hugetlbfs from being walked,
-or add a ->hugetlb_entry handler.  If this is not done, the code
-will go off the rails and start clearing huge page table entries.
-
-This patch removes that requirement on the walkers.  They can
-merrily call walk_page_range() on hugetlbfs areas, and those
-areas will simply be skipped inside the page walker code if they
-have not set up a handler.
-
-This makes the code more robust, shorter, and makes it more
-intuitive to write a page table walker.  Yay.
-
-Long story:
-
-I was looking at the page walker code and thought I found a bug.
-If the walker hits a hugetlbfs VMA where walk->hugetlb_entry was
-not set, it would hit the if(), and the clear out the pgd
-thinking it was bad.
-
-This essentially means that *EVERY* page walker has to *KNOW* to
-either exclude hugetlbfs VMAs, or set a ->hugetlb_entry handler.
-The good news is that all 9 users of walk_page_range() do this
-implicitly or explicitly.  The bad news is that it took me an
-hour to convince myself of this, and future walk_page_range()
-instances are vulnerable to making this mistake.  I think the
-madvise() use was probably just lucky (details below).
-
-Here's the code trimmed down.  Note what happens if we have a
-is_vm_hugetlb_page(), !walk->hugetlb_entry, and a huge page pgd
-entry in 'pgd' (or any of the lower levels).
-
-int walk_page_range(unsigned long addr, unsigned long end, ...
-{
-...
-	vma = find_vma(walk->mm, addr);
-        if (vma) {
-		if (walk->hugetlb_entry && is_vm_hugetlb_page(vma)) {
-			walk_hugetlb_range(vma, addr, next, walk);
-			...
-			continue;
-		}
-	}
-	if (pgd_none_or_clear_bad(pgd)) {
-
-
-There are currently 9 users of walk_page_range().  They handle
-hugetlbfs pages in 5 ways:
-
-/proc/$pid/smaps:
-/proc/$pid/clear_refs:
-cgroup precharge:
-cgroup move charge:
-	checks VMA explicitly for hugetblfs and skips, does not set
-	->hugetlb_entry (this patch removes the now unnecessary
-	hugetlbfs checks for these)
-
-openrisc dma alloc:
-	works on kernel memory, so no hugetlbfs, also arch does not
-	even support hugetlbfs
-
-powerpc subpage protection:
-	uses arch-specific is_hugepage_only_range() check
-
-/proc/$pid/pagemap:
-/proc/$pid/numa_map:
-	sets ->hugetlb_entry
-	(these are unaffected by this patch)
-
-MADV_WILLNEED:
-	does not set ->hugetlb_entry
-	only called via:
-	madvise_willneed() {
-		if (!vma->file)
-			force_swapin_readahead(...) {
-				walk_page_range(...)
-			}
-	}
-	That !vma->file check just _happens_ to cover hugetlbfs
-  	vmas since they are always file-backed (or at least have
-	vma->file set as far as I can tell)
-
-	(this case is unaffected by this patch)
-
-Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
----
-
- b/fs/proc/task_mmu.c |    4 +---
- b/mm/memcontrol.c    |    4 ----
- b/mm/pagewalk.c      |    5 ++++-
- 3 files changed, 5 insertions(+), 8 deletions(-)
-
-diff -puN fs/proc/task_mmu.c~pagewalk-always-skip-hugetlbfs-except-when-explicitly-handled-1 fs/proc/task_mmu.c
---- a/fs/proc/task_mmu.c~pagewalk-always-skip-hugetlbfs-except-when-explicitly-handled-1	2014-06-02 14:20:19.210803615 -0700
-+++ b/fs/proc/task_mmu.c	2014-06-02 14:20:19.218803974 -0700
-@@ -590,7 +590,7 @@ static int show_smap(struct seq_file *m,
- 	memset(&mss, 0, sizeof mss);
- 	mss.vma = vma;
- 	/* mmap_sem is held in m_start */
--	if (vma->vm_mm && !is_vm_hugetlb_page(vma))
-+	if (vma->vm_mm)
- 		walk_page_range(vma->vm_start, vma->vm_end, &smaps_walk);
- 
- 	show_map_vma(m, vma, is_pid);
-@@ -829,8 +829,6 @@ static ssize_t clear_refs_write(struct f
- 			mmu_notifier_invalidate_range_start(mm, 0, -1);
- 		for (vma = mm->mmap; vma; vma = vma->vm_next) {
- 			cp.vma = vma;
--			if (is_vm_hugetlb_page(vma))
--				continue;
- 			/*
- 			 * Writing 1 to /proc/pid/clear_refs affects all pages.
- 			 *
-diff -puN mm/memcontrol.c~pagewalk-always-skip-hugetlbfs-except-when-explicitly-handled-1 mm/memcontrol.c
---- a/mm/memcontrol.c~pagewalk-always-skip-hugetlbfs-except-when-explicitly-handled-1	2014-06-02 14:20:19.212803706 -0700
-+++ b/mm/memcontrol.c	2014-06-02 14:20:19.220804064 -0700
-@@ -6821,8 +6821,6 @@ static unsigned long mem_cgroup_count_pr
- 			.mm = mm,
- 			.private = vma,
- 		};
--		if (is_vm_hugetlb_page(vma))
--			continue;
- 		walk_page_range(vma->vm_start, vma->vm_end,
- 					&mem_cgroup_count_precharge_walk);
- 	}
-@@ -7087,8 +7085,6 @@ retry:
- 			.mm = mm,
- 			.private = vma,
- 		};
--		if (is_vm_hugetlb_page(vma))
--			continue;
- 		ret = walk_page_range(vma->vm_start, vma->vm_end,
- 						&mem_cgroup_move_charge_walk);
- 		if (ret)
-diff -puN mm/pagewalk.c~pagewalk-always-skip-hugetlbfs-except-when-explicitly-handled-1 mm/pagewalk.c
---- a/mm/pagewalk.c~pagewalk-always-skip-hugetlbfs-except-when-explicitly-handled-1	2014-06-02 14:20:19.214803794 -0700
-+++ b/mm/pagewalk.c	2014-06-02 14:20:19.220804064 -0700
-@@ -115,6 +115,9 @@ static int walk_hugetlb_range(struct vm_
- 	pte_t *pte;
- 	int err = 0;
- 
-+	if (!walk->hugetlb_entry)
-+		return 0;
-+
- 	do {
- 		next = hugetlb_entry_end(h, addr, end);
- 		pte = huge_pte_offset(walk->mm, addr & hmask);
-@@ -208,7 +211,7 @@ int walk_page_range(unsigned long addr,
- 			 * architecture and we can't handled it in the same
- 			 * manner as non-huge pages.
- 			 */
--			if (walk->hugetlb_entry && is_vm_hugetlb_page(vma)) {
-+			if (is_vm_hugetlb_page(vma)) {
- 				if (vma->vm_end < next)
- 					next = vma->vm_end;
- 				/*
-_
+This does a few cleanups and adds a new flavor of walker which
+can be stupid^Wsimple and not have to be explicitly taught about
+THP.
