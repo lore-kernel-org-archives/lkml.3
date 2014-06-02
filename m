@@ -1,66 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753193AbaFBS5Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 14:57:25 -0400
-Received: from mail-yk0-f170.google.com ([209.85.160.170]:37341 "EHLO
-	mail-yk0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751318AbaFBS5X (ORCPT
+	id S1753233AbaFBS55 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 14:57:57 -0400
+Received: from mail-yh0-f48.google.com ([209.85.213.48]:48081 "EHLO
+	mail-yh0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751217AbaFBS5x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 14:57:23 -0400
+	Mon, 2 Jun 2014 14:57:53 -0400
+Date: Mon, 2 Jun 2014 14:57:39 -0400
+From: Eduardo Valentin <edubezval@gmail.com>
+To: Amit Kachhap <amit.kachhap@gmail.com>
+Cc: Javi Merino <javi.merino@arm.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Zhang Rui <rui.zhang@intel.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "lenb@kernel.org" <lenb@kernel.org>
+Subject: Re: [PATCH v1 2/6] thermal: cpu_cooling: Support passing driver
+ private data.
+Message-ID: <20140602185739.GC5902@developer>
+References: <1401351334-11210-1-git-send-email-amit.daniel@samsung.com>
+ <1401351334-11210-3-git-send-email-amit.daniel@samsung.com>
+ <20140529120624.GA2593@e104805>
+ <CADGdYn6_cxfxR9+CA+pez00ViOVpTbv=r3eaGsk94CJ8PhF1tA@mail.gmail.com>
 MIME-Version: 1.0
-X-Originating-IP: [84.49.235.91]
-In-Reply-To: <20140521.154744.124910385161203311.davem@davemloft.net>
-References: <20140515.153721.2222505094570361361.davem@davemloft.net>
- <1400188890-2038-1-git-send-email-teg@jklm.no> <20140521.154744.124910385161203311.davem@davemloft.net>
-From: Tom Gundersen <teg@jklm.no>
-Date: Mon, 2 Jun 2014 20:57:02 +0200
-Message-ID: <CAG-2HqUEqz26YMTDHNVHUEtWDcaVrq3EKX-e8-9wnm4Y1XCUag@mail.gmail.com>
-Subject: Re: [PATCH v2] net: tunnels - enable module autoloading
-To: David Miller <davem@davemloft.net>
-Cc: netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Patrick McHardy <kaber@trash.net>, yoshfuji@linux-ipv6.org,
-        jmorris@namei.org, Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CADGdYn6_cxfxR9+CA+pez00ViOVpTbv=r3eaGsk94CJ8PhF1tA@mail.gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 21, 2014 at 9:47 PM, David Miller <davem@davemloft.net> wrote:
-> From: Tom Gundersen <teg@jklm.no>
-> Date: Thu, 15 May 2014 23:21:30 +0200
->
->> Enable the module alias hookup to allow tunnel modules to be autoloaded on demand.
->>
->> This is in line with how most other netdev kinds work, and will allow userspace
->> to create tunnels without having CAP_SYS_MODULE.
->>
->> Signed-off-by: Tom Gundersen <teg@jklm.no>
->> ---
->> v2: add ';'
->>
->> Hi Dave,
->>
->> I must have sent out the wrong version of this patch. Sorry for the inconvenience!
->
-> Applied to net-next
+On Mon, Jun 02, 2014 at 02:54:04PM +0530, Amit Kachhap wrote:
+> On 5/29/14, Javi Merino <javi.merino@arm.com> wrote:
+> > Hi Amit,
+> >
+> > One minor comment.
+> >
+> > On Thu, May 29, 2014 at 09:15:30AM +0100, Amit Daniel Kachhap wrote:
+> >> This patch allows the caller of cpufreq cooling APIs to register along
+> >> with their driver data which will be useful while receiving any cooling
+> >> states
+> >> notifications.
+> >> This patch is in preparation to add notfication support for cpufrequency
+> >> cooling changes. This change also removes the unnecessary exposing of
+> >> internal housekeeping structure via thermal_cooling_device->devdata to
+> >> the
+> >> users of cpufreq cooling APIs. As part of this implmentation, this private
+> >> local
+> >> structure (cpufreq_dev) is now stored in a list and scanned for each call
+> >> to
+> >> cpu cooling interfaces.
+> >>
+> >> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+> >> ---
+> >>  Documentation/thermal/cpu-cooling-api.txt          |    3 +-
+> >>  drivers/thermal/cpu_cooling.c                      |   89
+> >> ++++++++++++++++----
+> >>  drivers/thermal/db8500_cpufreq_cooling.c           |    2 +-
+> >>  drivers/thermal/samsung/exynos_thermal_common.c    |    2 +-
+> >>  drivers/thermal/ti-soc-thermal/ti-thermal-common.c |    2 +-
+> >>  include/linux/cpu_cooling.h                        |    5 +-
+> >>  6 files changed, 80 insertions(+), 23 deletions(-)
+> >>
+> >> diff --git a/Documentation/thermal/cpu-cooling-api.txt
+> >> b/Documentation/thermal/cpu-cooling-api.txt
+> >> index fca24c9..aaa07c6 100644
+> >> --- a/Documentation/thermal/cpu-cooling-api.txt
+> >> +++ b/Documentation/thermal/cpu-cooling-api.txt
+> >> @@ -17,13 +17,14 @@ the user. The registration APIs returns the cooling
+> >> device pointer.
+> >>
+> >>  1.1 cpufreq registration/unregistration APIs
+> >>  1.1.1 struct thermal_cooling_device *cpufreq_cooling_register(
+> >> -       struct cpumask *clip_cpus)
+> >> +       struct cpumask *clip_cpus, void *devdata)
+> >>
+> >>      This interface function registers the cpufreq cooling device with the
+> >> name
+> >>      "thermal-cpufreq-%x". This api can support multiple instances of
+> >> cpufreq
+> >>      cooling devices.
+> >>
+> >>     clip_cpus: cpumask of cpus where the frequency constraints will
+> >> happen.
+> >> +   devdata: driver private data pointer.
+> >>
+> >>  1.1.2 void cpufreq_cooling_unregister(struct thermal_cooling_device
+> >> *cdev)
+> >>
+> >> diff --git a/drivers/thermal/cpu_cooling.c
+> >> b/drivers/thermal/cpu_cooling.c
+> >> index 16388b0..6d145d5 100644
+> >> --- a/drivers/thermal/cpu_cooling.c
+> >> +++ b/drivers/thermal/cpu_cooling.c
+> >> @@ -50,16 +50,18 @@ struct cpufreq_cooling_device {
+> >>         unsigned int cpufreq_state;
+> >>         unsigned int cpufreq_val;
+> >>         struct cpumask allowed_cpus;
+> >> +       struct list_head node;
+> >>  };
+> >>  static DEFINE_IDR(cpufreq_idr);
+> >>  static DEFINE_MUTEX(cooling_cpufreq_lock);
+> >>
+> >> -static unsigned int cpufreq_dev_count;
+> >> -
+> >>  /* notify_table passes value to the CPUFREQ_ADJUST callback function. */
+> >>  #define NOTIFY_INVALID NULL
+> >>  static DEFINE_PER_CPU(struct cpufreq_cooling_device *, notify_device);
+> >>
+> >> +/* A list to hold all the cpufreq cooling devices registered */
+> >> +static LIST_HEAD(cpufreq_cooling_list);
+> >> +
+> >>  /**
+> >>   * get_idr - function to get a unique id.
+> >>   * @idr: struct idr * handle used to create a id.
+> >> @@ -98,6 +100,26 @@ static void release_idr(struct idr *idr, int id)
+> >>
+> >>  /* Below code defines functions to be used for cpufreq as cooling device
+> >> */
+> >>
+> >> +/**
+> >> + * cpufreq_cooling_get_info - function to cpufreq_dev for the
+> >> corresponding cdev
+> >> + * @cdev: pointer of the cooling device
+> >> + *
+> >> + * This function will loop through the cpufreq_cooling_device list and
+> >> + * return the matching device
+> >> + *
+> >
+> > You should add a "Locking:" section here which documents that this
+> > function must be called with cooling_cpufreq_lock held.
+> Yes agreed. Will update in the next version.
 
-Thanks!
+One good practice is to check the output of scripts/kerneldoc on your
+changed file.
 
-> although I never saw a firm conclusion in the
-> thread for the original patch where there was a discussion about
-> whether this is already possible or not.
+Cheers
 
-It is my understanding that this is not already possible, which is why
-the MODULE_ALIAS_RTNL_LINK exists.
-
-Would this patch be suitable for stable? While it does not fix a
-regression, it appears to fix the intended behaviour of
-MODULE_ALIAS_RTNL_LINK?
-
-What I'll do in userspace is to drop CAP_SYS_MODULE and just tell
-people who want tunnels to wait for a new kernel (or backport the
-patch), but having it in stable would obviously make it simpler.
-
-Cheers,
-
-Tom
+> 
+> Thanks,
+> Amit
+> >
+> > Cheers,
+> > Javi
+> >
+> >> + * Return: cpufreq_cooling_device if matched with the cdev or NULL if
+> >> not
+> >> + * matched.
+> >> + */
+> >> +static inline struct cpufreq_cooling_device *
+> >> +cpufreq_cooling_get_info(struct thermal_cooling_device *cdev)
+> >> +{
+> >> +       struct cpufreq_cooling_device *cpufreq_dev = NULL;
+> >> +       list_for_each_entry(cpufreq_dev, &cpufreq_cooling_list, node)
+> >> +               if (cpufreq_dev->cool_dev == cdev)
+> >> +                       break;
+> >> +       return cpufreq_dev;
+> >> +}
+> >> +
+> >
+> >
+> >
