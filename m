@@ -1,99 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752546AbaFBVhl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 17:37:41 -0400
-Received: from mga02.intel.com ([134.134.136.20]:22482 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752252AbaFBVg6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 17:36:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,959,1392192000"; 
-   d="scan'208";a="550474709"
-Subject: [PATCH 10/10] mm: pagewalk: use locked walker for /proc/pid/numa_maps
-To: linux-kernel@vger.kernel.org
-Cc: linux-mm@kvack.org, kirill.shutemov@linux.intel.com,
-        Dave Hansen <dave@sr71.net>
-From: Dave Hansen <dave@sr71.net>
-Date: Mon, 02 Jun 2014 14:36:57 -0700
-References: <20140602213644.925A26D0@viggo.jf.intel.com>
-In-Reply-To: <20140602213644.925A26D0@viggo.jf.intel.com>
-Message-Id: <20140602213657.A393F169@viggo.jf.intel.com>
+	id S1752690AbaFBViH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 17:38:07 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:53730 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752617AbaFBViC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 17:38:02 -0400
+From: Olof Johansson <olof@lixom.net>
+To: torvalds@linux-foundation.org
+Cc: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Olof Johansson <olof@lixom.net>
+Subject: [GIT PULL 1/7] ARM: SoC low-priority fixes for 3.16
+Date: Mon,  2 Jun 2014 14:04:04 -0700
+Message-Id: <1401743050-7379-2-git-send-email-olof@lixom.net>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1401743050-7379-1-git-send-email-olof@lixom.net>
+References: <1401743050-7379-1-git-send-email-olof@lixom.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+A small selection of fixes coming in late during the release cycle and
+not being critical enough for 3.15 inclusion.
 
-From: Dave Hansen <dave.hansen@linux.intel.com>
+----------------------------------------------------------------
 
-Same deal as the last one.  Lots of code savings using the new
-walker function.
+The following changes since commit 425553209b387fa2125df09d01a2d1c1724bd205:
+
+  Merge tag 'pci-v3.16-changes' of git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci into next
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/fixes-for-3.16
+
+for you to fetch changes up to da98f44f27d81d7fe9a41f69af4fe08c18d13b56:
+
+  Merge tag 'renesas-fixes-for-v3.16' of git://git.kernel.org/pub/scm/linux/kernel/git/horms/renesas into next/fixes-non-critical
+
+----------------------------------------------------------------
+
+Afzal Mohammed (1):
+      ARM: dts: AM4372: add l3-noc information
+
+Hans de Goede (1):
+      reset: Add of_reset_control_get to reset.h
+
+Joel Fernandes (1):
+      ARM: OMAP5: Redo THUMB mode switch on secondary CPU
+
+Johan Hovold (1):
+      ARM: dts: am335x-boneblack: remove use of ti,vcc-aux-disable-is-sleep
+
+Kuninori Morimoto (1):
+      ARM: shmobile: armadillo800eva: fixup HDMI sound flags setting
+
+Olof Johansson (3):
+      Merge branch 'reset/fixes' of git://git.pengutronix.de/git/pza/linux into next/fixes-non-critical
+      Merge tag 'omap-for-v3.16/fixes-not-urgent-signed' of git://git.kernel.org/.../tmlind/linux-omap into next/fixes-non-critical
+      Merge tag 'renesas-fixes-for-v3.16' of git://git.kernel.org/.../horms/renesas into next/fixes-non-critical
+
+Oussama Ghorbel (1):
+      ARM: OMAP2+: free use_gptimer_clksrc variable after boot
+
+Pekon Gupta (1):
+      ARM: dts: am43xx: fix starting offset of NAND.filesystem MTD partition
+
+Rajendra Nayak (1):
+      ARM: dts: DRA7: Use dra7-l3-noc instead of omap4-l3-noc
+
+Stephen Boyd (1):
+      ARM: msm: Silence readb/writeb warnings due to missing IOMEM()
+
+Tony Lindgren (1):
+      Merge branch 'pull/l3noc/dts-fixes' of https://github.com/nmenon/linux-2.6-playground into omap-for-v3.16/fixes-not-urgent
 
 
-Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
----
-
- b/fs/proc/task_mmu.c |   39 ++++++++-------------------------------
- 1 file changed, 8 insertions(+), 31 deletions(-)
-
-diff -puN fs/proc/task_mmu.c~mm-pagewalk-use-locked-walker-numa_maps fs/proc/task_mmu.c
---- a/fs/proc/task_mmu.c~mm-pagewalk-use-locked-walker-numa_maps	2014-06-02 14:20:21.518907178 -0700
-+++ b/fs/proc/task_mmu.c	2014-06-02 14:20:21.522907359 -0700
-@@ -1280,41 +1280,18 @@ static struct page *can_gather_numa_stat
- 	return page;
- }
- 
--static int gather_pte_stats(pmd_t *pmd, unsigned long addr,
--		unsigned long end, struct mm_walk *walk)
-+static int gather_stats_locked(pte_t *pte, unsigned long addr,
-+		unsigned long size, struct mm_walk *walk)
- {
--	struct numa_maps *md;
--	spinlock_t *ptl;
--	pte_t *orig_pte;
--	pte_t *pte;
--
--	md = walk->private;
-+	struct numa_maps *md = walk->private;
-+	struct page *page = can_gather_numa_stats(*pte, walk->vma, addr);
- 
--	if (pmd_trans_huge_lock(pmd, walk->vma, &ptl) == 1) {
--		pte_t huge_pte = *(pte_t *)pmd;
--		struct page *page;
--
--		page = can_gather_numa_stats(huge_pte, walk->vma, addr);
--		if (page)
--			gather_stats(page, md, pte_dirty(huge_pte),
--				     HPAGE_PMD_SIZE/PAGE_SIZE);
--		spin_unlock(ptl);
--		return 0;
--	}
-+	if (page)
-+		gather_stats(page, md, pte_dirty(*pte), size/PAGE_SIZE);
- 
--	if (pmd_trans_unstable(pmd))
--		return 0;
--	orig_pte = pte = pte_offset_map_lock(walk->mm, pmd, addr, &ptl);
--	do {
--		struct page *page = can_gather_numa_stats(*pte, walk->vma, addr);
--		if (!page)
--			continue;
--		gather_stats(page, md, pte_dirty(*pte), 1);
--
--	} while (pte++, addr += PAGE_SIZE, addr != end);
--	pte_unmap_unlock(orig_pte, ptl);
- 	return 0;
- }
-+
- #ifdef CONFIG_HUGETLB_PAGE
- static int gather_hugetbl_stats(pte_t *pte, unsigned long hmask,
- 		unsigned long addr, unsigned long end, struct mm_walk *walk)
-@@ -1366,7 +1343,7 @@ static int show_numa_map(struct seq_file
- 	memset(md, 0, sizeof(*md));
- 
- 	walk.hugetlb_entry = gather_hugetbl_stats;
--	walk.pmd_entry = gather_pte_stats;
-+	walk.locked_single_entry = gather_stats_locked;
- 	walk.private = md;
- 	walk.mm = mm;
- 
-_
+ arch/arm/boot/dts/am335x-boneblack.dts         |  1 -
+ arch/arm/boot/dts/am4372.dtsi                  |  6 +++++-
+ arch/arm/boot/dts/am43x-epos-evm.dts           |  2 +-
+ arch/arm/boot/dts/dra7.dtsi                    |  6 +++---
+ arch/arm/mach-msm/board-trout-gpio.c           |  2 +-
+ arch/arm/mach-msm/board-trout.c                |  2 +-
+ arch/arm/mach-msm/board-trout.h                |  2 +-
+ arch/arm/mach-omap2/omap-headsmp.S             |  6 +-----
+ arch/arm/mach-omap2/timer.c                    |  2 +-
+ arch/arm/mach-shmobile/board-armadillo800eva.c |  2 +-
+ include/linux/reset.h                          | 10 ++++++++++
+ 11 files changed, 25 insertions(+), 16 deletions(-)
