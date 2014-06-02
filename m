@@ -1,139 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753174AbaFBWwS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 18:52:18 -0400
-Received: from ozlabs.org ([103.22.144.67]:56203 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751875AbaFBWwR convert rfc822-to-8bit (ORCPT
+	id S1752661AbaFBW4A (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 18:56:00 -0400
+Received: from mail-vc0-f171.google.com ([209.85.220.171]:58058 "EHLO
+	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751708AbaFBWz6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 18:52:17 -0400
-Message-ID: <1401749534.13479.48.camel@ale.ozlabs.ibm.com>
-Subject: Re: [V6 00/11] perf: New conditional branch filter
-From: Michael Neuling <mikey@neuling.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: Anshuman Khandual <khandual@linux.vnet.ibm.com>,
-        Linux PPC dev <linuxppc-dev@ozlabs.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>
-Date: Tue, 03 Jun 2014 08:52:14 +1000
-In-Reply-To: <CABPqkBSmuMth4KmdLw7Nigf5uQREQJ+xL=42xV9c8FjR2VPO5g@mail.gmail.com>
-References: <1399280953-31442-1-git-send-email-khandual@linux.vnet.ibm.com>
-	 <CABPqkBS+3N6PW0wJr3xnvpF4zinZM7+iwFWzwS7BDm-LTkam5Q@mail.gmail.com>
-	 <53859873.9070603@linux.vnet.ibm.com>
-	 <CABPqkBSmuMth4KmdLw7Nigf5uQREQJ+xL=42xV9c8FjR2VPO5g@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
+	Mon, 2 Jun 2014 18:55:58 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140602220831.GG22231@linux.vnet.ibm.com>
+References: <alpine.LRH.2.02.1406011342470.20831@file01.intranet.prod.int.rdu2.redhat.com>
+	<alpine.LRH.2.02.1406021158360.20627@file01.intranet.prod.int.rdu2.redhat.com>
+	<20140602162525.GH16155@laptop.programming.kicks-ass.net>
+	<20140602163032.GI16155@laptop.programming.kicks-ass.net>
+	<538CB56E.5010709@hp.com>
+	<20140602200525.GD13930@laptop.programming.kicks-ass.net>
+	<CA+55aFwJwVf_MbcwNNWg-KrLdoOaV2xse2jzvBZTJHJgC_Htvg@mail.gmail.com>
+	<20140602210227.GE22231@linux.vnet.ibm.com>
+	<CA+55aFzX3oDvzqh4AfkJ7-X1Yfo8obFM+jOOmwzeN-GyqOPLJg@mail.gmail.com>
+	<20140602220831.GG22231@linux.vnet.ibm.com>
+Date: Mon, 2 Jun 2014 15:55:57 -0700
+X-Google-Sender-Auth: b7C94md1GZdiVhnTtisYhvM0zyM
+Message-ID: <CA+55aFz7P0y1gZx7K2TCAKE7JQ6XseEprqXAQEOdq-j540KRYA@mail.gmail.com>
+Subject: Re: [PATCH v2] introduce atomic_pointer to fix a race condition in
+ cancelable mcs spinlocks
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Paul McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Waiman Long <waiman.long@hp.com>,
+        Mikulas Patocka <mpatocka@redhat.com>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Helge Deller <deller@gmx.de>, John David Anglin <dave.anglin@bell.net>,
+        Parisc List <linux-parisc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Vinod, Chegu" <chegu_vinod@hp.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Davidlohr Bueso <davidlohr@hp.com>, Peter Anvin <hpa@zytor.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>, Jason Low <jason.low2@hp.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-06-02 at 14:59 +0200, Stephane Eranian wrote:
-> On Wed, May 28, 2014 at 10:04 AM, Anshuman Khandual
-> <khandual@linux.vnet.ibm.com> wrote:
-> > On 05/27/2014 05:39 PM, Stephane Eranian wrote:
-> >> I have been looking at those patches and ran some tests.
-> >> And I found a few issues so far.
-> >>
-> >> I am running:
-> >> $ perf record -j any_ret -e cycles:u test_program
-> >> $ perf report -D
-> >>
-> >> Most entries are okay and match the filter, however some do not make sense:
-> >>
-> >> 3642586996762 0x15d0 [0x108]: PERF_RECORD_SAMPLE(IP, 2): 17921/17921:
-> >> 0x10001170 period: 613678 addr: 0
-> >> .... branch stack: nr:9
-> >> .....  0: 00000000100011cc -> 0000000010000e38
-> >> .....  1: 0000000010001150 -> 00000000100011bc
-> >> .....  2: 0000000010001208 -> 0000000010000e38
-> >> .....  3: 0000000010001160 -> 00000000100011f8
-> >> .....  4: 00000000100011cc -> 0000000010000e38
-> >> .....  5: 0000000010001150 -> 00000000100011bc
-> >> .....  6: 0000000010001208 -> 0000000010000e38
-> >> .....  7: 0000000010001160 -> 00000000100011f8
-> >> .....  8: 0000000000000000 -> 0000000010001160
-> >> ^^^^^^
-> >> Entry 8 does not make sense, unless 0x0 is a valid return branch
-> >> instruction address.
-> >> If an address is invalid, the whole entry needs to be eliminated. It
-> >> is okay to have
-> >> less than the max number of entries supported by HW.
-> >
-> > Hey Stephane,
-> >
-> > Okay. The same behaviour is also reflected in the test results what I have
-> > shared in the patchset. Here is that section.
-> >
-> > (3) perf record -j any_ret -e branch-misses:u ./cprog
-> >
-> > # Overhead  Command  Source Shared Object          Source Symbol  Target Shared Object          Target Symbol
-> > # ........  .......  ....................  .....................  ....................  .....................
-> > #
-> >     15.61%    cprog  [unknown]             [.] 00000000           cprog                 [.] sw_3_1
-> >      6.28%    cprog  cprog                 [.] symbol2            cprog                 [.] hw_1_2
-> >      6.28%    cprog  cprog                 [.] ctr_addr           cprog                 [.] sw_4_1
-> >      6.26%    cprog  cprog                 [.] success_3_1_3      cprog                 [.] sw_3_1
-> >      6.24%    cprog  cprog                 [.] symbol1            cprog                 [.] hw_1_1
-> >      6.24%    cprog  cprog                 [.] sw_4_2             cprog                 [.] callme
-> >      6.21%    cprog  [unknown]             [.] 00000000           cprog                 [.] callme
-> >      6.19%    cprog  cprog                 [.] lr_addr            cprog                 [.] sw_4_2
-> >      3.16%    cprog  cprog                 [.] hw_1_2             cprog                 [.] callme
-> >      3.15%    cprog  cprog                 [.] success_3_1_1      cprog                 [.] sw_3_1
-> >      3.15%    cprog  cprog                 [.] sw_4_1             cprog                 [.] callme
-> >      3.14%    cprog  cprog                 [.] callme             cprog                 [.] main
-> >      3.13%    cprog  cprog                 [.] hw_1_1             cprog                 [.] callme
-> >
-> > So a lot of samples above have 0x0 as the "from" address. This originates from the code
-> > section here inside the function "power_pmu_bhrb_read", where we hit two back to back
-> 
-> Could you explain the back-to-back case a bit more here?
-> Back-to-back returns to me means something like:
-> 
-> int foo()
-> {
->   ...
->    return bar();
-> }
-> 
-> int bar()
-> {
->   return 0;
-> }
-> 
-> Not counting the leaf optimization here, bar return to foo which
-> immediately returns: 2 back-2-back returns.
-> Is that the case you're talking about here?
-> 
-> > target addresses. So we zero out the from address for the first target address and re-read
-> > the second address over again. So thats how we get zero as the from address. This is how the
-> > HW capture the samples. I was reluctant to drop these samples but I agree that these kind of
-> > samples can be dropped if we need to.
-> >
-> I think we need to make it as simple as possible for tools, i.e.,
-> avoid having to decode the
-> disassembly to figure out what happened. Here address 0 is not exploitable.
+On Mon, Jun 2, 2014 at 3:08 PM, Paul E. McKenney
+<paulmck@linux.vnet.ibm.com> wrote:
+>
+> rcu: Eliminate read-modify-write ACCESS_ONCE() calls
+>
+>         preempt_disable();
+> -       ACCESS_ONCE(this_cpu_ptr(sp->per_cpu_ref)->c[idx]) += 1;
+> +       lp = this_cpu_ptr(&sp->per_cpu_ref->c[idx]);
+> +       ACCESS_ONCE(*lp) = *lp + 1;
+>         smp_mb(); /* B */  /* Avoid leaking the critical section. */
+> -       ACCESS_ONCE(this_cpu_ptr(sp->per_cpu_ref)->seq[idx]) += 1;
+> +       lp = this_cpu_ptr(&sp->per_cpu_ref->seq[idx]);
+> +       ACCESS_ONCE(*lp) = *lp + 1;
+>         preempt_enable();
+>         return idx;
 
-This was my fault.  I figured if we only had partial information from
-the hardware, it was best to at least export that to the tools.  If you
-disagree then we can we remove them.  There was a discussion a while
-back on this here:
-  https://lkml.org/lkml/2013/5/8/543
+What Eric said. This should just use "this_cpu_inc()" instead.
+Particularly with the smp_mb() and the preempt_enable(), there's no
+way that could/should leak, and the ACCESS_ONCE() seems pointless and
+ugly.
 
-Because of the way the branch buffer is structured, we can certainly
-lose the from address of the oldest branch in the buffer.  I've not seen
-the hardware lose the from branches in the middle of the buffer but I
-guess it's possible.  We'll have to get back to you on how or why this
-would occur (and associated bias) after talking to some hardware folk.
+And the good news is, gcc _will_ generate good code for that.
 
-FWIW, there was some discussion on how the POWER8 branch buffer works a
-while back here (same thread as before):
-  https://lkml.org/lkml/2013/5/8/541
-
-Mikey
-
+              Linus
