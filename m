@@ -1,54 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751953AbaFBGEv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 02:04:51 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:39110 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751059AbaFBGEu (ORCPT
+	id S1751898AbaFBGOc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 02:14:32 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:45237 "EHLO
+	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751059AbaFBGOb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 02:04:50 -0400
-Date: Mon, 2 Jun 2014 11:34:40 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Denys Vlasenko <dvlasenk@redhat.com>,
-        Jim Keniston <jkenisto@us.ibm.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] uprobes/x86: Rename arch_uprobe->def into ->dflt, minor
- comment updates
-Message-ID: <20140602060440.GD2447@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20140601192520.GA14539@redhat.com>
+	Mon, 2 Jun 2014 02:14:31 -0400
+X-Original-SENDERIP: 10.177.220.145
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+Date: Mon, 2 Jun 2014 15:17:51 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Michal Nazarewicz <mina86@mina86.com>
+Cc: Gioh Kim <gioh.kim@lge.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Mel Gorman <mgorman@suse.de>, Laura Abbott <lauraa@codeaurora.org>,
+        Minchan Kim <minchan@kernel.org>,
+        Heesub Shin <heesub.shin@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/3] CMA: aggressively allocate the pages on cma
+ reserved memory when not used
+Message-ID: <20140602061751.GA7713@js1304-P5Q-DELUXE>
+References: <1401260672-28339-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1401260672-28339-3-git-send-email-iamjoonsoo.kim@lge.com>
+ <5386E0CA.5040201@lge.com>
+ <20140529074847.GA7554@js1304-P5Q-DELUXE>
+ <5386EB3E.5090007@lge.com>
+ <20140530004514.GB8906@js1304-P5Q-DELUXE>
+ <xa1tha46hl1w.fsf@mina86.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140601192520.GA14539@redhat.com>
+In-Reply-To: <xa1tha46hl1w.fsf@mina86.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14060206-3568-0000-0000-0000059B275B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Oleg Nesterov <oleg@redhat.com> [2014-06-01 21:25:20]:
-
-> Purely cosmetic, no changes in .o,
+On Sat, May 31, 2014 at 09:02:51AM +0900, Michal Nazarewicz wrote:
+> > On Thu, May 29, 2014 at 05:09:34PM +0900, Gioh Kim wrote:
+> >> Is IS_ENABLED(CONFIG_CMA) necessary?
+> >> What about if (migratetype == MIGRATE_MOVABLE && zone->managed_cma_pages) ?
 > 
-> 1. As Jim pointed out arch_uprobe->def looks ambiguous, rename it to
->    ->dflt.
+> On Fri, May 30 2014, Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
+> > Yes, field, managed_cma_pages exists only if CONFIG_CMA is enabled, so
+> > removing IS_ENABLE(CONFIG_CMA) would break the build.
 > 
-> 2. Add the comment into default_post_xol_op() to explain "regs->sp +=".
+> That statement makes no sense.  If zone->managed_cma_pages not being
+> defined is the problem, what you need is:
 > 
-> 3. Remove the stale part of the comment in arch_uprobe_analyze_insn().
+> +#ifdef CONFIG_CMA
+> +	if (migratetype == MIGRATE_MOVABLE && zone->managed_cma_pages)
+> +		page = __rmqueue_cma(zone, order);
+> +#endif
 > 
-> Suggested-by: Jim Keniston <jkenisto@us.ibm.com>
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> ---
+> If you use IS_ENABLED, zone-managed_cma_pages has to be defined
+> regardless of result of state of CONFIG_CMA.
 
-Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 
--- 
-Thanks and Regards
-Srikar Dronamraju
+Hello,
 
+Oops. I totally misunderstand how IS_ENABLED works.
+Thanks for spotting this.
+
+Thanks.
