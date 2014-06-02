@@ -1,150 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754475AbaFBLq6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 07:46:58 -0400
-Received: from mail-la0-f42.google.com ([209.85.215.42]:38791 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754179AbaFBLq5 (ORCPT
+	id S1754213AbaFBLsA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 07:48:00 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:39864 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753388AbaFBLr6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 07:46:57 -0400
-Message-ID: <538C642B.3000107@bjorling.me>
-Date: Mon, 02 Jun 2014 13:46:51 +0200
-From: =?ISO-8859-1?Q?Matias_Bj=F8rling?= <m@bjorling.me>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Mon, 2 Jun 2014 07:47:58 -0400
+Date: Mon, 2 Jun 2014 15:47:46 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+CC: Christoph Lameter <cl@gentwo.org>, <akpm@linux-foundation.org>,
+        <hannes@cmpxchg.org>, <mhocko@suse.cz>, <linux-kernel@vger.kernel.org>,
+        <linux-mm@kvack.org>
+Subject: Re: [PATCH -mm 7/8] slub: make dead caches discard free slabs
+ immediately
+Message-ID: <20140602114741.GA1039@esperanza>
+References: <cover.1401457502.git.vdavydov@parallels.com>
+ <5d2fbc894a2c62597e7196bb1ebb8357b15529ab.1401457502.git.vdavydov@parallels.com>
+ <alpine.DEB.2.10.1405300955120.11943@gentwo.org>
+ <20140531110456.GC25076@esperanza>
+ <20140602042435.GA17964@js1304-P5Q-DELUXE>
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>
-CC: willy@linux.intel.com, keith.busch@intel.com, sbradshaw@micron.com,
-        axboe@kernel.dk, linux-kernel@vger.kernel.org,
-        linux-nvme@lists.infradead.org
-Subject: Re: [PATCH v4] NVMe: basic conversion to blk-mq
-References: <1401400285-25003-1-git-send-email-m@bjorling.me> <1401400285-25003-2-git-send-email-m@bjorling.me> <20140602100821.GB30612@infradead.org>
-In-Reply-To: <20140602100821.GB30612@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20140602042435.GA17964@js1304-P5Q-DELUXE>
+X-Originating-IP: [109.195.248.178]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/02/2014 12:08 PM, Christoph Hellwig wrote:
->> +static int nvme_map_rq(struct nvme_queue *nvmeq, struct nvme_iod *iod,
->> +		struct request *req, enum dma_data_direction dma_dir,
->> +		int psegs)
->>   {
->>   	sg_init_table(iod->sg, psegs);
->> +	iod->nents = blk_rq_map_sg(req->q, req, iod->sg);
->>
->> +	if (!dma_map_sg(nvmeq->q_dmadev, iod->sg, iod->nents, dma_dir))
->>   		return -ENOMEM;
->>
->> +	return iod->nents;
->
-> Given how simple I'd suggest merging this into the only caller.
+Hi Joonsoo,
 
-Ok
+On Mon, Jun 02, 2014 at 01:24:36PM +0900, Joonsoo Kim wrote:
+> On Sat, May 31, 2014 at 03:04:58PM +0400, Vladimir Davydov wrote:
+> > On Fri, May 30, 2014 at 09:57:10AM -0500, Christoph Lameter wrote:
+> > > On Fri, 30 May 2014, Vladimir Davydov wrote:
+> > > 
+> > > > (3) is a bit more difficult, because slabs are added to per-cpu partial
+> > > > lists lock-less. Fortunately, we only have to handle the __slab_free
+> > > > case, because, as there shouldn't be any allocation requests dispatched
+> > > > to a dead memcg cache, get_partial_node() should never be called. In
+> > > > __slab_free we use cmpxchg to modify kmem_cache_cpu->partial (see
+> > > > put_cpu_partial) so that setting ->partial to a special value, which
+> > > > will make put_cpu_partial bail out, will do the trick.
+[...]
+> I think that we can do (3) easily.
+> If we check memcg_cache_dead() in the end of put_cpu_partial() rather
+> than in the begin of put_cpu_partial(), we can avoid the race you 
+> mentioned. If someone do put_cpu_partial() before dead flag is set,
+> it can be zapped by who set dead flag. And if someone do
+> put_cpu_partial() after dead flag is set, it can be zapped by who
+> do put_cpu_partial().
 
->
->> +static int nvme_submit_iod(struct nvme_queue *nvmeq, struct nvme_iod *iod,
->> +							struct nvme_ns *ns)
->>   {
->> +	struct request *req = iod->private;
->>   	struct nvme_command *cmnd;
->> +	u16 control = 0;
->> +	u32 dsmgmt = 0;
->>
->> +	spin_lock_irq(&nvmeq->q_lock);
->> +	if (nvmeq->q_suspended) {
->> +		spin_unlock_irq(&nvmeq->q_lock);
->> +		return -EBUSY;
->> +	}
->>
->> +	if (req->cmd_flags & REQ_DISCARD) {
->> +		nvme_submit_discard(nvmeq, ns, req, iod);
->> +		goto end_submit;
->> +	}
->> +	if (req->cmd_flags & REQ_FLUSH) {
->> +		nvme_submit_flush(nvmeq, ns, req->tag);
->> +		goto end_submit;
->> +	}
->
-> It would be nicer to have the locking and the the suspend check
-> in the caller, and then branch out to one function for each type
-> of request, especially as the caller already has special cases for
-> discard and zero-payload requests anyway.
->
+After put_cpu_partial() adds a frozen slab to a per cpu partial list,
+the slab becomes visible to other threads, which means it can be
+unfrozen and freed. The latter can trigger cache destruction. Hence we
+shouldn't touch the cache, in particular call memcg_cache_dead() on it,
+after calling put_cpu_partial(), otherwise we can get use-after-free.
 
-Ok, good idea.
+However, what you propose makes sense if we disable irqs before adding a
+slab to a partial list and enable them only after checking if the cache
+is dead and unfreezing all partials if so, i.e.
 
->> +static int nvme_queue_request(struct blk_mq_hw_ctx *hctx, struct request *req)
->> +{
->
-> Can you call this nvme_queue_rq to match the method name?  Makes
-> grepping so much easier..  (ditto for the admin queue).
->
+diff --git a/mm/slub.c b/mm/slub.c
+index d96faa2464c3..14b9e9a8677c 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -2030,8 +2030,15 @@ static void put_cpu_partial(struct kmem_cache *s, struct page *page, int drain)
+ 	struct page *oldpage;
+ 	int pages;
+ 	int pobjects;
++	unsigned long flags;
++	int irq_saved = 0;
+ 
+ 	do {
++		if (irq_saved) {
++			local_irq_restore(flags);
++			irq_saved = 0;
++		}
++
+ 		pages = 0;
+ 		pobjects = 0;
+ 		oldpage = this_cpu_read(s->cpu_slab->partial);
+@@ -2062,8 +2069,16 @@ static void put_cpu_partial(struct kmem_cache *s, struct page *page, int drain)
+ 		page->pobjects = pobjects;
+ 		page->next = oldpage;
+ 
++		local_irq_save(flags);
++		irq_saved = 1;
++
+ 	} while (this_cpu_cmpxchg(s->cpu_slab->partial, oldpage, page)
+ 								!= oldpage);
++
++	if (memcg_cache_dead(s))
++		unfreeze_partials(s, this_cpu_ptr(s->cpu_slab));
++
++	local_irq_restore(flags);
+ #endif
+ }
+ 
 
-Yes
+That would be safe against possible cache destruction, because to remove
+a slab from a per cpu partial list we have to run on the cpu it was
+frozen on. Disabling irqs makes it impossible.
 
->> +	struct nvme_ns *ns = hctx->queue->queuedata;
->> +	struct nvme_queue *nvmeq = hctx->driver_data;
->>
->> +	return nvme_submit_req_queue(nvmeq, ns, req);
->
-> What's the point of the serparate nvme_submit_req_queue function?
->
+Christoph,
 
-Removed
+Does it look better to you? BTW, why can't we *always* disable irqs for
+the whole put_cpu_partial()? That way handling dead caches there would
+be trivial, and we wouldn't have to use this_cpu_cmpxchg().
 
->>   	spin_lock(&nvmeq->q_lock);
->> -	nvme_process_cq(nvmeq);
->> -	result = nvmeq->cqe_seen ? IRQ_HANDLED : IRQ_NONE;
->> -	nvmeq->cqe_seen = 0;
->> +	result = nvme_process_cq(nvmeq) ? IRQ_HANDLED : IRQ_NONE;
->
-> No other caller checks the nvme_process_cq return value, so it might
-> as well return the IRQ_ values directly.
-
-Ok (it's been changed as cqe_seen had been mistakenly removed.)
->
->> +static struct blk_mq_ops nvme_mq_admin_ops = {
->> +	.queue_rq	= nvme_queue_admin_request,
->> +	.map_queue	= blk_mq_map_queue,
->> +	.init_hctx	= nvme_init_admin_hctx,
->> +	.init_request	= nvme_init_admin_request,
->> +	.timeout	= nvme_timeout,
->
-> Care to name these nvme_admin_<methodname> for easier grep-ability?
-
-Yes
-
->
->> +static int nvme_alloc_admin_tags(struct nvme_dev *dev)
->> +{
->> +	if (!dev->admin_rq) {
->
-> Why do you need the NULL check here?
-
-the nvme_alloc_admin_tags is called both in nvme_dev_start and 
-nvme_dev_resume. To make sure we don't double allocated it check if its 
-already been allocated.
-
->
->> +		dev->admin_tagset.reserved_tags = 1;
->
-> What is the reserved tag for?
-
-It was for flush. However, this way to do it has been removed in the 
-later series.
-
->
->> +		dev->admin_rq = blk_mq_init_queue(&dev->admin_tagset);
->> +		if (!dev->admin_rq) {
->> +			memset(&dev->admin_tagset, 0,
->> +						sizeof(dev->admin_tagset));
->> +			blk_mq_free_tag_set(&dev->admin_tagset);
->
-> Why do you zero the tagset here before freeing it?
->
-
-Removed.
-
-Thanks!
-
+Thanks.
