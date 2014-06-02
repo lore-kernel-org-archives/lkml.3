@@ -1,52 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752772AbaFBHyv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 03:54:51 -0400
-Received: from mga11.intel.com ([192.55.52.93]:65082 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751796AbaFBHys (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 03:54:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,955,1392192000"; 
-   d="scan'208";a="541103836"
-Message-ID: <1401695682.11182.108.camel@sauron.fi.intel.com>
-Subject: Re: [RFC 17/32] ubifs: convert to struct inode_time
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        joseph@codesourcery.com, john.stultz@linaro.org, hch@infradead.org,
-        tglx@linutronix.de, geert@linux-m68k.org, lftan@altera.com,
-        hpa@zytor.com, linux-fsdevel@vger.kernel.org,
-        Adrian Hunter <adrian.hunter@intel.com>, linux-mtd@lists.infradead.org
-Date: Mon, 02 Jun 2014 10:54:42 +0300
-In-Reply-To: <1401480116-1973111-18-git-send-email-arnd@arndb.de>
-References: <1401480116-1973111-1-git-send-email-arnd@arndb.de>
-	 <1401480116-1973111-18-git-send-email-arnd@arndb.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752473AbaFBH6E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 03:58:04 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:20551 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751641AbaFBH6D (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 03:58:03 -0400
+Date: Mon, 2 Jun 2014 10:57:31 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Daeseok Youn <daeseok.youn@gmail.com>
+Cc: lidza.louina@gmail.com, gregkh@linuxfoundation.org, markh@compro.net,
+        driverdev-devel@linuxdriverproject.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/6] staging: dgap: unwind on error in
+ dgap_tty_register_ports()
+Message-ID: <20140602075731.GS17724@mwanda>
+References: <20140602050824.GA29914@devel.8.8.4.4>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140602050824.GA29914@devel.8.8.4.4>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-05-30 at 22:01 +0200, Arnd Bergmann wrote:
-> ubifs uses 64-bit integers for inode timestamps, which will work
-> practicall forever, but the VFS uses struct timespec for timestamps,
-> which is only good until 2038 on 32-bit CPUs.
-> 
-> This gets us one small step closer to lifting the VFS limit by using
-> struct inode_time in ubifs.
-> 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: Artem Bityutskiy <dedekind1@gmail.com>
-> Cc: Adrian Hunter <adrian.hunter@intel.com>
-> Cc: linux-mtd@lists.infradead.org
+On Mon, Jun 02, 2014 at 02:08:24PM +0900, Daeseok Youn wrote:
+> @@ -4177,12 +4183,46 @@ static int dgap_tty_register_ports(struct board_t *brd)
+>  					brd->print_driver,
+>  					brd->firstminor + i, NULL);
 
-Looks fine from UBIFS POW, thanks!
+Btw, the "brd->firstminor + i" should just be "i".
 
--- 
-Best Regards,
-Artem Bityutskiy
+TODO-list: 2014-06-02: dgap: get rid of brd->first minor because it is 0
+
+regards,
+dan carpenter
 
