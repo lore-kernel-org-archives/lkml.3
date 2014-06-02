@@ -1,484 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755442AbaFBOmr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 10:42:47 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:36242 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754270AbaFBOmp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 10:42:45 -0400
-Message-ID: <538C8D5C.70207@linaro.org>
-Date: Mon, 02 Jun 2014 16:42:36 +0200
-From: Eric Auger <eric.auger@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1755496AbaFBOnk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 10:43:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42968 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754559AbaFBOnj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 10:43:39 -0400
+Message-ID: <538C8D95.2060503@redhat.com>
+Date: Mon, 02 Jun 2014 16:43:33 +0200
+From: Michal Privoznik <mprivozn@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: Marc Zyngier <marc.zyngier@arm.com>
-CC: "eric.auger@st.com" <eric.auger@st.com>,
-        "christoffer.dall@linaro.org" <christoffer.dall@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "christophe.barnichon@st.com" <christophe.barnichon@st.com>
-Subject: Re: [PATCH v2] ARM: KVM: add irqfd and irq routing support
-References: <1401694196-30861-1-git-send-email-eric.auger@linaro.org> <87bnub1kor.fsf@approximate.cambridge.arm.com>
-In-Reply-To: <87bnub1kor.fsf@approximate.cambridge.arm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Jiri Pirko <jiri@resnulli.us>
+CC: davem@davemloft.net, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH] net-sysfs: Report link speed as signed integer
+References: <06d53256e3bf2d0deedb16249082200500da3ee6.1401718809.git.mprivozn@redhat.com> <20140602143557.GA2925@minipsycho.orion>
+In-Reply-To: <20140602143557.GA2925@minipsycho.orion>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/02/2014 03:54 PM, Marc Zyngier wrote:
-> Hi Eric,
-> 
-> On Mon, Jun 02 2014 at  8:29:56 am BST, Eric Auger <eric.auger@linaro.org> wrote:
->> This patch enables irqfd and irq routing on ARM.
+On 02.06.2014 16:35, Jiri Pirko wrote:
+> Mon, Jun 02, 2014 at 04:25:15PM CEST, mprivozn@redhat.com wrote:
+>> The link speed is available at /sys/class/net/$nic/speed.
+>> However, the speed is printed in unsigned integer format. This
+>> makes userspace applications read an incorrect value (which
+>> moreover changes through several architectures) while in fact
+>> '-1' should be reported.
 >>
->> It turns on CONFIG_HAVE_KVM_EVENTFD and CONFIG_HAVE_KVM_IRQ_ROUTING
+>> Before the change:
+>>   # cat /sys/class/net/eth0/speed
+>>   4294967295
 >>
->> irqfd framework enables to assign physical IRQs to guests.
+>> After the change:
+>>   # cat /sys/class/net/eth0/speed
+>>   -1
 >>
->> 1) user-side uses KVM_IRQFD VM ioctl to pass KVM a kvm_irqfd struct that
->> associates a VM, an eventfd, an IRQ number (aka. the GSI). When an actor
->> signals the eventfd (typically a VFIO platform driver), the irqfd subsystem
->> injects the specified IRQ into the VM (the "GSI" takes the semantic of a
->> virtual IRQ for that guest).
-> 
-Hi Marc,
-
-First thanks for your review.
-
-> Just so I can understand how this works: Who EOIs (handles) the physical
-> interrupt? If it is the VFIO driver, then I don't see how you prevent
-> the interrupt from firing again immediately (unless this is an edge
-> interrupt?).
-
-Yes the physical IRQ is handled by the VFIO platform driver. This later
-masks the IRQ in the ISR before signaling the eventfd. The IRQ currently
-is unmasked when the virtual IRQ is completed, from user side, using the
-VFIO user API.
-> 
->> 2) the other use case is user-side does 1) and uses KVM_SET_GSI_ROUTING
->> VM ioctl to create an association between a VM, a physical IRQ (aka GSI) and
->> a virtual IRQ (aka irchip.pin).  This creates a so-called GSI routing entry.
->> When someone triggers the eventfd, irqfd handles it but uses the specified
->> routing and eventually injects irqchip.pin virtual IRQ into the guest. In that
->> context the GSI takes the semantic of a physical IRQ while the irqchip.pin
->> takes the semantic of a virtual IRQ.
->>
->> in 1) routing is used by irqfd but an identity routing is created by default
->> making the gsi = irqchip.pin. Note on ARM there is a single interrupt
->> controller kind, the GIC.
->>
->> GSI routing mostly is implemented in generic irqchip.c.
->> The tiny ARM specific part is directly implemented in the virtual interrupt
->> controller (vgic.c) as it is done for powerpc for instance. This option was
->> prefered compared to implementing other #ifdef in irq_comm.c (x86 and ia64).
->> Hence irq_comm.c is not used at all.
->>
->> Routing currently is not used for anything else than irqfd IRQ injection. Only
->> SPI can be injected. This means the vgic is not totally hidden behind the
->> irqchip. There are separate discussions on PPI/SGI routing.
->>
->> Only level sensitive IRQs are supported (with a registered resampler). As a
->> reminder the resampler is a second eventfd called by irqfd framework when the
->> virtual IRQ is completed by the guest. This eventfd is supposed to be handled
->> on user-side
->>
->> MSI routing is not supported yet.
->>
->> This work was tested with Calxeda Midway xgmac main interrupt (with and without
->> explicit user routing) with qemu-system-arm and QEMU VFIO platform device.
->>
->> changes v1 -> v2:
->> 2 fixes:
->> - v1 assumed gsi/irqchip.pin was already incremented by VGIC_NR_PRIVATE_IRQS.
->>   This is now vgic_set_assigned_irq that increments it before injection.
->> - v2 now handles the case where a pending assigned irq is cleared through
->>   MMIO access. The irq is properly acked allowing the resamplefd handler
->>   to possibly unmask the physical IRQ.
->>
->> Signed-off-by: Eric Auger <eric.auger@linaro.org>
->>
->> Conflicts:
->>         Documentation/virtual/kvm/api.txt
->>         arch/arm/kvm/Kconfig
->>
->> Conflicts:
->>         Documentation/virtual/kvm/api.txt
+>> Signed-off-by: Michal Privoznik <mprivozn@redhat.com>
 >> ---
->>  Documentation/virtual/kvm/api.txt |   4 +-
->>  arch/arm/include/uapi/asm/kvm.h   |   8 +++
->>  arch/arm/kvm/Kconfig              |   2 +
->>  arch/arm/kvm/Makefile             |   1 +
->>  arch/arm/kvm/irq.h                |  25 +++++++
->>  virt/kvm/arm/vgic.c               | 141 ++++++++++++++++++++++++++++++++++++--
->>  6 files changed, 174 insertions(+), 7 deletions(-)
->>  create mode 100644 arch/arm/kvm/irq.h
+>> net/core/net-sysfs.c | 2 +-
+>> 1 file changed, 1 insertion(+), 1 deletion(-)
 >>
->> diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
->> index b4f5365..b376334 100644
->> --- a/Documentation/virtual/kvm/api.txt
->> +++ b/Documentation/virtual/kvm/api.txt
->> @@ -1339,7 +1339,7 @@ KVM_ASSIGN_DEV_IRQ. Partial deassignment of host or guest IRQ is allowed.
->>  4.52 KVM_SET_GSI_ROUTING
->>
->>  Capability: KVM_CAP_IRQ_ROUTING
->> -Architectures: x86 ia64 s390
->> +Architectures: x86 ia64 s390 arm
->>  Type: vm ioctl
->>  Parameters: struct kvm_irq_routing (in)
->>  Returns: 0 on success, -1 on error
->> @@ -2126,7 +2126,7 @@ into the hash PTE second double word).
->>  4.75 KVM_IRQFD
->>
->>  Capability: KVM_CAP_IRQFD
->> -Architectures: x86 s390
->> +Architectures: x86 s390 arm
->>  Type: vm ioctl
->>  Parameters: struct kvm_irqfd (in)
->>  Returns: 0 on success, -1 on error
->> diff --git a/arch/arm/include/uapi/asm/kvm.h b/arch/arm/include/uapi/asm/kvm.h
->> index ef0c878..89b864d 100644
->> --- a/arch/arm/include/uapi/asm/kvm.h
->> +++ b/arch/arm/include/uapi/asm/kvm.h
->> @@ -192,6 +192,14 @@ struct kvm_arch_memory_slot {
->>  /* Highest supported SPI, from VGIC_NR_IRQS */
->>  #define KVM_ARM_IRQ_GIC_MAX            127
->>
->> +/* needed by IRQ routing */
->> +
->> +/* One single KVM irqchip, ie. the VGIC */
->> +#define KVM_NR_IRQCHIPS          1
->> +
->> +/* virtual interrupt controller input pins (max 480 SPI, 32 SGI/PPI) */
->> +#define KVM_IRQCHIP_NUM_PINS     256
-> 
-> Gahhhh... Please don't. We're trying hard to move away from hard-coded
-> definitions such as this, since GICv3 has much higher limits. And the
-> comment you've added perfectly outlines why this is such a bad idea
-> (even on GICv2, we can have up to 960 SPIs).
-> 
-> Have a look at what's brewing in my kvm-arm64/vgic-dyn branch.
+>> diff --git a/net/core/net-sysfs.c b/net/core/net-sysfs.c
+>> index 1cac29e..99afdea 100644
+>> --- a/net/core/net-sysfs.c
+>> +++ b/net/core/net-sysfs.c
+>> @@ -173,7 +173,7 @@ static ssize_t speed_show(struct device *dev,
+>> 	if (netif_running(netdev)) {
+>> 		struct ethtool_cmd cmd;
+>> 		if (!__ethtool_get_settings(netdev, &cmd))
+>> -			ret = sprintf(buf, fmt_udec, ethtool_cmd_speed(&cmd));
+>> +			ret = sprintf(buf, fmt_dec, ethtool_cmd_speed(&cmd));
+>
+> I wonder why this should be signed. What -1 means? What driver reports
+> this?
 
-OK I will do ;-)
-> 
->>  /* PSCI interface */
->>  #define KVM_PSCI_FN_BASE               0x95c1ba5e
->>  #define KVM_PSCI_FN(n)                 (KVM_PSCI_FN_BASE + (n))
->> diff --git a/arch/arm/kvm/Kconfig b/arch/arm/kvm/Kconfig
->> index 4be5bb1..096692c 100644
->> --- a/arch/arm/kvm/Kconfig
->> +++ b/arch/arm/kvm/Kconfig
->> @@ -24,6 +24,7 @@ config KVM
->>         select KVM_MMIO
->>         select KVM_ARM_HOST
->>         depends on ARM_VIRT_EXT && ARM_LPAE && !CPU_BIG_ENDIAN
->> +       select HAVE_KVM_EVENTFD
->>         ---help---
->>           Support hosting virtualized guest machines. You will also
->>           need to select one or more of the processor modules below.
->> @@ -56,6 +57,7 @@ config KVM_ARM_VGIC
->>         bool "KVM support for Virtual GIC"
->>         depends on KVM_ARM_HOST && OF
->>         select HAVE_KVM_IRQCHIP
->> +       select HAVE_KVM_IRQ_ROUTING
->>         default y
->>         ---help---
->>           Adds support for a hardware assisted, in-kernel GIC emulation.
->> diff --git a/arch/arm/kvm/Makefile b/arch/arm/kvm/Makefile
->> index 789bca9..29de111 100644
->> --- a/arch/arm/kvm/Makefile
->> +++ b/arch/arm/kvm/Makefile
->> @@ -21,4 +21,5 @@ obj-y += kvm-arm.o init.o interrupts.o
->>  obj-y += arm.o handle_exit.o guest.o mmu.o emulate.o reset.o
->>  obj-y += coproc.o coproc_a15.o coproc_a7.o mmio.o psci.o perf.o
->>  obj-$(CONFIG_KVM_ARM_VGIC) += $(KVM)/arm/vgic.o
->> +obj-$(CONFIG_HAVE_KVM_EVENTFD) += $(KVM)/eventfd.o $(KVM)/irqchip.o
->>  obj-$(CONFIG_KVM_ARM_TIMER) += $(KVM)/arm/arch_timer.o
->> diff --git a/arch/arm/kvm/irq.h b/arch/arm/kvm/irq.h
->> new file mode 100644
->> index 0000000..4d6fcc6
->> --- /dev/null
->> +++ b/arch/arm/kvm/irq.h
->> @@ -0,0 +1,25 @@
->> +/*
->> + * Copyright (C) 2014, STMicroelectronics
->> + * Authors: Eric Auger <eric.auger@st.com>
->> + *
->> + * This program is free software; you can redistribute it and/or modify
->> + * it under the terms of the GNU General Public License, version 2, as
->> + * published by the Free Software Foundation.
->> + *
->> + * This program is distributed in the hope that it will be useful,
->> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
->> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
->> + * GNU General Public License for more details.
->> + *
->> + */
->> +
->> +#ifndef __IRQ_H
->> +#define __IRQ_H
->> +
->> +#include <linux/kvm_host.h>
->> +/*
->> + * Placeholder for irqchip and irq/msi routing declarations
->> + * included in irqchip.c
->> + */
->> +
->> +#endif
->> diff --git a/virt/kvm/arm/vgic.c b/virt/kvm/arm/vgic.c
->> index 56ff9be..39afa0d 100644
->> --- a/virt/kvm/arm/vgic.c
->> +++ b/virt/kvm/arm/vgic.c
->> @@ -93,6 +93,9 @@ static struct device_node *vgic_node;
->>  #define ACCESS_WRITE_VALUE     (3 << 1)
->>  #define ACCESS_WRITE_MASK(x)   ((x) & (3 << 1))
->>
->> +static struct kvm_irq_routing_entry identity_table[VGIC_NR_IRQS];
->> +static int set_default_routing_table(struct kvm *kvm);
->> +
->>  static void vgic_retire_disabled_irqs(struct kvm_vcpu *vcpu);
->>  static void vgic_update_state(struct kvm *kvm);
->>  static void vgic_kick_vcpus(struct kvm *kvm);
->> @@ -408,11 +411,27 @@ static bool handle_mmio_clear_pending_reg(struct kvm_vcpu *vcpu,
->>                                           struct kvm_exit_mmio *mmio,
->>                                           phys_addr_t offset)
->>  {
->> -       u32 *reg = vgic_bitmap_get_reg(&vcpu->kvm->arch.vgic.irq_state,
->> +       struct vgic_dist *dist = &vcpu->kvm->arch.vgic;
->> +       unsigned int i;
->> +       bool is_assigned_irq;
->> +       DECLARE_BITMAP(old, VGIC_NR_SHARED_IRQS);
->> +       DECLARE_BITMAP(diff, VGIC_NR_SHARED_IRQS);
->> +       unsigned long *pending =
->> +               vgic_bitmap_get_shared_map(&dist->irq_state);
->> +       u32 *reg;
->> +       bitmap_copy(old, pending, VGIC_NR_SHARED_IRQS);
-> 
-> That's really heavy. You could find out which interrupts are potentially
-> affected (only 32 of them) and just handle those. Also, you do the copy
-> on both the read and write paths. Not great.
-for the copy you are fully right. I will add the check. Then to detect
-which pending IRQ is cleared I need to further study how I can optimize.
-Why do you say 32?  Can't any SPI be assigned to a guest?
-> 
->> +       reg = vgic_bitmap_get_reg(&vcpu->kvm->arch.vgic.irq_state,
->>                                        vcpu->vcpu_id, offset);
->>         vgic_reg_access(mmio, reg, offset,
->>                         ACCESS_READ_VALUE | ACCESS_WRITE_CLEARBIT);
->>         if (mmio->is_write) {
->> +               pending = vgic_bitmap_get_shared_map(&dist->irq_state);
->> +               bitmap_xor(diff, old, pending, VGIC_NR_SHARED_IRQS);
->> +               for_each_set_bit(i, diff, VGIC_NR_SHARED_IRQS) {
->> +                       is_assigned_irq = kvm_irq_has_notifier(vcpu->kvm, 0, i);
->> +                       if (is_assigned_irq)
->> +                               kvm_notify_acked_irq(vcpu->kvm, 0, i);
-> 
-> Are you saying that a masked interrupt should be treated the same as an
-> EOI-ed interrupt? That seems wrong from my PoV.
-Actually all that stuff comes from a bug I encountered with
-qemu_system_arm and the VFIO platform QEMU device (RFCv3 sent today).
-The scenario is the following:
-1) I launch a 1st qemu_system_arm session with one xgmac bound to the
-KVM guest with vfio. IRQs are routed through irqfd.
-2) I kill that session and launch a 2d one.
+This is e1000e. It seems like a default value. From e1000_get_settings() 
+in drivers/net/ethernet/intel/e1000e/ethtool.c:
 
-After the 1st session kill, xgmac ic still running (funny principle of
-VFIO "meta" driver which is HW device agnostic and do not know how to
-reset the xgmac). So very early I can see the xgmac sends a main IRQ
-which is handled by the vfio platform driver. This later masks the IRQ
-before signaling the eventfd. During guest setup I observe MMIO accesses
-that clears the xgmac pending IRQ under the hood. So for that IRQ the
-maintenance IRQ code will never be called, the notifier will not be be
-acked and thus the IRQ is never unmasked at VFIO driver level. As a
-result the xgmac driver gets stuck.
+     speed = -1;
+     ecmd->duplex = -1;
 
-So currently this is the best fix I have found. VFIO Reset management
-need to be further studied anyway. THis is planned but I understand it
-will not straightforward.
-> 
->> +               }
->>                 vgic_update_state(vcpu->kvm);
->>                 return true;
->>         }
->> @@ -1172,6 +1191,8 @@ static bool vgic_process_maintenance(struct kvm_vcpu *vcpu)
->>  {
->>         struct vgic_cpu *vgic_cpu = &vcpu->arch.vgic_cpu;
->>         bool level_pending = false;
->> +       struct kvm *kvm;
->> +       int is_assigned_irq;
->>
->>         kvm_debug("MISR = %08x\n", vgic_cpu->vgic_misr);
->>
->> @@ -1189,12 +1210,23 @@ static bool vgic_process_maintenance(struct kvm_vcpu *vcpu)
->>                         vgic_irq_clear_active(vcpu, irq);
->>                         vgic_cpu->vgic_lr[lr] &= ~GICH_LR_EOI;
->>
->> +                       kvm = vcpu->kvm;
->> +                       is_assigned_irq =
->> +                               kvm_irq_has_notifier(kvm, 0, irq-VGIC_NR_PRIVATE_IRQS);
->>                         /* Any additional pending interrupt? */
->> -                       if (vgic_dist_irq_is_pending(vcpu, irq)) {
->> -                               vgic_cpu_irq_set(vcpu, irq);
->> -                               level_pending = true;
->> -                       } else {
->> +                       if (is_assigned_irq) {
->>                                 vgic_cpu_irq_clear(vcpu, irq);
->> +                               kvm_debug("EOI irqchip routed vIRQ %d\n", irq);
->> +                               kvm_notify_acked_irq(kvm, 0,
->> +                                       irq-VGIC_NR_PRIVATE_IRQS);
->> +                               vgic_dist_irq_clear(vcpu, irq);
->> +                       } else {
->> +                               if (vgic_dist_irq_is_pending(vcpu, irq)) {
->> +                                       vgic_cpu_irq_set(vcpu, irq);
->> +                                       level_pending = true;
->> +                               } else {
->> +                                       vgic_cpu_irq_clear(vcpu, irq);
->> +                               }
->>                         }
->>
->>                         /*
->> @@ -1627,6 +1659,8 @@ int kvm_vgic_create(struct kvm *kvm)
->>         kvm->arch.vgic.vgic_dist_base = VGIC_ADDR_UNDEF;
->>         kvm->arch.vgic.vgic_cpu_base = VGIC_ADDR_UNDEF;
->>
->> +       set_default_routing_table(kvm);
->> +
->>  out_unlock:
->>         for (; vcpu_lock_idx >= 0; vcpu_lock_idx--) {
->>                 vcpu = kvm_get_vcpu(kvm, vcpu_lock_idx);
->> @@ -2017,3 +2051,100 @@ struct kvm_device_ops kvm_arm_vgic_v2_ops = {
->>         .get_attr = vgic_get_attr,
->>         .has_attr = vgic_has_attr,
->>  };
->> +
->> +
->> +/*
->> + * set up a default identity routing table
->> + * The user-side can further change the routing table using
->> + * KVM_SET_GSI_ROUTING VM ioctl
->> + */
->> +
->> +static int set_default_routing_table(struct kvm *kvm)
->> +{
->> +       struct kvm_irq_routing_entry;
->> +       int i;
->> +       for (i = 0; i < VGIC_NR_IRQS; i++)      {
->> +               identity_table[i].gsi = i;
->> +               identity_table[i].type = KVM_IRQ_ROUTING_IRQCHIP;
->> +               identity_table[i].u.irqchip.irqchip = 0;
->> +               identity_table[i].u.irqchip.pin = i;
->> +       }
->> +       return kvm_set_irq_routing(kvm, identity_table,
->> +                                  ARRAY_SIZE(identity_table), 0);
->> +}
->> +
->> +
->> +/*
->> + * Functions needed for GSI routing (used by irqchip.c)
->> + * implemented in irq_comm.c for x86 and ia64
->> + * in architecture specific files for some other archictures (powerpc)
->> + */
->> +
->> +static int vgic_set_assigned_irq(struct kvm_kernel_irq_routing_entry *e,
->> +                          struct kvm *kvm, int irq_source_id, int level,
->> +                          bool line_status)
->> +{
->> +       unsigned int spi = e->irqchip.pin + VGIC_NR_PRIVATE_IRQS;
->> +
->> +       if (irq_source_id == KVM_USERSPACE_IRQ_SOURCE_ID) {
->> +               /*
->> +                * This path is not tested yet,
->> +                * only irqchip with resampler was exercised
->> +                */
->> +               kvm_vgic_inject_irq(kvm, 0, spi, level);
->> +       } else if (irq_source_id == KVM_IRQFD_RESAMPLE_IRQ_SOURCE_ID) {
->> +               if (level == 1) {
->> +                       kvm_debug("Inject irqchip routed vIRQ %d\n",
->> +                                       e->irqchip.pin);
->> +                       kvm_vgic_inject_irq(kvm, 0, spi, level);
->> +                       /*
->> +                        * toggling down vIRQ wire is directly handled in
->> +                        * process_maintenance for this reason:
->> +                        * irqfd_resampler_ack is called in
->> +                        * process_maintenance which holds the dist lock.
->> +                        * irqfd_resampler_ack calls kvm_set_irq
->> +                        * which ends_up calling kvm_vgic_inject_irq.
->> +                        * This later attempts to take the lock -> deadlock!
->> +                        */
->> +               }
->> +       }
->> +       return 0;
->> +
->> +}
->> +
->> +/* void implementation requested to compile irqchip.c */
->> +
->> +int kvm_set_msi(struct kvm_kernel_irq_routing_entry *e,
->> +               struct kvm *kvm, int irq_source_id, int level, bool line_status)
->> +{
->> +       return 0;
->> +}
->> +
->> +int kvm_set_routing_entry(struct kvm_irq_routing_table *rt,
->> +                         struct kvm_kernel_irq_routing_entry *e,
->> +                         const struct kvm_irq_routing_entry *ue)
->> +{
->> +       int r = -EINVAL;
->> +
->> +       switch (ue->type) {
->> +       case KVM_IRQ_ROUTING_IRQCHIP:
->> +               e->set = vgic_set_assigned_irq;
->> +               e->irqchip.irqchip = ue->u.irqchip.irqchip;
->> +               e->irqchip.pin = ue->u.irqchip.pin;
->> +               if (e->irqchip.pin >= KVM_IRQCHIP_NUM_PINS)
->> +                       goto out;
->> +               /* chip[0][virtualID] = physicalID  */
->> +               rt->chip[ue->u.irqchip.irqchip][e->irqchip.pin] = ue->gsi;
->> +               break;
->> +       default:
->> +               goto out;
->> +       }
->> +
->> +       r = 0;
->> +out:
->> +       return r;
->> +}
-> 
-> I clearly need to do some more reading about all of this, but some of
-> the questions/remarks I've outlined above need anwers.
+     if (netif_running(netdev)) {
+         if (netif_carrier_ok(netdev)) {
+             speed = adapter->link_speed;
+             ecmd->duplex = adapter->link_duplex - 1;
+         }
+     } else if (!pm_runtime_suspended(netdev->dev.parent)) {
+	...
+     }
 
-hope I answered them.
-> 
-> Also, how does this combine with the work the VOS guys are doing?
+     ethtool_cmd_speed_set(ecmd, speed);
 
-This patch may address a subset of VOSYS original targets (ie. SPI
-routing through irqfd). Besides VFIO platform driver I understood
-Antonios original plan was to put the whole VGIC behind irqchip which
-was not my intent here. But I will let him update us wrt their plans and
-progress.
+If I unplug the cord, NIC is nor running nor runtime suspended.
 
-The patch intent is to achieve significant performance improvements
-compared to traditional QEMU user-side IRQ routing. irqfd/GSI routing
-framework achieves this by
-- handling the eventfd on kernel-side instead of on user-side
-- virtal EOI trapping at GIC level instead of trapping the MMIO access
-into the IRQ status register.
-
-Next step is to remove maintenance IRQ for assigned IRQs, thus removing
-completion trapping... sure we will need to rediscuss that together ;-)
-
-Best Regards
-
-Eric
-
-> 
-> Thanks,
-> 
-> 	M.
-> 
-
+Michal
