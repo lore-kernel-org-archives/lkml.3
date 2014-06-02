@@ -1,78 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755612AbaFBPDN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 11:03:13 -0400
-Received: from imap.thunk.org ([74.207.234.97]:45652 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755432AbaFBPDJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 11:03:09 -0400
-Date: Mon, 2 Jun 2014 11:02:58 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: =?utf-8?B?THVrw6HFoQ==?= Czerner <lczerner@redhat.com>
-Cc: Namjae Jeon <namjae.jeon@samsung.com>,
-        "'Dave Chinner'" <david@fromorbit.com>,
-        "'linux-ext4'" <linux-ext4@vger.kernel.org>, xfs@oss.sgi.com,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "'Ashish Sangwan'" <a.sangwan@samsung.com>
-Subject: Re: [PATCH v2 0/10] fs: Introduce FALLOC_FL_INSERT_RANGE for
- fallocate
-Message-ID: <20140602150258.GG30598@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	=?utf-8?B?THVrw6HFoQ==?= Czerner <lczerner@redhat.com>,
-	Namjae Jeon <namjae.jeon@samsung.com>,
-	'Dave Chinner' <david@fromorbit.com>,
-	'linux-ext4' <linux-ext4@vger.kernel.org>, xfs@oss.sgi.com,
-	linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-	'Ashish Sangwan' <a.sangwan@samsung.com>
-References: <003601cf6aa7$883103b0$98930b10$@samsung.com>
- <alpine.LFD.2.00.1405301238190.2009@localhost.localdomain>
- <000d01cf7ca3$98335c50$c89a14f0$@samsung.com>
- <alpine.LFD.2.00.1406021204540.2231@localhost.localdomain>
- <002201cf7e59$2e684c10$8b38e430$@samsung.com>
- <alpine.LFD.2.00.1406021450541.2231@localhost.localdomain>
+	id S1755673AbaFBPDV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 11:03:21 -0400
+Received: from mout.kundenserver.de ([212.227.17.24]:49310 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755631AbaFBPDS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 11:03:18 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Nicolas Pitre <nicolas.pitre@linaro.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, joseph@codesourcery.com,
+        john.stultz@linaro.org, hch@infradead.org, tglx@linutronix.de,
+        geert@linux-m68k.org, lftan@altera.com, linux-fsdevel@vger.kernel.org,
+        xfs@oss.sgi.com
+Subject: Re: [RFC 11/32] xfs: convert to struct inode_time
+Date: Mon, 02 Jun 2014 17:01:20 +0200
+Message-ID: <5896675.3VErDJM7s2@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140602130700.GC14276@thunk.org>
+References: <1401480116-1973111-1-git-send-email-arnd@arndb.de> <15496653.1vSv1RUCC0@wuerfel> <20140602130700.GC14276@thunk.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <alpine.LFD.2.00.1406021450541.2231@localhost.localdomain>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:SNdR1vrDuzzqVL0vQDRk1V2ukWgeZoI99UU1eid5LlS
+ fuLI/t6HzX7M9Tnf1nuIEi1ng1T9OJqx0VoUQe6fdJBd4Ekihd
+ 7N8SqHag7FfGUYfFegVzGKUZ+c9VsQO8ULEqg3Zk9v/qOPFGeZ
+ 6aCS5C1gKy0EPfu8QLUDawOWTffgbh8+7IJb5frlnXHUmSfqKT
+ lkL8OEZ6EJlo4ovNEJSEiS+wyGCC/toA63BIm+8lkpGyaF7tV4
+ rXVucuDJW2Qg6AYdXyVxh4ddn8D6nAIHkdaFlJI9/eJ7C4eRRQ
+ Zbm4ZFBfPh7frttxMCvSwnaImngDvp0ERED3X+zfqidNx8TCz0
+ j/6zcgRe2CXoVVHGlz20=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 02, 2014 at 03:06:13PM +0200, Lukáš Czerner wrote:
-> > > So what will happen when there is not enough space when "inserting a
-> > > range" ? And how should user proceed from there ?
-> > If insert range fails with an ENOSPC error, user could use collapse
-> > range on the same range to remove the hole.
-> > And after freeing more space, he can again try inserting range.
-> > Ofcourse, this type of guidance should be properly documented in
-> > manpage. When updating fallocate(2) manpage, I will keep  in mind to
-> > describe ENOSPC handling.
+On Monday 02 June 2014 09:07:00 Theodore Ts'o wrote:
+> Yes, there are some ongoing dicussions about changing the post-2038
+> encoding of the timestamp in ext4, which is why this hasn't been fixed
+> yet.  The main thing that's been missing is time for me to review the
+> patches, and a good way of writing regression tests that will work (or
+> at least not fail) on build environments with a 32-bit time_t and
+> 32-bit-only capable versions of functions such as gmtime(3).
 > 
-> Why collapse ? The hole is already there right ? Why not just use
-> fallocate to allocate the space for the hole. And that's my point
-> actually. Why not do it this way in the first place, because this is
-> really counterintuitive.
+> And given current discussions, I may want to think about some kind of
+> superblock flag to allow the use of a 32-bit unsigned encoding for
+> file systems using a 128-byte inode, with a way of setting that flag
+> after scanning the file system to make sure there are no times that
+> are previous to January 1, 1970.  (Or more generally, allow any epoch
+> to be defined using a 64-bit time_t offset stored in the superblock...)
 
-It's worse than that.  It's possible that the reason why you got the
-ENOSPC warning was because the operation to move the extents down
-required allocating a block, and it was *that* block allocation which
-failed.  So it's not deterministic whether or not the file's extent
-mappings were modified after a ENOSPC error, and so it's not clear
-whether or not a collapse_range function will undo the range that had
-been inserted --- or whether it ends up deleting existing data blocks.
+FWIW, I've gone through the other file system implementations once
+more. The most common pattern I've encountered is to have a read_inode
+function with
 
-In generally, you really want system calls to have all-or-nothing
-effects, where if the system call returns an error, the state of the
-file has not been changed.  And for that reason, I agree with Lukáš
-that it is really a good idea to decouple moving the blocks down, and
-allocating space --- and to make sure that if there is any failure
-while inserting the range, the state of the file is not modified at all.
+	inode->i_mtime = le32_to_cpu(raw_inode->mtime);
 
-Cheers,
+which results in interpreting the time as 'signed' on 32-bit
+kernels, but as 'unsigned' on 64-bit kernels. This could have been
+done intentionally to extend the valid time range to 2106 on 64-bit
+kernels, but it seems more likely that the code was written with
+no thought given to 64-bit time_t at all. I see this pattern on
+p9fs (old protocol only), afs, bfs, ceph, efs, freevxfs, hpfs, jffs2,
+jfs, minix, nfsv2/v3 (this was clearly intentional and is
+spelled out in the RFC), qnx4, qnx6, reiserfs, squashfs, sysv,
+and ufs (protocol version 1 only).
 
-					- Ted
+The other behavior I see is to treat the on-disk 32-bit value
+as signed on both 32-bit and 64-bit kernels:
+
+	inode->i_mtime = (signed)le32_to_cpu(raw_inode->mtime);
+
+this seems to be done intentionally in all cases, to maintain
+compatibility between 32-bit and 64-bit kernels, but it's
+relatively rare: exofs, ext2/3/4 (good old inodes) and xfs
+are the only ones doing this.
+
+In case of ext2/3/4, the sign handlign was introduced here:
+http://www.spinics.net/lists/linux-ext4/msg01758.html
+
+exofs and xfs seem to have done it like this for all of git
+history.
+
+	Arnd
