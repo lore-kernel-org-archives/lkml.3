@@ -1,125 +1,277 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753697AbaFBJon (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 05:44:43 -0400
-Received: from mout.perfora.net ([74.208.4.194]:50082 "EHLO mout.perfora.net"
+	id S1753784AbaFBJqw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 05:46:52 -0400
+Received: from srv01.voixit.com ([78.47.68.188]:38936 "EHLO srv01.voixit.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752843AbaFBJol (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 05:44:41 -0400
-From: Marcel Ziswiler <marcel@ziswiler.com>
-To: swarren@wwwdotorg.org, thierry.reding@gmail.com
-Cc: arm@kernel.org, linux@arm.linux.org.uk, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org, stefan@agner.ch, marcel@ziswiler.com
-Subject: [PATCH 1/3] arm: multi_v7: enable igb, stmpe, spidev, lm95245, pwm leds
-Date: Mon,  2 Jun 2014 11:43:50 +0200
-Message-Id: <cc612cd3f24f01cfc8fd3e81b1027ff94862e8b4.1401700579.git.marcel@ziswiler.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Provags-ID: V02:K0:pQT8e2eUIdIRSUZzjtdxnf8rU8HogvgcSmMIuKDyTCk
- AqoUlF8iydpVmB0myLLIPIv1C6lvuCaxCoeRQN9Fy3X2IePrwa
- zxzQPNylRPVCJiVXNx2fTxrCqq614Lbgvuen3YX+8oS8RBGy9l
- Kksy7ngB3f/1DeVcHrmJPMT+xL7RA/di0Bk7AUR30TG3V0ksds
- G+PUYLQDgugEeB7e7AtmZk2CIPnNuAmn2b2+I2FmM94F6UBa/u
- bc2r9O5Zh8xeh2Dmh+gzoezfNHzOUlDMzu7FBNJihhJ9HPjsj/
- HkYVDcElxGJQLsuBfUPsOOfjNewqo0uyYQ7CeI5kx21owCmXdc
- Y9ra161X47eK4EEHisQPRw9M1p5FUTh8jHPgcPg/nKOWzDLKH4
- 7NoJdPCNxc6PGjX18Cz/Ufimr7xbFfhahiLtdoNz4a0jyt8tfE
- 0U2ZMgbv7yay40Srmlw+njqEGGA==
+	id S1753120AbaFBJqv convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 05:46:51 -0400
+Subject: Re: [PATCH RFC - TAKE TWO - 10/12] block, bfq: add Early Queue Merge (EQM)
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.2\))
+Content-Type: text/plain; charset=us-ascii
+From: Paolo Valente <paolo.valente@unimore.it>
+In-Reply-To: <20140601000331.GA29085@htj.dyndns.org>
+Date: Mon, 2 Jun 2014 11:46:45 +0200
+Cc: Jens Axboe <axboe@kernel.dk>, Li Zefan <lizefan@huawei.com>,
+        Fabio Checconi <fchecconi@gmail.com>,
+        Arianna Avanzini <avanzini.arianna@gmail.com>,
+        linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org,
+        Mauro Andreolini <mauro.andreolini@unimore.it>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <3B7B1A46-46EB-4C52-A52C-4F79C71D14C2@unimore.it>
+References: <20140528221929.GG1419@htj.dyndns.org> <1401354343-5527-1-git-send-email-paolo.valente@unimore.it> <1401354343-5527-11-git-send-email-paolo.valente@unimore.it> <20140601000331.GA29085@htj.dyndns.org>
+To: Tejun Heo <tj@kernel.org>
+X-Mailer: Apple Mail (2.1878.2)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The NVIDIA Tegra 3 based Apalis T30 module contains an Intel i210 resp.
-i211 gigabit Ethernet controller, an STMPE811 ADC/touch controller,
-SPI bus and PWM LEDs generically accessible from user space and an
-LM95245 temperature sensor chip. The later four can also be found on
-the Colibri T30 module.
 
-While at it move the NEON entry down to its proper place to have it all
-nicely ordered again.
+Il giorno 01/giu/2014, alle ore 02:03, Tejun Heo <tj@kernel.org> ha scritto:
 
-Signed-off-by: Marcel Ziswiler <marcel@ziswiler.com>
----
-BTW: How about TEGRA_EMC_SCALING_ENABLE, MACH_UX500_DT, OMAP_USB3 and
-MMC_SUNXI which I haven't found any mentioning anywhere, MTD_M25P80
-which depends on MTD_SPI_NOR or DOVE_THERMAL which depends on the
-legacy ARCH_DOVE (besides USE_OF of course) being not much of multi
-compatible?
+> Hello,
+> 
+> On Thu, May 29, 2014 at 11:05:41AM +0200, Paolo Valente wrote:
+>> Unfortunately, in the following frequent case the mechanism
+>> implemented in CFQ for detecting cooperating processes and merging
+>> their queues is not responsive enough to handle also the fluctuating
+>> I/O pattern of the second type of processes. Suppose that one process
+>> of the second type issues a request close to the next request to serve
+>> of another process of the same type. At that time the two processes
+>> can be considered as cooperating. But, if the request issued by the
+>> first process is to be merged with some other already-queued request,
+>> then, from the moment at which this request arrives, to the moment
+>> when CFQ controls whether the two processes are cooperating, the two
+>> processes are likely to be already doing I/O in distant zones of the
+>> disk surface or device memory.
+> 
+> I don't really follow the last part.  So, the difference is that
+> cooperating queue setup also takes place during bio merge too, right?
 
- arch/arm/configs/multi_v7_defconfig |   11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
+Not only, in bfq an actual queue merge is performed in the bio-merge hook.
 
-diff --git a/arch/arm/configs/multi_v7_defconfig b/arch/arm/configs/multi_v7_defconfig
-index 7f4645c..7cfc176 100644
---- a/arch/arm/configs/multi_v7_defconfig
-+++ b/arch/arm/configs/multi_v7_defconfig
-@@ -65,7 +65,6 @@ CONFIG_ARCH_VEXPRESS=y
- CONFIG_ARCH_VEXPRESS_CA9X4=y
- CONFIG_ARCH_WM8850=y
- CONFIG_ARCH_ZYNQ=y
--CONFIG_NEON=y
- CONFIG_TRUSTED_FOUNDATIONS=y
- CONFIG_PCI=y
- CONFIG_PCI_MSI=y
-@@ -81,6 +80,7 @@ CONFIG_CPU_FREQ=y
- CONFIG_CPU_FREQ_STAT_DETAILS=y
- CONFIG_CPU_FREQ_DEFAULT_GOV_ONDEMAND=y
- CONFIG_CPU_IDLE=y
-+CONFIG_NEON=y
- CONFIG_NET=y
- CONFIG_PACKET=y
- CONFIG_UNIX=y
-@@ -132,6 +132,7 @@ CONFIG_NETDEVICES=y
- CONFIG_SUN4I_EMAC=y
- CONFIG_MACB=y
- CONFIG_NET_CALXEDA_XGMAC=y
-+CONFIG_IGB=y
- CONFIG_MV643XX_ETH=y
- CONFIG_MVNETA=y
- CONFIG_KS8851=y
-@@ -155,6 +156,8 @@ CONFIG_KEYBOARD_TEGRA=y
- CONFIG_KEYBOARD_SPEAR=y
- CONFIG_KEYBOARD_CROS_EC=y
- CONFIG_MOUSE_PS2_ELANTECH=y
-+CONFIG_INPUT_TOUCHSCREEN=y
-+CONFIG_TOUCHSCREEN_STMPE=y
- CONFIG_INPUT_MISC=y
- CONFIG_INPUT_MPU3050=y
- CONFIG_SERIO_AMBAKMI=y
-@@ -200,6 +203,7 @@ CONFIG_SPI_SUN6I=y
- CONFIG_SPI_TEGRA114=y
- CONFIG_SPI_TEGRA20_SFLASH=y
- CONFIG_SPI_TEGRA20_SLINK=y
-+CONFIG_SPI_SPIDEV=y
- CONFIG_PINCTRL_AS3722=y
- CONFIG_PINCTRL_PALMAS=y
- CONFIG_GPIO_SYSFS=y
-@@ -217,6 +221,7 @@ CONFIG_POWER_RESET_AS3722=y
- CONFIG_POWER_RESET_GPIO=y
- CONFIG_POWER_RESET_SUN6I=y
- CONFIG_SENSORS_LM90=y
-+CONFIG_SENSORS_LM95245=y
- CONFIG_THERMAL=y
- CONFIG_DOVE_THERMAL=y
- CONFIG_ARMADA_THERMAL=y
-@@ -227,6 +232,7 @@ CONFIG_MFD_AS3722=y
- CONFIG_MFD_CROS_EC=y
- CONFIG_MFD_CROS_EC_SPI=y
- CONFIG_MFD_MAX8907=y
-+CONFIG_MFD_STMPE=y
- CONFIG_MFD_PALMAS=y
- CONFIG_MFD_TPS65090=y
- CONFIG_MFD_TPS6586X=y
-@@ -303,6 +309,9 @@ CONFIG_MMC_OMAP=y
- CONFIG_MMC_OMAP_HS=y
- CONFIG_MMC_MVSDIO=y
- CONFIG_MMC_SUNXI=y
-+CONFIG_NEW_LEDS=y
-+CONFIG_LEDS_CLASS=y
-+CONFIG_LEDS_PWM=y
- CONFIG_EDAC=y
- CONFIG_EDAC_MM_EDAC=y
- CONFIG_EDAC_HIGHBANK_MC=y
--- 
-1.7.9.5
+> Are you trying to say that it's beneficial to detect cooperating
+> queues before the issuing queue gets unplugged because the two queues
+> might deviate while plugged?
+
+Yes, to keep throughput high both detection and queue merging must be performed immediately.
+
+>  If so, the above paragraph is, while
+> quite wordy, a rather lousy description.
+
+Sorry for the long and badly written paragraph. Hoping to have fully understood the issue you raised, I will try to synthesize it in the next submission.
+
+> 
+>> CFQ uses however preemption to get a sequential read pattern out of
+>> the read requests performed by the second type of processes too.  As a
+>> consequence, CFQ uses two different mechanisms to achieve the same
+>> goal: boosting the throughput with interleaved I/O.
+> 
+> You mean the cfq_rq_close() preemption, right?  Hmmm... interesting.
+> I'm a bit bothered that we might do this multiple times for the same
+> bio/request.  e.g. if bio is back merged to an existing request which
+> would be the most common bio merge scenario anyway, is it really
+> meaningful to retry it for each merge
+
+Unfortunately the only way to make sure that we never miss any queue-merge opportunities should be checking every time.
+
+> and then again on submission?
+
+Even if a queue-merge attempt fails in the invocation of an allow_merge_fn hook that returns false, the request related to the same bio may then lead to a successful queue-merge in the following add_rq_fn.
+
+> cfq does it once when allocating the request.  That seems a lot more
+> reasonable to me.  It's doing that once for one start sector.  I mean,
+> plugging is usually extremely short compared to actual IO service
+> time.  It's there to mask the latencies between bio issues that the
+> same CPU is doing.  I can't see how this earliness can be actually
+> useful.  Do you have results to back this one up?  Or is this just
+> born out of thin air?
+> 
+
+Arianna added the early-queue-merge part in the allow_merge_fn hook about one year ago, as a a consequence of a throughput loss of about 30% with KVM/QEMU workloads. In particular, we ran most of the tests on a WDC WD60000HLHX-0 Velociraptor. That HDD might not be available for testing any more, but we can reproduce our results for you on other HDDs, with and without early queue merge. And, maybe through traces, we can show you that the reason for the throughput loss is exactly that described (in a wordy way) in this patch. Of course unless we have missed something.
+
+>> +/*
+>> + * Must be called with the queue_lock held.
+> 
+> Use lockdep_assert_held() instead?
+> 
+
+We agree on this and on all your other suggestions/recommendations/corrections, especially on the idea of using per-parent rq position trees. We will apply these changes on the next submission of this patch.
+
+Thanks,
+Paolo
+
+>> + */
+>> +static int bfqq_process_refs(struct bfq_queue *bfqq)
+>> +{
+>> +	int process_refs, io_refs;
+>> +
+>> +	io_refs = bfqq->allocated[READ] + bfqq->allocated[WRITE];
+>> +	process_refs = atomic_read(&bfqq->ref) - io_refs - bfqq->entity.on_st;
+>> +	return process_refs;
+>> +}
+> ...
+>> +static inline sector_t bfq_io_struct_pos(void *io_struct, bool request)
+>> +{
+>> +	if (request)
+>> +		return blk_rq_pos(io_struct);
+>> +	else
+>> +		return ((struct bio *)io_struct)->bi_iter.bi_sector;
+>> +}
+>> +
+>> +static inline sector_t bfq_dist_from(sector_t pos1,
+>> +				     sector_t pos2)
+>> +{
+>> +	if (pos1 >= pos2)
+>> +		return pos1 - pos2;
+>> +	else
+>> +		return pos2 - pos1;
+>> +}
+>> +
+>> +static inline int bfq_rq_close_to_sector(void *io_struct, bool request,
+>> +					 sector_t sector)
+>> +{
+>> +	return bfq_dist_from(bfq_io_struct_pos(io_struct, request), sector) <=
+>> +	       BFQQ_SEEK_THR;
+>> +}
+> 
+> You can simply write the following.
+> 
+> 	abs64(sector0 - sector1) < BFQQ_SEEKTHR;
+> 
+> Note that abs64() works whether the source type is signed or unsigned.
+
+> Also, please don't do "void *" + type switch.  If it absoluately has
+> to take two different types of pointers, just take two different
+> pointers and BUG_ON() if both are set, but here this doesn't seem to
+> be the case.  Just pass around the actual sectors.  This applies to
+> all usages of void *io_struct.
+
+>> +static struct bfq_queue *bfqq_close(struct bfq_data *bfqd, sector_t sector)
+> 
+> bfqq_find_close() or find_close_bfqq()?
+
+> 
+>> +/*
+>> + * bfqd - obvious
+>> + * cur_bfqq - passed in so that we don't decide that the current queue
+>> + *            is closely cooperating with itself
+>> + * sector - used as a reference point to search for a close queue
+>> + */
+> 
+> If you're gonna do the above, please use proper function comment.
+> Please take a look at Documentation/kernel-doc-nano-HOWTO.txt.
+> 
+
+>> +static struct bfq_queue *bfq_close_cooperator(struct bfq_data *bfqd,
+>> +					      struct bfq_queue *cur_bfqq,
+>> +					      sector_t sector)
+>> +{
+>> +	struct bfq_queue *bfqq;
+>> +
+>> +	if (bfq_class_idle(cur_bfqq))
+>> +		return NULL;
+>> +	if (!bfq_bfqq_sync(cur_bfqq))
+>> +		return NULL;
+>> +	if (BFQQ_SEEKY(cur_bfqq))
+>> +		return NULL;
+> 
+> Why are some of these conditions tested twice?  Once here and once in
+> the caller?  Collect them into one place?
+> 
+
+> ...
+>> +	if (bfqq->entity.parent != cur_bfqq->entity.parent)
+>> +		return NULL;
+> 
+> This is the only place this rq position tree is being used, right?
+> Any reason not to use per-parent tree instead?
+
+The only reason could have been to save some memory, but your proposal seems much more efficient, thanks.
+
+> 
+>> +	if (bfq_class_rt(bfqq) != bfq_class_rt(cur_bfqq))
+>> +		return NULL;
+> 
+> Test ioprio_class for equality?
+
+> 
+>> +/*
+>> + * Attempt to schedule a merge of bfqq with the currently in-service queue
+>> + * or with a close queue among the scheduled queues.
+>> + * Return NULL if no merge was scheduled, a pointer to the shared bfq_queue
+>> + * structure otherwise.
+>> + */
+>> +static struct bfq_queue *
+>> +bfq_setup_cooperator(struct bfq_data *bfqd, struct bfq_queue *bfqq,
+>> +		     void *io_struct, bool request)
+>> +{
+>> +	struct bfq_queue *in_service_bfqq, *new_bfqq;
+>> +
+>> +	if (bfqq->new_bfqq)
+>> +		return bfqq->new_bfqq;
+>> +
+>> +	if (!io_struct)
+>> +		return NULL;
+>> +
+>> +	in_service_bfqq = bfqd->in_service_queue;
+>> +
+>> +	if (in_service_bfqq == NULL || in_service_bfqq == bfqq ||
+>> +	    !bfqd->in_service_bic)
+>> +		goto check_scheduled;
+>> +
+>> +	if (bfq_class_idle(in_service_bfqq) || bfq_class_idle(bfqq))
+>> +		goto check_scheduled;
+>> +
+>> +	if (bfq_class_rt(in_service_bfqq) != bfq_class_rt(bfqq))
+>> +		goto check_scheduled;
+>> +
+>> +	if (in_service_bfqq->entity.parent != bfqq->entity.parent)
+>> +		goto check_scheduled;
+>> +
+>> +	if (bfq_rq_close_to_sector(io_struct, request, bfqd->last_position) &&
+>> +	    bfq_bfqq_sync(in_service_bfqq) && bfq_bfqq_sync(bfqq)) {
+>> +		new_bfqq = bfq_setup_merge(bfqq, in_service_bfqq);
+>> +		if (new_bfqq != NULL)
+>> +			return new_bfqq; /* Merge with in-service queue */
+>> +	}
+>> +
+>> +	/*
+>> +	 * Check whether there is a cooperator among currently scheduled
+>> +	 * queues. The only thing we need is that the bio/request is not
+>> +	 * NULL, as we need it to establish whether a cooperator exists.
+>> +	 */
+>> +check_scheduled:
+>> +	new_bfqq = bfq_close_cooperator(bfqd, bfqq,
+>> +					bfq_io_struct_pos(io_struct, request));
+>> +	if (new_bfqq)
+>> +		return bfq_setup_merge(bfqq, new_bfqq);
+> 
+> Why don't in_service_queue and scheduled search share the cooperation
+> conditions?  They should be the same, right?  Shouldn't the function
+> be structured like the following instead?
+> 
+> 	if (bfq_try_close_cooperator(current_one, in_service_one))
+> 		return in_service_one;
+> 
+> 	found = bfq_find_close_cooperator();
+> 	if (bfq_try_close_cooperator(current_one, found))
+> 		return found;
+> 	return NULL;
+> 
+> Thanks.
+> 
+> -- 
+> tejun
+
+
+--
+Paolo Valente                                                 
+Algogroup
+Dipartimento di Fisica, Informatica e Matematica		
+Via Campi, 213/B
+41125 Modena - Italy        				  
+homepage:  http://algogroup.unimore.it/people/paolo/
 
