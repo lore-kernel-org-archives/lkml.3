@@ -1,53 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754880AbaFBNZy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 09:25:54 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:40022 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754399AbaFBNZw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 09:25:52 -0400
-Message-ID: <538C7B22.2020107@ti.com>
-Date: Mon, 2 Jun 2014 09:24:50 -0400
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1754926AbaFBN0Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 09:26:16 -0400
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:53774 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754717AbaFBN0O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 09:26:14 -0400
 MIME-Version: 1.0
-To: Shawn Guo <shawn.guo@freescale.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "Strashko, Grygorii" <grygorii.strashko@ti.com>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Olof Johansson <olof@lixom.net>,
+In-Reply-To: <20140602123851.GB2654@katana>
+References: <1401452797-29521-1-git-send-email-lee.jones@linaro.org>
+	<1401452797-29521-2-git-send-email-lee.jones@linaro.org>
+	<20140530123656.GC2742@katana>
+	<20140530133405.GB29731@lee--X1>
+	<20140530174800.GA4917@katana>
+	<20140530192516.GA4319@lee--X1>
+	<20140531134805.GA3287@katana>
+	<CACRpkdZvyfA0aaJe3YuevXfA2pTZLRPZ3mQpitL6qD7=qE0Xyg@mail.gmail.com>
+	<20140602123851.GB2654@katana>
+Date: Mon, 2 Jun 2014 15:26:13 +0200
+Message-ID: <CACRpkdbnzy3rSXQ8AFAYmtM93MGKmRj2F566LMvKDhtSw2MLxQ@mail.gmail.com>
+Subject: Re: [PATCH] i2c: Make I2C ID tables non-mandatory for DT'ed and/or
+ ACPI'ed devices
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: Grant Likely <grant.likely@linaro.org>, Lee Jones <lee.jones@linaro.org>,
         "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v3 0/7] of: setup dma parameters using dma-ranges and
- dma-coherent
-References: <1398353407-2345-1-git-send-email-santosh.shilimkar@ti.com> <20140602063702.GB7834@dragon>
-In-Reply-To: <20140602063702.GB7834@dragon>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 02 June 2014 02:37 AM, Shawn Guo wrote:
-> On Thu, Apr 24, 2014 at 11:30:00AM -0400, Santosh Shilimkar wrote:
->> Here is an updated v3 of the series. Series introduces support for setting up
->> dma parameters based on device tree properties like 'dma-ranges' and
->> 'dma-coherent' and also update to ARM 32 bit port. Earlier version of the
->> series can be found here [3], [2] and [1].
-> 
-> Are these two generic device tree properties documented somewhere under
-> Documentation/devicetree/bindings?
-> 
-These bindings have been already in use before this series. But looks like
-they have not been documented. I will do a patch to add description for those
-couple of parameters.
+On Mon, Jun 2, 2014 at 2:38 PM, Wolfram Sang <wsa@the-dreams.de> wrote:
 
-Regards,
-Santosh
+> Though, I wouldn't mind if compatible entries could be passed to the
+> 'new_device' file, in addition to i2c_device_ids. Yet, this needs some
+> extra handling I haven't found the time for, yet.
 
+Hm that's a way forward then I guess... but passing a compatible
+string to that same file is a bit arbitrarily ambigous. So we'd rather
+add a new instatiation file named new_device_of_compatible or so?
+
+Yours,
+Linus Walleij
