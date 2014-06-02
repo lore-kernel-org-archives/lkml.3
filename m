@@ -1,98 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753684AbaFBBpr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jun 2014 21:45:47 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:57471 "EHLO
-	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752715AbaFBBpq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jun 2014 21:45:46 -0400
-X-Original-SENDERIP: 10.178.36.63
-X-Original-MAILFROM: chanho.min@lge.com
-From: Chanho Min <chanho.min@lge.com>
-To: Russell King <linux@arm.linux.org.uk>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: Gioh Kim <gioh.kim@lge.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        HyoJun Im <hyojun.im@lge.com>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        Chanho Min <chanho.min@lge.com>
-Subject: [PATCH] arm: dma-mapping: fix potential build error under !CMA
-Date: Mon,  2 Jun 2014 10:45:28 +0900
-Message-Id: <1401673528-19077-1-git-send-email-chanho.min@lge.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1753779AbaFBBs6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jun 2014 21:48:58 -0400
+Received: from donald.hachti.de ([188.40.85.216]:49935 "EHLO donald.hachti.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753681AbaFBBs5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Jun 2014 21:48:57 -0400
+Message-ID: <538BD805.5040306@hachti.de>
+Date: Mon, 02 Jun 2014 03:48:53 +0200
+From: Philipp Hachtmann <hachti@hachti.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+MIME-Version: 1.0
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: jhovold@gmail.com, linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] usb/ftdi_sio: Add support for setting CBUS pins on
+ FT232H
+References: <1401579066-8298-1-git-send-email-hachti@hachti.de> <1401579066-8298-3-git-send-email-hachti@hachti.de> <20140601000059.27360.qmail@stuge.se> <538A7063.8010205@hachti.de> <20140601023106.GA4961@kroah.com> <538BCC03.3090606@hachti.de> <20140602013839.GA831@kroah.com>
+In-Reply-To: <20140602013839.GA831@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes build error under !CONFIG_CMA. dev_get_cma_area can be used
-when CMA is disabled when the bellow patch is appied.
+On 02.06.2014 03:38, Greg KH wrote:
 
-"arm: dma-mapping: add checking cma area initialized"
-https://lkml.org/lkml/2014/5/22/35
+ >> Yes but... I should have avoided the term "GPIO".> No, you used the right 
+term :)
+Sorry for using the right term :)
 
-arch/arm/mm/dma-mapping.c: In function 'atomic_pool_init':
-arch/arm/mm/dma-mapping.c:361:2: error: implicit declaration of function
- 'dev_get_cma_area' [-Werror=implicit-function-declaration]
+ > No, I am not going to add custom ioctls to a single driver for this.
+I did neither request nor expect that - did it sound that way?
 
-Signed-off-by: Chanho Min <chanho.min@lge.com>
----
- arch/arm/include/asm/dma-contiguous.h |    2 +-
- include/asm-generic/dma-contiguous.h  |   13 +++++++++++--
- 2 files changed, 12 insertions(+), 3 deletions(-)
+ > It would not be lost at all, you can see that relationship in sysfs
+ > between the gpio device and the tty device, they are both attached to
+ > the same "parent" usb interface.
+Ok, I understand. This is a real argument for the GPIO stuff. I'm just beginning 
+to understand that using the GPIO stuff will make everyone happy.
 
-diff --git a/arch/arm/include/asm/dma-contiguous.h b/arch/arm/include/asm/dma-contiguous.h
-index 3ed37b4..56c17bc 100644
---- a/arch/arm/include/asm/dma-contiguous.h
-+++ b/arch/arm/include/asm/dma-contiguous.h
-@@ -2,11 +2,11 @@
- #define ASMARM_DMA_CONTIGUOUS_H
- 
- #ifdef __KERNEL__
--#ifdef CONFIG_CMA
- 
- #include <linux/types.h>
- #include <asm-generic/dma-contiguous.h>
- 
-+#ifdef CONFIG_CMA
- void dma_contiguous_early_fixup(phys_addr_t base, unsigned long size);
- 
- #endif
-diff --git a/include/asm-generic/dma-contiguous.h b/include/asm-generic/dma-contiguous.h
-index 294b1e7..3d48460 100644
---- a/include/asm-generic/dma-contiguous.h
-+++ b/include/asm-generic/dma-contiguous.h
-@@ -2,11 +2,11 @@
- #define ASM_DMA_CONTIGUOUS_H
- 
- #ifdef __KERNEL__
--#ifdef CONFIG_CMA
- 
- #include <linux/device.h>
- #include <linux/dma-contiguous.h>
- 
-+#ifdef CONFIG_CMA
- static inline struct cma *dev_get_cma_area(struct device *dev)
- {
- 	if (dev && dev->cma_area)
-@@ -22,7 +22,16 @@ static inline void dev_set_cma_area(struct device *dev, struct cma *cma)
- 		dma_contiguous_default_area = cma;
- }
- 
--#endif
-+#else
-+static inline struct cma *dev_get_cma_area(struct device *dev)
-+{
-+	return NULL;
-+}
-+
-+static inline void dev_set_cma_area(struct device *dev, struct cma *cma)
-+{
-+}
- #endif
- 
- #endif
-+#endif
--- 
-1.7.9.5
+ > This comes up every 6 months or so, you aren't the first to ask for
+ > custom ioctls / sysfs files for this chip.  But no one seems to want to
+ > to do the work to make it a proper gpio device, which is sad :(
+Ok, ok. I will do it but it will take some time. I will resend my two patches then.
 
+Kind regards
+
+Philipp
