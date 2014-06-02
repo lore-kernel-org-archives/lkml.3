@@ -1,161 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752759AbaFBSdO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 14:33:14 -0400
-Received: from exprod5og112.obsmtp.com ([64.18.0.24]:34380 "HELO
-	exprod5og112.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751286AbaFBSdM (ORCPT
+	id S1751809AbaFBSg5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 14:36:57 -0400
+Received: from mailrelay003.isp.belgacom.be ([195.238.6.53]:47784 "EHLO
+	mailrelay003.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750723AbaFBSg4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 14:33:12 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAGVrzcbecJHbZn1UU3yaD3MtSWk8FmgjMxG4zmQONrnVc05uqg@mail.gmail.com>
-References: <1399326447-2329-1-git-send-email-isubramanian@apm.com>
-	<1399326447-2329-3-git-send-email-isubramanian@apm.com>
-	<CAGVrzcbecJHbZn1UU3yaD3MtSWk8FmgjMxG4zmQONrnVc05uqg@mail.gmail.com>
-Date: Mon, 2 Jun 2014 11:33:09 -0700
-Message-ID: <CAKh23FmFe+5Bn2=OD=GNgzCu9Sqd5Sx=P0_UC=UBvkeMihnhhQ@mail.gmail.com>
-Subject: Re: [PATCH v4 2/4] Documentation: dts: Add bindings for APM X-Gene
- SoC ethernet driver
-From: Iyappan Subramanian <isubramanian@apm.com>
-To: Florian Fainelli <f.fainelli@gmail.com>
-Cc: David Miller <davem@davemloft.net>, netdev <netdev@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "jcm@redhat.com" <jcm@redhat.com>,
-        Greg KH <gregkh@linuxfoundation.org>, patches <patches@apm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Keyur Chudgar <kchudgar@apm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Ravi Patel <rapatel@apm.com>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 2 Jun 2014 14:36:56 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Ao8OAGrDjFNbtAfK/2dsb2JhbABZgwerXQEBAQEBBQGYG4EVF3SCUy8jgRo3iEYBzyMXhVWIfR2EKgEDmgCLG4gSgXiBQjs
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>,
+        Anil Gurumurthy <anil.gurumurthy@qlogic.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Joe Perches <joe@perches.com>
+Subject: [PATCH 1/1] drivers/scsi/bfa/bfad_debugfs.c: replace 2 kzalloc/copy_from_user by memdup_user
+Date: Mon,  2 Jun 2014 20:35:40 +0200
+Message-Id: <1401734140-18987-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 5, 2014 at 2:57 PM, Florian Fainelli <f.fainelli@gmail.com> wrote:
-> 2014-05-05 14:47 GMT-07:00 Iyappan Subramanian <isubramanian@apm.com>:
->> This patch adds documentation for APM X-Gene SoC ethernet DTS binding.
->>
->> Signed-off-by: Iyappan Subramanian <isubramanian@apm.com>
->> Signed-off-by: Ravi Patel <rapatel@apm.com>
->> Signed-off-by: Keyur Chudgar <kchudgar@apm.com>
->> ---
->>  .../devicetree/bindings/net/apm-xgene-enet.txt     |   66 ++++++++++++++++++++
->>  1 file changed, 66 insertions(+)
->>  create mode 100644 Documentation/devicetree/bindings/net/apm-xgene-enet.txt
->>
->> diff --git a/Documentation/devicetree/bindings/net/apm-xgene-enet.txt b/Documentation/devicetree/bindings/net/apm-xgene-enet.txt
->> new file mode 100644
->> index 0000000..9ad6fe1
->> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/net/apm-xgene-enet.txt
->> @@ -0,0 +1,66 @@
->> +APM X-Gene SoC Ethernet nodes
->> +
->> +Ethernet nodes are defined to describe on-chip ethernet interfaces in
->> +APM X-Gene SoC.
->> +
->> +Required properties:
->> +- compatible:          Should be "apm,xgene-enet"
->> +- reg:                 First resource is the ethernet base register set
->> +                       Second resource is the ring base register set
->> +                       Third resource is the ring command register set
->> +- interrupts:          Ethernet main interrupt
->> +- clocks:              Reference to the clock entry.
->> +- local-mac-address:   Ethernet MAC address.
->> +- phy-connection-type: Ethernet MII mode.
->
-> - phy-handle is not listed anywhere, yet, present in the example you give.
+This patch also removes unnecessary printk(KERN_INFO
 
-I will add phy-handle information under required properties.
+Cc: Anil Gurumurthy <anil.gurumurthy@qlogic.com>
+Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
+Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+Cc: Joe Perches <joe@perches.com>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+V4: remove blank line after memdup_user
+V3: memdup_user first argument is already void __user * (thanks to Joe Perches)
+    typo in title
+V2: Remove printk(KERN_INFO (suggested by Alan)
 
->
->> +
->> +- mdio device tree subnode: When the X-Gene SoC has a phy connected to its local
->> +               mdio, there must be device tree subnode with the following
->> +               required properties:
->
-> In that specific case, 'phy-handle' becomes an optional property.
->
->> +
->> +       - compatible: Must be "apm,xgene-mdio".
->> +       - #address-cells: Must be <1>.
->> +       - #size-cells: Must be <0>.
->> +
->> +       For the phy on the mdio bus, there must be a node with the following
->> +       fields:
->> +
->> +       - reg: phy id used to communicate to phy.
->
-> Better refer to Documentation/devicetree/bindings/ethernet/phy.txt
-> which contains a more exhaustive binding description for Ethernet PHY
-> nodes.
->
->> +
->> +Optional properties:
->> +- status               : Should be "ok" or "disabled" for enabled/disabled.
->> +                         Default is "ok".
->> +
->> +Example:
->> +       menetclk: menetclk {
->> +               compatible = "apm,xgene-device-clock";
->> +               clock-output-names = "menetclk";
->> +               status = "ok";
->> +       };
->> +
->> +       menet: ethernet@17020000 {
->> +               compatible = "apm,xgene-enet";
->> +               status = "disabled";
->> +               reg = <0x0 0x17020000 0x0 0xd100>,
->> +                     <0x0 0X17030000 0x0 0X400>,
->> +                     <0x0 0X10000000 0x0 0X200>;
->
-> Since you have mutliple values in your 'reg' property, you could also
-> provide an optional 'reg-names' which documents what the register
-> ranges are about.
+ drivers/scsi/bfa/bfad_debugfs.c | 30 ++++++------------------------
+ 1 file changed, 6 insertions(+), 24 deletions(-)
 
-I will add reg-names supplemental property.
+diff --git a/drivers/scsi/bfa/bfad_debugfs.c b/drivers/scsi/bfa/bfad_debugfs.c
+index 8e83d04..74a307c 100644
+--- a/drivers/scsi/bfa/bfad_debugfs.c
++++ b/drivers/scsi/bfa/bfad_debugfs.c
+@@ -260,18 +260,9 @@ bfad_debugfs_write_regrd(struct file *file, const char __user *buf,
+ 	unsigned long flags;
+ 	void *kern_buf;
+ 
+-	kern_buf = kzalloc(nbytes, GFP_KERNEL);
+-
+-	if (!kern_buf) {
+-		printk(KERN_INFO "bfad[%d]: Failed to allocate buffer\n",
+-				bfad->inst_no);
+-		return -ENOMEM;
+-	}
+-
+-	if (copy_from_user(kern_buf, (void  __user *)buf, nbytes)) {
+-		kfree(kern_buf);
+-		return -ENOMEM;
+-	}
++	kern_buf = memdup_user(buf, nbytes);
++	if (IS_ERR(kern_buf))
++		return PTR_ERR(kern_buf);
+ 
+ 	rc = sscanf(kern_buf, "%x:%x", &addr, &len);
+ 	if (rc < 2) {
+@@ -336,18 +327,9 @@ bfad_debugfs_write_regwr(struct file *file, const char __user *buf,
+ 	unsigned long flags;
+ 	void *kern_buf;
+ 
+-	kern_buf = kzalloc(nbytes, GFP_KERNEL);
+-
+-	if (!kern_buf) {
+-		printk(KERN_INFO "bfad[%d]: Failed to allocate buffer\n",
+-				bfad->inst_no);
+-		return -ENOMEM;
+-	}
+-
+-	if (copy_from_user(kern_buf, (void  __user *)buf, nbytes)) {
+-		kfree(kern_buf);
+-		return -ENOMEM;
+-	}
++	kern_buf = memdup_user(buf, nbytes);
++	if (IS_ERR(kern_buf))
++		return PTR_ERR(kern_buf);
+ 
+ 	rc = sscanf(kern_buf, "%x:%x", &addr, &val);
+ 	if (rc < 2) {
+-- 
+1.8.4.5
 
->
->> +               interrupts = <0x0 0x3c 0x4>;
->> +               clocks = <&menetclk 0>;
->> +               local-mac-address = [00 01 73 00 00 01];
->> +               phy-connection-type = "rgmii";
->> +               phy-handle = <&menetphy>;
->> +               mdio {
->> +                       compatible = "apm,xgene-mdio";
->> +                       #address-cells = <1>;
->> +                       #size-cells = <0>;
->> +                       menetphy: menetphy@3 {
->
-> This PHY node is missing a compatible string as described in
-> Documentation/devicetree/bindings/net/ethernet/phy.txt. Your binding
-> should also link to that documentation for
-
-I will add the compatible property as per the phy.txt recommendations.
-
->
->> +                               reg = <0x3>;
->> +                       };
->> +
->> +               };
->> +       };
->> +
->> +/* Board-specific peripheral configurations */
->> +
->> +&menet {
->> +        status = "ok";
->> +};
->> --
->> 1.7.9.5
->>
->>
->> _______________________________________________
->> linux-arm-kernel mailing list
->> linux-arm-kernel@lists.infradead.org
->> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
->
->
->
-> --
-> Florian
