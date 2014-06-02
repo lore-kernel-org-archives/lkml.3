@@ -1,145 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753246AbaFBUCg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 16:02:36 -0400
-Received: from mail.phunq.net ([184.71.0.62]:57823 "EHLO starbase.phunq.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752065AbaFBUCe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 16:02:34 -0400
-Message-ID: <538CD855.90804@phunq.net>
-Date: Mon, 02 Jun 2014 13:02:29 -0700
-From: Daniel Phillips <daniel@phunq.net>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1752961AbaFBUFr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 16:05:47 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:57081 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752040AbaFBUFq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 16:05:46 -0400
+Date: Mon, 2 Jun 2014 22:05:25 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Waiman Long <waiman.long@hp.com>
+Cc: Mikulas Patocka <mpatocka@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>, jejb@parisc-linux.org,
+        deller@gmx.de, John David Anglin <dave.anglin@bell.net>,
+        linux-parisc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        paulmck@linux.vnet.ibm.com, chegu_vinod@hp.com, tglx@linutronix.de,
+        riel@redhat.com, akpm@linux-foundation.org, davidlohr@hp.com,
+        hpa@zytor.com, andi@firstfloor.org, aswin@hp.com, scott.norton@hp.com,
+        Jason Low <jason.low2@hp.com>
+Subject: Re: [PATCH v2] introduce atomic_pointer to fix a race condition in
+ cancelable mcs spinlocks
+Message-ID: <20140602200525.GD13930@laptop.programming.kicks-ass.net>
+References: <alpine.LRH.2.02.1406011342470.20831@file01.intranet.prod.int.rdu2.redhat.com>
+ <alpine.LRH.2.02.1406021158360.20627@file01.intranet.prod.int.rdu2.redhat.com>
+ <20140602162525.GH16155@laptop.programming.kicks-ass.net>
+ <20140602163032.GI16155@laptop.programming.kicks-ass.net>
+ <538CB56E.5010709@hp.com>
 MIME-Version: 1.0
-To: Dave Chinner <david@fromorbit.com>
-CC: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Subject: Re: [RFC][PATCH 1/2] Add a super operation for writeback
-References: <538B9DEE.20800@phunq.net> <20140602031526.GS14410@dastard>
-In-Reply-To: <20140602031526.GS14410@dastard>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <538CB56E.5010709@hp.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jun 02, 2014 at 01:33:34PM -0400, Waiman Long wrote:
+> On 06/02/2014 12:30 PM, Peter Zijlstra wrote:
+> >On Mon, Jun 02, 2014 at 06:25:25PM +0200, Peter Zijlstra wrote:
+> >>I'm almost inclined to just exclude parisc from using opt spinning.
+> >>
+> >>That said, this patch still doesn't address the far more interesting
+> >>problem of actually finding these issues for these few weird archs.
+> >So why do these archs provide xchg() and cmpxchg() at all? Wouldn't it
+> >be much simpler if archs that cannot sanely do this, not provide these
+> >primitives at all?
+> 
+> I believe xchg() and cmpxchg() are used in quite a number of places within
+> the generic kernel code. So kernel compilation will fail if those APIs
+> aren't provided by an architecture.
 
-On 06/01/2014 08:15 PM, Dave Chinner wrote:
-> On Sun, Jun 01, 2014 at 02:41:02PM -0700, I wrote:
->> +
->> +/*
->> + * Add inode to writeback dirty list with current time.
->> + */
->> +void inode_writeback_touch(struct inode *inode)
->> +{
->> +	struct backing_dev_info *bdi = inode->i_sb->s_bdi;
->> +	spin_lock(&bdi->wb.list_lock);
->> +	inode->dirtied_when = jiffies;
->> +	list_move(&inode->i_wb_list, &bdi->wb.b_dirty);
->> +	spin_unlock(&bdi->wb.list_lock);
->> +}
->> +EXPORT_SYMBOL_GPL(inode_writeback_touch);
-> You should be able to use redirty_tail() for this....
+Yep.. so this is going to be painful for a while. But given their
+(parisc, sparc32, metag-lock1) constraints, who knows how many of those
+uses are actually broken.
 
-Redirty_tail nearly works, but "if (!list_empty(&wb->b_dirty))" is not correct because the inode
-needs to end up on the dirty list whether it was already there or not. This requirement is analogous
-to __mark_inode_dirty() and must tolerate similar races. At the microoptimization level, calling
-redirty_tail from inode_writeback_touch would be less efficient and more bulky. Another small issue
-is, redirty_tail does not always update the timestamp, which could trigger some bogus writeback events.
+So the question is, do you prefer subtly broken code or hard compile
+fails? Me, I go for the compile fail.
 
-> Hmmmm - this is using the wb dirty lists and locks, but you
-> don't pass the wb structure to the writeback callout? That seem
-> wrong to me - why would you bother manipulating these lists if you
-> aren't using them to track dirty inodes in the first place?
-
->From Tux3's point of view, the wb lists just allow fs-writeback to determine when to call
-->writeback(). We agree that inode lists are a suboptimal mechanism, but that is how fs-writeback
-currently thinks. It would be better if our inodes never go onto wb lists in the first place,
-provided that fs-writeback can still drive writeback appropriately.
-
-Perhaps fs-writeback should have an option to work without inode lists at all, and just maintain
-writeback scheduling statistics in the superblock or similar. That would be a big change, more on
-the experimental side. We would be happy to take it on after merge, hopefully for the benefit of
-other filesystems besides Tux3.
-
-What we pass to ->writeback() is just a matter of taste at the moment because we currently ignore
-everything except &work->nr_pages. Anything sane is fine. Note that bdi_writeback is already
-available from bdi->wb, the "default writeback info", whatever that means. A quick tour of existing
-usage suggests that you can reliably obtain the wb that way, but a complete audit would be needed.
-
-Most probably, this API will evolve as new users arrive, and also as our Tux3 usage becomes more
-sophisticated. For now, Tux3 just flushes everything without asking questions. Exactly how that
-might change in the future is hard to predict. You are in a better position to know what XFS would
-require in order to use this interface.
-
-> The first thing that __writeback_sb_inodes() does is create a struct
-> writeback_control from the wb_writeback_work. That should be done
-> here and passed to __writeback_sb_inodes(), which should be renamed
-> "generic_writeback_sb_inodes()".  Also, all the fields in the wbc
-> need to be initialised correctly (i.e including range_start/end).
-
-Good point. I will try that generic_writeback_sb_inode concept for the next iteration, which will
-need a day or two including regression testing.
-
-> Further, a writeback implementation will need to use the generic bdi
-> list and lock structures and so we need to pass the bdi_writeback.
-> Similarly, if we are going to pass nr_pages, we might as well pass
-> the entire work structure. 
->
-> Finally, I don't like the way the wb->list_lock is treated
-> differently by this code. I suspect that we need to rationalise the
-> layering of the wb->list_lock as it is currently not clear what it
-> protects and what (nested) layers of the writeback code actually
-> require it.
-
-One design goal of this proposed writeback interface is to hide the wb list lock entirely from the
-filesystem so core writeback can evolve more easily. This is not cast in stone, but it smells like
-decent factoring. We can save some spinlocks by violating that factoring (as Hirofumi's original
-hack did) at the cost of holding a potentially busy wb lock longer, which does not seem like a good
-trade.
-
-I agree that writeback list locking is murky, and fs-writeback is murky in general. We would like
-Tux3 to be part of the solution, not the problem.
-
-> What I'd like to see is this work:
->
-> struct super_ops ... = {
-> ....
-> 	.writeback = generic_writeback_sb_inodes,
-> ....
->
-> And that means writeback_sb_inodes() would become:
->
-> static long writeback_sb_inodes(struct super_block *sb,
-> 				struct bdi_writeback *wb,
-> 				struct wb_writeback_work *work)
-> {
-> 	struct writeback_control wbc = {
-> 		.sync_mode		= work->sync_mode,
-> 		.tagged_writepages	= work->tagged_writepages,
-> 		.for_kupdate		= work->for_kupdate,
-> 		.for_background		= work->for_background,
-> 		.for_sync		= work->for_sync,
-> 		.range_cyclic		= work->range_cyclic,
-> 		.range_start		= 0,
-> 		.range_end		= LLONG_MAX,
-> 	};
->
-> 	if (sb->s_op->writeback)
-> 		return sb->s_op->writeback(sb, wb, work, &wbc);
->
-> 	return generic_writeback_sb_inodes(sb, wb, work, &wbc);
-> }
->
-> And the higher/lower layers deal with wb->list_lock appropriately.
->
-
-Looks good to me. As noted above, I am not sure that *work is actually required but it does no harm,
-so...
-
-Regards,
-
-Daniel
-
+In any case, this all goes towards what hpa said, what are the minimal
+requirements we have for running Linux.
