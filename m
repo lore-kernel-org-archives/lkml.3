@@ -1,117 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752629AbaFBRvS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 13:51:18 -0400
-Received: from mail-vc0-f175.google.com ([209.85.220.175]:47869 "EHLO
-	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751781AbaFBRvR (ORCPT
+	id S1752653AbaFBRv7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 13:51:59 -0400
+Received: from mailrelay012.isp.belgacom.be ([195.238.6.179]:64658 "EHLO
+	mailrelay012.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751538AbaFBRv6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 13:51:17 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.LSU.2.11.1406020331100.1259@eggly.anvils>
-References: <1397587118-1214-1-git-send-email-dh.herrmann@gmail.com>
- <1397587118-1214-3-git-send-email-dh.herrmann@gmail.com> <alpine.LSU.2.11.1405191916300.2970@eggly.anvils>
- <CANq1E4TORuZU7frtR167P-GNPzEuvbjXXEfi9KdvTwGojqGruA@mail.gmail.com> <alpine.LSU.2.11.1406020331100.1259@eggly.anvils>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 2 Jun 2014 10:50:55 -0700
-Message-ID: <CALCETrUp+3h7aW=FUoB2fng0gNF_Fi3K-WYPR8bNXoXR5968PA@mail.gmail.com>
-Subject: Re: [PATCH v2 2/3] shm: add memfd_create() syscall
-To: Hugh Dickins <hughd@google.com>
-Cc: David Herrmann <dh.herrmann@gmail.com>,
-        Tony Battersby <tonyb@cybernetics.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Jan Kara <jack@suse.cz>,
-        Michael Kerrisk <mtk.manpages@gmail.com>, Ryan Lortie <desrt@desrt.ca>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <tj@kernel.org>,
-        Greg Kroah-Hartman <greg@kroah.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Kristian Hogsberg <krh@bitplanet.net>,
-        Lennart Poettering <lennart@poettering.net>,
-        Daniel Mack <zonque@gmail.com>, Kay Sievers <kay@vrfy.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 2 Jun 2014 13:51:58 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Ao8OAG+5jFNbtAfK/2dsb2JhbABZgwerXQEBAQEBBQGYG4EVF3SCUy8jgRo3iEYBz0cXhVWIfR2EKgEDmgCLG4gSgXiBQjs
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>,
+        Anil Gurumurthy <anil.gurumurthy@qlogic.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Joe Perches <joe@perches.com>
+Subject: [PATCH V3] drivers/scsi/bfa/bfad_debugfs.c: replace 2 kzalloc/copy_from_user by memdup_user
+Date: Mon,  2 Jun 2014 19:50:39 +0200
+Message-Id: <1401731439-17978-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 2, 2014 at 3:59 AM, Hugh Dickins <hughd@google.com> wrote:
-> On Fri, 23 May 2014, David Herrmann wrote:
->> On Tue, May 20, 2014 at 4:20 AM, Hugh Dickins <hughd@google.com> wrote:
->> >
->> > What is a front-FD?
->>
->> With 'front-FD' I refer to things like dma-buf: They allocate a
->> file-descriptor which is just a wrapper around a kernel-internal FD.
->> For instance, DRM-gem buffers exported as dma-buf. fops on the dma-buf
->> are forwarded to the shmem-fd of the given gem-object, but any access
->> to the inode of the dma-buf fd is a no-op as the dma-buf fd uses
->> anon-inode, not the shmem-inode.
->>
->> A previous revision of memfd used something like that, but that was
->> inherently racy.
->
-> Thanks for explaining: then I guess you can leave "front-FD" out of the
-> description next time around, in case there are others like me who are
-> more mystified than enlightened by it.
->
->> > But this does highlight how the "size" arg to memfd_create() is
->> > perhaps redundant.  Why give a size there, when size can be changed
->> > afterwards?  I expect your answer is that many callers want to choose
->> > the size at the beginning, and would prefer to avoid the extra call.
->> > I'm not sure if that's a good enough reason for a redundant argument.
->>
->> At one point in time we might be required to support atomic-sealing.
->> So a memfd_create() call takes the initial seals as upper 32bits in
->> "flags" and sets them before returning the object. If these seals
->> contain SEAL_GROW/SHRINK, we must pass the size during setup (think
->> CLOEXEC with fork()).
->
-> That does sound like over-design to me.  You stop short of passing
-> in an optional buffer of the data it's to contain, good.
->
-> I think it would be a clearer interface without the size, but really
-> that's an issue for the linux-api people you'll be Cc'ing next time.
+This patch also removes unnecessary printk(KERN_INFO
 
-I agree that the interface is more orthogonal without size, but I
-suspect that every single user of memfd_create will follow up with an
-immediate ftruncate for fallocate.  That being said, maybe it's better
-to leave size out so that users have to think about whether to use
-ftruncate or fallocate.
+Cc: Anil Gurumurthy <anil.gurumurthy@qlogic.com>
+Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
+Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+Cc: Joe Perches <joe@perches.com>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
 
->
-> You say "think CLOEXEC with fork()": you have thought about this, I
-> have not, please spell out for me what the atomic size guards against.
-> Do you want an fd that's not shared across fork?
->
->>
->> Note that we spent a lot of time discussing whether such
->> atomic-sealing is necessary and no-one came up with a real race so
->> far. Therefore, I didn't include that. But especially if we add new
->> seals (like SHMEM_SEAL_OPEN, which I still think is not needed and
->> just hides real problems), we might at one point be required to
->> support that. That's also the reason why "flags" is 64bits.
->>
->> One might argue that we can just add memfd_create2() once that
->> happens, but I didn't see any harm in including "size" and making them
->> 64bit.
->
-> I've not noticed another system call with 64-bit flags, it does seem
-> over the top to me: the familiar ones all use int.  But again,
-> a matter for linux-api not for me.
+V3: memdup_user first argument is already void __user * (thanks to Joe Perches)
+    typo in title
+V2: Remove printk(KERN_INFO (suggested by Alan)
 
-I think that 64-bit flags are barely better than just having two flags
-arguments: 64-bit syscall arguments take up two slots on 32-bit
-architectures, so they don't save any space.  (They save a tiny amount
-of time on 64-bit architectures.)
+ drivers/scsi/bfa/bfad_debugfs.c | 28 ++++++----------------------
+ 1 file changed, 6 insertions(+), 22 deletions(-)
 
->
-> Hugh
-
-
-
+diff --git a/drivers/scsi/bfa/bfad_debugfs.c b/drivers/scsi/bfa/bfad_debugfs.c
+index 8e83d04..23e6426 100644
+--- a/drivers/scsi/bfa/bfad_debugfs.c
++++ b/drivers/scsi/bfa/bfad_debugfs.c
+@@ -260,18 +260,10 @@ bfad_debugfs_write_regrd(struct file *file, const char __user *buf,
+ 	unsigned long flags;
+ 	void *kern_buf;
+ 
+-	kern_buf = kzalloc(nbytes, GFP_KERNEL);
++	kern_buf = memdup_user(buf, nbytes);
+ 
+-	if (!kern_buf) {
+-		printk(KERN_INFO "bfad[%d]: Failed to allocate buffer\n",
+-				bfad->inst_no);
+-		return -ENOMEM;
+-	}
+-
+-	if (copy_from_user(kern_buf, (void  __user *)buf, nbytes)) {
+-		kfree(kern_buf);
+-		return -ENOMEM;
+-	}
++	if (IS_ERR(kern_buf))
++		return PTR_ERR(kern_buf);
+ 
+ 	rc = sscanf(kern_buf, "%x:%x", &addr, &len);
+ 	if (rc < 2) {
+@@ -336,18 +328,10 @@ bfad_debugfs_write_regwr(struct file *file, const char __user *buf,
+ 	unsigned long flags;
+ 	void *kern_buf;
+ 
+-	kern_buf = kzalloc(nbytes, GFP_KERNEL);
++	kern_buf = memdup_user(buf, nbytes);
+ 
+-	if (!kern_buf) {
+-		printk(KERN_INFO "bfad[%d]: Failed to allocate buffer\n",
+-				bfad->inst_no);
+-		return -ENOMEM;
+-	}
+-
+-	if (copy_from_user(kern_buf, (void  __user *)buf, nbytes)) {
+-		kfree(kern_buf);
+-		return -ENOMEM;
+-	}
++	if (IS_ERR(kern_buf))
++		return PTR_ERR(kern_buf);
+ 
+ 	rc = sscanf(kern_buf, "%x:%x", &addr, &val);
+ 	if (rc < 2) {
 -- 
-Andy Lutomirski
-AMA Capital Management, LLC
+1.8.4.5
+
