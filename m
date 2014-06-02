@@ -1,34 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752645AbaFBWmX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 18:42:23 -0400
-Received: from mail-ob0-f196.google.com ([209.85.214.196]:39283 "EHLO
-	mail-ob0-f196.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752257AbaFBWmU (ORCPT
+	id S1752514AbaFBWmL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 18:42:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42698 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752257AbaFBWmJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 18:42:20 -0400
-MIME-Version: 1.0
-Reply-To: ruthy92@outlook.com
-Date: Mon, 2 Jun 2014 22:42:20 +0000
-Message-ID: <CA+-TyJf+dv68YQDcvrt7wpq=GibrBWY2Yq27iJpW8KjLf5Gxeg@mail.gmail.com>
-Subject: Re: Please Read
-From: Ruth Yoda <ruthyoda92@gmail.com>
-To: undisclosed-recipients:;
-Content-Type: text/plain; charset=UTF-8
+	Mon, 2 Jun 2014 18:42:09 -0400
+Date: Mon, 2 Jun 2014 15:42:07 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Tony Luck <tony.luck@intel.com>, Andi Kleen <andi@firstfloor.org>,
+        Kamil Iskra <iskra@mcs.anl.gov>, Borislav Petkov <bp@suse.de>,
+        Chen Gong <gong.chen@linux.jf.intel.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH 3/3] mm/memory-failure.c: support dedicated thread to
+ handle SIGBUS(BUS_MCEERR_AO)
+Message-Id: <20140602154207.7e55a16c9038016cd080c176@linux-foundation.org>
+In-Reply-To: <1401432670-24664-4-git-send-email-n-horiguchi@ah.jp.nec.com>
+References: <53877e9c.8b2cdc0a.1604.ffffea43SMTPIN_ADDED_BROKEN@mx.google.com>
+	<1401432670-24664-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+	<1401432670-24664-4-git-send-email-n-horiguchi@ah.jp.nec.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greetings from BURKINA FASO:
-Let me start by introduce myself, I am Mrs.Ruth Yoda, BILL AND
-EXCHANGE MANAGER (Bank of Africa) Ouagadougou, Burkina Faso.I am
-writting you this letter based on the latest development at our bank
-which I will like to bring to your personal edification,$12,250million
-transfer claims. this is a legitimate transaction and I agree to offer
-you 40% of this money as my foreign partner after confirmation of the
-fund in your bank account,If you are interested,please get back to me
-for more clarification.
+On Fri, 30 May 2014 02:51:10 -0400 Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> wrote:
 
-Yours faithful,
+> Currently memory error handler handles action optional errors in the deferred
+> manner by default. And if a recovery aware application wants to handle it
+> immediately, it can do it by setting PF_MCE_EARLY flag. However, such signal
+> can be sent only to the main thread, so it's problematic if the application
+> wants to have a dedicated thread to handler such signals.
+> 
+> So this patch adds dedicated thread support to memory error handler. We have
+> PF_MCE_EARLY flags for each thread separately, so with this patch AO signal
+> is sent to the thread with PF_MCE_EARLY flag set, not the main thread. If
+> you want to implement a dedicated thread, you call prctl() to set PF_MCE_EARLY
+> on the thread.
+> 
+> Memory error handler collects processes to be killed, so this patch lets it
+> check PF_MCE_EARLY flag on each thread in the collecting routines.
+> 
+> No behavioral change for all non-early kill cases.
+> 
+> ...
+>
+> --- mmotm-2014-05-21-16-57.orig/mm/memory-failure.c
+> +++ mmotm-2014-05-21-16-57/mm/memory-failure.c
+> @@ -380,15 +380,44 @@ static void kill_procs(struct list_head *to_kill, int forcekill, int trapno,
+>  	}
+>  }
+>  
+> -static int task_early_kill(struct task_struct *tsk, int force_early)
+> +/*
+> + * Find a dedicated thread which is supposed to handle SIGBUS(BUS_MCEERR_AO)
+> + * on behalf of the thread group. Return task_struct of the (first found)
+> + * dedicated thread if found, and return NULL otherwise.
+> + */
+> +static struct task_struct *find_early_kill_thread(struct task_struct *tsk)
+> +{
+> +	struct task_struct *t;
+> +	rcu_read_lock();
+> +	for_each_thread(tsk, t)
+> +		if ((t->flags & PF_MCE_PROCESS) && (t->flags & PF_MCE_EARLY))
+> +			goto found;
+> +	t = NULL;
+> +found:
+> +	rcu_read_unlock();
+> +	return t;
+> +}
+> +
+> +/*
+> + * Determine whether a given process is "early kill" process which expects
+> + * to be signaled when some page under the process is hwpoisoned.
+> + * Return task_struct of the dedicated thread (main thread unless explicitly
+> + * specified) if the process is "early kill," and otherwise returns NULL.
+> + */
+> +static struct task_struct *task_early_kill(struct task_struct *tsk,
+> +					   int force_early)
+>  {
+> +	struct task_struct *t;
+>  	if (!tsk->mm)
+> -		return 0;
+> +		return NULL;
+>  	if (force_early)
+> -		return 1;
+> -	if (tsk->flags & PF_MCE_PROCESS)
+> -		return !!(tsk->flags & PF_MCE_EARLY);
+> -	return sysctl_memory_failure_early_kill;
+> +		return tsk;
+> +	t = find_early_kill_thread(tsk);
+> +	if (t)
+> +		return t;
+> +	if (sysctl_memory_failure_early_kill)
+> +		return tsk;
+> +	return NULL;
+>  }
 
-Mrs.Ruth Yoda
+The above two functions are to be called under
+read_lock(tasklist_lock), which is rather important...
+
+Given this requirement, did find_early_kill_thread() need rcu_read_lock()?
+
+
