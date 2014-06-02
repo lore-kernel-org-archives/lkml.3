@@ -1,66 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751552AbaFBD5t (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jun 2014 23:57:49 -0400
-Received: from ozlabs.org ([103.22.144.67]:36102 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750709AbaFBD5s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jun 2014 23:57:48 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Jens Axboe <axboe@kernel.dk>, Ming Lei <ming.lei@canonical.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH] block: virtio_blk: don't hold spin lock during world switch
-In-Reply-To: <53888D08.1050602@kernel.dk>
-References: <1401418169-3361-1-git-send-email-ming.lei@canonical.com> <5387F8B2.1070509@kernel.dk> <CACVXFVPoG6_fL_MTRF+616W7UdHpSgjtMLBLeBn4OGR63haw3w@mail.gmail.com> <5387FC96.4030508@kernel.dk> <877g537q6d.fsf@rustcorp.com.au> <53888D08.1050602@kernel.dk>
-User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Mon, 02 Jun 2014 10:53:21 +0930
-Message-ID: <87sino5cl2.fsf@rustcorp.com.au>
+	id S1751281AbaFBEHv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 00:07:51 -0400
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:39135 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750702AbaFBEHu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 00:07:50 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+X-Google-Sender-Delegation: ritesh.harjani@gmail.com
+In-Reply-To: <CAAmzW4OKO0005+-MuTrENHnMZKkJjk9aOx2vBDNoXN8==TWTew@mail.gmail.com>
+References: <1401260672-28339-1-git-send-email-iamjoonsoo.kim@lge.com>
+	<1401260672-28339-4-git-send-email-iamjoonsoo.kim@lge.com>
+	<CALk7dXr4c53boGMaM160ssoomToZvq8q5pUKkTxLtTVVpXGc1A@mail.gmail.com>
+	<CAAmzW4OKO0005+-MuTrENHnMZKkJjk9aOx2vBDNoXN8==TWTew@mail.gmail.com>
+Date: Mon, 2 Jun 2014 09:37:49 +0530
+X-Google-Sender-Auth: fs46RhFKINY6ZxTXIbHDTFie77Q
+Message-ID: <CALk7dXo6M1op0q2xiEW=9dEwOm1pK8C+gSTadJiAL071xJycCQ@mail.gmail.com>
+Subject: Re: [PATCH v2 3/3] CMA: always treat free cma pages as non-free on
+ watermark checking
+From: Ritesh Harjani <ritesh.list@gmail.com>
+To: Joonsoo Kim <js1304@gmail.com>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Mel Gorman <mgorman@suse.de>, Laura Abbott <lauraa@codeaurora.org>,
+        Minchan Kim <minchan@kernel.org>,
+        Heesub Shin <heesub.shin@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Nagachandra P <nagachandra@gmail.com>,
+        Vinayak Menon <menon.vinayak@gmail.com>,
+        Ritesh Harjani <ritesh.harjani@gmail.com>, t.stanislaws@samsung.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jens Axboe <axboe@kernel.dk> writes:
-> On 2014-05-30 00:10, Rusty Russell wrote:
->> Jens Axboe <axboe@kernel.dk> writes:
->>> If Rusty agrees, I'd like to add it for 3.16 with a stable marker.
+Hi Joonsoo,
+
+CC'ing the developer of the patch (Tomasz Stanislawski)
+
+
+On Fri, May 30, 2014 at 8:16 PM, Joonsoo Kim <js1304@gmail.com> wrote:
+> 2014-05-30 19:40 GMT+09:00 Ritesh Harjani <ritesh.list@gmail.com>:
+>> Hi Joonsoo,
 >>
->> Really stable?  It improves performance, which is nice.  But every patch
->> which goes into the kernel fixes a bug, improves clarity, improves
->> performance or adds a feature.  I've now seen all four cases get CC'd
->> into stable.
+>> I think you will be loosing the benefit of below patch with your changes.
+>> I am no expert here so please bear with me. I tried explaining in the
+>> inline comments, let me know if I am wrong.
 >>
->> Including some of mine explicitly not marked stable which get swept up
->> by enthusiastic stable maintainers :(
->>
->> Is now there *any* patch short of a major rewrite which shouldn't get
->> cc: stable?
+>> commit 026b08147923142e925a7d0aaa39038055ae0156
+>> Author: Tomasz Stanislawski <t.stanislaws@samsung.com>
+>> Date:   Wed Jun 12 14:05:02 2013 -0700
 >
-> I agree that there's sometimes an unfortunate trend there. I didn't 
-> check, but my assumption was that this is a regression after the blk-mq 
-> conversion, in which case I do think it belongs in stable.
+> Hello, Ritesh.
+>
+> Thanks for notifying that.
+>
+>>
+>> On Wed, May 28, 2014 at 12:34 PM, Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
+>>> commit d95ea5d1('cma: fix watermark checking') introduces ALLOC_CMA flag
+>>> for alloc flag and treats free cma pages as free pages if this flag is
+>>> passed to watermark checking. Intention of that patch is that movable page
+>>> allocation can be be handled from cma reserved region without starting
+>>> kswapd. Now, previous patch changes the behaviour of allocator that
+>>> movable allocation uses the page on cma reserved region aggressively,
+>>> so this watermark hack isn't needed anymore. Therefore remove it.
+>>>
+>>> Acked-by: Michal Nazarewicz <mina86@mina86.com>
+>>> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+>>>
+>>> diff --git a/mm/compaction.c b/mm/compaction.c
+>>> index 627dc2e..36e2fcd 100644
+>>> --- a/mm/compaction.c
+>>> +++ b/mm/compaction.c
+>>> @@ -1117,10 +1117,6 @@ unsigned long try_to_compact_pages(struct zonelist *zonelist,
+>>>
+>>>         count_compact_event(COMPACTSTALL);
+>>>
+>>> -#ifdef CONFIG_CMA
+>>> -       if (allocflags_to_migratetype(gfp_mask) == MIGRATE_MOVABLE)
+>>> -               alloc_flags |= ALLOC_CMA;
+>>> -#endif
+>>>         /* Compact each zone in the list */
+>>>         for_each_zone_zonelist_nodemask(zone, z, zonelist, high_zoneidx,
+>>>                                                                 nodemask) {
+>>> diff --git a/mm/internal.h b/mm/internal.h
+>>> index 07b6736..a121762 100644
+>>> --- a/mm/internal.h
+>>> +++ b/mm/internal.h
+>>> @@ -384,7 +384,6 @@ unsigned long reclaim_clean_pages_from_list(struct zone *zone,
+>>>  #define ALLOC_HARDER           0x10 /* try to alloc harder */
+>>>  #define ALLOC_HIGH             0x20 /* __GFP_HIGH set */
+>>>  #define ALLOC_CPUSET           0x40 /* check for correct cpuset */
+>>> -#define ALLOC_CMA              0x80 /* allow allocations from CMA areas */
+>>> -#define ALLOC_FAIR             0x100 /* fair zone allocation */
+>>> +#define ALLOC_FAIR             0x80 /* fair zone allocation */
+>>>
+>>>  #endif /* __MM_INTERNAL_H */
+>>> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+>>> index ca678b6..83a8021 100644
+>>> --- a/mm/page_alloc.c
+>>> +++ b/mm/page_alloc.c
+>>> @@ -1764,20 +1764,22 @@ static bool __zone_watermark_ok(struct zone *z, int order, unsigned long mark,
+>>>         long min = mark;
+>>>         long lowmem_reserve = z->lowmem_reserve[classzone_idx];
+>>>         int o;
+>>> -       long free_cma = 0;
+>>>
+>>>         free_pages -= (1 << order) - 1;
+>>>         if (alloc_flags & ALLOC_HIGH)
+>>>                 min -= min / 2;
+>>>         if (alloc_flags & ALLOC_HARDER)
+>>>                 min -= min / 4;
+>>> -#ifdef CONFIG_CMA
+>>> -       /* If allocation can't use CMA areas don't use free CMA pages */
+>>> -       if (!(alloc_flags & ALLOC_CMA))
+>>> -               free_cma = zone_page_state(z, NR_FREE_CMA_PAGES);
+>>> -#endif
+>>> +       /*
+>>> +        * We don't want to regard the pages on CMA region as free
+>>> +        * on watermark checking, since they cannot be used for
+>>> +        * unmovable/reclaimable allocation and they can suddenly
+>>> +        * vanish through CMA allocation
+>>> +        */
+>>> +       if (IS_ENABLED(CONFIG_CMA) && z->managed_cma_pages)
+>>> +               free_pages -= zone_page_state(z, NR_FREE_CMA_PAGES);
+>>
+>> make this free_cma instead of free_pages.
+>>
+>>>
+>>> -       if (free_pages - free_cma <= min + lowmem_reserve)
+>>> +       if (free_pages <= min + lowmem_reserve)
+>> free_pages - free_cma <= min + lowmem_reserve
+>>
+>> Because in for loop you subtract nr_free which includes the CMA pages.
+>> So if you have subtracted NR_FREE_CMA_PAGES
+>> from free_pages above then you will be subtracting cma pages again in
+>> nr_free (below in for loop).
+>
+> Yes, I understand the problem you mentioned.
+>
+> I think that this is complicated issue.
+>
+> Comit '026b081' you mentioned makes watermark_ok() loose for high order
+> allocation compared to kernel that CMA isn't enabled, since free_pages includes
+> free_cma pages and most of high order allocation except THP would be
+> non-movable allocation. This non-movable allocation can't use cma pages,
+> so we shouldn't include free_cma pages.
+>
+> If most of free cma pages are 0 order, that commit works correctly. We subtract
+> nr of free cma pages at the first loop, so there is no problem. But,
+> if the system
+> have some free high-order cma pages, watermark checking allow high-order
+> allocation more easily.
+>
+> I think that loosing the watermark check is right solution so will takes your
+> comment on v2. But I want to know other developer's opinion.
 
-No, it's always been that way.  In the original driver the entire "issue
-requests" function was under the lock.
+Thanks for giving this a thought for your v2 patch.
 
-It was your mq conversion which made this optimization possible, and
-also made it an optimization: now other the queues can continue while
-this one is going.
 
-> But in any case, I think the patch is obviously correct and the wins are 
-> sufficiently large to warrant a stable inclusion even if it isn't a 
-> regression.
+> If needed, I can implement to track free_area[o].nr_cma_free and use it for
+> precise freepage calculation in watermark check.
 
-If you're running SMP under an emulator where exits are expensive, then
-this wins.  Under KVM it's marginal at best.
+I guess implementing nr_cma_free would be the correct solution.
+Because currently for other than 0 order allocation
+we still consider high order free_cma pages as free pages in the for
+loop which from the code looks incorrect.
 
-Locking changes which are "obviously correct" make me nervous, too :)
+This can lead to situation when we have more high order free CMA pages
+but very less unmovable pages, but zone_watermark returns
+ok for unmovable page, thus leading to allocation failure every time
+instead of recovering from this situation.
 
-But IIRC last KS the argument is that not *enough* is going into stable,
-not that stable isn't stable enough.  So maybe it's a non-problem?
+But its better if experts comment on this.
 
-Cheers,
-Rusty.
+
+>
+> Thanks.
+
+
+Thanks
+Ritesh
