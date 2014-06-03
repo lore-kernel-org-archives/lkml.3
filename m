@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965037AbaFCSf0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 14:35:26 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:44939 "EHLO
+	id S965059AbaFCSfl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 14:35:41 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:44948 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933984AbaFCSfU (ORCPT
+	with ESMTP id S933984AbaFCSfh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 14:35:20 -0400
-Date: Tue, 3 Jun 2014 11:35:05 -0700
+	Tue, 3 Jun 2014 14:35:37 -0400
+Date: Tue, 3 Jun 2014 11:35:17 -0700
 From: tip-bot for Namhyung Kim <tipbot@zytor.com>
-Message-ID: <tip-7c50391f536ea6ed1e75b0f4d90922a2606da3de@git.kernel.org>
+Message-ID: <tip-1432ec342ece6a7ef78825ae3a9ba1c91686f71d@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         jolsa@kernel.org, rodrigo@sdfg.com.ar, namhyung@kernel.org,
-        tglx@linutronix.de, asharma@fb.com
+        fweisbec@gmail.com, tglx@linutronix.de, asharma@fb.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         jolsa@kernel.org, rodrigo@sdfg.com.ar, namhyung@kernel.org,
-        tglx@linutronix.de, asharma@fb.com
-In-Reply-To: <1401335910-16832-20-git-send-email-namhyung@kernel.org>
-References: <1401335910-16832-20-git-send-email-namhyung@kernel.org>
+        fweisbec@gmail.com, tglx@linutronix.de, asharma@fb.com
+In-Reply-To: <1401335910-16832-21-git-send-email-namhyung@kernel.org>
+References: <1401335910-16832-21-git-send-email-namhyung@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf top: Convert to hist_entry_iter
-Git-Commit-ID: 7c50391f536ea6ed1e75b0f4d90922a2606da3de
+Subject: [tip:perf/core] perf top: Add --children option
+Git-Commit-ID: 1432ec342ece6a7ef78825ae3a9ba1c91686f71d
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -33,151 +33,78 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  7c50391f536ea6ed1e75b0f4d90922a2606da3de
-Gitweb:     http://git.kernel.org/tip/7c50391f536ea6ed1e75b0f4d90922a2606da3de
+Commit-ID:  1432ec342ece6a7ef78825ae3a9ba1c91686f71d
+Gitweb:     http://git.kernel.org/tip/1432ec342ece6a7ef78825ae3a9ba1c91686f71d
 Author:     Namhyung Kim <namhyung@kernel.org>
-AuthorDate: Tue, 7 Jan 2014 17:41:03 +0900
+AuthorDate: Wed, 30 Oct 2013 17:05:55 +0900
 Committer:  Jiri Olsa <jolsa@kernel.org>
-CommitDate: Sun, 1 Jun 2014 14:35:06 +0200
+CommitDate: Sun, 1 Jun 2014 14:35:07 +0200
 
-perf top: Convert to hist_entry_iter
+perf top: Add --children option
 
-Reuse hist_entry_iter__add() function to share the similar code with
-perf report.  Note that it needs to be called with hists.lock so tweak
-some internal functions not to deadlock or hold the lock too long.
+The --children option is for showing accumulated overhead (period)
+value as well as self overhead.  It should be used with one of -g or
+--call-graph option.
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 Tested-by: Arun Sharma <asharma@fb.com>
 Tested-by: Rodrigo Campos <rodrigo@sdfg.com.ar>
-Link: http://lkml.kernel.org/r/1401335910-16832-20-git-send-email-namhyung@kernel.org
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Link: http://lkml.kernel.org/r/1401335910-16832-21-git-send-email-namhyung@kernel.org
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/builtin-top.c | 76 ++++++++++++++++++++++++++----------------------
- 1 file changed, 41 insertions(+), 35 deletions(-)
+ tools/perf/Documentation/perf-top.txt | 8 +++++++-
+ tools/perf/builtin-top.c              | 7 +++++++
+ 2 files changed, 14 insertions(+), 1 deletion(-)
 
+diff --git a/tools/perf/Documentation/perf-top.txt b/tools/perf/Documentation/perf-top.txt
+index dcfa54c..180ae02 100644
+--- a/tools/perf/Documentation/perf-top.txt
++++ b/tools/perf/Documentation/perf-top.txt
+@@ -119,7 +119,7 @@ Default is to monitor all CPUS.
+ --fields=::
+ 	Specify output field - multiple keys can be specified in CSV format.
+ 	Following fields are available:
+-	overhead, overhead_sys, overhead_us, sample and period.
++	overhead, overhead_sys, overhead_us, overhead_children, sample and period.
+ 	Also it can contain any sort key(s).
+ 
+ 	By default, every sort keys not specified in --field will be appended
+@@ -161,6 +161,12 @@ Default is to monitor all CPUS.
+ 	Setup and enable call-graph (stack chain/backtrace) recording,
+ 	implies -g.
+ 
++--children::
++	Accumulate callchain of children to parent entry so that then can
++	show up in the output.  The output will have a new "Children" column
++	and will be sorted on the data.  It requires -g/--call-graph option
++	enabled.
++
+ --max-stack::
+ 	Set the stack depth limit when parsing the callchain, anything
+ 	beyond the specified depth will be ignored. This is a trade-off
 diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 12e2e12..b1cb5f5 100644
+index b1cb5f5..fea55e3 100644
 --- a/tools/perf/builtin-top.c
 +++ b/tools/perf/builtin-top.c
-@@ -196,6 +196,12 @@ static void perf_top__record_precise_ip(struct perf_top *top,
+@@ -1098,6 +1098,8 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	OPT_CALLBACK(0, "call-graph", &top.record_opts,
+ 		     "mode[,dump_size]", record_callchain_help,
+ 		     &parse_callchain_opt),
++	OPT_BOOLEAN(0, "children", &symbol_conf.cumulate_callchain,
++		    "Accumulate callchains of children and show total overhead as well"),
+ 	OPT_INTEGER(0, "max-stack", &top.max_stack,
+ 		    "Set the maximum stack depth when parsing the callchain. "
+ 		    "Default: " __stringify(PERF_MAX_STACK_DEPTH)),
+@@ -1203,6 +1205,11 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
  
- 	pthread_mutex_unlock(&notes->lock);
+ 	top.sym_evsel = perf_evlist__first(top.evlist);
  
-+	/*
-+	 * This function is now called with he->hists->lock held.
-+	 * Release it before going to sleep.
-+	 */
-+	pthread_mutex_unlock(&he->hists->lock);
-+
- 	if (err == -ERANGE && !he->ms.map->erange_warned)
- 		ui__warn_map_erange(he->ms.map, sym, ip);
- 	else if (err == -ENOMEM) {
-@@ -203,6 +209,8 @@ static void perf_top__record_precise_ip(struct perf_top *top,
- 		       sym->name);
- 		sleep(1);
- 	}
-+
-+	pthread_mutex_lock(&he->hists->lock);
- }
- 
- static void perf_top__show_details(struct perf_top *top)
-@@ -238,24 +246,6 @@ out_unlock:
- 	pthread_mutex_unlock(&notes->lock);
- }
- 
--static struct hist_entry *perf_evsel__add_hist_entry(struct perf_evsel *evsel,
--						     struct addr_location *al,
--						     struct perf_sample *sample)
--{
--	struct hist_entry *he;
--
--	pthread_mutex_lock(&evsel->hists.lock);
--	he = __hists__add_entry(&evsel->hists, al, NULL, NULL, NULL,
--				sample->period, sample->weight,
--				sample->transaction, true);
--	pthread_mutex_unlock(&evsel->hists.lock);
--	if (he == NULL)
--		return NULL;
--
--	hists__inc_nr_samples(&evsel->hists, he->filtered);
--	return he;
--}
--
- static void perf_top__print_sym_table(struct perf_top *top)
- {
- 	char bf[160];
-@@ -659,6 +649,26 @@ static int symbol_filter(struct map *map __maybe_unused, struct symbol *sym)
- 	return 0;
- }
- 
-+static int hist_iter__top_callback(struct hist_entry_iter *iter,
-+				   struct addr_location *al, bool single,
-+				   void *arg)
-+{
-+	struct perf_top *top = arg;
-+	struct hist_entry *he = iter->he;
-+	struct perf_evsel *evsel = iter->evsel;
-+
-+	if (sort__has_sym && single) {
-+		u64 ip = al->addr;
-+
-+		if (al->map)
-+			ip = al->map->unmap_ip(al->map, ip);
-+
-+		perf_top__record_precise_ip(top, he, evsel->idx, ip);
++	if (!symbol_conf.use_callchain) {
++		symbol_conf.cumulate_callchain = false;
++		perf_hpp__cancel_cumulate();
 +	}
 +
-+	return 0;
-+}
-+
- static void perf_event__process_sample(struct perf_tool *tool,
- 				       const union perf_event *event,
- 				       struct perf_evsel *evsel,
-@@ -666,8 +676,6 @@ static void perf_event__process_sample(struct perf_tool *tool,
- 				       struct machine *machine)
- {
- 	struct perf_top *top = container_of(tool, struct perf_top, tool);
--	struct symbol *parent = NULL;
--	u64 ip = sample->ip;
- 	struct addr_location al;
- 	int err;
+ 	symbol_conf.priv_size = sizeof(struct annotation);
  
-@@ -742,25 +750,23 @@ static void perf_event__process_sample(struct perf_tool *tool,
- 	}
- 
- 	if (al.sym == NULL || !al.sym->ignore) {
--		struct hist_entry *he;
-+		struct hist_entry_iter iter = {
-+			.add_entry_cb = hist_iter__top_callback,
-+		};
- 
--		err = sample__resolve_callchain(sample, &parent, evsel, &al,
--						top->max_stack);
--		if (err)
--			return;
-+		if (symbol_conf.cumulate_callchain)
-+			iter.ops = &hist_iter_cumulative;
-+		else
-+			iter.ops = &hist_iter_normal;
- 
--		he = perf_evsel__add_hist_entry(evsel, &al, sample);
--		if (he == NULL) {
--			pr_err("Problem incrementing symbol period, skipping event\n");
--			return;
--		}
-+		pthread_mutex_lock(&evsel->hists.lock);
- 
--		err = hist_entry__append_callchain(he, sample);
--		if (err)
--			return;
-+		err = hist_entry_iter__add(&iter, &al, evsel, sample,
-+					   top->max_stack, top);
-+		if (err < 0)
-+			pr_err("Problem incrementing symbol period, skipping event\n");
- 
--		if (sort__has_sym)
--			perf_top__record_precise_ip(top, he, evsel->idx, ip);
-+		pthread_mutex_unlock(&evsel->hists.lock);
- 	}
- 
- 	return;
+ 	symbol_conf.try_vmlinux_path = (symbol_conf.vmlinux_name == NULL);
