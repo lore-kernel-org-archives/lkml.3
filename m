@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933151AbaFCLuw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 07:50:52 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43820 "EHLO
+	id S1754691AbaFCLml (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 07:42:41 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43785 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754709AbaFCLmo (ORCPT
+	with ESMTP id S1754625AbaFCLmf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 07:42:44 -0400
+	Tue, 3 Jun 2014 07:42:35 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Toshiaki Makita <makita.toshiaki@lab.ntt.co.jp>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Ivan Vecera <ivecera@redhat.com>, "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 114/138] bridge: Handle IFLA_ADDRESS correctly when creating bridge device
-Date: Tue,  3 Jun 2014 12:39:20 +0100
-Message-Id: <1401795584-22664-115-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 108/138] tg3: update rx_jumbo_pending ring param only when jumbo frames are enabled
+Date: Tue,  3 Jun 2014 12:39:14 +0100
+Message-Id: <1401795584-22664-109-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
 References: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
@@ -28,56 +27,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Toshiaki Makita <makita.toshiaki@lab.ntt.co.jp>
+From: Ivan Vecera <ivecera@redhat.com>
 
-commit 30313a3d5794472c3548d7288e306a5492030370 upstream.
+commit ba67b510035141bd89b40bf65efa0a79834311ca upstream.
 
-When bridge device is created with IFLA_ADDRESS, we are not calling
-br_stp_change_bridge_id(), which leads to incorrect local fdb
-management and bridge id calculation, and prevents us from receiving
-frames on the bridge device.
+The patch fixes a problem with dropped jumbo frames after usage of
+'ethtool -G ... rx'.
 
-Reported-by: Tom Gundersen <teg@jklm.no>
-Signed-off-by: Toshiaki Makita <makita.toshiaki@lab.ntt.co.jp>
+Scenario:
+1. ip link set eth0 up
+2. ethtool -G eth0 rx N # <- This zeroes rx-jumbo
+3. ip link set mtu 9000 dev eth0
+
+The ethtool command set rx_jumbo_pending to zero so any received jumbo
+packets are dropped and you need to use 'ethtool -G eth0 rx-jumbo N'
+to workaround the issue.
+The patch changes the logic so rx_jumbo_pending value is changed only if
+jumbo frames are enabled (MTU > 1500).
+
+Signed-off-by: Ivan Vecera <ivecera@redhat.com>
+Acked-by: Michael Chan <mchan@broadcom.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/bridge/br_netlink.c | 15 +++++++++++++++
- 1 file changed, 15 insertions(+)
+ drivers/net/ethernet/broadcom/tg3.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/net/bridge/br_netlink.c b/net/bridge/br_netlink.c
-index e74ddc1c29a8..e7be21fb434f 100644
---- a/net/bridge/br_netlink.c
-+++ b/net/bridge/br_netlink.c
-@@ -446,6 +446,20 @@ static int br_validate(struct nlattr *tb[], struct nlattr *data[])
- 	return 0;
- }
+diff --git a/drivers/net/ethernet/broadcom/tg3.c b/drivers/net/ethernet/broadcom/tg3.c
+index 17822c53ff82..35f66f680aed 100644
+--- a/drivers/net/ethernet/broadcom/tg3.c
++++ b/drivers/net/ethernet/broadcom/tg3.c
+@@ -12148,7 +12148,9 @@ static int tg3_set_ringparam(struct net_device *dev, struct ethtool_ringparam *e
+ 	if (tg3_flag(tp, MAX_RXPEND_64) &&
+ 	    tp->rx_pending > 63)
+ 		tp->rx_pending = 63;
+-	tp->rx_jumbo_pending = ering->rx_jumbo_pending;
++
++	if (tg3_flag(tp, JUMBO_RING_ENABLE))
++		tp->rx_jumbo_pending = ering->rx_jumbo_pending;
  
-+static int br_dev_newlink(struct net *src_net, struct net_device *dev,
-+			  struct nlattr *tb[], struct nlattr *data[])
-+{
-+	struct net_bridge *br = netdev_priv(dev);
-+
-+	if (tb[IFLA_ADDRESS]) {
-+		spin_lock_bh(&br->lock);
-+		br_stp_change_bridge_id(br, nla_data(tb[IFLA_ADDRESS]));
-+		spin_unlock_bh(&br->lock);
-+	}
-+
-+	return register_netdevice(dev);
-+}
-+
- static size_t br_get_link_af_size(const struct net_device *dev)
- {
- 	struct net_port_vlans *pv;
-@@ -474,6 +488,7 @@ struct rtnl_link_ops br_link_ops __read_mostly = {
- 	.priv_size	= sizeof(struct net_bridge),
- 	.setup		= br_dev_setup,
- 	.validate	= br_validate,
-+	.newlink	= br_dev_newlink,
- 	.dellink	= br_dev_delete,
- };
- 
+ 	for (i = 0; i < tp->irq_max; i++)
+ 		tp->napi[i].tx_pending = ering->tx_pending;
 -- 
 1.9.1
 
