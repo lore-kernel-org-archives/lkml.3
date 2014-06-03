@@ -1,74 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754241AbaFCNDT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 09:03:19 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:20527 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752347AbaFCNDS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 09:03:18 -0400
-X-Nat-Received: from [202.181.97.72]:46786 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1401800596.23326
-To: oleg@redhat.com, akpm@linux-foundation.org
-Cc: joseph.salisbury@canonical.com, rientjes@google.com,
-        torvalds@linux-foundation.org, tj@kernel.org, tglx@linutronix.de,
-        linux-kernel@vger.kernel.org, kernel-team@lists.ubuntu.com
-Subject: [PATCH] kthread: Fix return value of kthread_create() upon SIGKILL.
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-References: <53236AA2.7030105@canonical.com>
-	<20140317130241.7e4fde86d75d417628da6f1a@linux-foundation.org>
-	<20140317201919.GA28997@redhat.com>
-In-Reply-To: <20140317201919.GA28997@redhat.com>
-Message-Id: <201406032203.ECD00030.OOHFSQtVFLOFMJ@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Tue, 3 Jun 2014 22:03:11 +0900
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 03062014 #8117452, status: clean
+	id S932290AbaFCNIK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 09:08:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54062 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754029AbaFCNIH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 09:08:07 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: linux-kernel@vger.kernel.org, kexec@lists.infradead.org
+Cc: ebiederm@xmission.com, hpa@zytor.com, mjg59@srcf.ucam.org, greg@kroah.com,
+        bp@alien8.de, jkosina@suse.cz, dyoung@redhat.com, chaowang@redhat.com,
+        bhe@redhat.com, akpm@linux-foundation.org,
+        Vivek Goyal <vgoyal@redhat.com>
+Subject: [PATCH 01/13] bin2c: Move bin2c in scripts/basic
+Date: Tue,  3 Jun 2014 09:06:50 -0400
+Message-Id: <1401800822-27425-2-git-send-email-vgoyal@redhat.com>
+In-Reply-To: <1401800822-27425-1-git-send-email-vgoyal@redhat.com>
+References: <1401800822-27425-1-git-send-email-vgoyal@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From c41fa0b9294900a86167d6c8db392d99dde09774 Mon Sep 17 00:00:00 2001
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Date: Tue, 3 Jun 2014 21:46:24 +0900
-Subject: [PATCH] kthread: Fix return value of kthread_create() upon SIGKILL.
+Kexec wants to use bin2c and it wants to use it really early in the build
+process. See arch/x86/purgatory/ code in later patches.
 
-Commit 786235eeb "kthread: make kthread_create() killable" meant for
-allowing kthread_create() to abort as soon as killed by the OOM-killer.
-But returning -ENOMEM is wrong if killed by SIGKILL from userspace.
-Change kthread_create() to return -EINTR upon SIGKILL.
+So move bin2c in scripts/basic so that it can be built very early and
+be usable by arch/x86/purgatory/
 
-Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: David Rientjes <rientjes@google.com>
-Cc: stable <stable@kernel.org> [3.13+]
+Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
 ---
- kernel/kthread.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ kernel/Makefile        |  2 +-
+ scripts/Makefile       |  1 -
+ scripts/basic/Makefile |  1 +
+ scripts/basic/bin2c.c  | 35 +++++++++++++++++++++++++++++++++++
+ scripts/bin2c.c        | 36 ------------------------------------
+ 5 files changed, 37 insertions(+), 38 deletions(-)
+ create mode 100644 scripts/basic/bin2c.c
+ delete mode 100644 scripts/bin2c.c
 
-diff --git a/kernel/kthread.c b/kernel/kthread.c
-index 9a130ec..c2390f4 100644
---- a/kernel/kthread.c
-+++ b/kernel/kthread.c
-@@ -262,7 +262,7 @@ static void create_kthread(struct kthread_create_info *create)
-  * kthread_stop() has been called).  The return value should be zero
-  * or a negative error number; it will be passed to kthread_stop().
-  *
-- * Returns a task_struct or ERR_PTR(-ENOMEM).
-+ * Returns a task_struct or ERR_PTR(-ENOMEM) or ERR_PTR(-EINTR).
-  */
- struct task_struct *kthread_create_on_node(int (*threadfn)(void *data),
- 					   void *data, int node,
-@@ -298,7 +298,7 @@ struct task_struct *kthread_create_on_node(int (*threadfn)(void *data),
- 		 * that thread.
- 		 */
- 		if (xchg(&create->done, NULL))
--			return ERR_PTR(-ENOMEM);
-+			return ERR_PTR(-EINTR);
- 		/*
- 		 * kthreadd (or new kernel thread) will call complete()
- 		 * shortly.
+diff --git a/kernel/Makefile b/kernel/Makefile
+index f2a8b62..9b07bb7 100644
+--- a/kernel/Makefile
++++ b/kernel/Makefile
+@@ -105,7 +105,7 @@ targets += config_data.gz
+ $(obj)/config_data.gz: $(KCONFIG_CONFIG) FORCE
+ 	$(call if_changed,gzip)
+ 
+-      filechk_ikconfiggz = (echo "static const char kernel_config_data[] __used = MAGIC_START"; cat $< | scripts/bin2c; echo "MAGIC_END;")
++      filechk_ikconfiggz = (echo "static const char kernel_config_data[] __used = MAGIC_START"; cat $< | scripts/basic/bin2c; echo "MAGIC_END;")
+ targets += config_data.h
+ $(obj)/config_data.h: $(obj)/config_data.gz FORCE
+ 	$(call filechk,ikconfiggz)
+diff --git a/scripts/Makefile b/scripts/Makefile
+index 1d07860..e9d56fb 100644
+--- a/scripts/Makefile
++++ b/scripts/Makefile
+@@ -13,7 +13,6 @@ HOST_EXTRACFLAGS += -I$(srctree)/tools/include
+ hostprogs-$(CONFIG_KALLSYMS)     += kallsyms
+ hostprogs-$(CONFIG_LOGO)         += pnmtologo
+ hostprogs-$(CONFIG_VT)           += conmakehash
+-hostprogs-$(CONFIG_IKCONFIG)     += bin2c
+ hostprogs-$(BUILD_C_RECORDMCOUNT) += recordmcount
+ hostprogs-$(CONFIG_BUILDTIME_EXTABLE_SORT) += sortextable
+ hostprogs-$(CONFIG_ASN1)	 += asn1_compiler
+diff --git a/scripts/basic/Makefile b/scripts/basic/Makefile
+index 4fcef87..afbc1cd 100644
+--- a/scripts/basic/Makefile
++++ b/scripts/basic/Makefile
+@@ -9,6 +9,7 @@
+ # fixdep: 	 Used to generate dependency information during build process
+ 
+ hostprogs-y	:= fixdep
++hostprogs-$(CONFIG_IKCONFIG)     += bin2c
+ always		:= $(hostprogs-y)
+ 
+ # fixdep is needed to compile other host programs
+diff --git a/scripts/basic/bin2c.c b/scripts/basic/bin2c.c
+new file mode 100644
+index 0000000..af187e6
+--- /dev/null
++++ b/scripts/basic/bin2c.c
+@@ -0,0 +1,35 @@
++/*
++ * Unloved program to convert a binary on stdin to a C include on stdout
++ *
++ * Jan 1999 Matt Mackall <mpm@selenic.com>
++ *
++ * This software may be used and distributed according to the terms
++ * of the GNU General Public License, incorporated herein by reference.
++ */
++
++#include <stdio.h>
++
++int main(int argc, char *argv[])
++{
++	int ch, total = 0;
++
++	if (argc > 1)
++		printf("const char %s[] %s=\n",
++			argv[1], argc > 2 ? argv[2] : "");
++
++	do {
++		printf("\t\"");
++		while ((ch = getchar()) != EOF) {
++			total++;
++			printf("\\x%02x", ch);
++			if (total % 16 == 0)
++				break;
++		}
++		printf("\"\n");
++	} while (ch != EOF);
++
++	if (argc > 1)
++		printf("\t;\n\nconst int %s_size = %d;\n", argv[1], total);
++
++	return 0;
++}
+diff --git a/scripts/bin2c.c b/scripts/bin2c.c
+deleted file mode 100644
+index 96dd2bc..0000000
+--- a/scripts/bin2c.c
++++ /dev/null
+@@ -1,36 +0,0 @@
+-/*
+- * Unloved program to convert a binary on stdin to a C include on stdout
+- *
+- * Jan 1999 Matt Mackall <mpm@selenic.com>
+- *
+- * This software may be used and distributed according to the terms
+- * of the GNU General Public License, incorporated herein by reference.
+- */
+-
+-#include <stdio.h>
+-
+-int main(int argc, char *argv[])
+-{
+-	int ch, total=0;
+-
+-	if (argc > 1)
+-		printf("const char %s[] %s=\n",
+-			argv[1], argc > 2 ? argv[2] : "");
+-
+-	do {
+-		printf("\t\"");
+-		while ((ch = getchar()) != EOF)
+-		{
+-			total++;
+-			printf("\\x%02x",ch);
+-			if (total % 16 == 0)
+-				break;
+-		}
+-		printf("\"\n");
+-	} while (ch != EOF);
+-
+-	if (argc > 1)
+-		printf("\t;\n\nconst int %s_size = %d;\n", argv[1], total);
+-
+-	return 0;
+-}
 -- 
-1.7.1
+1.9.0
+
