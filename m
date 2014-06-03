@@ -1,254 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753370AbaFCF1G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 01:27:06 -0400
-Received: from mga03.intel.com ([143.182.124.21]:50556 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752013AbaFCF1E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 01:27:04 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,962,1392192000"; 
-   d="scan'208";a="440137931"
-From: "Zhu, Lejun" <lejun.zhu@linux.intel.com>
-To: lee.jones@linaro.org, linus.walleij@linaro.org, broonie@kernel.org
-Cc: sameo@linux.intel.com, mika.westerberg@linux.intel.com, gnurou@gmail.com,
-        linux-kernel@vger.kernel.org, jacob.jun.pan@linux.intel.com,
-        bin.yang@intel.com, lejun.zhu@linux.intel.com
-Subject: [PATCH v5 2/3] mfd: intel_soc_pmic: Crystal Cove support
-Date: Tue,  3 Jun 2014 13:26:03 +0800
-Message-Id: <1401773164-30326-3-git-send-email-lejun.zhu@linux.intel.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1401773164-30326-1-git-send-email-lejun.zhu@linux.intel.com>
-References: <1401773164-30326-1-git-send-email-lejun.zhu@linux.intel.com>
+	id S1753467AbaFCFbT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 01:31:19 -0400
+Received: from mout.kundenserver.de ([212.227.126.187]:49167 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751740AbaFCFbR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 01:31:17 -0400
+Message-ID: <538D5D78.6040102@ontolinux.com>
+Date: Tue, 03 Jun 2014 07:30:32 +0200
+From: Christian Stroetmann <stroetmann@ontolinux.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.0; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Dave Chinner <david@fromorbit.com>
+CC: Daniel Phillips <daniel@phunq.net>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Subject: Re: [RFC][PATCH 1/2] Add a super operation for writeback
+References: <538B9DEE.20800@phunq.net> <538C360F.7020901@ontolinux.com> <20140603033940.GB14410@dastard>
+In-Reply-To: <20140603033940.GB14410@dastard>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:v4/ejXAkkUPUWiXjgsjUIlx4EWh/AZcfxr7pj+UGiXi
+ Aro90EUIU09XStTw0pBRNN0TMlswqMaSMIn84woaP5W60qYHo0
+ AOWL5lo8I0BfZcD5NXhmN2ln1HUXnGHn4oVl5DCjJoZEDVoFav
+ wpgneK7xnoLpU9HHkdc82yE5xXuGZlq4F0Ed7zJlFmFhpF7BQO
+ I7XUdBQvmL05lwmSvVAn2XF3pfaaQvzUpmt4n2rHtntobuLRUa
+ O9hP+hi1o4gkxj6Rp+kOowAnUyar8YGcqXyCxT/FQDTYInwGuR
+ 2EyVj2yV98uido6OrVHKEmemMbz3WAlyEQX4eDHKFDnDHvtLJJ
+ xOcyHO2Ld7uZIogdVDuY=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch provides chip-specific support for Crystal Cove. Crystal
-Cove is the PMIC in Baytrail-T platform.
+On the 3rd of June 2014 05:39, Dave Chinner wrote:
+> On Mon, Jun 02, 2014 at 10:30:07AM +0200, Christian Stroetmann wrote:
+>> When I followed the advice of Dave Chinner:
+>> "We're not going to merge that page forking stuff (like you were
+>> told at LSF 2013 more than a year ago:
+>> http://lwn.net/Articles/548091/) without rigorous design review and
+>> a demonstration of the solutions to all the hard corner cases it
+>> has"
+>> given in his e-mail related with the presentation of the latest
+>> version of the Tux3 file system (see [1]) and read the linked
+>> article, I found in the second comments:
+>> "Parts of this almost sound like it either a.) overlaps with or b.)
+>> would benefit greatly from something similar to Featherstitch
+>> [[2]]."
+>>
+>> Could it be that we have with Featherstitch a general solution
+>> already that is said to be even "file system agnostic"?
+>> Honestly, I thought that something like this would make its way into
+>> the Linux code base.
+> Here's what I said about the last proposal (a few months ago) for
+> integrating featherstitch into the kernel:
+>
+> http://www.spinics.net/lists/linux-fsdevel/msg72799.html
+>
+> It's not a viable solution.
+>
+> Cheers,
+>
+> Dave.
 
-Also adds Intel SoC PMIC support to the build files.
+How annoying, I did not remember your e-mail of the referenced thread 
+"[Lsf-pc] [LSF/MM TOPIC] atomic block device" despite I saved it on 
+local disk. Thanks a lot for the reminder.
 
-Signed-off-by: Yang, Bin <bin.yang@intel.com>
-Signed-off-by: Zhu, Lejun <lejun.zhu@linux.intel.com>
----
-v2:
-- Add regmap_config for Crystal Cove.
-v3:
-- Convert IRQ config to regmap_irq_chip.
-v4:
-- Cleanup include files.
-- Remove useless init() function.
-- Remove useless .label and .init from struct intel_soc_pmic_config.
-- Fix various coding style issues.
-v5:
-- Use CRYSTAL_COVE_IRQ_ prefix for IRQ bits definition.
-- Merge build files patch to here.
----
- drivers/mfd/Kconfig              |  12 +++
- drivers/mfd/Makefile             |   3 +
- drivers/mfd/intel_soc_pmic_crc.c | 158 +++++++++++++++++++++++++++++++++++++++
- 3 files changed, 173 insertions(+)
- create mode 100644 drivers/mfd/intel_soc_pmic_crc.c
+I also directly saw the problem with the research prototype 
+Featherstitch, specifically the point "All the filesystem modules it has 
+are built into the featherstitch kernel module, and called through a VFS 
+shim layer". But it is just a prototype and its concept of abstraction 
+has not to be copied 1:1 into the Linux code base.
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index 3383412..d987b71 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -241,6 +241,18 @@ config LPC_SCH
- 	  LPC bridge function of the Intel SCH provides support for
- 	  System Management Bus and General Purpose I/O.
- 
-+config INTEL_SOC_PMIC
-+	bool "Support for Intel Atom SoC PMIC"
-+	depends on I2C=y
-+	select MFD_CORE
-+	select REGMAP_I2C
-+	select REGMAP_IRQ
-+	help
-+	  Select this option to enable support for the PMIC device
-+	  on some Intel SoC systems. The PMIC provides ADC, GPIO,
-+	  thermal, charger and related power management functions
-+	  on these systems.
-+
- config MFD_INTEL_MSIC
- 	bool "Intel MSIC"
- 	depends on INTEL_SCU_IPC
-diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-index 2851275..36dda4c 100644
---- a/drivers/mfd/Makefile
-+++ b/drivers/mfd/Makefile
-@@ -166,3 +166,6 @@ obj-$(CONFIG_MFD_RETU)		+= retu-mfd.o
- obj-$(CONFIG_MFD_AS3711)	+= as3711.o
- obj-$(CONFIG_MFD_AS3722)	+= as3722.o
- obj-$(CONFIG_MFD_STW481X)	+= stw481x.o
-+
-+intel-soc-pmic-objs		:= intel_soc_pmic_core.o intel_soc_pmic_crc.o
-+obj-$(CONFIG_INTEL_SOC_PMIC)	+= intel-soc-pmic.o
-diff --git a/drivers/mfd/intel_soc_pmic_crc.c b/drivers/mfd/intel_soc_pmic_crc.c
-new file mode 100644
-index 0000000..7107cab
---- /dev/null
-+++ b/drivers/mfd/intel_soc_pmic_crc.c
-@@ -0,0 +1,158 @@
-+/*
-+ * intel_soc_pmic_crc.c - Device access for Crystal Cove PMIC
-+ *
-+ * Copyright (C) 2013, 2014 Intel Corporation. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License version
-+ * 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * Author: Yang, Bin <bin.yang@intel.com>
-+ * Author: Zhu, Lejun <lejun.zhu@linux.intel.com>
-+ */
-+
-+#include <linux/mfd/core.h>
-+#include <linux/interrupt.h>
-+#include <linux/regmap.h>
-+#include <linux/mfd/intel_soc_pmic.h>
-+#include "intel_soc_pmic_core.h"
-+
-+#define CRYSTAL_COVE_MAX_REGISTER	0xC6
-+
-+#define CRYSTAL_COVE_REG_IRQLVL1	0x02
-+#define CRYSTAL_COVE_REG_MIRQLVL1	0x0E
-+
-+#define CRYSTAL_COVE_IRQ_PWRSRC		0
-+#define CRYSTAL_COVE_IRQ_THRM		1
-+#define CRYSTAL_COVE_IRQ_BCU		2
-+#define CRYSTAL_COVE_IRQ_ADC		3
-+#define CRYSTAL_COVE_IRQ_CHGR		4
-+#define CRYSTAL_COVE_IRQ_GPIO		5
-+#define CRYSTAL_COVE_IRQ_VHDMIOCP	6
-+
-+static struct resource gpio_resources[] = {
-+	{
-+		.name	= "GPIO",
-+		.start	= CRYSTAL_COVE_IRQ_GPIO,
-+		.end	= CRYSTAL_COVE_IRQ_GPIO,
-+		.flags	= IORESOURCE_IRQ,
-+	},
-+};
-+
-+static struct resource pwrsrc_resources[] = {
-+	{
-+		.name  = "PWRSRC",
-+		.start = CRYSTAL_COVE_IRQ_PWRSRC,
-+		.end   = CRYSTAL_COVE_IRQ_PWRSRC,
-+		.flags = IORESOURCE_IRQ,
-+	},
-+};
-+
-+static struct resource adc_resources[] = {
-+	{
-+		.name  = "ADC",
-+		.start = CRYSTAL_COVE_IRQ_ADC,
-+		.end   = CRYSTAL_COVE_IRQ_ADC,
-+		.flags = IORESOURCE_IRQ,
-+	},
-+};
-+
-+static struct resource thermal_resources[] = {
-+	{
-+		.name  = "THERMAL",
-+		.start = CRYSTAL_COVE_IRQ_THRM,
-+		.end   = CRYSTAL_COVE_IRQ_THRM,
-+		.flags = IORESOURCE_IRQ,
-+	},
-+};
-+
-+static struct resource bcu_resources[] = {
-+	{
-+		.name  = "BCU",
-+		.start = CRYSTAL_COVE_IRQ_BCU,
-+		.end   = CRYSTAL_COVE_IRQ_BCU,
-+		.flags = IORESOURCE_IRQ,
-+	},
-+};
-+
-+static struct mfd_cell crystal_cove_dev[] = {
-+	{
-+		.name = "crystal_cove_pwrsrc",
-+		.num_resources = ARRAY_SIZE(pwrsrc_resources),
-+		.resources = pwrsrc_resources,
-+	},
-+	{
-+		.name = "crystal_cove_adc",
-+		.num_resources = ARRAY_SIZE(adc_resources),
-+		.resources = adc_resources,
-+	},
-+	{
-+		.name = "crystal_cove_thermal",
-+		.num_resources = ARRAY_SIZE(thermal_resources),
-+		.resources = thermal_resources,
-+	},
-+	{
-+		.name = "crystal_cove_bcu",
-+		.num_resources = ARRAY_SIZE(bcu_resources),
-+		.resources = bcu_resources,
-+	},
-+	{
-+		.name = "crystal_cove_gpio",
-+		.num_resources = ARRAY_SIZE(gpio_resources),
-+		.resources = gpio_resources,
-+	},
-+};
-+
-+static struct regmap_config crystal_cove_regmap_config = {
-+	.reg_bits = 8,
-+	.val_bits = 8,
-+
-+	.max_register = CRYSTAL_COVE_MAX_REGISTER,
-+	.cache_type = REGCACHE_NONE,
-+};
-+
-+static const struct regmap_irq crystal_cove_irqs[] = {
-+	[CRYSTAL_COVE_IRQ_PWRSRC] = {
-+		.mask = BIT(CRYSTAL_COVE_IRQ_PWRSRC),
-+	},
-+	[CRYSTAL_COVE_IRQ_THRM] = {
-+		.mask = BIT(CRYSTAL_COVE_IRQ_THRM),
-+	},
-+	[CRYSTAL_COVE_IRQ_BCU] = {
-+		.mask = BIT(CRYSTAL_COVE_IRQ_BCU),
-+	},
-+	[CRYSTAL_COVE_IRQ_ADC] = {
-+		.mask = BIT(CRYSTAL_COVE_IRQ_ADC),
-+	},
-+	[CRYSTAL_COVE_IRQ_CHGR] = {
-+		.mask = BIT(CRYSTAL_COVE_IRQ_CHGR),
-+	},
-+	[CRYSTAL_COVE_IRQ_GPIO] = {
-+		.mask = BIT(CRYSTAL_COVE_IRQ_GPIO),
-+	},
-+	[CRYSTAL_COVE_IRQ_VHDMIOCP] = {
-+		.mask = BIT(CRYSTAL_COVE_IRQ_VHDMIOCP),
-+	},
-+};
-+
-+static struct regmap_irq_chip crystal_cove_irq_chip = {
-+	.name = "Crystal Cove",
-+	.irqs = crystal_cove_irqs,
-+	.num_irqs = ARRAY_SIZE(crystal_cove_irqs),
-+	.num_regs = 1,
-+	.status_base = CRYSTAL_COVE_REG_IRQLVL1,
-+	.mask_base = CRYSTAL_COVE_REG_MIRQLVL1,
-+};
-+
-+struct intel_soc_pmic_config intel_soc_pmic_config_crc = {
-+	.irq_flags = IRQF_TRIGGER_RISING,
-+	.cell_dev = crystal_cove_dev,
-+	.n_cell_devs = ARRAY_SIZE(crystal_cove_dev),
-+	.regmap_config = &crystal_cove_regmap_config,
-+	.irq_chip = &crystal_cove_irq_chip,
-+};
--- 
-1.8.3.2
+In general, I do not believe that the complexity problems of soft 
+updates, atomic writes, and related techniques can be solved by 
+hand/manually. So my suggestion is to automatically handle the 
+complexity problem of e.g. dependancies in a way that is comparable to 
+a(n on-the-fly) file-system compiler so to say that works on a very 
+large dependancy graph (having several billions of graph vertices 
+actually). And at this point an abstraction like it is given with 
+Featherstitch helps to feed and control this special FS compiler.
 
+Actually, I have to follow the discussion further on the one hand and go 
+deeper into the highly complex problem space on the other hand.
+
+
+
+With all the best
+Christian
