@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755811AbaFCMRJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 08:17:09 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43368 "EHLO
+	id S932508AbaFCMRp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 08:17:45 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43329 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932329AbaFCLkp (ORCPT
+	with ESMTP id S932211AbaFCLki (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 07:40:45 -0400
+	Tue, 3 Jun 2014 07:40:38 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Romain Izard <romain.izard.pro@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
+Cc: Christoph Hellwig <hch@lst.de>, Chuck Lever <chuck.lever@oracle.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 031/138] trace: module: Maintain a valid user count
-Date: Tue,  3 Jun 2014 12:37:57 +0100
-Message-Id: <1401795584-22664-32-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 029/138] posix_acl: handle NULL ACL in posix_acl_equiv_mode
+Date: Tue,  3 Jun 2014 12:37:55 +0100
+Message-Id: <1401795584-22664-30-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
 References: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
@@ -30,46 +28,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Romain Izard <romain.izard.pro@gmail.com>
+From: Christoph Hellwig <hch@lst.de>
 
-commit 098507ae3ec2331476fb52e85d4040c1cc6d0ef4 upstream.
+commit 50c6e282bdf5e8dabf8d7cf7b162545a55645fd9 upstream.
 
-The replacement of the 'count' variable by two variables 'incs' and
-'decs' to resolve some race conditions during module unloading was done
-in parallel with some cleanup in the trace subsystem, and was integrated
-as a merge.
+Various filesystems don't bother checking for a NULL ACL in
+posix_acl_equiv_mode, and thus can dereference a NULL pointer when it
+gets passed one. This usually happens from the NFS server, as the ACL tools
+never pass a NULL ACL, but instead of one representing the mode bits.
 
-Unfortunately, the formula for this replacement was wrong in the tracing
-code, and the refcount in the traces was not usable as a result.
+Instead of adding boilerplat to all filesystems put this check into one place,
+which will allow us to remove the check from other filesystems as well later
+on.
 
-Use 'count = incs - decs' to compute the user count.
-
-Link: http://lkml.kernel.org/p/1393924179-9147-1-git-send-email-romain.izard.pro@gmail.com
-
-Acked-by: Ingo Molnar <mingo@kernel.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Fixes: c1ab9cab7509 "merge conflict resolution"
-Signed-off-by: Romain Izard <romain.izard.pro@gmail.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+Reported-by: Ben Greear <greearb@candelatech.com>
+Reported-by: Marco Munderloh <munderl@tnt.uni-hannover.de>,
+Cc: Chuck Lever <chuck.lever@oracle.com>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- include/trace/events/module.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/posix_acl.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/include/trace/events/module.h b/include/trace/events/module.h
-index 161932737416..ca298c7157ae 100644
---- a/include/trace/events/module.h
-+++ b/include/trace/events/module.h
-@@ -78,7 +78,7 @@ DECLARE_EVENT_CLASS(module_refcnt,
+diff --git a/fs/posix_acl.c b/fs/posix_acl.c
+index 8bd2135b7f82..3542f1f814e2 100644
+--- a/fs/posix_acl.c
++++ b/fs/posix_acl.c
+@@ -158,6 +158,12 @@ posix_acl_equiv_mode(const struct posix_acl *acl, umode_t *mode_p)
+ 	umode_t mode = 0;
+ 	int not_equiv = 0;
  
- 	TP_fast_assign(
- 		__entry->ip	= ip;
--		__entry->refcnt	= __this_cpu_read(mod->refptr->incs) + __this_cpu_read(mod->refptr->decs);
-+		__entry->refcnt	= __this_cpu_read(mod->refptr->incs) - __this_cpu_read(mod->refptr->decs);
- 		__assign_str(name, mod->name);
- 	),
- 
++	/*
++	 * A null ACL can always be presented as mode bits.
++	 */
++	if (!acl)
++		return 0;
++
+ 	FOREACH_ACL_ENTRY(pa, acl, pe) {
+ 		switch (pa->e_tag) {
+ 			case ACL_USER_OBJ:
 -- 
 1.9.1
 
