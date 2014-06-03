@@ -1,63 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751566AbaFCJme (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 05:42:34 -0400
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:37155 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750709AbaFCJmd (ORCPT
+	id S1752169AbaFCJoZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 05:44:25 -0400
+Received: from smtp-out003.kontent.com ([81.88.40.217]:40499 "EHLO
+	smtp-out003.kontent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750892AbaFCJoY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 05:42:33 -0400
-MIME-Version: 1.0
-X-Originating-IP: [46.139.80.5]
-In-Reply-To: <CA+icZUU8BqGUoQdtuqt403NdCBnJnH1-k64bxTM0b_GSfQr1hQ@mail.gmail.com>
-References: <1400838223-30844-1-git-send-email-miklos@szeredi.hu>
-	<28592.1401382081@warthog.procyon.org.uk>
-	<11446.1401420931@jrobl>
-	<7184.1401439773@warthog.procyon.org.uk>
-	<CA+icZUV5P=fVwe_MJJHixwBOBoj7HoKSFuySLdS6AU5L++S=4g@mail.gmail.com>
-	<15839.1401786056@warthog.procyon.org.uk>
-	<CA+icZUUiirxYnoL7pg5TvFEy6pQ+5Q3CuJ0jonJMXTOwhT-LDw@mail.gmail.com>
-	<CA+icZUU8BqGUoQdtuqt403NdCBnJnH1-k64bxTM0b_GSfQr1hQ@mail.gmail.com>
-Date: Tue, 3 Jun 2014 11:42:32 +0200
-Message-ID: <CAJfpegtobxoMs+RRrPYLFRPOVSfr_uqZs+HJFLRif3svHGyQwA@mail.gmail.com>
-Subject: Re: Unionmount and overlayfs testsuite
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Sedat Dilek <sedat.dilek@gmail.com>
-Cc: David Howells <dhowells@redhat.com>,
-        "J. R. Okajima" <hooanon05g@gmail.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Robo Bot <apw@canonical.com>, Felix Fietkau <nbd@openwrt.org>,
-        Neil Brown <neilb@suse.de>, Jordi Pujol <jordipujolp@gmail.com>,
-        ezk@fsl.cs.sunysb.edu, "mszeredi@suse.cz" <mszeredi@suse.cz>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 3 Jun 2014 05:44:24 -0400
+Message-ID: <1401788659.18466.2.camel@linux-fkkt.site>
+Subject: Re: [PATCH] MAINTAINERS: drop two usb-serial subdriver entries
+From: Oliver Neukum <oliver@neukum.org>
+To: Johan Hovold <jhovold@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Matthias Urlichs <smurf@smurf.noris.de>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 03 Jun 2014 11:44:19 +0200
+In-Reply-To: <20140602071607.GD14935@localhost>
+References: <1401615137-11862-1-git-send-email-jhovold@gmail.com>
+	 <20140601174559.GB1281@kroah.com> <20140602071607.GD14935@localhost>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 3, 2014 at 11:26 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
-> On Tue, Jun 3, 2014 at 11:18 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->> [...]
->>>> [ NOTE-2: The call-trace I have seen once (TERMSLASH=0). ]
->>>
->>> Do you know for which operation?
+On Mon, 2014-06-02 at 09:16 +0200, Johan Hovold wrote:
+> Oliver and perhaps also Mathias are still around, but the option
+> driver
+> is now down to about 200 LOC (including boilerplate) when not counting
+> the id table, while the kl5kusb105 is currently at about 400 LOC
+> (including boilerplate) since I converted it to use the generic
+> implementation a few years ago.
+> 
+> Oliver and Mathias, what do you think of this? Would you be willing to
+> sign off on this patch?
 
-This still looks like the same annotation problem in
-generic_file_splice_write() I already sent a patch for.
+Signed-off-by: Oliver Neukum <oliver@neukum.org>
 
-Fix now pushed to overlayfs.v22/overlayfs.current.
+	Regards
+		Oliver
 
-Also added ops to shmem to support the cases where RENAME_EXCHANGE and
-RENAME_WHITEOUT are needed.  Not sure if the testsuite goes into these
-at all, but anyway.
 
-If I remove the assert_early_copy_up calls from impermissible.test
-(which seem to be bogus), then the suite passes for overlayfs without
-lockdep problems for me.
-
-Thanks,
-Miklos
