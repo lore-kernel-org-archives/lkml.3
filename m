@@ -1,65 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754519AbaFCOaD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 10:30:03 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:50141 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752637AbaFCO37 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 10:29:59 -0400
-From: Georgi Djakov <gdjakov@mm-sol.com>
-To: galak@codeaurora.org
-Cc: mturquette@linaro.org, sboyd@codeaurora.org, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, linux@arm.linux.org.uk,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        Georgi Djakov <gdjakov@mm-sol.com>
-Subject: [PATCH v3 1/2] ARM: dts: qcom: Add APQ8084 Global Clock Controller DT node
-Date: Tue,  3 Jun 2014 17:29:40 +0300
-Message-Id: <1401805781-26637-2-git-send-email-gdjakov@mm-sol.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1401805781-26637-1-git-send-email-gdjakov@mm-sol.com>
-References: <1401805781-26637-1-git-send-email-gdjakov@mm-sol.com>
+	id S932433AbaFCOde (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 10:33:34 -0400
+Received: from relay1.mentorg.com ([192.94.38.131]:63762 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751601AbaFCOda (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 10:33:30 -0400
+Date: Tue, 3 Jun 2014 14:33:10 +0000
+From: "Joseph S. Myers" <joseph@codesourcery.com>
+X-X-Sender: jsm28@digraph.polyomino.org.uk
+To: Arnd Bergmann <arnd@arndb.de>
+CC: "H. Peter Anvin" <hpa@zytor.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arch@vger.kernel.org>, <john.stultz@linaro.org>,
+        <hch@infradead.org>, <tglx@linutronix.de>, <geert@linux-m68k.org>,
+        <lftan@altera.com>, <linux-fsdevel@vger.kernel.org>,
+        <ceph-devel@vger.kernel.org>, <cluster-devel@redhat.com>,
+        <coda@cs.cmu.edu>, <codalist@telemann.coda.cs.cmu.edu>,
+        <fuse-devel@lists.sourceforge.net>, <linux-afs@lists.infradead.org>,
+        <linux-btrfs@vger.kernel.org>, <linux-cifs@vger.kernel.org>,
+        <linux-ext4@vger.kernel.org>, <linux-f2fs-devel@lists.sourceforge.net>,
+        <linux-mtd@lists.infradead.org>, <linux-nfs@vger.kernel.org>,
+        <linux-ntfs-dev@lists.sourceforge.net>, <linux-scsi@vger.kernel.org>,
+        <logfs@logfs.org>, <ocfs2-devel@oss.oracle.com>,
+        <reiserfs-devel@vger.kernel.org>, <samba-technical@lists.samba.org>,
+        <xfs@oss.sgi.com>
+Subject: Re: [RFC 00/32] making inode time stamps y2038 ready
+In-Reply-To: <5011138.W0gbOc20Qp@wuerfel>
+Message-ID: <Pine.LNX.4.64.1406031427130.12421@digraph.polyomino.org.uk>
+References: <1401480116-1973111-1-git-send-email-arnd@arndb.de>
+ <7175692.dpgYFMbTaP@wuerfel> <538CF346.2070504@zytor.com> <5011138.W0gbOc20Qp@wuerfel>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+X-OriginalArrivalTime: 03 Jun 2014 14:33:14.0298 (UTC) FILETIME=[C095E9A0:01CF7F38]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the necessary node to probe the global clock
-controller on APQ8084 platforms.
+On Tue, 3 Jun 2014, Arnd Bergmann wrote:
 
-Signed-off-by: Georgi Djakov <gdjakov@mm-sol.com>
-Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
----
- arch/arm/boot/dts/qcom-apq8084.dtsi |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+> I think John Stultz and Thomas Gleixner have already started looking
+> at how the timekeeping code can be updated. Once that is done, we should
+> be able to add a functional 64-bit gettimeofday/settimeofday syscall
+> pair. While I definitely agree this is one of the most basic things to
+> have, it's also not an area of the kernel that is easy to change.
 
-diff --git a/arch/arm/boot/dts/qcom-apq8084.dtsi b/arch/arm/boot/dts/qcom-apq8084.dtsi
-index e3e009a..1e785df 100644
---- a/arch/arm/boot/dts/qcom-apq8084.dtsi
-+++ b/arch/arm/boot/dts/qcom-apq8084.dtsi
-@@ -2,6 +2,8 @@
- 
- #include "skeleton.dtsi"
- 
-+#include <dt-bindings/clock/qcom,gcc-apq8084.h>
-+
- / {
- 	model = "Qualcomm APQ 8084";
- 	compatible = "qcom,apq8084";
-@@ -175,5 +177,13 @@
- 			compatible = "qcom,pshold";
- 			reg = <0xfc4ab000 0x4>;
- 		};
-+
-+		gcc: clock-controller@fc400000 {
-+			compatible = "qcom,gcc-apq8084";
-+			#clock-cells = <1>;
-+			#reset-cells = <1>;
-+			reg = <0xfc400000 0x4000>;
-+		};
-+
- 	};
- };
+64-bit clock_gettime / clock_settime instead of gettimeofday / 
+settimeofday should avoid the need for the kernel to have a 64-bit version 
+of struct timeval.  (Userspace 64-bit gettimeofday / settimeofday would 
+need to use a combination of the syscalls if the tz pointer is non-NULL.)
+
 -- 
-1.7.9.5
-
+Joseph S. Myers
+joseph@codesourcery.com
