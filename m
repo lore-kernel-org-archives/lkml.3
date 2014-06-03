@@ -1,76 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752720AbaFCAI0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 20:08:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43356 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751658AbaFCAIZ (ORCPT
+	id S932079AbaFCALX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 20:11:23 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:37963 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752124AbaFCALV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 20:08:25 -0400
-Date: Mon, 2 Jun 2014 17:12:02 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: [GIT PULL] extcon next-v2 for v3.16
-Message-ID: <20140603001202.GA17821@kroah.com>
-References: <538C06FC.4000009@samsung.com>
- <20140602225517.GB7641@kroah.com>
- <538D0E86.8080902@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <538D0E86.8080902@samsung.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Mon, 2 Jun 2014 20:11:21 -0400
+Date: Mon, 02 Jun 2014 17:11:20 -0700 (PDT)
+Message-Id: <20140602.171120.192669833635400682.davem@davemloft.net>
+To: olof@lixom.net
+Cc: rickard_strandqvist@spectrumdigital.se, chas@cmf.nrl.navy.mil,
+        grant.likely@linaro.org, robh+dt@kernel.org,
+        linux-atm-general@lists.sourceforge.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Subject: Re: [PATCH] atm: fore200e.c: Cleaning up uninitialized variables
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <CAOesGMi4SGRP6_WMgv3xz_QrGScktYGQEK-muCrE=ohFBfeBeQ@mail.gmail.com>
+References: <1401577712-4447-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+	<CAOesGMi4SGRP6_WMgv3xz_QrGScktYGQEK-muCrE=ohFBfeBeQ@mail.gmail.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 02 Jun 2014 17:11:21 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 03, 2014 at 08:53:42AM +0900, Chanwoo Choi wrote:
-> Dear Greg,
-> 
-> On 06/03/2014 07:55 AM, Greg KH wrote:
-> > On Mon, Jun 02, 2014 at 02:09:16PM +0900, Chanwoo Choi wrote:
-> >> Dear Greg,
-> >>
-> >> This is extcon-next-v2 full request for v3.16. This pull request includes
-> >> additional patchset after merged previous extcon-next pull request(tags/extcon-next-for-v3.16).
-> >> I add detailed description of this pull request on below. Please pull extcon with following update.
-> >>
-> >> Best Regards,
-> >> Chanwoo Choi
-> >>
-> >> The following changes since commit 3f79a3fb5f41e8f2229e5bf8aa725eaa79686f14:
-> >>
-> >>   extcon: palmas: Use devm_extcon_dev_allocate for extcon_dev (2014-04-29 09:52:12 +0900)
-> >>
-> >> are available in the git repository at:
-> >>
-> >>   git://git.kernel.org/pub/scm/linux/kernel/git/chanwoo/extcon.git tags/extcon-next-v2-for-3.16
-> > 
-> > I was thinking it was too late for 3.16-rc1, as the merge window is now
-> > open and I like to have things in my tree a week or so before that
-> > happens, but I figured this was nice and self-contained so I would take
-> > it.
-> 
-> Sorry late pull-request. I'll send next pull-request before -rc7 release certainly.
-> 
-> > 
-> > So I pulled, and built, and then got this:
-> > 
-> > ERROR: "regmap_irq_get_virq" [drivers/extcon/extcon-sm5502.ko] undefined!
-> > ERROR: "regmap_add_irq_chip" [drivers/extcon/extcon-sm5502.ko] undefined!
-> > ERROR: "regmap_del_irq_chip" [drivers/extcon/extcon-sm5502.ko] undefined!
-> > 
-> > which makes me know that you haven't done much build testing of the code
-> > :(
-> 
-> Sorry about this mistake. As you comment, I'll check much build testing.
+From: Olof Johansson <olof@lixom.net>
+Date: Sun, 1 Jun 2014 17:10:39 -0700
 
-Any reason your trees are not in linux-next?  I'd recommend them to be
-there, so you can get that build testing ahead-of-time.
+> On Sat, May 31, 2014 at 4:08 PM, Rickard Strandqvist
+> <rickard_strandqvist@spectrumdigital.se> wrote:
+>> There is a risk that the variable will be used without being initialized.
+>>
+>> This was largely found by using a static code analysis program called cppcheck.
+>>
+>> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+>> ---
+>>  drivers/atm/fore200e.c |    2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/atm/fore200e.c b/drivers/atm/fore200e.c
+>> index 204814e..d4725fc 100644
+>> --- a/drivers/atm/fore200e.c
+>> +++ b/drivers/atm/fore200e.c
+>> @@ -2780,7 +2780,7 @@ static struct pci_driver fore200e_pca_driver = {
+>>
+>>  static int __init fore200e_module_init(void)
+>>  {
+>> -       int err;
+>> +       int err = 0;
+>>
+>>         printk(FORE200E "FORE Systems 200E-series ATM driver - version " FORE200E_VERSION "\n");
+> 
+> 
+> I can see how a tool that doesn't know about Kconfig dependencies
+> might think so, but if you look at Kconfig you'll see that for this
+> driver to be enabled for building either CONFIG_SBUS or CONFIG_PCI
+> must be set, and if either of them is then this variable will not be
+> used without first being set.
 
-thanks,
-
-greg k-h
+Yeah but it's harmless to apply this, which I've done.
