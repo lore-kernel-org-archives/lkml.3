@@ -1,86 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754302AbaFCU6F (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 16:58:05 -0400
-Received: from hygieia.santi-shop.eu ([78.46.175.2]:40724 "EHLO
-	hygieia.santi-shop.eu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753283AbaFCU6D (ORCPT
+	id S964822AbaFCU6Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 16:58:25 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:37598 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933299AbaFCU6W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 16:58:03 -0400
-Date: Tue, 3 Jun 2014 22:57:57 +0200
-From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
-To: "Gideon D'souza" <gidisrael@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Pointers on debugging my machine not booting
-Message-ID: <20140603225757.5dfb2634@neptune.home>
-In-Reply-To: <CAPNrq4zJzMwJ2nFwWA3sVc7hr7nYXBRPQomFgZ_1SX+iGxrr0A@mail.gmail.com>
-References: <CAPNrq4zJzMwJ2nFwWA3sVc7hr7nYXBRPQomFgZ_1SX+iGxrr0A@mail.gmail.com>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.23; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 3 Jun 2014 16:58:22 -0400
+MIME-Version: 1.0
+In-Reply-To: <538E319B.3000606@redhat.com>
+References: <1401692506-7796-1-git-send-email-ast@plumgrid.com>
+	<538C3C94.3080206@redhat.com>
+	<CAMEtUuzkjZCsReWH9cZs8AU0mJjZH9YOdCBTWusxe6-NZ9mQ=g@mail.gmail.com>
+	<538CAEA6.4060307@redhat.com>
+	<CAMEtUuwxJOgYgFjg9deQZOffeg6-JUGZXZ1Rj344eQmriQ0F0Q@mail.gmail.com>
+	<538D8DAA.7090105@redhat.com>
+	<CAMEtUuw8uyCGeLeUB0PXm5cCpqcsjPLZt6y9FcKjapbVPjWTuw@mail.gmail.com>
+	<538E319B.3000606@redhat.com>
+Date: Tue, 3 Jun 2014 13:58:21 -0700
+Message-ID: <CAMEtUuzsHJioXZtuGje6UmwZmcmDZEn8PdkkYanA9j1sp242+Q@mail.gmail.com>
+Subject: Re: [PATCH v2 net-next 0/2] split BPF out of core networking
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Daniel Borkmann <dborkman@redhat.com>
+Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        Network Development <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Gideon,
+On Tue, Jun 3, 2014 at 1:35 PM, Daniel Borkmann <dborkman@redhat.com> wrote:
+> On 06/03/2014 05:44 PM, Alexei Starovoitov wrote:
+> ...
+>>
+>> All of your points are valid. They are right questions to ask. I just
+>>
+>> don't see why you're still arguing about first step of filter.c split,
+>> whereas your concerns are about steps 2, 3, 4.
+>
+>
+> Fair enough, lets keep them in mind though for future work. Btw,
 
-On Thu, 29 May 2014 "Gideon D'souza" <gidisrael@gmail.com> wrote:
-> Hey guys,
-> 
-> So I usually have the latest mainline kernel (on my fedora box) I've
-> recently sent it tiny refactoring patches.
+Ok :)
 
-What kind of box is it?
+> are other files planned for kernel/bpf/ or should it instead just
+> simply be kernel/bpf.c?
 
-> Today, I start my machine and it just doesn't start. I had 3.11, 3.12,
-> and a few 3.14 rcs.
-> 
-> All show up booting, a few lines print on the screen about various
-> things it does. At some random point the screen is just black and
-> backlit and nothing happens. I tried all kernels, 3.11 and 3.12 and
-> official fedora supported kernels. The rest I installed. Even the
-> fedora rescue system doesn't work.
-> 
-> I tried looking into remote debugging linux and keep just getting hits
-> on virtual machine options. It's time I left my training wheels and I
-> want to debug my actual machine and see what's going on.
-> 
-> Several of those kernels have debugging support on. I just don't get
-> what wire I need to buy, what really is a JTAG and I just need a
-> pointer on how to set it up. I have another windows machine and an OSX
-> machine around.
-
-JTAG is a debugging interface mostly present on ARM system (develoment
-boards, production boards often have no corresponding pin headers).
-x86/x86_64 system usually don't have JTAG and serial connectors are
-getting less common...
-Then there exists some EHCI (yes USB) based debugging interface but
-that's all I know about it.
-
-> Any pointers (pun intended) will be greatly appreciated.
-
-If you can hook up a serial console to your box that would maybe help,
-at least getting access to what has been shown prior to screen going blank.
-
-For your kernel you would need to add "console=ttyS0" possibly with
-a few details on baud-rate (see Documentation/kernel-parameters.txt).
-
-Depending on your GPU and corresponding drivers, adding nouveau.modeset=0
-or radeon.modeset=0 or i915.modeset=0 could get your further in case it's
-a GPU issue.
-
-Also of interest would be whether your system is still alive or not
-(might react to caps-lock, at least for PS2-conected keyboards), how
-network interface behaves.
-
-Otherwise sharing the kernel log you see before screen goes black could
-give a hint. If it's initializing GPU that breaks your system - black
-screen could be just that - checking GPU power supply might be an idea,
-especially if kernels that worked in the past don't work anymore.
-
-Critical information is if the "freeze" always happens during kernel
-booting or later on when modules are being loaded by your initrd.
-In the second case, booting with init=/bin/sh could get you a prompt.
-
-Bruno
+The most obvious one is eBPF verifier in separate file (kernel/bpf/verifier.c)
+bpf maps is yet another thing, but that's different topic.
+Probably a set of bpf-callable functions in another file. Like right now
+for sockets these helpers are __skb_get_pay_offset(), __skb_get_nlattr()
+For tracing there will be a different set of helper functions and eventually
+some will be common. Like __get_raw_cpu_id() from filter.c could
+eventually move to kernel/bpf/helpers.c
+I'm not a fan of squeezing different logic into one file.
