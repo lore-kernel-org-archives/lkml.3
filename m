@@ -1,67 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754605AbaFCWeX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 18:34:23 -0400
-Received: from ozlabs.org ([103.22.144.67]:39401 "EHLO ozlabs.org"
+	id S933525AbaFCWh5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 18:37:57 -0400
+Received: from mail.phunq.net ([184.71.0.62]:49070 "EHLO starbase.phunq.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750941AbaFCWeW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 18:34:22 -0400
-Date: Wed, 4 Jun 2014 08:34:11 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Trond Myklebust <trond.myklebust@fys.uio.no>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Anna Schumaker <Anna.Schumaker@Netapp.com>
-Subject: linux-next: bad commits in the nfs tree
-Message-ID: <20140604083411.4296bcd5@canb.auug.org.au>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
+	id S1751955AbaFCWh4 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 18:37:56 -0400
+From: Daniel Phillips <d.phillips@partner.samsung.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Christoph Hellwig <hch@infradead.org>, Dave Chinner <david@fromorbit.com>,
+        <linux-kernel@vger.kernel.org>, <linux-fsdevel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: Re: [RFC][PATCH 1/2] Add a super operation for writeback
+Date: Tue, 03 Jun 2014 15:37:39 -0700
+User-Agent: Trojita/0.4.1; Qt/4.8.6; X11; Linux; Ubuntu 14.04 LTS
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/X0+hyxOyqDe1EHel2wHJ2wg"; protocol="application/pgp-signature"
+Message-ID: <19f0e788-f6f2-4547-9cb2-a74d70d75cd0@partner.samsung.com>
+In-Reply-To: <20140603152155.GD30706@quack.suse.cz>
+References: <538B9DEE.20800@phunq.net> <20140602031526.GS14410@dastard>
+ <538CD855.90804@phunq.net> <20140603033322.GA14410@dastard>
+ <538D72B7.3010700@phunq.net> <20140603075209.GD14410@dastard>
+ <20140603140531.GB30706@quack.suse.cz> <20140603141444.GA21273@infradead.org>
+ <20140603152155.GD30706@quack.suse.cz>
+Organization: Samsung
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/X0+hyxOyqDe1EHel2wHJ2wg
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Tuesday, June 3, 2014 8:21:55 AM PDT, Jan Kara wrote:
+> On Tue 03-06-14 07:14:44, Christoph Hellwig wrote:
+>> On Tue, Jun 03, 2014 at 04:05:31PM +0200, Jan Kara wrote:
+>  ...
+>   So I agree per-bdi / per-sb matters only in simple setups but machines
+> with single rotating disk with several partitions and without LVM aren't
+> that rare AFAICT from my experience.
 
-Hi Trond,
+Retribution is sure to be swift, terrible and eternal for anyone who dares 
+to
+break those.
 
-I noticed in the nfs tree this morning 2 commits that have been
-cherry-picked from Linus' tree:
+> And I agree we went for per-bdi
+> flushing to avoid two threads congesting a single device leading to
+> suboptimal IO patterns during background writeback.
 
-cc6d854967ce	Linux 3.15-rc8
-2b267bb3a8e5	powerpc: Wire renameat2() syscall
+A proposal is on the table to implement s_ops->writeback() as a per-sb
+operation in such a way that nothing changes in the current per-inode path.
+Good or bad approach?
 
-These are part of a branch that you merged from Anna Schumaker.  It
-looks like they may have been included when Anna was trying to rebase
-the rest of the branch onto v3.15-rc8?
+> So currently I'm convinced we want to go for per-sb dirty tracking. That
+> also makes some speedups in that code noticeably simpler. I'm not 
+convinced
+> about the per-sb flushing thread - if we don't regress the multiple sb on
+> bdi case when we just let the threads from different superblocks contend
+> for IO, then that would be a natural thing to do. But once we have to
+> introduce some synchronization between threads to avoid regressions, I
+> think it might be easier to just stay with per-bdi thread which switches
+> between superblocks.
 
-Please fix this up before asking Linus to pull your tree.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Could you elaborate on the means of switching between superblocks? Do you 
+mean
+a new fs-writeback path just for data=journal class filesystems, or are you
+suggesting changing the way all filesystems are driven?
 
---Sig_/X0+hyxOyqDe1EHel2wHJ2wg
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+Regards,
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTjk1pAAoJEMDTa8Ir7ZwVTTQP/jOXkpDTKyt7U5wkuEN9cl1f
-MpSScV35gfD/b8zvwaZ/dvdlQEzh6vXeiBN+SAmuK87oR06XYojrF+fPuGRdwOQf
-xC+FiM0NdwE7MJu+/zSOiK2mdMzpmhTl6mXHymcpn0hYCqq7IfR1phmv0F9fVpfl
-qsDow/qaOh8QXcEs69Wwj+JUY6bcNE/zUhd4VvyoA42iGGjRnH4DVLMukisMey/N
-+rWFRuB3WCgLG9MHkhr5DcXuw0UmGXdS1/rHe9b4ObUyNMAJXlicwgse+k6rr6il
-DZT+jhrDAyGsDPIqec62EITc1798OOf3BUK6Pnl5eGKAR2ZhurQqoO7xxw5jkuGh
-ZCg8MgAsQzbgHP9gLDnNuc3QlrslKywUayMJgfBtbFbUOwwF2S3C66F6/H/wolpz
-OWdqMRYQyv2wxWFhrqMZCxh8yRijXDqCV8aistkg2njNzE2hUPAGK+EARLbgVnt9
-QXuZZRDuh281lYKeJtrkiZxf8YyqEpewyE9x5v9XnIuJdNXh4f8x7tD0rgu2rBN9
-YoYs/mKHT+5CEq36iXVGoO3zKztaI3gM/cDLhbm71qowENMnDa10FXGE1vgcM5Bf
-LwyOAJ9ezEFNAPieL4HiYExun0u7vhW34kxGjCORQ0AMIplMu6gNwCaz7BijOvC/
-WMFrnNfEQ12jp0z0jPF0
-=BJzb
------END PGP SIGNATURE-----
-
---Sig_/X0+hyxOyqDe1EHel2wHJ2wg--
+Daniel
