@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754575AbaFCLm0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 07:42:26 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43726 "EHLO
+	id S1754602AbaFCLm3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 07:42:29 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43754 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932836AbaFCLmU (ORCPT
+	with ESMTP id S1754581AbaFCLm1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 07:42:20 -0400
+	Tue, 3 Jun 2014 07:42:27 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, Florian Westphal <fw@strlen.de>,
+Cc: Chuansheng Liu <chuansheng.liu@intel.com>,
+        Zhang Dongxing <dongxing.zhang@intel.com>,
+        xiaoming wang <xiaoming.wang@intel.com>,
         "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 098/138] net: core: don't account for udp header size when computing seglen
-Date: Tue,  3 Jun 2014 12:39:04 +0100
-Message-Id: <1401795584-22664-99-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 103/138] net: ipv4: current group_info should be put after using.
+Date: Tue,  3 Jun 2014 12:39:09 +0100
+Message-Id: <1401795584-22664-104-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
 References: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
@@ -28,53 +30,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Florian Westphal <fw@strlen.de>
+From: "Wang, Xiaoming" <xiaoming.wang@intel.com>
 
-commit 6d39d589bb76ee8a1c6cde6822006ae0053decff upstream.
+commit b04c46190219a4f845e46a459e3102137b7f6cac upstream.
 
-In case of tcp, gso_size contains the tcpmss.
+Plug a group_info refcount leak in ping_init.
+group_info is only needed during initialization and
+the code failed to release the reference on exit.
+While here move grabbing the reference to a place
+where it is actually needed.
 
-For UFO (udp fragmentation offloading) skbs, gso_size is the fragment
-payload size, i.e. we must not account for udp header size.
-
-Otherwise, when using virtio drivers, a to-be-forwarded UFO GSO packet
-will be needlessly fragmented in the forward path, because we think its
-individual segments are too large for the outgoing link.
-
-Fixes: fe6cc55f3a9a053 ("net: ip, ipv6: handle gso skbs in forwarding path")
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Reported-by: Tobias Brunner <tobias@strongswan.org>
-Signed-off-by: Florian Westphal <fw@strlen.de>
+Signed-off-by: Chuansheng Liu <chuansheng.liu@intel.com>
+Signed-off-by: Zhang Dongxing <dongxing.zhang@intel.com>
+Signed-off-by: xiaoming wang <xiaoming.wang@intel.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/core/skbuff.c | 12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
+ net/ipv4/ping.c | 15 +++++++++++----
+ 1 file changed, 11 insertions(+), 4 deletions(-)
 
-diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-index ba05e044aed8..abcad83cece3 100644
---- a/net/core/skbuff.c
-+++ b/net/core/skbuff.c
-@@ -3505,12 +3505,14 @@ EXPORT_SYMBOL_GPL(skb_scrub_packet);
- unsigned int skb_gso_transport_seglen(const struct sk_buff *skb)
+diff --git a/net/ipv4/ping.c b/net/ipv4/ping.c
+index d243eefd5dc8..4bf71a9df3f0 100644
+--- a/net/ipv4/ping.c
++++ b/net/ipv4/ping.c
+@@ -249,26 +249,33 @@ int ping_init_sock(struct sock *sk)
  {
- 	const struct skb_shared_info *shinfo = skb_shinfo(skb);
--	unsigned int hdr_len;
+ 	struct net *net = sock_net(sk);
+ 	kgid_t group = current_egid();
+-	struct group_info *group_info = get_current_groups();
+-	int i, j, count = group_info->ngroups;
++	struct group_info *group_info;
++	int i, j, count;
+ 	kgid_t low, high;
++	int ret = 0;
  
- 	if (likely(shinfo->gso_type & (SKB_GSO_TCPV4 | SKB_GSO_TCPV6)))
--		hdr_len = tcp_hdrlen(skb);
--	else
--		hdr_len = sizeof(struct udphdr);
--	return hdr_len + shinfo->gso_size;
-+		return tcp_hdrlen(skb) + shinfo->gso_size;
+ 	inet_get_ping_group_range_net(net, &low, &high);
+ 	if (gid_lte(low, group) && gid_lte(group, high))
+ 		return 0;
+ 
++	group_info = get_current_groups();
++	count = group_info->ngroups;
+ 	for (i = 0; i < group_info->nblocks; i++) {
+ 		int cp_count = min_t(int, NGROUPS_PER_BLOCK, count);
+ 		for (j = 0; j < cp_count; j++) {
+ 			kgid_t gid = group_info->blocks[i][j];
+ 			if (gid_lte(low, gid) && gid_lte(gid, high))
+-				return 0;
++				goto out_release_group;
+ 		}
+ 
+ 		count -= cp_count;
+ 	}
+ 
+-	return -EACCES;
++	ret = -EACCES;
 +
-+	/* UFO sets gso_size to the size of the fragmentation
-+	 * payload, i.e. the size of the L4 (UDP) header is already
-+	 * accounted for.
-+	 */
-+	return shinfo->gso_size;
++out_release_group:
++	put_group_info(group_info);
++	return ret;
  }
- EXPORT_SYMBOL_GPL(skb_gso_transport_seglen);
+ EXPORT_SYMBOL_GPL(ping_init_sock);
+ 
 -- 
 1.9.1
 
