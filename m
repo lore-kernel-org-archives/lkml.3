@@ -1,93 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753647AbaFCIvA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 04:51:00 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:44668 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750941AbaFCIt6 (ORCPT
+	id S1751640AbaFCIxd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 04:53:33 -0400
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:47184 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750941AbaFCIxa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 04:49:58 -0400
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Hans de Goede <hdegoede@redhat.com>, Shuge <shuge@allwinnertech.com>,
-        kevin@allwinnertech.com, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>
-Subject: [RESEND2 PATCH v4 1/2] i2c: sunxi: add P2WI DT bindings documentation
-Date: Tue,  3 Jun 2014 10:49:51 +0200
-Message-Id: <1401785392-26602-2-git-send-email-boris.brezillon@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1401785392-26602-1-git-send-email-boris.brezillon@free-electrons.com>
-References: <1401785392-26602-1-git-send-email-boris.brezillon@free-electrons.com>
+	Tue, 3 Jun 2014 04:53:30 -0400
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCH] of/base: Replace alias if it already exists
+To: Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>
+Cc: robh+dt@kernel.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <538CA125.7090906@gmail.com>
+References: <1401624083-30796-1-git-send-email-ivo.g.dimitrov.75@gmail.com>
+	<20140602145959.7E669C426F6@trevor.secretlab.ca>
+	<538CA125.7090906@gmail.com>
+Date: Tue, 03 Jun 2014 09:53:25 +0100
+Message-Id: <20140603085325.490A1C4096E@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-P2WI (Push/Pull 2 Wire Interface) is an SMBus like bus used to communicate
-with some PMICs (like the AXP221).
+On Mon, 02 Jun 2014 19:07:01 +0300, Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com> wrote:
+> 
+> 
+> On  2.06.2014 17:59, Grant Likely wrote:
+> > On Sun,  1 Jun 2014 15:01:23 +0300, Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com> wrote:
+> >> The current code unconditionally adds aliases without check if it already
+> >> exists, so it is not possible to alter an alias, from board DT file for
+> >> example. Fix that by replacing an alias if it already exists
+> >>
+> >
+> > Can you describe a more detailed use-case for altering an alias?
+> >
+> > g.
+> >
+> 
+> That one http://www.spinics.net/lists/linux-omap/msg107869.html
 
-Document P2WI DT bindings which are pretty much the same as the one defined
-for the marvell's mv64xxx controller.
+So, if I understand correctly, the .dtsi file sets up aliases like so:
 
-Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
----
- .../devicetree/bindings/i2c/i2c-sunxi-p2wi.txt     | 41 ++++++++++++++++++++++
- 1 file changed, 41 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/i2c/i2c-sunxi-p2wi.txt
+aliases {
+	i2c0 = &i2c1;
+	i2c1 = &i2c2;
+	i2c2 = &i2c3;
+	i2c3 = &i2c4;
+	i2c4 = &i2c5;
+};
 
-diff --git a/Documentation/devicetree/bindings/i2c/i2c-sunxi-p2wi.txt b/Documentation/devicetree/bindings/i2c/i2c-sunxi-p2wi.txt
-new file mode 100644
-index 0000000..6b76548
---- /dev/null
-+++ b/Documentation/devicetree/bindings/i2c/i2c-sunxi-p2wi.txt
-@@ -0,0 +1,41 @@
-+
-+* Allwinner P2WI (Push/Pull 2 Wire Interface) controller
-+
-+Required properties :
-+
-+ - reg             : Offset and length of the register set for the device.
-+ - compatible      : Should one of the following:
-+                     - "allwinner,sun6i-a31-p2wi"
-+ - interrupts      : The interrupt line connected to the P2WI peripheral.
-+ - clocks          : The gate clk connected to the P2WI peripheral.
-+ - resets          : The reset line connected to the P2WI peripheral.
-+
-+Optional properties :
-+
-+ - clock-frequency : Desired P2WI bus clock frequency in Hz. If not set the
-+default frequency is 100kHz
-+
-+A P2WI may contain one child node encoding a P2WI slave device.
-+
-+Slave device properties:
-+  Required properties:
-+   - reg           : the I2C slave address used during the initialization
-+                     process to switch from I2C to P2WI mode
-+
-+Example:
-+
-+	p2wi@01f03400 {
-+		compatible = "allwinner,sun6i-a31-p2wi";
-+		reg = <0x01f03400 0x400>;
-+		interrupts = <0 39 4>;
-+		clocks = <&apb0_gates 3>;
-+		clock-frequency = <6000000>;
-+		resets = <&apb0_rst 3>;
-+
-+		axp221: pmic@68 {
-+			compatible = "x-powers,axp221";
-+			reg = <0x68>;
-+
-+			/* ... */
-+		};
-+	};
--- 
-1.8.3.2
+and the board file does this:
 
+
+aliases {
+	i2c1 = &i2c1;
+	i2c2 = &i2c2;
+	i2c3 = &i2c3;
+	i2c4 = &i2c4;
+	i2c5 = &i2c5;
+};
+
+Which results in a dtb that looks like this:
+
+aliases {
+	i2c0 = &i2c1;
+	i2c1 = &i2c1;
+	i2c2 = &i2c2;
+	i2c3 = &i2c3;
+	i2c4 = &i2c4;
+	i2c5 = &i2c5;
+};
+
+Do I understand correctly?
+
+The way aliases works, it is completely valid to have multiple aliases
+pointing at the same node. There are also no ordering guarantees about
+which comes first, so though this patch might work for you at the
+moment, there is no guarantee that it will continue to do so. If the
+i2c0 alias is invalid for that platform, then it must be removed.
+
+Unfortunately, the overlays have no mechanism for removing properties at
+this time. Can you try putting the following into your board dts file
+and see if it works?
+
+aliases {
+	i2c0;		/* Deactivate the old alias by making it blank */
+	i2c1 = &i2c1;
+	i2c2 = &i2c2;
+	i2c3 = &i2c3;
+	i2c4 = &i2c4;
+	i2c5 = &i2c5;
+};
+
+g.
