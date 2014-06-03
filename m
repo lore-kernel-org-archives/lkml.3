@@ -1,184 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932616AbaFCOR0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 10:17:26 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:36536 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753785AbaFCORZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 10:17:25 -0400
-Date: Tue, 3 Jun 2014 16:16:59 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: jjherne@linux.vnet.ibm.com, Sasha Levin <sasha.levin@oracle.com>,
-        Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: workqueue: WARN at at kernel/workqueue.c:2176
-Message-ID: <20140603141659.GO30445@twins.programming.kicks-ass.net>
-References: <537180B9.6080407@oracle.com>
- <53739F3B.4060608@linux.vnet.ibm.com>
- <53758B12.8060609@cn.fujitsu.com>
- <20140516115737.GP11096@twins.programming.kicks-ass.net>
- <CACvQF52-jUMzK32uoDCb8zn0RZsiC9uzUOq+ZBRXK22esYKS0g@mail.gmail.com>
- <20140516162945.GZ11096@twins.programming.kicks-ass.net>
- <53849EB7.9090302@linux.vnet.ibm.com>
- <20140527142637.GB19143@laptop.programming.kicks-ass.net>
- <53875F09.3090607@linux.vnet.ibm.com>
- <538DB076.4090704@cn.fujitsu.com>
+	id S932668AbaFCOTa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 10:19:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64763 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752926AbaFCOT1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 10:19:27 -0400
+Date: Tue, 3 Jun 2014 10:18:05 -0400 (EDT)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Helge Deller <deller@gmx.de>, John David Anglin <dave.anglin@bell.net>,
+        Parisc List <linux-parisc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        "Vinod, Chegu" <chegu_vinod@hp.com>, Waiman Long <Waiman.Long@hp.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Davidlohr Bueso <davidlohr@hp.com>, Peter Anvin <hpa@zytor.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>, Jason Low <jason.low2@hp.com>
+Subject: Re: [PATCH v2] introduce atomic_pointer to fix a race condition in
+ cancelable mcs spinlocks
+In-Reply-To: <20140603132439.GN30445@twins.programming.kicks-ass.net>
+Message-ID: <alpine.LRH.2.02.1406031007420.15434@file01.intranet.prod.int.rdu2.redhat.com>
+References: <alpine.LRH.2.02.1406011342470.20831@file01.intranet.prod.int.rdu2.redhat.com> <alpine.LRH.2.02.1406021158360.20627@file01.intranet.prod.int.rdu2.redhat.com> <20140602162525.GH16155@laptop.programming.kicks-ass.net>
+ <CA+55aFzwrqkwD=G=w2m7TdXTpsMFjV7XUMXv5DMPGr=5x5YGCQ@mail.gmail.com> <alpine.LRH.2.02.1406021622200.5874@file01.intranet.prod.int.rdu2.redhat.com> <CA+55aFwCy4-x02U6A-KbkPEpe_4pagsZ__ipBhe5HZOQt2vNmw@mail.gmail.com> <alpine.LRH.2.02.1406021656550.5874@file01.intranet.prod.int.rdu2.redhat.com>
+ <20140603073613.GH11096@twins.programming.kicks-ass.net> <alpine.LRH.2.02.1406030341570.10639@file01.intranet.prod.int.rdu2.redhat.com> <20140603132439.GN30445@twins.programming.kicks-ass.net>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="NI/YJYXQ/j0wYS88"
-Content-Disposition: inline
-In-Reply-To: <538DB076.4090704@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---NI/YJYXQ/j0wYS88
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Tue, Jun 03, 2014 at 07:24:38PM +0800, Lai Jiangshan wrote:
-> Hi, Jason
->=20
-> Could you test again after the following command has done.
-> (if Peter hasn't asked you test with this command before nor he doesn't s=
-top you now)=20
->=20
-> echo NO_TTWU_QUEUE > /sys/kernel/debug/sched_features
->=20
-> Thanks a lot.
->=20
-> Hi, Peter,
->=20
-> I found something strange by review (just by review, no test yet)
->=20
-> __migrate_task()
-> {
-> ...
-> 	/*
-> 	 * If we're not on a rq, the next wake-up will ensure we're
-> 	 * placed properly.
-> 	 */
-> 	if (p->on_rq) {
-> 		dequeue_task(rq_src, p, 0);
-> 		set_task_cpu(p, dest_cpu);
-> 		enqueue_task(rq_dest, p, 0);
-> 		check_preempt_curr(rq_dest, p, 0);
-> 	}
-> ...
-> }
->=20
-> The comment is incorrect if TTWU_QUEUE is enabled.
-> The task is waken-up even p->on_rq=3D=3D0 in this case:
-> 	p->wake_entry is added to the rq,
-> 	p->state is TASK_WAKING
-> 	p->on_rq is 0
->=20
-> In this case __migrate_task() fails to migrate the task!!!.
->=20
-> Go back to workqueue for higher level analysing.
->=20
-> task1				cpu#4			task3
-> workqueue_cpu_up_callback()
-> 							wake_up_process(worker1)
-> 							  ttwu_queue_remote() #queue worker1 to cpu#4
-> set_cpus_allowed_ptr()
->   set worker's cpuallowed to
->   cpumask_of(5)
-> 				#stopper_task
-> 				__migrate_task()
-> 				finds p->on_rq is 0,
-> 				do nothing return
-> set_cpus_allowed_ptr() return 0
->=20
-> In this case, the WARN_ON() in process_one_work() hit.
+On Tue, 3 Jun 2014, Peter Zijlstra wrote:
 
-Hmm, yes I think you're right. A queued wakeup can miss an affinity
-change like that.
+> On Tue, Jun 03, 2014 at 07:14:31AM -0400, Mikulas Patocka wrote:
+> > > So if we really want to keep supporting these platforms; I would propose
+> > > something like:
+> > > 
+> > > #ifdef __CHECKER__
+> > > #define __atomic	__attribute__((address_space(5)))
+> > > #else
+> > > #define __atomic
+> > > #endif
+> > > 
+> > > #define store(p, v)	(*(p) = (typeof(*(p)) __force __atomic)(v))
+> > > #define load(p)		((typeof(*p) __force)ACCESS_ONCE(*(p)))
+> > > 
+> > > Along with changes to xchg() and cmpxchg() that require them to take
+> > > pointers to __atomic.
+> > > 
+> > > That way we keep the flexibility of xchg() and cmpxchg() for being
+> > > (mostly) type and size invariant, and get sparse to find wrong usage.
+> > > 
+> > > Then parisc, sparc32, tile32, metag-lock1 and arc-!llsc can go implement
+> > > store() however they like.
+> > 
+> > Your proposal is very good because it warns about incorrect usage 
+> > automatically.
+> 
+> Exactly the point.
+> 
+> > Your usage is very similar to what my patch at the top of this thread 
+> > does:
+> > 
+> > Instead of "__atomic struct s *p;" declaration, my patch uses
+> > "atomic_pointer(struct s*) p;" as the declaration
+> > Instead of store(&p, v), my patch uses atomic_pointer_set(&p, v);
+> > Instead of load(&p), my patch uses atomic_pointer_get(&p);
+> > Instead of xchg(&p, v), my patch uses atomic_pointer_xchg(&p, v);
+> > Instead of cmpxchg(&p, v1, v2), my patch uses atomic_pointer_cmpxchg(&p1, v1, v2);
+> > 
+> > > But its horrible, and doesn't have any benefit afaict.
+> > 
+> > See the five cases above - why do you say that the operation on the left 
+> > is good and the operation on the right is horrible? To me, it looks like 
+> > they are both similar, they are just named differently. Both check the 
+> > type of the pointer and warns if the user passes incompatible pointer. If 
+> > I rename the operations in my patch to store(), load(), xchg(), cmpxchg(), 
+> > would you like it?
+> 
+> Nope.. because the above store,load,xchg,cmpxchg are type invariant and
+> work for anything of size (1),2,4,(8).
+> 
+> So I dislike your proposal on a number of points:
+> 
+>  1) its got pointer in, and while the immediate problem is indeed with
+>  pointers, there is no reason it always should be, so we'll keep on
+>  introducing new APIs;
+> 
+>  2) its got a fixed length, nl. sizeof(void *), if we were to find
+>  another case which had the same problem which used 'int' we'd have to
+>  again create new APIs;
+> 
+>  3) you only fixed the one site;
+> 
+>  4) I'm the lazy kind and atomic_foo_* is just too much typing, let
+>  alone remembering all the various new atomic_foo_ APIs resulting from
+>  all this.
+> 
+> This is the place where I really miss C++ templates; and yes before
+> people shoot me in the head for that, I do know about all the various
+> pitfalls and down sides of those too.
+> 
+> > My patch has advantage (over your #define __atomic 
+> > __attribute__((address_space(5))) ) that it checks the mismatches at 
+> > compile time. Your proposal only check them with sparse. But either way - 
+> > it is very good that the mismatches are being checked automatically.
+> 
+> So my proposal goes a lot further in that by making xchg() and cmpxchg()
+> require pointer to __atomic, all sites get coverage, not only the one
+> case where you found was a problem.
+> 
+> Yes, this requires a lot more effort, for we'll have to pretty much
+> audit and annotate the entire tree, but such things can be done, see for
+> example the introduction of __rcu.
+> 
+> Also, these days we get automagic emails if we introduce new sparse
+> fails, so it being sparse and not gcc isn't really any threshold at all.
+> 
+> > We need some method to catch these races automatically. There are places 
+> > where people xchg() or cmpxchg() with direct modifications, see for 
+> > example this:
+> 
+> Yep, so all those places will immediately stand out, the first fail will
+> be that those variables aren't marked __atomic, once you do that, the
+> direct assignment will complain about crossing the address_space marker.
+> 
+> Voila, sorted.
 
-Something like the below ought to cure that I suppose..
+I originally wanted to remove PA-RISC xchg and cmpxchg, force compile 
+failure on places where it is used and convert them to atomic operations. 
+But there's a lot of such places, the patch would be big and it would 
+probably trigger some compile failures in configurations that I can't 
+test.
 
----
- kernel/sched/core.c | 21 +++++++++++++++------
- 1 file changed, 15 insertions(+), 6 deletions(-)
+So, I agree that your approch with sparse tagging is better, it only warns 
+about unsafe use and it won't be breaking compilation for so many people.
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 240aa83e73f5..0708ee21632f 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1521,17 +1521,32 @@ static int ttwu_remote(struct task_struct *p, int w=
-ake_flags)
- }
-=20
- #ifdef CONFIG_SMP
-+static void ttwu_queue_remote(struct task_struct *p, int cpu)
-+{
-+	if (llist_add(&p->wake_entry, &cpu_rq(cpu)->wake_list))
-+		smp_send_reschedule(cpu);
-+}
-+
- static void sched_ttwu_pending(void)
- {
- 	struct rq *rq =3D this_rq();
- 	struct llist_node *llist =3D llist_del_all(&rq->wake_list);
- 	struct task_struct *p;
-+	int cpu;
-=20
- 	raw_spin_lock(&rq->lock);
-=20
- 	while (llist) {
- 		p =3D llist_entry(llist, struct task_struct, wake_entry);
- 		llist =3D llist_next(llist);
-+
-+		if (unlikely(!cpumask_test_cpu(rq->cpu, tsk_cpus_allowed(p)))) {
-+			cpu =3D select_fallback_rq(rq->cpu, p);
-+			set_task_cpu(p, cpu);
-+			ttwu_queue_remote(p, cpu);
-+			continue;
-+		}
-+
- 		ttwu_do_activate(rq, p, 0);
- 	}
-=20
-@@ -1579,12 +1594,6 @@ void scheduler_ipi(void)
- 	irq_exit();
- }
-=20
--static void ttwu_queue_remote(struct task_struct *p, int cpu)
--{
--	if (llist_add(&p->wake_entry, &cpu_rq(cpu)->wake_list))
--		smp_send_reschedule(cpu);
--}
--
- bool cpus_share_cache(int this_cpu, int that_cpu)
- {
- 	return per_cpu(sd_llc_id, this_cpu) =3D=3D per_cpu(sd_llc_id, that_cpu);
-
---NI/YJYXQ/j0wYS88
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTjdjbAAoJEHZH4aRLwOS6Ep8QALWCtMQipWoielx2KjoLl34a
-+TqZT96SCsPWirz0khTFwrNaPwa/zzUioyg+lA41j0Ht7SHdERX//IbdTuEZjBq0
-aGQGmO+ENy0IVtnXYqADb5MKuXrQSrRsKUhgAj+UZvoXmyxrKD/KCKjWisS8aMcf
-+A9TipsxbVT48lpzZqQ88XjhM1RDV0mwTQ9kZEhSqR+/5TJ9KujqfE2ThYwpnfaP
-s1hRR+nqonzLjN8nxl1s8MOebOdJRjvHFOxvK75Y5+q4q+dXXkAyfzlu4LdoAi8c
-vuv9iFKya4PT4MHJwTYXEdwTqreHe4TBF3PAVciyMKAAYGVm0V1wTHVGIMqOZRKB
-MtXzgL4LQFyTxUT0MztX0tkpROp4SFmxCZjGitu6xIHSMaxW1S94FbioHQWYJ5Ok
-zIYgKZcXjKCkmJ2LNss346JERapxFRWl8AdqPz8JawsBDY3zOtPifcQ7sj8uVEDb
-dmCXu4U0BkZKETeWkeI/lBewvDgL4e7ByFV+YoCkApNflVnPiQ4DS8TMIkawd49W
-UC46UE5nCu+m3otanhvJkI0oybGyS9f9vQsFruLCnj24/DTYQMSC4eGLZXcmr1hq
-eNMwjIVb2WKY+zrL7oj3FbPrzn2A1sZIMQ+a1dReaQH42DjFNHdqG3C5ZKZzKbJR
-jFwmSummbb5fxc5W1K4H
-=AIBR
------END PGP SIGNATURE-----
-
---NI/YJYXQ/j0wYS88--
+Mikulas
