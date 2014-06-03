@@ -1,53 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753850AbaFCTSN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 15:18:13 -0400
-Received: from mailrelay002.isp.belgacom.be ([195.238.6.175]:58517 "EHLO
-	mailrelay002.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751541AbaFCTSM (ORCPT
+	id S1754208AbaFCTSw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 15:18:52 -0400
+Received: from mailgw.ikc.edu.tr ([95.183.196.143]:56867 "EHLO
+	mailgw.ikc.edu.tr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751740AbaFCTSv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 15:18:12 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AnAOAJ8ejlNbsmtf/2dsb2JhbABZgwerXgQDAQEBBQGYHIEOF3SCUy8jgRo3iEYB0RcXhVWIfR2EKgSPS4o/ix2IFoM6Ow
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>, "Theodore Ts'o" <tytso@mit.edu>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 1/1] fs/ext4/super.c: use UINT_MAX instead of ~0U
-Date: Tue,  3 Jun 2014 21:16:47 +0200
-Message-Id: <1401823007-3475-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.8.4.5
+	Tue, 3 Jun 2014 15:18:51 -0400
+X-Greylist: delayed 865 seconds by postgrey-1.27 at vger.kernel.org; Tue, 03 Jun 2014 15:18:50 EDT
+Date: Tue, 3 Jun 2014 22:01:46 +0300 (EEST)
+From: "Jim McCullar." <evrim.akyol@ikc.edu.tr>
+Reply-To: Jims000@outlook.com
+Message-ID: <2000959081.65275.1401822106324.JavaMail.root@ikc.edu.tr>
+Subject: Donation to you.
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [41.203.67.132]
+X-Mailer: Zimbra 7.2.0_GA_2669 (zclient/7.2.0_GA_2669)
+To: undisclosed-recipients:;
+X-Copyrighted-Material: Please visit www.company.com/privacy.htm
+X-SMTP-Filter: SurGATE SMTP Filter EngineRelease 4.0 ($Revision: 523 $)
+X-SurGATE-Result: Clean (Content eval: 20.00 points)
+X-SurGATE-Reason: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use kernel.h definition
 
-Cc: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- fs/ext4/super.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-index 6f9e6fa..441f65f 100644
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -3573,9 +3573,9 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
- 		(test_opt(sb, POSIX_ACL) ? MS_POSIXACL : 0);
- 
- 	if (le32_to_cpu(es->s_rev_level) == EXT4_GOOD_OLD_REV &&
--	    (EXT4_HAS_COMPAT_FEATURE(sb, ~0U) ||
--	     EXT4_HAS_RO_COMPAT_FEATURE(sb, ~0U) ||
--	     EXT4_HAS_INCOMPAT_FEATURE(sb, ~0U)))
-+	    (EXT4_HAS_COMPAT_FEATURE(sb, UINT_MAX) ||
-+	     EXT4_HAS_RO_COMPAT_FEATURE(sb, UINT_MAX) ||
-+	     EXT4_HAS_INCOMPAT_FEATURE(sb, UINT_MAX)))
- 		ext4_msg(sb, KERN_WARNING,
- 		       "feature flags set on rev 0 fs, "
- 		       "running e2fsck is recommended");
--- 
-1.8.4.5
 
+I am giving you $2 Million as my heart tells me to do so; this is not Scam as everybody In US knows about my winning. For more details about the $2 Million WRITE me back with your Full name so that I can give you more Proof about myself.
+
+I'M VERY HAPPY
+Jim McCullar
+
+
+www.ikc.edu.tr
