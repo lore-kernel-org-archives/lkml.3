@@ -1,113 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753633AbaFCRjO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 13:39:14 -0400
-Received: from mail-ig0-f181.google.com ([209.85.213.181]:43027 "EHLO
-	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751789AbaFCRjK (ORCPT
+	id S1754153AbaFCRja (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 13:39:30 -0400
+Received: from relay.parallels.com ([195.214.232.42]:59814 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753888AbaFCRj2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 13:39:10 -0400
-From: Peter Moody <pmoody@google.com>
-To: <ananth@in.ibm.com>, <anil.s.keshavamurthy@intel.com>,
-        <davem@davemloft.net>, <masami.hiramatsu.pt@hitachi.com>
-Cc: linux-kernel@vger.kernel.org, Kees Cook <keescook@google.com>
-Subject: splat in kretprobe in get_task_mm(current)
-Date: Tue, 03 Jun 2014 10:39:06 -0700
-Message-ID: <r3noay9dhad.fsf@perdido.sfo.corp.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Tue, 3 Jun 2014 13:39:28 -0400
+Message-ID: <538E0848.6060900@parallels.com>
+Date: Tue, 3 Jun 2014 21:39:20 +0400
+From: Pavel Emelyanov <xemul@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="=-=-="
+To: Serge Hallyn <serge.hallyn@ubuntu.com>
+CC: Marian Marinov <mm@1h.com>,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        LXC development mailing-list 
+	<lxc-devel@lists.linuxcontainers.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] Per-user namespace process accounting
+References: <5386D58D.2080809@1h.com> <87tx88nbko.fsf@x220.int.ebiederm.org> <53870EAA.4060101@1h.com> <20140529153232.GB9714@ubuntumail> <538DFF72.7000209@parallels.com> <20140603172631.GL9714@ubuntumail>
+In-Reply-To: <20140603172631.GL9714@ubuntumail>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [89.169.95.100]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Type: text/plain
+On 06/03/2014 09:26 PM, Serge Hallyn wrote:
+> Quoting Pavel Emelyanov (xemul@parallels.com):
+>> On 05/29/2014 07:32 PM, Serge Hallyn wrote:
+>>> Quoting Marian Marinov (mm@1h.com):
+>>>> -----BEGIN PGP SIGNED MESSAGE-----
+>>>> Hash: SHA1
+>>>>
+>>>> On 05/29/2014 01:06 PM, Eric W. Biederman wrote:
+>>>>> Marian Marinov <mm@1h.com> writes:
+>>>>>
+>>>>>> Hello,
+>>>>>>
+>>>>>> I have the following proposition.
+>>>>>>
+>>>>>> Number of currently running processes is accounted at the root user namespace. The problem I'm facing is that
+>>>>>> multiple containers in different user namespaces share the process counters.
+>>>>>
+>>>>> That is deliberate.
+>>>>
+>>>> And I understand that very well ;)
+>>>>
+>>>>>
+>>>>>> So if containerX runs 100 with UID 99, containerY should have NPROC limit of above 100 in order to execute any 
+>>>>>> processes with ist own UID 99.
+>>>>>>
+>>>>>> I know that some of you will tell me that I should not provision all of my containers with the same UID/GID maps,
+>>>>>> but this brings another problem.
+>>>>>>
+>>>>>> We are provisioning the containers from a template. The template has a lot of files 500k and more. And chowning
+>>>>>> these causes a lot of I/O and also slows down provisioning considerably.
+>>>>>>
+>>>>>> The other problem is that when we migrate one container from one host machine to another the IDs may be already
+>>>>>> in use on the new machine and we need to chown all the files again.
+>>>>>
+>>>>> You should have the same uid allocations for all machines in your fleet as much as possible.   That has been true
+>>>>> ever since NFS was invented and is not new here.  You can avoid the cost of chowning if you untar your files inside
+>>>>> of your user namespace.  You can have different maps per machine if you are crazy enough to do that.  You can even
+>>>>> have shared uids that you use to share files between containers as long as none of those files is setuid.  And map
+>>>>> those shared files to some kind of nobody user in your user namespace.
+>>>>
+>>>> We are not using NFS. We are using a shared block storage that offers us snapshots. So provisioning new containers is
+>>>> extremely cheep and fast. Comparing that with untar is comparing a race car with Smart. Yes it can be done and no, I
+>>>> do not believe we should go backwards.
+>>>>
+>>>> We do not share filesystems between containers, we offer them block devices.
+>>>
+>>> Yes, this is a real nuisance for openstack style deployments.
+>>>
+>>> One nice solution to this imo would be a very thin stackable filesystem
+>>> which does uid shifting, or, better yet, a non-stackable way of shifting
+>>> uids at mount.
+>>
+>> I vote for non-stackable way too. Maybe on generic VFS level so that filesystems 
+>> don't bother with it. From what I've seen, even simple stacking is quite a challenge.
+> 
+> Do you have any ideas for how to go about it?  It seems like we'd have
+> to have separate inodes per mapping for each file, which is why of
+> course stacking seems "natural" here.
 
-Hi folks,
+I was thinking about "lightweight mapping" which is simple shifting. Since
+we're trying to make this co-work with user-ns mappings, simple uid/gid shift
+should be enough. Please, correct me if I'm wrong.
 
-I've managed to trigger the following splat on 3.15.0-rc8 using the attached kretprobe module.
+If I'm not, then it looks to be enough to have two per-sb or per-mnt values
+for uid and gid shift. Per-mnt for now looks more promising, since container's
+FS may be just a bind-mount from shared disk.
 
-[  339.208634] BUG: spinlock cpu recursion on CPU#4, rm/8733
-[  339.208643]  lock: kretprobe_table_locks+0x600/0x2000, .magic: dead4ead, .owner: rm/8734, .owner_cpu: 4
-[  339.208647] CPU: 4 PID: 8733 Comm: rm Tainted: G          IOE 3.15.0-rc8-splat+ #14
-[  339.208648] Hardware name: Dell Inc. Precision WorkStation T3500  /09KPNV, BIOS A10 01/21/2011
-[  339.208650]  ffff88044d3a2570 ffff880454e63d48 ffffffff81773413 0000000000000007
-[  339.208654]  ffffffff82842080 ffff880454e63d68 ffffffff8176ec74 ffffffff82842080
-[  339.208658]  ffffffff81a8b6a6 ffff880454e63d88 ffffffff8176ec9f ffffffff82842080
-[  339.208662] Call Trace:
-[  339.208667]  [<ffffffff81773413>] dump_stack+0x46/0x58
-[  339.208671]  [<ffffffff8176ec74>] spin_dump+0x8f/0x94
-[  339.208674]  [<ffffffff8176ec9f>] spin_bug+0x26/0x2b
-[  339.208678]  [<ffffffff810c4195>] do_raw_spin_lock+0x105/0x190
-[  339.208683]  [<ffffffff8177c7c0>] _raw_spin_lock_irqsave+0x70/0x90
-[  339.208687]  [<ffffffff817839dc>] ? kretprobe_hash_lock+0x6c/0x80
-[  339.208690]  [<ffffffff8177a86e>] ? mutex_unlock+0xe/0x10
-[  339.208693]  [<ffffffff817839dc>] kretprobe_hash_lock+0x6c/0x80
-[  339.208697]  [<ffffffff8177f16d>] trampoline_handler+0x3d/0x220
-[  339.208700]  [<ffffffff811bc537>] ? kfree+0x147/0x190
-[  339.208703]  [<ffffffff8177f0fe>] kretprobe_trampoline+0x25/0x57
-[  339.208707]  [<ffffffff811e28e8>] ? do_execve+0x18/0x20
-[  339.208710]  [<ffffffff817862a9>] stub_execve+0x69/0xa0
+> Trying to catch the uid/gid at every kernel-userspace crossing seems
+> like a design regression from the current userns approach.  I suppose we
+> could continue in the kuid theme and introduce a iiud/igid for the
+> in-kernel inode uid/gid owners.  Then allow a user privileged in some
+> ns to create a new mount associated with a different mapping for any
+> ids over which he is privileged.
 
-Unfortunately triggering the splat is kind of a pain. I've only been able to it by building chromeos. The cros build process kicks off dozens of processes (in this case, it was 32) to fetch/build the various packages for the system image. I can try to come up with a better reproducer if this splat and module aren't enough.
+User-space crossing? From my point of view it would be enough if we just turn
+uid/gid read from disk (well, from whenever FS gets them) into uids, that would
+match the user-ns's ones, this sould cover the VFS layer and related syscalls
+only, which is, IIRC stat-s family and chown.
 
-If I remove getting the reference to mm, I avoid the splat.
+Ouch, and the whole quota engine :\
 
-Cheers,
-peter
-
-
---=-=-=
-Content-Type: text/x-csrc
-Content-Disposition: inline; filename=exec_mm_probe.c
-
-#include <linux/version.h>
-#include <linux/kernel.h>
-#include <linux/module.h>
-#include <linux/mm.h>
-#include <linux/kprobes.h>
-
-static int cntr;
-
-static int exec_handler(struct kretprobe_instance *ri, struct pt_regs *regs)
-{
-  int ret = (int)regs_return_value(regs);
-  if (!(unlikely(IS_ERR_VALUE(ret)))) {
-     struct mm_struct *mm = NULL;
-     mm = get_task_mm(current);
-     if (mm)
-       mmput(mm);
-  }
-  return 0;
-}
-
-static struct kretprobe exec_kretprobe = {
-  .kp.symbol_name = "do_execve",
-  .handler = exec_handler,
-};
-
-static int __init probe_init(void)
-{
-  int err;
-  if ((err = register_kretprobe(&exec_kretprobe))) {
-    pr_err("register failed: %d\n", err);
-    return err;
-  }
-  pr_info("exec_mm_probe loaded.\n");
-  cntr = 0;
-  return 0;
-}
-
-static void probe_exit(void)
-{
-  unregister_kretprobe(&exec_kretprobe);
-  pr_info("exec_mm_probe unloaded.\n");
-}
-
-MODULE_LICENSE("GPL v2");
-
-module_init(probe_init);
-module_exit(probe_exit);
-
---=-=-=--
+Thanks,
+Pavel
