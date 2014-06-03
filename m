@@ -1,89 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932938AbaFCPte (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 11:49:34 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:52179 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932172AbaFCPtc (ORCPT
+	id S933042AbaFCPuY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 11:50:24 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:56462 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932172AbaFCPuX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 11:49:32 -0400
-Date: Tue, 3 Jun 2014 16:48:54 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arvind Chauhan <arvind.chauhan@arm.com>,
-        Eduardo Valentin <edubezval@gmail.com>, Pavel Machek <pavel@ucw.cz>,
-        Liam Girdwood <lgirdwood@gmail.com>
-Message-ID: <20140603154854.GG31751@sirena.org.uk>
-References: <1780c3205893be8567fa29ccd86674e2f32555b4.1401192160.git.viresh.kumar@linaro.org>
- <20140527192923.GC12304@sirena.org.uk>
- <CAKohpo=AnusM2FGs=JLozSyTc0N7SDXQxe+rPiLEHP6ewxY4ow@mail.gmail.com>
- <20140528173858.GG5099@sirena.org.uk>
- <CAKohpo=T3BG9X0gHfRA-x8B3ou3Y=XHcs=OTYAHikX61iAJ9xw@mail.gmail.com>
- <20140603145347.GE31751@sirena.org.uk>
- <CAKohpo=VLCf2nz1WsL-iGw6BWwpmqZ+8JwGFFHFFtjZyAS9LrA@mail.gmail.com>
+	Tue, 3 Jun 2014 11:50:23 -0400
+Date: Tue, 3 Jun 2014 17:50:07 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Morten Rasmussen <morten.rasmussen@arm.com>
+Cc: Vincent Guittot <vincent.guittot@linaro.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        "efault@gmx.de" <efault@gmx.de>,
+        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>
+Subject: Re: [PATCH v2 08/11] sched: get CPU's activity statistic
+Message-ID: <20140603155007.GZ30445@twins.programming.kicks-ass.net>
+References: <1400860385-14555-1-git-send-email-vincent.guittot@linaro.org>
+ <1400860385-14555-9-git-send-email-vincent.guittot@linaro.org>
+ <20140528121001.GI19967@e103034-lin>
+ <CAKfTPtDxeBfZK1AxCRqEG91pi--Ti1RYFoQPDhvMVnGTCspQ-g@mail.gmail.com>
+ <20140528154703.GJ19967@e103034-lin>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="0EIE/3F9PxFGTcfe"
+	protocol="application/pgp-signature"; boundary="jBytRjlvjIVQOM9g"
 Content-Disposition: inline
-In-Reply-To: <CAKohpo=VLCf2nz1WsL-iGw6BWwpmqZ+8JwGFFHFFtjZyAS9LrA@mail.gmail.com>
-X-Cookie: Big book, big bore.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 109.148.252.180
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/2] regulators: Add definition of
- regulator_set_voltage_time() for !CONFIG_REGULATOR
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <20140528154703.GJ19967@e103034-lin>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---0EIE/3F9PxFGTcfe
+--jBytRjlvjIVQOM9g
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Tue, Jun 03, 2014 at 08:55:25PM +0530, Viresh Kumar wrote:
-> On 3 June 2014 20:23, Mark Brown <broonie@kernel.org> wrote:
+On Wed, May 28, 2014 at 04:47:03PM +0100, Morten Rasmussen wrote:
+> Since we may do periodic load-balance every 10 ms or so, we will perform
+> a number of load-balances where runnable_avg_sum will mostly be
+> reflecting the state of the world before a change (new task queued or
+> moved a task to a different cpu). If you had have two tasks continuously
+> on one cpu and your other cpu is idle, and you move one of the tasks to
+> the other cpu, runnable_avg_sum will remain unchanged, 47742, on the
+> first cpu while it starts from 0 on the other one. 10 ms later it will
+> have increased a bit, 32 ms later it will be 47742/2, and 345 ms later
+> it reaches 47742. In the mean time the cpu doesn't appear fully utilized
+> and we might decide to put more tasks on it because we don't know if
+> runnable_avg_sum represents a partially utilized cpu (for example a 50%
+> task) or if it will continue to rise and eventually get to 47742.
 
-> > Well, we would need to look at what the drivers were doing and figure
-> > out something sensible - it really depends why they're trying to set the
-> > regulator and what would happen if it doesn't work.
+Ah, no, since we track per task, and update the per-cpu ones when we
+migrate tasks, the per-cpu values should be instantly updated.
 
-> For example, few cpufreq drivers are calling it during frequency
-> transition and are checking return value as well.. And fail if it failed.
+If we were to increase per task storage, we might as well also track
+running_avg not only runnable_avg.
 
-> One way out might be checking if pointer to regulator is valid or not
-> and only call it if pointer is not NULL..
-
-No, as I've explained repeatedly NULL is a perfectly valid regulator and
-that's not going to work reliably.  As I've previously requested please
-think about what happens to cpufreq if we fail to ramp voltages.
-
---0EIE/3F9PxFGTcfe
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+--jBytRjlvjIVQOM9g
+Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJTje5jAAoJELSic+t+oim9zjgQAJbSla2qE5KD8j5eBV+zP/gP
-1HDwLQ0mP/O8uOaTFcHPiTP/ai/CSCoPQBaoJAHt8SrO9UITHD+KXQT+YeZoErSq
-HCPgSh6vepVs4Vt3BhVWVkktrnN6xyUKClYhDGhyLIR0/sawUgGLoPDoGPSBJc9X
-vyOGhjA7QjrrM/narFsowurZGSZWu/SRN6aalbDeR24mc+tuqSrI565v5RLkUI+/
-ULC8RH6eG60RGJP9fQ7z8/PtK8IxocB6uZZPY+B8zE0Xq0seazBRmUkdEI0gPGdm
-4UX/liNt7o0d3xsVTPU+T2vRfp5JxuC6Z6iTPx/PbQHE4wCgQUFjxrqmScekdE0n
-qiPxftYrN0f+HOONtsjFe+nbpRxeFE7PKvib85e1pQNx6NDgJtKO4WnJTsVdJjac
-qg9sR8PKgPh0F26dS4pOhFFfs6TukC/Jw74bWo66NuHMR/EZnaMzGtiLjZ0abAIa
-3Xl+18ue0OsJnW/SQIb/mDJWmfd/5EtRcQ2aYuXTei+pkji80M2OGrLGJtokE3w4
-UK3Yf+xniNKescPeG58NLBMuX0qYEUUb2+bqRsfkyBrpf3wcviwtUXGjoBLjL+V7
-22hPYYH+qw2MUtxCcC8FfbSPsMllgZGKZ5LtfcbsX6MOQwWZocHKyIFDoLJL315R
-dtqDWUbOhOxCHQpA5V58
-=95Q0
+iQIcBAEBAgAGBQJTje6vAAoJEHZH4aRLwOS6kEMQAInvizNLVoAp0DllUcRnWCcd
+tZE1iuOh0eaDDUwHPMZMi0Ki9hK4kHkFoFTa8RyeYJ2beUe7i3SDcx87ceUCr54o
+q2dc/lIeyERngVsLunb3gqmLKnFzmSRAQ7h+k5FmoZgZ9usvyU9bmTuYh5jJLGGt
+3AxFoM8yJehKFK/GyM6ykvPYduzbLmTKjUfPLNZSWMcT6s9L1tmz3P4qmyOmsUN9
+6q75w3v6Pf6/McfcPsG3ghLeGopyj+jxUGBORyHkH0l9DOcaC5W/Z1i7V1CTASFs
+sNOzklIaZdLa3VikiF+jmMhhUcunIeeL+t9nHQwKRd6jIcKnF21OXe9VTHEoswB9
+ALIeRcagERXS7V2P/MINPqXlSLOlOiI3XV9QAsb1U8R5JgSVgtpBB1IBbcNnRC4Z
+hL/PTYdGVHz6fxo/GXpLUAf6DwMykmPkkdROPt4NxKQg4Vr4bZIdPWZIdvlRFS3l
+i/dVCEBFv050Dzc/N1lAz/uUW2puYjKuR+c7tIoZusucHT1jcT5Suntkn8nY36zn
+Lsy6VOJ+TRHLXiR30LcBoTP+gfo4GQF2PFHMf66qP0Tpbxze7SeC3JJt5lFfOh9K
++5CLwzgA4Gc1rQIHSq3RoXIsIzdXn1FwPEDw3vnUryv1wfBDpBkIQ3RIe1e4lsPk
+ENnkRsxSNq5FNmRXOdTU
+=rT1E
 -----END PGP SIGNATURE-----
 
---0EIE/3F9PxFGTcfe--
+--jBytRjlvjIVQOM9g--
