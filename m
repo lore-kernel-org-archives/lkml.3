@@ -1,94 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753467AbaFCFbT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 01:31:19 -0400
-Received: from mout.kundenserver.de ([212.227.126.187]:49167 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751740AbaFCFbR (ORCPT
+	id S1753544AbaFCFbY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 01:31:24 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:33179 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751740AbaFCFbW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 01:31:17 -0400
-Message-ID: <538D5D78.6040102@ontolinux.com>
-Date: Tue, 03 Jun 2014 07:30:32 +0200
-From: Christian Stroetmann <stroetmann@ontolinux.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.0; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Dave Chinner <david@fromorbit.com>
-CC: Daniel Phillips <daniel@phunq.net>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Subject: Re: [RFC][PATCH 1/2] Add a super operation for writeback
-References: <538B9DEE.20800@phunq.net> <538C360F.7020901@ontolinux.com> <20140603033940.GB14410@dastard>
-In-Reply-To: <20140603033940.GB14410@dastard>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:v4/ejXAkkUPUWiXjgsjUIlx4EWh/AZcfxr7pj+UGiXi
- Aro90EUIU09XStTw0pBRNN0TMlswqMaSMIn84woaP5W60qYHo0
- AOWL5lo8I0BfZcD5NXhmN2ln1HUXnGHn4oVl5DCjJoZEDVoFav
- wpgneK7xnoLpU9HHkdc82yE5xXuGZlq4F0Ed7zJlFmFhpF7BQO
- I7XUdBQvmL05lwmSvVAn2XF3pfaaQvzUpmt4n2rHtntobuLRUa
- O9hP+hi1o4gkxj6Rp+kOowAnUyar8YGcqXyCxT/FQDTYInwGuR
- 2EyVj2yV98uido6OrVHKEmemMbz3WAlyEQX4eDHKFDnDHvtLJJ
- xOcyHO2Ld7uZIogdVDuY=
+	Tue, 3 Jun 2014 01:31:22 -0400
+From: Real Name <enjoymindful@gmail.com>
+To: user-mode-linux-devel@lists.sourceforge.net
+Cc: richard@nod.at, linux-kernel@vger.kernel.org,
+        Honggang Li <enjoymindful@gmail.com>
+Subject: [PATCH] delete unnecessary bootmem struct page array
+Date: Tue,  3 Jun 2014 13:30:45 +0800
+Message-Id: <1401773445-25256-2-git-send-email-enjoymindful@gmail.com>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1401773445-25256-1-git-send-email-enjoymindful@gmail.com>
+References: <1401773445-25256-1-git-send-email-enjoymindful@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On the 3rd of June 2014 05:39, Dave Chinner wrote:
-> On Mon, Jun 02, 2014 at 10:30:07AM +0200, Christian Stroetmann wrote:
->> When I followed the advice of Dave Chinner:
->> "We're not going to merge that page forking stuff (like you were
->> told at LSF 2013 more than a year ago:
->> http://lwn.net/Articles/548091/) without rigorous design review and
->> a demonstration of the solutions to all the hard corner cases it
->> has"
->> given in his e-mail related with the presentation of the latest
->> version of the Tux3 file system (see [1]) and read the linked
->> article, I found in the second comments:
->> "Parts of this almost sound like it either a.) overlaps with or b.)
->> would benefit greatly from something similar to Featherstitch
->> [[2]]."
->>
->> Could it be that we have with Featherstitch a general solution
->> already that is said to be even "file system agnostic"?
->> Honestly, I thought that something like this would make its way into
->> the Linux code base.
-> Here's what I said about the last proposal (a few months ago) for
-> integrating featherstitch into the kernel:
->
-> http://www.spinics.net/lists/linux-fsdevel/msg72799.html
->
-> It's not a viable solution.
->
-> Cheers,
->
-> Dave.
+From: Honggang Li <enjoymindful@gmail.com>
 
-How annoying, I did not remember your e-mail of the referenced thread 
-"[Lsf-pc] [LSF/MM TOPIC] atomic block device" despite I saved it on 
-local disk. Thanks a lot for the reminder.
+1) uml kernel bootmem managed through bootmem_data->node_bootmem_map,
+not the struct page array, so the array is unnecessary.
 
-I also directly saw the problem with the research prototype 
-Featherstitch, specifically the point "All the filesystem modules it has 
-are built into the featherstitch kernel module, and called through a VFS 
-shim layer". But it is just a prototype and its concept of abstraction 
-has not to be copied 1:1 into the Linux code base.
+2) the bootmem struct page array has been pointed by a *local* pointer,
+struct page *map, in init_maps function. The array can be accessed only
+in init_maps's scope. As a result, uml kernel wastes about 1% of total
+memory.
 
-In general, I do not believe that the complexity problems of soft 
-updates, atomic writes, and related techniques can be solved by 
-hand/manually. So my suggestion is to automatically handle the 
-complexity problem of e.g. dependancies in a way that is comparable to 
-a(n on-the-fly) file-system compiler so to say that works on a very 
-large dependancy graph (having several billions of graph vertices 
-actually). And at this point an abstraction like it is given with 
-Featherstitch helps to feed and control this special FS compiler.
+Signed-off-by: Honggang Li <enjoymindful@gmail.com>
+---
+ arch/um/include/shared/mem_user.h |  2 +-
+ arch/um/kernel/physmem.c          | 32 ++++++--------------------------
+ arch/um/kernel/um_arch.c          |  7 +------
+ 3 files changed, 8 insertions(+), 33 deletions(-)
 
-Actually, I have to follow the discussion further on the one hand and go 
-deeper into the highly complex problem space on the other hand.
+diff --git a/arch/um/include/shared/mem_user.h b/arch/um/include/shared/mem_user.h
+index 46384ac..cb84414 100644
+--- a/arch/um/include/shared/mem_user.h
++++ b/arch/um/include/shared/mem_user.h
+@@ -49,7 +49,7 @@ extern int iomem_size;
+ extern int init_mem_user(void);
+ extern void setup_memory(void *entry);
+ extern unsigned long find_iomem(char *driver, unsigned long *len_out);
+-extern int init_maps(unsigned long physmem, unsigned long iomem,
++extern void mem_total_pages(unsigned long physmem, unsigned long iomem,
+ 		     unsigned long highmem);
+ extern unsigned long get_vm(unsigned long len);
+ extern void setup_physmem(unsigned long start, unsigned long usable,
+diff --git a/arch/um/kernel/physmem.c b/arch/um/kernel/physmem.c
+index 30fdd5d..549ecf3 100644
+--- a/arch/um/kernel/physmem.c
++++ b/arch/um/kernel/physmem.c
+@@ -22,39 +22,19 @@ EXPORT_SYMBOL(high_physmem);
+ 
+ extern unsigned long long physmem_size;
+ 
+-int __init init_maps(unsigned long physmem, unsigned long iomem,
++void __init mem_total_pages(unsigned long physmem, unsigned long iomem,
+ 		     unsigned long highmem)
+ {
+-	struct page *p, *map;
+-	unsigned long phys_len, phys_pages, highmem_len, highmem_pages;
+-	unsigned long iomem_len, iomem_pages, total_len, total_pages;
+-	int i;
+-
+-	phys_pages = physmem >> PAGE_SHIFT;
+-	phys_len = phys_pages * sizeof(struct page);
+-
+-	iomem_pages = iomem >> PAGE_SHIFT;
+-	iomem_len = iomem_pages * sizeof(struct page);
++	unsigned long phys_pages, highmem_pages;
++	unsigned long iomem_pages, total_pages;
+ 
++	phys_pages    = physmem >> PAGE_SHIFT;
++	iomem_pages   = iomem   >> PAGE_SHIFT;
+ 	highmem_pages = highmem >> PAGE_SHIFT;
+-	highmem_len = highmem_pages * sizeof(struct page);
+-
+-	total_pages = phys_pages + iomem_pages + highmem_pages;
+-	total_len = phys_len + iomem_len + highmem_len;
+ 
+-	map = alloc_bootmem_low_pages(total_len);
+-	if (map == NULL)
+-		return -ENOMEM;
+-
+-	for (i = 0; i < total_pages; i++) {
+-		p = &map[i];
+-		memset(p, 0, sizeof(struct page));
+-		SetPageReserved(p);
+-		INIT_LIST_HEAD(&p->lru);
+-	}
++	total_pages   = phys_pages + iomem_pages + highmem_pages;
+ 
+ 	max_mapnr = total_pages;
+-	return 0;
+ }
+ 
+ void map_memory(unsigned long virt, unsigned long phys, unsigned long len,
+diff --git a/arch/um/kernel/um_arch.c b/arch/um/kernel/um_arch.c
+index 6043c76..dbd5bda 100644
+--- a/arch/um/kernel/um_arch.c
++++ b/arch/um/kernel/um_arch.c
+@@ -338,12 +338,7 @@ int __init linux_main(int argc, char **argv)
+ 	start_vm = VMALLOC_START;
+ 
+ 	setup_physmem(uml_physmem, uml_reserved, physmem_size, highmem);
+-	if (init_maps(physmem_size, iomem_size, highmem)) {
+-		printf("Failed to allocate mem_map for %Lu bytes of physical "
+-		       "memory and %Lu bytes of highmem\n", physmem_size,
+-		       highmem);
+-		exit(1);
+-	}
++	mem_total_pages(physmem_size, iomem_size, highmem);
+ 
+ 	virtmem_size = physmem_size;
+ 	stack = (unsigned long) argv;
+-- 
+1.8.3.1
 
-
-
-With all the best
-Christian
