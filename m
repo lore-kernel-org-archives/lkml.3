@@ -1,23 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755319AbaFCMWC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 08:22:02 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43252 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754127AbaFCLkO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754132AbaFCLkO (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 3 Jun 2014 07:40:14 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43241 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754103AbaFCLkL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 07:40:11 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ilia Mirkin <imirkin@alum.mit.edu>, Ben Skeggs <bskeggs@redhat.com>,
+Cc: Leo Liu <leo.liu@amd.com>,
+        =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 014/138] drm/nouveau/acpi: allow non-optimus setups to load vbios from acpi
-Date: Tue,  3 Jun 2014 12:37:40 +0100
-Message-Id: <1401795584-22664-15-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 013/138] drm/radeon: check buffer relocation offset
+Date: Tue,  3 Jun 2014 12:37:39 +0100
+Message-Id: <1401795584-22664-14-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
 References: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,39 +31,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ilia Mirkin <imirkin@alum.mit.edu>
+From: Leo Liu <leo.liu@amd.com>
 
-commit a3d0b1218d351c6e6f3cea36abe22236a08cb246 upstream.
+commit 695daf1a8e731a4b5b89de89a61f32a4d7ad7094 upstream.
 
-There appear to be a crop of new hardware where the vbios is not
-available from PROM/PRAMIN, but there is a valid _ROM method in ACPI.
-The data read from PCIROM almost invariably contains invalid
-instructions (still has the x86 opcodes), which makes this a low-risk
-way to try to obtain a valid vbios image.
-
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=76475
-Signed-off-by: Ilia Mirkin <imirkin@alum.mit.edu>
-Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
-[ luis: backported to 3.11: adjusted context ]
+Signed-off-by: Leo Liu <leo.liu@amd.com>
+Signed-off-by: Christian König <christian.koenig@amd.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/nouveau/nouveau_acpi.c | 3 ---
- 1 file changed, 3 deletions(-)
+ drivers/gpu/drm/radeon/radeon_uvd.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/drivers/gpu/drm/nouveau/nouveau_acpi.c b/drivers/gpu/drm/nouveau/nouveau_acpi.c
-index d97f20069d3e..5cec3a0c6c85 100644
---- a/drivers/gpu/drm/nouveau/nouveau_acpi.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_acpi.c
-@@ -372,9 +372,6 @@ bool nouveau_acpi_rom_supported(struct pci_dev *pdev)
- 	acpi_status status;
- 	acpi_handle dhandle, rom_handle;
+diff --git a/drivers/gpu/drm/radeon/radeon_uvd.c b/drivers/gpu/drm/radeon/radeon_uvd.c
+index 26b107d13be1..af81d123db80 100644
+--- a/drivers/gpu/drm/radeon/radeon_uvd.c
++++ b/drivers/gpu/drm/radeon/radeon_uvd.c
+@@ -454,6 +454,10 @@ static int radeon_uvd_cs_reloc(struct radeon_cs_parser *p,
+ 	cmd = radeon_get_ib_value(p, p->idx) >> 1;
  
--	if (!nouveau_dsm_priv.dsm_detected && !nouveau_dsm_priv.optimus_detected)
--		return false;
--
- 	dhandle = DEVICE_ACPI_HANDLE(&pdev->dev);
- 	if (!dhandle)
- 		return false;
+ 	if (cmd < 0x4) {
++		if (end <= start) {
++			DRM_ERROR("invalid reloc offset %X!\n", offset);
++			return -EINVAL;
++		}
+ 		if ((end - start) < buf_sizes[cmd]) {
+ 			DRM_ERROR("buffer (%d) to small (%d / %d)!\n", cmd,
+ 				  (unsigned)(end - start), buf_sizes[cmd]);
 -- 
 1.9.1
 
