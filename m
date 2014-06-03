@@ -1,92 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934355AbaFCXjP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 19:39:15 -0400
-Received: from 8bytes.org ([85.214.48.195]:49100 "EHLO mail.8bytes.org"
+	id S965100AbaFCXl0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 19:41:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51871 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932907AbaFCXjM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 19:39:12 -0400
-Date: Wed, 4 Jun 2014 01:39:07 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Shuah Khan <shuah.kh@samsung.com>
-Cc: Eli Billauer <eli.billauer@gmail.com>, tj@kernel.org,
-        devel@driverdev.osuosl.org, gregkh@linuxfoundation.org,
-        bhelgaas@google.com, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, iommu@lists.linux-foundation.org,
-        discuss@x86-64.org
-Subject: Re: [PATCH v2 1/4] dma-mapping: Add devm_ interface for
- dma_map_single()
-Message-ID: <20140603233907.GB23880@8bytes.org>
-References: <1401606077-1739-1-git-send-email-eli.billauer@gmail.com>
- <1401606077-1739-2-git-send-email-eli.billauer@gmail.com>
- <538E3D04.9060808@samsung.com>
+	id S932164AbaFCXlZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 19:41:25 -0400
+Date: Tue, 3 Jun 2014 19:41:11 -0400
+From: Dave Jones <davej@redhat.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Konstantin Khlebnikov <koct9i@gmail.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Sasha Levin <sasha.levin@oracle.com>
+Subject: Re: 3.15-rc8 mm/filemap.c:202 BUG
+Message-ID: <20140603234111.GA21091@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Hugh Dickins <hughd@google.com>,
+	Konstantin Khlebnikov <koct9i@gmail.com>,
+	"linux-mm@kvack.org" <linux-mm@kvack.org>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Sasha Levin <sasha.levin@oracle.com>
+References: <20140603042121.GA27177@redhat.com>
+ <CALYGNiNV951SnBKdr0PEkgLbLCxy+YB6HJpafRr6CynO+a1sdQ@mail.gmail.com>
+ <alpine.LSU.2.11.1406031524470.7878@eggly.anvils>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <538E3D04.9060808@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Wed Jun  4 01:39:09 2014
-X-DSPAM-Confidence: 0.9994
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 538e5c9d20861477113474
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <alpine.LSU.2.11.1406031524470.7878@eggly.anvils>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 03, 2014 at 03:24:20PM -0600, Shuah Khan wrote:
-> On 06/01/2014 01:01 AM, Eli Billauer wrote:
-> I see the value of this interface in unmap case, this type of wrapper
-> can release dma buffers, drivers neglected to release leaving dangling
-> buffers.
-> 
-> However, driver writers should give it some thought before switching
-> from conventional dma_map_*() interfaces to these proposed managed
-> dma mapping interfaces. These new interfaces shouldn't be treated as
-> drop in replacements to dma_map_*() interfaces.
-> 
-> The reasons are:
-> 
-> 1. This interface adds an overhead in allocation memory for devres to
->    compared to other dma_map_* wrappers. Users need to be aware of that.
->    This would be okay in the cases where a driver allocates several
->    buffers at init time and uses them. However, several drivers allocate
->    during run-time and release as soon as it is no longer needed. This
->    overhead is going to be in the performance path.
-> 
-> 2. It adds a failure case even when dma buffers are available. i.e if
->    if devres alloc fails, it will return failure even if dma map could
->    have succeeded. This is a new failure case for DMA-API.
-> 
->    The reason dma_map_*() routines fail now is because there are no
->    buffers available. Drivers handle this error as a retry case.
-> 
->    Drivers using dmam_map_single() will have to handle the failure
->    cases differently.
-> 
->    Since the return values are different for dmam_map_*(), that is
->    plus that these interfaces can't be drop in replacements to the
->    dma_map_*() interfaces.
-> 
-> 3. Similarly, it adds an overhead in releasing memory for devres to
->    compared to other dma_unmap_* wrappers. Users need to be aware of
->    that. This overhead is going to be in the performance path when
->    drivers unmap buffers during run-time.
+On Tue, Jun 03, 2014 at 04:11:43PM -0700, Hugh Dickins wrote:
+ 
+ > > -       BUG_ON(page_mapped(page));
+ > > +       VM_BUG_ON_PAGE(page_mapped(page), page);
+ > > 
+ > >         /*
+ > >          * Some filesystems seem to re-dirty the page even after
+ > 
+ > Yes, there's a chance that will tell us more (but I don't have high
+ > hopes of it).  I'm still stumped by this issue, just as before.
 
-I fully agree with the points Shuah brought up here. I don't think it is
-a good idea to add this kind of resource management to runtime-allocated
-(and de-allocated) resources of device drivers.
+running with that applied now.
 
-Also DMA handles are not something that could be garbage collected at
-driver unload time. They are a limited resource that may be used up at
-some point. And the whole point of a devm-API is that code can be
-simpler because we don't need to de-allocate everything on the
-error-path or at unload time, no?
+ > Sasha (or Dave), any update on whether you see this without THP?
+ > and whether you see the remove_migration_pte oops without THP?
 
-Besides that, we already have DMA-API debug to find drivers that do not
-release all their DMA buffers.
+haven't tried yet. I wish I had a better reproducer, because it can
+take up to a day to show up, and if disabling THP makes it go away,
+it's hard to judge if that's the case, or if I haven't been running
+long enough.. Sort of a Schrödinger's BUG_ON.
+
+After I get a trace with the above patch applied, I'll give it a shot
+though, just to see what happens.
+
+ > Mind you, I've probably given too little weight to the fact that every
+ > stacktrace shown has been a shmem one: originally I assumed that just
+ > reflected trinity running its tests on a tmpfs, now I wonder: Dave,
+ > Sasha, are you running similar tests on tmpfs and other filesystems,
+ > and find this only in the tmpfs case?
+
+In my case, there's a tmpfs mounted, but it's extremely unlikely that
+trinity walked into it. Perhaps I should try that, to see if it happens
+faster.
 
 
-	Joerg
+ > > I don't like the way in which truncate silently skips page entries
+ > > when they are changing under it.
+ > > Completely untested patch follows.
+ > > 
+ > > --- a/mm/shmem.c
+ > > +++ b/mm/shmem.c
+ > > @@ -495,8 +495,9 @@ static void shmem_undo_range(struct inode *inode,
+ > > loff_t lstart, loff_t lend,
+ > >                         if (radix_tree_exceptional_entry(page)) {
+ > >                                 if (unfalloc)
+ > >                                         continue;
+ > > -                               nr_swaps_freed += !shmem_free_swap(mapping,
+ > > -                                                               index, page);
+ > > +                               if (shmem_free_swap(mapping, index, page))
+ > > +                                       goto retry;
+ > > +                               nr_swaps_freed++;
+ > >                                 continue;
+ > >                         }
+ > > 
+ > > @@ -509,10 +510,11 @@ static void shmem_undo_range(struct inode
+ > > *inode, loff_t lstart, loff_t lend,
+ > >                         }
+ > >                         unlock_page(page);
+ > >                 }
+ > > +               index++;
+ > > +retry:
+ > >                 pagevec_remove_exceptionals(&pvec);
+ > >                 pagevec_release(&pvec);
+ > >                 mem_cgroup_uncharge_end();
+ > > -               index++;
+ > >         }
 
+I'll add this to the queue of things to test, but that queue is now
+about two days deep already :)
+
+	Dave
 
