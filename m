@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932809AbaFCLlz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 07:41:55 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43620 "EHLO
+	id S1754525AbaFCLmO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 07:42:14 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43692 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932786AbaFCLlx (ORCPT
+	with ESMTP id S1754488AbaFCLmL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 07:41:53 -0400
+	Tue, 3 Jun 2014 07:42:11 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
+Cc: Liu Hua <sdu.liu@huawei.com>, Russell King <rmk+kernel@arm.linux.org.uk>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 081/138] x86-64, modify_ldt: Make support for 16-bit segments a runtime option
-Date: Tue,  3 Jun 2014 12:38:47 +0100
-Message-Id: <1401795584-22664-82-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 092/138] ARM: 8012/1: kdump: Avoid overflow when converting pfn to physaddr
+Date: Tue,  3 Jun 2014 12:38:58 +0100
+Message-Id: <1401795584-22664-93-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
 References: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
@@ -27,89 +27,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Liu Hua <sdu.liu@huawei.com>
 
-commit fa81511bb0bbb2b1aace3695ce869da9762624ff upstream.
+commit 8fad87bca7ac9737e413ba5f1656f1114a8c314d upstream.
 
-Checkin:
+When we configure CONFIG_ARM_LPAE=y, pfn << PAGE_SHIFT will
+overflow if pfn >= 0x100000 in copy_oldmem_page.
+So use __pfn_to_phys for converting.
 
-b3b42ac2cbae x86-64, modify_ldt: Ban 16-bit segments on 64-bit kernels
-
-disabled 16-bit segments on 64-bit kernels due to an information
-leak.  However, it does seem that people are genuinely using Wine to
-run old 16-bit Windows programs on Linux.
-
-A proper fix for this ("espfix64") is coming in the upcoming merge
-window, but as a temporary fix, create a sysctl to allow the
-administrator to re-enable support for 16-bit segments.
-
-It adds a "/proc/sys/abi/ldt16" sysctl that defaults to zero (off). If
-you hit this issue and care about your old Windows program more than
-you care about a kernel stack address information leak, you can do
-
-   echo 1 > /proc/sys/abi/ldt16
-
-as root (add it to your startup scripts), and you should be ok.
-
-The sysctl table is only added if you have COMPAT support enabled on
-x86-64, but I assume anybody who runs old windows binaries very much
-does that ;)
-
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Link: http://lkml.kernel.org/r/CA%2B55aFw9BPoD10U1LfHbOMpHWZkvJTkMcfCs9s3urPr1YyWBxw@mail.gmail.com
+Signed-off-by: Liu Hua <sdu.liu@huawei.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/x86/kernel/ldt.c        | 4 +++-
- arch/x86/vdso/vdso32-setup.c | 8 ++++++++
- 2 files changed, 11 insertions(+), 1 deletion(-)
+ arch/arm/kernel/crash_dump.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/x86/kernel/ldt.c b/arch/x86/kernel/ldt.c
-index af1d14a9ebda..dcbbaa165bde 100644
---- a/arch/x86/kernel/ldt.c
-+++ b/arch/x86/kernel/ldt.c
-@@ -20,6 +20,8 @@
- #include <asm/mmu_context.h>
- #include <asm/syscalls.h>
+diff --git a/arch/arm/kernel/crash_dump.c b/arch/arm/kernel/crash_dump.c
+index 90c50d4b43f7..5d1286d51154 100644
+--- a/arch/arm/kernel/crash_dump.c
++++ b/arch/arm/kernel/crash_dump.c
+@@ -39,7 +39,7 @@ ssize_t copy_oldmem_page(unsigned long pfn, char *buf,
+ 	if (!csize)
+ 		return 0;
  
-+int sysctl_ldt16 = 0;
-+
- #ifdef CONFIG_SMP
- static void flush_ldt(void *current_mm)
- {
-@@ -234,7 +236,7 @@ static int write_ldt(void __user *ptr, unsigned long bytecount, int oldmode)
- 	 * IRET leaking the high bits of the kernel stack address.
- 	 */
- #ifdef CONFIG_X86_64
--	if (!ldt_info.seg_32bit) {
-+	if (!ldt_info.seg_32bit && !sysctl_ldt16) {
- 		error = -EINVAL;
- 		goto out_unlock;
- 	}
-diff --git a/arch/x86/vdso/vdso32-setup.c b/arch/x86/vdso/vdso32-setup.c
-index d6bfb876cfb0..f1d633a43f8e 100644
---- a/arch/x86/vdso/vdso32-setup.c
-+++ b/arch/x86/vdso/vdso32-setup.c
-@@ -41,6 +41,7 @@ enum {
- #ifdef CONFIG_X86_64
- #define vdso_enabled			sysctl_vsyscall32
- #define arch_setup_additional_pages	syscall32_setup_pages
-+extern int sysctl_ldt16;
- #endif
- 
- /*
-@@ -380,6 +381,13 @@ static struct ctl_table abi_table2[] = {
- 		.mode		= 0644,
- 		.proc_handler	= proc_dointvec
- 	},
-+	{
-+		.procname	= "ldt16",
-+		.data		= &sysctl_ldt16,
-+		.maxlen		= sizeof(int),
-+		.mode		= 0644,
-+		.proc_handler	= proc_dointvec
-+	},
- 	{}
- };
+-	vaddr = ioremap(pfn << PAGE_SHIFT, PAGE_SIZE);
++	vaddr = ioremap(__pfn_to_phys(pfn), PAGE_SIZE);
+ 	if (!vaddr)
+ 		return -ENOMEM;
  
 -- 
 1.9.1
