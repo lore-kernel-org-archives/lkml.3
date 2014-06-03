@@ -1,76 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754594AbaFCSQy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 14:16:54 -0400
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:56726 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751440AbaFCSQx (ORCPT
+	id S1754789AbaFCSTN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 14:19:13 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:57324 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752307AbaFCSTL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 14:16:53 -0400
-Date: Tue, 3 Jun 2014 20:16:46 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Alexei Starovoitov <ast@plumgrid.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Jonathan Corbet <corbet@lwn.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Jiri Olsa <jolsa@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 net-next 0/2] split BPF out of core networking
-Message-ID: <20140603181646.GA5028@gmail.com>
-References: <1401692506-7796-1-git-send-email-ast@plumgrid.com>
- <20140602081545.7baf4a91@lwn.net>
- <20140602092456.2114440a@gandalf.local.home>
- <20140602141606.GC2544@kernel.org>
- <CAMEtUuxZQuyJaTfoNECnZCJ=q8A_aMpncGwUgWNm9Huxm=bynw@mail.gmail.com>
+	Tue, 3 Jun 2014 14:19:11 -0400
+Message-ID: <538E119D.8010304@codeaurora.org>
+Date: Tue, 03 Jun 2014 11:19:09 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMEtUuxZQuyJaTfoNECnZCJ=q8A_aMpncGwUgWNm9Huxm=bynw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Julia Lawall <julia.lawall@lip6.fr>
+CC: Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org,
+        Mitchel Humpherys <mitchelh@codeaurora.org>,
+        Gilles Muller <Gilles.Muller@lip6.fr>,
+        Nicolas Palix <nicolas.palix@imag.fr>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, devicetree@vger.kernel.org
+Subject: Re: [PATCH v2] coccinelle: Check for missing NULL terminators in
+ of_device_id tables
+References: <1401213858-31950-1-git-send-email-sboyd@codeaurora.org> <alpine.DEB.2.02.1406031208380.2036@localhost6.localdomain6> <538E09C1.30200@codeaurora.org> <alpine.DEB.2.02.1406032013150.2009@localhost6.localdomain6>
+In-Reply-To: <alpine.DEB.2.02.1406032013150.2009@localhost6.localdomain6>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06/03/14 11:14, Julia Lawall wrote:
+> On Tue, 3 Jun 2014, Stephen Boyd wrote:
+>
+>> On 06/03/14 03:15, Julia Lawall wrote:
+>>> Failure to terminate an of_device_id table can lead to confusing
+>>> failures depending on where the compiler places the array. Add a
+>>> check to make sure these tables are terminated. Thanks to Mitchel
+>>> Humpherys for coming up with the pattern initially.
+>>>
+>>> Cc: Mitchel Humpherys <mitchelh@codeaurora.org>
+>>> Cc: Julia Lawall <Julia.Lawall@lip6.fr>
+>>> Cc: Gilles Muller <Gilles.Muller@lip6.fr>
+>>> Cc: Nicolas Palix <nicolas.palix@imag.fr>
+>>> Cc: Grant Likely <grant.likely@linaro.org>
+>>> Cc: Rob Herring <robh+dt@kernel.org>
+>>> Cc: devicetree@vger.kernel.org
+>>> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+>>> Acked-by: Grant Likely <grant.likely@linaro.org>
+>>> Signed-off-by: Julia Lawall <julia.lawall@lip6.fr>
+>>>
+>>> ---
+>>>
+>>> v3: Removed unneeded rule bad_of_table.  Placed * in context rule on the 
+>>> closing brace; putting it on the field caused all fields to be marked.
+>>>
+>>
+>> These seem like only minor changes. Why was my authorship removed?
+> Probably because I don't know how to provide a new vesion of the patch 
+> properly.  What should I have done? 
 
-* Alexei Starovoitov <ast@plumgrid.com> wrote:
+If you use git format-patch it should insert a "From: <original author>"
+line at the beginning of the commit text. This ensures that when git am
+is used the correct authorship is retained. It looks like you're using
+alpine so I suspect you could just paste this information at the
+beginning of the message.
 
-> On Mon, Jun 2, 2014 at 7:16 AM, Arnaldo Carvalho de Melo
-> <acme@kernel.org> wrote:
-> > Em Mon, Jun 02, 2014 at 09:24:56AM -0400, Steven Rostedt escreveu:
-> >> On Mon, 2 Jun 2014 08:15:45 -0500
-> >> Jonathan Corbet <corbet@lwn.net> wrote:
-> >
-> >> > On Mon,  2 Jun 2014 00:01:44 -0700
-> >> > Alexei Starovoitov <ast@plumgrid.com> wrote:
-> >
-> >> > > This patch set splits BPF out of core networking into generic component
-> >
-> >> > Quick, probably dumb question: if you're going to split it out, why not
-> >> > split it out entirely, into kernel/ or (perhaps better) lib/?  The
-> >> > whole point seems to be that BPF is outgrowing its networking home, so
-> >> > it seems like it might be better to make it truly generic.
-> >
-> >> I believe this is what Ingo suggested as well. If it is become generic,
-> >> it belongs in lib/
-> >
-> > Yes, that was his suggestion, which I agree with, FWIW.
-> 
-> I guess I posted v2 too quickly :) v2 splits filter.c into 
-> kernel/bpf/. I think it's a better location than lib/bpf, since lib 
-> feels too constrained by definition of 'library'. bpf is more than a 
-> set of library calls.
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
-Yeah, the upgrade to kernel/bpf/ is a better place for BPF IMO: BPF is 
-really an 'active', stateful subsystem, with non-trivial per arch 
-implementations, while lib/ is generally for standalone, generic, 
-platform-decoupled library functions (with a few exceptions).
-
-Thanks,
-
-	Ingo
