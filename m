@@ -1,360 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933403AbaFCTxN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 15:53:13 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:60816 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933043AbaFCTxH (ORCPT
+	id S1754227AbaFCT4W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 15:56:22 -0400
+Received: from mailrelay011.isp.belgacom.be ([195.238.6.178]:52329 "EHLO
+	mailrelay011.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753251AbaFCT4U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 15:53:07 -0400
-MIME-Version: 1.0
-In-Reply-To: <CALCETrV2SMzMoFFn6tVrpoVOzyP_u2MCjGt=C-8_zDK=2rzSvA@mail.gmail.com>
-References: <1400799936-26499-1-git-send-email-keescook@chromium.org>
-	<1400799936-26499-7-git-send-email-keescook@chromium.org>
-	<CALCETrWR6s7wqSwEeygOYqizrxy8eAyHb3SqvLoTooMZ+MfdqA@mail.gmail.com>
-	<CAGXu5j+=itFtHe25pZxXsk+1C1Cca4DGm83SC93=xRctUdeXsw@mail.gmail.com>
-	<CALCETrX3fjeHeigLXy7Juq6XrNFEeZLQPLmQhiOwBDgc0MRtBw@mail.gmail.com>
-	<CAGXu5jL4erM41JBG703adSht-f4K7fAfbG9XyjPNUwiyAde-Nw@mail.gmail.com>
-	<CALCETrVZADpErLwsyaWEQqVa45_VEMyQg+L+g2gR4NhwNCXd4g@mail.gmail.com>
-	<CAGXu5jKdJDS5k+tpUhQdyMZt40S8H3C-4zFQQS-dmaP3dE6Avw@mail.gmail.com>
-	<CALCETrVTfViNBua0DURxPwbbSnoL07x=EMTxxq3zO5bzQrM00A@mail.gmail.com>
-	<CAGXu5j+KdJbZwtQpOab5J_-0uudpWHtoPwyvuDr0E-MRhNm90Q@mail.gmail.com>
-	<CALCETrUO_R0FVdd4CAiGxkD=gu-Hnnz3WBkjzU2CYubdQ2cXug@mail.gmail.com>
-	<CAGXu5jJzCPVmD9pR_AAdJF0Z1jRuh9x_vtM9K-q8JQQYNya9Kg@mail.gmail.com>
-	<CALCETrXAO_5bCHF80H5P-1T74-CM-_5wrrr7WDYgC4uywWmL=A@mail.gmail.com>
-	<CAGXu5jLNd3WmRReyO56=i2t9QYYf3jUtdqz_GhRz=3AvM=-3=g@mail.gmail.com>
-	<CALCETrXDA5EUG7FFg7_NeC=RBAOxX4n0U-AphA5e7F=+gSXwuA@mail.gmail.com>
-	<CAGXu5j+8-NTY1p=0d0hpeyFwsJmHObj3_=t8sWsqf78RtmDTcA@mail.gmail.com>
-	<CALCETrV2SMzMoFFn6tVrpoVOzyP_u2MCjGt=C-8_zDK=2rzSvA@mail.gmail.com>
-Date: Tue, 3 Jun 2014 12:53:06 -0700
-X-Google-Sender-Auth: Kepeiux7WxOV2NYCN17eVWk61J0
-Message-ID: <CAGXu5jLFgqFLGdeycOtm2TzJOQBawo_dxmz3e4=Egkj2NCofvQ@mail.gmail.com>
-Subject: Re: [PATCH v5 6/6] seccomp: add SECCOMP_EXT_ACT_TSYNC and SECCOMP_FILTER_TSYNC
-From: Kees Cook <keescook@chromium.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Peter Zijlstra <peterz@infradead.org>,
-        James Morris <james.l.morris@oracle.com>,
-        Eric Paris <eparis@redhat.com>, Juri Lelli <juri.lelli@gmail.com>,
-        John Stultz <john.stultz@linaro.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Alex Thorlton <athorlton@sgi.com>, Rik van Riel <riel@redhat.com>,
-        Daeseok Youn <daeseok.youn@gmail.com>,
-        David Rientjes <rientjes@google.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Dario Faggioli <raistlin@linux.it>,
-        Rashika Kheria <rashika.kheria@gmail.com>,
-        liguang <lig.fnst@cn.fujitsu.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        LSM List <linux-security-module@vger.kernel.org>,
-        Will Drewry <wad@chromium.org>, Julien Tinnes <jln@google.com>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 3 Jun 2014 15:56:20 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AnsOAJMljlNbsmtf/2dsb2JhbABZgweBJ6o3BAMBAQEFAZgcgQ4XdIJTLyOBGjeIRgHRHReFVYh9hEcEj0uKP4sdiBaBeIFCOy8
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>,
+        Sebastian Ott <sebott@linux.vnet.ibm.com>,
+        Joe Perches <joe@perches.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH V2 1/2] drivers/s390/cio/qdio_main.c: use unsigned int for count everywhere
+Date: Tue,  3 Jun 2014 21:54:48 +0200
+Message-Id: <1401825288-5766-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 2, 2014 at 6:15 PM, Andy Lutomirski <luto@amacapital.net> wrote:
-> On Mon, Jun 2, 2014 at 6:09 PM, Kees Cook <keescook@chromium.org> wrote:
->> On Mon, Jun 2, 2014 at 5:29 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->>> On Mon, Jun 2, 2014 at 5:14 PM, Kees Cook <keescook@chromium.org> wrote:
->>>> On Mon, Jun 2, 2014 at 1:53 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->>>>> On Tue, May 27, 2014 at 12:55 PM, Kees Cook <keescook@chromium.org> wrote:
->>>>>> On Tue, May 27, 2014 at 12:27 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->>>>>>> On Tue, May 27, 2014 at 12:23 PM, Kees Cook <keescook@chromium.org> wrote:
->>>>>>>> On Tue, May 27, 2014 at 12:10 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->>>>>>>>> On Tue, May 27, 2014 at 11:45 AM, Kees Cook <keescook@chromium.org> wrote:
->>>>>>>>>> On Tue, May 27, 2014 at 11:40 AM, Andy Lutomirski <luto@amacapital.net> wrote:
->>>>>>>>>>> On Tue, May 27, 2014 at 11:24 AM, Kees Cook <keescook@chromium.org> wrote:
->>>>>>>>>>>> On Mon, May 26, 2014 at 12:27 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->>>>>>>>>>>>> On Fri, May 23, 2014 at 10:05 AM, Kees Cook <keescook@chromium.org> wrote:
->>>>>>>>>>>>>> On Thu, May 22, 2014 at 4:11 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->>>>>>>>>>>>>>> On Thu, May 22, 2014 at 4:05 PM, Kees Cook <keescook@chromium.org> wrote:
->>>>>>>>>>>>>>>> Applying restrictive seccomp filter programs to large or diverse
->>>>>>>>>>>>>>>> codebases often requires handling threads which may be started early in
->>>>>>>>>>>>>>>> the process lifetime (e.g., by code that is linked in). While it is
->>>>>>>>>>>>>>>> possible to apply permissive programs prior to process start up, it is
->>>>>>>>>>>>>>>> difficult to further restrict the kernel ABI to those threads after that
->>>>>>>>>>>>>>>> point.
->>>>>>>>>>>>>>>>
->>>>>>>>>>>>>>>> This change adds a new seccomp extension action for synchronizing thread
->>>>>>>>>>>>>>>> group seccomp filters and a prctl() for accessing that functionality,
->>>>>>>>>>>>>>>> as well as a flag for SECCOMP_EXT_ACT_FILTER to perform sync at filter
->>>>>>>>>>>>>>>> installation time.
->>>>>>>>>>>>>>>>
->>>>>>>>>>>>>>>> When calling prctl(PR_SECCOMP_EXT, SECCOMP_EXT_ACT, SECCOMP_EXT_ACT_FILTER,
->>>>>>>>>>>>>>>> flags, filter) with flags containing SECCOMP_FILTER_TSYNC, or when calling
->>>>>>>>>>>>>>>> prctl(PR_SECCOMP_EXT, SECCOMP_EXT_ACT, SECCOMP_EXT_ACT_TSYNC, 0, 0), it
->>>>>>>>>>>>>>>> will attempt to synchronize all threads in current's threadgroup to its
->>>>>>>>>>>>>>>> seccomp filter program. This is possible iff all threads are using a filter
->>>>>>>>>>>>>>>> that is an ancestor to the filter current is attempting to synchronize to.
->>>>>>>>>>>>>>>> NULL filters (where the task is running as SECCOMP_MODE_NONE) are also
->>>>>>>>>>>>>>>> treated as ancestors allowing threads to be transitioned into
->>>>>>>>>>>>>>>> SECCOMP_MODE_FILTER. If prctrl(PR_SET_NO_NEW_PRIVS, ...) has been set on the
->>>>>>>>>>>>>>>> calling thread, no_new_privs will be set for all synchronized threads too.
->>>>>>>>>>>>>>>> On success, 0 is returned. On failure, the pid of one of the failing threads
->>>>>>>>>>>>>>>> will be returned, with as many filters installed as possible.
->>>>>>>>>>>>>>>
->>>>>>>>>>>>>>> Is there a use case for adding a filter and synchronizing filters
->>>>>>>>>>>>>>> being separate operations?  If not, I think this would be easier to
->>>>>>>>>>>>>>> understand and to use if there was just a single operation.
->>>>>>>>>>>>>>
->>>>>>>>>>>>>> Yes: if the other thread's lifetime is not well controlled, it's good
->>>>>>>>>>>>>> to be able to have a distinct interface to retry the thread sync that
->>>>>>>>>>>>>> doesn't require adding "no-op" filters.
->>>>>>>>>>>>>
->>>>>>>>>>>>> Wouldn't this still be solved by:
->>>>>>>>>>>>>
->>>>>>>>>>>>> seccomp_add_filter(final_filter, SECCOMP_FILTER_ALL_THREADS);
->>>>>>>>>>>>>
->>>>>>>>>>>>> the idea would be that, if seccomp_add_filter fails, then you give up
->>>>>>>>>>>>> and, if it succeeds, then you're done.  It shouldn't fail unless out
->>>>>>>>>>>>> of memory or you've nested too deeply.
->>>>>>>>>>>>
->>>>>>>>>>>> I wanted to keep the case of being able to to wait for non-ancestor
->>>>>>>>>>>> threads to finish. For example, 2 threads start and set separate
->>>>>>>>>>>> filters. 1 does work and exits, 2 starts another thread (3) which adds
->>>>>>>>>>>> filters, does work, and then waits for 1 to finish by calling TSYNC.
->>>>>>>>>>>> Once 1 dies, TSYNC succeeds. In the case of not having direct control
->>>>>>>>>>>> over thread lifetime (say, when using third-party libraries), I'd like
->>>>>>>>>>>> to retain the flexibility of being able to do TSYNC without needing a
->>>>>>>>>>>> filter being attached to it.
->>>>>>>>>>>
->>>>>>>>>>> I must admit this strikes me as odd.  What's the point of having a
->>>>>>>>>>> thread set a filter if it intends to be a short-lived thread?
->>>>>>>>>>
->>>>>>>>>> I was illustrating the potential insanity of third-party libraries.
->>>>>>>>>> There isn't much sense in that behavior, but if it exists, working
->>>>>>>>>> around it is harder without the separate TSYNC-only call.
->>>>>>>>>>
->>>>>>>>>>> In any case, I must have missed the ability for TSYNC to block.  Hmm.
->>>>>>>>>>> That seems complicated, albeit potentially useful.
->>>>>>>>>>
->>>>>>>>>> Oh, no, I didn't mean to imply TSYNC should block. I meant that thread
->>>>>>>>>> 3 could do:
->>>>>>>>>>
->>>>>>>>>> while (TSYNC-fails)
->>>>>>>>>>    wait-on-or-kill-unexpected-thread
->>>>>>>>>>
->>>>>>>>>
->>>>>>>>> Ok.
->>>>>>>>>
->>>>>>>>> I'm still not seeing the need for a separate TSYNC option, though --
->>>>>>>>> just add-a-filter-across-all-threads would work if it failed
->>>>>>>>> harmlessly on error.  FWIW, TSYNC is probably equivalent to adding an
->>>>>>>>> always-accept filter across all threads, although no one should really
->>>>>>>>> do the latter for efficiency reasons.
->>>>>>>>
->>>>>>>> Given the complexity of the locking, "fail" means "I applied the
->>>>>>>> change to all threads except for at least this one: *error code*",
->>>>>>>> which means looping with the "add-a-filter" method means all the other
->>>>>>>> threads keep getting filters added until there is full success. I
->>>>>>>> don't want that overhead, so this keeps TSYNC distinctly separate.
->>>>>>>
->>>>>>> Ugh, right.
->>>>>>>
->>>>>>>>
->>>>>>>> Because of the filter addition, when using add_filter-TSYNC, it's not
->>>>>>>> sensible to continue after a failure. However, using just-TSYNC allows
->>>>>>>> sensible re-trying. Since the environments where TSYNC intend to be
->>>>>>>> used in can be very weird, I really want to retain the retry ability.
->>>>>>>
->>>>>>> OK.  So what's wrong with the other approach in which the
->>>>>>> add-to-all-threads option always succeeds?  IOW, rather than requiring
->>>>>>> that all threads have the caller's filter as an ancestor, just add the
->>>>>>> requested filter to all threads.  As an optimization, if the targetted
->>>>>>> thread has the current thread's filter as its filter, too, then the
->>>>>>> targetted thread can stay synchronized.
->>>>>>>
->>>>>>> That way the add filter call really is atomic.
->>>>>>>
->>>>>>> I'm not fundamentally opposed to TSYNC, but I think I'd be happier if
->>>>>>> the userspace interface could be kept as simple as possible.  The fact
->>>>>>> that there's a filter hierarchy is sort of an implementation detail, I
->>>>>>> think.
->>>>>>
->>>>>> I'm totally on board with making this as simple as possible. :) The
->>>>>> corner cases are kind of horrible, though, but I think this is already
->>>>>> as simple as it can get.
->>>>>>
->>>>>> Externally, without the ancestry check, we can run the risk of have
->>>>>> unstable behavior out of a filter change. Imagine the case of a race
->>>>>> where a thread is adding a filter (via prctl), and the other thread
->>>>>> attempts to TSYNC a filter that blocks prctl.
->>>>>>
->>>>>> In the "always take the new filter" case, sometimes we get two filters
->>>>>> (original and TSYNCed) on the first thread, and sometimes it blows up
->>>>>> when it calls prctl (TSYNCed filter blocks the prctl). There's no way
->>>>>> for the TSYNC caller to detect who won the race.
->>>>>>
->>>>>> With the patch series as-is, losing the race results in a TSYNC
->>>>>> failure (ancestry doesn't match). This is immediately detectable and
->>>>>> the caller can the decide how to handle the situation directly.
->>>>>>
->>>>>> Regardless, I don't think the filter hierarchy is an implementation
->>>>>> detail -- complex filters take advantage of the hierarchies. And
->>>>>> keeping this hierarchy stable means the filters are simpler to
->>>>>> validate for correctness, etc.
->>>>>
->>>>> Hmm.
->>>>>
->>>>> Another issue: unless I'm not looking at the right version of this, I
->>>>> don't think that while_each_thread does what you think it does.
->>>>
->>>> I believe it to walk current's thread_group list. It starts at current
->>>> and walks until it sees current again. While holding task_list for
->>>> writing, no new threads can appear on the list. Any cloned threads not
->>>> yet in the thread_group list will be added once task_lock is held by
->>>> the cloner (kernel/fork.c after "init_task_pid(p, PIDTYPE_PID,
->>>> pid);").
->>>
->>> Oh.  I see.  I think the intended use is to pair do_each_thread with
->>> while_each_thread, which has a rather different effect.
->>> for_each_thread might be clearer.
->>
->> I can swap it out. It doesn't seem to be any different.
->>
->>>>> I'm generally in favor of making the kernel interfaces easy to use,
->>>>> even at the cost of a bit of implementation complexity.  Would this be
->>>>> simpler if you hijacked siglock to protect seccomp state?  Then I
->>>>> think you could just make everything atomic.
->>>>
->>>> The sighand structure isn't unique to the task nor the thread group
->>>> (CLONE_SIGHAND will leave the same sighand attached to a new thread),
->>>> so it can't be used sanely here AIUI. The threadgroup_lock stuff could
->>>> be used here, but I felt like it was too heavy a hammer for
->>>> per-add-filter actions.
->>>
->>> I'm going by this comment:
->>>
->>> /*
->>>  * NOTE! "signal_struct" does not have its own
->>>  * locking, because a shared signal_struct always
->>>  * implies a shared sighand_struct, so locking
->>>  * sighand_struct is always a proper superset of
->>>  * the locking of signal_struct.
->>>  */
->>> struct signal_struct {
->>>
->>> copy_process protects addition to signal->thread_head using siglock,
->>> which seems like a suitable lock for you to use.  And it's there
->>> regardless of configuration.
->>
->> Ah, I see now that CLONE_THREAD must include CLONE_SIGHAND, and
->> CLONE_SIGHAND must include CLONE_VM. So, we can depend on this being a
->> single thread-group-wide lock! Excellent.
->>
->>>> The atomicity you're after is just avoiding the "I failed but some
->>>> threads may have changed" side-effect, IIUC. As in, you want "I failed
->>>> and no threads have changed". For that, I think we need to use
->>>> threadgroup_lock. However, I remain unconvinced that this is the right
->>>> way to go since the failure corner case needs to be handled by the
->>>> tsync caller in one of two ways regardless of either perfect "failed,
->>>> no threads changed" or existing series "failed, some threads changed":
->>>> retry until success or kill entire process.
->>>
->>>
->>> With the current patches, I think you need:
->>>
->>> add filter to this thread;
->>> while (trying to sync fails) {
->>>   grumble;
->>>   sleep a bit;
->>> }
->>>
->>> If the "failed, some threads changed" case goes away, then I think it can be:
->>>
->>> while (trying to add a new filter to all threads fails) {
->>>   grumble;
->>>   sleep a bit;
->>> }
->>
->> You're still looking to get rid of the stand alone tsync action. It
->> does seem unneeded here if the filter-add can fail without
->> side-effects. A new prctl or syscall is still needed to handle this,
->> regardless.
->>
->>> which is nicer.  It could be fancier:
->>>
->>> force add new filter to all threads;  (i.e. no loop)
->>>
->>> where force-add does, roughly:
->>>
->>> acquire siglock
->>> old = current's filter
->>> add the filter to this thread
->>> new = current's new filter
->>> for each other thread {
->>>   if (thread's filter == old)
->>>     thread's filter = new (w/ appropriate refcounting)
->>>   else
->>>     add filter to thread
->>> }
->>
->> The trick is the "w/ appropriate refcounting" part. :) Also, "add
->> filter to thread" means performing memory allocation, which we can't
->> do while holding the siglock spinlock IIUC. I remain uncomfortable
->> with the composition idea, because it's not really a "sync", it's a
->> "make sure *this* filter is attached" instead of "make sure everyone
->> is using my entire current filter chain".
->>
->>> IOW, if you are already adding filters to library threads, I think
->>> it'll be more convenient and robust to to add it everywhere than to
->>> exempt threads that have added their own filter.  If they've added
->>> their own filter, we won't override it; we'll just compose.  It'll be
->>> the same, modulo filter order, as if the library thread adds its
->>> filter *after* we add ours.
->>
->> This is why I don't like it: it's not sync. It's force-apply. The goal
->> was to be able to build up a filter tree with potentially multiple
->> calls, and in the future say "okay, now, make sure any threads that
->> got started in the middle of that are all moved forward to the same
->> filter chain position I'm on."
->>
->> The force-apply route means all the filters must be force-loaded, and
->> doesn't handle, say, a library that doesn't start a thread but does
->> apply a filter running, and then we apply another with force-apply,
->> and suddenly all the other threads are missing the filter added by the
->> library.
->
-> This is racy, though: what if you sync before the library adds its filter?
+count was used unsigned int and int.
 
-Even in the force-apply case, it's still potentially racy if prctl is
-blocked. I don't feel the internal refactoring to the ref counting
-(and associated bug risks) justifies the benefit of a very small race
-that doesn't really go away and userspace has to handle gracefully
-either way.
+Cc: Sebastian Ott <sebott@linux.vnet.ibm.com>
+Cc: Joe Perches <joe@perches.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+This is untested.
 
->> I think sync should be sync -- it's the desired functionality that
->> Chrome needs. Force-apply is different, and could be implemented at a
->> later time if someone wants it, but for now, I'd like a literal
->> thread-sync.
->
->>> Yes, I realize there are oddities here if one of the filters blocks
->>> seccomp prctls, but I think there are oddities here regardless.  I
->>> certainly see the value in the non-force variant.
->>
->> So, it sounds like if I can build the side-effect-less failure case,
->> you'll be happy? I really do not want to do the force-apply. Can you
->> live without that?
->
-> Sure.  I can always add it if I find myself wanting it.  Are you
-> planning on changing the locking and making sync (or
-> add-to-all-threads-not-forced) atomic?
+V2:
+   -count int -> unsigned int (suggested by Joe Perches)
 
-Yes, you've convinced me. :) I still need to hold task_list lock to
-avoid ref count races during thread death, but holding sighand means
-the evaluation can be done for all threads before actually making
-changes.
+ drivers/s390/cio/qdio_main.c | 32 ++++++++++++++++++--------------
+ 1 file changed, 18 insertions(+), 14 deletions(-)
 
-And based on the feedback from linux-api, I'll rework the interface to
-use a new syscall.
-
--Kees
-
+diff --git a/drivers/s390/cio/qdio_main.c b/drivers/s390/cio/qdio_main.c
+index 77466c4..9fda160 100644
+--- a/drivers/s390/cio/qdio_main.c
++++ b/drivers/s390/cio/qdio_main.c
+@@ -124,10 +124,11 @@ static inline int qdio_check_ccq(struct qdio_q *q, unsigned int ccq)
+  * Stops processing if a state is different from the last buffers state.
+  */
+ static int qdio_do_eqbs(struct qdio_q *q, unsigned char *state,
+-			int start, int count, int auto_ack)
++			int start, unsigned int count, int auto_ack)
+ {
+-	int rc, tmp_count = count, tmp_start = start, nr = q->nr, retried = 0;
++	int rc, tmp_start = start, nr = q->nr, retried = 0;
+ 	unsigned int ccq = 0;
++	unsigned tmp_count = count;
+ 
+ 	qperf_inc(q, eqbs);
+ 
+@@ -178,10 +179,11 @@ again:
+  * error occurs.
+  */
+ static int qdio_do_sqbs(struct qdio_q *q, unsigned char state, int start,
+-			int count)
++			unsigned int count)
+ {
+ 	unsigned int ccq = 0;
+-	int tmp_count = count, tmp_start = start;
++	unsigned int tmp_count = count;
++	int tmp_start = start;
+ 	int nr = q->nr;
+ 	int rc;
+ 
+@@ -247,7 +249,7 @@ static inline int get_buf_state(struct qdio_q *q, unsigned int bufnr,
+ 
+ /* wrap-around safe setting of slsb states, returns number of changed buffers */
+ static inline int set_buf_states(struct qdio_q *q, int bufnr,
+-				 unsigned char state, int count)
++				 unsigned char state, unsigned int count)
+ {
+ 	int i;
+ 
+@@ -409,7 +411,7 @@ static inline void qdio_stop_polling(struct qdio_q *q)
+ 		set_buf_state(q, q->u.in.ack_start, SLSB_P_INPUT_NOT_INIT);
+ }
+ 
+-static inline void account_sbals(struct qdio_q *q, int count)
++static inline void account_sbals(struct qdio_q *q, unsigned int count)
+ {
+ 	int pos = 0;
+ 
+@@ -423,7 +425,7 @@ static inline void account_sbals(struct qdio_q *q, int count)
+ 	q->q_stats.nr_sbals[pos]++;
+ }
+ 
+-static void process_buffer_error(struct qdio_q *q, int count)
++static void process_buffer_error(struct qdio_q *q, unsigned int count)
+ {
+ 	unsigned char state = (q->is_input_q) ? SLSB_P_INPUT_NOT_INIT :
+ 					SLSB_P_OUTPUT_NOT_INIT;
+@@ -454,7 +456,7 @@ set:
+ 	set_buf_states(q, q->first_to_check, state, count);
+ }
+ 
+-static inline void inbound_primed(struct qdio_q *q, int count)
++static inline void inbound_primed(struct qdio_q *q, unsigned int count)
+ {
+ 	int new;
+ 
+@@ -501,7 +503,8 @@ static inline void inbound_primed(struct qdio_q *q, int count)
+ 
+ static int get_inbound_buffer_frontier(struct qdio_q *q)
+ {
+-	int count, stop;
++	unsigned int count;
++	int stop;
+ 	unsigned char state = 0;
+ 
+ 	q->timestamp = get_tod_clock_fast();
+@@ -608,7 +611,7 @@ static inline int contains_aobs(struct qdio_q *q)
+ 	return !q->is_input_q && q->u.out.use_cq;
+ }
+ 
+-static inline void qdio_handle_aobs(struct qdio_q *q, int start, int count)
++static inline void qdio_handle_aobs(struct qdio_q *q, int start, unsigned int count)
+ {
+ 	unsigned char state = 0;
+ 	int j, b = start;
+@@ -661,7 +664,7 @@ static void qdio_kick_handler(struct qdio_q *q)
+ {
+ 	int start = q->first_to_kick;
+ 	int end = q->first_to_check;
+-	int count;
++	unsigned int count;
+ 
+ 	if (unlikely(q->irq_ptr->state != QDIO_IRQ_STATE_ACTIVE))
+ 		return;
+@@ -725,7 +728,8 @@ void qdio_inbound_processing(unsigned long data)
+ 
+ static int get_outbound_buffer_frontier(struct qdio_q *q)
+ {
+-	int count, stop;
++	int stop;
++	unsigned int count;
+ 	unsigned char state = 0;
+ 
+ 	q->timestamp = get_tod_clock_fast();
+@@ -1013,7 +1017,7 @@ static void qdio_handle_activate_check(struct ccw_device *cdev,
+ {
+ 	struct qdio_irq *irq_ptr = cdev->private->qdio_data;
+ 	struct qdio_q *q;
+-	int count;
++	unsigned int count;
+ 
+ 	DBF_ERROR("%4x ACT CHECK", irq_ptr->schid.sch_no);
+ 	DBF_ERROR("intp :%lx", intparm);
+@@ -1468,7 +1472,7 @@ out:
+ }
+ EXPORT_SYMBOL_GPL(qdio_activate);
+ 
+-static inline int buf_in_between(int bufnr, int start, int count)
++static inline int buf_in_between(int bufnr, int start, unsigned int count)
+ {
+ 	int end = add_buf(start, count);
+ 
 -- 
-Kees Cook
-Chrome OS Security
+1.8.4.5
+
