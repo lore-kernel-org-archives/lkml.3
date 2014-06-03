@@ -1,91 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752351AbaFCJhh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 05:37:37 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:41695 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751201AbaFCJhf (ORCPT
+	id S1751729AbaFCJjV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 05:39:21 -0400
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:61896 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750892AbaFCJjU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 05:37:35 -0400
-From: Vaughan Cao <vaughan.cao@oracle.com>
-To: JBottomley@parallels.com
-Cc: hch@infradead.org, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, vaughan.cao@oracle.com
-Subject: [PATCH v2] notify block layer when using temporary change to cache_type
-Date: Tue,  3 Jun 2014 17:37:30 +0800
-Message-Id: <1401788250-8457-1-git-send-email-vaughan.cao@oracle.com>
-X-Mailer: git-send-email 1.9.0
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Tue, 3 Jun 2014 05:39:20 -0400
+MIME-Version: 1.0
+In-Reply-To: <538D9631.9090500@linux.vnet.ibm.com>
+References: <20140526205337.1100.55275.stgit@srivatsabhat.in.ibm.com>
+	<CAKohpokdnHag=79cXuwgNjX-k+JJU9GE3KUBhixcj3PZ6y78GQ@mail.gmail.com>
+	<538D9631.9090500@linux.vnet.ibm.com>
+Date: Tue, 3 Jun 2014 15:09:19 +0530
+Message-ID: <CAKohpomynD9m-Cq4zsVSp3Xbw5Tx2cSe_Fcp5y0U8uAKSpQ1Tw@mail.gmail.com>
+Subject: Re: [PATCH] cpufreq: governor: Be friendly towards latency-sensitive
+ bursty workloads
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        "ego@linux.vnet.ibm.com" <ego@linux.vnet.ibm.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a fix for commit:
-  39c60a0948cc06139e2fbfe084f83cb7e7deae3b sd: fix array cache flushing bug causing performance problems
-We must notify the block layer via q->flush_flags after temporary change the cache_type to write through.
-If not, SYNCHRONIZE CACHE command will still be generated.
-This patch factors out a helper that can be called from sd_revalidate_disk and cache_type_store.
+On 3 June 2014 15:02, Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com> wrote:
+> diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
+> index e1c6433..3e8588f 100644
+> --- a/drivers/cpufreq/cpufreq_governor.c
+> +++ b/drivers/cpufreq/cpufreq_governor.c
+> @@ -36,14 +36,29 @@ void dbs_check_cpu(struct dbs_data *dbs_data, int cpu)
+>         struct od_dbs_tuners *od_tuners = dbs_data->tuners;
+>         struct cs_dbs_tuners *cs_tuners = dbs_data->tuners;
+>         struct cpufreq_policy *policy;
+> +       unsigned int sampling_rate;
+>         unsigned int max_load = 0;
+>         unsigned int ignore_nice;
+>         unsigned int j;
+>
+> -       if (dbs_data->cdata->governor == GOV_ONDEMAND)
+> +       if (dbs_data->cdata->governor == GOV_ONDEMAND) {
+> +               struct od_cpu_dbs_info_s *od_dbs_info;
+> +
+> +               /*
+> +                * Sometimes, the ondemand governor uses an additional
+> +                * multiplier to give long delays. So apply this multiplier to
+> +                * the 'sampling_rate', so as to keep the wake-up-from-idle
+> +                * detection logic a bit conservative.
+> +                */
+> +               sampling_rate = od_tuners->sampling_rate;
+> +               od_dbs_info = dbs_data->cdata->get_cpu_dbs_info_s(cpu);
 
-Signed-off-by: Vaughan Cao <vaughan.cao@oracle.com>
----
- drivers/scsi/sd.c | 23 +++++++++++++++--------
- 1 file changed, 15 insertions(+), 8 deletions(-)
+Probably do both above right after definition of od_dbs_info or merge
+above with it. and just keep below after the comment ?
 
-diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
-index efcbcd1..e4774aa 100644
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -132,6 +132,19 @@ static const char *sd_cache_types[] = {
- 	"write back, no read (daft)"
- };
- 
-+static void sd_set_flush_flag(struct scsi_disk *sdkp)
-+{
-+	unsigned flush = 0;
-+
-+	if (sdkp->WCE) {
-+		flush |= REQ_FLUSH;
-+		if (sdkp->DPOFUA)
-+			flush |= REQ_FUA;
-+	}
-+
-+	blk_queue_flush(sdkp->disk->queue, flush);
-+}
-+
- static ssize_t
- cache_type_store(struct device *dev, struct device_attribute *attr,
- 		 const char *buf, size_t count)
-@@ -175,6 +188,7 @@ cache_type_store(struct device *dev, struct device_attribute *attr,
- 	if (sdkp->cache_override) {
- 		sdkp->WCE = wce;
- 		sdkp->RCD = rcd;
-+		sd_set_flush_flag(sdkp);
- 		return count;
- 	}
- 
-@@ -2712,7 +2726,6 @@ static int sd_revalidate_disk(struct gendisk *disk)
- 	struct scsi_disk *sdkp = scsi_disk(disk);
- 	struct scsi_device *sdp = sdkp->device;
- 	unsigned char *buffer;
--	unsigned flush = 0;
- 
- 	SCSI_LOG_HLQUEUE(3, sd_printk(KERN_INFO, sdkp,
- 				      "sd_revalidate_disk\n"));
-@@ -2758,13 +2771,7 @@ static int sd_revalidate_disk(struct gendisk *disk)
- 	 * We now have all cache related info, determine how we deal
- 	 * with flush requests.
- 	 */
--	if (sdkp->WCE) {
--		flush |= REQ_FLUSH;
--		if (sdkp->DPOFUA)
--			flush |= REQ_FUA;
--	}
--
--	blk_queue_flush(sdkp->disk->queue, flush);
-+	sd_set_flush_flag(sdkp);
- 
- 	set_capacity(disk, sdkp->capacity);
- 	sd_config_write_same(sdkp);
--- 
-1.9.0
-
+> +               sampling_rate *= od_dbs_info->rate_mult;
