@@ -1,77 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932185AbaFCE2s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 00:28:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45518 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932112AbaFCE2q (ORCPT
+	id S1753462AbaFCE3n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 00:29:43 -0400
+Received: from mail-ve0-f172.google.com ([209.85.128.172]:54917 "EHLO
+	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751732AbaFCE3m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 00:28:46 -0400
-Date: Mon, 2 Jun 2014 21:28:42 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Kim Phillips <kim.phillips@freescale.com>
-Cc: a.motakis@virtualopensystems.com, alex.williamson@redhat.com,
-        kvmarm@lists.cs.columbia.edu, iommu@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        linux-doc@vger.kernel.org, jhovold@gmail.com, will.deacon@arm.com,
-        a.rigo@virtualopensystems.com, rob.herring@calxeda.com,
-        stuart.yoder@freescale.com, rob@landley.net, grant.likely@linaro.org,
-        tech@virtualopensystems.com, clbchenlibo.chen@huawei.com,
-        christoffer.dall@linaro.org, eric.auger@linaro.org,
-        Julien Grall <julien.grall@linaro.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Alexander Graf <agraf@suse.de>
-Subject: Re: [PATCH] driver core: platform: add device binding path
- 'driver_override'
-Message-ID: <20140603042842.GD14668@kroah.com>
-References: <1398700371-20096-1-git-send-email-a.motakis@virtualopensystems.com>
- <1398700371-20096-2-git-send-email-a.motakis@virtualopensystems.com>
- <20140602194258.5135925bf3c71b9c010fb409@freescale.com>
+	Tue, 3 Jun 2014 00:29:42 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140602194258.5135925bf3c71b9c010fb409@freescale.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1401355531-632-1-git-send-email-linus.walleij@linaro.org>
+References: <1401355531-632-1-git-send-email-linus.walleij@linaro.org>
+Date: Tue, 3 Jun 2014 09:59:41 +0530
+X-Google-Sender-Auth: cE8wdOPKGewlww01TBam8D4g-6Y
+Message-ID: <CAOh2x=njLfu5D0=oH6kmdm9hnk3e1RXEsFtwsXJcOJ-JFcm1XQ@mail.gmail.com>
+Subject: Re: [PATCH] RFT: pinctrl: spear: switch plgpio to irqchip helpers
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>,
+        "pratyush.anand" <pratyush.anand@st.com>,
+        Mohit Kumar <mohit.kumar@st.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Shiraz Hashim <shiraz.linux.kernel@gmail.com>,
+        linux-gpio@vger.kernel.org, Alexandre Courbot <acourbot@nvidia.com>,
+        spear-devel <spear-devel@list.st.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 02, 2014 at 07:42:58PM -0500, Kim Phillips wrote:
-> Needed by platform device drivers, such as the upcoming
-> vfio-platform driver, in order to bypass the existing OF, ACPI,
-> id_table and name string matches, and successfully be able to be
-> bound to any device, like so:
-> 
-> echo vfio-platform > /sys/bus/platform/devices/fff51000.ethernet/driver_override
-> echo fff51000.ethernet > /sys/bus/platform/devices/fff51000.ethernet/driver/unbind
-> echo fff51000.ethernet > /sys/bus/platform/drivers_probe
-> 
-> This mimics "PCI: Introduce new device binding path using
-> pci_dev.driver_override", which is an interface enhancement
-> for more deterministic PCI device binding, e.g., when in the
-> presence of hotplug.
-> 
-> Reviewed-by: Alex Williamson <alex.williamson@redhat.com>
-> Reviewed-by: Alexander Graf <agraf@suse.de>
-> Reviewed-by: Stuart Yoder <stuart.yoder@freescale.com>
-> Signed-off-by: Kim Phillips <kim.phillips@freescale.com>
+On Thu, May 29, 2014 at 2:55 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
+> This switches the SPEAr PLGPIO driver over to using the irqchip
+> helpers.
+>
+> As part of this effort, also get rid of the strange irq_base
+> calculation and failure to use d->hwirq for obtaining a local
+> irqchip offset.
+>
+> Cc: Viresh Kumar <viresh.linux@gmail.com>
+> Cc: Shiraz Hashim <shiraz.linux.kernel@gmail.com>
+> Cc: spear-devel@list.st.com
+> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 > ---
-> Greg,
-> 
-> This is largely identical to the PCI version of the same that has
-> been accepted for v3.16 and ack'd by you:
-> 
-> https://lists.cs.columbia.edu/pipermail/kvmarm/2014-May/009674.html
-> 
-> and applied to Bjorn Helgaas' PCI tree:
-> 
-> https://git.kernel.org/cgit/linux/kernel/git/helgaas/pci.git/commit/?h=pci/virtualization&id=782a985d7af26db39e86070d28f987cad21313c0
-> 
-> You are the platform driver core maintainer: can you apply this to
-> your driver-core tree now?
+> SPEAr folks: please make sure to test this, it is part of an
+> important GPIO refactoring round. If it doesn't work: please do
+> an honest attempt at troubleshooting.
 
-Yes, I will after this merge window ends, it's too late for 3.16-rc1
-with the window opening up a week early, sorry.
+Both me and shiraz can't test it anymore, we switched our jobs :)
+And not sure who else can do it..
 
-greg k-h
+@Pratyush/Mohit ?
