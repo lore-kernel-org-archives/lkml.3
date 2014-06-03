@@ -1,102 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755195AbaFCLzf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 07:55:35 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43737 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932866AbaFCLmX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 07:42:23 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Toshiaki Makita <makita.toshiaki@lab.ntt.co.jp>,
-        "David S. Miller" <davem@davemloft.net>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 100/138] bridge: Fix double free and memory leak around br_allowed_ingress
-Date: Tue,  3 Jun 2014 12:39:06 +0100
-Message-Id: <1401795584-22664-101-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
-References: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	id S1755225AbaFCLzj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 07:55:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:65040 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753704AbaFCLzh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 07:55:37 -0400
+Date: Tue, 3 Jun 2014 13:55:03 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Jacob Shin <jacob.w.shin@gmail.com>,
+        Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, xiakaixu <xiakaixu@huawei.com>
+Subject: Re: [PATCH 2/4] perf tools: allow user to specify hardware
+ breakpoint bp_len
+Message-ID: <20140603115503.GA2864@krava.brq.redhat.com>
+References: <1401377213-24551-1-git-send-email-fweisbec@gmail.com>
+ <1401377213-24551-3-git-send-email-fweisbec@gmail.com>
+ <20140530133906.GC7427@krava.brq.redhat.com>
+ <87mwduepux.fsf@sejong.aot.lge.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87mwduepux.fsf@sejong.aot.lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.11 -stable review patch.  If anyone has any objections, please let me know.
+On Tue, Jun 03, 2014 at 10:36:22AM +0900, Namhyung Kim wrote:
+> Hi Jiri,
+> 
+> On Fri, 30 May 2014 15:39:06 +0200, Jiri Olsa wrote:
+> > On Thu, May 29, 2014 at 05:26:51PM +0200, Frederic Weisbecker wrote:
+> >> From: Jacob Shin <jacob.w.shin@gmail.com>
+> >> 
+> >> Currently bp_len is given a default value of 4. Allow user to override it:
+> >> 
+> >>   $ perf stat -e mem:0x1000/8
+> >>                             ^
+> >>                             bp_len
+> >> 
+> >> If no value is given, it will default to 4 as it did before.
+> >
+> > Namhyung,
+> > both perf tols patches from this patchset mess up with hists
+> > tests..  I havent found any connection yet.. any idea? ;-)
+> 
+> So you already found the problem in the hpp->elide change and that's the
+> reason of the failure, right? :)
 
-------------------
+I haven't got a chance to test it yet.. but it looks like
+thats the case.. I'll retest soon ;-)
 
-From: Toshiaki Makita <makita.toshiaki@lab.ntt.co.jp>
-
-commit eb7076182d1ae4bc4641534134ed707100d76acc upstream.
-
-br_allowed_ingress() has two problems.
-
-1. If br_allowed_ingress() is called by br_handle_frame_finish() and
-vlan_untag() in br_allowed_ingress() fails, skb will be freed by both
-vlan_untag() and br_handle_frame_finish().
-
-2. If br_allowed_ingress() is called by br_dev_xmit() and
-br_allowed_ingress() fails, the skb will not be freed.
-
-Fix these two problems by freeing the skb in br_allowed_ingress()
-if it fails.
-
-Signed-off-by: Toshiaki Makita <makita.toshiaki@lab.ntt.co.jp>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- net/bridge/br_input.c | 2 +-
- net/bridge/br_vlan.c  | 7 ++++---
- 2 files changed, 5 insertions(+), 4 deletions(-)
-
-diff --git a/net/bridge/br_input.c b/net/bridge/br_input.c
-index a2fd37ec35f7..c378750602cd 100644
---- a/net/bridge/br_input.c
-+++ b/net/bridge/br_input.c
-@@ -72,7 +72,7 @@ int br_handle_frame_finish(struct sk_buff *skb)
- 		goto drop;
- 
- 	if (!br_allowed_ingress(p->br, nbp_get_vlan_info(p), skb, &vid))
--		goto drop;
-+		goto out;
- 
- 	/* insert into forwarding database after filtering to avoid spoofing */
- 	br = p->br;
-diff --git a/net/bridge/br_vlan.c b/net/bridge/br_vlan.c
-index 9a9ffe7e4019..d8deb8bda736 100644
---- a/net/bridge/br_vlan.c
-+++ b/net/bridge/br_vlan.c
-@@ -202,7 +202,7 @@ bool br_allowed_ingress(struct net_bridge *br, struct net_port_vlans *v,
- 	 * rejected.
- 	 */
- 	if (!v)
--		return false;
-+		goto drop;
- 
- 	if (br_vlan_get_tag(skb, vid)) {
- 		u16 pvid = br_get_pvid(v);
-@@ -212,7 +212,7 @@ bool br_allowed_ingress(struct net_bridge *br, struct net_port_vlans *v,
- 		 * traffic belongs to.
- 		 */
- 		if (pvid == VLAN_N_VID)
--			return false;
-+			goto drop;
- 
- 		/* PVID is set on this port.  Any untagged ingress
- 		 * frame is considered to belong to this vlan.
-@@ -224,7 +224,8 @@ bool br_allowed_ingress(struct net_bridge *br, struct net_port_vlans *v,
- 	/* Frame had a valid vlan tag.  See if vlan is allowed */
- 	if (test_bit(*vid, v->vlan_bitmap))
- 		return true;
--
-+drop:
-+	kfree_skb(skb);
- 	return false;
- }
- 
--- 
-1.9.1
-
+jirka
