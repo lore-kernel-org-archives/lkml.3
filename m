@@ -1,123 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932465AbaFCHgi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 03:36:38 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:32780 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753232AbaFCHgg (ORCPT
+	id S932385AbaFCHib (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 03:38:31 -0400
+Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:50594 "EHLO
+	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932211AbaFCHia (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 03:36:36 -0400
-Date: Tue, 3 Jun 2014 09:36:13 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mikulas Patocka <mpatocka@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Helge Deller <deller@gmx.de>, John David Anglin <dave.anglin@bell.net>,
-        Parisc List <linux-parisc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        "Vinod, Chegu" <chegu_vinod@hp.com>, Waiman Long <Waiman.Long@hp.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Davidlohr Bueso <davidlohr@hp.com>, Peter Anvin <hpa@zytor.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>, Jason Low <jason.low2@hp.com>
-Subject: Re: [PATCH v2] introduce atomic_pointer to fix a race condition in
- cancelable mcs spinlocks
-Message-ID: <20140603073613.GH11096@twins.programming.kicks-ass.net>
-References: <alpine.LRH.2.02.1406011342470.20831@file01.intranet.prod.int.rdu2.redhat.com>
- <alpine.LRH.2.02.1406021158360.20627@file01.intranet.prod.int.rdu2.redhat.com>
- <20140602162525.GH16155@laptop.programming.kicks-ass.net>
- <CA+55aFzwrqkwD=G=w2m7TdXTpsMFjV7XUMXv5DMPGr=5x5YGCQ@mail.gmail.com>
- <alpine.LRH.2.02.1406021622200.5874@file01.intranet.prod.int.rdu2.redhat.com>
- <CA+55aFwCy4-x02U6A-KbkPEpe_4pagsZ__ipBhe5HZOQt2vNmw@mail.gmail.com>
- <alpine.LRH.2.02.1406021656550.5874@file01.intranet.prod.int.rdu2.redhat.com>
+	Tue, 3 Jun 2014 03:38:30 -0400
+From: <fwu@marvell.com>
+To: <linus.walleij@linaro.org>, <swarren@wwwdotorg.org>, <tony@atomide.com>
+CC: <linux-kernel@vger.kernel.org>, <swarren@nvidia.com>, <fwu@marvell.com>,
+        <cxie4@marvell.com>, <ylmao@marvell.com>, <njiang1@marvell.com>,
+        <tianxf@marvell.com>, <fswu@marvell.com>
+Subject: [PATCH v4] pinctrl: to avoid duplicated calling enable_pinmux_setting for a pin
+Date: Tue, 3 Jun 2014 15:37:57 +0800
+Message-ID: <1401781077-31150-1-git-send-email-fwu@marvell.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="C3csQhHPgbq3tf44"
-Content-Disposition: inline
-In-Reply-To: <alpine.LRH.2.02.1406021656550.5874@file01.intranet.prod.int.rdu2.redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
+ definitions=2014-06-02_02:2014-06-02,2014-06-02,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1402240000 definitions=main-1406030095
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Fan Wu <fwu@marvell.com>
 
---C3csQhHPgbq3tf44
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+What the patch did:
+1.To call pinmux_disable_setting ahead of pinmux_enable_setting in each time of
+  calling pinctrl_select_state
+2.Remove the HW disable operation in in pinmux_disable_setting function.
+3.Remove the disable ops in struct pinmux_ops
 
-On Mon, Jun 02, 2014 at 05:12:16PM -0400, Mikulas Patocka wrote:
-> The patch adds atomic_pointer_t for all architectures - it is in the=20
-> common code and it is backed by atomic_long_t (that already exists for al=
-l=20
-> architectures). There is no new arch-specific code at all.
->=20
-> When we have atomic_pointer_t, we can find the instances of xchg() and=20
-> cmpxchg() and convert them to atomic_pointer_t (or to other atomic*_t=20
-> types).
->=20
-> When we convert them all, we can drop xchg() and cmpxchg() at all (at=20
-> least from architecture-neutral code).
->=20
-> The problem with xchg() and cmpxchg() is that they are very easy to=20
-> misuse. Peter Zijlstra didn't know that they are not atomic w.r.t. normal=
-=20
-> stores, a lot of other people don't know it too - and if we allow these=
-=20
-> functions to be used, this race condition will reappear in the future=20
-> again and again.
->=20
-> That's why I'm proposing atomic_pointer_t - it guarantees that this race=
-=20
-> condition can't be made.
+The reason why to do this is that:
+1.To avoid duplicated calling enable_setting operation without disabling
+  operation which will let Pin's desc->mux_usecount keep being added.
+2.The HW pin disable operation is not useful for most of the vendors' platform.
+  And this can be used to avoid the HW glitch after using the item 1#
+  modification.
 
-But its horrible, and doesn't have any benefit afaict.
+In the following case, the issue can be reproduced:
+1)There is a driver need to switch Pin state dynamicly, E.g. b/t "sleep" and
+"default" state
+2)The Pin setting configuration in DTS node may be like the following one:
+component a {
+	pinctrl-names = "default", "sleep";
+	pinctrl-0 = <&a_grp_setting &c_grp_setting>;
+	pinctrl-1 = <&b_grp_setting &c_grp_setting>;
+}
+The "c_grp_setting" config node is totaly same, maybe like following one:
+c_grp_setting: c_grp_setting {
+	pinctrl-single,pins = <GPIO48 AF6>;
+}
+3)When switching the Pin state in the following official Pinctrl sequence:
+	pin = pinctrl_get();
+	state = pinctrl_lookup_state(wanted_state);
+	pinctrl_select_state(state);
+	pinctrl_put();
 
-So if we really want to keep supporting these platforms; I would propose
-something like:
+According to the comments in the original code, only the setting, in old state
+but not in new state, will be "disable"(calling pinmux_disable_setting), which
+is correct logic but not intact. We still need consider case that the setting
+is in both old state and new state.
+We can do this in the following two ways:
+1) Avoid "enable"(calling pinmux_enable_setting) the Same Pins setting repeatedly.
+2) "Disable"(calling pinmux_disable_setting) the "Same Pins setting", actually
+two setting instance, ahead of enabling them.
 
-#ifdef __CHECKER__
-#define __atomic	__attribute__((address_space(5)))
-#else
-#define __atomic
-#endif
+Analysis:
+1.The solution 2# is better because it can avoid too much iteration.
+2.If we choose 2# solution, we need to
+1) Should mark all the setting in disable state as disabled ahead of enabling.
+2) Avoid the possible HW glitch by removing the HW disable ops in
+in the pinmux_disable_setting
+If we disable all of the settings in the old state and one/ones of the
+setting(s) is/are existed in the new state, the Pin's mux function change
+may happen when some SoC vendors defined the "pinctrl-single,function-off"
+in their DTS file:
+old_setting=>disabled_setting=>new_setting.(HW glitch)
 
-#define store(p, v)	(*(p) =3D (typeof(*(p)) __force __atomic)(v))
-#define load(p)		((typeof(*p) __force)ACCESS_ONCE(*(p)))
+Signed-off-by: Fan Wu <fwu@marvell.com>
+Signed-off-by: Stephen Warren <swarren@nvidia.com>
+---
+ drivers/pinctrl/core.c         |   24 +++++-------------------
+ drivers/pinctrl/pinmux.c       |    4 ----
+ include/linux/pinctrl/pinmux.h |    2 --
+ 3 files changed, 5 insertions(+), 25 deletions(-)
 
-Along with changes to xchg() and cmpxchg() that require them to take
-pointers to __atomic.
+diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
+index c0fe609..4445a67 100644
+--- a/drivers/pinctrl/core.c
++++ b/drivers/pinctrl/core.c
+@@ -989,29 +989,15 @@ int pinctrl_select_state(struct pinctrl *p, struct pinctrl_state *state)
+ 
+ 	if (p->state) {
+ 		/*
+-		 * The set of groups with a mux configuration in the old state
+-		 * may not be identical to the set of groups with a mux setting
+-		 * in the new state. While this might be unusual, it's entirely
+-		 * possible for the "user"-supplied mapping table to be written
+-		 * that way. For each group that was configured in the old state
+-		 * but not in the new state, this code puts that group into a
+-		 * safe/disabled state.
++		 * For each pinmux setting in the old state, forget SW's record
++		 * of mux owner for that pingroup. Any pingroups which are
++		 * still owned by the new state will be re-acquired by the call
++		 * to pinmux_enable_setting() in the loop below.
+ 		 */
+ 		list_for_each_entry(setting, &p->state->settings, node) {
+-			bool found = false;
+ 			if (setting->type != PIN_MAP_TYPE_MUX_GROUP)
+ 				continue;
+-			list_for_each_entry(setting2, &state->settings, node) {
+-				if (setting2->type != PIN_MAP_TYPE_MUX_GROUP)
+-					continue;
+-				if (setting2->data.mux.group ==
+-						setting->data.mux.group) {
+-					found = true;
+-					break;
+-				}
+-			}
+-			if (!found)
+-				pinmux_disable_setting(setting);
++			pinmux_disable_setting(setting);
+ 		}
+ 	}
+ 
+diff --git a/drivers/pinctrl/pinmux.c b/drivers/pinctrl/pinmux.c
+index 9248ce4..c2c4aff 100644
+--- a/drivers/pinctrl/pinmux.c
++++ b/drivers/pinctrl/pinmux.c
+@@ -469,7 +469,6 @@ void pinmux_disable_setting(struct pinctrl_setting const *setting)
+ {
+ 	struct pinctrl_dev *pctldev = setting->pctldev;
+ 	const struct pinctrl_ops *pctlops = pctldev->desc->pctlops;
+-	const struct pinmux_ops *ops = pctldev->desc->pmxops;
+ 	int ret;
+ 	const unsigned *pins;
+ 	unsigned num_pins;
+@@ -515,9 +514,6 @@ void pinmux_disable_setting(struct pinctrl_setting const *setting)
+ 				 pins[i], desc->name, gname);
+ 		}
+ 	}
+-
+-	if (ops->disable)
+-		ops->disable(pctldev, setting->data.mux.func, setting->data.mux.group);
+ }
+ 
+ #ifdef CONFIG_DEBUG_FS
+diff --git a/include/linux/pinctrl/pinmux.h b/include/linux/pinctrl/pinmux.h
+index c153950..3097aaf 100644
+--- a/include/linux/pinctrl/pinmux.h
++++ b/include/linux/pinctrl/pinmux.h
+@@ -70,8 +70,6 @@ struct pinmux_ops {
+ 				  unsigned * const num_groups);
+ 	int (*enable) (struct pinctrl_dev *pctldev, unsigned func_selector,
+ 		       unsigned group_selector);
+-	void (*disable) (struct pinctrl_dev *pctldev, unsigned func_selector,
+-			 unsigned group_selector);
+ 	int (*gpio_request_enable) (struct pinctrl_dev *pctldev,
+ 				    struct pinctrl_gpio_range *range,
+ 				    unsigned offset);
+-- 
+1.7.9.5
 
-That way we keep the flexibility of xchg() and cmpxchg() for being
-(mostly) type and size invariant, and get sparse to find wrong usage.
-
-Then parisc, sparc32, tile32, metag-lock1 and arc-!llsc can go implement
-store() however they like.
-
-
-
---C3csQhHPgbq3tf44
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTjXrtAAoJEHZH4aRLwOS600UP/31g+OD4KSjczG/ZhSVsIagP
-0wLJYumd8UqFkArSRcJ6q3xcTzV34C705M34dZyFq0etylvyMcNtjvyZkjzTzpcd
-nM5nPNGLIrew12PCqkPeUxCSe7V7e+Wyte/mg1ejWdhdTKi3B3YeKICqGo52cW2v
-8PtzYyVKi83WkYEV/Y1gok1nsbych19manSI6Rn1hy4eLBKS3IBKYcz9Pwff2bgs
-moowd/K19tkvvl2MrBQM1yrrHe8iYSvmeLmdEWma0s3lJCp3BknyjUPPTQpGF8sq
-dE8YDO2mxgcIzx0p/xvBQ2OtiJNqfStrEZMne/2ODWKF12r7pZ/gPnJU4SO8rIZI
-U7xm07hPDKvmBG+h8wSBvCcdtnWqj9Tp6tMa4OqV4Ze4DWne8ysj/y7bJrhAYyiP
-bY25GXknujcOxZPliXgmX5E1fpTAtNP/lG39EACZFP0wBGRHq/efO3wia0Pbw+Ev
-gkZksDf1GkKPmmVkHuAerlzbhBhupy1ZbR6YDWAwNmHiAkitXy5rPmrso6z5Z+6G
-8f/fGIz233BI9bOnYmaf/a0O8xLU9Y+h0+cUXvSoSbfwwZrrgMbbSCufDeYKN/aG
-9quSHASRcQpeUM3aEHk29Wpj0hFyZiRFKntpvrVrCqvo/hAh3iJ5CdpieoBVrB2+
-MkXIDDqJNoUwusUl8lY6
-=CJbB
------END PGP SIGNATURE-----
-
---C3csQhHPgbq3tf44--
