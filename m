@@ -1,89 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932712AbaFCLlj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 07:41:39 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43557 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932684AbaFCLlg (ORCPT
+	id S1754592AbaFCMEA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 08:04:00 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:11383 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751362AbaFCMD5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 07:41:36 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Viresh Kumar <viresh.kumar@linaro.org>, linaro-kernel@lists.linaro.org,
-        linaro-networking@linaro.org, fweisbec@gmail.com,
-        arvind.chauhan@arm.com, Thomas Gleixner <tglx@linutronix.de>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 068/138] hrtimer: Set expiry time before switch_hrtimer_base()
-Date: Tue,  3 Jun 2014 12:38:34 +0100
-Message-Id: <1401795584-22664-69-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
-References: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Tue, 3 Jun 2014 08:03:57 -0400
+Date: Tue, 3 Jun 2014 13:03:54 +0100
+From: Morten Rasmussen <morten.rasmussen@arm.com>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: "peterz@infradead.org" <peterz@infradead.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        "efault@gmx.de" <efault@gmx.de>,
+        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>
+Subject: Re: [PATCH v2 08/11] sched: get CPU's activity statistic
+Message-ID: <20140603120354.GC29593@e103034-lin>
+References: <1400860385-14555-1-git-send-email-vincent.guittot@linaro.org>
+ <1400860385-14555-9-git-send-email-vincent.guittot@linaro.org>
+ <20140528121001.GI19967@e103034-lin>
+ <CAKfTPtDxeBfZK1AxCRqEG91pi--Ti1RYFoQPDhvMVnGTCspQ-g@mail.gmail.com>
+ <20140528154703.GJ19967@e103034-lin>
+ <CAKfTPtCd8Mm+bvO3f1ybRC=gV-vQ=_5SxcUnOiuZ0XTf0JN=mA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKfTPtCd8Mm+bvO3f1ybRC=gV-vQ=_5SxcUnOiuZ0XTf0JN=mA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.11 -stable review patch.  If anyone has any objections, please let me know.
+On Wed, May 28, 2014 at 05:39:10PM +0100, Vincent Guittot wrote:
+> On 28 May 2014 17:47, Morten Rasmussen <morten.rasmussen@arm.com> wrote:
+> > On Wed, May 28, 2014 at 02:15:03PM +0100, Vincent Guittot wrote:
+> >> On 28 May 2014 14:10, Morten Rasmussen <morten.rasmussen@arm.com> wrote:
+> >> > On Fri, May 23, 2014 at 04:53:02PM +0100, Vincent Guittot wrote:
+> 
+> [snip]
+> 
+> >
+> >> This value is linked to the CPU on
+> >> which it has run previously because of the time sharing with others
+> >> tasks, so the unweighted load of a freshly migrated task will reflect
+> >> its load on the previous CPU (with the time sharing with other tasks
+> >> on prev CPU).
+> >
+> > I agree that the task runnable_avg_sum is always affected by the
+> > circumstances on the cpu where it is running, and that it takes this
+> > history with it. However, I think cfs.runnable_load_avg leads to less
+> > problems than using the rq runnable_avg_sum. It would work nicely for
+> > the two tasks on two cpus example I mentioned earlier. We don't need add
+> 
+> i would say that nr_running is an even better metrics for such
+> situation as the load doesn't give any additional information.
 
-------------------
+I fail to understand how nr_running can be used. nr_running doesn't tell
+you anything about the utilization of the cpu, just the number tasks
+that happen to be runnable at a point in time on a specific cpu. It
+might be two small tasks that just happened to be running while you read
+nr_running.
 
-From: Viresh Kumar <viresh.kumar@linaro.org>
+An unweighted version of cfs.runnable_load_avg gives you a metric that
+captures cpu utilization to some extend, but not the number of tasks.
+And it reflects task migrations immediately unlike the rq
+runnable_avg_sum.
 
-commit 84ea7fe37908254c3bd90910921f6e1045c1747a upstream.
+> Just to point that we can spent a lot of time listing which use case
+> are better covered by which metrics :-)
 
-switch_hrtimer_base() calls hrtimer_check_target() which ensures that
-we do not migrate a timer to a remote cpu if the timer expires before
-the current programmed expiry time on that remote cpu.
+Agreed, but I think it is quite important to discuss what we understand
+by cpu utilization. It seems to be different depending on what you want
+to use it for. I think it is also clear that none of the metrics that
+have been proposed are perfect. We therefore have to be careful to only
+use metrics in scenarios where they make sense. IMHO, both rq
+runnable_avg_sum and unweighted cfs.runnable_load_avg capture cpu
+utilization, but in different ways.
 
-But __hrtimer_start_range_ns() calls switch_hrtimer_base() before the
-new expiry time is set. So the sanity check in hrtimer_check_target()
-is operating on stale or even uninitialized data.
+We have done experiments internally with rq runnable_avg_sum for
+load-balancing decisions in the past and found it unsuitable due to its
+slow response to task migrations. That is why I brought it up here.
+AFAICT, you use rq runnable_avg_sum more like a flag than a quantitative
+measure of cpu utilization. Viewing things from an energy-awareness
+point of view I'm more interested in the latter for estimating the
+implications of moving tasks around. I don't have any problems with
+using rq runnable_avg_sum for other things as long we are fully aware of
+how this metric works.
 
-Update expiry time before calling switch_hrtimer_base().
+> > something on top when the cpu is fully utilized by more than one task.
+> > It comes more naturally with cfs.runnable_load_avg. If it is much larger
+> > than 47742, it should be fairly safe to assume that you shouldn't stick
+> > more tasks on that cpu.
+> >
+> >>
+> >> I'm not saying that such metric is useless but it's not perfect as well.
+> >
+> > It comes with its own set of problems, agreed. Based on my current
+> > understanding (or lack thereof) they just seem smaller :)
+> 
+> I think it's worth using the cpu utilization for some cases because it
+> has got some information that are not available elsewhere. And the
+> replacement of the current capacity computation is one example.
+> As explained previously, I'm not against adding other metrics and i'm
+> not sure to understand why you oppose these 2 metrics whereas they
+> could be complementary
 
-[ tglx: Rewrote changelog once again ]
+I think we more or less agree :) I'm fine with both metrics and I agree
+that they complement each other. My concern is using the right metric
+for the right job. If you choose to use rq runnable_avg_sum you have to
+keep its slow reaction time in mind. I think that might be
+difficult/not possible for some load-balancing decisions. That is
+basically my point :)
 
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: linaro-kernel@lists.linaro.org
-Cc: linaro-networking@linaro.org
-Cc: fweisbec@gmail.com
-Cc: arvind.chauhan@arm.com
-Link: http://lkml.kernel.org/r/81999e148745fc51bbcd0615823fbab9b2e87e23.1399882253.git.viresh.kumar@linaro.org
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- kernel/hrtimer.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index 6de65d8a70e2..aa149222cd8e 100644
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -1002,11 +1002,8 @@ int __hrtimer_start_range_ns(struct hrtimer *timer, ktime_t tim,
- 	/* Remove an active timer from the queue: */
- 	ret = remove_hrtimer(timer, base);
- 
--	/* Switch the timer base, if necessary: */
--	new_base = switch_hrtimer_base(timer, base, mode & HRTIMER_MODE_PINNED);
--
- 	if (mode & HRTIMER_MODE_REL) {
--		tim = ktime_add_safe(tim, new_base->get_time());
-+		tim = ktime_add_safe(tim, base->get_time());
- 		/*
- 		 * CONFIG_TIME_LOW_RES is a temporary way for architectures
- 		 * to signal that they simply return xtime in
-@@ -1021,6 +1018,9 @@ int __hrtimer_start_range_ns(struct hrtimer *timer, ktime_t tim,
- 
- 	hrtimer_set_expires_range_ns(timer, tim, delta_ns);
- 
-+	/* Switch the timer base, if necessary: */
-+	new_base = switch_hrtimer_base(timer, base, mode & HRTIMER_MODE_PINNED);
-+
- 	timer_stats_hrtimer_set_start_info(timer);
- 
- 	leftmost = enqueue_hrtimer(timer, new_base);
--- 
-1.9.1
-
+Morten
