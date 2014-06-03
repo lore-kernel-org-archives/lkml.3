@@ -1,83 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965161AbaFCXBz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 19:01:55 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:45985 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S964824AbaFCXBx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 19:01:53 -0400
-Date: Tue, 3 Jun 2014 19:01:51 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Petr Mladek <pmladek@suse.cz>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
-        x86@kernel.org
-Subject: Re: [PATCH] ftrace/x86: Call text_ip_addr() instead of the
- duplicated code
-Message-ID: <20140603190151.0f8e2087@gandalf.local.home>
-In-Reply-To: <1401812601-2359-1-git-send-email-pmladek@suse.cz>
-References: <1401812601-2359-1-git-send-email-pmladek@suse.cz>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	id S934346AbaFCXIz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 19:08:55 -0400
+Received: from ozlabs.org ([103.22.144.67]:52642 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934243AbaFCXIy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 19:08:54 -0400
+Date: Wed, 4 Jun 2014 09:08:46 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Benjamin LaHaise <bcrl@kvack.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: failed to fetch the aio tree
+Message-ID: <20140604090846.3b4fd54c@canb.auug.org.au>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/se58d1+qYFmoUH/0.h+.pMw"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue,  3 Jun 2014 18:23:21 +0200
-Petr Mladek <pmladek@suse.cz> wrote:
+--Sig_/se58d1+qYFmoUH/0.h+.pMw
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-> I just went over this when looking at some Xen-related ftrace initialization
-> problems. They were related to Xen code that is not upstream but this clean up
-> would make sense here.
-> 
-> I think that this was already the intention when text_ip_addr() was introduced
-> in the commit 87fbb2ac6073a703930 (ftrace/x86: Use breakpoints for converting
-> function graph caller). Anyway, better do it now before it shots people into
-> their leg ;-)
+Hi Benjamin,
 
-You know, I made this change. It somehow got lost :-/
+Fetching the aio tree (git://git.kvack.org/~bcrl/aio-next.git#master)
+for the past 3 days has produced this error:
 
-I better analyze this a bit to make sure it was just lost and I didn't
-find some odd ball reason not to apply it. But I doubt I'll find
-anything. If not, I'll get it enqueued for 3.16.
+fatal: unable to connect to git.kvack.org:
+git.kvack.org[0: 205.233.56.16]: errno=3DConnection refused
 
-Thanks!
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
--- Steve
+--Sig_/se58d1+qYFmoUH/0.h+.pMw
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-> 
-> Signed-off-by: Petr Mladek <pmladek@suse.cz>
-> ---
->  arch/x86/kernel/ftrace.c | 11 +----------
->  1 file changed, 1 insertion(+), 10 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/ftrace.c b/arch/x86/kernel/ftrace.c
-> index 89de3eaf8772..cbc4a91b131e 100644
-> --- a/arch/x86/kernel/ftrace.c
-> +++ b/arch/x86/kernel/ftrace.c
-> @@ -297,16 +297,7 @@ int ftrace_int3_handler(struct pt_regs *regs)
->  
->  static int ftrace_write(unsigned long ip, const char *val, int size)
->  {
-> -	/*
-> -	 * On x86_64, kernel text mappings are mapped read-only with
-> -	 * CONFIG_DEBUG_RODATA. So we use the kernel identity mapping instead
-> -	 * of the kernel text mapping to modify the kernel text.
-> -	 *
-> -	 * For 32bit kernels, these mappings are same and we can use
-> -	 * kernel identity mapping to modify code.
-> -	 */
-> -	if (within(ip, (unsigned long)_text, (unsigned long)_etext))
-> -		ip = (unsigned long)__va(__pa_symbol(ip));
-> +	ip = text_ip_addr(ip);
->  
->  	if (probe_kernel_write((void *)ip, val, size))
->  		return -EPERM;
+iQIcBAEBCAAGBQJTjlWDAAoJEMDTa8Ir7ZwVklwP/RqRlgEs/NGx7W26jv5mKY+G
+59xqJfi8mqdU1Uxb+b3SdJz8Ka8+d3P3mbCH5iPX0rlvqm8dZCUov1XC3icra/I6
+9aHQxgxqACDYCFjja28R4C3AI/KKVB3tJAbQm6UCqp1WcHfH+IjfB9SQjE4fflCX
+Yu0U1U6hNEQQQgSQpIn1EJapdNEjTekCrFpwumZyKldojoQttrbB+SFAb9sq41Vo
+35QnaJPdKrP7ZX3cPieHg63EwztpSzcBagnmKYgmaP2IUTR87WeKIdzGhQHQ3LVe
+9UV7zq1jd41gwSTCfDAYn7751vi2K2vuC5HO36uaOm39zEzOwc5xcPtZv86ljmWr
+pHIBoeXxEeYZ7hxmJ5n4FipDbTScIksaBGCv+C9BwQaXtWxU9YVIxBrp8VaIawzS
+57XqRSBbjAdnfSC01vV0sC+x5UZYd66VjJyzbeTKiVcmM7gY+I/3bttdBbGsZlyu
+szVPqgLeQUCpLwVMmFyTu4VE9iwOlyklMdaUQEIKZcTtKZe8Z6FGcrYuuGLXSo78
+RaHmAS24vJu1XWp5YgYgA7OiiDruK4NOJCGRLJryBLBgt4XVzBaKySnc60Hz232/
+FBDlN9ZX0wJ/9aCZMDh34NZkqQb7ZOK3UWDoAC3njl6Jzr3kbpHati9m+rcBmzfB
+9OhHhjovjPrgOd5dUG6+
+=e89n
+-----END PGP SIGNATURE-----
 
+--Sig_/se58d1+qYFmoUH/0.h+.pMw--
