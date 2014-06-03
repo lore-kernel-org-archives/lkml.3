@@ -1,71 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933767AbaFCUSc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 16:18:32 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:54342 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753251AbaFCUSa (ORCPT
+	id S933112AbaFCUZS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 16:25:18 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:33683 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752043AbaFCUZR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 16:18:30 -0400
-Date: Wed, 4 Jun 2014 00:18:19 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Christoph Lameter <cl@gentwo.org>
-CC: <akpm@linux-foundation.org>, <hannes@cmpxchg.org>, <mhocko@suse.cz>,
-        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
-Subject: Re: [PATCH -mm 8/8] slab: reap dead memcg caches aggressively
-Message-ID: <20140603201817.GE6013@esperanza>
-References: <cover.1401457502.git.vdavydov@parallels.com>
- <23a736c90a81e13a2252d35d9fc3dc04a9ed7d7c.1401457502.git.vdavydov@parallels.com>
- <alpine.DEB.2.10.1405300957390.11943@gentwo.org>
- <20140531111922.GD25076@esperanza>
- <alpine.DEB.2.10.1406021019350.2987@gentwo.org>
+	Tue, 3 Jun 2014 16:25:17 -0400
+Date: Tue, 3 Jun 2014 16:25:14 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Clark Williams <williams@redhat.com>,
+        "Luis Claudio R. Goncalves" <lclaudio@uudg.org>
+Subject: Re: [BUG] signal: sighand unprotected when accessed by /proc
+Message-ID: <20140603162514.7b11f3ea@gandalf.local.home>
+In-Reply-To: <20140603200938.GA3384@redhat.com>
+References: <20140603130233.658a6a3c@gandalf.local.home>
+	<20140603172632.GA27956@redhat.com>
+	<CA+55aFzT5CGv_T60voAqR+4PfiMmJmsDZLid2DZ4=+X8uvF+ig@mail.gmail.com>
+	<20140603160524.7895f225@gandalf.local.home>
+	<20140603200938.GA3384@redhat.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.10.1406021019350.2987@gentwo.org>
-X-Originating-IP: [109.195.248.178]
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 02, 2014 at 10:24:09AM -0500, Christoph Lameter wrote:
-> On Sat, 31 May 2014, Vladimir Davydov wrote:
+On Tue, 3 Jun 2014 22:09:38 +0200
+Oleg Nesterov <oleg@redhat.com> wrote:
+ 
+> > Now, if that lock is released and reused (I didn't trace other tasks
+> > allocating these locks), it reinitializes the lock->wait_list.
 > 
-> > > You can use a similar approach than in SLUB. Reduce the size of the per
-> > > cpu array objects to zero. Then SLAB will always fall back to its slow
-> > > path in cache_flusharray() where you may be able to do something with less
-> > > of an impact on performace.
-> >
-> > In contrast to SLUB, for SLAB this will slow down kfree significantly.
-> 
-> But that is only when you want to destroy a cache. This is similar.
+> How? From where? This should be done by sighand_ctor() only?
 
-When we want to destroy a memcg cache, there can be really a lot of
-objects allocated from it, e.g. gigabytes of inodes and dentries. That's
-why I think we should avoid any performance degradations if possible.
+This looks definitely like an -rt only bug and it's an obvious one at
+that :-p
 
-> 
-> > Fast path for SLAB is just putting an object to a per cpu array, while
-> > the slow path requires taking a per node lock, which is much slower even
-> > with no contention. There still can be lots of objects in a dead memcg
-> > cache (e.g. hundreds of megabytes of dcache), so such performance
-> > degradation is not acceptable, IMO.
-> 
-> I am not sure that there is such a stark difference to SLUB. SLUB also
-> takes the per node lock if necessary to handle freeing especially if you
-> zap the per cpu partial slab pages.
+Looking in mm/slub.c: slab_alloc_node() we have this:
 
-Hmm, for SLUB we will only take the node lock for inserting a slab on
-the partial list, while for SLAB disabling per-cpu arrays will result in
-taking the lock on each object free. So if there are only several
-objects per slab, the difference won't be huge, otherwise the slow down
-will be noticeable for SLAB, but not for SLUB.
+        if (unlikely(gfpflags & __GFP_ZERO) && object)
+                memset(object, 0, s->object_size);
+#ifdef CONFIG_PREEMPT_RT_FULL
+        if (unlikely(s->ctor) && object)
+                s->ctor(object);
+#endif  
 
-I'm not that sure that we should prefer one way over another though. I
-just think that if we already have periodic reaping for SLAB, why not
-employ it for reaping dead memcg caches too, provided it won't obfuscate
-the code? Anyway, if you think that we can neglect possible performance
-degradation that will result from disabling per cpu caches for SLAB, I
-can give it a try.
+        slab_post_alloc_hook(s, gfpflags, object);
 
-Thanks.
+        return object;
+}
+
+
+We call the ctor on the object when it is allocated, not when the page
+is created.
+
+Doh! I guess we now know why we shouldn't do that.
+
+-- Steve
