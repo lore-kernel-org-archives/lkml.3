@@ -1,63 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933409AbaFCT4a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 15:56:30 -0400
-Received: from mailrelay006.isp.belgacom.be ([195.238.6.172]:13373 "EHLO
-	mailrelay006.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754430AbaFCT42 (ORCPT
+	id S933587AbaFCT4s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 15:56:48 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:48226 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933423AbaFCT4q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 15:56:28 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AnsOAJwnjlNbsmtf/2dsb2JhbABZgweBJ6o3BAMBAQEFAZgcgQ4XdIJTLyOBGjeIRgHRJBeFVYh9HYQqBI9Lij+LHYgWgzo7Lw
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>,
-        Sebastian Ott <sebott@linux.vnet.ibm.com>,
-        Joe Perches <joe@perches.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH V2 2/2] drivers/s390/cio/qdio_main.c: replace shift loop by ilog2
-Date: Tue,  3 Jun 2014 21:55:15 +0200
-Message-Id: <1401825315-5845-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.8.4.5
+	Tue, 3 Jun 2014 15:56:46 -0400
+From: Nicolas Koch <nioko1337@gmail.com>
+X-Google-Original-From: Nicolas Koch <nioko1337@googlemail.com>
+To: devel@driverdev.osuosl.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>, linux-kernel@vger.kernel.org,
+        Nicolas Koch <nioko1337@googlemail.com>
+Subject: [patch] Staging: octeon: minor style cleanups
+Date: Tue,  3 Jun 2014 21:56:31 +0200
+Message-Id: <1401825391-7413-1-git-send-email-nioko1337@googlemail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-account_sbals is called by get_inbound_buffer_frontier and
-get_outbound_buffer_frontier with 'count' value > 0 so we can safely convert
-shift loop to ilog2.
+Done as task 10 of the eudyptula challenge.
 
-Cc: Sebastian Ott <sebott@linux.vnet.ibm.com>
-Cc: Joe Perches <joe@perches.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
+Signed-off-by: Nicolas Koch <nioko1337@googlemail.com>
 ---
- drivers/s390/cio/qdio_main.c | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ drivers/staging/octeon/ethernet-mem.c |   11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/s390/cio/qdio_main.c b/drivers/s390/cio/qdio_main.c
-index 9fda160..2eee7f1 100644
---- a/drivers/s390/cio/qdio_main.c
-+++ b/drivers/s390/cio/qdio_main.c
-@@ -413,15 +413,14 @@ static inline void qdio_stop_polling(struct qdio_q *q)
- 
- static inline void account_sbals(struct qdio_q *q, unsigned int count)
+diff --git a/drivers/staging/octeon/ethernet-mem.c b/drivers/staging/octeon/ethernet-mem.c
+index bf666b0..964da86 100644
+--- a/drivers/staging/octeon/ethernet-mem.c
++++ b/drivers/staging/octeon/ethernet-mem.c
+@@ -46,9 +46,10 @@
+ static int cvm_oct_fill_hw_skbuff(int pool, int size, int elements)
  {
--	int pos = 0;
-+	int pos;
+ 	int freed = elements;
+-	while (freed) {
  
- 	q->q_stats.nr_sbal_total += count;
- 	if (count == QDIO_MAX_BUFFERS_MASK) {
- 		q->q_stats.nr_sbals[7]++;
- 		return;
- 	}
--	while (count >>= 1)
--		pos++;
-+	pos = ilog2(count);
- 	q->q_stats.nr_sbals[pos]++;
++	while (freed) {
+ 		struct sk_buff *skb = dev_alloc_skb(size + 256);
++
+ 		if (unlikely(skb == NULL))
+ 			break;
+ 		skb_reserve(skb, 256 - (((unsigned long)skb->data) & 0x7f));
+@@ -81,10 +82,10 @@ static void cvm_oct_free_hw_skbuff(int pool, int size, int elements)
+ 
+ 	if (elements < 0)
+ 		pr_warn("Freeing of pool %u had too many skbuffs (%d)\n",
+-		     pool, elements);
++			pool, elements);
+ 	else if (elements > 0)
+ 		pr_warn("Freeing of pool %u is missing %d skbuffs\n",
+-		       pool, elements);
++			pool, elements);
  }
  
+ /**
+@@ -115,7 +116,7 @@ static int cvm_oct_fill_hw_memory(int pool, int size, int elements)
+ 		memory = kmalloc(size + 256, GFP_ATOMIC);
+ 		if (unlikely(memory == NULL)) {
+ 			pr_warn("Unable to allocate %u bytes for FPA pool %d\n",
+-				   elements * size, pool);
++				elements * size, pool);
+ 			break;
+ 		}
+ 		fpa = (char *)(((unsigned long)memory + 256) & ~0x7fUL);
+@@ -136,6 +137,7 @@ static void cvm_oct_free_hw_memory(int pool, int size, int elements)
+ {
+ 	char *memory;
+ 	char *fpa;
++
+ 	do {
+ 		fpa = cvmx_fpa_alloc(pool);
+ 		if (fpa) {
+@@ -157,6 +159,7 @@ static void cvm_oct_free_hw_memory(int pool, int size, int elements)
+ int cvm_oct_mem_fill_fpa(int pool, int size, int elements)
+ {
+ 	int freed;
++
+ 	if (USE_SKBUFFS_IN_HW && pool == CVMX_FPA_PACKET_POOL)
+ 		freed = cvm_oct_fill_hw_skbuff(pool, size, elements);
+ 	else
 -- 
-1.8.4.5
+1.7.10.4
 
