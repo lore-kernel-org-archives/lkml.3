@@ -1,74 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933070AbaFCPiE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 11:38:04 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:40625 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932297AbaFCPiC (ORCPT
+	id S933099AbaFCPiV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 11:38:21 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:44741 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932297AbaFCPiT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 11:38:02 -0400
-Date: Tue, 3 Jun 2014 08:37:55 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: josh@joshtriplett.org, Joe Perches <joe@perches.com>,
-        linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
-        fweisbec@gmail.com, oleg@redhat.com, sbw@mit.edu
-Subject: Re: [PATCH RFC 1/2] MAINTAINERS: Add "R:" designated-reviewers tag
-Message-ID: <20140603153755.GO22231@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1401728420-3572-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <20140602174837.GA13257@cloud>
- <1401731968.7323.4.camel@joe-AO725>
- <20140602181658.GX22231@linux.vnet.ibm.com>
- <20140602185635.GB13569@cloud>
- <20140602190821.GZ22231@linux.vnet.ibm.com>
- <20140602191155.GB13648@cloud>
- <20140602192729.GB22231@linux.vnet.ibm.com>
- <735924028.25620.1401740751632.JavaMail.zimbra@efficios.com>
+	Tue, 3 Jun 2014 11:38:19 -0400
+Date: Tue, 3 Jun 2014 08:38:15 -0700
+From: Stephen Hemminger <stephen@networkplumber.org>
+To: "K. Y. Srinivasan" <kys@microsoft.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>
+Cc: devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: [PATCH net-next] hyper-v: make uuid_le const
+Message-ID: <20140603083815.14688f8a@nehalam.linuxnetplumber.net>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <735924028.25620.1401740751632.JavaMail.zimbra@efficios.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14060315-6688-0000-0000-0000024D24FA
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 02, 2014 at 08:25:51PM +0000, Mathieu Desnoyers wrote:
-> > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> > On Mon, Jun 02, 2014 at 12:11:55PM -0700, josh@joshtriplett.org wrote:
-> > > On Mon, Jun 02, 2014 at 12:08:21PM -0700, Paul E. McKenney wrote:
-> > > > On Mon, Jun 02, 2014 at 11:56:35AM -0700, josh@joshtriplett.org wrote:
-> > > > > On Mon, Jun 02, 2014 at 11:16:58AM -0700, Paul E. McKenney wrote:
-> > > > > > On Mon, Jun 02, 2014 at 10:59:28AM -0700, Joe Perches wrote:
-> > > > > > > On Mon, 2014-06-02 at 10:48 -0700, josh@joshtriplett.org wrote:
+The uuid structure could be managed as a const in several places.
 
-[ . . . ]
+Signed-off-by: Stephen Hemminger <stephen@networkplumber.org>
 
-> > > > > For the record, I'd be happy to be listed as a co-maintainer for RCU.
-> > > > > :)
-> > > > 
-> > > > I would be happy to put you down as maintainer and Steven down as
-> > > > official reviewer.  ;-)
-> > > 
-> > > I'd suggest adding Mathieu Desnoyers, Oleg Nesterov, and Lai Jiangshan
-> > > as reviewers as well, with their consent.
-> > 
-> > Mathieu, Oleg, Lai, any objections?
-> 
-> No objection from me. I'm always glad to help out
-> reviewing RCU patches whenever I have some cycles
-> available.
+---
+Patch against net-next because that is where most recent
+hyper-v related changes are.
 
-Very good!  I resent the series, replacing Dipankar with Josh as
-co-maintainer, and adding Steven (perhaps prematurely) and Mathieu
-as designated reviewers.
 
-							Thanx, Paul
-
+--- a/drivers/hv/channel_mgmt.c	2014-02-12 08:21:54.627887619 -0800
++++ b/drivers/hv/channel_mgmt.c	2014-06-03 08:08:47.030901345 -0700
+@@ -365,7 +365,7 @@ static u32  next_vp;
+  * performance critical channels (IDE, SCSI and Network) will be uniformly
+  * distributed across all available CPUs.
+  */
+-static u32 get_vp_index(uuid_le *type_guid)
++static u32 get_vp_index(const uuid_le *type_guid)
+ {
+ 	u32 cur_cpu;
+ 	int i;
+--- a/drivers/hv/vmbus_drv.c	2014-04-07 11:21:05.704486433 -0700
++++ b/drivers/hv/vmbus_drv.c	2014-06-03 08:11:14.771854064 -0700
+@@ -435,7 +435,7 @@ static int vmbus_uevent(struct device *d
+ 	return ret;
+ }
+ 
+-static uuid_le null_guid;
++static const uuid_le null_guid;
+ 
+ static inline bool is_null_guid(const __u8 *guid)
+ {
+@@ -450,7 +450,7 @@ static inline bool is_null_guid(const __
+  */
+ static const struct hv_vmbus_device_id *hv_vmbus_get_id(
+ 					const struct hv_vmbus_device_id *id,
+-					__u8 *guid)
++					const __u8 *guid)
+ {
+ 	for (; !is_null_guid(id->guid); id++)
+ 		if (!memcmp(&id->guid, guid, sizeof(uuid_le)))
+@@ -779,9 +779,9 @@ EXPORT_SYMBOL_GPL(vmbus_driver_unregiste
+  * vmbus_device_create - Creates and registers a new child device
+  * on the vmbus.
+  */
+-struct hv_device *vmbus_device_create(uuid_le *type,
+-					    uuid_le *instance,
+-					    struct vmbus_channel *channel)
++struct hv_device *vmbus_device_create(const uuid_le *type,
++				      const uuid_le *instance,
++				      struct vmbus_channel *channel)
+ {
+ 	struct hv_device *child_device_obj;
+ 
+--- a/drivers/hv/hyperv_vmbus.h	2014-04-07 11:21:05.704486433 -0700
++++ b/drivers/hv/hyperv_vmbus.h	2014-06-03 08:27:12.618223800 -0700
+@@ -644,9 +644,9 @@ extern struct vmbus_connection vmbus_con
+ 
+ /* General vmbus interface */
+ 
+-struct hv_device *vmbus_device_create(uuid_le *type,
+-					 uuid_le *instance,
+-					 struct vmbus_channel *channel);
++struct hv_device *vmbus_device_create(const uuid_le *type,
++				      const uuid_le *instance,
++				      struct vmbus_channel *channel);
+ 
+ int vmbus_device_register(struct hv_device *child_device_obj);
+ void vmbus_device_unregister(struct hv_device *device_obj);
