@@ -1,109 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753391AbaFCKz7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 06:55:59 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:53418 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751201AbaFCKz5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 06:55:57 -0400
-Date: Tue, 3 Jun 2014 12:55:47 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: John Stultz <john.stultz@linaro.org>
-Cc: Trond Myklebust <trond.myklebust@primarydata.com>,
-        Jeff Layton <jeff.layton@primarydata.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
-        Linux Kernel mailing list <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: nfs4_do_reclaim lockdep pop in v3.15.0-rc1
-Message-ID: <20140603105547.GV11096@twins.programming.kicks-ass.net>
-References: <20140602104948.4faf0bc2@tlielax.poochiereds.net>
- <CAHQdGtRR6SvEhXiqWo24hoUh9AU9cL82Z8Z-d8-7u951F_d+5g@mail.gmail.com>
- <CALAqxLVmRdv3eVaf_ue-NutDmjxJA2NNAXnH-Tm4a6ud2U7Q4g@mail.gmail.com>
- <CAHQdGtSn9RwdgaFgEDQXjrxSA_Bg=rNWux+96-5f43dyUwXLRw@mail.gmail.com>
- <CALAqxLUwtMnE9eB_dfV=C5CLuXpEdB9+mK7pw2jgo5Yg2ACKPA@mail.gmail.com>
- <CAHQdGtQhurcOsAii7PYNZwEL4Xm-8a2CKBkS4OhrS0FhaAX3Aw@mail.gmail.com>
- <CALAqxLXeuiTffvgu0uBbn2fiYQ0-3PVdZ4V4AxqC-ZkTaFSfQQ@mail.gmail.com>
+	id S1753557AbaFCK5S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 06:57:18 -0400
+Received: from mga09.intel.com ([134.134.136.24]:49808 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751189AbaFCK5Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 06:57:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,964,1392192000"; 
+   d="scan'208";a="550794117"
+Date: Tue, 3 Jun 2014 13:57:10 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Grygorii Strashko <grygorii.strashko@ti.com>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        "Zhu, Lejun" <lejun.zhu@linux.intel.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        jacob.jun.pan@linux.intel.com, bin.yang@intel.com
+Subject: Re: [PATCH v4] gpio: Add support for Intel SoC PMIC (Crystal Cove)
+Message-ID: <20140603105710.GF1730@lahna.fi.intel.com>
+References: <CAAVeFu+F=nHDCpL6Vfmq26QNr74mfRD5p9at_osB3R97v7xBSA@mail.gmail.com>
+ <538459E8.6010701@ti.com>
+ <20140527084615.GC1801@lahna.fi.intel.com>
+ <53847F39.2010503@ti.com>
+ <CACRpkdbe1=Yt3UDm9f4ZmZ+K2ZB9nVL+RNr7eU_TbnK-CmNY+A@mail.gmail.com>
+ <20140529150058.GB6263@lahna.fi.intel.com>
+ <53875A4B.2060604@ti.com>
+ <CACRpkdZk9hFUZCoWci15EGFsJ7gOWNyFH13gJjHB9EcQT4ONRQ@mail.gmail.com>
+ <20140530082503.GA1645@lahna.fi.intel.com>
+ <CACRpkdar8jUuQHg7q5rPmGQ2tdomBgXcPA5OUT-n3iLh5Ca11w@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="g4y/k9+5pukpRNAq"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CALAqxLXeuiTffvgu0uBbn2fiYQ0-3PVdZ4V4AxqC-ZkTaFSfQQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <CACRpkdar8jUuQHg7q5rPmGQ2tdomBgXcPA5OUT-n3iLh5Ca11w@mail.gmail.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jun 03, 2014 at 10:10:13AM +0200, Linus Walleij wrote:
+> On Fri, May 30, 2014 at 10:25 AM, Mika Westerberg
+> <mika.westerberg@linux.intel.com> wrote:
+> 
+> > I'm thinking that could we solve this so that we call
+> > acpi_gpiochip_request_interrupts() at the end of gpiochip_irqchip_add()
+> > and convert both pinctrl-baytrail and gpio-lynxpoint to use
+> > gpiochip_irqchip_add()?
+> 
+> Yes that seems like a great way to solve it actually.
+> 
+> Is someone able to do this refactoring?
 
---g4y/k9+5pukpRNAq
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I have both Haswell and Baytrail hardware here so I can take a look if I
+have time.
 
-On Mon, Jun 02, 2014 at 08:19:00PM -0700, John Stultz wrote:
-> On Mon, Jun 2, 2014 at 5:59 PM, Trond Myklebust
-> <trond.myklebust@primarydata.com> wrote:
-> > On Mon, Jun 2, 2014 at 6:49 PM, John Stultz <john.stultz@linaro.org> wr=
-ote:
-> >> On Mon, Jun 2, 2014 at 3:42 PM, Trond Myklebust
-> >> <trond.myklebust@primarydata.com> wrote:
-> >>> The so_reclaim_seqcount only exists in order to tell the other threads
-> >>> that they may need to replay file open or file lock requests that have
-> >>> raced with state recovery (because those threads got scheduled out
-> >>> after their RPC calls ran, but before they managed to set up the
-> >>> tracking of the new state). It is basically an edge condition
-> >>> killer...
-> >>
-> >> Would then swapping the acquisition order, so the seqcount is taken
-> >> before the so_lock at the top of nfs4_reclaim_open_state() avoid this
-> >> then, without having to disable lockdep?
-> >>
-> >
-> > I can change the write seqcount to use raw_write_seqcount(), but that
->=20
-> So this doesn't address my suggestion to change the locking order...
-> is that solution not feasible?
->=20
-> > doesn't answer the question of why raw_seqcount_begin() is the _only_
-> > object out there with a "raw_" prefix, that doesn't explicitly disable
-> > lockdep checking.
-> >
-> > What justifies the inconsistency?
->=20
-> Here's the naming discussion...
-> https://lkml.org/lkml/2014/1/2/404
->=20
+> I don't know if you have a case of an ACPI-based GPIO controller
+> that is *not* supplying interrupts? Because in that case this
+> would even be required for the thing to work, right?
 
-Ah, I think I see what Trond means; so raw_write_seqcount_{begin,end}()
-are without lockdep, _however_ raw_seqcount_begin() is with lockdep.
-
-This is inconsistent within the same API (seqcount/seqlock).
-
-Yes, we should fix that.
-
-raw_seqcount_begin() is a variant of read_seqcount_begin() but without
-the spin loop in. Maybe we should find a new name for this.
-
---g4y/k9+5pukpRNAq
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTjamzAAoJEHZH4aRLwOS69AUP/jEQuHc5R0qDHtIC4w0ddCBj
-rWuoZpa/coiLxw632iyGo7HWgLfyvyi1uJOxvRf+l5aX8ZuYJAK3F5fnf06G0Hgo
-q1ezg2KzGNO6li8HXOcHM7ezSOKQXEAr/rZNmeFuNiBDdQVsLWzRwEuck/E1M9bE
-SsBNboXXaQ55U7PBNHqpYCVaMnz6lfYZ6I5Wd6KbaeIbw2bhOL/g/d6jHuGYpm9g
-nRQQL1phBL8n7GtahtEe3DlOhVUk5C8B4Ct0Icbc1qGXFeiHMwE9EQ7aEzQgo7EQ
-VD05q9w5KqF8eqXxgHfX2N5jk/jDak3pAoeWL/rFNmPC2OFEyJFEuxLR0N56+rnY
-pH2agfeTtfcnRoSveyLn7JcVrx+kMgV/F/nnOXeJ+1Co/zFDumDbmikpkDnMviaQ
-2RkO4DoczMMIeL/IdR3h5dQ5v2iL608Y9eCDXISWgiIDRIyo2N9cDmPCcBsVcgp1
-IsAIZ5LWgA24cT54ZriHXmkgVsXFL6GN9xFd3Wn5JDLrzByPYMDS1YTj/apCAtWO
-YV6RZDkwFMfvQWz6xJmqWv2RZ0xGceNtlKVOdEEqKwQ5PR5rAUIuVLxEXVZCBcuT
-JEDF7r+4Fv9oM9i6YrOcDqlSnEQiHDjypVnaBAyY7Pgvy7tBn54jaxiOkwd29TgI
-fAL6Vq5TUMZSW3XMQSIn
-=no82
------END PGP SIGNATURE-----
-
---g4y/k9+5pukpRNAq--
+Both Haswell and Baytrail support interrupts but only the later provides
+ACPI events as far as I can tell.
