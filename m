@@ -1,105 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934002AbaFCRWG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 13:22:06 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:40993 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932560AbaFCRWE (ORCPT
+	id S934122AbaFCRXH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 13:23:07 -0400
+Received: from mail-vc0-f177.google.com ([209.85.220.177]:52043 "EHLO
+	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932762AbaFCRXF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 13:22:04 -0400
-Message-ID: <538E0424.7040305@infradead.org>
-Date: Tue, 03 Jun 2014 10:21:40 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Tue, 3 Jun 2014 13:23:05 -0400
 MIME-Version: 1.0
-To: Josh Triplett <josh@joshtriplett.org>
-CC: Joe Perches <joe@perches.com>, Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, mathieu.desnoyers@efficios.com, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
-        fweisbec@gmail.com, oleg@redhat.com, sbw@mit.edu
-Subject: Re: [PATCH RFC 2/2] rcu: Add Josh Triplett as designated reviewer
-References: <1401728420-3572-1-git-send-email-paulmck@linux.vnet.ibm.com> <1401728420-3572-2-git-send-email-paulmck@linux.vnet.ibm.com> <20140602133512.6d3f584314ecc423e63ffc8e@linux-foundation.org> <1401741411.7323.36.camel@joe-AO725> <538CE0E0.8020002@infradead.org> <20140603000246.GC14801@cloud> <538D1FC6.3090500@infradead.org> <20140603015133.GA20354@thin>
-In-Reply-To: <20140603015133.GA20354@thin>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CA+55aFx=TG25jPohWZ5xbYs4DcOTUQnCPA8G_fZZouNEfSoZ3A@mail.gmail.com>
+References: <CALCETrXbpiqwY=qyPcNWn2zX=vehXzBbxDG725egM9T2Ox2KTA@mail.gmail.com>
+	<538D2261.70406@huawei.com>
+	<20140603012211.GE19855@htj.dyndns.org>
+	<CA+55aFx=TG25jPohWZ5xbYs4DcOTUQnCPA8G_fZZouNEfSoZ3A@mail.gmail.com>
+Date: Tue, 3 Jun 2014 10:23:03 -0700
+X-Google-Sender-Auth: zFHg7UVA8fc40Wz6y2xBmDV0bTI
+Message-ID: <CA+55aFxfEsOZreYBCrDTfgaSf0441zXf4uSmzsYU-JXHBRkzJg@mail.gmail.com>
+Subject: Re: 3.15 regression: wrong cgroup magic
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Li Zefan <lizefan@huawei.com>, Andy Lutomirski <luto@amacapital.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jianyu Zhan <nasa4836@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/02/2014 06:51 PM, Josh Triplett wrote:
-> On Mon, Jun 02, 2014 at 06:07:18PM -0700, Randy Dunlap wrote:
->> On 06/02/2014 05:02 PM, josh@joshtriplett.org wrote:
->>> On Mon, Jun 02, 2014 at 01:38:56PM -0700, Randy Dunlap wrote:
->>>> On 06/02/2014 01:36 PM, Joe Perches wrote:
->>>>> On Mon, 2014-06-02 at 13:35 -0700, Andrew Morton wrote:
->>>>>> On Mon,  2 Jun 2014 10:00:20 -0700 "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
->>>>>>
->>>>>>> --- a/MAINTAINERS
->>>>>>> +++ b/MAINTAINERS
->>>>>>> @@ -7321,6 +7321,7 @@ F:	kernel/rcu/torture.c
->>>>>>>  
->>>>>>>  RCUTORTURE TEST FRAMEWORK
->>>>>>>  M:	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
->>>>>>> +R:	Josh Triplett <josh@joshtriplett.org>
->>>>>>>  L:	linux-kernel@vger.kernel.org
->>>>>>>  S:	Supported
->>>>>>>  T:	git git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git
->>>>>>
->>>>>> I like the general principle - knowing who to poke regarding a kernel
->>>>>> change is useful.
->>>>>>
->>>>>> I don't care much whether it's "M:" or "R:", although "R:" carries more
->>>>>> meaning and hence is probably better.
->>>>>>
->>>>>> But why not "Cc:"?  That's meaningful too and is more copy-n-paste friendly.
->>>>
->>>> Josh, what are you assuming that Andrew and I did not?
->>>
->>> Not sure what you mean here.  Responding to the text you quoted: I have
->>> no particular need to bikeshed the tag name, so if you prefer "Cc" and
->>> can convince get_maintainer.pl to handle it, fine by me.
->>
->> Sorry, what I meant is that Andrew and I both mentioned copy-paste and
->> you replied earlier (and I have already deleted it) that copy-paste shouldn't
->> be necessary for someone who is using get_maintainer.pl.
->>
->> Do you redirect its output to your patch file and then edit it or does
->> get_maintainer.pl work with git-send-email or something else?  if something
->> else, what is it, please?
-> 
-> Oh, I see; that was in text you hadn't quoted, so I didn't know what you
-> were asking. :)
-> 
-> git send-email can invoke 'scripts/get_maintainer.pl --no-rolestats'
-> directly via --to-cmd or -cc-cmd; that works fine as long as you don't
-> have a cover letter.
-> 
-> Depending on the system I'm running on, and whether it's more convenient
-> to invoke git-send-email or to edit patch mails and send them with 'mutt
-> -H', I have a shell pipeline which invokes get_maintainer.pl on an
-> entire patch series, collects all the email addresses it returns, and
-> inserts them all into each mail as CCs.  (That way, when I send a
-> cross-subsystem patch series, I don't get a pile of maintainers confused
-> that they only received a couple of the numbered patches.)  One example:
-> 
-> { echo -n "To: " ; for x in *.patch ; do scripts/get_maintainer.pl --no-rolestats < $x | fgrep -v josh@joshtriplett.org ; done | sort -u | sed 's/$/, /;$s/, $//' | tr -d '\n' ; echo ; } | sed -i '/^From:/r/dev/stdin'
+On Mon, Jun 2, 2014 at 6:30 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> Of course, Greg could just send it to me for my next branch (since the
+> merge window for 3.16 is already open) and tell me that it's also
+> stable material for 3.15. At _that_ point I'll happily cherry-pick it
+> into master...
 
-I see.  Thanks for the summary.
+Ok, so that happened.
 
-> Personally, I'd find it handy if one of the following happened:
-> 
-> - git send-email (and ideally also git format-patch) grew an option to
->   collect *all* the to-cmd and cc-cmd output from each patch and apply
->   it to every patch (including the cover letter).
-> 
-> - get_maintainer.pl accepted multiple patchfile names and output the
->   union of the results.  Ideally, get_maintainer.pl would also have a -i
->   option to edit the patch files and insert the addresses in the mail
->   headers.
+Tejun, just to be anal, can you please test and verify current -git
+(preferably both 'master' and 'next') with your app that cared about
+the f_type information for statfs()..
 
-
--- 
-~Randy
+             Linus
