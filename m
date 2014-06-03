@@ -1,159 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751616AbaFCJfU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 05:35:20 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:40652 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750810AbaFCJfR (ORCPT
+	id S1752116AbaFCJh1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 05:37:27 -0400
+Received: from mail.windriver.com ([147.11.1.11]:45940 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750709AbaFCJhZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 05:35:17 -0400
+	Tue, 3 Jun 2014 05:37:25 -0400
+From: <Wei.Yang@windriver.com>
+To: <balbi@ti.com>, <gregkh@linuxfoundation.org>
+CC: <wei.yang@windriver.com>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH v1] USB:gadget: Fix a warning while loading g_mass_storage
+Date: Tue, 3 Jun 2014 17:37:15 +0800
+Message-ID: <1401788235-22621-1-git-send-email-Wei.Yang@windriver.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-In-Reply-To: <CABb+yY3ZYqtT+R0PwZDtpW0O0SsbxTyiYmXaseZHoj4Nr6UBPQ@mail.gmail.com>
-References: <1400134105-3847-1-git-send-email-jaswinder.singh@linaro.org>
-	<1400134260-3962-1-git-send-email-jaswinder.singh@linaro.org>
-	<7978295.UBGxYvcnvH@wuerfel>
-	<CAJe_Zhe_VFTpPW0sKBsqit347MR7QmEDvzvQTyh1DWr3v991tg@mail.gmail.com>
-	<20140529154348.GH32082@beef>
-	<CABb+yY2PiGpqy2uevCFexAKeS4aZxJxZHEDJTRN1SW6VVjBzGQ@mail.gmail.com>
-	<20140602151454.GK32082@beef>
-	<CABb+yY3ZYqtT+R0PwZDtpW0O0SsbxTyiYmXaseZHoj4Nr6UBPQ@mail.gmail.com>
-Date: Tue, 3 Jun 2014 10:35:16 +0100
-X-Google-Sender-Auth: zaikYiqWBcj12kln0UHI6ia7MkQ
-Message-ID: <CAPKp9uZTnWCojeZHyvrm=vTuY15dAHiW1CWP18JUfuKU-mfH0Q@mail.gmail.com>
-Subject: Re: [PATCHv5 2/4] mailbox: Introduce framework for mailbox
-From: Sudeep Holla <sudeep.holla@arm.com>
-To: Jassi Brar <jassisinghbrar@gmail.com>
-Cc: Matt Porter <mporter@linaro.org>, Jassi Brar <jaswinder.singh@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, lkml <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Anna, Suman" <s-anna@ti.com>, Loic Pallardy <loic.pallardy@st.com>,
-        LeyFoon Tan <lftan.linux@gmail.com>,
-        Craig McGeachie <slapdau@yahoo.com.au>,
-        Courtney Cavin <courtney.cavin@sonymobile.com>,
-        Rob Herring <robherring2@gmail.com>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Kumar Gala <galak@codeaurora.org>,
-        "ks.giri@samsung.com" <ks.giri@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jassi,
+From: Yang Wei <Wei.Yang@windriver.com>
 
-On Mon, Jun 2, 2014 at 6:11 PM, Jassi Brar <jassisinghbrar@gmail.com> wrote:
-> On Mon, Jun 2, 2014 at 8:44 PM, Matt Porter <mporter@linaro.org> wrote:
->> On Fri, May 30, 2014 at 11:01:55AM +0530, Jassi Brar wrote:
->>
->>>  Being more specific to your platform, I think you need some server
->>> code (mailbox's client) that every driver (like clock, pmu, pinmux
->>> etc) registers with to send messages to remote and receive commands
->>> from remote ... perhaps by registering some filter to sort out
->>> messages for each driver.
->>
->> Right, and here's where you hit on the problem. This server you mention
->> is not a piece of hardware, it would be a software construct. As such, it
->> doesn't fit into the DT binding as it exists. It's probably best to
->> illustrate in DT syntax.
->>
->> If I were to represent the hardware relationship in the DT binding now
->> it would look like this:
->>
->> ---
->> cpm: mailbox@deadbeef {
->>         compatible = "brcm,bcm-cpm-mailbox";
->>         reg = <...>;
->>         #mbox-cells <1>;
->>         interrupts = <...>;
->> };
->>
->> /* clock complex */
->> ccu {
->>         compatible = "brcm,bcm-foo-ccu";
->>         mbox = <&cpm CPM_SYSTEM_CHANNEL>;
->>         mbox-names = "system";
->>         /* leaving out other mailboxes for brevity */
->>         #clock-cells <1>;
->>         clock-output-names = "bar",
->>                              "baz";
->> };
->>
->> pmu {
->>         compatible = "brcm,bcm-foo-pmu"
->>         mbox = <&cpm CPM_SYSTEM_CHANNEL>;
->>         mbox-names = "system";
->> };
->>
->> pinmux {
->>         compatible = "brcm,bcm-foo-pinctrl";
->>         mbox = <&cpm CPM_SYSTEM_CHANNEL>;
->>         mbox-names = "system";
->> };
->> ---
-> Yeah, I too don't think its a good idea.
->
->
->> What we would need to do is completely ignore this information in each
->> of the of the client drivers associated with the clock, pmu, and pinmux
->> devices. This IPC server would need to be instantiated and get the
->> mailbox information from some source. mbox_request_channel() only works
->> when the client has an of_node with the mbox-names property present.
->> Let's say we follow this model and represent it in DT:
->>
->> --
->> cpm: mailbox@deadbeef {
->>         compatible = "brcm,bcm-cpm-mailbox";
->>         reg = <...>;
->>         #mbox-cells <1>;
->>         interrupts = <...>;
->> };
->>
->> cpm_ipc {
->>         compatible = "brcm,bcm-cpm-ipc";
->>         mbox = <&cpm CPM_SYSTEM_CHANNEL>;
->>         mbox-names = "system";
->>         /* leaving out other mailboxes for brevity */
->> };
->> ---
->>
->> This would allow an ipc driver to exclusively own this system channel,
->> but now we've invented a binding that doesn't reflect the hardware at
->> all. It's describing software so I don't believe the DT maintainers will
->> allow this type of construct.
->>
-> Must the server node specify MMIO and an IRQ, to be acceptable? Like ...
->
-> cpm_ipc : cpm@deadbeef {
->          compatible = "brcm,bcm-cpm-ipc";
->        /*  reg = <0xdeadbeef 0x100>; */
->        /*  interrupts = <0 123 4>;  */
->          mbox = <&cpm CPM_SYSTEM_CHANNEL>;
->          mbox-names = "system";
-> };
->
-> cpm_ipc already specifies a hardware resource (mbox) that its driver
-> needs, I think that should be enough reason. If it were some purely
-> soft property for the driver like
->       mode = "poll";  //or "irq"
-> then the node wouldn't be justified because that is the job of a
-> build-time config or run-time module option.
->
+While loading g_mass_storage module, the following warning is triggered.
+In fact, it is more easy to reproduce it with RT kernel.
 
-Like Matt, I am also in similar situation where there's a lot of common
-code necessary to construct/parse IPCs for each of the drivers using the
-mailbox.
+WARNING: at drivers/usb/gadget/composite.c:
+usb_composite_setup_continue: Unexpected call
+Modules linked in: fat vfat minix nls_cp437 nls_iso8859_1 g_mass_storage
+[<800179cc>] (unwind_backtrace+0x0/0x104) from [<80619608>] (dump_stack+0x20/0x24)
+[<80619608>] (dump_stack+0x20/0x24) from [<80025100>] (warn_slowpath_common+0x64/0x74)
+[<80025100>] (warn_slowpath_common+0x64/0x74) from [<800251cc>] (warn_slowpath_fmt+0x40/0x48)
+[<800251cc>] (warn_slowpath_fmt+0x40/0x48) from [<7f047774>] (usb_composite_setup_continue+0xb4/0xbc [g_mass_storage])
+[<7f047774>] (usb_composite_setup_continue+0xb4/0xbc [g_mass_storage]) from [<7f047ad4>] (handle_exception+0x358/0x3e4 [g_mass_storage])
+[<7f047ad4>] (handle_exception+0x358/0x3e4 [g_mass_storage]) from [<7f048080>] (fsg_main_thread+0x520/0x157c [g_mass_storage])
+[<7f048080>] (fsg_main_thread+0x520/0x157c [g_mass_storage]) from [<8004bc90>] (kthread+0x98/0x9c)
+[<8004bc90>] (kthread+0x98/0x9c) from [<8000faec>] (kernel_thread_exit+0x0/0x8) 
 
-As per your suggestion if we have single DT node to specify both the
-controller and the client, we might still have to pollute this node with
-software specific compatibles.
+The root cause just likes the following scenario.
 
-One possible scenario I can think of is that if the mailbox controller is
-a standard primecell like PL320 used in multiple SoCs, each SoC vendor
-will develop their own protocol implemented in their firmware. This is true
-even with single SoC vendor having same IP but changing the protocol to
-talk to their firmware. We will need a way to identify that protocol mechanism.
-Does it make sense to add that  ? Is that something acceptable ?
+irq thread
 
-Regards,
-Sudeep
+composite_disconnect()
+|
+|->fsg_disable() fsg->common->new_fsg = NULL
+                 and then wake fsg_main_thread
+                 with seting common->state to
+                 FSG_STATE_CONFIG_CHANGE.
+                                                    fsg_main_thread
+                                                    |
+                                                    |->do_set_interface()
+irq thread
+
+set_config()
+|
+|->fsg_set_alt() fsg->common->new_fsg = new_fsg
+                 and then also wake up fsg_main_thread
+                 with setting common->state to
+                 FSG_STATE_CONFIG_CHANGE.
+                                                    |-> if(common->new_fsg)
+		                                                 usb_composite_setup_continue()
+
+In this case, fsg_main_thread would invoke usb_composite_setup_continue
+twice, so the second call would trigger the above call trace, as we also
+save common->new_fsg while changing the common->state.
+
+Signed-off-by: Yang Wei <Wei.Yang@windriver.com>
+---
+ drivers/usb/gadget/f_mass_storage.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+		Hi All,
+
+		This patch is based on git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb.git usb-next branch,
+		and is validated it with altera cyclone V board.
+
+		Thanks
+		Wei
+
+diff --git a/drivers/usb/gadget/f_mass_storage.c b/drivers/usb/gadget/f_mass_storage.c
+index b963939..e3b1798 100644
+--- a/drivers/usb/gadget/f_mass_storage.c
++++ b/drivers/usb/gadget/f_mass_storage.c
+@@ -2342,6 +2342,7 @@ static void handle_exception(struct fsg_common *common)
+ 	struct fsg_buffhd	*bh;
+ 	enum fsg_state		old_state;
+ 	struct fsg_lun		*curlun;
++	struct fsg_dev   *new;
+ 	unsigned int		exception_req_tag;
+ 
+ 	/*
+@@ -2421,6 +2422,7 @@ static void handle_exception(struct fsg_common *common)
+ 		}
+ 		common->state = FSG_STATE_IDLE;
+ 	}
++	new = common->new_fsg;
+ 	spin_unlock_irq(&common->lock);
+ 
+ 	/* Carry out any extra actions required for the exception */
+@@ -2460,8 +2462,8 @@ static void handle_exception(struct fsg_common *common)
+ 		break;
+ 
+ 	case FSG_STATE_CONFIG_CHANGE:
+-		do_set_interface(common, common->new_fsg);
+-		if (common->new_fsg)
++		do_set_interface(common, new);
++		if (new)
+ 			usb_composite_setup_continue(common->cdev);
+ 		break;
+ 
+-- 
+1.7.9.5
+
