@@ -1,170 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752430AbaFCBLH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 21:11:07 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:38300 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751441AbaFCBLF (ORCPT
+	id S1753206AbaFCBLa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 21:11:30 -0400
+Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:47202 "EHLO
+	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752579AbaFCBL3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 21:11:05 -0400
-Date: Mon, 02 Jun 2014 18:11:03 -0700 (PDT)
-Message-Id: <20140602.181103.775349647844696732.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] Networking
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 02 Jun 2014 18:11:04 -0700 (PDT)
+	Mon, 2 Jun 2014 21:11:29 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Asx1AI0fjVN5LL1sPGdsb2JhbABZgweDRagXAQEBAQEBBpgbAYEPFwMBAQEBODWCJQEBBAE6HCMFCwgDEgYJJQ8FJQMHBieIOgfQWRaFP4gsAQFPBxaEKgSZf5Z4K4E5
+Date: Tue, 3 Jun 2014 11:11:25 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: josh@joshtriplett.org
+Cc: Joe Perches <joe@perches.com>, Steven Rostedt <rostedt@goodmis.org>,
+        paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
+        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
+        fweisbec@gmail.com, oleg@redhat.com, sbw@mit.edu
+Subject: Re: [PATCH RFC 1/2] MAINTAINERS: Add "R:" designated-reviewers tag
+Message-ID: <20140603011125.GW14410@dastard>
+References: <1401731968.7323.4.camel@joe-AO725>
+ <20140602181658.GX22231@linux.vnet.ibm.com>
+ <1401734669.7323.20.camel@joe-AO725>
+ <20140602145020.400d4e0c@gandalf.local.home>
+ <20140602185504.GA13569@cloud>
+ <1401735917.7323.23.camel@joe-AO725>
+ <20140602190951.GA13648@cloud>
+ <1401736666.7323.25.camel@joe-AO725>
+ <20140602231949.GV14410@dastard>
+ <20140602235915.GB14801@cloud>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140602235915.GB14801@cloud>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jun 02, 2014 at 04:59:15PM -0700, josh@joshtriplett.org wrote:
+> On Tue, Jun 03, 2014 at 09:19:49AM +1000, Dave Chinner wrote:
+> > On Mon, Jun 02, 2014 at 12:17:46PM -0700, Joe Perches wrote:
+> > > What it needs is testing, not reviewing.
+> > > 
+> > > I tested it for all of 10 seconds.
+> > 
+> > From Documentation/SubmittingPatches:
+> > 
+> > "         (c) While there may be things that could be improved with this
+> >              submission, I believe that it is, at this time, (1) a
+> >              worthwhile modification to the kernel, and (2) free of known
+> >              issues which would argue against its inclusion.
+> > .....
+> > 
+> > A Reviewed-by tag is a statement of opinion that the patch is an
+> > appropriate modification of the kernel without any remaining serious
+> > technical issues."
+> > 
+> > So, for someone to say they have reviewed the code and are able to
+> > say it is free of known issues and has no remaining technical
+> > issues, they would have had to apply, compile and test the patch,
+> > yes?
+> > 
+> > i.e. Reviewed-by implies both Acked-by, Tested-by and that the code
+> > is technically sound.
+> 
+> No, not at all.  It implies Acked-by, and that the code is technically
+> sound (both at the micro-level and in overall architecture/approach),
+> but does not imply Tested-by; that's a separate tag for a reason.
 
-1) Unbreak zebra and other netlink apps, from Eric W. Biederman.
+You've ignored the (c).(2) "free of known issues" criteria there.
+You cannot say a patch is free of issues if you haven't applied,
+compiled and tested it.
 
-2) Some new qmi_wwan device IDs, from Aleksander Morgado.
+> We should not, for instance, prevent someone from providing a
+> Reviewed-by (as opposed to an Acked-by) for a driver whose hardware few
+> people actually have.  There's significant value in code review even
+> without the ability to test.
 
-3) Fix info leak in DCB netlink handler of qlcnic driver, from Dan Carpenter.
+I don't disagree with you that there's value in code review, but
+that's not the only part of what "reviewed-by" means.
 
-4) inet_getid() and ipv6_select_ident() do not generate monotnically increasing
-   ID numbers, fix from Eric Dumazet.
+You can test that the code is free of known issues without reviewing
+it (i.e. tested-by). You can read the code and note that you can't
+see any technical issues without testing it (Acked-by).
 
-5) Fix memory leak in __sk_prepare_filter(), from Leon Yu.
+But you can't say that is it both free of techical and known
+issues without both reading the code and testing it (Reviewed-by).
 
-6) Netlink leftover bytes warning message is user triggerable, rate
-   limit it.  From Michal Schmidt.
+> > Anyone using Reviewed-by without having actually applied and tested
+> > the patch is mis-using the tag - they should be using Acked-by: if
+> > all they have done is read the code in their mail program....
+> 
+> Acked-by and Reviewed-by mean two different things (Reviewed-by being a
+> superset of Acked-by), and the difference is not "I've applied and
+> tested this"; that's Tested-by.
 
-7) Fix non-linear SKB panic in ipvs, from Peter Christensen.
+Right, the difference is more than that - Reviewed-by is a
+superset of both Acked-by and Tested-by.
 
-8) Congestion window undo needs to be performed even if only never
-   retransmitted data is SACK'd, fix from Yuching Cheng.
+And, yes, this is the definition we've been using for "reviewed-by"
+for XFS code since, well, years before the "reviewed-by" tag even
+existed...
 
-Please pull, thanks a lot!
+Cheers,
 
-The following changes since commit 1ee1ceafb572f1a925809168267a7962a4289de8:
-
-  Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/sparc (2014-05-23 15:41:52 -0700)
-
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git master
-
-for you to fetch changes up to 418c96ac151a16a5094a95d14252c92c1d47ec67:
-
-  net: filter: fix possible memory leak in __sk_prepare_filter() (2014-06-02 17:49:45 -0700)
-
-----------------------------------------------------------------
-Aleksander Morgado (3):
-      net: qmi_wwan: add Netgear AirCard 341U
-      net: qmi_wwan: add additional Sierra Wireless QMI devices
-      net: qmi_wwan: interface #11 in Sierra Wireless MC73xx is not QMI
-
-Bart De Schuymer (1):
-      ebtables: Update MAINTAINERS entry.
-
-Dan Carpenter (1):
-      qlcnic: info leak in qlcnic_dcb_peer_app_info()
-
-David S. Miller (4):
-      Merge branch 'for-davem' of git://git.kernel.org/.../linville/wireless
-      Merge tag 'linux-can-fixes-for-3.15-20140528' of git://gitorious.org/linux-can/linux-can
-      Merge branch 'master' of git://git.kernel.org/.../pablo/nf
-      Merge tag 'batman-adv-fix-for-davem' of git://git.open-mesh.org/linux-merge
-
-Emmanuel Grumbach (1):
-      iwlwifi: mvm: disable beacon filtering
-
-Eric Dumazet (1):
-      net: fix inet_getid() and ipv6_select_ident() bugs
-
-Eric W. Biederman (1):
-      netlink: Only check file credentials for implicit destinations
-
-Ivan Mikhaylov (2):
-      emac: add missing support of 10mbit in emac/rgmii
-      emac: aggregation of v1-2 PLB errors for IER register
-
-Jack Morgenstein (1):
-      net/mlx4_core: Reset RoCE VF gids when guest driver goes down
-
-Jean Delvare (1):
-      net: ec_bhf: Add runtime dependencies
-
-Jiri Pirko (1):
-      team: fix mtu setting
-
-John W. Linville (3):
-      Merge branch 'master' of git://git.kernel.org/.../bluetooth/bluetooth
-      Merge branch 'for-john' of git://git.kernel.org/.../iwlwifi/iwlwifi-fixes
-      Merge branch 'master' of git://git.kernel.org/.../linville/wireless into for-davem
-
-Jon Maxwell (1):
-      bridge: notify user space after fdb update
-
-Kristian Evensen (1):
-      ipheth: Add support for iPad 2 and iPad 3
-
-Leon Yu (1):
-      net: filter: fix possible memory leak in __sk_prepare_filter()
-
-Marek Lindner (1):
-      batman-adv: fix NULL pointer dereferences
-
-Michal Schmidt (1):
-      netlink: rate-limit leftover bytes warning and print process name
-
-Nikolay Aleksandrov (1):
-      net: fix wrong mac_len calculation for vlans
-
-Oliver Hartkopp (1):
-      can: only rename enabled led triggers when changing the netdev name
-
-Peter Christensen (1):
-      ipvs: Fix panic due to non-linear skb
-
-Samuel Ortiz (1):
-      Bluetooth: Fix L2CAP LE debugfs entries permissions
-
-Toshiaki Makita (1):
-      bridge: Prevent insertion of FDB entry with disallowed vlan
-
-Yuchung Cheng (1):
-      tcp: fix cwnd undo on DSACK in F-RTO
-
- MAINTAINERS                                           |   3 +-
- drivers/net/can/led.c                                 |   3 ++
- drivers/net/ethernet/Kconfig                          |   1 +
- drivers/net/ethernet/ibm/emac/mal.c                   |   5 +---
- drivers/net/ethernet/ibm/emac/mal.h                   |  20 +++++--------
- drivers/net/ethernet/ibm/emac/rgmii.c                 |   3 ++
- drivers/net/ethernet/mellanox/mlx4/main.c             |   1 +
- drivers/net/ethernet/mellanox/mlx4/mlx4.h             |  20 +++++++++----
- drivers/net/ethernet/mellanox/mlx4/port.c             | 117 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-----
- drivers/net/ethernet/mellanox/mlx4/resource_tracker.c |   3 +-
- drivers/net/ethernet/qlogic/qlcnic/qlcnic_dcb.c       |   1 +
- drivers/net/team/team.c                               |   7 ++++-
- drivers/net/usb/ipheth.c                              |  10 +++++++
- drivers/net/usb/qmi_wwan.c                            |   6 +++-
- drivers/net/wireless/iwlwifi/mvm/mac80211.c           |   2 +-
- include/linux/if_team.h                               |   1 +
- include/linux/netlink.h                               |   7 +++--
- include/net/inetpeer.h                                |   9 +-----
- lib/nlattr.c                                          |   4 +--
- net/batman-adv/multicast.c                            |   6 ++--
- net/bluetooth/l2cap_core.c                            |   4 +--
- net/bridge/br_fdb.c                                   |   8 ++++-
- net/bridge/br_input.c                                 |   4 +--
- net/bridge/br_private.h                               |   7 +++++
- net/bridge/br_vlan.c                                  |  28 +++++++++++++++++
- net/core/dev.c                                        |  35 +++++++++++++++-------
- net/core/filter.c                                     |   7 ++++-
- net/ipv4/tcp_input.c                                  |  11 ++++---
- net/ipv6/output_core.c                                |  11 ++-----
- net/netfilter/ipvs/ip_vs_core.c                       |  15 ++++++----
- net/netlink/af_netlink.c                              |   7 ++++-
- 31 files changed, 279 insertions(+), 87 deletions(-)
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
