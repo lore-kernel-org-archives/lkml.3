@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932103AbaFCDW3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 23:22:29 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:24726 "EHLO
+	id S932177AbaFCDWl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 23:22:41 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:45948 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753182AbaFCDW1 (ORCPT
+	by vger.kernel.org with ESMTP id S1753409AbaFCDW3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 23:22:27 -0400
-Message-Id: <20140603032224.056940410@goodmis.org>
+	Mon, 2 Jun 2014 23:22:29 -0400
+Message-Id: <20140603032223.896255043@goodmis.org>
 User-Agent: quilt/0.63-1
-Date: Mon, 02 Jun 2014 23:20:15 -0400
+Date: Mon, 02 Jun 2014 23:20:14 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
         Ingo Molnar <mingo@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH v2 3/4] tools lib traceevent: Add options to function plugin
+Subject: [PATCH v2 2/4] tools lib traceevent: Add options to plugins
 References: <20140603032012.088137043@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=0003-tools-lib-traceevent-Add-options-to-function-plugin.patch
-X-RR-Connecting-IP: 107.14.168.118:25
+Content-Disposition: inline; filename=0002-tools-lib-traceevent-Add-options-to-plugins.patch
+X-RR-Connecting-IP: 107.14.168.142:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,131 +28,295 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-Add the options "parent" and "indent" to the function plugin.
+The traceevent plugins allows developers to have their events print out
+information that is more advanced than what can be achieved by the
+trace event format files.
 
-When parent is set, the output looks like this:
+As these plugins are used on the userspace side of the tracing tools, it
+is only logical that the tools should be able to produce different types
+of output for the events. The types of events still need to be defined by
+the plugins thus we need a way to pass information from the tool to the
+plugin to specify what type of information to be shown.
 
-function:             fsnotify_modify <-- vfs_write
-function:             zone_statistics <-- get_page_from_freelist
-function:                __inc_zone_state <-- zone_statistics
-function:                inotify_inode_queue_event <-- fsnotify_modify
-function:                fsnotify_parent <-- fsnotify_modify
-function:                __inc_zone_state <-- zone_statistics
-function:                   __fsnotify_parent <-- fsnotify_parent
-function:                   inotify_dentry_parent_queue_event <-- fsnotify_parent
-function:             add_to_page_cache_lru <-- do_read_cache_page
+Not only does the information need to be passed by the tool to plugin, but
+the plugin also requires a way to notify the tool of what options it can
+provide.
 
-When it's not set, it looks like:
-
-function:             fsnotify_modify
-function:             zone_statistics
-function:                __inc_zone_state
-function:                inotify_inode_queue_event
-function:                fsnotify_parent
-function:                __inc_zone_state
-function:                   __fsnotify_parent
-function:                   inotify_dentry_parent_queue_event
-function:             add_to_page_cache_lru
-
-When the otpion "indent" is not set, it looks like this:
-
-function:             fsnotify_modify <-- vfs_write
-function:             zone_statistics <-- get_page_from_freelist
-function:             __inc_zone_state <-- zone_statistics
-function:             inotify_inode_queue_event <-- fsnotify_modify
-function:             fsnotify_parent <-- fsnotify_modify
-function:             __inc_zone_state <-- zone_statistics
-function:             __fsnotify_parent <-- fsnotify_parent
-function:             inotify_dentry_parent_queue_event <-- fsnotify_parent
-function:             add_to_page_cache_lru <-- do_read_cache_page
+This builds the plugin option infrastructure that is taken from trace-cmd
+that is used to allow plugins to produce different output based on the
+options specified by the tool.
 
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- tools/lib/traceevent/plugin_function.c | 43 +++++++++++++++++++++++++++++-----
- 1 file changed, 37 insertions(+), 6 deletions(-)
+ tools/lib/traceevent/event-parse.h  |  16 ++-
+ tools/lib/traceevent/event-plugin.c | 197 ++++++++++++++++++++++++++++++++++++
+ 2 files changed, 210 insertions(+), 3 deletions(-)
 
-diff --git a/tools/lib/traceevent/plugin_function.c b/tools/lib/traceevent/plugin_function.c
-index 80ba4ff1fe84..a00ec190821a 100644
---- a/tools/lib/traceevent/plugin_function.c
-+++ b/tools/lib/traceevent/plugin_function.c
-@@ -33,6 +33,29 @@ static int cpus = -1;
+diff --git a/tools/lib/traceevent/event-parse.h b/tools/lib/traceevent/event-parse.h
+index a68ec3d8289f..56e0e6c12411 100644
+--- a/tools/lib/traceevent/event-parse.h
++++ b/tools/lib/traceevent/event-parse.h
+@@ -107,8 +107,8 @@ typedef int (*pevent_event_handler_func)(struct trace_seq *s,
+ typedef int (*pevent_plugin_load_func)(struct pevent *pevent);
+ typedef int (*pevent_plugin_unload_func)(struct pevent *pevent);
  
- #define STK_BLK 10
+-struct plugin_option {
+-	struct plugin_option		*next;
++struct pevent_plugin_option {
++	struct pevent_plugin_option	*next;
+ 	void				*handle;
+ 	char				*file;
+ 	char				*name;
+@@ -135,7 +135,7 @@ struct plugin_option {
+  * PEVENT_PLUGIN_OPTIONS:  (optional)
+  *   Plugin options that can be set before loading
+  *
+- *   struct plugin_option PEVENT_PLUGIN_OPTIONS[] = {
++ *   struct pevent_plugin_option PEVENT_PLUGIN_OPTIONS[] = {
+  *	{
+  *		.name = "option-name",
+  *		.plugin_alias = "overide-file-name", (optional)
+@@ -412,9 +412,19 @@ enum pevent_errno {
  
-+struct pevent_plugin_option plugin_options[] =
+ struct plugin_list;
+ 
++#define INVALID_PLUGIN_LIST_OPTION	((char **)((unsigned long)-1))
++
+ struct plugin_list *traceevent_load_plugins(struct pevent *pevent);
+ void traceevent_unload_plugins(struct plugin_list *plugin_list,
+ 			       struct pevent *pevent);
++char **traceevent_plugin_list_options(void);
++void traceevent_plugin_free_options_list(char **list);
++int traceevent_plugin_add_options(const char *name,
++				  struct pevent_plugin_option *options);
++void traceevent_plugin_remove_options(struct pevent_plugin_option *options);
++void traceevent_print_plugins(struct trace_seq *s,
++			      const char *prefix, const char *suffix,
++			      const struct plugin_list *list);
+ 
+ struct cmdline;
+ struct cmdline_list;
+diff --git a/tools/lib/traceevent/event-plugin.c b/tools/lib/traceevent/event-plugin.c
+index 317466bd1a37..648ef84dc37e 100644
+--- a/tools/lib/traceevent/event-plugin.c
++++ b/tools/lib/traceevent/event-plugin.c
+@@ -18,6 +18,7 @@
+  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  */
+ 
++#include <stdio.h>
+ #include <string.h>
+ #include <dlfcn.h>
+ #include <stdlib.h>
+@@ -30,12 +31,208 @@
+ 
+ #define LOCAL_PLUGIN_DIR ".traceevent/plugins"
+ 
++static struct registered_plugin_options {
++	struct registered_plugin_options	*next;
++	struct pevent_plugin_option		*options;
++} *registered_options;
++
++static struct trace_plugin_options {
++	struct trace_plugin_options	*next;
++	char				*plugin;
++	char				*option;
++	char				*value;
++} *trace_plugin_options;
++
+ struct plugin_list {
+ 	struct plugin_list	*next;
+ 	char			*name;
+ 	void			*handle;
+ };
+ 
++/**
++ * traceevent_plugin_list_options - get list of plugin options
++ *
++ * Returns an array of char strings that list the currently registered
++ * plugin options in the format of <plugin>:<option>. This list can be
++ * used by toggling the option.
++ *
++ * Returns NULL if there's no options registered. On error it returns
++ * INVALID_PLUGIN_LIST_OPTION
++ *
++ * Must be freed with traceevent_plugin_free_options_list().
++ */
++char **traceevent_plugin_list_options(void)
 +{
-+	{
-+		.name = "parent",
-+		.plugin_alias = "ftrace",
-+		.description =
-+		"Print parent of functions for function events",
-+	},
-+	{
-+		.name = "indent",
-+		.plugin_alias = "ftrace",
-+		.description =
-+		"Try to show function call indents, based on parents",
-+		.set = 1,
-+	},
-+	{
-+		.name = NULL,
++	struct registered_plugin_options *reg;
++	struct pevent_plugin_option *op;
++	char **list = NULL;
++	char *name;
++	int count = 0;
++
++	for (reg = registered_options; reg; reg = reg->next) {
++		for (op = reg->options; op->name; op++) {
++			char *alias = op->plugin_alias ? op->plugin_alias : op->file;
++			char **temp = list;
++
++			name = malloc(strlen(op->name) + strlen(alias) + 2);
++			if (!name)
++				goto err;
++
++			sprintf(name, "%s:%s", alias, op->name);
++			list = realloc(list, count + 2);
++			if (!list) {
++				list = temp;
++				free(name);
++				goto err;
++			}
++			list[count++] = name;
++			list[count] = NULL;
++		}
 +	}
-+};
++	return list;
 +
-+static struct pevent_plugin_option *ftrace_parent = &plugin_options[0];
-+static struct pevent_plugin_option *ftrace_indent = &plugin_options[1];
++ err:
++	while (--count >= 0)
++		free(list[count]);
++	free(list);
 +
- static void add_child(struct func_stack *stack, const char *child, int pos)
- {
- 	int i;
-@@ -119,7 +142,8 @@ static int function_handler(struct trace_seq *s, struct pevent_record *record,
- 
- 	parent = pevent_find_function(pevent, pfunction);
- 
--	index = add_and_get_index(parent, func, record->cpu);
-+	if (parent && ftrace_indent->set)
-+		index = add_and_get_index(parent, func, record->cpu);
- 
- 	trace_seq_printf(s, "%*s", index*3, "");
- 
-@@ -128,11 +152,13 @@ static int function_handler(struct trace_seq *s, struct pevent_record *record,
- 	else
- 		trace_seq_printf(s, "0x%llx", function);
- 
--	trace_seq_printf(s, " <-- ");
--	if (parent)
--		trace_seq_printf(s, "%s", parent);
--	else
--		trace_seq_printf(s, "0x%llx", pfunction);
-+	if (ftrace_parent->set) {
-+		trace_seq_printf(s, " <-- ");
-+		if (parent)
-+			trace_seq_printf(s, "%s", parent);
-+		else
-+			trace_seq_printf(s, "0x%llx", pfunction);
++	return INVALID_PLUGIN_LIST_OPTION;
++}
++
++void traceevent_plugin_free_options_list(char **list)
++{
++	int i;
++
++	if (!list)
++		return;
++
++	if (list == (char **)((unsigned long)-1))
++		return;
++
++	for (i = 0; list[i]; i++)
++		free(list[i]);
++
++	free(list);
++}
++
++static int
++update_option(const char *file, struct pevent_plugin_option *option)
++{
++	struct trace_plugin_options *op;
++	char *plugin;
++
++	if (option->plugin_alias) {
++		plugin = strdup(option->plugin_alias);
++		if (!plugin)
++			return -1;
++	} else {
++		char *p;
++		plugin = strdup(file);
++		if (!plugin)
++			return -1;
++		p = strstr(plugin, ".");
++		if (p)
++			*p = '\0';
 +	}
- 
- 	return 0;
- }
-@@ -141,6 +167,9 @@ int PEVENT_PLUGIN_LOADER(struct pevent *pevent)
- {
- 	pevent_register_event_handler(pevent, -1, "ftrace", "function",
- 				      function_handler, NULL);
 +
-+	traceevent_plugin_add_options("ftrace", plugin_options);
++	/* first look for named options */
++	for (op = trace_plugin_options; op; op = op->next) {
++		if (!op->plugin)
++			continue;
++		if (strcmp(op->plugin, plugin) != 0)
++			continue;
++		if (strcmp(op->option, option->name) != 0)
++			continue;
 +
- 	return 0;
- }
- 
-@@ -157,6 +186,8 @@ void PEVENT_PLUGIN_UNLOADER(struct pevent *pevent)
- 		free(fstack[i].stack);
- 	}
- 
-+	traceevent_plugin_remove_options(plugin_options);
++		option->value = op->value;
++		option->set ^= 1;
++		goto out;
++	}
 +
- 	free(fstack);
- 	fstack = NULL;
- 	cpus = -1;
++	/* first look for unnamed options */
++	for (op = trace_plugin_options; op; op = op->next) {
++		if (op->plugin)
++			continue;
++		if (strcmp(op->option, option->name) != 0)
++			continue;
++
++		option->value = op->value;
++		option->set ^= 1;
++		break;
++	}
++
++ out:
++	free(plugin);
++	return 0;
++}
++
++/**
++ * traceevent_plugin_add_options - Add a set of options by a plugin
++ * @name: The name of the plugin adding the options
++ * @options: The set of options being loaded
++ *
++ * Sets the options with the values that have been added by user.
++ */
++int traceevent_plugin_add_options(const char *name,
++				  struct pevent_plugin_option *options)
++{
++	struct registered_plugin_options *reg;
++
++	reg = malloc(sizeof(*reg));
++	if (!reg)
++		return -1;
++	reg->next = registered_options;
++	reg->options = options;
++	registered_options = reg;
++
++	while (options->name) {
++		update_option(name, options);
++		options++;
++	}
++	return 0;
++}
++
++/**
++ * traceevent_plugin_remove_options - remove plugin options that were registered
++ * @options: Options to removed that were registered with traceevent_plugin_add_options
++ */
++void traceevent_plugin_remove_options(struct pevent_plugin_option *options)
++{
++	struct registered_plugin_options **last;
++	struct registered_plugin_options *reg;
++
++	for (last = &registered_options; *last; last = &(*last)->next) {
++		if ((*last)->options == options) {
++			reg = *last;
++			*last = reg->next;
++			free(reg);
++			return;
++		}
++	}
++			
++}
++
++/**
++ * traceevent_print_plugins - print out the list of plugins loaded
++ * @s: the trace_seq descripter to write to
++ * @prefix: The prefix string to add before listing the option name
++ * @suffix: The suffix string ot append after the option name
++ * @list: The list of plugins (usually returned by traceevent_load_plugins()
++ *
++ * Writes to the trace_seq @s the list of plugins (files) that is
++ * returned by traceevent_load_plugins(). Use @prefix and @suffix for formating:
++ * @prefix = "  ", @suffix = "\n".
++ */
++void traceevent_print_plugins(struct trace_seq *s,
++			      const char *prefix, const char *suffix,
++			      const struct plugin_list *list)
++{
++	while (list) {
++		trace_seq_printf(s, "%s%s%s", prefix, list->name, suffix);
++		list = list->next;
++	}
++}
++
+ static void
+ load_plugin(struct pevent *pevent, const char *path,
+ 	    const char *file, void *data)
 -- 
 2.0.0.rc2
 
