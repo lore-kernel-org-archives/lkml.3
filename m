@@ -1,216 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932342AbaFCHuU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 03:50:20 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41444 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932320AbaFCHuT (ORCPT
+	id S932439AbaFCHwQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 03:52:16 -0400
+Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:4490 "EHLO
+	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753232AbaFCHwP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 03:50:19 -0400
-Message-ID: <538D7E36.9000104@canonical.com>
-Date: Tue, 03 Jun 2014 09:50:14 +0200
-From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Tue, 3 Jun 2014 03:52:15 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Ao5xAPF9jVN5LL1sPGdsb2JhbABZgweDRYUIoxMBAgaYGwGBCxcDAQEBATg1giUBAQQBJxMcDxQFCwgDGAklDwUlAwcaExkCiB8H0TAXFoU/g16ER1gHgyuBFQSZf5Z4K4Ew
+Date: Tue, 3 Jun 2014 17:52:09 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Daniel Phillips <daniel@phunq.net>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Subject: Re: [RFC][PATCH 1/2] Add a super operation for writeback
+Message-ID: <20140603075209.GD14410@dastard>
+References: <538B9DEE.20800@phunq.net>
+ <20140602031526.GS14410@dastard>
+ <538CD855.90804@phunq.net>
+ <20140603033322.GA14410@dastard>
+ <538D72B7.3010700@phunq.net>
 MIME-Version: 1.0
-To: =?ISO-8859-1?Q?Christian_K=F6nig?= <deathsimple@vodafone.de>,
-        airlied@linux.ie
-CC: nouveau@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
-Subject: [RFC PATCH v1.4 08/16 1/2] drm/radeon: add timeout argument to radeon_fence_wait_seq
-References: <20140514145134.21163.32350.stgit@patser> <20140514145809.21163.64947.stgit@patser> <53738BCC.2070809@vodafone.de> <5374131D.4010906@canonical.com> <53748702.6070606@vodafone.de> <53748AFA.8010109@canonical.com> <53748BFD.1050608@vodafone.de> <5374BB4A.6070102@canonical.com> <5374BEE2.4060608@vodafone.de> <5374CC9A.9090905@canonical.com> <5374E1B5.2020408@vodafone.de> <5374E410.1080203@canonical.com> <5374E792.4070607@vodafone.de> <5379BA04.8000901@canonical.com> <5379C06D.3050507@vodafone.de> <5379D8AD.1000904@canonical.com> <5379F96C.1060806@vodafone.de> <537A08BC.7060501@canonical.com> <537A144F.1070909@vodafone.de> <538C4D68.2030403@canonical.com> <538C55CA.6050804@vodafone.de> <538C78B3.8080502@canonical.com> <538C7BC3.6040301@vodafone.de>
-In-Reply-To: <538C7BC3.6040301@vodafone.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <538D72B7.3010700@phunq.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This makes it possible to wait for a specific amount of time,
-rather than wait until infinity.
+On Tue, Jun 03, 2014 at 12:01:11AM -0700, Daniel Phillips wrote:
+> Hi Dave,
+> On 06/02/2014 08:33 PM, Dave Chinner wrote:
+> > On Mon, Jun 02, 2014 at 01:02:29PM -0700, Daniel Phillips wrote:
+> >>> Hmmmm - this is using the wb dirty lists and locks, but you
+> >>> don't pass the wb structure to the writeback callout? That seem
+> >>> wrong to me - why would you bother manipulating these lists if
+> >>> you aren't using them to track dirty inodes in the first place?
+> >> From Tux3's point of view, the wb lists just allow fs-writeback to
+> >> determine when to call ->writeback(). We agree that inode lists
+> >> are a suboptimal mechanism, but that is how fs-writeback currently
+> >> thinks. It would be better if our inodes never go onto wb lists in
+> >> the first place, provided that fs-writeback can still drive
+> >> writeback appropriately.
+> > It can't, and definitely not with the callout you added.
+> 
+> Obviously, fs-writeback does not get to choose inodes or specific pages
+> with our proposal (which is the whole point) but it still decides when
+> to call Tux3 vs some other filesystem on the same device, and is still
+> able to indicate how much data it thinks should be written out. Even
+> though we ignore the latter suggestion and always flush everything, we
+> appreciate the timing of those callbacks very much, because they give
+> us exactly the pressure sensitive batching behavior we want.
 
-Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-Reviewed-by: Christian König <deathsimple@vodafone.de>
----
-  drivers/gpu/drm/radeon/radeon_fence.c | 60 +++++++++++++++++++++++------------
-  1 file changed, 40 insertions(+), 20 deletions(-)
+Which, again, points out that you want per-superblock flushing, not
+per-bdi flushing which is what the current writeback code does.
 
-diff --git a/drivers/gpu/drm/radeon/radeon_fence.c b/drivers/gpu/drm/radeon/radeon_fence.c
-index a77b1c13ea43..b25b14231421 100644
---- a/drivers/gpu/drm/radeon/radeon_fence.c
-+++ b/drivers/gpu/drm/radeon/radeon_fence.c
-@@ -283,28 +283,35 @@ static bool radeon_fence_any_seq_signaled(struct radeon_device *rdev, u64 *seq)
-  }
-  
-  /**
-- * radeon_fence_wait_seq - wait for a specific sequence numbers
-+ * radeon_fence_wait_seq_timeout - wait for a specific sequence numbers
-   *
-   * @rdev: radeon device pointer
-   * @target_seq: sequence number(s) we want to wait for
-   * @intr: use interruptable sleep
-+ * @timeout: maximum time to wait, or MAX_SCHEDULE_TIMEOUT for infinite wait
-   *
-   * Wait for the requested sequence number(s) to be written by any ring
-   * (all asics).  Sequnce number array is indexed by ring id.
-   * @intr selects whether to use interruptable (true) or non-interruptable
-   * (false) sleep when waiting for the sequence number.  Helper function
-   * for radeon_fence_wait_*().
-- * Returns 0 if the sequence number has passed, error for all other cases.
-+ * Returns remaining time if the sequence number has passed, 0 when
-+ * the wait timeout, or an error for all other cases.
-   * -EDEADLK is returned when a GPU lockup has been detected.
-   */
--static int radeon_fence_wait_seq(struct radeon_device *rdev, u64 *target_seq,
--				 bool intr)
-+static int radeon_fence_wait_seq_timeout(struct radeon_device *rdev,
-+					 u64 *target_seq, bool intr,
-+					 long timeout)
-  {
-  	uint64_t last_seq[RADEON_NUM_RINGS];
-  	bool signaled;
--	int i, r;
-+	int i;
-  
-  	while (!radeon_fence_any_seq_signaled(rdev, target_seq)) {
-+		long r, waited;
-+
-+		waited = timeout < RADEON_FENCE_JIFFIES_TIMEOUT ?
-+			 timeout : RADEON_FENCE_JIFFIES_TIMEOUT;
-  
-  		/* Save current sequence values, used to check for GPU lockups */
-  		for (i = 0; i < RADEON_NUM_RINGS; ++i) {
-@@ -319,11 +326,11 @@ static int radeon_fence_wait_seq(struct radeon_device *rdev, u64 *target_seq,
-  		if (intr) {
-  			r = wait_event_interruptible_timeout(rdev->fence_queue, (
-  				(signaled = radeon_fence_any_seq_signaled(rdev, target_seq))
--				 || rdev->needs_reset), RADEON_FENCE_JIFFIES_TIMEOUT);
-+				 || rdev->needs_reset), waited);
-  		} else {
-  			r = wait_event_timeout(rdev->fence_queue, (
-  				(signaled = radeon_fence_any_seq_signaled(rdev, target_seq))
--				 || rdev->needs_reset), RADEON_FENCE_JIFFIES_TIMEOUT);
-+				 || rdev->needs_reset), waited);
-  		}
-  
-  		for (i = 0; i < RADEON_NUM_RINGS; ++i) {
-@@ -337,6 +344,14 @@ static int radeon_fence_wait_seq(struct radeon_device *rdev, u64 *target_seq,
-  		if (unlikely(r < 0))
-  			return r;
-  
-+		timeout -= waited - r;
-+
-+		/*
-+		 * If this is a timed wait and the wait completely timed out just return.
-+		 */
-+		if (!timeout)
-+			break;
-+
-  		if (unlikely(!signaled)) {
-  			if (rdev->needs_reset)
-  				return -EDEADLK;
-@@ -379,14 +394,14 @@ static int radeon_fence_wait_seq(struct radeon_device *rdev, u64 *target_seq,
-  			}
-  		}
-  	}
--	return 0;
-+	return timeout;
-  }
-  
-  /**
-   * radeon_fence_wait - wait for a fence to signal
-   *
-   * @fence: radeon fence object
-- * @intr: use interruptable sleep
-+ * @intr: use interruptible sleep
-   *
-   * Wait for the requested fence to signal (all asics).
-   * @intr selects whether to use interruptable (true) or non-interruptable
-@@ -396,7 +411,7 @@ static int radeon_fence_wait_seq(struct radeon_device *rdev, u64 *target_seq,
-  int radeon_fence_wait(struct radeon_fence *fence, bool intr)
-  {
-  	uint64_t seq[RADEON_NUM_RINGS] = {};
--	int r;
-+	long r;
-  
-  	if (fence == NULL) {
-  		WARN(1, "Querying an invalid fence : %p !\n", fence);
-@@ -407,9 +422,10 @@ int radeon_fence_wait(struct radeon_fence *fence, bool intr)
-  	if (seq[fence->ring] == RADEON_FENCE_SIGNALED_SEQ)
-  		return 0;
-  
--	r = radeon_fence_wait_seq(fence->rdev, seq, intr);
--	if (r)
-+	r = radeon_fence_wait_seq_timeout(fence->rdev, seq, intr, MAX_SCHEDULE_TIMEOUT);
-+	if (r < 0) {
-  		return r;
-+	}
-  
-  	fence->seq = RADEON_FENCE_SIGNALED_SEQ;
-  	return 0;
-@@ -434,7 +450,7 @@ int radeon_fence_wait_any(struct radeon_device *rdev,
-  {
-  	uint64_t seq[RADEON_NUM_RINGS];
-  	unsigned i, num_rings = 0;
--	int r;
-+	long r;
-  
-  	for (i = 0; i < RADEON_NUM_RINGS; ++i) {
-  		seq[i] = 0;
-@@ -455,8 +471,8 @@ int radeon_fence_wait_any(struct radeon_device *rdev,
-  	if (num_rings == 0)
-  		return -ENOENT;
-  
--	r = radeon_fence_wait_seq(rdev, seq, intr);
--	if (r) {
-+	r = radeon_fence_wait_seq_timeout(rdev, seq, intr, MAX_SCHEDULE_TIMEOUT);
-+	if (r < 0) {
-  		return r;
-  	}
-  	return 0;
-@@ -475,6 +491,7 @@ int radeon_fence_wait_any(struct radeon_device *rdev,
-  int radeon_fence_wait_next(struct radeon_device *rdev, int ring)
-  {
-  	uint64_t seq[RADEON_NUM_RINGS] = {};
-+	long r;
-  
-  	seq[ring] = atomic64_read(&rdev->fence_drv[ring].last_seq) + 1ULL;
-  	if (seq[ring] >= rdev->fence_drv[ring].sync_seq[ring]) {
-@@ -482,7 +499,10 @@ int radeon_fence_wait_next(struct radeon_device *rdev, int ring)
-  		   already the last emited fence */
-  		return -ENOENT;
-  	}
--	return radeon_fence_wait_seq(rdev, seq, false);
-+	r = radeon_fence_wait_seq_timeout(rdev, seq, false, MAX_SCHEDULE_TIMEOUT);
-+	if (r < 0)
-+		return r;
-+	return 0;
-  }
-  
-  /**
-@@ -498,18 +518,18 @@ int radeon_fence_wait_next(struct radeon_device *rdev, int ring)
-  int radeon_fence_wait_empty(struct radeon_device *rdev, int ring)
-  {
-  	uint64_t seq[RADEON_NUM_RINGS] = {};
--	int r;
-+	long r;
-  
-  	seq[ring] = rdev->fence_drv[ring].sync_seq[ring];
-  	if (!seq[ring])
-  		return 0;
-  
--	r = radeon_fence_wait_seq(rdev, seq, false);
--	if (r) {
-+	r = radeon_fence_wait_seq_timeout(rdev, seq, false, MAX_SCHEDULE_TIMEOUT);
-+	if (r < 0) {
-  		if (r == -EDEADLK)
-  			return -EDEADLK;
-  
--		dev_err(rdev->dev, "error waiting for ring[%d] to become idle (%d)\n",
-+		dev_err(rdev->dev, "error waiting for ring[%d] to become idle (%ld)\n",
-  			ring, r);
-  	}
-  	return 0;
+> > However, we already avoid the VFS writeback lists for certain
+> > filesystems for pure metadata. e.g. XFS does not use the VFS dirty
+> > inode lists for inode metadata changes.  They get tracked internally
+> > by the transaction subsystem which does it's own writeback according
+> > to the requirements of journal space availability.
+> >
+> > This is done simply by not calling mark_inode_dirty() on any
+> > metadata only change. If we want to do the same for data, then we'd
+> > simply not call mark_inode_dirty() in the data IO path. That
+> > requires a custom ->set_page_dirty method to be provided by the
+> > filesystem that didn't call
+> >
+> > 	__mark_inode_dirty(mapping->host, I_DIRTY_PAGES);
+> >
+> > and instead did it's own thing.
+> >
+> > So the per-superblock dirty tracking is something we can do right
+> > now, and some filesystems do it for metadata. The missing piece for
+> > data is writeback infrastructure capable of deferring to superblocks
+> > for writeback rather than BDIs....
+> 
+> We agree that fs-writeback inode lists are broken for anything
+> more sophisticated than Ext2.
+
+No, I did not say that.
+
+I said XFS does something different for metadata changes because it
+has different flushing constraints and requirements than the generic
+code provides. That does not make the generic code broken.
+
+> An advantage of the patch under
+> consideration is that it still lets fs-writeback mostly work the
+> way it has worked for the last few years, except for not allowing it
+> to pick specific inodes and data pages for writeout. As far as I
+> can see, it still balances writeout between different filesystems
+> on the same block device pretty well.
+
+Not really. If there are 3 superblocks on a BDI, and the dirty inode
+list iterates between 2 of them with lots of dirty inodes, it can
+starve writeback from the third until one of it's dirty inodes pops
+to the head of the b_io list. So it's inherently unfair from that
+perspective.
+
+Changing the high level flushing to be per-superblock rather than
+per-BDI would enable us to control that behaviour and be much fairer
+to all the superblocks on a given BDI. That said, I don't really
+care that much about this case...
+
+> >> Perhaps fs-writeback should have an option to work without inode
+> >> lists at all, and just maintain writeback scheduling statistics in
+> >> the superblock or similar. That would be a big change, more on the
+> >> experimental side. We would be happy to take it on after merge,
+> >> hopefully for the benefit of other filesystems besides Tux3.
+> > Well, I don't see it that way. If you have a requirement to be able
+> > to track dirty inodes internally, then lets move to that implement
+> > that infrastructure rather than hacking around with callouts that
+> > only have a limited shelf-life.
+> 
+> What you call shelf-life, I call iteration. Small changes are beautiful.
+> Apologies for the rhetoric, content is below.
+
+Ok, let me use stronger language: implementing something at the
+wrong layer only to have to redo it at the correct layer a short
+while later is wasted effort. Do it right the first time.
+
+I do beleive I've explained this to you at least once before, so
+lets not have to go over this again.
+
+> > XFS already has everything it needs internally to track dirty
+> > inodes. In fact, we used to do data writeback from within XFS and we
+> > slowly removed it as the generic writeback code was improved made
+> > the XFS code redundant.
+> >
+> > That said, parallelising writeback so we can support hundreds of
+> > GB/s of delayed allocation based writeback is something we
+> > eventually need to do, and that pretty much means we need to bring
+> > dirty data inode tracking back into XFS.
+> >
+> > So what we really need is writeback infrastructure that is:
+> >
+> > 	a) independent of the dirty inode lists
+> > 	b) implements background, periodic and immediate writeback
+> > 	c) can be driven by BDI or superblock
+> >
+> > IOWs, the abstraction we need for this writeback callout is not at
+> > the writeback_sb_inodes() layer, it's above the dirty inode list
+> > queuing layer. IOWs, the callout needs to be closer to the
+> > wb_do_writeback() layer which drives all the writeback work
+> > including periodic and background writeback, and the interactions
+> > between foreground and background work that wb_writeback() uses
+> > needs to be turned into a bunch of helpers...
+> 
+> I agree, and that is what Tux3 really wants. I just wonder about the
+> wisdom of embarking on a big change to fs-writeback when a small
+> change will do. How will fs-writeback balancing between different
+> filesystems on the same device work? What will those helpers look
+> like? How long will it take to prove the new scheme stable? How can
+> we prove that no existing fs-writeback clients will regress?
+
+If the filesystem doesn't provide a callout, then the existing
+writeback code runs. So for everything but tux3, there is no change
+in behaviour. For tux3, you don't have to care about such
+interactions while you are developing it. IOWs, we don't have to
+solve every problem immediately but we get the hooks in the right
+place and clean up and sanitise the locking and writeback
+infrastructure at the same time.
+
+> What about a sporting proposal: you post a patch that trumps ours in
+> elegance, that you could in theory use for XFS. We verify that it
+> works for Tux3 at least as well as the current patch. We also test
+> it for you.
+
+Sorry, the world doesn't work that way. I have other work to do, and
+the onus on getting new code into the tree is on the people who need
+it, not the people who are reviewing the code.
+
+> >> This is not cast in stone, but it smells
+> >> like decent factoring. We can save some spinlocks by violating
+> >> that factoring (as Hirofumi's original hack did) at the cost of
+> >> holding a potentially busy wb lock longer, which does not seem
+> >> like a good trade.
+> > If we abstract at a higher layer, the wb lock protects just the work
+> > queuing and dispatch, and everything else can be done by the
+> > superblock callout. If the superblock callout is missing, then
+> > we simply fall down to the existing wb_writeback() code that retakes
+> > the lock and does it's work....
+> >
+> > Let's get the layering and abstraction in the right place the first
+> > time, rather having to revist this in the not-to-distant future.
+> >
+> 
+> That would be ideal, but incremental also has its attractions. In that
+> vein, here is a rewrite along the lines you suggested yesterday.
+
+Sure, but that assumes the hook is in the correct place, which with
+the information you gave today tells me it isn't. So polishing the
+original patch isn't the solution. Driving the hook up the stack
+seems to me like the better approach.
+
+> - * Passed into wb_writeback(), essentially a subset of writeback_control
+> - */
+> -struct wb_writeback_work {
+> -    long nr_pages;
+> -    struct super_block *sb;
+> -    unsigned long *older_than_this;
+
+Something is mangling tabs to 4 spaces in your patches.
+
+Cheers,
+
+Dave.
 -- 
-1.9.3
-
-
+Dave Chinner
+david@fromorbit.com
