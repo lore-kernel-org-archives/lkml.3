@@ -1,173 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933536AbaFCTqE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 15:46:04 -0400
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:43687 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932626AbaFCTqC (ORCPT
+	id S933629AbaFCTqe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 15:46:34 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52320 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932626AbaFCTqc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 15:46:02 -0400
-MIME-Version: 1.0
-In-Reply-To: <1401800524-28934-1-git-send-email-mika.westerberg@linux.intel.com>
-References: <1401800524-28934-1-git-send-email-mika.westerberg@linux.intel.com>
-Date: Tue, 3 Jun 2014 12:46:00 -0700
-X-Google-Sender-Auth: jEbzTYtwUmhSGjoDs8NIuZkHh5E
-Message-ID: <CANLzEksLB1=+TePxgPRBhsGKpC-4tWB8JOh-Ey80Hj43LkVn=g@mail.gmail.com>
-Subject: Re: [PATCH] platform/chrome: Add support for Acer C720
-From: Benson Leung <bleung@chromium.org>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Olof Johansson <olof@lixom.net>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 3 Jun 2014 15:46:32 -0400
+Message-ID: <1401825043.2412.14.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [PATCH] firmware: Added fw for qat_dh895xxcc hw crypto
+ accelerator
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Tadeusz Struk <tadeusz.struk@intel.com>
+Cc: dwmw2@infradead.org, john.griffin@intel.com, bruce.w.allan@intel.com,
+        karen.xiang@intel.com, pingchaox.yang@intel.com, bo.cui@intel.com,
+        davem@davemloft.net, qat-linux@intel.com, linux-crypto@vger.kernel.org,
+        linux-kernel@vger.kernel.org, herbert@gondor.apana.org.au,
+        linux-firmware@kernel.org
+Date: Tue, 03 Jun 2014 20:50:43 +0100
+In-Reply-To: <20140603182455.GA18826@gitlad.jf.intel.com>
+References: <20140603182455.GA18826@gitlad.jf.intel.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-yDI1H5yIn02qEhHF/AOb"
+X-Mailer: Evolution 3.12.2-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 192.168.4.249
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mika!
 
-Thanks for putting this patch together. It looks like this does the
-job of distinguishing the two busses apart. Thanks!
+--=-yDI1H5yIn02qEhHF/AOb
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-
-On Tue, Jun 3, 2014 at 6:02 AM, Mika Westerberg
-<mika.westerberg@linux.intel.com> wrote:
-> Acer C720 has touchpad and light sensor connected to a separate I2C buses.
-> Since the designware I2C host controller driver has two instances on this
-> particular machine we need a way to match the correct instance. Add support
-> for this and then register both C720 touchpad and light sensor.
->
-> This code is based on following patch from Benson Leung:
->
-> https://patchwork.kernel.org/patch/3074411/
->
-> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> Tested-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-> Cc: Benson Leung <bleung@chromium.org>
-
-Since it was based on my original:
-Signed-off-by: Benson Leung <bleung@chromium.org>
-
+On Tue, 2014-06-03 at 11:24 -0700, Tadeusz Struk wrote:
+> Hi,
+> This adds firmware for Intel QAT dh895xcc HW accelerator.
+>=20
+> Signed-off-by: Tadeusz Struk <tadeusz.struk@intel.com>
 > ---
->  drivers/platform/chrome/chromeos_laptop.c | 45 ++++++++++++++++++++++++++-----
->  1 file changed, 39 insertions(+), 6 deletions(-)
->
-> diff --git a/drivers/platform/chrome/chromeos_laptop.c b/drivers/platform/chrome/chromeos_laptop.c
-> index 7f3aad0e115c..44806c5dc26f 100644
-> --- a/drivers/platform/chrome/chromeos_laptop.c
-> +++ b/drivers/platform/chrome/chromeos_laptop.c
-> @@ -45,6 +45,8 @@ static const char *i2c_adapter_names[] = {
->         "SMBus I801 adapter",
->         "i915 gmbus vga",
->         "i915 gmbus panel",
-> +       "i2c-designware-pci",
-> +       "i2c-designware-pci",
->  };
->
->  /* Keep this enum consistent with i2c_adapter_names */
-> @@ -52,6 +54,8 @@ enum i2c_adapter_type {
->         I2C_ADAPTER_SMBUS = 0,
->         I2C_ADAPTER_VGADDC,
->         I2C_ADAPTER_PANEL,
-> +       I2C_ADAPTER_DESIGNWARE_0,
-> +       I2C_ADAPTER_DESIGNWARE_1,
->  };
->
->  struct i2c_peripheral {
-> @@ -183,29 +187,42 @@ static struct i2c_client *__add_probed_i2c_device(
->         return client;
->  }
->
-> +struct i2c_lookup {
-> +       const char *name;
-> +       int instance;
-> +       int n;
-> +};
-> +
->  static int __find_i2c_adap(struct device *dev, void *data)
->  {
-> -       const char *name = data;
-> +       struct i2c_lookup *lookup = data;
->         static const char *prefix = "i2c-";
->         struct i2c_adapter *adapter;
->         if (strncmp(dev_name(dev), prefix, strlen(prefix)) != 0)
->                 return 0;
->         adapter = to_i2c_adapter(dev);
-> -       return (strncmp(adapter->name, name, strlen(name)) == 0);
-> +       if (strncmp(adapter->name, lookup->name, strlen(lookup->name)) == 0 &&
-> +           lookup->n++ == lookup->instance)
-> +               return 1;
-> +       return 0;
+>  LICENCE.qat_dh895xcc_firmware |  39 ++++++++++++++++++++++++++++++++++++=
++++
+>  WHENCE                        |   6 ++++++
+>  qat_895xcc.bin                | Bin 0 -> 453248 bytes
+>  3 files changed, 45 insertions(+)
+>  create mode 100644 LICENCE.qat_dh895xcc_firmware
+>  create mode 100755 qat_895xcc.bin
+[...]
 
-minor nit. This could retain the original form with a single return.
+Applied, thanks.
 
-return  (strncmp(adapter->name, name, strlen(name)) == 0) &&
-            lookup->n++ == lookup->instance);
+Ben.
 
->  }
->
->  static int find_i2c_adapter_num(enum i2c_adapter_type type)
->  {
->         struct device *dev = NULL;
->         struct i2c_adapter *adapter;
-> -       const char *name = i2c_adapter_names[type];
-> +       struct i2c_lookup lookup;
-> +
-> +       memset(&lookup, 0, sizeof(lookup));
-> +       lookup.name = i2c_adapter_names[type];
-> +       lookup.instance = (type == I2C_ADAPTER_DESIGNWARE_1) ? 1 : 0;
-> +
->         /* find the adapter by name */
-> -       dev = bus_find_device(&i2c_bus_type, NULL, (void *)name,
-> -                             __find_i2c_adap);
-> +       dev = bus_find_device(&i2c_bus_type, NULL, &lookup, __find_i2c_adap);
->         if (!dev) {
->                 /* Adapters may appear later. Deferred probing will retry */
->                 pr_notice("%s: i2c adapter %s not found on system.\n", __func__,
-> -                         name);
-> +                         lookup.name);
->                 return -ENODEV;
->         }
->         adapter = to_i2c_adapter(dev);
-> @@ -388,6 +405,15 @@ static struct chromeos_laptop acer_ac700 = {
->         },
->  };
->
-> +static struct chromeos_laptop acer_c720 = {
-> +       .i2c_peripherals = {
-> +               /* Touchpad. */
-> +               { .add = setup_cyapa_tp, I2C_ADAPTER_DESIGNWARE_0 },
-> +               /* Light Sensor. */
-> +               { .add = setup_isl29018_als, I2C_ADAPTER_DESIGNWARE_1 },
-> +       },
-> +};
-> +
->  static struct chromeos_laptop hp_pavilion_14_chromebook = {
->         .i2c_peripherals = {
->                 /* Touchpad. */
-> @@ -445,6 +471,13 @@ static struct dmi_system_id chromeos_laptop_dmi_table[] __initdata = {
->                 _CBDD(acer_ac700),
->         },
->         {
-> +               .ident = "Acer C720",
-> +               .matches = {
-> +                       DMI_MATCH(DMI_PRODUCT_NAME, "Peppy"),
-> +               },
-> +               _CBDD(acer_c720),
-> +       },
-> +       {
->                 .ident = "HP Pavilion 14 Chromebook",
->                 .matches = {
->                         DMI_MATCH(DMI_PRODUCT_NAME, "Butterfly"),
-> --
-> 2.0.0.rc4
->
+--=20
+Ben Hutchings
+If more than one person is responsible for a bug, no one is at fault.
 
-By the way, I can create patches on top of this to support the other
-systems that we missed as well, the HP 14, the Dell 11, the Toshiba,
-etc.
+--=-yDI1H5yIn02qEhHF/AOb
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
--- 
-Benson Leung
-Software Engineer, Chrom* OS
-bleung@chromium.org
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIVAwUAU44nGOe/yOyVhhEJAQqXeg/9FBAAiWd98OpHMunvpHX0BjRqemMn/fy8
+5YtWTzmlNqytOwDAhfvxQmH5NsiRekr65pKA1oVhk7KKyGnqwG3IJakYTxGZyY9w
+pNBG2OOCHW98sowXXYIxDgtzEvQwAMsrA13IO8IRm7yVp4kKvj/+xWpzWQjRH0Pa
+83aXPtTjqH1mu7tvP0OcFj3lg/fymvhV9icqUK1cbbV9mRgadEi61Gyu8Z5r5Rkf
+Y83IN9ilhRoSz0pK7tQ9rtEgZapMLIc31oZ/pSr0a1tDjS8j3ZXCjgFZ8LahKKnK
+vFnCtD3mWdNd2JTrhc1lpbT2FIN46Ma30pGnX87SteXw1gnR3RY2ygmjVwonvs/p
+2nYKvCGSqXyIR1Ifg3XBjarTkXeLrRY209H1UAR+CZOB+N/ZaL1ANqPYYd89Jn4Q
+Ho26Aiea7leu7GkkjiXZ7MRct0kZpY0L/lUTwWrLcAhELJkxsomGfNoMgrKE4yYh
+TzoMit1H62pMN5RH+6r2b5SkgoSZ5SzIjR35p/eTwRk8dYZ8lyX0wr0HRGOUwXb+
+SgptkNg1zgBlPeKI+SPCPq0BXIfgKUZp1Mkjx2/Z94yt4na0oqT265r05Wi+VBZe
+9QIfCgM5IYs5lNm5/M086uxtKqvw1fBQRMQ39iqgdkzHh7mI5KGZtvBv2JCcA7P1
+Zyq7Kh2lNpc=
+=eszr
+-----END PGP SIGNATURE-----
+
+--=-yDI1H5yIn02qEhHF/AOb--
