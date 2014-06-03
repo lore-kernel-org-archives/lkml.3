@@ -1,184 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934331AbaFCUHs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 16:07:48 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:33968 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934159AbaFCUFB (ORCPT
+	id S934345AbaFCUHw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 16:07:52 -0400
+Received: from mail-vc0-f170.google.com ([209.85.220.170]:35248 "EHLO
+	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933810AbaFCUHs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 16:05:01 -0400
-From: Andreas Noever <andreas.noever@gmail.com>
-To: linux-kernel@vger.kernel.org, Matthew Garrett <matthew.garrett@nebula.com>,
-        Greg KH <greg@kroah.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        linux-pci@vger.kernel.org
-Cc: Andreas Noever <andreas.noever@gmail.com>
-Subject: [PATCH v5 09/15] thunderbolt: Handle hotplug events
-Date: Tue,  3 Jun 2014 22:04:06 +0200
-Message-Id: <1401825852-4745-10-git-send-email-andreas.noever@gmail.com>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1401825852-4745-1-git-send-email-andreas.noever@gmail.com>
-References: <1401825852-4745-1-git-send-email-andreas.noever@gmail.com>
+	Tue, 3 Jun 2014 16:07:48 -0400
+MIME-Version: 1.0
+In-Reply-To: <CALCETrVGGSv51NxMXaD-=9ukkYLTT7DrLTscgA0pa0+PkUYw3Q@mail.gmail.com>
+References: <20140522130931.GV13658@twins.programming.kicks-ass.net>
+ <CALCETrVBVOjs0EVqEz3qKtSHQg1agJzAyG4Ohqueky-zPF7uKA@mail.gmail.com>
+ <20140529064827.GI19143@laptop.programming.kicks-ass.net> <CALCETrWnG7fSuinDv+GAHsnTLJ-6xn+_1LB2XdLGVXcC=TQURA@mail.gmail.com>
+ <20140603104347.GT11096@twins.programming.kicks-ass.net> <20140603140223.GA13658@twins.programming.kicks-ass.net>
+ <CALCETrW3cr_RLnMeMtutM5H+3cJSerUxXuEmiT9miDOEmkpANw@mail.gmail.com>
+ <20140603161950.GB30445@twins.programming.kicks-ass.net> <CALCETrWOrYTK01ev34mP+5iyeBWw14u+3n4fg0+O5Zp9oPQ+3g@mail.gmail.com>
+ <20140603170018.GD30445@twins.programming.kicks-ass.net> <20140603182850.GJ16155@laptop.programming.kicks-ass.net>
+ <CALCETrVGGSv51NxMXaD-=9ukkYLTT7DrLTscgA0pa0+PkUYw3Q@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 3 Jun 2014 13:07:27 -0700
+Message-ID: <CALCETrWO-H2Xh0E42THgL71FkBfGr5L1yykcoVznJdbU+qgEqw@mail.gmail.com>
+Subject: Re: [RFC][PATCH 0/8] sched,idle: need resched polling rework
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        nicolas.pitre@linaro.org, Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We receive a plug event callback whenever a thunderbolt device is added
-or removed. This patch fills in the tb_handle_hotplug method and starts
-reacting to these events by adding/removing switches from the hierarchy.
+On Tue, Jun 3, 2014 at 11:44 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+> On Tue, Jun 3, 2014 at 11:28 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+>> On Tue, Jun 03, 2014 at 07:00:18PM +0200, Peter Zijlstra wrote:
+>>> On Tue, Jun 03, 2014 at 09:52:22AM -0700, Andy Lutomirski wrote:
+>>> > > So you could cheat and set it in pick_next_task_idle() and clear in
+>>> > > put_prev_task_idle(), that way the entire idle loop, when running has it
+>>> > > set.
+>>> > >
+>>> >
+>>> > Isn't that a little late for sched_ttwu_pending?  I guess it could be
+>>> > okay, but I'm hesitant to muck around with the scheduler innards that
+>>> > much.  I don't see anything that'll break, though.
+>>>
+>>> Yeah, only later did I see you clear much earlier, which makes sense.
+>>
+>> Could we clear it from set_nr_and_not_polling()/set_nr_if_polling()?
+>> That's the only two functions that'll kick a cpu out of its polling
+>> loop, and we're already writing to the word anyhow.
+>
+> I'd be nervous about this.  I think it could break if
+> cpuidle_idle_call decides not to idle for any reason, and there is
+> plenty of complicated code in there.
+>
+> I'm currently working on some patches that might make this clearer.
+> Give me a bit.
 
-Signed-off-by: Andreas Noever <andreas.noever@gmail.com>
----
- drivers/thunderbolt/switch.c | 42 +++++++++++++++++++++++++++++++++++++++-
- drivers/thunderbolt/tb.c     | 46 +++++++++++++++++++++++++++++++++++++++++++-
- drivers/thunderbolt/tb.h     |  3 +++
- 3 files changed, 89 insertions(+), 2 deletions(-)
+The code's here:
 
-diff --git a/drivers/thunderbolt/switch.c b/drivers/thunderbolt/switch.c
-index b31b8ce..d6c32e1 100644
---- a/drivers/thunderbolt/switch.c
-+++ b/drivers/thunderbolt/switch.c
-@@ -195,6 +195,24 @@ static void tb_dump_switch(struct tb *tb, struct tb_regs_switch_header *sw)
- 		sw->__unknown1, sw->__unknown4);
- }
- 
-+struct tb_switch *get_switch_at_route(struct tb_switch *sw, u64 route)
-+{
-+	u8 next_port = route; /*
-+			       * Routes use a stride of 8 bits,
-+			       * eventhough a port index has 6 bits at most.
-+			       * */
-+	if (route == 0)
-+		return sw;
-+	if (next_port > sw->config.max_port_number)
-+		return 0;
-+	if (tb_is_upstream_port(&sw->ports[next_port]))
-+		return 0;
-+	if (!sw->ports[next_port].remote)
-+		return 0;
-+	return get_switch_at_route(sw->ports[next_port].remote->sw,
-+				   route >> TB_ROUTE_SHIFT);
-+}
-+
- /**
-  * tb_plug_events_active() - enable/disable plug events on a switch
-  *
-@@ -249,7 +267,8 @@ void tb_switch_free(struct tb_switch *sw)
- 		sw->ports[i].remote = NULL;
- 	}
- 
--	tb_plug_events_active(sw, false);
-+	if (!sw->is_unplugged)
-+		tb_plug_events_active(sw, false);
- 
- 	kfree(sw->ports);
- 	kfree(sw);
-@@ -333,3 +352,24 @@ err:
- 	return NULL;
- }
- 
-+/**
-+ * tb_sw_set_unpplugged() - set is_unplugged on switch and downstream switches
-+ */
-+void tb_sw_set_unpplugged(struct tb_switch *sw)
-+{
-+	int i;
-+	if (sw == sw->tb->root_switch) {
-+		tb_sw_WARN(sw, "cannot unplug root switch\n");
-+		return;
-+	}
-+	if (sw->is_unplugged) {
-+		tb_sw_WARN(sw, "is_unplugged already set\n");
-+		return;
-+	}
-+	sw->is_unplugged = true;
-+	for (i = 0; i <= sw->config.max_port_number; i++) {
-+		if (!tb_is_upstream_port(&sw->ports[i]) && sw->ports[i].remote)
-+			tb_sw_set_unpplugged(sw->ports[i].remote->sw);
-+	}
-+}
-+
-diff --git a/drivers/thunderbolt/tb.c b/drivers/thunderbolt/tb.c
-index 3b716fd..1efcacc 100644
---- a/drivers/thunderbolt/tb.c
-+++ b/drivers/thunderbolt/tb.c
-@@ -71,11 +71,55 @@ static void tb_handle_hotplug(struct work_struct *work)
- {
- 	struct tb_hotplug_event *ev = container_of(work, typeof(*ev), work);
- 	struct tb *tb = ev->tb;
-+	struct tb_switch *sw;
-+	struct tb_port *port;
- 	mutex_lock(&tb->lock);
- 	if (!tb->hotplug_active)
- 		goto out; /* during init, suspend or shutdown */
- 
--	/* do nothing for now */
-+	sw = get_switch_at_route(tb->root_switch, ev->route);
-+	if (!sw) {
-+		tb_warn(tb,
-+			"hotplug event from non existent switch %llx:%x (unplug: %d)\n",
-+			ev->route, ev->port, ev->unplug);
-+		goto out;
-+	}
-+	if (ev->port > sw->config.max_port_number) {
-+		tb_warn(tb,
-+			"hotplug event from non existent port %llx:%x (unplug: %d)\n",
-+			ev->route, ev->port, ev->unplug);
-+		goto out;
-+	}
-+	port = &sw->ports[ev->port];
-+	if (tb_is_upstream_port(port)) {
-+		tb_warn(tb,
-+			"hotplug event for upstream port %llx:%x (unplug: %d)\n",
-+			ev->route, ev->port, ev->unplug);
-+		goto out;
-+	}
-+	if (ev->unplug) {
-+		if (port->remote) {
-+			tb_port_info(port, "unplugged\n");
-+			tb_sw_set_unpplugged(port->remote->sw);
-+			tb_switch_free(port->remote->sw);
-+			port->remote = NULL;
-+		} else {
-+			tb_port_info(port,
-+				     "got unplug event for disconnected port, ignoring\n");
-+		}
-+	} else if (port->remote) {
-+		tb_port_info(port,
-+			     "got plug event for connected port, ignoring\n");
-+	} else {
-+		tb_port_info(port, "hotplug: scanning\n");
-+		tb_scan_port(port);
-+		if (!port->remote) {
-+			tb_port_info(port, "hotplug: no switch found\n");
-+		} else if (port->remote->sw->config.depth > 1) {
-+			tb_sw_warn(port->remote->sw,
-+				   "hotplug: chaining not supported\n");
-+		}
-+	}
- out:
- 	mutex_unlock(&tb->lock);
- 	kfree(ev);
-diff --git a/drivers/thunderbolt/tb.h b/drivers/thunderbolt/tb.h
-index 70a66fe..661f182 100644
---- a/drivers/thunderbolt/tb.h
-+++ b/drivers/thunderbolt/tb.h
-@@ -20,6 +20,7 @@ struct tb_switch {
- 	struct tb_port *ports;
- 	struct tb *tb;
- 	int cap_plug_events; /* offset, zero if not found */
-+	bool is_unplugged; /* unplugged, will go away */
- };
- 
- /**
-@@ -160,6 +161,8 @@ void thunderbolt_shutdown_and_free(struct tb *tb);
- 
- struct tb_switch *tb_switch_alloc(struct tb *tb, u64 route);
- void tb_switch_free(struct tb_switch *sw);
-+void tb_sw_set_unpplugged(struct tb_switch *sw);
-+struct tb_switch *get_switch_at_route(struct tb_switch *sw, u64 route);
- 
- int tb_wait_for_port(struct tb_port *port, bool wait_if_unplugged);
- 
--- 
-2.0.0
+https://git.kernel.org/cgit/linux/kernel/git/luto/linux.git/log/?h=sched_ipi
 
+In summary, here's what it does:
+
+ - Fix poll_idle to set polling.
+
+ - Add a new tracepoint for polling wakeups -- this makes it much
+easier to verify that the code is doing something.
+
+ - Make it so that polling is only set when the idle task is actually
+paying attention.
+
+ - Clean up wake_up_idle_cpu
+
+ - More or less your earlier, more aggressive patch, with the
+CONFIG_SMP thing fixed and waking rq->idle instead of the task to be
+woken in ttwu.
+
+This has survived my trading software for about twenty minutes, and
+latency monitoring doesn't show any signs of missed wakeups.  If it
+survives awhile longer and the kbuild robot doesn't complain, I'll
+send out patches.
+
+--Andy
