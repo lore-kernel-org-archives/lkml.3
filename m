@@ -1,71 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755737AbaFCMPU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 08:15:20 -0400
-Received: from casper.infradead.org ([85.118.1.10]:41249 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755709AbaFCMPR (ORCPT
+	id S1755702AbaFCMPL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 08:15:11 -0400
+Received: from icp-osb-irony-out6.external.iinet.net.au ([203.59.1.222]:34561
+	"EHLO icp-osb-irony-out6.external.iinet.net.au" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755101AbaFCMPI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 08:15:17 -0400
-Date: Tue, 3 Jun 2014 14:15:10 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Yuyang Du <yuyang.du@intel.com>
-Cc: mingo@redhat.com, rafael.j.wysocki@intel.com, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, arjan.van.de.ven@intel.com,
-        len.brown@intel.com, alan.cox@intel.com, mark.gross@intel.com,
-        pjt@google.com, bsegall@google.com, morten.rasmussen@arm.com,
-        vincent.guittot@linaro.org, rajeev.d.muralidhar@intel.com,
-        vishwesh.m.rudramuni@intel.com, nicole.chalhoub@intel.com,
-        ajaya.durg@intel.com, harinarayanan.seshadri@intel.com,
-        jacob.jun.pan@linux.intel.com, fengguang.wu@intel.com
-Subject: Re: [RFC PATCH 09/16 v3] Define and allocate a per CPU local cpumask
- for Workload Consolidation
-Message-ID: <20140603121510.GI30445@twins.programming.kicks-ass.net>
-References: <1401431772-14320-1-git-send-email-yuyang.du@intel.com>
- <1401431772-14320-10-git-send-email-yuyang.du@intel.com>
+	Tue, 3 Jun 2014 08:15:08 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ArYDACO7jVN8q8bp/2dsb2JhbAANTINZqw8BAQEBAQEGkGKHOQGBI4MZAQEBAwEBAiQLAQVAAQULCw0KAQkWDwkDAgECARYnCAYBDAEFAgEBiDYVrDqlPReFVYNehEgGAQFPB4RABJcfiXqEB4IQiU5aAYEBCA
+X-IronPort-AV: E=Sophos;i="4.98,964,1392134400"; 
+   d="scan'208";a="43672080"
+Message-ID: <538DBC3F.9060207@uclinux.org>
+Date: Tue, 03 Jun 2014 22:14:55 +1000
+From: Greg Ungerer <gerg@uclinux.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="z71G5GnkLsv0QeRF"
-Content-Disposition: inline
-In-Reply-To: <1401431772-14320-10-git-send-email-yuyang.du@intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: =?ISO-8859-1?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Rabin Vincent <rabin@rab.in>, Will Deacon <will.deacon@arm.com>,
+        linux-arm-kernel@lists.infradead.org
+CC: David Howells <dhowells@redhat.com>,
+        uclinux-dist-devel@blackfin.uclinux.org, linux-m68k@vger.kernel.org,
+        linux-c6x-dev@linux-c6x.org, linux-m32r@ml.linux-m32r.org,
+        microblaze-uclinux@itee.uq.edu.au, linux-xtensa@linux-xtensa.org,
+        kernel@pengutronix.de, Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: TASK_SIZE for !MMU
+References: <20140429100028.GH28564@pengutronix.de> <20140602085150.GA31147@pengutronix.de>
+In-Reply-To: <20140602085150.GA31147@pengutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Uwe,
 
---z71G5GnkLsv0QeRF
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 02/06/14 18:51, Uwe Kleine-König wrote:
+> Hello
+>
+> [expand Cc: a bit]
+>
+> On Tue, Apr 29, 2014 at 12:00:28PM +0200, Uwe Kleine-König wrote:
+>> I grepped through the kernel (v3.15-rc1) for usages of TASK_SIZE to
+>> check if/how it is used on !MMU ARM machines. Most open questions also
+>> affect the other !MMU platforms, so I put the blackfin, c6x, frv and
+>> m32r, m68k, microblaze and xtensa lists on Cc:. (Did I miss a platform
+>> that cares for !MMU ?)
+>>
+>> Most occurences are fine, see the list at the end of this mail. However
+>> some are not or are unclear to me. Here is the complete list[1] apart from
+>> the definition of TASK_SIZE for !MMU in arch/arm/include/asm/memory.h:
+>>
+>>   - Probably this should be explict s/TASK_SIZE/CONFIG_DRAM_SIZE/. This
+>>     is generic code however while CONFIG_DRAM_SIZE is ARM only.
+>>          mm/nommu.c:     if (!rlen || rlen > TASK_SIZE)
+>>
+>>   - The issue the patch by Rabin is addressing (Subject: [PATCH] ARM: fix
+>>     string functions on !MMU), alternatively make TASK_SIZE ~0UL.
+>>          arch/arm/include/asm/uaccess.h:#define user_addr_max() \
+>>          arch/arm/include/asm/uaccess.h: (segment_eq(get_fs(), USER_DS) ? TASK_SIZE : ~0UL)
+> [reference: http://www.spinics.net/lists/arm-kernel/msg324112.html ]
+>
+>>   - probably bearable if broken:
+>>          drivers/misc/lkdtm.c:           if (user_addr >= TASK_SIZE) {
+>>          lib/test_user_copy.c:   user_addr = vm_mmap(...)
+>>          lib/test_user_copy.c:   if (user_addr >= (unsigned long)(TASK_SIZE)) {
+>>          lib/test_user_copy.c:           pr_warn("Failed to allocate user memory\n");
+>>          lib/test_user_copy.c:           return -ENOMEM;
+>>
+>>   - unclear to me:
+>>          fs/exec.c:      current->mm->task_size = TASK_SIZE;
+>>     - depends on PERF_EVENTS
+>>          kernel/events/core.c:   if (!addr || addr >= TASK_SIZE)
+>>          kernel/events/core.c:   return TASK_SIZE - addr;
+>>          kernel/events/uprobes.c:                area->vaddr = get_unmapped_area(NULL, TASK_SIZE - PAGE_SIZE,
+>>     - depends on (PERF_EVENTS && (CPU_V6 || CPU_V6K || CPU_V7)):
+>>          arch/arm/kernel/hw_breakpoint.c:        return (va >= TASK_SIZE) && ((va + len - 1) >= TASK_SIZE);
+>>     - seems to cope with big TASK_SIZE
+>>          fs/namespace.c:        size = TASK_SIZE - (unsigned long)data;
+>>          fs/namespace.c:        if (size > PAGE_SIZE)
+>>          fs/namespace.c:                size = PAGE_SIZE;
+>>     - depends on PLAT_S5P || ARCH_EXYNOS, this looks wrong
+>>          drivers/media/platform/s5p-mfc/s5p_mfc_common.h:#define DST_QUEUE_OFF_BASE      (TASK_SIZE / 2)
+>>     - used for prctl(PR_SET_MM, ...)
+>>          kernel/sys.c:   if (addr >= TASK_SIZE || addr < mmap_min_addr)
+>>
+>> Any help to judge if these are OK is appreciated (even from Will :-)
+>>
+>> I think it would be OK to define TASK_SIZE to 0xffffffff for !MMU.
+>> blackfin, frv and m68k also do this. c6x does define it to 0xFFFFF000 to
+>> leave space for error codes.
 
-On Fri, May 30, 2014 at 02:36:05PM +0800, Yuyang Du wrote:
-> We need these cpumasks to aid in cosolidated load balancing
->=20
-
-That's an entirely unsatisfactory changelog. Why would you need these?
+I did that same change for m68k in commit cc24c40 ("m68knommu: remove
+size limit on non-MMU TASK_SIZE"). For similar reasons as you need to
+now.
 
 
+>> Thoughts?
+> The problem is that current linus/master (and also next) doesn't boot on
+> my ARM-nommu machine because the user string functions (strnlen_user,
+> strncpy_from_user et al.) refuse to work on strings above TASK_SIZE
+> which in my case also includes the XIP kernel image.
 
---z71G5GnkLsv0QeRF
-Content-Type: application/pgp-signature
+I seem to recall that we were not considering flash or anything else
+other than RAM when defining that original TASK_SIZE (back many, many
+years ago). Some of the address checks you list above made some sense
+if you had everything in RAM (though only upper bounds are checked).
+The thinking was some checking is better than none I suppose.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Setting a hard coded memory size in CONFIG_DRAM_SIZE is not all that
+fantastic either...
 
-iQIcBAEBAgAGBQJTjbxOAAoJEHZH4aRLwOS6LHQQAImJdF6zGbBXX+KT7EIl66/H
-47DixyUM6eLz26l1ExCX3D1d1h2QkZwY/s6XEDz3RISNqUGTiXnN5sDoUCwgIFWA
-azjUS2ixWB2bB2Y7WBWncfgoVxtr/GLqHzmeOYZKRvW2VZt0uM6ASBjvE97f0HDj
-+ocmgSl4+YAHJNWvmsZH9eGuGXJkqgtn6/pTKD9STB/U+t/hsYTJdudqvg8B1s50
-u7seuHurwuEcYOFhW/R5RgZqf8F9N2lx8HzqEZT5FzJbsPY0WyN2SWSXG4n3Wg/a
-VJmuDoG3tm/ro1Z64AziKB0z5p6PDqvXLjNqDDPRd0LCJtVboF+0/l2GafuBQaTj
-OUiYlzrlVrjY+Z/+27OBmhmY8QFng+aA7c4LhRwt8sXnKOdznHSA/Wc1FAFmOkeB
-dYnLNH0wuEFG5qZZJGdco3L+UVkmf/90glPfhAuxpI7TKRjymLgPBZGnYBdUGQSX
-zlGoIYms2LsskpHFtGsKWen7fJRcKxVACkFVPbsiQs/Ya+wsvcMg3YsFudHW23CN
-N3g7qGlHJmMCTMz494ofCTR7DuDgQOcemiar1RTyCULbRH7RVnXAmiDDS0sp9GeQ
-P8c1GUop9B+Zy2qqTyw9GUQG2FabcT2N4yiyYcKNZKNyeU7fydbkm90ygl7zgKnP
-KXMrBwDPvuU81LAdIdcQ
-=iSWK
------END PGP SIGNATURE-----
+Regards
+Greg
 
---z71G5GnkLsv0QeRF--
+
+> Maybe someone of the mm people can bring light into the unclear points
+> above and the question what TASK_SIZE is supposed to be on no-MMU
+> machines?
+>
+> Best regards
+> Uwe
+>
+>> [1] complete as in "skip everything below arch/ but arch/arm" :-)
+>>
+> [removed the list, if you're interested, it's available at
+> http://mid.gmane.org/20140429100028.GH28564@pengutronix.de]
+>
+
