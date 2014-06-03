@@ -1,80 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753724AbaFCH71 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 03:59:27 -0400
-Received: from sauhun.de ([89.238.76.85]:52767 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751820AbaFCH7Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 03:59:25 -0400
-Date: Tue, 3 Jun 2014 09:59:22 +0200
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Maxime Coquelin <maxime.coquelin@st.com>
-Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
-        Patrice Chotard <patrice.chotard@st.com>, kernel@stlinux.com
-Subject: Re: [PATCH] drivers: i2c: i2c-st: Update i2c timings
-Message-ID: <20140603075922.GB2653@katana>
-References: <1400254330-2547-1-git-send-email-maxime.coquelin@st.com>
- <20140602163103.GJ2654@katana>
- <538D7A1C.5040409@st.com>
+	id S1753831AbaFCICW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 04:02:22 -0400
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:40541 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751129AbaFCICU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 04:02:20 -0400
+Date: Tue, 3 Jun 2014 17:01:31 +0900
+From: Daeseok Youn <daeseok.youn@gmail.com>
+To: lidza.louina@gmail.com, gregkh@linuxfoundation.org
+Cc: markh@compro.net, dan.carpenter@oracle.com,
+        driverdev-devel@linuxdriverproject.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 2/4 V2] staging: dgap: pass "brd" as a paramter to
+ dgap_after_config_loaded()
+Message-ID: <20140603080131.GA10350@devel.8.8.4.4>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="NMuMz9nt05w80d4+"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <538D7A1C.5040409@st.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Pass "brd" to dgap_after_config_loaded() instead of passing
+"dgap_numboards" and looking up brd again.
 
---NMuMz9nt05w80d4+
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+---
+V2: replace "dgap_board[board]->" with "brd->".
 
+ drivers/staging/dgap/dgap.c |   18 +++++++++---------
+ 1 files changed, 9 insertions(+), 9 deletions(-)
 
-> >Can you give names here? Would be interesting to know since a few
-> >drivers implement the minimum timings.
->=20
-> I don't have the name actually.
-> The request to implement this change came from hw guys.
+diff --git a/drivers/staging/dgap/dgap.c b/drivers/staging/dgap/dgap.c
+index 9501a5e..3587181 100644
+--- a/drivers/staging/dgap/dgap.c
++++ b/drivers/staging/dgap/dgap.c
+@@ -187,7 +187,7 @@ static void dgap_do_fep_load(struct board_t *brd, const u8 *ufep, int len);
+ #ifdef DIGI_CONCENTRATORS_SUPPORTED
+ static void dgap_do_conc_load(struct board_t *brd, u8 *uaddr, int len);
+ #endif
+-static int dgap_after_config_loaded(int board);
++static int dgap_after_config_loaded(struct board_t *brd);
+ static int dgap_finalize_board_init(struct board_t *brd);
+ 
+ static void dgap_get_vpd(struct board_t *brd);
+@@ -859,7 +859,7 @@ static int dgap_firmware_load(struct pci_dev *pdev, int card_type)
+ 		kfree(dgap_config_buf);
+ 	}
+ 
+-	ret = dgap_after_config_loaded(brd->boardnum);
++	ret = dgap_after_config_loaded(brd);
+ 	if (ret)
+ 		return ret;
+ 	/*
+@@ -4113,23 +4113,23 @@ static int dgap_tty_ioctl(struct tty_struct *tty, unsigned int cmd,
+ 	}
+ }
+ 
+-static int dgap_after_config_loaded(int board)
++static int dgap_after_config_loaded(struct board_t *brd)
+ {
+ 	/*
+ 	 * Initialize KME waitqueues...
+ 	 */
+-	init_waitqueue_head(&(dgap_board[board]->kme_wait));
++	init_waitqueue_head(&brd->kme_wait);
+ 
+ 	/*
+ 	 * allocate flip buffer for board.
+ 	 */
+-	dgap_board[board]->flipbuf = kmalloc(MYFLIPLEN, GFP_KERNEL);
+-	if (!dgap_board[board]->flipbuf)
++	brd->flipbuf = kmalloc(MYFLIPLEN, GFP_KERNEL);
++	if (!brd->flipbuf)
+ 		return -ENOMEM;
+ 
+-	dgap_board[board]->flipflagbuf = kmalloc(MYFLIPLEN, GFP_KERNEL);
+-	if (!dgap_board[board]->flipflagbuf) {
+-		kfree(dgap_board[board]->flipbuf);
++	brd->flipflagbuf = kmalloc(MYFLIPLEN, GFP_KERNEL);
++	if (!brd->flipflagbuf) {
++		kfree(brd->flipbuf);
+ 		return -ENOMEM;
+ 	}
+ 
+-- 
+1.7.1
 
-Can you ask? It feels better to have changes based on facts.
-
-> >>This patch adds a 10% margin on all the timings.
-> >
-> >Is there a safety margin or do the devices start to work exactly at 10%?
->=20
-> 10% is a safety margin, I don't know what is the limit.
-
-Which also came from the HW guys? Please ask for details why 10%, too.
-
-Thanks,
-
-   Wolfram
-
-
---NMuMz9nt05w80d4+
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTjYBaAAoJEBQN5MwUoCm2Cb8P/2AtAJPoxu19keSL/rBew3/d
-D4FoYT+qUkfxfHW+WBEcR+Y+AaMnvJcLUBV0Vj2ek6RZSs1xQkTX2VYR3R8RK3K7
-NesQzwz4oI9gvbUcj3+RnoiDFol+vCGCIQr/04BnI+Usj6Ryyu44A5tFNdwH3sH+
-/6jQDaaxfCkxuBMZIYJkL/XRt06H/e4OAhaPtcT2zTR7LhgCP7QprZC+0Akb4ce/
-e6YyaS854p/gr/e625C4k3Y6UcvXVW8JK9TAyWbT/kNfg3HQSK7tjLiTCdaoPocy
-jPvYX40VKrY5PvLzr7KTBAKiCYEQDewEqkbHKu4rMMgBZgJxvV/XXPasu1Kqfl1L
-nAjBX4JEQLVnGClRWdzGuRrYEqGAEhqonWi8UTcoOxblkpDL6+ZpXYPbPtFRv65z
-RxiTGY27Mla/lfYR0W5ZHZAnApWLvMApMWm3syRar2NNfICBo8+jJtBxDFXrLkQD
-aRNdcwXTQ1MZqGhSCB6x1VJPYw6HZddheUJXOOpUPrlaNvz6j/qay7td93QuYr7g
-kaHbN6KAJjYccSNpZDKNAQ74Z5U4jK3eDNJJ2zn2o7twYl+5czTFvFV2DgfZvtrz
-CA7fU91isnLpC2duyxiZu9XuxwpdnPLj+IXfw0jzD5/e8Il+RiJtdoYyH7xw1E5Q
-NLk/z3dt2tq90n8xs1xq
-=LKpl
------END PGP SIGNATURE-----
-
---NMuMz9nt05w80d4+--
