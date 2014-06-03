@@ -1,138 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932793AbaFCOus (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 10:50:48 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:49477 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932080AbaFCOur (ORCPT
+	id S1753948AbaFCOyc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 10:54:32 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:52134 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751129AbaFCOya (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 10:50:47 -0400
-Date: Tue, 3 Jun 2014 16:50:37 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>, Nicolas Pitre <nico@fluxnic.net>,
-        Colin Cross <ccross@google.com>, Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH] clocksource: document some basic timekeeping concepts
-Message-ID: <20140603145037.GR30445@twins.programming.kicks-ass.net>
-References: <1401793985-17650-1-git-send-email-linus.walleij@linaro.org>
+	Tue, 3 Jun 2014 10:54:30 -0400
+Date: Tue, 3 Jun 2014 15:53:47 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arvind Chauhan <arvind.chauhan@arm.com>,
+        Eduardo Valentin <edubezval@gmail.com>, Pavel Machek <pavel@ucw.cz>,
+        Liam Girdwood <lgirdwood@gmail.com>
+Message-ID: <20140603145347.GE31751@sirena.org.uk>
+References: <1780c3205893be8567fa29ccd86674e2f32555b4.1401192160.git.viresh.kumar@linaro.org>
+ <20140527192923.GC12304@sirena.org.uk>
+ <CAKohpo=AnusM2FGs=JLozSyTc0N7SDXQxe+rPiLEHP6ewxY4ow@mail.gmail.com>
+ <20140528173858.GG5099@sirena.org.uk>
+ <CAKohpo=T3BG9X0gHfRA-x8B3ou3Y=XHcs=OTYAHikX61iAJ9xw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="bRe6i2dqfB5QRoX4"
+	protocol="application/pgp-signature"; boundary="BtLpl2nkGUzqmEOn"
 Content-Disposition: inline
-In-Reply-To: <1401793985-17650-1-git-send-email-linus.walleij@linaro.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <CAKohpo=T3BG9X0gHfRA-x8B3ou3Y=XHcs=OTYAHikX61iAJ9xw@mail.gmail.com>
+X-Cookie: Big book, big bore.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 109.148.252.180
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/2] regulators: Add definition of
+ regulator_set_voltage_time() for !CONFIG_REGULATOR
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---bRe6i2dqfB5QRoX4
+--BtLpl2nkGUzqmEOn
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Tue, Jun 03, 2014 at 01:13:05PM +0200, Linus Walleij wrote:
-> +Clock events
-> +------------
-> +
-> +Clock events are conceptually orthogonal to clock sources. The same hardware
-> +and register range may be used for the clock event, but it is essentially
-> +a different thing.
-> +
-> +You will notice that the clock event device code is based on the same basic
-> +idea about translating counters to nanoseconds using mult and shift
-> +arithmetics, and you find the same family of helper functions again for
-> +assigning these values. The clock event driver does not need a 'mask'
-> +attribute however: the system will not try to plan events beyond the time
-> +horizon of the clock event.
+On Tue, Jun 03, 2014 at 08:10:00PM +0530, Viresh Kumar wrote:
+> On 28 May 2014 23:08, Mark Brown <broonie@kernel.org> wrote:
+> > Whatever - I don't think the particular code makes any practical
+> > difference.  We would need to audit existing users who don't have a
+> > REGULATOR dependency for breakage though.
 
-This bit is missing that events are timers, so these things need to be
-able to raise interrupts.
+> Exactly what kind of drivers are we looking to fix here? These might
+> be the possible cases:
+> - We are checking 'regulator pointer' before calling and don't need to
+> handle anything there..
 
-Also, it is beneficial if there is a timer per cpu.
+I'm not sure what you mean by this.
 
-However, clock_events do need to run in the same time 'space' as
-clock_sources, which makes it all a little more expensive than one would
-hope.
+> - None of above are true and drivers aren't checking return value of
+> regulator_set_voltage()
+> OR
+> They are checking it and failing when it failed..
 
-> +sched_clock()
-> +-------------
-> +
-> +In addition to the clock sources and clock events there is a special weak
-> +function in the kernel called sched_clock(). This function shall return the
-> +number of nanoseconds since the system was started. An architecture may or
-> +may not provide an implementation of sched_clock() on its own. If a local
-> +implementation is not provided, the system jiffy counter will be used as
-> +sched_clock().
-> +
-> +As the name suggests, sched_clock() is used for scheduling the system,
-> +determining the absolute timeslice for a certain process in the CFS scheduler
-> +for example. It is also used for printk timestamps when you have selected to
-> +include time information in printk for things like bootcharts.
-> +
-> +Compared to clock sources, sched_clock() has to be very fast: it is called
-> +much more often, especially by the scheduler. If you have to do trade-offs
-> +between accuracy compared to the clock source, you may sacrifice accuracy
-> +for speed in sched_clock(). It however require some of the same basic
-> +characteristics as the clock source, i.e. it has to be monotonic.
-> +
-> +The sched_clock() function may wrap only on unsigned long long boundaries,
-> +i.e. after 64 bits. Since this is a nanosecond value this will mean it wraps
-> +after circa 585 years. (For most practical systems this means "never".)
-> +
-> +If an architecture does not provide its own implementation of this function,
-> +it will fall back to using jiffies, making its maximum resolution 1/HZ of the
-> +jiffy frequency for the architecture. This will affect scheduling accuracy
-> +and will likely show up in system benchmarks.
-> +
-> +The clock driving sched_clock() may stop or reset to zero during system
-> +suspend/sleep. This does not matter to the function it serves of scheduling
-> +events on the system. However it may result in interesting timestamps in
-> +printk().
-> +
-> +Some architectures may have a limited set of time sources and lack a nice
-> +counter to derive a 64-bit nanosecond value, so for example on the ARM
-> +architecture, special helper functions have been created to provide a
-> +sched_clock() nanosecond base from a 16- or 32-bit counter. Sometimes the
-> +same counter that is also used as clock source is used for this purpose.
+> What do we want to do in these cases?
 
-This part misses the SMP aspect of sched_clock().
+Well, we would need to look at what the drivers were doing and figure
+out something sensible - it really depends why they're trying to set the
+regulator and what would happen if it doesn't work.  For drivers that
+ignore the return value they won't be affected anyway.
 
-so the arch sched_clock() function is allowed to drift between CPUs,
-when it has such hardware it must use CONFIG_HAVE_UNSTABLE_SCHED_CLOCK.
-
-Typically for x86 this means we can use the TSC, even on crappy and
-broken systems.
-
-So while clock_sources have to be global clocks, which implies some sort
-of serialization cost, sched_clock() can be a per-cpu clock without
-synchronization.
-
-As of this writing I'm only aware of two architectures that have such
-hardware: x86 and ia64.
-
-Furthermore, sched_clock() is assumed to be IRQ and NMI safe, that is,
-one should be able to call it from any context and get a 'sane' value.
-
---bRe6i2dqfB5QRoX4
-Content-Type: application/pgp-signature
+--BtLpl2nkGUzqmEOn
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBAgAGBQJTjeC9AAoJEHZH4aRLwOS6gBcP/AzAxT5JB9Gy36a2LrhpoGmG
-z8w+Ie4LjelM6UilcxL7UD2GEswTYit0noNMr5X+ZojWhBg/4FV8FTeOeYDvqcO1
-nrDQuUirruN/yAi6cNXDC8x/FcVIAeN6xBUNb9BBNa2ugiysT26fOIuxdtgEiH4Q
-oCCWxfCbcpJ8ePOlVqRH8zRgnNyJHDQfA7AUjK9knqTTEedEtqGFUwEALhirsyZw
-UjDSbNFofDI9+vF04Yt0dd/VoOfTKLQVIDHCdRGOGt73RTakgzP1kj7CVhlGkzl3
-+dPHjYc15gh5rq19JF36/oVli660BEa1uE/iYUD9aGnTK+SlrRIL6BP3WHFYXoxJ
-FyXV91840ogcHPy/q8V3HjLsJpNBkABj00pcghOef9AjGnORbNmuCRc9VHETyD1Y
-BSju/Pk798QAAtGyAnm2Ju1dFwNQu0gaAHmhRR/Ru/taIsdn+EWMa6uF8pW2BpuF
-fDuViKSkUQ4PhwUY2gkVst5MdZoTSnTAOJ1P66I4mF1z6dNOV+Ov2izCLghp9qJ9
-76oyGjOe7kG0W0YcNprf2X8X00wv6APzFCMx6VadP9Fj3fQhqwBQde5pZn0VDfhw
-cqLPMp30Jlc4nbRC/kcUzy1cuja76fGF81OZZpanGhuEO5qPYqZnonwprV3hX8xb
-hubcbXtbL7gWktimz/tl
-=Gdf4
+iQIcBAEBAgAGBQJTjeF4AAoJELSic+t+oim9J3wQAIspMrhepkJYEelgRTHs/mvG
+xyPIKNFgw2q+jfts2gk11YBuQ30vXaHke+pHG9oC3xV0un+qrJPuqV7UpTl8ebLA
+3y/oD+QcUcru63SPXPt0grT2MpvmerP+yZVd1u/m/0xoGI6TuZ88Xd5DUOWMsw+L
+UN9iGLZASLCumJFEMR4vlCdssZFehP7H4LHjaHLiV1naT3GTt5X7xxmDLd4n5/j3
+V92Y1OpNnwAzTElOnqXulglXA9Z9HnbCUCNzzJixX38LEfnzGKAR10W3aixFSEkb
+Iqs/V2qSIkRtM6bZ+6BdF2qkgJK6/LfbsniRfN99byFZTdp9T8emis4C9VdjfYUP
+Njf+HYkyr3vSyuaxOqkpYqCN67HmlvbmDHXws43O1SFzF5wds3HazJOa0gfP3Agl
+zGlTrsjMT9g5euq8rSqZc0molwWo7ZgdNk/UXCjt95GfiG6GBgm+R8OGrWPRpfbq
+Ca8cGeOgftOTf9XXIagqOyNQ25pxG7Bvt48jMXIvKgzHDMlJAHEiTW/3KJC5nAon
+iwypreKX5CPgQnc1f8kKIsmYWRQQdQ7UYwdLvgNClYhBwFinFS9BRiZGen38SGqB
+TEiBjbopiapgFiV/yjb5p8U9fF6xYYhsqRDUhNOU5GavXtcHAMVxXuvb4mu1JwxD
+YP12wHt5gLZWHMsQMKrW
+=66zW
 -----END PGP SIGNATURE-----
 
---bRe6i2dqfB5QRoX4--
+--BtLpl2nkGUzqmEOn--
