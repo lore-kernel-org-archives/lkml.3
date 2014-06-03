@@ -1,48 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752049AbaFCJYG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 05:24:06 -0400
-Received: from mga02.intel.com ([134.134.136.20]:17528 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750786AbaFCJYF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 05:24:05 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,964,1392192000"; 
-   d="scan'208";a="521916499"
-Message-ID: <538D93FB.6070309@intel.com>
-Date: Tue, 03 Jun 2014 12:23:07 +0300
-From: Adrian Hunter <adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
- Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Yann Droneaud <ydroneaud@opteya.com>, Jiri Olsa <jolsa@redhat.com>
-CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>, Andi Kleen <ak@linux.intel.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Stephane Eranian <eranian@google.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCHv5] perf tools: enable close-on-exec flag on perf file
- descriptor
-References: <1389005485-12778-1-git-send-email-ydroneaud@opteya.com>	 <20140106112436.GF31570@twins.programming.kicks-ass.net>	 <20140106144347.GA13500@ghostprotocols.net>	 <20140106142220.GB1183@krava.brq.redhat.com>	 <1389463628-24869-1-git-send-email-ydroneaud@opteya.com>	 <1389607770-4485-1-git-send-email-ydroneaud@opteya.com>	 <20140115185026.GA14248@ghostprotocols.net>	 <1390771203-28415-1-git-send-email-ydroneaud@opteya.com>	 <1394527147-7010-1-git-send-email-ydroneaud@opteya.com>	 <1401706594-4995-1-git-send-email-ydroneaud@opteya.com>	 <20140602192320.GD7861@krava.brq.redhat.com> <1401785835.32444.18.camel@localhost.localdomain>
-In-Reply-To: <1401785835.32444.18.camel@localhost.localdomain>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1752460AbaFCJYU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 05:24:20 -0400
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:56074 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752113AbaFCJYQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 05:24:16 -0400
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCH v2] coccinelle: Check for missing NULL terminators in
+ of_device_id tables
+To: Stephen Boyd <sboyd@codeaurora.org>, Michal Marek <mmarek@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Mitchel Humpherys <mitchelh@codeaurora.org>,
+        Julia Lawall <Julia.Lawall@lip6.fr>,
+        Gilles Muller <Gilles.Muller@lip6.fr>,
+        Nicolas Palix <nicolas.palix@imag.fr>,
+        Rob Herring <robh+dt@kernel.org>, devicetree@vger.kernel.org
+In-Reply-To: <1401213858-31950-1-git-send-email-sboyd@codeaurora.org>
+References: <1401213858-31950-1-git-send-email-sboyd@codeaurora.org>
+Date: Tue, 03 Jun 2014 10:24:12 +0100
+Message-Id: <20140603092412.AAEE2C40D3B@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/03/2014 11:57 AM, Yann Droneaud wrote:
-> Nice catch. This function was introduced by commit 
-> c09ec622629eeb4b7877646a42852e7156363425 ('perf evlist: Add 
-> can_select_event() method') by Adrian Hunter <adrian.hunter@intel.com>
-> and it seems it was never used by perf tools.
+On Tue, 27 May 2014 11:04:18 -0700, Stephen Boyd <sboyd@codeaurora.org> wrote:
+> Failure to terminate an of_device_id table can lead to confusing
+> failures depending on where the compiler places the array. Add a
+> check to make sure these tables are terminated. Thanks to Mitchel
+> Humpherys for coming up with the pattern initially.
+> 
+> Cc: Mitchel Humpherys <mitchelh@codeaurora.org>
+> Cc: Julia Lawall <Julia.Lawall@lip6.fr>
+> Cc: Gilles Muller <Gilles.Muller@lip6.fr>
+> Cc: Nicolas Palix <nicolas.palix@imag.fr>
+> Cc: Grant Likely <grant.likely@linaro.org>
+> Cc: Rob Herring <robh+dt@kernel.org>
+> Cc: devicetree@vger.kernel.org
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 
-It is part of preparation for Intel PT.
+Looks good to me:
+
+Acked-by: Grant Likely <grant.likely@linaro.org>
+
+> ---
+>  scripts/coccinelle/misc/of_table.cocci | 73 ++++++++++++++++++++++++++++++++++
+>  1 file changed, 73 insertions(+)
+>  create mode 100644 scripts/coccinelle/misc/of_table.cocci
+> 
+> diff --git a/scripts/coccinelle/misc/of_table.cocci b/scripts/coccinelle/misc/of_table.cocci
+> new file mode 100644
+> index 000000000000..838c74c418c9
+> --- /dev/null
+> +++ b/scripts/coccinelle/misc/of_table.cocci
+> @@ -0,0 +1,73 @@
+> +/// Make sure of_device_id tables are NULL terminated
+> +//
+> +// Keywords: of_table
+> +// Confidence: Medium
+> +// Options: --include-headers
+> +
+> +virtual patch
+> +virtual context
+> +virtual org
+> +virtual report
+> +
+> +@bad_of_table exists@
+> +identifier var, arr;
+> +expression E;
+> +@@
+> +struct of_device_id arr[] = {
+> +	...,
+> +	{
+> +	.var = E,
+> +	}
+> +};
+> +
+> +@depends on bad_of_table && context@
+> +identifier var, arr;
+> +expression E;
+> +@@
+> +struct of_device_id arr[] = {
+> +	...,
+> +	{
+> +*	.var = E,
+> +	}
+> +};
+> +
+> +@depends on bad_of_table && patch@
+> +identifier var, arr;
+> +expression E;
+> +@@
+> +struct of_device_id arr[] = {
+> +	...,
+> +	{
+> +	.var = E,
+> +-	}
+> ++	},
+> ++	{ }
+> +};
+> +
+> +@r depends on bad_of_table exists@
+> +position p1;
+> +identifier var, arr;
+> +expression E;
+> +@@
+> +struct of_device_id arr[] = {
+> +	...,
+> +	{
+> +	.var = E,
+> +	}
+> +	@p1
+> +};
+> +
+> +@script:python depends on org@
+> +p1 << r.p1;
+> +arr << r.arr;
+> +@@
+> +
+> +cocci.print_main(arr,p1)
+> +
+> +@script:python depends on report@
+> +p1 << r.p1;
+> +arr << r.arr;
+> +@@
+> +
+> +msg = "%s is not NULL terminated at line %s" % (arr, p1[0].line)
+> +coccilib.report.print_report(p1[0],msg)
+> -- 
+> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+> hosted by The Linux Foundation
+> 
 
