@@ -1,55 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752582AbaFCJth (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 05:49:37 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41336 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750709AbaFCJtg (ORCPT
+	id S1752634AbaFCJuY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 05:50:24 -0400
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:47374 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750892AbaFCJuW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 05:49:36 -0400
-Date: Tue, 3 Jun 2014 10:49:32 +0100
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: lee.jones@linaro.org, sameo@linux.intel.com,
-        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] mfd: core: Add the option to order destruction of
-	MFD cells
-Message-ID: <20140603094932.GF11951@opensource.wolfsonmicro.com>
-References: <1401699704-17902-1-git-send-email-ckeepax@opensource.wolfsonmicro.com> <20140602210117.GO31751@sirena.org.uk>
+	Tue, 3 Jun 2014 05:50:22 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140602210117.GO31751@sirena.org.uk>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <538C17D6.60100@linux.vnet.ibm.com>
+References: <1400860385-14555-1-git-send-email-vincent.guittot@linaro.org>
+ <1400860385-14555-12-git-send-email-vincent.guittot@linaro.org>
+ <20140529135510.GG11074@laptop.programming.kicks-ass.net> <538C17D6.60100@linux.vnet.ibm.com>
+From: Vincent Guittot <vincent.guittot@linaro.org>
+Date: Tue, 3 Jun 2014 11:50:01 +0200
+Message-ID: <CAKfTPtAF+HNzs8B-xP2jPbJ+iJVO2wR0frmZ=EgQs35A_wXyNA@mail.gmail.com>
+Subject: Re: [PATCH v2 11/11] sched: replace capacity by activity
+To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Mike Galbraith <efault@gmx.de>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 02, 2014 at 10:01:17PM +0100, Mark Brown wrote:
-> On Mon, Jun 02, 2014 at 10:01:43AM +0100, Charles Keepax wrote:
-> > Sometimes MFD children will have interdependancies. For example an MFD
-> > device might contain a regulator cell and another cell which requires
-> > that regulator to function. Probe deferral will ensure that these
-> > devices probe in the correct order, however currently nothing ensures
-> > they are destroyed in the correct order. As such it is possible for a
-> > cell to be destroyed whilst another cell still expects it to exist. For
-> > example the cell mentioned earlier would attempt to do a regulator_put
-> > as part of its own tear-down but the regulator may have already been
-> > destroyed.
-> 
-> Probe deferral is supposed to handle removal too, we're supposed to be
-> able to walk the device list in reverse order and everything just work.
+On 2 June 2014 08:21, Preeti U Murthy <preeti@linux.vnet.ibm.com> wrote:
+> On 05/29/2014 07:25 PM, Peter Zijlstra wrote:
+>> On Fri, May 23, 2014 at 05:53:05PM +0200, Vincent Guittot wrote:
+>>> The scheduler tries to compute how many tasks a group of CPUs can handle by
+>>> assuming that a task's load is SCHED_LOAD_SCALE and a CPU capacity is
+>>> SCHED_POWER_SCALE.
+>>> We can now have a better idea of the utilization of a group fo CPUs thanks to
+>>> group_actitvity and deduct how many capacity is still available.
+>>>
+>>> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+>>> ---
+>>
+>> Right, so as Preeti already mentioned, this wrecks SMT. It also seems to
+>> loose the aggressive spread, where we want to run 1 task on each 'core'
+>> before we start 'balancing'.
+>
+> True. I just profiled the ebizzy runs and found that ebizzy threads were
+> being packed onto a single core which is SMT-8 capable before spreading.
+> This was a 6 core, SMT-8 machine. So for instance if I run 8 threads of
+> ebizzy. the load balancing as record by perf sched record showed that
+> two cores were packed upto 3 ebizzy threads and one core ran two ebizzy
+> threads while the rest of the 3 cores were idle.
+>
+> I am unable to understand which part of this patch is aiding packing to
+> a core.  There is this check in this patch right?
+>
+> if (sgs->group_capacity < 0)
+>                 return true;
+>
+> which should ideally prevent such packing? Because irrespective of the
+> number of SMT threads, the capacity of a core is unchanged. And in the
+> above scenario, we have 6 tasks on 3 cores. So shouldn't the above check
+> have caught it?
 
-I had considered this approach but was perhaps incorrectly too
-nervous about it. I was slightly concerned about breaking other
-MFD devices by changing the order things destroy in. Also the way
-the child devices are iterated with device_for_each_child, there is
-lack of helpers to process the klist in reverse and it felt like
-code I probably shouldn't be modifying.
+yes, it should. the group_capacity should become < 0 because the CPU
+are fully loaded and the activity reach the max capacity value +
+nr_running
 
-I am happy to do a version that removes devices in reverse probe
-order, if that is preferrable? But any pointers if I am missing
-the obvious way to do that would be appreciated.
-
-Thanks,
-Charles
+>
+> Regards
+> Preeti U Murthy
+>>
+>> So I think we should be able to fix this by setting PREFER_SIBLING on
+>> the SMT domain, that way we'll get single tasks running on each SMT
+>> domain before filling them up until capacity.
+>>
+>> Now, its been a while since I looked at PREFER_SIBLING, and I've not yet
+>> looked at what your patch does to it, but it seems to me that that is
+>> the first direction we should look for an answer to this.
+>>
+>
