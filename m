@@ -1,48 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754423AbaFCPbM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 11:31:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43694 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751376AbaFCPbK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 11:31:10 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20140603132153.GA26512@tucsk.piliscsaba.szeredi.hu>
-References: <20140603132153.GA26512@tucsk.piliscsaba.szeredi.hu> <CAJfpegtobxoMs+RRrPYLFRPOVSfr_uqZs+HJFLRif3svHGyQwA@mail.gmail.com> <1400838223-30844-1-git-send-email-miklos@szeredi.hu> <28592.1401382081@warthog.procyon.org.uk> <11446.1401420931@jrobl> <7184.1401439773@warthog.procyon.org.uk> <CA+icZUV5P=fVwe_MJJHixwBOBoj7HoKSFuySLdS6AU5L++S=4g@mail.gmail.com> <15839.1401786056@warthog.procyon.org.uk> <CA+icZUUiirxYnoL7pg5TvFEy6pQ+5Q3CuJ0jonJMXTOwhT-LDw@mail.gmail.com> <CA+icZUU8BqGUoQdtuqt403NdCBnJnH1-k64bxTM0b_GSfQr1hQ@mail.gmail.com> <10013.1401791634@warthog.procyon.org.uk>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: dhowells@redhat.com, Sedat Dilek <sedat.dilek@gmail.com>,
-        "J. R. Okajima" <hooanon05g@gmail.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Robo Bot <apw@canonical.com>, Felix Fietkau <nbd@openwrt.org>,
-        Neil Brown <neilb@suse.de>, Jordi Pujol <jordipujolp@gmail.com>,
-        ezk@fsl.cs.sunysb.edu, "mszeredi@suse.cz" <mszeredi@suse.cz>
-Subject: Re: Unionmount and overlayfs testsuite
-Date: Tue, 03 Jun 2014 16:30:18 +0100
-Message-ID: <19281.1401809418@warthog.procyon.org.uk>
+	id S1754741AbaFCPcw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 11:32:52 -0400
+Received: from mail-ve0-f180.google.com ([209.85.128.180]:49016 "EHLO
+	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753297AbaFCPcv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 11:32:51 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140603054434.GB2921@kroah.com>
+References: <20140603054434.GB2921@kroah.com>
+Date: Tue, 3 Jun 2014 08:32:50 -0700
+X-Google-Sender-Auth: q0N3Mr1QS483aTR14IbR2QVDtPk
+Message-ID: <CA+55aFyQ=iSMnLAywumYpGBOBiqxL2qO9u9OsTF=RFfYBnz10g@mail.gmail.com>
+Subject: Re: [GIT PULL] char/misc driver patches for 3.16-rc1
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Arnd Bergmann <arnd@arndb.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Miklos Szeredi <miklos@szeredi.hu> wrote:
+On Mon, Jun 2, 2014 at 10:44 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+>
+> Bin Wang (1):
+>       uio: fix vma io range check in mmap
 
-> And this one is a missing annotation in overlayfs.  Tested patch pushed to the
-> usual branches.
+Greg, this is BS.
 
-Looks good so far, though there are a few more bits to try and break -
-rename() for example.
+If the UIO memory size is smaller than a page, we cannot mmap it
+safely, because the mmap will map random memory *after* the memory
+area too. This is not like a regular file mapping where the kernel can
+just zero-pad up to the end of the page.
 
-I also want to rewrite my test stuff in something a little more wieldy than
-shell scripts - Perl or Python for example.
+We had this bug before (and even worse - it would mmap unaligned IO
+structures too, so now the actual mapped address didn't actually
+correspond to the returned user mapping address at all), and we fixed
+them. See
 
-Tentative Tested-by from me unless I can break it.
+  7314e613d5ff Fix a few incorrectly checked [io_]remap_pfn_range() calls
+  b65502879556 uio: we cannot mmap unaligned page contents
 
-David
+so now you've re-introduced part of the problem, and marked it for stable too.
+
+The commit log shows nothing useful. It basically just says "let's
+reintroduce this bug" without even giving an excuse why that would be
+a good idea.
+
+And it really _isn't_ a good idea. At least you didn't remove the
+alignment check, but the thing is, if a resource is less than a page
+in size, it's quite possibly also unaligned, so the fix doesn't even
+*fix* anything, except by pure luck. The fact is, memory-mapping
+device areas smaller than one page is simply a bad bad idea.
+
+Don't do this shit.
+
+                      Linus
