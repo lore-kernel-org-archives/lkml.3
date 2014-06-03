@@ -1,66 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752924AbaFCBdN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 21:33:13 -0400
-Received: from mail2.nust.ac.zw ([196.220.96.63]:55549 "EHLO mail2.nust.ac.zw"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751441AbaFCBdL convert rfc822-to-8bit (ORCPT
+	id S1752278AbaFCBfH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 21:35:07 -0400
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:33897 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751200AbaFCBfF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 21:33:11 -0400
-X-Amavis-Modified: Mail body modified (using disclaimer) - mail2.nust.ac.zw
-Date: Sat, 31 May 2014 07:40:16 +0200 (SAST)
-From: DIAMONDSWISS LOANSCOMPANY <ngqabutho.nhlabano@nust.ac.zw>
-Reply-To: "diamond_swissloans@hotmail.com" <diamond_swissloans@hotmail.com>
-Subject: =?utf-8?Q?kred=C4=ABta_pied=C4=81v=C4=81jums?=
-Message-ID: <3baefcd7-cc5c-4ec9-99ec-f67ce7d7b426@mail2.nust.ac.zw>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+	Mon, 2 Jun 2014 21:35:05 -0400
+Date: Mon, 2 Jun 2014 18:35:02 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Vladimir Davydov <vdavydov@parallels.com>
+cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>
+Subject: Re: [PATCH -mm] slab: delete cache from list after __kmem_cache_shutdown
+ succeeds
+In-Reply-To: <1400159291-5330-1-git-send-email-vdavydov@parallels.com>
+Message-ID: <alpine.DEB.2.02.1406021834500.13072@chino.kir.corp.google.com>
+References: <1400159291-5330-1-git-send-email-vdavydov@parallels.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-X-Originating-IP: [41.220.69.108]
-X-Mailer: Zimbra 7.1.3_GA_3346 (zclient/7.1.3_GA_3346)
-To: undisclosed-recipients:;
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 15 May 2014, Vladimir Davydov wrote:
 
+> Currently, on kmem_cache_destroy we delete the cache from the slab_list
+> before __kmem_cache_shutdown, inserting it back to the list on failure.
+> Initially, this was done, because we could release the slab_mutex in
+> __kmem_cache_shutdown to delete sysfs slub entry, but since commit
+> 41a212859a4d ("slub: use sysfs'es release mechanism for kmem_cache") we
+> remove sysfs entry later in kmem_cache_destroy after dropping the
+> slab_mutex, so that no implementation of __kmem_cache_shutdown can ever
+> release the lock. Therefore we can simplify the code a bit by moving
+> list_del after __kmem_cache_shutdown.
+> 
+> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
 
-
-Laba diena, 
-      
-     Mēs esam DIAMOND ŠVEICES aizdevumu uzņēmumam sniedzot aizdevumus ar pasta reklāma. Mēs piedāvājam dažāda veida aizdevumu (īstermiņa un ilgtermiņa aizdevumi, individuālie aizņēmumi, aizdevumi uzņēmumiem uc), par 3% procentu likmi. Mēs izsniegt aizdevumus cilvēkiem, kam nepieciešama ne neatkarīgi no to atrašanās vietas, dzimuma, ģimenes stāvokļa, izglītības, nodarbinātības statusu, bet ir jābūt ar tiesiskiem līdzekļiem atmaksu. Mūsu aizdevumu svārstās no 5,000.00 līdz 10,000,000.00 ASV dolāru vai eiro, vai mārciņa ar maksimālo ilgumu 20 gadi. Ja jūs interesē vairāk informācijas, lūdzu, aizpildiet zemāk esošo formu un nosūtiet to uz mūsu e-pasta adresi: diamond_swissloans@hotmail.com 
-
-Lūdzu, aizpildiet: 
-
-vārds: 
-
-adrese: 
-
-vecums: 
-
-dzimums: 
-
-Kontaktu Tālrunis: 
-
-Nodarbošanās: 
-
-Ikmēneša ienākumi: 
-
-Nepieciešama aizdevuma summa: 
-
-Ilgums aizdevums: 
-
-Aizdevuma mērķis: 
-
-Valsts: 
-
-ZIP kods: 
-
-
-"Mēs parādīsim jums labāku veidu, lai jūsu finansiālo brīvību" 
-
-Ar cieņu, 
-Mr Diamond Peters (Managing Director). 
-Mr Bill Anthony (mārketinga vadītājs)
-                                                                                                                                                                                                                                                                                                                                                                                                                                    This message is intended only for the named recipient. If you are not the intended recipient you are notified that disclosing, copying, distributing or taking any action in reliance on the contents of this information is strictly prohibited. This emailis confidential, may be legally privileged, and is for the intended recipient only. If an addressing or transmission error has misdirected this e-mail, please notify the author by replying to this e-mail. If you are not the intended recipient you must not use, disclose, distribute, copy, print or rely on this email. 
- Any views or opinions presented are solely those of the author and do not necessarily represent those of the National University of Science and Technology. The National University of Science and Technology, Zimbabwe, does not accept legal responsibility for the contents of this message. Whilst all reasonable steps are taken to ensure the accuracy and integrity of information and data transmitted electronically and to preserve the confidentiality thereof, no liability or responsibility whatsoever is accepted if information or data is, for whatever reason, corrupted or does not reach its intended destination. Replies to this email may be monitored by the National University of Science and Technology, Zimbabwe, for operational, security or business reasons.
+Acked-by: David Rientjes <rientjes@google.com>
