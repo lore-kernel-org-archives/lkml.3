@@ -1,82 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752681AbaFCBze (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 21:55:34 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:48920 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751441AbaFCBzd (ORCPT
+	id S1753100AbaFCCDN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 22:03:13 -0400
+Received: from nschwqsrv03p.mx.bigpond.com ([61.9.189.237]:37561 "EHLO
+	nschwqsrv03p.mx.bigpond.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752050AbaFCCDM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 21:55:33 -0400
-Date: Mon, 2 Jun 2014 21:55:29 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Jan Kara <jack@suse.cz>, "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: mm,console: circular dependency between console_sem and zone
- lock
-Message-ID: <20140602215529.0c13f91b@gandalf.local.home>
-In-Reply-To: <538B33D5.8070002@oracle.com>
-References: <536AE5DC.6070307@oracle.com>
-	<20140512162811.GD3685@quack.suse.cz>
-	<538B33D5.8070002@oracle.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+	Mon, 2 Jun 2014 22:03:12 -0400
+X-Greylist: delayed 822 seconds by postgrey-1.27 at vger.kernel.org; Mon, 02 Jun 2014 22:03:11 EDT
+X-Authority-Analysis: v=2.0 cv=Os7NOlDt c=1 sm=1
+ a=tpHzvNDyw14p4wpd1xf5Bw==:17 a=4QTP58DfdrcA:10 a=aFTPlZ8mLXYA:10
+ a=abLpnCq0AAAA:8 a=H5rnqBSDAAAA:8 a=VwQbUJbxAAAA:8 a=dY2cLoPVL-V4rmBxXu4A:9
+ a=tpHzvNDyw14p4wpd1xf5Bw==:117
+Date: Tue, 3 Jun 2014 11:49:21 +1000
+From: Greg Ungerer <gerg@uclinux.org>
+Message-Id: <201406030149.s531nLIO004581@goober.accelcon.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-m68k@vger.kernel.org>,
+        <uclinux-dev@uclinux.org>
+Subject: [git pull] m68knommu arch fixes for 3.16
+To: <torvalds@linux-foundation.org>
+X-Mailer: mail (GNU Mailutils 2.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 01 Jun 2014 10:08:21 -0400
-Sasha Levin <sasha.levin@oracle.com> wrote:
+Hi Linus,
 
-> On 05/12/2014 12:28 PM, Jan Kara wrote:
-> > On Wed 07-05-14 22:03:08, Sasha Levin wrote:
-> >> > Hi all,
-> >> > 
-> >> > While fuzzing with trinity inside a KVM tools guest running the latest -next
-> >> > kernel I've stumbled on the following spew:
-> >   Thanks for report. So the problem seems to be maginally valid but I'm not
-> > 100% sure whom to blame :). So printk() code calls up() which calls
-> > try_to_wake_up() under console_sem.lock spinlock. That function can take
-> > rq->lock which is all expected.
-> > 
-> > The next part of the chain is that during CPU initialization we call
-> > __sched_fork() with rq->lock which calls into hrtimer_init() which can
-> > allocate memory which creates a dependency rq->lock => zone.lock.rlock.
-> > 
-> > And memory management code calls printk() which zone.lock.rlock held which
-> > closes the loop. Now I suspect the second link in the chain can happen only
-> > while CPU is booting and might even happen only if some debug options are
-> > enabled. But I don't really know scheduler code well enough. Steven?
-> 
-> I've cc'ed Peter and Ingo who may be able to answer that, as it still happens
-> on -next.
-> 
+Can you please pull the m68knommu git tree, for-next branch.
 
-Hmm, it failed on a try lock, but on the spinlock within the trylock. I
-wonder if we should add this.
+Nothing too big, just a handfull of small changes. A couple of dragonball
+fixes, coldfire qspi cleanup and fixes, and some coldfire gpio cleanup,
+fixes and extensions.
 
-Peter?
+Regards
+Greg
 
--- Steve
 
-diff --git a/kernel/locking/semaphore.c b/kernel/locking/semaphore.c
-index 6815171..6579f84 100644
---- a/kernel/locking/semaphore.c
-+++ b/kernel/locking/semaphore.c
-@@ -132,7 +132,9 @@ int down_trylock(struct semaphore *sem)
- 	unsigned long flags;
- 	int count;
- 
--	raw_spin_lock_irqsave(&sem->lock, flags);
-+	if (!raw_spin_trylock_irqsave(&sem->lock, flags))
-+		return 1;
-+
- 	count = sem->count - 1;
- 	if (likely(count >= 0))
- 		sem->count = count;
+
+The following changes since commit c7208164e66f63e3ec1759b98087849286410741:
+
+  Linux 3.15-rc7 (2014-05-25 16:06:00 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/gerg/m68knommu.git for-next
+
+for you to fetch changes up to 83c6bdb827c9422fe6e02130d9546800143304c1:
+
+  m68knommu: Implement gpio support for m54xx. (2014-05-26 13:28:38 +1000)
+
+----------------------------------------------------------------
+Daniel Palmer (2):
+      m68knommu: Fix mach_sched_init for EZ and VZ DragonBall chips
+      m68k: fix a compiler warning when building for DragonBall
+
+Steven King (7):
+      m68knommu: Add qspi clk for Coldfire SoCs without real clks.
+      m68knommu: Fix the 5249/525x qspi base address.
+      m68knommu: qspi declutter.
+      m68knommu: add to_irq function so we can map gpios to external interrupts.
+      m68knommu: setting the gpio data direction register to output doesn't dependent upon the value to output!
+      m68knommu: Make everything thats not exported, static.
+      m68knommu: Implement gpio support for m54xx.
+
+ arch/m68k/include/asm/m525xsim.h    |  2 +-
+ arch/m68k/include/asm/m54xxsim.h    | 12 +++++++++---
+ arch/m68k/include/asm/mcfgpio.h     | 12 ++++++++----
+ arch/m68k/kernel/setup_no.c         | 13 ++++++-------
+ arch/m68k/platform/68000/m68EZ328.c |  3 ++-
+ arch/m68k/platform/68000/m68VZ328.c |  1 +
+ arch/m68k/platform/coldfire/gpio.c  | 34 +++++++++++++++++++++++-----------
+ arch/m68k/platform/coldfire/m520x.c |  8 ++------
+ arch/m68k/platform/coldfire/m523x.c | 10 ++++------
+ arch/m68k/platform/coldfire/m5249.c | 10 ++++------
+ arch/m68k/platform/coldfire/m525x.c |  2 ++
+ arch/m68k/platform/coldfire/m5272.c |  2 ++
+ arch/m68k/platform/coldfire/m527x.c | 10 ++++------
+ arch/m68k/platform/coldfire/m528x.c | 10 ++++------
+ arch/m68k/platform/coldfire/m53xx.c |  8 ++------
+ 15 files changed, 74 insertions(+), 63 deletions(-)
