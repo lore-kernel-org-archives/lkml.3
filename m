@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754722AbaFCMQF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 08:16:05 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43384 "EHLO
+	id S932377AbaFCLkr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 07:40:47 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43360 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932386AbaFCLkt (ORCPT
+	with ESMTP id S932322AbaFCLkn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 07:40:49 -0400
+	Tue, 3 Jun 2014 07:40:43 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Michael Neuling <mikey@neuling.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+Cc: Kieran Clancy <clancy.kieran@gmail.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 036/138] powerpc/tm: Disable IRQ in tm_recheckpoint
-Date: Tue,  3 Jun 2014 12:38:02 +0100
-Message-Id: <1401795584-22664-37-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 034/138] ACPI / EC: Clear stale EC events on Samsung systems
+Date: Tue,  3 Jun 2014 12:38:00 +0100
+Message-Id: <1401795584-22664-35-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
 References: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
@@ -28,170 +28,179 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Neuling <mikey@neuling.org>
+From: Kieran Clancy <clancy.kieran@gmail.com>
 
-commit e6b8fd028b584ffca7a7255b8971f254932c9fce upstream.
+commit ad332c8a45330d170bb38b95209de449b31cd1b4 upstream.
 
-We can't take an IRQ when we're about to do a trechkpt as our GPR state is set
-to user GPR values.
+A number of Samsung notebooks (530Uxx/535Uxx/540Uxx/550Pxx/900Xxx/etc)
+continue to log events during sleep (lid open/close, AC plug/unplug,
+battery level change), which accumulate in the EC until a buffer fills.
+After the buffer is full (tests suggest it holds 8 events), GPEs stop
+being triggered for new events. This state persists on wake or even on
+power cycle, and prevents new events from being registered until the EC
+is manually polled.
 
-We've hit this when running some IBM Java stress tests in the lab resulting in
-the following dump:
+This is the root cause of a number of bugs, including AC not being
+detected properly, lid close not triggering suspend, and low ambient
+light not triggering the keyboard backlight. The bug also seemed to be
+responsible for performance issues on at least one user's machine.
 
-  cpu 0x3f: Vector: 700 (Program Check) at [c000000007eb3d40]
-      pc: c000000000050074: restore_gprs+0xc0/0x148
-      lr: 00000000b52a8184
-      sp: ac57d360
-     msr: 8000000100201030
-    current = 0xc00000002c500000
-    paca    = 0xc000000007dbfc00     softe: 0     irq_happened: 0x00
-      pid   = 34535, comm = Pooled Thread #
-  R00 = 00000000b52a8184   R16 = 00000000b3e48fda
-  R01 = 00000000ac57d360   R17 = 00000000ade79bd8
-  R02 = 00000000ac586930   R18 = 000000000fac9bcc
-  R03 = 00000000ade60000   R19 = 00000000ac57f930
-  R04 = 00000000f6624918   R20 = 00000000ade79be8
-  R05 = 00000000f663f238   R21 = 00000000ac218a54
-  R06 = 0000000000000002   R22 = 000000000f956280
-  R07 = 0000000000000008   R23 = 000000000000007e
-  R08 = 000000000000000a   R24 = 000000000000000c
-  R09 = 00000000b6e69160   R25 = 00000000b424cf00
-  R10 = 0000000000000181   R26 = 00000000f66256d4
-  R11 = 000000000f365ec0   R27 = 00000000b6fdcdd0
-  R12 = 00000000f66400f0   R28 = 0000000000000001
-  R13 = 00000000ada71900   R29 = 00000000ade5a300
-  R14 = 00000000ac2185a8   R30 = 00000000f663f238
-  R15 = 0000000000000004   R31 = 00000000f6624918
-  pc  = c000000000050074 restore_gprs+0xc0/0x148
-  cfar= c00000000004fe28 dont_restore_vec+0x1c/0x1a4
-  lr  = 00000000b52a8184
-  msr = 8000000100201030   cr  = 24804888
-  ctr = 0000000000000000   xer = 0000000000000000   trap =  700
+Juan Manuel Cabo found the cause of bug and the workaround of polling
+the EC manually on wake.
 
-This moves tm_recheckpoint to a C function and moves the tm_restore_sprs into
-that function.  It then adds IRQ disabling over the trechkpt critical section.
-It also sets the TEXASR FS in the signals code to ensure this is never set now
-that we explictly write the TM sprs in tm_recheckpoint.
+The loop which clears the stale events is based on an earlier patch by
+Lan Tianyu (see referenced attachment).
 
-Signed-off-by: Michael Neuling <mikey@neuling.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-[ luis: backported to 3.11: used mikey's backport to 3.10, which picks
-  the definition of TEXASR_FS from commit
-  e4e38121507a27d2ccc4b28d9e7fc4818a12c44c ("KVM: PPC: Book3S HV: Add
-  transactional memory support") ]
+This patch:
+ - Adds a function acpi_ec_clear() which polls the EC for stale _Q
+   events at most ACPI_EC_CLEAR_MAX (currently 100) times. A warning is
+   logged if this limit is reached.
+ - Adds a flag EC_FLAGS_CLEAR_ON_RESUME which is set to 1 if the DMI
+   system vendor is Samsung. This check could be replaced by several
+   more specific DMI vendor/product pairs, but it's likely that the bug
+   affects more Samsung products than just the five series mentioned
+   above. Further, it should not be harmful to run acpi_ec_clear() on
+   systems without the bug; it will return immediately after finding no
+   data waiting.
+ - Runs acpi_ec_clear() on initialisation (boot), from acpi_ec_add()
+ - Runs acpi_ec_clear() on wake, from acpi_ec_unblock_transactions()
+
+References: https://bugzilla.kernel.org/show_bug.cgi?id=44161
+References: https://bugzilla.kernel.org/show_bug.cgi?id=45461
+References: https://bugzilla.kernel.org/show_bug.cgi?id=57271
+References: https://bugzilla.kernel.org/attachment.cgi?id=126801
+Suggested-by: Juan Manuel Cabo <juanmanuel.cabo@gmail.com>
+Signed-off-by: Kieran Clancy <clancy.kieran@gmail.com>
+Reviewed-by: Lan Tianyu <tianyu.lan@intel.com>
+Reviewed-by: Dennis Jansen <dennis.jansen@web.de>
+Tested-by: Kieran Clancy <clancy.kieran@gmail.com>
+Tested-by: Juan Manuel Cabo <juanmanuel.cabo@gmail.com>
+Tested-by: Dennis Jansen <dennis.jansen@web.de>
+Tested-by: Maurizio D'Addona <mauritiusdadd@gmail.com>
+Tested-by: San Zamoyski <san@plusnet.pl>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/powerpc/include/asm/reg.h  |  1 +
- arch/powerpc/kernel/process.c   | 34 ++++++++++++++++++++++++++++------
- arch/powerpc/kernel/signal_32.c |  2 ++
- arch/powerpc/kernel/signal_64.c |  2 ++
- arch/powerpc/kernel/tm.S        |  2 +-
- 5 files changed, 34 insertions(+), 7 deletions(-)
+ drivers/acpi/ec.c | 64 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 64 insertions(+)
 
-diff --git a/arch/powerpc/include/asm/reg.h b/arch/powerpc/include/asm/reg.h
-index 99222e27f173..bdb7c45fb49e 100644
---- a/arch/powerpc/include/asm/reg.h
-+++ b/arch/powerpc/include/asm/reg.h
-@@ -208,6 +208,7 @@
- #define SPRN_ACOP	0x1F	/* Available Coprocessor Register */
- #define SPRN_TFIAR	0x81	/* Transaction Failure Inst Addr   */
- #define SPRN_TEXASR	0x82	/* Transaction EXception & Summary */
-+#define   TEXASR_FS	__MASK(63-36)	/* Transaction Failure Summary */
- #define SPRN_TEXASRU	0x83	/* ''	   ''	   ''	 Upper 32  */
- #define SPRN_TFHAR	0x80	/* Transaction Failure Handler Addr */
- #define SPRN_CTRLF	0x088
-diff --git a/arch/powerpc/kernel/process.c b/arch/powerpc/kernel/process.c
-index 273e9abbeb23..db9d5540f76f 100644
---- a/arch/powerpc/kernel/process.c
-+++ b/arch/powerpc/kernel/process.c
-@@ -523,6 +523,31 @@ out_and_saveregs:
- 	tm_save_sprs(thr);
- }
+diff --git a/drivers/acpi/ec.c b/drivers/acpi/ec.c
+index c69ac1463294..e053d158efd6 100644
+--- a/drivers/acpi/ec.c
++++ b/drivers/acpi/ec.c
+@@ -70,6 +70,8 @@ enum ec_command {
+ #define ACPI_EC_DELAY		500	/* Wait 500ms max. during EC ops */
+ #define ACPI_EC_UDELAY_GLK	1000	/* Wait 1ms max. to get global lock */
+ #define ACPI_EC_MSI_UDELAY	550	/* Wait 550us for MSI EC */
++#define ACPI_EC_CLEAR_MAX	100	/* Maximum number of events to query
++					 * when trying to clear the EC */
  
-+extern void __tm_recheckpoint(struct thread_struct *thread,
-+			      unsigned long orig_msr);
+ enum {
+ 	EC_FLAGS_QUERY_PENDING,		/* Query is pending */
+@@ -123,6 +125,7 @@ EXPORT_SYMBOL(first_ec);
+ static int EC_FLAGS_MSI; /* Out-of-spec MSI controller */
+ static int EC_FLAGS_VALIDATE_ECDT; /* ASUStec ECDTs need to be validated */
+ static int EC_FLAGS_SKIP_DSDT_SCAN; /* Not all BIOS survive early DSDT scan */
++static int EC_FLAGS_CLEAR_ON_RESUME; /* Needs acpi_ec_clear() on boot/resume */
+ 
+ /* --------------------------------------------------------------------------
+                              Transaction Management
+@@ -468,6 +471,29 @@ acpi_handle ec_get_handle(void)
+ 
+ EXPORT_SYMBOL(ec_get_handle);
+ 
++static int acpi_ec_query_unlocked(struct acpi_ec *ec, u8 *data);
 +
-+void tm_recheckpoint(struct thread_struct *thread,
-+		     unsigned long orig_msr)
++/*
++ * Clears stale _Q events that might have accumulated in the EC.
++ * Run with locked ec mutex.
++ */
++static void acpi_ec_clear(struct acpi_ec *ec)
 +{
-+	unsigned long flags;
++	int i, status;
++	u8 value = 0;
 +
-+	/* We really can't be interrupted here as the TEXASR registers can't
-+	 * change and later in the trecheckpoint code, we have a userspace R1.
-+	 * So let's hard disable over this region.
-+	 */
-+	local_irq_save(flags);
-+	hard_irq_disable();
++	for (i = 0; i < ACPI_EC_CLEAR_MAX; i++) {
++		status = acpi_ec_query_unlocked(ec, &value);
++		if (status || !value)
++			break;
++	}
 +
-+	/* The TM SPRs are restored here, so that TEXASR.FS can be set
-+	 * before the trecheckpoint and no explosion occurs.
-+	 */
-+	tm_restore_sprs(thread);
-+
-+	__tm_recheckpoint(thread, orig_msr);
-+
-+	local_irq_restore(flags);
++	if (unlikely(i == ACPI_EC_CLEAR_MAX))
++		pr_warn("Warning: Maximum of %d stale EC events cleared\n", i);
++	else
++		pr_info("%d stale EC events cleared\n", i);
 +}
 +
- static inline void tm_recheckpoint_new_task(struct task_struct *new)
+ void acpi_ec_block_transactions(void)
  {
- 	unsigned long msr;
-@@ -541,13 +566,10 @@ static inline void tm_recheckpoint_new_task(struct task_struct *new)
- 	if (!new->thread.regs)
- 		return;
+ 	struct acpi_ec *ec = first_ec;
+@@ -491,6 +517,10 @@ void acpi_ec_unblock_transactions(void)
+ 	mutex_lock(&ec->mutex);
+ 	/* Allow transactions to be carried out again */
+ 	clear_bit(EC_FLAGS_BLOCKED, &ec->flags);
++
++	if (EC_FLAGS_CLEAR_ON_RESUME)
++		acpi_ec_clear(ec);
++
+ 	mutex_unlock(&ec->mutex);
+ }
  
--	/* The TM SPRs are restored here, so that TEXASR.FS can be set
--	 * before the trecheckpoint and no explosion occurs.
--	 */
--	tm_restore_sprs(&new->thread);
--
--	if (!MSR_TM_ACTIVE(new->thread.regs->msr))
-+	if (!MSR_TM_ACTIVE(new->thread.regs->msr)){
-+		tm_restore_sprs(&new->thread);
- 		return;
+@@ -848,6 +878,13 @@ static int acpi_ec_add(struct acpi_device *device)
+ 
+ 	/* EC is fully operational, allow queries */
+ 	clear_bit(EC_FLAGS_QUERY_PENDING, &ec->flags);
++
++	/* Clear stale _Q events if hardware might require that */
++	if (EC_FLAGS_CLEAR_ON_RESUME) {
++		mutex_lock(&ec->mutex);
++		acpi_ec_clear(ec);
++		mutex_unlock(&ec->mutex);
 +	}
- 	msr = new->thread.tm_orig_msr;
- 	/* Recheckpoint to restore original checkpointed register state. */
- 	TM_DEBUG("*** tm_recheckpoint of pid %d "
-diff --git a/arch/powerpc/kernel/signal_32.c b/arch/powerpc/kernel/signal_32.c
-index 7e9dff80e1dc..81f929f026f2 100644
---- a/arch/powerpc/kernel/signal_32.c
-+++ b/arch/powerpc/kernel/signal_32.c
-@@ -863,6 +863,8 @@ static long restore_tm_user_regs(struct pt_regs *regs,
- 	 * transactional versions should be loaded.
- 	 */
- 	tm_enable();
-+	/* Make sure the transaction is marked as failed */
-+	current->thread.tm_texasr |= TEXASR_FS;
- 	/* This loads the checkpointed FP/VEC state, if used */
- 	tm_recheckpoint(&current->thread, msr);
- 	/* Get the top half of the MSR */
-diff --git a/arch/powerpc/kernel/signal_64.c b/arch/powerpc/kernel/signal_64.c
-index 35c20a1fb365..74d9615a6bb6 100644
---- a/arch/powerpc/kernel/signal_64.c
-+++ b/arch/powerpc/kernel/signal_64.c
-@@ -513,6 +513,8 @@ static long restore_tm_sigcontexts(struct pt_regs *regs,
- 	}
- #endif
- 	tm_enable();
-+	/* Make sure the transaction is marked as failed */
-+	current->thread.tm_texasr |= TEXASR_FS;
- 	/* This loads the checkpointed FP/VEC state, if used */
- 	tm_recheckpoint(&current->thread, msr);
+ 	return ret;
+ }
  
-diff --git a/arch/powerpc/kernel/tm.S b/arch/powerpc/kernel/tm.S
-index e3f8da3c00b9..df71307e9d8e 100644
---- a/arch/powerpc/kernel/tm.S
-+++ b/arch/powerpc/kernel/tm.S
-@@ -306,7 +306,7 @@ dont_backup_fp:
- 	 *	Call with IRQs off, stacks get all out of sync for
- 	 *	some periods in here!
- 	 */
--_GLOBAL(tm_recheckpoint)
-+_GLOBAL(__tm_recheckpoint)
- 	mfcr	r5
- 	mflr	r0
- 	std	r5, 8(r1)
+@@ -949,6 +986,30 @@ static int ec_enlarge_storm_threshold(const struct dmi_system_id *id)
+ 	return 0;
+ }
+ 
++/*
++ * On some hardware it is necessary to clear events accumulated by the EC during
++ * sleep. These ECs stop reporting GPEs until they are manually polled, if too
++ * many events are accumulated. (e.g. Samsung Series 5/9 notebooks)
++ *
++ * https://bugzilla.kernel.org/show_bug.cgi?id=44161
++ *
++ * Ideally, the EC should also be instructed NOT to accumulate events during
++ * sleep (which Windows seems to do somehow), but the interface to control this
++ * behaviour is not known at this time.
++ *
++ * Models known to be affected are Samsung 530Uxx/535Uxx/540Uxx/550Pxx/900Xxx,
++ * however it is very likely that other Samsung models are affected.
++ *
++ * On systems which don't accumulate _Q events during sleep, this extra check
++ * should be harmless.
++ */
++static int ec_clear_on_resume(const struct dmi_system_id *id)
++{
++	pr_debug("Detected system needing EC poll on resume.\n");
++	EC_FLAGS_CLEAR_ON_RESUME = 1;
++	return 0;
++}
++
+ static struct dmi_system_id ec_dmi_table[] __initdata = {
+ 	{
+ 	ec_skip_dsdt_scan, "Compal JFL92", {
+@@ -992,6 +1053,9 @@ static struct dmi_system_id ec_dmi_table[] __initdata = {
+ 	ec_validate_ecdt, "ASUS hardware", {
+ 	DMI_MATCH(DMI_SYS_VENDOR, "ASUSTek Computer Inc."),
+ 	DMI_MATCH(DMI_PRODUCT_NAME, "L4R"),}, NULL},
++	{
++	ec_clear_on_resume, "Samsung hardware", {
++	DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD.")}, NULL},
+ 	{},
+ };
+ 
 -- 
 1.9.1
 
