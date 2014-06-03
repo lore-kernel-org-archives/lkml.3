@@ -1,129 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755348AbaFCSZq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 14:25:46 -0400
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:43356 "EHLO
-	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753618AbaFCSZa (ORCPT
+	id S1754895AbaFCS3K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 14:29:10 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:35501 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752217AbaFCS3I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 14:25:30 -0400
-X-IronPort-AV: E=Sophos;i="4.98,967,1392159600"; 
-   d="scan'208";a="77881016"
-Date: Tue, 3 Jun 2014 20:25:27 +0200 (CEST)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@localhost6.localdomain6
-To: Stephen Boyd <sboyd@codeaurora.org>
-cc: Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org,
-        Mitchel Humpherys <mitchelh@codeaurora.org>,
-        Gilles Muller <Gilles.Muller@lip6.fr>,
-        Nicolas Palix <nicolas.palix@imag.fr>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, devicetree@vger.kernel.org
-Subject: Re: [PATCH v2] coccinelle: Check for missing NULL terminators in
- of_device_id tables
-In-Reply-To: <538E119D.8010304@codeaurora.org>
-Message-ID: <alpine.DEB.2.02.1406032022540.2009@localhost6.localdomain6>
-References: <1401213858-31950-1-git-send-email-sboyd@codeaurora.org> <alpine.DEB.2.02.1406031208380.2036@localhost6.localdomain6> <538E09C1.30200@codeaurora.org> <alpine.DEB.2.02.1406032013150.2009@localhost6.localdomain6> <538E119D.8010304@codeaurora.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 3 Jun 2014 14:29:08 -0400
+Date: Tue, 3 Jun 2014 20:28:50 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        nicolas.pitre@linaro.org, Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC][PATCH 0/8] sched,idle: need resched polling rework
+Message-ID: <20140603182850.GJ16155@laptop.programming.kicks-ass.net>
+References: <20140522130931.GV13658@twins.programming.kicks-ass.net>
+ <CALCETrVBVOjs0EVqEz3qKtSHQg1agJzAyG4Ohqueky-zPF7uKA@mail.gmail.com>
+ <20140529064827.GI19143@laptop.programming.kicks-ass.net>
+ <CALCETrWnG7fSuinDv+GAHsnTLJ-6xn+_1LB2XdLGVXcC=TQURA@mail.gmail.com>
+ <20140603104347.GT11096@twins.programming.kicks-ass.net>
+ <20140603140223.GA13658@twins.programming.kicks-ass.net>
+ <CALCETrW3cr_RLnMeMtutM5H+3cJSerUxXuEmiT9miDOEmkpANw@mail.gmail.com>
+ <20140603161950.GB30445@twins.programming.kicks-ass.net>
+ <CALCETrWOrYTK01ev34mP+5iyeBWw14u+3n4fg0+O5Zp9oPQ+3g@mail.gmail.com>
+ <20140603170018.GD30445@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140603170018.GD30445@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Boyd <sboyd@codeaurora.org>
+On Tue, Jun 03, 2014 at 07:00:18PM +0200, Peter Zijlstra wrote:
+> On Tue, Jun 03, 2014 at 09:52:22AM -0700, Andy Lutomirski wrote:
+> > > So you could cheat and set it in pick_next_task_idle() and clear in
+> > > put_prev_task_idle(), that way the entire idle loop, when running has it
+> > > set.
+> > >
+> > 
+> > Isn't that a little late for sched_ttwu_pending?  I guess it could be
+> > okay, but I'm hesitant to muck around with the scheduler innards that
+> > much.  I don't see anything that'll break, though.
+> 
+> Yeah, only later did I see you clear much earlier, which makes sense.
 
-Failure to terminate an of_device_id table can lead to confusing
-failures depending on where the compiler places the array. Add a
-check to make sure these tables are terminated. Thanks to Mitchel
-Humpherys for coming up with the pattern initially.
-
-Cc: Mitchel Humpherys <mitchelh@codeaurora.org>
-Cc: Julia Lawall <Julia.Lawall@lip6.fr>
-Cc: Gilles Muller <Gilles.Muller@lip6.fr>
-Cc: Nicolas Palix <nicolas.palix@imag.fr>
-Cc: Grant Likely <grant.likely@linaro.org>
-Cc: Rob Herring <robh+dt@kernel.org>
-Cc: devicetree@vger.kernel.org
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-Acked-by: Grant Likely <grant.likely@linaro.org>
-Signed-off-by: Julia Lawall <julia.lawall@lip6.fr>
-
----
-
-v3: Removed unneeded rule bad_of_table.  Placed * in context rule on the 
-closing brace; putting it on the field caused all fields to be marked.
-
-v4: corrected authorship
-
- scripts/coccinelle/misc/of_table.cocci |   62 +++++++++++++++++++++++++++++++++
- 1 file changed, 62 insertions(+)
-
-diff --git a/scripts/coccinelle/misc/of_table.cocci b/scripts/coccinelle/misc/of_table.cocci
-new file mode 100644
-index 0000000..3c93404
---- /dev/null
-+++ b/scripts/coccinelle/misc/of_table.cocci
-@@ -0,0 +1,62 @@
-+/// Make sure of_device_id tables are NULL terminated
-+//
-+// Keywords: of_table
-+// Confidence: Medium
-+// Options: --include-headers
-+
-+virtual patch
-+virtual context
-+virtual org
-+virtual report
-+
-+@depends on context@
-+identifier var, arr;
-+expression E;
-+@@
-+struct of_device_id arr[] = {
-+	...,
-+	{
-+	.var = E,
-+*	}
-+};
-+
-+@depends on patch@
-+identifier var, arr;
-+expression E;
-+@@
-+struct of_device_id arr[] = {
-+	...,
-+	{
-+	.var = E,
-+-	}
-++	},
-++	{ }
-+};
-+
-+@r depends on org || report@
-+position p1;
-+identifier var, arr;
-+expression E;
-+@@
-+struct of_device_id arr[] = {
-+	...,
-+	{
-+	.var = E,
-+	}
-+	@p1
-+};
-+
-+@script:python depends on org@
-+p1 << r.p1;
-+arr << r.arr;
-+@@
-+
-+cocci.print_main(arr,p1)
-+
-+@script:python depends on report@
-+p1 << r.p1;
-+arr << r.arr;
-+@@
-+
-+msg = "%s is not NULL terminated at line %s" % (arr, p1[0].line)
-+coccilib.report.print_report(p1[0],msg)
+Could we clear it from set_nr_and_not_polling()/set_nr_if_polling()?
+That's the only two functions that'll kick a cpu out of its polling
+loop, and we're already writing to the word anyhow.
