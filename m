@@ -1,74 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753550AbaFCR6c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 13:58:32 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:62268 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751440AbaFCR6a (ORCPT
+	id S1754457AbaFCR6v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 13:58:51 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:52891 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754057AbaFCR6t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 13:58:30 -0400
-Date: Tue, 3 Jun 2014 13:58:27 -0400
-From: Tejun Heo <tj@kernel.org>
-To: suravee.suthikulpanit@amd.com
-Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Hans de Goede <hdegoede@redhat.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Subject: Re: [PATCH 1/1] ata: Check and set 64-bit DMA mask for platform AHCI
- driver
-Message-ID: <20140603175827.GH26210@htj.dyndns.org>
-References: <1400866510-3130-1-git-send-email-suravee.suthikulpanit@amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1400866510-3130-1-git-send-email-suravee.suthikulpanit@amd.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 3 Jun 2014 13:58:49 -0400
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: linux-security-module <linux-security-module@vger.kernel.org>
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        Dmitry Kasatkin <d.kasatkin@samsung.com>,
+        David Howells <dhowells@redhat.com>, Josh Boyer <jwboyer@redhat.com>,
+        keyrings <keyrings@linux-nfs.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [RFC PATCH v5 0/4] ima: extending secure boot certificate chain of trust
+Date: Tue,  3 Jun 2014 13:58:34 -0400
+Message-Id: <1401818318-15780-1-git-send-email-zohar@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.1.4
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14060317-8236-0000-0000-000002D41F5B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hans, Bartlomiej, can you guys please review this patch?
+The original patches extended the secure boot signature chain of trust
+to IMA-appraisal, by allowing only certificates signed by a 'trusted'
+key on the system_trusted_keyring to be added to the IMA keyring.
 
-Thanks.
+Instead of allowing public keys, with certificates signed by any
+key on the system trusted keyring, to be added to a trusted
+keyring, the last patch in this patch set further restricts the
+certificates to those signed by a particular key on the system keyring.
+(This is a total rewrite of the previous version.)
 
-On Fri, May 23, 2014 at 12:35:10PM -0500, suravee.suthikulpanit@amd.com wrote:
-> From: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
-> 
-> The current platform AHCI drier does not set the dma_mask correctly
-> for 64-bit DMA capable AHCI controller.  This patch checks the AHCI
-> capability bit and set the dma_mask and coherent_dma_mask accordingly.
-> 
-> Signed-off-by: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
-> ---
->  drivers/ata/libahci_platform.c | 9 +++++++++
->  1 file changed, 9 insertions(+)
-> 
-> diff --git a/drivers/ata/libahci_platform.c b/drivers/ata/libahci_platform.c
-> index 7cb3a85..85049ef 100644
-> --- a/drivers/ata/libahci_platform.c
-> +++ b/drivers/ata/libahci_platform.c
-> @@ -368,6 +368,15 @@ int ahci_platform_init_host(struct platform_device *pdev,
->  	ahci_init_controller(host);
->  	ahci_print_info(host, "platform");
->  
-> +	if (hpriv->cap & HOST_CAP_64) {
-> +		if (!dev->dma_mask)
-> +			dev->dma_mask = &dev->coherent_dma_mask;
-> +
-> +		rc = dma_set_mask_and_coherent(dev, DMA_BIT_MASK(64));
-> +		if (rc)
-> +			return rc;
-> +	}
-> +
->  	return ata_host_activate(host, irq, ahci_interrupt, IRQF_SHARED,
->  				 &ahci_platform_sht);
->  }
-> -- 
-> 1.9.0
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-ide" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+All comments have been addressed aside from the issue of requiring
+procfs for loading a key on the ima keyring.
+
+Mimi
+
+Mimi Zohar (4):
+  KEYS: special dot prefixed keyring name bug fix
+  KEYS: verify a certificate is signed by a 'trusted' key
+  ima: define '.ima' as a builtin 'trusted' keyring
+  KEYS: define an owner trusted keyring
+
+ Documentation/kernel-parameters.txt      |  5 ++
+ crypto/asymmetric_keys/x509_public_key.c | 86 +++++++++++++++++++++++++++++++-
+ include/keys/owner_keyring.h             | 27 ++++++++++
+ include/keys/system_keyring.h            | 10 +++-
+ init/Kconfig                             | 10 ++++
+ kernel/Makefile                          |  1 +
+ kernel/owner_keyring.c                   | 85 +++++++++++++++++++++++++++++++
+ security/integrity/digsig.c              | 26 ++++++++++
+ security/integrity/ima/Kconfig           |  8 +++
+ security/integrity/ima/ima_main.c        | 12 ++++-
+ security/integrity/integrity.h           |  5 ++
+ security/keys/keyctl.c                   |  6 ++-
+ 12 files changed, 275 insertions(+), 6 deletions(-)
+ create mode 100644 include/keys/owner_keyring.h
+ create mode 100644 kernel/owner_keyring.c
 
 -- 
-tejun
+1.8.1.4
+
