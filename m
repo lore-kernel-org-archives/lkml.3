@@ -1,195 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755261AbaFCMIA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 08:08:00 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:59791 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753839AbaFCMH5 (ORCPT
+	id S1755289AbaFCMIG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 08:08:06 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:30029 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753839AbaFCMIB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 08:07:57 -0400
-Date: Tue, 3 Jun 2014 14:07:52 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] scheduler tree changes for v3.16
-Message-ID: <20140603120752.GA26873@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 3 Jun 2014 08:08:01 -0400
+X-AuditID: cbfee68d-b7fd46d000005f36-b2-538dbaa045a5
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Andrew Morton'" <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, "'Alessandro Zummo'" <a.zummo@towertech.it>,
+        rtc-linux@googlegroups.com, "'Jingoo Han'" <jg1.han@samsung.com>,
+        "'Robert Jarzmik'" <robert.jarzmik@free.fr>
+References: <002101cf7f24$40f3e670$c2dbb350$%han@samsung.com>
+In-reply-to: <002101cf7f24$40f3e670$c2dbb350$%han@samsung.com>
+Subject: [PATCH 2/2] rtc: rtc-pxa: Make of_device_id array const
+Date: Tue, 03 Jun 2014 21:07:59 +0900
+Message-id: <002201cf7f24$760f0600$622d1200$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac9/JEDaC3X0p7C2RhWGHyaVfFroSQAAA+ZQ
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrAIsWRmVeSWpSXmKPExsVy+t8zY90Fu3qDDSauZrVYcvEqu8Wc9WvY
+	LC4vvMRqcXnXHDaLWW+ELfZ3djA6sHn0r/vM6rFn4kk2jxMzfrN49G1Zxegxfd5PJo/Pm+QC
+	2KK4bFJSczLLUov07RK4Ml7OWMZe0Mtacar5H3MD43SWLkZODgkBE4ne7RvYIWwxiQv31rN1
+	MXJxCAksY5R4e/4zUBEHWNGDs84Q8UWMEnMntbFAOL8ZJb7/nQHWzSagJvHly2F2kAYRAX2J
+	thYNkBpmgV2MEo9vzmcGqRESsJXYdf0/G4jNKWAn8ffwKVYQW1jAQWLVt4VgNouAqsT+n8fB
+	ruMFqv+/dScrhC0o8WPyPbA4s4CWxPqdx5kgbHmJzWveMkMcqi7x6K8uSFhEwEiideEpRogS
+	EYl9L94xgtwjIfCRXeLzhZ3sELsEJL5NPgT1pKzEpgPMkICQlDi44gbLBEaJWUg2z0KyeRaS
+	zbOQrFjAyLKKUTS1ILmgOCm9yFCvODG3uDQvXS85P3cTIyR2e3cw3j5gfYgxGWj9RGYp0eR8
+	YOznlcQbGpsZWZiamBobmVuakSasJM6b9DApSEggPbEkNTs1tSC1KL6oNCe1+BAjEwenVAMj
+	K/8WyaAZz/f8N/Za2pjT8N0rursz143l3zOmQ2I5T6e6du04s9Zyn852n3arJZd5JJeUH3RJ
+	2lD48ECCe1+OUE6E1EW+VhN7XYlHE6ZnnFlT4VL9g/V8Vo1mzppWjrUxN44yzDrAMF3I9fIv
+	oc+XXj3utL6948JRTs0lR9OX84Qd3n/BtmqrEktxRqKhFnNRcSIA3HRwsPMCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrLKsWRmVeSWpSXmKPExsVy+t9jAd0Fu3qDDWYeZrRYcvEqu8Wc9WvY
+	LC4vvMRqcXnXHDaLWW+ELfZ3djA6sHn0r/vM6rFn4kk2jxMzfrN49G1Zxegxfd5PJo/Pm+QC
+	2KIaGG0yUhNTUosUUvOS81My89JtlbyD453jTc0MDHUNLS3MlRTyEnNTbZVcfAJ03TJzgM5Q
+	UihLzCkFCgUkFhcr6dthmhAa4qZrAdMYoesbEgTXY2SABhLWMWa8nLGMvaCXteJU8z/mBsbp
+	LF2MHBwSAiYSD846dzFyApliEhfurWfrYuTiEBJYxCgxd1IbC4Tzm1Hi+98Z7CBVbAJqEl++
+	HGYHaRYR0Jdoa9EAqWEW2MUo8fjmfGaQGiEBW4ld1/+zgdicAnYSfw+fYgWxhQUcJFZ9Wwhm
+	swioSuz/eZwFxOYFqv+/dScrhC0o8WPyPbA4s4CWxPqdx5kgbHmJzWveMkMcrS7x6K8uSFhE
+	wEiideEpRogSEYl9L94xTmAUmoVk0iwkk2YhmTQLScsCRpZVjKKpBckFxUnpuYZ6xYm5xaV5
+	6XrJ+bmbGMGJ4ZnUDsaVDRaHGAU4GJV4eH/s7QkWYk0sK67MPcQowcGsJML7b31vsBBvSmJl
+	VWpRfnxRaU5q8SHGZKBHJzJLiSbnA5NWXkm8obGJmZGlkZmFkYm5OWnCSuK8B1qtA4UE0hNL
+	UrNTUwtSi2C2MHFwSjUwnjv/OduxLu1e2c+fM5S2zD9p332sm/ex1rKUx3ulKu4385QcP7Wt
+	tDtZRI7fMGbiJof+Sf2PdeYn2SgcWfuJsXmOkPx2lvbqaTv2hNdM3fait7VnadOdjK/dst/O
+	FzxPUJA9uLpG3u+fJL9gzbGCuXcmzWndZ/W9d2P2cedcL+Ve94PzQ2ZcU2Ipzkg01GIuKk4E
+	ADopUoNQAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+Make of_device_id array const, because all OF functions handle
+it as const.
 
-Please pull the latest sched-core-for-linus git tree from:
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+---
+ drivers/rtc/rtc-pxa.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git sched-core-for-linus
-
-   # HEAD: 096aa33863a5e48de52d2ff30e0801b7487944f4 sched/numa: Decay ->wakee_flips instead of zeroing
-
-The main scheduling related changes in this cycle were:
-
- - various sched/numa updates, for better performance
-
- - tree wide cleanup of open coded nice levels
-
- - nohz fix related to rq->nr_running use
-
- - cpuidle changes and continued consolidation to improve the 
-   kernel/sched/idle.c high level idle scheduling logic. As part of 
-   this effort I pulled cpuidle driver changes from Rafael as well.
-
- - standardized idle polling amongst architectures
-
- - continued work on preparing better power/energy aware scheduling
-
- - sched/rt updates
-
- - misc fixlets and cleanups
-
- Thanks,
-
-	Ingo
-
---------------[ shortlog and diffstat created manually ]---------------->
-
-Ben Segall (1):
-      sched: Fix exec_start/task_hot on migrated tasks
-
-Chander Kashyap (1):
-      cpuidle / menu: move repeated correction factor check to init
-
-Corey Minyard (1):
-      sched: Initialize rq->age_stamp on processor start
-
-Dietmar Eggemann (1):
-      sched: Do not zero sg->cpumask and sg->sgp->power in build_sched_groups()
-
-Dongsheng Yang (3):
-      sched, treewide: Replace hardcoded nice values with MIN_NICE/MAX_NICE
-      sched: Use clamp() and clamp_val() to make sys_nice() more readable
-      sched: Consolidate open coded implementations of nice level frobbing into nice_to_rlimit() and rlimit_to_nice()
-
-Ingo Molnar (4):
-      Merge branch 'sched/urgent' into sched/core, to avoid conflicts
-      Merge tag 'v3.15-rc6' into sched/core, to pick up the latest fixes
-      Merge branch 'pm-cpuidle' of git://git.kernel.org/.../rafael/linux-pm into sched/core
-      Merge branch 'sched/urgent' into sched/core to avoid conflicts with upcoming changes
-
-James Hogan (1):
-      metag: Remove TIF_POLLING_NRFLAG
-
-Jason Low (2):
-      sched/fair: Stop searching for tasks in newidle balance if there are runnable tasks
-      sched: Fix the rq->next_balance logic in rebalance_domains() and idle_balance()
-
-Kirill Tkhai (5):
-      sched/rt: Sum number of all children tasks in hierarhy at ->rt_nr_running
-      sched/rt: Add accessors rq_of_rt_se()
-      sched/rt: Substract number of tasks of throttled queues from rq->nr_running
-      sched: Revert commit 4c6c4e38c4e9 ("sched/core: Fix endless loop in pick_next_task()")
-      sched, nohz: Change rq->nr_running to always use wrappers
-
-Kirill V Tkhai (1):
-      sched/rt: Do not try to push tasks if pinned task switches to RT
-
-Michael Kerrisk (2):
-      sched: Simplify return logic in sched_copy_attr()
-      sched: Simplify return logic in sched_read_attr()
-
-Peter Zijlstra (12):
-      sched: Make scale_rt_power() deal with backward clocks
-      sched/wait: Explain the shadowing and type inconsistencies
-      sched: Remove set_need_resched()
-      sched/idle, alpha: Switch from TS_POLLING to TIF_POLLING_NRFLAG
-      sched/idle, tile: Switch from TS_POLLING to TIF_POLLING_NRFLAG
-      sched/idle, ia64: Switch from TS_POLLING to TIF_POLLING_NRFLAG
-      sched/idle, x86: Switch from TS_POLLING to TIF_POLLING_NRFLAG
-      sched/idle: Remove TS_POLLING support
-      sched/idle: Avoid spurious wakeup IPIs
-      sched/idle: Delay clearing the polling bit
-      sched/idle: Reflow cpuidle_idle_call()
-      arm64: Remove TIF_POLLING_NRFLAG
-
-Rafael J. Wysocki (4):
-      cpuidle: Combine cpuidle_enabled() with cpuidle_select()
-      cpuidle / menu: Return (-1) if there are no suitable states
-      PM / suspend: Always use deepest C-state in the "freeze" sleep state
-      sched/idle: Make cpuidle_idle_call() void
-
-Rik van Riel (8):
-      sched/numa: Count pages on active node as local
-      sched/numa: Retry placement more frequently when misplaced
-      sched/numa: Do not set preferred_node on migration to a second choice node
-      mm/numa: Remove BUG_ON() in __handle_mm_fault()
-      sched: Call select_idle_sibling() when not affine_sd
-      sched/numa: Allow task switch if load imbalance improves
-      sched/numa: Update migrate_improves/degrades_locality()
-      sched/numa: Decay ->wakee_flips instead of zeroing
-
-Vincent Guittot (6):
-      sched: Rework sched_domain topology definition
-      sched, s390: Create a dedicated topology table
-      sched, powerpc: Create a dedicated topology table
-      sched: Add a new SD_SHARE_POWERDOMAIN for sched_domain
-      sched, ARM: Create a dedicated scheduler topology table
-      sched/numa: Fix initialization of sched_domain_topology for NUMA
-
-xiaofeng.yan (1):
-      sched/rt: Fix 'struct sched_dl_entity' and dl_task_time() comments, to match the current upstream code
+diff --git a/drivers/rtc/rtc-pxa.c b/drivers/rtc/rtc-pxa.c
+index cccbf9d..4561f37 100644
+--- a/drivers/rtc/rtc-pxa.c
++++ b/drivers/rtc/rtc-pxa.c
+@@ -389,7 +389,7 @@ static int __exit pxa_rtc_remove(struct platform_device *pdev)
+ }
+ 
+ #ifdef CONFIG_OF
+-static struct of_device_id pxa_rtc_dt_ids[] = {
++static const struct of_device_id pxa_rtc_dt_ids[] = {
+ 	{ .compatible = "marvell,pxa-rtc" },
+ 	{}
+ };
+-- 
+1.7.10.4
 
 
-
- arch/alpha/include/asm/thread_info.h        |   4 +-
- arch/arm/kernel/topology.c                  |  26 ++++++++++
- arch/arm64/include/asm/thread_info.h        |   2 -
- arch/ia64/include/asm/thread_info.h         |   3 +-
- arch/ia64/include/asm/topology.h            |  24 ---------
- arch/metag/include/asm/thread_info.h        |   6 +--
- arch/powerpc/kernel/smp.c                   |  31 +++++++++---
- arch/s390/include/asm/topology.h            |  13 +----
- arch/s390/kernel/topology.c                 |  20 ++++++++
- arch/tile/include/asm/thread_info.h         |   3 +-
- arch/tile/include/asm/topology.h            |  33 ------------
- arch/x86/include/asm/thread_info.h          |   4 +-
- arch/x86/kernel/apm_32.c                    |  11 ----
- drivers/block/loop.c                        |   2 +-
- drivers/block/nbd.c                         |   2 +-
- drivers/block/pktcdvd.c                     |   2 +-
- drivers/char/ipmi/ipmi_si_intf.c            |   2 +-
- drivers/cpuidle/cpuidle.c                   |  55 +++++++++++++++-----
- drivers/cpuidle/governors/menu.c            |  17 ++++---
- drivers/s390/crypto/ap_bus.c                |   2 +-
- drivers/scsi/bnx2fc/bnx2fc_fcoe.c           |   4 +-
- drivers/scsi/bnx2i/bnx2i_hwi.c              |   2 +-
- drivers/scsi/fcoe/fcoe.c                    |   2 +-
- drivers/scsi/ibmvscsi/ibmvfc.c              |   2 +-
- drivers/scsi/ibmvscsi/ibmvscsi.c            |   2 +-
- drivers/scsi/lpfc/lpfc_hbadisc.c            |   2 +-
- drivers/scsi/qla2xxx/qla_os.c               |   2 +-
- drivers/staging/android/binder.c            |   4 +-
- drivers/staging/lustre/lustre/llite/lloop.c |   2 +-
- fs/ocfs2/cluster/heartbeat.c                |   2 +-
- include/linux/cpuidle.h                     |   7 +--
- include/linux/sched.h                       | 104 +++++++++++++++++++++-----------------
- include/linux/sched/prio.h                  |  16 ++++++
- include/linux/thread_info.h                 |  14 ------
- include/linux/topology.h                    | 128 +++++------------------------------------------
- kernel/locking/locktorture.c                |   2 +-
- kernel/power/suspend.c                      |   2 +
- kernel/sched/core.c                         | 324 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++------------------------------------------------------
- kernel/sched/deadline.c                     |   6 +--
- kernel/sched/fair.c                         | 226 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++------------------------
- kernel/sched/idle.c                         | 140 ++++++++++++++++++++++-----------------------------
- kernel/sched/rt.c                           | 119 ++++++++++++++++++++++++++++++++++++-------
- kernel/sched/sched.h                        |  26 ++++------
- kernel/sched/stop_task.c                    |   4 +-
- kernel/sys.c                                |   6 +--
- kernel/workqueue.c                          |   6 +--
- mm/huge_memory.c                            |   2 +-
- mm/memory.c                                 |   3 --
- 48 files changed, 759 insertions(+), 662 deletions(-)
