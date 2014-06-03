@@ -1,77 +1,254 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755090AbaFCLyT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 07:54:19 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43745 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932884AbaFCLmZ (ORCPT
+	id S1755140AbaFCLyd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 07:54:33 -0400
+Received: from mail-qg0-f46.google.com ([209.85.192.46]:35903 "EHLO
+	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755103AbaFCLya (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 07:42:25 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Pravin B Shelar <pshelar@nicira.com>,
+	Tue, 3 Jun 2014 07:54:30 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140601122152.GB22450@redhat.com>
+References: <CAKyyzSRfO_Hw4bDimfzV9+-8damc9RwoqA_RLkBBa_gMw9e62Q@mail.gmail.com>
+	<20140601122152.GB22450@redhat.com>
+Date: Tue, 3 Jun 2014 14:54:29 +0300
+Message-ID: <CAKyyzSSs1PUfJXTPDWTbWU5p+b54qti_N_6kR6mJWWrp__rykw@mail.gmail.com>
+Subject: Re: [PATCH] Fixed zero copy GSO without orphaning the fragments
+From: Igor Royzis <igorr@swortex.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <edumazet@google.com>, Tom Herbert <therbert@google.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
         Nicolas Dichtel <nicolas.dichtel@6wind.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 102/138] gre: don't allow to add the same tunnel twice
-Date: Tue,  3 Jun 2014 12:39:08 +0100
-Message-Id: <1401795584-22664-103-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
-References: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+        Simon Horman <horms@verge.net.au>, Joe Perches <joe@perches.com>,
+        Jiri Pirko <jiri@resnulli.us>, Florian Westphal <fw@strlen.de>,
+        Paul Durrant <Paul.Durrant@citrix.com>, Thomas Graf <tgraf@suug.ch>,
+        Jan Beulich <JBeulich@suse.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        Miklos Szeredi <mszeredi@suse.cz>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>, Anton Nayshtut <anton@swortex.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.11 -stable review patch.  If anyone has any objections, please let me know.
+Eric, could you please provide a feedback on the suggestion to move
+the pointer from skb_shared_info to skbuff? If we must fit
+skb_shared_info till the 'frags' field into 1 cache line (I honestly
+don't quite understand why (the whole structure as well as the skb's
+data will always require > 1 cache line anyway)  and I would
+appreciate if you elaborate on this more), then moving the pointer to
+the parent fragment off skb_shared_info should help. Am I right?
 
-------------------
+The pointer is essential if we want to solve the incorrect way the
+kernel handles a combination of packet segmentation (of any reason, in
+our case it was a VM guest not supporting GRO) and zero-copy feature.
+Disabling zero-copy for segmented packets is a workaround but an
+efficient solution would require either:
+a) a pointer in skb_shared_info, or
+b) a pointer in skbuff,  or
+c) reusing a [currently unused] existing pointer/field in a skb
+structure, which is a bad idea and I list it for completeness only.
 
-From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+Please comment,
+-Igor
 
-commit 5a4552752d8f7f4cef1d98775ece7adb7616fde2 upstream.
-
-Before the patch, it was possible to add two times the same tunnel:
-ip l a gre1 type gre remote 10.16.0.121 local 10.16.0.249
-ip l a gre2 type gre remote 10.16.0.121 local 10.16.0.249
-
-It was possible, because ip_tunnel_newlink() calls ip_tunnel_find() with the
-argument dev->type, which was set only later (when calling ndo_init handler
-in register_netdevice()). Let's set this type in the setup handler, which is
-called before newlink handler.
-
-Introduced by commit c54419321455 ("GRE: Refactor GRE tunneling code.").
-
-CC: Pravin B Shelar <pshelar@nicira.com>
-Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- net/ipv4/ip_gre.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/net/ipv4/ip_gre.c b/net/ipv4/ip_gre.c
-index 297740070250..06ae1eb02f56 100644
---- a/net/ipv4/ip_gre.c
-+++ b/net/ipv4/ip_gre.c
-@@ -463,6 +463,7 @@ static const struct net_device_ops ipgre_netdev_ops = {
- static void ipgre_tunnel_setup(struct net_device *dev)
- {
- 	dev->netdev_ops		= &ipgre_netdev_ops;
-+	dev->type		= ARPHRD_IPGRE;
- 	ip_tunnel_setup(dev, ipgre_net_id);
- }
- 
-@@ -501,7 +502,6 @@ static int ipgre_tunnel_init(struct net_device *dev)
- 	memcpy(dev->dev_addr, &iph->saddr, 4);
- 	memcpy(dev->broadcast, &iph->daddr, 4);
- 
--	dev->type		= ARPHRD_IPGRE;
- 	dev->flags		= IFF_NOARP;
- 	dev->priv_flags		&= ~IFF_XMIT_DST_RELEASE;
- 	dev->addr_len		= 4;
--- 
-1.9.1
-
+On Sun, Jun 1, 2014 at 3:21 PM, Michael S. Tsirkin <mst@redhat.com> wrote:
+> On Sun, Jun 01, 2014 at 02:39:39PM +0300, Igor Royzis wrote:
+>> The patch discussion seems got lost due to a delay it took us to get
+>> the numbers. We believe that a 24% improvement in VM's network
+>> performance (and probably the better improvement the more guests are
+>> running on a host) is worth commenting and getting to some conclusion.
+>
+> Absolutely, but we need to find a way to address Eric's comments.
+>
+>> > Before your patch :
+>> >
+>> > sizeof(struct skb_shared_info)=0x140
+>> > offsetof(struct skb_shared_info, frags[1])=0x40
+>> >
+>> > SKB_DATA_ALIGN(sizeof(struct skb_shared_info)) -> 0x140
+>> >
+>> > After your patch :
+>> >
+>> > sizeof(struct skb_shared_info)=0x148
+>> > offsetof(struct skb_shared_info, frags[1])=0x48
+>> >
+>> > SKB_DATA_ALIGN(sizeof(struct skb_shared_info)) -> 0x180
+>> >
+>> > Thats a serious bump, because it increases all skb truesizes, and
+>> > typical skb with one fragment will use 2 cache lines instead of one in
+>> > struct skb_shared_info, so this adds memory pressure in fast path.
+>> >
+>> > So while this patch might increase performance for some workloads,
+>> > it generally decreases performance on many others.
+>>
+>> Would moving  the parent fragment pointer from skb_shared_info to
+>> skbuff solve this issue?
+>>
+>> Regards,
+>> -Igor
+>>
+>> On Sun, May 25, 2014 at 1:54 PM, Igor Royzis <igorr@swortex.com> wrote:
+>> >> If true, I'd like to see some performance numbers please.
+>> >
+>> > The numbers have been obtained by running iperf between 2 QEMU Win2012
+>> > VMs, 4 vCPU/ 4GB RAM each.
+>> > iperf parameters: -w 256K -l 256K -t 300
+>> > Original kernel 3.15.0-rc5:           34.4 Gbytes transferred, 984
+>> > Mbits/sec bandwidth.
+>> > Kernel 3.15.0-rc5 with our patch: 42.5 Gbytes transferred, 1.22
+>> > Gbits/sec bandwidth.
+>> >
+>> > Overall improvement is about 24%.
+>> > Below are raw iperf outputs.
+>> >
+>> > kernel 3.15.0-rc5:
+>> > C:\iperf>iperf -c 192.168.11.2 -w 256K -l 256K -t 300
+>> > ------------------------------------------------------------
+>> > Client connecting to 192.168.11.2, TCP port 5001
+>> > TCP window size:  256 KByte
+>> > ------------------------------------------------------------
+>> > [  3] local 192.168.11.1 port 49167 connected with 192.168.11.2 port 5001
+>> > [ ID] Interval       Transfer     Bandwidth
+>> > [  3]  0.0-300.7 sec  34.4 GBytes   984 Mbits/sec
+>> >
+>> > kernel 3.15.0-rc5-patched:
+>> > C:\iperf>iperf -c 192.168.11.2 -w 256K -l 256K -t 300
+>> > ------------------------------------------------------------
+>> > Client connecting to 192.168.11.2, TCP port 5001
+>> > TCP window size:  256 KByte
+>> > ------------------------------------------------------------
+>> > [  3] local 192.168.11.1 port 49167 connected with 192.168.11.2 port 5001
+>> > [ ID] Interval       Transfer     Bandwidth
+>> > [  3]  0.0-300.7 sec  42.5 GBytes   1.22 Gbits/sec
+>> >
+>> > On Tue, May 20, 2014 at 2:50 PM, Michael S. Tsirkin <mst@redhat.com> wrote:
+>> >>
+>> >> On Tue, May 20, 2014 at 02:24:21PM +0300, Igor Royzis wrote:
+>> >> > Fix accessing GSO fragments memory (and a possible corruption therefore) after
+>> >> > reporting completion in a zero copy callback. The previous fix in the commit 1fd819ec
+>> >> > orphaned frags which eliminates zero copy advantages. The fix makes the completion
+>> >> > called after all the fragments were processed avoiding unnecessary orphaning/copying
+>> >> > from userspace.
+>> >> >
+>> >> > The GSO fragments corruption issue was observed in a typical QEMU/KVM VM setup that
+>> >> > hosts a Windows guest (since QEMU virtio-net Windows driver doesn't support GRO).
+>> >> > The fix has been verified by running the HCK OffloadLSO test.
+>> >> >
+>> >> > Signed-off-by: Igor Royzis <igorr@swortex.com>
+>> >> > Signed-off-by: Anton Nayshtut <anton@swortex.com>
+>> >>
+>> >> OK but with 1fd819ec there's no corruption, correct?
+>> >> So this patch is in fact an optimization?
+>> >> If true, I'd like to see some performance numbers please.
+>> >>
+>> >> Thanks!
+>> >>
+>> >> > ---
+>> >> >  include/linux/skbuff.h |    1 +
+>> >> >  net/core/skbuff.c      |   18 +++++++++++++-----
+>> >> >  2 files changed, 14 insertions(+), 5 deletions(-)
+>> >> >
+>> >> > diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
+>> >> > index 08074a8..8c49edc 100644
+>> >> > --- a/include/linux/skbuff.h
+>> >> > +++ b/include/linux/skbuff.h
+>> >> > @@ -287,6 +287,7 @@ struct skb_shared_info {
+>> >> >       struct sk_buff  *frag_list;
+>> >> >       struct skb_shared_hwtstamps hwtstamps;
+>> >> >       __be32          ip6_frag_id;
+>> >> > +     struct sk_buff  *zcopy_src;
+>> >> >
+>> >> >       /*
+>> >> >        * Warning : all fields before dataref are cleared in __alloc_skb()
+>> >> > diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+>> >> > index 1b62343..6fa6342 100644
+>> >> > --- a/net/core/skbuff.c
+>> >> > +++ b/net/core/skbuff.c
+>> >> > @@ -610,14 +610,18 @@ EXPORT_SYMBOL(__kfree_skb);
+>> >> >   */
+>> >> >  void kfree_skb(struct sk_buff *skb)
+>> >> >  {
+>> >> > +     struct sk_buff *zcopy_src;
+>> >> >       if (unlikely(!skb))
+>> >> >               return;
+>> >> >       if (likely(atomic_read(&skb->users) == 1))
+>> >> >               smp_rmb();
+>> >> >       else if (likely(!atomic_dec_and_test(&skb->users)))
+>> >> >               return;
+>> >> > +     zcopy_src = skb_shinfo(skb)->zcopy_src;
+>> >> >       trace_kfree_skb(skb, __builtin_return_address(0));
+>> >> >       __kfree_skb(skb);
+>> >> > +     if (unlikely(zcopy_src))
+>> >> > +             kfree_skb(zcopy_src);
+>> >> >  }
+>> >> >  EXPORT_SYMBOL(kfree_skb);
+>> >> >
+>> >> > @@ -662,14 +666,18 @@ EXPORT_SYMBOL(skb_tx_error);
+>> >> >   */
+>> >> >  void consume_skb(struct sk_buff *skb)
+>> >> >  {
+>> >> > +     struct sk_buff *zcopy_src;
+>> >> >       if (unlikely(!skb))
+>> >> >               return;
+>> >> >       if (likely(atomic_read(&skb->users) == 1))
+>> >> >               smp_rmb();
+>> >> >       else if (likely(!atomic_dec_and_test(&skb->users)))
+>> >> >               return;
+>> >> > +     zcopy_src = skb_shinfo(skb)->zcopy_src;
+>> >> >       trace_consume_skb(skb);
+>> >> >       __kfree_skb(skb);
+>> >> > +     if (unlikely(zcopy_src))
+>> >> > +             consume_skb(zcopy_src);
+>> >> >  }
+>> >> >  EXPORT_SYMBOL(consume_skb);
+>> >> >
+>> >> > @@ -2867,7 +2875,6 @@ struct sk_buff *skb_segment(struct sk_buff *head_skb,
+>> >> >       skb_frag_t *frag = skb_shinfo(head_skb)->frags;
+>> >> >       unsigned int mss = skb_shinfo(head_skb)->gso_size;
+>> >> >       unsigned int doffset = head_skb->data - skb_mac_header(head_skb);
+>> >> > -     struct sk_buff *frag_skb = head_skb;
+>> >> >       unsigned int offset = doffset;
+>> >> >       unsigned int tnl_hlen = skb_tnl_header_len(head_skb);
+>> >> >       unsigned int headroom;
+>> >> > @@ -2913,7 +2920,6 @@ struct sk_buff *skb_segment(struct sk_buff *head_skb,
+>> >> >                       i = 0;
+>> >> >                       nfrags = skb_shinfo(list_skb)->nr_frags;
+>> >> >                       frag = skb_shinfo(list_skb)->frags;
+>> >> > -                     frag_skb = list_skb;
+>> >> >                       pos += skb_headlen(list_skb);
+>> >> >
+>> >> >                       while (pos < offset + len) {
+>> >> > @@ -2975,6 +2981,11 @@ struct sk_buff *skb_segment(struct sk_buff *head_skb,
+>> >> >                                                nskb->data - tnl_hlen,
+>> >> >                                                doffset + tnl_hlen);
+>> >> >
+>> >> > +             if (skb_shinfo(head_skb)->tx_flags & SKBTX_DEV_ZEROCOPY) {
+>> >> > +                     skb_shinfo(nskb)->zcopy_src = head_skb;
+>> >> > +                     atomic_inc(&head_skb->users);
+>> >> > +             }
+>> >> > +
+>> >> >               if (nskb->len == len + doffset)
+>> >> >                       goto perform_csum_check;
+>> >> >
+>> >> > @@ -3001,7 +3012,6 @@ struct sk_buff *skb_segment(struct sk_buff *head_skb,
+>> >> >                               i = 0;
+>> >> >                               nfrags = skb_shinfo(list_skb)->nr_frags;
+>> >> >                               frag = skb_shinfo(list_skb)->frags;
+>> >> > -                             frag_skb = list_skb;
+>> >> >
+>> >> >                               BUG_ON(!nfrags);
+>> >> >
+>> >> > @@ -3016,8 +3026,6 @@ struct sk_buff *skb_segment(struct sk_buff *head_skb,
+>> >> >                               goto err;
+>> >> >                       }
+>> >> >
+>> >> > -                     if (unlikely(skb_orphan_frags(frag_skb, GFP_ATOMIC)))
+>> >> > -                             goto err;
+>> >> >
+>> >> >                       *nskb_frag = *frag;
+>> >> >                       __skb_frag_ref(nskb_frag);
+>> >> > --
+>> >> > 1.7.9.5
