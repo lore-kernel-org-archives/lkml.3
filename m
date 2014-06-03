@@ -1,136 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754553AbaFCTf5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 15:35:57 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:49039 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933409AbaFCTbr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 15:31:47 -0400
-From: Paolo Bonzini <pbonzini@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: hch@lst.de, JBottomley@Parallels.com, venkateshs@google.com,
-        Ming Lei <ming.lei@canonical.com>
-Subject: [PATCH 2/6] virtio-scsi: replace target spinlock with seqcount
-Date: Tue,  3 Jun 2014 21:31:29 +0200
-Message-Id: <1401823893-29028-3-git-send-email-pbonzini@redhat.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1401823893-29028-1-git-send-email-pbonzini@redhat.com>
-References: <1401823893-29028-1-git-send-email-pbonzini@redhat.com>
+	id S1754753AbaFCTgS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 15:36:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51574 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754585AbaFCTgP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 15:36:15 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Joe Lawrence <joe.lawrence@stratus.com>
+Cc: <linux-kernel@vger.kernel.org>, Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH 1/2] block,scsi: verify return pointer from blk_get_request
+References: <1401396529-17275-1-git-send-email-joe.lawrence@stratus.com>
+	<1401396529-17275-2-git-send-email-joe.lawrence@stratus.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Tue, 03 Jun 2014 15:36:09 -0400
+In-Reply-To: <1401396529-17275-2-git-send-email-joe.lawrence@stratus.com> (Joe
+	Lawrence's message of "Thu, 29 May 2014 16:48:48 -0400")
+Message-ID: <x49vbshvl92.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ming Lei <ming.lei@canonical.com>
+Joe Lawrence <joe.lawrence@stratus.com> writes:
 
-The spinlock of tgt_lock is only for serializing read and write
-req_vq, one lockless seqcount is enough for the purpose.
+> The blk-core dead queue checks introduce an error scenario to
+> blk_get_request that returns NULL if the request queue has been
+> shutdown. This affects the behavior for __GFP_WAIT callers, who should
+> verify the return value before dereferencing.
+>
+> Signed-off-by: Joe Lawrence <joe.lawrence@stratus.com>
+> Acked-by: Jiri Kosina <jkosina@suse.cz> [for pktdvd]
 
-On one 16core VM with vhost-scsi backend, the patch can improve
-IOPS with 3% on random read test.
+Acked-by: Jeff Moyer <jmoyer@redhat.com>
 
-Signed-off-by: Ming Lei <ming.lei@canonical.com>
-[Add initialization in virtscsi_target_alloc. - Paolo]
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
----
- drivers/scsi/virtio_scsi.c | 42 +++++++++++++++++++++++++++++-------------
- 1 file changed, 29 insertions(+), 13 deletions(-)
-
-diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
-index fc054935eb1f..f0b4cdbfceb0 100644
---- a/drivers/scsi/virtio_scsi.c
-+++ b/drivers/scsi/virtio_scsi.c
-@@ -26,6 +26,7 @@
- #include <scsi/scsi_host.h>
- #include <scsi/scsi_device.h>
- #include <scsi/scsi_cmnd.h>
-+#include <linux/seqlock.h>
- 
- #define VIRTIO_SCSI_MEMPOOL_SZ 64
- #define VIRTIO_SCSI_EVENT_LEN 8
-@@ -73,18 +74,16 @@ struct virtio_scsi_vq {
-  * queue, and also lets the driver optimize the IRQ affinity for the virtqueues
-  * (each virtqueue's affinity is set to the CPU that "owns" the queue).
-  *
-- * tgt_lock is held to serialize reading and writing req_vq. Reading req_vq
-- * could be done locklessly, but we do not do it yet.
-+ * tgt_seq is held to serialize reading and writing req_vq.
-  *
-  * Decrements of reqs are never concurrent with writes of req_vq: before the
-  * decrement reqs will be != 0; after the decrement the virtqueue completion
-  * routine will not use the req_vq so it can be changed by a new request.
-- * Thus they can happen outside the tgt_lock, provided of course we make reqs
-+ * Thus they can happen outside the tgt_seq, provided of course we make reqs
-  * an atomic_t.
-  */
- struct virtio_scsi_target_state {
--	/* This spinlock never held at the same time as vq_lock. */
--	spinlock_t tgt_lock;
-+	seqcount_t tgt_seq;
- 
- 	/* Count of outstanding requests. */
- 	atomic_t reqs;
-@@ -521,19 +520,33 @@ static struct virtio_scsi_vq *virtscsi_pick_vq(struct virtio_scsi *vscsi,
- 	unsigned long flags;
- 	u32 queue_num;
- 
--	spin_lock_irqsave(&tgt->tgt_lock, flags);
-+	local_irq_save(flags);
-+	if (atomic_inc_return(&tgt->reqs) > 1) {
-+		unsigned long seq;
-+
-+		do {
-+			seq = read_seqcount_begin(&tgt->tgt_seq);
-+			vq = tgt->req_vq;
-+		} while (read_seqcount_retry(&tgt->tgt_seq, seq));
-+	} else {
-+		/* no writes can be concurrent because of atomic_t */
-+		write_seqcount_begin(&tgt->tgt_seq);
-+
-+		/* keep previous req_vq if there is reader found */
-+		if (unlikely(atomic_read(&tgt->reqs) > 1)) {
-+			vq = tgt->req_vq;
-+			goto unlock;
-+		}
- 
--	if (atomic_inc_return(&tgt->reqs) > 1)
--		vq = tgt->req_vq;
--	else {
- 		queue_num = smp_processor_id();
- 		while (unlikely(queue_num >= vscsi->num_queues))
- 			queue_num -= vscsi->num_queues;
--
- 		tgt->req_vq = vq = &vscsi->req_vqs[queue_num];
-+ unlock:
-+		write_seqcount_end(&tgt->tgt_seq);
- 	}
-+	local_irq_restore(flags);
- 
--	spin_unlock_irqrestore(&tgt->tgt_lock, flags);
- 	return vq;
- }
- 
-@@ -618,14 +631,17 @@ static int virtscsi_abort(struct scsi_cmnd *sc)
- 
- static int virtscsi_target_alloc(struct scsi_target *starget)
- {
-+	struct Scsi_Host *sh = dev_to_shost(starget->dev.parent);
-+	struct virtio_scsi *vscsi = shost_priv(sh);
-+
- 	struct virtio_scsi_target_state *tgt =
- 				kmalloc(sizeof(*tgt), GFP_KERNEL);
- 	if (!tgt)
- 		return -ENOMEM;
- 
--	spin_lock_init(&tgt->tgt_lock);
-+	seqcount_init(&tgt->tgt_seq);
- 	atomic_set(&tgt->reqs, 0);
--	tgt->req_vq = NULL;
-+	tgt->req_vq = &vscsi->req_vqs[0];
- 
- 	starget->hostdata = tgt;
- 	return 0;
--- 
-1.8.3.1
-
-
+> ---
+>  block/scsi_ioctl.c        | 9 ++++++++-
+>  drivers/block/paride/pd.c | 2 ++
+>  drivers/block/pktcdvd.c   | 2 ++
+>  drivers/scsi/scsi_error.c | 2 ++
+>  4 files changed, 14 insertions(+), 1 deletion(-)
+>
+> diff --git a/block/scsi_ioctl.c b/block/scsi_ioctl.c
+> index 2648797..e6485c9 100644
+> --- a/block/scsi_ioctl.c
+> +++ b/block/scsi_ioctl.c
+> @@ -442,6 +442,10 @@ int sg_scsi_ioctl(struct request_queue *q, struct gendisk *disk, fmode_t mode,
+>  	}
+>  
+>  	rq = blk_get_request(q, in_len ? WRITE : READ, __GFP_WAIT);
+> +	if (!rq) {
+> +		err = -ENODEV;
+> +		goto error_free_buffer;
+> +	}
+>  
+>  	cmdlen = COMMAND_SIZE(opcode);
+>  
+> @@ -514,8 +518,9 @@ out:
+>  	}
+>  	
+>  error:
+> -	kfree(buffer);
+>  	blk_put_request(rq);
+> +error_free_buffer:
+> +	kfree(buffer);
+>  	return err;
+>  }
+>  EXPORT_SYMBOL_GPL(sg_scsi_ioctl);
+> @@ -528,6 +533,8 @@ static int __blk_send_generic(struct request_queue *q, struct gendisk *bd_disk,
+>  	int err;
+>  
+>  	rq = blk_get_request(q, WRITE, __GFP_WAIT);
+> +	if (!rq)
+> +		return -ENODEV;
+>  	rq->cmd_type = REQ_TYPE_BLOCK_PC;
+>  	rq->timeout = BLK_DEFAULT_SG_TIMEOUT;
+>  	rq->cmd[0] = cmd;
+> diff --git a/drivers/block/paride/pd.c b/drivers/block/paride/pd.c
+> index 19ad8f0..856178a 100644
+> --- a/drivers/block/paride/pd.c
+> +++ b/drivers/block/paride/pd.c
+> @@ -722,6 +722,8 @@ static int pd_special_command(struct pd_unit *disk,
+>  	int err = 0;
+>  
+>  	rq = blk_get_request(disk->gd->queue, READ, __GFP_WAIT);
+> +	if (!rq)
+> +		return -ENODEV;
+>  
+>  	rq->cmd_type = REQ_TYPE_SPECIAL;
+>  	rq->special = func;
+> diff --git a/drivers/block/pktcdvd.c b/drivers/block/pktcdvd.c
+> index a2af73d..ff39837 100644
+> --- a/drivers/block/pktcdvd.c
+> +++ b/drivers/block/pktcdvd.c
+> @@ -704,6 +704,8 @@ static int pkt_generic_packet(struct pktcdvd_device *pd, struct packet_command *
+>  
+>  	rq = blk_get_request(q, (cgc->data_direction == CGC_DATA_WRITE) ?
+>  			     WRITE : READ, __GFP_WAIT);
+> +	if (!rq)
+> +		return -ENODEV;
+>  
+>  	if (cgc->buflen) {
+>  		ret = blk_rq_map_kern(q, rq, cgc->buffer, cgc->buflen,
+> diff --git a/drivers/scsi/scsi_error.c b/drivers/scsi/scsi_error.c
+> index f17aa7a..d50531f 100644
+> --- a/drivers/scsi/scsi_error.c
+> +++ b/drivers/scsi/scsi_error.c
+> @@ -1950,6 +1950,8 @@ static void scsi_eh_lock_door(struct scsi_device *sdev)
+>  	 * request becomes available
+>  	 */
+>  	req = blk_get_request(sdev->request_queue, READ, GFP_KERNEL);
+> +	if (!req)
+> +		return;
+>  
+>  	req->cmd[0] = ALLOW_MEDIUM_REMOVAL;
+>  	req->cmd[1] = 0;
