@@ -1,114 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754195AbaFCPQ2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 11:16:28 -0400
-Received: from mail-we0-f175.google.com ([74.125.82.175]:46003 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751376AbaFCPQ1 (ORCPT
+	id S932847AbaFCPRJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 11:17:09 -0400
+Received: from mail-qg0-f52.google.com ([209.85.192.52]:56300 "EHLO
+	mail-qg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932225AbaFCPRH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 11:16:27 -0400
-Date: Tue, 3 Jun 2014 16:16:23 +0100
-From: Daniel Walter <dwalter@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: richard@nod.at, akpm@linux-foundation.org, linux@arm.linux.org.uk
-Subject: [PATCH v2 01/11] [arch/arm/omap2] replace strict_strto* with kstrto*
-Message-ID: <20140603151623.GC28580@google.com>
+	Tue, 3 Jun 2014 11:17:07 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5384DD67.3010408@intel.com>
+References: <1401199802-10212-1-git-send-email-matt.fleming@intel.com>
+	<5384DD67.3010408@intel.com>
+Date: Tue, 3 Jun 2014 16:17:06 +0100
+Message-ID: <CAL01qpvbDRnE0mHBttomcqYtT6i9OaG_kvnj6BMXtqYn4cP1FQ@mail.gmail.com>
+Subject: Re: [PATCH] mm: bootmem: Check pfn_valid() before accessing struct page
+From: "Fleming, Matt" <matt.fleming@intel.com>
+To: Dave Hansen <dave.hansen@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Daniel Walter <dwalter@google.com>
-Subject: [PATCH v2 01/11] [arch/arm/omap2] replace strict_strto* with kstrto*
+On 27 May 2014 19:45, Dave Hansen <dave.hansen@intel.com> wrote:
+>
+> I don't think this is quite right.  pfn_valid() tells us whether we have
+> a 'struct page' there or not.  *BUT*, it does not tell us whether it is
+> RAM that we can actually address and than can be freed in to the buddy
+> allocator.
+>
+> I think sparsemem is where this matters.  Let's say mem= caused lowmem
+> to end in the middle of a section (or that 896MB wasn't
+> section-aligned).  Then someone calls free_bootmem_late() on an area
+> that is in the last section, but _above_ max_mapnr.  It'll be
+> pfn_valid(), we'll free it in to the buddy allocator, and we'll blam the
+> first time we try to write to a bogus vaddr after a phys_to_virt().
 
-Replace obsolete strict_strto call with kstrto calls.
-Simplify copy_from_user/strict_strto by using kstrto_from_user
+Ah, the sparsemem case wasn't something I'd considered. Thanks Dave.
 
-Signed-off-by: Daniel Walter <dwalter@google.com>
----
- arch/arm/mach-omap2/board-omap3touchbook.c |  2 +-
- arch/arm/mach-omap2/mux.c                  | 22 ++++++----------------
- 2 files changed, 7 insertions(+), 17 deletions(-)
+> At a higher level, I don't like the idea of the bootmem code papering
+> over bugs when somebody calls in to it trying to _free_ stuff that's not
+> memory (as far as the kernel is concerned).
+>
+> I think the right thing to do is to call in to the e820 code and see if
+> the range is E820_RAM before trying to bootmem-free it.
 
-diff --git a/arch/arm/mach-omap2/board-omap3touchbook.c b/arch/arm/mach-omap2/board-omap3touchbook.c
-index 7da48bc..70b904c 100644
---- a/arch/arm/mach-omap2/board-omap3touchbook.c
-+++ b/arch/arm/mach-omap2/board-omap3touchbook.c
-@@ -336,7 +336,7 @@ static int __init early_touchbook_revision(char *p)
- 	if (!p)
- 		return 0;
- 
--	return strict_strtoul(p, 10, &touchbook_revision);
-+	return kstrtoul(p, 10, &touchbook_revision);
- }
- early_param("tbr", early_touchbook_revision);
- 
-diff --git a/arch/arm/mach-omap2/mux.c b/arch/arm/mach-omap2/mux.c
-index 48094b5..42f7109 100644
---- a/arch/arm/mach-omap2/mux.c
-+++ b/arch/arm/mach-omap2/mux.c
-@@ -679,29 +679,19 @@ static ssize_t omap_mux_dbg_signal_write(struct file *file,
- 					 const char __user *user_buf,
- 					 size_t count, loff_t *ppos)
- {
--	char buf[OMAP_MUX_MAX_ARG_CHAR];
- 	struct seq_file *seqf;
- 	struct omap_mux *m;
--	unsigned long val;
--	int buf_size, ret;
-+	u16 val;
-+	int ret;
- 	struct omap_mux_partition *partition;
- 
- 	if (count > OMAP_MUX_MAX_ARG_CHAR)
- 		return -EINVAL;
- 
--	memset(buf, 0, sizeof(buf));
--	buf_size = min(count, sizeof(buf) - 1);
--
--	if (copy_from_user(buf, user_buf, buf_size))
--		return -EFAULT;
--
--	ret = strict_strtoul(buf, 0x10, &val);
-+	ret = kstrtou16_from_user(user_buf, count, 0x10, &val);
- 	if (ret < 0)
- 		return ret;
- 
--	if (val > 0xffff)
--		return -EINVAL;
--
- 	seqf = file->private_data;
- 	m = seqf->private;
- 
-@@ -709,7 +699,7 @@ static ssize_t omap_mux_dbg_signal_write(struct file *file,
- 	if (!partition)
- 		return -ENODEV;
- 
--	omap_mux_write(partition, (u16)val, m->reg_offset);
-+	omap_mux_write(partition, val, m->reg_offset);
- 	*ppos += count;
- 
- 	return count;
-@@ -915,14 +905,14 @@ static void __init omap_mux_set_cmdline_signals(void)
- 
- 	while ((token = strsep(&next_opt, ",")) != NULL) {
- 		char *keyval, *name;
--		unsigned long val;
-+		u16 val;
- 
- 		keyval = token;
- 		name = strsep(&keyval, "=");
- 		if (name) {
- 			int res;
- 
--			res = strict_strtoul(keyval, 0x10, &val);
-+			res = kstrtou16(keyval, 0x10, &val);
- 			if (res < 0)
- 				continue;
- 
--- 
-1.9.3
-
+OK, this makes sense. I'll try that approach and see if it also fixes
+Alan's problem.
