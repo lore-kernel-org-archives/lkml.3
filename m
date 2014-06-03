@@ -1,49 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752328AbaFCDHP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 23:07:15 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:42251 "EHLO
-	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751549AbaFCDHO (ORCPT
+	id S1753149AbaFCDKl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 23:10:41 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:63139 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751549AbaFCDKk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 23:07:14 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@gmail.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: acme@kernel.org, namhyung.kim@lge.com, linux-kernel@vger.kernel.org,
-        tzanussi@gmail.com, jolsa@redhat.com, a.p.zijlstra@chello.nl,
-        mingo@kernel.org, paulus@samba.org
-Subject: Re: [PATCH] perf script: pass more arguments to the python event handler
-References: <1401467123-12773-1-git-send-email-bigeasy@linutronix.de>
-Date: Tue, 03 Jun 2014 12:07:11 +0900
-In-Reply-To: <1401467123-12773-1-git-send-email-bigeasy@linutronix.de>
-	(Sebastian Andrzej Siewior's message of "Fri, 30 May 2014 18:25:23
-	+0200")
-Message-ID: <8738fmelnk.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	Mon, 2 Jun 2014 23:10:40 -0400
+From: Jianyu Zhan <nasa4836@gmail.com>
+To: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
+        acme@kernel.org, jolsa@redhat.com, jean.pihet@linaro.org
+Cc: linux-kernel@vger.kernel.org, nasa4836@gmail.com
+Subject: Re: [PATCH] perf: fix 'make help' message error
+Date: Tue,  3 Jun 2014 11:10:31 +0800
+Message-Id: <1401765031-29555-1-git-send-email-nasa4836@gmail.com>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <87egz6emef.fsf@sejong.aot.lge.com>
+References: <87egz6emef.fsf@sejong.aot.lge.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sebastian,
+Hi, Namhyung,
 
-On Fri, 30 May 2014 18:25:23 +0200, Sebastian Andrzej Siewior wrote:
-> This patch extends the current argument list in case of events by
-> - IP / addr of the event. Currently only the function name is passed.
-> - seconds and ns as the timestamp. Split into two value to stay close to
->   what the trace handler passes.
-> - the pid of the proccess
+On Tue, Jun 3, 2014 at 10:51 AM, Namhyung Kim <namhyung@gmail.com> wrote:
 >
-> I added a common_ prefix to stay close to the naming of the "trace"
-> handler. Currently I don't mind dropping it since "comm" isn't named
-> "common_comm". Any suggestions?
+> s/condiered/considered/ ?
+>
+>
 
-Please take a look at Joseph's work on the same direction (and more).
+Oops, sorry for the typo.
 
-https://lkml.org/lkml/2014/4/3/217
+>>> has an empty value, so "prefix" is honored. However, "prefix" is unconditionally
+>>> assigned to $HOME, regardless of what it is set to from command line. So our
+>>> "prefix" setting got no respect and the actual destination falls back to $HOME.
+>>>
+>>> This patch fixes this issue and corrects the help message.
+>
+> With that changed,
+>
+> Acked-by: Namhyung Kim <namhyung@kernel.org>
 
-Thanks,
-Namhyung
+Thanks. I renew the patch for maintainers to pick up.
+
+-----8<-----
+Subject: [PATCH] perf: fix 'make help' message error
+Currently 'make help' message has such hint:
+
+   use "make prefix=<path> <install target>" to install to a particular
+       path like make prefix=/usr/local install install-doc
+
+But this is misleading, when I specify "prefix=/usr/local", it has got no
+respect at all.
+
+This is because that, "DESTDIR" is considered first. In this case, "DESTDIR"
+has an empty value, so "prefix" is honored. However, "prefix" is unconditionally
+assigned to $HOME, regardless of what it is set to from command line. So our
+"prefix" setting got no respect and the actual destination falls back to $HOME.
+
+This patch fixes this issue and corrects the help message.
+
+Acked-by: Namhyung Kim <namhyung@kernel.org>
+Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
+---
+ tools/perf/Makefile.perf   | 4 ++--
+ tools/perf/config/Makefile | 2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
+index 895edd3..5918063 100644
+--- a/tools/perf/Makefile.perf
++++ b/tools/perf/Makefile.perf
+@@ -784,8 +784,8 @@ help:
+ 	@echo ''
+ 	@echo 'Perf install targets:'
+ 	@echo '  NOTE: documentation build requires asciidoc, xmlto packages to be installed'
+-	@echo '  HINT: use "make prefix=<path> <install target>" to install to a particular'
+-	@echo '        path like make prefix=/usr/local install install-doc'
++	@echo '  HINT: use "prefix" or "DESTDIR" to install to a particular'
++	@echo '        path like "make prefix=/usr/local install install-doc"'
+ 	@echo '  install	- install compiled binaries'
+ 	@echo '  install-doc	- install *all* documentation'
+ 	@echo '  install-man	- install manpage documentation'
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index 802cf54..53dc11e 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -601,7 +601,7 @@ endif
+ 
+ # Make the path relative to DESTDIR, not to prefix
+ ifndef DESTDIR
+-prefix = $(HOME)
++prefix ?= $(HOME)
+ endif
+ bindir_relative = bin
+ bindir = $(prefix)/$(bindir_relative)
+-- 
+2.0.0
+
