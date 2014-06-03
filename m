@@ -1,76 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934332AbaFCXsV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 19:48:21 -0400
-Received: from know-smtprelay-omc-10.server.virginmedia.net ([80.0.253.74]:41601
-	"EHLO know-smtprelay-omc-10.server.virginmedia.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932164AbaFCXsU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 19:48:20 -0400
-X-Originating-IP: [81.106.150.188]
-X-Spam: 0
-X-Authority: v=2.1 cv=FZq5xfO6 c=1 sm=1 tr=0 a=DGj713NdaxKrsjjgQne7PA==:117
- a=DGj713NdaxKrsjjgQne7PA==:17 a=J0QyKEt1u0cA:10 a=stjsFTeFptUA:10
- a=uObrxnre4hsA:10 a=IkcTkHD0fZMA:10 a=NLZqzBF-AAAA:8 a=dT1Wy2BCr5avlHYHrYgA:9
- a=QEXdDO2ut3YA:10
-Date: Wed, 4 Jun 2014 00:48:16 +0100
-From: Ken Moffat <zarniwhoop@ntlworld.com>
-To: Joe Perches <joe@perches.com>
-Cc: josh@joshtriplett.org, Dave Chinner <david@fromorbit.com>,
-        Steven Rostedt <rostedt@goodmis.org>, paulmck@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, dhowells@redhat.com, edumazet@google.com,
-        dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
-        sbw@mit.edu
-Subject: Re: [PATCH RFC 1/2] MAINTAINERS: Add "R:" designated-reviewers tag
-Message-ID: <20140603234816.GB26144@milliways>
-References: <20140602181658.GX22231@linux.vnet.ibm.com>
- <1401734669.7323.20.camel@joe-AO725>
- <20140602145020.400d4e0c@gandalf.local.home>
- <20140602185504.GA13569@cloud>
- <1401735917.7323.23.camel@joe-AO725>
- <20140602190951.GA13648@cloud>
- <1401736666.7323.25.camel@joe-AO725>
- <20140602231949.GV14410@dastard>
- <20140602235915.GB14801@cloud>
- <1401754325.7323.50.camel@joe-AO725>
+	id S1754867AbaFCXu5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 19:50:57 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:36117 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753180AbaFCXu4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 19:50:56 -0400
+Date: Tue, 3 Jun 2014 19:50:50 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+Cc: linux-kernel@vger.kernel.org,
+        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ingo Molnar <mingo@redhat.com>, yrl.pp-manager.tt@hitachi.com
+Subject: Re: [PATCH ftrace/core 1/2] [BUGFIX] ftrace: Avoid panic when
+ allocation of max_buffer is failed
+Message-ID: <20140603195050.18bdbc15@gandalf.local.home>
+In-Reply-To: <20140603042803.27308.30956.stgit@yunodevel>
+References: <20140603042800.27308.48050.stgit@yunodevel>
+	<20140603042803.27308.30956.stgit@yunodevel>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1401754325.7323.50.camel@joe-AO725>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 02, 2014 at 05:12:05PM -0700, Joe Perches wrote:
+On Tue, 03 Jun 2014 13:28:03 +0900
+Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com> wrote:
+
+> When allocation of max_buffer is failed, the kernel frees tr->trace_buffer.data
+> per CPU and return -ENOMEM in allocate_trace_buffers(). However,
+> tracer_alloc_buffers() calling allocate_trace_buffers() also frees the data
+> per CPU for -ENOMEM by allocate_trace_buffers(). Therefore, the allocation
+> failure induces double free.
 > 
-> "Tested-by:" tags would be more helpful if the test
-> cases that were used were somehow sent along with the
-> signature.
+> For the out_free_mask path in tracer_alloc_buffers(),
+> global_trace.trace_buffer.data and global_trace.max_buffer.data are
+> not allocated yet, so free_percpu of those are not needed.
 > 
- To me, that seems either a perverse, or else a bureaucratic,
-interpretation of what should go where.
+> Signed-off-by: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: linux-kernel@vger.kernel.org
+> ---
+>  kernel/trace/trace.c |    4 ----
+>  1 file changed, 4 deletions(-)
+> 
+> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+> index 626dbfd..135af32 100644
+> --- a/kernel/trace/trace.c
+> +++ b/kernel/trace/trace.c
+> @@ -6671,10 +6671,6 @@ __init static int tracer_alloc_buffers(void)
+>  out_free_temp_buffer:
+>  	ring_buffer_free(temp_buffer);
+>  out_free_cpumask:
+> -	free_percpu(global_trace.trace_buffer.data);
+> -#ifdef CONFIG_TRACER_MAX_TRACE
+> -	free_percpu(global_trace.max_buffer.data);
+> -#endif
+>  	free_cpumask_var(global_trace.tracing_cpumask);
+>  out_free_buffer_mask:
+>  	free_cpumask_var(tracing_buffer_mask);
 
- Tested-by is usually used for a fix of some problem, often a
-regression.  A good commit message will explain the problem.  I have
-recently offered this tag in two cases - in the first case it did
-not boot without the fix, in the second it did not wake up from
-suspend.  In each case, only one of my boxes was affected.  Do you
-think I should have insisted that some of my lspci -V information
-was appended to the commit (they both affected the radeon code) if
-my tag was going to be added ?
+OK, so this is a double free on an error path at boot up. As it is
+highly unlikely, I'll just add it for my 3.16 queue. It doesn't need to
+go to stable.
 
- This is _often_ not like userspace programs where you can write a
-testsuite to exercise the corner cases.  Kernel problems can be
-tied up with intricate details of the hardware, or equally they
-might happen only for certain usage, and for those it might not be
-at all obvious what is "special" about the affected usage.
-
-ĸen
--- 
-Nanny Ogg usually went to bed early. After all, she was an old lady.
-Sometimes she went to bed as early as 6 a.m.
+-- Steve
