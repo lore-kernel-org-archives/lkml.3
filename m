@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754420AbaFCLmE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 07:42:04 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43647 "EHLO
+	id S1754907AbaFCL7J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 07:59:09 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43662 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932836AbaFCLmA (ORCPT
+	with ESMTP id S1752884AbaFCLmD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 07:42:00 -0400
+	Tue, 3 Jun 2014 07:42:03 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Nicholas Bellinger <nab@linux-iscsi.org>,
+Cc: Leif Lindholm <leif.lindholm@linaro.org>, linux-mips@linux-mips.org,
+        devicetree@vger.kernel.org, Mark Rutland <mark.rutland@arm.com>,
+        Grant Likely <grant.likely@linaro.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 086/138] iscsi-target: Change BUG_ON to REJECT in iscsit_process_nop_out
-Date: Tue,  3 Jun 2014 12:38:52 +0100
-Message-Id: <1401795584-22664-87-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 088/138] mips: dts: Fix missing device_type="memory" property in memory nodes
+Date: Tue,  3 Jun 2014 12:38:54 +0100
+Message-Id: <1401795584-22664-89-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
 References: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
@@ -27,47 +29,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Leif Lindholm <leif.lindholm@linaro.org>
 
-commit 7cbfcc953789ff864c2bf8365a82a3fba4869649 upstream.
+commit dfc44f8030653b345fc6fb337558c3a07536823f upstream.
 
-This patch changes an incorrect use of BUG_ON to instead generate a
-REJECT + PROTOCOL_ERROR in iscsit_process_nop_out() code.  This case
-can occur with traditional TCP where a flood of zeros in the data
-stream can reach this block for what is presumed to be a NOP-OUT with
-a solicited reply, but without a valid iscsi_cmd pointer.
+A few platforms lack a 'device_type = "memory"' for their memory
+nodes, relying on an old ppc quirk in order to discover its memory.
+Add the missing data so that all parsing code can find memory nodes
+correctly.
 
-This incorrect BUG_ON was introduced during the v3.11-rc timeframe
-with the following commit:
-
-commit 778de368964c5b7e8100cde9f549992d521e9c89
-Author: Nicholas Bellinger <nab@linux-iscsi.org>
-Date:   Fri Jun 14 16:07:47 2013 -0700
-
-    iscsi/isert-target: Refactor ISCSI_OP_NOOP RX handling
-
-Reported-by: Arshad Hussain <arshad.hussain@calsoftinc.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Leif Lindholm <leif.lindholm@linaro.org>
+Cc: linux-mips@linux-mips.org
+Cc: devicetree@vger.kernel.org
+Cc: Mark Rutland <mark.rutland@arm.com>
+Acked-by: John Crispin <blogic@openwrt.org>
+Signed-off-by: Grant Likely <grant.likely@linaro.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/target/iscsi/iscsi_target.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ arch/mips/lantiq/dts/easy50712.dts    | 1 +
+ arch/mips/ralink/dts/mt7620a_eval.dts | 1 +
+ arch/mips/ralink/dts/rt2880_eval.dts  | 1 +
+ arch/mips/ralink/dts/rt3052_eval.dts  | 1 +
+ arch/mips/ralink/dts/rt3883_eval.dts  | 1 +
+ 5 files changed, 5 insertions(+)
 
-diff --git a/drivers/target/iscsi/iscsi_target.c b/drivers/target/iscsi/iscsi_target.c
-index 173094aa1a21..9c3852720bd1 100644
---- a/drivers/target/iscsi/iscsi_target.c
-+++ b/drivers/target/iscsi/iscsi_target.c
-@@ -1591,7 +1591,9 @@ int iscsit_process_nop_out(struct iscsi_conn *conn, struct iscsi_cmd *cmd,
- 	 * Initiator is expecting a NopIN ping reply..
- 	 */
- 	if (hdr->itt != RESERVED_ITT) {
--		BUG_ON(!cmd);
-+		if (!cmd)
-+			return iscsit_add_reject(conn, ISCSI_REASON_PROTOCOL_ERROR,
-+						(unsigned char *)hdr);
+diff --git a/arch/mips/lantiq/dts/easy50712.dts b/arch/mips/lantiq/dts/easy50712.dts
+index fac1f5b178eb..143b8a37b5e4 100644
+--- a/arch/mips/lantiq/dts/easy50712.dts
++++ b/arch/mips/lantiq/dts/easy50712.dts
+@@ -8,6 +8,7 @@
+ 	};
  
- 		spin_lock_bh(&conn->cmd_lock);
- 		list_add_tail(&cmd->i_conn_node, &conn->conn_cmd_list);
+ 	memory@0 {
++		device_type = "memory";
+ 		reg = <0x0 0x2000000>;
+ 	};
+ 
+diff --git a/arch/mips/ralink/dts/mt7620a_eval.dts b/arch/mips/ralink/dts/mt7620a_eval.dts
+index 35eb874ab7f1..709f58132f5c 100644
+--- a/arch/mips/ralink/dts/mt7620a_eval.dts
++++ b/arch/mips/ralink/dts/mt7620a_eval.dts
+@@ -7,6 +7,7 @@
+ 	model = "Ralink MT7620A evaluation board";
+ 
+ 	memory@0 {
++		device_type = "memory";
+ 		reg = <0x0 0x2000000>;
+ 	};
+ 
+diff --git a/arch/mips/ralink/dts/rt2880_eval.dts b/arch/mips/ralink/dts/rt2880_eval.dts
+index 322d7002595b..0a685db093d4 100644
+--- a/arch/mips/ralink/dts/rt2880_eval.dts
++++ b/arch/mips/ralink/dts/rt2880_eval.dts
+@@ -7,6 +7,7 @@
+ 	model = "Ralink RT2880 evaluation board";
+ 
+ 	memory@0 {
++		device_type = "memory";
+ 		reg = <0x8000000 0x2000000>;
+ 	};
+ 
+diff --git a/arch/mips/ralink/dts/rt3052_eval.dts b/arch/mips/ralink/dts/rt3052_eval.dts
+index 0ac73ea28198..ec9e9a035541 100644
+--- a/arch/mips/ralink/dts/rt3052_eval.dts
++++ b/arch/mips/ralink/dts/rt3052_eval.dts
+@@ -7,6 +7,7 @@
+ 	model = "Ralink RT3052 evaluation board";
+ 
+ 	memory@0 {
++		device_type = "memory";
+ 		reg = <0x0 0x2000000>;
+ 	};
+ 
+diff --git a/arch/mips/ralink/dts/rt3883_eval.dts b/arch/mips/ralink/dts/rt3883_eval.dts
+index 2fa6b330bf4f..e8df21a5d10d 100644
+--- a/arch/mips/ralink/dts/rt3883_eval.dts
++++ b/arch/mips/ralink/dts/rt3883_eval.dts
+@@ -7,6 +7,7 @@
+ 	model = "Ralink RT3883 evaluation board";
+ 
+ 	memory@0 {
++		device_type = "memory";
+ 		reg = <0x0 0x2000000>;
+ 	};
+ 
 -- 
 1.9.1
 
