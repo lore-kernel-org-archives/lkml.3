@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933643AbaFCTbz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 15:31:55 -0400
-Received: from mail-we0-f176.google.com ([74.125.82.176]:44129 "EHLO
-	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933574AbaFCTbx (ORCPT
+	id S933665AbaFCTc3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 15:32:29 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:65264 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933048AbaFCTby (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 15:31:53 -0400
+	Tue, 3 Jun 2014 15:31:54 -0400
 From: Paolo Bonzini <pbonzini@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: hch@lst.de, JBottomley@Parallels.com, venkateshs@google.com,
-        stable@vger.kernel.org, Ulrich Obergfell <uobergfe@redhat.com>
-Subject: [PATCH 5/6] virtio-scsi: fix various bad behavior on aborted requests
-Date: Tue,  3 Jun 2014 21:31:32 +0200
-Message-Id: <1401823893-29028-6-git-send-email-pbonzini@redhat.com>
+Cc: hch@lst.de, JBottomley@Parallels.com, venkateshs@google.com
+Subject: [PATCH 6/6] virtio-scsi: Implement change_queue_depth for virtscsi targets
+Date: Tue,  3 Jun 2014 21:31:33 +0200
+Message-Id: <1401823893-29028-7-git-send-email-pbonzini@redhat.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1401823893-29028-1-git-send-email-pbonzini@redhat.com>
 References: <1401823893-29028-1-git-send-email-pbonzini@redhat.com>
@@ -21,60 +20,86 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Even though the virtio-scsi spec guarantees that all requests related
-to the TMF will have been completed by the time the TMF itself completes,
-the request queue's callback might not have run yet.  This causes requests
-to be completed more than once, and as a result triggers a variety of
-BUGs or oopses.
+From: Venkatesh Srinivas <venkateshs@google.com>
 
-Cc: stable@vger.kernel.org
-Cc: Ulrich Obergfell <uobergfe@redhat.com>
+change_queue_depth allows changing per-target queue depth via sysfs.
+
+It also allows the SCSI midlayer to ramp down the number of concurrent
+inflight requests in response to a SCSI BUSY status response and allows
+the midlayer to ramp the count back up to the device maximum when the
+BUSY condition has resolved.
+
+Signed-off-by: Venkatesh Srinivas <venkateshs@google.com>
 Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 ---
- drivers/scsi/virtio_scsi.c | 22 ++++++++++++++++++++++
- 1 file changed, 22 insertions(+)
+ drivers/scsi/virtio_scsi.c | 33 +++++++++++++++++++++++++++++++++
+ 1 file changed, 33 insertions(+)
 
 diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
-index d66c4ee2c774..fda9fb358888 100644
+index fda9fb358888..de0f8d9b3682 100644
 --- a/drivers/scsi/virtio_scsi.c
 +++ b/drivers/scsi/virtio_scsi.c
-@@ -235,6 +235,16 @@ static void virtscsi_req_done(struct virtqueue *vq)
- 	virtscsi_vq_done(vscsi, req_vq, virtscsi_complete_cmd);
- };
+@@ -26,6 +26,7 @@
+ #include <scsi/scsi_host.h>
+ #include <scsi/scsi_device.h>
+ #include <scsi/scsi_cmnd.h>
++#include <scsi/scsi_tcq.h>
+ #include <linux/seqlock.h>
  
-+static void virtscsi_poll_requests(struct virtio_scsi *vscsi)
+ #define VIRTIO_SCSI_MEMPOOL_SZ 64
+@@ -629,6 +630,36 @@ static int virtscsi_device_reset(struct scsi_cmnd *sc)
+ 	return virtscsi_tmf(vscsi, cmd);
+ }
+ 
++/**
++ * virtscsi_change_queue_depth() - Change a virtscsi target's queue depth
++ * @sdev:	Virtscsi target whose queue depth to change
++ * @qdepth:	New queue depth
++ * @reason:	Reason for the queue depth change.
++ */
++static int virtscsi_change_queue_depth(struct scsi_device *sdev,
++				       int qdepth,
++				       int reason)
 +{
-+	int i, num_vqs;
++	struct Scsi_Host *shost = sdev->host;
++	int max_depth = shost->cmd_per_lun;
 +
-+	num_vqs = vscsi->num_queues;
-+	for (i = 0; i < num_vqs; i++)
-+		virtscsi_vq_done(vscsi, &vscsi->req_vqs[i],
-+				 virtscsi_complete_cmd);
++	switch (reason) {
++	case SCSI_QDEPTH_QFULL: /* Drop qdepth in response to BUSY state */
++		scsi_track_queue_full(sdev, qdepth);
++		break;
++	case SCSI_QDEPTH_RAMP_UP: /* Raise qdepth after BUSY state resolved */
++	case SCSI_QDEPTH_DEFAULT: /* Manual change via sysfs */
++		scsi_adjust_queue_depth(sdev,
++					scsi_get_tag_type(sdev),
++					min(max_depth, qdepth));
++		break;
++	default:
++		return -EOPNOTSUPP;
++	}
++
++	return sdev->queue_depth;
 +}
 +
- static void virtscsi_complete_free(struct virtio_scsi *vscsi, void *buf)
+ static int virtscsi_abort(struct scsi_cmnd *sc)
  {
- 	struct virtio_scsi_cmd *cmd = buf;
-@@ -579,6 +589,18 @@ static int virtscsi_tmf(struct virtio_scsi *vscsi, struct virtio_scsi_cmd *cmd)
- 	    cmd->resp.tmf.response == VIRTIO_SCSI_S_FUNCTION_SUCCEEDED)
- 		ret = SUCCESS;
+ 	struct virtio_scsi *vscsi = shost_priv(sc->device->host);
+@@ -683,6 +714,7 @@ static struct scsi_host_template virtscsi_host_template_single = {
+ 	.proc_name = "virtio_scsi",
+ 	.this_id = -1,
+ 	.queuecommand = virtscsi_queuecommand_single,
++	.change_queue_depth = virtscsi_change_queue_depth,
+ 	.eh_abort_handler = virtscsi_abort,
+ 	.eh_device_reset_handler = virtscsi_device_reset,
  
-+	/*
-+	 * The spec guarantees that all requests related to the TMF have
-+	 * been completed, but the callback might not have run yet if
-+	 * we're using independent interrupts (e.g. MSI).  Poll the
-+	 * virtqueues once.
-+	 *
-+	 * In the abort case, sc->scsi_done will do nothing, because
-+	 * the block layer must have detected a timeout and as a result
-+	 * REQ_ATOM_COMPLETE has been set.
-+	 */
-+	virtscsi_poll_requests(vscsi);
-+
- out:
- 	mempool_free(cmd, virtscsi_cmd_pool);
- 	return ret;
+@@ -699,6 +731,7 @@ static struct scsi_host_template virtscsi_host_template_multi = {
+ 	.proc_name = "virtio_scsi",
+ 	.this_id = -1,
+ 	.queuecommand = virtscsi_queuecommand_multi,
++	.change_queue_depth = virtscsi_change_queue_depth,
+ 	.eh_abort_handler = virtscsi_abort,
+ 	.eh_device_reset_handler = virtscsi_device_reset,
+ 
 -- 
 1.8.3.1
-
 
