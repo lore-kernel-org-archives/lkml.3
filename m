@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754547AbaFCPUW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 11:20:22 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:36462 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754456AbaFCPUR (ORCPT
+	id S932966AbaFCPVL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 11:21:11 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:36174 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754594AbaFCPVJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 11:20:17 -0400
-Date: Tue, 3 Jun 2014 16:20:13 +0100
+	Tue, 3 Jun 2014 11:21:09 -0400
+Date: Tue, 3 Jun 2014 16:21:05 +0100
 From: Daniel Walter <dwalter@google.com>
 To: linux-kernel@vger.kernel.org
-Cc: richard@nod.at, akpm@linux-foundation.org, mcuos.com@gmail.com
-Subject: [PATCH v2 04/11] [arch/arm/mach-w90x900] replace obsolete
- strict_strto
-Message-ID: <20140603152013.GF28580@google.com>
+Cc: richard@nod.at, akpm@linux-foundation.org, ralf@linux-mips.org
+Subject: [PATCH v2 05/11] [arch/mips/alchemy] replace obsolete strict_strto
+Message-ID: <20140603152105.GG28580@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -23,28 +22,50 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Daniel Walter <dwalter@google.com>
-Subject: [PATCH v2 04/11] [arch/arm/mach-w90x900] replace obsolete strict_strto
+Subject: [PATCH v2 05/11] [arch/mips/alchemy] replace obsolete strict_strto
 
-Replace obsolete strict_strto with kstrto calls
+Replace obsolete strict_strto call with kstrto
 
 Signed-off-by: Daniel Walter <dwalter@google.com>
 ---
- arch/arm/mach-w90x900/cpu.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ arch/mips/alchemy/board-xxs1500.c | 2 +-
+ arch/mips/alchemy/devboards/pm.c  | 4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/arch/arm/mach-w90x900/cpu.c b/arch/arm/mach-w90x900/cpu.c
-index b1eabaa..213230ee 100644
---- a/arch/arm/mach-w90x900/cpu.c
-+++ b/arch/arm/mach-w90x900/cpu.c
-@@ -178,7 +178,8 @@ static int __init nuc900_set_cpufreq(char *str)
- 	if (!*str)
- 		return 0;
+diff --git a/arch/mips/alchemy/board-xxs1500.c b/arch/mips/alchemy/board-xxs1500.c
+index bd55136..3fb814b 100644
+--- a/arch/mips/alchemy/board-xxs1500.c
++++ b/arch/mips/alchemy/board-xxs1500.c
+@@ -49,7 +49,7 @@ void __init prom_init(void)
+ 	prom_init_cmdline();
  
--	strict_strtoul(str, 0, &cpufreq);
-+	if (kstrtoul(str, 0, &cpufreq))
-+		return 0;
+ 	memsize_str = prom_getenv("memsize");
+-	if (!memsize_str || strict_strtoul(memsize_str, 0, &memsize))
++	if (!memsize_str || kstrtoul(memsize_str, 0, &memsize))
+ 		memsize = 0x04000000;
  
- 	nuc900_clock_source(NULL, "ext");
+ 	add_memory_region(0, memsize, BOOT_MEM_RAM);
+diff --git a/arch/mips/alchemy/devboards/pm.c b/arch/mips/alchemy/devboards/pm.c
+index b86bff3..61e90fe 100644
+--- a/arch/mips/alchemy/devboards/pm.c
++++ b/arch/mips/alchemy/devboards/pm.c
+@@ -158,7 +158,7 @@ static ssize_t db1x_pmattr_store(struct kobject *kobj,
+ 	int tmp;
+ 
+ 	if (ATTRCMP(timer_timeout)) {
+-		tmp = strict_strtoul(instr, 0, &l);
++		tmp = kstrtoul(instr, 0, &l);
+ 		if (tmp)
+ 			return tmp;
+ 
+@@ -181,7 +181,7 @@ static ssize_t db1x_pmattr_store(struct kobject *kobj,
+ 		}
+ 
+ 	} else if (ATTRCMP(wakemsk)) {
+-		tmp = strict_strtoul(instr, 0, &l);
++		tmp = kstrtoul(instr, 0, &l);
+ 		if (tmp)
+ 			return tmp;
  
 -- 
 1.9.3
