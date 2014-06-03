@@ -1,57 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754761AbaFCNQs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 09:16:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25931 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754728AbaFCNQq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 09:16:46 -0400
-Date: Tue, 3 Jun 2014 09:16:09 -0400
-From: Dave Jones <davej@redhat.com>
-To: Richard Weinberger <richard@nod.at>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Michael Kerrisk-manpages <mtk.manpages@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: sched: Disallow sched_attr::sched_policy < 0
-Message-ID: <20140603131609.GA26267@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Richard Weinberger <richard@nod.at>,
-	Peter Zijlstra <peterz@infradead.org>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	Michael Kerrisk-manpages <mtk.manpages@gmail.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Ingo Molnar <mingo@kernel.org>
-References: <20140602021319.9A5F9660C19@gitolite.kernel.org>
- <20140602202204.GA26649@redhat.com>
- <20140603080826.GK11096@twins.programming.kicks-ass.net>
- <CAFLxGvz4yKJfWyRqh5wnG-05m9P3oxcrvVZLH-Yap8dFz-0ctg@mail.gmail.com>
- <20140603083228.GN11096@twins.programming.kicks-ass.net>
- <538D8B96.7080503@nod.at>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <538D8B96.7080503@nod.at>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1754090AbaFCNSm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 09:18:42 -0400
+Received: from mx08-00178001.pphosted.com ([91.207.212.93]:51493 "EHLO
+	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751557AbaFCNSk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 09:18:40 -0400
+From: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
+To: Russell King <linux@arm.linux.org.uk>
+Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Stephen Warren <swarren@nvidia.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Soren Brinkmann <soren.brinkmann@xilinx.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kernel@stlinux.com, Lee Jones <lee.jones@linaro.org>,
+        Gabriel Fernandez <gabriel.fernandez@linaro.org>
+Subject: [PATCH] ARM: multi_v7_defconfig: add ST Keyscan driver
+Date: Tue,  3 Jun 2014 15:16:51 +0200
+Message-Id: <1401801411-6158-1-git-send-email-gabriel.fernandez@linaro.org>
+X-Mailer: git-send-email 1.9.1
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
+ definitions=2014-06-02_03:2014-06-02,2014-06-02,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 03, 2014 at 10:47:18AM +0200, Richard Weinberger wrote:
- > Am 03.06.2014 10:32, schrieb Peter Zijlstra:
- > > On Tue, Jun 03, 2014 at 10:15:44AM +0200, Richard Weinberger wrote:
- > >>> Once upon a time GCC also did warns like that, but my compiler is silent
- > >>> :-(
- > 
- > -Wtype-limits is what you're looking for.
- > 
- > /me currently builds some kernel configs to find out how much noise it triggers...
- 
-Probably quite a bit I'd bet. There's a load of similar bugs in
-coverity's db. Some of them look benign, and are probably there just in
-case someone ever changes the type of a var, but it's non-obvious
-sometimes if the values a function receives can ever actually be < 0
+This patch adds KEYBOARD_ST_KEYSCAN config
 
-	Dave
+Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
+Acked-by: Lee Jones <lee.jones@linaro.org>
+---
+ arch/arm/configs/multi_v7_defconfig | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm/configs/multi_v7_defconfig b/arch/arm/configs/multi_v7_defconfig
+index 19dbddb..c123e35 100644
+--- a/arch/arm/configs/multi_v7_defconfig
++++ b/arch/arm/configs/multi_v7_defconfig
+@@ -155,6 +155,7 @@ CONFIG_INPUT_EVDEV=y
+ CONFIG_KEYBOARD_GPIO=y
+ CONFIG_KEYBOARD_TEGRA=y
+ CONFIG_KEYBOARD_SPEAR=y
++CONFIG_KEYBOARD_ST_KEYSCAN=y
+ CONFIG_KEYBOARD_CROS_EC=y
+ CONFIG_MOUSE_PS2_ELANTECH=y
+ CONFIG_INPUT_MISC=y
+-- 
+1.9.1
 
