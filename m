@@ -1,69 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751611AbaFCI4y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 04:56:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56332 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750767AbaFCI4w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 04:56:52 -0400
-Message-ID: <538D8DAA.7090105@redhat.com>
-Date: Tue, 03 Jun 2014 10:56:10 +0200
-From: Daniel Borkmann <dborkman@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1751973AbaFCI51 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 04:57:27 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:58021 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751338AbaFCI5Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 04:57:25 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Daniel Phillips <daniel@phunq.net>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC][PATCH 1/2] Add a super operation for writeback
+References: <538B9DEE.20800@phunq.net> <20140602031526.GS14410@dastard>
+	<538CD855.90804@phunq.net> <20140603033322.GA14410@dastard>
+	<538D72B7.3010700@phunq.net> <877g4yv3h3.fsf@devron.myhome.or.jp>
+	<20140603081235.GE14410@dastard>
+Date: Tue, 03 Jun 2014 17:57:21 +0900
+In-Reply-To: <20140603081235.GE14410@dastard> (Dave Chinner's message of "Tue,
+	3 Jun 2014 18:12:35 +1000")
+Message-ID: <8738fmv09a.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.4.50 (gnu/linux)
 MIME-Version: 1.0
-To: Alexei Starovoitov <ast@plumgrid.com>
-CC: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 net-next 0/2] split BPF out of core networking
-References: <1401692506-7796-1-git-send-email-ast@plumgrid.com> <538C3C94.3080206@redhat.com> <CAMEtUuzkjZCsReWH9cZs8AU0mJjZH9YOdCBTWusxe6-NZ9mQ=g@mail.gmail.com> <538CAEA6.4060307@redhat.com> <CAMEtUuwxJOgYgFjg9deQZOffeg6-JUGZXZ1Rj344eQmriQ0F0Q@mail.gmail.com>
-In-Reply-To: <CAMEtUuwxJOgYgFjg9deQZOffeg6-JUGZXZ1Rj344eQmriQ0F0Q@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/02/2014 09:02 PM, Alexei Starovoitov wrote:
-...
-> Classic has all sorts of hard coded assumptions. The whole
-> concept of 'load from magic constant' to mean different things
-> is flawed. We all got used to it and now think that it's normal
-> for "ld_abs -4056" to mean "a ^= x"
+Dave Chinner <david@fromorbit.com> writes:
 
-I think everyone knows that, no? Sure it doesn't fit into the
-concept, but I think at the time BPF extensions were introduced,
-it was probably seen as the best trade-off available to access
-useful skb fields while still trying to minimize exposure to uapi
-as much as possible.
-
-> This split is not trying to make classic easier to hack.
-> With eBPF underneath classic, it got a lot easier to add extensions
-> to classic, but we shouldn't be doing it.
-> Classic BPF is not generic and cannot become one. It's eBPF's job.
+>> It doesn't move inode to end of the dirty if wb.b_dirty is empty
+>> (I.e. it can move from wb.b_io to wb.b_dirty too).
 >
-> The split is mainly helping to clearly see the boundary of eBPF core
-> vs its socket use case. It doesn't change or add any API.
+> Um, really?  What code are you reading? From 3.15-rc8:
+>
+> static void redirty_tail(struct inode *inode, struct bdi_writeback *wb)
+> {
+>         assert_spin_locked(&wb->list_lock);
+>         if (!list_empty(&wb->b_dirty)) {
+>                 struct inode *tail;
+>
+>                 tail = wb_inode(wb->b_dirty.next);
+>                 if (time_before(inode->dirtied_when, tail->dirtied_when))
+>                         inode->dirtied_when = jiffies;
+>         }
+>         list_move(&inode->i_wb_list, &wb->b_dirty);
+> }
+>
+> The list_move() is not conditional at all and so the inode is
+> *always* moved to the tail of wb->b_dirty....
 
-So what's the plan with everything in arch/*/net/, tools/net/ and
-in Documentation/networking/filter.txt, plus MAINTAINERS file, that
-the current patch doesn't address?
+Oh, you are right.
 
-We want changes to go via netdev@vger.kernel.org as they always
-did, since [ although other use cases pop up ] the main user, as
-I said, is simply still packet filtering in various networking
-subsystems, no?
+>> It has difference.
+>> 
+>> Say, tail->dirtied_when == 1, inode->dirtied_when == 2, and now == 30
+>> (tail->dirtied_when is expired at 31 with default config). In this case,
+>> redirty_tail() doesn't update ->dirtied_when.
+>
+> OK, that's a different issue, and is actually handled by
+> requeue_inode(), which is called to put inodes back on the correct
+> dirty list when IO completes. I think that if you are going to use
+> the wb dirty inode lists, you should probably use the existing
+> functions to manage the inode lists appropriately rather than
+> creating your own writeback list lifecycle.
 
-> This in-kernel API cleanup was done in commit 5fe821a9dee2
-> You even acked it back then :)
+See __mark_inode_dirty() what does. We can consolidate that with
+__mark_inode_dirty() if you want.
 
-I agreed with that change, otherwise I wouldn't have acked it,
-of course.
+In our case, dirty while inode has I_DIRTY needs to handle new dirty
+sometime, because of data=journal behavior.
+
+> If tux3 wants it's own dirty inode list lifecycles, then that's
+> where avoiding the wb lists completely is an appropriate design
+> point. I don't want to hack little bits and pieces all over the
+> writeback code to support what tux3 is doing right now if it's going
+> to do something else real soon. When tux3 moves to use it's own
+> internal lists these new funcitons just have to be removed again, so
+> let's skip the hack step we are at right now and go straight for
+> supporting the "don't need the fs-writeback lists" infrstructure.
+
+Is it agreed with someone? There was bdflush, pdflush, and now bdi
+flush. Why changed to bdi flush? This respects the intent of change
+"pdflush to bdi flush" more or less.
+
+Thanks.
+-- 
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
