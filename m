@@ -1,84 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753900AbaFCTAc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 15:00:32 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:45623 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751379AbaFCTAa (ORCPT
+	id S1754310AbaFCTBN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 15:01:13 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:49185 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753251AbaFCTBM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 15:00:30 -0400
+	Tue, 3 Jun 2014 15:01:12 -0400
+Date: Tue, 3 Jun 2014 23:00:59 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Christoph Lameter <cl@gentwo.org>
+CC: <akpm@linux-foundation.org>, <hannes@cmpxchg.org>, <mhocko@suse.cz>,
+        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
+Subject: Re: [PATCH -mm 5/8] slab: remove kmem_cache_shrink retval
+Message-ID: <20140603190056.GD6013@esperanza>
+References: <cover.1401457502.git.vdavydov@parallels.com>
+ <d2bbd28ae0f0c1807f9fe72d0443eccb739b8aa6.1401457502.git.vdavydov@parallels.com>
+ <alpine.DEB.2.10.1405300947170.11943@gentwo.org>
+ <20140531102740.GB25076@esperanza>
+ <alpine.DEB.2.10.1406021014140.2987@gentwo.org>
+ <20140603090623.GC6013@esperanza>
+ <alpine.DEB.2.10.1406030948310.13291@gentwo.org>
 MIME-Version: 1.0
-In-Reply-To: <1401096012-6895-1-git-send-email-george.cherian@ti.com>
-References: <1401096012-6895-1-git-send-email-george.cherian@ti.com>
-Date: Tue, 3 Jun 2014 14:00:29 -0500
-Message-ID: <CADYTM3aX-X4QbecitTD9EOFyoLeiqSnJum7AFnaF5UEV3FBmpQ@mail.gmail.com>
-Subject: Re: [PATCH v6 0/5] Add support for SW babble Control
-From: Bin Liu <binmlist@gmail.com>
-To: George Cherian <george.cherian@ti.com>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-omap@vger.kernel.org, gregkh@linuxfoundation.org, balbi@ti.com,
-        zonque@gmail.com, b-liu@ti.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.10.1406030948310.13291@gentwo.org>
+X-Originating-IP: [109.195.248.178]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-George,
+On Tue, Jun 03, 2014 at 09:48:51AM -0500, Christoph Lameter wrote:
+> On Tue, 3 Jun 2014, Vladimir Davydov wrote:
+> 
+> > Still, I really want to evict all empty slabs from cache on memcg
+> > offline for sure. Handling failures there means introducing a worker
+> > that will retry shrinking, but that seems to me as an unnecessary
+> > complication, because there's nothing that can prevent us from shrinking
+> > empty slabs from the cache, even if we merge slab defragmentation, isn't
+> > it?
+> >
+> > May be, it's worth introducing a special function, say kmem_cache_zap(),
+> > that will only evict empty slabs from the cache, plus disable empty
+> > slabs caching? This function would be called only from memcg offline for
+> > dead memcg caches.
+> 
+> I am fine with the lower impact version that you came up with later.
 
-On Mon, May 26, 2014 at 4:20 AM, George Cherian <george.cherian@ti.com> wrote:
-> Series add support for SW babble control logic found in
-> new silicon versions of AM335x. Runtime differentiation of
-> silicon version is done by checking the BABBLE_CTL register.
-> For newer silicon the register default value read is 0x4 and
-> for older versions its 0x0.
+Oh, I missed a couple of your previous e-mails, because our mail server
+marked them (along with a hundred or so another messages :-) ) as junk
+for some reason. Going to turn off the filter completely.
 
-Please add 'Tested-by: Bin Liu <b-liu@ti.com>' to this series.
-
-Thanks,
--Bin.
-
->
-> Patch 1 -> Handle Babble only if MUSB is in HOST mode
-> Patch 2 -> Convert recover work to delayed work.
-> Patch 3 -> usb_phy_vbus_(off/_on) are NOPs for am335x PHY
->            so use usb_phy(_shutdown/_init) in musb_platform_reset()
-> Patch 4 -> Add return value for musb_platform_reset() in prepration
->            to support SW babble_ctrl
-> Patch 5 -> Add and Enable sw babble control for newer silicon
->
-> v5 -> v6 : Squash patch 5 and 6 form v5 to avoid build warnings.
->
-> v4 -> v5 : Added a debug print before resetting MUSB.
->            changed a musb_readb to dsps_readb introduced in Patch#5 of v4.
->
-> v3 -> v4 : Fixes an issue in gagdet mode - BUS RESET should not
->            be handled as a BABBLE. Added a check for the same.(Patch #1)
->            Enable sw babble control properly (Patch #6)
->
-> v2 -> v3 : Modify musb_platform_reset() to return zero on success.
->
->
->
-> George Cherian (5):
->   usb: musb: core: Handle Babble condition only in HOST mode
->   usb: musb: core: Convert babble recover work to delayed work
->   usb: musb: dsps: Call usb_phy(_shutdown/_init) during
->     musb_platform_reset()
->   usb: musb: core: Convert the musb_platform_reset to have a return
->     value.
->   usb: musb: dsps: Add the sw_babble_control() and Enable for newer
->     silicon
->
->  drivers/usb/musb/musb_core.c | 27 ++++++++------
->  drivers/usb/musb/musb_core.h | 12 +++---
->  drivers/usb/musb/musb_dsps.c | 88 ++++++++++++++++++++++++++++++++++++++++++--
->  drivers/usb/musb/musb_regs.h |  7 ++++
->  4 files changed, 114 insertions(+), 20 deletions(-)
->
-> --
-> 1.8.3.1
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Sorry for being inconsistent and thank you.
