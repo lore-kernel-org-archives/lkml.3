@@ -1,73 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753310AbaFCDUE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 23:20:04 -0400
-Received: from mail-bn1lp0145.outbound.protection.outlook.com ([207.46.163.145]:4520
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753095AbaFCDUB convert rfc822-to-8bit (ORCPT
+	id S1753376AbaFCDVp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 23:21:45 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:39760 "EHLO
+	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753182AbaFCDVo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 23:20:01 -0400
-From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-To: Guenter Roeck <linux@roeck-us.net>, "wim@iguana.be" <wim@iguana.be>,
-        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] watchdog: imx2_wdt: adds big endianness support.
-Thread-Topic: [PATCH] watchdog: imx2_wdt: adds big endianness support.
-Thread-Index: AQHPe9PWWurwnEMpYESZpSUKzyB6bptZMVcAgAWMLOA=
-Date: Tue, 3 Jun 2014 03:19:58 +0000
-Message-ID: <cc49edeb85294b00af2a2e6a88e542fc@BY2PR03MB505.namprd03.prod.outlook.com>
-References: <1401430217-29543-1-git-send-email-Li.Xiubo@freescale.com>
- <5388975A.7040109@roeck-us.net>
-In-Reply-To: <5388975A.7040109@roeck-us.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [123.151.195.49]
-x-microsoft-antispam: BL:0;ACTION:Default;RISK:Low;SCL:0;SPMLVL:NotSpam;PCL:0;RULEID:
-x-forefront-prvs: 02318D10FB
-x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(428001)(189002)(164054003)(199002)(51704005)(46102001)(83322001)(4396001)(74502001)(81342001)(77982001)(76176999)(92566001)(2656002)(64706001)(87936001)(80022001)(99286001)(19580395003)(50986999)(21056001)(101416001)(79102001)(74662001)(99396002)(83072002)(54356999)(86362001)(74316001)(85852003)(2201001)(77096999)(76576001)(33646001)(66066001)(81542001)(31966008)(20776003)(76482001)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR03MB507;H:BY2PR03MB505.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-authentication-results: spf=none (sender IP is )
- smtp.mailfrom=Li.Xiubo@freescale.com; 
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 2 Jun 2014 23:21:44 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@gmail.com>
+To: Jiri Olsa <jolsa@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH] perf record: Fix poll return value propagation
+References: <1401732126-19465-1-git-send-email-jolsa@kernel.org>
+Date: Tue, 03 Jun 2014 12:21:43 +0900
+In-Reply-To: <1401732126-19465-1-git-send-email-jolsa@kernel.org> (Jiri Olsa's
+	message of "Mon, 2 Jun 2014 20:02:06 +0200")
+Message-ID: <87ppiqd6ew.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > @@ -201,6 +204,10 @@ static int __init imx2_wdt_probe(struct platform_device
-> *pdev)
-> >   	if (!wdev)
-> >   		return -ENOMEM;
-> >
-> > +	big_endian = of_property_read_bool(np, "big-endian");
-> > +	if (big_endian)
-> > +		imx2_wdt_regmap_config.val_format_endian = REGMAP_ENDIAN_BIG;
-> > +
-> 
-> You'll need to document the use of this property in
-> Documentation/devicetree/bindings/watchdog/fsl-imx-wdt.txt.
+On Mon,  2 Jun 2014 20:02:06 +0200, Jiri Olsa wrote:
+> If the perf record command is interrupted in record__mmap_read_all
+> function, the 'done' is set and err has the latest poll return
+> value, which is most likely positive number (= number of pollfds
+> ready to read).
 >
+> This 'positive err' is then propagated to the exit code, resulting
+> in not finishing the perf.data header properly, causing following
+> error in report:
+>
+>   # perf record -F 50000 -a
+>
+>   ---
+>   make the system real busy, so there's more chance
+>   to interrupt perf in event writing code
+>   ---
+>
+>   ^C[ perf record: Woken up 16 times to write data ]
+>   [ perf record: Captured and wrote 30.292 MB perf.data (~1323468 samples) ]
+>
+>   # perf report --stdio > /dev/null
+>   WARNING: The perf.data file's data size field is 0 which is unexpected.
+>   Was the 'perf record' command properly terminated?
+>
+> Fixing this by checking for positive poll return value
+> and setting err to 0.
 
-Sorry for late.
-
-Please see the next version.
+Acked-by: Namhyung Kim <namhyung@kernel.org>
 
 Thanks,
-
-BRs
-Xiubo
-
-
-
-
-> Guenter
-> 
-> >   	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> >   	base = devm_ioremap_resource(&pdev->dev, res);
-> >   	if (IS_ERR(base))
-> >
-
+Namhyung
