@@ -1,46 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753151AbaFCKIU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 06:08:20 -0400
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:52771 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751487AbaFCKIR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 06:08:17 -0400
+	id S1753221AbaFCKJH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 06:09:07 -0400
+Received: from mga03.intel.com ([143.182.124.21]:65522 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751574AbaFCKJF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 06:09:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,964,1392192000"; 
+   d="scan'208";a="440224955"
+Message-ID: <538D9EA9.6070406@intel.com>
+Date: Tue, 03 Jun 2014 18:08:41 +0800
+From: Jet Chen <jet.chen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <538D9DBD.2030605@linux.vnet.ibm.com>
-References: <20140526205337.1100.55275.stgit@srivatsabhat.in.ibm.com>
-	<CAKohpokdnHag=79cXuwgNjX-k+JJU9GE3KUBhixcj3PZ6y78GQ@mail.gmail.com>
-	<538D9631.9090500@linux.vnet.ibm.com>
-	<CAKohpomynD9m-Cq4zsVSp3Xbw5Tx2cSe_Fcp5y0U8uAKSpQ1Tw@mail.gmail.com>
-	<538D9DBD.2030605@linux.vnet.ibm.com>
-Date: Tue, 3 Jun 2014 15:38:17 +0530
-Message-ID: <CAKohpomS+ayvCavhXMHubcx2Pn6NcTDkV5iyUV+nz6_fKJetDg@mail.gmail.com>
-Subject: Re: [PATCH] cpufreq: governor: Be friendly towards latency-sensitive
- bursty workloads
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        "ego@linux.vnet.ibm.com" <ego@linux.vnet.ibm.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+CC: LKML <linux-kernel@vger.kernel.org>, lkp@01.org,
+        Fengguang Wu <fengguang.wu@intel.com>
+Subject: [rcu] 5057f55e543: -23.5% qperf.udp.recv_bw
+Content-Type: multipart/mixed;
+ boundary="------------010209070405030808090100"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3 June 2014 15:34, Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com> wrote:
-> Well, the method I used keeps the organization such that the code following
-> the comment does precisely what the comment says (i.e, get the sampling_rate,
-> fetch the multiplier, and then multiply). So I feel it makes it easier to
-> understand.
+This is a multi-part message in MIME format.
+--------------010209070405030808090100
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 
-It looked like the comment is there only for this special statement:
+Hi Paul,
 
->>> +               sampling_rate *= od_dbs_info->rate_mult;
+FYI, we noticed the below changes on
 
-And so suggested that :)
+git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git rcu/fixes
+commit 5057f55e543b7859cfd26bc281291795eac93f8a ("rcu: Bind RCU grace-period kthreads if NO_HZ_FULL")
 
-Anyway move this up as it doesn't belong to comment for sure.
->> +               od_dbs_info = dbs_data->cdata->get_cpu_dbs_info_s(cpu);
+71a9b26963f8c2d  5057f55e543b7859cfd26bc28
+---------------  -------------------------
+ 2.127e+09 ~ 0%     -23.5%  1.628e+09 ~ 4%  bens/qperf/600s
+ 2.127e+09 ~ 0%     -23.5%  1.628e+09 ~ 4%  TOTAL qperf.udp.recv_bw
+
+71a9b26963f8c2d  5057f55e543b7859cfd26bc28
+---------------  -------------------------
+ 2.128e+09 ~ 0%     -23.3%  1.633e+09 ~ 4%  bens/qperf/600s
+ 2.128e+09 ~ 0%     -23.3%  1.633e+09 ~ 4%  TOTAL qperf.udp.send_bw
+
+71a9b26963f8c2d  5057f55e543b7859cfd26bc28
+---------------  -------------------------
+ 2.101e+10 ~ 2%     -18.7%  1.707e+10 ~ 2%  bens/iperf/300s-tcp
+ 2.101e+10 ~ 2%     -18.7%  1.707e+10 ~ 2%  TOTAL iperf.tcp.sender.bps
+
+71a9b26963f8c2d  5057f55e543b7859cfd26bc28
+---------------  -------------------------
+ 2.101e+10 ~ 2%     -18.7%  1.707e+10 ~ 2%  bens/iperf/300s-tcp
+ 2.101e+10 ~ 2%     -18.7%  1.707e+10 ~ 2%  TOTAL iperf.tcp.receiver.bps
+
+71a9b26963f8c2d  5057f55e543b7859cfd26bc28
+---------------  -------------------------
+ 1.331e+09 ~ 2%      -5.8%  1.255e+09 ~ 2%  bens/qperf/600s
+   2.4e+09 ~ 6%     -30.4%  1.671e+09 ~12%  brickland3/qperf/600s
+ 2.384e+09 ~ 7%     -12.1%  2.096e+09 ~ 3%  lkp-sb03/qperf/600s
+ 6.115e+09 ~ 5%     -17.9%  5.022e+09 ~ 6%  TOTAL qperf.sctp.bw
+
+71a9b26963f8c2d  5057f55e543b7859cfd26bc28
+---------------  -------------------------
+  2.83e+09 ~ 1%     -12.5%  2.476e+09 ~ 3%  bens/qperf/600s
+  2.83e+09 ~ 1%     -12.5%  2.476e+09 ~ 3%  TOTAL qperf.tcp.bw
+
+71a9b26963f8c2d  5057f55e543b7859cfd26bc28
+---------------  -------------------------
+ 2.272e+08 ~ 1%     -13.3%   1.97e+08 ~ 2%  bens/qperf/600s
+ 2.272e+08 ~ 1%     -13.3%   1.97e+08 ~ 2%  TOTAL proc-vmstat.pgalloc_dma32
+
+71a9b26963f8c2d  5057f55e543b7859cfd26bc28
+---------------  -------------------------
+     53062 ~ 2%     -35.1%      34464 ~ 3%  bens/qperf/600s
+    109531 ~13%     +46.9%     160928 ~ 5%  brickland3/qperf/600s
+     67902 ~ 1%     +13.8%      77302 ~ 3%  lkp-sb03/qperf/600s
+    230496 ~ 7%     +18.3%     272694 ~ 4%  TOTAL softirqs.RCU
+
+71a9b26963f8c2d  5057f55e543b7859cfd26bc28
+---------------  -------------------------
+     80344 ~ 1%     -26.2%      59325 ~ 2%  bens/qperf/600s
+     80344 ~ 1%     -26.2%      59325 ~ 2%  TOTAL softirqs.SCHED
+
+71a9b26963f8c2d  5057f55e543b7859cfd26bc28
+---------------  -------------------------
+      1036 ~ 4%     -17.6%        853 ~ 4%  brickland3/qperf/600s
+      1036 ~ 4%     -17.6%        853 ~ 4%  TOTAL proc-vmstat.nr_page_table_pages
+
+71a9b26963f8c2d  5057f55e543b7859cfd26bc28
+---------------  -------------------------
+     48.12 ~ 0%     -11.7%      42.46 ~ 6%  brickland3/qperf/600s
+     48.12 ~ 0%     -11.7%      42.46 ~ 6%  TOTAL turbostat.%pc2
+
+71a9b26963f8c2d  5057f55e543b7859cfd26bc28
+---------------  -------------------------
+  74689352 ~ 1%     -13.3%   64771743 ~ 2%  bens/qperf/600s
+  74689352 ~ 1%     -13.3%   64771743 ~ 2%  TOTAL proc-vmstat.pgalloc_normal
+
+71a9b26963f8c2d  5057f55e543b7859cfd26bc28
+---------------  -------------------------
+ 3.019e+08 ~ 1%     -13.3%  2.618e+08 ~ 2%  bens/qperf/600s
+ 3.019e+08 ~ 1%     -13.3%  2.618e+08 ~ 2%  TOTAL proc-vmstat.pgfree
+
+71a9b26963f8c2d  5057f55e543b7859cfd26bc28
+---------------  -------------------------
+  23538414 ~ 0%     -12.9%   20506157 ~ 2%  bens/qperf/600s
+  23538414 ~ 0%     -12.9%   20506157 ~ 2%  TOTAL proc-vmstat.numa_local
+
+71a9b26963f8c2d  5057f55e543b7859cfd26bc28
+---------------  -------------------------
+  23538414 ~ 0%     -12.9%   20506157 ~ 2%  bens/qperf/600s
+  23538414 ~ 0%     -12.9%   20506157 ~ 2%  TOTAL proc-vmstat.numa_hit
+
+71a9b26963f8c2d  5057f55e543b7859cfd26bc28
+---------------  -------------------------
+     12789 ~ 1%     -10.9%      11391 ~ 2%  bens/qperf/600s
+     12789 ~ 1%     -10.9%      11391 ~ 2%  TOTAL softirqs.HRTIMER
+
+71a9b26963f8c2d  5057f55e543b7859cfd26bc28
+---------------  -------------------------
+    481253 ~ 0%      -8.9%     438624 ~ 0%  bens/qperf/600s
+    481253 ~ 0%      -8.9%     438624 ~ 0%  TOTAL softirqs.TIMER
+
+71a9b26963f8c2d  5057f55e543b7859cfd26bc28
+---------------  -------------------------
+      1297 ~33%    +565.9%       8640 ~ 7%  bens/iperf/300s-tcp
+      2788 ~ 3%    +588.8%      19204 ~ 4%  bens/qperf/600s
+      1191 ~ 5%   +1200.9%      15493 ~ 4%  brickland3/qperf/600s
+      1135 ~26%   +1195.9%      14709 ~ 4%  lkp-sb03/qperf/600s
+      6411 ~13%    +805.3%      58047 ~ 4%  TOTAL time.involuntary_context_switches
+
+71a9b26963f8c2d  5057f55e543b7859cfd26bc28
+---------------  -------------------------
+     72398 ~ 1%      -5.4%      68503 ~ 0%  bens/qperf/600s
+      8789 ~ 4%     +22.3%      10749 ~15%  lkp-sb03/qperf/600s
+     81187 ~ 1%      -2.4%      79253 ~ 2%  TOTAL vmstat.system.in
+
+71a9b26963f8c2d  5057f55e543b7859cfd26bc28
+---------------  -------------------------
+    141174 ~ 1%      -5.4%     133551 ~ 0%  bens/qperf/600s
+    143982 ~ 1%      -4.4%     137600 ~ 0%  brickland3/qperf/600s
+    285156 ~ 1%      -4.9%     271152 ~ 0%  TOTAL vmstat.system.cs
+
+71a9b26963f8c2d  5057f55e543b7859cfd26bc28
+---------------  -------------------------
+  42351859 ~ 0%      -5.3%   40114932 ~ 0%  bens/qperf/600s
+  43015383 ~ 1%      -4.4%   41143092 ~ 0%  brickland3/qperf/600s
+  85367242 ~ 1%      -4.8%   81258025 ~ 0%  TOTAL time.voluntary_context_switches
+
+71a9b26963f8c2d  5057f55e543b7859cfd26bc28
+---------------  -------------------------
+       146 ~ 0%      -2.2%        143 ~ 0%  bens/qperf/600s
+       147 ~ 1%      -4.8%        140 ~ 1%  brickland3/qperf/600s
+       293 ~ 0%      -3.5%        283 ~ 0%  TOTAL time.percent_of_cpu_this_job_got
+
+71a9b26963f8c2d  5057f55e543b7859cfd26bc28
+---------------  -------------------------
+       872 ~ 0%      -2.3%        853 ~ 0%  bens/qperf/600s
+       874 ~ 1%      -4.6%        834 ~ 1%  brickland3/qperf/600s
+      1747 ~ 0%      -3.4%       1687 ~ 0%  TOTAL time.system_time
+
+
+Legend:
+	~XX%    - stddev percent
+	[+-]XX% - change percent
+
+
+
+
+Disclaimer:
+Results have been estimated based on internal Intel analysis and are provided
+for informational purposes only. Any difference in system hardware or software
+design or configuration may affect actual performance.
+
+Thanks,
+Jet
+
+
+
+--------------010209070405030808090100
+Content-Type: text/plain; charset=UTF-8;
+ name="reproduce"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+ filename="reproduce"
+
+ZWNobyBwZXJmb3JtYW5jZSA+IC9zeXMvZGV2aWNlcy9zeXN0ZW0vY3B1L2NwdTAvY3B1ZnJl
+cS9zY2FsaW5nX2dvdmVybm9yCmVjaG8gcGVyZm9ybWFuY2UgPiAvc3lzL2RldmljZXMvc3lz
+dGVtL2NwdS9jcHUxL2NwdWZyZXEvc2NhbGluZ19nb3Zlcm5vcgplY2hvIHBlcmZvcm1hbmNl
+ID4gL3N5cy9kZXZpY2VzL3N5c3RlbS9jcHUvY3B1Mi9jcHVmcmVxL3NjYWxpbmdfZ292ZXJu
+b3IKZWNobyBwZXJmb3JtYW5jZSA+IC9zeXMvZGV2aWNlcy9zeXN0ZW0vY3B1L2NwdTMvY3B1
+ZnJlcS9zY2FsaW5nX2dvdmVybm9yCi4vcnVudGVzdC5weSB1bmxpbmsxIDMyIDEgMiAzIDQK
+
+--------------010209070405030808090100--
