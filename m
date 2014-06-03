@@ -1,93 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754977AbaFCSWS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 14:22:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52136 "EHLO
+	id S1755026AbaFCSX2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 14:23:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52142 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752930AbaFCSWQ (ORCPT
+	with ESMTP id S1752289AbaFCSX1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 14:22:16 -0400
-Date: Tue, 3 Jun 2014 11:25:55 -0700
+	Tue, 3 Jun 2014 14:23:27 -0400
+Date: Tue, 3 Jun 2014 11:27:05 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Bin Wang <binw@marvell.com>,
-        Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Norbert Ciosek <norbertciosek@gmail.com>
-Subject: Re: [GIT PULL] char/misc driver patches for 3.16-rc1
-Message-ID: <20140603182555.GA28541@kroah.com>
-References: <20140603054434.GB2921@kroah.com>
- <CA+55aFyQ=iSMnLAywumYpGBOBiqxL2qO9u9OsTF=RFfYBnz10g@mail.gmail.com>
- <20140603170244.GA22867@kroah.com>
- <CA+55aFwMEigYZGeF4sFTSpmnvb8YQ3hOndjNrd9ObL2EdOptgQ@mail.gmail.com>
+To: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+Cc: Wolfram Sang <wolfram@the-dreams.de>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, linux-i2c@vger.kernel.org
+Subject: Re: i2c/ACPI: Support for multiple serial bus addresses
+Message-ID: <20140603182705.GB28541@kroah.com>
+References: <538DEF2A.7030506@linux.intel.com>
+ <20140603170659.GD22867@kroah.com>
+ <538E0374.905@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFwMEigYZGeF4sFTSpmnvb8YQ3hOndjNrd9ObL2EdOptgQ@mail.gmail.com>
+In-Reply-To: <538E0374.905@linux.intel.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 03, 2014 at 10:14:41AM -0700, Linus Torvalds wrote:
-> On Tue, Jun 3, 2014 at 10:02 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+On Tue, Jun 03, 2014 at 10:18:44AM -0700, Srinivas Pandruvada wrote:
+> On 06/03/2014 10:06 AM, Greg KH wrote:
+> >On Tue, Jun 03, 2014 at 08:52:10AM -0700, Srinivas Pandruvada wrote:
+> >>Hi Greg,
+> >>
+> >>If you get chance, please provide feedback. This will enable sensors in
+> >>several new tablets and 2 in 1 laptops.
+> >>
+> >>http://patchwork.ozlabs.org/patch/338342/
+> >>http://patchwork.ozlabs.org/patch/338341/
+> >>
+> >>If there is any other better way, then I can rework on this.
 > >
-> > Hm, I got two different bug reports, and this same patch from two
-> > different people insisting that we broke their drivers with the above
-> > patches, and asked for this patch to be applied.
+> >Wait, this is i2c stuff, why would I care about this?
 > 
-> So I do think that we might be able to apply this patch, but I think
-> it needs a *lot* more thought than was obviously spent on it so far.
-> 
-> For example, right now it's actively insecure. Do we care? Maybe we
-> don't. The user-space uio side presumably is root-owned, and hopefully
-> trusted.
+> I think Wolfram is very busy. I tried to ping him couple of times.
 
-It better be trusted, as userspace has access to the "raw" hardware
-here, and is getting notified about every irq that happens to the
-device.
-
-> And what about the unaligned mmio case? Are people somehow
-> guaranteeing that the regions is page-aligned, even if it isn't
-> page-sized?
-> 
-> What is the actual hardware in question?
-
-Here are two email threads that I had about this, first from Bin that
-is the patch I applied:
-	https://lkml.org/lkml/2014/3/25/11
-
-And this one with Nobuhiro that goes into details a bit more:
-	https://lkml.org/lkml/2014/3/11/707
-
-Showing how a small memory window of the device is now broken without
-this change.
-
-And this one that didn't get an answer from anyone from Norbert:
-	https://lkml.org/lkml/2014/4/18/47
-showing how the changes you referred to broke his hardware access as
-well for the same reasons.
-
-Bin, Nobuhiro, Norbert, anything else you want to bring up about this as
-your hardware is affected?
-
-Norbert, it is commit ddb09754e6c7239e302c7b675df9bbd415f8de5d now in
-Linus's tree.
-
-> Basically, it's an obvious security issue, and we shouldn't just say
-> "whatever". But maybe - with lots of commentary about why the security
-> implications aren't actually bad in _practice_, and why things are
-> always page-aligned even if they aren't page-sized, we can say "ok,
-> it's wrong, but we can still do it because xyz".
-
-I think that if the size of the io range is smaller than a page, we
-still want to give access to the hardware.  I guess we can require that
-userspace ask for the whole page size, but even if we do that, it's
-still accessing data "off the end" of the device and that is unknown
-what's going to happen as we are mmaping physical memory here, not
-virtual.
+So instead you ask me?  That's rude to Wolfram, especially as I would
+just defer to him anyway.
 
 thanks,
 
