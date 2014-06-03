@@ -1,50 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753462AbaFCE3n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 00:29:43 -0400
-Received: from mail-ve0-f172.google.com ([209.85.128.172]:54917 "EHLO
-	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751732AbaFCE3m (ORCPT
+	id S1753263AbaFCErZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 00:47:25 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:40556 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752013AbaFCErY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 00:29:42 -0400
+	Tue, 3 Jun 2014 00:47:24 -0400
+Message-ID: <538D5359.1080009@kernel.dk>
+Date: Mon, 02 Jun 2014 22:47:21 -0600
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <1401355531-632-1-git-send-email-linus.walleij@linaro.org>
-References: <1401355531-632-1-git-send-email-linus.walleij@linaro.org>
-Date: Tue, 3 Jun 2014 09:59:41 +0530
-X-Google-Sender-Auth: cE8wdOPKGewlww01TBam8D4g-6Y
-Message-ID: <CAOh2x=njLfu5D0=oH6kmdm9hnk3e1RXEsFtwsXJcOJ-JFcm1XQ@mail.gmail.com>
-Subject: Re: [PATCH] RFT: pinctrl: spear: switch plgpio to irqchip helpers
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>,
-        "pratyush.anand" <pratyush.anand@st.com>,
-        Mohit Kumar <mohit.kumar@st.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Shiraz Hashim <shiraz.linux.kernel@gmail.com>,
-        linux-gpio@vger.kernel.org, Alexandre Courbot <acourbot@nvidia.com>,
-        spear-devel <spear-devel@list.st.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Ming Lei <tom.leiming@gmail.com>, linux-kernel@vger.kernel.org
+CC: fengguang.wu@intel.com
+Subject: Re: [PATCH] blk-mq: fix sparse warning on missed __percpu annotation
+References: <1401765846-28160-1-git-send-email-tom.leiming@gmail.com>
+In-Reply-To: <1401765846-28160-1-git-send-email-tom.leiming@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 29, 2014 at 2:55 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> This switches the SPEAr PLGPIO driver over to using the irqchip
-> helpers.
+On 2014-06-02 21:24, Ming Lei wrote:
+> 'struct blk_mq_ctx' is  __percpu, so add the annotation
+> and fix the sparse warning reported from Fengguang:
 >
-> As part of this effort, also get rid of the strange irq_base
-> calculation and failure to use d->hwirq for obtaining a local
-> irqchip offset.
->
-> Cc: Viresh Kumar <viresh.linux@gmail.com>
-> Cc: Shiraz Hashim <shiraz.linux.kernel@gmail.com>
-> Cc: spear-devel@list.st.com
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-> ---
-> SPEAr folks: please make sure to test this, it is part of an
-> important GPIO refactoring round. If it doesn't work: please do
-> an honest attempt at troubleshooting.
+> 	[block:for-linus 2/3] block/blk-mq.h:75:16: sparse: incorrect
+> 	type in initializer (different address spaces)
 
-Both me and shiraz can't test it anymore, we switched our jobs :)
-And not sure who else can do it..
+Thanks, applied.
 
-@Pratyush/Mohit ?
+-- 
+Jens Axboe
+
