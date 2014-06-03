@@ -1,65 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752510AbaFCCbO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 22:31:14 -0400
-Received: from ozlabs.org ([103.22.144.67]:52330 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752191AbaFCCbN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 22:31:13 -0400
-Date: Tue, 3 Jun 2014 12:31:04 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Eric Dumazet <edumazet@google.com>
-Subject: linux-next: manual merge of the net-next tree with the net tree
-Message-ID: <20140603123104.048d1bf7@canb.auug.org.au>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
+	id S1752258AbaFCCnb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 22:43:31 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:37120 "EHLO
+	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751549AbaFCCn3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 22:43:29 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Javi Merino <javi.merino@arm.com>
+Subject: Re: [PATCH 4/4] tools lib traceevent: Added support for __get_bitmask() macro
+References: <20140516140215.149535442@goodmis.org>
+	<20140516140502.628373326@goodmis.org>
+Date: Tue, 03 Jun 2014 11:43:26 +0900
+In-Reply-To: <20140516140502.628373326@goodmis.org> (Steven Rostedt's message
+	of "Fri, 16 May 2014 10:02:19 -0400")
+Message-ID: <87iooiemr5.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/wbB6YTnblQWs4.z8NYf8xn+"; protocol="application/pgp-signature"
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/wbB6YTnblQWs4.z8NYf8xn+
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Hi Steve,
 
-Hi all,
+On Fri, 16 May 2014 10:02:19 -0400, Steven Rostedt wrote:
+> @@ -3691,6 +3784,23 @@ static void print_str_arg(struct trace_seq *s, void *data, int size,
+>  	case PRINT_BSTRING:
+>  		print_str_to_seq(s, format, len_arg, arg->string.string);
+>  		break;
+> +	case PRINT_BITMASK: {
+> +		int bitmask_offset;
+> +		int bitmask_size;
+> +
+> +		if (arg->bitmask.offset == -1) {
+> +			struct format_field *f;
+> +
+> +			f = pevent_find_any_field(event, arg->bitmask.bitmask);
+> +			arg->bitmask.offset = f->offset;
+> +		}
+> +		bitmask_offset = data2host4(pevent, data + arg->string.offset);
 
-Today's linux-next merge of the net-next tree got a conflict in
-net/ipv6/output_core.c between commit 39c36094d78c ("net: fix
-inet_getid() and ipv6_select_ident() bugs") from the net tree and
-commit 73f156a6e8c1 ("inetpeer: get rid of ip_id_count") from the
-net-next tree.
+s/string.offset/bitmask.offset/
 
-I fixed it up (the latter removed the code that the former updated, so
-I did that) and can carry the fix as necessary (no action is required).
+Thanks,
+Namhyung
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
---Sig_/wbB6YTnblQWs4.z8NYf8xn+
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTjTNtAAoJEMDTa8Ir7ZwVLp0P/RyNJi98kkj0HwD9Ba/eyhbd
-/x/aCatGZmVNAPjGmd8vsM2/+cxEf9DH8p2ExlQj9nw7TztW5l6hfpG6hx6AN4On
-kocQZkWUamn1FS5CP1fJTeaEhgNy6Du6meuT5LM0FpwysrHKbUHwzXVWPb7I65XV
-wFBxU3YAen8dvqCl+nj/JDTYB0onwCRct1/MfAu5HzOhWaUUtSWvaYqI2ld7OL7f
-iEtbdOU7AXVy8xVkz7S+MOiaPko3ZHRghkTeIqXbkroIutfeIGxiM2rypNfYmzqe
-xJI0MFeZluzA5o35Tnh6gGZAePPoJ/7zG0Ka6QGQKSdxfQSjS/lff6vx+LIRymxN
-Qi+y1+CmlJXHA5Q0gW6utsizDyyE0huVT9ejJSBvzpGBLyVSjxZr7hOufh+UT/sm
-NhSe/hf/c8Mjei09Ar2rQy67q2Pd/EXNkZrFTICA/MgmAcpaWDiRBlibGP1xc9T0
-G/t6Ahbtu4QMTGmW32MP0BjpCTgS3J/gvgLtsEWBTw2U1YGzmTrVYafXRhGdxp5z
-rndoZtmQMjVJ7Mfnn1bzmX2fNMbtkdKh938OacG3tHsNATRi+eju5PUZEy+k2Myn
-5AJwENwMMMVhKxpA8FZO25eXJj8TarFLFlcITCCkKD98zIIigExlyQ3jBY24ZfsK
-bqquLqJOxca6SUGINBr9
-=3G3F
------END PGP SIGNATURE-----
-
---Sig_/wbB6YTnblQWs4.z8NYf8xn+--
+> +		bitmask_size = bitmask_offset >> 16;
+> +		bitmask_offset &= 0xffff;
+> +		print_bitmask_to_seq(pevent, s, format, len_arg,
+> +				     data + bitmask_offset, bitmask_size);
+> +		break;
+> +	}
