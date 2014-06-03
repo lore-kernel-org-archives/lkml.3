@@ -1,139 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755610AbaFCMOb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 08:14:31 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43395 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932405AbaFCLkw (ORCPT
+	id S1755587AbaFCMO3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 08:14:29 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:42546 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755050AbaFCMO1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 07:40:52 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Matt Fleming <matt.fleming@intel.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 040/138] x86/efi: Correct EFI boot stub use of code32_start
-Date: Tue,  3 Jun 2014 12:38:06 +0100
-Message-Id: <1401795584-22664-41-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
-References: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
+	Tue, 3 Jun 2014 08:14:27 -0400
+Date: Tue, 3 Jun 2014 14:14:16 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Yuyang Du <yuyang.du@intel.com>
+Cc: mingo@redhat.com, rafael.j.wysocki@intel.com, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, arjan.van.de.ven@intel.com,
+        len.brown@intel.com, alan.cox@intel.com, mark.gross@intel.com,
+        pjt@google.com, bsegall@google.com, morten.rasmussen@arm.com,
+        vincent.guittot@linaro.org, rajeev.d.muralidhar@intel.com,
+        vishwesh.m.rudramuni@intel.com, nicole.chalhoub@intel.com,
+        ajaya.durg@intel.com, harinarayanan.seshadri@intel.com,
+        jacob.jun.pan@linux.intel.com, fengguang.wu@intel.com
+Subject: Re: [RFC PATCH 07/16 v3] Init Workload Consolidation flags in
+ sched_domain
+Message-ID: <20140603121416.GH30445@twins.programming.kicks-ass.net>
+References: <1401431772-14320-1-git-send-email-yuyang.du@intel.com>
+ <1401431772-14320-8-git-send-email-yuyang.du@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Extended-Stable: 3.11
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="iogImpl5JeySoxiL"
+Content-Disposition: inline
+In-Reply-To: <1401431772-14320-8-git-send-email-yuyang.du@intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.11 -stable review patch.  If anyone has any objections, please let me know.
 
-------------------
+--iogImpl5JeySoxiL
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-From: Matt Fleming <matt@console-pimps.org>
+On Fri, May 30, 2014 at 02:36:03PM +0800, Yuyang Du wrote:
+> Workload Consolidation can be enabled/disabled on the fly. This patchset
+> enables MC and CPU domain WC by default.
+>=20
+> To enable CPU WC (SD_WORKLOAD_CONSOLIDATION=3D0x8000):
+>=20
+> sysctl -w kernel.sched_domain.cpuX.domainY.flags +=3D 0x8000
+>=20
+> To disable CPU WC:
+>=20
+> sysctl -w kernel.sched_domain.cpuX.domainY.flags -=3D 0x8000
+>=20
+> Signed-off-by: Yuyang Du <yuyang.du@intel.com>
+> ---
+>  include/linux/topology.h |    6 ++++++
+>  1 file changed, 6 insertions(+)
+>=20
+> diff --git a/include/linux/topology.h b/include/linux/topology.h
+> index 7062330..ebc339c3 100644
+> --- a/include/linux/topology.h
+> +++ b/include/linux/topology.h
+> @@ -102,12 +102,14 @@ int arch_update_cpu_topology(void);
+>  				| 0*SD_SERIALIZE			\
+>  				| 0*SD_PREFER_SIBLING			\
+>  				| arch_sd_sibling_asym_packing()	\
+> +				| 0*SD_WORKLOAD_CONSOLIDATION	\
+>  				,					\
+>  	.last_balance		=3D jiffies,				\
+>  	.balance_interval	=3D 1,					\
+>  	.smt_gain		=3D 1178,	/* 15% */			\
+>  	.max_newidle_lb_cost	=3D 0,					\
+>  	.next_decay_max_lb_cost	=3D jiffies,				\
+> +	.consolidating_coeff =3D 0,					\
+>  }
+>  #endif
+>  #endif /* CONFIG_SCHED_SMT */
+> @@ -134,11 +136,13 @@ int arch_update_cpu_topology(void);
+>  				| 0*SD_SHARE_CPUPOWER			\
+>  				| 1*SD_SHARE_PKG_RESOURCES		\
+>  				| 0*SD_SERIALIZE			\
+> +				| 1*SD_WORKLOAD_CONSOLIDATION	\
+>  				,					\
+>  	.last_balance		=3D jiffies,				\
+>  	.balance_interval	=3D 1,					\
+>  	.max_newidle_lb_cost	=3D 0,					\
+>  	.next_decay_max_lb_cost	=3D jiffies,				\
+> +	.consolidating_coeff =3D 180,					\
+>  }
+>  #endif
+>  #endif /* CONFIG_SCHED_MC */
+> @@ -167,11 +171,13 @@ int arch_update_cpu_topology(void);
+>  				| 0*SD_SHARE_PKG_RESOURCES		\
+>  				| 0*SD_SERIALIZE			\
+>  				| 1*SD_PREFER_SIBLING			\
+> +				| 1*SD_WORKLOAD_CONSOLIDATION	\
+>  				,					\
+>  	.last_balance		=3D jiffies,				\
+>  	.balance_interval	=3D 1,					\
+>  	.max_newidle_lb_cost	=3D 0,					\
+>  	.next_decay_max_lb_cost	=3D jiffies,				\
+> +	.consolidating_coeff =3D 180,					\
+>  }
+>  #endif
 
-commit 7e8213c1f3acc064aef37813a39f13cbfe7c3ce7 upstream.
+What tree are you working against, non of that exists anymore. Also, you
+cannot unconditionally set this.
 
-code32_start should point at the start of the protected mode code, and
-*not* at the beginning of the bzImage. This is much easier to do in
-assembly so document that callers of make_boot_params() need to fill out
-code32_start.
+--iogImpl5JeySoxiL
+Content-Type: application/pgp-signature
 
-The fallout from this bug is that we would end up relocating the image
-but copying the image at some offset, resulting in what appeared to be
-memory corruption.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Reported-by: Thomas Bächler <thomas@archlinux.org>
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- arch/x86/boot/compressed/eboot.c   |  5 +++--
- arch/x86/boot/compressed/head_32.S | 14 ++++++++------
- arch/x86/boot/compressed/head_64.S |  9 +++------
- 3 files changed, 14 insertions(+), 14 deletions(-)
+iQIcBAEBAgAGBQJTjbwYAAoJEHZH4aRLwOS6a1cQAIYcImsuY55lKsziw8F8S7dB
+hCJHD0P+Uiq6xPVoZH5jZON5mpXtZb6LyA+ehUu/pLt72RYTrGRHBLhQQgKNlac4
+/onIkfPgT5VBKLiS8bgTQvadHDxmGhN+DsFzyFgkF9EMkRi+h4Km9EQ/+NMgBDPG
+HvgFeprcCVaaSeJ76hh9/oH5LBMe7Nva4VcryOzsBNsJuWdAa5lqOGmp7cxSCHdr
+3Xk1pFlXlprwQmJru6hJNDkcmaZMS2XDCPcbbcwcyyErTl3zxJslgHUN/NsH5b+f
+8Ic3p1GjdpWtR6OJ6yZ5T1Zvk4uzcX+tEuVIPuY2L9Pl+CL9k20UIoXDOvZYytQk
+FjcL+MVAKZL3yUY2UGQdFryR/sdJx/AQ2cygXyEgKKmJZXuvVvHK1BvsGFK6eVbz
+A3hZVRm9uqSseKH4ROEo8np2HJxQEG9tmslcJ7N1H0SatBC+5D64vuKhxfwgWayK
+xnwTHrbHjnuNAFzSy9rXMLLdf/otFl+YeWzzPV4H3merINJOcUoPiBKdBJ3yZUgT
+m+xAB2x13xet0+gn1xmejcX1sk7NArU8gzrazkRUl+m7F7dX7i/KItv2V0H0OuQf
+Vp38Pl3exoct+bVZosLyqzg5Y74R8jf7OTS5JTPGPJMATSKX0ZPdP178QpDe+BJF
+F0xS2q9RP6ft89jl7WZ1
+=P83/
+-----END PGP SIGNATURE-----
 
-diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
-index b7388a425f09..9b883a89aad5 100644
---- a/arch/x86/boot/compressed/eboot.c
-+++ b/arch/x86/boot/compressed/eboot.c
-@@ -865,6 +865,9 @@ fail:
-  * Because the x86 boot code expects to be passed a boot_params we
-  * need to create one ourselves (usually the bootloader would create
-  * one for us).
-+ *
-+ * The caller is responsible for filling out ->code32_start in the
-+ * returned boot_params.
-  */
- struct boot_params *make_boot_params(void *handle, efi_system_table_t *_table)
- {
-@@ -921,8 +924,6 @@ struct boot_params *make_boot_params(void *handle, efi_system_table_t *_table)
- 	hdr->vid_mode = 0xffff;
- 	hdr->boot_flag = 0xAA55;
- 
--	hdr->code32_start = (__u64)(unsigned long)image->image_base;
--
- 	hdr->type_of_loader = 0x21;
- 
- 	/* Convert unicode cmdline to ascii */
-diff --git a/arch/x86/boot/compressed/head_32.S b/arch/x86/boot/compressed/head_32.S
-index 1e3184f6072f..abb988a54c69 100644
---- a/arch/x86/boot/compressed/head_32.S
-+++ b/arch/x86/boot/compressed/head_32.S
-@@ -50,6 +50,13 @@ ENTRY(efi_pe_entry)
- 	pushl	%eax
- 	pushl	%esi
- 	pushl	%ecx
-+
-+	call	reloc
-+reloc:
-+	popl	%ecx
-+	subl	reloc, %ecx
-+	movl	%ecx, BP_code32_start(%eax)
-+
- 	sub	$0x4, %esp
- 
- ENTRY(efi_stub_entry)
-@@ -63,12 +70,7 @@ ENTRY(efi_stub_entry)
- 	hlt
- 	jmp	1b
- 2:
--	call	3f
--3:
--	popl	%eax
--	subl	$3b, %eax
--	subl	BP_pref_address(%esi), %eax
--	add	BP_code32_start(%esi), %eax
-+	movl	BP_code32_start(%esi), %eax
- 	leal	preferred_addr(%eax), %eax
- 	jmp	*%eax
- 
-diff --git a/arch/x86/boot/compressed/head_64.S b/arch/x86/boot/compressed/head_64.S
-index 06e71c2c16bf..55dce09e973c 100644
---- a/arch/x86/boot/compressed/head_64.S
-+++ b/arch/x86/boot/compressed/head_64.S
-@@ -215,6 +215,8 @@ ENTRY(efi_pe_entry)
- 	cmpq	$0,%rax
- 	je	1f
- 	mov	%rax, %rdx
-+	leaq	startup_32(%rip), %rax
-+	movl	%eax, BP_code32_start(%rdx)
- 	popq	%rsi
- 	popq	%rdi
- 
-@@ -228,12 +230,7 @@ ENTRY(efi_stub_entry)
- 	hlt
- 	jmp	1b
- 2:
--	call	3f
--3:
--	popq	%rax
--	subq	$3b, %rax
--	subq	BP_pref_address(%rsi), %rax
--	add	BP_code32_start(%esi), %eax
-+	movl	BP_code32_start(%esi), %eax
- 	leaq	preferred_addr(%rax), %rax
- 	jmp	*%rax
- 
--- 
-1.9.1
-
+--iogImpl5JeySoxiL--
