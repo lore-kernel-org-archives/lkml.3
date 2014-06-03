@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755405AbaFCMLP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 08:11:15 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43448 "EHLO
+	id S932563AbaFCLlG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 07:41:06 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43429 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932508AbaFCLlH (ORCPT
+	with ESMTP id S932508AbaFCLlC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 07:41:07 -0400
+	Tue, 3 Jun 2014 07:41:02 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Jason Cooper <jason@lakedaemon.net>,
+Cc: Antti Palosaari <crope@iki.fi>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 050/138] bus: mvebu-mbus: allow several windows with the same target/attribute
-Date: Tue,  3 Jun 2014 12:38:16 +0100
-Message-Id: <1401795584-22664-51-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 045/138] [media] fc2580: fix tuning failure on 32-bit arch
+Date: Tue,  3 Jun 2014 12:38:11 +0100
+Message-Id: <1401795584-22664-46-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
 References: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
@@ -28,42 +28,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+From: Antti Palosaari <crope@iki.fi>
 
-commit b566e782be32145664d96ada3e389f17d32742e5 upstream.
+commit 8845cc6415ec28ef8d57b3fb81c75ef9bce69c5f upstream.
 
-Having multiple windows with the same target and attribute is actually
-legal, and can be useful for PCIe windows, when PCIe BARs have a size
-that isn't a power of two, and we therefore need to create several
-MBus windows to cover the PCIe BAR for a given PCIe interface.
+There was some frequency calculation overflows which caused tuning
+failure on 32-bit architecture. Use 64-bit numbers where needed in
+order to avoid calculation overflows.
 
-Fixes: fddddb52a6c4 ('bus: introduce an Marvell EBU MBus driver')
-Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Link: https://lkml.kernel.org/r/1397823593-1932-7-git-send-email-thomas.petazzoni@free-electrons.com
-Tested-by: Neil Greatorex <neil@fatboyfat.co.uk>
-Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+Thanks for the Finnish person, who asked remain anonymous, reporting,
+testing and suggesting the fix.
+
+Signed-off-by: Antti Palosaari <crope@iki.fi>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/bus/mvebu-mbus.c | 6 ------
- 1 file changed, 6 deletions(-)
+ drivers/media/tuners/fc2580.c      | 6 +++---
+ drivers/media/tuners/fc2580_priv.h | 1 +
+ 2 files changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/bus/mvebu-mbus.c b/drivers/bus/mvebu-mbus.c
-index 33c6947eebec..2c14db25e553 100644
---- a/drivers/bus/mvebu-mbus.c
-+++ b/drivers/bus/mvebu-mbus.c
-@@ -252,12 +252,6 @@ static int mvebu_mbus_window_conflicts(struct mvebu_mbus_state *mbus,
- 		 */
- 		if ((u64)base < wend && end > wbase)
- 			return 0;
--
--		/*
--		 * Check if target/attribute conflicts
--		 */
--		if (target == wtarget && attr == wattr)
--			return 0;
- 	}
+diff --git a/drivers/media/tuners/fc2580.c b/drivers/media/tuners/fc2580.c
+index 3aecaf465094..f0c9c42867de 100644
+--- a/drivers/media/tuners/fc2580.c
++++ b/drivers/media/tuners/fc2580.c
+@@ -195,7 +195,7 @@ static int fc2580_set_params(struct dvb_frontend *fe)
  
- 	return 1;
+ 	f_ref = 2UL * priv->cfg->clock / r_val;
+ 	n_val = div_u64_rem(f_vco, f_ref, &k_val);
+-	k_val_reg = 1UL * k_val * (1 << 20) / f_ref;
++	k_val_reg = div_u64(1ULL * k_val * (1 << 20), f_ref);
+ 
+ 	ret = fc2580_wr_reg(priv, 0x18, r18_val | ((k_val_reg >> 16) & 0xff));
+ 	if (ret < 0)
+@@ -348,8 +348,8 @@ static int fc2580_set_params(struct dvb_frontend *fe)
+ 	if (ret < 0)
+ 		goto err;
+ 
+-	ret = fc2580_wr_reg(priv, 0x37, 1UL * priv->cfg->clock * \
+-			fc2580_if_filter_lut[i].mul / 1000000000);
++	ret = fc2580_wr_reg(priv, 0x37, div_u64(1ULL * priv->cfg->clock *
++			fc2580_if_filter_lut[i].mul, 1000000000));
+ 	if (ret < 0)
+ 		goto err;
+ 
+diff --git a/drivers/media/tuners/fc2580_priv.h b/drivers/media/tuners/fc2580_priv.h
+index be38a9e637e0..646c99452136 100644
+--- a/drivers/media/tuners/fc2580_priv.h
++++ b/drivers/media/tuners/fc2580_priv.h
+@@ -22,6 +22,7 @@
+ #define FC2580_PRIV_H
+ 
+ #include "fc2580.h"
++#include <linux/math64.h>
+ 
+ struct fc2580_reg_val {
+ 	u8 reg;
 -- 
 1.9.1
 
