@@ -1,95 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751640AbaFCIxd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 04:53:33 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:47184 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750941AbaFCIxa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 04:53:30 -0400
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH] of/base: Replace alias if it already exists
-To: Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>
-Cc: robh+dt@kernel.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <538CA125.7090906@gmail.com>
-References: <1401624083-30796-1-git-send-email-ivo.g.dimitrov.75@gmail.com>
-	<20140602145959.7E669C426F6@trevor.secretlab.ca>
-	<538CA125.7090906@gmail.com>
-Date: Tue, 03 Jun 2014 09:53:25 +0100
-Message-Id: <20140603085325.490A1C4096E@trevor.secretlab.ca>
+	id S1751611AbaFCI4y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 04:56:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56332 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750767AbaFCI4w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 04:56:52 -0400
+Message-ID: <538D8DAA.7090105@redhat.com>
+Date: Tue, 03 Jun 2014 10:56:10 +0200
+From: Daniel Borkmann <dborkman@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Alexei Starovoitov <ast@plumgrid.com>
+CC: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        Network Development <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 net-next 0/2] split BPF out of core networking
+References: <1401692506-7796-1-git-send-email-ast@plumgrid.com> <538C3C94.3080206@redhat.com> <CAMEtUuzkjZCsReWH9cZs8AU0mJjZH9YOdCBTWusxe6-NZ9mQ=g@mail.gmail.com> <538CAEA6.4060307@redhat.com> <CAMEtUuwxJOgYgFjg9deQZOffeg6-JUGZXZ1Rj344eQmriQ0F0Q@mail.gmail.com>
+In-Reply-To: <CAMEtUuwxJOgYgFjg9deQZOffeg6-JUGZXZ1Rj344eQmriQ0F0Q@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 02 Jun 2014 19:07:01 +0300, Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com> wrote:
-> 
-> 
-> On  2.06.2014 17:59, Grant Likely wrote:
-> > On Sun,  1 Jun 2014 15:01:23 +0300, Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com> wrote:
-> >> The current code unconditionally adds aliases without check if it already
-> >> exists, so it is not possible to alter an alias, from board DT file for
-> >> example. Fix that by replacing an alias if it already exists
-> >>
-> >
-> > Can you describe a more detailed use-case for altering an alias?
-> >
-> > g.
-> >
-> 
-> That one http://www.spinics.net/lists/linux-omap/msg107869.html
+On 06/02/2014 09:02 PM, Alexei Starovoitov wrote:
+...
+> Classic has all sorts of hard coded assumptions. The whole
+> concept of 'load from magic constant' to mean different things
+> is flawed. We all got used to it and now think that it's normal
+> for "ld_abs -4056" to mean "a ^= x"
 
-So, if I understand correctly, the .dtsi file sets up aliases like so:
+I think everyone knows that, no? Sure it doesn't fit into the
+concept, but I think at the time BPF extensions were introduced,
+it was probably seen as the best trade-off available to access
+useful skb fields while still trying to minimize exposure to uapi
+as much as possible.
 
-aliases {
-	i2c0 = &i2c1;
-	i2c1 = &i2c2;
-	i2c2 = &i2c3;
-	i2c3 = &i2c4;
-	i2c4 = &i2c5;
-};
+> This split is not trying to make classic easier to hack.
+> With eBPF underneath classic, it got a lot easier to add extensions
+> to classic, but we shouldn't be doing it.
+> Classic BPF is not generic and cannot become one. It's eBPF's job.
+>
+> The split is mainly helping to clearly see the boundary of eBPF core
+> vs its socket use case. It doesn't change or add any API.
 
-and the board file does this:
+So what's the plan with everything in arch/*/net/, tools/net/ and
+in Documentation/networking/filter.txt, plus MAINTAINERS file, that
+the current patch doesn't address?
 
+We want changes to go via netdev@vger.kernel.org as they always
+did, since [ although other use cases pop up ] the main user, as
+I said, is simply still packet filtering in various networking
+subsystems, no?
 
-aliases {
-	i2c1 = &i2c1;
-	i2c2 = &i2c2;
-	i2c3 = &i2c3;
-	i2c4 = &i2c4;
-	i2c5 = &i2c5;
-};
+> This in-kernel API cleanup was done in commit 5fe821a9dee2
+> You even acked it back then :)
 
-Which results in a dtb that looks like this:
-
-aliases {
-	i2c0 = &i2c1;
-	i2c1 = &i2c1;
-	i2c2 = &i2c2;
-	i2c3 = &i2c3;
-	i2c4 = &i2c4;
-	i2c5 = &i2c5;
-};
-
-Do I understand correctly?
-
-The way aliases works, it is completely valid to have multiple aliases
-pointing at the same node. There are also no ordering guarantees about
-which comes first, so though this patch might work for you at the
-moment, there is no guarantee that it will continue to do so. If the
-i2c0 alias is invalid for that platform, then it must be removed.
-
-Unfortunately, the overlays have no mechanism for removing properties at
-this time. Can you try putting the following into your board dts file
-and see if it works?
-
-aliases {
-	i2c0;		/* Deactivate the old alias by making it blank */
-	i2c1 = &i2c1;
-	i2c2 = &i2c2;
-	i2c3 = &i2c3;
-	i2c4 = &i2c4;
-	i2c5 = &i2c5;
-};
-
-g.
+I agreed with that change, otherwise I wouldn't have acked it,
+of course.
