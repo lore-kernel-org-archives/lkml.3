@@ -1,539 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932442AbaFCHrk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 03:47:40 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:53205 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932130AbaFCHre convert rfc822-to-8bit (ORCPT
+	id S932488AbaFCHsA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 03:48:00 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:57997 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932398AbaFCHr5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 03:47:34 -0400
-Date: Tue, 3 Jun 2014 00:47:10 -0700
-From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        David Ahern <dsahern@gmail.com>, Namhyung Kim <namhyung@kernel.org>
-Subject: Re: Fw: Re: [PATCH 1/1] powerpc/perf: Adjust callchain based on
- DWARF debug info
-Message-ID: <20140603074710.GA30870@us.ibm.com>
-References: <20140530155925.GF7427@krava.brq.redhat.com>
- <20140602141219.GB7861@krava.brq.redhat.com>
+	Tue, 3 Jun 2014 03:47:57 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: Daniel Phillips <daniel@phunq.net>
+Cc: Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC][PATCH 1/2] Add a super operation for writeback
+References: <538B9DEE.20800@phunq.net> <20140602031526.GS14410@dastard>
+	<538CD855.90804@phunq.net> <20140603033322.GA14410@dastard>
+	<538D72B7.3010700@phunq.net>
+Date: Tue, 03 Jun 2014 16:47:52 +0900
+In-Reply-To: <538D72B7.3010700@phunq.net> (Daniel Phillips's message of "Tue,
+	03 Jun 2014 00:01:11 -0700")
+Message-ID: <877g4yv3h3.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.4.50 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <20140602141219.GB7861@krava.brq.redhat.com>
-X-Operating-System: Linux 2.0.32 on an i486
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14060307-0320-0000-0000-000003717502
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jiri Olsa [jolsa@redhat.com] wrote:
-| On Fri, May 30, 2014 at 05:59:25PM +0200, Jiri Olsa wrote:
-| > On Fri, May 30, 2014 at 08:50:19AM -0700, Sukadev Bhattiprolu wrote:
-| > > Jiri Olsa [jolsa@redhat.com] wrote:
-| > > | On Fri, May 16, 2014 at 02:03:33PM -0700, Sukadev Bhattiprolu wrote:
-| > > | > Hi Arnaldo, Jiri
-| > > | > 
-| > > | > Do you have any comments on this patch ? Pls let me know if you need
-| > > | > me to resend this. The TODO is for a less frequent case and can be
-| > > | > addressed independently.
-| > > | 
-| > > | hi,
-| > > | I can take it, but it does not apply to my perf/core,
-| > > | there're some ARM related unwind changes already:
-| > > |   git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git
-| > > | 
-| > > | please resend updated patch
-| > > 
-| > > Jiri,
-| > > 
-| > > I resent the patch. Can you please let me know if you have any
-| > > comments ?
-| > > 
-| > > 	https://lkml.org/lkml/2014/5/22/695
-| > 
-| > sry, got distracted.. yep, that one seems looks ok now, I'll queue it
-| > 
-| 
-| so.. I tried some performance test and looks like this
-| adds some considerable penalty also for archs != powerpc
-| 
-| test data:
-|   $ sudo ./perf record -a -g -F 50000 # perf.data size is ~1.1GB
-| 
-| before your patch:
-| 
-|  Performance counter stats for './perf.old report --stdio' (5 runs):
-| 
-|     60,345,248,146      cycles                     ( +-  0.50% ) █▁▁▂▂
-|     72,766,496,819      instructions              #    1.21  insns per cycle          ( +-  0.00% ) █▁▄▁▅
-| 
-|       19.930324523 seconds time elapsed                                          ( +-  1.07% ) █▄▁▁▁
-| 
-| with your patch:
-|     62,559,079,470      cycles                     ( +-  2.10% ) ▁▁▂▁█
-|     72,649,781,930      instructions              #    1.16  insns per cycle          ( +-  0.00% ) ▄▃▅█▁
-| 
-|       23.355028944 seconds time elapsed                                          ( +-  9.85% ) ▁▁▁▂█
-| 
-| 
-| I think the issue is following hunk (I havent verified with record/report):
-| 
-| @@ -1300,14 +1301,25 @@ static int machine__resolve_callchain_sample(struct machine *machine,
-|                 return 0;
-|         }
-| 
-| +       /*
-| +        * Based on DWARF debug information, some architectures skip
-| +        * some of the callchain entries saved by the kernel.
-| +        */
-| +       skip_slot = arch_skip_callchain_idx(machine, thread, chain);
-| +
-|         for (i = 0; i < chain_nr; i++) {
-|                 u64 ip;
-|                 struct addr_location al;
-| 
-| -               if (callchain_param.order == ORDER_CALLEE)
-| +               if (callchain_param.order == ORDER_CALLEE) {
-| +                       if (i == skip_slot)
-| +                               continue;
-|                         ip = chain->ips[i];
-| -               else
-| +               } else {
-| +                       if ((int)(chain->nr - i - 1) == skip_slot)
-| +                               continue;
-|                         ip = chain->ips[chain->nr - i - 1];
-| +               }
-| 
-| 
-| could you please change this, so it's nop for arch != powerpc
-| via #ifdef I guess.. or some other smart way ;-)
+Daniel Phillips <daniel@phunq.net> writes:
 
-I was trying to avoid the #ifdef in the middle of the function.
+> Hi Dave,
+> On 06/02/2014 08:33 PM, Dave Chinner wrote:
+>> On Mon, Jun 02, 2014 at 01:02:29PM -0700, Daniel Phillips wrote:
+>>>
+>>> Redirty_tail nearly works, but "if (!list_empty(&wb->b_dirty))" is
+>>> not correct because the inode needs to end up on the dirty list
+>>> whether it was already there or not.
+>> redirty_tail() always moves the inode to the end of the dirty
+>> list.
 
-How about adding a PERF_CONTEXT_IGNORE and doing something like this:
+It doesn't move inode to end of the dirty if wb.b_dirty is empty
+(I.e. it can move from wb.b_io to wb.b_dirty too).
 
----
-diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-index e3fc8f0..b671abf 100644
---- a/include/uapi/linux/perf_event.h
-+++ b/include/uapi/linux/perf_event.h
-@@ -719,6 +719,8 @@ enum perf_callchain_context {
- 	PERF_CONTEXT_GUEST_KERNEL	= (__u64)-2176,
- 	PERF_CONTEXT_GUEST_USER		= (__u64)-2560,
- 
-+	PERF_CONTEXT_IGNORE		= (__u64)-3840,
-+
- 	PERF_CONTEXT_MAX		= (__u64)-4095,
- };
- 
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index 729bbdf..8d1417d 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -48,6 +48,10 @@ ifneq ($(ARCH),$(filter $(ARCH),x86 arm))
-   NO_LIBDW_DWARF_UNWIND := 1
- endif
- 
-+ifeq ($(ARCH),powerpc)
-+  CFLAGS += -DHAVE_SKIP_CALLCHAIN_IDX
-+endif
-+
- ifeq ($(LIBUNWIND_LIBS),)
-   NO_LIBUNWIND := 1
- else
-diff --git a/tools/perf/util/callchain.h b/tools/perf/util/callchain.h
-index 8f84423..333018d 100644
---- a/tools/perf/util/callchain.h
-+++ b/tools/perf/util/callchain.h
-@@ -176,4 +176,56 @@ static inline void callchain_cursor_snapshot(struct callchain_cursor *dest,
- 	dest->first = src->curr;
- 	dest->nr -= src->pos;
- }
-+
-+#ifdef HAVE_SKIP_CALLCHAIN_IDX
-+extern int arch_skip_callchain_idx(struct machine *machine,
-+			struct thread *thread, struct ip_callchain *chain);
-+static inline
-+u64 arch_next_callchain_ip(struct ip_callchain *chain, enum chain_order order,
-+			int i, int skip_idx)
-+{
-+	u64 ip;
-+
-+	/*
-+	 * As explained in the arch_skip_callcain_idx() implementation on
-+	 * Power, some callchain entries are meant to be ignored. If this
-+	 * is one such entry, return PERF_CONTEXT_IGNORE.
-+	 */
-+	ip = PERF_CONTEXT_IGNORE;
-+	if (order == ORDER_CALLEE) {
-+		if (i != skip_idx)
-+			ip = chain->ips[i];
-+	} else {
-+		int j = (int)chain->nr - i - 1;
-+
-+		if (j != skip_idx)
-+			ip = chain->ips[j];
-+	}
-+
-+	return ip;
-+}
-+#else
-+static inline
-+int arch_skip_callchain_idx(struct machine *machine __maybe_unused,
-+			struct thread *thread __maybe_unused,
-+			struct ip_callchain *chain __maybe_unused)
-+{
-+	return -1;
-+}
-+
-+static inline
-+u64 arch_next_callchain_ip(struct ip_callchain *chain, enum chain_order order,
-+			int i, int skip_idx __maybe_unused)
-+{
-+	u64 ip;
-+
-+	if (order == ORDER_CALLEE)
-+		ip = chain->ips[i];
-+	else
-+		ip = chain->ips[chain->nr - i - 1];
-+
-+	return ip;
-+}
-+#endif
-+
- #endif	/* __PERF_CALLCHAIN_H */
-diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index 7409ac8..a604ea4 100644
---- a/tools/perf/util/machine.c
-+++ b/tools/perf/util/machine.c
-@@ -1288,8 +1288,10 @@ static int machine__resolve_callchain_sample(struct machine *machine,
- {
- 	u8 cpumode = PERF_RECORD_MISC_USER;
- 	int chain_nr = min(max_stack, (int)chain->nr);
-+	enum chain_order order = callchain_param.order;
- 	int i;
- 	int err;
-+	int skip_idx;
- 
- 	callchain_cursor_reset(&callchain_cursor);
- 
-@@ -1298,14 +1300,17 @@ static int machine__resolve_callchain_sample(struct machine *machine,
- 		return 0;
- 	}
- 
-+	/*
-+	 * Based on DWARF debug information, some architectures skip
-+	 * some of the callchain entries saved by the kernel.
-+	 */
-+	skip_idx = arch_skip_callchain_idx(machine, thread, chain);
-+
- 	for (i = 0; i < chain_nr; i++) {
- 		u64 ip;
- 		struct addr_location al;
- 
--		if (callchain_param.order == ORDER_CALLEE)
--			ip = chain->ips[i];
--		else
--			ip = chain->ips[chain->nr - i - 1];
-+		ip = arch_next_callchain_ip(chain, order, i, skip_idx);
- 
- 		if (ip >= PERF_CONTEXT_MAX) {
- 			switch (ip) {
-@@ -1318,6 +1323,9 @@ static int machine__resolve_callchain_sample(struct machine *machine,
- 			case PERF_CONTEXT_USER:
- 				cpumode = PERF_RECORD_MISC_USER;
- 				break;
-+			case PERF_CONTEXT_IGNORE:
-+				/* ignore entry. Eg: based on DWARF debug */
-+				break;
- 			default:
- 				pr_debug("invalid callchain context: "
- 					 "%"PRId64"\n", (s64) ip);
-diff --git a/tools/perf/arch/powerpc/Makefile b/tools/perf/arch/powerpc/Makefile
-index 744e629..b92219b 100644
---- a/tools/perf/arch/powerpc/Makefile
-+++ b/tools/perf/arch/powerpc/Makefile
-@@ -3,3 +3,4 @@ PERF_HAVE_DWARF_REGS := 1
- LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/dwarf-regs.o
- endif
- LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/header.o
-+LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/skip-callchain-idx.o
-diff --git a/tools/perf/arch/powerpc/util/skip-callchain-idx.c b/tools/perf/arch/powerpc/util/skip-callchain-idx.c
-new file mode 100644
-index 0000000..a7c23a4
---- /dev/null
-+++ b/tools/perf/arch/powerpc/util/skip-callchain-idx.c
-@@ -0,0 +1,266 @@
-+/*
-+ * Use DWARF Debug information to skip unnecessary callchain entries.
-+ *
-+ * Copyright (C) 2014 Sukadev Bhattiprolu, IBM Corporation.
-+ * Copyright (C) 2014 Ulrich Weigand, IBM Corporation.
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; either version
-+ * 2 of the License, or (at your option) any later version.
-+ */
-+#include <inttypes.h>
-+#include <dwarf.h>
-+#include <elfutils/libdwfl.h>
-+
-+#include "util/thread.h"
-+#include "util/callchain.h"
-+
-+/*
-+ * When saving the callchain on Power, the kernel conservatively saves
-+ * excess entries in the callchain. A few of these entries are needed
-+ * in some cases but not others. If the unnecessary entries are not
-+ * ignored, we end up with duplicate arcs in the call-graphs. Use
-+ * DWARF debug information to skip over any unnecessary callchain
-+ * entries.
-+ *
-+ * See function header for arch_adjust_callchain() below for more details.
-+ *
-+ * The libdwfl code in this file is based on code from elfutils
-+ * (libdwfl/argp-std.c, libdwfl/tests/addrcfi.c, etc).
-+ */
-+static char *debuginfo_path;
-+
-+static const Dwfl_Callbacks offline_callbacks = {
-+	.debuginfo_path = &debuginfo_path,
-+	.find_debuginfo = dwfl_standard_find_debuginfo,
-+	.section_address = dwfl_offline_section_address,
-+};
-+
-+
-+/*
-+ * Use the DWARF expression for the Call-frame-address and determine
-+ * if return address is in LR and if a new frame was allocated.
-+ */
-+static int check_return_reg(int ra_regno, Dwarf_Frame *frame)
-+{
-+	Dwarf_Op ops_mem[2];
-+	Dwarf_Op dummy;
-+	Dwarf_Op *ops = &dummy;
-+	size_t nops;
-+	int result;
-+
-+	result = dwarf_frame_register(frame, ra_regno, ops_mem, &ops, &nops);
-+	if (result < 0) {
-+		pr_debug("dwarf_frame_register() %s\n", dwarf_errmsg(-1));
-+		return -1;
-+	}
-+
-+	/*
-+	 * Check if return address is on the stack.
-+	 */
-+	if (nops != 0 || ops != NULL)
-+		return 0;
-+
-+	/*
-+	 * Return address is in LR. Check if a frame was allocated
-+	 * but not-yet used.
-+	 */
-+	result = dwarf_frame_cfa(frame, &ops, &nops);
-+	if (result < 0) {
-+		pr_debug("dwarf_frame_cfa() returns %d, %s\n", result,
-+					dwarf_errmsg(-1));
-+		return -1;
-+	}
-+
-+	/*
-+	 * If call frame address is in r1, no new frame was allocated.
-+	 */
-+	if (nops == 1 && ops[0].atom == DW_OP_bregx && ops[0].number == 1 &&
-+				ops[0].number2 == 0)
-+		return 1;
-+
-+	/*
-+	 * A new frame was allocated but has not yet been used.
-+	 */
-+	return 2;
-+}
-+
-+/*
-+ * Get the DWARF frame from the .eh_frame section.
-+ */
-+static Dwarf_Frame *get_eh_frame(Dwfl_Module *mod, Dwarf_Addr pc)
-+{
-+	int		result;
-+	Dwarf_Addr	bias;
-+	Dwarf_CFI	*cfi;
-+	Dwarf_Frame	*frame;
-+
-+	cfi = dwfl_module_eh_cfi(mod, &bias);
-+	if (!cfi) {
-+		pr_debug("%s(): no CFI - %s\n", __func__, dwfl_errmsg(-1));
-+		return NULL;
-+	}
-+
-+	result = dwarf_cfi_addrframe(cfi, pc, &frame);
-+	if (result) {
-+		pr_debug("%s(): %s\n", __func__, dwfl_errmsg(-1));
-+		return NULL;
-+	}
-+
-+	return frame;
-+}
-+
-+/*
-+ * Get the DWARF frame from the .debug_frame section.
-+ */
-+static Dwarf_Frame *get_dwarf_frame(Dwfl_Module *mod, Dwarf_Addr pc)
-+{
-+	Dwarf_CFI       *cfi;
-+	Dwarf_Addr      bias;
-+	Dwarf_Frame     *frame;
-+	int             result;
-+
-+	cfi = dwfl_module_dwarf_cfi(mod, &bias);
-+	if (!cfi) {
-+		pr_debug("%s(): no CFI - %s\n", __func__, dwfl_errmsg(-1));
-+		return NULL;
-+	}
-+
-+	result = dwarf_cfi_addrframe(cfi, pc, &frame);
-+	if (result) {
-+		pr_debug("%s(): %s\n", __func__, dwfl_errmsg(-1));
-+		return NULL;
-+	}
-+
-+	return frame;
-+}
-+
-+/*
-+ * Return:
-+ *	0 if return address for the program counter @pc is on stack
-+ *	1 if return address is in LR and no new stack frame was allocated
-+ *	2 if return address is in LR and a new frame was allocated (but not
-+ *		yet used)
-+ *	-1 in case of errors
-+ */
-+static int check_return_addr(const char *exec_file, Dwarf_Addr pc)
-+{
-+	int		rc = -1;
-+	Dwfl		*dwfl;
-+	Dwfl_Module	*mod;
-+	Dwarf_Frame	*frame;
-+	int		ra_regno;
-+	Dwarf_Addr	start = pc;
-+	Dwarf_Addr	end = pc;
-+	bool		signalp;
-+
-+	dwfl = dwfl_begin(&offline_callbacks);
-+	if (!dwfl) {
-+		pr_debug("dwfl_begin() failed: %s\n", dwarf_errmsg(-1));
-+		return -1;
-+	}
-+
-+	if (dwfl_report_offline(dwfl, "",  exec_file, -1) == NULL) {
-+		pr_debug("dwfl_report_offline() failed %s\n", dwarf_errmsg(-1));
-+		goto out;
-+	}
-+
-+	mod = dwfl_addrmodule(dwfl, pc);
-+	if (!mod) {
-+		pr_debug("dwfl_addrmodule() failed, %s\n", dwarf_errmsg(-1));
-+		goto out;
-+	}
-+
-+	/*
-+	 * To work with split debug info files (eg: glibc), check both
-+	 * .eh_frame and .debug_frame sections of the ELF header.
-+	 */
-+	frame = get_eh_frame(mod, pc);
-+	if (!frame) {
-+		frame = get_dwarf_frame(mod, pc);
-+		if (!frame)
-+			goto out;
-+	}
-+
-+	ra_regno = dwarf_frame_info(frame, &start, &end, &signalp);
-+	if (ra_regno < 0) {
-+		pr_debug("Return address register unavailable: %s\n",
-+				dwarf_errmsg(-1));
-+		goto out;
-+	}
-+
-+	rc = check_return_reg(ra_regno, frame);
-+
-+out:
-+	dwfl_end(dwfl);
-+	return rc;
-+}
-+
-+/*
-+ * The callchain saved by the kernel always includes the link register (LR).
-+ *
-+ *	0:	PERF_CONTEXT_USER
-+ *	1:	Program counter (Next instruction pointer)
-+ *	2:	LR value
-+ *	3:	Caller's caller
-+ *	4:	...
-+ *
-+ * The value in LR is only needed when it holds a return address. If the
-+ * return address is on the stack, we should ignore the LR value.
-+ *
-+ * Further, when the return address is in the LR, if a new frame was just
-+ * allocated but the LR was not saved into it, then the LR contains the
-+ * caller, slot 4: contains the caller's caller and the contents of slot 3:
-+ * (chain->ips[3]) is undefined and must be ignored.
-+ *
-+ * Use DWARF debug information to determine if any entries need to be skipped.
-+ *
-+ * Return:
-+ *	index:	of callchain entry that needs to be ignored (if any)
-+ *	-1	if no entry needs to be ignored or in case of errors
-+ */
-+int arch_skip_callchain_idx(struct machine *machine, struct thread *thread,
-+				struct ip_callchain *chain)
-+{
-+	struct addr_location al;
-+	struct dso *dso = NULL;
-+	int rc;
-+	u64 ip;
-+	u64 skip_slot = -1;
-+
-+	if (chain->nr < 3)
-+		return skip_slot;
-+
-+	ip = chain->ips[2];
-+
-+	thread__find_addr_location(thread, machine, PERF_RECORD_MISC_USER,
-+			MAP__FUNCTION, ip, &al);
-+
-+	if (al.map)
-+		dso = al.map->dso;
-+
-+	if (!dso) {
-+		pr_debug("%" PRIx64 " dso is NULL\n", ip);
-+		return skip_slot;
-+	}
-+
-+	rc = check_return_addr(dso->long_name, ip);
-+
-+	pr_debug("DSO %s, nr %" PRIx64 ", ip 0x%" PRIx64 "rc %d\n",
-+				dso->long_name, chain->nr, ip, rc);
-+
-+	if (rc == 0) {
-+		/*
-+		 * Return address on stack. Ignore LR value in callchain
-+		 */
-+		skip_slot = 2;
-+	} else if (rc == 2) {
-+		/*
-+		 * New frame allocated but return address still in LR.
-+		 * Ignore the caller's caller entry in callchain.
-+		 */
-+		skip_slot = 3;
-+	}
-+	return skip_slot;
-+}
+BTW, this is called for like mark inode dirty process, not always
+writeback path.
 
+>>> This requirement is analogous to __mark_inode_dirty() and must
+>>> tolerate similar races. At the microoptimization level, calling
+>>> redirty_tail from inode_writeback_touch would be less efficient
+>>> and more bulky. Another small issue is, redirty_tail does not
+>>> always update the timestamp, which could trigger some bogus
+>>> writeback events.
+>> redirty_tail does not update the timestamp when it doesn't need to
+>> change. If it needs to be changed because the current value would
+>> violate the time ordering requirements of the list, it rewrites it.
+>>
+>> So there is essentially no functional difference between the new
+>> function and redirty_tail....
+>
+> Hirofumi, would you care to comment?
+
+It has difference.
+
+Say, tail->dirtied_when == 1, inode->dirtied_when == 2, and now == 30
+(tail->dirtied_when is expired at 31 with default config). In this case,
+redirty_tail() doesn't update ->dirtied_when.
+
+And if inode->dirtied_when is not updated to 30, expire time has
+difference. I.e. 32 vs 60.
+
+Thanks.
+-- 
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
