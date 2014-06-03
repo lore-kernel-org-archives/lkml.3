@@ -1,64 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933095AbaFCPzJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 11:55:09 -0400
-Received: from mga09.intel.com ([134.134.136.24]:6455 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932308AbaFCPzH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 11:55:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,966,1392192000"; 
-   d="scan'208";a="550924238"
-Message-ID: <538DEFD8.4050506@intel.com>
-Date: Tue, 03 Jun 2014 08:55:04 -0700
-From: Dave Hansen <dave.hansen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S933040AbaFCP4Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 11:56:25 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:39004 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932308AbaFCP4X (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 11:56:23 -0400
+Date: Tue, 3 Jun 2014 08:56:18 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Mikulas Patocka <mpatocka@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Helge Deller <deller@gmx.de>, John David Anglin <dave.anglin@bell.net>,
+        Parisc List <linux-parisc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Vinod, Chegu" <chegu_vinod@hp.com>, Waiman Long <Waiman.Long@hp.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Davidlohr Bueso <davidlohr@hp.com>, Peter Anvin <hpa@zytor.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>, Jason Low <jason.low2@hp.com>,
+        sparse@chrisli.org
+Subject: Re: [PATCH v2] introduce atomic_pointer to fix a race condition in
+ cancelable mcs spinlocks
+Message-ID: <20140603155618.GR22231@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <alpine.LRH.2.02.1406011342470.20831@file01.intranet.prod.int.rdu2.redhat.com>
+ <alpine.LRH.2.02.1406021158360.20627@file01.intranet.prod.int.rdu2.redhat.com>
+ <20140602162525.GH16155@laptop.programming.kicks-ass.net>
+ <CA+55aFzwrqkwD=G=w2m7TdXTpsMFjV7XUMXv5DMPGr=5x5YGCQ@mail.gmail.com>
+ <alpine.LRH.2.02.1406021622200.5874@file01.intranet.prod.int.rdu2.redhat.com>
+ <CA+55aFwCy4-x02U6A-KbkPEpe_4pagsZ__ipBhe5HZOQt2vNmw@mail.gmail.com>
+ <alpine.LRH.2.02.1406021656550.5874@file01.intranet.prod.int.rdu2.redhat.com>
+ <20140603073613.GH11096@twins.programming.kicks-ass.net>
+ <20140603140727.GM22231@linux.vnet.ibm.com>
+ <20140603150908.GW30445@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: Re: [PATCH -mm] mincore: apply page table walker on do_mincore()
- (Re: [PATCH 00/10] mm: pagewalk: huge page cleanups and VMA passing)
-References: <20140602213644.925A26D0@viggo.jf.intel.com> <1401745925-l651h3s9@n-horiguchi@ah.jp.nec.com> <538CF25E.8070905@sr71.net> <1401776292-dn0fof8e@n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1401776292-dn0fof8e@n-horiguchi@ah.jp.nec.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140603150908.GW30445@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14060315-3532-0000-0000-000002372478
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/02/2014 11:18 PM, Naoya Horiguchi wrote:
-> And for patch 8, 9, and 10, I don't think it's good idea to add a new callback
-> which can handle both pmd and pte (because they are essentially differnt thing).
-> But the underneath idea of doing pmd_trans_huge_lock() in the common code in
-> walk_single_entry_locked() looks nice to me. So it would be great if we can do
-> the same thing in walk_pmd_range() (of linux-mm) to reduce code in callbacks.
+On Tue, Jun 03, 2014 at 05:09:08PM +0200, Peter Zijlstra wrote:
+> On Tue, Jun 03, 2014 at 07:07:27AM -0700, Paul E. McKenney wrote:
+> > On Tue, Jun 03, 2014 at 09:36:13AM +0200, Peter Zijlstra wrote:
+> > > 
+> > > #ifdef __CHECKER__
+> > > #define __atomic	__attribute__((address_space(5)))
+> > > #else
+> > > #define __atomic
+> > > #endif
+> > > 
+> > > #define store(p, v)	(*(p) = (typeof(*(p)) __force __atomic)(v))
+> > > #define load(p)		((typeof(*p) __force)ACCESS_ONCE(*(p)))
+> > > 
+> > > Along with changes to xchg() and cmpxchg() that require them to take
+> > > pointers to __atomic.
+> > > 
+> > > That way we keep the flexibility of xchg() and cmpxchg() for being
+> > > (mostly) type and size invariant, and get sparse to find wrong usage.
+> > > 
+> > > Then parisc, sparc32, tile32, metag-lock1 and arc-!llsc can go implement
+> > > store() however they like.
+> > 
+> > Should be fun interacting with atomic operations on __rcu variables
+> > (address space 4).  Of course, that is already fun...
+> > 
+> 
+> Hmm, good point, I suppose sparse doesn't like two different
+> address_space annotations on the same variable ?
+> 
+> /me adds Christpoher Li to the CC list.
+> 
+> ISTR Mikulas actually listing one such, me digs in recent email..
+> 
+> > $ grep -w "fdt->fd" */*.c
+> > fs/file.c:      free_fdmem(fdt->fd);
+> > fs/file.c:      fdt->fd = data;
+> > fs/file.c:      free_fdmem(fdt->fd);
+> > fs/file.c:                              struct file * file = xchg(&fdt->fd[i], NULL);
+> 
+> So yes, that's going to be fun, mostly because rcu_assign_pointer()
+> doesn't actually do the right magic for this to be safe on their
+> platform(s).
 
-You think they are different, I think they're the same. :)
+Maybe at some point sparse needs to keep a bit mask for the address
+spaces, so that you caould say somthing like:
 
-What the walkers *really* care about is getting a leaf node in the page
-tables.  They generally don't *care* whether it is a pmd or pte, they
-just want to know what its value is and how large it is.
+	struct foo __atomic __rcu *p;
 
-I'd argue that they don't really ever need to actually know at which
-level they are in the page tables, just if they are at the bottom or
-not.  Note that *NOBODY* sets a pud or pgd entry.  That's because the
-walkers are 100% concerned about leaf nodes (pte's) at this point.
+							Thanx, Paul
 
-Take a look at my version of gather_stats_locked():
-
->  static int gather_stats_locked(pte_t *pte, unsigned long addr,
->                 unsigned long size, struct mm_walk *walk)
->  {
->         struct numa_maps *md = walk->private;
->         struct page *page = can_gather_numa_stats(*pte, walk->vma, addr);
->  
->         if (page)
->                 gather_stats(page, md, pte_dirty(*pte), size/PAGE_SIZE);
->  
->         return 0;
->  }
-
-The mmotm version looks _very_ similar to that, *BUT* the mmotm version
-needs to have an entire *EXTRA* 22-line gather_pmd_stats() dealing with
-THP locking, while mine doesn't.
