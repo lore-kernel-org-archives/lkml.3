@@ -1,86 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965543AbaFCRCY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 13:02:24 -0400
-Received: from relay.parallels.com ([195.214.232.42]:54063 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932969AbaFCRCG (ORCPT
+	id S965563AbaFCRCh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 13:02:37 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:9904 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932714AbaFCRCf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 13:02:06 -0400
-Message-ID: <538DFF72.7000209@parallels.com>
-Date: Tue, 3 Jun 2014 21:01:38 +0400
-From: Pavel Emelyanov <xemul@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	Tue, 3 Jun 2014 13:02:35 -0400
+Date: Tue, 3 Jun 2014 13:02:33 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Clark Williams <williams@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [BUG] signal: sighand unprotected when accessed by /proc
+Message-ID: <20140603130233.658a6a3c@gandalf.local.home>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Serge Hallyn <serge.hallyn@ubuntu.com>
-CC: Marian Marinov <mm@1h.com>,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        LXC development mailing-list 
-	<lxc-devel@lists.linuxcontainers.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] Per-user namespace process accounting
-References: <5386D58D.2080809@1h.com> <87tx88nbko.fsf@x220.int.ebiederm.org> <53870EAA.4060101@1h.com> <20140529153232.GB9714@ubuntumail>
-In-Reply-To: <20140529153232.GB9714@ubuntumail>
-Content-Type: text/plain; charset="ISO-8859-1"
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [89.169.95.100]
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/29/2014 07:32 PM, Serge Hallyn wrote:
-> Quoting Marian Marinov (mm@1h.com):
->> -----BEGIN PGP SIGNED MESSAGE-----
->> Hash: SHA1
->>
->> On 05/29/2014 01:06 PM, Eric W. Biederman wrote:
->>> Marian Marinov <mm@1h.com> writes:
->>>
->>>> Hello,
->>>>
->>>> I have the following proposition.
->>>>
->>>> Number of currently running processes is accounted at the root user namespace. The problem I'm facing is that
->>>> multiple containers in different user namespaces share the process counters.
->>>
->>> That is deliberate.
->>
->> And I understand that very well ;)
->>
->>>
->>>> So if containerX runs 100 with UID 99, containerY should have NPROC limit of above 100 in order to execute any 
->>>> processes with ist own UID 99.
->>>>
->>>> I know that some of you will tell me that I should not provision all of my containers with the same UID/GID maps,
->>>> but this brings another problem.
->>>>
->>>> We are provisioning the containers from a template. The template has a lot of files 500k and more. And chowning
->>>> these causes a lot of I/O and also slows down provisioning considerably.
->>>>
->>>> The other problem is that when we migrate one container from one host machine to another the IDs may be already
->>>> in use on the new machine and we need to chown all the files again.
->>>
->>> You should have the same uid allocations for all machines in your fleet as much as possible.   That has been true
->>> ever since NFS was invented and is not new here.  You can avoid the cost of chowning if you untar your files inside
->>> of your user namespace.  You can have different maps per machine if you are crazy enough to do that.  You can even
->>> have shared uids that you use to share files between containers as long as none of those files is setuid.  And map
->>> those shared files to some kind of nobody user in your user namespace.
->>
->> We are not using NFS. We are using a shared block storage that offers us snapshots. So provisioning new containers is
->> extremely cheep and fast. Comparing that with untar is comparing a race car with Smart. Yes it can be done and no, I
->> do not believe we should go backwards.
->>
->> We do not share filesystems between containers, we offer them block devices.
-> 
-> Yes, this is a real nuisance for openstack style deployments.
-> 
-> One nice solution to this imo would be a very thin stackable filesystem
-> which does uid shifting, or, better yet, a non-stackable way of shifting
-> uids at mount.
+We were able to trigger this bug in -rt, and by review, I'm thinking
+that this could very well be a mainline bug too. I had our QA team add
+a trace patch to the kernel to prove my analysis, and it did.
 
-I vote for non-stackable way too. Maybe on generic VFS level so that filesystems 
-don't bother with it. From what I've seen, even simple stacking is quite a challenge.
+Here's the patch:
 
-Thanks,
-Pavel
+ http://rostedt.homelinux.com/private/sighand-trace.patch
+
+Let me try to explain the bug:
+
+
+	CPU0				CPU1
+	----				----
+ [ read of /proc/<pid>/stat ]
+  get_task_struct();
+  [...]
+				  [ <pid> exits ]
+				  [ parent does wait on <pid> ]
+				  wait_task_zombie()
+				    release_task()
+				      proc_flush_task()
+				      /* the above removes new access
+				         to the /proc system */
+				      __exit_signal()
+				        __cleanup_sighand(sighand);
+					  atomic_dec_and_test(sighand->count);
+  do_task_stat()
+    lock_task_sighand(task);
+      sighand = rcu_dereference(tsk->sighand);
+
+					    kmem_cache_free(sighand);
+
+      if (sighand != NULL)
+        spin_lock(sighand->siglock);
+
+       ** BOOM! use after free **
+
+
+Seems there is no protection between reading the sighand from proc and
+freeing it. The sighand->count is not updated, and the sighand is not
+freed via rcu.  Wouldn't matter, because the use of sighand is not
+totally protected by rcu.
+
+We take a lot of care to free tsk->signal but we are a bit sloppy in
+protecting sighand.
+
+Here's the trace from our last crash:
+
+      ps-23716   1....... 11201242344176: __lock_task_sighand: lock sighand=ffff8801022aee80 from sh:23718
+    make-23672   1.....11 11201242409218: release_task: freeing sighand ffff8801022aee80 for sh:23718
+    make-23672   1.....11 11201242409980: __cleanup_sighand: free sighand ffff8801022aee80
+    make-23672   1.....11 11201242410380: __cleanup_sighand: sighand ffff8801022aee80 freed
+      ps-23716   1d...211 11201243007052: __list_del_entry: BUG HIT!
+
+Let me explain the differences between -rt and mainline here.
+
+One, the spinlock in -rt is an rtmutex. The list_del_entry() bug is the
+task trying to remove itself from sighand->lock->wait_list. As the lock
+has been freed, the list head of the rtmutex is corrupted.
+
+Another difference here is that all this ran on CPU 1. In mainline,
+that could not happen because the spinlock prevents preemption. But
+still, I don't see anything that could stop this from happening on
+multiple CPUs.
+
+Again, the bug does exist in mainline. I believe the only reason that
+we do not trigger it (often) is that there's a lot that the reading of
+the proc needs to do between opening the proc files and then reading
+the sighand->lock. Much more than the clean up path between
+removing /proc and freeing sighand. But with an interrupt going off at
+the right time slowing down the fast path, we can still hit this race.
+
+This is the beauty of the -rt patch. It can simulate hard to hit races
+nicely, due to the preemptive nature of the spinlocks.
+
+I do not see any trivial fix for this. I figured I show this to the
+signal gurus before trying to redesign the way sighand gets freed or
+used by /proc.
+
+-- Steve
+
+  
