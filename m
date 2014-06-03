@@ -1,87 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933587AbaFCT4s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 15:56:48 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:48226 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933423AbaFCT4q (ORCPT
+	id S933422AbaFCUBX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 16:01:23 -0400
+Received: from mailrelay003.isp.belgacom.be ([195.238.6.53]:21040 "EHLO
+	mailrelay003.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753251AbaFCUBW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 15:56:46 -0400
-From: Nicolas Koch <nioko1337@gmail.com>
-X-Google-Original-From: Nicolas Koch <nioko1337@googlemail.com>
-To: devel@driverdev.osuosl.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>, linux-kernel@vger.kernel.org,
-        Nicolas Koch <nioko1337@googlemail.com>
-Subject: [patch] Staging: octeon: minor style cleanups
-Date: Tue,  3 Jun 2014 21:56:31 +0200
-Message-Id: <1401825391-7413-1-git-send-email-nioko1337@googlemail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Tue, 3 Jun 2014 16:01:22 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AnAOABYpjlNbsmtf/2dsb2JhbABZgwerXgQDAQEBBQGYHIEOF3SDAiOBGjeIRgHRKxeFVYgZZB2EKgSPS4o/ix2IFoM6O4Ew
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 1/1] fs/file.c: use SIZE_MAX instead of ~(size_t)0
+Date: Tue,  3 Jun 2014 22:00:08 +0200
+Message-Id: <1401825608-7037-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Done as task 10 of the eudyptula challenge.
+Use kernel.h definition.
 
-Signed-off-by: Nicolas Koch <nioko1337@googlemail.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
 ---
- drivers/staging/octeon/ethernet-mem.c |   11 +++++++----
- 1 file changed, 7 insertions(+), 4 deletions(-)
+ fs/file.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/staging/octeon/ethernet-mem.c b/drivers/staging/octeon/ethernet-mem.c
-index bf666b0..964da86 100644
---- a/drivers/staging/octeon/ethernet-mem.c
-+++ b/drivers/staging/octeon/ethernet-mem.c
-@@ -46,9 +46,10 @@
- static int cvm_oct_fill_hw_skbuff(int pool, int size, int elements)
- {
- 	int freed = elements;
--	while (freed) {
+diff --git a/fs/file.c b/fs/file.c
+index 8f294cf..d63f731 100644
+--- a/fs/file.c
++++ b/fs/file.c
+@@ -27,7 +27,7 @@ int sysctl_nr_open __read_mostly = 1024*1024;
+ int sysctl_nr_open_min = BITS_PER_LONG;
+ /* our max() is unusable in constant expressions ;-/ */
+ #define __const_max(x, y) ((x) < (y) ? (x) : (y))
+-int sysctl_nr_open_max = __const_max(INT_MAX, ~(size_t)0/sizeof(void *)) &
++int sysctl_nr_open_max = __const_max(INT_MAX, SIZE_MAX/sizeof(void *)) &
+ 			 -BITS_PER_LONG;
  
-+	while (freed) {
- 		struct sk_buff *skb = dev_alloc_skb(size + 256);
-+
- 		if (unlikely(skb == NULL))
- 			break;
- 		skb_reserve(skb, 256 - (((unsigned long)skb->data) & 0x7f));
-@@ -81,10 +82,10 @@ static void cvm_oct_free_hw_skbuff(int pool, int size, int elements)
- 
- 	if (elements < 0)
- 		pr_warn("Freeing of pool %u had too many skbuffs (%d)\n",
--		     pool, elements);
-+			pool, elements);
- 	else if (elements > 0)
- 		pr_warn("Freeing of pool %u is missing %d skbuffs\n",
--		       pool, elements);
-+			pool, elements);
- }
- 
- /**
-@@ -115,7 +116,7 @@ static int cvm_oct_fill_hw_memory(int pool, int size, int elements)
- 		memory = kmalloc(size + 256, GFP_ATOMIC);
- 		if (unlikely(memory == NULL)) {
- 			pr_warn("Unable to allocate %u bytes for FPA pool %d\n",
--				   elements * size, pool);
-+				elements * size, pool);
- 			break;
- 		}
- 		fpa = (char *)(((unsigned long)memory + 256) & ~0x7fUL);
-@@ -136,6 +137,7 @@ static void cvm_oct_free_hw_memory(int pool, int size, int elements)
- {
- 	char *memory;
- 	char *fpa;
-+
- 	do {
- 		fpa = cvmx_fpa_alloc(pool);
- 		if (fpa) {
-@@ -157,6 +159,7 @@ static void cvm_oct_free_hw_memory(int pool, int size, int elements)
- int cvm_oct_mem_fill_fpa(int pool, int size, int elements)
- {
- 	int freed;
-+
- 	if (USE_SKBUFFS_IN_HW && pool == CVMX_FPA_PACKET_POOL)
- 		freed = cvm_oct_fill_hw_skbuff(pool, size, elements);
- 	else
+ static void *alloc_fdmem(size_t size)
 -- 
-1.7.10.4
+1.8.4.5
 
