@@ -1,72 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754070AbaFCM6s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 08:58:48 -0400
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:58429 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751221AbaFCM6r (ORCPT
+	id S1753654AbaFCNBu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 09:01:50 -0400
+Received: from mail-qg0-f52.google.com ([209.85.192.52]:63684 "EHLO
+	mail-qg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751129AbaFCNBs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 08:58:47 -0400
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-To: peterz@infradead.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] sched: Move enum CPU_[xxx_]IDLE to private sched.h
-Date: Tue,  3 Jun 2014 14:59:05 +0200
-Message-Id: <1401800345-29468-1-git-send-email-daniel.lezcano@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 3 Jun 2014 09:01:48 -0400
+Date: Tue, 3 Jun 2014 09:01:44 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Li Zefan <lizefan@huawei.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
+Subject: Re: [PATCH 2/3] cgroup: make the default root invisible when it's
+ umounted
+Message-ID: <20140603130144.GB26210@htj.dyndns.org>
+References: <538D4956.5050205@huawei.com>
+ <538D4982.10905@huawei.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <538D4982.10905@huawei.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The different enum CPU_IDLE, CPU_NOT_IDLE, CPU_NEWLY_IDLE and
-CPU_MAX_IDLE_TYPES are only used in kernel/sched/fair.c and
-kernel/sched/stats.c.
+On Tue, Jun 03, 2014 at 12:05:22PM +0800, Li Zefan wrote:
+> Before this patch (in a fresh system):
+> 
+>    # cat /proc/$$/cgroup
+>    # mount -t cgroup -o __DEVEL__sane_behavior xxx /cgroup
+>    # umount /cgroup
+>    # cat /proc/$$/cgroup
+>    0:cpuset,cpu,cpuacct,memory,devices,freezer,net_cls,blkio,perf_event,net_prio,hugetlb:/
+> 
+> After this patch (in a fresh system):
+> 
+>    # cat ...
+>    # mount ...
+>    # umount ...
+>    # cat /proc/$$/cgroup
+>    #
+> 
+> You won't see the default root after it's umounted.
 
-Move their definitions in the private 'sched.h' file located in the
-same place than the files above.
+Hmmmm... I intentionally left it visible tho.  The only reason we gate
+its visibility is avoid disturbing userland which doesn't know about
+and won't use the unified hierarchy.  If the userland starts making
+use of it, there's no reason to hide it again especially as that's
+consistent with how other hierarchies behave too - they keep showing
+up if they have lingering refs.
 
-Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
----
- include/linux/sched.h |    7 -------
- kernel/sched/sched.h  |    7 +++++++
- 2 files changed, 7 insertions(+), 7 deletions(-)
+Thanks.
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 0f91d00..d561501 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -846,13 +846,6 @@ static inline int sched_info_on(void)
- #endif
- }
- 
--enum cpu_idle_type {
--	CPU_IDLE,
--	CPU_NOT_IDLE,
--	CPU_NEWLY_IDLE,
--	CPU_MAX_IDLE_TYPES
--};
--
- /*
-  * Increase resolution of cpu_power calculations
-  */
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 600e229..118a859 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -23,6 +23,13 @@ extern atomic_long_t calc_load_tasks;
- extern long calc_load_fold_active(struct rq *this_rq);
- extern void update_cpu_load_active(struct rq *this_rq);
- 
-+enum cpu_idle_type {
-+	CPU_IDLE,
-+	CPU_NOT_IDLE,
-+	CPU_NEWLY_IDLE,
-+	CPU_MAX_IDLE_TYPES
-+};
-+
- /*
-  * Helpers for converting nanosecond timing to jiffy resolution
-  */
 -- 
-1.7.9.5
-
+tejun
