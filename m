@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932665AbaFCLle (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 07:41:34 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43518 "EHLO
+	id S1755207AbaFCMGK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 08:06:10 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43542 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932629AbaFCLl1 (ORCPT
+	with ESMTP id S932655AbaFCLld (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 07:41:27 -0400
+	Tue, 3 Jun 2014 07:41:33 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Gary Servin <garyservin@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Rik van Riel <riel@redhat.com>, Dave Jones <davej@redhat.com>,
+        David Miller <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 063/138] gpio: mcp23s08: trivial: fixed coding style issues
-Date: Tue,  3 Jun 2014 12:38:29 +0100
-Message-Id: <1401795584-22664-64-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 066/138] mm, thp: close race between mremap() and split_huge_page()
+Date: Tue,  3 Jun 2014 12:38:32 +0100
+Message-Id: <1401795584-22664-67-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
 References: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
@@ -28,118 +31,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gary Servin <garyservin@gmail.com>
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-commit 33bc8411eec33f92ba59e8ef7394b82245ec556e upstream.
+commit dd18dbc2d42af75fffa60c77e0f02220bc329829 upstream.
 
-This coding style issue was detected using the checkpatch.pl script
+It's critical for split_huge_page() (and migration) to catch and freeze
+all PMDs on rmap walk.  It gets tricky if there's concurrent fork() or
+mremap() since usually we copy/move page table entries on dup_mm() or
+move_page_tables() without rmap lock taken.  To get it work we rely on
+rmap walk order to not miss any entry.  We expect to see destination VMA
+after source one to work correctly.
 
-Signed-off-by: Gary Servin <garyservin@gmail.com>
-Reviewed-by: Alexandre Courbot <acourbot@nvidia.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+But after switching rmap implementation to interval tree it's not always
+possible to preserve expected walk order.
+
+It works fine for dup_mm() since new VMA has the same vma_start_pgoff()
+/ vma_last_pgoff() and explicitly insert dst VMA after src one with
+vma_interval_tree_insert_after().
+
+But on move_vma() destination VMA can be merged into adjacent one and as
+result shifted left in interval tree.  Fortunately, we can detect the
+situation and prevent race with rmap walk by moving page table entries
+under rmap lock.  See commit 38a76013ad80.
+
+Problem is that we miss the lock when we move transhuge PMD.  Most
+likely this bug caused the crash[1].
+
+[1] http://thread.gmane.org/gmane.linux.kernel.mm/96473
+
+Fixes: 108d6642ad81 ("mm anon rmap: remove anon_vma_moveto_tail")
+
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Reviewed-by: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Rik van Riel <riel@redhat.com>
+Acked-by: Michel Lespinasse <walken@google.com>
+Cc: Dave Jones <davej@redhat.com>
+Cc: David Miller <davem@davemloft.net>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpio/gpio-mcp23s08.c | 22 +++++++++++-----------
- 1 file changed, 11 insertions(+), 11 deletions(-)
+ mm/mremap.c | 9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/gpio/gpio-mcp23s08.c b/drivers/gpio/gpio-mcp23s08.c
-index 6a4470b84488..65d2590b0ecd 100644
---- a/drivers/gpio/gpio-mcp23s08.c
-+++ b/drivers/gpio/gpio-mcp23s08.c
-@@ -152,7 +152,7 @@ static int mcp23s08_read(struct mcp23s08 *mcp, unsigned reg)
- 
- 	tx[0] = mcp->addr | 0x01;
- 	tx[1] = reg;
--	status = spi_write_then_read(mcp->data, tx, sizeof tx, rx, sizeof rx);
-+	status = spi_write_then_read(mcp->data, tx, sizeof(tx), rx, sizeof(rx));
- 	return (status < 0) ? status : rx[0];
- }
- 
-@@ -163,7 +163,7 @@ static int mcp23s08_write(struct mcp23s08 *mcp, unsigned reg, unsigned val)
- 	tx[0] = mcp->addr;
- 	tx[1] = reg;
- 	tx[2] = val;
--	return spi_write_then_read(mcp->data, tx, sizeof tx, NULL, 0);
-+	return spi_write_then_read(mcp->data, tx, sizeof(tx), NULL, 0);
- }
- 
- static int
-@@ -172,13 +172,13 @@ mcp23s08_read_regs(struct mcp23s08 *mcp, unsigned reg, u16 *vals, unsigned n)
- 	u8	tx[2], *tmp;
- 	int	status;
- 
--	if ((n + reg) > sizeof mcp->cache)
-+	if ((n + reg) > sizeof(mcp->cache))
- 		return -EINVAL;
- 	tx[0] = mcp->addr | 0x01;
- 	tx[1] = reg;
- 
- 	tmp = (u8 *)vals;
--	status = spi_write_then_read(mcp->data, tx, sizeof tx, tmp, n);
-+	status = spi_write_then_read(mcp->data, tx, sizeof(tx), tmp, n);
- 	if (status >= 0) {
- 		while (n--)
- 			vals[n] = tmp[n]; /* expand to 16bit */
-@@ -193,7 +193,7 @@ static int mcp23s17_read(struct mcp23s08 *mcp, unsigned reg)
- 
- 	tx[0] = mcp->addr | 0x01;
- 	tx[1] = reg << 1;
--	status = spi_write_then_read(mcp->data, tx, sizeof tx, rx, sizeof rx);
-+	status = spi_write_then_read(mcp->data, tx, sizeof(tx), rx, sizeof(rx));
- 	return (status < 0) ? status : (rx[0] | (rx[1] << 8));
- }
- 
-@@ -205,7 +205,7 @@ static int mcp23s17_write(struct mcp23s08 *mcp, unsigned reg, unsigned val)
- 	tx[1] = reg << 1;
- 	tx[2] = val;
- 	tx[3] = val >> 8;
--	return spi_write_then_read(mcp->data, tx, sizeof tx, NULL, 0);
-+	return spi_write_then_read(mcp->data, tx, sizeof(tx), NULL, 0);
- }
- 
- static int
-@@ -214,12 +214,12 @@ mcp23s17_read_regs(struct mcp23s08 *mcp, unsigned reg, u16 *vals, unsigned n)
- 	u8	tx[2];
- 	int	status;
- 
--	if ((n + reg) > sizeof mcp->cache)
-+	if ((n + reg) > sizeof(mcp->cache))
- 		return -EINVAL;
- 	tx[0] = mcp->addr | 0x01;
- 	tx[1] = reg << 1;
- 
--	status = spi_write_then_read(mcp->data, tx, sizeof tx,
-+	status = spi_write_then_read(mcp->data, tx, sizeof(tx),
- 				     (u8 *)vals, n * 2);
- 	if (status >= 0) {
- 		while (n--)
-@@ -357,7 +357,7 @@ static void mcp23s08_dbg_show(struct seq_file *s, struct gpio_chip *chip)
- 			(mcp->cache[MCP_GPIO] & mask) ? "hi" : "lo",
- 			(mcp->cache[MCP_GPPU] & mask) ? "up" : "  ");
- 		/* NOTE:  ignoring the irq-related registers */
--		seq_printf(s, "\n");
-+		seq_puts(s, "\n");
- 	}
- done:
- 	mutex_unlock(&mcp->lock);
-@@ -534,7 +534,7 @@ static int mcp230xx_probe(struct i2c_client *client,
- 		pullups = pdata->chip[0].pullups;
- 	}
- 
--	mcp = kzalloc(sizeof *mcp, GFP_KERNEL);
-+	mcp = kzalloc(sizeof(*mcp), GFP_KERNEL);
- 	if (!mcp)
- 		return -ENOMEM;
- 
-@@ -661,7 +661,7 @@ static int mcp23s08_probe(struct spi_device *spi)
- 		base = pdata->base;
- 	}
- 
--	data = kzalloc(sizeof *data + chips * sizeof(struct mcp23s08),
-+	data = kzalloc(sizeof(*data) + chips * sizeof(struct mcp23s08),
- 			GFP_KERNEL);
- 	if (!data)
- 		return -ENOMEM;
+diff --git a/mm/mremap.c b/mm/mremap.c
+index 0843feb66f3d..05f1180e9f21 100644
+--- a/mm/mremap.c
++++ b/mm/mremap.c
+@@ -194,10 +194,17 @@ unsigned long move_page_tables(struct vm_area_struct *vma,
+ 			break;
+ 		if (pmd_trans_huge(*old_pmd)) {
+ 			int err = 0;
+-			if (extent == HPAGE_PMD_SIZE)
++			if (extent == HPAGE_PMD_SIZE) {
++				VM_BUG_ON(vma->vm_file || !vma->anon_vma);
++				/* See comment in move_ptes() */
++				if (need_rmap_locks)
++					anon_vma_lock_write(vma->anon_vma);
+ 				err = move_huge_pmd(vma, new_vma, old_addr,
+ 						    new_addr, old_end,
+ 						    old_pmd, new_pmd);
++				if (need_rmap_locks)
++					anon_vma_unlock_write(vma->anon_vma);
++			}
+ 			if (err > 0) {
+ 				need_flush = true;
+ 				continue;
 -- 
 1.9.1
 
