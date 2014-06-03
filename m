@@ -1,41 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753482AbaFCL1b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 07:27:31 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:61794 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751189AbaFCL1a (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 07:27:30 -0400
+	id S1753842AbaFCL1t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 07:27:49 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:51876 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753753AbaFCL1s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 07:27:48 -0400
+X-IronPort-AV: E=Sophos;i="4.98,964,1392163200"; 
+   d="scan'208";a="139003950"
+Date: Tue, 3 Jun 2014 12:27:47 +0100
+From: Wei Liu <wei.liu2@citrix.com>
+To: Elena Ufimtseva <ufimtseva@gmail.com>
+CC: <xen-devel@lists.xenproject.org>, <akpm@linux-foundation.org>,
+        <wency@cn.fujitsu.com>, <x86@kernel.org>,
+        <linux-kernel@vger.kernel.org>, <tangchen@cn.fujitsu.com>,
+        <mingo@redhat.com>, <david.vrabel@citrix.com>, <hpa@zytor.com>,
+        <boris.ostrovsky@oracle.com>, <tglx@linutronix.de>,
+        <stefano.stabellini@eu.citrix.com>, <ian.campbell@citrix.com>,
+        <wei.liu2@citrix.com>
+Subject: Re: [Xen-devel] [PATCH v3 0/2] xen: vnuma for PV guests
+Message-ID: <20140603112747.GI6043@zion.uk.xensource.com>
+References: <1401771279-11530-1-git-send-email-ufimtseva@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <10455941.RzodM59Z3O@wuerfel>
-References: <10455941.RzodM59Z3O@wuerfel>
-Date: Tue, 3 Jun 2014 16:57:28 +0530
-Message-ID: <CAK5sBcH8YH1+i0yBUHLqiYWAmOV3v5Dpoavxo-ZOGA8oX0OcwQ@mail.gmail.com>
-Subject: Re: [PATCH] serial: samsung: fix typo in debug code
-From: Sachin Kamat <spk.linux@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, Joe Perches <joe@perches.com>,
-        Doug Anderson <dianders@chromium.org>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1401771279-11530-1-git-send-email-ufimtseva@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+Hi Elena
 
-On Tue, Jun 3, 2014 at 3:23 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> commit e4ac92df2791 ("serial: samsung: Neaten dbg uses") introduced
-> a regression in the conversion from vsprintf to vsnprintf.
->
-> This fixes the build error by passing the correct variable name.
+> 
+> Elena Ufimtseva (1):
+>   Xen vnuma introduction.
+> 
 
-I submitted a similar patch sometime back.
-http://www.spinics.net/lists/linux-serial/msg12843.html
+Is there a 2/2 for this series? The numbering in subject line suggests
+so but the patch list in this email says otherwise.
 
-Regards,
-Sachin
+Wei.
