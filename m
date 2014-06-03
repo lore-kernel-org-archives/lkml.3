@@ -1,27 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932391AbaFCMQp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 08:16:45 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43371 "EHLO
+	id S1755838AbaFCMRL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 08:17:11 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43367 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932338AbaFCLkq (ORCPT
+	with ESMTP id S932328AbaFCLko (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 07:40:46 -0400
+	Tue, 3 Jun 2014 07:40:44 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Vlastimil Babka <vbabka@suse.cz>, Mel Gorman <mgorman@suse.de>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Christoph Lameter <cl@linux.com>, Dongjun Shin <d.j.shin@samsung.com>,
-        Sunghwan Yun <sunghwan.yun@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Kieran Clancy <clancy.kieran@gmail.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 030/138] mm/compaction: make isolate_freepages start at pageblock boundary
-Date: Tue,  3 Jun 2014 12:37:56 +0100
-Message-Id: <1401795584-22664-31-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 035/138] ACPI / EC: Process rather than discard events in acpi_ec_clear
+Date: Tue,  3 Jun 2014 12:38:01 +0100
+Message-Id: <1401795584-22664-36-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
 References: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
@@ -34,104 +28,122 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vlastimil Babka <vbabka@suse.cz>
+From: Kieran Clancy <clancy.kieran@gmail.com>
 
-commit 49e068f0b73dd042c186ffa9b420a9943e90389a upstream.
+commit 3eba563e280101209bad27d40bfc83ddf1489234 upstream.
 
-The compaction freepage scanner implementation in isolate_freepages()
-starts by taking the current cc->free_pfn value as the first pfn.  In a
-for loop, it scans from this first pfn to the end of the pageblock, and
-then subtracts pageblock_nr_pages from the first pfn to obtain the first
-pfn for the next for loop iteration.
+Address a regression caused by commit ad332c8a4533:
+(ACPI / EC: Clear stale EC events on Samsung systems)
 
-This means that when cc->free_pfn starts at offset X rather than being
-aligned on pageblock boundary, the scanner will start at offset X in all
-scanned pageblock, ignoring potentially many free pages.  Currently this
-can happen when
+After the earlier patch, there was found to be a race condition on some
+earlier Samsung systems (N150/N210/N220). The function acpi_ec_clear was
+sometimes discarding a new EC event before its GPE was triggered by the
+system. In the case of these systems, this meant that the "lid open"
+event was not registered on resume if that was the cause of the wake,
+leading to problems when attempting to close the lid to suspend again.
 
- a) zone's end pfn is not pageblock aligned, or
+After testing on a number of Samsung systems, both those affected by the
+previous EC bug and those affected by the race condition, it seemed that
+the best course of action was to process rather than discard the events.
+On Samsung systems which accumulate stale EC events, there does not seem
+to be any adverse side-effects of running the associated _Q methods.
 
- b) through zone->compact_cached_free_pfn with CONFIG_HOLES_IN_ZONE
-    enabled and a hole spanning the beginning of a pageblock
+This patch adds an argument to the static function acpi_ec_sync_query so
+that it may be used within the acpi_ec_clear loop in place of
+acpi_ec_query_unlocked which was used previously.
 
-This patch fixes the problem by aligning the initial pfn in
-isolate_freepages() to pageblock boundary.  This also permits replacing
-the end-of-pageblock alignment within the for loop with a simple
-pageblock_nr_pages increment.
+With thanks to Stefan Biereigel for reporting the issue, and for all the
+people who helped test the new patch on affected systems.
 
-Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
-Reported-by: Heesub Shin <heesub.shin@samsung.com>
-Acked-by: Minchan Kim <minchan@kernel.org>
-Cc: Mel Gorman <mgorman@suse.de>
-Acked-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: Michal Nazarewicz <mina86@mina86.com>
-Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Christoph Lameter <cl@linux.com>
-Acked-by: Rik van Riel <riel@redhat.com>
-Cc: Dongjun Shin <d.j.shin@samsung.com>
-Cc: Sunghwan Yun <sunghwan.yun@samsung.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Fixes: ad332c8a4533 (ACPI / EC: Clear stale EC events on Samsung systems)
+References: https://lkml.kernel.org/r/532FE3B2.9060808@biereigel-wb.de
+References: https://bugzilla.kernel.org/show_bug.cgi?id=44161#c173
+Reported-by: Stefan Biereigel <stefan@biereigel.de>
+Signed-off-by: Kieran Clancy <clancy.kieran@gmail.com>
+Tested-by: Stefan Biereigel <stefan@biereigel.de>
+Tested-by: Dennis Jansen <dennis.jansen@web.de>
+Tested-by: Nicolas Porcel <nicolasporcel06@gmail.com>
+Tested-by: Maurizio D'Addona <mauritiusdadd@gmail.com>
+Tested-by: Juan Manuel Cabo <juanmanuel.cabo@gmail.com>
+Tested-by: Giannis Koutsou <giannis.koutsou@gmail.com>
+Tested-by: Kieran Clancy <clancy.kieran@gmail.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- mm/compaction.c | 22 ++++++++++++----------
- 1 file changed, 12 insertions(+), 10 deletions(-)
+ drivers/acpi/ec.c | 21 ++++++++++++---------
+ 1 file changed, 12 insertions(+), 9 deletions(-)
 
-diff --git a/mm/compaction.c b/mm/compaction.c
-index 18a90b4d0bfc..46e2f96454bc 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -657,16 +657,20 @@ static void isolate_freepages(struct zone *zone,
- 				struct compact_control *cc)
+diff --git a/drivers/acpi/ec.c b/drivers/acpi/ec.c
+index e053d158efd6..3ed713698d3d 100644
+--- a/drivers/acpi/ec.c
++++ b/drivers/acpi/ec.c
+@@ -213,13 +213,13 @@ unlock:
+ 	spin_unlock_irqrestore(&ec->lock, flags);
+ }
+ 
+-static int acpi_ec_sync_query(struct acpi_ec *ec);
++static int acpi_ec_sync_query(struct acpi_ec *ec, u8 *data);
+ 
+ static int ec_check_sci_sync(struct acpi_ec *ec, u8 state)
  {
- 	struct page *page;
--	unsigned long high_pfn, low_pfn, pfn, z_end_pfn, end_pfn;
-+	unsigned long high_pfn, low_pfn, pfn, z_end_pfn;
- 	int nr_freepages = cc->nr_freepages;
- 	struct list_head *freelist = &cc->freepages;
+ 	if (state & ACPI_EC_FLAG_SCI) {
+ 		if (!test_and_set_bit(EC_FLAGS_QUERY_PENDING, &ec->flags))
+-			return acpi_ec_sync_query(ec);
++			return acpi_ec_sync_query(ec, NULL);
+ 	}
+ 	return 0;
+ }
+@@ -471,10 +471,8 @@ acpi_handle ec_get_handle(void)
  
- 	/*
- 	 * Initialise the free scanner. The starting point is where we last
--	 * scanned from (or the end of the zone if starting). The low point
--	 * is the end of the pageblock the migration scanner is using.
-+	 * successfully isolated from, zone-cached value, or the end of the
-+	 * zone when isolating for the first time. We need this aligned to
-+	 * the pageblock boundary, because we do pfn -= pageblock_nr_pages
-+	 * in the for loop.
-+	 * The low boundary is the end of the pageblock the migration scanner
-+	 * is using.
- 	 */
--	pfn = cc->free_pfn;
-+	pfn = cc->free_pfn & ~(pageblock_nr_pages-1);
- 	low_pfn = cc->migrate_pfn + pageblock_nr_pages;
+ EXPORT_SYMBOL(ec_get_handle);
  
- 	/*
-@@ -686,6 +690,7 @@ static void isolate_freepages(struct zone *zone,
- 	for (; pfn > low_pfn && cc->nr_migratepages > nr_freepages;
- 					pfn -= pageblock_nr_pages) {
- 		unsigned long isolated;
-+		unsigned long end_pfn;
+-static int acpi_ec_query_unlocked(struct acpi_ec *ec, u8 *data);
+-
+ /*
+- * Clears stale _Q events that might have accumulated in the EC.
++ * Process _Q events that might have accumulated in the EC.
+  * Run with locked ec mutex.
+  */
+ static void acpi_ec_clear(struct acpi_ec *ec)
+@@ -483,7 +481,7 @@ static void acpi_ec_clear(struct acpi_ec *ec)
+ 	u8 value = 0;
  
- 		if (!pfn_valid(pfn))
- 			continue;
-@@ -713,13 +718,10 @@ static void isolate_freepages(struct zone *zone,
- 		isolated = 0;
+ 	for (i = 0; i < ACPI_EC_CLEAR_MAX; i++) {
+-		status = acpi_ec_query_unlocked(ec, &value);
++		status = acpi_ec_sync_query(ec, &value);
+ 		if (status || !value)
+ 			break;
+ 	}
+@@ -610,13 +608,18 @@ static void acpi_ec_run(void *cxt)
+ 	kfree(handler);
+ }
  
- 		/*
--		 * As pfn may not start aligned, pfn+pageblock_nr_page
--		 * may cross a MAX_ORDER_NR_PAGES boundary and miss
--		 * a pfn_valid check. Ensure isolate_freepages_block()
--		 * only scans within a pageblock
-+		 * Take care when isolating in last pageblock of a zone which
-+		 * ends in the middle of a pageblock.
- 		 */
--		end_pfn = ALIGN(pfn + 1, pageblock_nr_pages);
--		end_pfn = min(end_pfn, z_end_pfn);
-+		end_pfn = min(pfn + pageblock_nr_pages, z_end_pfn);
- 		isolated = isolate_freepages_block(cc, pfn, end_pfn,
- 						   freelist, false);
- 		nr_freepages += isolated;
+-static int acpi_ec_sync_query(struct acpi_ec *ec)
++static int acpi_ec_sync_query(struct acpi_ec *ec, u8 *data)
+ {
+ 	u8 value = 0;
+ 	int status;
+ 	struct acpi_ec_query_handler *handler, *copy;
+-	if ((status = acpi_ec_query_unlocked(ec, &value)))
++
++	status = acpi_ec_query_unlocked(ec, &value);
++	if (data)
++		*data = value;
++	if (status)
+ 		return status;
++
+ 	list_for_each_entry(handler, &ec->list, node) {
+ 		if (value == handler->query_bit) {
+ 			/* have custom handler for this bit */
+@@ -639,7 +642,7 @@ static void acpi_ec_gpe_query(void *ec_cxt)
+ 	if (!ec)
+ 		return;
+ 	mutex_lock(&ec->mutex);
+-	acpi_ec_sync_query(ec);
++	acpi_ec_sync_query(ec, NULL);
+ 	mutex_unlock(&ec->mutex);
+ }
+ 
 -- 
 1.9.1
 
