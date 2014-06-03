@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754798AbaFCLvc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 07:51:32 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43806 "EHLO
+	id S1754663AbaFCLmj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 07:42:39 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43786 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754673AbaFCLml (ORCPT
+	with ESMTP id S1754626AbaFCLmf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 07:42:41 -0400
+	Tue, 3 Jun 2014 07:42:35 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: David Gibson <david@gibson.dropbear.id.au>,
+Cc: Dmitry Kozlov <xeb@mail.ru>, Nicolas Dichtel <nicolas.dichtel@6wind.com>,
         "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 111/138] rtnetlink: Warn when interface's information won't fit in our packet
-Date: Tue,  3 Jun 2014 12:39:17 +0100
-Message-Id: <1401795584-22664-112-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 106/138] ip6_gre: don't allow to remove the fb_tunnel_dev
+Date: Tue,  3 Jun 2014 12:39:12 +0100
+Message-Id: <1401795584-22664-107-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
 References: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
@@ -28,66 +28,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Gibson <david@gibson.dropbear.id.au>
+From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
 
-commit 973462bbde79bb827824c73b59027a0aed5c9ca6 upstream.
+commit 54d63f787b652755e66eb4dd8892ee6d3f5197fc upstream.
 
-Without IFLA_EXT_MASK specified, the information reported for a single
-interface in response to RTM_GETLINK is expected to fit within a netlink
-packet of NLMSG_GOODSIZE.
+It's possible to remove the FB tunnel with the command 'ip link del ip6gre0' but
+this is unsafe, the module always supposes that this device exists. For example,
+ip6gre_tunnel_lookup() may use it unconditionally.
 
-If it doesn't, however, things will go badly wrong,  When listing all
-interfaces, netlink_dump() will incorrectly treat -EMSGSIZE on the first
-message in a packet as the end of the listing and omit information for
-that interface and all subsequent ones.  This can cause getifaddrs(3) to
-enter an infinite loop.
+Let's add a rtnl handler for dellink, which will never remove the FB tunnel (we
+let ip6gre_destroy_tunnels() do the job).
 
-This patch won't fix the problem, but it will WARN_ON() making it easier to
-track down what's going wrong.
+Introduced by commit c12b395a4664 ("gre: Support GRE over IPv6").
 
-Signed-off-by: David Gibson <david@gibson.dropbear.id.au>
-Reviewed-by: Jiri Pirko <jpirko@redhat.com>
+CC: Dmitry Kozlov <xeb@mail.ru>
+Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/core/rtnetlink.c | 17 ++++++++++++-----
- 1 file changed, 12 insertions(+), 5 deletions(-)
+ net/ipv6/ip6_gre.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-diff --git a/net/core/rtnetlink.c b/net/core/rtnetlink.c
-index 6f73a1094abb..415e33ecd503 100644
---- a/net/core/rtnetlink.c
-+++ b/net/core/rtnetlink.c
-@@ -1048,6 +1048,7 @@ static int rtnl_dump_ifinfo(struct sk_buff *skb, struct netlink_callback *cb)
- 	struct hlist_head *head;
- 	struct nlattr *tb[IFLA_MAX+1];
- 	u32 ext_filter_mask = 0;
-+	int err;
+diff --git a/net/ipv6/ip6_gre.c b/net/ipv6/ip6_gre.c
+index 8bc717b82b03..2b14fef6d055 100644
+--- a/net/ipv6/ip6_gre.c
++++ b/net/ipv6/ip6_gre.c
+@@ -1554,6 +1554,15 @@ static int ip6gre_changelink(struct net_device *dev, struct nlattr *tb[],
+ 	return 0;
+ }
  
- 	s_h = cb->args[0];
- 	s_idx = cb->args[1];
-@@ -1068,11 +1069,17 @@ static int rtnl_dump_ifinfo(struct sk_buff *skb, struct netlink_callback *cb)
- 		hlist_for_each_entry_rcu(dev, head, index_hlist) {
- 			if (idx < s_idx)
- 				goto cont;
--			if (rtnl_fill_ifinfo(skb, dev, RTM_NEWLINK,
--					     NETLINK_CB(cb->skb).portid,
--					     cb->nlh->nlmsg_seq, 0,
--					     NLM_F_MULTI,
--					     ext_filter_mask) <= 0)
-+			err = rtnl_fill_ifinfo(skb, dev, RTM_NEWLINK,
-+					       NETLINK_CB(cb->skb).portid,
-+					       cb->nlh->nlmsg_seq, 0,
-+					       NLM_F_MULTI,
-+					       ext_filter_mask);
-+			/* If we ran out of room on the first message,
-+			 * we're in trouble
-+			 */
-+			WARN_ON((err == -EMSGSIZE) && (skb->len == 0));
++static void ip6gre_dellink(struct net_device *dev, struct list_head *head)
++{
++	struct net *net = dev_net(dev);
++	struct ip6gre_net *ign = net_generic(net, ip6gre_net_id);
 +
-+			if (err <= 0)
- 				goto out;
- 
- 			nl_dump_check_consistent(cb, nlmsg_hdr(skb));
++	if (dev != ign->fb_tunnel_dev)
++		unregister_netdevice_queue(dev, head);
++}
++
+ static size_t ip6gre_get_size(const struct net_device *dev)
+ {
+ 	return
+@@ -1631,6 +1640,7 @@ static struct rtnl_link_ops ip6gre_link_ops __read_mostly = {
+ 	.validate	= ip6gre_tunnel_validate,
+ 	.newlink	= ip6gre_newlink,
+ 	.changelink	= ip6gre_changelink,
++	.dellink	= ip6gre_dellink,
+ 	.get_size	= ip6gre_get_size,
+ 	.fill_info	= ip6gre_fill_info,
+ };
 -- 
 1.9.1
 
