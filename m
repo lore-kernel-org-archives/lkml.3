@@ -1,72 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932966AbaFCPVL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 11:21:11 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:36174 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754594AbaFCPVJ (ORCPT
+	id S932990AbaFCPWI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 11:22:08 -0400
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:45847 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754741AbaFCPWF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 11:21:09 -0400
-Date: Tue, 3 Jun 2014 16:21:05 +0100
-From: Daniel Walter <dwalter@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: richard@nod.at, akpm@linux-foundation.org, ralf@linux-mips.org
-Subject: [PATCH v2 05/11] [arch/mips/alchemy] replace obsolete strict_strto
-Message-ID: <20140603152105.GG28580@google.com>
+	Tue, 3 Jun 2014 11:22:05 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140603145347.GE31751@sirena.org.uk>
+References: <1780c3205893be8567fa29ccd86674e2f32555b4.1401192160.git.viresh.kumar@linaro.org>
+	<20140527192923.GC12304@sirena.org.uk>
+	<CAKohpo=AnusM2FGs=JLozSyTc0N7SDXQxe+rPiLEHP6ewxY4ow@mail.gmail.com>
+	<20140528173858.GG5099@sirena.org.uk>
+	<CAKohpo=T3BG9X0gHfRA-x8B3ou3Y=XHcs=OTYAHikX61iAJ9xw@mail.gmail.com>
+	<20140603145347.GE31751@sirena.org.uk>
+Date: Tue, 3 Jun 2014 20:52:04 +0530
+Message-ID: <CAKohpokRk+PDokcgRdQc+EfRs6t7Uduk8mJinBfANCs36-5_oQ@mail.gmail.com>
+Subject: Re: [PATCH 1/2] regulators: Add definition of regulator_set_voltage_time()
+ for !CONFIG_REGULATOR
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arvind Chauhan <arvind.chauhan@arm.com>,
+        Eduardo Valentin <edubezval@gmail.com>, Pavel Machek <pavel@ucw.cz>,
+        Liam Girdwood <lgirdwood@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Daniel Walter <dwalter@google.com>
-Subject: [PATCH v2 05/11] [arch/mips/alchemy] replace obsolete strict_strto
+On 3 June 2014 20:23, Mark Brown <broonie@kernel.org> wrote:
+>> - We are checking 'regulator pointer' before calling and don't need to
+>> handle anything there..
+>
+> I'm not sure what you mean by this.
 
-Replace obsolete strict_strto call with kstrto
-
-Signed-off-by: Daniel Walter <dwalter@google.com>
----
- arch/mips/alchemy/board-xxs1500.c | 2 +-
- arch/mips/alchemy/devboards/pm.c  | 4 ++--
- 2 files changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/arch/mips/alchemy/board-xxs1500.c b/arch/mips/alchemy/board-xxs1500.c
-index bd55136..3fb814b 100644
---- a/arch/mips/alchemy/board-xxs1500.c
-+++ b/arch/mips/alchemy/board-xxs1500.c
-@@ -49,7 +49,7 @@ void __init prom_init(void)
- 	prom_init_cmdline();
- 
- 	memsize_str = prom_getenv("memsize");
--	if (!memsize_str || strict_strtoul(memsize_str, 0, &memsize))
-+	if (!memsize_str || kstrtoul(memsize_str, 0, &memsize))
- 		memsize = 0x04000000;
- 
- 	add_memory_region(0, memsize, BOOT_MEM_RAM);
-diff --git a/arch/mips/alchemy/devboards/pm.c b/arch/mips/alchemy/devboards/pm.c
-index b86bff3..61e90fe 100644
---- a/arch/mips/alchemy/devboards/pm.c
-+++ b/arch/mips/alchemy/devboards/pm.c
-@@ -158,7 +158,7 @@ static ssize_t db1x_pmattr_store(struct kobject *kobj,
- 	int tmp;
- 
- 	if (ATTRCMP(timer_timeout)) {
--		tmp = strict_strtoul(instr, 0, &l);
-+		tmp = kstrtoul(instr, 0, &l);
- 		if (tmp)
- 			return tmp;
- 
-@@ -181,7 +181,7 @@ static ssize_t db1x_pmattr_store(struct kobject *kobj,
- 		}
- 
- 	} else if (ATTRCMP(wakemsk)) {
--		tmp = strict_strtoul(instr, 0, &l);
-+		tmp = kstrtoul(instr, 0, &l);
- 		if (tmp)
- 			return tmp;
- 
--- 
-1.9.3
-
+I meant that sometimes regulator_set_voltage() is only called when pointer
+to regulator is valid.
