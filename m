@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753605AbaFCL6B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 07:58:01 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43671 "EHLO
+	id S1753227AbaFCL57 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 07:57:59 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43673 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754426AbaFCLmG (ORCPT
+	with ESMTP id S1754433AbaFCLmG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 3 Jun 2014 07:42:06 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mark Salter <msalter@redhat.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
+Cc: Sage Weil <sage@inktank.com>, Yehuda Sadeh <yehuda@inktank.com>,
+        Chunwei Chen <tuxoko@gmail.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 089/138] arm64: fix pud_huge() for 2-level pagetables
-Date: Tue,  3 Jun 2014 12:38:55 +0100
-Message-Id: <1401795584-22664-90-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 090/138] libceph: fix corruption when using page_count 0 page in rbd
+Date: Tue,  3 Jun 2014 12:38:56 +0100
+Message-Id: <1401795584-22664-91-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
 References: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
@@ -28,63 +28,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Salter <msalter@redhat.com>
+From: Chunwei Chen <tuxoko@gmail.com>
 
-commit 4797ec2dc83a43be35bad56037d1b53db9e2b5d5 upstream.
+commit 178eda29ca721842f2146378e73d43e0044c4166 upstream.
 
-The following happens when trying to run a kvm guest on a kernel
-configured for 64k pages. This doesn't happen with 4k pages:
+It has been reported that using ZFSonLinux on rbd will result in memory
+corruption. The bug report can be found here:
 
-  BUG: failure at include/linux/mm.h:297/put_page_testzero()!
-  Kernel panic - not syncing: BUG!
-  CPU: 2 PID: 4228 Comm: qemu-system-aar Tainted: GF            3.13.0-0.rc7.31.sa2.k32v1.aarch64.debug #1
-  Call trace:
-  [<fffffe0000096034>] dump_backtrace+0x0/0x16c
-  [<fffffe00000961b4>] show_stack+0x14/0x1c
-  [<fffffe000066e648>] dump_stack+0x84/0xb0
-  [<fffffe0000668678>] panic+0xf4/0x220
-  [<fffffe000018ec78>] free_reserved_area+0x0/0x110
-  [<fffffe000018edd8>] free_pages+0x50/0x88
-  [<fffffe00000a759c>] kvm_free_stage2_pgd+0x30/0x40
-  [<fffffe00000a5354>] kvm_arch_destroy_vm+0x18/0x44
-  [<fffffe00000a1854>] kvm_put_kvm+0xf0/0x184
-  [<fffffe00000a1938>] kvm_vm_release+0x10/0x1c
-  [<fffffe00001edc1c>] __fput+0xb0/0x288
-  [<fffffe00001ede4c>] ____fput+0xc/0x14
-  [<fffffe00000d5a2c>] task_work_run+0xa8/0x11c
-  [<fffffe0000095c14>] do_notify_resume+0x54/0x58
+https://github.com/zfsonlinux/spl/issues/241
+http://tracker.ceph.com/issues/7790
 
-In arch/arm/kvm/mmu.c:unmap_range(), we end up doing an extra put_page()
-on the stage2 pgd which leads to the BUG in put_page_testzero(). This
-happens because a pud_huge() test in unmap_range() returns true when it
-should always be false with 2-level pages tables used by 64k pages.
-This patch removes support for huge puds if 2-level pagetables are
-being used.
+The reason is that ZFS will send pages with page_count 0 into rbd, which in
+turns send them to tcp_sendpage. However, tcp_sendpage cannot deal with
+page_count 0, as it will do get_page and put_page, and erroneously free the
+page.
 
-Signed-off-by: Mark Salter <msalter@redhat.com>
-[catalin.marinas@arm.com: removed #ifndef around PUD_SIZE check]
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+This type of issue has been noted before, and handled in iscsi, drbd,
+etc. So, rbd should also handle this. This fix address this issue by fall back
+to slower sendmsg when page_count 0 detected.
+
+Cc: Sage Weil <sage@inktank.com>
+Cc: Yehuda Sadeh <yehuda@inktank.com>
+Signed-off-by: Chunwei Chen <tuxoko@gmail.com>
+Reviewed-by: Ilya Dryomov <ilya.dryomov@inktank.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/arm64/mm/hugetlbpage.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ net/ceph/messenger.c | 20 +++++++++++++++++++-
+ 1 file changed, 19 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm64/mm/hugetlbpage.c b/arch/arm64/mm/hugetlbpage.c
-index 2fc8258bab2d..023747bf4dd7 100644
---- a/arch/arm64/mm/hugetlbpage.c
-+++ b/arch/arm64/mm/hugetlbpage.c
-@@ -51,7 +51,11 @@ int pmd_huge(pmd_t pmd)
- 
- int pud_huge(pud_t pud)
- {
-+#ifndef __PAGETABLE_PMD_FOLDED
- 	return !(pud_val(pud) & PUD_TABLE_BIT);
-+#else
-+	return 0;
-+#endif
+diff --git a/net/ceph/messenger.c b/net/ceph/messenger.c
+index f8579689d10d..33b4405da8ac 100644
+--- a/net/ceph/messenger.c
++++ b/net/ceph/messenger.c
+@@ -556,7 +556,7 @@ static int ceph_tcp_sendmsg(struct socket *sock, struct kvec *iov,
+ 	return r;
  }
  
- static __init int setup_hugepagesz(char *opt)
+-static int ceph_tcp_sendpage(struct socket *sock, struct page *page,
++static int __ceph_tcp_sendpage(struct socket *sock, struct page *page,
+ 		     int offset, size_t size, bool more)
+ {
+ 	int flags = MSG_DONTWAIT | MSG_NOSIGNAL | (more ? MSG_MORE : MSG_EOR);
+@@ -569,6 +569,24 @@ static int ceph_tcp_sendpage(struct socket *sock, struct page *page,
+ 	return ret;
+ }
+ 
++static int ceph_tcp_sendpage(struct socket *sock, struct page *page,
++		     int offset, size_t size, bool more)
++{
++	int ret;
++	struct kvec iov;
++
++	/* sendpage cannot properly handle pages with page_count == 0,
++	 * we need to fallback to sendmsg if that's the case */
++	if (page_count(page) >= 1)
++		return __ceph_tcp_sendpage(sock, page, offset, size, more);
++
++	iov.iov_base = kmap(page) + offset;
++	iov.iov_len = size;
++	ret = ceph_tcp_sendmsg(sock, &iov, 1, size, more);
++	kunmap(page);
++
++	return ret;
++}
+ 
+ /*
+  * Shutdown/close the socket for the given connection.
 -- 
 1.9.1
 
