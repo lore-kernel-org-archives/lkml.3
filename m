@@ -1,183 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753436AbaFCLPu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 07:15:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34862 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752438AbaFCLPs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 07:15:48 -0400
-Date: Tue, 3 Jun 2014 07:14:31 -0400 (EDT)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Helge Deller <deller@gmx.de>, John David Anglin <dave.anglin@bell.net>,
-        Parisc List <linux-parisc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        "Vinod, Chegu" <chegu_vinod@hp.com>, Waiman Long <Waiman.Long@hp.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Davidlohr Bueso <davidlohr@hp.com>, Peter Anvin <hpa@zytor.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>, Jason Low <jason.low2@hp.com>
-Subject: Re: [PATCH v2] introduce atomic_pointer to fix a race condition in
- cancelable mcs spinlocks
-In-Reply-To: <20140603073613.GH11096@twins.programming.kicks-ass.net>
-Message-ID: <alpine.LRH.2.02.1406030341570.10639@file01.intranet.prod.int.rdu2.redhat.com>
-References: <alpine.LRH.2.02.1406011342470.20831@file01.intranet.prod.int.rdu2.redhat.com> <alpine.LRH.2.02.1406021158360.20627@file01.intranet.prod.int.rdu2.redhat.com> <20140602162525.GH16155@laptop.programming.kicks-ass.net>
- <CA+55aFzwrqkwD=G=w2m7TdXTpsMFjV7XUMXv5DMPGr=5x5YGCQ@mail.gmail.com> <alpine.LRH.2.02.1406021622200.5874@file01.intranet.prod.int.rdu2.redhat.com> <CA+55aFwCy4-x02U6A-KbkPEpe_4pagsZ__ipBhe5HZOQt2vNmw@mail.gmail.com> <alpine.LRH.2.02.1406021656550.5874@file01.intranet.prod.int.rdu2.redhat.com>
- <20140603073613.GH11096@twins.programming.kicks-ass.net>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+	id S1753699AbaFCLQF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 07:16:05 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:57397 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752438AbaFCLQB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 07:16:01 -0400
+Date: Tue, 3 Jun 2014 13:15:32 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Mike Galbraith <efault@gmx.de>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>
+Subject: Re: [PATCH v2 10/11] sched: move cfs task on a CPU with higher
+ capacity
+Message-ID: <20140603111532.GW11096@twins.programming.kicks-ass.net>
+References: <1400860385-14555-1-git-send-email-vincent.guittot@linaro.org>
+ <1400860385-14555-11-git-send-email-vincent.guittot@linaro.org>
+ <20140529095024.GF11074@laptop.programming.kicks-ass.net>
+ <CAKfTPtCHhxyugMOCeS0hZoEXWhgRec4uOBexZ2aB2A+Eycgi8w@mail.gmail.com>
+ <20140530062937.GA11096@twins.programming.kicks-ass.net>
+ <CAKfTPtBXddNFXDuL5YNNtcW7e1Un=LqHU8bgaejJwPObSGoBhg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="rDr66iUNdD59gODe"
+Content-Disposition: inline
+In-Reply-To: <CAKfTPtBXddNFXDuL5YNNtcW7e1Un=LqHU8bgaejJwPObSGoBhg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+--rDr66iUNdD59gODe
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Tue, 3 Jun 2014, Peter Zijlstra wrote:
+On Mon, Jun 02, 2014 at 07:06:44PM +0200, Vincent Guittot wrote:
+> > Could you detail those conditions? FWIW those make excellent Changelog
+> > material.
+>=20
+> I have looked back into my tests and traces:
+>=20
+> In a 1st test, the capacity of the CPU was still above half default
+> value (power=3D538) unlike what i remembered. So it's some what "normal"
+> to keep the task on CPU0 which also handles IRQ because sg_capacity
+> still returns 1.
 
-> On Mon, Jun 02, 2014 at 05:12:16PM -0400, Mikulas Patocka wrote:
-> > The patch adds atomic_pointer_t for all architectures - it is in the 
-> > common code and it is backed by atomic_long_t (that already exists for all 
-> > architectures). There is no new arch-specific code at all.
-> > 
-> > When we have atomic_pointer_t, we can find the instances of xchg() and 
-> > cmpxchg() and convert them to atomic_pointer_t (or to other atomic*_t 
-> > types).
-> > 
-> > When we convert them all, we can drop xchg() and cmpxchg() at all (at 
-> > least from architecture-neutral code).
-> > 
-> > The problem with xchg() and cmpxchg() is that they are very easy to 
-> > misuse. Peter Zijlstra didn't know that they are not atomic w.r.t. normal 
-> > stores, a lot of other people don't know it too - and if we allow these 
-> > functions to be used, this race condition will reappear in the future 
-> > again and again.
-> > 
-> > That's why I'm proposing atomic_pointer_t - it guarantees that this race 
-> > condition can't be made.
-> 
-> But its horrible, and doesn't have any benefit afaict.
->
-> So if we really want to keep supporting these platforms; I would propose
-> something like:
-> 
-> #ifdef __CHECKER__
-> #define __atomic	__attribute__((address_space(5)))
-> #else
-> #define __atomic
-> #endif
-> 
-> #define store(p, v)	(*(p) = (typeof(*(p)) __force __atomic)(v))
-> #define load(p)		((typeof(*p) __force)ACCESS_ONCE(*(p)))
-> 
-> Along with changes to xchg() and cmpxchg() that require them to take
-> pointers to __atomic.
-> 
-> That way we keep the flexibility of xchg() and cmpxchg() for being
-> (mostly) type and size invariant, and get sparse to find wrong usage.
-> 
-> Then parisc, sparc32, tile32, metag-lock1 and arc-!llsc can go implement
-> store() however they like.
+OK, so I suspect that once we move to utilization based capacity stuff
+we'll do the migration IF the task indeed requires more cpu than can be
+provided by the reduced, one, right?
 
-Your proposal is very good because it warns about incorrect usage 
-automatically.
+> In a 2nd test,the main task runs (most of the time) on CPU0 whereas
+> the max power of the latter is only 623 and the cpu_power goes below
+> 512 (power=3D330) during the use case. So the sg_capacity of CPU0 is
+> null but the main task still stays on CPU0.
+> The use case (scp transfer) is made of a long running task (ssh) and a
+> periodic short task (scp). ssh runs on CPU0 and scp runs each 6ms on
+> CPU1. The newly idle load balance on CPU1 doesn't pull the long
+> running task although sg_capacity is null because of
+> sd->nr_balance_failed is never incremented and load_balance doesn't
+> trig an active load_balance. When an idle balance occurs in the middle
+> of the newly idle balance, the ssh long task migrates on CPU1 but as
+> soon as it sleeps and wakes up, it goes back on CPU0 because of the
+> wake affine which migrates it back on CPU0 (issue solved by patch 09).
+
+OK, so there's two problems here, right?
+ 1) we don't migrate away from cpu0
+ 2) if we do, we get pulled back.
+
+And patch 9 solves 2, so maybe enhance its changelog to mention this
+slightly more explicit.
+
+Which leaves us with 1.. interesting problem. I'm just not sure
+endlessly kicking a low capacity cpu is the right fix for that.
 
 
 
-Your usage is very similar to what my patch at the top of this thread 
-does:
+--rDr66iUNdD59gODe
+Content-Type: application/pgp-signature
 
-Instead of "__atomic struct s *p;" declaration, my patch uses
-"atomic_pointer(struct s*) p;" as the declaration
-Instead of store(&p, v), my patch uses atomic_pointer_set(&p, v);
-Instead of load(&p), my patch uses atomic_pointer_get(&p);
-Instead of xchg(&p, v), my patch uses atomic_pointer_xchg(&p, v);
-Instead of cmpxchg(&p, v1, v2), my patch uses atomic_pointer_cmpxchg(&p1, v1, v2);
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-> But its horrible, and doesn't have any benefit afaict.
+iQIcBAEBAgAGBQJTja5UAAoJEHZH4aRLwOS6xLoP/1c+kA0yqL8iIMtlXMDUxjpG
+MyuQgE7FWwYg39V2ALyzyAv8c75KjJSSRGQJMLxAI/BMAtjlZMLkKAPaLYVDkut4
+9vBtAorL18JNQlCEApkPOvVmlPy/CS++Xlvv2Pcm7XdlXyTz/MccxB8xVtucvALh
+rLaBPfE7s6agy6j0q608PK7wC1BhQOpvT7y/HN66aNGiktqy+/aGJydXC/+r9AXn
+xrxA/ZvmfSw/4+SBh1uDEsF9Aeui3K87+e3TwV7ovD/ybeQSqowI0hVZ+KbADq2A
+8G95ZA6NYkylTPggJ66zZZqsq/WTzYyW6XvGn/zCf2SYfvGciMnDOS1GKpLyFLfJ
+PdBpXDupQAQ02bhj2qx3GWoA2MvoaCHiY/vu9UhySFTg70UKMY3TVf9O8yNYnQ8g
+kfS8puX021V2LS0FtcgfRc2xTA1FcQP9Y5KDUsGBohSHuSLI6G0IWSnq/OrPHYK2
+/XhiZ4gED1TKAiUzo9YQIWLyPbmqJOnd6UVI128CrroYSz6twXW3QY9OAHXJ3cUz
+kAnC+DyztKilUsMD+rhCTEHt/+dP2mxox8hcD9PaSUqREVxk/rym+VMz1onWJVQF
+1xqheRp6iNKxVLFHV9sxmD12NrFX4mI94Xktpa/oyRcWuK4wMm2nhgyhIrLwLSj3
+E+PDomMx/sg9p6Mn520Y
+=o/yo
+-----END PGP SIGNATURE-----
 
-See the five cases above - why do you say that the operation on the left 
-is good and the operation on the right is horrible? To me, it looks like 
-they are both similar, they are just named differently. Both check the 
-type of the pointer and warns if the user passes incompatible pointer. If 
-I rename the operations in my patch to store(), load(), xchg(), cmpxchg(), 
-would you like it?
-
-
-My patch has advantage (over your #define __atomic 
-__attribute__((address_space(5))) ) that it checks the mismatches at 
-compile time. Your proposal only check them with sparse. But either way - 
-it is very good that the mismatches are being checked automatically.
-
-
-
-
-We need some method to catch these races automatically. There are places 
-where people xchg() or cmpxchg() with direct modifications, see for 
-example this:
-
-
-$ grep -w mnt_expiry_mark */*.c
-fs/namespace.c:         if (unlikely(m->mnt_expiry_mark))
-fs/namespace.c:                 m->mnt_expiry_mark = 0;
-fs/namespace.c:         if (!xchg(&mnt->mnt_expiry_mark, 1))
-fs/namespace.c: /* we mustn't call path_put() as that would clear mnt_expiry_mark */
-fs/namespace.c:         if (!xchg(&mnt->mnt_expiry_mark, 1) ||
-
-$ grep "sub_info->complete" */*.c
-kernel/kmod.c:  struct completion *comp = xchg(&sub_info->complete, NULL);
-kernel/kmod.c:  sub_info->complete = &done;
-kernel/kmod.c:          if (xchg(&sub_info->complete, NULL))
-
-$ grep -w "fdt->fd" */*.c
-fs/file.c:      free_fdmem(fdt->fd);
-fs/file.c:      fdt->fd = data;
-fs/file.c:      free_fdmem(fdt->fd);
-fs/file.c:                              struct file * file = xchg(&fdt->fd[i], NULL);
-fs/file.c:      if (rcu_access_pointer(fdt->fd[fd]) != NULL) {
-fs/file.c:              rcu_assign_pointer(fdt->fd[fd], NULL);
-fs/file.c:      BUG_ON(fdt->fd[fd] != NULL);
-fs/file.c:      rcu_assign_pointer(fdt->fd[fd], file);
-fs/file.c:      file = fdt->fd[fd];
-fs/file.c:      rcu_assign_pointer(fdt->fd[fd], NULL);
-fs/file.c:                      file = fdt->fd[fd];
-fs/file.c:                      rcu_assign_pointer(fdt->fd[fd], NULL);
-fs/file.c:      tofree = fdt->fd[fd];
-fs/file.c:      rcu_assign_pointer(fdt->fd[fd], file);
-fs/file.c:              file = rcu_dereference_check_fdtable(files, fdt->fd[n]);
-
-$ grep -w exit_state */*.c
-fs/exec.c:                      if (likely(leader->exit_state))
-fs/exec.c:              BUG_ON(leader->exit_state != EXIT_ZOMBIE);
-fs/exec.c:              leader->exit_state = EXIT_DEAD;
-kernel/exit.c:  if (leader != p && thread_group_empty(leader) && leader->exit_state == EXIT_ZOMBIE) {
-kernel/exit.c:                  leader->exit_state = EXIT_DEAD;
-kernel/exit.c:              (p->exit_state && thread_group_empty(p)) ||
-kernel/exit.c:  if (p->exit_state == EXIT_DEAD)
-kernel/exit.c:      p->exit_state == EXIT_ZOMBIE && thread_group_empty(p)) {
-kernel/exit.c:                  p->exit_state = EXIT_DEAD;
-kernel/exit.c:  tsk->exit_state = autoreap ? EXIT_DEAD : EXIT_ZOMBIE;
-kernel/exit.c:  if (cmpxchg(&p->exit_state, EXIT_ZOMBIE, state) != EXIT_ZOMBIE)
-kernel/exit.c:          p->exit_state = state;
-kernel/exit.c:  if (unlikely(p->exit_state == EXIT_DEAD))
-kernel/exit.c:  if (unlikely(p->exit_state == EXIT_TRACE)) {
-kernel/exit.c:  if (p->exit_state == EXIT_ZOMBIE) {
-kernel/fork.c:  WARN_ON(!tsk->exit_state);
-kernel/posix-cpu-timers.c:              if (unlikely(p->exit_state))
-kernel/posix-cpu-timers.c:              } else if (unlikely(p->exit_state) && thread_group_empty(p)) {
-kernel/ptrace.c:        if (unlikely(task->exit_state))
-kernel/ptrace.c:        if (p->exit_state != EXIT_ZOMBIE)
-kernel/ptrace.c:                p->exit_state = EXIT_DEAD;
-kernel/ptrace.c:                if (child->exit_state)  /* already dead */
-kernel/signal.c:                if (t->exit_state)
-kernel/taskstats.c:             if (tsk->exit_state)
-mm/oom_kill.c:  if (task->exit_state)
-
-
-Mikulas
+--rDr66iUNdD59gODe--
