@@ -1,108 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934135AbaFCUhG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 16:37:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1796 "EHLO mx1.redhat.com"
+	id S934176AbaFCUho (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 16:37:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34201 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753283AbaFCUhD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 16:37:03 -0400
+	id S934016AbaFCUg7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 16:36:59 -0400
 From: Jiri Olsa <jolsa@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Cody P Schafer <dev@codyps.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>, David Binderman <dcb314@hotmail.com>,
-        Dianfang Zhang <zhangdianfang@huawei.com>,
-        Don Zickus <dzickus@redhat.com>,
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Jean Delvare <jdelvare@suse.de>, Jianyu Zhan <nasa4836@gmail.com>,
-        Jiri Olsa <jolsa@kernel.org>, Mike Galbraith <efault@gmx.de>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Stephane Eranian <eranian@google.com>,
-        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Subject: [GIT PULL 0/9] perf/core improvements and fixes
-Date: Tue,  3 Jun 2014 22:36:07 +0200
-Message-Id: <1401827776-4443-1-git-send-email-jolsa@kernel.org>
+        Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@kernel.org>
+Subject: [PATCH 2/9] perf tools: Add warning when disabling perl scripting support due to missing devel files
+Date: Tue,  3 Jun 2014 22:36:09 +0200
+Message-Id: <1401827776-4443-3-git-send-email-jolsa@kernel.org>
+In-Reply-To: <1401827776-4443-1-git-send-email-jolsa@kernel.org>
+References: <1401827776-4443-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi Ingo,
-please consider pulling
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-thanks,
-jirka
+We were just showing "libperl: OFF", unlike other features where we
+present the user with a message helping have a feature built in.
 
+Fix it by adding the following message:
 
-The following changes since commit 9b261365dd73a5014b49033327ad881708e81f33:
+config/Makefile:450: Missing perl devel files. Disabling perl scripting support, consider installing perl-ExtUtils-Embed
 
-  Merge tag 'perf-core-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf into perf/core (2014-06-03 20:22:40 +0200)
-
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git tags/perf-core-for-mingo
-
-for you to fetch changes up to fc9cabeabf42d76854059e7bce81a02645e7e5ca:
-
-  perf tools: Fix 'make help' message error (2014-06-03 21:35:12 +0200)
-
-----------------------------------------------------------------
-perf/core improvements and fixes:
-
-. Warn the user when trace command is not available (Arnaldo Carvalho de Melo)
-
-. Add warning when disabling perl scripting support due to missing devel files (Arnaldo Carvalho de Melo)
-
-. Consider header files outside perf directory in tags target (Sebastian Andrzej Siewior)
-
-. Allow overriding sysfs and proc finding with env var (Cody P Schafer)
-
-. Fix "==" into "=" in ui_browser__warning assignment (zhangdianfang)
-
-. Factor elide bool handling in sort code (Jiri Olsa)
-
-. Fix poll return value propagation (Jiri Olsa)
-
-. Fix 'make help' message error (Jianyu Zhan)
-
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Don Zickus <dzickus@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-t7yeud34ehimlfi6pklb29p7@git.kernel.org
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+---
+ tools/perf/config/Makefile | 1 +
+ 1 file changed, 1 insertion(+)
 
-----------------------------------------------------------------
-Arnaldo Carvalho de Melo (2):
-      perf trace: Warn the user when not available
-      perf tools: Add warning when disabling perl scripting support due to missing devel files
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index 729bbdf..319426f 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -447,6 +447,7 @@ else
+   ifneq ($(feature-libperl), 1)
+     CFLAGS += -DNO_LIBPERL
+     NO_LIBPERL := 1
++    msg := $(warning Missing perl devel files. Disabling perl scripting support, consider installing perl-ExtUtils-Embed);
+   else
+     LDFLAGS += $(PERL_EMBED_LDFLAGS)
+     EXTLIBS += $(PERL_EMBED_LIBADD)
+-- 
+1.8.3.1
 
-Cody P Schafer (1):
-      perf tools: Allow overriding sysfs and proc finding with env var
-
-Jianyu Zhan (1):
-      perf tools: Fix 'make help' message error
-
-Jiri Olsa (3):
-      perf tools: Remove elide setup for SORT_MODE__MEMORY mode
-      perf tools: Move elide bool into perf_hpp_fmt struct
-      perf record: Fix poll return value propagation
-
-Sebastian Andrzej Siewior (1):
-      perf tools: Consider header files outside perf directory in tags target
-
-zhangdianfang (1):
-      perf tools: Fix "==" into "=" in ui_browser__warning assignment
-
- tools/lib/api/fs/fs.c          |  43 ++++++++++++++++-
- tools/perf/Makefile.perf       |  13 ++++--
- tools/perf/builtin-record.c    |   6 ++-
- tools/perf/config/Makefile     |   3 +-
- tools/perf/perf.c              |   8 +++-
- tools/perf/ui/browser.c        |   2 +-
- tools/perf/ui/browsers/hists.c |   8 ++--
- tools/perf/util/hist.h         |   8 +++-
- tools/perf/util/sort.c         | 103 ++++++++++++++++++++++-------------------
- tools/perf/util/sort.h         |   2 +-
- 10 files changed, 132 insertions(+), 64 deletions(-)
