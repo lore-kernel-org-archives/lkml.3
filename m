@@ -1,77 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932307AbaFCTEc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 15:04:32 -0400
-Received: from mail-ve0-f176.google.com ([209.85.128.176]:35974 "EHLO
-	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752347AbaFCTEa (ORCPT
+	id S1752958AbaFCTL7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 15:11:59 -0400
+Received: from us01smtprelay-2.synopsys.com ([198.182.60.111]:41149 "EHLO
+	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751128AbaFCTL5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 15:04:30 -0400
+	Tue, 3 Jun 2014 15:11:57 -0400
+From: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
+To: Vivek Gautam <gautam.vivek@samsung.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "balbi@ti.com" <balbi@ti.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "kishon@ti.com" <kishon@ti.com>
+Subject: RE: [PATCH] usb: dwc3: Keeping 'resource' related code together
+Thread-Topic: [PATCH] usb: dwc3: Keeping 'resource' related code together
+Thread-Index: AQHPfxg7yOZU+jxkEUmywznWt4wwV5tfvfow
+Date: Tue, 3 Jun 2014 19:11:54 +0000
+Message-ID: <A2CA0424C0A6F04399FB9E1CD98E0304844B2141@US01WEMBX2.internal.synopsys.com>
+References: <1401791978-3555-1-git-send-email-gautam.vivek@samsung.com>
+In-Reply-To: <1401791978-3555-1-git-send-email-gautam.vivek@samsung.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.9.64.241]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <87mwduqg09.fsf@rasmusvillemoes.dk>
-References: <1401260039-18189-1-git-send-email-minchan@kernel.org>
-	<1401260039-18189-2-git-send-email-minchan@kernel.org>
-	<CA+55aFxXdc22dirnE49UbQP_2s2vLQpjQFL+NptuyK7Xry6c=g@mail.gmail.com>
-	<20140528223142.GO8554@dastard>
-	<CA+55aFyRk6_v6COPGVvu6hvt=i2A8-dPcs1X3Ydn1g24AxbPkg@mail.gmail.com>
-	<20140529013007.GF6677@dastard>
-	<20140529015830.GG6677@dastard>
-	<20140529233638.GJ10092@bbox>
-	<20140530001558.GB14410@dastard>
-	<20140530021247.GR10092@bbox>
-	<87mwduqg09.fsf@rasmusvillemoes.dk>
-Date: Tue, 3 Jun 2014 12:04:29 -0700
-X-Google-Sender-Auth: AolbzEGae3xFJW-QUs6MShnkjr8
-Message-ID: <CA+55aFyYQES1CbEfYzRkFas_aw=+YNSbDoLRJpjh2sDFxVV3vg@mail.gmail.com>
-Subject: Re: [RFC 2/2] x86_64: expand kernel stack to 16K
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-Cc: Minchan Kim <minchan@kernel.org>, Dave Chinner <david@fromorbit.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm <linux-mm@kvack.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Hugh Dickins <hughd@google.com>, Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 3, 2014 at 6:28 AM, Rasmus Villemoes
-<linux@rasmusvillemoes.dk> wrote:
-> Possibly stupid question: Is it true that any given task can only be
-> using one wait_queue_t at a time?
+> From: linux-usb-owner@vger.kernel.org [mailto:linux-usb-owner@vger.kernel.org] On Behalf Of Vivek Gautam
+> Sent: Tuesday, June 03, 2014 3:40 AM
+> 
+> Putting together the code related to getting the 'IORESOURCE_MEM'
+> and assigning the same to dwc->xhci_resources, for increasing
+> the readability.
+> 
+> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+> ---
+> 
+> Based on 'next' branch of Felipe's usb tree.
+> Also cleanly applies to 'usb-next' branch of Greg's usb tree.
+> 
+>  drivers/usb/dwc3/core.c |   38 +++++++++++++++++++-------------------
+>  1 file changed, 19 insertions(+), 19 deletions(-)
+> 
+> diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
+> index 3f59c12..4ca925d 100644
+> --- a/drivers/usb/dwc3/core.c
+> +++ b/drivers/usb/dwc3/core.c
+> @@ -656,6 +656,25 @@ static int dwc3_probe(struct platform_device *pdev)
+>  		return -ENODEV;
+>  	}
+> 
+> +	dwc->xhci_resources[0].start = res->start;
+> +	dwc->xhci_resources[0].end = dwc->xhci_resources[0].start +
+> +					DWC3_XHCI_REGS_END;
+> +	dwc->xhci_resources[0].flags = res->flags;
+> +	dwc->xhci_resources[0].name = res->name;
+> +
+> +	res->start += DWC3_GLOBALS_REGS_START;
+> +
+> +	/*
+> +	 * Request memory region but exclude xHCI regs,
+> +	 * since it will be requested by the xhci-plat driver.
+> +	 */
+> +	regs = devm_ioremap_resource(dev, res);
+> +	if (IS_ERR(regs))
+> +		return PTR_ERR(regs);
+> +
+> +	dwc->regs	= regs;
+> +	dwc->regs_size	= resource_size(res);
+> +
+>  	if (node) {
+>  		dwc->maximum_speed = of_usb_get_maximum_speed(node);
 
-Nope.
+I think this will break if the following dwc3_core_get_phy() call returns
+-EPROBE_DEFER. Since you have incremented res->start above, the next time
+this probe function is called, res->start will have the wrong value.
+Provided I'm reading the code correctly of course :)
 
-Being on multiple different wait-queues is actually very common. The
-obvious case is select/poll, but there are others. The more subtle
-ones involve being on a wait-queue while doing something that can
-cause nested waiting (iow, it's technically not wrong to be on a
-wait-queue and then do a user space access, which obviously can end up
-doing IO).
+I think you could fix that by decrementing res->start back to its
+original value just after the call to resource_size() above.
 
-That said, the case of a single wait-queue entry is another common
-case, and it wouldn't necessarily be wrong to have one pre-initialized
-wait queue entry in the task structure for that special case, for when
-you know that there is no possible nesting. And even if it *does*
-nest, if it's the "leaf" entry it could be used for that innermost
-nesting without worrying about other wait queue users (who use stack
-allocations or actual explicit allocations like poll).
+-- 
+Paul
 
-So it might certainly be worth looking at. In fact, it might be worth
-it having multiple per-thread entries, so that we could get rid of the
-special on-stack allocation for poll too (and making one of them
-special and not available to poll, to handle the "leaf waiter" case).
-
-So it's not necessarily a bad idea at all, even if the general case
-requires more than one (or a few) static per-thread allocations.
-
-Anybody want to try to code it up?
-
-              Linus
