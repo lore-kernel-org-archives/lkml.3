@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754470AbaFCLmJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 07:42:09 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43641 "EHLO
+	id S932911AbaFCL5f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 07:57:35 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43682 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932831AbaFCLl7 (ORCPT
+	with ESMTP id S1754453AbaFCLmJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 07:41:59 -0400
+	Tue, 3 Jun 2014 07:42:09 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sagi Grimberg <sagig@mellanox.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
+Cc: Tuomas Tynkkynen <ttynkkynen@nvidia.com>,
+        Mike Turquette <mturquette@linaro.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 085/138] Target/iser: Fix iscsit_accept_np and rdma_cm racy flow
-Date: Tue,  3 Jun 2014 12:38:51 +0100
-Message-Id: <1401795584-22664-86-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 091/138] clk: tegra: Fix wrong value written to PLLE_AUX
+Date: Tue,  3 Jun 2014 12:38:57 +0100
+Message-Id: <1401795584-22664-92-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
 References: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
@@ -28,116 +28,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sagi Grimberg <sagig@mellanox.com>
+From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
 
-commit 531b7bf4bd795d9a09eac92504322a472c010bc8 upstream.
+commit d2c834abe2b39a2d5a6c38ef44de87c97cbb34b4 upstream.
 
-RDMA CM and iSCSI target flows are asynchronous and completely
-uncorrelated. Relying on the fact that iscsi_accept_np will be called
-after CM connection request event and will wait for it is a mistake.
+The value written to PLLE_AUX was incorrect due to a wrong variable
+being used. Without this fix SATA does not work.
 
-When attempting to login to a few targets this flow is racy and
-unpredictable, but for parallel login to dozens of targets will
-race and hang every time.
-
-The correct synchronizing mechanism in this case is pending on
-a semaphore rather than a wait_for_event. We keep the pending
-interruptible for iscsi_np cleanup stage.
-
-(Squash patch to remove dead code into parent - nab)
-
-Reported-by: Slava Shwartsman <valyushash@gmail.com>
-Signed-off-by: Sagi Grimberg <sagig@mellanox.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+Tested-by: Mikko Perttunen <mperttunen@nvidia.com>
+Reviewed-by: Thierry Reding <treding@nvidia.com>
+Tested-by: Thierry Reding <treding@nvidia.com>
+Acked-by: Thierry Reding <treding@nvidia.com>
+Signed-off-by: Mike Turquette <mturquette@linaro.org>
+[mturquette@linaro.org: improved changelog]
+[ luis: backported to 3.11: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/infiniband/ulp/isert/ib_isert.c | 25 ++++++-------------------
- drivers/infiniband/ulp/isert/ib_isert.h |  2 +-
- 2 files changed, 7 insertions(+), 20 deletions(-)
+ drivers/clk/tegra/clk-pll.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/infiniband/ulp/isert/ib_isert.c b/drivers/infiniband/ulp/isert/ib_isert.c
-index f1741e62647c..224cfbbbc6d3 100644
---- a/drivers/infiniband/ulp/isert/ib_isert.c
-+++ b/drivers/infiniband/ulp/isert/ib_isert.c
-@@ -27,6 +27,7 @@
- #include <target/target_core_base.h>
- #include <target/target_core_fabric.h>
- #include <target/iscsi/iscsi_transport.h>
-+#include <linux/semaphore.h>
- 
- #include "isert_proto.h"
- #include "ib_isert.h"
-@@ -462,8 +463,8 @@ isert_connect_request(struct rdma_cm_id *cma_id, struct rdma_cm_event *event)
- 	list_add_tail(&isert_conn->conn_accept_node, &isert_np->np_accept_list);
- 	mutex_unlock(&isert_np->np_accept_mutex);
- 
--	pr_debug("isert_connect_request() waking up np_accept_wq: %p\n", np);
--	wake_up(&isert_np->np_accept_wq);
-+	pr_debug("isert_connect_request() up np_sem np: %p\n", np);
-+	up(&isert_np->np_sem);
- 	return 0;
- 
- out_conn_dev:
-@@ -2162,7 +2163,7 @@ isert_setup_np(struct iscsi_np *np,
- 		pr_err("Unable to allocate struct isert_np\n");
- 		return -ENOMEM;
+diff --git a/drivers/clk/tegra/clk-pll.c b/drivers/clk/tegra/clk-pll.c
+index 197074a57754..59c39f32bba8 100644
+--- a/drivers/clk/tegra/clk-pll.c
++++ b/drivers/clk/tegra/clk-pll.c
+@@ -1592,7 +1592,7 @@ struct clk *tegra_clk_register_plle_tegra114(const char *name,
+ 			  (val & PLLE_AUX_PLLP_SEL) ? "pllp_out0" : "pll_ref");
+ 	} else {
+ 		val_aux |= PLLE_AUX_PLLRE_SEL;
+-		pll_writel(val, pll_params->aux_reg, pll);
++		pll_writel(val_aux, pll_params->aux_reg, pll);
  	}
--	init_waitqueue_head(&isert_np->np_accept_wq);
-+	sema_init(&isert_np->np_sem, 0);
- 	mutex_init(&isert_np->np_accept_mutex);
- 	INIT_LIST_HEAD(&isert_np->np_accept_list);
- 	init_completion(&isert_np->np_login_comp);
-@@ -2211,18 +2212,6 @@ out:
- }
  
- static int
--isert_check_accept_queue(struct isert_np *isert_np)
--{
--	int empty;
--
--	mutex_lock(&isert_np->np_accept_mutex);
--	empty = list_empty(&isert_np->np_accept_list);
--	mutex_unlock(&isert_np->np_accept_mutex);
--
--	return empty;
--}
--
--static int
- isert_rdma_accept(struct isert_conn *isert_conn)
- {
- 	struct rdma_cm_id *cm_id = isert_conn->conn_cm_id;
-@@ -2306,16 +2295,14 @@ isert_accept_np(struct iscsi_np *np, struct iscsi_conn *conn)
- 	int max_accept = 0, ret;
- 
- accept_wait:
--	ret = wait_event_interruptible(isert_np->np_accept_wq,
--			!isert_check_accept_queue(isert_np) ||
--			np->np_thread_state == ISCSI_NP_THREAD_RESET);
-+	ret = down_interruptible(&isert_np->np_sem);
- 	if (max_accept > 5)
- 		return -ENODEV;
- 
- 	spin_lock_bh(&np->np_thread_lock);
- 	if (np->np_thread_state == ISCSI_NP_THREAD_RESET) {
- 		spin_unlock_bh(&np->np_thread_lock);
--		pr_err("ISCSI_NP_THREAD_RESET for isert_accept_np\n");
-+		pr_debug("ISCSI_NP_THREAD_RESET for isert_accept_np\n");
- 		return -ENODEV;
- 	}
- 	spin_unlock_bh(&np->np_thread_lock);
-diff --git a/drivers/infiniband/ulp/isert/ib_isert.h b/drivers/infiniband/ulp/isert/ib_isert.h
-index eaf7682ab4fe..3fe0299efc11 100644
---- a/drivers/infiniband/ulp/isert/ib_isert.h
-+++ b/drivers/infiniband/ulp/isert/ib_isert.h
-@@ -131,7 +131,7 @@ struct isert_device {
- };
- 
- struct isert_np {
--	wait_queue_head_t	np_accept_wq;
-+	struct semaphore	np_sem;
- 	struct rdma_cm_id	*np_cm_id;
- 	struct mutex		np_accept_mutex;
- 	struct list_head	np_accept_list;
+ 	clk = _tegra_clk_register_pll(pll, name, parent_name, flags,
 -- 
 1.9.1
 
