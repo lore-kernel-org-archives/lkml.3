@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932409AbaFCH1w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 03:27:52 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:28088 "EHLO
+	id S932430AbaFCH2N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 03:28:13 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:11852 "EHLO
 	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932329AbaFCH1t (ORCPT
+	with ESMTP id S932080AbaFCH2K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 03:27:49 -0400
+	Tue, 3 Jun 2014 03:28:10 -0400
 X-IronPort-AV: E=Sophos;i="4.98,963,1392134400"; 
-   d="scan'208";a="31368499"
+   d="scan'208";a="31368513"
 From: Lai Jiangshan <laijs@cn.fujitsu.com>
 To: <linux-kernel@vger.kernel.org>
 CC: Tejun Heo <tj@kernel.org>, Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: [PATCH] workqueue: use schedule_timeout_interruptible() instead of open code
-Date: Tue, 3 Jun 2014 15:32:17 +0800
-Message-ID: <1401780737-12195-1-git-send-email-laijs@cn.fujitsu.com>
+Subject: [PATCH] workqueue: remove useless WARN_ON_ONCE()
+Date: Tue, 3 Jun 2014 15:32:41 +0800
+Message-ID: <1401780761-12229-1-git-send-email-laijs@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.4.4
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -23,28 +23,27 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-schedule_timeout_interruptible(CREATE_COOLDOWN) is exactly the same as
-the original code.
+The @cpu is fetched via smp_processor_id() in this function,
+so the check is useless.
 
 Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 ---
- kernel/workqueue.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+ kernel/workqueue.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
 
 diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index a1c2c10..6b6e9f2 100644
+index 6b6e9f2..7dc6e66 100644
 --- a/kernel/workqueue.c
 +++ b/kernel/workqueue.c
-@@ -1917,8 +1917,7 @@ restart:
- 		if (!need_to_create_worker(pool))
- 			break;
+@@ -4461,8 +4461,6 @@ static void wq_unbind_fn(struct work_struct *work)
+ 	struct worker *worker;
  
--		__set_current_state(TASK_INTERRUPTIBLE);
--		schedule_timeout(CREATE_COOLDOWN);
-+		schedule_timeout_interruptible(CREATE_COOLDOWN);
+ 	for_each_cpu_worker_pool(pool, cpu) {
+-		WARN_ON_ONCE(cpu != smp_processor_id());
+-
+ 		mutex_lock(&pool->attach_mutex);
+ 		spin_lock_irq(&pool->lock);
  
- 		if (!need_to_create_worker(pool))
- 			break;
 -- 
 1.7.4.4
 
