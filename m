@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933093AbaFCLnX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 07:43:23 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43968 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933056AbaFCLnS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S933058AbaFCLnS (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 3 Jun 2014 07:43:18 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43947 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933028AbaFCLnO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 07:43:14 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sergey Popovich <popovich_sergei@mail.ru>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
+Cc: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 138/138] netfilter: Fix potential use after free in ip6_route_me_harder()
-Date: Tue,  3 Jun 2014 12:39:44 +0100
-Message-Id: <1401795584-22664-139-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 134/138] net: qmi_wwan: add Olivetti Olicard 500
+Date: Tue,  3 Jun 2014 12:39:40 +0100
+Message-Id: <1401795584-22664-135-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
 References: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,44 +31,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sergey Popovich <popovich_sergei@mail.ru>
+From: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
 
-commit a8951d5814e1373807a94f79f7ccec7041325470 upstream.
+commit efc0b25c3add97717ece57bf5319792ca98f348e upstream.
 
-Dst is released one line before we access it again with dst->error.
+Device interface layout:
+0: ff/ff/ff - serial
+1: ff/ff/ff - serial AT+PPP
+2: 08/06/50 - storage
+3: ff/ff/ff - serial
+4: ff/ff/ff - QMI/wwan
 
-Fixes: 58e35d147128 netfilter: ipv6: propagate routing errors from
-ip6_route_me_harder()
-
-Signed-off-by: Sergey Popovich <popovich_sergei@mail.ru>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+Reported-by: Julio Araujo <julio.araujo@wllctel.com.br>
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/ipv6/netfilter.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/net/usb/qmi_wwan.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/net/ipv6/netfilter.c b/net/ipv6/netfilter.c
-index 95f3f1da0d7f..d38e6a8d8b9f 100644
---- a/net/ipv6/netfilter.c
-+++ b/net/ipv6/netfilter.c
-@@ -30,13 +30,15 @@ int ip6_route_me_harder(struct sk_buff *skb)
- 		.daddr = iph->daddr,
- 		.saddr = iph->saddr,
- 	};
-+	int err;
+diff --git a/drivers/net/usb/qmi_wwan.c b/drivers/net/usb/qmi_wwan.c
+index 8a2fbdbec403..39aa428206d5 100644
+--- a/drivers/net/usb/qmi_wwan.c
++++ b/drivers/net/usb/qmi_wwan.c
+@@ -723,6 +723,7 @@ static const struct usb_device_id products[] = {
+ 	{QMI_FIXED_INTF(0x1bc7, 0x1200, 5)},	/* Telit LE920 */
+ 	{QMI_FIXED_INTF(0x1bc7, 0x1201, 2)},	/* Telit LE920 */
+ 	{QMI_FIXED_INTF(0x0b3c, 0xc005, 6)},    /* Olivetti Olicard 200 */
++	{QMI_FIXED_INTF(0x0b3c, 0xc00b, 4)},	/* Olivetti Olicard 500 */
+ 	{QMI_FIXED_INTF(0x1e2d, 0x0060, 4)},	/* Cinterion PLxx */
+ 	{QMI_FIXED_INTF(0x1e2d, 0x0053, 4)},	/* Cinterion PHxx,PXxx */
  
- 	dst = ip6_route_output(net, skb->sk, &fl6);
--	if (dst->error) {
-+	err = dst->error;
-+	if (err) {
- 		IP6_INC_STATS(net, ip6_dst_idev(dst), IPSTATS_MIB_OUTNOROUTES);
- 		LIMIT_NETDEBUG(KERN_DEBUG "ip6_route_me_harder: No more route.\n");
- 		dst_release(dst);
--		return dst->error;
-+		return err;
- 	}
- 
- 	/* Drop old route. */
 -- 
 1.9.1
 
