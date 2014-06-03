@@ -1,93 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753598AbaFCHBA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 03:01:00 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:64093 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753397AbaFCHA5 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 03:00:57 -0400
-From: Michal Nazarewicz <mina86@mina86.com>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: Minchan Kim <minchan@kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@kernel.org>,
-        Alexander Graf <agraf@suse.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        kvm@vger.kernel.org, kvm-ppc@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: Re: [RFC PATCH 2/3] DMA, CMA: use general CMA reserved area management framework
-In-Reply-To: <1401757919-30018-3-git-send-email-iamjoonsoo.kim@lge.com>
-Organization: http://mina86.com/
-References: <1401757919-30018-1-git-send-email-iamjoonsoo.kim@lge.com> <1401757919-30018-3-git-send-email-iamjoonsoo.kim@lge.com>
-User-Agent: Notmuch/0.17+15~gb65ca8e (http://notmuchmail.org) Emacs/24.4.50.1 (x86_64-unknown-linux-gnu)
-X-Face: PbkBB1w#)bOqd`iCe"Ds{e+!C7`pkC9a|f)Qo^BMQvy\q5x3?vDQJeN(DS?|-^$uMti[3D*#^_Ts"pU$jBQLq~Ud6iNwAw_r_o_4]|JO?]}P_}Nc&"p#D(ZgUb4uCNPe7~a[DbPG0T~!&c.y$Ur,=N4RT>]dNpd;KFrfMCylc}gc??'U2j,!8%xdD
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAJFBMVEWbfGlUPDDHgE57V0jUupKjgIObY0PLrom9mH4dFRK4gmjPs41MxjOgAAACQElEQVQ4jW3TMWvbQBQHcBk1xE6WyALX1069oZBMlq+ouUwpEQQ6uRjttkWP4CmBgGM0BQLBdPFZYPsyFUo6uEtKDQ7oy/U96XR2Ux8ehH/89Z6enqxBcS7Lg81jmSuujrfCZcLI/TYYvbGj+jbgFpHJ/bqQAUISj8iLyu4LuFHJTosxsucO4jSDNE0Hq3hwK/ceQ5sx97b8LcUDsILfk+ovHkOIsMbBfg43VuQ5Ln9YAGCkUdKJoXR9EclFBhixy3EGVz1K6eEkhxCAkeMMnqoAhAKwhoUJkDrCqvbecaYINlFKSRS1i12VKH1XpUd4qxL876EkMcDvHj3s5RBajHHMlA5iK32e0C7VgG0RlzFPvoYHZLRmAC0BmNcBruhkE0KsMsbEc62ZwUJDxWUdMsMhVqovoT96i/DnX/ASvz/6hbCabELLk/6FF/8PNpPCGqcZTGFcBhhAaZZDbQPaAB3+KrWWy2XgbYDNIinkdWAFcCpraDE/knwe5DBqGmgzESl1p2E4MWAz0VUPgYYzmfWb9yS4vCvgsxJriNTHoIBz5YteBvg+VGISQWUqhMiByPIPpygeDBE6elD973xWwKkEiHZAHKjhuPsFnBuArrzxtakRcISv+XMIPl4aGBUJm8Emk7qBYU8IlgNEIpiJhk/No24jHwkKTFHDWfPniR4iw5vJaw2nzSjfq2zffcE/GDjRC2dn0J0XwPAbDL84TvaFCJEU4Oml9pRyEUhR3Cl2t01AoEjRbs0sYugp14/4X5n4pU4EHHnMAAAAAElFTkSuQmCC
-X-PGP: 50751FF4
-X-PGP-FP: AC1F 5F5C D418 88F8 CC84 5858 2060 4012 5075 1FF4
-X-Hashcash: 1:20:140603:aneesh.kumar@linux.vnet.ibm.com::UYcpFzTuHF17hT1u:0000000000000000000000000000000UT6
-X-Hashcash: 1:20:140603:akpm@linux-foundation.org::Bf9r10RQUyQg19Aq:0000000000000000000000000000000000000KBt
-X-Hashcash: 1:20:140603:linux@arm.linux.org.uk::fgwpK59rCMOEQIl2:0000000000000000000000000000000000000000WTW
-X-Hashcash: 1:20:140603:iamjoonsoo.kim@lge.com::XsKEBimhu72BKVsT:00000000000000000000000000000000000000011vL
-X-Hashcash: 1:20:140603:linux-arm-kernel@lists.infradead.org::ivmbVEZtQg37hoNq:00000000000000000000000000+3J
-X-Hashcash: 1:20:140603:gregkh@linuxfoundation.org::ev/RNg8ADTeHUSW9:000000000000000000000000000000000001gRG
-X-Hashcash: 1:20:140603:m.szyprowski@samsung.com::Gr+/YADo4ler7n0A:00000000000000000000000000000000000001cBT
-X-Hashcash: 1:20:140603:iamjoonsoo.kim@lge.com::BdzSd6XVBuEomHTt:0000000000000000000000000000000000000002jAC
-X-Hashcash: 1:20:140603:gleb@kernel.org::onefDyaktWUvC16t:001Zkx
-X-Hashcash: 1:20:140603:paulus@samba.org::TW6JsM0xDjg1I3Bt:03ZCL
-X-Hashcash: 1:20:140603:agraf@suse.de::GcAtOZp7JGeyR2+E:00003451
-X-Hashcash: 1:20:140603:kvm@vger.kernel.org::hy3X5H4bfdqKz1lH:0000000000000000000000000000000000000000003rH7
-X-Hashcash: 1:20:140603:benh@kernel.crashing.org::3ajwaQY/TfrfRl3W:00000000000000000000000000000000000003soO
-X-Hashcash: 1:20:140603:minchan@kernel.org::0TziF21I9t+PdlVQ:00000000000000000000000000000000000000000004Y8U
-X-Hashcash: 1:20:140603:pbonzini@redhat.com::vFvdIAbwxpMIHFKE:0000000000000000000000000000000000000000004net
-X-Hashcash: 1:20:140603:kvm-ppc@vger.kernel.org::CznBgB5p2eCuA+1j:000000000000000000000000000000000000006CRE
-X-Hashcash: 1:20:140603:linuxppc-dev@lists.ozlabs.org::l+fPkRMV0+bhJUfE:000000000000000000000000000000007WVX
-X-Hashcash: 1:20:140603:linux-mm@kvack.org::ob1VzYuTwW6VM0c/:00000000000000000000000000000000000000000009kun
-X-Hashcash: 1:20:140603:linux-kernel@vger.kernel.org::Z+x/CrA8IUfowyoP:000000000000000000000000000000000COn4
-Date: Tue, 03 Jun 2014 09:00:48 +0200
-Message-ID: <xa1twqcyjx3z.fsf@mina86.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+	id S1753700AbaFCHBK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 03:01:10 -0400
+Received: from mprc.pku.edu.cn ([162.105.203.9]:42631 "EHLO mprc.pku.edu.cn"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753643AbaFCHBH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 03:01:07 -0400
+To: gxt@mprc.pku.edu.cn, torvalds@linux-foundation.org
+Subject: [GIT PULL] UniCore32 update for v3.15-rc8
+Cc: linux-kernel@vger.kernel.org
+Message-Id: <20140603065940.A4756146003B@linuxdev-32>
+Date: Tue,  3 Jun 2014 14:59:40 +0800 (CST)
+From: guanxuetao@mprc.pku.edu.cn (guanxuetao)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 03 2014, Joonsoo Kim wrote:
-> Now, we have general CMA reserved area management framework,
-> so use it for future maintainabilty. There is no functional change.
->
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Hi Linus,
 
-Acked-by: Michal Nazarewicz <mina86@mina86.com>
+This is unicore32 pull request for v3.15-rc8.
 
-> diff --git a/include/linux/dma-contiguous.h b/include/linux/dma-contiguous.h
-> index dfb1dc9..ecb85ac 100644
-> --- a/include/linux/dma-contiguous.h
-> +++ b/include/linux/dma-contiguous.h
-> @@ -53,9 +53,10 @@
->  
->  #ifdef __KERNEL__
->  
-> +#include <linux/device.h>
-> +
+This pull request includes bugfixes to make unicore32 successfully build under defconfig,
+and some changes for allmodconfig (though not finished).
 
-Why is this suddenly required?
+Please pull tags/for-linus with following updates.
 
->  struct cma;
->  struct page;
-> -struct device;
->  
->  #ifdef CONFIG_DMA_CMA
+Thanks and Regards,
+Xuetao Guan
 
--- 
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
-..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
-ooo +--<mpn@google.com>--<xmpp:mina86@jabber.org>--ooO--(_)--Ooo--
+The following changes since commit cae61ba37b4c2672704cbd8a626fbd85be7e67d9:
+  Linus Torvalds (1):
+        Merge git://git.kernel.org/.../davem/net
+
+are available in the git repository at:
+
+  git://github.com/gxt/linux.git tags/for-linus
+
+for you to fetch changes up to aba36cb673f6e3e41bd8d5cde1891795c4dace58:
+
+  UniCore32: Change git tree location information in MAINTAINERS (2014-05-27 07:53:10 +0800)
+
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Chen Gang (17):
+      arch/unicore32/kernel/ksyms.c: remove several undefined exported symbols
+      arch/unicore32/kernel/module.c: use __vmalloc_node_range() instead of __vmalloc_area()
+      arch/unicore32/kernel/clock.c: add readl() and writel() for 'PM_' macros
+      arch/unicore32/mm/alignment.c: include "asm/pgtable.h" to avoid compiling error
+      arch/unicore32/include/asm/ptrace.h: add generic definition for profile_pc()
+      arch/unicore32/include/asm/io.h: add readl_relaxed() generic definition
+      drivers/rtc/rtc-puv3.c: use dev_dbg() instead of dev_debug() for typo issue
+      drivers/rtc/rtc-puv3.c: remove "&dev->" for typo issue MIME-Version: 1.0
+      arch/unicore32/kernel/ksyms.c: remove 2 export symbols to avoid compiling failure
+      arch: unicore32: kernel: ksyms: remove 'bswapsi2' and 'muldi3' to avoid compiling failure
+      drivers: scsi: mvsas: fix compiling issue by adding 'MVS_' for "enum pci_interrupt_cause"
+      arch/unicore32/kernel/setup.c: add generic 'screen_info' to avoid compiling failure
+      unicore32: include: asm: add missing ')' for PAGE_* macros in pgtable.h
+      arch:unicore32:mm: add devmem_is_allowed() to support STRICT_DEVMEM
+      arch: unicore32: ksyms: export additional find_first_*() to avoid compiling failure
+      arch: unicore32: ksyms: export 'pm_power_off' to avoid compiling failure.
+      arch: unicore32: ksyms: export '__cpuc_coherent_kern_range' to avoid compiling failure
+
+Guan Xuetao (1):
+      UniCore32: Change git tree location information in MAINTAINERS
+
+Zhichuang SUN (1):
+      drivers/video/fbdev/fb-puv3.c: Add header files for function unifb_mmap
+
+ MAINTAINERS                          |    4 +-
+ arch/unicore32/include/asm/io.h      |   27 ++++++++++++++++
+ arch/unicore32/include/asm/pgtable.h |   10 +++---
+ arch/unicore32/include/asm/ptrace.h  |    1 +
+ arch/unicore32/kernel/clock.c        |    8 ++--
+ arch/unicore32/kernel/ksyms.c        |   41 +-----------------------
+ arch/unicore32/kernel/ksyms.h        |    2 -
+ arch/unicore32/kernel/module.c       |   11 ++-----
+ arch/unicore32/kernel/process.c      |    1 +
+ arch/unicore32/kernel/setup.c        |    4 ++
+ arch/unicore32/mm/alignment.c        |    1 +
+ arch/unicore32/mm/proc-syms.c        |    2 +
+ drivers/rtc/rtc-puv3.c               |    4 +-
+ drivers/scsi/mvsas/mv_94xx.c         |   10 +++---
+ drivers/scsi/mvsas/mv_94xx.h         |   58 +++++++++++++++++-----------------
+ drivers/video/fbdev/fb-puv3.c        |    2 +
+ 16 files changed, 90 insertions(+), 96 deletions(-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTjWloAAoJENFylnOm3dTbbrkP/0Ol6LiUULkenh7J2CvxBw2r
+DGqogrFlJKlrZDPbnNomNKnhiBJsjCTPmgoUTfP8NSxTu0vmaeqHUz/JFsP3GwXC
+FL985EDrj4TyB16evse21rY3f5z+UNGdAHsxlzFC+2WBFxEbWnbVmyXwanqmw8Xa
+zxt9IK3eXWgulvGYMxtQ/xT4SF0AGtZDHGGn0nZsSolnY4ChUKSmoRMziHpb9GFp
+m/Jb4aMCLdlb2BcJUifln5joDecP8XOnfPWjUdxZLPmHFT6KxgTzgiT8pqZ6XfNc
+g2KU4DT0YcLKEnBYFnxy8JFt4kU174VZ7tJKtAPdIcnwur23Khfh+xR0McALcA7S
+3YkDF7zZ8Aj10/m0njEQx4utgcJ6qf6S0PJ9mMfRT9SrTPvT6dOYp+JGlgnk91IT
+2Mgd1zxUEopdAE3HHmeM5Ii17gr5ifZ0BZNzXSKf/rOY7tmvrso9tbAUMdElg3cd
+/tkRsb2z+flT0xnFmCvdAmPWppSaXWWW/RF4Wq9JkRCGA8F8KW2/GoG2GitUjMfn
+vj1bN0lH5tpkNkJpHxrCB5z54YMMFLA1eSEcdfl8PfkXlFYZY+pRXjc5Rph3sStp
+ckD17QtBzD2NbaiwrCJuMQ7cDtmdj3maTleJiQLccj8Sh98gp6FpSiTZcsGTuGnQ
+mhfN3djHkuz5OLSLGX8/
+=jyTe
+-----END PGP SIGNATURE-----
