@@ -1,32 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753384AbaFCKu7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 06:50:59 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:51704 "EHLO
+	id S1753209AbaFCKwz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 06:52:55 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:51719 "EHLO
 	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753196AbaFCKu5 (ORCPT
+	with ESMTP id S1751223AbaFCKwx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 06:50:57 -0400
-Date: Tue, 3 Jun 2014 11:35:01 +0100
+	Tue, 3 Jun 2014 06:52:53 -0400
+Date: Tue, 3 Jun 2014 11:52:23 +0100
 From: Mark Brown <broonie@kernel.org>
-To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Cc: lee.jones@linaro.org, sameo@linux.intel.com,
-        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
-Message-ID: <20140603103501.GX31751@sirena.org.uk>
-References: <1401699704-17902-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
- <20140602210117.GO31751@sirena.org.uk>
- <20140603094932.GF11951@opensource.wolfsonmicro.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arvind Chauhan <arvind.chauhan@arm.com>,
+        Eduardo Valentin <edubezval@gmail.com>, Pavel Machek <pavel@ucw.cz>,
+        Liam Girdwood <lgirdwood@gmail.com>
+Message-ID: <20140603105223.GB31751@sirena.org.uk>
+References: <20140528173858.GG5099@sirena.org.uk>
+ <CAKohpokk_sNQ7Be5F8NLa7pLrssPm9qPf-fDEUYkiurJ6Etrpg@mail.gmail.com>
+ <20140602095112.GV5099@sirena.org.uk>
+ <CAKohpom7XNFJ7dBzNVW0TX3gyxo4RJdJ4yriYLa_noforhyciw@mail.gmail.com>
+ <20140602100201.GX5099@sirena.org.uk>
+ <CAKohpomj5-tHPkBLMrgGpsDCaCxW-8hGMunMTmJgXGgEgTR=vA@mail.gmail.com>
+ <20140602122332.GA31751@sirena.org.uk>
+ <CAKohpo=vPojhX_9u6Coa=2Kiu0jY9hCTg2B0WiWfJS8ZQxK4Rg@mail.gmail.com>
+ <20140602152014.GL31751@sirena.org.uk>
+ <CAKohpo=4gY42TJ0CcUBarHRnUvFKkXTykTYCfGUnAZ+CFwYE9g@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="FhxWStFQ84VXWhXs"
+	protocol="application/pgp-signature"; boundary="4rQ9lIe3OahbhU4J"
 Content-Disposition: inline
-In-Reply-To: <20140603094932.GF11951@opensource.wolfsonmicro.com>
+In-Reply-To: <CAKohpo=4gY42TJ0CcUBarHRnUvFKkXTykTYCfGUnAZ+CFwYE9g@mail.gmail.com>
 X-Cookie: Big book, big bore.
 User-Agent: Mutt/1.5.23 (2014-03-12)
 X-SA-Exim-Connect-IP: 109.148.252.180
 X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/2] mfd: core: Add the option to order destruction of
- MFD cells
+Subject: Re: [PATCH 1/2] regulators: Add definition of
+ regulator_set_voltage_time() for !CONFIG_REGULATOR
 X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
 X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -34,55 +46,37 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---FhxWStFQ84VXWhXs
+--4rQ9lIe3OahbhU4J
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Tue, Jun 03, 2014 at 10:49:32AM +0100, Charles Keepax wrote:
-> On Mon, Jun 02, 2014 at 10:01:17PM +0100, Mark Brown wrote:
+On Mon, Jun 02, 2014 at 10:25:18PM +0530, Viresh Kumar wrote:
 
-> > Probe deferral is supposed to handle removal too, we're supposed to be
-> > able to walk the device list in reverse order and everything just work.
+> As Rafael has asked you to apply the patches, can you please apply
+> patch 2-3 for now?
 
-> I had considered this approach but was perhaps incorrectly too
-> nervous about it. I was slightly concerned about breaking other
-> MFD devices by changing the order things destroy in. Also the way
+Not right now, the merge window is open.
 
-It seems vastly more likely that there's other drivers out there with
-poorly tested removal paths than drivers relying on the current
-behaviour.
-
-> the child devices are iterated with device_for_each_child, there is
-> lack of helpers to process the klist in reverse and it felt like
-> code I probably shouldn't be modifying.
-
-> I am happy to do a version that removes devices in reverse probe
-> order, if that is preferrable? But any pointers if I am missing
-> the obvious way to do that would be appreciated.
-
-You probably need to write the helpers but I'd expect they should be
-relatively straightforward.
-
---FhxWStFQ84VXWhXs
+--4rQ9lIe3OahbhU4J
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBAgAGBQJTjaTSAAoJELSic+t+oim95aQP/1PXA6t9AjWBQGXLZCCNdqWT
-1keeRygBDis3DG5lPvtxVKNxA0RYFNlz+tTCSEmW5MDLYaFewK/udkyA/AlGs203
-13unI0+20VMR2y3+gdZwI7eaLe8PFSD/K63oWafquuXL8E6k7ewfOZXhJLOflrfx
-NpmMb7phRuj5YvJRwoMXVIM7AwOA/Nv36VD4yUSt+jEYb4tKticNpgGQxu4KWSVj
-y/uj/HdG5LwPdHxb52B0wPVs/iuT+SEOPWmDGKd0KUCPr5+EKW5fXhDtg+QLBpVv
-+ZKbJXYAQuNC8mZ4wqahJaHQjGhI86r5XCrzm4RbBr1CcvBLr81unfUuw1MHthgX
-WeLpK1UVff9a1KcEdKJGTToNh4VJGvfhMyezUgFZVuS07EF8VJfrwGm/6iCeiBIw
-WDGDCfbTeP/XXnIua4r5CZE9QIwrwo5SgVx5wm++HbCgyhAm1zR9cTwR+oR/DcJd
-+n+PFmEvDEsQT3NxbWf9UoJGa7HKLg08QaJ2MCa6+O992PFLIXsb1s/8ufGjXEPz
-Dgmrn9Vsub0F/i/3KwBeQDTNwTrse/tGyjR/cSLF/cuF+dOOz/HAOhb5rBFMkvhG
-Qu9pvBFROfi/GYNNB39WuqT+Y12e2Z3o1zMguCut37KXb6r8tLZGU90z7mEMZfNN
-MfcBSgQtGuFrBk5ye36i
-=zvFY
+iQIcBAEBAgAGBQJTjajkAAoJELSic+t+oim9Ow4QAIhWWs6UURz9kji0vixZ+C0n
+J7vE1ecXtBRDehYtogFCPra27e+IDwkNkqyoO5U/4Uj9Bh+xYrQRzG/R60hCYi+0
+kcRkcASxKGF6ILzMft+kXjFp/wuZnVyfUZFGRZAnkH63XUCln7WotRz5Ra184icx
+ZBXwxIf5OHbq+0/7m9q0Yl1VO1th7+5XsiEo1g3WCinKXi8CSOgcPTsLuHBADOAx
+RQwh9nos/cHtBl3shKtvJsqDhjv8DYxlwH09w7ChwsGsV2ddXnLi6Hw08xiPVsD7
+2BSON2f96e5gwewNqRAXTF3kejBhfc+/gx6YSCcXXWgKyQS/M8ncSmHxReDjdl9c
+3ekRNJ9HeoA1+iXxmYx76+p2muKKsNZD9BkmZwMG1lrQOaC3mRn+LCGTXLJlcu5a
+IjHtPKgFyHMaRYNZ2HWymZZl3zbWYZuSZtWEvs2/l0Th07Pu+UhmK8qmcIBnamtw
+HcyMh7BpMYsaq2pDTJrMaFGuVK67Ya2W0WMMLW0STIwo9QO807doi91wFujd+moL
+v+ZCe4UHhVUCpZB6NYUAuducb0lhRLycErana0wRSBvGyBNcnTpOaQco510Bo1NR
+y1AojI8Cv+ltQvWxDetRVlMZ73JB260ze3G3+n0nfMuVIH5q6H1VQVUs+XWcS9G6
+jlRknsEY6qbGoaS0fQL0
+=+Scx
 -----END PGP SIGNATURE-----
 
---FhxWStFQ84VXWhXs--
+--4rQ9lIe3OahbhU4J--
