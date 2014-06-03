@@ -1,140 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934214AbaFCWSn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 18:18:43 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49795 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933038AbaFCWSl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 18:18:41 -0400
-Date: Wed, 4 Jun 2014 00:18:37 +0200
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
-To: Johannes Berg <johannes@sipsolutions.net>,
-        Liraz Perelmooter <liraz.perelmooter@intel.com>
-Cc: Rostislav Lisovy <lisovy@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Michal Sojka <sojkam1@fel.cvut.cz>, s.sander@nordsys.de,
-        jan-niklas.meier@volkswagen.de,
-        Rostislav Lisovy <rostislav.lisovy@fel.cvut.cz>,
-        wireless-regdb@lists.infradead.org, green@qti.qualcomm.com
-Subject: Re: [RFC 1/4] cfg80211: Add channel flags limiting availability to
-	OCB mode only
-Message-ID: <20140603221837.GU26450@wotan.suse.de>
-References: <1401468984-24575-1-git-send-email-rostislav.lisovy@fel.cvut.cz> <1401468984-24575-2-git-send-email-rostislav.lisovy@fel.cvut.cz> <1401825693.4157.44.camel@jlt4.sipsolutions.net>
+	id S965310AbaFCWTQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 18:19:16 -0400
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:54563 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934040AbaFCWTP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 18:19:15 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ALfTUftag+2gvp1h"
-Content-Disposition: inline
-In-Reply-To: <1401825693.4157.44.camel@jlt4.sipsolutions.net>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <20140602100548.GW15585@mwanda>
+References: <1401629611-19166-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+	<20140602100548.GW15585@mwanda>
+Date: Wed, 4 Jun 2014 00:19:14 +0200
+Message-ID: <CAFo99gZ_idLvvvh86pEuiMTTwkK=dgZBop_qZAbA2z_Y00boPA@mail.gmail.com>
+Subject: Re: [PATCH] staging: tidspbridge: pmgr: dspapi.c: Cleaning up
+ uninitialized variables
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Omar Ramirez Luna <omar.ramirez@copitl.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org, Rashika Kheria <rashika.kheria@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi
 
---ALfTUftag+2gvp1h
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I send in a new patch now, hope I interpreted you correctly how you
+wanted the changes.
 
-On Tue, Jun 03, 2014 at 10:01:33PM +0200, Johannes Berg wrote:
-> On Fri, 2014-05-30 at 18:56 +0200, Rostislav Lisovy wrote:
-> > IEEE 802.11p operates in its own 5.9GHz band. When there will
-> > be a record for the 5.9GHz band in the regulatory daemon,
-> > it must be limited to the OCB mode only -- using the newly
-> > added flags.
->=20
-> Is this really a *regulatory* limitation? Rather than a limitation
-> elsewhere, e.g. the spec?
+Worth mention is that in mgrwrap_enum_node_info()   unless you wanted to remove
+"if (size < sizeof(struct dsp_ndbprops))" then size will always be the
+same as sizeof(struct dsp_ndbprops)
 
-Our engaged and capable *real* regulatory folks in the community are:
 
-  * Liraz Perelmooter <liraz.perelmooter@intel.com>
-  * Michael Green <green@qti.qualcomm.com>
+Best regards
+Rickard Strandqvist
 
-Additionally we have the wireless-regdb mailing list [0] which we should
-Cc for inquiries and verification on things like this. We hope for their
-participation as they are our real experts who grind away at the specs.
 
-Rostislav, can you provide documentation references which would clarify
-the stance on 802.11p and restrictions for only allowing  OCB mode?
-Also your patches seem to refer to the 802.11p ammendment work to 802.11,
-but it is now merged as of IEEE 802.11-2012 as per Jouni's last update to us
-on the standards work [1]. As per Jouni's slides 802.11p-2010 made it as an
-ammendment into 802.11-2012 and this work is rerrred to as "Wireless  Access
-for the Vehicular Environent". It would be *useful* if you'd refer to the I=
-EEE
-802.11-2012 standard then and document as part of your patches the exact
-sections and references that about Wireless Access for the Vehicular
-Environment.
-
-For reference to others this comes in as a full patch series by Rostislav
-to add some form of "802.11p" support using OCB (Outside the Context of BSS)
-mode. This mode of operation allows devices to send frames not connected
-to a BSS. The patch in question above is for the regulatory flag that is
-being proposed to be added, the full series of the other patches can be
-seen on the mailing list archive [2]. Rostislav clarifies that when OCB
-mode is used all the STAs communicate with each other without the need
-for a coordinator. The 5.9 GHz band is being clarified to be used for 802.1=
-1p,
-the patch series also is specifying that when 5.9 GHz is enabled only
-OCB mode of operation is allowed on that band. No references are made to
-the specific 802.11 ammendment / IEEE 802.11 sections or more importantly i=
-t is
-not being made clear if the OCB mode is something that differs depending
-on regulatory bodies at this point.
-
-Since 802.11p was designed for cars in mind I suspect regulatory bodies
-likely do want proper rules followed, but its unclear what countries
-that follow either IEEE 802.11 or the ISO equivalent want OCB mode of
-operation and if they also have the same restrictions of only allowing
-5.9 GHz operation only for OCB. I can also imagine for example of regulatory
-bodies that may want to allow 5.9 GHz for non OCB mode, specially if they
-need the spectrum. One particular use case which provides a compromise
-could be for example to have APs/P2P GOs look for OCB communication and
-if its detected to disallow it. Not like I would recommend this given
-that it would then introduce crazy regulatory compliance silliness
-such as seen with DFS and that pushed crazy implementation and designs,
-but -- its certainly possible.
-
-So is this an IEEE compliance thing or regulatory thing? If its a generally
-accepted IEEE compliance thing for 802.11-2012 then I don't see why we
-don't just hard code this restriction on cfg80211 for the band. That
-after all would be the much more saner thing to do than all the silly
-mess of discrepencies betwen regulatory bodies. After all cfg80211 is for
-802.11, and if we follow the specs and if its mentioned clearly there I
-see no resason why not to hard code this. If folks want to override this
-(I envision university environments doing research on this) the patch can
-add a Kconfig option that depends on CONFIG_CFG80211_CERTIFICATION_ONUS
-which will make the check permissive on 5.9 GHz instead of fully enforced.
-
-[0] http://lists.infradead.org/mailman/listinfo/wireless-regdb
-[1] http://wireless.kernel.org/en/developers/Summits/Barcelona-2012?action=
-=3DAttachFile&do=3Dview&target=3Dieee80211-barcelona-2012.pdf
-[2] http://comments.gmane.org/gmane.linux.kernel.wireless.general/121022
-
-  Luis
-
---ALfTUftag+2gvp1h
-Content-Type: application/pgp-signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.9 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTjkm9AAoJEPep4JnvMe6zlAgQAK9cqZAghwqYaOMzrKgHKGDV
-3LNyzwoYpOq17xJQ9/75y2ePrjhIo0eYtBu9wjdoYtUXdP6IoTZkRhi6fMLOIrQW
-45jeO8gL0rlkarsb5Ydp2q8VVvlsdbgkcn4Vk8Cz6a4HqZPITJLBDCmDUrCZUkKQ
-AEcBh1rhejtengnAKkUUww1Q89AdjJld1cLD7mHPSm3P4u/lAVRdTjm1qhEbQU8p
-6JFZGNWnjxrD+oQQW+s3ow+KKxJO2xG9/yJiBab4XTN7jRxB7NUlBmKruQ82lmy2
-fXUt37p0gsqkkQ/TpbGHBQn0t89lKIwdxMfE5VKyB2SIeEBfr5xaweElF+YYLyqN
-XpaowWl09hhl6bZQNWfSK1jfB2k0y49Soxga41QjUMPDat7kl34wOjmHJ/Xpu7hC
-y4vcd4dkaZQqsOJv3dTdUpdqHMcFPie1pAVGe8ZS/PGOCpAmCZGFKT3MqhDUw1GA
-Tzo0fJi4kINsH7/4PI+0qgJhGUr16/kScxe+MG+zamIq6t9V3iK8j1jbe4egaO/h
-2LqzVJSfkhk5Mtze5LkzVWzigy+MkdohaQDpdfDcrreHD+Rmh3Y6o0Ten0wH14b+
-1tLdB58z/R0t5GLVJORHX5eYaf74Z4ClBuqc01LyQ4GaSKSg0fMVlPo07E9S9pJT
-R+JhVaXOl1d7bCZJQkEh
-=Alqy
------END PGP SIGNATURE-----
-
---ALfTUftag+2gvp1h--
+2014-06-02 12:10 GMT+02:00 Dan Carpenter <dan.carpenter@oracle.com>:
+> [ I am writing this at the end after writing the rest of this email.
+>
+>   After looking at the CP_TO_USR() macro more carefully, I realize that
+>   the uninitialized variable bugs you are fixing are false positives.
+>   The information leaks where the max size is not capped are real
+>   security bugs.
+>
+>   This code is total garbage.  It makes me irritated to look at it.
+>   Let's replace the stupid CP_TO_USR() macro with normal copy_to_user()
+>   calls, for example.  -- dan ]
+>
+> On Sun, Jun 01, 2014 at 03:33:31PM +0200, Rickard Strandqvist wrote:
+>> There is a risk that the variable will be used without being initialized.
+>>
+>> This was largely found by using a static code analysis program called cppcheck.
+>>
+>> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+>> ---
+>>  drivers/staging/tidspbridge/pmgr/dspapi.c |    8 ++++----
+>>  1 file changed, 4 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/drivers/staging/tidspbridge/pmgr/dspapi.c b/drivers/staging/tidspbridge/pmgr/dspapi.c
+>> index b7d5c8c..4e12a5b 100644
+>> --- a/drivers/staging/tidspbridge/pmgr/dspapi.c
+>> +++ b/drivers/staging/tidspbridge/pmgr/dspapi.c
+>> @@ -340,7 +340,7 @@ int api_init_complete2(void)
+>>  u32 mgrwrap_enum_node_info(union trapped_args *args, void *pr_ctxt)
+>>  {
+>>       u8 *pndb_props;
+>> -     u32 num_nodes;
+>> +     u32 num_nodes = 0;
+>>       int status = 0;
+>>       u32 size = args->args_mgr_enumnode_info.ndb_props_size;
+>>
+>
+> The error handling in this function really sucks.
+>
+> The "num_nodes" variable was supposed to be initialized in
+> mgr_enum_node_info().
+>
+> The error handling in this function really sucks.  If the kmalloc()
+> fails then we will hit your uninitialized variable bug and also we will
+> hit a NULL dereference bug and crash.
+>
+> Besides those two bugs, there is a third even worse bug which is that if
+> if "size" is greater than sizeof(struct dsp_ndbprops) then we leak the
+> extra information to the user.  It is a security problem.
+>
+> Please could you send something to clean this up completely?
+>
+> 1) Add a check:
+>         if (size > sizeof(struct dsp_ndbprops))
+>                 size = sizeof(struct dsp_ndbprops);
+>
+> 2) Return immediately on kmalloc() failure
+>
+> 3) if mgr_enum_node_info() fails then goto free_props, do not copy bogus
+>    data to the user.
+>
+>
+>> @@ -372,7 +372,7 @@ u32 mgrwrap_enum_node_info(union trapped_args *args, void *pr_ctxt)
+>>  u32 mgrwrap_enum_proc_info(union trapped_args *args, void *pr_ctxt)
+>>  {
+>>       u8 *processor_info;
+>> -     u8 num_procs;
+>> +     u8 num_procs = 0;
+>>       int status = 0;
+>>       u32 size = args->args_mgr_enumproc_info.processor_info_size;
+>>
+>
+> This function has all the same problems as the previous function but
+> fixing it is more complicated.  The sizeof() check should be:
+>
+>         if (size > sizeof(struct mgr_processorextinfo))
+>                 size = sizeof(struct mgr_processorextinfo);
+>
+> And change the kmalloc() to a kzalloc() in case the size is somewhere in
+> the middle of sizeof(struct dsp_processorinfo) and
+> sizeof(struct mgr_processorextinfo).
+>
+>> @@ -475,7 +475,7 @@ u32 mgrwrap_wait_for_bridge_events(union trapped_args *args, void *pr_ctxt)
+>>       int status = 0;
+>>       struct dsp_notification *anotifications[MAX_EVENTS];
+>>       struct dsp_notification notifications[MAX_EVENTS];
+>> -     u32 index, i;
+>> +     u32 index = 0, i;
+>>       u32 count = args->args_mgr_wait.count;
+>>
+>>       if (count > MAX_EVENTS)
+>
+> This function is total garbage as well.  Fix up the error handling.
+>
+>> @@ -1755,7 +1755,7 @@ u32 strmwrap_register_notify(union trapped_args *args, void *pr_ctxt)
+>>   */
+>>  u32 strmwrap_select(union trapped_args *args, void *pr_ctxt)
+>>  {
+>> -     u32 mask;
+>> +     u32 mask = 0;
+>>       struct strm_object *strm_tab[MAX_STREAMS];
+>>       int status = 0;
+>>       struct strm_res_object *strm_res;
+>
+>
+>
+>> --
+>> 1.7.10.4
+>>
+>> _______________________________________________
+>> devel mailing list
+>> devel@linuxdriverproject.org
+>> http://driverdev.linuxdriverproject.org/mailman/listinfo/driverdev-devel
