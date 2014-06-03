@@ -1,69 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754848AbaFCLtH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 07:49:07 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43872 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932909AbaFCLm4 (ORCPT
+	id S1754863AbaFCLt1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 07:49:27 -0400
+Received: from relay.parallels.com ([195.214.232.42]:52026 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754259AbaFCLtF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 07:42:56 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Peter Christensen <pch@ordbogen.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 122/138] macvlan: Don't propagate IFF_ALLMULTI changes on down interfaces.
-Date: Tue,  3 Jun 2014 12:39:28 +0100
-Message-Id: <1401795584-22664-123-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
-References: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Tue, 3 Jun 2014 07:49:05 -0400
+Subject: [PATCH] fuse: do not evict dirty inodes
+To: miklos@szeredi.hu
+From: Maxim Patlasov <MPatlasov@parallels.com>
+Cc: fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Date: Tue, 03 Jun 2014 15:49:00 +0400
+Message-ID: <20140603114827.3188.35705.stgit@localhost.localdomain>
+User-Agent: StGit/0.16
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.11 -stable review patch.  If anyone has any objections, please let me know.
+Commit 1e18bda8 added .write_inode method to the fuse super_operations. This
+allowed fuse to use the kernel infrastructure for writing out dirty metadata
+(mtime and ctime for now). However, given that .drop_inode was not redefined
+from the legacy generic_delete_inode(), on umount(2) generic_shutdown_super()
+led to the eviction of all inodes disregarding their state.
 
-------------------
+The patch removes .drop_inode definition from the fuse super_operations. This
+works because now iput_final() calls generic_drop_inode() and returns w/o
+evicting inode. This, in turn, allows generic_shutdown_super() to write dirty
+inodes by calling sync_filesystem().
 
-From: Peter Christensen <pch@ordbogen.com>
-
-commit bbeb0eadcf9fe74fb2b9b1a6fea82cd538b1e556 upstream.
-
-Clearing the IFF_ALLMULTI flag on a down interface could cause an allmulti
-overflow on the underlying interface.
-
-Attempting the set IFF_ALLMULTI on the underlying interface would cause an
-error and the log message:
-
-"allmulti touches root, set allmulti failed."
-
-Signed-off-by: Peter Christensen <pch@ordbogen.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Signed-off-by: Maxim Patlasov <MPatlasov@parallels.com>
 ---
- drivers/net/macvlan.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ fs/fuse/inode.c |    1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/drivers/net/macvlan.c b/drivers/net/macvlan.c
-index 9f7dd0ce4c70..e64fb8bc3e97 100644
---- a/drivers/net/macvlan.c
-+++ b/drivers/net/macvlan.c
-@@ -423,8 +423,10 @@ static void macvlan_change_rx_flags(struct net_device *dev, int change)
- 	struct macvlan_dev *vlan = netdev_priv(dev);
- 	struct net_device *lowerdev = vlan->lowerdev;
- 
--	if (change & IFF_ALLMULTI)
--		dev_set_allmulti(lowerdev, dev->flags & IFF_ALLMULTI ? 1 : -1);
-+	if (dev->flags & IFF_UP) {
-+		if (change & IFF_ALLMULTI)
-+			dev_set_allmulti(lowerdev, dev->flags & IFF_ALLMULTI ? 1 : -1);
-+	}
- }
- 
- static void macvlan_set_mac_lists(struct net_device *dev)
--- 
-1.9.1
+diff --git a/fs/fuse/inode.c b/fs/fuse/inode.c
+index 754dcf2..ee017be 100644
+--- a/fs/fuse/inode.c
++++ b/fs/fuse/inode.c
+@@ -791,7 +791,6 @@ static const struct super_operations fuse_super_operations = {
+ 	.destroy_inode  = fuse_destroy_inode,
+ 	.evict_inode	= fuse_evict_inode,
+ 	.write_inode	= fuse_write_inode,
+-	.drop_inode	= generic_delete_inode,
+ 	.remount_fs	= fuse_remount_fs,
+ 	.put_super	= fuse_put_super,
+ 	.umount_begin	= fuse_umount_begin,
 
