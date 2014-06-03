@@ -1,47 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964936AbaFCULY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 16:11:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20449 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933080AbaFCULU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 16:11:20 -0400
-From: Bandan Das <bsd@redhat.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: kvm@vger.kernel.org, Gleb Natapov <gleb@kernel.org>,
-        Jan Kiszka <jan.kiszka@siemens.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 0/4] Emulate VMXON region correctly
-References: <1399357158-8305-1-git-send-email-bsd@redhat.com>
-	<5369156F.1070104@redhat.com>
-Date: Tue, 03 Jun 2014 16:11:10 -0400
-In-Reply-To: <5369156F.1070104@redhat.com> (Paolo Bonzini's message of "Tue,
-	06 May 2014 19:01:35 +0200")
-Message-ID: <jpgoay9eotd.fsf@nelium.bos.redhat.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S964975AbaFCUML (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 16:12:11 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:46070 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964793AbaFCUMI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 16:12:08 -0400
+Date: Tue, 3 Jun 2014 13:12:02 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Joe Perches <joe@perches.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
+        fweisbec@gmail.com, oleg@redhat.com, sbw@mit.edu
+Subject: Re: [PATCH v2 RFC 1/3] MAINTAINERS: Add "R:" designated-reviewers tag
+Message-ID: <20140603201202.GW22231@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1401809736-12023-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1401822187.18833.24.camel@joe-AO725>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1401822187.18833.24.camel@joe-AO725>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14060320-9332-0000-0000-000000FC0D7E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paolo Bonzini <pbonzini@redhat.com> writes:
+On Tue, Jun 03, 2014 at 12:03:07PM -0700, Joe Perches wrote:
+> On Tue, 2014-06-03 at 08:35 -0700, Paul E. McKenney wrote:
+> > Paul Walmsley also noted the need for patch
+> > submitters to know who the key reviewers are and suggested adding an
+> > "R:" tag to the MAINTAINERS file to record this information on a
+> > per-subsystem basis.
+> []
+> > diff --git a/MAINTAINERS b/MAINTAINERS
+> []
+> > @@ -70,6 +70,8 @@ Descriptions of section entries:
+> >  
+> >  	P: Person (obsolete)
+> >  	M: Mail patches to: FullName <address@domain>
+> > +	R: Designated reviewer, who should be CCed on patches,
+> > +	   format: FullName <address@domain>
+> >  	L: Mailing list that is relevant to this area
+> >  	W: Web-page with status/info
+> >  	Q: Patchwork web based patch tracking system site
+> 
+> Perhaps the M: and R: roles should be more fully
+> described here.
+> 
+> The R: entry description doesn't need commas.
+> 
+> Maybe something like:
+> 	M: Maintainer (to:) FullName <address@domain>
+> 	R: Reviewer   (cc:) FullName <address@domain>
 
-> Il 06/05/2014 08:19, Bandan Das ha scritto:
->> Reference: https://bugzilla.kernel.org/show_bug.cgi?id=54521
->>
->> The vmxon region is unused by nvmx, but adding these checks
->> are probably harmless and may detect buggy L1 hypervisors in
->> the future!
->
-> Applied to kvm/queue, unit test patches are welcome (hint, hint!).
+This is arguably better organized, but I need to keep my focus on adding
+the designated reviewer.  I am not in a position to undertake a rewrite
+of the MAINTAINER file preamble at this point.
 
-Jan and Paolo,
+> You might as well send the get_maintainer update with this
+> series too.
 
-Ok, I thought a little bit about this and I am wondering what 
-kind of tests we could have here. All the changes are pure 
-checks and no data is returned back to the guest. The
-vmxon code in kvm-unit-tests already does the right thing i.e
-sets the revision identifier, allocs a page for the region etc
+Interesting...  Who is the maintainer for get_maintainer?  ;-)
 
-> Paolo
+							Thanx, Paul
+
