@@ -1,135 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932066AbaFCGNY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 02:13:24 -0400
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:50329 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751732AbaFCGNX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 02:13:23 -0400
+	id S1753418AbaFCGWi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 02:22:38 -0400
+Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:46513 "EHLO
+	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751740AbaFCGWg convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 02:22:36 -0400
+Date: Tue, 3 Jun 2014 14:19:13 +0800
+From: Jisheng Zhang <jszhang@marvell.com>
+To: Antoine =?UTF-8?B?VMOpbmFydA==?= 
+	<antoine.tenart@free-electrons.com>
+CC: Andrew Lunn <andrew@lunn.ch>,
+        "sebastian.hesselbarth@gmail.com" <sebastian.hesselbarth@gmail.com>,
+        "thomas.petazzoni@free-electrons.com" 
+	<thomas.petazzoni@free-electrons.com>,
+        Jimmy Xu <zmxu@marvell.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "alexandre.belloni@free-electrons.com" 
+	<alexandre.belloni@free-electrons.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 1/5] ARM: berlin: add SMP support
+Message-ID: <20140603141913.710a1f7e@xhacker>
+In-Reply-To: <20140602102750.GB13681@kwain>
+References: <1401700866-24804-1-git-send-email-antoine.tenart@free-electrons.com>
+	<1401700866-24804-2-git-send-email-antoine.tenart@free-electrons.com>
+	<20140602094715.GG28090@lunn.ch>
+	<20140602100048.GA12162@kwain>
+	<20140602100332.GH28090@lunn.ch>
+	<20140602102750.GB13681@kwain>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <1401746847-3193-1-git-send-email-sboyd@codeaurora.org>
-References: <1401746847-3193-1-git-send-email-sboyd@codeaurora.org>
-Date: Tue, 3 Jun 2014 11:43:21 +0530
-Message-ID: <CAK5sBcEbLetRcgPuDJ30RqYjLOHhCXChtKE5ep22ZvEPWc9XwA@mail.gmail.com>
-Subject: Re: [PATCH] ARM: Remove ARCH_HAS_CPUFREQ config option
-From: Sachin Kamat <spk.linux@gmail.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arm@kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
+ definitions=2014-06-02_02:2014-06-02,2014-06-02,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=2
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1402240000 definitions=main-1406030087
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 3, 2014 at 3:37 AM, Stephen Boyd <sboyd@codeaurora.org> wrote:
-> This config exists entirely to hide the cpufreq menu from the
-> kernel configuration unless a platform has selected it. Nothing
-> is actually built if this config is 'Y' and it just leads to
-> more patches that add a select under a platform Kconfig so that
-> some other CPUfreq option can be chosen. Let's remove the
-> option so that we can always enable CPUfreq drivers on ARM
-> platforms.
->
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> ---
->  arch/arm/Kconfig               | 18 ------------------
->  arch/arm/mach-davinci/Kconfig  |  1 -
->  arch/arm/mach-highbank/Kconfig |  1 -
->  arch/arm/mach-imx/Kconfig      |  3 ---
->  arch/arm/mach-mvebu/Kconfig    |  1 -
->  arch/arm/mach-omap2/Kconfig    |  1 -
->  arch/arm/mach-shmobile/Kconfig |  2 --
->  arch/arm/mach-spear/Kconfig    |  1 -
->  arch/arm/mach-tegra/Kconfig    |  1 -
->  arch/arm/mach-ux500/Kconfig    |  1 -
->  arch/arm/mach-vexpress/Kconfig |  1 -
->  arch/arm/mach-vt8500/Kconfig   |  1 -
->  arch/arm/mach-zynq/Kconfig     |  1 -
->  13 files changed, 33 deletions(-)
->
-> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> index 5e91e40c1d22..3fdae40d5114 100644
-> --- a/arch/arm/Kconfig
-> +++ b/arch/arm/Kconfig
-> @@ -179,13 +179,6 @@ config ARCH_HAS_ILOG2_U32
->  config ARCH_HAS_ILOG2_U64
->         bool
->
-> -config ARCH_HAS_CPUFREQ
-> -       bool
-> -       help
-> -         Internal node to signify that the ARCH has CPUFREQ support
-> -         and that the relevant menu configurations are displayed for
-> -         it.
-> -
->  config ARCH_HAS_BANDGAP
->         bool
->
-> @@ -321,7 +314,6 @@ config ARCH_MULTIPLATFORM
->
->  config ARCH_INTEGRATOR
->         bool "ARM Ltd. Integrator family"
-> -       select ARCH_HAS_CPUFREQ
->         select ARM_AMBA
->         select ARM_PATCH_PHYS_VIRT
->         select AUTO_ZRELADDR
-> @@ -540,7 +532,6 @@ config ARCH_DOVE
->
->  config ARCH_KIRKWOOD
->         bool "Marvell Kirkwood"
-> -       select ARCH_HAS_CPUFREQ
->         select ARCH_REQUIRE_GPIOLIB
->         select CPU_FEROCEON
->         select GENERIC_CLOCKEVENTS
-> @@ -639,7 +630,6 @@ config ARCH_LPC32XX
->  config ARCH_PXA
->         bool "PXA2xx/PXA3xx-based"
->         depends on MMU
-> -       select ARCH_HAS_CPUFREQ
->         select ARCH_MTD_XIP
->         select ARCH_REQUIRE_GPIOLIB
->         select ARM_CPU_SUSPEND if PM
-> @@ -709,7 +699,6 @@ config ARCH_RPC
->
->  config ARCH_SA1100
->         bool "SA1100-based"
-> -       select ARCH_HAS_CPUFREQ
->         select ARCH_MTD_XIP
->         select ARCH_REQUIRE_GPIOLIB
->         select ARCH_SPARSEMEM_ENABLE
-> @@ -727,7 +716,6 @@ config ARCH_SA1100
->
->  config ARCH_S3C24XX
->         bool "Samsung S3C24XX SoCs"
-> -       select ARCH_HAS_CPUFREQ
->         select ARCH_REQUIRE_GPIOLIB
->         select ATAGS
->         select CLKDEV_LOOKUP
-> @@ -748,7 +736,6 @@ config ARCH_S3C24XX
->
->  config ARCH_S3C64XX
->         bool "Samsung S3C64XX"
-> -       select ARCH_HAS_CPUFREQ
->         select ARCH_REQUIRE_GPIOLIB
->         select ARM_AMBA
->         select ARM_VIC
-> @@ -811,7 +798,6 @@ config ARCH_S5PC100
->
->  config ARCH_S5PV210
->         bool "Samsung S5PV210/S5PC110"
-> -       select ARCH_HAS_CPUFREQ
->         select ARCH_HAS_HOLES_MEMORYMODEL
->         select ARCH_SPARSEMEM_ENABLE
->         select ATAGS
-> @@ -831,7 +817,6 @@ config ARCH_S5PV210
->
->  config ARCH_EXYNOS
->         bool "Samsung EXYNOS"
-> -       select ARCH_HAS_CPUFREQ
->         select ARCH_HAS_HOLES_MEMORYMODEL
->         select ARCH_REQUIRE_GPIOLIB
->         select ARCH_SPARSEMEM_ENABLE
+Hi Andrew, Antoine, 
 
-I think this patch is not based on the latest code base as ARCH_EXYNOS
-symbol is now defined in arch/arm/mach-exynos/Kconfig file.
+On Mon, 2 Jun 2014 03:27:50 -0700
+Antoine Ténart <antoine.tenart@free-electrons.com> wrote:
+
+> On Mon, Jun 02, 2014 at 12:03:32PM +0200, Andrew Lunn wrote:
+> > On Mon, Jun 02, 2014 at 12:00:48PM +0200, Antoine Ténart wrote:
+> > > Hi Andrew,
+> > > 
+> > > On Mon, Jun 02, 2014 at 11:47:15AM +0200, Andrew Lunn wrote:
+> > > > On Mon, Jun 02, 2014 at 11:21:02AM +0200, Antoine Ténart wrote:
+> > > > > +
+> > > > > +static inline void berlin_reset_cpu(unsigned int cpu)
+> > > > > +{
+> > > > > +	u32 val;
+> > > > > +
+> > > > > +	val = readl(cpu_ctrl + CPU_RESET);
+> > > > > +	val |= BIT(cpu_logical_map(cpu));
+> > > > > +	writel(val, cpu_ctrl + CPU_RESET);
+> > > > > +}
+> > > > 
+> > > > Is this performing a reset on the CPU, or is it taking it out of
+> > > > reset?
+> > > > 
+> > > > If you are going to implement CPU hotplug at some point, you are going
+> > > > to want to be able to put the CPU into reset, i.e. power it off, and
+> > > > take it out of reset, i.e. power it on and getting it running. So it
+> > > > might help if we get these function names clear now.
+> > > 
+> > > It is performing a reset on the CPU. berlin_perform_reset_cpu() then?
+> > 
+> > What happens if the CPU is powered off? Will a reset power it on?  Or
+> > are you assuming the boot loader has powered it on?
+> 
+> I actually don't have information about this. For now let's assume the
+> boot loader has powered on the CPUs.
+> 
+
+We don't support independently power off cpu on BG2 and BG2Q in linux kernel.
+So we can assume that bootloader has powered on the CPUs
+
