@@ -1,88 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965125AbaFCXrx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 19:47:53 -0400
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:44466 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932164AbaFCXrv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 19:47:51 -0400
+	id S934332AbaFCXsV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 19:48:21 -0400
+Received: from know-smtprelay-omc-10.server.virginmedia.net ([80.0.253.74]:41601
+	"EHLO know-smtprelay-omc-10.server.virginmedia.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932164AbaFCXsU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 19:48:20 -0400
+X-Originating-IP: [81.106.150.188]
+X-Spam: 0
+X-Authority: v=2.1 cv=FZq5xfO6 c=1 sm=1 tr=0 a=DGj713NdaxKrsjjgQne7PA==:117
+ a=DGj713NdaxKrsjjgQne7PA==:17 a=J0QyKEt1u0cA:10 a=stjsFTeFptUA:10
+ a=uObrxnre4hsA:10 a=IkcTkHD0fZMA:10 a=NLZqzBF-AAAA:8 a=dT1Wy2BCr5avlHYHrYgA:9
+ a=QEXdDO2ut3YA:10
+Date: Wed, 4 Jun 2014 00:48:16 +0100
+From: Ken Moffat <zarniwhoop@ntlworld.com>
+To: Joe Perches <joe@perches.com>
+Cc: josh@joshtriplett.org, Dave Chinner <david@fromorbit.com>,
+        Steven Rostedt <rostedt@goodmis.org>, paulmck@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, dhowells@redhat.com, edumazet@google.com,
+        dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
+        sbw@mit.edu
+Subject: Re: [PATCH RFC 1/2] MAINTAINERS: Add "R:" designated-reviewers tag
+Message-ID: <20140603234816.GB26144@milliways>
+References: <20140602181658.GX22231@linux.vnet.ibm.com>
+ <1401734669.7323.20.camel@joe-AO725>
+ <20140602145020.400d4e0c@gandalf.local.home>
+ <20140602185504.GA13569@cloud>
+ <1401735917.7323.23.camel@joe-AO725>
+ <20140602190951.GA13648@cloud>
+ <1401736666.7323.25.camel@joe-AO725>
+ <20140602231949.GV14410@dastard>
+ <20140602235915.GB14801@cloud>
+ <1401754325.7323.50.camel@joe-AO725>
 MIME-Version: 1.0
-In-Reply-To: <CAHO5Pa3F2MjfTtfNxa8LbnkeeU8=YJ+9tDqxZpw7Gz59E-4AUg@mail.gmail.com>
-References: <1400799936-26499-1-git-send-email-keescook@chromium.org>
-	<CAGXu5jLYPbJKCBvhVxfHEUFeCPJO-OBhRFufUSNy6o1N=LJ6UQ@mail.gmail.com>
-	<CALCETrV0ZEFipU0E64n5q44LiUV4j4Qqvnz0h_QAoddg+e7V3A@mail.gmail.com>
-	<CAGXu5j+YRW_+W8Z9S9O84ep-uUc4wQQRbtSu6_s8o5J2HLPUYg@mail.gmail.com>
-	<CALCETrXB0zp8gwpWuxXs0bgB8sQhe6JLE46BOYw3OrBx7hQYVw@mail.gmail.com>
-	<CAGXu5jKFte0ZvqU8RYcqjWDCoegWeu66gdwX83tiL8vprcvMgQ@mail.gmail.com>
-	<CALCETrWLNFJbwaYKkjBi7XPLBQ2=gEGmW=G==+_9jcrLPW+JdA@mail.gmail.com>
-	<CAHO5Pa3F2MjfTtfNxa8LbnkeeU8=YJ+9tDqxZpw7Gz59E-4AUg@mail.gmail.com>
-Date: Tue, 3 Jun 2014 16:47:50 -0700
-Message-ID: <CAKyRK=i+nDe3jFXRnYeDbrefc4HwC4gn16Biq8GMjXPRfry+oQ@mail.gmail.com>
-Subject: Re: [PATCH v5 0/6] seccomp: add PR_SECCOMP_EXT and SECCOMP_EXT_ACT_TSYNC
-From: Julien Tinnes <jln@google.com>
-To: Michael Kerrisk <mtk.manpages@gmail.com>
-Cc: Andy Lutomirski <luto@amacapital.net>, Kees Cook <keescook@chromium.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        James Morris <james.l.morris@oracle.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        LKML <linux-kernel@vger.kernel.org>, Will Drewry <wad@chromium.org>,
-        Alexei Starovoitov <ast@plumgrid.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1401754325.7323.50.camel@joe-AO725>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 3, 2014 at 3:12 AM, Michael Kerrisk <mtk.manpages@gmail.com> wrote:
-> [Kees, thank you for CCing linux-api]
->
-> On Tue, Jun 3, 2014 at 1:08 AM, Andy Lutomirski <luto@amacapital.net> wrote:
->> On Mon, Jun 2, 2014 at 4:05 PM, Kees Cook <keescook@chromium.org> wrote:
->
->>> I'd like to hear from other folks on this (akpm?). My instinct is to
->>> continue using prctl since that is already where mediation for seccomp
->>> happens. I don't see why prctl vs a new syscall makes a difference
->>> here, frankly.
->>
->> Aesthetics?  There's a tendency for people to get annoyed at big
->> multiplexed APIs, and your patches will be doubly multiplexed.
->
-> prctl() is already a Franken-interface that provides a mass of
-> different, mostly completely unrelated, functionality. So, I wonder if
-> it would be better not to make the situation worse. Furthermore, the
-> very fact that the existing prctl seccomp API is being extended and
-> multiplexed suggests that other extensions might be desirable further
-> down the line, which also hints that a separate syscall would be a
-> good idea. (Or do we have to wait until the prctl seccomp API is
-> extended one more time, before we realize that a new system call would
-> have been a good idea...)
->
->> TBH, I care more about the atomicity thing than about the actual form
->> of the API.
->
-> User-space does not necessarily thank you for that perspective, Andy
-> ;-). The atomicity thing is presumably fixable, regardless of the API.
-> On the other hand, APIs are things that kernel developers design once
-> and forget about, and user-space has to live with forever.
+On Mon, Jun 02, 2014 at 05:12:05PM -0700, Joe Perches wrote:
+> 
+> "Tested-by:" tags would be more helpful if the test
+> cases that were used were somehow sent along with the
+> signature.
+> 
+ To me, that seems either a perverse, or else a bureaucratic,
+interpretation of what should go where.
 
-Well, maybe the history of it being a prctl() should count for something.
-Most likely, userland will need to test for whether or not these
-features are present in the kernel for years to come. With a syscall,
-it would now require a syscall (unlikely to be in older headers for a
-while, so will require using syscall(3) for a bit) as well as a call
-to prctl() to test for seccomp mode 2 (without thread sync) in the
-fallback path. It'll be a little odd. As the person who will make this
-work in Chromium, I do not feel strongly either way, it's a detail, so
-feel free to disregard this point.
+ Tested-by is usually used for a fix of some problem, often a
+regression.  A good commit message will explain the problem.  I have
+recently offered this tag in two cases - in the first case it did
+not boot without the fix, in the second it did not wake up from
+suspend.  In each case, only one of my boxes was affected.  Do you
+think I should have insisted that some of my lspci -V information
+was appended to the commit (they both affected the radeon code) if
+my tag was going to be added ?
 
-But I'm eagerly waiting for:
-- Not having to test for the presence of threads at run-time (which
-requires a very ugly busy loop with exponential back-off watching for
-/proc/self/tasks/ to drop to 1 directory entry).
-- Being able to engage the sandbox after third-party libraries have
-started threads.
+ This is _often_ not like userspace programs where you can write a
+testsuite to exercise the corner cases.  Kernel problems can be
+tied up with intricate details of the hardware, or equally they
+might happen only for certain usage, and for those it might not be
+at all obvious what is "special" about the affected usage.
 
-Julien
+ĸen
+-- 
+Nanny Ogg usually went to bed early. After all, she was an old lady.
+Sometimes she went to bed as early as 6 a.m.
