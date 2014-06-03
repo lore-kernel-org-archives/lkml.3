@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754835AbaFCL45 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 07:56:57 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43689 "EHLO
+	id S1754470AbaFCLmJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 07:42:09 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43641 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754480AbaFCLmL (ORCPT
+	with ESMTP id S932831AbaFCLl7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 07:42:11 -0400
+	Tue, 3 Jun 2014 07:41:59 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Will Deacon <will.deacon@arm.com>,
-        Weng Meiling <wengmeiling.weng@huawei.com>,
+Cc: Sagi Grimberg <sagig@mellanox.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 093/138] ARM: perf: hook up perf_sample_event_took around pmu irq handling
-Date: Tue,  3 Jun 2014 12:38:59 +0100
-Message-Id: <1401795584-22664-94-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 085/138] Target/iser: Fix iscsit_accept_np and rdma_cm racy flow
+Date: Tue,  3 Jun 2014 12:38:51 +0100
+Message-Id: <1401795584-22664-86-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
 References: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
@@ -28,49 +28,116 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: Sagi Grimberg <sagig@mellanox.com>
 
-commit 5f5092e72cc25a6a5785308270e0085b2b2772cc upstream.
+commit 531b7bf4bd795d9a09eac92504322a472c010bc8 upstream.
 
-Since we indirect all of our PMU IRQ handling through a dispatcher, it's
-trivial to hook up perf_sample_event_took to prevent applications such
-as oprofile from generating interrupt storms due to an unrealisticly
-low sample period.
+RDMA CM and iSCSI target flows are asynchronous and completely
+uncorrelated. Relying on the fact that iscsi_accept_np will be called
+after CM connection request event and will wait for it is a mistake.
 
-Reported-by: Robert Richter <rric@kernel.org>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Cc: Weng Meiling <wengmeiling.weng@huawei.com>
-[ luis: backported to 3.11: adjusted context ]
+When attempting to login to a few targets this flow is racy and
+unpredictable, but for parallel login to dozens of targets will
+race and hang every time.
+
+The correct synchronizing mechanism in this case is pending on
+a semaphore rather than a wait_for_event. We keep the pending
+interruptible for iscsi_np cleanup stage.
+
+(Squash patch to remove dead code into parent - nab)
+
+Reported-by: Slava Shwartsman <valyushash@gmail.com>
+Signed-off-by: Sagi Grimberg <sagig@mellanox.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/arm/kernel/perf_event.c | 11 +++++++++--
- 1 file changed, 9 insertions(+), 2 deletions(-)
+ drivers/infiniband/ulp/isert/ib_isert.c | 25 ++++++-------------------
+ drivers/infiniband/ulp/isert/ib_isert.h |  2 +-
+ 2 files changed, 7 insertions(+), 20 deletions(-)
 
-diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
-index e186ee1e63f6..de5cd767e4df 100644
---- a/arch/arm/kernel/perf_event.c
-+++ b/arch/arm/kernel/perf_event.c
-@@ -303,11 +303,18 @@ static irqreturn_t armpmu_dispatch_irq(int irq, void *dev)
- 	struct arm_pmu *armpmu = (struct arm_pmu *) dev;
- 	struct platform_device *plat_device = armpmu->plat_device;
- 	struct arm_pmu_platdata *plat = dev_get_platdata(&plat_device->dev);
-+	int ret;
-+	u64 start_clock, finish_clock;
+diff --git a/drivers/infiniband/ulp/isert/ib_isert.c b/drivers/infiniband/ulp/isert/ib_isert.c
+index f1741e62647c..224cfbbbc6d3 100644
+--- a/drivers/infiniband/ulp/isert/ib_isert.c
++++ b/drivers/infiniband/ulp/isert/ib_isert.c
+@@ -27,6 +27,7 @@
+ #include <target/target_core_base.h>
+ #include <target/target_core_fabric.h>
+ #include <target/iscsi/iscsi_transport.h>
++#include <linux/semaphore.h>
  
-+	start_clock = sched_clock();
- 	if (plat && plat->handle_irq)
--		return plat->handle_irq(irq, dev, armpmu->handle_irq);
-+		ret = plat->handle_irq(irq, dev, armpmu->handle_irq);
- 	else
--		return armpmu->handle_irq(irq, dev);
-+		ret = armpmu->handle_irq(irq, dev);
-+	finish_clock = sched_clock();
-+
-+	perf_sample_event_took(finish_clock - start_clock);
-+	return ret;
+ #include "isert_proto.h"
+ #include "ib_isert.h"
+@@ -462,8 +463,8 @@ isert_connect_request(struct rdma_cm_id *cma_id, struct rdma_cm_event *event)
+ 	list_add_tail(&isert_conn->conn_accept_node, &isert_np->np_accept_list);
+ 	mutex_unlock(&isert_np->np_accept_mutex);
+ 
+-	pr_debug("isert_connect_request() waking up np_accept_wq: %p\n", np);
+-	wake_up(&isert_np->np_accept_wq);
++	pr_debug("isert_connect_request() up np_sem np: %p\n", np);
++	up(&isert_np->np_sem);
+ 	return 0;
+ 
+ out_conn_dev:
+@@ -2162,7 +2163,7 @@ isert_setup_np(struct iscsi_np *np,
+ 		pr_err("Unable to allocate struct isert_np\n");
+ 		return -ENOMEM;
+ 	}
+-	init_waitqueue_head(&isert_np->np_accept_wq);
++	sema_init(&isert_np->np_sem, 0);
+ 	mutex_init(&isert_np->np_accept_mutex);
+ 	INIT_LIST_HEAD(&isert_np->np_accept_list);
+ 	init_completion(&isert_np->np_login_comp);
+@@ -2211,18 +2212,6 @@ out:
  }
  
- static void
+ static int
+-isert_check_accept_queue(struct isert_np *isert_np)
+-{
+-	int empty;
+-
+-	mutex_lock(&isert_np->np_accept_mutex);
+-	empty = list_empty(&isert_np->np_accept_list);
+-	mutex_unlock(&isert_np->np_accept_mutex);
+-
+-	return empty;
+-}
+-
+-static int
+ isert_rdma_accept(struct isert_conn *isert_conn)
+ {
+ 	struct rdma_cm_id *cm_id = isert_conn->conn_cm_id;
+@@ -2306,16 +2295,14 @@ isert_accept_np(struct iscsi_np *np, struct iscsi_conn *conn)
+ 	int max_accept = 0, ret;
+ 
+ accept_wait:
+-	ret = wait_event_interruptible(isert_np->np_accept_wq,
+-			!isert_check_accept_queue(isert_np) ||
+-			np->np_thread_state == ISCSI_NP_THREAD_RESET);
++	ret = down_interruptible(&isert_np->np_sem);
+ 	if (max_accept > 5)
+ 		return -ENODEV;
+ 
+ 	spin_lock_bh(&np->np_thread_lock);
+ 	if (np->np_thread_state == ISCSI_NP_THREAD_RESET) {
+ 		spin_unlock_bh(&np->np_thread_lock);
+-		pr_err("ISCSI_NP_THREAD_RESET for isert_accept_np\n");
++		pr_debug("ISCSI_NP_THREAD_RESET for isert_accept_np\n");
+ 		return -ENODEV;
+ 	}
+ 	spin_unlock_bh(&np->np_thread_lock);
+diff --git a/drivers/infiniband/ulp/isert/ib_isert.h b/drivers/infiniband/ulp/isert/ib_isert.h
+index eaf7682ab4fe..3fe0299efc11 100644
+--- a/drivers/infiniband/ulp/isert/ib_isert.h
++++ b/drivers/infiniband/ulp/isert/ib_isert.h
+@@ -131,7 +131,7 @@ struct isert_device {
+ };
+ 
+ struct isert_np {
+-	wait_queue_head_t	np_accept_wq;
++	struct semaphore	np_sem;
+ 	struct rdma_cm_id	*np_cm_id;
+ 	struct mutex		np_accept_mutex;
+ 	struct list_head	np_accept_list;
 -- 
 1.9.1
 
