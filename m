@@ -1,46 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934122AbaFCRXH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 13:23:07 -0400
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:52043 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932762AbaFCRXF (ORCPT
+	id S1751477AbaFCR0r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 13:26:47 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:45810 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750722AbaFCR0p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 13:23:05 -0400
+	Tue, 3 Jun 2014 13:26:45 -0400
+Date: Tue, 3 Jun 2014 17:26:31 +0000
+From: Serge Hallyn <serge.hallyn@ubuntu.com>
+To: Pavel Emelyanov <xemul@parallels.com>
+Cc: Marian Marinov <mm@1h.com>,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        LXC development mailing-list 
+	<lxc-devel@lists.linuxcontainers.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] Per-user namespace process accounting
+Message-ID: <20140603172631.GL9714@ubuntumail>
+References: <5386D58D.2080809@1h.com>
+ <87tx88nbko.fsf@x220.int.ebiederm.org>
+ <53870EAA.4060101@1h.com>
+ <20140529153232.GB9714@ubuntumail>
+ <538DFF72.7000209@parallels.com>
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFx=TG25jPohWZ5xbYs4DcOTUQnCPA8G_fZZouNEfSoZ3A@mail.gmail.com>
-References: <CALCETrXbpiqwY=qyPcNWn2zX=vehXzBbxDG725egM9T2Ox2KTA@mail.gmail.com>
-	<538D2261.70406@huawei.com>
-	<20140603012211.GE19855@htj.dyndns.org>
-	<CA+55aFx=TG25jPohWZ5xbYs4DcOTUQnCPA8G_fZZouNEfSoZ3A@mail.gmail.com>
-Date: Tue, 3 Jun 2014 10:23:03 -0700
-X-Google-Sender-Auth: zFHg7UVA8fc40Wz6y2xBmDV0bTI
-Message-ID: <CA+55aFxfEsOZreYBCrDTfgaSf0441zXf4uSmzsYU-JXHBRkzJg@mail.gmail.com>
-Subject: Re: 3.15 regression: wrong cgroup magic
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Li Zefan <lizefan@huawei.com>, Andy Lutomirski <luto@amacapital.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jianyu Zhan <nasa4836@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <538DFF72.7000209@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 2, 2014 at 6:30 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
-> Of course, Greg could just send it to me for my next branch (since the
-> merge window for 3.16 is already open) and tell me that it's also
-> stable material for 3.15. At _that_ point I'll happily cherry-pick it
-> into master...
+Quoting Pavel Emelyanov (xemul@parallels.com):
+> On 05/29/2014 07:32 PM, Serge Hallyn wrote:
+> > Quoting Marian Marinov (mm@1h.com):
+> >> -----BEGIN PGP SIGNED MESSAGE-----
+> >> Hash: SHA1
+> >>
+> >> On 05/29/2014 01:06 PM, Eric W. Biederman wrote:
+> >>> Marian Marinov <mm@1h.com> writes:
+> >>>
+> >>>> Hello,
+> >>>>
+> >>>> I have the following proposition.
+> >>>>
+> >>>> Number of currently running processes is accounted at the root user namespace. The problem I'm facing is that
+> >>>> multiple containers in different user namespaces share the process counters.
+> >>>
+> >>> That is deliberate.
+> >>
+> >> And I understand that very well ;)
+> >>
+> >>>
+> >>>> So if containerX runs 100 with UID 99, containerY should have NPROC limit of above 100 in order to execute any 
+> >>>> processes with ist own UID 99.
+> >>>>
+> >>>> I know that some of you will tell me that I should not provision all of my containers with the same UID/GID maps,
+> >>>> but this brings another problem.
+> >>>>
+> >>>> We are provisioning the containers from a template. The template has a lot of files 500k and more. And chowning
+> >>>> these causes a lot of I/O and also slows down provisioning considerably.
+> >>>>
+> >>>> The other problem is that when we migrate one container from one host machine to another the IDs may be already
+> >>>> in use on the new machine and we need to chown all the files again.
+> >>>
+> >>> You should have the same uid allocations for all machines in your fleet as much as possible.   That has been true
+> >>> ever since NFS was invented and is not new here.  You can avoid the cost of chowning if you untar your files inside
+> >>> of your user namespace.  You can have different maps per machine if you are crazy enough to do that.  You can even
+> >>> have shared uids that you use to share files between containers as long as none of those files is setuid.  And map
+> >>> those shared files to some kind of nobody user in your user namespace.
+> >>
+> >> We are not using NFS. We are using a shared block storage that offers us snapshots. So provisioning new containers is
+> >> extremely cheep and fast. Comparing that with untar is comparing a race car with Smart. Yes it can be done and no, I
+> >> do not believe we should go backwards.
+> >>
+> >> We do not share filesystems between containers, we offer them block devices.
+> > 
+> > Yes, this is a real nuisance for openstack style deployments.
+> > 
+> > One nice solution to this imo would be a very thin stackable filesystem
+> > which does uid shifting, or, better yet, a non-stackable way of shifting
+> > uids at mount.
+> 
+> I vote for non-stackable way too. Maybe on generic VFS level so that filesystems 
+> don't bother with it. From what I've seen, even simple stacking is quite a challenge.
 
-Ok, so that happened.
+Do you have any ideas for how to go about it?  It seems like we'd have
+to have separate inodes per mapping for each file, which is why of
+course stacking seems "natural" here.
 
-Tejun, just to be anal, can you please test and verify current -git
-(preferably both 'master' and 'next') with your app that cared about
-the f_type information for statfs()..
-
-             Linus
+Trying to catch the uid/gid at every kernel-userspace crossing seems
+like a design regression from the current userns approach.  I suppose we
+could continue in the kuid theme and introduce a iiud/igid for the
+in-kernel inode uid/gid owners.  Then allow a user privileged in some
+ns to create a new mount associated with a different mapping for any
+ids over which he is privileged.
