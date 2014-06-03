@@ -1,106 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933778AbaFCUgi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 16:36:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61261 "EHLO mx1.redhat.com"
+	id S933955AbaFCUgr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 16:36:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53740 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933533AbaFCUgf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 16:36:35 -0400
+	id S933835AbaFCUgo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 16:36:44 -0400
 From: Jiri Olsa <jolsa@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Cody P Schafer <dev@codyps.com>,
-        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
+Cc: linux-kernel@vger.kernel.org, Jianyu Zhan <nasa4836@gmail.com>,
         Jiri Olsa <jolsa@kernel.org>
-Subject: [PATCH 4/9] perf tools: Allow overriding sysfs and proc finding with env var
-Date: Tue,  3 Jun 2014 22:36:11 +0200
-Message-Id: <1401827776-4443-5-git-send-email-jolsa@kernel.org>
+Subject: [PATCH 9/9] perf tools: Fix 'make help' message error
+Date: Tue,  3 Jun 2014 22:36:16 +0200
+Message-Id: <1401827776-4443-10-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1401827776-4443-1-git-send-email-jolsa@kernel.org>
 References: <1401827776-4443-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Cody P Schafer <dev@codyps.com>
+From: Jianyu Zhan <nasa4836@gmail.com>
 
-SYSFS_PATH and PROC_PATH environment variables now let the user override
-the detection of sysfs and proc locations for testing purposes.
+Currently 'make help' message has such hint:
 
-Signed-off-by: Cody P Schafer <dev@codyps.com>
-Cc: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Link: http://lkml.kernel.org/r/1401236684-10579-2-git-send-email-dev@codyps.com
+   use "make prefix=<path> <install target>" to install to a particular
+       path like make prefix=/usr/local install install-doc
+
+But this is misleading, when I specify "prefix=/usr/local", it has got no
+respect at all.
+
+This is because that, "DESTDIR" is considered first. In this case, "DESTDIR"
+has an empty value, so "prefix" is honored. However, "prefix" is unconditionally
+assigned to $HOME, regardless of what it is set to from command line. So our
+"prefix" setting got no respect and the actual destination falls back to $HOME.
+
+This patch fixes this issue and corrects the help message.
+
+Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
+Acked-by: Namhyung Kim <namhyung@kernel.org>
+Link: http://lkml.kernel.org/r/1401727474-19370-1-git-send-email-nasa4836@gmail.com
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/lib/api/fs/fs.c | 43 ++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 42 insertions(+), 1 deletion(-)
+ tools/perf/Makefile.perf   | 4 ++--
+ tools/perf/config/Makefile | 2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/tools/lib/api/fs/fs.c b/tools/lib/api/fs/fs.c
-index 5b5eb78..c1b49c3 100644
---- a/tools/lib/api/fs/fs.c
-+++ b/tools/lib/api/fs/fs.c
-@@ -1,8 +1,10 @@
- /* TODO merge/factor in debugfs.c here */
+diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
+index 6286e13..ae20edf 100644
+--- a/tools/perf/Makefile.perf
++++ b/tools/perf/Makefile.perf
+@@ -789,8 +789,8 @@ help:
+ 	@echo ''
+ 	@echo 'Perf install targets:'
+ 	@echo '  NOTE: documentation build requires asciidoc, xmlto packages to be installed'
+-	@echo '  HINT: use "make prefix=<path> <install target>" to install to a particular'
+-	@echo '        path like make prefix=/usr/local install install-doc'
++	@echo '  HINT: use "prefix" or "DESTDIR" to install to a particular'
++	@echo '        path like "make prefix=/usr/local install install-doc"'
+ 	@echo '  install	- install compiled binaries'
+ 	@echo '  install-doc	- install *all* documentation'
+ 	@echo '  install-man	- install manpage documentation'
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index 319426f..4f100b5 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -600,7 +600,7 @@ endif
  
-+#include <ctype.h>
- #include <errno.h>
- #include <stdbool.h>
- #include <stdio.h>
-+#include <stdlib.h>
- #include <string.h>
- #include <sys/vfs.h>
- 
-@@ -96,12 +98,51 @@ static bool fs__check_mounts(struct fs *fs)
- 	return false;
- }
- 
-+static void mem_toupper(char *f, size_t len)
-+{
-+	while (len) {
-+		*f = toupper(*f);
-+		f++;
-+		len--;
-+	}
-+}
-+
-+/*
-+ * Check for "NAME_PATH" environment variable to override fs location (for
-+ * testing). This matches the recommendation in Documentation/sysfs-rules.txt
-+ * for SYSFS_PATH.
-+ */
-+static bool fs__env_override(struct fs *fs)
-+{
-+	char *override_path;
-+	size_t name_len = strlen(fs->name);
-+	/* name + "_PATH" + '\0' */
-+	char upper_name[name_len + 5 + 1];
-+	memcpy(upper_name, fs->name, name_len);
-+	mem_toupper(upper_name, name_len);
-+	strcpy(&upper_name[name_len], "_PATH");
-+
-+	override_path = getenv(upper_name);
-+	if (!override_path)
-+		return false;
-+
-+	fs->found = true;
-+	strncpy(fs->path, override_path, sizeof(fs->path));
-+	return true;
-+}
-+
- static const char *fs__get_mountpoint(struct fs *fs)
- {
-+	if (fs__env_override(fs))
-+		return fs->path;
-+
- 	if (fs__check_mounts(fs))
- 		return fs->path;
- 
--	return fs__read_mounts(fs) ? fs->path : NULL;
-+	if (fs__read_mounts(fs))
-+		return fs->path;
-+
-+	return NULL;
- }
- 
- static const char *fs__mountpoint(int idx)
+ # Make the path relative to DESTDIR, not to prefix
+ ifndef DESTDIR
+-prefix = $(HOME)
++prefix ?= $(HOME)
+ endif
+ bindir_relative = bin
+ bindir = $(prefix)/$(bindir_relative)
 -- 
 1.8.3.1
 
