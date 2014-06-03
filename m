@@ -1,132 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755702AbaFCMPL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 08:15:11 -0400
-Received: from icp-osb-irony-out6.external.iinet.net.au ([203.59.1.222]:34561
-	"EHLO icp-osb-irony-out6.external.iinet.net.au" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755101AbaFCMPI (ORCPT
+	id S1754722AbaFCMQF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 08:16:05 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43384 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932386AbaFCLkt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 08:15:08 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ArYDACO7jVN8q8bp/2dsb2JhbAANTINZqw8BAQEBAQEGkGKHOQGBI4MZAQEBAwEBAiQLAQVAAQULCw0KAQkWDwkDAgECARYnCAYBDAEFAgEBiDYVrDqlPReFVYNehEgGAQFPB4RABJcfiXqEB4IQiU5aAYEBCA
-X-IronPort-AV: E=Sophos;i="4.98,964,1392134400"; 
-   d="scan'208";a="43672080"
-Message-ID: <538DBC3F.9060207@uclinux.org>
-Date: Tue, 03 Jun 2014 22:14:55 +1000
-From: Greg Ungerer <gerg@uclinux.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: =?ISO-8859-1?Q?Uwe_Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Rabin Vincent <rabin@rab.in>, Will Deacon <will.deacon@arm.com>,
-        linux-arm-kernel@lists.infradead.org
-CC: David Howells <dhowells@redhat.com>,
-        uclinux-dist-devel@blackfin.uclinux.org, linux-m68k@vger.kernel.org,
-        linux-c6x-dev@linux-c6x.org, linux-m32r@ml.linux-m32r.org,
-        microblaze-uclinux@itee.uq.edu.au, linux-xtensa@linux-xtensa.org,
-        kernel@pengutronix.de, Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: TASK_SIZE for !MMU
-References: <20140429100028.GH28564@pengutronix.de> <20140602085150.GA31147@pengutronix.de>
-In-Reply-To: <20140602085150.GA31147@pengutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+	Tue, 3 Jun 2014 07:40:49 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Michael Neuling <mikey@neuling.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 036/138] powerpc/tm: Disable IRQ in tm_recheckpoint
+Date: Tue,  3 Jun 2014 12:38:02 +0100
+Message-Id: <1401795584-22664-37-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
+References: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Uwe,
+3.11.10.11 -stable review patch.  If anyone has any objections, please let me know.
 
-On 02/06/14 18:51, Uwe Kleine-König wrote:
-> Hello
->
-> [expand Cc: a bit]
->
-> On Tue, Apr 29, 2014 at 12:00:28PM +0200, Uwe Kleine-König wrote:
->> I grepped through the kernel (v3.15-rc1) for usages of TASK_SIZE to
->> check if/how it is used on !MMU ARM machines. Most open questions also
->> affect the other !MMU platforms, so I put the blackfin, c6x, frv and
->> m32r, m68k, microblaze and xtensa lists on Cc:. (Did I miss a platform
->> that cares for !MMU ?)
->>
->> Most occurences are fine, see the list at the end of this mail. However
->> some are not or are unclear to me. Here is the complete list[1] apart from
->> the definition of TASK_SIZE for !MMU in arch/arm/include/asm/memory.h:
->>
->>   - Probably this should be explict s/TASK_SIZE/CONFIG_DRAM_SIZE/. This
->>     is generic code however while CONFIG_DRAM_SIZE is ARM only.
->>          mm/nommu.c:     if (!rlen || rlen > TASK_SIZE)
->>
->>   - The issue the patch by Rabin is addressing (Subject: [PATCH] ARM: fix
->>     string functions on !MMU), alternatively make TASK_SIZE ~0UL.
->>          arch/arm/include/asm/uaccess.h:#define user_addr_max() \
->>          arch/arm/include/asm/uaccess.h: (segment_eq(get_fs(), USER_DS) ? TASK_SIZE : ~0UL)
-> [reference: http://www.spinics.net/lists/arm-kernel/msg324112.html ]
->
->>   - probably bearable if broken:
->>          drivers/misc/lkdtm.c:           if (user_addr >= TASK_SIZE) {
->>          lib/test_user_copy.c:   user_addr = vm_mmap(...)
->>          lib/test_user_copy.c:   if (user_addr >= (unsigned long)(TASK_SIZE)) {
->>          lib/test_user_copy.c:           pr_warn("Failed to allocate user memory\n");
->>          lib/test_user_copy.c:           return -ENOMEM;
->>
->>   - unclear to me:
->>          fs/exec.c:      current->mm->task_size = TASK_SIZE;
->>     - depends on PERF_EVENTS
->>          kernel/events/core.c:   if (!addr || addr >= TASK_SIZE)
->>          kernel/events/core.c:   return TASK_SIZE - addr;
->>          kernel/events/uprobes.c:                area->vaddr = get_unmapped_area(NULL, TASK_SIZE - PAGE_SIZE,
->>     - depends on (PERF_EVENTS && (CPU_V6 || CPU_V6K || CPU_V7)):
->>          arch/arm/kernel/hw_breakpoint.c:        return (va >= TASK_SIZE) && ((va + len - 1) >= TASK_SIZE);
->>     - seems to cope with big TASK_SIZE
->>          fs/namespace.c:        size = TASK_SIZE - (unsigned long)data;
->>          fs/namespace.c:        if (size > PAGE_SIZE)
->>          fs/namespace.c:                size = PAGE_SIZE;
->>     - depends on PLAT_S5P || ARCH_EXYNOS, this looks wrong
->>          drivers/media/platform/s5p-mfc/s5p_mfc_common.h:#define DST_QUEUE_OFF_BASE      (TASK_SIZE / 2)
->>     - used for prctl(PR_SET_MM, ...)
->>          kernel/sys.c:   if (addr >= TASK_SIZE || addr < mmap_min_addr)
->>
->> Any help to judge if these are OK is appreciated (even from Will :-)
->>
->> I think it would be OK to define TASK_SIZE to 0xffffffff for !MMU.
->> blackfin, frv and m68k also do this. c6x does define it to 0xFFFFF000 to
->> leave space for error codes.
+------------------
 
-I did that same change for m68k in commit cc24c40 ("m68knommu: remove
-size limit on non-MMU TASK_SIZE"). For similar reasons as you need to
-now.
+From: Michael Neuling <mikey@neuling.org>
 
+commit e6b8fd028b584ffca7a7255b8971f254932c9fce upstream.
 
->> Thoughts?
-> The problem is that current linus/master (and also next) doesn't boot on
-> my ARM-nommu machine because the user string functions (strnlen_user,
-> strncpy_from_user et al.) refuse to work on strings above TASK_SIZE
-> which in my case also includes the XIP kernel image.
+We can't take an IRQ when we're about to do a trechkpt as our GPR state is set
+to user GPR values.
 
-I seem to recall that we were not considering flash or anything else
-other than RAM when defining that original TASK_SIZE (back many, many
-years ago). Some of the address checks you list above made some sense
-if you had everything in RAM (though only upper bounds are checked).
-The thinking was some checking is better than none I suppose.
+We've hit this when running some IBM Java stress tests in the lab resulting in
+the following dump:
 
-Setting a hard coded memory size in CONFIG_DRAM_SIZE is not all that
-fantastic either...
+  cpu 0x3f: Vector: 700 (Program Check) at [c000000007eb3d40]
+      pc: c000000000050074: restore_gprs+0xc0/0x148
+      lr: 00000000b52a8184
+      sp: ac57d360
+     msr: 8000000100201030
+    current = 0xc00000002c500000
+    paca    = 0xc000000007dbfc00     softe: 0     irq_happened: 0x00
+      pid   = 34535, comm = Pooled Thread #
+  R00 = 00000000b52a8184   R16 = 00000000b3e48fda
+  R01 = 00000000ac57d360   R17 = 00000000ade79bd8
+  R02 = 00000000ac586930   R18 = 000000000fac9bcc
+  R03 = 00000000ade60000   R19 = 00000000ac57f930
+  R04 = 00000000f6624918   R20 = 00000000ade79be8
+  R05 = 00000000f663f238   R21 = 00000000ac218a54
+  R06 = 0000000000000002   R22 = 000000000f956280
+  R07 = 0000000000000008   R23 = 000000000000007e
+  R08 = 000000000000000a   R24 = 000000000000000c
+  R09 = 00000000b6e69160   R25 = 00000000b424cf00
+  R10 = 0000000000000181   R26 = 00000000f66256d4
+  R11 = 000000000f365ec0   R27 = 00000000b6fdcdd0
+  R12 = 00000000f66400f0   R28 = 0000000000000001
+  R13 = 00000000ada71900   R29 = 00000000ade5a300
+  R14 = 00000000ac2185a8   R30 = 00000000f663f238
+  R15 = 0000000000000004   R31 = 00000000f6624918
+  pc  = c000000000050074 restore_gprs+0xc0/0x148
+  cfar= c00000000004fe28 dont_restore_vec+0x1c/0x1a4
+  lr  = 00000000b52a8184
+  msr = 8000000100201030   cr  = 24804888
+  ctr = 0000000000000000   xer = 0000000000000000   trap =  700
 
-Regards
-Greg
+This moves tm_recheckpoint to a C function and moves the tm_restore_sprs into
+that function.  It then adds IRQ disabling over the trechkpt critical section.
+It also sets the TEXASR FS in the signals code to ensure this is never set now
+that we explictly write the TM sprs in tm_recheckpoint.
 
+Signed-off-by: Michael Neuling <mikey@neuling.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+[ luis: backported to 3.11: used mikey's backport to 3.10, which picks
+  the definition of TEXASR_FS from commit
+  e4e38121507a27d2ccc4b28d9e7fc4818a12c44c ("KVM: PPC: Book3S HV: Add
+  transactional memory support") ]
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ arch/powerpc/include/asm/reg.h  |  1 +
+ arch/powerpc/kernel/process.c   | 34 ++++++++++++++++++++++++++++------
+ arch/powerpc/kernel/signal_32.c |  2 ++
+ arch/powerpc/kernel/signal_64.c |  2 ++
+ arch/powerpc/kernel/tm.S        |  2 +-
+ 5 files changed, 34 insertions(+), 7 deletions(-)
 
-> Maybe someone of the mm people can bring light into the unclear points
-> above and the question what TASK_SIZE is supposed to be on no-MMU
-> machines?
->
-> Best regards
-> Uwe
->
->> [1] complete as in "skip everything below arch/ but arch/arm" :-)
->>
-> [removed the list, if you're interested, it's available at
-> http://mid.gmane.org/20140429100028.GH28564@pengutronix.de]
->
+diff --git a/arch/powerpc/include/asm/reg.h b/arch/powerpc/include/asm/reg.h
+index 99222e27f173..bdb7c45fb49e 100644
+--- a/arch/powerpc/include/asm/reg.h
++++ b/arch/powerpc/include/asm/reg.h
+@@ -208,6 +208,7 @@
+ #define SPRN_ACOP	0x1F	/* Available Coprocessor Register */
+ #define SPRN_TFIAR	0x81	/* Transaction Failure Inst Addr   */
+ #define SPRN_TEXASR	0x82	/* Transaction EXception & Summary */
++#define   TEXASR_FS	__MASK(63-36)	/* Transaction Failure Summary */
+ #define SPRN_TEXASRU	0x83	/* ''	   ''	   ''	 Upper 32  */
+ #define SPRN_TFHAR	0x80	/* Transaction Failure Handler Addr */
+ #define SPRN_CTRLF	0x088
+diff --git a/arch/powerpc/kernel/process.c b/arch/powerpc/kernel/process.c
+index 273e9abbeb23..db9d5540f76f 100644
+--- a/arch/powerpc/kernel/process.c
++++ b/arch/powerpc/kernel/process.c
+@@ -523,6 +523,31 @@ out_and_saveregs:
+ 	tm_save_sprs(thr);
+ }
+ 
++extern void __tm_recheckpoint(struct thread_struct *thread,
++			      unsigned long orig_msr);
++
++void tm_recheckpoint(struct thread_struct *thread,
++		     unsigned long orig_msr)
++{
++	unsigned long flags;
++
++	/* We really can't be interrupted here as the TEXASR registers can't
++	 * change and later in the trecheckpoint code, we have a userspace R1.
++	 * So let's hard disable over this region.
++	 */
++	local_irq_save(flags);
++	hard_irq_disable();
++
++	/* The TM SPRs are restored here, so that TEXASR.FS can be set
++	 * before the trecheckpoint and no explosion occurs.
++	 */
++	tm_restore_sprs(thread);
++
++	__tm_recheckpoint(thread, orig_msr);
++
++	local_irq_restore(flags);
++}
++
+ static inline void tm_recheckpoint_new_task(struct task_struct *new)
+ {
+ 	unsigned long msr;
+@@ -541,13 +566,10 @@ static inline void tm_recheckpoint_new_task(struct task_struct *new)
+ 	if (!new->thread.regs)
+ 		return;
+ 
+-	/* The TM SPRs are restored here, so that TEXASR.FS can be set
+-	 * before the trecheckpoint and no explosion occurs.
+-	 */
+-	tm_restore_sprs(&new->thread);
+-
+-	if (!MSR_TM_ACTIVE(new->thread.regs->msr))
++	if (!MSR_TM_ACTIVE(new->thread.regs->msr)){
++		tm_restore_sprs(&new->thread);
+ 		return;
++	}
+ 	msr = new->thread.tm_orig_msr;
+ 	/* Recheckpoint to restore original checkpointed register state. */
+ 	TM_DEBUG("*** tm_recheckpoint of pid %d "
+diff --git a/arch/powerpc/kernel/signal_32.c b/arch/powerpc/kernel/signal_32.c
+index 7e9dff80e1dc..81f929f026f2 100644
+--- a/arch/powerpc/kernel/signal_32.c
++++ b/arch/powerpc/kernel/signal_32.c
+@@ -863,6 +863,8 @@ static long restore_tm_user_regs(struct pt_regs *regs,
+ 	 * transactional versions should be loaded.
+ 	 */
+ 	tm_enable();
++	/* Make sure the transaction is marked as failed */
++	current->thread.tm_texasr |= TEXASR_FS;
+ 	/* This loads the checkpointed FP/VEC state, if used */
+ 	tm_recheckpoint(&current->thread, msr);
+ 	/* Get the top half of the MSR */
+diff --git a/arch/powerpc/kernel/signal_64.c b/arch/powerpc/kernel/signal_64.c
+index 35c20a1fb365..74d9615a6bb6 100644
+--- a/arch/powerpc/kernel/signal_64.c
++++ b/arch/powerpc/kernel/signal_64.c
+@@ -513,6 +513,8 @@ static long restore_tm_sigcontexts(struct pt_regs *regs,
+ 	}
+ #endif
+ 	tm_enable();
++	/* Make sure the transaction is marked as failed */
++	current->thread.tm_texasr |= TEXASR_FS;
+ 	/* This loads the checkpointed FP/VEC state, if used */
+ 	tm_recheckpoint(&current->thread, msr);
+ 
+diff --git a/arch/powerpc/kernel/tm.S b/arch/powerpc/kernel/tm.S
+index e3f8da3c00b9..df71307e9d8e 100644
+--- a/arch/powerpc/kernel/tm.S
++++ b/arch/powerpc/kernel/tm.S
+@@ -306,7 +306,7 @@ dont_backup_fp:
+ 	 *	Call with IRQs off, stacks get all out of sync for
+ 	 *	some periods in here!
+ 	 */
+-_GLOBAL(tm_recheckpoint)
++_GLOBAL(__tm_recheckpoint)
+ 	mfcr	r5
+ 	mflr	r0
+ 	std	r5, 8(r1)
+-- 
+1.9.1
 
