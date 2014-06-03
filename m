@@ -1,304 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754427AbaFCX2i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 19:28:38 -0400
-Received: from mga02.intel.com ([134.134.136.20]:6828 "EHLO mga02.intel.com"
+	id S934040AbaFCXeA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 19:34:00 -0400
+Received: from imap.thunk.org ([74.207.234.97]:49026 "EHLO imap.thunk.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752069AbaFCX2g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 19:28:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,969,1392192000"; 
-   d="scan'208";a="522289605"
-From: Andi Kleen <andi@firstfloor.org>
-To: jolsa@redhat.com
-Cc: linux-kernel@vger.kernel.org, namhyung@kernel.org, acme@infradead.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH] perf, tools: Support spark lines in perf stat v6
-Date: Tue,  3 Jun 2014 16:28:06 -0700
-Message-Id: <1401838086-17750-1-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.9.0
+	id S1753180AbaFCXd6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 19:33:58 -0400
+Date: Tue, 3 Jun 2014 19:33:56 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        axboe@kernel.dk
+Subject: Scheduling while atomic regression in Linus's next branch
+Message-ID: <20140603233356.GA25980@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+	axboe@kernel.dk
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+Using 3.15.0-rc8-04539-gc84a1e3, mke2fs failed while trying to fsync
+to a block device (probably /dev/vdc).
 
-perf stat -rX prints the stddev for multiple measurements.
-Just looking at the stddev for judging the quality of the data
-is a bit dangerous The simplest sanity check is to just look
-at a simple plot. This patchs add a sparkline to the end
-of the measurements to make it simple to judge the data.
+I haven't tried to bisect this yet, but this seems pretty blatent.
+Is this a known bug?
 
-The sparkline only uses UTF-8, so should be readable
-in all modern tools and terminals.
+Thanks,
 
-The sparkline is between the minimum and maximum of the data,
-so it's mainly a indicator of variance. To keep the code
-simple and make the output not too wide only the first
-8 values are printed. If more values are there it adds '..'
+  	  	   	       	    - Ted
 
-The code is inspired by Zach Holman's spark shell script.
-
-Example output (view in non-proportial font):
-
- Performance counter stats for 'true' (10 runs):
-
-          0.175672      task-clock (msec)         #    0.555 CPUs utilized            ( +-  1.77% ) █▄▁▁▁▁▁▁..
-                 0      context-switches          #    0.000 K/sec
-                 0      cpu-migrations            #    0.000 K/sec
-               114      page-faults               #    0.647 M/sec                    ( +-  0.14% ) ▁█▁▁████..
-           520,798      cycles                    #    2.965 GHz                      ( +-  1.75% ) █▄▁▁▁▁▁▁..
-           433,525      instructions              #    0.83  insns per cycle          ( +-  0.28% ) ▅▇▅▄▇█▁▆..
-            83,012      branches                  #  472.537 M/sec                    ( +-  0.31% ) ▅▇▆▄▇█▁▆..
-             3,157      branch-misses             #    3.80% of all branches          ( +-  2.55% ) ▇█▃▅▁▃▁▂..
-
-       0.000316660 seconds time elapsed                                          ( +-  1.78% ) █▅▁▁▁▁▁▁..
-
-As you can see even in the most simple run there are quite interesting
-patterns. The time sparkline suggests it would be also useful to have an option
-to throw the first measurement away.
-
-Known issues:
-- Makes the perf stat output wider. Could be adjust by shrinking
-some white space. Not done so far.
-- No output for -A/--per-socket/--per-core with -rX. This code
-is missing the basic noise detection code. Once it's added there
-sparklines could be shown too.
-
-v2: Avoid printing spark lines for normal CSV case (Jiri)
-v3: LONG->ULONG, random changes
-v4: Add some missing changes from the forked v2: checks value is not
-zero instead of all the same. Update documentation. Remove n variable.
-Remove #pragma once
-v5: Add overflow fixes from Jiri.
-v6: Fix 32bit build
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- tools/perf/Documentation/perf-stat.txt |  4 ++++
- tools/perf/Makefile.perf               |  1 +
- tools/perf/builtin-stat.c              | 12 ++++++++++++
- tools/perf/util/spark.c                | 31 +++++++++++++++++++++++++++++++
- tools/perf/util/spark.h                |  4 ++++
- tools/perf/util/stat.c                 | 34 ++++++++++++++++++++++++++++++++++
- tools/perf/util/stat.h                 | 10 ++++++++++
- 7 files changed, 96 insertions(+)
- create mode 100644 tools/perf/util/spark.c
- create mode 100644 tools/perf/util/spark.h
-
-diff --git a/tools/perf/Documentation/perf-stat.txt b/tools/perf/Documentation/perf-stat.txt
-index 29ee857..840c1db 100644
---- a/tools/perf/Documentation/perf-stat.txt
-+++ b/tools/perf/Documentation/perf-stat.txt
-@@ -53,6 +53,10 @@ OPTIONS
- -r::
- --repeat=<n>::
- 	repeat command and print average + stddev (max: 100). 0 means forever.
-+	In addition it prints a spark line (when not in CSV mode), which visualizes the
-+	variance between minimum and maximum of the measurements. This allows a simple sanity
-+	check of the measurements. Only 8 values are printed, when more are available
-+	it adds ..
- 
- -B::
- --big-num::
-diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index 7257e7e..432d099 100644
---- a/tools/perf/Makefile.perf
-+++ b/tools/perf/Makefile.perf
-@@ -359,6 +359,7 @@ LIB_OBJS += $(OUTPUT)util/trace-event-scripting.o
- LIB_OBJS += $(OUTPUT)util/trace-event.o
- LIB_OBJS += $(OUTPUT)util/svghelper.o
- LIB_OBJS += $(OUTPUT)util/sort.o
-+LIB_OBJS += $(OUTPUT)util/spark.o
- LIB_OBJS += $(OUTPUT)util/hist.o
- LIB_OBJS += $(OUTPUT)util/probe-event.o
- LIB_OBJS += $(OUTPUT)util/util.o
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index 65a151e..cb0f7c5 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -1176,6 +1176,9 @@ static void print_aggr(char *prefix)
- 				if (run != ena)
- 					fprintf(output, "  (%.2f%%)",
- 						100.0 * run / ena);
-+
-+				fputc(' ', output);
-+				print_stat_spark(output, counter->priv);
- 			}
- 			fputc('\n', output);
- 		}
-@@ -1229,6 +1232,9 @@ static void print_counter_aggr(struct perf_evsel *counter, char *prefix)
- 		return;
- 	}
- 
-+	fputc(' ', output);
-+	print_stat_spark(output, counter->priv);
-+
- 	if (scaled) {
- 		double avg_enabled, avg_running;
- 
-@@ -1295,6 +1301,9 @@ static void print_counter(struct perf_evsel *counter, char *prefix)
- 			if (run != ena)
- 				fprintf(output, "  (%.2f%%)",
- 					100.0 * run / ena);
-+
-+			fputc(' ', output);
-+			print_stat_spark(output, counter->priv);
- 		}
- 		fputc('\n', output);
- 	}
-@@ -1355,6 +1364,9 @@ static void print_stat(int argc, const char **argv)
- 			fprintf(output, "                                        ");
- 			print_noise_pct(stddev_stats(&walltime_nsecs_stats),
- 					avg_stats(&walltime_nsecs_stats));
-+
-+			fputc(' ', output);
-+			print_stat_spark(output, &walltime_nsecs_stats);
- 		}
- 		fprintf(output, "\n\n");
- 	}
-diff --git a/tools/perf/util/spark.c b/tools/perf/util/spark.c
-new file mode 100644
-index 0000000..5a1033f
---- /dev/null
-+++ b/tools/perf/util/spark.c
-@@ -0,0 +1,31 @@
-+#include <stdio.h>
-+#include <limits.h>
-+#include "spark.h"
-+
-+#define NUM_SPARKS 8
-+#define SPARK_SHIFT 8
-+
-+/* Print spark lines on outf for numval values in val. */
-+void print_spark(FILE *outf, unsigned long long *val, int numval)
-+{
-+	static const char *ticks[NUM_SPARKS] = {
-+		"▁",  "▂", "▃", "▄", "▅", "▆", "▇", "█"
-+	};
-+	int i;
-+	unsigned long long min = ULLONG_MAX, max = 0, f;
-+
-+	for (i = 0; i < numval; i++) {
-+		if (val[i] < min)
-+			min = val[i];
-+		if (val[i] > max)
-+			max = val[i];
-+	}
-+	f = ((max - min) << SPARK_SHIFT) / (NUM_SPARKS - 1);
-+	if (f < 1)
-+		f = 1;
-+	for (i = 0; i < numval; i++) {
-+		int index = ((val[i] - min) << SPARK_SHIFT) / f;
-+		if (index >= 0 && index < NUM_SPARKS)
-+			fputs(ticks[index], outf);
-+	}
-+}
-diff --git a/tools/perf/util/spark.h b/tools/perf/util/spark.h
-new file mode 100644
-index 0000000..d9ebc94
---- /dev/null
-+++ b/tools/perf/util/spark.h
-@@ -0,0 +1,4 @@
-+#ifndef SPARK_H
-+#define SPARK_H 1
-+void print_spark(FILE *outf, unsigned long long *val, int numval);
-+#endif
-diff --git a/tools/perf/util/stat.c b/tools/perf/util/stat.c
-index 6506b3d..a7c02c5 100644
---- a/tools/perf/util/stat.c
-+++ b/tools/perf/util/stat.c
-@@ -1,10 +1,16 @@
- #include <math.h>
-+#include <stdio.h>
- 
- #include "stat.h"
-+#include "spark.h"
- 
- void update_stats(struct stats *stats, u64 val)
- {
- 	double delta;
-+	int n = stats->n;
-+
-+	if (n < NUM_SPARK_VALS)
-+		stats->svals[n] = val;
- 
- 	stats->n++;
- 	delta = val - stats->mean;
-@@ -61,3 +67,31 @@ double rel_stddev_stats(double stddev, double avg)
- 
- 	return pct;
- }
-+
-+static int all_zero(unsigned long long *vals, int len)
-+{
-+	int i;
-+
-+	for (i = 0; i < len; i++)
-+		if (vals[i] != 0)
-+			return 0;
-+	return 1;
-+}
-+
-+void print_stat_spark(FILE *f, struct stats *stat)
-+{
-+	int len;
-+
-+	if (stat->n <= 1)
-+		return;
-+
-+	len = stat->n;
-+	if (len > NUM_SPARK_VALS)
-+		len = NUM_SPARK_VALS;
-+	if (all_zero(stat->svals, len))
-+		return;
-+
-+	print_spark(f, stat->svals, len);
-+	if (stat->n > NUM_SPARK_VALS)
-+		fputs("..", f);
-+}
-diff --git a/tools/perf/util/stat.h b/tools/perf/util/stat.h
-index ae8ccd7..29f2092 100644
---- a/tools/perf/util/stat.h
-+++ b/tools/perf/util/stat.h
-@@ -1,12 +1,16 @@
- #ifndef __PERF_STATS_H
- #define __PERF_STATS_H
- 
-+#include <stdio.h>
- #include "types.h"
- 
-+#define NUM_SPARK_VALS 8 /* support spark line on first N items */
-+
- struct stats
- {
- 	double n, mean, M2;
- 	u64 max, min;
-+	unsigned long long svals[NUM_SPARK_VALS];
- };
- 
- void update_stats(struct stats *stats, u64 val);
-@@ -14,12 +18,18 @@ double avg_stats(struct stats *stats);
- double stddev_stats(struct stats *stats);
- double rel_stddev_stats(double stddev, double avg);
- 
-+void print_stat_spark(FILE *f, struct stats *stat);
-+
- static inline void init_stats(struct stats *stats)
- {
-+	int i;
-+
- 	stats->n    = 0.0;
- 	stats->mean = 0.0;
- 	stats->M2   = 0.0;
- 	stats->min  = (u64) -1;
- 	stats->max  = 0;
-+	for (i = 0; i < NUM_SPARK_VALS; i++)
-+		stats->svals[i] = 0;
- }
- #endif
--- 
-1.9.0
+[   11.563804] BUG: scheduling while atomic: mkfs.ext4/2975/0x00000002
+[   11.564832] no locks held by mkfs.ext4/2975.
+[   11.565320] Modules linked in:
+[   11.565623] CPU: 0 PID: 2975 Comm: mkfs.ext4 Not tainted 3.15.0-rc8-04539-gc84a1e3 #200
+[   11.566444] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2007
+[   11.567382]  00000000 00000000 f3e93bb0 c1056a06 f4152710 f3e93bbc c104fa37 f3e93ec8
+[   11.568452]  f3e93c34 c105e229 c0235c8b 00000000 000000ec f3e92000 c1869d00 f3e93bf4
+[   11.569501]  00000007 f4152710 c02682ab f4580200 f3e93bfc c023c177 f4580200 f3e93c10
+[   11.570475] Call Trace:
+[   11.570696]  [<c1056a06>] dump_stack+0xaa/0xec
+[   11.571074]  [<c104fa37>] __schedule_bug+0xd0/0xfd
+[   11.571478]  [<c105e229>] __schedule+0xb1/0xb62
+[   11.571869]  [<c0235c8b>] ? lock_release_holdtime+0xc0/0x10f
+[   11.572440]  [<c02682ab>] ? read_seqcount_begin.constprop.6+0xe7/0x154
+[   11.573106]  [<c023c177>] ? trace_hardirqs_on_caller+0x2d2/0x360
+[   11.573799]  [<c0268955>] ? timekeeping_get_ns.constprop.10+0x1f/0x80
+[   11.574470]  [<c0268cc5>] ? ktime_get_ts+0x73/0x112
+[   11.574984]  [<c105ef19>] schedule+0xf5/0x106
+[   11.575427]  [<c105efce>] io_schedule+0xa4/0xe5
+[   11.575928]  [<c0837812>] bt_get+0x133/0x174
+[   11.576300]  [<c022bf46>] ? bit_waitqueue+0x58/0x58
+[   11.576762]  [<c0837bda>] blk_mq_get_tag+0x34/0x116
+[   11.577206]  [<c0832e4c>] __blk_mq_alloc_request+0x38/0x208
+[   11.577728]  [<c08345d9>] blk_mq_map_request+0x2eb/0x312
+[   11.578354]  [<c021d0d2>] ? sched_clock_cpu+0x1bf/0x1f2
+[   11.578922]  [<c0835096>] blk_sq_make_request+0x150/0x302
+[   11.579379]  [<c08237e6>] generic_make_request+0xe6/0x151
+[   11.579824]  [<c0823a00>] submit_bio+0x1af/0x1c5
+[   11.580268]  [<c023c177>] ? trace_hardirqs_on_caller+0x2d2/0x360
+[   11.580781]  [<c03b57f9>] ? i_size_read+0x10c/0x18f
+[   11.581189]  [<c03b5b90>] _submit_bh+0x314/0x360
+[   11.581580]  [<c03b5bf9>] submit_bh+0x1d/0x2d
+[   11.581948]  [<c03b9a78>] __block_write_full_page+0x3a3/0x5fc
+[   11.582440]  [<c03bc3ad>] ? I_BDEV+0x18/0x18
+[   11.582802]  [<c03b9d30>] block_write_full_page_endio+0x5f/0x120
+[   11.583303]  [<c03bbc48>] ? block_read_full_page+0x39d/0x39d
+[   11.583819]  [<c03bc3ad>] ? I_BDEV+0x18/0x18
+[   11.584182]  [<c03b9e11>] block_write_full_page+0x20/0x30
+[   11.584633]  [<c03bbc48>] ? block_read_full_page+0x39d/0x39d
+[   11.585098]  [<c03bd92a>] blkdev_writepage+0x22/0x32
+[   11.585514]  [<c031425b>] __writepage+0x21/0x85
+[   11.585886]  [<c0315577>] write_cache_pages+0x3ac/0x53f
+[   11.586314]  [<c031423a>] ? set_page_dirty+0xd1/0xd1
+[   11.586775]  [<c016f05f>] ? native_sched_clock+0x84/0x98
+[   11.587221]  [<c031576b>] generic_writepages+0x61/0x91
+[   11.587645]  [<c03174ba>] do_writepages+0x3f/0x75
+[   11.588041]  [<c0308fc1>] __filemap_fdatawrite_range+0x76/0x8c
+[   11.588527]  [<c0309013>] filemap_write_and_wait_range+0x3c/0xca
+[   11.589022]  [<c03bdbe7>] ? init_once+0xb2/0xb2
+[   11.589393]  [<c03bdc11>] blkdev_fsync+0x2a/0x86
+[   11.589778]  [<c03b1ee6>] vfs_fsync_range+0x44/0x5c
+[   11.590234]  [<c03b1f25>] vfs_fsync+0x27/0x37
+[   11.590604]  [<c03b1f8b>] do_fsync+0x56/0x96
+[   11.590961]  [<c03b254f>] SyS_fsync+0x20/0x3e
+[   11.591324]  [<c1067352>] syscall_call+0x7/0xb
 
