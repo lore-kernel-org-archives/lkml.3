@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932886AbaFCLmY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 07:42:24 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43712 "EHLO
+	id S1755195AbaFCLzf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 07:55:35 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43737 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754488AbaFCLmQ (ORCPT
+	with ESMTP id S932866AbaFCLmX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 07:42:16 -0400
+	Tue, 3 Jun 2014 07:42:23 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Daniel Borkmann <dborkman@redhat.com>, Vlad Yasevich <vyasevic@redhat.com>,
+Cc: Toshiaki Makita <makita.toshiaki@lab.ntt.co.jp>,
         "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 096/138] net: sctp: test if association is dead in sctp_wake_up_waiters
-Date: Tue,  3 Jun 2014 12:39:02 +0100
-Message-Id: <1401795584-22664-97-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 100/138] bridge: Fix double free and memory leak around br_allowed_ingress
+Date: Tue,  3 Jun 2014 12:39:06 +0100
+Message-Id: <1401795584-22664-101-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
 References: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
@@ -28,84 +28,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: Toshiaki Makita <makita.toshiaki@lab.ntt.co.jp>
 
-commit 1e1cdf8ac78793e0875465e98a648df64694a8d0 upstream.
+commit eb7076182d1ae4bc4641534134ed707100d76acc upstream.
 
-In function sctp_wake_up_waiters(), we need to involve a test
-if the association is declared dead. If so, we don't have any
-reference to a possible sibling association anymore and need
-to invoke sctp_write_space() instead, and normally walk the
-socket's associations and notify them of new wmem space. The
-reason for special casing is that otherwise, we could run
-into the following issue when a sctp_primitive_SEND() call
-from sctp_sendmsg() fails, and tries to flush an association's
-outq, i.e. in the following way:
+br_allowed_ingress() has two problems.
 
-sctp_association_free()
-`-> list_del(&asoc->asocs)         <-- poisons list pointer
-    asoc->base.dead = true
-    sctp_outq_free(&asoc->outqueue)
-    `-> __sctp_outq_teardown()
-     `-> sctp_chunk_free()
-      `-> consume_skb()
-       `-> sctp_wfree()
-        `-> sctp_wake_up_waiters() <-- dereferences poisoned pointers
-                                       if asoc->ep->sndbuf_policy=0
+1. If br_allowed_ingress() is called by br_handle_frame_finish() and
+vlan_untag() in br_allowed_ingress() fails, skb will be freed by both
+vlan_untag() and br_handle_frame_finish().
 
-Therefore, only walk the list in an 'optimized' way if we find
-that the current association is still active. We could also use
-list_del_init() in addition when we call sctp_association_free(),
-but as Vlad suggests, we want to trap such bugs and thus leave
-it poisoned as is.
+2. If br_allowed_ingress() is called by br_dev_xmit() and
+br_allowed_ingress() fails, the skb will not be freed.
 
-Why is it safe to resolve the issue by testing for asoc->base.dead?
-Parallel calls to sctp_sendmsg() are protected under socket lock,
-that is lock_sock()/release_sock(). Only within that path under
-lock held, we're setting skb/chunk owner via sctp_set_owner_w().
-Eventually, chunks are freed directly by an association still
-under that lock. So when traversing association list on destruction
-time from sctp_wake_up_waiters() via sctp_wfree(), a different
-CPU can't be running sctp_wfree() while another one calls
-sctp_association_free() as both happens under the same lock.
-Therefore, this can also not race with setting/testing against
-asoc->base.dead as we are guaranteed for this to happen in order,
-under lock. Further, Vlad says: the times we check asoc->base.dead
-is when we've cached an association pointer for later processing.
-In between cache and processing, the association may have been
-freed and is simply still around due to reference counts. We check
-asoc->base.dead under a lock, so it should always be safe to check
-and not race against sctp_association_free(). Stress-testing seems
-fine now, too.
+Fix these two problems by freeing the skb in br_allowed_ingress()
+if it fails.
 
-Fixes: cd253f9f357d ("net: sctp: wake up all assocs if sndbuf policy is per socket")
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Cc: Vlad Yasevich <vyasevic@redhat.com>
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
-Acked-by: Vlad Yasevich <vyasevic@redhat.com>
+Signed-off-by: Toshiaki Makita <makita.toshiaki@lab.ntt.co.jp>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/sctp/socket.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ net/bridge/br_input.c | 2 +-
+ net/bridge/br_vlan.c  | 7 ++++---
+ 2 files changed, 5 insertions(+), 4 deletions(-)
 
-diff --git a/net/sctp/socket.c b/net/sctp/socket.c
-index f04550816cbd..085eb1ba8b3e 100644
---- a/net/sctp/socket.c
-+++ b/net/sctp/socket.c
-@@ -6581,6 +6581,12 @@ static void sctp_wake_up_waiters(struct sock *sk,
- 	if (asoc->ep->sndbuf_policy)
- 		return __sctp_write_space(asoc);
+diff --git a/net/bridge/br_input.c b/net/bridge/br_input.c
+index a2fd37ec35f7..c378750602cd 100644
+--- a/net/bridge/br_input.c
++++ b/net/bridge/br_input.c
+@@ -72,7 +72,7 @@ int br_handle_frame_finish(struct sk_buff *skb)
+ 		goto drop;
  
-+	/* If association goes down and is just flushing its
-+	 * outq, then just normally notify others.
-+	 */
-+	if (asoc->base.dead)
-+		return sctp_write_space(sk);
-+
- 	/* Accounting for the sndbuf space is per socket, so we
- 	 * need to wake up others, try to be fair and in case of
- 	 * other associations, let them have a go first instead
+ 	if (!br_allowed_ingress(p->br, nbp_get_vlan_info(p), skb, &vid))
+-		goto drop;
++		goto out;
+ 
+ 	/* insert into forwarding database after filtering to avoid spoofing */
+ 	br = p->br;
+diff --git a/net/bridge/br_vlan.c b/net/bridge/br_vlan.c
+index 9a9ffe7e4019..d8deb8bda736 100644
+--- a/net/bridge/br_vlan.c
++++ b/net/bridge/br_vlan.c
+@@ -202,7 +202,7 @@ bool br_allowed_ingress(struct net_bridge *br, struct net_port_vlans *v,
+ 	 * rejected.
+ 	 */
+ 	if (!v)
+-		return false;
++		goto drop;
+ 
+ 	if (br_vlan_get_tag(skb, vid)) {
+ 		u16 pvid = br_get_pvid(v);
+@@ -212,7 +212,7 @@ bool br_allowed_ingress(struct net_bridge *br, struct net_port_vlans *v,
+ 		 * traffic belongs to.
+ 		 */
+ 		if (pvid == VLAN_N_VID)
+-			return false;
++			goto drop;
+ 
+ 		/* PVID is set on this port.  Any untagged ingress
+ 		 * frame is considered to belong to this vlan.
+@@ -224,7 +224,8 @@ bool br_allowed_ingress(struct net_bridge *br, struct net_port_vlans *v,
+ 	/* Frame had a valid vlan tag.  See if vlan is allowed */
+ 	if (test_bit(*vid, v->vlan_bitmap))
+ 		return true;
+-
++drop:
++	kfree_skb(skb);
+ 	return false;
+ }
+ 
 -- 
 1.9.1
 
