@@ -1,73 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751734AbaFCBHl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 21:07:41 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:40504 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750791AbaFCBHk (ORCPT
+	id S1752362AbaFCBIp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 21:08:45 -0400
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:49495 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751834AbaFCBIm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 21:07:40 -0400
-Message-ID: <538D1FC6.3090500@infradead.org>
-Date: Mon, 02 Jun 2014 18:07:18 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: josh@joshtriplett.org
-CC: Joe Perches <joe@perches.com>, Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, mathieu.desnoyers@efficios.com, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
-        fweisbec@gmail.com, oleg@redhat.com, sbw@mit.edu
-Subject: Re: [PATCH RFC 2/2] rcu: Add Josh Triplett as designated reviewer
-References: <1401728420-3572-1-git-send-email-paulmck@linux.vnet.ibm.com> <1401728420-3572-2-git-send-email-paulmck@linux.vnet.ibm.com> <20140602133512.6d3f584314ecc423e63ffc8e@linux-foundation.org> <1401741411.7323.36.camel@joe-AO725> <538CE0E0.8020002@infradead.org> <20140603000246.GC14801@cloud>
-In-Reply-To: <20140603000246.GC14801@cloud>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 2 Jun 2014 21:08:42 -0400
+X-Original-SENDERIP: 10.177.220.145
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>
+Cc: Minchan Kim <minchan@kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@kernel.org>,
+        Alexander Graf <agraf@suse.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        kvm@vger.kernel.org, kvm-ppc@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: [RFC PATCH 0/3] CMA: generalize CMA reserved area management code
+Date: Tue,  3 Jun 2014 10:11:55 +0900
+Message-Id: <1401757919-30018-1-git-send-email-iamjoonsoo.kim@lge.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/02/2014 05:02 PM, josh@joshtriplett.org wrote:
-> On Mon, Jun 02, 2014 at 01:38:56PM -0700, Randy Dunlap wrote:
->> On 06/02/2014 01:36 PM, Joe Perches wrote:
->>> On Mon, 2014-06-02 at 13:35 -0700, Andrew Morton wrote:
->>>> On Mon,  2 Jun 2014 10:00:20 -0700 "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
->>>>
->>>>> --- a/MAINTAINERS
->>>>> +++ b/MAINTAINERS
->>>>> @@ -7321,6 +7321,7 @@ F:	kernel/rcu/torture.c
->>>>>  
->>>>>  RCUTORTURE TEST FRAMEWORK
->>>>>  M:	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
->>>>> +R:	Josh Triplett <josh@joshtriplett.org>
->>>>>  L:	linux-kernel@vger.kernel.org
->>>>>  S:	Supported
->>>>>  T:	git git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git
->>>>
->>>> I like the general principle - knowing who to poke regarding a kernel
->>>> change is useful.
->>>>
->>>> I don't care much whether it's "M:" or "R:", although "R:" carries more
->>>> meaning and hence is probably better.
->>>>
->>>> But why not "Cc:"?  That's meaningful too and is more copy-n-paste friendly.
->>
->> Josh, what are you assuming that Andrew and I did not?
-> 
-> Not sure what you mean here.  Responding to the text you quoted: I have
-> no particular need to bikeshed the tag name, so if you prefer "Cc" and
-> can convince get_maintainer.pl to handle it, fine by me.
+Currently, there are two users on CMA functionality, one is the DMA
+subsystem and the other is the kvm on powerpc. They have their own code
+to manage CMA reserved area even if they looks really similar.
+>From my guess, it is caused by some needs on bitmap management. Kvm side
+wants to maintain bitmap not for 1 page, but for more size. Eventually it
+use bitmap where one bit represents 64 pages.
 
-Sorry, what I meant is that Andrew and I both mentioned copy-paste and
-you replied earlier (and I have already deleted it) that copy-paste shouldn't
-be necessary for someone who is using get_maintainer.pl.
+When I implement CMA related patches, I should change those two places
+to apply my change and it seem to be painful to me. I want to change
+this situation and reduce future code management overhead through
+this patch.
 
-Do you redirect its output to your patch file and then edit it or does
-get_maintainer.pl work with git-send-email or something else?  if something
-else, what is it, please?
+This change could also help developer who want to use CMA in their
+new feature development, since they can use CMA easily without
+copying & pasting this reserved area management code.
 
-thanks,
+Now, we are in merge window, so this is not for merging. I'd like to
+listen opinion from people who related to this stuff before actually
+trying to merge this patchset. If all agree with this change, I will
+resend it after rc1.
+
+Thanks.
+
+Joonsoo Kim (3):
+  CMA: generalize CMA reserved area management functionality
+  DMA, CMA: use general CMA reserved area management framework
+  PPC, KVM, CMA: use general CMA reserved area management framework
+
+ arch/powerpc/kvm/book3s_hv_builtin.c |   17 +-
+ arch/powerpc/kvm/book3s_hv_cma.c     |  240 -------------------------
+ arch/powerpc/kvm/book3s_hv_cma.h     |   27 ---
+ drivers/base/Kconfig                 |   10 --
+ drivers/base/dma-contiguous.c        |  230 ++----------------------
+ include/linux/cma.h                  |   28 +++
+ include/linux/dma-contiguous.h       |    7 +-
+ mm/Kconfig                           |   11 ++
+ mm/Makefile                          |    1 +
+ mm/cma.c                             |  329 ++++++++++++++++++++++++++++++++++
+ 10 files changed, 396 insertions(+), 504 deletions(-)
+ delete mode 100644 arch/powerpc/kvm/book3s_hv_cma.c
+ delete mode 100644 arch/powerpc/kvm/book3s_hv_cma.h
+ create mode 100644 include/linux/cma.h
+ create mode 100644 mm/cma.c
+
 -- 
-~Randy
+1.7.9.5
+
