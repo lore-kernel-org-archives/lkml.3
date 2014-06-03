@@ -1,563 +1,453 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754546AbaFCNMI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 09:12:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37772 "EHLO mx1.redhat.com"
+	id S1754563AbaFCNMv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 09:12:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52754 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753271AbaFCNIC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 09:08:02 -0400
+	id S1753857AbaFCNMt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 09:12:49 -0400
+Date: Tue, 3 Jun 2014 09:12:03 -0400
 From: Vivek Goyal <vgoyal@redhat.com>
 To: linux-kernel@vger.kernel.org, kexec@lists.infradead.org
 Cc: ebiederm@xmission.com, hpa@zytor.com, mjg59@srcf.ucam.org, greg@kroah.com,
         bp@alien8.de, jkosina@suse.cz, dyoung@redhat.com, chaowang@redhat.com,
-        bhe@redhat.com, akpm@linux-foundation.org,
-        Vivek Goyal <vgoyal@redhat.com>
-Subject: [PATCH 11/13] kexec-bzImage: Support for loading bzImage using 64bit entry
-Date: Tue,  3 Jun 2014 09:07:00 -0400
-Message-Id: <1401800822-27425-12-git-send-email-vgoyal@redhat.com>
-In-Reply-To: <1401800822-27425-1-git-send-email-vgoyal@redhat.com>
+        bhe@redhat.com, akpm@linux-foundation.org
+Subject: Re: [RFC PATCH 00/13][V3] kexec: A new system call to allow in
+ kernel loading
+Message-ID: <20140603131203.GA23395@redhat.com>
 References: <1401800822-27425-1-git-send-email-vgoyal@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1401800822-27425-1-git-send-email-vgoyal@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is loader specific code which can load bzImage and set it up for
-64bit entry. This does not take care of 32bit entry or real mode entry.
+On Tue, Jun 03, 2014 at 09:06:49AM -0400, Vivek Goyal wrote:
+> Hi,
+> 
+> This is V3 of the patchset. Previous versions were posted here.
+> 
+> V1: https://lkml.org/lkml/2013/11/20/540
+> V2: https://lkml.org/lkml/2014/1/27/331
+> 
+> Changes since v2:
+> 
+> - Took care of most of the review comments from V2.
+> - Added support for kexec/kdump on EFI systems.
+> - Dropped support for loading ELF vmlinux.
+> 
+> This patch series is generated on top of 3.15.0-rc8. It also requires a
+> two patch cleanup series which is sitting in -tip tree here.
 
-32bit mode entry can be implemented if somebody needs it.
+I used following kexec-tools patches to test kernel changes.
+
+Thanks
+Vivek
+
+
+kexec-tools: Provide an option to make use of new system call
+
+This patch provides and option --use-kexec2-syscall, to force use of
+new system call for kexec. Default is to continue to use old syscall.
 
 Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
 ---
- arch/x86/include/asm/kexec-bzimage.h |  11 ++
- arch/x86/include/asm/kexec.h         |  30 ++++
- arch/x86/kernel/Makefile             |   3 +-
- arch/x86/kernel/kexec-bzimage.c      | 269 +++++++++++++++++++++++++++++++++++
- arch/x86/kernel/machine_kexec.c      | 136 ++++++++++++++++++
- arch/x86/kernel/machine_kexec_64.c   |   3 +-
- 6 files changed, 450 insertions(+), 2 deletions(-)
- create mode 100644 arch/x86/include/asm/kexec-bzimage.h
- create mode 100644 arch/x86/kernel/kexec-bzimage.c
- create mode 100644 arch/x86/kernel/machine_kexec.c
+ kexec/arch/x86_64/kexec-bzImage64.c |   86 +++++++++++++++++++++++++
+ kexec/kexec-syscall.h               |   31 +++++++++
+ kexec/kexec.c                       |  123 +++++++++++++++++++++++++++++++++++-
+ kexec/kexec.h                       |    9 ++
+ 4 files changed, 246 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/include/asm/kexec-bzimage.h b/arch/x86/include/asm/kexec-bzimage.h
-new file mode 100644
-index 0000000..9e83961
---- /dev/null
-+++ b/arch/x86/include/asm/kexec-bzimage.h
-@@ -0,0 +1,11 @@
-+#ifndef _ASM_BZIMAGE_H
-+#define _ASM_BZIMAGE_H
-+
-+extern int bzImage64_probe(const char *buf, unsigned long len);
-+extern void *bzImage64_load(struct kimage *image, char *kernel,
-+		unsigned long kernel_len, char *initrd,
-+		unsigned long initrd_len, char *cmdline,
-+		unsigned long cmdline_len);
-+extern int bzImage64_cleanup(struct kimage *image);
-+
-+#endif  /* _ASM_BZIMAGE_H */
-diff --git a/arch/x86/include/asm/kexec.h b/arch/x86/include/asm/kexec.h
-index 17483a4..9bd6fec 100644
---- a/arch/x86/include/asm/kexec.h
-+++ b/arch/x86/include/asm/kexec.h
-@@ -23,6 +23,7 @@
+Index: kexec-tools/kexec/kexec.c
+===================================================================
+--- kexec-tools.orig/kexec/kexec.c	2014-06-02 14:34:16.719774316 -0400
++++ kexec-tools/kexec/kexec.c	2014-06-02 14:34:42.009036315 -0400
+@@ -51,6 +51,7 @@
+ unsigned long long mem_min = 0;
+ unsigned long long mem_max = ULONG_MAX;
+ static unsigned long kexec_flags = 0;
++static unsigned long kexec2_flags = 0;
+ int kexec_debug = 0;
  
- #include <asm/page.h>
- #include <asm/ptrace.h>
-+#include <asm/bootparam.h>
+ void dbgprint_mem_range(const char *prefix, struct memory_range *mr, int nr_mr)
+@@ -787,6 +788,19 @@ static int my_load(const char *type, int
+ 	return result;
+ }
  
- /*
-  * KEXEC_SOURCE_MEMORY_LIMIT maximum page get_free_page can return.
-@@ -161,11 +162,40 @@ struct kimage_arch {
- 	pmd_t *pmd;
- 	pte_t *pte;
- };
-+
-+struct kexec_entry64_regs {
-+	uint64_t rax;
-+	uint64_t rbx;
-+	uint64_t rcx;
-+	uint64_t rdx;
-+	uint64_t rsi;
-+	uint64_t rdi;
-+	uint64_t rsp;
-+	uint64_t rbp;
-+	uint64_t r8;
-+	uint64_t r9;
-+	uint64_t r10;
-+	uint64_t r11;
-+	uint64_t r12;
-+	uint64_t r13;
-+	uint64_t r14;
-+	uint64_t r15;
-+	uint64_t rip;
-+};
- #endif
- 
- typedef void crash_vmclear_fn(void);
- extern crash_vmclear_fn __rcu *crash_vmclear_loaded_vmcss;
- 
-+extern int kexec_setup_initrd(struct boot_params *boot_params,
-+		unsigned long initrd_load_addr, unsigned long initrd_len);
-+extern int kexec_setup_cmdline(struct boot_params *boot_params,
-+		unsigned long bootparams_load_addr,
-+		unsigned long cmdline_offset, char *cmdline,
-+		unsigned long cmdline_len);
-+extern int kexec_setup_boot_parameters(struct boot_params *params);
-+
-+
- #endif /* __ASSEMBLY__ */
- 
- #endif /* _ASM_X86_KEXEC_H */
-diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
-index f4d9600..b2d0cfa 100644
---- a/arch/x86/kernel/Makefile
-+++ b/arch/x86/kernel/Makefile
-@@ -67,8 +67,9 @@ obj-$(CONFIG_DYNAMIC_FTRACE)	+= ftrace.o
- obj-$(CONFIG_FUNCTION_GRAPH_TRACER) += ftrace.o
- obj-$(CONFIG_FTRACE_SYSCALLS)	+= ftrace.o
- obj-$(CONFIG_X86_TSC)		+= trace_clock.o
--obj-$(CONFIG_KEXEC)		+= machine_kexec_$(BITS).o
-+obj-$(CONFIG_KEXEC)		+= machine_kexec.o machine_kexec_$(BITS).o
- obj-$(CONFIG_KEXEC)		+= relocate_kernel_$(BITS).o crash.o
-+obj-$(CONFIG_KEXEC)		+= kexec-bzimage.o
- obj-$(CONFIG_CRASH_DUMP)	+= crash_dump_$(BITS).o
- obj-y				+= kprobes/
- obj-$(CONFIG_MODULES)		+= module.o
-diff --git a/arch/x86/kernel/kexec-bzimage.c b/arch/x86/kernel/kexec-bzimage.c
-new file mode 100644
-index 0000000..0750784
---- /dev/null
-+++ b/arch/x86/kernel/kexec-bzimage.c
-@@ -0,0 +1,269 @@
-+/*
-+ * Kexec bzImage loader
-+ *
-+ * Copyright (C) 2014 Red Hat Inc.
-+ * Authors:
-+ *      Vivek Goyal <vgoyal@redhat.com>
-+ *
-+ * This source code is licensed under the GNU General Public License,
-+ * Version 2.  See the file COPYING for more details.
-+ */
-+#include <linux/string.h>
-+#include <linux/printk.h>
-+#include <linux/errno.h>
-+#include <linux/slab.h>
-+#include <linux/kexec.h>
-+#include <linux/kernel.h>
-+#include <linux/mm.h>
-+
-+#include <asm/bootparam.h>
-+#include <asm/setup.h>
-+
-+/*
-+ * Defines lowest physical address for various segments. Not sure where
-+ * exactly these limits came from. Current bzimage64 loader in kexec-tools
-+ * uses these so I am retaining it. It can be changed over time as we gain
-+ * more insight.
-+ */
-+#define MIN_PURGATORY_ADDR	0x3000
-+#define MIN_BOOTPARAM_ADDR	0x3000
-+#define MIN_KERNEL_LOAD_ADDR	0x100000
-+#define MIN_INITRD_LOAD_ADDR	0x1000000
-+
-+#ifdef CONFIG_X86_64
-+
-+/*
-+ * This is a place holder for all boot loader specific data structure which
-+ * gets allocated in one call but gets freed much later during cleanup
-+ * time. Right now there is only one field but it can grow as need be.
-+ */
-+struct bzimage64_data {
-+	/*
-+	 * Temporary buffer to hold bootparams buffer. This should be
-+	 * freed once the bootparam segment has been loaded.
-+	 */
-+	void *bootparams_buf;
-+};
-+
-+int bzImage64_probe(const char *buf, unsigned long len)
++static int kexec2_unload(unsigned long kexec2_flags)
 +{
-+	int ret = -ENOEXEC;
-+	struct setup_header *header;
++	int ret = 0;
 +
-+	/* kernel should be atleast two sector long */
-+	if (len < 2 * 512) {
-+		pr_debug("File is too short to be a bzImage\n");
-+		return ret;
++	ret = kexec_file_load(-1, -1, NULL, 0, kexec2_flags);
++	if (ret != 0) {
++		/* The unload failed, print some debugging information */
++		fprintf(stderr, "kexec_file_load(unload) failed\n: %s\n",
++			strerror(errno));
 +	}
-+
-+	header = (struct setup_header *)(buf + offsetof(struct boot_params,
-+								hdr));
-+	if (memcmp((char *)&header->header, "HdrS", 4) != 0) {
-+		pr_debug("Not a bzImage\n");
-+		return ret;
-+	}
-+
-+	if (header->boot_flag != 0xAA55) {
-+		pr_debug("No x86 boot sector present\n");
-+		return ret;
-+	}
-+
-+	if (header->version < 0x020C) {
-+		pr_debug("Must be at least protocol version 2.12\n");
-+		return ret;
-+	}
-+
-+	if ((header->loadflags & LOADED_HIGH) == 0) {
-+		pr_debug("zImage not a bzImage\n");
-+		return ret;
-+	}
-+
-+	if (!(header->xloadflags & XLF_KERNEL_64)) {
-+		pr_debug("Not a bzImage64. XLF_KERNEL_64 is not set.\n");
-+		return ret;
-+	}
-+
-+	if (!(header->xloadflags & XLF_CAN_BE_LOADED_ABOVE_4G)) {
-+		pr_debug("XLF_CAN_BE_LOADED_ABOVE_4G is not set.\n");
-+		return ret;
-+	}
-+
-+	/* I've got a bzImage */
-+	pr_debug("It's a relocatable bzImage64\n");
-+	ret = 0;
-+
 +	return ret;
 +}
 +
-+void *bzImage64_load(struct kimage *image, char *kernel,
-+		unsigned long kernel_len,
-+		char *initrd, unsigned long initrd_len,
-+		char *cmdline, unsigned long cmdline_len)
-+{
+ static int k_unload (unsigned long kexec_flags)
+ {
+ 	int result;
+@@ -925,6 +939,7 @@ void usage(void)
+ 	       "                      (0 means it's not jump back or\n"
+ 	       "                      preserve context)\n"
+ 	       "                      to original kernel.\n"
++	       " -s --use-kexec2-syscall Use new syscall for kexec operation\n"
+ 	       " -d, --debug           Enable debugging to help spot a failure.\n"
+ 	       "\n"
+ 	       "Supported kernel file types and options: \n");
+@@ -1072,6 +1087,75 @@ char *concat_cmdline(const char *base, c
+ 	return cmdline;
+ }
+ 
++/* New file based kexec system call related code */
++static int kexec2_load(int fileind, int argc, char **argv,
++			unsigned long flags) {
 +
-+	struct setup_header *header;
-+	int setup_sects, kern16_size, ret = 0;
-+	unsigned long setup_header_size, params_cmdline_sz;
-+	struct boot_params *params;
-+	unsigned long bootparam_load_addr, kernel_load_addr, initrd_load_addr;
-+	unsigned long purgatory_load_addr;
-+	unsigned long kernel_bufsz, kernel_memsz, kernel_align;
++	char *kernel;
++	int kernel_fd, i;
++	struct kexec_info info;
++	int ret = 0;
 +	char *kernel_buf;
-+	struct bzimage64_data *ldata;
-+	struct kexec_entry64_regs regs64;
-+	void *stack;
-+	unsigned int setup_hdr_offset = offsetof(struct boot_params, hdr);
++	off_t kernel_size;
 +
-+	header = (struct setup_header *)(kernel + setup_hdr_offset);
-+	setup_sects = header->setup_sects;
-+	if (setup_sects == 0)
-+		setup_sects = 4;
++	memset(&info, 0, sizeof(info));
++	info.segment = NULL;
++	info.nr_segments = 0;
++	info.entry = NULL;
++	info.backup_start = 0;
++	info.kexec_flags = flags;
 +
-+	kern16_size = (setup_sects + 1) * 512;
-+	if (kernel_len < kern16_size) {
-+		pr_debug("bzImage truncated\n");
-+		return ERR_PTR(-ENOEXEC);
++	info.file_mode = 1;
++	info.initrd_fd = -1;
++
++	if (argc - fileind <= 0) {
++		fprintf(stderr, "No kernel specified\n");
++		usage();
++		return -1;
 +	}
 +
-+	if (cmdline_len > header->cmdline_size) {
-+		pr_debug("Kernel command line too long\n");
-+		return ERR_PTR(-EINVAL);
++	kernel = argv[fileind];
++
++	kernel_fd = open(kernel, O_RDONLY);
++	if (kernel_fd == -1) {
++		fprintf(stderr, "Failed to open file %s:%s\n", kernel,
++				strerror(errno));
++		return -1;
 +	}
 +
-+	/* Allocate loader specific data */
-+	ldata = kzalloc(sizeof(struct bzimage64_data), GFP_KERNEL);
-+	if (!ldata)
-+		return ERR_PTR(-ENOMEM);
++	/* slurp in the input kernel */
++	kernel_buf = slurp_decompress_file(kernel, &kernel_size);
 +
++	for (i = 0; i < file_types; i++) {
++		if (file_type[i].probe(kernel_buf, kernel_size) >= 0)
++			break;
++	}
++
++	if (i == file_types) {
++		fprintf(stderr, "Cannot determine the file type " "of %s\n",
++				kernel);
++		return -1;
++	}
++
++	ret = file_type[i].load(argc, argv, kernel_buf, kernel_size, &info);
++	if (ret < 0) {
++		fprintf(stderr, "Cannot load %s\n", kernel);
++		return ret;
++	}
++
++	if (!is_kexec_file_load_implemented()) {
++		fprintf(stderr, "syscall kexec_file_load not available.\n");
++		return -1;
++	}
++
++	ret = kexec_file_load(kernel_fd, info.initrd_fd, info.command_line,
++			info.command_line_len, info.kexec_flags);
++	if (ret != 0)
++		fprintf(stderr, "kexec_file_load failed: %s\n",
++					strerror(errno));
++	return ret;
++}
++
+ 
+ int main(int argc, char *argv[])
+ {
+@@ -1083,6 +1167,7 @@ int main(int argc, char *argv[])
+ 	int do_ifdown = 0;
+ 	int do_unload = 0;
+ 	int do_reuse_initrd = 0;
++	int do_use_kexec2_syscall = 0;
+ 	void *entry = 0;
+ 	char *type = 0;
+ 	char *endptr;
+@@ -1095,6 +1180,23 @@ int main(int argc, char *argv[])
+ 	};
+ 	static const char short_options[] = KEXEC_ALL_OPT_STR;
+ 
 +	/*
-+	 * Load purgatory. For 64bit entry point, purgatory  code can be
-+	 * anywhere.
++	 * First check if --use-kexec2-syscall is set. That changes lot of
++	 * things
 +	 */
-+	ret = kexec_load_purgatory(image, MIN_PURGATORY_ADDR, ULONG_MAX, 1,
-+					&purgatory_load_addr);
-+	if (ret) {
-+		pr_debug("Loading purgatory failed\n");
-+		goto out_free_loader_data;
-+	}
-+
-+	pr_debug("Loaded purgatory at 0x%lx\n", purgatory_load_addr);
-+
-+	/* Load Bootparams and cmdline */
-+	params_cmdline_sz = sizeof(struct boot_params) + cmdline_len;
-+	params = kzalloc(params_cmdline_sz, GFP_KERNEL);
-+	if (!params) {
-+		ret = -ENOMEM;
-+		goto out_free_loader_data;
-+	}
-+
-+	/* Copy setup header onto bootparams. Documentation/x86/boot.txt */
-+	setup_header_size = 0x0202 + kernel[0x0201] - setup_hdr_offset;
-+
-+	/* Is there a limit on setup header size? */
-+	memcpy(&params->hdr, (kernel + setup_hdr_offset), setup_header_size);
-+
-+	ret = kexec_add_buffer(image, (char *)params, params_cmdline_sz,
-+			       params_cmdline_sz, 16, MIN_BOOTPARAM_ADDR,
-+			       ULONG_MAX, 1, &bootparam_load_addr);
-+	if (ret)
-+		goto out_free_params;
-+	pr_debug("Loaded boot_param and command line at 0x%lx bufsz=0x%lx memsz=0x%lx\n",
-+		 bootparam_load_addr, params_cmdline_sz, params_cmdline_sz);
-+
-+	/* Load kernel */
-+	kernel_buf = kernel + kern16_size;
-+	kernel_bufsz =  kernel_len - kern16_size;
-+	kernel_memsz = ALIGN(header->init_size, 4096);
-+	kernel_align = header->kernel_alignment;
-+
-+	ret = kexec_add_buffer(image, kernel_buf,
-+			       kernel_bufsz, kernel_memsz, kernel_align,
-+			       MIN_KERNEL_LOAD_ADDR, ULONG_MAX, 1,
-+			       &kernel_load_addr);
-+	if (ret)
-+		goto out_free_params;
-+
-+	pr_debug("Loaded 64bit kernel at 0x%lx bufsz=0x%lx memsz=0x%lx\n",
-+		 kernel_load_addr, kernel_memsz, kernel_memsz);
-+
-+	/* Load initrd high */
-+	if (initrd) {
-+		ret = kexec_add_buffer(image, initrd, initrd_len, initrd_len,
-+				       PAGE_SIZE, MIN_INITRD_LOAD_ADDR,
-+				       ULONG_MAX, 1, &initrd_load_addr);
-+		if (ret)
-+			goto out_free_params;
-+
-+		pr_debug("Loaded initrd at 0x%lx bufsz=0x%lx memsz=0x%lx\n",
-+				initrd_load_addr, initrd_len, initrd_len);
-+		ret = kexec_setup_initrd(params, initrd_load_addr, initrd_len);
-+		if (ret)
-+			goto out_free_params;
-+	}
-+
-+	ret = kexec_setup_cmdline(params, bootparam_load_addr,
-+				  sizeof(struct boot_params), cmdline,
-+				  cmdline_len);
-+	if (ret)
-+		goto out_free_params;
-+
-+	/* bootloader info. Do we need a separate ID for kexec kernel loader? */
-+	params->hdr.type_of_loader = 0x0D << 4;
-+	params->hdr.loadflags = 0;
-+
-+	/* Setup purgatory regs for entry */
-+	ret = kexec_purgatory_get_set_symbol(image, "entry64_regs", &regs64,
-+					     sizeof(regs64), 1);
-+	if (ret)
-+		goto out_free_params;
-+
-+	regs64.rbx = 0; /* Bootstrap Processor */
-+	regs64.rsi = bootparam_load_addr;
-+	regs64.rip = kernel_load_addr + 0x200;
-+	stack = kexec_purgatory_get_symbol_addr(image, "stack_end");
-+	if (IS_ERR(stack)) {
-+		pr_debug("Could not find address of symbol stack_end\n");
-+		ret = -EINVAL;
-+		goto out_free_params;
-+	}
-+
-+	regs64.rsp = (unsigned long)stack;
-+	ret = kexec_purgatory_get_set_symbol(image, "entry64_regs", &regs64,
-+					     sizeof(regs64), 0);
-+	if (ret)
-+		goto out_free_params;
-+
-+	ret = kexec_setup_boot_parameters(params);
-+	if (ret)
-+		goto out_free_params;
-+
-+	/*
-+	 * Store pointer to params so that it could be freed after loading
-+	 * params segment has been loaded and contents have been copied
-+	 * somewhere else.
-+	 */
-+	ldata->bootparams_buf = params;
-+	return ldata;
-+
-+out_free_params:
-+	kfree(params);
-+out_free_loader_data:
-+	kfree(ldata);
-+	return ERR_PTR(ret);
-+}
-+
-+/* This cleanup function is called after various segments have been loaded */
-+int bzImage64_cleanup(struct kimage *image)
-+{
-+	struct bzimage64_data *ldata = image->image_loader_data;
-+
-+	if (!ldata)
-+		return 0;
-+
-+	kfree(ldata->bootparams_buf);
-+	ldata->bootparams_buf = NULL;
-+
-+	return 0;
-+}
-+
-+#endif /* CONFIG_X86_64 */
-diff --git a/arch/x86/kernel/machine_kexec.c b/arch/x86/kernel/machine_kexec.c
-new file mode 100644
-index 0000000..7de3239
---- /dev/null
-+++ b/arch/x86/kernel/machine_kexec.c
-@@ -0,0 +1,136 @@
-+/*
-+ * handle transition of Linux booting another kernel
-+ *
-+ * Copyright (C) 2014 Red Hat Inc.
-+ * Authors:
-+ *      Vivek Goyal <vgoyal@redhat.com>
-+ *
-+ * This source code is licensed under the GNU General Public License,
-+ * Version 2.  See the file COPYING for more details.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/string.h>
-+#include <asm/bootparam.h>
-+#include <asm/setup.h>
-+
-+/*
-+ * Common code for x86 and x86_64 used for kexec.
-+ *
-+ * For the time being it compiles only for x86_64 as there are no image
-+ * loaders implemented * for x86. This #ifdef can be removed once somebody
-+ * decides to write an image loader on CONFIG_X86_32.
-+ */
-+
-+#ifdef CONFIG_X86_64
-+
-+int kexec_setup_initrd(struct boot_params *params,
-+		unsigned long initrd_load_addr, unsigned long initrd_len)
-+{
-+	params->hdr.ramdisk_image = initrd_load_addr & 0xffffffffUL;
-+	params->hdr.ramdisk_size = initrd_len & 0xffffffffUL;
-+
-+	params->ext_ramdisk_image = initrd_load_addr >> 32;
-+	params->ext_ramdisk_size = initrd_len >> 32;
-+
-+	return 0;
-+}
-+
-+int kexec_setup_cmdline(struct boot_params *params,
-+		unsigned long bootparams_load_addr,
-+		unsigned long cmdline_offset, char *cmdline,
-+		unsigned long cmdline_len)
-+{
-+	char *cmdline_ptr = ((char *)params) + cmdline_offset;
-+	unsigned long cmdline_ptr_phys;
-+	uint32_t cmdline_low_32, cmdline_ext_32;
-+
-+	memcpy(cmdline_ptr, cmdline, cmdline_len);
-+	cmdline_ptr[cmdline_len - 1] = '\0';
-+
-+	cmdline_ptr_phys = bootparams_load_addr + cmdline_offset;
-+	cmdline_low_32 = cmdline_ptr_phys & 0xffffffffUL;
-+	cmdline_ext_32 = cmdline_ptr_phys >> 32;
-+
-+	params->hdr.cmd_line_ptr = cmdline_low_32;
-+	if (cmdline_ext_32)
-+		params->ext_cmd_line_ptr = cmdline_ext_32;
-+
-+	return 0;
-+}
-+
-+static int setup_memory_map_entries(struct boot_params *params)
-+{
-+	unsigned int nr_e820_entries;
-+
-+	/* TODO: What about EFI */
-+	nr_e820_entries = e820_saved.nr_map;
-+	if (nr_e820_entries > E820MAX)
-+		nr_e820_entries = E820MAX;
-+
-+	params->e820_entries = nr_e820_entries;
-+	memcpy(&params->e820_map, &e820_saved.map,
-+			nr_e820_entries * sizeof(struct e820entry));
-+
-+	return 0;
-+}
-+
-+int kexec_setup_boot_parameters(struct boot_params *params)
-+{
-+	unsigned int nr_e820_entries;
-+	unsigned long long mem_k, start, end;
-+	int i;
-+
-+	/* Get subarch from existing bootparams */
-+	params->hdr.hardware_subarch = boot_params.hdr.hardware_subarch;
-+
-+	/* Copying screen_info will do? */
-+	memcpy(&params->screen_info, &boot_params.screen_info,
-+				sizeof(struct screen_info));
-+
-+	/* Fill in memsize later */
-+	params->screen_info.ext_mem_k = 0;
-+	params->alt_mem_k = 0;
-+
-+	/* Default APM info */
-+	memset(&params->apm_bios_info, 0, sizeof(params->apm_bios_info));
-+
-+	/* Default drive info */
-+	memset(&params->hd0_info, 0, sizeof(params->hd0_info));
-+	memset(&params->hd1_info, 0, sizeof(params->hd1_info));
-+
-+	/* Default sysdesc table */
-+	params->sys_desc_table.length = 0;
-+
-+	setup_memory_map_entries(params);
-+	nr_e820_entries = params->e820_entries;
-+
-+	for (i = 0; i < nr_e820_entries; i++) {
-+		if (params->e820_map[i].type != E820_RAM)
-+			continue;
-+		start = params->e820_map[i].addr;
-+		end = params->e820_map[i].addr + params->e820_map[i].size - 1;
-+
-+		if ((start <= 0x100000) && end > 0x100000) {
-+			mem_k = (end >> 10) - (0x100000 >> 10);
-+			params->screen_info.ext_mem_k = mem_k;
-+			params->alt_mem_k = mem_k;
-+			if (mem_k > 0xfc00)
-+				params->screen_info.ext_mem_k = 0xfc00; /* 64M*/
-+			if (mem_k > 0xffffffff)
-+				params->alt_mem_k = 0xffffffff;
++	while ((opt = getopt_long(argc, argv, short_options,
++				  options, 0)) != -1) {
++		switch(opt) {
++		case OPT_USE_KEXEC2_SYSCALL:
++			do_use_kexec2_syscall = 1;
++			break;
 +		}
 +	}
 +
-+	/* Setup EDD info */
-+	memcpy(params->eddbuf, boot_params.eddbuf,
-+				EDDMAXNR * sizeof(struct edd_info));
-+	params->eddbuf_entries = boot_params.eddbuf_entries;
++	/* Reset getopt for the next pass. */
++	opterr = 1;
++	optind = 1;
 +
-+	memcpy(params->edd_mbr_sig_buffer, boot_params.edd_mbr_sig_buffer,
-+			EDD_MBR_SIG_MAX * sizeof(unsigned int));
+ 	while ((opt = getopt_long(argc, argv, short_options,
+ 				  options, 0)) != -1) {
+ 		switch(opt) {
+@@ -1127,6 +1229,8 @@ int main(int argc, char *argv[])
+ 			do_shutdown = 0;
+ 			do_sync = 0;
+ 			do_unload = 1;
++			if (do_use_kexec2_syscall)
++				kexec2_flags |= KEXEC_FILE_UNLOAD;
+ 			break;
+ 		case OPT_EXEC:
+ 			do_load = 0;
+@@ -1169,7 +1273,10 @@ int main(int argc, char *argv[])
+ 			do_exec = 0;
+ 			do_shutdown = 0;
+ 			do_sync = 0;
+-			kexec_flags = KEXEC_ON_CRASH;
++			if (do_use_kexec2_syscall)
++				kexec2_flags |= KEXEC_FILE_ON_CRASH;
++			else
++				kexec_flags = KEXEC_ON_CRASH;
+ 			break;
+ 		case OPT_MEM_MIN:
+ 			mem_min = strtoul(optarg, &endptr, 0);
+@@ -1194,6 +1301,9 @@ int main(int argc, char *argv[])
+ 		case OPT_REUSE_INITRD:
+ 			do_reuse_initrd = 1;
+ 			break;
++		case OPT_USE_KEXEC2_SYSCALL:
++			/* We already parsed it. Nothing to do. */
++			break;
+ 		default:
+ 			break;
+ 		}
+@@ -1238,10 +1348,17 @@ int main(int argc, char *argv[])
+ 	}
+ 
+ 	if (do_unload) {
+-		result = k_unload(kexec_flags);
++		if (do_use_kexec2_syscall)
++			result = kexec2_unload(kexec2_flags);
++		else
++			result = k_unload(kexec_flags);
+ 	}
+ 	if (do_load && (result == 0)) {
+-		result = my_load(type, fileind, argc, argv, kexec_flags, entry);
++		if (do_use_kexec2_syscall)
++			result = kexec2_load(fileind, argc, argv, kexec2_flags);
++		else
++			result = my_load(type, fileind, argc, argv,
++						kexec_flags, entry);
+ 	}
+ 	/* Don't shutdown unless there is something to reboot to! */
+ 	if ((result == 0) && (do_shutdown || do_exec) && !kexec_loaded()) {
+Index: kexec-tools/kexec/kexec.h
+===================================================================
+--- kexec-tools.orig/kexec/kexec.h	2014-06-02 14:34:16.719774316 -0400
++++ kexec-tools/kexec/kexec.h	2014-06-02 14:34:42.010036325 -0400
+@@ -156,6 +156,13 @@ struct kexec_info {
+ 	unsigned long kexec_flags;
+ 	unsigned long backup_src_start;
+ 	unsigned long backup_src_size;
++	/* Set to 1 if we are using kexec2 syscall */
++	unsigned long file_mode :1;
 +
++	/* Filled by kernel image processing code */
++	int initrd_fd;
++	char *command_line;
++	int command_line_len;
+ };
+ 
+ struct arch_map_entry {
+@@ -207,6 +214,7 @@ extern int file_types;
+ #define OPT_UNLOAD		'u'
+ #define OPT_TYPE		't'
+ #define OPT_PANIC		'p'
++#define OPT_USE_KEXEC2_SYSCALL	's'
+ #define OPT_MEM_MIN             256
+ #define OPT_MEM_MAX             257
+ #define OPT_REUSE_INITRD	258
+@@ -230,6 +238,7 @@ extern int file_types;
+ 	{ "mem-min",		1, 0, OPT_MEM_MIN }, \
+ 	{ "mem-max",		1, 0, OPT_MEM_MAX }, \
+ 	{ "reuseinitrd",	0, 0, OPT_REUSE_INITRD }, \
++	{ "use-kexec2-syscall",	0, 0, OPT_USE_KEXEC2_SYSCALL }, \
+ 	{ "debug",		0, 0, OPT_DEBUG }, \
+ 
+ #define KEXEC_OPT_STR "h?vdfxluet:p"
+Index: kexec-tools/kexec/arch/x86_64/kexec-bzImage64.c
+===================================================================
+--- kexec-tools.orig/kexec/arch/x86_64/kexec-bzImage64.c	2014-06-02 14:34:16.719774316 -0400
++++ kexec-tools/kexec/arch/x86_64/kexec-bzImage64.c	2014-06-02 14:34:42.011036336 -0400
+@@ -235,6 +235,89 @@ static int do_bzImage64_load(struct kexe
+ 	return 0;
+ }
+ 
++/* This assumes file is being loaded using file based kexec2 syscall */
++int bzImage64_load_file(int argc, char **argv, struct kexec_info *info)
++{
++	int ret = 0;
++	char *command_line = NULL, *tmp_cmdline = NULL;
++	const char *ramdisk = NULL, *append = NULL;
++	int entry_16bit = 0, entry_32bit = 0;
++	int opt;
++	int command_line_len;
++
++	/* See options.h -- add any more there, too. */
++	static const struct option options[] = {
++		KEXEC_ARCH_OPTIONS
++		{ "command-line",	1, 0, OPT_APPEND },
++		{ "append",		1, 0, OPT_APPEND },
++		{ "reuse-cmdline",	0, 0, OPT_REUSE_CMDLINE },
++		{ "initrd",		1, 0, OPT_RAMDISK },
++		{ "ramdisk",		1, 0, OPT_RAMDISK },
++		{ "real-mode",		0, 0, OPT_REAL_MODE },
++		{ "entry-32bit",	0, 0, OPT_ENTRY_32BIT },
++		{ 0,			0, 0, 0 },
++	};
++	static const char short_options[] = KEXEC_ARCH_OPT_STR "d";
++
++	while ((opt = getopt_long(argc, argv, short_options, options, 0)) != -1) {
++		switch (opt) {
++		default:
++			/* Ignore core options */
++			if (opt < OPT_ARCH_MAX)
++				break;
++		case OPT_APPEND:
++			append = optarg;
++			break;
++		case OPT_REUSE_CMDLINE:
++			tmp_cmdline = get_command_line();
++			break;
++		case OPT_RAMDISK:
++			ramdisk = optarg;
++			break;
++		case OPT_REAL_MODE:
++			entry_16bit = 1;
++			break;
++		case OPT_ENTRY_32BIT:
++			entry_32bit = 1;
++			break;
++		}
++	}
++	command_line = concat_cmdline(tmp_cmdline, append);
++	if (tmp_cmdline)
++		free(tmp_cmdline);
++	command_line_len = 0;
++	if (command_line) {
++		command_line_len = strlen(command_line) + 1;
++	} else {
++		command_line = strdup("\0");
++		command_line_len = 1;
++	}
++
++	if (entry_16bit || entry_32bit) {
++		fprintf(stderr, "Kexec2 syscall does not support 16bit"
++			" or 32bit entry yet\n");
++		ret = -1;
++		goto out;
++	}
++
++	if (ramdisk) {
++		info->initrd_fd = open(ramdisk, O_RDONLY);
++		if (info->initrd_fd == -1) {
++			fprintf(stderr, "Could not open initrd file %s:%s\n",
++					ramdisk, strerror(errno));
++			ret = -1;
++			goto out;
++		}
++	}
++
++	info->command_line = command_line;
++	info->command_line_len = command_line_len;
++	return ret;
++out:
++	free(command_line);
++	return ret;
++}
++
+ int bzImage64_load(int argc, char **argv, const char *buf, off_t len,
+ 	struct kexec_info *info)
+ {
+@@ -247,6 +330,9 @@ int bzImage64_load(int argc, char **argv
+ 	int opt;
+ 	int result;
+ 
++	if (info->file_mode)
++		return bzImage64_load_file(argc, argv, info);
++
+ 	/* See options.h -- add any more there, too. */
+ 	static const struct option options[] = {
+ 		KEXEC_ARCH_OPTIONS
+Index: kexec-tools/kexec/kexec-syscall.h
+===================================================================
+--- kexec-tools.orig/kexec/kexec-syscall.h	2014-06-02 14:34:16.719774316 -0400
++++ kexec-tools/kexec/kexec-syscall.h	2014-06-02 14:34:42.011036336 -0400
+@@ -53,6 +53,19 @@
+ #endif
+ #endif /*ifndef __NR_kexec_load*/
+ 
++#ifndef __NR_kexec_file_load
++
++#ifdef __x86_64__
++#define __NR_kexec_file_load	317
++#endif
++
++#ifndef __NR_kexec_file_load
++/* system call not available for the arch */
++#define __NR_kexec_file_load	0xffffffff	/* system call not available */
++#endif
++
++#endif /*ifndef __NR_kexec_file_load*/
++
+ struct kexec_segment;
+ 
+ static inline long kexec_load(void *entry, unsigned long nr_segments,
+@@ -61,10 +74,28 @@ static inline long kexec_load(void *entr
+ 	return (long) syscall(__NR_kexec_load, entry, nr_segments, segments, flags);
+ }
+ 
++static inline int is_kexec_file_load_implemented(void) {
++	if (__NR_kexec_file_load != 0xffffffff)
++		return 1;
 +	return 0;
 +}
 +
-+#endif /* CONFIG_X86_64 */
-diff --git a/arch/x86/kernel/machine_kexec_64.c b/arch/x86/kernel/machine_kexec_64.c
-index 711c1fb..a66fae3 100644
---- a/arch/x86/kernel/machine_kexec_64.c
-+++ b/arch/x86/kernel/machine_kexec_64.c
-@@ -21,10 +21,11 @@
- #include <asm/tlbflush.h>
- #include <asm/mmu_context.h>
- #include <asm/debugreg.h>
-+#include <asm/kexec-bzimage.h>
++static inline long kexec_file_load(int kernel_fd, int initrd_fd,
++			const char *cmdline_ptr, unsigned long cmdline_len,
++			unsigned long flags)
++{
++	return (long) syscall(__NR_kexec_file_load, kernel_fd, initrd_fd,
++				cmdline_ptr, cmdline_len, flags);
++}
++
+ #define KEXEC_ON_CRASH		0x00000001
+ #define KEXEC_PRESERVE_CONTEXT	0x00000002
+ #define KEXEC_ARCH_MASK		0xffff0000
  
- /* arch dependent functionality related to kexec file based syscall */
- static struct kexec_file_type kexec_file_type[] = {
--	{"", NULL, NULL, NULL},
-+	{"bzImage64", bzImage64_probe, bzImage64_load, bzImage64_cleanup},
- };
- 
- static int nr_file_types = sizeof(kexec_file_type)/sizeof(kexec_file_type[0]);
--- 
-1.9.0
-
++/* Flags for kexec file based system call */
++#define KEXEC_FILE_UNLOAD	0x00000001
++#define KEXEC_FILE_ON_CRASH	0x00000002
++
+ /* These values match the ELF architecture values. 
+  * Unless there is a good reason that should continue to be the case.
+  */
