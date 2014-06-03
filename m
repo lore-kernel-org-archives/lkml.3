@@ -1,67 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933869AbaFCRUo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 13:20:44 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:54814 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932560AbaFCRUn (ORCPT
+	id S934002AbaFCRWG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 13:22:06 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:40993 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932560AbaFCRWE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 13:20:43 -0400
-Date: Tue, 3 Jun 2014 18:20:48 +0100
-From: Morten Rasmussen <morten.rasmussen@arm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Vincent Guittot <vincent.guittot@linaro.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        "efault@gmx.de" <efault@gmx.de>,
-        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
-        Benjamin Segall <bsegall@google.com>, Paul Turner <pjt@google.com>
-Subject: Re: [PATCH v2 08/11] sched: get CPU's activity statistic
-Message-ID: <20140603172048.GF29593@e103034-lin>
-References: <1400860385-14555-1-git-send-email-vincent.guittot@linaro.org>
- <1400860385-14555-9-git-send-email-vincent.guittot@linaro.org>
- <20140528121001.GI19967@e103034-lin>
- <CAKfTPtDxeBfZK1AxCRqEG91pi--Ti1RYFoQPDhvMVnGTCspQ-g@mail.gmail.com>
- <20140528154703.GJ19967@e103034-lin>
- <20140603155007.GZ30445@twins.programming.kicks-ass.net>
+	Tue, 3 Jun 2014 13:22:04 -0400
+Message-ID: <538E0424.7040305@infradead.org>
+Date: Tue, 03 Jun 2014 10:21:40 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140603155007.GZ30445@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Josh Triplett <josh@joshtriplett.org>
+CC: Joe Perches <joe@perches.com>, Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, mathieu.desnoyers@efficios.com, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
+        fweisbec@gmail.com, oleg@redhat.com, sbw@mit.edu
+Subject: Re: [PATCH RFC 2/2] rcu: Add Josh Triplett as designated reviewer
+References: <1401728420-3572-1-git-send-email-paulmck@linux.vnet.ibm.com> <1401728420-3572-2-git-send-email-paulmck@linux.vnet.ibm.com> <20140602133512.6d3f584314ecc423e63ffc8e@linux-foundation.org> <1401741411.7323.36.camel@joe-AO725> <538CE0E0.8020002@infradead.org> <20140603000246.GC14801@cloud> <538D1FC6.3090500@infradead.org> <20140603015133.GA20354@thin>
+In-Reply-To: <20140603015133.GA20354@thin>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 03, 2014 at 04:50:07PM +0100, Peter Zijlstra wrote:
-> On Wed, May 28, 2014 at 04:47:03PM +0100, Morten Rasmussen wrote:
-> > Since we may do periodic load-balance every 10 ms or so, we will perform
-> > a number of load-balances where runnable_avg_sum will mostly be
-> > reflecting the state of the world before a change (new task queued or
-> > moved a task to a different cpu). If you had have two tasks continuously
-> > on one cpu and your other cpu is idle, and you move one of the tasks to
-> > the other cpu, runnable_avg_sum will remain unchanged, 47742, on the
-> > first cpu while it starts from 0 on the other one. 10 ms later it will
-> > have increased a bit, 32 ms later it will be 47742/2, and 345 ms later
-> > it reaches 47742. In the mean time the cpu doesn't appear fully utilized
-> > and we might decide to put more tasks on it because we don't know if
-> > runnable_avg_sum represents a partially utilized cpu (for example a 50%
-> > task) or if it will continue to rise and eventually get to 47742.
+On 06/02/2014 06:51 PM, Josh Triplett wrote:
+> On Mon, Jun 02, 2014 at 06:07:18PM -0700, Randy Dunlap wrote:
+>> On 06/02/2014 05:02 PM, josh@joshtriplett.org wrote:
+>>> On Mon, Jun 02, 2014 at 01:38:56PM -0700, Randy Dunlap wrote:
+>>>> On 06/02/2014 01:36 PM, Joe Perches wrote:
+>>>>> On Mon, 2014-06-02 at 13:35 -0700, Andrew Morton wrote:
+>>>>>> On Mon,  2 Jun 2014 10:00:20 -0700 "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+>>>>>>
+>>>>>>> --- a/MAINTAINERS
+>>>>>>> +++ b/MAINTAINERS
+>>>>>>> @@ -7321,6 +7321,7 @@ F:	kernel/rcu/torture.c
+>>>>>>>  
+>>>>>>>  RCUTORTURE TEST FRAMEWORK
+>>>>>>>  M:	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+>>>>>>> +R:	Josh Triplett <josh@joshtriplett.org>
+>>>>>>>  L:	linux-kernel@vger.kernel.org
+>>>>>>>  S:	Supported
+>>>>>>>  T:	git git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git
+>>>>>>
+>>>>>> I like the general principle - knowing who to poke regarding a kernel
+>>>>>> change is useful.
+>>>>>>
+>>>>>> I don't care much whether it's "M:" or "R:", although "R:" carries more
+>>>>>> meaning and hence is probably better.
+>>>>>>
+>>>>>> But why not "Cc:"?  That's meaningful too and is more copy-n-paste friendly.
+>>>>
+>>>> Josh, what are you assuming that Andrew and I did not?
+>>>
+>>> Not sure what you mean here.  Responding to the text you quoted: I have
+>>> no particular need to bikeshed the tag name, so if you prefer "Cc" and
+>>> can convince get_maintainer.pl to handle it, fine by me.
+>>
+>> Sorry, what I meant is that Andrew and I both mentioned copy-paste and
+>> you replied earlier (and I have already deleted it) that copy-paste shouldn't
+>> be necessary for someone who is using get_maintainer.pl.
+>>
+>> Do you redirect its output to your patch file and then edit it or does
+>> get_maintainer.pl work with git-send-email or something else?  if something
+>> else, what is it, please?
 > 
-> Ah, no, since we track per task, and update the per-cpu ones when we
-> migrate tasks, the per-cpu values should be instantly updated.
+> Oh, I see; that was in text you hadn't quoted, so I didn't know what you
+> were asking. :)
+> 
+> git send-email can invoke 'scripts/get_maintainer.pl --no-rolestats'
+> directly via --to-cmd or -cc-cmd; that works fine as long as you don't
+> have a cover letter.
+> 
+> Depending on the system I'm running on, and whether it's more convenient
+> to invoke git-send-email or to edit patch mails and send them with 'mutt
+> -H', I have a shell pipeline which invokes get_maintainer.pl on an
+> entire patch series, collects all the email addresses it returns, and
+> inserts them all into each mail as CCs.  (That way, when I send a
+> cross-subsystem patch series, I don't get a pile of maintainers confused
+> that they only received a couple of the numbered patches.)  One example:
+> 
+> { echo -n "To: " ; for x in *.patch ; do scripts/get_maintainer.pl --no-rolestats < $x | fgrep -v josh@joshtriplett.org ; done | sort -u | sed 's/$/, /;$s/, $//' | tr -d '\n' ; echo ; } | sed -i '/^From:/r/dev/stdin'
 
-No, not for this per-cpu tracking metric :) For cfs.runnable_load_avg
-you are right, but this patch set is using rq->avg.runnable_avg_sum
-which is different. See my other reply.
+I see.  Thanks for the summary.
 
-> If we were to increase per task storage, we might as well also track
-> running_avg not only runnable_avg.
+> Personally, I'd find it handy if one of the following happened:
+> 
+> - git send-email (and ideally also git format-patch) grew an option to
+>   collect *all* the to-cmd and cc-cmd output from each patch and apply
+>   it to every patch (including the cover letter).
+> 
+> - get_maintainer.pl accepted multiple patchfile names and output the
+>   union of the results.  Ideally, get_maintainer.pl would also have a -i
+>   option to edit the patch files and insert the addresses in the mail
+>   headers.
 
-That could probably make sense. We had that in pjt's first proposal.
+
+-- 
+~Randy
