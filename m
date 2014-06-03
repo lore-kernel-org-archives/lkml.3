@@ -1,112 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965100AbaFCXl0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 19:41:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51871 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932164AbaFCXlZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 19:41:25 -0400
-Date: Tue, 3 Jun 2014 19:41:11 -0400
-From: Dave Jones <davej@redhat.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: Konstantin Khlebnikov <koct9i@gmail.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Sasha Levin <sasha.levin@oracle.com>
-Subject: Re: 3.15-rc8 mm/filemap.c:202 BUG
-Message-ID: <20140603234111.GA21091@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Hugh Dickins <hughd@google.com>,
-	Konstantin Khlebnikov <koct9i@gmail.com>,
-	"linux-mm@kvack.org" <linux-mm@kvack.org>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Sasha Levin <sasha.levin@oracle.com>
-References: <20140603042121.GA27177@redhat.com>
- <CALYGNiNV951SnBKdr0PEkgLbLCxy+YB6HJpafRr6CynO+a1sdQ@mail.gmail.com>
- <alpine.LSU.2.11.1406031524470.7878@eggly.anvils>
+	id S965125AbaFCXrx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 19:47:53 -0400
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:44466 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932164AbaFCXrv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 19:47:51 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <alpine.LSU.2.11.1406031524470.7878@eggly.anvils>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CAHO5Pa3F2MjfTtfNxa8LbnkeeU8=YJ+9tDqxZpw7Gz59E-4AUg@mail.gmail.com>
+References: <1400799936-26499-1-git-send-email-keescook@chromium.org>
+	<CAGXu5jLYPbJKCBvhVxfHEUFeCPJO-OBhRFufUSNy6o1N=LJ6UQ@mail.gmail.com>
+	<CALCETrV0ZEFipU0E64n5q44LiUV4j4Qqvnz0h_QAoddg+e7V3A@mail.gmail.com>
+	<CAGXu5j+YRW_+W8Z9S9O84ep-uUc4wQQRbtSu6_s8o5J2HLPUYg@mail.gmail.com>
+	<CALCETrXB0zp8gwpWuxXs0bgB8sQhe6JLE46BOYw3OrBx7hQYVw@mail.gmail.com>
+	<CAGXu5jKFte0ZvqU8RYcqjWDCoegWeu66gdwX83tiL8vprcvMgQ@mail.gmail.com>
+	<CALCETrWLNFJbwaYKkjBi7XPLBQ2=gEGmW=G==+_9jcrLPW+JdA@mail.gmail.com>
+	<CAHO5Pa3F2MjfTtfNxa8LbnkeeU8=YJ+9tDqxZpw7Gz59E-4AUg@mail.gmail.com>
+Date: Tue, 3 Jun 2014 16:47:50 -0700
+Message-ID: <CAKyRK=i+nDe3jFXRnYeDbrefc4HwC4gn16Biq8GMjXPRfry+oQ@mail.gmail.com>
+Subject: Re: [PATCH v5 0/6] seccomp: add PR_SECCOMP_EXT and SECCOMP_EXT_ACT_TSYNC
+From: Julien Tinnes <jln@google.com>
+To: Michael Kerrisk <mtk.manpages@gmail.com>
+Cc: Andy Lutomirski <luto@amacapital.net>, Kees Cook <keescook@chromium.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        James Morris <james.l.morris@oracle.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        LKML <linux-kernel@vger.kernel.org>, Will Drewry <wad@chromium.org>,
+        Alexei Starovoitov <ast@plumgrid.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 03, 2014 at 04:11:43PM -0700, Hugh Dickins wrote:
- 
- > > -       BUG_ON(page_mapped(page));
- > > +       VM_BUG_ON_PAGE(page_mapped(page), page);
- > > 
- > >         /*
- > >          * Some filesystems seem to re-dirty the page even after
- > 
- > Yes, there's a chance that will tell us more (but I don't have high
- > hopes of it).  I'm still stumped by this issue, just as before.
+On Tue, Jun 3, 2014 at 3:12 AM, Michael Kerrisk <mtk.manpages@gmail.com> wrote:
+> [Kees, thank you for CCing linux-api]
+>
+> On Tue, Jun 3, 2014 at 1:08 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+>> On Mon, Jun 2, 2014 at 4:05 PM, Kees Cook <keescook@chromium.org> wrote:
+>
+>>> I'd like to hear from other folks on this (akpm?). My instinct is to
+>>> continue using prctl since that is already where mediation for seccomp
+>>> happens. I don't see why prctl vs a new syscall makes a difference
+>>> here, frankly.
+>>
+>> Aesthetics?  There's a tendency for people to get annoyed at big
+>> multiplexed APIs, and your patches will be doubly multiplexed.
+>
+> prctl() is already a Franken-interface that provides a mass of
+> different, mostly completely unrelated, functionality. So, I wonder if
+> it would be better not to make the situation worse. Furthermore, the
+> very fact that the existing prctl seccomp API is being extended and
+> multiplexed suggests that other extensions might be desirable further
+> down the line, which also hints that a separate syscall would be a
+> good idea. (Or do we have to wait until the prctl seccomp API is
+> extended one more time, before we realize that a new system call would
+> have been a good idea...)
+>
+>> TBH, I care more about the atomicity thing than about the actual form
+>> of the API.
+>
+> User-space does not necessarily thank you for that perspective, Andy
+> ;-). The atomicity thing is presumably fixable, regardless of the API.
+> On the other hand, APIs are things that kernel developers design once
+> and forget about, and user-space has to live with forever.
 
-running with that applied now.
+Well, maybe the history of it being a prctl() should count for something.
+Most likely, userland will need to test for whether or not these
+features are present in the kernel for years to come. With a syscall,
+it would now require a syscall (unlikely to be in older headers for a
+while, so will require using syscall(3) for a bit) as well as a call
+to prctl() to test for seccomp mode 2 (without thread sync) in the
+fallback path. It'll be a little odd. As the person who will make this
+work in Chromium, I do not feel strongly either way, it's a detail, so
+feel free to disregard this point.
 
- > Sasha (or Dave), any update on whether you see this without THP?
- > and whether you see the remove_migration_pte oops without THP?
+But I'm eagerly waiting for:
+- Not having to test for the presence of threads at run-time (which
+requires a very ugly busy loop with exponential back-off watching for
+/proc/self/tasks/ to drop to 1 directory entry).
+- Being able to engage the sandbox after third-party libraries have
+started threads.
 
-haven't tried yet. I wish I had a better reproducer, because it can
-take up to a day to show up, and if disabling THP makes it go away,
-it's hard to judge if that's the case, or if I haven't been running
-long enough.. Sort of a Schrödinger's BUG_ON.
-
-After I get a trace with the above patch applied, I'll give it a shot
-though, just to see what happens.
-
- > Mind you, I've probably given too little weight to the fact that every
- > stacktrace shown has been a shmem one: originally I assumed that just
- > reflected trinity running its tests on a tmpfs, now I wonder: Dave,
- > Sasha, are you running similar tests on tmpfs and other filesystems,
- > and find this only in the tmpfs case?
-
-In my case, there's a tmpfs mounted, but it's extremely unlikely that
-trinity walked into it. Perhaps I should try that, to see if it happens
-faster.
-
-
- > > I don't like the way in which truncate silently skips page entries
- > > when they are changing under it.
- > > Completely untested patch follows.
- > > 
- > > --- a/mm/shmem.c
- > > +++ b/mm/shmem.c
- > > @@ -495,8 +495,9 @@ static void shmem_undo_range(struct inode *inode,
- > > loff_t lstart, loff_t lend,
- > >                         if (radix_tree_exceptional_entry(page)) {
- > >                                 if (unfalloc)
- > >                                         continue;
- > > -                               nr_swaps_freed += !shmem_free_swap(mapping,
- > > -                                                               index, page);
- > > +                               if (shmem_free_swap(mapping, index, page))
- > > +                                       goto retry;
- > > +                               nr_swaps_freed++;
- > >                                 continue;
- > >                         }
- > > 
- > > @@ -509,10 +510,11 @@ static void shmem_undo_range(struct inode
- > > *inode, loff_t lstart, loff_t lend,
- > >                         }
- > >                         unlock_page(page);
- > >                 }
- > > +               index++;
- > > +retry:
- > >                 pagevec_remove_exceptionals(&pvec);
- > >                 pagevec_release(&pvec);
- > >                 mem_cgroup_uncharge_end();
- > > -               index++;
- > >         }
-
-I'll add this to the queue of things to test, but that queue is now
-about two days deep already :)
-
-	Dave
-
+Julien
