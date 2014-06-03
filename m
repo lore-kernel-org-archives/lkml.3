@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754691AbaFCLml (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 07:42:41 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43785 "EHLO
+	id S1754798AbaFCLvc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 07:51:32 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43806 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754625AbaFCLmf (ORCPT
+	with ESMTP id S1754673AbaFCLml (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 07:42:35 -0400
+	Tue, 3 Jun 2014 07:42:41 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ivan Vecera <ivecera@redhat.com>, "David S. Miller" <davem@davemloft.net>,
+Cc: David Gibson <david@gibson.dropbear.id.au>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 108/138] tg3: update rx_jumbo_pending ring param only when jumbo frames are enabled
-Date: Tue,  3 Jun 2014 12:39:14 +0100
-Message-Id: <1401795584-22664-109-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 111/138] rtnetlink: Warn when interface's information won't fit in our packet
+Date: Tue,  3 Jun 2014 12:39:17 +0100
+Message-Id: <1401795584-22664-112-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
 References: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
@@ -27,47 +28,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ivan Vecera <ivecera@redhat.com>
+From: David Gibson <david@gibson.dropbear.id.au>
 
-commit ba67b510035141bd89b40bf65efa0a79834311ca upstream.
+commit 973462bbde79bb827824c73b59027a0aed5c9ca6 upstream.
 
-The patch fixes a problem with dropped jumbo frames after usage of
-'ethtool -G ... rx'.
+Without IFLA_EXT_MASK specified, the information reported for a single
+interface in response to RTM_GETLINK is expected to fit within a netlink
+packet of NLMSG_GOODSIZE.
 
-Scenario:
-1. ip link set eth0 up
-2. ethtool -G eth0 rx N # <- This zeroes rx-jumbo
-3. ip link set mtu 9000 dev eth0
+If it doesn't, however, things will go badly wrong,  When listing all
+interfaces, netlink_dump() will incorrectly treat -EMSGSIZE on the first
+message in a packet as the end of the listing and omit information for
+that interface and all subsequent ones.  This can cause getifaddrs(3) to
+enter an infinite loop.
 
-The ethtool command set rx_jumbo_pending to zero so any received jumbo
-packets are dropped and you need to use 'ethtool -G eth0 rx-jumbo N'
-to workaround the issue.
-The patch changes the logic so rx_jumbo_pending value is changed only if
-jumbo frames are enabled (MTU > 1500).
+This patch won't fix the problem, but it will WARN_ON() making it easier to
+track down what's going wrong.
 
-Signed-off-by: Ivan Vecera <ivecera@redhat.com>
-Acked-by: Michael Chan <mchan@broadcom.com>
+Signed-off-by: David Gibson <david@gibson.dropbear.id.au>
+Reviewed-by: Jiri Pirko <jpirko@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/ethernet/broadcom/tg3.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ net/core/rtnetlink.c | 17 ++++++++++++-----
+ 1 file changed, 12 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/net/ethernet/broadcom/tg3.c b/drivers/net/ethernet/broadcom/tg3.c
-index 17822c53ff82..35f66f680aed 100644
---- a/drivers/net/ethernet/broadcom/tg3.c
-+++ b/drivers/net/ethernet/broadcom/tg3.c
-@@ -12148,7 +12148,9 @@ static int tg3_set_ringparam(struct net_device *dev, struct ethtool_ringparam *e
- 	if (tg3_flag(tp, MAX_RXPEND_64) &&
- 	    tp->rx_pending > 63)
- 		tp->rx_pending = 63;
--	tp->rx_jumbo_pending = ering->rx_jumbo_pending;
-+
-+	if (tg3_flag(tp, JUMBO_RING_ENABLE))
-+		tp->rx_jumbo_pending = ering->rx_jumbo_pending;
+diff --git a/net/core/rtnetlink.c b/net/core/rtnetlink.c
+index 6f73a1094abb..415e33ecd503 100644
+--- a/net/core/rtnetlink.c
++++ b/net/core/rtnetlink.c
+@@ -1048,6 +1048,7 @@ static int rtnl_dump_ifinfo(struct sk_buff *skb, struct netlink_callback *cb)
+ 	struct hlist_head *head;
+ 	struct nlattr *tb[IFLA_MAX+1];
+ 	u32 ext_filter_mask = 0;
++	int err;
  
- 	for (i = 0; i < tp->irq_max; i++)
- 		tp->napi[i].tx_pending = ering->tx_pending;
+ 	s_h = cb->args[0];
+ 	s_idx = cb->args[1];
+@@ -1068,11 +1069,17 @@ static int rtnl_dump_ifinfo(struct sk_buff *skb, struct netlink_callback *cb)
+ 		hlist_for_each_entry_rcu(dev, head, index_hlist) {
+ 			if (idx < s_idx)
+ 				goto cont;
+-			if (rtnl_fill_ifinfo(skb, dev, RTM_NEWLINK,
+-					     NETLINK_CB(cb->skb).portid,
+-					     cb->nlh->nlmsg_seq, 0,
+-					     NLM_F_MULTI,
+-					     ext_filter_mask) <= 0)
++			err = rtnl_fill_ifinfo(skb, dev, RTM_NEWLINK,
++					       NETLINK_CB(cb->skb).portid,
++					       cb->nlh->nlmsg_seq, 0,
++					       NLM_F_MULTI,
++					       ext_filter_mask);
++			/* If we ran out of room on the first message,
++			 * we're in trouble
++			 */
++			WARN_ON((err == -EMSGSIZE) && (skb->len == 0));
++
++			if (err <= 0)
+ 				goto out;
+ 
+ 			nl_dump_check_consistent(cb, nlmsg_hdr(skb));
 -- 
 1.9.1
 
