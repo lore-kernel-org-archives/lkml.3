@@ -1,87 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752080AbaFCJBl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 05:01:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2982 "EHLO mx1.redhat.com"
+	id S1752008AbaFCJEK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 05:04:10 -0400
+Received: from mga14.intel.com ([192.55.52.115]:3786 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750930AbaFCJBi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 05:01:38 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <CA+icZUV5P=fVwe_MJJHixwBOBoj7HoKSFuySLdS6AU5L++S=4g@mail.gmail.com>
-References: <CA+icZUV5P=fVwe_MJJHixwBOBoj7HoKSFuySLdS6AU5L++S=4g@mail.gmail.com> <1400838223-30844-1-git-send-email-miklos@szeredi.hu> <28592.1401382081@warthog.procyon.org.uk> <11446.1401420931@jrobl> <7184.1401439773@warthog.procyon.org.uk>
-To: sedat.dilek@gmail.com
-Cc: dhowells@redhat.com, "J. R. Okajima" <hooanon05g@gmail.com>,
-        Miklos Szeredi <miklos@szeredi.hu>, Al Viro <viro@zeniv.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>, apw@canonical.com,
-        Felix Fietkau <nbd@openwrt.org>, neilb@suse.de, jordipujolp@gmail.com,
-        ezk@fsl.cs.sunysb.edu, mszeredi@suse.cz
-Subject: Re: Unionmount and overlayfs testsuite
-Date: Tue, 03 Jun 2014 10:00:56 +0100
-Message-ID: <15839.1401786056@warthog.procyon.org.uk>
+	id S1751189AbaFCJEG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 05:04:06 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="asc'?scan'208";a="350737363"
+Date: Tue, 3 Jun 2014 04:36:07 -0400
+From: "Chen, Gong" <gong.chen@linux.intel.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: "Luck, Tony" <tony.luck@intel.com>, Borislav Petkov <bp@alien8.de>,
+        "m.chehab@samsung.com" <m.chehab@samsung.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/7 v6] trace, RAS: Add eMCA trace event interface
+Message-ID: <20140603083606.GA15476@gchen.bj.intel.com>
+Mail-Followup-To: Steven Rostedt <rostedt@goodmis.org>,
+	"Luck, Tony" <tony.luck@intel.com>, Borislav Petkov <bp@alien8.de>,
+	"m.chehab@samsung.com" <m.chehab@samsung.com>,
+	"linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+	LKML <linux-kernel@vger.kernel.org>
+References: <1401247938-22125-2-git-send-email-gong.chen@linux.intel.com>
+ <20140528112832.5f83c66b@gandalf.local.home>
+ <20140528163452.GF17196@pd.tnic>
+ <20140528125625.6f6dcf7f@gandalf.local.home>
+ <20140530092232.GA13495@gchen.bj.intel.com>
+ <20140530100716.GE28131@pd.tnic>
+ <3908561D78D1C84285E8C5FCA982C28F32823D2B@ORSMSX114.amr.corp.intel.com>
+ <20140530210759.267a854e@gandalf.local.home>
+ <3908561D78D1C84285E8C5FCA982C28F3282545B@ORSMSX114.amr.corp.intel.com>
+ <20140602125748.7093ced8@gandalf.local.home>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="tKW2IUtsqtDRztdT"
+Content-Disposition: inline
+In-Reply-To: <20140602125748.7093ced8@gandalf.local.home>
+X-PGP-Key-ID: A43922C7
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sedat Dilek <sedat.dilek@gmail.com> wrote:
 
-> [ Re-Tested with 3.15.0-rc8-1-iniza-lockdep ]
-> 
-> Running the impermissible test on OverlayFS with TERMSLASH=1 is
-> successful here
+--tKW2IUtsqtDRztdT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-That's not very surprising.  utimensat() doesn't even get out of pathwalk if
-the filename has a terminal slash and the fs_op macro correctly overrides the
-expected error code in this case.
+On Mon, Jun 02, 2014 at 12:57:48PM -0400, Steven Rostedt wrote:
+> Also matters how big you expect these events to be. If you get a
+> "christmas tree" set of flags, how big will that event grow with all
+> the descriptions attached?
+>=20
+> The max event size after all headers is 4056 bytes. If you go over
+> that, the event is ignored.
+>=20
+Hi, Steven
 
-> (TERMSLASH=0 still fails):
+Normally, the length of one eMCA trace record is between 200 and 256 bytes.
+Once CMCI storm happens, before it is turned into poll mode, there are
+about ~15 CMCI events are recorded, because I don't use rate limit for
+trace so they should be recorded so seriously, some records will be lost.
+But they are repeated and similar records so maybe the *lost* is not a=20
+big issue.
 
-It's possible that the test is wrong.  utimes is icky, at least on unionmount,
-because the copy up has to be done before we call notify_change() - but
-notify_change() can still reject the operation (in which case we didn't want
-to copy up at all).  The problem is that notify_change() has i_mutex.
+Return to how to print trace record. To avoid buffer waste, I need to
+print data when TP_printk called, in the meanwhile, the print content
+is an array of [name, value], but we don't know how many items are
+valid. Here is the question: I can't create a dynamic printk format
+like "%s %d, %s %d, ..." in TP_printk. So the only way to me is
+printking them all, even some of them are invalid, which means an 12
+group "%s %d", or somthing like "%.*s" to make output format graceful.
+This is what we want?
 
-Ideally, we'd do copy-up inside notify_change() - but we can't do that in
-unionmount.  I imagine you can do that in overlayfs.
+--tKW2IUtsqtDRztdT
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-> # LC_ALL=C TEST_OVERLAYFS=1 TERMSLASH=1 ./run.sh
-> 
-> [ NOTE-1: I still see the reported call-trace which you Dave see as a
-> problem in OverlayFS. ]
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-There should be zero lockdep complaints.  It may be a real locking problem or
-it may just be a missing nesting annotation.
+iQIcBAEBAgAGBQJTjYj2AAoJEI01n1+kOSLHnLwP/3swsyjyzcxMpyAza5JH1P+w
+FXEpHeSoeGN6Kf0g/oaZ+CCBUUZ70V7zWrvtGbvJE0X3zBct/GslGEu8mKr0DTN7
+lXK0N+b8npWQx4E0joi+XtcnwfZ6XZrxvYpFLP9qgSk5Lo6tyFYgaPXejEh/pORy
+7/1Auq3IpE03FkTZFCnszoWIEcDS1zATldT07gJ9sKbh4DK3Mv//wI6nYcoqIyge
+00U2GTdjrpr8DDssPgXjEF7br9NjL23/SamAAIvy4NYcb115M85br2Mvym/8Iaxk
+JP2GtANZxGymEP0jJXRtdk5Vz9RAhjdexseDDDk/aidiJfWRZKle2+4Vubic9vSa
+Hg/TQzc0X9hzUKsaPrqDxrbPED8Dd5Vy+HymHwrdHbGi+yuB2gBQ7alpuhOcmDzE
+YpQQrKVZPtjUhwHMe8zXeGkOcBKpJQj1qPJWNFeKcOPhif5QFZPWuMRi3IHHVQLI
+BemtakXC8qaS09Lo0G4FvlXGCVPHabsmnGtVPCpv386ntjRDuzs4hqMj7sDTA9Gw
+MKEUWgoIhoWM8jgsjc0xnAJmG0/seFZazqcGAtLdgD3sTyhcN6f2orjJU4Q/2lsh
++4BOjWvg+bCcwxNxqflvigTYwDtdp91vLPesgRJq0jIxHP2kJ7iS7gEjD+0W3CL/
+uNMET6lqzntt6G7OT+MG
+=p1/f
+-----END PGP SIGNATURE-----
 
-One problem I had with unionmounts that I don't think applies to overlayfs is
-that i_{,mdir_}mutex on inodes on the upper (union) layer and the lower layers
-may come from the same superblock and thus have the same lockdep class keys
-(which are per struct file_system_type).  This means that lockdep thinks
-they're conflicting - when actually they are not.  What I did was to give
-i_{,dir_}mutex in the upper layer different lockdep classes.
-
-The reason this works for unionmounts is that there unionmounting is done by
-the VFS and the upper/glue layer is an ordinary superblock (tmpfs, ext2, ...)
-and I get to meddle with the lockdep classes of the upper superblock during
-mount before any inodes exist.
-
-I don't think this would work for overlayfs for two reasons: (1) the top layer
-is an overlayfs superblock and would have different lockdep classes anyway and
-(2) you cannot change the lockdep class once inodes exist in the filesystem -
-and overlayfs requires both the upper and lower layers to exist prior to the
-glue layer being mounted.
-
-My suspicion is that overlayfs is doing stuff to the lower layer whilst
-holding a lock on the upper layer or vice versa.
-
-> [ NOTE-2: The call-trace I have seen once (TERMSLASH=0). ]
-
-Do you know for which operation?
-
-David
+--tKW2IUtsqtDRztdT--
