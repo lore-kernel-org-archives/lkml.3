@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933058AbaFCLnS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 07:43:18 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43947 "EHLO
+	id S933138AbaFCLog (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 07:44:36 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43959 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933028AbaFCLnO (ORCPT
+	with ESMTP id S933038AbaFCLnR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 07:43:14 -0400
+	Tue, 3 Jun 2014 07:43:17 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
         "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 134/138] net: qmi_wwan: add Olivetti Olicard 500
-Date: Tue,  3 Jun 2014 12:39:40 +0100
-Message-Id: <1401795584-22664-135-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 136/138] net: qmi_wwan: add a number of CMOTech devices
+Date: Tue,  3 Jun 2014 12:39:42 +0100
+Message-Id: <1401795584-22664-137-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
 References: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
@@ -33,35 +33,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
 
-commit efc0b25c3add97717ece57bf5319792ca98f348e upstream.
+commit 41be7d90993b1502d445bfc59e58348c258ce66a upstream.
 
-Device interface layout:
-0: ff/ff/ff - serial
-1: ff/ff/ff - serial AT+PPP
-2: 08/06/50 - storage
-3: ff/ff/ff - serial
-4: ff/ff/ff - QMI/wwan
+A number of older CMOTech modems are based on Qualcomm
+chips and exporting a QMI/wwan function.
 
-Reported-by: Julio Araujo <julio.araujo@wllctel.com.br>
+Reported-by: Lars Melin <larsm17@gmail.com>
 Signed-off-by: Bjørn Mork <bjorn@mork.no>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/usb/qmi_wwan.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/usb/qmi_wwan.c | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
 
 diff --git a/drivers/net/usb/qmi_wwan.c b/drivers/net/usb/qmi_wwan.c
-index 8a2fbdbec403..39aa428206d5 100644
+index 283ad0c312f0..bf25998fcb7a 100644
 --- a/drivers/net/usb/qmi_wwan.c
 +++ b/drivers/net/usb/qmi_wwan.c
-@@ -723,6 +723,7 @@ static const struct usb_device_id products[] = {
- 	{QMI_FIXED_INTF(0x1bc7, 0x1200, 5)},	/* Telit LE920 */
- 	{QMI_FIXED_INTF(0x1bc7, 0x1201, 2)},	/* Telit LE920 */
- 	{QMI_FIXED_INTF(0x0b3c, 0xc005, 6)},    /* Olivetti Olicard 200 */
-+	{QMI_FIXED_INTF(0x0b3c, 0xc00b, 4)},	/* Olivetti Olicard 500 */
- 	{QMI_FIXED_INTF(0x1e2d, 0x0060, 4)},	/* Cinterion PLxx */
- 	{QMI_FIXED_INTF(0x1e2d, 0x0053, 4)},	/* Cinterion PHxx,PXxx */
- 
+@@ -649,6 +649,22 @@ static const struct usb_device_id products[] = {
+ 	{QMI_FIXED_INTF(0x05c6, 0x920d, 5)},
+ 	{QMI_FIXED_INTF(0x12d1, 0x140c, 1)},	/* Huawei E173 */
+ 	{QMI_FIXED_INTF(0x12d1, 0x14ac, 1)},	/* Huawei E1820 */
++	{QMI_FIXED_INTF(0x16d8, 0x6003, 0)},	/* CMOTech 6003 */
++	{QMI_FIXED_INTF(0x16d8, 0x6007, 0)},	/* CMOTech CHE-628S */
++	{QMI_FIXED_INTF(0x16d8, 0x6008, 0)},	/* CMOTech CMU-301 */
++	{QMI_FIXED_INTF(0x16d8, 0x6280, 0)},	/* CMOTech CHU-628 */
++	{QMI_FIXED_INTF(0x16d8, 0x7001, 0)},	/* CMOTech CHU-720S */
++	{QMI_FIXED_INTF(0x16d8, 0x7002, 0)},	/* CMOTech 7002 */
++	{QMI_FIXED_INTF(0x16d8, 0x7003, 4)},	/* CMOTech CHU-629K */
++	{QMI_FIXED_INTF(0x16d8, 0x7004, 3)},	/* CMOTech 7004 */
++	{QMI_FIXED_INTF(0x16d8, 0x7006, 5)},	/* CMOTech CGU-629 */
++	{QMI_FIXED_INTF(0x16d8, 0x700a, 4)},	/* CMOTech CHU-629S */
++	{QMI_FIXED_INTF(0x16d8, 0x7211, 0)},	/* CMOTech CHU-720I */
++	{QMI_FIXED_INTF(0x16d8, 0x7212, 0)},	/* CMOTech 7212 */
++	{QMI_FIXED_INTF(0x16d8, 0x7213, 0)},	/* CMOTech 7213 */
++	{QMI_FIXED_INTF(0x16d8, 0x7251, 1)},	/* CMOTech 7251 */
++	{QMI_FIXED_INTF(0x16d8, 0x7252, 1)},	/* CMOTech 7252 */
++	{QMI_FIXED_INTF(0x16d8, 0x7253, 1)},	/* CMOTech 7253 */
+ 	{QMI_FIXED_INTF(0x19d2, 0x0002, 1)},
+ 	{QMI_FIXED_INTF(0x19d2, 0x0012, 1)},
+ 	{QMI_FIXED_INTF(0x19d2, 0x0017, 3)},
 -- 
 1.9.1
 
