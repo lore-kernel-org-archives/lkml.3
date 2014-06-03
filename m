@@ -1,61 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932389AbaFCHdS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 03:33:18 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:43986 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932316AbaFCHdO (ORCPT
+	id S932462AbaFCHe6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 03:34:58 -0400
+Received: from mail-qg0-f53.google.com ([209.85.192.53]:32937 "EHLO
+	mail-qg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932228AbaFCHe5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 03:33:14 -0400
-From: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
-	<antoine.tenart@free-electrons.com>
-To: sebastian.hesselbarth@gmail.com
-Cc: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        alexandre.belloni@free-electrons.com,
-        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] ARM: dts: berlin: enable i2c0 and i2c2
-Date: Tue,  3 Jun 2014 09:33:10 +0200
-Message-Id: <1401780790-17830-3-git-send-email-antoine.tenart@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1401780790-17830-1-git-send-email-antoine.tenart@free-electrons.com>
-References: <1401780790-17830-1-git-send-email-antoine.tenart@free-electrons.com>
+	Tue, 3 Jun 2014 03:34:57 -0400
 MIME-Version: 1.0
+In-Reply-To: <20140602143720.GB19809@trinity.fluff.org>
+References: <CAPDyKFpkKNx17ha=WWAp4-6w3k4pRYSHUhOWHv1G+1_wAEBceA@mail.gmail.com>
+	<20140602143720.GB19809@trinity.fluff.org>
+Date: Tue, 3 Jun 2014 09:34:56 +0200
+Message-ID: <CAPDyKFqM7uLzimAagBMNJ0j-KERgmE8UbpeEFswG5Z8oUruw2A@mail.gmail.com>
+Subject: Re: [GIT PULL] MMC for v.3.16
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Ben Dooks <ben@trinity.fluff.org>
+Cc: Linus <torvalds@linux-foundation.org>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Chris Ball <chris@printf.net>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable the I2C0 and I2C2 for the Marvell Berlin BG2G DMP. I2C1 and I2C3
-are also working on this board, but no devices seemed to be there.
+On 2 June 2014 16:37, Ben Dooks <ben@trinity.fluff.org> wrote:
+> On Mon, Jun 02, 2014 at 02:03:27PM +0200, Ulf Hansson wrote:
+>> Hi Linus,
+>>
+>> This is the first PR I send to you as I am co-maintaining the MMC
+>> subsystem with Chris Ball. You will receive a separate PR for MMC from
+>> him as well, as usual.
+>>
+>> These patches are mainly updates for the mmci driver and have been
+>> tested in linux-next.
+>>
+>> Some ARM SoC related patches are also included and those have been
+>> acked from the corresponding maintainers to go through my mmc tree.
+>>
+>> Some more details in the signed tag.
+>>
+>> Kind regards
+>> Ulf Hansson
+>
+> Hi, is it too late to get the sh-mmcif driver cleanups in? I posted
+> them some time ago but they do not seem to have been applied.
 
-Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
----
- arch/arm/boot/dts/berlin2q-marvell-dmp.dts | 8 ++++++++
- 1 file changed, 8 insertions(+)
+Hi Ben,
 
-diff --git a/arch/arm/boot/dts/berlin2q-marvell-dmp.dts b/arch/arm/boot/dts/berlin2q-marvell-dmp.dts
-index 995150f93795..a357ce02a64e 100644
---- a/arch/arm/boot/dts/berlin2q-marvell-dmp.dts
-+++ b/arch/arm/boot/dts/berlin2q-marvell-dmp.dts
-@@ -34,6 +34,14 @@
- 	status = "okay";
- };
- 
-+&i2c0 {
-+	status = "okay";
-+};
-+
-+&i2c2 {
-+	status = "okay";
-+};
-+
- &uart0 {
- 	status = "okay";
- };
--- 
-1.9.1
+Sorry! I have missed them in the earlier PRs I have sent to Chris.
 
+I suppose Chris still can take some trivial patches for 3.16, since he
+haven't send his PR yet.
+
+Kind regards
+Uffe
+
+>
+>
+> --
+> Ben Dooks, ben@fluff.org, http://www.fluff.org/ben/
+>
+> Large Hadron Colada: A large Pina Colada that makes the universe disappear.
+>
