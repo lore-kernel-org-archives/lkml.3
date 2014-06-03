@@ -1,43 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933684AbaFCSlu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 14:41:50 -0400
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:36043 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932645AbaFCSlr (ORCPT
+	id S933550AbaFCSoc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 14:44:32 -0400
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:60070 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753924AbaFCSob (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 14:41:47 -0400
-Message-ID: <538E16E7.9000101@gmail.com>
-Date: Tue, 03 Jun 2014 12:41:43 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Tue, 3 Jun 2014 14:44:31 -0400
 MIME-Version: 1.0
-To: Jiri Olsa <jolsa@redhat.com>
-CC: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 11/13] perf tests: Allow reuse of test_file function
-References: <1401743927-398-1-git-send-email-jolsa@kernel.org> <1401743927-398-12-git-send-email-jolsa@kernel.org> <538DD2E3.2090407@gmail.com> <20140603153505.GJ2864@krava.brq.redhat.com>
-In-Reply-To: <20140603153505.GJ2864@krava.brq.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140603182850.GJ16155@laptop.programming.kicks-ass.net>
+References: <20140522130931.GV13658@twins.programming.kicks-ass.net>
+ <CALCETrVBVOjs0EVqEz3qKtSHQg1agJzAyG4Ohqueky-zPF7uKA@mail.gmail.com>
+ <20140529064827.GI19143@laptop.programming.kicks-ass.net> <CALCETrWnG7fSuinDv+GAHsnTLJ-6xn+_1LB2XdLGVXcC=TQURA@mail.gmail.com>
+ <20140603104347.GT11096@twins.programming.kicks-ass.net> <20140603140223.GA13658@twins.programming.kicks-ass.net>
+ <CALCETrW3cr_RLnMeMtutM5H+3cJSerUxXuEmiT9miDOEmkpANw@mail.gmail.com>
+ <20140603161950.GB30445@twins.programming.kicks-ass.net> <CALCETrWOrYTK01ev34mP+5iyeBWw14u+3n4fg0+O5Zp9oPQ+3g@mail.gmail.com>
+ <20140603170018.GD30445@twins.programming.kicks-ass.net> <20140603182850.GJ16155@laptop.programming.kicks-ass.net>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 3 Jun 2014 11:44:10 -0700
+Message-ID: <CALCETrVGGSv51NxMXaD-=9ukkYLTT7DrLTscgA0pa0+PkUYw3Q@mail.gmail.com>
+Subject: Re: [RFC][PATCH 0/8] sched,idle: need resched polling rework
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        nicolas.pitre@linaro.org, Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/3/14, 9:35 AM, Jiri Olsa wrote:
-
->>> +	static char buf_templ[sizeof(TEMPL)];
+On Tue, Jun 3, 2014 at 11:28 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Tue, Jun 03, 2014 at 07:00:18PM +0200, Peter Zijlstra wrote:
+>> On Tue, Jun 03, 2014 at 09:52:22AM -0700, Andy Lutomirski wrote:
+>> > > So you could cheat and set it in pick_next_task_idle() and clear in
+>> > > put_prev_task_idle(), that way the entire idle loop, when running has it
+>> > > set.
+>> > >
+>> >
+>> > Isn't that a little late for sched_ttwu_pending?  I guess it could be
+>> > okay, but I'm hesitant to muck around with the scheduler innards that
+>> > much.  I don't see anything that'll break, though.
 >>
->> why static? and ...
+>> Yeah, only later did I see you clear much earlier, which makes sense.
 >
-> I need to use it outside the test_file function
+> Could we clear it from set_nr_and_not_polling()/set_nr_if_polling()?
+> That's the only two functions that'll kick a cpu out of its polling
+> loop, and we're already writing to the word anyhow.
 
-Oh, it's a return variable.
+I'd be nervous about this.  I think it could break if
+cpuidle_idle_call decides not to idle for any reason, and there is
+plenty of complicated code in there.
 
-David
+I'm currently working on some patches that might make this clearer.
+Give me a bit.
 
+--Andy
+
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
