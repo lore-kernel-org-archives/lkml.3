@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932749AbaFCLlo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 07:41:44 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43555 "EHLO
+	id S932980AbaFCMCA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 08:02:00 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43596 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932678AbaFCLlg (ORCPT
+	with ESMTP id S932678AbaFCLlp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 07:41:36 -0400
+	Tue, 3 Jun 2014 07:41:45 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Josef Gajdusek <atx@atx.name>, Guenter Roeck <linux@roeck-us.net>,
+Cc: Olof Johansson <olof@lixom.net>, Doug Anderson <dianders@chromium.org>,
+        Wolfram Sang <wsa@the-dreams.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 069/138] hwmon: (emc1403) fix inverted store_hyst()
-Date: Tue,  3 Jun 2014 12:38:35 +0100
-Message-Id: <1401795584-22664-70-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 076/138] i2c: s3c2410: resume race fix
+Date: Tue,  3 Jun 2014 12:38:42 +0100
+Message-Id: <1401795584-22664-77-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
 References: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
@@ -27,36 +28,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josef Gajdusek <atx@atx.name>
+From: Olof Johansson <olof@lixom.net>
 
-commit 17c048fc4bd95efea208a1920f169547d8588f1f upstream.
+commit ce78cc071f5f541480e381cc0241d37590041a9d upstream.
 
-Attempts to set the hysteresis value to a temperature below the target
-limit fails with "write error: Numerical result out of range" due to
-an inverted comparison.
+Don't unmark the device as suspended until after it's been re-setup.
 
-Signed-off-by: Josef Gajdusek <atx@atx.name>
-Reviewed-by: Jean Delvare <jdelvare@suse.de>
-[Guenter Roeck: Updated headline and description]
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+The main race would be w.r.t. an i2c driver that gets resumed at the same
+time (asyncronously), that is allowed to do a transfer since suspended
+is set to 0 before reinit, but really should have seen the -EIO return
+instead.
+
+Signed-off-by: Olof Johansson <olof@lixom.net>
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+Acked-by: Kukjin Kim <kgene.kim@samsung.com>
+Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/hwmon/emc1403.c | 2 +-
+ drivers/i2c/busses/i2c-s3c2410.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/hwmon/emc1403.c b/drivers/hwmon/emc1403.c
-index 142e1cb8dea7..62fba71ef3c5 100644
---- a/drivers/hwmon/emc1403.c
-+++ b/drivers/hwmon/emc1403.c
-@@ -162,7 +162,7 @@ static ssize_t store_hyst(struct device *dev,
- 	if (retval < 0)
- 		goto fail;
+diff --git a/drivers/i2c/busses/i2c-s3c2410.c b/drivers/i2c/busses/i2c-s3c2410.c
+index cab1c91b75a3..a72aad9561b0 100644
+--- a/drivers/i2c/busses/i2c-s3c2410.c
++++ b/drivers/i2c/busses/i2c-s3c2410.c
+@@ -1204,10 +1204,10 @@ static int s3c24xx_i2c_resume(struct device *dev)
+ 	struct platform_device *pdev = to_platform_device(dev);
+ 	struct s3c24xx_i2c *i2c = platform_get_drvdata(pdev);
  
--	hyst = val - retval * 1000;
-+	hyst = retval * 1000 - val;
- 	hyst = DIV_ROUND_CLOSEST(hyst, 1000);
- 	if (hyst < 0 || hyst > 255) {
- 		retval = -ERANGE;
+-	i2c->suspended = 0;
+ 	clk_prepare_enable(i2c->clk);
+ 	s3c24xx_i2c_init(i2c);
+ 	clk_disable_unprepare(i2c->clk);
++	i2c->suspended = 0;
+ 
+ 	return 0;
+ }
 -- 
 1.9.1
 
