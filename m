@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755061AbaFCSXc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 14:23:32 -0400
-Received: from mga11.intel.com ([192.55.52.93]:15343 "EHLO mga11.intel.com"
+	id S1755163AbaFCSXw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 14:23:52 -0400
+Received: from mga01.intel.com ([192.55.52.88]:56227 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755012AbaFCSX3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 14:23:29 -0400
+	id S1755073AbaFCSXi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 14:23:38 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.98,967,1392192000"; 
-   d="scan'208";a="549200878"
-Date: Tue, 3 Jun 2014 11:23:19 -0700
+   d="scan'208";a="541915368"
+Date: Tue, 3 Jun 2014 11:23:33 -0700
 From: Tadeusz Struk <tadeusz.struk@intel.com>
 To: herbert@gondor.apana.org.au
 Cc: tadeusz.struk@intel.com, john.griffin@intel.com, bruce.w.allan@intel.com,
         karen.xiang@intel.com, pingchaox.yang@intel.com, bo.cui@intel.com,
-        davem@davemloft.net, qat-linux@intel.com, linux-kernel@vger.kernel.org,
-        dwmw2@infradead.org, ben@decadent.org.uk
-Subject: [RFC][PATCH 1/4] crypto: Intel QAT driver driver framework
-Message-ID: <20140603182319.GA18675@gitlad.jf.intel.com>
+        davem@davemloft.net, qat-linux@intel.com, linux-crypto@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dwmw2@infradead.org, ben@decadent.org.uk
+Subject: [RFC][PATCH 2/4] crypto: QAT FW Loader
+Message-ID: <20140603182333.GA18701@gitlad.jf.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -26,87 +26,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a common infractructure that will be used by all QAT devices.
+This patch adds a firmware loader module that loads microcode and manages acceleration engines.
 
-Signed-off-by: Tadeusz Struk <tadeusz.struk@intel.com>
-Acked-by: John Griffin <john.griffin@intel.com>
+Signed-off-by: Karen Xiang <karen.xiang@intel.com>
+Signed-off-by: Pingchaox Yang <pingchaox.yang@intel.com>
+Acked-by: Bo Cui <bo.cui@intel.com>
 Reviewed-by: Bruce W. Allan <bruce.w.allan@intel.com>
 ---
- drivers/crypto/qat/qat_common/Makefile             |   11 +
- drivers/crypto/qat/qat_common/adf_accel_devices.h  |  204 ++++
- drivers/crypto/qat/qat_common/adf_accel_engine.c   |  168 ++++
- drivers/crypto/qat/qat_common/adf_aer.c            |  258 +++++
- drivers/crypto/qat/qat_common/adf_cfg.c            |  359 +++++++
- drivers/crypto/qat/qat_common/adf_cfg.h            |   87 ++
- drivers/crypto/qat/qat_common/adf_cfg_common.h     |  100 ++
- drivers/crypto/qat/qat_common/adf_cfg_strings.h    |   83 ++
- drivers/crypto/qat/qat_common/adf_cfg_user.h       |   94 ++
- drivers/crypto/qat/qat_common/adf_common_drv.h     |  192 ++++
- drivers/crypto/qat/qat_common/adf_ctl_drv.c        |  490 ++++++++++
- drivers/crypto/qat/qat_common/adf_dev_mgr.c        |  215 ++++
- drivers/crypto/qat/qat_common/adf_init.c           |  388 ++++++++
- drivers/crypto/qat/qat_common/adf_transport.c      |  565 +++++++++++
- drivers/crypto/qat/qat_common/adf_transport.h      |   63 ++
- .../qat/qat_common/adf_transport_access_macros.h   |  160 +++
- .../crypto/qat/qat_common/adf_transport_debug.c    |  301 ++++++
- .../crypto/qat/qat_common/adf_transport_internal.h |  115 +++
- drivers/crypto/qat/qat_common/icp_qat_fw.h         |  316 ++++++
- .../crypto/qat/qat_common/icp_qat_fw_init_admin.h  |  131 +++
- drivers/crypto/qat/qat_common/icp_qat_fw_la.h      |  403 ++++++++
- drivers/crypto/qat/qat_common/icp_qat_hw.h         |  305 ++++++
- drivers/crypto/qat/qat_common/qat_algs.c           | 1033 ++++++++++++++++++++
- drivers/crypto/qat/qat_common/qat_crypto.c         |  284 ++++++
- drivers/crypto/qat/qat_common/qat_crypto.h         |   83 ++
- 25 files changed, 6408 insertions(+)
- create mode 100644 drivers/crypto/qat/qat_common/Makefile
- create mode 100644 drivers/crypto/qat/qat_common/adf_accel_devices.h
- create mode 100644 drivers/crypto/qat/qat_common/adf_accel_engine.c
- create mode 100644 drivers/crypto/qat/qat_common/adf_aer.c
- create mode 100644 drivers/crypto/qat/qat_common/adf_cfg.c
- create mode 100644 drivers/crypto/qat/qat_common/adf_cfg.h
- create mode 100644 drivers/crypto/qat/qat_common/adf_cfg_common.h
- create mode 100644 drivers/crypto/qat/qat_common/adf_cfg_strings.h
- create mode 100644 drivers/crypto/qat/qat_common/adf_cfg_user.h
- create mode 100644 drivers/crypto/qat/qat_common/adf_common_drv.h
- create mode 100644 drivers/crypto/qat/qat_common/adf_ctl_drv.c
- create mode 100644 drivers/crypto/qat/qat_common/adf_dev_mgr.c
- create mode 100644 drivers/crypto/qat/qat_common/adf_init.c
- create mode 100644 drivers/crypto/qat/qat_common/adf_transport.c
- create mode 100644 drivers/crypto/qat/qat_common/adf_transport.h
- create mode 100644 drivers/crypto/qat/qat_common/adf_transport_access_macros.h
- create mode 100644 drivers/crypto/qat/qat_common/adf_transport_debug.c
- create mode 100644 drivers/crypto/qat/qat_common/adf_transport_internal.h
- create mode 100644 drivers/crypto/qat/qat_common/icp_qat_fw.h
- create mode 100644 drivers/crypto/qat/qat_common/icp_qat_fw_init_admin.h
- create mode 100644 drivers/crypto/qat/qat_common/icp_qat_fw_la.h
- create mode 100644 drivers/crypto/qat/qat_common/icp_qat_hw.h
- create mode 100644 drivers/crypto/qat/qat_common/qat_algs.c
- create mode 100644 drivers/crypto/qat/qat_common/qat_crypto.c
- create mode 100644 drivers/crypto/qat/qat_common/qat_crypto.h
+ drivers/crypto/qat/qat_common/Makefile             |    4 +-
+ .../qat/qat_common/icp_qat_fw_loader_handle.h      |   78 ++
+ drivers/crypto/qat/qat_common/icp_qat_hal.h        |  125 ++
+ drivers/crypto/qat/qat_common/icp_qat_uclo.h       |  377 ++++++
+ drivers/crypto/qat/qat_common/qat_hal.c            | 1402 ++++++++++++++++++++
+ drivers/crypto/qat/qat_common/qat_uclo.c           | 1191 +++++++++++++++++
+ 6 files changed, 3176 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/crypto/qat/qat_common/icp_qat_fw_loader_handle.h
+ create mode 100644 drivers/crypto/qat/qat_common/icp_qat_hal.h
+ create mode 100644 drivers/crypto/qat/qat_common/icp_qat_uclo.h
+ create mode 100644 drivers/crypto/qat/qat_common/qat_hal.c
+ create mode 100644 drivers/crypto/qat/qat_common/qat_uclo.c
 
 diff --git a/drivers/crypto/qat/qat_common/Makefile b/drivers/crypto/qat/qat_common/Makefile
-new file mode 100644
-index 0000000..a0c21ea
---- /dev/null
+index a0c21ea..5f71a52 100644
+--- a/drivers/crypto/qat/qat_common/Makefile
 +++ b/drivers/crypto/qat/qat_common/Makefile
-@@ -0,0 +1,11 @@
-+obj-$(CONFIG_CRYPTO_DEV_QAT) += intel_qat.o
-+intel_qat-objs := adf_cfg.o \
-+	adf_ctl_drv.o \
-+	adf_dev_mgr.o \
-+	adf_init.o \
-+	adf_accel_engine.o \
-+	adf_aer.o \
-+	adf_transport.o \
-+	adf_transport_debug.o \
-+	qat_crypto.o \
-+	qat_algs.o
-diff --git a/drivers/crypto/qat/qat_common/adf_accel_devices.h b/drivers/crypto/qat/qat_common/adf_accel_devices.h
+@@ -8,4 +8,6 @@ intel_qat-objs := adf_cfg.o \
+ 	adf_transport.o \
+ 	adf_transport_debug.o \
+ 	qat_crypto.o \
+-	qat_algs.o
++	qat_algs.o \
++	qat_uclo.o \
++	qat_hal.o
+diff --git a/drivers/crypto/qat/qat_common/icp_qat_fw_loader_handle.h b/drivers/crypto/qat/qat_common/icp_qat_fw_loader_handle.h
 new file mode 100644
-index 0000000..f3206d9
+index 0000000..5e1aa40
 --- /dev/null
-+++ b/drivers/crypto/qat/qat_common/adf_accel_devices.h
-@@ -0,0 +1,204 @@
++++ b/drivers/crypto/qat/qat_common/icp_qat_fw_loader_handle.h
+@@ -0,0 +1,78 @@
 +/*
 +  This file is provided under a dual BSD/GPLv2 license.  When using or
 +  redistributing this file, you may do so under either license.
@@ -153,1559 +110,1966 @@ index 0000000..f3206d9
 +  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 +  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 +*/
-+#ifndef ADF_ACCEL_DEVICES_H_
-+#define ADF_ACCEL_DEVICES_H_
-+#include <linux/module.h>
-+#include <linux/atomic.h>
-+#include <linux/list.h>
-+#include <linux/proc_fs.h>
-+#include "adf_cfg_common.h"
-+
-+#define PCI_VENDOR_ID_INTEL 0x8086
-+#define ADF_DH895XCC_DEVICE_NAME "dh895xcc"
-+#define ADF_DH895XCC_PCI_DEVICE_ID 0x435
-+#define ADF_DH895XCC_PMISC_BAR 1
-+#define ADF_DH895XCC_ETR_BAR 2
-+#define ADF_PCI_MAX_BARS 3
-+#define ADF_DEVICE_NAME_LENGTH 32
-+#define ADF_ETR_MAX_RINGS_PER_BANK 16
-+#define ADF_MAX_MSIX_VECTOR_NAME 16
-+#define ADF_DEVICE_NAME_PREFIX "qat_"
-+
-+enum adf_accel_capabilities {
-+	ADF_ACCEL_CAPABILITIES_NULL = 0,
-+	ADF_ACCEL_CAPABILITIES_CRYPTO_SYMMETRIC = 1,
-+	ADF_ACCEL_CAPABILITIES_CRYPTO_ASYMMETRIC = 2,
-+	ADF_ACCEL_CAPABILITIES_CIPHER = 4,
-+	ADF_ACCEL_CAPABILITIES_AUTHENTICATION = 8,
-+	ADF_ACCEL_CAPABILITIES_COMPRESSION = 32,
-+	ADF_ACCEL_CAPABILITIES_LZS_COMPRESSION = 64,
-+	ADF_ACCEL_CAPABILITIES_RANDOM_NUMBER = 128
-+};
-+
-+struct adf_bar {
-+	resource_size_t base_addr;
-+	void __iomem *virt_addr;
-+	resource_size_t size;
-+} __packed;
-+
-+struct adf_accel_msix {
-+	struct msix_entry *entries;
-+	char **names;
-+} __packed;
-+
-+struct adf_accel_pci {
-+	struct pci_dev *pci_dev;
-+	struct adf_accel_msix msix_entries;
-+	struct adf_bar pci_bars[ADF_PCI_MAX_BARS];
-+	uint8_t revid;
-+	uint8_t sku;
-+} __packed;
-+
-+enum dev_state {
-+	DEV_DOWN = 0,
-+	DEV_UP
-+};
-+
-+enum dev_sku_info {
-+	DEV_SKU_1 = 0,
-+	DEV_SKU_2,
-+	DEV_SKU_3,
-+	DEV_SKU_4,
-+	DEV_SKU_UNKNOWN,
-+};
-+
-+static inline const char *get_sku_info(enum dev_sku_info info)
-+{
-+	switch (info) {
-+	case DEV_SKU_1:
-+		return "SKU1";
-+	case DEV_SKU_2:
-+		return "SKU2";
-+	case DEV_SKU_3:
-+		return "SKU3";
-+	case DEV_SKU_4:
-+		return "SKU4";
-+	case DEV_SKU_UNKNOWN:
-+	default:
-+		break;
-+	}
-+	return "Unknown SKU";
-+}
-+
-+struct adf_hw_device_class {
-+	const char *name;
-+	const enum adf_device_type type;
-+	uint32_t instances;
-+} __packed;
-+
-+struct adf_cfg_device_data;
-+struct adf_accel_dev;
-+struct adf_etr_data;
-+struct adf_etr_ring_data;
-+
-+struct adf_hw_device_data {
-+	struct adf_hw_device_class *dev_class;
-+	uint32_t (*get_accel_mask)(uint32_t fuse);
-+	uint32_t (*get_ae_mask)(uint32_t fuse);
-+	uint32_t (*get_misc_bar_id)(struct adf_hw_device_data *self);
-+	uint32_t (*get_etr_bar_id)(struct adf_hw_device_data *self);
-+	uint32_t (*get_num_aes)(struct adf_hw_device_data *self);
-+	uint32_t (*get_num_accels)(struct adf_hw_device_data *self);
-+	enum dev_sku_info (*get_sku)(struct adf_hw_device_data *self);
-+	void (*hw_arb_ring_enable)(struct adf_etr_ring_data *ring);
-+	void (*hw_arb_ring_disable)(struct adf_etr_ring_data *ring);
-+	int (*alloc_irq)(struct adf_accel_dev *accel_dev);
-+	void (*free_irq)(struct adf_accel_dev *accel_dev);
-+	void (*enable_error_correction)(struct adf_accel_dev *accel_dev);
-+	const char *fw_name;
-+	uint32_t pci_dev_id;
-+	uint32_t fuses;
-+	uint32_t accel_capabilities_mask;
-+	uint16_t accel_mask;
-+	uint16_t ae_mask;
-+	uint16_t tx_rings_mask;
-+	uint8_t tx_rx_gap;
-+	uint8_t instance_id;
-+	uint8_t num_banks;
-+	uint8_t num_accel;
-+	uint8_t num_logical_accel;
-+	uint8_t num_engines;
-+} __packed;
-+
-+/* CSR write macro */
-+#define ADF_CSR_WR(csr_base, csr_offset, val) \
-+	__raw_writel(val, csr_base + csr_offset)
-+
-+/* CSR read macro */
-+#define ADF_CSR_RD(csr_base, csr_offset) __raw_readl(csr_base + csr_offset)
-+
-+#define GET_DEV(accel_dev) ((accel_dev)->accel_pci_dev.pci_dev->dev)
-+#define GET_BARS(accel_dev) ((accel_dev)->accel_pci_dev.pci_bars)
-+#define GET_HW_DATA(accel_dev) (accel_dev->hw_device)
-+#define GET_MAX_BANKS(accel_dev) (GET_HW_DATA(accel_dev)->num_banks)
-+#define GET_MAX_ACCELENGINES(accel_dev) (GET_HW_DATA(accel_dev)->num_engines)
-+#define accel_to_pci_dev(accel_ptr) accel_ptr->accel_pci_dev.pci_dev
-+
-+struct adf_admin_comms;
-+struct icp_qat_fw_loader_handle;
-+struct adf_fw_loader_data {
-+	struct icp_qat_fw_loader_handle *fw_loader;
-+	const struct firmware *uof_fw;
-+};
-+
-+struct adf_accel_dev {
-+	struct adf_etr_data *transport;
-+	struct adf_hw_device_data *hw_device;
-+	struct adf_cfg_device_data *cfg;
-+	struct adf_fw_loader_data *fw_loader;
-+	struct adf_admin_comms *admin;
-+	struct list_head crypto_list;
-+	unsigned long status;
-+	atomic_t ref_count;
-+	struct dentry *debugfs_dir;
-+	struct list_head list;
-+	struct module *owner;
-+	uint8_t accel_id;
-+	uint8_t numa_node;
-+	struct adf_accel_pci accel_pci_dev;
-+} __packed;
-+#endif
-diff --git a/drivers/crypto/qat/qat_common/adf_accel_engine.c b/drivers/crypto/qat/qat_common/adf_accel_engine.c
-new file mode 100644
-index 0000000..25801fe
---- /dev/null
-+++ b/drivers/crypto/qat/qat_common/adf_accel_engine.c
-@@ -0,0 +1,168 @@
-+/*
-+  This file is provided under a dual BSD/GPLv2 license.  When using or
-+  redistributing this file, you may do so under either license.
-+
-+  GPL LICENSE SUMMARY
-+  Copyright(c) 2014 Intel Corporation.
-+  This program is free software; you can redistribute it and/or modify
-+  it under the terms of version 2 of the GNU General Public License as
-+  published by the Free Software Foundation.
-+
-+  This program is distributed in the hope that it will be useful, but
-+  WITHOUT ANY WARRANTY; without even the implied warranty of
-+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+  General Public License for more details.
-+
-+  Contact Information:
-+  qat-linux@intel.com
-+
-+  BSD LICENSE
-+  Copyright(c) 2014 Intel Corporation.
-+  Redistribution and use in source and binary forms, with or without
-+  modification, are permitted provided that the following conditions
-+  are met:
-+
-+    * Redistributions of source code must retain the above copyright
-+      notice, this list of conditions and the following disclaimer.
-+    * Redistributions in binary form must reproduce the above copyright
-+      notice, this list of conditions and the following disclaimer in
-+      the documentation and/or other materials provided with the
-+      distribution.
-+    * Neither the name of Intel Corporation nor the names of its
-+      contributors may be used to endorse or promote products derived
-+      from this software without specific prior written permission.
-+
-+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-+  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-+  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-+  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-+  OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-+  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-+  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-+  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-+  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-+  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-+  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-+*/
-+#include <linux/firmware.h>
-+#include <linux/pci.h>
-+#include "adf_cfg.h"
-+#include "adf_accel_devices.h"
-+#include "adf_common_drv.h"
++#ifndef __ICP_QAT_FW_LOADER_HANDLE_H__
++#define __ICP_QAT_FW_LOADER_HANDLE_H__
 +#include "icp_qat_uclo.h"
 +
-+int adf_ae_fw_load(struct adf_accel_dev *accel_dev)
++struct icp_qat_fw_loader_ae_data {
++	unsigned int state;
++	unsigned int ustore_size;
++	unsigned int free_addr;
++	unsigned int free_size;
++	unsigned int live_ctx_mask;
++};
++
++struct icp_qat_fw_loader_hal_handle {
++	struct icp_qat_fw_loader_ae_data aes[ICP_QAT_UCLO_MAX_AE];
++	unsigned int ae_mask;
++	unsigned int slice_mask;
++	unsigned int revision_id;
++	unsigned int ae_max_num;
++	unsigned int upc_mask;
++	unsigned int max_ustore;
++};
++
++struct icp_qat_fw_loader_handle {
++	struct icp_qat_fw_loader_hal_handle *hal_handle;
++	void *obj_handle;
++	void __iomem *hal_sram_addr_v;
++	void __iomem *hal_cap_g_ctl_csr_addr_v;
++	void __iomem *hal_cap_ae_xfer_csr_addr_v;
++	void __iomem *hal_cap_ae_local_csr_addr_v;
++	void __iomem *hal_ep_csr_addr_v;
++};
++#endif
+diff --git a/drivers/crypto/qat/qat_common/icp_qat_hal.h b/drivers/crypto/qat/qat_common/icp_qat_hal.h
+new file mode 100644
+index 0000000..85b6d24
+--- /dev/null
++++ b/drivers/crypto/qat/qat_common/icp_qat_hal.h
+@@ -0,0 +1,125 @@
++/*
++  This file is provided under a dual BSD/GPLv2 license.  When using or
++  redistributing this file, you may do so under either license.
++
++  GPL LICENSE SUMMARY
++  Copyright(c) 2014 Intel Corporation.
++  This program is free software; you can redistribute it and/or modify
++  it under the terms of version 2 of the GNU General Public License as
++  published by the Free Software Foundation.
++
++  This program is distributed in the hope that it will be useful, but
++  WITHOUT ANY WARRANTY; without even the implied warranty of
++  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++  General Public License for more details.
++
++  Contact Information:
++  qat-linux@intel.com
++
++  BSD LICENSE
++  Copyright(c) 2014 Intel Corporation.
++  Redistribution and use in source and binary forms, with or without
++  modification, are permitted provided that the following conditions
++  are met:
++
++    * Redistributions of source code must retain the above copyright
++      notice, this list of conditions and the following disclaimer.
++    * Redistributions in binary form must reproduce the above copyright
++      notice, this list of conditions and the following disclaimer in
++      the documentation and/or other materials provided with the
++      distribution.
++    * Neither the name of Intel Corporation nor the names of its
++      contributors may be used to endorse or promote products derived
++      from this software without specific prior written permission.
++
++  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
++  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
++  OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
++  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
++  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
++  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
++  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
++  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++*/
++#ifndef __ICP_QAT_HAL_H
++#define __ICP_QAT_HAL_H
++#include "icp_qat_fw_loader_handle.h"
++
++enum hal_global_csr {
++	MISC_CONTROL = 0x04,
++	ICP_RESET = 0x0c,
++	ICP_GLOBAL_CLK_ENABLE = 0x50
++};
++
++enum hal_ae_csr {
++	USTORE_ADDRESS = 0x000,
++	USTORE_DATA_LOWER = 0x004,
++	USTORE_DATA_UPPER = 0x008,
++	ALU_OUT = 0x010,
++	CTX_ARB_CNTL = 0x014,
++	CTX_ENABLES = 0x018,
++	CC_ENABLE = 0x01c,
++	CSR_CTX_POINTER = 0x020,
++	CTX_STS_INDIRECT = 0x040,
++	ACTIVE_CTX_STATUS = 0x044,
++	CTX_SIG_EVENTS_INDIRECT = 0x048,
++	CTX_SIG_EVENTS_ACTIVE = 0x04c,
++	CTX_WAKEUP_EVENTS_INDIRECT = 0x050,
++	LM_ADDR_0_INDIRECT = 0x060,
++	LM_ADDR_1_INDIRECT = 0x068,
++	INDIRECT_LM_ADDR_0_BYTE_INDEX = 0x0e0,
++	INDIRECT_LM_ADDR_1_BYTE_INDEX = 0x0e8,
++	FUTURE_COUNT_SIGNAL_INDIRECT = 0x078,
++	TIMESTAMP_LOW = 0x0c0,
++	TIMESTAMP_HIGH = 0x0c4,
++	PROFILE_COUNT = 0x144,
++	SIGNATURE_ENABLE = 0x150,
++	AE_MISC_CONTROL = 0x160,
++	LOCAL_CSR_STATUS = 0x180,
++};
++
++#define UA_ECS                      (0x1 << 31)
++#define ACS_ABO_BITPOS              31
++#define ACS_ACNO                    0x7
++#define CE_ENABLE_BITPOS            0x8
++#define CE_LMADDR_0_GLOBAL_BITPOS   16
++#define CE_LMADDR_1_GLOBAL_BITPOS   17
++#define CE_NN_MODE_BITPOS           20
++#define CE_REG_PAR_ERR_BITPOS       25
++#define CE_BREAKPOINT_BITPOS        27
++#define CE_CNTL_STORE_PARITY_ERROR_BITPOS 29
++#define CE_INUSE_CONTEXTS_BITPOS    31
++#define CE_NN_MODE                  (0x1 << CE_NN_MODE_BITPOS)
++#define CE_INUSE_CONTEXTS           (0x1 << CE_INUSE_CONTEXTS_BITPOS)
++#define XCWE_VOLUNTARY              (0x1)
++#define LCS_STATUS          (0x1)
++#define MMC_SHARE_CS_BITPOS         2
++#define GLOBAL_CSR                0xA00
++
++#define SET_CAP_CSR(handle, csr, val) \
++	ADF_CSR_WR(handle->hal_cap_g_ctl_csr_addr_v, csr, val)
++#define GET_CAP_CSR(handle, csr) \
++	ADF_CSR_RD(handle->hal_cap_g_ctl_csr_addr_v, csr)
++#define SET_GLB_CSR(handle, csr, val) SET_CAP_CSR(handle, csr + GLOBAL_CSR, val)
++#define GET_GLB_CSR(handle, csr) GET_CAP_CSR(handle, GLOBAL_CSR + csr)
++#define AE_CSR(handle, ae) \
++	(handle->hal_cap_ae_local_csr_addr_v + \
++	((ae & handle->hal_handle->ae_mask) << 12))
++#define AE_CSR_ADDR(handle, ae, csr) (AE_CSR(handle, ae) + (0x3ff & csr))
++#define SET_AE_CSR(handle, ae, csr, val) \
++	ADF_CSR_WR(AE_CSR_ADDR(handle, ae, csr), 0, val)
++#define GET_AE_CSR(handle, ae, csr) ADF_CSR_RD(AE_CSR_ADDR(handle, ae, csr), 0)
++#define AE_XFER(handle, ae) \
++	(handle->hal_cap_ae_xfer_csr_addr_v + \
++	((ae & handle->hal_handle->ae_mask) << 12))
++#define AE_XFER_ADDR(handle, ae, reg) (AE_XFER(handle, ae) + \
++	((reg & 0xff) << 2))
++#define SET_AE_XFER(handle, ae, reg, val) \
++	ADF_CSR_WR(AE_XFER_ADDR(handle, ae, reg), 0, val)
++#define SRAM_WRITE(handle, addr, val) \
++	ADF_CSR_WR(handle->hal_sram_addr_v, addr, val)
++#define SRAM_READ(handle, addr) ADF_CSR_RD(handle->hal_sram_addr_v, addr)
++#endif
+diff --git a/drivers/crypto/qat/qat_common/icp_qat_uclo.h b/drivers/crypto/qat/qat_common/icp_qat_uclo.h
+new file mode 100644
+index 0000000..120fbce
+--- /dev/null
++++ b/drivers/crypto/qat/qat_common/icp_qat_uclo.h
+@@ -0,0 +1,377 @@
++/*
++  This file is provided under a dual BSD/GPLv2 license.  When using or
++  redistributing this file, you may do so under either license.
++
++  GPL LICENSE SUMMARY
++  Copyright(c) 2014 Intel Corporation.
++  This program is free software; you can redistribute it and/or modify
++  it under the terms of version 2 of the GNU General Public License as
++  published by the Free Software Foundation.
++
++  This program is distributed in the hope that it will be useful, but
++  WITHOUT ANY WARRANTY; without even the implied warranty of
++  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++  General Public License for more details.
++
++  Contact Information:
++  qat-linux@intel.com
++
++  BSD LICENSE
++  Copyright(c) 2014 Intel Corporation.
++  Redistribution and use in source and binary forms, with or without
++  modification, are permitted provided that the following conditions
++  are met:
++
++    * Redistributions of source code must retain the above copyright
++      notice, this list of conditions and the following disclaimer.
++    * Redistributions in binary form must reproduce the above copyright
++      notice, this list of conditions and the following disclaimer in
++      the documentation and/or other materials provided with the
++      distribution.
++    * Neither the name of Intel Corporation nor the names of its
++      contributors may be used to endorse or promote products derived
++      from this software without specific prior written permission.
++
++  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
++  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
++  OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
++  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
++  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
++  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
++  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
++  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++*/
++#ifndef __ICP_QAT_UCLO_H__
++#define __ICP_QAT_UCLO_H__
++
++#define ICP_QAT_AC_C_CPU_TYPE     0x00400000
++#define ICP_QAT_UCLO_MAX_AE       12
++#define ICP_QAT_UCLO_MAX_CTX      8
++#define ICP_QAT_UCLO_MAX_UIMAGE   (ICP_QAT_UCLO_MAX_AE * ICP_QAT_UCLO_MAX_CTX)
++#define ICP_QAT_UCLO_MAX_USTORE   0x4000
++#define ICP_QAT_UCLO_MAX_XFER_REG 128
++#define ICP_QAT_UCLO_MAX_GPR_REG  128
++#define ICP_QAT_UCLO_MAX_NN_REG   128
++#define ICP_QAT_UCLO_MAX_LMEM_REG 1024
++#define ICP_QAT_UCLO_AE_ALL_CTX   0xff
++#define ICP_QAT_UOF_OBJID_LEN     8
++#define ICP_QAT_UOF_FID 0xc6c2
++#define ICP_QAT_UOF_MAJVER 0x4
++#define ICP_QAT_UOF_MINVER 0x11
++#define ICP_QAT_UOF_NN_MODE_NOTCARE   0xff
++#define ICP_QAT_UOF_OBJS        "UOF_OBJS"
++#define ICP_QAT_UOF_STRT        "UOF_STRT"
++#define ICP_QAT_UOF_GTID        "UOF_GTID"
++#define ICP_QAT_UOF_IMAG        "UOF_IMAG"
++#define ICP_QAT_UOF_IMEM        "UOF_IMEM"
++#define ICP_QAT_UOF_MSEG        "UOF_MSEG"
++#define ICP_QAT_UOF_LOCAL_SCOPE     1
++#define ICP_QAT_UOF_INIT_EXPR               0
++#define ICP_QAT_UOF_INIT_REG                1
++#define ICP_QAT_UOF_INIT_REG_CTX            2
++#define ICP_QAT_UOF_INIT_EXPR_ENDIAN_SWAP   3
++
++#define ICP_QAT_CTX_MODE(ae_mode) ((ae_mode) & 0xf)
++#define ICP_QAT_NN_MODE(ae_mode) (((ae_mode) >> 0x4) & 0xf)
++#define ICP_QAT_SHARED_USTORE_MODE(ae_mode) (((ae_mode) >> 0xb) & 0x1)
++#define RELOADABLE_CTX_SHARED_MODE(ae_mode) (((ae_mode) >> 0xc) & 0x1)
++
++#define ICP_QAT_LOC_MEM0_MODE(ae_mode) (((ae_mode) >> 0x8) & 0x1)
++#define ICP_QAT_LOC_MEM1_MODE(ae_mode) (((ae_mode) >> 0x9) & 0x1)
++
++enum icp_qat_uof_mem_region {
++	ICP_QAT_UOF_SRAM_REGION = 0x0,
++	ICP_QAT_UOF_LMEM_REGION = 0x3,
++	ICP_QAT_UOF_UMEM_REGION = 0x5
++};
++
++enum icp_qat_uof_regtype {
++	ICP_NO_DEST,
++	ICP_GPA_REL,
++	ICP_GPA_ABS,
++	ICP_GPB_REL,
++	ICP_GPB_ABS,
++	ICP_SR_REL,
++	ICP_SR_RD_REL,
++	ICP_SR_WR_REL,
++	ICP_SR_ABS,
++	ICP_SR_RD_ABS,
++	ICP_SR_WR_ABS,
++	ICP_DR_REL,
++	ICP_DR_RD_REL,
++	ICP_DR_WR_REL,
++	ICP_DR_ABS,
++	ICP_DR_RD_ABS,
++	ICP_DR_WR_ABS,
++	ICP_LMEM,
++	ICP_LMEM0,
++	ICP_LMEM1,
++	ICP_NEIGH_REL,
++};
++
++struct icp_qat_uclo_page {
++	struct icp_qat_uclo_encap_page *encap_page;
++	struct icp_qat_uclo_region *region;
++	unsigned int flags;
++};
++
++struct icp_qat_uclo_region {
++	struct icp_qat_uclo_page *loaded;
++	struct icp_qat_uclo_page *page;
++};
++
++struct icp_qat_uclo_aeslice {
++	struct icp_qat_uclo_region *regions;
++	struct icp_qat_uclo_page *page;
++	struct icp_qat_uclo_page *cur_page[ICP_QAT_UCLO_MAX_CTX];
++	struct icp_qat_uclo_encapme *encap_image;
++	unsigned int ctx_mask_assigned;
++	unsigned int new_uaddr[ICP_QAT_UCLO_MAX_CTX];
++};
++
++struct icp_qat_uclo_aedata {
++	unsigned int slice_num;
++	unsigned int eff_ustore_size;
++	struct icp_qat_uclo_aeslice ae_slices[ICP_QAT_UCLO_MAX_CTX];
++};
++
++struct icp_qat_uof_encap_obj {
++	char *beg_uof;
++	struct icp_qat_uof_objhdr *obj_hdr;
++	struct icp_qat_uof_chunkhdr *chunk_hdr;
++	struct icp_qat_uof_varmem_seg *var_mem_seg;
++};
++
++struct icp_qat_uclo_encap_uwblock {
++	unsigned int start_addr;
++	unsigned int words_num;
++	uint64_t micro_words;
++};
++
++struct icp_qat_uclo_encap_page {
++	unsigned int def_page;
++	unsigned int page_region;
++	unsigned int beg_addr_v;
++	unsigned int beg_addr_p;
++	unsigned int micro_words_num;
++	unsigned int uwblock_num;
++	struct icp_qat_uclo_encap_uwblock *uwblock;
++};
++
++struct icp_qat_uclo_encapme {
++	struct icp_qat_uof_image *img_ptr;
++	struct icp_qat_uclo_encap_page *page;
++	unsigned int ae_reg_num;
++	struct icp_qat_uof_ae_reg *ae_reg;
++	unsigned int init_regsym_num;
++	struct icp_qat_uof_init_regsym *init_regsym;
++	unsigned int sbreak_num;
++	struct icp_qat_uof_sbreak *sbreak;
++	unsigned int uwords_num;
++};
++
++struct icp_qat_uclo_init_mem_table {
++	unsigned int entry_num;
++	struct icp_qat_uof_initmem *init_mem;
++};
++
++struct icp_qat_uclo_objhdr {
++	char *file_buff;
++	unsigned int checksum;
++	unsigned int size;
++};
++
++struct icp_qat_uof_strtable {
++	unsigned int table_len;
++	unsigned int reserved;
++	uint64_t strings;
++};
++
++struct icp_qat_uclo_objhandle {
++	unsigned int prod_type;
++	unsigned int prod_rev;
++	struct icp_qat_uclo_objhdr *obj_hdr;
++	struct icp_qat_uof_encap_obj encap_uof_obj;
++	struct icp_qat_uof_strtable str_table;
++	struct icp_qat_uclo_encapme ae_uimage[ICP_QAT_UCLO_MAX_UIMAGE];
++	struct icp_qat_uclo_aedata ae_data[ICP_QAT_UCLO_MAX_AE];
++	struct icp_qat_uclo_init_mem_table init_mem_tab;
++	struct icp_qat_uof_batch_init *lm_init_tab[ICP_QAT_UCLO_MAX_AE];
++	struct icp_qat_uof_batch_init *umem_init_tab[ICP_QAT_UCLO_MAX_AE];
++	int uimage_num;
++	int uword_in_bytes;
++	int global_inited;
++	unsigned int ae_num;
++	unsigned int ustore_phy_size;
++	void *obj_buf;
++	uint64_t *uword_buf;
++};
++
++struct icp_qat_uof_uword_block {
++	unsigned int start_addr;
++	unsigned int words_num;
++	unsigned int uword_offset;
++	unsigned int reserved;
++};
++
++struct icp_qat_uof_filehdr {
++	unsigned short file_id;
++	unsigned short reserved1;
++	char min_ver;
++	char maj_ver;
++	unsigned short reserved2;
++	unsigned short max_chunks;
++	unsigned short num_chunks;
++};
++
++struct icp_qat_uof_filechunkhdr {
++	char chunk_id[ICP_QAT_UOF_OBJID_LEN];
++	unsigned int checksum;
++	unsigned int offset;
++	unsigned int size;
++};
++
++struct icp_qat_uof_objhdr {
++	unsigned int cpu_type;
++	unsigned short min_cpu_ver;
++	unsigned short max_cpu_ver;
++	short max_chunks;
++	short num_chunks;
++	unsigned int reserved1;
++	unsigned int reserved2;
++};
++
++struct icp_qat_uof_chunkhdr {
++	char chunk_id[ICP_QAT_UOF_OBJID_LEN];
++	unsigned int offset;
++	unsigned int size;
++};
++
++struct icp_qat_uof_memvar_attr {
++	unsigned int offset_in_byte;
++	unsigned int value;
++};
++
++struct icp_qat_uof_initmem {
++	unsigned int sym_name;
++	char region;
++	char scope;
++	unsigned short reserved1;
++	unsigned int addr;
++	unsigned int num_in_bytes;
++	unsigned int val_attr_num;
++};
++
++struct icp_qat_uof_init_regsym {
++	unsigned int sym_name;
++	char init_type;
++	char value_type;
++	char reg_type;
++	unsigned char ctx;
++	unsigned int reg_addr;
++	unsigned int value;
++};
++
++struct icp_qat_uof_varmem_seg {
++	unsigned int sram_base;
++	unsigned int sram_size;
++	unsigned int sram_alignment;
++	unsigned int sdram_base;
++	unsigned int sdram_size;
++	unsigned int sdram_alignment;
++	unsigned int sdram1_base;
++	unsigned int sdram1_size;
++	unsigned int sdram1_alignment;
++	unsigned int scratch_base;
++	unsigned int scratch_size;
++	unsigned int scratch_alignment;
++};
++
++struct icp_qat_uof_gtid {
++	char tool_id[ICP_QAT_UOF_OBJID_LEN];
++	int tool_ver;
++	unsigned int reserved1;
++	unsigned int reserved2;
++};
++
++struct icp_qat_uof_sbreak {
++	unsigned int page_num;
++	unsigned int virt_uaddr;
++	unsigned char sbreak_type;
++	unsigned char reg_type;
++	unsigned short reserved1;
++	unsigned int addr_offset;
++	unsigned int reg_addr;
++};
++
++struct icp_qat_uof_code_page {
++	unsigned int page_region;
++	unsigned int page_num;
++	unsigned char def_page;
++	unsigned char reserved2;
++	unsigned short reserved1;
++	unsigned int beg_addr_v;
++	unsigned int beg_addr_p;
++	unsigned int neigh_reg_tab_offset;
++	unsigned int uc_var_tab_offset;
++	unsigned int imp_var_tab_offset;
++	unsigned int imp_expr_tab_offset;
++	unsigned int code_area_offset;
++};
++
++struct icp_qat_uof_image {
++	unsigned int img_name;
++	unsigned int ae_assigned;
++	unsigned int ctx_assigned;
++	unsigned int cpu_type;
++	unsigned int entry_address;
++	unsigned int fill_pattern[2];
++	unsigned int reloadable_size;
++	unsigned char sensitivity;
++	unsigned char reserved;
++	unsigned short ae_mode;
++	unsigned short max_ver;
++	unsigned short min_ver;
++	unsigned short image_attrib;
++	unsigned short reserved2;
++	unsigned short page_region_num;
++	unsigned short numpages;
++	unsigned int reg_tab_offset;
++	unsigned int init_reg_sym_tab;
++	unsigned int sbreak_tab;
++	unsigned int app_metadata;
++};
++
++struct icp_qat_uof_objtable {
++	unsigned int entry_num;
++};
++
++struct icp_qat_uof_ae_reg {
++	unsigned int name;
++	unsigned int vis_name;
++	unsigned short type;
++	unsigned short addr;
++	unsigned short access_mode;
++	unsigned char visible;
++	unsigned char reserved1;
++	unsigned short ref_count;
++	unsigned short reserved2;
++	unsigned int xo_id;
++};
++
++struct icp_qat_uof_code_area {
++	unsigned int micro_words_num;
++	unsigned int uword_block_tab;
++};
++
++struct icp_qat_uof_batch_init {
++	unsigned int ae;
++	unsigned int addr;
++	unsigned int *value;
++	unsigned int size;
++	struct icp_qat_uof_batch_init *next;
++};
++#endif
+diff --git a/drivers/crypto/qat/qat_common/qat_hal.c b/drivers/crypto/qat/qat_common/qat_hal.c
+new file mode 100644
+index 0000000..c0b3519
+--- /dev/null
++++ b/drivers/crypto/qat/qat_common/qat_hal.c
+@@ -0,0 +1,1402 @@
++/*
++  This file is provided under a dual BSD/GPLv2 license.  When using or
++  redistributing this file, you may do so under either license.
++
++  GPL LICENSE SUMMARY
++  Copyright(c) 2014 Intel Corporation.
++  This program is free software; you can redistribute it and/or modify
++  it under the terms of version 2 of the GNU General Public License as
++  published by the Free Software Foundation.
++
++  This program is distributed in the hope that it will be useful, but
++  WITHOUT ANY WARRANTY; without even the implied warranty of
++  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++  General Public License for more details.
++
++  Contact Information:
++  qat-linux@intel.com
++
++  BSD LICENSE
++  Copyright(c) 2014 Intel Corporation.
++  Redistribution and use in source and binary forms, with or without
++  modification, are permitted provided that the following conditions
++  are met:
++
++    * Redistributions of source code must retain the above copyright
++      notice, this list of conditions and the following disclaimer.
++    * Redistributions in binary form must reproduce the above copyright
++      notice, this list of conditions and the following disclaimer in
++      the documentation and/or other materials provided with the
++      distribution.
++    * Neither the name of Intel Corporation nor the names of its
++      contributors may be used to endorse or promote products derived
++      from this software without specific prior written permission.
++
++  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
++  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
++  OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
++  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
++  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
++  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
++  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
++  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++*/
++#include <linux/slab.h>
++
++#include "adf_accel_devices.h"
++#include "adf_common_drv.h"
++#include "icp_qat_hal.h"
++#include "icp_qat_uclo.h"
++
++#define BAD_REGADDR               0xffff
++#define MAX_RETRY_TIMES           10000
++#define INIT_CTX_ARB_VALUE        0x0
++#define INIT_CTX_ENABLE_VALUE     0x0
++#define INIT_PC_VALUE             0x0
++#define INIT_WAKEUP_EVENTS_VALUE  0x1
++#define INIT_SIG_EVENTS_VALUE     0x1
++#define INIT_CCENABLE_VALUE       0x2000
++#define RST_CSR_QAT_LSB           20
++#define RST_CSR_AE_LSB		  0
++#define MC_TIMESTAMP_ENABLE       (0x1 << 7)
++
++#define IGNORE_W1C_MASK ((~(1 << CE_BREAKPOINT_BITPOS)) & \
++	(~(1 << CE_CNTL_STORE_PARITY_ERROR_BITPOS)) & \
++	(~(1 << CE_REG_PAR_ERR_BITPOS)))
++#define INSERT_IMMED_GPRA_CONST(inst, const_val) \
++	(inst = ((inst & 0xFFFF00C03FFull) | \
++		((((const_val) << 12) & 0x0FF00000ull) | \
++		(((const_val) << 10) & 0x0003FC00ull))))
++#define INSERT_IMMED_GPRB_CONST(inst, const_val) \
++	(inst = ((inst & 0xFFFF00FFF00ull) | \
++		((((const_val) << 12) & 0x0FF00000ull) | \
++		(((const_val) <<  0) & 0x000000FFull))))
++
++#define AE(handle, ae) handle->hal_handle->aes[ae]
++
++static const uint64_t inst_4b[] = {
++	0x0F0400C0000ull, 0x0F4400C0000ull, 0x0F040000300ull, 0x0F440000300ull,
++	0x0FC066C0000ull, 0x0F0000C0300ull, 0x0F0000C0300ull, 0x0F0000C0300ull,
++	0x0A021000000ull
++};
++
++static const uint64_t inst[] = {
++	0x0F0000C0000ull, 0x0F000000380ull, 0x0D805000011ull, 0x0FC082C0300ull,
++	0x0F0000C0300ull, 0x0F0000C0300ull, 0x0F0000C0300ull, 0x0F0000C0300ull,
++	0x0A0643C0000ull, 0x0BAC0000301ull, 0x0D802000101ull, 0x0F0000C0001ull,
++	0x0FC066C0001ull, 0x0F0000C0300ull, 0x0F0000C0300ull, 0x0F0000C0300ull,
++	0x0F000400300ull, 0x0A0610C0000ull, 0x0BAC0000301ull, 0x0D804400101ull,
++	0x0A0580C0000ull, 0x0A0581C0000ull, 0x0A0582C0000ull, 0x0A0583C0000ull,
++	0x0A0584C0000ull, 0x0A0585C0000ull, 0x0A0586C0000ull, 0x0A0587C0000ull,
++	0x0A0588C0000ull, 0x0A0589C0000ull, 0x0A058AC0000ull, 0x0A058BC0000ull,
++	0x0A058CC0000ull, 0x0A058DC0000ull, 0x0A058EC0000ull, 0x0A058FC0000ull,
++	0x0A05C0C0000ull, 0x0A05C1C0000ull, 0x0A05C2C0000ull, 0x0A05C3C0000ull,
++	0x0A05C4C0000ull, 0x0A05C5C0000ull, 0x0A05C6C0000ull, 0x0A05C7C0000ull,
++	0x0A05C8C0000ull, 0x0A05C9C0000ull, 0x0A05CAC0000ull, 0x0A05CBC0000ull,
++	0x0A05CCC0000ull, 0x0A05CDC0000ull, 0x0A05CEC0000ull, 0x0A05CFC0000ull,
++	0x0A0400C0000ull, 0x0B0400C0000ull, 0x0A0401C0000ull, 0x0B0401C0000ull,
++	0x0A0402C0000ull, 0x0B0402C0000ull, 0x0A0403C0000ull, 0x0B0403C0000ull,
++	0x0A0404C0000ull, 0x0B0404C0000ull, 0x0A0405C0000ull, 0x0B0405C0000ull,
++	0x0A0406C0000ull, 0x0B0406C0000ull, 0x0A0407C0000ull, 0x0B0407C0000ull,
++	0x0A0408C0000ull, 0x0B0408C0000ull, 0x0A0409C0000ull, 0x0B0409C0000ull,
++	0x0A040AC0000ull, 0x0B040AC0000ull, 0x0A040BC0000ull, 0x0B040BC0000ull,
++	0x0A040CC0000ull, 0x0B040CC0000ull, 0x0A040DC0000ull, 0x0B040DC0000ull,
++	0x0A040EC0000ull, 0x0B040EC0000ull, 0x0A040FC0000ull, 0x0B040FC0000ull,
++	0x0D81581C010ull, 0x0E000010000ull, 0x0E000010000ull,
++};
++
++void qat_hal_set_live_ctx(struct icp_qat_fw_loader_handle *handle,
++			  unsigned char ae, unsigned int ctx_mask)
 +{
-+	struct adf_fw_loader_data *loader_data = accel_dev->fw_loader;
-+	struct adf_hw_device_data *hw_device = accel_dev->hw_device;
-+	void *uof_addr;
-+	uint32_t uof_size;
++	AE(handle, ae).live_ctx_mask = ctx_mask;
++}
 +
-+	if (request_firmware(&loader_data->uof_fw, hw_device->fw_name,
-+			     &accel_dev->accel_pci_dev.pci_dev->dev)) {
-+		pr_err("QAT: Failed to load firmware %s\n", hw_device->fw_name);
-+		return -EFAULT;
-+	}
++#define CSR_RETRY_TIMES 500
++static int qat_hal_rd_ae_csr(struct icp_qat_fw_loader_handle *handle,
++			     unsigned char ae, unsigned int csr,
++			     unsigned int *value)
++{
++	unsigned int iterations = CSR_RETRY_TIMES;
 +
-+	uof_size = loader_data->uof_fw->size;
-+	uof_addr = (void *)loader_data->uof_fw->data;
-+	if (qat_uclo_map_uof_obj(loader_data->fw_loader, uof_addr, uof_size)) {
-+		pr_err("QAT: Failed to map uof\n");
-+		goto out_err;
-+	}
-+	if (qat_uclo_wr_all_uimage(loader_data->fw_loader)) {
-+		pr_err("QAT: Failed to map uof\n");
-+		goto out_err;
-+	}
-+	return 0;
++	do {
++		*value = GET_AE_CSR(handle, ae, csr);
++		if (!(GET_AE_CSR(handle, ae, LOCAL_CSR_STATUS) & LCS_STATUS))
++			return 0;
++	} while (iterations--);
 +
-+out_err:
-+	release_firmware(loader_data->uof_fw);
++	pr_err("QAT: Read CSR timeout\n");
 +	return -EFAULT;
 +}
 +
-+int adf_ae_fw_release(struct adf_accel_dev *accel_dev)
++static int qat_hal_wr_ae_csr(struct icp_qat_fw_loader_handle *handle,
++			     unsigned char ae, unsigned int csr,
++			     unsigned int value)
 +{
-+	struct adf_fw_loader_data *loader_data = accel_dev->fw_loader;
++	unsigned int iterations = CSR_RETRY_TIMES;
 +
-+	release_firmware(loader_data->uof_fw);
-+	qat_uclo_del_uof_obj(loader_data->fw_loader);
-+	qat_hal_deinit(loader_data->fw_loader);
-+	loader_data->fw_loader = NULL;
-+	return 0;
++	do {
++		SET_AE_CSR(handle, ae, csr, value);
++		if (!(GET_AE_CSR(handle, ae, LOCAL_CSR_STATUS) & LCS_STATUS))
++			return 0;
++	} while (iterations--);
++
++	pr_err("QAT: Write CSR Timeout\n");
++	return -EFAULT;
 +}
 +
-+int adf_ae_start(struct adf_accel_dev *accel_dev)
++static void qat_hal_get_wakeup_event(struct icp_qat_fw_loader_handle *handle,
++				     unsigned char ae, unsigned char ctx,
++				     unsigned int *events)
 +{
-+	struct adf_fw_loader_data *loader_data = accel_dev->fw_loader;
-+	struct adf_hw_device_data *hw_data = accel_dev->hw_device;
-+	uint32_t ae_ctr, ae, max_aes = GET_MAX_ACCELENGINES(accel_dev);
++	unsigned int cur_ctx;
 +
-+	for (ae = 0, ae_ctr = 0; ae < max_aes; ae++) {
-+		if (hw_data->ae_mask & (1 << ae)) {
-+			qat_hal_start(loader_data->fw_loader, ae, 0xFF);
-+			ae_ctr++;
-+		}
++	qat_hal_rd_ae_csr(handle, ae, CSR_CTX_POINTER, &cur_ctx);
++	qat_hal_wr_ae_csr(handle, ae, CSR_CTX_POINTER, ctx);
++	qat_hal_rd_ae_csr(handle, ae, CTX_WAKEUP_EVENTS_INDIRECT, events);
++	qat_hal_wr_ae_csr(handle, ae, CSR_CTX_POINTER, cur_ctx);
++}
++
++static int qat_hal_wait_cycles(struct icp_qat_fw_loader_handle *handle,
++			       unsigned char ae, unsigned int cycles,
++			       int chk_inactive)
++{
++	unsigned int base_cnt = 0, cur_cnt = 0;
++	unsigned int csr = (1 << ACS_ABO_BITPOS);
++	int times = MAX_RETRY_TIMES;
++	int elapsed_cycles = 0;
++
++	qat_hal_rd_ae_csr(handle, ae, PROFILE_COUNT, &base_cnt);
++	base_cnt &= 0xffff;
++	while ((int)cycles > elapsed_cycles && times--) {
++		if (chk_inactive)
++			qat_hal_rd_ae_csr(handle, ae, ACTIVE_CTX_STATUS, &csr);
++
++		qat_hal_rd_ae_csr(handle, ae, PROFILE_COUNT, &cur_cnt);
++		cur_cnt &= 0xffff;
++		elapsed_cycles = cur_cnt - base_cnt;
++
++		if (elapsed_cycles < 0)
++			elapsed_cycles += 0x10000;
++
++		/* ensure at least 8 time cycles elapsed in wait_cycles */
++		if (elapsed_cycles >= 8 && !(csr & (1 << ACS_ABO_BITPOS)))
++			return 0;
 +	}
-+	pr_info("QAT: qat_dev%d started %d acceleration engines\n",
-+		accel_dev->accel_id, ae_ctr);
-+	return 0;
-+}
-+
-+int adf_ae_stop(struct adf_accel_dev *accel_dev)
-+{
-+	struct adf_fw_loader_data *loader_data = accel_dev->fw_loader;
-+	struct adf_hw_device_data *hw_data = accel_dev->hw_device;
-+	uint32_t ae_ctr, ae, max_aes = GET_MAX_ACCELENGINES(accel_dev);
-+
-+	for (ae = 0, ae_ctr = 0; ae < max_aes; ae++) {
-+		if (hw_data->ae_mask & (1 << ae)) {
-+			qat_hal_stop(loader_data->fw_loader, ae, 0xFF);
-+			ae_ctr++;
-+		}
-+	}
-+	pr_info("QAT: qat_dev%d stopped %d acceleration engines\n",
-+		accel_dev->accel_id, ae_ctr);
-+	return 0;
-+}
-+
-+static int adf_ae_reset(struct adf_accel_dev *accel_dev, int ae)
-+{
-+	struct adf_fw_loader_data *loader_data = accel_dev->fw_loader;
-+
-+	qat_hal_reset(loader_data->fw_loader);
-+	if (qat_hal_clr_reset(loader_data->fw_loader))
-+		return -EFAULT;
-+
-+	return 0;
-+}
-+
-+int adf_ae_init(struct adf_accel_dev *accel_dev)
-+{
-+	struct adf_fw_loader_data *loader_data;
-+
-+	loader_data = kzalloc(sizeof(*loader_data), GFP_KERNEL);
-+	if (!loader_data)
-+		return -ENOMEM;
-+
-+	accel_dev->fw_loader = loader_data;
-+	if (qat_hal_init(accel_dev)) {
-+		pr_err("QAT: Failed to init the AEs\n");
-+		kfree(loader_data);
-+		return -EFAULT;
-+	}
-+	if (adf_ae_reset(accel_dev, 0)) {
-+		pr_err("QAT: Failed to reset the AEs\n");
-+		qat_hal_deinit(loader_data->fw_loader);
-+		kfree(loader_data);
++	if (!times) {
++		pr_err("QAT: wait_num_cycles time out\n");
 +		return -EFAULT;
 +	}
 +	return 0;
 +}
 +
-+int adf_ae_shutdown(struct adf_accel_dev *accel_dev)
++#define CLR_BIT(wrd, bit) (wrd & ~(1 << bit))
++#define SET_BIT(wrd, bit) (wrd | 1 << bit)
++
++int qat_hal_set_ae_ctx_mode(struct icp_qat_fw_loader_handle *handle,
++			    unsigned char ae, unsigned char mode)
 +{
-+	kfree(accel_dev->fw_loader);
-+	accel_dev->fw_loader = NULL;
-+	return 0;
-+}
-diff --git a/drivers/crypto/qat/qat_common/adf_aer.c b/drivers/crypto/qat/qat_common/adf_aer.c
-new file mode 100644
-index 0000000..0651678
---- /dev/null
-+++ b/drivers/crypto/qat/qat_common/adf_aer.c
-@@ -0,0 +1,258 @@
-+/*
-+  This file is provided under a dual BSD/GPLv2 license.  When using or
-+  redistributing this file, you may do so under either license.
++	unsigned int csr, new_csr;
 +
-+  GPL LICENSE SUMMARY
-+  Copyright(c) 2014 Intel Corporation.
-+  This program is free software; you can redistribute it and/or modify
-+  it under the terms of version 2 of the GNU General Public License as
-+  published by the Free Software Foundation.
-+
-+  This program is distributed in the hope that it will be useful, but
-+  WITHOUT ANY WARRANTY; without even the implied warranty of
-+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+  General Public License for more details.
-+
-+  Contact Information:
-+  qat-linux@intel.com
-+
-+  BSD LICENSE
-+  Copyright(c) 2014 Intel Corporation.
-+  Redistribution and use in source and binary forms, with or without
-+  modification, are permitted provided that the following conditions
-+  are met:
-+
-+    * Redistributions of source code must retain the above copyright
-+      notice, this list of conditions and the following disclaimer.
-+    * Redistributions in binary form must reproduce the above copyright
-+      notice, this list of conditions and the following disclaimer in
-+      the documentation and/or other materials provided with the
-+      distribution.
-+    * Neither the name of Intel Corporation nor the names of its
-+      contributors may be used to endorse or promote products derived
-+      from this software without specific prior written permission.
-+
-+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-+  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-+  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-+  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-+  OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-+  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-+  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-+  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-+  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-+  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-+  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-+*/
-+#include <linux/kernel.h>
-+#include <linux/pci.h>
-+#include <linux/aer.h>
-+#include <linux/completion.h>
-+#include <linux/workqueue.h>
-+#include <linux/delay.h>
-+#include "adf_accel_devices.h"
-+#include "adf_common_drv.h"
-+
-+static struct workqueue_struct *device_reset_wq;
-+
-+static pci_ers_result_t adf_error_detected(struct pci_dev *pdev,
-+					   pci_channel_state_t state)
-+{
-+	struct adf_accel_dev *accel_dev = adf_devmgr_pci_to_accel_dev(pdev);
-+
-+	pr_info("QAT: Acceleration driver hardware error detected.\n");
-+	if (!accel_dev) {
-+		pr_err("QAT: Can't find acceleration device\n");
-+		return PCI_ERS_RESULT_DISCONNECT;
++	if ((mode != 4) && (mode != 8)) {
++		pr_err("QAT: bad ctx mode=%d\n", mode);
++		return -EINVAL;
 +	}
 +
-+	if (state == pci_channel_io_perm_failure) {
-+		pr_err("QAT: Can't recover from device error\n");
-+		return PCI_ERS_RESULT_DISCONNECT;
-+	}
-+
-+	return PCI_ERS_RESULT_NEED_RESET;
-+}
-+
-+/* reset dev data */
-+struct adf_reset_dev_data {
-+	int mode;
-+	struct adf_accel_dev *accel_dev;
-+	struct completion compl;
-+	struct work_struct reset_work;
-+};
-+
-+#define PPDSTAT_OFFSET 0x7E
-+static void adf_dev_restore(struct adf_accel_dev *accel_dev)
-+{
-+	struct pci_dev *pdev = accel_to_pci_dev(accel_dev);
-+	struct pci_dev *parent = pdev->bus->self;
-+	uint16_t ppdstat = 0, bridge_ctl = 0;
-+	int pending = 0;
-+
-+	pr_info("QAT: Reseting device qat_dev%d\n", accel_dev->accel_id);
-+	pci_read_config_word(pdev, PPDSTAT_OFFSET, &ppdstat);
-+	pending = ppdstat & PCI_EXP_DEVSTA_TRPND;
-+	if (pending) {
-+		int ctr = 0;
-+		do {
-+			msleep(100);
-+			pci_read_config_word(pdev, PPDSTAT_OFFSET, &ppdstat);
-+			pending = ppdstat & PCI_EXP_DEVSTA_TRPND;
-+		} while (pending && ctr++ < 10);
-+	}
-+
-+	if (pending)
-+		pr_info("QAT: Transaction still in progress. Proceeding\n");
-+
-+	pci_read_config_word(parent, PCI_BRIDGE_CONTROL, &bridge_ctl);
-+	bridge_ctl |= PCI_BRIDGE_CTL_BUS_RESET;
-+	pci_write_config_word(parent, PCI_BRIDGE_CONTROL, bridge_ctl);
-+	msleep(100);
-+	bridge_ctl &= ~PCI_BRIDGE_CTL_BUS_RESET;
-+	pci_write_config_word(parent, PCI_BRIDGE_CONTROL, bridge_ctl);
-+	msleep(100);
-+	pci_restore_state(pdev);
-+	pci_save_state(pdev);
-+}
-+
-+static void adf_device_reset_worker(struct work_struct *work)
-+{
-+	struct adf_reset_dev_data *reset_data =
-+		  container_of(work, struct adf_reset_dev_data, reset_work);
-+	struct adf_accel_dev *accel_dev = reset_data->accel_dev;
-+
-+	adf_dev_restarting_notify(accel_dev);
-+	adf_dev_stop(accel_dev);
-+	adf_dev_restore(accel_dev);
-+	if (adf_dev_start(accel_dev)) {
-+		/* The device hanged and we can't restart it so stop here */
-+		dev_err(&GET_DEV(accel_dev), "Restart device failed\n");
-+		kfree(reset_data);
-+		WARN(1, "QAT: device restart failed. Device is unusable\n");
-+		return;
-+	}
-+	adf_dev_restarted_notify(accel_dev);
-+	clear_bit(ADF_STATUS_RESTARTING, &accel_dev->status);
-+
-+	/* The dev is back alive. Notify the caller if in sync mode */
-+	if (reset_data->mode == ADF_DEV_RESET_SYNC)
-+		complete(&reset_data->compl);
-+	else
-+		kfree(reset_data);
-+}
-+
-+static int adf_dev_aer_schedule_reset(struct adf_accel_dev *accel_dev,
-+				      enum adf_dev_reset_mode mode)
-+{
-+	struct adf_reset_dev_data *reset_data;
-+
-+	if (adf_dev_started(accel_dev) &&
-+	    !test_bit(ADF_STATUS_RESTARTING, &accel_dev->status))
-+		return 0;
-+
-+	set_bit(ADF_STATUS_RESTARTING, &accel_dev->status);
-+	reset_data = kzalloc(sizeof(*reset_data), GFP_ATOMIC);
-+	if (!reset_data)
-+		return -ENOMEM;
-+	reset_data->accel_dev = accel_dev;
-+	init_completion(&reset_data->compl);
-+	reset_data->mode = mode;
-+	INIT_WORK(&reset_data->reset_work, adf_device_reset_worker);
-+	queue_work(device_reset_wq, &reset_data->reset_work);
-+
-+	/* If in sync mode wait for the result */
-+	if (mode == ADF_DEV_RESET_SYNC) {
-+		int ret = 0;
-+		/* Maximum device reset time is 10 seconds */
-+		unsigned long wait_jiffies = msecs_to_jiffies(10000);
-+		unsigned long timeout = wait_for_completion_timeout(
-+				   &reset_data->compl, wait_jiffies);
-+		if (!timeout) {
-+			pr_err("QAT: Reset device timeout expired\n");
-+			ret = -EFAULT;
-+		}
-+		kfree(reset_data);
-+		return ret;
-+	}
++	/* Sets the accelaration engine context mode to either four or eight */
++	qat_hal_rd_ae_csr(handle, ae, CTX_ENABLES, &csr);
++	csr = IGNORE_W1C_MASK & csr;
++	new_csr = (mode == 4) ?
++		SET_BIT(csr, CE_INUSE_CONTEXTS_BITPOS) :
++		CLR_BIT(csr, CE_INUSE_CONTEXTS_BITPOS);
++	qat_hal_wr_ae_csr(handle, ae, CTX_ENABLES, new_csr);
 +	return 0;
 +}
 +
-+static pci_ers_result_t adf_slot_reset(struct pci_dev *pdev)
++int qat_hal_set_ae_nn_mode(struct icp_qat_fw_loader_handle *handle,
++			   unsigned char ae, unsigned char mode)
 +{
-+	struct adf_accel_dev *accel_dev = adf_devmgr_pci_to_accel_dev(pdev);
++	unsigned int csr, new_csr;
 +
-+	if (!accel_dev) {
-+		pr_err("QAT: Can't find acceleration device\n");
-+		return PCI_ERS_RESULT_DISCONNECT;
-+	}
-+	pci_cleanup_aer_uncorrect_error_status(pdev);
-+	if (adf_dev_aer_schedule_reset(accel_dev, ADF_DEV_RESET_SYNC))
-+		return PCI_ERS_RESULT_DISCONNECT;
++	qat_hal_rd_ae_csr(handle, ae, CTX_ENABLES, &csr);
++	csr &= IGNORE_W1C_MASK;
 +
-+	return PCI_ERS_RESULT_RECOVERED;
-+}
++	new_csr = (mode) ?
++		SET_BIT(csr, CE_NN_MODE_BITPOS) :
++		CLR_BIT(csr, CE_NN_MODE_BITPOS);
 +
-+static void adf_resume(struct pci_dev *pdev)
-+{
-+	pr_info("QAT: Acceleration driver reset completed\n");
-+	pr_info("QAT: Device is up and runnig\n");
-+}
++	if (new_csr != csr)
++		qat_hal_wr_ae_csr(handle, ae, CTX_ENABLES, new_csr);
 +
-+static struct pci_error_handlers adf_err_handler = {
-+	.error_detected = adf_error_detected,
-+	.slot_reset = adf_slot_reset,
-+	.resume = adf_resume,
-+};
-+
-+/**
-+ * adf_enable_aer() - Enable Advance Error Reporting for acceleration device
-+ * @accel_dev:  Pointer to acceleration device.
-+ * @adf:        PCI device driver owning the given acceleration device.
-+ *
-+ * Function enables PCI Advance Error Reporting for the
-+ * QAT acceleration device accel_dev.
-+ * To be used by QAT device specific drivers.
-+ *
-+ * Return: 0 on success, error code othewise.
-+ */
-+int adf_enable_aer(struct adf_accel_dev *accel_dev, struct pci_driver *adf)
-+{
-+	struct pci_dev *pdev = accel_to_pci_dev(accel_dev);
-+
-+	adf->err_handler = &adf_err_handler;
-+	pci_enable_pcie_error_reporting(pdev);
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(adf_enable_aer);
-+
-+/**
-+ * adf_disable_aer() - Enable Advance Error Reporting for acceleration device
-+ * @accel_dev:  Pointer to acceleration device.
-+ *
-+ * Function disables PCI Advance Error Reporting for the
-+ * QAT acceleration device accel_dev.
-+ * To be used by QAT device specific drivers.
-+ *
-+ * Return: void
-+ */
-+void adf_disable_aer(struct adf_accel_dev *accel_dev)
-+{
-+	struct pci_dev *pdev = accel_to_pci_dev(accel_dev);
-+
-+	pci_disable_pcie_error_reporting(pdev);
-+}
-+EXPORT_SYMBOL_GPL(adf_disable_aer);
-+
-+int adf_init_aer(void)
-+{
-+	device_reset_wq = create_workqueue("qat_device_reset_wq");
-+	return (device_reset_wq == NULL) ? -EFAULT : 0;
-+}
-+
-+void adf_exit_aer(void)
-+{
-+	if (device_reset_wq)
-+		destroy_workqueue(device_reset_wq);
-+	device_reset_wq = NULL;
-+}
-diff --git a/drivers/crypto/qat/qat_common/adf_cfg.c b/drivers/crypto/qat/qat_common/adf_cfg.c
-new file mode 100644
-index 0000000..389c0cf
---- /dev/null
-+++ b/drivers/crypto/qat/qat_common/adf_cfg.c
-@@ -0,0 +1,359 @@
-+/*
-+  This file is provided under a dual BSD/GPLv2 license.  When using or
-+  redistributing this file, you may do so under either license.
-+
-+  GPL LICENSE SUMMARY
-+  Copyright(c) 2014 Intel Corporation.
-+  This program is free software; you can redistribute it and/or modify
-+  it under the terms of version 2 of the GNU General Public License as
-+  published by the Free Software Foundation.
-+
-+  This program is distributed in the hope that it will be useful, but
-+  WITHOUT ANY WARRANTY; without even the implied warranty of
-+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+  General Public License for more details.
-+
-+  Contact Information:
-+  qat-linux@intel.com
-+
-+  BSD LICENSE
-+  Copyright(c) 2014 Intel Corporation.
-+  Redistribution and use in source and binary forms, with or without
-+  modification, are permitted provided that the following conditions
-+  are met:
-+
-+    * Redistributions of source code must retain the above copyright
-+      notice, this list of conditions and the following disclaimer.
-+    * Redistributions in binary form must reproduce the above copyright
-+      notice, this list of conditions and the following disclaimer in
-+      the documentation and/or other materials provided with the
-+      distribution.
-+    * Neither the name of Intel Corporation nor the names of its
-+      contributors may be used to endorse or promote products derived
-+      from this software without specific prior written permission.
-+
-+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-+  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-+  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-+  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-+  OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-+  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-+  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-+  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-+  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-+  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-+  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-+*/
-+#include <linux/mutex.h>
-+#include <linux/slab.h>
-+#include <linux/list.h>
-+#include <linux/seq_file.h>
-+#include "adf_accel_devices.h"
-+#include "adf_common_drv.h"
-+#include "adf_cfg.h"
-+
-+static DEFINE_MUTEX(qat_cfg_read_lock);
-+
-+static void *qat_dev_cfg_start(struct seq_file *sfile, loff_t *pos)
-+{
-+	struct adf_cfg_device_data *dev_cfg = sfile->private;
-+	mutex_lock(&qat_cfg_read_lock);
-+	return seq_list_start(&dev_cfg->sec_list, *pos);
-+}
-+
-+static int qat_dev_cfg_show(struct seq_file *sfile, void *v)
-+{
-+	struct list_head *list;
-+	struct adf_cfg_section *sec =
-+				list_entry(v, struct adf_cfg_section, list);
-+
-+	seq_printf(sfile, "[%s]\n", sec->name);
-+	list_for_each(list, &sec->param_head) {
-+		struct adf_cfg_key_val *ptr =
-+			list_entry(list, struct adf_cfg_key_val, list);
-+		seq_printf(sfile, "%s = %s\n", ptr->key, ptr->val);
-+	}
 +	return 0;
 +}
 +
-+static void *qat_dev_cfg_next(struct seq_file *sfile, void *v, loff_t *pos)
-+{
-+	struct adf_cfg_device_data *dev_cfg = sfile->private;
-+	return seq_list_next(v, &dev_cfg->sec_list, pos);
-+}
-+
-+static void qat_dev_cfg_stop(struct seq_file *sfile, void *v)
-+{
-+	mutex_unlock(&qat_cfg_read_lock);
-+}
-+
-+static const struct seq_operations qat_dev_cfg_sops = {
-+	.start = qat_dev_cfg_start,
-+	.next = qat_dev_cfg_next,
-+	.stop = qat_dev_cfg_stop,
-+	.show = qat_dev_cfg_show
-+};
-+
-+static int qat_dev_cfg_open(struct inode *inode, struct file *file)
-+{
-+	int ret = seq_open(file, &qat_dev_cfg_sops);
-+
-+	if (!ret) {
-+		struct seq_file *seq_f = file->private_data;
-+		seq_f->private = inode->i_private;
-+	}
-+	return ret;
-+}
-+
-+static const struct file_operations qat_dev_cfg_fops = {
-+	.open = qat_dev_cfg_open,
-+	.read = seq_read,
-+	.llseek = seq_lseek,
-+	.release = seq_release
-+};
-+
-+/**
-+ * adf_cfg_dev_add() - Create an acceleration device configuration table.
-+ * @accel_dev:  Pointer to acceleration device.
-+ *
-+ * Function creates a configuration table for the given acceleration device.
-+ * The table stores device specific config values.
-+ * To be used by QAT device specific drivers.
-+ *
-+ * Return: 0 on success, error code othewise.
-+ */
-+int adf_cfg_dev_add(struct adf_accel_dev *accel_dev)
-+{
-+	struct adf_cfg_device_data *dev_cfg_data;
-+
-+	dev_cfg_data = kzalloc(sizeof(*dev_cfg_data), GFP_KERNEL);
-+	if (!dev_cfg_data)
-+		return -ENOMEM;
-+	INIT_LIST_HEAD(&dev_cfg_data->sec_list);
-+	init_rwsem(&dev_cfg_data->lock);
-+	accel_dev->cfg = dev_cfg_data;
-+
-+	/* accel_dev->debugfs_dir should always be non-NULL here */
-+	dev_cfg_data->debug = debugfs_create_file("dev_cfg", S_IRUSR,
-+						  accel_dev->debugfs_dir,
-+						  dev_cfg_data,
-+						  &qat_dev_cfg_fops);
-+	if (!dev_cfg_data->debug) {
-+		pr_err("QAT: Failed to create qat cfg debugfs entry.\n");
-+		kfree(dev_cfg_data);
-+		accel_dev->cfg = NULL;
-+		return -EFAULT;
-+	}
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(adf_cfg_dev_add);
-+
-+static void adf_cfg_section_del_all(struct list_head *head);
-+
-+void adf_cfg_del_all(struct adf_accel_dev *accel_dev)
-+{
-+	struct adf_cfg_device_data *dev_cfg_data = accel_dev->cfg;
-+
-+	down_write(&dev_cfg_data->lock);
-+	adf_cfg_section_del_all(&dev_cfg_data->sec_list);
-+	up_write(&dev_cfg_data->lock);
-+}
-+
-+/**
-+ * adf_cfg_dev_remove() - Clears acceleration device configuration table.
-+ * @accel_dev:  Pointer to acceleration device.
-+ *
-+ * Function removes configuration table from the given acceleration device
-+ * and frees all allocated memory.
-+ * To be used by QAT device specific drivers.
-+ *
-+ * Return: void
-+ */
-+void adf_cfg_dev_remove(struct adf_accel_dev *accel_dev)
-+{
-+	struct adf_cfg_device_data *dev_cfg_data = accel_dev->cfg;
-+
-+	down_write(&dev_cfg_data->lock);
-+	adf_cfg_section_del_all(&dev_cfg_data->sec_list);
-+	up_write(&dev_cfg_data->lock);
-+	debugfs_remove(dev_cfg_data->debug);
-+	kfree(dev_cfg_data);
-+	accel_dev->cfg = NULL;
-+}
-+EXPORT_SYMBOL_GPL(adf_cfg_dev_remove);
-+
-+static void adf_cfg_keyval_add(struct adf_cfg_key_val *new,
-+			       struct adf_cfg_section *sec)
-+{
-+	list_add_tail(&new->list, &sec->param_head);
-+}
-+
-+static void adf_cfg_keyval_del_all(struct list_head *head)
-+{
-+	struct list_head *list_ptr, *tmp;
-+
-+	list_for_each_prev_safe(list_ptr, tmp, head) {
-+		struct adf_cfg_key_val *ptr =
-+			list_entry(list_ptr, struct adf_cfg_key_val, list);
-+		list_del(list_ptr);
-+		kfree(ptr);
-+	}
-+}
-+
-+static void adf_cfg_section_del_all(struct list_head *head)
-+{
-+	struct adf_cfg_section *ptr;
-+	struct list_head *list, *tmp;
-+
-+	list_for_each_prev_safe(list, tmp, head) {
-+		ptr = list_entry(list, struct adf_cfg_section, list);
-+		adf_cfg_keyval_del_all(&ptr->param_head);
-+		list_del(list);
-+		kfree(ptr);
-+	}
-+}
-+
-+static struct adf_cfg_key_val *adf_cfg_key_value_find(struct adf_cfg_section *s,
-+						      const char *key)
-+{
-+	struct list_head *list;
-+
-+	list_for_each(list, &s->param_head) {
-+		struct adf_cfg_key_val *ptr =
-+			list_entry(list, struct adf_cfg_key_val, list);
-+		if (!strcmp(ptr->key, key))
-+			return ptr;
-+	}
-+	return NULL;
-+}
-+
-+static struct adf_cfg_section *adf_cfg_sec_find(struct adf_accel_dev *accel_dev,
-+						const char *sec_name)
-+{
-+	struct adf_cfg_device_data *cfg = accel_dev->cfg;
-+	struct list_head *list;
-+
-+	list_for_each(list, &cfg->sec_list) {
-+		struct adf_cfg_section *ptr =
-+			list_entry(list, struct adf_cfg_section, list);
-+		if (!strcmp(ptr->name, sec_name))
-+			return ptr;
-+	}
-+	return NULL;
-+}
-+
-+static int adf_cfg_key_val_get(struct adf_accel_dev *accel_dev,
-+			       const char *sec_name,
-+			       const char *key_name,
-+			       char *val)
-+{
-+	struct adf_cfg_section *sec = adf_cfg_sec_find(accel_dev, sec_name);
-+	struct adf_cfg_key_val *keyval = NULL;
-+
-+	if (sec)
-+		keyval = adf_cfg_key_value_find(sec, key_name);
-+	if (keyval) {
-+		memcpy(val, keyval->val, ADF_CFG_MAX_VAL_LEN_IN_BYTES);
-+		return 0;
-+	}
-+	return -1;
-+}
-+
-+/**
-+ * adf_cfg_add_key_value_param() - Add key-value config entry to config table.
-+ * @accel_dev:  Pointer to acceleration device.
-+ * @section_name: Name of the section where the param will be added
-+ * @key: The key string
-+ * @val: Value pain for the given @key
-+ * @type: Type - string, int or address
-+ *
-+ * Function adds configuration key - value entry in the appropriate section
-+ * in the given acceleration device
-+ * To be used by QAT device specific drivers.
-+ *
-+ * Return: 0 on success, error code othewise.
-+ */
-+int adf_cfg_add_key_value_param(struct adf_accel_dev *accel_dev,
-+				const char *section_name,
-+				const char *key, const void *val,
-+				enum adf_cfg_val_type type)
-+{
-+	struct adf_cfg_device_data *cfg = accel_dev->cfg;
-+	struct adf_cfg_key_val *key_val;
-+	struct adf_cfg_section *section = adf_cfg_sec_find(accel_dev,
-+							   section_name);
-+	if (!section)
-+		return -EFAULT;
-+
-+	key_val = kzalloc(sizeof(*key_val), GFP_KERNEL);
-+	if (!key_val)
-+		return -ENOMEM;
-+
-+	INIT_LIST_HEAD(&key_val->list);
-+	strlcpy(key_val->key, key, sizeof(key_val->key));
-+
-+	if (type == ADF_DEC) {
-+		snprintf(key_val->val, ADF_CFG_MAX_VAL_LEN_IN_BYTES,
-+			 "%ld", (*((long *)val)));
-+	} else if (type == ADF_STR) {
-+		strlcpy(key_val->val, (char *)val, sizeof(key_val->val));
-+	} else if (type == ADF_HEX) {
-+		snprintf(key_val->val, ADF_CFG_MAX_VAL_LEN_IN_BYTES,
-+			 "0x%lx", (unsigned long)val);
-+	} else {
-+		pr_err("QAT: Unknown type given.\n");
-+		kfree(key_val);
-+		return -1;
-+	}
-+	key_val->type = type;
-+	down_write(&cfg->lock);
-+	adf_cfg_keyval_add(key_val, section);
-+	up_write(&cfg->lock);
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(adf_cfg_add_key_value_param);
-+
-+/**
-+ * adf_cfg_section_add() - Add config section entry to config table.
-+ * @accel_dev:  Pointer to acceleration device.
-+ * @name: Name of the section
-+ *
-+ * Function adds configuration section where key - value entries
-+ * will be stored.
-+ * To be used by QAT device specific drivers.
-+ *
-+ * Return: 0 on success, error code othewise.
-+ */
-+int adf_cfg_section_add(struct adf_accel_dev *accel_dev, const char *name)
-+{
-+	struct adf_cfg_device_data *cfg = accel_dev->cfg;
-+	struct adf_cfg_section *sec = adf_cfg_sec_find(accel_dev, name);
-+
-+	if (sec)
-+		return 0;
-+
-+	sec = kzalloc(sizeof(*sec), GFP_KERNEL);
-+	if (!sec)
-+		return -ENOMEM;
-+
-+	strlcpy(sec->name, name, sizeof(sec->name));
-+	INIT_LIST_HEAD(&sec->param_head);
-+	down_write(&cfg->lock);
-+	list_add_tail(&sec->list, &cfg->sec_list);
-+	up_write(&cfg->lock);
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(adf_cfg_section_add);
-+
-+int adf_cfg_get_param_value(struct adf_accel_dev *accel_dev,
-+			    const char *section, const char *name,
-+			    char *value)
-+{
-+	struct adf_cfg_device_data *cfg = accel_dev->cfg;
-+	int ret;
-+
-+	down_read(&cfg->lock);
-+	ret = adf_cfg_key_val_get(accel_dev, section, name, value);
-+	up_read(&cfg->lock);
-+	return ret;
-+}
-diff --git a/drivers/crypto/qat/qat_common/adf_cfg.h b/drivers/crypto/qat/qat_common/adf_cfg.h
-new file mode 100644
-index 0000000..6a9c6f6
---- /dev/null
-+++ b/drivers/crypto/qat/qat_common/adf_cfg.h
-@@ -0,0 +1,87 @@
-+/*
-+  This file is provided under a dual BSD/GPLv2 license.  When using or
-+  redistributing this file, you may do so under either license.
-+
-+  GPL LICENSE SUMMARY
-+  Copyright(c) 2014 Intel Corporation.
-+  This program is free software; you can redistribute it and/or modify
-+  it under the terms of version 2 of the GNU General Public License as
-+  published by the Free Software Foundation.
-+
-+  This program is distributed in the hope that it will be useful, but
-+  WITHOUT ANY WARRANTY; without even the implied warranty of
-+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+  General Public License for more details.
-+
-+  Contact Information:
-+  qat-linux@intel.com
-+
-+  BSD LICENSE
-+  Copyright(c) 2014 Intel Corporation.
-+  Redistribution and use in source and binary forms, with or without
-+  modification, are permitted provided that the following conditions
-+  are met:
-+
-+    * Redistributions of source code must retain the above copyright
-+      notice, this list of conditions and the following disclaimer.
-+    * Redistributions in binary form must reproduce the above copyright
-+      notice, this list of conditions and the following disclaimer in
-+      the documentation and/or other materials provided with the
-+      distribution.
-+    * Neither the name of Intel Corporation nor the names of its
-+      contributors may be used to endorse or promote products derived
-+      from this software without specific prior written permission.
-+
-+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-+  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-+  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-+  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-+  OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-+  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-+  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-+  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-+  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-+  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-+  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-+*/
-+#ifndef ADF_CFG_H_
-+#define ADF_CFG_H_
-+
-+#include <linux/list.h>
-+#include <linux/rwsem.h>
-+#include <linux/debugfs.h>
-+#include "adf_accel_devices.h"
-+#include "adf_cfg_common.h"
-+#include "adf_cfg_strings.h"
-+
-+struct adf_cfg_key_val {
-+	char key[ADF_CFG_MAX_KEY_LEN_IN_BYTES];
-+	char val[ADF_CFG_MAX_VAL_LEN_IN_BYTES];
-+	enum adf_cfg_val_type type;
-+	struct list_head list;
-+};
-+
-+struct adf_cfg_section {
-+	char name[ADF_CFG_MAX_SECTION_LEN_IN_BYTES];
-+	struct list_head list;
-+	struct list_head param_head;
-+};
-+
-+struct adf_cfg_device_data {
-+	struct list_head sec_list;
-+	struct dentry *debug;
-+	struct rw_semaphore lock;
-+};
-+
-+int adf_cfg_dev_add(struct adf_accel_dev *accel_dev);
-+void adf_cfg_dev_remove(struct adf_accel_dev *accel_dev);
-+int adf_cfg_section_add(struct adf_accel_dev *accel_dev, const char *name);
-+void adf_cfg_del_all(struct adf_accel_dev *accel_dev);
-+int adf_cfg_add_key_value_param(struct adf_accel_dev *accel_dev,
-+				const char *section_name,
-+				const char *key, const void *val,
-+				enum adf_cfg_val_type type);
-+int adf_cfg_get_param_value(struct adf_accel_dev *accel_dev,
-+			    const char *section, const char *name, char *value);
-+
-+#endif
-diff --git a/drivers/crypto/qat/qat_common/adf_cfg_common.h b/drivers/crypto/qat/qat_common/adf_cfg_common.h
-new file mode 100644
-index 0000000..88b8218
---- /dev/null
-+++ b/drivers/crypto/qat/qat_common/adf_cfg_common.h
-@@ -0,0 +1,100 @@
-+/*
-+  This file is provided under a dual BSD/GPLv2 license.  When using or
-+  redistributing this file, you may do so under either license.
-+
-+  GPL LICENSE SUMMARY
-+  Copyright(c) 2014 Intel Corporation.
-+  This program is free software; you can redistribute it and/or modify
-+  it under the terms of version 2 of the GNU General Public License as
-+  published by the Free Software Foundation.
-+
-+  This program is distributed in the hope that it will be useful, but
-+  WITHOUT ANY WARRANTY; without even the implied warranty of
-+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+  General Public License for more details.
-+
-+  Contact Information:
-+  qat-linux@intel.com
-+
-+  BSD LICENSE
-+  Copyright(c) 2014 Intel Corporation.
-+  Redistribution and use in source and binary forms, with or without
-+  modification, are permitted provided that the following conditions
-+  are met:
-+
-+    * Redistributions of source code must retain the above copyright
-+      notice, this list of conditions and the following disclaimer.
-+    * Redistributions in binary form must reproduce the above copyright
-+      notice, this list of conditions and the following disclaimer in
-+      the documentation and/or other materials provided with the
-+      distribution.
-+    * Neither the name of Intel Corporation nor the names of its
-+      contributors may be used to endorse or promote products derived
-+      from this software without specific prior written permission.
-+
-+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-+  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-+  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-+  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-+  OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-+  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-+  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-+  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-+  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-+  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-+  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-+*/
-+#ifndef ADF_CFG_COMMON_H_
-+#define ADF_CFG_COMMON_H_
-+
-+#include <linux/types.h>
-+#include <linux/ioctl.h>
-+
-+#define ADF_CFG_MAX_STR_LEN 64
-+#define ADF_CFG_MAX_KEY_LEN_IN_BYTES ADF_CFG_MAX_STR_LEN
-+#define ADF_CFG_MAX_VAL_LEN_IN_BYTES ADF_CFG_MAX_STR_LEN
-+#define ADF_CFG_MAX_SECTION_LEN_IN_BYTES ADF_CFG_MAX_STR_LEN
-+#define ADF_CFG_BASE_DEC 10
-+#define ADF_CFG_BASE_HEX 16
-+#define ADF_CFG_ALL_DEVICES 0xFE
-+#define ADF_CFG_NO_DEVICE 0xFF
-+#define ADF_CFG_AFFINITY_WHATEVER 0xFF
-+#define MAX_DEVICE_NAME_SIZE 32
-+#define ADF_MAX_DEVICES 32
-+
-+enum adf_cfg_val_type {
-+	ADF_DEC,
-+	ADF_HEX,
-+	ADF_STR
-+};
-+
-+enum adf_device_type {
-+	DEV_UNKNOWN = 0,
-+	DEV_DH895XCC,
-+};
-+
-+struct adf_dev_status_info {
-+	enum adf_device_type type;
-+	uint8_t accel_id;
-+	uint8_t instance_id;
-+	uint8_t num_ae;
-+	uint8_t num_accel;
-+	uint8_t num_logical_accel;
-+	uint8_t banks_per_accel;
-+	uint8_t state;
-+	uint8_t bus;
-+	uint8_t dev;
-+	uint8_t fun;
-+	char name[MAX_DEVICE_NAME_SIZE];
-+};
-+
-+#define ADF_CTL_IOC_MAGIC 'a'
-+#define IOCTL_CONFIG_SYS_RESOURCE_PARAMETERS _IOW(ADF_CTL_IOC_MAGIC, 0, \
-+		struct adf_user_cfg_ctl_data)
-+#define IOCTL_STOP_ACCEL_DEV _IOW(ADF_CTL_IOC_MAGIC, 1, \
-+		struct adf_user_cfg_ctl_data)
-+#define IOCTL_START_ACCEL_DEV _IOW(ADF_CTL_IOC_MAGIC, 2, \
-+		struct adf_user_cfg_ctl_data)
-+#define IOCTL_STATUS_ACCEL_DEV _IOW(ADF_CTL_IOC_MAGIC, 3, uint32_t)
-+#define IOCTL_GET_NUM_DEVICES _IOW(ADF_CTL_IOC_MAGIC, 4, int32_t)
-+#endif
-diff --git a/drivers/crypto/qat/qat_common/adf_cfg_strings.h b/drivers/crypto/qat/qat_common/adf_cfg_strings.h
-new file mode 100644
-index 0000000..c7ac758
---- /dev/null
-+++ b/drivers/crypto/qat/qat_common/adf_cfg_strings.h
-@@ -0,0 +1,83 @@
-+/*
-+  This file is provided under a dual BSD/GPLv2 license.  When using or
-+  redistributing this file, you may do so under either license.
-+
-+  GPL LICENSE SUMMARY
-+  Copyright(c) 2014 Intel Corporation.
-+  This program is free software; you can redistribute it and/or modify
-+  it under the terms of version 2 of the GNU General Public License as
-+  published by the Free Software Foundation.
-+
-+  This program is distributed in the hope that it will be useful, but
-+  WITHOUT ANY WARRANTY; without even the implied warranty of
-+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+  General Public License for more details.
-+
-+  Contact Information:
-+  qat-linux@intel.com
-+
-+  BSD LICENSE
-+  Copyright(c) 2014 Intel Corporation.
-+  Redistribution and use in source and binary forms, with or without
-+  modification, are permitted provided that the following conditions
-+  are met:
-+
-+    * Redistributions of source code must retain the above copyright
-+      notice, this list of conditions and the following disclaimer.
-+    * Redistributions in binary form must reproduce the above copyright
-+      notice, this list of conditions and the following disclaimer in
-+      the documentation and/or other materials provided with the
-+      distribution.
-+    * Neither the name of Intel Corporation nor the names of its
-+      contributors may be used to endorse or promote products derived
-+      from this software without specific prior written permission.
-+
-+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-+  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-+  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-+  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-+  OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-+  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-+  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-+  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-+  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-+  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-+  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-+*/
-+#ifndef ADF_CFG_STRINGS_H_
-+#define ADF_CFG_STRINGS_H_
-+
-+#define ADF_GENERAL_SEC "GENERAL"
-+#define ADF_KERNEL_SEC "KERNEL"
-+#define ADF_ACCEL_SEC "Accelerator"
-+#define ADF_NUM_CY "NumberCyInstances"
-+#define ADF_NUM_DC "NumberDcInstances"
-+#define ADF_RING_SYM_SIZE "NumConcurrentSymRequests"
-+#define ADF_RING_ASYM_SIZE "NumConcurrentAsymRequests"
-+#define ADF_RING_DC_SIZE "NumConcurrentRequests"
-+#define ADF_RING_ASYM_TX "RingAsymTx"
-+#define ADF_RING_SYM_TX "RingSymTx"
-+#define ADF_RING_RND_TX "RingNrbgTx"
-+#define ADF_RING_ASYM_RX "RingAsymRx"
-+#define ADF_RING_SYM_RX "RinSymRx"
-+#define ADF_RING_RND_RX "RingNrbgRx"
-+#define ADF_RING_DC_TX "RingTx"
-+#define ADF_RING_DC_RX "RingRx"
-+#define ADF_ETRMGR_BANK "Bank"
-+#define ADF_RING_BANK_NUM "BankNumber"
-+#define ADF_CY "Cy"
-+#define ADF_DC "Dc"
-+#define ADF_ETRMGR_COALESCING_ENABLED "InterruptCoalescingEnabled"
-+#define ADF_ETRMGR_COALESCING_ENABLED_FORMAT \
-+	ADF_ETRMGR_BANK"%d"ADF_ETRMGR_COALESCING_ENABLED
-+#define ADF_ETRMGR_COALESCE_TIMER "InterruptCoalescingTimerNs"
-+#define ADF_ETRMGR_COALESCE_TIMER_FORMAT \
-+	ADF_ETRMGR_BANK"%d"ADF_ETRMGR_COALESCE_TIMER
-+#define ADF_ETRMGR_COALESCING_MSG_ENABLED "InterruptCoalescingNumResponses"
-+#define ADF_ETRMGR_COALESCING_MSG_ENABLED_FORMAT \
-+	ADF_ETRMGR_BANK"%d"ADF_ETRMGR_COALESCING_MSG_ENABLED
-+#define ADF_ETRMGR_CORE_AFFINITY "CoreAffinity"
-+#define ADF_ETRMGR_CORE_AFFINITY_FORMAT \
-+	ADF_ETRMGR_BANK"%d"ADF_ETRMGR_CORE_AFFINITY
-+#define ADF_ACCEL_STR "Accelerator%d"
-+#endif
-diff --git a/drivers/crypto/qat/qat_common/adf_cfg_user.h b/drivers/crypto/qat/qat_common/adf_cfg_user.h
-new file mode 100644
-index 0000000..0c38a15
---- /dev/null
-+++ b/drivers/crypto/qat/qat_common/adf_cfg_user.h
-@@ -0,0 +1,94 @@
-+/*
-+  This file is provided under a dual BSD/GPLv2 license.  When using or
-+  redistributing this file, you may do so under either license.
-+
-+  GPL LICENSE SUMMARY
-+  Copyright(c) 2014 Intel Corporation.
-+  This program is free software; you can redistribute it and/or modify
-+  it under the terms of version 2 of the GNU General Public License as
-+  published by the Free Software Foundation.
-+
-+  This program is distributed in the hope that it will be useful, but
-+  WITHOUT ANY WARRANTY; without even the implied warranty of
-+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+  General Public License for more details.
-+
-+  Contact Information:
-+  qat-linux@intel.com
-+
-+  BSD LICENSE
-+  Copyright(c) 2014 Intel Corporation.
-+  Redistribution and use in source and binary forms, with or without
-+  modification, are permitted provided that the following conditions
-+  are met:
-+
-+    * Redistributions of source code must retain the above copyright
-+      notice, this list of conditions and the following disclaimer.
-+    * Redistributions in binary form must reproduce the above copyright
-+      notice, this list of conditions and the following disclaimer in
-+      the documentation and/or other materials provided with the
-+      distribution.
-+    * Neither the name of Intel Corporation nor the names of its
-+      contributors may be used to endorse or promote products derived
-+      from this software without specific prior written permission.
-+
-+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-+  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-+  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-+  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-+  OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-+  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-+  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-+  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-+  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-+  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-+  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-+*/
-+#ifndef ADF_CFG_USER_H_
-+#define ADF_CFG_USER_H_
-+
-+#include "adf_cfg_common.h"
-+#include "adf_cfg_strings.h"
-+
-+struct adf_user_cfg_key_val {
-+	char key[ADF_CFG_MAX_KEY_LEN_IN_BYTES];
-+	char val[ADF_CFG_MAX_VAL_LEN_IN_BYTES];
-+	union {
-+		char *user_val_ptr;
-+		uint64_t padding1;
-+	};
-+	union {
-+		struct adf_user_cfg_key_val *prev;
-+		uint64_t padding2;
-+	};
-+	union {
-+		struct adf_user_cfg_key_val *next;
-+		uint64_t padding3;
-+	};
-+	enum adf_cfg_val_type type;
-+};
-+
-+struct adf_user_cfg_section {
-+	char name[ADF_CFG_MAX_SECTION_LEN_IN_BYTES];
-+	union {
-+		struct adf_user_cfg_key_val *params;
-+		uint64_t padding1;
-+	};
-+	union {
-+		struct adf_user_cfg_section *prev;
-+		uint64_t padding2;
-+	};
-+	union {
-+		struct adf_user_cfg_section *next;
-+		uint64_t padding3;
-+	};
-+};
-+
-+struct adf_user_cfg_ctl_data {
-+	union {
-+		struct adf_user_cfg_section *config_section;
-+		uint64_t padding;
-+	};
-+	uint8_t device_id;
-+};
-+#endif
-diff --git a/drivers/crypto/qat/qat_common/adf_common_drv.h b/drivers/crypto/qat/qat_common/adf_common_drv.h
-new file mode 100644
-index 0000000..3cea9fa
---- /dev/null
-+++ b/drivers/crypto/qat/qat_common/adf_common_drv.h
-@@ -0,0 +1,192 @@
-+/*
-+  This file is provided under a dual BSD/GPLv2 license.  When using or
-+  redistributing this file, you may do so under either license.
-+
-+  GPL LICENSE SUMMARY
-+  Copyright(c) 2014 Intel Corporation.
-+  This program is free software; you can redistribute it and/or modify
-+  it under the terms of version 2 of the GNU General Public License as
-+  published by the Free Software Foundation.
-+
-+  This program is distributed in the hope that it will be useful, but
-+  WITHOUT ANY WARRANTY; without even the implied warranty of
-+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+  General Public License for more details.
-+
-+  Contact Information:
-+  qat-linux@intel.com
-+
-+  BSD LICENSE
-+  Copyright(c) 2014 Intel Corporation.
-+  Redistribution and use in source and binary forms, with or without
-+  modification, are permitted provided that the following conditions
-+  are met:
-+
-+    * Redistributions of source code must retain the above copyright
-+      notice, this list of conditions and the following disclaimer.
-+    * Redistributions in binary form must reproduce the above copyright
-+      notice, this list of conditions and the following disclaimer in
-+      the documentation and/or other materials provided with the
-+      distribution.
-+    * Neither the name of Intel Corporation nor the names of its
-+      contributors may be used to endorse or promote products derived
-+      from this software without specific prior written permission.
-+
-+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-+  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-+  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-+  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-+  OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-+  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-+  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-+  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-+  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-+  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-+  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-+*/
-+#ifndef ADF_DRV_H
-+#define ADF_DRV_H
-+
-+#include <linux/list.h>
-+#include <linux/pci.h>
-+#include "adf_accel_devices.h"
-+#include "icp_qat_fw_loader_handle.h"
-+#include "icp_qat_hal.h"
-+
-+#define ADF_STATUS_RESTARTING 0
-+#define ADF_STATUS_STARTING 1
-+#define ADF_STATUS_CONFIGURED 2
-+#define ADF_STATUS_STARTED 3
-+#define ADF_STATUS_AE_INITIALISED 4
-+#define ADF_STATUS_AE_UCODE_LOADED 5
-+#define ADF_STATUS_AE_STARTED 6
-+#define ADF_STATUS_ORPHAN_TH_RUNNING 7
-+#define ADF_STATUS_IRQ_ALLOCATED 8
-+
-+enum adf_dev_reset_mode {
-+	ADF_DEV_RESET_ASYNC = 0,
-+	ADF_DEV_RESET_SYNC
-+};
-+
-+enum adf_event {
-+	ADF_EVENT_INIT = 0,
-+	ADF_EVENT_START,
-+	ADF_EVENT_STOP,
-+	ADF_EVENT_SHUTDOWN,
-+	ADF_EVENT_RESTARTING,
-+	ADF_EVENT_RESTARTED,
-+};
-+
-+struct service_hndl {
-+	int (*event_hld)(struct adf_accel_dev *accel_dev,
-+			 enum adf_event event);
-+	unsigned long init_status;
-+	unsigned long start_status;
-+	char *name;
-+	struct list_head list;
-+	int admin;
-+};
-+
-+int adf_service_register(struct service_hndl *service);
-+int adf_service_unregister(struct service_hndl *service);
-+
-+int adf_dev_init(struct adf_accel_dev *accel_dev);
-+int adf_dev_start(struct adf_accel_dev *accel_dev);
-+int adf_dev_stop(struct adf_accel_dev *accel_dev);
-+int adf_dev_shutdown(struct adf_accel_dev *accel_dev);
-+
-+int adf_ctl_dev_register(void);
-+void adf_ctl_dev_unregister(void);
-+int adf_processes_dev_register(void);
-+void adf_processes_dev_unregister(void);
-+
-+int adf_devmgr_add_dev(struct adf_accel_dev *accel_dev);
-+void adf_devmgr_rm_dev(struct adf_accel_dev *accel_dev);
-+struct list_head *adf_devmgr_get_head(void);
-+struct adf_accel_dev *adf_devmgr_get_dev_by_id(uint32_t id);
-+struct adf_accel_dev *adf_devmgr_get_first(void);
-+struct adf_accel_dev *adf_devmgr_pci_to_accel_dev(struct pci_dev *pci_dev);
-+int adf_devmgr_verify_id(uint32_t id);
-+void adf_devmgr_get_num_dev(uint32_t *num);
-+int adf_devmgr_in_reset(struct adf_accel_dev *accel_dev);
-+int adf_dev_started(struct adf_accel_dev *accel_dev);
-+int adf_dev_restarting_notify(struct adf_accel_dev *accel_dev);
-+int adf_dev_restarted_notify(struct adf_accel_dev *accel_dev);
-+int adf_ae_init(struct adf_accel_dev *accel_dev);
-+int adf_ae_shutdown(struct adf_accel_dev *accel_dev);
-+int adf_ae_fw_load(struct adf_accel_dev *accel_dev);
-+int adf_ae_fw_release(struct adf_accel_dev *accel_dev);
-+int adf_ae_start(struct adf_accel_dev *accel_dev);
-+int adf_ae_stop(struct adf_accel_dev *accel_dev);
-+
-+int adf_enable_aer(struct adf_accel_dev *accel_dev, struct pci_driver *adf);
-+void adf_disable_aer(struct adf_accel_dev *accel_dev);
-+int adf_init_aer(void);
-+void adf_exit_aer(void);
-+
-+int adf_dev_get(struct adf_accel_dev *accel_dev);
-+void adf_dev_put(struct adf_accel_dev *accel_dev);
-+int adf_dev_in_use(struct adf_accel_dev *accel_dev);
-+int adf_init_etr_data(struct adf_accel_dev *accel_dev);
-+void adf_cleanup_etr_data(struct adf_accel_dev *accel_dev);
-+int qat_crypto_register(void);
-+int qat_crypto_unregister(void);
-+struct qat_crypto_instance *qat_crypto_get_instance_node(int node);
-+void qat_crypto_put_instance(struct qat_crypto_instance *inst);
-+void qat_alg_callback(void *resp);
-+int qat_algs_init(void);
-+void qat_algs_exit(void);
-+int qat_algs_register(void);
-+int qat_algs_unregister(void);
-+
-+int qat_hal_init(struct adf_accel_dev *accel_dev);
-+void qat_hal_deinit(struct icp_qat_fw_loader_handle *handle);
-+void qat_hal_start(struct icp_qat_fw_loader_handle *handle, unsigned char ae,
-+		   unsigned int ctx_mask);
-+void qat_hal_stop(struct icp_qat_fw_loader_handle *handle, unsigned char ae,
-+		  unsigned int ctx_mask);
-+void qat_hal_reset(struct icp_qat_fw_loader_handle *handle);
-+int qat_hal_clr_reset(struct icp_qat_fw_loader_handle *handle);
-+void qat_hal_set_live_ctx(struct icp_qat_fw_loader_handle *handle,
-+			  unsigned char ae, unsigned int ctx_mask);
 +int qat_hal_set_ae_lm_mode(struct icp_qat_fw_loader_handle *handle,
 +			   unsigned char ae, enum icp_qat_uof_regtype lm_type,
-+			   unsigned char mode);
-+int qat_hal_set_ae_ctx_mode(struct icp_qat_fw_loader_handle *handle,
-+			    unsigned char ae, unsigned char mode);
-+int qat_hal_set_ae_nn_mode(struct icp_qat_fw_loader_handle *handle,
-+			   unsigned char ae, unsigned char mode);
-+void qat_hal_set_pc(struct icp_qat_fw_loader_handle *handle,
-+		    unsigned char ae, unsigned int ctx_mask, unsigned int upc);
++			   unsigned char mode)
++{
++	unsigned int csr, new_csr;
++
++	qat_hal_rd_ae_csr(handle, ae, CTX_ENABLES, &csr);
++	csr &= IGNORE_W1C_MASK;
++	switch (lm_type) {
++	case ICP_LMEM0:
++		new_csr = (mode) ?
++			SET_BIT(csr, CE_LMADDR_0_GLOBAL_BITPOS) :
++			CLR_BIT(csr, CE_LMADDR_0_GLOBAL_BITPOS);
++		break;
++	case ICP_LMEM1:
++		new_csr = (mode) ?
++			SET_BIT(csr, CE_LMADDR_1_GLOBAL_BITPOS) :
++			CLR_BIT(csr, CE_LMADDR_1_GLOBAL_BITPOS);
++		break;
++	default:
++		pr_err("QAT: lmType = 0x%x\n", lm_type);
++		return -EINVAL;
++	}
++
++	if (new_csr != csr)
++		qat_hal_wr_ae_csr(handle, ae, CTX_ENABLES, new_csr);
++	return 0;
++}
++
++static unsigned short qat_hal_get_reg_addr(unsigned int type,
++					   unsigned short reg_num)
++{
++	unsigned short reg_addr;
++	switch (type) {
++	case ICP_GPA_ABS:
++	case ICP_GPB_ABS:
++		reg_addr = 0x80 | (reg_num & 0x7f);
++		break;
++	case ICP_GPA_REL:
++	case ICP_GPB_REL:
++		reg_addr = reg_num & 0x1f;
++		break;
++	case ICP_SR_RD_REL:
++	case ICP_SR_WR_REL:
++	case ICP_SR_REL:
++		reg_addr = 0x180 | (reg_num & 0x1f);
++		break;
++	case ICP_SR_ABS:
++		reg_addr = 0x140 | ((reg_num & 0x3) << 1);
++		break;
++	case ICP_DR_RD_REL:
++	case ICP_DR_WR_REL:
++	case ICP_DR_REL:
++		reg_addr = 0x1c0 | (reg_num & 0x1f);
++		break;
++	case ICP_DR_ABS:
++		reg_addr = 0x100 | ((reg_num & 0x3) << 1);
++		break;
++	case ICP_NEIGH_REL:
++		reg_addr = 0x280 | (reg_num & 0x1f);
++		break;
++	case ICP_LMEM0:
++		reg_addr = 0x200;
++		break;
++	case ICP_LMEM1:
++		reg_addr = 0x220;
++		break;
++	case ICP_NO_DEST:
++		reg_addr = 0x300 | (reg_num & 0xff);
++		break;
++	default:
++		reg_addr = BAD_REGADDR;
++		break;
++	}
++	return reg_addr;
++}
++
++void qat_hal_reset(struct icp_qat_fw_loader_handle *handle)
++{
++	unsigned int ae_reset_csr;
++
++	ae_reset_csr = GET_GLB_CSR(handle, ICP_RESET);
++	ae_reset_csr |= handle->hal_handle->ae_mask << RST_CSR_AE_LSB;
++	ae_reset_csr |= handle->hal_handle->slice_mask << RST_CSR_QAT_LSB;
++	SET_GLB_CSR(handle, ICP_RESET, ae_reset_csr);
++}
++
++static void qat_hal_wr_indr_csr(struct icp_qat_fw_loader_handle *handle,
++				unsigned char ae, unsigned int ctx_mask,
++				unsigned int ae_csr, unsigned int csr_val)
++{
++	unsigned int ctx, cur_ctx;
++
++	qat_hal_rd_ae_csr(handle, ae, CSR_CTX_POINTER, &cur_ctx);
++
++	for (ctx = 0; ctx < ICP_QAT_UCLO_MAX_CTX; ctx++) {
++		if (!(ctx_mask & (1 << ctx)))
++			continue;
++		qat_hal_wr_ae_csr(handle, ae, CSR_CTX_POINTER, ctx);
++		qat_hal_wr_ae_csr(handle, ae, ae_csr, csr_val);
++	}
++
++	qat_hal_wr_ae_csr(handle, ae, CSR_CTX_POINTER, cur_ctx);
++}
++
++static void qat_hal_rd_indr_csr(struct icp_qat_fw_loader_handle *handle,
++				unsigned char ae, unsigned char ctx,
++				unsigned int ae_csr, unsigned int *csr_val)
++{
++	unsigned int cur_ctx;
++
++	qat_hal_rd_ae_csr(handle, ae, CSR_CTX_POINTER, &cur_ctx);
++	qat_hal_wr_ae_csr(handle, ae, CSR_CTX_POINTER, ctx);
++	qat_hal_rd_ae_csr(handle, ae, ae_csr, csr_val);
++	qat_hal_wr_ae_csr(handle, ae, CSR_CTX_POINTER, cur_ctx);
++}
++
++static void qat_hal_put_sig_event(struct icp_qat_fw_loader_handle *handle,
++				  unsigned char ae, unsigned int ctx_mask,
++				  unsigned int events)
++{
++	unsigned int ctx, cur_ctx;
++
++	qat_hal_rd_ae_csr(handle, ae, CSR_CTX_POINTER, &cur_ctx);
++	for (ctx = 0; ctx < ICP_QAT_UCLO_MAX_CTX; ctx++) {
++		if (!(ctx_mask & (1 << ctx)))
++			continue;
++		qat_hal_wr_ae_csr(handle, ae, CSR_CTX_POINTER, ctx);
++		qat_hal_wr_ae_csr(handle, ae, CTX_SIG_EVENTS_INDIRECT, events);
++	}
++	qat_hal_wr_ae_csr(handle, ae, CSR_CTX_POINTER, cur_ctx);
++}
++
++static void qat_hal_put_wakeup_event(struct icp_qat_fw_loader_handle *handle,
++				     unsigned char ae, unsigned int ctx_mask,
++				     unsigned int events)
++{
++	unsigned int ctx, cur_ctx;
++
++	qat_hal_rd_ae_csr(handle, ae, CSR_CTX_POINTER, &cur_ctx);
++	for (ctx = 0; ctx < ICP_QAT_UCLO_MAX_CTX; ctx++) {
++		if (!(ctx_mask & (1 << ctx)))
++			continue;
++		qat_hal_wr_ae_csr(handle, ae, CSR_CTX_POINTER, ctx);
++		qat_hal_wr_ae_csr(handle, ae, CTX_WAKEUP_EVENTS_INDIRECT,
++				  events);
++	}
++	qat_hal_wr_ae_csr(handle, ae, CSR_CTX_POINTER, cur_ctx);
++}
++
++static int qat_hal_check_ae_alive(struct icp_qat_fw_loader_handle *handle)
++{
++	unsigned int base_cnt, cur_cnt;
++	unsigned char ae;
++	unsigned int times = MAX_RETRY_TIMES;
++
++	for (ae = 0; ae < handle->hal_handle->ae_max_num; ae++) {
++		if (!(handle->hal_handle->ae_mask & (1 << ae)))
++			continue;
++
++		qat_hal_rd_ae_csr(handle, ae, PROFILE_COUNT,
++				  (unsigned int *)&base_cnt);
++		base_cnt &= 0xffff;
++
++		do {
++			qat_hal_rd_ae_csr(handle, ae, PROFILE_COUNT,
++					  (unsigned int *)&cur_cnt);
++			cur_cnt &= 0xffff;
++		} while (times-- && (cur_cnt == base_cnt));
++
++		if (!times) {
++			pr_err("QAT: AE%d is inactive!!\n", ae);
++			return -EFAULT;
++		}
++	}
++
++	return 0;
++}
++
++static void qat_hal_reset_timestamp(struct icp_qat_fw_loader_handle *handle)
++{
++	unsigned int misc_ctl;
++	unsigned char ae;
++
++	/* stop the timestamp timers */
++	misc_ctl = GET_GLB_CSR(handle, MISC_CONTROL);
++	if (misc_ctl & MC_TIMESTAMP_ENABLE)
++		SET_GLB_CSR(handle, MISC_CONTROL, misc_ctl &
++			    (~MC_TIMESTAMP_ENABLE));
++
++	for (ae = 0; ae <= handle->hal_handle->ae_max_num; ae++) {
++		if (!(handle->hal_handle->ae_mask & (1 << ae)))
++			continue;
++		qat_hal_wr_ae_csr(handle, ae, TIMESTAMP_LOW, 0);
++		qat_hal_wr_ae_csr(handle, ae, TIMESTAMP_HIGH, 0);
++	}
++	/* start timestamp timers */
++	SET_GLB_CSR(handle, MISC_CONTROL, misc_ctl | MC_TIMESTAMP_ENABLE);
++}
++
++#define ESRAM_AUTO_TINIT (1<<2)
++#define ESRAM_AUTO_TINIT_DONE (1<<3)
++#define ESRAM_AUTO_INIT_USED_CYCLES (1640)
++#define ESRAM_AUTO_INIT_CSR_OFFSET 0xC1C
++static int qat_hal_init_esram(struct icp_qat_fw_loader_handle *handle)
++{
++	void __iomem *csr_addr = handle->hal_ep_csr_addr_v +
++				 ESRAM_AUTO_INIT_CSR_OFFSET;
++	unsigned int csr_val, times = 30;
++
++	csr_val = ADF_CSR_RD(csr_addr, 0);
++	if ((csr_val & ESRAM_AUTO_TINIT) && (csr_val & ESRAM_AUTO_TINIT_DONE))
++		return 0;
++
++	csr_val = ADF_CSR_RD(csr_addr, 0);
++	csr_val |= ESRAM_AUTO_TINIT;
++	ADF_CSR_WR(csr_addr, 0, csr_val);
++
++	do {
++		qat_hal_wait_cycles(handle, 0, ESRAM_AUTO_INIT_USED_CYCLES, 0);
++		csr_val = ADF_CSR_RD(csr_addr, 0);
++	} while (!(csr_val & ESRAM_AUTO_TINIT_DONE) && times--);
++	if ((!times)) {
++		pr_err("QAT: Fail to init eSram!\n");
++		return -EFAULT;
++	}
++	return 0;
++}
++
++#define SHRAM_INIT_CYCLES 2060
++int qat_hal_clr_reset(struct icp_qat_fw_loader_handle *handle)
++{
++	unsigned int ae_reset_csr;
++	unsigned char ae;
++	unsigned int clk_csr;
++	unsigned int times = 100;
++	unsigned int csr;
++
++	/* write to the reset csr */
++	ae_reset_csr = GET_GLB_CSR(handle, ICP_RESET);
++	ae_reset_csr &= ~(handle->hal_handle->ae_mask << RST_CSR_AE_LSB);
++	ae_reset_csr &= ~(handle->hal_handle->slice_mask << RST_CSR_QAT_LSB);
++	do {
++		SET_GLB_CSR(handle, ICP_RESET, ae_reset_csr);
++		if (!(times--))
++			goto out_err;
++		csr = GET_GLB_CSR(handle, ICP_RESET);
++	} while (csr & (handle->hal_handle->ae_mask |
++		 (handle->hal_handle->slice_mask << RST_CSR_QAT_LSB)));
++	/* enable clock */
++	clk_csr = GET_GLB_CSR(handle, ICP_GLOBAL_CLK_ENABLE);
++	clk_csr |= handle->hal_handle->ae_mask << 0;
++	clk_csr |= handle->hal_handle->slice_mask << 20;
++	SET_GLB_CSR(handle, ICP_GLOBAL_CLK_ENABLE, clk_csr);
++	if (qat_hal_check_ae_alive(handle))
++		goto out_err;
++
++	/* Set undefined power-up/reset states to reasonable default values */
++	for (ae = 0; ae <= handle->hal_handle->ae_max_num; ae++) {
++		if (!(handle->hal_handle->ae_mask & (1 << ae)))
++			continue;
++		qat_hal_wr_ae_csr(handle, ae, CTX_ENABLES,
++				  INIT_CTX_ENABLE_VALUE);
++		qat_hal_wr_indr_csr(handle, ae, ICP_QAT_UCLO_AE_ALL_CTX,
++				    CTX_STS_INDIRECT,
++				    handle->hal_handle->upc_mask &
++				    INIT_PC_VALUE);
++		qat_hal_wr_ae_csr(handle, ae, CTX_ARB_CNTL, INIT_CTX_ARB_VALUE);
++		qat_hal_wr_ae_csr(handle, ae, CC_ENABLE, INIT_CCENABLE_VALUE);
++		qat_hal_put_wakeup_event(handle, ae,
++					 ICP_QAT_UCLO_AE_ALL_CTX,
++					 INIT_WAKEUP_EVENTS_VALUE);
++		qat_hal_put_sig_event(handle, ae,
++				      ICP_QAT_UCLO_AE_ALL_CTX,
++				      INIT_SIG_EVENTS_VALUE);
++	}
++	if (qat_hal_init_esram(handle))
++		goto out_err;
++	if (qat_hal_wait_cycles(handle, 0, SHRAM_INIT_CYCLES, 0))
++		goto out_err;
++	qat_hal_reset_timestamp(handle);
++
++	return 0;
++out_err:
++	pr_err("QAT: failed to get device out of reset\n");
++	return -EFAULT;
++}
++
++static void qat_hal_disable_ctx(struct icp_qat_fw_loader_handle *handle,
++				unsigned char ae, unsigned int ctx_mask)
++{
++	unsigned int ctx;
++
++	qat_hal_rd_ae_csr(handle, ae, CTX_ENABLES, &ctx);
++	ctx &= IGNORE_W1C_MASK &
++		(~((ctx_mask & ICP_QAT_UCLO_AE_ALL_CTX) << CE_ENABLE_BITPOS));
++	qat_hal_wr_ae_csr(handle, ae, CTX_ENABLES, ctx);
++}
++
++static uint64_t qat_hal_parity_64bit(uint64_t word)
++{
++	word ^= word >> 1;
++	word ^= word >> 2;
++	word ^= word >> 4;
++	word ^= word >> 8;
++	word ^= word >> 16;
++	word ^= word >> 32;
++	return word & 1;
++}
++
++static uint64_t qat_hal_set_uword_ecc(uint64_t uword)
++{
++	uint64_t bit0_mask = 0xff800007fffULL, bit1_mask = 0x1f801ff801fULL,
++		bit2_mask = 0xe387e0781e1ULL, bit3_mask = 0x7cb8e388e22ULL,
++		bit4_mask = 0xaf5b2c93244ULL, bit5_mask = 0xf56d5525488ULL,
++		bit6_mask = 0xdaf69a46910ULL;
++
++	/* clear the ecc bits */
++	uword &= ~(0x7fULL << 0x2C);
++	uword |= qat_hal_parity_64bit(bit0_mask & uword) << 0x2C;
++	uword |= qat_hal_parity_64bit(bit1_mask & uword) << 0x2D;
++	uword |= qat_hal_parity_64bit(bit2_mask & uword) << 0x2E;
++	uword |= qat_hal_parity_64bit(bit3_mask & uword) << 0x2F;
++	uword |= qat_hal_parity_64bit(bit4_mask & uword) << 0x30;
++	uword |= qat_hal_parity_64bit(bit5_mask & uword) << 0x31;
++	uword |= qat_hal_parity_64bit(bit6_mask & uword) << 0x32;
++	return uword;
++}
++
 +void qat_hal_wr_uwords(struct icp_qat_fw_loader_handle *handle,
 +		       unsigned char ae, unsigned int uaddr,
-+		       unsigned int words_num, uint64_t *uword);
-+void qat_hal_wr_umem(struct icp_qat_fw_loader_handle *handle, unsigned char ae,
-+		     unsigned int uword_addr, unsigned int words_num,
-+		     unsigned int *data);
-+int qat_hal_get_ins_num(void);
++		       unsigned int words_num, uint64_t *uword)
++{
++	unsigned int ustore_addr;
++	unsigned int i;
++
++	qat_hal_rd_ae_csr(handle, ae, USTORE_ADDRESS, &ustore_addr);
++	uaddr |= UA_ECS;
++	qat_hal_wr_ae_csr(handle, ae, USTORE_ADDRESS, uaddr);
++	for (i = 0; i < words_num; i++) {
++		unsigned int uwrd_lo, uwrd_hi;
++		uint64_t tmp;
++
++		tmp = qat_hal_set_uword_ecc(uword[i]);
++		uwrd_lo = (unsigned int)(tmp & 0xffffffff);
++		uwrd_hi = (unsigned int)(tmp >> 0x20);
++		qat_hal_wr_ae_csr(handle, ae, USTORE_DATA_LOWER, uwrd_lo);
++		qat_hal_wr_ae_csr(handle, ae, USTORE_DATA_UPPER, uwrd_hi);
++	}
++	qat_hal_wr_ae_csr(handle, ae, USTORE_ADDRESS, ustore_addr);
++}
++
++static void qat_hal_enable_ctx(struct icp_qat_fw_loader_handle *handle,
++			       unsigned char ae, unsigned int ctx_mask)
++{
++	unsigned int ctx;
++
++	qat_hal_rd_ae_csr(handle, ae, CTX_ENABLES, &ctx);
++	ctx &= IGNORE_W1C_MASK;
++	ctx_mask &= (ctx & CE_INUSE_CONTEXTS) ? 0x55 : 0xFF;
++	ctx |= (ctx_mask << CE_ENABLE_BITPOS);
++	qat_hal_wr_ae_csr(handle, ae, CTX_ENABLES, ctx);
++}
++
++static int qat_hal_clear_gpr(struct icp_qat_fw_loader_handle *handle)
++{
++	unsigned char ae;
++	unsigned int ctx_mask = ICP_QAT_UCLO_AE_ALL_CTX;
++	int times = MAX_RETRY_TIMES;
++	unsigned int csr_val = 0;
++	unsigned short reg;
++	unsigned int savctx = 0;
++	int ret = 0;
++
++	for (ae = 0; ae <= handle->hal_handle->ae_max_num; ae++) {
++		if (!(handle->hal_handle->ae_mask & (1 << ae)))
++			continue;
++		for (reg = 0; reg < ICP_QAT_UCLO_MAX_GPR_REG; reg++) {
++			qat_hal_init_rd_xfer(handle, ae, 0, ICP_SR_RD_ABS,
++					     reg, 0);
++			qat_hal_init_rd_xfer(handle, ae, 0, ICP_DR_RD_ABS,
++					     reg, 0);
++		}
++		qat_hal_rd_ae_csr(handle, ae, AE_MISC_CONTROL, &csr_val);
++		csr_val &= ~(1 << MMC_SHARE_CS_BITPOS);
++		qat_hal_wr_ae_csr(handle, ae, AE_MISC_CONTROL, csr_val);
++		qat_hal_rd_ae_csr(handle, ae, CTX_ENABLES, &csr_val);
++		csr_val &= IGNORE_W1C_MASK;
++		csr_val |= CE_NN_MODE;
++		qat_hal_wr_ae_csr(handle, ae, CTX_ENABLES, csr_val);
++		qat_hal_wr_uwords(handle, ae, 0, ARRAY_SIZE(inst),
++				  (uint64_t *)inst);
++		qat_hal_wr_indr_csr(handle, ae, ctx_mask, CTX_STS_INDIRECT,
++				    handle->hal_handle->upc_mask &
++				    INIT_PC_VALUE);
++		qat_hal_rd_ae_csr(handle, ae, ACTIVE_CTX_STATUS, &savctx);
++		qat_hal_wr_ae_csr(handle, ae, ACTIVE_CTX_STATUS, 0);
++		qat_hal_put_wakeup_event(handle, ae, ctx_mask, XCWE_VOLUNTARY);
++		qat_hal_wr_indr_csr(handle, ae, ctx_mask,
++				    CTX_SIG_EVENTS_INDIRECT, 0);
++		qat_hal_wr_ae_csr(handle, ae, CTX_SIG_EVENTS_ACTIVE, 0);
++		qat_hal_enable_ctx(handle, ae, ctx_mask);
++	}
++	for (ae = 0; ae <= handle->hal_handle->ae_max_num; ae++) {
++		if (!(handle->hal_handle->ae_mask & (1 << ae)))
++			continue;
++		/* wait for AE to finish */
++		do {
++			ret = qat_hal_wait_cycles(handle, ae, 20, 1);
++		} while (ret && times--);
++
++		if (!times) {
++			pr_err("QAT: clear GPR of AE %d failed", ae);
++			return -EINVAL;
++		}
++		qat_hal_disable_ctx(handle, ae, ctx_mask);
++		qat_hal_wr_ae_csr(handle, ae, ACTIVE_CTX_STATUS,
++				  savctx & ACS_ACNO);
++		qat_hal_wr_ae_csr(handle, ae, CTX_ENABLES,
++				  INIT_CTX_ENABLE_VALUE);
++		qat_hal_wr_indr_csr(handle, ae, ctx_mask, CTX_STS_INDIRECT,
++				    handle->hal_handle->upc_mask &
++				    INIT_PC_VALUE);
++		qat_hal_wr_ae_csr(handle, ae, CTX_ARB_CNTL, INIT_CTX_ARB_VALUE);
++		qat_hal_wr_ae_csr(handle, ae, CC_ENABLE, INIT_CCENABLE_VALUE);
++		qat_hal_put_wakeup_event(handle, ae, ctx_mask,
++					 INIT_WAKEUP_EVENTS_VALUE);
++		qat_hal_put_sig_event(handle, ae, ctx_mask,
++				      INIT_SIG_EVENTS_VALUE);
++	}
++	return 0;
++}
++
++#define ICP_DH895XCC_AE_OFFSET      0x20000
++#define ICP_DH895XCC_CAP_OFFSET     (ICP_DH895XCC_AE_OFFSET + 0x10000)
++#define LOCAL_TO_XFER_REG_OFFSET    0x800
++#define ICP_DH895XCC_EP_OFFSET      0x3a000
++#define ICP_DH895XCC_PMISC_BAR 1
++int qat_hal_init(struct adf_accel_dev *accel_dev)
++{
++	unsigned char ae = 0;
++	unsigned int csr_val = 0;
++	unsigned int max_en_ae_num = 0;
++	struct icp_qat_fw_loader_handle *handle = NULL;
++	struct adf_accel_pci *pci_info = &accel_dev->accel_pci_dev;
++	struct adf_hw_device_data *hw_data = accel_dev->hw_device;
++	struct adf_bar *bar = &pci_info->pci_bars[ADF_DH895XCC_PMISC_BAR];
++
++	handle = kzalloc(sizeof(*handle), GFP_KERNEL);
++	if (!handle)
++		goto out_handle;
++
++	handle->hal_cap_g_ctl_csr_addr_v = bar->virt_addr +
++						ICP_DH895XCC_CAP_OFFSET;
++	handle->hal_cap_ae_xfer_csr_addr_v = bar->virt_addr +
++						ICP_DH895XCC_AE_OFFSET;
++	handle->hal_ep_csr_addr_v = bar->virt_addr + ICP_DH895XCC_EP_OFFSET;
++	handle->hal_cap_ae_local_csr_addr_v =
++		handle->hal_cap_ae_xfer_csr_addr_v + LOCAL_TO_XFER_REG_OFFSET;
++
++	handle->hal_handle = kzalloc(sizeof(*handle->hal_handle), GFP_KERNEL);
++	if (!handle->hal_handle)
++		goto out_hal_handle;
++	handle->hal_handle->revision_id = accel_dev->accel_pci_dev.revid;
++	handle->hal_handle->ae_mask = hw_data->ae_mask;
++	handle->hal_handle->slice_mask = hw_data->accel_mask;
++	/* create AE objects */
++	handle->hal_handle->upc_mask = 0x1ffff;
++	handle->hal_handle->max_ustore = 0x4000;
++	for (ae = 0; ae < ICP_QAT_UCLO_MAX_AE; ae++) {
++		if (!(hw_data->ae_mask & (1 << ae)))
++			continue;
++		handle->hal_handle->aes[ae].free_addr = 0;
++		handle->hal_handle->aes[ae].free_size =
++		    handle->hal_handle->max_ustore;
++		handle->hal_handle->aes[ae].ustore_size =
++		    handle->hal_handle->max_ustore;
++		handle->hal_handle->aes[ae].live_ctx_mask =
++						ICP_QAT_UCLO_AE_ALL_CTX;
++		max_en_ae_num = ae;
++	}
++	handle->hal_handle->ae_max_num = max_en_ae_num;
++	/* take all AEs out of reset */
++	if (qat_hal_clr_reset(handle)) {
++		pr_err("QAT: qat_hal_clr_reset error\n");
++		goto out_err;
++	}
++	if (qat_hal_clear_gpr(handle))
++		goto out_err;
++	/* Set SIGNATURE_ENABLE[0] to 0x1 in order to enable ALU_OUT csr */
++	for (ae = 0; ae <= handle->hal_handle->ae_max_num; ae++) {
++		if (!(hw_data->ae_mask & (1 << ae)))
++			continue;
++		qat_hal_rd_ae_csr(handle, ae, SIGNATURE_ENABLE, &csr_val);
++		csr_val |= 0x1;
++		qat_hal_wr_ae_csr(handle, ae, SIGNATURE_ENABLE, csr_val);
++	}
++	accel_dev->fw_loader->fw_loader = handle;
++	return 0;
++
++out_err:
++	kfree(handle->hal_handle);
++out_hal_handle:
++	kfree(handle);
++out_handle:
++	return -EFAULT;
++}
++
++void qat_hal_deinit(struct icp_qat_fw_loader_handle *handle)
++{
++	if (!handle)
++		return;
++	kfree(handle->hal_handle);
++	kfree(handle);
++}
++
++void qat_hal_start(struct icp_qat_fw_loader_handle *handle, unsigned char ae,
++		   unsigned int ctx_mask)
++{
++	qat_hal_put_wakeup_event(handle, ae, (~ctx_mask) &
++				 ICP_QAT_UCLO_AE_ALL_CTX, 0x10000);
++	qat_hal_enable_ctx(handle, ae, ctx_mask);
++}
++
++void qat_hal_stop(struct icp_qat_fw_loader_handle *handle, unsigned char ae,
++		  unsigned int ctx_mask)
++{
++	qat_hal_disable_ctx(handle, ae, ctx_mask);
++}
++
++void qat_hal_set_pc(struct icp_qat_fw_loader_handle *handle,
++		    unsigned char ae, unsigned int ctx_mask, unsigned int upc)
++{
++	qat_hal_wr_indr_csr(handle, ae, ctx_mask, CTX_STS_INDIRECT,
++			    handle->hal_handle->upc_mask & upc);
++}
++
++static void qat_hal_get_uwords(struct icp_qat_fw_loader_handle *handle,
++			       unsigned char ae, unsigned int uaddr,
++			       unsigned int words_num, uint64_t *uword)
++{
++	unsigned int i, uwrd_lo, uwrd_hi;
++	unsigned int ustore_addr, misc_control;
++
++	qat_hal_rd_ae_csr(handle, ae, AE_MISC_CONTROL, &misc_control);
++	qat_hal_wr_ae_csr(handle, ae, AE_MISC_CONTROL,
++			  misc_control & 0xfffffffb);
++	qat_hal_rd_ae_csr(handle, ae, USTORE_ADDRESS, &ustore_addr);
++	uaddr |= UA_ECS;
++	for (i = 0; i < words_num; i++) {
++		qat_hal_wr_ae_csr(handle, ae, USTORE_ADDRESS, uaddr);
++		uaddr++;
++		qat_hal_rd_ae_csr(handle, ae, USTORE_DATA_LOWER, &uwrd_lo);
++		qat_hal_rd_ae_csr(handle, ae, USTORE_DATA_UPPER, &uwrd_hi);
++		uword[i] = uwrd_hi;
++		uword[i] = (uword[i] << 0x20) | uwrd_lo;
++	}
++	qat_hal_wr_ae_csr(handle, ae, AE_MISC_CONTROL, misc_control);
++	qat_hal_wr_ae_csr(handle, ae, USTORE_ADDRESS, ustore_addr);
++}
++
++static int qat_hal_count_bits(unsigned int word)
++{
++	int n = 0;
++
++	while (word) {
++		n++;
++		word &= word - 1;
++	}
++	return n;
++}
++
++void qat_hal_wr_umem(struct icp_qat_fw_loader_handle *handle,
++		     unsigned char ae, unsigned int uaddr,
++		     unsigned int words_num, unsigned int *data)
++{
++	unsigned int i, ustore_addr;
++
++	qat_hal_rd_ae_csr(handle, ae, USTORE_ADDRESS, &ustore_addr);
++	uaddr |= UA_ECS;
++	qat_hal_wr_ae_csr(handle, ae, USTORE_ADDRESS, uaddr);
++	for (i = 0; i < words_num; i++) {
++		unsigned int uwrd_lo, uwrd_hi, tmp;
++		uwrd_lo = ((data[i] & 0xfff0000) << 4) | (0x3 << 18) |
++			  ((data[i] & 0xff00) << 2) |
++			  (0x3 << 8) | (data[i] & 0xff);
++		uwrd_hi = (0xf << 4) | ((data[i] & 0xf0000000) >> 28);
++		uwrd_hi |= (qat_hal_count_bits(data[i] & 0xffff) & 0x1) << 8;
++		tmp = ((data[i] >> 0x10) & 0xffff);
++		uwrd_hi |= (qat_hal_count_bits(tmp) & 0x1) << 9;
++		qat_hal_wr_ae_csr(handle, ae, USTORE_DATA_LOWER, uwrd_lo);
++		qat_hal_wr_ae_csr(handle, ae, USTORE_DATA_UPPER, uwrd_hi);
++	}
++	qat_hal_wr_ae_csr(handle, ae, USTORE_ADDRESS, ustore_addr);
++}
++
++#define MAX_EXEC_INST 100
++static int qat_hal_exec_micro_inst(struct icp_qat_fw_loader_handle *handle,
++				   unsigned char ae, unsigned char ctx,
++				   uint64_t *micro_inst, unsigned int inst_num,
++				   int code_off, unsigned int max_cycle,
++				   unsigned int *endpc)
++{
++	uint64_t savuwords[MAX_EXEC_INST];
++	unsigned int ind_lm_addr0, ind_lm_addr1;
++	unsigned int ind_lm_addr_byte0, ind_lm_addr_byte1;
++	unsigned int ind_cnt_sig;
++	unsigned int ind_sig, act_sig;
++	unsigned int csr_val = 0, newcsr_val;
++	unsigned int savctx;
++	unsigned int savcc, wakeup_events, savpc;
++	unsigned int ctxarb_ctl, ctx_enables;
++
++	if ((inst_num > handle->hal_handle->max_ustore) || !micro_inst) {
++		pr_err("QAT: invalid instructs inst_num=%d, micro_inst=0x%p\n ",
++		       inst_num, (unsigned int *)micro_inst);
++		return -EINVAL;
++	}
++	/* save current context */
++	qat_hal_rd_indr_csr(handle, ae, ctx, LM_ADDR_0_INDIRECT, &ind_lm_addr0);
++	qat_hal_rd_indr_csr(handle, ae, ctx, LM_ADDR_1_INDIRECT, &ind_lm_addr1);
++	qat_hal_rd_indr_csr(handle, ae, ctx, INDIRECT_LM_ADDR_0_BYTE_INDEX,
++			    &ind_lm_addr_byte0);
++	qat_hal_rd_indr_csr(handle, ae, ctx, INDIRECT_LM_ADDR_1_BYTE_INDEX,
++			    &ind_lm_addr_byte1);
++	if (inst_num <= MAX_EXEC_INST)
++		qat_hal_get_uwords(handle, ae, 0, inst_num, savuwords);
++	qat_hal_get_wakeup_event(handle, ae, ctx, &wakeup_events);
++	qat_hal_rd_indr_csr(handle, ae, ctx, CTX_STS_INDIRECT, &savpc);
++	savpc = (savpc & handle->hal_handle->upc_mask) >> 0;
++	qat_hal_rd_ae_csr(handle, ae, CTX_ENABLES, &ctx_enables);
++	ctx_enables &= IGNORE_W1C_MASK;
++	qat_hal_rd_ae_csr(handle, ae, CC_ENABLE, &savcc);
++	qat_hal_rd_ae_csr(handle, ae, ACTIVE_CTX_STATUS, &savctx);
++	qat_hal_rd_ae_csr(handle, ae, CTX_ARB_CNTL, &ctxarb_ctl);
++	qat_hal_rd_indr_csr(handle, ae, ctx, FUTURE_COUNT_SIGNAL_INDIRECT,
++			    &ind_cnt_sig);
++	qat_hal_rd_indr_csr(handle, ae, ctx, CTX_SIG_EVENTS_INDIRECT, &ind_sig);
++	qat_hal_rd_ae_csr(handle, ae, CTX_SIG_EVENTS_ACTIVE, &act_sig);
++	/* execute micro codes */
++	qat_hal_wr_ae_csr(handle, ae, CTX_ENABLES, ctx_enables);
++	qat_hal_wr_uwords(handle, ae, 0, inst_num, micro_inst);
++	qat_hal_wr_indr_csr(handle, ae, (1 << ctx), CTX_STS_INDIRECT, 0);
++	qat_hal_wr_ae_csr(handle, ae, ACTIVE_CTX_STATUS, ctx & ACS_ACNO);
++	if (code_off)
++		qat_hal_wr_ae_csr(handle, ae, CC_ENABLE, savcc & 0xffffdfff);
++	qat_hal_put_wakeup_event(handle, ae, (1 << ctx), XCWE_VOLUNTARY);
++	qat_hal_wr_indr_csr(handle, ae, (1 << ctx), CTX_SIG_EVENTS_INDIRECT, 0);
++	qat_hal_wr_ae_csr(handle, ae, CTX_SIG_EVENTS_ACTIVE, 0);
++	qat_hal_enable_ctx(handle, ae, (1 << ctx));
++	/* wait for micro codes to finish */
++	if (qat_hal_wait_cycles(handle, ae, max_cycle, 1) != 0)
++		return -EFAULT;
++	if (endpc) {
++		unsigned int ctx_status;
++		qat_hal_rd_indr_csr(handle, ae, ctx, CTX_STS_INDIRECT,
++				    &ctx_status);
++		*endpc = ctx_status & handle->hal_handle->upc_mask;
++	}
++	/* retore to saved context */
++	qat_hal_disable_ctx(handle, ae, (1 << ctx));
++	if (inst_num <= MAX_EXEC_INST)
++		qat_hal_wr_uwords(handle, ae, 0, inst_num, savuwords);
++	qat_hal_put_wakeup_event(handle, ae, (1 << ctx), wakeup_events);
++	qat_hal_wr_indr_csr(handle, ae, (1 << ctx), CTX_STS_INDIRECT,
++			    handle->hal_handle->upc_mask & savpc);
++	qat_hal_rd_ae_csr(handle, ae, AE_MISC_CONTROL, &csr_val);
++	newcsr_val = CLR_BIT(csr_val, MMC_SHARE_CS_BITPOS);
++	qat_hal_wr_ae_csr(handle, ae, AE_MISC_CONTROL, newcsr_val);
++	qat_hal_wr_ae_csr(handle, ae, CC_ENABLE, savcc);
++	qat_hal_wr_ae_csr(handle, ae, ACTIVE_CTX_STATUS, savctx & ACS_ACNO);
++	qat_hal_wr_ae_csr(handle, ae, CTX_ARB_CNTL, ctxarb_ctl);
++	qat_hal_wr_indr_csr(handle, ae, (1 << ctx),
++			    LM_ADDR_0_INDIRECT, ind_lm_addr0);
++	qat_hal_wr_indr_csr(handle, ae, (1 << ctx),
++			    LM_ADDR_1_INDIRECT, ind_lm_addr1);
++	qat_hal_wr_indr_csr(handle, ae, (1 << ctx),
++			    INDIRECT_LM_ADDR_0_BYTE_INDEX, ind_lm_addr_byte0);
++	qat_hal_wr_indr_csr(handle, ae, (1 << ctx),
++			    INDIRECT_LM_ADDR_1_BYTE_INDEX, ind_lm_addr_byte1);
++	qat_hal_wr_indr_csr(handle, ae, (1 << ctx),
++			    FUTURE_COUNT_SIGNAL_INDIRECT, ind_cnt_sig);
++	qat_hal_wr_indr_csr(handle, ae, (1 << ctx),
++			    CTX_SIG_EVENTS_INDIRECT, ind_sig);
++	qat_hal_wr_ae_csr(handle, ae, CTX_SIG_EVENTS_ACTIVE, act_sig);
++	qat_hal_wr_ae_csr(handle, ae, CTX_ENABLES, ctx_enables);
++
++	return 0;
++}
++
++static int qat_hal_rd_rel_reg(struct icp_qat_fw_loader_handle *handle,
++			      unsigned char ae, unsigned char ctx,
++			      enum icp_qat_uof_regtype reg_type,
++			      unsigned short reg_num, unsigned int *data)
++{
++	unsigned int savctx, uaddr, uwrd_lo, uwrd_hi;
++	unsigned int ctxarb_cntl, ustore_addr, ctx_enables;
++	unsigned short reg_addr;
++	int status = 0;
++	uint64_t insts, savuword;
++
++	reg_addr = qat_hal_get_reg_addr(reg_type, reg_num);
++	if (reg_addr == BAD_REGADDR) {
++		pr_err("QAT: bad regaddr=0x%x\n", reg_addr);
++		return -EINVAL;
++	}
++	switch (reg_type) {
++	case ICP_GPA_REL:
++		insts = 0xA070000000ull | (reg_addr & 0x3ff);
++		break;
++	default:
++		insts = (uint64_t)0xA030000000ull | ((reg_addr & 0x3ff) << 10);
++		break;
++	}
++	qat_hal_rd_ae_csr(handle, ae, ACTIVE_CTX_STATUS, &savctx);
++	qat_hal_rd_ae_csr(handle, ae, CTX_ARB_CNTL, &ctxarb_cntl);
++	qat_hal_rd_ae_csr(handle, ae, CTX_ENABLES, &ctx_enables);
++	ctx_enables &= IGNORE_W1C_MASK;
++	if (ctx != (savctx & ACS_ACNO))
++		qat_hal_wr_ae_csr(handle, ae, ACTIVE_CTX_STATUS,
++				  ctx & ACS_ACNO);
++	qat_hal_get_uwords(handle, ae, 0, 1, &savuword);
++	qat_hal_wr_ae_csr(handle, ae, CTX_ENABLES, ctx_enables);
++	qat_hal_rd_ae_csr(handle, ae, USTORE_ADDRESS, &ustore_addr);
++	uaddr = UA_ECS;
++	qat_hal_wr_ae_csr(handle, ae, USTORE_ADDRESS, uaddr);
++	insts = qat_hal_set_uword_ecc(insts);
++	uwrd_lo = (unsigned int)(insts & 0xffffffff);
++	uwrd_hi = (unsigned int)(insts >> 0x20);
++	qat_hal_wr_ae_csr(handle, ae, USTORE_DATA_LOWER, uwrd_lo);
++	qat_hal_wr_ae_csr(handle, ae, USTORE_DATA_UPPER, uwrd_hi);
++	qat_hal_wr_ae_csr(handle, ae, USTORE_ADDRESS, uaddr);
++	/* delay for at least 8 cycles */
++	qat_hal_wait_cycles(handle, ae, 0x8, 0);
++	/*
++	 * read ALU output
++	 * the instruction should have been executed
++	 * prior to clearing the ECS in putUwords
++	 */
++	qat_hal_rd_ae_csr(handle, ae, ALU_OUT, data);
++	qat_hal_wr_ae_csr(handle, ae, USTORE_ADDRESS, ustore_addr);
++	qat_hal_wr_uwords(handle, ae, 0, 1, &savuword);
++	if (ctx != (savctx & ACS_ACNO))
++		qat_hal_wr_ae_csr(handle, ae, ACTIVE_CTX_STATUS,
++				  savctx & ACS_ACNO);
++	qat_hal_wr_ae_csr(handle, ae, CTX_ARB_CNTL, ctxarb_cntl);
++	qat_hal_wr_ae_csr(handle, ae, CTX_ENABLES, ctx_enables);
++
++	return status;
++}
++
++static int qat_hal_wr_rel_reg(struct icp_qat_fw_loader_handle *handle,
++			      unsigned char ae, unsigned char ctx,
++			      enum icp_qat_uof_regtype reg_type,
++			      unsigned short reg_num, unsigned int data)
++{
++	unsigned short src_hiaddr, src_lowaddr, dest_addr, data16hi, data16lo;
++	uint64_t insts[] = {
++		0x0F440000000ull,
++		0x0F040000000ull,
++		0x0F0000C0300ull,
++		0x0E000010000ull
++	};
++	const int num_inst = ARRAY_SIZE(insts), code_off = 1;
++	const int imm_w1 = 0, imm_w0 = 1;
++
++	dest_addr = qat_hal_get_reg_addr(reg_type, reg_num);
++	if (dest_addr == BAD_REGADDR) {
++		pr_err("QAT: bad destAddr=0x%x\n", dest_addr);
++		return -EINVAL;
++	}
++
++	data16lo = 0xffff & data;
++	data16hi = 0xffff & (data >> 0x10);
++	src_hiaddr = qat_hal_get_reg_addr(ICP_NO_DEST, (unsigned short)
++					  (0xff & data16hi));
++	src_lowaddr = qat_hal_get_reg_addr(ICP_NO_DEST, (unsigned short)
++					   (0xff & data16lo));
++	switch (reg_type) {
++	case ICP_GPA_REL:
++		insts[imm_w1] = insts[imm_w1] | ((data16hi >> 8) << 20) |
++		    ((src_hiaddr & 0x3ff) << 10) | (dest_addr & 0x3ff);
++		insts[imm_w0] = insts[imm_w0] | ((data16lo >> 8) << 20) |
++		    ((src_lowaddr & 0x3ff) << 10) | (dest_addr & 0x3ff);
++		break;
++	default:
++		insts[imm_w1] = insts[imm_w1] | ((data16hi >> 8) << 20) |
++		    ((dest_addr & 0x3ff) << 10) | (src_hiaddr & 0x3ff);
++
++		insts[imm_w0] = insts[imm_w0] | ((data16lo >> 8) << 20) |
++		    ((dest_addr & 0x3ff) << 10) | (src_lowaddr & 0x3ff);
++		break;
++	}
++
++	return qat_hal_exec_micro_inst(handle, ae, ctx, insts, num_inst,
++				       code_off, num_inst * 0x5, NULL);
++}
++
++int qat_hal_get_ins_num(void)
++{
++	return ARRAY_SIZE(inst_4b);
++}
++
++static int qat_hal_concat_micro_code(uint64_t *micro_inst,
++				     unsigned int inst_num, unsigned int size,
++				     unsigned int addr, unsigned int *value)
++{
++	int i, val_indx;
++	unsigned int cur_value;
++	const uint64_t *inst_arr;
++	int fixup_offset;
++	int usize = 0;
++	int orig_num;
++
++	orig_num = inst_num;
++	val_indx = 0;
++	cur_value = value[val_indx++];
++	inst_arr = inst_4b;
++	usize = ARRAY_SIZE(inst_4b);
++	fixup_offset = inst_num;
++	for (i = 0; i < usize; i++)
++		micro_inst[inst_num++] = inst_arr[i];
++	INSERT_IMMED_GPRA_CONST(micro_inst[fixup_offset], (addr));
++	fixup_offset++;
++	INSERT_IMMED_GPRA_CONST(micro_inst[fixup_offset], 0);
++	fixup_offset++;
++	INSERT_IMMED_GPRB_CONST(micro_inst[fixup_offset], (cur_value >> 0));
++	fixup_offset++;
++	INSERT_IMMED_GPRB_CONST(micro_inst[fixup_offset], (cur_value >> 0x10));
++
++	return inst_num - orig_num;
++}
++
++static int qat_hal_exec_micro_init_lm(struct icp_qat_fw_loader_handle *handle,
++				      unsigned char ae, unsigned char ctx,
++				      int *pfirst_exec, uint64_t *micro_inst,
++				      unsigned int inst_num)
++{
++	int stat = 0;
++	unsigned int gpra0 = 0, gpra1 = 0, gpra2 = 0;
++	unsigned int gprb0 = 0, gprb1 = 0;
++
++	if (*pfirst_exec) {
++		qat_hal_rd_rel_reg(handle, ae, ctx, ICP_GPA_REL, 0, &gpra0);
++		qat_hal_rd_rel_reg(handle, ae, ctx, ICP_GPA_REL, 0x1, &gpra1);
++		qat_hal_rd_rel_reg(handle, ae, ctx, ICP_GPA_REL, 0x2, &gpra2);
++		qat_hal_rd_rel_reg(handle, ae, ctx, ICP_GPB_REL, 0, &gprb0);
++		qat_hal_rd_rel_reg(handle, ae, ctx, ICP_GPB_REL, 0x1, &gprb1);
++		*pfirst_exec = 0;
++	}
++	stat = qat_hal_exec_micro_inst(handle, ae, ctx, micro_inst, inst_num, 1,
++				       inst_num * 0x5, NULL);
++	if (stat != 0)
++		return -EFAULT;
++	qat_hal_wr_rel_reg(handle, ae, ctx, ICP_GPA_REL, 0, gpra0);
++	qat_hal_wr_rel_reg(handle, ae, ctx, ICP_GPA_REL, 0x1, gpra1);
++	qat_hal_wr_rel_reg(handle, ae, ctx, ICP_GPA_REL, 0x2, gpra2);
++	qat_hal_wr_rel_reg(handle, ae, ctx, ICP_GPB_REL, 0, gprb0);
++	qat_hal_wr_rel_reg(handle, ae, ctx, ICP_GPB_REL, 0x1, gprb1);
++
++	return 0;
++}
++
 +int qat_hal_batch_wr_lm(struct icp_qat_fw_loader_handle *handle,
 +			unsigned char ae,
-+			struct icp_qat_uof_batch_init *lm_init_header);
++			struct icp_qat_uof_batch_init *lm_init_header)
++{
++	struct icp_qat_uof_batch_init *plm_init;
++	uint64_t *micro_inst_arry;
++	int micro_inst_num;
++	int alloc_inst_size;
++	int first_exec = 1;
++	int stat = 0;
++
++	plm_init = lm_init_header->next;
++	alloc_inst_size = lm_init_header->size;
++	if ((unsigned int)alloc_inst_size > handle->hal_handle->max_ustore)
++		alloc_inst_size = handle->hal_handle->max_ustore;
++	micro_inst_arry = kmalloc(alloc_inst_size * sizeof(uint64_t),
++				  GFP_KERNEL);
++	if (!micro_inst_arry)
++		return -ENOMEM;
++	micro_inst_num = 0;
++	while (plm_init) {
++		unsigned int addr, *value, size;
++
++		ae = plm_init->ae;
++		addr = plm_init->addr;
++		value = plm_init->value;
++		size = plm_init->size;
++		micro_inst_num += qat_hal_concat_micro_code(micro_inst_arry,
++							    micro_inst_num,
++							    size, addr, value);
++		plm_init = plm_init->next;
++	}
++	/* exec micro codes */
++	if (micro_inst_arry && (micro_inst_num > 0)) {
++		micro_inst_arry[micro_inst_num++] = 0x0E000010000ull;
++		stat = qat_hal_exec_micro_init_lm(handle, ae, 0, &first_exec,
++						  micro_inst_arry,
++						  micro_inst_num);
++	}
++	kfree(micro_inst_arry);
++	return stat;
++}
++
++static int qat_hal_put_rel_rd_xfer(struct icp_qat_fw_loader_handle *handle,
++				   unsigned char ae, unsigned char ctx,
++				   enum icp_qat_uof_regtype reg_type,
++				   unsigned short reg_num, unsigned int val)
++{
++	int status = 0;
++	unsigned int reg_addr;
++	unsigned int ctx_enables;
++	unsigned short mask;
++	unsigned short dr_offset = 0x10;
++
++	status = qat_hal_rd_ae_csr(handle, ae, CTX_ENABLES, &ctx_enables);
++	if (CE_INUSE_CONTEXTS & ctx_enables) {
++		if (ctx & 0x1) {
++			pr_err("QAT: bad 4-ctx mode,ctx=0x%x\n", ctx);
++			return -EINVAL;
++		}
++		mask = 0x1f;
++		dr_offset = 0x20;
++	} else {
++		mask = 0x0f;
++	}
++	if (reg_num & ~mask)
++		return -EINVAL;
++	reg_addr = reg_num + (ctx << 0x5);
++	switch (reg_type) {
++	case ICP_SR_RD_REL:
++	case ICP_SR_REL:
++		SET_AE_XFER(handle, ae, reg_addr, val);
++		break;
++	case ICP_DR_RD_REL:
++	case ICP_DR_REL:
++		SET_AE_XFER(handle, ae, (reg_addr + dr_offset), val);
++		break;
++	default:
++		status = -EINVAL;
++		break;
++	}
++	return status;
++}
++
++static int qat_hal_put_rel_wr_xfer(struct icp_qat_fw_loader_handle *handle,
++				   unsigned char ae, unsigned char ctx,
++				   enum icp_qat_uof_regtype reg_type,
++				   unsigned short reg_num, unsigned int data)
++{
++	unsigned int gprval, ctx_enables;
++	unsigned short src_hiaddr, src_lowaddr, gpr_addr, xfr_addr, data16hi,
++	    data16low;
++	unsigned short reg_mask;
++	int status = 0;
++	uint64_t micro_inst[] = {
++		0x0F440000000ull,
++		0x0F040000000ull,
++		0x0A000000000ull,
++		0x0F0000C0300ull,
++		0x0E000010000ull
++	};
++	const int num_inst = ARRAY_SIZE(micro_inst), code_off = 1;
++	const unsigned short gprnum = 0, dly = num_inst * 0x5;
++
++	qat_hal_rd_ae_csr(handle, ae, CTX_ENABLES, &ctx_enables);
++	if (CE_INUSE_CONTEXTS & ctx_enables) {
++		if (ctx & 0x1) {
++			pr_err("QAT: 4-ctx mode,ctx=0x%x\n", ctx);
++			return -EINVAL;
++		}
++		reg_mask = (unsigned short)~0x1f;
++	} else {
++		reg_mask = (unsigned short)~0xf;
++	}
++	if (reg_num & reg_mask)
++		return -EINVAL;
++	xfr_addr = qat_hal_get_reg_addr(reg_type, reg_num);
++	if (xfr_addr == BAD_REGADDR) {
++		pr_err("QAT: bad xfrAddr=0x%x\n", xfr_addr);
++		return -EINVAL;
++	}
++	qat_hal_rd_rel_reg(handle, ae, ctx, ICP_GPB_REL, gprnum, &gprval);
++	gpr_addr = qat_hal_get_reg_addr(ICP_GPB_REL, gprnum);
++	data16low = 0xffff & data;
++	data16hi = 0xffff & (data >> 0x10);
++	src_hiaddr = qat_hal_get_reg_addr(ICP_NO_DEST,
++					  (unsigned short)(0xff & data16hi));
++	src_lowaddr = qat_hal_get_reg_addr(ICP_NO_DEST,
++					   (unsigned short)(0xff & data16low));
++	micro_inst[0] = micro_inst[0x0] | ((data16hi >> 8) << 20) |
++	    ((gpr_addr & 0x3ff) << 10) | (src_hiaddr & 0x3ff);
++	micro_inst[1] = micro_inst[0x1] | ((data16low >> 8) << 20) |
++	    ((gpr_addr & 0x3ff) << 10) | (src_lowaddr & 0x3ff);
++	micro_inst[0x2] = micro_inst[0x2] |
++	    ((xfr_addr & 0x3ff) << 20) | ((gpr_addr & 0x3ff) << 10);
++	status = qat_hal_exec_micro_inst(handle, ae, ctx, micro_inst, num_inst,
++					 code_off, dly, NULL);
++	qat_hal_wr_rel_reg(handle, ae, ctx, ICP_GPB_REL, gprnum, gprval);
++	return status;
++}
++
++static int qat_hal_put_rel_nn(struct icp_qat_fw_loader_handle *handle,
++			      unsigned char ae, unsigned char ctx,
++			      unsigned short nn, unsigned int val)
++{
++	unsigned int ctx_enables;
++	int stat = 0;
++
++	qat_hal_rd_ae_csr(handle, ae, CTX_ENABLES, &ctx_enables);
++	ctx_enables &= IGNORE_W1C_MASK;
++	qat_hal_wr_ae_csr(handle, ae, CTX_ENABLES, ctx_enables | CE_NN_MODE);
++
++	stat = qat_hal_put_rel_wr_xfer(handle, ae, ctx, ICP_NEIGH_REL, nn, val);
++	qat_hal_wr_ae_csr(handle, ae, CTX_ENABLES, ctx_enables);
++	return stat;
++}
++
++static int qat_hal_convert_abs_to_rel(struct icp_qat_fw_loader_handle
++				      *handle, unsigned char ae,
++				      unsigned short absreg_num,
++				      unsigned short *relreg,
++				      unsigned char *ctx)
++{
++	unsigned int ctx_enables;
++
++	qat_hal_rd_ae_csr(handle, ae, CTX_ENABLES, &ctx_enables);
++	if (ctx_enables & CE_INUSE_CONTEXTS) {
++		/* 4-ctx mode */
++		*relreg = absreg_num & 0x1F;
++		*ctx = (absreg_num >> 0x4) & 0x6;
++	} else {
++		/* 8-ctx mode */
++		*relreg = absreg_num & 0x0F;
++		*ctx = (absreg_num >> 0x4) & 0x7;
++	}
++	return 0;
++}
++
 +int qat_hal_init_gpr(struct icp_qat_fw_loader_handle *handle,
 +		     unsigned char ae, unsigned char ctx_mask,
 +		     enum icp_qat_uof_regtype reg_type,
-+		     unsigned short reg_num, unsigned int regdata);
++		     unsigned short reg_num, unsigned int regdata)
++{
++	int stat = 0;
++	unsigned short reg;
++	unsigned char ctx = 0;
++	enum icp_qat_uof_regtype type;
++
++	if (reg_num >= ICP_QAT_UCLO_MAX_GPR_REG)
++		return -EINVAL;
++
++	do {
++		if (ctx_mask == 0) {
++			qat_hal_convert_abs_to_rel(handle, ae, reg_num, &reg,
++						   &ctx);
++			type = reg_type - 1;
++		} else {
++			reg = reg_num;
++			type = reg_type;
++			if (!test_bit(ctx, (unsigned long *)&ctx_mask))
++				continue;
++		}
++		stat = qat_hal_wr_rel_reg(handle, ae, ctx, type, reg, regdata);
++		if (stat) {
++			pr_err("QAT: write gpr fail\n");
++			return -EINVAL;
++		}
++	} while (ctx_mask && (ctx++ < ICP_QAT_UCLO_MAX_CTX));
++
++	return 0;
++}
++
 +int qat_hal_init_wr_xfer(struct icp_qat_fw_loader_handle *handle,
 +			 unsigned char ae, unsigned char ctx_mask,
 +			 enum icp_qat_uof_regtype reg_type,
-+			 unsigned short reg_num, unsigned int regdata);
++			 unsigned short reg_num, unsigned int regdata)
++{
++	int stat = 0;
++	unsigned short reg;
++	unsigned char ctx = 0;
++	enum icp_qat_uof_regtype type;
++
++	if (reg_num >= ICP_QAT_UCLO_MAX_XFER_REG)
++		return -EINVAL;
++
++	do {
++		if (ctx_mask == 0) {
++			qat_hal_convert_abs_to_rel(handle, ae, reg_num, &reg,
++						   &ctx);
++			type = reg_type - 3;
++		} else {
++			reg = reg_num;
++			type = reg_type;
++			if (!test_bit(ctx, (unsigned long *)&ctx_mask))
++				continue;
++		}
++		stat = qat_hal_put_rel_wr_xfer(handle, ae, ctx, type, reg,
++					       regdata);
++		if (stat) {
++			pr_err("QAT: write wr xfer fail\n");
++			return -EINVAL;
++		}
++	} while (ctx_mask && (ctx++ < ICP_QAT_UCLO_MAX_CTX));
++
++	return 0;
++}
++
 +int qat_hal_init_rd_xfer(struct icp_qat_fw_loader_handle *handle,
 +			 unsigned char ae, unsigned char ctx_mask,
 +			 enum icp_qat_uof_regtype reg_type,
-+			 unsigned short reg_num, unsigned int regdata);
++			 unsigned short reg_num, unsigned int regdata)
++{
++	int stat = 0;
++	unsigned short reg;
++	unsigned char ctx = 0;
++	enum icp_qat_uof_regtype type;
++
++	if (reg_num >= ICP_QAT_UCLO_MAX_XFER_REG)
++		return -EINVAL;
++
++	do {
++		if (ctx_mask == 0) {
++			qat_hal_convert_abs_to_rel(handle, ae, reg_num, &reg,
++						   &ctx);
++			type = reg_type - 3;
++		} else {
++			reg = reg_num;
++			type = reg_type;
++			if (!test_bit(ctx, (unsigned long *)&ctx_mask))
++				continue;
++		}
++		stat = qat_hal_put_rel_rd_xfer(handle, ae, ctx, type, reg,
++					       regdata);
++		if (stat) {
++			pr_err("QAT: write rd xfer fail\n");
++			return -EINVAL;
++		}
++	} while (ctx_mask && (ctx++ < ICP_QAT_UCLO_MAX_CTX));
++
++	return 0;
++}
++
 +int qat_hal_init_nn(struct icp_qat_fw_loader_handle *handle,
 +		    unsigned char ae, unsigned char ctx_mask,
-+		    unsigned short reg_num, unsigned int regdata);
-+int qat_hal_wr_lm(struct icp_qat_fw_loader_handle *handle,
-+		  unsigned char ae, unsigned short lm_addr, unsigned int value);
-+int qat_uclo_wr_all_uimage(struct icp_qat_fw_loader_handle *handle);
-+int qat_uclo_del_uof_obj(struct icp_qat_fw_loader_handle *handle);
-+int qat_uclo_map_uof_obj(struct icp_qat_fw_loader_handle *handle,
-+			 void *addr_ptr, int mem_size);
-+#endif
-diff --git a/drivers/crypto/qat/qat_common/adf_ctl_drv.c b/drivers/crypto/qat/qat_common/adf_ctl_drv.c
++		    unsigned short reg_num, unsigned int regdata)
++{
++	int stat = 0;
++	unsigned char ctx;
++
++	if (ctx_mask == 0)
++		return -EINVAL;
++
++	for (ctx = 0; ctx < ICP_QAT_UCLO_MAX_CTX; ctx++) {
++		if (!test_bit(ctx, (unsigned long *)&ctx_mask))
++			continue;
++		stat = qat_hal_put_rel_nn(handle, ae, ctx, reg_num, regdata);
++		if (stat) {
++			pr_err("QAT: write neigh error\n");
++			return -EINVAL;
++		}
++	}
++
++	return 0;
++}
+diff --git a/drivers/crypto/qat/qat_common/qat_uclo.c b/drivers/crypto/qat/qat_common/qat_uclo.c
 new file mode 100644
-index 0000000..141df84
+index 0000000..4b6f850
 --- /dev/null
-+++ b/drivers/crypto/qat/qat_common/adf_ctl_drv.c
-@@ -0,0 +1,490 @@
++++ b/drivers/crypto/qat/qat_common/qat_uclo.c
+@@ -0,0 +1,1191 @@
 +/*
 +  This file is provided under a dual BSD/GPLv2 license.  When using or
 +  redistributing this file, you may do so under either license.
@@ -1752,4896 +2116,1151 @@ index 0000000..141df84
 +  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 +  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 +*/
-+#include <linux/module.h>
-+#include <linux/mutex.h>
 +#include <linux/slab.h>
-+#include <linux/fs.h>
-+#include <linux/bitops.h>
-+#include <linux/pci.h>
-+#include <linux/cdev.h>
-+#include <linux/uaccess.h>
++#include <linux/ctype.h>
++#include <linux/kernel.h>
 +
 +#include "adf_accel_devices.h"
 +#include "adf_common_drv.h"
-+#include "adf_cfg.h"
-+#include "adf_cfg_common.h"
-+#include "adf_cfg_user.h"
++#include "icp_qat_uclo.h"
++#include "icp_qat_hal.h"
++#include "icp_qat_fw_loader_handle.h"
 +
-+#define DEVICE_NAME "qat_adf_ctl"
++#define UWORD_CPYBUF_SIZE 1024
++#define INVLD_UWORD 0xffffffffffull
++#define PID_MINOR_REV 0xf
++#define PID_MAJOR_REV (0xf << 4)
 +
-+static DEFINE_MUTEX(adf_ctl_lock);
-+static long adf_ctl_ioctl(struct file *fp, unsigned int cmd, unsigned long arg);
-+
-+static const struct file_operations adf_ctl_ops = {
-+	.owner = THIS_MODULE,
-+	.unlocked_ioctl = adf_ctl_ioctl,
-+	.compat_ioctl = adf_ctl_ioctl,
-+};
-+
-+struct adf_ctl_drv_info {
-+	unsigned int major;
-+	struct cdev drv_cdev;
-+	struct class *drv_class;
-+};
-+
-+static struct adf_ctl_drv_info adt_ctl_drv;
-+
-+static void adf_chr_drv_destroy(void)
++static int qat_uclo_init_ae_data(struct icp_qat_uclo_objhandle *obj_handle,
++				 unsigned int ae, unsigned int image_num)
 +{
-+	device_destroy(adt_ctl_drv.drv_class, MKDEV(adt_ctl_drv.major, 0));
-+	cdev_del(&adt_ctl_drv.drv_cdev);
-+	class_destroy(adt_ctl_drv.drv_class);
-+	unregister_chrdev_region(MKDEV(adt_ctl_drv.major, 0), 1);
-+}
++	struct icp_qat_uclo_aedata *ae_data;
++	struct icp_qat_uclo_encapme *encap_image;
++	struct icp_qat_uclo_page *page = NULL;
++	struct icp_qat_uclo_aeslice *ae_slice = NULL;
 +
-+static int adf_chr_drv_create(void)
-+{
-+	dev_t dev_id;
-+	struct device *drv_device;
++	ae_data = &obj_handle->ae_data[ae];
++	encap_image = &obj_handle->ae_uimage[image_num];
++	ae_slice = &ae_data->ae_slices[ae_data->slice_num];
++	ae_slice->encap_image = encap_image;
 +
-+	if (alloc_chrdev_region(&dev_id, 0, 1, DEVICE_NAME)) {
-+		pr_err("QAT: unable to allocate chrdev region\n");
-+		return -EFAULT;
-+	}
-+
-+	adt_ctl_drv.drv_class = class_create(THIS_MODULE, DEVICE_NAME);
-+	if (IS_ERR(adt_ctl_drv.drv_class)) {
-+		pr_err("QAT: class_create failed for adf_ctl\n");
-+		goto err_chrdev_unreg;
-+	}
-+	adt_ctl_drv.major = MAJOR(dev_id);
-+	cdev_init(&adt_ctl_drv.drv_cdev, &adf_ctl_ops);
-+	if (cdev_add(&adt_ctl_drv.drv_cdev, dev_id, 1)) {
-+		pr_err("QAT: cdev add failed\n");
-+		goto err_class_destr;
-+	}
-+
-+	drv_device = device_create(adt_ctl_drv.drv_class, NULL,
-+				   MKDEV(adt_ctl_drv.major, 0),
-+				   NULL, DEVICE_NAME);
-+	if (!drv_device) {
-+		pr_err("QAT: failed to create device\n");
-+		goto err_cdev_del;
-+	}
-+	return 0;
-+err_cdev_del:
-+	cdev_del(&adt_ctl_drv.drv_cdev);
-+err_class_destr:
-+	class_destroy(adt_ctl_drv.drv_class);
-+err_chrdev_unreg:
-+	unregister_chrdev_region(dev_id, 1);
-+	return -EFAULT;
-+}
-+
-+static int adf_ctl_alloc_resources(struct adf_user_cfg_ctl_data **ctl_data,
-+				   unsigned long arg)
-+{
-+	struct adf_user_cfg_ctl_data *cfg_data;
-+
-+	cfg_data = kzalloc(sizeof(*cfg_data), GFP_KERNEL);
-+	if (!cfg_data)
-+		return -ENOMEM;
-+
-+	/* Initialize device id to NO DEVICE as 0 is a valid device id */
-+	cfg_data->device_id = ADF_CFG_NO_DEVICE;
-+
-+	if (copy_from_user(cfg_data, (void __user *)arg, sizeof(*cfg_data))) {
-+		pr_err("QAT: failed to copy from user cfg_data.\n");
-+		kfree(cfg_data);
-+		return -EIO;
-+	}
-+
-+	*ctl_data = cfg_data;
-+	return 0;
-+}
-+
-+static int adf_add_key_value_data(struct adf_accel_dev *accel_dev,
-+				  const char *section,
-+				  const struct adf_user_cfg_key_val *key_val)
-+{
-+	if (key_val->type == ADF_HEX) {
-+		long *ptr = (long *)key_val->val;
-+		long val = *ptr;
-+
-+		if (adf_cfg_add_key_value_param(accel_dev, section,
-+						key_val->key, (void *)val,
-+						key_val->type)) {
-+			pr_err("QAT: failed to add keyvalue.\n");
-+			return -EFAULT;
-+		}
++	if (encap_image->img_ptr) {
++		ae_slice->ctx_mask_assigned =
++					encap_image->img_ptr->ctx_assigned;
++		ae_data->eff_ustore_size = obj_handle->ustore_phy_size;
 +	} else {
-+		if (adf_cfg_add_key_value_param(accel_dev, section,
-+						key_val->key, key_val->val,
-+						key_val->type)) {
-+			pr_err("QAT: failed to add keyvalue.\n");
-+			return -EFAULT;
-+		}
++		ae_slice->ctx_mask_assigned = 0;
++	}
++	ae_slice->regions = kzalloc(sizeof(*(ae_slice->regions)), GFP_KERNEL);
++	if (!(ae_slice->regions))
++		return -ENOMEM;
++	ae_slice->page = kzalloc(sizeof(*(ae_slice->page)), GFP_KERNEL);
++	if (!(ae_slice->page))
++		goto out_err;
++	page = ae_slice->page;
++	page->encap_page = encap_image->page;
++	ae_slice->page->region = ae_slice->regions;
++	ae_data->slice_num++;
++	return 0;
++out_err:
++	kfree(ae_slice->regions);
++	ae_slice->regions = NULL;
++	return -ENOMEM;
++}
++
++static int qat_uclo_free_ae_data(struct icp_qat_uclo_aedata *ae_data)
++{
++	unsigned int ss = 0;
++
++	if (!ae_data) {
++		pr_err("QAT: bad argument, ae_data is NULL\n ");
++		return -EINVAL;
++	}
++
++	for (ss = 0; ss < ae_data->slice_num; ss++) {
++		kfree(ae_data->ae_slices[ss].regions);
++		ae_data->ae_slices[ss].regions = NULL;
++		kfree(ae_data->ae_slices[ss].page);
++		ae_data->ae_slices[ss].page = NULL;
 +	}
 +	return 0;
 +}
 +
-+static int adf_copy_key_value_data(struct adf_accel_dev *accel_dev,
-+				   struct adf_user_cfg_ctl_data *ctl_data)
++static char *qat_uclo_get_string(struct icp_qat_uof_strtable *str_table,
++				 unsigned int str_offset)
 +{
-+	struct adf_user_cfg_key_val key_val;
-+	struct adf_user_cfg_key_val *params_head;
-+	struct adf_user_cfg_section section, *section_head;
++	if ((!str_table->table_len) || (str_offset > str_table->table_len))
++		return NULL;
++	return (char *)(((unsigned long)(str_table->strings)) + str_offset);
++}
 +
-+	section_head = ctl_data->config_section;
++static int qat_uclo_check_format(struct icp_qat_uof_filehdr *hdr)
++{
++	int maj = hdr->maj_ver & 0xff;
++	int min = hdr->min_ver & 0xff;
 +
-+	while (section_head) {
-+		if (copy_from_user(&section, (void __user *)section_head,
-+				   sizeof(*section_head))) {
-+			pr_err("QAT: failed to copy section info\n");
++	if (hdr->file_id != ICP_QAT_UOF_FID) {
++		pr_err("QAT: Invalid header 0x%x\n", hdr->file_id);
++		return -EINVAL;
++	}
++	if (min != ICP_QAT_UOF_MINVER || maj != ICP_QAT_UOF_MAJVER) {
++		pr_err("QAT: bad uof version, major 0x%x, minor 0x%x\n",
++		       maj, min);
++		return -EINVAL;
++	}
++	return 0;
++}
++
++static void qat_uclo_wr_sram_by_words(struct icp_qat_fw_loader_handle *handle,
++				      unsigned int addr, unsigned int *val,
++				      unsigned int num_in_bytes)
++{
++	unsigned int outval;
++	unsigned char *ptr = (unsigned char *)val;
++
++	while (num_in_bytes) {
++		memcpy(&outval, ptr, 4);
++		SRAM_WRITE(handle, addr, outval);
++		num_in_bytes -= 4;
++		ptr += 4;
++		addr += 4;
++	}
++}
++
++static void qat_uclo_wr_umem_by_words(struct icp_qat_fw_loader_handle *handle,
++				      unsigned char ae, unsigned int addr,
++				      unsigned int *val,
++				      unsigned int num_in_bytes)
++{
++	unsigned int outval;
++	unsigned char *ptr = (unsigned char *)val;
++
++	addr >>= 0x2; /* convert to uword address */
++
++	while (num_in_bytes) {
++		memcpy(&outval, ptr, 4);
++		qat_hal_wr_umem(handle, ae, addr++, 1, &outval);
++		num_in_bytes -= 4;
++		ptr += 4;
++	}
++	return;
++}
++
++static void qat_uclo_batch_wr_umem(struct icp_qat_fw_loader_handle *handle,
++				   unsigned char ae,
++				   struct icp_qat_uof_batch_init
++				   *umem_init_header)
++{
++	struct icp_qat_uof_batch_init *umem_init;
++
++	if (!umem_init_header)
++		return;
++	umem_init = umem_init_header->next;
++	while (umem_init) {
++		unsigned int addr, *value, size;
++		ae = umem_init->ae;
++		addr = umem_init->addr;
++		value = umem_init->value;
++		size = umem_init->size;
++		qat_uclo_wr_umem_by_words(handle, ae, addr, value, size);
++		umem_init = umem_init->next;
++	}
++}
++
++static void
++qat_uclo_cleanup_batch_init_list(struct icp_qat_fw_loader_handle *handle,
++				 struct icp_qat_uof_batch_init **base)
++{
++	struct icp_qat_uof_batch_init *umem_init;
++
++	umem_init = *base;
++	while (umem_init) {
++		struct icp_qat_uof_batch_init *pre;
++		pre = umem_init;
++		umem_init = umem_init->next;
++		kfree(pre);
++	}
++	*base = NULL;
++}
++
++static int qat_uclo_parse_num(char *str, unsigned int *num)
++{
++	char buf[16];
++	unsigned long ae = 0;
++	int i;
++
++	memset(buf, '\0', 16);
++	strncpy(buf, str, 15);
++	for (i = 0; i < 16; i++) {
++		if (!isdigit(buf[i])) {
++			buf[i] = '\0';
++			break;
++		}
++	}
++	if ((kstrtoul(buf, 10, &ae)))
++		return -EFAULT;
++
++	*num = (unsigned int)ae;
++	return 0;
++}
++
++static int qat_uclo_fetch_initmem_ae(struct icp_qat_fw_loader_handle *handle,
++				     struct icp_qat_uof_initmem *init_mem,
++				     unsigned int size_range, unsigned int *ae)
++{
++	struct icp_qat_uclo_objhandle *obj_handle = handle->obj_handle;
++	char *str;
++
++	if ((init_mem->addr + init_mem->num_in_bytes) > (size_range << 0x2)) {
++		pr_err("QAT: initmem is out of range");
++		return -EINVAL;
++	}
++	if (init_mem->scope != ICP_QAT_UOF_LOCAL_SCOPE) {
++		pr_err("QAT: Memory scope for init_mem error\n");
++		return -EINVAL;
++	}
++	str = qat_uclo_get_string(&(obj_handle->str_table), init_mem->sym_name);
++	if (!str) {
++		pr_err("QAT: AE name assigned in uof init table is NULL\n");
++		return -EINVAL;
++	}
++	if (qat_uclo_parse_num(str, ae)) {
++		pr_err("QAT: Parse num for AE number failed\n");
++		return -EINVAL;
++	}
++	if (!test_bit(*ae, (unsigned long *)&(handle->hal_handle->ae_mask))) {
++		pr_err("QAT: ae %d to be init is fused off\n", *ae);
++		return -EINVAL;
++	}
++	if (*ae >= ICP_QAT_UCLO_MAX_AE) {
++		pr_err("QAT: ae %d out of range\n", *ae);
++		return -EINVAL;
++	}
++	return 0;
++}
++
++static int qat_uclo_create_batch_init_list(struct icp_qat_fw_loader_handle
++					   *handle, struct icp_qat_uof_initmem
++					   *init_mem, unsigned int ae,
++					   struct icp_qat_uof_batch_init
++					   **init_tab_base)
++{
++	struct icp_qat_uof_batch_init *init_header, *tail;
++	struct icp_qat_uof_batch_init *mem_init, *tail_old;
++	struct icp_qat_uof_memvar_attr *mem_val_attr;
++	unsigned int i, flag = 0;
++
++	mem_val_attr =
++		(struct icp_qat_uof_memvar_attr *)((unsigned long)init_mem +
++		sizeof(struct icp_qat_uof_initmem));
++
++	init_header = *init_tab_base;
++	if (!init_header) {
++		init_header = kzalloc(sizeof(*init_header), GFP_KERNEL);
++		if (!init_header)
++			return -ENOMEM;
++		init_header->size = 1;
++		*init_tab_base = init_header;
++		flag = 1;
++	}
++	tail_old = init_header;
++	while (tail_old->next)
++		tail_old = tail_old->next;
++	tail = tail_old;
++	for (i = 0; i < init_mem->val_attr_num; i++) {
++		mem_init = kzalloc(sizeof(*mem_init), GFP_KERNEL);
++		if (!mem_init)
 +			goto out_err;
-+		}
-+
-+		if (adf_cfg_section_add(accel_dev, section.name)) {
-+			pr_err("QAT: failed to add section.\n");
-+			goto out_err;
-+		}
-+
-+		params_head = section_head->params;
-+
-+		while (params_head) {
-+			if (copy_from_user(&key_val, (void __user *)params_head,
-+					   sizeof(key_val))) {
-+				pr_err("QAT: Failed to copy keyvalue.\n");
-+				goto out_err;
-+			}
-+			if (adf_add_key_value_data(accel_dev, section.name,
-+						   &key_val)) {
-+				goto out_err;
-+			}
-+			params_head = key_val.next;
-+		}
-+		section_head = section.next;
++		mem_init->ae = ae;
++		mem_init->addr = init_mem->addr + mem_val_attr->offset_in_byte;
++		mem_init->value = &mem_val_attr->value;
++		mem_init->size = 4;
++		mem_init->next = NULL;
++		tail->next = mem_init;
++		tail = mem_init;
++		init_header->size += qat_hal_get_ins_num();
++		mem_val_attr++;
 +	}
 +	return 0;
 +out_err:
-+	adf_cfg_del_all(accel_dev);
-+	return -EFAULT;
-+}
-+
-+static int adf_ctl_ioctl_dev_config(struct file *fp, unsigned int cmd,
-+				    unsigned long arg)
-+{
-+	int ret;
-+	struct adf_user_cfg_ctl_data *ctl_data;
-+	struct adf_accel_dev *accel_dev;
-+
-+	ret = adf_ctl_alloc_resources(&ctl_data, arg);
-+	if (ret)
-+		return ret;
-+
-+	accel_dev = adf_devmgr_get_dev_by_id(ctl_data->device_id);
-+	if (!accel_dev) {
-+		ret = -EFAULT;
-+		goto out;
++	while (tail_old) {
++		mem_init = tail_old->next;
++		kfree(tail_old);
++		tail_old = mem_init;
 +	}
-+
-+	if (adf_dev_started(accel_dev)) {
-+		ret = -EFAULT;
-+		goto out;
-+	}
-+
-+	if (adf_copy_key_value_data(accel_dev, ctl_data)) {
-+		ret = -EFAULT;
-+		goto out;
-+	}
-+	set_bit(ADF_STATUS_CONFIGURED, &accel_dev->status);
-+out:
-+	kfree(ctl_data);
-+	return ret;
-+}
-+
-+static int adf_ctl_is_device_in_use(int id)
-+{
-+	struct list_head *itr, *head = adf_devmgr_get_head();
-+
-+	list_for_each(itr, head) {
-+		struct adf_accel_dev *dev =
-+				list_entry(itr, struct adf_accel_dev, list);
-+
-+		if (id == dev->accel_id || id == ADF_CFG_ALL_DEVICES) {
-+			if (adf_devmgr_in_reset(dev) || adf_dev_in_use(dev)) {
-+				pr_info("QAT: device qat_dev%d is busy\n",
-+					dev->accel_id);
-+				return -EBUSY;
-+			}
-+		}
-+	}
-+	return 0;
-+}
-+
-+static int adf_ctl_stop_devices(uint32_t id)
-+{
-+	struct list_head *itr, *head = adf_devmgr_get_head();
-+	int ret = 0;
-+
-+	list_for_each(itr, head) {
-+		struct adf_accel_dev *accel_dev =
-+				list_entry(itr, struct adf_accel_dev, list);
-+		if (id == accel_dev->accel_id || id == ADF_CFG_ALL_DEVICES) {
-+			if (!adf_dev_started(accel_dev))
-+				continue;
-+
-+			if (adf_dev_stop(accel_dev)) {
-+				pr_err("QAT: Failed to stop qat_dev%d\n", id);
-+				ret = -EFAULT;
-+			}
-+		}
-+	}
-+	return ret;
-+}
-+
-+static int adf_ctl_ioctl_dev_stop(struct file *fp, unsigned int cmd,
-+				  unsigned long arg)
-+{
-+	int ret;
-+	struct adf_user_cfg_ctl_data *ctl_data;
-+
-+	ret = adf_ctl_alloc_resources(&ctl_data, arg);
-+	if (ret)
-+		return ret;
-+
-+	if (adf_devmgr_verify_id(ctl_data->device_id)) {
-+		pr_err("QAT: Device %d not found\n", ctl_data->device_id);
-+		ret = -ENODEV;
-+		goto out;
-+	}
-+
-+	ret = adf_ctl_is_device_in_use(ctl_data->device_id);
-+	if (ret)
-+		goto out;
-+
-+	if (ctl_data->device_id == ADF_CFG_ALL_DEVICES)
-+		pr_info("QAT: Stopping all acceleration devices.\n");
-+	else
-+		pr_info("QAT: Stopping acceleration device qat_dev%d.\n",
-+			ctl_data->device_id);
-+
-+	ret = adf_ctl_stop_devices(ctl_data->device_id);
-+	if (ret)
-+		pr_err("QAT: failed to stop device.\n");
-+out:
-+	kfree(ctl_data);
-+	return ret;
-+}
-+
-+static int adf_ctl_ioctl_dev_start(struct file *fp, unsigned int cmd,
-+				   unsigned long arg)
-+{
-+	int ret;
-+	struct adf_user_cfg_ctl_data *ctl_data;
-+	struct adf_accel_dev *accel_dev;
-+
-+	ret = adf_ctl_alloc_resources(&ctl_data, arg);
-+	if (ret)
-+		return ret;
-+
-+	accel_dev = adf_devmgr_get_dev_by_id(ctl_data->device_id);
-+	if (!accel_dev) {
-+		pr_err("QAT: Device %d not found\n", ctl_data->device_id);
-+		ret = -ENODEV;
-+		goto out;
-+	}
-+
-+	if (!adf_dev_started(accel_dev)) {
-+		pr_info("QAT: Starting acceleration device qat_dev%d.\n",
-+			ctl_data->device_id);
-+		ret = adf_dev_start(accel_dev);
-+	} else {
-+		pr_info("QAT: Acceleration device qat_dev%d already started.\n",
-+			ctl_data->device_id);
-+	}
-+	if (ret) {
-+		pr_err("QAT: Failed to start qat_dev%d\n", ctl_data->device_id);
-+		adf_dev_stop(accel_dev);
-+	}
-+out:
-+	kfree(ctl_data);
-+	return ret;
-+}
-+
-+static int adf_ctl_ioctl_get_num_devices(struct file *fp, unsigned int cmd,
-+					 unsigned long arg)
-+{
-+	uint32_t num_devices = 0;
-+
-+	adf_devmgr_get_num_dev(&num_devices);
-+	if (copy_to_user((void __user *)arg, &num_devices, sizeof(num_devices)))
-+		return -EFAULT;
-+
-+	return 0;
-+}
-+
-+static int adf_ctl_ioctl_get_status(struct file *fp, unsigned int cmd,
-+				    unsigned long arg)
-+{
-+	struct adf_hw_device_data *hw_data;
-+	struct adf_dev_status_info dev_info;
-+	struct adf_accel_dev *accel_dev;
-+
-+	if (copy_from_user(&dev_info, (void __user *)arg,
-+			   sizeof(struct adf_dev_status_info))) {
-+		pr_err("QAT: failed to copy from user.\n");
-+		return -EFAULT;
-+	}
-+
-+	accel_dev = adf_devmgr_get_dev_by_id(dev_info.accel_id);
-+	if (!accel_dev) {
-+		pr_err("QAT: Device %d not found\n", dev_info.accel_id);
-+		return -ENODEV;
-+	}
-+	hw_data = accel_dev->hw_device;
-+	dev_info.state = adf_dev_started(accel_dev) ? DEV_UP : DEV_DOWN;
-+	dev_info.num_ae = hw_data->get_num_aes(hw_data);
-+	dev_info.num_accel = hw_data->get_num_accels(hw_data);
-+	dev_info.num_logical_accel = hw_data->num_logical_accel;
-+	dev_info.banks_per_accel = hw_data->num_banks
-+					/ hw_data->num_logical_accel;
-+	strlcpy(dev_info.name, hw_data->dev_class->name, sizeof(dev_info.name));
-+	dev_info.instance_id = hw_data->instance_id;
-+	dev_info.type = hw_data->dev_class->type;
-+	dev_info.bus = accel_to_pci_dev(accel_dev)->bus->number;
-+	dev_info.dev = PCI_SLOT(accel_to_pci_dev(accel_dev)->devfn);
-+	dev_info.fun = PCI_FUNC(accel_to_pci_dev(accel_dev)->devfn);
-+
-+	if (copy_to_user((void __user *)arg, &dev_info,
-+			 sizeof(struct adf_dev_status_info))) {
-+		pr_err("QAT: failed to copy status.\n");
-+		return -EFAULT;
-+	}
-+	return 0;
-+}
-+
-+static long adf_ctl_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
-+{
-+	int ret;
-+
-+	if (mutex_lock_interruptible(&adf_ctl_lock))
-+		return -EFAULT;
-+
-+	switch (cmd) {
-+	case IOCTL_CONFIG_SYS_RESOURCE_PARAMETERS:
-+		ret = adf_ctl_ioctl_dev_config(fp, cmd, arg);
-+		break;
-+
-+	case IOCTL_STOP_ACCEL_DEV:
-+		ret = adf_ctl_ioctl_dev_stop(fp, cmd, arg);
-+		break;
-+
-+	case IOCTL_START_ACCEL_DEV:
-+		ret = adf_ctl_ioctl_dev_start(fp, cmd, arg);
-+		break;
-+
-+	case IOCTL_GET_NUM_DEVICES:
-+		ret = adf_ctl_ioctl_get_num_devices(fp, cmd, arg);
-+		break;
-+
-+	case IOCTL_STATUS_ACCEL_DEV:
-+		ret = adf_ctl_ioctl_get_status(fp, cmd, arg);
-+		break;
-+	default:
-+		pr_err("QAT: Invalid ioclt\n");
-+		ret = -EFAULT;
-+		break;
-+	}
-+	mutex_unlock(&adf_ctl_lock);
-+	return ret;
-+}
-+
-+static int __init adf_register_ctl_device_driver(void)
-+{
-+	mutex_init(&adf_ctl_lock);
-+
-+	if (qat_algs_init())
-+		goto err_algs_init;
-+
-+	if (adf_chr_drv_create())
-+		goto err_chr_dev;
-+
-+	if (adf_init_aer())
-+		goto err_aer;
-+
-+	if (qat_crypto_register())
-+		goto err_crypto_register;
-+
-+	return 0;
-+
-+err_crypto_register:
-+	adf_exit_aer();
-+err_aer:
-+	adf_chr_drv_destroy();
-+err_chr_dev:
-+	qat_algs_exit();
-+err_algs_init:
-+	mutex_destroy(&adf_ctl_lock);
-+	return -EFAULT;
-+}
-+
-+static void __exit adf_unregister_ctl_device_driver(void)
-+{
-+	adf_chr_drv_destroy();
-+	adf_exit_aer();
-+	qat_crypto_unregister();
-+	qat_algs_exit();
-+	mutex_destroy(&adf_ctl_lock);
-+}
-+
-+module_init(adf_register_ctl_device_driver);
-+module_exit(adf_unregister_ctl_device_driver);
-+MODULE_LICENSE("GPL");
-+MODULE_AUTHOR("Intel");
-+MODULE_DESCRIPTION("Intel(R) QuickAssist Technology");
-+MODULE_ALIAS("intel_qat");
-diff --git a/drivers/crypto/qat/qat_common/adf_dev_mgr.c b/drivers/crypto/qat/qat_common/adf_dev_mgr.c
-new file mode 100644
-index 0000000..ae71555
---- /dev/null
-+++ b/drivers/crypto/qat/qat_common/adf_dev_mgr.c
-@@ -0,0 +1,215 @@
-+/*
-+  This file is provided under a dual BSD/GPLv2 license.  When using or
-+  redistributing this file, you may do so under either license.
-+
-+  GPL LICENSE SUMMARY
-+  Copyright(c) 2014 Intel Corporation.
-+  This program is free software; you can redistribute it and/or modify
-+  it under the terms of version 2 of the GNU General Public License as
-+  published by the Free Software Foundation.
-+
-+  This program is distributed in the hope that it will be useful, but
-+  WITHOUT ANY WARRANTY; without even the implied warranty of
-+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+  General Public License for more details.
-+
-+  Contact Information:
-+  qat-linux@intel.com
-+
-+  BSD LICENSE
-+  Copyright(c) 2014 Intel Corporation.
-+  Redistribution and use in source and binary forms, with or without
-+  modification, are permitted provided that the following conditions
-+  are met:
-+
-+    * Redistributions of source code must retain the above copyright
-+      notice, this list of conditions and the following disclaimer.
-+    * Redistributions in binary form must reproduce the above copyright
-+      notice, this list of conditions and the following disclaimer in
-+      the documentation and/or other materials provided with the
-+      distribution.
-+    * Neither the name of Intel Corporation nor the names of its
-+      contributors may be used to endorse or promote products derived
-+      from this software without specific prior written permission.
-+
-+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-+  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-+  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-+  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-+  OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-+  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-+  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-+  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-+  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-+  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-+  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-+*/
-+#include <linux/mutex.h>
-+#include <linux/list.h>
-+#include "adf_cfg.h"
-+#include "adf_common_drv.h"
-+
-+static LIST_HEAD(accel_table);
-+static DEFINE_MUTEX(table_lock);
-+static uint32_t num_devices;
-+
-+/**
-+ * adf_devmgr_add_dev() - Add accel_dev to the acceleration framework
-+ * @accel_dev:  Pointer to acceleration device.
-+ *
-+ * Function adds acceleration device to the acceleration framework.
-+ * To be used by QAT device specific drivers.
-+ *
-+ * Return: 0 on success, error code othewise.
-+ */
-+int adf_devmgr_add_dev(struct adf_accel_dev *accel_dev)
-+{
-+	struct list_head *itr;
-+
-+	if (num_devices == ADF_MAX_DEVICES) {
-+		pr_err("QAT: Only support up to %d devices\n", ADF_MAX_DEVICES);
-+		return -EFAULT;
-+	}
-+
-+	mutex_lock(&table_lock);
-+	list_for_each(itr, &accel_table) {
-+		struct adf_accel_dev *ptr =
-+				list_entry(itr, struct adf_accel_dev, list);
-+
-+		if (ptr == accel_dev) {
-+			mutex_unlock(&table_lock);
-+			return -EEXIST;
-+		}
-+	}
-+	atomic_set(&accel_dev->ref_count, 0);
-+	list_add_tail(&accel_dev->list, &accel_table);
-+	accel_dev->accel_id = num_devices++;
-+	mutex_unlock(&table_lock);
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(adf_devmgr_add_dev);
-+
-+struct list_head *adf_devmgr_get_head(void)
-+{
-+	return &accel_table;
-+}
-+
-+/**
-+ * adf_devmgr_rm_dev() - Remove accel_dev from the acceleration framework.
-+ * @accel_dev:  Pointer to acceleration device.
-+ *
-+ * Function removes acceleration device from the acceleration framework.
-+ * To be used by QAT device specific drivers.
-+ *
-+ * Return: void
-+ */
-+void adf_devmgr_rm_dev(struct adf_accel_dev *accel_dev)
-+{
-+	mutex_lock(&table_lock);
-+	list_del(&accel_dev->list);
-+	num_devices--;
-+	mutex_unlock(&table_lock);
-+}
-+EXPORT_SYMBOL_GPL(adf_devmgr_rm_dev);
-+
-+struct adf_accel_dev *adf_devmgr_get_first(void)
-+{
-+	struct adf_accel_dev *dev = NULL;
-+
-+	if (!list_empty(&accel_table))
-+		dev = list_first_entry(&accel_table, struct adf_accel_dev,
-+				       list);
-+	return dev;
-+}
-+
-+/**
-+ * adf_devmgr_pci_to_accel_dev() - Get accel_dev associated with the pci_dev.
-+ * @accel_dev:  Pointer to pci device.
-+ *
-+ * Function returns acceleration device associated with the given pci device.
-+ * To be used by QAT device specific drivers.
-+ *
-+ * Return: pinter to accel_dev or NULL if not found.
-+ */
-+struct adf_accel_dev *adf_devmgr_pci_to_accel_dev(struct pci_dev *pci_dev)
-+{
-+	struct list_head *itr;
-+
-+	list_for_each(itr, &accel_table) {
-+		struct adf_accel_dev *ptr =
-+				list_entry(itr, struct adf_accel_dev, list);
-+
-+		if (ptr->accel_pci_dev.pci_dev == pci_dev) {
-+			mutex_unlock(&table_lock);
-+			return ptr;
-+		}
-+	}
-+	return NULL;
-+}
-+EXPORT_SYMBOL_GPL(adf_devmgr_pci_to_accel_dev);
-+
-+struct adf_accel_dev *adf_devmgr_get_dev_by_id(uint32_t id)
-+{
-+	struct list_head *itr;
-+
-+	list_for_each(itr, &accel_table) {
-+		struct adf_accel_dev *ptr =
-+				list_entry(itr, struct adf_accel_dev, list);
-+
-+		if (ptr->accel_id == id) {
-+			mutex_unlock(&table_lock);
-+			return ptr;
-+		}
-+	}
-+	return NULL;
-+}
-+
-+int adf_devmgr_verify_id(uint32_t id)
-+{
-+	if (id == ADF_CFG_ALL_DEVICES)
-+		return 0;
-+
-+	if (adf_devmgr_get_dev_by_id(id))
-+		return 0;
-+
-+	return -ENODEV;
-+}
-+
-+void adf_devmgr_get_num_dev(uint32_t *num)
-+{
-+	struct list_head *itr;
-+
-+	*num = 0;
-+	list_for_each(itr, &accel_table) {
-+		(*num)++;
-+	}
-+}
-+
-+int adf_dev_in_use(struct adf_accel_dev *accel_dev)
-+{
-+	return atomic_read(&accel_dev->ref_count) != 0;
-+}
-+
-+int adf_dev_get(struct adf_accel_dev *accel_dev)
-+{
-+	if (atomic_add_return(1, &accel_dev->ref_count) == 1)
-+		if (!try_module_get(accel_dev->owner))
-+			return -EFAULT;
-+	return 0;
-+}
-+
-+void adf_dev_put(struct adf_accel_dev *accel_dev)
-+{
-+	if (atomic_sub_return(1, &accel_dev->ref_count) == 0)
-+		module_put(accel_dev->owner);
-+}
-+
-+int adf_devmgr_in_reset(struct adf_accel_dev *accel_dev)
-+{
-+	return test_bit(ADF_STATUS_RESTARTING, &accel_dev->status);
-+}
-+
-+int adf_dev_started(struct adf_accel_dev *accel_dev)
-+{
-+	return test_bit(ADF_STATUS_STARTED, &accel_dev->status);
-+}
-diff --git a/drivers/crypto/qat/qat_common/adf_init.c b/drivers/crypto/qat/qat_common/adf_init.c
-new file mode 100644
-index 0000000..5c3d6f1
---- /dev/null
-+++ b/drivers/crypto/qat/qat_common/adf_init.c
-@@ -0,0 +1,388 @@
-+/*
-+  This file is provided under a dual BSD/GPLv2 license.  When using or
-+  redistributing this file, you may do so under either license.
-+
-+  GPL LICENSE SUMMARY
-+  Copyright(c) 2014 Intel Corporation.
-+  This program is free software; you can redistribute it and/or modify
-+  it under the terms of version 2 of the GNU General Public License as
-+  published by the Free Software Foundation.
-+
-+  This program is distributed in the hope that it will be useful, but
-+  WITHOUT ANY WARRANTY; without even the implied warranty of
-+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+  General Public License for more details.
-+
-+  Contact Information:
-+  qat-linux@intel.com
-+
-+  BSD LICENSE
-+  Copyright(c) 2014 Intel Corporation.
-+  Redistribution and use in source and binary forms, with or without
-+  modification, are permitted provided that the following conditions
-+  are met:
-+
-+    * Redistributions of source code must retain the above copyright
-+      notice, this list of conditions and the following disclaimer.
-+    * Redistributions in binary form must reproduce the above copyright
-+      notice, this list of conditions and the following disclaimer in
-+      the documentation and/or other materials provided with the
-+      distribution.
-+    * Neither the name of Intel Corporation nor the names of its
-+      contributors may be used to endorse or promote products derived
-+      from this software without specific prior written permission.
-+
-+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-+  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-+  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-+  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-+  OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-+  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-+  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-+  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-+  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-+  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-+  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-+*/
-+#include <linux/mutex.h>
-+#include <linux/list.h>
-+#include <linux/bitops.h>
-+#include <linux/delay.h>
-+#include "adf_accel_devices.h"
-+#include "adf_cfg.h"
-+#include "adf_common_drv.h"
-+
-+static LIST_HEAD(service_table);
-+static DEFINE_MUTEX(service_lock);
-+
-+static void adf_service_add(struct service_hndl *service)
-+{
-+	mutex_lock(&service_lock);
-+	list_add(&service->list, &service_table);
-+	mutex_unlock(&service_lock);
-+}
-+
-+/**
-+ * adf_service_register() - Register acceleration service in the accel framework
-+ * @service:    Pointer to the service
-+ *
-+ * Function adds the acceleration service to the acceleration framework.
-+ * To be used by QAT device specific drivers.
-+ *
-+ * Return: 0 on success, error code othewise.
-+ */
-+int adf_service_register(struct service_hndl *service)
-+{
-+	service->init_status = 0;
-+	service->start_status = 0;
-+	adf_service_add(service);
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(adf_service_register);
-+
-+static void adf_service_remove(struct service_hndl *service)
-+{
-+	mutex_lock(&service_lock);
-+	list_del(&service->list);
-+	mutex_unlock(&service_lock);
-+}
-+
-+/**
-+ * adf_service_unregister() - Unregister acceleration service from the framework
-+ * @service:    Pointer to the service
-+ *
-+ * Function remove the acceleration service from the acceleration framework.
-+ * To be used by QAT device specific drivers.
-+ *
-+ * Return: 0 on success, error code othewise.
-+ */
-+int adf_service_unregister(struct service_hndl *service)
-+{
-+	if (service->init_status || service->start_status) {
-+		pr_err("QAT: Could not remove active service\n");
-+		return -EFAULT;
-+	}
-+	adf_service_remove(service);
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(adf_service_unregister);
-+
-+/**
-+ * adf_dev_start() - Start acceleration service for the given accel device
-+ * @accel_dev:    Pointer to acceleration device.
-+ *
-+ * Function notifies all the registered services that the acceleration device
-+ * is ready to be used.
-+ * To be used by QAT device specific drivers.
-+ *
-+ * Return: 0 on success, error code othewise.
-+ */
-+int adf_dev_start(struct adf_accel_dev *accel_dev)
-+{
-+	struct service_hndl *service;
-+	struct list_head *list_itr;
-+	struct adf_hw_device_data *hw_data = accel_dev->hw_device;
-+
-+	if (!test_bit(ADF_STATUS_CONFIGURED, &accel_dev->status)) {
-+		pr_info("QAT: Device not configured\n");
-+		return -EFAULT;
-+	}
-+	set_bit(ADF_STATUS_STARTING, &accel_dev->status);
-+
-+	if (adf_ae_init(accel_dev)) {
-+		pr_err("QAT: Failed to initialise Acceleration Engine\n");
-+		return -EFAULT;
-+	}
-+	set_bit(ADF_STATUS_AE_INITIALISED, &accel_dev->status);
-+
-+	if (adf_ae_fw_load(accel_dev)) {
-+		pr_err("Failed to load acceleration FW\n");
-+		adf_ae_fw_release(accel_dev);
-+		return -EFAULT;
-+	}
-+	set_bit(ADF_STATUS_AE_UCODE_LOADED, &accel_dev->status);
-+
-+	if (hw_data->alloc_irq(accel_dev)) {
-+		pr_err("QAT: Failed to allocate interrupts\n");
-+		return -EFAULT;
-+	}
-+	set_bit(ADF_STATUS_IRQ_ALLOCATED, &accel_dev->status);
-+
-+	/*
-+	 * Subservice initialisation is divided into two stages: init and start.
-+	 * This is to facilitate any ordering dependencies between services
-+	 * prior to starting any of the accelerators.
-+	 */
-+	list_for_each(list_itr, &service_table) {
-+		service = list_entry(list_itr, struct service_hndl, list);
-+		if (!service->admin)
-+			continue;
-+		if (service->event_hld(accel_dev, ADF_EVENT_INIT)) {
-+			pr_err("QAT: Failed to initialise service %s\n",
-+			       service->name);
-+			return -EFAULT;
-+		}
-+		set_bit(accel_dev->accel_id, &service->init_status);
-+	}
-+	list_for_each(list_itr, &service_table) {
-+		service = list_entry(list_itr, struct service_hndl, list);
-+		if (service->admin)
-+			continue;
-+		if (service->event_hld(accel_dev, ADF_EVENT_INIT)) {
-+			pr_err("QAT: Failed to initialise service %s\n",
-+			       service->name);
-+			return -EFAULT;
-+		}
-+		set_bit(accel_dev->accel_id, &service->init_status);
-+	}
-+
-+	hw_data->enable_error_correction(accel_dev);
-+
-+	if (adf_ae_start(accel_dev)) {
-+		pr_err("QAT: AE Start Failed\n");
-+		return -EFAULT;
-+	}
-+	set_bit(ADF_STATUS_AE_STARTED, &accel_dev->status);
-+
-+	list_for_each(list_itr, &service_table) {
-+		service = list_entry(list_itr, struct service_hndl, list);
-+		if (!service->admin)
-+			continue;
-+		if (service->event_hld(accel_dev, ADF_EVENT_START)) {
-+			pr_err("QAT: Failed to start service %s\n",
-+			       service->name);
-+			return -EFAULT;
-+		}
-+		set_bit(accel_dev->accel_id, &service->start_status);
-+	}
-+	list_for_each(list_itr, &service_table) {
-+		service = list_entry(list_itr, struct service_hndl, list);
-+		if (service->admin)
-+			continue;
-+		if (service->event_hld(accel_dev, ADF_EVENT_START)) {
-+			pr_err("QAT: Failed to start service %s\n",
-+			       service->name);
-+			return -EFAULT;
-+		}
-+		set_bit(accel_dev->accel_id, &service->start_status);
-+	}
-+
-+	clear_bit(ADF_STATUS_STARTING, &accel_dev->status);
-+	set_bit(ADF_STATUS_STARTED, &accel_dev->status);
-+
-+	if (qat_algs_register()) {
-+		pr_err("QAT: Failed to register crypto algs\n");
-+		set_bit(ADF_STATUS_STARTING, &accel_dev->status);
-+		clear_bit(ADF_STATUS_STARTED, &accel_dev->status);
-+		return -EFAULT;
-+	}
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(adf_dev_start);
-+
-+/**
-+ * adf_dev_stop() - Stop acceleration service for the given accel device
-+ * @accel_dev:    Pointer to acceleration device.
-+ *
-+ * Function notifies all the registered services that the acceleration device
-+ * is shuting down.
-+ * To be used by QAT device specific drivers.
-+ *
-+ * Return: 0 on success, error code othewise.
-+ */
-+int adf_dev_stop(struct adf_accel_dev *accel_dev)
-+{
-+	struct adf_hw_device_data *hw_data = accel_dev->hw_device;
-+	struct service_hndl *service;
-+	struct list_head *list_itr;
-+	int ret, wait = 0;
-+
-+	if (!adf_dev_started(accel_dev) &&
-+	    !test_bit(ADF_STATUS_STARTING, &accel_dev->status)) {
-+		return 0;
-+	}
-+	clear_bit(ADF_STATUS_CONFIGURED, &accel_dev->status);
-+	clear_bit(ADF_STATUS_STARTING, &accel_dev->status);
-+	clear_bit(ADF_STATUS_STARTED, &accel_dev->status);
-+
-+	if (qat_algs_unregister())
-+		pr_err("QAT: Failed to unregister crypto algs\n");
-+
-+	list_for_each(list_itr, &service_table) {
-+		service = list_entry(list_itr, struct service_hndl, list);
-+		if (service->admin)
-+			continue;
-+		if (!test_bit(accel_dev->accel_id, &service->start_status))
-+			continue;
-+		ret = service->event_hld(accel_dev, ADF_EVENT_STOP);
-+		if (!ret) {
-+			clear_bit(accel_dev->accel_id, &service->start_status);
-+		} else if (ret == -EAGAIN) {
-+			wait = 1;
-+			clear_bit(accel_dev->accel_id, &service->start_status);
-+		}
-+	}
-+	list_for_each(list_itr, &service_table) {
-+		service = list_entry(list_itr, struct service_hndl, list);
-+		if (!service->admin)
-+			continue;
-+		if (!test_bit(accel_dev->accel_id, &service->start_status))
-+			continue;
-+		if (service->event_hld(accel_dev, ADF_EVENT_STOP))
-+			pr_err("QAT: Failed to shutdown service %s\n",
-+			       service->name);
-+		else
-+			clear_bit(accel_dev->accel_id, &service->start_status);
-+	}
-+
-+	if (wait)
-+		msleep(100);
-+
-+	if (adf_dev_started(accel_dev)) {
-+		if (adf_ae_stop(accel_dev))
-+			pr_err("QAT: failed to stop AE\n");
-+		else
-+			clear_bit(ADF_STATUS_AE_STARTED, &accel_dev->status);
-+	}
-+
-+	if (test_bit(ADF_STATUS_AE_UCODE_LOADED, &accel_dev->status)) {
-+		if (adf_ae_fw_release(accel_dev))
-+			pr_err("QAT: Failed to release the ucode\n");
-+		else
-+			clear_bit(ADF_STATUS_AE_UCODE_LOADED,
-+				  &accel_dev->status);
-+	}
-+
-+	if (test_bit(ADF_STATUS_AE_INITIALISED, &accel_dev->status)) {
-+		if (adf_ae_shutdown(accel_dev))
-+			pr_err("QAT: Failed to shutdown Accel Engine\n");
-+		else
-+			clear_bit(ADF_STATUS_AE_INITIALISED,
-+				  &accel_dev->status);
-+	}
-+
-+	list_for_each(list_itr, &service_table) {
-+		service = list_entry(list_itr, struct service_hndl, list);
-+		if (service->admin)
-+			continue;
-+		if (!test_bit(accel_dev->accel_id, &service->init_status))
-+			continue;
-+		if (service->event_hld(accel_dev, ADF_EVENT_SHUTDOWN))
-+			pr_err("QAT: Failed to shutdown service %s\n",
-+			       service->name);
-+		else
-+			clear_bit(accel_dev->accel_id, &service->init_status);
-+	}
-+	list_for_each(list_itr, &service_table) {
-+		service = list_entry(list_itr, struct service_hndl, list);
-+		if (!service->admin)
-+			continue;
-+		if (!test_bit(accel_dev->accel_id, &service->init_status))
-+			continue;
-+		if (service->event_hld(accel_dev, ADF_EVENT_SHUTDOWN))
-+			pr_err("QAT: Failed to shutdown service %s\n",
-+			       service->name);
-+		else
-+			clear_bit(accel_dev->accel_id, &service->init_status);
-+	}
-+
-+	if (test_bit(ADF_STATUS_IRQ_ALLOCATED, &accel_dev->status)) {
-+		hw_data->free_irq(accel_dev);
-+		clear_bit(ADF_STATUS_IRQ_ALLOCATED, &accel_dev->status);
-+	}
-+
-+	/* Delete configuration only if not restarting */
-+	if (!test_bit(ADF_STATUS_RESTARTING, &accel_dev->status))
-+		adf_cfg_del_all(accel_dev);
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(adf_dev_stop);
-+
-+int adf_dev_restarting_notify(struct adf_accel_dev *accel_dev)
-+{
-+	struct service_hndl *service;
-+	struct list_head *list_itr;
-+
-+	list_for_each(list_itr, &service_table) {
-+		service = list_entry(list_itr, struct service_hndl, list);
-+		if (service->admin)
-+			continue;
-+		if (service->event_hld(accel_dev, ADF_EVENT_RESTARTING))
-+			pr_err("QAT: Failed to restart service %s.\n",
-+			       service->name);
-+	}
-+	list_for_each(list_itr, &service_table) {
-+		service = list_entry(list_itr, struct service_hndl, list);
-+		if (!service->admin)
-+			continue;
-+		if (service->event_hld(accel_dev, ADF_EVENT_RESTARTING))
-+			pr_err("QAT: Failed to restart service %s.\n",
-+			       service->name);
-+	}
-+	return 0;
-+}
-+
-+int adf_dev_restarted_notify(struct adf_accel_dev *accel_dev)
-+{
-+	struct service_hndl *service;
-+	struct list_head *list_itr;
-+
-+	list_for_each(list_itr, &service_table) {
-+		service = list_entry(list_itr, struct service_hndl, list);
-+		if (service->admin)
-+			continue;
-+		if (service->event_hld(accel_dev, ADF_EVENT_RESTARTED))
-+			pr_err("QAT: Failed to restart service %s.\n",
-+			       service->name);
-+	}
-+	list_for_each(list_itr, &service_table) {
-+		service = list_entry(list_itr, struct service_hndl, list);
-+		if (!service->admin)
-+			continue;
-+		if (service->event_hld(accel_dev, ADF_EVENT_RESTARTED))
-+			pr_err("QAT: Failed to restart service %s.\n",
-+			       service->name);
-+	}
-+	return 0;
-+}
-diff --git a/drivers/crypto/qat/qat_common/adf_transport.c b/drivers/crypto/qat/qat_common/adf_transport.c
-new file mode 100644
-index 0000000..b213010
---- /dev/null
-+++ b/drivers/crypto/qat/qat_common/adf_transport.c
-@@ -0,0 +1,565 @@
-+/*
-+  This file is provided under a dual BSD/GPLv2 license.  When using or
-+  redistributing this file, you may do so under either license.
-+
-+  GPL LICENSE SUMMARY
-+  Copyright(c) 2014 Intel Corporation.
-+  This program is free software; you can redistribute it and/or modify
-+  it under the terms of version 2 of the GNU General Public License as
-+  published by the Free Software Foundation.
-+
-+  This program is distributed in the hope that it will be useful, but
-+  WITHOUT ANY WARRANTY; without even the implied warranty of
-+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+  General Public License for more details.
-+
-+  Contact Information:
-+  qat-linux@intel.com
-+
-+  BSD LICENSE
-+  Copyright(c) 2014 Intel Corporation.
-+  Redistribution and use in source and binary forms, with or without
-+  modification, are permitted provided that the following conditions
-+  are met:
-+
-+    * Redistributions of source code must retain the above copyright
-+      notice, this list of conditions and the following disclaimer.
-+    * Redistributions in binary form must reproduce the above copyright
-+      notice, this list of conditions and the following disclaimer in
-+      the documentation and/or other materials provided with the
-+      distribution.
-+    * Neither the name of Intel Corporation nor the names of its
-+      contributors may be used to endorse or promote products derived
-+      from this software without specific prior written permission.
-+
-+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-+  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-+  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-+  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-+  OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-+  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-+  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-+  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-+  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-+  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-+  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-+*/
-+#include <linux/delay.h>
-+#include "adf_accel_devices.h"
-+#include "adf_transport_internal.h"
-+#include "adf_transport_access_macros.h"
-+#include "adf_cfg.h"
-+#include "adf_common_drv.h"
-+
-+static inline uint32_t adf_modulo(uint32_t data, uint32_t shift)
-+{
-+	uint32_t div = data >> shift;
-+	uint32_t mult = div << shift;
-+	return data - mult;
-+}
-+
-+static inline int adf_check_ring_alignment(uint64_t addr, uint64_t size)
-+{
-+	if (((size - 1) & addr) != 0)
-+		return -EFAULT;
-+	return 0;
-+}
-+
-+static int adf_verify_ring_size(uint32_t msg_size, uint32_t msg_num)
-+{
-+	int i = ADF_MIN_RING_SIZE;
-+	for (; i <= ADF_MAX_RING_SIZE; i++)
-+		if ((msg_size * msg_num) == ADF_SIZE_TO_RING_SIZE_IN_BYTES(i))
-+			return i;
-+
-+	return ADF_DEFAULT_RING_SIZE;
-+}
-+
-+static int adf_reserve_ring(struct adf_etr_bank_data *bank, uint32_t ring)
-+{
-+	spin_lock(&bank->lock);
-+	if (bank->ring_mask & (1 << ring)) {
-+		spin_unlock(&bank->lock);
-+		return -EFAULT;
-+	}
-+	bank->ring_mask |= (1 << ring);
-+	spin_unlock(&bank->lock);
-+	return 0;
-+}
-+
-+static void adf_unreserve_ring(struct adf_etr_bank_data *bank, uint32_t ring)
-+{
-+	spin_lock(&bank->lock);
-+	bank->ring_mask &= ~(1 << ring);
-+	spin_unlock(&bank->lock);
-+}
-+
-+static void adf_enable_ring_irq(struct adf_etr_bank_data *bank, uint32_t ring)
-+{
-+	spin_lock_bh(&bank->lock);
-+	bank->irq_mask |= (1 << ring);
-+	spin_unlock_bh(&bank->lock);
-+	WRITE_CSR_INT_COL_EN(bank->csr_addr, bank->bank_number, bank->irq_mask);
-+	WRITE_CSR_INT_COL_CTL(bank->csr_addr, bank->bank_number,
-+			      bank->irq_coalesc_timer);
-+}
-+
-+static void adf_disable_ring_irq(struct adf_etr_bank_data *bank, uint32_t ring)
-+{
-+	spin_lock_bh(&bank->lock);
-+	bank->irq_mask &= ~(1 << ring);
-+	spin_unlock_bh(&bank->lock);
-+	WRITE_CSR_INT_COL_EN(bank->csr_addr, bank->bank_number, bank->irq_mask);
-+}
-+
-+int adf_send_message(struct adf_etr_ring_data *ring, uint32_t *msg)
-+{
-+	if (atomic_add_return(1, ring->inflights) >
-+	    ADF_MAX_INFLIGHTS(ring->ring_size, ring->msg_size)) {
-+		atomic_dec(ring->inflights);
-+		return -EAGAIN;
-+	}
-+	spin_lock_bh(&ring->lock);
-+	memcpy(ring->base_addr + ring->tail, msg,
-+	       ADF_MSG_SIZE_TO_BYTES(ring->msg_size));
-+
-+	ring->tail = adf_modulo(ring->tail +
-+				ADF_MSG_SIZE_TO_BYTES(ring->msg_size),
-+				ADF_RING_SIZE_MODULO(ring->ring_size));
-+	WRITE_CSR_RING_TAIL(ring->bank->csr_addr, ring->bank->bank_number,
-+			    ring->ring_number, ring->tail);
-+	spin_unlock_bh(&ring->lock);
-+	return 0;
-+}
-+
-+static int adf_handle_response(struct adf_etr_ring_data *ring)
-+{
-+	uint32_t msg_counter = 0;
-+	uint32_t *msg = (uint32_t *)(ring->base_addr + ring->head);
-+
-+	while (*msg != ADF_RING_EMPTY_SIG) {
-+		ring->callback((uint32_t *)msg);
-+		*msg = ADF_RING_EMPTY_SIG;
-+		ring->head = adf_modulo(ring->head +
-+					ADF_MSG_SIZE_TO_BYTES(ring->msg_size),
-+					ADF_RING_SIZE_MODULO(ring->ring_size));
-+		msg_counter++;
-+		msg = (uint32_t *)(ring->base_addr + ring->head);
-+	}
-+	if (msg_counter > 0) {
-+		WRITE_CSR_RING_HEAD(ring->bank->csr_addr,
-+				    ring->bank->bank_number,
-+				    ring->ring_number, ring->head);
-+		atomic_sub(msg_counter, ring->inflights);
-+	}
-+	return 0;
-+}
-+
-+static void adf_configure_tx_ring(struct adf_etr_ring_data *ring)
-+{
-+	uint32_t ring_config = BUILD_RING_CONFIG(ring->ring_size);
-+
-+	WRITE_CSR_RING_CONFIG(ring->bank->csr_addr, ring->bank->bank_number,
-+			      ring->ring_number, ring_config);
-+}
-+
-+static void adf_configure_rx_ring(struct adf_etr_ring_data *ring)
-+{
-+	uint32_t ring_config =
-+			BUILD_RESP_RING_CONFIG(ring->ring_size,
-+					       ADF_RING_NEAR_WATERMARK_512,
-+					       ADF_RING_NEAR_WATERMARK_0);
-+
-+	WRITE_CSR_RING_CONFIG(ring->bank->csr_addr, ring->bank->bank_number,
-+			      ring->ring_number, ring_config);
-+}
-+
-+static int adf_init_ring(struct adf_etr_ring_data *ring)
-+{
-+	struct adf_etr_bank_data *bank = ring->bank;
-+	struct adf_accel_dev *accel_dev = bank->accel_dev;
-+	struct adf_hw_device_data *hw_data = accel_dev->hw_device;
-+	uint64_t ring_base;
-+	uint32_t ring_size_bytes =
-+			ADF_SIZE_TO_RING_SIZE_IN_BYTES(ring->ring_size);
-+
-+	ring_size_bytes = ADF_RING_SIZE_BYTES_MIN(ring_size_bytes);
-+	ring->base_addr = dma_alloc_coherent(&GET_DEV(accel_dev),
-+					     ring_size_bytes, &ring->dma_addr,
-+					     GFP_KERNEL);
-+	if (!ring->base_addr)
-+		return -ENOMEM;
-+
-+	memset(ring->base_addr, 0x7F, ring_size_bytes);
-+	/* The base_addr has to be aligned to the size of the buffer */
-+	if (adf_check_ring_alignment(ring->dma_addr, ring_size_bytes)) {
-+		pr_err("QAT: Ring address not aligned\n");
-+		dma_free_coherent(&GET_DEV(accel_dev), ring_size_bytes,
-+				  ring->base_addr, ring->dma_addr);
-+		return -EFAULT;
-+	}
-+
-+	if (hw_data->tx_rings_mask & (1 << ring->ring_number))
-+		adf_configure_tx_ring(ring);
-+
-+	else
-+		adf_configure_rx_ring(ring);
-+
-+	ring_base = BUILD_RING_BASE_ADDR(ring->dma_addr, ring->ring_size);
-+	WRITE_CSR_RING_BASE(ring->bank->csr_addr, ring->bank->bank_number,
-+			    ring->ring_number, ring_base);
-+	spin_lock_init(&ring->lock);
-+	return 0;
-+}
-+
-+static void adf_cleanup_ring(struct adf_etr_ring_data *ring)
-+{
-+	uint32_t ring_size_bytes =
-+			ADF_SIZE_TO_RING_SIZE_IN_BYTES(ring->ring_size);
-+	ring_size_bytes = ADF_RING_SIZE_BYTES_MIN(ring_size_bytes);
-+
-+	if (ring->base_addr) {
-+		memset(ring->base_addr, 0x7F, ring_size_bytes);
-+		dma_free_coherent(&GET_DEV(ring->bank->accel_dev),
-+				  ring_size_bytes, ring->base_addr,
-+				  ring->dma_addr);
-+	}
-+}
-+
-+int adf_create_ring(struct adf_accel_dev *accel_dev, const char *section,
-+		    uint32_t bank_num, uint32_t num_msgs,
-+		    uint32_t msg_size, const char *ring_name,
-+		    adf_callback_fn callback, int poll_mode,
-+		    struct adf_etr_ring_data **ring_ptr)
-+{
-+	struct adf_etr_data *transport_data = accel_dev->transport;
-+	struct adf_etr_bank_data *bank;
-+	struct adf_etr_ring_data *ring;
-+	char val[ADF_CFG_MAX_VAL_LEN_IN_BYTES];
-+	uint32_t ring_num;
-+	int ret;
-+
-+	if (bank_num >= GET_MAX_BANKS(accel_dev)) {
-+		pr_err("QAT: Invalid bank number\n");
-+		return -EFAULT;
-+	}
-+	if (msg_size > ADF_MSG_SIZE_TO_BYTES(ADF_MAX_MSG_SIZE)) {
-+		pr_err("QAT: Invalid msg size\n");
-+		return -EFAULT;
-+	}
-+	if (ADF_MAX_INFLIGHTS(adf_verify_ring_size(msg_size, num_msgs),
-+			      ADF_BYTES_TO_MSG_SIZE(msg_size)) < 2) {
-+		pr_err("QAT: Invalid ring size for given msg size\n");
-+		return -EFAULT;
-+	}
-+	if (adf_cfg_get_param_value(accel_dev, section, ring_name, val)) {
-+		pr_err("QAT: Section %s, no such entry : %s\n",
-+		       section, ring_name);
-+		return -EFAULT;
-+	}
-+	if (kstrtouint(val, 10, &ring_num)) {
-+		pr_err("QAT: Can't get ring number\n");
-+		return -EFAULT;
-+	}
-+
-+	bank = &transport_data->banks[bank_num];
-+	if (adf_reserve_ring(bank, ring_num)) {
-+		pr_err("QAT: Ring %d, %s already exists.\n",
-+		       ring_num, ring_name);
-+		return -EFAULT;
-+	}
-+	ring = &bank->rings[ring_num];
-+	ring->ring_number = ring_num;
-+	ring->bank = bank;
-+	ring->callback = callback;
-+	ring->msg_size = ADF_BYTES_TO_MSG_SIZE(msg_size);
-+	ring->ring_size = adf_verify_ring_size(msg_size, num_msgs);
-+	ring->head = 0;
-+	ring->tail = 0;
-+	atomic_set(ring->inflights, 0);
-+	ret = adf_init_ring(ring);
-+	if (ret)
-+		goto err;
-+
-+	/* Enable HW arbitration for the given ring */
-+	accel_dev->hw_device->hw_arb_ring_enable(ring);
-+
-+	if (adf_ring_debugfs_add(ring, ring_name)) {
-+		pr_err("QAT: Couldn't add ring debugfs entry\n");
-+		ret = -EFAULT;
-+		goto err;
-+	}
-+
-+	/* Enable interrupts if needed */
-+	if (callback && (!poll_mode))
-+		adf_enable_ring_irq(bank, ring->ring_number);
-+	*ring_ptr = ring;
-+	return 0;
-+err:
-+	adf_cleanup_ring(ring);
-+	adf_unreserve_ring(bank, ring_num);
-+	accel_dev->hw_device->hw_arb_ring_disable(ring);
-+	return ret;
-+}
-+
-+void adf_remove_ring(struct adf_etr_ring_data *ring)
-+{
-+	struct adf_etr_bank_data *bank = ring->bank;
-+	struct adf_accel_dev *accel_dev = bank->accel_dev;
-+
-+	/* Disable interrupts for the given ring */
-+	adf_disable_ring_irq(bank, ring->ring_number);
-+
-+	/* Clear PCI config space */
-+	WRITE_CSR_RING_CONFIG(bank->csr_addr, bank->bank_number,
-+			      ring->ring_number, 0);
-+	WRITE_CSR_RING_BASE(bank->csr_addr, bank->bank_number,
-+			    ring->ring_number, 0);
-+	adf_ring_debugfs_rm(ring);
-+	adf_unreserve_ring(bank, ring->ring_number);
-+	/* Disable HW arbitration for the given ring */
-+	accel_dev->hw_device->hw_arb_ring_disable(ring);
-+	adf_cleanup_ring(ring);
-+}
-+
-+static void adf_ring_response_handler(struct adf_etr_bank_data *bank)
-+{
-+	uint32_t empty_rings, i;
-+
-+	empty_rings = READ_CSR_E_STAT(bank->csr_addr, bank->bank_number);
-+	empty_rings = ~empty_rings & bank->irq_mask;
-+
-+	for (i = 0; i < ADF_ETR_MAX_RINGS_PER_BANK; ++i) {
-+		if (empty_rings & (1 << i))
-+			adf_handle_response(&bank->rings[i]);
-+	}
-+}
-+
-+/**
-+ * adf_response_handler() - Bottom half handler response handler
-+ * @bank_addr:  Address of a ring bank for with the BH was scheduled.
-+ *
-+ * Function is the bottom half handler for the response from acceleration
-+ * device. There is one handler for every ring bank. Function checks all
-+ * communication rings in the bank.
-+ * To be used by QAT device specific drivers.
-+ *
-+ * Return: void
-+ */
-+void adf_response_handler(unsigned long bank_addr)
-+{
-+	struct adf_etr_bank_data *bank = (void *)bank_addr;
-+
-+	/* Handle all the responses nad reenable IRQs */
-+	adf_ring_response_handler(bank);
-+	WRITE_CSR_INT_FLAG_AND_COL(bank->csr_addr, bank->bank_number,
-+				   bank->irq_mask);
-+}
-+EXPORT_SYMBOL_GPL(adf_response_handler);
-+
-+static inline int adf_get_cfg_int(struct adf_accel_dev *accel_dev,
-+				  const char *section, const char *format,
-+				  uint32_t key, uint32_t *value)
-+{
-+	char key_buf[ADF_CFG_MAX_KEY_LEN_IN_BYTES];
-+	char val_buf[ADF_CFG_MAX_VAL_LEN_IN_BYTES];
-+
-+	snprintf(key_buf, ADF_CFG_MAX_KEY_LEN_IN_BYTES, format, key);
-+
-+	if (adf_cfg_get_param_value(accel_dev, section, key_buf, val_buf))
-+		return -EFAULT;
-+
-+	if (kstrtouint(val_buf, 10, value))
-+		return -EFAULT;
-+	return 0;
-+}
-+
-+static void adf_enable_coalesc(struct adf_etr_bank_data *bank,
-+			       const char *section, uint32_t bank_num_in_accel)
-+{
-+	if (adf_get_cfg_int(bank->accel_dev, section,
-+			    ADF_ETRMGR_COALESCE_TIMER_FORMAT,
-+			    bank_num_in_accel, &bank->irq_coalesc_timer))
-+		bank->irq_coalesc_timer = ADF_COALESCING_DEF_TIME;
-+
-+	if (ADF_COALESCING_MAX_TIME < bank->irq_coalesc_timer ||
-+	    ADF_COALESCING_MIN_TIME > bank->irq_coalesc_timer)
-+		bank->irq_coalesc_timer = ADF_COALESCING_DEF_TIME;
-+}
-+
-+static int adf_init_bank(struct adf_accel_dev *accel_dev,
-+			 struct adf_etr_bank_data *bank,
-+			 uint32_t bank_num, void __iomem *csr_addr)
-+{
-+	struct adf_hw_device_data *hw_data = accel_dev->hw_device;
-+	struct adf_etr_ring_data *ring;
-+	struct adf_etr_ring_data *tx_ring;
-+	uint32_t i, coalesc_enabled;
-+
-+	memset(bank, 0, sizeof(*bank));
-+	bank->bank_number = bank_num;
-+	bank->csr_addr = csr_addr;
-+	bank->accel_dev = accel_dev;
-+	spin_lock_init(&bank->lock);
-+
-+	/* Enable IRQ coalescing always. This will allow to use
-+	 * the optimised flag and coalesc register.
-+	 * If it is disabled in the config file just use min time value */
-+	if (adf_get_cfg_int(accel_dev, "Accelerator0",
-+			    ADF_ETRMGR_COALESCING_ENABLED_FORMAT,
-+			    bank_num, &coalesc_enabled) && coalesc_enabled)
-+		adf_enable_coalesc(bank, "Accelerator0", bank_num);
-+	else
-+		bank->irq_coalesc_timer = ADF_COALESCING_MIN_TIME;
-+
-+	for (i = 0; i < ADF_ETR_MAX_RINGS_PER_BANK; i++) {
-+		WRITE_CSR_RING_CONFIG(csr_addr, bank_num, i, 0);
-+		WRITE_CSR_RING_BASE(csr_addr, bank_num, i, 0);
-+		ring = &bank->rings[i];
-+		if (hw_data->tx_rings_mask & (1 << i)) {
-+			ring->inflights = kzalloc_node(sizeof(atomic_t),
-+						       GFP_KERNEL,
-+						       accel_dev->numa_node);
-+			if (!ring->inflights)
-+				goto err;
-+		} else {
-+			if (i < hw_data->tx_rx_gap) {
-+				pr_err("QAT: Invalid tx rings mask config\n");
-+				goto err;
-+			}
-+			tx_ring = &bank->rings[i - hw_data->tx_rx_gap];
-+			ring->inflights = tx_ring->inflights;
-+		}
-+	}
-+	if (adf_bank_debugfs_add(bank)) {
-+		pr_err("QAT: Failed to add bank debugfs entry\n");
-+		goto err;
-+	}
-+
-+	WRITE_CSR_INT_SRCSEL(csr_addr, bank_num);
-+	return 0;
-+err:
-+	for (i = 0; i < ADF_ETR_MAX_RINGS_PER_BANK; i++) {
-+		ring = &bank->rings[i];
-+		if (hw_data->tx_rings_mask & (1 << i) && ring->inflights)
-+			kfree(ring->inflights);
-+	}
++	if (flag)
++		kfree(*init_tab_base);
 +	return -ENOMEM;
 +}
 +
-+/**
-+ * adf_init_etr_data() - Initialize transport rings for acceleration device
-+ * @accel_dev:  Pointer to acceleration device.
-+ *
-+ * Function is the initializes the communications channels (rings) to the
-+ * acceleration device accel_dev.
-+ * To be used by QAT device specific drivers.
-+ *
-+ * Return: 0 on success, error code othewise.
-+ */
-+int adf_init_etr_data(struct adf_accel_dev *accel_dev)
++static int qat_uclo_init_lmem_seg(struct icp_qat_fw_loader_handle *handle,
++				  struct icp_qat_uof_initmem *init_mem)
 +{
-+	struct adf_etr_data *etr_data;
-+	struct adf_hw_device_data *hw_data = accel_dev->hw_device;
-+	void __iomem *csr_addr;
-+	uint32_t size;
-+	uint32_t num_banks = 0;
-+	int i, ret;
++	struct icp_qat_uclo_objhandle *obj_handle = handle->obj_handle;
++	unsigned int ae;
 +
-+	etr_data = kzalloc_node(sizeof(*etr_data), GFP_KERNEL,
-+				accel_dev->numa_node);
-+	if (!etr_data)
-+		return -ENOMEM;
-+
-+	num_banks = GET_MAX_BANKS(accel_dev);
-+	size = num_banks * sizeof(struct adf_etr_bank_data);
-+	etr_data->banks = kzalloc_node(size, GFP_KERNEL, accel_dev->numa_node);
-+	if (!etr_data->banks) {
-+		ret = -ENOMEM;
-+		goto err_bank;
-+	}
-+
-+	accel_dev->transport = etr_data;
-+	i = hw_data->get_etr_bar_id(hw_data);
-+	csr_addr = accel_dev->accel_pci_dev.pci_bars[i].virt_addr;
-+
-+	/* accel_dev->debugfs_dir should always be non-NULL here */
-+	etr_data->debug = debugfs_create_dir("transport",
-+					     accel_dev->debugfs_dir);
-+	if (!etr_data->debug) {
-+		pr_err("QAT: Unable to create transport debugfs entry\n");
-+		ret = -ENOENT;
-+		goto err_bank_debug;
-+	}
-+
-+	for (i = 0; i < num_banks; i++) {
-+		ret = adf_init_bank(accel_dev, &etr_data->banks[i], i,
-+				    csr_addr);
-+		if (ret)
-+			goto err_bank_all;
-+	}
-+
-+	return 0;
-+
-+err_bank_all:
-+	debugfs_remove(etr_data->debug);
-+err_bank_debug:
-+	kfree(etr_data->banks);
-+err_bank:
-+	kfree(etr_data);
-+	accel_dev->transport = NULL;
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(adf_init_etr_data);
-+
-+static void cleanup_bank(struct adf_etr_bank_data *bank)
-+{
-+	uint32_t i;
-+
-+	for (i = 0; i < ADF_ETR_MAX_RINGS_PER_BANK; i++) {
-+		struct adf_accel_dev *accel_dev = bank->accel_dev;
-+		struct adf_hw_device_data *hw_data = accel_dev->hw_device;
-+		struct adf_etr_ring_data *ring = &bank->rings[i];
-+
-+		if (bank->ring_mask & (1 << i))
-+			adf_cleanup_ring(ring);
-+
-+		if (hw_data->tx_rings_mask & (1 << i))
-+			kfree(ring->inflights);
-+	}
-+	adf_bank_debugfs_rm(bank);
-+	memset(bank, 0, sizeof(*bank));
-+}
-+
-+static void adf_cleanup_etr_handles(struct adf_accel_dev *accel_dev)
-+{
-+	struct adf_etr_data *etr_data = accel_dev->transport;
-+	uint32_t i, num_banks = GET_MAX_BANKS(accel_dev);
-+
-+	for (i = 0; i < num_banks; i++)
-+		cleanup_bank(&etr_data->banks[i]);
-+}
-+
-+/**
-+ * adf_cleanup_etr_data() - Clear transport rings for acceleration device
-+ * @accel_dev:  Pointer to acceleration device.
-+ *
-+ * Function is the clears the communications channels (rings) of the
-+ * acceleration device accel_dev.
-+ * To be used by QAT device specific drivers.
-+ *
-+ * Return: void
-+ */
-+void adf_cleanup_etr_data(struct adf_accel_dev *accel_dev)
-+{
-+	struct adf_etr_data *etr_data = accel_dev->transport;
-+
-+	if (etr_data) {
-+		adf_cleanup_etr_handles(accel_dev);
-+		debugfs_remove(etr_data->debug);
-+		kfree(etr_data->banks);
-+		kfree(etr_data);
-+		accel_dev->transport = NULL;
-+	}
-+}
-+EXPORT_SYMBOL_GPL(adf_cleanup_etr_data);
-diff --git a/drivers/crypto/qat/qat_common/adf_transport.h b/drivers/crypto/qat/qat_common/adf_transport.h
-new file mode 100644
-index 0000000..386485b
---- /dev/null
-+++ b/drivers/crypto/qat/qat_common/adf_transport.h
-@@ -0,0 +1,63 @@
-+/*
-+  This file is provided under a dual BSD/GPLv2 license.  When using or
-+  redistributing this file, you may do so under either license.
-+
-+  GPL LICENSE SUMMARY
-+  Copyright(c) 2014 Intel Corporation.
-+  This program is free software; you can redistribute it and/or modify
-+  it under the terms of version 2 of the GNU General Public License as
-+  published by the Free Software Foundation.
-+
-+  This program is distributed in the hope that it will be useful, but
-+  WITHOUT ANY WARRANTY; without even the implied warranty of
-+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+  General Public License for more details.
-+
-+  Contact Information:
-+  qat-linux@intel.com
-+
-+  BSD LICENSE
-+  Copyright(c) 2014 Intel Corporation.
-+  Redistribution and use in source and binary forms, with or without
-+  modification, are permitted provided that the following conditions
-+  are met:
-+
-+    * Redistributions of source code must retain the above copyright
-+      notice, this list of conditions and the following disclaimer.
-+    * Redistributions in binary form must reproduce the above copyright
-+      notice, this list of conditions and the following disclaimer in
-+      the documentation and/or other materials provided with the
-+      distribution.
-+    * Neither the name of Intel Corporation nor the names of its
-+      contributors may be used to endorse or promote products derived
-+      from this software without specific prior written permission.
-+
-+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-+  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-+  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-+  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-+  OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-+  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-+  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-+  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-+  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-+  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-+  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-+*/
-+#ifndef ADF_TRANSPORT_H
-+#define ADF_TRANSPORT_H
-+
-+#include "adf_accel_devices.h"
-+
-+struct adf_etr_ring_data;
-+
-+typedef void (*adf_callback_fn)(void *resp_msg);
-+
-+int adf_create_ring(struct adf_accel_dev *accel_dev, const char *section,
-+		    uint32_t bank_num, uint32_t num_mgs, uint32_t msg_size,
-+		    const char *ring_name, adf_callback_fn callback,
-+		    int poll_mode, struct adf_etr_ring_data **ring_ptr);
-+
-+int adf_send_message(struct adf_etr_ring_data *ring, uint32_t *msg);
-+void adf_remove_ring(struct adf_etr_ring_data *ring);
-+#endif
-diff --git a/drivers/crypto/qat/qat_common/adf_transport_access_macros.h b/drivers/crypto/qat/qat_common/adf_transport_access_macros.h
-new file mode 100644
-index 0000000..91d88d6
---- /dev/null
-+++ b/drivers/crypto/qat/qat_common/adf_transport_access_macros.h
-@@ -0,0 +1,160 @@
-+/*
-+  This file is provided under a dual BSD/GPLv2 license.  When using or
-+  redistributing this file, you may do so under either license.
-+
-+  GPL LICENSE SUMMARY
-+  Copyright(c) 2014 Intel Corporation.
-+  This program is free software; you can redistribute it and/or modify
-+  it under the terms of version 2 of the GNU General Public License as
-+  published by the Free Software Foundation.
-+
-+  This program is distributed in the hope that it will be useful, but
-+  WITHOUT ANY WARRANTY; without even the implied warranty of
-+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+  General Public License for more details.
-+
-+  Contact Information:
-+  qat-linux@intel.com
-+
-+  BSD LICENSE
-+  Copyright(c) 2014 Intel Corporation.
-+  Redistribution and use in source and binary forms, with or without
-+  modification, are permitted provided that the following conditions
-+  are met:
-+
-+    * Redistributions of source code must retain the above copyright
-+      notice, this list of conditions and the following disclaimer.
-+    * Redistributions in binary form must reproduce the above copyright
-+      notice, this list of conditions and the following disclaimer in
-+      the documentation and/or other materials provided with the
-+      distribution.
-+    * Neither the name of Intel Corporation nor the names of its
-+      contributors may be used to endorse or promote products derived
-+      from this software without specific prior written permission.
-+
-+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-+  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-+  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-+  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-+  OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-+  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-+  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-+  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-+  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-+  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-+  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-+*/
-+#ifndef ADF_TRANSPORT_ACCESS_MACROS_H
-+#define ADF_TRANSPORT_ACCESS_MACROS_H
-+
-+#include "adf_accel_devices.h"
-+#define ADF_BANK_INT_SRC_SEL_MASK_0 0x4444444CUL
-+#define ADF_BANK_INT_SRC_SEL_MASK_X 0x44444444UL
-+#define ADF_RING_CSR_RING_CONFIG 0x000
-+#define ADF_RING_CSR_RING_LBASE 0x040
-+#define ADF_RING_CSR_RING_UBASE 0x080
-+#define ADF_RING_CSR_RING_HEAD 0x0C0
-+#define ADF_RING_CSR_RING_TAIL 0x100
-+#define ADF_RING_CSR_E_STAT 0x14C
-+#define ADF_RING_CSR_INT_SRCSEL 0x174
-+#define ADF_RING_CSR_INT_SRCSEL_2 0x178
-+#define ADF_RING_CSR_INT_COL_EN 0x17C
-+#define ADF_RING_CSR_INT_COL_CTL 0x180
-+#define ADF_RING_CSR_INT_FLAG_AND_COL 0x184
-+#define ADF_RING_CSR_INT_COL_CTL_ENABLE	0x80000000
-+#define ADF_RING_BUNDLE_SIZE 0x1000
-+#define ADF_RING_CONFIG_NEAR_FULL_WM 0x0A
-+#define ADF_RING_CONFIG_NEAR_EMPTY_WM 0x05
-+#define ADF_COALESCING_MIN_TIME 0x1FF
-+#define ADF_COALESCING_MAX_TIME 0xFFFFF
-+#define ADF_COALESCING_DEF_TIME 0x27FF
-+#define ADF_RING_NEAR_WATERMARK_512 0x08
-+#define ADF_RING_NEAR_WATERMARK_0 0x00
-+#define ADF_RING_EMPTY_SIG 0x7F7F7F7F
-+
-+/* Valid internal ring size values */
-+#define ADF_RING_SIZE_128 0x01
-+#define ADF_RING_SIZE_256 0x02
-+#define ADF_RING_SIZE_512 0x03
-+#define ADF_RING_SIZE_4K 0x06
-+#define ADF_RING_SIZE_16K 0x08
-+#define ADF_RING_SIZE_4M 0x10
-+#define ADF_MIN_RING_SIZE ADF_RING_SIZE_128
-+#define ADF_MAX_RING_SIZE ADF_RING_SIZE_4M
-+#define ADF_DEFAULT_RING_SIZE ADF_RING_SIZE_16K
-+
-+/* Valid internal msg size values internal */
-+#define ADF_MSG_SIZE_32 0x01
-+#define ADF_MSG_SIZE_64 0x02
-+#define ADF_MSG_SIZE_128 0x04
-+#define ADF_MIN_MSG_SIZE ADF_MSG_SIZE_32
-+#define ADF_MAX_MSG_SIZE ADF_MSG_SIZE_128
-+
-+/* Size to bytes conversion macros for ring and msg values */
-+#define ADF_MSG_SIZE_TO_BYTES(SIZE) (SIZE << 5)
-+#define ADF_BYTES_TO_MSG_SIZE(SIZE) (SIZE >> 5)
-+#define ADF_SIZE_TO_RING_SIZE_IN_BYTES(SIZE) ((1 << (SIZE - 1)) << 7)
-+#define ADF_RING_SIZE_IN_BYTES_TO_SIZE(SIZE) ((1 << (SIZE - 1)) >> 7)
-+
-+/* Minimum ring bufer size for memory allocation */
-+#define ADF_RING_SIZE_BYTES_MIN(SIZE) ((SIZE < ADF_RING_SIZE_4K) ? \
-+				ADF_RING_SIZE_4K : SIZE)
-+#define ADF_RING_SIZE_MODULO(SIZE) (SIZE + 0x6)
-+#define ADF_MAX_INFLIGHTS(RING_SIZE, MSG_SIZE) \
-+	((((1 << (RING_SIZE - 1)) << 4) >> MSG_SIZE) - 1)
-+#define BUILD_RING_CONFIG(size)	\
-+	((ADF_RING_NEAR_WATERMARK_0 << ADF_RING_CONFIG_NEAR_FULL_WM) \
-+	| (ADF_RING_NEAR_WATERMARK_0 << ADF_RING_CONFIG_NEAR_EMPTY_WM) \
-+	| size)
-+#define BUILD_RESP_RING_CONFIG(size, watermark_nf, watermark_ne) \
-+	((watermark_nf << ADF_RING_CONFIG_NEAR_FULL_WM)	\
-+	| (watermark_ne << ADF_RING_CONFIG_NEAR_EMPTY_WM) \
-+	| size)
-+#define BUILD_RING_BASE_ADDR(addr, size) \
-+	((addr >> 6) & (0xFFFFFFFFFFFFFFFFULL << size))
-+#define READ_CSR_RING_HEAD(csr_base_addr, bank, ring) \
-+	ADF_CSR_RD(csr_base_addr, (ADF_RING_BUNDLE_SIZE * bank) + \
-+			ADF_RING_CSR_RING_HEAD + (ring << 2))
-+#define READ_CSR_RING_TAIL(csr_base_addr, bank, ring) \
-+	ADF_CSR_RD(csr_base_addr, (ADF_RING_BUNDLE_SIZE * bank) + \
-+			ADF_RING_CSR_RING_TAIL + (ring << 2))
-+#define READ_CSR_E_STAT(csr_base_addr, bank) \
-+	ADF_CSR_RD(csr_base_addr, (ADF_RING_BUNDLE_SIZE * bank) + \
-+			ADF_RING_CSR_E_STAT)
-+#define WRITE_CSR_RING_CONFIG(csr_base_addr, bank, ring, value) \
-+	ADF_CSR_WR(csr_base_addr, (ADF_RING_BUNDLE_SIZE * bank) + \
-+		ADF_RING_CSR_RING_CONFIG + (ring << 2), value)
-+#define WRITE_CSR_RING_BASE(csr_base_addr, bank, ring, value) \
-+do { \
-+	uint32_t l_base = 0, u_base = 0; \
-+	l_base = (uint32_t)(value & 0xFFFFFFFF); \
-+	u_base = (uint32_t)((value & 0xFFFFFFFF00000000ULL) >> 32); \
-+	ADF_CSR_WR(csr_base_addr, (ADF_RING_BUNDLE_SIZE * bank) + \
-+		ADF_RING_CSR_RING_LBASE + (ring << 2), l_base);	\
-+	ADF_CSR_WR(csr_base_addr, (ADF_RING_BUNDLE_SIZE * bank) + \
-+		ADF_RING_CSR_RING_UBASE + (ring << 2), u_base);	\
-+} while (0)
-+#define WRITE_CSR_RING_HEAD(csr_base_addr, bank, ring, value) \
-+	ADF_CSR_WR(csr_base_addr, (ADF_RING_BUNDLE_SIZE * bank) + \
-+		ADF_RING_CSR_RING_HEAD + (ring << 2), value)
-+#define WRITE_CSR_RING_TAIL(csr_base_addr, bank, ring, value) \
-+	ADF_CSR_WR(csr_base_addr, (ADF_RING_BUNDLE_SIZE * bank) + \
-+		ADF_RING_CSR_RING_TAIL + (ring << 2), value)
-+#define WRITE_CSR_INT_SRCSEL(csr_base_addr, bank) \
-+do { \
-+	ADF_CSR_WR(csr_base_addr, (ADF_RING_BUNDLE_SIZE * bank) + \
-+	ADF_RING_CSR_INT_SRCSEL, ADF_BANK_INT_SRC_SEL_MASK_0);	\
-+	ADF_CSR_WR(csr_base_addr, (ADF_RING_BUNDLE_SIZE * bank) + \
-+	ADF_RING_CSR_INT_SRCSEL_2, ADF_BANK_INT_SRC_SEL_MASK_X); \
-+} while (0)
-+#define WRITE_CSR_INT_COL_EN(csr_base_addr, bank, value) \
-+	ADF_CSR_WR(csr_base_addr, (ADF_RING_BUNDLE_SIZE * bank) + \
-+			ADF_RING_CSR_INT_COL_EN, value)
-+#define WRITE_CSR_INT_COL_CTL(csr_base_addr, bank, value) \
-+	ADF_CSR_WR(csr_base_addr, (ADF_RING_BUNDLE_SIZE * bank) + \
-+			ADF_RING_CSR_INT_COL_CTL, \
-+			ADF_RING_CSR_INT_COL_CTL_ENABLE | value)
-+#define WRITE_CSR_INT_FLAG_AND_COL(csr_base_addr, bank, value) \
-+	ADF_CSR_WR(csr_base_addr, (ADF_RING_BUNDLE_SIZE * bank) + \
-+			ADF_RING_CSR_INT_FLAG_AND_COL, value)
-+#endif
-diff --git a/drivers/crypto/qat/qat_common/adf_transport_debug.c b/drivers/crypto/qat/qat_common/adf_transport_debug.c
-new file mode 100644
-index 0000000..d83a581
---- /dev/null
-+++ b/drivers/crypto/qat/qat_common/adf_transport_debug.c
-@@ -0,0 +1,301 @@
-+/*
-+  This file is provided under a dual BSD/GPLv2 license.  When using or
-+  redistributing this file, you may do so under either license.
-+
-+  GPL LICENSE SUMMARY
-+  Copyright(c) 2014 Intel Corporation.
-+  This program is free software; you can redistribute it and/or modify
-+  it under the terms of version 2 of the GNU General Public License as
-+  published by the Free Software Foundation.
-+
-+  This program is distributed in the hope that it will be useful, but
-+  WITHOUT ANY WARRANTY; without even the implied warranty of
-+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+  General Public License for more details.
-+
-+  Contact Information:
-+  qat-linux@intel.com
-+
-+  BSD LICENSE
-+  Copyright(c) 2014 Intel Corporation.
-+  Redistribution and use in source and binary forms, with or without
-+  modification, are permitted provided that the following conditions
-+  are met:
-+
-+    * Redistributions of source code must retain the above copyright
-+      notice, this list of conditions and the following disclaimer.
-+    * Redistributions in binary form must reproduce the above copyright
-+      notice, this list of conditions and the following disclaimer in
-+      the documentation and/or other materials provided with the
-+      distribution.
-+    * Neither the name of Intel Corporation nor the names of its
-+      contributors may be used to endorse or promote products derived
-+      from this software without specific prior written permission.
-+
-+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-+  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-+  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-+  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-+  OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-+  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-+  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-+  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-+  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-+  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-+  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-+*/
-+#include <linux/mutex.h>
-+#include <linux/slab.h>
-+#include <linux/seq_file.h>
-+#include "adf_accel_devices.h"
-+#include "adf_transport_internal.h"
-+#include "adf_transport_access_macros.h"
-+
-+static DEFINE_MUTEX(ring_read_lock);
-+static DEFINE_MUTEX(bank_read_lock);
-+
-+static void *adf_ring_start(struct seq_file *sfile, loff_t *pos)
-+{
-+	struct adf_etr_ring_data *ring = sfile->private;
-+	mutex_lock(&ring_read_lock);
-+	if (*pos == 0)
-+		return SEQ_START_TOKEN;
-+
-+	if (*pos >= (ADF_SIZE_TO_RING_SIZE_IN_BYTES(ring->ring_size) /
-+		     ADF_MSG_SIZE_TO_BYTES(ring->msg_size)))
-+		return NULL;
-+
-+	return ring->base_addr +
-+		(ADF_MSG_SIZE_TO_BYTES(ring->msg_size) * (*pos)++);
-+}
-+
-+static void *adf_ring_next(struct seq_file *sfile, void *v, loff_t *pos)
-+{
-+	struct adf_etr_ring_data *ring = sfile->private;
-+
-+	if (*pos >= (ADF_SIZE_TO_RING_SIZE_IN_BYTES(ring->ring_size) /
-+		     ADF_MSG_SIZE_TO_BYTES(ring->msg_size)))
-+		return NULL;
-+
-+	return ring->base_addr +
-+		(ADF_MSG_SIZE_TO_BYTES(ring->msg_size) * (*pos)++);
-+}
-+
-+static int adf_ring_show(struct seq_file *sfile, void *v)
-+{
-+	struct adf_etr_ring_data *ring = sfile->private;
-+	struct adf_etr_bank_data *bank = ring->bank;
-+	uint32_t *msg = v;
-+	void __iomem *csr = ring->bank->csr_addr;
-+	int i, x;
-+
-+	if (v == SEQ_START_TOKEN) {
-+		int head, tail, empty;
-+
-+		head = READ_CSR_RING_HEAD(csr, bank->bank_number,
-+					  ring->ring_number);
-+		tail = READ_CSR_RING_TAIL(csr, bank->bank_number,
-+					  ring->ring_number);
-+		empty = READ_CSR_E_STAT(csr, bank->bank_number);
-+
-+		seq_puts(sfile, "------- Ring configuration -------\n");
-+		seq_printf(sfile, "ring num %d, bank num %d\n",
-+			   ring->ring_number, ring->bank->bank_number);
-+		seq_printf(sfile, "head %x, tail %x, empty: %d\n",
-+			   head, tail, (empty & 1 << ring->ring_number)
-+			   >> ring->ring_number);
-+		seq_printf(sfile, "ring size %d, msg size %d\n",
-+			   ADF_SIZE_TO_RING_SIZE_IN_BYTES(ring->ring_size),
-+			   ADF_MSG_SIZE_TO_BYTES(ring->msg_size));
-+		seq_puts(sfile, "----------- Ring data ------------\n");
-+		return 0;
-+	}
-+	seq_printf(sfile, "%p:", msg);
-+	x = 0;
-+	i = 0;
-+	for (; i < (ADF_MSG_SIZE_TO_BYTES(ring->msg_size) >> 2); i++) {
-+		seq_printf(sfile, " %08X", *(msg + i));
-+		if ((ADF_MSG_SIZE_TO_BYTES(ring->msg_size) >> 2) != i + 1 &&
-+		    (++x == 8)) {
-+			seq_printf(sfile, "\n%p:", msg + i + 1);
-+			x = 0;
-+		}
-+	}
-+	seq_puts(sfile, "\n");
++	if (qat_uclo_fetch_initmem_ae(handle, init_mem,
++				      ICP_QAT_UCLO_MAX_LMEM_REG, &ae))
++		return -EINVAL;
++	if (qat_uclo_create_batch_init_list(handle, init_mem, ae,
++					    &(obj_handle->lm_init_tab[ae])))
++		return -EINVAL;
 +	return 0;
 +}
 +
-+static void adf_ring_stop(struct seq_file *sfile, void *v)
++static int qat_uclo_init_umem_seg(struct icp_qat_fw_loader_handle *handle,
++				  struct icp_qat_uof_initmem *init_mem)
 +{
-+	mutex_unlock(&ring_read_lock);
-+}
++	struct icp_qat_uclo_objhandle *obj_handle = handle->obj_handle;
++	unsigned int ae, ustore_size, uaddr, i;
 +
-+static const struct seq_operations adf_ring_sops = {
-+	.start = adf_ring_start,
-+	.next = adf_ring_next,
-+	.stop = adf_ring_stop,
-+	.show = adf_ring_show
-+};
-+
-+static int adf_ring_open(struct inode *inode, struct file *file)
-+{
-+	int ret = seq_open(file, &adf_ring_sops);
-+
-+	if (!ret) {
-+		struct seq_file *seq_f = file->private_data;
-+		seq_f->private = inode->i_private;
-+	}
-+	return ret;
-+}
-+
-+static const struct file_operations adf_ring_debug_fops = {
-+	.open = adf_ring_open,
-+	.read = seq_read,
-+	.llseek = seq_lseek,
-+	.release = seq_release
-+};
-+
-+int adf_ring_debugfs_add(struct adf_etr_ring_data *ring, const char *name)
-+{
-+	struct adf_etr_ring_debug_entry *ring_debug;
-+	char entry_name[8];
-+
-+	ring_debug = kzalloc(sizeof(*ring_debug), GFP_KERNEL);
-+	if (!ring_debug)
-+		return -ENOMEM;
-+
-+	strlcpy(ring_debug->ring_name, name, sizeof(ring_debug->ring_name));
-+	snprintf(entry_name, sizeof(entry_name), "ring_%02d",
-+		 ring->ring_number);
-+
-+	ring_debug->debug = debugfs_create_file(entry_name, S_IRUSR,
-+						ring->bank->bank_debug_dir,
-+						ring, &adf_ring_debug_fops);
-+	if (!ring_debug->debug) {
-+		pr_err("QAT: Failed to create ring debug entry.\n");
-+		kfree(ring_debug);
-+		return -EFAULT;
-+	}
-+	ring->ring_debug = ring_debug;
-+	return 0;
-+}
-+
-+void adf_ring_debugfs_rm(struct adf_etr_ring_data *ring)
-+{
-+	if (ring->ring_debug) {
-+		debugfs_remove(ring->ring_debug->debug);
-+		kfree(ring->ring_debug);
-+		ring->ring_debug = NULL;
-+	}
-+}
-+
-+static void *adf_bank_start(struct seq_file *sfile, loff_t *pos)
-+{
-+	mutex_lock(&bank_read_lock);
-+	if (*pos == 0)
-+		return SEQ_START_TOKEN;
-+
-+	if (*pos >= ADF_ETR_MAX_RINGS_PER_BANK)
-+		return NULL;
-+
-+	return pos;
-+}
-+
-+static void *adf_bank_next(struct seq_file *sfile, void *v, loff_t *pos)
-+{
-+	if (++(*pos) >= ADF_ETR_MAX_RINGS_PER_BANK)
-+		return NULL;
-+
-+	return pos;
-+}
-+
-+static int adf_bank_show(struct seq_file *sfile, void *v)
-+{
-+	struct adf_etr_bank_data *bank = sfile->private;
-+
-+	if (v == SEQ_START_TOKEN) {
-+		seq_printf(sfile, "------- Bank %d configuration -------\n",
-+			   bank->bank_number);
-+	} else {
-+		int ring_id = *((int *)v) - 1;
-+		struct adf_etr_ring_data *ring = &bank->rings[ring_id];
-+		void __iomem *csr = bank->csr_addr;
-+		int head, tail, empty;
-+
-+		if (!(bank->ring_mask & 1 << ring_id))
-+			return 0;
-+
-+		head = READ_CSR_RING_HEAD(csr, bank->bank_number,
-+					  ring->ring_number);
-+		tail = READ_CSR_RING_TAIL(csr, bank->bank_number,
-+					  ring->ring_number);
-+		empty = READ_CSR_E_STAT(csr, bank->bank_number);
-+
-+		seq_printf(sfile,
-+			   "ring num %02d, head %04x, tail %04x, empty: %d\n",
-+			   ring->ring_number, head, tail,
-+			   (empty & 1 << ring->ring_number) >>
-+			   ring->ring_number);
++	ustore_size = obj_handle->ustore_phy_size;
++	if (qat_uclo_fetch_initmem_ae(handle, init_mem, ustore_size, &ae))
++		return -EINVAL;
++	if (qat_uclo_create_batch_init_list(handle, init_mem, ae,
++					    &(obj_handle->umem_init_tab[ae])))
++		return -EINVAL;
++	/* set the highest ustore address referenced */
++	uaddr = (init_mem->addr + init_mem->num_in_bytes) >> 0x2;
++	for (i = 0; i < obj_handle->ae_data[ae].slice_num; i++) {
++		if (obj_handle->ae_data[ae].ae_slices[i].
++		    encap_image->uwords_num < uaddr)
++			obj_handle->ae_data[ae].ae_slices[i].
++			encap_image->uwords_num = uaddr;
 +	}
 +	return 0;
 +}
 +
-+static void adf_bank_stop(struct seq_file *sfile, void *v)
++#define ICP_DH895XCC_PESRAM_BAR_SIZE 0x80000
++static int qat_uclo_init_ae_memory(struct icp_qat_fw_loader_handle *handle,
++				   struct icp_qat_uof_initmem *init_mem)
 +{
-+	mutex_unlock(&bank_read_lock);
-+}
-+
-+static const struct seq_operations adf_bank_sops = {
-+	.start = adf_bank_start,
-+	.next = adf_bank_next,
-+	.stop = adf_bank_stop,
-+	.show = adf_bank_show
-+};
-+
-+static int adf_bank_open(struct inode *inode, struct file *file)
-+{
-+	int ret = seq_open(file, &adf_bank_sops);
-+
-+	if (!ret) {
-+		struct seq_file *seq_f = file->private_data;
-+		seq_f->private = inode->i_private;
-+	}
-+	return ret;
-+}
-+
-+static const struct file_operations adf_bank_debug_fops = {
-+	.open = adf_bank_open,
-+	.read = seq_read,
-+	.llseek = seq_lseek,
-+	.release = seq_release
-+};
-+
-+int adf_bank_debugfs_add(struct adf_etr_bank_data *bank)
-+{
-+	struct adf_accel_dev *accel_dev = bank->accel_dev;
-+	struct dentry *parent = accel_dev->transport->debug;
-+	char name[8];
-+
-+	snprintf(name, sizeof(name), "bank_%02d", bank->bank_number);
-+	bank->bank_debug_dir = debugfs_create_dir(name, parent);
-+	if (!bank->bank_debug_dir) {
-+		pr_err("QAT: Failed to create bank debug dir.\n");
-+		return -EFAULT;
-+	}
-+
-+	bank->bank_debug_cfg = debugfs_create_file("config", S_IRUSR,
-+						   bank->bank_debug_dir, bank,
-+						   &adf_bank_debug_fops);
-+	if (!bank->bank_debug_cfg) {
-+		pr_err("QAT: Failed to create bank debug entry.\n");
-+		debugfs_remove(bank->bank_debug_dir);
-+		return -EFAULT;
-+	}
-+	return 0;
-+}
-+
-+void adf_bank_debugfs_rm(struct adf_etr_bank_data *bank)
-+{
-+	debugfs_remove(bank->bank_debug_cfg);
-+	debugfs_remove(bank->bank_debug_dir);
-+}
-diff --git a/drivers/crypto/qat/qat_common/adf_transport_internal.h b/drivers/crypto/qat/qat_common/adf_transport_internal.h
-new file mode 100644
-index 0000000..4eb8969
---- /dev/null
-+++ b/drivers/crypto/qat/qat_common/adf_transport_internal.h
-@@ -0,0 +1,115 @@
-+/*
-+  This file is provided under a dual BSD/GPLv2 license.  When using or
-+  redistributing this file, you may do so under either license.
-+
-+  GPL LICENSE SUMMARY
-+  Copyright(c) 2014 Intel Corporation.
-+  This program is free software; you can redistribute it and/or modify
-+  it under the terms of version 2 of the GNU General Public License as
-+  published by the Free Software Foundation.
-+
-+  This program is distributed in the hope that it will be useful, but
-+  WITHOUT ANY WARRANTY; without even the implied warranty of
-+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+  General Public License for more details.
-+
-+  Contact Information:
-+  qat-linux@intel.com
-+
-+  BSD LICENSE
-+  Copyright(c) 2014 Intel Corporation.
-+  Redistribution and use in source and binary forms, with or without
-+  modification, are permitted provided that the following conditions
-+  are met:
-+
-+    * Redistributions of source code must retain the above copyright
-+      notice, this list of conditions and the following disclaimer.
-+    * Redistributions in binary form must reproduce the above copyright
-+      notice, this list of conditions and the following disclaimer in
-+      the documentation and/or other materials provided with the
-+      distribution.
-+    * Neither the name of Intel Corporation nor the names of its
-+      contributors may be used to endorse or promote products derived
-+      from this software without specific prior written permission.
-+
-+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-+  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-+  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-+  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-+  OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-+  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-+  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-+  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-+  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-+  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-+  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-+*/
-+#ifndef ADF_TRANSPORT_INTRN_H
-+#define ADF_TRANSPORT_INTRN_H
-+
-+#include <linux/interrupt.h>
-+#include <linux/atomic.h>
-+#include <linux/spinlock_types.h>
-+#include "adf_transport.h"
-+
-+struct adf_etr_ring_debug_entry {
-+	char ring_name[ADF_CFG_MAX_KEY_LEN_IN_BYTES];
-+	struct dentry *debug;
-+};
-+
-+struct adf_etr_ring_data {
-+	void *base_addr;
-+	atomic_t *inflights;
-+	spinlock_t lock;	/* protects ring data struct */
-+	adf_callback_fn callback;
-+	struct adf_etr_bank_data *bank;
-+	dma_addr_t dma_addr;
-+	uint16_t head;
-+	uint16_t tail;
-+	uint8_t ring_number;
-+	uint8_t ring_size;
-+	uint8_t msg_size;
-+	uint8_t reserved;
-+	struct adf_etr_ring_debug_entry *ring_debug;
-+} __packed;
-+
-+struct adf_etr_bank_data {
-+	struct adf_etr_ring_data rings[ADF_ETR_MAX_RINGS_PER_BANK];
-+	struct tasklet_struct resp_hanlder;
-+	void __iomem *csr_addr;
-+	struct adf_accel_dev *accel_dev;
-+	uint32_t irq_coalesc_timer;
-+	uint16_t ring_mask;
-+	uint16_t irq_mask;
-+	spinlock_t lock;	/* protects bank data struct */
-+	struct dentry *bank_debug_dir;
-+	struct dentry *bank_debug_cfg;
-+	uint32_t bank_number;
-+} __packed;
-+
-+struct adf_etr_data {
-+	struct adf_etr_bank_data *banks;
-+	struct dentry *debug;
-+};
-+
-+void adf_response_handler(unsigned long bank_addr);
-+#ifdef CONFIG_DEBUG_FS
-+#include <linux/debugfs.h>
-+int adf_bank_debugfs_add(struct adf_etr_bank_data *bank);
-+void adf_bank_debugfs_rm(struct adf_etr_bank_data *bank);
-+int adf_ring_debugfs_add(struct adf_etr_ring_data *ring, const char *name);
-+void adf_ring_debugfs_rm(struct adf_etr_ring_data *ring);
-+#else
-+static inline int adf_bank_debugfs_add(struct adf_etr_bank_data *bank)
-+{
-+	return 0;
-+}
-+#define adf_bank_debugfs_rm(bank) do {} while (0)
-+static inline int adf_ring_debugfs_add(struct adf_etr_ring_data *ring,
-+				       const char *name)
-+{
-+	return 0;
-+}
-+#define adf_ring_debugfs_rm(ring) do {} while (0)
-+#endif
-+#endif
-diff --git a/drivers/crypto/qat/qat_common/icp_qat_fw.h b/drivers/crypto/qat/qat_common/icp_qat_fw.h
-new file mode 100644
-index 0000000..f1e30e2
---- /dev/null
-+++ b/drivers/crypto/qat/qat_common/icp_qat_fw.h
-@@ -0,0 +1,316 @@
-+/*
-+  This file is provided under a dual BSD/GPLv2 license.  When using or
-+  redistributing this file, you may do so under either license.
-+
-+  GPL LICENSE SUMMARY
-+  Copyright(c) 2014 Intel Corporation.
-+  This program is free software; you can redistribute it and/or modify
-+  it under the terms of version 2 of the GNU General Public License as
-+  published by the Free Software Foundation.
-+
-+  This program is distributed in the hope that it will be useful, but
-+  WITHOUT ANY WARRANTY; without even the implied warranty of
-+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+  General Public License for more details.
-+
-+  Contact Information:
-+  qat-linux@intel.com
-+
-+  BSD LICENSE
-+  Copyright(c) 2014 Intel Corporation.
-+  Redistribution and use in source and binary forms, with or without
-+  modification, are permitted provided that the following conditions
-+  are met:
-+
-+    * Redistributions of source code must retain the above copyright
-+      notice, this list of conditions and the following disclaimer.
-+    * Redistributions in binary form must reproduce the above copyright
-+      notice, this list of conditions and the following disclaimer in
-+      the documentation and/or other materials provided with the
-+      distribution.
-+    * Neither the name of Intel Corporation nor the names of its
-+      contributors may be used to endorse or promote products derived
-+      from this software without specific prior written permission.
-+
-+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-+  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-+  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-+  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-+  OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-+  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-+  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-+  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-+  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-+  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-+  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-+*/
-+#ifndef _ICP_QAT_FW_H_
-+#define _ICP_QAT_FW_H_
-+#include <linux/types.h>
-+#include "icp_qat_hw.h"
-+
-+#define QAT_FIELD_SET(flags, val, bitpos, mask) \
-+{ (flags) = (((flags) & (~((mask) << (bitpos)))) | \
-+		(((val) & (mask)) << (bitpos))) ; }
-+
-+#define QAT_FIELD_GET(flags, bitpos, mask) \
-+	(((flags) >> (bitpos)) & (mask))
-+
-+#define ICP_QAT_FW_REQ_DEFAULT_SZ 128
-+#define ICP_QAT_FW_RESP_DEFAULT_SZ 32
-+#define ICP_QAT_FW_COMN_ONE_BYTE_SHIFT 8
-+#define ICP_QAT_FW_COMN_SINGLE_BYTE_MASK 0xFF
-+#define ICP_QAT_FW_NUM_LONGWORDS_1 1
-+#define ICP_QAT_FW_NUM_LONGWORDS_2 2
-+#define ICP_QAT_FW_NUM_LONGWORDS_3 3
-+#define ICP_QAT_FW_NUM_LONGWORDS_4 4
-+#define ICP_QAT_FW_NUM_LONGWORDS_5 5
-+#define ICP_QAT_FW_NUM_LONGWORDS_6 6
-+#define ICP_QAT_FW_NUM_LONGWORDS_7 7
-+#define ICP_QAT_FW_NUM_LONGWORDS_10 10
-+#define ICP_QAT_FW_NUM_LONGWORDS_13 13
-+#define ICP_QAT_FW_NULL_REQ_SERV_ID 1
-+
-+enum icp_qat_fw_comn_resp_serv_id {
-+	ICP_QAT_FW_COMN_RESP_SERV_NULL,
-+	ICP_QAT_FW_COMN_RESP_SERV_CPM_FW,
-+	ICP_QAT_FW_COMN_RESP_SERV_DELIMITER
-+};
-+
-+enum icp_qat_fw_comn_request_id {
-+	ICP_QAT_FW_COMN_REQ_NULL = 0,
-+	ICP_QAT_FW_COMN_REQ_CPM_FW_PKE = 3,
-+	ICP_QAT_FW_COMN_REQ_CPM_FW_LA = 4,
-+	ICP_QAT_FW_COMN_REQ_CPM_FW_DMA = 7,
-+	ICP_QAT_FW_COMN_REQ_CPM_FW_COMP = 9,
-+	ICP_QAT_FW_COMN_REQ_DELIMITER
-+};
-+
-+struct icp_qat_fw_comn_req_hdr_cd_pars {
-+	union {
-+		struct {
-+			uint64_t content_desc_addr;
-+			uint16_t content_desc_resrvd1;
-+			uint8_t content_desc_params_sz;
-+			uint8_t content_desc_hdr_resrvd2;
-+			uint32_t content_desc_resrvd3;
-+		} s;
-+		struct {
-+			uint32_t serv_specif_fields[4];
-+		} s1;
-+	} u;
-+};
-+
-+struct icp_qat_fw_comn_req_mid {
-+	uint64_t opaque_data;
-+	uint64_t src_data_addr;
-+	uint64_t dest_data_addr;
-+	uint32_t src_length;
-+	uint32_t dst_length;
-+};
-+
-+struct icp_qat_fw_comn_req_cd_ctrl {
-+	uint32_t content_desc_ctrl_lw[ICP_QAT_FW_NUM_LONGWORDS_5];
-+};
-+
-+struct icp_qat_fw_comn_req_hdr {
-+	uint8_t resrvd1;
-+	uint8_t service_cmd_id;
-+	uint8_t service_type;
-+	uint8_t hdr_flags;
-+	uint16_t serv_specif_flags;
-+	uint16_t comn_req_flags;
-+};
-+
-+struct icp_qat_fw_comn_req_rqpars {
-+	uint32_t serv_specif_rqpars_lw[ICP_QAT_FW_NUM_LONGWORDS_13];
-+};
-+
-+struct icp_qat_fw_comn_req {
-+	struct icp_qat_fw_comn_req_hdr comn_hdr;
-+	struct icp_qat_fw_comn_req_hdr_cd_pars cd_pars;
-+	struct icp_qat_fw_comn_req_mid comn_mid;
-+	struct icp_qat_fw_comn_req_rqpars serv_specif_rqpars;
-+	struct icp_qat_fw_comn_req_cd_ctrl cd_ctrl;
-+};
-+
-+struct icp_qat_fw_comn_error {
-+	uint8_t xlat_err_code;
-+	uint8_t cmp_err_code;
-+};
-+
-+struct icp_qat_fw_comn_resp_hdr {
-+	uint8_t resrvd1;
-+	uint8_t service_id;
-+	uint8_t response_type;
-+	uint8_t hdr_flags;
-+	struct icp_qat_fw_comn_error comn_error;
-+	uint8_t comn_status;
-+	uint8_t cmd_id;
-+};
-+
-+struct icp_qat_fw_comn_resp {
-+	struct icp_qat_fw_comn_resp_hdr comn_hdr;
-+	uint64_t opaque_data;
-+	uint32_t resrvd[ICP_QAT_FW_NUM_LONGWORDS_4];
-+};
-+
-+#define ICP_QAT_FW_COMN_REQ_FLAG_SET 1
-+#define ICP_QAT_FW_COMN_REQ_FLAG_CLR 0
-+#define ICP_QAT_FW_COMN_VALID_FLAG_BITPOS 7
-+#define ICP_QAT_FW_COMN_VALID_FLAG_MASK 0x1
-+#define ICP_QAT_FW_COMN_HDR_RESRVD_FLD_MASK 0x7F
-+
-+#define ICP_QAT_FW_COMN_OV_SRV_TYPE_GET(icp_qat_fw_comn_req_hdr_t) \
-+	icp_qat_fw_comn_req_hdr_t.service_type
-+
-+#define ICP_QAT_FW_COMN_OV_SRV_TYPE_SET(icp_qat_fw_comn_req_hdr_t, val) \
-+	icp_qat_fw_comn_req_hdr_t.service_type = val
-+
-+#define ICP_QAT_FW_COMN_OV_SRV_CMD_ID_GET(icp_qat_fw_comn_req_hdr_t) \
-+	icp_qat_fw_comn_req_hdr_t.service_cmd_id
-+
-+#define ICP_QAT_FW_COMN_OV_SRV_CMD_ID_SET(icp_qat_fw_comn_req_hdr_t, val) \
-+	icp_qat_fw_comn_req_hdr_t.service_cmd_id = val
-+
-+#define ICP_QAT_FW_COMN_HDR_VALID_FLAG_GET(hdr_t) \
-+	ICP_QAT_FW_COMN_VALID_FLAG_GET(hdr_t.hdr_flags)
-+
-+#define ICP_QAT_FW_COMN_HDR_VALID_FLAG_SET(hdr_t, val) \
-+	ICP_QAT_FW_COMN_VALID_FLAG_SET(hdr_t, val)
-+
-+#define ICP_QAT_FW_COMN_VALID_FLAG_GET(hdr_flags) \
-+	QAT_FIELD_GET(hdr_flags, \
-+	ICP_QAT_FW_COMN_VALID_FLAG_BITPOS, \
-+	ICP_QAT_FW_COMN_VALID_FLAG_MASK)
-+
-+#define ICP_QAT_FW_COMN_HDR_RESRVD_FLD_GET(hdr_flags) \
-+	(hdr_flags & ICP_QAT_FW_COMN_HDR_RESRVD_FLD_MASK)
-+
-+#define ICP_QAT_FW_COMN_VALID_FLAG_SET(hdr_t, val) \
-+	QAT_FIELD_SET((hdr_t.hdr_flags), (val), \
-+	ICP_QAT_FW_COMN_VALID_FLAG_BITPOS, \
-+	ICP_QAT_FW_COMN_VALID_FLAG_MASK)
-+
-+#define ICP_QAT_FW_COMN_HDR_FLAGS_BUILD(valid) \
-+	(((valid) & ICP_QAT_FW_COMN_VALID_FLAG_MASK) << \
-+	 ICP_QAT_FW_COMN_VALID_FLAG_BITPOS)
-+
-+#define QAT_COMN_PTR_TYPE_BITPOS 0
-+#define QAT_COMN_PTR_TYPE_MASK 0x1
-+#define QAT_COMN_CD_FLD_TYPE_BITPOS 1
-+#define QAT_COMN_CD_FLD_TYPE_MASK 0x1
-+#define QAT_COMN_PTR_TYPE_FLAT 0x0
-+#define QAT_COMN_PTR_TYPE_SGL 0x1
-+#define QAT_COMN_CD_FLD_TYPE_64BIT_ADR 0x0
-+#define QAT_COMN_CD_FLD_TYPE_16BYTE_DATA 0x1
-+
-+#define ICP_QAT_FW_COMN_FLAGS_BUILD(cdt, ptr) \
-+	((((cdt) & QAT_COMN_CD_FLD_TYPE_MASK) << QAT_COMN_CD_FLD_TYPE_BITPOS) \
-+	 | (((ptr) & QAT_COMN_PTR_TYPE_MASK) << QAT_COMN_PTR_TYPE_BITPOS))
-+
-+#define ICP_QAT_FW_COMN_PTR_TYPE_GET(flags) \
-+	QAT_FIELD_GET(flags, QAT_COMN_PTR_TYPE_BITPOS, QAT_COMN_PTR_TYPE_MASK)
-+
-+#define ICP_QAT_FW_COMN_CD_FLD_TYPE_GET(flags) \
-+	QAT_FIELD_GET(flags, QAT_COMN_CD_FLD_TYPE_BITPOS, \
-+			QAT_COMN_CD_FLD_TYPE_MASK)
-+
-+#define ICP_QAT_FW_COMN_PTR_TYPE_SET(flags, val) \
-+	QAT_FIELD_SET(flags, val, QAT_COMN_PTR_TYPE_BITPOS, \
-+			QAT_COMN_PTR_TYPE_MASK)
-+
-+#define ICP_QAT_FW_COMN_CD_FLD_TYPE_SET(flags, val) \
-+	QAT_FIELD_SET(flags, val, QAT_COMN_CD_FLD_TYPE_BITPOS, \
-+			QAT_COMN_CD_FLD_TYPE_MASK)
-+
-+#define ICP_QAT_FW_COMN_NEXT_ID_BITPOS 4
-+#define ICP_QAT_FW_COMN_NEXT_ID_MASK 0xF0
-+#define ICP_QAT_FW_COMN_CURR_ID_BITPOS 0
-+#define ICP_QAT_FW_COMN_CURR_ID_MASK 0x0F
-+
-+#define ICP_QAT_FW_COMN_NEXT_ID_GET(cd_ctrl_hdr_t) \
-+	((((cd_ctrl_hdr_t)->next_curr_id) & ICP_QAT_FW_COMN_NEXT_ID_MASK) \
-+	>> (ICP_QAT_FW_COMN_NEXT_ID_BITPOS))
-+
-+#define ICP_QAT_FW_COMN_NEXT_ID_SET(cd_ctrl_hdr_t, val) \
-+	{ ((cd_ctrl_hdr_t)->next_curr_id) = ((((cd_ctrl_hdr_t)->next_curr_id) \
-+	& ICP_QAT_FW_COMN_CURR_ID_MASK) | \
-+	((val << ICP_QAT_FW_COMN_NEXT_ID_BITPOS) \
-+	 & ICP_QAT_FW_COMN_NEXT_ID_MASK)); }
-+
-+#define ICP_QAT_FW_COMN_CURR_ID_GET(cd_ctrl_hdr_t) \
-+	(((cd_ctrl_hdr_t)->next_curr_id) & ICP_QAT_FW_COMN_CURR_ID_MASK)
-+
-+#define ICP_QAT_FW_COMN_CURR_ID_SET(cd_ctrl_hdr_t, val) \
-+	{ ((cd_ctrl_hdr_t)->next_curr_id) = ((((cd_ctrl_hdr_t)->next_curr_id) \
-+	& ICP_QAT_FW_COMN_NEXT_ID_MASK) | \
-+	((val) & ICP_QAT_FW_COMN_CURR_ID_MASK)); }
-+
-+#define QAT_COMN_RESP_CRYPTO_STATUS_BITPOS 7
-+#define QAT_COMN_RESP_CRYPTO_STATUS_MASK 0x1
-+#define QAT_COMN_RESP_CMP_STATUS_BITPOS 5
-+#define QAT_COMN_RESP_CMP_STATUS_MASK 0x1
-+#define QAT_COMN_RESP_XLAT_STATUS_BITPOS 4
-+#define QAT_COMN_RESP_XLAT_STATUS_MASK 0x1
-+#define QAT_COMN_RESP_CMP_END_OF_LAST_BLK_BITPOS 3
-+#define QAT_COMN_RESP_CMP_END_OF_LAST_BLK_MASK 0x1
-+
-+#define ICP_QAT_FW_COMN_RESP_STATUS_BUILD(crypto, comp, xlat, eolb) \
-+	((((crypto) & QAT_COMN_RESP_CRYPTO_STATUS_MASK) << \
-+	QAT_COMN_RESP_CRYPTO_STATUS_BITPOS) | \
-+	(((comp) & QAT_COMN_RESP_CMP_STATUS_MASK) << \
-+	QAT_COMN_RESP_CMP_STATUS_BITPOS) | \
-+	(((xlat) & QAT_COMN_RESP_XLAT_STATUS_MASK) << \
-+	QAT_COMN_RESP_XLAT_STATUS_BITPOS) | \
-+	(((eolb) & QAT_COMN_RESP_CMP_END_OF_LAST_BLK_MASK) << \
-+	QAT_COMN_RESP_CMP_END_OF_LAST_BLK_BITPOS))
-+
-+#define ICP_QAT_FW_COMN_RESP_CRYPTO_STAT_GET(status) \
-+	QAT_FIELD_GET(status, QAT_COMN_RESP_CRYPTO_STATUS_BITPOS, \
-+	QAT_COMN_RESP_CRYPTO_STATUS_MASK)
-+
-+#define ICP_QAT_FW_COMN_RESP_CMP_STAT_GET(status) \
-+	QAT_FIELD_GET(status, QAT_COMN_RESP_CMP_STATUS_BITPOS, \
-+	QAT_COMN_RESP_CMP_STATUS_MASK)
-+
-+#define ICP_QAT_FW_COMN_RESP_XLAT_STAT_GET(status) \
-+	QAT_FIELD_GET(status, QAT_COMN_RESP_XLAT_STATUS_BITPOS, \
-+	QAT_COMN_RESP_XLAT_STATUS_MASK)
-+
-+#define ICP_QAT_FW_COMN_RESP_CMP_END_OF_LAST_BLK_FLAG_GET(status) \
-+	QAT_FIELD_GET(status, QAT_COMN_RESP_CMP_END_OF_LAST_BLK_BITPOS, \
-+	QAT_COMN_RESP_CMP_END_OF_LAST_BLK_MASK)
-+
-+#define ICP_QAT_FW_COMN_STATUS_FLAG_OK 0
-+#define ICP_QAT_FW_COMN_STATUS_FLAG_ERROR 1
-+#define ICP_QAT_FW_COMN_STATUS_CMP_END_OF_LAST_BLK_FLAG_CLR 0
-+#define ICP_QAT_FW_COMN_STATUS_CMP_END_OF_LAST_BLK_FLAG_SET 1
-+#define ERR_CODE_NO_ERROR 0
-+#define ERR_CODE_INVALID_BLOCK_TYPE -1
-+#define ERR_CODE_NO_MATCH_ONES_COMP -2
-+#define ERR_CODE_TOO_MANY_LEN_OR_DIS -3
-+#define ERR_CODE_INCOMPLETE_LEN -4
-+#define ERR_CODE_RPT_LEN_NO_FIRST_LEN -5
-+#define ERR_CODE_RPT_GT_SPEC_LEN -6
-+#define ERR_CODE_INV_LIT_LEN_CODE_LEN -7
-+#define ERR_CODE_INV_DIS_CODE_LEN -8
-+#define ERR_CODE_INV_LIT_LEN_DIS_IN_BLK -9
-+#define ERR_CODE_DIS_TOO_FAR_BACK -10
-+#define ERR_CODE_OVERFLOW_ERROR -11
-+#define ERR_CODE_SOFT_ERROR -12
-+#define ERR_CODE_FATAL_ERROR -13
-+#define ERR_CODE_SSM_ERROR -14
-+#define ERR_CODE_ENDPOINT_ERROR -15
-+
-+enum icp_qat_fw_slice {
-+	ICP_QAT_FW_SLICE_NULL = 0,
-+	ICP_QAT_FW_SLICE_CIPHER = 1,
-+	ICP_QAT_FW_SLICE_AUTH = 2,
-+	ICP_QAT_FW_SLICE_DRAM_RD = 3,
-+	ICP_QAT_FW_SLICE_DRAM_WR = 4,
-+	ICP_QAT_FW_SLICE_COMP = 5,
-+	ICP_QAT_FW_SLICE_XLAT = 6,
-+	ICP_QAT_FW_SLICE_DELIMITER
-+};
-+#endif
-diff --git a/drivers/crypto/qat/qat_common/icp_qat_fw_init_admin.h b/drivers/crypto/qat/qat_common/icp_qat_fw_init_admin.h
-new file mode 100644
-index 0000000..72a59fa
---- /dev/null
-+++ b/drivers/crypto/qat/qat_common/icp_qat_fw_init_admin.h
-@@ -0,0 +1,131 @@
-+/*
-+  This file is provided under a dual BSD/GPLv2 license.  When using or
-+  redistributing this file, you may do so under either license.
-+
-+  GPL LICENSE SUMMARY
-+  Copyright(c) 2014 Intel Corporation.
-+  This program is free software; you can redistribute it and/or modify
-+  it under the terms of version 2 of the GNU General Public License as
-+  published by the Free Software Foundation.
-+
-+  This program is distributed in the hope that it will be useful, but
-+  WITHOUT ANY WARRANTY; without even the implied warranty of
-+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+  General Public License for more details.
-+
-+  Contact Information:
-+  qat-linux@intel.com
-+
-+  BSD LICENSE
-+  Copyright(c) 2014 Intel Corporation.
-+  Redistribution and use in source and binary forms, with or without
-+  modification, are permitted provided that the following conditions
-+  are met:
-+
-+    * Redistributions of source code must retain the above copyright
-+      notice, this list of conditions and the following disclaimer.
-+    * Redistributions in binary form must reproduce the above copyright
-+      notice, this list of conditions and the following disclaimer in
-+      the documentation and/or other materials provided with the
-+      distribution.
-+    * Neither the name of Intel Corporation nor the names of its
-+      contributors may be used to endorse or promote products derived
-+      from this software without specific prior written permission.
-+
-+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-+  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-+  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-+  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-+  OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-+  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-+  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-+  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-+  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-+  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-+  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-+*/
-+#ifndef _ICP_QAT_FW_INIT_ADMIN_H_
-+#define _ICP_QAT_FW_INIT_ADMIN_H_
-+
-+#include "icp_qat_fw.h"
-+
-+enum icp_qat_fw_init_admin_cmd_id {
-+	ICP_QAT_FW_INIT_ME = 0,
-+	ICP_QAT_FW_TRNG_ENABLE = 1,
-+	ICP_QAT_FW_TRNG_DISABLE = 2,
-+	ICP_QAT_FW_CONSTANTS_CFG = 3,
-+	ICP_QAT_FW_STATUS_GET = 4,
-+	ICP_QAT_FW_COUNTERS_GET = 5,
-+	ICP_QAT_FW_LOOPBACK = 6,
-+	ICP_QAT_FW_HEARTBEAT_SYNC = 7,
-+	ICP_QAT_FW_HEARTBEAT_GET = 8
-+};
-+
-+enum icp_qat_fw_init_admin_resp_status {
-+	ICP_QAT_FW_INIT_RESP_STATUS_SUCCESS = 0,
-+	ICP_QAT_FW_INIT_RESP_STATUS_FAIL
-+};
-+
-+struct icp_qat_fw_init_admin_req {
-+	uint16_t init_cfg_sz;
-+	uint8_t resrvd1;
-+	uint8_t init_admin_cmd_id;
-+	uint32_t resrvd2;
-+	uint64_t opaque_data;
-+	uint64_t init_cfg_ptr;
-+	uint64_t resrvd3;
-+};
-+
-+struct icp_qat_fw_init_admin_resp_hdr {
-+	uint8_t flags;
-+	uint8_t resrvd1;
-+	uint8_t status;
-+	uint8_t init_admin_cmd_id;
-+};
-+
-+struct icp_qat_fw_init_admin_resp_pars {
-+	union {
-+		uint32_t resrvd1[ICP_QAT_FW_NUM_LONGWORDS_4];
-+		struct {
-+			uint32_t version_patch_num;
-+			uint8_t context_id;
-+			uint8_t ae_id;
-+			uint16_t resrvd1;
-+			uint64_t resrvd2;
-+		} s1;
-+		struct {
-+			uint64_t req_rec_count;
-+			uint64_t resp_sent_count;
-+		} s2;
-+	} u;
-+};
-+
-+struct icp_qat_fw_init_admin_resp {
-+	struct icp_qat_fw_init_admin_resp_hdr init_resp_hdr;
-+	union {
-+		uint32_t resrvd2;
-+		struct {
-+			uint16_t version_minor_num;
-+			uint16_t version_major_num;
-+		} s;
-+	} u;
-+	uint64_t opaque_data;
-+	struct icp_qat_fw_init_admin_resp_pars init_resp_pars;
-+};
-+
-+#define ICP_QAT_FW_COMN_HEARTBEAT_OK 0
-+#define ICP_QAT_FW_COMN_HEARTBEAT_BLOCKED 1
-+#define ICP_QAT_FW_COMN_HEARTBEAT_FLAG_BITPOS 0
-+#define ICP_QAT_FW_COMN_HEARTBEAT_FLAG_MASK 0x1
-+#define ICP_QAT_FW_COMN_STATUS_RESRVD_FLD_MASK 0xFE
-+#define ICP_QAT_FW_COMN_HEARTBEAT_HDR_FLAG_GET(hdr_t) \
-+	ICP_QAT_FW_COMN_HEARTBEAT_FLAG_GET(hdr_t.flags)
-+
-+#define ICP_QAT_FW_COMN_HEARTBEAT_HDR_FLAG_SET(hdr_t, val) \
-+	ICP_QAT_FW_COMN_HEARTBEAT_FLAG_SET(hdr_t, val)
-+
-+#define ICP_QAT_FW_COMN_HEARTBEAT_FLAG_GET(flags) \
-+	QAT_FIELD_GET(flags, \
-+		 ICP_QAT_FW_COMN_HEARTBEAT_FLAG_BITPOS, \
-+		 ICP_QAT_FW_COMN_HEARTBEAT_FLAG_MASK)
-+#endif
-diff --git a/drivers/crypto/qat/qat_common/icp_qat_fw_la.h b/drivers/crypto/qat/qat_common/icp_qat_fw_la.h
-new file mode 100644
-index 0000000..d1d4802
---- /dev/null
-+++ b/drivers/crypto/qat/qat_common/icp_qat_fw_la.h
-@@ -0,0 +1,403 @@
-+/*
-+  This file is provided under a dual BSD/GPLv2 license.  When using or
-+  redistributing this file, you may do so under either license.
-+
-+  GPL LICENSE SUMMARY
-+  Copyright(c) 2014 Intel Corporation.
-+  This program is free software; you can redistribute it and/or modify
-+  it under the terms of version 2 of the GNU General Public License as
-+  published by the Free Software Foundation.
-+
-+  This program is distributed in the hope that it will be useful, but
-+  WITHOUT ANY WARRANTY; without even the implied warranty of
-+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+  General Public License for more details.
-+
-+  Contact Information:
-+  qat-linux@intel.com
-+
-+  BSD LICENSE
-+  Copyright(c) 2014 Intel Corporation.
-+  Redistribution and use in source and binary forms, with or without
-+  modification, are permitted provided that the following conditions
-+  are met:
-+
-+    * Redistributions of source code must retain the above copyright
-+      notice, this list of conditions and the following disclaimer.
-+    * Redistributions in binary form must reproduce the above copyright
-+      notice, this list of conditions and the following disclaimer in
-+      the documentation and/or other materials provided with the
-+      distribution.
-+    * Neither the name of Intel Corporation nor the names of its
-+      contributors may be used to endorse or promote products derived
-+      from this software without specific prior written permission.
-+
-+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-+  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-+  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-+  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-+  OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-+  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-+  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-+  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-+  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-+  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-+  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-+*/
-+#ifndef _ICP_QAT_FW_LA_H_
-+#define _ICP_QAT_FW_LA_H_
-+#include "icp_qat_fw.h"
-+
-+enum icp_qat_fw_la_cmd_id {
-+	ICP_QAT_FW_LA_CMD_CIPHER = 0,
-+	ICP_QAT_FW_LA_CMD_AUTH = 1,
-+	ICP_QAT_FW_LA_CMD_CIPHER_HASH = 2,
-+	ICP_QAT_FW_LA_CMD_HASH_CIPHER = 3,
-+	ICP_QAT_FW_LA_CMD_TRNG_GET_RANDOM = 4,
-+	ICP_QAT_FW_LA_CMD_TRNG_TEST = 5,
-+	ICP_QAT_FW_LA_CMD_SSL3_KEY_DERIVE = 6,
-+	ICP_QAT_FW_LA_CMD_TLS_V1_1_KEY_DERIVE = 7,
-+	ICP_QAT_FW_LA_CMD_TLS_V1_2_KEY_DERIVE = 8,
-+	ICP_QAT_FW_LA_CMD_MGF1 = 9,
-+	ICP_QAT_FW_LA_CMD_AUTH_PRE_COMP = 10,
-+	ICP_QAT_FW_LA_CMD_CIPHER_PRE_COMP = 11,
-+	ICP_QAT_FW_LA_CMD_DELIMITER = 12
-+};
-+
-+#define ICP_QAT_FW_LA_ICV_VER_STATUS_PASS ICP_QAT_FW_COMN_STATUS_FLAG_OK
-+#define ICP_QAT_FW_LA_ICV_VER_STATUS_FAIL ICP_QAT_FW_COMN_STATUS_FLAG_ERROR
-+#define ICP_QAT_FW_LA_TRNG_STATUS_PASS ICP_QAT_FW_COMN_STATUS_FLAG_OK
-+#define ICP_QAT_FW_LA_TRNG_STATUS_FAIL ICP_QAT_FW_COMN_STATUS_FLAG_ERROR
-+
-+struct icp_qat_fw_la_bulk_req {
-+	struct icp_qat_fw_comn_req_hdr comn_hdr;
-+	struct icp_qat_fw_comn_req_hdr_cd_pars cd_pars;
-+	struct icp_qat_fw_comn_req_mid comn_mid;
-+	struct icp_qat_fw_comn_req_rqpars serv_specif_rqpars;
-+	struct icp_qat_fw_comn_req_cd_ctrl cd_ctrl;
-+};
-+
-+#define ICP_QAT_FW_LA_GCM_IV_LEN_12_OCTETS 1
-+#define ICP_QAT_FW_LA_GCM_IV_LEN_NOT_12_OCTETS 0
-+#define QAT_FW_LA_ZUC_3G_PROTO_FLAG_BITPOS 12
-+#define ICP_QAT_FW_LA_ZUC_3G_PROTO 1
-+#define QAT_FW_LA_ZUC_3G_PROTO_FLAG_MASK 0x1
-+#define QAT_LA_GCM_IV_LEN_FLAG_BITPOS 11
-+#define QAT_LA_GCM_IV_LEN_FLAG_MASK 0x1
-+#define ICP_QAT_FW_LA_DIGEST_IN_BUFFER 1
-+#define ICP_QAT_FW_LA_NO_DIGEST_IN_BUFFER 0
-+#define QAT_LA_DIGEST_IN_BUFFER_BITPOS	10
-+#define QAT_LA_DIGEST_IN_BUFFER_MASK 0x1
-+#define ICP_QAT_FW_LA_SNOW_3G_PROTO 4
-+#define ICP_QAT_FW_LA_GCM_PROTO	2
-+#define ICP_QAT_FW_LA_CCM_PROTO	1
-+#define ICP_QAT_FW_LA_NO_PROTO 0
-+#define QAT_LA_PROTO_BITPOS 7
-+#define QAT_LA_PROTO_MASK 0x7
-+#define ICP_QAT_FW_LA_CMP_AUTH_RES 1
-+#define ICP_QAT_FW_LA_NO_CMP_AUTH_RES 0
-+#define QAT_LA_CMP_AUTH_RES_BITPOS 6
-+#define QAT_LA_CMP_AUTH_RES_MASK 0x1
-+#define ICP_QAT_FW_LA_RET_AUTH_RES 1
-+#define ICP_QAT_FW_LA_NO_RET_AUTH_RES 0
-+#define QAT_LA_RET_AUTH_RES_BITPOS 5
-+#define QAT_LA_RET_AUTH_RES_MASK 0x1
-+#define ICP_QAT_FW_LA_UPDATE_STATE 1
-+#define ICP_QAT_FW_LA_NO_UPDATE_STATE 0
-+#define QAT_LA_UPDATE_STATE_BITPOS 4
-+#define QAT_LA_UPDATE_STATE_MASK 0x1
-+#define ICP_QAT_FW_CIPH_AUTH_CFG_OFFSET_IN_CD_SETUP 0
-+#define ICP_QAT_FW_CIPH_AUTH_CFG_OFFSET_IN_SHRAM_CP 1
-+#define QAT_LA_CIPH_AUTH_CFG_OFFSET_BITPOS 3
-+#define QAT_LA_CIPH_AUTH_CFG_OFFSET_MASK 0x1
-+#define ICP_QAT_FW_CIPH_IV_64BIT_PTR 0
-+#define ICP_QAT_FW_CIPH_IV_16BYTE_DATA 1
-+#define QAT_LA_CIPH_IV_FLD_BITPOS 2
-+#define QAT_LA_CIPH_IV_FLD_MASK   0x1
-+#define ICP_QAT_FW_LA_PARTIAL_NONE 0
-+#define ICP_QAT_FW_LA_PARTIAL_START 1
-+#define ICP_QAT_FW_LA_PARTIAL_MID 3
-+#define ICP_QAT_FW_LA_PARTIAL_END 2
-+#define QAT_LA_PARTIAL_BITPOS 0
-+#define QAT_LA_PARTIAL_MASK 0x3
-+#define ICP_QAT_FW_LA_FLAGS_BUILD(zuc_proto, gcm_iv_len, auth_rslt, proto, \
-+	cmp_auth, ret_auth, update_state, \
-+	ciph_iv, ciphcfg, partial) \
-+	(((zuc_proto & QAT_FW_LA_ZUC_3G_PROTO_FLAG_MASK) << \
-+	QAT_FW_LA_ZUC_3G_PROTO_FLAG_BITPOS) | \
-+	((gcm_iv_len & QAT_LA_GCM_IV_LEN_FLAG_MASK) << \
-+	QAT_LA_GCM_IV_LEN_FLAG_BITPOS) | \
-+	((auth_rslt & QAT_LA_DIGEST_IN_BUFFER_MASK) << \
-+	QAT_LA_DIGEST_IN_BUFFER_BITPOS) | \
-+	((proto & QAT_LA_PROTO_MASK) << \
-+	QAT_LA_PROTO_BITPOS)	| \
-+	((cmp_auth & QAT_LA_CMP_AUTH_RES_MASK) << \
-+	QAT_LA_CMP_AUTH_RES_BITPOS) | \
-+	((ret_auth & QAT_LA_RET_AUTH_RES_MASK) << \
-+	QAT_LA_RET_AUTH_RES_BITPOS) | \
-+	((update_state & QAT_LA_UPDATE_STATE_MASK) << \
-+	QAT_LA_UPDATE_STATE_BITPOS) | \
-+	((ciph_iv & QAT_LA_CIPH_IV_FLD_MASK) << \
-+	QAT_LA_CIPH_IV_FLD_BITPOS) | \
-+	((ciphcfg & QAT_LA_CIPH_AUTH_CFG_OFFSET_MASK) << \
-+	QAT_LA_CIPH_AUTH_CFG_OFFSET_BITPOS) | \
-+	((partial & QAT_LA_PARTIAL_MASK) << \
-+	QAT_LA_PARTIAL_BITPOS))
-+
-+#define ICP_QAT_FW_LA_CIPH_IV_FLD_FLAG_GET(flags) \
-+	QAT_FIELD_GET(flags, QAT_LA_CIPH_IV_FLD_BITPOS, \
-+	QAT_LA_CIPH_IV_FLD_MASK)
-+
-+#define ICP_QAT_FW_LA_CIPH_AUTH_CFG_OFFSET_FLAG_GET(flags) \
-+	QAT_FIELD_GET(flags, QAT_LA_CIPH_AUTH_CFG_OFFSET_BITPOS, \
-+	QAT_LA_CIPH_AUTH_CFG_OFFSET_MASK)
-+
-+#define ICP_QAT_FW_LA_ZUC_3G_PROTO_FLAG_GET(flags) \
-+	QAT_FIELD_GET(flags, QAT_FW_LA_ZUC_3G_PROTO_FLAG_BITPOS, \
-+	QAT_FW_LA_ZUC_3G_PROTO_FLAG_MASK)
-+
-+#define ICP_QAT_FW_LA_GCM_IV_LEN_FLAG_GET(flags) \
-+	QAT_FIELD_GET(flags, QAT_LA_GCM_IV_LEN_FLAG_BITPOS, \
-+	QAT_LA_GCM_IV_LEN_FLAG_MASK)
-+
-+#define ICP_QAT_FW_LA_PROTO_GET(flags) \
-+	QAT_FIELD_GET(flags, QAT_LA_PROTO_BITPOS, QAT_LA_PROTO_MASK)
-+
-+#define ICP_QAT_FW_LA_CMP_AUTH_GET(flags) \
-+	QAT_FIELD_GET(flags, QAT_LA_CMP_AUTH_RES_BITPOS, \
-+	QAT_LA_CMP_AUTH_RES_MASK)
-+
-+#define ICP_QAT_FW_LA_RET_AUTH_GET(flags) \
-+	QAT_FIELD_GET(flags, QAT_LA_RET_AUTH_RES_BITPOS, \
-+	QAT_LA_RET_AUTH_RES_MASK)
-+
-+#define ICP_QAT_FW_LA_DIGEST_IN_BUFFER_GET(flags) \
-+	QAT_FIELD_GET(flags, QAT_LA_DIGEST_IN_BUFFER_BITPOS, \
-+	QAT_LA_DIGEST_IN_BUFFER_MASK)
-+
-+#define ICP_QAT_FW_LA_UPDATE_STATE_GET(flags) \
-+	QAT_FIELD_GET(flags, QAT_LA_UPDATE_STATE_BITPOS, \
-+	QAT_LA_UPDATE_STATE_MASK)
-+
-+#define ICP_QAT_FW_LA_PARTIAL_GET(flags) \
-+	QAT_FIELD_GET(flags, QAT_LA_PARTIAL_BITPOS, \
-+	QAT_LA_PARTIAL_MASK)
-+
-+#define ICP_QAT_FW_LA_CIPH_IV_FLD_FLAG_SET(flags, val) \
-+	QAT_FIELD_SET(flags, val, QAT_LA_CIPH_IV_FLD_BITPOS, \
-+	QAT_LA_CIPH_IV_FLD_MASK)
-+
-+#define ICP_QAT_FW_LA_CIPH_AUTH_CFG_OFFSET_FLAG_SET(flags, val) \
-+	QAT_FIELD_SET(flags, val, QAT_LA_CIPH_AUTH_CFG_OFFSET_BITPOS, \
-+	QAT_LA_CIPH_AUTH_CFG_OFFSET_MASK)
-+
-+#define ICP_QAT_FW_LA_ZUC_3G_PROTO_FLAG_SET(flags, val) \
-+	QAT_FIELD_SET(flags, val, QAT_FW_LA_ZUC_3G_PROTO_FLAG_BITPOS, \
-+	QAT_FW_LA_ZUC_3G_PROTO_FLAG_MASK)
-+
-+#define ICP_QAT_FW_LA_GCM_IV_LEN_FLAG_SET(flags, val) \
-+	QAT_FIELD_SET(flags, val, QAT_LA_GCM_IV_LEN_FLAG_BITPOS, \
-+	QAT_LA_GCM_IV_LEN_FLAG_MASK)
-+
-+#define ICP_QAT_FW_LA_PROTO_SET(flags, val) \
-+	QAT_FIELD_SET(flags, val, QAT_LA_PROTO_BITPOS, \
-+	QAT_LA_PROTO_MASK)
-+
-+#define ICP_QAT_FW_LA_CMP_AUTH_SET(flags, val) \
-+	QAT_FIELD_SET(flags, val, QAT_LA_CMP_AUTH_RES_BITPOS, \
-+	QAT_LA_CMP_AUTH_RES_MASK)
-+
-+#define ICP_QAT_FW_LA_RET_AUTH_SET(flags, val) \
-+	QAT_FIELD_SET(flags, val, QAT_LA_RET_AUTH_RES_BITPOS, \
-+	QAT_LA_RET_AUTH_RES_MASK)
-+
-+#define ICP_QAT_FW_LA_DIGEST_IN_BUFFER_SET(flags, val) \
-+	QAT_FIELD_SET(flags, val, QAT_LA_DIGEST_IN_BUFFER_BITPOS, \
-+	QAT_LA_DIGEST_IN_BUFFER_MASK)
-+
-+#define ICP_QAT_FW_LA_UPDATE_STATE_SET(flags, val) \
-+	QAT_FIELD_SET(flags, val, QAT_LA_UPDATE_STATE_BITPOS, \
-+	QAT_LA_UPDATE_STATE_MASK)
-+
-+#define ICP_QAT_FW_LA_PARTIAL_SET(flags, val) \
-+	QAT_FIELD_SET(flags, val, QAT_LA_PARTIAL_BITPOS, \
-+	QAT_LA_PARTIAL_MASK)
-+
-+struct icp_qat_fw_cipher_req_hdr_cd_pars {
-+	union {
-+		struct {
-+			uint64_t content_desc_addr;
-+			uint16_t content_desc_resrvd1;
-+			uint8_t content_desc_params_sz;
-+			uint8_t content_desc_hdr_resrvd2;
-+			uint32_t content_desc_resrvd3;
-+		} s;
-+		struct {
-+			uint32_t cipher_key_array[ICP_QAT_FW_NUM_LONGWORDS_4];
-+		} s1;
-+	} u;
-+};
-+
-+struct icp_qat_fw_cipher_auth_req_hdr_cd_pars {
-+	union {
-+		struct {
-+			uint64_t content_desc_addr;
-+			uint16_t content_desc_resrvd1;
-+			uint8_t content_desc_params_sz;
-+			uint8_t content_desc_hdr_resrvd2;
-+			uint32_t content_desc_resrvd3;
-+		} s;
-+		struct {
-+			uint32_t cipher_key_array[ICP_QAT_FW_NUM_LONGWORDS_4];
-+		} sl;
-+	} u;
-+};
-+
-+struct icp_qat_fw_cipher_cd_ctrl_hdr {
-+	uint8_t cipher_state_sz;
-+	uint8_t cipher_key_sz;
-+	uint8_t cipher_cfg_offset;
-+	uint8_t next_curr_id;
-+	uint8_t cipher_padding_sz;
-+	uint8_t resrvd1;
-+	uint16_t resrvd2;
-+	uint32_t resrvd3[ICP_QAT_FW_NUM_LONGWORDS_3];
-+};
-+
-+struct icp_qat_fw_auth_cd_ctrl_hdr {
-+	uint32_t resrvd1;
-+	uint8_t resrvd2;
-+	uint8_t hash_flags;
-+	uint8_t hash_cfg_offset;
-+	uint8_t next_curr_id;
-+	uint8_t resrvd3;
-+	uint8_t outer_prefix_sz;
-+	uint8_t final_sz;
-+	uint8_t inner_res_sz;
-+	uint8_t resrvd4;
-+	uint8_t inner_state1_sz;
-+	uint8_t inner_state2_offset;
-+	uint8_t inner_state2_sz;
-+	uint8_t outer_config_offset;
-+	uint8_t outer_state1_sz;
-+	uint8_t outer_res_sz;
-+	uint8_t outer_prefix_offset;
-+};
-+
-+struct icp_qat_fw_cipher_auth_cd_ctrl_hdr {
-+	uint8_t cipher_state_sz;
-+	uint8_t cipher_key_sz;
-+	uint8_t cipher_cfg_offset;
-+	uint8_t next_curr_id_cipher;
-+	uint8_t cipher_padding_sz;
-+	uint8_t hash_flags;
-+	uint8_t hash_cfg_offset;
-+	uint8_t next_curr_id_auth;
-+	uint8_t resrvd1;
-+	uint8_t outer_prefix_sz;
-+	uint8_t final_sz;
-+	uint8_t inner_res_sz;
-+	uint8_t resrvd2;
-+	uint8_t inner_state1_sz;
-+	uint8_t inner_state2_offset;
-+	uint8_t inner_state2_sz;
-+	uint8_t outer_config_offset;
-+	uint8_t outer_state1_sz;
-+	uint8_t outer_res_sz;
-+	uint8_t outer_prefix_offset;
-+};
-+
-+#define ICP_QAT_FW_AUTH_HDR_FLAG_DO_NESTED 1
-+#define ICP_QAT_FW_AUTH_HDR_FLAG_NO_NESTED 0
-+#define ICP_QAT_FW_CCM_GCM_AAD_SZ_MAX	240
-+#define ICP_QAT_FW_HASH_REQUEST_PARAMETERS_OFFSET \
-+	(sizeof(struct icp_qat_fw_la_cipher_req_params_t))
-+#define ICP_QAT_FW_CIPHER_REQUEST_PARAMETERS_OFFSET (0)
-+
-+struct icp_qat_fw_la_cipher_req_params {
-+	uint32_t cipher_offset;
-+	uint32_t cipher_length;
-+	union {
-+		uint32_t cipher_IV_array[ICP_QAT_FW_NUM_LONGWORDS_4];
-+		struct {
-+			uint64_t cipher_IV_ptr;
-+			uint64_t resrvd1;
-+		} s;
-+	} u;
-+};
-+
-+struct icp_qat_fw_la_auth_req_params {
-+	uint32_t auth_off;
-+	uint32_t auth_len;
-+	union {
-+		uint64_t auth_partial_st_prefix;
-+		uint64_t aad_adr;
-+	} u1;
-+	uint64_t auth_res_addr;
-+	union {
-+		uint8_t inner_prefix_sz;
-+		uint8_t aad_sz;
-+	} u2;
-+	uint8_t resrvd1;
-+	uint8_t hash_state_sz;
-+	uint8_t auth_res_sz;
-+} __packed;
-+
-+struct icp_qat_fw_la_auth_req_params_resrvd_flds {
-+	uint32_t resrvd[ICP_QAT_FW_NUM_LONGWORDS_6];
-+	union {
-+		uint8_t inner_prefix_sz;
-+		uint8_t aad_sz;
-+	} u2;
-+	uint8_t resrvd1;
-+	uint16_t resrvd2;
-+};
-+
-+struct icp_qat_fw_la_resp {
-+	struct icp_qat_fw_comn_resp_hdr comn_resp;
-+	uint64_t opaque_data;
-+	uint32_t resrvd[ICP_QAT_FW_NUM_LONGWORDS_4];
-+};
-+#define ICP_QAT_FW_CIPHER_NEXT_ID_GET(cd_ctrl_hdr_t) \
-+	((((cd_ctrl_hdr_t)->next_curr_id_cipher) & \
-+	  ICP_QAT_FW_COMN_NEXT_ID_MASK) >> (ICP_QAT_FW_COMN_NEXT_ID_BITPOS))
-+
-+#define ICP_QAT_FW_CIPHER_NEXT_ID_SET(cd_ctrl_hdr_t, val) \
-+{ (cd_ctrl_hdr_t)->next_curr_id_cipher = \
-+	((((cd_ctrl_hdr_t)->next_curr_id_cipher) \
-+	& ICP_QAT_FW_COMN_CURR_ID_MASK) | \
-+	((val << ICP_QAT_FW_COMN_NEXT_ID_BITPOS) \
-+	& ICP_QAT_FW_COMN_NEXT_ID_MASK)) }
-+
-+#define ICP_QAT_FW_CIPHER_CURR_ID_GET(cd_ctrl_hdr_t) \
-+	(((cd_ctrl_hdr_t)->next_curr_id_cipher) \
-+	& ICP_QAT_FW_COMN_CURR_ID_MASK)
-+
-+#define ICP_QAT_FW_CIPHER_CURR_ID_SET(cd_ctrl_hdr_t, val) \
-+{ (cd_ctrl_hdr_t)->next_curr_id_cipher = \
-+	((((cd_ctrl_hdr_t)->next_curr_id_cipher) \
-+	& ICP_QAT_FW_COMN_NEXT_ID_MASK) | \
-+	((val) & ICP_QAT_FW_COMN_CURR_ID_MASK)) }
-+
-+#define ICP_QAT_FW_AUTH_NEXT_ID_GET(cd_ctrl_hdr_t) \
-+	((((cd_ctrl_hdr_t)->next_curr_id_auth) & ICP_QAT_FW_COMN_NEXT_ID_MASK) \
-+	>> (ICP_QAT_FW_COMN_NEXT_ID_BITPOS))
-+
-+#define ICP_QAT_FW_AUTH_NEXT_ID_SET(cd_ctrl_hdr_t, val) \
-+{ (cd_ctrl_hdr_t)->next_curr_id_auth = \
-+	((((cd_ctrl_hdr_t)->next_curr_id_auth) \
-+	& ICP_QAT_FW_COMN_CURR_ID_MASK) | \
-+	((val << ICP_QAT_FW_COMN_NEXT_ID_BITPOS) \
-+	& ICP_QAT_FW_COMN_NEXT_ID_MASK)) }
-+
-+#define ICP_QAT_FW_AUTH_CURR_ID_GET(cd_ctrl_hdr_t) \
-+	(((cd_ctrl_hdr_t)->next_curr_id_auth) \
-+	& ICP_QAT_FW_COMN_CURR_ID_MASK)
-+
-+#define ICP_QAT_FW_AUTH_CURR_ID_SET(cd_ctrl_hdr_t, val) \
-+{ (cd_ctrl_hdr_t)->next_curr_id_auth = \
-+	((((cd_ctrl_hdr_t)->next_curr_id_auth) \
-+	& ICP_QAT_FW_COMN_NEXT_ID_MASK) | \
-+	((val) & ICP_QAT_FW_COMN_CURR_ID_MASK)) }
-+
-+#endif
-diff --git a/drivers/crypto/qat/qat_common/icp_qat_hw.h b/drivers/crypto/qat/qat_common/icp_qat_hw.h
-new file mode 100644
-index 0000000..cc7ec40
---- /dev/null
-+++ b/drivers/crypto/qat/qat_common/icp_qat_hw.h
-@@ -0,0 +1,305 @@
-+/*
-+  This file is provided under a dual BSD/GPLv2 license.  When using or
-+  redistributing this file, you may do so under either license.
-+
-+  GPL LICENSE SUMMARY
-+  Copyright(c) 2014 Intel Corporation.
-+  This program is free software; you can redistribute it and/or modify
-+  it under the terms of version 2 of the GNU General Public License as
-+  published by the Free Software Foundation.
-+
-+  This program is distributed in the hope that it will be useful, but
-+  WITHOUT ANY WARRANTY; without even the implied warranty of
-+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+  General Public License for more details.
-+
-+  Contact Information:
-+  qat-linux@intel.com
-+
-+  BSD LICENSE
-+  Copyright(c) 2014 Intel Corporation.
-+  Redistribution and use in source and binary forms, with or without
-+  modification, are permitted provided that the following conditions
-+  are met:
-+
-+    * Redistributions of source code must retain the above copyright
-+      notice, this list of conditions and the following disclaimer.
-+    * Redistributions in binary form must reproduce the above copyright
-+      notice, this list of conditions and the following disclaimer in
-+      the documentation and/or other materials provided with the
-+      distribution.
-+    * Neither the name of Intel Corporation nor the names of its
-+      contributors may be used to endorse or promote products derived
-+      from this software without specific prior written permission.
-+
-+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-+  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-+  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-+  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-+  OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-+  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-+  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-+  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-+  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-+  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-+  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-+*/
-+#ifndef _ICP_QAT_HW_H_
-+#define _ICP_QAT_HW_H_
-+
-+enum icp_qat_hw_ae_id {
-+	ICP_QAT_HW_AE_0 = 0,
-+	ICP_QAT_HW_AE_1 = 1,
-+	ICP_QAT_HW_AE_2 = 2,
-+	ICP_QAT_HW_AE_3 = 3,
-+	ICP_QAT_HW_AE_4 = 4,
-+	ICP_QAT_HW_AE_5 = 5,
-+	ICP_QAT_HW_AE_6 = 6,
-+	ICP_QAT_HW_AE_7 = 7,
-+	ICP_QAT_HW_AE_8 = 8,
-+	ICP_QAT_HW_AE_9 = 9,
-+	ICP_QAT_HW_AE_10 = 10,
-+	ICP_QAT_HW_AE_11 = 11,
-+	ICP_QAT_HW_AE_DELIMITER = 12
-+};
-+
-+enum icp_qat_hw_qat_id {
-+	ICP_QAT_HW_QAT_0 = 0,
-+	ICP_QAT_HW_QAT_1 = 1,
-+	ICP_QAT_HW_QAT_2 = 2,
-+	ICP_QAT_HW_QAT_3 = 3,
-+	ICP_QAT_HW_QAT_4 = 4,
-+	ICP_QAT_HW_QAT_5 = 5,
-+	ICP_QAT_HW_QAT_DELIMITER = 6
-+};
-+
-+enum icp_qat_hw_auth_algo {
-+	ICP_QAT_HW_AUTH_ALGO_NULL = 0,
-+	ICP_QAT_HW_AUTH_ALGO_SHA1 = 1,
-+	ICP_QAT_HW_AUTH_ALGO_MD5 = 2,
-+	ICP_QAT_HW_AUTH_ALGO_SHA224 = 3,
-+	ICP_QAT_HW_AUTH_ALGO_SHA256 = 4,
-+	ICP_QAT_HW_AUTH_ALGO_SHA384 = 5,
-+	ICP_QAT_HW_AUTH_ALGO_SHA512 = 6,
-+	ICP_QAT_HW_AUTH_ALGO_AES_XCBC_MAC = 7,
-+	ICP_QAT_HW_AUTH_ALGO_AES_CBC_MAC = 8,
-+	ICP_QAT_HW_AUTH_ALGO_AES_F9 = 9,
-+	ICP_QAT_HW_AUTH_ALGO_GALOIS_128 = 10,
-+	ICP_QAT_HW_AUTH_ALGO_GALOIS_64 = 11,
-+	ICP_QAT_HW_AUTH_ALGO_KASUMI_F9 = 12,
-+	ICP_QAT_HW_AUTH_ALGO_SNOW_3G_UIA2 = 13,
-+	ICP_QAT_HW_AUTH_ALGO_ZUC_3G_128_EIA3 = 14,
-+	ICP_QAT_HW_AUTH_RESERVED_1 = 15,
-+	ICP_QAT_HW_AUTH_RESERVED_2 = 16,
-+	ICP_QAT_HW_AUTH_ALGO_SHA3_256 = 17,
-+	ICP_QAT_HW_AUTH_RESERVED_3 = 18,
-+	ICP_QAT_HW_AUTH_ALGO_SHA3_512 = 19,
-+	ICP_QAT_HW_AUTH_ALGO_DELIMITER = 20
-+};
-+
-+enum icp_qat_hw_auth_mode {
-+	ICP_QAT_HW_AUTH_MODE0 = 0,
-+	ICP_QAT_HW_AUTH_MODE1 = 1,
-+	ICP_QAT_HW_AUTH_MODE2 = 2,
-+	ICP_QAT_HW_AUTH_MODE_DELIMITER = 3
-+};
-+
-+struct icp_qat_hw_auth_config {
-+	uint32_t config;
-+	uint32_t reserved;
-+};
-+
-+#define QAT_AUTH_MODE_BITPOS 4
-+#define QAT_AUTH_MODE_MASK 0xF
-+#define QAT_AUTH_ALGO_BITPOS 0
-+#define QAT_AUTH_ALGO_MASK 0xF
-+#define QAT_AUTH_CMP_BITPOS 8
-+#define QAT_AUTH_CMP_MASK 0x7F
-+#define QAT_AUTH_SHA3_PADDING_BITPOS 16
-+#define QAT_AUTH_SHA3_PADDING_MASK 0x1
-+#define QAT_AUTH_ALGO_SHA3_BITPOS 22
-+#define QAT_AUTH_ALGO_SHA3_MASK 0x3
-+#define ICP_QAT_HW_AUTH_CONFIG_BUILD(mode, algo, cmp_len) \
-+	((((mode) & QAT_AUTH_MODE_MASK) << QAT_AUTH_MODE_BITPOS) | \
-+	(((algo) & QAT_AUTH_ALGO_MASK) << QAT_AUTH_ALGO_BITPOS) | \
-+	(((algo >> 4) & QAT_AUTH_ALGO_SHA3_MASK) << \
-+	 QAT_AUTH_ALGO_SHA3_BITPOS) | \
-+	 (((((algo == ICP_QAT_HW_AUTH_ALGO_SHA3_256) || \
-+	(algo == ICP_QAT_HW_AUTH_ALGO_SHA3_512)) ? 1 : 0) \
-+	& QAT_AUTH_SHA3_PADDING_MASK) << QAT_AUTH_SHA3_PADDING_BITPOS) | \
-+	(((cmp_len) & QAT_AUTH_CMP_MASK) << QAT_AUTH_CMP_BITPOS))
-+
-+struct icp_qat_hw_auth_counter {
-+	__be32 counter;
-+	uint32_t reserved;
-+};
-+
-+#define QAT_AUTH_COUNT_MASK 0xFFFFFFFF
-+#define QAT_AUTH_COUNT_BITPOS 0
-+#define ICP_QAT_HW_AUTH_COUNT_BUILD(val) \
-+	(((val) & QAT_AUTH_COUNT_MASK) << QAT_AUTH_COUNT_BITPOS)
-+
-+struct icp_qat_hw_auth_setup {
-+	struct icp_qat_hw_auth_config auth_config;
-+	struct icp_qat_hw_auth_counter auth_counter;
-+};
-+
-+#define QAT_HW_DEFAULT_ALIGNMENT 8
-+#define QAT_HW_ROUND_UP(val, n) (((val) + ((n)-1)) & (~(n-1)))
-+#define ICP_QAT_HW_NULL_STATE1_SZ 32
-+#define ICP_QAT_HW_MD5_STATE1_SZ 16
-+#define ICP_QAT_HW_SHA1_STATE1_SZ 20
-+#define ICP_QAT_HW_SHA224_STATE1_SZ 32
-+#define ICP_QAT_HW_SHA256_STATE1_SZ 32
-+#define ICP_QAT_HW_SHA3_256_STATE1_SZ 32
-+#define ICP_QAT_HW_SHA384_STATE1_SZ 64
-+#define ICP_QAT_HW_SHA512_STATE1_SZ 64
-+#define ICP_QAT_HW_SHA3_512_STATE1_SZ 64
-+#define ICP_QAT_HW_SHA3_224_STATE1_SZ 28
-+#define ICP_QAT_HW_SHA3_384_STATE1_SZ 48
-+#define ICP_QAT_HW_AES_XCBC_MAC_STATE1_SZ 16
-+#define ICP_QAT_HW_AES_CBC_MAC_STATE1_SZ 16
-+#define ICP_QAT_HW_AES_F9_STATE1_SZ 32
-+#define ICP_QAT_HW_KASUMI_F9_STATE1_SZ 16
-+#define ICP_QAT_HW_GALOIS_128_STATE1_SZ 16
-+#define ICP_QAT_HW_SNOW_3G_UIA2_STATE1_SZ 8
-+#define ICP_QAT_HW_ZUC_3G_EIA3_STATE1_SZ 8
-+#define ICP_QAT_HW_NULL_STATE2_SZ 32
-+#define ICP_QAT_HW_MD5_STATE2_SZ 16
-+#define ICP_QAT_HW_SHA1_STATE2_SZ 20
-+#define ICP_QAT_HW_SHA224_STATE2_SZ 32
-+#define ICP_QAT_HW_SHA256_STATE2_SZ 32
-+#define ICP_QAT_HW_SHA3_256_STATE2_SZ 0
-+#define ICP_QAT_HW_SHA384_STATE2_SZ 64
-+#define ICP_QAT_HW_SHA512_STATE2_SZ 64
-+#define ICP_QAT_HW_SHA3_512_STATE2_SZ 0
-+#define ICP_QAT_HW_SHA3_224_STATE2_SZ 0
-+#define ICP_QAT_HW_SHA3_384_STATE2_SZ 0
-+#define ICP_QAT_HW_AES_XCBC_MAC_KEY_SZ 16
-+#define ICP_QAT_HW_AES_CBC_MAC_KEY_SZ 16
-+#define ICP_QAT_HW_AES_CCM_CBC_E_CTR0_SZ 16
-+#define ICP_QAT_HW_F9_IK_SZ 16
-+#define ICP_QAT_HW_F9_FK_SZ 16
-+#define ICP_QAT_HW_KASUMI_F9_STATE2_SZ (ICP_QAT_HW_F9_IK_SZ + \
-+	ICP_QAT_HW_F9_FK_SZ)
-+#define ICP_QAT_HW_AES_F9_STATE2_SZ ICP_QAT_HW_KASUMI_F9_STATE2_SZ
-+#define ICP_QAT_HW_SNOW_3G_UIA2_STATE2_SZ 24
-+#define ICP_QAT_HW_ZUC_3G_EIA3_STATE2_SZ 32
-+#define ICP_QAT_HW_GALOIS_H_SZ 16
-+#define ICP_QAT_HW_GALOIS_LEN_A_SZ 8
-+#define ICP_QAT_HW_GALOIS_E_CTR0_SZ 16
-+
-+struct icp_qat_hw_auth_sha512 {
-+	struct icp_qat_hw_auth_setup inner_setup;
-+	uint8_t state1[ICP_QAT_HW_SHA512_STATE1_SZ];
-+	struct icp_qat_hw_auth_setup outer_setup;
-+	uint8_t state2[ICP_QAT_HW_SHA512_STATE2_SZ];
-+};
-+
-+struct icp_qat_hw_auth_algo_blk {
-+	struct icp_qat_hw_auth_sha512 sha;
-+};
-+
-+#define ICP_QAT_HW_GALOIS_LEN_A_BITPOS 0
-+#define ICP_QAT_HW_GALOIS_LEN_A_MASK 0xFFFFFFFF
-+
-+enum icp_qat_hw_cipher_algo {
-+	ICP_QAT_HW_CIPHER_ALGO_NULL = 0,
-+	ICP_QAT_HW_CIPHER_ALGO_DES = 1,
-+	ICP_QAT_HW_CIPHER_ALGO_3DES = 2,
-+	ICP_QAT_HW_CIPHER_ALGO_AES128 = 3,
-+	ICP_QAT_HW_CIPHER_ALGO_AES192 = 4,
-+	ICP_QAT_HW_CIPHER_ALGO_AES256 = 5,
-+	ICP_QAT_HW_CIPHER_ALGO_ARC4 = 6,
-+	ICP_QAT_HW_CIPHER_ALGO_KASUMI = 7,
-+	ICP_QAT_HW_CIPHER_ALGO_SNOW_3G_UEA2 = 8,
-+	ICP_QAT_HW_CIPHER_ALGO_ZUC_3G_128_EEA3 = 9,
-+	ICP_QAT_HW_CIPHER_DELIMITER = 10
-+};
-+
-+enum icp_qat_hw_cipher_mode {
-+	ICP_QAT_HW_CIPHER_ECB_MODE = 0,
-+	ICP_QAT_HW_CIPHER_CBC_MODE = 1,
-+	ICP_QAT_HW_CIPHER_CTR_MODE = 2,
-+	ICP_QAT_HW_CIPHER_F8_MODE = 3,
-+	ICP_QAT_HW_CIPHER_XTS_MODE = 6,
-+	ICP_QAT_HW_CIPHER_MODE_DELIMITER = 7
-+};
-+
-+struct icp_qat_hw_cipher_config {
-+	uint32_t val;
-+	uint32_t reserved;
-+};
-+
-+enum icp_qat_hw_cipher_dir {
-+	ICP_QAT_HW_CIPHER_ENCRYPT = 0,
-+	ICP_QAT_HW_CIPHER_DECRYPT = 1,
-+};
-+
-+enum icp_qat_hw_cipher_convert {
-+	ICP_QAT_HW_CIPHER_NO_CONVERT = 0,
-+	ICP_QAT_HW_CIPHER_KEY_CONVERT = 1,
-+};
-+
-+#define QAT_CIPHER_MODE_BITPOS 4
-+#define QAT_CIPHER_MODE_MASK 0xF
-+#define QAT_CIPHER_ALGO_BITPOS 0
-+#define QAT_CIPHER_ALGO_MASK 0xF
-+#define QAT_CIPHER_CONVERT_BITPOS 9
-+#define QAT_CIPHER_CONVERT_MASK 0x1
-+#define QAT_CIPHER_DIR_BITPOS 8
-+#define QAT_CIPHER_DIR_MASK 0x1
-+#define QAT_CIPHER_MODE_F8_KEY_SZ_MULT 2
-+#define QAT_CIPHER_MODE_XTS_KEY_SZ_MULT 2
-+#define ICP_QAT_HW_CIPHER_CONFIG_BUILD(mode, algo, convert, dir) \
-+	(((mode & QAT_CIPHER_MODE_MASK) << QAT_CIPHER_MODE_BITPOS) | \
-+	((algo & QAT_CIPHER_ALGO_MASK) << QAT_CIPHER_ALGO_BITPOS) | \
-+	((convert & QAT_CIPHER_CONVERT_MASK) << QAT_CIPHER_CONVERT_BITPOS) | \
-+	((dir & QAT_CIPHER_DIR_MASK) << QAT_CIPHER_DIR_BITPOS))
-+#define ICP_QAT_HW_DES_BLK_SZ 8
-+#define ICP_QAT_HW_3DES_BLK_SZ 8
-+#define ICP_QAT_HW_NULL_BLK_SZ 8
-+#define ICP_QAT_HW_AES_BLK_SZ 16
-+#define ICP_QAT_HW_KASUMI_BLK_SZ 8
-+#define ICP_QAT_HW_SNOW_3G_BLK_SZ 8
-+#define ICP_QAT_HW_ZUC_3G_BLK_SZ 8
-+#define ICP_QAT_HW_NULL_KEY_SZ 256
-+#define ICP_QAT_HW_DES_KEY_SZ 8
-+#define ICP_QAT_HW_3DES_KEY_SZ 24
-+#define ICP_QAT_HW_AES_128_KEY_SZ 16
-+#define ICP_QAT_HW_AES_192_KEY_SZ 24
-+#define ICP_QAT_HW_AES_256_KEY_SZ 32
-+#define ICP_QAT_HW_AES_128_F8_KEY_SZ (ICP_QAT_HW_AES_128_KEY_SZ * \
-+	QAT_CIPHER_MODE_F8_KEY_SZ_MULT)
-+#define ICP_QAT_HW_AES_192_F8_KEY_SZ (ICP_QAT_HW_AES_192_KEY_SZ * \
-+	QAT_CIPHER_MODE_F8_KEY_SZ_MULT)
-+#define ICP_QAT_HW_AES_256_F8_KEY_SZ (ICP_QAT_HW_AES_256_KEY_SZ * \
-+	QAT_CIPHER_MODE_F8_KEY_SZ_MULT)
-+#define ICP_QAT_HW_AES_128_XTS_KEY_SZ (ICP_QAT_HW_AES_128_KEY_SZ * \
-+	QAT_CIPHER_MODE_XTS_KEY_SZ_MULT)
-+#define ICP_QAT_HW_AES_256_XTS_KEY_SZ (ICP_QAT_HW_AES_256_KEY_SZ * \
-+	QAT_CIPHER_MODE_XTS_KEY_SZ_MULT)
-+#define ICP_QAT_HW_KASUMI_KEY_SZ 16
-+#define ICP_QAT_HW_KASUMI_F8_KEY_SZ (ICP_QAT_HW_KASUMI_KEY_SZ * \
-+	QAT_CIPHER_MODE_F8_KEY_SZ_MULT)
-+#define ICP_QAT_HW_AES_128_XTS_KEY_SZ (ICP_QAT_HW_AES_128_KEY_SZ * \
-+	QAT_CIPHER_MODE_XTS_KEY_SZ_MULT)
-+#define ICP_QAT_HW_AES_256_XTS_KEY_SZ (ICP_QAT_HW_AES_256_KEY_SZ * \
-+	QAT_CIPHER_MODE_XTS_KEY_SZ_MULT)
-+#define ICP_QAT_HW_ARC4_KEY_SZ 256
-+#define ICP_QAT_HW_SNOW_3G_UEA2_KEY_SZ 16
-+#define ICP_QAT_HW_SNOW_3G_UEA2_IV_SZ 16
-+#define ICP_QAT_HW_ZUC_3G_EEA3_KEY_SZ 16
-+#define ICP_QAT_HW_ZUC_3G_EEA3_IV_SZ 16
-+#define ICP_QAT_HW_MODE_F8_NUM_REG_TO_CLEAR 2
-+#define INIT_SHRAM_CONSTANTS_TABLE_SZ 1024
-+
-+struct icp_qat_hw_cipher_aes256_f8 {
-+	struct icp_qat_hw_cipher_config cipher_config;
-+	uint8_t key[ICP_QAT_HW_AES_256_F8_KEY_SZ];
-+};
-+
-+struct icp_qat_hw_cipher_algo_blk {
-+	struct icp_qat_hw_cipher_aes256_f8 aes;
-+};
-+#endif
-diff --git a/drivers/crypto/qat/qat_common/qat_algs.c b/drivers/crypto/qat/qat_common/qat_algs.c
-new file mode 100644
-index 0000000..2779e5e
---- /dev/null
-+++ b/drivers/crypto/qat/qat_common/qat_algs.c
-@@ -0,0 +1,1033 @@
-+/*
-+  This file is provided under a dual BSD/GPLv2 license.  When using or
-+  redistributing this file, you may do so under either license.
-+
-+  GPL LICENSE SUMMARY
-+  Copyright(c) 2014 Intel Corporation.
-+  This program is free software; you can redistribute it and/or modify
-+  it under the terms of version 2 of the GNU General Public License as
-+  published by the Free Software Foundation.
-+
-+  This program is distributed in the hope that it will be useful, but
-+  WITHOUT ANY WARRANTY; without even the implied warranty of
-+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+  General Public License for more details.
-+
-+  Contact Information:
-+  qat-linux@intel.com
-+
-+  BSD LICENSE
-+  Copyright(c) 2014 Intel Corporation.
-+  Redistribution and use in source and binary forms, with or without
-+  modification, are permitted provided that the following conditions
-+  are met:
-+
-+    * Redistributions of source code must retain the above copyright
-+      notice, this list of conditions and the following disclaimer.
-+    * Redistributions in binary form must reproduce the above copyright
-+      notice, this list of conditions and the following disclaimer in
-+      the documentation and/or other materials provided with the
-+      distribution.
-+    * Neither the name of Intel Corporation nor the names of its
-+      contributors may be used to endorse or promote products derived
-+      from this software without specific prior written permission.
-+
-+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-+  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-+  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-+  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-+  OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-+  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-+  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-+  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-+  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-+  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-+  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-+*/
-+#include <linux/module.h>
-+#include <linux/slab.h>
-+#include <linux/crypto.h>
-+#include <crypto/aead.h>
-+#include <crypto/aes.h>
-+#include <crypto/sha.h>
-+#include <crypto/hash.h>
-+#include <crypto/algapi.h>
-+#include <crypto/authenc.h>
-+#include <crypto/rng.h>
-+#include <linux/dma-mapping.h>
-+#include "adf_accel_devices.h"
-+#include "adf_transport.h"
-+#include "adf_common_drv.h"
-+#include "qat_crypto.h"
-+#include "icp_qat_hw.h"
-+#include "icp_qat_fw.h"
-+#include "icp_qat_fw_la.h"
-+
-+#define QAT_AES_HW_CONFIG_ENC(alg) \
-+	ICP_QAT_HW_CIPHER_CONFIG_BUILD(ICP_QAT_HW_CIPHER_CBC_MODE, alg, \
-+			ICP_QAT_HW_CIPHER_NO_CONVERT, \
-+			ICP_QAT_HW_CIPHER_ENCRYPT)
-+
-+#define QAT_AES_HW_CONFIG_DEC(alg) \
-+	ICP_QAT_HW_CIPHER_CONFIG_BUILD(ICP_QAT_HW_CIPHER_CBC_MODE, alg, \
-+			ICP_QAT_HW_CIPHER_KEY_CONVERT, \
-+			ICP_QAT_HW_CIPHER_DECRYPT)
-+
-+static atomic_t active_dev;
-+
-+struct qat_alg_buf {
-+	uint32_t len;
-+	uint32_t resrvd;
-+	uint64_t addr;
-+} __packed;
-+
-+struct qat_alg_buf_list {
-+	uint64_t resrvd;
-+	uint32_t num_bufs;
-+	uint32_t num_mapped_bufs;
-+	struct qat_alg_buf bufers[];
-+} __packed __aligned(64);
-+
-+/* Common content descriptor */
-+struct qat_alg_cd {
-+	union {
-+		struct qat_enc { /* Encrypt content desc */
-+			struct icp_qat_hw_cipher_algo_blk cipher;
-+			struct icp_qat_hw_auth_algo_blk hash;
-+		} qat_enc_cd;
-+		struct qat_dec { /* Decrytp content desc */
-+			struct icp_qat_hw_auth_algo_blk hash;
-+			struct icp_qat_hw_cipher_algo_blk cipher;
-+		} qat_dec_cd;
-+	};
-+} __aligned(64);
-+
-+#define MAX_AUTH_STATE_SIZE sizeof(struct icp_qat_hw_auth_algo_blk)
-+
-+struct qat_auth_state {
-+	uint8_t data[MAX_AUTH_STATE_SIZE];
-+} __aligned(64);
-+
-+struct qat_alg_session_ctx {
-+	struct qat_alg_cd *enc_cd;
-+	dma_addr_t enc_cd_paddr;
-+	struct qat_alg_cd *dec_cd;
-+	dma_addr_t dec_cd_paddr;
-+	struct qat_auth_state *auth_hw_state_enc;
-+	dma_addr_t auth_state_enc_paddr;
-+	struct qat_auth_state *auth_hw_state_dec;
-+	dma_addr_t auth_state_dec_paddr;
-+	struct icp_qat_fw_la_bulk_req enc_fw_req_tmpl;
-+	struct icp_qat_fw_la_bulk_req dec_fw_req_tmpl;
-+	struct qat_crypto_instance *inst;
-+	struct crypto_tfm *tfm;
-+	struct crypto_shash *hash_tfm;
-+	enum icp_qat_hw_auth_algo qat_hash_alg;
-+	uint8_t salt[AES_BLOCK_SIZE];
-+	spinlock_t lock;	/* protects qat_alg_session_ctx struct */
-+};
-+
-+static int get_current_node(void)
-+{
-+	return cpu_data(current_thread_info()->cpu).phys_proc_id;
-+}
-+
-+static int qat_get_inter_state_size(enum icp_qat_hw_auth_algo qat_hash_alg)
-+{
-+	switch (qat_hash_alg) {
-+	case ICP_QAT_HW_AUTH_ALGO_SHA1:
-+		return ICP_QAT_HW_SHA1_STATE1_SZ;
-+	case ICP_QAT_HW_AUTH_ALGO_SHA256:
-+		return ICP_QAT_HW_SHA256_STATE1_SZ;
-+	case ICP_QAT_HW_AUTH_ALGO_SHA512:
-+		return ICP_QAT_HW_SHA512_STATE1_SZ;
-+	default:
-+		return -EFAULT;
-+	};
-+	return -EFAULT;
-+}
-+
-+static int qat_alg_do_precomputes(struct icp_qat_hw_auth_algo_blk *hash,
-+				  struct qat_alg_session_ctx *ctx,
-+				  const uint8_t *auth_key,
-+				  unsigned int auth_keylen, uint8_t *auth_state)
-+{
-+	struct {
-+		struct shash_desc shash;
-+		char ctx[crypto_shash_descsize(ctx->hash_tfm)];
-+	} desc;
-+	struct sha1_state sha1;
-+	struct sha256_state sha256;
-+	struct sha512_state sha512;
-+	int block_size = crypto_shash_blocksize(ctx->hash_tfm);
-+	int digest_size = crypto_shash_digestsize(ctx->hash_tfm);
-+	uint8_t *ipad = auth_state;
-+	uint8_t *opad = ipad + block_size;
-+	__be32 *hash_state_out;
-+	__be64 *hash512_state_out;
-+	int i, offset;
-+
-+	desc.shash.tfm = ctx->hash_tfm;
-+	desc.shash.flags = 0x0;
-+
-+	if (auth_keylen > block_size) {
-+		char buff[SHA512_BLOCK_SIZE];
-+		int ret = crypto_shash_digest(&desc.shash, auth_key,
-+					      auth_keylen, buff);
-+		if (ret)
-+			return ret;
-+
-+		memcpy(ipad, buff, digest_size);
-+		memcpy(opad, buff, digest_size);
-+		memset(ipad + digest_size, 0, block_size - digest_size);
-+		memset(opad + digest_size, 0, block_size - digest_size);
-+	} else {
-+		memcpy(ipad, auth_key, auth_keylen);
-+		memcpy(opad, auth_key, auth_keylen);
-+		memset(ipad + auth_keylen, 0, block_size - auth_keylen);
-+		memset(opad + auth_keylen, 0, block_size - auth_keylen);
-+	}
-+
-+	for (i = 0; i < block_size; i++) {
-+		char *ipad_ptr = ipad + i;
-+		char *opad_ptr = opad + i;
-+		*ipad_ptr ^= 0x36;
-+		*opad_ptr ^= 0x5C;
-+	}
-+
-+	if (crypto_shash_init(&desc.shash))
-+		return -EFAULT;
-+
-+	if (crypto_shash_update(&desc.shash, ipad, block_size))
-+		return -EFAULT;
-+
-+	hash_state_out = (__be32 *)hash->sha.state1;
-+	hash512_state_out = (__be64 *)hash_state_out;
-+
-+	switch (ctx->qat_hash_alg) {
-+	case ICP_QAT_HW_AUTH_ALGO_SHA1:
-+		if (crypto_shash_export(&desc.shash, &sha1))
-+			return -EFAULT;
-+		for (i = 0; i < digest_size >> 2; i++, hash_state_out++)
-+			*hash_state_out = cpu_to_be32(*(sha1.state + i));
-+		break;
-+	case ICP_QAT_HW_AUTH_ALGO_SHA256:
-+		if (crypto_shash_export(&desc.shash, &sha256))
-+			return -EFAULT;
-+		for (i = 0; i < digest_size >> 2; i++, hash_state_out++)
-+			*hash_state_out = cpu_to_be32(*(sha256.state + i));
-+		break;
-+	case ICP_QAT_HW_AUTH_ALGO_SHA512:
-+		if (crypto_shash_export(&desc.shash, &sha512))
-+			return -EFAULT;
-+		for (i = 0; i < digest_size >> 3; i++, hash512_state_out++)
-+			*hash512_state_out = cpu_to_be64(*(sha512.state + i));
-+		break;
-+	default:
-+		return -EFAULT;
-+	}
-+
-+	if (crypto_shash_init(&desc.shash))
-+		return -EFAULT;
-+
-+	if (crypto_shash_update(&desc.shash, opad, block_size))
-+		return -EFAULT;
-+
-+	offset = round_up(qat_get_inter_state_size(ctx->qat_hash_alg), 8);
-+	hash_state_out = (__be32 *)(hash->sha.state1 + offset);
-+	hash512_state_out = (__be64 *)hash_state_out;
-+
-+	switch (ctx->qat_hash_alg) {
-+	case ICP_QAT_HW_AUTH_ALGO_SHA1:
-+		if (crypto_shash_export(&desc.shash, &sha1))
-+			return -EFAULT;
-+		for (i = 0; i < digest_size >> 2; i++, hash_state_out++)
-+			*hash_state_out = cpu_to_be32(*(sha1.state + i));
-+		break;
-+	case ICP_QAT_HW_AUTH_ALGO_SHA256:
-+		if (crypto_shash_export(&desc.shash, &sha256))
-+			return -EFAULT;
-+		for (i = 0; i < digest_size >> 2; i++, hash_state_out++)
-+			*hash_state_out = cpu_to_be32(*(sha256.state + i));
-+		break;
-+	case ICP_QAT_HW_AUTH_ALGO_SHA512:
-+		if (crypto_shash_export(&desc.shash, &sha512))
-+			return -EFAULT;
-+		for (i = 0; i < digest_size >> 3; i++, hash512_state_out++)
-+			*hash512_state_out = cpu_to_be64(*(sha512.state + i));
-+		break;
-+	default:
-+		return -EFAULT;
-+	}
-+	return 0;
-+}
-+
-+static void qat_alg_init_common_hdr(struct icp_qat_fw_comn_req_hdr *header)
-+{
-+	header->hdr_flags =
-+		ICP_QAT_FW_COMN_HDR_FLAGS_BUILD(ICP_QAT_FW_COMN_REQ_FLAG_SET);
-+	header->service_type = ICP_QAT_FW_COMN_REQ_CPM_FW_LA;
-+	header->comn_req_flags =
-+		ICP_QAT_FW_COMN_FLAGS_BUILD(QAT_COMN_CD_FLD_TYPE_64BIT_ADR,
-+					    QAT_COMN_PTR_TYPE_SGL);
-+	ICP_QAT_FW_LA_DIGEST_IN_BUFFER_SET(header->serv_specif_flags,
-+					   ICP_QAT_FW_LA_DIGEST_IN_BUFFER);
-+	ICP_QAT_FW_LA_PARTIAL_SET(header->serv_specif_flags,
-+				  ICP_QAT_FW_LA_PARTIAL_NONE);
-+	ICP_QAT_FW_LA_CIPH_IV_FLD_FLAG_SET(header->serv_specif_flags,
-+					   ICP_QAT_FW_CIPH_IV_16BYTE_DATA);
-+	ICP_QAT_FW_LA_PROTO_SET(header->serv_specif_flags,
-+				ICP_QAT_FW_LA_NO_PROTO);
-+	ICP_QAT_FW_LA_UPDATE_STATE_SET(header->serv_specif_flags,
-+				       ICP_QAT_FW_LA_NO_UPDATE_STATE);
-+}
-+
-+static int qat_alg_init_enc_session(struct qat_alg_session_ctx *ctx,
-+				    int alg, struct crypto_authenc_keys *keys)
-+{
-+	struct crypto_aead *aead_tfm = __crypto_aead_cast(ctx->tfm);
-+	unsigned int digestsize = crypto_aead_crt(aead_tfm)->authsize;
-+	struct qat_enc *enc_ctx = &ctx->enc_cd->qat_enc_cd;
-+	struct icp_qat_hw_cipher_algo_blk *cipher = &enc_ctx->cipher;
-+	struct icp_qat_hw_auth_algo_blk *hash =
-+		(struct icp_qat_hw_auth_algo_blk *)((char *)enc_ctx +
-+		sizeof(struct icp_qat_hw_auth_setup) + keys->enckeylen);
-+	struct icp_qat_fw_la_bulk_req *req_tmpl = &ctx->enc_fw_req_tmpl;
-+	struct icp_qat_fw_comn_req_hdr_cd_pars *cd_pars = &req_tmpl->cd_pars;
-+	struct icp_qat_fw_comn_req_hdr *header = &req_tmpl->comn_hdr;
-+	void *ptr = &req_tmpl->cd_ctrl;
-+	struct icp_qat_fw_cipher_cd_ctrl_hdr *cipher_cd_ctrl = ptr;
-+	struct icp_qat_fw_auth_cd_ctrl_hdr *hash_cd_ctrl = ptr;
-+	struct icp_qat_fw_la_auth_req_params *auth_param =
-+		(struct icp_qat_fw_la_auth_req_params *)
-+		((char *)&req_tmpl->serv_specif_rqpars +
-+		 sizeof(struct icp_qat_fw_la_cipher_req_params));
-+
-+	/* CD setup */
-+	cipher->aes.cipher_config.val = QAT_AES_HW_CONFIG_ENC(alg);
-+	memcpy(cipher->aes.key, keys->enckey, keys->enckeylen);
-+	hash->sha.inner_setup.auth_config.config =
-+		ICP_QAT_HW_AUTH_CONFIG_BUILD(ICP_QAT_HW_AUTH_MODE1,
-+					     ctx->qat_hash_alg, digestsize);
-+	hash->sha.inner_setup.auth_counter.counter =
-+		cpu_to_be32(crypto_shash_blocksize(ctx->hash_tfm));
-+
-+	if (qat_alg_do_precomputes(hash, ctx, keys->authkey, keys->authkeylen,
-+				   (uint8_t *)ctx->auth_hw_state_enc))
-+		return -EFAULT;
-+
-+	/* Request setup */
-+	qat_alg_init_common_hdr(header);
-+	header->service_cmd_id = ICP_QAT_FW_LA_CMD_CIPHER_HASH;
-+	ICP_QAT_FW_LA_RET_AUTH_SET(header->serv_specif_flags,
-+				   ICP_QAT_FW_LA_RET_AUTH_RES);
-+	ICP_QAT_FW_LA_CMP_AUTH_SET(header->serv_specif_flags,
-+				   ICP_QAT_FW_LA_NO_CMP_AUTH_RES);
-+	cd_pars->u.s.content_desc_addr = ctx->enc_cd_paddr;
-+	cd_pars->u.s.content_desc_params_sz = sizeof(struct qat_alg_cd) >> 3;
-+
-+	/* Cipher CD config setup */
-+	cipher_cd_ctrl->cipher_key_sz = keys->enckeylen >> 3;
-+	cipher_cd_ctrl->cipher_state_sz = AES_BLOCK_SIZE >> 3;
-+	cipher_cd_ctrl->cipher_cfg_offset = 0;
-+	ICP_QAT_FW_COMN_CURR_ID_SET(cipher_cd_ctrl, ICP_QAT_FW_SLICE_CIPHER);
-+	ICP_QAT_FW_COMN_NEXT_ID_SET(cipher_cd_ctrl, ICP_QAT_FW_SLICE_AUTH);
-+	/* Auth CD config setup */
-+	hash_cd_ctrl->hash_cfg_offset = ((char *)hash - (char *)cipher) >> 3;
-+	hash_cd_ctrl->hash_flags = ICP_QAT_FW_AUTH_HDR_FLAG_NO_NESTED;
-+	hash_cd_ctrl->inner_res_sz = digestsize;
-+	hash_cd_ctrl->final_sz = digestsize;
-+
-+	switch (ctx->qat_hash_alg) {
-+	case ICP_QAT_HW_AUTH_ALGO_SHA1:
-+		hash_cd_ctrl->inner_state1_sz =
-+			round_up(ICP_QAT_HW_SHA1_STATE1_SZ, 8);
-+		hash_cd_ctrl->inner_state2_sz =
-+			round_up(ICP_QAT_HW_SHA1_STATE2_SZ, 8);
-+		break;
-+	case ICP_QAT_HW_AUTH_ALGO_SHA256:
-+		hash_cd_ctrl->inner_state1_sz = ICP_QAT_HW_SHA256_STATE1_SZ;
-+		hash_cd_ctrl->inner_state2_sz = ICP_QAT_HW_SHA256_STATE2_SZ;
-+		break;
-+	case ICP_QAT_HW_AUTH_ALGO_SHA512:
-+		hash_cd_ctrl->inner_state1_sz = ICP_QAT_HW_SHA512_STATE1_SZ;
-+		hash_cd_ctrl->inner_state2_sz = ICP_QAT_HW_SHA512_STATE2_SZ;
-+		break;
-+	default:
-+		break;
-+	}
-+	hash_cd_ctrl->inner_state2_offset = hash_cd_ctrl->hash_cfg_offset +
-+			((sizeof(struct icp_qat_hw_auth_setup) +
-+			 round_up(hash_cd_ctrl->inner_state1_sz, 8)) >> 3);
-+	auth_param->u1.auth_partial_st_prefix = ctx->auth_state_enc_paddr +
-+			sizeof(struct icp_qat_hw_auth_counter) +
-+			round_up(hash_cd_ctrl->inner_state1_sz, 8);
-+	ICP_QAT_FW_COMN_CURR_ID_SET(hash_cd_ctrl, ICP_QAT_FW_SLICE_AUTH);
-+	ICP_QAT_FW_COMN_NEXT_ID_SET(hash_cd_ctrl, ICP_QAT_FW_SLICE_DRAM_WR);
-+	return 0;
-+}
-+
-+static int qat_alg_init_dec_session(struct qat_alg_session_ctx *ctx,
-+				    int alg, struct crypto_authenc_keys *keys)
-+{
-+	struct crypto_aead *aead_tfm = __crypto_aead_cast(ctx->tfm);
-+	unsigned int digestsize = crypto_aead_crt(aead_tfm)->authsize;
-+	struct qat_dec *dec_ctx = &ctx->dec_cd->qat_dec_cd;
-+	struct icp_qat_hw_auth_algo_blk *hash = &dec_ctx->hash;
-+	struct icp_qat_hw_cipher_algo_blk *cipher =
-+		(struct icp_qat_hw_cipher_algo_blk *)((char *)dec_ctx +
-+		sizeof(struct icp_qat_hw_auth_setup) +
-+		roundup(crypto_shash_digestsize(ctx->hash_tfm), 8) * 2);
-+	struct icp_qat_fw_la_bulk_req *req_tmpl = &ctx->dec_fw_req_tmpl;
-+	struct icp_qat_fw_comn_req_hdr_cd_pars *cd_pars = &req_tmpl->cd_pars;
-+	struct icp_qat_fw_comn_req_hdr *header = &req_tmpl->comn_hdr;
-+	void *ptr = &req_tmpl->cd_ctrl;
-+	struct icp_qat_fw_cipher_cd_ctrl_hdr *cipher_cd_ctrl = ptr;
-+	struct icp_qat_fw_auth_cd_ctrl_hdr *hash_cd_ctrl = ptr;
-+	struct icp_qat_fw_la_auth_req_params *auth_param =
-+		(struct icp_qat_fw_la_auth_req_params *)
-+		((char *)&req_tmpl->serv_specif_rqpars +
-+		sizeof(struct icp_qat_fw_la_cipher_req_params));
-+
-+	/* CD setup */
-+	cipher->aes.cipher_config.val = QAT_AES_HW_CONFIG_DEC(alg);
-+	memcpy(cipher->aes.key, keys->enckey, keys->enckeylen);
-+	hash->sha.inner_setup.auth_config.config =
-+		ICP_QAT_HW_AUTH_CONFIG_BUILD(ICP_QAT_HW_AUTH_MODE1,
-+					     ctx->qat_hash_alg,
-+					     digestsize);
-+	hash->sha.inner_setup.auth_counter.counter =
-+		cpu_to_be32(crypto_shash_blocksize(ctx->hash_tfm));
-+
-+	if (qat_alg_do_precomputes(hash, ctx, keys->authkey, keys->authkeylen,
-+				   (uint8_t *)ctx->auth_hw_state_dec))
-+		return -EFAULT;
-+
-+	/* Request setup */
-+	qat_alg_init_common_hdr(header);
-+	header->service_cmd_id = ICP_QAT_FW_LA_CMD_HASH_CIPHER;
-+	ICP_QAT_FW_LA_RET_AUTH_SET(header->serv_specif_flags,
-+				   ICP_QAT_FW_LA_NO_RET_AUTH_RES);
-+	ICP_QAT_FW_LA_CMP_AUTH_SET(header->serv_specif_flags,
-+				   ICP_QAT_FW_LA_CMP_AUTH_RES);
-+	cd_pars->u.s.content_desc_addr = ctx->dec_cd_paddr;
-+	cd_pars->u.s.content_desc_params_sz = sizeof(struct qat_alg_cd) >> 3;
-+
-+	/* Cipher CD config setup */
-+	cipher_cd_ctrl->cipher_key_sz = keys->enckeylen >> 3;
-+	cipher_cd_ctrl->cipher_state_sz = AES_BLOCK_SIZE >> 3;
-+	cipher_cd_ctrl->cipher_cfg_offset =
-+		(sizeof(struct icp_qat_hw_auth_setup) +
-+		 roundup(crypto_shash_digestsize(ctx->hash_tfm), 8) * 2) >> 3;
-+	ICP_QAT_FW_COMN_CURR_ID_SET(cipher_cd_ctrl, ICP_QAT_FW_SLICE_CIPHER);
-+	ICP_QAT_FW_COMN_NEXT_ID_SET(cipher_cd_ctrl, ICP_QAT_FW_SLICE_DRAM_WR);
-+
-+	/* Auth CD config setup */
-+	hash_cd_ctrl->hash_cfg_offset = 0;
-+	hash_cd_ctrl->hash_flags = ICP_QAT_FW_AUTH_HDR_FLAG_NO_NESTED;
-+	hash_cd_ctrl->inner_res_sz = digestsize;
-+	hash_cd_ctrl->final_sz = digestsize;
-+
-+	switch (ctx->qat_hash_alg) {
-+	case ICP_QAT_HW_AUTH_ALGO_SHA1:
-+		hash_cd_ctrl->inner_state1_sz =
-+			round_up(ICP_QAT_HW_SHA1_STATE1_SZ, 8);
-+		hash_cd_ctrl->inner_state2_sz =
-+			round_up(ICP_QAT_HW_SHA1_STATE2_SZ, 8);
-+		break;
-+	case ICP_QAT_HW_AUTH_ALGO_SHA256:
-+		hash_cd_ctrl->inner_state1_sz = ICP_QAT_HW_SHA256_STATE1_SZ;
-+		hash_cd_ctrl->inner_state2_sz = ICP_QAT_HW_SHA256_STATE2_SZ;
-+		break;
-+	case ICP_QAT_HW_AUTH_ALGO_SHA512:
-+		hash_cd_ctrl->inner_state1_sz = ICP_QAT_HW_SHA512_STATE1_SZ;
-+		hash_cd_ctrl->inner_state2_sz = ICP_QAT_HW_SHA512_STATE2_SZ;
-+		break;
-+	default:
-+		break;
-+	}
-+
-+	hash_cd_ctrl->inner_state2_offset = hash_cd_ctrl->hash_cfg_offset +
-+			((sizeof(struct icp_qat_hw_auth_setup) +
-+			 round_up(hash_cd_ctrl->inner_state1_sz, 8)) >> 3);
-+	auth_param->u1.auth_partial_st_prefix = ctx->auth_state_enc_paddr +
-+			sizeof(struct icp_qat_hw_auth_counter) +
-+			round_up(hash_cd_ctrl->inner_state1_sz, 8);
-+	auth_param->auth_res_sz = digestsize;
-+	ICP_QAT_FW_COMN_CURR_ID_SET(hash_cd_ctrl, ICP_QAT_FW_SLICE_AUTH);
-+	ICP_QAT_FW_COMN_NEXT_ID_SET(hash_cd_ctrl, ICP_QAT_FW_SLICE_CIPHER);
-+	return 0;
-+}
-+
-+static int qat_alg_init_sessions(struct qat_alg_session_ctx *ctx,
-+				 const uint8_t *key, unsigned int keylen)
-+{
-+	struct crypto_authenc_keys keys;
-+	int alg;
-+
-+	if (crypto_rng_get_bytes(crypto_default_rng, ctx->salt, AES_BLOCK_SIZE))
-+		return -EFAULT;
-+
-+	if (crypto_authenc_extractkeys(&keys, key, keylen))
-+		goto bad_key;
-+
-+	switch (keys.enckeylen) {
-+	case AES_KEYSIZE_128:
-+		alg = ICP_QAT_HW_CIPHER_ALGO_AES128;
-+		break;
-+	case AES_KEYSIZE_192:
-+		alg = ICP_QAT_HW_CIPHER_ALGO_AES192;
-+		break;
-+	case AES_KEYSIZE_256:
-+		alg = ICP_QAT_HW_CIPHER_ALGO_AES256;
-+		break;
-+	default:
-+		goto bad_key;
-+		break;
-+	}
-+
-+	if (qat_alg_init_enc_session(ctx, alg, &keys))
-+		goto error;
-+
-+	if (qat_alg_init_dec_session(ctx, alg, &keys))
-+		goto error;
-+
-+	return 0;
-+bad_key:
-+	crypto_tfm_set_flags(ctx->tfm, CRYPTO_TFM_RES_BAD_KEY_LEN);
-+	return -EINVAL;
-+error:
-+	return -EFAULT;
-+}
-+
-+static int qat_alg_setkey(struct crypto_aead *tfm, const uint8_t *key,
-+			  unsigned int keylen)
-+{
-+	struct qat_alg_session_ctx *ctx = crypto_aead_ctx(tfm);
-+	struct device *dev;
-+
-+	spin_lock(&ctx->lock);
-+	if (ctx->enc_cd) {
-+		/* rekeying */
-+		dev = &GET_DEV(ctx->inst->accel_dev);
-+		memset(ctx->enc_cd, 0, sizeof(struct qat_alg_cd));
-+		memset(ctx->dec_cd, 0, sizeof(struct qat_alg_cd));
-+		memset(ctx->auth_hw_state_enc, 0,
-+		       sizeof(struct qat_auth_state));
-+		memset(ctx->auth_hw_state_dec, 0,
-+		       sizeof(struct qat_auth_state));
-+		memset(&ctx->enc_fw_req_tmpl, 0,
-+		       sizeof(struct icp_qat_fw_la_bulk_req));
-+		memset(&ctx->dec_fw_req_tmpl, 0,
-+		       sizeof(struct icp_qat_fw_la_bulk_req));
-+	} else {
-+		/* new key */
-+		int node = get_current_node();
-+		struct qat_crypto_instance *inst =
-+				qat_crypto_get_instance_node(node);
-+		if (!inst) {
-+			spin_unlock(&ctx->lock);
++	unsigned int i;
++	struct icp_qat_uof_memvar_attr *mem_val_attr;
++
++	mem_val_attr =
++		(struct icp_qat_uof_memvar_attr *)((unsigned long)init_mem +
++		sizeof(struct icp_qat_uof_initmem));
++
++	switch (init_mem->region) {
++	case ICP_QAT_UOF_SRAM_REGION:
++		if ((init_mem->addr + init_mem->num_in_bytes) >
++		     ICP_DH895XCC_PESRAM_BAR_SIZE) {
++			pr_err("QAT: initmem on SRAM is out of range");
 +			return -EINVAL;
 +		}
-+
-+		dev = &GET_DEV(inst->accel_dev);
-+		ctx->inst = inst;
-+		ctx->enc_cd = dma_zalloc_coherent(dev,
-+						  sizeof(struct qat_alg_cd),
-+						  &ctx->enc_cd_paddr,
-+						  GFP_ATOMIC);
-+		if (!ctx->enc_cd) {
-+			spin_unlock(&ctx->lock);
-+			return -ENOMEM;
++		for (i = 0; i < init_mem->val_attr_num; i++) {
++			qat_uclo_wr_sram_by_words(handle,
++						  init_mem->addr +
++						  mem_val_attr->offset_in_byte,
++						  &mem_val_attr->value, 4);
++			mem_val_attr++;
 +		}
-+		ctx->dec_cd = dma_zalloc_coherent(dev,
-+						  sizeof(struct qat_alg_cd),
-+						  &ctx->dec_cd_paddr,
-+						  GFP_ATOMIC);
-+		if (!ctx->dec_cd) {
-+			spin_unlock(&ctx->lock);
-+			goto out_free_enc;
-+		}
-+		ctx->auth_hw_state_enc =
-+			dma_zalloc_coherent(dev, sizeof(struct qat_auth_state),
-+					    &ctx->auth_state_enc_paddr,
-+					    GFP_ATOMIC);
-+		if (!ctx->auth_hw_state_enc) {
-+			spin_unlock(&ctx->lock);
-+			goto out_free_dec;
-+		}
-+		ctx->auth_hw_state_dec =
-+			dma_zalloc_coherent(dev, sizeof(struct qat_auth_state),
-+					    &ctx->auth_state_dec_paddr,
-+					    GFP_ATOMIC);
-+		if (!ctx->auth_hw_state_dec) {
-+			spin_unlock(&ctx->lock);
-+			goto out_free_auth_enc;
-+		}
-+	}
-+	spin_unlock(&ctx->lock);
-+	if (qat_alg_init_sessions(ctx, key, keylen))
-+		goto out_free_all;
-+
-+	return 0;
-+
-+out_free_all:
-+	dma_free_coherent(dev, sizeof(struct qat_auth_state),
-+			  ctx->auth_hw_state_dec, ctx->auth_state_dec_paddr);
-+	ctx->auth_hw_state_dec = NULL;
-+out_free_auth_enc:
-+	dma_free_coherent(dev, sizeof(struct qat_auth_state),
-+			  ctx->auth_hw_state_enc, ctx->auth_state_enc_paddr);
-+	ctx->auth_hw_state_enc = NULL;
-+out_free_dec:
-+	dma_free_coherent(dev, sizeof(struct qat_alg_cd),
-+			  ctx->dec_cd, ctx->dec_cd_paddr);
-+	ctx->dec_cd = NULL;
-+out_free_enc:
-+	dma_free_coherent(dev, sizeof(struct qat_alg_cd),
-+			  ctx->enc_cd, ctx->enc_cd_paddr);
-+	ctx->enc_cd = NULL;
-+	return -ENOMEM;
-+}
-+
-+static void qat_alg_free_bufl(struct qat_crypto_instance *inst,
-+			      struct qat_crypto_request *qat_req)
-+{
-+	struct device *dev = &GET_DEV(inst->accel_dev);
-+	struct qat_alg_buf_list *bl = qat_req->buf.bl;
-+	struct qat_alg_buf_list *blout = qat_req->buf.blout;
-+	dma_addr_t blp = qat_req->buf.blp;
-+	dma_addr_t blpout = qat_req->buf.bloutp;
-+	size_t sz = qat_req->buf.sz;
-+	int i, bufs = bl->num_bufs;
-+
-+	for (i = 0; i < bl->num_bufs; i++)
-+		dma_unmap_single(dev, bl->bufers[i].addr,
-+				 bl->bufers[i].len, DMA_BIDIRECTIONAL);
-+
-+	dma_unmap_single(dev, blp, sz, DMA_TO_DEVICE);
-+	kfree(bl);
-+	if (blp != blpout) {
-+		/* If out of place operation dma unmap only data */
-+		int bufless = bufs - blout->num_mapped_bufs;
-+		for (i = bufless; i < bufs; i++) {
-+			dma_unmap_single(dev, blout->bufers[i].addr,
-+					 blout->bufers[i].len,
-+					 DMA_BIDIRECTIONAL);
-+		}
-+		dma_unmap_single(dev, blpout, sz, DMA_TO_DEVICE);
-+		kfree(blout);
-+	}
-+}
-+
-+static int qat_alg_sgl_to_bufl(struct qat_crypto_instance *inst,
-+			       struct scatterlist *assoc,
-+			       struct scatterlist *sgl,
-+			       struct scatterlist *sglout, uint8_t *iv,
-+			       uint8_t ivlen,
-+			       struct qat_crypto_request *qat_req)
-+{
-+	struct device *dev = &GET_DEV(inst->accel_dev);
-+	int i, bufs = 0, n = sg_nents(sgl), assoc_n = sg_nents(assoc);
-+	struct qat_alg_buf_list *bufl;
-+	struct qat_alg_buf_list *buflout = NULL;
-+	dma_addr_t blp;
-+	dma_addr_t bloutp = 0;
-+	struct scatterlist *sg;
-+	size_t sz = sizeof(struct qat_alg_buf_list) +
-+			((1 + n + assoc_n) * sizeof(struct qat_alg_buf));
-+
-+	if (unlikely(!n))
++		break;
++	case ICP_QAT_UOF_LMEM_REGION:
++		if (qat_uclo_init_lmem_seg(handle, init_mem))
++			return -EINVAL;
++		break;
++	case ICP_QAT_UOF_UMEM_REGION:
++		if (qat_uclo_init_umem_seg(handle, init_mem))
++			return -EINVAL;
++		break;
++	default:
++		pr_err("QAT: initmem region error. region type=0x%x\n",
++		       init_mem->region);
 +		return -EINVAL;
-+
-+	bufl = kmalloc(sz, GFP_ATOMIC);
-+	if (unlikely(!bufl))
-+		return -ENOMEM;
-+
-+	blp = dma_map_single(dev, bufl, sz, DMA_TO_DEVICE);
-+	if (unlikely(dma_mapping_error(dev, blp)))
-+		goto err;
-+
-+	for_each_sg(assoc, sg, assoc_n, i) {
-+		bufl->bufers[bufs].addr = dma_map_single(dev,
-+							 sg_virt(sg),
-+							 sg->length,
-+							 DMA_BIDIRECTIONAL);
-+		bufl->bufers[bufs].len = sg->length;
-+		if (unlikely(dma_mapping_error(dev, bufl->bufers[bufs].addr)))
-+			goto err;
-+		bufs++;
-+	}
-+	bufl->bufers[bufs].addr = dma_map_single(dev, iv, ivlen,
-+						 DMA_BIDIRECTIONAL);
-+	bufl->bufers[bufs].len = ivlen;
-+	if (unlikely(dma_mapping_error(dev, bufl->bufers[bufs].addr)))
-+		goto err;
-+	bufs++;
-+
-+	for_each_sg(sgl, sg, n, i) {
-+		int y = i + bufs;
-+		bufl->bufers[y].addr = dma_map_single(dev, sg_virt(sg),
-+						      sg->length,
-+						      DMA_BIDIRECTIONAL);
-+		bufl->bufers[y].len = sg->length;
-+		if (unlikely(dma_mapping_error(dev, bufl->bufers[y].addr)))
-+			goto err;
-+	}
-+	bufl->num_bufs = n + bufs;
-+	qat_req->buf.bl = bufl;
-+	qat_req->buf.blp = blp;
-+	qat_req->buf.sz = sz;
-+	/* Handle out of place operation */
-+	if (sgl != sglout) {
-+		struct qat_alg_buf *bufers;
-+
-+		buflout = kmalloc(sz, GFP_ATOMIC);
-+		if (unlikely(!buflout))
-+			goto err;
-+		bloutp = dma_map_single(dev, buflout, sz, DMA_TO_DEVICE);
-+		if (unlikely(dma_mapping_error(dev, bloutp)))
-+			goto err;
-+		bufers = buflout->bufers;
-+		/* For out of place operation dma map only data and
-+		 * reuse assoc mapping and iv */
-+		for (i = 0; i < bufs; i++) {
-+			bufers[i].len = bufl->bufers[i].len;
-+			bufers[i].addr = bufl->bufers[i].addr;
-+		}
-+		for_each_sg(sglout, sg, n, i) {
-+			int y = i + bufs;
-+			bufers[y].addr = dma_map_single(dev, sg_virt(sg),
-+							sg->length,
-+							DMA_BIDIRECTIONAL);
-+			buflout->bufers[y].len = sg->length;
-+			if (unlikely(dma_mapping_error(dev, bufers[y].addr)))
-+				goto err;
-+		}
-+		buflout->num_bufs = n + bufs;
-+		buflout->num_mapped_bufs = n;
-+		qat_req->buf.blout = buflout;
-+		qat_req->buf.bloutp = bloutp;
-+	} else {
-+		/* Otherwise set the src and dst to the same address */
-+		qat_req->buf.bloutp = qat_req->buf.blp;
 +	}
 +	return 0;
-+err:
-+	dev_err(dev, "Failed to map buf for dma\n");
-+	for_each_sg(sgl, sg, n + bufs, i) {
-+		if (!dma_mapping_error(dev, bufl->bufers[i].addr)) {
-+			dma_unmap_single(dev, bufl->bufers[i].addr,
-+					 bufl->bufers[i].len,
-+					 DMA_BIDIRECTIONAL);
-+		}
-+	}
-+	if (!dma_mapping_error(dev, blp))
-+		dma_unmap_single(dev, blp, sz, DMA_TO_DEVICE);
-+	kfree(bufl);
-+	if (sgl != sglout && buflout) {
-+		for_each_sg(sglout, sg, n, i) {
-+			int y = i + bufs;
-+			if (!dma_mapping_error(dev, buflout->bufers[y].addr))
-+				dma_unmap_single(dev, buflout->bufers[y].addr,
-+						 buflout->bufers[y].len,
-+						 DMA_BIDIRECTIONAL);
-+		}
-+		if (!dma_mapping_error(dev, bloutp))
-+			dma_unmap_single(dev, bloutp, sz, DMA_TO_DEVICE);
-+		kfree(buflout);
-+	}
-+	return -ENOMEM;
 +}
 +
-+void qat_alg_callback(void *resp)
++static int qat_uclo_init_ustore(struct icp_qat_fw_loader_handle *handle,
++				struct icp_qat_uclo_encapme *image)
 +{
-+	struct icp_qat_fw_la_resp *qat_resp = resp;
-+	struct qat_crypto_request *qat_req =
-+			(void *)(dma_addr_t)qat_resp->opaque_data;
-+	struct qat_alg_session_ctx *ctx = qat_req->ctx;
-+	struct qat_crypto_instance *inst = ctx->inst;
-+	struct aead_request *areq = qat_req->areq;
-+	uint8_t stat_filed = qat_resp->comn_resp.comn_status;
-+	int res = 0, qat_res = ICP_QAT_FW_COMN_RESP_CRYPTO_STAT_GET(stat_filed);
++	unsigned int i;
++	struct icp_qat_uclo_encap_page *page;
++	struct icp_qat_uof_image *uof_image;
++	unsigned char ae;
++	unsigned int ustore_size;
++	unsigned int patt_pos;
++	struct icp_qat_uclo_objhandle *obj_handle = handle->obj_handle;
++	uint64_t *fill_data;
 +
-+	qat_alg_free_bufl(inst, qat_req);
-+	if (unlikely(qat_res != ICP_QAT_FW_COMN_STATUS_FLAG_OK))
-+		res = -EBADMSG;
-+	areq->base.complete(&(areq->base), res);
-+}
-+
-+static int qat_alg_dec(struct aead_request *areq)
-+{
-+	struct crypto_aead *aead_tfm = crypto_aead_reqtfm(areq);
-+	struct crypto_tfm *tfm = crypto_aead_tfm(aead_tfm);
-+	struct qat_alg_session_ctx *ctx = crypto_tfm_ctx(tfm);
-+	struct qat_crypto_request *qat_req = aead_request_ctx(areq);
-+	struct icp_qat_fw_la_cipher_req_params *cipher_param;
-+	struct icp_qat_fw_la_auth_req_params *auth_param;
-+	struct icp_qat_fw_la_bulk_req *msg;
-+	int digst_size = crypto_aead_crt(aead_tfm)->authsize;
-+	int ret, ctr = 0;
-+
-+	ret = qat_alg_sgl_to_bufl(ctx->inst, areq->assoc, areq->src, areq->dst,
-+				  areq->iv, AES_BLOCK_SIZE, qat_req);
-+	if (unlikely(ret))
-+		return ret;
-+
-+	msg = &qat_req->req;
-+	*msg = ctx->dec_fw_req_tmpl;
-+	qat_req->ctx = ctx;
-+	qat_req->areq = areq;
-+	qat_req->req.comn_mid.opaque_data = (uint64_t)(dma_addr_t)qat_req;
-+	qat_req->req.comn_mid.src_data_addr = qat_req->buf.blp;
-+	qat_req->req.comn_mid.dest_data_addr = qat_req->buf.bloutp;
-+	cipher_param = (void *)&qat_req->req.serv_specif_rqpars;
-+	cipher_param->cipher_length = areq->cryptlen - digst_size;
-+	cipher_param->cipher_offset = areq->assoclen + AES_BLOCK_SIZE;
-+	memcpy(cipher_param->u.cipher_IV_array, areq->iv, AES_BLOCK_SIZE);
-+	auth_param = (void *)((uint8_t *)cipher_param + sizeof(*cipher_param));
-+	auth_param->auth_off = 0;
-+	auth_param->auth_len = areq->assoclen +
-+				cipher_param->cipher_length + AES_BLOCK_SIZE;
-+	do {
-+		ret = adf_send_message(ctx->inst->sym_tx, (uint32_t *)msg);
-+	} while (ret == -EAGAIN && ctr++ < 10);
-+
-+	if (ret == -EAGAIN) {
-+		qat_alg_free_bufl(ctx->inst, qat_req);
-+		return -EBUSY;
-+	}
-+	return -EINPROGRESS;
-+}
-+
-+static int qat_alg_enc_internal(struct aead_request *areq, uint8_t *iv,
-+				int enc_iv)
-+{
-+	struct crypto_aead *aead_tfm = crypto_aead_reqtfm(areq);
-+	struct crypto_tfm *tfm = crypto_aead_tfm(aead_tfm);
-+	struct qat_alg_session_ctx *ctx = crypto_tfm_ctx(tfm);
-+	struct qat_crypto_request *qat_req = aead_request_ctx(areq);
-+	struct icp_qat_fw_la_cipher_req_params *cipher_param;
-+	struct icp_qat_fw_la_auth_req_params *auth_param;
-+	struct icp_qat_fw_la_bulk_req *msg;
-+	int ret, ctr = 0;
-+
-+	ret = qat_alg_sgl_to_bufl(ctx->inst, areq->assoc, areq->src, areq->dst,
-+				  iv, AES_BLOCK_SIZE, qat_req);
-+	if (unlikely(ret))
-+		return ret;
-+
-+	msg = &qat_req->req;
-+	*msg = ctx->enc_fw_req_tmpl;
-+	qat_req->ctx = ctx;
-+	qat_req->areq = areq;
-+	qat_req->req.comn_mid.opaque_data = (uint64_t)(dma_addr_t)qat_req;
-+	qat_req->req.comn_mid.src_data_addr = qat_req->buf.blp;
-+	qat_req->req.comn_mid.dest_data_addr = qat_req->buf.bloutp;
-+	cipher_param = (void *)&qat_req->req.serv_specif_rqpars;
-+	auth_param = (void *)((uint8_t *)cipher_param + sizeof(*cipher_param));
-+
-+	if (enc_iv) {
-+		cipher_param->cipher_length = areq->cryptlen + AES_BLOCK_SIZE;
-+		cipher_param->cipher_offset = areq->assoclen;
-+	} else {
-+		memcpy(cipher_param->u.cipher_IV_array, iv, AES_BLOCK_SIZE);
-+		cipher_param->cipher_length = areq->cryptlen;
-+		cipher_param->cipher_offset = areq->assoclen + AES_BLOCK_SIZE;
-+	}
-+	auth_param->auth_off = 0;
-+	auth_param->auth_len = areq->assoclen + areq->cryptlen + AES_BLOCK_SIZE;
-+
-+	do {
-+		ret = adf_send_message(ctx->inst->sym_tx, (uint32_t *)msg);
-+	} while (ret == -EAGAIN && ctr++ < 10);
-+
-+	if (ret == -EAGAIN) {
-+		qat_alg_free_bufl(ctx->inst, qat_req);
-+		return -EBUSY;
-+	}
-+	return -EINPROGRESS;
-+}
-+
-+static int qat_alg_enc(struct aead_request *areq)
-+{
-+	return qat_alg_enc_internal(areq, areq->iv, 0);
-+}
-+
-+static int qat_alg_genivenc(struct aead_givcrypt_request *req)
-+{
-+	struct crypto_aead *aead_tfm = crypto_aead_reqtfm(&req->areq);
-+	struct crypto_tfm *tfm = crypto_aead_tfm(aead_tfm);
-+	struct qat_alg_session_ctx *ctx = crypto_tfm_ctx(tfm);
-+	__be64 seq;
-+
-+	memcpy(req->giv, ctx->salt, AES_BLOCK_SIZE);
-+	seq = cpu_to_be64(req->seq);
-+	memcpy(req->giv + AES_BLOCK_SIZE - sizeof(uint64_t),
-+	       &seq, sizeof(uint64_t));
-+	return qat_alg_enc_internal(&req->areq, req->giv, 1);
-+}
-+
-+static int qat_alg_init(struct crypto_tfm *tfm,
-+			enum icp_qat_hw_auth_algo hash, const char *hash_name)
-+{
-+	struct qat_alg_session_ctx *ctx = crypto_tfm_ctx(tfm);
-+
-+	memset(ctx, '\0', sizeof(*ctx));
-+	ctx->hash_tfm = crypto_alloc_shash(hash_name, 0, 0);
-+	if (IS_ERR(ctx->hash_tfm))
++	uof_image = image->img_ptr;
++	fill_data = kzalloc(ICP_QAT_UCLO_MAX_USTORE * sizeof(uint64_t),
++			    GFP_KERNEL);
++	if (!fill_data)
 +		return -EFAULT;
-+	spin_lock_init(&ctx->lock);
-+	ctx->qat_hash_alg = hash;
-+	tfm->crt_aead.reqsize = sizeof(struct aead_request) +
-+				sizeof(struct qat_crypto_request);
-+	ctx->tfm = tfm;
-+	return 0;
-+}
++	for (i = 0; i < ICP_QAT_UCLO_MAX_USTORE; i++)
++		memcpy(&fill_data[i], &uof_image->fill_pattern,
++		       sizeof(uint64_t));
++	page = image->page;
 +
-+static int qat_alg_sha1_init(struct crypto_tfm *tfm)
-+{
-+	return qat_alg_init(tfm, ICP_QAT_HW_AUTH_ALGO_SHA1, "sha1");
-+}
++	for (ae = 0; ae <= handle->hal_handle->ae_max_num; ae++) {
++		if (!test_bit(ae, (unsigned long *)&(uof_image->ae_assigned)))
++			continue;
++		ustore_size = obj_handle->ae_data[ae].eff_ustore_size;
++		patt_pos = page->beg_addr_p + page->micro_words_num;
 +
-+static int qat_alg_sha256_init(struct crypto_tfm *tfm)
-+{
-+	return qat_alg_init(tfm, ICP_QAT_HW_AUTH_ALGO_SHA256, "sha256");
-+}
-+
-+static int qat_alg_sha512_init(struct crypto_tfm *tfm)
-+{
-+	return qat_alg_init(tfm, ICP_QAT_HW_AUTH_ALGO_SHA512, "sha512");
-+}
-+
-+static void qat_alg_exit(struct crypto_tfm *tfm)
-+{
-+	struct qat_alg_session_ctx *ctx = crypto_tfm_ctx(tfm);
-+	struct qat_crypto_instance *inst = ctx->inst;
-+	struct device *dev;
-+
-+	if (!IS_ERR(ctx->hash_tfm))
-+		crypto_free_shash(ctx->hash_tfm);
-+
-+	if (!inst)
-+		return;
-+
-+	dev = &GET_DEV(inst->accel_dev);
-+	if (ctx->enc_cd)
-+		dma_free_coherent(dev, sizeof(struct qat_alg_cd),
-+				  ctx->enc_cd, ctx->enc_cd_paddr);
-+	if (ctx->dec_cd)
-+		dma_free_coherent(dev, sizeof(struct qat_alg_cd),
-+				  ctx->dec_cd, ctx->dec_cd_paddr);
-+	if (ctx->auth_hw_state_enc)
-+		dma_free_coherent(dev, sizeof(struct qat_auth_state),
-+				  ctx->auth_hw_state_enc,
-+				  ctx->auth_state_enc_paddr);
-+
-+	if (ctx->auth_hw_state_dec)
-+		dma_free_coherent(dev, sizeof(struct qat_auth_state),
-+				  ctx->auth_hw_state_dec,
-+				  ctx->auth_state_dec_paddr);
-+
-+	qat_crypto_put_instance(inst);
-+}
-+
-+static struct crypto_alg qat_algs[] = { {
-+	.cra_name = "authenc(hmac(sha1),cbc(aes))",
-+	.cra_driver_name = "qat_aes_cbc_hmac_sha1",
-+	.cra_priority = 4001,
-+	.cra_flags = CRYPTO_ALG_TYPE_AEAD | CRYPTO_ALG_ASYNC,
-+	.cra_blocksize = AES_BLOCK_SIZE,
-+	.cra_ctxsize = sizeof(struct qat_alg_session_ctx),
-+	.cra_alignmask = 0,
-+	.cra_type = &crypto_aead_type,
-+	.cra_module = THIS_MODULE,
-+	.cra_init = qat_alg_sha1_init,
-+	.cra_exit = qat_alg_exit,
-+	.cra_u = {
-+		.aead = {
-+			.setkey = qat_alg_setkey,
-+			.decrypt = qat_alg_dec,
-+			.encrypt = qat_alg_enc,
-+			.givencrypt = qat_alg_genivenc,
-+			.ivsize = AES_BLOCK_SIZE,
-+			.maxauthsize = SHA1_DIGEST_SIZE,
-+		},
-+	},
-+}, {
-+	.cra_name = "authenc(hmac(sha256),cbc(aes))",
-+	.cra_driver_name = "qat_aes_cbc_hmac_sha256",
-+	.cra_priority = 4001,
-+	.cra_flags = CRYPTO_ALG_TYPE_AEAD | CRYPTO_ALG_ASYNC,
-+	.cra_blocksize = AES_BLOCK_SIZE,
-+	.cra_ctxsize = sizeof(struct qat_alg_session_ctx),
-+	.cra_alignmask = 0,
-+	.cra_type = &crypto_aead_type,
-+	.cra_module = THIS_MODULE,
-+	.cra_init = qat_alg_sha256_init,
-+	.cra_exit = qat_alg_exit,
-+	.cra_u = {
-+		.aead = {
-+			.setkey = qat_alg_setkey,
-+			.decrypt = qat_alg_dec,
-+			.encrypt = qat_alg_enc,
-+			.givencrypt = qat_alg_genivenc,
-+			.ivsize = AES_BLOCK_SIZE,
-+			.maxauthsize = SHA256_DIGEST_SIZE,
-+		},
-+	},
-+}, {
-+	.cra_name = "authenc(hmac(sha512),cbc(aes))",
-+	.cra_driver_name = "qat_aes_cbc_hmac_sha512",
-+	.cra_priority = 4001,
-+	.cra_flags = CRYPTO_ALG_TYPE_AEAD | CRYPTO_ALG_ASYNC,
-+	.cra_blocksize = AES_BLOCK_SIZE,
-+	.cra_ctxsize = sizeof(struct qat_alg_session_ctx),
-+	.cra_alignmask = 0,
-+	.cra_type = &crypto_aead_type,
-+	.cra_module = THIS_MODULE,
-+	.cra_init = qat_alg_sha512_init,
-+	.cra_exit = qat_alg_exit,
-+	.cra_u = {
-+		.aead = {
-+			.setkey = qat_alg_setkey,
-+			.decrypt = qat_alg_dec,
-+			.encrypt = qat_alg_enc,
-+			.givencrypt = qat_alg_genivenc,
-+			.ivsize = AES_BLOCK_SIZE,
-+			.maxauthsize = SHA512_DIGEST_SIZE,
-+		},
-+	},
-+} };
-+
-+int qat_algs_register(void)
-+{
-+	if (atomic_add_return(1, &active_dev) == 1) {
-+		int i;
-+
-+		for (i = 0; i < ARRAY_SIZE(qat_algs); i++)
-+			qat_algs[i].cra_flags =	CRYPTO_ALG_TYPE_AEAD |
-+						CRYPTO_ALG_ASYNC;
-+		return crypto_register_algs(qat_algs, ARRAY_SIZE(qat_algs));
++		qat_hal_wr_uwords(handle, (unsigned char)ae, 0,
++				  page->beg_addr_p, &fill_data[0]);
++		qat_hal_wr_uwords(handle, (unsigned char)ae, patt_pos,
++				  ustore_size - patt_pos + 1,
++				  &fill_data[page->beg_addr_p]);
 +	}
++	kfree(fill_data);
 +	return 0;
 +}
 +
-+int qat_algs_unregister(void)
++static int qat_uclo_init_memory(struct icp_qat_fw_loader_handle *handle)
 +{
-+	if (atomic_sub_return(1, &active_dev) == 0)
-+		return crypto_unregister_algs(qat_algs, ARRAY_SIZE(qat_algs));
-+	return 0;
++	unsigned int i;
++	int status = 0;
++	struct icp_qat_uclo_objhandle *obj_handle = handle->obj_handle;
++	struct icp_qat_uof_initmem *initmem = obj_handle->init_mem_tab.init_mem;
++	int ae;
++
++	for (i = 0; i < obj_handle->init_mem_tab.entry_num; i++) {
++		if (initmem->num_in_bytes) {
++			if (qat_uclo_init_ae_memory(handle, initmem))
++				return -EINVAL;
++		}
++		initmem = (struct icp_qat_uof_initmem *)((unsigned long)(
++			(unsigned long)initmem +
++			sizeof(struct icp_qat_uof_initmem)) +
++			(sizeof(struct icp_qat_uof_memvar_attr) *
++			initmem->val_attr_num));
++	}
++	for (ae = 0; ae < ICP_QAT_UCLO_MAX_AE; ae++) {
++		if (qat_hal_batch_wr_lm(handle, ae,
++					obj_handle->lm_init_tab[ae])) {
++			pr_err("QAT: fail to batch init lmem for AE %d\n", ae);
++			return -EINVAL;
++		}
++		qat_uclo_cleanup_batch_init_list(handle,
++						 &obj_handle->lm_init_tab[ae]);
++		qat_uclo_batch_wr_umem(handle, ae,
++				       obj_handle->umem_init_tab[ae]);
++		qat_uclo_cleanup_batch_init_list(handle,
++						 &obj_handle->
++						 umem_init_tab[ae]);
++	}
++	return status;
 +}
 +
-+int qat_algs_init(void)
++static void *qat_uclo_find_chunk(struct icp_qat_uof_objhdr *obj_hdr,
++				 char *chunk_id, void *cur)
 +{
-+	atomic_set(&active_dev, 0);
-+	crypto_get_default_rng();
-+	return 0;
++	int i;
++	struct icp_qat_uof_chunkhdr *chunk_hdr =
++	    (struct icp_qat_uof_chunkhdr *)
++	    ((unsigned long)obj_hdr + sizeof(struct icp_qat_uof_objhdr));
++
++	for (i = 0; i < obj_hdr->num_chunks; i++) {
++		if ((cur < (void *)&chunk_hdr[i]) &&
++		    !(strncmp(chunk_hdr[i].chunk_id, chunk_id,
++			      ICP_QAT_UOF_OBJID_LEN))) {
++			return &chunk_hdr[i];
++		}
++	}
++	return NULL;
 +}
 +
-+void qat_algs_exit(void)
++static unsigned int qat_uclo_calc_checksum(unsigned int reg, int ch)
 +{
-+	crypto_put_default_rng();
-+}
-diff --git a/drivers/crypto/qat/qat_common/qat_crypto.c b/drivers/crypto/qat/qat_common/qat_crypto.c
-new file mode 100644
-index 0000000..cc562cb
---- /dev/null
-+++ b/drivers/crypto/qat/qat_common/qat_crypto.c
-@@ -0,0 +1,284 @@
-+/*
-+  This file is provided under a dual BSD/GPLv2 license.  When using or
-+  redistributing this file, you may do so under either license.
++	int i;
++	unsigned int topbit = 1 << 0xF;
++	unsigned int inbyte = (unsigned int)((reg >> 0x18) ^ ch);
 +
-+  GPL LICENSE SUMMARY
-+  Copyright(c) 2014 Intel Corporation.
-+  This program is free software; you can redistribute it and/or modify
-+  it under the terms of version 2 of the GNU General Public License as
-+  published by the Free Software Foundation.
-+
-+  This program is distributed in the hope that it will be useful, but
-+  WITHOUT ANY WARRANTY; without even the implied warranty of
-+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+  General Public License for more details.
-+
-+  Contact Information:
-+  qat-linux@intel.com
-+
-+  BSD LICENSE
-+  Copyright(c) 2014 Intel Corporation.
-+  Redistribution and use in source and binary forms, with or without
-+  modification, are permitted provided that the following conditions
-+  are met:
-+
-+    * Redistributions of source code must retain the above copyright
-+      notice, this list of conditions and the following disclaimer.
-+    * Redistributions in binary form must reproduce the above copyright
-+      notice, this list of conditions and the following disclaimer in
-+      the documentation and/or other materials provided with the
-+      distribution.
-+    * Neither the name of Intel Corporation nor the names of its
-+      contributors may be used to endorse or promote products derived
-+      from this software without specific prior written permission.
-+
-+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-+  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-+  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-+  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-+  OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-+  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-+  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-+  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-+  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-+  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-+  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-+*/
-+#include <linux/module.h>
-+#include <linux/slab.h>
-+#include "adf_accel_devices.h"
-+#include "adf_common_drv.h"
-+#include "adf_transport.h"
-+#include "adf_cfg.h"
-+#include "adf_cfg_strings.h"
-+#include "qat_crypto.h"
-+#include "icp_qat_fw.h"
-+
-+#define SEC ADF_KERNEL_SEC
-+
-+static struct service_hndl qat_crypto;
-+
-+void qat_crypto_put_instance(struct qat_crypto_instance *inst)
-+{
-+	if (atomic_sub_return(1, &inst->refctr) == 0)
-+		adf_dev_put(inst->accel_dev);
++	reg ^= inbyte << 0x8;
++	for (i = 0; i < 0x8; i++) {
++		if (reg & topbit)
++			reg = (reg << 1) ^ 0x1021;
++		else
++			reg <<= 1;
++	}
++	return reg & 0xFFFF;
 +}
 +
-+static int qat_crypto_free_instances(struct adf_accel_dev *accel_dev)
++static unsigned int qat_uclo_calc_str_checksum(char *ptr, int num)
 +{
-+	struct qat_crypto_instance *inst;
-+	struct list_head *list_ptr, *tmp;
++	unsigned int chksum = 0;
++
++	if (ptr)
++		while (num--)
++			chksum = qat_uclo_calc_checksum(chksum, *ptr++);
++	return chksum;
++}
++
++static struct icp_qat_uclo_objhdr *
++qat_uclo_map_chunk(char *buf, struct icp_qat_uof_filehdr *file_hdr,
++		   char *chunk_id)
++{
++	struct icp_qat_uof_filechunkhdr *file_chunk;
++	struct icp_qat_uclo_objhdr *obj_hdr;
++	void *chunk;
 +	int i;
 +
-+	list_for_each_safe(list_ptr, tmp, &accel_dev->crypto_list) {
-+		inst = list_entry(list_ptr, struct qat_crypto_instance, list);
++	file_chunk = (struct icp_qat_uof_filechunkhdr *)
++		(buf + sizeof(struct icp_qat_uof_filehdr));
++	for (i = 0; i < file_hdr->num_chunks; i++) {
++		if (!(strncmp(file_chunk->chunk_id, chunk_id,
++			      ICP_QAT_UOF_OBJID_LEN))) {
++			chunk = buf + file_chunk->offset;
++			if (file_chunk->checksum != qat_uclo_calc_str_checksum(
++				(char *)chunk, file_chunk->size))
++				break;
++			obj_hdr = kzalloc(sizeof(*obj_hdr), GFP_KERNEL);
++			if (!obj_hdr)
++				break;
++			obj_hdr->file_buff = chunk;
++			obj_hdr->checksum = file_chunk->checksum;
++			obj_hdr->size = file_chunk->size;
++			return obj_hdr;
++		}
++		file_chunk++;
++	}
++	return NULL;
++}
 +
-+		for (i = 0; i < atomic_read(&inst->refctr); i++)
-+			qat_crypto_put_instance(inst);
++static unsigned int
++qat_uclo_check_image_compat(struct icp_qat_uof_encap_obj *encap_uof_obj,
++			    struct icp_qat_uof_image *image)
++{
++	struct icp_qat_uof_objtable *uc_var_tab, *imp_var_tab, *imp_expr_tab;
++	struct icp_qat_uof_objtable *neigh_reg_tab;
++	struct icp_qat_uof_code_page *code_page;
 +
-+		if (inst->sym_tx)
-+			adf_remove_ring(inst->sym_tx);
-+
-+		if (inst->sym_rx)
-+			adf_remove_ring(inst->sym_rx);
-+
-+		if (inst->pke_tx)
-+			adf_remove_ring(inst->pke_tx);
-+
-+		if (inst->pke_rx)
-+			adf_remove_ring(inst->pke_rx);
-+
-+		if (inst->rnd_tx)
-+			adf_remove_ring(inst->rnd_tx);
-+
-+		if (inst->rnd_rx)
-+			adf_remove_ring(inst->rnd_rx);
-+
-+		list_del(list_ptr);
-+		kfree(inst);
++	code_page = (struct icp_qat_uof_code_page *)
++			((char *)image + sizeof(struct icp_qat_uof_image));
++	uc_var_tab = (struct icp_qat_uof_objtable *)(encap_uof_obj->beg_uof +
++		     code_page->uc_var_tab_offset);
++	imp_var_tab = (struct icp_qat_uof_objtable *)(encap_uof_obj->beg_uof +
++		      code_page->imp_var_tab_offset);
++	imp_expr_tab = (struct icp_qat_uof_objtable *)
++		       (encap_uof_obj->beg_uof +
++		       code_page->imp_expr_tab_offset);
++	if (uc_var_tab->entry_num || imp_var_tab->entry_num ||
++	    imp_expr_tab->entry_num) {
++		pr_err("QAT: UOF can't contain imported variable to be parsed");
++		return -EINVAL;
++	}
++	neigh_reg_tab = (struct icp_qat_uof_objtable *)
++			(encap_uof_obj->beg_uof +
++			code_page->neigh_reg_tab_offset);
++	if (neigh_reg_tab->entry_num) {
++		pr_err("QAT: UOF can't contain shared control store feature");
++		return -EINVAL;
++	}
++	if (image->numpages > 1) {
++		pr_err("QAT: UOF can't contain multiple pages");
++		return -EINVAL;
++	}
++	if (ICP_QAT_SHARED_USTORE_MODE(image->ae_mode)) {
++		pr_err("QAT: UOF can't use shared control store feature");
++		return -EFAULT;
++	}
++	if (RELOADABLE_CTX_SHARED_MODE(image->ae_mode)) {
++		pr_err("QAT: UOF can't use reloadable feature");
++		return -EFAULT;
 +	}
 +	return 0;
 +}
 +
-+struct qat_crypto_instance *qat_crypto_get_instance_node(int node)
++static void qat_uclo_map_image_pages(struct icp_qat_uof_encap_obj
++				     *encap_uof_obj,
++				     struct icp_qat_uof_image *img,
++				     struct icp_qat_uclo_encap_page *page)
 +{
-+	struct adf_accel_dev *accel_dev = NULL;
-+	struct qat_crypto_instance *inst_best = NULL;
-+	struct list_head *itr;
-+	unsigned long best = ~0;
++	struct icp_qat_uof_code_page *code_page;
++	struct icp_qat_uof_code_area *code_area;
++	struct icp_qat_uof_objtable *uword_block_tab;
++	struct icp_qat_uof_uword_block *uwblock;
++	int i;
 +
-+	list_for_each(itr, adf_devmgr_get_head()) {
-+		accel_dev = list_entry(itr, struct adf_accel_dev, list);
-+		if (accel_dev->numa_node == node && adf_dev_started(accel_dev))
++	code_page = (struct icp_qat_uof_code_page *)
++			((char *)img + sizeof(struct icp_qat_uof_image));
++	page->def_page = code_page->def_page;
++	page->page_region = code_page->page_region;
++	page->beg_addr_v = code_page->beg_addr_v;
++	page->beg_addr_p = code_page->beg_addr_p;
++	code_area = (struct icp_qat_uof_code_area *)(encap_uof_obj->beg_uof +
++						code_page->code_area_offset);
++	page->micro_words_num = code_area->micro_words_num;
++	uword_block_tab = (struct icp_qat_uof_objtable *)
++			  (encap_uof_obj->beg_uof +
++			  code_area->uword_block_tab);
++	page->uwblock_num = uword_block_tab->entry_num;
++	uwblock = (struct icp_qat_uof_uword_block *)((char *)uword_block_tab +
++			sizeof(struct icp_qat_uof_objtable));
++	page->uwblock = (struct icp_qat_uclo_encap_uwblock *)uwblock;
++	for (i = 0; i < uword_block_tab->entry_num; i++)
++		page->uwblock[i].micro_words =
++		(unsigned long)encap_uof_obj->beg_uof + uwblock[i].uword_offset;
++}
++
++static int qat_uclo_map_uimage(struct icp_qat_uclo_objhandle *obj_handle,
++			       struct icp_qat_uclo_encapme *ae_uimage,
++			       int max_image)
++{
++	int a = 0, i;
++	struct icp_qat_uof_chunkhdr *chunk_hdr = NULL;
++	struct icp_qat_uof_image *image;
++	struct icp_qat_uof_objtable *ae_regtab;
++	struct icp_qat_uof_objtable *init_reg_sym_tab;
++	struct icp_qat_uof_objtable *sbreak_tab;
++	struct icp_qat_uof_encap_obj *encap_uof_obj =
++					&obj_handle->encap_uof_obj;
++
++	for (a = 0; a < max_image; a++) {
++		chunk_hdr = qat_uclo_find_chunk(encap_uof_obj->obj_hdr,
++						ICP_QAT_UOF_IMAG, chunk_hdr);
++		if (!chunk_hdr)
 +			break;
-+		accel_dev = NULL;
++		image = (struct icp_qat_uof_image *)(encap_uof_obj->beg_uof +
++						     chunk_hdr->offset);
++		ae_regtab = (struct icp_qat_uof_objtable *)
++			   (image->reg_tab_offset +
++			   obj_handle->obj_hdr->file_buff);
++		ae_uimage[a].ae_reg_num = ae_regtab->entry_num;
++		ae_uimage[a].ae_reg = (struct icp_qat_uof_ae_reg *)
++			(((char *)ae_regtab) +
++			sizeof(struct icp_qat_uof_objtable));
++		init_reg_sym_tab = (struct icp_qat_uof_objtable *)
++				   (image->init_reg_sym_tab +
++				   obj_handle->obj_hdr->file_buff);
++		ae_uimage[a].init_regsym_num = init_reg_sym_tab->entry_num;
++		ae_uimage[a].init_regsym = (struct icp_qat_uof_init_regsym *)
++			(((char *)init_reg_sym_tab) +
++			sizeof(struct icp_qat_uof_objtable));
++		sbreak_tab = (struct icp_qat_uof_objtable *)
++			(image->sbreak_tab + obj_handle->obj_hdr->file_buff);
++		ae_uimage[a].sbreak_num = sbreak_tab->entry_num;
++		ae_uimage[a].sbreak = (struct icp_qat_uof_sbreak *)
++				      (((char *)sbreak_tab) +
++				      sizeof(struct icp_qat_uof_objtable));
++		ae_uimage[a].img_ptr = image;
++		if (qat_uclo_check_image_compat(encap_uof_obj, image))
++			goto out_err;
++		ae_uimage[a].page =
++			kzalloc(sizeof(struct icp_qat_uclo_encap_page),
++				GFP_KERNEL);
++		if (!ae_uimage[a].page)
++			goto out_err;
++		qat_uclo_map_image_pages(encap_uof_obj, image,
++					 ae_uimage[a].page);
 +	}
-+	if (!accel_dev) {
-+		pr_err("QAT: Could not find device on give node\n");
-+		accel_dev = adf_devmgr_get_first();
-+	}
-+	if (!accel_dev || !adf_dev_started(accel_dev))
-+		return NULL;
++	return a;
++out_err:
++	for (i = 0; i < a; i++)
++		kfree(ae_uimage[i].page);
++	return 0;
++}
 +
-+	list_for_each(itr, &accel_dev->crypto_list) {
-+		struct qat_crypto_instance *inst;
-+		unsigned long cur;
++static int qat_uclo_map_ae(struct icp_qat_fw_loader_handle *handle, int max_ae)
++{
++	int i, ae;
++	int mflag = 0;
++	struct icp_qat_uclo_objhandle *obj_handle = handle->obj_handle;
 +
-+		inst = list_entry(itr, struct qat_crypto_instance, list);
-+		cur = atomic_read(&inst->refctr);
-+		if (best > cur) {
-+			inst_best = inst;
-+			best = cur;
++	for (ae = 0; ae <= max_ae; ae++) {
++		if (!test_bit(ae, (unsigned long *)
++			      &(handle->hal_handle->ae_mask)))
++			continue;
++		for (i = 0; i < obj_handle->uimage_num; i++) {
++			if (!test_bit(ae, (unsigned long *)
++			&(obj_handle->ae_uimage[i].img_ptr->ae_assigned)))
++				continue;
++			mflag = 1;
++			if (qat_uclo_init_ae_data(obj_handle, ae, i))
++				return -EINVAL;
 +		}
 +	}
-+	if (inst_best) {
-+		if (atomic_add_return(1, &inst_best->refctr) == 1) {
-+			if (adf_dev_get(accel_dev)) {
-+				atomic_dec(&inst_best->refctr);
-+				pr_err("QAT: Could increment dev refctr\n");
-+				return NULL;
++	if (!mflag) {
++		pr_err("QAT: uimage uses AE not set");
++		return -EINVAL;
++	}
++	return 0;
++}
++
++static struct icp_qat_uof_strtable *
++qat_uclo_map_str_table(struct icp_qat_uclo_objhdr *obj_hdr,
++		       char *tab_name, struct icp_qat_uof_strtable *str_table)
++{
++	struct icp_qat_uof_chunkhdr *chunk_hdr;
++
++	chunk_hdr = qat_uclo_find_chunk((struct icp_qat_uof_objhdr *)
++					obj_hdr->file_buff, tab_name, NULL);
++	if (chunk_hdr) {
++		int hdr_size;
++		memcpy(&str_table->table_len, obj_hdr->file_buff +
++		       chunk_hdr->offset, sizeof(str_table->table_len));
++		hdr_size = (char *)&str_table->strings - (char *)str_table;
++		str_table->strings = (unsigned long)obj_hdr->file_buff +
++					chunk_hdr->offset + hdr_size;
++		return str_table;
++	}
++	return NULL;
++}
++
++static void
++qat_uclo_map_initmem_table(struct icp_qat_uof_encap_obj *encap_uof_obj,
++			   struct icp_qat_uclo_init_mem_table *init_mem_tab)
++{
++	struct icp_qat_uof_chunkhdr *chunk_hdr;
++
++	chunk_hdr = qat_uclo_find_chunk(encap_uof_obj->obj_hdr,
++					ICP_QAT_UOF_IMEM, NULL);
++	if (chunk_hdr) {
++		memmove(&init_mem_tab->entry_num, encap_uof_obj->beg_uof +
++			chunk_hdr->offset, sizeof(unsigned int));
++		init_mem_tab->init_mem = (struct icp_qat_uof_initmem *)
++		(encap_uof_obj->beg_uof + chunk_hdr->offset +
++		sizeof(unsigned int));
++	}
++}
++
++static int qat_uclo_check_uof_compat(struct icp_qat_uclo_objhandle *obj_handle)
++{
++	unsigned int maj_ver, prod_type = obj_handle->prod_type;
++
++	if (!(prod_type & obj_handle->encap_uof_obj.obj_hdr->cpu_type)) {
++		pr_err("QAT: uof type 0x%x not match with cur platform 0x%x\n",
++		       obj_handle->encap_uof_obj.obj_hdr->cpu_type, prod_type);
++		return -EINVAL;
++	}
++	maj_ver = obj_handle->prod_rev & 0xff;
++	if ((obj_handle->encap_uof_obj.obj_hdr->max_cpu_ver < maj_ver) ||
++	    (obj_handle->encap_uof_obj.obj_hdr->min_cpu_ver > maj_ver)) {
++		pr_err("QAT: uof majVer 0x%x out of range\n", maj_ver);
++		return -EINVAL;
++	}
++	return 0;
++}
++
++static int qat_uclo_init_reg(struct icp_qat_fw_loader_handle *handle,
++			     unsigned char ae, unsigned char ctx_mask,
++			     enum icp_qat_uof_regtype reg_type,
++			     unsigned short reg_addr, unsigned int value)
++{
++	switch (reg_type) {
++	case ICP_GPA_ABS:
++	case ICP_GPB_ABS:
++		ctx_mask = 0;
++	case ICP_GPA_REL:
++	case ICP_GPB_REL:
++		return qat_hal_init_gpr(handle, ae, ctx_mask, reg_type,
++					reg_addr, value);
++	case ICP_SR_ABS:
++	case ICP_DR_ABS:
++	case ICP_SR_RD_ABS:
++	case ICP_DR_RD_ABS:
++		ctx_mask = 0;
++	case ICP_SR_REL:
++	case ICP_DR_REL:
++	case ICP_SR_RD_REL:
++	case ICP_DR_RD_REL:
++		return qat_hal_init_rd_xfer(handle, ae, ctx_mask, reg_type,
++					    reg_addr, value);
++	case ICP_SR_WR_ABS:
++	case ICP_DR_WR_ABS:
++		ctx_mask = 0;
++	case ICP_SR_WR_REL:
++	case ICP_DR_WR_REL:
++		return qat_hal_init_wr_xfer(handle, ae, ctx_mask, reg_type,
++					    reg_addr, value);
++	case ICP_NEIGH_REL:
++		return qat_hal_init_nn(handle, ae, ctx_mask, reg_addr, value);
++	default:
++		pr_err("QAT: UOF uses not supported reg type 0x%x\n", reg_type);
++		return -EFAULT;
++	}
++	return 0;
++}
++
++static int qat_uclo_init_reg_sym(struct icp_qat_fw_loader_handle *handle,
++				 unsigned int ae,
++				 struct icp_qat_uclo_encapme *encap_ae)
++{
++	unsigned int i;
++	unsigned char ctx_mask;
++	struct icp_qat_uof_init_regsym *init_regsym;
++
++	if (ICP_QAT_CTX_MODE(encap_ae->img_ptr->ae_mode) ==
++	    ICP_QAT_UCLO_MAX_CTX)
++		ctx_mask = 0xff;
++	else
++		ctx_mask = 0x55;
++
++	for (i = 0; i < encap_ae->init_regsym_num; i++) {
++		unsigned int exp_res;
++		init_regsym = &encap_ae->init_regsym[i];
++		exp_res = init_regsym->value;
++		switch (init_regsym->init_type) {
++		case ICP_QAT_UOF_INIT_REG:
++			qat_uclo_init_reg(handle, ae, ctx_mask,
++					  (enum icp_qat_uof_regtype)
++					  init_regsym->reg_type,
++					  (unsigned short)init_regsym->reg_addr,
++					  exp_res);
++			break;
++		case ICP_QAT_UOF_INIT_REG_CTX:
++			/* check if ctx is appropriate for the ctxMode */
++			if (!((1 << init_regsym->ctx) & ctx_mask)) {
++				pr_err("QAT: invalid ctx num = 0x%x\n",
++				       init_regsym->ctx);
++				return -EINVAL;
++			}
++			qat_uclo_init_reg(handle, ae,
++					  (unsigned char)
++					  (1 << init_regsym->ctx),
++					  (enum icp_qat_uof_regtype)
++					  init_regsym->reg_type,
++					  (unsigned short)init_regsym->reg_addr,
++					  exp_res);
++			break;
++		case ICP_QAT_UOF_INIT_EXPR:
++			pr_err("QAT: INIT_EXPR feature not supported\n");
++			return -EINVAL;
++		case ICP_QAT_UOF_INIT_EXPR_ENDIAN_SWAP:
++			pr_err("QAT: INIT_EXPR_ENDIAN_SWAP feature not supported\n");
++			return -EINVAL;
++		default:
++			break;
++		}
++	}
++	return 0;
++}
++
++static int qat_uclo_init_globals(struct icp_qat_fw_loader_handle *handle)
++{
++	struct icp_qat_uclo_objhandle *obj_handle = handle->obj_handle;
++	unsigned int s, ae;
++
++	if (obj_handle->global_inited)
++		return 0;
++	if (obj_handle->init_mem_tab.entry_num) {
++		if (qat_uclo_init_memory(handle)) {
++			pr_err("QAT: initalize memory failed\n");
++			return -EINVAL;
++		}
++	}
++	for (ae = 0; ae <= handle->hal_handle->ae_max_num; ae++) {
++		for (s = 0; s < obj_handle->ae_data[ae].slice_num; s++) {
++			if (!obj_handle->ae_data[ae].ae_slices[s].encap_image)
++				continue;
++			if (qat_uclo_init_reg_sym(handle, ae,
++						  obj_handle->ae_data[ae].
++						  ae_slices[s].encap_image))
++				return -EINVAL;
++		}
++	}
++	obj_handle->global_inited = 1;
++	return 0;
++}
++
++static int qat_uclo_set_ae_mode(struct icp_qat_fw_loader_handle *handle)
++{
++	unsigned char ae, nn_mode, s;
++	struct icp_qat_uof_image *uof_image;
++	struct icp_qat_uclo_aedata *ae_data;
++	struct icp_qat_uclo_objhandle *obj_handle = handle->obj_handle;
++
++	for (ae = 0; ae <= handle->hal_handle->ae_max_num; ae++) {
++		if (!test_bit(ae,
++			      (unsigned long *)&(handle->hal_handle->ae_mask)))
++			continue;
++		ae_data = &(obj_handle->ae_data[ae]);
++		for (s = 0; s < ae_data->slice_num && s < ICP_QAT_UCLO_MAX_CTX;
++		     s++) {
++			if (!(obj_handle->ae_data[ae].ae_slices[s].encap_image))
++				continue;
++			uof_image = ae_data->ae_slices[s].encap_image->img_ptr;
++			if (qat_hal_set_ae_ctx_mode(handle, ae,
++						    (char)ICP_QAT_CTX_MODE
++						    (uof_image->ae_mode))) {
++				pr_err("QAT: qat_hal_set_ae_ctx_mode error\n");
++				return -EFAULT;
++			}
++			nn_mode = ICP_QAT_NN_MODE(uof_image->ae_mode);
++			if (qat_hal_set_ae_nn_mode(handle, ae, nn_mode)) {
++				pr_err("QAT: qat_hal_set_ae_nn_mode error\n");
++				return -EFAULT;
++			}
++			if (qat_hal_set_ae_lm_mode(handle, ae, ICP_LMEM0,
++						   (char)ICP_QAT_LOC_MEM0_MODE
++						   (uof_image->ae_mode))) {
++				pr_err("QAT: qat_hal_set_ae_lm_mode error\n ");
++				return -EFAULT;
++			}
++			if (qat_hal_set_ae_lm_mode(handle, ae, ICP_LMEM1,
++						   (char)ICP_QAT_LOC_MEM1_MODE
++						   (uof_image->ae_mode))) {
++				pr_err("QAT: qat_hal_set_ae_lm_mode error\n ");
++				return -EFAULT;
 +			}
 +		}
 +	}
-+	return inst_best;
++	return 0;
 +}
 +
-+static int qat_crypto_create_instances(struct adf_accel_dev *accel_dev)
++static void qat_uclo_init_uword_num(struct icp_qat_fw_loader_handle *handle)
 +{
-+	int i;
-+	long unsigned int bank;
-+	long unsigned int num_inst, num_msg_sym, num_msg_asym;
-+	int msg_size;
-+	struct qat_crypto_instance *inst;
-+	char key[ADF_CFG_MAX_KEY_LEN_IN_BYTES];
-+	char val[ADF_CFG_MAX_VAL_LEN_IN_BYTES];
++	struct icp_qat_uclo_objhandle *obj_handle = handle->obj_handle;
++	struct icp_qat_uclo_encapme *image;
++	int a;
 +
-+	INIT_LIST_HEAD(&accel_dev->crypto_list);
-+	strlcpy(key, ADF_NUM_CY, sizeof(key));
-+
-+	if (adf_cfg_get_param_value(accel_dev, SEC, key, val))
-+		return -EFAULT;
-+
-+	if (kstrtoul(val, 0, &num_inst))
-+		return -EFAULT;
-+
-+	for (i = 0; i < num_inst; i++) {
-+		inst = kzalloc_node(sizeof(*inst), GFP_KERNEL,
-+				    accel_dev->numa_node);
-+		if (!inst)
-+			goto err;
-+
-+		list_add_tail(&inst->list, &accel_dev->crypto_list);
-+		inst->id = i;
-+		atomic_set(&inst->refctr, 0);
-+		inst->accel_dev = accel_dev;
-+		snprintf(key, sizeof(key), ADF_CY "%d" ADF_RING_BANK_NUM, i);
-+		if (adf_cfg_get_param_value(accel_dev, SEC, key, val))
-+			goto err;
-+
-+		if (kstrtoul(val, 10, &bank))
-+			goto err;
-+		snprintf(key, sizeof(key), ADF_CY "%d" ADF_RING_SYM_SIZE, i);
-+		if (adf_cfg_get_param_value(accel_dev, SEC, key, val))
-+			goto err;
-+
-+		if (kstrtoul(val, 10, &num_msg_sym))
-+			goto err;
-+		num_msg_sym = num_msg_sym >> 1;
-+		snprintf(key, sizeof(key), ADF_CY "%d" ADF_RING_ASYM_SIZE, i);
-+		if (adf_cfg_get_param_value(accel_dev, SEC, key, val))
-+			goto err;
-+
-+		if (kstrtoul(val, 10, &num_msg_asym))
-+			goto err;
-+		num_msg_asym = num_msg_asym >> 1;
-+
-+		msg_size = ICP_QAT_FW_REQ_DEFAULT_SZ;
-+		snprintf(key, sizeof(key), ADF_CY "%d" ADF_RING_SYM_TX, i);
-+		if (adf_create_ring(accel_dev, SEC, bank, num_msg_sym,
-+				    msg_size, key, NULL, 0, &inst->sym_tx))
-+			goto err;
-+
-+		snprintf(key, sizeof(key), ADF_CY "%d" ADF_RING_RND_TX, i);
-+		if (adf_create_ring(accel_dev, SEC, bank, num_msg_asym,
-+				    msg_size, key, NULL, 0, &inst->rnd_tx))
-+			goto err;
-+
-+		msg_size = msg_size >> 1;
-+		snprintf(key, sizeof(key), ADF_CY "%d" ADF_RING_ASYM_TX, i);
-+		if (adf_create_ring(accel_dev, SEC, bank, num_msg_asym,
-+				    msg_size, key, NULL, 0, &inst->pke_tx))
-+			goto err;
-+
-+		msg_size = ICP_QAT_FW_RESP_DEFAULT_SZ;
-+		snprintf(key, sizeof(key), ADF_CY "%d" ADF_RING_SYM_RX, i);
-+		if (adf_create_ring(accel_dev, SEC, bank, num_msg_sym,
-+				    msg_size, key, qat_alg_callback, 0,
-+				    &inst->sym_rx))
-+			goto err;
-+
-+		snprintf(key, sizeof(key), ADF_CY "%d" ADF_RING_RND_RX, i);
-+		if (adf_create_ring(accel_dev, SEC, bank, num_msg_asym,
-+				    msg_size, key, qat_alg_callback, 0,
-+				    &inst->rnd_rx))
-+			goto err;
-+
-+		snprintf(key, sizeof(key), ADF_CY "%d" ADF_RING_ASYM_RX, i);
-+		if (adf_create_ring(accel_dev, SEC, bank, num_msg_asym,
-+				    msg_size, key, qat_alg_callback, 0,
-+				    &inst->pke_rx))
-+			goto err;
++	for (a = 0; a < obj_handle->uimage_num; a++) {
++		image = &obj_handle->ae_uimage[a];
++		image->uwords_num = image->page->beg_addr_p +
++					image->page->micro_words_num;
 +	}
++}
++
++static int qat_uclo_parse_uof_obj(struct icp_qat_fw_loader_handle *handle)
++{
++	struct icp_qat_uclo_objhandle *obj_handle = handle->obj_handle;
++	unsigned int ae;
++
++	obj_handle->uword_buf = kzalloc(UWORD_CPYBUF_SIZE * sizeof(uint64_t),
++					GFP_KERNEL);
++	if (!obj_handle->uword_buf)
++		return -ENOMEM;
++	obj_handle->encap_uof_obj.beg_uof = obj_handle->obj_hdr->file_buff;
++	obj_handle->encap_uof_obj.obj_hdr = (struct icp_qat_uof_objhdr *)
++					     obj_handle->obj_hdr->file_buff;
++	obj_handle->encap_uof_obj.chunk_hdr = (struct icp_qat_uof_chunkhdr *)
++	    obj_handle->obj_hdr->file_buff + sizeof(struct icp_qat_uof_objhdr);
++	obj_handle->uword_in_bytes = 6;
++	obj_handle->prod_type = ICP_QAT_AC_C_CPU_TYPE;
++	obj_handle->prod_rev = PID_MAJOR_REV |
++			(PID_MINOR_REV & handle->hal_handle->revision_id);
++	if (qat_uclo_check_uof_compat(obj_handle)) {
++		pr_err("QAT: uof incompatible\n ");
++		return -EINVAL;
++	}
++	obj_handle->ustore_phy_size = ICP_QAT_UCLO_MAX_USTORE;
++	if (!(obj_handle->obj_hdr->file_buff) ||
++	    !(qat_uclo_map_str_table(obj_handle->obj_hdr, ICP_QAT_UOF_STRT,
++				     &(obj_handle->str_table)))) {
++		pr_err("QAT: uof doesn't have effective images");
++		goto out_err;
++	}
++	obj_handle->uimage_num =
++		qat_uclo_map_uimage(obj_handle, obj_handle->ae_uimage,
++				    ICP_QAT_UCLO_MAX_AE * ICP_QAT_UCLO_MAX_CTX);
++	if (!obj_handle->uimage_num)
++		goto out_err;
++	if (qat_uclo_map_ae(handle, handle->hal_handle->ae_max_num)) {
++		pr_err("QAT: Bad object\n ");
++		goto out_check_uof_aemask_err;
++	}
++	qat_uclo_init_uword_num(handle);
++	qat_uclo_map_initmem_table(&(obj_handle->encap_uof_obj),
++				   &(obj_handle->init_mem_tab));
++	if (qat_uclo_set_ae_mode(handle))
++		goto out_check_uof_aemask_err;
 +	return 0;
-+err:
-+	qat_crypto_free_instances(accel_dev);
++out_check_uof_aemask_err:
++	for (ae = 0; ae < obj_handle->uimage_num; ae++)
++		kfree(obj_handle->ae_uimage[ae].page);
++out_err:
++	kfree(obj_handle->uword_buf);
++	return -EFAULT;
++}
++
++int qat_uclo_map_uof_obj(struct icp_qat_fw_loader_handle *handle,
++			 void *addr_ptr, int mem_size)
++{
++	struct icp_qat_uof_filehdr *filehdr;
++	struct icp_qat_uclo_objhandle *objhdl;
++
++	BUILD_BUG_ON(ICP_QAT_UCLO_MAX_AE >=
++		     (sizeof(handle->hal_handle->ae_mask) * 8));
++
++	if (!handle || !addr_ptr || mem_size < 24)
++		return -EINVAL;
++	objhdl = kzalloc(sizeof(*objhdl), GFP_KERNEL);
++	if (!objhdl)
++		return -ENOMEM;
++	objhdl->obj_buf = kmemdup(addr_ptr, mem_size, GFP_KERNEL);
++	if (!objhdl->obj_buf)
++		goto out_objbuf_err;
++	filehdr = (struct icp_qat_uof_filehdr *)objhdl->obj_buf;
++	if (qat_uclo_check_format(filehdr))
++		goto out_objhdr_err;
++	objhdl->obj_hdr = qat_uclo_map_chunk((char *)objhdl->obj_buf, filehdr,
++					     ICP_QAT_UOF_OBJS);
++	if (!objhdl->obj_hdr) {
++		pr_err("QAT: object file chunk is null\n");
++		goto out_objhdr_err;
++	}
++	handle->obj_handle = objhdl;
++	if (qat_uclo_parse_uof_obj(handle))
++		goto out_overlay_obj_err;
++	return 0;
++
++out_overlay_obj_err:
++	handle->obj_handle = NULL;
++	kfree(objhdl->obj_hdr);
++out_objhdr_err:
++	kfree(objhdl->obj_buf);
++out_objbuf_err:
++	kfree(objhdl);
 +	return -ENOMEM;
 +}
 +
-+static int qat_crypto_init(struct adf_accel_dev *accel_dev)
++int qat_uclo_del_uof_obj(struct icp_qat_fw_loader_handle *handle)
 +{
-+	if (qat_crypto_create_instances(accel_dev))
-+		return -EFAULT;
++	struct icp_qat_uclo_objhandle *obj_handle = handle->obj_handle;
++	int a;
 +
++	kfree(obj_handle->uword_buf);
++	for (a = 0; a < obj_handle->uimage_num; a++)
++		kfree(obj_handle->ae_uimage[a].page);
++
++	for (a = 0; a <= (int)handle->hal_handle->ae_max_num; a++)
++		qat_uclo_free_ae_data(&obj_handle->ae_data[a]);
++	kfree(obj_handle->obj_hdr);
++
++	kfree(obj_handle->obj_buf);
++	kfree(obj_handle);
++	handle->obj_handle = NULL;
 +	return 0;
 +}
 +
-+static int qat_crypto_shutdown(struct adf_accel_dev *accel_dev)
++static void qat_uclo_fill_uwords(struct icp_qat_uclo_objhandle *obj_handle,
++				 struct icp_qat_uclo_encap_page *encap_page,
++				 uint64_t *uword, unsigned int addr_p,
++				 unsigned int raddr, uint64_t fill)
 +{
-+	return qat_crypto_free_instances(accel_dev);
-+}
++	uint64_t uwrd = 0;
++	unsigned int i;
 +
-+static int qat_crypto_event_handler(struct adf_accel_dev *accel_dev,
-+				    enum adf_event event)
-+{
-+	int ret;
-+
-+	switch (event) {
-+	case ADF_EVENT_INIT:
-+		ret = qat_crypto_init(accel_dev);
-+		break;
-+	case ADF_EVENT_SHUTDOWN:
-+		ret = qat_crypto_shutdown(accel_dev);
-+		break;
-+	case ADF_EVENT_RESTARTING:
-+	case ADF_EVENT_RESTARTED:
-+	case ADF_EVENT_START:
-+	case ADF_EVENT_STOP:
-+	default:
-+		ret = 0;
++	if (!encap_page) {
++		*uword = fill;
++		return;
 +	}
-+	return ret;
++	for (i = 0; i < encap_page->uwblock_num; i++) {
++		if (raddr >= encap_page->uwblock[i].start_addr &&
++		    raddr <= encap_page->uwblock[i].start_addr +
++		    encap_page->uwblock[i].words_num - 1) {
++			raddr -= encap_page->uwblock[i].start_addr;
++			raddr *= obj_handle->uword_in_bytes;
++			memcpy(&uwrd, (void *)(((unsigned long)
++			       encap_page->uwblock[i].micro_words) + raddr),
++			       obj_handle->uword_in_bytes);
++			uwrd = uwrd & 0xbffffffffffull;
++		}
++	}
++	*uword = uwrd;
++	if (*uword == INVLD_UWORD)
++		*uword = fill;
 +}
 +
-+int qat_crypto_register(void)
++static int qat_uclo_wr_uimage_raw_page(struct icp_qat_fw_loader_handle *handle,
++				       struct icp_qat_uclo_encap_page
++				       *encap_page, unsigned int ae)
 +{
-+	memset(&qat_crypto, 0, sizeof(qat_crypto));
-+	qat_crypto.event_hld = qat_crypto_event_handler;
-+	qat_crypto.name = "qat_crypto";
-+	return adf_service_register(&qat_crypto);
++	unsigned int uw_physical_addr, uw_relative_addr, i, words_num, cpylen;
++	struct icp_qat_uclo_objhandle *obj_handle = handle->obj_handle;
++	uint64_t fill_pat;
++	int status = 0;
++
++	/* load the page starting at appropriate ustore address */
++	/* get fill-pattern from an image -- they are all the same */
++	memcpy(&fill_pat, obj_handle->ae_uimage[0].img_ptr->fill_pattern,
++	       sizeof(uint64_t));
++	uw_physical_addr = encap_page->beg_addr_p;
++	uw_relative_addr = 0;
++	words_num = encap_page->micro_words_num;
++	while (words_num) {
++		if (words_num < UWORD_CPYBUF_SIZE)
++			cpylen = words_num;
++		else
++			cpylen = UWORD_CPYBUF_SIZE;
++
++		/* load the buffer */
++		for (i = 0; i < cpylen; i++)
++			qat_uclo_fill_uwords(obj_handle, encap_page,
++					     &obj_handle->uword_buf[i],
++					     uw_physical_addr + i,
++					     uw_relative_addr + i, fill_pat);
++
++		/* copy the buffer to ustore */
++		qat_hal_wr_uwords(handle, (unsigned char)ae,
++				  uw_physical_addr, cpylen,
++				  obj_handle->uword_buf);
++
++		uw_physical_addr += cpylen;
++		uw_relative_addr += cpylen;
++		words_num -= cpylen;
++	}
++	return status;
 +}
 +
-+int qat_crypto_unregister(void)
++static int
++qat_uclo_wr_uimage_pages(struct icp_qat_fw_loader_handle *handle,
++			 struct icp_qat_uof_image *image)
 +{
-+	return adf_service_unregister(&qat_crypto);
++	struct icp_qat_uclo_objhandle *obj_handle = handle->obj_handle;
++	unsigned int ctx_mask, s;
++	struct icp_qat_uclo_page *page;
++	unsigned char ae;
++	int retval = 0;
++	int ctx;
++
++	if (ICP_QAT_CTX_MODE(image->ae_mode) == ICP_QAT_UCLO_MAX_CTX)
++		ctx_mask = 0xff;
++	else
++		ctx_mask = 0x55;
++	/* load the default page and set assigned CTX PC
++	 * to the entrypoint address */
++	for (ae = 0; ae <= handle->hal_handle->ae_max_num; ae++) {
++		if (!test_bit(ae, (unsigned long *)&(image->ae_assigned)))
++			continue;
++		/* find the slice to which this image is assigned */
++		for (s = 0; s < obj_handle->ae_data[ae].slice_num; s++) {
++			if (image->ctx_assigned & obj_handle->ae_data[ae].
++			    ae_slices[s].ctx_mask_assigned)
++				break;
++		}
++		if (s >= obj_handle->ae_data[ae].slice_num)
++			continue;
++		page = obj_handle->ae_data[ae].ae_slices[s].page;
++		if (!page->encap_page->def_page)
++			continue;
++		if (qat_uclo_wr_uimage_raw_page(handle, page->encap_page, ae))
++			return -EINVAL;
++
++		page = obj_handle->ae_data[ae].ae_slices[s].page;
++		for (ctx = 0; ctx < ICP_QAT_UCLO_MAX_CTX; ctx++)
++			obj_handle->ae_data[ae].ae_slices[s].cur_page[ctx] =
++					(ctx_mask & (1 << ctx)) ? page : NULL;
++		qat_hal_set_live_ctx(handle, (unsigned char)ae,
++				     image->ctx_assigned);
++		qat_hal_set_pc(handle, (unsigned char)ae, image->ctx_assigned,
++			       image->entry_address);
++	}
++	return retval;
 +}
-diff --git a/drivers/crypto/qat/qat_common/qat_crypto.h b/drivers/crypto/qat/qat_common/qat_crypto.h
-new file mode 100644
-index 0000000..ab8468d
---- /dev/null
-+++ b/drivers/crypto/qat/qat_common/qat_crypto.h
-@@ -0,0 +1,83 @@
-+/*
-+  This file is provided under a dual BSD/GPLv2 license.  When using or
-+  redistributing this file, you may do so under either license.
++int qat_uclo_wr_all_uimage(struct icp_qat_fw_loader_handle *handle)
++{
++	struct icp_qat_uclo_objhandle *obj_handle = handle->obj_handle;
++	unsigned int i;
 +
-+  GPL LICENSE SUMMARY
-+  Copyright(c) 2014 Intel Corporation.
-+  This program is free software; you can redistribute it and/or modify
-+  it under the terms of version 2 of the GNU General Public License as
-+  published by the Free Software Foundation.
-+
-+  This program is distributed in the hope that it will be useful, but
-+  WITHOUT ANY WARRANTY; without even the implied warranty of
-+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+  General Public License for more details.
-+
-+  Contact Information:
-+  qat-linux@intel.com
-+
-+  BSD LICENSE
-+  Copyright(c) 2014 Intel Corporation.
-+  Redistribution and use in source and binary forms, with or without
-+  modification, are permitted provided that the following conditions
-+  are met:
-+
-+    * Redistributions of source code must retain the above copyright
-+      notice, this list of conditions and the following disclaimer.
-+    * Redistributions in binary form must reproduce the above copyright
-+      notice, this list of conditions and the following disclaimer in
-+      the documentation and/or other materials provided with the
-+      distribution.
-+    * Neither the name of Intel Corporation nor the names of its
-+      contributors may be used to endorse or promote products derived
-+      from this software without specific prior written permission.
-+
-+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-+  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-+  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-+  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-+  OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-+  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-+  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-+  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-+  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-+  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-+  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-+*/
-+#ifndef _QAT_CRYPTO_INSTANCE_H_
-+#define _QAT_CRYPTO_INSTANCE_H_
-+
-+#include <linux/list.h>
-+#include <linux/slab.h>
-+#include "adf_accel_devices.h"
-+#include "icp_qat_fw_la.h"
-+
-+struct qat_crypto_instance {
-+	struct adf_etr_ring_data *sym_tx;
-+	struct adf_etr_ring_data *sym_rx;
-+	struct adf_etr_ring_data *pke_tx;
-+	struct adf_etr_ring_data *pke_rx;
-+	struct adf_etr_ring_data *rnd_tx;
-+	struct adf_etr_ring_data *rnd_rx;
-+	struct adf_accel_dev *accel_dev;
-+	struct list_head list;
-+	unsigned long state;
-+	int id;
-+	atomic_t refctr;
-+};
-+
-+struct qat_crypto_request_buffs {
-+	struct qat_alg_buf_list *bl;
-+	dma_addr_t blp;
-+	struct qat_alg_buf_list *blout;
-+	dma_addr_t bloutp;
-+	size_t sz;
-+};
-+
-+struct qat_crypto_request {
-+	struct icp_qat_fw_la_bulk_req req;
-+	struct qat_alg_session_ctx *ctx;
-+	struct aead_request *areq;
-+	struct qat_crypto_request_buffs buf;
-+};
-+#endif
++	if (qat_uclo_init_globals(handle))
++		return -EINVAL;
++	for (i = 0; i < obj_handle->uimage_num; i++) {
++		if (!(obj_handle->ae_uimage[i].img_ptr))
++			return -EINVAL;
++		if (qat_uclo_init_ustore(handle, &(obj_handle->ae_uimage[i])))
++			return -EINVAL;
++		if (qat_uclo_wr_uimage_pages(handle,
++					     obj_handle->ae_uimage[i].img_ptr))
++			return -EINVAL;
++	}
++	return 0;
++}
 -- 
 1.8.5.rc2.6.gc6f1b92.dirty
 
