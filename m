@@ -1,128 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932922AbaFCQKB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 12:10:01 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:33335 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932418AbaFCQJ7 (ORCPT
+	id S932828AbaFCQO6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 12:14:58 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:54058 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932400AbaFCQO5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 12:09:59 -0400
-Date: Tue, 3 Jun 2014 18:09:55 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Christoph Lameter <cl@gentwo.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Gilad Ben-Yossef <gilad@benyossef.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>,
-        John Stultz <johnstul@us.ibm.com>, Hakan Akkan <hakanakkan@gmail.com>,
-        Max Krasnyansky <maxk@qualcomm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, hughd@google.com,
-        viresh.kumar@linaro.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, Mike Frysinger <vapier@gentoo.org>,
-        Minchan Kim <minchan.kim@gmail.com>
-Subject: Re: [PATCH] vmstat: on demand updates from differentials V7
-Message-ID: <20140603160953.GF23860@localhost.localdomain>
-References: <alpine.DEB.2.10.1405291453260.2899@gentwo.org>
+	Tue, 3 Jun 2014 12:14:57 -0400
+Date: Tue, 3 Jun 2014 12:14:53 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, dhowells@redhat.com,
+        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
+        oleg@redhat.com, sbw@mit.edu
+Subject: Re: [PATCH v2 RFC 1/3] MAINTAINERS: Add "R:" designated-reviewers
+ tag
+Message-ID: <20140603121453.00051e99@gandalf.local.home>
+In-Reply-To: <1401809736-12023-1-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <1401809736-12023-1-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.10.1405291453260.2899@gentwo.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 29, 2014 at 02:56:15PM -0500, Christoph Lameter wrote:
-> 
-> V6->V7
-> - Remove /sysfs support and avoid the large cpumask definition.
-> 
-> V5->V6:
-> - Shepherd thread as a general worker thread. This means
->   that the general mechanism to control worker thread
->   cpu use by Frederic Weisbecker is necessary to
->   restrict the shepherd thread to the cpus not used
->   for low latency tasks. Hopefully that is ready to be
->   merged soon. No need anymore to have a specific
->   cpu be the housekeeper cpu.
-> 
-> V4->V5:
-> - Shepherd thread on a specific cpu (HOUSEKEEPING_CPU).
-> - Incorporate Andrew's feedback
-> - Work out the races.
-> - Make visible which CPUs have stat updates switched off
->   in /sys/devices/system/cpu/stat_off
-> 
-> V3->V4:
-> - Make the shepherd task not deferrable. It runs on the tick cpu
->   anyways. Deferral could get deltas too far out of sync if
->   vmstat operations are disabled for a certain processor.
-> 
-> V2->V3:
-> - Introduce a new tick_get_housekeeping_cpu() function. Not sure
->   if that is exactly what we want but it is a start. Thomas?
-> - Migrate the shepherd task if the output of
->   tick_get_housekeeping_cpu() changes.
-> - Fixes recommended by Andrew.
-> 
-> V1->V2:
-> - Optimize the need_update check by using memchr_inv.
-> - Clean up.
-> 
-> vmstat workers are used for folding counter differentials into the
-> zone, per node and global counters at certain time intervals.
-> They currently run at defined intervals on all processors which will
-> cause some holdoff for processors that need minimal intrusion by the
-> OS.
-> 
-> The current vmstat_update mechanism depends on a deferrable timer
-> firing every other second by default which registers a work queue item
-> that runs on the local CPU, with the result that we have 1 interrupt
-> and one additional schedulable task on each CPU every 2 seconds
-> If a workload indeed causes VM activity or multiple tasks are running
-> on a CPU, then there are probably bigger issues to deal with.
-> 
-> However, some workloads dedicate a CPU for a single CPU bound task.
-> This is done in high performance computing, in high frequency
-> financial applications, in networking (Intel DPDK, EZchip NPS) and with
-> the advent of systems with more and more CPUs over time, this may become
-> more and more common to do since when one has enough CPUs
-> one cares less about efficiently sharing a CPU with other tasks and
-> more about efficiently monopolizing a CPU per task.
-> 
-> The difference of having this timer firing and workqueue kernel thread
-> scheduled per second can be enormous. An artificial test measuring the
-> worst case time to do a simple "i++" in an endless loop on a bare metal
-> system and under Linux on an isolated CPU with dynticks and with and
-> without this patch, have Linux match the bare metal performance
-> (~700 cycles) with this patch and loose by couple of orders of magnitude
-> (~200k cycles) without it[*].  The loss occurs for something that just
-> calculates statistics. For networking applications, for example, this
-> could be the difference between dropping packets or sustaining line rate.
-> 
-> Statistics are important and useful, but it would be great if there
-> would be a way to not cause statistics gathering produce a huge
-> performance difference. This patche does just that.
-> 
-> This patch creates a vmstat shepherd worker that monitors the
-> per cpu differentials on all processors. If there are differentials
-> on a processor then a vmstat worker local to the processors
-> with the differentials is created. That worker will then start
-> folding the diffs in regular intervals. Should the worker
-> find that there is no work to be done then it will make the shepherd
-> worker monitor the differentials again.
-> 
-> With this patch it is possible then to have periods longer than
-> 2 seconds without any OS event on a "cpu" (hardware thread).
-> 
-> Reviewed-by: Gilad Ben-Yossef <gilad@benyossef.com>
-> Signed-off-by: Christoph Lameter <cl@linux.com>
+On Tue,  3 Jun 2014 08:35:34 -0700
+"Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
 
-So after the cpumask_var_t conversion I have no other concern except
-perhaps that the scan may bring some overhead on workloads that don't
-care about isolation. You might want to make it optional. But I let you
-check that.
+> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> 
+> A ksummit-discuss email thread looked at the difficulty recruiting
+> and retaining reviewers.  Paul Walmsley also noted the need for patch
+> submitters to know who the key reviewers are and suggested adding an
+> "R:" tag to the MAINTAINERS file to record this information on a
+> per-subsystem basis.  This commit does just that, and a subsequent
+> commit tags the designated reviewer for the RCU-related subsystems.
+> 
+> http://lists.linuxfoundation.org/pipermail/ksummit-discuss/2014-May/000830.html
+> 
+> Suggested-by: Paul Walmsley <paul@pwsan.com>
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 
-And I can't judge much the -mm internal changes. But other than that, it looks good to me.
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
 
-Thanks.
+-- Steve
+
+> ---
+>  MAINTAINERS | 2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index 6dc67b1fdb50..8513adb1135d 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -70,6 +70,8 @@ Descriptions of section entries:
+>  
+>  	P: Person (obsolete)
+>  	M: Mail patches to: FullName <address@domain>
+> +	R: Designated reviewer, who should be CCed on patches,
+> +	   format: FullName <address@domain>
+>  	L: Mailing list that is relevant to this area
+>  	W: Web-page with status/info
+>  	Q: Patchwork web based patch tracking system site
+
