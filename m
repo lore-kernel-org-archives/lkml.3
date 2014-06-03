@@ -1,50 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753821AbaFCOkD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 10:40:03 -0400
-Received: from mail-oa0-f51.google.com ([209.85.219.51]:44072 "EHLO
-	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751721AbaFCOkB (ORCPT
+	id S1754559AbaFCOk3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 10:40:29 -0400
+Received: from mail-we0-f178.google.com ([74.125.82.178]:41247 "EHLO
+	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754204AbaFCOk0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 10:40:01 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140528173858.GG5099@sirena.org.uk>
-References: <1780c3205893be8567fa29ccd86674e2f32555b4.1401192160.git.viresh.kumar@linaro.org>
-	<20140527192923.GC12304@sirena.org.uk>
-	<CAKohpo=AnusM2FGs=JLozSyTc0N7SDXQxe+rPiLEHP6ewxY4ow@mail.gmail.com>
-	<20140528173858.GG5099@sirena.org.uk>
-Date: Tue, 3 Jun 2014 20:10:00 +0530
-Message-ID: <CAKohpo=T3BG9X0gHfRA-x8B3ou3Y=XHcs=OTYAHikX61iAJ9xw@mail.gmail.com>
-Subject: Re: [PATCH 1/2] regulators: Add definition of regulator_set_voltage_time()
- for !CONFIG_REGULATOR
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arvind Chauhan <arvind.chauhan@arm.com>,
-        Eduardo Valentin <edubezval@gmail.com>, Pavel Machek <pavel@ucw.cz>,
-        Liam Girdwood <lgirdwood@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 3 Jun 2014 10:40:26 -0400
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kevin Hilman <khilman@linaro.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [GIT PULL] nohz: Move nohz kick out of scheduler IPI, v7
+Date: Tue,  3 Jun 2014 16:40:15 +0200
+Message-Id: <1401806420-31018-1-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28 May 2014 23:08, Mark Brown <broonie@kernel.org> wrote:
-> Whatever - I don't think the particular code makes any practical
-> difference.  We would need to audit existing users who don't have a
-> REGULATOR dependency for breakage though.
+Hi,
 
-Exactly what kind of drivers are we looking to fix here? These might
-be the possible cases:
-- We are checking 'regulator pointer' before calling and don't need to
-handle anything there..
-- drivers depend on CONFIG_REGULATOR and so again we don't need
-to handle anything
-- None of above are true and drivers aren't checking return value of
-regulator_set_voltage()
-OR
-They are checking it and failing when it failed..
+This version fixes the following concerns from Peterz:
 
-What do we want to do in these cases?
+* Warn _before_ work claim on irq_work_queue_on()
+* Warn on in_nmi() while remote queueing
+* Only disabled preemption (and not irqs) on local queueing
+
+Thanks.
+
+git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
+	timers/nohz-irq-work-v5
+
+Thanks,
+	Frederic
+---
+
+Frederic Weisbecker (5):
+      irq_work: Split raised and lazy lists
+      irq_work: Shorten a bit irq_work_needs_cpu()
+      irq_work: Implement remote queueing
+      nohz: Move full nohz kick to its own IPI
+      nohz: Use IPI implicit full barrier against rq->nr_running r/w
+
+
+ include/linux/irq_work.h |  2 ++
+ include/linux/tick.h     |  9 +++++-
+ kernel/irq_work.c        | 72 ++++++++++++++++++++++++++++--------------------
+ kernel/sched/core.c      | 14 ++++------
+ kernel/sched/sched.h     | 12 ++++++--
+ kernel/smp.c             |  4 +++
+ kernel/time/tick-sched.c | 10 ++++---
+ 7 files changed, 77 insertions(+), 46 deletions(-)
