@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933665AbaFCTc3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 15:32:29 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:65264 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933048AbaFCTby (ORCPT
+	id S933564AbaFCTbv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 15:31:51 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:63938 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933374AbaFCTbq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 15:31:54 -0400
+	Tue, 3 Jun 2014 15:31:46 -0400
 From: Paolo Bonzini <pbonzini@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: hch@lst.de, JBottomley@Parallels.com, venkateshs@google.com
-Subject: [PATCH 6/6] virtio-scsi: Implement change_queue_depth for virtscsi targets
-Date: Tue,  3 Jun 2014 21:31:33 +0200
-Message-Id: <1401823893-29028-7-git-send-email-pbonzini@redhat.com>
+Cc: hch@lst.de, JBottomley@Parallels.com, venkateshs@google.com,
+        Ming Lei <tom.leiming@gmail.com>
+Subject: [PATCH 1/6] virtio_scsi: remove ACCESS_ONCE() and smp_read_barrier_depends()
+Date: Tue,  3 Jun 2014 21:31:28 +0200
+Message-Id: <1401823893-29028-2-git-send-email-pbonzini@redhat.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1401823893-29028-1-git-send-email-pbonzini@redhat.com>
 References: <1401823893-29028-1-git-send-email-pbonzini@redhat.com>
@@ -20,86 +21,107 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Venkatesh Srinivas <venkateshs@google.com>
+From: Ming Lei <tom.leiming@gmail.com>
 
-change_queue_depth allows changing per-target queue depth via sysfs.
+Access to tgt->req_vq is strictly serialized by spin_lock
+of tgt->tgt_lock, so the ACCESS_ONCE() isn't necessary.
 
-It also allows the SCSI midlayer to ramp down the number of concurrent
-inflight requests in response to a SCSI BUSY status response and allows
-the midlayer to ramp the count back up to the device maximum when the
-BUSY condition has resolved.
+smp_read_barrier_depends() in virtscsi_req_done was introduced
+to order reading req_vq and decreasing tgt->reqs, but it isn't
+needed now because req_vq is read from
+scsi->req_vqs[vq->index - VIRTIO_SCSI_VQ_BASE] instead of
+tgt->req_vq, so remove the unnecessary barrier.
 
-Signed-off-by: Venkatesh Srinivas <venkateshs@google.com>
+Also remove related comment about the barrier.
+
+Cc: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Ming Lei <tom.leiming@gmail.com>
 Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 ---
- drivers/scsi/virtio_scsi.c | 33 +++++++++++++++++++++++++++++++++
- 1 file changed, 33 insertions(+)
+ drivers/scsi/virtio_scsi.c | 53 ++++++----------------------------------------
+ 1 file changed, 6 insertions(+), 47 deletions(-)
 
 diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
-index fda9fb358888..de0f8d9b3682 100644
+index db3b494e5926..fc054935eb1f 100644
 --- a/drivers/scsi/virtio_scsi.c
 +++ b/drivers/scsi/virtio_scsi.c
-@@ -26,6 +26,7 @@
- #include <scsi/scsi_host.h>
- #include <scsi/scsi_device.h>
- #include <scsi/scsi_cmnd.h>
-+#include <scsi/scsi_tcq.h>
- #include <linux/seqlock.h>
+@@ -73,17 +73,12 @@ struct virtio_scsi_vq {
+  * queue, and also lets the driver optimize the IRQ affinity for the virtqueues
+  * (each virtqueue's affinity is set to the CPU that "owns" the queue).
+  *
+- * An interesting effect of this policy is that only writes to req_vq need to
+- * take the tgt_lock.  Read can be done outside the lock because:
++ * tgt_lock is held to serialize reading and writing req_vq. Reading req_vq
++ * could be done locklessly, but we do not do it yet.
+  *
+- * - writes of req_vq only occur when atomic_inc_return(&tgt->reqs) returns 1.
+- *   In that case, no other CPU is reading req_vq: even if they were in
+- *   virtscsi_queuecommand_multi, they would be spinning on tgt_lock.
+- *
+- * - reads of req_vq only occur when the target is not idle (reqs != 0).
+- *   A CPU that enters virtscsi_queuecommand_multi will not modify req_vq.
+- *
+- * Similarly, decrements of reqs are never concurrent with writes of req_vq.
++ * Decrements of reqs are never concurrent with writes of req_vq: before the
++ * decrement reqs will be != 0; after the decrement the virtqueue completion
++ * routine will not use the req_vq so it can be changed by a new request.
+  * Thus they can happen outside the tgt_lock, provided of course we make reqs
+  * an atomic_t.
+  */
+@@ -238,38 +233,6 @@ static void virtscsi_req_done(struct virtqueue *vq)
+ 	int index = vq->index - VIRTIO_SCSI_VQ_BASE;
+ 	struct virtio_scsi_vq *req_vq = &vscsi->req_vqs[index];
  
- #define VIRTIO_SCSI_MEMPOOL_SZ 64
-@@ -629,6 +630,36 @@ static int virtscsi_device_reset(struct scsi_cmnd *sc)
- 	return virtscsi_tmf(vscsi, cmd);
- }
+-	/*
+-	 * Read req_vq before decrementing the reqs field in
+-	 * virtscsi_complete_cmd.
+-	 *
+-	 * With barriers:
+-	 *
+-	 * 	CPU #0			virtscsi_queuecommand_multi (CPU #1)
+-	 * 	------------------------------------------------------------
+-	 * 	lock vq_lock
+-	 * 	read req_vq
+-	 * 	read reqs (reqs = 1)
+-	 * 	write reqs (reqs = 0)
+-	 * 				increment reqs (reqs = 1)
+-	 * 				write req_vq
+-	 *
+-	 * Possible reordering without barriers:
+-	 *
+-	 * 	CPU #0			virtscsi_queuecommand_multi (CPU #1)
+-	 * 	------------------------------------------------------------
+-	 * 	lock vq_lock
+-	 * 	read reqs (reqs = 1)
+-	 * 	write reqs (reqs = 0)
+-	 * 				increment reqs (reqs = 1)
+-	 * 				write req_vq
+-	 * 	read (wrong) req_vq
+-	 *
+-	 * We do not need a full smp_rmb, because req_vq is required to get
+-	 * to tgt->reqs: tgt is &vscsi->tgt[sc->device->id], where sc is stored
+-	 * in the virtqueue as the user token.
+-	 */
+-	smp_read_barrier_depends();
+-
+ 	virtscsi_vq_done(vscsi, req_vq, virtscsi_complete_cmd);
+ };
  
-+/**
-+ * virtscsi_change_queue_depth() - Change a virtscsi target's queue depth
-+ * @sdev:	Virtscsi target whose queue depth to change
-+ * @qdepth:	New queue depth
-+ * @reason:	Reason for the queue depth change.
-+ */
-+static int virtscsi_change_queue_depth(struct scsi_device *sdev,
-+				       int qdepth,
-+				       int reason)
-+{
-+	struct Scsi_Host *shost = sdev->host;
-+	int max_depth = shost->cmd_per_lun;
-+
-+	switch (reason) {
-+	case SCSI_QDEPTH_QFULL: /* Drop qdepth in response to BUSY state */
-+		scsi_track_queue_full(sdev, qdepth);
-+		break;
-+	case SCSI_QDEPTH_RAMP_UP: /* Raise qdepth after BUSY state resolved */
-+	case SCSI_QDEPTH_DEFAULT: /* Manual change via sysfs */
-+		scsi_adjust_queue_depth(sdev,
-+					scsi_get_tag_type(sdev),
-+					min(max_depth, qdepth));
-+		break;
-+	default:
-+		return -EOPNOTSUPP;
-+	}
-+
-+	return sdev->queue_depth;
-+}
-+
- static int virtscsi_abort(struct scsi_cmnd *sc)
- {
- 	struct virtio_scsi *vscsi = shost_priv(sc->device->host);
-@@ -683,6 +714,7 @@ static struct scsi_host_template virtscsi_host_template_single = {
- 	.proc_name = "virtio_scsi",
- 	.this_id = -1,
- 	.queuecommand = virtscsi_queuecommand_single,
-+	.change_queue_depth = virtscsi_change_queue_depth,
- 	.eh_abort_handler = virtscsi_abort,
- 	.eh_device_reset_handler = virtscsi_device_reset,
+@@ -560,12 +523,8 @@ static struct virtio_scsi_vq *virtscsi_pick_vq(struct virtio_scsi *vscsi,
  
-@@ -699,6 +731,7 @@ static struct scsi_host_template virtscsi_host_template_multi = {
- 	.proc_name = "virtio_scsi",
- 	.this_id = -1,
- 	.queuecommand = virtscsi_queuecommand_multi,
-+	.change_queue_depth = virtscsi_change_queue_depth,
- 	.eh_abort_handler = virtscsi_abort,
- 	.eh_device_reset_handler = virtscsi_device_reset,
+ 	spin_lock_irqsave(&tgt->tgt_lock, flags);
  
+-	/*
+-	 * The memory barrier after atomic_inc_return matches
+-	 * the smp_read_barrier_depends() in virtscsi_req_done.
+-	 */
+ 	if (atomic_inc_return(&tgt->reqs) > 1)
+-		vq = ACCESS_ONCE(tgt->req_vq);
++		vq = tgt->req_vq;
+ 	else {
+ 		queue_num = smp_processor_id();
+ 		while (unlikely(queue_num >= vscsi->num_queues))
 -- 
 1.8.3.1
+
 
