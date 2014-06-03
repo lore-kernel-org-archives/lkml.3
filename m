@@ -1,78 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964832AbaFCUK6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 16:10:58 -0400
-Received: from s3.sipsolutions.net ([5.9.151.49]:60298 "EHLO sipsolutions.net"
+	id S964936AbaFCULY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 16:11:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20449 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933840AbaFCUK5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 16:10:57 -0400
-Message-ID: <1401826244.4157.49.camel@jlt4.sipsolutions.net>
-Subject: Re: [RFC 2/4] cfg80211: Add new interface type for OCB mode
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Rostislav Lisovy <lisovy@gmail.com>
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Michal Sojka <sojkam1@fel.cvut.cz>, s.sander@nordsys.de,
-        jan-niklas.meier@volkswagen.de,
-        Rostislav Lisovy <rostislav.lisovy@fel.cvut.cz>
-Date: Tue, 03 Jun 2014 22:10:44 +0200
-In-Reply-To: <1401468984-24575-3-git-send-email-rostislav.lisovy@fel.cvut.cz> (sfid-20140530_185637_255661_DD2CB60E)
-References: <1401468984-24575-1-git-send-email-rostislav.lisovy@fel.cvut.cz>
-	 <1401468984-24575-3-git-send-email-rostislav.lisovy@fel.cvut.cz>
-	 (sfid-20140530_185637_255661_DD2CB60E)
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.1-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S933080AbaFCULU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 16:11:20 -0400
+From: Bandan Das <bsd@redhat.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: kvm@vger.kernel.org, Gleb Natapov <gleb@kernel.org>,
+        Jan Kiszka <jan.kiszka@siemens.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 0/4] Emulate VMXON region correctly
+References: <1399357158-8305-1-git-send-email-bsd@redhat.com>
+	<5369156F.1070104@redhat.com>
+Date: Tue, 03 Jun 2014 16:11:10 -0400
+In-Reply-To: <5369156F.1070104@redhat.com> (Paolo Bonzini's message of "Tue,
+	06 May 2014 19:01:35 +0200")
+Message-ID: <jpgoay9eotd.fsf@nelium.bos.redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-05-30 at 18:56 +0200, Rostislav Lisovy wrote:
-> Add new OCB mode (outside the context of the BSS) interface
-> type as well as functions necessary to configure the interface
-> when 'joining' such network.
+Paolo Bonzini <pbonzini@redhat.com> writes:
 
-I think you also want some API to leave (stop operating in) the network
-again, and call that appropriately (e.g. on ifdown) and allow userspace
-to call it.
+> Il 06/05/2014 08:19, Bandan Das ha scritto:
+>> Reference: https://bugzilla.kernel.org/show_bug.cgi?id=54521
+>>
+>> The vmxon region is unused by nvmx, but adding these checks
+>> are probably harmless and may detect buggy L1 hypervisors in
+>> the future!
+>
+> Applied to kvm/queue, unit test patches are welcome (hint, hint!).
 
-> +struct ocb_setup {
-> +	struct cfg80211_chan_def chandef;
-> +	u32 basic_rates;
-> +};
+Jan and Paolo,
 
-The channel seems obvious - but basic rates? Wouldn't OCB always just
-use a single rate, basically? Certainly not *basic* rates (which are
-required to be implemented for joining the BSS) since there is no BSS?
+Ok, I thought a little bit about this and I am wondering what 
+kind of tests we could have here. All the changes are pure 
+checks and no data is returned back to the guest. The
+vmxon code in kvm-unit-tests already does the right thing i.e
+sets the revision identifier, allocs a page for the region etc
 
-
-> +	if (!setup->chandef.chan)
-> +		WARN_ON(!setup->chandef.chan);
-
-That makes very little sense to me?
-
-
-> @@ -892,6 +893,7 @@ cfg80211_get_chan_state(struct wireless_dev *wdev,
->                                 *radar_detect |=
-> BIT(wdev->chandef.width);
->                 }
->                 return;
-> +       case NL80211_IFTYPE_OCB:
->         case NL80211_IFTYPE_MONITOR:
->         case NL80211_IFTYPE_AP_VLAN:
->         case NL80211_IFTYPE_WDS:
-
-That certainly doesn't seem correct, in particular if you consider the
-comment that's two lines down.
-
-        case NL80211_IFTYPE_P2P_DEVICE:
-                /* these interface types don't really have a channel
-*/   
-
-It seems for OCB you need some indication that it's joined (maybe the
-channel being non-NULL could do?) and then treat it here correctly has
-having an exclusive lock on the channel.
-
-johannes
-
+> Paolo
