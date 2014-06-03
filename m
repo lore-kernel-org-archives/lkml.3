@@ -1,46 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754338AbaFCNjN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 09:39:13 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:57378 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752785AbaFCNjM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 09:39:12 -0400
-Message-ID: <538DCFFD.8030306@gmail.com>
-Date: Tue, 03 Jun 2014 07:39:09 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org
-CC: Arnaldo Carvalho de Melo <acme@kernel.org>,
+	id S1754460AbaFCNmA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 09:42:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39509 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751796AbaFCNl7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 09:41:59 -0400
+Date: Tue, 3 Jun 2014 15:41:45 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: David Ahern <dsahern@gmail.com>
+Cc: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
         Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
         Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>
 Subject: Re: [PATCH 06/13] perf tools: Cache dso data file descriptor
-References: <1401743927-398-1-git-send-email-jolsa@kernel.org> <1401743927-398-7-git-send-email-jolsa@kernel.org>
-In-Reply-To: <1401743927-398-7-git-send-email-jolsa@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Message-ID: <20140603134145.GD2864@krava.brq.redhat.com>
+References: <1401743927-398-1-git-send-email-jolsa@kernel.org>
+ <1401743927-398-7-git-send-email-jolsa@kernel.org>
+ <538DCF59.6000808@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <538DCF59.6000808@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/2/14, 3:18 PM, Jiri Olsa wrote:
-> +static rlim_t get_fd_limit(void)
-> +{
-> +	struct rlimit l;
-> +	rlim_t limit = 0;
-> +
-> +	/* Allow half of the current open fd limit. */
-> +	if (getrlimit(RLIMIT_NOFILE, &l) == 0) {
-> +		if (l.rlim_cur == RLIM_INFINITY)
-> +			limit = l.rlim_cur;
+On Tue, Jun 03, 2014 at 07:36:25AM -0600, David Ahern wrote:
+> On 6/2/14, 3:18 PM, Jiri Olsa wrote:
+> >We keep dsos data file descriptors open until their count reaches
+> >the half of the current fd open limit (RLIMIT_NOFILE). In this case
+> >we close file descriptor of the first opened dso object.
+> >
+> >We've got overall speedup (24% for my workload) of report:
+> >  'perf report --stdio -i perf-test.data' (3 runs)
+> >   (perf-test.data size was around 12GB)
+> >
+> >   current code:
+> >    446,826,474,217      cycles                     ( +-  0.23% )
+> >    669,435,100,846      instructions               ( +-  0.03% )
+> >
+> >      266.380674551 seconds time elapsed            ( +-  0.37% )
+> >
+> >   change:
+> >    558,345,509,819      cycles                     ( +-  0.55% )
+> >    817,283,647,637      instructions               ( +-  0.03% )
+> >
+> >      351.564209617 seconds time elapsed            ( +-  0.89% )
+> 
+> message is confusing. Looks like time went up.
 
+aaargh.. right ;-) it should bethe other way around
 
-Why not limit this to something reasonable -- 512 or 1024 -- rather 
-"infinity" (~0UL).
-
-David
+thanks,
+jirka
