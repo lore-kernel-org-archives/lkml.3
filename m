@@ -1,38 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753371AbaFCL0F (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 07:26:05 -0400
-Received: from mail-oa0-f53.google.com ([209.85.219.53]:53428 "EHLO
-	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752627AbaFCL0C (ORCPT
+	id S1753482AbaFCL1b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 07:27:31 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:61794 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751189AbaFCL1a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 07:26:02 -0400
+	Tue, 3 Jun 2014 07:27:30 -0400
 MIME-Version: 1.0
-In-Reply-To: <1401627240-16524-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-References: <1401627240-16524-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-Date: Tue, 3 Jun 2014 13:26:02 +0200
-Message-ID: <CACRpkdYsfM4YeMVHksE6if+SyFFUkFNtJHeBOnci8jwSY-49Jg@mail.gmail.com>
-Subject: Re: [PATCH] pinctrl: pinctrl-abx500.c: Cleaning up uninitialized variables
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Cc: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+In-Reply-To: <10455941.RzodM59Z3O@wuerfel>
+References: <10455941.RzodM59Z3O@wuerfel>
+Date: Tue, 3 Jun 2014 16:57:28 +0530
+Message-ID: <CAK5sBcH8YH1+i0yBUHLqiYWAmOV3v5Dpoavxo-ZOGA8oX0OcwQ@mail.gmail.com>
+Subject: Re: [PATCH] serial: samsung: fix typo in debug code
+From: Sachin Kamat <spk.linux@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, Joe Perches <joe@perches.com>,
+        Doug Anderson <dianders@chromium.org>,
+        Kukjin Kim <kgene.kim@samsung.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 1, 2014 at 2:54 PM, Rickard Strandqvist
-<rickard_strandqvist@spectrumdigital.se> wrote:
+Hi Arnd,
 
-> There is a risk that the variable will be used without being initialized.
+On Tue, Jun 3, 2014 at 3:23 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> commit e4ac92df2791 ("serial: samsung: Neaten dbg uses") introduced
+> a regression in the conversion from vsprintf to vsnprintf.
 >
-> This was largely found by using a static code analysis program called cppcheck.
->
-> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+> This fixes the build error by passing the correct variable name.
 
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
+I submitted a similar patch sometime back.
+http://www.spinics.net/lists/linux-serial/msg12843.html
 
-Yours,
-Linus Walleij
+Regards,
+Sachin
