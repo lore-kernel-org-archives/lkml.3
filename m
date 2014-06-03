@@ -1,69 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932513AbaFCI0y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 04:26:54 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:46302 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932171AbaFCI0w (ORCPT
+	id S932503AbaFCI3P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 04:29:15 -0400
+Received: from mga03.intel.com ([143.182.124.21]:58742 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932171AbaFCI3N convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 04:26:52 -0400
-Date: Tue, 3 Jun 2014 10:26:38 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Richard Weinberger <richard@nod.at>
-Cc: linux-kernel@vger.kernel.org, Michael Kerrisk <mtk.manpages@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH] sched: Fix sched_policy < 0 comparison
-Message-ID: <20140603082638.GL11096@twins.programming.kicks-ass.net>
-References: <1401741514-7045-1-git-send-email-richard@nod.at>
+	Tue, 3 Jun 2014 04:29:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,963,1392192000"; 
+   d="scan'208";a="440193740"
+From: "Baldysiak, Pawel" <pawel.baldysiak@intel.com>
+To: NeilBrown <neilb@suse.de>
+CC: "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Paszkiewicz, Artur" <artur.paszkiewicz@intel.com>
+Subject: RE: [PATCH 1/1] md: Do only necessary operations when adding device
+ to RO array
+Thread-Topic: [PATCH 1/1] md: Do only necessary operations when adding
+ device to RO array
+Thread-Index: Ac98CRsveY1xahZjQxqPA7TvjN5fzQB+aXOAAD/dyeA=
+Date: Tue, 3 Jun 2014 08:29:10 +0000
+Message-ID: <84A53BEA6EAC69439B7E311E9B17A76F0791C04E@IRSMSX105.ger.corp.intel.com>
+References: <84A53BEA6EAC69439B7E311E9B17A76F07918BF9@IRSMSX105.ger.corp.intel.com>
+ <20140602123411.4becb274@notabene.brown>
+In-Reply-To: <20140602123411.4becb274@notabene.brown>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [163.33.239.182]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="fPlFr9CTKi+yOJ4Y"
-Content-Disposition: inline
-In-Reply-To: <1401741514-7045-1-git-send-email-richard@nod.at>
-User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---fPlFr9CTKi+yOJ4Y
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Mon, Jun 02, 2014 at 10:38:34PM +0200, Richard Weinberger wrote:
-> attr.sched_policy is u32, therefore a comparison against < 0 is never tru=
-e.
-> Fix this by casting sched_policy to int.
->=20
-> This issue was reported by coverity CID 1219934.
->=20
-> Cc: Michael Kerrisk <mtk.manpages@gmail.com>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Signed-off-by: Richard Weinberger <richard@nod.at>
-
+> On Monday, June 02, 2014 4:34 AM NeilBrown Wrote:
+> To: Baldysiak, Pawel
+> Cc: linux-raid@vger.kernel.org; linux-kernel@vger.kernel.org; Paszkiewicz,
+> Artur
+> Subject: Re: [PATCH 1/1] md: Do only necessary operations when adding
+> device to RO array
+> 
+> On Fri, 30 May 2014 13:17:14 +0000 "Baldysiak, Pawel"
+> <pawel.baldysiak@intel.com> wrote:
+> 
+> > Commit 8313b8e57f55b15e5b7f7fc5d1630bbf686a9a97 changed way of
+> adding
+> > device to read-only array. Used routine
+> > md_reap_sync_thread() which also trigger finish_reshape(), can break
+> > reshape process, if it was restarted.
+> 
+> Exactly how can it break?
+> 
+> This is probably fixed by a couple of patches in my for-next branch which I will
+> be sending to Linus shortly.
+> 
+> NeilBrown
+> 
+ 
+Hi Neil, 
+I have checked your patches from "for-next", and this issue is fixed.
+Reshape process is continued correctly after restart.
 Thanks!
 
---fPlFr9CTKi+yOJ4Y
-Content-Type: application/pgp-signature
+Pawel Baldysiak
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+> > This part of function should do only necessary operations, that is:
+> > 1) call ->spare_active
+> > 2) clear saved_raid_disk if array is no longer degraded
+> >
+> > Signed-off-by: Pawel Baldysiak <pawel.baldysiak@intel.com>
+> > Reviewed-by: Artur Paszkiewicz <artur.paszkiewicz@intel.com>
+> >
+> > ---
+> > drivers/md/md.c | 10 ++++++----
+> > 1 file changed, 6 insertions(+), 4 deletions(-)
+> >
+> > diff --git a/drivers/md/md.c b/drivers/md/md.c index 237b7e0..cf073de2
+> > 100644
+> > --- a/drivers/md/md.c
+> > +++ b/drivers/md/md.c
+> > @@ -7820,11 +7820,13 @@ void md_check_recovery(struct mddev
+> *mddev)
+> >                                                 * As we only add devices that are already in-sync,
+> >                                                 * we can activate the spares immediately.
+> >                                                 */
+> > +                                             struct md_rdev *rdev;
+> >                                                remove_and_add_spares(mddev, NULL);
+> > -                                              /* There is no thread, but we need to call
+> > -                                              * ->spare_active and clear saved_raid_disk
+> > -                                              */
+> > -                                              md_reap_sync_thread(mddev);
+> > +                                             mddev->pers->spare_active(mddev);
+> > +                                             rdev_for_each(rdev, mddev)
+> > +                                                             if (!mddev->degraded ||
+> > +                                                                 test_bit(In_sync, &rdev->flags))
+> > +
+> > + rdev->saved_raid_disk = -1;
+> >                                                clear_bit(MD_RECOVERY_NEEDED, &mddev-
+> >recovery);
+> >                                                goto unlock;
+> >                                }
+> > --
+> > 1.9.0
 
-iQIcBAEBAgAGBQJTjYa+AAoJEHZH4aRLwOS6yXQP/Am63YNsL6uEDmhIYUpwVFak
-s6C0urvIcx8J1n679u3uETTlzoxjjvHZ/SCMg9QcTnDEzMaD/hDBaFPMCWDOYJvy
-YExbdjcYyr9j6Z3XBn/V+dzAa1SuCUG112J0G9zhktE+FUWKPTXTvzzKdkD+X0JK
-UB3YB5PnDq1vMR+eFPq4N+aZ2cGCFA4WwpjBd3/S4CX5uqnxaqb89iBDdXR/mZhK
-xxdCIHyZl4heG7j4WBpWK//rqBHWfKn1Lwh7Hjeb34pRAL1sO21pIsG2kGBsJTfV
-g/MbEupp2FDRzqRSNaEF0JIzBdFsvVgTQ/yfuvWCKwFWz9Y0qm9WqaZzN7TYi3KX
-U77yFieU0H8crWPzv8V0sBiQVozmIY29qf9AD/H+NdPLmCJe9C1EZ0Pdg5rFOIJ1
-RmGteJJSXk0jraxmc2sMOjdiMIUhqxoqks0PPnm/+fxQSBHjG12B1nbao7h9xtGu
-b++6XWf5XWuG3qs+c0M7ShbeLy1tbUBecWa4Ei1gMTU4kYbHzPNf8MQfg4SOpdQL
-3xg+KtpxPzFG7Xg5W4iEFIA+ODsF94lpYoiQ0UfDljrWDd4t4tUDvAvDuorVgw+i
-blQ84LVm883OeyfxAfldq5R7XjdW4yaGoP3b6M30z/2vncEtJ6GMGDa2ss64ds/b
-PRpyjRR1NLz4ygF1swYz
-=eAtj
------END PGP SIGNATURE-----
-
---fPlFr9CTKi+yOJ4Y--
