@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964844AbaFCSeA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 14:34:00 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:44851 "EHLO
+	id S1755342AbaFCSeN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 14:34:13 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:44860 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933591AbaFCSd7 (ORCPT
+	with ESMTP id S1755099AbaFCSeJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 14:33:59 -0400
-Date: Tue, 3 Jun 2014 11:33:39 -0700
+	Tue, 3 Jun 2014 14:34:09 -0400
+Date: Tue, 3 Jun 2014 11:33:51 -0700
 From: tip-bot for Namhyung Kim <tipbot@zytor.com>
-Message-ID: <tip-b09955b2a3d5fd02ed31d279f8c0ac29b32abe83@git.kernel.org>
+Message-ID: <tip-14135663f1d770bb057f8bf345e5436c985eb29c@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         jolsa@kernel.org, rodrigo@sdfg.com.ar, namhyung@kernel.org,
         fweisbec@gmail.com, tglx@linutronix.de, asharma@fb.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         jolsa@kernel.org, rodrigo@sdfg.com.ar, namhyung@kernel.org,
         fweisbec@gmail.com, tglx@linutronix.de, asharma@fb.com
-In-Reply-To: <1401335910-16832-13-git-send-email-namhyung@kernel.org>
-References: <1401335910-16832-13-git-send-email-namhyung@kernel.org>
+In-Reply-To: <1401335910-16832-14-git-send-email-namhyung@kernel.org>
+References: <1401335910-16832-14-git-send-email-namhyung@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf ui/gtk: Add support to accumulated hist stat
-Git-Commit-ID: b09955b2a3d5fd02ed31d279f8c0ac29b32abe83
+Subject: [tip:perf/core] perf tools:
+  Apply percent-limit to cumulative percentage
+Git-Commit-ID: 14135663f1d770bb057f8bf345e5436c985eb29c
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -33,64 +34,243 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b09955b2a3d5fd02ed31d279f8c0ac29b32abe83
-Gitweb:     http://git.kernel.org/tip/b09955b2a3d5fd02ed31d279f8c0ac29b32abe83
+Commit-ID:  14135663f1d770bb057f8bf345e5436c985eb29c
+Gitweb:     http://git.kernel.org/tip/14135663f1d770bb057f8bf345e5436c985eb29c
 Author:     Namhyung Kim <namhyung@kernel.org>
-AuthorDate: Wed, 30 Oct 2013 16:15:23 +0900
+AuthorDate: Thu, 31 Oct 2013 10:17:39 +0900
 Committer:  Jiri Olsa <jolsa@kernel.org>
 CommitDate: Sun, 1 Jun 2014 14:35:02 +0200
 
-perf ui/gtk: Add support to accumulated hist stat
+perf tools: Apply percent-limit to cumulative percentage
 
-Print accumulated stat of a hist entry if requested.
+If -g cumulative option is given, it needs to show entries which don't
+have self overhead.  So apply percent-limit to accumulated overhead
+percentage in this case.
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 Tested-by: Arun Sharma <asharma@fb.com>
 Tested-by: Rodrigo Campos <rodrigo@sdfg.com.ar>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Link: http://lkml.kernel.org/r/1401335910-16832-13-git-send-email-namhyung@kernel.org
+Link: http://lkml.kernel.org/r/1401335910-16832-14-git-send-email-namhyung@kernel.org
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/ui/gtk/hists.c | 17 +++++++++++++++++
- 1 file changed, 17 insertions(+)
+ tools/perf/ui/browsers/hists.c | 40 +++++++++++-----------------------------
+ tools/perf/ui/gtk/hists.c      |  6 ++----
+ tools/perf/ui/stdio/hist.c     |  4 ++--
+ tools/perf/util/sort.h         | 17 ++++++++++++++++-
+ 4 files changed, 31 insertions(+), 36 deletions(-)
 
+diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
+index 2dcbe3d..5905acd 100644
+--- a/tools/perf/ui/browsers/hists.c
++++ b/tools/perf/ui/browsers/hists.c
+@@ -37,7 +37,6 @@ static int hists__browser_title(struct hists *hists, char *bf, size_t size,
+ static void hist_browser__update_nr_entries(struct hist_browser *hb);
+ 
+ static struct rb_node *hists__filter_entries(struct rb_node *nd,
+-					     struct hists *hists,
+ 					     float min_pcnt);
+ 
+ static bool hist_browser__has_filter(struct hist_browser *hb)
+@@ -319,7 +318,7 @@ __hist_browser__set_folding(struct hist_browser *browser, bool unfold)
+ 	struct hists *hists = browser->hists;
+ 
+ 	for (nd = rb_first(&hists->entries);
+-	     (nd = hists__filter_entries(nd, hists, browser->min_pcnt)) != NULL;
++	     (nd = hists__filter_entries(nd, browser->min_pcnt)) != NULL;
+ 	     nd = rb_next(nd)) {
+ 		struct hist_entry *he = rb_entry(nd, struct hist_entry, rb_node);
+ 		hist_entry__set_folding(he, unfold);
+@@ -808,15 +807,12 @@ static unsigned int hist_browser__refresh(struct ui_browser *browser)
+ 
+ 	for (nd = browser->top; nd; nd = rb_next(nd)) {
+ 		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
+-		u64 total = hists__total_period(h->hists);
+-		float percent = 0.0;
++		float percent;
+ 
+ 		if (h->filtered)
+ 			continue;
+ 
+-		if (total)
+-			percent = h->stat.period * 100.0 / total;
+-
++		percent = hist_entry__get_percent_limit(h);
+ 		if (percent < hb->min_pcnt)
+ 			continue;
+ 
+@@ -829,16 +825,11 @@ static unsigned int hist_browser__refresh(struct ui_browser *browser)
+ }
+ 
+ static struct rb_node *hists__filter_entries(struct rb_node *nd,
+-					     struct hists *hists,
+ 					     float min_pcnt)
+ {
+ 	while (nd != NULL) {
+ 		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
+-		u64 total = hists__total_period(hists);
+-		float percent = 0.0;
+-
+-		if (total)
+-			percent = h->stat.period * 100.0 / total;
++		float percent = hist_entry__get_percent_limit(h);
+ 
+ 		if (!h->filtered && percent >= min_pcnt)
+ 			return nd;
+@@ -850,16 +841,11 @@ static struct rb_node *hists__filter_entries(struct rb_node *nd,
+ }
+ 
+ static struct rb_node *hists__filter_prev_entries(struct rb_node *nd,
+-						  struct hists *hists,
+ 						  float min_pcnt)
+ {
+ 	while (nd != NULL) {
+ 		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
+-		u64 total = hists__total_period(hists);
+-		float percent = 0.0;
+-
+-		if (total)
+-			percent = h->stat.period * 100.0 / total;
++		float percent = hist_entry__get_percent_limit(h);
+ 
+ 		if (!h->filtered && percent >= min_pcnt)
+ 			return nd;
+@@ -888,14 +874,14 @@ static void ui_browser__hists_seek(struct ui_browser *browser,
+ 	switch (whence) {
+ 	case SEEK_SET:
+ 		nd = hists__filter_entries(rb_first(browser->entries),
+-					   hb->hists, hb->min_pcnt);
++					   hb->min_pcnt);
+ 		break;
+ 	case SEEK_CUR:
+ 		nd = browser->top;
+ 		goto do_offset;
+ 	case SEEK_END:
+ 		nd = hists__filter_prev_entries(rb_last(browser->entries),
+-						hb->hists, hb->min_pcnt);
++						hb->min_pcnt);
+ 		first = false;
+ 		break;
+ 	default:
+@@ -938,8 +924,7 @@ do_offset:
+ 					break;
+ 				}
+ 			}
+-			nd = hists__filter_entries(rb_next(nd), hb->hists,
+-						   hb->min_pcnt);
++			nd = hists__filter_entries(rb_next(nd), hb->min_pcnt);
+ 			if (nd == NULL)
+ 				break;
+ 			--offset;
+@@ -972,7 +957,7 @@ do_offset:
+ 				}
+ 			}
+ 
+-			nd = hists__filter_prev_entries(rb_prev(nd), hb->hists,
++			nd = hists__filter_prev_entries(rb_prev(nd),
+ 							hb->min_pcnt);
+ 			if (nd == NULL)
+ 				break;
+@@ -1151,7 +1136,6 @@ static int hist_browser__fprintf_entry(struct hist_browser *browser,
+ static int hist_browser__fprintf(struct hist_browser *browser, FILE *fp)
+ {
+ 	struct rb_node *nd = hists__filter_entries(rb_first(browser->b.entries),
+-						   browser->hists,
+ 						   browser->min_pcnt);
+ 	int printed = 0;
+ 
+@@ -1159,8 +1143,7 @@ static int hist_browser__fprintf(struct hist_browser *browser, FILE *fp)
+ 		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
+ 
+ 		printed += hist_browser__fprintf_entry(browser, h, fp);
+-		nd = hists__filter_entries(rb_next(nd), browser->hists,
+-					   browser->min_pcnt);
++		nd = hists__filter_entries(rb_next(nd), browser->min_pcnt);
+ 	}
+ 
+ 	return printed;
+@@ -1397,8 +1380,7 @@ static void hist_browser__update_nr_entries(struct hist_browser *hb)
+ 		return;
+ 	}
+ 
+-	while ((nd = hists__filter_entries(nd, hb->hists,
+-					   hb->min_pcnt)) != NULL) {
++	while ((nd = hists__filter_entries(nd, hb->min_pcnt)) != NULL) {
+ 		nr_entries++;
+ 		nd = rb_next(nd);
+ 	}
 diff --git a/tools/perf/ui/gtk/hists.c b/tools/perf/ui/gtk/hists.c
-index 9d90683..7e5da4a 100644
+index 7e5da4a..03d6812 100644
 --- a/tools/perf/ui/gtk/hists.c
 +++ b/tools/perf/ui/gtk/hists.c
-@@ -47,11 +47,26 @@ static int perf_gtk__hpp_color_##_type(struct perf_hpp_fmt *fmt __maybe_unused,
- 			  __percent_color_snprintf, true);			\
+@@ -226,14 +226,12 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists,
+ 		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
+ 		GtkTreeIter iter;
+ 		u64 total = hists__total_period(h->hists);
+-		float percent = 0.0;
++		float percent;
+ 
+ 		if (h->filtered)
+ 			continue;
+ 
+-		if (total)
+-			percent = h->stat.period * 100.0 / total;
+-
++		percent = hist_entry__get_percent_limit(h);
+ 		if (percent < min_pcnt)
+ 			continue;
+ 
+diff --git a/tools/perf/ui/stdio/hist.c b/tools/perf/ui/stdio/hist.c
+index 9f57991..475d2f5 100644
+--- a/tools/perf/ui/stdio/hist.c
++++ b/tools/perf/ui/stdio/hist.c
+@@ -461,12 +461,12 @@ print_entries:
+ 
+ 	for (nd = rb_first(&hists->entries); nd; nd = rb_next(nd)) {
+ 		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
+-		float percent = h->stat.period * 100.0 /
+-					hists->stats.total_period;
++		float percent;
+ 
+ 		if (h->filtered)
+ 			continue;
+ 
++		percent = hist_entry__get_percent_limit(h);
+ 		if (percent < min_pcnt)
+ 			continue;
+ 
+diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
+index c9ffa03..426b873 100644
+--- a/tools/perf/util/sort.h
++++ b/tools/perf/util/sort.h
+@@ -20,7 +20,7 @@
+ 
+ #include "parse-options.h"
+ #include "parse-events.h"
+-
++#include "hist.h"
+ #include "thread.h"
+ 
+ extern regex_t parent_regex;
+@@ -131,6 +131,21 @@ static inline void hist_entry__add_pair(struct hist_entry *pair,
+ 	list_add_tail(&pair->pairs.node, &he->pairs.head);
  }
  
-+#define __HPP_COLOR_ACC_PERCENT_FN(_type, _field)				\
-+static u64 he_get_acc_##_field(struct hist_entry *he)				\
-+{										\
-+	return he->stat_acc->_field;						\
-+}										\
-+										\
-+static int perf_gtk__hpp_color_##_type(struct perf_hpp_fmt *fmt __maybe_unused,	\
-+				       struct perf_hpp *hpp,			\
-+				       struct hist_entry *he)			\
-+{										\
-+	return __hpp__fmt_acc(hpp, he, he_get_acc_##_field, " %6.2f%%",		\
-+			      __percent_color_snprintf, true);			\
++static inline float hist_entry__get_percent_limit(struct hist_entry *he)
++{
++	u64 period = he->stat.period;
++	u64 total_period = hists__total_period(he->hists);
++
++	if (unlikely(total_period == 0))
++		return 0;
++
++	if (symbol_conf.cumulate_callchain)
++		period = he->stat_acc->period;
++
++	return period * 100.0 / total_period;
 +}
 +
- __HPP_COLOR_PERCENT_FN(overhead, period)
- __HPP_COLOR_PERCENT_FN(overhead_sys, period_sys)
- __HPP_COLOR_PERCENT_FN(overhead_us, period_us)
- __HPP_COLOR_PERCENT_FN(overhead_guest_sys, period_guest_sys)
- __HPP_COLOR_PERCENT_FN(overhead_guest_us, period_guest_us)
-+__HPP_COLOR_ACC_PERCENT_FN(overhead_acc, period)
- 
- #undef __HPP_COLOR_PERCENT_FN
- 
-@@ -68,6 +83,8 @@ void perf_gtk__init_hpp(void)
- 				perf_gtk__hpp_color_overhead_guest_sys;
- 	perf_hpp__format[PERF_HPP__OVERHEAD_GUEST_US].color =
- 				perf_gtk__hpp_color_overhead_guest_us;
-+	perf_hpp__format[PERF_HPP__OVERHEAD_ACC].color =
-+				perf_gtk__hpp_color_overhead_acc;
- }
- 
- static void callchain_list__sym_name(struct callchain_list *cl,
++
+ enum sort_mode {
+ 	SORT_MODE__NORMAL,
+ 	SORT_MODE__BRANCH,
