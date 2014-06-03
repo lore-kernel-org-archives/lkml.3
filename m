@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932658AbaFCMTG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 08:19:06 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43303 "EHLO
+	id S932710AbaFCMTj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 08:19:39 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43297 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754271AbaFCLk3 (ORCPT
+	with ESMTP id S1754258AbaFCLk1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 07:40:29 -0400
+	Tue, 3 Jun 2014 07:40:27 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: AceLan Kao <acelan.kao@canonical.com>, Jiri Kosina <jkosina@suse.cz>,
+Cc: Tomoki Sekiyama <tomoki.sekiyama@hds.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 025/138] HID: usbhid: quirk for Synaptics HD touchscreen
-Date: Tue,  3 Jun 2014 12:37:51 +0100
-Message-Id: <1401795584-22664-26-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 022/138] drivers/tty/hvc: don't free hvc_console_setup after init
+Date: Tue,  3 Jun 2014 12:37:48 +0100
+Message-Id: <1401795584-22664-23-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
 References: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
@@ -27,44 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: AceLan Kao <acelan.kao@canonical.com>
+From: Tomoki Sekiyama <tomoki.sekiyama@hds.com>
 
-commit d8e2e7581d2521910398c4c80d7a3b78e84da7d5 upstream.
+commit 501fed45b7e8836ee9373f4d31e2d85e3db6103a upstream.
 
-Add Synaptics HD touchscreen(06cb:0ac3) to no init report quirk.
+When 'console=hvc0' is specified to the kernel parameter in x86 KVM guest,
+hvc console is setup within a kthread. However, that will cause SEGV
+and the boot will fail when the driver is builtin to the kernel,
+because currently hvc_console_setup() is annotated with '__init'. This
+patch removes '__init' to boot the guest successfully with 'console=hvc0'.
 
-Signed-off-by: AceLan Kao <acelan.kao@canonical.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Tomoki Sekiyama <tomoki.sekiyama@hds.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/hid/hid-ids.h           | 1 +
- drivers/hid/usbhid/hid-quirks.c | 1 +
- 2 files changed, 2 insertions(+)
+ drivers/tty/hvc/hvc_console.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-index 7c8591895c66..4a71fd269c5b 100644
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -807,6 +807,7 @@
- #define USB_DEVICE_ID_SYNAPTICS_DPAD	0x0013
- #define USB_DEVICE_ID_SYNAPTICS_LTS1	0x0af8
- #define USB_DEVICE_ID_SYNAPTICS_LTS2	0x1d10
-+#define USB_DEVICE_ID_SYNAPTICS_HD	0x0ac3
+diff --git a/drivers/tty/hvc/hvc_console.c b/drivers/tty/hvc/hvc_console.c
+index a2a2645b296c..f179033eaa3e 100644
+--- a/drivers/tty/hvc/hvc_console.c
++++ b/drivers/tty/hvc/hvc_console.c
+@@ -190,7 +190,7 @@ static struct tty_driver *hvc_console_device(struct console *c, int *index)
+ 	return hvc_driver;
+ }
  
- #define USB_VENDOR_ID_THINGM		0x27b8
- #define USB_DEVICE_ID_BLINK1		0x01ed
-diff --git a/drivers/hid/usbhid/hid-quirks.c b/drivers/hid/usbhid/hid-quirks.c
-index 0db9a67278ba..c0c0fcf69688 100644
---- a/drivers/hid/usbhid/hid-quirks.c
-+++ b/drivers/hid/usbhid/hid-quirks.c
-@@ -115,6 +115,7 @@ static const struct hid_blacklist {
- 	{ USB_VENDOR_ID_SYNAPTICS, USB_DEVICE_ID_SYNAPTICS_LTS1, HID_QUIRK_NO_INIT_REPORTS },
- 	{ USB_VENDOR_ID_SYNAPTICS, USB_DEVICE_ID_SYNAPTICS_LTS2, HID_QUIRK_NO_INIT_REPORTS },
- 	{ USB_VENDOR_ID_SIS, USB_DEVICE_ID_SIS_TS, HID_QUIRK_NO_INIT_REPORTS },
-+	{ USB_VENDOR_ID_SYNAPTICS, USB_DEVICE_ID_SYNAPTICS_HD, HID_QUIRK_NO_INIT_REPORTS },
- 
- 	{ 0, 0 }
- };
+-static int __init hvc_console_setup(struct console *co, char *options)
++static int hvc_console_setup(struct console *co, char *options)
+ {	
+ 	if (co->index < 0 || co->index >= MAX_NR_HVC_CONSOLES)
+ 		return -ENODEV;
 -- 
 1.9.1
 
