@@ -1,78 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752726AbaFCKRh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 06:17:37 -0400
-Received: from mail-qg0-f46.google.com ([209.85.192.46]:48939 "EHLO
-	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751443AbaFCKRg (ORCPT
+	id S1753273AbaFCKTE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 06:19:04 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:60753 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751379AbaFCKTC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 06:17:36 -0400
-Message-ID: <538DA0BD.5080208@mutualink.net>
-Date: Tue, 03 Jun 2014 06:17:33 -0400
-From: Mike Remski <mremski@mutualink.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Johan Hovold <jhovold@gmail.com>
-CC: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Re: ftdi_sio BUG: NULL pointer dereference
-References: <538C8963.4010909@mutualink.net> <20140602143347.GA1902@localhost> <538C953B.9020304@mutualink.net> <20140602154036.GA8662@localhost> <538CA020.4070204@mutualink.net> <20140602162027.GB13790@localhost> <538CA54C.4040803@mutualink.net> <20140602164957.GC13790@localhost> <538CB049.9020805@mutualink.net> <20140602174630.GD13790@localhost>
-In-Reply-To: <20140602174630.GD13790@localhost>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 3 Jun 2014 06:19:02 -0400
+From: "Javi Merino" <javi.merino@arm.com>
+To: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: punit.agrawal@arm.com, Javi Merino <javi.merino@arm.com>
+Subject: [RFC PATCH v3 0/7] The power allocator thermal governor
+Date: Tue,  3 Jun 2014 11:18:28 +0100
+Message-Id: <1401790715-5630-1-git-send-email-javi.merino@arm.com>
+X-Mailer: git-send-email 1.9.1
+X-OriginalArrivalTime: 03 Jun 2014 10:18:55.0867 (UTC) FILETIME=[39DA1CB0:01CF7F15]
+X-MC-Unique: 114060311185914101
+Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id s53AJ95t004057
 
-On 06/02/2014 01:46 PM, Johan Hovold wrote:
-> On Mon, Jun 02, 2014 at 01:11:37PM -0400, Mike Remski wrote:
->> On 06/02/2014 12:49 PM, Johan Hovold wrote:
->>> On Mon, Jun 02, 2014 at 12:24:44PM -0400, Mike Remski wrote:
->>>> On 06/02/2014 12:20 PM, Johan Hovold wrote:
->>>>> On Mon, Jun 02, 2014 at 12:02:40PM -0400, Mike Remski wrote:
->>>>>> On 06/02/2014 11:40 AM, Johan Hovold wrote:
->>>>>>> [ Please avoid top-posting. ]
->>>>>>>
->>>>>>> On Mon, Jun 02, 2014 at 11:16:11AM -0400, Mike Remski wrote:
->>>>> The third interface lacks endpoints and crashes the ftdi_sio driver.
->>>>> This shouldn't happen (even if you're forcing the wrong driver to bind),
->>>>> so I'll fix it up if still broken in v3.15-rc.
->>>>>
->>>> Johan,
->>>> Thanks again.  Yes, the device does indeed have an FTDI embedded in it;
->>>> they've programmed in their own ids.  They supply a Windows driver for
->>>> it, but that doesn't do me any good.  :)
->>> Not just their own ID's it seems.
->>>
->>> Have you tried just using the cdc-acm driver? The ports should up as
->>> /dev/ttyACMx instead of ttyUSBx.
->>>
->> Not yet, next on the list.
-> You really should try this before anything else. :)
->
->> I'm suspecting that bNumEndpoints == 0 is causing endpoint[1].desc to
->> stay at NULL (line 1567 in 3.1.4.5 source), so by the time it gets used
->> later on, I'm hitting the NULL dereference.
-> Yeah, the code is obviously broken (also in v3.15-rc). It should
-> probably work to just return from ftdi_set_max_packet_size if
-> num_endpoints is 0 if you want to try that (or you can use your ?:
-> construct), but I should be able to fix this up properly on Wednesday.
->
-> Thanks,
-> Johan
-Johan,
-I had a chance to play around with code over in ftdi_sio.c;   adding this:
+Hi linux-pm,
 
-         if (!num_endpoints) {
-                 return;
-         }
-  after the "Number of endpoints" message gets rid of the crash, 
-everything looks to be working correctly.
+The power allocator governor allocates device power to control
+temperature.  This requires transforming performance requests into
+requested power, which we do with the aid of power models.  Patch 5
+(thermal: add a basic cpu power actor) implements a simple power model
+for cpus.  The division of power between the actors ensures that power
+is allocated where it is needed the most, based on the current
+workload.
 
-Thanks again
+Patches 1 and 2 are not proper parts of these series and can be merged
+separately.  Patch 1 (tracing: Add __bitmask() macro to trace events
+to cpumasks and other bitmasks) is already in for-next[1].  Patch 2
+(thermal: document struct thermal_zone_device and thermal_governor)
+has already been submitted to linux-pm[2] and is generic.
 
-m
+[1] https://git.kernel.org/cgit/linux/kernel/git/rostedt/linux-trace.git/commit/?h=for-next&id=4449bf927b61b
+db4389393c6fea6837214d1ace7
+[2] http://article.gmane.org/gmane.linux.power-management.general/46041
+
+Changes since v2:
+  - Changed the PI controller into a PID controller
+  - Added static power to the cpu power model
+  - tz parameter max_dissipatable_power renamed to sustainable_power
+  - Register the cpufreq cooling device as part of the
+    power_cpu_actor registration.
+
+Changes since v1:
+  - Fixed finding cpufreq cooling devices in cpufreq_frequency_change()
+  - Replaced the cooling device interface with a separate power actor
+    API
+  - Addressed most of Eduardo's comments
+  - Incorporated ftrace support for bitmask to trace cpumasks
+
+Todo:
+  - Fix kerneldoc strings
+  - Use tz->passive
+  - Use cpufreq_get() to get the frequency of the cpu instead of
+    using the notifiers.
+  - Rethink the use of trip points and make it less intrusive
+  - Let platforms override the power allocator governor parameters
+  - Add more tracing and provide scripts to evaluate the proposal.
+  - Tune it to achieve the temperature stability we are aiming for
+
+Cheers,
+Javi & Punit
+
+Javi Merino (6):
+  thermal: document struct thermal_zone_device and thermal_governor
+  thermal: let governors have private data for each thermal zone
+  thermal: introduce the Power Actor API
+  thermal: add a basic cpu power actor
+  thermal: introduce the Power Allocator governor
+  thermal: add trace events to the power allocator governor
+
+Steven Rostedt (Red Hat) (1):
+  tracing: Add __bitmask() macro to trace events to cpumasks and other
+    bitmasks
+
+ Documentation/thermal/power_actor.txt     | 164 ++++++++
+ Documentation/thermal/power_allocator.txt |  42 +++
+ drivers/thermal/Kconfig                   |  23 ++
+ drivers/thermal/Makefile                  |   3 +
+ drivers/thermal/power_actor/Kconfig       |   9 +
+ drivers/thermal/power_actor/Makefile      |   7 +
+ drivers/thermal/power_actor/cpu_actor.c   | 606 ++++++++++++++++++++++++++++++
+ drivers/thermal/power_actor/power_actor.c |  64 ++++
+ drivers/thermal/power_actor/power_actor.h | 105 ++++++
+ drivers/thermal/power_allocator.c         | 465 +++++++++++++++++++++++
+ drivers/thermal/thermal_core.c            |  90 ++++-
+ drivers/thermal/thermal_core.h            |   8 +
+ include/linux/ftrace_event.h              |   3 +
+ include/linux/thermal.h                   |  62 ++-
+ include/linux/trace_seq.h                 |  10 +
+ include/trace/events/thermal.h            |  38 ++
+ include/trace/events/thermal_governor.h   |  37 ++
+ include/trace/ftrace.h                    |  57 ++-
+ kernel/trace/trace_output.c               |  41 ++
+ 19 files changed, 1822 insertions(+), 12 deletions(-)
+ create mode 100644 Documentation/thermal/power_actor.txt
+ create mode 100644 Documentation/thermal/power_allocator.txt
+ create mode 100644 drivers/thermal/power_actor/Kconfig
+ create mode 100644 drivers/thermal/power_actor/Makefile
+ create mode 100644 drivers/thermal/power_actor/cpu_actor.c
+ create mode 100644 drivers/thermal/power_actor/power_actor.c
+ create mode 100644 drivers/thermal/power_actor/power_actor.h
+ create mode 100644 drivers/thermal/power_allocator.c
+ create mode 100644 include/trace/events/thermal.h
+ create mode 100644 include/trace/events/thermal_governor.h
 
 -- 
-Office: (978)401-4032 (x123 internally)
-Cell: (603) 759-6953
+1.9.1
+
 
