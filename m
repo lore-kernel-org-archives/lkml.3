@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754448AbaFCLmH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 07:42:07 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43643 "EHLO
+	id S1753605AbaFCL6B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 07:58:01 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43671 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932833AbaFCLmA (ORCPT
+	with ESMTP id S1754426AbaFCLmG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 07:42:00 -0400
+	Tue, 3 Jun 2014 07:42:06 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: James Hogan <james.hogan@imgtec.com>, Helge Deller <deller@gmx.de>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        linux-parisc@vger.kernel.org, linux-metag@vger.kernel.org,
-        John David Anglin <dave.anglin@bell.net>,
+Cc: Mark Salter <msalter@redhat.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 080/138] metag: Reduce maximum stack size to 256MB
-Date: Tue,  3 Jun 2014 12:38:46 +0100
-Message-Id: <1401795584-22664-81-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 089/138] arm64: fix pud_huge() for 2-level pagetables
+Date: Tue,  3 Jun 2014 12:38:55 +0100
+Message-Id: <1401795584-22664-90-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
 References: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
@@ -30,80 +28,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: James Hogan <james.hogan@imgtec.com>
+From: Mark Salter <msalter@redhat.com>
 
-commit d71f290b4e98a39f49f2595a13be3b4d5ce8e1f1 upstream.
+commit 4797ec2dc83a43be35bad56037d1b53db9e2b5d5 upstream.
 
-Specify the maximum stack size for arches where the stack grows upward
-(parisc and metag) in asm/processor.h rather than hard coding in
-fs/exec.c so that metag can specify a smaller value of 256MB rather than
-1GB.
+The following happens when trying to run a kvm guest on a kernel
+configured for 64k pages. This doesn't happen with 4k pages:
 
-This fixes a BUG on metag if the RLIMIT_STACK hard limit is increased
-beyond a safe value by root. E.g. when starting a process after running
-"ulimit -H -s unlimited" it will then attempt to use a stack size of the
-maximum 1GB which is far too big for metag's limited user virtual
-address space (stack_top is usually 0x3ffff000):
+  BUG: failure at include/linux/mm.h:297/put_page_testzero()!
+  Kernel panic - not syncing: BUG!
+  CPU: 2 PID: 4228 Comm: qemu-system-aar Tainted: GF            3.13.0-0.rc7.31.sa2.k32v1.aarch64.debug #1
+  Call trace:
+  [<fffffe0000096034>] dump_backtrace+0x0/0x16c
+  [<fffffe00000961b4>] show_stack+0x14/0x1c
+  [<fffffe000066e648>] dump_stack+0x84/0xb0
+  [<fffffe0000668678>] panic+0xf4/0x220
+  [<fffffe000018ec78>] free_reserved_area+0x0/0x110
+  [<fffffe000018edd8>] free_pages+0x50/0x88
+  [<fffffe00000a759c>] kvm_free_stage2_pgd+0x30/0x40
+  [<fffffe00000a5354>] kvm_arch_destroy_vm+0x18/0x44
+  [<fffffe00000a1854>] kvm_put_kvm+0xf0/0x184
+  [<fffffe00000a1938>] kvm_vm_release+0x10/0x1c
+  [<fffffe00001edc1c>] __fput+0xb0/0x288
+  [<fffffe00001ede4c>] ____fput+0xc/0x14
+  [<fffffe00000d5a2c>] task_work_run+0xa8/0x11c
+  [<fffffe0000095c14>] do_notify_resume+0x54/0x58
 
-BUG: failure at fs/exec.c:589/shift_arg_pages()!
+In arch/arm/kvm/mmu.c:unmap_range(), we end up doing an extra put_page()
+on the stage2 pgd which leads to the BUG in put_page_testzero(). This
+happens because a pud_huge() test in unmap_range() returns true when it
+should always be false with 2-level pages tables used by 64k pages.
+This patch removes support for huge puds if 2-level pagetables are
+being used.
 
-Signed-off-by: James Hogan <james.hogan@imgtec.com>
-Cc: Helge Deller <deller@gmx.de>
-Cc: "James E.J. Bottomley" <jejb@parisc-linux.org>
-Cc: linux-parisc@vger.kernel.org
-Cc: linux-metag@vger.kernel.org
-Cc: John David Anglin <dave.anglin@bell.net>
+Signed-off-by: Mark Salter <msalter@redhat.com>
+[catalin.marinas@arm.com: removed #ifndef around PUD_SIZE check]
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/metag/include/asm/processor.h  | 2 ++
- arch/parisc/include/asm/processor.h | 2 ++
- fs/exec.c                           | 6 +++---
- 3 files changed, 7 insertions(+), 3 deletions(-)
+ arch/arm64/mm/hugetlbpage.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/arch/metag/include/asm/processor.h b/arch/metag/include/asm/processor.h
-index f16477d1f571..3be8581af495 100644
---- a/arch/metag/include/asm/processor.h
-+++ b/arch/metag/include/asm/processor.h
-@@ -22,6 +22,8 @@
- /* Add an extra page of padding at the top of the stack for the guard page. */
- #define STACK_TOP	(TASK_SIZE - PAGE_SIZE)
- #define STACK_TOP_MAX	STACK_TOP
-+/* Maximum virtual space for stack */
-+#define STACK_SIZE_MAX	(1 << 28)	/* 256 MB */
+diff --git a/arch/arm64/mm/hugetlbpage.c b/arch/arm64/mm/hugetlbpage.c
+index 2fc8258bab2d..023747bf4dd7 100644
+--- a/arch/arm64/mm/hugetlbpage.c
++++ b/arch/arm64/mm/hugetlbpage.c
+@@ -51,7 +51,11 @@ int pmd_huge(pmd_t pmd)
  
- /* This decides where the kernel will search for a free chunk of vm
-  * space during mmap's.
-diff --git a/arch/parisc/include/asm/processor.h b/arch/parisc/include/asm/processor.h
-index cc2290a3cace..c6ee86542fec 100644
---- a/arch/parisc/include/asm/processor.h
-+++ b/arch/parisc/include/asm/processor.h
-@@ -53,6 +53,8 @@
- #define STACK_TOP	TASK_SIZE
- #define STACK_TOP_MAX	DEFAULT_TASK_SIZE
+ int pud_huge(pud_t pud)
+ {
++#ifndef __PAGETABLE_PMD_FOLDED
+ 	return !(pud_val(pud) & PUD_TABLE_BIT);
++#else
++	return 0;
++#endif
+ }
  
-+#define STACK_SIZE_MAX	(1 << 30)	/* 1 GB */
-+
- #endif
- 
- #ifndef __ASSEMBLY__
-diff --git a/fs/exec.c b/fs/exec.c
-index e72f6bbbde2e..87e9edb36fe0 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -655,10 +655,10 @@ int setup_arg_pages(struct linux_binprm *bprm,
- 	unsigned long rlim_stack;
- 
- #ifdef CONFIG_STACK_GROWSUP
--	/* Limit stack size to 1GB */
-+	/* Limit stack size */
- 	stack_base = rlimit_max(RLIMIT_STACK);
--	if (stack_base > (1 << 30))
--		stack_base = 1 << 30;
-+	if (stack_base > STACK_SIZE_MAX)
-+		stack_base = STACK_SIZE_MAX;
- 
- 	/* Make sure we didn't let the argument array grow too large. */
- 	if (vma->vm_end - vma->vm_start > stack_base)
+ static __init int setup_hugepagesz(char *opt)
 -- 
 1.9.1
 
