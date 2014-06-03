@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932985AbaFCLxH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 07:53:07 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43781 "EHLO
+	id S932939AbaFCLxG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 07:53:06 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43782 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754609AbaFCLmd (ORCPT
+	with ESMTP id S1754610AbaFCLmd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 3 Jun 2014 07:42:33 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Daniel Borkmann <dborkman@redhat.com>, Thomas Graf <tgraf@suug.ch>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        Vlad Yasevich <vyasevic@redhat.com>,
+Cc: Ding Tianhong <dingtianhong@huawei.com>,
         "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 095/138] net: sctp: wake up all assocs if sndbuf policy is per socket
-Date: Tue,  3 Jun 2014 12:39:01 +0100
-Message-Id: <1401795584-22664-96-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 107/138] vlan: Fix lockdep warning when vlan dev handle notification
+Date: Tue,  3 Jun 2014 12:39:13 +0100
+Message-Id: <1401795584-22664-108-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
 References: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
@@ -30,119 +28,190 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: dingtianhong <dingtianhong@huawei.com>
 
-commit 52c35befb69b005c3fc5afdaae3a5717ad013411 upstream.
+commit dc8eaaa006350d24030502a4521542e74b5cb39f upstream.
 
-SCTP charges chunks for wmem accounting via skb->truesize in
-sctp_set_owner_w(), and sctp_wfree() respectively as the
-reverse operation. If a sender runs out of wmem, it needs to
-wait via sctp_wait_for_sndbuf(), and gets woken up by a call
-to __sctp_write_space() mostly via sctp_wfree().
+When I open the LOCKDEP config and run these steps:
 
-__sctp_write_space() is being called per association. Although
-we assign sk->sk_write_space() to sctp_write_space(), which
-is then being done per socket, it is only used if send space
-is increased per socket option (SO_SNDBUF), as SOCK_USE_WRITE_QUEUE
-is set and therefore not invoked in sock_wfree().
+modprobe 8021q
+vconfig add eth2 20
+vconfig add eth2.20 30
+ifconfig eth2 xx.xx.xx.xx
 
-Commit 4c3a5bdae293 ("sctp: Don't charge for data in sndbuf
-again when transmitting packet") fixed an issue where in case
-sctp_packet_transmit() manages to queue up more than sndbuf
-bytes, sctp_wait_for_sndbuf() will never be woken up again
-unless it is interrupted by a signal. However, a still
-remaining issue is that if net.sctp.sndbuf_policy=0, that is
-accounting per socket, and one-to-many sockets are in use,
-the reclaimed write space from sctp_wfree() is 'unfairly'
-handed back on the server to the association that is the lucky
-one to be woken up again via __sctp_write_space(), while
-the remaining associations are never be woken up again
-(unless by a signal).
+then the Call Trace happened:
 
-The effect disappears with net.sctp.sndbuf_policy=1, that
-is wmem accounting per association, as it guarantees a fair
-share of wmem among associations.
+[32524.386288] =============================================
+[32524.386293] [ INFO: possible recursive locking detected ]
+[32524.386298] 3.14.0-rc2-0.7-default+ #35 Tainted: G           O
+[32524.386302] ---------------------------------------------
+[32524.386306] ifconfig/3103 is trying to acquire lock:
+[32524.386310]  (&vlan_netdev_addr_lock_key/1){+.....}, at: [<ffffffff814275f4>] dev_mc_sync+0x64/0xb0
+[32524.386326]
+[32524.386326] but task is already holding lock:
+[32524.386330]  (&vlan_netdev_addr_lock_key/1){+.....}, at: [<ffffffff8141af83>] dev_set_rx_mode+0x23/0x40
+[32524.386341]
+[32524.386341] other info that might help us debug this:
+[32524.386345]  Possible unsafe locking scenario:
+[32524.386345]
+[32524.386350]        CPU0
+[32524.386352]        ----
+[32524.386354]   lock(&vlan_netdev_addr_lock_key/1);
+[32524.386359]   lock(&vlan_netdev_addr_lock_key/1);
+[32524.386364]
+[32524.386364]  *** DEADLOCK ***
+[32524.386364]
+[32524.386368]  May be due to missing lock nesting notation
+[32524.386368]
+[32524.386373] 2 locks held by ifconfig/3103:
+[32524.386376]  #0:  (rtnl_mutex){+.+.+.}, at: [<ffffffff81431d42>] rtnl_lock+0x12/0x20
+[32524.386387]  #1:  (&vlan_netdev_addr_lock_key/1){+.....}, at: [<ffffffff8141af83>] dev_set_rx_mode+0x23/0x40
+[32524.386398]
+[32524.386398] stack backtrace:
+[32524.386403] CPU: 1 PID: 3103 Comm: ifconfig Tainted: G           O 3.14.0-rc2-0.7-default+ #35
+[32524.386409] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2007
+[32524.386414]  ffffffff81ffae40 ffff8800d9625ae8 ffffffff814f68a2 ffff8800d9625bc8
+[32524.386421]  ffffffff810a35fb ffff8800d8a8d9d0 00000000d9625b28 ffff8800d8a8e5d0
+[32524.386428]  000003cc00000000 0000000000000002 ffff8800d8a8e5f8 0000000000000000
+[32524.386435] Call Trace:
+[32524.386441]  [<ffffffff814f68a2>] dump_stack+0x6a/0x78
+[32524.386448]  [<ffffffff810a35fb>] __lock_acquire+0x7ab/0x1940
+[32524.386454]  [<ffffffff810a323a>] ? __lock_acquire+0x3ea/0x1940
+[32524.386459]  [<ffffffff810a4874>] lock_acquire+0xe4/0x110
+[32524.386464]  [<ffffffff814275f4>] ? dev_mc_sync+0x64/0xb0
+[32524.386471]  [<ffffffff814fc07a>] _raw_spin_lock_nested+0x2a/0x40
+[32524.386476]  [<ffffffff814275f4>] ? dev_mc_sync+0x64/0xb0
+[32524.386481]  [<ffffffff814275f4>] dev_mc_sync+0x64/0xb0
+[32524.386489]  [<ffffffffa0500cab>] vlan_dev_set_rx_mode+0x2b/0x50 [8021q]
+[32524.386495]  [<ffffffff8141addf>] __dev_set_rx_mode+0x5f/0xb0
+[32524.386500]  [<ffffffff8141af8b>] dev_set_rx_mode+0x2b/0x40
+[32524.386506]  [<ffffffff8141b3cf>] __dev_open+0xef/0x150
+[32524.386511]  [<ffffffff8141b177>] __dev_change_flags+0xa7/0x190
+[32524.386516]  [<ffffffff8141b292>] dev_change_flags+0x32/0x80
+[32524.386524]  [<ffffffff8149ca56>] devinet_ioctl+0x7d6/0x830
+[32524.386532]  [<ffffffff81437b0b>] ? dev_ioctl+0x34b/0x660
+[32524.386540]  [<ffffffff814a05b0>] inet_ioctl+0x80/0xa0
+[32524.386550]  [<ffffffff8140199d>] sock_do_ioctl+0x2d/0x60
+[32524.386558]  [<ffffffff81401a52>] sock_ioctl+0x82/0x2a0
+[32524.386568]  [<ffffffff811a7123>] do_vfs_ioctl+0x93/0x590
+[32524.386578]  [<ffffffff811b2705>] ? rcu_read_lock_held+0x45/0x50
+[32524.386586]  [<ffffffff811b39e5>] ? __fget_light+0x105/0x110
+[32524.386594]  [<ffffffff811a76b1>] SyS_ioctl+0x91/0xb0
+[32524.386604]  [<ffffffff815057e2>] system_call_fastpath+0x16/0x1b
 
-Therefore, if we have reclaimed memory in case of per socket
-accounting, wake all related associations to a socket in a
-fair manner, that is, traverse the socket association list
-starting from the current neighbour of the association and
-issue a __sctp_write_space() to everyone until we end up
-waking ourselves. This guarantees that no association is
-preferred over another and even if more associations are
-taken into the one-to-many session, all receivers will get
-messages from the server and are not stalled forever on
-high load. This setting still leaves the advantage of per
-socket accounting in touch as an association can still use
-up global limits if unused by others.
+========================================================================
 
-Fixes: 4eb701dfc618 ("[SCTP] Fix SCTP sendbuffer accouting.")
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Cc: Thomas Graf <tgraf@suug.ch>
-Cc: Neil Horman <nhorman@tuxdriver.com>
-Cc: Vlad Yasevich <vyasevic@redhat.com>
-Acked-by: Vlad Yasevich <vyasevic@redhat.com>
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
+The reason is that all of the addr_lock_key for vlan dev have the same class,
+so if we change the status for vlan dev, the vlan dev and its real dev will
+hold the same class of addr_lock_key together, so the warning happened.
+
+we should distinguish the lock depth for vlan dev and its real dev.
+
+v1->v2: Convert the vlan_netdev_addr_lock_key to an array of eight elements, which
+	could support to add 8 vlan id on a same vlan dev, I think it is enough for current
+	scene, because a netdev's name is limited to IFNAMSIZ which could not hold 8 vlan id,
+	and the vlan dev would not meet the same class key with its real dev.
+
+	The new function vlan_dev_get_lockdep_subkey() will return the subkey and make the vlan
+	dev could get a suitable class key.
+
+v2->v3: According David's suggestion, I use the subclass to distinguish the lock key for vlan dev
+	and its real dev, but it make no sense, because the difference for subclass in the
+	lock_class_key doesn't mean that the difference class for lock_key, so I use lock_depth
+	to distinguish the different depth for every vlan dev, the same depth of the vlan dev
+	could have the same lock_class_key, I import the MAX_LOCK_DEPTH from the include/linux/sched.h,
+	I think it is enough here, the lockdep should never exceed that value.
+
+v3->v4: Add a huge array of locking keys will waste static kernel memory and is not a appropriate method,
+	we could use _nested() variants to fix the problem, calculate the depth for every vlan dev,
+	and use the depth as the subclass for addr_lock_key.
+
+Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/sctp/socket.c | 36 +++++++++++++++++++++++++++++++++++-
- 1 file changed, 35 insertions(+), 1 deletion(-)
+ net/8021q/vlan_dev.c | 46 +++++++++++++++++++++++++++++++++++++++++-----
+ net/core/dev.c       |  1 +
+ 2 files changed, 42 insertions(+), 5 deletions(-)
 
-diff --git a/net/sctp/socket.c b/net/sctp/socket.c
-index bd4a48d942dc..f04550816cbd 100644
---- a/net/sctp/socket.c
-+++ b/net/sctp/socket.c
-@@ -6570,6 +6570,40 @@ static void __sctp_write_space(struct sctp_association *asoc)
+diff --git a/net/8021q/vlan_dev.c b/net/8021q/vlan_dev.c
+index cf35f383db4c..698e922f41ea 100644
+--- a/net/8021q/vlan_dev.c
++++ b/net/8021q/vlan_dev.c
+@@ -512,10 +512,48 @@ static void vlan_dev_change_rx_flags(struct net_device *dev, int change)
  	}
  }
  
-+static void sctp_wake_up_waiters(struct sock *sk,
-+				 struct sctp_association *asoc)
++static int vlan_calculate_locking_subclass(struct net_device *real_dev)
 +{
-+	struct sctp_association *tmp = asoc;
++	int subclass = 0;
 +
-+	/* We do accounting for the sndbuf space per association,
-+	 * so we only need to wake our own association.
-+	 */
-+	if (asoc->ep->sndbuf_policy)
-+		return __sctp_write_space(asoc);
-+
-+	/* Accounting for the sndbuf space is per socket, so we
-+	 * need to wake up others, try to be fair and in case of
-+	 * other associations, let them have a go first instead
-+	 * of just doing a sctp_write_space() call.
-+	 *
-+	 * Note that we reach sctp_wake_up_waiters() only when
-+	 * associations free up queued chunks, thus we are under
-+	 * lock and the list of associations on a socket is
-+	 * guaranteed not to change.
-+	 */
-+	for (tmp = list_next_entry(tmp, asocs); 1;
-+	     tmp = list_next_entry(tmp, asocs)) {
-+		/* Manually skip the head element. */
-+		if (&tmp->asocs == &((sctp_sk(sk))->ep->asocs))
-+			continue;
-+		/* Wake up association. */
-+		__sctp_write_space(tmp);
-+		/* We've reached the end. */
-+		if (tmp == asoc)
-+			break;
++	while (is_vlan_dev(real_dev)) {
++		subclass++;
++		real_dev = vlan_dev_priv(real_dev)->real_dev;
 +	}
++
++	return subclass;
 +}
 +
- /* Do accounting for the sndbuf space.
-  * Decrement the used sndbuf space of the corresponding association by the
-  * data size which was just transmitted(freed).
-@@ -6597,7 +6631,7 @@ static void sctp_wfree(struct sk_buff *skb)
- 	sk_mem_uncharge(sk, skb->truesize);
- 
- 	sock_wfree(skb);
--	__sctp_write_space(asoc);
-+	sctp_wake_up_waiters(sk, asoc);
- 
- 	sctp_association_put(asoc);
++static void vlan_dev_mc_sync(struct net_device *to, struct net_device *from)
++{
++	int err = 0, subclass;
++
++	subclass = vlan_calculate_locking_subclass(to);
++
++	spin_lock_nested(&to->addr_list_lock, subclass);
++	err = __hw_addr_sync(&to->mc, &from->mc, to->addr_len);
++	if (!err)
++		__dev_set_rx_mode(to);
++	spin_unlock(&to->addr_list_lock);
++}
++
++static void vlan_dev_uc_sync(struct net_device *to, struct net_device *from)
++{
++	int err = 0, subclass;
++
++	subclass = vlan_calculate_locking_subclass(to);
++
++	spin_lock_nested(&to->addr_list_lock, subclass);
++	err = __hw_addr_sync(&to->uc, &from->uc, to->addr_len);
++	if (!err)
++		__dev_set_rx_mode(to);
++	spin_unlock(&to->addr_list_lock);
++}
++
+ static void vlan_dev_set_rx_mode(struct net_device *vlan_dev)
+ {
+-	dev_mc_sync(vlan_dev_priv(vlan_dev)->real_dev, vlan_dev);
+-	dev_uc_sync(vlan_dev_priv(vlan_dev)->real_dev, vlan_dev);
++	vlan_dev_mc_sync(vlan_dev_priv(vlan_dev)->real_dev, vlan_dev);
++	vlan_dev_uc_sync(vlan_dev_priv(vlan_dev)->real_dev, vlan_dev);
  }
+ 
+ /*
+@@ -624,9 +662,7 @@ static int vlan_dev_init(struct net_device *dev)
+ 
+ 	SET_NETDEV_DEVTYPE(dev, &vlan_type);
+ 
+-	if (is_vlan_dev(real_dev))
+-		subclass = 1;
+-
++	subclass = vlan_calculate_locking_subclass(dev);
+ 	vlan_dev_set_lockdep_class(dev, subclass);
+ 
+ 	vlan_dev_priv(dev)->vlan_pcpu_stats = alloc_percpu(struct vlan_pcpu_stats);
+diff --git a/net/core/dev.c b/net/core/dev.c
+index d31d822a1f10..ab07f35d0f38 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -4751,6 +4751,7 @@ void __dev_set_rx_mode(struct net_device *dev)
+ 	if (ops->ndo_set_rx_mode)
+ 		ops->ndo_set_rx_mode(dev);
+ }
++EXPORT_SYMBOL(__dev_set_rx_mode);
+ 
+ void dev_set_rx_mode(struct net_device *dev)
+ {
 -- 
 1.9.1
 
