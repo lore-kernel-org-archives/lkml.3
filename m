@@ -1,49 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932797AbaFCOZV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 10:25:21 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:49811 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932750AbaFCOZQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932775AbaFCOZQ (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 3 Jun 2014 10:25:16 -0400
-From: Georgi Djakov <gdjakov@mm-sol.com>
-To: mturquette@linaro.org
-Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        sboyd@codeaurora.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        Georgi Djakov <gdjakov@mm-sol.com>
-Subject: [PATCH v3 1/2] clk: qcom: Add APQ8084 Global Clock Controller documentation
-Date: Tue,  3 Jun 2014 17:24:08 +0300
-Message-Id: <1401805449-26499-2-git-send-email-gdjakov@mm-sol.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1401805449-26499-1-git-send-email-gdjakov@mm-sol.com>
-References: <1401805449-26499-1-git-send-email-gdjakov@mm-sol.com>
+Received: from mout.kundenserver.de ([212.227.126.187]:62135 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754053AbaFCOZL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 10:25:11 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: "Joseph S. Myers" <joseph@codesourcery.com>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, john.stultz@linaro.org, hch@infradead.org,
+        tglx@linutronix.de, geert@linux-m68k.org, lftan@altera.com,
+        linux-fsdevel@vger.kernel.org, ceph-devel@vger.kernel.org,
+        cluster-devel@redhat.com, coda@cs.cmu.edu,
+        codalist@telemann.coda.cs.cmu.edu, fuse-devel@lists.sourceforge.net,
+        linux-afs@lists.infradead.org, linux-btrfs@vger.kernel.org,
+        linux-cifs@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net, linux-mtd@lists.infradead.org,
+        linux-nfs@vger.kernel.org, linux-ntfs-dev@lists.sourceforge.net,
+        linux-scsi@vger.kernel.org, logfs@logfs.org,
+        ocfs2-devel@oss.oracle.com, reiserfs-devel@vger.kernel.org,
+        samba-technical@lists.samba.org, xfs@oss.sgi.com
+Subject: Re: [RFC 00/32] making inode time stamps y2038 ready
+Date: Tue, 03 Jun 2014 16:22:19 +0200
+Message-ID: <5011138.W0gbOc20Qp@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <538CF346.2070504@zytor.com>
+References: <1401480116-1973111-1-git-send-email-arnd@arndb.de> <7175692.dpgYFMbTaP@wuerfel> <538CF346.2070504@zytor.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:/TknYcvxqhw//en3UBNTXYoqE+nfyCOaZmUTHg9HpZU
+ aC0W/PXkJOE0Js/B8qBmgymT99hg/mBq0CoYbMg3+Ws5/vBDaw
+ V5q8w4s9F070Oz04sogKJ9tWjemFSNUx9Yp/1O8RJEzRrc4jRV
+ kO9ic3AMip5+RUjpxm/bnaJdXZ1s36b08xwkVVI88o+5W/J2am
+ s7HCMRggMHyGdMTDHC3AFXGsJShC5hcmSWvvYrZOrEdK29R8Lp
+ YhGd03/cwjR6NOZPHMOItDveG9Z8AYDbBvr8ht0C8SH4p97d9d
+ EqyWi2k40+ydoqiahD6X4cNsBWaLd8+TWKENN7Chgg7/w1L3p4
+ p42LCxcvS7fkjtYYW/Xg=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the compatible string for the APQ8084 global clock controller
-to the clock binding documentation.
+On Monday 02 June 2014 14:57:26 H. Peter Anvin wrote:
+> On 06/02/2014 12:55 PM, Arnd Bergmann wrote:
+> >>
+> >> The bit that is really going to hurt is every single ioctl that uses a
+> >> timespec.
+> >>
+> >> Honestly, though, I really don't understand the point with "struct
+> >> inode_time".  It seems like the zeroeth-order thing is to change the
+> >> kernel internal version of struct timespec to have a 64-bit time... it
+> >> isn't just about inodes.  We then should be explicit about the external
+> >> uses of time, and use accessors.
+> > 
+> > I picked these because they are fairly isolated from all other uses,
+> > in particular since inode times are the only things where we really
+> > care about times in the distant past or future (decades away as opposed
+> > to things that happened between boot and shutdown).
+> > 
+> 
+> If nothing else, I would expect to be able to set the system time to
+> weird values for testing.  So I'm not so sure I agree with that...
 
-Signed-off-by: Georgi Djakov <gdjakov@mm-sol.com>
-Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
----
- .../devicetree/bindings/clock/qcom,gcc.txt         |    1 +
- 1 file changed, 1 insertion(+)
+I think John Stultz and Thomas Gleixner have already started looking
+at how the timekeeping code can be updated. Once that is done, we should
+be able to add a functional 64-bit gettimeofday/settimeofday syscall
+pair. While I definitely agree this is one of the most basic things to
+have, it's also not an area of the kernel that is easy to change.
 
-diff --git a/Documentation/devicetree/bindings/clock/qcom,gcc.txt b/Documentation/devicetree/bindings/clock/qcom,gcc.txt
-index 9cfcb4f..4f35042 100644
---- a/Documentation/devicetree/bindings/clock/qcom,gcc.txt
-+++ b/Documentation/devicetree/bindings/clock/qcom,gcc.txt
-@@ -5,6 +5,7 @@ Required properties :
- - compatible : shall contain only one of the following:
- 
- 			"qcom,gcc-apq8064"
-+			"qcom,gcc-apq8084"
- 			"qcom,gcc-msm8660"
- 			"qcom,gcc-msm8960"
- 			"qcom,gcc-msm8974"
--- 
-1.7.9.5
+> > For other kernel-internal uses, we may be better off migrating to
+> > a completely different representation, such as nanoseconds since
+> > boot or the architecture specific ktime_t, but this is really something
+> > to decide for each subsystem.
+> 
+> Having a bunch of different time representations in the kernel seems
+> like a real headache...
 
+We already have time_t, ktime_t, timeval, timespec, compat_timespec,
+clock_t, cputime_t, cputime64_t, tm, nanoseconds, jiffies, jiffies64,
+and lots of driver or file system specific representations. I'm all for
+removing a bunch of these from the kernel, but my feeling is that this is
+one of the cases where we first have to add new ones in order to remove
+those that are already there.
+To complicate things further, we also have various times bases
+(realtime/utc, realtime/tai, monotonic, monotonic_raw, boottime, ...),
+and at least for the timespec values we pass around, it's not always
+obvious which one is used, of if that's the right one.
+
+We probably don't want to add a lot of new representations, and it's
+possible that we can change most of the internal code we have to
+ktime_t and then convert that to whatever user space wants at the
+interfaces.
+
+The possible uses I can see for non-ktime_t types in the kernel are:
+* inodes need 96 bit timestamps to represent the full range of values
+  that can be stored in a file system, you made a convincing argument
+  for that. Almost everything else can fit into 64 bit on a 32-bit
+  kernel, in theory also on a 64-bit kernel if we want that.
+* A number of interfaces pass relative timespecs: nanosleep(), poll(),
+  select(), sigtimedwait(), alarm(), futex() and probably more. There is
+  nothing wrong with the use of timespec here, and it may be good to
+  annotate that by using a new type (e.g. struct timeout) that is defined
+  as compatible with the current timespec.
+* For new user interfaces, we need a new type such as the
+  __kernel_timespec64 I introduced, so it doesn't clash with the normal
+  user timespec that may be smaller, depending on the libc.
+* A lot of drivers will need new ioctl commands, and for drivers that
+  just need time stamps (audio, v4l, sockets, ...) it may be more
+  efficient and more correct to use a new timestamp_t (e.g. boot time
+  64-bit nanoseconds) than __kernel_timespec64, which is not normally
+  monotonic and requires a normalization step. If we end up introducing
+  such a type in the user interface, we can also start using it in the
+  kernel.
+
+	Arnd
