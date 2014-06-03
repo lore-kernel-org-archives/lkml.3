@@ -1,52 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932895AbaFCP1H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 11:27:07 -0400
-Received: from mail-we0-f180.google.com ([74.125.82.180]:63600 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753832AbaFCP1E (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 11:27:04 -0400
-Date: Tue, 3 Jun 2014 16:27:01 +0100
-From: Daniel Walter <dwalter@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: richard@nod.at, akpm@linux-foundation.org, rostedt@goodmis.org
-Subject: [PATCH v2 11/11] [include/linux] remove strict_strto* definitions
-Message-ID: <20140603152701.GM28580@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754423AbaFCPbM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 11:31:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43694 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751376AbaFCPbK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 11:31:10 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <20140603132153.GA26512@tucsk.piliscsaba.szeredi.hu>
+References: <20140603132153.GA26512@tucsk.piliscsaba.szeredi.hu> <CAJfpegtobxoMs+RRrPYLFRPOVSfr_uqZs+HJFLRif3svHGyQwA@mail.gmail.com> <1400838223-30844-1-git-send-email-miklos@szeredi.hu> <28592.1401382081@warthog.procyon.org.uk> <11446.1401420931@jrobl> <7184.1401439773@warthog.procyon.org.uk> <CA+icZUV5P=fVwe_MJJHixwBOBoj7HoKSFuySLdS6AU5L++S=4g@mail.gmail.com> <15839.1401786056@warthog.procyon.org.uk> <CA+icZUUiirxYnoL7pg5TvFEy6pQ+5Q3CuJ0jonJMXTOwhT-LDw@mail.gmail.com> <CA+icZUU8BqGUoQdtuqt403NdCBnJnH1-k64bxTM0b_GSfQr1hQ@mail.gmail.com> <10013.1401791634@warthog.procyon.org.uk>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: dhowells@redhat.com, Sedat Dilek <sedat.dilek@gmail.com>,
+        "J. R. Okajima" <hooanon05g@gmail.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Robo Bot <apw@canonical.com>, Felix Fietkau <nbd@openwrt.org>,
+        Neil Brown <neilb@suse.de>, Jordi Pujol <jordipujolp@gmail.com>,
+        ezk@fsl.cs.sunysb.edu, "mszeredi@suse.cz" <mszeredi@suse.cz>
+Subject: Re: Unionmount and overlayfs testsuite
+Date: Tue, 03 Jun 2014 16:30:18 +0100
+Message-ID: <19281.1401809418@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Daniel Walter <dwalter@google.com>
-Subject: [PATCH v2 11/11] [include/linux] remove strict_strto* definitions
+Miklos Szeredi <miklos@szeredi.hu> wrote:
 
-Remove obsolete and unused strict_strto* functions
+> And this one is a missing annotation in overlayfs.  Tested patch pushed to the
+> usual branches.
 
-Signed-off-by: Daniel Walter <dwalter@google.com>
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
----
- include/linux/kernel.h | 4 ----
- 1 file changed, 4 deletions(-)
+Looks good so far, though there are a few more bits to try and break -
+rename() for example.
 
-diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-index 4c52907..a39043c 100644
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -376,10 +376,6 @@ extern unsigned long simple_strtoul(const char *,char **,unsigned int);
- extern long simple_strtol(const char *,char **,unsigned int);
- extern unsigned long long simple_strtoull(const char *,char **,unsigned int);
- extern long long simple_strtoll(const char *,char **,unsigned int);
--#define strict_strtoul	kstrtoul
--#define strict_strtol	kstrtol
--#define strict_strtoull	kstrtoull
--#define strict_strtoll	kstrtoll
- 
- extern int num_to_str(char *buf, int size, unsigned long long num);
- 
--- 
-1.9.3
+I also want to rewrite my test stuff in something a little more wieldy than
+shell scripts - Perl or Python for example.
 
+Tentative Tested-by from me unless I can break it.
+
+David
