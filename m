@@ -1,54 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751926AbaFCBPT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 21:15:19 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:33908 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751431AbaFCBPR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 21:15:17 -0400
-Date: Mon, 2 Jun 2014 21:15:10 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
-        Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, cgroups@vger.kernel.org
-Subject: Re: [patch v2] mm, memcg: periodically schedule when emptying page
- list
-Message-ID: <20140603011510.GO2878@cmpxchg.org>
-References: <alpine.DEB.2.02.1406021612550.6487@chino.kir.corp.google.com>
- <alpine.DEB.2.02.1406021749590.13910@chino.kir.corp.google.com>
+	id S1752332AbaFCBPj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 21:15:39 -0400
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:44992 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752058AbaFCBPh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 21:15:37 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1406021749590.13910@chino.kir.corp.google.com>
+In-Reply-To: <CALCETrXbpiqwY=qyPcNWn2zX=vehXzBbxDG725egM9T2Ox2KTA@mail.gmail.com>
+References: <CALCETrXbpiqwY=qyPcNWn2zX=vehXzBbxDG725egM9T2Ox2KTA@mail.gmail.com>
+Date: Mon, 2 Jun 2014 18:15:36 -0700
+X-Google-Sender-Auth: oCWRqSe1DAOgpgotwJ4I1eflD1c
+Message-ID: <CA+55aFz+cijJuUTs6xs6SdGnasmR7uYXKkr7=0YTuPQ+xgjFEA@mail.gmail.com>
+Subject: Re: 3.15 regression: wrong cgroup magic
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 02, 2014 at 05:51:25PM -0700, David Rientjes wrote:
-> From: Hugh Dickins <hughd@google.com>
-> 
-> mem_cgroup_force_empty_list() can iterate a large number of pages on an lru and 
-> mem_cgroup_move_parent() doesn't return an errno unless certain criteria, none 
-> of which indicate that the iteration may be taking too long, is met.
-> 
-> We have encountered the following stack trace many times indicating
-> "need_resched set for > 51000020 ns (51 ticks) without schedule", for example:
-> 
-> 	scheduler_tick()
-> 	<timer irq>
-> 	mem_cgroup_move_account+0x4d/0x1d5
-> 	mem_cgroup_move_parent+0x8d/0x109
-> 	mem_cgroup_reparent_charges+0x149/0x2ba
-> 	mem_cgroup_css_offline+0xeb/0x11b
-> 	cgroup_offline_fn+0x68/0x16b
-> 	process_one_work+0x129/0x350
-> 
-> If this iteration is taking too long, we still need to do cond_resched() even 
-> when an individual page is not busy.
-> 
-> [rientjes@google.com: changelog]
-> Signed-off-by: Hugh Dickins <hughd@google.com>
-> Signed-off-by: David Rientjes <rientjes@google.com>
+On Mon, Jun 2, 2014 at 5:56 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>
+> In particular, this piece:
+>
+> -       sb->s_magic = CGROUP_SUPER_MAGIC;
+>
+> The result is that cgroup shows up with the wrong magic number, so my
+> code goes "oh crap, cgroupfs isn't mounted" and fails.
+>
+> I can change my code to hack around this, but I can imagine other
+> things getting tripped up.  Is there still time to fix this?
 
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Sure. Send me a tested patch. I'm assuming it's going to look something like
+
+  --- a/kernel/cgroup.c
+  +++ b/kernel/cgroup.c
+  @@ -54,6 +54,7 @@
+   #include <linux/vmalloc.h> /* TODO: replace with more sophisticated array */
+   #include <linux/kthread.h>
+   #include <linux/delay.h>
+  +#include <linux/magic.h>
+
+   #include <linux/atomic.h>
+
+  @@ -1607,6 +1608,8 @@ out_unlock:
+          dentry = kernfs_mount(fs_type, flags, root->kf_root, &new_sb);
+          if (IS_ERR(dentry) || !new_sb)
+                  cgroup_put(&root->cgrp);
+  +       else
+  +               dentry->d_sb->s_magic = CGROUP_SUPER_MAGIC;
+          return dentry;
+   }
+
+but somebody definitely needs to test it.
+
+               Linus
