@@ -1,35 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754044AbaFCMuD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 08:50:03 -0400
-Received: from mga03.intel.com ([143.182.124.21]:48210 "EHLO mga03.intel.com"
+	id S1753686AbaFCMwF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 08:52:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43071 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751223AbaFCMuB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 08:50:01 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,965,1392192000"; 
-   d="scan'208";a="440271914"
-Date: Tue, 3 Jun 2014 15:49:53 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: eric.ernst@linux.intel.com
-Cc: linus.walleij@linaro.org, linux-kernel@vger.kernel.org,
-        mark.gross@intel.com
-Subject: Re: [PATCH v2 1/1] PINCTRL: Warn if direct IRQ GPIO set to output
-Message-ID: <20140603124953.GJ1730@lahna.fi.intel.com>
-References: <0140602191416.GD1730@lahna.fi.intel.com>
- <1401743527-47035-1-git-send-email-eric.ernst@linux.intel.com>
+	id S1752789AbaFCMwC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 08:52:02 -0400
+Date: Tue, 3 Jun 2014 14:49:53 +0200 (CEST)
+From: =?ISO-8859-15?Q?Luk=E1=A8_Czerner?= <lczerner@redhat.com>
+X-X-Sender: lczerner@localhost.localdomain
+To: Jaegeuk Kim <jaegeuk@kernel.org>
+cc: Dave Chinner <david@fromorbit.com>, xfs@oss.sgi.com,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforget.net
+Subject: Re: [PATCH] xfstests: f2fs support
+In-Reply-To: <alpine.LFD.2.00.1406031307590.2112@localhost.localdomain>
+Message-ID: <alpine.LFD.2.00.1406031449400.2112@localhost.localdomain>
+References: <1401717572-21731-1-git-send-email-jaegeuk@kernel.org> <alpine.LFD.2.00.1406031307590.2112@localhost.localdomain>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1401743527-47035-1-git-send-email-eric.ernst@linux.intel.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-788635479-1401799797=:2112"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 02, 2014 at 02:12:07PM -0700, eric.ernst@linux.intel.com wrote:
-> +	WARN((readl(conf_reg) & BYT_DIRECTIRQ),
-> +		"Potential Error: Setting GPIO with direct_irq_en to output");
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Also you don't need parentheses here.
+--8323328-788635479-1401799797=:2112
+Content-Type: TEXT/PLAIN; charset=ISO-8859-15
+Content-Transfer-Encoding: 8BIT
+
+On Tue, 3 Jun 2014, Luká¨ Czerner wrote:
+
+> Date: Tue, 3 Jun 2014 13:32:30 +0200 (CEST)
+> From: Luká¨ Czerner <lczerner@redhat.com>
+> To: Jaegeuk Kim <jaegeuk@kernel.org>
+> Cc: Dave Chinner <david@fromorbit.com>, xfs@oss.sgi.com,
+>     linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+>     linux-f2fs-devel@lists.sourceforget.net
+> Subject: Re: [PATCH] xfstests: f2fs support
+> 
+> On Mon, 2 Jun 2014, jaegeuk@kernel.org wrote:
+> 
+> > Date: Mon,  2 Jun 2014 22:59:32 +0900
+> > From: jaegeuk@kernel.org
+> > To: Dave Chinner <david@fromorbit.com>
+> > Cc: xfs@oss.sgi.com, linux-kernel@vger.kernel.org,
+> >     linux-fsdevel@vger.kernel.org, linux-f2fs-devel@lists.sourceforget.net,
+> >     Jaegeuk Kim <jaegeuk@kernel.org>
+> > Subject: [PATCH] xfstests: f2fs support
+> > 
+> > From: Jaegeuk Kim <jaegeuk@kernel.org>
+> > 
+> > This patch adds to support f2fs file system.
+> 
+> Hi,
+> 
+> Looks good.
+> 
+> Signed-off-by: Lukas Czerner <lczerner@redhat.com>
+> 
+
+Oops, wrong macro. I meant to say
+
+Reviewed-by: Lukas Czerner <lczerner@redhat.com>
+
+
+> Btw dry run option in fsck is quite useful here because when the
+> file system gets corrupted you do not want it to get fixed, but
+> rather investigate the corrupted file system to figure out what
+> happened. But of course it's not required :)
+> 
+> However after a quick look at you fsck code it seems that you do not
+> attempt to fix anything at all...
+> 
+> Also having mkfs to check for existing signatures on the device
+> before attempting to create the file system is a good thing to do
+> (at least xfs, btrfs extN are doing so) to avoid data loss by
+> mistake. You can use libblkid from util-linux and it's very simple
+> to use.
+> 
+> Thanks!
+> -Lukas
+> 
+> > 
+> > Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
+> > ---
+> >  common/config | 7 +++++++
+> >  common/rc     | 6 ++++++
+> >  2 files changed, 13 insertions(+)
+> > 
+> > diff --git a/common/config b/common/config
+> > index 0dbf0b9..0607294 100644
+> > --- a/common/config
+> > +++ b/common/config
+> > @@ -210,6 +210,7 @@ case "$HOSTOS" in
+> >          export MKFS_XFS_PROG="`set_prog_path mkfs.xfs`"
+> >          export MKFS_UDF_PROG="`set_prog_path mkudffs`"
+> >          export MKFS_BTRFS_PROG="`set_btrfs_mkfs_prog_path_with_opts`"
+> > +        export MKFS_F2FS_PROG="`set_prog_path mkfs.f2fs`"
+> >          export BTRFS_UTIL_PROG="`set_prog_path btrfs`"
+> >          export BTRFS_SHOW_SUPER_PROG="`set_prog_path btrfs-show-super`"
+> >          export XFS_FSR_PROG="`set_prog_path xfs_fsr`"
+> > @@ -241,6 +242,9 @@ _mount_opts()
+> >  		# acls & xattrs aren't turned on by default on ext$FOO
+> >  		export MOUNT_OPTIONS="-o acl,user_xattr $EXT_MOUNT_OPTIONS"
+> >  		;;
+> > +	f2fs)
+> > +		export MOUNT_OPTIONS="-o acl,user_xattr $F2FS_MOUNT_OPTIONS"
+> > +		;;
+> >  	reiserfs)
+> >  		# acls & xattrs aren't turned on by default on reiserfs
+> >  		export MOUNT_OPTIONS="-o acl,user_xattr $REISERFS_MOUNT_OPTIONS"
+> > @@ -295,6 +299,9 @@ _fsck_opts()
+> >  	reiserfs)
+> >  		export FSCK_OPTIONS="--yes"
+> >  		;;
+> > +	f2fs)
+> > +		export FSCK_OPTIONS=""
+> > +		;;
+> >  	*)
+> >  		export FSCK_OPTIONS="-n"
+> >  		;;
+> > diff --git a/common/rc b/common/rc
+> > index f27ee53..fcdabfe 100644
+> > --- a/common/rc
+> > +++ b/common/rc
+> > @@ -105,6 +105,9 @@ case "$FSTYP" in
+> >      btrfs)
+> >  	 [ "$MKFS_BTRFS_PROG" = "" ] && _fatal "mkfs.btrfs not found"
+> >  	 ;;
+> > +    f2fs)
+> > +	 [ "$MKFS_F2FS_PROG" = "" ] && _fatal "mkfs.f2fs not found"
+> > +	 ;;
+> >      nfs)
+> >  	 ;;
+> >  esac
+> > @@ -511,6 +514,9 @@ _scratch_mkfs()
+> >      tmpfs)
+> >  	# do nothing for tmpfs
+> >  	;;
+> > +    f2fs)
+> > +        $MKFS_F2FS_PROG $MKFS_OPTIONS $* $SCRATCH_DEV > /dev/null
+> > +	;;
+> >      *)
+> >  	yes | $MKFS_PROG -t $FSTYP -- $MKFS_OPTIONS $* $SCRATCH_DEV
+> >  	;;
+> > 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+--8323328-788635479-1401799797=:2112--
