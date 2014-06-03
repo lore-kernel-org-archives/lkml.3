@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932648AbaFCLlc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 07:41:32 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43523 "EHLO
+	id S1754940AbaFCMHp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 08:07:45 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43508 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932630AbaFCLl2 (ORCPT
+	with ESMTP id S1754300AbaFCLlY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 07:41:28 -0400
+	Tue, 3 Jun 2014 07:41:24 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Michael Welling <mwelling@ieee.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
+Cc: Igor Mammedov <imammedo@redhat.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 064/138] gpio: mcp23s08: Bug fix of SPI device tree registration.
-Date: Tue,  3 Jun 2014 12:38:30 +0100
-Message-Id: <1401795584-22664-65-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 061/138] ACPI / processor: do not mark present at boot but not onlined CPU as onlined
+Date: Tue,  3 Jun 2014 12:38:27 +0100
+Message-Id: <1401795584-22664-62-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
 References: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
@@ -28,57 +28,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Welling <mwelling@ieee.org>
+From: Igor Mammedov <imammedo@redhat.com>
 
-commit 99e4b98dbe3ad1fe38a74d12c3b8d44a55930de4 upstream.
+commit 0b9d46dd7debf8e6dc8614106f1c1909fa8de64d upstream.
 
-The chips variable needs to be incremented for each chip that is
-found in the spi_present_mask when registering via device tree.
-Without this and the checking a negative index is passed to the
-data->chip array in a subsequent loop.
+acpi_processor_add() assumes that present at boot CPUs
+are always onlined, it is not so if a CPU failed to become
+onlined. As result acpi_processor_add() will mark such CPU
+device as onlined in sysfs and following attempts to
+online/offline it using /sys/device/system/cpu/cpuX/online
+attribute will fail.
 
-Signed-off-by: Michael Welling <mwelling@ieee.org>
-Acked-by: Peter Korsgaard <peter@korsgaard.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Do not poke into device internals in acpi_processor_add()
+and touch "struct device { .offline }" attribute, since
+for CPUs onlined at boot it's set by:
+  topology_init() -> arch_register_cpu() -> register_cpu()
+before ACPI device tree is parsed, and for hotplugged
+CPUs it's set when userspace onlines CPU via sysfs.
+
+Signed-off-by: Igor Mammedov <imammedo@redhat.com>
+Acked-by: Toshi Kani <toshi.kani@hp.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpio/gpio-mcp23s08.c | 12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
+ drivers/acpi/acpi_processor.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/drivers/gpio/gpio-mcp23s08.c b/drivers/gpio/gpio-mcp23s08.c
-index 65d2590b0ecd..236c4dcd7084 100644
---- a/drivers/gpio/gpio-mcp23s08.c
-+++ b/drivers/gpio/gpio-mcp23s08.c
-@@ -630,9 +630,11 @@ static int mcp23s08_probe(struct spi_device *spi)
- 			dev_err(&spi->dev, "invalid spi-present-mask\n");
- 			return -ENODEV;
- 		}
--
--		for (addr = 0; addr < ARRAY_SIZE(pdata->chip); addr++)
-+		for (addr = 0; addr < ARRAY_SIZE(pdata->chip); addr++) {
-+			if ((spi_present_mask & (1 << addr)))
-+				chips++;
- 			pullups[addr] = 0;
-+		}
- 	} else {
- 		type = spi_get_device_id(spi)->driver_data;
- 		pdata = spi->dev.platform_data;
-@@ -655,12 +657,12 @@ static int mcp23s08_probe(struct spi_device *spi)
- 			pullups[addr] = pdata->chip[addr].pullups;
- 		}
+diff --git a/drivers/acpi/acpi_processor.c b/drivers/acpi/acpi_processor.c
+index 5a74a9c1e42c..0611a1cda874 100644
+--- a/drivers/acpi/acpi_processor.c
++++ b/drivers/acpi/acpi_processor.c
+@@ -403,7 +403,6 @@ static int acpi_processor_add(struct acpi_device *device,
+ 		goto err;
  
--		if (!chips)
--			return -ENODEV;
--
- 		base = pdata->base;
- 	}
+ 	pr->dev = dev;
+-	dev->offline = pr->flags.need_hotplug_init;
  
-+	if (!chips)
-+		return -ENODEV;
-+
- 	data = kzalloc(sizeof(*data) + chips * sizeof(struct mcp23s08),
- 			GFP_KERNEL);
- 	if (!data)
+ 	/* Trigger the processor driver's .probe() if present. */
+ 	if (device_attach(dev) >= 0)
 -- 
 1.9.1
 
