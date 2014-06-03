@@ -1,69 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755125AbaFCSaK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 14:30:10 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:58135 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754991AbaFCSaF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 14:30:05 -0400
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Guan Xuetao <gxt@mprc.pku.edu.cn>
-Cc: linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH] unicore32: Remove ARCH_HAS_CPUFREQ config option
-Date: Tue,  3 Jun 2014 11:30:03 -0700
-Message-Id: <1401820203-21556-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.9.0.1.gd5ccf8c
+	id S1755403AbaFCSbv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 14:31:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7477 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751848AbaFCSbu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 14:31:50 -0400
+Date: Tue, 3 Jun 2014 20:30:57 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Denys Vlasenko <dvlasenk@redhat.com>,
+        Jim Keniston <jkenisto@us.ibm.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] uprobes/x86: Rename arch_uprobe->def into ->dflt,
+	minor comment updates
+Message-ID: <20140603183057.GA31382@redhat.com>
+References: <20140601192520.GA14539@redhat.com> <20140603182142.GA5097@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140603182142.GA5097@gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This config exists entirely to hide the cpufreq menu from the
-kernel configuration unless a platform has selected it. Nothing
-is actually built if this config is 'Y' and it just leads to more
-patches that add a select under a platform Kconfig so that some
-other CPUfreq option can be chosen. Let's remove the option so
-that we can always enable CPUfreq drivers on unicore32 platforms.
+On 06/03, Ingo Molnar wrote:
+>
+> * Oleg Nesterov <oleg@redhat.com> wrote:
+>
+> > --- a/arch/x86/include/asm/uprobes.h
+> > +++ b/arch/x86/include/asm/uprobes.h
+> > @@ -52,7 +52,7 @@ struct arch_uprobe {
+> >  		struct {
+> >  			u8	fixups;
+> >  			u8	ilen;
+> > -		} 			def;
+> > +		} 			dflt;
+>
+> Pls lts nt use slly abbrvtns, ok?
 
-Cc: Viresh Kumar <viresh.kumar@linaro.org>
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- arch/unicore32/Kconfig | 6 ------
- 1 file changed, 6 deletions(-)
+OK. As I said in the previous dicussion, I agree with any naming.
 
-diff --git a/arch/unicore32/Kconfig b/arch/unicore32/Kconfig
-index aafad6fa1667..928237a7b9ca 100644
---- a/arch/unicore32/Kconfig
-+++ b/arch/unicore32/Kconfig
-@@ -51,9 +51,6 @@ config ARCH_HAS_ILOG2_U32
- config ARCH_HAS_ILOG2_U64
- 	bool
- 
--config ARCH_HAS_CPUFREQ
--	bool
--
- config GENERIC_HWEIGHT
- 	def_bool y
- 
-@@ -87,7 +84,6 @@ config ARCH_PUV3
- 	select GENERIC_CLOCKEVENTS
- 	select HAVE_CLK
- 	select ARCH_REQUIRE_GPIOLIB
--	select ARCH_HAS_CPUFREQ
- 
- # CONFIGs for ARCH_PUV3
- 
-@@ -198,9 +194,7 @@ menu "Power management options"
- 
- source "kernel/power/Kconfig"
- 
--if ARCH_HAS_CPUFREQ
- source "drivers/cpufreq/Kconfig"
--endif
- 
- config ARCH_SUSPEND_POSSIBLE
- 	def_bool y if !ARCH_FPGA
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+> How about arch_uprobe->default?
+
+And this is how it was named when I wrote this code. Unfortunately gcc
+dislikes this name ;) So I renamed it to ->def. Then I was asked to
+rename it and I agree, ->def doesn't look good.
+
+Could you suggest something better?
+
+Oleg.
 
