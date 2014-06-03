@@ -1,97 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932541AbaFCR7l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 13:59:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21379 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753618AbaFCR7j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 13:59:39 -0400
-From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-input <linux-input@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Cc: Hans de Goede <hdegoede@redhat.com>,
-        Peter Hutterer <peter.hutterer@who-t.net>
-Subject: [PATCH] Input - synaptics: fix resolution for manually provided min/max
-Date: Tue,  3 Jun 2014 13:59:35 -0400
-Message-Id: <1401818375-7212-1-git-send-email-benjamin.tissoires@redhat.com>
+	id S1754925AbaFCR74 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 13:59:56 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:51237 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754610AbaFCR6y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 13:58:54 -0400
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: linux-security-module <linux-security-module@vger.kernel.org>
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        Dmitry Kasatkin <d.kasatkin@samsung.com>,
+        David Howells <dhowells@redhat.com>, Josh Boyer <jwboyer@redhat.com>,
+        keyrings <keyrings@linux-nfs.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [RFC PATCH v5 2/4] KEYS: verify a certificate is signed by a 'trusted' key
+Date: Tue,  3 Jun 2014 13:58:36 -0400
+Message-Id: <1401818318-15780-3-git-send-email-zohar@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1401818318-15780-1-git-send-email-zohar@linux.vnet.ibm.com>
+References: <1401818318-15780-1-git-send-email-zohar@linux.vnet.ibm.com>
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14060317-7164-0000-0000-000002326B0D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 421e08c41fda fixed the reported min/max for the X and Y axis,
-but unfortunately, it broke the resolution of those same axis.
+Only public keys, with certificates signed by an existing
+'trusted' key on the system trusted keyring, should be added
+to a trusted keyring.  This patch adds support for verifying
+a certificate's signature.
 
-On the t540p, the resolution is the same regarding X and Y. It is not
-a problem for xf86-input-synaptics because this driver is only interested
-in the ratio between X and Y.
-Unfortunately, xf86-input-cmt uses directly the resolution, and having a
-null resolution leads to some divide by 0 errors, which are translated by
--infinity in the resulting coordinates.
+This is derived from David Howells pkcs7_request_asymmetric_key() patch.
 
-Reported-by: Peter Hutterer <peter.hutterer@who-t.net>
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Cc: stable@vger.kernel.org
+Changelog:
+- define get_system_trusted_keyring() to fix kbuild issues
+
+Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
 ---
+ crypto/asymmetric_keys/x509_public_key.c | 84 +++++++++++++++++++++++++++++++-
+ include/keys/system_keyring.h            | 10 +++-
+ 2 files changed, 92 insertions(+), 2 deletions(-)
 
-Hi Dmitry,
-
-in the original submission, the test for the quirk was at the end of the
-synaptics_resolution() function. However, there was a mixmatch with the config
-in this original submission and you had to change the patch slightly.
-Unfortunately, this change created this bug which was hard to notice, which is
-why it comes that late in the cycle (and also because we are trying to find out
-if xf86-input-cmt could replace xf86-input-synaptics).
-
-Anyway, as mentioned in the commit message, this will not harm a big majority
-of users, because only those using ChromeOS will be impacted (not sure they
-have the Lenovo 40 series in their kernel either).
-
-Again, it's your call to leave or not the stable@ tag, but given that all we
-put regarding those crappy devices are tagged as such, I put it there also.
-
-Cheers,
-Benjamin
-
- drivers/input/mouse/synaptics.c | 18 +++++++++---------
- 1 file changed, 9 insertions(+), 9 deletions(-)
-
-diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
-index c5ec703..9cff1f8 100644
---- a/drivers/input/mouse/synaptics.c
-+++ b/drivers/input/mouse/synaptics.c
-@@ -347,15 +347,6 @@ static int synaptics_resolution(struct psmouse *psmouse)
- 	unsigned char resp[3];
- 	int i;
+diff --git a/crypto/asymmetric_keys/x509_public_key.c b/crypto/asymmetric_keys/x509_public_key.c
+index 382ef0d..1af8a30 100644
+--- a/crypto/asymmetric_keys/x509_public_key.c
++++ b/crypto/asymmetric_keys/x509_public_key.c
+@@ -18,12 +18,60 @@
+ #include <linux/asn1_decoder.h>
+ #include <keys/asymmetric-subtype.h>
+ #include <keys/asymmetric-parser.h>
++#include <keys/system_keyring.h>
+ #include <crypto/hash.h>
+ #include "asymmetric_keys.h"
+ #include "public_key.h"
+ #include "x509_parser.h"
  
--	for (i = 0; min_max_pnpid_table[i].pnp_ids; i++)
--		if (matches_pnp_id(psmouse, min_max_pnpid_table[i].pnp_ids)) {
--			priv->x_min = min_max_pnpid_table[i].x_min;
--			priv->x_max = min_max_pnpid_table[i].x_max;
--			priv->y_min = min_max_pnpid_table[i].y_min;
--			priv->y_max = min_max_pnpid_table[i].y_max;
--			return 0;
--		}
--
- 	if (SYN_ID_MAJOR(priv->identity) < 4)
- 		return 0;
+ /*
++ * Find a key in the given keyring by issuer and authority.
++ */
++static struct key *x509_request_asymmetric_key(
++	struct key *keyring,
++	const char *signer, size_t signer_len,
++	const char *authority, size_t auth_len)
++{
++	key_ref_t key;
++	char *id;
++
++	/* Construct an identifier. */
++	id = kmalloc(signer_len + 2 + auth_len + 1, GFP_KERNEL);
++	if (!id)
++		return ERR_PTR(-ENOMEM);
++
++	memcpy(id, signer, signer_len);
++	id[signer_len + 0] = ':';
++	id[signer_len + 1] = ' ';
++	memcpy(id + signer_len + 2, authority, auth_len);
++	id[signer_len + 2 + auth_len] = 0;
++
++	pr_debug("Look up: \"%s\"\n", id);
++
++	key = keyring_search(make_key_ref(keyring, 1),
++			     &key_type_asymmetric, id);
++	if (IS_ERR(key))
++		pr_debug("Request for module key '%s' err %ld\n",
++			 id, PTR_ERR(key));
++	kfree(id);
++
++	if (IS_ERR(key)) {
++		switch (PTR_ERR(key)) {
++			/* Hide some search errors */
++		case -EACCES:
++		case -ENOTDIR:
++		case -EAGAIN:
++			return ERR_PTR(-ENOKEY);
++		default:
++			return ERR_CAST(key);
++		}
++	}
++
++	pr_devel("<==%s() = 0 [%x]\n", __func__, key_serial(key_ref_to_ptr(key)));
++	return key_ref_to_ptr(key);
++}
++
++/*
+  * Set up the signature parameters in an X.509 certificate.  This involves
+  * digesting the signed data and extracting the signature.
+  */
+@@ -103,6 +151,36 @@ int x509_check_signature(const struct public_key *pub,
+ EXPORT_SYMBOL_GPL(x509_check_signature);
  
-@@ -366,6 +357,15 @@ static int synaptics_resolution(struct psmouse *psmouse)
- 		}
+ /*
++ * Check the new certificate against the ones in the trust keyring.  If one of
++ * those is the signing key and validates the new certificate, then mark the
++ * new certificate as being trusted.
++ *
++ * Return 0 if the new certificate was successfully validated, 1 if we couldn't
++ * find a matching parent certificate in the trusted list and an error if there
++ * is a matching certificate but the signature check fails.
++ */
++static int x509_validate_trust(struct x509_certificate *cert,
++			       struct key *trust_keyring)
++{
++	const struct public_key *pk;
++	struct key *key;
++	int ret = 1;
++
++	if (!trust_keyring)
++		return -EOPNOTSUPP;
++
++	key = x509_request_asymmetric_key(trust_keyring,
++					  cert->issuer, strlen(cert->issuer),
++					  cert->authority,
++					  strlen(cert->authority));
++	if (!IS_ERR(key))  {
++		pk = key->payload.data;
++		ret = x509_check_signature(pk, cert);
++	}
++	return ret;
++}
++
++/*
+  * Attempt to parse a data blob for a key as an X509 certificate.
+  */
+ static int x509_key_preparse(struct key_preparsed_payload *prep)
+@@ -155,9 +233,13 @@ static int x509_key_preparse(struct key_preparsed_payload *prep)
+ 	/* Check the signature on the key if it appears to be self-signed */
+ 	if (!cert->authority ||
+ 	    strcmp(cert->fingerprint, cert->authority) == 0) {
+-		ret = x509_check_signature(cert->pub, cert);
++		ret = x509_check_signature(cert->pub, cert); /* self-signed */
+ 		if (ret < 0)
+ 			goto error_free_cert;
++	} else {
++		ret = x509_validate_trust(cert, get_system_trusted_keyring());
++		if (!ret)
++			prep->trusted = 1;
  	}
  
-+	for (i = 0; min_max_pnpid_table[i].pnp_ids; i++)
-+		if (matches_pnp_id(psmouse, min_max_pnpid_table[i].pnp_ids)) {
-+			priv->x_min = min_max_pnpid_table[i].x_min;
-+			priv->x_max = min_max_pnpid_table[i].x_max;
-+			priv->y_min = min_max_pnpid_table[i].y_min;
-+			priv->y_max = min_max_pnpid_table[i].y_max;
-+			return 0;
-+		}
-+
- 	if (SYN_EXT_CAP_REQUESTS(priv->capabilities) >= 5 &&
- 	    SYN_CAP_MAX_DIMENSIONS(priv->ext_cap_0c)) {
- 		if (synaptics_send_cmd(psmouse, SYN_QUE_EXT_MAX_COORDS, resp)) {
+ 	/* Propose a description */
+diff --git a/include/keys/system_keyring.h b/include/keys/system_keyring.h
+index 8dabc39..72665eb 100644
+--- a/include/keys/system_keyring.h
++++ b/include/keys/system_keyring.h
+@@ -17,7 +17,15 @@
+ #include <linux/key.h>
+ 
+ extern struct key *system_trusted_keyring;
+-
++static inline struct key *get_system_trusted_keyring(void)
++{
++	return system_trusted_keyring;
++}
++#else
++static inline struct key *get_system_trusted_keyring(void)
++{
++	return NULL;
++}
+ #endif
+ 
+ #endif /* _KEYS_SYSTEM_KEYRING_H */
 -- 
-1.9.0
+1.8.1.4
 
