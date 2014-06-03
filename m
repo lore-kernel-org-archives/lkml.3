@@ -1,84 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965133AbaFCUQR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 16:16:17 -0400
-Received: from smtprelay0120.hostedemail.com ([216.40.44.120]:38710 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S965096AbaFCUQP (ORCPT
+	id S933767AbaFCUSc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 16:18:32 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:54342 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753251AbaFCUSa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 16:16:15 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::::::::::::::,RULES_HIT:41:355:379:541:599:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1431:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2828:2892:2895:3138:3139:3140:3141:3142:3354:362
-X-HE-Tag: eyes10_52db77f74a75c
-X-Filterd-Recvd-Size: 2965
-Message-ID: <1401826567.22133.2.camel@joe-AO725>
-Subject: Re: [PATCH v2 RFC 1/3] MAINTAINERS: Add "R:" designated-reviewers
- tag
-From: Joe Perches <joe@perches.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
-        fweisbec@gmail.com, oleg@redhat.com, sbw@mit.edu
-Date: Tue, 03 Jun 2014 13:16:07 -0700
-In-Reply-To: <20140603201202.GW22231@linux.vnet.ibm.com>
-References: <1401809736-12023-1-git-send-email-paulmck@linux.vnet.ibm.com>
-	 <1401822187.18833.24.camel@joe-AO725>
-	 <20140603201202.GW22231@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 3 Jun 2014 16:18:30 -0400
+Date: Wed, 4 Jun 2014 00:18:19 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Christoph Lameter <cl@gentwo.org>
+CC: <akpm@linux-foundation.org>, <hannes@cmpxchg.org>, <mhocko@suse.cz>,
+        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
+Subject: Re: [PATCH -mm 8/8] slab: reap dead memcg caches aggressively
+Message-ID: <20140603201817.GE6013@esperanza>
+References: <cover.1401457502.git.vdavydov@parallels.com>
+ <23a736c90a81e13a2252d35d9fc3dc04a9ed7d7c.1401457502.git.vdavydov@parallels.com>
+ <alpine.DEB.2.10.1405300957390.11943@gentwo.org>
+ <20140531111922.GD25076@esperanza>
+ <alpine.DEB.2.10.1406021019350.2987@gentwo.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.10.1406021019350.2987@gentwo.org>
+X-Originating-IP: [109.195.248.178]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-06-03 at 13:12 -0700, Paul E. McKenney wrote:
-> On Tue, Jun 03, 2014 at 12:03:07PM -0700, Joe Perches wrote:
-> > On Tue, 2014-06-03 at 08:35 -0700, Paul E. McKenney wrote:
-> > > Paul Walmsley also noted the need for patch
-> > > submitters to know who the key reviewers are and suggested adding an
-> > > "R:" tag to the MAINTAINERS file to record this information on a
-> > > per-subsystem basis.
-> > []
-> > > diff --git a/MAINTAINERS b/MAINTAINERS
-> > []
-> > > @@ -70,6 +70,8 @@ Descriptions of section entries:
-> > >  
-> > >  	P: Person (obsolete)
-> > >  	M: Mail patches to: FullName <address@domain>
-> > > +	R: Designated reviewer, who should be CCed on patches,
-> > > +	   format: FullName <address@domain>
-> > >  	L: Mailing list that is relevant to this area
-> > >  	W: Web-page with status/info
-> > >  	Q: Patchwork web based patch tracking system site
-> > 
-> > Perhaps the M: and R: roles should be more fully
-> > described here.
-> > 
-> > The R: entry description doesn't need commas.
-> > 
-> > Maybe something like:
-> > 	M: Maintainer (to:) FullName <address@domain>
-> > 	R: Reviewer   (cc:) FullName <address@domain>
+On Mon, Jun 02, 2014 at 10:24:09AM -0500, Christoph Lameter wrote:
+> On Sat, 31 May 2014, Vladimir Davydov wrote:
 > 
-> This is arguably better organized, but I need to keep my focus on adding
-> the designated reviewer.  I am not in a position to undertake a rewrite
-> of the MAINTAINER file preamble at this point.
-
-That's silly, you're adding the "R" entry.
-Add a proper description for it.
-
-> > You might as well send the get_maintainer update with this
-> > series too.
+> > > You can use a similar approach than in SLUB. Reduce the size of the per
+> > > cpu array objects to zero. Then SLAB will always fall back to its slow
+> > > path in cache_flusharray() where you may be able to do something with less
+> > > of an impact on performace.
+> >
+> > In contrast to SLUB, for SLAB this will slow down kfree significantly.
 > 
-> Interesting...  Who is the maintainer for get_maintainer?  ;-)
+> But that is only when you want to destroy a cache. This is similar.
 
-Some numbskull just signed up for that.
+When we want to destroy a memcg cache, there can be really a lot of
+objects allocated from it, e.g. gigabytes of inodes and dentries. That's
+why I think we should avoid any performance degradations if possible.
 
-He suggests you keep all the patches that add
-support for this "R: reviewer" feature together.
+> 
+> > Fast path for SLAB is just putting an object to a per cpu array, while
+> > the slow path requires taking a per node lock, which is much slower even
+> > with no contention. There still can be lots of objects in a dead memcg
+> > cache (e.g. hundreds of megabytes of dcache), so such performance
+> > degradation is not acceptable, IMO.
+> 
+> I am not sure that there is such a stark difference to SLUB. SLUB also
+> takes the per node lock if necessary to handle freeing especially if you
+> zap the per cpu partial slab pages.
 
+Hmm, for SLUB we will only take the node lock for inserting a slab on
+the partial list, while for SLAB disabling per-cpu arrays will result in
+taking the lock on each object free. So if there are only several
+objects per slab, the difference won't be huge, otherwise the slow down
+will be noticeable for SLAB, but not for SLUB.
 
+I'm not that sure that we should prefer one way over another though. I
+just think that if we already have periodic reaping for SLAB, why not
+employ it for reaping dead memcg caches too, provided it won't obfuscate
+the code? Anyway, if you think that we can neglect possible performance
+degradation that will result from disabling per cpu caches for SLAB, I
+can give it a try.
+
+Thanks.
