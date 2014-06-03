@@ -1,85 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932738AbaFCOoS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 10:44:18 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:52126 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753707AbaFCOoQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 10:44:16 -0400
-Date: Tue, 3 Jun 2014 15:43:19 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: carlo@caione.org, Boris Brezillon <boris@free-electrons.com>,
-        lgirdwood@gmail.com, lee.jones@linaro.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kevin.z.m.zh@gmail.com, sunny@allwinnertech.com,
-        shuge@allwinnertech.com, zhuzhenhua@allwinnertech.com
-Message-ID: <20140603144319.GD31751@sirena.org.uk>
-References: <1401297069-7423-1-git-send-email-maxime.ripard@free-electrons.com>
- <1401297069-7423-4-git-send-email-maxime.ripard@free-electrons.com>
- <20140528185051.GB22488@sirena.org.uk>
- <20140603131204.GJ27722@lukather>
+	id S1754707AbaFCOpB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 10:45:01 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42898 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752096AbaFCOo7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 10:44:59 -0400
+Date: Tue, 3 Jun 2014 16:44:55 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Greg Thelen <gthelen@google.com>, Johannes Weiner <hannes@cmpxchg.org>
+Cc: Roman Gushchin <klamm@yandex-team.ru>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>, linux-mm@kvack.org,
+        Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>
+Subject: Re: [PATCH v2 0/4] memcg: Low-limit reclaim
+Message-ID: <20140603144455.GL1321@dhcp22.suse.cz>
+References: <1398688005-26207-1-git-send-email-mhocko@suse.cz>
+ <20140528121023.GA10735@dhcp22.suse.cz>
+ <20140528134905.GF2878@cmpxchg.org>
+ <20140528142144.GL9895@dhcp22.suse.cz>
+ <20140528152854.GG2878@cmpxchg.org>
+ <xr93ioopyj1y.fsf@gthelen.mtv.corp.google.com>
+ <20140603110959.GE1321@dhcp22.suse.cz>
+ <CAHH2K0YuEFdPRVrCfoxYwP5b0GK4cZzL5K3ByubW+087BKcsUg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="JGq01gMRpXZxBGpH"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140603131204.GJ27722@lukather>
-X-Cookie: Big book, big bore.
+In-Reply-To: <CAHH2K0YuEFdPRVrCfoxYwP5b0GK4cZzL5K3ByubW+087BKcsUg@mail.gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 109.148.252.180
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 3/5] regulator: axp20x: Update the bindings to use a
- local parent regulator
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue 03-06-14 07:01:20, Greg Thelen wrote:
+> On Jun 3, 2014 4:10 AM, "Michal Hocko" <mhocko@suse.cz> wrote:
+> >
+> > On Wed 28-05-14 09:17:13, Greg Thelen wrote:
+> > [...]
+> > > My 2c...  The following works for my use cases:
+> > > 1) introduce memory.low_limit_in_bytes (default=0 thus no default change
+> > >    from older kernels)
+> > > 2) interested users will set low_limit_in_bytes to non-zero value.
+> > >    Memory protected by low limit should be as migratable/reclaimable as
+> > >    mlock memory.  If a zone full of mlock memory causes oom kills, then
+> > >    so should the low limit.
+> >
+> > Would fallback mode in overcommit or the corner case situation break
+> > your usecase?
+> 
+> Yes.  Fallback mode would break my use cases.  What is the corner case
+> situation?  NUMA conflicts? 
 
---JGq01gMRpXZxBGpH
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Described here http://marc.info/?l=linux-mm&m=139940101124396&w=2
 
-On Tue, Jun 03, 2014 at 03:12:04PM +0200, Maxime Ripard wrote:
-> On Wed, May 28, 2014 at 07:50:51PM +0100, Mark Brown wrote:
-> > On Wed, May 28, 2014 at 07:11:07PM +0200, Maxime Ripard wrote:
+> Low limit is a substitute for users mlocking memory.  So if mlocked
+> memory has the same NUMA conflicts, then I see no problem with low
+> limit having the same behavior.
 
-> > >  		axp_mic_reg: ldo5 {
-> > > +			vin-supply = <&axp_ipsout_reg>;
+In principal they are similar - at least from the reclaim POV. The usage
+will be however quite different IMO.
+mlock is the explicit way to keep memory resident. The application
+writer knows_what_he_is_doing, right?
+Lowlimit is an administrative tool. Administrator of a potentially complex
+application is tuning the said application to beat the best performance
+out of it.
+Now both of them know that the thing might blow up if they overcommit on
+the locked memory. So the application writer can check the system state
+before he asks for mlock and he knows about previous mlocks.
+Admin doesn't have that possibility because the memory distribution of
+the memcg is not easy to find out.
 
-> > This is saying that every single regulator on the device is powered by a
-> > (presumably) single input called "vin".  This would certainly be an
-> > unusual package design...  As ever the name of the supply should follow
-> > the name of the pin on the device.
+> From a user API perspective, I'm not clear on the difference between
+> non-ooming (fallback) low limit and the existing soft limit interface.  If
+> low limit is a "soft" (non ooming) limit then why not rework the existing
+> soft limit interface and save the low limit for strict (ooming) behavior?
 
-> Not exactly. Each regulator has its own input pin, named
-> <regulator_name>in in the schematics, with the exception of LDO2 and
-> LDO4 that share the same pin.
+No, not that path again. Pretty please! We've been there and it didn't
+work out. We've been told to not flip defaults and potentially break
+userspace. Softlimit with it weird semantic should die and stay as a
+colorful example of a bad design decision.
 
-OK, so the supplies should be called <regulator_name>in then not vin.
+> Of course, Google can continue to tweak the soft limit or new low
+> limit to provide an ooming guarantee rather than violating the limit.
 
---JGq01gMRpXZxBGpH
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+If you have the use case for the hard guarantee then we can add a knob
+as I've said repeatedly. I just wanted to hear the use case. If you have
+one, great. I just wanted to start with something which is more usable
+in general.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Your setup is quite specific and known to love OOM killers so you are
+very well prepared for that. On the other hand my users would end up in
+a surprise if they saw an OOM while the setup was seemingly correct
+because lowlimit was not overcommitted.
 
-iQIcBAEBAgAGBQJTjd78AAoJELSic+t+oim9gTIP/RFoGTEdwt7pHWORTSpjUvHw
-w0R8nxrSlfSCwI7oieA0gmmHbX/pxdtX8qt/fw8nS3HIYYiyB6q9nwcUgZp6wsT/
-3fGmKAxqqVvdGC4wObhUCfT307X3XBLXP7qL9lMydddGYMfYUneGEipKktX8Xjgf
-T2Q+4sW1v7icoKT7RCRXkrooi0QxasPlIwoJAQk+eV4s/VPfUOkGXJnFAXiZl/M4
-+7hJEM3IAjFo7I7XPlRg3AbS4pClH47GoPfQ5S5K2zjoYu2CewFqu+3BtwKkJrdv
-BnDpqKPWQrb61q67LB5+6xPWz0hmqR92n1BQxh3Ry+bWpXb+krH3quYPATKKz2zQ
-anBtPYxkF5MHNVxP4pxwVpnzAM88FHSz2RJCVhJLEZcycAzgkjxV0Nxz5WLxMB0h
-3J7bVcAS/pUQdzwc//GTMomQMgxnUGeeH8c4QnN1Ls9ahLJDsdS7qx9kD3+JZfT5
-Qv0HnECfcOygWgmhd2n/0Zj5QdnpLjFRwvCY/a5mL/E1rOL/sGWdY0yeC/LuIfJr
-nwyRMrsMTncHU+cDtLc6SVj7m8WqYdL/LPitJHwUKlLi1YEuLmRVNb1vgEunl7RU
-Z9HYAnOjC/9tQ400y6mNyug0/Bp6eVrUaq/r31P6y6lIbMAWHNrXBhv1O42TRFgG
-wwaNW8F5Nnaj98x4sQHZ
-=Nr2e
------END PGP SIGNATURE-----
+I can come up with a patch on top of what is in mm tree now. It would
+add a knob (configurable to default to fallback or OOM by default).
 
---JGq01gMRpXZxBGpH--
+What do you think about this? Would that work for you and Johannes?
+
+> PS: I currently have very limited connectivity so my responses will be
+> delayed.
+
+-- 
+Michal Hocko
+SUSE Labs
