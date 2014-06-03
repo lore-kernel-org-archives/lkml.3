@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932681AbaFCMTh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 08:19:37 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43298 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754263AbaFCLk1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754268AbaFCLk1 (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 3 Jun 2014 07:40:27 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43277 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754227AbaFCLkW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 07:40:22 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Daniele Forsi <dforsi@gmail.com>,
+Cc: Nikita Yushchenko <nyushchenko@dev.rtsoft.ru>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 019/138] usb: storage: shuttle_usbat: fix discs being detected twice
-Date: Tue,  3 Jun 2014 12:37:45 +0100
-Message-Id: <1401795584-22664-20-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 020/138] fsl-usb: do not test for PHY_CLK_VALID bit on controller version 1.6
+Date: Tue,  3 Jun 2014 12:37:46 +0100
+Message-Id: <1401795584-22664-21-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
 References: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
@@ -28,35 +28,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniele Forsi <dforsi@gmail.com>
+From: Nikita Yushchenko <nyushchenko@dev.rtsoft.ru>
 
-commit df602c2d2358f02c6e49cffc5b49b9daa16db033 upstream.
+commit d183c81929beeba842b74422f754446ef2b8b49c upstream.
 
-Even if the USB-to-ATAPI converter supported multiple LUNs, this
-driver would always detect the same physical device or media because
-it doesn't use srb->device->lun in any way.
-Tested with an Hewlett-Packard CD-Writer Plus 8200e.
+Per reference manuals of Freescale P1020 and P2020 SoCs, USB controller
+present in these SoCs has bit 17 of USBx_CONTROL register marked as
+Reserved - there is no PHY_CLK_VALID bit there.
 
-Signed-off-by: Daniele Forsi <dforsi@gmail.com>
+Testing for this bit in ehci_fsl_setup_phy() behaves differently on two
+P1020RDB boards available here - on one board test passes and fsl-usb
+init succeeds, but on other board test fails, causing fsl-usb init to
+fail.
+
+This patch changes ehci_fsl_setup_phy() not to test PHY_CLK_VALID on
+controller version 1.6 that (per manual) does not have this bit.
+
+Signed-off-by: Nikita Yushchenko <nyushchenko@dev.rtsoft.ru>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/storage/shuttle_usbat.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/host/ehci-fsl.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/usb/storage/shuttle_usbat.c b/drivers/usb/storage/shuttle_usbat.c
-index 4ef2a80728f7..008d805c3d21 100644
---- a/drivers/usb/storage/shuttle_usbat.c
-+++ b/drivers/usb/storage/shuttle_usbat.c
-@@ -1851,7 +1851,7 @@ static int usbat_probe(struct usb_interface *intf,
- 	us->transport_name = "Shuttle USBAT";
- 	us->transport = usbat_flash_transport;
- 	us->transport_reset = usb_stor_CB_reset;
--	us->max_lun = 1;
-+	us->max_lun = 0;
+diff --git a/drivers/usb/host/ehci-fsl.c b/drivers/usb/host/ehci-fsl.c
+index 87c1a2efba4f..164e3816f16b 100644
+--- a/drivers/usb/host/ehci-fsl.c
++++ b/drivers/usb/host/ehci-fsl.c
+@@ -261,7 +261,8 @@ static int ehci_fsl_setup_phy(struct usb_hcd *hcd,
+ 		break;
+ 	}
  
- 	result = usb_stor_probe2(us);
- 	return result;
+-	if (pdata->have_sysif_regs && pdata->controller_ver &&
++	if (pdata->have_sysif_regs &&
++	    pdata->controller_ver > FSL_USB_VER_1_6 &&
+ 	    (phy_mode == FSL_USB2_PHY_ULPI)) {
+ 		/* check PHY_CLK_VALID to get phy clk valid */
+ 		if (!spin_event_timeout(in_be32(non_ehci + FSL_SOC_USB_CTRL) &
 -- 
 1.9.1
 
