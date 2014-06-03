@@ -1,51 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932847AbaFCPRJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 11:17:09 -0400
-Received: from mail-qg0-f52.google.com ([209.85.192.52]:56300 "EHLO
-	mail-qg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932225AbaFCPRH (ORCPT
+	id S932865AbaFCPR7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 11:17:59 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:56262 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751601AbaFCPR6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 11:17:07 -0400
+	Tue, 3 Jun 2014 11:17:58 -0400
+Date: Tue, 3 Jun 2014 16:17:54 +0100
+From: Daniel Walter <dwalter@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: richard@nod.at, akpm@linux-foundation.org, eric.y.miao@gmail.com
+Subject: [PATCH v2 02/11] [arch/arm/mach-pxa] replace strict_strto call with
+ kstrto
+Message-ID: <20140603151754.GD28580@google.com>
 MIME-Version: 1.0
-In-Reply-To: <5384DD67.3010408@intel.com>
-References: <1401199802-10212-1-git-send-email-matt.fleming@intel.com>
-	<5384DD67.3010408@intel.com>
-Date: Tue, 3 Jun 2014 16:17:06 +0100
-Message-ID: <CAL01qpvbDRnE0mHBttomcqYtT6i9OaG_kvnj6BMXtqYn4cP1FQ@mail.gmail.com>
-Subject: Re: [PATCH] mm: bootmem: Check pfn_valid() before accessing struct page
-From: "Fleming, Matt" <matt.fleming@intel.com>
-To: Dave Hansen <dave.hansen@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27 May 2014 19:45, Dave Hansen <dave.hansen@intel.com> wrote:
->
-> I don't think this is quite right.  pfn_valid() tells us whether we have
-> a 'struct page' there or not.  *BUT*, it does not tell us whether it is
-> RAM that we can actually address and than can be freed in to the buddy
-> allocator.
->
-> I think sparsemem is where this matters.  Let's say mem= caused lowmem
-> to end in the middle of a section (or that 896MB wasn't
-> section-aligned).  Then someone calls free_bootmem_late() on an area
-> that is in the last section, but _above_ max_mapnr.  It'll be
-> pfn_valid(), we'll free it in to the buddy allocator, and we'll blam the
-> first time we try to write to a bogus vaddr after a phys_to_virt().
+From: Daniel Walter <dwalter@google.com>
+Subject: [PATCH v2 02/11] [arch/arm/mach-pxa] replace strict_strto call with kstrto
 
-Ah, the sparsemem case wasn't something I'd considered. Thanks Dave.
+Replace obsolete call to strict_strto with kstrto
 
-> At a higher level, I don't like the idea of the bootmem code papering
-> over bugs when somebody calls in to it trying to _free_ stuff that's not
-> memory (as far as the kernel is concerned).
->
-> I think the right thing to do is to call in to the e820 code and see if
-> the range is E820_RAM before trying to bootmem-free it.
+Signed-off-by: Daniel Walter <dwalter@google.com>
+---
+ arch/arm/mach-pxa/balloon3.c | 2 +-
+ arch/arm/mach-pxa/viper.c    | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-OK, this makes sense. I'll try that approach and see if it also fixes
-Alan's problem.
+diff --git a/arch/arm/mach-pxa/balloon3.c b/arch/arm/mach-pxa/balloon3.c
+index 43596e0..d897292 100644
+--- a/arch/arm/mach-pxa/balloon3.c
++++ b/arch/arm/mach-pxa/balloon3.c
+@@ -90,7 +90,7 @@ int __init parse_balloon3_features(char *arg)
+ 	if (!arg)
+ 		return 0;
+ 
+-	return strict_strtoul(arg, 0, &balloon3_features_present);
++	return kstrtoul(arg, 0, &balloon3_features_present);
+ }
+ early_param("balloon3_features", parse_balloon3_features);
+ 
+diff --git a/arch/arm/mach-pxa/viper.c b/arch/arm/mach-pxa/viper.c
+index 41f27f6..de3b080 100644
+--- a/arch/arm/mach-pxa/viper.c
++++ b/arch/arm/mach-pxa/viper.c
+@@ -769,7 +769,7 @@ static unsigned long viper_tpm;
+ 
+ static int __init viper_tpm_setup(char *str)
+ {
+-	return strict_strtoul(str, 10, &viper_tpm) >= 0;
++	return kstrtoul(str, 10, &viper_tpm) >= 0;
+ }
+ 
+ __setup("tpm=", viper_tpm_setup);
+-- 
+1.9.3
+
