@@ -1,76 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934222AbaFCWok (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 18:44:40 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:48296 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753311AbaFCWoi (ORCPT
+	id S965091AbaFCWqT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 18:46:19 -0400
+Received: from mail-qa0-f47.google.com ([209.85.216.47]:34093 "EHLO
+	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752069AbaFCWqS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 18:44:38 -0400
-From: Benson Leung <bleung@chromium.org>
-To: gene.chen@intel.com, moch@chromium.org, mika.westerberg@linux.intel.com,
-        kirill.shutemov@linux.intel.com, olof@lixom.net,
-        linux-kernel@vger.kernel.org
-Cc: bleung@chromium.org
-Subject: [PATCH 3/3] platform/chrome: chromeos_laptop - Add Toshiba CB35 Touch
-Date: Tue,  3 Jun 2014 15:44:24 -0700
-Message-Id: <1401835464-15267-4-git-send-email-bleung@chromium.org>
-X-Mailer: git-send-email 1.9.1.423.g4596e3a
-In-Reply-To: <1401835464-15267-1-git-send-email-bleung@chromium.org>
-References: <1401835464-15267-1-git-send-email-bleung@chromium.org>
+	Tue, 3 Jun 2014 18:46:18 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140604083411.4296bcd5@canb.auug.org.au>
+References: <20140604083411.4296bcd5@canb.auug.org.au>
+Date: Tue, 3 Jun 2014 18:46:17 -0400
+X-Google-Sender-Auth: qZ8d7VHAAm5lxAwsWd7oGDuDv7k
+Message-ID: <CAABAsM4hpz_vCK=AbLUzBnVCr3-_5KhJUqif3YP3Yjp+-ojx8w@mail.gmail.com>
+Subject: Re: linux-next: bad commits in the nfs tree
+From: Trond Myklebust <trond.myklebust@fys.uio.no>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Anna Schumaker <Anna.Schumaker@netapp.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Gene Chen <gene.chen@intel.com>
+On Tue, Jun 3, 2014 at 6:34 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi Trond,
+>
+> I noticed in the nfs tree this morning 2 commits that have been
+> cherry-picked from Linus' tree:
+>
+> cc6d854967ce    Linux 3.15-rc8
+> 2b267bb3a8e5    powerpc: Wire renameat2() syscall
+>
+> These are part of a branch that you merged from Anna Schumaker.  It
+> looks like they may have been included when Anna was trying to rebase
+> the rest of the branch onto v3.15-rc8?
+>
+> Please fix this up before asking Linus to pull your tree.
+>
 
-Add support for Leon touch devices, which is the same as
-falco/peppy/wolf on the same buses using the LynxPoint-LP I2C
-via the i2c-designware-pci driver.
+Thanks Stephen! We're still ironing out the kinks in a new process for
+the NFS client maintenance, and appreciate your patience.
 
-Based on these patches from the chromeos-3.8 kernel:
-https://chromium-review.googlesource.com/168351
-https://chromium-review.googlesource.com/173445
+Anna, let's avoid the mess that is 3.15-rc8 for now. Please rebase on
+top of commit b5968725f46d (Push the file layout driver into a
+subdirectory) from my nfs-for-next branch and retag the resulting
+branch using the same commit information as earlier.
+I'll pull the new tag once you send the word that all is ready...
 
-Signed-off-by: Gene Chen <gene.chen@intel.com>
-Signed-off-by: Benson Leung <bleung@chromium.org>
----
- drivers/platform/chrome/chromeos_laptop.c | 15 +++++++++++++++
- 1 file changed, 15 insertions(+)
-
-diff --git a/drivers/platform/chrome/chromeos_laptop.c b/drivers/platform/chrome/chromeos_laptop.c
-index c4d89ae..0f06ab5 100644
---- a/drivers/platform/chrome/chromeos_laptop.c
-+++ b/drivers/platform/chrome/chromeos_laptop.c
-@@ -405,6 +405,13 @@ static struct chromeos_laptop dell_chromebook_11 = {
- 	},
- };
- 
-+static struct chromeos_laptop toshiba_cb35 = {
-+	.i2c_peripherals = {
-+		/* Touchpad. */
-+		{ .add = setup_cyapa_tp, I2C_ADAPTER_DESIGNWARE_0 },
-+	},
-+};
-+
- static struct chromeos_laptop acer_c7_chromebook = {
- 	.i2c_peripherals = {
- 		/* Touchpad. */
-@@ -486,6 +493,14 @@ static struct dmi_system_id chromeos_laptop_dmi_table[] __initdata = {
- 		_CBDD(hp_chromebook_14),
- 	},
- 	{
-+		.ident = "Toshiba CB35",
-+		.matches = {
-+			DMI_MATCH(DMI_BIOS_VENDOR, "coreboot"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "Leon"),
-+		},
-+		_CBDD(toshiba_cb35),
-+	},
-+	{
- 		.ident = "Acer C7 Chromebook",
- 		.matches = {
- 			DMI_MATCH(DMI_PRODUCT_NAME, "Parrot"),
--- 
-1.9.1.423.g4596e3a
-
+Thanks
+   Trond
