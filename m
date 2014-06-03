@@ -1,82 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932796AbaFCPMD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 11:12:03 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:57821 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932080AbaFCPMB (ORCPT
+	id S932813AbaFCPON (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 11:14:13 -0400
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:54781 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932280AbaFCPOL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 11:12:01 -0400
-Date: Tue, 3 Jun 2014 17:11:47 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jason Baron <jbaron@akamai.com>
-Cc: Sasha Levin <sasha.levin@oracle.com>, Ingo Molnar <mingo@kernel.org>,
-        "acme@ghostprotocols.net" <acme@ghostprotocols.net>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Dave Jones <davej@redhat.com>,
-        "edumazet@google.com" <edumazet@google.com>,
-        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>
-Subject: Re: eventpoll __list_del_entry corruption
-Message-ID: <20140603151147.GX30445@twins.programming.kicks-ass.net>
-References: <5370EBE9.6@oracle.com>
- <20140515181102.GH11096@twins.programming.kicks-ass.net>
- <538DE49F.7040904@akamai.com>
+	Tue, 3 Jun 2014 11:14:11 -0400
+Date: Tue, 3 Jun 2014 16:14:07 +0100
+From: Daniel Walter <dwalter@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: richard@nod.at, akpm@linux-foundation.org
+Subject: [PATCH v2 00/11] replace obsolete strict_strto* calls
+Message-ID: <20140603151407.GB28580@google.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="HoX+cWnpt0BNB0oo"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <538DE49F.7040904@akamai.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Daniel Walter <dwalter@google.com>
+Subject: [PATCH v2 00/11] replace obsolete strict_strto* calls
 
---HoX+cWnpt0BNB0oo
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Changes since v1:
+ Removed [arch/tile] (was merged to tile tree)
+ Added Acked-by 
 
-On Tue, Jun 03, 2014 at 11:07:11AM -0400, Jason Baron wrote:
-> Hi Peter,
->=20
-> If its possible to reproduce maybe we can apply the following debug
+Replace all calls to strict_strto* functions with appropriate
+calls to kstrto*.
+Remove definition of strict_strto* functions
 
-I think I saw it twice during a week of fuzzing, so it might be a while,
-esp. since I'm now not actively fuzzing anymore, but I can sure stuff
-this in my tmp/trinity branch just in case.
+All patches apply against current linux git tree
 
-Sasha and Dave might also want to carry it for a while, since they're
-doing far more of this than me.
+Daniel Walter (11):
+  [arch/arm/omap2] replace strict_strto* with kstrto*
+  [arch/arm/mach-pxa] replace strict_strto call with kstrto
+  [arch/arm/mach-s3c24xx] replace strict_strto* with kstrto*
+  [arch/arm/mach-w90x900] replace obsolete strict_strto
+  [arch/mips/alchemy] replace obsolete strict_strto
+  [arch/mips] replace obsolete strict_strto calls
+  [arch/powerpc] replace obsolete strict_strto* calls
+  [arch/x86] replace strict_strto calls
+  [drivers/scsi] replace strict_strto calls
+  [net/sunrpc] replace strict_strto calls
+  [include/linux] remove strict_strto* definitions
 
-> patch to at least have a clue about which wait queue has gotten
-> corrupted. The bug could also be isolated to the epoll core too (ie
-> not specific to a particular wait queue), but I think its worth a
-> shot...
->=20
-> Thanks,
->=20
-> -Jason
+ arch/arm/mach-omap2/board-omap3touchbook.c |  2 +-
+ arch/arm/mach-omap2/mux.c                  | 22 ++++++----------------
+ arch/arm/mach-pxa/balloon3.c               |  2 +-
+ arch/arm/mach-pxa/viper.c                  |  2 +-
+ arch/arm/mach-s3c24xx/mach-jive.c          |  2 +-
+ arch/arm/mach-w90x900/cpu.c                |  3 ++-
+ arch/mips/alchemy/board-xxs1500.c          |  2 +-
+ arch/mips/alchemy/devboards/pm.c           |  4 ++--
+ arch/mips/pci/ops-tx4927.c                 |  9 ++++++---
+ arch/mips/txx9/generic/setup.c             |  4 ++--
+ arch/powerpc/kernel/setup_64.c             |  6 +++---
+ arch/powerpc/kernel/vio.c                  |  2 +-
+ arch/powerpc/platforms/pseries/dlpar.c     |  4 ++--
+ arch/powerpc/platforms/pseries/mobility.c  |  2 +-
+ arch/x86/kernel/cpu/intel_cacheinfo.c      |  4 ++--
+ arch/x86/kernel/cpu/mcheck/mce.c           |  6 +++---
+ arch/x86/kernel/cpu/mcheck/mce_amd.c       |  4 ++--
+ arch/x86/kvm/mmu_audit.c                   |  2 +-
+ arch/x86/platform/uv/tlb_uv.c              |  2 +-
+ drivers/scsi/pmcraid.c                     |  4 ++--
+ drivers/scsi/scsi_sysfs.c                  |  4 ++--
+ include/linux/kernel.h                     |  4 ----
+ net/sunrpc/addr.c                          | 16 ++++++----------
+ net/sunrpc/auth.c                          |  2 +-
+ net/sunrpc/xprtsock.c                      |  4 ++--
+ 25 files changed, 52 insertions(+), 63 deletions(-)
 
---HoX+cWnpt0BNB0oo
-Content-Type: application/pgp-signature
+-- 
+1.9.3
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTjeWzAAoJEHZH4aRLwOS6Y5UQAI3Sl/wBOGi0ZXCIsclDnNQw
-JSz91OFXRKyR/0pR/Ow8KyfFBW6q+US49x6elBAopPvg4z+wsOoATcMIH5pz3Ta0
-q2RRCpu5NowEeiCEpTqHB2GU0rqEACDBOQUVbmsqGNtuzl878I+a7k1GOyP5v4/d
-KIyFUmPYl/HjQ0hBCAwrTaOkKJ3DXxHnnuBSEKlg8BzLivjmP2tAqup1z7sQS1QH
-ApFWuUyC+rW9nro/EOJA4B1kUbInSqaRWC0bthQi08aE+P8eHeCXVtW4vgOuz8mm
-OfCbsVmgaOjfTPmLb206KFipDTdJCpyCi0ylv65qhFNpGtci2eu78Ep9COlSbXty
-bA8mTVgJirqRGN4+2wu88ZejEzMRxLNxSPZaQLp7p4WaluDP6771TsOFDpVuzPzQ
-9jzWZni9FOiKor+ePcxOV7k/IpoU28nQc4TEQ0XjgpEyN5vLddJ2jYzGbYviPJf2
-ghbgQgwXt7NYHzTPOaQneq3wX0Sjyqlmykler/i0ZzTHbt47TmPeAX5LTw2De7p4
-PrfClsmLknq4gN9nHwV++nZHmsYhdE4C0PMLobpdN4/vho9KFQyeHkfHj62O4k1F
-0UmFEJjIRWXMANJYvcvrxTIUH36sSCeidqWmleKq6TBIaQRUCZOJZHNt6XcuL42k
-r1Ti0E5+2iMmTOPGBcMb
-=QFWI
------END PGP SIGNATURE-----
-
---HoX+cWnpt0BNB0oo--
