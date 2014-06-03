@@ -1,75 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932663AbaFCMB0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 08:01:26 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43602 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932754AbaFCLlr (ORCPT
+	id S932960AbaFCMBd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 08:01:33 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:55865 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932754AbaFCMBb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 07:41:47 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Wolfram Sang <wsa+renesas@sang-engineering.com>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 077/138] i2c: rcar: bail out on zero length transfers
-Date: Tue,  3 Jun 2014 12:38:43 +0100
-Message-Id: <1401795584-22664-78-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
-References: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Tue, 3 Jun 2014 08:01:31 -0400
+Date: Tue, 3 Jun 2014 14:01:28 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
+Cc: "'len.brown@intel.com'" <len.brown@intel.com>,
+        "'rjw@sisk.pl'" <rjw@sisk.pl>,
+        "'linux-pm@vger.kernel.org'" <linux-pm@vger.kernel.org>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
+Subject: Re: autosleep suspend too frquent problem
+Message-ID: <20140603120128.GA5080@amd.pavel.ucw.cz>
+References: <35FD53F367049845BC99AC72306C23D1029A27656A2D@CNBJMBX05.corpusers.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <35FD53F367049845BC99AC72306C23D1029A27656A2D@CNBJMBX05.corpusers.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.11 -stable review patch.  If anyone has any objections, please let me know.
+Hi!
 
-------------------
 
-From: Wolfram Sang <wsa+renesas@sang-engineering.com>
+> I found sd card sometimes are damaged/ destroyed 
+> On our devices .
+> And seems it is caused by kernel's frequently suspend/resume,
+> Because during suspend/resume, the driver will suspend/resume sdcard
+> Very frequently, this will damaged the sdcard sometimes, and the damage
+> is not recoverable ..
+> 
+> Sometimes kernel will enter suspend and exit suspend very frequently,
+> Especially when the system is in idle, but some driver is not idle,
+> And it will  wake up the system by irq frequently.
+> By our power test result, if system enter suspend /resume very frequently,
+> Will consume more power , because it will enable /disable many devices
+> During a short time .
+> 
+> I make a patch to prevent the system to enter suspend/resume state
+> More than one time during 2 seconds：
 
-commit d7653964c590ba846aa11a8f6edf409773cbc492 upstream.
+It is good you managed to diagnose the problem, but this si not the
+right solution.
 
-This hardware does not support zero length transfers. Instead, the
-driver does one (random) byte transfers currently with undefined results
-for the slaves. We now bail out.
+Either:
 
-Signed-off-by: Wolfram Sang <wsa+renesas@sang-engineering.com>
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/i2c/busses/i2c-rcar.c | 9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+1) don't power down SD card during system suspend
 
-diff --git a/drivers/i2c/busses/i2c-rcar.c b/drivers/i2c/busses/i2c-rcar.c
-index 0fc585861610..820b140061c9 100644
---- a/drivers/i2c/busses/i2c-rcar.c
-+++ b/drivers/i2c/busses/i2c-rcar.c
-@@ -541,6 +541,12 @@ static int rcar_i2c_master_xfer(struct i2c_adapter *adap,
- 
- 	ret = -EINVAL;
- 	for (i = 0; i < num; i++) {
-+		/* This HW can't send STOP after address phase */
-+		if (msgs[i].len == 0) {
-+			ret = -EOPNOTSUPP;
-+			break;
-+		}
-+
- 		/*-------------- spin lock -----------------*/
- 		spin_lock_irqsave(&priv->lock, flags);
- 
-@@ -605,7 +611,8 @@ static int rcar_i2c_master_xfer(struct i2c_adapter *adap,
- 
- static u32 rcar_i2c_func(struct i2c_adapter *adap)
- {
--	return I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL;
-+	/* This HW can't do SMBUS_QUICK and NOSTART */
-+	return I2C_FUNC_I2C | (I2C_FUNC_SMBUS_EMUL & ~I2C_FUNC_SMBUS_QUICK);
- }
- 
- static const struct i2c_algorithm rcar_i2c_algo = {
+or maybe even better
+
+2) don't power _up_ SD card during system resume. Let it be powered
+down until the first access.
+
+Thanks,
+									Pavel
 -- 
-1.9.1
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
