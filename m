@@ -1,73 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965155AbaFCVaI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 17:30:08 -0400
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:59287 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965105AbaFCVaE (ORCPT
+	id S934248AbaFCVat (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 17:30:49 -0400
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:54149 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965135AbaFCVaG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 17:30:04 -0400
+	Tue, 3 Jun 2014 17:30:06 -0400
 From: Larry Bassel <larry.bassel@linaro.org>
 To: catalin.marinas@arm.com, will.deacon@arm.com
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linaro-kernel@lists.linaro.org, khilman@linaro.org,
         Larry Bassel <larry.bassel@linaro.org>
-Subject: [PATCH v8 0/2] context tracker support for arm64
-Date: Tue,  3 Jun 2014 14:29:49 -0700
-Message-Id: <1401830991-21233-1-git-send-email-larry.bassel@linaro.org>
+Subject: [PATCH v8 1/2] arm64: adjust el0_sync so that a function can be called
+Date: Tue,  3 Jun 2014 14:29:50 -0700
+Message-Id: <1401830991-21233-2-git-send-email-larry.bassel@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1401830991-21233-1-git-send-email-larry.bassel@linaro.org>
+References: <1401830991-21233-1-git-send-email-larry.bassel@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implement and enable context tracking for arm64 (which is
-a prerequisite for FULL_NOHZ support). This patchset
-builds upon earlier work by Kevin Hilman and is based on
-Will Deacon's tree.
+To implement the context tracker properly on arm64,
+a function call needs to be made after debugging and
+interrupts are turned on, but before the lr is changed
+to point to ret_to_user(). If the function call
+is made after the lr is changed the function will not
+return to the correct place.
 
-Changes v7 to v8:
+For similar reasons, defer the setting of x0 so that
+it doesn't need to be saved around the function call
+(save far_el1 in x26 temporarily instead).
 
-* Fix bug where el1_irq was calling ct_user_exit rather than el0_irq
+Acked-by: Will Deacon <will.deacon@arm.com>
+Reviewed-by: Kevin Hilman <khilman@linaro.org>
+Tested-by: Kevin Hilman <khilman@linaro.org>
+Signed-off-by: Larry Bassel <larry.bassel@linaro.org>
+---
+ arch/arm64/kernel/entry.S | 19 +++++++++++++------
+ 1 file changed, 13 insertions(+), 6 deletions(-)
 
-Changes v6 to v7:
-
-* Rename parameter of ct_user_exit from restore to syscall
-
-Changes v5 to v6:
-
-* Don't save far_el1 in x26 in el0_dbg path (not needed)
-* TIF_NOHZ processes go through the slow path (so no register
-save/restore is needed in ct_user_enter)
-
-Changes v4 to v5:
-
-* Improvement to code restoring far_el1 (suggested by Christopher Covington)
-* Improvement to register save/restore in ct_user_enter
-
-Changes v3 to v4:
-
-* Rename parameter of ct_user_exit from save to restore
-* Rebased patch to Will Deacon's tree (branch remotes/origin/aarch64
-of git://git.kernel.org/pub/scm/linux/kernel/git/will/linux.git)
-
-Changes v2 to v3:
-
-* Save/restore necessary registers in ct_user_enter and ct_user_exit
-* Annotate "error paths" out of el0_sync with ct_user_exit
-
-Changes v1 to v2:
-
-* Save far_el1 in x26 temporarily
-
-Larry Bassel (2):
-  arm64: adjust el0_sync so that a function can be called
-  arm64: enable context tracking
-
- arch/arm64/Kconfig                   |  1 +
- arch/arm64/include/asm/thread_info.h |  4 +++
- arch/arm64/kernel/entry.S            | 58 +++++++++++++++++++++++++++++++-----
- 3 files changed, 56 insertions(+), 7 deletions(-)
-
+diff --git a/arch/arm64/kernel/entry.S b/arch/arm64/kernel/entry.S
+index e8b23a3..b0101b9 100644
+--- a/arch/arm64/kernel/entry.S
++++ b/arch/arm64/kernel/entry.S
+@@ -354,7 +354,6 @@ el0_sync:
+ 	lsr	x24, x25, #ESR_EL1_EC_SHIFT	// exception class
+ 	cmp	x24, #ESR_EL1_EC_SVC64		// SVC in 64-bit state
+ 	b.eq	el0_svc
+-	adr	lr, ret_to_user
+ 	cmp	x24, #ESR_EL1_EC_DABT_EL0	// data abort in EL0
+ 	b.eq	el0_da
+ 	cmp	x24, #ESR_EL1_EC_IABT_EL0	// instruction abort in EL0
+@@ -383,7 +382,6 @@ el0_sync_compat:
+ 	lsr	x24, x25, #ESR_EL1_EC_SHIFT	// exception class
+ 	cmp	x24, #ESR_EL1_EC_SVC32		// SVC in 32-bit state
+ 	b.eq	el0_svc_compat
+-	adr	lr, ret_to_user
+ 	cmp	x24, #ESR_EL1_EC_DABT_EL0	// data abort in EL0
+ 	b.eq	el0_da
+ 	cmp	x24, #ESR_EL1_EC_IABT_EL0	// instruction abort in EL0
+@@ -426,22 +424,25 @@ el0_da:
+ 	/*
+ 	 * Data abort handling
+ 	 */
+-	mrs	x0, far_el1
+-	bic	x0, x0, #(0xff << 56)
++	mrs	x26, far_el1
+ 	// enable interrupts before calling the main handler
+ 	enable_dbg_and_irq
++	bic	x0, x26, #(0xff << 56)
+ 	mov	x1, x25
+ 	mov	x2, sp
++	adr	lr, ret_to_user
+ 	b	do_mem_abort
+ el0_ia:
+ 	/*
+ 	 * Instruction abort handling
+ 	 */
+-	mrs	x0, far_el1
++	mrs	x26, far_el1
+ 	// enable interrupts before calling the main handler
+ 	enable_dbg_and_irq
++	mov	x0, x26
+ 	orr	x1, x25, #1 << 24		// use reserved ISS bit for instruction aborts
+ 	mov	x2, sp
++	adr	lr, ret_to_user
+ 	b	do_mem_abort
+ el0_fpsimd_acc:
+ 	/*
+@@ -450,6 +451,7 @@ el0_fpsimd_acc:
+ 	enable_dbg
+ 	mov	x0, x25
+ 	mov	x1, sp
++	adr	lr, ret_to_user
+ 	b	do_fpsimd_acc
+ el0_fpsimd_exc:
+ 	/*
+@@ -458,16 +460,19 @@ el0_fpsimd_exc:
+ 	enable_dbg
+ 	mov	x0, x25
+ 	mov	x1, sp
++	adr	lr, ret_to_user
+ 	b	do_fpsimd_exc
+ el0_sp_pc:
+ 	/*
+ 	 * Stack or PC alignment exception handling
+ 	 */
+-	mrs	x0, far_el1
++	mrs	x26, far_el1
+ 	// enable interrupts before calling the main handler
+ 	enable_dbg_and_irq
++	mov	x0, x26
+ 	mov	x1, x25
+ 	mov	x2, sp
++	adr	lr, ret_to_user
+ 	b	do_sp_pc_abort
+ el0_undef:
+ 	/*
+@@ -476,6 +481,7 @@ el0_undef:
+ 	// enable interrupts before calling the main handler
+ 	enable_dbg_and_irq
+ 	mov	x0, sp
++	adr	lr, ret_to_user
+ 	b	do_undefinstr
+ el0_dbg:
+ 	/*
+@@ -493,6 +499,7 @@ el0_inv:
+ 	mov	x0, sp
+ 	mov	x1, #BAD_SYNC
+ 	mrs	x2, esr_el1
++	adr	lr, ret_to_user
+ 	b	bad_mode
+ ENDPROC(el0_sync)
+ 
 -- 
 1.8.3.2
 
