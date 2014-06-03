@@ -1,187 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754925AbaFCR74 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 13:59:56 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:51237 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754610AbaFCR6y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 13:58:54 -0400
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: linux-security-module <linux-security-module@vger.kernel.org>
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        Dmitry Kasatkin <d.kasatkin@samsung.com>,
-        David Howells <dhowells@redhat.com>, Josh Boyer <jwboyer@redhat.com>,
-        keyrings <keyrings@linux-nfs.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [RFC PATCH v5 2/4] KEYS: verify a certificate is signed by a 'trusted' key
-Date: Tue,  3 Jun 2014 13:58:36 -0400
-Message-Id: <1401818318-15780-3-git-send-email-zohar@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1401818318-15780-1-git-send-email-zohar@linux.vnet.ibm.com>
-References: <1401818318-15780-1-git-send-email-zohar@linux.vnet.ibm.com>
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14060317-7164-0000-0000-000002326B0D
+	id S933013AbaFCSAh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 14:00:37 -0400
+Received: from poczta.biotech.uni.wroc.pl ([156.17.99.28]:48858 "EHLO
+	poczta.biotech.uni.wroc.pl" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754667AbaFCSAe convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 14:00:34 -0400
+X-Greylist: delayed 2115 seconds by postgrey-1.27 at vger.kernel.org; Tue, 03 Jun 2014 14:00:33 EDT
+Content-Type: text/plain; charset="iso-8859-1"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+Content-Description: Mail message body
+Subject: Ubiegac sie o pozyczke dzis o 2%
+To: Recipients <info@helpdesk.com>
+From: <info@helpdesk.com>
+Date: Tue, 03 Jun 2014 18:16:15 +0100
+Reply-To: flowellhelpdesk@gmail.com
+X-Antivirus: avast! (VPS 140603-0, 06/03/2014), Outbound message
+X-Antivirus-Status: Clean
+Message-Id: <20140603172557.B80573A623@poczta.biotech.uni.wroc.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Only public keys, with certificates signed by an existing
-'trusted' key on the system trusted keyring, should be added
-to a trusted keyring.  This patch adds support for verifying
-a certificate's signature.
+Teraz mozesz uzyskac pozyczke w wysokosci 2% za uniewaznic i uzyskac do 20 lat lub wiecej, aby go splacac. Nie wchodza do kredytów krótkoterminowych, które sprawiaja, ze zwróci sie w kilka tygodni lub miesiecy.
 
-This is derived from David Howells pkcs7_request_asymmetric_key() patch.
+Zdobadz pieniadze potrzebne dzisiaj z duza iloscia czasu do dokonania platnosci z powrotem. Aby zastosowac, wyslac zapytania do flowellhelpdesk@gmail.com  wszystkie
 
-Changelog:
-- define get_system_trusted_keyring() to fix kbuild issues
-
-Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
 ---
- crypto/asymmetric_keys/x509_public_key.c | 84 +++++++++++++++++++++++++++++++-
- include/keys/system_keyring.h            | 10 +++-
- 2 files changed, 92 insertions(+), 2 deletions(-)
-
-diff --git a/crypto/asymmetric_keys/x509_public_key.c b/crypto/asymmetric_keys/x509_public_key.c
-index 382ef0d..1af8a30 100644
---- a/crypto/asymmetric_keys/x509_public_key.c
-+++ b/crypto/asymmetric_keys/x509_public_key.c
-@@ -18,12 +18,60 @@
- #include <linux/asn1_decoder.h>
- #include <keys/asymmetric-subtype.h>
- #include <keys/asymmetric-parser.h>
-+#include <keys/system_keyring.h>
- #include <crypto/hash.h>
- #include "asymmetric_keys.h"
- #include "public_key.h"
- #include "x509_parser.h"
- 
- /*
-+ * Find a key in the given keyring by issuer and authority.
-+ */
-+static struct key *x509_request_asymmetric_key(
-+	struct key *keyring,
-+	const char *signer, size_t signer_len,
-+	const char *authority, size_t auth_len)
-+{
-+	key_ref_t key;
-+	char *id;
-+
-+	/* Construct an identifier. */
-+	id = kmalloc(signer_len + 2 + auth_len + 1, GFP_KERNEL);
-+	if (!id)
-+		return ERR_PTR(-ENOMEM);
-+
-+	memcpy(id, signer, signer_len);
-+	id[signer_len + 0] = ':';
-+	id[signer_len + 1] = ' ';
-+	memcpy(id + signer_len + 2, authority, auth_len);
-+	id[signer_len + 2 + auth_len] = 0;
-+
-+	pr_debug("Look up: \"%s\"\n", id);
-+
-+	key = keyring_search(make_key_ref(keyring, 1),
-+			     &key_type_asymmetric, id);
-+	if (IS_ERR(key))
-+		pr_debug("Request for module key '%s' err %ld\n",
-+			 id, PTR_ERR(key));
-+	kfree(id);
-+
-+	if (IS_ERR(key)) {
-+		switch (PTR_ERR(key)) {
-+			/* Hide some search errors */
-+		case -EACCES:
-+		case -ENOTDIR:
-+		case -EAGAIN:
-+			return ERR_PTR(-ENOKEY);
-+		default:
-+			return ERR_CAST(key);
-+		}
-+	}
-+
-+	pr_devel("<==%s() = 0 [%x]\n", __func__, key_serial(key_ref_to_ptr(key)));
-+	return key_ref_to_ptr(key);
-+}
-+
-+/*
-  * Set up the signature parameters in an X.509 certificate.  This involves
-  * digesting the signed data and extracting the signature.
-  */
-@@ -103,6 +151,36 @@ int x509_check_signature(const struct public_key *pub,
- EXPORT_SYMBOL_GPL(x509_check_signature);
- 
- /*
-+ * Check the new certificate against the ones in the trust keyring.  If one of
-+ * those is the signing key and validates the new certificate, then mark the
-+ * new certificate as being trusted.
-+ *
-+ * Return 0 if the new certificate was successfully validated, 1 if we couldn't
-+ * find a matching parent certificate in the trusted list and an error if there
-+ * is a matching certificate but the signature check fails.
-+ */
-+static int x509_validate_trust(struct x509_certificate *cert,
-+			       struct key *trust_keyring)
-+{
-+	const struct public_key *pk;
-+	struct key *key;
-+	int ret = 1;
-+
-+	if (!trust_keyring)
-+		return -EOPNOTSUPP;
-+
-+	key = x509_request_asymmetric_key(trust_keyring,
-+					  cert->issuer, strlen(cert->issuer),
-+					  cert->authority,
-+					  strlen(cert->authority));
-+	if (!IS_ERR(key))  {
-+		pk = key->payload.data;
-+		ret = x509_check_signature(pk, cert);
-+	}
-+	return ret;
-+}
-+
-+/*
-  * Attempt to parse a data blob for a key as an X509 certificate.
-  */
- static int x509_key_preparse(struct key_preparsed_payload *prep)
-@@ -155,9 +233,13 @@ static int x509_key_preparse(struct key_preparsed_payload *prep)
- 	/* Check the signature on the key if it appears to be self-signed */
- 	if (!cert->authority ||
- 	    strcmp(cert->fingerprint, cert->authority) == 0) {
--		ret = x509_check_signature(cert->pub, cert);
-+		ret = x509_check_signature(cert->pub, cert); /* self-signed */
- 		if (ret < 0)
- 			goto error_free_cert;
-+	} else {
-+		ret = x509_validate_trust(cert, get_system_trusted_keyring());
-+		if (!ret)
-+			prep->trusted = 1;
- 	}
- 
- 	/* Propose a description */
-diff --git a/include/keys/system_keyring.h b/include/keys/system_keyring.h
-index 8dabc39..72665eb 100644
---- a/include/keys/system_keyring.h
-+++ b/include/keys/system_keyring.h
-@@ -17,7 +17,15 @@
- #include <linux/key.h>
- 
- extern struct key *system_trusted_keyring;
--
-+static inline struct key *get_system_trusted_keyring(void)
-+{
-+	return system_trusted_keyring;
-+}
-+#else
-+static inline struct key *get_system_trusted_keyring(void)
-+{
-+	return NULL;
-+}
- #endif
- 
- #endif /* _KEYS_SYSTEM_KEYRING_H */
--- 
-1.8.1.4
+This email is free from viruses and malware because avast! Antivirus protection is active.
+http://www.avast.com
 
