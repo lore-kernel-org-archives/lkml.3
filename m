@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754132AbaFCLkO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 07:40:14 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43241 "EHLO
+	id S1755352AbaFCMW0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 08:22:26 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43250 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754103AbaFCLkL (ORCPT
+	with ESMTP id S1754116AbaFCLkO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 07:40:11 -0400
+	Tue, 3 Jun 2014 07:40:14 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Leo Liu <leo.liu@amd.com>,
-        =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>,
+Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        Ben Skeggs <bskeggs@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 013/138] drm/radeon: check buffer relocation offset
-Date: Tue,  3 Jun 2014 12:37:39 +0100
-Message-Id: <1401795584-22664-14-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 015/138] drm/nouveau: fix another lock unbalance in nouveau_crtc_page_flip
+Date: Tue,  3 Jun 2014 12:37:41 +0100
+Message-Id: <1401795584-22664-16-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
 References: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,32 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Leo Liu <leo.liu@amd.com>
+From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
 
-commit 695daf1a8e731a4b5b89de89a61f32a4d7ad7094 upstream.
+commit 806cbc5026933a781b66adecf6d1658fde9138e6 upstream.
 
-Signed-off-by: Leo Liu <leo.liu@amd.com>
-Signed-off-by: Christian König <christian.koenig@amd.com>
+Fixes a regression introduced by 060810d7abaabca "drm/nouveau: fix locking
+issues in page flipping paths".  chan->cli->mutex is unlocked a second time
+in the fail_unreserve path, fix this by moving mutex_unlock down.
+
+Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/radeon/radeon_uvd.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/gpu/drm/nouveau/nouveau_display.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/radeon/radeon_uvd.c b/drivers/gpu/drm/radeon/radeon_uvd.c
-index 26b107d13be1..af81d123db80 100644
---- a/drivers/gpu/drm/radeon/radeon_uvd.c
-+++ b/drivers/gpu/drm/radeon/radeon_uvd.c
-@@ -454,6 +454,10 @@ static int radeon_uvd_cs_reloc(struct radeon_cs_parser *p,
- 	cmd = radeon_get_ib_value(p, p->idx) >> 1;
+diff --git a/drivers/gpu/drm/nouveau/nouveau_display.c b/drivers/gpu/drm/nouveau/nouveau_display.c
+index a03e75deacaf..00d547eaf579 100644
+--- a/drivers/gpu/drm/nouveau/nouveau_display.c
++++ b/drivers/gpu/drm/nouveau/nouveau_display.c
+@@ -583,9 +583,9 @@ nouveau_crtc_page_flip(struct drm_crtc *crtc, struct drm_framebuffer *fb,
+ 	}
  
- 	if (cmd < 0x4) {
-+		if (end <= start) {
-+			DRM_ERROR("invalid reloc offset %X!\n", offset);
-+			return -EINVAL;
-+		}
- 		if ((end - start) < buf_sizes[cmd]) {
- 			DRM_ERROR("buffer (%d) to small (%d / %d)!\n", cmd,
- 				  (unsigned)(end - start), buf_sizes[cmd]);
+ 	ret = nouveau_page_flip_emit(chan, old_bo, new_bo, s, &fence);
+-	mutex_unlock(&chan->cli->mutex);
+ 	if (ret)
+ 		goto fail_unreserve;
++	mutex_unlock(&chan->cli->mutex);
+ 
+ 	/* Update the crtc struct and cleanup */
+ 	crtc->fb = fb;
 -- 
 1.9.1
 
