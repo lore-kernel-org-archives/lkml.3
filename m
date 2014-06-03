@@ -1,125 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753352AbaFCKP1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 06:15:27 -0400
-Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:15342
-	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752133AbaFCKPW (ORCPT
+	id S1752208AbaFCKQQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 06:16:16 -0400
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:63505 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750930AbaFCKQP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 06:15:22 -0400
-X-IronPort-AV: E=Sophos;i="4.98,964,1392159600"; 
-   d="scan'208";a="65215821"
-Date: Tue, 3 Jun 2014 12:15:18 +0200 (CEST)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@localhost6.localdomain6
-To: Stephen Boyd <sboyd@codeaurora.org>
-cc: Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org,
-        Mitchel Humpherys <mitchelh@codeaurora.org>,
-        Gilles Muller <Gilles.Muller@lip6.fr>,
-        Nicolas Palix <nicolas.palix@imag.fr>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, devicetree@vger.kernel.org
-Subject: Re: [PATCH v2] coccinelle: Check for missing NULL terminators in
- of_device_id tables
-In-Reply-To: <1401213858-31950-1-git-send-email-sboyd@codeaurora.org>
-Message-ID: <alpine.DEB.2.02.1406031208380.2036@localhost6.localdomain6>
-References: <1401213858-31950-1-git-send-email-sboyd@codeaurora.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 3 Jun 2014 06:16:15 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <538D9FDB.6070607@linux.vnet.ibm.com>
+References: <20140526205337.1100.55275.stgit@srivatsabhat.in.ibm.com>
+	<CAKohpokdnHag=79cXuwgNjX-k+JJU9GE3KUBhixcj3PZ6y78GQ@mail.gmail.com>
+	<538D9631.9090500@linux.vnet.ibm.com>
+	<CAKohpomynD9m-Cq4zsVSp3Xbw5Tx2cSe_Fcp5y0U8uAKSpQ1Tw@mail.gmail.com>
+	<538D9DBD.2030605@linux.vnet.ibm.com>
+	<CAKohpomS+ayvCavhXMHubcx2Pn6NcTDkV5iyUV+nz6_fKJetDg@mail.gmail.com>
+	<538D9FDB.6070607@linux.vnet.ibm.com>
+Date: Tue, 3 Jun 2014 15:46:10 +0530
+Message-ID: <CAKohpomEX8+WN2pVdUZwFsSE4JgnFuUuHTu0WcDmLy71JxWGOA@mail.gmail.com>
+Subject: Re: [PATCH] cpufreq: governor: Be friendly towards latency-sensitive
+ bursty workloads
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        "ego@linux.vnet.ibm.com" <ego@linux.vnet.ibm.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Failure to terminate an of_device_id table can lead to confusing
-failures depending on where the compiler places the array. Add a
-check to make sure these tables are terminated. Thanks to Mitchel
-Humpherys for coming up with the pattern initially.
+On 3 June 2014 15:43, Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com> wrote:
+> diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
+> index e1c6433..2597bbe 100644
+> --- a/drivers/cpufreq/cpufreq_governor.c
+> +++ b/drivers/cpufreq/cpufreq_governor.c
+> @@ -36,14 +36,29 @@ void dbs_check_cpu(struct dbs_data *dbs_data, int cpu)
+>         struct od_dbs_tuners *od_tuners = dbs_data->tuners;
+>         struct cs_dbs_tuners *cs_tuners = dbs_data->tuners;
+>         struct cpufreq_policy *policy;
+> +       unsigned int sampling_rate;
+>         unsigned int max_load = 0;
+>         unsigned int ignore_nice;
+>         unsigned int j;
+>
+> -       if (dbs_data->cdata->governor == GOV_ONDEMAND)
+> +       if (dbs_data->cdata->governor == GOV_ONDEMAND) {
+> +               struct od_cpu_dbs_info_s *od_dbs_info =
+> +                               dbs_data->cdata->get_cpu_dbs_info_s(cpu);
+> +
+> +               /*
+> +                * Sometimes, the ondemand governor uses an additional
+> +                * multiplier to give long delays. So apply this multiplier to
+> +                * the 'sampling_rate', so as to keep the wake-up-from-idle
+> +                * detection logic a bit conservative.
+> +                */
+> +               sampling_rate = od_tuners->sampling_rate;
+> +               sampling_rate *= od_dbs_info->rate_mult;
+> +
+>                 ignore_nice = od_tuners->ignore_nice_load;
+> -       else
+> +       } else {
+> +               sampling_rate = cs_tuners->sampling_rate;
+>                 ignore_nice = cs_tuners->ignore_nice_load;
+> +       }
+>
+>         policy = cdbs->cur_policy;
+>
+> @@ -96,7 +111,29 @@ void dbs_check_cpu(struct dbs_data *dbs_data, int cpu)
+>                 if (unlikely(!wall_time || wall_time < idle_time))
+>                         continue;
+>
+> -               load = 100 * (wall_time - idle_time) / wall_time;
+> +               /*
+> +                * If the CPU had gone completely idle, and a task just woke up
+> +                * on this CPU now, it would be unfair to calculate 'load' the
+> +                * usual way for this elapsed time-window, because it will show
+> +                * near-zero load, irrespective of how CPU intensive the new
+> +                * task is. This is undesirable for latency-sensitive bursty
+> +                * workloads.
+> +                *
+> +                * To avoid this, we reuse the 'load' from the previous
+> +                * time-window and give this task a chance to start with a
+> +                * reasonably high CPU frequency.
+> +                *
+> +                * Detecting this situation is easy: the governor's deferrable
+> +                * timer would not have fired during CPU-idle periods. Hence
+> +                * an unusually large 'wall_time' (as compared to the sampling
+> +                * rate) indicates this scenario.
+> +                */
+> +               if (unlikely(wall_time > (2 * sampling_rate))) {
+> +                       load = j_cdbs->prev_load;
+> +               } else {
+> +                       load = 100 * (wall_time - idle_time) / wall_time;
+> +                       j_cdbs->prev_load = load;
+> +               }
+>
+>                 if (load > max_load)
+>                         max_load = load;
+> @@ -323,6 +360,10 @@ int cpufreq_governor_dbs(struct cpufreq_policy *policy,
+>                         j_cdbs->cur_policy = policy;
+>                         j_cdbs->prev_cpu_idle = get_cpu_idle_time(j,
+>                                                &j_cdbs->prev_cpu_wall, io_busy);
+> +                       j_cdbs->prev_load = 100 * (j_cdbs->prev_cpu_wall -
+> +                                                  j_cdbs->prev_cpu_idle) /
+> +                                                  j_cdbs->prev_cpu_wall;
+> +
+>                         if (ignore_nice)
+>                                 j_cdbs->prev_cpu_nice =
+>                                         kcpustat_cpu(j).cpustat[CPUTIME_NICE];
+> diff --git a/drivers/cpufreq/cpufreq_governor.h b/drivers/cpufreq/cpufreq_governor.h
+> index bfb9ae1..b56552b 100644
+> --- a/drivers/cpufreq/cpufreq_governor.h
+> +++ b/drivers/cpufreq/cpufreq_governor.h
+> @@ -134,6 +134,7 @@ struct cpu_dbs_common_info {
+>         u64 prev_cpu_idle;
+>         u64 prev_cpu_wall;
+>         u64 prev_cpu_nice;
+> +       unsigned int prev_load;
+>         struct cpufreq_policy *cur_policy;
+>         struct delayed_work work;
+>         /*
 
-Cc: Mitchel Humpherys <mitchelh@codeaurora.org>
-Cc: Julia Lawall <Julia.Lawall@lip6.fr>
-Cc: Gilles Muller <Gilles.Muller@lip6.fr>
-Cc: Nicolas Palix <nicolas.palix@imag.fr>
-Cc: Grant Likely <grant.likely@linaro.org>
-Cc: Rob Herring <robh+dt@kernel.org>
-Cc: devicetree@vger.kernel.org
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-Acked-by: Grant Likely <grant.likely@linaro.org>
-Signed-off-by: Julia Lawall <julia.lawall@lip6.fr>
-
----
-
-v3: Removed unneeded rule bad_of_table.  Placed * in context rule on the 
-closing brace; putting it on the field caused all fields to be marked.
-
- scripts/coccinelle/misc/of_table.cocci |   62 +++++++++++++++++++++++++++++++++
- 1 file changed, 62 insertions(+)
-
-diff --git a/scripts/coccinelle/misc/of_table.cocci b/scripts/coccinelle/misc/of_table.cocci
-new file mode 100644
-index 0000000..3c93404
---- /dev/null
-+++ b/scripts/coccinelle/misc/of_table.cocci
-@@ -0,0 +1,62 @@
-+/// Make sure of_device_id tables are NULL terminated
-+//
-+// Keywords: of_table
-+// Confidence: Medium
-+// Options: --include-headers
-+
-+virtual patch
-+virtual context
-+virtual org
-+virtual report
-+
-+@depends on context@
-+identifier var, arr;
-+expression E;
-+@@
-+struct of_device_id arr[] = {
-+	...,
-+	{
-+	.var = E,
-+*	}
-+};
-+
-+@depends on patch@
-+identifier var, arr;
-+expression E;
-+@@
-+struct of_device_id arr[] = {
-+	...,
-+	{
-+	.var = E,
-+-	}
-++	},
-++	{ }
-+};
-+
-+@r depends on org || report@
-+position p1;
-+identifier var, arr;
-+expression E;
-+@@
-+struct of_device_id arr[] = {
-+	...,
-+	{
-+	.var = E,
-+	}
-+	@p1
-+};
-+
-+@script:python depends on org@
-+p1 << r.p1;
-+arr << r.arr;
-+@@
-+
-+cocci.print_main(arr,p1)
-+
-+@script:python depends on report@
-+p1 << r.p1;
-+arr << r.arr;
-+@@
-+
-+msg = "%s is not NULL terminated at line %s" % (arr, p1[0].line)
-+coccilib.report.print_report(p1[0],msg)
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
