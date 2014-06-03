@@ -1,20 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755791AbaFCMQZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 08:16:25 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43383 "EHLO
+	id S932391AbaFCMQp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 08:16:45 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43371 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932322AbaFCLks (ORCPT
+	with ESMTP id S932338AbaFCLkq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 07:40:48 -0400
+	Tue, 3 Jun 2014 07:40:46 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Gerd Hoffmann <kraxel@redhat.com>, Dave Airlie <airlied@redhat.com>,
+Cc: Vlastimil Babka <vbabka@suse.cz>, Mel Gorman <mgorman@suse.de>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Dongjun Shin <d.j.shin@samsung.com>,
+        Sunghwan Yun <sunghwan.yun@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 038/138] drm: cirrus: add power management support
-Date: Tue,  3 Jun 2014 12:38:04 +0100
-Message-Id: <1401795584-22664-39-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 030/138] mm/compaction: make isolate_freepages start at pageblock boundary
+Date: Tue,  3 Jun 2014 12:37:56 +0100
+Message-Id: <1401795584-22664-31-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
 References: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
@@ -27,110 +34,104 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gerd Hoffmann <kraxel@redhat.com>
+From: Vlastimil Babka <vbabka@suse.cz>
 
-commit 2f1e800799bf478494cec3573cd63eb34ca89c9d upstream.
+commit 49e068f0b73dd042c186ffa9b420a9943e90389a upstream.
 
-cirrus kms driver lacks power management support, thus
-the vga display doesn't work any more after S3 resume.
+The compaction freepage scanner implementation in isolate_freepages()
+starts by taking the current cc->free_pfn value as the first pfn.  In a
+for loop, it scans from this first pfn to the end of the pageblock, and
+then subtracts pageblock_nr_pages from the first pfn to obtain the first
+pfn for the next for loop iteration.
 
-Fix this by adding suspend and resume functions.
-Also make the mode_set function unblank the screen.
+This means that when cc->free_pfn starts at offset X rather than being
+aligned on pageblock boundary, the scanner will start at offset X in all
+scanned pageblock, ignoring potentially many free pages.  Currently this
+can happen when
 
-Signed-off-by: Gerd Hoffmann <kraxel@redhat.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+ a) zone's end pfn is not pageblock aligned, or
+
+ b) through zone->compact_cached_free_pfn with CONFIG_HOLES_IN_ZONE
+    enabled and a hole spanning the beginning of a pageblock
+
+This patch fixes the problem by aligning the initial pfn in
+isolate_freepages() to pageblock boundary.  This also permits replacing
+the end-of-pageblock alignment within the for loop with a simple
+pageblock_nr_pages increment.
+
+Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+Reported-by: Heesub Shin <heesub.shin@samsung.com>
+Acked-by: Minchan Kim <minchan@kernel.org>
+Cc: Mel Gorman <mgorman@suse.de>
+Acked-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Cc: Michal Nazarewicz <mina86@mina86.com>
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Christoph Lameter <cl@linux.com>
+Acked-by: Rik van Riel <riel@redhat.com>
+Cc: Dongjun Shin <d.j.shin@samsung.com>
+Cc: Sunghwan Yun <sunghwan.yun@samsung.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/cirrus/cirrus_drv.c  | 42 ++++++++++++++++++++++++++++++++++++
- drivers/gpu/drm/cirrus/cirrus_mode.c |  3 +++
- 2 files changed, 45 insertions(+)
+ mm/compaction.c | 22 ++++++++++++----------
+ 1 file changed, 12 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/gpu/drm/cirrus/cirrus_drv.c b/drivers/gpu/drm/cirrus/cirrus_drv.c
-index 8ecb601152ef..64bfc235021a 100644
---- a/drivers/gpu/drm/cirrus/cirrus_drv.c
-+++ b/drivers/gpu/drm/cirrus/cirrus_drv.c
-@@ -11,6 +11,7 @@
- #include <linux/module.h>
- #include <linux/console.h>
- #include <drm/drmP.h>
-+#include <drm/drm_crtc_helper.h>
+diff --git a/mm/compaction.c b/mm/compaction.c
+index 18a90b4d0bfc..46e2f96454bc 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -657,16 +657,20 @@ static void isolate_freepages(struct zone *zone,
+ 				struct compact_control *cc)
+ {
+ 	struct page *page;
+-	unsigned long high_pfn, low_pfn, pfn, z_end_pfn, end_pfn;
++	unsigned long high_pfn, low_pfn, pfn, z_end_pfn;
+ 	int nr_freepages = cc->nr_freepages;
+ 	struct list_head *freelist = &cc->freepages;
  
- #include "cirrus_drv.h"
+ 	/*
+ 	 * Initialise the free scanner. The starting point is where we last
+-	 * scanned from (or the end of the zone if starting). The low point
+-	 * is the end of the pageblock the migration scanner is using.
++	 * successfully isolated from, zone-cached value, or the end of the
++	 * zone when isolating for the first time. We need this aligned to
++	 * the pageblock boundary, because we do pfn -= pageblock_nr_pages
++	 * in the for loop.
++	 * The low boundary is the end of the pageblock the migration scanner
++	 * is using.
+ 	 */
+-	pfn = cc->free_pfn;
++	pfn = cc->free_pfn & ~(pageblock_nr_pages-1);
+ 	low_pfn = cc->migrate_pfn + pageblock_nr_pages;
  
-@@ -75,6 +76,41 @@ static void cirrus_pci_remove(struct pci_dev *pdev)
- 	drm_put_dev(dev);
- }
+ 	/*
+@@ -686,6 +690,7 @@ static void isolate_freepages(struct zone *zone,
+ 	for (; pfn > low_pfn && cc->nr_migratepages > nr_freepages;
+ 					pfn -= pageblock_nr_pages) {
+ 		unsigned long isolated;
++		unsigned long end_pfn;
  
-+static int cirrus_pm_suspend(struct device *dev)
-+{
-+	struct pci_dev *pdev = to_pci_dev(dev);
-+	struct drm_device *drm_dev = pci_get_drvdata(pdev);
-+	struct cirrus_device *cdev = drm_dev->dev_private;
-+
-+	drm_kms_helper_poll_disable(drm_dev);
-+
-+	if (cdev->mode_info.gfbdev) {
-+		console_lock();
-+		fb_set_suspend(cdev->mode_info.gfbdev->helper.fbdev, 1);
-+		console_unlock();
-+	}
-+
-+	return 0;
-+}
-+
-+static int cirrus_pm_resume(struct device *dev)
-+{
-+	struct pci_dev *pdev = to_pci_dev(dev);
-+	struct drm_device *drm_dev = pci_get_drvdata(pdev);
-+	struct cirrus_device *cdev = drm_dev->dev_private;
-+
-+	drm_helper_resume_force_mode(drm_dev);
-+
-+	if (cdev->mode_info.gfbdev) {
-+		console_lock();
-+		fb_set_suspend(cdev->mode_info.gfbdev->helper.fbdev, 0);
-+		console_unlock();
-+	}
-+
-+	drm_kms_helper_poll_enable(drm_dev);
-+	return 0;
-+}
-+
- static const struct file_operations cirrus_driver_fops = {
- 	.owner = THIS_MODULE,
- 	.open = drm_open,
-@@ -105,11 +141,17 @@ static struct drm_driver driver = {
- 	.dumb_destroy = cirrus_dumb_destroy,
- };
+ 		if (!pfn_valid(pfn))
+ 			continue;
+@@ -713,13 +718,10 @@ static void isolate_freepages(struct zone *zone,
+ 		isolated = 0;
  
-+static const struct dev_pm_ops cirrus_pm_ops = {
-+	SET_SYSTEM_SLEEP_PM_OPS(cirrus_pm_suspend,
-+				cirrus_pm_resume)
-+};
-+
- static struct pci_driver cirrus_pci_driver = {
- 	.name = DRIVER_NAME,
- 	.id_table = pciidlist,
- 	.probe = cirrus_pci_probe,
- 	.remove = cirrus_pci_remove,
-+	.driver.pm = &cirrus_pm_ops,
- };
- 
- static int __init cirrus_init(void)
-diff --git a/drivers/gpu/drm/cirrus/cirrus_mode.c b/drivers/gpu/drm/cirrus/cirrus_mode.c
-index 379a47ea99f6..b86f68d8b726 100644
---- a/drivers/gpu/drm/cirrus/cirrus_mode.c
-+++ b/drivers/gpu/drm/cirrus/cirrus_mode.c
-@@ -308,6 +308,9 @@ static int cirrus_crtc_mode_set(struct drm_crtc *crtc,
- 
- 	WREG_HDR(hdr);
- 	cirrus_crtc_do_set_base(crtc, old_fb, x, y, 0);
-+
-+	/* Unblank (needed on S3 resume, vgabios doesn't do it then) */
-+	outb(0x20, 0x3c0);
- 	return 0;
- }
- 
+ 		/*
+-		 * As pfn may not start aligned, pfn+pageblock_nr_page
+-		 * may cross a MAX_ORDER_NR_PAGES boundary and miss
+-		 * a pfn_valid check. Ensure isolate_freepages_block()
+-		 * only scans within a pageblock
++		 * Take care when isolating in last pageblock of a zone which
++		 * ends in the middle of a pageblock.
+ 		 */
+-		end_pfn = ALIGN(pfn + 1, pageblock_nr_pages);
+-		end_pfn = min(end_pfn, z_end_pfn);
++		end_pfn = min(pfn + pageblock_nr_pages, z_end_pfn);
+ 		isolated = isolate_freepages_block(cc, pfn, end_pfn,
+ 						   freelist, false);
+ 		nr_freepages += isolated;
 -- 
 1.9.1
 
