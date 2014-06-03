@@ -1,62 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932820AbaFCOZ2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 10:25:28 -0400
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:47304 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932800AbaFCOZY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 10:25:24 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140603105547.GV11096@twins.programming.kicks-ass.net>
-References: <20140602104948.4faf0bc2@tlielax.poochiereds.net>
-	<CAHQdGtRR6SvEhXiqWo24hoUh9AU9cL82Z8Z-d8-7u951F_d+5g@mail.gmail.com>
-	<CALAqxLVmRdv3eVaf_ue-NutDmjxJA2NNAXnH-Tm4a6ud2U7Q4g@mail.gmail.com>
-	<CAHQdGtSn9RwdgaFgEDQXjrxSA_Bg=rNWux+96-5f43dyUwXLRw@mail.gmail.com>
-	<CALAqxLUwtMnE9eB_dfV=C5CLuXpEdB9+mK7pw2jgo5Yg2ACKPA@mail.gmail.com>
-	<CAHQdGtQhurcOsAii7PYNZwEL4Xm-8a2CKBkS4OhrS0FhaAX3Aw@mail.gmail.com>
-	<CALAqxLXeuiTffvgu0uBbn2fiYQ0-3PVdZ4V4AxqC-ZkTaFSfQQ@mail.gmail.com>
-	<20140603105547.GV11096@twins.programming.kicks-ass.net>
-Date: Tue, 3 Jun 2014 10:25:23 -0400
-Message-ID: <CAHQdGtTotdPj9ijyCqnAcZeK=vmUe3R1pFaTzXwzQ3pu0Q8WPA@mail.gmail.com>
-Subject: Re: nfs4_do_reclaim lockdep pop in v3.15.0-rc1
-From: Trond Myklebust <trond.myklebust@primarydata.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: John Stultz <john.stultz@linaro.org>,
-        Jeff Layton <jeff.layton@primarydata.com>,
+	id S932860AbaFCO0A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 10:26:00 -0400
+Received: from imap.thunk.org ([74.207.234.97]:47936 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932692AbaFCOZ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 10:25:57 -0400
+Date: Tue, 3 Jun 2014 10:25:21 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Jan Kara <jack@suse.cz>, Dave Chinner <david@fromorbit.com>,
+        Daniel Phillips <daniel@phunq.net>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
-        Linux Kernel mailing list <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>
-Content-Type: text/plain; charset=UTF-8
+        Andrew Morton <akpm@linux-foundation.org>,
+        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: Re: [RFC][PATCH 1/2] Add a super operation for writeback
+Message-ID: <20140603142521.GA12890@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Christoph Hellwig <hch@infradead.org>, Jan Kara <jack@suse.cz>,
+	Dave Chinner <david@fromorbit.com>,
+	Daniel Phillips <daniel@phunq.net>, linux-kernel@vger.kernel.org,
+	linux-fsdevel@vger.kernel.org,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
+	Jens Axboe <axboe@kernel.dk>
+References: <538B9DEE.20800@phunq.net>
+ <20140602031526.GS14410@dastard>
+ <538CD855.90804@phunq.net>
+ <20140603033322.GA14410@dastard>
+ <538D72B7.3010700@phunq.net>
+ <20140603075209.GD14410@dastard>
+ <20140603140531.GB30706@quack.suse.cz>
+ <20140603141444.GA21273@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140603141444.GA21273@infradead.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 3, 2014 at 6:55 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> Ah, I think I see what Trond means; so raw_write_seqcount_{begin,end}()
-> are without lockdep, _however_ raw_seqcount_begin() is with lockdep.
->
-> This is inconsistent within the same API (seqcount/seqlock).
->
-> Yes, we should fix that.
->
-> raw_seqcount_begin() is a variant of read_seqcount_begin() but without
-> the spin loop in. Maybe we should find a new name for this.
+On Tue, Jun 03, 2014 at 07:14:44AM -0700, Christoph Hellwig wrote:
+> Honestly I think doing per-bdi writeback has been a major mistake.  As
+> you said it only even matters when we have filesystems on multiple
+> partitions on a single device, and even then only in a simple setup,
+> as soon as we use LVM or btrfs this sort of sharing stops to happen
+> anyway.  I don't even see much of a benefit except that we prevent
+> two flushing daemons to congest a single device for that special case
+> of multiple filesystems on partitions of the same device, and that could
+> be solved in other ways.
 
-As far as I can see, there are 2 users of raw_seqcount_begin outside
-the NFS code: __d_lookup_rcu and netdev_get_name. Neither one of them
-are using it as part of a lock (no waiting), but rather as a notifier
-of conflicting events. As far as I can tell, there are therefore no
-users that benefit from lockdep checking here.
+To be fair, back when per-bdi writeback was introduced, having
+multiple partitions on a single disk was far more common, and the use
+of LVM was much less common.  These days, many more systems using one
+big root filesystem, and or using flash where the parallel writes can
+actually be a good thing (since there isn't a single disk head which
+has to seek all over the HDD), the case for keeping per-bdi writeback
+is much weaker, if not non-existent.
 
-So is there any reason why we shouldn't just revert that part of
-commit 1ca7d67cf5d5a, and leave it to future generations to add a
-lockdep-enabled version if and when they need it?
+Cheers,
 
--- 
-Trond Myklebust
-
-Linux NFS client maintainer, PrimaryData
-
-trond.myklebust@primarydata.com
+					- Ted
