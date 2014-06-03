@@ -1,64 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754803AbaFCSLv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 14:11:51 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:56839 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752289AbaFCSLu (ORCPT
+	id S932470AbaFCSOY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 14:14:24 -0400
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:39374 "EHLO
+	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752113AbaFCSOW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 14:11:50 -0400
-Message-ID: <538E0FE2.4090405@codeaurora.org>
-Date: Tue, 03 Jun 2014 11:11:46 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Tue, 3 Jun 2014 14:14:22 -0400
+X-IronPort-AV: E=Sophos;i="4.98,967,1392159600"; 
+   d="scan'208";a="77879928"
+Date: Tue, 3 Jun 2014 20:14:19 +0200 (CEST)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@localhost6.localdomain6
+To: Stephen Boyd <sboyd@codeaurora.org>
+cc: Julia Lawall <julia.lawall@lip6.fr>, Michal Marek <mmarek@suse.cz>,
+        linux-kernel@vger.kernel.org,
+        Mitchel Humpherys <mitchelh@codeaurora.org>,
+        Gilles Muller <Gilles.Muller@lip6.fr>,
+        Nicolas Palix <nicolas.palix@imag.fr>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, devicetree@vger.kernel.org
+Subject: Re: [PATCH v2] coccinelle: Check for missing NULL terminators in
+ of_device_id tables
+In-Reply-To: <538E09C1.30200@codeaurora.org>
+Message-ID: <alpine.DEB.2.02.1406032013150.2009@localhost6.localdomain6>
+References: <1401213858-31950-1-git-send-email-sboyd@codeaurora.org> <alpine.DEB.2.02.1406031208380.2036@localhost6.localdomain6> <538E09C1.30200@codeaurora.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "arm@kernel.org" <arm@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: Remove ARCH_HAS_CPUFREQ config option
-References: <1401746847-3193-1-git-send-email-sboyd@codeaurora.org> <CAOh2x==wsy2_+GygS03snFN_YOar3eHi7v1a-jNdsQYoWCAZsw@mail.gmail.com>
-In-Reply-To: <CAOh2x==wsy2_+GygS03snFN_YOar3eHi7v1a-jNdsQYoWCAZsw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/02/14 21:27, Viresh Kumar wrote:
-> On Tue, Jun 3, 2014 at 3:37 AM, Stephen Boyd <sboyd@codeaurora.org> wrote:
->> This config exists entirely to hide the cpufreq menu from the
->> kernel configuration unless a platform has selected it. Nothing
->> is actually built if this config is 'Y' and it just leads to
->> more patches that add a select under a platform Kconfig so that
->> some other CPUfreq option can be chosen. Let's remove the
->> option so that we can always enable CPUfreq drivers on ARM
->> platforms.
->>
->> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
->> ---
->>  arch/arm/Kconfig               | 18 ------------------
->>  arch/arm/mach-davinci/Kconfig  |  1 -
->>  arch/arm/mach-highbank/Kconfig |  1 -
->>  arch/arm/mach-imx/Kconfig      |  3 ---
->>  arch/arm/mach-mvebu/Kconfig    |  1 -
->>  arch/arm/mach-omap2/Kconfig    |  1 -
->>  arch/arm/mach-shmobile/Kconfig |  2 --
->>  arch/arm/mach-spear/Kconfig    |  1 -
->>  arch/arm/mach-tegra/Kconfig    |  1 -
->>  arch/arm/mach-ux500/Kconfig    |  1 -
->>  arch/arm/mach-vexpress/Kconfig |  1 -
->>  arch/arm/mach-vt8500/Kconfig   |  1 -
->>  arch/arm/mach-zynq/Kconfig     |  1 -
->>  13 files changed, 33 deletions(-)
-> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
->
-> While you are at it, please see if you can also fix unicore as well.
+On Tue, 3 Jun 2014, Stephen Boyd wrote:
 
-Sure I'll send a separate patch and Cc you.
+> On 06/03/14 03:15, Julia Lawall wrote:
+> > Failure to terminate an of_device_id table can lead to confusing
+> > failures depending on where the compiler places the array. Add a
+> > check to make sure these tables are terminated. Thanks to Mitchel
+> > Humpherys for coming up with the pattern initially.
+> >
+> > Cc: Mitchel Humpherys <mitchelh@codeaurora.org>
+> > Cc: Julia Lawall <Julia.Lawall@lip6.fr>
+> > Cc: Gilles Muller <Gilles.Muller@lip6.fr>
+> > Cc: Nicolas Palix <nicolas.palix@imag.fr>
+> > Cc: Grant Likely <grant.likely@linaro.org>
+> > Cc: Rob Herring <robh+dt@kernel.org>
+> > Cc: devicetree@vger.kernel.org
+> > Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> > Acked-by: Grant Likely <grant.likely@linaro.org>
+> > Signed-off-by: Julia Lawall <julia.lawall@lip6.fr>
+> >
+> > ---
+> >
+> > v3: Removed unneeded rule bad_of_table.  Placed * in context rule on the 
+> > closing brace; putting it on the field caused all fields to be marked.
+> >
+> 
+> 
+> These seem like only minor changes. Why was my authorship removed?
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+Probably because I don't know how to provide a new vesion of the patch 
+properly.  What should I have done?  There were quite a lot of 
+modifications.  It seemed easier to just send a complete new version.
 
+julia
