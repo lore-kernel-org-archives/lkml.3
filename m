@@ -1,78 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754656AbaFCNtt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 09:49:49 -0400
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:60491 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753549AbaFCNtr (ORCPT
+	id S1754672AbaFCNvk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 09:51:40 -0400
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:53494 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753862AbaFCNvj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 09:49:47 -0400
-Message-ID: <1401803385.3645.201.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: [PATCH] Fixed zero copy GSO without orphaning the fragments
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Igor Royzis <igorr@swortex.com>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <edumazet@google.com>, Tom Herbert <therbert@google.com>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
-        Simon Horman <horms@verge.net.au>, Joe Perches <joe@perches.com>,
-        Jiri Pirko <jiri@resnulli.us>, Florian Westphal <fw@strlen.de>,
-        Paul Durrant <Paul.Durrant@citrix.com>, Thomas Graf <tgraf@suug.ch>,
-        Jan Beulich <JBeulich@suse.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        Miklos Szeredi <mszeredi@suse.cz>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>, Anton Nayshtut <anton@swortex.com>
-Date: Tue, 03 Jun 2014 06:49:45 -0700
-In-Reply-To: <CAKyyzSSs1PUfJXTPDWTbWU5p+b54qti_N_6kR6mJWWrp__rykw@mail.gmail.com>
-References: <CAKyyzSRfO_Hw4bDimfzV9+-8damc9RwoqA_RLkBBa_gMw9e62Q@mail.gmail.com>
-	 <20140601122152.GB22450@redhat.com>
-	 <CAKyyzSSs1PUfJXTPDWTbWU5p+b54qti_N_6kR6mJWWrp__rykw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	Tue, 3 Jun 2014 09:51:39 -0400
+Message-ID: <538DD2E3.2090407@gmail.com>
+Date: Tue, 03 Jun 2014 07:51:31 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org
+CC: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 11/13] perf tests: Allow reuse of test_file function
+References: <1401743927-398-1-git-send-email-jolsa@kernel.org> <1401743927-398-12-git-send-email-jolsa@kernel.org>
+In-Reply-To: <1401743927-398-12-git-send-email-jolsa@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-06-03 at 14:54 +0300, Igor Royzis wrote:
-> Eric, could you please provide a feedback on the suggestion to move
-> the pointer from skb_shared_info to skbuff? If we must fit
-> skb_shared_info till the 'frags' field into 1 cache line (I honestly
-> don't quite understand why (the whole structure as well as the skb's
-> data will always require > 1 cache line anyway)  and I would
-> appreciate if you elaborate on this more), then moving the pointer to
-> the parent fragment off skb_shared_info should help. Am I right?
+On 6/2/14, 3:18 PM, Jiri Olsa wrote:
+> Making the test_file function to be reusable for
+> new tests coming in following patches.
+>
+> Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+> Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+> Cc: David Ahern <dsahern@gmail.com>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Jean Pihet <jean.pihet@linaro.org>
+> Cc: Namhyung Kim <namhyung@kernel.org>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+> ---
+>   tools/perf/tests/dso-data.c | 6 +++++-
+>   1 file changed, 5 insertions(+), 1 deletion(-)
+>
+> diff --git a/tools/perf/tests/dso-data.c b/tools/perf/tests/dso-data.c
+> index 3e6cb17..f5c8743 100644
+> --- a/tools/perf/tests/dso-data.c
+> +++ b/tools/perf/tests/dso-data.c
+> @@ -12,11 +12,15 @@
+>
+>   static char *test_file(int size)
+>   {
+> -	static char buf_templ[] = "/tmp/test-XXXXXX";
+> +#define TEMPL "/tmp/test-XXXXXX"
 
+use /tmp/perf-test-XXXXXX or /tmp/perf-XXXXXX to we know where all these 
+tmp files came from.
 
-Have you tried this idea and cook a patch ?
-It seems quite complex, but maybe you have a pretty clear idea.
+> +	static char buf_templ[sizeof(TEMPL)];
 
-> 
-> The pointer is essential if we want to solve the incorrect way the
-> kernel handles a combination of packet segmentation (of any reason, in
-> our case it was a VM guest not supporting GRO) and zero-copy feature.
-> Disabling zero-copy for segmented packets is a workaround but an
-> efficient solution would require either:
-> a) a pointer in skb_shared_info, or
-> b) a pointer in skbuff,  or
-> c) reusing a [currently unused] existing pointer/field in a skb
-> structure, which is a bad idea and I list it for completeness only.
-> 
-> Please comment,
+why static? and ...
 
-It's nice you guys want nice numbers for bulk flows sending at line
-rate, but many networking workloads handle thousands of flows, if not
-more, and small to medium packet sizes. Its critical for them to keep
-skb overhead as small as possible.
+>   	char *templ = buf_templ;
+>   	int fd, i;
+>   	unsigned char *buf;
+>
+> +	strcpy(buf_templ, TEMPL);
+> +#undef TEMPL
 
-My understanding of this zero copy stuff and GSO is that you need a
-refcounter, not in the skb or skb_shared_info, but in the structure that
-describes the zero copy stuff. This way, the overhead of this extra
-refcounting (still a win for you compared to 'orphaning fragments'), is
-only paid for this special case.
+why the need to change from char buf_templ[] to strcpy?
 
-
-
+David
