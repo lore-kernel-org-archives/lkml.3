@@ -1,328 +1,375 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932223AbaFCNII (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 09:08:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22111 "EHLO mx1.redhat.com"
+	id S1754003AbaFCNIF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 09:08:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6917 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752785AbaFCNIH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 09:08:07 -0400
+	id S1752785AbaFCNIA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 09:08:00 -0400
 From: Vivek Goyal <vgoyal@redhat.com>
 To: linux-kernel@vger.kernel.org, kexec@lists.infradead.org
 Cc: ebiederm@xmission.com, hpa@zytor.com, mjg59@srcf.ucam.org, greg@kroah.com,
         bp@alien8.de, jkosina@suse.cz, dyoung@redhat.com, chaowang@redhat.com,
         bhe@redhat.com, akpm@linux-foundation.org,
         Vivek Goyal <vgoyal@redhat.com>
-Subject: [PATCH 03/13] kexec: Move segment verification code in a separate function
-Date: Tue,  3 Jun 2014 09:06:52 -0400
-Message-Id: <1401800822-27425-4-git-send-email-vgoyal@redhat.com>
+Subject: [PATCH 08/13] purgatory/sha256: Provide implementation of sha256 in purgaotory context
+Date: Tue,  3 Jun 2014 09:06:57 -0400
+Message-Id: <1401800822-27425-9-git-send-email-vgoyal@redhat.com>
 In-Reply-To: <1401800822-27425-1-git-send-email-vgoyal@redhat.com>
 References: <1401800822-27425-1-git-send-email-vgoyal@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Previously do_kimage_alloc() will allocate a kimage structure, copy
-segment list from user space and then do the segment list sanity verification.
+Next two patches provide code for purgatory. This is a code which does
+not link against the kernel and runs stand alone. This code runs between
+two kernels. One of the primary purpose of this code is to verify the
+digest of newly loaded kernel and making sure it matches the digest
+computed at kernel load time.
 
-Break down this function in 3 parts. do_kimage_alloc_init() to do actual
-allocation and basic initialization of kimage structure.
-copy_user_segment_list() to copy segment list from user space and
-sanity_check_segment_list() to verify the sanity of segment list as passed
-by user space.
+We use sha256 for calculating digest of kexec segmetns. Purgatory can't
+use stanard crypto API as that API is not available in purgatory context.
 
-In later patches, I need to only allocate kimage and not copy segment
-list from user space. So breaking down in smaller functions enables
-re-use of code at other places.
+Hence, I have copied code from crypto/sha256_generic.c and compiled it
+with purgaotry code so that it could be used. I could not
+#include sha256_generic.c file here as some of the function signature
+requiered little tweaking. Original functions work with crypto API but
+these ones don't
+
+So instead of doing #include on sha256_generic.c I just copied relevant
+portions of code into arch/x86/purgatory/sha256.c. Now we shouldn't have to
+touch this code at all. Do let me know if there are better ways to handle it.
+
+This patch does not enable compiling of this code. That happens in next
+patch. I wanted to highlight this change in a separate patch for easy
+review.
 
 Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
 ---
- kernel/kexec.c | 182 ++++++++++++++++++++++++++++++++-------------------------
- 1 file changed, 101 insertions(+), 81 deletions(-)
+ arch/x86/purgatory/sha256.c | 284 ++++++++++++++++++++++++++++++++++++++++++++
+ arch/x86/purgatory/sha256.h |  22 ++++
+ 2 files changed, 306 insertions(+)
+ create mode 100644 arch/x86/purgatory/sha256.c
+ create mode 100644 arch/x86/purgatory/sha256.h
 
-diff --git a/kernel/kexec.c b/kernel/kexec.c
-index 28c5706..c435c5f 100644
---- a/kernel/kexec.c
-+++ b/kernel/kexec.c
-@@ -124,45 +124,27 @@ static struct page *kimage_alloc_page(struct kimage *image,
- 				       gfp_t gfp_mask,
- 				       unsigned long dest);
- 
--static int do_kimage_alloc(struct kimage **rimage, unsigned long entry,
--	                    unsigned long nr_segments,
--                            struct kexec_segment __user *segments)
-+static int copy_user_segment_list(struct kimage *image,
-+				unsigned long nr_segments,
-+				struct kexec_segment __user *segments)
- {
-+	int ret;
- 	size_t segment_bytes;
--	struct kimage *image;
--	unsigned long i;
--	int result;
--
--	/* Allocate a controlling structure */
--	result = -ENOMEM;
--	image = kzalloc(sizeof(*image), GFP_KERNEL);
--	if (!image)
--		goto out;
--
--	image->head = 0;
--	image->entry = &image->head;
--	image->last_entry = &image->head;
--	image->control_page = ~0; /* By default this does not apply */
--	image->start = entry;
--	image->type = KEXEC_TYPE_DEFAULT;
--
--	/* Initialize the list of control pages */
--	INIT_LIST_HEAD(&image->control_pages);
--
--	/* Initialize the list of destination pages */
--	INIT_LIST_HEAD(&image->dest_pages);
--
--	/* Initialize the list of unusable pages */
--	INIT_LIST_HEAD(&image->unuseable_pages);
- 
- 	/* Read in the segments */
- 	image->nr_segments = nr_segments;
- 	segment_bytes = nr_segments * sizeof(*segments);
--	result = copy_from_user(image->segment, segments, segment_bytes);
--	if (result) {
--		result = -EFAULT;
--		goto out;
--	}
-+	ret = copy_from_user(image->segment, segments, segment_bytes);
-+	if (ret)
-+		ret = -EFAULT;
+diff --git a/arch/x86/purgatory/sha256.c b/arch/x86/purgatory/sha256.c
+new file mode 100644
+index 0000000..1e814ca
+--- /dev/null
++++ b/arch/x86/purgatory/sha256.c
+@@ -0,0 +1,284 @@
++/*
++ * SHA-256, as specified in
++ * http://csrc.nist.gov/groups/STM/cavp/documents/shs/sha256-384-512.pdf
++ *
++ * SHA-256 code by Jean-Luc Cooke <jlcooke@certainkey.com>.
++ *
++ * Copyright (c) Jean-Luc Cooke <jlcooke@certainkey.com>
++ * Copyright (c) Andrew McDonald <andrew@mcdonald.org.uk>
++ * Copyright (c) 2002 James Morris <jmorris@intercode.com.au>
++ * Copyright (c) 2014 Red Hat Inc.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License as published by the Free
++ * Software Foundation; either version 2 of the License, or (at your option)
++ * any later version.
++ */
 +
-+	return ret;
++#include <linux/bitops.h>
++#include <asm/byteorder.h>
++#include "sha256.h"
++#include "../boot/string.h"
++
++static inline u32 Ch(u32 x, u32 y, u32 z)
++{
++	return z ^ (x & (y ^ z));
 +}
 +
-+static int sanity_check_segment_list(struct kimage *image)
++static inline u32 Maj(u32 x, u32 y, u32 z)
 +{
-+	int result, i;
-+	unsigned long nr_segments = image->nr_segments;
- 
- 	/*
- 	 * Verify we have good destination addresses.  The caller is
-@@ -184,9 +166,9 @@ static int do_kimage_alloc(struct kimage **rimage, unsigned long entry,
- 		mstart = image->segment[i].mem;
- 		mend   = mstart + image->segment[i].memsz;
- 		if ((mstart & ~PAGE_MASK) || (mend & ~PAGE_MASK))
--			goto out;
-+			return result;
- 		if (mend >= KEXEC_DESTINATION_MEMORY_LIMIT)
--			goto out;
-+			return result;
- 	}
- 
- 	/* Verify our destination addresses do not overlap.
-@@ -207,7 +189,7 @@ static int do_kimage_alloc(struct kimage **rimage, unsigned long entry,
- 			pend   = pstart + image->segment[j].memsz;
- 			/* Do the segments overlap ? */
- 			if ((mend > pstart) && (mstart < pend))
--				goto out;
-+				return result;
- 		}
- 	}
- 
-@@ -219,18 +201,61 @@ static int do_kimage_alloc(struct kimage **rimage, unsigned long entry,
- 	result = -EINVAL;
- 	for (i = 0; i < nr_segments; i++) {
- 		if (image->segment[i].bufsz > image->segment[i].memsz)
--			goto out;
-+			return result;
- 	}
- 
--	result = 0;
--out:
--	if (result == 0)
--		*rimage = image;
--	else
--		kfree(image);
-+	/*
-+	 * Verify we have good destination addresses.  Normally
-+	 * the caller is responsible for making certain we don't
-+	 * attempt to load the new image into invalid or reserved
-+	 * areas of RAM.  But crash kernels are preloaded into a
-+	 * reserved area of ram.  We must ensure the addresses
-+	 * are in the reserved area otherwise preloading the
-+	 * kernel could corrupt things.
-+	 */
- 
--	return result;
-+	if (image->type == KEXEC_TYPE_CRASH) {
-+		result = -EADDRNOTAVAIL;
-+		for (i = 0; i < nr_segments; i++) {
-+			unsigned long mstart, mend;
- 
-+			mstart = image->segment[i].mem;
-+			mend = mstart + image->segment[i].memsz - 1;
-+			/* Ensure we are within the crash kernel limits */
-+			if ((mstart < crashk_res.start) ||
-+			    (mend > crashk_res.end))
-+				return result;
-+		}
-+	}
++	return (x & y) | (z & (x | y));
++}
++
++#define e0(x)       (ror32(x, 2) ^ ror32(x, 13) ^ ror32(x, 22))
++#define e1(x)       (ror32(x, 6) ^ ror32(x, 11) ^ ror32(x, 25))
++#define s0(x)       (ror32(x, 7) ^ ror32(x, 18) ^ (x >> 3))
++#define s1(x)       (ror32(x, 17) ^ ror32(x, 19) ^ (x >> 10))
++
++static inline void LOAD_OP(int I, u32 *W, const u8 *input)
++{
++	W[I] = __be32_to_cpu(((__be32 *)(input))[I]);
++}
++
++static inline void BLEND_OP(int I, u32 *W)
++{
++	W[I] = s1(W[I-2]) + W[I-7] + s0(W[I-15]) + W[I-16];
++}
++
++static void sha256_transform(u32 *state, const u8 *input)
++{
++	u32 a, b, c, d, e, f, g, h, t1, t2;
++	u32 W[64];
++	int i;
++
++	/* load the input */
++	for (i = 0; i < 16; i++)
++		LOAD_OP(i, W, input);
++
++	/* now blend */
++	for (i = 16; i < 64; i++)
++		BLEND_OP(i, W);
++
++	/* load the state into our registers */
++	a = state[0];  b = state[1];  c = state[2];  d = state[3];
++	e = state[4];  f = state[5];  g = state[6];  h = state[7];
++
++	/* now iterate */
++	t1 = h + e1(e) + Ch(e, f, g) + 0x428a2f98 + W[0];
++	t2 = e0(a) + Maj(a, b, c);    d += t1;    h = t1 + t2;
++	t1 = g + e1(d) + Ch(d, e, f) + 0x71374491 + W[1];
++	t2 = e0(h) + Maj(h, a, b);    c += t1;    g = t1 + t2;
++	t1 = f + e1(c) + Ch(c, d, e) + 0xb5c0fbcf + W[2];
++	t2 = e0(g) + Maj(g, h, a);    b += t1;    f = t1 + t2;
++	t1 = e + e1(b) + Ch(b, c, d) + 0xe9b5dba5 + W[3];
++	t2 = e0(f) + Maj(f, g, h);    a += t1;    e = t1 + t2;
++	t1 = d + e1(a) + Ch(a, b, c) + 0x3956c25b + W[4];
++	t2 = e0(e) + Maj(e, f, g);    h += t1;    d = t1 + t2;
++	t1 = c + e1(h) + Ch(h, a, b) + 0x59f111f1 + W[5];
++	t2 = e0(d) + Maj(d, e, f);    g += t1;    c = t1 + t2;
++	t1 = b + e1(g) + Ch(g, h, a) + 0x923f82a4 + W[6];
++	t2 = e0(c) + Maj(c, d, e);    f += t1;    b = t1 + t2;
++	t1 = a + e1(f) + Ch(f, g, h) + 0xab1c5ed5 + W[7];
++	t2 = e0(b) + Maj(b, c, d);    e += t1;    a = t1 + t2;
++
++	t1 = h + e1(e) + Ch(e, f, g) + 0xd807aa98 + W[8];
++	t2 = e0(a) + Maj(a, b, c);    d += t1;    h = t1 + t2;
++	t1 = g + e1(d) + Ch(d, e, f) + 0x12835b01 + W[9];
++	t2 = e0(h) + Maj(h, a, b);    c += t1;    g = t1 + t2;
++	t1 = f + e1(c) + Ch(c, d, e) + 0x243185be + W[10];
++	t2 = e0(g) + Maj(g, h, a);    b += t1;    f = t1 + t2;
++	t1 = e + e1(b) + Ch(b, c, d) + 0x550c7dc3 + W[11];
++	t2 = e0(f) + Maj(f, g, h);    a += t1;    e = t1 + t2;
++	t1 = d + e1(a) + Ch(a, b, c) + 0x72be5d74 + W[12];
++	t2 = e0(e) + Maj(e, f, g);    h += t1;    d = t1 + t2;
++	t1 = c + e1(h) + Ch(h, a, b) + 0x80deb1fe + W[13];
++	t2 = e0(d) + Maj(d, e, f);    g += t1;    c = t1 + t2;
++	t1 = b + e1(g) + Ch(g, h, a) + 0x9bdc06a7 + W[14];
++	t2 = e0(c) + Maj(c, d, e);    f += t1;    b = t1 + t2;
++	t1 = a + e1(f) + Ch(f, g, h) + 0xc19bf174 + W[15];
++	t2 = e0(b) + Maj(b, c, d);    e += t1;    a = t1+t2;
++
++	t1 = h + e1(e) + Ch(e, f, g) + 0xe49b69c1 + W[16];
++	t2 = e0(a) + Maj(a, b, c);    d += t1;    h = t1+t2;
++	t1 = g + e1(d) + Ch(d, e, f) + 0xefbe4786 + W[17];
++	t2 = e0(h) + Maj(h, a, b);    c += t1;    g = t1+t2;
++	t1 = f + e1(c) + Ch(c, d, e) + 0x0fc19dc6 + W[18];
++	t2 = e0(g) + Maj(g, h, a);    b += t1;    f = t1+t2;
++	t1 = e + e1(b) + Ch(b, c, d) + 0x240ca1cc + W[19];
++	t2 = e0(f) + Maj(f, g, h);    a += t1;    e = t1+t2;
++	t1 = d + e1(a) + Ch(a, b, c) + 0x2de92c6f + W[20];
++	t2 = e0(e) + Maj(e, f, g);    h += t1;    d = t1+t2;
++	t1 = c + e1(h) + Ch(h, a, b) + 0x4a7484aa + W[21];
++	t2 = e0(d) + Maj(d, e, f);    g += t1;    c = t1+t2;
++	t1 = b + e1(g) + Ch(g, h, a) + 0x5cb0a9dc + W[22];
++	t2 = e0(c) + Maj(c, d, e);    f += t1;    b = t1+t2;
++	t1 = a + e1(f) + Ch(f, g, h) + 0x76f988da + W[23];
++	t2 = e0(b) + Maj(b, c, d);    e += t1;    a = t1+t2;
++
++	t1 = h + e1(e) + Ch(e, f, g) + 0x983e5152 + W[24];
++	t2 = e0(a) + Maj(a, b, c);    d += t1;    h = t1+t2;
++	t1 = g + e1(d) + Ch(d, e, f) + 0xa831c66d + W[25];
++	t2 = e0(h) + Maj(h, a, b);    c += t1;    g = t1+t2;
++	t1 = f + e1(c) + Ch(c, d, e) + 0xb00327c8 + W[26];
++	t2 = e0(g) + Maj(g, h, a);    b += t1;    f = t1+t2;
++	t1 = e + e1(b) + Ch(b, c, d) + 0xbf597fc7 + W[27];
++	t2 = e0(f) + Maj(f, g, h);    a += t1;    e = t1+t2;
++	t1 = d + e1(a) + Ch(a, b, c) + 0xc6e00bf3 + W[28];
++	t2 = e0(e) + Maj(e, f, g);    h += t1;    d = t1+t2;
++	t1 = c + e1(h) + Ch(h, a, b) + 0xd5a79147 + W[29];
++	t2 = e0(d) + Maj(d, e, f);    g += t1;    c = t1+t2;
++	t1 = b + e1(g) + Ch(g, h, a) + 0x06ca6351 + W[30];
++	t2 = e0(c) + Maj(c, d, e);    f += t1;    b = t1+t2;
++	t1 = a + e1(f) + Ch(f, g, h) + 0x14292967 + W[31];
++	t2 = e0(b) + Maj(b, c, d);    e += t1;    a = t1+t2;
++
++	t1 = h + e1(e) + Ch(e, f, g) + 0x27b70a85 + W[32];
++	t2 = e0(a) + Maj(a, b, c);    d += t1;    h = t1+t2;
++	t1 = g + e1(d) + Ch(d, e, f) + 0x2e1b2138 + W[33];
++	t2 = e0(h) + Maj(h, a, b);    c += t1;    g = t1+t2;
++	t1 = f + e1(c) + Ch(c, d, e) + 0x4d2c6dfc + W[34];
++	t2 = e0(g) + Maj(g, h, a);    b += t1;    f = t1+t2;
++	t1 = e + e1(b) + Ch(b, c, d) + 0x53380d13 + W[35];
++	t2 = e0(f) + Maj(f, g, h);    a += t1;    e = t1+t2;
++	t1 = d + e1(a) + Ch(a, b, c) + 0x650a7354 + W[36];
++	t2 = e0(e) + Maj(e, f, g);    h += t1;    d = t1+t2;
++	t1 = c + e1(h) + Ch(h, a, b) + 0x766a0abb + W[37];
++	t2 = e0(d) + Maj(d, e, f);    g += t1;    c = t1+t2;
++	t1 = b + e1(g) + Ch(g, h, a) + 0x81c2c92e + W[38];
++	t2 = e0(c) + Maj(c, d, e);    f += t1;    b = t1+t2;
++	t1 = a + e1(f) + Ch(f, g, h) + 0x92722c85 + W[39];
++	t2 = e0(b) + Maj(b, c, d);    e += t1;    a = t1+t2;
++
++	t1 = h + e1(e) + Ch(e, f, g) + 0xa2bfe8a1 + W[40];
++	t2 = e0(a) + Maj(a, b, c);    d += t1;    h = t1+t2;
++	t1 = g + e1(d) + Ch(d, e, f) + 0xa81a664b + W[41];
++	t2 = e0(h) + Maj(h, a, b);    c += t1;    g = t1+t2;
++	t1 = f + e1(c) + Ch(c, d, e) + 0xc24b8b70 + W[42];
++	t2 = e0(g) + Maj(g, h, a);    b += t1;    f = t1+t2;
++	t1 = e + e1(b) + Ch(b, c, d) + 0xc76c51a3 + W[43];
++	t2 = e0(f) + Maj(f, g, h);    a += t1;    e = t1+t2;
++	t1 = d + e1(a) + Ch(a, b, c) + 0xd192e819 + W[44];
++	t2 = e0(e) + Maj(e, f, g);    h += t1;    d = t1+t2;
++	t1 = c + e1(h) + Ch(h, a, b) + 0xd6990624 + W[45];
++	t2 = e0(d) + Maj(d, e, f);    g += t1;    c = t1+t2;
++	t1 = b + e1(g) + Ch(g, h, a) + 0xf40e3585 + W[46];
++	t2 = e0(c) + Maj(c, d, e);    f += t1;    b = t1+t2;
++	t1 = a + e1(f) + Ch(f, g, h) + 0x106aa070 + W[47];
++	t2 = e0(b) + Maj(b, c, d);    e += t1;    a = t1+t2;
++
++	t1 = h + e1(e) + Ch(e, f, g) + 0x19a4c116 + W[48];
++	t2 = e0(a) + Maj(a, b, c);    d += t1;    h = t1+t2;
++	t1 = g + e1(d) + Ch(d, e, f) + 0x1e376c08 + W[49];
++	t2 = e0(h) + Maj(h, a, b);    c += t1;    g = t1+t2;
++	t1 = f + e1(c) + Ch(c, d, e) + 0x2748774c + W[50];
++	t2 = e0(g) + Maj(g, h, a);    b += t1;    f = t1+t2;
++	t1 = e + e1(b) + Ch(b, c, d) + 0x34b0bcb5 + W[51];
++	t2 = e0(f) + Maj(f, g, h);    a += t1;    e = t1+t2;
++	t1 = d + e1(a) + Ch(a, b, c) + 0x391c0cb3 + W[52];
++	t2 = e0(e) + Maj(e, f, g);    h += t1;    d = t1+t2;
++	t1 = c + e1(h) + Ch(h, a, b) + 0x4ed8aa4a + W[53];
++	t2 = e0(d) + Maj(d, e, f);    g += t1;    c = t1+t2;
++	t1 = b + e1(g) + Ch(g, h, a) + 0x5b9cca4f + W[54];
++	t2 = e0(c) + Maj(c, d, e);    f += t1;    b = t1+t2;
++	t1 = a + e1(f) + Ch(f, g, h) + 0x682e6ff3 + W[55];
++	t2 = e0(b) + Maj(b, c, d);    e += t1;    a = t1+t2;
++
++	t1 = h + e1(e) + Ch(e, f, g) + 0x748f82ee + W[56];
++	t2 = e0(a) + Maj(a, b, c);    d += t1;    h = t1+t2;
++	t1 = g + e1(d) + Ch(d, e, f) + 0x78a5636f + W[57];
++	t2 = e0(h) + Maj(h, a, b);    c += t1;    g = t1+t2;
++	t1 = f + e1(c) + Ch(c, d, e) + 0x84c87814 + W[58];
++	t2 = e0(g) + Maj(g, h, a);    b += t1;    f = t1+t2;
++	t1 = e + e1(b) + Ch(b, c, d) + 0x8cc70208 + W[59];
++	t2 = e0(f) + Maj(f, g, h);    a += t1;    e = t1+t2;
++	t1 = d + e1(a) + Ch(a, b, c) + 0x90befffa + W[60];
++	t2 = e0(e) + Maj(e, f, g);    h += t1;    d = t1+t2;
++	t1 = c + e1(h) + Ch(h, a, b) + 0xa4506ceb + W[61];
++	t2 = e0(d) + Maj(d, e, f);    g += t1;    c = t1+t2;
++	t1 = b + e1(g) + Ch(g, h, a) + 0xbef9a3f7 + W[62];
++	t2 = e0(c) + Maj(c, d, e);    f += t1;    b = t1+t2;
++	t1 = a + e1(f) + Ch(f, g, h) + 0xc67178f2 + W[63];
++	t2 = e0(b) + Maj(b, c, d);    e += t1;    a = t1+t2;
++
++	state[0] += a; state[1] += b; state[2] += c; state[3] += d;
++	state[4] += e; state[5] += f; state[6] += g; state[7] += h;
++
++	/* clear any sensitive info... */
++	a = b = c = d = e = f = g = h = t1 = t2 = 0;
++	memset(W, 0, 64 * sizeof(u32));
++}
++
++int sha256_init(struct sha256_state *sctx)
++{
++	sctx->state[0] = SHA256_H0;
++	sctx->state[1] = SHA256_H1;
++	sctx->state[2] = SHA256_H2;
++	sctx->state[3] = SHA256_H3;
++	sctx->state[4] = SHA256_H4;
++	sctx->state[5] = SHA256_H5;
++	sctx->state[6] = SHA256_H6;
++	sctx->state[7] = SHA256_H7;
++	sctx->count = 0;
 +
 +	return 0;
 +}
 +
-+static struct kimage *do_kimage_alloc_init(void)
++int sha256_update(struct sha256_state *sctx, const u8 *data,
++					unsigned int len)
 +{
-+	struct kimage *image;
++	unsigned int partial, done;
++	const u8 *src;
 +
-+	/* Allocate a controlling structure */
-+	image = kzalloc(sizeof(*image), GFP_KERNEL);
-+	if (!image)
-+		return NULL;
++	partial = sctx->count & 0x3f;
++	sctx->count += len;
++	done = 0;
++	src = data;
 +
-+	image->head = 0;
-+	image->entry = &image->head;
-+	image->last_entry = &image->head;
-+	image->control_page = ~0; /* By default this does not apply */
-+	image->type = KEXEC_TYPE_DEFAULT;
++	if ((partial + len) > 63) {
++		if (partial) {
++			done = -partial;
++			memcpy(sctx->buf + partial, data, done + 64);
++			src = sctx->buf;
++		}
 +
-+	/* Initialize the list of control pages */
-+	INIT_LIST_HEAD(&image->control_pages);
++		do {
++			sha256_transform(sctx->state, src);
++			done += 64;
++			src = data + done;
++		} while (done + 63 < len);
 +
-+	/* Initialize the list of destination pages */
-+	INIT_LIST_HEAD(&image->dest_pages);
++		partial = 0;
++	}
++	memcpy(sctx->buf + partial, src, len - done);
 +
-+	/* Initialize the list of unusable pages */
-+	INIT_LIST_HEAD(&image->unuseable_pages);
++	return 0;
++}
 +
-+	return image;
- }
- 
- static void kimage_free_page_list(struct list_head *list);
-@@ -243,10 +268,19 @@ static int kimage_normal_alloc(struct kimage **rimage, unsigned long entry,
- 	struct kimage *image;
- 
- 	/* Allocate and initialize a controlling structure */
--	image = NULL;
--	result = do_kimage_alloc(&image, entry, nr_segments, segments);
-+	image = do_kimage_alloc_init();
-+	if (!image)
-+		return -ENOMEM;
++int sha256_final(struct sha256_state *sctx, u8 *out)
++{
++	__be32 *dst = (__be32 *)out;
++	__be64 bits;
++	unsigned int index, pad_len;
++	int i;
++	static const u8 padding[64] = { 0x80, };
 +
-+	image->start = entry;
++	/* Save number of bits */
++	bits = cpu_to_be64(sctx->count << 3);
 +
-+	result = copy_user_segment_list(image, nr_segments, segments);
- 	if (result)
--		goto out;
-+		goto out_free_image;
++	/* Pad out to 56 mod 64. */
++	index = sctx->count & 0x3f;
++	pad_len = (index < 56) ? (56 - index) : ((64+56) - index);
++	sha256_update(sctx, padding, pad_len);
 +
-+	result = sanity_check_segment_list(image);
-+	if (result)
-+		goto out_free_image;
- 
- 	/*
- 	 * Find a location for the control code buffer, and add it
-@@ -258,22 +292,23 @@ static int kimage_normal_alloc(struct kimage **rimage, unsigned long entry,
- 					   get_order(KEXEC_CONTROL_PAGE_SIZE));
- 	if (!image->control_code_page) {
- 		printk(KERN_ERR "Could not allocate control_code_buffer\n");
--		goto out_free;
-+		goto out_free_image;
- 	}
- 
- 	image->swap_page = kimage_alloc_control_pages(image, 0);
- 	if (!image->swap_page) {
- 		printk(KERN_ERR "Could not allocate swap buffer\n");
--		goto out_free;
-+		goto out_free_control_pages;
- 	}
- 
- 	*rimage = image;
- 	return 0;
- 
--out_free:
++	/* Append length (before padding) */
++	sha256_update(sctx, (const u8 *)&bits, sizeof(bits));
 +
-+out_free_control_pages:
- 	kimage_free_page_list(&image->control_pages);
-+out_free_image:
- 	kfree(image);
--out:
- 	return result;
- }
- 
-@@ -283,19 +318,17 @@ static int kimage_crash_alloc(struct kimage **rimage, unsigned long entry,
- {
- 	int result;
- 	struct kimage *image;
--	unsigned long i;
- 
--	image = NULL;
- 	/* Verify we have a valid entry point */
--	if ((entry < crashk_res.start) || (entry > crashk_res.end)) {
--		result = -EADDRNOTAVAIL;
--		goto out;
--	}
-+	if ((entry < crashk_res.start) || (entry > crashk_res.end))
-+		return -EADDRNOTAVAIL;
- 
- 	/* Allocate and initialize a controlling structure */
--	result = do_kimage_alloc(&image, entry, nr_segments, segments);
--	if (result)
--		goto out;
-+	image = do_kimage_alloc_init();
-+	if (!image)
-+		return -ENOMEM;
++	/* Store state in digest */
++	for (i = 0; i < 8; i++)
++		dst[i] = cpu_to_be32(sctx->state[i]);
 +
-+	image->start = entry;
- 
- 	/* Enable the special crash kernel control page
- 	 * allocation policy.
-@@ -303,25 +336,13 @@ static int kimage_crash_alloc(struct kimage **rimage, unsigned long entry,
- 	image->control_page = crashk_res.start;
- 	image->type = KEXEC_TYPE_CRASH;
- 
--	/*
--	 * Verify we have good destination addresses.  Normally
--	 * the caller is responsible for making certain we don't
--	 * attempt to load the new image into invalid or reserved
--	 * areas of RAM.  But crash kernels are preloaded into a
--	 * reserved area of ram.  We must ensure the addresses
--	 * are in the reserved area otherwise preloading the
--	 * kernel could corrupt things.
--	 */
--	result = -EADDRNOTAVAIL;
--	for (i = 0; i < nr_segments; i++) {
--		unsigned long mstart, mend;
-+	result = copy_user_segment_list(image, nr_segments, segments);
-+	if (result)
-+		goto out_free_image;
- 
--		mstart = image->segment[i].mem;
--		mend = mstart + image->segment[i].memsz - 1;
--		/* Ensure we are within the crash kernel limits */
--		if ((mstart < crashk_res.start) || (mend > crashk_res.end))
--			goto out_free;
--	}
-+	result = sanity_check_segment_list(image);
-+	if (result)
-+		goto out_free_image;
- 
- 	/*
- 	 * Find a location for the control code buffer, and add
-@@ -333,15 +354,14 @@ static int kimage_crash_alloc(struct kimage **rimage, unsigned long entry,
- 					   get_order(KEXEC_CONTROL_PAGE_SIZE));
- 	if (!image->control_code_page) {
- 		printk(KERN_ERR "Could not allocate control_code_buffer\n");
--		goto out_free;
-+		goto out_free_image;
- 	}
- 
- 	*rimage = image;
- 	return 0;
- 
--out_free:
-+out_free_image:
- 	kfree(image);
--out:
- 	return result;
- }
- 
++	/* Zeroize sensitive information. */
++	memset(sctx, 0, sizeof(*sctx));
++
++	return 0;
++}
+diff --git a/arch/x86/purgatory/sha256.h b/arch/x86/purgatory/sha256.h
+new file mode 100644
+index 0000000..bd15a41
+--- /dev/null
++++ b/arch/x86/purgatory/sha256.h
+@@ -0,0 +1,22 @@
++/*
++ *  Copyright (C) 2014 Red Hat Inc.
++ *
++ *  Author: Vivek Goyal <vgoyal@redhat.com>
++ *
++ * This source code is licensed under the GNU General Public License,
++ * Version 2.  See the file COPYING for more details.
++ */
++
++#ifndef SHA256_H
++#define SHA256_H
++
++
++#include <linux/types.h>
++#include <crypto/sha.h>
++
++extern int sha256_init(struct sha256_state *sctx);
++extern int sha256_update(struct sha256_state *sctx, const u8 *input,
++				unsigned int length);
++extern int sha256_final(struct sha256_state *sctx, u8 *hash);
++
++#endif /* SHA256_H */
 -- 
 1.9.0
 
