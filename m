@@ -1,105 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753282AbaFCBvu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 21:51:50 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:60581 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751431AbaFCBvt (ORCPT
+	id S1752681AbaFCBze (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 21:55:34 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:48920 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751441AbaFCBzd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 21:51:49 -0400
-X-Originating-IP: 50.43.32.211
-Date: Mon, 2 Jun 2014 18:51:33 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: Joe Perches <joe@perches.com>, Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, mathieu.desnoyers@efficios.com, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
-        fweisbec@gmail.com, oleg@redhat.com, sbw@mit.edu
-Subject: Re: [PATCH RFC 2/2] rcu: Add Josh Triplett as designated reviewer
-Message-ID: <20140603015133.GA20354@thin>
-References: <1401728420-3572-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1401728420-3572-2-git-send-email-paulmck@linux.vnet.ibm.com>
- <20140602133512.6d3f584314ecc423e63ffc8e@linux-foundation.org>
- <1401741411.7323.36.camel@joe-AO725>
- <538CE0E0.8020002@infradead.org>
- <20140603000246.GC14801@cloud>
- <538D1FC6.3090500@infradead.org>
+	Mon, 2 Jun 2014 21:55:33 -0400
+Date: Mon, 2 Jun 2014 21:55:29 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Jan Kara <jack@suse.cz>, "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: mm,console: circular dependency between console_sem and zone
+ lock
+Message-ID: <20140602215529.0c13f91b@gandalf.local.home>
+In-Reply-To: <538B33D5.8070002@oracle.com>
+References: <536AE5DC.6070307@oracle.com>
+	<20140512162811.GD3685@quack.suse.cz>
+	<538B33D5.8070002@oracle.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <538D1FC6.3090500@infradead.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 02, 2014 at 06:07:18PM -0700, Randy Dunlap wrote:
-> On 06/02/2014 05:02 PM, josh@joshtriplett.org wrote:
-> > On Mon, Jun 02, 2014 at 01:38:56PM -0700, Randy Dunlap wrote:
-> >> On 06/02/2014 01:36 PM, Joe Perches wrote:
-> >>> On Mon, 2014-06-02 at 13:35 -0700, Andrew Morton wrote:
-> >>>> On Mon,  2 Jun 2014 10:00:20 -0700 "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
-> >>>>
-> >>>>> --- a/MAINTAINERS
-> >>>>> +++ b/MAINTAINERS
-> >>>>> @@ -7321,6 +7321,7 @@ F:	kernel/rcu/torture.c
-> >>>>>  
-> >>>>>  RCUTORTURE TEST FRAMEWORK
-> >>>>>  M:	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> >>>>> +R:	Josh Triplett <josh@joshtriplett.org>
-> >>>>>  L:	linux-kernel@vger.kernel.org
-> >>>>>  S:	Supported
-> >>>>>  T:	git git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git
-> >>>>
-> >>>> I like the general principle - knowing who to poke regarding a kernel
-> >>>> change is useful.
-> >>>>
-> >>>> I don't care much whether it's "M:" or "R:", although "R:" carries more
-> >>>> meaning and hence is probably better.
-> >>>>
-> >>>> But why not "Cc:"?  That's meaningful too and is more copy-n-paste friendly.
-> >>
-> >> Josh, what are you assuming that Andrew and I did not?
+On Sun, 01 Jun 2014 10:08:21 -0400
+Sasha Levin <sasha.levin@oracle.com> wrote:
+
+> On 05/12/2014 12:28 PM, Jan Kara wrote:
+> > On Wed 07-05-14 22:03:08, Sasha Levin wrote:
+> >> > Hi all,
+> >> > 
+> >> > While fuzzing with trinity inside a KVM tools guest running the latest -next
+> >> > kernel I've stumbled on the following spew:
+> >   Thanks for report. So the problem seems to be maginally valid but I'm not
+> > 100% sure whom to blame :). So printk() code calls up() which calls
+> > try_to_wake_up() under console_sem.lock spinlock. That function can take
+> > rq->lock which is all expected.
 > > 
-> > Not sure what you mean here.  Responding to the text you quoted: I have
-> > no particular need to bikeshed the tag name, so if you prefer "Cc" and
-> > can convince get_maintainer.pl to handle it, fine by me.
+> > The next part of the chain is that during CPU initialization we call
+> > __sched_fork() with rq->lock which calls into hrtimer_init() which can
+> > allocate memory which creates a dependency rq->lock => zone.lock.rlock.
+> > 
+> > And memory management code calls printk() which zone.lock.rlock held which
+> > closes the loop. Now I suspect the second link in the chain can happen only
+> > while CPU is booting and might even happen only if some debug options are
+> > enabled. But I don't really know scheduler code well enough. Steven?
 > 
-> Sorry, what I meant is that Andrew and I both mentioned copy-paste and
-> you replied earlier (and I have already deleted it) that copy-paste shouldn't
-> be necessary for someone who is using get_maintainer.pl.
+> I've cc'ed Peter and Ingo who may be able to answer that, as it still happens
+> on -next.
 > 
-> Do you redirect its output to your patch file and then edit it or does
-> get_maintainer.pl work with git-send-email or something else?  if something
-> else, what is it, please?
 
-Oh, I see; that was in text you hadn't quoted, so I didn't know what you
-were asking. :)
+Hmm, it failed on a try lock, but on the spinlock within the trylock. I
+wonder if we should add this.
 
-git send-email can invoke 'scripts/get_maintainer.pl --no-rolestats'
-directly via --to-cmd or -cc-cmd; that works fine as long as you don't
-have a cover letter.
+Peter?
 
-Depending on the system I'm running on, and whether it's more convenient
-to invoke git-send-email or to edit patch mails and send them with 'mutt
--H', I have a shell pipeline which invokes get_maintainer.pl on an
-entire patch series, collects all the email addresses it returns, and
-inserts them all into each mail as CCs.  (That way, when I send a
-cross-subsystem patch series, I don't get a pile of maintainers confused
-that they only received a couple of the numbered patches.)  One example:
+-- Steve
 
-{ echo -n "To: " ; for x in *.patch ; do scripts/get_maintainer.pl --no-rolestats < $x | fgrep -v josh@joshtriplett.org ; done | sort -u | sed 's/$/, /;$s/, $//' | tr -d '\n' ; echo ; } | sed -i '/^From:/r/dev/stdin'
-
-Personally, I'd find it handy if one of the following happened:
-
-- git send-email (and ideally also git format-patch) grew an option to
-  collect *all* the to-cmd and cc-cmd output from each patch and apply
-  it to every patch (including the cover letter).
-
-- get_maintainer.pl accepted multiple patchfile names and output the
-  union of the results.  Ideally, get_maintainer.pl would also have a -i
-  option to edit the patch files and insert the addresses in the mail
-  headers.
+diff --git a/kernel/locking/semaphore.c b/kernel/locking/semaphore.c
+index 6815171..6579f84 100644
+--- a/kernel/locking/semaphore.c
++++ b/kernel/locking/semaphore.c
+@@ -132,7 +132,9 @@ int down_trylock(struct semaphore *sem)
+ 	unsigned long flags;
+ 	int count;
+ 
+-	raw_spin_lock_irqsave(&sem->lock, flags);
++	if (!raw_spin_trylock_irqsave(&sem->lock, flags))
++		return 1;
++
+ 	count = sem->count - 1;
+ 	if (likely(count >= 0))
+ 		sem->count = count;
