@@ -1,84 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752634AbaFCJuY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 05:50:24 -0400
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:47374 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750892AbaFCJuW (ORCPT
+	id S1752074AbaFCJyf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 05:54:35 -0400
+Received: from mout.kundenserver.de ([212.227.126.130]:58241 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751132AbaFCJyd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 05:50:22 -0400
+	Tue, 3 Jun 2014 05:54:33 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, Joe Perches <joe@perches.com>,
+        Doug Anderson <dianders@chromium.org>,
+        Kukjin Kim <kgene.kim@samsung.com>
+Subject: [PATCH] serial: samsung: fix typo in debug code
+Date: Tue, 03 Jun 2014 11:53:47 +0200
+Message-ID: <10455941.RzodM59Z3O@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
 MIME-Version: 1.0
-In-Reply-To: <538C17D6.60100@linux.vnet.ibm.com>
-References: <1400860385-14555-1-git-send-email-vincent.guittot@linaro.org>
- <1400860385-14555-12-git-send-email-vincent.guittot@linaro.org>
- <20140529135510.GG11074@laptop.programming.kicks-ass.net> <538C17D6.60100@linux.vnet.ibm.com>
-From: Vincent Guittot <vincent.guittot@linaro.org>
-Date: Tue, 3 Jun 2014 11:50:01 +0200
-Message-ID: <CAKfTPtAF+HNzs8B-xP2jPbJ+iJVO2wR0frmZ=EgQs35A_wXyNA@mail.gmail.com>
-Subject: Re: [PATCH v2 11/11] sched: replace capacity by activity
-To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        Mike Galbraith <efault@gmx.de>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:8aTxr+ACTn1tkSqPNasw4Ivwn3KhRiI9U7jLYuJ0kQ2
+ QmMPLvS0IQ86UMcRlA6jwVrybtEMu1cFLvoCzxD25stPsFLSGS
+ SLv38+ybFubwTKRCPJddCyGLvTvHR+EI3ctrpLMvazAbtkNDGY
+ VJqfps8xT83BCnUny5Ezn4tpW59SIzgOkr6tbOkdChjvEUdw9f
+ k3mUuca8iABllDcCrC04FNNKkQvTGqQd1rzcEgQeWf8rohvCz2
+ 1VteKbbF2fOHQd49k0MxSN/K/248bEttvRwC3yfzDIeYYTccT6
+ 27QuYpTQPZODczOIeT7NykrAVRrxy7UJsPtACOJIKePoBj+hGu
+ 7QnK8StMUOYXUUZNNmG8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2 June 2014 08:21, Preeti U Murthy <preeti@linux.vnet.ibm.com> wrote:
-> On 05/29/2014 07:25 PM, Peter Zijlstra wrote:
->> On Fri, May 23, 2014 at 05:53:05PM +0200, Vincent Guittot wrote:
->>> The scheduler tries to compute how many tasks a group of CPUs can handle by
->>> assuming that a task's load is SCHED_LOAD_SCALE and a CPU capacity is
->>> SCHED_POWER_SCALE.
->>> We can now have a better idea of the utilization of a group fo CPUs thanks to
->>> group_actitvity and deduct how many capacity is still available.
->>>
->>> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
->>> ---
->>
->> Right, so as Preeti already mentioned, this wrecks SMT. It also seems to
->> loose the aggressive spread, where we want to run 1 task on each 'core'
->> before we start 'balancing'.
->
-> True. I just profiled the ebizzy runs and found that ebizzy threads were
-> being packed onto a single core which is SMT-8 capable before spreading.
-> This was a 6 core, SMT-8 machine. So for instance if I run 8 threads of
-> ebizzy. the load balancing as record by perf sched record showed that
-> two cores were packed upto 3 ebizzy threads and one core ran two ebizzy
-> threads while the rest of the 3 cores were idle.
->
-> I am unable to understand which part of this patch is aiding packing to
-> a core.  There is this check in this patch right?
->
-> if (sgs->group_capacity < 0)
->                 return true;
->
-> which should ideally prevent such packing? Because irrespective of the
-> number of SMT threads, the capacity of a core is unchanged. And in the
-> above scenario, we have 6 tasks on 3 cores. So shouldn't the above check
-> have caught it?
+commit e4ac92df2791 ("serial: samsung: Neaten dbg uses") introduced
+a regression in the conversion from vsprintf to vsnprintf.
 
-yes, it should. the group_capacity should become < 0 because the CPU
-are fully loaded and the activity reach the max capacity value +
-nr_running
+This fixes the build error by passing the correct variable name.
 
->
-> Regards
-> Preeti U Murthy
->>
->> So I think we should be able to fix this by setting PREFER_SIBLING on
->> the SMT domain, that way we'll get single tasks running on each SMT
->> domain before filling them up until capacity.
->>
->> Now, its been a while since I looked at PREFER_SIBLING, and I've not yet
->> looked at what your patch does to it, but it seems to me that that is
->> the first direction we should look for an answer to this.
->>
->
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Joe Perches <joe@perches.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Doug Anderson <dianders@chromium.org>
+Cc: Kukjin Kim <kgene.kim@samsung.com>
+
+diff --git a/drivers/tty/serial/samsung.c b/drivers/tty/serial/samsung.c
+index 3293377..c1d3ebd 100644
+--- a/drivers/tty/serial/samsung.c
++++ b/drivers/tty/serial/samsung.c
+@@ -66,7 +66,7 @@ static void dbg(const char *fmt, ...)
+ 	char buff[256];
+ 
+ 	va_start(va, fmt);
+-	vscnprintf(buff, sizeof(buf), fmt, va);
++	vscnprintf(buff, sizeof(buff), fmt, va);
+ 	va_end(va);
+ 
+ 	printascii(buff);
+
