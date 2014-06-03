@@ -1,83 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932257AbaFCG1q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 02:27:46 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60925 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932203AbaFCG1o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 02:27:44 -0400
-Date: Tue, 3 Jun 2014 08:27:42 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: David Rientjes <rientjes@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, cgroups@vger.kernel.org
-Subject: Re: [patch v2] mm, memcg: periodically schedule when emptying page
- list
-Message-ID: <20140603062742.GA1321@dhcp22.suse.cz>
-References: <alpine.DEB.2.02.1406021612550.6487@chino.kir.corp.google.com>
- <alpine.DEB.2.02.1406021749590.13910@chino.kir.corp.google.com>
+	id S932301AbaFCG2S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 02:28:18 -0400
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:40521 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932203AbaFCG2R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 02:28:17 -0400
+Date: Tue, 3 Jun 2014 15:27:28 +0900
+From: Daeseok Youn <daeseok.youn@gmail.com>
+To: lidza.louina@gmail.com, gregkh@linuxfoundation.org
+Cc: markh@compro.net, dan.carpenter@oracle.com,
+        driverdev-devel@linuxdriverproject.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 2/4] staging: dgap: pass "brd" as a paramter to
+ dgap_after_config_loaded()
+Message-ID: <20140603062728.GA7161@devel.8.8.4.4>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1406021749590.13910@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 02-06-14 17:51:25, David Rientjes wrote:
-> From: Hugh Dickins <hughd@google.com>
-> 
-> mem_cgroup_force_empty_list() can iterate a large number of pages on an lru and 
-> mem_cgroup_move_parent() doesn't return an errno unless certain criteria, none 
-> of which indicate that the iteration may be taking too long, is met.
-> 
-> We have encountered the following stack trace many times indicating
-> "need_resched set for > 51000020 ns (51 ticks) without schedule", for example:
-> 
-> 	scheduler_tick()
-> 	<timer irq>
-> 	mem_cgroup_move_account+0x4d/0x1d5
-> 	mem_cgroup_move_parent+0x8d/0x109
-> 	mem_cgroup_reparent_charges+0x149/0x2ba
-> 	mem_cgroup_css_offline+0xeb/0x11b
-> 	cgroup_offline_fn+0x68/0x16b
-> 	process_one_work+0x129/0x350
-> 
-> If this iteration is taking too long, we still need to do cond_resched() even 
-> when an individual page is not busy.
-> 
-> [rientjes@google.com: changelog]
-> Signed-off-by: Hugh Dickins <hughd@google.com>
-> Signed-off-by: David Rientjes <rientjes@google.com>
+Pass "brd" to dgap_after_config_loaded() instead of passing
+"dgap_numboards" and looking up brd again.
 
-Acked-by: Michal Hocko <mhocko@suse.cz>
+Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+---
+ drivers/staging/dgap/dgap.c |    8 +++++---
+ 1 files changed, 5 insertions(+), 3 deletions(-)
 
-Thanks!
-
-> ---
->  v2: always reschedule if needed, "page" itself may not have a pc mismatch
->      or been unable to isolate.
-> 
->  mm/memcontrol.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -4784,9 +4784,9 @@ static void mem_cgroup_force_empty_list(struct mem_cgroup *memcg,
->  		if (mem_cgroup_move_parent(page, pc, memcg)) {
->  			/* found lock contention or "pc" is obsolete. */
->  			busy = page;
-> -			cond_resched();
->  		} else
->  			busy = NULL;
-> +		cond_resched();
->  	} while (!list_empty(list));
->  }
->  
-
+diff --git a/drivers/staging/dgap/dgap.c b/drivers/staging/dgap/dgap.c
+index 9501a5e..7a07a9b 100644
+--- a/drivers/staging/dgap/dgap.c
++++ b/drivers/staging/dgap/dgap.c
+@@ -187,7 +187,7 @@ static void dgap_do_fep_load(struct board_t *brd, const u8 *ufep, int len);
+ #ifdef DIGI_CONCENTRATORS_SUPPORTED
+ static void dgap_do_conc_load(struct board_t *brd, u8 *uaddr, int len);
+ #endif
+-static int dgap_after_config_loaded(int board);
++static int dgap_after_config_loaded(struct board_t *brd);
+ static int dgap_finalize_board_init(struct board_t *brd);
+ 
+ static void dgap_get_vpd(struct board_t *brd);
+@@ -859,7 +859,7 @@ static int dgap_firmware_load(struct pci_dev *pdev, int card_type)
+ 		kfree(dgap_config_buf);
+ 	}
+ 
+-	ret = dgap_after_config_loaded(brd->boardnum);
++	ret = dgap_after_config_loaded(brd);
+ 	if (ret)
+ 		return ret;
+ 	/*
+@@ -4113,8 +4113,10 @@ static int dgap_tty_ioctl(struct tty_struct *tty, unsigned int cmd,
+ 	}
+ }
+ 
+-static int dgap_after_config_loaded(int board)
++static int dgap_after_config_loaded(struct board_t *brd)
+ {
++	int board = brd->boardnum;
++
+ 	/*
+ 	 * Initialize KME waitqueues...
+ 	 */
 -- 
-Michal Hocko
-SUSE Labs
+1.7.1
+
