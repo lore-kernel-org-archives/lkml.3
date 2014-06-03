@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933119AbaFCMDg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 08:03:36 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43571 "EHLO
+	id S932712AbaFCLlj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 07:41:39 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43557 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932708AbaFCLlk (ORCPT
+	with ESMTP id S932684AbaFCLlg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 07:41:40 -0400
+	Tue, 3 Jun 2014 07:41:36 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
-        Mark Brown <broonie@linaro.org>,
+Cc: Viresh Kumar <viresh.kumar@linaro.org>, linaro-kernel@lists.linaro.org,
+        linaro-networking@linaro.org, fweisbec@gmail.com,
+        arvind.chauhan@arm.com, Thomas Gleixner <tglx@linutronix.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 072/138] ASoC: wm8962: Update register CLASS_D_CONTROL_1 to be non-volatile
-Date: Tue,  3 Jun 2014 12:38:38 +0100
-Message-Id: <1401795584-22664-73-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 068/138] hrtimer: Set expiry time before switch_hrtimer_base()
+Date: Tue,  3 Jun 2014 12:38:34 +0100
+Message-Id: <1401795584-22664-69-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
 References: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
@@ -28,90 +29,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+From: Viresh Kumar <viresh.kumar@linaro.org>
 
-commit 44330ab516c15dda8a1e660eeaf0003f84e43e3f upstream.
+commit 84ea7fe37908254c3bd90910921f6e1045c1747a upstream.
 
-The register CLASS_D_CONTROL_1 is marked as volatile because it contains
-a bit, DAC_MUTE, which is also mirrored in the ADC_DAC_CONTROL_1
-register. This causes problems for the "Speaker Switch" control, which
-will report an error if the CODEC is suspended because it relies on a
-volatile register.
+switch_hrtimer_base() calls hrtimer_check_target() which ensures that
+we do not migrate a timer to a remote cpu if the timer expires before
+the current programmed expiry time on that remote cpu.
 
-To resolve this issue mark CLASS_D_CONTROL_1 as non-volatile and
-manually keep the register cache in sync by updating both bits when
-changing the mute status.
+But __hrtimer_start_range_ns() calls switch_hrtimer_base() before the
+new expiry time is set. So the sanity check in hrtimer_check_target()
+is operating on stale or even uninitialized data.
 
-Reported-by: Shawn Guo <shawn.guo@linaro.org>
-Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Tested-by: Shawn Guo <shawn.guo@linaro.org>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Update expiry time before calling switch_hrtimer_base().
+
+[ tglx: Rewrote changelog once again ]
+
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: linaro-kernel@lists.linaro.org
+Cc: linaro-networking@linaro.org
+Cc: fweisbec@gmail.com
+Cc: arvind.chauhan@arm.com
+Link: http://lkml.kernel.org/r/81999e148745fc51bbcd0615823fbab9b2e87e23.1399882253.git.viresh.kumar@linaro.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/soc/codecs/wm8962.c | 15 ++++++++++++---
- sound/soc/codecs/wm8962.h |  4 ++++
- 2 files changed, 16 insertions(+), 3 deletions(-)
+ kernel/hrtimer.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/sound/soc/codecs/wm8962.c b/sound/soc/codecs/wm8962.c
-index ca3ef5a12e48..ad0f2b3e9b81 100644
---- a/sound/soc/codecs/wm8962.c
-+++ b/sound/soc/codecs/wm8962.c
-@@ -154,6 +154,7 @@ static struct reg_default wm8962_reg[] = {
- 	{ 40, 0x0000 },   /* R40    - SPKOUTL volume */
- 	{ 41, 0x0000 },   /* R41    - SPKOUTR volume */
+diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+index 6de65d8a70e2..aa149222cd8e 100644
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -1002,11 +1002,8 @@ int __hrtimer_start_range_ns(struct hrtimer *timer, ktime_t tim,
+ 	/* Remove an active timer from the queue: */
+ 	ret = remove_hrtimer(timer, base);
  
-+	{ 49, 0x0010 },   /* R49    - Class D Control 1 */
- 	{ 51, 0x0003 },   /* R51    - Class D Control 2 */
+-	/* Switch the timer base, if necessary: */
+-	new_base = switch_hrtimer_base(timer, base, mode & HRTIMER_MODE_PINNED);
+-
+ 	if (mode & HRTIMER_MODE_REL) {
+-		tim = ktime_add_safe(tim, new_base->get_time());
++		tim = ktime_add_safe(tim, base->get_time());
+ 		/*
+ 		 * CONFIG_TIME_LOW_RES is a temporary way for architectures
+ 		 * to signal that they simply return xtime in
+@@ -1021,6 +1018,9 @@ int __hrtimer_start_range_ns(struct hrtimer *timer, ktime_t tim,
  
- 	{ 56, 0x0506 },   /* R56    - Clocking 4 */
-@@ -795,7 +796,6 @@ static bool wm8962_volatile_register(struct device *dev, unsigned int reg)
- 	case WM8962_ALC2:
- 	case WM8962_THERMAL_SHUTDOWN_STATUS:
- 	case WM8962_ADDITIONAL_CONTROL_4:
--	case WM8962_CLASS_D_CONTROL_1:
- 	case WM8962_DC_SERVO_6:
- 	case WM8962_INTERRUPT_STATUS_1:
- 	case WM8962_INTERRUPT_STATUS_2:
-@@ -2903,13 +2903,22 @@ static int wm8962_set_fll(struct snd_soc_codec *codec, int fll_id, int source,
- static int wm8962_mute(struct snd_soc_dai *dai, int mute)
- {
- 	struct snd_soc_codec *codec = dai->codec;
--	int val;
-+	int val, ret;
+ 	hrtimer_set_expires_range_ns(timer, tim, delta_ns);
  
- 	if (mute)
--		val = WM8962_DAC_MUTE;
-+		val = WM8962_DAC_MUTE | WM8962_DAC_MUTE_ALT;
- 	else
- 		val = 0;
- 
-+	/**
-+	 * The DAC mute bit is mirrored in two registers, update both to keep
-+	 * the register cache consistent.
-+	 */
-+	ret = snd_soc_update_bits(codec, WM8962_CLASS_D_CONTROL_1,
-+				  WM8962_DAC_MUTE_ALT, val);
-+	if (ret < 0)
-+		return ret;
++	/* Switch the timer base, if necessary: */
++	new_base = switch_hrtimer_base(timer, base, mode & HRTIMER_MODE_PINNED);
 +
- 	return snd_soc_update_bits(codec, WM8962_ADC_DAC_CONTROL_1,
- 				   WM8962_DAC_MUTE, val);
- }
-diff --git a/sound/soc/codecs/wm8962.h b/sound/soc/codecs/wm8962.h
-index a1a5d5294c19..910aafd09d21 100644
---- a/sound/soc/codecs/wm8962.h
-+++ b/sound/soc/codecs/wm8962.h
-@@ -1954,6 +1954,10 @@
- #define WM8962_SPKOUTL_ENA_MASK                 0x0040  /* SPKOUTL_ENA */
- #define WM8962_SPKOUTL_ENA_SHIFT                     6  /* SPKOUTL_ENA */
- #define WM8962_SPKOUTL_ENA_WIDTH                     1  /* SPKOUTL_ENA */
-+#define WM8962_DAC_MUTE_ALT                     0x0010  /* DAC_MUTE */
-+#define WM8962_DAC_MUTE_ALT_MASK                0x0010  /* DAC_MUTE */
-+#define WM8962_DAC_MUTE_ALT_SHIFT                    4  /* DAC_MUTE */
-+#define WM8962_DAC_MUTE_ALT_WIDTH                    1  /* DAC_MUTE */
- #define WM8962_SPKOUTL_PGA_MUTE                 0x0002  /* SPKOUTL_PGA_MUTE */
- #define WM8962_SPKOUTL_PGA_MUTE_MASK            0x0002  /* SPKOUTL_PGA_MUTE */
- #define WM8962_SPKOUTL_PGA_MUTE_SHIFT                1  /* SPKOUTL_PGA_MUTE */
+ 	timer_stats_hrtimer_set_start_info(timer);
+ 
+ 	leftmost = enqueue_hrtimer(timer, new_base);
 -- 
 1.9.1
 
