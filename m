@@ -1,87 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753418AbaFCGWi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 02:22:38 -0400
-Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:46513 "EHLO
-	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751740AbaFCGWg convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 02:22:36 -0400
-Date: Tue, 3 Jun 2014 14:19:13 +0800
-From: Jisheng Zhang <jszhang@marvell.com>
-To: Antoine =?UTF-8?B?VMOpbmFydA==?= 
-	<antoine.tenart@free-electrons.com>
-CC: Andrew Lunn <andrew@lunn.ch>,
-        "sebastian.hesselbarth@gmail.com" <sebastian.hesselbarth@gmail.com>,
-        "thomas.petazzoni@free-electrons.com" 
-	<thomas.petazzoni@free-electrons.com>,
-        Jimmy Xu <zmxu@marvell.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "alexandre.belloni@free-electrons.com" 
-	<alexandre.belloni@free-electrons.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 1/5] ARM: berlin: add SMP support
-Message-ID: <20140603141913.710a1f7e@xhacker>
-In-Reply-To: <20140602102750.GB13681@kwain>
-References: <1401700866-24804-1-git-send-email-antoine.tenart@free-electrons.com>
-	<1401700866-24804-2-git-send-email-antoine.tenart@free-electrons.com>
-	<20140602094715.GG28090@lunn.ch>
-	<20140602100048.GA12162@kwain>
-	<20140602100332.GH28090@lunn.ch>
-	<20140602102750.GB13681@kwain>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	id S932191AbaFCG1n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 02:27:43 -0400
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:50182 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753180AbaFCG1m (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 02:27:42 -0400
+Date: Tue, 3 Jun 2014 15:26:53 +0900
+From: Daeseok Youn <daeseok.youn@gmail.com>
+To: lidza.louina@gmail.com, gregkh@linuxfoundation.org
+Cc: markh@compro.net, dan.carpenter@oracle.com,
+        driverdev-devel@linuxdriverproject.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/4] staging: dgap: pass "dgap_numboards" as a paramter to
+ dgap_found_board()
+Message-ID: <20140603062653.GA7153@devel.8.8.4.4>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
- definitions=2014-06-02_02:2014-06-02,2014-06-02,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=2
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1402240000 definitions=main-1406030087
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew, Antoine, 
+- Pass "dgap_numboards" to dgap_found_board() instead of
+using a global variable.
 
-On Mon, 2 Jun 2014 03:27:50 -0700
-Antoine Ténart <antoine.tenart@free-electrons.com> wrote:
+Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+---
+ drivers/staging/dgap/dgap.c |   14 +++++++-------
+ 1 files changed, 7 insertions(+), 7 deletions(-)
 
-> On Mon, Jun 02, 2014 at 12:03:32PM +0200, Andrew Lunn wrote:
-> > On Mon, Jun 02, 2014 at 12:00:48PM +0200, Antoine Ténart wrote:
-> > > Hi Andrew,
-> > > 
-> > > On Mon, Jun 02, 2014 at 11:47:15AM +0200, Andrew Lunn wrote:
-> > > > On Mon, Jun 02, 2014 at 11:21:02AM +0200, Antoine Ténart wrote:
-> > > > > +
-> > > > > +static inline void berlin_reset_cpu(unsigned int cpu)
-> > > > > +{
-> > > > > +	u32 val;
-> > > > > +
-> > > > > +	val = readl(cpu_ctrl + CPU_RESET);
-> > > > > +	val |= BIT(cpu_logical_map(cpu));
-> > > > > +	writel(val, cpu_ctrl + CPU_RESET);
-> > > > > +}
-> > > > 
-> > > > Is this performing a reset on the CPU, or is it taking it out of
-> > > > reset?
-> > > > 
-> > > > If you are going to implement CPU hotplug at some point, you are going
-> > > > to want to be able to put the CPU into reset, i.e. power it off, and
-> > > > take it out of reset, i.e. power it on and getting it running. So it
-> > > > might help if we get these function names clear now.
-> > > 
-> > > It is performing a reset on the CPU. berlin_perform_reset_cpu() then?
-> > 
-> > What happens if the CPU is powered off? Will a reset power it on?  Or
-> > are you assuming the boot loader has powered it on?
-> 
-> I actually don't have information about this. For now let's assume the
-> boot loader has powered on the CPUs.
-> 
-
-We don't support independently power off cpu on BG2 and BG2Q in linux kernel.
-So we can assume that bootloader has powered on the CPUs
+diff --git a/drivers/staging/dgap/dgap.c b/drivers/staging/dgap/dgap.c
+index c78c8e2..9501a5e 100644
+--- a/drivers/staging/dgap/dgap.c
++++ b/drivers/staging/dgap/dgap.c
+@@ -70,7 +70,7 @@ MODULE_SUPPORTED_DEVICE("dgap");
+ 
+ static int dgap_start(void);
+ static void dgap_init_globals(void);
+-static int dgap_found_board(struct pci_dev *pdev, int id);
++static int dgap_found_board(struct pci_dev *pdev, int id, int boardnum);
+ static void dgap_cleanup_board(struct board_t *brd);
+ static void dgap_poll_handler(ulong dummy);
+ static int dgap_init_pci(void);
+@@ -575,7 +575,7 @@ static int dgap_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
+ 	if (rc)
+ 		return -EIO;
+ 
+-	rc = dgap_found_board(pdev, ent->driver_data);
++	rc = dgap_found_board(pdev, ent->driver_data, dgap_numboards);
+ 	if (rc)
+ 		return rc;
+ 
+@@ -667,7 +667,7 @@ static void dgap_cleanup_board(struct board_t *brd)
+  *
+  * A board has been found, init it.
+  */
+-static int dgap_found_board(struct pci_dev *pdev, int id)
++static int dgap_found_board(struct pci_dev *pdev, int id, int boardnum)
+ {
+ 	struct board_t *brd;
+ 	unsigned int pci_irq;
+@@ -679,11 +679,11 @@ static int dgap_found_board(struct pci_dev *pdev, int id)
+ 	if (!brd)
+ 		return -ENOMEM;
+ 
+-	dgap_board[dgap_numboards] = brd;
++	dgap_board[boardnum] = brd;
+ 
+ 	/* store the info for the board we've found */
+ 	brd->magic = DGAP_BOARD_MAGIC;
+-	brd->boardnum = dgap_numboards;
++	brd->boardnum = boardnum;
+ 	brd->firstminor = 0;
+ 	brd->vendor = dgap_pci_tbl[id].vendor;
+ 	brd->device = dgap_pci_tbl[id].device;
+@@ -777,13 +777,13 @@ static int dgap_found_board(struct pci_dev *pdev, int id)
+ 		goto free_brd;
+ 
+ 	pr_info("dgap: board %d: %s (rev %d), irq %ld\n",
+-		dgap_numboards, brd->name, brd->rev, brd->irq);
++		boardnum, brd->name, brd->rev, brd->irq);
+ 
+ 	return 0;
+ 
+ free_brd:
+ 	kfree(brd);
+-	dgap_board[dgap_numboards] = NULL;
++	dgap_board[boardnum] = NULL;
+ 
+ 	return ret;
+ }
+-- 
+1.7.1
 
