@@ -1,169 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932385AbaFCHib (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 03:38:31 -0400
-Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:50594 "EHLO
-	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932211AbaFCHia (ORCPT
+	id S1753585AbaFCHlJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 03:41:09 -0400
+Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:34390 "EHLO
+	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753232AbaFCHlH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 03:38:30 -0400
-From: <fwu@marvell.com>
-To: <linus.walleij@linaro.org>, <swarren@wwwdotorg.org>, <tony@atomide.com>
-CC: <linux-kernel@vger.kernel.org>, <swarren@nvidia.com>, <fwu@marvell.com>,
-        <cxie4@marvell.com>, <ylmao@marvell.com>, <njiang1@marvell.com>,
-        <tianxf@marvell.com>, <fswu@marvell.com>
-Subject: [PATCH v4] pinctrl: to avoid duplicated calling enable_pinmux_setting for a pin
-Date: Tue, 3 Jun 2014 15:37:57 +0800
-Message-ID: <1401781077-31150-1-git-send-email-fwu@marvell.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 3 Jun 2014 03:41:07 -0400
+Date: Tue, 3 Jun 2014 09:41:02 +0200 (CEST)
+From: Sebastian Ott <sebott@linux.vnet.ibm.com>
+X-X-Sender: sebott@denkbrett
+To: Fabian Frederick <fabf@skynet.be>
+cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        akpm <akpm@linux-foundation.org>
+Subject: Re: [PATCH 1/1] drivers/s390/cio/qdio_main.c: replace shift loop by
+ ilog2
+In-Reply-To: <20140602201757.66cf234bcba12078dc278eba@skynet.be>
+Message-ID: <alpine.LFD.2.11.1406030939300.1588@denkbrett>
+References: <20140520183728.c28374c3f1a655a2e33996a3@skynet.be> <alpine.LFD.2.11.1406021637300.1587@denkbrett> <20140602201757.66cf234bcba12078dc278eba@skynet.be>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+Organization: =?ISO-8859-15?Q?=22IBM_Deutschland_Research_&_Development_GmbH_=2F_Vorsitzende_des_Aufsichtsrats=3A_Martina_Koederitz_Gesch=E4ftsf=FChrung=3A_Dirk_Wittkopp_Sitz_der_Gesellschaft=3A_B=F6blingen_=2F_Registergericht?=
+ =?ISO-8859-15?Q?=3A_Amtsgericht_Stuttgart=2C_HRB_243294=22?=
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
- definitions=2014-06-02_02:2014-06-02,2014-06-02,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1402240000 definitions=main-1406030095
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14060307-4966-0000-0000-0000003D2AE2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Fan Wu <fwu@marvell.com>
+On Mon, 2 Jun 2014, Fabian Frederick wrote:
+> On Mon, 2 Jun 2014 16:41:48 +0200 (CEST)
+> Sebastian Ott <sebott@linux.vnet.ibm.com> wrote:
+> 
+> > Hello Fabian,
+> > 
+> > On Tue, 20 May 2014, Fabian Frederick wrote:
+> > > 
+> > > This is untested.
+> > > 
+> > > Cc: Sebastian Ott <sebott@linux.vnet.ibm.com>
+> > > Cc: Andrew Morton <akpm@linux-foundation.org>
+> > > Signed-off-by: Fabian Frederick <fabf@skynet.be>
+> > > ---
+> > >  drivers/s390/cio/qdio_main.c | 5 ++---
+> > >  1 file changed, 2 insertions(+), 3 deletions(-)
+> > > 
+> > > diff --git a/drivers/s390/cio/qdio_main.c b/drivers/s390/cio/qdio_main.c
+> > > index 77466c4..8bf9ec1 100644
+> > > --- a/drivers/s390/cio/qdio_main.c
+> > > +++ b/drivers/s390/cio/qdio_main.c
+> > > @@ -411,15 +411,14 @@ static inline void qdio_stop_polling(struct qdio_q *q)
+> > > 
+> > >  static inline void account_sbals(struct qdio_q *q, int count)
+> > >  {
+> > > -	int pos = 0;
+> > > +	int pos;
+> > > 
+> > >  	q->q_stats.nr_sbal_total += count;
+> > >  	if (count == QDIO_MAX_BUFFERS_MASK) {
+> > >  		q->q_stats.nr_sbals[7]++;
+> > >  		return;
+> > >  	}
+> > > -	while (count >>= 1)
+> > > -		pos++;
+> > > +	pos = ilog2(count);
+> > >  	q->q_stats.nr_sbals[pos]++;
+> > >  }
+> > > 
+> > > -- 
+> > > 1.8.4.5
+> > > 
+> > > 
+> > 
+> > Could you please resend the patch with a better description plus
+> > the change Joe suggested.
+> > 
+> > Thanks,
+> > Sebastian
+> 
+> Hello Sebastian,
+>    Conclusion of that patch/thread was that callers guarantee count to be > 0
 
-What the patch did:
-1.To call pinmux_disable_setting ahead of pinmux_enable_setting in each time of
-  calling pinctrl_select_state
-2.Remove the HW disable operation in in pinmux_disable_setting function.
-3.Remove the disable ops in struct pinmux_ops
+Correct.
 
-The reason why to do this is that:
-1.To avoid duplicated calling enable_setting operation without disabling
-  operation which will let Pin's desc->mux_usecount keep being added.
-2.The HW pin disable operation is not useful for most of the vendors' platform.
-  And this can be used to avoid the HW glitch after using the item 1#
-  modification.
+> Joe suggested to have unsigned count. Is it what you're talking about ?
 
-In the following case, the issue can be reproduced:
-1)There is a driver need to switch Pin state dynamicly, E.g. b/t "sleep" and
-"default" state
-2)The Pin setting configuration in DTS node may be like the following one:
-component a {
-	pinctrl-names = "default", "sleep";
-	pinctrl-0 = <&a_grp_setting &c_grp_setting>;
-	pinctrl-1 = <&b_grp_setting &c_grp_setting>;
-}
-The "c_grp_setting" config node is totaly same, maybe like following one:
-c_grp_setting: c_grp_setting {
-	pinctrl-single,pins = <GPIO48 AF6>;
-}
-3)When switching the Pin state in the following official Pinctrl sequence:
-	pin = pinctrl_get();
-	state = pinctrl_lookup_state(wanted_state);
-	pinctrl_select_state(state);
-	pinctrl_put();
+Yes.
 
-According to the comments in the original code, only the setting, in old state
-but not in new state, will be "disable"(calling pinmux_disable_setting), which
-is correct logic but not intact. We still need consider case that the setting
-is in both old state and new state.
-We can do this in the following two ways:
-1) Avoid "enable"(calling pinmux_enable_setting) the Same Pins setting repeatedly.
-2) "Disable"(calling pinmux_disable_setting) the "Same Pins setting", actually
-two setting instance, ahead of enabling them.
-
-Analysis:
-1.The solution 2# is better because it can avoid too much iteration.
-2.If we choose 2# solution, we need to
-1) Should mark all the setting in disable state as disabled ahead of enabling.
-2) Avoid the possible HW glitch by removing the HW disable ops in
-in the pinmux_disable_setting
-If we disable all of the settings in the old state and one/ones of the
-setting(s) is/are existed in the new state, the Pin's mux function change
-may happen when some SoC vendors defined the "pinctrl-single,function-off"
-in their DTS file:
-old_setting=>disabled_setting=>new_setting.(HW glitch)
-
-Signed-off-by: Fan Wu <fwu@marvell.com>
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
----
- drivers/pinctrl/core.c         |   24 +++++-------------------
- drivers/pinctrl/pinmux.c       |    4 ----
- include/linux/pinctrl/pinmux.h |    2 --
- 3 files changed, 5 insertions(+), 25 deletions(-)
-
-diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
-index c0fe609..4445a67 100644
---- a/drivers/pinctrl/core.c
-+++ b/drivers/pinctrl/core.c
-@@ -989,29 +989,15 @@ int pinctrl_select_state(struct pinctrl *p, struct pinctrl_state *state)
- 
- 	if (p->state) {
- 		/*
--		 * The set of groups with a mux configuration in the old state
--		 * may not be identical to the set of groups with a mux setting
--		 * in the new state. While this might be unusual, it's entirely
--		 * possible for the "user"-supplied mapping table to be written
--		 * that way. For each group that was configured in the old state
--		 * but not in the new state, this code puts that group into a
--		 * safe/disabled state.
-+		 * For each pinmux setting in the old state, forget SW's record
-+		 * of mux owner for that pingroup. Any pingroups which are
-+		 * still owned by the new state will be re-acquired by the call
-+		 * to pinmux_enable_setting() in the loop below.
- 		 */
- 		list_for_each_entry(setting, &p->state->settings, node) {
--			bool found = false;
- 			if (setting->type != PIN_MAP_TYPE_MUX_GROUP)
- 				continue;
--			list_for_each_entry(setting2, &state->settings, node) {
--				if (setting2->type != PIN_MAP_TYPE_MUX_GROUP)
--					continue;
--				if (setting2->data.mux.group ==
--						setting->data.mux.group) {
--					found = true;
--					break;
--				}
--			}
--			if (!found)
--				pinmux_disable_setting(setting);
-+			pinmux_disable_setting(setting);
- 		}
- 	}
- 
-diff --git a/drivers/pinctrl/pinmux.c b/drivers/pinctrl/pinmux.c
-index 9248ce4..c2c4aff 100644
---- a/drivers/pinctrl/pinmux.c
-+++ b/drivers/pinctrl/pinmux.c
-@@ -469,7 +469,6 @@ void pinmux_disable_setting(struct pinctrl_setting const *setting)
- {
- 	struct pinctrl_dev *pctldev = setting->pctldev;
- 	const struct pinctrl_ops *pctlops = pctldev->desc->pctlops;
--	const struct pinmux_ops *ops = pctldev->desc->pmxops;
- 	int ret;
- 	const unsigned *pins;
- 	unsigned num_pins;
-@@ -515,9 +514,6 @@ void pinmux_disable_setting(struct pinctrl_setting const *setting)
- 				 pins[i], desc->name, gname);
- 		}
- 	}
--
--	if (ops->disable)
--		ops->disable(pctldev, setting->data.mux.func, setting->data.mux.group);
- }
- 
- #ifdef CONFIG_DEBUG_FS
-diff --git a/include/linux/pinctrl/pinmux.h b/include/linux/pinctrl/pinmux.h
-index c153950..3097aaf 100644
---- a/include/linux/pinctrl/pinmux.h
-+++ b/include/linux/pinctrl/pinmux.h
-@@ -70,8 +70,6 @@ struct pinmux_ops {
- 				  unsigned * const num_groups);
- 	int (*enable) (struct pinctrl_dev *pctldev, unsigned func_selector,
- 		       unsigned group_selector);
--	void (*disable) (struct pinctrl_dev *pctldev, unsigned func_selector,
--			 unsigned group_selector);
- 	int (*gpio_request_enable) (struct pinctrl_dev *pctldev,
- 				    struct pinctrl_gpio_range *range,
- 				    unsigned offset);
--- 
-1.7.9.5
+Regards,
+Sebastian
 
