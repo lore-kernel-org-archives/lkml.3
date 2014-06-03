@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932563AbaFCLlG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 07:41:06 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43429 "EHLO
+	id S1755428AbaFCMLk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 08:11:40 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43443 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932508AbaFCLlC (ORCPT
+	with ESMTP id S932555AbaFCLlF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 07:41:02 -0400
+	Tue, 3 Jun 2014 07:41:05 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Antti Palosaari <crope@iki.fi>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, Tejun Heo <tj@kernel.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 045/138] [media] fc2580: fix tuning failure on 32-bit arch
-Date: Tue,  3 Jun 2014 12:38:11 +0100
-Message-Id: <1401795584-22664-46-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 048/138] workqueue: fix a possible race condition between rescuer and pwq-release
+Date: Tue,  3 Jun 2014 12:38:14 +0100
+Message-Id: <1401795584-22664-49-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
 References: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
@@ -28,61 +27,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Antti Palosaari <crope@iki.fi>
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
 
-commit 8845cc6415ec28ef8d57b3fb81c75ef9bce69c5f upstream.
+commit 77668c8b559e4fe2acf2a0749c7c83cde49a5025 upstream.
 
-There was some frequency calculation overflows which caused tuning
-failure on 32-bit architecture. Use 64-bit numbers where needed in
-order to avoid calculation overflows.
+There is a race condition between rescuer_thread() and
+pwq_unbound_release_workfn().
 
-Thanks for the Finnish person, who asked remain anonymous, reporting,
-testing and suggesting the fix.
+Even after a pwq is scheduled for rescue, the associated work items
+may be consumed by any worker.  If all of them are consumed before the
+rescuer gets to them and the pwq's base ref was put due to attribute
+change, the pwq may be released while still being linked on
+@wq->maydays list making the rescuer dereference already freed pwq
+later.
 
-Signed-off-by: Antti Palosaari <crope@iki.fi>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Make send_mayday() pin the target pwq until the rescuer is done with
+it.
+
+tj: Updated comment and patch description.
+
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/media/tuners/fc2580.c      | 6 +++---
- drivers/media/tuners/fc2580_priv.h | 1 +
- 2 files changed, 4 insertions(+), 3 deletions(-)
+ kernel/workqueue.c | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
-diff --git a/drivers/media/tuners/fc2580.c b/drivers/media/tuners/fc2580.c
-index 3aecaf465094..f0c9c42867de 100644
---- a/drivers/media/tuners/fc2580.c
-+++ b/drivers/media/tuners/fc2580.c
-@@ -195,7 +195,7 @@ static int fc2580_set_params(struct dvb_frontend *fe)
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 2b48572be9b3..23071c9acdc1 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -1894,6 +1894,12 @@ static void send_mayday(struct work_struct *work)
  
- 	f_ref = 2UL * priv->cfg->clock / r_val;
- 	n_val = div_u64_rem(f_vco, f_ref, &k_val);
--	k_val_reg = 1UL * k_val * (1 << 20) / f_ref;
-+	k_val_reg = div_u64(1ULL * k_val * (1 << 20), f_ref);
+ 	/* mayday mayday mayday */
+ 	if (list_empty(&pwq->mayday_node)) {
++		/*
++		 * If @pwq is for an unbound wq, its base ref may be put at
++		 * any time due to an attribute change.  Pin @pwq until the
++		 * rescuer is done with it.
++		 */
++		get_pwq(pwq);
+ 		list_add_tail(&pwq->mayday_node, &wq->maydays);
+ 		wake_up_process(wq->rescuer->task);
+ 	}
+@@ -2421,6 +2427,12 @@ repeat:
+ 		process_scheduled_works(rescuer);
  
- 	ret = fc2580_wr_reg(priv, 0x18, r18_val | ((k_val_reg >> 16) & 0xff));
- 	if (ret < 0)
-@@ -348,8 +348,8 @@ static int fc2580_set_params(struct dvb_frontend *fe)
- 	if (ret < 0)
- 		goto err;
- 
--	ret = fc2580_wr_reg(priv, 0x37, 1UL * priv->cfg->clock * \
--			fc2580_if_filter_lut[i].mul / 1000000000);
-+	ret = fc2580_wr_reg(priv, 0x37, div_u64(1ULL * priv->cfg->clock *
-+			fc2580_if_filter_lut[i].mul, 1000000000));
- 	if (ret < 0)
- 		goto err;
- 
-diff --git a/drivers/media/tuners/fc2580_priv.h b/drivers/media/tuners/fc2580_priv.h
-index be38a9e637e0..646c99452136 100644
---- a/drivers/media/tuners/fc2580_priv.h
-+++ b/drivers/media/tuners/fc2580_priv.h
-@@ -22,6 +22,7 @@
- #define FC2580_PRIV_H
- 
- #include "fc2580.h"
-+#include <linux/math64.h>
- 
- struct fc2580_reg_val {
- 	u8 reg;
+ 		/*
++		 * Put the reference grabbed by send_mayday().  @pool won't
++		 * go away while we're holding its lock.
++		 */
++		put_pwq(pwq);
++
++		/*
+ 		 * Leave this pool.  If keep_working() is %true, notify a
+ 		 * regular worker; otherwise, we end up with 0 concurrency
+ 		 * and stalling the execution.
 -- 
 1.9.1
 
