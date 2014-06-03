@@ -1,135 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932100AbaFCDMQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 23:12:16 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:17277 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752100AbaFCDMO (ORCPT
+	id S1753388AbaFCDOY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 23:14:24 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:58949 "EHLO
+	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752191AbaFCDOX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 23:12:14 -0400
-Date: Mon, 2 Jun 2014 23:12:05 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 2/4] tools lib traceevent: Add options to plugins
-Message-ID: <20140602231205.56bf9312@gandalf.local.home>
-In-Reply-To: <1400509775.1742.15.camel@leonhard>
-References: <20140516140215.149535442@goodmis.org>
-	<20140516140502.340008258@goodmis.org>
-	<1400509775.1742.15.camel@leonhard>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Mon, 2 Jun 2014 23:14:23 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@gmail.com>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] tools: perf: builtin-trace.c:  Cleaning up memory leak
+References: <1401622706-13802-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Date: Tue, 03 Jun 2014 12:14:21 +0900
+In-Reply-To: <1401622706-13802-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+	(Rickard Strandqvist's message of "Sun, 1 Jun 2014 13:38:26 +0200")
+Message-ID: <87tx82d6r6.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 19 May 2014 23:29:35 +0900
-Namhyung Kim <namhyung@kernel.org> wrote:
+On Sun,  1 Jun 2014 13:38:26 +0200, Rickard Strandqvist wrote:
+> There is a risk for memory leak in when something unexpected happens
+> and the function returns.
+>
+> This was largely found by using a static code analysis program called cppcheck.
 
-> > - *   struct plugin_option PEVENT_PLUGIN_OPTIONS[] = {
-> > + *   struct pevent_plugin_option PEVENT_PLUGIN_OPTIONS[] = {
-> >   *	{
-> >   *		.name = "option-name",
-> >   *		.plugin_alias = "overide-file-name", (optional)
-> > @@ -355,7 +355,7 @@ enum pevent_func_arg_type {
-> >  enum pevent_flag {
-> >  	PEVENT_NSEC_OUTPUT		= 1,	/* output in NSECS */
-> >  	PEVENT_DISABLE_SYS_PLUGINS	= 1 << 1,
-> > -	PEVENT_DISABLE_PLUGINS		= 1 << 2,
-> > +	PEVENT_DISABLE_PLUGINS		= 1 << 2
-> 
-> Unnecessary change?
-
-Hmm, no idea why I changed that.
-
- 
-> > +/**
-> > + * traceevent_plugin_list_options - get list of plugin options
-> > + *
-> > + * Returns an array of char strings that list the currently registered
-> > + * plugin options in the format of <plugin>:<option>. This list can be
-> > + * used by toggling the option.
-> > + *
-> > + * Returns NULL if there's no options registered. On error it returns
-> > + * an (char **)-1 (must check for that)
-> 
-> What about making it a macro like INVALID_OPTION_LIST?
-
-Yeah, I could do this.
-
-> 
-> > + *
-> > + * Must be freed with traceevent_plugin_free_options_list().
-> > + */
-> > +char **traceevent_plugin_list_options(void)
-> > +{
-> > +	struct registered_plugin_options *reg;
-> > +	struct pevent_plugin_option *op;
-> > +	char **list = NULL;
-> > +	char *name;
-> > +	int count = 0;
-> > +
-> > +	for (reg = registered_options; reg; reg = reg->next) {
-> > +		for (op = reg->options; op->name; op++) {
-> > +			char *alias = op->plugin_alias ? op->plugin_alias : op->file;
-> > +
-> > +			name = malloc(strlen(op->name) + strlen(alias) + 2);
-> > +			if (!name)
-> > +				goto err;
-> > +
-> > +			sprintf(name, "%s:%s", alias, op->name);
-> > +			list = realloc(list, count + 2);
-> > +			if (!list) {
-> 
-> This will lost the original list pointer.  Please use a temp variable.
-
-Will fix.
-
-> 
-> 
-> > +				free(name);
-> > +				goto err;
-> > +			}
-> > +			list[count++] = name;
-> > +			list[count] = NULL;
-> > +		}
-> > +	}
-> > +	if (!count)
-> > +		return NULL;
-> > +	return list;
-> 
-> Isn't it enough to simply return the list?
-
-Yep, will do.
-
-> 
-> > +
-> > + err:
-> > +	while (--count > 0)
-> 
-> Shouldn't it be >= instead of > ?
-> 
-
-Fixed.
+Acked-by: Namhyung Kim <namhyung@kernel.org>
 
 Thanks,
-
--- Steve
-
-> Thanks,
-> Namhyung
-> 
-> 
-> > +		free(list[count]);
-> > +	free(list);
-> > +
-> > +	return (char **)((unsigned long)-1);
-> > +}
-> 
-
+Namhyung
