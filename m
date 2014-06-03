@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755216AbaFCMHM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 08:07:12 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43528 "EHLO
+	id S932648AbaFCLlc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 07:41:32 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43523 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932631AbaFCLla (ORCPT
+	with ESMTP id S932630AbaFCLl2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 07:41:30 -0400
+	Tue, 3 Jun 2014 07:41:28 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sascha Hauer <s.hauer@pengutronix.de>, Olof Johansson <olof@lixom.net>,
+Cc: Michael Welling <mwelling@ieee.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 065/138] ARM: dts: i.MX53: Fix ipu register space size
-Date: Tue,  3 Jun 2014 12:38:31 +0100
-Message-Id: <1401795584-22664-66-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 064/138] gpio: mcp23s08: Bug fix of SPI device tree registration.
+Date: Tue,  3 Jun 2014 12:38:30 +0100
+Message-Id: <1401795584-22664-65-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
 References: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
@@ -27,35 +28,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sascha Hauer <s.hauer@pengutronix.de>
+From: Michael Welling <mwelling@ieee.org>
 
-commit 6d66da89bf4422c0a0693627fb3e25f74af50f92 upstream.
+commit 99e4b98dbe3ad1fe38a74d12c3b8d44a55930de4 upstream.
 
-The IPU register space is 128MB, not 2GB.
+The chips variable needs to be incremented for each chip that is
+found in the spi_present_mask when registering via device tree.
+Without this and the checking a negative index is passed to the
+data->chip array in a subsequent loop.
 
-Fixes: abed9a6bf2bb 'ARM i.MX53: Add IPU support'
-Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
-Acked-by: Shawn Guo <shawn.guo@freescale.com>
-Signed-off-by: Olof Johansson <olof@lixom.net>
-[ luis: backported to 3.11: adjusted context ]
+Signed-off-by: Michael Welling <mwelling@ieee.org>
+Acked-by: Peter Korsgaard <peter@korsgaard.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/arm/boot/dts/imx53.dtsi | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpio/gpio-mcp23s08.c | 12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
 
-diff --git a/arch/arm/boot/dts/imx53.dtsi b/arch/arm/boot/dts/imx53.dtsi
-index 569aa9f2c4ed..162824dbf70d 100644
---- a/arch/arm/boot/dts/imx53.dtsi
-+++ b/arch/arm/boot/dts/imx53.dtsi
-@@ -74,7 +74,7 @@
- 		ipu: ipu@18000000 {
- 			#crtc-cells = <1>;
- 			compatible = "fsl,imx53-ipu";
--			reg = <0x18000000 0x080000000>;
-+			reg = <0x18000000 0x08000000>;
- 			interrupts = <11 10>;
- 			clocks = <&clks 59>, <&clks 110>, <&clks 61>;
- 			clock-names = "bus", "di0", "di1";
+diff --git a/drivers/gpio/gpio-mcp23s08.c b/drivers/gpio/gpio-mcp23s08.c
+index 65d2590b0ecd..236c4dcd7084 100644
+--- a/drivers/gpio/gpio-mcp23s08.c
++++ b/drivers/gpio/gpio-mcp23s08.c
+@@ -630,9 +630,11 @@ static int mcp23s08_probe(struct spi_device *spi)
+ 			dev_err(&spi->dev, "invalid spi-present-mask\n");
+ 			return -ENODEV;
+ 		}
+-
+-		for (addr = 0; addr < ARRAY_SIZE(pdata->chip); addr++)
++		for (addr = 0; addr < ARRAY_SIZE(pdata->chip); addr++) {
++			if ((spi_present_mask & (1 << addr)))
++				chips++;
+ 			pullups[addr] = 0;
++		}
+ 	} else {
+ 		type = spi_get_device_id(spi)->driver_data;
+ 		pdata = spi->dev.platform_data;
+@@ -655,12 +657,12 @@ static int mcp23s08_probe(struct spi_device *spi)
+ 			pullups[addr] = pdata->chip[addr].pullups;
+ 		}
+ 
+-		if (!chips)
+-			return -ENODEV;
+-
+ 		base = pdata->base;
+ 	}
+ 
++	if (!chips)
++		return -ENODEV;
++
+ 	data = kzalloc(sizeof(*data) + chips * sizeof(struct mcp23s08),
+ 			GFP_KERNEL);
+ 	if (!data)
 -- 
 1.9.1
 
