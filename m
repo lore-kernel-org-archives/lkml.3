@@ -1,280 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934284AbaFCUFS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 16:05:18 -0400
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:63667 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934074AbaFCUFG (ORCPT
+	id S934322AbaFCUG0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 16:06:26 -0400
+Received: from mailrelay001.isp.belgacom.be ([195.238.6.51]:44555 "EHLO
+	mailrelay001.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932925AbaFCUGY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 16:05:06 -0400
-From: Andreas Noever <andreas.noever@gmail.com>
-To: linux-kernel@vger.kernel.org, Matthew Garrett <matthew.garrett@nebula.com>,
-        Greg KH <greg@kroah.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        linux-pci@vger.kernel.org
-Cc: Andreas Noever <andreas.noever@gmail.com>
-Subject: [PATCH v5 14/15] thunderbolt: Read switch uid from EEPROM
-Date: Tue,  3 Jun 2014 22:04:11 +0200
-Message-Id: <1401825852-4745-15-git-send-email-andreas.noever@gmail.com>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1401825852-4745-1-git-send-email-andreas.noever@gmail.com>
-References: <1401825852-4745-1-git-send-email-andreas.noever@gmail.com>
+	Tue, 3 Jun 2014 16:06:24 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AnAOAIUpjlNbsmtf/2dsb2JhbABZgwerXgQDAQEBBQGYHIEOF3SDAiOBGjeIRgHRMBeFVYgZZB2EKgSPS4o/ix2IFoM6O4Ew
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>, Eric Paris <eparis@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 1/1] kernel/audit.c: use ARRAY_SIZE instead of sizeof/sizeof[0]
+Date: Tue,  3 Jun 2014 22:05:10 +0200
+Message-Id: <1401825910-8793-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add eeprom access code and read the uid during switch initialization.
-The UID will be used to check device identity after suspend.
+Use kernel.h definition.
 
-Signed-off-by: Andreas Noever <andreas.noever@gmail.com>
+Cc: Eric Paris <eparis@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
 ---
- drivers/thunderbolt/Makefile |   2 +-
- drivers/thunderbolt/eeprom.c | 189 +++++++++++++++++++++++++++++++++++++++++++
- drivers/thunderbolt/switch.c |   5 ++
- drivers/thunderbolt/tb.h     |   3 +
- 4 files changed, 198 insertions(+), 1 deletion(-)
- create mode 100644 drivers/thunderbolt/eeprom.c
+ kernel/audit.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/thunderbolt/Makefile b/drivers/thunderbolt/Makefile
-index 0122ca6..5d1053c 100644
---- a/drivers/thunderbolt/Makefile
-+++ b/drivers/thunderbolt/Makefile
-@@ -1,3 +1,3 @@
- obj-${CONFIG_THUNDERBOLT} := thunderbolt.o
--thunderbolt-objs := nhi.o ctl.o tb.o switch.o cap.o path.o tunnel_pci.o
-+thunderbolt-objs := nhi.o ctl.o tb.o switch.o cap.o path.o tunnel_pci.o eeprom.o
+diff --git a/kernel/audit.c b/kernel/audit.c
+index 47845c5..48e6e5d 100644
+--- a/kernel/audit.c
++++ b/kernel/audit.c
+@@ -718,7 +718,7 @@ static int audit_set_feature(struct sk_buff *skb)
+ 	struct audit_features *uaf;
+ 	int i;
  
-diff --git a/drivers/thunderbolt/eeprom.c b/drivers/thunderbolt/eeprom.c
-new file mode 100644
-index 0000000..f28e402
---- /dev/null
-+++ b/drivers/thunderbolt/eeprom.c
-@@ -0,0 +1,189 @@
-+/*
-+ * Thunderbolt Cactus Ridge driver - eeprom access
-+ *
-+ * Copyright (c) 2014 Andreas Noever <andreas.noever@gmail.com>
-+ */
-+
-+#include "tb.h"
-+
-+/**
-+ * tb_eeprom_ctl_write() - write control word
-+ */
-+static int tb_eeprom_ctl_write(struct tb_switch *sw, struct tb_eeprom_ctl *ctl)
-+{
-+	return tb_sw_write(sw, ctl, TB_CFG_SWITCH, sw->cap_plug_events + 4, 1);
-+}
-+
-+/**
-+ * tb_eeprom_ctl_write() - read control word
-+ */
-+static int tb_eeprom_ctl_read(struct tb_switch *sw, struct tb_eeprom_ctl *ctl)
-+{
-+	return tb_sw_read(sw, ctl, TB_CFG_SWITCH, sw->cap_plug_events + 4, 1);
-+}
-+
-+enum tb_eeprom_transfer {
-+	TB_EEPROM_IN,
-+	TB_EEPROM_OUT,
-+};
-+
-+/**
-+ * tb_eeprom_active - enable rom access
-+ *
-+ * WARNING: Always disable access after usage. Otherwise the controller will
-+ * fail to reprobe.
-+ */
-+static int tb_eeprom_active(struct tb_switch *sw, bool enable)
-+{
-+	struct tb_eeprom_ctl ctl;
-+	int res = tb_eeprom_ctl_read(sw, &ctl);
-+	if (res)
-+		return res;
-+	if (enable) {
-+		ctl.access_high = 1;
-+		res = tb_eeprom_ctl_write(sw, &ctl);
-+		if (res)
-+			return res;
-+		ctl.access_low = 0;
-+		return tb_eeprom_ctl_write(sw, &ctl);
-+	} else {
-+		ctl.access_low = 1;
-+		res = tb_eeprom_ctl_write(sw, &ctl);
-+		if (res)
-+			return res;
-+		ctl.access_high = 0;
-+		return tb_eeprom_ctl_write(sw, &ctl);
-+	}
-+}
-+
-+/**
-+ * tb_eeprom_transfer - transfer one bit
-+ *
-+ * If TB_EEPROM_IN is passed, then the bit can be retrieved from ctl->data_in.
-+ * If TB_EEPROM_OUT is passed, then ctl->data_out will be written.
-+ */
-+static int tb_eeprom_transfer(struct tb_switch *sw, struct tb_eeprom_ctl *ctl,
-+			      enum tb_eeprom_transfer direction)
-+{
-+	int res;
-+	if (direction == TB_EEPROM_OUT) {
-+		res = tb_eeprom_ctl_write(sw, ctl);
-+		if (res)
-+			return res;
-+	}
-+	ctl->clock = 1;
-+	res = tb_eeprom_ctl_write(sw, ctl);
-+	if (res)
-+		return res;
-+	if (direction == TB_EEPROM_IN) {
-+		res = tb_eeprom_ctl_read(sw, ctl);
-+		if (res)
-+			return res;
-+	}
-+	ctl->clock = 0;
-+	return tb_eeprom_ctl_write(sw, ctl);
-+}
-+
-+/**
-+ * tb_eeprom_out - write one byte to the bus
-+ */
-+static int tb_eeprom_out(struct tb_switch *sw, u8 val)
-+{
-+	struct tb_eeprom_ctl ctl;
-+	int i;
-+	int res = tb_eeprom_ctl_read(sw, &ctl);
-+	if (res)
-+		return res;
-+	for (i = 0; i < 8; i++) {
-+		ctl.data_out = val & 0x80;
-+		res = tb_eeprom_transfer(sw, &ctl, TB_EEPROM_OUT);
-+		if (res)
-+			return res;
-+		val <<= 1;
-+	}
-+	return 0;
-+}
-+
-+/**
-+ * tb_eeprom_in - read one byte from the bus
-+ */
-+static int tb_eeprom_in(struct tb_switch *sw, u8 *val)
-+{
-+	struct tb_eeprom_ctl ctl;
-+	int i;
-+	int res = tb_eeprom_ctl_read(sw, &ctl);
-+	if (res)
-+		return res;
-+	*val = 0;
-+	for (i = 0; i < 8; i++) {
-+		*val <<= 1;
-+		res = tb_eeprom_transfer(sw, &ctl, TB_EEPROM_IN);
-+		if (res)
-+			return res;
-+		*val |= ctl.data_in;
-+	}
-+	return 0;
-+}
-+
-+/**
-+ * tb_eeprom_read_n - read count bytes from offset into val
-+ */
-+static int tb_eeprom_read_n(struct tb_switch *sw, u16 offset, u8 *val,
-+		size_t count)
-+{
-+	int i, res;
-+	res = tb_eeprom_active(sw, true);
-+	if (res)
-+		return res;
-+	res = tb_eeprom_out(sw, 3);
-+	if (res)
-+		return res;
-+	res = tb_eeprom_out(sw, offset >> 8);
-+	if (res)
-+		return res;
-+	res = tb_eeprom_out(sw, offset);
-+	if (res)
-+		return res;
-+	for (i = 0; i < count; i++) {
-+		res = tb_eeprom_in(sw, val + i);
-+		if (res)
-+			return res;
-+	}
-+	return tb_eeprom_active(sw, false);
-+}
-+
-+int tb_eeprom_read_uid(struct tb_switch *sw, u64 *uid)
-+{
-+	u8 data[9];
-+	struct tb_cap_plug_events cap;
-+	int res;
-+	if (!sw->cap_plug_events) {
-+		tb_sw_warn(sw, "no TB_CAP_PLUG_EVENTS, cannot read eeprom\n");
-+		return -ENOSYS;
-+	}
-+	res = tb_sw_read(sw, &cap, TB_CFG_SWITCH, sw->cap_plug_events,
-+			     sizeof(cap) / 4);
-+	if (res)
-+		return res;
-+	if (!cap.eeprom_ctl.present || cap.eeprom_ctl.not_present) {
-+		tb_sw_warn(sw, "no NVM\n");
-+		return -ENOSYS;
-+	}
-+
-+	if (cap.drom_offset > 0xffff) {
-+		tb_sw_warn(sw, "drom offset is larger than 0xffff: %#x\n",
-+				cap.drom_offset);
-+		return -ENXIO;
-+	}
-+
-+	/* read uid */
-+	res = tb_eeprom_read_n(sw, cap.drom_offset, data, 9);
-+	if (res)
-+		return res;
-+	/* TODO: check checksum in data[0] */
-+	*uid = *(u64 *)(data+1);
-+	return 0;
-+}
-+
-+
-+
-diff --git a/drivers/thunderbolt/switch.c b/drivers/thunderbolt/switch.c
-index 667413f..aeb5c30 100644
---- a/drivers/thunderbolt/switch.c
-+++ b/drivers/thunderbolt/switch.c
-@@ -376,6 +376,11 @@ struct tb_switch *tb_switch_alloc(struct tb *tb, u64 route)
- 	}
- 	sw->cap_plug_events = cap;
+-	BUILD_BUG_ON(AUDIT_LAST_FEATURE + 1 > sizeof(audit_feature_names)/sizeof(audit_feature_names[0]));
++	BUILD_BUG_ON(AUDIT_LAST_FEATURE + 1 > ARRAY_SIZE(audit_feature_names));
+ 	uaf = nlmsg_data(nlmsg_hdr(skb));
  
-+	if (tb_eeprom_read_uid(sw, &sw->uid))
-+		tb_sw_warn(sw, "could not read uid from eeprom\n");
-+	else
-+		tb_sw_info(sw, "uid: %#llx\n", sw->uid);
-+
- 	if (tb_plug_events_active(sw, true))
- 		goto err;
- 
-diff --git a/drivers/thunderbolt/tb.h b/drivers/thunderbolt/tb.h
-index 508abc4..a89087f 100644
---- a/drivers/thunderbolt/tb.h
-+++ b/drivers/thunderbolt/tb.h
-@@ -19,6 +19,7 @@ struct tb_switch {
- 	struct tb_regs_switch_header config;
- 	struct tb_port *ports;
- 	struct tb *tb;
-+	u64 uid;
- 	int cap_plug_events; /* offset, zero if not found */
- 	bool is_unplugged; /* unplugged, will go away */
- };
-@@ -231,6 +232,8 @@ int tb_path_activate(struct tb_path *path);
- void tb_path_deactivate(struct tb_path *path);
- bool tb_path_is_invalid(struct tb_path *path);
- 
-+int tb_eeprom_read_uid(struct tb_switch *sw, u64 *uid);
-+
- 
- static inline int tb_route_length(u64 route)
- {
+ 	/* if there is ever a version 2 we should handle that here */
 -- 
-2.0.0
+1.8.4.5
 
