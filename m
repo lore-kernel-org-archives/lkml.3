@@ -1,232 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753241AbaFCLNR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 07:13:17 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:44224 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751201AbaFCLNQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 07:13:16 -0400
-From: Linus Walleij <linus.walleij@linaro.org>
-To: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>, Nicolas Pitre <nico@fluxnic.net>,
-        Colin Cross <ccross@google.com>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: [PATCH] clocksource: document some basic timekeeping concepts
-Date: Tue,  3 Jun 2014 13:13:05 +0200
-Message-Id: <1401793985-17650-1-git-send-email-linus.walleij@linaro.org>
-X-Mailer: git-send-email 1.9.3
+	id S1753436AbaFCLPu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 07:15:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34862 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752438AbaFCLPs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 07:15:48 -0400
+Date: Tue, 3 Jun 2014 07:14:31 -0400 (EDT)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Helge Deller <deller@gmx.de>, John David Anglin <dave.anglin@bell.net>,
+        Parisc List <linux-parisc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        "Vinod, Chegu" <chegu_vinod@hp.com>, Waiman Long <Waiman.Long@hp.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Davidlohr Bueso <davidlohr@hp.com>, Peter Anvin <hpa@zytor.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>, Jason Low <jason.low2@hp.com>
+Subject: Re: [PATCH v2] introduce atomic_pointer to fix a race condition in
+ cancelable mcs spinlocks
+In-Reply-To: <20140603073613.GH11096@twins.programming.kicks-ass.net>
+Message-ID: <alpine.LRH.2.02.1406030341570.10639@file01.intranet.prod.int.rdu2.redhat.com>
+References: <alpine.LRH.2.02.1406011342470.20831@file01.intranet.prod.int.rdu2.redhat.com> <alpine.LRH.2.02.1406021158360.20627@file01.intranet.prod.int.rdu2.redhat.com> <20140602162525.GH16155@laptop.programming.kicks-ass.net>
+ <CA+55aFzwrqkwD=G=w2m7TdXTpsMFjV7XUMXv5DMPGr=5x5YGCQ@mail.gmail.com> <alpine.LRH.2.02.1406021622200.5874@file01.intranet.prod.int.rdu2.redhat.com> <CA+55aFwCy4-x02U6A-KbkPEpe_4pagsZ__ipBhe5HZOQt2vNmw@mail.gmail.com> <alpine.LRH.2.02.1406021656550.5874@file01.intranet.prod.int.rdu2.redhat.com>
+ <20140603073613.GH11096@twins.programming.kicks-ass.net>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds some documentation about clock sources, clock events,
-the weak sched_clock() function and delay timers that answers
-questions that repeatedly arise on the mailing lists.
 
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Nicolas Pitre <nico@fluxnic.net>
-Cc: Colin Cross <ccross@google.com>
-Cc: John Stultz <john.stultz@linaro.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@redhat.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
-Began writing this documentation years ago, literally, posted,
-fixed comments, then left it on a branch idling for kernel release
-after kernel release. Let's just get this in shape, it's
-information that people need.
----
- Documentation/timers/00-INDEX        |   2 +
- Documentation/timers/timekeeping.txt | 165 +++++++++++++++++++++++++++++++++++
- 2 files changed, 167 insertions(+)
- create mode 100644 Documentation/timers/timekeeping.txt
 
-diff --git a/Documentation/timers/00-INDEX b/Documentation/timers/00-INDEX
-index 6d042dc1cce0..ee212a27772f 100644
---- a/Documentation/timers/00-INDEX
-+++ b/Documentation/timers/00-INDEX
-@@ -12,6 +12,8 @@ Makefile
- 	- Build and link hpet_example
- NO_HZ.txt
- 	- Summary of the different methods for the scheduler clock-interrupts management.
-+timekeeping.txt
-+	- Clock sources, clock events, sched_clock() and delay timer notes
- timers-howto.txt
- 	- how to insert delays in the kernel the right (tm) way.
- timer_stats.txt
-diff --git a/Documentation/timers/timekeeping.txt b/Documentation/timers/timekeeping.txt
-new file mode 100644
-index 000000000000..2a137a646d66
---- /dev/null
-+++ b/Documentation/timers/timekeeping.txt
-@@ -0,0 +1,165 @@
-+Clock sources, Clock events, sched_clock() and delay timers
-+-----------------------------------------------------------
-+
-+This document tries to briefly explain some basic kernel timekeeping
-+abstractions. It partly pertains to the drivers usually found in
-+drivers/clocksource in the kernel tree, but the code may be spread out
-+across the kernel.
-+
-+If you grep through the kernel source you will find a number of architecture-
-+specific implementations of clock sources, clockevents and several likewise
-+architecture-specific overrides of the sched_clock() function and some
-+delay timers.
-+
-+To provide timekeeping for your platform, the clock source provides
-+the basic timeline, whereas clock events shoot interrupts on certain points
-+on this timeline, providing facilities such as high-resolution timers.
-+sched_clock() is used for scheduling and timestamping, and delay timers
-+provide an accurate delay source using hardware counters.
-+
-+
-+Clock sources
-+-------------
-+
-+The purpose of the clock source is to provide a timeline for the system that
-+tells you where you are in time. For example issuing the command 'date' on
-+a Linux system will eventually read the clock source to determine exactly
-+what time it is.
-+
-+Typically the clock source is a monotonic, atomic counter which will provide
-+n bits which count from 0 to 2^(n-1) and then wraps around to 0 and start over.
-+It will ideally NEVER stop ticking as long as the system is functional.
-+
-+The clock source shall have as high resolution as possible, and shall be as
-+stable and correct as possible as compared to a real-world wall clock. It
-+should not move unpredictably back and forth in time or miss a few cycles
-+here and there.
-+
-+It must be immune to the kind of effects that occur in hardware where e.g.
-+the counter register is read in two phases on the bus lowest 16 bits first
-+and the higher 16 bits in a second bus cycle with the counter bits
-+potentially being updated inbetween leading to the risk of very strange
-+values from the counter.
-+
-+When the wall-clock accuracy of the clock source isn't satisfactory, there
-+are various quirks and layers in the timekeeping code for e.g. synchronizing
-+the user-visible time to RTC clocks in the system or against networked time
-+servers using NTP, but all they do is basically to update an offset against
-+the clock source, which provides the fundamental timeline for the system.
-+These measures does not affect the clock source per se, they only adapt the
-+system to the shortcomings of it.
-+
-+The clock source struct shall provide means to translate the provided counter
-+into a rough nanosecond value as an unsigned long long (unsigned 64 bit) number.
-+Since this operation may be invoked very often, doing this in a strict
-+mathematical sense is not desireable: instead the number is taken as close as
-+possible to a nanosecond value using only the arithmetic operations
-+mult and shift, so in clocksource_cyc2ns() you find:
-+
-+  ns ~= (clocksource * mult) >> shift
-+
-+You will find a number of helper functions in the clock source code intended
-+to aid in providing these mult and shift values, such as
-+clocksource_khz2mult(), clocksource_hz2mult() that help determinining the
-+mult factor from a fixed shift, and clocksource_calc_mult_shift() and
-+clocksource_register_hz() which will help out assigning both shift and mult
-+factors using the frequency of the clock source and desirable minimum idle
-+time as the only input.
-+
-+For real simple clock sources accessed from a single I/O memory location
-+there is nowadays even clocksource_mmio_init() which will take a memory
-+location, bit width, a parameter telling whether the counter in the
-+register counts up or down, and the timer clock rate, and then conjure all
-+necessary parameters.
-+
-+In the past, the timekeeping authors would come up with the shift and mult
-+values by hand, which is why you will sometimes find hard-coded shift and
-+mult values in the code.
-+
-+Since a 32 bit counter at say 100 MHz will wrap around to zero after some 43
-+seconds, the code handling the clock source will have to compensate for this.
-+That is the reason to why the clock source struct also contains a 'mask'
-+member telling how many bits of the source are valid. This way the timekeeping
-+code knows when the counter will wrap around and can insert the necessary
-+compensation code on both sides of the wrap point so that the system timeline
-+remains monotonic.
-+
-+
-+Clock events
-+------------
-+
-+Clock events are conceptually orthogonal to clock sources. The same hardware
-+and register range may be used for the clock event, but it is essentially
-+a different thing.
-+
-+You will notice that the clock event device code is based on the same basic
-+idea about translating counters to nanoseconds using mult and shift
-+arithmetics, and you find the same family of helper functions again for
-+assigning these values. The clock event driver does not need a 'mask'
-+attribute however: the system will not try to plan events beyond the time
-+horizon of the clock event.
-+
-+
-+sched_clock()
-+-------------
-+
-+In addition to the clock sources and clock events there is a special weak
-+function in the kernel called sched_clock(). This function shall return the
-+number of nanoseconds since the system was started. An architecture may or
-+may not provide an implementation of sched_clock() on its own. If a local
-+implementation is not provided, the system jiffy counter will be used as
-+sched_clock().
-+
-+As the name suggests, sched_clock() is used for scheduling the system,
-+determining the absolute timeslice for a certain process in the CFS scheduler
-+for example. It is also used for printk timestamps when you have selected to
-+include time information in printk for things like bootcharts.
-+
-+Compared to clock sources, sched_clock() has to be very fast: it is called
-+much more often, especially by the scheduler. If you have to do trade-offs
-+between accuracy compared to the clock source, you may sacrifice accuracy
-+for speed in sched_clock(). It however require some of the same basic
-+characteristics as the clock source, i.e. it has to be monotonic.
-+
-+The sched_clock() function may wrap only on unsigned long long boundaries,
-+i.e. after 64 bits. Since this is a nanosecond value this will mean it wraps
-+after circa 585 years. (For most practical systems this means "never".)
-+
-+If an architecture does not provide its own implementation of this function,
-+it will fall back to using jiffies, making its maximum resolution 1/HZ of the
-+jiffy frequency for the architecture. This will affect scheduling accuracy
-+and will likely show up in system benchmarks.
-+
-+The clock driving sched_clock() may stop or reset to zero during system
-+suspend/sleep. This does not matter to the function it serves of scheduling
-+events on the system. However it may result in interesting timestamps in
-+printk().
-+
-+Some architectures may have a limited set of time sources and lack a nice
-+counter to derive a 64-bit nanosecond value, so for example on the ARM
-+architecture, special helper functions have been created to provide a
-+sched_clock() nanosecond base from a 16- or 32-bit counter. Sometimes the
-+same counter that is also used as clock source is used for this purpose.
-+
-+
-+Delay timers (some architectures only)
-+--------------------------------------
-+
-+On systems with variable CPU frequency, the various kernel delay() function
-+will sometimes behave strangely. Basically these delays usually use a hard
-+loop to delay a certain number of jiffy fractions using a "lpj" (loops per
-+jiffy) value, calibrated on boot.
-+
-+Let's hope that your system is running on maximum frequency when this value
-+is calibrated: as an effect when the frequency is geared down to half the
-+full frequency, any delay() will be twice as long. Usually this does not
-+hurt, as you're commonly requesting that amount of delay *or more*. But
-+basically the sematics are quite unpredictable on such systems.
-+
-+Enter timer-based delays. Using these, a timer read may be used instead of
-+a hard-coded loop for providing the desired delay.
-+
-+This is done by declaring a struct delay_timer and assigning the apropriate
-+function pointers and rate settings for this delay timer.
-+
-+This is available on some architectures like OpenRISC or ARM.
--- 
-1.9.3
+On Tue, 3 Jun 2014, Peter Zijlstra wrote:
 
+> On Mon, Jun 02, 2014 at 05:12:16PM -0400, Mikulas Patocka wrote:
+> > The patch adds atomic_pointer_t for all architectures - it is in the 
+> > common code and it is backed by atomic_long_t (that already exists for all 
+> > architectures). There is no new arch-specific code at all.
+> > 
+> > When we have atomic_pointer_t, we can find the instances of xchg() and 
+> > cmpxchg() and convert them to atomic_pointer_t (or to other atomic*_t 
+> > types).
+> > 
+> > When we convert them all, we can drop xchg() and cmpxchg() at all (at 
+> > least from architecture-neutral code).
+> > 
+> > The problem with xchg() and cmpxchg() is that they are very easy to 
+> > misuse. Peter Zijlstra didn't know that they are not atomic w.r.t. normal 
+> > stores, a lot of other people don't know it too - and if we allow these 
+> > functions to be used, this race condition will reappear in the future 
+> > again and again.
+> > 
+> > That's why I'm proposing atomic_pointer_t - it guarantees that this race 
+> > condition can't be made.
+> 
+> But its horrible, and doesn't have any benefit afaict.
+>
+> So if we really want to keep supporting these platforms; I would propose
+> something like:
+> 
+> #ifdef __CHECKER__
+> #define __atomic	__attribute__((address_space(5)))
+> #else
+> #define __atomic
+> #endif
+> 
+> #define store(p, v)	(*(p) = (typeof(*(p)) __force __atomic)(v))
+> #define load(p)		((typeof(*p) __force)ACCESS_ONCE(*(p)))
+> 
+> Along with changes to xchg() and cmpxchg() that require them to take
+> pointers to __atomic.
+> 
+> That way we keep the flexibility of xchg() and cmpxchg() for being
+> (mostly) type and size invariant, and get sparse to find wrong usage.
+> 
+> Then parisc, sparc32, tile32, metag-lock1 and arc-!llsc can go implement
+> store() however they like.
+
+Your proposal is very good because it warns about incorrect usage 
+automatically.
+
+
+
+Your usage is very similar to what my patch at the top of this thread 
+does:
+
+Instead of "__atomic struct s *p;" declaration, my patch uses
+"atomic_pointer(struct s*) p;" as the declaration
+Instead of store(&p, v), my patch uses atomic_pointer_set(&p, v);
+Instead of load(&p), my patch uses atomic_pointer_get(&p);
+Instead of xchg(&p, v), my patch uses atomic_pointer_xchg(&p, v);
+Instead of cmpxchg(&p, v1, v2), my patch uses atomic_pointer_cmpxchg(&p1, v1, v2);
+
+> But its horrible, and doesn't have any benefit afaict.
+
+See the five cases above - why do you say that the operation on the left 
+is good and the operation on the right is horrible? To me, it looks like 
+they are both similar, they are just named differently. Both check the 
+type of the pointer and warns if the user passes incompatible pointer. If 
+I rename the operations in my patch to store(), load(), xchg(), cmpxchg(), 
+would you like it?
+
+
+My patch has advantage (over your #define __atomic 
+__attribute__((address_space(5))) ) that it checks the mismatches at 
+compile time. Your proposal only check them with sparse. But either way - 
+it is very good that the mismatches are being checked automatically.
+
+
+
+
+We need some method to catch these races automatically. There are places 
+where people xchg() or cmpxchg() with direct modifications, see for 
+example this:
+
+
+$ grep -w mnt_expiry_mark */*.c
+fs/namespace.c:         if (unlikely(m->mnt_expiry_mark))
+fs/namespace.c:                 m->mnt_expiry_mark = 0;
+fs/namespace.c:         if (!xchg(&mnt->mnt_expiry_mark, 1))
+fs/namespace.c: /* we mustn't call path_put() as that would clear mnt_expiry_mark */
+fs/namespace.c:         if (!xchg(&mnt->mnt_expiry_mark, 1) ||
+
+$ grep "sub_info->complete" */*.c
+kernel/kmod.c:  struct completion *comp = xchg(&sub_info->complete, NULL);
+kernel/kmod.c:  sub_info->complete = &done;
+kernel/kmod.c:          if (xchg(&sub_info->complete, NULL))
+
+$ grep -w "fdt->fd" */*.c
+fs/file.c:      free_fdmem(fdt->fd);
+fs/file.c:      fdt->fd = data;
+fs/file.c:      free_fdmem(fdt->fd);
+fs/file.c:                              struct file * file = xchg(&fdt->fd[i], NULL);
+fs/file.c:      if (rcu_access_pointer(fdt->fd[fd]) != NULL) {
+fs/file.c:              rcu_assign_pointer(fdt->fd[fd], NULL);
+fs/file.c:      BUG_ON(fdt->fd[fd] != NULL);
+fs/file.c:      rcu_assign_pointer(fdt->fd[fd], file);
+fs/file.c:      file = fdt->fd[fd];
+fs/file.c:      rcu_assign_pointer(fdt->fd[fd], NULL);
+fs/file.c:                      file = fdt->fd[fd];
+fs/file.c:                      rcu_assign_pointer(fdt->fd[fd], NULL);
+fs/file.c:      tofree = fdt->fd[fd];
+fs/file.c:      rcu_assign_pointer(fdt->fd[fd], file);
+fs/file.c:              file = rcu_dereference_check_fdtable(files, fdt->fd[n]);
+
+$ grep -w exit_state */*.c
+fs/exec.c:                      if (likely(leader->exit_state))
+fs/exec.c:              BUG_ON(leader->exit_state != EXIT_ZOMBIE);
+fs/exec.c:              leader->exit_state = EXIT_DEAD;
+kernel/exit.c:  if (leader != p && thread_group_empty(leader) && leader->exit_state == EXIT_ZOMBIE) {
+kernel/exit.c:                  leader->exit_state = EXIT_DEAD;
+kernel/exit.c:              (p->exit_state && thread_group_empty(p)) ||
+kernel/exit.c:  if (p->exit_state == EXIT_DEAD)
+kernel/exit.c:      p->exit_state == EXIT_ZOMBIE && thread_group_empty(p)) {
+kernel/exit.c:                  p->exit_state = EXIT_DEAD;
+kernel/exit.c:  tsk->exit_state = autoreap ? EXIT_DEAD : EXIT_ZOMBIE;
+kernel/exit.c:  if (cmpxchg(&p->exit_state, EXIT_ZOMBIE, state) != EXIT_ZOMBIE)
+kernel/exit.c:          p->exit_state = state;
+kernel/exit.c:  if (unlikely(p->exit_state == EXIT_DEAD))
+kernel/exit.c:  if (unlikely(p->exit_state == EXIT_TRACE)) {
+kernel/exit.c:  if (p->exit_state == EXIT_ZOMBIE) {
+kernel/fork.c:  WARN_ON(!tsk->exit_state);
+kernel/posix-cpu-timers.c:              if (unlikely(p->exit_state))
+kernel/posix-cpu-timers.c:              } else if (unlikely(p->exit_state) && thread_group_empty(p)) {
+kernel/ptrace.c:        if (unlikely(task->exit_state))
+kernel/ptrace.c:        if (p->exit_state != EXIT_ZOMBIE)
+kernel/ptrace.c:                p->exit_state = EXIT_DEAD;
+kernel/ptrace.c:                if (child->exit_state)  /* already dead */
+kernel/signal.c:                if (t->exit_state)
+kernel/taskstats.c:             if (tsk->exit_state)
+mm/oom_kill.c:  if (task->exit_state)
+
+
+Mikulas
