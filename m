@@ -1,95 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752958AbaFCTL7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 15:11:59 -0400
-Received: from us01smtprelay-2.synopsys.com ([198.182.60.111]:41149 "EHLO
-	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751128AbaFCTL5 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 15:11:57 -0400
-From: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
-To: Vivek Gautam <gautam.vivek@samsung.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "balbi@ti.com" <balbi@ti.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "kishon@ti.com" <kishon@ti.com>
-Subject: RE: [PATCH] usb: dwc3: Keeping 'resource' related code together
-Thread-Topic: [PATCH] usb: dwc3: Keeping 'resource' related code together
-Thread-Index: AQHPfxg7yOZU+jxkEUmywznWt4wwV5tfvfow
-Date: Tue, 3 Jun 2014 19:11:54 +0000
-Message-ID: <A2CA0424C0A6F04399FB9E1CD98E0304844B2141@US01WEMBX2.internal.synopsys.com>
-References: <1401791978-3555-1-git-send-email-gautam.vivek@samsung.com>
-In-Reply-To: <1401791978-3555-1-git-send-email-gautam.vivek@samsung.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.9.64.241]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1753859AbaFCTOI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 15:14:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62682 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752347AbaFCTOH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 15:14:07 -0400
+Date: Tue, 3 Jun 2014 21:13:15 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Denys Vlasenko <dvlasenk@redhat.com>,
+        Jim Keniston <jkenisto@us.ibm.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] uprobes/x86: Rename arch_uprobe->def into ->dflt,
+	minor comment updates
+Message-ID: <20140603191315.GA32736@redhat.com>
+References: <20140601192520.GA14539@redhat.com> <20140603182142.GA5097@gmail.com> <20140603183057.GA31382@redhat.com> <20140603183919.GC7664@gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140603183919.GC7664@gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: linux-usb-owner@vger.kernel.org [mailto:linux-usb-owner@vger.kernel.org] On Behalf Of Vivek Gautam
-> Sent: Tuesday, June 03, 2014 3:40 AM
-> 
-> Putting together the code related to getting the 'IORESOURCE_MEM'
-> and assigning the same to dwc->xhci_resources, for increasing
-> the readability.
-> 
-> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
-> ---
-> 
-> Based on 'next' branch of Felipe's usb tree.
-> Also cleanly applies to 'usb-next' branch of Greg's usb tree.
-> 
->  drivers/usb/dwc3/core.c |   38 +++++++++++++++++++-------------------
->  1 file changed, 19 insertions(+), 19 deletions(-)
-> 
-> diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
-> index 3f59c12..4ca925d 100644
-> --- a/drivers/usb/dwc3/core.c
-> +++ b/drivers/usb/dwc3/core.c
-> @@ -656,6 +656,25 @@ static int dwc3_probe(struct platform_device *pdev)
->  		return -ENODEV;
->  	}
-> 
-> +	dwc->xhci_resources[0].start = res->start;
-> +	dwc->xhci_resources[0].end = dwc->xhci_resources[0].start +
-> +					DWC3_XHCI_REGS_END;
-> +	dwc->xhci_resources[0].flags = res->flags;
-> +	dwc->xhci_resources[0].name = res->name;
-> +
-> +	res->start += DWC3_GLOBALS_REGS_START;
-> +
-> +	/*
-> +	 * Request memory region but exclude xHCI regs,
-> +	 * since it will be requested by the xhci-plat driver.
-> +	 */
-> +	regs = devm_ioremap_resource(dev, res);
-> +	if (IS_ERR(regs))
-> +		return PTR_ERR(regs);
-> +
-> +	dwc->regs	= regs;
-> +	dwc->regs_size	= resource_size(res);
-> +
->  	if (node) {
->  		dwc->maximum_speed = of_usb_get_maximum_speed(node);
+On 06/03, Ingo Molnar wrote:
+>
+> * Oleg Nesterov <oleg@redhat.com> wrote:
+>
+> > And this is how it was named when I wrote this code. Unfortunately gcc
+> > dislikes this name ;) So I renamed it to ->def. Then I was asked to
+> > rename it and I agree, ->def doesn't look good.
+> >
+> > Could you suggest something better?
+>
+> So exactly what do those fields do? If it's scratch register handling,
+> would it be logical to name it arch_uprobe->scratch, or so?
 
-I think this will break if the following dwc3_core_get_phy() call returns
--EPROBE_DEFER. Since you have incremented res->start above, the next time
-this probe function is called, res->start will have the wrong value.
-Provided I'm reading the code correctly of course :)
+Not only, ->fixups encodes other flags. and ->ilen is used by UPROBE_FIX_CALL.
 
-I think you could fix that by decrementing res->start back to its
-original value just after the call to resource_size() above.
+arch_uprobe->def contains the arguments for default_xol_ops methods, currently
+this handles everything except relative jmp/call insns.
 
--- 
-Paul
+So perhaps ->dflt is not that ugly in this case? I simply do not see anything
+better. But again, I agree with any name in advance.
+
+Oleg.
 
