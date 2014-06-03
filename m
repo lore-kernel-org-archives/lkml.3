@@ -1,65 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753931AbaFCIFR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 04:05:17 -0400
-Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:47335 "EHLO
-	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753817AbaFCIFI (ORCPT
+	id S1753653AbaFCIIH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 04:08:07 -0400
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:57496 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753635AbaFCIIB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 04:05:08 -0400
-Date: Tue, 3 Jun 2014 16:02:39 +0800
-From: Jisheng Zhang <jszhang@marvell.com>
-To: Andrew Lunn <andrew@lunn.ch>
-CC: Antoine =?UTF-8?B?VMOpbmFydA==?= 
-	<antoine.tenart@free-electrons.com>,
-        "sebastian.hesselbarth@gmail.com" <sebastian.hesselbarth@gmail.com>,
-        "thomas.petazzoni@free-electrons.com" 
-	<thomas.petazzoni@free-electrons.com>,
-        Jimmy Xu <zmxu@marvell.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "alexandre.belloni@free-electrons.com" 
-	<alexandre.belloni@free-electrons.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 1/5] ARM: berlin: add SMP support
-Message-ID: <20140603160239.38defafe@xhacker>
-In-Reply-To: <20140603075011.GA22742@lunn.ch>
-References: <1401700866-24804-1-git-send-email-antoine.tenart@free-electrons.com>
-	<1401700866-24804-2-git-send-email-antoine.tenart@free-electrons.com>
-	<20140602094715.GG28090@lunn.ch>
-	<20140602100048.GA12162@kwain>
-	<20140602100332.GH28090@lunn.ch>
-	<20140602102750.GB13681@kwain>
-	<20140603141913.710a1f7e@xhacker>
-	<20140603075011.GA22742@lunn.ch>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Tue, 3 Jun 2014 04:08:01 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
- definitions=2014-06-02_03:2014-06-02,2014-06-02,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1402240000 definitions=main-1406030102
+In-Reply-To: <5387E915.4000008@linux.intel.com>
+References: <1400810423-14067-1-git-send-email-lejun.zhu@linux.intel.com>
+	<CAAVeFu+F=nHDCpL6Vfmq26QNr74mfRD5p9at_osB3R97v7xBSA@mail.gmail.com>
+	<538459E8.6010701@ti.com>
+	<20140527084615.GC1801@lahna.fi.intel.com>
+	<53847F39.2010503@ti.com>
+	<CACRpkdbe1=Yt3UDm9f4ZmZ+K2ZB9nVL+RNr7eU_TbnK-CmNY+A@mail.gmail.com>
+	<5387E915.4000008@linux.intel.com>
+Date: Tue, 3 Jun 2014 10:08:00 +0200
+Message-ID: <CACRpkdaRP9UpBd0stX+qgTRcaHN2108yeak3FvZeHaayyc6uWg@mail.gmail.com>
+Subject: Re: [PATCH v4] gpio: Add support for Intel SoC PMIC (Crystal Cove)
+From: Linus Walleij <linus.walleij@linaro.org>
+To: "Zhu, Lejun" <lejun.zhu@linux.intel.com>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        jacob.jun.pan@linux.intel.com, bin.yang@intel.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew,
+On Fri, May 30, 2014 at 4:12 AM, Zhu, Lejun <lejun.zhu@linux.intel.com> wrote:
 
-On Tue, 3 Jun 2014 00:50:11 -0700
-Andrew Lunn <andrew@lunn.ch> wrote:
+>         retval = gpiochip_add(&cg->chip);
+>         if (retval) {
+>                 dev_warn(&pdev->dev, "add gpio chip error: %d\n", retval);
+>                 return ret;
+>         }
+>
+>         gpiochip_irqchip_add(&cg->chip, &crystalcove_irqchip, 0,
+>                              handle_simple_irq, IRQ_TYPE_NONE);
+>
+>         retval = request_threaded_irq(irq, NULL, crystalcove_gpio_irq_handler,
+>                                       IRQF_ONESHOT, KBUILD_MODNAME, cg);
 
-> > We don't support independently power off cpu on BG2 and BG2Q in linux
-> > kernel. So we can assume that bootloader has powered on the CPUs
-> 
-> Can i assume from your answer that the hardware does actually support
-> independent power off/on of CPUs? It could be added sometime in the
-> future.
-> 
+You should request the interrupt before you add the irqchip
+I think. But it shouldn't really matter, mainly to avoid tearing
+down the irqchip if getting the irq should fail.
 
-The BG2 and BG2Q HW doesn't support independent power off/on CPUs.
+> But this code will trigger a crash in gpiolib-acpi. Currently at the end
+> of gpiochip_add(), it calls:
+>
+> gpiochip_add() -> acpi_gpiochip_add() -> acpi_gpiochip_request_interrupts()
+>
+> acpi_gpiochip_request_interrupts() needs ->to_irq to work. Without having
+> called gpiochip_irqchip_add() already, this will be NULL:
+>
+>         if (!chip->to_irq)
+>                 return;    <-- It will return here.
+>
+>         INIT_LIST_HEAD(&acpi_gpio->events);
+>
+> In the tear down path, acpi_gpiochip_free_interrupts() will find to_irq is
+> no longer NULL, then it will walk an uninitialized list.
+>
+> So, should this be fixed in gpiolib-acpi?
 
-Sorry for confusion,
-Jisheng
+Maybe, maybe in the drivers. I think Mika has a proposed solution...
+
+Yours,
+Linus Walleij
