@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755838AbaFCMRL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 08:17:11 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43367 "EHLO
+	id S1755811AbaFCMRJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 08:17:09 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43368 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932328AbaFCLko (ORCPT
+	with ESMTP id S932329AbaFCLkp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 07:40:44 -0400
+	Tue, 3 Jun 2014 07:40:45 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Kieran Clancy <clancy.kieran@gmail.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Romain Izard <romain.izard.pro@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 035/138] ACPI / EC: Process rather than discard events in acpi_ec_clear
-Date: Tue,  3 Jun 2014 12:38:01 +0100
-Message-Id: <1401795584-22664-36-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 031/138] trace: module: Maintain a valid user count
+Date: Tue,  3 Jun 2014 12:37:57 +0100
+Message-Id: <1401795584-22664-32-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
 References: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
@@ -28,121 +30,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kieran Clancy <clancy.kieran@gmail.com>
+From: Romain Izard <romain.izard.pro@gmail.com>
 
-commit 3eba563e280101209bad27d40bfc83ddf1489234 upstream.
+commit 098507ae3ec2331476fb52e85d4040c1cc6d0ef4 upstream.
 
-Address a regression caused by commit ad332c8a4533:
-(ACPI / EC: Clear stale EC events on Samsung systems)
+The replacement of the 'count' variable by two variables 'incs' and
+'decs' to resolve some race conditions during module unloading was done
+in parallel with some cleanup in the trace subsystem, and was integrated
+as a merge.
 
-After the earlier patch, there was found to be a race condition on some
-earlier Samsung systems (N150/N210/N220). The function acpi_ec_clear was
-sometimes discarding a new EC event before its GPE was triggered by the
-system. In the case of these systems, this meant that the "lid open"
-event was not registered on resume if that was the cause of the wake,
-leading to problems when attempting to close the lid to suspend again.
+Unfortunately, the formula for this replacement was wrong in the tracing
+code, and the refcount in the traces was not usable as a result.
 
-After testing on a number of Samsung systems, both those affected by the
-previous EC bug and those affected by the race condition, it seemed that
-the best course of action was to process rather than discard the events.
-On Samsung systems which accumulate stale EC events, there does not seem
-to be any adverse side-effects of running the associated _Q methods.
+Use 'count = incs - decs' to compute the user count.
 
-This patch adds an argument to the static function acpi_ec_sync_query so
-that it may be used within the acpi_ec_clear loop in place of
-acpi_ec_query_unlocked which was used previously.
+Link: http://lkml.kernel.org/p/1393924179-9147-1-git-send-email-romain.izard.pro@gmail.com
 
-With thanks to Stefan Biereigel for reporting the issue, and for all the
-people who helped test the new patch on affected systems.
-
-Fixes: ad332c8a4533 (ACPI / EC: Clear stale EC events on Samsung systems)
-References: https://lkml.kernel.org/r/532FE3B2.9060808@biereigel-wb.de
-References: https://bugzilla.kernel.org/show_bug.cgi?id=44161#c173
-Reported-by: Stefan Biereigel <stefan@biereigel.de>
-Signed-off-by: Kieran Clancy <clancy.kieran@gmail.com>
-Tested-by: Stefan Biereigel <stefan@biereigel.de>
-Tested-by: Dennis Jansen <dennis.jansen@web.de>
-Tested-by: Nicolas Porcel <nicolasporcel06@gmail.com>
-Tested-by: Maurizio D'Addona <mauritiusdadd@gmail.com>
-Tested-by: Juan Manuel Cabo <juanmanuel.cabo@gmail.com>
-Tested-by: Giannis Koutsou <giannis.koutsou@gmail.com>
-Tested-by: Kieran Clancy <clancy.kieran@gmail.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Acked-by: Ingo Molnar <mingo@kernel.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Fixes: c1ab9cab7509 "merge conflict resolution"
+Signed-off-by: Romain Izard <romain.izard.pro@gmail.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/acpi/ec.c | 21 ++++++++++++---------
- 1 file changed, 12 insertions(+), 9 deletions(-)
+ include/trace/events/module.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/acpi/ec.c b/drivers/acpi/ec.c
-index e053d158efd6..3ed713698d3d 100644
---- a/drivers/acpi/ec.c
-+++ b/drivers/acpi/ec.c
-@@ -213,13 +213,13 @@ unlock:
- 	spin_unlock_irqrestore(&ec->lock, flags);
- }
+diff --git a/include/trace/events/module.h b/include/trace/events/module.h
+index 161932737416..ca298c7157ae 100644
+--- a/include/trace/events/module.h
++++ b/include/trace/events/module.h
+@@ -78,7 +78,7 @@ DECLARE_EVENT_CLASS(module_refcnt,
  
--static int acpi_ec_sync_query(struct acpi_ec *ec);
-+static int acpi_ec_sync_query(struct acpi_ec *ec, u8 *data);
- 
- static int ec_check_sci_sync(struct acpi_ec *ec, u8 state)
- {
- 	if (state & ACPI_EC_FLAG_SCI) {
- 		if (!test_and_set_bit(EC_FLAGS_QUERY_PENDING, &ec->flags))
--			return acpi_ec_sync_query(ec);
-+			return acpi_ec_sync_query(ec, NULL);
- 	}
- 	return 0;
- }
-@@ -471,10 +471,8 @@ acpi_handle ec_get_handle(void)
- 
- EXPORT_SYMBOL(ec_get_handle);
- 
--static int acpi_ec_query_unlocked(struct acpi_ec *ec, u8 *data);
--
- /*
-- * Clears stale _Q events that might have accumulated in the EC.
-+ * Process _Q events that might have accumulated in the EC.
-  * Run with locked ec mutex.
-  */
- static void acpi_ec_clear(struct acpi_ec *ec)
-@@ -483,7 +481,7 @@ static void acpi_ec_clear(struct acpi_ec *ec)
- 	u8 value = 0;
- 
- 	for (i = 0; i < ACPI_EC_CLEAR_MAX; i++) {
--		status = acpi_ec_query_unlocked(ec, &value);
-+		status = acpi_ec_sync_query(ec, &value);
- 		if (status || !value)
- 			break;
- 	}
-@@ -610,13 +608,18 @@ static void acpi_ec_run(void *cxt)
- 	kfree(handler);
- }
- 
--static int acpi_ec_sync_query(struct acpi_ec *ec)
-+static int acpi_ec_sync_query(struct acpi_ec *ec, u8 *data)
- {
- 	u8 value = 0;
- 	int status;
- 	struct acpi_ec_query_handler *handler, *copy;
--	if ((status = acpi_ec_query_unlocked(ec, &value)))
-+
-+	status = acpi_ec_query_unlocked(ec, &value);
-+	if (data)
-+		*data = value;
-+	if (status)
- 		return status;
-+
- 	list_for_each_entry(handler, &ec->list, node) {
- 		if (value == handler->query_bit) {
- 			/* have custom handler for this bit */
-@@ -639,7 +642,7 @@ static void acpi_ec_gpe_query(void *ec_cxt)
- 	if (!ec)
- 		return;
- 	mutex_lock(&ec->mutex);
--	acpi_ec_sync_query(ec);
-+	acpi_ec_sync_query(ec, NULL);
- 	mutex_unlock(&ec->mutex);
- }
+ 	TP_fast_assign(
+ 		__entry->ip	= ip;
+-		__entry->refcnt	= __this_cpu_read(mod->refptr->incs) + __this_cpu_read(mod->refptr->decs);
++		__entry->refcnt	= __this_cpu_read(mod->refptr->incs) - __this_cpu_read(mod->refptr->decs);
+ 		__assign_str(name, mod->name);
+ 	),
  
 -- 
 1.9.1
