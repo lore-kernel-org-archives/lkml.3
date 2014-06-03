@@ -1,49 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753531AbaFCHHh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 03:07:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21354 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753315AbaFCHHf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 03:07:35 -0400
-Message-ID: <538D7430.2080200@redhat.com>
-Date: Tue, 03 Jun 2014 09:07:28 +0200
-From: Michal Privoznik <mprivozn@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1753612AbaFCHKX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 03:10:23 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:43857 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753302AbaFCHKV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 03:10:21 -0400
+Date: Tue, 3 Jun 2014 09:10:17 +0200
+From: Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>
+To: Jisheng Zhang <jszhang@marvell.com>
+Cc: Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        "sebastian.hesselbarth@gmail.com" <sebastian.hesselbarth@gmail.com>,
+        "alexandre.belloni@free-electrons.com" 
+	<alexandre.belloni@free-electrons.com>,
+        "thomas.petazzoni@free-electrons.com" 
+	<thomas.petazzoni@free-electrons.com>,
+        Jimmy Xu <zmxu@marvell.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/5] ARM: berlin: add SMP support
+Message-ID: <20140603071017.GA15966@kwain>
+References: <1401700866-24804-1-git-send-email-antoine.tenart@free-electrons.com>
+ <1401700866-24804-2-git-send-email-antoine.tenart@free-electrons.com>
+ <20140603143113.0b2aeb74@xhacker>
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>, vfalico@redhat.com
-CC: jiri@resnulli.us, gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH] net-sysfs: Report link speed as signed integer
-References: <06d53256e3bf2d0deedb16249082200500da3ee6.1401718809.git.mprivozn@redhat.com>	<20140602143557.GA2925@minipsycho.orion>	<20140602150150.GF6295@redhat.com> <20140602.111050.54996809312556969.davem@davemloft.net>
-In-Reply-To: <20140602.111050.54996809312556969.davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140603143113.0b2aeb74@xhacker>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02.06.2014 20:10, David Miller wrote:
-> From: Veaceslav Falico <vfalico@redhat.com>
-> Date: Mon, 2 Jun 2014 17:01:50 +0200
->
->> I wonder, though, if we should document it or just output "Unknown"
->> instead of -1.
->
-> All of this discussion means that we can't change the format string
-> without potentially breaking something out there interpreting the -1
-> value, however it gets output now.
+Hi Jisheng,
 
-No, the discussion means reporting -1 as link speed is confusing.
+On Tue, Jun 03, 2014 at 02:31:13PM +0800, Jisheng Zhang wrote:
+> On Mon, 2 Jun 2014 02:21:02 -0700
+> Antoine Ténart <antoine.tenart@free-electrons.com> wrote:
+> > +
+> > +extern void berlin_secondary_startup(void);
+> > +extern u32 boot_inst;
+> > +
+> > +static void __iomem *cpu_ctrl;
+> > +
+> > +static inline void berlin_reset_cpu(unsigned int cpu)
+> > +{
+> > +	u32 val;
+> > +
+> > +	val = readl(cpu_ctrl + CPU_RESET);
+> > +	val |= BIT(cpu_logical_map(cpu));
+> > +	writel(val, cpu_ctrl + CPU_RESET);
+> 
+> "writel(BIT(cpu_logical_map(cpu)), cpu_ctrl + CPU_RESET)" is enough.
+> we don't need to read and modify, because we writing 0 has no any effect.
 
->
-> I think we just have to leave things as-is and document them in the
-> sysfs ABI docs.
+The reset bit is automatically cleared but I dumped the register value
+and it wasn't 0x0, that's why I preferred to read first and only set the
+reset bit.
 
-Well, that's rather unpleasant.
+> > +
+> > +	/*
+> > +	 * Write the first instruction the CPU will execute after being
+> > reseted
+> > +	 * in the reset exception register.
+> > +	 */
+> > +	writel(boot_inst, vectors_base + RESET_VECT);
+> 
+> Is it better to let bootloader/firmware handle this writing. Then, we can
+> also remove the tricky boot_inst in headsmp.S.
 
->
-> I'm not applying this patch.
->
+We thought about it, and since it can be difficult to update the
+bootloader for some boards, like BG2 based ones, we preferred to include
+this here.
 
-Michal
+Thanks!
+
+Antoine
+
+-- 
+Antoine Ténart, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
