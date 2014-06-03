@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932842AbaFCMBD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 08:01:03 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43615 "EHLO
+	id S932663AbaFCMB0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 08:01:26 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43602 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932746AbaFCLlv (ORCPT
+	with ESMTP id S932754AbaFCLlr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 07:41:51 -0400
+	Tue, 3 Jun 2014 07:41:47 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mikulas Patocka <mpatocka@redhat.com>,
-        James Hogan <james.hogan@imgtec.com>,
+Cc: Wolfram Sang <wsa+renesas@sang-engineering.com>,
+        Wolfram Sang <wsa@the-dreams.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 079/138] metag: fix memory barriers
-Date: Tue,  3 Jun 2014 12:38:45 +0100
-Message-Id: <1401795584-22664-80-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 077/138] i2c: rcar: bail out on zero length transfers
+Date: Tue,  3 Jun 2014 12:38:43 +0100
+Message-Id: <1401795584-22664-78-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
 References: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
@@ -28,64 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Wolfram Sang <wsa+renesas@sang-engineering.com>
 
-commit 2425ce84026c385b73ae72039f90d042d49e0394 upstream.
+commit d7653964c590ba846aa11a8f6edf409773cbc492 upstream.
 
-Volatile access doesn't really imply the compiler barrier. Volatile access
-is only ordered with respect to other volatile accesses, it isn't ordered
-with respect to general memory accesses. Gcc may reorder memory accesses
-around volatile access, as we can see in this simple example (if we
-compile it with optimization, both increments of *b will be collapsed to
-just one):
+This hardware does not support zero length transfers. Instead, the
+driver does one (random) byte transfers currently with undefined results
+for the slaves. We now bail out.
 
-void fn(volatile int *a, long *b)
-{
-	(*b)++;
-	*a = 10;
-	(*b)++;
-}
-
-Consequently, we need the compiler barrier after a write to the volatile
-variable, to make sure that the compiler doesn't reorder the volatile
-write with something else.
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Acked-by: Peter Zijlstra <peterz@infradead.org>
-Signed-off-by: James Hogan <james.hogan@imgtec.com>
+Signed-off-by: Wolfram Sang <wsa+renesas@sang-engineering.com>
+Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/metag/include/asm/barrier.h | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/i2c/busses/i2c-rcar.c | 9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
-diff --git a/arch/metag/include/asm/barrier.h b/arch/metag/include/asm/barrier.h
-index c90bfc6bf648..e355a4c10968 100644
---- a/arch/metag/include/asm/barrier.h
-+++ b/arch/metag/include/asm/barrier.h
-@@ -15,6 +15,7 @@ static inline void wr_fence(void)
- 	volatile int *flushptr = (volatile int *) LINSYSEVENT_WR_FENCE;
- 	barrier();
- 	*flushptr = 0;
-+	barrier();
+diff --git a/drivers/i2c/busses/i2c-rcar.c b/drivers/i2c/busses/i2c-rcar.c
+index 0fc585861610..820b140061c9 100644
+--- a/drivers/i2c/busses/i2c-rcar.c
++++ b/drivers/i2c/busses/i2c-rcar.c
+@@ -541,6 +541,12 @@ static int rcar_i2c_master_xfer(struct i2c_adapter *adap,
+ 
+ 	ret = -EINVAL;
+ 	for (i = 0; i < num; i++) {
++		/* This HW can't send STOP after address phase */
++		if (msgs[i].len == 0) {
++			ret = -EOPNOTSUPP;
++			break;
++		}
++
+ 		/*-------------- spin lock -----------------*/
+ 		spin_lock_irqsave(&priv->lock, flags);
+ 
+@@ -605,7 +611,8 @@ static int rcar_i2c_master_xfer(struct i2c_adapter *adap,
+ 
+ static u32 rcar_i2c_func(struct i2c_adapter *adap)
+ {
+-	return I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL;
++	/* This HW can't do SMBUS_QUICK and NOSTART */
++	return I2C_FUNC_I2C | (I2C_FUNC_SMBUS_EMUL & ~I2C_FUNC_SMBUS_QUICK);
  }
  
- #else /* CONFIG_METAG_META21 */
-@@ -35,6 +36,7 @@ static inline void wr_fence(void)
- 	*flushptr = 0;
- 	*flushptr = 0;
- 	*flushptr = 0;
-+	barrier();
- }
- 
- #endif /* !CONFIG_METAG_META21 */
-@@ -68,6 +70,7 @@ static inline void fence(void)
- 	volatile int *flushptr = (volatile int *) LINSYSEVENT_WR_ATOMIC_UNLOCK;
- 	barrier();
- 	*flushptr = 0;
-+	barrier();
- }
- #define smp_mb()        fence()
- #define smp_rmb()       fence()
+ static const struct i2c_algorithm rcar_i2c_algo = {
 -- 
 1.9.1
 
