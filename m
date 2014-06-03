@@ -1,140 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934248AbaFCVat (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 17:30:49 -0400
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:54149 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965135AbaFCVaG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 17:30:06 -0400
-From: Larry Bassel <larry.bassel@linaro.org>
-To: catalin.marinas@arm.com, will.deacon@arm.com
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linaro-kernel@lists.linaro.org, khilman@linaro.org,
-        Larry Bassel <larry.bassel@linaro.org>
-Subject: [PATCH v8 1/2] arm64: adjust el0_sync so that a function can be called
-Date: Tue,  3 Jun 2014 14:29:50 -0700
-Message-Id: <1401830991-21233-2-git-send-email-larry.bassel@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1401830991-21233-1-git-send-email-larry.bassel@linaro.org>
-References: <1401830991-21233-1-git-send-email-larry.bassel@linaro.org>
+	id S965158AbaFCVe3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 17:34:29 -0400
+Received: from smtp3-g21.free.fr ([212.27.42.3]:63437 "EHLO smtp3-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965076AbaFCVe2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 17:34:28 -0400
+From: =?UTF-8?q?Cl=C3=A9ment=20Calmels?= <clement.calmels@free.fr>
+To: JBottomley@parallels.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] sd: bad return code of init_sd
+Date: Tue,  3 Jun 2014 23:34:25 +0200
+Message-Id: <1401831265-8547-1-git-send-email-clement.calmels@free.fr>
+X-Mailer: git-send-email 2.0.0
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To implement the context tracker properly on arm64,
-a function call needs to be made after debugging and
-interrupts are turned on, but before the lr is changed
-to point to ret_to_user(). If the function call
-is made after the lr is changed the function will not
-return to the correct place.
+In init_sd function, if kmem_cache_create or mempool_create_slab_pools
+calls fail, the error will not be correclty reported because
+class_register previously set the value of err to 0.
 
-For similar reasons, defer the setting of x0 so that
-it doesn't need to be saved around the function call
-(save far_el1 in x26 temporarily instead).
-
-Acked-by: Will Deacon <will.deacon@arm.com>
-Reviewed-by: Kevin Hilman <khilman@linaro.org>
-Tested-by: Kevin Hilman <khilman@linaro.org>
-Signed-off-by: Larry Bassel <larry.bassel@linaro.org>
+Signed-off-by: Clément Calmels <clement.calmels@free.fr>
 ---
- arch/arm64/kernel/entry.S | 19 +++++++++++++------
- 1 file changed, 13 insertions(+), 6 deletions(-)
+ drivers/scsi/sd.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/arch/arm64/kernel/entry.S b/arch/arm64/kernel/entry.S
-index e8b23a3..b0101b9 100644
---- a/arch/arm64/kernel/entry.S
-+++ b/arch/arm64/kernel/entry.S
-@@ -354,7 +354,6 @@ el0_sync:
- 	lsr	x24, x25, #ESR_EL1_EC_SHIFT	// exception class
- 	cmp	x24, #ESR_EL1_EC_SVC64		// SVC in 64-bit state
- 	b.eq	el0_svc
--	adr	lr, ret_to_user
- 	cmp	x24, #ESR_EL1_EC_DABT_EL0	// data abort in EL0
- 	b.eq	el0_da
- 	cmp	x24, #ESR_EL1_EC_IABT_EL0	// instruction abort in EL0
-@@ -383,7 +382,6 @@ el0_sync_compat:
- 	lsr	x24, x25, #ESR_EL1_EC_SHIFT	// exception class
- 	cmp	x24, #ESR_EL1_EC_SVC32		// SVC in 32-bit state
- 	b.eq	el0_svc_compat
--	adr	lr, ret_to_user
- 	cmp	x24, #ESR_EL1_EC_DABT_EL0	// data abort in EL0
- 	b.eq	el0_da
- 	cmp	x24, #ESR_EL1_EC_IABT_EL0	// instruction abort in EL0
-@@ -426,22 +424,25 @@ el0_da:
- 	/*
- 	 * Data abort handling
- 	 */
--	mrs	x0, far_el1
--	bic	x0, x0, #(0xff << 56)
-+	mrs	x26, far_el1
- 	// enable interrupts before calling the main handler
- 	enable_dbg_and_irq
-+	bic	x0, x26, #(0xff << 56)
- 	mov	x1, x25
- 	mov	x2, sp
-+	adr	lr, ret_to_user
- 	b	do_mem_abort
- el0_ia:
- 	/*
- 	 * Instruction abort handling
- 	 */
--	mrs	x0, far_el1
-+	mrs	x26, far_el1
- 	// enable interrupts before calling the main handler
- 	enable_dbg_and_irq
-+	mov	x0, x26
- 	orr	x1, x25, #1 << 24		// use reserved ISS bit for instruction aborts
- 	mov	x2, sp
-+	adr	lr, ret_to_user
- 	b	do_mem_abort
- el0_fpsimd_acc:
- 	/*
-@@ -450,6 +451,7 @@ el0_fpsimd_acc:
- 	enable_dbg
- 	mov	x0, x25
- 	mov	x1, sp
-+	adr	lr, ret_to_user
- 	b	do_fpsimd_acc
- el0_fpsimd_exc:
- 	/*
-@@ -458,16 +460,19 @@ el0_fpsimd_exc:
- 	enable_dbg
- 	mov	x0, x25
- 	mov	x1, sp
-+	adr	lr, ret_to_user
- 	b	do_fpsimd_exc
- el0_sp_pc:
- 	/*
- 	 * Stack or PC alignment exception handling
- 	 */
--	mrs	x0, far_el1
-+	mrs	x26, far_el1
- 	// enable interrupts before calling the main handler
- 	enable_dbg_and_irq
-+	mov	x0, x26
- 	mov	x1, x25
- 	mov	x2, sp
-+	adr	lr, ret_to_user
- 	b	do_sp_pc_abort
- el0_undef:
- 	/*
-@@ -476,6 +481,7 @@ el0_undef:
- 	// enable interrupts before calling the main handler
- 	enable_dbg_and_irq
- 	mov	x0, sp
-+	adr	lr, ret_to_user
- 	b	do_undefinstr
- el0_dbg:
- 	/*
-@@ -493,6 +499,7 @@ el0_inv:
- 	mov	x0, sp
- 	mov	x1, #BAD_SYNC
- 	mrs	x2, esr_el1
-+	adr	lr, ret_to_user
- 	b	bad_mode
- ENDPROC(el0_sync)
+diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
+index e9689d5..7daa2aa 100644
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -3205,12 +3205,14 @@ static int __init init_sd(void)
+ 					 0, 0, NULL);
+ 	if (!sd_cdb_cache) {
+ 		printk(KERN_ERR "sd: can't init extended cdb cache\n");
++		err = -ENOMEM;
+ 		goto err_out_class;
+ 	}
+ 
+ 	sd_cdb_pool = mempool_create_slab_pool(SD_MEMPOOL_SIZE, sd_cdb_cache);
+ 	if (!sd_cdb_pool) {
+ 		printk(KERN_ERR "sd: can't init extended cdb pool\n");
++		err = -ENOMEM;
+ 		goto err_out_cache;
+ 	}
  
 -- 
-1.8.3.2
+2.0.0
 
