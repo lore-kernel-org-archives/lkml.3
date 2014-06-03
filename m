@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932624AbaFCLlZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 07:41:25 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43501 "EHLO
+	id S932770AbaFCLlr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 07:41:47 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43592 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754363AbaFCLlV (ORCPT
+	with ESMTP id S932746AbaFCLlp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 07:41:21 -0400
+	Tue, 3 Jun 2014 07:41:45 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Levente Kurusa <levex@linux.com>, Tejun Heo <tj@kernel.org>,
+Cc: Anthony Iliopoulos <anthony.iliopoulos@huawei.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 059/138] libata: clean up ZPODD when a port is detached
-Date: Tue,  3 Jun 2014 12:38:25 +0100
-Message-Id: <1401795584-22664-60-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 075/138] x86, mm, hugetlb: Add missing TLB page invalidation for hugetlb_cow()
+Date: Tue,  3 Jun 2014 12:38:41 +0100
+Message-Id: <1401795584-22664-76-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
 References: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
@@ -27,52 +28,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Levente Kurusa <levex@linux.com>
+From: Anthony Iliopoulos <anthony.iliopoulos@huawei.com>
 
-commit a6f9bf4d2f965b862b95213303d154e02957eed8 upstream.
+commit 9844f5462392b53824e8b86726e7c33b5ecbb676 upstream.
 
-When a ZPODD device is unbound via sysfs, the ACPI notify handler
-is not removed. This causes panics as observed in Bug #74601. The
-panic only happens when the wake happens from outside the kernel
-(i.e. inserting a media or pressing a button). Add a loop to
-ata_port_detach which loops through the port's devices and checks
-if zpodd is enabled, if so call zpodd_exit.
+The invalidation is required in order to maintain proper semantics
+under CoW conditions. In scenarios where a process clones several
+threads, a thread operating on a core whose DTLB entry for a
+particular hugepage has not been invalidated, will be reading from
+the hugepage that belongs to the forked child process, even after
+hugetlb_cow().
 
-Reviewed-by: Aaron Lu <aaron.lu@intel.com>
-Signed-off-by: Levente Kurusa <levex@linux.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+The thread will not see the updated page as long as the stale DTLB
+entry remains cached, the thread attempts to write into the page,
+the child process exits, or the thread gets migrated to a different
+processor.
+
+Signed-off-by: Anthony Iliopoulos <anthony.iliopoulos@huawei.com>
+Link: http://lkml.kernel.org/r/20140514092948.GA17391@server-36.huawei.corp
+Suggested-by: Shay Goikhman <shay.goikhman@huawei.com>
+Acked-by: Dave Hansen <dave.hansen@intel.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/ata/libata-core.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
+ arch/x86/include/asm/hugetlb.h | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
-index 908c07c70bac..6b45338919b7 100644
---- a/drivers/ata/libata-core.c
-+++ b/drivers/ata/libata-core.c
-@@ -6302,6 +6302,8 @@ int ata_host_activate(struct ata_host *host, int irq,
- static void ata_port_detach(struct ata_port *ap)
+diff --git a/arch/x86/include/asm/hugetlb.h b/arch/x86/include/asm/hugetlb.h
+index a8091216963b..68c05398bba9 100644
+--- a/arch/x86/include/asm/hugetlb.h
++++ b/arch/x86/include/asm/hugetlb.h
+@@ -52,6 +52,7 @@ static inline pte_t huge_ptep_get_and_clear(struct mm_struct *mm,
+ static inline void huge_ptep_clear_flush(struct vm_area_struct *vma,
+ 					 unsigned long addr, pte_t *ptep)
  {
- 	unsigned long flags;
-+	struct ata_link *link;
-+	struct ata_device *dev;
++	ptep_clear_flush(vma, addr, ptep);
+ }
  
- 	if (!ap->ops->error_handler)
- 		goto skip_eh;
-@@ -6321,6 +6323,13 @@ static void ata_port_detach(struct ata_port *ap)
- 	cancel_delayed_work_sync(&ap->hotplug_task);
- 
-  skip_eh:
-+	/* clean up zpodd on port removal */
-+	ata_for_each_link(link, ap, HOST_FIRST) {
-+		ata_for_each_dev(dev, link, ALL) {
-+			if (zpodd_dev_enabled(dev))
-+				zpodd_exit(dev);
-+		}
-+	}
- 	if (ap->pmp_link) {
- 		int i;
- 		for (i = 0; i < SATA_PMP_MAX_PORTS; i++)
+ static inline int huge_pte_none(pte_t pte)
 -- 
 1.9.1
 
