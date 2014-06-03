@@ -1,127 +1,299 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753417AbaFCDW2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 23:22:28 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:45948 "EHLO
+	id S932254AbaFCDXH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 23:23:07 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:61239 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752003AbaFCDW1 (ORCPT
+	by vger.kernel.org with ESMTP id S1752939AbaFCDW1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 2 Jun 2014 23:22:27 -0400
-Message-Id: <20140603032012.088137043@goodmis.org>
+Message-Id: <20140603032224.229186537@goodmis.org>
 User-Agent: quilt/0.63-1
-Date: Mon, 02 Jun 2014 23:20:12 -0400
+Date: Mon, 02 Jun 2014 23:20:16 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
         Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH v2 0/4] tools lib traceevent: bitmask handling and plugin updates
-X-RR-Connecting-IP: 107.14.168.142:25
+        Andrew Morton <akpm@linux-foundation.org>,
+        Javi Merino <javi.merino@arm.com>
+Subject: [PATCH v2 4/4] tools lib traceevent: Added support for __get_bitmask() macro
+References: <20140603032012.088137043@goodmis.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline; filename=0004-tools-lib-traceevent-Added-support-for-__get_bitmask.patch
+X-RR-Connecting-IP: 107.14.168.130:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is v2 of the patch series that added __get_bitmask() as well as
-added some plugin code. This version addresses what Namhyung suggested.
-The diff from v1 is posted below.
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-Steven Rostedt (Red Hat) (4):
-      tools lib traceevent: Add flag to not load event plugins
-      tools lib traceevent: Add options to plugins
-      tools lib traceevent: Add options to function plugin
-      tools lib traceevent: Added support for __get_bitmask() macro
+Coming in v3.16, trace events will be able to save bitmasks in raw
+format in the ring buffer and output it with the __get_bitmask() macro.
 
-----
- tools/lib/traceevent/event-parse.c                 | 113 ++++++++++++
- tools/lib/traceevent/event-parse.h                 |  25 ++-
- tools/lib/traceevent/event-plugin.c                | 204 ++++++++++++++++++++-
- tools/lib/traceevent/plugin_function.c             |  43 ++++-
+In order for userspace tools to parse this, it must be able to handle
+the __get_bitmask() call and be able to convert the data that's in
+the ring buffer into a nice bitmask format. The output is similar to
+what the kernel uses to print bitmasks, with a comma separator every
+4 bytes (8 characters).
+
+This allows for cpumasks to also be saved efficiently.
+
+The first user is the thermal:thermal_power_limit event which has the
+following output:
+
+ thermal_power_limit:  cpus=0000000f freq=1900000 cdev_state=0 power=5252
+
+Link: http://lkml.kernel.org/r/20140506132238.22e136d1@gandalf.local.home
+
+Suggested-by: Javi Merino <javi.merino@arm.com>
+Tested-by: Javi Merino <javi.merino@arm.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ tools/lib/traceevent/event-parse.c                 | 113 +++++++++++++++++++++
+ tools/lib/traceevent/event-parse.h                 |   7 ++
  .../perf/util/scripting-engines/trace-event-perl.c |   1 +
  .../util/scripting-engines/trace-event-python.c    |   1 +
- 6 files changed, 377 insertions(+), 10 deletions(-)
-
+ 4 files changed, 122 insertions(+)
 
 diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
-index 2d6aa92..93825a1 100644
+index b83184f2d484..93825a17dcce 100644
 --- a/tools/lib/traceevent/event-parse.c
 +++ b/tools/lib/traceevent/event-parse.c
-@@ -3794,7 +3794,7 @@ static void print_str_arg(struct trace_seq *s, void *data, int size,
- 			f = pevent_find_any_field(event, arg->bitmask.bitmask);
- 			arg->bitmask.offset = f->offset;
- 		}
--		bitmask_offset = data2host4(pevent, data + arg->string.offset);
-+		bitmask_offset = data2host4(pevent, data + arg->bitmask.offset);
- 		bitmask_size = bitmask_offset >> 16;
- 		bitmask_offset &= 0xffff;
- 		print_bitmask_to_seq(pevent, s, format, len_arg,
-diff --git a/tools/lib/traceevent/event-parse.h b/tools/lib/traceevent/event-parse.h
-index 025627f..7a3873f 100644
---- a/tools/lib/traceevent/event-parse.h
-+++ b/tools/lib/traceevent/event-parse.h
-@@ -362,7 +362,7 @@ enum pevent_func_arg_type {
- enum pevent_flag {
- 	PEVENT_NSEC_OUTPUT		= 1,	/* output in NSECS */
- 	PEVENT_DISABLE_SYS_PLUGINS	= 1 << 1,
--	PEVENT_DISABLE_PLUGINS		= 1 << 2
-+	PEVENT_DISABLE_PLUGINS		= 1 << 2,
- };
- 
- #define PEVENT_ERRORS 							      \
-@@ -419,6 +419,8 @@ enum pevent_errno {
- 
- struct plugin_list;
- 
-+#define INVALID_PLUGIN_LIST_OPTION	((char **)((unsigned long)-1))
-+
- struct plugin_list *traceevent_load_plugins(struct pevent *pevent);
- void traceevent_unload_plugins(struct plugin_list *plugin_list,
- 			       struct pevent *pevent);
-diff --git a/tools/lib/traceevent/event-plugin.c b/tools/lib/traceevent/event-plugin.c
-index a244794..648ef84 100644
---- a/tools/lib/traceevent/event-plugin.c
-+++ b/tools/lib/traceevent/event-plugin.c
-@@ -57,7 +57,7 @@ struct plugin_list {
-  * used by toggling the option.
-  *
-  * Returns NULL if there's no options registered. On error it returns
-- * an (char **)-1 (must check for that)
-+ * INVALID_PLUGIN_LIST_OPTION
-  *
-  * Must be freed with traceevent_plugin_free_options_list().
-  */
-@@ -72,6 +72,7 @@ char **traceevent_plugin_list_options(void)
- 	for (reg = registered_options; reg; reg = reg->next) {
- 		for (op = reg->options; op->name; op++) {
- 			char *alias = op->plugin_alias ? op->plugin_alias : op->file;
-+			char **temp = list;
- 
- 			name = malloc(strlen(op->name) + strlen(alias) + 2);
- 			if (!name)
-@@ -80,6 +81,7 @@ char **traceevent_plugin_list_options(void)
- 			sprintf(name, "%s:%s", alias, op->name);
- 			list = realloc(list, count + 2);
- 			if (!list) {
-+				list = temp;
- 				free(name);
- 				goto err;
- 			}
-@@ -87,16 +89,14 @@ char **traceevent_plugin_list_options(void)
- 			list[count] = NULL;
- 		}
- 	}
--	if (!count)
--		return NULL;
- 	return list;
- 
-  err:
--	while (--count > 0)
-+	while (--count >= 0)
- 		free(list[count]);
- 	free(list);
- 
--	return (char **)((unsigned long)-1);
-+	return INVALID_PLUGIN_LIST_OPTION;
+@@ -765,6 +765,9 @@ static void free_arg(struct print_arg *arg)
+ 	case PRINT_BSTRING:
+ 		free(arg->string.string);
+ 		break;
++	case PRINT_BITMASK:
++		free(arg->bitmask.bitmask);
++		break;
+ 	case PRINT_DYNAMIC_ARRAY:
+ 		free(arg->dynarray.index);
+ 		break;
+@@ -2268,6 +2271,7 @@ static int arg_num_eval(struct print_arg *arg, long long *val)
+ 	case PRINT_FIELD ... PRINT_SYMBOL:
+ 	case PRINT_STRING:
+ 	case PRINT_BSTRING:
++	case PRINT_BITMASK:
+ 	default:
+ 		do_warning("invalid eval type %d", arg->type);
+ 		ret = 0;
+@@ -2296,6 +2300,7 @@ static char *arg_eval (struct print_arg *arg)
+ 	case PRINT_FIELD ... PRINT_SYMBOL:
+ 	case PRINT_STRING:
+ 	case PRINT_BSTRING:
++	case PRINT_BITMASK:
+ 	default:
+ 		do_warning("invalid eval type %d", arg->type);
+ 		break;
+@@ -2683,6 +2688,35 @@ process_str(struct event_format *event __maybe_unused, struct print_arg *arg,
+ 	return EVENT_ERROR;
  }
  
- void traceevent_plugin_free_options_list(char **list)
++static enum event_type
++process_bitmask(struct event_format *event __maybe_unused, struct print_arg *arg,
++	    char **tok)
++{
++	enum event_type type;
++	char *token;
++
++	if (read_expect_type(EVENT_ITEM, &token) < 0)
++		goto out_free;
++
++	arg->type = PRINT_BITMASK;
++	arg->bitmask.bitmask = token;
++	arg->bitmask.offset = -1;
++
++	if (read_expected(EVENT_DELIM, ")") < 0)
++		goto out_err;
++
++	type = read_token(&token);
++	*tok = token;
++
++	return type;
++
++ out_free:
++	free_token(token);
++ out_err:
++	*tok = NULL;
++	return EVENT_ERROR;
++}
++
+ static struct pevent_function_handler *
+ find_func_handler(struct pevent *pevent, char *func_name)
+ {
+@@ -2797,6 +2831,10 @@ process_function(struct event_format *event, struct print_arg *arg,
+ 		free_token(token);
+ 		return process_str(event, arg, tok);
+ 	}
++	if (strcmp(token, "__get_bitmask") == 0) {
++		free_token(token);
++		return process_bitmask(event, arg, tok);
++	}
+ 	if (strcmp(token, "__get_dynamic_array") == 0) {
+ 		free_token(token);
+ 		return process_dynamic_array(event, arg, tok);
+@@ -3324,6 +3362,7 @@ eval_num_arg(void *data, int size, struct event_format *event, struct print_arg
+ 		return eval_type(val, arg, 0);
+ 	case PRINT_STRING:
+ 	case PRINT_BSTRING:
++	case PRINT_BITMASK:
+ 		return 0;
+ 	case PRINT_FUNC: {
+ 		struct trace_seq s;
+@@ -3556,6 +3595,60 @@ static void print_str_to_seq(struct trace_seq *s, const char *format,
+ 		trace_seq_printf(s, format, str);
+ }
+ 
++static void print_bitmask_to_seq(struct pevent *pevent,
++				 struct trace_seq *s, const char *format,
++				 int len_arg, const void *data, int size)
++{
++	int nr_bits = size * 8;
++	int str_size = (nr_bits + 3) / 4;
++	int len = 0;
++	char buf[3];
++	char *str;
++	int index;
++	int i;
++
++	/*
++	 * The kernel likes to put in commas every 32 bits, we
++	 * can do the same.
++	 */
++	str_size += (nr_bits - 1) / 32;
++
++	str = malloc(str_size + 1);
++	if (!str) {
++		do_warning("%s: not enough memory!", __func__);
++		return;
++	}
++	str[str_size] = 0;
++
++	/* Start out with -2 for the two chars per byte */
++	for (i = str_size - 2; i >= 0; i -= 2) {
++		/*
++		 * data points to a bit mask of size bytes.
++		 * In the kernel, this is an array of long words, thus
++		 * endianess is very important.
++		 */
++		if (pevent->file_bigendian)
++			index = size - (len + 1);
++		else
++			index = len;
++
++		snprintf(buf, 3, "%02x", *((unsigned char *)data + index));
++		memcpy(str + i, buf, 2);
++		len++;
++		if (!(len & 3) && i > 0) {
++			i--;
++			str[i] = ',';
++		}
++	}
++
++	if (len_arg >= 0)
++		trace_seq_printf(s, format, len_arg, str);
++	else
++		trace_seq_printf(s, format, str);
++
++	free(str);
++}
++
+ static void print_str_arg(struct trace_seq *s, void *data, int size,
+ 			  struct event_format *event, const char *format,
+ 			  int len_arg, struct print_arg *arg)
+@@ -3691,6 +3784,23 @@ static void print_str_arg(struct trace_seq *s, void *data, int size,
+ 	case PRINT_BSTRING:
+ 		print_str_to_seq(s, format, len_arg, arg->string.string);
+ 		break;
++	case PRINT_BITMASK: {
++		int bitmask_offset;
++		int bitmask_size;
++
++		if (arg->bitmask.offset == -1) {
++			struct format_field *f;
++
++			f = pevent_find_any_field(event, arg->bitmask.bitmask);
++			arg->bitmask.offset = f->offset;
++		}
++		bitmask_offset = data2host4(pevent, data + arg->bitmask.offset);
++		bitmask_size = bitmask_offset >> 16;
++		bitmask_offset &= 0xffff;
++		print_bitmask_to_seq(pevent, s, format, len_arg,
++				     data + bitmask_offset, bitmask_size);
++		break;
++	}
+ 	case PRINT_OP:
+ 		/*
+ 		 * The only op for string should be ? :
+@@ -4822,6 +4932,9 @@ static void print_args(struct print_arg *args)
+ 	case PRINT_BSTRING:
+ 		printf("__get_str(%s)", args->string.string);
+ 		break;
++	case PRINT_BITMASK:
++		printf("__get_bitmask(%s)", args->bitmask.bitmask);
++		break;
+ 	case PRINT_TYPE:
+ 		printf("(%s)", args->typecast.type);
+ 		print_args(args->typecast.item);
+diff --git a/tools/lib/traceevent/event-parse.h b/tools/lib/traceevent/event-parse.h
+index 56e0e6c12411..7a3873ff9a4f 100644
+--- a/tools/lib/traceevent/event-parse.h
++++ b/tools/lib/traceevent/event-parse.h
+@@ -208,6 +208,11 @@ struct print_arg_string {
+ 	int			offset;
+ };
+ 
++struct print_arg_bitmask {
++	char			*bitmask;
++	int			offset;
++};
++
+ struct print_arg_field {
+ 	char			*name;
+ 	struct format_field	*field;
+@@ -274,6 +279,7 @@ enum print_arg_type {
+ 	PRINT_DYNAMIC_ARRAY,
+ 	PRINT_OP,
+ 	PRINT_FUNC,
++	PRINT_BITMASK,
+ };
+ 
+ struct print_arg {
+@@ -288,6 +294,7 @@ struct print_arg {
+ 		struct print_arg_hex		hex;
+ 		struct print_arg_func		func;
+ 		struct print_arg_string		string;
++		struct print_arg_bitmask	bitmask;
+ 		struct print_arg_op		op;
+ 		struct print_arg_dynarray	dynarray;
+ 	};
+diff --git a/tools/perf/util/scripting-engines/trace-event-perl.c b/tools/perf/util/scripting-engines/trace-event-perl.c
+index e108207c5de0..af7da565a750 100644
+--- a/tools/perf/util/scripting-engines/trace-event-perl.c
++++ b/tools/perf/util/scripting-engines/trace-event-perl.c
+@@ -215,6 +215,7 @@ static void define_event_symbols(struct event_format *event,
+ 	case PRINT_BSTRING:
+ 	case PRINT_DYNAMIC_ARRAY:
+ 	case PRINT_STRING:
++	case PRINT_BITMASK:
+ 		break;
+ 	case PRINT_TYPE:
+ 		define_event_symbols(event, ev_name, args->typecast.item);
+diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
+index cd9774df3750..c3de0971bfdd 100644
+--- a/tools/perf/util/scripting-engines/trace-event-python.c
++++ b/tools/perf/util/scripting-engines/trace-event-python.c
+@@ -197,6 +197,7 @@ static void define_event_symbols(struct event_format *event,
+ 	case PRINT_BSTRING:
+ 	case PRINT_DYNAMIC_ARRAY:
+ 	case PRINT_FUNC:
++	case PRINT_BITMASK:
+ 		/* we should warn... */
+ 		return;
+ 	}
+-- 
+2.0.0.rc2
+
+
