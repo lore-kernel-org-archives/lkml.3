@@ -1,110 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933991AbaFCUEk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 16:04:40 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:53197 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933671AbaFCUEh (ORCPT
+	id S934203AbaFCUFE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 16:05:04 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:44660 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934074AbaFCUE5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 16:04:37 -0400
+	Tue, 3 Jun 2014 16:04:57 -0400
 From: Andreas Noever <andreas.noever@gmail.com>
 To: linux-kernel@vger.kernel.org, Matthew Garrett <matthew.garrett@nebula.com>,
         Greg KH <greg@kroah.com>, Bjorn Helgaas <bhelgaas@google.com>,
         linux-pci@vger.kernel.org
 Cc: Andreas Noever <andreas.noever@gmail.com>
-Subject: [PATCH v5 00/15] Thunderbolt driver for Apple MacBooks
-Date: Tue,  3 Jun 2014 22:03:57 +0200
-Message-Id: <1401825852-4745-1-git-send-email-andreas.noever@gmail.com>
+Subject: [PATCH v5 06/15] thunderbolt: Add thunderbolt capability handling
+Date: Tue,  3 Jun 2014 22:04:03 +0200
+Message-Id: <1401825852-4745-7-git-send-email-andreas.noever@gmail.com>
 X-Mailer: git-send-email 2.0.0
+In-Reply-To: <1401825852-4745-1-git-send-email-andreas.noever@gmail.com>
+References: <1401825852-4745-1-git-send-email-andreas.noever@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Thunderbolt config areas contain capability lists similar to those found
+on pci devices. This patch introduces a tb_find_cap utility method to
+search for capabilities.
 
-Updated version of the driver. Includes changes by Matthew to make it work on
-Falcon Ridge hardware (present in the newest Mac(Book)Pro). 
-
-Changes since v4 (suggested by Matthew):
- - Changed the PCI quirks to check just for Apple hardware instead of checking
-   against a list of machines. (The PCI id check already restricts this quirk
-to the relevant Apple machines).
- - Added Falcon Ridge PCI id to the driver and to the "wait_for_thunderbolt"
-   quirk (the "poweroff_thunderbolt" quirk is no longer necessary for Falcon
-Ridge devices).
- - Fixed plug events for Falcon Ridge hardware.
-
-@Matthew: I think that your patch was missing the Falcon Ridge PCI id within
-the wait_for_thunderbolt quirk (I have added it). If you have time could you
-verify that suspend/resume works on your MacPro?  Thanks!
-
-As before Matthew's ACPI changes (latest version: [1]) are required for this to
-work properly. Without them you need to boot with a coldplugged TB device to
-prevent the firmware from disabling the controller.
-
-Thanks,
-Andreas
-
-[1]: https://lkml.org/lkml/2014/6/1/165 
-
-
-Andreas Noever (15):
-  thunderbolt: Add initial cactus ridge NHI support
-  thunderbolt: Add control channel interface
-  thunderbolt: Setup control channel
-  thunderbolt: Add tb_regs.h
-  thunderbolt: Initialize root switch and ports
-  thunderbolt: Add thunderbolt capability handling
-  thunderbolt: Enable plug events
-  thunderbolt: Scan for downstream switches
-  thunderbolt: Handle hotplug events
-  thunderbolt: Add path setup code.
-  thunderbolt: Add support for simple pci tunnels
-  PCI: Add pci_fixup_suspend_late quirk pass
-  PCI: Suspend/resume quirks for Apple thunderbolt
-  thunderbolt: Read switch uid from EEPROM
-  thunderbolt: Add suspend/hibernate support
-
- drivers/Kconfig                   |   2 +
- drivers/Makefile                  |   1 +
- drivers/pci/pci-driver.c          |  18 +-
- drivers/pci/quirks.c              | 104 ++++++
- drivers/thunderbolt/Kconfig       |  12 +
- drivers/thunderbolt/Makefile      |   3 +
- drivers/thunderbolt/cap.c         | 116 ++++++
- drivers/thunderbolt/ctl.c         | 731 ++++++++++++++++++++++++++++++++++++++
- drivers/thunderbolt/ctl.h         |  75 ++++
- drivers/thunderbolt/eeprom.c      | 189 ++++++++++
- drivers/thunderbolt/nhi.c         | 677 +++++++++++++++++++++++++++++++++++
- drivers/thunderbolt/nhi.h         | 114 ++++++
- drivers/thunderbolt/nhi_regs.h    | 101 ++++++
- drivers/thunderbolt/path.c        | 215 +++++++++++
- drivers/thunderbolt/switch.c      | 498 ++++++++++++++++++++++++++
- drivers/thunderbolt/tb.c          | 431 ++++++++++++++++++++++
- drivers/thunderbolt/tb.h          | 266 ++++++++++++++
- drivers/thunderbolt/tb_regs.h     | 213 +++++++++++
- drivers/thunderbolt/tunnel_pci.c  | 232 ++++++++++++
- drivers/thunderbolt/tunnel_pci.h  |  30 ++
- include/asm-generic/vmlinux.lds.h |   3 +
- include/linux/pci.h               |  12 +-
- 22 files changed, 4038 insertions(+), 5 deletions(-)
- create mode 100644 drivers/thunderbolt/Kconfig
- create mode 100644 drivers/thunderbolt/Makefile
+Signed-off-by: Andreas Noever <andreas.noever@gmail.com>
+---
+ drivers/thunderbolt/Makefile |   2 +-
+ drivers/thunderbolt/cap.c    | 116 +++++++++++++++++++++++++++++++++++++++++++
+ drivers/thunderbolt/tb.h     |   2 +
+ 3 files changed, 119 insertions(+), 1 deletion(-)
  create mode 100644 drivers/thunderbolt/cap.c
- create mode 100644 drivers/thunderbolt/ctl.c
- create mode 100644 drivers/thunderbolt/ctl.h
- create mode 100644 drivers/thunderbolt/eeprom.c
- create mode 100644 drivers/thunderbolt/nhi.c
- create mode 100644 drivers/thunderbolt/nhi.h
- create mode 100644 drivers/thunderbolt/nhi_regs.h
- create mode 100644 drivers/thunderbolt/path.c
- create mode 100644 drivers/thunderbolt/switch.c
- create mode 100644 drivers/thunderbolt/tb.c
- create mode 100644 drivers/thunderbolt/tb.h
- create mode 100644 drivers/thunderbolt/tb_regs.h
- create mode 100644 drivers/thunderbolt/tunnel_pci.c
- create mode 100644 drivers/thunderbolt/tunnel_pci.h
 
+diff --git a/drivers/thunderbolt/Makefile b/drivers/thunderbolt/Makefile
+index 4ac18d9..617b314 100644
+--- a/drivers/thunderbolt/Makefile
++++ b/drivers/thunderbolt/Makefile
+@@ -1,3 +1,3 @@
+ obj-${CONFIG_THUNDERBOLT} := thunderbolt.o
+-thunderbolt-objs := nhi.o ctl.o tb.o switch.o
++thunderbolt-objs := nhi.o ctl.o tb.o switch.o cap.o
+ 
+diff --git a/drivers/thunderbolt/cap.c b/drivers/thunderbolt/cap.c
+new file mode 100644
+index 0000000..a7b47e7
+--- /dev/null
++++ b/drivers/thunderbolt/cap.c
+@@ -0,0 +1,116 @@
++/*
++ * Thunderbolt Cactus Ridge driver - capabilities lookup
++ *
++ * Copyright (c) 2014 Andreas Noever <andreas.noever@gmail.com>
++ */
++
++#include <linux/slab.h>
++#include <linux/errno.h>
++
++#include "tb.h"
++
++
++struct tb_cap_any {
++	union {
++		struct tb_cap_basic basic;
++		struct tb_cap_extended_short extended_short;
++		struct tb_cap_extended_long extended_long;
++	};
++} __packed;
++
++static bool tb_cap_is_basic(struct tb_cap_any *cap)
++{
++	/* basic.cap is u8. This checks only the lower 8 bit of cap. */
++	return cap->basic.cap != 5;
++}
++
++static bool tb_cap_is_long(struct tb_cap_any *cap)
++{
++	return !tb_cap_is_basic(cap)
++	       && cap->extended_short.next == 0
++	       && cap->extended_short.length == 0;
++}
++
++static enum tb_cap tb_cap(struct tb_cap_any *cap)
++{
++	if (tb_cap_is_basic(cap))
++		return cap->basic.cap;
++	else
++		/* extended_short/long have cap at the same offset. */
++		return cap->extended_short.cap;
++}
++
++static u32 tb_cap_next(struct tb_cap_any *cap, u32 offset)
++{
++	int next;
++	if (offset == 1) {
++		/*
++		 * The first pointer is part of the switch header and always
++		 * a simple pointer.
++		 */
++		next = cap->basic.next;
++	} else {
++		/*
++		 * Somehow Intel decided to use 3 different types of capability
++		 * headers. It is not like anyone could have predicted that
++		 * single byte offsets are not enough...
++		 */
++		if (tb_cap_is_basic(cap))
++			next = cap->basic.next;
++		else if (!tb_cap_is_long(cap))
++			next = cap->extended_short.next;
++		else
++			next = cap->extended_long.next;
++	}
++	/*
++	 * "Hey, we could terminate some capability lists with a null offset
++	 *  and others with a pointer to the last element." - "Great idea!"
++	 */
++	if (next == offset)
++		return 0;
++	return next;
++}
++
++/**
++ * tb_find_cap() - find a capability
++ *
++ * Return: Returns a positive offset if the capability was found and 0 if not.
++ * Returns an error code on failure.
++ */
++int tb_find_cap(struct tb_port *port, enum tb_cfg_space space, enum tb_cap cap)
++{
++	u32 offset = 1;
++	struct tb_cap_any header;
++	int res;
++	int retries = 10;
++	while (retries--) {
++		res = tb_port_read(port, &header, space, offset, 1);
++		if (res) {
++			/* Intel needs some help with linked lists. */
++			if (space == TB_CFG_PORT && offset == 0xa
++			    && port->config.type == TB_TYPE_DP_HDMI_OUT) {
++				offset = 0x39;
++				continue;
++			}
++			return res;
++		}
++		if (offset != 1) {
++			if (tb_cap(&header) == cap)
++				return offset;
++			if (tb_cap_is_long(&header)) {
++				/* tb_cap_extended_long is 2 dwords */
++				res = tb_port_read(port, &header, space,
++						   offset, 2);
++				if (res)
++					return res;
++			}
++		}
++		offset = tb_cap_next(&header, offset);
++		if (!offset)
++			return 0;
++	}
++	tb_port_WARN(port,
++		     "run out of retries while looking for cap %#x in config space %d, last offset: %#x\n",
++		     cap, space, offset);
++	return -EIO;
++}
+diff --git a/drivers/thunderbolt/tb.h b/drivers/thunderbolt/tb.h
+index 389dbb4..38e4c23 100644
+--- a/drivers/thunderbolt/tb.h
++++ b/drivers/thunderbolt/tb.h
+@@ -159,6 +159,8 @@ void thunderbolt_shutdown_and_free(struct tb *tb);
+ struct tb_switch *tb_switch_alloc(struct tb *tb, u64 route);
+ void tb_switch_free(struct tb_switch *sw);
+ 
++int tb_find_cap(struct tb_port *port, enum tb_cfg_space space, u32 value);
++
+ 
+ static inline int tb_route_length(u64 route)
+ {
 -- 
 2.0.0
 
