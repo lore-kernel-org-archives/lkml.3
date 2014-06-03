@@ -1,76 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965049AbaFCUOO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 16:14:14 -0400
-Received: from s3.sipsolutions.net ([5.9.151.49]:60326 "EHLO sipsolutions.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932917AbaFCUOK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 16:14:10 -0400
-Message-ID: <1401826431.4157.52.camel@jlt4.sipsolutions.net>
-Subject: Re: [RFC 4/4] mac80211: OCB mode interface configuration
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Rostislav Lisovy <lisovy@gmail.com>
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Michal Sojka <sojkam1@fel.cvut.cz>, s.sander@nordsys.de,
-        jan-niklas.meier@volkswagen.de,
-        Rostislav Lisovy <rostislav.lisovy@fel.cvut.cz>
-Date: Tue, 03 Jun 2014 22:13:51 +0200
-In-Reply-To: <1401468984-24575-5-git-send-email-rostislav.lisovy@fel.cvut.cz> (sfid-20140530_185640_927854_70A2DAA5)
-References: <1401468984-24575-1-git-send-email-rostislav.lisovy@fel.cvut.cz>
-	 <1401468984-24575-5-git-send-email-rostislav.lisovy@fel.cvut.cz>
-	 (sfid-20140530_185640_927854_70A2DAA5)
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.1-1 
-Mime-Version: 1.0
+	id S965064AbaFCUPV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 16:15:21 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:29455 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932917AbaFCUPT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 16:15:19 -0400
+Date: Tue, 3 Jun 2014 16:15:17 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Clark Williams <williams@redhat.com>,
+        "Luis Claudio R. Goncalves" <lclaudio@uudg.org>
+Subject: Re: [BUG] signal: sighand unprotected when accessed by /proc
+Message-ID: <20140603161517.7e4ca4a8@gandalf.local.home>
+In-Reply-To: <20140603200938.GA3384@redhat.com>
+References: <20140603130233.658a6a3c@gandalf.local.home>
+	<20140603172632.GA27956@redhat.com>
+	<CA+55aFzT5CGv_T60voAqR+4PfiMmJmsDZLid2DZ4=+X8uvF+ig@mail.gmail.com>
+	<20140603160524.7895f225@gandalf.local.home>
+	<20140603200938.GA3384@redhat.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-05-30 at 18:56 +0200, Rostislav Lisovy wrote:
-> +	static u8 bssid_wildcard[ETH_ALEN] = { 0xff, 0xff, 0xff,
-> +					       0xff, 0xff, 0xff };
+On Tue, 3 Jun 2014 22:09:38 +0200
+Oleg Nesterov <oleg@redhat.com> wrote:
 
-const
 
-that doesn't actually exist anywhere already? Maybe not I guess.
+> > Now, if that lock is released and reused (I didn't trace other tasks
+> > allocating these locks), it reinitializes the lock->wait_list.
+> 
+> How? From where? This should be done by sighand_ctor() only?
 
-> +int ieee80211_start_ocb(struct ieee80211_sub_if_data *sdata)
-> +{
-> +	u32 changed = BSS_CHANGED_BEACON_ENABLED;
-> +
-> +	sdata->vif.bss_conf.enable_beacon = false;
-> +	ieee80211_bss_info_change_notify(sdata, changed);
+heh, the more I look at this code, the deeper in the rabbit hole I go.
 
-Why would beacon_enabled be changing?
+OK, I didn't understand this in the first place. I see that
+sighand_ctor() is only called when the entire slab is created, correct?
 
-> +	/* MORE TO BE DONE ... */
+That means, when you allocate a new sighand, it doesn't get
+re-initialized, and the sighand->lock should still be the old lock.
 
->From a brief look it seems that you should at least be setting the QoS
-parameters, but what, if anything, else is there?
+That makes sense. I'll need to look at this some more :-/  Maybe
+there's another bug that I'm missing and I'm climbing the wrong tree.
 
-Certainly there should also be some indication to the low-level driver
-that it should now consider being part of the OCB network though.
-
-> +	netif_carrier_on(sdata->dev);
-> +	return 0;
-> +}
-> diff --git a/net/mac80211/util.c b/net/mac80211/util.c
-> index 7e0dd4b..bf4fd61 100644
-> --- a/net/mac80211/util.c
-> +++ b/net/mac80211/util.c
-> @@ -1689,6 +1689,11 @@ int ieee80211_reconfig(struct ieee80211_local *local)
->  			ieee80211_bss_info_change_notify(sdata, changed);
->  			sdata_unlock(sdata);
->  			break;
-> +		case NL80211_IFTYPE_OCB:
-> +			changed |= BSS_CHANGED_IBSS |
-> +				   BSS_CHANGED_BEACON_ENABLED;
-
-CHANGED_IBSS?
-
-I guess you need a new CHANGED_OCB flag and ocb_active bool value.
-
-johannes
-
+-- Steve
