@@ -1,55 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932433AbaFCOde (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 10:33:34 -0400
-Received: from relay1.mentorg.com ([192.94.38.131]:63762 "EHLO
-	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751601AbaFCOda (ORCPT
+	id S932569AbaFCOey (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 10:34:54 -0400
+Received: from casper.infradead.org ([85.118.1.10]:41857 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753302AbaFCOex (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 10:33:30 -0400
-Date: Tue, 3 Jun 2014 14:33:10 +0000
-From: "Joseph S. Myers" <joseph@codesourcery.com>
-X-X-Sender: jsm28@digraph.polyomino.org.uk
-To: Arnd Bergmann <arnd@arndb.de>
-CC: "H. Peter Anvin" <hpa@zytor.com>, <linux-kernel@vger.kernel.org>,
-        <linux-arch@vger.kernel.org>, <john.stultz@linaro.org>,
-        <hch@infradead.org>, <tglx@linutronix.de>, <geert@linux-m68k.org>,
-        <lftan@altera.com>, <linux-fsdevel@vger.kernel.org>,
-        <ceph-devel@vger.kernel.org>, <cluster-devel@redhat.com>,
-        <coda@cs.cmu.edu>, <codalist@telemann.coda.cs.cmu.edu>,
-        <fuse-devel@lists.sourceforge.net>, <linux-afs@lists.infradead.org>,
-        <linux-btrfs@vger.kernel.org>, <linux-cifs@vger.kernel.org>,
-        <linux-ext4@vger.kernel.org>, <linux-f2fs-devel@lists.sourceforge.net>,
-        <linux-mtd@lists.infradead.org>, <linux-nfs@vger.kernel.org>,
-        <linux-ntfs-dev@lists.sourceforge.net>, <linux-scsi@vger.kernel.org>,
-        <logfs@logfs.org>, <ocfs2-devel@oss.oracle.com>,
-        <reiserfs-devel@vger.kernel.org>, <samba-technical@lists.samba.org>,
-        <xfs@oss.sgi.com>
-Subject: Re: [RFC 00/32] making inode time stamps y2038 ready
-In-Reply-To: <5011138.W0gbOc20Qp@wuerfel>
-Message-ID: <Pine.LNX.4.64.1406031427130.12421@digraph.polyomino.org.uk>
-References: <1401480116-1973111-1-git-send-email-arnd@arndb.de>
- <7175692.dpgYFMbTaP@wuerfel> <538CF346.2070504@zytor.com> <5011138.W0gbOc20Qp@wuerfel>
+	Tue, 3 Jun 2014 10:34:53 -0400
+Date: Tue, 3 Jun 2014 16:34:46 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mike Galbraith <umgwanakikbuti@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [patchlet][resend] sched: Fix up /proc/sched_debug to print only
+ runnable tasks again
+Message-ID: <20140603143446.GQ30445@twins.programming.kicks-ass.net>
+References: <1401801261.5788.2.camel@marge.simpson.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-OriginalArrivalTime: 03 Jun 2014 14:33:14.0298 (UTC) FILETIME=[C095E9A0:01CF7F38]
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="5ZC8HHDsDfqlD0R9"
+Content-Disposition: inline
+In-Reply-To: <1401801261.5788.2.camel@marge.simpson.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 3 Jun 2014, Arnd Bergmann wrote:
 
-> I think John Stultz and Thomas Gleixner have already started looking
-> at how the timekeeping code can be updated. Once that is done, we should
-> be able to add a functional 64-bit gettimeofday/settimeofday syscall
-> pair. While I definitely agree this is one of the most basic things to
-> have, it's also not an area of the kernel that is easy to change.
+--5ZC8HHDsDfqlD0R9
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-64-bit clock_gettime / clock_settime instead of gettimeofday / 
-settimeofday should avoid the need for the kernel to have a 64-bit version 
-of struct timeval.  (Userspace 64-bit gettimeofday / settimeofday would 
-need to use a combination of the syscalls if the tz pointer is non-NULL.)
+On Tue, Jun 03, 2014 at 03:14:21PM +0200, Mike Galbraith wrote:
+>=20
+> Commit b32e86b430 dropped p->on_rq check, leading to printing tasks which
+> used to live on runqueues, which is very noisy and highly annoying.
 
--- 
-Joseph S. Myers
-joseph@codesourcery.com
+Yes,.. but also useful for the numa cruft :-(
+
+When printing all we can get placement info for !running tasks.
+
+Not sure what to do here..=20
+
+
+--5ZC8HHDsDfqlD0R9
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTjd0FAAoJEHZH4aRLwOS6rR4P/AwRq76tqRzucw5/I67Y/6eR
+IcWbNa/OtA9a67dflPIGlAOihxLcFnTB2JQPxmNrZhhd7KtCjVM95RfsXjW7YbWA
++ysrG6CqxJ69dUYGY+s6AnOLnQyPuSeS3hzQ6FhUBODATcGyUgPsqJhKubo0Nd0g
+nK90hjbhmRkjnBxqekdbdnE8AvYOIAjlNaMZxQe4vw7y1nWAriYbAKyYHm9P1HQl
+3TXu/K+zFzpmqcx4eUsHyk14Z+Q4F04GuYcNKe3f5EtnA3C6SUQd6y5g9b/LrmgY
+N/UwvGntGRzu3CfMn6k5eLpXdtlHR5/Mk2mkr2YXKEBHsWtyoKh07GWSCC4bJ/55
+25f3uwePtgpunBkTwSDUU7575RGqN7TfO+cZk5dgVHUiIOqBhnmXs7ptxtW93n0J
+0ucDN56ZW2ekGTK9LbEQWANPa8UgvbNguDeYsCwoxR7owPe1w4qezk5EhIEwBCF9
+tyTMxnp6jB3yNQeD/bp0oETGo/soKZvqocwDjR/H9s7ZmuHqy3dwwsLEbglnp+6P
+p/FNc7lRyEfa/dpXwlDej79wTEP+ch0oQiauX+GRSXen21d61DbEpCQWxurHDtL5
+82rNOMdOh4CZ7QMt0JGwUZT9QjynICCN+LpfuWonzB0ASsi/uKU0CHyIqJ3uhaPj
+1DVOxzTdSdosgs2GoWUM
+=3n1V
+-----END PGP SIGNATURE-----
+
+--5ZC8HHDsDfqlD0R9--
