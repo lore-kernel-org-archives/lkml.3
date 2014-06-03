@@ -1,116 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754293AbaFCRr7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 13:47:59 -0400
-Received: from ns4.system-techniques.com ([50.0.96.199]:39873 "EHLO
-	ns4.baby-dragons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751128AbaFCRr4 (ORCPT
+	id S1754614AbaFCRse (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 13:48:34 -0400
+Received: from mail-ve0-f172.google.com ([209.85.128.172]:55099 "EHLO
+	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754409AbaFCRsd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 13:47:56 -0400
-X-Greylist: delayed 415 seconds by postgrey-1.27 at vger.kernel.org; Tue, 03 Jun 2014 13:47:56 EDT
-Date: Tue, 3 Jun 2014 09:40:57 -0800 (AKDT)
-From: "Mr. James W. Laferriere" <babydr@baby-dragons.com>
-To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-cc: lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [kernel] man-pages-3.68 is released
-In-Reply-To: <538784BA.3080807@gmail.com>
-Message-ID: <alpine.LNX.2.01.1405291132370.5598@filesrv1.baby-dragons.com>
-References: <538784BA.3080807@gmail.com>
-User-Agent: Alpine 2.01 (LNX 1184 2008-12-16)
+	Tue, 3 Jun 2014 13:48:33 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (ns4.baby-dragons.com [50.0.96.199]); Tue, 03 Jun 2014 10:40:59 -0700 (PDT)
+In-Reply-To: <CA+55aFxfEsOZreYBCrDTfgaSf0441zXf4uSmzsYU-JXHBRkzJg@mail.gmail.com>
+References: <CALCETrXbpiqwY=qyPcNWn2zX=vehXzBbxDG725egM9T2Ox2KTA@mail.gmail.com>
+ <538D2261.70406@huawei.com> <20140603012211.GE19855@htj.dyndns.org>
+ <CA+55aFx=TG25jPohWZ5xbYs4DcOTUQnCPA8G_fZZouNEfSoZ3A@mail.gmail.com> <CA+55aFxfEsOZreYBCrDTfgaSf0441zXf4uSmzsYU-JXHBRkzJg@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 3 Jun 2014 10:48:11 -0700
+Message-ID: <CALCETrXKbDb-ww+52OWzXMzYDXdFxFZczsKCFOdcEyw2vSy1EQ@mail.gmail.com>
+Subject: Re: 3.15 regression: wrong cgroup magic
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jianyu Zhan <nasa4836@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- 	Helo Michael ,  Thank you !-)  JimL
+On Tue, Jun 3, 2014 at 10:23 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Mon, Jun 2, 2014 at 6:30 PM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+>>
+>> Of course, Greg could just send it to me for my next branch (since the
+>> merge window for 3.16 is already open) and tell me that it's also
+>> stable material for 3.15. At _that_ point I'll happily cherry-pick it
+>> into master...
+>
+> Ok, so that happened.
+>
+> Tejun, just to be anal, can you please test and verify current -git
+> (preferably both 'master' and 'next') with your app that cared about
+> the f_type information for statfs()..
 
-On Thu, 29 May 2014, Michael Kerrisk (man-pages) wrote:
+Did you mean me?
 
-> Gidday,
->
-> The Linux man-pages maintainer proudly announces his 150th release
-> as project maintainer:
->
->    man-pages-3.68 - man pages for Linux
->
-> Tarball download:
->    http://www.kernel.org/doc/man-pages/download.html
-> Git repository:
->    https://git.kernel.org/cgit/docs/man-pages/man-pages.git/
-> Online changelog:
->    http://man7.org/linux/man-pages/changelog.html#release_3.68
->
-> A short summary of the release is blogged at:
-> http://linux-man-pages.blogspot.com/2014/05/man-pages-368-is-released.html
->
-> The current version of the pages is browsable at:
-> http://man7.org/linux/man-pages/
->
-> A few changes in this release that may be of interest to readers of
-> this list are given below.
->
-> Cheers,
->
-> Michael
->
->
-> ==================== Changes in man-pages-3.68 ====================
->
-> Released: 2014-05-28, Munich
->
->
-> New and rewritten pages
-> -----------------------
->
-> localedef.1
->    Marko Myllynen, Richard Braakman, Alastair McKinstry, Lars Wirzenius
->        New page for localedef(1)
->            Add new page based on Debian localedef(1) page.
->
->
-> Changes to individual pages
-> ---------------------------
->
-> locale.1
->    Marko Myllynen
->        Provide a step-by-step example of how to use a custom locale
->
-> fork.2
->    Michael Kerrisk
->        ERRORS: add pid_max and threads-max to EAGAIN
->            And rewrite text to be the same as pthread_create(3).
->
-> proc.5
->    Michael Kerrisk
->        'pid_max' is a system-wide limit on number of threads and processes
->            Since PIDs > /proc/sys/kernel/pid_max are not allocated, this
->            file thus also imposes a system-wide limit on the number of
->            threads and processes.
->
-> capabilities.7
->    Michael Kerrisk
->        CAP_SYS_ADMIN allows overriding RLIMIT_NPROC
->    Michael Kerrisk
->        CAP_SYS_PTRACE allows process_vm_readv(2) and process_vm_writev(2)
->
-> inotify.7
->    Heinrich Schuchardt
->        Add example program
->            This example of the usage of the inotify API shows the
->            usage of inotify_init1(2) and inotify_add_watch(2) as well
->            as polling and reading from the inotify file descriptor.
->
-> locale.7
->    Marko Myllynen [Michael Kerrisk]
->        Document the LOCPATH environment variable
->
->
+My code seems to work now, and strace says:
 
--- 
-+------------------------------------------------------------------+
-| James   W.   Laferriere | System    Techniques | Give me VMS     |
-| Network&System Engineer | 3237     Holden Road |  Give me Linux  |
-| babydr@baby-dragons.com | Fairbanks, AK. 99709 |   only  on  AXP |
-+------------------------------------------------------------------+
+fstatfs(6, {f_type=0x27e0eb, f_bsize=4096, f_blocks=0, f_bfree=0, f_bavail=0, f_
+files=0, f_ffree=0, f_fsid={0, 0}, f_namelen=255, f_frsize=4096}) = 0
+
+which is consistent with:
+
+#define CGROUP_SUPER_MAGIC      0x27e0eb
+
+This is on master.  I'll test next eventually.
+
+Thanks everyone!
+
+--Andy
