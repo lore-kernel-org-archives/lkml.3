@@ -1,82 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752346AbaFCJSz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 05:18:55 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:47037 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751995AbaFCJSf (ORCPT
+	id S1752117AbaFCJU7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 05:20:59 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:49046 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751129AbaFCJU5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 05:18:35 -0400
+	Tue, 3 Jun 2014 05:20:57 -0400
 From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH 3/3] i2c: Make I2C ID tables non-mandatory for DT'ed
- and/or ACPI'ed devices
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        wsa@the-dreams.de, linus.walleij@linaro.org, linux-i2c@vger.kernel.org
-In-Reply-To: <20140603081109.GD3060@lee--X1>
-References: <1401716463-23457-1-git-send-email-lee.jones@linaro.org>
-	<1401716463-23457-4-git-send-email-lee.jones@linaro.org>
-	<20140602160829.F3519C40476@trevor.secretlab.ca>
-	<20140603081109.GD3060@lee--X1>
-Date: Tue, 03 Jun 2014 10:18:32 +0100
-Message-Id: <20140603091832.15965C40D3B@trevor.secretlab.ca>
+Subject: Re: [PATCH v1] of/irq: do irq resolution in
+ platform_get_irq_byname()
+To: Kevin Hilman <khilman@linaro.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>
+Cc: Chen-Yu Tsai <wens@csie.org>, Linus Walleij <linus.walleij@linaro.org>,
+        Lee Jones <lee.jones@linaro.org>, Rob Herring <robh@kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Rob Herring <robh+dt@kernel.org>,
+        Olof Johansson <olof@lixom.net>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
+In-Reply-To: <7h7g4zz7s4.fsf@paris.lan>
+References: <1400582523-22684-1-git-send-email-grygorii.strashko@ti.com>
+	<20140523080333.66720C4176E@trevor.secretlab.ca>
+	<CAGa+x85mOHtNAj-UHgK2_z8zWAF=qwFcRcUgHTR-byNiX7heHA@mail.gmail.com>
+	<CAL_JsqLm3wfVS+au+JUbhBhxz=LuVpepH6GxabCQhPowhbw77g@mail.gmail.com>
+	<20140528071855.GJ4227@lee--X1>
+	<CACRpkdYgkEOjLamYu5uKSgs3iTNJ-w5XkbeygKjRdR-bNdETfg@mail.gmail.com>
+	<CAGb2v64f8Wju6dtVuVN2x=9YVGA-=RXozzhpJZNspKZ05f=jtA@mail.gmail.com>
+	<CACxGe6ts-TcSKk2F0-XSxAxeTxVCiyDHgh-O12v+F2OjHUsPyg@mail.gmail.com>
+	<5385B566.2050600@ti.com> <7h7g4zz7s4.fsf@paris.lan>
+Date: Tue, 03 Jun 2014 10:20:50 +0100
+Message-Id: <20140603092050.F0FD0C40D3B@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 3 Jun 2014 09:11:09 +0100, Lee Jones <lee.jones@linaro.org> wrote:
-> On Mon, 02 Jun 2014, Grant Likely wrote:
-> > On Mon,  2 Jun 2014 14:41:03 +0100, Lee Jones <lee.jones@linaro.org> wrote:
-> > > Currently the I2C framework insists on devices supplying an I2C ID
-> > > table.  Many of the devices which do so unnecessarily adding quite a
-> > > few wasted lines to kernel code.  This patch allows drivers a means
-> > > to 'not' supply the aforementioned table and match on either DT
-> > > and/or ACPI match tables instead.
-> > > 
-> > > Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> > 
-> > Looks reasonable.
+On Mon, 02 Jun 2014 07:48:59 -0700, Kevin Hilman <khilman@linaro.org> wrote:
+> Grygorii Strashko <grygorii.strashko@ti.com> writes:
 > 
-> Can I add your Ack?
+> > Hi All,
+> >
+> > On 05/28/2014 12:03 PM, Grant Likely wrote:
+> 
+> [...]
+> 
+> >> The bisected patch causes platform_get_irq() to always parse the
+> >> devicetree to obtain the irq instead of using a precalculated value in
+> >> the platform_device. There are two possible scenarios for this problem
+> >> that I can think of:
+> >> 1) Platform_get_irq() is getting called multiple times (which would
+> >> happen on a deferred probe) but the setup code isn't handling it
+> >> properly, like trying to request the GPIO more than once
+> >> 2) the platform_device was preloaded with an irq number that differs
+> >> from what is determined when parsing the tree. This would happen if a
+> >> platform_device was created manually.
+> >>
+> >
+> > Could anyone try attached patch? It has to improve situation, but it
+> > might not fix all problems (see my previous e-mail).
+> 
+> I can confirm it makes the STE Snowball boot again on top of next-20150602.
+> 
+> > From 4a41912dba648c935982274966426fa430fd5aa4 Mon Sep 17 00:00:00 2001
+> > From: Grygorii Strashko <grygorii.strashko@ti.com>
+> > Date: Wed, 28 May 2014 12:53:34 +0300
+> > Subject: [PATCH] mfd: ab8500: fix dt irq mapping
+> >
+> > The AD8500 defines itself as interrupt-controller in DT,
+> > but it doesn't assign DT node to IRQ domain when creates it.
+> > As result, of_irq_xx() helpers don't work because they can't
+> > find necessary IRQ domain.
+> >
+> > Hence, fix it by assigning AD8500 core device DT node to IRQ
+> > domain when it's created.
+> >
+> > Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+> 
+> Tested-by: Kevin Hilman <khilman@linaro.org>
+
+So is that it, or were there other problems? If it is then you can add
+my acked-by when applying.
 
 Acked-by: Grant Likely <grant.likely@linaro.org>
-
-> 
-> > g.
-> > 
-> > > ---
-> > >  drivers/i2c/i2c-core.c | 13 ++++++++++++-
-> > >  1 file changed, 12 insertions(+), 1 deletion(-)
-> > > 
-> > > diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
-> > > index d0c7180..811b78f 100644
-> > > --- a/drivers/i2c/i2c-core.c
-> > > +++ b/drivers/i2c/i2c-core.c
-> > > @@ -271,7 +271,18 @@ static int i2c_device_probe(struct device *dev)
-> > >  		return 0;
-> > >  
-> > >  	driver = to_i2c_driver(dev->driver);
-> > > -	if (!driver->probe || !driver->id_table)
-> > > +	if (!driver->probe)
-> > > +		return -EINVAL;
-> > > +
-> > > +	/*
-> > > +	 * An I2C ID table is not madatory, if and only if, a suitable Device
-> > > +	 * Tree and/or ACPI match table entry is supplied for the probing
-> > > +	 * device.
-> > > +	 *
-> > > +	 * TODO: Provide 'device type' to 'ACPI node' call and match here.
-> > > +	 */
-> > > +	if (!driver->id_table &&
-> > > +	    !of_match_device(dev->driver->of_match_table, dev))
-> > >  		return -ENODEV;
-> > >  
-> > >  	if (!device_can_wakeup(&client->dev))
-> > 
-> 
-> -- 
-> Lee Jones
-> Linaro STMicroelectronics Landing Team Lead
-> Linaro.org │ Open source software for ARM SoCs
-> Follow Linaro: Facebook | Twitter | Blog
 
