@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754907AbaFCL7J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 07:59:09 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43662 "EHLO
+	id S1754993AbaFCL7b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 07:59:31 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43661 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752884AbaFCLmD (ORCPT
+	with ESMTP id S932842AbaFCLmD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 3 Jun 2014 07:42:03 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Leif Lindholm <leif.lindholm@linaro.org>, linux-mips@linux-mips.org,
-        devicetree@vger.kernel.org, Mark Rutland <mark.rutland@arm.com>,
-        Grant Likely <grant.likely@linaro.org>,
+Cc: Andy Grover <agrover@redhat.com>, Nicholas Bellinger <nab@linux-iscsi.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 088/138] mips: dts: Fix missing device_type="memory" property in memory nodes
-Date: Tue,  3 Jun 2014 12:38:54 +0100
-Message-Id: <1401795584-22664-89-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 087/138] target: Don't allow setting WC emulation if device doesn't support
+Date: Tue,  3 Jun 2014 12:38:53 +0100
+Message-Id: <1401795584-22664-88-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
 References: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
@@ -29,90 +27,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Leif Lindholm <leif.lindholm@linaro.org>
+From: Andy Grover <agrover@redhat.com>
 
-commit dfc44f8030653b345fc6fb337558c3a07536823f upstream.
+commit 07b8dae38b09bcfede7e726f172e39b5ce8390d9 upstream.
 
-A few platforms lack a 'device_type = "memory"' for their memory
-nodes, relying on an old ppc quirk in order to discover its memory.
-Add the missing data so that all parsing code can find memory nodes
-correctly.
+Just like for pSCSI, if the transport sets get_write_cache, then it is
+not valid to enable write cache emulation for it. Return an error.
 
-Signed-off-by: Leif Lindholm <leif.lindholm@linaro.org>
-Cc: linux-mips@linux-mips.org
-Cc: devicetree@vger.kernel.org
-Cc: Mark Rutland <mark.rutland@arm.com>
-Acked-by: John Crispin <blogic@openwrt.org>
-Signed-off-by: Grant Likely <grant.likely@linaro.org>
+see https://bugzilla.redhat.com/show_bug.cgi?id=1082675
+
+Reviewed-by: Chris Leech <cleech@redhat.com>
+Signed-off-by: Andy Grover <agrover@redhat.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/mips/lantiq/dts/easy50712.dts    | 1 +
- arch/mips/ralink/dts/mt7620a_eval.dts | 1 +
- arch/mips/ralink/dts/rt2880_eval.dts  | 1 +
- arch/mips/ralink/dts/rt3052_eval.dts  | 1 +
- arch/mips/ralink/dts/rt3883_eval.dts  | 1 +
- 5 files changed, 5 insertions(+)
+ drivers/target/target_core_device.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/arch/mips/lantiq/dts/easy50712.dts b/arch/mips/lantiq/dts/easy50712.dts
-index fac1f5b178eb..143b8a37b5e4 100644
---- a/arch/mips/lantiq/dts/easy50712.dts
-+++ b/arch/mips/lantiq/dts/easy50712.dts
-@@ -8,6 +8,7 @@
- 	};
+diff --git a/drivers/target/target_core_device.c b/drivers/target/target_core_device.c
+index 717d35b4d123..2640f2c65329 100644
+--- a/drivers/target/target_core_device.c
++++ b/drivers/target/target_core_device.c
+@@ -796,10 +796,10 @@ int se_dev_set_emulate_write_cache(struct se_device *dev, int flag)
+ 		pr_err("emulate_write_cache not supported for pSCSI\n");
+ 		return -EINVAL;
+ 	}
+-	if (dev->transport->get_write_cache) {
+-		pr_warn("emulate_write_cache cannot be changed when underlying"
+-			" HW reports WriteCacheEnabled, ignoring request\n");
+-		return 0;
++	if (flag &&
++	    dev->transport->get_write_cache) {
++		pr_err("emulate_write_cache not supported for this device\n");
++		return -EINVAL;
+ 	}
  
- 	memory@0 {
-+		device_type = "memory";
- 		reg = <0x0 0x2000000>;
- 	};
- 
-diff --git a/arch/mips/ralink/dts/mt7620a_eval.dts b/arch/mips/ralink/dts/mt7620a_eval.dts
-index 35eb874ab7f1..709f58132f5c 100644
---- a/arch/mips/ralink/dts/mt7620a_eval.dts
-+++ b/arch/mips/ralink/dts/mt7620a_eval.dts
-@@ -7,6 +7,7 @@
- 	model = "Ralink MT7620A evaluation board";
- 
- 	memory@0 {
-+		device_type = "memory";
- 		reg = <0x0 0x2000000>;
- 	};
- 
-diff --git a/arch/mips/ralink/dts/rt2880_eval.dts b/arch/mips/ralink/dts/rt2880_eval.dts
-index 322d7002595b..0a685db093d4 100644
---- a/arch/mips/ralink/dts/rt2880_eval.dts
-+++ b/arch/mips/ralink/dts/rt2880_eval.dts
-@@ -7,6 +7,7 @@
- 	model = "Ralink RT2880 evaluation board";
- 
- 	memory@0 {
-+		device_type = "memory";
- 		reg = <0x8000000 0x2000000>;
- 	};
- 
-diff --git a/arch/mips/ralink/dts/rt3052_eval.dts b/arch/mips/ralink/dts/rt3052_eval.dts
-index 0ac73ea28198..ec9e9a035541 100644
---- a/arch/mips/ralink/dts/rt3052_eval.dts
-+++ b/arch/mips/ralink/dts/rt3052_eval.dts
-@@ -7,6 +7,7 @@
- 	model = "Ralink RT3052 evaluation board";
- 
- 	memory@0 {
-+		device_type = "memory";
- 		reg = <0x0 0x2000000>;
- 	};
- 
-diff --git a/arch/mips/ralink/dts/rt3883_eval.dts b/arch/mips/ralink/dts/rt3883_eval.dts
-index 2fa6b330bf4f..e8df21a5d10d 100644
---- a/arch/mips/ralink/dts/rt3883_eval.dts
-+++ b/arch/mips/ralink/dts/rt3883_eval.dts
-@@ -7,6 +7,7 @@
- 	model = "Ralink RT3883 evaluation board";
- 
- 	memory@0 {
-+		device_type = "memory";
- 		reg = <0x0 0x2000000>;
- 	};
- 
+ 	dev->dev_attrib.emulate_write_cache = flag;
 -- 
 1.9.1
 
