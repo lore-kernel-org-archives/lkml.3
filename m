@@ -1,73 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755870AbaFCMXW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 08:23:22 -0400
-Received: from casper.infradead.org ([85.118.1.10]:41296 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755273AbaFCMXR (ORCPT
+	id S1754062AbaFCLkH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 07:40:07 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43203 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752374AbaFCLkB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 08:23:17 -0400
-Date: Tue, 3 Jun 2014 14:23:09 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Yuyang Du <yuyang.du@intel.com>
-Cc: mingo@redhat.com, rafael.j.wysocki@intel.com, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, arjan.van.de.ven@intel.com,
-        len.brown@intel.com, alan.cox@intel.com, mark.gross@intel.com,
-        pjt@google.com, bsegall@google.com, morten.rasmussen@arm.com,
-        vincent.guittot@linaro.org, rajeev.d.muralidhar@intel.com,
-        vishwesh.m.rudramuni@intel.com, nicole.chalhoub@intel.com,
-        ajaya.durg@intel.com, harinarayanan.seshadri@intel.com,
-        jacob.jun.pan@linux.intel.com, fengguang.wu@intel.com
-Subject: Re: [RFC PATCH 11/16 v3] Make wakeup bias threshold changeable via
- sysctl
-Message-ID: <20140603122309.GK30445@twins.programming.kicks-ass.net>
-References: <1401431772-14320-1-git-send-email-yuyang.du@intel.com>
- <1401431772-14320-12-git-send-email-yuyang.du@intel.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="+9Nh279w3tr8TrRk"
-Content-Disposition: inline
-In-Reply-To: <1401431772-14320-12-git-send-email-yuyang.du@intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Tue, 3 Jun 2014 07:40:01 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Johan Hedberg <johan.hedberg@intel.com>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 005/138] Bluetooth: Fix triggering BR/EDR L2CAP Connect too early
+Date: Tue,  3 Jun 2014 12:37:31 +0100
+Message-Id: <1401795584-22664-6-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
+References: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.11.10.11 -stable review patch.  If anyone has any objections, please let me know.
 
---+9Nh279w3tr8TrRk
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+------------------
 
-On Fri, May 30, 2014 at 02:36:07PM +0800, Yuyang Du wrote:
-> In wakeup balance, we bias wakee and waker (in this order) if it is capab=
-le
-> of handling the wakee task.
->=20
-> sysctl_sched_cc_wakeup_threshold is the threshold to see whether the CPU
-> is capable, and can be changed by sysctl tool
+From: Johan Hedberg <johan.hedberg@intel.com>
 
-This must strive for the most useless changelog ever..=20
+commit 9eb1fbfa0a737fd4d3a6d12d71c5ea9af622b887 upstream.
 
---+9Nh279w3tr8TrRk
-Content-Type: application/pgp-signature
+Commit 1c2e004183178 introduced an event handler for the encryption key
+refresh complete event with the intent of fixing some LE/SMP cases.
+However, this event is shared with BR/EDR and there we actually want to
+act only on the auth_complete event (which comes after the key refresh).
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+If we do not do this we may trigger an L2CAP Connect Request too early
+and cause the remote side to return a security block error.
 
-iQIcBAEBAgAGBQJTjb4tAAoJEHZH4aRLwOS61sMP/1HHLdLOKb/ULUoa7I3lDEmh
-JZWMdwhn+XfHH3u5imbStMapLaxfk1SnhfcZluzpj+5qxsSY2mwnMng62fW+9Auy
-9Uw6oADoUe/rrAMziNzxFgj8va2tvcB7eyjQHCLy5aTe3nV12iHg3g8Ox4zIJTyc
-hzp5MFzbsLxYNu1SQ2kL+L8ZW6y2CT5ci2wK62wYskwCDY0FnG5Hd0nTjLtnjXXa
-RjGmAu8fxvAji2AUfaoqC4HCacRP85FnoqI95EohcmJs3eZzh2ADrJ3xBSmF339A
-X3WFWfqrJo8Js5GsQYr11XfshjiyXT79vVUpj67xPtdWp4sFnZHww/eSGidJAFcC
-+0biQEt37WKXArbZqyxr8u80D4cJM+ja3lj6JFDDuaiTpKMqJe2HmqoX08e/UuHg
-gqu4tGCtIEUI/UqNNIl7Un1ySxcIa3dwj0H6jcGD10xcPKUx8GDaISuvvouMS02o
-YsNDwAQ/c4tJuGLMV2DOW/FxRnuD3ehiYv+3dvwCzmR6/1fuQqo7eDz/vIp4dj5g
-9mPCaLZK48OSfQgNm9d64aYra6q4N5iulhdq1fMtc0/0xBGtfSnqRQkId0st82pT
-2YSyZkHTru5YovTXG2KgbI2Jk+kGv5fkZRq4Z3cyj/2oVJVhvlLtqHGWJ1Z7Tv8r
-r9/tXvpNpltvyehZCcPM
-=IlEk
------END PGP SIGNATURE-----
+Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
+Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ net/bluetooth/hci_event.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
---+9Nh279w3tr8TrRk--
+diff --git a/net/bluetooth/hci_event.c b/net/bluetooth/hci_event.c
+index 4cc3ee0923c5..b767ed9969c4 100644
+--- a/net/bluetooth/hci_event.c
++++ b/net/bluetooth/hci_event.c
+@@ -2992,6 +2992,12 @@ static void hci_key_refresh_complete_evt(struct hci_dev *hdev,
+ 	if (!conn)
+ 		goto unlock;
+ 
++	/* For BR/EDR the necessary steps are taken through the
++	 * auth_complete event.
++	 */
++	if (conn->type != LE_LINK)
++		goto unlock;
++
+ 	if (!ev->status)
+ 		conn->sec_level = conn->pending_sec_level;
+ 
+-- 
+1.9.1
+
