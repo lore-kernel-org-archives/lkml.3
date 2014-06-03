@@ -1,74 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933063AbaFCMCv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 08:02:51 -0400
-Received: from netz.smurf.noris.de ([213.95.21.43]:37674 "EHLO
-	netz.smurf.noris.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932678AbaFCMCt (ORCPT
+	id S933119AbaFCMDg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 08:03:36 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43571 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932708AbaFCLlk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 08:02:49 -0400
-Date: Tue, 3 Jun 2014 14:01:57 +0200
-From: Matthias Urlichs <matthias@urlichs.de>
-To: Johan Hovold <jhovold@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Oliver Neukum <oliver@neukum.org>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] MAINTAINERS: drop two usb-serial subdriver entries
-Message-ID: <20140603120156.GD3152@smurf.noris.de>
-References: <1401615137-11862-1-git-send-email-jhovold@gmail.com>
- <20140601174559.GB1281@kroah.com>
- <20140602071607.GD14935@localhost>
- <20140602072709.GP10337@smurf.noris.de>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="9jxsPFA5p3P2qPhR"
-Content-Disposition: inline
-In-Reply-To: <20140602072709.GP10337@smurf.noris.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Smurf-Spam-Score: -1.1 (-)
-X-Smurf-Whitelist: +relay_from_hosts
+	Tue, 3 Jun 2014 07:41:40 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
+        Mark Brown <broonie@linaro.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 072/138] ASoC: wm8962: Update register CLASS_D_CONTROL_1 to be non-volatile
+Date: Tue,  3 Jun 2014 12:38:38 +0100
+Message-Id: <1401795584-22664-73-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
+References: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.11.10.11 -stable review patch.  If anyone has any objections, please let me know.
 
---9jxsPFA5p3P2qPhR
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+------------------
 
-Hi,
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 
-Matthias Urlichs:
-> Fine by me.
+commit 44330ab516c15dda8a1e660eeaf0003f84e43e3f upstream.
 
-or, in other words:
+The register CLASS_D_CONTROL_1 is marked as volatile because it contains
+a bit, DAC_MUTE, which is also mirrored in the ADC_DAC_CONTROL_1
+register. This causes problems for the "Speaker Switch" control, which
+will report an error if the CODEC is suspended because it relies on a
+volatile register.
 
-Signed-Off-By: Matthias Urlichs <matthias@urlichs.de>
+To resolve this issue mark CLASS_D_CONTROL_1 as non-volatile and
+manually keep the register cache in sync by updating both bits when
+changing the mute status.
 
---=20
--- Matthias Urlichs
+Reported-by: Shawn Guo <shawn.guo@linaro.org>
+Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Tested-by: Shawn Guo <shawn.guo@linaro.org>
+Signed-off-by: Mark Brown <broonie@linaro.org>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ sound/soc/codecs/wm8962.c | 15 ++++++++++++---
+ sound/soc/codecs/wm8962.h |  4 ++++
+ 2 files changed, 16 insertions(+), 3 deletions(-)
 
---9jxsPFA5p3P2qPhR
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+diff --git a/sound/soc/codecs/wm8962.c b/sound/soc/codecs/wm8962.c
+index ca3ef5a12e48..ad0f2b3e9b81 100644
+--- a/sound/soc/codecs/wm8962.c
++++ b/sound/soc/codecs/wm8962.c
+@@ -154,6 +154,7 @@ static struct reg_default wm8962_reg[] = {
+ 	{ 40, 0x0000 },   /* R40    - SPKOUTL volume */
+ 	{ 41, 0x0000 },   /* R41    - SPKOUTR volume */
+ 
++	{ 49, 0x0010 },   /* R49    - Class D Control 1 */
+ 	{ 51, 0x0003 },   /* R51    - Class D Control 2 */
+ 
+ 	{ 56, 0x0506 },   /* R56    - Clocking 4 */
+@@ -795,7 +796,6 @@ static bool wm8962_volatile_register(struct device *dev, unsigned int reg)
+ 	case WM8962_ALC2:
+ 	case WM8962_THERMAL_SHUTDOWN_STATUS:
+ 	case WM8962_ADDITIONAL_CONTROL_4:
+-	case WM8962_CLASS_D_CONTROL_1:
+ 	case WM8962_DC_SERVO_6:
+ 	case WM8962_INTERRUPT_STATUS_1:
+ 	case WM8962_INTERRUPT_STATUS_2:
+@@ -2903,13 +2903,22 @@ static int wm8962_set_fll(struct snd_soc_codec *codec, int fll_id, int source,
+ static int wm8962_mute(struct snd_soc_dai *dai, int mute)
+ {
+ 	struct snd_soc_codec *codec = dai->codec;
+-	int val;
++	int val, ret;
+ 
+ 	if (mute)
+-		val = WM8962_DAC_MUTE;
++		val = WM8962_DAC_MUTE | WM8962_DAC_MUTE_ALT;
+ 	else
+ 		val = 0;
+ 
++	/**
++	 * The DAC mute bit is mirrored in two registers, update both to keep
++	 * the register cache consistent.
++	 */
++	ret = snd_soc_update_bits(codec, WM8962_CLASS_D_CONTROL_1,
++				  WM8962_DAC_MUTE_ALT, val);
++	if (ret < 0)
++		return ret;
++
+ 	return snd_soc_update_bits(codec, WM8962_ADC_DAC_CONTROL_1,
+ 				   WM8962_DAC_MUTE, val);
+ }
+diff --git a/sound/soc/codecs/wm8962.h b/sound/soc/codecs/wm8962.h
+index a1a5d5294c19..910aafd09d21 100644
+--- a/sound/soc/codecs/wm8962.h
++++ b/sound/soc/codecs/wm8962.h
+@@ -1954,6 +1954,10 @@
+ #define WM8962_SPKOUTL_ENA_MASK                 0x0040  /* SPKOUTL_ENA */
+ #define WM8962_SPKOUTL_ENA_SHIFT                     6  /* SPKOUTL_ENA */
+ #define WM8962_SPKOUTL_ENA_WIDTH                     1  /* SPKOUTL_ENA */
++#define WM8962_DAC_MUTE_ALT                     0x0010  /* DAC_MUTE */
++#define WM8962_DAC_MUTE_ALT_MASK                0x0010  /* DAC_MUTE */
++#define WM8962_DAC_MUTE_ALT_SHIFT                    4  /* DAC_MUTE */
++#define WM8962_DAC_MUTE_ALT_WIDTH                    1  /* DAC_MUTE */
+ #define WM8962_SPKOUTL_PGA_MUTE                 0x0002  /* SPKOUTL_PGA_MUTE */
+ #define WM8962_SPKOUTL_PGA_MUTE_MASK            0x0002  /* SPKOUTL_PGA_MUTE */
+ #define WM8962_SPKOUTL_PGA_MUTE_SHIFT                1  /* SPKOUTL_PGA_MUTE */
+-- 
+1.9.1
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTjbkxAAoJEHLPjl4ltMKTFYYQAMW1DLov/jNzlc0ZI1xpry3L
-eZkaxmA2M1JZ1R+C3jSA0FBoumIuiZLXAQNa+XG3G5+Loz1ANpvubI0kcjF21Xq+
-6tVE0U9h5qVpRzUi49lrAYcaUuEGdPfLQmEQW8GNOsFqTWbelV2BDF6XOubJOFeT
-s4X5Xr1BItXnkMrogfVw9nZ0/MLRUMqNUcftRfx6E4R+yFJQKanaMEWQAJ0QRE8X
-/L4j4+5svgFs0/giwvtaV7AS7xw9D3sT1uW7TTy5XLP3aI3JgzGhxkwXDSToY2v5
-FeAOT6OM5Rbm6CQX9ZDs/k4J0tAjObGz4XBAa2ZQMRGG4ChmZxHWXHmoDURZIWce
-92YDOyd+vh0rffokmpyY0CZqMxRv87HOj8+yditFOffz1UoIEr8vH5+CxsJKWGXf
-MTW+MP6tO8CZ74sGewfwp9WsQCRZcjxL0EJxUmldqTQNSW3SXzjG0jxrlwZPJYHc
-kjE3xpbhGGWaSvjtJzWGGoZ6t3nBKkwGiuE8qXw3T5MU0Xsap4uRLm7JGKFd7Qos
-76oywIoC4nqgkQ60SBZCauZ0ZwLjCPuTkPFiJl1dNFM4nYUJigwAYSHO+Tfp59pt
-QDrfcOQ/pP80LGrwvEOHURx7CN52A8f513i2rqM8Z/mgAyAqAUqmev1G2GvSt960
-peF+xEGgXDxzv0/dM2zH
-=uGjB
------END PGP SIGNATURE-----
-
---9jxsPFA5p3P2qPhR--
