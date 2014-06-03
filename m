@@ -1,203 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932467AbaFCPGH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 11:06:07 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:43537 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754042AbaFCPGF convert rfc822-to-8bit (ORCPT
+	id S932722AbaFCPI0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 11:08:26 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:58214 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932244AbaFCPIY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 11:06:05 -0400
-Message-ID: <538DE488.3090208@arm.com>
-Date: Tue, 03 Jun 2014 16:06:48 +0100
-From: Sudeep Holla <sudeep.holla@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Tue, 3 Jun 2014 11:08:24 -0400
+Date: Tue, 3 Jun 2014 17:08:21 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kevin Hilman <khilman@linaro.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: Re: [PATCH 3/5] irq_work: Implement remote queueing
+Message-ID: <20140603150819.GC23860@localhost.localdomain>
+References: <1401806420-31018-1-git-send-email-fweisbec@gmail.com>
+ <1401806420-31018-4-git-send-email-fweisbec@gmail.com>
+ <20140603150008.GT30445@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-To: Jassi Brar <jaswinder.singh@linaro.org>
-CC: Sudeep Holla <sudeep.holla@arm.com>, Jassi Brar <jassisinghbrar@gmail.com>,
-        Matt Porter <mporter@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Anna, Suman" <s-anna@ti.com>, Loic Pallardy <loic.pallardy@st.com>,
-        LeyFoon Tan <lftan.linux@gmail.com>,
-        Craig McGeachie <slapdau@yahoo.com.au>,
-        Courtney Cavin <courtney.cavin@sonymobile.com>,
-        Rob Herring <robherring2@gmail.com>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Kumar Gala <galak@codeaurora.org>,
-        "ks.giri@samsung.com" <ks.giri@samsung.com>
-Subject: Re: [PATCHv5 2/4] mailbox: Introduce framework for mailbox
-References: <1400134105-3847-1-git-send-email-jaswinder.singh@linaro.org>	<1400134260-3962-1-git-send-email-jaswinder.singh@linaro.org>	<7978295.UBGxYvcnvH@wuerfel>	<CAJe_Zhe_VFTpPW0sKBsqit347MR7QmEDvzvQTyh1DWr3v991tg@mail.gmail.com>	<20140529154348.GH32082@beef>	<CABb+yY2PiGpqy2uevCFexAKeS4aZxJxZHEDJTRN1SW6VVjBzGQ@mail.gmail.com>	<20140602151454.GK32082@beef>	<CABb+yY3ZYqtT+R0PwZDtpW0O0SsbxTyiYmXaseZHoj4Nr6UBPQ@mail.gmail.com>	<CAPKp9uZTnWCojeZHyvrm=vTuY15dAHiW1CWP18JUfuKU-mfH0Q@mail.gmail.com> <CAJe_ZheA_2PwzFGwx2rdba0oVsAKRnwK02XE-8nPY6K5NKpdTw@mail.gmail.com>
-In-Reply-To: <CAJe_ZheA_2PwzFGwx2rdba0oVsAKRnwK02XE-8nPY6K5NKpdTw@mail.gmail.com>
-X-OriginalArrivalTime: 03 Jun 2014 15:05:54.0832 (UTC) FILETIME=[5127A900:01CF7F3D]
-X-MC-Unique: 114060316055912201
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140603150008.GT30445@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jassi,
+On Tue, Jun 03, 2014 at 05:00:08PM +0200, Peter Zijlstra wrote:
+> On Tue, Jun 03, 2014 at 04:40:18PM +0200, Frederic Weisbecker wrote:
+> > irq work currently only supports local callbacks. However its code
+> > is mostly ready to run remote callbacks and we have some potential user.
+> > 
+> > The full nohz subsystem currently open codes its own remote irq work
+> > on top of the scheduler ipi when it wants a CPU to reevaluate its next
+> > tick. However this ad hoc solution bloats the scheduler IPI.
+> > 
+> > Lets just extend the irq work subsystem to support remote queuing on top
+> > of the generic SMP IPI to handle this kind of user. This shouldn't add
+> > noticeable overhead.
+> > 
+> > Suggested-by: Peter Zijlstra <peterz@infradead.org>
+> > Cc: Andrew Morton <akpm@linux-foundation.org>
+> > Cc: Ingo Molnar <mingo@kernel.org>
+> > Cc: Kevin Hilman <khilman@linaro.org>
+> > Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> 
+> Acked-by: Peter Zijlstra <peterz@infradead.org>
+> 
+> > Cc: Thomas Gleixner <tglx@linutronix.de>
+> > Cc: Viresh Kumar <viresh.kumar@linaro.org>
+> > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> > ---
+> >  include/linux/irq_work.h |  2 ++
+> >  kernel/irq_work.c        | 22 +++++++++++++++++++++-
+> >  kernel/smp.c             |  4 ++++
+> >  3 files changed, 27 insertions(+), 1 deletion(-)
+> 
+> > @@ -198,6 +199,9 @@ void generic_smp_call_function_single_interrupt(void)
+> >  		csd->func(csd->info);
+> >  		csd_unlock(csd);
+> >  	}
+> > +
+> > +	/* Handle irq works queued remotely by irq_work_queue_on() */
+> > +	irq_work_run();
+> >  }
+> 
+> One could possibly extend that comment by stating that we explicitly run
+> the irq_work bits after the function bits, because the function bits are
+> typically synchronous and have people waiting on them, while not so for
+> the irq_works.
+> 
 
-On 03/06/14 11:21, Jassi Brar wrote:
-> On 3 June 2014 15:05, Sudeep Holla <sudeep.holla@arm.com> wrote:
->> Hi Jassi,
->>
->> On Mon, Jun 2, 2014 at 6:11 PM, Jassi Brar <jassisinghbrar@gmail.com> wrote:
->>> On Mon, Jun 2, 2014 at 8:44 PM, Matt Porter <mporter@linaro.org> wrote:
->>>> On Fri, May 30, 2014 at 11:01:55AM +0530, Jassi Brar wrote:
->>>>
->>>>>   Being more specific to your platform, I think you need some server
->>>>> code (mailbox's client) that every driver (like clock, pmu, pinmux
->>>>> etc) registers with to send messages to remote and receive commands
->>>>> from remote ... perhaps by registering some filter to sort out
->>>>> messages for each driver.
->>>>
->>>> Right, and here's where you hit on the problem. This server you mention
->>>> is not a piece of hardware, it would be a software construct. As such, it
->>>> doesn't fit into the DT binding as it exists. It's probably best to
->>>> illustrate in DT syntax.
->>>>
->>>> If I were to represent the hardware relationship in the DT binding now
->>>> it would look like this:
->>>>
->>>> ---
->>>> cpm: mailbox@deadbeef {
->>>>          compatible = "brcm,bcm-cpm-mailbox";
->>>>          reg = <...>;
->>>>          #mbox-cells <1>;
->>>>          interrupts = <...>;
->>>> };
->>>>
->>>> /* clock complex */
->>>> ccu {
->>>>          compatible = "brcm,bcm-foo-ccu";
->>>>          mbox = <&cpm CPM_SYSTEM_CHANNEL>;
->>>>          mbox-names = "system";
->>>>          /* leaving out other mailboxes for brevity */
->>>>          #clock-cells <1>;
->>>>          clock-output-names = "bar",
->>>>                               "baz";
->>>> };
->>>>
->>>> pmu {
->>>>          compatible = "brcm,bcm-foo-pmu"
->>>>          mbox = <&cpm CPM_SYSTEM_CHANNEL>;
->>>>          mbox-names = "system";
->>>> };
->>>>
->>>> pinmux {
->>>>          compatible = "brcm,bcm-foo-pinctrl";
->>>>          mbox = <&cpm CPM_SYSTEM_CHANNEL>;
->>>>          mbox-names = "system";
->>>> };
->>>> ---
->>> Yeah, I too don't think its a good idea.
->>>
->>>
->>>> What we would need to do is completely ignore this information in each
->>>> of the of the client drivers associated with the clock, pmu, and pinmux
->>>> devices. This IPC server would need to be instantiated and get the
->>>> mailbox information from some source. mbox_request_channel() only works
->>>> when the client has an of_node with the mbox-names property present.
->>>> Let's say we follow this model and represent it in DT:
->>>>
->>>> --
->>>> cpm: mailbox@deadbeef {
->>>>          compatible = "brcm,bcm-cpm-mailbox";
->>>>          reg = <...>;
->>>>          #mbox-cells <1>;
->>>>          interrupts = <...>;
->>>> };
->>>>
->>>> cpm_ipc {
->>>>          compatible = "brcm,bcm-cpm-ipc";
->>>>          mbox = <&cpm CPM_SYSTEM_CHANNEL>;
->>>>          mbox-names = "system";
->>>>          /* leaving out other mailboxes for brevity */
->>>> };
-
-I am assuming this is what you referring below: cpm(which is the controller)
-and cpm_ipc(a virtual node referring to the client). If yes that's fine, but is
-this virtual node acceptable ?
-
->>>> ---
->>>>
->>>> This would allow an ipc driver to exclusively own this system channel,
->>>> but now we've invented a binding that doesn't reflect the hardware at
->>>> all. It's describing software so I don't believe the DT maintainers will
->>>> allow this type of construct.
->>>>
->>> Must the server node specify MMIO and an IRQ, to be acceptable? Like ...
->>>
->>> cpm_ipc : cpm@deadbeef {
->>>           compatible = "brcm,bcm-cpm-ipc";
->>>         /*  reg = <0xdeadbeef 0x100>; */
->>>         /*  interrupts = <0 123 4>;  */
->>>           mbox = <&cpm CPM_SYSTEM_CHANNEL>;
->>>           mbox-names = "system";
->>> };
->>>
-
-Sorry got carried away with this example, assumed it to be accidental comment
-and the proposal was to unify both controller and client. Now its clear, ignore
-my noise earlier.
-
->>> cpm_ipc already specifies a hardware resource (mbox) that its driver
->>> needs, I think that should be enough reason. If it were some purely
->>> soft property for the driver like
->>>        mode = "poll";  //or "irq"
->>> then the node wouldn't be justified because that is the job of a
->>> build-time config or run-time module option.
->>>
->>
->> Like Matt, I am also in similar situation where there's a lot of common
->> code necessary to construct/parse IPCs for each of the drivers using the
->> mailbox.
->>
->> As per your suggestion if we have single DT node to specify both the
->> controller and the client, we might still have to pollute this node with
->> software specific compatibles.
->>
-> I am afraid you misunderstood me. I don't suggest single node for
-> mailbox controller and client, and IIUC, neither did Matt. Please note
-> the controller is cpm and client is cpm_ipc.
->
-> BTW, here we at least have a hardware resource to specify in the DT
-> node, there are examples in kernel where the DT nodes are purely
-> virtual. For ex, grep for "linux,spdif-dit". So I think we should be
-> ok.
->
-
-Yes while I agree with you, but will it be acceptable for a generic mailbox
-binding ? I think this is what even Matt mentioned earlier.
-
->> One possible scenario I can think of is that if the mailbox controller is
->> a standard primecell like PL320 used in multiple SoCs, each SoC vendor
->> will develop their own protocol implemented in their firmware. This is true
->> even with single SoC vendor having same IP but changing the protocol to
->> talk to their firmware.
->>
-> Yeah, people have noted that in previous threads.
->
-
-Ok that's good. I tried to follow previous discussions, but couldn't. I followed
-only your last postings(v4) after I started using this driver.
-
->> We will need a way to identify that protocol mechanism.
->> Does it make sense to add that  ? Is that something acceptable ?
->>
->   IMO we can't help it more than _trying_ to write the controller
-> driver as versatile as possible. And still some protocol
-> version/peculiarity could make reuse of the controller driver worse
-> than write a new for the protocol version. Any minor change in
-> behavior could be flagged to controller and client in platform
-> specific way.
-
-Yes I understand that. So I was worried about unifying both controller and
-protocol in one node. The controller driver must just handle raw data and never
-interpret it. Now we just need DT maintainers' view on this virtual DT node.
-
-Regards,
-Sudeep
-
+Good point! I'll expand the comment.
