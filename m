@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932316AbaFCLki (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 07:40:38 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43319 "EHLO
+	id S932586AbaFCLlI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 07:41:08 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43437 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932244AbaFCLke (ORCPT
+	with ESMTP id S932491AbaFCLlF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 07:40:34 -0400
+	Tue, 3 Jun 2014 07:41:05 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Hans de Goede <hdegoede@redhat.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, Tejun Heo <tj@kernel.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 028/138] Input: elantech - fix touchpad initialization on Gigabyte U2442
-Date: Tue,  3 Jun 2014 12:37:54 +0100
-Message-Id: <1401795584-22664-29-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 047/138] workqueue: make rescuer_thread() empty wq->maydays list before exiting
+Date: Tue,  3 Jun 2014 12:38:13 +0100
+Message-Id: <1401795584-22664-48-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
 References: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
@@ -28,123 +27,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
 
-commit 36189cc3cd57ab0f1cd75241f93fe01de928ac06 upstream.
+commit 4d595b866d2c653dc90a492b9973a834eabfa354 upstream.
 
-The hw_version 3 Elantech touchpad on the Gigabyte U2442 does not accept
-0x0b as initialization value for r10, this stand-alone version of the
-driver: http://planet76.com/drivers/elantech/psmouse-elantech-v6.tar.bz2
+After a @pwq is scheduled for emergency execution, other workers may
+consume the affectd work items before the rescuer gets to them.  This
+means that a workqueue many have pwqs queued on @wq->maydays list
+while not having any work item pending or in-flight.  If
+destroy_workqueue() executes in such condition, the rescuer may exit
+without emptying @wq->maydays.
 
-Uses 0x03 which does work, so this means not setting bit 3 of r10 which
-sets: "Enable Real H/W Resolution In Absolute mode"
+This currently doesn't cause any actual harm.  destroy_workqueue() can
+safely destroy all the involved data structures whether @wq->maydays
+is populated or not as nobody access the list once the rescuer exits.
 
-Which will result in half the x and y resolution we get with that bit set,
-so simply not setting it everywhere is not a solution. We've been unable to
-find a way to identify touchpads where setting the bit will fail, so this
-patch uses a dmi based blacklist for this.
+However, this is nasty and makes future development difficult.  Let's
+update rescuer_thread() so that it empties @wq->maydays after seeing
+should_stop to guarantee that the list is empty on rescuer exit.
 
-https://bugzilla.kernel.org/show_bug.cgi?id=61151
+tj: Updated comment and patch description.
 
-Reported-by: Philipp Wolfer <ph.wolfer@gmail.com>
-Tested-by: Philipp Wolfer <ph.wolfer@gmail.com>
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- Documentation/input/elantech.txt |  5 ++++-
- drivers/input/mouse/elantech.c   | 26 +++++++++++++++++++++++++-
- drivers/input/mouse/elantech.h   |  1 +
- 3 files changed, 30 insertions(+), 2 deletions(-)
+ kernel/workqueue.c | 21 ++++++++++++++++-----
+ 1 file changed, 16 insertions(+), 5 deletions(-)
 
-diff --git a/Documentation/input/elantech.txt b/Documentation/input/elantech.txt
-index 5602eb71ad5d..e1ae127ed099 100644
---- a/Documentation/input/elantech.txt
-+++ b/Documentation/input/elantech.txt
-@@ -504,9 +504,12 @@ byte 5:
- * reg_10
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index a8b0147f3a89..2b48572be9b3 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -2369,6 +2369,7 @@ static int rescuer_thread(void *__rescuer)
+ 	struct worker *rescuer = __rescuer;
+ 	struct workqueue_struct *wq = rescuer->rescue_wq;
+ 	struct list_head *scheduled = &rescuer->scheduled;
++	bool should_stop;
  
-    bit   7   6   5   4   3   2   1   0
--         0   0   0   0   0   0   0   A
-+         0   0   0   0   R   F   T   A
+ 	set_user_nice(current, RESCUER_NICE_LEVEL);
  
-          A: 1 = enable absolute tracking
-+         T: 1 = enable two finger mode auto correct
-+         F: 1 = disable ABS Position Filter
-+         R: 1 = enable real hardware resolution
+@@ -2380,11 +2381,15 @@ static int rescuer_thread(void *__rescuer)
+ repeat:
+ 	set_current_state(TASK_INTERRUPTIBLE);
  
- 6.2 Native absolute mode 6 byte packet format
-     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-diff --git a/drivers/input/mouse/elantech.c b/drivers/input/mouse/elantech.c
-index 6cd2d2d995ae..01fbea59398a 100644
---- a/drivers/input/mouse/elantech.c
-+++ b/drivers/input/mouse/elantech.c
-@@ -11,6 +11,7 @@
-  */
+-	if (kthread_should_stop()) {
+-		__set_current_state(TASK_RUNNING);
+-		rescuer->task->flags &= ~PF_WQ_WORKER;
+-		return 0;
+-	}
++	/*
++	 * By the time the rescuer is requested to stop, the workqueue
++	 * shouldn't have any work pending, but @wq->maydays may still have
++	 * pwq(s) queued.  This can happen by non-rescuer workers consuming
++	 * all the work items before the rescuer got to them.  Go through
++	 * @wq->maydays processing before acting on should_stop so that the
++	 * list is always empty on exit.
++	 */
++	should_stop = kthread_should_stop();
  
- #include <linux/delay.h>
-+#include <linux/dmi.h>
- #include <linux/slab.h>
- #include <linux/module.h>
- #include <linux/input.h>
-@@ -831,7 +832,11 @@ static int elantech_set_absolute_mode(struct psmouse *psmouse)
- 		break;
+ 	/* see whether any pwq is asking for help */
+ 	spin_lock_irq(&wq_mayday_lock);
+@@ -2430,6 +2435,12 @@ repeat:
  
- 	case 3:
--		etd->reg_10 = 0x0b;
-+		if (etd->set_hw_resolution)
-+			etd->reg_10 = 0x0b;
-+		else
-+			etd->reg_10 = 0x03;
+ 	spin_unlock_irq(&wq_mayday_lock);
+ 
++	if (should_stop) {
++		__set_current_state(TASK_RUNNING);
++		rescuer->task->flags &= ~PF_WQ_WORKER;
++		return 0;
++	}
 +
- 		if (elantech_write_reg(psmouse, 0x10, etd->reg_10))
- 			rc = -1;
- 
-@@ -1331,6 +1336,22 @@ static int elantech_reconnect(struct psmouse *psmouse)
- }
- 
- /*
-+ * Some hw_version 3 models go into error state when we try to set bit 3 of r10
-+ */
-+static const struct dmi_system_id no_hw_res_dmi_table[] = {
-+#if defined(CONFIG_DMI) && defined(CONFIG_X86)
-+	{
-+		/* Gigabyte U2442 */
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "GIGABYTE"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "U2442"),
-+		},
-+	},
-+#endif
-+	{ }
-+};
-+
-+/*
-  * determine hardware version and set some properties according to it.
-  */
- static int elantech_set_properties(struct elantech_data *etd)
-@@ -1388,6 +1409,9 @@ static int elantech_set_properties(struct elantech_data *etd)
- 	 */
- 	etd->crc_enabled = ((etd->fw_version & 0x4000) == 0x4000);
- 
-+	/* Enable real hardware resolution on hw_version 3 ? */
-+	etd->set_hw_resolution = !dmi_check_system(no_hw_res_dmi_table);
-+
- 	return 0;
- }
- 
-diff --git a/drivers/input/mouse/elantech.h b/drivers/input/mouse/elantech.h
-index 036a04abaef7..9e0e2a1f340d 100644
---- a/drivers/input/mouse/elantech.h
-+++ b/drivers/input/mouse/elantech.h
-@@ -130,6 +130,7 @@ struct elantech_data {
- 	bool jumpy_cursor;
- 	bool reports_pressure;
- 	bool crc_enabled;
-+	bool set_hw_resolution;
- 	unsigned char hw_version;
- 	unsigned int fw_version;
- 	unsigned int single_finger_reports;
+ 	/* rescuers should never participate in concurrency management */
+ 	WARN_ON_ONCE(!(rescuer->flags & WORKER_NOT_RUNNING));
+ 	schedule();
 -- 
 1.9.1
 
