@@ -1,78 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964794AbaFCUCl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 16:02:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3858 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933084AbaFCUCj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 16:02:39 -0400
-Date: Tue, 3 Jun 2014 22:01:25 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Clark Williams <williams@redhat.com>
-Subject: Re: [BUG] signal: sighand unprotected when accessed by /proc
-Message-ID: <20140603200125.GB1105@redhat.com>
-References: <20140603130233.658a6a3c@gandalf.local.home> <20140603172632.GA27956@redhat.com> <CA+55aFzT5CGv_T60voAqR+4PfiMmJmsDZLid2DZ4=+X8uvF+ig@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFzT5CGv_T60voAqR+4PfiMmJmsDZLid2DZ4=+X8uvF+ig@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S933811AbaFCUDr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 16:03:47 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52350 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933011AbaFCUDq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 16:03:46 -0400
+Message-ID: <1401826083.2412.17.camel@deadeye.wl.decadent.org.uk>
+Subject: [PATCH linux-firmware] README: Update the submission address to
+ linux-firmware@kernel.org
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, linux-firmware@kernel.org
+Date: Tue, 03 Jun 2014 21:08:03 +0100
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-4ET3mth3tUCg0UcvyrIc"
+X-Mailer: Evolution 3.12.2-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 192.168.4.249
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/03, Linus Torvalds wrote:
->
-> On Tue, Jun 3, 2014 at 10:26 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> >
-> > looks like, SLAB_DESTROY_BY_RCU logic is broken?
->
-> I haven't looked at the code yet, but SLAB_DESTROY_BY_RCU can be
-> subtle and very dangerous.
->
-> The danger is that the *slab* itself is free'd by RCU, but individual
-> allocations can (and do) get re-used FOR THE SAME OBJECT TYPE without
-> waiting for RCU!
->
-> This is subtle. It means that most people who think that "it's free'd
-> by RCU" get it wrong. Because individual allocations really aren't at
-> all RCU-free'd, it's just that the underlying memory is guaranteed to
-> not change type or be entirely thrown away until after a RCU grace
-> period.
 
-Yes, exactly. And unless you use current->sighand (which is obviously
-stable) you need lock_task_sighand() which relies on ->siglock initialized
-by sighand_ctor().
+--=-4ET3mth3tUCg0UcvyrIc
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-> Without looking at the code, it sounds like somebody may doing things
-> to "sighand->lock->wait_list" that they shouldn't do. We've had cases
-> like that before, and most of them have been changed to *not* use
-> SLAB_DESTROY_BY_RCU, and instead make each individual allocation be
-> RCU-free'd (which is a lot simpler to think about, because then you
-> don't have the whole re-use issue).
+This new alias will reach all maintainers.
 
-Sure, we only need to change __cleanup_sighand() to use call_rcu().
-But I am not sure this makes sense, I mean, I do not think this can
-make something more simple/clear.
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+I've just cleared out my patch queue, applied this change and pushed.
+If I get any later submissions with only individual addresses, I'll
+request re-submission to linux-firmware@kernel.org
 
-> And this could easily be an RT issue, if the RT code does some
-> re-initialization of the rtmutex that replaces the spinlock we have.
+Ben.
 
-Unlikely... this should be done by sighand_ctor() anyway.
+ README | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-I'll try to recheck rt_mutex_unlock() tomorrow. _Perhaps_ rcu_read_unlock()
-should be shifted from lock_task_sighand() to unlock_task_sighand() to
-ensure that rt_mutex_unlock() does nothihg with this memory after it
-makes another lock/unlock possible.
+diff --git a/README b/README
+index 0ed6d79..f2ed92e 100644
+--- a/README
++++ b/README
+@@ -13,8 +13,7 @@ been permitted to redistribute under separate cover.
+=20
+ To submit firmware to this repository, please send either a git binary
+ diff or preferably a git pull request to:
+-      David Woodhouse <dwmw2@infradead.org>
+-      Ben Hutchings <ben@decadent.org.uk>
++      linux-firmware@kernel.org
+ and also cc: to related mailing lists.
+=20
+ Your commit should include an update to the WHENCE file clearly
 
-But if we need this (currently I do not think so), this doesn't depend on
-SLAB_DESTROY_BY_RCU. And, at first glance, in this case rcu_read_unlock_special()
-might be wrong too.
+--=20
+Ben Hutchings
+If more than one person is responsible for a bug, no one is at fault.
 
-Oleg.
+--=-4ET3mth3tUCg0UcvyrIc
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIVAwUAU44rKOe/yOyVhhEJAQrN9g//UVfZ6ecCaM/5bPetv3KiXYjlTlqhsYhC
+fP4v8734lmKHqnIlfrDzRE1LISvoVKI2NijknYkfmpFGyG9mk+AcgXygxI04AKvV
+zQwyNjoMGXO7SH02MYNPBch2zl8F4YTmG7B+zSRAx7Y/PLCcelB0AYp0MFBg+hhJ
+nYZfwZfR5kVRf7v4y2LhDoCsNRH32PC6CPKwnJSZfiDdhAW483VcBLxhfJmuuG+p
+4+gVR5cbR64WWVF8rJFyU/0jyPlmBOfrhV42r+Cl+eauu0mVSH7PMFuZmzroSYqG
+oHcUJNUXKJBhctBO2cpLKUYpzDB4K4piY676ZP59UEopuYHz7G7kOaZhTkKCNu6N
+KbVF02bhVv88jxv+MvP1ybeT+6kDKUM4O59WaBfQJ6Hrp2BOnJ2POTrgIItqMk7f
+k/Y8yfdCYLSqR2+Pta1S8SKNbtqX7XK4oxNpUIhqcZmujaT6hyfc40V4+TneHK4L
+i3GVoOOGEWDl7YYWqP9zRnPFpFxrCQm7xvo3M2qllt6/BQQ+GykjtLsWEARMrHPQ
+bSHJu5It1GWrRXvnXzZDj7gBPNX7YmFh6NiIzA8JLHGr0TzFWuP9xlQRg8G3+Ygw
+Y1X6hAXzTBY8hRxw0niFF7zW7GjtXmAZMuS9Pt30Z/KQZDZ35d9L8W77EetsSnST
+NorudZYeZGg=
+=fsW3
+-----END PGP SIGNATURE-----
+
+--=-4ET3mth3tUCg0UcvyrIc--
