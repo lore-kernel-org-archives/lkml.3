@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754811AbaFCLrO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 07:47:14 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43891 "EHLO
+	id S933105AbaFCLrk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 07:47:40 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43886 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932954AbaFCLnB (ORCPT
+	with ESMTP id S932943AbaFCLm7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 07:43:01 -0400
+	Tue, 3 Jun 2014 07:42:59 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Eric Dumazet <edumazet@google.com>,
+Cc: Li RongQing <roy.qing.li@gmail.com>,
         "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 125/138] net-gro: reset skb->truesize in napi_reuse_skb()
-Date: Tue,  3 Jun 2014 12:39:31 +0100
-Message-Id: <1401795584-22664-126-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 124/138] ipv4: initialise the itag variable in __mkroute_input
+Date: Tue,  3 Jun 2014 12:39:30 +0100
+Message-Id: <1401795584-22664-125-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
 References: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
@@ -28,42 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Li RongQing <roy.qing.li@gmail.com>
 
-commit e33d0ba8047b049c9262fdb1fcafb93cb52ceceb upstream.
+commit fbdc0ad095c0a299e9abf5d8ac8f58374951149a upstream.
 
-Recycling skb always had been very tough...
+the value of itag is a random value from stack, and may not be initiated by
+fib_validate_source, which called fib_combine_itag if CONFIG_IP_ROUTE_CLASSID
+is not set
 
-This time it appears GRO layer can accumulate skb->truesize
-adjustments made by drivers when they attach a fragment to skb.
+This will make the cached dst uncertainty
 
-skb_gro_receive() can only subtract from skb->truesize the used part
-of a fragment.
-
-I spotted this problem seeing TcpExtPruneCalled and
-TcpExtTCPRcvCollapsed that were unexpected with a recent kernel, where
-TCP receive window should be sized properly to accept traffic coming
-from a driver not overshooting skb->truesize.
-
-Signed-off-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: Li RongQing <roy.qing.li@gmail.com>
+Acked-by: Alexei Starovoitov <ast@plumgrid.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/core/dev.c | 1 +
- 1 file changed, 1 insertion(+)
+ net/ipv4/route.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/net/core/dev.c b/net/core/dev.c
-index ab07f35d0f38..363e06e58c81 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -3962,6 +3962,7 @@ static void napi_reuse_skb(struct napi_struct *napi, struct sk_buff *skb)
- 	skb->vlan_tci = 0;
- 	skb->dev = napi->dev;
- 	skb->skb_iif = 0;
-+	skb->truesize = SKB_TRUESIZE(skb_end_offset(skb));
+diff --git a/net/ipv4/route.c b/net/ipv4/route.c
+index 06329ca4787d..68091be23be2 100644
+--- a/net/ipv4/route.c
++++ b/net/ipv4/route.c
+@@ -1527,7 +1527,7 @@ static int __mkroute_input(struct sk_buff *skb,
+ 	struct in_device *out_dev;
+ 	unsigned int flags = 0;
+ 	bool do_cache;
+-	u32 itag;
++	u32 itag = 0;
  
- 	napi->skb = skb;
- }
+ 	/* get a working reference to the output device */
+ 	out_dev = __in_dev_get_rcu(FIB_RES_DEV(*res));
 -- 
 1.9.1
 
