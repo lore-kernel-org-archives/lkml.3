@@ -1,53 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754090AbaFCNSm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 09:18:42 -0400
-Received: from mx08-00178001.pphosted.com ([91.207.212.93]:51493 "EHLO
-	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751557AbaFCNSk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 09:18:40 -0400
-From: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
-To: Russell King <linux@arm.linux.org.uk>
-Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Stephen Warren <swarren@nvidia.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Soren Brinkmann <soren.brinkmann@xilinx.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kernel@stlinux.com, Lee Jones <lee.jones@linaro.org>,
-        Gabriel Fernandez <gabriel.fernandez@linaro.org>
-Subject: [PATCH] ARM: multi_v7_defconfig: add ST Keyscan driver
-Date: Tue,  3 Jun 2014 15:16:51 +0200
-Message-Id: <1401801411-6158-1-git-send-email-gabriel.fernandez@linaro.org>
-X-Mailer: git-send-email 1.9.1
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
- definitions=2014-06-02_03:2014-06-02,2014-06-02,1970-01-01 signatures=0
+	id S1754192AbaFCNUe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 09:20:34 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41015 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752785AbaFCNUd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 09:20:33 -0400
+Date: Tue, 3 Jun 2014 15:20:29 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
+        Tejun Heo <tj@kernel.org>, Vladimir Davydov <vdavydov@parallels.com>,
+        cgroups@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 03/10] mm: memcontrol: retry reclaim for oom-disabled and
+ __GFP_NOFAIL charges
+Message-ID: <20140603132029.GI1321@dhcp22.suse.cz>
+References: <1401380162-24121-1-git-send-email-hannes@cmpxchg.org>
+ <1401380162-24121-4-git-send-email-hannes@cmpxchg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1401380162-24121-4-git-send-email-hannes@cmpxchg.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds KEYBOARD_ST_KEYSCAN config
+On Thu 29-05-14 12:15:55, Johannes Weiner wrote:
+> There is no reason why oom-disabled and __GFP_NOFAIL charges should
+> try to reclaim only once when every other charge tries several times
+> before giving up.  Make them all retry the same number of times.
 
-Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
-Acked-by: Lee Jones <lee.jones@linaro.org>
----
- arch/arm/configs/multi_v7_defconfig | 1 +
- 1 file changed, 1 insertion(+)
+I have mentioned that already with the last iteration of the patch.
+This can make THP charges stall unnecessarily when the allocation could
+fall back to single page charges.
+MEM_CGROUP_RECLAIM_RETRIES * SWAP_CLUSTER_MAX + CHARGE_BATCH * CPUS
+reclaimed pages will not help for huge pages so multiple reclaims is
+just pointless waisting of time.
 
-diff --git a/arch/arm/configs/multi_v7_defconfig b/arch/arm/configs/multi_v7_defconfig
-index 19dbddb..c123e35 100644
---- a/arch/arm/configs/multi_v7_defconfig
-+++ b/arch/arm/configs/multi_v7_defconfig
-@@ -155,6 +155,7 @@ CONFIG_INPUT_EVDEV=y
- CONFIG_KEYBOARD_GPIO=y
- CONFIG_KEYBOARD_TEGRA=y
- CONFIG_KEYBOARD_SPEAR=y
-+CONFIG_KEYBOARD_ST_KEYSCAN=y
- CONFIG_KEYBOARD_CROS_EC=y
- CONFIG_MOUSE_PS2_ELANTECH=y
- CONFIG_INPUT_MISC=y
+I think you should just move the next patch in the series up and simply make
+the thp charge __GFP_NORETRY:
+
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index b3a6deed66d5..ba822c27a55b 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -3703,10 +3703,13 @@ int mem_cgroup_charge_anon(struct page *page,
+ 		nr_pages <<= compound_order(page);
+ 		VM_BUG_ON_PAGE(!PageTransHuge(page), page);
+ 		/*
+-		 * Never OOM-kill a process for a huge page.  The
+-		 * fault handler will fall back to regular pages.
++		 * Never OOM-kill a process for a huge page. Also do not
++		 * reclaim memcg too much because it wouldn't help the
++		 * huge page charge anyway.
++		 * The fault handler will fall back to regular pages.
+ 		 */
+ 		oom = false;
++		gfp_mask |= __GFP_NORETRY;
+ 	}
+ 
+ 	memcg = mem_cgroup_try_charge_mm(mm, gfp_mask, nr_pages, oom);
+
+
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> ---
+>  mm/memcontrol.c | 8 ++++----
+>  1 file changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 46b3e37542ad..e8d5075c081f 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -2567,7 +2567,7 @@ static int mem_cgroup_try_charge(struct mem_cgroup *memcg,
+>  				 bool oom)
+>  {
+>  	unsigned int batch = max(CHARGE_BATCH, nr_pages);
+> -	int nr_oom_retries = MEM_CGROUP_RECLAIM_RETRIES;
+> +	int nr_retries = MEM_CGROUP_RECLAIM_RETRIES;
+>  	struct mem_cgroup *mem_over_limit;
+>  	struct res_counter *fail_res;
+>  	unsigned long nr_reclaimed;
+> @@ -2639,6 +2639,9 @@ retry:
+>  	if (mem_cgroup_wait_acct_move(mem_over_limit))
+>  		goto retry;
+>  
+> +	if (nr_retries--)
+> +		goto retry;
+> +
+>  	if (gfp_mask & __GFP_NOFAIL)
+>  		goto bypass;
+>  
+> @@ -2648,9 +2651,6 @@ retry:
+>  	if (!oom)
+>  		goto nomem;
+>  
+> -	if (nr_oom_retries--)
+> -		goto retry;
+> -
+>  	mem_cgroup_oom(mem_over_limit, gfp_mask, get_order(batch));
+>  nomem:
+>  	if (!(gfp_mask & __GFP_NOFAIL))
+> -- 
+> 1.9.3
+> 
+
 -- 
-1.9.1
-
+Michal Hocko
+SUSE Labs
