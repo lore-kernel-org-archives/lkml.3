@@ -1,66 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932147AbaFCAMJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 20:12:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43365 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752020AbaFCAMH (ORCPT
+	id S932204AbaFCAMP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 20:12:15 -0400
+Received: from smtprelay0154.hostedemail.com ([216.40.44.154]:33730 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753207AbaFCAML (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 20:12:07 -0400
-Date: Mon, 2 Jun 2014 17:15:44 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Sune =?iso-8859-1?Q?M=F8lgaard?= <sune@molgaard.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] Summarizing deprecations
-Message-ID: <20140603001544.GB17821@kroah.com>
-References: <53893895.3040202@molgaard.org>
- <20140531022151.GA32348@kroah.com>
- <538944E2.2070706@molgaard.org>
- <20140531033711.GA1697@kroah.com>
- <538D04D4.1060906@molgaard.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <538D04D4.1060906@molgaard.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Mon, 2 Jun 2014 20:12:11 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::::::::::::::::,RULES_HIT:41:355:379:541:599:800:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1593:1594:1711:1714:1730:1747:1777:1792:2198:2199:2393:2559:2562:282
+X-HE-Tag: map25_2f8847cb46648
+X-Filterd-Recvd-Size: 2081
+Message-ID: <1401754325.7323.50.camel@joe-AO725>
+Subject: Re: [PATCH RFC 1/2] MAINTAINERS: Add "R:" designated-reviewers tag
+From: Joe Perches <joe@perches.com>
+To: josh@joshtriplett.org
+Cc: Dave Chinner <david@fromorbit.com>, Steven Rostedt <rostedt@goodmis.org>,
+        paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
+        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
+        fweisbec@gmail.com, oleg@redhat.com, sbw@mit.edu
+Date: Mon, 02 Jun 2014 17:12:05 -0700
+In-Reply-To: <20140602235915.GB14801@cloud>
+References: <20140602174837.GA13257@cloud>
+	 <1401731968.7323.4.camel@joe-AO725>
+	 <20140602181658.GX22231@linux.vnet.ibm.com>
+	 <1401734669.7323.20.camel@joe-AO725>
+	 <20140602145020.400d4e0c@gandalf.local.home> <20140602185504.GA13569@cloud>
+	 <1401735917.7323.23.camel@joe-AO725> <20140602190951.GA13648@cloud>
+	 <1401736666.7323.25.camel@joe-AO725> <20140602231949.GV14410@dastard>
+	 <20140602235915.GB14801@cloud>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 03, 2014 at 01:12:20AM +0200, Sune Mølgaard wrote:
-> Hi again, and thank you still for interacting,
-> 
-> Greg KH wrote:
-> > What specific drivers are they?  Why are the drivers out of the tree?
-> > I'll gladly add them to the drivers/staging/ directory as long as the
-> > license of them allows me to do so.  That way api changes will happen
-> > automatically for them.
-> 
-> For at least one of the manufacturers, I have already pointed them in
-> your direction with regards to the previously mentioned project. They
-> lamented that they would love to take you up on your offer, but that
-> their legal department was less than enthusiastic, based on fear of
-> repercussions from their chip suppliers.
-> 
-> This particular company could be a candidate for positive nudging from
-> stronger entities than myself, as just one guy.
+On Mon, 2014-06-02 at 16:59 -0700, josh@joshtriplett.org wrote:
+> Acked-by and Reviewed-by mean two different things (Reviewed-by being a
+> superset of Acked-by), and the difference is not "I've applied and
+> tested this"; that's Tested-by.
 
-Feel free to follow up with me about this company and contacts
-privately, if you feel I can help out there.
+I think the standards for every signature tag other
+than Signed-off-by: should be _much_ higher than they
+are and that most all uses of "Acked-by:" and
+"Reviewed-by:" tags are for vanity.
 
-> It stands to reason, though, that there may not only be legal obstacles
-> to supporting OSS drivers, but also that corporate resources allocated
-> to keeping their "monstrosity" current may be severely lacking.
+"Tested-by:" tags would be more helpful if the test
+cases that were used were somehow sent along with the
+signature.
 
-Take away the legal issues (their side, not ours), and then merge the
-driver into the kernel and then all of those maintenance issues go
-away for the most part, allowing a single developer to just baby-sit the
-driver to ensure nothing goes wrong on newer kernel releases.
 
-That's the Linux kernel development model, it's worked really well for
-the past 20+ years, creating something that works on more hardware than
-any other operating system ever has, so we must be doing something right
-here with the model :)
-
-greg k-h
