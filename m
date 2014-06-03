@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755876AbaFCMXm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 08:23:42 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43221 "EHLO
+	id S1754030AbaFCLkF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 07:40:05 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43204 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754033AbaFCLkG (ORCPT
+	with ESMTP id S1753928AbaFCLkB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 07:40:06 -0400
+	Tue, 3 Jun 2014 07:40:01 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Egbert Eich <eich@suse.de>, Jani Nikula <jani.nikula@linux.intel.com>,
-        Jani Nikula <jani.nikula@intel.com>,
+Cc: Johan Hedberg <johan.hedberg@intel.com>,
+        Marcel Holtmann <marcel@holtmann.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 008/138] drm/i915: Break encoder->crtc link separately in intel_sanitize_crtc()
-Date: Tue,  3 Jun 2014 12:37:34 +0100
-Message-Id: <1401795584-22664-9-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 006/138] Bluetooth: Fix redundant encryption request for reauthentication
+Date: Tue,  3 Jun 2014 12:37:32 +0100
+Message-Id: <1401795584-22664-7-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
 References: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
@@ -28,118 +28,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Egbert Eich <eich@suse.de>
+From: Johan Hedberg <johan.hedberg@intel.com>
 
-commit 7f1950fbb989e8fc5463b307e062b4529d51c862 upstream.
+commit 09da1f3463eb81d59685df723b1c5950b7570340 upstream.
 
-Depending on the SDVO output_flags SDVO may have multiple connectors
-linking to the same encoder (in intel_connector->encoder->base).
-Only one of those connectors should be active (ie link to the encoder
-thru drm_connector->encoder).
-If intel_connector_break_all_links() is called from intel_sanitize_crtc()
-we may break the crtc connection of an encoder thru an inactive connector
-in which case intel_connector_break_all_links() will not be called again
-for the active connector if this happens to come later in the list due to:
-    if (connector->encoder->base.crtc != &crtc->base)
-                                 continue;
-in intel_sanitize_crtc().
-This will however leave the drm_connector->encoder linkage for this
-active connector in place. Subsequently this will cause multiple
-warnings in intel_connector_check_state() to trigger and the driver
-will eventually die in drm_encoder_crtc_ok() (because of crtc == NULL).
+When we're performing reauthentication (in order to elevate the
+security level from an unauthenticated key to an authenticated one) we
+do not need to issue any encryption command once authentication
+completes. Since the trigger for the encryption HCI command is the
+ENCRYPT_PEND flag this flag should not be set in this scenario.
+Instead, the REAUTH_PEND flag takes care of all necessary steps for
+reauthentication.
 
-To avoid this remove intel_connector_break_all_links() and move its
-code to its two calling functions: intel_sanitize_crtc() and
-intel_sanitize_encoder().
-This allows to implement the link breaking more flexibly matching
-the surrounding code: ie. in intel_sanitize_crtc() we can break the
-crtc link separatly after the links to the encoders have been
-broken which avoids above problem.
-
-This regression has been introduced in:
-
-commit 24929352481f085c5f85d4d4cbc919ddf106d381
-Author: Daniel Vetter <daniel.vetter@ffwll.ch>
-Date:   Mon Jul 2 20:28:59 2012 +0200
-
-    drm/i915: read out the modeset hw state at load and resume time
-
-so goes back to the very beginning of the modeset rework.
-
-v2: This patch takes care of the concernes voiced by Chris Wilson
-and Daniel Vetter that only breaking links if the drm_connector
-is linked to an encoder may miss some links.
-v3: move all encoder handling to encoder loop as suggested by
-Daniel Vetter.
-
-Signed-off-by: Egbert Eich <eich@suse.de>
-Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Jani Nikula <jani.nikula@linux.intel.com>
-Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
+Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/i915/intel_display.c | 26 ++++++++++++++------------
- 1 file changed, 14 insertions(+), 12 deletions(-)
+ net/bluetooth/hci_conn.c | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
-index 91cbf6fcfb4f..d6bce476ed26 100644
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -9682,15 +9682,6 @@ void intel_modeset_init(struct drm_device *dev)
- 	intel_disable_fbc(dev);
- }
+diff --git a/net/bluetooth/hci_conn.c b/net/bluetooth/hci_conn.c
+index 6c7f36379722..4c51c055d00f 100644
+--- a/net/bluetooth/hci_conn.c
++++ b/net/bluetooth/hci_conn.c
+@@ -652,14 +652,17 @@ static int hci_conn_auth(struct hci_conn *conn, __u8 sec_level, __u8 auth_type)
+ 	if (!test_and_set_bit(HCI_CONN_AUTH_PEND, &conn->flags)) {
+ 		struct hci_cp_auth_requested cp;
  
--static void
--intel_connector_break_all_links(struct intel_connector *connector)
--{
--	connector->base.dpms = DRM_MODE_DPMS_OFF;
--	connector->base.encoder = NULL;
--	connector->encoder->connectors_active = false;
--	connector->encoder->base.crtc = NULL;
--}
+-		/* encrypt must be pending if auth is also pending */
+-		set_bit(HCI_CONN_ENCRYPT_PEND, &conn->flags);
 -
- static void intel_enable_pipe_a(struct drm_device *dev)
- {
- 	struct intel_connector *connector;
-@@ -9772,8 +9763,17 @@ static void intel_sanitize_crtc(struct intel_crtc *crtc)
- 			if (connector->encoder->base.crtc != &crtc->base)
- 				continue;
- 
--			intel_connector_break_all_links(connector);
-+			connector->base.dpms = DRM_MODE_DPMS_OFF;
-+			connector->base.encoder = NULL;
- 		}
-+		/* multiple connectors may have the same encoder:
-+		 *  handle them and break crtc link separately */
-+		list_for_each_entry(connector, &dev->mode_config.connector_list,
-+				    base.head)
-+			if (connector->encoder->base.crtc == &crtc->base) {
-+				connector->encoder->base.crtc = NULL;
-+				connector->encoder->connectors_active = false;
-+			}
- 
- 		WARN_ON(crtc->active);
- 		crtc->base.enabled = false;
-@@ -9844,6 +9844,8 @@ static void intel_sanitize_encoder(struct intel_encoder *encoder)
- 				      drm_get_encoder_name(&encoder->base));
- 			encoder->disable(encoder);
- 		}
-+		encoder->base.crtc = NULL;
-+		encoder->connectors_active = false;
- 
- 		/* Inconsistent output/port/pipe state happens presumably due to
- 		 * a bug in one of the get_hw_state functions. Or someplace else
-@@ -9854,8 +9856,8 @@ static void intel_sanitize_encoder(struct intel_encoder *encoder)
- 				    base.head) {
- 			if (connector->encoder != encoder)
- 				continue;
--
--			intel_connector_break_all_links(connector);
-+			connector->base.dpms = DRM_MODE_DPMS_OFF;
-+			connector->base.encoder = NULL;
- 		}
+ 		cp.handle = cpu_to_le16(conn->handle);
+ 		hci_send_cmd(conn->hdev, HCI_OP_AUTH_REQUESTED,
+ 			     sizeof(cp), &cp);
++
++		/* If we're already encrypted set the REAUTH_PEND flag,
++		 * otherwise set the ENCRYPT_PEND.
++		 */
+ 		if (conn->key_type != 0xff)
+ 			set_bit(HCI_CONN_REAUTH_PEND, &conn->flags);
++		else
++			set_bit(HCI_CONN_ENCRYPT_PEND, &conn->flags);
  	}
- 	/* Enabled encoders without active connectors will be fixed in
+ 
+ 	return 0;
 -- 
 1.9.1
 
