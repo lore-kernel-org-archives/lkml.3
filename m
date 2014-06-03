@@ -1,82 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932697AbaFCO50 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 10:57:26 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:33946 "EHLO zene.cmpxchg.org"
+	id S1754637AbaFCO56 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 10:57:58 -0400
+Received: from imap.thunk.org ([74.207.234.97]:48022 "EHLO imap.thunk.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751642AbaFCO5Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 10:57:25 -0400
-Date: Tue, 3 Jun 2014 10:57:10 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: John Stultz <john.stultz@linaro.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
+	id S1753680AbaFCO54 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 10:57:56 -0400
+Date: Tue, 3 Jun 2014 10:57:49 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Christian Stroetmann <stroetmann@ontolinux.com>
+Cc: Dave Chinner <david@fromorbit.com>, Daniel Phillips <daniel@phunq.net>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@sr71.net>,
-        Rik van Riel <riel@redhat.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Neil Brown <neilb@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
-        Jan Kara <jack@suse.cz>, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Michel Lespinasse <walken@google.com>,
-        Minchan Kim <minchan@kernel.org>, Keith Packard <keithp@keithp.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH 0/4] Volatile Ranges (v14 - madvise reborn edition!)
-Message-ID: <20140603145710.GQ2878@cmpxchg.org>
-References: <1398806483-19122-1-git-send-email-john.stultz@linaro.org>
- <536BBB08.3000503@linaro.org>
+        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Subject: Re: [RFC][PATCH 1/2] Add a super operation for writeback
+Message-ID: <20140603145749.GB12890@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Christian Stroetmann <stroetmann@ontolinux.com>,
+	Dave Chinner <david@fromorbit.com>,
+	Daniel Phillips <daniel@phunq.net>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+References: <538B9DEE.20800@phunq.net>
+ <538C360F.7020901@ontolinux.com>
+ <20140603033940.GB14410@dastard>
+ <538D5D78.6040102@ontolinux.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <536BBB08.3000503@linaro.org>
+In-Reply-To: <538D5D78.6040102@ontolinux.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 08, 2014 at 10:12:40AM -0700, John Stultz wrote:
-> On 04/29/2014 02:21 PM, John Stultz wrote:
-> > Another few weeks and another volatile ranges patchset...
-> >
-> > After getting the sense that the a major objection to the earlier
-> > patches was the introduction of a new syscall (and its somewhat
-> > strange dual length/purged-bit return values), I spent some time
-> > trying to rework the vma manipulations so we can be we won't fail
-> > mid-way through changing volatility (basically making it atomic).
-> > I think I have it working, and thus, there is no longer the
-> > need for a new syscall, and we can go back to using madvise()
-> > to set and unset pages as volatile.
-> 
-> Johannes: To get some feedback, maybe I'll needle you directly here a
-> bit. :)
-> 
-> Does moving this interface to madvise help reduce your objections?  I
-> feel like your cleaning-the-dirty-bit idea didn't work out, but I was
-> hoping that by reworking the vma manipulations to be atomic, we could
-> move to madvise and still avoid the new syscall that you seemed bothered
-> by. But I've not really heard much from you recently so I worry your
-> concerns on this were actually elsewhere, and I'm just churning the
-> patch needlessly.
+On Tue, Jun 03, 2014 at 07:30:32AM +0200, Christian Stroetmann wrote:
+> In general, I do not believe that the complexity problems of soft updates,
+> atomic writes, and related techniques can be solved by hand/manually. So my
+> suggestion is to automatically handle the complexity problem of e.g.
+> dependancies in a way that is comparable to a(n on-the-fly) file-system
+> compiler so to say that works on a very large dependancy graph (having
+> several billions of graph vertices actually). And at this point an
+> abstraction like it is given with Featherstitch helps to feed and control
+> this special FS compiler.
 
-My objection was not the syscall.
+Well, if you want to try to implement something like this, go for it!
 
->From a reclaim perspective, using the dirty state to denote whether a
-swap-backed page needs writeback before reclaim is quite natural and I
-much prefer Minchan's changes to the reclaim code over yours.
+I'd be very curious to see how well (a) how much CPU overhead it takes
+to crunch on a dependency graph with billions of vertices, and (b) how
+easily can it be to express these dependencies and maintainable such a
+dependency language would be.  Sounds like a great research topic, and
+I'll note the Call For Papers for FAST 2015 is out, and if you can
+solve these problems, it would make a great FAST 2015 submission:
 
->From an interface point of view, I would prefer the simplicity of
-cleaning dirty bits to invalidate pages, and a default of zero-filling
-invalidated pages instead of sending SIGBUS.  This also is quite
-natural when you think of anon/shmem mappings as cache pages on top of
-/dev/zero (see mmap_zero() and shmem_zero_setup()).  And it translates
-well to tmpfs.
+https://www.usenix.org/conference/fast15/call-for-papers
 
-At the same time, I acknowledge that there are usecases that want
-SIGBUS delivery for more than just convenience in order to implement
-userspace fault handling, and this is the only place where I see a
-real divergence in actual functionality from Minchan's code.
+Cheers,
 
-That, however, truly is a separate virtual memory feature.  Would it
-be possible for you to take MADV_FREE and MADV_REVIVE as a base and
-implement an madvise op that switches the no-page behavior of a VMA
-from zero-filling to SIGBUS delivery?
+					- Ted
