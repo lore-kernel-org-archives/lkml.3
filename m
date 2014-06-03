@@ -1,67 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751995AbaFCVqf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 17:46:35 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:17830 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750734AbaFCVqe (ORCPT
+	id S1754521AbaFCVsR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 17:48:17 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:49272 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754169AbaFCVsQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 17:46:34 -0400
-Date: Tue, 3 Jun 2014 17:46:31 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Dave Chinner <david@fromorbit.com>, josh@joshtriplett.org,
-        Joe Perches <joe@perches.com>, paulmck@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+	Tue, 3 Jun 2014 17:48:16 -0400
+Date: Tue, 3 Jun 2014 14:48:09 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Joe Perches <joe@perches.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
         dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, dhowells@redhat.com, edumazet@google.com,
-        dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
-        sbw@mit.edu
-Subject: Re: [PATCH RFC 1/2] MAINTAINERS: Add "R:" designated-reviewers tag
-Message-ID: <20140603174631.2de89352@gandalf.local.home>
-In-Reply-To: <20140603205253.GC25483@thunk.org>
-References: <20140602185504.GA13569@cloud>
-	<1401735917.7323.23.camel@joe-AO725>
-	<20140602190951.GA13648@cloud>
-	<1401736666.7323.25.camel@joe-AO725>
-	<20140602231949.GV14410@dastard>
-	<20140602235915.GB14801@cloud>
-	<20140603011125.GW14410@dastard>
-	<20140602213045.26219ddb@gandalf.local.home>
-	<20140603071654.GC14410@dastard>
-	<20140603134347.6e39f946@gandalf.local.home>
-	<20140603205253.GC25483@thunk.org>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
+        fweisbec@gmail.com, oleg@redhat.com, sbw@mit.edu
+Subject: Re: [PATCH v2 RFC 1/3] MAINTAINERS: Add "R:" designated-reviewers tag
+Message-ID: <20140603214809.GX22231@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1401809736-12023-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1401822187.18833.24.camel@joe-AO725>
+ <20140603201202.GW22231@linux.vnet.ibm.com>
+ <1401826567.22133.2.camel@joe-AO725>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1401826567.22133.2.camel@joe-AO725>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14060321-9332-0000-0000-000000FC4B6F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 3 Jun 2014 16:52:53 -0400
-Theodore Ts'o <tytso@mit.edu> wrote:
+On Tue, Jun 03, 2014 at 01:16:07PM -0700, Joe Perches wrote:
+> On Tue, 2014-06-03 at 13:12 -0700, Paul E. McKenney wrote:
+> > On Tue, Jun 03, 2014 at 12:03:07PM -0700, Joe Perches wrote:
+> > > On Tue, 2014-06-03 at 08:35 -0700, Paul E. McKenney wrote:
+> > > > Paul Walmsley also noted the need for patch
+> > > > submitters to know who the key reviewers are and suggested adding an
+> > > > "R:" tag to the MAINTAINERS file to record this information on a
+> > > > per-subsystem basis.
+> > > []
+> > > > diff --git a/MAINTAINERS b/MAINTAINERS
+> > > []
+> > > > @@ -70,6 +70,8 @@ Descriptions of section entries:
+> > > >  
+> > > >  	P: Person (obsolete)
+> > > >  	M: Mail patches to: FullName <address@domain>
+> > > > +	R: Designated reviewer, who should be CCed on patches,
+> > > > +	   format: FullName <address@domain>
+> > > >  	L: Mailing list that is relevant to this area
+> > > >  	W: Web-page with status/info
+> > > >  	Q: Patchwork web based patch tracking system site
+> > > 
+> > > Perhaps the M: and R: roles should be more fully
+> > > described here.
+> > > 
+> > > The R: entry description doesn't need commas.
+> > > 
+> > > Maybe something like:
+> > > 	M: Maintainer (to:) FullName <address@domain>
+> > > 	R: Reviewer   (cc:) FullName <address@domain>
+> > 
+> > This is arguably better organized, but I need to keep my focus on adding
+> > the designated reviewer.  I am not in a position to undertake a rewrite
+> > of the MAINTAINER file preamble at this point.
+> 
+> That's silly, you're adding the "R" entry.
+> Add a proper description for it.
 
+I will take another look at R: in a few days and possibly wordsmith it.
 
-> The important thing to note here is that we do not have consensus
-> across all subsystems what Reviewed-by: means, and I think that's OK.
-> The Reviewed-by: is mostly of interest to the maintainer before the
-> patch is submitted to mainline.  The value of keeping it in the git
-> commit logs after the fact seems to be a bit variable, although if
-> there are companies blindly using it as a performance metric and this
-> is driving down the quality of reviews, perhaps one could even argue
-> that including these tags in the git commit logs is actually adding
-> negative value.  But I don't really care about that issue, because
-> like most maintainers, I know the reviewers by reputation, and whether
-> someone actually says "you can add my Reviewed-by" is actually not so
-> important as their comments on the patch, one way or another.
+> > > You might as well send the get_maintainer update with this
+> > > series too.
+> > 
+> > Interesting...  Who is the maintainer for get_maintainer?  ;-)
+> 
+> Some numbskull just signed up for that.
+> 
+> He suggests you keep all the patches that add
+> support for this "R: reviewer" feature together.
 
-I prefer the Reviewed-by tags in the git commit. If something is
-screwed up in a commit, I can blame the reviewers just as much as I can
-blame the author :-)
+My reluctance is due to the fact that this will change how newbies
+submit patches.  But if we get a few Acked-by or Reviewed-by responses
+from high-level maintainers (Linus, Greg, Ingo, Thomas, Peter, Ted,
+Dave, Ben, ...), I will of course be happy to queue it.
 
+							Thanx, Paul
 
--- Steve
