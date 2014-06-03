@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932377AbaFCLkr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 07:40:47 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43360 "EHLO
+	id S1755791AbaFCMQZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 08:16:25 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43383 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932322AbaFCLkn (ORCPT
+	with ESMTP id S932322AbaFCLks (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 07:40:43 -0400
+	Tue, 3 Jun 2014 07:40:48 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Kieran Clancy <clancy.kieran@gmail.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+Cc: Gerd Hoffmann <kraxel@redhat.com>, Dave Airlie <airlied@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 034/138] ACPI / EC: Clear stale EC events on Samsung systems
-Date: Tue,  3 Jun 2014 12:38:00 +0100
-Message-Id: <1401795584-22664-35-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 038/138] drm: cirrus: add power management support
+Date: Tue,  3 Jun 2014 12:38:04 +0100
+Message-Id: <1401795584-22664-39-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
 References: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
@@ -28,178 +27,109 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kieran Clancy <clancy.kieran@gmail.com>
+From: Gerd Hoffmann <kraxel@redhat.com>
 
-commit ad332c8a45330d170bb38b95209de449b31cd1b4 upstream.
+commit 2f1e800799bf478494cec3573cd63eb34ca89c9d upstream.
 
-A number of Samsung notebooks (530Uxx/535Uxx/540Uxx/550Pxx/900Xxx/etc)
-continue to log events during sleep (lid open/close, AC plug/unplug,
-battery level change), which accumulate in the EC until a buffer fills.
-After the buffer is full (tests suggest it holds 8 events), GPEs stop
-being triggered for new events. This state persists on wake or even on
-power cycle, and prevents new events from being registered until the EC
-is manually polled.
+cirrus kms driver lacks power management support, thus
+the vga display doesn't work any more after S3 resume.
 
-This is the root cause of a number of bugs, including AC not being
-detected properly, lid close not triggering suspend, and low ambient
-light not triggering the keyboard backlight. The bug also seemed to be
-responsible for performance issues on at least one user's machine.
+Fix this by adding suspend and resume functions.
+Also make the mode_set function unblank the screen.
 
-Juan Manuel Cabo found the cause of bug and the workaround of polling
-the EC manually on wake.
-
-The loop which clears the stale events is based on an earlier patch by
-Lan Tianyu (see referenced attachment).
-
-This patch:
- - Adds a function acpi_ec_clear() which polls the EC for stale _Q
-   events at most ACPI_EC_CLEAR_MAX (currently 100) times. A warning is
-   logged if this limit is reached.
- - Adds a flag EC_FLAGS_CLEAR_ON_RESUME which is set to 1 if the DMI
-   system vendor is Samsung. This check could be replaced by several
-   more specific DMI vendor/product pairs, but it's likely that the bug
-   affects more Samsung products than just the five series mentioned
-   above. Further, it should not be harmful to run acpi_ec_clear() on
-   systems without the bug; it will return immediately after finding no
-   data waiting.
- - Runs acpi_ec_clear() on initialisation (boot), from acpi_ec_add()
- - Runs acpi_ec_clear() on wake, from acpi_ec_unblock_transactions()
-
-References: https://bugzilla.kernel.org/show_bug.cgi?id=44161
-References: https://bugzilla.kernel.org/show_bug.cgi?id=45461
-References: https://bugzilla.kernel.org/show_bug.cgi?id=57271
-References: https://bugzilla.kernel.org/attachment.cgi?id=126801
-Suggested-by: Juan Manuel Cabo <juanmanuel.cabo@gmail.com>
-Signed-off-by: Kieran Clancy <clancy.kieran@gmail.com>
-Reviewed-by: Lan Tianyu <tianyu.lan@intel.com>
-Reviewed-by: Dennis Jansen <dennis.jansen@web.de>
-Tested-by: Kieran Clancy <clancy.kieran@gmail.com>
-Tested-by: Juan Manuel Cabo <juanmanuel.cabo@gmail.com>
-Tested-by: Dennis Jansen <dennis.jansen@web.de>
-Tested-by: Maurizio D'Addona <mauritiusdadd@gmail.com>
-Tested-by: San Zamoyski <san@plusnet.pl>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Gerd Hoffmann <kraxel@redhat.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/acpi/ec.c | 64 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 64 insertions(+)
+ drivers/gpu/drm/cirrus/cirrus_drv.c  | 42 ++++++++++++++++++++++++++++++++++++
+ drivers/gpu/drm/cirrus/cirrus_mode.c |  3 +++
+ 2 files changed, 45 insertions(+)
 
-diff --git a/drivers/acpi/ec.c b/drivers/acpi/ec.c
-index c69ac1463294..e053d158efd6 100644
---- a/drivers/acpi/ec.c
-+++ b/drivers/acpi/ec.c
-@@ -70,6 +70,8 @@ enum ec_command {
- #define ACPI_EC_DELAY		500	/* Wait 500ms max. during EC ops */
- #define ACPI_EC_UDELAY_GLK	1000	/* Wait 1ms max. to get global lock */
- #define ACPI_EC_MSI_UDELAY	550	/* Wait 550us for MSI EC */
-+#define ACPI_EC_CLEAR_MAX	100	/* Maximum number of events to query
-+					 * when trying to clear the EC */
+diff --git a/drivers/gpu/drm/cirrus/cirrus_drv.c b/drivers/gpu/drm/cirrus/cirrus_drv.c
+index 8ecb601152ef..64bfc235021a 100644
+--- a/drivers/gpu/drm/cirrus/cirrus_drv.c
++++ b/drivers/gpu/drm/cirrus/cirrus_drv.c
+@@ -11,6 +11,7 @@
+ #include <linux/module.h>
+ #include <linux/console.h>
+ #include <drm/drmP.h>
++#include <drm/drm_crtc_helper.h>
  
- enum {
- 	EC_FLAGS_QUERY_PENDING,		/* Query is pending */
-@@ -123,6 +125,7 @@ EXPORT_SYMBOL(first_ec);
- static int EC_FLAGS_MSI; /* Out-of-spec MSI controller */
- static int EC_FLAGS_VALIDATE_ECDT; /* ASUStec ECDTs need to be validated */
- static int EC_FLAGS_SKIP_DSDT_SCAN; /* Not all BIOS survive early DSDT scan */
-+static int EC_FLAGS_CLEAR_ON_RESUME; /* Needs acpi_ec_clear() on boot/resume */
+ #include "cirrus_drv.h"
  
- /* --------------------------------------------------------------------------
-                              Transaction Management
-@@ -468,6 +471,29 @@ acpi_handle ec_get_handle(void)
+@@ -75,6 +76,41 @@ static void cirrus_pci_remove(struct pci_dev *pdev)
+ 	drm_put_dev(dev);
+ }
  
- EXPORT_SYMBOL(ec_get_handle);
- 
-+static int acpi_ec_query_unlocked(struct acpi_ec *ec, u8 *data);
-+
-+/*
-+ * Clears stale _Q events that might have accumulated in the EC.
-+ * Run with locked ec mutex.
-+ */
-+static void acpi_ec_clear(struct acpi_ec *ec)
++static int cirrus_pm_suspend(struct device *dev)
 +{
-+	int i, status;
-+	u8 value = 0;
++	struct pci_dev *pdev = to_pci_dev(dev);
++	struct drm_device *drm_dev = pci_get_drvdata(pdev);
++	struct cirrus_device *cdev = drm_dev->dev_private;
 +
-+	for (i = 0; i < ACPI_EC_CLEAR_MAX; i++) {
-+		status = acpi_ec_query_unlocked(ec, &value);
-+		if (status || !value)
-+			break;
++	drm_kms_helper_poll_disable(drm_dev);
++
++	if (cdev->mode_info.gfbdev) {
++		console_lock();
++		fb_set_suspend(cdev->mode_info.gfbdev->helper.fbdev, 1);
++		console_unlock();
 +	}
 +
-+	if (unlikely(i == ACPI_EC_CLEAR_MAX))
-+		pr_warn("Warning: Maximum of %d stale EC events cleared\n", i);
-+	else
-+		pr_info("%d stale EC events cleared\n", i);
-+}
-+
- void acpi_ec_block_transactions(void)
- {
- 	struct acpi_ec *ec = first_ec;
-@@ -491,6 +517,10 @@ void acpi_ec_unblock_transactions(void)
- 	mutex_lock(&ec->mutex);
- 	/* Allow transactions to be carried out again */
- 	clear_bit(EC_FLAGS_BLOCKED, &ec->flags);
-+
-+	if (EC_FLAGS_CLEAR_ON_RESUME)
-+		acpi_ec_clear(ec);
-+
- 	mutex_unlock(&ec->mutex);
- }
- 
-@@ -848,6 +878,13 @@ static int acpi_ec_add(struct acpi_device *device)
- 
- 	/* EC is fully operational, allow queries */
- 	clear_bit(EC_FLAGS_QUERY_PENDING, &ec->flags);
-+
-+	/* Clear stale _Q events if hardware might require that */
-+	if (EC_FLAGS_CLEAR_ON_RESUME) {
-+		mutex_lock(&ec->mutex);
-+		acpi_ec_clear(ec);
-+		mutex_unlock(&ec->mutex);
-+	}
- 	return ret;
- }
- 
-@@ -949,6 +986,30 @@ static int ec_enlarge_storm_threshold(const struct dmi_system_id *id)
- 	return 0;
- }
- 
-+/*
-+ * On some hardware it is necessary to clear events accumulated by the EC during
-+ * sleep. These ECs stop reporting GPEs until they are manually polled, if too
-+ * many events are accumulated. (e.g. Samsung Series 5/9 notebooks)
-+ *
-+ * https://bugzilla.kernel.org/show_bug.cgi?id=44161
-+ *
-+ * Ideally, the EC should also be instructed NOT to accumulate events during
-+ * sleep (which Windows seems to do somehow), but the interface to control this
-+ * behaviour is not known at this time.
-+ *
-+ * Models known to be affected are Samsung 530Uxx/535Uxx/540Uxx/550Pxx/900Xxx,
-+ * however it is very likely that other Samsung models are affected.
-+ *
-+ * On systems which don't accumulate _Q events during sleep, this extra check
-+ * should be harmless.
-+ */
-+static int ec_clear_on_resume(const struct dmi_system_id *id)
-+{
-+	pr_debug("Detected system needing EC poll on resume.\n");
-+	EC_FLAGS_CLEAR_ON_RESUME = 1;
 +	return 0;
 +}
 +
- static struct dmi_system_id ec_dmi_table[] __initdata = {
- 	{
- 	ec_skip_dsdt_scan, "Compal JFL92", {
-@@ -992,6 +1053,9 @@ static struct dmi_system_id ec_dmi_table[] __initdata = {
- 	ec_validate_ecdt, "ASUS hardware", {
- 	DMI_MATCH(DMI_SYS_VENDOR, "ASUSTek Computer Inc."),
- 	DMI_MATCH(DMI_PRODUCT_NAME, "L4R"),}, NULL},
-+	{
-+	ec_clear_on_resume, "Samsung hardware", {
-+	DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD.")}, NULL},
- 	{},
++static int cirrus_pm_resume(struct device *dev)
++{
++	struct pci_dev *pdev = to_pci_dev(dev);
++	struct drm_device *drm_dev = pci_get_drvdata(pdev);
++	struct cirrus_device *cdev = drm_dev->dev_private;
++
++	drm_helper_resume_force_mode(drm_dev);
++
++	if (cdev->mode_info.gfbdev) {
++		console_lock();
++		fb_set_suspend(cdev->mode_info.gfbdev->helper.fbdev, 0);
++		console_unlock();
++	}
++
++	drm_kms_helper_poll_enable(drm_dev);
++	return 0;
++}
++
+ static const struct file_operations cirrus_driver_fops = {
+ 	.owner = THIS_MODULE,
+ 	.open = drm_open,
+@@ -105,11 +141,17 @@ static struct drm_driver driver = {
+ 	.dumb_destroy = cirrus_dumb_destroy,
  };
+ 
++static const struct dev_pm_ops cirrus_pm_ops = {
++	SET_SYSTEM_SLEEP_PM_OPS(cirrus_pm_suspend,
++				cirrus_pm_resume)
++};
++
+ static struct pci_driver cirrus_pci_driver = {
+ 	.name = DRIVER_NAME,
+ 	.id_table = pciidlist,
+ 	.probe = cirrus_pci_probe,
+ 	.remove = cirrus_pci_remove,
++	.driver.pm = &cirrus_pm_ops,
+ };
+ 
+ static int __init cirrus_init(void)
+diff --git a/drivers/gpu/drm/cirrus/cirrus_mode.c b/drivers/gpu/drm/cirrus/cirrus_mode.c
+index 379a47ea99f6..b86f68d8b726 100644
+--- a/drivers/gpu/drm/cirrus/cirrus_mode.c
++++ b/drivers/gpu/drm/cirrus/cirrus_mode.c
+@@ -308,6 +308,9 @@ static int cirrus_crtc_mode_set(struct drm_crtc *crtc,
+ 
+ 	WREG_HDR(hdr);
+ 	cirrus_crtc_do_set_base(crtc, old_fb, x, y, 0);
++
++	/* Unblank (needed on S3 resume, vgabios doesn't do it then) */
++	outb(0x20, 0x3c0);
+ 	return 0;
+ }
  
 -- 
 1.9.1
