@@ -1,27 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932119AbaFCLk3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 07:40:29 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43282 "EHLO
+	id S932658AbaFCMTG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 08:19:06 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43303 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752374AbaFCLkY (ORCPT
+	with ESMTP id S1754271AbaFCLk3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 07:40:24 -0400
+	Tue, 3 Jun 2014 07:40:29 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Michael Welling <mwelling@ieee.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: AceLan Kao <acelan.kao@canonical.com>, Jiri Kosina <jkosina@suse.cz>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 021/138] tty: serial: 8250_core.c Bug fix for Exar chips.
-Date: Tue,  3 Jun 2014 12:37:47 +0100
-Message-Id: <1401795584-22664-22-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 025/138] HID: usbhid: quirk for Synaptics HD touchscreen
+Date: Tue,  3 Jun 2014 12:37:51 +0100
+Message-Id: <1401795584-22664-26-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
 References: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,35 +27,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Welling <mwelling@ieee.org>
+From: AceLan Kao <acelan.kao@canonical.com>
 
-commit b790f210fe8423eff881b2a8a93ba5dbc45534d0 upstream.
+commit d8e2e7581d2521910398c4c80d7a3b78e84da7d5 upstream.
 
-The sleep function was updated to put the serial port to sleep only when necessary.
-This appears to resolve the errant behavior of the driver as described in
-Kernel Bug 61961 – "My Exar Corp. XR17C/D152 Dual PCI UART modem does not
-work with 3.8.0".
+Add Synaptics HD touchscreen(06cb:0ac3) to no init report quirk.
 
-Signed-off-by: Michael Welling <mwelling@ieee.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: AceLan Kao <acelan.kao@canonical.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/tty/serial/8250/8250_core.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/hid/hid-ids.h           | 1 +
+ drivers/hid/usbhid/hid-quirks.c | 1 +
+ 2 files changed, 2 insertions(+)
 
-diff --git a/drivers/tty/serial/8250/8250_core.c b/drivers/tty/serial/8250/8250_core.c
-index 9d5c6610083d..d8c06a3d391e 100644
---- a/drivers/tty/serial/8250/8250_core.c
-+++ b/drivers/tty/serial/8250/8250_core.c
-@@ -555,7 +555,7 @@ static void serial8250_set_sleep(struct uart_8250_port *p, int sleep)
- 	 */
- 	if ((p->port.type == PORT_XR17V35X) ||
- 	   (p->port.type == PORT_XR17D15X)) {
--		serial_out(p, UART_EXAR_SLEEP, 0xff);
-+		serial_out(p, UART_EXAR_SLEEP, sleep ? 0xff : 0);
- 		return;
- 	}
+diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+index 7c8591895c66..4a71fd269c5b 100644
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -807,6 +807,7 @@
+ #define USB_DEVICE_ID_SYNAPTICS_DPAD	0x0013
+ #define USB_DEVICE_ID_SYNAPTICS_LTS1	0x0af8
+ #define USB_DEVICE_ID_SYNAPTICS_LTS2	0x1d10
++#define USB_DEVICE_ID_SYNAPTICS_HD	0x0ac3
  
+ #define USB_VENDOR_ID_THINGM		0x27b8
+ #define USB_DEVICE_ID_BLINK1		0x01ed
+diff --git a/drivers/hid/usbhid/hid-quirks.c b/drivers/hid/usbhid/hid-quirks.c
+index 0db9a67278ba..c0c0fcf69688 100644
+--- a/drivers/hid/usbhid/hid-quirks.c
++++ b/drivers/hid/usbhid/hid-quirks.c
+@@ -115,6 +115,7 @@ static const struct hid_blacklist {
+ 	{ USB_VENDOR_ID_SYNAPTICS, USB_DEVICE_ID_SYNAPTICS_LTS1, HID_QUIRK_NO_INIT_REPORTS },
+ 	{ USB_VENDOR_ID_SYNAPTICS, USB_DEVICE_ID_SYNAPTICS_LTS2, HID_QUIRK_NO_INIT_REPORTS },
+ 	{ USB_VENDOR_ID_SIS, USB_DEVICE_ID_SIS_TS, HID_QUIRK_NO_INIT_REPORTS },
++	{ USB_VENDOR_ID_SYNAPTICS, USB_DEVICE_ID_SYNAPTICS_HD, HID_QUIRK_NO_INIT_REPORTS },
+ 
+ 	{ 0, 0 }
+ };
 -- 
 1.9.1
 
