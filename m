@@ -1,81 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755320AbaFCM1V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 08:27:21 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:46702 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753617AbaFCM1T (ORCPT
+	id S1753300AbaFCMcA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 08:32:00 -0400
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:41281 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751233AbaFCMb6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 08:27:19 -0400
-Date: Tue, 3 Jun 2014 14:27:02 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Yuyang Du <yuyang.du@intel.com>
-Cc: mingo@redhat.com, rafael.j.wysocki@intel.com, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, arjan.van.de.ven@intel.com,
-        len.brown@intel.com, alan.cox@intel.com, mark.gross@intel.com,
-        pjt@google.com, bsegall@google.com, morten.rasmussen@arm.com,
-        vincent.guittot@linaro.org, rajeev.d.muralidhar@intel.com,
-        vishwesh.m.rudramuni@intel.com, nicole.chalhoub@intel.com,
-        ajaya.durg@intel.com, harinarayanan.seshadri@intel.com,
-        jacob.jun.pan@linux.intel.com, fengguang.wu@intel.com
-Subject: Re: [RFC PATCH 13/16 v3] Intercept wakeup/fork/exec load balancing
-Message-ID: <20140603122702.GM30445@twins.programming.kicks-ass.net>
-References: <1401431772-14320-1-git-send-email-yuyang.du@intel.com>
- <1401431772-14320-14-git-send-email-yuyang.du@intel.com>
+	Tue, 3 Jun 2014 08:31:58 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="gK07V1xo3z7kEGDf"
-Content-Disposition: inline
-In-Reply-To: <1401431772-14320-14-git-send-email-yuyang.du@intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20140603111532.GW11096@twins.programming.kicks-ass.net>
+References: <1400860385-14555-1-git-send-email-vincent.guittot@linaro.org>
+ <1400860385-14555-11-git-send-email-vincent.guittot@linaro.org>
+ <20140529095024.GF11074@laptop.programming.kicks-ass.net> <CAKfTPtCHhxyugMOCeS0hZoEXWhgRec4uOBexZ2aB2A+Eycgi8w@mail.gmail.com>
+ <20140530062937.GA11096@twins.programming.kicks-ass.net> <CAKfTPtBXddNFXDuL5YNNtcW7e1Un=LqHU8bgaejJwPObSGoBhg@mail.gmail.com>
+ <20140603111532.GW11096@twins.programming.kicks-ass.net>
+From: Vincent Guittot <vincent.guittot@linaro.org>
+Date: Tue, 3 Jun 2014 14:31:38 +0200
+Message-ID: <CAKfTPtBRkWY1hTBqd9cQKetFbWEVvJVo-wKUz9MN-ZfZLq4TuA@mail.gmail.com>
+Subject: Re: [PATCH v2 10/11] sched: move cfs task on a CPU with higher capacity
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Mike Galbraith <efault@gmx.de>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 3 June 2014 13:15, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Mon, Jun 02, 2014 at 07:06:44PM +0200, Vincent Guittot wrote:
+>> > Could you detail those conditions? FWIW those make excellent Changelog
+>> > material.
+>>
+>> I have looked back into my tests and traces:
+>>
+>> In a 1st test, the capacity of the CPU was still above half default
+>> value (power=538) unlike what i remembered. So it's some what "normal"
+>> to keep the task on CPU0 which also handles IRQ because sg_capacity
+>> still returns 1.
+>
+> OK, so I suspect that once we move to utilization based capacity stuff
+> we'll do the migration IF the task indeed requires more cpu than can be
+> provided by the reduced, one, right?
 
---gK07V1xo3z7kEGDf
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The current version of the patchset only checks if the capacity of a
+CPU has significantly reduced that we should look for another CPU. But
+we effectively could also add compare the remaining capacity with the
+task load
 
-On Fri, May 30, 2014 at 02:36:09PM +0800, Yuyang Du wrote:
-> We intercept load balancing to contain the load and load balancing in
-> the consolidated CPUs according to our consolidating mechanism.
->=20
-> In wakeup/fork/exec load balaning, when to find the idlest sched_group,
-> we first try to find the consolidated group
+>
+>> In a 2nd test,the main task runs (most of the time) on CPU0 whereas
+>> the max power of the latter is only 623 and the cpu_power goes below
+>> 512 (power=330) during the use case. So the sg_capacity of CPU0 is
+>> null but the main task still stays on CPU0.
+>> The use case (scp transfer) is made of a long running task (ssh) and a
+>> periodic short task (scp). ssh runs on CPU0 and scp runs each 6ms on
+>> CPU1. The newly idle load balance on CPU1 doesn't pull the long
+>> running task although sg_capacity is null because of
+>> sd->nr_balance_failed is never incremented and load_balance doesn't
+>> trig an active load_balance. When an idle balance occurs in the middle
+>> of the newly idle balance, the ssh long task migrates on CPU1 but as
+>> soon as it sleeps and wakes up, it goes back on CPU0 because of the
+>> wake affine which migrates it back on CPU0 (issue solved by patch 09).
+>
+> OK, so there's two problems here, right?
+>  1) we don't migrate away from cpu0
+>  2) if we do, we get pulled back.
+>
+> And patch 9 solves 2, so maybe enhance its changelog to mention this
+> slightly more explicit.
+>
+> Which leaves us with 1.. interesting problem. I'm just not sure
+> endlessly kicking a low capacity cpu is the right fix for that.
 
-Anything with intercept in is a complete non-starter. You still fully
-duplicate the logic.
+What prevent us to migrate the task directly is the fact that
+nr_balance_failed is not incremented for newly idle and it's the only
+condition for active migration (except asym feature)
 
-You really didn't get anything I said, did you?
+We could add a additional test in need_active_balance for newly_idle
+load balance. Something like:
 
-Please as to go back to square 1 and read again.
+if ((sd->flags & SD_SHARE_PKG_RESOURCES)
+ && (senv->rc_rq->cpu_power_orig * 100) > (env->src_rq->group_power *
+env->sd->imbalance_pct))
+return 1;
 
-So take a step back and try and explain what and why you're doing
-things, also try and look at what other people are doing. If I see
-another patch from you within two weeks I'll simply delete it, there's
-no way you can read up and fix everything in such a short time.
-
---gK07V1xo3z7kEGDf
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTjb8WAAoJEHZH4aRLwOS6oOsQAKI26ZCB9FRgjaYeVHLoa0+z
-iap1EvqblYx19ew9ph7mzJlLHwUCcPWaD9ZiSzSYDnhFfZ7TR8mqfvDyzGnFkIbD
-zpGVoKZRG22NerM9udYrsuNZihXo8WqMh5FbtX3baGoLDWgdIKOb/e+LQhaiy1Gq
-WJJNwhjKEYT5tzNvTWXPd8sTKbL9Nvb6r7xhSUGBnBXDbRxa3Q5vryk2+nrDqgwr
-KvalXbVH9Jm/HB6VVUHa6r/V6Q/LJfz8BkW9UqC9kgXXfQhYl+OmADLQC8UMGJcH
-tH/O/scwJDBtCyj0SUSDbGrT8/mHpf6SpSah3kWvm75WR9FhKJpkxjbb1wOIq5OD
-neMmV4sUT0wjtdP+XXAb1Tfr2iMUu4TegIwl752tplO5fJpey0sjnklXAu7mnaSM
-TqQ5TZGZVbWgwxv0E7PTaEoQsKHdRw1SECL0KN8cweSzDWGn8XdWcX3+U/seKgF2
-uo0P/ZhdoP+rmNbAsEi8OHpb1OkFGIrZZIQILzSIa2Yq6lvFtRfYBVyVDMK3834A
-36rEY1+PqkNwZ1BPmpcw4Sl8SZ6lBBDTZroBe3UXF522t9OiBqWg9LELjPJVqotW
-HevL2Mf+k8yGIJOW1KB5i95QZFa+XSdD6PYGfFPrFVt1Jr7iXGjFwbm8Flyikr22
-qT+gEZLw59s1AU6Zy+07
-=FJAB
------END PGP SIGNATURE-----
-
---gK07V1xo3z7kEGDf--
+>
+>
