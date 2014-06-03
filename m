@@ -1,69 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755013AbaFCMEU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 08:04:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57758 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751362AbaFCMER (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 08:04:17 -0400
-Message-ID: <538DB9B4.2070607@redhat.com>
-Date: Tue, 03 Jun 2014 14:04:04 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Gleb Natapov <gleb@kernel.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] arch: x86: kvm: x86.c:  Cleaning up uninitialized variables
-References: <1401577506-4112-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-In-Reply-To: <1401577506-4112-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+	id S1755069AbaFCMEv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 08:04:51 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43565 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932692AbaFCLli (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 07:41:38 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Alex Williamson <alex.williamson@redhat.com>,
+        Joerg Roedel <joro@8bytes.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 071/138] iommu/amd: Fix interrupt remapping for aliased devices
+Date: Tue,  3 Jun 2014 12:38:37 +0100
+Message-Id: <1401795584-22664-72-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
+References: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 01/06/2014 01:05, Rickard Strandqvist ha scritto:
-> There is a risk that the variable will be used without being initialized.
-> 
-> This was largely found by using a static code analysis program called cppcheck.
-> 
-> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+3.11.10.11 -stable review patch.  If anyone has any objections, please let me know.
 
-No, there isn't.  The full context looks like this:
+------------------
 
-        longmode = is_long_mode(vcpu) && cs_l == 1;
-        if (!longmode) {
-                param = ((u64)kvm_register_read(vcpu, VCPU_REGS_RDX) << 32) |
-                        (kvm_register_read(vcpu, VCPU_REGS_RAX) & 0xffffffff);
-                ingpa = ((u64)kvm_register_read(vcpu, VCPU_REGS_RBX) << 32) |
-                        (kvm_register_read(vcpu, VCPU_REGS_RCX) & 0xffffffff);
-                outgpa = ((u64)kvm_register_read(vcpu, VCPU_REGS_RDI) << 32) |
-                        (kvm_register_read(vcpu, VCPU_REGS_RSI) & 0xffffffff);
-        }
-#ifdef CONFIG_X86_64
-        else {
-                param = kvm_register_read(vcpu, VCPU_REGS_RCX);
-                ingpa = kvm_register_read(vcpu, VCPU_REGS_RDX);
-                outgpa = kvm_register_read(vcpu, VCPU_REGS_R8);
-        }
-#endif
+From: Alex Williamson <alex.williamson@redhat.com>
 
-and longmode must be zero if !CONFIG_X86_64:
+commit e028a9e6b8a637af09ac4114083280df4a7045f1 upstream.
 
-static inline int is_long_mode(struct kvm_vcpu *vcpu)
-{
-#ifdef CONFIG_X86_64
-        return vcpu->arch.efer & EFER_LMA;
-#else
-        return 0;
-#endif
-}
+An apparent cut and paste error prevents the correct flags from being
+set on the alias device resulting in MSI on conventional PCI devices
+failing to work.  This also produces error events from the IOMMU like:
 
-So it's the static checker that cannot understand #ifdef well
-enough and ought to be fixed.
+AMD-Vi: Event logged [INVALID_DEVICE_REQUEST device=00:14.4 address=0x000000fdf8000000 flags=0x0a00]
 
-Paolo
+Where 14.4 is a PCIe-to-PCI bridge with a device behind it trying to
+use MSI interrupts.
+
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+Signed-off-by: Joerg Roedel <joro@8bytes.org>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/iommu/amd_iommu.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
+index 6dc659426a51..b89025108ba8 100644
+--- a/drivers/iommu/amd_iommu.c
++++ b/drivers/iommu/amd_iommu.c
+@@ -3997,7 +3997,7 @@ static struct irq_remap_table *get_irq_table(u16 devid, bool ioapic)
+ 	iommu_flush_dte(iommu, devid);
+ 	if (devid != alias) {
+ 		irq_lookup_table[alias] = table;
+-		set_dte_irq_entry(devid, table);
++		set_dte_irq_entry(alias, table);
+ 		iommu_flush_dte(iommu, alias);
+ 	}
+ 
+-- 
+1.9.1
+
