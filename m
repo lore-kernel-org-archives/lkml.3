@@ -1,102 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751665AbaFCB1O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 21:27:14 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:9543 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750767AbaFCB1N (ORCPT
+	id S1752370AbaFCBaX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 21:30:23 -0400
+Received: from mail-ve0-f169.google.com ([209.85.128.169]:42559 "EHLO
+	mail-ve0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750767AbaFCBaW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 21:27:13 -0400
-Message-ID: <538D245C.5090101@huawei.com>
-Date: Tue, 3 Jun 2014 09:26:52 +0800
-From: Liu hua <sdu.liu@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Mon, 2 Jun 2014 21:30:22 -0400
 MIME-Version: 1.0
-To: Simon Horman <horms@verge.net.au>
-CC: <wangnan0@huawei.com>, <peifeiyue@huawei.com>, <liusdu@126.com>,
-        <kexec@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <hui.geng@huawei.com>, <kumagai-atsushi@mxc.nes.nec.co.jp>,
-        <ebiederm@xmission.com>, <anderson@redhat.com>
-Subject: Re: [RESEND PATCH] kexec : add sparse memory related values to vmcore
-References: <1401284996-44873-1-git-send-email-sdu.liu@huawei.com> <20140529001328.GD22705@verge.net.au>
-In-Reply-To: <20140529001328.GD22705@verge.net.au>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.111.58.238]
-X-CFilter-Loop: Reflected
+In-Reply-To: <20140603012211.GE19855@htj.dyndns.org>
+References: <CALCETrXbpiqwY=qyPcNWn2zX=vehXzBbxDG725egM9T2Ox2KTA@mail.gmail.com>
+	<538D2261.70406@huawei.com>
+	<20140603012211.GE19855@htj.dyndns.org>
+Date: Mon, 2 Jun 2014 18:30:20 -0700
+X-Google-Sender-Auth: KJ-ZEPiAU6Z-bHbbLsu48B2QnUg
+Message-ID: <CA+55aFx=TG25jPohWZ5xbYs4DcOTUQnCPA8G_fZZouNEfSoZ3A@mail.gmail.com>
+Subject: Re: 3.15 regression: wrong cgroup magic
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Li Zefan <lizefan@huawei.com>, Andy Lutomirski <luto@amacapital.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jianyu Zhan <nasa4836@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/5/29 8:13, Simon Horman 写道:
-> On Wed, May 28, 2014 at 09:49:56PM +0800, Liu Hua wrote:
->> This patch deales with sparse memory model.
->>
->> For ARM32 platforms, different vendors may define different
->> SECTION_SIZE_BITS, which we did not write to vmcore.
->>
->> For example:
->>
->>   1 arch/arm/mach-clps711x/include/mach/memory.h
->>     #define SECTION_SIZE_BITS 24
->>   2 arch/arm/mach-exynos/include/mach/memory.h
->>     #define SECTION_SIZE_BITS 28
->>   3 arch/arm/mach-sa1100/include/mach/memory.h
->>     #define SECTION_SIZE_BITS 27
-> 
-> I wonder if this problem will eventually go away, or at least only
-> apply to older platforms, as ARM moves towards multiplatform: a single
-> kernel for more than one platform.
+On Mon, Jun 2, 2014 at 6:22 PM, Tejun Heo <tj@kernel.org> wrote:
+>
+> Linus, can you please cherry-pick the commit?
 
+I'd much rather see it go through the proper channels than go ahead
+and cherry-pick from some branch that hasn't even been sent to me yet.
+The whole "you have to send things to me for me to take them" policy
+is not new, I don't want to start taking stuff that the
+authors/maintainers haven't actively sent my way.
 
->> It is really a bad news for user space tools such as
->> makedumpfile and crash, who have to defines them as
->> macros. So for the same architecture, we may need to
->> recomile them to parse vmcores with different
->> SECTION_SIZE_BITS.
->>
->> And if we enable LPAE, MAX_PHYSMEM_SIZE can alse
->> be variable.
->>
->> This patch adds these SECTION_SIZE_BITS and MAX_PHYSMEM_SIZE
->> to vmcore. which makes user space tools more compatible.
->>
->> BTW, makedumpfile has queued the related patch.
->>
->> Signed-off-by: Liu Hua <sdu.liu@huawei.com>
->> ---
->>  kernel/kexec.c | 2 ++
->>  1 file changed, 2 insertions(+)
->>
->> diff --git a/kernel/kexec.c b/kernel/kexec.c
->> index bf0b929e..8b1a193 100644
->> --- a/kernel/kexec.c
->> +++ b/kernel/kexec.c
->> @@ -1577,6 +1577,8 @@ static int __init crash_save_vmcoreinfo_init(void)
->>  	VMCOREINFO_LENGTH(mem_section, NR_SECTION_ROOTS);
->>  	VMCOREINFO_STRUCT_SIZE(mem_section);
->>  	VMCOREINFO_OFFSET(mem_section, section_mem_map);
->> +	VMCOREINFO_NUMBER(MAX_PHYSMEM_BITS);
->> +	VMCOREINFO_NUMBER(SECTION_SIZE_BITS);
->>  #endif
->>  	VMCOREINFO_STRUCT_SIZE(page);
->>  	VMCOREINFO_STRUCT_SIZE(pglist_data);
->> -- 
->> 1.9.0
->>
->>
->> _______________________________________________
->> kexec mailing list
->> kexec@lists.infradead.org
->> http://lists.infradead.org/mailman/listinfo/kexec
->>
-> 
-> _______________________________________________
-> kexec mailing list
-> kexec@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/kexec
-> 
-> .
-> 
+That said, I suspect that Greg didn't expect this to actually matter
+(the commit message certainly doesn't make it sound like anything that
+people would notice), so the reason it is in -next is likely that
+nobody thought it was a regression.
 
+Of course, Greg could just send it to me for my next branch (since the
+merge window for 3.16 is already open) and tell me that it's also
+stable material for 3.15. At _that_ point I'll happily cherry-pick it
+intpo master...
 
+                Linus
