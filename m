@@ -1,122 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753486AbaFCKzU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 06:55:20 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:49457 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751748AbaFCKzS (ORCPT
+	id S1753391AbaFCKz7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 06:55:59 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:53418 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751201AbaFCKz5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 06:55:18 -0400
-MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <CA+icZUUTqHbJ+x+HueD0z_MGJbfiS-H3nnW37BWbe9auurD8+A@mail.gmail.com>
-References: <1400838223-30844-1-git-send-email-miklos@szeredi.hu>
-	<28592.1401382081@warthog.procyon.org.uk>
-	<11446.1401420931@jrobl>
-	<7184.1401439773@warthog.procyon.org.uk>
-	<CA+icZUV5P=fVwe_MJJHixwBOBoj7HoKSFuySLdS6AU5L++S=4g@mail.gmail.com>
-	<15839.1401786056@warthog.procyon.org.uk>
-	<CA+icZUUiirxYnoL7pg5TvFEy6pQ+5Q3CuJ0jonJMXTOwhT-LDw@mail.gmail.com>
-	<CA+icZUU8BqGUoQdtuqt403NdCBnJnH1-k64bxTM0b_GSfQr1hQ@mail.gmail.com>
-	<CAJfpegtobxoMs+RRrPYLFRPOVSfr_uqZs+HJFLRif3svHGyQwA@mail.gmail.com>
-	<CA+icZUUTqHbJ+x+HueD0z_MGJbfiS-H3nnW37BWbe9auurD8+A@mail.gmail.com>
-Date: Tue, 3 Jun 2014 12:55:16 +0200
-Message-ID: <CA+icZUWOvq4jK-Fs3u+A5FA6UjeFeh=bRmbmxrx_UuHKH7zo9Q@mail.gmail.com>
-Subject: Re: Unionmount and overlayfs testsuite
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: David Howells <dhowells@redhat.com>,
-        "J. R. Okajima" <hooanon05g@gmail.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
+	Tue, 3 Jun 2014 06:55:57 -0400
+Date: Tue, 3 Jun 2014 12:55:47 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: John Stultz <john.stultz@linaro.org>
+Cc: Trond Myklebust <trond.myklebust@primarydata.com>,
+        Jeff Layton <jeff.layton@primarydata.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Robo Bot <apw@canonical.com>, Felix Fietkau <nbd@openwrt.org>,
-        Neil Brown <neilb@suse.de>, Jordi Pujol <jordipujolp@gmail.com>,
-        ezk@fsl.cs.sunysb.edu, "mszeredi@suse.cz" <mszeredi@suse.cz>
-Content-Type: text/plain; charset=UTF-8
+        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
+        Linux Kernel mailing list <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: nfs4_do_reclaim lockdep pop in v3.15.0-rc1
+Message-ID: <20140603105547.GV11096@twins.programming.kicks-ass.net>
+References: <20140602104948.4faf0bc2@tlielax.poochiereds.net>
+ <CAHQdGtRR6SvEhXiqWo24hoUh9AU9cL82Z8Z-d8-7u951F_d+5g@mail.gmail.com>
+ <CALAqxLVmRdv3eVaf_ue-NutDmjxJA2NNAXnH-Tm4a6ud2U7Q4g@mail.gmail.com>
+ <CAHQdGtSn9RwdgaFgEDQXjrxSA_Bg=rNWux+96-5f43dyUwXLRw@mail.gmail.com>
+ <CALAqxLUwtMnE9eB_dfV=C5CLuXpEdB9+mK7pw2jgo5Yg2ACKPA@mail.gmail.com>
+ <CAHQdGtQhurcOsAii7PYNZwEL4Xm-8a2CKBkS4OhrS0FhaAX3Aw@mail.gmail.com>
+ <CALAqxLXeuiTffvgu0uBbn2fiYQ0-3PVdZ4V4AxqC-ZkTaFSfQQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="g4y/k9+5pukpRNAq"
+Content-Disposition: inline
+In-Reply-To: <CALAqxLXeuiTffvgu0uBbn2fiYQ0-3PVdZ4V4AxqC-ZkTaFSfQQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 3, 2014 at 12:21 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
-> On Tue, Jun 3, 2014 at 11:42 AM, Miklos Szeredi <miklos@szeredi.hu> wrote:
->> On Tue, Jun 3, 2014 at 11:26 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->>> On Tue, Jun 3, 2014 at 11:18 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->>>> [...]
->>>>>> [ NOTE-2: The call-trace I have seen once (TERMSLASH=0). ]
->>>>>
->>>>> Do you know for which operation?
->>
->> This still looks like the same annotation problem in
->> generic_file_splice_write() I already sent a patch for.
->>
->> Fix now pushed to overlayfs.v22/overlayfs.current.
->>
->
-> Will you send this patch to Al separately or will it go through your tree?
->
-> [ Do you happen to know if LTP has some tests especially to test pipes? ]
->
 
-Chris from LTP answered me to test with latest ltp-git [1] (here:
-20140422-134-gd458410).
+--g4y/k9+5pukpRNAq
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-So, I have run IPC/Pipes/Syscalls tests...
+On Mon, Jun 02, 2014 at 08:19:00PM -0700, John Stultz wrote:
+> On Mon, Jun 2, 2014 at 5:59 PM, Trond Myklebust
+> <trond.myklebust@primarydata.com> wrote:
+> > On Mon, Jun 2, 2014 at 6:49 PM, John Stultz <john.stultz@linaro.org> wr=
+ote:
+> >> On Mon, Jun 2, 2014 at 3:42 PM, Trond Myklebust
+> >> <trond.myklebust@primarydata.com> wrote:
+> >>> The so_reclaim_seqcount only exists in order to tell the other threads
+> >>> that they may need to replay file open or file lock requests that have
+> >>> raced with state recovery (because those threads got scheduled out
+> >>> after their RPC calls ran, but before they managed to set up the
+> >>> tracking of the new state). It is basically an edge condition
+> >>> killer...
+> >>
+> >> Would then swapping the acquisition order, so the seqcount is taken
+> >> before the so_lock at the top of nfs4_reclaim_open_state() avoid this
+> >> then, without having to disable lockdep?
+> >>
+> >
+> > I can change the write seqcount to use raw_write_seqcount(), but that
+>=20
+> So this doesn't address my suggestion to change the locking order...
+> is that solution not feasible?
+>=20
+> > doesn't answer the question of why raw_seqcount_begin() is the _only_
+> > object out there with a "raw_" prefix, that doesn't explicitly disable
+> > lockdep checking.
+> >
+> > What justifies the inconsistency?
+>=20
+> Here's the naming discussion...
+> https://lkml.org/lkml/2014/1/2/404
+>=20
 
-    # LC_ALL=C ./runltp -f ipc pipes syscalls
+Ah, I think I see what Trond means; so raw_write_seqcount_{begin,end}()
+are without lockdep, _however_ raw_seqcount_begin() is with lockdep.
 
-Test Start Time: Tue Jun  3 12:48:24 2014
------------------------------------------
-Testcase                       Result     Exit Value
---------                       ------     ----------
-pipeio_1                       PASS       0
-pipeio_3                       PASS       0
-pipeio_4                       PASS       0
-pipeio_5                       PASS       0
-pipeio_6                       PASS       0
-pipeio_8                       PASS       0
-sem01                          PASS       0
-sem02                          PASS       0
-message_queue_test_01          PASS       0
-message_queue_test_02_get      PASS       0
-message_queue_test_02_snd      PASS       0
-message_queue_test_02_rcv      PASS       0
-message_queue_test_02_ctl      PASS       0
-message_queue_test_04          PASS       0
-message_queue_test_05          PASS       0
-pipe_test_01                   PASS       0
-pipe_test_02                   PASS       0
-semaphore_test_01              PASS       0
-semaphore_test_02              PASS       0
-semaphore_test_03              PASS       0
-shmem_test_01                  PASS       0
-shmem_test_02                  PASS       0
-shmem_test_03                  PASS       0
-shmem_test_04                  PASS       0
-shmem_test_05                  PASS       0
-shmem_test_06                  PASS       0
-shmem_test_07                  PASS       0
-signal_test_01                 PASS       0
-signal_test_02                 PASS       0
-signal_test_03                 PASS       0
-signal_test_04                 PASS       0
-signal_test_05                 PASS       0
-signal_test_06                 PASS       0
-signal_test_07                 PASS       0
+This is inconsistent within the same API (seqcount/seqlock).
 
------------------------------------------------
-Total Tests: 34
-Total Failures: 0
-Kernel Version: 3.15.0-rc8-2-iniza-lockdep
-Machine Architecture: x86_64
-Hostname: fambox
+Yes, we should fix that.
 
-So far no LOCKPDEPs in my logs.
+raw_seqcount_begin() is a variant of read_seqcount_begin() but without
+the spin loop in. Maybe we should find a new name for this.
 
-- Sedat -
+--g4y/k9+5pukpRNAq
+Content-Type: application/pgp-signature
 
-[1] http://marc.info/?l=ltp-list&m=140179189918510&w=2
-[2] https://github.com/linux-test-project/ltp/blob/master/doc/mini-howto-building-ltp-from-git.txt
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTjamzAAoJEHZH4aRLwOS69AUP/jEQuHc5R0qDHtIC4w0ddCBj
+rWuoZpa/coiLxw632iyGo7HWgLfyvyi1uJOxvRf+l5aX8ZuYJAK3F5fnf06G0Hgo
+q1ezg2KzGNO6li8HXOcHM7ezSOKQXEAr/rZNmeFuNiBDdQVsLWzRwEuck/E1M9bE
+SsBNboXXaQ55U7PBNHqpYCVaMnz6lfYZ6I5Wd6KbaeIbw2bhOL/g/d6jHuGYpm9g
+nRQQL1phBL8n7GtahtEe3DlOhVUk5C8B4Ct0Icbc1qGXFeiHMwE9EQ7aEzQgo7EQ
+VD05q9w5KqF8eqXxgHfX2N5jk/jDak3pAoeWL/rFNmPC2OFEyJFEuxLR0N56+rnY
+pH2agfeTtfcnRoSveyLn7JcVrx+kMgV/F/nnOXeJ+1Co/zFDumDbmikpkDnMviaQ
+2RkO4DoczMMIeL/IdR3h5dQ5v2iL608Y9eCDXISWgiIDRIyo2N9cDmPCcBsVcgp1
+IsAIZ5LWgA24cT54ZriHXmkgVsXFL6GN9xFd3Wn5JDLrzByPYMDS1YTj/apCAtWO
+YV6RZDkwFMfvQWz6xJmqWv2RZ0xGceNtlKVOdEEqKwQ5PR5rAUIuVLxEXVZCBcuT
+JEDF7r+4Fv9oM9i6YrOcDqlSnEQiHDjypVnaBAyY7Pgvy7tBn54jaxiOkwd29TgI
+fAL6Vq5TUMZSW3XMQSIn
+=no82
+-----END PGP SIGNATURE-----
+
+--g4y/k9+5pukpRNAq--
