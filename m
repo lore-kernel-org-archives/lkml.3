@@ -1,118 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933113AbaFCP6m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 11:58:42 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:60379 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932308AbaFCP6l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 11:58:41 -0400
-From: Yi Li <yi.li@linaro.org>
-To: ard.biesheuvel@linaro.org, catalin.marinas@arm.com, will.deacon@arm.com,
-        rob.herring@calxeda.com, sudeep.karkadanagesha@arm.com,
-        steve.capper@linaro.org, lorenzo.pieralisi@arm.com,
-        liviu.dudau@arm.com, grant.likely@linaro.org
-Cc: yi.li@linaro.org, phoenix.liyi@huawei.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] ARM64:DMI: Add smbios/dmi support on arm64
-Date: Tue,  3 Jun 2014 23:57:13 +0800
-Message-Id: <1401811033-16478-1-git-send-email-yi.li@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+	id S932951AbaFCP7u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 11:59:50 -0400
+Received: from www.sr71.net ([198.145.64.142]:48582 "EHLO blackbird.sr71.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932308AbaFCP7t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 11:59:49 -0400
+Message-ID: <538DF0F1.5070104@sr71.net>
+Date: Tue, 03 Jun 2014 08:59:45 -0700
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Subject: Re: [PATCH -mm] mincore: apply page table walker on do_mincore()
+ (Re: [PATCH 00/10] mm: pagewalk: huge page cleanups and VMA passing)
+References: <20140602213644.925A26D0@viggo.jf.intel.com> <1401745925-l651h3s9@n-horiguchi@ah.jp.nec.com> <538CF25E.8070905@sr71.net> <1401776292-dn0fof8e@n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1401776292-dn0fof8e@n-horiguchi@ah.jp.nec.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add smbios/dmi support on arm64 system, it depends on
-EFI boot.
+On 06/02/2014 11:18 PM, Naoya Horiguchi wrote:
+> +	/*
+> +	 * Huge pages are always in RAM for now, but
+> +	 * theoretically it needs to be checked.
+> +	 */
+> +	present = pte && !huge_pte_none(huge_ptep_get(pte));
+> +	for (; addr != end; vec++, addr += PAGE_SIZE)
+> +		*vec = present;
+> +	cond_resched();
+> +	walk->private += (end - addr) >> PAGE_SHIFT;
 
-Signed-off-by: Yi Li <yi.li@linaro.org>
----
-
-Changes since v1:
-  -Followed Ard Biesheuvel's suggestion to rebase the patch on
-   Matt Fleming's arm64-efi branch.
-
- arch/arm64/Kconfig           |   10 ++++++++++
- arch/arm64/include/asm/dmi.h |   28 ++++++++++++++++++++++++++++
- arch/arm64/kernel/setup.c    |    2 ++
- 3 files changed, 40 insertions(+)
- create mode 100644 arch/arm64/include/asm/dmi.h
-
-diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-index 6c71f12..13ee261 100644
---- a/arch/arm64/Kconfig
-+++ b/arch/arm64/Kconfig
-@@ -294,6 +294,16 @@ config EFI
- 	  allow the kernel to be booted as an EFI application. This
- 	  is only useful on systems that have UEFI firmware.
- 
-+config DMI
-+	bool "Enable support for SMBIOS (DMI) tables"
-+	depends on EFI
-+	default y
-+	help
-+	  This enables SMBIOS/DMI feature for systems.
-+
-+	  This option is only useful on systems that have UEFI firmware.
-+	  However, even with this option, the resultant kernel should
-+	  continue to boot on existing non-UEFI platforms.
- endmenu
- 
- menu "Userspace binary formats"
-diff --git a/arch/arm64/include/asm/dmi.h b/arch/arm64/include/asm/dmi.h
-new file mode 100644
-index 0000000..f2198bf
---- /dev/null
-+++ b/arch/arm64/include/asm/dmi.h
-@@ -0,0 +1,28 @@
-+/*
-+ * arch/arm64/include/asm/dmi.h
-+ *
-+ * Copyright (C) 2013 Linaro Limited.
-+ * Written by: Yi Li (yi.li@linaro.org)
-+ *
-+ * based on arch/ia64/include/asm/dmi.h
-+ *
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file "COPYING" in the main directory of this archive
-+ * for more details.
-+ */
-+
-+
-+#ifndef _ASM_DMI_H
-+#define _ASM_DMI_H 1
-+
-+#include <linux/slab.h>
-+#include <asm/io.h>
-+
-+/* Use efi mappings for DMI */
-+#define dmi_early_remap(x, l)	efi_lookup_mapped_addr(x)
-+#define dmi_early_unmap(x, l)
-+#define dmi_remap(x, l)			efi_lookup_mapped_addr(x)
-+#define dmi_unmap(x)
-+#define dmi_alloc(l)			kzalloc(l, GFP_ATOMIC)
-+
-+#endif
-diff --git a/arch/arm64/kernel/setup.c b/arch/arm64/kernel/setup.c
-index 0a14aaf..7622561 100644
---- a/arch/arm64/kernel/setup.c
-+++ b/arch/arm64/kernel/setup.c
-@@ -42,6 +42,7 @@
- #include <linux/of_fdt.h>
- #include <linux/of_platform.h>
- #include <linux/efi.h>
-+#include <linux/dmi.h>
- 
- #include <asm/fixmap.h>
- #include <asm/cputype.h>
-@@ -400,6 +401,7 @@ static int __init arm64_device_init(void)
- {
- 	of_clk_init(NULL);
- 	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
-+	dmi_scan_machine();
- 	return 0;
- }
- arch_initcall(arm64_device_init);
--- 
-1.7.9.5
-
+That comment is bogus, fwiw.  Huge pages are demand-faulted and it's
+quite possible that they are not present.
