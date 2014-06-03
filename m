@@ -1,110 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754707AbaFCOpB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 10:45:01 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42898 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752096AbaFCOo7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 10:44:59 -0400
-Date: Tue, 3 Jun 2014 16:44:55 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Greg Thelen <gthelen@google.com>, Johannes Weiner <hannes@cmpxchg.org>
-Cc: Roman Gushchin <klamm@yandex-team.ru>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>, linux-mm@kvack.org,
-        Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michel Lespinasse <walken@google.com>
-Subject: Re: [PATCH v2 0/4] memcg: Low-limit reclaim
-Message-ID: <20140603144455.GL1321@dhcp22.suse.cz>
-References: <1398688005-26207-1-git-send-email-mhocko@suse.cz>
- <20140528121023.GA10735@dhcp22.suse.cz>
- <20140528134905.GF2878@cmpxchg.org>
- <20140528142144.GL9895@dhcp22.suse.cz>
- <20140528152854.GG2878@cmpxchg.org>
- <xr93ioopyj1y.fsf@gthelen.mtv.corp.google.com>
- <20140603110959.GE1321@dhcp22.suse.cz>
- <CAHH2K0YuEFdPRVrCfoxYwP5b0GK4cZzL5K3ByubW+087BKcsUg@mail.gmail.com>
+	id S1754490AbaFCOss (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 10:48:48 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:42515 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753046AbaFCOsr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 10:48:47 -0400
+Date: Tue, 3 Jun 2014 10:48:45 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Wei.Yang@windriver.com, Michal Nazarewicz <mina86@mina86.com>,
+        Andrzej Pietrasiewicz <andrzej.p@samsung.com>
+cc: Felipe Balbi <balbi@ti.com>, <gregkh@linuxfoundation.org>,
+        USB list <linux-usb@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v1] USB:gadget: Fix a warning while loading g_mass_storage
+In-Reply-To: <1401788235-22621-1-git-send-email-Wei.Yang@windriver.com>
+Message-ID: <Pine.LNX.4.44L0.1406031033010.1054-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAHH2K0YuEFdPRVrCfoxYwP5b0GK4cZzL5K3ByubW+087BKcsUg@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 03-06-14 07:01:20, Greg Thelen wrote:
-> On Jun 3, 2014 4:10 AM, "Michal Hocko" <mhocko@suse.cz> wrote:
-> >
-> > On Wed 28-05-14 09:17:13, Greg Thelen wrote:
-> > [...]
-> > > My 2c...  The following works for my use cases:
-> > > 1) introduce memory.low_limit_in_bytes (default=0 thus no default change
-> > >    from older kernels)
-> > > 2) interested users will set low_limit_in_bytes to non-zero value.
-> > >    Memory protected by low limit should be as migratable/reclaimable as
-> > >    mlock memory.  If a zone full of mlock memory causes oom kills, then
-> > >    so should the low limit.
-> >
-> > Would fallback mode in overcommit or the corner case situation break
-> > your usecase?
+On Tue, 3 Jun 2014 Wei.Yang@windriver.com wrote:
+
+> From: Yang Wei <Wei.Yang@windriver.com>
 > 
-> Yes.  Fallback mode would break my use cases.  What is the corner case
-> situation?  NUMA conflicts? 
+> While loading g_mass_storage module, the following warning is triggered.
+> In fact, it is more easy to reproduce it with RT kernel.
+> 
+> WARNING: at drivers/usb/gadget/composite.c:
+> usb_composite_setup_continue: Unexpected call
+> Modules linked in: fat vfat minix nls_cp437 nls_iso8859_1 g_mass_storage
+> [<800179cc>] (unwind_backtrace+0x0/0x104) from [<80619608>] (dump_stack+0x20/0x24)
+> [<80619608>] (dump_stack+0x20/0x24) from [<80025100>] (warn_slowpath_common+0x64/0x74)
+> [<80025100>] (warn_slowpath_common+0x64/0x74) from [<800251cc>] (warn_slowpath_fmt+0x40/0x48)
+> [<800251cc>] (warn_slowpath_fmt+0x40/0x48) from [<7f047774>] (usb_composite_setup_continue+0xb4/0xbc [g_mass_storage])
+> [<7f047774>] (usb_composite_setup_continue+0xb4/0xbc [g_mass_storage]) from [<7f047ad4>] (handle_exception+0x358/0x3e4 [g_mass_storage])
+> [<7f047ad4>] (handle_exception+0x358/0x3e4 [g_mass_storage]) from [<7f048080>] (fsg_main_thread+0x520/0x157c [g_mass_storage])
+> [<7f048080>] (fsg_main_thread+0x520/0x157c [g_mass_storage]) from [<8004bc90>] (kthread+0x98/0x9c)
+> [<8004bc90>] (kthread+0x98/0x9c) from [<8000faec>] (kernel_thread_exit+0x0/0x8) 
+> 
+> The root cause just likes the following scenario.
+> 
+> irq thread
+> 
+> composite_disconnect()
+> |
+> |->fsg_disable() fsg->common->new_fsg = NULL
+>                  and then wake fsg_main_thread
+>                  with seting common->state to
+>                  FSG_STATE_CONFIG_CHANGE.
+>                                                     fsg_main_thread
+>                                                     |
+>                                                     |->do_set_interface()
+> irq thread
+> 
+> set_config()
+> |
+> |->fsg_set_alt() fsg->common->new_fsg = new_fsg
+>                  and then also wake up fsg_main_thread
+>                  with setting common->state to
+>                  FSG_STATE_CONFIG_CHANGE.
+>                                                     |-> if(common->new_fsg)
+> 		                                                 usb_composite_setup_continue()
+> 
+> In this case, fsg_main_thread would invoke usb_composite_setup_continue
+> twice, so the second call would trigger the above call trace, as we also
+> save common->new_fsg while changing the common->state.
 
-Described here http://marc.info/?l=linux-mm&m=139940101124396&w=2
+Michal and Andrzej:
 
-> Low limit is a substitute for users mlocking memory.  So if mlocked
-> memory has the same NUMA conflicts, then I see no problem with low
-> limit having the same behavior.
+I haven't paid much attention to these matters, because you handled the 
+conversion from g_file_storage to f_mass_storage using the composite 
+framework.  But this patch seemed odd, so I took a closer look.
 
-In principal they are similar - at least from the reclaim POV. The usage
-will be however quite different IMO.
-mlock is the explicit way to keep memory resident. The application
-writer knows_what_he_is_doing, right?
-Lowlimit is an administrative tool. Administrator of a potentially complex
-application is tuning the said application to beat the best performance
-out of it.
-Now both of them know that the thing might blow up if they overcommit on
-the locked memory. So the application writer can check the system state
-before he asks for mlock and he knows about previous mlocks.
-Admin doesn't have that possibility because the memory distribution of
-the memcg is not easy to find out.
+In f_mass_storage.c, struct fsg_common is shared among all the function
+instances.  This structure includes things like cmnd and nluns, which
+will in general be different for different functions.
 
-> From a user API perspective, I'm not clear on the difference between
-> non-ooming (fallback) low limit and the existing soft limit interface.  If
-> low limit is a "soft" (non ooming) limit then why not rework the existing
-> soft limit interface and save the low limit for strict (ooming) behavior?
+That's okay if each function is in a separate config, but what happens
+when there are multiple functions in the same config, using different
+interfaces?  What if the host sends concurrent commands to two of these
+functions?
 
-No, not that path again. Pretty please! We've been there and it didn't
-work out. We've been told to not flip defaults and potentially break
-userspace. Softlimit with it weird semantic should die and stay as a
-colorful example of a bad design decision.
+Am I missing something?
 
-> Of course, Google can continue to tweak the soft limit or new low
-> limit to provide an ooming guarantee rather than violating the limit.
+Alan Stern
 
-If you have the use case for the hard guarantee then we can add a knob
-as I've said repeatedly. I just wanted to hear the use case. If you have
-one, great. I just wanted to start with something which is more usable
-in general.
-
-Your setup is quite specific and known to love OOM killers so you are
-very well prepared for that. On the other hand my users would end up in
-a surprise if they saw an OOM while the setup was seemingly correct
-because lowlimit was not overcommitted.
-
-I can come up with a patch on top of what is in mm tree now. It would
-add a knob (configurable to default to fallback or OOM by default).
-
-What do you think about this? Would that work for you and Johannes?
-
-> PS: I currently have very limited connectivity so my responses will be
-> delayed.
-
--- 
-Michal Hocko
-SUSE Labs
