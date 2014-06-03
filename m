@@ -1,65 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933088AbaFCMCx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 08:02:53 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43577 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932718AbaFCLll (ORCPT
+	id S933063AbaFCMCv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 08:02:51 -0400
+Received: from netz.smurf.noris.de ([213.95.21.43]:37674 "EHLO
+	netz.smurf.noris.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932678AbaFCMCt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 07:41:41 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 073/138] [media] V4L2: ov7670: fix a wrong index, potentially Oopsing the kernel from user-space
-Date: Tue,  3 Jun 2014 12:38:39 +0100
-Message-Id: <1401795584-22664-74-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
-References: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Tue, 3 Jun 2014 08:02:49 -0400
+Date: Tue, 3 Jun 2014 14:01:57 +0200
+From: Matthias Urlichs <matthias@urlichs.de>
+To: Johan Hovold <jhovold@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Oliver Neukum <oliver@neukum.org>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] MAINTAINERS: drop two usb-serial subdriver entries
+Message-ID: <20140603120156.GD3152@smurf.noris.de>
+References: <1401615137-11862-1-git-send-email-jhovold@gmail.com>
+ <20140601174559.GB1281@kroah.com>
+ <20140602071607.GD14935@localhost>
+ <20140602072709.GP10337@smurf.noris.de>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="9jxsPFA5p3P2qPhR"
+Content-Disposition: inline
+In-Reply-To: <20140602072709.GP10337@smurf.noris.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Smurf-Spam-Score: -1.1 (-)
+X-Smurf-Whitelist: +relay_from_hosts
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.11 -stable review patch.  If anyone has any objections, please let me know.
 
-------------------
+--9jxsPFA5p3P2qPhR
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Hi,
 
-commit cfece5857ca51d1dcdb157017aba226f594e9dcf upstream.
+Matthias Urlichs:
+> Fine by me.
 
-Commit 75e2bdad8901a0b599e01a96229be922eef1e488 "ov7670: allow
-configuration of image size, clock speed, and I/O method" uses a wrong
-index to iterate an array. Apart from being wrong, it also uses an
-unchecked value from user-space, which can cause access to unmapped
-memory in the kernel, triggered by a normal desktop user with rights to
-use V4L2 devices.
+or, in other words:
 
-Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Acked-by: Jonathan Corbet <corbet@lwn.net>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/media/i2c/ov7670.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Signed-Off-By: Matthias Urlichs <matthias@urlichs.de>
 
-diff --git a/drivers/media/i2c/ov7670.c b/drivers/media/i2c/ov7670.c
-index e8a1ce204036..cdd7c1b7259b 100644
---- a/drivers/media/i2c/ov7670.c
-+++ b/drivers/media/i2c/ov7670.c
-@@ -1109,7 +1109,7 @@ static int ov7670_enum_framesizes(struct v4l2_subdev *sd,
- 	 * windows that fall outside that.
- 	 */
- 	for (i = 0; i < n_win_sizes; i++) {
--		struct ov7670_win_size *win = &info->devtype->win_sizes[index];
-+		struct ov7670_win_size *win = &info->devtype->win_sizes[i];
- 		if (info->min_width && win->width < info->min_width)
- 			continue;
- 		if (info->min_height && win->height < info->min_height)
--- 
-1.9.1
+--=20
+-- Matthias Urlichs
 
+--9jxsPFA5p3P2qPhR
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTjbkxAAoJEHLPjl4ltMKTFYYQAMW1DLov/jNzlc0ZI1xpry3L
+eZkaxmA2M1JZ1R+C3jSA0FBoumIuiZLXAQNa+XG3G5+Loz1ANpvubI0kcjF21Xq+
+6tVE0U9h5qVpRzUi49lrAYcaUuEGdPfLQmEQW8GNOsFqTWbelV2BDF6XOubJOFeT
+s4X5Xr1BItXnkMrogfVw9nZ0/MLRUMqNUcftRfx6E4R+yFJQKanaMEWQAJ0QRE8X
+/L4j4+5svgFs0/giwvtaV7AS7xw9D3sT1uW7TTy5XLP3aI3JgzGhxkwXDSToY2v5
+FeAOT6OM5Rbm6CQX9ZDs/k4J0tAjObGz4XBAa2ZQMRGG4ChmZxHWXHmoDURZIWce
+92YDOyd+vh0rffokmpyY0CZqMxRv87HOj8+yditFOffz1UoIEr8vH5+CxsJKWGXf
+MTW+MP6tO8CZ74sGewfwp9WsQCRZcjxL0EJxUmldqTQNSW3SXzjG0jxrlwZPJYHc
+kjE3xpbhGGWaSvjtJzWGGoZ6t3nBKkwGiuE8qXw3T5MU0Xsap4uRLm7JGKFd7Qos
+76oywIoC4nqgkQ60SBZCauZ0ZwLjCPuTkPFiJl1dNFM4nYUJigwAYSHO+Tfp59pt
+QDrfcOQ/pP80LGrwvEOHURx7CN52A8f513i2rqM8Z/mgAyAqAUqmev1G2GvSt960
+peF+xEGgXDxzv0/dM2zH
+=uGjB
+-----END PGP SIGNATURE-----
+
+--9jxsPFA5p3P2qPhR--
