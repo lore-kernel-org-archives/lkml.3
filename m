@@ -1,104 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754313AbaFCUlH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 16:41:07 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:42774 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753781AbaFCUlF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 16:41:05 -0400
-Date: Tue, 3 Jun 2014 22:40:57 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Paolo Valente <paolo.valente@unimore.it>
-Cc: Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>,
-        Li Zefan <lizefan@huawei.com>, Fabio Checconi <fchecconi@gmail.com>,
-        Arianna Avanzini <avanzini.arianna@gmail.com>,
-        linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org
-Subject: Re: [PATCH RFC - TAKE TWO - 00/12] New version of the BFQ I/O
- Scheduler
-Message-ID: <20140603204057.GA18900@amd.pavel.ucw.cz>
-References: <20140528221929.GG1419@htj.dyndns.org>
- <1401354343-5527-1-git-send-email-paolo.valente@unimore.it>
- <20140530160712.GG24871@htj.dyndns.org>
- <464F6CBE-A63E-46EF-A90D-BF8450430444@unimore.it>
- <20140530232804.GA5057@htj.dyndns.org>
- <20140602111432.GA3737@amd.pavel.ucw.cz>
- <20140602130226.GA14654@amd.pavel.ucw.cz>
- <FCFE0106-A4DD-4DEF-AAAE-040F3823A447@unimore.it>
+	id S1754372AbaFCUql (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 16:46:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36639 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753651AbaFCUqk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 16:46:40 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Joe Lawrence <joe.lawrence@stratus.com>
+Cc: <linux-kernel@vger.kernel.org>, Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH 2/2] block,scsi: convert and handle ERR_PTR from blk_get_request
+References: <1401396529-17275-1-git-send-email-joe.lawrence@stratus.com>
+	<1401396529-17275-3-git-send-email-joe.lawrence@stratus.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Tue, 03 Jun 2014 16:07:01 -0400
+In-Reply-To: <1401396529-17275-3-git-send-email-joe.lawrence@stratus.com> (Joe
+	Lawrence's message of "Thu, 29 May 2014 16:48:49 -0400")
+Message-ID: <x49mwdtvjtm.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <FCFE0106-A4DD-4DEF-AAAE-040F3823A447@unimore.it>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+Joe Lawrence <joe.lawrence@stratus.com> writes:
 
-> >>> Well, it's all about how to actually route the changes and in general
-> >>> whenever avoidable we try to avoid whole-sale code replacement
-> >>> especially when most of the structural code is similar like in this
-> >>> case.  Gradually evolving cfq to bfq is likely to take more work but
-> >>> I'm very positive that it'd definitely be a lot easier to merge the
-> >>> changes that way and people involved, including the developers and
-> >>> reviewers, would acquire a lot clearer picture of what's going on in
-> >>> the process.  For example, AFAICS, most of the heuristics added by
-> >> 
-> >> Would it make sense to merge bfq first, _then_ turn cfq into bfq, then
-> >> remove bfq?
-> >> 
-> >> That way
-> >> 
-> >> 1. Users like me would see improvements soon 
-> >> 
-> >> 2. BFQ would get more testing early. 
-> > 
-> > Like this: I applied patch over today's git... 
-> > 
-> > I only see last bits of panic...
-> > 
-> > Call trace:
-> > __bfq_bfqq_expire
-> > bfq_bfqq_expire
-> > bfq_dispatch_requests
-> > sci_request_fn
-> > ...
-> > EIP: T.1839+0x26
-> > Kernel panic - not syncing: Fatal exception in interrupt
-> > Shutting down cpus with NMI
-> > 
-> > ...
-> > 
-> > Will retry.
-> > 
-> > Any ideas?
-> > 			
+> diff --git a/block/bsg.c b/block/bsg.c
+> index 420a5a9..2b1c322 100644
+> --- a/block/bsg.c
+> +++ b/block/bsg.c
+> @@ -271,8 +271,8 @@ bsg_map_hdr(struct bsg_device *bd, struct sg_io_v4 *hdr, fmode_t has_write_perm,
+>  	 * map scatter-gather elements separately and string them to request
+>  	 */
+>  	rq = blk_get_request(q, rw, GFP_KERNEL);
+> -	if (!rq)
+> -		return ERR_PTR(-ENOMEM);
+> +	if (IS_ERR(rq))
+> +		return rq;
+>  	ret = blk_fill_sgv4_hdr_rq(q, rq, hdr, bd, has_write_perm);
+>  	if (ret)
+>  		goto out;
+> @@ -284,8 +284,8 @@ bsg_map_hdr(struct bsg_device *bd, struct sg_io_v4 *hdr, fmode_t has_write_perm,
+>  		}
+>  
+>  		next_rq = blk_get_request(q, READ, GFP_KERNEL);
+> -		if (!next_rq) {
+> -			ret = -ENOMEM;
+> +		if (IS_ERR(next_rq)) {
+> +			ret = PTR_ERR(rq);
 
->  We have tried to think about ways to trigger this failure, but in
-> vain. Unfortunately, so far no user has reported any failure with
-> this last version of bfq either. Finally, we have gone through a new
-> static analysis, but also in this case uselessly.
+ITYM ret = PTR_ERR(next_rq), right?
 
-Ok, it is pretty much reproducible here: system just will not finish
-booting.
+> diff --git a/drivers/scsi/device_handler/scsi_dh_hp_sw.c b/drivers/scsi/device_handler/scsi_dh_hp_sw.c
+> index 084062b..1cf4019 100644
+> --- a/drivers/scsi/device_handler/scsi_dh_hp_sw.c
+> +++ b/drivers/scsi/device_handler/scsi_dh_hp_sw.c
+> @@ -117,7 +117,7 @@ static int hp_sw_tur(struct scsi_device *sdev, struct hp_sw_dh_data *h)
+>  
+>  retry:
+>  	req = blk_get_request(sdev->request_queue, WRITE, GFP_NOIO);
+> -	if (!req)
+> +	if (IS_ERR(req))
+>  		return SCSI_DH_RES_TEMP_UNAVAIL;
+>  
 
-> So, if you are willing to retry, we have put online a version of the code filled with many BUG_ONs. I hope they can make it easier to track down the bug. The archive is here:
-> http://algogroup.unimore.it/people/paolo/disk_sched/debugging-patches/3.15.0-rc8-v7rc5.tgz
-> 
+Don't we have an opportunity here to differentiate between enomem and
+eio?  I have no idea what the right SCSI_DH error would be, I'm just
+asking the question.
 
-Ok, let me try.
+>  	req->cmd_type = REQ_TYPE_BLOCK_PC;
+> @@ -247,7 +247,7 @@ static int hp_sw_start_stop(struct hp_sw_dh_data *h)
+>  	struct request *req;
+>  
+>  	req = blk_get_request(h->sdev->request_queue, WRITE, GFP_ATOMIC);
+> -	if (!req)
+> +	if (IS_ERR(req))
+>  		return SCSI_DH_RES_TEMP_UNAVAIL;
 
-> Should this attempt be useless as well, I will, if you do not mind, try by asking you more details about your system and reproducing your configuration as much as I can.
-> 
+Same goes here.
 
-It is thinkpad x60 notebook, x86-32 machine with 2GB ram.
-
-But I think it died on my x86-32 core duo desktop, too. 
-
-Best regards,
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Cheers,
+Jeff
