@@ -1,68 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932559AbaFCOCl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 10:02:41 -0400
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:33916 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754425AbaFCOCj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 10:02:39 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140603132217.GD29593@e103034-lin>
-References: <1400860385-14555-1-git-send-email-vincent.guittot@linaro.org>
- <1400860385-14555-5-git-send-email-vincent.guittot@linaro.org> <20140603132217.GD29593@e103034-lin>
-From: Vincent Guittot <vincent.guittot@linaro.org>
-Date: Tue, 3 Jun 2014 16:02:18 +0200
-Message-ID: <CAKfTPtB2XC3hVN4LuRjvd3JB5GZ9=R5Tq6F52iYxO3nCJ04Cew@mail.gmail.com>
-Subject: Re: [PATCH v2 04/11] sched: Allow all archs to set the power_orig
-To: Morten Rasmussen <morten.rasmussen@arm.com>
-Cc: "peterz@infradead.org" <peterz@infradead.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        "efault@gmx.de" <efault@gmx.de>,
-        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S932611AbaFCOFH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 10:05:07 -0400
+Received: from plane.gmane.org ([80.91.229.3]:54572 "EHLO plane.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932073AbaFCOFF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 10:05:05 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Prankul Garg <prankul.iiitm@gmail.com>
+Subject: perf tools[ARM]:Not able to detect [kernel.kallsyms] dso on Qualcomm MSM 8974
+Date: Tue, 3 Jun 2014 14:02:52 +0000 (UTC)
+Message-ID: <loom.20140603T154538-510@post.gmane.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@ger.gmane.org
+X-Gmane-NNTP-Posting-Host: sea.gmane.org
+User-Agent: Loom/3.14 (http://gmane.org/)
+X-Loom-IP: 118.102.239.85 (Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/35.0.1916.114 Safari/537.36)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3 June 2014 15:22, Morten Rasmussen <morten.rasmussen@arm.com> wrote:
-> On Fri, May 23, 2014 at 04:52:58PM +0100, Vincent Guittot wrote:
->> power_orig is only changed for system with a SMT sched_domain level in order to
->> reflect the lower capacity of CPUs. Heterogenous system also have to reflect an
->> original capacity that is different from the default value.
->>
->> Create a more generic function arch_scale_cpu_power that can be also used by
->> non SMT platform to set power_orig.
->
-> I did a quick test of the patch set with adjusting cpu_power on
-> big.LITTLE (ARM TC2) to reflect the different compute capacities of the
-> A15s and A7s. I ran the sysbench cpu benchmark with 5 threads with and
-> without the patches applied, but with non-default cpu_powers.
->
-> I didn't see any difference in the load-balance. Three tasks ended up on
-> the two A15s and two tasks ended up on two of the three A7s leaving one
-> unused in both cases.
->
-> Using default cpu_power I get one task on each of the five cpus (best
-> throughput). Unless I messed something up, it seems that setting
-> cpu_power doesn't give me the best throughput with these patches
-> applied.
+Hi,
 
-That's normal this patchset is necessary but not enough to solve the
-issue you mention. We also need to fix the way the imbalance is
-calculated for such situation. I have planned to push that in another
-patchset in order to not mix too much thing together
+Qualcomm MSM 8974 is not able to detect [kernel.kallsyms] dso either with 
+Hardware or Tracepoint events while Exynos do.
 
-Vincent
+Corresponding logs are as:
 
->
-> Have you done any tests on big.LITTLE?
->
-> Morten
+-----------------Qualcomm MSM 8974----------------------------------
+
+./perf record -e cycles cal
+# Overhead  Command  Shared Object                         Symbol
+# ........  .......  .............  .............................
+#
+
+    75.02%      cal  [ks8851]       [k] 0x01114a5c               
+     4.58%      cal  libc-2.13.so   [.] 0x000f9fa8               
+     4.49%      cal  ld-2.13.so     [.] __udivsi3                
+     4.49%      cal  ld-2.13.so     [.] do_lookup_x              
+     2.94%      cal  ld-2.13.so     [.] _dl_relocate_object      
+     1.50%      cal  ld-2.13.so     [.] _dl_protect_relro        
+     1.50%      cal  ld-2.13.so     [.] check_match.8416         
+     1.46%      cal  ld-2.13.so     [.] calloc                   
+     1.39%      cal  ld-2.13.so     [.] _dl_add_to_namespace_list
+     1.39%      cal  ld-2.13.so     [.] memset                   
+     1.24%      cal  ld-2.13.so     [.] _dl_new_object     
+
+./perf record -e kmem:kmalloc cal
+# Overhead  Command  Shared Object          Symbol
+# ........  .......  .............  ..............
+#
+
+   100.00%      cal  [ks8851]       [k] 0x01151dac
+
+
+
+----------------Exynos------------------------------------
+
+./perf record -e cycles cal
+# Overhead  Command               Shared Object                           
+Symbol
+# ........  .......  ..........................  
+...............................
+#
+
+     8.02%      cal  ld-2.13.so                  [.] 0x00001d40                 
+     5.47%      cal  [kernel.kallsyms]           [k] cpu_v7_set_pte_ext         
+     5.46%      cal  libc-2.13.so                [.] 0x000fbcc8                 
+     5.44%      cal  [kernel.kallsyms]           [k] __memzero                  
+     5.39%      cal  [kernel.kallsyms]           [k] strcmp                     
+     5.29%      cal  [kernel.kallsyms]           [k] copy_page                  
+     5.20%      cal  cal                         [.] 0x00000cb0                 
+     4.87%      cal  [kernel.kallsyms]           [k] unmap_page_range           
+     2.78%      cal  [kernel.kallsyms]           [k] __wake_up_bit              
+     2.77%      cal  [kernel.kallsyms]           [k] hrtimer_run_pending        
+     2.76%      cal  [kernel.kallsyms]           [k] 
+mem_cgroup_uncharge_start  
+     2.76%      cal  [kernel.kallsyms]           [k] submit_bio                 
+     2.75%      cal  [kernel.kallsyms]           [k] n_tty_write                
+     2.73%      cal  [kernel.kallsyms]           [k] strncpy                    
+     2.68%      cal  [kernel.kallsyms]           [k] do_page_fault
+	[...]     
+
+./perf record -e kmem:kmalloc cal
+# Overhead  Command      Shared Object                      Symbol
+# ........  .......  .................  ..........................
+#
+
+    97.37%      cal  [kernel.kallsyms]  [k] kmem_cache_alloc_trace
+     2.63%      cal  [kernel.kallsyms]  [k] __kmalloc             
+
+
+
+  
+
