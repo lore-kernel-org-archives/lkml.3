@@ -1,111 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754216AbaFCNCf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 09:02:35 -0400
-Received: from mail-ig0-f173.google.com ([209.85.213.173]:35065 "EHLO
-	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751010AbaFCNCd (ORCPT
+	id S1754241AbaFCNDT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 09:03:19 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:20527 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752347AbaFCNDS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 09:02:33 -0400
-MIME-Version: 1.0
-In-Reply-To: <5389393D.2030305@kernel.dk>
-References: <1401260039-18189-1-git-send-email-minchan@kernel.org>
-	<1401260039-18189-2-git-send-email-minchan@kernel.org>
-	<CA+55aFxXdc22dirnE49UbQP_2s2vLQpjQFL+NptuyK7Xry6c=g@mail.gmail.com>
-	<20140528223142.GO8554@dastard>
-	<CA+55aFyRk6_v6COPGVvu6hvt=i2A8-dPcs1X3Ydn1g24AxbPkg@mail.gmail.com>
-	<20140529013007.GF6677@dastard>
-	<CA+55aFzdq2V-Q3WUV7hQJG8jBSAvBqdYLVTNtbD4ObVZ5yDRmw@mail.gmail.com>
-	<5389393D.2030305@kernel.dk>
-Date: Tue, 3 Jun 2014 17:02:32 +0400
-Message-ID: <CALYGNiNwTJDwTL5PdERnFefZjE3hoi2fbNhK16mf12J5gYGeiw@mail.gmail.com>
-Subject: Re: [RFC 2/2] x86_64: expand kernel stack to 16K
-From: Konstantin Khlebnikov <koct9i@gmail.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Chinner <david@fromorbit.com>, Minchan Kim <minchan@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm <linux-mm@kvack.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Hugh Dickins <hughd@google.com>, Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 3 Jun 2014 09:03:18 -0400
+X-Nat-Received: from [202.181.97.72]:46786 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1401800596.23326
+To: oleg@redhat.com, akpm@linux-foundation.org
+Cc: joseph.salisbury@canonical.com, rientjes@google.com,
+        torvalds@linux-foundation.org, tj@kernel.org, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org, kernel-team@lists.ubuntu.com
+Subject: [PATCH] kthread: Fix return value of kthread_create() upon SIGKILL.
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <53236AA2.7030105@canonical.com>
+	<20140317130241.7e4fde86d75d417628da6f1a@linux-foundation.org>
+	<20140317201919.GA28997@redhat.com>
+In-Reply-To: <20140317201919.GA28997@redhat.com>
+Message-Id: <201406032203.ECD00030.OOHFSQtVFLOFMJ@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Tue, 3 Jun 2014 22:03:11 +0900
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 03062014 #8117452, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 31, 2014 at 6:06 AM, Jens Axboe <axboe@kernel.dk> wrote:
-> On 2014-05-28 20:42, Linus Torvalds wrote:
->>>
->>> Regardless of whether it is swap or something external queues the
->>> bio on the plug, perhaps we should look at why it's done inline
->>> rather than by kblockd, where it was moved because it was blowing
->>> the stack from schedule():
->>
->>
->> So it sounds like we need to do this for io_schedule() too.
->>
->> In fact, we've generally found it to be a mistake every time we
->> "automatically" unblock some IO queue. And I'm not saying that because
->> of stack space, but because we've _often_ had the situation that eager
->> unblocking results in IO that could have been done as bigger requests.
->
->
-> We definitely need to auto-unplug on the schedule path, otherwise we run
-> into all sorts of trouble. But making it async off the IO schedule path is
-> fine. By definition, it's not latency sensitive if we are hitting unplug on
-> schedule. I'm pretty sure it was run inline on CPU concerns here, as running
-> inline is certainly cheaper than punting to kblockd.
->
->
->> Looking at that callchain, I have to say that ext4 doesn't look
->> horrible compared to the whole block layer and virtio.. Yes,
->> "ext4_writepages()" is using almost 400 bytes of stack, and most of
->> that seems to be due to:
->>
->>          struct mpage_da_data mpd;
->>          struct blk_plug plug;
->
->
-> Plus blk_plug is pretty tiny as it is. I queued up a patch to kill the magic
-> part of it, since that's never caught any bugs. Only saves 8 bytes, but may
-> as well take that. Especially if we end up with nested plugs.
+>From c41fa0b9294900a86167d6c8db392d99dde09774 Mon Sep 17 00:00:00 2001
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Date: Tue, 3 Jun 2014 21:46:24 +0900
+Subject: [PATCH] kthread: Fix return value of kthread_create() upon SIGKILL.
 
-In case of nested plugs only the first one is used? Right?
-So, it may be embedded into task_struct together with integer recursion counter.
-This will save bit of precious stack and make it looks cleaner.
+Commit 786235eeb "kthread: make kthread_create() killable" meant for
+allowing kthread_create() to abort as soon as killed by the OOM-killer.
+But returning -ENOMEM is wrong if killed by SIGKILL from userspace.
+Change kthread_create() to return -EINTR upon SIGKILL.
 
+Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: David Rientjes <rientjes@google.com>
+Cc: stable <stable@kernel.org> [3.13+]
+---
+ kernel/kthread.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
->
->
->> Well, we've definitely have had some issues with deeper callchains
->> with md, but I suspect virtio might be worse, and the new blk-mq code
->> is lilkely worse in this respect too.
->
->
-> I don't think blk-mq is worse than the older stack, in fact it should be
-> better. The call chains are shorter, and a lot less cruft on the stack.
-> Historically the stack issues have been nested devices, however. And for
-> sync IO, we do run it inline, so if the driver chews up a lot of stack,
-> well...
->
-> Looks like I'm late here and the decision has been made to go 16K stacks,
-> which I think is a good one. We've been living on the edge (and sometimes
-> over) for heavy dm/md setups for a while, and have been patching around that
-> fact in the IO stack for years.
->
->
-> --
-> Jens Axboe
->
->
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+diff --git a/kernel/kthread.c b/kernel/kthread.c
+index 9a130ec..c2390f4 100644
+--- a/kernel/kthread.c
++++ b/kernel/kthread.c
+@@ -262,7 +262,7 @@ static void create_kthread(struct kthread_create_info *create)
+  * kthread_stop() has been called).  The return value should be zero
+  * or a negative error number; it will be passed to kthread_stop().
+  *
+- * Returns a task_struct or ERR_PTR(-ENOMEM).
++ * Returns a task_struct or ERR_PTR(-ENOMEM) or ERR_PTR(-EINTR).
+  */
+ struct task_struct *kthread_create_on_node(int (*threadfn)(void *data),
+ 					   void *data, int node,
+@@ -298,7 +298,7 @@ struct task_struct *kthread_create_on_node(int (*threadfn)(void *data),
+ 		 * that thread.
+ 		 */
+ 		if (xchg(&create->done, NULL))
+-			return ERR_PTR(-ENOMEM);
++			return ERR_PTR(-EINTR);
+ 		/*
+ 		 * kthreadd (or new kernel thread) will call complete()
+ 		 * shortly.
+-- 
+1.7.1
