@@ -1,114 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965373AbaFCVko (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 17:40:44 -0400
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:53302 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965335AbaFCVkk (ORCPT
+	id S934226AbaFCVmS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 17:42:18 -0400
+Received: from mail-yk0-f181.google.com ([209.85.160.181]:45494 "EHLO
+	mail-yk0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751955AbaFCVmN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 17:40:40 -0400
+	Tue, 3 Jun 2014 17:42:13 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAMEtUuzsHJioXZtuGje6UmwZmcmDZEn8PdkkYanA9j1sp242+Q@mail.gmail.com>
-References: <1401692506-7796-1-git-send-email-ast@plumgrid.com>
-	<538C3C94.3080206@redhat.com>
-	<CAMEtUuzkjZCsReWH9cZs8AU0mJjZH9YOdCBTWusxe6-NZ9mQ=g@mail.gmail.com>
-	<538CAEA6.4060307@redhat.com>
-	<CAMEtUuwxJOgYgFjg9deQZOffeg6-JUGZXZ1Rj344eQmriQ0F0Q@mail.gmail.com>
-	<538D8DAA.7090105@redhat.com>
-	<CAMEtUuw8uyCGeLeUB0PXm5cCpqcsjPLZt6y9FcKjapbVPjWTuw@mail.gmail.com>
-	<538E319B.3000606@redhat.com>
-	<CAMEtUuzsHJioXZtuGje6UmwZmcmDZEn8PdkkYanA9j1sp242+Q@mail.gmail.com>
-Date: Tue, 3 Jun 2014 14:40:39 -0700
-Message-ID: <CA+ZOOTOfq705CbUjx9ppw4gLxJ8JFCaFsphwhAS+NskHVjd86Q@mail.gmail.com>
-Subject: Re: [PATCH v2 net-next 0/2] split BPF out of core networking
-From: Chema Gonzalez <chema@google.com>
-To: Alexei Starovoitov <ast@plumgrid.com>
-Cc: Daniel Borkmann <dborkman@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+X-Originating-IP: [128.107.239.236]
+In-Reply-To: <20140603214251.GA19925@kroah.com>
+References: <1401725505-3459-1-git-send-email-c@24.io>
+	<1401725505-3459-2-git-send-email-c@24.io>
+	<CAMuHMdW1YnLVyZbmD0fadc6KX=EcH4CArC1379CDGb9ACm=GbQ@mail.gmail.com>
+	<20140603183644.GG15585@mwanda>
+	<CADadk9HSKT3+wtBbOEiMB2ZirikNF2D71Zw6Jy+A1CCNHwXiTA@mail.gmail.com>
+	<20140603214251.GA19925@kroah.com>
+Date: Tue, 3 Jun 2014 14:42:12 -0700
+Message-ID: <CADadk9FOGef-kHLFQuKZUBp+e4f5ziF+PY7YfWFbk-j76pJ0qg@mail.gmail.com>
+Subject: Re: [PATCH 2/4] Staging: rtl8192u: r8192U_wx.c Removed all C99 comments
+From: Chaitanya Hazarey <c@24.io>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+        driverdevel <devel@driverdev.osuosl.org>,
+        Andrea Merello <andrea.merello@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Ksenia Ragiadakou <burzalodowa@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-First of all, and just to join the crowd, kernel/bpf/ FTW.
-
-Now, I have some suggestions about eBPF. IMO classic BPF is an ISA
-oriented to filter (meaning returning a single integer that states how
-many bytes of the packet must be captured) packets (e.g. consider the
-6 load modes, where 3 provide access the packet -- abs, ind, msh --,
-one to an skb field -- len--, the 5th one to the memory itself -- mem
---, and the 6th is an immediate set mode --imm-- ) that has been used
-in other environments (seccomp, tracing, etc.) by (a) extending the
-idea of a "packet" into a "buffer", and (b) adding ancillary loads.
-
-eBPF should be a generic ISA that can be used by many environments,
-including those served today by classic BPF. IMO, we should get a
-nicely-defined ISA (MIPS anyone?) and check what should go into eBPF
-and what should not.
-
-- 1. we should considering separating the eBPF ISA farther from classic BPF
-  - eBPF still uses a_reg and x_reg as the names of the 2 op
-registers. This is very confusing, especially when dealing with
-translated filters that do move data between A and X. I've had a_reg
-being X, and x_reg being A. We should rename them d_reg and s_reg.
-  - BPF_LD vs. BPF_LDX: this made sense in classic BPF, as there was
-only one register, and d_reg was implicit in the name of the insn
-code. Now, why are we keeping both in eBPF, when the register we're
-writing to is made explicit in d_reg (I already forgot if d_reg was
-a_reg or x_reg ;) ? Removing one of them will save us 1/8th of the
-insns.
-  - BPF_ST vs. BPF_STX: same here. Note that the current
-sk_convert_filter() just converts all stores to BPF_STX.
-
-- 2. there are other insn that we should consider adding:
-  - lui: AFAICT, there is no clean way to build a 64-bit number (you
-can LD_IMM the upper part, lsh 32, and then add the lower part).
-  - nop: I'd like to have a nop. Do I know why? Nope.
-
-
-On Tue, Jun 3, 2014 at 1:58 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
-> On Tue, Jun 3, 2014 at 1:35 PM, Daniel Borkmann <dborkman@redhat.com> wrote:
->> On 06/03/2014 05:44 PM, Alexei Starovoitov wrote:
->> ...
->>>
->>> All of your points are valid. They are right questions to ask. I just
->>>
->>> don't see why you're still arguing about first step of filter.c split,
->>> whereas your concerns are about steps 2, 3, 4.
->>
->>
->> Fair enough, lets keep them in mind though for future work. Btw,
+On Tue, Jun 3, 2014 at 2:42 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> So keep working on things,
+> these aren't lost, I'll get to them in a few weeks.
 >
-> Ok :)
->
->> are other files planned for kernel/bpf/ or should it instead just
->> simply be kernel/bpf.c?
->
-> The most obvious one is eBPF verifier in separate file (kernel/bpf/verifier.c)
-> bpf maps is yet another thing, but that's different topic.
-> Probably a set of bpf-callable functions in another file. Like right now
-> for sockets these helpers are __skb_get_pay_offset(), __skb_get_nlattr()
-> For tracing there will be a different set of helper functions and eventually
-> some will be common. Like __get_raw_cpu_id() from filter.c could
-> eventually move to kernel/bpf/helpers.c
-LGTM.
 
-I like the idea of every user (packet filter, seccomp, etc.) providing
-a map of the bpf calls that are ok, as in the packet filter stating
-that {1->__skb_get_pay_offset(), 2->__skb_get_nlattr(), ...}, but
-seccomp providing a completely different (or even empty) map.
+Ok will do,
 
--Chema
-
-
-> I'm not a fan of squeezing different logic into one file.
+Chaitanya
