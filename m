@@ -1,76 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752774AbaFCKGM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 06:06:12 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:51656 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751000AbaFCKGK (ORCPT
+	id S1752939AbaFCKGV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 06:06:21 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:52315 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751000AbaFCKGT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 06:06:10 -0400
-Date: Tue, 3 Jun 2014 11:05:45 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Tim Kryger <tim.kryger@gmail.com>
-Cc: Jingoo Han <jg1.han@samsung.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        linux-kernel@vger.kernel.org, Matt Porter <mporter@linaro.org>,
-        Tim Kryger <tim.kryger@linaro.org>
-Message-ID: <20140603100545.GT31751@sirena.org.uk>
-References: <000101cf7e2b$b5c9f9c0$215ded40$%han@samsung.com>
- <CAD7vxxKT+Wq2ArH9iYLm2OUeBSqKvzORKZ1NnoyPcdcDH6wOKw@mail.gmail.com>
- <20140602125055.GE31751@sirena.org.uk>
- <CAD7vxxKgauFdEavebiZ3u7pXhjJu9QqwW0nMuLbEr7+JJWssfA@mail.gmail.com>
+	Tue, 3 Jun 2014 06:06:19 -0400
+Message-ID: <538D9DBD.2030605@linux.vnet.ibm.com>
+Date: Tue, 03 Jun 2014 15:34:45 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="e4Ac2VUIqaLF2Uxx"
-Content-Disposition: inline
-In-Reply-To: <CAD7vxxKgauFdEavebiZ3u7pXhjJu9QqwW0nMuLbEr7+JJWssfA@mail.gmail.com>
-X-Cookie: Big book, big bore.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 109.148.252.180
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/3] regulator: bcm590xx: remove unnecessary OOM messages
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        "ego@linux.vnet.ibm.com" <ego@linux.vnet.ibm.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] cpufreq: governor: Be friendly towards latency-sensitive
+ bursty workloads
+References: <20140526205337.1100.55275.stgit@srivatsabhat.in.ibm.com> <CAKohpokdnHag=79cXuwgNjX-k+JJU9GE3KUBhixcj3PZ6y78GQ@mail.gmail.com> <538D9631.9090500@linux.vnet.ibm.com> <CAKohpomynD9m-Cq4zsVSp3Xbw5Tx2cSe_Fcp5y0U8uAKSpQ1Tw@mail.gmail.com>
+In-Reply-To: <CAKohpomynD9m-Cq4zsVSp3Xbw5Tx2cSe_Fcp5y0U8uAKSpQ1Tw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14060310-8256-0000-0000-00000D8512D8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06/03/2014 03:09 PM, Viresh Kumar wrote:
+> On 3 June 2014 15:02, Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com> wrote:
+>> diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
+>> index e1c6433..3e8588f 100644
+>> --- a/drivers/cpufreq/cpufreq_governor.c
+>> +++ b/drivers/cpufreq/cpufreq_governor.c
+>> @@ -36,14 +36,29 @@ void dbs_check_cpu(struct dbs_data *dbs_data, int cpu)
+>>         struct od_dbs_tuners *od_tuners = dbs_data->tuners;
+>>         struct cs_dbs_tuners *cs_tuners = dbs_data->tuners;
+>>         struct cpufreq_policy *policy;
+>> +       unsigned int sampling_rate;
+>>         unsigned int max_load = 0;
+>>         unsigned int ignore_nice;
+>>         unsigned int j;
+>>
+>> -       if (dbs_data->cdata->governor == GOV_ONDEMAND)
+>> +       if (dbs_data->cdata->governor == GOV_ONDEMAND) {
+>> +               struct od_cpu_dbs_info_s *od_dbs_info;
+>> +
+>> +               /*
+>> +                * Sometimes, the ondemand governor uses an additional
+>> +                * multiplier to give long delays. So apply this multiplier to
+>> +                * the 'sampling_rate', so as to keep the wake-up-from-idle
+>> +                * detection logic a bit conservative.
+>> +                */
+>> +               sampling_rate = od_tuners->sampling_rate;
+>> +               od_dbs_info = dbs_data->cdata->get_cpu_dbs_info_s(cpu);
+> 
+> Probably do both above right after definition of od_dbs_info or merge
+> above with it. and just keep below after the comment ?
+> 
+>> +               sampling_rate *= od_dbs_info->rate_mult;
+> 
 
---e4Ac2VUIqaLF2Uxx
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Well, the method I used keeps the organization such that the code following
+the comment does precisely what the comment says (i.e, get the sampling_rate,
+fetch the multiplier, and then multiply). So I feel it makes it easier to
+understand.
 
-On Mon, Jun 02, 2014 at 11:41:01PM -0700, Tim Kryger wrote:
+Regards,
+Srivatsa S. Bhat
 
-> The real question is whether this change improves the driver.  To me,
-> it seems like a draw.
-
-It's not really for the benefit of the driver, it's for the benefit of
-the kernel as a whole - the individually hand crafted error messages all
-take up space in the kernel so if we just remove them and rely on the
-OOM messages being loud we will in aggregate save some not completely
-trivial amount of space in the kernel image.  Not a *massive* amount but
-somewhat helpful.
-
---e4Ac2VUIqaLF2Uxx
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTjZ32AAoJELSic+t+oim9OXsQAIUWgTTw6iTM/LDmGf65SNQJ
-t5Bl/Kb31OUgGdGR5j/usCMWzzXNXrtMeR1AjXReO7epOUR2K71MqOBJUxHIdasd
-uNBSKOewqZWZK+169O54vNos6RwrLbWOY4GsWsXrp2hW7N0VbD8LiTFNYGZce0uW
-LuA6rU0gmLWX4MG6BjX9lQhH/b1WFvZzc1L9C6EUFaN6JIO0+g+qLNvK/ZGIrm69
-QdZnj/qlPGWSXTTfK2usSlR5omz0y8o7+Oi7UlHNR51B84rexqY9tTiKte2D8+SW
-nkDHCPAQQyiOXUYkjXitX2BfVmpRqeSMoDsuADEvCfWPoM/HKzJtJNv58RqlUnPQ
-uP4bDiXFcGkpSgcpjVN5pUKiX8WO3rgF1vJxTt6F7nVRo0RPdkgc2jJXPfneZIg2
-crwpshfMcLFbrPCr5TnrFnSUR1PlHk+qczCIFEY9NfiFt3SqUuEBbJ8n66BYVD27
-7PQZPUyoKzEzwjcqgUOCr9wVOgjymmTMO5keQwxYll3VgVeo/z8AHD1MD97Iebc/
-DCt1cxcIoYwLZl87Op25JVyk7rRXOc7WrZVWIEfwo0eMmxSILgO3dPpAbT/zNEhI
-bSYBwnMItkbZ2SKJiko6T0VImZKOQAPqmplyqgEtqclVb07A9t4f7gdNsXXXiw4n
-hqrr+Z1DchwIS3G+zFN3
-=SYyX
------END PGP SIGNATURE-----
-
---e4Ac2VUIqaLF2Uxx--
