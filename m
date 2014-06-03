@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754203AbaFCLkU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 07:40:20 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43237 "EHLO
+	id S932725AbaFCMVL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 08:21:11 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43266 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753928AbaFCLkL (ORCPT
+	with ESMTP id S1754104AbaFCLkT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 07:40:11 -0400
+	Tue, 3 Jun 2014 07:40:19 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>,
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 012/138] drm/radeon: use pflip irq on R600+ v2
-Date: Tue,  3 Jun 2014 12:37:38 +0100
-Message-Id: <1401795584-22664-13-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 017/138] USB: OHCI: fix problem with global suspend on ATI controllers
+Date: Tue,  3 Jun 2014 12:37:43 +0100
+Message-Id: <1401795584-22664-18-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
 References: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
@@ -30,360 +31,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit f5d636d2a74b755879feec35e14a259de52ccc07 upstream.
+commit c1db30a2a79eb59997b13b8cabf2a50bea9f04e1 upstream.
 
-Testing the update pending bit directly after issuing an
-update is nonsense cause depending on the pixel clock the
-CRTC needs a bit of time to execute the flip even when we
-are in the VBLANK period.
+Some OHCI controllers from ATI/AMD seem to have difficulty with
+"global" USB suspend, that is, suspending an entire USB bus without
+setting the suspend feature for each port connected to a device.  When
+we try to resume the child devices, the controller gives timeout
+errors on the unsuspended ports, requiring resets, and can even cause
+ohci-hcd to hang; see
 
-This is just a non invasive patch to solve the problem at
-hand, a more complete and cleaner solution should follow
-in the next merge window.
+	http://marc.info/?l=linux-usb&m=139514332820398&w=2
 
-Fixes: https://bugs.freedesktop.org/show_bug.cgi?id=76564
+and the following messages.
 
-v2: fix source IDs for CRTC2-6
+This patch fixes the problem by adding a new quirk flag to ohci-hcd.
+The flag causes the ohci_rh_suspend() routine to suspend each
+unsuspended, enabled port before suspending the root hub.  This
+effectively converts the "global" suspend to an ordinary root-hub
+suspend.  There is no need to unsuspend these ports when the root hub
+is resumed, because the child devices will be resumed anyway in the
+course of a normal system resume ("global" suspend is never used for
+runtime PM).
 
-Signed-off-by: Christian König <christian.koenig@amd.com>
+This patch should be applied to all stable kernels which include
+commit 0aa2832dd0d9 (USB: use "global suspend" for system sleep on
+USB-2 buses) or a backported version thereof.
+
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Reported-by: Peter Münster <pmlists@free.fr>
+Tested-by: Peter Münster <pmlists@free.fr>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[ luis: backported to 3.11: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/radeon/cik.c            | 76 +++++++++++++++++++++++++++++++++
- drivers/gpu/drm/radeon/cikd.h           |  9 ++++
- drivers/gpu/drm/radeon/evergreen.c      | 28 +++++++++---
- drivers/gpu/drm/radeon/r600.c           | 13 ++++--
- drivers/gpu/drm/radeon/radeon.h         |  6 +++
- drivers/gpu/drm/radeon/radeon_display.c |  4 ++
- drivers/gpu/drm/radeon/si.c             | 28 +++++++++---
- 7 files changed, 147 insertions(+), 17 deletions(-)
+ drivers/usb/host/ohci-hub.c | 18 ++++++++++++++++++
+ drivers/usb/host/ohci-pci.c |  1 +
+ drivers/usb/host/ohci.h     |  2 ++
+ 3 files changed, 21 insertions(+)
 
-diff --git a/drivers/gpu/drm/radeon/cik.c b/drivers/gpu/drm/radeon/cik.c
-index 986537b59d7e..85647ab99fb1 100644
---- a/drivers/gpu/drm/radeon/cik.c
-+++ b/drivers/gpu/drm/radeon/cik.c
-@@ -5017,6 +5017,19 @@ static void cik_disable_interrupt_state(struct radeon_device *rdev)
- 		WREG32(LB_INTERRUPT_MASK + EVERGREEN_CRTC4_REGISTER_OFFSET, 0);
- 		WREG32(LB_INTERRUPT_MASK + EVERGREEN_CRTC5_REGISTER_OFFSET, 0);
- 	}
-+	/* pflip */
-+	if (rdev->num_crtc >= 2) {
-+		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC0_REGISTER_OFFSET, 0);
-+		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC1_REGISTER_OFFSET, 0);
-+	}
-+	if (rdev->num_crtc >= 4) {
-+		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC2_REGISTER_OFFSET, 0);
-+		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC3_REGISTER_OFFSET, 0);
-+	}
-+	if (rdev->num_crtc >= 6) {
-+		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC4_REGISTER_OFFSET, 0);
-+		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC5_REGISTER_OFFSET, 0);
-+	}
+diff --git a/drivers/usb/host/ohci-hub.c b/drivers/usb/host/ohci-hub.c
+index 2347ab83f046..dcf570862502 100644
+--- a/drivers/usb/host/ohci-hub.c
++++ b/drivers/usb/host/ohci-hub.c
+@@ -90,6 +90,24 @@ __acquires(ohci->lock)
+ 	dl_done_list (ohci);
+ 	finish_unlinks (ohci, ohci_frame_no(ohci));
  
- 	/* dac hotplug */
- 	WREG32(DAC_AUTODETECT_INT_CONTROL, 0);
-@@ -5354,6 +5367,25 @@ int cik_irq_set(struct radeon_device *rdev)
- 		WREG32(LB_INTERRUPT_MASK + EVERGREEN_CRTC5_REGISTER_OFFSET, crtc6);
- 	}
- 
-+	if (rdev->num_crtc >= 2) {
-+		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC0_REGISTER_OFFSET,
-+		       GRPH_PFLIP_INT_MASK);
-+		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC1_REGISTER_OFFSET,
-+		       GRPH_PFLIP_INT_MASK);
-+	}
-+	if (rdev->num_crtc >= 4) {
-+		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC2_REGISTER_OFFSET,
-+		       GRPH_PFLIP_INT_MASK);
-+		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC3_REGISTER_OFFSET,
-+		       GRPH_PFLIP_INT_MASK);
-+	}
-+	if (rdev->num_crtc >= 6) {
-+		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC4_REGISTER_OFFSET,
-+		       GRPH_PFLIP_INT_MASK);
-+		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC5_REGISTER_OFFSET,
-+		       GRPH_PFLIP_INT_MASK);
++	/*
++	 * Some controllers don't handle "global" suspend properly if
++	 * there are unsuspended ports.  For these controllers, put all
++	 * the enabled ports into suspend before suspending the root hub.
++	 */
++	if (ohci->flags & OHCI_QUIRK_GLOBAL_SUSPEND) {
++		__hc32 __iomem	*portstat = ohci->regs->roothub.portstatus;
++		int		i;
++		unsigned	temp;
++
++		for (i = 0; i < ohci->num_ports; (++i, ++portstat)) {
++			temp = ohci_readl(ohci, portstat);
++			if ((temp & (RH_PS_PES | RH_PS_PSS)) ==
++					RH_PS_PES)
++				ohci_writel(ohci, RH_PS_PSS, portstat);
++		}
 +	}
 +
- 	WREG32(DC_HPD1_INT_CONTROL, hpd1);
- 	WREG32(DC_HPD2_INT_CONTROL, hpd2);
- 	WREG32(DC_HPD3_INT_CONTROL, hpd3);
-@@ -5385,6 +5417,29 @@ static inline void cik_irq_ack(struct radeon_device *rdev)
- 	rdev->irq.stat_regs.cik.disp_int_cont5 = RREG32(DISP_INTERRUPT_STATUS_CONTINUE5);
- 	rdev->irq.stat_regs.cik.disp_int_cont6 = RREG32(DISP_INTERRUPT_STATUS_CONTINUE6);
+ 	/* maybe resume can wake root hub */
+ 	if (ohci_to_hcd(ohci)->self.root_hub->do_remote_wakeup || autostop) {
+ 		ohci->hc_control |= OHCI_CTRL_RWE;
+diff --git a/drivers/usb/host/ohci-pci.c b/drivers/usb/host/ohci-pci.c
+index ec337c2bd5e0..32a2e6a84222 100644
+--- a/drivers/usb/host/ohci-pci.c
++++ b/drivers/usb/host/ohci-pci.c
+@@ -171,6 +171,7 @@ static int ohci_quirk_amd700(struct usb_hcd *hcd)
  
-+	rdev->irq.stat_regs.cik.d1grph_int = RREG32(GRPH_INT_STATUS +
-+		EVERGREEN_CRTC0_REGISTER_OFFSET);
-+	rdev->irq.stat_regs.cik.d2grph_int = RREG32(GRPH_INT_STATUS +
-+		EVERGREEN_CRTC1_REGISTER_OFFSET);
-+	if (rdev->num_crtc >= 4) {
-+		rdev->irq.stat_regs.cik.d3grph_int = RREG32(GRPH_INT_STATUS +
-+			EVERGREEN_CRTC2_REGISTER_OFFSET);
-+		rdev->irq.stat_regs.cik.d4grph_int = RREG32(GRPH_INT_STATUS +
-+			EVERGREEN_CRTC3_REGISTER_OFFSET);
-+	}
-+	if (rdev->num_crtc >= 6) {
-+		rdev->irq.stat_regs.cik.d5grph_int = RREG32(GRPH_INT_STATUS +
-+			EVERGREEN_CRTC4_REGISTER_OFFSET);
-+		rdev->irq.stat_regs.cik.d6grph_int = RREG32(GRPH_INT_STATUS +
-+			EVERGREEN_CRTC5_REGISTER_OFFSET);
-+	}
+ 	pci_dev_put(amd_smbus_dev);
+ 	amd_smbus_dev = NULL;
++	ohci->flags |= OHCI_QUIRK_GLOBAL_SUSPEND;
+ 
+ 	return 0;
+ }
+diff --git a/drivers/usb/host/ohci.h b/drivers/usb/host/ohci.h
+index e2e5faa5a402..0b2e58c2dfef 100644
+--- a/drivers/usb/host/ohci.h
++++ b/drivers/usb/host/ohci.h
+@@ -405,6 +405,8 @@ struct ohci_hcd {
+ #define	OHCI_QUIRK_HUB_POWER	0x100			/* distrust firmware power/oc setup */
+ #define	OHCI_QUIRK_AMD_PLL	0x200			/* AMD PLL quirk*/
+ #define	OHCI_QUIRK_AMD_PREFETCH	0x400			/* pre-fetch for ISO transfer */
++#define	OHCI_QUIRK_GLOBAL_SUSPEND	0x800		/* must suspend ports */
 +
-+	if (rdev->irq.stat_regs.cik.d1grph_int & GRPH_PFLIP_INT_OCCURRED)
-+		WREG32(GRPH_INT_STATUS + EVERGREEN_CRTC0_REGISTER_OFFSET,
-+		       GRPH_PFLIP_INT_CLEAR);
-+	if (rdev->irq.stat_regs.cik.d2grph_int & GRPH_PFLIP_INT_OCCURRED)
-+		WREG32(GRPH_INT_STATUS + EVERGREEN_CRTC1_REGISTER_OFFSET,
-+		       GRPH_PFLIP_INT_CLEAR);
- 	if (rdev->irq.stat_regs.cik.disp_int & LB_D1_VBLANK_INTERRUPT)
- 		WREG32(LB_VBLANK_STATUS + EVERGREEN_CRTC0_REGISTER_OFFSET, VBLANK_ACK);
- 	if (rdev->irq.stat_regs.cik.disp_int & LB_D1_VLINE_INTERRUPT)
-@@ -5395,6 +5450,12 @@ static inline void cik_irq_ack(struct radeon_device *rdev)
- 		WREG32(LB_VLINE_STATUS + EVERGREEN_CRTC1_REGISTER_OFFSET, VLINE_ACK);
+ 	// there are also chip quirks/bugs in init logic
  
- 	if (rdev->num_crtc >= 4) {
-+		if (rdev->irq.stat_regs.cik.d3grph_int & GRPH_PFLIP_INT_OCCURRED)
-+			WREG32(GRPH_INT_STATUS + EVERGREEN_CRTC2_REGISTER_OFFSET,
-+			       GRPH_PFLIP_INT_CLEAR);
-+		if (rdev->irq.stat_regs.cik.d4grph_int & GRPH_PFLIP_INT_OCCURRED)
-+			WREG32(GRPH_INT_STATUS + EVERGREEN_CRTC3_REGISTER_OFFSET,
-+			       GRPH_PFLIP_INT_CLEAR);
- 		if (rdev->irq.stat_regs.cik.disp_int_cont2 & LB_D3_VBLANK_INTERRUPT)
- 			WREG32(LB_VBLANK_STATUS + EVERGREEN_CRTC2_REGISTER_OFFSET, VBLANK_ACK);
- 		if (rdev->irq.stat_regs.cik.disp_int_cont2 & LB_D3_VLINE_INTERRUPT)
-@@ -5406,6 +5467,12 @@ static inline void cik_irq_ack(struct radeon_device *rdev)
- 	}
- 
- 	if (rdev->num_crtc >= 6) {
-+		if (rdev->irq.stat_regs.cik.d5grph_int & GRPH_PFLIP_INT_OCCURRED)
-+			WREG32(GRPH_INT_STATUS + EVERGREEN_CRTC4_REGISTER_OFFSET,
-+			       GRPH_PFLIP_INT_CLEAR);
-+		if (rdev->irq.stat_regs.cik.d6grph_int & GRPH_PFLIP_INT_OCCURRED)
-+			WREG32(GRPH_INT_STATUS + EVERGREEN_CRTC5_REGISTER_OFFSET,
-+			       GRPH_PFLIP_INT_CLEAR);
- 		if (rdev->irq.stat_regs.cik.disp_int_cont4 & LB_D5_VBLANK_INTERRUPT)
- 			WREG32(LB_VBLANK_STATUS + EVERGREEN_CRTC4_REGISTER_OFFSET, VBLANK_ACK);
- 		if (rdev->irq.stat_regs.cik.disp_int_cont4 & LB_D5_VLINE_INTERRUPT)
-@@ -5756,6 +5823,15 @@ restart_ih:
- 				break;
- 			}
- 			break;
-+		case 8: /* D1 page flip */
-+		case 10: /* D2 page flip */
-+		case 12: /* D3 page flip */
-+		case 14: /* D4 page flip */
-+		case 16: /* D5 page flip */
-+		case 18: /* D6 page flip */
-+			DRM_DEBUG("IH: D%d flip\n", ((src_id - 8) >> 1) + 1);
-+			radeon_crtc_handle_flip(rdev, (src_id - 8) >> 1);
-+			break;
- 		case 42: /* HPD hotplug */
- 			switch (src_data) {
- 			case 0:
-diff --git a/drivers/gpu/drm/radeon/cikd.h b/drivers/gpu/drm/radeon/cikd.h
-index ade318ed9b70..302d2b756e94 100644
---- a/drivers/gpu/drm/radeon/cikd.h
-+++ b/drivers/gpu/drm/radeon/cikd.h
-@@ -370,6 +370,15 @@
- #       define DC_HPD6_RX_INTERRUPT                     (1 << 18)
- #define DISP_INTERRUPT_STATUS_CONTINUE6                 0x6780
- 
-+/* 0x6858, 0x7458, 0x10058, 0x10c58, 0x11858, 0x12458 */
-+#define GRPH_INT_STATUS                                 0x6858
-+#       define GRPH_PFLIP_INT_OCCURRED                  (1 << 0)
-+#       define GRPH_PFLIP_INT_CLEAR                     (1 << 8)
-+/* 0x685c, 0x745c, 0x1005c, 0x10c5c, 0x1185c, 0x1245c */
-+#define GRPH_INT_CONTROL                                0x685c
-+#       define GRPH_PFLIP_INT_MASK                      (1 << 0)
-+#       define GRPH_PFLIP_INT_TYPE                      (1 << 8)
-+
- #define	DAC_AUTODETECT_INT_CONTROL			0x67c8
- 
- #define DC_HPD1_INT_STATUS                              0x601c
-diff --git a/drivers/gpu/drm/radeon/evergreen.c b/drivers/gpu/drm/radeon/evergreen.c
-index dfd2c516afca..f5eb157f69cd 100644
---- a/drivers/gpu/drm/radeon/evergreen.c
-+++ b/drivers/gpu/drm/radeon/evergreen.c
-@@ -4209,7 +4209,6 @@ int evergreen_irq_set(struct radeon_device *rdev)
- 	u32 crtc1 = 0, crtc2 = 0, crtc3 = 0, crtc4 = 0, crtc5 = 0, crtc6 = 0;
- 	u32 hpd1, hpd2, hpd3, hpd4, hpd5, hpd6;
- 	u32 grbm_int_cntl = 0;
--	u32 grph1 = 0, grph2 = 0, grph3 = 0, grph4 = 0, grph5 = 0, grph6 = 0;
- 	u32 afmt1 = 0, afmt2 = 0, afmt3 = 0, afmt4 = 0, afmt5 = 0, afmt6 = 0;
- 	u32 dma_cntl, dma_cntl1 = 0;
- 	u32 thermal_int = 0;
-@@ -4392,15 +4391,21 @@ int evergreen_irq_set(struct radeon_device *rdev)
- 		WREG32(INT_MASK + EVERGREEN_CRTC5_REGISTER_OFFSET, crtc6);
- 	}
- 
--	WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC0_REGISTER_OFFSET, grph1);
--	WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC1_REGISTER_OFFSET, grph2);
-+	WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC0_REGISTER_OFFSET,
-+	       GRPH_PFLIP_INT_MASK);
-+	WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC1_REGISTER_OFFSET,
-+	       GRPH_PFLIP_INT_MASK);
- 	if (rdev->num_crtc >= 4) {
--		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC2_REGISTER_OFFSET, grph3);
--		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC3_REGISTER_OFFSET, grph4);
-+		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC2_REGISTER_OFFSET,
-+		       GRPH_PFLIP_INT_MASK);
-+		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC3_REGISTER_OFFSET,
-+		       GRPH_PFLIP_INT_MASK);
- 	}
- 	if (rdev->num_crtc >= 6) {
--		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC4_REGISTER_OFFSET, grph5);
--		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC5_REGISTER_OFFSET, grph6);
-+		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC4_REGISTER_OFFSET,
-+		       GRPH_PFLIP_INT_MASK);
-+		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC5_REGISTER_OFFSET,
-+		       GRPH_PFLIP_INT_MASK);
- 	}
- 
- 	WREG32(DC_HPD1_INT_CONTROL, hpd1);
-@@ -4789,6 +4794,15 @@ restart_ih:
- 				break;
- 			}
- 			break;
-+		case 8: /* D1 page flip */
-+		case 10: /* D2 page flip */
-+		case 12: /* D3 page flip */
-+		case 14: /* D4 page flip */
-+		case 16: /* D5 page flip */
-+		case 18: /* D6 page flip */
-+			DRM_DEBUG("IH: D%d flip\n", ((src_id - 8) >> 1) + 1);
-+			radeon_crtc_handle_flip(rdev, (src_id - 8) >> 1);
-+			break;
- 		case 42: /* HPD hotplug */
- 			switch (src_data) {
- 			case 0:
-diff --git a/drivers/gpu/drm/radeon/r600.c b/drivers/gpu/drm/radeon/r600.c
-index 8862411a57ef..33b35c9e82be 100644
---- a/drivers/gpu/drm/radeon/r600.c
-+++ b/drivers/gpu/drm/radeon/r600.c
-@@ -4143,7 +4143,6 @@ int r600_irq_set(struct radeon_device *rdev)
- 	u32 hpd1, hpd2, hpd3, hpd4 = 0, hpd5 = 0, hpd6 = 0;
- 	u32 grbm_int_cntl = 0;
- 	u32 hdmi0, hdmi1;
--	u32 d1grph = 0, d2grph = 0;
- 	u32 dma_cntl;
- 	u32 thermal_int = 0;
- 
-@@ -4252,8 +4251,8 @@ int r600_irq_set(struct radeon_device *rdev)
- 	WREG32(CP_INT_CNTL, cp_int_cntl);
- 	WREG32(DMA_CNTL, dma_cntl);
- 	WREG32(DxMODE_INT_MASK, mode_int);
--	WREG32(D1GRPH_INTERRUPT_CONTROL, d1grph);
--	WREG32(D2GRPH_INTERRUPT_CONTROL, d2grph);
-+	WREG32(D1GRPH_INTERRUPT_CONTROL, DxGRPH_PFLIP_INT_MASK);
-+	WREG32(D2GRPH_INTERRUPT_CONTROL, DxGRPH_PFLIP_INT_MASK);
- 	WREG32(GRBM_INT_CNTL, grbm_int_cntl);
- 	if (ASIC_IS_DCE3(rdev)) {
- 		WREG32(DC_HPD1_INT_CONTROL, hpd1);
-@@ -4556,6 +4555,14 @@ restart_ih:
- 				break;
- 			}
- 			break;
-+		case 9: /* D1 pflip */
-+			DRM_DEBUG("IH: D1 flip\n");
-+			radeon_crtc_handle_flip(rdev, 0);
-+			break;
-+		case 11: /* D2 pflip */
-+			DRM_DEBUG("IH: D2 flip\n");
-+			radeon_crtc_handle_flip(rdev, 1);
-+			break;
- 		case 19: /* HPD/DAC hotplug */
- 			switch (src_data) {
- 			case 0:
-diff --git a/drivers/gpu/drm/radeon/radeon.h b/drivers/gpu/drm/radeon/radeon.h
-index 9f19259667df..c7899718f344 100644
---- a/drivers/gpu/drm/radeon/radeon.h
-+++ b/drivers/gpu/drm/radeon/radeon.h
-@@ -671,6 +671,12 @@ struct cik_irq_stat_regs {
- 	u32 disp_int_cont4;
- 	u32 disp_int_cont5;
- 	u32 disp_int_cont6;
-+	u32 d1grph_int;
-+	u32 d2grph_int;
-+	u32 d3grph_int;
-+	u32 d4grph_int;
-+	u32 d5grph_int;
-+	u32 d6grph_int;
- };
- 
- union radeon_irq_stat_regs {
-diff --git a/drivers/gpu/drm/radeon/radeon_display.c b/drivers/gpu/drm/radeon/radeon_display.c
-index 4bc4c65c1445..7b9b98112545 100644
---- a/drivers/gpu/drm/radeon/radeon_display.c
-+++ b/drivers/gpu/drm/radeon/radeon_display.c
-@@ -281,6 +281,10 @@ void radeon_crtc_handle_flip(struct radeon_device *rdev, int crtc_id)
- 	u32 update_pending;
- 	int vpos, hpos;
- 
-+	/* can happen during initialization */
-+	if (radeon_crtc == NULL)
-+		return;
-+
- 	spin_lock_irqsave(&rdev->ddev->event_lock, flags);
- 	work = radeon_crtc->unpin_work;
- 	if (work == NULL ||
-diff --git a/drivers/gpu/drm/radeon/si.c b/drivers/gpu/drm/radeon/si.c
-index b1ccf78e4391..3479145e8f47 100644
---- a/drivers/gpu/drm/radeon/si.c
-+++ b/drivers/gpu/drm/radeon/si.c
-@@ -5745,7 +5745,6 @@ int si_irq_set(struct radeon_device *rdev)
- 	u32 crtc1 = 0, crtc2 = 0, crtc3 = 0, crtc4 = 0, crtc5 = 0, crtc6 = 0;
- 	u32 hpd1 = 0, hpd2 = 0, hpd3 = 0, hpd4 = 0, hpd5 = 0, hpd6 = 0;
- 	u32 grbm_int_cntl = 0;
--	u32 grph1 = 0, grph2 = 0, grph3 = 0, grph4 = 0, grph5 = 0, grph6 = 0;
- 	u32 dma_cntl, dma_cntl1;
- 	u32 thermal_int = 0;
- 
-@@ -5881,16 +5880,22 @@ int si_irq_set(struct radeon_device *rdev)
- 	}
- 
- 	if (rdev->num_crtc >= 2) {
--		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC0_REGISTER_OFFSET, grph1);
--		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC1_REGISTER_OFFSET, grph2);
-+		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC0_REGISTER_OFFSET,
-+		       GRPH_PFLIP_INT_MASK);
-+		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC1_REGISTER_OFFSET,
-+		       GRPH_PFLIP_INT_MASK);
- 	}
- 	if (rdev->num_crtc >= 4) {
--		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC2_REGISTER_OFFSET, grph3);
--		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC3_REGISTER_OFFSET, grph4);
-+		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC2_REGISTER_OFFSET,
-+		       GRPH_PFLIP_INT_MASK);
-+		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC3_REGISTER_OFFSET,
-+		       GRPH_PFLIP_INT_MASK);
- 	}
- 	if (rdev->num_crtc >= 6) {
--		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC4_REGISTER_OFFSET, grph5);
--		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC5_REGISTER_OFFSET, grph6);
-+		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC4_REGISTER_OFFSET,
-+		       GRPH_PFLIP_INT_MASK);
-+		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC5_REGISTER_OFFSET,
-+		       GRPH_PFLIP_INT_MASK);
- 	}
- 
- 	if (!ASIC_IS_NODCE(rdev)) {
-@@ -6254,6 +6259,15 @@ restart_ih:
- 				break;
- 			}
- 			break;
-+		case 8: /* D1 page flip */
-+		case 10: /* D2 page flip */
-+		case 12: /* D3 page flip */
-+		case 14: /* D4 page flip */
-+		case 16: /* D5 page flip */
-+		case 18: /* D6 page flip */
-+			DRM_DEBUG("IH: D%d flip\n", ((src_id - 8) >> 1) + 1);
-+			radeon_crtc_handle_flip(rdev, (src_id - 8) >> 1);
-+			break;
- 		case 42: /* HPD hotplug */
- 			switch (src_data) {
- 			case 0:
+ 	struct work_struct	nec_work;	/* Worker for NEC quirk */
 -- 
 1.9.1
 
