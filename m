@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754062AbaFCLkH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 07:40:07 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43203 "EHLO
+	id S1755876AbaFCMXm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 08:23:42 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43221 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752374AbaFCLkB (ORCPT
+	with ESMTP id S1754033AbaFCLkG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 07:40:01 -0400
+	Tue, 3 Jun 2014 07:40:06 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Johan Hedberg <johan.hedberg@intel.com>,
-        Marcel Holtmann <marcel@holtmann.org>,
+Cc: Egbert Eich <eich@suse.de>, Jani Nikula <jani.nikula@linux.intel.com>,
+        Jani Nikula <jani.nikula@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 005/138] Bluetooth: Fix triggering BR/EDR L2CAP Connect too early
-Date: Tue,  3 Jun 2014 12:37:31 +0100
-Message-Id: <1401795584-22664-6-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 008/138] drm/i915: Break encoder->crtc link separately in intel_sanitize_crtc()
+Date: Tue,  3 Jun 2014 12:37:34 +0100
+Message-Id: <1401795584-22664-9-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
 References: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
@@ -28,42 +28,118 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hedberg <johan.hedberg@intel.com>
+From: Egbert Eich <eich@suse.de>
 
-commit 9eb1fbfa0a737fd4d3a6d12d71c5ea9af622b887 upstream.
+commit 7f1950fbb989e8fc5463b307e062b4529d51c862 upstream.
 
-Commit 1c2e004183178 introduced an event handler for the encryption key
-refresh complete event with the intent of fixing some LE/SMP cases.
-However, this event is shared with BR/EDR and there we actually want to
-act only on the auth_complete event (which comes after the key refresh).
+Depending on the SDVO output_flags SDVO may have multiple connectors
+linking to the same encoder (in intel_connector->encoder->base).
+Only one of those connectors should be active (ie link to the encoder
+thru drm_connector->encoder).
+If intel_connector_break_all_links() is called from intel_sanitize_crtc()
+we may break the crtc connection of an encoder thru an inactive connector
+in which case intel_connector_break_all_links() will not be called again
+for the active connector if this happens to come later in the list due to:
+    if (connector->encoder->base.crtc != &crtc->base)
+                                 continue;
+in intel_sanitize_crtc().
+This will however leave the drm_connector->encoder linkage for this
+active connector in place. Subsequently this will cause multiple
+warnings in intel_connector_check_state() to trigger and the driver
+will eventually die in drm_encoder_crtc_ok() (because of crtc == NULL).
 
-If we do not do this we may trigger an L2CAP Connect Request too early
-and cause the remote side to return a security block error.
+To avoid this remove intel_connector_break_all_links() and move its
+code to its two calling functions: intel_sanitize_crtc() and
+intel_sanitize_encoder().
+This allows to implement the link breaking more flexibly matching
+the surrounding code: ie. in intel_sanitize_crtc() we can break the
+crtc link separatly after the links to the encoders have been
+broken which avoids above problem.
 
-Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
-Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
+This regression has been introduced in:
+
+commit 24929352481f085c5f85d4d4cbc919ddf106d381
+Author: Daniel Vetter <daniel.vetter@ffwll.ch>
+Date:   Mon Jul 2 20:28:59 2012 +0200
+
+    drm/i915: read out the modeset hw state at load and resume time
+
+so goes back to the very beginning of the modeset rework.
+
+v2: This patch takes care of the concernes voiced by Chris Wilson
+and Daniel Vetter that only breaking links if the drm_connector
+is linked to an encoder may miss some links.
+v3: move all encoder handling to encoder loop as suggested by
+Daniel Vetter.
+
+Signed-off-by: Egbert Eich <eich@suse.de>
+Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Jani Nikula <jani.nikula@linux.intel.com>
+Signed-off-by: Jani Nikula <jani.nikula@intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/bluetooth/hci_event.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/gpu/drm/i915/intel_display.c | 26 ++++++++++++++------------
+ 1 file changed, 14 insertions(+), 12 deletions(-)
 
-diff --git a/net/bluetooth/hci_event.c b/net/bluetooth/hci_event.c
-index 4cc3ee0923c5..b767ed9969c4 100644
---- a/net/bluetooth/hci_event.c
-+++ b/net/bluetooth/hci_event.c
-@@ -2992,6 +2992,12 @@ static void hci_key_refresh_complete_evt(struct hci_dev *hdev,
- 	if (!conn)
- 		goto unlock;
+diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
+index 91cbf6fcfb4f..d6bce476ed26 100644
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -9682,15 +9682,6 @@ void intel_modeset_init(struct drm_device *dev)
+ 	intel_disable_fbc(dev);
+ }
  
-+	/* For BR/EDR the necessary steps are taken through the
-+	 * auth_complete event.
-+	 */
-+	if (conn->type != LE_LINK)
-+		goto unlock;
-+
- 	if (!ev->status)
- 		conn->sec_level = conn->pending_sec_level;
+-static void
+-intel_connector_break_all_links(struct intel_connector *connector)
+-{
+-	connector->base.dpms = DRM_MODE_DPMS_OFF;
+-	connector->base.encoder = NULL;
+-	connector->encoder->connectors_active = false;
+-	connector->encoder->base.crtc = NULL;
+-}
+-
+ static void intel_enable_pipe_a(struct drm_device *dev)
+ {
+ 	struct intel_connector *connector;
+@@ -9772,8 +9763,17 @@ static void intel_sanitize_crtc(struct intel_crtc *crtc)
+ 			if (connector->encoder->base.crtc != &crtc->base)
+ 				continue;
  
+-			intel_connector_break_all_links(connector);
++			connector->base.dpms = DRM_MODE_DPMS_OFF;
++			connector->base.encoder = NULL;
+ 		}
++		/* multiple connectors may have the same encoder:
++		 *  handle them and break crtc link separately */
++		list_for_each_entry(connector, &dev->mode_config.connector_list,
++				    base.head)
++			if (connector->encoder->base.crtc == &crtc->base) {
++				connector->encoder->base.crtc = NULL;
++				connector->encoder->connectors_active = false;
++			}
+ 
+ 		WARN_ON(crtc->active);
+ 		crtc->base.enabled = false;
+@@ -9844,6 +9844,8 @@ static void intel_sanitize_encoder(struct intel_encoder *encoder)
+ 				      drm_get_encoder_name(&encoder->base));
+ 			encoder->disable(encoder);
+ 		}
++		encoder->base.crtc = NULL;
++		encoder->connectors_active = false;
+ 
+ 		/* Inconsistent output/port/pipe state happens presumably due to
+ 		 * a bug in one of the get_hw_state functions. Or someplace else
+@@ -9854,8 +9856,8 @@ static void intel_sanitize_encoder(struct intel_encoder *encoder)
+ 				    base.head) {
+ 			if (connector->encoder != encoder)
+ 				continue;
+-
+-			intel_connector_break_all_links(connector);
++			connector->base.dpms = DRM_MODE_DPMS_OFF;
++			connector->base.encoder = NULL;
+ 		}
+ 	}
+ 	/* Enabled encoders without active connectors will be fixed in
 -- 
 1.9.1
 
