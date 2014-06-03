@@ -1,68 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965602AbaFCWNv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 18:13:51 -0400
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:56253 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965243AbaFCWJA (ORCPT
+	id S965613AbaFCWOO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 18:14:14 -0400
+Received: from mail-we0-f175.google.com ([74.125.82.175]:41757 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965230AbaFCWI7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 18:09:00 -0400
-Date: Tue, 3 Jun 2014 15:08:50 -0700
-From: josh@joshtriplett.org
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Dave Chinner <david@fromorbit.com>,
-        Joe Perches <joe@perches.com>, paulmck@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, dhowells@redhat.com, edumazet@google.com,
-        dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
-        sbw@mit.edu
-Subject: Re: [PATCH RFC 1/2] MAINTAINERS: Add "R:" designated-reviewers tag
-Message-ID: <20140603220850.GA20736@cloud>
-References: <20140602190951.GA13648@cloud>
- <1401736666.7323.25.camel@joe-AO725>
- <20140602231949.GV14410@dastard>
- <20140602235915.GB14801@cloud>
- <20140603011125.GW14410@dastard>
- <20140602213045.26219ddb@gandalf.local.home>
- <20140603071654.GC14410@dastard>
- <20140603134347.6e39f946@gandalf.local.home>
- <20140603205253.GC25483@thunk.org>
- <20140603174631.2de89352@gandalf.local.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140603174631.2de89352@gandalf.local.home>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 3 Jun 2014 18:08:59 -0400
+From: Alexis Berlemont <alexis.berlemont@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Alexis Berlemont <alexis.berlemont@gmail.com>, jolsa@redhat.com,
+        dsahern@gmail.com, mingo@kernel.org, sam@ravnborg.org, mmarek@suse.cz
+Subject: [PATCH 17/32] perf kbuild: remove legacy on_exit-related build variable
+Date: Wed,  4 Jun 2014 00:06:10 +0200
+Message-Id: <1401833185-10347-18-git-send-email-alexis.berlemont@gmail.com>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1401833185-10347-1-git-send-email-alexis.berlemont@gmail.com>
+References: <1401833185-10347-1-git-send-email-alexis.berlemont@gmail.com>
+In-Reply-To: <CAMesUR5h0687dTFCDC3LhKSOFyKTFmH3vUjU+p6XuOpawPUwxQ@mail.gmail.com>
+References: <CAMesUR5h0687dTFCDC3LhKSOFyKTFmH3vUjU+p6XuOpawPUwxQ@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 03, 2014 at 05:46:31PM -0400, Steven Rostedt wrote:
-> On Tue, 3 Jun 2014 16:52:53 -0400
-> Theodore Ts'o <tytso@mit.edu> wrote:
-> 
-> 
-> > The important thing to note here is that we do not have consensus
-> > across all subsystems what Reviewed-by: means, and I think that's OK.
-> > The Reviewed-by: is mostly of interest to the maintainer before the
-> > patch is submitted to mainline.  The value of keeping it in the git
-> > commit logs after the fact seems to be a bit variable, although if
-> > there are companies blindly using it as a performance metric and this
-> > is driving down the quality of reviews, perhaps one could even argue
-> > that including these tags in the git commit logs is actually adding
-> > negative value.  But I don't really care about that issue, because
-> > like most maintainers, I know the reviewers by reputation, and whether
-> > someone actually says "you can add my Reviewed-by" is actually not so
-> > important as their comments on the patch, one way or another.
-> 
-> I prefer the Reviewed-by tags in the git commit. If something is
-> screwed up in a commit, I can blame the reviewers just as much as I can
-> blame the author :-)
+Remove HAVE_ON_EXIT_SUPPORT (replaced by CONFIG_ON_EXIT)
+---
+ tools/perf/Kconfig          | 6 ++++++
+ tools/perf/builtin-record.c | 4 +++-
+ tools/perf/config/Makefile  | 6 +++---
+ 3 files changed, 12 insertions(+), 4 deletions(-)
 
-I like it there for the same reason: if there turns out to be an issue
-in a commit I reviewed, I'd like to get CCed on the resulting discussion
-and fix, so that I can take that into account in future reviews.
+diff --git a/tools/perf/Kconfig b/tools/perf/Kconfig
+index 762c50e..a00bfb6 100644
+--- a/tools/perf/Kconfig
++++ b/tools/perf/Kconfig
+@@ -196,6 +196,12 @@ config TIMERFD
+         ---help---
+ 	  Timer via file descriptor
+ 
++config ON_EXIT
++	bool "Support of on_exit() function"
++	default n
++        ---help---
++	  On exit support
++
+ config DEMANGLE
+ 	bool "Demangle symbols"
+ 	default n
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 8ce62ef..372a812 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -5,6 +5,8 @@
+  * (or a CPU, or a PID) into the perf.data output file - for
+  * later analysis via perf report.
+  */
++
++#include "generated/autoconf.h"
+ #include "builtin.h"
+ 
+ #include "perf.h"
+@@ -30,7 +32,7 @@
+ #include <sched.h>
+ #include <sys/mman.h>
+ 
+-#ifndef HAVE_ON_EXIT_SUPPORT
++#ifndef CONFIG_ON_EXIT
+ #ifndef ATEXIT_MAX
+ #define ATEXIT_MAX 32
+ #endif
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index ff7f01c..c128f30 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -566,9 +566,9 @@ ifdef CONFIG_LIBIBERTY_ONLY
+   endif
+ endif
+ 
+-ifndef NO_ON_EXIT
+-  ifeq ($(feature-on-exit), 1)
+-    CFLAGS += -DHAVE_ON_EXIT_SUPPORT
++ifdef CONFIG_ON_EXIT
++  ifneq ($(feature-on-exit), 1)
++    $(shell $(KCONFIG_SCRIPT) -d CONFIG_ON_EXIT)
+   endif
+ endif
+ 
+-- 
+1.9.3
 
-- Josh Triplett
