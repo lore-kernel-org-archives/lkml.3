@@ -1,95 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752574AbaFCBkN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 21:40:13 -0400
-Received: from mail-ig0-f177.google.com ([209.85.213.177]:49898 "EHLO
-	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751355AbaFCBkK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 21:40:10 -0400
-Date: Mon, 2 Jun 2014 18:40:08 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Oleg Drokin <green@linuxhacker.ru>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        Rohit Seth <rohitseth@google.com>
-Subject: Re: [PATCH] sysctl: Fix division by zero in percpu_pagelist_fraction
- handler
-In-Reply-To: <1399166883-514-1-git-send-email-green@linuxhacker.ru>
-Message-ID: <alpine.DEB.2.02.1406021837490.13072@chino.kir.corp.google.com>
-References: <1399166883-514-1-git-send-email-green@linuxhacker.ru>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1752651AbaFCBoV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 21:44:21 -0400
+Received: from evunix.uevora.pt ([193.136.216.1]:35459 "EHLO evunix.uevora.pt"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751200AbaFCBoU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jun 2014 21:44:20 -0400
+X-Greylist: delayed 800 seconds by postgrey-1.27 at vger.kernel.org; Mon, 02 Jun 2014 21:44:19 EDT
+X-UEvora-MailScanner-From: mlbaa@uevora.pt
+X-UEvora-MailScanner: Found to be clean
+X-UEvora-MailScanner-ID: 25477F0E82.A9A4F
+X-DKIM: OpenDKIM Filter v2.6.8 evunix.uevora.pt 25477F0E82
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain;
+ charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 7bit
+Date: Tue, 03 Jun 2014 02:30:43 +0100
+From: Osbornes Solicitors LLP <mlbaa@uevora.pt>
+To: undisclosed-recipients:;
+Subject: Legal Notice
+Reply-To: <mark.fllp@rogers.com>
+Mail-Reply-To: <mark.fllp@rogers.com>
+Message-ID: <512d6c5ed6822c15ae3ab2aed3f87b38@uevora.pt>
+User-Agent: Roundcube Webmail/0.7.1
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.3.7 (evunix.uevora.pt [0.0.0.0]); Tue, 03 Jun 2014 02:30:45 +0100 (WEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 3 May 2014, Oleg Drokin wrote:
+My late client made his last will and testament in your favour, i sent 
+letters to you but got no response, i advise you contact me immediately.
 
-> percpu_pagelist_fraction_sysctl_handler calls proc_dointvec_minmax
-> and blindly assumes that return value of 0 means success.
-> In fact the other valid case is when it got a zero length input.
-> 
-> After that it proceeds to a division by percpu_pagelist_fraction
-> value which is conveniently set to a default of zero, resulting in
-> division by zero.
-> 
-> Other than checking the bytecount to be more than zero, perhaps
-> a better default value for percpu_pagelist_fraction would help too.
-> 
-> [  661.985469] divide error: 0000 [#1] SMP DEBUG_PAGEALLOC
-> [  661.985868] Modules linked in: binfmt_misc cfg80211 rfkill rpcsec_gss_krb5 ttm drm_kms_helper drm i2c_piix4 microcode i2c_core joydev serio_raw pcspkr virtio_blk nfsd
-> [  661.986008] CPU: 1 PID: 9142 Comm: badarea_io Not tainted 3.15.0-rc2-vm-nfs+ #19
-> [  661.986008] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-> [  661.986008] task: ffff8800d5aeb6e0 ti: ffff8800d87a2000 task.ti: ffff8800d87a2000
-> [  661.986008] RIP: 0010:[<ffffffff81152664>]  [<ffffffff81152664>] percpu_pagelist_fraction_sysctl_handler+0x84/0x120
-> [  661.988031] RSP: 0018:ffff8800d87a3e78  EFLAGS: 00010246
-> [  661.988031] RAX: 0000000000000f89 RBX: ffff88011f7fd000 RCX: 0000000000000000
-> [  661.988031] RDX: 0000000000000000 RSI: 0000000000000001 RDI: 0000000000000010
-> [  661.988031] RBP: ffff8800d87a3e98 R08: ffffffff81d002c8 R09: ffff8800d87a3f50
-> [  661.988031] R10: 000000000000000b R11: 0000000000000246 R12: 0000000000000060
-> [  661.988031] R13: ffffffff81c3c3e0 R14: ffffffff81cfddf8 R15: ffff8801193b0800
-> [  661.988031] FS:  00007f614f1e9740(0000) GS:ffff88011f440000(0000) knlGS:0000000000000000
-> [  661.988031] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> [  661.988031] CR2: 00007f614f1fa000 CR3: 00000000d9291000 CR4: 00000000000006e0
-> [  661.988031] Stack:
-> [  661.988031]  0000000000000001 ffffffffffffffea ffffffff81c3c3e0 0000000000000000
-> [  661.988031]  ffff8800d87a3ee8 ffffffff8122b163 ffff8800d87a3f50 00007fff1564969c
-> [  661.988031]  0000000000000000 ffff8800d8098f00 00007fff1564969c ffff8800d87a3f50
-> [  661.988031] Call Trace:
-> [  661.988031]  [<ffffffff8122b163>] proc_sys_call_handler+0xb3/0xc0
-> [  661.988031]  [<ffffffff8122b184>] proc_sys_write+0x14/0x20
-> [  661.988031]  [<ffffffff811ba93a>] vfs_write+0xba/0x1e0
-> [  661.988031]  [<ffffffff811bb486>] SyS_write+0x46/0xb0
-> [  661.988031]  [<ffffffff816db7ff>] tracesys+0xe1/0xe6
-> [  661.988031] Code: 1f 84 00 00 00 00 00 48 83 bb b0 06 00 00 00 0f 84 7c 00 00 00 48 63 0d 93 6a e1 00 48 8b 83 b8 06 00 00 31 d2 41 bc 60 00 00 00 <48> f7 f1 ba 01 00 00 00 49 89 c5 48 c1 e8 02 48 85 c0 48 0f 44
-> 
-> Signed-off-by: Oleg Drokin <green@linuxhacker.ru>
-> CC: Rohit Seth <rohitseth@google.com>
-> ---
->  mm/page_alloc.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index 5dba293..91d0265 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -5854,7 +5854,7 @@ int percpu_pagelist_fraction_sysctl_handler(ctl_table *table, int write,
->  	int ret;
->  
->  	ret = proc_dointvec_minmax(table, write, buffer, length, ppos);
-> -	if (!write || (ret < 0))
-> +	if (!write || (ret < 0) || !*length)
->  		return ret;
->  
->  	mutex_lock(&pcp_batch_high_lock);
-
-This hasn't made it to linux-next yet (probably because you didn't cc 
-Andrew Morton, the mm maintainer), but I'm wondering why it's needed.  
-Shouldn't this value always be >= min_percpu_pagelist_fract?
-
-If there's something going on in proc_dointvec_minmax() that disregards 
-that minimum then we need to fix it rather than the caller.
+Barr Mark Freedman
