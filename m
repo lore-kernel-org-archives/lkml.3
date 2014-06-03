@@ -1,93 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933149AbaFCQF2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 12:05:28 -0400
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:47787 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932568AbaFCQF0 (ORCPT
+	id S932922AbaFCQKB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 12:10:01 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:33335 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932418AbaFCQJ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 12:05:26 -0400
+	Tue, 3 Jun 2014 12:09:59 -0400
+Date: Tue, 3 Jun 2014 18:09:55 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Christoph Lameter <cl@gentwo.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Gilad Ben-Yossef <gilad@benyossef.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>,
+        John Stultz <johnstul@us.ibm.com>, Hakan Akkan <hakanakkan@gmail.com>,
+        Max Krasnyansky <maxk@qualcomm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, hughd@google.com,
+        viresh.kumar@linaro.org, hpa@zytor.com, mingo@kernel.org,
+        peterz@infradead.org, Mike Frysinger <vapier@gentoo.org>,
+        Minchan Kim <minchan.kim@gmail.com>
+Subject: Re: [PATCH] vmstat: on demand updates from differentials V7
+Message-ID: <20140603160953.GF23860@localhost.localdomain>
+References: <alpine.DEB.2.10.1405291453260.2899@gentwo.org>
 MIME-Version: 1.0
-In-Reply-To: <20140603140223.GA13658@twins.programming.kicks-ass.net>
-References: <20140411134243.160989490@infradead.org> <CALCETrWJZ1-T+qOY9v=KBOSJkck7YYe7khw_dYPc9Ar8WFgMKw@mail.gmail.com>
- <20140522125818.GV30445@twins.programming.kicks-ass.net> <20140522130931.GV13658@twins.programming.kicks-ass.net>
- <CALCETrVBVOjs0EVqEz3qKtSHQg1agJzAyG4Ohqueky-zPF7uKA@mail.gmail.com>
- <20140529064827.GI19143@laptop.programming.kicks-ass.net> <CALCETrWnG7fSuinDv+GAHsnTLJ-6xn+_1LB2XdLGVXcC=TQURA@mail.gmail.com>
- <20140603104347.GT11096@twins.programming.kicks-ass.net> <20140603140223.GA13658@twins.programming.kicks-ass.net>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 3 Jun 2014 09:05:03 -0700
-Message-ID: <CALCETrW3cr_RLnMeMtutM5H+3cJSerUxXuEmiT9miDOEmkpANw@mail.gmail.com>
-Subject: Re: [RFC][PATCH 0/8] sched,idle: need resched polling rework
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        nicolas.pitre@linaro.org, Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.10.1405291453260.2899@gentwo.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 3, 2014 at 7:02 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Tue, Jun 03, 2014 at 12:43:47PM +0200, Peter Zijlstra wrote:
->> We need rq->curr, rq->idle 'sleeps' with polling set and nr clear, but
->> it obviously has no effect setting that if its not actually the current
->> task.
->>
->> Touching rq->curr needs holding rcu_read_lock() though, to make sure the
->> task stays around, still shouldn't be a problem.
->
->> @@ -1581,8 +1604,14 @@ void scheduler_ipi(void)
->>
->>  static void ttwu_queue_remote(struct task_struct *p, int cpu)
->>  {
->> -     if (llist_add(&p->wake_entry, &cpu_rq(cpu)->wake_list))
->> -             smp_send_reschedule(cpu);
->> +     struct rq *rq = cpu_rq(cpu);
->> +
->> +     if (llist_add(&p->wake_entry, &rq->wake_list)) {
->> +             rcu_read_lock();
->> +             if (!set_nr_if_polling(rq->curr))
->> +                     smp_send_reschedule(cpu);
->> +             rcu_read_unlock();
->> +     }
->>  }
->
-> Hrmm, I think that is still broken, see how in schedule() we clear NR
-> before setting the new ->curr.
->
-> So I think I had a loop on rq->curr the last time we talked about this,
-> but alternatively we could look at clearing NR after setting a new curr.
->
-> I think I once looked at why it was done before, of course I can't
-> actually remember the details :/
+On Thu, May 29, 2014 at 02:56:15PM -0500, Christoph Lameter wrote:
+> 
+> V6->V7
+> - Remove /sysfs support and avoid the large cpumask definition.
+> 
+> V5->V6:
+> - Shepherd thread as a general worker thread. This means
+>   that the general mechanism to control worker thread
+>   cpu use by Frederic Weisbecker is necessary to
+>   restrict the shepherd thread to the cpus not used
+>   for low latency tasks. Hopefully that is ready to be
+>   merged soon. No need anymore to have a specific
+>   cpu be the housekeeper cpu.
+> 
+> V4->V5:
+> - Shepherd thread on a specific cpu (HOUSEKEEPING_CPU).
+> - Incorporate Andrew's feedback
+> - Work out the races.
+> - Make visible which CPUs have stat updates switched off
+>   in /sys/devices/system/cpu/stat_off
+> 
+> V3->V4:
+> - Make the shepherd task not deferrable. It runs on the tick cpu
+>   anyways. Deferral could get deltas too far out of sync if
+>   vmstat operations are disabled for a certain processor.
+> 
+> V2->V3:
+> - Introduce a new tick_get_housekeeping_cpu() function. Not sure
+>   if that is exactly what we want but it is a start. Thomas?
+> - Migrate the shepherd task if the output of
+>   tick_get_housekeeping_cpu() changes.
+> - Fixes recommended by Andrew.
+> 
+> V1->V2:
+> - Optimize the need_update check by using memchr_inv.
+> - Clean up.
+> 
+> vmstat workers are used for folding counter differentials into the
+> zone, per node and global counters at certain time intervals.
+> They currently run at defined intervals on all processors which will
+> cause some holdoff for processors that need minimal intrusion by the
+> OS.
+> 
+> The current vmstat_update mechanism depends on a deferrable timer
+> firing every other second by default which registers a work queue item
+> that runs on the local CPU, with the result that we have 1 interrupt
+> and one additional schedulable task on each CPU every 2 seconds
+> If a workload indeed causes VM activity or multiple tasks are running
+> on a CPU, then there are probably bigger issues to deal with.
+> 
+> However, some workloads dedicate a CPU for a single CPU bound task.
+> This is done in high performance computing, in high frequency
+> financial applications, in networking (Intel DPDK, EZchip NPS) and with
+> the advent of systems with more and more CPUs over time, this may become
+> more and more common to do since when one has enough CPUs
+> one cares less about efficiently sharing a CPU with other tasks and
+> more about efficiently monopolizing a CPU per task.
+> 
+> The difference of having this timer firing and workqueue kernel thread
+> scheduled per second can be enormous. An artificial test measuring the
+> worst case time to do a simple "i++" in an endless loop on a bare metal
+> system and under Linux on an isolated CPU with dynticks and with and
+> without this patch, have Linux match the bare metal performance
+> (~700 cycles) with this patch and loose by couple of orders of magnitude
+> (~200k cycles) without it[*].  The loss occurs for something that just
+> calculates statistics. For networking applications, for example, this
+> could be the difference between dropping packets or sustaining line rate.
+> 
+> Statistics are important and useful, but it would be great if there
+> would be a way to not cause statistics gathering produce a huge
+> performance difference. This patche does just that.
+> 
+> This patch creates a vmstat shepherd worker that monitors the
+> per cpu differentials on all processors. If there are differentials
+> on a processor then a vmstat worker local to the processors
+> with the differentials is created. That worker will then start
+> folding the diffs in regular intervals. Should the worker
+> find that there is no work to be done then it will make the shepherd
+> worker monitor the differentials again.
+> 
+> With this patch it is possible then to have periods longer than
+> 2 seconds without any OS event on a "cpu" (hardware thread).
+> 
+> Reviewed-by: Gilad Ben-Yossef <gilad@benyossef.com>
+> Signed-off-by: Christoph Lameter <cl@linux.com>
 
-Wouldn't this be a little simpler and maybe even faster if we just
-changed the idle loop to make TIF_POLLING_NRFLAG be a real indication
-that the idle task is running and actively polling?  That is, change
-the end of cpuidle_idle_loop to:
+So after the cpumask_var_t conversion I have no other concern except
+perhaps that the scan may bring some overhead on workloads that don't
+care about isolation. You might want to make it optional. But I let you
+check that.
 
-                preempt_set_need_resched();
-                tick_nohz_idle_exit();
-                clear_tsk_need_resched(current);
-                __current_clr_polling();
-                smp_mb__after_clear_bit();
-                WARN_ON_ONCE(test_thread_flag(TIF_POLLING_NRFLAG));
-                sched_ttwu_pending();
-                schedule_preempt_disabled();
-                __current_set_polling();
+And I can't judge much the -mm internal changes. But other than that, it looks good to me.
 
-This has the added benefit that the optimistic version of the cmpxchg
-loop would be safe again.  I'm about to test this with this variant.
-I'll try and send a comprehensible set of patches in a few hours.
-
-Can you remind me what the benefit was of letting polling be set when
-the idle thread schedules?  It seems racy to me: it probably prevents
-any safe use of the polling bit without holding the rq lock.  I guess
-there's some benefit to having polling be set for as long as possible,
-but it only helps if there are wakeups in very rapid succession, and
-it costs a couple of extra bit ops per idle entry.
-
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+Thanks.
