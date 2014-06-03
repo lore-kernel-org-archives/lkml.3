@@ -1,55 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932286AbaFCNfW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 09:35:22 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:60437 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753917AbaFCNfV (ORCPT
+	id S932359AbaFCNga (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 09:36:30 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:43777 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932308AbaFCNg3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 09:35:21 -0400
-Message-ID: <538DCF15.4080904@gmail.com>
-Date: Tue, 03 Jun 2014 09:35:17 -0400
-From: Vlad Yasevich <vyasevich@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Tue, 3 Jun 2014 09:36:29 -0400
+Message-ID: <538DCF59.6000808@gmail.com>
+Date: Tue, 03 Jun 2014 07:36:25 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Paolo Bonzini <pbonzini@redhat.com>, Eric Dumazet <eric.dumazet@gmail.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>
-CC: netdev@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        David Miller <davem@davemloft.net>
-Subject: Re: [PULL 2/2] vhost: replace rcu with mutex
-References: <1401744482-17764-1-git-send-email-mst@redhat.com>	<1401744482-17764-3-git-send-email-mst@redhat.com> <1401746280.3645.187.camel@edumazet-glaptop2.roam.corp.google.com> <538DC422.1050303@redhat.com>
-In-Reply-To: <538DC422.1050303@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org
+CC: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 06/13] perf tools: Cache dso data file descriptor
+References: <1401743927-398-1-git-send-email-jolsa@kernel.org> <1401743927-398-7-git-send-email-jolsa@kernel.org>
+In-Reply-To: <1401743927-398-7-git-send-email-jolsa@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/03/2014 08:48 AM, Paolo Bonzini wrote:
-> Il 02/06/2014 23:58, Eric Dumazet ha scritto:
->> This looks dubious
->>
->> What about using kfree_rcu() instead ?
-> 
-> It would lead to unbound allocation from userspace.
-> 
->> translate_desc() still uses rcu_read_lock(), its not clear if the mutex
->> is really held.
-> 
-> Yes, vhost_get_vq_desc must be called with the vq mutex held.
-> 
-> The rcu_read_lock/unlock in translate_desc is unnecessary.
-> 
+On 6/2/14, 3:18 PM, Jiri Olsa wrote:
+> We keep dsos data file descriptors open until their count reaches
+> the half of the current fd open limit (RLIMIT_NOFILE). In this case
+> we close file descriptor of the first opened dso object.
+>
+> We've got overall speedup (24% for my workload) of report:
+>   'perf report --stdio -i perf-test.data' (3 runs)
+>    (perf-test.data size was around 12GB)
+>
+>    current code:
+>     446,826,474,217      cycles                     ( +-  0.23% )
+>     669,435,100,846      instructions               ( +-  0.03% )
+>
+>       266.380674551 seconds time elapsed            ( +-  0.37% )
+>
+>    change:
+>     558,345,509,819      cycles                     ( +-  0.55% )
+>     817,283,647,637      instructions               ( +-  0.03% )
+>
+>       351.564209617 seconds time elapsed            ( +-  0.89% )
 
-If that's true, then does dev->memory really needs to be rcu protected?
-It appears to always be read under mutex.
+message is confusing. Looks like time went up.
 
--vlad
-
-> Paolo
-> -- 
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
+David
