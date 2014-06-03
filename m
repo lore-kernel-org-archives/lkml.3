@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753192AbaFCKui (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 06:50:38 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:51695 "EHLO
+	id S1753301AbaFCKun (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 06:50:43 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:51698 "EHLO
 	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751213AbaFCKug (ORCPT
+	with ESMTP id S1753196AbaFCKuj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 06:50:36 -0400
-Date: Tue, 3 Jun 2014 11:50:12 +0100
+	Tue, 3 Jun 2014 06:50:39 -0400
+Date: Tue, 3 Jun 2014 11:36:43 +0100
 From: Mark Brown <broonie@kernel.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-ID: <20140603105012.GZ31751@sirena.org.uk>
+Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lgirdwood@gmail.com>
+Message-ID: <20140603103643.GY31751@sirena.org.uk>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="zAZKrYjO7GRpkTOs"
+	protocol="application/pgp-signature"; boundary="w+MAdceOglSEzbpc"
 Content-Disposition: inline
 X-Cookie: Big book, big bore.
 User-Agent: Mutt/1.5.23 (2014-03-12)
 X-SA-Exim-Connect-IP: 109.148.252.180
 X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: [GIT PULL] spi updates for v3.16
+Subject: [GIT PULL] regulator updates for v3.16
 X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
 X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -28,7 +28,7 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---zAZKrYjO7GRpkTOs
+--w+MAdceOglSEzbpc
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
@@ -38,196 +38,212 @@ The following changes since commit fad01e866afdbe01a1f3ec06a39c3a8b9e197014:
 
 are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/spi.git spi-v3.16
+  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regulator.git regulator-v3.16
 
-for you to fetch changes up to 69e25c755722056b57892bebeb1892e3a6fe8774:
+for you to fetch changes up to 978371cbabb4cb7a47751049d72f06dc8348cab2:
 
-  Merge remote-tracking branch 'spi/topic/workqueue' into spi-next (2014-06-02 17:08:43 +0100)
-
-----------------------------------------------------------------
-
-spi: Updates for v3.16
-
-For this release SPI has been exceptionally quiet, all the work has been
-on improving drivers (including taking advantage of some of the recent
-framework updates):
-
- - DMA support for the rspi driver providing a nice performance boost.
- - Performance improvement for the SIRF controller in PIO mode.
- - New support for the Cadence SPI IP and for pxa2xx on BayTrail.
+  Merge remote-tracking branch 'regulator/topic/tps6586x' into regulator-next (2014-06-02 17:08:14 +0100)
 
 ----------------------------------------------------------------
-Alexandre Belloni (1):
-      spi: atmel: fix incorrect comparison
 
-Andy Gross (1):
-      spi: qup: Correct selection of FIFO/Block mode
+regulator: Updates for v3.16
 
-Antonio Ospite (1):
-      spi/pxa2xx: fix runtime PM enabling order
+The bulk of the changes for this release are a few new drivers however
+there are a couple of noticable core changes and the usual stream of
+cleanups and fixes:
 
-Axel Lin (6):
-      spi: atmel: Make current_remaining_bytes to be int
-      spi: fsl: Kill mpc8xxx_spi_cleanup and convert fsl_espi_setup to use devm_kzalloc
-      spi: fsl-spi: Fix memory leak
-      spi: s3c24xx: Convert to use devm_kzalloc
-      spi: Remove unneeded include of linux/workqueue.h
-      spi: dw: Remove unused dw_spi_cleanup function
+ - Move disable of unused regulators later in init so it comes after
+   deferred probe has iterated making startup smoother.
+ - Fixes reference counting of the DT nodes for constraints from Charles
+   Keepax.  This has little practical impact since all real users of
+   the regulator bindings use FDT which doesn't need the reference
+   counting.
+ - Lots of cleanups, especially to the Samsung drivers.
+ - Support for Linear Technologies LTC3589, Texas Instruments TPS658640
+   and X-Powers AXP20x.
 
-Baruch Siach (3):
-      spi: dw: migrate to generic queue infrastructure
-      spi: dw: document device tree binding
-      spi: dw: add support for gpio controlled chip select
+----------------------------------------------------------------
+Alban Bedel (3):
+      regulator: tps6586x: Prepare supporting fixed regulators
+      regulator: tps6586x: Add support for the TPS658640
+      regulator: core: Fix the init of DT defined fixed regulators
 
-Chew, Chiau Ee (1):
-      spi/pxa2xx-pci: Add PCI mode support for BayTrail LPSS SPI
+Arnd Bergmann (1):
+      regulator: arizona-ldo1: add missing #include
 
-Geert Uytterhoeven (19):
-      spi: rspi: Round up division to avoid slave overclocking
-      spi: core: Ignore unsupported spi-[tr]x-bus-width property values
-      spi: rspi: Extract rspi_wait_for_{tx_empty,rx_full}()
-      spi: rspi: Do not call rspi_receive_init() for TX-only
-      spi: rspi: Remove unused 16-bit DMA support
-      spi: rspi: Use core SPI_MASTER_MUST_[RT]X handling
-      spi: rspi: Extract rspi_pio_transfer()
-      spi: rspi: Don't consider DMA configuration failures fatal
-      spi: rspi: Extract rspi_request_dma_chan()
-      spi: rspi: Remove unneeded resource test in DMA setup
-      spi: rspi: SPI DMA core needs both RX and TX DMA to function
-      spi: rspi: Use SPI core DMA mapping framework
-      spi: rspi: Move RSPI-specific setup out of DMA routines
-      spi: rspi: Pass sg_tables instead of spi_tranfer to rspi_*_dma()
-      spi: rspi: Merge rspi_*_dma() into rspi_dma_transfer()
-      spi: rspi: Absorb rspi_rz_transfer_out_in() into rspi_rz_transfer_one()
-      spi: rspi: Add DMA support for QSPI on R-Car Gen2
-      spi: rspi: Add DMA support for RSPI on RZ/A1H
-      spi: rspi: Extract rspi_common_transfer()
+Axel Lin (10):
+      regulator: pbias: Convert to use regulator_[enable|is_enabled]_regmap
+      regulator: tps65217: Remove *rdev[] from struct tps65217
+      regulator: tps65217: Use regulator_map_voltage_ascend for LDO1
+      regulator: core: Use map_voltage_linear_range by default for list_voltage_linear_range
+      regulator: tps65218: Convert to use regulator_set_voltage_time_sel
+      regulator: tps6586x: Remove unused to_tps6586x_dev() function
+      regulator: ltc3589: Fix module dependency
+      regulator: ltc3589: Remove ltc3589_list_voltage_fixed function
+      regulator: pfuze100: Support enable/disable for fixed regulator
+      regulator: axp20x: Use regulator_map_voltage_ascend for LDO4
 
-Harini Katakam (4):
-      spi: core: Increase timeout value
-      spi: Add driver for Cadence SPI controller
-      spi: Add devicetree bindings documentation for Cadence SPI
-      spi: cadence: Add dependency on ARM
+Boris BREZILLON (1):
+      regulator: AXP20x: fix wrong call to of_find_node_by_name
 
-Jane Wan (1):
-      spi: fsl-espi: Configure FSL eSPI CSBEF and CSAFT
+Carlo Caione (1):
+      regulator: AXP20x: Add support for regulators subsystem
 
-Jean Delvare (1):
-      spi/topcliff-pch: Fix Kconfig dependencies
+Charles Keepax (10):
+      regulator: core: Add of_node_get to of_regulator_match
+      regulator: core: Add helper to put of_nodes from matches
+      regulator: core: Get and put regulator of_node
+      regulator: core: Fix typo in of_regulator.h
+      regulator: core: Use devres for releasing of_regulator_match of_nodes
+      mfd: arizona: Factor out read of device tree GPIOs
+      regulator: arizona-micsupp: Add processing of init_data from device tree
+      regulator: arizona-ldo1: Move setup processing from arizona-core
+      regulator: arizona-ldo1: Add processing of init_data from device tree
+      regulator: arizona-micsupp: Add missing #include
 
-Jingoo Han (13):
-      spi: pl022: remove unnecessary OOM messages
-      spi: pxa2xx: remove unnecessary OOM messages
-      spi: s3c24xx: remove unnecessary OOM messages
-      spi: s3c64xx: remove unnecessary OOM messages
-      spi: sh-msiof: remove unnecessary OOM messages
-      spi: tle62x0: remove unnecessary OOM messages
-      spi: topcliff-pch: remove unnecessary OOM messages
-      spi: fsl-dspi: Make of_device_id array const
-      spi: spi-gpio: Make of_device_id array const
-      spi: qup: Make of_device_id array const
-      spi: tegra114: Make of_device_id array const
-      spi: tegra20-sflash: Make of_device_id array const
-      spi: tegra20-slink: Make of_device_id array const
+Doug Anderson (5):
+      regulator: tps65090: Allow setting the overcurrent wait time
+      mfd: tps65090: Don't tell child devices we have an IRQ if we don't
+      mfd: tps65090: Stop caching most registers
+      regulator: tps65090: Make FETs more reliable by adding retries
+      regulator: tps65090: Fix tps65090 crash on Tegra Dalmore
 
-Mark Brown (7):
-      Merge remote-tracking branches 'spi/fix/qup' and 'spi/fix/topcliff-pch' into spi-linus
-      Merge remote-tracking branch 'spi/topic/core' into spi-next
-      Merge remote-tracking branch 'spi/topic/dt' into spi-next
-      Merge remote-tracking branches 'spi/topic/adi', 'spi/topic/atmel' and 'spi/topic/cadence' into spi-next
-      Merge remote-tracking branches 'spi/topic/dw', 'spi/topic/fsl', 'spi/topic/fsl-espi' and 'spi/topic/id-const' into spi-next
-      Merge remote-tracking branches 'spi/topic/oom', 'spi/topic/pxa2xx', 'spi/topic/rspi' and 'spi/topic/sirf' into spi-next
-      Merge remote-tracking branch 'spi/topic/workqueue' into spi-next
+Jingoo Han (7):
+      regulator: anatop: Make of_device_id array const
+      regulator: palmas: Make of_device_id array const
+      regulator: st-pwm: Make of_device_id array const
+      regulator: vexpress: Make of_device_id array const
+      regulator: max8952: Make of_device_id array const
+      regulator: max8649: remove unnecessary OOM messages
+      regulator: pbias: remove unnecessary OOM messages
 
-Qipan Li (4):
-      spi: sirf: fix line over 80 characters style issue
-      spi: sirf: fix spi full-duplex DMA transferring issue
-      spi: sirf: refactor spi transfer functions
-      spi: sirf: decrease the interrupt count and latency of PIO mode
+Keerthy (1):
+      regulator: palmas: Reemove open coded functions with helper functions
 
-Scott Jiang (2):
-      spi: convert spi-bfin-v3.c to a multiplatform driver
-      spi: spi-adi-v3: convert to use common clk framework
+Krzysztof Kozlowski (10):
+      regulator: s5m8767: Remove regulator_dev pointer from state container
+      regulator: s2mps11: Move DTS parsing code to separate function
+      regulator: s2mps11: Add external GPIO control for S2MPS14
+      regulator: s2mps11: Document external GPIO control
+      regulator: s5m8767: Allow GPIO 0 to be used as external control
+      regulator: s2mps11: Allow GPIO 0 to be used as external control on S2MPS14
+      regulator: s2mpa01: Fix accidental enable of buck4 ramp delay
+      regulator: s2mps11: Fix accidental enable of buck6 ramp delay
+      regulator: s2mpa01: Use rdev_get_id() to access id of regulator
+      regulator: s2mpa01: Use correct register for buck1 ramp delay
 
-Valentin Longchamp (1):
-      spi/fsl-espi: fix rx_buf in fsl_espi_cmd_trans()/fsl_espi_rw_trans()
+Lee Jones (1):
+      regulator: Constify the pointer to alias name array
 
-Zhao Qiang (1):
-      spi: add "spi-lsb-first" to devicetree
+Mark Brown (11):
+      Merge tag 'ib-mfd-regulator-3.16' of git://git.kernel.org/.../lee/mfd into regulator-tps65090
+      Merge tag 'mfd-regulator-v3.16-1' of git://git.kernel.org/.../lee/mfd into regulator-bcm590xxx
+      regulator: Don't disable unused regulators we don't have permission for
+      Merge remote-tracking branch 'regulator/fix/s2mpa01' into regulator-linus
+      Merge remote-tracking branch 'regulator/topic/constraints' into regulator-next
+      Merge remote-tracking branch 'regulator/topic/core' into regulator-next
+      Merge remote-tracking branches 'regulator/topic/arizona', 'regulator/topic/axp20' and 'regulator/topic/bcm590xx' into regulator-next
+      Merge remote-tracking branches 'regulator/topic/fixed', 'regulator/topic/id-const', 'regulator/topic/ltc3589', 'regulator/topic/max8649' and 'regulator/topic/of' into regulator-next
+      Merge remote-tracking branches 'regulator/topic/palmas', 'regulator/topic/pbias', 'regulator/topic/pfuze100', 'regulator/topic/s2mpa01' and 'regulator/topic/s2mps11' into regulator-next
+      Merge remote-tracking branches 'regulator/topic/s5m8767', 'regulator/topic/stub', 'regulator/topic/tps65090', 'regulator/topic/tps65217' and 'regulator/topic/tps65218' into regulator-next
+      Merge remote-tracking branch 'regulator/topic/tps6586x' into regulator-next
 
- Documentation/devicetree/bindings/spi/fsl-spi.txt  |   6 +
- Documentation/devicetree/bindings/spi/spi-bus.txt  |   2 +
- .../devicetree/bindings/spi/spi-cadence.txt        |  31 +
- Documentation/devicetree/bindings/spi/spi-dw.txt   |  24 +
- arch/blackfin/mach-bf609/boards/ezkit.c            |  22 +-
- arch/blackfin/mach-bf609/clock.c                   |   7 +
- drivers/spi/Kconfig                                |  13 +-
- drivers/spi/Makefile                               |   3 +-
- drivers/spi/{spi-bfin-v3.c => spi-adi-v3.c}        | 433 ++++++-------
- drivers/spi/spi-ath79.c                            |   1 -
- drivers/spi/spi-atmel.c                            |   9 +-
- drivers/spi/spi-bcm63xx-hsspi.c                    |   1 -
- drivers/spi/spi-bcm63xx.c                          |   1 -
- drivers/spi/spi-cadence.c                          | 673 +++++++++++++++++++++
- drivers/spi/spi-dw-mmio.c                          |  22 +
- drivers/spi/spi-dw.c                               | 197 +-----
- drivers/spi/spi-dw.h                               |  24 +-
- drivers/spi/spi-falcon.c                           |   1 -
- drivers/spi/spi-fsl-dspi.c                         |   2 +-
- drivers/spi/spi-fsl-espi.c                         |  40 +-
- drivers/spi/spi-fsl-lib.c                          |   6 -
- drivers/spi/spi-fsl-lib.h                          |   1 -
- drivers/spi/spi-fsl-spi.c                          |   2 +-
- drivers/spi/spi-gpio.c                             |   2 +-
- drivers/spi/spi-nuc900.c                           |   1 -
- drivers/spi/spi-omap-uwire.c                       |   1 -
- drivers/spi/spi-pl022.c                            |  13 +-
- drivers/spi/spi-pxa2xx-pci.c                       |  76 ++-
- drivers/spi/spi-pxa2xx.c                           |  21 +-
- drivers/spi/spi-qup.c                              |   6 +-
- drivers/spi/spi-rspi.c                             | 601 +++++++-----------
- drivers/spi/spi-s3c24xx.c                          |  15 +-
- drivers/spi/spi-s3c64xx.c                          |   6 +-
- drivers/spi/spi-sh-msiof.c                         |   4 +-
- drivers/spi/spi-sh-sci.c                           |   1 -
- drivers/spi/spi-sirf.c                             | 305 ++++++----
- drivers/spi/spi-sun4i.c                            |   1 -
- drivers/spi/spi-sun6i.c                            |   1 -
- drivers/spi/spi-tegra114.c                         |   2 +-
- drivers/spi/spi-tegra20-sflash.c                   |   2 +-
- drivers/spi/spi-tegra20-slink.c                    |   2 +-
- drivers/spi/spi-tle62x0.c                          |   4 +-
- drivers/spi/spi-topcliff-pch.c                     |   5 +-
- drivers/spi/spi.c                                  |  22 +-
- .../bfin_spi3.h => include/linux/spi/adi_spi3.h    |  20 +-
- include/linux/spi/rspi.h                           |   2 -
- 46 files changed, 1582 insertions(+), 1052 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/spi/spi-cadence.txt
- create mode 100644 Documentation/devicetree/bindings/spi/spi-dw.txt
- rename drivers/spi/{spi-bfin-v3.c => spi-adi-v3.c} (60%)
- create mode 100644 drivers/spi/spi-cadence.c
- rename arch/blackfin/include/asm/bfin_spi3.h => include/linux/spi/adi_spi3.h (97%)
+Matt Porter (3):
+      mfd: bcm590xx: Update binding with additional BCM59056 regulators
+      mfd: bcm590xx: Add support for secondary I2C slave address
+      regulator: bcm590xx: Add support for regulators on secondary I2C slave
 
---zAZKrYjO7GRpkTOs
+Philipp Zabel (3):
+      of: Add vendor prefix for Linear Technology Corporation
+      regulator: ltc3589: Add DT binding documentation
+      regulator: Add LTC3589 support
+
+Saravana Kannan (1):
+      regulator: core: Disable unused regulators after deferred probing is done
+
+Sean Cross (2):
+      regulator: pfuze100: Support SWB enable/disable
+      regulator: pfuze100: Don't allocate an invalid gpio
+
+Sergei Shtylyov (2):
+      regulator: fixed: use of_property_read_{bool|u32}()
+      regulator: use of_property_read_{bool|u32}()
+
+Stephen Boyd (1):
+      regulator: Fix regulator_get_{optional,exclusive}() documentation
+
+Viresh Kumar (1):
+      regulators: Add definition of regulator_set_voltage_time() for !CONFIG_REGULATOR
+
+ Documentation/devicetree/bindings/mfd/bcm590xx.txt |   4 +-
+ Documentation/devicetree/bindings/mfd/s2mps11.txt  |  14 +
+ .../devicetree/bindings/regulator/ltc3589.txt      |  99 ++++
+ .../devicetree/bindings/regulator/tps65090.txt     |   4 +
+ .../devicetree/bindings/vendor-prefixes.txt        |   1 +
+ drivers/mfd/arizona-core.c                         |  41 +-
+ drivers/mfd/bcm590xx.c                             |  60 ++-
+ drivers/mfd/tps65090.c                             |  41 +-
+ drivers/mfd/tps6586x.c                             |   4 +
+ drivers/power/tps65090-charger.c                   |  11 -
+ drivers/regulator/Kconfig                          |  15 +
+ drivers/regulator/Makefile                         |   2 +
+ drivers/regulator/anatop-regulator.c               |   2 +-
+ drivers/regulator/arizona-ldo1.c                   |  58 +++
+ drivers/regulator/arizona-micsupp.c                |  38 ++
+ drivers/regulator/axp20x-regulator.c               | 286 +++++++++++
+ drivers/regulator/bcm590xx-regulator.c             |  92 +++-
+ drivers/regulator/core.c                           |  58 ++-
+ drivers/regulator/devres.c                         |   6 +-
+ drivers/regulator/fixed.c                          |  13 +-
+ drivers/regulator/ltc3589.c                        | 554 +++++++++++++++++++++
+ drivers/regulator/max8649.c                        |   4 +-
+ drivers/regulator/max8952.c                        |   2 +-
+ drivers/regulator/of_regulator.c                   |  68 ++-
+ drivers/regulator/palmas-regulator.c               | 160 +-----
+ drivers/regulator/pbias-regulator.c                |  29 +-
+ drivers/regulator/pfuze100-regulator.c             |   8 +
+ drivers/regulator/s2mpa01.c                        |  19 +-
+ drivers/regulator/s2mps11.c                        | 113 ++++-
+ drivers/regulator/s5m8767.c                        |  37 +-
+ drivers/regulator/st-pwm.c                         |   2 +-
+ drivers/regulator/tps65090-regulator.c             | 214 +++++++-
+ drivers/regulator/tps65217-regulator.c             |   4 +-
+ drivers/regulator/tps65218-regulator.c             |  37 +-
+ drivers/regulator/tps6586x-regulator.c             |  68 ++-
+ drivers/regulator/vexpress.c                       |   2 +-
+ include/linux/mfd/arizona/core.h                   |   3 +
+ include/linux/mfd/bcm590xx.h                       |   9 +-
+ include/linux/mfd/core.h                           |   2 +-
+ include/linux/mfd/samsung/s2mps14.h                |   2 +
+ include/linux/mfd/tps65090.h                       |  19 +
+ include/linux/mfd/tps65217.h                       |   1 -
+ include/linux/mfd/tps6586x.h                       |   2 +
+ include/linux/regulator/consumer.h                 |  42 +-
+ 44 files changed, 1832 insertions(+), 418 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/regulator/ltc3589.txt
+ create mode 100644 drivers/regulator/axp20x-regulator.c
+ create mode 100644 drivers/regulator/ltc3589.c
+
+--w+MAdceOglSEzbpc
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBAgAGBQJTjahhAAoJELSic+t+oim9dnQP/0caJtC+p6hjc27jThVyr5U8
-NC5VYE+b1mAvDJQsWUZO3qdWotO+KTxFzwNqKrwdNafeE5jAMmXevidGSRWE17IS
-+mRxqB52/CAGWKjtDMrpNgV4+zfbiQPeLkVG7hijIfVaexIX22JMDanyTYptUNdH
-gFu0pnlqnF/rXMdXKMLXNQCSb1YTSehO+ipl+g6DMFUik0ght5XpJMOpcfY1j4/K
-u81T7fwdaiaxtKwCyq/db9gL1DFkU7158dhv3FCfh4bR7fxk3+KsnfkLcm+9OgpJ
-5rsPTBSZGzTIH5hyuF+tLLzzbd/K5TfG9Hqo5Gg0JT0qK4b3AMYveo4gqZwNhLMx
-QmEqpO6LCQuCU8wNOw/A+ctvuCriOPOZKtbHwqf0xaifryW/YZlmCO+nwplBlhAP
-dydCp0+pUF86cOd7SEotgQIgSymACdc5RW0j9cv+kv1ps4pyoK0yCBF1HuMXhBfa
-VShO5mogcpyjq0lAAiTME+mg269jakLu8Df3L77stpvXmp7qiqNsyhG+2DydZKO9
-xtnlGyBTJcflLqdln40iCawTE6zgjF7/U+Kz2iJb+1viieZLd7aXYPJiDgFDVluG
-eNihykXskqL3KidMhHomidsv9SHGcHSoMvTToztu9gWRel29uOusP0nRwFajQ7Lq
-p9gzOssSU82mX75Y2TKz
-=e2OE
+iQIcBAEBAgAGBQJTjaU4AAoJELSic+t+oim9G48P/0Y9HanRfe+xNQoyj1eU3cZr
+lQWkP7bXqGrVDLzqO2h6jtfQolSRF7d7hXM6V3B36/gsm7gKYXmYv6TRUZp9IQm9
+pIRf7gbJALoco+njHDFrutA0o0hlAvPuNuGUl5XSq61iaMElH+gTV/D7a47rkQyP
+/PDr6vVhpnGBlaDypDMXspV2hjOV5rcGn6DZZ5mScSbJRPYdUXfxjM1n5jWopq2N
+xV6PkgCxpS6Xrv3+3oNPO8cX+JBdjh8c73b39JN6ZflkXoIglNoQhtK9BZ1Dl6Gu
+1pSfsHxD2z1yARHSoqathFhpTy0R24JjDfJsRx69bXpWF0pOm/8s27li7Qj/8jFz
+y1fnR+0Bd3lx3GZFXZ4I+7mVQ2CJw/XJLvwLGKq07/66PbHZ4UrfUnl9shv0AqKG
+9Er9cKeGWPaWQTh60Q7hWs1MKcla6mEIH+lLx7cj5aux9/cedkjV+A7A698d3mGy
+XaoBy20FYcEKBGO+05RVQPl9LPlqPgFUSJpuuznmlmZNXj1C7lHb9njvnOplecaq
+jvigA/1wVtK4Xc+fBEH7fA3LJwTrtoPPq1HyEw3LkxeGBvGt47C6UDoeXhy7VR38
+dRMWimBJjVFEjsSxmYyMU1VVTtZr+JPk1/qFSfa8M+uWmx/MogUYnOS3IwA/N9Hp
+PAuE7UQoGxvdmrw3uKTZ
+=bWwl
 -----END PGP SIGNATURE-----
 
---zAZKrYjO7GRpkTOs--
+--w+MAdceOglSEzbpc--
