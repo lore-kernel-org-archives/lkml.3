@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934231AbaFCUFN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 16:05:13 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:41963 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934208AbaFCUFI (ORCPT
+	id S934328AbaFCUH1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 16:07:27 -0400
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:57977 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934171AbaFCUFB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 16:05:08 -0400
+	Tue, 3 Jun 2014 16:05:01 -0400
 From: Andreas Noever <andreas.noever@gmail.com>
 To: linux-kernel@vger.kernel.org, Matthew Garrett <matthew.garrett@nebula.com>,
         Greg KH <greg@kroah.com>, Bjorn Helgaas <bhelgaas@google.com>,
         linux-pci@vger.kernel.org
 Cc: Andreas Noever <andreas.noever@gmail.com>
-Subject: [PATCH v5 15/15] thunderbolt: Add suspend/hibernate support
-Date: Tue,  3 Jun 2014 22:04:12 +0200
-Message-Id: <1401825852-4745-16-git-send-email-andreas.noever@gmail.com>
+Subject: [PATCH v5 10/15] thunderbolt: Add path setup code.
+Date: Tue,  3 Jun 2014 22:04:07 +0200
+Message-Id: <1401825852-4745-11-git-send-email-andreas.noever@gmail.com>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <1401825852-4745-1-git-send-email-andreas.noever@gmail.com>
 References: <1401825852-4745-1-git-send-email-andreas.noever@gmail.com>
@@ -22,276 +22,379 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We use _noirq since we have to restore the pci tunnels before the pci
-core wakes the tunneled devices.
+A thunderbolt path is a unidirectional channel between two thunderbolt
+ports. Two such paths are needed to establish a pci tunnel.
+
+This patch introduces struct tb_path as well as a set of tb_path_*
+methods which are used to activate & deactivate paths.
 
 Signed-off-by: Andreas Noever <andreas.noever@gmail.com>
 ---
- drivers/thunderbolt/nhi.c    | 33 +++++++++++++++++
- drivers/thunderbolt/switch.c | 84 ++++++++++++++++++++++++++++++++++++++++++++
- drivers/thunderbolt/tb.c     | 61 ++++++++++++++++++++++++++++++++
- drivers/thunderbolt/tb.h     |  5 +++
- 4 files changed, 183 insertions(+)
+ drivers/thunderbolt/Makefile |   2 +-
+ drivers/thunderbolt/path.c   | 215 +++++++++++++++++++++++++++++++++++++++++++
+ drivers/thunderbolt/switch.c |  34 +++++++
+ drivers/thunderbolt/tb.h     |  62 +++++++++++++
+ 4 files changed, 312 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/thunderbolt/path.c
 
-diff --git a/drivers/thunderbolt/nhi.c b/drivers/thunderbolt/nhi.c
-index d2b9ce8..346b41e 100644
---- a/drivers/thunderbolt/nhi.c
-+++ b/drivers/thunderbolt/nhi.c
-@@ -7,6 +7,7 @@
-  * Copyright (c) 2014 Andreas Noever <andreas.noever@gmail.com>
-  */
+diff --git a/drivers/thunderbolt/Makefile b/drivers/thunderbolt/Makefile
+index 617b314..3532f36 100644
+--- a/drivers/thunderbolt/Makefile
++++ b/drivers/thunderbolt/Makefile
+@@ -1,3 +1,3 @@
+ obj-${CONFIG_THUNDERBOLT} := thunderbolt.o
+-thunderbolt-objs := nhi.o ctl.o tb.o switch.o cap.o
++thunderbolt-objs := nhi.o ctl.o tb.o switch.o cap.o path.o
  
-+#include <linux/pm_runtime.h>
- #include <linux/slab.h>
- #include <linux/errno.h>
- #include <linux/pci.h>
-@@ -492,6 +493,22 @@ static irqreturn_t nhi_msi(int irq, void *data)
- 	return IRQ_HANDLED;
- }
- 
-+static int nhi_suspend_noirq(struct device *dev)
-+{
-+	struct pci_dev *pdev = to_pci_dev(dev);
-+	struct tb *tb = pci_get_drvdata(pdev);
-+	thunderbolt_suspend(tb);
-+	return 0;
-+}
-+
-+static int nhi_resume_noirq(struct device *dev)
-+{
-+	struct pci_dev *pdev = to_pci_dev(dev);
-+	struct tb *tb = pci_get_drvdata(pdev);
-+	thunderbolt_resume(tb);
-+	return 0;
-+}
-+
- static void nhi_shutdown(struct tb_nhi *nhi)
- {
- 	int i;
-@@ -600,6 +617,21 @@ static void nhi_remove(struct pci_dev *pdev)
- 	nhi_shutdown(nhi);
- }
- 
+diff --git a/drivers/thunderbolt/path.c b/drivers/thunderbolt/path.c
+new file mode 100644
+index 0000000..8fcf8a7
+--- /dev/null
++++ b/drivers/thunderbolt/path.c
+@@ -0,0 +1,215 @@
 +/*
-+ * The tunneled pci bridges are siblings of us. Use resume_noirq to reenable
-+ * the tunnels asap. A corresponding pci quirk blocks the downstream bridges
-+ * resume_noirq until we are done.
++ * Thunderbolt Cactus Ridge driver - path/tunnel functionality
++ *
++ * Copyright (c) 2014 Andreas Noever <andreas.noever@gmail.com>
 + */
-+static const struct dev_pm_ops nhi_pm_ops = {
-+	.suspend_noirq = nhi_suspend_noirq,
-+	.resume_noirq = nhi_resume_noirq,
-+	.freeze_noirq = nhi_suspend_noirq, /*
-+					    * we just disable hotplug, the
-+					    * pci-tunnels stay alive.
-+					    */
-+	.restore_noirq = nhi_resume_noirq,
-+};
 +
- struct pci_device_id nhi_ids[] = {
- 	/*
- 	 * We have to specify class, the TB bridges use the same device and
-@@ -626,6 +658,7 @@ static struct pci_driver nhi_driver = {
- 	.id_table = nhi_ids,
- 	.probe = nhi_probe,
- 	.remove = nhi_remove,
-+	.driver.pm = &nhi_pm_ops,
- };
- 
- static int __init nhi_init(void)
-diff --git a/drivers/thunderbolt/switch.c b/drivers/thunderbolt/switch.c
-index aeb5c30..c2a24b6 100644
---- a/drivers/thunderbolt/switch.c
-+++ b/drivers/thunderbolt/switch.c
-@@ -229,6 +229,30 @@ static void tb_dump_switch(struct tb *tb, struct tb_regs_switch_header *sw)
- 		sw->__unknown1, sw->__unknown4);
- }
- 
++#include <linux/slab.h>
++#include <linux/errno.h>
++
++#include "tb.h"
++
++
++static void tb_dump_hop(struct tb_port *port, struct tb_regs_hop *hop)
++{
++	tb_port_info(port, " Hop through port %d to hop %d (%s)\n",
++		     hop->out_port, hop->next_hop,
++		     hop->enable ? "enabled" : "disabled");
++	tb_port_info(port, "  Weight: %d Priority: %d Credits: %d Drop: %d\n",
++		     hop->weight, hop->priority,
++		     hop->initial_credits, hop->drop_packages);
++	tb_port_info(port, "   Counter enabled: %d Counter index: %d\n",
++		     hop->counter_enable, hop->counter);
++	tb_port_info(port, "  Flow Control (In/Eg): %d/%d Shared Buffer (In/Eg): %d/%d\n",
++		     hop->ingress_fc, hop->egress_fc,
++		     hop->ingress_shared_buffer, hop->egress_shared_buffer);
++	tb_port_info(port, "  Unknown1: %#x Unknown2: %#x Unknown3: %#x\n",
++		     hop->unknown1, hop->unknown2, hop->unknown3);
++}
++
 +/**
-+ * reset_switch() - reconfigure route, enable and send TB_CFG_PKG_RESET
++ * tb_path_alloc() - allocate a thunderbolt path
++ *
++ * Return: Returns a tb_path on success or NULL on failure.
++ */
++struct tb_path *tb_path_alloc(struct tb *tb, int num_hops)
++{
++	struct tb_path *path = kzalloc(sizeof(*path), GFP_KERNEL);
++	if (!path)
++		return NULL;
++	path->hops = kcalloc(num_hops, sizeof(*path->hops), GFP_KERNEL);
++	if (!path->hops) {
++		kfree(path);
++		return NULL;
++	}
++	path->tb = tb;
++	path->path_length = num_hops;
++	return path;
++}
++
++/**
++ * tb_path_free() - free a deactivated path
++ */
++void tb_path_free(struct tb_path *path)
++{
++	if (path->activated) {
++		tb_WARN(path->tb, "trying to free an activated path\n")
++		return;
++	}
++	kfree(path->hops);
++	kfree(path);
++}
++
++static void __tb_path_deallocate_nfc(struct tb_path *path, int first_hop)
++{
++	int i, res;
++	for (i = first_hop; i < path->path_length; i++) {
++		res = tb_port_add_nfc_credits(path->hops[i].in_port,
++					      -path->nfc_credits);
++		if (res)
++			tb_port_warn(path->hops[i].in_port,
++				     "nfc credits deallocation failed for hop %d\n",
++				     i);
++	}
++}
++
++static void __tb_path_deactivate_hops(struct tb_path *path, int first_hop)
++{
++	int i, res;
++	struct tb_regs_hop hop = { };
++	for (i = first_hop; i < path->path_length; i++) {
++		res = tb_port_write(path->hops[i].in_port, &hop, TB_CFG_HOPS,
++				    2 * path->hops[i].in_hop_index, 2);
++		if (res)
++			tb_port_warn(path->hops[i].in_port,
++				     "hop deactivation failed for hop %d, index %d\n",
++				     i, path->hops[i].in_hop_index);
++	}
++}
++
++void tb_path_deactivate(struct tb_path *path)
++{
++	if (!path->activated) {
++		tb_WARN(path->tb, "trying to deactivate an inactive path\n");
++		return;
++	}
++	tb_info(path->tb,
++		"deactivating path from %llx:%x to %llx:%x\n",
++		tb_route(path->hops[0].in_port->sw),
++		path->hops[0].in_port->port,
++		tb_route(path->hops[path->path_length - 1].out_port->sw),
++		path->hops[path->path_length - 1].out_port->port);
++	__tb_path_deactivate_hops(path, 0);
++	__tb_path_deallocate_nfc(path, 0);
++	path->activated = false;
++}
++
++/**
++ * tb_path_activate() - activate a path
++ *
++ * Activate a path starting with the last hop and iterating backwards. The
++ * caller must fill path->hops before calling tb_path_activate().
 + *
 + * Return: Returns 0 on success or an error code on failure.
 + */
-+int tb_switch_reset(struct tb *tb, u64 route)
++int tb_path_activate(struct tb_path *path)
 +{
-+	struct tb_cfg_result res;
-+	struct tb_regs_switch_header header = {
-+		header.route_hi = route >> 32,
-+		header.route_lo = route,
-+		header.enabled = true,
-+	};
-+	tb_info(tb, "resetting switch at %llx\n", route);
-+	res.err = tb_cfg_write(tb->ctl, ((u32 *) &header) + 2, route,
-+			0, 2, 2, 2);
-+	if (res.err)
-+		return res.err;
-+	res = tb_cfg_reset(tb->ctl, route, TB_CFG_DEFAULT_TIMEOUT);
-+	if (res.err > 0)
-+		return -EIO;
-+	return res.err;
-+}
-+
- struct tb_switch *get_switch_at_route(struct tb_switch *sw, u64 route)
- {
- 	u8 next_port = route; /*
-@@ -412,3 +436,63 @@ void tb_sw_set_unpplugged(struct tb_switch *sw)
- 	}
- }
- 
-+int tb_switch_resume(struct tb_switch *sw)
-+{
-+	int i, err;
-+	u64 uid;
-+	tb_sw_info(sw, "resuming switch\n");
-+
-+	err = tb_eeprom_read_uid(sw, &uid);
-+	if (err) {
-+		tb_sw_warn(sw, "uid read failed\n");
-+		return err;
-+	}
-+	if (sw->uid != uid) {
-+		tb_sw_info(sw,
-+			"changed while suspended (uid %#llx -> %#llx)\n",
-+			sw->uid, uid);
-+		return -ENODEV;
++	int i, res;
++	enum tb_path_port out_mask, in_mask;
++	if (path->activated) {
++		tb_WARN(path->tb, "trying to activate already activated path\n");
++		return -EINVAL;
 +	}
 +
-+	/* upload configuration */
-+	err = tb_sw_write(sw, 1 + (u32 *) &sw->config, TB_CFG_SWITCH, 1, 3);
-+	if (err)
-+		return err;
++	tb_info(path->tb,
++		"activating path from %llx:%x to %llx:%x\n",
++		tb_route(path->hops[0].in_port->sw),
++		path->hops[0].in_port->port,
++		tb_route(path->hops[path->path_length - 1].out_port->sw),
++		path->hops[path->path_length - 1].out_port->port);
 +
-+	err = tb_plug_events_active(sw, true);
-+	if (err)
-+		return err;
++	/* Clear counters. */
++	for (i = path->path_length - 1; i >= 0; i--) {
++		if (path->hops[i].in_counter_index == -1)
++			continue;
++		res = tb_port_clear_counter(path->hops[i].in_port,
++					    path->hops[i].in_counter_index);
++		if (res)
++			goto err;
++	}
 +
-+	/* check for surviving downstream switches */
-+	for (i = 1; i <= sw->config.max_port_number; i++) {
-+		struct tb_port *port = &sw->ports[i];
-+		if (tb_is_upstream_port(port))
-+			continue;
-+		if (!port->remote)
-+			continue;
-+		if (tb_wait_for_port(port, true) <= 0
-+			|| tb_switch_resume(port->remote->sw)) {
-+			tb_port_warn(port,
-+				     "lost during suspend, disconnecting\n");
-+			tb_sw_set_unpplugged(port->remote->sw);
++	/* Add non flow controlled credits. */
++	for (i = path->path_length - 1; i >= 0; i--) {
++		res = tb_port_add_nfc_credits(path->hops[i].in_port,
++					      path->nfc_credits);
++		if (res) {
++			__tb_path_deallocate_nfc(path, i);
++			goto err;
 +		}
 +	}
-+	return 0;
-+}
 +
-+void tb_switch_suspend(struct tb_switch *sw)
-+{
-+	int i, err;
-+	err = tb_plug_events_active(sw, false);
-+	if (err)
-+		return;
++	/* Activate hops. */
++	for (i = path->path_length - 1; i >= 0; i--) {
++		struct tb_regs_hop hop;
 +
-+	for (i = 1; i <= sw->config.max_port_number; i++) {
-+		if (!tb_is_upstream_port(&sw->ports[i]) && sw->ports[i].remote)
-+			tb_switch_suspend(sw->ports[i].remote->sw);
++		/* dword 0 */
++		hop.next_hop = path->hops[i].next_hop_index;
++		hop.out_port = path->hops[i].out_port->port;
++		/* TODO: figure out why these are good values */
++		hop.initial_credits = (i == path->path_length - 1) ? 16 : 7;
++		hop.unknown1 = 0;
++		hop.enable = 1;
++
++		/* dword 1 */
++		out_mask = (i == path->path_length - 1) ?
++				TB_PATH_DESTINATION : TB_PATH_INTERNAL;
++		in_mask = (i == 0) ? TB_PATH_SOURCE : TB_PATH_INTERNAL;
++		hop.weight = path->weight;
++		hop.unknown2 = 0;
++		hop.priority = path->priority;
++		hop.drop_packages = path->drop_packages;
++		hop.counter = path->hops[i].in_counter_index;
++		hop.counter_enable = path->hops[i].in_counter_index != -1;
++		hop.ingress_fc = path->ingress_fc_enable & in_mask;
++		hop.egress_fc = path->egress_fc_enable & out_mask;
++		hop.ingress_shared_buffer = path->ingress_shared_buffer
++					    & in_mask;
++		hop.egress_shared_buffer = path->egress_shared_buffer
++					    & out_mask;
++		hop.unknown3 = 0;
++
++		tb_port_info(path->hops[i].in_port, "Writing hop %d, index %d",
++			     i, path->hops[i].in_hop_index);
++		tb_dump_hop(path->hops[i].in_port, &hop);
++		res = tb_port_write(path->hops[i].in_port, &hop, TB_CFG_HOPS,
++				    2 * path->hops[i].in_hop_index, 2);
++		if (res) {
++			__tb_path_deactivate_hops(path, i);
++			__tb_path_deallocate_nfc(path, 0);
++			goto err;
++		}
 +	}
-+	/*
-+	 * TODO: invoke tb_cfg_prepare_to_sleep here? does not seem to have any
-+	 * effect?
-+	 */
++	path->activated = true;
++	tb_info(path->tb, "path activation complete\n");
++	return 0;
++err:
++	tb_WARN(path->tb, "path activation failed\n");
++	return res;
 +}
-diff --git a/drivers/thunderbolt/tb.c b/drivers/thunderbolt/tb.c
-index 177f61d..1aa6dd7 100644
---- a/drivers/thunderbolt/tb.c
-+++ b/drivers/thunderbolt/tb.c
-@@ -69,6 +69,28 @@ static void tb_free_invalid_tunnels(struct tb *tb)
++
++/**
++ * tb_path_is_invalid() - check whether any ports on the path are invalid
++ *
++ * Return: Returns true if the path is invalid, false otherwise.
++ */
++bool tb_path_is_invalid(struct tb_path *path)
++{
++	int i = 0;
++	for (i = 0; i < path->path_length; i++) {
++		if (path->hops[i].in_port->sw->is_unplugged)
++			return true;
++		if (path->hops[i].out_port->sw->is_unplugged)
++			return true;
++	}
++	return false;
++}
+diff --git a/drivers/thunderbolt/switch.c b/drivers/thunderbolt/switch.c
+index d6c32e1..667413f 100644
+--- a/drivers/thunderbolt/switch.c
++++ b/drivers/thunderbolt/switch.c
+@@ -139,6 +139,40 @@ int tb_wait_for_port(struct tb_port *port, bool wait_if_unplugged)
  }
  
  /**
-+ * tb_free_unplugged_children() - traverse hierarchy and free unplugged switches
++ * tb_port_add_nfc_credits() - add/remove non flow controlled credits to port
++ *
++ * Change the number of NFC credits allocated to @port by @credits. To remove
++ * NFC credits pass a negative amount of credits.
++ *
++ * Return: Returns 0 on success or an error code on failure.
 + */
-+static void tb_free_unplugged_children(struct tb_switch *sw)
++int tb_port_add_nfc_credits(struct tb_port *port, int credits)
 +{
-+	int i;
-+	for (i = 1; i <= sw->config.max_port_number; i++) {
-+		struct tb_port *port = &sw->ports[i];
-+		if (tb_is_upstream_port(port))
-+			continue;
-+		if (!port->remote)
-+			continue;
-+		if (port->remote->sw->is_unplugged) {
-+			tb_switch_free(port->remote->sw);
-+			port->remote = NULL;
-+		} else {
-+			tb_free_unplugged_children(port->remote->sw);
-+		}
-+	}
++	if (credits == 0)
++		return 0;
++	tb_port_info(port,
++		     "adding %#x NFC credits (%#x -> %#x)",
++		     credits,
++		     port->config.nfc_credits,
++		     port->config.nfc_credits + credits);
++	port->config.nfc_credits += credits;
++	return tb_port_write(port, &port->config.nfc_credits,
++			     TB_CFG_PORT, 4, 1);
 +}
++
++/**
++ * tb_port_clear_counter() - clear a counter in TB_CFG_COUNTER
++ *
++ * Return: Returns 0 on success or an error code on failure.
++ */
++int tb_port_clear_counter(struct tb_port *port, int counter)
++{
++	u32 zero[3] = { 0, 0, 0 };
++	tb_port_info(port, "clearing counter %d\n", counter);
++	return tb_port_write(port, zero, TB_CFG_COUNTERS, 3 * counter, 3);
++}
++
++/**
+  * tb_init_port() - initialize a port
+  *
+  * This is a helper method for tb_switch_alloc. Does not check or initialize
+diff --git a/drivers/thunderbolt/tb.h b/drivers/thunderbolt/tb.h
+index 661f182..8bbdc2b 100644
+--- a/drivers/thunderbolt/tb.h
++++ b/drivers/thunderbolt/tb.h
+@@ -35,6 +35,60 @@ struct tb_port {
+ };
+ 
+ /**
++ * struct tb_path_hop - routing information for a tb_path
++ *
++ * Hop configuration is always done on the IN port of a switch.
++ * in_port and out_port have to be on the same switch. Packets arriving on
++ * in_port with "hop" = in_hop_index will get routed to through out_port. The
++ * next hop to take (on out_port->remote) is determined by next_hop_index.
++ *
++ * in_counter_index is the index of a counter (in TB_CFG_COUNTERS) on the in
++ * port.
++ */
++struct tb_path_hop {
++	struct tb_port *in_port;
++	struct tb_port *out_port;
++	int in_hop_index;
++	int in_counter_index; /* write -1 to disable counters for this hop. */
++	int next_hop_index;
++};
++
++/**
++ * enum tb_path_port - path options mask
++ */
++enum tb_path_port {
++	TB_PATH_NONE = 0,
++	TB_PATH_SOURCE = 1, /* activate on the first hop (out of src) */
++	TB_PATH_INTERNAL = 2, /* activate on other hops (not the first/last) */
++	TB_PATH_DESTINATION = 4, /* activate on the last hop (into dst) */
++	TB_PATH_ALL = 7,
++};
++
++/**
++ * struct tb_path - a unidirectional path between two ports
++ *
++ * A path consists of a number of hops (see tb_path_hop). To establish a PCIe
++ * tunnel two paths have to be created between the two PCIe ports.
++ *
++ */
++struct tb_path {
++	struct tb *tb;
++	int nfc_credits; /* non flow controlled credits */
++	enum tb_path_port ingress_shared_buffer;
++	enum tb_path_port egress_shared_buffer;
++	enum tb_path_port ingress_fc_enable;
++	enum tb_path_port egress_fc_enable;
++
++	int priority:3;
++	int weight:4;
++	bool drop_packages;
++	bool activated;
++	struct tb_path_hop *hops;
++	int path_length; /* number of hops */
++};
 +
 +
 +/**
-  * find_pci_up_port() - return the first PCIe up port on @sw or NULL
+  * struct tb - main thunderbolt bus structure
   */
- static struct tb_port *tb_find_pci_up_port(struct tb_switch *sw)
-@@ -368,3 +390,42 @@ err_locked:
- 	return NULL;
- }
- 
-+void thunderbolt_suspend(struct tb *tb)
-+{
-+	tb_info(tb, "suspending...\n");
-+	mutex_lock(&tb->lock);
-+	tb_switch_suspend(tb->root_switch);
-+	tb_ctl_stop(tb->ctl);
-+	tb->hotplug_active = false; /* signal tb_handle_hotplug to quit */
-+	mutex_unlock(&tb->lock);
-+	tb_info(tb, "suspend finished\n");
-+}
-+
-+void thunderbolt_resume(struct tb *tb)
-+{
-+	struct tb_pci_tunnel *tunnel, *n;
-+	tb_info(tb, "resuming...\n");
-+	mutex_lock(&tb->lock);
-+	tb_ctl_start(tb->ctl);
-+
-+	/* remove any pci devices the firmware might have setup */
-+	tb_switch_reset(tb, 0);
-+
-+	tb_switch_resume(tb->root_switch);
-+	tb_free_invalid_tunnels(tb);
-+	tb_free_unplugged_children(tb->root_switch);
-+	list_for_each_entry_safe(tunnel, n, &tb->tunnel_list, list)
-+		tb_pci_restart(tunnel);
-+	if (!list_empty(&tb->tunnel_list)) {
-+		/*
-+		 * the pcie links need some time to get going.
-+		 * 100ms works for me...
-+		 */
-+		tb_info(tb, "tunnels restarted, sleeping for 100ms\n");
-+		msleep(100);
-+	}
-+	 /* Allow tb_handle_hotplug to progress events */
-+	tb->hotplug_active = true;
-+	mutex_unlock(&tb->lock);
-+	tb_info(tb, "resume finished\n");
-+}
-diff --git a/drivers/thunderbolt/tb.h b/drivers/thunderbolt/tb.h
-index a89087f..63e89d0 100644
---- a/drivers/thunderbolt/tb.h
-+++ b/drivers/thunderbolt/tb.h
-@@ -214,9 +214,14 @@ static inline int tb_port_write(struct tb_port *port, void *buffer,
- 
- struct tb *thunderbolt_alloc_and_start(struct tb_nhi *nhi);
- void thunderbolt_shutdown_and_free(struct tb *tb);
-+void thunderbolt_suspend(struct tb *tb);
-+void thunderbolt_resume(struct tb *tb);
- 
- struct tb_switch *tb_switch_alloc(struct tb *tb, u64 route);
- void tb_switch_free(struct tb_switch *sw);
-+void tb_switch_suspend(struct tb_switch *sw);
-+int tb_switch_resume(struct tb_switch *sw);
-+int tb_switch_reset(struct tb *tb, u64 route);
- void tb_sw_set_unpplugged(struct tb_switch *sw);
+ struct tb {
+@@ -165,9 +219,17 @@ void tb_sw_set_unpplugged(struct tb_switch *sw);
  struct tb_switch *get_switch_at_route(struct tb_switch *sw, u64 route);
  
+ int tb_wait_for_port(struct tb_port *port, bool wait_if_unplugged);
++int tb_port_add_nfc_credits(struct tb_port *port, int credits);
++int tb_port_clear_counter(struct tb_port *port, int counter);
+ 
+ int tb_find_cap(struct tb_port *port, enum tb_cfg_space space, u32 value);
+ 
++struct tb_path *tb_path_alloc(struct tb *tb, int num_hops);
++void tb_path_free(struct tb_path *path);
++int tb_path_activate(struct tb_path *path);
++void tb_path_deactivate(struct tb_path *path);
++bool tb_path_is_invalid(struct tb_path *path);
++
+ 
+ static inline int tb_route_length(u64 route)
+ {
 -- 
 2.0.0
 
