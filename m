@@ -1,130 +1,324 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755291AbaFCSYs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 14:24:48 -0400
-Received: from mga03.intel.com ([143.182.124.21]:10107 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753937AbaFCSYa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 14:24:30 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,967,1392192000"; 
-   d="scan'208";a="440422104"
-Date: Tue, 3 Jun 2014 11:23:04 -0700
-From: Tadeusz Struk <tadeusz.struk@intel.com>
-To: herbert@gondor.apana.org.au
-Cc: tadeusz.struk@intel.com, john.griffin@intel.com, bruce.w.allan@intel.com,
-        karen.xiang@intel.com, pingchaox.yang@intel.com, bo.cui@intel.com,
-        davem@davemloft.net, qat-linux@intel.com, linux-crypto@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dwmw2@infradead.org, ben@decadent.org.uk
-Subject: [RFC][PATCH 0/4] crypto: Intel QAT driver
-Message-ID: <20140603182304.GA18567@gitlad.jf.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1755263AbaFCSYb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 14:24:31 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:57583 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754788AbaFCSY0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 14:24:26 -0400
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: arm@kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Sachin Kamat <spk.linux@gmail.com>
+Subject: [PATCH v2] ARM: Remove ARCH_HAS_CPUFREQ config option
+Date: Tue,  3 Jun 2014 11:24:23 -0700
+Message-Id: <1401819863-20296-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.9.0.1.gd5ccf8c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-This patchset adds support for Intel Quick Assist Technology and DH895xxC hardware accelerator.
-First patch adds a common infractructure that will be used by all QAT devices.
-Second patch adds a firmware loader module that is used to load the microcode to the acceleration engines and start them.
-Third patch adds dh895xcc hardware specific code, which hooks to the common infrastructure and provides acceleration for
-the following algorithms:
-authenc(hmac(sha1),cbc(aes)), authenc(hmac(sha256),cbc(aes)), authenc(hmac(sha512),cbc(aes))
-Forth patch updates makefiles etc.
+This config exists entirely to hide the cpufreq menu from the
+kernel configuration unless a platform has selected it. Nothing
+is actually built if this config is 'Y' and it just leads to more
+patches that add a select under a platform Kconfig so that some
+other CPUfreq option can be chosen. Let's remove the option so
+that we can always enable CPUfreq drivers on ARM platforms.
 
-More info on the hardware accelerator and the Quick Assist can be on:
-https://01.org/packet-processing/intel%C2%AE-quickassist-technology-drivers-and-patches
-
-Signed-off-by: Tadeusz Struk <tadeusz.struk@intel.com>
-Signed-off-by: Karen Xiang <karen.xiang@intel.com>
-Signed-off-by: Pingchaox Yang <pingchaox.yang@intel.com>
-Acked-by: John Griffin <john.griffin@intel.com>
-Acked-by: Bo Cui <bo.cui@intel.com>
-Reviewed-by: Bruce W. Allan <bruce.w.allan@intel.com>
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- drivers/crypto/Kconfig                                      |    1 +
- drivers/crypto/Makefile                                     |    1 +
- drivers/crypto/qat/qat_common/Makefile                      |   13 +
- drivers/crypto/qat/qat_common/adf_accel_devices.h           |  204 +++++++++++++++
- drivers/crypto/qat/qat_common/adf_accel_engine.c            |  168 ++++++++++++
- drivers/crypto/qat/qat_common/adf_aer.c                     |  258 +++++++++++++++++++
- drivers/crypto/qat/qat_common/adf_cfg.c                     |  359 ++++++++++++++++++++++++++
- drivers/crypto/qat/qat_common/adf_cfg.h                     |   87 +++++++
- drivers/crypto/qat/qat_common/adf_cfg_common.h              |  100 ++++++++
- drivers/crypto/qat/qat_common/adf_cfg_strings.h             |   83 ++++++
- drivers/crypto/qat/qat_common/adf_cfg_user.h                |   94 +++++++
- drivers/crypto/qat/qat_common/adf_common_drv.h              |  192 ++++++++++++++
- drivers/crypto/qat/qat_common/adf_ctl_drv.c                 |  490 +++++++++++++++++++++++++++++++++++
- drivers/crypto/qat/qat_common/adf_dev_mgr.c                 |  215 ++++++++++++++++
- drivers/crypto/qat/qat_common/adf_init.c                    |  388 ++++++++++++++++++++++++++++
- drivers/crypto/qat/qat_common/adf_transport.c               |  565 +++++++++++++++++++++++++++++++++++++++++
- drivers/crypto/qat/qat_common/adf_transport.h               |   63 +++++
- drivers/crypto/qat/qat_common/adf_transport_access_macros.h |  160 ++++++++++++
- drivers/crypto/qat/qat_common/adf_transport_debug.c         |  301 ++++++++++++++++++++++
- drivers/crypto/qat/qat_common/adf_transport_internal.h      |  115 +++++++++
- drivers/crypto/qat/qat_common/icp_qat_fw.h                  |  316 +++++++++++++++++++++++
- drivers/crypto/qat/qat_common/icp_qat_fw_init_admin.h       |  131 ++++++++++
- drivers/crypto/qat/qat_common/icp_qat_fw_la.h               |  403 +++++++++++++++++++++++++++++
- drivers/crypto/qat/qat_common/icp_qat_fw_loader_handle.h    |   78 ++++++
- drivers/crypto/qat/qat_common/icp_qat_hal.h                 |  125 +++++++++
- drivers/crypto/qat/qat_common/icp_qat_hw.h                  |  305 ++++++++++++++++++++++
- drivers/crypto/qat/qat_common/icp_qat_uclo.h                |  377 +++++++++++++++++++++++++++
- drivers/crypto/qat/qat_common/qat_algs.c                    | 1033 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- drivers/crypto/qat/qat_common/qat_crypto.c                  |  284 +++++++++++++++++++++
- drivers/crypto/qat/qat_common/qat_crypto.h                  |   83 ++++++
- drivers/crypto/qat/qat_common/qat_hal.c                     | 1402 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- drivers/crypto/qat/qat_common/qat_uclo.c                    | 1191 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- drivers/crypto/qat/qat_dh895xcc/Makefile                    |    8 +
- drivers/crypto/qat/qat_dh895xcc/adf_admin.c                 |  144 +++++++++++
- drivers/crypto/qat/qat_dh895xcc/adf_dh895xcc_hw_data.c      |  214 ++++++++++++++++
- drivers/crypto/qat/qat_dh895xcc/adf_dh895xcc_hw_data.h      |   86 +++++++
- drivers/crypto/qat/qat_dh895xcc/adf_drv.c                   |  448 ++++++++++++++++++++++++++++++++
- drivers/crypto/qat/qat_dh895xcc/adf_drv.h                   |   67 +++++
- drivers/crypto/qat/qat_dh895xcc/adf_hw_arbiter.c            |  159 ++++++++++++
- drivers/crypto/qat/qat_dh895xcc/adf_isr.c                   |  266 +++++++++++++++++++
- drivers/crypto/qat/qat_dh895xcc/qat_admin.c                 |  107 ++++++++
- firmware/Makefile                                           |    1 +
- 44 files changed, 11092 insertions(+)
- create mode 100644 drivers/crypto/qat/qat_common/Makefile
- create mode 100644 drivers/crypto/qat/qat_common/adf_accel_devices.h
- create mode 100644 drivers/crypto/qat/qat_common/adf_accel_engine.c
- create mode 100644 drivers/crypto/qat/qat_common/adf_aer.c
- create mode 100644 drivers/crypto/qat/qat_common/adf_cfg.c
- create mode 100644 drivers/crypto/qat/qat_common/adf_cfg.h
- create mode 100644 drivers/crypto/qat/qat_common/adf_cfg_common.h
- create mode 100644 drivers/crypto/qat/qat_common/adf_cfg_strings.h
- create mode 100644 drivers/crypto/qat/qat_common/adf_cfg_user.h
- create mode 100644 drivers/crypto/qat/qat_common/adf_common_drv.h
- create mode 100644 drivers/crypto/qat/qat_common/adf_ctl_drv.c
- create mode 100644 drivers/crypto/qat/qat_common/adf_dev_mgr.c
- create mode 100644 drivers/crypto/qat/qat_common/adf_init.c
- create mode 100644 drivers/crypto/qat/qat_common/adf_transport.c
- create mode 100644 drivers/crypto/qat/qat_common/adf_transport.h
- create mode 100644 drivers/crypto/qat/qat_common/adf_transport_access_macros.h
- create mode 100644 drivers/crypto/qat/qat_common/adf_transport_debug.c
- create mode 100644 drivers/crypto/qat/qat_common/adf_transport_internal.h
- create mode 100644 drivers/crypto/qat/qat_common/icp_qat_fw.h
- create mode 100644 drivers/crypto/qat/qat_common/icp_qat_fw_init_admin.h
- create mode 100644 drivers/crypto/qat/qat_common/icp_qat_fw_la.h
- create mode 100644 drivers/crypto/qat/qat_common/icp_qat_fw_loader_handle.h
- create mode 100644 drivers/crypto/qat/qat_common/icp_qat_hal.h
- create mode 100644 drivers/crypto/qat/qat_common/icp_qat_hw.h
- create mode 100644 drivers/crypto/qat/qat_common/icp_qat_uclo.h
- create mode 100644 drivers/crypto/qat/qat_common/qat_algs.c
- create mode 100644 drivers/crypto/qat/qat_common/qat_crypto.c
- create mode 100644 drivers/crypto/qat/qat_common/qat_crypto.h
- create mode 100644 drivers/crypto/qat/qat_common/qat_hal.c
- create mode 100644 drivers/crypto/qat/qat_common/qat_uclo.c
- create mode 100644 drivers/crypto/qat/qat_dh895xcc/Makefile
- create mode 100644 drivers/crypto/qat/qat_dh895xcc/adf_admin.c
- create mode 100644 drivers/crypto/qat/qat_dh895xcc/adf_dh895xcc_hw_data.c
- create mode 100644 drivers/crypto/qat/qat_dh895xcc/adf_dh895xcc_hw_data.h
- create mode 100644 drivers/crypto/qat/qat_dh895xcc/adf_drv.c
- create mode 100644 drivers/crypto/qat/qat_dh895xcc/adf_drv.h
- create mode 100644 drivers/crypto/qat/qat_dh895xcc/adf_hw_arbiter.c
- create mode 100644 drivers/crypto/qat/qat_dh895xcc/adf_isr.c
- create mode 100644 drivers/crypto/qat/qat_dh895xcc/qat_admin.c
+
+Maybe this can go through the arm-soc tree by direct patch
+application?
+
+ arch/arm/Kconfig               | 17 -----------------
+ arch/arm/mach-davinci/Kconfig  |  1 -
+ arch/arm/mach-exynos/Kconfig   |  1 -
+ arch/arm/mach-highbank/Kconfig |  1 -
+ arch/arm/mach-imx/Kconfig      |  3 ---
+ arch/arm/mach-mvebu/Kconfig    |  1 -
+ arch/arm/mach-omap2/Kconfig    |  1 -
+ arch/arm/mach-shmobile/Kconfig |  2 --
+ arch/arm/mach-spear/Kconfig    |  1 -
+ arch/arm/mach-tegra/Kconfig    |  1 -
+ arch/arm/mach-ux500/Kconfig    |  1 -
+ arch/arm/mach-vexpress/Kconfig |  1 -
+ arch/arm/mach-vt8500/Kconfig   |  1 -
+ arch/arm/mach-zynq/Kconfig     |  1 -
+ 14 files changed, 33 deletions(-)
+
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 692399cc1170..e5a7396c990d 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -176,13 +176,6 @@ config ARCH_HAS_ILOG2_U32
+ config ARCH_HAS_ILOG2_U64
+ 	bool
+ 
+-config ARCH_HAS_CPUFREQ
+-	bool
+-	help
+-	  Internal node to signify that the ARCH has CPUFREQ support
+-	  and that the relevant menu configurations are displayed for
+-	  it.
+-
+ config ARCH_HAS_BANDGAP
+ 	bool
+ 
+@@ -319,7 +312,6 @@ config ARCH_MULTIPLATFORM
+ 
+ config ARCH_INTEGRATOR
+ 	bool "ARM Ltd. Integrator family"
+-	select ARCH_HAS_CPUFREQ
+ 	select ARM_AMBA
+ 	select ARM_PATCH_PHYS_VIRT
+ 	select AUTO_ZRELADDR
+@@ -539,7 +531,6 @@ config ARCH_DOVE
+ 
+ config ARCH_KIRKWOOD
+ 	bool "Marvell Kirkwood"
+-	select ARCH_HAS_CPUFREQ
+ 	select ARCH_REQUIRE_GPIOLIB
+ 	select CPU_FEROCEON
+ 	select GENERIC_CLOCKEVENTS
+@@ -638,7 +629,6 @@ config ARCH_LPC32XX
+ config ARCH_PXA
+ 	bool "PXA2xx/PXA3xx-based"
+ 	depends on MMU
+-	select ARCH_HAS_CPUFREQ
+ 	select ARCH_MTD_XIP
+ 	select ARCH_REQUIRE_GPIOLIB
+ 	select ARM_CPU_SUSPEND if PM
+@@ -708,7 +698,6 @@ config ARCH_RPC
+ 
+ config ARCH_SA1100
+ 	bool "SA1100-based"
+-	select ARCH_HAS_CPUFREQ
+ 	select ARCH_MTD_XIP
+ 	select ARCH_REQUIRE_GPIOLIB
+ 	select ARCH_SPARSEMEM_ENABLE
+@@ -726,7 +715,6 @@ config ARCH_SA1100
+ 
+ config ARCH_S3C24XX
+ 	bool "Samsung S3C24XX SoCs"
+-	select ARCH_HAS_CPUFREQ
+ 	select ARCH_REQUIRE_GPIOLIB
+ 	select ATAGS
+ 	select CLKDEV_LOOKUP
+@@ -747,7 +735,6 @@ config ARCH_S3C24XX
+ 
+ config ARCH_S3C64XX
+ 	bool "Samsung S3C64XX"
+-	select ARCH_HAS_CPUFREQ
+ 	select ARCH_REQUIRE_GPIOLIB
+ 	select ARM_AMBA
+ 	select ARM_VIC
+@@ -810,7 +797,6 @@ config ARCH_S5PC100
+ 
+ config ARCH_S5PV210
+ 	bool "Samsung S5PV210/S5PC110"
+-	select ARCH_HAS_CPUFREQ
+ 	select ARCH_HAS_HOLES_MEMORYMODEL
+ 	select ARCH_SPARSEMEM_ENABLE
+ 	select ATAGS
+@@ -846,7 +832,6 @@ config ARCH_DAVINCI
+ config ARCH_OMAP1
+ 	bool "TI OMAP1"
+ 	depends on MMU
+-	select ARCH_HAS_CPUFREQ
+ 	select ARCH_HAS_HOLES_MEMORYMODEL
+ 	select ARCH_OMAP
+ 	select ARCH_REQUIRE_GPIOLIB
+@@ -2115,9 +2100,7 @@ endmenu
+ 
+ menu "CPU Power Management"
+ 
+-if ARCH_HAS_CPUFREQ
+ source "drivers/cpufreq/Kconfig"
+-endif
+ 
+ source "drivers/cpuidle/Kconfig"
+ 
+diff --git a/arch/arm/mach-davinci/Kconfig b/arch/arm/mach-davinci/Kconfig
+index db18ef866593..584e8d4e2892 100644
+--- a/arch/arm/mach-davinci/Kconfig
++++ b/arch/arm/mach-davinci/Kconfig
+@@ -39,7 +39,6 @@ config ARCH_DAVINCI_DA830
+ config ARCH_DAVINCI_DA850
+ 	bool "DA850/OMAP-L138/AM18x based system"
+ 	select ARCH_DAVINCI_DA8XX
+-	select ARCH_HAS_CPUFREQ
+ 	select CP_INTC
+ 
+ config ARCH_DAVINCI_DA8XX
+diff --git a/arch/arm/mach-exynos/Kconfig b/arch/arm/mach-exynos/Kconfig
+index d58995c9a95a..845031b50826 100644
+--- a/arch/arm/mach-exynos/Kconfig
++++ b/arch/arm/mach-exynos/Kconfig
+@@ -10,7 +10,6 @@
+ config ARCH_EXYNOS
+ 	bool "Samsung EXYNOS" if ARCH_MULTI_V7
+ 	select ARCH_HAS_BANDGAP
+-	select ARCH_HAS_CPUFREQ
+ 	select ARCH_HAS_HOLES_MEMORYMODEL
+ 	select ARCH_REQUIRE_GPIOLIB
+ 	select ARM_AMBA
+diff --git a/arch/arm/mach-highbank/Kconfig b/arch/arm/mach-highbank/Kconfig
+index 830b76e70250..a5960e2ac090 100644
+--- a/arch/arm/mach-highbank/Kconfig
++++ b/arch/arm/mach-highbank/Kconfig
+@@ -1,7 +1,6 @@
+ config ARCH_HIGHBANK
+ 	bool "Calxeda ECX-1000/2000 (Highbank/Midway)" if ARCH_MULTI_V7
+ 	select ARCH_DMA_ADDR_T_64BIT if ARM_LPAE
+-	select ARCH_HAS_CPUFREQ
+ 	select ARCH_HAS_HOLES_MEMORYMODEL
+ 	select ARCH_HAS_OPP
+ 	select ARCH_SUPPORTS_BIG_ENDIAN
+diff --git a/arch/arm/mach-imx/Kconfig b/arch/arm/mach-imx/Kconfig
+index 4cce93d6c042..8acd4b1cc5d6 100644
+--- a/arch/arm/mach-imx/Kconfig
++++ b/arch/arm/mach-imx/Kconfig
+@@ -1,6 +1,5 @@
+ config ARCH_MXC
+ 	bool "Freescale i.MX family" if ARCH_MULTI_V4_V5 || ARCH_MULTI_V6_V7
+-	select ARCH_HAS_CPUFREQ
+ 	select ARCH_HAS_OPP
+ 	select ARCH_REQUIRE_GPIOLIB
+ 	select ARM_CPU_SUSPEND if PM
+@@ -99,7 +98,6 @@ config SOC_IMX25
+ 
+ config SOC_IMX27
+ 	bool
+-	select ARCH_HAS_CPUFREQ
+ 	select ARCH_HAS_OPP
+ 	select CPU_ARM926T
+ 	select IMX_HAVE_IOMUX_V1
+@@ -693,7 +691,6 @@ comment "Device tree only"
+ 
+ config SOC_IMX5
+ 	bool
+-	select ARCH_HAS_CPUFREQ
+ 	select ARCH_HAS_OPP
+ 	select HAVE_IMX_SRC
+ 	select MXC_TZIC
+diff --git a/arch/arm/mach-mvebu/Kconfig b/arch/arm/mach-mvebu/Kconfig
+index 6090b9eb00c8..c8bef39ec199 100644
+--- a/arch/arm/mach-mvebu/Kconfig
++++ b/arch/arm/mach-mvebu/Kconfig
+@@ -84,7 +84,6 @@ config MACH_DOVE
+ 
+ config MACH_KIRKWOOD
+ 	bool "Marvell Kirkwood boards" if ARCH_MULTI_V5
+-	select ARCH_HAS_CPUFREQ
+ 	select ARCH_REQUIRE_GPIOLIB
+ 	select CPU_FEROCEON
+ 	select KIRKWOOD_CLK
+diff --git a/arch/arm/mach-omap2/Kconfig b/arch/arm/mach-omap2/Kconfig
+index 0ba482638ebf..d8006a2bb808 100644
+--- a/arch/arm/mach-omap2/Kconfig
++++ b/arch/arm/mach-omap2/Kconfig
+@@ -80,7 +80,6 @@ config SOC_DRA7XX
+ config ARCH_OMAP2PLUS
+ 	bool
+ 	select ARCH_HAS_BANDGAP
+-	select ARCH_HAS_CPUFREQ
+ 	select ARCH_HAS_HOLES_MEMORYMODEL
+ 	select ARCH_OMAP
+ 	select ARCH_REQUIRE_GPIOLIB
+diff --git a/arch/arm/mach-shmobile/Kconfig b/arch/arm/mach-shmobile/Kconfig
+index dbd954e61aa7..270e5caf3c97 100644
+--- a/arch/arm/mach-shmobile/Kconfig
++++ b/arch/arm/mach-shmobile/Kconfig
+@@ -85,7 +85,6 @@ config ARCH_R8A73A4
+ 	select CPU_V7
+ 	select SH_CLK_CPG
+ 	select RENESAS_IRQC
+-	select ARCH_HAS_CPUFREQ
+ 	select ARCH_HAS_OPP
+ 	select SYS_SUPPORTS_SH_CMT
+ 	select SYS_SUPPORTS_SH_TMU
+@@ -264,7 +263,6 @@ config MACH_KOELSCH
+ config MACH_KZM9G
+ 	bool "KZM-A9-GT board"
+ 	depends on ARCH_SH73A0
+-	select ARCH_HAS_CPUFREQ
+ 	select ARCH_HAS_OPP
+ 	select ARCH_REQUIRE_GPIOLIB
+ 	select REGULATOR_FIXED_VOLTAGE if REGULATOR
+diff --git a/arch/arm/mach-spear/Kconfig b/arch/arm/mach-spear/Kconfig
+index 0786249b2832..90df2022276a 100644
+--- a/arch/arm/mach-spear/Kconfig
++++ b/arch/arm/mach-spear/Kconfig
+@@ -14,7 +14,6 @@ if PLAT_SPEAR
+ config ARCH_SPEAR13XX
+ 	bool "ST SPEAr13xx"
+ 	depends on ARCH_MULTI_V7 || PLAT_SPEAR_SINGLE
+-	select ARCH_HAS_CPUFREQ
+ 	select ARM_GIC
+ 	select GPIO_SPEAR_SPICS
+ 	select HAVE_ARM_SCU if SMP
+diff --git a/arch/arm/mach-tegra/Kconfig b/arch/arm/mach-tegra/Kconfig
+index e16999e5b735..8981ed49787d 100644
+--- a/arch/arm/mach-tegra/Kconfig
++++ b/arch/arm/mach-tegra/Kconfig
+@@ -1,6 +1,5 @@
+ config ARCH_TEGRA
+ 	bool "NVIDIA Tegra" if ARCH_MULTI_V7
+-	select ARCH_HAS_CPUFREQ
+ 	select ARCH_REQUIRE_GPIOLIB
+ 	select ARCH_SUPPORTS_TRUSTED_FOUNDATIONS
+ 	select ARM_GIC
+diff --git a/arch/arm/mach-ux500/Kconfig b/arch/arm/mach-ux500/Kconfig
+index b41a42da1505..9b93144c1c2b 100644
+--- a/arch/arm/mach-ux500/Kconfig
++++ b/arch/arm/mach-ux500/Kconfig
+@@ -3,7 +3,6 @@ config ARCH_U8500
+ 	depends on MMU
+ 	select AB8500_CORE
+ 	select ABX500_CORE
+-	select ARCH_HAS_CPUFREQ
+ 	select ARCH_REQUIRE_GPIOLIB
+ 	select ARM_AMBA
+ 	select ARM_ERRATA_754322
+diff --git a/arch/arm/mach-vexpress/Kconfig b/arch/arm/mach-vexpress/Kconfig
+index 90249cfc37b3..2e2e8bbb88d7 100644
+--- a/arch/arm/mach-vexpress/Kconfig
++++ b/arch/arm/mach-vexpress/Kconfig
+@@ -65,7 +65,6 @@ config ARCH_VEXPRESS_DCSCB
+ 
+ config ARCH_VEXPRESS_SPC
+ 	bool "Versatile Express Serial Power Controller (SPC)"
+-	select ARCH_HAS_CPUFREQ
+ 	select ARCH_HAS_OPP
+ 	select PM_OPP
+ 	help
+diff --git a/arch/arm/mach-vt8500/Kconfig b/arch/arm/mach-vt8500/Kconfig
+index 08f56a41cb55..aaaa24fe4d71 100644
+--- a/arch/arm/mach-vt8500/Kconfig
++++ b/arch/arm/mach-vt8500/Kconfig
+@@ -1,6 +1,5 @@
+ config ARCH_VT8500
+ 	bool
+-	select ARCH_HAS_CPUFREQ
+ 	select ARCH_REQUIRE_GPIOLIB
+ 	select CLKDEV_LOOKUP
+ 	select VT8500_TIMER
+diff --git a/arch/arm/mach-zynq/Kconfig b/arch/arm/mach-zynq/Kconfig
+index 573e0db1d0f0..0c164f81e72d 100644
+--- a/arch/arm/mach-zynq/Kconfig
++++ b/arch/arm/mach-zynq/Kconfig
+@@ -1,6 +1,5 @@
+ config ARCH_ZYNQ
+ 	bool "Xilinx Zynq ARM Cortex A9 Platform" if ARCH_MULTI_V7
+-	select ARCH_HAS_CPUFREQ
+ 	select ARCH_HAS_OPP
+ 	select ARCH_SUPPORTS_BIG_ENDIAN
+ 	select ARM_AMBA
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
