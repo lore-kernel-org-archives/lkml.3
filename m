@@ -1,67 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932569AbaFCOey (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 10:34:54 -0400
-Received: from casper.infradead.org ([85.118.1.10]:41857 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753302AbaFCOex (ORCPT
+	id S1754545AbaFCOfu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 10:35:50 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:5921 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753928AbaFCOfs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 10:34:53 -0400
-Date: Tue, 3 Jun 2014 16:34:46 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mike Galbraith <umgwanakikbuti@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [patchlet][resend] sched: Fix up /proc/sched_debug to print only
- runnable tasks again
-Message-ID: <20140603143446.GQ30445@twins.programming.kicks-ass.net>
-References: <1401801261.5788.2.camel@marge.simpson.net>
+	Tue, 3 Jun 2014 10:35:48 -0400
+Date: Tue, 3 Jun 2014 10:35:44 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "Chen, Gong" <gong.chen@linux.intel.com>
+Cc: "Luck, Tony" <tony.luck@intel.com>, Borislav Petkov <bp@alien8.de>,
+        "m.chehab@samsung.com" <m.chehab@samsung.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/7 v6] trace, RAS: Add eMCA trace event interface
+Message-ID: <20140603103544.207eaa6e@gandalf.local.home>
+In-Reply-To: <20140603083606.GA15476@gchen.bj.intel.com>
+References: <1401247938-22125-2-git-send-email-gong.chen@linux.intel.com>
+	<20140528112832.5f83c66b@gandalf.local.home>
+	<20140528163452.GF17196@pd.tnic>
+	<20140528125625.6f6dcf7f@gandalf.local.home>
+	<20140530092232.GA13495@gchen.bj.intel.com>
+	<20140530100716.GE28131@pd.tnic>
+	<3908561D78D1C84285E8C5FCA982C28F32823D2B@ORSMSX114.amr.corp.intel.com>
+	<20140530210759.267a854e@gandalf.local.home>
+	<3908561D78D1C84285E8C5FCA982C28F3282545B@ORSMSX114.amr.corp.intel.com>
+	<20140602125748.7093ced8@gandalf.local.home>
+	<20140603083606.GA15476@gchen.bj.intel.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="5ZC8HHDsDfqlD0R9"
-Content-Disposition: inline
-In-Reply-To: <1401801261.5788.2.camel@marge.simpson.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 3 Jun 2014 04:36:07 -0400
+"Chen, Gong" <gong.chen@linux.intel.com> wrote:
 
---5ZC8HHDsDfqlD0R9
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> On Mon, Jun 02, 2014 at 12:57:48PM -0400, Steven Rostedt wrote:
+> > Also matters how big you expect these events to be. If you get a
+> > "christmas tree" set of flags, how big will that event grow with all
+> > the descriptions attached?
+> > 
+> > The max event size after all headers is 4056 bytes. If you go over
+> > that, the event is ignored.
+> > 
+> Hi, Steven
+> 
+> Normally, the length of one eMCA trace record is between 200 and 256 bytes.
+> Once CMCI storm happens, before it is turned into poll mode, there are
+> about ~15 CMCI events are recorded, because I don't use rate limit for
+> trace so they should be recorded so seriously, some records will be lost.
+> But they are repeated and similar records so maybe the *lost* is not a 
+> big issue.
+> 
+> Return to how to print trace record. To avoid buffer waste, I need to
+> print data when TP_printk called, in the meanwhile, the print content
+> is an array of [name, value], but we don't know how many items are
+> valid. Here is the question: I can't create a dynamic printk format
+> like "%s %d, %s %d, ..." in TP_printk. So the only way to me is
+> printking them all, even some of them are invalid, which means an 12
+> group "%s %d", or somthing like "%.*s" to make output format graceful.
+> This is what we want?
 
-On Tue, Jun 03, 2014 at 03:14:21PM +0200, Mike Galbraith wrote:
->=20
-> Commit b32e86b430 dropped p->on_rq check, leading to printing tasks which
-> used to live on runqueues, which is very noisy and highly annoying.
+You can create a helper function to call (needs to be placed in a .c
+file).
 
-Yes,.. but also useful for the numa cruft :-(
-
-When printing all we can get placement info for !running tasks.
-
-Not sure what to do here..=20
+Note, there's a pointer to a trace_seq structure "p" that is available.
+Hmm, I should add a get_dynamic_array_len(field), to give you the
+length. I'll add that now. I also don't like the trace_seq being "p" as
+that is too generic. Maybe I'll change that to "__trace_seq" or
+something not so generic.
 
 
---5ZC8HHDsDfqlD0R9
-Content-Type: application/pgp-signature
+Anyway, have something like this:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJTjd0FAAoJEHZH4aRLwOS6rR4P/AwRq76tqRzucw5/I67Y/6eR
-IcWbNa/OtA9a67dflPIGlAOihxLcFnTB2JQPxmNrZhhd7KtCjVM95RfsXjW7YbWA
-+ysrG6CqxJ69dUYGY+s6AnOLnQyPuSeS3hzQ6FhUBODATcGyUgPsqJhKubo0Nd0g
-nK90hjbhmRkjnBxqekdbdnE8AvYOIAjlNaMZxQe4vw7y1nWAriYbAKyYHm9P1HQl
-3TXu/K+zFzpmqcx4eUsHyk14Z+Q4F04GuYcNKe3f5EtnA3C6SUQd6y5g9b/LrmgY
-N/UwvGntGRzu3CfMn6k5eLpXdtlHR5/Mk2mkr2YXKEBHsWtyoKh07GWSCC4bJ/55
-25f3uwePtgpunBkTwSDUU7575RGqN7TfO+cZk5dgVHUiIOqBhnmXs7ptxtW93n0J
-0ucDN56ZW2ekGTK9LbEQWANPa8UgvbNguDeYsCwoxR7owPe1w4qezk5EhIEwBCF9
-tyTMxnp6jB3yNQeD/bp0oETGo/soKZvqocwDjR/H9s7ZmuHqy3dwwsLEbglnp+6P
-p/FNc7lRyEfa/dpXwlDej79wTEP+ch0oQiauX+GRSXen21d61DbEpCQWxurHDtL5
-82rNOMdOh4CZ7QMt0JGwUZT9QjynICCN+LpfuWonzB0ASsi/uKU0CHyIqJ3uhaPj
-1DVOxzTdSdosgs2GoWUM
-=3n1V
------END PGP SIGNATURE-----
+	TP_printk("%s", emca_parse_events(p, __get_dynamic_array(field),
+			__get_dynamic_array_len(field)));
 
---5ZC8HHDsDfqlD0R9--
+I'll still need to add that __get_dynamic_array_len() helper. I'll send
+you something tonight.
+
+Then you write the emca_parse_events() as:
+
+
+const char *emca_parse_events(struct trace_seq *p,
+		struct cper_sec_mem_rec *data, int len)
+{
+	const char *ret = p->buffer + p->len;
+	int i;
+
+	len = len / sizeof(struct cper_sec_mem_rec);
+	for (i = 0; i < len; i++) {
+		switch (data[i].type) {
+		case FOO:
+			trace_seq_printf(p, "BAR: %d\n", data[i].data);
+			break;
+		[..]
+		}
+	}
+	trace_seq_putc('\0');
+
+	return ret;
+}
+
+-- Steve
