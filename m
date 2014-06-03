@@ -1,99 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932524AbaFCOMB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 10:12:01 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:45392 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932443AbaFCOMA (ORCPT
+	id S932622AbaFCON6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 10:13:58 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:36083 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932443AbaFCON5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 10:12:00 -0400
-Date: Tue, 3 Jun 2014 16:11:38 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Greg Ungerer <gerg@uclinux.org>
-Cc: Rabin Vincent <rabin@rab.in>, Will Deacon <will.deacon@arm.com>,
-        linux-arm-kernel@lists.infradead.org, linux-xtensa@linux-xtensa.org,
-        linux-m32r@ml.linux-m32r.org, linux-c6x-dev@linux-c6x.org,
-        microblaze-uclinux@itee.uq.edu.au, linux-kernel@vger.kernel.org,
-        David Howells <dhowells@redhat.com>, linux-mm@kvack.org,
-        linux-m68k@vger.kernel.org, kernel@pengutronix.de,
-        uclinux-dist-devel@blackfin.uclinux.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        panchaxari <panchaxari.prasannamurthy@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: TASK_SIZE for !MMU
-Message-ID: <20140603141138.GH16741@pengutronix.de>
-References: <20140429100028.GH28564@pengutronix.de>
- <20140602085150.GA31147@pengutronix.de>
- <538DBC3F.9060207@uclinux.org>
+	Tue, 3 Jun 2014 10:13:57 -0400
+Message-ID: <538DD821.9000401@gmail.com>
+Date: Tue, 03 Jun 2014 08:13:53 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <538DBC3F.9060207@uclinux.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Prankul Garg <prankul.iiitm@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: perf tools[ARM]:Not able to detect [kernel.kallsyms] dso on Qualcomm
+ MSM 8974
+References: <loom.20140603T154538-510@post.gmane.org>
+In-Reply-To: <loom.20140603T154538-510@post.gmane.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Greg,
+On 6/3/14, 8:02 AM, Prankul Garg wrote:
+> Qualcomm MSM 8974 is not able to detect [kernel.kallsyms] dso either with
+> Hardware or Tracepoint events while Exynos do.
 
-thanks for your reply.
+Add -v to perf-record and perf-report.
 
-On Tue, Jun 03, 2014 at 10:14:55PM +1000, Greg Ungerer wrote:
-> >>I think it would be OK to define TASK_SIZE to 0xffffffff for !MMU.
-> >>blackfin, frv and m68k also do this. c6x does define it to 0xFFFFF000 to
-> >>leave space for error codes.
-> 
-> I did that same change for m68k in commit cc24c40 ("m68knommu: remove
-> size limit on non-MMU TASK_SIZE"). For similar reasons as you need to
-> now.
-ok.
- 
-> >>Thoughts?
-> >The problem is that current linus/master (and also next) doesn't boot on
-> >my ARM-nommu machine because the user string functions (strnlen_user,
-> >strncpy_from_user et al.) refuse to work on strings above TASK_SIZE
-> >which in my case also includes the XIP kernel image.
-> 
-> I seem to recall that we were not considering flash or anything else
-> other than RAM when defining that original TASK_SIZE (back many, many
-> years ago). Some of the address checks you list above made some sense
-> if you had everything in RAM (though only upper bounds are checked).
-> The thinking was some checking is better than none I suppose.
-What is the actual meaning of TASK_SIZE? The maximal value of a valid
-userspace address?
+And try:
+perf report -D | grep kallsyms
 
-> Setting a hard coded memory size in CONFIG_DRAM_SIZE is not all that
-> fantastic either...
-Not sure what you mean? Having CONFIG_DRAM_SIZE at all or use it for
-boundary checking?
+Do you see something like:
+0 0 0xd8 [0x58]: PERF_RECORD_MMAP -1/0: [0(0xffffffff9fffffff) @ 
+0xffffffff81000000]: x [kernel.kallsyms]_text
 
-CONFIG_DRAM_SIZE is hardly used apart from defining TASK_SIZE:
-
- - #define END_MEM (UL(CONFIG_DRAM_BASE) + CONFIG_DRAM_SIZE)
-   which is only used to define MODULES_END. Ap
- - Some memory configuration using cp15 registers in
-   arch/arm/mm/proc-arm{740,940,946}.S
-
-For the former I'd say better use 0xffffffff, too. For the latter I
-wonder if we should just drop CPU_ARM740T, CPU_ARM940T and CPU_ARM946E.
-These are only selectable if ARCH_INTEGRATOR and are not selected by
-other symbols. As ARCH_INTEGRATOR selects ARM_PATCH_PHYS_VIRT since
-commit fe9891454473 (ARM: integrator: Default enable
-ARM_PATCH_PHYS_VIRT, AUTO_ZRELADDR) for Linux 3.13 and
-ARM_PATCH_PHYS_VIRT depends on MMU the Integrator-noMMU targets are
-broken anyhow.
-
-I will prepare a patch series with some cleanups.
-
-Best regards
-Uwe
-
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+David
