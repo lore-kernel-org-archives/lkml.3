@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965225AbaFCWI6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 18:08:58 -0400
-Received: from mail-we0-f170.google.com ([74.125.82.170]:32772 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965164AbaFCWIx (ORCPT
+	id S965618AbaFCWOk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 18:14:40 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:55311 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965192AbaFCWI5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 18:08:53 -0400
+	Tue, 3 Jun 2014 18:08:57 -0400
 From: Alexis Berlemont <alexis.berlemont@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: Alexis Berlemont <alexis.berlemont@gmail.com>, jolsa@redhat.com,
         dsahern@gmail.com, mingo@kernel.org, sam@ravnborg.org, mmarek@suse.cz
-Subject: [PATCH 12/32] perf kbuild: remove legacy libaudit-related build variables
-Date: Wed,  4 Jun 2014 00:06:05 +0200
-Message-Id: <1401833185-10347-13-git-send-email-alexis.berlemont@gmail.com>
+Subject: [PATCH 15/32] perf kbuild: remove legacy timerfd-related build variable
+Date: Wed,  4 Jun 2014 00:06:08 +0200
+Message-Id: <1401833185-10347-16-git-send-email-alexis.berlemont@gmail.com>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1401833185-10347-1-git-send-email-alexis.berlemont@gmail.com>
 References: <1401833185-10347-1-git-send-email-alexis.berlemont@gmail.com>
@@ -23,76 +23,123 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove NO_LIBAUDIT (replaced by CONFIG_LIBAUDIT)
-Remove HAVE_LIBAUDIT_SUPPORT from CFLAGS (replaced by CONFIG_LIBAUDIT)
+Remove HAVE_TIMERFD_SUPPORT (replaced by CONFIG_TIMERFD)
 ---
- tools/perf/config/Makefile            | 8 +++-----
- tools/perf/config/Makefile.fix-config | 8 --------
- tools/perf/config/Makefile.fix-legacy | 4 ----
- 3 files changed, 3 insertions(+), 17 deletions(-)
+ tools/perf/Kconfig         |  8 +++++++-
+ tools/perf/builtin-kvm.c   | 13 +++++++------
+ tools/perf/config/Makefile | 10 ++++++----
+ 3 files changed, 20 insertions(+), 11 deletions(-)
 
+diff --git a/tools/perf/Kconfig b/tools/perf/Kconfig
+index 5ca0527..9b75649 100644
+--- a/tools/perf/Kconfig
++++ b/tools/perf/Kconfig
+@@ -151,7 +151,7 @@ config BUILTIN_TEST
+ 
+ endmenu
+ 
+-menu "Libraries"
++menu "Libraries / Dependencies"
+ 
+ config LIBSLANG
+ 	bool "Slang (libslang)"
+@@ -190,6 +190,12 @@ config LIBPYTHON
+         ---help---
+ 	  Libpython dependency needed by the perf script feature.
+ 
++config TIMERFD
++	bool "Timer via file descriptor"
++	default n
++        ---help---
++	  Timer via file descriptor
++
+ choice
+ 	prompt "Elf library"
+ 	default LIBELF
+diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
+index 0f1e5a2..d035253 100644
+--- a/tools/perf/builtin-kvm.c
++++ b/tools/perf/builtin-kvm.c
+@@ -1,3 +1,4 @@
++#include "generated/autoconf.h"
+ #include "builtin.h"
+ #include "perf.h"
+ 
+@@ -20,7 +21,7 @@
+ #include "util/data.h"
+ 
+ #include <sys/prctl.h>
+-#ifdef HAVE_TIMERFD_SUPPORT
++#ifdef CONFIG_TIMERFD
+ #include <sys/timerfd.h>
+ #endif
+ 
+@@ -339,7 +340,7 @@ static void init_kvm_event_record(struct perf_kvm_stat *kvm)
+ 		INIT_LIST_HEAD(&kvm->kvm_events_cache[i]);
+ }
+ 
+-#ifdef HAVE_TIMERFD_SUPPORT
++#ifdef CONFIG_TIMERFD
+ static void clear_events_cache_stats(struct list_head *kvm_events_cache)
+ {
+ 	struct list_head *head;
+@@ -788,7 +789,7 @@ static void print_result(struct perf_kvm_stat *kvm)
+ 		pr_info("\nLost events: %" PRIu64 "\n\n", kvm->lost_events);
+ }
+ 
+-#ifdef HAVE_TIMERFD_SUPPORT
++#ifdef CONFIG_TIMERFD
+ static int process_lost_event(struct perf_tool *tool,
+ 			      union perf_event *event __maybe_unused,
+ 			      struct perf_sample *sample __maybe_unused,
+@@ -879,7 +880,7 @@ static bool verify_vcpu(int vcpu)
+ 	return true;
+ }
+ 
+-#ifdef HAVE_TIMERFD_SUPPORT
++#ifdef CONFIG_TIMERFD
+ /* keeping the max events to a modest level to keep
+  * the processing of samples per mmap smooth.
+  */
+@@ -1386,7 +1387,7 @@ kvm_events_report(struct perf_kvm_stat *kvm, int argc, const char **argv)
+ 	return kvm_events_report_vcpu(kvm);
+ }
+ 
+-#ifdef HAVE_TIMERFD_SUPPORT
++#ifdef CONFIG_TIMERFD
+ static struct perf_evlist *kvm_live_event_list(void)
+ {
+ 	struct perf_evlist *evlist;
+@@ -1601,7 +1602,7 @@ static int kvm_cmd_stat(const char *file_name, int argc, const char **argv)
+ 	if (!strncmp(argv[1], "rep", 3))
+ 		return kvm_events_report(&kvm, argc - 1 , argv + 1);
+ 
+-#ifdef HAVE_TIMERFD_SUPPORT
++#ifdef CONFIG_TIMERFD
+ 	if (!strncmp(argv[1], "live", 4))
+ 		return kvm_events_live(&kvm, argc - 1 , argv + 1);
+ #endif
 diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index fa07862..96bb232 100644
+index 93c3321..33843b7 100644
 --- a/tools/perf/config/Makefile
 +++ b/tools/perf/config/Makefile
-@@ -392,12 +392,11 @@ ifndef NO_LIBUNWIND
-   LDFLAGS += $(LIBUNWIND_LDFLAGS)
- endif
- 
--ifndef NO_LIBAUDIT
-+ifdef CONFIG_LIBAUDIT
-   ifneq ($(feature-libaudit), 1)
--    msg := $(warning No libaudit.h found, disables 'trace' tool, please install audit-libs-devel or libaudit-dev);
--    NO_LIBAUDIT := 1
-+    msg := $(warning No libaudit.h found, disables LIBAUDIT support and 'trace' tool, please install audit-libs-devel or libaudit-dev);
-+    $(shell $(KCONFIG_SCRIPT) -d CONFIG_LIBAUDIT)
-   else
--    CFLAGS += -DHAVE_LIBAUDIT_SUPPORT
-     EXTLIBS += -laudit
+@@ -445,10 +445,12 @@ ifdef CONFIG_LIBPERL
    endif
  endif
-@@ -763,7 +762,6 @@ all:
- 	$(call store,NO_LIBUNWIND)
- 	$(call store,NO_BACKTRACE)
- 	$(call store,NO_LIBNUMA)
--	$(call store,NO_LIBAUDIT)
- 	$(call store,NO_LIBBIONIC)
- 	$(call store,ETC_PERFCONFIG_SQ)
- 	$(call store,DESTDIR_SQ)
-diff --git a/tools/perf/config/Makefile.fix-config b/tools/perf/config/Makefile.fix-config
-index a8e5539..77f9840 100644
---- a/tools/perf/config/Makefile.fix-config
-+++ b/tools/perf/config/Makefile.fix-config
-@@ -69,14 +69,6 @@ dummy := $(shell $(CONFIG) -d CONFIG_NUMA)
- endif
+ 
+-ifeq ($(feature-timerfd), 1)
+-  CFLAGS += -DHAVE_TIMERFD_SUPPORT
+-else
+-  msg := $(warning No timerfd support. Disables 'perf kvm stat live');
++ifdef CONFIG_TIMERFD
++  ifneq ($(feature-timerfd), 1)
++    $(shell $(KCONFIG_SCRIPT) -d CONFIG_TIMERFD)
++  else
++    msg := $(warning No timerfd support. Disables 'perf kvm stat live');
++  endif
  endif
  
--# NO_LIBAUDIT
--ifdef CONFIG_LIBAUDIT
--ifdef NO_LIBAUDIT
--dummy := $(info Disabling CONFIG_LIBAUDIT)
--dummy := $(shell $(CONFIG) -d CONFIG_LIBAUDIT)
--endif
--endif
--
- # NO_LIBBIONIC
- ifdef CONFIG_BIONIC
- ifdef NO_LIBBIONIC
-diff --git a/tools/perf/config/Makefile.fix-legacy b/tools/perf/config/Makefile.fix-legacy
-index 18acc92..ab72582 100644
---- a/tools/perf/config/Makefile.fix-legacy
-+++ b/tools/perf/config/Makefile.fix-legacy
-@@ -33,10 +33,6 @@ ifndef CONFIG_NUMA
- export NO_LIBNUMA := 1
- endif
- 
--ifndef CONFIG_LIBAUDIT
--NO_LIBAUDIT := 1
--endif
--
- ifdef CONFIG_BIONIC
- NO_LIBBIONIC := 1
- endif
+ disable-python = $(eval $(disable-python_code))
 -- 
 1.9.3
 
