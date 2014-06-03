@@ -1,98 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932191AbaFCG1n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 02:27:43 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:50182 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753180AbaFCG1m (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 02:27:42 -0400
-Date: Tue, 3 Jun 2014 15:26:53 +0900
-From: Daeseok Youn <daeseok.youn@gmail.com>
-To: lidza.louina@gmail.com, gregkh@linuxfoundation.org
-Cc: markh@compro.net, dan.carpenter@oracle.com,
-        driverdev-devel@linuxdriverproject.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 1/4] staging: dgap: pass "dgap_numboards" as a paramter to
- dgap_found_board()
-Message-ID: <20140603062653.GA7153@devel.8.8.4.4>
+	id S932257AbaFCG1q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 02:27:46 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60925 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932203AbaFCG1o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 02:27:44 -0400
+Date: Tue, 3 Jun 2014 08:27:42 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, cgroups@vger.kernel.org
+Subject: Re: [patch v2] mm, memcg: periodically schedule when emptying page
+ list
+Message-ID: <20140603062742.GA1321@dhcp22.suse.cz>
+References: <alpine.DEB.2.02.1406021612550.6487@chino.kir.corp.google.com>
+ <alpine.DEB.2.02.1406021749590.13910@chino.kir.corp.google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <alpine.DEB.2.02.1406021749590.13910@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-- Pass "dgap_numboards" to dgap_found_board() instead of
-using a global variable.
+On Mon 02-06-14 17:51:25, David Rientjes wrote:
+> From: Hugh Dickins <hughd@google.com>
+> 
+> mem_cgroup_force_empty_list() can iterate a large number of pages on an lru and 
+> mem_cgroup_move_parent() doesn't return an errno unless certain criteria, none 
+> of which indicate that the iteration may be taking too long, is met.
+> 
+> We have encountered the following stack trace many times indicating
+> "need_resched set for > 51000020 ns (51 ticks) without schedule", for example:
+> 
+> 	scheduler_tick()
+> 	<timer irq>
+> 	mem_cgroup_move_account+0x4d/0x1d5
+> 	mem_cgroup_move_parent+0x8d/0x109
+> 	mem_cgroup_reparent_charges+0x149/0x2ba
+> 	mem_cgroup_css_offline+0xeb/0x11b
+> 	cgroup_offline_fn+0x68/0x16b
+> 	process_one_work+0x129/0x350
+> 
+> If this iteration is taking too long, we still need to do cond_resched() even 
+> when an individual page is not busy.
+> 
+> [rientjes@google.com: changelog]
+> Signed-off-by: Hugh Dickins <hughd@google.com>
+> Signed-off-by: David Rientjes <rientjes@google.com>
 
-Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
----
- drivers/staging/dgap/dgap.c |   14 +++++++-------
- 1 files changed, 7 insertions(+), 7 deletions(-)
+Acked-by: Michal Hocko <mhocko@suse.cz>
 
-diff --git a/drivers/staging/dgap/dgap.c b/drivers/staging/dgap/dgap.c
-index c78c8e2..9501a5e 100644
---- a/drivers/staging/dgap/dgap.c
-+++ b/drivers/staging/dgap/dgap.c
-@@ -70,7 +70,7 @@ MODULE_SUPPORTED_DEVICE("dgap");
- 
- static int dgap_start(void);
- static void dgap_init_globals(void);
--static int dgap_found_board(struct pci_dev *pdev, int id);
-+static int dgap_found_board(struct pci_dev *pdev, int id, int boardnum);
- static void dgap_cleanup_board(struct board_t *brd);
- static void dgap_poll_handler(ulong dummy);
- static int dgap_init_pci(void);
-@@ -575,7 +575,7 @@ static int dgap_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
- 	if (rc)
- 		return -EIO;
- 
--	rc = dgap_found_board(pdev, ent->driver_data);
-+	rc = dgap_found_board(pdev, ent->driver_data, dgap_numboards);
- 	if (rc)
- 		return rc;
- 
-@@ -667,7 +667,7 @@ static void dgap_cleanup_board(struct board_t *brd)
-  *
-  * A board has been found, init it.
-  */
--static int dgap_found_board(struct pci_dev *pdev, int id)
-+static int dgap_found_board(struct pci_dev *pdev, int id, int boardnum)
- {
- 	struct board_t *brd;
- 	unsigned int pci_irq;
-@@ -679,11 +679,11 @@ static int dgap_found_board(struct pci_dev *pdev, int id)
- 	if (!brd)
- 		return -ENOMEM;
- 
--	dgap_board[dgap_numboards] = brd;
-+	dgap_board[boardnum] = brd;
- 
- 	/* store the info for the board we've found */
- 	brd->magic = DGAP_BOARD_MAGIC;
--	brd->boardnum = dgap_numboards;
-+	brd->boardnum = boardnum;
- 	brd->firstminor = 0;
- 	brd->vendor = dgap_pci_tbl[id].vendor;
- 	brd->device = dgap_pci_tbl[id].device;
-@@ -777,13 +777,13 @@ static int dgap_found_board(struct pci_dev *pdev, int id)
- 		goto free_brd;
- 
- 	pr_info("dgap: board %d: %s (rev %d), irq %ld\n",
--		dgap_numboards, brd->name, brd->rev, brd->irq);
-+		boardnum, brd->name, brd->rev, brd->irq);
- 
- 	return 0;
- 
- free_brd:
- 	kfree(brd);
--	dgap_board[dgap_numboards] = NULL;
-+	dgap_board[boardnum] = NULL;
- 
- 	return ret;
- }
+Thanks!
+
+> ---
+>  v2: always reschedule if needed, "page" itself may not have a pc mismatch
+>      or been unable to isolate.
+> 
+>  mm/memcontrol.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -4784,9 +4784,9 @@ static void mem_cgroup_force_empty_list(struct mem_cgroup *memcg,
+>  		if (mem_cgroup_move_parent(page, pc, memcg)) {
+>  			/* found lock contention or "pc" is obsolete. */
+>  			busy = page;
+> -			cond_resched();
+>  		} else
+>  			busy = NULL;
+> +		cond_resched();
+>  	} while (!list_empty(list));
+>  }
+>  
+
 -- 
-1.7.1
-
+Michal Hocko
+SUSE Labs
