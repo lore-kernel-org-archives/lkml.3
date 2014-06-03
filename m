@@ -1,87 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932836AbaFCPBE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 11:01:04 -0400
-Received: from casper.infradead.org ([85.118.1.10]:41998 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932080AbaFCPBC (ORCPT
+	id S932854AbaFCPCm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 11:02:42 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:33151 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932250AbaFCPCk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 11:01:02 -0400
-Date: Tue, 3 Jun 2014 17:00:54 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kevin Hilman <khilman@linaro.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: Re: [PATCH 4/5] nohz: Move full nohz kick to its own IPI
-Message-ID: <20140603150054.GU30445@twins.programming.kicks-ass.net>
-References: <1401806420-31018-1-git-send-email-fweisbec@gmail.com>
- <1401806420-31018-5-git-send-email-fweisbec@gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="fI9rxb8OPOZXsIa9"
-Content-Disposition: inline
-In-Reply-To: <1401806420-31018-5-git-send-email-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Tue, 3 Jun 2014 11:02:40 -0400
+Message-ID: <1401807754.5458.13.camel@dhcp-9-2-203-236.watson.ibm.com>
+Subject: Re: [RFC PATCH v4 4/4] KEYS: define an owner trusted keyring
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Josh Boyer <jwboyer@redhat.com>
+Cc: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>,
+        linux-security-module <linux-security-module@vger.kernel.org>,
+        Dmitry Kasatkin <d.kasatkin@samsung.com>,
+        David Howells <dhowells@redhat.com>, keyrings <keyrings@linux-nfs.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Date: Tue, 03 Jun 2014 11:02:34 -0400
+In-Reply-To: <20140602115505.GA10515@hansolo.jdub.homelinux.org>
+References: <1401289784-31340-1-git-send-email-zohar@linux.vnet.ibm.com>
+	 <1401289784-31340-5-git-send-email-zohar@linux.vnet.ibm.com>
+	 <CACE9dm-CwB=wPffdg7UMKWw1LBaePBgxXPYd9E51dZK+kpFKBw@mail.gmail.com>
+	 <1401588848.22476.33.camel@dhcp-9-2-203-236.watson.ibm.com>
+	 <CACE9dm_9QQapE=NiPF+vL=RpuoVAFLotOyzObcRRZ=+rqeuCOw@mail.gmail.com>
+	 <1401708833.15098.26.camel@dhcp-9-2-203-236.watson.ibm.com>
+	 <CACE9dm-bqp-a3yogxEDk3M1c-XByuYki+7jZK3=U=VtqDMkCRQ@mail.gmail.com>
+	 <20140602115505.GA10515@hansolo.jdub.homelinux.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14060315-1542-0000-0000-0000024C8A4A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2014-06-02 at 07:55 -0400, Josh Boyer wrote: 
+> On Mon, Jun 02, 2014 at 02:40:28PM +0300, Dmitry Kasatkin wrote:
+> > On 2 June 2014 14:33, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+> > > On Mon, 2014-06-02 at 13:48 +0300, Dmitry Kasatkin wrote:
+> > >> On 1 June 2014 05:14, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
 
---fI9rxb8OPOZXsIa9
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> > > Currently only the builtin keys are on the system keyring, but once
+> > > David and Josh's UEFI patches are upstreamed, the UEFI keys will also be
+> > > on the system keyring.  At that point, we would want to differentiate
+> > > between the builtin keys and the remaining keys on the system keyring.
+> > > Splitting this patch definitely helps clarify what's happening and, more
+> > > importantly, why.
+> > >
+> > > Mimi
+> > >
+> > 
+> > Ok. May be would should focus on patches for existing functionality.
+> > If something new comes from other side, it can be addressed by new
+> > another set of patches.
+> 
+> I agree.  I appreciate taking the UEFI key patches into account, but
+> they're held up and won't be hitting mainline in the next release or
+> two.  Focus on the changes you need to make against mainline.
 
-On Tue, Jun 03, 2014 at 04:40:19PM +0200, Frederic Weisbecker wrote:
-> Now that the irq work subsystem can queue remote callbacks, it's
-> a perfect fit to safely queue IPIs when interrupts are disabled
-> without worrying about concurrent callers.
->=20
-> Lets use it for the full dynticks kick to notify a CPU that it's
-> exiting single task mode.
->=20
-> This unbloats a bit the scheduler IPI that the nohz code was abusing
-> for its cool "callable anywhere/anytime" properties.
->=20
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Kevin Hilman <khilman@linaro.org>
-> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Acked-by: Peter Zijlstra <peterz@infradead.org>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Viresh Kumar <viresh.kumar@linaro.org>
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> ---
->  include/linux/tick.h     |  9 ++++++++-
->  kernel/sched/core.c      |  5 +----
->  kernel/sched/sched.h     |  2 +-
->  kernel/time/tick-sched.c | 10 ++++++----
->  4 files changed, 16 insertions(+), 10 deletions(-)
->=20
+Ok.  I've rewritten the patch.  Instead of loading the key on the owner
+keyring at the same time as loading it on the system keyring, it waits
+until all the keys are on the system keyring, before adding the
+specified key to the owner keyring.  We loose the ability to specify all
+the builtin keys, but at least for now, this isn't important.  For now,
+we can identify a single builtin key, and when the UEFI patches are
+upstreamed, we should be able to identify a UEFI key, as well.
 
---fI9rxb8OPOZXsIa9
-Content-Type: application/pgp-signature
+thanks,
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Mimi
 
-iQIcBAEBAgAGBQJTjeMmAAoJEHZH4aRLwOS6gDkP/0nkwPvVojo/Sp8BPUmlj3Re
-CGyHl0Jo5v+WGka7FeXzjcwL+NefRs1dyAVcPAuO68d/oetA1leE2UpbHpLIpO8h
-CDfCQRxKTJ+8a/f6TPmxIDQ2fSR6hygTd67zyRT8iooUh9m77ZLx6doGYxL8hXhe
-pY8x8sn4obxJIKpnuxcgQeKYDPQbIFPVLkOJmkv5YqVKKKuPQxiKjx6L8ynDdCUF
-p5EqE/u+HaaxFGru+8G9j7pmZZWCaYSkQMwne3zJEhiGQdfQ1sDddnL2PIPjJZju
-kXzVbGmeUHZjTb1yNU9pjgcfhVoJVbCe8s3tK4CrPA1TB5u4wUsC37SVoHQ8zGsc
-OSzB1voF0t7//DIH3UXKIeHm6cVsGCVjum04dWORXRu2qANjNdr/qc4OTeKJpkJ+
-SI9JPupW04xQWwwqweXreVFJ0bAvNGuLFIA49muvsmdW9/4FrEL/VI1x5w94zUCK
-JW4bPsyY6qG7duJZTAIrXhTI0DxEXTV8kgk6ZHHmECwtSRLGShwCRQgL46q9/CAn
-4xkFsoWzr/6tRtNjcZPH71g2IDrzU21FDAlF1HI8DBrf6AM/XDxb2XaY4ZNmRGiL
-iyHmmOCNg7anB5xVxcsrBPZrB9JxmmmpvdfK3RhVi+Pm3G07Fpllbwz5LS0Gg4sS
-c2z+TzUaAPDcaBKcsxEZ
-=8GGy
------END PGP SIGNATURE-----
-
---fI9rxb8OPOZXsIa9--
