@@ -1,52 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754863AbaFCLt1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 07:49:27 -0400
-Received: from relay.parallels.com ([195.214.232.42]:52026 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754259AbaFCLtF (ORCPT
+	id S1754898AbaFCLtt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 07:49:49 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43849 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754720AbaFCLmu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 07:49:05 -0400
-Subject: [PATCH] fuse: do not evict dirty inodes
-To: miklos@szeredi.hu
-From: Maxim Patlasov <MPatlasov@parallels.com>
-Cc: fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Date: Tue, 03 Jun 2014 15:49:00 +0400
-Message-ID: <20140603114827.3188.35705.stgit@localhost.localdomain>
-User-Agent: StGit/0.16
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	Tue, 3 Jun 2014 07:42:50 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Xufeng Zhang <xufeng.zhang@windriver.com>, Julian Anastasov <ja@ssi.bg>,
+        "David S. Miller" <davem@davemloft.net>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 115/138] sctp: reset flowi4_oif parameter on route lookup
+Date: Tue,  3 Jun 2014 12:39:21 +0100
+Message-Id: <1401795584-22664-116-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
+References: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 1e18bda8 added .write_inode method to the fuse super_operations. This
-allowed fuse to use the kernel infrastructure for writing out dirty metadata
-(mtime and ctime for now). However, given that .drop_inode was not redefined
-from the legacy generic_delete_inode(), on umount(2) generic_shutdown_super()
-led to the eviction of all inodes disregarding their state.
+3.11.10.11 -stable review patch.  If anyone has any objections, please let me know.
 
-The patch removes .drop_inode definition from the fuse super_operations. This
-works because now iput_final() calls generic_drop_inode() and returns w/o
-evicting inode. This, in turn, allows generic_shutdown_super() to write dirty
-inodes by calling sync_filesystem().
+------------------
 
-Signed-off-by: Maxim Patlasov <MPatlasov@parallels.com>
+From: Xufeng Zhang <xufeng.zhang@windriver.com>
+
+commit 85350871317a5adb35519d9dc6fc9e80809d42ad upstream.
+
+commit 813b3b5db83 (ipv4: Use caller's on-stack flowi as-is
+in output route lookups.) introduces another regression which
+is very similar to the problem of commit e6b45241c (ipv4: reset
+flowi parameters on route connect) wants to fix:
+Before we call ip_route_output_key() in sctp_v4_get_dst() to
+get a dst that matches a bind address as the source address,
+we have already called this function previously and the flowi
+parameters have been initialized including flowi4_oif, so when
+we call this function again, the process in __ip_route_output_key()
+will be different because of the setting of flowi4_oif, and we'll
+get a networking device which corresponds to the inputted flowi4_oif
+as the output device, this is wrong because we'll never hit this
+place if the previously returned source address of dst match one
+of the bound addresses.
+
+To reproduce this problem, a vlan setting is enough:
+  # ifconfig eth0 up
+  # route del default
+  # vconfig add eth0 2
+  # vconfig add eth0 3
+  # ifconfig eth0.2 10.0.1.14 netmask 255.255.255.0
+  # route add default gw 10.0.1.254 dev eth0.2
+  # ifconfig eth0.3 10.0.0.14 netmask 255.255.255.0
+  # ip rule add from 10.0.0.14 table 4
+  # ip route add table 4 default via 10.0.0.254 src 10.0.0.14 dev eth0.3
+  # sctp_darn -H 10.0.0.14 -P 36422 -h 10.1.4.134 -p 36422 -s -I
+You'll detect that all the flow are routed to eth0.2(10.0.1.254).
+
+Signed-off-by: Xufeng Zhang <xufeng.zhang@windriver.com>
+Signed-off-by: Julian Anastasov <ja@ssi.bg>
+Acked-by: Vlad Yasevich <vyasevich@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/fuse/inode.c |    1 -
- 1 file changed, 1 deletion(-)
+ net/sctp/protocol.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-diff --git a/fs/fuse/inode.c b/fs/fuse/inode.c
-index 754dcf2..ee017be 100644
---- a/fs/fuse/inode.c
-+++ b/fs/fuse/inode.c
-@@ -791,7 +791,6 @@ static const struct super_operations fuse_super_operations = {
- 	.destroy_inode  = fuse_destroy_inode,
- 	.evict_inode	= fuse_evict_inode,
- 	.write_inode	= fuse_write_inode,
--	.drop_inode	= generic_delete_inode,
- 	.remount_fs	= fuse_remount_fs,
- 	.put_super	= fuse_put_super,
- 	.umount_begin	= fuse_umount_begin,
+diff --git a/net/sctp/protocol.c b/net/sctp/protocol.c
+index 4a17494d736c..8654837ae317 100644
+--- a/net/sctp/protocol.c
++++ b/net/sctp/protocol.c
+@@ -498,8 +498,13 @@ static void sctp_v4_get_dst(struct sctp_transport *t, union sctp_addr *saddr,
+ 			continue;
+ 		if ((laddr->state == SCTP_ADDR_SRC) &&
+ 		    (AF_INET == laddr->a.sa.sa_family)) {
+-			fl4->saddr = laddr->a.v4.sin_addr.s_addr;
+ 			fl4->fl4_sport = laddr->a.v4.sin_port;
++			flowi4_update_output(fl4,
++					     asoc->base.sk->sk_bound_dev_if,
++					     RT_CONN_FLAGS(asoc->base.sk),
++					     daddr->v4.sin_addr.s_addr,
++					     laddr->a.v4.sin_addr.s_addr);
++
+ 			rt = ip_route_output_key(sock_net(sk), fl4);
+ 			if (!IS_ERR(rt)) {
+ 				dst = &rt->dst;
+-- 
+1.9.1
 
