@@ -1,57 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753654AbaFCNBu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 09:01:50 -0400
-Received: from mail-qg0-f52.google.com ([209.85.192.52]:63684 "EHLO
-	mail-qg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751129AbaFCNBs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 09:01:48 -0400
-Date: Tue, 3 Jun 2014 09:01:44 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Li Zefan <lizefan@huawei.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
-Subject: Re: [PATCH 2/3] cgroup: make the default root invisible when it's
- umounted
-Message-ID: <20140603130144.GB26210@htj.dyndns.org>
-References: <538D4956.5050205@huawei.com>
- <538D4982.10905@huawei.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <538D4982.10905@huawei.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1754126AbaFCNCK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 09:02:10 -0400
+Received: from mga03.intel.com ([143.182.124.21]:50141 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753881AbaFCNCI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 09:02:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,965,1392192000"; 
+   d="scan'208";a="440276167"
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Olof Johansson <olof@lixom.net>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Benson Leung <bleung@chromium.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] platform/chrome: Add support for Acer C720
+Date: Tue,  3 Jun 2014 16:02:04 +0300
+Message-Id: <1401800524-28934-1-git-send-email-mika.westerberg@linux.intel.com>
+X-Mailer: git-send-email 2.0.0.rc4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 03, 2014 at 12:05:22PM +0800, Li Zefan wrote:
-> Before this patch (in a fresh system):
-> 
->    # cat /proc/$$/cgroup
->    # mount -t cgroup -o __DEVEL__sane_behavior xxx /cgroup
->    # umount /cgroup
->    # cat /proc/$$/cgroup
->    0:cpuset,cpu,cpuacct,memory,devices,freezer,net_cls,blkio,perf_event,net_prio,hugetlb:/
-> 
-> After this patch (in a fresh system):
-> 
->    # cat ...
->    # mount ...
->    # umount ...
->    # cat /proc/$$/cgroup
->    #
-> 
-> You won't see the default root after it's umounted.
+Acer C720 has touchpad and light sensor connected to a separate I2C buses.
+Since the designware I2C host controller driver has two instances on this
+particular machine we need a way to match the correct instance. Add support
+for this and then register both C720 touchpad and light sensor.
 
-Hmmmm... I intentionally left it visible tho.  The only reason we gate
-its visibility is avoid disturbing userland which doesn't know about
-and won't use the unified hierarchy.  If the userland starts making
-use of it, there's no reason to hide it again especially as that's
-consistent with how other hierarchies behave too - they keep showing
-up if they have lingering refs.
+This code is based on following patch from Benson Leung:
 
-Thanks.
+https://patchwork.kernel.org/patch/3074411/
 
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Tested-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Cc: Benson Leung <bleung@chromium.org>
+---
+ drivers/platform/chrome/chromeos_laptop.c | 45 ++++++++++++++++++++++++++-----
+ 1 file changed, 39 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/platform/chrome/chromeos_laptop.c b/drivers/platform/chrome/chromeos_laptop.c
+index 7f3aad0e115c..44806c5dc26f 100644
+--- a/drivers/platform/chrome/chromeos_laptop.c
++++ b/drivers/platform/chrome/chromeos_laptop.c
+@@ -45,6 +45,8 @@ static const char *i2c_adapter_names[] = {
+ 	"SMBus I801 adapter",
+ 	"i915 gmbus vga",
+ 	"i915 gmbus panel",
++	"i2c-designware-pci",
++	"i2c-designware-pci",
+ };
+ 
+ /* Keep this enum consistent with i2c_adapter_names */
+@@ -52,6 +54,8 @@ enum i2c_adapter_type {
+ 	I2C_ADAPTER_SMBUS = 0,
+ 	I2C_ADAPTER_VGADDC,
+ 	I2C_ADAPTER_PANEL,
++	I2C_ADAPTER_DESIGNWARE_0,
++	I2C_ADAPTER_DESIGNWARE_1,
+ };
+ 
+ struct i2c_peripheral {
+@@ -183,29 +187,42 @@ static struct i2c_client *__add_probed_i2c_device(
+ 	return client;
+ }
+ 
++struct i2c_lookup {
++	const char *name;
++	int instance;
++	int n;
++};
++
+ static int __find_i2c_adap(struct device *dev, void *data)
+ {
+-	const char *name = data;
++	struct i2c_lookup *lookup = data;
+ 	static const char *prefix = "i2c-";
+ 	struct i2c_adapter *adapter;
+ 	if (strncmp(dev_name(dev), prefix, strlen(prefix)) != 0)
+ 		return 0;
+ 	adapter = to_i2c_adapter(dev);
+-	return (strncmp(adapter->name, name, strlen(name)) == 0);
++	if (strncmp(adapter->name, lookup->name, strlen(lookup->name)) == 0 &&
++	    lookup->n++ == lookup->instance)
++		return 1;
++	return 0;
+ }
+ 
+ static int find_i2c_adapter_num(enum i2c_adapter_type type)
+ {
+ 	struct device *dev = NULL;
+ 	struct i2c_adapter *adapter;
+-	const char *name = i2c_adapter_names[type];
++	struct i2c_lookup lookup;
++
++	memset(&lookup, 0, sizeof(lookup));
++	lookup.name = i2c_adapter_names[type];
++	lookup.instance = (type == I2C_ADAPTER_DESIGNWARE_1) ? 1 : 0;
++
+ 	/* find the adapter by name */
+-	dev = bus_find_device(&i2c_bus_type, NULL, (void *)name,
+-			      __find_i2c_adap);
++	dev = bus_find_device(&i2c_bus_type, NULL, &lookup, __find_i2c_adap);
+ 	if (!dev) {
+ 		/* Adapters may appear later. Deferred probing will retry */
+ 		pr_notice("%s: i2c adapter %s not found on system.\n", __func__,
+-			  name);
++			  lookup.name);
+ 		return -ENODEV;
+ 	}
+ 	adapter = to_i2c_adapter(dev);
+@@ -388,6 +405,15 @@ static struct chromeos_laptop acer_ac700 = {
+ 	},
+ };
+ 
++static struct chromeos_laptop acer_c720 = {
++	.i2c_peripherals = {
++		/* Touchpad. */
++		{ .add = setup_cyapa_tp, I2C_ADAPTER_DESIGNWARE_0 },
++		/* Light Sensor. */
++		{ .add = setup_isl29018_als, I2C_ADAPTER_DESIGNWARE_1 },
++	},
++};
++
+ static struct chromeos_laptop hp_pavilion_14_chromebook = {
+ 	.i2c_peripherals = {
+ 		/* Touchpad. */
+@@ -445,6 +471,13 @@ static struct dmi_system_id chromeos_laptop_dmi_table[] __initdata = {
+ 		_CBDD(acer_ac700),
+ 	},
+ 	{
++		.ident = "Acer C720",
++		.matches = {
++			DMI_MATCH(DMI_PRODUCT_NAME, "Peppy"),
++		},
++		_CBDD(acer_c720),
++	},
++	{
+ 		.ident = "HP Pavilion 14 Chromebook",
+ 		.matches = {
+ 			DMI_MATCH(DMI_PRODUCT_NAME, "Butterfly"),
 -- 
-tejun
+2.0.0.rc4
+
