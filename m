@@ -1,428 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932252AbaFCGtO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 02:49:14 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:56006 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932121AbaFCGtM (ORCPT
+	id S932295AbaFCGvL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 02:51:11 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:52162 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752525AbaFCGvK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 02:49:12 -0400
-Message-ID: <538D6FE2.8060009@suse.cz>
-Date: Tue, 03 Jun 2014 08:49:06 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Tue, 3 Jun 2014 02:51:10 -0400
+Date: Tue, 3 Jun 2014 08:51:01 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        nicolas.pitre@linaro.org, Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC][PATCH 0/8] sched,idle: need resched polling rework
+Message-ID: <20140603065101.GF11096@twins.programming.kicks-ass.net>
+References: <20140411134243.160989490@infradead.org>
+ <CALCETrWJZ1-T+qOY9v=KBOSJkck7YYe7khw_dYPc9Ar8WFgMKw@mail.gmail.com>
+ <20140522125818.GV30445@twins.programming.kicks-ass.net>
+ <20140522130931.GV13658@twins.programming.kicks-ass.net>
+ <CALCETrVBVOjs0EVqEz3qKtSHQg1agJzAyG4Ohqueky-zPF7uKA@mail.gmail.com>
+ <20140529064827.GI19143@laptop.programming.kicks-ass.net>
+ <CALCETrWnG7fSuinDv+GAHsnTLJ-6xn+_1LB2XdLGVXcC=TQURA@mail.gmail.com>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org, stable@vger.kernel.org
-CC: lwn@lwn.net
-Subject: Linux 3.12.21
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="NbUNL4d9A9kY58qh"
+Content-Disposition: inline
+In-Reply-To: <CALCETrWnG7fSuinDv+GAHsnTLJ-6xn+_1LB2XdLGVXcC=TQURA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
 
-I'm announcing the release of the 3.12.21 kernel.
+--NbUNL4d9A9kY58qh
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Mon, Jun 02, 2014 at 11:40:26PM -0700, Andy Lutomirski wrote:
+> Bugs found so far:
+>=20
+> defined(SMP) should be defined(CONFIG_SMP)
+>=20
+> You're testing polling on the task being woken, which cannot possibly
+> succeed: the only tasks that have any business polling are the idle
+> tasks.  Something like this seems to help:
+
+Urgh,. comes from doing too many things at once.. Thanks, I'll go fix
+up.
+
+--NbUNL4d9A9kY58qh
+Content-Type: application/pgp-signature
 
-All users of the 3.12 kernel series must upgrade.
-
-The updated 3.12.y git tree can be found at:
-	git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
-linux-3.12.y
-and can be browsed at the normal kernel.org git web browser:
-	http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git;a=summary
-
-- ----------------------------------------------------------------
-AceLan Kao (3):
-      HID: usbhid: merge the sis quirk
-      HID: usbhid: quirk for Synaptics HD touchscreen
-      HID: usbhid: quirk for Synaptics Quad HD touchscreen
-
-Al Viro (1):
-      don't bother with {get,put}_write_access() on non-regular files
-
-Aleksander Morgado (1):
-      net: qmi_wwan: add support for Cinterion PXS8 and PHS8
-
-Alex Deucher (2):
-      drm/radeon: call drm_edid_to_eld when we update the edid
-      drm/radeon: fix typo in spectre_golden_registers
-
-Andreas Schwab (1):
-      powerpc: Add vr save/restore functions
-
-Andrew Lutomirski (1):
-      net: Fix ns_capable check in sock_diag_put_filterinfo
-
-Andrey Vagin (1):
-      netfilter: nf_conntrack: reserve two bytes for nf_ct_ext->len
-
-Andy King (1):
-      vsock: Make transport the proto owner
-
-Antonio Quartulli (1):
-      batman-adv: increase orig refcount when storing ref in gw_node
-
-Benjamin Tissoires (1):
-      HID: core: do not scan constant input report
-
-Bjørn Mork (14):
-      usb: qcserial: add Sierra Wireless EM7355
-      usb: qcserial: add Sierra Wireless MC73xx
-      usb: qcserial: add Sierra Wireless MC7305/MC7355
-      usb: option: add Olivetti Olicard 500
-      usb: option: add Alcatel L800MA
-      usb: option: add and update a number of CMOTech devices
-      net: qmi_wwan: add Sierra Wireless EM7355
-      net: qmi_wwan: add Sierra Wireless MC73xx
-      net: qmi_wwan: add Sierra Wireless MC7305/MC7355
-      net: qmi_wwan: add Olivetti Olicard 500
-      net: qmi_wwan: add Alcatel L800MA
-      net: qmi_wwan: add a number of CMOTech devices
-      net: qmi_wwan: add a number of Dell devices
-      net: cdc_mbim: handle unaccelerated VLAN tagged frames
-
-Chris Mason (1):
-      mlx4_en: don't use napi_synchronize inside mlx4_en_netpoll
-
-Christopher Friedt (1):
-      drm/vmwgfx: correct fb_fix_screeninfo.line_length
-
-Cong Wang (1):
-      rtnetlink: wait for unregistering devices in rtnl_link_unregister()
-
-Dan Carpenter (1):
-      SCSI: megaraid: missing bounds check in mimd_to_kioc()
-
-Daniel Borkmann (2):
-      net: sctp: wake up all assocs if sndbuf policy is per socket
-      net: sctp: test if association is dead in sctp_wake_up_waiters
-
-Daniele Palmas (1):
-      usb: option driver, add support for Telit UE910v2
-
-David Gibson (2):
-      rtnetlink: Warn when interface's information won't fit in our packet
-      rtnetlink: Only supply IFLA_VF_PORTS information when
-RTEXT_FILTER_VF is set
-
-Dmitry Petukhov (1):
-      l2tp: take PMTU from tunnel UDP socket
-
-Emanuel Krenz (1):
-      HID: add support for SiS multitouch panel in the touch monitor
-LG 23ET83V
-
-Eric Dumazet (2):
-      ipv6: Limit mtu to 65575 bytes
-      net-gro: reset skb->truesize in napi_reuse_skb()
-
-Fabio Porcedda (1):
-      net: qmi_wwan: add Telit LE920 newer firmware support
-
-Florian Westphal (3):
-      net: core: don't account for udp header size when computing seglen
-      net: ipv4: ip_forward: fix inverted local_df test
-      net: ipv6: send pkttoobig immediately if orig frag size > mtu
-
-Hans de Goede (2):
-      xhci: For streams the css flag most be read from the stream-ctx
-on ep stop
-      HID: add NO_INIT_REPORTS quirk for Synaptics Touch Pad V 103S
-
-Ilya Dryomov (1):
-      rbd: fix error paths in rbd_img_request_fill()
-
-Ivan Vecera (1):
-      tg3: update rx_jumbo_pending ring param only when jumbo frames
-are enabled
-
-James Bottomley (2):
-      scsi: fix our current target reap infrastructure
-      SCSI: dual scan thread bug fix
-
-Jani Nikula (1):
-      drm/i915/tv: fix gen4 composite s-video tv-out
-
-Jiri Slaby (1):
-      Linux 3.12.21
-
-Johan Hovold (4):
-      USB: usb_wwan: fix handling of missing bulk endpoints
-      Revert "USB: serial: add usbid for dell wwan card to sierra.c"
-      USB: serial: fix sysfs-attribute removal deadlock
-      USB: io_ti: fix firmware download on big-endian machines
-
-Julian Anastasov (1):
-      ipv4: return valid RTA_IIF on ip route get
-
-Konrad Rzeszutek Wilk (1):
-      xen/spinlock: Don't enable them unconditionally.
-
-Kumar Sundararajan (1):
-      ipv6: fib: fix fib dump restart
-
-Li RongQing (1):
-      ipv4: initialise the itag variable in __mkroute_input
-
-Liu Yu (1):
-      tcp_cubic: fix the range of delayed_ack
-
-Maarten Lankhorst (1):
-      drm/qxl: unset a pointer in sync_obj_unref
-
-Marcelo Tosatti (1):
-      KVM: x86: remove WARN_ON from get_kernel_ns()
-
-Mathias Krause (1):
-      filter: prevent nla extensions to peek beyond the end of the message
-
-Mel Gorman (1):
-      mm: use paravirt friendly ops for NUMA hinting ptes
-
-Michael Ulbricht (1):
-      USB: cdc-acm: Remove Motorola/Telit H24 serial interfaces from
-ACM driver
-
-Michele Baldessari (1):
-      USB: serial: ftdi_sio: add id for Brainboxes serial cards
-
-Mikulas Patocka (1):
-      tgafb: fix mode setting with fbset
-
-Mizuma, Masayoshi (1):
-      mm/hugetlb.c: add cond_resched_lock() in
-return_unused_surplus_pages()
-
-NeilBrown (1):
-      md/raid1: r1buf_pool_alloc: free allocate pages when subsequent
-allocation fails.
-
-Nicolas Dichtel (3):
-      gre: don't allow to add the same tunnel twice
-      vti: don't allow to add the same tunnel twice
-      ip6_gre: don't allow to remove the fb_tunnel_dev
-
-Nikolay Aleksandrov (1):
-      sfc: fix calling of free_irq with already free vector
-
-Oleg Nesterov (1):
-      list: introduce list_next_entry() and list_prev_entry()
-
-Oliver Hartkopp (1):
-      slip: fix spinlock variant
-
-Peter Christensen (1):
-      macvlan: Don't propagate IFF_ALLMULTI changes on down interfaces.
-
-Raymond Wanyoike (1):
-      net: qmi_wwan: add ZTE MF667
-
-Richard Guy Briggs (4):
-      audit: restore order of tty and ses fields in log output
-      pid: get pid_t ppid of task in init_pid_ns
-      sched: declare pid_alive as inline
-      audit: convert PPIDs to the inital PID namespace.
-
-Roman Pen (1):
-      blktrace: fix accounting of partially completed requests
-
-Sachin Prabhu (1):
-      cifs: Wait for writebacks to complete before attempting write.
-
-Sergey Popovich (1):
-      ipv4: fib_semantics: increment fib_info_cnt after fib_info
-allocation
-
-Steffen Klassert (1):
-      ip_tunnel: Initialize the fallback device properly
-
-Steven Rostedt (Red Hat) (1):
-      tracepoint: Do not waste memory on mods with no tracepoints
-
-Susant Sahani (1):
-      ip6_tunnel: fix potential NULL pointer dereference
-
-Thomas Bächler (1):
-      fs: Don't return 0 from get_anon_bdev
-
-Thomas Graf (1):
-      netfilter: Can't fail and free after table replacement
-
-Thomas Hellstrom (1):
-      drm/vmwgfx: Make sure user-space can't DMA across buffer object
-boundaries v2
-
-Thomas Richter (1):
-      bonding: Remove debug_fs files when module init fails
-
-Toshiaki Makita (2):
-      bridge: Fix double free and memory leak around br_allowed_ingress
-      bridge: Handle IFLA_ADDRESS correctly when creating bridge device
-
-Tristan Bruns (1):
-      USB: cp210x: Add 8281 (Nanotec Plug & Drive)
-
-Viresh Kumar (1):
-      tick-common: Fix wrong check in tick_check_replacement()
-
-Vlad Yasevich (3):
-      net: sctp: cache auth_enable per endpoint
-      mactap: Fix checksum errors for non-gso packets in bridge mode
-      Revert "macvlan : fix checksums error when we are in bridge mode"
-
-Wanlong Gao (1):
-      HID: usbhid: fix sis quirk
-
-Xufeng Zhang (1):
-      sctp: reset flowi4_oif parameter on route lookup
-
-Ying Cai (1):
-      ip_tunnel: Set network header properly for IP_ECN_decapsulate()
-
-Yufeng Shen (1):
-      HID: usbhid: quirk for CY-TM75 75 inch Touch Overlay
-
-dingtianhong (1):
-      vlan: Fix lockdep warning when vlan dev handle notification
-
- Makefile                                       |   2 +-
- arch/powerpc/lib/crtsavres.S                   | 186
-+++++++++++++++++++++++++
- arch/x86/kvm/x86.c                             |   1 -
- arch/x86/xen/spinlock.c                        |   5 +-
- block/blk-core.c                               |   2 +-
- drivers/block/rbd.c                            |   2 +-
- drivers/gpu/drm/i915/intel_tv.c                |   9 +-
- drivers/gpu/drm/qxl/qxl_ttm.c                  |   1 +
- drivers/gpu/drm/radeon/cik.c                   |   2 +-
- drivers/gpu/drm/radeon/radeon_display.c        |   1 +
- drivers/gpu/drm/vmwgfx/vmwgfx_execbuf.c        |  22 +++
- drivers/gpu/drm/vmwgfx/vmwgfx_fb.c             |   5 +-
- drivers/hid/hid-core.c                         |   8 +-
- drivers/hid/hid-ids.h                          |  10 +-
- drivers/hid/hid-multitouch.c                   |   7 +-
- drivers/hid/usbhid/hid-quirks.c                |  11 +-
- drivers/md/raid1.c                             |  17 ++-
- drivers/net/bonding/bond_main.c                |   1 +
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_sp.c |   3 -
- drivers/net/ethernet/broadcom/tg3.c            |   4 +-
- drivers/net/ethernet/mellanox/mlx4/en_cq.c     |   1 -
- drivers/net/ethernet/mellanox/mlx4/en_netdev.c |   6 +-
- drivers/net/ethernet/mellanox/mlx4/mlx4_en.h   |   1 -
- drivers/net/ethernet/sfc/nic.c                 |  14 +-
- drivers/net/macvlan.c                          |   9 +-
- drivers/net/macvtap.c                          |   9 ++
- drivers/net/slip/slip.c                        |   6 +-
- drivers/net/usb/cdc_mbim.c                     |  39 ++++--
- drivers/net/usb/qmi_wwan.c                     |  31 +++++
- drivers/scsi/megaraid/megaraid_mm.c            |   2 +
- drivers/scsi/scsi_scan.c                       | 112 +++++++++------
- drivers/scsi/scsi_sysfs.c                      |  20 ++-
- drivers/usb/class/cdc-acm.c                    |  28 +++-
- drivers/usb/host/xhci-ring.c                   |  14 +-
- drivers/usb/serial/cp210x.c                    |   1 +
- drivers/usb/serial/ftdi_sio.c                  |  33 +++++
- drivers/usb/serial/ftdi_sio_ids.h              |  37 +++++
- drivers/usb/serial/io_ti.c                     |  50 ++++---
- drivers/usb/serial/option.c                    |  83 ++++++++++-
- drivers/usb/serial/qcserial.c                  |   9 ++
- drivers/usb/serial/sierra.c                    |   1 -
- drivers/usb/serial/usb-serial.c                |   4 +-
- drivers/usb/serial/usb_wwan.c                  |   9 +-
- drivers/video/tgafb.c                          |  15 +-
- fs/cifs/cifsfs.c                               |  14 +-
- fs/cifs/cifsglob.h                             |   8 ++
- fs/cifs/cifsproto.h                            |   3 +
- fs/cifs/file.c                                 |  31 ++++-
- fs/cifs/misc.c                                 |  74 +++++++++-
- fs/cifs/smb1ops.c                              |  11 ++
- fs/cifs/smb2misc.c                             |  18 ++-
- fs/cifs/smb2ops.c                              |  14 ++
- fs/file_table.c                                |   4 +-
- fs/open.c                                      |  26 +---
- fs/super.c                                     |   5 +-
- include/asm-generic/pgtable.h                  |  31 +++--
- include/linux/list.h                           |  16 +++
- include/linux/rtnetlink.h                      |   5 +
- include/linux/sched.h                          |  20 ++-
- include/linux/sock_diag.h                      |   2 +-
- include/net/af_vsock.h                         |   6 +-
- include/net/ip6_route.h                        |   5 +
- include/net/netfilter/nf_conntrack_extend.h    |   4 +-
- include/net/sctp/structs.h                     |   4 +-
- include/scsi/scsi_device.h                     |   3 +-
- include/trace/events/block.h                   |  33 ++++-
- kernel/audit.c                                 |   8 +-
- kernel/auditsc.c                               |   2 +-
- kernel/events/core.c                           |   3 -
- kernel/time/tick-common.c                      |   2 +-
- kernel/trace/blktrace.c                        |  20 +--
- kernel/tracepoint.c                            |   6 +
- mm/hugetlb.c                                   |   1 +
- net/8021q/vlan_dev.c                           |  46 +++++-
- net/batman-adv/gateway_client.c                |  11 +-
- net/bridge/br_input.c                          |   2 +-
- net/bridge/br_netlink.c                        |  15 ++
- net/bridge/br_vlan.c                           |   7 +-
- net/bridge/netfilter/ebtables.c                |   5 +-
- net/core/dev.c                                 |   4 +-
- net/core/filter.c                              |   6 +-
- net/core/net_namespace.c                       |   2 +-
- net/core/rtnetlink.c                           |  66 +++++++--
- net/core/skbuff.c                              |  12 +-
- net/core/sock_diag.c                           |   4 +-
- net/ipv4/fib_semantics.c                       |   2 +-
- net/ipv4/ip_forward.c                          |   4 +-
- net/ipv4/ip_gre.c                              |   2 +-
- net/ipv4/ip_tunnel.c                           |   3 +
- net/ipv4/ip_vti.c                              |   2 +-
- net/ipv4/netfilter/arp_tables.c                |   6 +-
- net/ipv4/netfilter/ip_tables.c                 |   6 +-
- net/ipv4/route.c                               |   4 +-
- net/ipv4/tcp_cubic.c                           |   2 +-
- net/ipv6/ip6_fib.c                             |   3 +-
- net/ipv6/ip6_gre.c                             |  10 ++
- net/ipv6/ip6_output.c                          |   6 +-
- net/ipv6/ip6_tunnel.c                          |   2 +-
- net/ipv6/netfilter/ip6_tables.c                |   6 +-
- net/ipv6/route.c                               |   5 +-
- net/l2tp/l2tp_ppp.c                            |   4 +-
- net/packet/diag.c                              |   2 +-
- net/sctp/auth.c                                |  17 +--
- net/sctp/endpointola.c                         |   3 +-
- net/sctp/protocol.c                            |   7 +-
- net/sctp/sm_make_chunk.c                       |  32 +++--
- net/sctp/sm_statefuns.c                        |   6 +-
- net/sctp/socket.c                              |  96 +++++++++----
- net/sctp/sysctl.c                              |  38 ++++-
- net/vmw_vsock/af_vsock.c                       |  47 +++----
- scripts/mod/modpost.c                          |   8 +-
- 111 files changed, 1352 insertions(+), 363 deletions(-)
-
-
-thanks,
-- -- 
-js
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJTjW/iAAoJEL0lsQQGtHBJlvYP/RYjmuNzlNav/1L6hkFnUiVL
-QJQNMf1M2GEy6U27L9VzMzp7XDYQxBmiHP6hTYz3OCK/9tQy4sGQ5TpDWTlO2ewJ
-IpkEMqRHMx6XXzC3csxaT86qFUxMCUq7TxQ6hSJI0Cwi/xbMDCPKqb99qtaAvjAK
-iD07D0Yc54rJHSVtnjosFjFBowtPhxjwjNPIeASFXy04Xd4afunKUziFEbuMgdVM
-c+YjKKrcuY8KszcjiiR8VCViYDL1Fiy5AQegLGqb7GK60U5qozTtZL4b8KPrz9SW
-NygkYx0atHjQTHbhV6MsG96ae+3PnXK1bQU4tMXHAufduaSqY5sEhQMNHKeLJMJh
-Z0EyICeh2z3dtLwZGHntp9dRyseaZcEBH1szIFgUjOUWr1375ZjkQOntIvPU+9iW
-zz1dnUhcJhGlI+vbg2xS54HQFCzvmvJQ7m+nFy1v8pF5Zt04C93Md7NIiU/Zy/pM
-/AkjAJbytfvgHoqdqNp2c9lTciYFOXYxg1rhdfhXLe0RVwh1QwcGVyZUNxw9NfT1
-7VwEfVISzD17wsdujrGx/PTQFuYz9bukGZ/fyLU4FTIdB/td9I63aWSzjsKvMKvr
-CkteA57UbQY20U6uhzz75lunpUaejonfi64P7c64sx0umOnjTpYVZkjfqPweNemh
-bpqjBu+CQkAC++JjzXGU
-=XB++
+iQIcBAEBAgAGBQJTjXBQAAoJEHZH4aRLwOS6ugsP/1W8SssrxVdkUb0Q3w8MRtLp
+Y/rVgYhFDXADLeIkNOt9B2GQYM6/tkrtM0WmeC3pVtzX/gIhXZH1kwXWRJv8RVFX
+lAIHyBOM07HzL2Uk8dOXiaABENjP4imoY72k9Hdiux/vdvcPS0ZADlk6qbrge210
+zKwVOTc7nKBBW8kePoFFJbdjG4PhofGsdXzhNwDuK+YLFYTsIkNRKEv7Hp+jx6fk
+dZ/pEAv1xirRcjiuM8pN2QCUDIq3fIjfK78jetNwULbkWLRzLbsQlsRdhXt5u3VO
+M5uzd80r4wpvTLDGDKDPmJk4HimnI6CS2I76zRrhk6qGhIk8zzK7nZFiZHUCN/bf
+UD78SomDb1bpp8MurseNsrJSF8SEQwxs2x/P1QGKQAJ8oIVAUlBUse1FGO56rm07
+z5aEZLpGz5+xXLmKrRrtHy1xTKLOTTRVRLZWQLfxzEfIIKnk8tqk9TIC/Bjcw3EC
+LBsVyKeSSgpYr820ApnGavoGTvvTn15rkfYEMzIz5hvHwJgikZ/H5TiH6wKifMIn
+8qs1AKOAOaF5FB3w1kcRQ0J3hXGVWJD2VcMT0NVRIh3B0b7t6bq4TqbgUSaqVRFF
+eUr3NrWCesF28qHAmd2zbrt5c98HN87IqSEHsjfu4zWnjpVIUFmyRmzL3m3t/tNl
++YL9jRcVaMJff8l7Z/t2
+=zOU1
 -----END PGP SIGNATURE-----
+
+--NbUNL4d9A9kY58qh--
