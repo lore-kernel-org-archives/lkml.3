@@ -1,60 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752257AbaFCK3p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 06:29:45 -0400
-Received: from mout.kundenserver.de ([212.227.126.187]:49917 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751201AbaFCK3n (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 06:29:43 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ian Abbott <abbotti@mev.co.uk>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>
-Subject: [PATCH] staging: comedi: addi_apci_1564: add addi_watchdog dependency
-Date: Tue, 03 Jun 2014 12:29:29 +0200
-Message-ID: <6736164.51V0tJU9Jh@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+	id S1752769AbaFCKcB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 06:32:01 -0400
+Received: from isis.lip6.fr ([132.227.60.2]:49321 "EHLO isis.lip6.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750892AbaFCKb7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 06:31:59 -0400
+X-pt: isis.lip6.fr
+Date: Tue, 3 Jun 2014 12:32:54 +0200
+From: Benoit Taine <benoit.taine@lip6.fr>
+To: David Miller <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: [PATCH 2/2 v4] lpc_eth: Use resource_size instead of computation
+Message-ID: <20140603103254.GA20794@lip6.fr>
+References: <1401290047-30005-1-git-send-email-benoit.taine@lip6.fr>
+ <1401290047-30005-3-git-send-email-benoit.taine@lip6.fr>
+ <20140601.192705.693805935389177182.davem@davemloft.net>
+ <20140602112419.GA3625@lip6.fr>
+ <20140602113430.GA3823@lip6.fr>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:wceMaZswxrJIVAxC97YJv10c+JytEmHgRqGxiilfnbM
- 3X7m89GexDk7t08ygpmRgXYXTR1ebQtAPD71pb5rY9As2ZjthX
- OXGUgLWsviq6L/ShsffG+bp04o10xwR4qKjdOrF5DKlQMR3zXl
- XpxwmT+bxjewFOoas/wndQHQkfoCo0G/WOxT/DfZrvssyfSZwU
- +0RjBJSOGvzrlwFTcNKQc9EheCYgHApkbPKWzKZLU1B8x6p9If
- rmpeY9ZA0ESiCU1z3s4mB5ab5f7D30bH4fyrg+mE9t7QPPA/00
- vVQ4CpsCdHZ7IiLTZV5d2OIPQSqZ3WcGPCsp4RDcCt5huoRu+/
- kywb84JuFzkTjxERE01I=
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140602113430.GA3823@lip6.fr>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.4.3 (isis.lip6.fr [132.227.60.2]); Tue, 03 Jun 2014 12:31:53 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With commit aed3f9d498b ("staging: comedi: addi_apci_1564:
-absorb apci1564_reset()"), the apci 1564 driver has gained
-a dependency on the addi watchdog module, which is not reflected
-correctly in Kconfig, and that can lead to link errors
-when the watchdog is disabled.
+This issue was reported by coccicheck using the semantic patch 
+at scripts/coccinelle/api/resource_size.cocci
 
-This adds an explicit 'select', like it is done in the other
-addi apci drivers that need it.
+Signed-off-by: Benoit Taine <benoit.taine@lip6.fr>
+---
+Not compile tested, due incompatible architecture.
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Changes from V3:
+ - should now apply correctly
 
-diff --git a/drivers/staging/comedi/Kconfig b/drivers/staging/comedi/Kconfig
-index 5d56428..a2f6957 100644
---- a/drivers/staging/comedi/Kconfig
-+++ b/drivers/staging/comedi/Kconfig
-@@ -651,6 +651,7 @@ config COMEDI_ADDI_APCI_1516
+Changes from V2:
+ - added line break to debug message
+
+Changes from V1:
+ - Use %pR format type with the debug message (Thanks to Joe Perches)
+
+diff --git a/drivers/net/ethernet/nxp/lpc_eth.c b/drivers/net/ethernet/nxp/lpc_eth.c
+index 422d9b5..8706c0d 100644
+--- a/drivers/net/ethernet/nxp/lpc_eth.c
++++ b/drivers/net/ethernet/nxp/lpc_eth.c
+@@ -1361,7 +1361,7 @@ static int lpc_eth_drv_probe(struct platform_device *pdev)
+ 	__lpc_eth_clock_enable(pldat, true);
  
- config COMEDI_ADDI_APCI_1564
- 	tristate "ADDI-DATA APCI_1564 support"
-+	select COMEDI_ADDI_WATCHDOG
- 	---help---
- 	  Enable support for ADDI-DATA APCI_1564 cards
+ 	/* Map IO space */
+-	pldat->net_base = ioremap(res->start, res->end - res->start + 1);
++	pldat->net_base = ioremap(res->start, resource_size(res));
+ 	if (!pldat->net_base) {
+ 		dev_err(&pdev->dev, "failed to map registers\n");
+ 		ret = -ENOMEM;
+@@ -1417,10 +1417,8 @@ static int lpc_eth_drv_probe(struct platform_device *pdev)
+ 	}
+ 	pldat->dma_buff_base_p = dma_handle;
  
-
+-	netdev_dbg(ndev, "IO address start     :0x%08x\n",
+-			res->start);
+-	netdev_dbg(ndev, "IO address size      :%d\n",
+-			res->end - res->start + 1);
++	netdev_dbg(ndev, "IO address space     :%pR\n", res);
++	netdev_dbg(ndev, "IO address size      :%d\n", resource_size(res));
+ 	netdev_dbg(ndev, "IO address (mapped)  :0x%p\n",
+ 			pldat->net_base);
+ 	netdev_dbg(ndev, "IRQ number           :%d\n", ndev->irq);
