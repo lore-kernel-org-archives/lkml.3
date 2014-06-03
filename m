@@ -1,441 +1,439 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751409AbaFCJJl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 05:09:41 -0400
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:62518 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750709AbaFCJJi (ORCPT
+	id S1751879AbaFCJJ6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 05:09:58 -0400
+Received: from mail-ig0-f174.google.com ([209.85.213.174]:52088 "EHLO
+	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751708AbaFCJJz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 05:09:38 -0400
+	Tue, 3 Jun 2014 05:09:55 -0400
 MIME-Version: 1.0
-In-Reply-To: <1401457391-12242-3-git-send-email-mathieu.poirier@linaro.org>
-References: <1401457391-12242-1-git-send-email-mathieu.poirier@linaro.org>
-	<1401457391-12242-3-git-send-email-mathieu.poirier@linaro.org>
-Date: Tue, 3 Jun 2014 11:09:37 +0200
-Message-ID: <CACRpkdYnFBP8RbOhePed+sq+tk=syME4Trwtd+PgfAyht+3Zqg@mail.gmail.com>
-Subject: Re: [RFC PATCH 02/11] coresight: add CoreSight TMC driver
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Mathieu Poirier <mathieu.poirier@linaro.org>
-Cc: Will Deacon <will.deacon@arm.com>,
-        =?UTF-8?B?QXJ2ZSBIasO4bm5ldsOlZw==?= <arve@android.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Pratik Patel <pratikp@codeaurora.org>, varshney@ti.com,
-        Al.Grant@arm.com, jonas.svennebring@avagotech.com,
-        James King <james.king@linaro.org>,
-        Panchaxari Prasannamurthy Tumkur 
-	<panchaxari.prasannamurthy@linaro.org>,
-        Arnd Bergmann <arnd@linaro.org>, marcin.jabrzyk@gmail.com,
-        r.sengupta@samsung.com, Robert Marklund <robbelibobban@gmail.com>,
-        Patch Tracking <patches@linaro.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        daniel.thompson@linaro.org
+In-Reply-To: <20140603082208.GA19887@bbox>
+References: <000001cf7be2$385f9fd0$a91edf70$%yang@samsung.com>
+	<20140602004338.GA26372@bbox>
+	<CAL1ERfNUaeu2SG=nUfpwt3MW6YZx0oDTk5+sSL1fPJ9Cr2NWSQ@mail.gmail.com>
+	<20140603082208.GA19887@bbox>
+Date: Tue, 3 Jun 2014 17:09:54 +0800
+Message-ID: <CAL1ERfMpMNA298b6JqK8jCQfei4RwtxzZ_6HHwRYS0_FNYmgHA@mail.gmail.com>
+Subject: Re: [PATCH v3] zram: remove global tb_lock with fine grain lock
+From: Weijie Yang <weijie.yang.kh@gmail.com>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Weijie Yang <weijie.yang@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Bob Liu <bob.liu@oracle.com>, Dan Streetman <ddstreet@ieee.org>,
+        Heesub Shin <heesub.shin@samsung.com>,
+        Davidlohr Bueso <davidlohr@hp.com>, Joonsoo Kim <js1304@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 30, 2014 at 3:43 PM,  <mathieu.poirier@linaro.org> wrote:
+On Tue, Jun 3, 2014 at 4:22 PM, Minchan Kim <minchan@kernel.org> wrote:
+> Hello,
+>
+> On Tue, Jun 03, 2014 at 03:59:06PM +0800, Weijie Yang wrote:
+>> On Mon, Jun 2, 2014 at 8:43 AM, Minchan Kim <minchan@kernel.org> wrote:
+>> > Hello Weijie,
+>> >
+>> > Thanks for resending.
+>> > Below are mostly nitpicks.
+>> >
+>> > On Fri, May 30, 2014 at 04:34:44PM +0800, Weijie Yang wrote:
+>> >> Currently, we use a rwlock tb_lock to protect concurrent access to
+>> >> the whole zram meta table. However, according to the actual access model,
+>> >> there is only a small chance for upper user to access the same table[index],
+>> >> so the current lock granularity is too big.
+>> >>
+>> >> The idea of optimization is to change the lock granularity from whole
+>> >> meta table to per table entry (table -> table[index]), so that we can
+>> >> protect concurrent access to the same table[index], meanwhile allow
+>> >> the maximum concurrency.
+>> >> With this in mind, several kinds of locks which could be used as a
+>> >> per-entry lock were tested and compared:
+>> >>
+>> >> Test environment:
+>> >> x86-64 Intel Core2 Q8400, system memory 4GB, Ubuntu 12.04,
+>> >> kernel v3.15.0-rc3 as base, zram with 4 max_comp_streams LZO.
+>> >>
+>> >> iozone test:
+>> >> iozone -t 4 -R -r 16K -s 200M -I +Z
+>> >> (1GB zram with ext4 filesystem, take the average of 10 tests, KB/s)
+>> >>
+>> >>       Test       base      CAS    spinlock    rwlock   bit_spinlock
+>> >> -------------------------------------------------------------------
+>> >>  Initial write  1381094   1425435   1422860   1423075   1421521
+>> >>        Rewrite  1529479   1641199   1668762   1672855   1654910
+>> >>           Read  8468009  11324979  11305569  11117273  10997202
+>> >>        Re-read  8467476  11260914  11248059  11145336  10906486
+>> >>   Reverse Read  6821393   8106334   8282174   8279195   8109186
+>> >>    Stride read  7191093   8994306   9153982   8961224   9004434
+>> >>    Random read  7156353   8957932   9167098   8980465   8940476
+>> >> Mixed workload  4172747   5680814   5927825   5489578   5972253
+>> >>   Random write  1483044   1605588   1594329   1600453   1596010
+>> >>         Pwrite  1276644   1303108   1311612   1314228   1300960
+>> >>          Pread  4324337   4632869   4618386   4457870   4500166
+>> >>
+>> >> To enhance the possibility of access the same table[index] concurrently,
+>> >> set zram a small disksize(10MB) and let threads run with large loop count.
+>> >>
+>> >> fio test:
+>> >> fio --bs=32k --randrepeat=1 --randseed=100 --refill_buffers
+>> >> --scramble_buffers=1 --direct=1 --loops=3000 --numjobs=4
+>> >> --filename=/dev/zram0 --name=seq-write --rw=write --stonewall
+>> >> --name=seq-read --rw=read --stonewall --name=seq-readwrite
+>> >> --rw=rw --stonewall --name=rand-readwrite --rw=randrw --stonewall
+>> >> (10MB zram raw block device, take the average of 10 tests, KB/s)
+>> >>
+>> >>     Test     base     CAS    spinlock    rwlock  bit_spinlock
+>> >> -------------------------------------------------------------
+>> >> seq-write   933789   999357   1003298    995961   1001958
+>> >>  seq-read  5634130  6577930   6380861   6243912   6230006
+>> >>    seq-rw  1405687  1638117   1640256   1633903   1634459
+>> >>   rand-rw  1386119  1614664   1617211   1609267   1612471
+>> >>
+>> >> All the optimization methods show a higher performance than the base,
+>> >> however, it is hard to say which method is the most appropriate.
+>> >>
+>> >> On the other hand, zram is mostly used on small embedded system, so we
+>> >> don't want to increase any memory footprint.
+>> >>
+>> >> This patch pick the bit_spinlock method, pack object size and page_flag
+>> >> into an unsigned long table.value, so as to not increase any memory
+>> >> overhead on both 32-bit and 64-bit system.
+>> >>
+>> >> On the third hand, even though different kinds of locks have different
+>> >> performances, we can ignore this difference, because:
+>> >> if zram is used as zram swapfile, the swap subsystem can prevent concurrent
+>> >> access to the same swapslot;
+>> >> if zram is used as zram-blk for set up filesystem on it, the upper filesystem
+>> >> and the page cache also prevent concurrent access of the same block mostly.
+>> >> So we can ignore the different performances among locks.
+>> >
+>> > Nice description. :)
+>> >
+>> >>
+>> >> Changes since v1: https://lkml.org/lkml/2014/5/5/1
+>> >>   - replace CAS method with bit_spinlock method
+>> >>   - rename zram_test_flag() to zram_test_zero()
+>> >>   - add some comments
+>> >>
+>> >> Changes since v2: https://lkml.org/lkml/2014/5/15/113
+>> >>   - change size type from int to size_t in zram_set_obj_size()
+>> >>   - refactor zram_set_obj_size() to make it readable
+>> >>   - add comments
+>> >>
+>> >> Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
+>> >> ---
+>> >>  drivers/block/zram/zram_drv.c |   89 ++++++++++++++++++++++++-----------------
+>> >>  drivers/block/zram/zram_drv.h |   22 +++++++---
+>> >>  2 files changed, 68 insertions(+), 43 deletions(-)
+>> >>
+>> >> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+>> >> index 9849b52..166e882 100644
+>> >> --- a/drivers/block/zram/zram_drv.c
+>> >> +++ b/drivers/block/zram/zram_drv.c
+>> >> @@ -179,23 +179,32 @@ static ssize_t comp_algorithm_store(struct device *dev,
+>> >>       return len;
+>> >>  }
+>> >>
+>> >> -/* flag operations needs meta->tb_lock */
+>> >> -static int zram_test_flag(struct zram_meta *meta, u32 index,
+>> >> -                     enum zram_pageflags flag)
+>> >> +static int zram_test_zero(struct zram_meta *meta, u32 index)
+>> >
+>> > Why do you want to create specific function for zero?
+>> > It would be one of usecase for various potential flags.
+>> > Do you want to create new functions whenever we define new flag?
+>> > Or something do you have a mind?
+>> >
+>>
+>> As you see, this patch adds a new flag ZRAM_ACCESS, which is
+>> accessed through different method from ZRAM_ZERO.
+>> I think it is hard to use a general method to access all kinds of flags,
+>> to eliminate some potential ambiguity or wrong usage, I use specific
+>> function to access different flags.
+>
+> Although I am not against that, we can do it when it's really messy
+> as another patch in future. I don't want to bloat patch size without
+> the goal which is to enhance locking contention.
 
-> +#define tmc_writel(drvdata, val, off)  __raw_writel((val), drvdata->base + off)
-> +#define tmc_readl(drvdata, off)                __raw_readl(drvdata->base + off)
+OK, let's focus on this patch's goal. I will restore it.
 
-Why not writel_relaxed()/readl_relaxed()?
+>>
+>> >
+>> >>  {
+>> >> -     return meta->table[index].flags & BIT(flag);
+>> >> +     return meta->table[index].value & BIT(ZRAM_ZERO);
+>> >>  }
+>> >>
+>> >> -static void zram_set_flag(struct zram_meta *meta, u32 index,
+>> >> -                     enum zram_pageflags flag)
+>> >> +static void zram_set_zero(struct zram_meta *meta, u32 index)
+>> >>  {
+>> >> -     meta->table[index].flags |= BIT(flag);
+>> >> +     meta->table[index].value |= BIT(ZRAM_ZERO);
+>> >>  }
+>> >>
+>> >> -static void zram_clear_flag(struct zram_meta *meta, u32 index,
+>> >> -                     enum zram_pageflags flag)
+>> >> +static void zram_clear_zero(struct zram_meta *meta, u32 index)
+>> >>  {
+>> >> -     meta->table[index].flags &= ~BIT(flag);
+>> >> +     meta->table[index].value &= ~BIT(ZRAM_ZERO);
+>> >> +}
+>> >> +
+>> >> +static size_t zram_get_obj_size(struct zram_meta *meta, u32 index)
+>> >> +{
+>> >> +     return meta->table[index].value & (BIT(ZRAM_FLAG_SHIFT) - 1);
+>> >> +}
+>> >> +
+>> >> +static void zram_set_obj_size(struct zram_meta *meta,
+>> >> +                                     u32 index, size_t size)
+>> >> +{
+>> >> +     unsigned long flags = meta->table[index].value >> ZRAM_FLAG_SHIFT;
+>> >> +
+>> >> +     meta->table[index].value = (flags << ZRAM_FLAG_SHIFT) | size;
+>> >>  }
+>> >>
+>> >>  static inline int is_partial_io(struct bio_vec *bvec)
+>> >> @@ -255,7 +264,6 @@ static struct zram_meta *zram_meta_alloc(u64 disksize)
+>> >>               goto free_table;
+>> >>       }
+>> >>
+>> >> -     rwlock_init(&meta->tb_lock);
+>> >>       return meta;
+>> >>
+>> >>  free_table:
+>> >> @@ -304,19 +312,24 @@ static void handle_zero_page(struct bio_vec *bvec)
+>> >>       flush_dcache_page(page);
+>> >>  }
+>> >>
+>> >> -/* NOTE: caller should hold meta->tb_lock with write-side */
+>> >> +/*
+>> >> + * To protect concurrent access to the same index entry,
+>> >> + * caller should hold this table index entry's bit_spinlock to
+>> >> + * indicate this index entry is accessing.
+>> >> + */
+>> >>  static void zram_free_page(struct zram *zram, size_t index)
+>> >>  {
+>> >>       struct zram_meta *meta = zram->meta;
+>> >>       unsigned long handle = meta->table[index].handle;
+>> >> +     size_t size;
+>> >>
+>> >>       if (unlikely(!handle)) {
+>> >>               /*
+>> >>                * No memory is allocated for zero filled pages.
+>> >>                * Simply clear zero page flag.
+>> >>                */
+>> >> -             if (zram_test_flag(meta, index, ZRAM_ZERO)) {
+>> >> -                     zram_clear_flag(meta, index, ZRAM_ZERO);
+>> >> +             if (zram_test_zero(meta, index)) {
+>> >> +                     zram_clear_zero(meta, index);
+>> >>                       atomic64_dec(&zram->stats.zero_pages);
+>> >>               }
+>> >>               return;
+>> >> @@ -324,27 +337,28 @@ static void zram_free_page(struct zram *zram, size_t index)
+>> >>
+>> >>       zs_free(meta->mem_pool, handle);
+>> >>
+>> >> -     atomic64_sub(meta->table[index].size, &zram->stats.compr_data_size);
+>> >> +     size = zram_get_obj_size(meta, index);
+>> >> +     atomic64_sub(size, &zram->stats.compr_data_size);
+>> >>       atomic64_dec(&zram->stats.pages_stored);
+>> >>
+>> >>       meta->table[index].handle = 0;
+>> >> -     meta->table[index].size = 0;
+>> >> +     zram_set_obj_size(meta, index, 0);
+>> >>  }
+>> >>
+>> >>  static int zram_decompress_page(struct zram *zram, char *mem, u32 index)
+>> >>  {
+>> >> -     int ret = 0;
+>> >
+>> > Unnecessary change.
+>>
+>> I want to compact the memory usage on stack, so I put ret and size variables
+>> together. On 64-bit system, it will be helpful.
+>
+> Please, do it as another patchset if you think it's worthy.
 
-Using __raw* accessors seem a bit thick. (Applies to all such defines.)
+I will send a specific patch on this topic.
 
-> +#define TMC_LOCK(drvdata)                                              \
-> +do {                                                                   \
-> +       /* settle everything first */                                   \
-> +       mb();                                                           \
-> +       tmc_writel(drvdata, 0x0, CORESIGHT_LAR);                        \
-> +} while (0)
-> +#define TMC_UNLOCK(drvdata)                                            \
-> +do {                                                                   \
-> +       tmc_writel(drvdata, CORESIGHT_UNLOCK, CORESIGHT_LAR);           \
-> +       /* make sure everyone sees this */                              \
-> +       mb();                                                           \
-> +} while (0)
+>>
+>> >>       unsigned char *cmem;
+>> >>       struct zram_meta *meta = zram->meta;
+>> >>       unsigned long handle;
+>> >> -     u16 size;
+>> >
+>> > I'm not sure it's good idea to use size_t instead of u16 because we apparently
+>> > have a limitation to express range of size due to packing it into unsigned long
+>> > so u16 is more clear to show the limiation and someone might find a problem
+>> > more easily in future if we break something subtle.
+>> >
+>> >> +     size_t size;
+>> >> +     int ret = 0;
+>> >>
+>> >> -     read_lock(&meta->tb_lock);
+>> >> +     bit_spin_lock(ZRAM_ACCESS, &meta->table[index].value);
+>> >>       handle = meta->table[index].handle;
+>> >> -     size = meta->table[index].size;
+>> >> +     size = zram_get_obj_size(meta, index);
+>> >>
+>> >> -     if (!handle || zram_test_flag(meta, index, ZRAM_ZERO)) {
+>> >> -             read_unlock(&meta->tb_lock);
+>> >> +     if (!handle || zram_test_zero(meta, index)) {
+>> >> +             bit_spin_unlock(ZRAM_ACCESS, &meta->table[index].value);
+>> >>               clear_page(mem);
+>> >>               return 0;
+>> >>       }
+>> >> @@ -355,7 +369,7 @@ static int zram_decompress_page(struct zram *zram, char *mem, u32 index)
+>> >>       else
+>> >>               ret = zcomp_decompress(zram->comp, cmem, size, mem);
+>> >>       zs_unmap_object(meta->mem_pool, handle);
+>> >> -     read_unlock(&meta->tb_lock);
+>> >> +     bit_spin_unlock(ZRAM_ACCESS, &meta->table[index].value);
+>> >>
+>> >>       /* Should NEVER happen. Return bio error if it does. */
+>> >>       if (unlikely(ret)) {
+>> >> @@ -376,14 +390,14 @@ static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
+>> >>       struct zram_meta *meta = zram->meta;
+>> >>       page = bvec->bv_page;
+>> >>
+>> >> -     read_lock(&meta->tb_lock);
+>> >> +     bit_spin_lock(ZRAM_ACCESS, &meta->table[index].value);
+>> >>       if (unlikely(!meta->table[index].handle) ||
+>> >> -                     zram_test_flag(meta, index, ZRAM_ZERO)) {
+>> >> -             read_unlock(&meta->tb_lock);
+>> >> +                     zram_test_zero(meta, index)) {
+>> >> +             bit_spin_unlock(ZRAM_ACCESS, &meta->table[index].value);
+>> >>               handle_zero_page(bvec);
+>> >>               return 0;
+>> >>       }
+>> >> -     read_unlock(&meta->tb_lock);
+>> >> +     bit_spin_unlock(ZRAM_ACCESS, &meta->table[index].value);
+>> >>
+>> >>       if (is_partial_io(bvec))
+>> >>               /* Use  a temporary buffer to decompress the page */
+>> >> @@ -461,10 +475,10 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+>> >>       if (page_zero_filled(uncmem)) {
+>> >>               kunmap_atomic(user_mem);
+>> >>               /* Free memory associated with this sector now. */
+>> >> -             write_lock(&zram->meta->tb_lock);
+>> >> +             bit_spin_lock(ZRAM_ACCESS, &meta->table[index].value);
+>> >>               zram_free_page(zram, index);
+>> >> -             zram_set_flag(meta, index, ZRAM_ZERO);
+>> >> -             write_unlock(&zram->meta->tb_lock);
+>> >> +             zram_set_zero(meta, index);
+>> >> +             bit_spin_unlock(ZRAM_ACCESS, &meta->table[index].value);
+>> >>
+>> >>               atomic64_inc(&zram->stats.zero_pages);
+>> >>               ret = 0;
+>> >> @@ -514,12 +528,12 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+>> >>        * Free memory associated with this sector
+>> >>        * before overwriting unused sectors.
+>> >>        */
+>> >> -     write_lock(&zram->meta->tb_lock);
+>> >> +     bit_spin_lock(ZRAM_ACCESS, &meta->table[index].value);
+>> >>       zram_free_page(zram, index);
+>> >>
+>> >>       meta->table[index].handle = handle;
+>> >> -     meta->table[index].size = clen;
+>> >> -     write_unlock(&zram->meta->tb_lock);
+>> >> +     zram_set_obj_size(meta, index, clen);
+>> >> +     bit_spin_unlock(ZRAM_ACCESS, &meta->table[index].value);
+>> >>
+>> >>       /* Update stats */
+>> >>       atomic64_add(clen, &zram->stats.compr_data_size);
+>> >> @@ -560,6 +574,7 @@ static void zram_bio_discard(struct zram *zram, u32 index,
+>> >>                            int offset, struct bio *bio)
+>> >>  {
+>> >>       size_t n = bio->bi_iter.bi_size;
+>> >> +     struct zram_meta *meta = zram->meta;
+>> >>
+>> >>       /*
+>> >>        * zram manages data in physical block size units. Because logical block
+>> >> @@ -584,9 +599,9 @@ static void zram_bio_discard(struct zram *zram, u32 index,
+>> >>                * Discard request can be large so the lock hold times could be
+>> >>                * lengthy.  So take the lock once per page.
+>> >>                */
+>> >> -             write_lock(&zram->meta->tb_lock);
+>> >> +             bit_spin_lock(ZRAM_ACCESS, &meta->table[index].value);
+>> >>               zram_free_page(zram, index);
+>> >> -             write_unlock(&zram->meta->tb_lock);
+>> >> +             bit_spin_unlock(ZRAM_ACCESS, &meta->table[index].value);
+>> >>               index++;
+>> >>               n -= PAGE_SIZE;
+>> >>       }
+>> >> @@ -804,9 +819,9 @@ static void zram_slot_free_notify(struct block_device *bdev,
+>> >>       zram = bdev->bd_disk->private_data;
+>> >>       meta = zram->meta;
+>> >>
+>> >> -     write_lock(&meta->tb_lock);
+>> >> +     bit_spin_lock(ZRAM_ACCESS, &meta->table[index].value);
+>> >>       zram_free_page(zram, index);
+>> >> -     write_unlock(&meta->tb_lock);
+>> >> +     bit_spin_unlock(ZRAM_ACCESS, &meta->table[index].value);
+>> >>       atomic64_inc(&zram->stats.notify_free);
+>> >>  }
+>> >>
+>> >> diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
+>> >> index 7f21c14..71bc4ad 100644
+>> >> --- a/drivers/block/zram/zram_drv.h
+>> >> +++ b/drivers/block/zram/zram_drv.h
+>> >> @@ -51,10 +51,22 @@ static const size_t max_zpage_size = PAGE_SIZE / 4 * 3;
+>> >>  #define ZRAM_SECTOR_PER_LOGICAL_BLOCK        \
+>> >>       (1 << (ZRAM_LOGICAL_BLOCK_SHIFT - SECTOR_SHIFT))
+>> >>
+>> >> -/* Flags for zram pages (table[page_no].flags) */
+>> >> +/*
+>> >> + * The lower ZRAM_FLAG_SHIFT bits of table.value is for
+>> >> + * object size (excluding header), the higher bits is for
+>> >> + * zram_pageflags. By this means, it won't increase any
+>> >> + * memory overhead on both 32-bit and 64-bit system.
+>> >
+>> > Comment on "By this means, ~ 64 bit system" is unncessary because
+>> > someone read this line but don't know history couldn't understand
+>> > what's the old structure.
+>>
+>> I will remove it.
+>>
+>> >> + * zram is mostly used on small embedded system, so we
+>> >> + * don't want to increase memory footprint. That is why
+>> >> + * we pack size and flag into table.value.
+>> >> + */
+>> >
+>> > IMHO, it would be more clear but not sure if native speakers look at. ;-)
+>> >
+>> > * zram is mainly used for memory efficiency so we want to keep memory
+>> > * footprint small so we can squeeze size and flags into a field.
+>> > * The lower ZRAM_FLAG_SHIFT bits is for object size (excluding header),
+>> > * the higher bits is for zram_pageflags.
+>> >
+>>
+>> That is a better comment.
+>>
+>> >> +#define ZRAM_FLAG_SHIFT 24
+>> >
+>> > Why is it 24? We have used for 16-bit for size.
+>> > Do you think it's too small for size?
+>>
+>> The reason why I choose 24-bit and size_t is that when I checked the PAGE_SHIFT
+>> on all kinds of architectures, I found on some architectures such as powerpc and
+>> hexagon, PAGE_SHIFT would be 18 or 20, so I think 16-bit could be small to use.
+>
+> If it's a problem, could you do it as another patch? Because it's bug fix,
+> not related to this patchset.
 
-Convert these to static inlines. No need for them to be #defines
-at all really.
+OK, I will send a specific patch on this.
 
-> +#define BYTES_PER_WORD         4
+Thank you very much for your review and suggestion.
 
-But please. Just using the number 4 everywhere is clear enough.
-
-> +struct tmc_drvdata {
-> +       void __iomem            *base;
-> +       struct device           *dev;
-> +       struct coresight_device *csdev;
-> +       struct miscdevice       miscdev;
-> +       struct clk              *clk;
-> +       spinlock_t              spinlock;
-> +       int                     read_count;
-
-Can this really be negative?
-
-> +       bool                    reading;
-> +       char                    *buf;
-> +       dma_addr_t              paddr;
-> +       void __iomem            *vaddr;
-> +       uint32_t                size;
-
-Use u32
-
-> +       bool                    enable;
-> +       enum tmc_config_type    config_type;
-> +       uint32_t                trigger_cntr;
-
-Use u32
-
-> +};
-
-This struct overall could use some kerneldoc.
-
-> +static void tmc_flush_and_stop(struct tmc_drvdata *drvdata)
-> +{
-> +       int count;
-
-Why not call this variable "i" as per convention.
-
-> +       uint32_t ffcr;
-
-u32
-
-> +
-> +       ffcr = tmc_readl(drvdata, TMC_FFCR);
-> +       ffcr |= BIT(12);
-> +       tmc_writel(drvdata, ffcr, TMC_FFCR);
-> +       ffcr |= BIT(6);
-
-A bit unclear what bit 12 and 6 does. Either #define them or add comments.
-
-> +       tmc_writel(drvdata, ffcr, TMC_FFCR);
-> +       /* Ensure flush completes */
-> +       for (count = TIMEOUT_US; BVAL(tmc_readl(drvdata, TMC_FFCR), 6) != 0
-> +                               && count > 0; count--)
-> +               udelay(1);
-> +       WARN(count == 0, "timeout while flushing TMC, TMC_FFCR: %#x\n",
-> +            tmc_readl(drvdata, TMC_FFCR));
-> +
-> +       tmc_wait_for_ready(drvdata);
-> +}
-> +
-> +static void __tmc_enable(struct tmc_drvdata *drvdata)
-> +{
-> +       tmc_writel(drvdata, 0x1, TMC_CTL);
-> +}
-> +
-> +static void __tmc_disable(struct tmc_drvdata *drvdata)
-> +{
-> +       tmc_writel(drvdata, 0x0, TMC_CTL);
-> +}
-
-I actually understand what bit 0 does in this register, but could
-also be #defined.
-
-> +static void __tmc_etb_enable(struct tmc_drvdata *drvdata)
-> +{
-> +       /* Zero out the memory to help with debug */
-> +       memset(drvdata->buf, 0, drvdata->size);
-> +
-> +       TMC_UNLOCK(drvdata);
-> +
-> +       tmc_writel(drvdata, TMC_MODE_CIRCULAR_BUFFER, TMC_MODE);
-> +       tmc_writel(drvdata, 0x133, TMC_FFCR);
-
-0x133? Que ce que c'est?
-
-> +       tmc_writel(drvdata, drvdata->trigger_cntr, TMC_TRG);
-> +       __tmc_enable(drvdata);
-> +
-> +       TMC_LOCK(drvdata);
-> +}
-> +
-> +static void __tmc_etr_enable(struct tmc_drvdata *drvdata)
-> +{
-> +       uint32_t axictl;
-
-u32
-
-> +       /* Zero out the memory to help with debug */
-> +       memset(drvdata->vaddr, 0, drvdata->size);
-> +
-> +       TMC_UNLOCK(drvdata);
-> +
-> +       tmc_writel(drvdata, drvdata->size / BYTES_PER_WORD, TMC_RSZ);
-> +       tmc_writel(drvdata, TMC_MODE_CIRCULAR_BUFFER, TMC_MODE);
-> +
-> +       axictl = tmc_readl(drvdata, TMC_AXICTL);
-> +       axictl |= (0xF << 8);
-> +       tmc_writel(drvdata, axictl, TMC_AXICTL);
-> +       axictl &= ~(0x1 << 7);
-> +       tmc_writel(drvdata, axictl, TMC_AXICTL);
-> +       axictl = (axictl & ~0x3) | 0x2;
-> +       tmc_writel(drvdata, axictl, TMC_AXICTL);
-
-I don't understand these bits and shifts either.
-
-> +       tmc_writel(drvdata, drvdata->paddr, TMC_DBALO);
-> +       tmc_writel(drvdata, 0x0, TMC_DBAHI);
-> +       tmc_writel(drvdata, 0x133, TMC_FFCR);
-
-More magic...
-
-> +       tmc_writel(drvdata, drvdata->trigger_cntr, TMC_TRG);
-> +       __tmc_enable(drvdata);
-> +
-> +       TMC_LOCK(drvdata);
-> +}
-> +
-> +static void __tmc_etf_enable(struct tmc_drvdata *drvdata)
-> +{
-> +       TMC_UNLOCK(drvdata);
-> +
-> +       tmc_writel(drvdata, TMC_MODE_HARDWARE_FIFO, TMC_MODE);
-> +       tmc_writel(drvdata, 0x3, TMC_FFCR);
-> +       tmc_writel(drvdata, 0x0, TMC_BUFWM);
-
-More magic.
-
-> +       __tmc_enable(drvdata);
-> +
-> +       TMC_LOCK(drvdata);
-> +}
-> +
-> +static int tmc_enable(struct tmc_drvdata *drvdata, enum tmc_mode mode)
-> +{
-> +       int ret;
-> +       unsigned long flags;
-> +
-> +       ret = clk_prepare_enable(drvdata->clk);
-> +       if (ret)
-> +               return ret;
-> +
-> +       spin_lock_irqsave(&drvdata->spinlock, flags);
-> +       if (drvdata->reading) {
-> +               spin_unlock_irqrestore(&drvdata->spinlock, flags);
-> +               clk_disable_unprepare(drvdata->clk);
-> +               return -EBUSY;
-> +       }
-> +
-> +       if (drvdata->config_type == TMC_CONFIG_TYPE_ETB) {
-> +               __tmc_etb_enable(drvdata);
-> +       } else if (drvdata->config_type == TMC_CONFIG_TYPE_ETR) {
-> +               __tmc_etr_enable(drvdata);
-> +       } else {
-> +               if (mode == TMC_MODE_CIRCULAR_BUFFER)
-> +                       __tmc_etb_enable(drvdata);
-> +               else
-> +                       __tmc_etf_enable(drvdata);
-> +       }
-> +       drvdata->enable = true;
-> +       spin_unlock_irqrestore(&drvdata->spinlock, flags);
-> +
-> +       dev_info(drvdata->dev, "TMC enabled\n");
-> +       return 0;
-> +}
-> +
-> +static int tmc_enable_sink(struct coresight_device *csdev)
-> +{
-> +       struct tmc_drvdata *drvdata = dev_get_drvdata(csdev->dev.parent);
-> +
-> +       return tmc_enable(drvdata, TMC_MODE_CIRCULAR_BUFFER);
-> +}
-> +
-> +static int tmc_enable_link(struct coresight_device *csdev, int inport,
-> +                          int outport)
-> +{
-> +       struct tmc_drvdata *drvdata = dev_get_drvdata(csdev->dev.parent);
-> +
-> +       return tmc_enable(drvdata, TMC_MODE_HARDWARE_FIFO);
-> +}
-> +
-> +static void __tmc_etb_dump(struct tmc_drvdata *drvdata)
-
-I'm no fan of prefixing functions with __underscores and cannot see why
-this is done here even, just seems like force of habit. Please cut them.
-Rename the function slightly to correspond to what it does if it collides
-with another function.
-
-> +{
-> +       enum tmc_mem_intf_width memwidth;
-> +       uint8_t memwords;
-
-u8
-
-> +       char *bufp;
-> +       uint32_t read_data;
-
-u32
-
-(...)
-> +       bufp = drvdata->buf;
-> +       while (1) {
-> +               for (i = 0; i < memwords; i++) {
-> +                       read_data = tmc_readl(drvdata, TMC_RRD);
-> +                       if (read_data == 0xFFFFFFFF)
-> +                               return;
-> +                       memcpy(bufp, &read_data, BYTES_PER_WORD);
-> +                       bufp += BYTES_PER_WORD;
-
-Use 4 rather than BYTES_PER_WORD please.
-
-(...)
-> +static void __tmc_etr_dump(struct tmc_drvdata *drvdata)
-
-Cut __
-
-> +{
-> +       uint32_t rwp, rwphi;
-
-u32
-
-> +       rwp = tmc_readl(drvdata, TMC_RWP);
-> +       rwphi = tmc_readl(drvdata, TMC_RWPHI);
-> +
-> +       if (BVAL(tmc_readl(drvdata, TMC_STS), 0))
-> +               drvdata->buf = drvdata->vaddr + rwp - drvdata->paddr;
-> +       else
-> +               drvdata->buf = drvdata->vaddr;
-> +}
-> +
-> +static void __tmc_etr_disable(struct tmc_drvdata *drvdata)
-
-Cut __
-
-> +{
-> +       TMC_UNLOCK(drvdata);
-> +
-> +       tmc_flush_and_stop(drvdata);
-> +       __tmc_etr_dump(drvdata);
-> +       __tmc_disable(drvdata);
-> +
-> +       TMC_LOCK(drvdata);
-> +}
-> +
-> +static void __tmc_etf_disable(struct tmc_drvdata *drvdata)
-
-Cut __
-
-(...)
-> +static int tmc_probe(struct platform_device *pdev)
-> +{
-> +       int ret = 0;
-> +       uint32_t devid;
-
-u32
-
-> +       struct device *dev = &pdev->dev;
-> +       struct coresight_platform_data *pdata = NULL;
-> +       struct tmc_drvdata *drvdata;
-> +       struct resource *res;
-> +       struct coresight_desc *desc;
-> +
-> +       if (pdev->dev.of_node) {
-> +               pdata = of_get_coresight_platform_data(dev, pdev->dev.of_node);
-> +               if (IS_ERR(pdata))
-> +                       return PTR_ERR(pdata);
-> +               pdev->dev.platform_data = pdata;
-> +       }
-> +
-> +       drvdata = devm_kzalloc(dev, sizeof(*drvdata), GFP_KERNEL);
-> +       if (!drvdata)
-> +               return -ENOMEM;
-> +       drvdata->dev = &pdev->dev;
-> +       platform_set_drvdata(pdev, drvdata);
-> +
-> +       res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> +       if (!res)
-> +               return -ENODEV;
-> +
-> +       drvdata->base = devm_ioremap(dev, res->start, resource_size(res));
-
-Use devm_ioremap_resource() instead.
-
-> +       if (drvdata->config_type == TMC_CONFIG_TYPE_ETB) {
-> +               desc->type = CORESIGHT_DEV_TYPE_SINK;
-> +               desc->subtype.sink_subtype = CORESIGHT_DEV_SUBTYPE_SINK_BUFFER;
-> +               desc->ops = &tmc_etb_cs_ops;
-> +               desc->pdata = pdev->dev.platform_data;
-> +               desc->dev = &pdev->dev;
-> +               desc->debugfs_ops = tmc_etb_attr_grps;
-> +               desc->owner = THIS_MODULE;
-> +               drvdata->csdev = coresight_register(desc);
-> +               if (IS_ERR(drvdata->csdev)) {
-> +                       ret = PTR_ERR(drvdata->csdev);
-> +                       goto err0;
-> +               }
-> +       } else if (drvdata->config_type == TMC_CONFIG_TYPE_ETR) {
-> +               desc->type = CORESIGHT_DEV_TYPE_SINK;
-> +               desc->subtype.sink_subtype = CORESIGHT_DEV_SUBTYPE_SINK_BUFFER;
-> +               desc->ops = &tmc_etr_cs_ops;
-> +               desc->pdata = pdev->dev.platform_data;
-> +               desc->dev = &pdev->dev;
-> +               desc->debugfs_ops = tmc_etr_attr_grps;
-> +               desc->owner = THIS_MODULE;
-> +               drvdata->csdev = coresight_register(desc);
-> +               if (IS_ERR(drvdata->csdev)) {
-> +                       ret = PTR_ERR(drvdata->csdev);
-> +                       goto err0;
-> +               }
-> +       } else {
-> +               desc->type = CORESIGHT_DEV_TYPE_LINKSINK;
-> +               desc->subtype.sink_subtype = CORESIGHT_DEV_SUBTYPE_SINK_BUFFER;
-> +               desc->subtype.link_subtype = CORESIGHT_DEV_SUBTYPE_LINK_FIFO;
-> +               desc->ops = &tmc_etf_cs_ops;
-> +               desc->pdata = pdev->dev.platform_data;
-> +               desc->dev = &pdev->dev;
-> +               desc->debugfs_ops = tmc_etf_attr_grps;
-> +               desc->owner = THIS_MODULE;
-> +               drvdata->csdev = coresight_register(desc);
-> +               if (IS_ERR(drvdata->csdev)) {
-> +                       ret = PTR_ERR(drvdata->csdev);
-> +                       goto err0;
-> +               }
-> +       }
-
-Actually you set some stuff like desc->dev and pdata to the
-same thing in all three clauses... Do it before the if/else-ladder
-and cut the repititions.
-
-> +       drvdata->miscdev.name = ((struct coresight_platform_data *)
-> +                                (pdev->dev.platform_data))->name;
-> +       drvdata->miscdev.minor = MISC_DYNAMIC_MINOR;
-> +       drvdata->miscdev.fops = &tmc_fops;
-> +       ret = misc_register(&drvdata->miscdev);
-
-Miscdev really? Well, not that I know any better.
-
-> +static struct platform_driver tmc_driver = {
-> +       .probe          = tmc_probe,
-> +       .remove         = tmc_remove,
-> +       .driver         = {
-> +               .name   = "coresight-tmc",
-> +               .owner  = THIS_MODULE,
-> +               .of_match_table = tmc_match,
-> +       },
-> +};
-> +
-> +static int __init tmc_init(void)
-> +{
-> +       return platform_driver_register(&tmc_driver);
-> +}
-> +module_init(tmc_init);
-> +
-> +static void __exit tmc_exit(void)
-> +{
-> +       platform_driver_unregister(&tmc_driver);
-> +}
-> +module_exit(tmc_exit);
-
-Convert to use module_platform_driver()
-
-I think these review comments apply to many of the patches,
-so please take each comment and iterate over the code.
-
-Yours,
-Linus Walleij
+> Thanks.
+>
+> --
+> Kind regards,
+> Minchan Kim
