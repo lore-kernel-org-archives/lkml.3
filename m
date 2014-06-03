@@ -1,57 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754152AbaFCTQg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 15:16:36 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:41084 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752212AbaFCTQf (ORCPT
+	id S1753850AbaFCTSN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 15:18:13 -0400
+Received: from mailrelay002.isp.belgacom.be ([195.238.6.175]:58517 "EHLO
+	mailrelay002.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751541AbaFCTSM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 15:16:35 -0400
-Message-ID: <538E1F06.8070300@infradead.org>
-Date: Tue, 03 Jun 2014 12:16:22 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Tadeusz Struk <tadeusz.struk@intel.com>, herbert@gondor.apana.org.au
-CC: john.griffin@intel.com, bruce.w.allan@intel.com, karen.xiang@intel.com,
-        pingchaox.yang@intel.com, bo.cui@intel.com, davem@davemloft.net,
-        qat-linux@intel.com, linux-crypto@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dwmw2@infradead.org, ben@decadent.org.uk
-Subject: Re: [RFC][PATCH 4/4] crypto: Updated makefiles to add QAT
-References: <20140603182400.GA18752@gitlad.jf.intel.com>
-In-Reply-To: <20140603182400.GA18752@gitlad.jf.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 3 Jun 2014 15:18:12 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AnAOAJ8ejlNbsmtf/2dsb2JhbABZgwerXgQDAQEBBQGYHIEOF3SCUy8jgRo3iEYB0RcXhVWIfR2EKgSPS4o/ix2IFoM6Ow
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>, "Theodore Ts'o" <tytso@mit.edu>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 1/1] fs/ext4/super.c: use UINT_MAX instead of ~0U
+Date: Tue,  3 Jun 2014 21:16:47 +0200
+Message-Id: <1401823007-3475-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/03/2014 11:24 AM, Tadeusz Struk wrote:
-> Update to makefiles etc.
-> Signed-off-by: Tadeusz Struk <tadeusz.struk@intel.com>
-> ---
->  Documentation/ioctl/ioctl-number.txt | 1 +
->  MAINTAINERS                          | 6 ++++++
->  drivers/crypto/Kconfig               | 1 +
->  drivers/crypto/Makefile              | 1 +
->  firmware/Makefile                    | 1 +
->  5 files changed, 10 insertions(+)
-> 
+Use kernel.h definition
 
-> diff --git a/drivers/crypto/Kconfig b/drivers/crypto/Kconfig
-> index f066fa2..1f20814 100644
-> --- a/drivers/crypto/Kconfig
-> +++ b/drivers/crypto/Kconfig
-> @@ -418,4 +418,5 @@ config CRYPTO_DEV_MXS_DCP
->  	  To compile this driver as a module, choose M here: the module
->  	  will be called mxs-dcp.
->  
-> +source "drivers/crypto/qat/Kconfig"
+Cc: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ fs/ext4/super.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-Missing that file ^^^^^^^^^^^^^^^^^^^
-
->  endif # CRYPTO_HW
-
-
+diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+index 6f9e6fa..441f65f 100644
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -3573,9 +3573,9 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
+ 		(test_opt(sb, POSIX_ACL) ? MS_POSIXACL : 0);
+ 
+ 	if (le32_to_cpu(es->s_rev_level) == EXT4_GOOD_OLD_REV &&
+-	    (EXT4_HAS_COMPAT_FEATURE(sb, ~0U) ||
+-	     EXT4_HAS_RO_COMPAT_FEATURE(sb, ~0U) ||
+-	     EXT4_HAS_INCOMPAT_FEATURE(sb, ~0U)))
++	    (EXT4_HAS_COMPAT_FEATURE(sb, UINT_MAX) ||
++	     EXT4_HAS_RO_COMPAT_FEATURE(sb, UINT_MAX) ||
++	     EXT4_HAS_INCOMPAT_FEATURE(sb, UINT_MAX)))
+ 		ext4_msg(sb, KERN_WARNING,
+ 		       "feature flags set on rev 0 fs, "
+ 		       "running e2fsck is recommended");
 -- 
-~Randy
+1.8.4.5
+
