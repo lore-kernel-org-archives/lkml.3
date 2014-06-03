@@ -1,115 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752116AbaFCJh1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 05:37:27 -0400
-Received: from mail.windriver.com ([147.11.1.11]:45940 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750709AbaFCJhZ (ORCPT
+	id S1752351AbaFCJhh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 05:37:37 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:41695 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751201AbaFCJhf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 05:37:25 -0400
-From: <Wei.Yang@windriver.com>
-To: <balbi@ti.com>, <gregkh@linuxfoundation.org>
-CC: <wei.yang@windriver.com>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH v1] USB:gadget: Fix a warning while loading g_mass_storage
-Date: Tue, 3 Jun 2014 17:37:15 +0800
-Message-ID: <1401788235-22621-1-git-send-email-Wei.Yang@windriver.com>
-X-Mailer: git-send-email 1.7.9.5
-MIME-Version: 1.0
-Content-Type: text/plain
+	Tue, 3 Jun 2014 05:37:35 -0400
+From: Vaughan Cao <vaughan.cao@oracle.com>
+To: JBottomley@parallels.com
+Cc: hch@infradead.org, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, vaughan.cao@oracle.com
+Subject: [PATCH v2] notify block layer when using temporary change to cache_type
+Date: Tue,  3 Jun 2014 17:37:30 +0800
+Message-Id: <1401788250-8457-1-git-send-email-vaughan.cao@oracle.com>
+X-Mailer: git-send-email 1.9.0
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yang Wei <Wei.Yang@windriver.com>
+This is a fix for commit:
+  39c60a0948cc06139e2fbfe084f83cb7e7deae3b sd: fix array cache flushing bug causing performance problems
+We must notify the block layer via q->flush_flags after temporary change the cache_type to write through.
+If not, SYNCHRONIZE CACHE command will still be generated.
+This patch factors out a helper that can be called from sd_revalidate_disk and cache_type_store.
 
-While loading g_mass_storage module, the following warning is triggered.
-In fact, it is more easy to reproduce it with RT kernel.
-
-WARNING: at drivers/usb/gadget/composite.c:
-usb_composite_setup_continue: Unexpected call
-Modules linked in: fat vfat minix nls_cp437 nls_iso8859_1 g_mass_storage
-[<800179cc>] (unwind_backtrace+0x0/0x104) from [<80619608>] (dump_stack+0x20/0x24)
-[<80619608>] (dump_stack+0x20/0x24) from [<80025100>] (warn_slowpath_common+0x64/0x74)
-[<80025100>] (warn_slowpath_common+0x64/0x74) from [<800251cc>] (warn_slowpath_fmt+0x40/0x48)
-[<800251cc>] (warn_slowpath_fmt+0x40/0x48) from [<7f047774>] (usb_composite_setup_continue+0xb4/0xbc [g_mass_storage])
-[<7f047774>] (usb_composite_setup_continue+0xb4/0xbc [g_mass_storage]) from [<7f047ad4>] (handle_exception+0x358/0x3e4 [g_mass_storage])
-[<7f047ad4>] (handle_exception+0x358/0x3e4 [g_mass_storage]) from [<7f048080>] (fsg_main_thread+0x520/0x157c [g_mass_storage])
-[<7f048080>] (fsg_main_thread+0x520/0x157c [g_mass_storage]) from [<8004bc90>] (kthread+0x98/0x9c)
-[<8004bc90>] (kthread+0x98/0x9c) from [<8000faec>] (kernel_thread_exit+0x0/0x8) 
-
-The root cause just likes the following scenario.
-
-irq thread
-
-composite_disconnect()
-|
-|->fsg_disable() fsg->common->new_fsg = NULL
-                 and then wake fsg_main_thread
-                 with seting common->state to
-                 FSG_STATE_CONFIG_CHANGE.
-                                                    fsg_main_thread
-                                                    |
-                                                    |->do_set_interface()
-irq thread
-
-set_config()
-|
-|->fsg_set_alt() fsg->common->new_fsg = new_fsg
-                 and then also wake up fsg_main_thread
-                 with setting common->state to
-                 FSG_STATE_CONFIG_CHANGE.
-                                                    |-> if(common->new_fsg)
-		                                                 usb_composite_setup_continue()
-
-In this case, fsg_main_thread would invoke usb_composite_setup_continue
-twice, so the second call would trigger the above call trace, as we also
-save common->new_fsg while changing the common->state.
-
-Signed-off-by: Yang Wei <Wei.Yang@windriver.com>
+Signed-off-by: Vaughan Cao <vaughan.cao@oracle.com>
 ---
- drivers/usb/gadget/f_mass_storage.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/scsi/sd.c | 23 +++++++++++++++--------
+ 1 file changed, 15 insertions(+), 8 deletions(-)
 
-		Hi All,
-
-		This patch is based on git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb.git usb-next branch,
-		and is validated it with altera cyclone V board.
-
-		Thanks
-		Wei
-
-diff --git a/drivers/usb/gadget/f_mass_storage.c b/drivers/usb/gadget/f_mass_storage.c
-index b963939..e3b1798 100644
---- a/drivers/usb/gadget/f_mass_storage.c
-+++ b/drivers/usb/gadget/f_mass_storage.c
-@@ -2342,6 +2342,7 @@ static void handle_exception(struct fsg_common *common)
- 	struct fsg_buffhd	*bh;
- 	enum fsg_state		old_state;
- 	struct fsg_lun		*curlun;
-+	struct fsg_dev   *new;
- 	unsigned int		exception_req_tag;
+diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
+index efcbcd1..e4774aa 100644
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -132,6 +132,19 @@ static const char *sd_cache_types[] = {
+ 	"write back, no read (daft)"
+ };
  
- 	/*
-@@ -2421,6 +2422,7 @@ static void handle_exception(struct fsg_common *common)
- 		}
- 		common->state = FSG_STATE_IDLE;
++static void sd_set_flush_flag(struct scsi_disk *sdkp)
++{
++	unsigned flush = 0;
++
++	if (sdkp->WCE) {
++		flush |= REQ_FLUSH;
++		if (sdkp->DPOFUA)
++			flush |= REQ_FUA;
++	}
++
++	blk_queue_flush(sdkp->disk->queue, flush);
++}
++
+ static ssize_t
+ cache_type_store(struct device *dev, struct device_attribute *attr,
+ 		 const char *buf, size_t count)
+@@ -175,6 +188,7 @@ cache_type_store(struct device *dev, struct device_attribute *attr,
+ 	if (sdkp->cache_override) {
+ 		sdkp->WCE = wce;
+ 		sdkp->RCD = rcd;
++		sd_set_flush_flag(sdkp);
+ 		return count;
  	}
-+	new = common->new_fsg;
- 	spin_unlock_irq(&common->lock);
  
- 	/* Carry out any extra actions required for the exception */
-@@ -2460,8 +2462,8 @@ static void handle_exception(struct fsg_common *common)
- 		break;
+@@ -2712,7 +2726,6 @@ static int sd_revalidate_disk(struct gendisk *disk)
+ 	struct scsi_disk *sdkp = scsi_disk(disk);
+ 	struct scsi_device *sdp = sdkp->device;
+ 	unsigned char *buffer;
+-	unsigned flush = 0;
  
- 	case FSG_STATE_CONFIG_CHANGE:
--		do_set_interface(common, common->new_fsg);
--		if (common->new_fsg)
-+		do_set_interface(common, new);
-+		if (new)
- 			usb_composite_setup_continue(common->cdev);
- 		break;
+ 	SCSI_LOG_HLQUEUE(3, sd_printk(KERN_INFO, sdkp,
+ 				      "sd_revalidate_disk\n"));
+@@ -2758,13 +2771,7 @@ static int sd_revalidate_disk(struct gendisk *disk)
+ 	 * We now have all cache related info, determine how we deal
+ 	 * with flush requests.
+ 	 */
+-	if (sdkp->WCE) {
+-		flush |= REQ_FLUSH;
+-		if (sdkp->DPOFUA)
+-			flush |= REQ_FUA;
+-	}
+-
+-	blk_queue_flush(sdkp->disk->queue, flush);
++	sd_set_flush_flag(sdkp);
  
+ 	set_capacity(disk, sdkp->capacity);
+ 	sd_config_write_same(sdkp);
 -- 
-1.7.9.5
+1.9.0
 
