@@ -1,113 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753533AbaFCLGT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 07:06:19 -0400
-Received: from mga03.intel.com ([143.182.124.21]:9551 "EHLO mga03.intel.com"
+	id S1753485AbaFCLHs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 07:07:48 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38240 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751201AbaFCLGS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 07:06:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,964,1392192000"; 
-   d="scan'208";a="440241118"
-Date: Tue, 3 Jun 2014 14:06:00 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: eric.ernst@linux.intel.com
-Cc: linus.walleij@linaro.org, linux-kernel@vger.kernel.org,
-        mark.gross@intel.com
-Subject: Re: [PATCH v2 1/1] PINCTRL: Warn if direct IRQ GPIO set to output
-Message-ID: <20140603110600.GG1730@lahna.fi.intel.com>
-References: <0140602191416.GD1730@lahna.fi.intel.com>
- <1401743527-47035-1-git-send-email-eric.ernst@linux.intel.com>
+	id S1750892AbaFCLHr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 07:07:47 -0400
+Date: Tue, 3 Jun 2014 13:07:43 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Greg Thelen <gthelen@google.com>,
+        Michel Lespinasse <walken@google.com>, Tejun Heo <tj@kernel.org>,
+        Hugh Dickins <hughd@google.com>, Roman Gushchin <klamm@yandex-team.ru>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH v2 0/4] memcg: Low-limit reclaim
+Message-ID: <20140603110743.GD1321@dhcp22.suse.cz>
+References: <1398688005-26207-1-git-send-email-mhocko@suse.cz>
+ <20140528121023.GA10735@dhcp22.suse.cz>
+ <20140528134905.GF2878@cmpxchg.org>
+ <20140528142144.GL9895@dhcp22.suse.cz>
+ <20140528152854.GG2878@cmpxchg.org>
+ <20140528155414.GN9895@dhcp22.suse.cz>
+ <20140528163335.GI2878@cmpxchg.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1401743527-47035-1-git-send-email-eric.ernst@linux.intel.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+In-Reply-To: <20140528163335.GI2878@cmpxchg.org>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 02, 2014 at 02:12:07PM -0700, eric.ernst@linux.intel.com wrote:
-> From: Eric Ernst <eric.ernst@linux.intel.com>
+On Wed 28-05-14 12:33:35, Johannes Weiner wrote:
+> On Wed, May 28, 2014 at 05:54:14PM +0200, Michal Hocko wrote:
+> > On Wed 28-05-14 11:28:54, Johannes Weiner wrote:
+> > > On Wed, May 28, 2014 at 04:21:44PM +0200, Michal Hocko wrote:
+> > > > On Wed 28-05-14 09:49:05, Johannes Weiner wrote:
+> > > > > On Wed, May 28, 2014 at 02:10:23PM +0200, Michal Hocko wrote:
+> > [...]
+> > > > > > My main motivation for the weaker model is that it is hard to see all
+> > > > > > the corner case right now and once we hit them I would like to see a
+> > > > > > graceful fallback rather than fatal action like OOM killer. Besides that
+> > > > > > the usaceses I am mostly interested in are OK with fallback when the
+> > > > > > alternative would be OOM killer. I also feel that introducing a knob
+> > > > > > with a weaker semantic which can be made stronger later is a sensible
+> > > > > > way to go.
+> > > > > 
+> > > > > We can't make it stronger, but we can make it weaker. 
+> > > > 
+> > > > Why cannot we make it stronger by a knob/configuration option?
+> > > 
+> > > Why can't we make it weaker by a knob?
+> > 
+> > I haven't said we couldn't.
+> > 
+> > > Why should we design the default for unforeseeable cornercases
+> > > rather than make the default make sense for existing cases and give
+> > > cornercases a fallback once they show up?
+> > 
+> > Sure we can do that but it would be little bit lame IMO. We are
+> > promising something and once we find out it doesn't work we will make
+> > it weaker to workaround that.
+> >
+> > Besides that the default should reflect the usecases, no? Do we have any
+> > use case for the hard guarantee?
 > 
-> For Baytrail, you should never set a GPIO set to direct_irq
-> to output mode.  When direct_irq_en is set for a GPIO, it is
-> tied directly to an APIC internally, and making the pad output
-> does not make any sense. Assert a WARN() in the event this happens.
+> You're adding an extra layer of complexity so the burden of proof is
+> on you.  Do we have any usecases that require a graceful fallback?
 
-Subject should probably be:
+As far as I am aware nobody (except for google) really loves OOM
+killer because there is nothing you can do once it strikes (in the
+global/cpuset memory case). You have no choice for clean up etc...
 
-pinctrl: baytrail: Warn if direct IRQ GPIO is set to output
+If we consider that memcg and its limits are not zone aware while the
+page allocator and reclaim are zone oriented then I can see a problem
+of unexpected reclaim failure although there is no over commit on the
+low_limit globally. And we do not have in-kernel effective measures to
+mitigate this inherent problem. At least not now and I am afraid it is
+a long route to have something that would work reasonably well in such
+cases.
 
-> Signed-off-by: Eric Ernst <eric.ernst@linux.intel.com>
-> ---
->  drivers/pinctrl/pinctrl-baytrail.c |   19 +++++++++++++++----
->  1 file changed, 15 insertions(+), 4 deletions(-)
+So to me it sounds more responsible to promise only as much as we can
+handle. I think that fallback mode is not crippling the semantic of
+the knob as it triggers only for limit overcommit or strange corner
+cases. We have agreed that we do not care about the first one and
+handling the later one by potentially fatal action doesn't sounds very
+user friendly to me.
+
+For example, if we get back to the NUMA case then a graceful fallback
+allows to migrate offending tasks off the node and reduce reclaim on the
+protected group. This can be done simply by watching the breach counter
+and act upon it. On the other hand if the default policy is OOM then
+the possible actions are much more reduced (action would have to be
+pro-active with hopes that they are faster than OOM).
+
+Yet if somebody really wants to overcommit on the low_limit and get OOM
+rather than get reclaimed then I can see some sense in it and would be
+willing to add a knob to set allow this behavior. But that is a
+different situation because the configuration will be explicit and
+administrator aware of the consequences and is willing to accept them.
+
+> > > > > Stronger is the simpler definition, it's simpler code,
+> > > > 
+> > > > The code is not really that much simpler. The one you have posted will
+> > > > not work I am afraid. I haven't tested it yet but I remember I had to do
+> > > > some tweaks to the reclaim path to not end up in an endless loop in the
+> > > > direct reclaim (http://marc.info/?l=linux-mm&m=138677140828678&w=2 and
+> > > > http://marc.info/?l=linux-mm&m=138677141328682&w=2).
+> > > 
+> > > That's just a result of do_try_to_free_pages being stupid and using
+> > > its own zonelist loop to check reclaimability by duplicating all the
+> > > checks instead of properly using returned state of shrink_zones().
+> > > Something that would be worth fixing regardless of memcg guarantees.
+> > > 
+> > > Or maybe we could add the guaranteed lru pages to sc->nr_scanned.
+> > 
+> > Fixes might be different than what I was proposing previously. I was
+> > merely pointing out that removing the retry loop is not sufficient.
 > 
-> diff --git a/drivers/pinctrl/pinctrl-baytrail.c b/drivers/pinctrl/pinctrl-baytrail.c
-> index e59983423991..fde3767df254 100644
-> --- a/drivers/pinctrl/pinctrl-baytrail.c
-> +++ b/drivers/pinctrl/pinctrl-baytrail.c
-> @@ -47,6 +47,7 @@
->  #define BYT_TRIG_POS		BIT(25)
->  #define BYT_TRIG_LVL		BIT(24)
->  #define BYT_PIN_MUX		0x07
-> +#define BYT_DIRECTIRQ		BIT(27)
+> No, you were claiming that the hard limit implementation is not
+> simpler.  It is.
 
-Please move this definition to be first, like:
+Well, there are things you have to check anyway - short loops due to
+racing reclaimers and quick priority drop down or even pre-mature OOM
+in direct reclaim paths. kswapd shoudn't loop endlessly if it cannot
+balance the zone because all groups are withing limit on the node.
+So I fail to see it as that much simpler.
 
-/* BYT_CONF0_REG register bits */
-#define BYT_DIRECT_IRQ_EN	BIT(27)
-#define BYT_TRIG_NEG		BIT(26)
-#define BYT_TRIG_POS		BIT(25)
+Anyway, the complexity of the retry&ignore loop doesn't seem to be
+significant enough to dictate the default behavior. We should go with
+the one which makes the most sense for users.
 
-and I would call it BYT_DIRECT_IRQ_EN since it's name in datasheet is
-"direct_irq_en".
+> > > > > your usecases are fine with it,
+> > > > 
+> > > > my usecases do not overcommit low_limit on the available memory, so far
+> > > > so good, but once we hit a corner cases when limits are set properly but
+> > > > we end up not being able to reclaim anybody in a zone then OOM sounds
+> > > > too brutal.
+> > > 
+> > > What cornercases?
+> > 
+> > I have mentioned a case where NUMA placement and specific node bindings
+> > interfering with other allocators can end up in unreclaimable zones.
+> > While you might disagree about the setup I have seen different things
+> > done out there.
+> 
+> If you have real usecases that might depend on weak guarantees, please
+> make a rational argument for them and don't just handwave. 
 
->  
->  /* BYT_VAL_REG register bits */
->  #define BYT_INPUT_EN		BIT(2)  /* 0: input enabled (active low)*/
-> @@ -256,19 +257,29 @@ static int byt_gpio_direction_output(struct gpio_chip *chip,
->  				     unsigned gpio, int value)
->  {
->  	struct byt_gpio *vg = to_byt_gpio(chip);
-> -	void __iomem *reg = byt_gpio_reg(chip, gpio, BYT_VAL_REG);
-> +	void __iomem *conf_reg = byt_gpio_reg(chip, gpio, BYT_CONF0_REG);
-> +	void __iomem *value_reg = byt_gpio_reg(chip, gpio, BYT_VAL_REG);
+As I've said above. Usecases I am interested in do not overcommit on
+low_limit. The limit is used to protect group(s) from memory pressure
+from other loads which are running on the same machine. Primarily
+because the working set is quite expensive to build up. If we really
+hit a corner case and OOM would trigger then the whole state has to be
+rebuilt and that is much more expensive than ephemeral reclaim.
 
-Not sure if it is necessary to rename reg -> value_reg. It just makes
-the patch bigger than it has to be since you also need to rename stuff
-below.
+> I know that there is every conceivable configuration out there, but
+> it's unreasonable to design new features around the requirement of
+> setups that are questionable to begin with.
 
-Otherwise looks good.
+I do agree but on the other hand I think we shouldn't ignore inherent
+problems which might lead to problems mentioned above and provide an
+interface which doesn't cause an unexpected behavior.
 
->  	unsigned long flags;
->  	u32 reg_val;
->  
->  	spin_lock_irqsave(&vg->lock, flags);
->  
-> -	reg_val = readl(reg) | BYT_DIR_MASK;
-> +	/*
-> +	 * Before making any direction modifications, do a check if gpio
-> +	 * is set for direct IRQ.  On baytrail, setting GPIO to output does
-> +	 * not make sense, so let's at least warn the caller before they shoot
-> +	 * themselves in the foot.
-> +	 */
-> +	WARN((readl(conf_reg) & BYT_DIRECTIRQ),
-> +		"Potential Error: Setting GPIO with direct_irq_en to output");
-> +
-> +	reg_val = readl(value_reg) | BYT_DIR_MASK;
->  	reg_val &= ~BYT_OUTPUT_EN;
->  
->  	if (value)
-> -		writel(reg_val | BYT_LEVEL, reg);
-> +		writel(reg_val | BYT_LEVEL, value_reg);
->  	else
-> -		writel(reg_val & ~BYT_LEVEL, reg);
-> +		writel(reg_val & ~BYT_LEVEL, value_reg);
->  
->  	spin_unlock_irqrestore(&vg->lock, flags);
->  
-> -- 
-> 1.7.9.5
+> > Besides that the reclaim logic is complex enough and history thought me
+> > that little buggers are hidden at places where you do not expect them.
+> 
+> So we introduce user interfaces designed around the fact that we don't
+> trust our own code anymore?
+
+No, we are talking about inherent problems here. And my experience
+taught me to be careful and corner cases tend to show up in the real
+life situations. 
+
+> There is being prudent and then there is cargo cult programming.
+> 
+> > So call me a chicken but I would sleep calmer if we start weaker and add
+> > an additional guarantees later when somebody really insists on rseeing
+> > an OOM rather than get reclaimed.
+> > The proposed counter can tell us more how good we are at not touching
+> > groups with the limit and we can eventually debug those corner cases
+> > without affecting the loads too much.
+> 
+> More realistically, potential bugs are never reported with a silent
+> counter, which further widens the gap between our assumptions on how
+> the VM behaves and what happens in production.
+
+OOM driven reports are arguably worse and without easy workaround on the
+other hand.
+-- 
+Michal Hocko
+SUSE Labs
