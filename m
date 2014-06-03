@@ -1,198 +1,249 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753221AbaFCKJH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 06:09:07 -0400
-Received: from mga03.intel.com ([143.182.124.21]:65522 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751574AbaFCKJF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 06:09:05 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,964,1392192000"; 
-   d="scan'208";a="440224955"
-Message-ID: <538D9EA9.6070406@intel.com>
-Date: Tue, 03 Jun 2014 18:08:41 +0800
-From: Jet Chen <jet.chen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1753072AbaFCKJi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 06:09:38 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:60232 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751747AbaFCKJf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 06:09:35 -0400
+Date: Tue, 3 Jun 2014 11:08:53 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Alex Elder <elder@linaro.org>
+Cc: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "rdunlap@infradead.org" <rdunlap@infradead.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        "gregory.clement@free-electrons.com" 
+	<gregory.clement@free-electrons.com>,
+        "rvaswani@codeaurora.org" <rvaswani@codeaurora.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RESEND] devicetree: bindings: separate CPU enable method
+ descriptions
+Message-ID: <20140603100853.GB1310@leverpostej>
+References: <1401487914-21016-1-git-send-email-elder@linaro.org>
 MIME-Version: 1.0
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-CC: LKML <linux-kernel@vger.kernel.org>, lkp@01.org,
-        Fengguang Wu <fengguang.wu@intel.com>
-Subject: [rcu] 5057f55e543: -23.5% qperf.udp.recv_bw
-Content-Type: multipart/mixed;
- boundary="------------010209070405030808090100"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1401487914-21016-1-git-send-email-elder@linaro.org>
+Thread-Topic: [PATCH RESEND] devicetree: bindings: separate CPU enable method
+ descriptions
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------010209070405030808090100
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Hi Alex,
 
-Hi Paul,
+On Fri, May 30, 2014 at 11:11:54PM +0100, Alex Elder wrote:
+> The bindings for CPU enable methods are defined in ".../arm/cpus.txt".  As
+> additional 32-bit ARM CPUS are converted to use the "enable-method" CPU
+> property to imply a particular set of SMP operations to use, the list of these
+> methods is likely to become unwieldy.  The current documentation already
+> contains several property descriptions that are meaningful only for certain
+> enable methods.
+>
+> This patch defines a new Documentation subdirectory whose purpose is to give
+> each CPU enable method its own place to define how and when it's used, as
+> well as what other properties (optional or required) are associated with
+> the method.  The existing enable method documentation is expanded and moved
+> from ".../arm/cpus.txt" into new files accordingly.
+>
+> Signed-off-by: Alex Elder <elder@linaro.org>
+> ---
+> v2:  Rename "arm,psci.txt" to be "psci.txt" and fix its content
+>
+>  .../bindings/arm/cpu-enable-method/README          | 20 +++++
+>  .../bindings/arm/cpu-enable-method/psci.txt        | 45 ++++++++++
+>  .../arm/cpu-enable-method/qcom,gcc-msm8660         | 30 +++++++
+>  .../arm/cpu-enable-method/qcom,kpss-acc-v1         | 56 +++++++++++++
+>  .../arm/cpu-enable-method/qcom,kpss-acc-v2         | 56 +++++++++++++
+>  .../bindings/arm/cpu-enable-method/spin-table.txt  | 95 ++++++++++++++++++++++
+>  Documentation/devicetree/bindings/arm/cpus.txt     | 29 +------
+>  7 files changed, 305 insertions(+), 26 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/arm/cpu-enable-method/README
+>  create mode 100644 Documentation/devicetree/bindings/arm/cpu-enable-method/psci.txt
+>  create mode 100644 Documentation/devicetree/bindings/arm/cpu-enable-method/qcom,gcc-msm8660
+>  create mode 100644 Documentation/devicetree/bindings/arm/cpu-enable-method/qcom,kpss-acc-v1
+>  create mode 100644 Documentation/devicetree/bindings/arm/cpu-enable-method/qcom,kpss-acc-v2
+>  create mode 100644 Documentation/devicetree/bindings/arm/cpu-enable-method/spin-table.txt
+>
+> diff --git a/Documentation/devicetree/bindings/arm/cpu-enable-method/README b/Documentation/devicetree/bindings/arm/cpu-enable-method/README
+> new file mode 100644
+> index 0000000..cc9431e
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/arm/cpu-enable-method/README
+> @@ -0,0 +1,20 @@
+> +==========================
+> +CPU enable-method bindings
+> +==========================
+> +
+> +The device tree describes the layout of CPUs in a machine in a single "cpus"
+> +node, which in turn contains a number of "cpu" sub-nodes defining properties
+> +for each cpu.
+> +
+> +For multiprocessing configurations, CPU cores can be individually enabled
+> +and disabled.  The enabling capability is used for SMP startup as well as
+> +CPU hotplug.  A CPU enable method--normally specified in the device tree
+> +using an "enable-method" property--defines how cores are enabled.  If all
+> +CPUs in a machine use the same enable method and related property values,
+> +these properties should be defined in the "cpus" node, which associates the
+> +property values with all CPUs.  Alternatively, every "cpu" node can define
+> +its "enable-method" separately.
+> +
+> +Documents in this directory define how each of the CPU enable methods are to
+> +be used, as well the names and possible values of related properties that
+> +are required by or affect each enable method.
+> diff --git a/Documentation/devicetree/bindings/arm/cpu-enable-method/psci.txt b/Documentation/devicetree/bindings/arm/cpu-enable-method/psci.txt
+> new file mode 100644
+> index 0000000..68b26c2
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/arm/cpu-enable-method/psci.txt
+> @@ -0,0 +1,45 @@
+> +================================
+> +CPU enable-method "psci" binding
+> +================================
+> +
+> +This document describes the "psci" method for enabling secondary CPUs.  A
+> +"psci" enable method is supported only in individual "cpu" nodes (even if
+> +       all CPU cores use the "psci" enable method).
+> +
+> +Enable method name:    "psci"
+> +Compatible cpus:       "arm,cortex-a57" (?)
 
-FYI, we noticed the below changes on
+Any CPU with the security extensions or hypervisor extensions may
+support PSCI. So far, implementations exist for at Cortex-A{7,15,53,57},
+in addition to AEMs.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git rcu/fixes
-commit 5057f55e543b7859cfd26bc281291795eac93f8a ("rcu: Bind RCU grace-period kthreads if NO_HZ_FULL")
+> +Related properties:    (none)
+> +
+> +Note:
+> +This enable method is only available if a valid PSCI node[1] (compatible
+> +with "arm,psci") is present in the device tree, and it defines a "cpu_on"
+> +property.
+> +
+> +Example (contrived 2-core ARM Cortex-A57 64-bit system):
+> +
+> +       psci {
+> +               compatible = "arm,psci";
+> +               method = "smc";
+> +               cpu_on = 0x1;
 
-71a9b26963f8c2d  5057f55e543b7859cfd26bc28
----------------  -------------------------
- 2.127e+09 ~ 0%     -23.5%  1.628e+09 ~ 4%  bens/qperf/600s
- 2.127e+09 ~ 0%     -23.5%  1.628e+09 ~ 4%  TOTAL qperf.udp.recv_bw
+Missing '<' and '>'.
 
-71a9b26963f8c2d  5057f55e543b7859cfd26bc28
----------------  -------------------------
- 2.128e+09 ~ 0%     -23.3%  1.633e+09 ~ 4%  bens/qperf/600s
- 2.128e+09 ~ 0%     -23.3%  1.633e+09 ~ 4%  TOTAL qperf.udp.send_bw
+> +       };
+> +       cpus {
+> +               #size-cells = <0>;
+> +               #address-cells = <2>;
+> +
+> +               cpu@0 {
+> +                       device_type = "cpu";
+> +                       compatible = "arm,cortex-a57";
+> +                       reg = <0x0 0x0>;
+> +                       enable-method = "psci";
+> +               };
+> +
+> +               cpu@1 {
+> +                       device_type = "cpu";
+> +                       compatible = "arm,cortex-a57";
+> +                       reg = <0x0 0x1>;
+> +                       enable-method = "psci";
+> +               };
+> +       };
+> +
+> +--
+> +[1] arm/psci.txt
 
-71a9b26963f8c2d  5057f55e543b7859cfd26bc28
----------------  -------------------------
- 2.101e+10 ~ 2%     -18.7%  1.707e+10 ~ 2%  bens/iperf/300s-tcp
- 2.101e+10 ~ 2%     -18.7%  1.707e+10 ~ 2%  TOTAL iperf.tcp.sender.bps
+It may be worth folding the existing PSCI binding document in with the
+enable-method portion.
 
-71a9b26963f8c2d  5057f55e543b7859cfd26bc28
----------------  -------------------------
- 2.101e+10 ~ 2%     -18.7%  1.707e+10 ~ 2%  bens/iperf/300s-tcp
- 2.101e+10 ~ 2%     -18.7%  1.707e+10 ~ 2%  TOTAL iperf.tcp.receiver.bps
+> diff --git a/Documentation/devicetree/bindings/arm/cpu-enable-method/qcom,gcc-msm8660 b/Documentation/devicetree/bindings/arm/cpu-enable-method/qcom,gcc-msm8660
+> new file mode 100644
+> index 0000000..b19f51c
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/arm/cpu-enable-method/qcom,gcc-msm8660
+> @@ -0,0 +1,30 @@
+> +======================================================
+> +Secondary CPU enable-method "qcom,gcc-msm8660" binding
+> +======================================================
+> +
+> +This document describes the "qcom,gcc-msm8660" method for enabling secondary
+> +CPUs.  A "qcom,gcc-msm8660" enable method should only be used in the "cpus"
+> +node, to apply to all CPUs.
+> +
+> +Enable method name:    "qcom,gcc-msm8660"
+> +Compatible cpu:                "qcom,scorpion"
+> +Related properties:    (none)
 
-71a9b26963f8c2d  5057f55e543b7859cfd26bc28
----------------  -------------------------
- 1.331e+09 ~ 2%      -5.8%  1.255e+09 ~ 2%  bens/qperf/600s
-   2.4e+09 ~ 6%     -30.4%  1.671e+09 ~12%  brickland3/qperf/600s
- 2.384e+09 ~ 7%     -12.1%  2.096e+09 ~ 3%  lkp-sb03/qperf/600s
- 6.115e+09 ~ 5%     -17.9%  5.022e+09 ~ 6%  TOTAL qperf.sctp.bw
+>From a look at the code, we need a node compatible with
+"qcom,gcc-msm8660" somewhere in the tree (see scss_release_secondary).
+It would be good to mention that.
 
-71a9b26963f8c2d  5057f55e543b7859cfd26bc28
----------------  -------------------------
-  2.83e+09 ~ 1%     -12.5%  2.476e+09 ~ 3%  bens/qperf/600s
-  2.83e+09 ~ 1%     -12.5%  2.476e+09 ~ 3%  TOTAL qperf.tcp.bw
+[...]
 
-71a9b26963f8c2d  5057f55e543b7859cfd26bc28
----------------  -------------------------
- 2.272e+08 ~ 1%     -13.3%   1.97e+08 ~ 2%  bens/qperf/600s
- 2.272e+08 ~ 1%     -13.3%   1.97e+08 ~ 2%  TOTAL proc-vmstat.pgalloc_dma32
+> diff --git a/Documentation/devicetree/bindings/arm/cpu-enable-method/spin-table.txt b/Documentation/devicetree/bindings/arm/cpu-enable-method/spin-table.txt
+> new file mode 100644
+> index 0000000..aee3617
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/arm/cpu-enable-method/spin-table.txt
+> @@ -0,0 +1,95 @@
+> +================================================
+> +Secondary CPU enable-method "spin-table" binding
+> +================================================
+> +
+> +This document describes the "spin-table" method for enabling secondary CPUs.
+> +A "spin-table" enable method can be used in either the "cpus" node or in
+> +individual "cpu" nodes.
+> +
+> +Enable method name:    "spin-table"
+> +Compatible cpus:       "arm,cortex-a57" (?)
 
-71a9b26963f8c2d  5057f55e543b7859cfd26bc28
----------------  -------------------------
-     53062 ~ 2%     -35.1%      34464 ~ 3%  bens/qperf/600s
-    109531 ~13%     +46.9%     160928 ~ 5%  brickland3/qperf/600s
-     67902 ~ 1%     +13.8%      77302 ~ 3%  lkp-sb03/qperf/600s
-    230496 ~ 7%     +18.3%     272694 ~ 4%  TOTAL softirqs.RCU
+Any CPU with AArch64 may support this.
 
-71a9b26963f8c2d  5057f55e543b7859cfd26bc28
----------------  -------------------------
-     80344 ~ 1%     -26.2%      59325 ~ 2%  bens/qperf/600s
-     80344 ~ 1%     -26.2%      59325 ~ 2%  TOTAL softirqs.SCHED
+> +Related properties:
+> +       - cpu-release-addr
+> +               Usage:          required
+> +               Value type:     <prop-encoded-array>
 
-71a9b26963f8c2d  5057f55e543b7859cfd26bc28
----------------  -------------------------
-      1036 ~ 4%     -17.6%        853 ~ 4%  brickland3/qperf/600s
-      1036 ~ 4%     -17.6%        853 ~ 4%  TOTAL proc-vmstat.nr_page_table_pages
+Just say it's a 64-bit value, "prop-encoded-array" isn't all that
+helpful.
 
-71a9b26963f8c2d  5057f55e543b7859cfd26bc28
----------------  -------------------------
-     48.12 ~ 0%     -11.7%      42.46 ~ 6%  brickland3/qperf/600s
-     48.12 ~ 0%     -11.7%      42.46 ~ 6%  TOTAL turbostat.%pc2
+> +               Definition:
+> +                       A two cell value identifying a 64-bit memory location
+> +                       used by the boot CPU to inform a secondary CPU it
+> +                       should begin its kernel bootstrap.  Memory at this
+> +                       location must initially be zeroed.
+> +
+> +Examples (contrived 4-core ARM Cortex-A57 64-bit systems):
+> +
+> +The first example uses the same enable method for all cores.
+> +
+> +       cpus {
+> +               #size-cells = <0>;
+> +               #address-cells = <2>;
+> +               enable-method = "spin-table";
+> +               cpu-release-addr = <0 0x20000000>;
 
-71a9b26963f8c2d  5057f55e543b7859cfd26bc28
----------------  -------------------------
-  74689352 ~ 1%     -13.3%   64771743 ~ 2%  bens/qperf/600s
-  74689352 ~ 1%     -13.3%   64771743 ~ 2%  TOTAL proc-vmstat.pgalloc_normal
+Linux currently expects this to be described per-cpu, and does not
+support either of these properties this being defined in /cpus for
+arm64.
 
-71a9b26963f8c2d  5057f55e543b7859cfd26bc28
----------------  -------------------------
- 3.019e+08 ~ 1%     -13.3%  2.618e+08 ~ 2%  bens/qperf/600s
- 3.019e+08 ~ 1%     -13.3%  2.618e+08 ~ 2%  TOTAL proc-vmstat.pgfree
+I would also very much like to discourage using a single release address
+-- it means we can only throw all CPUs into the kernel pen, where some
+may have to sit forever (breaking things like kexec). Ideally if a
+system has to use spin-table the addresses should be unique.
 
-71a9b26963f8c2d  5057f55e543b7859cfd26bc28
----------------  -------------------------
-  23538414 ~ 0%     -12.9%   20506157 ~ 2%  bens/qperf/600s
-  23538414 ~ 0%     -12.9%   20506157 ~ 2%  TOTAL proc-vmstat.numa_local
+So could we just have the example with unique addresses please?
 
-71a9b26963f8c2d  5057f55e543b7859cfd26bc28
----------------  -------------------------
-  23538414 ~ 0%     -12.9%   20506157 ~ 2%  bens/qperf/600s
-  23538414 ~ 0%     -12.9%   20506157 ~ 2%  TOTAL proc-vmstat.numa_hit
+[...]
 
-71a9b26963f8c2d  5057f55e543b7859cfd26bc28
----------------  -------------------------
-     12789 ~ 1%     -10.9%      11391 ~ 2%  bens/qperf/600s
-     12789 ~ 1%     -10.9%      11391 ~ 2%  TOTAL softirqs.HRTIMER
+Otherwise, this looks like a good first step. It would be nice to see
+some qcom folk review the qcom documentation changes.
 
-71a9b26963f8c2d  5057f55e543b7859cfd26bc28
----------------  -------------------------
-    481253 ~ 0%      -8.9%     438624 ~ 0%  bens/qperf/600s
-    481253 ~ 0%      -8.9%     438624 ~ 0%  TOTAL softirqs.TIMER
-
-71a9b26963f8c2d  5057f55e543b7859cfd26bc28
----------------  -------------------------
-      1297 ~33%    +565.9%       8640 ~ 7%  bens/iperf/300s-tcp
-      2788 ~ 3%    +588.8%      19204 ~ 4%  bens/qperf/600s
-      1191 ~ 5%   +1200.9%      15493 ~ 4%  brickland3/qperf/600s
-      1135 ~26%   +1195.9%      14709 ~ 4%  lkp-sb03/qperf/600s
-      6411 ~13%    +805.3%      58047 ~ 4%  TOTAL time.involuntary_context_switches
-
-71a9b26963f8c2d  5057f55e543b7859cfd26bc28
----------------  -------------------------
-     72398 ~ 1%      -5.4%      68503 ~ 0%  bens/qperf/600s
-      8789 ~ 4%     +22.3%      10749 ~15%  lkp-sb03/qperf/600s
-     81187 ~ 1%      -2.4%      79253 ~ 2%  TOTAL vmstat.system.in
-
-71a9b26963f8c2d  5057f55e543b7859cfd26bc28
----------------  -------------------------
-    141174 ~ 1%      -5.4%     133551 ~ 0%  bens/qperf/600s
-    143982 ~ 1%      -4.4%     137600 ~ 0%  brickland3/qperf/600s
-    285156 ~ 1%      -4.9%     271152 ~ 0%  TOTAL vmstat.system.cs
-
-71a9b26963f8c2d  5057f55e543b7859cfd26bc28
----------------  -------------------------
-  42351859 ~ 0%      -5.3%   40114932 ~ 0%  bens/qperf/600s
-  43015383 ~ 1%      -4.4%   41143092 ~ 0%  brickland3/qperf/600s
-  85367242 ~ 1%      -4.8%   81258025 ~ 0%  TOTAL time.voluntary_context_switches
-
-71a9b26963f8c2d  5057f55e543b7859cfd26bc28
----------------  -------------------------
-       146 ~ 0%      -2.2%        143 ~ 0%  bens/qperf/600s
-       147 ~ 1%      -4.8%        140 ~ 1%  brickland3/qperf/600s
-       293 ~ 0%      -3.5%        283 ~ 0%  TOTAL time.percent_of_cpu_this_job_got
-
-71a9b26963f8c2d  5057f55e543b7859cfd26bc28
----------------  -------------------------
-       872 ~ 0%      -2.3%        853 ~ 0%  bens/qperf/600s
-       874 ~ 1%      -4.6%        834 ~ 1%  brickland3/qperf/600s
-      1747 ~ 0%      -3.4%       1687 ~ 0%  TOTAL time.system_time
-
-
-Legend:
-	~XX%    - stddev percent
-	[+-]XX% - change percent
-
-
-
-
-Disclaimer:
-Results have been estimated based on internal Intel analysis and are provided
-for informational purposes only. Any difference in system hardware or software
-design or configuration may affect actual performance.
-
-Thanks,
-Jet
-
-
-
---------------010209070405030808090100
-Content-Type: text/plain; charset=UTF-8;
- name="reproduce"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
- filename="reproduce"
-
-ZWNobyBwZXJmb3JtYW5jZSA+IC9zeXMvZGV2aWNlcy9zeXN0ZW0vY3B1L2NwdTAvY3B1ZnJl
-cS9zY2FsaW5nX2dvdmVybm9yCmVjaG8gcGVyZm9ybWFuY2UgPiAvc3lzL2RldmljZXMvc3lz
-dGVtL2NwdS9jcHUxL2NwdWZyZXEvc2NhbGluZ19nb3Zlcm5vcgplY2hvIHBlcmZvcm1hbmNl
-ID4gL3N5cy9kZXZpY2VzL3N5c3RlbS9jcHUvY3B1Mi9jcHVmcmVxL3NjYWxpbmdfZ292ZXJu
-b3IKZWNobyBwZXJmb3JtYW5jZSA+IC9zeXMvZGV2aWNlcy9zeXN0ZW0vY3B1L2NwdTMvY3B1
-ZnJlcS9zY2FsaW5nX2dvdmVybm9yCi4vcnVudGVzdC5weSB1bmxpbmsxIDMyIDEgMiAzIDQK
-
---------------010209070405030808090100--
+Mark.
