@@ -1,58 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754624AbaFCT1v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 15:27:51 -0400
-Received: from mailrelay011.isp.belgacom.be ([195.238.6.178]:61417 "EHLO
-	mailrelay011.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754168AbaFCT1u (ORCPT
+	id S933643AbaFCTbz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 15:31:55 -0400
+Received: from mail-we0-f176.google.com ([74.125.82.176]:44129 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933574AbaFCTbx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 15:27:50 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AnAOABwhjlNbsmtf/2dsb2JhbABZgwerXgQDAQEBBQGYHIEOF3SCUy8jgRo3iEYB0SQXhVWIfR2EKgSPS4o/ix2IFoM6Ow
-From: Fabian Frederick <fabf@skynet.be>
+	Tue, 3 Jun 2014 15:31:53 -0400
+From: Paolo Bonzini <pbonzini@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 1/1] fs/omfs/inode.c: use ULLONG_MAX instead of ~0ULL
-Date: Tue,  3 Jun 2014 21:26:36 +0200
-Message-Id: <1401823596-4954-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.8.4.5
+Cc: hch@lst.de, JBottomley@Parallels.com, venkateshs@google.com,
+        stable@vger.kernel.org, Ulrich Obergfell <uobergfe@redhat.com>
+Subject: [PATCH 5/6] virtio-scsi: fix various bad behavior on aborted requests
+Date: Tue,  3 Jun 2014 21:31:32 +0200
+Message-Id: <1401823893-29028-6-git-send-email-pbonzini@redhat.com>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1401823893-29028-1-git-send-email-pbonzini@redhat.com>
+References: <1401823893-29028-1-git-send-email-pbonzini@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use more explicit kernel.h definition
+Even though the virtio-scsi spec guarantees that all requests related
+to the TMF will have been completed by the time the TMF itself completes,
+the request queue's callback might not have run yet.  This causes requests
+to be completed more than once, and as a result triggers a variety of
+BUGs or oopses.
 
-Bob Copeland <me@bobcopeland.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
+Cc: stable@vger.kernel.org
+Cc: Ulrich Obergfell <uobergfe@redhat.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 ---
- fs/omfs/inode.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/scsi/virtio_scsi.c | 22 ++++++++++++++++++++++
+ 1 file changed, 22 insertions(+)
 
-diff --git a/fs/omfs/inode.c b/fs/omfs/inode.c
-index ec58c76..40c0707 100644
---- a/fs/omfs/inode.c
-+++ b/fs/omfs/inode.c
-@@ -317,7 +317,7 @@ static int omfs_get_imap(struct super_block *sb)
- 	bitmap_size = DIV_ROUND_UP(sbi->s_num_blocks, 8);
- 	array_size = DIV_ROUND_UP(bitmap_size, sb->s_blocksize);
+diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
+index d66c4ee2c774..fda9fb358888 100644
+--- a/drivers/scsi/virtio_scsi.c
++++ b/drivers/scsi/virtio_scsi.c
+@@ -235,6 +235,16 @@ static void virtscsi_req_done(struct virtqueue *vq)
+ 	virtscsi_vq_done(vscsi, req_vq, virtscsi_complete_cmd);
+ };
  
--	if (sbi->s_bitmap_ino == ~0ULL)
-+	if (sbi->s_bitmap_ino == ULLONG_MAX)
- 		goto out;
++static void virtscsi_poll_requests(struct virtio_scsi *vscsi)
++{
++	int i, num_vqs;
++
++	num_vqs = vscsi->num_queues;
++	for (i = 0; i < num_vqs; i++)
++		virtscsi_vq_done(vscsi, &vscsi->req_vqs[i],
++				 virtscsi_complete_cmd);
++}
++
+ static void virtscsi_complete_free(struct virtio_scsi *vscsi, void *buf)
+ {
+ 	struct virtio_scsi_cmd *cmd = buf;
+@@ -579,6 +589,18 @@ static int virtscsi_tmf(struct virtio_scsi *vscsi, struct virtio_scsi_cmd *cmd)
+ 	    cmd->resp.tmf.response == VIRTIO_SCSI_S_FUNCTION_SUCCEEDED)
+ 		ret = SUCCESS;
  
- 	sbi->s_imap_size = array_size;
-@@ -516,7 +516,7 @@ static int omfs_fill_super(struct super_block *sb, void *data, int silent)
- 		goto out_brelse_bh2;
- 	}
- 
--	if (sbi->s_bitmap_ino != ~0ULL &&
-+	if (sbi->s_bitmap_ino != ULLONG_MAX &&
- 	    sbi->s_bitmap_ino > sbi->s_num_blocks) {
- 		printk(KERN_ERR "omfs: free space bitmap location is corrupt "
- 			"(%llx, total blocks %llx)\n",
++	/*
++	 * The spec guarantees that all requests related to the TMF have
++	 * been completed, but the callback might not have run yet if
++	 * we're using independent interrupts (e.g. MSI).  Poll the
++	 * virtqueues once.
++	 *
++	 * In the abort case, sc->scsi_done will do nothing, because
++	 * the block layer must have detected a timeout and as a result
++	 * REQ_ATOM_COMPLETE has been set.
++	 */
++	virtscsi_poll_requests(vscsi);
++
+ out:
+ 	mempool_free(cmd, virtscsi_cmd_pool);
+ 	return ret;
 -- 
-1.8.4.5
+1.8.3.1
+
 
