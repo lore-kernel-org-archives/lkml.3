@@ -1,75 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754613AbaFCSDw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 14:03:52 -0400
-Received: from mail-vc0-f178.google.com ([209.85.220.178]:51328 "EHLO
-	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751793AbaFCSDu (ORCPT
+	id S1754790AbaFCSFe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 14:05:34 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:60202 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751607AbaFCSFd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 14:03:50 -0400
-MIME-Version: 1.0
+	Tue, 3 Jun 2014 14:05:33 -0400
+Date: Tue, 3 Jun 2014 14:05:29 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Clark Williams <williams@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [BUG] signal: sighand unprotected when accessed by /proc
+Message-ID: <20140603140529.048701b9@gandalf.local.home>
 In-Reply-To: <20140603172632.GA27956@redhat.com>
 References: <20140603130233.658a6a3c@gandalf.local.home>
 	<20140603172632.GA27956@redhat.com>
-Date: Tue, 3 Jun 2014 11:03:49 -0700
-X-Google-Sender-Auth: 0-zkbaPP-q5kAc9S4vjNeTrigVw
-Message-ID: <CA+55aFzT5CGv_T60voAqR+4PfiMmJmsDZLid2DZ4=+X8uvF+ig@mail.gmail.com>
-Subject: Re: [BUG] signal: sighand unprotected when accessed by /proc
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Clark Williams <williams@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 3, 2014 at 10:26 AM, Oleg Nesterov <oleg@redhat.com> wrote:
->
+On Tue, 3 Jun 2014 19:26:32 +0200
+Oleg Nesterov <oleg@redhat.com> wrote:
+
+> On 06/03, Steven Rostedt wrote:
+> >
+> > We were able to trigger this bug in -rt, and by review, I'm thinking
+> > that this could very well be a mainline bug too. I had our QA team add
+> > a trace patch to the kernel to prove my analysis, and it did.
+> >
+> > Here's the patch:
+> >
+> >  http://rostedt.homelinux.com/private/sighand-trace.patch
+> >
+> > Let me try to explain the bug:
+> >
+> >
+> > 	CPU0				CPU1
+> > 	----				----
+> >  [ read of /proc/<pid>/stat ]
+> >   get_task_struct();
+> >   [...]
+> > 				  [ <pid> exits ]
+> > 				  [ parent does wait on <pid> ]
+> > 				  wait_task_zombie()
+> > 				    release_task()
+> > 				      proc_flush_task()
+> > 				      /* the above removes new access
+> > 				         to the /proc system */
+> > 				      __exit_signal()
+> > 				        __cleanup_sighand(sighand);
+> > 					  atomic_dec_and_test(sighand->count);
+> >   do_task_stat()
+> >     lock_task_sighand(task);
+> >       sighand = rcu_dereference(tsk->sighand);
+> >
+> > 					    kmem_cache_free(sighand);
+> >
+> >       if (sighand != NULL)
+> >         spin_lock(sighand->siglock);
+> >
+> >        ** BOOM! use after free **
+> 
+> Yes, ->sighand can be already freed at this point, but this should be
+> fine because sighand_cachep is SLAB_DESTROY_BY_RCU.
+
+Ah, I didn't notice that. This makes this even more bazaar.
+
+You know, this code could use some comments. I may send you a patch,
+because that __lock_task_sighand() is doing a lot of subtle things and
+there's not a single comment explaining it :-(
+
+
+
+> 
+> That is why lock_task_sighand() does rcu_read_lock() and re-checks
+> sighand == tsk->sighand after it takes ->siglock. It is fine if it was
+> already freed or even reallocated via kmem_cache_alloc(sighand_cachep).
+> We only need to ensure that (SLAB_DESTROY_BY_RCU should ensure this)
+> this memory won't be returned to system, so this peace of memory must
+> be "struct sighand" with the properly initialized ->siglock until
+> rcu_read_unlock().
+
+OK, this makes __lock_task_sighand() make some more sense.
+
+> 
+> > Seems there is no protection between reading the sighand from proc and
+> > freeing it. The sighand->count is not updated, and the sighand is not
+> > freed via rcu.
+> 
+> See above.
+> 
+> > One, the spinlock in -rt is an rtmutex. The list_del_entry() bug is the
+> > task trying to remove itself from sighand->lock->wait_list. As the lock
+> > has been freed, the list head of the rtmutex is corrupted.
+> 
 > looks like, SLAB_DESTROY_BY_RCU logic is broken?
 
-I haven't looked at the code yet, but SLAB_DESTROY_BY_RCU can be
-subtle and very dangerous.
+Could be. I'll look to see if we didn't break something.
 
-The danger is that the *slab* itself is free'd by RCU, but individual
-allocations can (and do) get re-used FOR THE SAME OBJECT TYPE without
-waiting for RCU!
+Thanks!
 
-This is subtle. It means that most people who think that "it's free'd
-by RCU" get it wrong. Because individual allocations really aren't at
-all RCU-free'd, it's just that the underlying memory is guaranteed to
-not change type or be entirely thrown away until after a RCU grace
-period.
-
-That means that the only thing you can use rcu-delayed are:
- (a) pure optimistic reads
- (b) idempotent things that are initialized by the constructor, and
-_not_ by the allocation.
-
-Nothing else.
-
-An example of (b) is having a lock that is initialized by the
-constructor, and that everybody else uses properly: you may have
-delayed people locking/unlocking it, but as long as they don't screw
-anything else up they won't break even if the data structure was
-re-used by a new allocations.
-
-Without looking at the code, it sounds like somebody may doing things
-to "sighand->lock->wait_list" that they shouldn't do. We've had cases
-like that before, and most of them have been changed to *not* use
-SLAB_DESTROY_BY_RCU, and instead make each individual allocation be
-RCU-free'd (which is a lot simpler to think about, because then you
-don't have the whole re-use issue).
-
-Of course, it could easily be lack of any RCU protection too. As
-mentioned, I didn't really check the code. I just wanted to clarify
-this subtlety, because while I think Oleg knows about it, maybe others
-didn't quite catch that subtlety.
-
-And this could easily be an RT issue, if the RT code does some
-re-initialization of the rtmutex that replaces the spinlock we have.
-
-               Linus
+-- Steve
