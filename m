@@ -1,48 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965110AbaFCUPs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 16:15:48 -0400
-Received: from s3.sipsolutions.net ([5.9.151.49]:60339 "EHLO sipsolutions.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932917AbaFCUPq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 16:15:46 -0400
-Message-ID: <1401826536.4157.54.camel@jlt4.sipsolutions.net>
-Subject: Re: [RFC 0/4 v2] cfg80211/mac80211: Add new interface type for OCB
- (Outside the Context of a BSS) mode
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Rostislav Lisovy <lisovy@gmail.com>
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Michal Sojka <sojkam1@fel.cvut.cz>, s.sander@nordsys.de,
-        jan-niklas.meier@volkswagen.de,
-        Rostislav Lisovy <rostislav.lisovy@fel.cvut.cz>
-Date: Tue, 03 Jun 2014 22:15:36 +0200
-In-Reply-To: <1401468984-24575-1-git-send-email-rostislav.lisovy@fel.cvut.cz> (sfid-20140530_185636_416967_38B72FDB)
-References: <1401468984-24575-1-git-send-email-rostislav.lisovy@fel.cvut.cz>
-	 (sfid-20140530_185636_416967_38B72FDB)
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.1-1 
+	id S965133AbaFCUQR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 16:16:17 -0400
+Received: from smtprelay0120.hostedemail.com ([216.40.44.120]:38710 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S965096AbaFCUQP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 16:16:15 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::::::::::::::,RULES_HIT:41:355:379:541:599:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1431:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2828:2892:2895:3138:3139:3140:3141:3142:3354:362
+X-HE-Tag: eyes10_52db77f74a75c
+X-Filterd-Recvd-Size: 2965
+Message-ID: <1401826567.22133.2.camel@joe-AO725>
+Subject: Re: [PATCH v2 RFC 1/3] MAINTAINERS: Add "R:" designated-reviewers
+ tag
+From: Joe Perches <joe@perches.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
+        fweisbec@gmail.com, oleg@redhat.com, sbw@mit.edu
+Date: Tue, 03 Jun 2014 13:16:07 -0700
+In-Reply-To: <20140603201202.GW22231@linux.vnet.ibm.com>
+References: <1401809736-12023-1-git-send-email-paulmck@linux.vnet.ibm.com>
+	 <1401822187.18833.24.camel@joe-AO725>
+	 <20140603201202.GW22231@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-05-30 at 18:56 +0200, Rostislav Lisovy wrote:
+On Tue, 2014-06-03 at 13:12 -0700, Paul E. McKenney wrote:
+> On Tue, Jun 03, 2014 at 12:03:07PM -0700, Joe Perches wrote:
+> > On Tue, 2014-06-03 at 08:35 -0700, Paul E. McKenney wrote:
+> > > Paul Walmsley also noted the need for patch
+> > > submitters to know who the key reviewers are and suggested adding an
+> > > "R:" tag to the MAINTAINERS file to record this information on a
+> > > per-subsystem basis.
+> > []
+> > > diff --git a/MAINTAINERS b/MAINTAINERS
+> > []
+> > > @@ -70,6 +70,8 @@ Descriptions of section entries:
+> > >  
+> > >  	P: Person (obsolete)
+> > >  	M: Mail patches to: FullName <address@domain>
+> > > +	R: Designated reviewer, who should be CCed on patches,
+> > > +	   format: FullName <address@domain>
+> > >  	L: Mailing list that is relevant to this area
+> > >  	W: Web-page with status/info
+> > >  	Q: Patchwork web based patch tracking system site
+> > 
+> > Perhaps the M: and R: roles should be more fully
+> > described here.
+> > 
+> > The R: entry description doesn't need commas.
+> > 
+> > Maybe something like:
+> > 	M: Maintainer (to:) FullName <address@domain>
+> > 	R: Reviewer   (cc:) FullName <address@domain>
+> 
+> This is arguably better organized, but I need to keep my focus on adding
+> the designated reviewer.  I am not in a position to undertake a rewrite
+> of the MAINTAINER file preamble at this point.
 
-> This patchset presents work in progress. Patches adding *_leave_ocb()
-> functions and modifying RX/TX path in mac80211 to work with OCB
-> mode will come in near future.
+That's silly, you're adding the "R" entry.
+Add a proper description for it.
 
-Oh, sorry - I commented on that but failed to read the cover letter
-first. My bad.
+> > You might as well send the get_maintainer update with this
+> > series too.
+> 
+> Interesting...  Who is the maintainer for get_maintainer?  ;-)
 
-Overall you're off on a good start I think - see the comments I had on
-the patches.
+Some numbskull just signed up for that.
 
-I'm hoping that drivers implementing this won't actually need any
-station entries. Apart from that, it's unclear to me how the bitrate is
-selected, are there even different bitrates?
+He suggests you keep all the patches that add
+support for this "R: reviewer" feature together.
 
-johannes
 
