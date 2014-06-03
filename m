@@ -1,111 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753964AbaFCMym (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 08:54:42 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40480 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752785AbaFCMyl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 08:54:41 -0400
-Date: Tue, 3 Jun 2014 14:54:38 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
-        Tejun Heo <tj@kernel.org>, Vladimir Davydov <vdavydov@parallels.com>,
-        cgroups@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 02/10] mm: memcontrol: rearrange charging fast path
-Message-ID: <20140603125438.GG1321@dhcp22.suse.cz>
-References: <1401380162-24121-1-git-send-email-hannes@cmpxchg.org>
- <1401380162-24121-3-git-send-email-hannes@cmpxchg.org>
+	id S1753440AbaFCM5e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 08:57:34 -0400
+Received: from mail-qg0-f52.google.com ([209.85.192.52]:38933 "EHLO
+	mail-qg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751010AbaFCM5d (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 08:57:33 -0400
+Date: Tue, 3 Jun 2014 08:57:28 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Li Zefan <lizefan@huawei.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
+Subject: Re: [PATCH 1/3] cgroup: don't destroy the default root
+Message-ID: <20140603125728.GA26210@htj.dyndns.org>
+References: <538D4956.5050205@huawei.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1401380162-24121-3-git-send-email-hannes@cmpxchg.org>
+In-Reply-To: <538D4956.5050205@huawei.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 29-05-14 12:15:54, Johannes Weiner wrote:
-> The charging path currently starts out with OOM condition checks when
-> OOM is the rarest possible case.
-> 
-> Rearrange this code to run OOM/task dying checks only after trying the
-> percpu charge and the res_counter charge and bail out before entering
-> reclaim.  Attempting a charge does not hurt an (oom-)killed task as
-> much as every charge attempt having to check OOM conditions.  Also,
-> only check __GFP_NOFAIL when the charge would actually fail.
-> 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Hello, Li.
 
-Acked-by: Michal Hocko <mhocko@suse.cz>
+On Tue, Jun 03, 2014 at 12:04:38PM +0800, Li Zefan wrote:
+>  static void cgroup_get(struct cgroup *cgrp)
+>  {
+>  	WARN_ON_ONCE(cgroup_is_dead(cgrp));
+> -	css_get(&cgrp->self);
+> +	if (!(cgrp->self.flags & CSS_NO_REF))
+> +		css_get(&cgrp->self);
 
-> ---
->  mm/memcontrol.c | 33 +++++++++++++++++----------------
->  1 file changed, 17 insertions(+), 16 deletions(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index c3c10ab98355..46b3e37542ad 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -2576,22 +2576,6 @@ static int mem_cgroup_try_charge(struct mem_cgroup *memcg,
->  
->  	if (mem_cgroup_is_root(memcg))
->  		goto done;
-> -	/*
-> -	 * Unlike in global OOM situations, memcg is not in a physical
-> -	 * memory shortage.  Allow dying and OOM-killed tasks to
-> -	 * bypass the last charges so that they can exit quickly and
-> -	 * free their memory.
-> -	 */
-> -	if (unlikely(test_thread_flag(TIF_MEMDIE) ||
-> -		     fatal_signal_pending(current) ||
-> -		     current->flags & PF_EXITING))
-> -		goto bypass;
-> -
-> -	if (unlikely(task_in_memcg_oom(current)))
-> -		goto nomem;
-> -
-> -	if (gfp_mask & __GFP_NOFAIL)
-> -		oom = false;
->  retry:
->  	if (consume_stock(memcg, nr_pages))
->  		goto done;
-> @@ -2613,6 +2597,20 @@ retry:
->  		goto retry;
->  	}
->  
-> +	/*
-> +	 * Unlike in global OOM situations, memcg is not in a physical
-> +	 * memory shortage.  Allow dying and OOM-killed tasks to
-> +	 * bypass the last charges so that they can exit quickly and
-> +	 * free their memory.
-> +	 */
-> +	if (unlikely(test_thread_flag(TIF_MEMDIE) ||
-> +		     fatal_signal_pending(current) ||
-> +		     current->flags & PF_EXITING))
-> +		goto bypass;
-> +
-> +	if (unlikely(task_in_memcg_oom(current)))
-> +		goto nomem;
-> +
->  	if (!(gfp_mask & __GFP_WAIT))
->  		goto nomem;
->  
-> @@ -2641,6 +2639,9 @@ retry:
->  	if (mem_cgroup_wait_acct_move(mem_over_limit))
->  		goto retry;
->  
-> +	if (gfp_mask & __GFP_NOFAIL)
-> +		goto bypass;
-> +
->  	if (fatal_signal_pending(current))
->  		goto bypass;
->  
-> -- 
-> 1.9.3
-> 
+Hmmm?  The same condition is tested by css_get().  Why should it be
+tested again here?
+
+>  static void cgroup_put(struct cgroup *cgrp)
+>  {
+> -	css_put(&cgrp->self);
+> +	if (!(cgrp->self.flags & CSS_NO_REF))
+> +		css_put(&cgrp->self);
+
+Ditto.
+
+> @@ -1781,10 +1783,12 @@ static void cgroup_kill_sb(struct super_block *sb)
+>  	 * This prevents new mounts by disabling percpu_ref_tryget_live().
+>  	 * cgroup_mount() may wait for @root's release.
+>  	 */
+> -	if (css_has_online_children(&root->cgrp.self))
+> +	if (css_has_online_children(&root->cgrp.self)) {
+>  		cgroup_put(&root->cgrp);
+> -	else
+> -		percpu_ref_kill(&root->cgrp.self.refcnt);
+> +	} else {
+> +		if (root != &cgrp_dfl_root)
+> +			percpu_ref_kill(&root->cgrp.self.refcnt);
+> +	}
+
+As conceptually percpu_ref_kill() just puts the base ref and the
+dfl_root's refcnt never reaches zero, it won't actually trigger.
+Hmmm.... wouldn't the above leak a ref each time the default hierarchy
+is unmounted tho?  Shouldn't it be like the following?
+
+	if (root == &cgrp_dfl_root || css_has_online_children(...))
+		cgroup_put(&root->cgrp);
+	else
+		percpu_ref_kill(...);
+
+Thanks.
 
 -- 
-Michal Hocko
-SUSE Labs
+tejun
