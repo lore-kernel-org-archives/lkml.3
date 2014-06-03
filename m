@@ -1,99 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932754AbaFCPAC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 11:00:02 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:39934 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753741AbaFCO77 (ORCPT
+	id S932803AbaFCPAU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 11:00:20 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:54963 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932762AbaFCPAS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 10:59:59 -0400
-Date: Tue, 3 Jun 2014 07:07:27 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Mikulas Patocka <mpatocka@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Helge Deller <deller@gmx.de>, John David Anglin <dave.anglin@bell.net>,
-        Parisc List <linux-parisc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Vinod, Chegu" <chegu_vinod@hp.com>, Waiman Long <Waiman.Long@hp.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
+	Tue, 3 Jun 2014 11:00:18 -0400
+Date: Tue, 3 Jun 2014 17:00:08 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Davidlohr Bueso <davidlohr@hp.com>, Peter Anvin <hpa@zytor.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>, Jason Low <jason.low2@hp.com>
-Subject: Re: [PATCH v2] introduce atomic_pointer to fix a race condition in
- cancelable mcs spinlocks
-Message-ID: <20140603140727.GM22231@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <alpine.LRH.2.02.1406011342470.20831@file01.intranet.prod.int.rdu2.redhat.com>
- <alpine.LRH.2.02.1406021158360.20627@file01.intranet.prod.int.rdu2.redhat.com>
- <20140602162525.GH16155@laptop.programming.kicks-ass.net>
- <CA+55aFzwrqkwD=G=w2m7TdXTpsMFjV7XUMXv5DMPGr=5x5YGCQ@mail.gmail.com>
- <alpine.LRH.2.02.1406021622200.5874@file01.intranet.prod.int.rdu2.redhat.com>
- <CA+55aFwCy4-x02U6A-KbkPEpe_4pagsZ__ipBhe5HZOQt2vNmw@mail.gmail.com>
- <alpine.LRH.2.02.1406021656550.5874@file01.intranet.prod.int.rdu2.redhat.com>
- <20140603073613.GH11096@twins.programming.kicks-ass.net>
+        Kevin Hilman <khilman@linaro.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: Re: [PATCH 3/5] irq_work: Implement remote queueing
+Message-ID: <20140603150008.GT30445@twins.programming.kicks-ass.net>
+References: <1401806420-31018-1-git-send-email-fweisbec@gmail.com>
+ <1401806420-31018-4-git-send-email-fweisbec@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="X0hJ4E3r/0nQXmJY"
 Content-Disposition: inline
-In-Reply-To: <20140603073613.GH11096@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14060314-0928-0000-0000-0000026D99A5
+In-Reply-To: <1401806420-31018-4-git-send-email-fweisbec@gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 03, 2014 at 09:36:13AM +0200, Peter Zijlstra wrote:
-> On Mon, Jun 02, 2014 at 05:12:16PM -0400, Mikulas Patocka wrote:
-> > The patch adds atomic_pointer_t for all architectures - it is in the 
-> > common code and it is backed by atomic_long_t (that already exists for all 
-> > architectures). There is no new arch-specific code at all.
-> > 
-> > When we have atomic_pointer_t, we can find the instances of xchg() and 
-> > cmpxchg() and convert them to atomic_pointer_t (or to other atomic*_t 
-> > types).
-> > 
-> > When we convert them all, we can drop xchg() and cmpxchg() at all (at 
-> > least from architecture-neutral code).
-> > 
-> > The problem with xchg() and cmpxchg() is that they are very easy to 
-> > misuse. Peter Zijlstra didn't know that they are not atomic w.r.t. normal 
-> > stores, a lot of other people don't know it too - and if we allow these 
-> > functions to be used, this race condition will reappear in the future 
-> > again and again.
-> > 
-> > That's why I'm proposing atomic_pointer_t - it guarantees that this race 
-> > condition can't be made.
-> 
-> But its horrible, and doesn't have any benefit afaict.
-> 
-> So if we really want to keep supporting these platforms; I would propose
-> something like:
-> 
-> #ifdef __CHECKER__
-> #define __atomic	__attribute__((address_space(5)))
-> #else
-> #define __atomic
-> #endif
-> 
-> #define store(p, v)	(*(p) = (typeof(*(p)) __force __atomic)(v))
-> #define load(p)		((typeof(*p) __force)ACCESS_ONCE(*(p)))
-> 
-> Along with changes to xchg() and cmpxchg() that require them to take
-> pointers to __atomic.
-> 
-> That way we keep the flexibility of xchg() and cmpxchg() for being
-> (mostly) type and size invariant, and get sparse to find wrong usage.
-> 
-> Then parisc, sparc32, tile32, metag-lock1 and arc-!llsc can go implement
-> store() however they like.
 
-Should be fun interacting with atomic operations on __rcu variables
-(address space 4).  Of course, that is already fun...
+--X0hJ4E3r/0nQXmJY
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-							Thanx, Paul
+On Tue, Jun 03, 2014 at 04:40:18PM +0200, Frederic Weisbecker wrote:
+> irq work currently only supports local callbacks. However its code
+> is mostly ready to run remote callbacks and we have some potential user.
+>=20
+> The full nohz subsystem currently open codes its own remote irq work
+> on top of the scheduler ipi when it wants a CPU to reevaluate its next
+> tick. However this ad hoc solution bloats the scheduler IPI.
+>=20
+> Lets just extend the irq work subsystem to support remote queuing on top
+> of the generic SMP IPI to handle this kind of user. This shouldn't add
+> noticeable overhead.
+>=20
+> Suggested-by: Peter Zijlstra <peterz@infradead.org>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Kevin Hilman <khilman@linaro.org>
+> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
+Acked-by: Peter Zijlstra <peterz@infradead.org>
+
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Viresh Kumar <viresh.kumar@linaro.org>
+> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> ---
+>  include/linux/irq_work.h |  2 ++
+>  kernel/irq_work.c        | 22 +++++++++++++++++++++-
+>  kernel/smp.c             |  4 ++++
+>  3 files changed, 27 insertions(+), 1 deletion(-)
+
+> @@ -198,6 +199,9 @@ void generic_smp_call_function_single_interrupt(void)
+>  		csd->func(csd->info);
+>  		csd_unlock(csd);
+>  	}
+> +
+> +	/* Handle irq works queued remotely by irq_work_queue_on() */
+> +	irq_work_run();
+>  }
+
+One could possibly extend that comment by stating that we explicitly run
+the irq_work bits after the function bits, because the function bits are
+typically synchronous and have people waiting on them, while not so for
+the irq_works.
+
+
+--X0hJ4E3r/0nQXmJY
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTjeL4AAoJEHZH4aRLwOS6DF0P/i2WrdV59D1b5uKMh/+U5mJt
+C0xpOYVJ0k9wzIzcAKkojCWjQcxGOvD0uutL2MUrBL7Jw5XB9Xt02ADzF/NnSL8N
+6+NxxHgfQQTaN2eVtsEC17gEcO7bZH7ecyBepGV1Rvoue9k4NDGVXAsPaGnxth0t
+n3x2jZImhEXNmxqzR8d+ayNpTBR/or0T76i0g9BIg4/45RSu5v058uOF6L6UEraE
+85ebPQM8sKBGnALSeZx/iSUjhPV/sIDUjuFN6tRxpb9otrwcduOPqPCf21PyPJK8
+qnRudWDTnwmO9x2O2BAkjsFMNBmIPb06TeTOXGqUQ1VZnp7m6saHBGNCtbk502vz
+EF8XkK+rKVPw23AJ3qzBKBVK8QGBs5losq87v0nhzc91KPIqam7lnmiGLUuRbHUG
+dvyZWoZUb0z4/C1zsUbBrDSwu3Fo4HtEudPQfpz/ai0v/CW0Wczu5DlMqK3lZBjJ
+mmd44fAfpjWtwk/2kdJDbijCoxpazWfRKriS4+MXtMLrODaeRanvzqr4l/fgcQGw
+QRRrccEpRYDUyCzjlRC8sGhp1IvLHYbjQOFXr+43vupzcJebyuwgK3cPnulR1QIq
+yx7M9gFNUugWDXyLtol7kvNxaAVjWXRpSaJlDs7f6V9yNn8kukt3q5oLMZBuEntI
+q2R7eLGD3GloN1Xi1l8E
+=zsWV
+-----END PGP SIGNATURE-----
+
+--X0hJ4E3r/0nQXmJY--
