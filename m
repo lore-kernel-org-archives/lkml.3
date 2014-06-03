@@ -1,79 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752907AbaFCKpF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 06:45:05 -0400
-Received: from isis.lip6.fr ([132.227.60.2]:65280 "EHLO isis.lip6.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750892AbaFCKpD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 06:45:03 -0400
-X-pt: isis.lip6.fr
-Date: Tue, 3 Jun 2014 12:45:59 +0200
-From: Benoit Taine <benoit.taine@lip6.fr>
-To: David Miller <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: [PATCH 2/2 v5] lpc_eth: Use resource_size instead of computation
-Message-ID: <20140603104559.GA21087@lip6.fr>
-References: <1401290047-30005-1-git-send-email-benoit.taine@lip6.fr>
- <1401290047-30005-3-git-send-email-benoit.taine@lip6.fr>
- <20140601.192705.693805935389177182.davem@davemloft.net>
- <20140602112419.GA3625@lip6.fr>
- <20140602113430.GA3823@lip6.fr>
- <20140603103254.GA20794@lip6.fr>
+	id S1752172AbaFCKsf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 06:48:35 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:53202 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751202AbaFCKse (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 06:48:34 -0400
+Date: Tue, 3 Jun 2014 12:48:23 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Trond Myklebust <trond.myklebust@primarydata.com>
+Cc: John Stultz <john.stultz@linaro.org>,
+        Jeff Layton <jeff.layton@primarydata.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
+        Linux Kernel mailing list <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: nfs4_do_reclaim lockdep pop in v3.15.0-rc1
+Message-ID: <20140603104823.GU11096@twins.programming.kicks-ass.net>
+References: <20140602104948.4faf0bc2@tlielax.poochiereds.net>
+ <CAHQdGtRR6SvEhXiqWo24hoUh9AU9cL82Z8Z-d8-7u951F_d+5g@mail.gmail.com>
+ <CALAqxLVmRdv3eVaf_ue-NutDmjxJA2NNAXnH-Tm4a6ud2U7Q4g@mail.gmail.com>
+ <CAHQdGtSn9RwdgaFgEDQXjrxSA_Bg=rNWux+96-5f43dyUwXLRw@mail.gmail.com>
+ <CALAqxLUwtMnE9eB_dfV=C5CLuXpEdB9+mK7pw2jgo5Yg2ACKPA@mail.gmail.com>
+ <CAHQdGtQhurcOsAii7PYNZwEL4Xm-8a2CKBkS4OhrS0FhaAX3Aw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="0ynlhraTE7dg5hjP"
 Content-Disposition: inline
-In-Reply-To: <20140603103254.GA20794@lip6.fr>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.4.3 (isis.lip6.fr [132.227.60.2]); Tue, 03 Jun 2014 12:44:59 +0200 (CEST)
+In-Reply-To: <CAHQdGtQhurcOsAii7PYNZwEL4Xm-8a2CKBkS4OhrS0FhaAX3Aw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This issue was reported by coccicheck using the semantic patch 
-at scripts/coccinelle/api/resource_size.cocci
 
-Signed-off-by: Benoit Taine <benoit.taine@lip6.fr>
----
-Not compile tested, due incompatible architecture.
+--0ynlhraTE7dg5hjP
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Changes from V4:
- - Added blank line a the end of the diff (Thank to David Miller for your
-   patience)
+On Mon, Jun 02, 2014 at 08:59:21PM -0400, Trond Myklebust wrote:
+>=20
+> I can change the write seqcount to use raw_write_seqcount(), but that
+> doesn't answer the question of why raw_seqcount_begin() is the _only_
+> object out there with a "raw_" prefix, that doesn't explicitly disable
+> lockdep checking.
 
-Changes from V3:
- - should now apply correctly
+raw_spinlock_t has lockdep too.. just to add to the confusion.
 
-Changes from V2:
- - added line break to debug message
 
-Changes from V1:
- - Use %pR format type with the debug message (Thanks to Joe Perches)
 
-diff --git a/drivers/net/ethernet/nxp/lpc_eth.c b/drivers/net/ethernet/nxp/lpc_eth.c
-index 422d9b5..8706c0d 100644
---- a/drivers/net/ethernet/nxp/lpc_eth.c
-+++ b/drivers/net/ethernet/nxp/lpc_eth.c
-@@ -1361,7 +1361,7 @@ static int lpc_eth_drv_probe(struct platform_device *pdev)
- 	__lpc_eth_clock_enable(pldat, true);
- 
- 	/* Map IO space */
--	pldat->net_base = ioremap(res->start, res->end - res->start + 1);
-+	pldat->net_base = ioremap(res->start, resource_size(res));
- 	if (!pldat->net_base) {
- 		dev_err(&pdev->dev, "failed to map registers\n");
- 		ret = -ENOMEM;
-@@ -1417,10 +1417,8 @@ static int lpc_eth_drv_probe(struct platform_device *pdev)
- 	}
- 	pldat->dma_buff_base_p = dma_handle;
- 
--	netdev_dbg(ndev, "IO address start     :0x%08x\n",
--			res->start);
--	netdev_dbg(ndev, "IO address size      :%d\n",
--			res->end - res->start + 1);
-+	netdev_dbg(ndev, "IO address space     :%pR\n", res);
-+	netdev_dbg(ndev, "IO address size      :%d\n", resource_size(res));
- 	netdev_dbg(ndev, "IO address (mapped)  :0x%p\n",
- 			pldat->net_base);
- 	netdev_dbg(ndev, "IRQ number           :%d\n", ndev->irq);
+--0ynlhraTE7dg5hjP
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTjaf3AAoJEHZH4aRLwOS6Z08P/1o/nFfk6dd1wHXP7M9PMXec
+HD/y0pI8CYTwshkOcozQEEiFjUTQ1Ul13NXAudnaXdzNwZSHsjTn1L3ihcCIBZXp
+uS2rbau0XCxe/XbhRQKLndiXkDJoHa7FoyKRJbZTj+QX3UAnIwAG9pYX/72bzmCB
+jb4J6YbEbM13TKXF/z3mwGkbcKFQQ5b5z4uXLaEHBQh6Lm7i4PtxVKNq32UB5f4J
+45uApiQW+yzctJzK1YQyHwBwey/Uu5HnSsG8QDCSSXZ+gNpWwFpgyG75XD6uSd+y
+rl4VZxRLHL47Q/Go32J8OGvzwmq1riYifRbLpe6kthbp6tYZQbbBSg2QlXQaBQj4
+0spZd4EkBg+YZcZd30up+XgowXkj0wjTMw5BSnqksmtU/F3PXRqtW9VpaHHThdzi
+1N2k6L9PTPJopIU8AE60YV94CKA0g6QlLYQ2rxQMYXinzdy4zvbuhsGKKFXUdsCT
+iBNjSVmu1x9i7wqkFahudu7qBpkFxCKuL4grXEy2JR6g0w6ycGI9d2ZuTJdqLP7y
+qnqaK1DfUL2dtiZMcX/dO9e2i5XCV5uGu2WGc+VHw05zsKRP+1+aeT8YU/hBuy8M
+cTaHaFrtjdj+u7TUI8n4FyUE8/kVafHFoOdd2ApHfu3gpmsD195F4/CixLY/ATub
+2LTZO77hXANVcX5UlqKE
+=rFBX
+-----END PGP SIGNATURE-----
+
+--0ynlhraTE7dg5hjP--
