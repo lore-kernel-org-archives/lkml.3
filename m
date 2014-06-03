@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754495AbaFCLmL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 07:42:11 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43639 "EHLO
+	id S1754835AbaFCL45 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 07:56:57 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43689 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932822AbaFCLl7 (ORCPT
+	with ESMTP id S1754480AbaFCLmL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 07:41:59 -0400
+	Tue, 3 Jun 2014 07:42:11 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sagi Grimberg <sagig@mellanox.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
+Cc: Will Deacon <will.deacon@arm.com>,
+        Weng Meiling <wengmeiling.weng@huawei.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 084/138] Target/iser: Fix wrong connection requests list addition
-Date: Tue,  3 Jun 2014 12:38:50 +0100
-Message-Id: <1401795584-22664-85-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 093/138] ARM: perf: hook up perf_sample_event_took around pmu irq handling
+Date: Tue,  3 Jun 2014 12:38:59 +0100
+Message-Id: <1401795584-22664-94-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
 References: <1401795584-22664-1-git-send-email-luis.henriques@canonical.com>
@@ -28,33 +28,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sagi Grimberg <sagig@mellanox.com>
+From: Will Deacon <will.deacon@arm.com>
 
-commit 9fe63c88b1d59f1ce054d6948ccd3096496ecedb upstream.
+commit 5f5092e72cc25a6a5785308270e0085b2b2772cc upstream.
 
-Should be adding list_add_tail($new, $head) and not
-the other way around.
+Since we indirect all of our PMU IRQ handling through a dispatcher, it's
+trivial to hook up perf_sample_event_took to prevent applications such
+as oprofile from generating interrupt storms due to an unrealisticly
+low sample period.
 
-Signed-off-by: Sagi Grimberg <sagig@mellanox.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Reported-by: Robert Richter <rric@kernel.org>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Cc: Weng Meiling <wengmeiling.weng@huawei.com>
+[ luis: backported to 3.11: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/infiniband/ulp/isert/ib_isert.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/kernel/perf_event.c | 11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/infiniband/ulp/isert/ib_isert.c b/drivers/infiniband/ulp/isert/ib_isert.c
-index 0e28266315b1..f1741e62647c 100644
---- a/drivers/infiniband/ulp/isert/ib_isert.c
-+++ b/drivers/infiniband/ulp/isert/ib_isert.c
-@@ -459,7 +459,7 @@ isert_connect_request(struct rdma_cm_id *cma_id, struct rdma_cm_event *event)
- 		goto out_conn_dev;
+diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
+index e186ee1e63f6..de5cd767e4df 100644
+--- a/arch/arm/kernel/perf_event.c
++++ b/arch/arm/kernel/perf_event.c
+@@ -303,11 +303,18 @@ static irqreturn_t armpmu_dispatch_irq(int irq, void *dev)
+ 	struct arm_pmu *armpmu = (struct arm_pmu *) dev;
+ 	struct platform_device *plat_device = armpmu->plat_device;
+ 	struct arm_pmu_platdata *plat = dev_get_platdata(&plat_device->dev);
++	int ret;
++	u64 start_clock, finish_clock;
  
- 	mutex_lock(&isert_np->np_accept_mutex);
--	list_add_tail(&isert_np->np_accept_list, &isert_conn->conn_accept_node);
-+	list_add_tail(&isert_conn->conn_accept_node, &isert_np->np_accept_list);
- 	mutex_unlock(&isert_np->np_accept_mutex);
++	start_clock = sched_clock();
+ 	if (plat && plat->handle_irq)
+-		return plat->handle_irq(irq, dev, armpmu->handle_irq);
++		ret = plat->handle_irq(irq, dev, armpmu->handle_irq);
+ 	else
+-		return armpmu->handle_irq(irq, dev);
++		ret = armpmu->handle_irq(irq, dev);
++	finish_clock = sched_clock();
++
++	perf_sample_event_took(finish_clock - start_clock);
++	return ret;
+ }
  
- 	pr_debug("isert_connect_request() waking up np_accept_wq: %p\n", np);
+ static void
 -- 
 1.9.1
 
