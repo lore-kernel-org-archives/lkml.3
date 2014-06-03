@@ -1,66 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754393AbaFCTDR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 15:03:17 -0400
-Received: from smtprelay0177.hostedemail.com ([216.40.44.177]:40532 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751489AbaFCTDQ (ORCPT
+	id S932307AbaFCTEc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 15:04:32 -0400
+Received: from mail-ve0-f176.google.com ([209.85.128.176]:35974 "EHLO
+	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752347AbaFCTEa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 15:03:16 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::::::::::::::,RULES_HIT:41:355:379:541:599:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1431:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:2892:2895:3138:3139:3140:3141:3142:3352:3622:386
-X-HE-Tag: card20_1b8e6ace4cb2d
-X-Filterd-Recvd-Size: 2185
-Message-ID: <1401822187.18833.24.camel@joe-AO725>
-Subject: Re: [PATCH v2 RFC 1/3] MAINTAINERS: Add "R:" designated-reviewers
- tag
-From: Joe Perches <joe@perches.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
-        fweisbec@gmail.com, oleg@redhat.com, sbw@mit.edu
-Date: Tue, 03 Jun 2014 12:03:07 -0700
-In-Reply-To: <1401809736-12023-1-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <1401809736-12023-1-git-send-email-paulmck@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 3 Jun 2014 15:04:30 -0400
+MIME-Version: 1.0
+In-Reply-To: <87mwduqg09.fsf@rasmusvillemoes.dk>
+References: <1401260039-18189-1-git-send-email-minchan@kernel.org>
+	<1401260039-18189-2-git-send-email-minchan@kernel.org>
+	<CA+55aFxXdc22dirnE49UbQP_2s2vLQpjQFL+NptuyK7Xry6c=g@mail.gmail.com>
+	<20140528223142.GO8554@dastard>
+	<CA+55aFyRk6_v6COPGVvu6hvt=i2A8-dPcs1X3Ydn1g24AxbPkg@mail.gmail.com>
+	<20140529013007.GF6677@dastard>
+	<20140529015830.GG6677@dastard>
+	<20140529233638.GJ10092@bbox>
+	<20140530001558.GB14410@dastard>
+	<20140530021247.GR10092@bbox>
+	<87mwduqg09.fsf@rasmusvillemoes.dk>
+Date: Tue, 3 Jun 2014 12:04:29 -0700
+X-Google-Sender-Auth: AolbzEGae3xFJW-QUs6MShnkjr8
+Message-ID: <CA+55aFyYQES1CbEfYzRkFas_aw=+YNSbDoLRJpjh2sDFxVV3vg@mail.gmail.com>
+Subject: Re: [RFC 2/2] x86_64: expand kernel stack to 16K
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+Cc: Minchan Kim <minchan@kernel.org>, Dave Chinner <david@fromorbit.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm <linux-mm@kvack.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Hugh Dickins <hughd@google.com>, Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-06-03 at 08:35 -0700, Paul E. McKenney wrote:
-> Paul Walmsley also noted the need for patch
-> submitters to know who the key reviewers are and suggested adding an
-> "R:" tag to the MAINTAINERS file to record this information on a
-> per-subsystem basis.
-[]
-> diff --git a/MAINTAINERS b/MAINTAINERS
-[]
-> @@ -70,6 +70,8 @@ Descriptions of section entries:
->  
->  	P: Person (obsolete)
->  	M: Mail patches to: FullName <address@domain>
-> +	R: Designated reviewer, who should be CCed on patches,
-> +	   format: FullName <address@domain>
->  	L: Mailing list that is relevant to this area
->  	W: Web-page with status/info
->  	Q: Patchwork web based patch tracking system site
+On Tue, Jun 3, 2014 at 6:28 AM, Rasmus Villemoes
+<linux@rasmusvillemoes.dk> wrote:
+> Possibly stupid question: Is it true that any given task can only be
+> using one wait_queue_t at a time?
 
-Perhaps the M: and R: roles should be more fully
-described here.
+Nope.
 
-The R: entry description doesn't need commas.
+Being on multiple different wait-queues is actually very common. The
+obvious case is select/poll, but there are others. The more subtle
+ones involve being on a wait-queue while doing something that can
+cause nested waiting (iow, it's technically not wrong to be on a
+wait-queue and then do a user space access, which obviously can end up
+doing IO).
 
-Maybe something like:
-	M: Maintainer (to:) FullName <address@domain>
-	R: Reviewer   (cc:) FullName <address@domain>
+That said, the case of a single wait-queue entry is another common
+case, and it wouldn't necessarily be wrong to have one pre-initialized
+wait queue entry in the task structure for that special case, for when
+you know that there is no possible nesting. And even if it *does*
+nest, if it's the "leaf" entry it could be used for that innermost
+nesting without worrying about other wait queue users (who use stack
+allocations or actual explicit allocations like poll).
 
-You might as well send the get_maintainer update with this
-series too.
+So it might certainly be worth looking at. In fact, it might be worth
+it having multiple per-thread entries, so that we could get rid of the
+special on-stack allocation for poll too (and making one of them
+special and not available to poll, to handle the "leaf waiter" case).
 
+So it's not necessarily a bad idea at all, even if the general case
+requires more than one (or a few) static per-thread allocations.
 
+Anybody want to try to code it up?
+
+              Linus
