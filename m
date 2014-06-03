@@ -1,98 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753164AbaFBX7X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jun 2014 19:59:23 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:38193 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751966AbaFBX7W (ORCPT
+	id S1753254AbaFCAB7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jun 2014 20:01:59 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:37871 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752756AbaFCAB6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jun 2014 19:59:22 -0400
-Date: Mon, 2 Jun 2014 16:59:15 -0700
-From: josh@joshtriplett.org
-To: Dave Chinner <david@fromorbit.com>
-Cc: Joe Perches <joe@perches.com>, Steven Rostedt <rostedt@goodmis.org>,
-        paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
-        mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
-        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
-        fweisbec@gmail.com, oleg@redhat.com, sbw@mit.edu
-Subject: Re: [PATCH RFC 1/2] MAINTAINERS: Add "R:" designated-reviewers tag
-Message-ID: <20140602235915.GB14801@cloud>
-References: <20140602174837.GA13257@cloud>
- <1401731968.7323.4.camel@joe-AO725>
- <20140602181658.GX22231@linux.vnet.ibm.com>
- <1401734669.7323.20.camel@joe-AO725>
- <20140602145020.400d4e0c@gandalf.local.home>
- <20140602185504.GA13569@cloud>
- <1401735917.7323.23.camel@joe-AO725>
- <20140602190951.GA13648@cloud>
- <1401736666.7323.25.camel@joe-AO725>
- <20140602231949.GV14410@dastard>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140602231949.GV14410@dastard>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 2 Jun 2014 20:01:58 -0400
+Date: Mon, 02 Jun 2014 17:01:57 -0700 (PDT)
+Message-Id: <20140602.170157.1949471057816808999.davem@davemloft.net>
+To: manuel.schoelling@gmx.de
+Cc: kevin.curtis@farsite.co.uk, joe@perches.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] wan: Use usleep_range()
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1401548871-12352-1-git-send-email-manuel.schoelling@gmx.de>
+References: <E603DC592C92B54A89CEF6B0919A0B1CAFDE223C6D@SOLO.hq.farsitecommunications.com>
+	<1401548871-12352-1-git-send-email-manuel.schoelling@gmx.de>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 02 Jun 2014 17:01:58 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 03, 2014 at 09:19:49AM +1000, Dave Chinner wrote:
-> On Mon, Jun 02, 2014 at 12:17:46PM -0700, Joe Perches wrote:
-> > On Mon, 2014-06-02 at 12:09 -0700, josh@joshtriplett.org wrote:
-> > > On Mon, Jun 02, 2014 at 12:05:17PM -0700, Joe Perches wrote:
-> > > > On Mon, 2014-06-02 at 11:55 -0700, josh@joshtriplett.org wrote:
-> > > > > this should go along with a change to
-> > > > > get_maintainer.pl to add those folks to the CC list.
-> > > > 
-> > > > Something like this:
-> > > 
-> > > Yes, exactly.  Given an appropriate commit message,
-> > > Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-> > 
-> > That's the sort of patch where reviewing is
-> > pretty useless.
-> > 
-> > What it needs is testing, not reviewing.
-> > 
-> > I tested it for all of 10 seconds.
-> 
-> From Documentation/SubmittingPatches:
-> 
-> "         (c) While there may be things that could be improved with this
->              submission, I believe that it is, at this time, (1) a
->              worthwhile modification to the kernel, and (2) free of known
->              issues which would argue against its inclusion.
-> .....
-> 
-> A Reviewed-by tag is a statement of opinion that the patch is an
-> appropriate modification of the kernel without any remaining serious
-> technical issues."
-> 
-> So, for someone to say they have reviewed the code and are able to
-> say it is free of known issues and has no remaining technical
-> issues, they would have had to apply, compile and test the patch,
-> yes?
-> 
-> i.e. Reviewed-by implies both Acked-by, Tested-by and that the code
-> is technically sound.
+From: Manuel Schölling <manuel.schoelling@gmx.de>
+Date: Sat, 31 May 2014 17:07:51 +0200
 
-No, not at all.  It implies Acked-by, and that the code is technically
-sound (both at the micro-level and in overall architecture/approach),
-but does not imply Tested-by; that's a separate tag for a reason.
+> Instead of using a jiffies hack we can use the standard api for delays.
+> 
+> Signed-off-by: Manuel Schölling <manuel.schoelling@gmx.de>
 
-We should not, for instance, prevent someone from providing a
-Reviewed-by (as opposed to an Acked-by) for a driver whose hardware few
-people actually have.  There's significant value in code review even
-without the ability to test.
-
-> Anyone using Reviewed-by without having actually applied and tested
-> the patch is mis-using the tag - they should be using Acked-by: if
-> all they have done is read the code in their mail program....
-
-Acked-by and Reviewed-by mean two different things (Reviewed-by being a
-superset of Acked-by), and the difference is not "I've applied and
-tested this"; that's Tested-by.
-
-- Josh Triplett
+Applied, thanks.
