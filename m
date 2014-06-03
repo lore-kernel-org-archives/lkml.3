@@ -1,62 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754623AbaFCNOw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 09:14:52 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:51293 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753135AbaFCNOv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 09:14:51 -0400
-Date: Tue, 3 Jun 2014 15:14:46 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] x86/cleanups change for v3.16
-Message-ID: <20140603131446.GA28127@gmail.com>
+	id S1754660AbaFCNO5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 09:14:57 -0400
+Received: from isrv.corpit.ru ([86.62.121.231]:33354 "EHLO isrv.corpit.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751201AbaFCNOy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 09:14:54 -0400
+X-Greylist: delayed 520 seconds by postgrey-1.27 at vger.kernel.org; Tue, 03 Jun 2014 09:14:54 EDT
+Message-ID: <538DC844.2040808@msgid.tls.msk.ru>
+Date: Tue, 03 Jun 2014 17:06:12 +0400
+From: Michael Tokarev <mjt@tls.msk.ru>
+Organization: Telecom Service, JSC
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Paolo Bonzini <pbonzini@redhat.com>,
+        Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Gleb Natapov <gleb@kernel.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] arch: x86: kvm: x86.c:  Cleaning up uninitialized variables
+References: <1401577506-4112-1-git-send-email-rickard_strandqvist@spectrumdigital.se> <538DB9B4.2070607@redhat.com>
+In-Reply-To: <538DB9B4.2070607@redhat.com>
+X-Enigmail-Version: 1.6
+OpenPGP: id=804465C5
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+03.06.2014 16:04, Paolo Bonzini wrote:
+> Il 01/06/2014 01:05, Rickard Strandqvist ha scritto:
+>> There is a risk that the variable will be used without being initialized.
+>>
+>> This was largely found by using a static code analysis program called cppcheck.
+>>
+>> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+> 
+> No, there isn't.  The full context looks like this:
+> 
+>         longmode = is_long_mode(vcpu) && cs_l == 1;
+>         if (!longmode) {
+>                 param = ((u64)kvm_register_read(vcpu, VCPU_REGS_RDX) << 32) |
+>                         (kvm_register_read(vcpu, VCPU_REGS_RAX) & 0xffffffff);
+>                 ingpa = ((u64)kvm_register_read(vcpu, VCPU_REGS_RBX) << 32) |
+>                         (kvm_register_read(vcpu, VCPU_REGS_RCX) & 0xffffffff);
+>                 outgpa = ((u64)kvm_register_read(vcpu, VCPU_REGS_RDI) << 32) |
+>                         (kvm_register_read(vcpu, VCPU_REGS_RSI) & 0xffffffff);
+>         }
+> #ifdef CONFIG_X86_64
+>         else {
+>                 param = kvm_register_read(vcpu, VCPU_REGS_RCX);
+>                 ingpa = kvm_register_read(vcpu, VCPU_REGS_RDX);
+>                 outgpa = kvm_register_read(vcpu, VCPU_REGS_R8);
+>         }
+> #endif
+> 
+> and longmode must be zero if !CONFIG_X86_64:
 
-Please pull the latest x86-cleanups-for-linus git tree from:
+This is not the first time this code is attempted to be changed.
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-cleanups-for-linus
+Maybe adding an additional #ifdef..endif around the longmode
+assignment and the "if" above will solve this for good?
 
-   # HEAD: 79a51b25badae79d2da6f7b54530adf56697f669 x86/irq: Clean up VECTOR_UNDEFINED and VECTOR_RETRIGGERED definition
+Or maybe something like this:
 
-A single, trivial cleanup.
-
- Thanks,
-
-	Ingo
-
------------------->
-Prarit Bhargava (1):
-      x86/irq: Clean up VECTOR_UNDEFINED and VECTOR_RETRIGGERED definition
-
-
- arch/x86/include/asm/hw_irq.h | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/include/asm/hw_irq.h b/arch/x86/include/asm/hw_irq.h
-index a307b75..4615906 100644
---- a/arch/x86/include/asm/hw_irq.h
-+++ b/arch/x86/include/asm/hw_irq.h
-@@ -190,8 +190,8 @@ extern void (*__initconst interrupt[NR_VECTORS-FIRST_EXTERNAL_VECTOR])(void);
- #define trace_interrupt interrupt
+ #ifdef CONFIG_X86_64
+         if (!(is_long_mode(vcpu) && cs_l == 1)) {
+ #else
+         if (1) {
  #endif
- 
--#define VECTOR_UNDEFINED	-1
--#define VECTOR_RETRIGGERED	-2
-+#define VECTOR_UNDEFINED	(-1)
-+#define VECTOR_RETRIGGERED	(-2)
- 
- typedef int vector_irq_t[NR_VECTORS];
- DECLARE_PER_CPU(vector_irq_t, vector_irq);
+                 param = ((u64)kvm_register_read(vcpu, VCPU_REGS_RDX) << 32) |
+                         (kvm_register_read(vcpu, VCPU_REGS_RAX) & 0xffffffff);
+                 ingpa = ((u64)kvm_register_read(vcpu, VCPU_REGS_RBX) << 32) |
+                         (kvm_register_read(vcpu, VCPU_REGS_RCX) & 0xffffffff);
+                 outgpa = ((u64)kvm_register_read(vcpu, VCPU_REGS_RDI) << 32) |
+                         (kvm_register_read(vcpu, VCPU_REGS_RSI) & 0xffffffff);
+         }
+         else {
+                 param = kvm_register_read(vcpu, VCPU_REGS_RCX);
+                 ingpa = kvm_register_read(vcpu, VCPU_REGS_RDX);
+                 outgpa = kvm_register_read(vcpu, VCPU_REGS_R8);
+         }
+
+, to make it all explicit and obvious?
+
+Thanks,
+
+/mjt
+
