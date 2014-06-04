@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752199AbaFDXUs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:20:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39645 "EHLO
+	id S1757221AbaFEAuu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 20:50:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39693 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751877AbaFDXUm (ORCPT
+	with ESMTP id S1752154AbaFDXUr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:20:42 -0400
+	Wed, 4 Jun 2014 19:20:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takao Indoh <indou.takao@jp.fujitsu.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 3.14 006/228] ftrace/module: Hardcode ftrace_module_init() call into load_module()
-Date: Wed,  4 Jun 2014 16:20:35 -0700
-Message-Id: <20140604232348.287962516@linuxfoundation.org>
+        Dave Jones <davej@redhat.com>, Hugh Dickins <hughd@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.14 016/228] mm: make fixup_user_fault() check the vma access rights too
+Date: Wed,  4 Jun 2014 16:20:45 -0700
+Message-Id: <20140604232348.618066465@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -30,152 +29,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit a949ae560a511fe4e3adf48fa44fefded93e5c2b upstream.
+commit 1b17844b29ae042576bea588164f2f1e9590a8bc upstream.
 
-A race exists between module loading and enabling of function tracer.
+fixup_user_fault() is used by the futex code when the direct user access
+fails, and the futex code wants it to either map in the page in a usable
+form or return an error.  It relied on handle_mm_fault() to map the
+page, and correctly checked the error return from that, but while that
+does map the page, it doesn't actually guarantee that the page will be
+mapped with sufficient permissions to be then accessed.
 
-	CPU 1				CPU 2
-	-----				-----
-  load_module()
-   module->state = MODULE_STATE_COMING
+So do the appropriate tests of the vma access rights by hand.
 
-				register_ftrace_function()
-				 mutex_lock(&ftrace_lock);
-				 ftrace_startup()
-				  update_ftrace_function();
-				   ftrace_arch_code_modify_prepare()
-				    set_all_module_text_rw();
-				   <enables-ftrace>
-				    ftrace_arch_code_modify_post_process()
-				     set_all_module_text_ro();
+[ Side note: arguably handle_mm_fault() could just do that itself, but
+  we have traditionally done it in the caller, because some callers -
+  notably get_user_pages() - have been able to access pages even when
+  they are mapped with PROT_NONE.  Maybe we should re-visit that design
+  decision, but in the meantime this is the minimal patch. ]
 
-				[ here all module text is set to RO,
-				  including the module that is
-				  loading!! ]
+Found by Dave Jones running his trinity tool.
 
-   blocking_notifier_call_chain(MODULE_STATE_COMING);
-    ftrace_init_module()
-
-     [ tries to modify code, but it's RO, and fails!
-       ftrace_bug() is called]
-
-When this race happens, ftrace_bug() will produces a nasty warning and
-all of the function tracing features will be disabled until reboot.
-
-The simple solution is to treate module load the same way the core
-kernel is treated at boot. To hardcode the ftrace function modification
-of converting calls to mcount into nops. This is done in init/main.c
-there's no reason it could not be done in load_module(). This gives
-a better control of the changes and doesn't tie the state of the
-module to its notifiers as much. Ftrace is special, it needs to be
-treated as such.
-
-The reason this would work, is that the ftrace_module_init() would be
-called while the module is in MODULE_STATE_UNFORMED, which is ignored
-by the set_all_module_text_ro() call.
-
-Link: http://lkml.kernel.org/r/1395637826-3312-1-git-send-email-indou.takao@jp.fujitsu.com
-
-Reported-by: Takao Indoh <indou.takao@jp.fujitsu.com>
-Acked-by: Rusty Russell <rusty@rustcorp.com.au>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Reported-by: Dave Jones <davej@redhat.com>
+Acked-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/ftrace.h |    2 ++
- kernel/module.c        |    3 +++
- kernel/trace/ftrace.c  |   27 ++++-----------------------
- 3 files changed, 9 insertions(+), 23 deletions(-)
+ mm/memory.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/include/linux/ftrace.h
-+++ b/include/linux/ftrace.h
-@@ -524,6 +524,7 @@ static inline int ftrace_modify_call(str
- extern int ftrace_arch_read_dyn_info(char *buf, int size);
- 
- extern int skip_trace(unsigned long ip);
-+extern void ftrace_module_init(struct module *mod);
- 
- extern void ftrace_disable_daemon(void);
- extern void ftrace_enable_daemon(void);
-@@ -533,6 +534,7 @@ static inline int ftrace_force_update(vo
- static inline void ftrace_disable_daemon(void) { }
- static inline void ftrace_enable_daemon(void) { }
- static inline void ftrace_release_mod(struct module *mod) {}
-+static inline void ftrace_module_init(struct module *mod) {}
- static inline __init int register_ftrace_command(struct ftrace_func_command *cmd)
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -1929,12 +1929,17 @@ int fixup_user_fault(struct task_struct
+ 		     unsigned long address, unsigned int fault_flags)
  {
- 	return -EINVAL;
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -3265,6 +3265,9 @@ static int load_module(struct load_info
+ 	struct vm_area_struct *vma;
++	vm_flags_t vm_flags;
+ 	int ret;
  
- 	dynamic_debug_setup(info->debug, info->num_debug);
+ 	vma = find_extend_vma(mm, address);
+ 	if (!vma || address < vma->vm_start)
+ 		return -EFAULT;
  
-+	/* Ftrace init must be called in the MODULE_STATE_UNFORMED state */
-+	ftrace_module_init(mod);
++	vm_flags = (fault_flags & FAULT_FLAG_WRITE) ? VM_WRITE : VM_READ;
++	if (!(vm_flags & vma->vm_flags))
++		return -EFAULT;
 +
- 	/* Finally it's fully formed, ready to start executing. */
- 	err = complete_formation(mod, info);
- 	if (err)
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -4315,16 +4315,11 @@ static void ftrace_init_module(struct mo
- 	ftrace_process_locs(mod, start, end);
- }
- 
--static int ftrace_module_notify_enter(struct notifier_block *self,
--				      unsigned long val, void *data)
-+void ftrace_module_init(struct module *mod)
- {
--	struct module *mod = data;
--
--	if (val == MODULE_STATE_COMING)
--		ftrace_init_module(mod, mod->ftrace_callsites,
--				   mod->ftrace_callsites +
--				   mod->num_ftrace_callsites);
--	return 0;
-+	ftrace_init_module(mod, mod->ftrace_callsites,
-+			   mod->ftrace_callsites +
-+			   mod->num_ftrace_callsites);
- }
- 
- static int ftrace_module_notify_exit(struct notifier_block *self,
-@@ -4338,11 +4333,6 @@ static int ftrace_module_notify_exit(str
- 	return 0;
- }
- #else
--static int ftrace_module_notify_enter(struct notifier_block *self,
--				      unsigned long val, void *data)
--{
--	return 0;
--}
- static int ftrace_module_notify_exit(struct notifier_block *self,
- 				     unsigned long val, void *data)
- {
-@@ -4350,11 +4340,6 @@ static int ftrace_module_notify_exit(str
- }
- #endif /* CONFIG_MODULES */
- 
--struct notifier_block ftrace_module_enter_nb = {
--	.notifier_call = ftrace_module_notify_enter,
--	.priority = INT_MAX,	/* Run before anything that can use kprobes */
--};
--
- struct notifier_block ftrace_module_exit_nb = {
- 	.notifier_call = ftrace_module_notify_exit,
- 	.priority = INT_MIN,	/* Run after anything that can remove kprobes */
-@@ -4391,10 +4376,6 @@ void __init ftrace_init(void)
- 				  __start_mcount_loc,
- 				  __stop_mcount_loc);
- 
--	ret = register_module_notifier(&ftrace_module_enter_nb);
--	if (ret)
--		pr_warning("Failed to register trace ftrace module enter notifier\n");
--
- 	ret = register_module_notifier(&ftrace_module_exit_nb);
- 	if (ret)
- 		pr_warning("Failed to register trace ftrace module exit notifier\n");
+ 	ret = handle_mm_fault(mm, vma, address, fault_flags);
+ 	if (ret & VM_FAULT_ERROR) {
+ 		if (ret & VM_FAULT_OOM)
 
 
