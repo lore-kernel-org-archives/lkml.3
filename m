@@ -1,153 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753191AbaFDMNG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 08:13:06 -0400
-Received: from smtp26.sms.unimo.it ([155.185.44.26]:39676 "EHLO
-	smtp26.sms.unimo.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752383AbaFDMNE convert rfc822-to-8bit (ORCPT
+	id S1752677AbaFDMSU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 08:18:20 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:62268 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752164AbaFDMSS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 08:13:04 -0400
-Subject: Re: BFQ speed tests [was Re: [PATCH RFC - TAKE TWO - 00/12] New version of the BFQ I/O Scheduler]
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.2\))
-Content-Type: text/plain; charset=windows-1252
-From: Paolo Valente <paolo.valente@unimore.it>
-In-Reply-To: <s5hsink3mxk.wl%tiwai@suse.de>
-Date: Wed, 4 Jun 2014 14:12:37 +0200
-Cc: Pavel Machek <pavel@ucw.cz>, Tejun Heo <tj@kernel.org>,
-        Jens Axboe <axboe@kernel.dk>, Li Zefan <lizefan@huawei.com>,
-        Fabio Checconi <fchecconi@gmail.com>,
-        Arianna Avanzini <avanzini.arianna@gmail.com>,
-        linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <99FDFB8C-84B0-46DD-ABFB-06C688AC8493@unimore.it>
-References: <20140528221929.GG1419@htj.dyndns.org> <1401354343-5527-1-git-send-email-paolo.valente@unimore.it> <20140530160712.GG24871@htj.dyndns.org> <464F6CBE-A63E-46EF-A90D-BF8450430444@unimore.it> <20140530232804.GA5057@htj.dyndns.org> <20140602111432.GA3737@amd.pavel.ucw.cz> <20140602130226.GA14654@amd.pavel.ucw.cz> <FCFE0106-A4DD-4DEF-AAAE-040F3823A447@unimore.it> <20140604100358.GA4799@amd.pavel.ucw.cz> <4888F93F-D58D-48DD-81A6-A6D61C452D92@unimore.it> <s5hsink3mxk.wl%tiwai@suse.de>
-To: Takashi Iwai <tiwai@suse.de>
-X-Mailer: Apple Mail (2.1878.2)
-UNIMORE-X-SA-Score: -2.9
+	Wed, 4 Jun 2014 08:18:18 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        wsa@the-dreams.de, grant.likely@linaro.org, linux-i2c@vger.kernel.org,
+        devicetree@vger.kernel.org, linus.walleij@linaro.org,
+        Lv Zheng <lv.zheng@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        linux-acpi@vger.kernel.org, devel@acpica.org
+Subject: Re: [PATCH 1/7] ACPICA: Only include ACPI asm files if ACPI is enabled
+Date: Wed, 04 Jun 2014 14:35:33 +0200
+Message-ID: <3061297.feg5DGUjIt@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1401883796-17841-2-git-send-email-lee.jones@linaro.org>
+References: <1401883796-17841-1-git-send-email-lee.jones@linaro.org> <1401883796-17841-2-git-send-email-lee.jones@linaro.org>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wednesday, June 04, 2014 01:09:50 PM Lee Jones wrote:
+> Any drivers which support ACPI and Device Tree probing need to include
+> both respective header files.  Without this patch, if a driver is being
+> used on a platform which does not support ACPI and subsequently does not
+> have the config option enabled, but includes linux/acpi.h the build
+> breaks with:
+> 
+>   In file included from ../include/acpi/platform/acenv.h:150:0,
+>                    from ../include/acpi/acpi.h:56,
+>                    from ../include/linux/match.h:2,
+>                    from ../drivers/i2c/i2c-core.c:43:
+>   ../include/acpi/platform/aclinux.h:73:23:
+>    fatal error: asm/acenv.h: No such file or directory
+>    #include <asm/acenv.h>
+>                        ^
 
-Il giorno 04/giu/2014, alle ore 13:59, Takashi Iwai <tiwai@suse.de> ha scritto:
+Which kernel does this happen with?
 
-> At Wed, 4 Jun 2014 12:24:30 +0200,
-> Paolo Valente wrote:
->> 
->> 
->> Il giorno 04/giu/2014, alle ore 12:03, Pavel Machek <pavel@ucw.cz> ha scritto:
->> 
->>> Hi!
->>> 
->>>> Should this attempt be useless as well, I will, if you do not mind, try by asking you more details about your system and reproducing your configuration as much as I can.
->>>> 
->>> 
->>> Try making BFQ the default scheduler. That seems to break it for me,
->>> when selected at runtime, it looks stable.
->>> 
->>> Anyway, here are some speed tests. Background load:
->>> 
->>> root@duo:/data/tmp# echo cfq > /sys/block/sda/queue/scheduler 
->>> root@duo:/data/tmp# echo 3 > /proc/sys/vm/drop_caches
->>> root@duo:/data/tmp# cat /dev/zero > delme; cat /dev/zero > delme;cat
->>> /dev/zero > delme;cat /dev/zero > delme;cat /dev/zero > delme;cat
->>> /dev/zero > delme
->>> 
->>> (Machine was running out of disk space.)
->>> 
->>> (I alternate between cfq and bfq).
->>> 
->>> Benchmark. I chose git describe because it is part of kernel build
->>> sometimes .. and I actually wait for that.
->>> 
->>> pavel@duo:/data/l/linux-good$ time git describe
->>> warning: refname 'HEAD' is ambiguous.
->>> v3.15-rc8-144-g405dedd
->>> 
->>> Unfortunately, results are not too good for BFQ. (Can you replicate
->>> the results?)
->>> 
->>> # BFQ
->>> 10.24user 1.62system 467.02 (7m47.028s) elapsed 2.54%CPU
->>> # CFQ
->>> 8.55user 1.26system 69.57 (1m9.577s) elapsed 14.11%CPU
->>> # BFQ
->>> 11.70user 3.18system 1491.59 (24m51.599s) elapsed 0.99%CPU
->>> # CFQ, no background load
->>> 8.51user 0.75system 30.99 (0m30.994s) elapsed 29.91%CPU
->>> # CFQ
->>> 8.70user 1.36system 74.72 (1m14.720s) elapsed 13.48%CPU
->>> 
->> 
->> Definitely bad, we are about to repeat the test …
+> Cc: Lv Zheng <lv.zheng@intel.com>
+> Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> Cc: linux-acpi@vger.kernel.org
+> Cc: devel@acpica.org
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> ---
+>  include/acpi/platform/aclinux.h | 5 +++--
+>  1 file changed, 3 insertions(+), 2 deletions(-)
 > 
-> I've been using BFQ for a while and noticed also some obvious
-> regression in some operations, notably git, too.
-> For example, git grep regresses badly.
+> diff --git a/include/acpi/platform/aclinux.h b/include/acpi/platform/aclinux.h
+> index cd1f052..fdf7663 100644
+> --- a/include/acpi/platform/aclinux.h
+> +++ b/include/acpi/platform/aclinux.h
+> @@ -70,9 +70,10 @@
+>  #ifdef EXPORT_ACPI_INTERFACES
+>  #include <linux/export.h>
+>  #endif
+> -#include <asm/acenv.h>
+>  
+> -#ifndef CONFIG_ACPI
+> +#ifdef CONFIG_ACPI
+> +#include <asm/acenv.h>
+> +#else
+>  
+>  /* External globals for __KERNEL__, stubs is needed */
+>  
 > 
-> I ran "test git grep foo > /dev/null" on linux kernel repos on both
-> rotational disk and SSD.
-> 
-> Rotational disk:
->  CFQ:
->    2.32user 3.48system 1:46.97elapsed 5%CPU
->    2.33user 3.41system 1:48.30elapsed 5%CPU
->    2.30user 3.54system 1:48.01elapsed 5%CPU
-> 
->  BFQ:
->    2.41user 3.22system 2:51.96elapsed 3%CPU
->    2.40user 3.19system 2:50.35elapsed 3%CPU
->    2.43user 3.11system 2:46.49elapsed 3%CPU
-> 
-> SSD:
->  CFQ:
->    2.37user 3.18system 0:04.70elapsed 118%CPU
->    2.28user 3.26system 0:04.69elapsed 118%CPU
->    2.21user 3.33system 0:04.69elapsed 118%CPU
-> 
->  BFQ:
->    2.35user 2.82system 1:07.85elapsed 7%CPU
->    2.32user 2.90system 0:57.57elapsed 9%CPU
->    2.39user 2.90system 0:55.03elapsed 9%CPU
-> 
-> It's without background task.
-> 
-> BFQ seems behaving bad when reading many small files.
 
-We ran this type of tests (plus checkout, merge and compilation) a long ago, and the performance was about the same as or better than with CFQ. Unfortunately, we have not repeated also these tests anymore since then.
-
-We are already trying to understand what is going wrong.
-
-Thanks,
-Paolo
-
-> When I ran "git grep foo HEAD", i.e. performing to the packaged
-> repository, the results of both BFQ and CFQ become almost same, as
-> expected:
-> 
-> SSD:
->  CFQ:
->    7.25user 0.47system 0:09.79elapsed 78%CPU
->    7.26user 0.43system 0:09.75elapsed 78%CPU
->    7.26user 0.43system 0:09.76elapsed 78%CPU
-> 
->  BFQ:
->    7.24user 0.45system 0:09.93elapsed 77%CPU
->    7.31user 0.42system 0:09.90elapsed 78%CPU
->    7.28user 0.42system 0:09.86elapsed 78%CPU
-> 
-> 
-> thanks,
-> 
-> Takashi
-
-
---
-Paolo Valente                                                 
-Algogroup
-Dipartimento di Fisica, Informatica e Matematica		
-Via Campi, 213/B
-41125 Modena - Italy        				  
-homepage:  http://algogroup.unimore.it/people/paolo/
-
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
