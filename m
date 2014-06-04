@@ -1,71 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754084AbaFDBpa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 21:45:30 -0400
-Received: from mail-by2lp0238.outbound.protection.outlook.com ([207.46.163.238]:28256
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752439AbaFDBp2 convert rfc822-to-8bit (ORCPT
+	id S1753815AbaFDBtm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 21:49:42 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:62274 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751510AbaFDBtk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 21:45:28 -0400
-From: Peter Chen <Peter.Chen@freescale.com>
-To: "Yang,Wei" <Wei.Yang@windriver.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        "Andrzej Pietrasiewicz" <andrzej.p@samsung.com>
-CC: Felipe Balbi <balbi@ti.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        USB list <linux-usb@vger.kernel.org>,
-        "Kernel development list" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v1] USB:gadget: Fix a warning while loading g_mass_storage
-Thread-Topic: [PATCH v1] USB:gadget: Fix a warning while loading
- g_mass_storage
-Thread-Index: AQHPfw914N6/1BltqEeVaM9JvGUSI5tfd7eAgACwf4CAAAVUAA==
-Date: Wed, 4 Jun 2014 01:45:23 +0000
-Message-ID: <411dd8052ca74ed38810f2a5248063e2@BL2PR03MB226.namprd03.prod.outlook.com>
-References: <Pine.LNX.4.44L0.1406031033010.1054-100000@iolanthe.rowland.org>
- <538E745B.1020200@windriver.com>
-In-Reply-To: <538E745B.1020200@windriver.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [123.151.195.50]
-x-microsoft-antispam: BL:0;ACTION:Default;RISK:Low;SCL:0;SPMLVL:NotSpam;PCL:0;RULEID:
-x-forefront-prvs: 0232B30BBC
-x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(428001)(51704005)(189002)(199002)(83072002)(86362001)(85852003)(2171001)(76176999)(50986999)(76576001)(54356999)(92566001)(87936001)(2656002)(19580395003)(83322001)(19580405001)(101416001)(21056001)(74316001)(79102001)(81542001)(46102001)(31966008)(80022001)(81342001)(74502001)(99396002)(74662001)(77982001)(99286001)(33646001)(66066001)(64706001)(76482001)(4396001)(20776003)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BL2PR03MB225;H:BL2PR03MB226.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-authentication-results: spf=none (sender IP is )
- smtp.mailfrom=Peter.Chen@freescale.com; 
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 3 Jun 2014 21:49:40 -0400
+Message-ID: <538E7B2F.2000100@gmail.com>
+Date: Tue, 03 Jun 2014 19:49:35 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+To: Alexis Berlemont <alexis.berlemont@gmail.com>,
+        linux-kernel@vger.kernel.org
+CC: Jiri Olsa <jolsa@redhat.com>, mingo@kernel.org, sam@ravnborg.org,
+        mmarek@suse.cz, Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>, Borislav Petkov <bp@alien8.de>,
+        linux-kbuild@vger.kernel.org, Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 03/32] perf tools: Kbuild source related fixies
+References: <1401833185-10347-1-git-send-email-alexis.berlemont@gmail.com> <1401833185-10347-4-git-send-email-alexis.berlemont@gmail.com>
+In-Reply-To: <1401833185-10347-4-git-send-email-alexis.berlemont@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- 
-> 
-> commit d18f7116a5ddb8263fe62b05ad63e5ceb5875791
-> Author: Robert Baldyga <r.baldyga@samsung.com>
-> Date:   Thu Nov 21 13:49:18 2013 +0100
-> 
->      usb: gadget: s3c-hsotg: fix disconnect handling
-> 
->      This patch moves s3c_hsotg_disconnect function call from USBSusp
-> interrupt
->      handler to SET_ADDRESS request handler.
-> 
+On 6/3/14, 4:05 PM, Alexis Berlemont wrote:
+> From: Jiri Olsa <jolsa@redhat.com>
+>
+> Fixing several sources config dependencies to allow
+> separate config builds.
+>
+> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Namhyung Kim <namhyung@kernel.org>
+> Cc: Borislav Petkov <bp@alien8.de>
+> Cc: Michal Marek <mmarek@suse.cz>
+> Cc: linux-kbuild@vger.kernel.org
+> Cc: Stephane Eranian <eranian@google.com>
+> ---
+>   tools/perf/builtin-lock.c        |  4 +++-
+>   tools/perf/builtin-sched.c       |  2 ++
+>   tools/perf/perf.c                |  6 ++++++
+>   tools/perf/perf.h                |  2 ++
+>   tools/perf/ui/browsers/scripts.c |  4 ++++
+>   tools/perf/ui/setup.c            | 10 +++++++++-
+>   6 files changed, 26 insertions(+), 2 deletions(-)
+>
+> diff --git a/tools/perf/builtin-lock.c b/tools/perf/builtin-lock.c
+> index c852c7a..b255c20 100644
+> --- a/tools/perf/builtin-lock.c
+> +++ b/tools/perf/builtin-lock.c
+> @@ -992,9 +992,11 @@ int cmd_lock(int argc, const char **argv, const char *prefix __maybe_unused)
+>   				usage_with_options(report_usage, report_options);
+>   		}
+>   		rc = __cmd_report(false);
+> +#ifdef CONFIG_BULTIN_SCRIPT
+>   	} else if (!strcmp(argv[0], "script")) {
+>   		/* Aliased to 'perf script' */
+> -		return cmd_script(argc, argv, prefix);
+> +		rc = cmd_script(argc, argv, prefix);
+> +#endif
+>   	} else if (!strcmp(argv[0], "info")) {
+>   		if (argc) {
+>   			argc = parse_options(argc, argv,
 
-It is a little strange we call gadget's disconnect at SET_ADDRESS?
-How the udc calls gadget driver the disconnection has happened when
-the usb cable is disconnected from the host?
+Since you are not adding builtin-cmds.h as an included file this change 
+takes away functionality. Each patch should ensure that existing options 
+continue to work after the change.
 
-Usually, we call gadget's disconnect at two situations
+ditto for all of the other changes to other files.
 
-- udc's reset handler if udc's speed is not UNKNOWN, it is usually happened
-when the host sends reset after enumeration.
-- udc's disconnect handler, it is usually happened when the usb cable
-is disconnected from host.
-
-Peter
+David
