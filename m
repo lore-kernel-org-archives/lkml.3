@@ -1,59 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754442AbaFDQcv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 12:32:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35087 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754423AbaFDQct (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 12:32:49 -0400
-Date: Wed, 4 Jun 2014 18:31:29 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Clark Williams <williams@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [BUG] signal: sighand unprotected when accessed by /proc
-Message-ID: <20140604163129.GB23724@redhat.com>
-References: <20140603130233.658a6a3c@gandalf.local.home> <20140603172632.GA27956@redhat.com> <20140603140529.048701b9@gandalf.local.home> <20140603192525.GA1105@redhat.com> <20140603211651.79263d7e@gandalf.local.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140603211651.79263d7e@gandalf.local.home>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1754470AbaFDQdH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 12:33:07 -0400
+Received: from mail-we0-f179.google.com ([74.125.82.179]:52034 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754081AbaFDQbT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 12:31:19 -0400
+From: Peter Griffin <peter.griffin@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        chris@printf.net, ulf.hansson@linaro.org, maxime.coquelin@st.com,
+        patrice.chotard@st.com, srinivas.kandagatla@gmail.com
+Cc: peter.griffin@linaro.org, kernel@stlinux.com, linux-mmc@vger.kernel.org,
+        devicetree@vger.kernel.org,
+        Giuseppe Cavallaro <peppe.cavallaro@st.com>
+Subject: [PATCH v3 05/10] ARM: STi: DT: Add sdhci pin configuration for stih415
+Date: Wed,  4 Jun 2014 17:30:19 +0100
+Message-Id: <1401899424-1365-6-git-send-email-peter.griffin@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1401899424-1365-1-git-send-email-peter.griffin@linaro.org>
+References: <1401899424-1365-1-git-send-email-peter.griffin@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/03, Steven Rostedt wrote:
->
-> On Tue, 3 Jun 2014 21:25:25 +0200
-> Oleg Nesterov <oleg@redhat.com> wrote:
->
-> > On 06/03, Steven Rostedt wrote:
-> > >
-> > > You know, this code could use some comments. I may send you a patch,
-> > > because that __lock_task_sighand() is doing a lot of subtle things and
-> > > there's not a single comment explaining it :-(
-> >
-> > Yes, agreed. Not only SLAB_DESTROY_BY_RCU is not obvious, local_irq_save()
-> > is not clear at all. The latter already has a doc patch from Paul, I'll try
-> > to add more comments on top once I see that patch in Linus's tree.
-> >
-> > But I would be happy if you send the patch ;)
-> >
-> > And this reminds me... I still think that __lock_task_sighand() should be
-> > de-uglified. I already sent the patch, probably I'll resend it.
->
-> I'd be happy to document the hell out of that function, but it sounds
-> like you have some updates to it.
+This patch adds the required pin config for the sdhci controller
+present in the stih415 SoC.
 
-Paul has, I don't know where ;) That patch adds the comments to explain the
-mysterious local_irq_disable() at the start. On top of another patch which
-documents the subtle problems with preemption and rcu_read_unlock().
+Signed-off-by: Giuseppe Cavallaro <peppe.cavallaro@st.com>
+Signed-off-by: Peter Griffin <peter.griffin@linaro.org>
+Acked-by: Lee Jones <lee.jones@linaro.org>
+Acked-by: Maxime Coquelin <maxime.coquelin@st.com>
+---
+ arch/arm/boot/dts/stih415-pinctrl.dtsi | 21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
 
-As for the cleanup I have, it is nowhere and I'll resend it later.
-
-Oleg.
+diff --git a/arch/arm/boot/dts/stih415-pinctrl.dtsi b/arch/arm/boot/dts/stih415-pinctrl.dtsi
+index caeac7e..eee2373 100644
+--- a/arch/arm/boot/dts/stih415-pinctrl.dtsi
++++ b/arch/arm/boot/dts/stih415-pinctrl.dtsi
+@@ -429,6 +429,27 @@
+ 					};
+ 				};
+ 			};
++
++			mmc0 {
++				pinctrl_mmc0: mmc0 {
++					st,pins {
++						mmcclk = <&PIO13 4 ALT4 BIDIR_PU NICLK 0 CLK_B>;
++						data0  = <&PIO14 4 ALT4 BIDIR_PU BYPASS 0>;
++						data1  = <&PIO14 5 ALT4 BIDIR_PU BYPASS 0>;
++						data2  = <&PIO14 6 ALT4 BIDIR_PU BYPASS 0>;
++						data3  = <&PIO14 7 ALT4 BIDIR_PU BYPASS 0>;
++						cmd    = <&PIO15 1 ALT4 BIDIR_PU BYPASS 0>;
++						wp     = <&PIO15 3 ALT4 IN>;
++						data4  = <&PIO16 4 ALT4 BIDIR_PU BYPASS 0>;
++						data5  = <&PIO16 5 ALT4 BIDIR_PU BYPASS 0>;
++						data6  = <&PIO16 6 ALT4 BIDIR_PU BYPASS 0>;
++						data7  = <&PIO16 7 ALT4 BIDIR_PU BYPASS 0>;
++						pwr    = <&PIO17 1 ALT4 OUT>;
++						cd     = <&PIO17 2 ALT4 IN>;
++						led    = <&PIO17 3 ALT4 OUT>;
++					};
++				};
++			};
+ 		};
+ 
+ 		pin-controller-left {
+-- 
+1.9.1
 
