@@ -1,68 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753874AbaFDPGi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 11:06:38 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:41037 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752316AbaFDPGe convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753844AbaFDPGe (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 4 Jun 2014 11:06:34 -0400
+Received: from mout.kundenserver.de ([212.227.126.131]:55366 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752498AbaFDPG1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 11:06:27 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Joseph S. Myers" <joseph@codesourcery.com>
+Subject: Re: [RFC 00/32] making inode time stamps y2038 ready
+Date: Wed, 4 Jun 2014 17:05:27 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-35-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        john.stultz@linaro.org, hch@infradead.org, tglx@linutronix.de,
+        geert@linux-m68k.org, lftan@altera.com, hpa@zytor.com,
+        linux-fsdevel@vger.kernel.org, ceph-devel@vger.kernel.org,
+        cluster-devel@redhat.com, coda@cs.cmu.edu,
+        codalist@TELEMANN.coda.cs.cmu.edu, fuse-devel@lists.sourceforge.net,
+        linux-afs@lists.infradead.org, linux-btrfs@vger.kernel.org,
+        linux-cifs@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net, linux-mtd@lists.infradead.org,
+        linux-nfs@vger.kernel.org, linux-ntfs-dev@lists.sourceforge.net,
+        linux-scsi@vger.kernel.org, logfs@logfs.org,
+        ocfs2-devel@oss.oracle.com, reiserfs-devel@vger.kernel.org,
+        samba-technical@lists.samba.org, xfs@oss.sgi.com
+References: <1401480116-1973111-1-git-send-email-arnd@arndb.de> <4233989.Saca0ocOUr@wuerfel> <Pine.LNX.4.64.1406022044090.27099@digraph.polyomino.org.uk>
+In-Reply-To: <Pine.LNX.4.64.1406022044090.27099@digraph.polyomino.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <20140604144639.GI28484@ulmo>
-References: <CACqcpZDziJs7QUKVYwio=La5LyRzBd+xeeRW=dPFcPzw0Wrn5Q@mail.gmail.com>
- <20140604144639.GI28484@ulmo>
-From: =?UTF-8?Q?Rapha=C3=ABl_Poggi?= <raphio98@gmail.com>
-Date: Wed, 4 Jun 2014 17:05:49 +0200
-Message-ID: <CACqcpZBPMkpMvqpuZJSCi9yPH2GbTStL-8hQ-Fs7H9ORKCthtQ@mail.gmail.com>
-Subject: Re: pwm: atmel: problem when disable pwm
-To: Thierry Reding <thierry.reding@gmail.com>, linux-kernel@vger.kernel.org,
-        inux-pwm@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201406041705.27599.arnd@arndb.de>
+X-Provags-ID: V02:K0:9Z7B6PH1fuP6xB7kyWGg/6G67MAwbOH4t4QcAuprpi2
+ rWcYe+/0KZDPwrPRKDIi/irf01ZChYBUtRqE6QgWERHOfmR7oD
+ woB+VczEIn/MfjBtlwQql+Yi+4HBWgC46GMnN0Dysih35H41/4
+ ObvZqn7tBO4ioZnsksnJLzpg6P+DcsPhUqWQ7KwH86fuMtGR2g
+ 5h7KbMtjkNE6xI2jL7miGhWILvq9uxSEpruFHgbkrzcT8Chs9c
+ lmPfDlCGPinHDX/ZYF3Yz9CBm0e+ux0rgSoOe4Y48HUECQj+X3
+ 2ixb66mne6qPvQ3wpA3mtJ3/jhWzfpBXf2RoK4O0HzcZrMtf1s
+ 3ynQO5ayLv9OJWAmZKik=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Monday 02 June 2014, Joseph S. Myers wrote:
+> On Mon, 2 Jun 2014, Arnd Bergmann wrote:
+> 
+> > Ok. Sorry about missing linux-api, I confused it with linux-arch, which
+> > may not be as relevant here, except for the one question whether we
+> > actually want to have the new ABI on all 32-bit architectures or only
+> > as an opt-in for those that expect to stay around for another 24 years.
+> 
+> For glibc I think it will make the most sense to add the support for 
+> 64-bit time_t across all architectures that currently have 32-bit time_t 
+> (with the new interfaces having fallback support to implementation in 
+> terms of the 32-bit kernel interfaces, if the 64-bit syscalls are 
+> unavailable either at runtime or in the kernel headers against which glibc 
+> is compiled - this fallback code will of course need to check for overflow 
+> when passing a time value to the kernel, hopefully with error handling 
+> consistent with whatever the kernel ends up doing when a filesystem can't 
+> support a timestamp).  If some architectures don't provide the new 
+> interfaces in the kernel then that will mean the fallback code in glibc 
+> can't be removed until glibc support for those architectures is removed 
+> (as opposed to removing it when glibc no longer supports kernels predating 
+> the kernel support).
 
-Thanks for your answer.
+Ok, that's a good reason to just provide the new interfaces on all
+architectures right away. Thanks for the insight!
 
-I'm seeing the problem with the version 3.10-at91. I tried with the
-newer version of the driver which add the 916030db4399 commit and I
-have the same bug.
-
-2014-06-04 16:46 GMT+02:00 Thierry Reding <thierry.reding@gmail.com>:
-> Adding in the linux-pwm mailing list.
->
-> On Wed, Jun 04, 2014 at 02:56:13PM +0200, Raphaël Poggi wrote:
->> Hello,
->>
->> I'm using the pwm-atmel driver to control led, but i'm facing a problem.
->>
->> When writing "echo 0 > /sys/class/leds/d1/brightness" (to switch off
->> the led) sometimes the led stayed active.
->>
->> After investigation I think this problem is due to this function:
->>
->> static void atmel_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
->> {
->>     struct atmel_pwm_chip *atmel_pwm = to_atmel_pwm_chip(chip);
->>
->>     atmel_pwm_writel(atmel_pwm, PWM_DIS, 1 << pwm->hwpwm);
->>
->>     clk_disable(atmel_pwm->clk);
->> }
->>
->> By disable the pwm channel, I think the duty cycle "0" has not been
->> update, and the channel is disable and stayed in active state (high or
->> low depending of polarity).
->
-> This sounds like a bug that could be fixed by this commit:
->
->         916030db4399 pwm: atmel: correct CDTY calculation
->
-> What version of the kernel are you seeing this problem with? The above
-> commit was first added in v3.15-rc1, so maybe try that or any later
-> version to see if that fixes it.
->
-> Thierry
+	Arnd
