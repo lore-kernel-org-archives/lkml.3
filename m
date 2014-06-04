@@ -1,43 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751818AbaFDIWr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 04:22:47 -0400
-Received: from mga02.intel.com ([134.134.136.20]:22880 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751140AbaFDIWp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 04:22:45 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,971,1392192000"; 
-   d="scan'208";a="551340725"
-Date: Wed, 4 Jun 2014 11:22:40 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: eric.ernst@linux.intel.com
-Cc: linus.walleij@linaro.org, linux-kernel@vger.kernel.org,
-        mark.gross@intel.com
-Subject: Re: [PATCH v3 1/1] pinctrl: baytrail: Warn if direct IRQ GPIO set to
- output
-Message-ID: <20140604082240.GM1730@lahna.fi.intel.com>
-References: <20140603110600.GG1730@lahna.fi.intel.com>
- <1401834316-199359-1-git-send-email-eric.ernst@linux.intel.com>
+	id S1751889AbaFDIZK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 04:25:10 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:56387 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750853AbaFDIZI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 04:25:08 -0400
+Message-ID: <538ED7DE.5070508@hitachi.com>
+Date: Wed, 04 Jun 2014 17:25:02 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1401834316-199359-1-git-send-email-eric.ernst@linux.intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH -tip ] [BUGFIX] perf/probe: Fix perf probe to find correct
+ variable DIE
+References: <20140529105232.28251.30447.stgit@ltc230.yrl.intra.hitachi.co.jp> <20140529121930.30879.87092.stgit@ltc230.yrl.intra.hitachi.co.jp> <53872A72.6040007@hitachi.com> <20140603203823.GG3696@kernel.org>
+In-Reply-To: <20140603203823.GG3696@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 03, 2014 at 03:25:16PM -0700, eric.ernst@linux.intel.com wrote:
-> From: Eric Ernst <eric.ernst@linux.intel.com>
+(2014/06/04 5:38), Arnaldo Carvalho de Melo wrote:
+> Now trying to reference a bogus member name:
 > 
-> For Baytrail, you should never set a GPIO set to direct_irq
-> to output mode.  When direct_irq_en is set for a GPIO, it is
-> tied directly to an APIC internally, and making the pad output
-> does not make any sense. Assert a WARN() in the event this happens.
+> [root@zoo ~]# perf probe 'vfs_getname=getname_flags:65 pathname=result->BOGUS:string'
+> result(type:filename) has no member BOGUS.
+> Failed to find 'result' in this function.
+>   Error: Failed to add events. (-22)
+> [root@zoo ~]#
 > 
-> Signed-off-by: Eric Ernst <eric.ernst@linux.intel.com>
+> No segfault, albeit it produces a bogus error message, as it clearly
+> _finds_ the 'result' variable, its just that it is of a struct type that
+> _has_ no such 'BOGUS' _member_.
 
-Looks good now thanks,
+Right, I'll fix that.
 
-Acked-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> 
+> Also I suggest removing that last "Error:" line, what is its value for
+> users or developers?
+
+It tells them the perf probe finally failed because of an error (with
+error code). Indeed that message is bluntness. I'll update it to use
+strerr instead of giving mysterious error code.
+FYI, if it gets some general errors, like -ENOMEM, will just indicate
+the last error message.
+
+Thank you!
+
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
