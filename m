@@ -1,75 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751500AbaFDJAd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 05:00:33 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:9267 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751094AbaFDJAa (ORCPT
+	id S1751889AbaFDJD6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 05:03:58 -0400
+Received: from mail-vc0-f175.google.com ([209.85.220.175]:60653 "EHLO
+	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751807AbaFDJDz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 05:00:30 -0400
-Message-ID: <538EE00F.10406@huawei.com>
-Date: Wed, 4 Jun 2014 16:59:59 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Wed, 4 Jun 2014 05:03:55 -0400
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
-Subject: Re: [PATCH 2/3] cgroup: make the default root invisible when it's
- umounted
-References: <538D4956.5050205@huawei.com> <538D4982.10905@huawei.com> <20140603130144.GB26210@htj.dyndns.org>
-In-Reply-To: <20140603130144.GB26210@htj.dyndns.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.18.230]
-X-CFilter-Loop: Reflected
+In-Reply-To: <1399639944-20551-4-git-send-email-mmarek@suse.cz>
+References: <1399639944-20551-1-git-send-email-mmarek@suse.cz>
+	<1399639944-20551-4-git-send-email-mmarek@suse.cz>
+Date: Wed, 4 Jun 2014 11:03:54 +0200
+Message-ID: <CAFLxGvyz-aX8rTveo9W3mqsQxPeg8cb7Oq59UiC1kMz4qTiYwg@mail.gmail.com>
+Subject: Re: [PATCH v2 3/5] kbuild: Use relative path for $(objtree)
+From: Richard Weinberger <richard.weinberger@gmail.com>
+To: Michal Marek <mmarek@suse.cz>
+Cc: linux-kbuild@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Sam Ravnborg <sam@ravnborg.org>, rdunlap@infradead.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/6/3 21:01, Tejun Heo wrote:
-> On Tue, Jun 03, 2014 at 12:05:22PM +0800, Li Zefan wrote:
->> Before this patch (in a fresh system):
->>
->>    # cat /proc/$$/cgroup
->>    # mount -t cgroup -o __DEVEL__sane_behavior xxx /cgroup
->>    # umount /cgroup
->>    # cat /proc/$$/cgroup
->>    0:cpuset,cpu,cpuacct,memory,devices,freezer,net_cls,blkio,perf_event,net_prio,hugetlb:/
->>
->> After this patch (in a fresh system):
->>
->>    # cat ...
->>    # mount ...
->>    # umount ...
->>    # cat /proc/$$/cgroup
->>    #
->>
->> You won't see the default root after it's umounted.
-> 
-> Hmmmm... I intentionally left it visible tho.  The only reason we gate
-> its visibility is avoid disturbing userland which doesn't know about
-> and won't use the unified hierarchy.  If the userland starts making
-> use of it, there's no reason to hide it again especially as that's
-> consistent with how other hierarchies behave too - they keep showing
-> up if they have lingering refs.
-> 
+On Fri, May 9, 2014 at 2:52 PM, Michal Marek <mmarek@suse.cz> wrote:
+> The main Makefile sets its working directory to the object tree and
+> never changes it again. Therefore, we can use '.' instead of the
+> absolute path. The only case where we need the absolute path is when
+> creating the 'build' symlink in /lib/modules.
+>
+> Acked-by: Sam Ravnborg <sam@ravnborg.org>
+> Signed-off-by: Michal Marek <mmarek@suse.cz>
+> ---
+> v1->v2: Fix the 'build' symlink
+>
+>  Makefile | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/Makefile b/Makefile
+> index 60ccbfe..480503a 100644
+> --- a/Makefile
+> +++ b/Makefile
+> @@ -154,7 +154,7 @@ _all: modules
+>  endif
+>
+>  srctree                := $(if $(KBUILD_SRC),$(KBUILD_SRC),$(CURDIR))
+> -objtree                := $(CURDIR)
+> +objtree                := .
+>  src            := $(srctree)
+>  obj            := $(objtree)
+>
+> @@ -1057,7 +1057,7 @@ _modinst_:
+>         @ln -s $(srctree) $(MODLIB)/source
+>         @if [ ! $(objtree) -ef  $(MODLIB)/build ]; then \
+>                 rm -f $(MODLIB)/build ; \
+> -               ln -s $(objtree) $(MODLIB)/build ; \
+> +               ln -s $(CURDIR) $(MODLIB)/build ; \
+>         fi
+>         @cp -f $(objtree)/modules.order $(MODLIB)/
+>         @cp -f $(objtree)/modules.builtin $(MODLIB)/
 
-The example I gave is the same result if sane_behavior is not specified,
-so this is a behavioural change for the old interface?
+This commit breaks the of-of-tree build of UML.
 
-Do we need a fix like this?
+  CC      arch/x86/um/user-offsets.s
+/home/rw/linux-next/arch/x86/um/user-offsets.c:21:29: fatal error:
+asm/syscalls_64.h: No such file or directory
+compilation terminated.
+make[2]: *** [arch/x86/um/user-offsets.s] Error 1
+make[1]: *** [arch/x86/um/user-offsets.s] Error 2
+make: *** [sub-make] Error 2
 
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 3f46165..6f10cff 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -1789,6 +1789,9 @@ static void cgroup_kill_sb(struct super_block *sb)
- 	else
- 		percpu_ref_kill(&root->cgrp.self.refcnt);
+To reproduce run:
+make defconfig ARCH=um O=/mnt/o && make linux ARCH=um O=/mnt/
 
-+	if (root == &cgrp_dfl_root && !cgroup_sane_behavior(&root->cgrp))
-+		cgrp_dfl_root_visible = false;
-+
- 	kernfs_kill_sb(sb);
- 
+If there is anything in UML which needs fixing, please tell. :-)
 
+-- 
+Thanks,
+//richard
