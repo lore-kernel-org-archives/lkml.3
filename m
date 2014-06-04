@@ -1,74 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754046AbaFDBHk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 21:07:40 -0400
-Received: from ozlabs.org ([103.22.144.67]:44398 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751833AbaFDBHj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 21:07:39 -0400
-Date: Wed, 4 Jun 2014 11:07:31 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Benjamin LaHaise <bcrl@kvack.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: failed to fetch the aio tree
-Message-ID: <20140604110731.11226e7b@canb.auug.org.au>
-In-Reply-To: <20140604004300.GM5097@kvack.org>
-References: <20140604090846.3b4fd54c@canb.auug.org.au>
-	<20140604004300.GM5097@kvack.org>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
+	id S1753411AbaFDBRA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 21:17:00 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:53196 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751487AbaFDBQ7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 21:16:59 -0400
+Date: Tue, 3 Jun 2014 21:16:51 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Clark Williams <williams@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [BUG] signal: sighand unprotected when accessed by /proc
+Message-ID: <20140603211651.79263d7e@gandalf.local.home>
+In-Reply-To: <20140603192525.GA1105@redhat.com>
+References: <20140603130233.658a6a3c@gandalf.local.home>
+	<20140603172632.GA27956@redhat.com>
+	<20140603140529.048701b9@gandalf.local.home>
+	<20140603192525.GA1105@redhat.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/rH.__3P2mhF/C+F8o0PrtX9"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/rH.__3P2mhF/C+F8o0PrtX9
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Tue, 3 Jun 2014 21:25:25 +0200
+Oleg Nesterov <oleg@redhat.com> wrote:
 
-Hi Ben,
+> On 06/03, Steven Rostedt wrote:
+> >
+> > You know, this code could use some comments. I may send you a patch,
+> > because that __lock_task_sighand() is doing a lot of subtle things and
+> > there's not a single comment explaining it :-(
+> 
+> Yes, agreed. Not only SLAB_DESTROY_BY_RCU is not obvious, local_irq_save()
+> is not clear at all. The latter already has a doc patch from Paul, I'll try
+> to add more comments on top once I see that patch in Linus's tree.
+> 
+> But I would be happy if you send the patch ;)
+> 
+> And this reminds me... I still think that __lock_task_sighand() should be
+> de-uglified. I already sent the patch, probably I'll resend it.
 
-On Tue, 3 Jun 2014 20:43:00 -0400 Benjamin LaHaise <bcrl@kvack.org> wrote:
->
-> On Wed, Jun 04, 2014 at 09:08:46AM +1000, Stephen Rothwell wrote:
-> >=20
-> > Fetching the aio tree (git://git.kvack.org/~bcrl/aio-next.git#master)
-> > for the past 3 days has produced this error:
-> >=20
-> > fatal: unable to connect to git.kvack.org:
-> > git.kvack.org[0: 205.233.56.16]: errno=3DConnection refused
->=20
-> Whoops, it looks like the system upgrade that took place on the weekend=20
-> didn't managed to restart git-daemon.  That should be fixed now.  Thanks=
-=20
-> for the report.
+I'd be happy to document the hell out of that function, but it sounds
+like you have some updates to it. Is there a git repo somewhere with
+your latest that I can base a patch against?
 
-Yep, all good.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/rH.__3P2mhF/C+F8o0PrtX9
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTjnFZAAoJEMDTa8Ir7ZwVfvMQAIP87pCOjR/Ol5al2bJzCu9y
-slAjnk1cdQXUvVLivf7HBBFjMp3PPi60K+L0KOKtCCS0A8xMc9jp4jikKDLK9Of/
-cWb4XNGkhYn+3NIptTuaeRmZLGylVwcD2EZnS4RIt9+vtT9JARDQ/u51BTlJbthS
-6TnWAoer2p+45pLbCC2RCWpuukFzLgHWfApkFhE/9FSd21nsgoft2W4OA0sU3c9S
-KQuqRu+x1QskbZYekfFtnvcpt/dJo5dT28Dii4Ce8d5n6RvL5YzUAn2qnx7LAPiQ
-R2EQcL56O4Co5cv4Pu/3xgeM08nbg/jlcHfAEkKgMfZA6oLRIspw/mSZoFxE8nwa
-pJref/l6rv2/eEY3upS/6wc6VKTDPsHQ+ecYQ8dvTtt2KVUfgxvQeBGxOyaouVuM
-9tkhDw4vYUcWubcmR1izpdD02ltvV3Euw0ZP4bl/eUAuo38PpsLAAA8xsa614yxU
-/eyTCmKkw54tG1XwckMkTR0uy2Bwa7N224gQH+dHBVsRn+oLiIZP9hTSt7IuJl/V
-dZujjq9oVkP83Zi3G6wMXYFzjEmAHEFoaVns9oyJzdu9jUf+G/7yLRIOQAIZyuTu
-hwVzFIQjzU8/+M1gKfS1/zEOwWebn1IaBCUxTRVmayMfpXP7D4666qGG+Ku+jVz7
-MXiAbiu9yYwBn2Lq4vyr
-=OnHD
------END PGP SIGNATURE-----
-
---Sig_/rH.__3P2mhF/C+F8o0PrtX9--
+-- Steve
