@@ -1,94 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753126AbaFDO7Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 10:59:16 -0400
-Received: from mail-ve0-f170.google.com ([209.85.128.170]:55566 "EHLO
-	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753093AbaFDO7N (ORCPT
+	id S1753368AbaFDPAZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 11:00:25 -0400
+Received: from mx07-00178001.pphosted.com ([62.209.51.94]:50204 "EHLO
+	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752782AbaFDPAV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 10:59:13 -0400
-MIME-Version: 1.0
-In-Reply-To: <538F1936.4000905@linaro.org>
-References: <cover.1401841482.git.luto@amacapital.net> <1f7b2a25440561e49fb6d0bace3532b5df832ffd.1401841482.git.luto@amacapital.net>
- <538F1936.4000905@linaro.org>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 4 Jun 2014 07:58:52 -0700
-Message-ID: <CALCETrWW15tK8eYr74OhKfWTxWn3xj4C5moyLP_TFxN3DaVcng@mail.gmail.com>
-Subject: Re: [PATCH 3/6] sched,idle: Clarify where TIF_NRFLAG_POLLING is set
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        nicolas.pitre@linaro.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 4 Jun 2014 11:00:21 -0400
+From: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
+To: Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
+        Maxime Coquelin <maxime.coquelin@st.com>,
+        Patrice Chotard <patrice.chotard@st.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, olof@lixom.net
+Cc: linux-arm-kernel@lists.infradead.org, kernel@stlinux.com,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Lee Jones <lee.jones@linaro.org>,
+        Gabriel Fernandez <gabriel.fernandez@linaro.org>
+Subject: [PATCH 0/4] Enables STMicroelectronics Flexgen Clock support
+Date: Wed,  4 Jun 2014 16:32:48 +0200
+Message-Id: <1401892372-18279-1-git-send-email-gabriel.fernandez@linaro.org>
+X-Mailer: git-send-email 1.9.1
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
+ definitions=2014-06-04_03:2014-06-04,2014-06-04,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 4, 2014 at 6:03 AM, Daniel Lezcano
-<daniel.lezcano@linaro.org> wrote:
-> On 06/04/2014 02:29 AM, Andy Lutomirski wrote:
->>
->> This doesn't change functionality at all, but I've misread this code
->> so many times that I want to make it a bit more obvious.
->>
->> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
->> ---
->>   kernel/sched/idle.c | 12 +++++++++++-
->>   1 file changed, 11 insertions(+), 1 deletion(-)
->>
->> diff --git a/kernel/sched/idle.c b/kernel/sched/idle.c
->> index 25b9423..2ec9f47 100644
->> --- a/kernel/sched/idle.c
->> +++ b/kernel/sched/idle.c
->> @@ -67,6 +67,10 @@ void __weak arch_cpu_idle(void)
->>    * cpuidle_idle_call - the main idle function
->>    *
->>    * NOTE: no locks or semaphores should be used here
->> + *
->> + * On archs that support TIF_POLLING_NRFLAG, is called with polling
->> + * set, and it returns with polling set.  If it ever stops polling, it
->> + * must clear the polling bit.
->>    */
->>   static void cpuidle_idle_call(void)
->>   {
->> @@ -178,7 +182,14 @@ exit_idle:
->>    */
->>   static void cpu_idle_loop(void)
->>   {
->> +       __current_set_polling();
->> +
->>         while (1) {
->> +               /*
->> +                * Invariant: polling is set here (assuming that the arch
->> +                * has a polling bit.
->> +                */
->> +
->
->
-> nit : extra line
->
+These patches enables clock drivers for STih407 boards.
 
-It was intentional: the comment is about this point in the loop, not
-about the tick_nohz_idle_enter call.  I'm not attached to it, though.
+Gabriel Fernandez (4):
+  ARM: STi: DT: STiH407: 407 DT Entry for clockgen A0
+  ARM: STi: DT: STiH407: 407 DT Entry for clockgen C0
+  ARM: STi: DT: STiH407: 407 DT Entry for clockgen D0/D2/D3
+  ARM: STi: DT: STiH407: 407 DT Entry for clockgenA9
 
->
->>                 tick_nohz_idle_enter();
->>
->>                 while (!need_resched()) {
->> @@ -239,7 +250,6 @@ void cpu_startup_entry(enum cpuhp_state state)
->>          */
->>         boot_init_stack_canary();
->>   #endif
->> -       __current_set_polling();
->
->
-> I don't get the connection with the patch description.
->
+ arch/arm/boot/dts/stih407-clock.dtsi     | 295 ++++++++++++++++++++++++++++++-
+ arch/arm/boot/dts/stih407.dtsi           |  18 +-
+ include/dt-bindings/clock/stih407-clks.h |  11 ++
+ 3 files changed, 307 insertions(+), 17 deletions(-)
+ create mode 100644 include/dt-bindings/clock/stih407-clks.h
 
-In retrospect, I think I can just fold this patch with the one after
-it.  I wrote this because I could never remember who is responsible
-for setting polling in the first place.
+-- 
+1.9.1
 
---Andy
