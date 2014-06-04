@@ -1,64 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751910AbaFDVZb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 17:25:31 -0400
-Received: from 8bytes.org ([85.214.48.195]:50912 "EHLO mail.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751363AbaFDVZ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 17:25:29 -0400
-Date: Wed, 4 Jun 2014 23:25:25 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Eli Billauer <eli.billauer@gmail.com>
-Cc: Tejun Heo <tj@kernel.org>, Shuah Khan <shuah.kh@samsung.com>,
-        devel@driverdev.osuosl.org, gregkh@linuxfoundation.org,
-        bhelgaas@google.com, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, iommu@lists.linux-foundation.org,
-        discuss@x86-64.org
-Subject: Re: [PATCH v2 1/4] dma-mapping: Add devm_ interface for
- dma_map_single()
-Message-ID: <20140604212525.GE23880@8bytes.org>
-References: <1401606077-1739-1-git-send-email-eli.billauer@gmail.com>
- <1401606077-1739-2-git-send-email-eli.billauer@gmail.com>
- <538E3D04.9060808@samsung.com>
- <20140603233907.GB23880@8bytes.org>
- <20140604140408.GC5004@htj.dyndns.org>
- <20140604141211.GC23880@8bytes.org>
- <20140604141416.GD5004@htj.dyndns.org>
- <538F3548.4050101@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <538F3548.4050101@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Wed Jun  4 23:25:27 2014
-X-DSPAM-Confidence: 0.9995
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 538f8ec720861989511335
+	id S1751867AbaFDV0R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 17:26:17 -0400
+Received: from g4t3427.houston.hp.com ([15.201.208.55]:6606 "EHLO
+	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751329AbaFDV0Q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 17:26:16 -0400
+Message-ID: <1401917173.2232.14.camel@j-VirtualBox>
+Subject: Re: [RFC PATCH 1/3] locking/mutex: Try to acquire mutex only if it
+ is unlocked
+From: Jason Low <jason.low2@hp.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: mingo@kernel.org, tglx@linutronix.de, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, paulmck@linux.vnet.ibm.com,
+        tim.c.chen@linux.intel.com, peter@hurleysoftware.com, riel@redhat.com,
+        hpa@zytor.com, walken@google.com, davidlohr@hp.com, Waiman.Long@hp.com,
+        aswin@hp.com, scott.norton@hp.com, chegu_vinod@hp.com
+Date: Wed, 04 Jun 2014 14:26:13 -0700
+In-Reply-To: <20140604194322.GN13930@laptop.programming.kicks-ass.net>
+References: <1401908911-8947-1-git-send-email-jason.low2@hp.com>
+	 <1401908911-8947-2-git-send-email-jason.low2@hp.com>
+	 <20140604194322.GN13930@laptop.programming.kicks-ass.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, 2014-06-04 at 21:43 +0200, Peter Zijlstra wrote:
+> On Wed, Jun 04, 2014 at 12:08:29PM -0700, Jason Low wrote:
+> > Upon entering the slowpath in __mutex_lock_common(), we try once more
+> > to acquire the mutex. We only try to acquire it if MUTEX_SHOW_NO_WAITER
+> > (lock->count >= 0) is true in order to avoid using the atomic xchg()
+> > operation whenever it is not necessary. However, we really only need
+> > to try to acquire if the mutex is free (lock->count == 1).
+> > 
+> > This patch changes it so that we only try-acquire the mutex upon
+> > entering the slowpath if it is unlocked, rather than if there are
+> > no waiters. This helps further reduce unncessary atomic xchg()
+> > operations. Furthermore, this patch introduces and uses a new
+> > MUTEX_IS_UNLOCKED() macro to improve readbability.
+> > 
+> > Signed-off-by: Jason Low <jason.low2@hp.com>
+> > ---
+> >  kernel/locking/mutex.c |   10 ++++++----
+> >  1 files changed, 6 insertions(+), 4 deletions(-)
+> > 
+> > diff --git a/kernel/locking/mutex.c b/kernel/locking/mutex.c
+> > index bc73d33..0925968 100644
+> > --- a/kernel/locking/mutex.c
+> > +++ b/kernel/locking/mutex.c
+> > @@ -48,9 +48,10 @@
+> >  
+> >  /*
+> >   * A negative mutex count indicates that waiters are sleeping waiting for the
+> > - * mutex.
+> > + * mutex, and a count of one indicates the mutex is unlocked.
+> >   */
+> >  #define	MUTEX_SHOW_NO_WAITER(mutex)	(atomic_read(&(mutex)->count) >= 0)
+> > +#define	MUTEX_IS_UNLOCKED(mutex)	(atomic_read(&(mutex)->count) == 1)
+> 
+> So I recently saw that MUTEX_SHOW_NO_WAITER thing and cried a little;
+> and now you're adding more of that same nonsense.
+> 
+> Please make them inline functions, also can we rename the SHOW_NO_WAITER
+> thing, because its not at all clear to me wtf it does; should it be
+> called: mutex_no_waiters() or somesuch?
 
-On Wed, Jun 04, 2014 at 06:03:36PM +0300, Eli Billauer wrote:
-> I believe that I need a managed dma_map_single() my own driver,
-> which doesn't fall in the case of a single use: The driver allocates
-> its buffers with __get_free_pages() (or the to-be managed version of
-> it). Then it cuts the allocated memory into smaller buffers (in some
-> cases, and with certain alignment rules), and  then calls
-> dma_map_single() to do the DMA mapping for each. The buffers are
-> held along the driver's lifetime, with DMA sync API juggling control
-> back and forth to the hardware. Note that the DMA is noncoherent.
-
-What you are trying to do should work with dma_alloc_noncoherent(). The
-API allows partial syncs on this memory, so you should be fine.
-
-The problem with a devm variant of dma_map_* is that it is too easy to
-misuse or to use it wrong so that a driver could eat up all available
-DMA handles on some platforms.
-
-
-	Joerg
-
+Okay, I can make them inline functions. I mainly added the macro to keep
+it consistent with the MUTEX_SHOW_NO_WAITER() check, but we can surely
+make this more clear. mutex_no_waiters() sounds fine, or perhaps
+something like mutex_has_no_waiters()?
 
