@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753893AbaFDXXj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:23:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40653 "EHLO
+	id S1755036AbaFDXog (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 19:44:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40710 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753838AbaFDXXb (ORCPT
+	with ESMTP id S1753880AbaFDXXi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:23:31 -0400
+	Wed, 4 Jun 2014 19:23:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chen Yucong <slaoub@gmail.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.10 020/103] hwpoison, hugetlb: lock_page/unlock_page does not match for handling a free hugepage
-Date: Wed,  4 Jun 2014 16:24:43 -0700
-Message-Id: <20140604232547.507029648@linuxfoundation.org>
+        Atilla Filiz <atilla.filiz@essensium.com>,
+        Jonathan Cameron <jic23@kernel.org>
+Subject: [PATCH 3.10 033/103] iio:imu:mpu6050: Fixed segfault in Invensens MPU driver due to null dereference
+Date: Wed,  4 Jun 2014 16:24:56 -0700
+Message-Id: <20140604232547.931622065@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232546.704156131@linuxfoundation.org>
 References: <20140604232546.704156131@linuxfoundation.org>
@@ -32,54 +29,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chen Yucong <slaoub@gmail.com>
+From: Atilla Filiz <atilla.filiz@essensium.com>
 
-commit b985194c8c0a130ed155b71662e39f7eaea4876f upstream.
+commit b9b3a41893c3f1be67b5aacfa525969914bea0e9 upstream.
 
-For handling a free hugepage in memory failure, the race will happen if
-another thread hwpoisoned this hugepage concurrently.  So we need to
-check PageHWPoison instead of !PageHWPoison.
+The driver segfaults when the kernel boots with device tree as the
+platform data is then not present and the pointer is deferenced without
+checking it is not null.  This patch introduces such a check avoiding the
+crash.
 
-If hwpoison_filter(p) returns true or a race happens, then we need to
-unlock_page(hpage).
-
-Signed-off-by: Chen Yucong <slaoub@gmail.com>
-Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Tested-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Reviewed-by: Andi Kleen <ak@linux.intel.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Atilla Filiz <atilla.filiz@essensium.com>
+Signed-off-by: Jonathan Cameron <jic23@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/memory-failure.c |   15 ++++++++-------
- 1 file changed, 8 insertions(+), 7 deletions(-)
+ drivers/iio/imu/inv_mpu6050/inv_mpu_core.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/mm/memory-failure.c
-+++ b/mm/memory-failure.c
-@@ -1083,15 +1083,16 @@ int memory_failure(unsigned long pfn, in
- 			return 0;
- 		} else if (PageHuge(hpage)) {
- 			/*
--			 * Check "just unpoisoned", "filter hit", and
--			 * "race with other subpage."
-+			 * Check "filter hit" and "race with other subpage."
- 			 */
- 			lock_page(hpage);
--			if (!PageHWPoison(hpage)
--			    || (hwpoison_filter(p) && TestClearPageHWPoison(p))
--			    || (p != hpage && TestSetPageHWPoison(hpage))) {
--				atomic_long_sub(nr_pages, &num_poisoned_pages);
--				return 0;
-+			if (PageHWPoison(hpage)) {
-+				if ((hwpoison_filter(p) && TestClearPageHWPoison(p))
-+				    || (p != hpage && TestSetPageHWPoison(hpage))) {
-+					atomic_long_sub(nr_pages, &num_poisoned_pages);
-+					unlock_page(hpage);
-+					return 0;
-+				}
- 			}
- 			set_page_hwpoison_huge_page(hpage);
- 			res = dequeue_hwpoisoned_huge_page(hpage);
+--- a/drivers/iio/imu/inv_mpu6050/inv_mpu_core.c
++++ b/drivers/iio/imu/inv_mpu6050/inv_mpu_core.c
+@@ -660,6 +660,7 @@ static int inv_mpu_probe(struct i2c_clie
+ {
+ 	struct inv_mpu6050_state *st;
+ 	struct iio_dev *indio_dev;
++	struct inv_mpu6050_platform_data *pdata;
+ 	int result;
+ 
+ 	if (!i2c_check_functionality(client->adapter,
+@@ -675,8 +676,10 @@ static int inv_mpu_probe(struct i2c_clie
+ 	}
+ 	st = iio_priv(indio_dev);
+ 	st->client = client;
+-	st->plat_data = *(struct inv_mpu6050_platform_data
+-				*)dev_get_platdata(&client->dev);
++	pdata = (struct inv_mpu6050_platform_data
++			*)dev_get_platdata(&client->dev);
++	if (pdata)
++		st->plat_data = *pdata;
+ 	/* power is turned on inside check chip type*/
+ 	result = inv_check_and_setup_chip(st, id);
+ 	if (result)
 
 
