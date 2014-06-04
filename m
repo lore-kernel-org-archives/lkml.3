@@ -1,64 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753511AbaFDPC1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 11:02:27 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:54334 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752199AbaFDPCX (ORCPT
+	id S1753303AbaFDPAQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 11:00:16 -0400
+Received: from mx07-00178001.pphosted.com ([62.209.51.94]:47920 "EHLO
+	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752782AbaFDPAF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 11:02:23 -0400
-Message-ID: <538F34FB.7050003@kernel.dk>
-Date: Wed, 04 Jun 2014 09:02:19 -0600
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>
-CC: Shaohua Li <shli@kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: [patch]blk-mq: blk_mq_tag_to_rq should handle flush request
-References: <20140509120733.GA27918@kernel.org> <20140509150018.GA26215@infradead.org> <20140510040023.GA13788@kernel.org> <5388912F.7010609@kernel.dk> <20140604111133.GA7826@infradead.org> <538F2A11.4060800@kernel.dk> <20140604142012.GA20056@infradead.org> <538F331F.60101@kernel.dk> <20140604145803.GA7826@infradead.org>
-In-Reply-To: <20140604145803.GA7826@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 4 Jun 2014 11:00:05 -0400
+From: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
+To: mturquette@linaro.org, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org
+Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        kernel@stlinux.com, Lee Jones <lee.jones@linaro.org>,
+        Gabriel Fernandez <gabriel.fernandez@linaro.org>
+Subject: [PATCH RESEND 01/12] clk: st: Update ST clock binding documentation
+Date: Wed,  4 Jun 2014 16:31:49 +0200
+Message-Id: <1401892320-18211-2-git-send-email-gabriel.fernandez@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1401892320-18211-1-git-send-email-gabriel.fernandez@linaro.org>
+References: <1401892320-18211-1-git-send-email-gabriel.fernandez@linaro.org>
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
+ definitions=2014-06-04_03:2014-06-04,2014-06-04,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-06-04 08:58, Christoph Hellwig wrote:
-> On Wed, Jun 04, 2014 at 08:54:23AM -0600, Jens Axboe wrote:
->>> It's not as simple as the added code wants to get a queue from the
->>> hwctx, which we can't get at.  I was planning to look into this, but
->>> there are various other regressions in the recent block updates that I
->>> need to fix before I can even test a tree with this one reverted.
->>
->> Which regressions? Performance or crashes?
->
-> Both.  I've tracked down the SCSI boot crash and you'll have a patch for
-> that soon, still working on bisecting the performance crawl, but I'm
-> getting close.
+This patch adds new compatibilities to support STiH407 SoC.
 
-OK strange, there hasn't been that much churn since the last rebase. In 
-my for-linus, there's a patch for a single queue crash, but that should 
-just hit for the removal case. And then there's the atomic schedule 
-patch, but that issue was actually in the code base for about a month, 
-so not a new one either.
+Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
+---
+ .../devicetree/bindings/clock/st/st,clkgen-mux.txt   |  2 +-
+ .../devicetree/bindings/clock/st/st,clkgen-pll.txt   |  5 ++++-
+ .../devicetree/bindings/clock/st/st,clkgen.txt       | 20 ++++++++++++++++----
+ .../devicetree/bindings/clock/st/st,quadfs.txt       |  3 +++
+ 4 files changed, 24 insertions(+), 6 deletions(-)
 
->>> If you can get to sorting this out soon I'd love you to handle it,
->>> otherwise I'll look into it as soon as I can.
->>
->> Just took a look at it, but I don't see the problematic path. I'm
->> looking at wip-9.
->
-> scsi_mq_find_tag only gets the scsi host, which may have multiple
-> queues.  When called from scsi_find_tag we actually have a scsi device,
-> so that's not an issue, but when called from scsi_host_find_tag the
-> driver only provides the host.
-
-Only solution I see right now is to have the flush_rq in the shared 
-tags, but that would potentially be a regression for multiple devices 
-and heavy flush uses cases. I'll see if I can come up with something 
-better, or maybe Shaohua has an idea.
-
-
+diff --git a/Documentation/devicetree/bindings/clock/st/st,clkgen-mux.txt b/Documentation/devicetree/bindings/clock/st/st,clkgen-mux.txt
+index 943e080..2d92fc8 100644
+--- a/Documentation/devicetree/bindings/clock/st/st,clkgen-mux.txt
++++ b/Documentation/devicetree/bindings/clock/st/st,clkgen-mux.txt
+@@ -17,7 +17,7 @@ Required properties:
+ 	"st,stih416-clkgenf-vcc-sd",	"st,clkgen-mux"
+ 	"st,stih415-clkgen-a9-mux",	"st,clkgen-mux"
+ 	"st,stih416-clkgen-a9-mux",	"st,clkgen-mux"
+-
++	"st,stih407-clkgen-a9-mux",	"st,clkgen-mux"
+ 
+ - #clock-cells : from common clock binding; shall be set to 0.
+ 
+diff --git a/Documentation/devicetree/bindings/clock/st/st,clkgen-pll.txt b/Documentation/devicetree/bindings/clock/st/st,clkgen-pll.txt
+index 81eb385..b852925 100644
+--- a/Documentation/devicetree/bindings/clock/st/st,clkgen-pll.txt
++++ b/Documentation/devicetree/bindings/clock/st/st,clkgen-pll.txt
+@@ -19,11 +19,14 @@ Required properties:
+ 	"st,stih415-plls-c32-ddr",	"st,clkgen-plls-c32"
+ 	"st,stih416-plls-c32-a9",	"st,clkgen-plls-c32"
+ 	"st,stih416-plls-c32-ddr",	"st,clkgen-plls-c32"
++	"st,stih407-plls-c32-a0",	"st,clkgen-plls-c32"
++	"st,stih407-plls-c32-a9",	"st,clkgen-plls-c32"
++	"st,stih407-plls-c32-c0_0",	"st,clkgen-plls-c32"
++	"st,stih407-plls-c32-c0_1",	"st,clkgen-plls-c32"
+ 
+ 	"st,stih415-gpu-pll-c32",	"st,clkgengpu-pll-c32"
+ 	"st,stih416-gpu-pll-c32",	"st,clkgengpu-pll-c32"
+ 
+-
+ - #clock-cells : From common clock binding; shall be set to 1.
+ 
+ - clocks : From common clock binding
+diff --git a/Documentation/devicetree/bindings/clock/st/st,clkgen.txt b/Documentation/devicetree/bindings/clock/st/st,clkgen.txt
+index 49ec5ae..55506c2 100644
+--- a/Documentation/devicetree/bindings/clock/st/st,clkgen.txt
++++ b/Documentation/devicetree/bindings/clock/st/st,clkgen.txt
+@@ -24,16 +24,28 @@ address is common of all subnode.
+ 		quadfs_node {
+ 			...
+ 		};
++
++		mux_node {
++			...
++		};
++
++		vcc_node {
++			...
++		};
+ 		...
+ 	};
+ 
+ This binding uses the common clock binding[1].
+-Each subnode should use the binding discribe in [2]..[4]
++Each subnode should use the binding discribe in [2]..[7]
+ 
+ [1] Documentation/devicetree/bindings/clock/clock-bindings.txt
+-[2] Documentation/devicetree/bindings/clock/st,quadfs.txt
+-[3] Documentation/devicetree/bindings/clock/st,quadfs.txt
+-[4] Documentation/devicetree/bindings/clock/st,quadfs.txt
++[2] Documentation/devicetree/bindings/clock/st,clkgen-divmux.txt
++[3] Documentation/devicetree/bindings/clock/st,clkgen-mux.txt
++[4] Documentation/devicetree/bindings/clock/st,clkgen-pll.txt
++[5] Documentation/devicetree/bindings/clock/st,clkgen-prediv.txt
++[6] Documentation/devicetree/bindings/clock/st,vcc.txt
++[7] Documentation/devicetree/bindings/clock/st,quadfs.txt
++
+ 
+ Required properties:
+ - reg : A Base address and length of the register set.
+diff --git a/Documentation/devicetree/bindings/clock/st/st,quadfs.txt b/Documentation/devicetree/bindings/clock/st/st,quadfs.txt
+index ec86d62..c0a4045 100644
+--- a/Documentation/devicetree/bindings/clock/st/st,quadfs.txt
++++ b/Documentation/devicetree/bindings/clock/st/st,quadfs.txt
+@@ -15,6 +15,9 @@ Required properties:
+   "st,stih416-quadfs432",	"st,quadfs"
+   "st,stih416-quadfs660-E",	"st,quadfs"
+   "st,stih416-quadfs660-F",	"st,quadfs"
++  "st,stih407-quadfs660-C",	"st,quadfs"
++  "st,stih407-quadfs660-D",	"st,quadfs"
++
+ 
+ - #clock-cells : from common clock binding; shall be set to 1.
+ 
 -- 
-Jens Axboe
+1.9.1
 
