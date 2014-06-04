@@ -1,51 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751989AbaFDPfu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 11:35:50 -0400
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:54108
-	"EHLO p3plsmtps2ded03.prod.phx3.secureserver.net"
+	id S1752504AbaFDPi1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 11:38:27 -0400
+Received: from mga02.intel.com ([134.134.136.20]:17807 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751098AbaFDPft (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 11:35:49 -0400
-x-originating-ip: 72.167.245.219
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, ohering@suse.com,
-        jbottomley@parallels.com, hch@infradead.org,
-        linux-scsi@vger.kernel.org, apw@canonical.com, jasowang@redhat.com
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 1/1] [SCSI] Fix a bug in deriving the FLUSH_TIMEOUT from the basic I/O timeout
-Date: Wed,  4 Jun 2014 09:33:43 -0700
-Message-Id: <1401899623-24194-1-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1751701AbaFDPi0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 11:38:26 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,973,1392192000"; 
+   d="scan'208";a="551534082"
+Message-ID: <538F3E6A.4080905@linux.intel.com>
+Date: Wed, 04 Jun 2014 08:42:34 -0700
+From: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Reyad Attiyat <reyad.attiyat@gmail.com>
+CC: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
+        Jonathan Cameron <jic23@kernel.org>,
+        linux-input <linux-input@vger.kernel.org>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: Re: [PATCHv2 3/3] IIO: hid-sensor-magn-3d: Add in support for True/Magnetic
+ North HID usages
+References: <1401750890-31854-1-git-send-email-reyad.attiyat@gmail.com> <1401750890-31854-4-git-send-email-reyad.attiyat@gmail.com> <538E092F.9040004@linux.intel.com> <CA+BWVUTxnS_C+EXm1SuShywk998+E5KfTdtTrS6_a0+k+4U4ig@mail.gmail.com>
+In-Reply-To: <CA+BWVUTxnS_C+EXm1SuShywk998+E5KfTdtTrS6_a0+k+4U4ig@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit ID: 7e660100d85af860e7ad763202fff717adcdaacd added code to derive the
-FLUSH_TIMEOUT from the basic I/O timeout. However, this patch did not use the
-basic I/O timeout of the device. Fix this bug.
+On 06/04/2014 08:23 AM, Reyad Attiyat wrote:
+> Hey Srinivas,
+>
+> On Tue, Jun 3, 2014 at 12:43 PM, Srinivas Pandruvada
+> <srinivas.pandruvada@linux.intel.com> wrote:
+>
+>>
+>> May be we should have a field in const struct iio_chan_spec, so that we
+>> can dynamically enable disable channels. In this way we can statically
+>> define channels, but can be enabled/disabled dynamically.
+>>
+> Would this require changing iio subsystem to create sysfs entries only
+> when enabled? Would we need to add functions to disable and enable
+> later on?
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
----
- drivers/scsi/sd.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+This is just a thought. You don't have to change it. I am sure Jonathan 
+will have some opinion this.
 
-diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
-index e9689d5..54150b1 100644
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -832,7 +832,9 @@ static int sd_setup_write_same_cmnd(struct scsi_device *sdp, struct request *rq)
- 
- static int scsi_setup_flush_cmnd(struct scsi_device *sdp, struct request *rq)
- {
--	rq->timeout *= SD_FLUSH_TIMEOUT_MULTIPLIER;
-+	int timeout = sdp->request_queue->rq_timeout;
-+
-+	rq->timeout = (timeout * SD_FLUSH_TIMEOUT_MULTIPLIER);
- 	rq->retries = SD_MAX_RETRIES;
- 	rq->cmd[0] = SYNCHRONIZE_CACHE;
- 	rq->cmd_len = 10;
--- 
-1.7.4.1
+>>
+>> I think we need to present angle in radians. Are you basing change present
+>> in linux-next? This will automatically do in this function.
+>>
+> I'll look into this. What function should I use to make the iio chanel
+> to report radians?
+I think it will work if the existing sequence is maintained
+  st->scale_precision = hid_sensor_format_scale(
+                                 HID_USAGE_SENSOR_COMPASS_3D,
+                                 &st->magn[CHANNEL_SCAN_INDEX_X],
+                                 &st->scale_pre_decml, 
+&st->scale_post_decml);
+
+So as long as you call this function, the scale value to user space will
+be returned correctly.
+
+>>
+>>
+>> I don't see kfree. Try devm_kcalloc?
+>>
+> I changed kmemdup to kcalloc so there is still a kfree in the exsiting
+> code. I can change this to devm_kcalloc but only if we don't go with
+> static channels that are enabled as found.
+>
+Since you are changing this part, devm_ calls are preferred, I think.
+
+Thanks,
+Srinivas
+
+
+> Thanks,
+> Reyad Attiyat
+>
 
