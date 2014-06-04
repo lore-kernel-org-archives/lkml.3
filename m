@@ -1,215 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752651AbaFDLOE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 07:14:04 -0400
-Received: from mail.dev.rtsoft.ru ([213.79.90.226]:58652 "EHLO dev.rtsoft.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752183AbaFDLNi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 07:13:38 -0400
-From: nyushchenko@dev.rtsoft.ru
-To: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, devicetree@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, lugovskoy@dev.rtsoft.ru,
-        Nikita Yushchenko <nyushchenko@dev.rtsoft.ru>
-Subject: [PATCH 01/21] irq: add devres version of OF IRQ mapping routines
-Date: Wed,  4 Jun 2014 15:13:01 +0400
-Message-Id: <1401880402-30091-2-git-send-email-nyushchenko@dev.rtsoft.ru>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1401880402-30091-1-git-send-email-nyushchenko@dev.rtsoft.ru>
-References: <1401880402-30091-1-git-send-email-nyushchenko@dev.rtsoft.ru>
+	id S1752427AbaFDLPe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 07:15:34 -0400
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:42537 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751967AbaFDLPd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 07:15:33 -0400
+Date: Wed, 4 Jun 2014 18:39:01 +0800
+From: Shaohua Li <shli@kernel.org>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Matias =?iso-8859-1?Q?Bj=F8rling?= <m@bjorling.me>, sbradshaw@micron.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] block: per-cpu counters for in-flight IO accounting
+Message-ID: <20140604103901.GA14383@kernel.org>
+References: <1399627061-5960-1-git-send-email-m@bjorling.me>
+ <1399627061-5960-2-git-send-email-m@bjorling.me>
+ <536CE25C.5040107@kernel.dk>
+ <536D0537.7010905@kernel.dk>
+ <20140530121119.GA1637@kernel.org>
+ <53888C80.2020206@kernel.dk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <53888C80.2020206@kernel.dk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nikita Yushchenko <nyushchenko@dev.rtsoft.ru>
+On Fri, May 30, 2014 at 07:49:52AM -0600, Jens Axboe wrote:
+> On 2014-05-30 06:11, Shaohua Li wrote:
+> >On Fri, May 09, 2014 at 10:41:27AM -0600, Jens Axboe wrote:
+> >>On 05/09/2014 08:12 AM, Jens Axboe wrote:
+> >>>On 05/09/2014 03:17 AM, Matias Bjørling wrote:
+> >>>>With multi-million IOPS and multi-node workloads, the atomic_t in_flight
+> >>>>tracking becomes a bottleneck. Change the in-flight accounting to per-cpu
+> >>>>counters to elevate.
+> >>>
+> >>>The part stats are a pain in the butt, I've tried to come up with a
+> >>>great fix for them too. But I don't think the percpu conversion is
+> >>>necessarily the right one. The summing is part of the hotpath, so percpu
+> >>>counters aren't necessarily the right way to go. I don't have a better
+> >>>answer right now, otherwise it would have been fixed :-)
+> >>
+> >>Actual data point - this slows my test down ~14% compared to the stock
+> >>kernel. Also, if you experiment with this, you need to watch for the
+> >>out-of-core users of the part stats (like DM).
+> >
+> >I had a try with Matias's patch. Performance actually boost significantly.
+> >(there are other cache line issue though, eg, hd_struct_get). Jens, what did
+> >you run? part_in_flight() has 3 usages. 2 are for status output, which are cold
+> >path. part_round_stats_single() uses it too, but it's a cold path too as we
+> >simple data every jiffy. Are you using HZ=1000? maybe we should simple the data
+> >every 10ms instead of every jiffy?
+> 
+> I ran peak and normal benchmarks on a p320, on a 4 socket box (64
+> cores). The problem is the one hot path of part_in_flight(), summing
+> percpu for that is too expensive. On bigger systems than mine, it'd
+> be even worse.
 
-Many drivers use devres to manage their resources, and at the same time
-use irq_of_parse_and_map() / irq_dispose_mapping(). This creates problem
-on driver unload paths and on error paths:
-- it is invalid to call irq_dispose_mapping() while IRQ handler is still
-  installed,
-- devres moves removal of IRQ handler out of driver,
-- without explicit devres support for IRQ mapping, irq_dispose_mapping()
-  stays in driver and thus gets called while IRQ handler is still
-  installed.
+I run a null_blk test with 4 sockets, Matias has improvement. And I didn't find
+part_in_flight() is called in any hot path.
 
-This patch adds devm_irq_create_of_mapping() and devm_irq_of_parse_and_map()
-routines to be used by drivers for correct release of resources.
-
-Signed-off-by: Nikita Yushchenko <nyushchenko@dev.rtsoft.ru>
----
- drivers/of/irq.c          |   24 +++++++++++++++++++++++
- include/linux/irqdomain.h |    3 +++
- include/linux/of_irq.h    |   12 ++++++++++++
- kernel/irq/irqdomain.c    |   47 +++++++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 86 insertions(+)
-
-diff --git a/drivers/of/irq.c b/drivers/of/irq.c
-index 5aeb894..30b5010 100644
---- a/drivers/of/irq.c
-+++ b/drivers/of/irq.c
-@@ -46,6 +46,30 @@ unsigned int irq_of_parse_and_map(struct device_node *dev, int index)
- EXPORT_SYMBOL_GPL(irq_of_parse_and_map);
- 
- /**
-+ * devm_irq_of_parse_and_map - Parse and map an interrupt into linux virq space
-+ * @dev: Device interrupt will be used for
-+ * @dn: Device node of the device whose interrupt is to be mapped
-+ * @index: Index of the interrupt to map
-+ *
-+ * This function does the same as irq_of_parse_and_map(), but ensures that
-+ * irq_dispose_mapping() will be called automatically at driver detatch.
-+ *
-+ * If IRQ mapping created by this function needs to be removed manually,
-+ * devm_irq_dispose_mapping() must be called instead of irq_dispose_mapping().
-+ */
-+int devm_irq_of_parse_and_map(struct device *dev, struct device_node *dn,
-+		int index)
-+{
-+	struct of_phandle_args oirq;
-+
-+	if (of_irq_parse_one(dn, index, &oirq))
-+		return 0;
-+
-+	return devm_irq_create_of_mapping(dev, &oirq);
-+}
-+EXPORT_SYMBOL_GPL(devm_irq_of_parse_and_map);
-+
-+/**
-  * of_irq_find_parent - Given a device node, find its interrupt parent node
-  * @child: pointer to device node
-  *
-diff --git a/include/linux/irqdomain.h b/include/linux/irqdomain.h
-index c983ed1..44e6261 100644
---- a/include/linux/irqdomain.h
-+++ b/include/linux/irqdomain.h
-@@ -176,6 +176,7 @@ extern void irq_domain_associate_many(struct irq_domain *domain,
- extern unsigned int irq_create_mapping(struct irq_domain *host,
- 				       irq_hw_number_t hwirq);
- extern void irq_dispose_mapping(unsigned int virq);
-+extern void devm_irq_dispose_mapping(struct device *dev, unsigned int virq);
- 
- /**
-  * irq_linear_revmap() - Find a linux irq from a hw irq number.
-@@ -220,6 +221,8 @@ int irq_domain_xlate_onetwocell(struct irq_domain *d, struct device_node *ctrlr,
- 
- #else /* CONFIG_IRQ_DOMAIN */
- static inline void irq_dispose_mapping(unsigned int virq) { }
-+static inline void devm_irq_dispose_mapping(struct device *dev,
-+		unsigned int virq) { }
- #endif /* !CONFIG_IRQ_DOMAIN */
- 
- #endif /* _LINUX_IRQDOMAIN_H */
-diff --git a/include/linux/of_irq.h b/include/linux/of_irq.h
-index 6404253..4ac7138 100644
---- a/include/linux/of_irq.h
-+++ b/include/linux/of_irq.h
-@@ -35,6 +35,8 @@ extern int of_irq_parse_raw(const __be32 *addr, struct of_phandle_args *out_irq)
- extern int of_irq_parse_one(struct device_node *device, int index,
- 			  struct of_phandle_args *out_irq);
- extern unsigned int irq_create_of_mapping(struct of_phandle_args *irq_data);
-+extern int devm_irq_create_of_mapping(struct device *dev,
-+		struct of_phandle_args *irq_data);
- extern int of_irq_to_resource(struct device_node *dev, int index,
- 			      struct resource *r);
- extern int of_irq_to_resource_table(struct device_node *dev,
-@@ -63,6 +65,9 @@ static inline int of_irq_get(struct device_node *dev, int index)
-  * so declare it here regardless of the CONFIG_OF_IRQ setting.
-  */
- extern unsigned int irq_of_parse_and_map(struct device_node *node, int index);
-+extern int devm_irq_of_parse_and_map(struct device *dev,
-+				     struct device_node *node,
-+				     int index);
- extern struct device_node *of_irq_find_parent(struct device_node *child);
- 
- #else /* !CONFIG_OF */
-@@ -72,6 +77,13 @@ static inline unsigned int irq_of_parse_and_map(struct device_node *dev,
- 	return 0;
- }
- 
-+static inline int devm_irq_of_parse_and_map(struct device *dev,
-+					    struct device_node *node,
-+					    int index)
-+{
-+	return 0;
-+}
-+
- static inline void *of_irq_find_parent(struct device_node *child)
- {
- 	return NULL;
-diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
-index f140337..c8705de 100644
---- a/kernel/irq/irqdomain.c
-+++ b/kernel/irq/irqdomain.c
-@@ -16,6 +16,7 @@
- #include <linux/slab.h>
- #include <linux/smp.h>
- #include <linux/fs.h>
-+#include <linux/device.h>
- 
- static LIST_HEAD(irq_domain_list);
- static DEFINE_MUTEX(irq_domain_mutex);
-@@ -502,6 +503,34 @@ unsigned int irq_create_of_mapping(struct of_phandle_args *irq_data)
- }
- EXPORT_SYMBOL_GPL(irq_create_of_mapping);
- 
-+static void devm_release_irq_mapping(void *p)
-+{
-+	unsigned int virq = (unsigned int)((unsigned long)p);
-+
-+	if (virq)
-+		irq_dispose_mapping(virq);
-+}
-+
-+int devm_irq_create_of_mapping(struct device *dev,
-+		struct of_phandle_args *irq_data)
-+{
-+	unsigned int virq;
-+	int ret;
-+
-+	virq = irq_create_of_mapping(irq_data);
-+	if (virq) {
-+		ret = devm_add_action(dev, devm_release_irq_mapping,
-+				(void *)((unsigned long)virq));
-+		if (ret) {
-+			irq_dispose_mapping(virq);
-+			return ret;
-+		}
-+	}
-+
-+	return virq;
-+}
-+EXPORT_SYMBOL_GPL(devm_irq_create_of_mapping);
-+
- /**
-  * irq_dispose_mapping() - Unmap an interrupt
-  * @virq: linux irq number of the interrupt to unmap
-@@ -524,6 +553,24 @@ void irq_dispose_mapping(unsigned int virq)
- EXPORT_SYMBOL_GPL(irq_dispose_mapping);
- 
- /**
-+ * devm_irq_dispose_mapping() - Unmap an interrupt
-+ * @dev: device irq was used for
-+ * @virq: linux irq number of the interrupt to unmap
-+ *
-+ * This should be used instead of irq_dispose_mapping() if mapping was created
-+ * with devm_irq_create_of_mapping()
-+ */
-+void devm_irq_dispose_mapping(struct device *dev, unsigned int virq)
-+{
-+	if (virq) {
-+		devm_remove_action(dev, devm_release_irq_mapping,
-+				(void *)((unsigned long)virq));
-+		irq_dispose_mapping(virq);
-+	}
-+}
-+EXPORT_SYMBOL_GPL(devm_irq_dispose_mapping);
-+
-+/**
-  * irq_find_mapping() - Find a linux irq from an hw irq number.
-  * @domain: domain owning this hardware interrupt
-  * @hwirq: hardware irq number in that domain space
--- 
-1.7.10.4
-
+Thanks,
+Shaohua
