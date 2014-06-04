@@ -1,78 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752303AbaFDRal (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 13:30:41 -0400
-Received: from mail-qa0-f52.google.com ([209.85.216.52]:51193 "EHLO
-	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751884AbaFDRag (ORCPT
+	id S1752452AbaFDRbE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 13:31:04 -0400
+Received: from mail-vc0-f201.google.com ([209.85.220.201]:50379 "EHLO
+	mail-vc0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752387AbaFDRbB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 13:30:36 -0400
-Date: Wed, 4 Jun 2014 13:30:32 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>
-cc: Dave Chinner <david@fromorbit.com>, hch@infradead.org,
-        linux-mtd@lists.infradead.org, "H. Peter Anvin" <hpa@zytor.com>,
-        logfs@logfs.org, linux-afs@lists.infradead.org,
-        "Joseph S. Myers" <joseph@codesourcery.com>,
-        linux-arch@vger.kernel.org, linux-cifs@vger.kernel.org,
-        linux-scsi@vger.kernel.org, ceph-devel@vger.kernel.org,
-        cluster-devel@redhat.com, coda@cs.cmu.edu, geert@linux-m68k.org,
-        linux-ext4@vger.kernel.org, codalist@telemann.coda.cs.cmu.edu,
-        fuse-devel@lists.sourceforge.net, reiserfs-devel@vger.kernel.org,
-        xfs@oss.sgi.com, john.stultz@linaro.org, tglx@linutronix.de,
-        linux-nfs@vger.kernel.org, linux-ntfs-dev@lists.sourceforge.net,
-        samba-technical@lists.samba.org, linux-kernel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net, ocfs2-devel@oss.oracle.com,
-        linux-fsdevel@vger.kernel.org, lftan@altera.com,
-        linux-btrfs@vger.kernel.org
-Subject: Re: [RFC 00/32] making inode time stamps y2038 ready
-In-Reply-To: <201406041703.47592.arnd@arndb.de>
-Message-ID: <alpine.LFD.2.11.1406041308300.17310@knanqh.ubzr>
-References: <1401480116-1973111-1-git-send-email-arnd@arndb.de> <5011138.W0gbOc20Qp@wuerfel> <20140603213802.GH14410@dastard> <201406041703.47592.arnd@arndb.de>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 4 Jun 2014 13:31:01 -0400
+From: Doug Anderson <dianders@chromium.org>
+To: Kukjin Kim <kgene.kim@samsung.com>, Tomasz Figa <t.figa@samsung.com>
+Cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Chirantan Ekbote <chirantan@chromium.org>,
+        David Riley <davidriley@chromium.org>, olof@lixom.net,
+        linux-samsung-soc@vger.kernel.org,
+        Mandeep Singh Baines <msb@chromium.org>,
+        Andrew Bresticker <abrestic@chromium.org>,
+        Doug Anderson <dianders@chromium.org>, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [PATCH 2/3] clocksource: exynos_mct: cache mct upper count
+Date: Wed,  4 Jun 2014 10:30:33 -0700
+Message-Id: <1401903034-20074-2-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 2.0.0.526.g5318336
+In-Reply-To: <1401903034-20074-1-git-send-email-dianders@chromium.org>
+References: <1401903034-20074-1-git-send-email-dianders@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 4 Jun 2014, Arnd Bergmann wrote:
+From: Mandeep Singh Baines <msb@chromium.org>
 
-> On Tuesday 03 June 2014, Dave Chinner wrote:
-> > Just ot be pedantic, inodes don't need 96 bit timestamps - some
-> > filesystems can *support up to* 96 bit timestamps. If the kernel
-> > only supports 64 bit timestamps and that's all the kernel can
-> > represent, then the upper bits of the 96 bit on-disk inode
-> > timestamps simply remain zero.
-> 
-> I meant the reverse: since we have file systems that can store
-> 96-bit timestamps when using 64-bit kernels, we need to extend
-> 32-bit kernels to have the same internal representation so we
-> can actually read those file systems correctly.
-> 
-> > If you move the filesystem between kernels with different time
-> > ranges, then the filesystem needs to be able to tell the kernel what
-> > it's supported range is.  This is where having the VFS limit the
-> > range of supported timestamps is important: the limit is the
-> > min(kernel range, filesystem range). This allows the filesystems
-> > to be indepenent of the kernel time representation, and the kernel
-> > to be independent of the physical filesystem time encoding....
-> 
-> I agree it makes sense to let the kernel know about the limits
-> of the file system it accesses, but for the reverse, we're probably
-> better off just making the kernel representation large enough (i.e.
-> 96 bits) so it can work with any known file system.
+Saves one register read.  Note that the upper count only changes every
+~178 seconds with a 24MHz source clock, so it's likely it hasn't
+changed from call to call.
 
-Depends...  96 bit handling may get prohibitive on 32-bit archs.
+Before: 1323852 us for 1000000 gettimeofday in userspace
+After:  1173084 us for 1000000 gettimeofday in userspace
 
-The important point here is for the kernel to be able to represent the 
-time _range_ used by any known filesystem, not necessarily the time 
-_precision_.
+Note that even with this change the CPU is in exynos_frc_read() more
+than 2% of the time in real world profiles of ChromeOS.  That
+indicates that it's important to optimize.
 
-For example, a 64 bit representation can be made of 40 bits for seconds 
-spanning 34865 years, and 24 bits for fractional seconds providing 
-precision down to 60 nanosecs.  That ought to be plenty good on 32 bit 
-systems while still being cheap to handle.
+Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
+Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+---
+ drivers/clocksource/exynos_mct.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
+diff --git a/drivers/clocksource/exynos_mct.c b/drivers/clocksource/exynos_mct.c
+index ba3a683..7cbe4aa 100644
+--- a/drivers/clocksource/exynos_mct.c
++++ b/drivers/clocksource/exynos_mct.c
+@@ -167,8 +167,8 @@ static void exynos4_mct_frc_start(u32 hi, u32 lo)
+ 
+ static inline cycle_t notrace _exynos4_frc_read(void)
+ {
+-	unsigned int lo, hi;
+-	u32 hi2 = __raw_readl(reg_base + EXYNOS4_MCT_G_CNT_U);
++	u32 lo, hi;
++	static u32 hi2;
+ 
+ 	do {
+ 		hi = hi2;
+-- 
+2.0.0.526.g5318336
 
-Nicolas
