@@ -1,82 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751717AbaFDU60 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 16:58:26 -0400
-Received: from g4t3425.houston.hp.com ([15.201.208.53]:59560 "EHLO
-	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751129AbaFDU6Z (ORCPT
+	id S1751873AbaFDVA7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 17:00:59 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:54052 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751787AbaFDVA4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 16:58:25 -0400
-Message-ID: <1401915499.13877.21.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [RFC PATCH 1/3] locking/mutex: Try to acquire mutex only if it
- is unlocked
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Jason Low <jason.low2@hp.com>, mingo@kernel.org, tglx@linutronix.de,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        paulmck@linux.vnet.ibm.com, tim.c.chen@linux.intel.com,
-        peter@hurleysoftware.com, riel@redhat.com, hpa@zytor.com,
-        walken@google.com, Waiman.Long@hp.com, aswin@hp.com,
-        scott.norton@hp.com, chegu_vinod@hp.com
-Date: Wed, 04 Jun 2014 13:58:19 -0700
-In-Reply-To: <1401915420.13877.20.camel@buesod1.americas.hpqcorp.net>
-References: <1401908911-8947-1-git-send-email-jason.low2@hp.com>
-	 <1401908911-8947-2-git-send-email-jason.low2@hp.com>
-	 <20140604194322.GN13930@laptop.programming.kicks-ass.net>
-	 <1401915420.13877.20.camel@buesod1.americas.hpqcorp.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 4 Jun 2014 17:00:56 -0400
+Date: Wed, 4 Jun 2014 23:00:52 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Dave P Martin <Dave.Martin@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Grant Grundler <grundler@chromium.org>, Joerg Roedel <joro@8bytes.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Linux IOMMU <iommu@lists.linux-foundation.org>,
+        Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Cho KyongHo <pullip.cho@samsung.com>, Hiroshi Doyu <hdoyu@nvidia.com>
+Subject: Re: [PATCH v2] devicetree: Add generic IOMMU device tree bindings
+Message-ID: <20140604210045.GB18710@mithrandir>
+References: <1400877218-4113-1-git-send-email-thierry.reding@gmail.com>
+ <4545972.cM7IP1qTXQ@wuerfel>
+ <CAL_Jsq+tkFNpjSEZboT+o69B_Z3a8e-ZVKaYDmLwtkyYoPy6VQ@mail.gmail.com>
+ <5288123.eXagyPAxNq@wuerfel>
+ <20140602104104.GD3855@e103592.cambridge.arm.com>
+ <20140604143509.GF28484@ulmo>
+ <20140604164132.GF6644@arm.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="dTy3Mrz/UPE2dbVg"
+Content-Disposition: inline
+In-Reply-To: <20140604164132.GF6644@arm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-06-04 at 13:57 -0700, Davidlohr Bueso wrote:
-> On Wed, 2014-06-04 at 21:43 +0200, Peter Zijlstra wrote:
-> > On Wed, Jun 04, 2014 at 12:08:29PM -0700, Jason Low wrote:
-> > > Upon entering the slowpath in __mutex_lock_common(), we try once more
-> > > to acquire the mutex. We only try to acquire it if MUTEX_SHOW_NO_WAITER
-> > > (lock->count >= 0) is true in order to avoid using the atomic xchg()
-> > > operation whenever it is not necessary. However, we really only need
-> > > to try to acquire if the mutex is free (lock->count == 1).
-> > > 
-> > > This patch changes it so that we only try-acquire the mutex upon
-> > > entering the slowpath if it is unlocked, rather than if there are
-> > > no waiters. This helps further reduce unncessary atomic xchg()
-> > > operations. Furthermore, this patch introduces and uses a new
-> > > MUTEX_IS_UNLOCKED() macro to improve readbability.
-> > > 
-> > > Signed-off-by: Jason Low <jason.low2@hp.com>
-> > > ---
-> > >  kernel/locking/mutex.c |   10 ++++++----
-> > >  1 files changed, 6 insertions(+), 4 deletions(-)
-> > > 
-> > > diff --git a/kernel/locking/mutex.c b/kernel/locking/mutex.c
-> > > index bc73d33..0925968 100644
-> > > --- a/kernel/locking/mutex.c
-> > > +++ b/kernel/locking/mutex.c
-> > > @@ -48,9 +48,10 @@
-> > >  
-> > >  /*
-> > >   * A negative mutex count indicates that waiters are sleeping waiting for the
-> > > - * mutex.
-> > > + * mutex, and a count of one indicates the mutex is unlocked.
-> > >   */
-> > >  #define	MUTEX_SHOW_NO_WAITER(mutex)	(atomic_read(&(mutex)->count) >= 0)
-> > > +#define	MUTEX_IS_UNLOCKED(mutex)	(atomic_read(&(mutex)->count) == 1)
-> > 
-> > So I recently saw that MUTEX_SHOW_NO_WAITER thing and cried a little;
-> > and now you're adding more of that same nonsense.
-> > 
-> > Please make them inline functions, also can we rename the SHOW_NO_WAITER
-> > thing, because its not at all clear to me wtf it does; should it be
-> > called: mutex_no_waiters() or somesuch?
-> 
-> Agreed. 
-> 
-> In addition, how about the following helpers instead:
-> - mutex_is_unlocked() : count > 0
-> - mutex_has_waiters() : count < 0, or list_empty(->wait_list)
-                                      ^ err, that's !list_empty()
 
+--dTy3Mrz/UPE2dbVg
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Wed, Jun 04, 2014 at 05:41:32PM +0100, Will Deacon wrote:
+> On Wed, Jun 04, 2014 at 03:35:10PM +0100, Thierry Reding wrote:
+> > On Mon, Jun 02, 2014 at 11:41:04AM +0100, Dave Martin wrote:
+> > > In the strictest sense, no.
+> > >=20
+> > > But for a large set of sane configurations, this probably works.
+> > >=20
+> > > Small sets of randomly-assigned IDs can just be enumerated one by one.
+> > >=20
+> > > We wouldn't be able to describe folding and bit shuffling, but we
+> > > probably don't want to encourage that anyway.
+> >=20
+> > I'm having some difficulty understanding this. You make it sound like
+> > there's a fairly arbitrary number of IDs that the SMMU can handle. So
+> > how is the mapping to devices defined? If you say encourage that does
+> > make it sound like the assignment of IDs is purely defined by some
+> > mechanism in software rather than in hardware. Or they are more or less
+> > randomly picked by someone. If that's the case, is that not something
+> > that should be dynamically allocated by the kernel rather than put into
+> > the device tree?
+>=20
+> The set of StreamIDs that can be generated by a master is fixed in the
+> hardware. The SMMU can then be programmed to map these incoming IDs onto
+> a context ID (or a set of context IDs), which are the IDs used internally
+> by the SMMU to find the page tables etc.
+>=20
+> The StreamID -> ContextID mapping is dynamic and controlled by software.
+> The Master -> StreamIDs mapping is fixed in the hardware.
+
+Okay, that sounds similar to what the Tegra SMMU does. The naming is
+slightly differently. "Master" is called "memory client", "StreamID"
+would be "SWGROUP" and "ContextID" I guess would map to what's called an
+"ASID" (Address Space ID) on Tegra.
+
+I'm not sure about the amount of leverage that we have to encourage the
+mappings that we think are easy to describe in DT and discourage those
+that we don't want. Last time I checked we were still playing catch up
+rather than being able to give recommendations to hardware engineers
+about what will result in sane DT content and what won't.
+
+Irrespective of the above, I still think that a generic binding based on
+an #iommu-cells and iommus property gives us the most flexibility. For
+easy cases, most of which are listed in the current proposal could
+easily be dealt with in convenience helpers. For the more complex cases
+drivers for those IOMMUs can define a specifier that make sense for the
+mappings they need to be able to describe.
+
+Also we're talking about a generic IOMMU binding here. That means that
+if some hardware comes along that's not "generic" and doesn't fit into
+the constraints set by this binding, then we still have the option of
+defining a completely different one for that particular case.
+
+Thierry
+
+--dTy3Mrz/UPE2dbVg
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTj4j9AAoJEN0jrNd/PrOhthkP/3PIBa/lJxjOHVGl6FhiC0t4
+IbjaZ7cTtGPpmnAzVVJK6CW75XM4UUXdmSXefh/8qMFGmhUT+Y8x6lCgT8yTh7hG
+VAp2qAAeZNBzUjeDDfbMO+insDB+qqYkZs5KmG/y9gMuBHxkpP0rIgx3xsCDXtGs
+/8F+X/+ca06tqUW6zlCzVMvQoy3r8PU+UxyjztUz4qa6L1F5OeI6SU8+S13lsmE0
+RzWvUbDtehfuDvEr98JHcSjd+Mge7Ewj1G3637dIdO3nbdlOzwzrPgG6Om9gdExN
+Addh2mQ0DxUPVv0gDyNDB0UP5RdUsPUjILrERW1wxB2bLynMjcw7gtstvRRmEmTe
+99ZcuEe7d/SddSR0dCdmscYnI3oWw3b5nnU/KzcdaVAEtJyXtYAuJPZFRfvOA+JC
+t7D8Q5Ic037iW8Fsj17UfxqlgsoHVrfdhVGYZJ/nwsRtU6t4o/RQ9YIBFl3kGU6L
+cNzhHOhbKQssxPIQW0PdxPxdw+Ud3q1x4XI947eh0j2BRFnNBINo1ryOKkH2+uqc
+0xIf+W6IrNyuaJZVHbmmWuS7CKH9npNXOly+5YPKRqiIwxd4rkBZrvsEjm9sSbSX
+pNp/p9K3a9ixsFIOxKaUxhH+gSQZs2GwXQZ4c7nuCWBgYPvB5CMw7RA2/aWVXpuF
+RrtSvQiLY8FTipVjQHEQ
+=pRJk
+-----END PGP SIGNATURE-----
+
+--dTy3Mrz/UPE2dbVg--
