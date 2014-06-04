@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754881AbaFDXlY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:41:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40779 "EHLO
+	id S1754646AbaFDXlW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 19:41:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40785 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753957AbaFDXXu (ORCPT
+	with ESMTP id S1753958AbaFDXXu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 4 Jun 2014 19:23:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Shawn Guo <shawn.guo@freescale.com>, Olof Johansson <olof@lixom.net>
-Subject: [PATCH 3.10 048/103] ARM: dts: i.MX53: Fix ipu register space size
-Date: Wed,  4 Jun 2014 16:25:11 -0700
-Message-Id: <20140604232548.401743282@linuxfoundation.org>
+        Liu Hua <sdu.liu@huawei.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [PATCH 3.10 049/103] ARM: 8012/1: kdump: Avoid overflow when converting pfn to physaddr
+Date: Wed,  4 Jun 2014 16:25:12 -0700
+Message-Id: <20140604232548.430458806@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232546.704156131@linuxfoundation.org>
 References: <20140604232546.704156131@linuxfoundation.org>
@@ -29,32 +29,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sascha Hauer <s.hauer@pengutronix.de>
+From: Liu Hua <sdu.liu@huawei.com>
 
-commit 6d66da89bf4422c0a0693627fb3e25f74af50f92 upstream.
+commit 8fad87bca7ac9737e413ba5f1656f1114a8c314d upstream.
 
-The IPU register space is 128MB, not 2GB.
+When we configure CONFIG_ARM_LPAE=y, pfn << PAGE_SHIFT will
+overflow if pfn >= 0x100000 in copy_oldmem_page.
+So use __pfn_to_phys for converting.
 
-Fixes: abed9a6bf2bb 'ARM i.MX53: Add IPU support'
-Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
-Acked-by: Shawn Guo <shawn.guo@freescale.com>
-Signed-off-by: Olof Johansson <olof@lixom.net>
+Signed-off-by: Liu Hua <sdu.liu@huawei.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/boot/dts/imx53.dtsi |    2 +-
+ arch/arm/kernel/crash_dump.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/arm/boot/dts/imx53.dtsi
-+++ b/arch/arm/boot/dts/imx53.dtsi
-@@ -71,7 +71,7 @@
- 		ipu: ipu@18000000 {
- 			#crtc-cells = <1>;
- 			compatible = "fsl,imx53-ipu";
--			reg = <0x18000000 0x080000000>;
-+			reg = <0x18000000 0x08000000>;
- 			interrupts = <11 10>;
- 			clocks = <&clks 59>, <&clks 110>, <&clks 61>;
- 			clock-names = "bus", "di0", "di1";
+--- a/arch/arm/kernel/crash_dump.c
++++ b/arch/arm/kernel/crash_dump.c
+@@ -39,7 +39,7 @@ ssize_t copy_oldmem_page(unsigned long p
+ 	if (!csize)
+ 		return 0;
+ 
+-	vaddr = ioremap(pfn << PAGE_SHIFT, PAGE_SIZE);
++	vaddr = ioremap(__pfn_to_phys(pfn), PAGE_SIZE);
+ 	if (!vaddr)
+ 		return -ENOMEM;
+ 
 
 
