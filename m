@@ -1,70 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752357AbaFDVo2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 17:44:28 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:38170 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752333AbaFDVoZ (ORCPT
+	id S1752460AbaFDVp0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 17:45:26 -0400
+Received: from mail-we0-f179.google.com ([74.125.82.179]:64376 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752438AbaFDVpY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 17:44:25 -0400
-From: Stephane Eranian <eranian@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, jolsa@redhat.com,
-        zheng.z.yan@intel.com, maria.n.dimakopoulou@gmail.com
-Subject: [PATCH 8/9] perf/x86: fix intel_get_event_constraints() for dynamic constraints
-Date: Wed,  4 Jun 2014 23:34:17 +0200
-Message-Id: <1401917658-26065-9-git-send-email-eranian@google.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1401917658-26065-1-git-send-email-eranian@google.com>
-References: <1401917658-26065-1-git-send-email-eranian@google.com>
+	Wed, 4 Jun 2014 17:45:24 -0400
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung.kim@lge.com>,
+        Andi Kleen <ak@linux.intel.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Stephane Eranian <eranian@google.com>, David Ahern <dsahern@gmail.com>,
+        Vince Weaver <vincent.weaver@maine.edu>, linux-kernel@vger.kernel.org
+Subject: [PATCH] tools: perf: util: parse-events.c:  Cleaning up missing null-terminate after strncpy call
+Date: Wed,  4 Jun 2014 23:46:18 +0200
+Message-Id: <1401918378-3842-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With dynamic constraint, we need to restart from the static
-constraints each time the intel_get_event_constraints() is called.
+Added a guaranteed null-terminate after call to strncpy.
 
-Reviewed-by: Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
-Signed-off-by: Stephane Eranian <eranian@google.com>
+This was partly found using a static code analysis program called cppcheck.
+
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- arch/x86/kernel/cpu/perf_event_intel.c |   15 ++++++++++-----
- 1 file changed, 10 insertions(+), 5 deletions(-)
+ tools/perf/util/parse-events.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index b1a2684..4fb4fe6 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -1849,20 +1849,25 @@ intel_get_excl_constraints(struct cpu_hw_events *cpuc, struct perf_event *event,
- static struct event_constraint *
- intel_get_event_constraints(struct cpu_hw_events *cpuc, struct perf_event *event)
- {
--	struct event_constraint *c = event->hw.constraint;
-+	struct event_constraint *c1 = event->hw.constraint;
-+	struct event_constraint *c2;
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index 1e15df1..fad2976 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -1216,8 +1216,10 @@ static void print_symbol_events(const char *event_glob, unsigned type,
  
- 	/*
- 	 * first time only
- 	 * - static constraint: no change across incremental scheduling calls
- 	 * - dynamic constraint: handled by intel_get_excl_constraints()
- 	 */
--	if (!c)
--		c = __intel_get_event_constraints(cpuc, event);
-+	c2 = __intel_get_event_constraints(cpuc, event);
-+	if (c1 && (c1->flags & PERF_X86_EVENT_DYNAMIC)) {
-+		bitmap_copy(c1->idxmsk, c2->idxmsk, X86_PMC_IDX_MAX);
-+		c1->weight = c2->weight;
-+		c2 = c1;
-+	}
+ 		if (strlen(syms->alias))
+ 			snprintf(name, MAX_NAME_LEN, "%s OR %s", syms->symbol, syms->alias);
+-		else
++		else {
+ 			strncpy(name, syms->symbol, MAX_NAME_LEN);
++			name[sizeof(name) - 1] = '\0';
++		}
  
- 	if (cpuc->excl_cntrs)
--		return intel_get_excl_constraints(cpuc, event, c);
-+		return intel_get_excl_constraints(cpuc, event, c2);
+ 		printf("  %-50s [%s]\n", name, event_type_descriptors[type]);
  
--	return c;
-+	return c2;
- }
- 
- static void intel_put_excl_constraints(struct cpu_hw_events *cpuc,
 -- 
-1.7.9.5
+1.7.10.4
 
