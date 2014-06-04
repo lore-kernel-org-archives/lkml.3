@@ -1,103 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752376AbaFDKgP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 06:36:15 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:59314 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751332AbaFDKgO (ORCPT
+	id S1752284AbaFDKj0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 06:39:26 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:52916 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752050AbaFDKjY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 06:36:14 -0400
-Date: Wed, 4 Jun 2014 11:36:19 +0100
-From: Morten Rasmussen <morten.rasmussen@arm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Vincent Guittot <vincent.guittot@linaro.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        "efault@gmx.de" <efault@gmx.de>,
-        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>
-Subject: Re: [PATCH v2 08/11] sched: get CPU's activity statistic
-Message-ID: <20140604103619.GL29593@e103034-lin>
-References: <1400860385-14555-1-git-send-email-vincent.guittot@linaro.org>
- <1400860385-14555-9-git-send-email-vincent.guittot@linaro.org>
- <20140528121001.GI19967@e103034-lin>
- <CAKfTPtDxeBfZK1AxCRqEG91pi--Ti1RYFoQPDhvMVnGTCspQ-g@mail.gmail.com>
- <20140528154703.GJ19967@e103034-lin>
- <20140603155007.GZ30445@twins.programming.kicks-ass.net>
- <CAKfTPtDUvH--WxFATTW6YRAvLuohzyNHDUq6DRdfxc7gRKCX6Q@mail.gmail.com>
- <20140604080809.GK30445@twins.programming.kicks-ass.net>
- <CAKfTPtBCG1Jq2b+fyoGuA=7yG_yUbsmaD+j-ZXXsPNGp5giKpg@mail.gmail.com>
- <20140604101724.GD11096@twins.programming.kicks-ass.net>
+	Wed, 4 Jun 2014 06:39:24 -0400
+Date: Wed, 4 Jun 2014 11:38:46 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arvind Chauhan <arvind.chauhan@arm.com>,
+        Eduardo Valentin <edubezval@gmail.com>, Pavel Machek <pavel@ucw.cz>,
+        Liam Girdwood <lgirdwood@gmail.com>
+Message-ID: <20140604103846.GF2520@sirena.org.uk>
+References: <1780c3205893be8567fa29ccd86674e2f32555b4.1401192160.git.viresh.kumar@linaro.org>
+ <20140527192923.GC12304@sirena.org.uk>
+ <CAKohpo=AnusM2FGs=JLozSyTc0N7SDXQxe+rPiLEHP6ewxY4ow@mail.gmail.com>
+ <20140528173858.GG5099@sirena.org.uk>
+ <CAKohpo=T3BG9X0gHfRA-x8B3ou3Y=XHcs=OTYAHikX61iAJ9xw@mail.gmail.com>
+ <20140603145347.GE31751@sirena.org.uk>
+ <CAKohpo=VLCf2nz1WsL-iGw6BWwpmqZ+8JwGFFHFFtjZyAS9LrA@mail.gmail.com>
+ <20140603154854.GG31751@sirena.org.uk>
+ <CAKohpon9G=JdZ1jSStHZH29VZDggZXm+EOqDAwedk2K0ZxD0Qg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="FeAIMMcddNRN4P4/"
 Content-Disposition: inline
-In-Reply-To: <20140604101724.GD11096@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAKohpon9G=JdZ1jSStHZH29VZDggZXm+EOqDAwedk2K0ZxD0Qg@mail.gmail.com>
+X-Cookie: Your lucky color has faded.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 109.148.252.180
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/2] regulators: Add definition of
+ regulator_set_voltage_time() for !CONFIG_REGULATOR
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 04, 2014 at 11:17:24AM +0100, Peter Zijlstra wrote:
-> On Wed, Jun 04, 2014 at 11:32:10AM +0200, Vincent Guittot wrote:
-> > On 4 June 2014 10:08, Peter Zijlstra <peterz@infradead.org> wrote:
-> > > On Wed, Jun 04, 2014 at 09:47:26AM +0200, Vincent Guittot wrote:
-> > >> On 3 June 2014 17:50, Peter Zijlstra <peterz@infradead.org> wrote:
-> > >> > On Wed, May 28, 2014 at 04:47:03PM +0100, Morten Rasmussen wrote:
-> > >> >> Since we may do periodic load-balance every 10 ms or so, we will perform
-> > >> >> a number of load-balances where runnable_avg_sum will mostly be
-> > >> >> reflecting the state of the world before a change (new task queued or
-> > >> >> moved a task to a different cpu). If you had have two tasks continuously
-> > >> >> on one cpu and your other cpu is idle, and you move one of the tasks to
-> > >> >> the other cpu, runnable_avg_sum will remain unchanged, 47742, on the
-> > >> >> first cpu while it starts from 0 on the other one. 10 ms later it will
-> > >> >> have increased a bit, 32 ms later it will be 47742/2, and 345 ms later
-> > >> >> it reaches 47742. In the mean time the cpu doesn't appear fully utilized
-> > >> >> and we might decide to put more tasks on it because we don't know if
-> > >> >> runnable_avg_sum represents a partially utilized cpu (for example a 50%
-> > >> >> task) or if it will continue to rise and eventually get to 47742.
-> > >> >
-> > >> > Ah, no, since we track per task, and update the per-cpu ones when we
-> > >> > migrate tasks, the per-cpu values should be instantly updated.
-> > >> >
-> > >> > If we were to increase per task storage, we might as well also track
-> > >> > running_avg not only runnable_avg.
-> > >>
-> > >> I agree that the removed running_avg should give more useful
-> > >> information about the the load of a CPU.
-> > >>
-> > >> The main issue with running_avg is that it's disturbed by other tasks
-> > >> (as point out previously). As a typical example,  if we have 2 tasks
-> > >> with a load of 25% on 1 CPU, the unweighted runnable_load_avg will be
-> > >> in the range of [100% - 50%] depending of the parallelism of the
-> > >> runtime of the tasks whereas the reality is 50% and the use of
-> > >> running_avg will return this value
-> > >
-> > > I'm not sure I see how 100% is possible, but yes I agree that runnable
-> > > can indeed be inflated due to this queueing effect.
->  
-> Let me explain the 75%, take any one of the above scenarios. Lets call
-> the two tasks A and B, and let for a moment assume A always wins and
-> runs first, and then B.
-> 
-> So A will be runnable for 25%, B otoh will be runnable the entire time A
-> is actually running plus its own running time, giving 50%. Together that
-> makes 75%.
-> 
-> If you release the assumption that A runs first, but instead assume they
-> equally win the first execution, you get them averaging at 37.5% each,
-> which combined will still give 75%.
 
-But that is assuming that the first task gets to run to completion of it
-busy period. If it uses up its sched_slice and we switch to the other
-tasks, they both get to wait.
+--FeAIMMcddNRN4P4/
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-For example, if the sched_slice is 5 ms and the busy period is 10 ms,
-the execution pattern would be: A, B, A, B, idle, ... In that case A is
-runnable for 15 ms and B is for 20 ms. Assuming that the overall period
-is 40 ms, the A runnable is 37.5% and B is 50%.
+On Wed, Jun 04, 2014 at 11:16:37AM +0530, Viresh Kumar wrote:
 
+> - But for platforms without regulators support (CONFIG_REGULATOR=n),
+> regulator_get() will return NULL (a valid regulator though) and
+> regulator_set_voltage() will fail. Because the platform doesn't care much
+> about regulators it must go on and change frequency as if nothing
+> happened.
+
+No, approximately none of this is true.  CONFIG_REGULATOR tells you
+nothing about the hardware, it tells you what someone selected in the
+kernel config.  There is nothing stopping anyone enabling the API on any
+platform, and there is nothing stopping anyone disabling the API when
+building a kernel for a platform which can do something with regulators
+with CONFIG_REGULATOR disabled.
+
+Please, go and *think* about what's going on here.  I've repeatedly
+asked you to consider the case where we need to raise the voltage prior
+to raising the frequency for cpufreq but you've not responded to these
+requests either directly or in showing any sign of having understood the
+issue.
+
+If the code fails to change the voltage it needs to handle that
+(including remembering that attempts to lower the voltage fail); if the
+code handles the errors sensibly I would expect that to handle
+everything.
+
+--FeAIMMcddNRN4P4/
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTjvczAAoJELSic+t+oim9AEMQAJVEwGI59MNoz7sFpAYba7Lz
+3PJUK+QsWIXiMzvikzSbf9Cc7+JvISb1vRywEvTCZlGhvODXd51tTQDCZw7aIKFn
+wgN/5c5rmIzekqz+hrCpG4E2LHmL1QQ+x5gIzecWak38PL8AlSil/TsEOo65GZ9Q
+06gQHctBK64yhPywpKkVdfDr7ShlWYe0+9BFYTi0DzArglR2XaIaxwFryMY66ivo
+kW/TofAt84eV/KU1rRIsFnz5HUzxn+Id+tSg8yjOOw3pix3AmffLnJqZCPXyF1w9
+3pwIlJu/MyCaLtCWBJy2HzVxDL8y4IfL45fcqoBqz+hzZ6UGm0c6iP2UVpjvW11+
+xAmUOZSTN7oBRECeSf4/IyH239UM7LuHTUrHRF89Hg7DN4ALFhAgSUacOiA+XidM
+KU3XnOqf0aOwFr6kSdr8tDFgLuF9Xwo+ITYsEX6fzy4NqbE0kx0fM0EpUVtXz6rn
+xz94BVsxtgSnayMexg2Q0D0+EXZiLSf/XTveGJwP8YH4T1bpv0iGVdPu02gMifLQ
+rwJZ3gFeSGKRaYB6Rs71zIwy2x5m/+ZUUAgBUTrldS4GBRfnvE/HikN/cjh2zPlZ
+VE8e7gv0ke02Cy9yfMM6Iy/u0sCEIuO/Y39+g7u3JLl75QFLLoXb2NNellQT9XEP
+w8LHe0tKQJ5oo4T3EnuS
+=J+fe
+-----END PGP SIGNATURE-----
+
+--FeAIMMcddNRN4P4/--
