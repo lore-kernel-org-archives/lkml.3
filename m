@@ -1,90 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754486AbaFDQd3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 12:33:29 -0400
-Received: from mail-we0-f176.google.com ([74.125.82.176]:39667 "EHLO
-	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754092AbaFDQbO (ORCPT
+	id S1754501AbaFDQdi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 12:33:38 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:55609 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752770AbaFDQdg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 12:31:14 -0400
-From: Peter Griffin <peter.griffin@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        chris@printf.net, ulf.hansson@linaro.org, maxime.coquelin@st.com,
-        patrice.chotard@st.com, srinivas.kandagatla@gmail.com
-Cc: peter.griffin@linaro.org, kernel@stlinux.com, linux-mmc@vger.kernel.org,
-        devicetree@vger.kernel.org,
-        Giuseppe Cavallaro <peppe.cavallaro@st.com>
-Subject: [PATCH v3 03/10] ARM: STi: DT: Add sdhci pins for stih416
-Date: Wed,  4 Jun 2014 17:30:17 +0100
-Message-Id: <1401899424-1365-4-git-send-email-peter.griffin@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1401899424-1365-1-git-send-email-peter.griffin@linaro.org>
-References: <1401899424-1365-1-git-send-email-peter.griffin@linaro.org>
+	Wed, 4 Jun 2014 12:33:36 -0400
+Date: Wed, 4 Jun 2014 09:33:34 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Ming Lei <tom.leiming@gmail.com>, Christoph Hellwig <hch@infradead.org>,
+        Shaohua Li <shli@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [patch]blk-mq: blk_mq_tag_to_rq should handle flush request
+Message-ID: <20140604163334.GA21501@infradead.org>
+References: <538F331F.60101@kernel.dk>
+ <20140604145803.GA7826@infradead.org>
+ <538F34FB.7050003@kernel.dk>
+ <20140604153159.GA27096@infradead.org>
+ <CACVXFVNNTPrq29eS9GzJDequtFXCTNWPLJfzB4Z-XJVE5j8+aA@mail.gmail.com>
+ <538F3FB5.2020102@kernel.dk>
+ <CACVXFVM-aJwBgrvgT-nNbbi81vE4qeS1LgsS5cFGiz5cbsApZw@mail.gmail.com>
+ <538F44AD.4090906@kernel.dk>
+ <CACVXFVOxx973ho9yN0W95YCj2XQBoYqyu4aD4bZ_9Pv89XGgnQ@mail.gmail.com>
+ <538F4938.7040309@kernel.dk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <538F4938.7040309@kernel.dk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds the required pin config for both SDHCI controllers on
-the stih416 SoC.
+On Wed, Jun 04, 2014 at 10:28:40AM -0600, Jens Axboe wrote:
+> > Attachment patch should be enough.
+> 
+> Yep, looks fine. Care to send as a proper patch, then I will include it?
 
-Signed-off-by: Giuseppe Cavallaro <peppe.cavallaro@st.com>
-Signed-off-by: Peter Griffin <peter.griffin@linaro.org>
-Acked-by: Lee Jones <lee.jones@linaro.org>
-Acked-by: Maxime Coquelin <maxime.coquelin@st.com>
----
- arch/arm/boot/dts/stih416-pinctrl.dtsi | 39 ++++++++++++++++++++++++++++++++++
- 1 file changed, 39 insertions(+)
-
-diff --git a/arch/arm/boot/dts/stih416-pinctrl.dtsi b/arch/arm/boot/dts/stih416-pinctrl.dtsi
-index 6252188..dad1f24 100644
---- a/arch/arm/boot/dts/stih416-pinctrl.dtsi
-+++ b/arch/arm/boot/dts/stih416-pinctrl.dtsi
-@@ -467,6 +467,45 @@
- 					};
- 				};
- 			};
-+
-+			mmc0 {
-+				pinctrl_mmc0: mmc0 {
-+					st,pins {
-+						mmcclk  = <&PIO13 4 ALT4 BIDIR_PU NICLK 0 CLK_B>;
-+						data0   = <&PIO14 4 ALT4 BIDIR_PU BYPASS 0>;
-+						data1   = <&PIO14 5 ALT4 BIDIR_PU BYPASS 0>;
-+						data2   = <&PIO14 6 ALT4 BIDIR_PU BYPASS 0>;
-+						data3   = <&PIO14 7 ALT4 BIDIR_PU BYPASS 0>;
-+						cmd     = <&PIO15 1 ALT4 BIDIR_PU BYPASS 0>;
-+						wp      = <&PIO15 3 ALT4 IN>;
-+						data4   = <&PIO16 4 ALT4 BIDIR_PU BYPASS 0>;
-+						data5   = <&PIO16 5 ALT4 BIDIR_PU BYPASS 0>;
-+						data6   = <&PIO16 6 ALT4 BIDIR_PU BYPASS 0>;
-+						data7   = <&PIO16 7 ALT4 BIDIR_PU BYPASS 0>;
-+						pwr     = <&PIO17 1 ALT4 OUT>;
-+						cd      = <&PIO17 2 ALT4 IN>;
-+						led     = <&PIO17 3 ALT4 OUT>;
-+					};
-+				};
-+			};
-+			mmc1 {
-+				pinctrl_mmc1: mmc1 {
-+					st,pins {
-+						mmcclk  = <&PIO15 0 ALT3 BIDIR_PU NICLK 0 CLK_B>;
-+						data0   = <&PIO13 7 ALT3 BIDIR_PU BYPASS 0>;
-+						data1   = <&PIO14 1 ALT3 BIDIR_PU BYPASS 0>;
-+						data2   = <&PIO14 2 ALT3 BIDIR_PU BYPASS 0>;
-+						data3   = <&PIO14 3 ALT3 BIDIR_PU BYPASS 0>;
-+						cmd     = <&PIO15 4 ALT3 BIDIR_PU BYPASS 0>;
-+						data4   = <&PIO15 6 ALT3 BIDIR_PU BYPASS 0>;
-+						data5   = <&PIO15 7 ALT3 BIDIR_PU BYPASS 0>;
-+						data6   = <&PIO16 0 ALT3 BIDIR_PU BYPASS 0>;
-+						data7   = <&PIO16 1 ALT3 BIDIR_PU BYPASS 0>;
-+						pwr     = <&PIO16 2 ALT3 OUT>;
-+						nreset  = <&PIO13 6 ALT3 OUT>;
-+					};
-+				};
-+			};
- 		};
- 
- 		pin-controller-fvdp-fe {
--- 
-1.9.1
+I think we an also drop the assignment to q->flush_rq->cmd_flags in
+flush_end_io now.
 
