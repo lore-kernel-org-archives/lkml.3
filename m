@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932801AbaFEAtM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 20:49:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39715 "EHLO
+	id S1754300AbaFEAte (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 20:49:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39720 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751877AbaFDXUv (ORCPT
+	with ESMTP id S1752291AbaFDXUv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 4 Jun 2014 19:20:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ilan Peer <ilan.peer@intel.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        "Luis R. Rodriguez" <mcgrof@suse.com>
-Subject: [PATCH 3.14 031/228] cfg80211: fix few minor issues in reg_process_hint()
-Date: Wed,  4 Jun 2014 16:21:00 -0700
-Message-Id: <20140604232349.077043731@linuxfoundation.org>
+        Bodo Stroesser <bstroesser@ts.fujitsu.com>,
+        Corey Minyard <cminyard@mvista.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.14 030/228] ipmi: Reset the KCS timeout when starting error recovery
+Date: Wed,  4 Jun 2014 16:20:59 -0700
+Message-Id: <20140604232349.047986959@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -30,77 +30,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ilan Peer <ilan.peer@intel.com>
+From: Corey Minyard <cminyard@mvista.com>
 
-commit 772f0389338cfcf96da1c178046dc7e1649ab554 upstream.
+commit eb6d78ec213e6938559b801421d64714dafcf4b2 upstream.
 
-Fix the following issues in reg_process_hint():
+The OBF timer in KCS was not reset in one situation when error recovery
+was started, resulting in an immediate timeout.
 
-1. Add verification that wiphy is valid before processing
-   NL80211_REGDOMAIN_SET_BY_COUNTRY_IE.
-2. Free the request in case of invalid initiator.
-3. Remove WARN_ON check on reg_request->alpha2 as it is not a
-   pointer.
-
-Signed-off-by: Ilan Peer <ilan.peer@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
+Reported-by: Bodo Stroesser <bstroesser@ts.fujitsu.com>
+Signed-off-by: Corey Minyard <cminyard@mvista.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/wireless/reg.c |   19 ++++++++++---------
- 1 file changed, 10 insertions(+), 9 deletions(-)
+ drivers/char/ipmi/ipmi_kcs_sm.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/net/wireless/reg.c
-+++ b/net/wireless/reg.c
-@@ -1683,17 +1683,9 @@ static void reg_process_hint(struct regu
- 	struct wiphy *wiphy = NULL;
- 	enum reg_request_treatment treatment;
- 
--	if (WARN_ON(!reg_request->alpha2))
--		return;
--
- 	if (reg_request->wiphy_idx != WIPHY_IDX_INVALID)
- 		wiphy = wiphy_idx_to_wiphy(reg_request->wiphy_idx);
- 
--	if (reg_request->initiator == NL80211_REGDOM_SET_BY_DRIVER && !wiphy) {
--		kfree(reg_request);
--		return;
--	}
--
- 	switch (reg_request->initiator) {
- 	case NL80211_REGDOM_SET_BY_CORE:
- 		reg_process_hint_core(reg_request);
-@@ -1706,20 +1698,29 @@ static void reg_process_hint(struct regu
- 		schedule_delayed_work(&reg_timeout, msecs_to_jiffies(3142));
- 		return;
- 	case NL80211_REGDOM_SET_BY_DRIVER:
-+		if (!wiphy)
-+			goto out_free;
- 		treatment = reg_process_hint_driver(wiphy, reg_request);
- 		break;
- 	case NL80211_REGDOM_SET_BY_COUNTRY_IE:
-+		if (!wiphy)
-+			goto out_free;
- 		treatment = reg_process_hint_country_ie(wiphy, reg_request);
- 		break;
- 	default:
- 		WARN(1, "invalid initiator %d\n", reg_request->initiator);
--		return;
-+		goto out_free;
+--- a/drivers/char/ipmi/ipmi_kcs_sm.c
++++ b/drivers/char/ipmi/ipmi_kcs_sm.c
+@@ -251,8 +251,9 @@ static inline int check_obf(struct si_sm
+ 	if (!GET_STATUS_OBF(status)) {
+ 		kcs->obf_timeout -= time;
+ 		if (kcs->obf_timeout < 0) {
+-		    start_error_recovery(kcs, "OBF not ready in time");
+-		    return 1;
++			kcs->obf_timeout = OBF_RETRY_TIMEOUT;
++			start_error_recovery(kcs, "OBF not ready in time");
++			return 1;
+ 		}
+ 		return 0;
  	}
- 
- 	/* This is required so that the orig_* parameters are saved */
- 	if (treatment == REG_REQ_ALREADY_SET && wiphy &&
- 	    wiphy->regulatory_flags & REGULATORY_STRICT_REG)
- 		wiphy_update_regulatory(wiphy, reg_request->initiator);
-+
-+	return;
-+
-+out_free:
-+	kfree(reg_request);
- }
- 
- /*
 
 
