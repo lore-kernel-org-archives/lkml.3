@@ -1,85 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751958AbaFDQje (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 12:39:34 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:52970 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750871AbaFDQjc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 12:39:32 -0400
-Date: Wed, 4 Jun 2014 17:39:33 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Thierry Reding <thierry.reding@gmail.com>, Hiroshi Doyu <hdoyu@nvidia.com>,
-        Rob Herring <robherring2@gmail.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>, Mark Rutland <Mark.Rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Cho KyongHo <pullip.cho@samsung.com>,
-        Grant Grundler <grundler@chromium.org>,
-        Dave P Martin <Dave.Martin@arm.com>,
-        Marc Zyngier <Marc.Zyngier@arm.com>, Joerg Roedel <joro@8bytes.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Linux IOMMU <iommu@lists.linux-foundation.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] devicetree: Add generic IOMMU device tree bindings
-Message-ID: <20140604163933.GE6644@arm.com>
-References: <1400877218-4113-1-git-send-email-thierry.reding@gmail.com>
- <20140604134400.GE28484@ulmo>
- <20140604135600.GD6644@arm.com>
- <13061821.NYx1AfEhs0@wuerfel>
+	id S1752045AbaFDQkk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 12:40:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57165 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751633AbaFDQkj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 12:40:39 -0400
+Date: Wed, 4 Jun 2014 18:39:45 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Denys Vlasenko <dvlasenk@redhat.com>,
+        Jim Keniston <jkenisto@us.ibm.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: Re: [PATCH] uprobes/x86: Rename arch_uprobe->def into ->dflt,
+	minor comment updates
+Message-ID: <20140604163945.GA26429@redhat.com>
+References: <20140601192520.GA14539@redhat.com> <20140603182142.GA5097@gmail.com> <20140603183057.GA31382@redhat.com> <20140603183919.GC7664@gmail.com> <20140603191315.GA32736@redhat.com> <538E8FAA.7010302@hitachi.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <13061821.NYx1AfEhs0@wuerfel>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <538E8FAA.7010302@hitachi.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 04, 2014 at 03:01:15PM +0100, Arnd Bergmann wrote:
-> On Wednesday 04 June 2014 14:56:01 Will Deacon wrote:
-> > On Wed, Jun 04, 2014 at 02:44:03PM +0100, Thierry Reding wrote:
-> > > On Fri, May 30, 2014 at 09:54:37PM +0200, Arnd Bergmann wrote:
-> > > > On Friday 30 May 2014 22:29:13 Hiroshi Doyu wrote:
-> > > > > The disadvantage of this is that this limits the max number of streamIDs
-> > > > > to support. If # of streamID is increased later more than 64, this
-> > > > > format cannot cover any more. You have to predict the max # of streamIDs
-> > > > > in advance if steamID is statically assigned.
-> > > > > 
-> > > > 
-> > > > Well, the iommu specific binding could allow a variable #address-cells.
-> > > > That way, you just need to know the number of stream IDs for that instance
-> > > > of the iommu.
-> > > 
-> > > That sounds fairly complicated to me. I don't see what that buys us over
-> > > the clarity and simplicity that the above explicit notation gives us. Is
-> > > it not more common for a device to have a single master rather than a
-> > > whole bunch of them?
-> > 
-> > I've never seen a device upstream of an ARM SMMU with a single stream-id;
-> > they always seem to have a whole bunch of them. Calxeda's SATA controller
-> > had 10 IDs, for example, and a PL330 DMA controller tends to have at least
-> > 3.
-> 
-> What are those good for? Would we just always use the first one?
+On 06/04, Masami Hiramatsu wrote:
+>
+> (2014/06/04 4:13), Oleg Nesterov wrote:
+> > On 06/03, Ingo Molnar wrote:
+> >>
+> >> So exactly what do those fields do? If it's scratch register handling,
+> >> would it be logical to name it arch_uprobe->scratch, or so?
+> >
+> > Not only, ->fixups encodes other flags. and ->ilen is used by UPROBE_FIX_CALL.
+> >
+> > arch_uprobe->def contains the arguments for default_xol_ops methods, currently
+> > this handles everything except relative jmp/call insns.
+> >
+> > So perhaps ->dflt is not that ugly in this case? I simply do not see anything
+> > better. But again, I agree with any name in advance.
+>
+> Hmm, how about ->defparam ? :)
 
-I think It's just an artifact of how these systems tend to be built. The
-StreamID is constructed out of bits on the bus (AXI and sideband), so a
-DMA controller could easily have one ID for reads, one for writes,
-one for execute. Masters capable of multiple outstanding transactions
-could also have sets of IDs too.
+Fine with me ;)
 
-The SMMU driver would point them all at the same context bank, as far as I
-can tell, but that means the driver does need to be aware of the incoming
-IDs.
+Ingo, will you agree with s/def/defparam/ ?
 
-Rob might know how they constructed the IDs on the Calxeda SATA controller?
+Oleg.
 
-Will
