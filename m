@@ -1,340 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753789AbaFDOGR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 10:06:17 -0400
-Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:45651 "EHLO
-	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753766AbaFDOGO (ORCPT
+	id S1753819AbaFDOG2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 10:06:28 -0400
+Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:39481 "EHLO
+	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753799AbaFDOG1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 10:06:14 -0400
-Subject: Re: [PATCH 2/4] GenWQE: Add support for EEH error recovery
+	Wed, 4 Jun 2014 10:06:27 -0400
+Subject: Re: [PATCH 3/4] GenWQE: Improve hardware error recovery
 From: Frank Haverkamp <haver@linux.vnet.ibm.com>
 Reply-To: haver@linux.vnet.ibm.com
 To: Kleber Sacilotto de Souza <klebers@linux.vnet.ibm.com>
 Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org
-In-Reply-To: <1401890273-13067-3-git-send-email-klebers@linux.vnet.ibm.com>
+In-Reply-To: <1401890273-13067-4-git-send-email-klebers@linux.vnet.ibm.com>
 References: <1401890273-13067-1-git-send-email-klebers@linux.vnet.ibm.com>
-	 <1401890273-13067-3-git-send-email-klebers@linux.vnet.ibm.com>
+	 <1401890273-13067-4-git-send-email-klebers@linux.vnet.ibm.com>
 Content-Type: text/plain; charset="UTF-8"
 Organization: IBM
-Date: Wed, 04 Jun 2014 16:06:09 +0200
-Message-ID: <1401890769.24099.9.camel@oc7383187364.ibm.com>
+Date: Wed, 04 Jun 2014 16:06:22 +0200
+Message-ID: <1401890782.24099.10.camel@oc7383187364.ibm.com>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14060414-4966-0000-0000-00000041FF7C
+x-cbid: 14060414-5024-0000-0000-0000003A2672
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Am Mittwoch, den 04.06.2014, 10:57 -0300 schrieb Kleber Sacilotto de
 Souza:
-> This patch implements the callbacks and functions necessary to have EEH
-> recovery support.
+> Currently, in the event of a fatal hardware error, the driver tries a
+> recovery procedure that calls pci_reset_function() to reset the card.
+> This is not sufficient in some cases, needing a fundamental reset to
+> bring the card back.
 > 
-> It adds a config option to enable or disable explicit calls to trigger
-> platform specific mechanisms on error recovery paths. This option is
-> enabled by default only on PPC64 systems and can be overritten via
-> debugfs. If this option is enabled, on the error recovery path the
-> driver will call pci_channel_offline() to check for error condition and
-> issue non-raw MMIO reads to trigger early EEH detection in case of
-> hardware failures. This is necessary since the driver MMIO helper
-> funtions use raw accessors.
+> This patch implements a call to the platform fundamental reset procedure
+> on the error recovery path if GENWQE_PLATFORM_ERROR_RECOVERY is enabled.
+> This is implemented by default only on PPC64, since this can cause
+> problems on other archs, e.g. zSeries, where the platform has its own
+> recovery procedures, leading to a potencial race conditition. For these
+> cases, the recovery is kept as it was before.
 > 
 > Signed-off-by: Kleber Sacilotto de Souza <klebers@linux.vnet.ibm.com>
 > ---
->  drivers/misc/genwqe/Kconfig        |    6 +++
->  drivers/misc/genwqe/card_base.c    |   79 ++++++++++++++++++++++++++++++------
->  drivers/misc/genwqe/card_base.h    |    2 +
->  drivers/misc/genwqe/card_ddcb.c    |   24 +++++++++--
->  drivers/misc/genwqe/card_debugfs.c |    7 +++
->  drivers/misc/genwqe/card_dev.c     |    5 ++
->  drivers/misc/genwqe/card_utils.c   |   10 +++++
->  7 files changed, 115 insertions(+), 18 deletions(-)
+>  drivers/misc/genwqe/card_base.c |   45 +++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 45 insertions(+), 0 deletions(-)
 > 
-> diff --git a/drivers/misc/genwqe/Kconfig b/drivers/misc/genwqe/Kconfig
-> index 6069d8c..4c0a033 100644
-> --- a/drivers/misc/genwqe/Kconfig
-> +++ b/drivers/misc/genwqe/Kconfig
-> @@ -11,3 +11,9 @@ menuconfig GENWQE
->  	  Enables PCIe card driver for IBM GenWQE accelerators.
->  	  The user-space interface is described in
->  	  include/linux/genwqe/genwqe_card.h.
-> +
-> +config GENWQE_PLATFORM_ERROR_RECOVERY
-> +	int "Use platform recovery procedures (0=off, 1=on)"
-> +	depends on GENWQE
-> +	default 1 if PPC64
-> +	default 0
 > diff --git a/drivers/misc/genwqe/card_base.c b/drivers/misc/genwqe/card_base.c
-> index e6cc3e1..87ebaba 100644
+> index 87ebaba..abb7961 100644
 > --- a/drivers/misc/genwqe/card_base.c
 > +++ b/drivers/misc/genwqe/card_base.c
-> @@ -140,6 +140,12 @@ static struct genwqe_dev *genwqe_dev_alloc(void)
->  	cd->class_genwqe = class_genwqe;
->  	cd->debugfs_genwqe = debugfs_genwqe;
+> @@ -797,6 +797,41 @@ static int genwqe_pci_fundamental_reset(struct pci_dev *pci_dev)
+>  	return rc;
+>  }
 > 
-> +	/*
-> +	 * This comes from kernel config option and can be overritten via
-> +	 * debugfs.
-> +	 */
-> +	cd->use_platform_recovery = CONFIG_GENWQE_PLATFORM_ERROR_RECOVERY;
 > +
->  	init_waitqueue_head(&cd->queue_waitq);
-> 
->  	spin_lock_init(&cd->file_lock);
-> @@ -943,6 +949,19 @@ static int genwqe_health_thread(void *data)
->  	return 0;
-> 
->   fatal_error:
-> +	if (cd->use_platform_recovery) {
-> +		/*
-> +		 * Since we use raw accessors, EEH errors won't be detected
-> +		 * by the platform until we do a non-raw MMIO or config space
-> +		 * read
-> +		 */
-> +		readq(cd->mmio + IO_SLC_CFGREG_GFIR);
+> +static int genwqe_platform_recovery(struct genwqe_dev *cd)
+> +{
+> +	struct pci_dev *pci_dev = cd->pci_dev;
+> +	int rc;
 > +
-> +		/* We do nothing if the card is going over PCI recovery */
-> +		if (pci_channel_offline(pci_dev))
-> +			return -EIO;
-> +	}
+> +	dev_info(&pci_dev->dev,
+> +		 "[%s] resetting card for error recovery\n", __func__);
 > +
->  	dev_err(&pci_dev->dev,
->  		"[%s] card unusable. Please trigger unbind!\n", __func__);
-> 
-> @@ -1048,6 +1067,9 @@ static int genwqe_pci_setup(struct genwqe_dev *cd)
->  	pci_set_master(pci_dev);
->  	pci_enable_pcie_error_reporting(pci_dev);
-> 
-> +	/* EEH recovery requires PCIe fundamental reset */
-> +	pci_dev->needs_freset = 1;
+> +	/* Clear out error injection flags */
+> +	cd->err_inject &= ~(GENWQE_INJECT_HARDWARE_FAILURE |
+> +			    GENWQE_INJECT_GFIR_FATAL |
+> +			    GENWQE_INJECT_GFIR_INFO);
 > +
->  	/* request complete BAR-0 space (length = 0) */
->  	cd->mmio_len = pci_resource_len(pci_dev, 0);
->  	cd->mmio = pci_iomap(pci_dev, 0, 0);
-> @@ -1186,23 +1208,40 @@ static pci_ers_result_t genwqe_err_error_detected(struct pci_dev *pci_dev,
-> 
->  	dev_err(&pci_dev->dev, "[%s] state=%d\n", __func__, state);
-> 
-> -	if (pci_dev == NULL)
-> -		return PCI_ERS_RESULT_NEED_RESET;
-> -
->  	cd = dev_get_drvdata(&pci_dev->dev);
->  	if (cd == NULL)
-> -		return PCI_ERS_RESULT_NEED_RESET;
-> +		return PCI_ERS_RESULT_DISCONNECT;
-> 
-> -	switch (state) {
-> -	case pci_channel_io_normal:
-> -		return PCI_ERS_RESULT_CAN_RECOVER;
-> -	case pci_channel_io_frozen:
-> -		return PCI_ERS_RESULT_NEED_RESET;
-> -	case pci_channel_io_perm_failure:
-> +	/* Stop the card */
-> +	genwqe_health_check_stop(cd);
 > +	genwqe_stop(cd);
 > +
-> +	/*
-> +	 * On permanent failure, the PCI code will call device remove
-> +	 * after the return of this function.
-> +	 * genwqe_stop() can be called twice.
-> +	 */
-> +	if (state == pci_channel_io_perm_failure) {
->  		return PCI_ERS_RESULT_DISCONNECT;
+> +	/* Try recoverying the card with fundamental reset */
+> +	rc = genwqe_pci_fundamental_reset(pci_dev);
+> +	if (!rc) {
+> +		rc = genwqe_start(cd);
+> +		if (!rc)
+> +			dev_info(&pci_dev->dev,
+> +				 "[%s] card recovered\n", __func__);
+> +		else
+> +			dev_err(&pci_dev->dev,
+> +				"[%s] err: cannot start card services! (err=%d)\n",
+> +				__func__, rc);
 > +	} else {
-> +		genwqe_pci_remove(cd);
-> +		return PCI_ERS_RESULT_NEED_RESET;
->  	}
+> +		dev_err(&pci_dev->dev,
+> +			"[%s] card reset failed\n", __func__);
+> +	}
+> +
+> +	return rc;
 > +}
 > +
-> +static pci_ers_result_t genwqe_err_slot_reset(struct pci_dev *pci_dev)
-> +{
-> +	int rc;
-> +	struct genwqe_dev *cd = dev_get_drvdata(&pci_dev->dev);
+>  /*
+>   * genwqe_reload_bistream() - reload card bitstream
+>   *
+> @@ -875,6 +910,7 @@ static int genwqe_health_thread(void *data)
+>  	struct pci_dev *pci_dev = cd->pci_dev;
+>  	u64 gfir, gfir_masked, slu_unitcfg, app_unitcfg;
 > 
-> -	return PCI_ERS_RESULT_NEED_RESET;
-> +	rc = genwqe_pci_setup(cd);
-> +	if (!rc) {
-> +		return PCI_ERS_RESULT_RECOVERED;
-> +	} else {
-> +		dev_err(&pci_dev->dev,
-> +			"err: problems with PCI setup (err=%d)\n", rc);
-> +		return PCI_ERS_RESULT_DISCONNECT;
-> +	}
->  }
-> 
->  static pci_ers_result_t genwqe_err_result_none(struct pci_dev *dev)
-> @@ -1210,8 +1249,22 @@ static pci_ers_result_t genwqe_err_result_none(struct pci_dev *dev)
->  	return PCI_ERS_RESULT_NONE;
->  }
-> 
-> -static void genwqe_err_resume(struct pci_dev *dev)
-> +static void genwqe_err_resume(struct pci_dev *pci_dev)
->  {
-> +	int rc;
-> +	struct genwqe_dev *cd = dev_get_drvdata(&pci_dev->dev);
+> + health_thread_begin:
+>  	while (!kthread_should_stop()) {
+>  		rc = wait_event_interruptible_timeout(cd->health_waitq,
+>  			 (genwqe_health_check_cond(cd, &gfir) ||
+> @@ -960,6 +996,15 @@ static int genwqe_health_thread(void *data)
+>  		/* We do nothing if the card is going over PCI recovery */
+>  		if (pci_channel_offline(pci_dev))
+>  			return -EIO;
 > +
-> +	rc = genwqe_start(cd);
-> +	if (!rc) {
-> +		rc = genwqe_health_check_start(cd);
-> +		if (rc)
-> +			dev_err(&pci_dev->dev,
-> +				"err: cannot start health checking! (err=%d)\n",
-> +				rc);
-> +	} else {
-> +		dev_err(&pci_dev->dev,
-> +			"err: cannot start card services! (err=%d)\n", rc);
-> +	}
->  }
-> 
->  static int genwqe_sriov_configure(struct pci_dev *dev, int numvfs)
-> @@ -1234,7 +1287,7 @@ static struct pci_error_handlers genwqe_err_handler = {
->  	.error_detected = genwqe_err_error_detected,
->  	.mmio_enabled	= genwqe_err_result_none,
->  	.link_reset	= genwqe_err_result_none,
-> -	.slot_reset	= genwqe_err_result_none,
-> +	.slot_reset	= genwqe_err_slot_reset,
->  	.resume		= genwqe_err_resume,
->  };
-> 
-> diff --git a/drivers/misc/genwqe/card_base.h b/drivers/misc/genwqe/card_base.h
-> index 0e608a2..67abd8c 100644
-> --- a/drivers/misc/genwqe/card_base.h
-> +++ b/drivers/misc/genwqe/card_base.h
-> @@ -291,6 +291,8 @@ struct genwqe_dev {
->  	struct task_struct *health_thread;
->  	wait_queue_head_t health_waitq;
-> 
-> +	int use_platform_recovery;	/* use platform recovery mechanisms */
-> +
->  	/* char device */
->  	dev_t  devnum_genwqe;		/* major/minor num card */
->  	struct class *class_genwqe;	/* reference to class object */
-> diff --git a/drivers/misc/genwqe/card_ddcb.c b/drivers/misc/genwqe/card_ddcb.c
-> index c8046db..f0de615 100644
-> --- a/drivers/misc/genwqe/card_ddcb.c
-> +++ b/drivers/misc/genwqe/card_ddcb.c
-> @@ -1118,7 +1118,21 @@ static irqreturn_t genwqe_pf_isr(int irq, void *dev_id)
->  	 * safer, but slower for the good-case ... See above.
->  	 */
->  	gfir = __genwqe_readq(cd, IO_SLC_CFGREG_GFIR);
-> -	if ((gfir & GFIR_ERR_TRIGGER) != 0x0) {
-> +	if (((gfir & GFIR_ERR_TRIGGER) != 0x0) &&
-> +	    !pci_channel_offline(pci_dev)) {
-> +
-> +		if (cd->use_platform_recovery) {
-> +			/*
-> +			 * Since we use raw accessors, EEH errors won't be
-> +			 * detected by the platform until we do a non-raw
-> +			 * MMIO or config space read
-> +			 */
-> +			readq(cd->mmio + IO_SLC_CFGREG_GFIR);
-> +
-> +			/* Don't do anything if the PCI channel is frozen */
-> +			if (pci_channel_offline(pci_dev))
-> +				goto exit;
-> +		}
-> 
->  		wake_up_interruptible(&cd->health_waitq);
-> 
-> @@ -1126,12 +1140,12 @@ static irqreturn_t genwqe_pf_isr(int irq, void *dev_id)
->  		 * By default GFIRs causes recovery actions. This
->  		 * count is just for debug when recovery is masked.
->  		 */
-> -		printk_ratelimited(KERN_ERR
-> -				   "%s %s: [%s] GFIR=%016llx\n",
-> -				   GENWQE_DEVNAME, dev_name(&pci_dev->dev),
-> -				   __func__, gfir);
-> +		dev_err_ratelimited(&pci_dev->dev,
-> +				    "[%s] GFIR=%016llx\n",
-> +				    __func__, gfir);
+> +		/*
+> +		 * If it's supported by the platform, we try a fundamental reset
+> +		 * to recover from a fatal error. Otherwise, we continue to wait
+> +		 * for an external recovery procedure to take care of it.
+> +		 */
+> +		rc = genwqe_platform_recovery(cd);
+> +		if (!rc)
+> +			goto health_thread_begin;
 >  	}
 > 
-> + exit:
->  	return IRQ_HANDLED;
->  }
-> 
-> diff --git a/drivers/misc/genwqe/card_debugfs.c b/drivers/misc/genwqe/card_debugfs.c
-> index 50d2096..2171915 100644
-> --- a/drivers/misc/genwqe/card_debugfs.c
-> +++ b/drivers/misc/genwqe/card_debugfs.c
-> @@ -485,6 +485,13 @@ int genwqe_init_debugfs(struct genwqe_dev *cd)
->  		goto err1;
->  	}
-> 
-> +	file = debugfs_create_u32("use_platform_recovery", 0666, root,
-> +				  &cd->use_platform_recovery);
-> +	if (!file) {
-> +		ret = -ENOMEM;
-> +		goto err1;
-> +	}
-> +
->  	cd->debugfs_root = root;
->  	return 0;
->  err1:
-> diff --git a/drivers/misc/genwqe/card_dev.c b/drivers/misc/genwqe/card_dev.c
-> index 1d2f163..aae4255 100644
-> --- a/drivers/misc/genwqe/card_dev.c
-> +++ b/drivers/misc/genwqe/card_dev.c
-> @@ -1048,10 +1048,15 @@ static long genwqe_ioctl(struct file *filp, unsigned int cmd,
->  	int rc = 0;
->  	struct genwqe_file *cfile = (struct genwqe_file *)filp->private_data;
->  	struct genwqe_dev *cd = cfile->cd;
-> +	struct pci_dev *pci_dev = cd->pci_dev;
->  	struct genwqe_reg_io __user *io;
->  	u64 val;
->  	u32 reg_offs;
-> 
-> +	/* Return -EIO if card hit EEH */
-> +	if (pci_channel_offline(pci_dev))
-> +		return -EIO;
-> +
->  	if (_IOC_TYPE(cmd) != GENWQE_IOC_CODE)
->  		return -EINVAL;
-> 
-> diff --git a/drivers/misc/genwqe/card_utils.c b/drivers/misc/genwqe/card_utils.c
-> index d049d27..61846dd 100644
-> --- a/drivers/misc/genwqe/card_utils.c
-> +++ b/drivers/misc/genwqe/card_utils.c
-> @@ -53,12 +53,17 @@
->   */
->  int __genwqe_writeq(struct genwqe_dev *cd, u64 byte_offs, u64 val)
->  {
-> +	struct pci_dev *pci_dev = cd->pci_dev;
-> +
->  	if (cd->err_inject & GENWQE_INJECT_HARDWARE_FAILURE)
->  		return -EIO;
-> 
->  	if (cd->mmio == NULL)
->  		return -EIO;
-> 
-> +	if (pci_channel_offline(pci_dev))
-> +		return -EIO;
-> +
->  	__raw_writeq((__force u64)cpu_to_be64(val), cd->mmio + byte_offs);
->  	return 0;
->  }
-> @@ -99,12 +104,17 @@ u64 __genwqe_readq(struct genwqe_dev *cd, u64 byte_offs)
->   */
->  int __genwqe_writel(struct genwqe_dev *cd, u64 byte_offs, u32 val)
->  {
-> +	struct pci_dev *pci_dev = cd->pci_dev;
-> +
->  	if (cd->err_inject & GENWQE_INJECT_HARDWARE_FAILURE)
->  		return -EIO;
-> 
->  	if (cd->mmio == NULL)
->  		return -EIO;
-> 
-> +	if (pci_channel_offline(pci_dev))
-> +		return -EIO;
-> +
->  	__raw_writel((__force u32)cpu_to_be32(val), cd->mmio + byte_offs);
->  	return 0;
->  }
+>  	dev_err(&pci_dev->dev,
 
 Thanks for contributing those additions to our driver.
 
