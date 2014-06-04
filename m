@@ -1,38 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751630AbaFDW7q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 18:59:46 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:37319 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750925AbaFDW7o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 18:59:44 -0400
-Message-ID: <538FA4C7.2050206@zytor.com>
-Date: Wed, 04 Jun 2014 15:59:19 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1751799AbaFDXBB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 19:01:01 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:35833 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751122AbaFDXA7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 19:00:59 -0400
+From: Peter Moody <pmoody@google.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: ananth@in.ibm.com, anil.s.keshavamurthy@intel.com, davem@davemloft.net,
+        linux-kernel@vger.kernel.org, Kees Cook <keescook@google.com>
+Subject: Re: splat in kretprobe in get_task_mm(current)
+References: <r3noay9dhad.fsf@perdido.sfo.corp.google.com>
+	<r3nfvjld5il.fsf@perdido.sfo.corp.google.com> <538ED2E3.1000707@hitachi.com>
+	<538F2837.3080800@hitachi.com> <r3nd2eobswp.fsf@perdido.sfo.corp.google.com>
+	<538FA28F.30407@hitachi.com>
+Date: Wed, 04 Jun 2014 16:00:13 -0700
+In-Reply-To: <538FA28F.30407@hitachi.com> (Masami Hiramatsu's message of "Thu\,
+	05 Jun 2014 07\:49\:51 +0900")
+Message-ID: <r3nha409t6q.fsf@perdido.sfo.corp.google.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-To: "Maciej W. Rozycki" <macro@linux-mips.org>,
-        Josh Triplett <josh@joshtriplett.org>
-CC: Jann Horn <jann@thejh.net>, Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-api@vger.kernel.org
-Subject: Re: [PATCH] drivers/char/mem.c: Add /dev/ioports, supporting 16-bit
- and 32-bit ports
-References: <20140509191914.GA7286@jtriplet-mobl1> <20140510070742.GE6099@debjann.fritz.box> <20140510193246.GA12079@thin> <20140511125006.GA16197@debjann.fritz.box> <20140511210514.GB6056@thin> <alpine.LFD.2.11.1406011101400.30121@eddie.linux-mips.org>
-In-Reply-To: <alpine.LFD.2.11.1406011101400.30121@eddie.linux-mips.org>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/01/2014 03:35 AM, Maciej W. Rozycki wrote:
-> Also IIRC PCI-PCI bridges only forward port I/O space accesses 
-> within the low 64kB.
 
-Not true.
+On Wed, Jun 04 2014 at 15:49, Masami Hiramatsu wrote:
 
-	-hpa
+> Here, as you can see, calling mmput() in kretprobe handler is actually the root cause
+> of this problem.
 
+Indeed, deferring the mmput to a workqueue solved my issue.
+
+Thanks for your quick reply today!
+
+Cheers,
+peter
