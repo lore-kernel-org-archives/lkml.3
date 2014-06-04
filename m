@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751791AbaFDXWj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:22:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40216 "EHLO
+	id S1756269AbaFEAQ6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 20:16:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40230 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753231AbaFDXWh (ORCPT
+	with ESMTP id S1753244AbaFDXWi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:22:37 -0400
+	Wed, 4 Jun 2014 19:22:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Chew, Kean ho" <kean.ho.chew@intel.com>,
-        "Chew, Chiau Ee" <chiau.ee.chew@intel.com>,
-        Jean Delvare <jdelvare@suse.de>, Wolfram Sang <wsa@the-dreams.de>,
-        "Chang, Rebecca Swee Fun" <rebecca.swee.fun.chang@intel.com>
-Subject: [PATCH 3.14 130/228] i2c: i801: enable Intel BayTrail SMBUS
-Date: Wed,  4 Jun 2014 16:22:39 -0700
-Message-Id: <20140604232352.202046308@linuxfoundation.org>
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Jason Cooper <jason@lakedaemon.net>
+Subject: [PATCH 3.14 156/228] memory: mvebu-devbus: fix the conversion of the bus width
+Date: Wed,  4 Jun 2014 16:23:05 -0700
+Message-Id: <20140604232353.026562452@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -31,70 +31,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Chew, Kean ho" <kean.ho.chew@intel.com>
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 
-commit 1b31e9b76ef8c62291e698dfdb973499986a7f68 upstream.
+commit ce965c3d2e68c5325dd5624eb101d70423022fef upstream.
 
-Add Device ID of Intel BayTrail SMBus Controller.
+According to the Armada 370 and Armada XP datasheets, the part of the
+Device Bus register that configure the bus width should contain 0 for
+a 8 bits bus width, and 1 for a 16 bits bus width (other values are
+unsupported/reserved).
 
-Signed-off-by: Chew, Kean ho <kean.ho.chew@intel.com>
-Signed-off-by: Chew, Chiau Ee <chiau.ee.chew@intel.com>
-Reviewed-by: Jean Delvare <jdelvare@suse.de>
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
-Cc: "Chang, Rebecca Swee Fun" <rebecca.swee.fun.chang@intel.com>
+However, the current conversion done in the driver to convert from a
+bus width in bits to the value expected by the register leads to
+setting the register to 1 for a 8 bits bus, and 2 for a 16 bits bus.
+
+This mistake was compensated by a mistake in the existing Device Tree
+files for Armada 370/XP platforms: they were declaring a 8 bits bus
+width, while the hardware in fact uses a 16 bits bus width.
+
+This commit fixes that by adjusting the conversion logic.
+
+This patch fixes a bug that was introduced in
+3edad321b1bd2e6c8b5f38146c115c8982438f06 ('drivers: memory: Introduce
+Marvell EBU Device Bus driver'), which was merged in v3.11.
+
+Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Link: https://lkml.kernel.org/r/1397489361-5833-2-git-send-email-thomas.petazzoni@free-electrons.com
+Fixes: 3edad321b1bd ('drivers: memory: Introduce Marvell EBU Device Bus driver')
+Acked-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+Acked-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- Documentation/i2c/busses/i2c-i801 |    1 +
- drivers/i2c/busses/Kconfig        |    1 +
- drivers/i2c/busses/i2c-i801.c     |    3 +++
- 3 files changed, 5 insertions(+)
+ drivers/memory/mvebu-devbus.c |   15 +++++++++++++--
+ 1 file changed, 13 insertions(+), 2 deletions(-)
 
---- a/Documentation/i2c/busses/i2c-i801
-+++ b/Documentation/i2c/busses/i2c-i801
-@@ -26,6 +26,7 @@ Supported adapters:
-   * Intel Wellsburg (PCH)
-   * Intel Coleto Creek (PCH)
-   * Intel Wildcat Point-LP (PCH)
-+  * Intel BayTrail (SOC)
-    Datasheets: Publicly available at the Intel website
+--- a/drivers/memory/mvebu-devbus.c
++++ b/drivers/memory/mvebu-devbus.c
+@@ -108,8 +108,19 @@ static int devbus_set_timing_params(stru
+ 			node->full_name);
+ 		return err;
+ 	}
+-	/* Convert bit width to byte width */
+-	r.bus_width /= 8;
++
++	/*
++	 * The bus width is encoded into the register as 0 for 8 bits,
++	 * and 1 for 16 bits, so we do the necessary conversion here.
++	 */
++	if (r.bus_width == 8)
++		r.bus_width = 0;
++	else if (r.bus_width == 16)
++		r.bus_width = 1;
++	else {
++		dev_err(devbus->dev, "invalid bus width %d\n", r.bus_width);
++		return -EINVAL;
++	}
  
- On Intel Patsburg and later chipsets, both the normal host SMBus controller
---- a/drivers/i2c/busses/Kconfig
-+++ b/drivers/i2c/busses/Kconfig
-@@ -110,6 +110,7 @@ config I2C_I801
- 	    Wellsburg (PCH)
- 	    Coleto Creek (PCH)
- 	    Wildcat Point-LP (PCH)
-+	    BayTrail (SOC)
- 
- 	  This driver can also be built as a module.  If so, the module
- 	  will be called i2c-i801.
---- a/drivers/i2c/busses/i2c-i801.c
-+++ b/drivers/i2c/busses/i2c-i801.c
-@@ -60,6 +60,7 @@
-   Wellsburg (PCH) MS    0x8d7f     32     hard     yes     yes     yes
-   Coleto Creek (PCH)    0x23b0     32     hard     yes     yes     yes
-   Wildcat Point-LP (PCH)   0x9ca2     32     hard     yes     yes     yes
-+  BayTrail (SOC)        0x0f12     32     hard     yes     yes     yes
- 
-   Features supported by this driver:
-   Software PEC                     no
-@@ -161,6 +162,7 @@
- 				 STATUS_ERROR_FLAGS)
- 
- /* Older devices have their ID defined in <linux/pci_ids.h> */
-+#define PCI_DEVICE_ID_INTEL_BAYTRAIL_SMBUS	0x0f12
- #define PCI_DEVICE_ID_INTEL_COUGARPOINT_SMBUS	0x1c22
- #define PCI_DEVICE_ID_INTEL_PATSBURG_SMBUS	0x1d22
- /* Patsburg also has three 'Integrated Device Function' SMBus controllers */
-@@ -822,6 +824,7 @@ static DEFINE_PCI_DEVICE_TABLE(i801_ids)
- 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_WELLSBURG_SMBUS_MS2) },
- 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_COLETOCREEK_SMBUS) },
- 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_WILDCATPOINT_LP_SMBUS) },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_BAYTRAIL_SMBUS) },
- 	{ 0, }
- };
- 
+ 	err = get_timing_param_ps(devbus, node, "devbus,badr-skew-ps",
+ 				 &r.badr_skew);
 
 
