@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753379AbaFDXWt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:22:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40297 "EHLO
+	id S1756113AbaFEALg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 20:11:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40308 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753354AbaFDXWr (ORCPT
+	with ESMTP id S1753366AbaFDXWt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:22:47 -0400
+	Wed, 4 Jun 2014 19:22:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [PATCH 3.14 171/228] x86-64, modify_ldt: Make support for 16-bit segments a runtime option
-Date: Wed,  4 Jun 2014 16:23:20 -0700
-Message-Id: <20140604232353.520079349@linuxfoundation.org>
+        Marcel Apfelbaum <marcel.a@redhat.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>
+Subject: [PATCH 3.14 174/228] PCI: shpchp: Check bridges secondary (not primary) bus speed
+Date: Wed,  4 Jun 2014 16:23:23 -0700
+Message-Id: <20140604232353.609398240@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -28,86 +30,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Marcel Apfelbaum <marcel.a@redhat.com>
 
-commit fa81511bb0bbb2b1aace3695ce869da9762624ff upstream.
+commit 93fa9d32670f5592c8e56abc9928fc194e1e72fc upstream.
 
-Checkin:
+When a new device is added below a hotplug bridge, the bridge's secondary
+bus speed and the device's bus speed must match.  The shpchp driver
+previously checked the bridge's *primary* bus speed, not the secondary bus
+speed.
 
-b3b42ac2cbae x86-64, modify_ldt: Ban 16-bit segments on 64-bit kernels
+This caused hot-add errors like:
 
-disabled 16-bit segments on 64-bit kernels due to an information
-leak.  However, it does seem that people are genuinely using Wine to
-run old 16-bit Windows programs on Linux.
+  shpchp 0000:00:03.0: Speed of bus ff and adapter 0 mismatch
 
-A proper fix for this ("espfix64") is coming in the upcoming merge
-window, but as a temporary fix, create a sysctl to allow the
-administrator to re-enable support for 16-bit segments.
+Check the secondary bus speed instead.
 
-It adds a "/proc/sys/abi/ldt16" sysctl that defaults to zero (off). If
-you hit this issue and care about your old Windows program more than
-you care about a kernel stack address information leak, you can do
-
-   echo 1 > /proc/sys/abi/ldt16
-
-as root (add it to your startup scripts), and you should be ok.
-
-The sysctl table is only added if you have COMPAT support enabled on
-x86-64, but I assume anybody who runs old windows binaries very much
-does that ;)
-
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Link: http://lkml.kernel.org/r/CA%2B55aFw9BPoD10U1LfHbOMpHWZkvJTkMcfCs9s3urPr1YyWBxw@mail.gmail.com
+[bhelgaas: changelog]
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=75251
+Fixes: 3749c51ac6c1 ("PCI: Make current and maximum bus speeds part of the PCI core")
+Signed-off-by: Marcel Apfelbaum <marcel.a@redhat.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/ldt.c        |    4 +++-
- arch/x86/vdso/vdso32-setup.c |    8 ++++++++
- 2 files changed, 11 insertions(+), 1 deletion(-)
+ drivers/pci/hotplug/shpchp_ctrl.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/x86/kernel/ldt.c
-+++ b/arch/x86/kernel/ldt.c
-@@ -20,6 +20,8 @@
- #include <asm/mmu_context.h>
- #include <asm/syscalls.h>
- 
-+int sysctl_ldt16 = 0;
-+
- #ifdef CONFIG_SMP
- static void flush_ldt(void *current_mm)
- {
-@@ -234,7 +236,7 @@ static int write_ldt(void __user *ptr, u
- 	 * IRET leaking the high bits of the kernel stack address.
- 	 */
- #ifdef CONFIG_X86_64
--	if (!ldt_info.seg_32bit) {
-+	if (!ldt_info.seg_32bit && !sysctl_ldt16) {
- 		error = -EINVAL;
- 		goto out_unlock;
+--- a/drivers/pci/hotplug/shpchp_ctrl.c
++++ b/drivers/pci/hotplug/shpchp_ctrl.c
+@@ -282,8 +282,8 @@ static int board_added(struct slot *p_sl
+ 		return WRONG_BUS_FREQUENCY;
  	}
---- a/arch/x86/vdso/vdso32-setup.c
-+++ b/arch/x86/vdso/vdso32-setup.c
-@@ -41,6 +41,7 @@ enum {
- #ifdef CONFIG_X86_64
- #define vdso_enabled			sysctl_vsyscall32
- #define arch_setup_additional_pages	syscall32_setup_pages
-+extern int sysctl_ldt16;
- #endif
  
- /*
-@@ -379,6 +380,13 @@ static struct ctl_table abi_table2[] = {
- 		.maxlen		= sizeof(int),
- 		.mode		= 0644,
- 		.proc_handler	= proc_dointvec
-+	},
-+	{
-+		.procname	= "ldt16",
-+		.data		= &sysctl_ldt16,
-+		.maxlen		= sizeof(int),
-+		.mode		= 0644,
-+		.proc_handler	= proc_dointvec
- 	},
- 	{}
- };
+-	bsp = ctrl->pci_dev->bus->cur_bus_speed;
+-	msp = ctrl->pci_dev->bus->max_bus_speed;
++	bsp = ctrl->pci_dev->subordinate->cur_bus_speed;
++	msp = ctrl->pci_dev->subordinate->max_bus_speed;
+ 
+ 	/* Check if there are other slots or devices on the same bus */
+ 	if (!list_empty(&ctrl->pci_dev->subordinate->devices))
 
 
