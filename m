@@ -1,48 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751925AbaFDOgd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 10:36:33 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:33106 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750933AbaFDOgb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 10:36:31 -0400
-X-Greylist: delayed 1201 seconds by postgrey-1.27 at vger.kernel.org; Wed, 04 Jun 2014 10:36:31 EDT
-Message-ID: <538F2EED.9070104@hurleysoftware.com>
-Date: Wed, 04 Jun 2014 10:36:29 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Valerio Vanni <valerio.vanni@inwind.it>
-Subject: Re: [PATCH 1/2] serial: core: Don't drop DTR if system console
-References: <7EC4C3FDEFF6492F91DEE16AEE0831E6@vanni.it> <1401891371-4946-1-git-send-email-peter@hurleysoftware.com> <20140604142208.GA1008@kroah.com>
-In-Reply-To: <20140604142208.GA1008@kroah.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+	id S1752117AbaFDOhV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 10:37:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16285 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751750AbaFDOhR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 10:37:17 -0400
+From: Jiri Olsa <jolsa@kernel.org>
+To: linux-kernel@vger.kernel.org
+Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: [PATCH 01/13] perf tools: Cache register accesses for unwind processing
+Date: Wed,  4 Jun 2014 16:36:50 +0200
+Message-Id: <1401892622-30848-2-git-send-email-jolsa@kernel.org>
+In-Reply-To: <1401892622-30848-1-git-send-email-jolsa@kernel.org>
+References: <1401892622-30848-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/04/2014 10:22 AM, Greg Kroah-Hartman wrote:
-> On Wed, Jun 04, 2014 at 10:16:10AM -0400, Peter Hurley wrote:
->> If a tty is opened on a serial console, don't drop DTR on
->> last tty close, on tty hangup, or when resetting port hardware
->> via TIOCSSERIAL and TIOCSERCONFIG ioctls.
->>
->> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
->> ---
->>   drivers/tty/serial/serial_core.c | 3 ++-
->>   1 file changed, 2 insertions(+), 1 deletion(-)
->
-> Is this a regression, or something we have never done?
+Caching registers value into an array. Got about 4% speed up
+of perf_reg_value function for report command processing
+dwarf unwind stacks.
 
-Not sure. I just noticed this was wrong while working on the
-other fix.
+Output from report over 1.5 GB data with DWARF unwind stacks:
+(TODO fix perf diff)
 
-Regards,
-Peter Hurley
+  current code:
+   5.84%     perf  perf                       [.] perf_reg_value
+  change:
+   1.94%     perf  perf                       [.] perf_reg_value
+
+And little bit of overall speed up:
+(perf stat -r 5 -e '{cycles,instructions}:u' ...)
+
+  current code:
+   310,298,611,754      cycles                     ( +-  0.33% )
+   439,669,689,341      instructions               ( +-  0.03% )
+
+     188.656753166 seconds time elapsed            ( +-  0.82% )
+
+  change:
+   291,315,329,878      cycles                     ( +-  0.22% )
+   391,763,485,304      instructions               ( +-  0.03%  )
+
+     180.742249687 seconds time elapsed            ( +-  0.64% )
+
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jean Pihet <jean.pihet@linaro.org>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+---
+ tools/perf/util/event.h     |  5 +++++
+ tools/perf/util/perf_regs.c | 10 +++++++++-
+ tools/perf/util/perf_regs.h |  4 +++-
+ 3 files changed, 17 insertions(+), 2 deletions(-)
+
+diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
+index d970232..d369ad9 100644
+--- a/tools/perf/util/event.h
++++ b/tools/perf/util/event.h
+@@ -7,6 +7,7 @@
+ #include "../perf.h"
+ #include "map.h"
+ #include "build-id.h"
++#include "perf_regs.h"
+ 
+ struct mmap_event {
+ 	struct perf_event_header header;
+@@ -87,6 +88,10 @@ struct regs_dump {
+ 	u64 abi;
+ 	u64 mask;
+ 	u64 *regs;
++
++	/* Cached values/mask filled by first register access. */
++	u64 cache_regs[PERF_REGS_MAX];
++	u64 cache_mask;
+ };
+ 
+ struct stack_dump {
+diff --git a/tools/perf/util/perf_regs.c b/tools/perf/util/perf_regs.c
+index a3539ef..43168fb 100644
+--- a/tools/perf/util/perf_regs.c
++++ b/tools/perf/util/perf_regs.c
+@@ -1,11 +1,15 @@
+ #include <errno.h>
+ #include "perf_regs.h"
++#include "event.h"
+ 
+ int perf_reg_value(u64 *valp, struct regs_dump *regs, int id)
+ {
+ 	int i, idx = 0;
+ 	u64 mask = regs->mask;
+ 
++	if (regs->cache_mask & (1 << id))
++		goto out;
++
+ 	if (!(mask & (1 << id)))
+ 		return -EINVAL;
+ 
+@@ -14,6 +18,10 @@ int perf_reg_value(u64 *valp, struct regs_dump *regs, int id)
+ 			idx++;
+ 	}
+ 
+-	*valp = regs->regs[idx];
++	regs->cache_mask |= (1 << id);
++	regs->cache_regs[id] = regs->regs[idx];
++
++out:
++	*valp = regs->cache_regs[id];
+ 	return 0;
+ }
+diff --git a/tools/perf/util/perf_regs.h b/tools/perf/util/perf_regs.h
+index 79c78f7..980dbf7 100644
+--- a/tools/perf/util/perf_regs.h
++++ b/tools/perf/util/perf_regs.h
+@@ -2,7 +2,8 @@
+ #define __PERF_REGS_H
+ 
+ #include <linux/types.h>
+-#include "event.h"
++
++struct regs_dump;
+ 
+ #ifdef HAVE_PERF_REGS_SUPPORT
+ #include <perf_regs.h>
+@@ -11,6 +12,7 @@ int perf_reg_value(u64 *valp, struct regs_dump *regs, int id);
+ 
+ #else
+ #define PERF_REGS_MASK	0
++#define PERF_REGS_MAX	0
+ 
+ static inline const char *perf_reg_name(int id __maybe_unused)
+ {
+-- 
+1.8.3.1
 
