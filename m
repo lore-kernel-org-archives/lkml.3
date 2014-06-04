@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752946AbaFDX12 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:27:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41053 "EHLO
+	id S1754511AbaFDX1o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 19:27:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41045 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754198AbaFDXYV (ORCPT
+	with ESMTP id S1754194AbaFDXYV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 4 Jun 2014 19:24:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michael Neuling <mikey@neuling.org>,
-        Adhemerval Zanella Neto <azanella@br.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Xue Liu <liuxueliu.liu@huawei.com>
-Subject: [PATCH 3.10 089/103] powerpc/tm: Fix crash when forking inside a transaction
-Date: Wed,  4 Jun 2014 16:25:52 -0700
-Message-Id: <20140604232549.720257566@linuxfoundation.org>
+        Chris Leech <cleech@redhat.com>, Andy Grover <agrover@redhat.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.10 088/103] target: Dont allow setting WC emulation if device doesnt support
+Date: Wed,  4 Jun 2014 16:25:51 -0700
+Message-Id: <20140604232549.686493808@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232546.704156131@linuxfoundation.org>
 References: <20140604232546.704156131@linuxfoundation.org>
@@ -31,69 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Neuling <mikey@neuling.org>
+From: Andy Grover <agrover@redhat.com>
 
-commit 621b5060e823301d0cba4cb52a7ee3491922d291 upstream.
+commit 07b8dae38b09bcfede7e726f172e39b5ce8390d9 upstream.
 
-When we fork/clone we currently don't copy any of the TM state to the new
-thread.  This results in a TM bad thing (program check) when the new process is
-switched in as the kernel does a tmrechkpt with TEXASR FS not set.  Also, since
-R1 is from userspace, we trigger the bad kernel stack pointer detection.  So we
-end up with something like this:
+Just like for pSCSI, if the transport sets get_write_cache, then it is
+not valid to enable write cache emulation for it. Return an error.
 
-   Bad kernel stack pointer 0 at c0000000000404fc
-   cpu 0x2: Vector: 700 (Program Check) at [c00000003ffefd40]
-       pc: c0000000000404fc: restore_gprs+0xc0/0x148
-       lr: 0000000000000000
-       sp: 0
-      msr: 9000000100201030
-     current = 0xc000001dd1417c30
-     paca    = 0xc00000000fe00800   softe: 0        irq_happened: 0x01
-       pid   = 0, comm = swapper/2
-   WARNING: exception is not recoverable, can't continue
+see https://bugzilla.redhat.com/show_bug.cgi?id=1082675
 
-The below fixes this by flushing the TM state before we copy the task_struct to
-the clone.  To do this we go through the tmreclaim patch, which removes the
-checkpointed registers from the CPU and transitions the CPU out of TM suspend
-mode.  Hence we need to call tmrechkpt after to restore the checkpointed state
-and the TM mode for the current task.
-
-To make this fail from userspace is simply:
-	tbegin
-	li	r0, 2
-	sc
-	<boom>
-
-Kudos to Adhemerval Zanella Neto for finding this.
-
-Signed-off-by: Michael Neuling <mikey@neuling.org>
-cc: Adhemerval Zanella Neto <azanella@br.ibm.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-[Backported to 3.10: context adjust]
-Signed-off-by: Xue Liu <liuxueliu.liu@huawei.com>
+Reviewed-by: Chris Leech <cleech@redhat.com>
+Signed-off-by: Andy Grover <agrover@redhat.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- arch/powerpc/kernel/process.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
 
---- a/arch/powerpc/kernel/process.c
-+++ b/arch/powerpc/kernel/process.c
-@@ -948,6 +948,16 @@ int arch_dup_task_struct(struct task_str
- 	flush_altivec_to_thread(src);
- 	flush_vsx_to_thread(src);
- 	flush_spe_to_thread(src);
-+	/*
-+	* Flush TM state out so we can copy it.  __switch_to_tm() does this
-+	* flush but it removes the checkpointed state from the current CPU and
-+	* transitions the CPU out of TM mode.  Hence we need to call
-+	* tm_recheckpoint_new_task() (on the same task) to restore the
-+	* checkpointed state back and the TM mode.
-+	*/
-+	__switch_to_tm(src);
-+	tm_recheckpoint_new_task(src);
-+
- 	*dst = *src;
- 	return 0;
- }
+---
+ drivers/target/target_core_device.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+--- a/drivers/target/target_core_device.c
++++ b/drivers/target/target_core_device.c
+@@ -796,10 +796,10 @@ int se_dev_set_emulate_write_cache(struc
+ 		pr_err("emulate_write_cache not supported for pSCSI\n");
+ 		return -EINVAL;
+ 	}
+-	if (dev->transport->get_write_cache) {
+-		pr_warn("emulate_write_cache cannot be changed when underlying"
+-			" HW reports WriteCacheEnabled, ignoring request\n");
+-		return 0;
++	if (flag &&
++	    dev->transport->get_write_cache) {
++		pr_err("emulate_write_cache not supported for this device\n");
++		return -EINVAL;
+ 	}
+ 
+ 	dev->dev_attrib.emulate_write_cache = flag;
 
 
