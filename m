@@ -1,60 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751588AbaFDUBP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 16:01:15 -0400
-Received: from mail-la0-f42.google.com ([209.85.215.42]:64850 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750777AbaFDUBO (ORCPT
+	id S1751803AbaFDUCf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 16:02:35 -0400
+Received: from www.linutronix.de ([62.245.132.108]:41056 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751290AbaFDUCe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 16:01:14 -0400
-Message-ID: <538F7B05.70705@bjorling.me>
-Date: Wed, 04 Jun 2014 22:01:09 +0200
-From: Matias Bjorling <m@bjorling.me>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Wed, 4 Jun 2014 16:02:34 -0400
+Date: Wed, 4 Jun 2014 22:02:17 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Olof Johansson <olof@lixom.net>
+cc: Stephen Rothwell <sfr@canb.auug.org.au>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: linux-next: build failure after merge of the tip tree
+In-Reply-To: <CAOesGMhGT30QN2LeVp2sgzY0BjbguW=iw3x1PH8RVB-Rj-GZNQ@mail.gmail.com>
+Message-ID: <alpine.DEB.2.10.1406042157220.18296@nanos>
+References: <20140604160522.1d788c1e@canb.auug.org.au> <alpine.DEB.2.10.1406041134070.3319@nanos> <CAOesGMhGT30QN2LeVp2sgzY0BjbguW=iw3x1PH8RVB-Rj-GZNQ@mail.gmail.com>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Keith Busch <keith.busch@intel.com>, Jens Axboe <axboe@kernel.dk>
-CC: willy@linux.intel.com, sbradshaw@micron.com, linux-kernel@vger.kernel.org,
-        linux-nvme@lists.infradead.org, hch@infradead.org
-Subject: Re: [PATCH v5] conversion to blk-mq
-References: <1401742510-10827-1-git-send-email-m@bjorling.me> <alpine.LRH.2.03.1406021642480.11244@AMR> <alpine.LRH.2.03.1406021702530.11244@AMR> <538E2C2E.1010500@bjorling.me> <alpine.LRH.2.03.1406031553280.11244@AMR> <alpine.LRH.2.03.1406031625120.11244@AMR> <538EE3E6.60408@bjorling.me> <alpine.LRH.2.03.1406041146280.11244@AMR> <538F68A9.50608@kernel.dk> <alpine.LRH.2.03.1406041246300.11244@AMR>
-In-Reply-To: <alpine.LRH.2.03.1406041246300.11244@AMR>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/04/2014 08:52 PM, Keith Busch wrote:
-> On Wed, 4 Jun 2014, Jens Axboe wrote:
->> On 06/04/2014 12:28 PM, Keith Busch wrote:
->> Are you testing against 3.13? You really need the current tree for this,
->> otherwise I'm sure you'll run into issues (as you appear to be :-)
-> 
-> I'm using Matias' current tree:
-> 
-> git://github.com/MatiasBjorling/linux-collab nvmeq_wip_6
-> 
-> Is this the right one to use? Looks like a 3.15rc1+.
-> 
-> Also ... obviously that's the wrong diff from before. I didn't save my
-> file before creating the diff. Should have looked like this:
-> 
-> diff --git a/block/blk-mq.c b/block/blk-mq.c
-> index d10013b..d1b986c 100644
-> --- a/block/blk-mq.c
-> +++ b/block/blk-mq.c
-> @@ -105,7 +105,8 @@ static int blk_mq_queue_enter(struct request_queue *q)
->      __percpu_counter_add(&q->mq_usage_counter, 1, 1000000);
->      smp_wmb();
->      /* we have problems to freeze the queue if it's initializing */
-> -    if (!blk_queue_bypass(q) || !blk_queue_init_done(q))
-> +    if (!blk_queue_dying(q) && (!blk_queue_bypass(q) ||
-> +                    !blk_queue_init_done(q)))
->          return 0;
-> 
->      __percpu_counter_add(&q->mq_usage_counter, -1, 1000000);
+On Wed, 4 Jun 2014, Olof Johansson wrote:
+> On Wed, Jun 4, 2014 at 3:49 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> So, we'll dial back and stop taking these patches through our tree
+> without an explicit ack or shared branch from you (or Daniel on
+> clocksource). Not a problem at all.
 
-Thanks!
+I prefer the shared branch (for clocksource and irqchip) either from
+me or from Daniel(clocksource) / Jason (irqchip).
 
-I've put your patch into the nvmemq_wip_v6 branch and rebased it on top
-of Jens' for-linus.
+That way you can proceed and we can do our unrelated changes without
+creating merge dependencies.
+
+> On the other hand, it would have been a lot easier
+> to handle had the code on your end landed a bit sooner than in the
+> middle of the merge window.
+
+I know. I was just burried in futex wreckage for almost a week...
+
+> Not much I can say besides what's above and that I owe you a few beers
+> at the next conference.
+
+Don't worry. I let off steam and all is good if we can avoid this in
+the future. Though I'm certainly up for a few beers :)
+
+Thanks,
+
+	tglx
