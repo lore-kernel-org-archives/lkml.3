@@ -1,88 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752228AbaFDQtW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 12:49:22 -0400
-Received: from ozlabs.org ([103.22.144.67]:37000 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752060AbaFDQtU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 12:49:20 -0400
-Date: Thu, 5 Jun 2014 02:49:13 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Fengguang Wu <fengguang.wu@intel.com>
-Subject: Re: linux-next: build warning after merge of the ftrace tree
-Message-ID: <20140605024913.4c8cad55@canb.auug.org.au>
-In-Reply-To: <20140604122612.366e2874@gandalf.local.home>
-References: <20140604160921.4f4e69c4@canb.auug.org.au>
-	<20140604122612.366e2874@gandalf.local.home>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
+	id S1751758AbaFDQyD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 12:54:03 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:48106 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751132AbaFDQyB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 12:54:01 -0400
+Date: Wed, 4 Jun 2014 17:53:58 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>
+Cc: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] EFI urgent fixes
+Message-ID: <20140604164955.GA3059@console-pimps.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/7nP0D4XMq1Tf5TdH_jJgh7z"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/7nP0D4XMq1Tf5TdH_jJgh7z
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Folks,
 
-Hi Steve,
+Here are two commits I've queued up from Dave. The first fixes the efi
+earlyprintk code and the second fixes a bug where we were exporting the
+EFI runtime mappings for use by kexec-tools, despite the fact that those
+mappings were not persistent across kexec reboot.
 
-On Wed, 4 Jun 2014 12:26:12 -0400 Steven Rostedt <rostedt@goodmis.org> wrot=
-e:
->
-> On Wed, 4 Jun 2014 16:09:21 +1000
-> Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->=20
-> > After merging the ftrace tree, today's linux-next build (x86_64 allmodc=
-onfig)
-> > produced this warning:
-> >=20
-> > kernel/trace/trace_benchmark.c: In function 'trace_do_benchmark':
-> > kernel/trace/trace_benchmark.c:38:6: warning: unused variable 'seedsq' =
-[-Wunused-variable]
-> >   u64 seedsq;
-> >       ^
-> >=20
-> > Introduced by commit 81dc9f0ef21e ("tracing: Add tracepoint benchmark t=
-racepoint").
->=20
-> Hmm, I don't know why my tests missed this. I do a allmodconfig looking
-> for new warning messages too. Oh, but I do need to add this config to my
-> regular testing config :-/
->=20
-> I'm surprised Wu's bot didn't report it either.
->=20
-> I'm not going to rebase, but I'll add a patch to nuke it.
+The following changes since commit 47514c996fac5e6f13ef3a4c5e23f1c5cffabb7b:
 
-Correct behaviour!  :-)
+  efi: Pass correct file handle to efi_file_{read,close} (2014-04-10 21:20:03 +0100)
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+are available in the git repository at:
 
---Sig_/7nP0D4XMq1Tf5TdH_jJgh7z
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+  git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi.git tags/efi-urgent
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+for you to fetch changes up to a3530e8fe980f756b823d451fe9243f26db95fa5:
 
-iQIcBAEBCAAGBQJTj04OAAoJEMDTa8Ir7ZwVa/oP/jgzbOjJUhP4aUHvIjdqnLyE
-ByP+nBngi1/WM+z9lrZeUrunVbYh6oG8CZkHqJ8VlUFXtZeBa41GvsN99iTxolE7
-fU90wmMfWB4jQX771P/zV2FbgkehaxVecNFq2n30iKQsXC/Zt3W+CvJmMIPYEbRq
-9ne/ineHBGMkF4ESgaA1yIyVlU7m+2nHGsYszOdy0+uiHOLba9PR+Cy1LrRvSRmR
-iit4td0ORrHnjUv3xkD5Umfovn/OPtBo84YPMlbnL99DFk7c1SGe4EPrjWg8m4tK
-xC5z1SczbB9WF5iRMKt0Gnv+pRnBM8Jdf9LtMI/tGPMkWG4uP4EZYNqmxQb/OUku
-ETLjTkr9cCaSW3n19PZmjwOZJmkAvhpWMvboyhPIyKK1xuy2rHxludeJCyMoB+ff
-43eyNVdPqtuc5Jf8wWGMXZG0ADjej60klyimFx9WQoWPX754twLRUWej2BE6qslX
-j3+Gl2dAg4BNlkpXMk9V0Ht1CK0Pv3dKkNGLN8QkAkx6oOMkkUvP17A+/wqASFI3
-AE6tkgsMHLdTiHKBmqRCbrx7tSrVLJTcE626sckt1YFJJsRSKIL+hLmsHVVu7DqN
-2jDBNRGXOzpLzAE1eY3dskuoQTuLDtxBVZIEnKiBL+tJ2vS96cv9k+HKIVHRlVDm
-yasvfekQZaSAKRu9vpOp
-=lRl5
------END PGP SIGNATURE-----
+  x86/efi: Do not export efi runtime map in case old map (2014-06-02 12:21:59 +0100)
 
---Sig_/7nP0D4XMq1Tf5TdH_jJgh7z--
+----------------------------------------------------------------
+ * Fix earlyprintk=efi,keep support by switching to an ioremap() mapping
+   of the framebuffer when early_ioremap() is no longer available and
+   dropping __init from functions that may be invoked after
+   free_initmem() - Dave Young
+
+ * We shouldn't be exporting the EFI runtime map in sysfs if not using
+   the new 1:1 EFI mapping code since in that case the mappings are not
+   static across a kexec reboot - Dave Young
+
+----------------------------------------------------------------
+Dave Young (2):
+      x86/efi: earlyprintk=efi,keep fix
+      x86/efi: Do not export efi runtime map in case old map
+
+ arch/x86/platform/efi/early_printk.c | 83 +++++++++++++++++++++++++++---------
+ arch/x86/platform/efi/efi.c          |  3 ++
+ 2 files changed, 67 insertions(+), 19 deletions(-)
+
+-- 
+Matt Fleming, Intel Open Source Technology Center
