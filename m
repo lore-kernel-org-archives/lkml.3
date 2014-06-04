@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932472AbaFEAfj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 20:35:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39947 "EHLO
+	id S932488AbaFEAf7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 20:35:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39942 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752777AbaFDXVi (ORCPT
+	with ESMTP id S1752770AbaFDXVg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:21:38 -0400
+	Wed, 4 Jun 2014 19:21:36 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.14 076/228] drm/radeon/pm: dont walk the crtc list before it has been initialized (v2)
-Date: Wed,  4 Jun 2014 16:21:45 -0700
-Message-Id: <20140604232350.514504191@linuxfoundation.org>
+Subject: [PATCH 3.14 074/228] drm/radeon: properly unregister hwmon interface (v2)
+Date: Wed,  4 Jun 2014 16:21:43 -0700
+Message-Id: <20140604232350.430849457@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -30,12 +30,12 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alex Deucher <alexdeucher@gmail.com>
 
-commit 3ed9a335cfc64b2c83545f341cdddf2347b12b97 upstream.
+commit cb3e4e7c59e4b43ac378631f6101f5c8de3a27a5 upstream.
 
-Avoids a crash in certain cases when thermal irqs are generated
-before the display structures have been initialized.
+Need to properly unregister the hwmon device on driver
+unload.
 
-v2: fix the vblank and vrefresh helpers as well
+v2: minor clean up
 
 bug:
 https://bugzilla.kernel.org/show_bug.cgi?id=73931
@@ -44,106 +44,66 @@ Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/r600_dpm.c  |   35 +++++++++++++++++++----------------
- drivers/gpu/drm/radeon/radeon_pm.c |   28 ++++++++++++++++------------
- 2 files changed, 35 insertions(+), 28 deletions(-)
+ drivers/gpu/drm/radeon/radeon_pm.c |   21 +++++++++++++++------
+ 1 file changed, 15 insertions(+), 6 deletions(-)
 
---- a/drivers/gpu/drm/radeon/r600_dpm.c
-+++ b/drivers/gpu/drm/radeon/r600_dpm.c
-@@ -158,16 +158,18 @@ u32 r600_dpm_get_vblank_time(struct rade
- 	u32 line_time_us, vblank_lines;
- 	u32 vblank_time_us = 0xffffffff; /* if the displays are off, vblank time is max */
- 
--	list_for_each_entry(crtc, &dev->mode_config.crtc_list, head) {
--		radeon_crtc = to_radeon_crtc(crtc);
--		if (crtc->enabled && radeon_crtc->enabled && radeon_crtc->hw_mode.clock) {
--			line_time_us = (radeon_crtc->hw_mode.crtc_htotal * 1000) /
--				radeon_crtc->hw_mode.clock;
--			vblank_lines = radeon_crtc->hw_mode.crtc_vblank_end -
--				radeon_crtc->hw_mode.crtc_vdisplay +
--				(radeon_crtc->v_border * 2);
--			vblank_time_us = vblank_lines * line_time_us;
--			break;
-+	if (rdev->num_crtc && rdev->mode_info.mode_config_initialized) {
-+		list_for_each_entry(crtc, &dev->mode_config.crtc_list, head) {
-+			radeon_crtc = to_radeon_crtc(crtc);
-+			if (crtc->enabled && radeon_crtc->enabled && radeon_crtc->hw_mode.clock) {
-+				line_time_us = (radeon_crtc->hw_mode.crtc_htotal * 1000) /
-+					radeon_crtc->hw_mode.clock;
-+				vblank_lines = radeon_crtc->hw_mode.crtc_vblank_end -
-+					radeon_crtc->hw_mode.crtc_vdisplay +
-+					(radeon_crtc->v_border * 2);
-+				vblank_time_us = vblank_lines * line_time_us;
-+				break;
-+			}
- 		}
- 	}
- 
-@@ -181,14 +183,15 @@ u32 r600_dpm_get_vrefresh(struct radeon_
- 	struct radeon_crtc *radeon_crtc;
- 	u32 vrefresh = 0;
- 
--	list_for_each_entry(crtc, &dev->mode_config.crtc_list, head) {
--		radeon_crtc = to_radeon_crtc(crtc);
--		if (crtc->enabled && radeon_crtc->enabled && radeon_crtc->hw_mode.clock) {
--			vrefresh = radeon_crtc->hw_mode.vrefresh;
--			break;
-+	if (rdev->num_crtc && rdev->mode_info.mode_config_initialized) {
-+		list_for_each_entry(crtc, &dev->mode_config.crtc_list, head) {
-+			radeon_crtc = to_radeon_crtc(crtc);
-+			if (crtc->enabled && radeon_crtc->enabled && radeon_crtc->hw_mode.clock) {
-+				vrefresh = radeon_crtc->hw_mode.vrefresh;
-+				break;
-+			}
- 		}
- 	}
--
- 	return vrefresh;
- }
- 
 --- a/drivers/gpu/drm/radeon/radeon_pm.c
 +++ b/drivers/gpu/drm/radeon/radeon_pm.c
-@@ -1384,12 +1384,14 @@ static void radeon_pm_compute_clocks_old
+@@ -603,7 +603,6 @@ static const struct attribute_group *hwm
+ static int radeon_hwmon_init(struct radeon_device *rdev)
+ {
+ 	int err = 0;
+-	struct device *hwmon_dev;
  
- 	rdev->pm.active_crtcs = 0;
- 	rdev->pm.active_crtc_count = 0;
--	list_for_each_entry(crtc,
--		&ddev->mode_config.crtc_list, head) {
--		radeon_crtc = to_radeon_crtc(crtc);
--		if (radeon_crtc->enabled) {
--			rdev->pm.active_crtcs |= (1 << radeon_crtc->crtc_id);
--			rdev->pm.active_crtc_count++;
-+	if (rdev->num_crtc && rdev->mode_info.mode_config_initialized) {
-+		list_for_each_entry(crtc,
-+				    &ddev->mode_config.crtc_list, head) {
-+			radeon_crtc = to_radeon_crtc(crtc);
-+			if (radeon_crtc->enabled) {
-+				rdev->pm.active_crtcs |= (1 << radeon_crtc->crtc_id);
-+				rdev->pm.active_crtc_count++;
-+			}
+ 	switch (rdev->pm.int_thermal_type) {
+ 	case THERMAL_TYPE_RV6XX:
+@@ -616,11 +615,11 @@ static int radeon_hwmon_init(struct rade
+ 	case THERMAL_TYPE_KV:
+ 		if (rdev->asic->pm.get_temperature == NULL)
+ 			return err;
+-		hwmon_dev = hwmon_device_register_with_groups(rdev->dev,
+-							      "radeon", rdev,
+-							      hwmon_groups);
+-		if (IS_ERR(hwmon_dev)) {
+-			err = PTR_ERR(hwmon_dev);
++		rdev->pm.int_hwmon_dev = hwmon_device_register_with_groups(rdev->dev,
++									   "radeon", rdev,
++									   hwmon_groups);
++		if (IS_ERR(rdev->pm.int_hwmon_dev)) {
++			err = PTR_ERR(rdev->pm.int_hwmon_dev);
+ 			dev_err(rdev->dev,
+ 				"Unable to register hwmon device: %d\n", err);
  		}
+@@ -632,6 +631,12 @@ static int radeon_hwmon_init(struct rade
+ 	return err;
+ }
+ 
++static void radeon_hwmon_fini(struct radeon_device *rdev)
++{
++	if (rdev->pm.int_hwmon_dev)
++		hwmon_device_unregister(rdev->pm.int_hwmon_dev);
++}
++
+ static void radeon_dpm_thermal_work_handler(struct work_struct *work)
+ {
+ 	struct radeon_device *rdev =
+@@ -1331,6 +1336,8 @@ static void radeon_pm_fini_old(struct ra
+ 		device_remove_file(rdev->dev, &dev_attr_power_method);
  	}
  
-@@ -1456,12 +1458,14 @@ static void radeon_pm_compute_clocks_dpm
- 	/* update active crtc counts */
- 	rdev->pm.dpm.new_active_crtcs = 0;
- 	rdev->pm.dpm.new_active_crtc_count = 0;
--	list_for_each_entry(crtc,
--		&ddev->mode_config.crtc_list, head) {
--		radeon_crtc = to_radeon_crtc(crtc);
--		if (crtc->enabled) {
--			rdev->pm.dpm.new_active_crtcs |= (1 << radeon_crtc->crtc_id);
--			rdev->pm.dpm.new_active_crtc_count++;
-+	if (rdev->num_crtc && rdev->mode_info.mode_config_initialized) {
-+		list_for_each_entry(crtc,
-+				    &ddev->mode_config.crtc_list, head) {
-+			radeon_crtc = to_radeon_crtc(crtc);
-+			if (crtc->enabled) {
-+				rdev->pm.dpm.new_active_crtcs |= (1 << radeon_crtc->crtc_id);
-+				rdev->pm.dpm.new_active_crtc_count++;
-+			}
- 		}
++	radeon_hwmon_fini(rdev);
++
+ 	if (rdev->pm.power_state)
+ 		kfree(rdev->pm.power_state);
+ }
+@@ -1350,6 +1357,8 @@ static void radeon_pm_fini_dpm(struct ra
  	}
+ 	radeon_dpm_fini(rdev);
  
++	radeon_hwmon_fini(rdev);
++
+ 	if (rdev->pm.power_state)
+ 		kfree(rdev->pm.power_state);
+ }
 
 
