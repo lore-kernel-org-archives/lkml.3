@@ -1,77 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751490AbaFDTR5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 15:17:57 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:10003 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751010AbaFDTR4 (ORCPT
+	id S1751578AbaFDTTU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 15:19:20 -0400
+Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:24254
+	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750925AbaFDTTT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 15:17:56 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 04 Jun 2014 12:10:00 -0700
-From: Vidya Sagar <vidyas@nvidia.com>
-To: <linux@arm.linux.org.uk>, <bhelgaas@google.com>, <wangyijing@huawei.com>,
-        <thierry.reding@gmail.com>, <jason@lakedaemon.net>,
-        <will.deacon@arm.com>, <swarren@nvidia.com>, <kthota@nvidia.com>,
-        <vidyas@nvidia.com>
-CC: <sagar.tv@gmail.com>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH] ARM: fix debug prints relevant to PCI devices
-Date: Thu, 5 Jun 2014 00:47:27 +0530
-Message-ID: <1401909447-8434-1-git-send-email-vidyas@nvidia.com>
-X-Mailer: git-send-email 1.8.1.5
-X-NVConfidentiality: public
+	Wed, 4 Jun 2014 15:19:19 -0400
+X-IronPort-AV: E=Sophos;i="4.98,974,1392159600"; 
+   d="scan'208";a="65476315"
+Date: Wed, 4 Jun 2014 21:19:13 +0200 (CEST)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@localhost6.localdomain6
+To: "Marciniszyn, Mike" <mike.marciniszyn@intel.com>
+cc: Julia Lawall <Julia.Lawall@lip6.fr>, infinipath <infinipath@intel.com>,
+        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
+        Roland Dreier <roland@kernel.org>,
+        "Hefty, Sean" <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>,
+        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 9/10] IB/qib: use safer test on the result of
+ find_first_zero_bit
+In-Reply-To: <32E1700B9017364D9B60AED9960492BC21BE92E6@fmsmsx120.amr.corp.intel.com>
+Message-ID: <alpine.DEB.2.02.1406042118420.1977@localhost6.localdomain6>
+References: <1401872880-23685-1-git-send-email-Julia.Lawall@lip6.fr> <1401872880-23685-10-git-send-email-Julia.Lawall@lip6.fr> <32E1700B9017364D9B60AED9960492BC21BE92E6@fmsmsx120.amr.corp.intel.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As per PCIe spec, fast back-to-back transactions feature
-is not applicable to PCIe devices. Hence, do not print
-that fast back-to-back trasactions are disabled when
-there is a PCIe device found on the bus
+On Wed, 4 Jun 2014, Marciniszyn, Mike wrote:
 
-Signed-off-by: Vidya Sagar <vidyas@nvidia.com>
----
- arch/arm/kernel/bios32.c | 9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+> > Subject: [PATCH 9/10] IB/qib: use safer test on the result of find_first_zero_bit
+> > 
+> > From: Julia Lawall <Julia.Lawall@lip6.fr>
+> 
+> Thanks for the patch!
+> 
+> Roland, I'm marking this as stable since a memory corruption can occur in the _set_bit().
 
-diff --git a/arch/arm/kernel/bios32.c b/arch/arm/kernel/bios32.c
-index 17a26c1..95ad3fb 100644
---- a/arch/arm/kernel/bios32.c
-+++ b/arch/arm/kernel/bios32.c
-@@ -290,6 +290,7 @@ void pcibios_fixup_bus(struct pci_bus *bus)
- {
- 	struct pci_dev *dev;
- 	u16 features = PCI_COMMAND_SERR | PCI_COMMAND_PARITY | PCI_COMMAND_FAST_BACK;
-+	int has_pcie_dev = 0;
- 
- 	/*
- 	 * Walk the devices on this bus, working out what we can
-@@ -298,6 +299,8 @@ void pcibios_fixup_bus(struct pci_bus *bus)
- 	list_for_each_entry(dev, &bus->devices, bus_list) {
- 		u16 status;
- 
-+		if (!has_pcie_dev)
-+			has_pcie_dev = pci_pcie_cap(dev);
- 		pci_read_config_word(dev, PCI_STATUS, &status);
- 
- 		/*
-@@ -354,9 +357,11 @@ void pcibios_fixup_bus(struct pci_bus *bus)
- 
- 	/*
- 	 * Report what we did for this bus
-+	 * (only if the bus doesn't have even one PCIe device)
- 	 */
--	printk(KERN_INFO "PCI: bus%d: Fast back to back transfers %sabled\n",
--		bus->number, (features & PCI_COMMAND_FAST_BACK) ? "en" : "dis");
-+	if (!has_pcie_dev)
-+		printk(KERN_INFO "PCI: bus%d: Fast back to back transfers %sabled\n",
-+			bus->number, (features & PCI_COMMAND_FAST_BACK) ? "en" : "dis");
- }
- EXPORT_SYMBOL(pcibios_fixup_bus);
- 
--- 
-1.8.1.5
+No, it's not necessary.  It turns out that the result cannot be greater 
+than the requested maximum value.
 
+julia
