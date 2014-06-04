@@ -1,84 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751556AbaFDIkA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 04:40:00 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:56853 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750860AbaFDIj5 (ORCPT
+	id S1751623AbaFDIlU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 04:41:20 -0400
+Received: from [119.145.14.66] ([119.145.14.66]:57945 "EHLO
+	szxga03-in.huawei.com" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1751055AbaFDIlQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 04:39:57 -0400
-Date: Wed, 4 Jun 2014 10:39:55 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Paolo Valente <paolo.valente@unimore.it>
-Cc: Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>,
-        Li Zefan <lizefan@huawei.com>, Fabio Checconi <fchecconi@gmail.com>,
-        Arianna Avanzini <avanzini.arianna@gmail.com>,
-        linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org
-Subject: Re: [PATCH RFC - TAKE TWO - 00/12] New version of the BFQ I/O
- Scheduler
-Message-ID: <20140604083955.GA878@amd.pavel.ucw.cz>
-References: <20140528221929.GG1419@htj.dyndns.org>
- <1401354343-5527-1-git-send-email-paolo.valente@unimore.it>
- <20140530160712.GG24871@htj.dyndns.org>
- <464F6CBE-A63E-46EF-A90D-BF8450430444@unimore.it>
- <20140530232804.GA5057@htj.dyndns.org>
- <20140602111432.GA3737@amd.pavel.ucw.cz>
- <20140602130226.GA14654@amd.pavel.ucw.cz>
- <FCFE0106-A4DD-4DEF-AAAE-040F3823A447@unimore.it>
+	Wed, 4 Jun 2014 04:41:16 -0400
+Message-ID: <538EDB7C.2070405@huawei.com>
+Date: Wed, 4 Jun 2014 16:40:28 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <FCFE0106-A4DD-4DEF-AAAE-040F3823A447@unimore.it>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Tejun Heo <tj@kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
+Subject: Re: [PATCH 1/3] cgroup: don't destroy the default root
+References: <538D4956.5050205@huawei.com> <20140603125728.GA26210@htj.dyndns.org>
+In-Reply-To: <20140603125728.GA26210@htj.dyndns.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.18.230]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
-
-> > Like this: I applied patch over today's git... 
-> > 
-> > I only see last bits of panic...
-> > 
-> > Call trace:
-> > __bfq_bfqq_expire
-> > bfq_bfqq_expire
-> > bfq_dispatch_requests
-> > sci_request_fn
-> > ...
-> > EIP: T.1839+0x26
-
-> > Any ideas?
-> > 			
+On 2014/6/3 20:57, Tejun Heo wrote:
+> Hello, Li.
 > 
-> We have tried to think about ways to trigger this failure, but in vain. Unfortunately, so far no user has reported any failure with this last version of bfq either. Finally, we have gone through a new static analysis, but also in this case uselessly.
+> On Tue, Jun 03, 2014 at 12:04:38PM +0800, Li Zefan wrote:
+>>  static void cgroup_get(struct cgroup *cgrp)
+>>  {
+>>  	WARN_ON_ONCE(cgroup_is_dead(cgrp));
+>> -	css_get(&cgrp->self);
+>> +	if (!(cgrp->self.flags & CSS_NO_REF))
+>> +		css_get(&cgrp->self);
 > 
-> So, if you are willing to retry, we have put online a version of the code filled with many BUG_ONs. I hope they can make it easier to track down the bug. The archive is here:
-> http://algogroup.unimore.it/people/paolo/disk_sched/debugging-patches/3.15.0-rc8-v7rc5.tgz
->
+> Hmmm?  The same condition is tested by css_get().  Why should it be
+> tested again here?
+> 
 
-BUG: Unable to handle kernel paging request ad dee22fa0
-IP: bfq_del_bfqq_busy+0x4d
-...
-Tainted: GW 3.15.0-rc8+
-...
-Call trace:
-__bfq_bfqq_expire
-bfq_bfqq_expire
-? bfq_bfqq_expire
-? bfq_bfqq_expire
-bfq_idle_slice_timer
-call_timer_fn
-...
+Oh, I completely ignored that.
 
-> Should this attempt be useless as well, I will, if you do not mind, try by asking you more details about your system and reproducing your configuration as much as I can.
->
+>>  static void cgroup_put(struct cgroup *cgrp)
+>>  {
+>> -	css_put(&cgrp->self);
+>> +	if (!(cgrp->self.flags & CSS_NO_REF))
+>> +		css_put(&cgrp->self);
+> 
+> Ditto.
+> 
+>> @@ -1781,10 +1783,12 @@ static void cgroup_kill_sb(struct super_block *sb)
+>>  	 * This prevents new mounts by disabling percpu_ref_tryget_live().
+>>  	 * cgroup_mount() may wait for @root's release.
+>>  	 */
+>> -	if (css_has_online_children(&root->cgrp.self))
+>> +	if (css_has_online_children(&root->cgrp.self)) {
+>>  		cgroup_put(&root->cgrp);
+>> -	else
+>> -		percpu_ref_kill(&root->cgrp.self.refcnt);
+>> +	} else {
+>> +		if (root != &cgrp_dfl_root)
+>> +			percpu_ref_kill(&root->cgrp.self.refcnt);
+>> +	}
+> 
+> As conceptually percpu_ref_kill() just puts the base ref and the
+> dfl_root's refcnt never reaches zero, it won't actually trigger.
 
-See the preivous email...
+Yes it will, just try mount && umount.
 
-Best regards,
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+I think it's because cgroup_get() is a no-op for CSS_NO_REF, so it has
+only the base ref, so percpu_ref_iill() will actually schedule the
+call to css_release().
+
+> Hmmm.... wouldn't the above leak a ref each time the default hierarchy
+> is unmounted tho?  Shouldn't it be like the following?
+> 
+
+cgroup_get() is a no-op for root cgroup of the default root, so there's
+no leak, but still better to call cgroup_put().
+
+I'll send an updated patch.
+
+> 	if (root == &cgrp_dfl_root || css_has_online_children(...))
+> 		cgroup_put(&root->cgrp);
+> 	else
+> 		percpu_ref_kill(...);
+> 
+> Thanks.
+> 
+
