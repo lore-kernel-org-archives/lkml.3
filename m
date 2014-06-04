@@ -1,127 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752886AbaFDLnF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 07:43:05 -0400
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:43460 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752485AbaFDLfI (ORCPT
+	id S1752653AbaFDLrb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 07:47:31 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:10017 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752508AbaFDLr2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 07:35:08 -0400
-From: Paolo Bonzini <pbonzini@redhat.com>
-To: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Cc: hch@lst.de, JBottomley@Parallels.com, venkateshs@google.com,
-        Ming Lei <tom.leiming@gmail.com>
-Subject: [PATCH v3 1/6] virtio_scsi: remove ACCESS_ONCE() and smp_read_barrier_depends()
-Date: Wed,  4 Jun 2014 13:34:54 +0200
-Message-Id: <1401881699-1456-2-git-send-email-pbonzini@redhat.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1401881699-1456-1-git-send-email-pbonzini@redhat.com>
-References: <1401881699-1456-1-git-send-email-pbonzini@redhat.com>
+	Wed, 4 Jun 2014 07:47:28 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 04 Jun 2014 04:42:18 -0700
+From: Mikko Perttunen <mperttunen@nvidia.com>
+To: <swarren@wwwdotorg.org>, <thierry.reding@gmail.com>, <tj@kernel.org>,
+        <pdeschrijver@nvidia.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux-tegra@vger.kernel.org>, <linux-ide@vger.kernel.org>,
+        Mikko Perttunen <mperttunen@nvidia.com>
+Subject: [PATCH 0/9] Serial ATA support for NVIDIA Tegra124
+Date: Wed, 4 Jun 2014 14:32:30 +0300
+Message-ID: <1401881559-18469-1-git-send-email-mperttunen@nvidia.com>
+X-Mailer: git-send-email 1.8.1.5
+X-NVConfidentiality: public
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ming Lei <tom.leiming@gmail.com>
+Hi,
 
-Access to tgt->req_vq is strictly serialized by spin_lock
-of tgt->tgt_lock, so the ACCESS_ONCE() isn't necessary.
+This series adds support for the onboard AHCI-compliant Serial ATA
+controller found on Tegra124 systems-on-chip. The controller is
+enabled on Jetson TK1. The series depends on Peter's efuse series 
+and Thierry's yet to be submitted XUSB pinctrl driver.
 
-smp_read_barrier_depends() in virtscsi_req_done was introduced
-to order reading req_vq and decreasing tgt->reqs, but it isn't
-needed now because req_vq is read from
-scsi->req_vqs[vq->index - VIRTIO_SCSI_VQ_BASE] instead of
-tgt->req_vq, so remove the unnecessary barrier.
+A branch containing the series is located at 
+	git://github.com/cyndis/linux.git
+branch ahci-rel.
 
-Also remove related comment about the barrier.
+Mikko Perttunen (9):
+  of: Add NVIDIA Tegra SATA controller binding
+  ARM: tegra: Add SATA controller to Tegra124 device tree
+  ARM: tegra: Add SATA and SATA power to Jetson TK1 device tree
+  clk: tegra: Enable hardware control of SATA PLL
+  clk: tegra: Add SATA clocks to Tegra124 initialization table
+  ARM: tegra: Export tegra_powergate_power_on
+  ahci: Increase AHCI_MAX_CLKS to 4
+  ata: Add support for the Tegra124 SATA controller
+  ARM: tegra: Add options for Tegra AHCI support to tegra_defconfig
 
-Cc: Paolo Bonzini <pbonzini@redhat.com>
-Signed-off-by: Ming Lei <tom.leiming@gmail.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
----
- drivers/scsi/virtio_scsi.c | 53 ++++++----------------------------------------
- 1 file changed, 6 insertions(+), 47 deletions(-)
+ .../devicetree/bindings/ata/tegra-sata.txt         |  29 ++
+ arch/arm/boot/dts/tegra124-jetson-tk1.dts          |  36 ++
+ arch/arm/boot/dts/tegra124.dtsi                    |  24 ++
+ arch/arm/configs/tegra_defconfig                   |   3 +
+ arch/arm/mach-tegra/powergate.c                    |   1 +
+ drivers/ata/Kconfig                                |   9 +
+ drivers/ata/Makefile                               |   1 +
+ drivers/ata/ahci.h                                 |   2 +-
+ drivers/ata/ahci_tegra.c                           | 386 +++++++++++++++++++++
+ drivers/clk/tegra/clk-pll.c                        |   8 +
+ drivers/clk/tegra/clk-tegra124.c                   |   2 +
+ 11 files changed, 500 insertions(+), 1 deletion(-)
+ create mode 100644 Documentation/devicetree/bindings/ata/tegra-sata.txt
+ create mode 100644 drivers/ata/ahci_tegra.c
 
-diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
-index db3b494e5926..fc054935eb1f 100644
---- a/drivers/scsi/virtio_scsi.c
-+++ b/drivers/scsi/virtio_scsi.c
-@@ -73,17 +73,12 @@ struct virtio_scsi_vq {
-  * queue, and also lets the driver optimize the IRQ affinity for the virtqueues
-  * (each virtqueue's affinity is set to the CPU that "owns" the queue).
-  *
-- * An interesting effect of this policy is that only writes to req_vq need to
-- * take the tgt_lock.  Read can be done outside the lock because:
-+ * tgt_lock is held to serialize reading and writing req_vq. Reading req_vq
-+ * could be done locklessly, but we do not do it yet.
-  *
-- * - writes of req_vq only occur when atomic_inc_return(&tgt->reqs) returns 1.
-- *   In that case, no other CPU is reading req_vq: even if they were in
-- *   virtscsi_queuecommand_multi, they would be spinning on tgt_lock.
-- *
-- * - reads of req_vq only occur when the target is not idle (reqs != 0).
-- *   A CPU that enters virtscsi_queuecommand_multi will not modify req_vq.
-- *
-- * Similarly, decrements of reqs are never concurrent with writes of req_vq.
-+ * Decrements of reqs are never concurrent with writes of req_vq: before the
-+ * decrement reqs will be != 0; after the decrement the virtqueue completion
-+ * routine will not use the req_vq so it can be changed by a new request.
-  * Thus they can happen outside the tgt_lock, provided of course we make reqs
-  * an atomic_t.
-  */
-@@ -238,38 +233,6 @@ static void virtscsi_req_done(struct virtqueue *vq)
- 	int index = vq->index - VIRTIO_SCSI_VQ_BASE;
- 	struct virtio_scsi_vq *req_vq = &vscsi->req_vqs[index];
- 
--	/*
--	 * Read req_vq before decrementing the reqs field in
--	 * virtscsi_complete_cmd.
--	 *
--	 * With barriers:
--	 *
--	 * 	CPU #0			virtscsi_queuecommand_multi (CPU #1)
--	 * 	------------------------------------------------------------
--	 * 	lock vq_lock
--	 * 	read req_vq
--	 * 	read reqs (reqs = 1)
--	 * 	write reqs (reqs = 0)
--	 * 				increment reqs (reqs = 1)
--	 * 				write req_vq
--	 *
--	 * Possible reordering without barriers:
--	 *
--	 * 	CPU #0			virtscsi_queuecommand_multi (CPU #1)
--	 * 	------------------------------------------------------------
--	 * 	lock vq_lock
--	 * 	read reqs (reqs = 1)
--	 * 	write reqs (reqs = 0)
--	 * 				increment reqs (reqs = 1)
--	 * 				write req_vq
--	 * 	read (wrong) req_vq
--	 *
--	 * We do not need a full smp_rmb, because req_vq is required to get
--	 * to tgt->reqs: tgt is &vscsi->tgt[sc->device->id], where sc is stored
--	 * in the virtqueue as the user token.
--	 */
--	smp_read_barrier_depends();
--
- 	virtscsi_vq_done(vscsi, req_vq, virtscsi_complete_cmd);
- };
- 
-@@ -560,12 +523,8 @@ static struct virtio_scsi_vq *virtscsi_pick_vq(struct virtio_scsi *vscsi,
- 
- 	spin_lock_irqsave(&tgt->tgt_lock, flags);
- 
--	/*
--	 * The memory barrier after atomic_inc_return matches
--	 * the smp_read_barrier_depends() in virtscsi_req_done.
--	 */
- 	if (atomic_inc_return(&tgt->reqs) > 1)
--		vq = ACCESS_ONCE(tgt->req_vq);
-+		vq = tgt->req_vq;
- 	else {
- 		queue_num = smp_processor_id();
- 		while (unlikely(queue_num >= vscsi->num_queues))
 -- 
-1.8.3.1
-
+1.8.1.5
 
