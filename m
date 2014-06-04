@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754138AbaFDXYN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:24:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40890 "EHLO
+	id S1754636AbaFDXbI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 19:31:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40959 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754072AbaFDXYF (ORCPT
+	with ESMTP id S1754133AbaFDXYN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:24:05 -0400
+	Wed, 4 Jun 2014 19:24:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 3.10 061/103] Drivers: hv: vmbus: Negotiate version 3.0 when running on ws2012r2 hosts
-Date: Wed,  4 Jun 2014 16:25:24 -0700
-Message-Id: <20140604232548.811993279@linuxfoundation.org>
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 3.10 075/103] workqueue: make rescuer_thread() empty wq->maydays list before exiting
+Date: Wed,  4 Jun 2014 16:25:38 -0700
+Message-Id: <20140604232549.256333194@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232546.704156131@linuxfoundation.org>
 References: <20140604232546.704156131@linuxfoundation.org>
@@ -28,75 +28,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "K. Y. Srinivasan" <kys@microsoft.com>
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
 
-commit 03367ef5ea811475187a0732aada068919e14d61 upstream.
+commit 4d595b866d2c653dc90a492b9973a834eabfa354 upstream.
 
-Only ws2012r2 hosts support the ability to reconnect to the host on VMBUS. This functionality
-is needed by kexec in Linux. To use this functionality we need to negotiate version 3.0 of the
-VMBUS protocol.
+After a @pwq is scheduled for emergency execution, other workers may
+consume the affectd work items before the rescuer gets to them.  This
+means that a workqueue many have pwqs queued on @wq->maydays list
+while not having any work item pending or in-flight.  If
+destroy_workqueue() executes in such condition, the rescuer may exit
+without emptying @wq->maydays.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+This currently doesn't cause any actual harm.  destroy_workqueue() can
+safely destroy all the involved data structures whether @wq->maydays
+is populated or not as nobody access the list once the rescuer exits.
+
+However, this is nasty and makes future development difficult.  Let's
+update rescuer_thread() so that it empties @wq->maydays after seeing
+should_stop to guarantee that the list is empty on rescuer exit.
+
+tj: Updated comment and patch description.
+
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
 ---
- drivers/hv/connection.c |    6 ++++++
- include/linux/hyperv.h  |    7 +++++--
- 2 files changed, 11 insertions(+), 2 deletions(-)
+ kernel/workqueue.c |   21 ++++++++++++++++-----
+ 1 file changed, 16 insertions(+), 5 deletions(-)
 
---- a/drivers/hv/connection.c
-+++ b/drivers/hv/connection.c
-@@ -55,6 +55,9 @@ static __u32 vmbus_get_next_version(__u3
- 	case (VERSION_WIN8):
- 		return VERSION_WIN7;
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -2362,6 +2362,7 @@ static int rescuer_thread(void *__rescue
+ 	struct worker *rescuer = __rescuer;
+ 	struct workqueue_struct *wq = rescuer->rescue_wq;
+ 	struct list_head *scheduled = &rescuer->scheduled;
++	bool should_stop;
  
-+	case (VERSION_WIN8_1):
-+		return VERSION_WIN8;
+ 	set_user_nice(current, RESCUER_NICE_LEVEL);
+ 
+@@ -2373,11 +2374,15 @@ static int rescuer_thread(void *__rescue
+ repeat:
+ 	set_current_state(TASK_INTERRUPTIBLE);
+ 
+-	if (kthread_should_stop()) {
+-		__set_current_state(TASK_RUNNING);
+-		rescuer->task->flags &= ~PF_WQ_WORKER;
+-		return 0;
+-	}
++	/*
++	 * By the time the rescuer is requested to stop, the workqueue
++	 * shouldn't have any work pending, but @wq->maydays may still have
++	 * pwq(s) queued.  This can happen by non-rescuer workers consuming
++	 * all the work items before the rescuer got to them.  Go through
++	 * @wq->maydays processing before acting on should_stop so that the
++	 * list is always empty on exit.
++	 */
++	should_stop = kthread_should_stop();
+ 
+ 	/* see whether any pwq is asking for help */
+ 	spin_lock_irq(&wq_mayday_lock);
+@@ -2429,6 +2434,12 @@ repeat:
+ 
+ 	spin_unlock_irq(&wq_mayday_lock);
+ 
++	if (should_stop) {
++		__set_current_state(TASK_RUNNING);
++		rescuer->task->flags &= ~PF_WQ_WORKER;
++		return 0;
++	}
 +
- 	case (VERSION_WS2008):
- 	default:
- 		return VERSION_INVAL;
-@@ -80,6 +83,9 @@ static int vmbus_negotiate_version(struc
- 			(void *)((unsigned long)vmbus_connection.monitor_pages +
- 				 PAGE_SIZE));
- 
-+	if (version == VERSION_WIN8_1)
-+		msg->target_vcpu = hv_context.vp_index[smp_processor_id()];
-+
- 	/*
- 	 * Add to list before we send the request since we may
- 	 * receive the response before returning from this routine
---- a/include/linux/hyperv.h
-+++ b/include/linux/hyperv.h
-@@ -483,15 +483,18 @@ hv_get_ringbuffer_availbytes(struct hv_r
-  * 0 . 13 (Windows Server 2008)
-  * 1 . 1  (Windows 7)
-  * 2 . 4  (Windows 8)
-+ * 3 . 0  (Windows 8 R2)
-  */
- 
- #define VERSION_WS2008  ((0 << 16) | (13))
- #define VERSION_WIN7    ((1 << 16) | (1))
- #define VERSION_WIN8    ((2 << 16) | (4))
-+#define VERSION_WIN8_1    ((3 << 16) | (0))
-+
- 
- #define VERSION_INVAL -1
- 
--#define VERSION_CURRENT VERSION_WIN8
-+#define VERSION_CURRENT VERSION_WIN8_1
- 
- /* Make maximum size of pipe payload of 16K */
- #define MAX_PIPE_DATA_PAYLOAD		(sizeof(u8) * 16384)
-@@ -894,7 +897,7 @@ struct vmbus_channel_relid_released {
- struct vmbus_channel_initiate_contact {
- 	struct vmbus_channel_message_header header;
- 	u32 vmbus_version_requested;
--	u32 padding2;
-+	u32 target_vcpu; /* The VCPU the host should respond to */
- 	u64 interrupt_page;
- 	u64 monitor_page1;
- 	u64 monitor_page2;
+ 	/* rescuers should never participate in concurrency management */
+ 	WARN_ON_ONCE(!(rescuer->flags & WORKER_NOT_RUNNING));
+ 	schedule();
 
 
