@@ -1,70 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751909AbaFDRsI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 13:48:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36554 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750853AbaFDRsF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 13:48:05 -0400
-Date: Wed, 4 Jun 2014 10:51:45 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: ritesh.harjani@gmail.com
-Cc: catalin.marinas@arm.com, Will.Deacon@arm.com, m.szyprowski@samsung.com,
-        rmk@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] device.h: arm,dma-iommu: Move out dma_iommu_mapping
- struct
-Message-ID: <20140604175145.GD20812@kroah.com>
-References: <1401869506-48129-1-git-send-email-ritesh.harjani@gmail.com>
- <1401869506-48129-2-git-send-email-ritesh.harjani@gmail.com>
+	id S1751550AbaFDRvS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 13:51:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11475 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750925AbaFDRvQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 13:51:16 -0400
+Date: Wed, 4 Jun 2014 13:50:31 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: WANG Chao <chaowang@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
+        ebiederm@xmission.com, hpa@zytor.com, mjg59@srcf.ucam.org,
+        greg@kroah.com, bp@alien8.de, jkosina@suse.cz, dyoung@redhat.com,
+        bhe@redhat.com, akpm@linux-foundation.org
+Subject: Re: [RFC PATCH 00/13][V3] kexec: A new system call to allow in
+ kernel loading
+Message-ID: <20140604175031.GA4406@redhat.com>
+References: <1401800822-27425-1-git-send-email-vgoyal@redhat.com>
+ <20140603131203.GA23395@redhat.com>
+ <20140604092214.GA17528@dhcp-17-89.nay.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1401869506-48129-2-git-send-email-ritesh.harjani@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140604092214.GA17528@dhcp-17-89.nay.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 04, 2014 at 01:41:46PM +0530, ritesh.harjani@gmail.com wrote:
-> From: Ritesh Harjani <ritesh.harjani@gmail.com>
+On Wed, Jun 04, 2014 at 05:22:14PM +0800, WANG Chao wrote:
+
+[..]
+> > Index: kexec-tools/kexec/kexec.h
+> > ===================================================================
+> > --- kexec-tools.orig/kexec/kexec.h	2014-06-02 14:34:16.719774316 -0400
+> > +++ kexec-tools/kexec/kexec.h	2014-06-02 14:34:42.010036325 -0400
+> > @@ -156,6 +156,13 @@ struct kexec_info {
+> >  	unsigned long kexec_flags;
+> >  	unsigned long backup_src_start;
+> >  	unsigned long backup_src_size;
+> > +	/* Set to 1 if we are using kexec2 syscall */
+> > +	unsigned long file_mode :1;
+> > +
+> > +	/* Filled by kernel image processing code */
+> > +	int initrd_fd;
+> > +	char *command_line;
+> > +	int command_line_len;
+> >  };
+> >  
+> >  struct arch_map_entry {
+> > @@ -207,6 +214,7 @@ extern int file_types;
+> >  #define OPT_UNLOAD		'u'
+> >  #define OPT_TYPE		't'
+> >  #define OPT_PANIC		'p'
+> > +#define OPT_USE_KEXEC2_SYSCALL	's'
+> >  #define OPT_MEM_MIN             256
+> >  #define OPT_MEM_MAX             257
+> >  #define OPT_REUSE_INITRD	258
+> > @@ -230,6 +238,7 @@ extern int file_types;
+> >  	{ "mem-min",		1, 0, OPT_MEM_MIN }, \
+> >  	{ "mem-max",		1, 0, OPT_MEM_MAX }, \
+> >  	{ "reuseinitrd",	0, 0, OPT_REUSE_INITRD }, \
+> > +	{ "use-kexec2-syscall",	0, 0, OPT_USE_KEXEC2_SYSCALL }, \
+> >  	{ "debug",		0, 0, OPT_DEBUG }, \
+> >  
+> >  #define KEXEC_OPT_STR "h?vdfxluet:p"
 > 
-> This patch moves out *mapping pointer of dma_iommu_mapping
-> from arch/arm/include/asm/device.h to include/liunux/device.h
-
-Why?  Who else can use this becides arm devices?
-
+> This line,
+> #define KEXEC_OPT_STR "h?vdfxluet:p"
 > 
-> Also, it moves out complete structre definition of dma_iommu_mapping
-> to include/linux/iommu-helper.h
-> 
-> This is done since arm iommu's dma-mapping arch independent code,
-> needs to be moved out to lib/iommu-helper.c, this means
-> dma_iommu_mapping will be arch independent and later other archs
-> can make use of it.
+> should be something like,
+> #define KEXEC_OPT_STR "h?vdfxluet:ps"
 
-Will that really happen?  Do you have patches that do that?  I'd prefer
-to not do stuff like this until you have a patch series that needs it,
-otherwise this is just unneeded churn.
+Thanks chao. I will fix it.
 
-> --- a/include/linux/device.h
-> +++ b/include/linux/device.h
-> @@ -705,6 +705,10 @@ struct device {
->  	/* arch specific additions */
->  	struct dev_archdata	archdata;
->  
-> +#ifdef CONFIG_DMA_USE_IOMMU_HELPER_MAPPING
-> +	struct dma_iommu_mapping	*mapping;
-> +#endif
-> +
->  	struct device_node	*of_node; /* associated device tree node */
->  	struct acpi_dev_node	acpi_node; /* associated ACPI device node */
->  
-
-Are you sure this will not break the build on systems that enable that
-option, yet do not include iommu-helper.h?
-
-thanks,
-
-greg k-h
+Thanks
+Vivek
