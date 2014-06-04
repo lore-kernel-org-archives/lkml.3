@@ -1,188 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752805AbaFDM12 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 08:27:28 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:41849 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751660AbaFDM10 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 08:27:26 -0400
-Message-ID: <538F10A4.5050708@ti.com>
-Date: Wed, 4 Jun 2014 15:27:16 +0300
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1752828AbaFDM3S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 08:29:18 -0400
+Received: from casper.infradead.org ([85.118.1.10]:46469 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751660AbaFDM3R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 08:29:17 -0400
+Date: Wed, 4 Jun 2014 14:29:09 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Kirill Tkhai <tkhai@yandex.ru>
+Cc: "riel@redhat.com" <riel@redhat.com>,
+        "laijs@cn.fujitsu.com" <laijs@cn.fujitsu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@kernel.org" <mingo@kernel.org>
+Subject: Re: [PATCH] sched: Fix migration_cpu_stop() return value
+Message-ID: <20140604122909.GE13658@twins.programming.kicks-ass.net>
+References: <20140604104122.GL30445@twins.programming.kicks-ass.net>
+ <5962011401880725@web26h.yandex.ru>
+ <20140604120338.GH13930@laptop.programming.kicks-ass.net>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: linux-kernel <linux-kernel@vger.kernel.org>,
-        Linux Fbdev development list <linux-fbdev@vger.kernel.org>
-Subject: [GIT PULL] main fbdev changes for 3.16
-X-Enigmail-Version: 1.6
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="TjAnn6wNJdqmI8OipDLCeBQcfjDcbcRlo"
+	protocol="application/pgp-signature"; boundary="bNvn4bxlrUVLu6cT"
+Content-Disposition: inline
+In-Reply-To: <20140604120338.GH13930@laptop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---TjAnn6wNJdqmI8OipDLCeBQcfjDcbcRlo
-Content-Type: text/plain; charset=ISO-8859-1
+
+--bNvn4bxlrUVLu6cT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi Linus,
+On Wed, Jun 04, 2014 at 02:03:38PM +0200, Peter Zijlstra wrote:
+> On Wed, Jun 04, 2014 at 03:18:45PM +0400, Kirill Tkhai wrote:
+> > Hi, Peter,
+> >=20
+> > 04.06.2014, 14:41, "Peter Zijlstra" <peterz@infradead.org>:
+> > > =A0A while ago I did a similar patch for some debugging, but looking =
+at it
+> > > =A0again today I realized we should probably fix this anyway.
+> > >
+> > > =A0---
+> > > =A0Subject: sched: Fix migration_cpu_stop() return value
+> > >
+> > > =A0There are a number of migration_cpu_stop() users; and some actuall=
+y care
+> > > =A0about the success of the migration. So report this.
+> > >
+> > > =A0In particular migrate_task_to() as used from task_numa_migrate()
+> > > =A0actually tests this return value.
+> > >
+> > > =A0Also change set_cpus_allowed_ptr() to propagate this return value,=
+ since
+> > > =A0it already returns other errors.
+> > >
+> > > =A0Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
+> > > =A0Cc: Ingo Molnar <mingo@redhat.com>
+> > > =A0Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+> > > =A0---
+> > > =A0=A0kernel/sched/core.c | =A0=A015 +++++++++++----
+> > > =A0=A01 file changed, 11 insertions(+), 4 deletions(-)
+> > (snipped everything because of bad email editor)
+> >=20
+> > In set_cpus_allowed_ptr() p->on_rq branch can not fail.
+> >=20
+> > We've changed affinity and released rq's lock, so task can migrate
+> > on allowed cpu only (even if migration_cpu_stop fails).
+> >=20
+> > And it's a little ambiguously how user should react on this EAGAIN.
+>=20
+> Try again? So one reason it might fail is because the task got migrated
+> in between the stop_cpu_call(migration_cpu_stop) call getting to
+> __migrate_task().
+>=20
+> Esp. if you look at migrate_task_to() its fairly easy to fail this.
+> Currently it reports success, even though we completely failed to
+> migrate.
+>=20
+> On -EAGAIN, re-evaluate the target and try again (later). Like for the
+> numa case, we'll try again on the next task_numa_migrate() call if its
+> still relevant.
 
-Please pull the main fbdev changes for 3.16.
+Argh, I just realized that the one case the numa code is interested in
+is actually reported as success (task_cpu() !=3D cpu).
 
- Tomi
+I'll go make a new patch..
 
-The following changes since commit a798c10faf62a505d24e5f6213fbaf904a3962=
-3f:
-
-  Linux 3.15-rc2 (2014-04-20 11:08:50 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/tomba/linux.git tags/fbde=
-v-main-3.16
-
-for you to fetch changes up to fbc6c4a13bbfb420eedfdb26a0a859f9c07e8a7b:
-
-  drivers/video/fbdev/fb-puv3.c: Add header files for function unifb_mmap=
- (2014-05-23 13:51:10 +0300)
-
-----------------------------------------------------------------
-fbdev changes for 3.16 (main part)
-
-Mainly fixes and small improvements. The biggest change seems to be backl=
-ight
-control support for mx3fb.
-
-----------------------------------------------------------------
-Aaro Koskinen (1):
-      video: omap: delete support for early fbmem allocation
-
-Alexander Stein (1):
-      video: mx3fb: Add backlight control support
-
-Arnd Bergmann (7):
-      video: sh_mobile_lcdcfb depends on meram
-      video: clarify I2C dependencies
-      video/omap: fix modular build
-      video/mbx: fix building debugfs support
-      video: export fb_prepare_logo
-      video: atmel needs FB_BACKLIGHT
-      video/nuc900: allow modular build
-
-Boris BREZILLON (1):
-      video: of: display_timing: fix default native-mode setting
-
-Brian W Hart (1):
-      fbdev/fb.h: silence warning with -Wsign-compare
-
-Dan Carpenter (1):
-      video: mmpfb: cleanup some static checker warnings in probe()
-
-David Ung (1):
-      video: Check EDID for HDMI connection
-
-Denis Carikli (1):
-      video: mx3fb: Use devm_kzalloc
-
-Fabian Frederick (1):
-      fbdev: fbmem: remove positive test on unsigned values
-
-Jean Delvare (3):
-      fbdev: Fix tmiofb driver dependencies
-      video: exynos: Add a dependency to the menu
-      video: Kconfig: Add a dependency to the Goldfish framebuffer driver=
-
-
-Jingoo Han (1):
-      video: pxa3xx-gcu: use devm_ioremap_resource()
-
-Jon Ringle (1):
-      video: da8xx-fb: Add support for Densitron 84-0023-001T
-
-Julia Lawall (1):
-      video: delete unneeded call to platform_get_drvdata
-
-Lucas Stach (1):
-      video: of: display_timing: remove two unsafe error messages
-
-Masami Ichikawa (1):
-      fbcon: Fix memory leak in con2fb_release_oldinfo()
-
-Masanari Iida (2):
-      video: fbdev: Fix format string mismatch in wm8505fb.c
-      video: fbdev: Fix format string mismatch in gbefb.c
-
-Mikulas Patocka (1):
-      matroxfb: perform a dummy read of M_STATUS
-
-Richard Weinberger (2):
-      video: mmp: Remove references to CPU_MMP3
-      video: mmp: Remove references to CPU_PXA988
-
-Rickard Strandqvist (2):
-      video: fbdev: grvga.c: Fix for possible null pointer dereference
-      video: fbdev: s3fb.c: Fix for possible null pointer dereference
-
-Zhichuang SUN (1):
-      drivers/video/fbdev/fb-puv3.c: Add header files for function unifb_=
-mmap
-
- drivers/video/console/fbcon.c              |  1 +
- drivers/video/fbdev/Kconfig                | 11 ++--
- drivers/video/fbdev/bf54x-lq043fb.c        |  2 -
- drivers/video/fbdev/core/fbmem.c           |  7 +--
- drivers/video/fbdev/core/fbmon.c           |  9 +++-
- drivers/video/fbdev/da8xx-fb.c             | 14 +++++
- drivers/video/fbdev/exynos/Kconfig         |  2 +-
- drivers/video/fbdev/fb-puv3.c              |  2 +
- drivers/video/fbdev/gbefb.c                |  2 +-
- drivers/video/fbdev/grvga.c                |  3 +-
- drivers/video/fbdev/matrox/matroxfb_base.h |  2 +-
- drivers/video/fbdev/mbx/Makefile           |  3 +-
- drivers/video/fbdev/mbx/mbxdebugfs.c       |  2 +-
- drivers/video/fbdev/mbx/mbxfb.c            |  2 +
- drivers/video/fbdev/mmp/Kconfig            |  2 +-
- drivers/video/fbdev/mmp/fb/mmpfb.c         |  9 +---
- drivers/video/fbdev/mmp/hw/Kconfig         |  6 +--
- drivers/video/fbdev/mmp/hw/mmp_ctrl.h      | 32 -----------
- drivers/video/fbdev/mx3fb.c                | 85 ++++++++++++++++++++++++=
-++++--
- drivers/video/fbdev/omap/Kconfig           |  9 ++++
- drivers/video/fbdev/omap/Makefile          | 23 ++++----
- drivers/video/fbdev/omap/lcdc.c            | 67 +----------------------
- drivers/video/fbdev/omap/omapfb_main.c     |  1 +
- drivers/video/fbdev/pxa3xx-gcu.c           |  6 +--
- drivers/video/fbdev/s3fb.c                 |  3 +-
- drivers/video/fbdev/wm8505fb.c             |  2 +-
- drivers/video/of_display_timing.c          | 10 ++--
- include/linux/fb.h                         |  3 +-
- include/linux/omap-dma.h                   |  2 +-
- 29 files changed, 169 insertions(+), 153 deletions(-)
-
-
---TjAnn6wNJdqmI8OipDLCeBQcfjDcbcRlo
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+--bNvn4bxlrUVLu6cT
+Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJTjxCqAAoJEPo9qoy8lh71YksQAILVG7HbSj64fxEkyss/6CDz
-H/JJtmr9mWh4cgDKfMxo1/sI+9o6eI+7kWv1RP5aJcp9GkEMu3JlXFIOryajw6uk
-2QwPBJ0D83SEctqC1LoMIAiUVaoXTFYm+esnr1lA2ZWU9VGPBMF3eO7WinuTiI8/
-sdGVbc9vIkwh0pAGR8fVFRUfcvIpXhjrq1TSBR/iXzma9ThRMt/K6DRePWs10bSP
-Fbc3ahlkUWzv7dyKdXV+uSMXCwRJgwhBCnFkNhooXVHfBrkNFn9BETp6Ao2NAb4j
-kyAg7NXzjHW9umD12W2fpd1Jr6P+ujtzkEWAy7HfMCaT/2kX4r9tDDs/3X5rbn7E
-2tblhdhBTh3IeQEwaZDcfm2zL1rp0AOCgX07BWr+ozOGWz1aYxir4hh8V+8KqvAV
-6BNwAnErByapgj0kd2XqUzfDySvZ7vmfZnzfMc0xfDhzQowXPL781hCnZZRSmroc
-ihW0E/PP4mNxbwqDyDxZTzGExnIgxNKPEaVPkAW6AsLEDcVJvp5oSVokploU4/b/
-RMxTSv2R3LxTi3Vra7b8vW3/qZueSX5wRQuquJ3vhVliXjWgq2il4Akren3tz37W
-Ae5t+Gia9vc2BNcJIQ62L+zq6n0t5QOdpZ+/3plQMaI8xWMkQGkugKDBlfaCCq1n
-YEK7TeMlGnfjeo5hJ6I7
-=C41W
+iQIcBAEBAgAGBQJTjxEVAAoJEHZH4aRLwOS6118P/3AHwKzN1Fap3eoxkRIxztSd
+z4U0FTXhG6AKMoNsm+f6ZTxRfEorxlNl6MZxwcB0/dNdNxpkxVWO/YtfZjcksDvS
+DJQLwVLgCPBfZkSkc4w93Q+q2J8fEyJaQwpb2P/c2DWy1IPKmxLhZaLiXetnNl6x
+wpddrwLgRsfDTY12lX4qe2cs4711+j+lBe/C8pEA9KpP4s2g0USmdnBGOCrtbcN0
+lfJSaHeHoDZ9sGb/TnxOtDeSBffxLAEZ9C4Zp3u9s/b5Cilf1u9L6vsxzNR6kDeX
+BhE32odeUzl0OhFhDsp73YBUcSTjUYQN7DUqWMAOolb5RuXEf4LukagMO64ICaIZ
+XiqXMf/LaLoPvfyEfZmoj3LcroevBAzjMagnxzjCYZRRwt+VYVKysNOB6anwFARl
+xs4ZBkn34jTT1hs+83n22Wr1b51n2q8X+k5T/9o7KsE1MA+CcWAT+ac729JQE+v+
+8VNK6/Ct5SUSU5wsHQ5Ox0/nMD5TX9V+m9AwqZowiFl4iz3NSWEMiFUTvuBAI/PT
+DTKf4kO0hs5WN6iLdF6BnpdEPgJBw4NXl6n0al7A4i6Ng2qIpeMxzAfZ55tS8aPZ
+el/5nP2wTRytOtsK7Pdx/dOe9miPdmWkcVUC3OqqycOFepd2mVz4PsJQHmxZmOZJ
+9nj5Hh7E5Z32IQGUw+kW
+=wXAe
 -----END PGP SIGNATURE-----
 
---TjAnn6wNJdqmI8OipDLCeBQcfjDcbcRlo--
+--bNvn4bxlrUVLu6cT--
