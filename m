@@ -1,189 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752815AbaFDBVO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 21:21:14 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:50069 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751833AbaFDBVN (ORCPT
+	id S1753249AbaFDBWq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 21:22:46 -0400
+Received: from mail-ig0-f177.google.com ([209.85.213.177]:54316 "EHLO
+	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752180AbaFDBWo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 21:21:13 -0400
-Message-ID: <538E745B.1020200@windriver.com>
-Date: Wed, 4 Jun 2014 09:20:27 +0800
-From: "Yang,Wei" <Wei.Yang@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Tue, 3 Jun 2014 21:22:44 -0400
+Date: Tue, 3 Jun 2014 18:22:41 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Oleg Drokin <green@linuxhacker.ru>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Randy Dunlap <rdunlap@infradead.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-doc@vger.kernel.org,
+        devel@driverdev.osuosl.org
+Subject: [patch] mm, pcp: allow restoring percpu_pagelist_fraction default
+In-Reply-To: <2C763027-307F-4BC0-8C0A-7E3D5957A4DA@linuxhacker.ru>
+Message-ID: <alpine.DEB.2.02.1406031819580.8682@chino.kir.corp.google.com>
+References: <1399166883-514-1-git-send-email-green@linuxhacker.ru> <alpine.DEB.2.02.1406021837490.13072@chino.kir.corp.google.com> <B549468A-10FC-4897-8720-7C9FEC6FD03A@linuxhacker.ru> <alpine.DEB.2.02.1406022056300.20536@chino.kir.corp.google.com>
+ <2C763027-307F-4BC0-8C0A-7E3D5957A4DA@linuxhacker.ru>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Alan Stern <stern@rowland.harvard.edu>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Andrzej Pietrasiewicz <andrzej.p@samsung.com>
-CC: Felipe Balbi <balbi@ti.com>, <gregkh@linuxfoundation.org>,
-        USB list <linux-usb@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v1] USB:gadget: Fix a warning while loading g_mass_storage
-References: <Pine.LNX.4.44L0.1406031033010.1054-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1406031033010.1054-100000@iolanthe.rowland.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.224.162.170]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/03/2014 10:48 PM, Alan Stern wrote:
-> On Tue, 3 Jun 2014 Wei.Yang@windriver.com wrote:
->
->> From: Yang Wei <Wei.Yang@windriver.com>
->>
->> While loading g_mass_storage module, the following warning is triggered.
->> In fact, it is more easy to reproduce it with RT kernel.
->>
->> WARNING: at drivers/usb/gadget/composite.c:
->> usb_composite_setup_continue: Unexpected call
->> Modules linked in: fat vfat minix nls_cp437 nls_iso8859_1 g_mass_storage
->> [<800179cc>] (unwind_backtrace+0x0/0x104) from [<80619608>] (dump_stack+0x20/0x24)
->> [<80619608>] (dump_stack+0x20/0x24) from [<80025100>] (warn_slowpath_common+0x64/0x74)
->> [<80025100>] (warn_slowpath_common+0x64/0x74) from [<800251cc>] (warn_slowpath_fmt+0x40/0x48)
->> [<800251cc>] (warn_slowpath_fmt+0x40/0x48) from [<7f047774>] (usb_composite_setup_continue+0xb4/0xbc [g_mass_storage])
->> [<7f047774>] (usb_composite_setup_continue+0xb4/0xbc [g_mass_storage]) from [<7f047ad4>] (handle_exception+0x358/0x3e4 [g_mass_storage])
->> [<7f047ad4>] (handle_exception+0x358/0x3e4 [g_mass_storage]) from [<7f048080>] (fsg_main_thread+0x520/0x157c [g_mass_storage])
->> [<7f048080>] (fsg_main_thread+0x520/0x157c [g_mass_storage]) from [<8004bc90>] (kthread+0x98/0x9c)
->> [<8004bc90>] (kthread+0x98/0x9c) from [<8000faec>] (kernel_thread_exit+0x0/0x8)
->>
->> The root cause just likes the following scenario.
->>
->> irq thread
->>
->> composite_disconnect()
->> |
->> |->fsg_disable() fsg->common->new_fsg = NULL
->>                   and then wake fsg_main_thread
->>                   with seting common->state to
->>                   FSG_STATE_CONFIG_CHANGE.
->>                                                      fsg_main_thread
->>                                                      |
->>                                                      |->do_set_interface()
->> irq thread
->>
->> set_config()
->> |
->> |->fsg_set_alt() fsg->common->new_fsg = new_fsg
->>                   and then also wake up fsg_main_thread
->>                   with setting common->state to
->>                   FSG_STATE_CONFIG_CHANGE.
->>                                                      |-> if(common->new_fsg)
->> 		                                                 usb_composite_setup_continue()
->>
->> In this case, fsg_main_thread would invoke usb_composite_setup_continue
->> twice, so the second call would trigger the above call trace, as we also
->> save common->new_fsg while changing the common->state.
-> Michal and Andrzej:
->
-> I haven't paid much attention to these matters, because you handled the
-> conversion from g_file_storage to f_mass_storage using the composite
-> framework.  But this patch seemed odd, so I took a closer look.
+If the percpu_pagelist_fraction sysctl is set by the user, it is 
+impossible to restore it to the kernel default since the user cannot 
+write 0 to the sysctl.
 
-Let me make sense it, Robert once introduced the following patch to fix 
-disconnect handling of s3c-hsotg.
+This patch allows the user to write 0 to restore the default behavior.  
+It still requires a fraction equal to or larger than 8, however, as stated 
+by the documentation for sanity.  If a value in the range [1, 7] is 
+written, the sysctl will return EINVAL.
 
-commit d18f7116a5ddb8263fe62b05ad63e5ceb5875791
-Author: Robert Baldyga <r.baldyga@samsung.com>
-Date:   Thu Nov 21 13:49:18 2013 +0100
+This also fixes a division by zero identified by Oleg that occurs if a 
+write() occurs with zero length and the value hasn't been changed before 
+(so that percpu_pagelist_fraction is still 0).
 
-     usb: gadget: s3c-hsotg: fix disconnect handling
+Reported-by: Oleg Drokin <green@linuxhacker.ru>
+Cc: stable@vger.kernel.org
+Signed-off-by: David Rientjes <rientjes@google.com>
+---
+ Documentation/sysctl/vm.txt |  3 ++-
+ kernel/sysctl.c             |  3 +--
+ mm/page_alloc.c             | 30 +++++++++++++++++++++---------
+ 3 files changed, 24 insertions(+), 12 deletions(-)
 
-     This patch moves s3c_hsotg_disconnect function call from USBSusp 
-interrupt
-     handler to SET_ADDRESS request handler.
-
-     It's because disconnected state can't be detected directly, because 
-this
-     hardware doesn't support Disconnected interrupt for device mode. 
-For both
-     Suspend and Disconnect events there is one interrupt USBSusp, but 
-calling
-     s3c_hsotg_disconnect from this interrupt handler causes config reset in
-     composite layer, which is not undesirable for Suspended state.
-
-     For this reason s3c_hsotg_disconnect is called from SET_ADDRESS request
-     handler, which occurs always after disconnection, so we do disconnect
-     immediately before we are connected again. It's probably only way we
-     can do handle disconnection correctly.
-
-     Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
-     Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-     Signed-off-by: Felipe Balbi <balbi@ti.com>
-
-Just like what the commit log described, s3c_hsotg_disconnect is called 
-from SET_ADDRESS request handler, therefore,
-reset_config would finally be called, it raises a 
-FSG_STATE_CONFIG_CHANGE exception and wakes up fsg_main_thread to
-handle this exception. After handling SET_ADDRESS, subsequently the irq 
-hanler of s3c-hsotg would also invokes composite_setup()
-function to handle USB_REQ_SET_CONFIGURATION request, set_config would 
-be invoked, it also raises a FSG_STATE_CONFIG_CHANGE
-exception and wakes up fsg_main_thread, in mean time, 
-cdev->delayed_status would be plus one. Right? If I am missing 
-something, please
-let me know it.:-) If so, the following scenario would trigger the above 
-call trace.
-
-irq handler
-   |
-   |-> s3c_hsotg_disconnect()
-            |
-            |-> common->new_fsg = NULL
-            |-> common->state to FSG_STATE_CONFIG.
-            |-> wakes up fsg_main_thread.
-   |-> set USB device address
-
-fsg_main_thread finds the common->state == FSG_STATE_CONFIG
-|
-|-> handle_execption
-|
-|-> set common->state to FSG_STATE_IDLE
-irq hanppens ------------>|
-  irq handler needs to hanle USB_REQ_SET_CONFIGURATION request. 
-|->do_set_interface()
-   |-> set_config()
-          |
-          |-> common->new_fsg = new_fsg;
-          |-> common->state = FSG_STATE_CONFIG
-          |-> cdev->delayed_status++
-          |-> wakes up fsg_main_thread
-
-|-> Now the common->state == FSG_STATE_CONFIG
-|-> if(common->new_fsg)
-                                       usb_composite_setup_continue()
-|->cdev->delayed_status--
-                                                                  | 
-fsg_main_thread finds the common->state still is FSG_STATE_CONFIG,
-                     | so it would invoke handle_execption again.
-                     |->hanle_execption
-                              |->  set common->state to FSG_STATE_IDLE
-                              |->  do_set_interface()
-                              |-> if (common->new_fsg)
-usb_composite_setup_continue()
-                                             |-> cdev->delayed_status == 
-0, so
-this warning is triggered.
-
-
-Thanks
-Wei
-
->
-> In f_mass_storage.c, struct fsg_common is shared among all the function
-> instances.  This structure includes things like cmnd and nluns, which
-> will in general be different for different functions.
->
-> That's okay if each function is in a separate config, but what happens
-> when there are multiple functions in the same config, using different
-> interfaces?  What if the host sends concurrent commands to two of these
-> functions?
->
-> Am I missing something?
->
-> Alan Stern
->
->
->
-
+diff --git a/Documentation/sysctl/vm.txt b/Documentation/sysctl/vm.txt
+--- a/Documentation/sysctl/vm.txt
++++ b/Documentation/sysctl/vm.txt
+@@ -702,7 +702,8 @@ The batch value of each per cpu pagelist is also updated as a result.  It is
+ set to pcp->high/4.  The upper limit of batch is (PAGE_SHIFT * 8)
+ 
+ The initial value is zero.  Kernel does not use this value at boot time to set
+-the high water marks for each per cpu page list.
++the high water marks for each per cpu page list.  If the user writes '0' to this
++sysctl, it will revert to this default behavior.
+ 
+ ==============================================================
+ 
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -136,7 +136,6 @@ static unsigned long dirty_bytes_min = 2 * PAGE_SIZE;
+ /* this is needed for the proc_dointvec_minmax for [fs_]overflow UID and GID */
+ static int maxolduid = 65535;
+ static int minolduid;
+-static int min_percpu_pagelist_fract = 8;
+ 
+ static int ngroups_max = NGROUPS_MAX;
+ static const int cap_last_cap = CAP_LAST_CAP;
+@@ -1305,7 +1304,7 @@ static struct ctl_table vm_table[] = {
+ 		.maxlen		= sizeof(percpu_pagelist_fraction),
+ 		.mode		= 0644,
+ 		.proc_handler	= percpu_pagelist_fraction_sysctl_handler,
+-		.extra1		= &min_percpu_pagelist_fract,
++		.extra1		= &zero,
+ 	},
+ #ifdef CONFIG_MMU
+ 	{
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -69,6 +69,7 @@
+ 
+ /* prevent >1 _updater_ of zone percpu pageset ->high and ->batch fields */
+ static DEFINE_MUTEX(pcp_batch_high_lock);
++#define MIN_PERCPU_PAGELIST_FRACTION	(8)
+ 
+ #ifdef CONFIG_USE_PERCPU_NUMA_NODE_ID
+ DEFINE_PER_CPU(int, numa_node);
+@@ -4107,7 +4108,7 @@ static void __meminit zone_init_free_lists(struct zone *zone)
+ 	memmap_init_zone((size), (nid), (zone), (start_pfn), MEMMAP_EARLY)
+ #endif
+ 
+-static int __meminit zone_batchsize(struct zone *zone)
++static int zone_batchsize(struct zone *zone)
+ {
+ #ifdef CONFIG_MMU
+ 	int batch;
+@@ -4223,8 +4224,8 @@ static void pageset_set_high(struct per_cpu_pageset *p,
+ 	pageset_update(&p->pcp, high, batch);
+ }
+ 
+-static void __meminit pageset_set_high_and_batch(struct zone *zone,
+-		struct per_cpu_pageset *pcp)
++static void pageset_set_high_and_batch(struct zone *zone,
++				       struct per_cpu_pageset *pcp)
+ {
+ 	if (percpu_pagelist_fraction)
+ 		pageset_set_high(pcp,
+@@ -5849,21 +5850,32 @@ int lowmem_reserve_ratio_sysctl_handler(ctl_table *table, int write,
+ int percpu_pagelist_fraction_sysctl_handler(ctl_table *table, int write,
+ 	void __user *buffer, size_t *length, loff_t *ppos)
+ {
++	const int old_percpu_pagelist_fraction = percpu_pagelist_fraction;
+ 	struct zone *zone;
+-	unsigned int cpu;
+ 	int ret;
+ 
+ 	ret = proc_dointvec_minmax(table, write, buffer, length, ppos);
+-	if (!write || (ret < 0))
++	if (!write || ret < 0)
+ 		return ret;
+ 
++	/* Sanity checking to avoid pcp imbalance */
++	if (percpu_pagelist_fraction &&
++	    percpu_pagelist_fraction < MIN_PERCPU_PAGELIST_FRACTION) {
++		percpu_pagelist_fraction = old_percpu_pagelist_fraction;
++		return -EINVAL;
++	}
++
++	/* No change? */
++	if (percpu_pagelist_fraction == old_percpu_pagelist_fraction)
++		return 0;
++
+ 	mutex_lock(&pcp_batch_high_lock);
+ 	for_each_populated_zone(zone) {
+-		unsigned long  high;
+-		high = zone->managed_pages / percpu_pagelist_fraction;
++		unsigned int cpu;
++
+ 		for_each_possible_cpu(cpu)
+-			pageset_set_high(per_cpu_ptr(zone->pageset, cpu),
+-					 high);
++			pageset_set_high_and_batch(zone,
++					per_cpu_ptr(zone->pageset, cpu));
+ 	}
+ 	mutex_unlock(&pcp_batch_high_lock);
+ 	return 0;
