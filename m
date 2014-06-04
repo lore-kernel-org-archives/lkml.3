@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752619AbaFDLNk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 07:13:40 -0400
-Received: from mail.dev.rtsoft.ru ([213.79.90.226]:58656 "EHLO dev.rtsoft.ru"
+	id S1752641AbaFDLNl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 07:13:41 -0400
+Received: from mail.dev.rtsoft.ru ([213.79.90.226]:58647 "EHLO dev.rtsoft.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752558AbaFDLNi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752453AbaFDLNi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 4 Jun 2014 07:13:38 -0400
 From: nyushchenko@dev.rtsoft.ru
 To: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
@@ -12,9 +12,9 @@ To: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
         Thomas Gleixner <tglx@linutronix.de>, devicetree@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, lugovskoy@dev.rtsoft.ru,
         Nikita Yushchenko <nyushchenko@dev.rtsoft.ru>
-Subject: [PATCH 03/21] exynos5440-cpufreq: use devm_irq_of_parse_and_map()
-Date: Wed,  4 Jun 2014 15:13:03 +0400
-Message-Id: <1401880402-30091-4-git-send-email-nyushchenko@dev.rtsoft.ru>
+Subject: [PATCH 02/21] ata: use devm_irq_of_parse_and_map() where appropriate
+Date: Wed,  4 Jun 2014 15:13:02 +0400
+Message-Id: <1401880402-30091-3-git-send-email-nyushchenko@dev.rtsoft.ru>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1401880402-30091-1-git-send-email-nyushchenko@dev.rtsoft.ru>
 References: <1401880402-30091-1-git-send-email-nyushchenko@dev.rtsoft.ru>
@@ -28,26 +28,102 @@ This avoids leak of IRQ mapping on error paths, and makes it possible
 to use devm_request_irq() without facing unmap-while-handler-installed
 issues.
 
+pata_mpc52xx's task_irq is special case since it is managed by betstcomm
+DMA driver. Do not use devres for it.
+
 Signed-off-by: Nikita Yushchenko <nyushchenko@dev.rtsoft.ru>
 ---
- drivers/cpufreq/exynos5440-cpufreq.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/ata/pata_mpc52xx.c |   24 ++++++++++--------------
+ drivers/ata/sata_mv.c      |    5 ++++-
+ 2 files changed, 14 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/cpufreq/exynos5440-cpufreq.c b/drivers/cpufreq/exynos5440-cpufreq.c
-index a6b8214..a0b7121 100644
---- a/drivers/cpufreq/exynos5440-cpufreq.c
-+++ b/drivers/cpufreq/exynos5440-cpufreq.c
-@@ -353,8 +353,8 @@ static int exynos_cpufreq_probe(struct platform_device *pdev)
- 		goto err_put_node;
+diff --git a/drivers/ata/pata_mpc52xx.c b/drivers/ata/pata_mpc52xx.c
+index 0024ced..fc14d7f 100644
+--- a/drivers/ata/pata_mpc52xx.c
++++ b/drivers/ata/pata_mpc52xx.c
+@@ -729,18 +729,17 @@ static int mpc52xx_ata_probe(struct platform_device *op)
+ 	if ((prop) && (proplen >= 4))
+ 		udma_mask = ATA_UDMA2 & ((1 << (*prop + 1)) - 1);
+ 
+-	ata_irq = irq_of_parse_and_map(op->dev.of_node, 0);
+-	if (ata_irq == NO_IRQ) {
++	ata_irq = devm_irq_of_parse_and_map(&op->dev, op->dev.of_node, 0);
++	if (ata_irq <= 0) {
+ 		dev_err(&op->dev, "error mapping irq\n");
+-		return -EINVAL;
++		return ata_irq ? ata_irq : -EINVAL;
  	}
  
--	dvfs_info->irq = irq_of_parse_and_map(np, 0);
--	if (!dvfs_info->irq) {
-+	dvfs_info->irq = devm_irq_of_parse_and_map(dvfs_info->dev, np, 0);
-+	if (dvfs_info->irq <= 0) {
- 		dev_err(dvfs_info->dev, "No cpufreq irq found\n");
- 		ret = -ENODEV;
- 		goto err_put_node;
+ 	/* Prepare our private structure */
+ 	priv = devm_kzalloc(&op->dev, sizeof(*priv), GFP_ATOMIC);
+ 	if (!priv) {
+ 		dev_err(&op->dev, "error allocating private structure\n");
+-		rv = -ENOMEM;
+-		goto err1;
++		return -ENOMEM;
+ 	}
+ 
+ 	priv->ipb_period = 1000000000 / (ipb_freq / 1000);
+@@ -762,16 +761,14 @@ static int mpc52xx_ata_probe(struct platform_device *op)
+ 	dmatsk = bcom_ata_init(MAX_DMA_BUFFERS, MAX_DMA_BUFFER_SIZE);
+ 	if (!dmatsk) {
+ 		dev_err(&op->dev, "bestcomm initialization failed\n");
+-		rv = -ENOMEM;
+-		goto err1;
++		return -ENOMEM;
+ 	}
+ 
+ 	task_irq = bcom_get_task_irq(dmatsk);
+-	rv = devm_request_irq(&op->dev, task_irq, &mpc52xx_ata_task_irq, 0,
+-				"ATA task", priv);
++	rv = request_irq(task_irq, &mpc52xx_ata_task_irq, 0, "ATA task", priv);
+ 	if (rv) {
+ 		dev_err(&op->dev, "error requesting DMA IRQ\n");
+-		goto err2;
++		goto err1;
+ 	}
+ 	priv->dmatsk = dmatsk;
+ 
+@@ -793,10 +790,10 @@ static int mpc52xx_ata_probe(struct platform_device *op)
+ 	return 0;
+ 
+  err2:
+-	irq_dispose_mapping(task_irq);
++	free_irq(task_irq, priv);
++ err1:
+ 	bcom_ata_release(dmatsk);
+  err1:
+-	irq_dispose_mapping(ata_irq);
+ 	return rv;
+ }
+ 
+@@ -812,9 +809,8 @@ mpc52xx_ata_remove(struct platform_device *op)
+ 
+ 	/* Clean up DMA */
+ 	task_irq = bcom_get_task_irq(priv->dmatsk);
+-	irq_dispose_mapping(task_irq);
++	free_irq(task_irq, priv);
+ 	bcom_ata_release(priv->dmatsk);
+-	irq_dispose_mapping(priv->ata_irq);
+ 
+ 	return 0;
+ }
+diff --git a/drivers/ata/sata_mv.c b/drivers/ata/sata_mv.c
+index 05c8a44..9b48e91 100644
+--- a/drivers/ata/sata_mv.c
++++ b/drivers/ata/sata_mv.c
+@@ -4081,7 +4081,10 @@ static int mv_platform_probe(struct platform_device *pdev)
+ 	/* allocate host */
+ 	if (pdev->dev.of_node) {
+ 		of_property_read_u32(pdev->dev.of_node, "nr-ports", &n_ports);
+-		irq = irq_of_parse_and_map(pdev->dev.of_node, 0);
++		irq = devm_irq_of_parse_and_map(&pdev->dev,
++				pdev->dev.of_node, 0);
++		if (irq <= 0)
++			return -EINVAL;
+ 	} else {
+ 		mv_platform_data = dev_get_platdata(&pdev->dev);
+ 		n_ports = mv_platform_data->n_ports;
 -- 
 1.7.10.4
 
