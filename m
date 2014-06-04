@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754300AbaFEAte (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 20:49:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39720 "EHLO
+	id S1752276AbaFDXUu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 19:20:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39702 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752291AbaFDXUv (ORCPT
+	with ESMTP id S1751877AbaFDXUs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:20:51 -0400
+	Wed, 4 Jun 2014 19:20:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bodo Stroesser <bstroesser@ts.fujitsu.com>,
-        Corey Minyard <cminyard@mvista.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 030/228] ipmi: Reset the KCS timeout when starting error recovery
-Date: Wed,  4 Jun 2014 16:20:59 -0700
-Message-Id: <20140604232349.047986959@linuxfoundation.org>
+        Loic Poulain <loic.poulain@intel.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>
+Subject: [PATCH 3.14 018/228] 8250_core: Fix unwanted TX chars write
+Date: Wed,  4 Jun 2014 16:20:47 -0700
+Message-Id: <20140604232348.675756047@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -30,35 +29,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Corey Minyard <cminyard@mvista.com>
+From: Loic Poulain <loic.poulain@intel.com>
 
-commit eb6d78ec213e6938559b801421d64714dafcf4b2 upstream.
+commit b08c9c317e3f7764a91d522cd031639ba42b98cc upstream.
 
-The OBF timer in KCS was not reset in one situation when error recovery
-was started, resulting in an immediate timeout.
+On transmit-hold-register empty, serial8250_tx_chars
+should be called only if we don't use DMA.
+DMA has its own tx cycle.
 
-Reported-by: Bodo Stroesser <bstroesser@ts.fujitsu.com>
-Signed-off-by: Corey Minyard <cminyard@mvista.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Loic Poulain <loic.poulain@intel.com>
+Reviewed-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/char/ipmi/ipmi_kcs_sm.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/tty/serial/8250/8250_core.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/char/ipmi/ipmi_kcs_sm.c
-+++ b/drivers/char/ipmi/ipmi_kcs_sm.c
-@@ -251,8 +251,9 @@ static inline int check_obf(struct si_sm
- 	if (!GET_STATUS_OBF(status)) {
- 		kcs->obf_timeout -= time;
- 		if (kcs->obf_timeout < 0) {
--		    start_error_recovery(kcs, "OBF not ready in time");
--		    return 1;
-+			kcs->obf_timeout = OBF_RETRY_TIMEOUT;
-+			start_error_recovery(kcs, "OBF not ready in time");
-+			return 1;
- 		}
- 		return 0;
+--- a/drivers/tty/serial/8250/8250_core.c
++++ b/drivers/tty/serial/8250/8250_core.c
+@@ -1520,7 +1520,7 @@ int serial8250_handle_irq(struct uart_po
+ 			status = serial8250_rx_chars(up, status);
  	}
+ 	serial8250_modem_status(up);
+-	if (status & UART_LSR_THRE)
++	if (!up->dma && (status & UART_LSR_THRE))
+ 		serial8250_tx_chars(up);
+ 
+ 	spin_unlock_irqrestore(&port->lock, flags);
 
 
