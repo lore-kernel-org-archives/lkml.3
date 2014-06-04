@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756113AbaFEALg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 20:11:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40308 "EHLO
+	id S1756128AbaFEALy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 20:11:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40304 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753366AbaFDXWt (ORCPT
+	with ESMTP id S1753359AbaFDXWs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:22:49 -0400
+	Wed, 4 Jun 2014 19:22:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Marcel Apfelbaum <marcel.a@redhat.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>
-Subject: [PATCH 3.14 174/228] PCI: shpchp: Check bridges secondary (not primary) bus speed
-Date: Wed,  4 Jun 2014 16:23:23 -0700
-Message-Id: <20140604232353.609398240@linuxfoundation.org>
+        Tejun Heo <tj@kernel.org>, Ron <ron@debian.org>
+Subject: [PATCH 3.14 173/228] sysfs: make sure read buffer is zeroed
+Date: Wed,  4 Jun 2014 16:23:22 -0700
+Message-Id: <20140604232353.580003687@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -30,45 +28,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marcel Apfelbaum <marcel.a@redhat.com>
+From: Tejun Heo <tj@kernel.org>
 
-commit 93fa9d32670f5592c8e56abc9928fc194e1e72fc upstream.
+commit f5c16f29bf5e57ba4051fc7785ba7f035f798c71 upstream.
 
-When a new device is added below a hotplug bridge, the bridge's secondary
-bus speed and the device's bus speed must match.  The shpchp driver
-previously checked the bridge's *primary* bus speed, not the secondary bus
-speed.
+13c589d5b0ac ("sysfs: use seq_file when reading regular files")
+switched sysfs from custom read implementation to seq_file to enable
+later transition to kernfs.  After the change, the buffer passed to
+->show() is acquired through seq_get_buf(); unfortunately, this
+introduces a subtle behavior change.  Before the commit, the buffer
+passed to ->show() was always zero as it was allocated using
+get_zeroed_page().  Because seq_file doesn't clear buffers on
+allocation and neither does seq_get_buf(), after the commit, depending
+on the behavior of ->show(), we may end up exposing uninitialized data
+to userland thus possibly altering userland visible behavior and
+leaking information.
 
-This caused hot-add errors like:
+Fix it by explicitly clearing the buffer.
 
-  shpchp 0000:00:03.0: Speed of bus ff and adapter 0 mismatch
-
-Check the secondary bus speed instead.
-
-[bhelgaas: changelog]
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=75251
-Fixes: 3749c51ac6c1 ("PCI: Make current and maximum bus speeds part of the PCI core")
-Signed-off-by: Marcel Apfelbaum <marcel.a@redhat.com>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Ron <ron@debian.org>
+Fixes: 13c589d5b0ac ("sysfs: use seq_file when reading regular files")
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pci/hotplug/shpchp_ctrl.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/sysfs/file.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/pci/hotplug/shpchp_ctrl.c
-+++ b/drivers/pci/hotplug/shpchp_ctrl.c
-@@ -282,8 +282,8 @@ static int board_added(struct slot *p_sl
- 		return WRONG_BUS_FREQUENCY;
+--- a/fs/sysfs/file.c
++++ b/fs/sysfs/file.c
+@@ -47,12 +47,13 @@ static int sysfs_kf_seq_show(struct seq_
+ 	ssize_t count;
+ 	char *buf;
+ 
+-	/* acquire buffer and ensure that it's >= PAGE_SIZE */
++	/* acquire buffer and ensure that it's >= PAGE_SIZE and clear */
+ 	count = seq_get_buf(sf, &buf);
+ 	if (count < PAGE_SIZE) {
+ 		seq_commit(sf, -1);
+ 		return 0;
  	}
++	memset(buf, 0, PAGE_SIZE);
  
--	bsp = ctrl->pci_dev->bus->cur_bus_speed;
--	msp = ctrl->pci_dev->bus->max_bus_speed;
-+	bsp = ctrl->pci_dev->subordinate->cur_bus_speed;
-+	msp = ctrl->pci_dev->subordinate->max_bus_speed;
- 
- 	/* Check if there are other slots or devices on the same bus */
- 	if (!list_empty(&ctrl->pci_dev->subordinate->devices))
+ 	/*
+ 	 * Invoke show().  Control may reach here via seq file lseek even
 
 
