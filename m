@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754922AbaFDXn0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:43:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40728 "EHLO
+	id S1754963AbaFDXnn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 19:43:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40725 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753901AbaFDXXl (ORCPT
+	with ESMTP id S1753838AbaFDXXk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:23:41 -0400
+	Wed, 4 Jun 2014 19:23:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Leon Ma <xindong.ma@intel.com>, Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 3.10 026/103] hrtimer: Prevent remote enqueue of leftmost timers
-Date: Wed,  4 Jun 2014 16:24:49 -0700
-Message-Id: <20140604232547.699091226@linuxfoundation.org>
+        Josef Gajdusek <atx@atx.name>, Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH 3.10 023/103] hwmon: (emc1403) Support full range of known chip revision numbers
+Date: Wed,  4 Jun 2014 16:24:46 -0700
+Message-Id: <20140604232547.599712205@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232546.704156131@linuxfoundation.org>
 References: <20140604232546.704156131@linuxfoundation.org>
@@ -28,55 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Leon Ma <xindong.ma@intel.com>
+From: Josef Gajdusek <atx@atx.name>
 
-commit 012a45e3f4af68e86d85cce060c6c2fed56498b2 upstream.
+commit 3a18e1398fc2dc9c32bbdc50664da3a77959a8d1 upstream.
 
-If a cpu is idle and starts an hrtimer which is not pinned on that
-same cpu, the nohz code might target the timer to a different cpu.
+The datasheet for EMC1413/EMC1414, which is fully compatible to
+EMC1403/1404 and uses the same chip identification, references revision
+numbers 0x01, 0x03, and 0x04. Accept the full range of revision numbers
+from 0x01 to 0x04 to make sure none are missed.
 
-In the case that we switch the cpu base of the timer we already have a
-sanity check in place, which determines whether the timer is earlier
-than the current leftmost timer on the target cpu. In that case we
-enqueue the timer on the current cpu because we cannot reprogram the
-clock event device on the target.
-
-If the timers base is already the target CPU we do not have this
-sanity check in place so we enqueue the timer as the leftmost timer in
-the target cpus rb tree, but we cannot reprogram the clock event
-device on the target cpu. So the timer expires late and subsequently
-prevents the reprogramming of the target cpu clock event device until
-the previously programmed event fires or a timer with an earlier
-expiry time gets enqueued on the target cpu itself.
-
-Add the same target check as we have for the switch base case and
-start the timer on the current cpu if it would become the leftmost
-timer on the target.
-
-[ tglx: Rewrote subject and changelog ]
-
-Signed-off-by: Leon Ma <xindong.ma@intel.com>
-Link: http://lkml.kernel.org/r/1398847391-5994-1-git-send-email-xindong.ma@intel.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Josef Gajdusek <atx@atx.name>
+[Guenter Roeck: Updated headline and description]
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/hrtimer.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/hwmon/emc1403.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -245,6 +245,11 @@ again:
- 			goto again;
- 		}
- 		timer->base = new_base;
-+	} else {
-+		if (cpu != this_cpu && hrtimer_check_target(timer, new_base)) {
-+			cpu = this_cpu;
-+			goto again;
-+		}
+--- a/drivers/hwmon/emc1403.c
++++ b/drivers/hwmon/emc1403.c
+@@ -295,7 +295,7 @@ static int emc1403_detect(struct i2c_cli
  	}
- 	return new_base;
- }
+ 
+ 	id = i2c_smbus_read_byte_data(client, THERMAL_REVISION_REG);
+-	if (id != 0x01)
++	if (id < 0x01 || id > 0x04)
+ 		return -ENODEV;
+ 
+ 	return 0;
 
 
