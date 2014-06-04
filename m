@@ -1,81 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752116AbaFDQlT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 12:41:19 -0400
-Received: from mail-qg0-f54.google.com ([209.85.192.54]:46468 "EHLO
-	mail-qg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751500AbaFDQlS (ORCPT
+	id S1752326AbaFDQlb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 12:41:31 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:53003 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752139AbaFDQl2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 12:41:18 -0400
-Date: Wed, 4 Jun 2014 12:41:06 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Sebastian Ott <sebott@linux.vnet.ibm.com>
-Cc: Anatol Pomozov <anatol.pomozov@gmail.com>,
-        Benjamin LaHaise <bcrl@kvack.org>, linux-aio@kvack.org,
-        Kent Overstreet <kmo@daterainc.com>,
-        Gu Zheng <guz.fnst@cn.fujitsu.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Christoph Lameter <cl@linux-foundation.org>
-Subject: Re: [PATCH] percpu-refcount: fix usage of this_cpu_ops (was Re:
- hanging aio process)
-Message-ID: <20140604164106.GI5004@htj.dyndns.org>
-References: <20140519180851.GD2915@kvack.org>
- <alpine.LFD.2.11.1405200950480.1606@denkbrett>
- <alpine.LFD.2.11.1405201508450.1606@denkbrett>
- <CAOMFOmWfQ2naF+1BE0wSQXpBoyxV6MPm021hY77B4sDpZNZ-Dw@mail.gmail.com>
- <alpine.LFD.2.11.1405201945280.1631@denkbrett>
- <CAOMFOmUT-WGbV57qDafM-NJ+=s1OzX-2Q6G6hAh6EV8Vt9yBZw@mail.gmail.com>
- <alpine.LFD.2.11.1405210954110.1579@denkbrett>
- <alpine.LFD.2.11.1405211042350.1579@denkbrett>
- <CAOMFOmXXHBicH38onWgVAWhEXe2sE_RMiJXi=iMjJB15o7mOLQ@mail.gmail.com>
- <alpine.LFD.2.11.1406041540520.21183@denkbrett>
+	Wed, 4 Jun 2014 12:41:28 -0400
+Date: Wed, 4 Jun 2014 17:41:32 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Dave P Martin <Dave.Martin@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Grant Grundler <grundler@chromium.org>, Joerg Roedel <joro@8bytes.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Linux IOMMU <iommu@lists.linux-foundation.org>,
+        Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Cho KyongHo <pullip.cho@samsung.com>, Hiroshi Doyu <hdoyu@nvidia.com>
+Subject: Re: [PATCH v2] devicetree: Add generic IOMMU device tree bindings
+Message-ID: <20140604164132.GF6644@arm.com>
+References: <1400877218-4113-1-git-send-email-thierry.reding@gmail.com>
+ <4545972.cM7IP1qTXQ@wuerfel>
+ <CAL_Jsq+tkFNpjSEZboT+o69B_Z3a8e-ZVKaYDmLwtkyYoPy6VQ@mail.gmail.com>
+ <5288123.eXagyPAxNq@wuerfel>
+ <20140602104104.GD3855@e103592.cambridge.arm.com>
+ <20140604143509.GF28484@ulmo>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.11.1406041540520.21183@denkbrett>
+In-Reply-To: <20140604143509.GF28484@ulmo>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cc'ing Christoph.  Hey!
-
-On Wed, Jun 04, 2014 at 03:58:24PM +0200, Sebastian Ott wrote:
-> From 82295633cad58c7d6b9af4e470e3168ed43a6779 Mon Sep 17 00:00:00 2001
-> From: Heiko Carstens <heiko.carstens@de.ibm.com>
-> Date: Wed, 4 Jun 2014 12:53:19 +0200
-> Subject: [PATCH] percpu-refcount: fix usage of this_cpu_ops
+On Wed, Jun 04, 2014 at 03:35:10PM +0100, Thierry Reding wrote:
+> On Mon, Jun 02, 2014 at 11:41:04AM +0100, Dave Martin wrote:
+> > In the strictest sense, no.
+> > 
+> > But for a large set of sane configurations, this probably works.
+> > 
+> > Small sets of randomly-assigned IDs can just be enumerated one by one.
+> > 
+> > We wouldn't be able to describe folding and bit shuffling, but we
+> > probably don't want to encourage that anyway.
 > 
-> The percpu-refcount infrastructure uses the underscore variants of
-> this_cpu_ops in order to modify percpu reference counters.
-> (e.g. __this_cpu_inc()).
-> 
-> However the underscore variants do not atomically update the percpu
-> variable, instead they may be implemented using read-modify-write
-> semantics (more than one instruction).  Therefore it is only safe to
-> use the underscore variant if the context is always the same (process,
-> softirq, or hardirq). Otherwise it is possible to lose updates.
-> 
-> This problem is something that Sebastian has seen within the aio
-> subsystem which uses percpu refcounters both in process and softirq
-> context leading to reference counts that never dropped to zeroes; even
-> though the number of "get" and "put" calls matched.
-> 
-> Fix this by using the non-underscore this_cpu_ops variant which
-> provides correct per cpu atomic semantics and fixes the corrupted
-> reference counts.
+> I'm having some difficulty understanding this. You make it sound like
+> there's a fairly arbitrary number of IDs that the SMMU can handle. So
+> how is the mapping to devices defined? If you say encourage that does
+> make it sound like the assignment of IDs is purely defined by some
+> mechanism in software rather than in hardware. Or they are more or less
+> randomly picked by someone. If that's the case, is that not something
+> that should be dynamically allocated by the kernel rather than put into
+> the device tree?
 
-Christoph, percpu-refcount misused __this_cpu_*() and subtly broke
-s390 which uses the stock read-modify-write implementation.  It should
-be possible to annotate __this_cpu_*() so that lockdep warns if it's
-used from different contexts, right?  Hmm.... now that I think about
-it, there's nothing to attach lockdep context to.  :(
+The set of StreamIDs that can be generated by a master is fixed in the
+hardware. The SMMU can then be programmed to map these incoming IDs onto
+a context ID (or a set of context IDs), which are the IDs used internally
+by the SMMU to find the page tables etc.
 
-Urgh... I really don't like the subtleties around __this_cpu_*().
-It's too easy to get it wrong and fail to notice it.  :(
+The StreamID -> ContextID mapping is dynamic and controlled by software.
+The Master -> StreamIDs mapping is fixed in the hardware.
 
-Thanks.
+Will
 
--- 
-tejun
