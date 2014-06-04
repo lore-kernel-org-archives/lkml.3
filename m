@@ -1,26 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752817AbaFDXVk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:21:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39883 "EHLO
+	id S932441AbaFEAeS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 20:34:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39949 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752673AbaFDXV2 (ORCPT
+	with ESMTP id S1752795AbaFDXVi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:21:28 -0400
+	Wed, 4 Jun 2014 19:21:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stefan Biereigel <stefan@biereigel.de>,
-        Kieran Clancy <clancy.kieran@gmail.com>,
-        Dennis Jansen <dennis.jansen@web.de>,
-        Nicolas Porcel <nicolasporcel06@gmail.com>,
-        Maurizio DAddona <mauritiusdadd@gmail.com>,
-        Juan Manuel Cabo <juanmanuel.cabo@gmail.com>,
-        Giannis Koutsou <giannis.koutsou@gmail.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.14 058/228] ACPI / EC: Process rather than discard events in acpi_ec_clear
-Date: Wed,  4 Jun 2014 16:21:27 -0700
-Message-Id: <20140604232349.927542764@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [PATCH 3.14 067/228] drm/radeon: fix runpm handling on APUs (v4)
+Date: Wed,  4 Jun 2014 16:21:36 -0700
+Message-Id: <20140604232350.204994225@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -35,120 +28,207 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kieran Clancy <clancy.kieran@gmail.com>
+From: Alex Deucher <alexdeucher@gmail.com>
 
-commit 3eba563e280101209bad27d40bfc83ddf1489234 upstream.
+commit 90c4cde9d5a2bb6239cb3e253bb3832ed89dc75c upstream.
 
-Address a regression caused by commit ad332c8a4533:
-(ACPI / EC: Clear stale EC events on Samsung systems)
+Don't try and runtime suspend the APU in PX systems.  We
+only want to power down the dGPU.
 
-After the earlier patch, there was found to be a race condition on some
-earlier Samsung systems (N150/N210/N220). The function acpi_ec_clear was
-sometimes discarding a new EC event before its GPE was triggered by the
-system. In the case of these systems, this meant that the "lid open"
-event was not registered on resume if that was the cause of the wake,
-leading to problems when attempting to close the lid to suspend again.
+v2: fix harder
+v3: fix stupid typo
+v4: consolidate runpm enablement to a single flag
 
-After testing on a number of Samsung systems, both those affected by the
-previous EC bug and those affected by the race condition, it seemed that
-the best course of action was to process rather than discard the events.
-On Samsung systems which accumulate stale EC events, there does not seem
-to be any adverse side-effects of running the associated _Q methods.
+bugs:
+https://bugs.freedesktop.org/show_bug.cgi?id=75127
+https://bugzilla.kernel.org/show_bug.cgi?id=72701
 
-This patch adds an argument to the static function acpi_ec_sync_query so
-that it may be used within the acpi_ec_clear loop in place of
-acpi_ec_query_unlocked which was used previously.
-
-With thanks to Stefan Biereigel for reporting the issue, and for all the
-people who helped test the new patch on affected systems.
-
-Fixes: ad332c8a4533 (ACPI / EC: Clear stale EC events on Samsung systems)
-References: https://lkml.kernel.org/r/532FE3B2.9060808@biereigel-wb.de
-References: https://bugzilla.kernel.org/show_bug.cgi?id=44161#c173
-Reported-by: Stefan Biereigel <stefan@biereigel.de>
-Signed-off-by: Kieran Clancy <clancy.kieran@gmail.com>
-Tested-by: Stefan Biereigel <stefan@biereigel.de>
-Tested-by: Dennis Jansen <dennis.jansen@web.de>
-Tested-by: Nicolas Porcel <nicolasporcel06@gmail.com>
-Tested-by: Maurizio D'Addona <mauritiusdadd@gmail.com>
-Tested-by: Juan Manuel Cabo <juanmanuel.cabo@gmail.com>
-Tested-by: Giannis Koutsou <giannis.koutsou@gmail.com>
-Tested-by: Kieran Clancy <clancy.kieran@gmail.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/ec.c |   21 ++++++++++++---------
- 1 file changed, 12 insertions(+), 9 deletions(-)
+ drivers/gpu/drm/radeon/radeon.h              |    1 +
+ drivers/gpu/drm/radeon/radeon_atpx_handler.c |    2 +-
+ drivers/gpu/drm/radeon/radeon_device.c       |   19 ++++++++++---------
+ drivers/gpu/drm/radeon/radeon_drv.c          |   24 ++++--------------------
+ drivers/gpu/drm/radeon/radeon_family.h       |    1 +
+ drivers/gpu/drm/radeon/radeon_kms.c          |   14 ++++++++++----
+ 6 files changed, 27 insertions(+), 34 deletions(-)
 
---- a/drivers/acpi/ec.c
-+++ b/drivers/acpi/ec.c
-@@ -206,13 +206,13 @@ unlock:
- 	spin_unlock_irqrestore(&ec->lock, flags);
+--- a/drivers/gpu/drm/radeon/radeon.h
++++ b/drivers/gpu/drm/radeon/radeon.h
+@@ -2242,6 +2242,7 @@ struct radeon_device {
+ 	bool have_disp_power_ref;
+ };
+ 
++bool radeon_is_px(struct drm_device *dev);
+ int radeon_device_init(struct radeon_device *rdev,
+ 		       struct drm_device *ddev,
+ 		       struct pci_dev *pdev,
+--- a/drivers/gpu/drm/radeon/radeon_atpx_handler.c
++++ b/drivers/gpu/drm/radeon/radeon_atpx_handler.c
+@@ -59,7 +59,7 @@ struct atpx_mux {
+ 	u16 mux;
+ } __packed;
+ 
+-bool radeon_is_px(void) {
++bool radeon_has_atpx(void) {
+ 	return radeon_atpx_priv.atpx_detected;
  }
  
--static int acpi_ec_sync_query(struct acpi_ec *ec);
-+static int acpi_ec_sync_query(struct acpi_ec *ec, u8 *data);
+--- a/drivers/gpu/drm/radeon/radeon_device.c
++++ b/drivers/gpu/drm/radeon/radeon_device.c
+@@ -102,11 +102,14 @@ static const char radeon_family_name[][1
+ 	"LAST",
+ };
  
- static int ec_check_sci_sync(struct acpi_ec *ec, u8 state)
- {
- 	if (state & ACPI_EC_FLAG_SCI) {
- 		if (!test_and_set_bit(EC_FLAGS_QUERY_PENDING, &ec->flags))
--			return acpi_ec_sync_query(ec);
-+			return acpi_ec_sync_query(ec, NULL);
- 	}
- 	return 0;
- }
-@@ -443,10 +443,8 @@ acpi_handle ec_get_handle(void)
- 
- EXPORT_SYMBOL(ec_get_handle);
- 
--static int acpi_ec_query_unlocked(struct acpi_ec *ec, u8 *data);
--
- /*
-- * Clears stale _Q events that might have accumulated in the EC.
-+ * Process _Q events that might have accumulated in the EC.
-  * Run with locked ec mutex.
-  */
- static void acpi_ec_clear(struct acpi_ec *ec)
-@@ -455,7 +453,7 @@ static void acpi_ec_clear(struct acpi_ec
- 	u8 value = 0;
- 
- 	for (i = 0; i < ACPI_EC_CLEAR_MAX; i++) {
--		status = acpi_ec_query_unlocked(ec, &value);
-+		status = acpi_ec_sync_query(ec, &value);
- 		if (status || !value)
- 			break;
- 	}
-@@ -582,13 +580,18 @@ static void acpi_ec_run(void *cxt)
- 	kfree(handler);
- }
- 
--static int acpi_ec_sync_query(struct acpi_ec *ec)
-+static int acpi_ec_sync_query(struct acpi_ec *ec, u8 *data)
- {
- 	u8 value = 0;
- 	int status;
- 	struct acpi_ec_query_handler *handler, *copy;
--	if ((status = acpi_ec_query_unlocked(ec, &value)))
+-#if defined(CONFIG_VGA_SWITCHEROO)
+-bool radeon_is_px(void);
+-#else
+-static inline bool radeon_is_px(void) { return false; }
+-#endif
++bool radeon_is_px(struct drm_device *dev)
++{
++	struct radeon_device *rdev = dev->dev_private;
 +
-+	status = acpi_ec_query_unlocked(ec, &value);
-+	if (data)
-+		*data = value;
-+	if (status)
- 		return status;
-+
- 	list_for_each_entry(handler, &ec->list, node) {
- 		if (value == handler->query_bit) {
- 			/* have custom handler for this bit */
-@@ -612,7 +615,7 @@ static void acpi_ec_gpe_query(void *ec_c
- 	if (!ec)
++	if (rdev->flags & RADEON_IS_PX)
++		return true;
++	return false;
++}
+ 
+ /**
+  * radeon_program_register_sequence - program an array of registers.
+@@ -1082,7 +1085,7 @@ static void radeon_switcheroo_set_state(
+ {
+ 	struct drm_device *dev = pci_get_drvdata(pdev);
+ 
+-	if (radeon_is_px() && state == VGA_SWITCHEROO_OFF)
++	if (radeon_is_px(dev) && state == VGA_SWITCHEROO_OFF)
  		return;
- 	mutex_lock(&ec->mutex);
--	acpi_ec_sync_query(ec);
-+	acpi_ec_sync_query(ec, NULL);
- 	mutex_unlock(&ec->mutex);
- }
  
+ 	if (state == VGA_SWITCHEROO_ON) {
+@@ -1303,9 +1306,7 @@ int radeon_device_init(struct radeon_dev
+ 	 * ignore it */
+ 	vga_client_register(rdev->pdev, rdev, NULL, radeon_vga_set_decode);
+ 
+-	if (radeon_runtime_pm == 1)
+-		runtime = true;
+-	if ((radeon_runtime_pm == -1) && radeon_is_px())
++	if (rdev->flags & RADEON_IS_PX)
+ 		runtime = true;
+ 	vga_switcheroo_register_client(rdev->pdev, &radeon_switcheroo_ops, runtime);
+ 	if (runtime)
+--- a/drivers/gpu/drm/radeon/radeon_drv.c
++++ b/drivers/gpu/drm/radeon/radeon_drv.c
+@@ -113,6 +113,7 @@ extern int radeon_get_crtc_scanoutpos(st
+ 				      unsigned int flags,
+ 				      int *vpos, int *hpos, ktime_t *stime,
+ 				      ktime_t *etime);
++extern bool radeon_is_px(struct drm_device *dev);
+ extern const struct drm_ioctl_desc radeon_ioctls_kms[];
+ extern int radeon_max_kms_ioctl;
+ int radeon_mmap(struct file *filp, struct vm_area_struct *vma);
+@@ -142,11 +143,9 @@ void radeon_debugfs_cleanup(struct drm_m
+ #if defined(CONFIG_VGA_SWITCHEROO)
+ void radeon_register_atpx_handler(void);
+ void radeon_unregister_atpx_handler(void);
+-bool radeon_is_px(void);
+ #else
+ static inline void radeon_register_atpx_handler(void) {}
+ static inline void radeon_unregister_atpx_handler(void) {}
+-static inline bool radeon_is_px(void) { return false; }
+ #endif
+ 
+ int radeon_no_wb;
+@@ -403,12 +402,7 @@ static int radeon_pmops_runtime_suspend(
+ 	struct drm_device *drm_dev = pci_get_drvdata(pdev);
+ 	int ret;
+ 
+-	if (radeon_runtime_pm == 0) {
+-		pm_runtime_forbid(dev);
+-		return -EBUSY;
+-	}
+-
+-	if (radeon_runtime_pm == -1 && !radeon_is_px()) {
++	if (!radeon_is_px(drm_dev)) {
+ 		pm_runtime_forbid(dev);
+ 		return -EBUSY;
+ 	}
+@@ -432,10 +426,7 @@ static int radeon_pmops_runtime_resume(s
+ 	struct drm_device *drm_dev = pci_get_drvdata(pdev);
+ 	int ret;
+ 
+-	if (radeon_runtime_pm == 0)
+-		return -EINVAL;
+-
+-	if (radeon_runtime_pm == -1 && !radeon_is_px())
++	if (!radeon_is_px(drm_dev))
+ 		return -EINVAL;
+ 
+ 	drm_dev->switch_power_state = DRM_SWITCH_POWER_CHANGING;
+@@ -460,14 +451,7 @@ static int radeon_pmops_runtime_idle(str
+ 	struct drm_device *drm_dev = pci_get_drvdata(pdev);
+ 	struct drm_crtc *crtc;
+ 
+-	if (radeon_runtime_pm == 0) {
+-		pm_runtime_forbid(dev);
+-		return -EBUSY;
+-	}
+-
+-	/* are we PX enabled? */
+-	if (radeon_runtime_pm == -1 && !radeon_is_px()) {
+-		DRM_DEBUG_DRIVER("failing to power off - not px\n");
++	if (!radeon_is_px(drm_dev)) {
+ 		pm_runtime_forbid(dev);
+ 		return -EBUSY;
+ 	}
+--- a/drivers/gpu/drm/radeon/radeon_family.h
++++ b/drivers/gpu/drm/radeon/radeon_family.h
+@@ -115,6 +115,7 @@ enum radeon_chip_flags {
+ 	RADEON_NEW_MEMMAP = 0x00400000UL,
+ 	RADEON_IS_PCI = 0x00800000UL,
+ 	RADEON_IS_IGPGART = 0x01000000UL,
++	RADEON_IS_PX = 0x02000000UL,
+ };
+ 
+ #endif
+--- a/drivers/gpu/drm/radeon/radeon_kms.c
++++ b/drivers/gpu/drm/radeon/radeon_kms.c
+@@ -35,9 +35,9 @@
+ #include <linux/pm_runtime.h>
+ 
+ #if defined(CONFIG_VGA_SWITCHEROO)
+-bool radeon_is_px(void);
++bool radeon_has_atpx(void);
+ #else
+-static inline bool radeon_is_px(void) { return false; }
++static inline bool radeon_has_atpx(void) { return false; }
+ #endif
+ 
+ /**
+@@ -107,6 +107,13 @@ int radeon_driver_load_kms(struct drm_de
+ 		flags |= RADEON_IS_PCI;
+ 	}
+ 
++	if (radeon_runtime_pm == 1)
++		flags |= RADEON_IS_PX;
++	else if ((radeon_runtime_pm == -1) &&
++		 radeon_has_atpx() &&
++		 ((flags & RADEON_IS_IGP) == 0))
++		flags |= RADEON_IS_PX;
++
+ 	/* radeon_device_init should report only fatal error
+ 	 * like memory allocation failure or iomapping failure,
+ 	 * or memory manager initialization failure, it must
+@@ -137,8 +144,7 @@ int radeon_driver_load_kms(struct drm_de
+ 				"Error during ACPI methods call\n");
+ 	}
+ 
+-	if ((radeon_runtime_pm == 1) ||
+-	    ((radeon_runtime_pm == -1) && radeon_is_px())) {
++	if (radeon_is_px(dev)) {
+ 		pm_runtime_use_autosuspend(dev->dev);
+ 		pm_runtime_set_autosuspend_delay(dev->dev, 5000);
+ 		pm_runtime_set_active(dev->dev);
 
 
