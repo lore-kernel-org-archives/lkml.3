@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752664AbaFDOig (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 10:38:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61636 "EHLO mx1.redhat.com"
+	id S1752381AbaFDOhi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 10:37:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20756 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752488AbaFDOhq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 10:37:46 -0400
+	id S1752328AbaFDOhf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 10:37:35 -0400
 From: Jiri Olsa <jolsa@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@kernel.org>,
@@ -15,18 +15,18 @@ Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@kernel.org>,
         Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
         Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 10/13] perf tests: Spawn child for each test
-Date: Wed,  4 Jun 2014 16:36:59 +0200
-Message-Id: <1401892622-30848-11-git-send-email-jolsa@kernel.org>
+Subject: [PATCH 08/13] perf tools: Allow to close dso fd in case of open failure
+Date: Wed,  4 Jun 2014 16:36:57 +0200
+Message-Id: <1401892622-30848-9-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1401892622-30848-1-git-send-email-jolsa@kernel.org>
 References: <1401892622-30848-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In upcoming tests we will setup process limits, which
-might affect other tests. Spawning child for each test
-to prevent this.
+Adding do_open function that tries to close opened
+dso objects in case we fail to open the dso due to
+to crossing the allowed RLIMIT_NOFILE limit.
 
 Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
@@ -37,69 +37,52 @@ Cc: Jean Pihet <jean.pihet@linaro.org>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Reviewed-by: David Ahern <dsahern@gmail.com>
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/tests/builtin-test.c | 32 +++++++++++++++++++++++++++++++-
- 1 file changed, 31 insertions(+), 1 deletion(-)
+ tools/perf/util/dso.c | 23 ++++++++++++++++++++++-
+ 1 file changed, 22 insertions(+), 1 deletion(-)
 
-diff --git a/tools/perf/tests/builtin-test.c b/tools/perf/tests/builtin-test.c
-index 802e3cd..9677a5c 100644
---- a/tools/perf/tests/builtin-test.c
-+++ b/tools/perf/tests/builtin-test.c
-@@ -3,6 +3,8 @@
-  *
-  * Builtin regression testing command: ever growing number of sanity tests
-  */
-+#include <unistd.h>
-+#include <string.h>
- #include "builtin.h"
- #include "intlist.h"
- #include "tests.h"
-@@ -172,6 +174,34 @@ static bool perf_test__matches(int curr, int argc, const char *argv[])
- 	return false;
+diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
+index db63438..c30752c 100644
+--- a/tools/perf/util/dso.c
++++ b/tools/perf/util/dso.c
+@@ -159,6 +159,27 @@ static void dso__list_del(struct dso *dso)
+ 	dso__data_open_cnt--;
  }
  
-+static int run_test(struct test *test)
++static void close_first_dso(void);
++
++static int do_open(char *name)
 +{
-+	int status, err = -1, child = fork();
++	int fd;
 +
-+	if (child < 0) {
-+		pr_err("failed to fork test: %s\n", strerror(errno));
-+		return -1;
-+	}
++	do {
++		fd = open(name, O_RDONLY);
++		if (fd >= 0)
++			return fd;
 +
-+	if (!child) {
-+		pr_debug("test child forked, pid %d\n", getpid());
-+		err = test->func();
-+		exit(err);
-+	}
++		pr_debug("dso open failed, mmap: %s\n", strerror(errno));
++		if (!dso__data_open_cnt || errno != EMFILE)
++			break;
 +
-+	wait(&status);
++		close_first_dso();
++	} while (1);
 +
-+	if (WIFEXITED(status)) {
-+		err = WEXITSTATUS(status);
-+		pr_debug("test child finished with %d\n", err);
-+	} else if (WIFSIGNALED(status)) {
-+		err = -1;
-+		pr_debug("test child interrupted\n");
-+	}
-+
-+	return err;
++	return -1;
 +}
 +
- static int __cmd_test(int argc, const char *argv[], struct intlist *skiplist)
+ static int __open_dso(struct dso *dso, struct machine *machine)
  {
- 	int i = 0;
-@@ -200,7 +230,7 @@ static int __cmd_test(int argc, const char *argv[], struct intlist *skiplist)
- 		}
+ 	int fd;
+@@ -177,7 +198,7 @@ static int __open_dso(struct dso *dso, struct machine *machine)
+ 		return -EINVAL;
+ 	}
  
- 		pr_debug("\n--- start ---\n");
--		err = tests[curr].func();
-+		err = run_test(&tests[curr]);
- 		pr_debug("---- end ----\n%s:", tests[curr].desc);
- 
- 		switch (err) {
+-	fd = open(name, O_RDONLY);
++	fd = do_open(name);
+ 	free(name);
+ 	return fd;
+ }
 -- 
 1.8.3.1
 
