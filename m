@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932185AbaFEASf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 20:18:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40202 "EHLO
+	id S1756403AbaFEASd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 20:18:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40197 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753081AbaFDXWf (ORCPT
+	with ESMTP id S1753170AbaFDXWg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:22:35 -0400
+	Wed, 4 Jun 2014 19:22:36 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ian Kent <raven@themaw.net>, Al Viro <viro@zeniv.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 3.14 137/228] autofs: fix lockref lookup
-Date: Wed,  4 Jun 2014 16:22:46 -0700
-Message-Id: <20140604232352.418627555@linuxfoundation.org>
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: [PATCH 3.14 138/228] fix races between __d_instantiate() and checks of dentry flags
+Date: Wed,  4 Jun 2014 16:22:47 -0700
+Message-Id: <20140604232352.449628989@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -30,54 +28,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ian Kent <raven@themaw.net>
+From: Al Viro <viro@zeniv.linux.org.uk>
 
-commit 6b6751f7feba68d8f5c72b72cc69a1c5a625529c upstream.
+commit 22213318af7ae265bc6cd8aef2febbc2d69a2440 upstream.
 
-autofs needs to be able to see private data dentry flags for its dentrys
-that are being created but not yet hashed and for its dentrys that have
-been rmdir()ed but not yet freed.  It needs to do this so it can block
-processes in these states until a status has been returned to indicate
-the given operation is complete.
+in non-lazy walk we need to be careful about dentry switching from
+negative to positive - both ->d_flags and ->d_inode are updated,
+and in some places we might see only one store.  The cases where
+dentry has been obtained by dcache lookup with ->i_mutex held on
+parent are safe - ->d_lock and ->i_mutex provide all the barriers
+we need.  However, there are several places where we run into
+trouble:
+	* do_last() fetches ->d_inode, then checks ->d_flags and
+assumes that inode won't be NULL unless d_is_negative() is true.
+Race with e.g. creat() - we might have fetched the old value of
+->d_inode (still NULL) and new value of ->d_flags (already not
+DCACHE_MISS_TYPE).  Lin Ming has observed and reported the resulting
+oops.
+	* a bunch of places checks ->d_inode for being non-NULL,
+then checks ->d_flags for "is it a symlink".  Race with symlink(2)
+in case if our CPU sees ->d_inode update first - we see non-NULL
+there, but ->d_flags still contains DCACHE_MISS_TYPE instead of
+DCACHE_SYMLINK_TYPE.  Result: false negative on "should we follow
+link here?", with subsequent unpleasantness.
 
-It does this by keeping two lists, active and expring, of dentrys in
-this state and uses ->d_release() to keep them stable while it checks
-the reference count to determine if they should be used.
-
-But with the recent lockref changes dentrys being freed sometimes don't
-transition to a reference count of 0 before being freed so autofs can
-occassionally use a dentry that is invalid which can lead to a panic.
-
-Signed-off-by: Ian Kent <raven@themaw.net>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-and-tested-by: Lin Ming <minggr@gmail.com>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/autofs4/root.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/dcache.c |    3 +--
+ fs/namei.c  |    6 +++---
+ 2 files changed, 4 insertions(+), 5 deletions(-)
 
---- a/fs/autofs4/root.c
-+++ b/fs/autofs4/root.c
-@@ -179,7 +179,7 @@ static struct dentry *autofs4_lookup_act
- 		spin_lock(&active->d_lock);
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -1647,8 +1647,7 @@ static void __d_instantiate(struct dentr
+ 	unsigned add_flags = d_flags_for_inode(inode);
  
- 		/* Already gone? */
--		if (!d_count(active))
-+		if ((int) d_count(active) <= 0)
- 			goto next;
+ 	spin_lock(&dentry->d_lock);
+-	dentry->d_flags &= ~DCACHE_ENTRY_TYPE;
+-	dentry->d_flags |= add_flags;
++	__d_set_type(dentry, add_flags);
+ 	if (inode)
+ 		hlist_add_head(&dentry->d_alias, &inode->i_dentry);
+ 	dentry->d_inode = inode;
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -1537,7 +1537,7 @@ static inline int walk_component(struct
+ 		inode = path->dentry->d_inode;
+ 	}
+ 	err = -ENOENT;
+-	if (!inode)
++	if (!inode || d_is_negative(path->dentry))
+ 		goto out_path_put;
  
- 		qstr = &active->d_name;
-@@ -230,7 +230,7 @@ static struct dentry *autofs4_lookup_exp
+ 	if (should_follow_link(path->dentry, follow)) {
+@@ -2240,7 +2240,7 @@ mountpoint_last(struct nameidata *nd, st
+ 	mutex_unlock(&dir->d_inode->i_mutex);
  
- 		spin_lock(&expiring->d_lock);
- 
--		/* Bad luck, we've already been dentry_iput */
-+		/* We've already been dentry_iput or unlinked */
- 		if (!expiring->d_inode)
- 			goto next;
- 
+ done:
+-	if (!dentry->d_inode) {
++	if (!dentry->d_inode || d_is_negative(dentry)) {
+ 		error = -ENOENT;
+ 		dput(dentry);
+ 		goto out;
+@@ -2982,7 +2982,7 @@ retry_lookup:
+ finish_lookup:
+ 	/* we _can_ be in RCU mode here */
+ 	error = -ENOENT;
+-	if (d_is_negative(path->dentry)) {
++	if (!inode || d_is_negative(path->dentry)) {
+ 		path_to_nameidata(path, nd);
+ 		goto out;
+ 	}
 
 
