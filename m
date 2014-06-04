@@ -1,131 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752133AbaFDJdd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 05:33:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14474 "EHLO mx1.redhat.com"
+	id S1752081AbaFDJdX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 05:33:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62525 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751332AbaFDJda (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 05:33:30 -0400
-Message-ID: <1401874402.9373.2.camel@menhir>
-Subject: GFS2: Pull request (merge window)
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, cluster-devel@redhat.com
-Date: Wed, 04 Jun 2014 10:33:22 +0100
-Organization: Red Hat UK Ltd
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-FdhrKbveLeLBINEiCL+G"
-Mime-Version: 1.0
+	id S1751729AbaFDJdV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 05:33:21 -0400
+Date: Wed, 4 Jun 2014 11:33:14 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Namhyung Kim <namhyung@kernel.org>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH v3 2/4] tools lib traceevent: Add options to plugins
+Message-ID: <20140604093314.GA1348@krava.brq.redhat.com>
+References: <20140603032012.088137043@goodmis.org>
+ <20140603032223.896255043@goodmis.org>
+ <87lhtecwph.fsf@sejong.aot.lge.com>
+ <20140603184154.0a4c031c@gandalf.local.home>
+ <20140603184310.4be2d339@gandalf.local.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140603184310.4be2d339@gandalf.local.home>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jun 03, 2014 at 06:43:10PM -0400, Steven Rostedt wrote:
+> On Tue, 3 Jun 2014 18:41:54 -0400
+> Steven Rostedt <rostedt@goodmis.org> wrote:
+> 
+> > 
+> > The traceevent plugins allows developers to have their events print out
+> > information that is more advanced than what can be achieved by the
+> > trace event format files.
+> > 
+> > As these plugins are used on the userspace side of the tracing tools, it
+> > is only logical that the tools should be able to produce different types
+> > of output for the events. The types of events still need to be defined by
+> > the plugins thus we need a way to pass information from the tool to the
+> > plugin to specify what type of information to be shown.
+> > 
+> > Not only does the information need to be passed by the tool to plugin, but
+> > the plugin also requires a way to notify the tool of what options it can
+> > provide.
+> > 
+> > This builds the plugin option infrastructure that is taken from trace-cmd
+> > that is used to allow plugins to produce different output based on the
+> > options specified by the tool.
+> > 
+> > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> 
+> Jiri,
+> 
+> I only sent this patch for v3, as the 1,3,4 are fine. Do you want me to
+> send a full series? Or can you just pull in v2 of patches 1,3 and 4 and
+> then v3 of this one?
 
---=-FdhrKbveLeLBINEiCL+G
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+no need to resend, I'll take it from here
 
-Hi,
-
-Please consider pulling the following changes,
-
-Steve.
-
----------------------------------------------------------------------------=
---
-The following changes since commit 6ca2a88ad820af56535ed1e6936e0490cb6ec6dc=
-:
-
-  Merge branch 'x86-urgent-for-linus' of git://git.kernel.org/pub/scm/linux=
-/kernel/git/tip/tip (2014-04-16 16:40:18 -0700)
-
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/steve/gfs2-3.0-nmw.git tags=
-/gfs2-merge-window
-
-for you to fetch changes up to 0e48e055a7dfc0cf17bbabe4d9b523ee0b1a9ed6:
-
-  GFS2: Prevent recovery before the local journal is set (2014-06-02 19:12:=
-06 +0100)
-
-----------------------------------------------------------------
-This must be about the smallest merge window patch set ever for GFS2.
-It is probably also the first one without a single patch from me. That
-is down to a combination of factors, and I have some things in the works
-that are not quite ready yet, that I hope to put in next time around.
-
-Returning to what is here this time... we have 3 patches which fix
-various warnings. Two are bug fixes (for quotas and also a
-rare recovery race condition). The final patch, from Ben Marzinski,
-is an important change in the freeze code which has been in
-progress for some time. This removes the need to take and drop the
-transaction lock for every single transaction, when the only time it
-was used, was at file system freeze time. Ben's patch integrates the
-freeze operation into the journal flush code as an alternative with
-lower overheads and also lands up resolving some difficult to fix races
-at the same time.
-
-----------------------------------------------------------------
-Abhi Das (1):
-      GFS2: quotas not being refreshed in gfs2_adjust_quota
-
-Benjamin Marzinski (1):
-      GFS2: remove transaction glock
-
-Bob Peterson (1):
-      GFS2: Prevent recovery before the local journal is set
-
-Fabian Frederick (3):
-      GFS2: lops.c: replace 0 by NULL for pointers
-      GFS2: fs/gfs2/bmap.c: kernel-doc warning fixes
-      GFS2: fs/gfs2/file.c: kernel-doc warning fixes
-
- fs/gfs2/aops.c                   |  2 +-
- fs/gfs2/bmap.c                   |  8 ++--
- fs/gfs2/file.c                   | 12 +++---
- fs/gfs2/glops.c                  | 51 ++++++++++++++--------
- fs/gfs2/glops.h                  |  2 +-
- fs/gfs2/incore.h                 | 14 ++++--
- fs/gfs2/inode.c                  | 40 ++++++++++++-----
- fs/gfs2/log.c                    | 93 +++++++++++++++++++++++++++---------=
-----
- fs/gfs2/log.h                    | 11 ++++-
- fs/gfs2/lops.c                   |  2 +-
- fs/gfs2/ops_fstype.c             | 25 ++++++++---
- fs/gfs2/quota.c                  |  3 +-
- fs/gfs2/recovery.c               | 22 +++++-----
- fs/gfs2/rgrp.c                   |  2 +-
- fs/gfs2/super.c                  | 69 ++++++++++++++++++-----------
- fs/gfs2/sys.c                    |  7 ++-
- fs/gfs2/trans.c                  | 44 +++----------------
- include/uapi/linux/gfs2_ondisk.h |  2 +-
- 18 files changed, 246 insertions(+), 163 deletions(-)
-
-
---=-FdhrKbveLeLBINEiCL+G
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAABAgAGBQJTjufnAAoJEMrg3m4a/8jSh4MP/1WuMoN25uwH32CW3/CtXpM4
-Wh4HpKe1ualY/fwRPfXEcX2+mJf0i2sgqfHPSE6GtiIvStJvLAwnzjP8OK8FqUn7
-ldv2R3sZTzzfOk0OERu3cLFupQCJpm2agrU6ENV1xM4DyU2khbbA9A3pQJJUivXk
-BPfi0GToMM04ZcaRJoxr2fau7r9CZXWuDLF0chXDMe+c+Hd3AA18rwymvpFJ+9jx
-gX8hwNVStN21vAHzPSgXh/zh0WYmqtpC8Ynkjg14UaLlejF76kH/qCvo6oO4acuU
-Wklg49SXtMwpDXKtf6p5JMZuVBIhl9TrfborLn2zh1/b4o3VeDOAaUrUA/IxH/0B
-qR3ybpPwpSFDUm5baedgyKeEN7lv65lG/5xiwlys4B7+fO1w/yzfHFawaSEB1VC2
-duQeT0P/zF6WwcerddmaTiyQ3EbplGAA6JUKIzkZ5TbWy42krJs0mZmC9jT6CmKW
-n9w81T6r9m9v5bqQUT4DEn9fxyMDF3cMpriwOeGZO51jG4OIdcenytc+1s81sxTM
-7r0vcTDUURawGqen7mLU50gGMRimLK1nsMfqRZzKoUGnTSgssyZfCoAivoPWlx28
-CUig8mNi+EsgMXCkX3/8mXkfYWLzgGB9yOZ3gweWydyDSUJVxj2X30z2AU5Yk1dH
-eaap4NhisvNG8XIX/7G8
-=3Ifv
------END PGP SIGNATURE-----
-
---=-FdhrKbveLeLBINEiCL+G--
-
+jirka
