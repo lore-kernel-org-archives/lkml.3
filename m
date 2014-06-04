@@ -1,154 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752166AbaFDW0Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 18:26:16 -0400
-Received: from mail-qa0-f73.google.com ([209.85.216.73]:34477 "EHLO
-	mail-qa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752060AbaFDW0P (ORCPT
+	id S1752182AbaFDW2a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 18:28:30 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:37790 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751693AbaFDW22 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 18:26:15 -0400
-From: Doug Anderson <dianders@chromium.org>
-To: Stephen Warren <swarren@nvidia.com>, Thierry Reding <treding@nvidia.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>, olof@lixom.net
-Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Doug Anderson <dianders@chromium.org>, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        linux@arm.linux.org.uk, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/3] ARM: dts: Create a cros-ec-keyboard fragment
-Date: Wed,  4 Jun 2014 15:20:18 -0700
-Message-Id: <1401920421-25729-1-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 2.0.0.526.g5318336
+	Wed, 4 Jun 2014 18:28:28 -0400
+Message-ID: <1401920905.17510.42.camel@dabdike>
+Subject: Re: [PATCH] scsi: mpt2sas: mpt2sas_base.c:  Cleaning up missing
+ null-terminate after strncpy call
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: Nagalakshmi Nandigama <Nagalakshmi.Nandigama@lsi.com>,
+        Sreekanth Reddy <Sreekanth.Reddy@lsi.com>, support@lsi.com,
+        DL-MPTFusionLinux@lsi.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Wed, 04 Jun 2014 15:28:25 -0700
+In-Reply-To: <1401917775-3222-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+References: <1401917775-3222-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.12.2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All ChromeOS ARM devices that have the standard "CrOS EC" have the
-same keyboard mapping.  It's silly to include this same definition
-everywhere.  Let's create a "dtsi" fragment that we can include from
-many different boards.
+On Wed, 2014-06-04 at 23:36 +0200, Rickard Strandqvist wrote:
+> Added a guaranteed null-terminate after call to strncpy.
+> 
+> This was partly found using a static code analysis program called cppcheck.
+> 
+> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+> ---
+>  drivers/scsi/mpt2sas/mpt2sas_base.c |    3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/scsi/mpt2sas/mpt2sas_base.c b/drivers/scsi/mpt2sas/mpt2sas_base.c
+> index bde63f7..4c3eceb 100644
+> --- a/drivers/scsi/mpt2sas/mpt2sas_base.c
+> +++ b/drivers/scsi/mpt2sas/mpt2sas_base.c
+> @@ -2097,7 +2097,8 @@ _base_display_ioc_capabilities(struct MPT2SAS_ADAPTER *ioc)
+>  	u32 bios_version;
+>  
+>  	bios_version = le32_to_cpu(ioc->bios_pg3.BiosVersion);
+> -	strncpy(desc, ioc->manu_pg0.ChipName, 16);
+> +	strncpy(desc, ioc->manu_pg0.ChipName, sizeof(desc));
+> +	desc[sizeof(desc) - 1] = '\0';
 
-This fragment is based on what's currently in tegra124-venice2.dts
+There's no bug here because the specs define the ChipName field of the
+manufacturing page 0 to be 16 bytes and null terminated.  The nasty part
+is the way this driver is littered with magic numbers.
 
-Signed-off-by: Doug Anderson <dianders@chromium.org>
----
- arch/arm/boot/dts/cros-ec-keyboard.dtsi | 105 ++++++++++++++++++++++++++++++++
- 1 file changed, 105 insertions(+)
- create mode 100644 arch/arm/boot/dts/cros-ec-keyboard.dtsi
+James
 
-diff --git a/arch/arm/boot/dts/cros-ec-keyboard.dtsi b/arch/arm/boot/dts/cros-ec-keyboard.dtsi
-new file mode 100644
-index 0000000..9c7fb0a
---- /dev/null
-+++ b/arch/arm/boot/dts/cros-ec-keyboard.dtsi
-@@ -0,0 +1,105 @@
-+/*
-+ * Keyboard dts fragment for devices that use cros-ec-keyboard
-+ *
-+ * Copyright (c) 2014 Google, Inc
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+*/
-+
-+#include <dt-bindings/input/input.h>
-+
-+&cros_ec {
-+	keyboard-controller {
-+		compatible = "google,cros-ec-keyb";
-+		keypad,num-rows = <8>;
-+		keypad,num-columns = <13>;
-+		google,needs-ghost-filter;
-+
-+		linux,keymap = <
-+			MATRIX_KEY(0x00, 0x01, KEY_LEFTMETA)
-+			MATRIX_KEY(0x00, 0x02, KEY_F1)
-+			MATRIX_KEY(0x00, 0x03, KEY_B)
-+			MATRIX_KEY(0x00, 0x04, KEY_F10)
-+			MATRIX_KEY(0x00, 0x06, KEY_N)
-+			MATRIX_KEY(0x00, 0x08, KEY_EQUAL)
-+			MATRIX_KEY(0x00, 0x0a, KEY_RIGHTALT)
-+
-+			MATRIX_KEY(0x01, 0x01, KEY_ESC)
-+			MATRIX_KEY(0x01, 0x02, KEY_F4)
-+			MATRIX_KEY(0x01, 0x03, KEY_G)
-+			MATRIX_KEY(0x01, 0x04, KEY_F7)
-+			MATRIX_KEY(0x01, 0x06, KEY_H)
-+			MATRIX_KEY(0x01, 0x08, KEY_APOSTROPHE)
-+			MATRIX_KEY(0x01, 0x09, KEY_F9)
-+			MATRIX_KEY(0x01, 0x0b, KEY_BACKSPACE)
-+
-+			MATRIX_KEY(0x02, 0x00, KEY_LEFTCTRL)
-+			MATRIX_KEY(0x02, 0x01, KEY_TAB)
-+			MATRIX_KEY(0x02, 0x02, KEY_F3)
-+			MATRIX_KEY(0x02, 0x03, KEY_T)
-+			MATRIX_KEY(0x02, 0x04, KEY_F6)
-+			MATRIX_KEY(0x02, 0x05, KEY_RIGHTBRACE)
-+			MATRIX_KEY(0x02, 0x06, KEY_Y)
-+			MATRIX_KEY(0x02, 0x07, KEY_102ND)
-+			MATRIX_KEY(0x02, 0x08, KEY_LEFTBRACE)
-+			MATRIX_KEY(0x02, 0x09, KEY_F8)
-+
-+			MATRIX_KEY(0x03, 0x01, KEY_GRAVE)
-+			MATRIX_KEY(0x03, 0x02, KEY_F2)
-+			MATRIX_KEY(0x03, 0x03, KEY_5)
-+			MATRIX_KEY(0x03, 0x04, KEY_F5)
-+			MATRIX_KEY(0x03, 0x06, KEY_6)
-+			MATRIX_KEY(0x03, 0x08, KEY_MINUS)
-+			MATRIX_KEY(0x03, 0x0b, KEY_BACKSLASH)
-+
-+			MATRIX_KEY(0x04, 0x00, KEY_RIGHTCTRL)
-+			MATRIX_KEY(0x04, 0x01, KEY_A)
-+			MATRIX_KEY(0x04, 0x02, KEY_D)
-+			MATRIX_KEY(0x04, 0x03, KEY_F)
-+			MATRIX_KEY(0x04, 0x04, KEY_S)
-+			MATRIX_KEY(0x04, 0x05, KEY_K)
-+			MATRIX_KEY(0x04, 0x06, KEY_J)
-+			MATRIX_KEY(0x04, 0x08, KEY_SEMICOLON)
-+			MATRIX_KEY(0x04, 0x09, KEY_L)
-+			MATRIX_KEY(0x04, 0x0a, KEY_BACKSLASH)
-+			MATRIX_KEY(0x04, 0x0b, KEY_ENTER)
-+
-+			MATRIX_KEY(0x05, 0x01, KEY_Z)
-+			MATRIX_KEY(0x05, 0x02, KEY_C)
-+			MATRIX_KEY(0x05, 0x03, KEY_V)
-+			MATRIX_KEY(0x05, 0x04, KEY_X)
-+			MATRIX_KEY(0x05, 0x05, KEY_COMMA)
-+			MATRIX_KEY(0x05, 0x06, KEY_M)
-+			MATRIX_KEY(0x05, 0x07, KEY_LEFTSHIFT)
-+			MATRIX_KEY(0x05, 0x08, KEY_SLASH)
-+			MATRIX_KEY(0x05, 0x09, KEY_DOT)
-+			MATRIX_KEY(0x05, 0x0b, KEY_SPACE)
-+
-+			MATRIX_KEY(0x06, 0x01, KEY_1)
-+			MATRIX_KEY(0x06, 0x02, KEY_3)
-+			MATRIX_KEY(0x06, 0x03, KEY_4)
-+			MATRIX_KEY(0x06, 0x04, KEY_2)
-+			MATRIX_KEY(0x06, 0x05, KEY_8)
-+			MATRIX_KEY(0x06, 0x06, KEY_7)
-+			MATRIX_KEY(0x06, 0x08, KEY_0)
-+			MATRIX_KEY(0x06, 0x09, KEY_9)
-+			MATRIX_KEY(0x06, 0x0a, KEY_LEFTALT)
-+			MATRIX_KEY(0x06, 0x0b, KEY_DOWN)
-+			MATRIX_KEY(0x06, 0x0c, KEY_RIGHT)
-+
-+			MATRIX_KEY(0x07, 0x01, KEY_Q)
-+			MATRIX_KEY(0x07, 0x02, KEY_E)
-+			MATRIX_KEY(0x07, 0x03, KEY_R)
-+			MATRIX_KEY(0x07, 0x04, KEY_W)
-+			MATRIX_KEY(0x07, 0x05, KEY_I)
-+			MATRIX_KEY(0x07, 0x06, KEY_U)
-+			MATRIX_KEY(0x07, 0x07, KEY_RIGHTSHIFT)
-+			MATRIX_KEY(0x07, 0x08, KEY_P)
-+			MATRIX_KEY(0x07, 0x09, KEY_O)
-+			MATRIX_KEY(0x07, 0x0b, KEY_UP)
-+			MATRIX_KEY(0x07, 0x0c, KEY_LEFT)
-+		>;
-+	};
-+};
--- 
-2.0.0.526.g5318336
 
