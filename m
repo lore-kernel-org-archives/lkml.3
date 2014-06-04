@@ -1,42 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751432AbaFDS1X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 14:27:23 -0400
-Received: from mail-qa0-f41.google.com ([209.85.216.41]:51330 "EHLO
-	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750933AbaFDS1W (ORCPT
+	id S1751582AbaFDS2N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 14:28:13 -0400
+Received: from qmta01.emeryville.ca.mail.comcast.net ([76.96.30.16]:53756 "EHLO
+	qmta01.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750933AbaFDS2M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 14:27:22 -0400
-MIME-Version: 1.0
-Date: Wed, 4 Jun 2014 11:27:22 -0700
-Message-ID: <CAMd89uLDTwQL8rEmAkOSZOYoZgwrcVVTeHDPq5nFnHV+v13cFQ@mail.gmail.com>
-Subject: [PERF] TUI bug when interpreting JIT .map files
-From: Trevor Norris <trev.norris@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Wed, 4 Jun 2014 14:28:12 -0400
+Date: Wed, 4 Jun 2014 13:28:09 -0500 (CDT)
+From: Christoph Lameter <cl@gentwo.org>
+To: Tejun Heo <tj@kernel.org>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Kent Overstreet <kmo@daterainc.com>,
+        Sebastian Ott <sebott@linux.vnet.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: Re: [GIT PULL] last minute percpu fix for v3.15-rc8
+In-Reply-To: <20140604181214.GM5004@htj.dyndns.org>
+Message-ID: <alpine.DEB.2.10.1406041327240.12812@gentwo.org>
+References: <20140604163700.GH5004@htj.dyndns.org> <alpine.DEB.2.10.1406041215180.12469@gentwo.org> <20140604181214.GM5004@htj.dyndns.org>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When reading the .map file for JIT usage in perf report using
-the TUI interface there is a specific circumstance where perf
-closes almost immediately.
+On Wed, 4 Jun 2014, Tejun Heo wrote:
 
-A quick refresher on the contents of the .map file:
+>
+> Given that percpu operations can be performed on any allocated percpu
+> area, it's a bit difficult to achieve tho.  The only way I can think
+> of is percpu allocator creating lockdep key for all the allocated
+> offsets which isn't too enticing. :(
 
-<address> <instruction size> <instruction>
+Hmmm.. Or an annotation for a percpu variable saying that its being used
+from an interrupt context.
 
-The bug is manifested when the same address is listed twice, but
-the instruction size differs.
-
-This bug does not occur with the stdio or gtk interfaces.
-
-I plan on attempting to fix this issue. Though my coding chops
-aren't yet at par with kernel development. Hence why I post this
-now in the case someone else wishes to investigate and is able
-to create a patch first.
-
-Please CC me on any response.
-
-/trev
-@trevnorris
