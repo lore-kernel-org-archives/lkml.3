@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757039AbaFEAg6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 20:36:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39935 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752746AbaFDXVf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752747AbaFDXVf (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 4 Jun 2014 19:21:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39905 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752687AbaFDXV3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 19:21:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.14 071/228] drm/radeon: re-enable mclk dpm on R7 260X asics
-Date: Wed,  4 Jun 2014 16:21:40 -0700
-Message-Id: <20140604232350.334876252@linuxfoundation.org>
+        Leon Ma <xindong.ma@intel.com>, Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 3.14 051/228] hrtimer: Prevent remote enqueue of leftmost timers
+Date: Wed,  4 Jun 2014 16:21:20 -0700
+Message-Id: <20140604232349.712903879@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -28,45 +28,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexdeucher@gmail.com>
+From: Leon Ma <xindong.ma@intel.com>
 
-commit 7e1858f9aff7d608b3d0abad4bda0130de887b89 upstream.
+commit 012a45e3f4af68e86d85cce060c6c2fed56498b2 upstream.
 
-If the new mc ucode is available.
+If a cpu is idle and starts an hrtimer which is not pinned on that
+same cpu, the nohz code might target the timer to a different cpu.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+In the case that we switch the cpu base of the timer we already have a
+sanity check in place, which determines whether the timer is earlier
+than the current leftmost timer on the target cpu. In that case we
+enqueue the timer on the current cpu because we cannot reprogram the
+clock event device on the target.
+
+If the timers base is already the target CPU we do not have this
+sanity check in place so we enqueue the timer as the leftmost timer in
+the target cpus rb tree, but we cannot reprogram the clock event
+device on the target cpu. So the timer expires late and subsequently
+prevents the reprogramming of the target cpu clock event device until
+the previously programmed event fires or a timer with an earlier
+expiry time gets enqueued on the target cpu itself.
+
+Add the same target check as we have for the switch base case and
+start the timer on the current cpu if it would become the leftmost
+timer on the target.
+
+[ tglx: Rewrote subject and changelog ]
+
+Signed-off-by: Leon Ma <xindong.ma@intel.com>
+Link: http://lkml.kernel.org/r/1398847391-5994-1-git-send-email-xindong.ma@intel.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/ci_dpm.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ kernel/hrtimer.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/drivers/gpu/drm/radeon/ci_dpm.c
-+++ b/drivers/gpu/drm/radeon/ci_dpm.c
-@@ -21,8 +21,10 @@
-  *
-  */
- 
-+#include <linux/firmware.h>
- #include "drmP.h"
- #include "radeon.h"
-+#include "radeon_ucode.h"
- #include "cikd.h"
- #include "r600_dpm.h"
- #include "ci_dpm.h"
-@@ -5106,9 +5108,11 @@ int ci_dpm_init(struct radeon_device *rd
- 	pi->mclk_dpm_key_disabled = 0;
- 	pi->pcie_dpm_key_disabled = 0;
- 
--	/* mclk dpm is unstable on some R7 260X cards */
--	if (rdev->pdev->device == 0x6658)
-+	/* mclk dpm is unstable on some R7 260X cards with the old mc ucode */
-+	if ((rdev->pdev->device == 0x6658) &&
-+	    (rdev->mc_fw->size == (BONAIRE_MC_UCODE_SIZE * 4))) {
- 		pi->mclk_dpm_key_disabled = 1;
-+	}
- 
- 	pi->caps_sclk_ds = true;
- 
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -247,6 +247,11 @@ again:
+ 			goto again;
+ 		}
+ 		timer->base = new_base;
++	} else {
++		if (cpu != this_cpu && hrtimer_check_target(timer, new_base)) {
++			cpu = this_cpu;
++			goto again;
++		}
+ 	}
+ 	return new_base;
+ }
 
 
