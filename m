@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754191AbaFDXYU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:24:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40982 "EHLO
+	id S1754526AbaFDX2B (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 19:28:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41030 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754157AbaFDXYQ (ORCPT
+	with ESMTP id S1754176AbaFDXYT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:24:16 -0400
+	Wed, 4 Jun 2014 19:24:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Marcel Apfelbaum <marcel.a@redhat.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>
-Subject: [PATCH 3.10 085/103] PCI: shpchp: Check bridges secondary (not primary) bus speed
-Date: Wed,  4 Jun 2014 16:25:48 -0700
-Message-Id: <20140604232549.584592389@linuxfoundation.org>
+        Sage Weil <sage@inktank.com>, Yehuda Sadeh <yehuda@inktank.com>,
+        Chunwei Chen <tuxoko@gmail.com>,
+        Ilya Dryomov <ilya.dryomov@inktank.com>
+Subject: [PATCH 3.10 099/103] libceph: fix corruption when using page_count 0 page in rbd
+Date: Wed,  4 Jun 2014 16:26:02 -0700
+Message-Id: <20140604232550.065288171@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232546.704156131@linuxfoundation.org>
 References: <20140604232546.704156131@linuxfoundation.org>
@@ -30,45 +30,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marcel Apfelbaum <marcel.a@redhat.com>
+From: Chunwei Chen <tuxoko@gmail.com>
 
-commit 93fa9d32670f5592c8e56abc9928fc194e1e72fc upstream.
+commit 178eda29ca721842f2146378e73d43e0044c4166 upstream.
 
-When a new device is added below a hotplug bridge, the bridge's secondary
-bus speed and the device's bus speed must match.  The shpchp driver
-previously checked the bridge's *primary* bus speed, not the secondary bus
-speed.
+It has been reported that using ZFSonLinux on rbd will result in memory
+corruption. The bug report can be found here:
 
-This caused hot-add errors like:
+https://github.com/zfsonlinux/spl/issues/241
+http://tracker.ceph.com/issues/7790
 
-  shpchp 0000:00:03.0: Speed of bus ff and adapter 0 mismatch
+The reason is that ZFS will send pages with page_count 0 into rbd, which in
+turns send them to tcp_sendpage. However, tcp_sendpage cannot deal with
+page_count 0, as it will do get_page and put_page, and erroneously free the
+page.
 
-Check the secondary bus speed instead.
+This type of issue has been noted before, and handled in iscsi, drbd,
+etc. So, rbd should also handle this. This fix address this issue by fall back
+to slower sendmsg when page_count 0 detected.
 
-[bhelgaas: changelog]
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=75251
-Fixes: 3749c51ac6c1 ("PCI: Make current and maximum bus speeds part of the PCI core")
-Signed-off-by: Marcel Apfelbaum <marcel.a@redhat.com>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
+Cc: Sage Weil <sage@inktank.com>
+Cc: Yehuda Sadeh <yehuda@inktank.com>
+Signed-off-by: Chunwei Chen <tuxoko@gmail.com>
+Reviewed-by: Ilya Dryomov <ilya.dryomov@inktank.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pci/hotplug/shpchp_ctrl.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ net/ceph/messenger.c |   20 +++++++++++++++++++-
+ 1 file changed, 19 insertions(+), 1 deletion(-)
 
---- a/drivers/pci/hotplug/shpchp_ctrl.c
-+++ b/drivers/pci/hotplug/shpchp_ctrl.c
-@@ -282,8 +282,8 @@ static int board_added(struct slot *p_sl
- 		return WRONG_BUS_FREQUENCY;
- 	}
+--- a/net/ceph/messenger.c
++++ b/net/ceph/messenger.c
+@@ -556,7 +556,7 @@ static int ceph_tcp_sendmsg(struct socke
+ 	return r;
+ }
  
--	bsp = ctrl->pci_dev->bus->cur_bus_speed;
--	msp = ctrl->pci_dev->bus->max_bus_speed;
-+	bsp = ctrl->pci_dev->subordinate->cur_bus_speed;
-+	msp = ctrl->pci_dev->subordinate->max_bus_speed;
+-static int ceph_tcp_sendpage(struct socket *sock, struct page *page,
++static int __ceph_tcp_sendpage(struct socket *sock, struct page *page,
+ 		     int offset, size_t size, bool more)
+ {
+ 	int flags = MSG_DONTWAIT | MSG_NOSIGNAL | (more ? MSG_MORE : MSG_EOR);
+@@ -569,6 +569,24 @@ static int ceph_tcp_sendpage(struct sock
+ 	return ret;
+ }
  
- 	/* Check if there are other slots or devices on the same bus */
- 	if (!list_empty(&ctrl->pci_dev->subordinate->devices))
++static int ceph_tcp_sendpage(struct socket *sock, struct page *page,
++		     int offset, size_t size, bool more)
++{
++	int ret;
++	struct kvec iov;
++
++	/* sendpage cannot properly handle pages with page_count == 0,
++	 * we need to fallback to sendmsg if that's the case */
++	if (page_count(page) >= 1)
++		return __ceph_tcp_sendpage(sock, page, offset, size, more);
++
++	iov.iov_base = kmap(page) + offset;
++	iov.iov_len = size;
++	ret = ceph_tcp_sendmsg(sock, &iov, 1, size, more);
++	kunmap(page);
++
++	return ret;
++}
+ 
+ /*
+  * Shutdown/close the socket for the given connection.
 
 
