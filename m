@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752139AbaFDJLb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 05:11:31 -0400
-Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:7781 "EHLO
-	mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751974AbaFDJKC (ORCPT
+	id S1751660AbaFDJMX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 05:12:23 -0400
+Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:54263
+	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751867AbaFDJKB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 05:10:02 -0400
+	Wed, 4 Jun 2014 05:10:01 -0400
 X-IronPort-AV: E=Sophos;i="4.98,972,1392159600"; 
-   d="scan'208";a="65385501"
+   d="scan'208";a="65385498"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Sebastian Ott <sebott@linux.vnet.ibm.com>
+To: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
 Cc: kernel-janitors@vger.kernel.org,
-        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com,
-        linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 8/10] s390/pci: use safer test on the result of find_first_zero_bit
-Date: Wed,  4 Jun 2014 11:07:58 +0200
-Message-Id: <1401872880-23685-9-git-send-email-Julia.Lawall@lip6.fr>
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        iss_storagedev@hp.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 6/10] hpsa: use safer test on the result of find_first_zero_bit
+Date: Wed,  4 Jun 2014 11:07:56 +0200
+Message-Id: <1401872880-23685-7-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1401872880-23685-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1401872880-23685-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -53,28 +52,19 @@ S1 else S2
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- arch/s390/pci/pci.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/scsi/hpsa.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff -u -p a/arch/s390/pci/pci.c b/arch/s390/pci/pci.c
---- a/arch/s390/pci/pci.c
-+++ b/arch/s390/pci/pci.c
-@@ -566,7 +566,7 @@ static int zpci_alloc_iomap(struct zpci_
- 
- 	spin_lock(&zpci_iomap_lock);
- 	entry = find_first_zero_bit(zpci_iomap, ZPCI_IOMAP_MAX_ENTRIES);
--	if (entry == ZPCI_IOMAP_MAX_ENTRIES) {
-+	if (entry >= ZPCI_IOMAP_MAX_ENTRIES) {
- 		spin_unlock(&zpci_iomap_lock);
- 		return -ENOSPC;
- 	}
-@@ -746,7 +746,7 @@ static int zpci_alloc_domain(struct zpci
- {
- 	spin_lock(&zpci_domain_lock);
- 	zdev->domain = find_first_zero_bit(zpci_domain, ZPCI_NR_DEVICES);
--	if (zdev->domain == ZPCI_NR_DEVICES) {
-+	if (zdev->domain >= ZPCI_NR_DEVICES) {
- 		spin_unlock(&zpci_domain_lock);
- 		return -ENOSPC;
- 	}
+diff -u -p a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
+--- a/drivers/scsi/hpsa.c
++++ b/drivers/scsi/hpsa.c
+@@ -4703,7 +4703,7 @@ static struct CommandList *cmd_alloc(str
+ 	spin_lock_irqsave(&h->lock, flags);
+ 	do {
+ 		i = find_first_zero_bit(h->cmd_pool_bits, h->nr_cmds);
+-		if (i == h->nr_cmds) {
++		if (i >= h->nr_cmds) {
+ 			spin_unlock_irqrestore(&h->lock, flags);
+ 			return NULL;
+ 		}
 
