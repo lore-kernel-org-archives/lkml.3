@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755566AbaFEABN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 20:01:13 -0400
+	id S1755549AbaFEABL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 20:01:11 -0400
 Received: from mail.linuxfoundation.org ([140.211.169.12]:40415 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753479AbaFDXXD (ORCPT
+	with ESMTP id S1753546AbaFDXXE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:23:03 -0400
+	Wed, 4 Jun 2014 19:23:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Subject: [PATCH 3.14 185/228] iwlwifi: mvm: BT Coex - fix Look Up Table
-Date: Wed,  4 Jun 2014 16:23:34 -0700
-Message-Id: <20140604232353.975010451@linuxfoundation.org>
+        Gavin Shan <gwshan@linux.vnet.ibm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Alex Williamson <alex.williamson@gmail.com>
+Subject: [PATCH 3.14 186/228] PCI: Wrong register used to check pending traffic
+Date: Wed,  4 Jun 2014 16:23:35 -0700
+Message-Id: <20140604232354.004988520@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -28,52 +30,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+From: Gavin Shan <gwshan@linux.vnet.ibm.com>
 
-commit a6bc92803e7f765e02c923cf37c8e280e729642a upstream.
+commit d0b4cc4e32705ff00d90d32da7783c266c702c04 upstream.
 
-A few entries were wrong and this caused throughput issues.
+The incorrect register offset is passed to pci_wait_for_pending(), which is
+caused by commit 157e876ffe ("PCI: Add pci_wait_for_pending() (refactor
+pci_wait_for_pending_transaction())").
 
-Fixes: dac94da8dba3 ("iwlwifi: mvm: new BT Coex API")
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Fixes: 157e876ffe ("PCI: Add pci_wait_for_pending() (refactor pci_wait_for_pending_transaction())
+Signed-off-by: Gavin Shan <gwshan@linux.vnet.ibm.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Acked-by: Alex Williamson <alex.williamson@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/iwlwifi/mvm/bt-coex.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ drivers/pci/pci.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/net/wireless/iwlwifi/mvm/bt-coex.c
-+++ b/drivers/net/wireless/iwlwifi/mvm/bt-coex.c
-@@ -188,7 +188,7 @@ static const __le32 iwl_combined_lookup[
- 		cpu_to_le32(0xcc00aaaa),
- 		cpu_to_le32(0x0000aaaa),
- 		cpu_to_le32(0xc0004000),
--		cpu_to_le32(0x00000000),
-+		cpu_to_le32(0x00004000),
- 		cpu_to_le32(0xf0005000),
- 		cpu_to_le32(0xf0005000),
- 	},
-@@ -211,16 +211,16 @@ static const __le32 iwl_combined_lookup[
- 		/* Tx Tx disabled */
- 		cpu_to_le32(0xaaaaaaaa),
- 		cpu_to_le32(0xaaaaaaaa),
--		cpu_to_le32(0xaaaaaaaa),
-+		cpu_to_le32(0xeeaaaaaa),
- 		cpu_to_le32(0xaaaaaaaa),
- 		cpu_to_le32(0xcc00ff28),
- 		cpu_to_le32(0x0000aaaa),
- 		cpu_to_le32(0xcc00aaaa),
- 		cpu_to_le32(0x0000aaaa),
--		cpu_to_le32(0xC0004000),
--		cpu_to_le32(0xC0004000),
--		cpu_to_le32(0xF0005000),
--		cpu_to_le32(0xF0005000),
-+		cpu_to_le32(0xc0004000),
-+		cpu_to_le32(0xc0004000),
-+		cpu_to_le32(0xf0005000),
-+		cpu_to_le32(0xf0005000),
- 	},
- };
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -3043,7 +3043,8 @@ int pci_wait_for_pending_transaction(str
+ 	if (!pci_is_pcie(dev))
+ 		return 1;
  
+-	return pci_wait_for_pending(dev, PCI_EXP_DEVSTA, PCI_EXP_DEVSTA_TRPND);
++	return pci_wait_for_pending(dev, pci_pcie_cap(dev) + PCI_EXP_DEVSTA,
++				    PCI_EXP_DEVSTA_TRPND);
+ }
+ EXPORT_SYMBOL(pci_wait_for_pending_transaction);
+ 
+@@ -3085,7 +3086,7 @@ static int pci_af_flr(struct pci_dev *de
+ 		return 0;
+ 
+ 	/* Wait for Transaction Pending bit clean */
+-	if (pci_wait_for_pending(dev, PCI_AF_STATUS, PCI_AF_STATUS_TP))
++	if (pci_wait_for_pending(dev, pos + PCI_AF_STATUS, PCI_AF_STATUS_TP))
+ 		goto clear;
+ 
+ 	dev_err(&dev->dev, "transaction is not cleared; "
 
 
