@@ -1,88 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752381AbaFDOhi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 10:37:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20756 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752328AbaFDOhf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 10:37:35 -0400
-From: Jiri Olsa <jolsa@kernel.org>
-To: linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 08/13] perf tools: Allow to close dso fd in case of open failure
-Date: Wed,  4 Jun 2014 16:36:57 +0200
-Message-Id: <1401892622-30848-9-git-send-email-jolsa@kernel.org>
-In-Reply-To: <1401892622-30848-1-git-send-email-jolsa@kernel.org>
-References: <1401892622-30848-1-git-send-email-jolsa@kernel.org>
+	id S1752743AbaFDOjM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 10:39:12 -0400
+Received: from skprod3.natinst.com ([130.164.80.24]:32933 "EHLO ni.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752696AbaFDOjJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 10:39:09 -0400
+From: "Brad Mouring" <bmouring@ni.com>
+Date: Wed, 4 Jun 2014 09:38:30 -0500
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Brad Mouring <bmouring@ni.com>, linux-rt-users@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Clark Williams <williams@redhat.com>
+Subject: Re: [PATCH 1/1] rtmutex: Handle when top lock owner changes
+Message-ID: <20140604143830.GA3393@linuxgetsreal>
+References: <1400855410-14773-1-git-send-email-brad.mouring@ni.com>
+ <1400855410-14773-2-git-send-email-brad.mouring@ni.com>
+ <20140603210609.62de6451@gandalf.local.home>
+ <20140604130525.GA1621@linuxgetsreal>
+ <20140604101612.0d47b399@gandalf.local.home>
+MIME-Version: 1.0
+In-Reply-To: <20140604101612.0d47b399@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-MIMETrack: Itemize by SMTP Server on US-AUS-MGWOut2/AUS/H/NIC(Release 8.5.3FP5|July 31, 2013) at
+ 06/04/2014 09:38:31 AM,
+	Serialize by Router on US-AUS-MGWOut2/AUS/H/NIC(Release 8.5.3FP5|July 31, 2013) at
+ 06/04/2014 09:38:31 AM,
+	Serialize complete at 06/04/2014 09:38:31 AM
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
+ definitions=2014-06-04_03:2014-06-04,2014-06-04,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding do_open function that tries to close opened
-dso objects in case we fail to open the dso due to
-to crossing the allowed RLIMIT_NOFILE limit.
+On Wed, Jun 04, 2014 at 10:16:12AM -0400, Steven Rostedt wrote:
+> On Wed, 4 Jun 2014 08:05:25 -0500
+> "Brad Mouring" <bmouring@ni.com> wrote:
+> 
+>  >          A->L2
+> > 
+> > This is a slight variation on what I was seeing. To use the nomenclature
+> > that you proposed at the start, rewinding to the point
+> > 
+> >    A->L2->B->L3->C->L4->D
+> > 
+> > Let's assume things continue to unfold as you explain. Task is D,
+> > top_waiter is C. A is scheduled out and the chain shuffles.
+> > 
+> >        A->L2->B
+> > C->L4->D->'
+> 
+> But isn't that a lock ordering problem there?
+> 
+> If B can block on L3 owned by C, I see the following:
+> 
+>   B->L3->C->L4->D->L2->B
+> 
+> Deadlock!
+Yes, it could be. But currently no one owns L3. B is currently not
+blocked. Under these circumstances, there is no deadlock. Also, I
+somewhat arbitrarily picked L4, it could be Lfoo that C blocks on
+since the process is
+...
+waiter = D->pi_blocked_on
 
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jean Pihet <jean.pihet@linaro.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
----
- tools/perf/util/dso.c | 23 ++++++++++++++++++++++-
- 1 file changed, 22 insertions(+), 1 deletion(-)
+// waiter is real_waiter D->L2
 
-diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
-index db63438..c30752c 100644
---- a/tools/perf/util/dso.c
-+++ b/tools/perf/util/dso.c
-@@ -159,6 +159,27 @@ static void dso__list_del(struct dso *dso)
- 	dso__data_open_cnt--;
- }
- 
-+static void close_first_dso(void);
-+
-+static int do_open(char *name)
-+{
-+	int fd;
-+
-+	do {
-+		fd = open(name, O_RDONLY);
-+		if (fd >= 0)
-+			return fd;
-+
-+		pr_debug("dso open failed, mmap: %s\n", strerror(errno));
-+		if (!dso__data_open_cnt || errno != EMFILE)
-+			break;
-+
-+		close_first_dso();
-+	} while (1);
-+
-+	return -1;
-+}
-+
- static int __open_dso(struct dso *dso, struct machine *machine)
- {
- 	int fd;
-@@ -177,7 +198,7 @@ static int __open_dso(struct dso *dso, struct machine *machine)
- 		return -EINVAL;
- 	}
- 
--	fd = open(name, O_RDONLY);
-+	fd = do_open(name);
- 	free(name);
- 	return fd;
- }
--- 
-1.8.3.1
+// orig_waiter still there, orig_lock still has an owner
 
+// top_waiter was pointing to C->L4, now points to C->Lfoo
+// D does have top_waiters, and, as noted above, it aliased
+// to encompass a different waiter scenario
+
+> 
+> In my scenario I was very careful to point out that the lock ordering
+> was: L1->L2->L3->L4
+> 
+> But you show that we can have both:
+> 
+>    L2-> ... ->L4
+> 
+>     and
+> 
+>    L4-> ... ->L2
+> 
+> Which is a reverse of lock ordering and a possible deadlock can occur.
+
+So the numbering/ordering of the locks is really somewhat arbitrary.
+Here we *can* have L2-> ... ->L4 (if B decides to block on L2, it
+could just as easily block on L8), and we absolutely have
+L4-> ... ->L2. A deadlock *could* occur, but all of the traces that
+I dug through, no actual deadlocks occurred.
+> 
+> -- Steve
+> 
+> 
+> > 
+> > So, we now have D blocking on L2 and L4 has waiters, C again. Also,
+> > since the codepath to have C block on L4 again is the same as the
+> > codepath from when it blocked on it in the first place, the location
+> > is the same since the stack (for what we care about) is the same.
+> > 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-rt-users" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
