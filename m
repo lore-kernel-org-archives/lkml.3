@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753017AbaFDXWP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:22:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40011 "EHLO
+	id S1756882AbaFEA3i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 20:29:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40042 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752954AbaFDXWL (ORCPT
+	with ESMTP id S1753001AbaFDXWP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:22:11 -0400
+	Wed, 4 Jun 2014 19:22:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christoph Hellwig <hch@lst.de>, Ben Greear <greearb@candelatech.com>,
-        Chuck Lever <chuck.lever@oracle.com>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH 3.14 099/228] posix_acl: handle NULL ACL in posix_acl_equiv_mode
-Date: Wed,  4 Jun 2014 16:22:08 -0700
-Message-Id: <20140604232351.227210655@linuxfoundation.org>
+        Fabian Frederick <fabf@skynet.be>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.14 100/228] fs/affs/super.c: bugfix / double free
+Date: Wed,  4 Jun 2014 16:22:09 -0700
+Message-Id: <20140604232351.257138624@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -30,44 +31,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christoph Hellwig <hch@lst.de>
+From: Fabian Frederick <fabf@skynet.be>
 
-commit 50c6e282bdf5e8dabf8d7cf7b162545a55645fd9 upstream.
+commit d353efd02357a74753cd45f367a2d3d357fd6904 upstream.
 
-Various filesystems don't bother checking for a NULL ACL in
-posix_acl_equiv_mode, and thus can dereference a NULL pointer when it
-gets passed one. This usually happens from the NFS server, as the ACL tools
-never pass a NULL ACL, but instead of one representing the mode bits.
+Commit 842a859db26b ("affs: use ->kill_sb() to simplify ->put_super()
+and failure exits of ->mount()") adds .kill_sb which frees sbi but
+doesn't remove sbi free in case of parse_options error causing double
+free+random crash.
 
-Instead of adding boilerplat to all filesystems put this check into one place,
-which will allow us to remove the check from other filesystems as well later
-on.
-
-Signed-off-by: Christoph Hellwig <hch@lst.de>
-Reported-by: Ben Greear <greearb@candelatech.com>
-Reported-by: Marco Munderloh <munderl@tnt.uni-hannover.de>,
-Cc: Chuck Lever <chuck.lever@oracle.com>
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/posix_acl.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ fs/affs/super.c |    2 --
+ 1 file changed, 2 deletions(-)
 
---- a/fs/posix_acl.c
-+++ b/fs/posix_acl.c
-@@ -246,6 +246,12 @@ posix_acl_equiv_mode(const struct posix_
- 	umode_t mode = 0;
- 	int not_equiv = 0;
- 
-+	/*
-+	 * A null ACL can always be presented as mode bits.
-+	 */
-+	if (!acl)
-+		return 0;
-+
- 	FOREACH_ACL_ENTRY(pa, acl, pe) {
- 		switch (pa->e_tag) {
- 			case ACL_USER_OBJ:
+--- a/fs/affs/super.c
++++ b/fs/affs/super.c
+@@ -336,8 +336,6 @@ static int affs_fill_super(struct super_
+ 				&blocksize,&sbi->s_prefix,
+ 				sbi->s_volume, &mount_flags)) {
+ 		printk(KERN_ERR "AFFS: Error parsing options\n");
+-		kfree(sbi->s_prefix);
+-		kfree(sbi);
+ 		return -EINVAL;
+ 	}
+ 	/* N.B. after this point s_prefix must be released */
 
 
