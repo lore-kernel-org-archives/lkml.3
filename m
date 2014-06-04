@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932132AbaFDXwf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:52:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40555 "EHLO
+	id S1755277AbaFDXwx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 19:52:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40552 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753730AbaFDXXW (ORCPT
+	with ESMTP id S1753724AbaFDXXV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:23:22 -0400
+	Wed, 4 Jun 2014 19:23:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Eliad Peller <eliadx.peller@intel.com>,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Subject: [PATCH 3.14 225/228] iwlwifi: add rs_rate_scale_clear_tbl_windows helper function
-Date: Wed,  4 Jun 2014 16:24:14 -0700
-Message-Id: <20140604232355.271692360@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Wenkai Du <wenkai.du@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Wolfram Sang <wsa@the-dreams.de>
+Subject: [PATCH 3.14 208/228] i2c: designware: Mask all interrupts during i2c controller enable
+Date: Wed,  4 Jun 2014 16:23:57 -0700
+Message-Id: <20140604232354.734412131@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -29,96 +30,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eliad Peller <eliad@wizery.com>
+From: "Du, Wenkai" <wenkai.du@intel.com>
 
-commit 3ca71f603bb1a0f55e1ba24618ba45617bc36f70 upstream.
+commit 47bb27e78867997040a228328f2a631c3c7f2c82 upstream.
 
-instead of duplicating the same loop multiple times,
-use a new function for it.
+There have been "i2c_designware 80860F41:00: controller timed out" errors
+on a number of Baytrail platforms. The issue is caused by incorrect value in
+Interrupt Mask Register (DW_IC_INTR_MASK)  when i2c core is being enabled.
+This causes call to __i2c_dw_enable() to immediately start the transfer which
+leads to timeout. There are 3 failure modes observed:
 
-this will be later used also for clearing other
-windows in the table.
+1. Failure in S0 to S3 resume path
 
-Signed-off-by: Eliad Peller <eliadx.peller@intel.com>
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+The default value after reset for DW_IC_INTR_MASK is 0x8ff. When we start
+the first transaction after resuming from system sleep, TX_EMPTY interrupt
+is already unmasked because of the hardware default.
+
+2. Failure in normal operational path
+
+This failure happens rarely and is hard to reproduce. Debug trace showed that
+DW_IC_INTR_MASK had value of 0x254 when failure occurred, which meant
+TX_EMPTY was unmasked.
+
+3. Failure in S3 to S0 suspend path
+
+This failure also happens rarely and is hard to reproduce. Adding debug trace
+that read DW_IC_INTR_MASK made this failure not reproducible. But from ISR
+call trace we could conclude TX_EMPTY was unmasked when problem occurred.
+
+The patch masks all interrupts before the controller is enabled to resolve the
+faulty DW_IC_INTR_MASK conditions.
+
+Signed-off-by: Wenkai Du <wenkai.du@intel.com>
+Acked-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+[wsa: improved the comment and removed typo in commit msg]
+Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/wireless/iwlwifi/mvm/rs.c |   23 ++++++++++++-----------
- 1 file changed, 12 insertions(+), 11 deletions(-)
 
---- a/drivers/net/wireless/iwlwifi/mvm/rs.c
-+++ b/drivers/net/wireless/iwlwifi/mvm/rs.c
-@@ -519,6 +519,14 @@ static void rs_rate_scale_clear_window(s
- 	window->average_tpt = IWL_INVALID_VALUE;
- }
+---
+ drivers/i2c/busses/i2c-designware-core.c |    3 +++
+ 1 file changed, 3 insertions(+)
+
+--- a/drivers/i2c/busses/i2c-designware-core.c
++++ b/drivers/i2c/busses/i2c-designware-core.c
+@@ -417,6 +417,9 @@ static void i2c_dw_xfer_init(struct dw_i
+ 	 */
+ 	dw_writel(dev, msgs[dev->msg_write_idx].addr | ic_tar, DW_IC_TAR);
  
-+static void rs_rate_scale_clear_tbl_windows(struct iwl_scale_tbl_info *tbl)
-+{
-+	int i;
++	/* enforce disabled interrupts (due to HW issues) */
++	i2c_dw_disable_int(dev);
 +
-+	for (i = 0; i < IWL_RATE_COUNT; i++)
-+		rs_rate_scale_clear_window(&tbl->win[i]);
-+}
-+
- static inline u8 rs_is_valid_ant(u8 valid_antenna, u8 ant_type)
- {
- 	return (ant_type & valid_antenna) == ant_type;
-@@ -1397,7 +1405,6 @@ static u32 rs_bw_from_sta_bw(struct ieee
- static void rs_stay_in_table(struct iwl_lq_sta *lq_sta, bool force_search)
- {
- 	struct iwl_scale_tbl_info *tbl;
--	int i;
- 	int active_tbl;
- 	int flush_interval_passed = 0;
- 	struct iwl_mvm *mvm;
-@@ -1458,9 +1465,7 @@ static void rs_stay_in_table(struct iwl_
+ 	/* Enable the adapter */
+ 	__i2c_dw_enable(dev, true);
  
- 				IWL_DEBUG_RATE(mvm,
- 					       "LQ: stay in table clear win\n");
--				for (i = 0; i < IWL_RATE_COUNT; i++)
--					rs_rate_scale_clear_window(
--						&(tbl->win[i]));
-+				rs_rate_scale_clear_tbl_windows(tbl);
- 			}
- 		}
- 
-@@ -1469,8 +1474,7 @@ static void rs_stay_in_table(struct iwl_
- 		 * "search" table). */
- 		if (lq_sta->rs_state == RS_STATE_SEARCH_CYCLE_STARTED) {
- 			IWL_DEBUG_RATE(mvm, "Clearing up window stats\n");
--			for (i = 0; i < IWL_RATE_COUNT; i++)
--				rs_rate_scale_clear_window(&(tbl->win[i]));
-+			rs_rate_scale_clear_tbl_windows(tbl);
- 		}
- 	}
- }
-@@ -1751,7 +1755,6 @@ static void rs_rate_scale_perform(struct
- 	int low = IWL_RATE_INVALID;
- 	int high = IWL_RATE_INVALID;
- 	int index;
--	int i;
- 	struct iwl_rate_scale_data *window = NULL;
- 	int current_tpt = IWL_INVALID_VALUE;
- 	int low_tpt = IWL_INVALID_VALUE;
-@@ -2036,8 +2039,7 @@ lq_update:
- 		if (lq_sta->search_better_tbl) {
- 			/* Access the "search" table, clear its history. */
- 			tbl = &(lq_sta->lq_info[(1 - lq_sta->active_tbl)]);
--			for (i = 0; i < IWL_RATE_COUNT; i++)
--				rs_rate_scale_clear_window(&(tbl->win[i]));
-+			rs_rate_scale_clear_tbl_windows(tbl);
- 
- 			/* Use new "search" start rate */
- 			index = tbl->rate.index;
-@@ -2301,8 +2303,7 @@ void iwl_mvm_rs_rate_init(struct iwl_mvm
- 	lq_sta->lq.sta_id = sta_priv->sta_id;
- 
- 	for (j = 0; j < LQ_SIZE; j++)
--		for (i = 0; i < IWL_RATE_COUNT; i++)
--			rs_rate_scale_clear_window(&lq_sta->lq_info[j].win[i]);
-+		rs_rate_scale_clear_tbl_windows(&lq_sta->lq_info[j]);
- 
- 	lq_sta->flush_timer = 0;
- 	lq_sta->last_tx = jiffies;
 
 
