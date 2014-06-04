@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753978AbaFDXXw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:23:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40769 "EHLO
+	id S1754570AbaFDXk5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 19:40:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40789 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753897AbaFDXXt (ORCPT
+	with ESMTP id S1753960AbaFDXXv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:23:49 -0400
+	Wed, 4 Jun 2014 19:23:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christoph Hellwig <hch@lst.de>, Ben Greear <greearb@candelatech.com>,
-        Chuck Lever <chuck.lever@oracle.com>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH 3.10 046/103] posix_acl: handle NULL ACL in posix_acl_equiv_mode
-Date: Wed,  4 Jun 2014 16:25:09 -0700
-Message-Id: <20140604232548.334270966@linuxfoundation.org>
+        Ben Hutchings <ben@decadent.org.uk>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.10 050/103] rtl8192cu: Fix unbalanced irq enable in error path of rtl92cu_hw_init()
+Date: Wed,  4 Jun 2014 16:25:13 -0700
+Message-Id: <20140604232548.459932457@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232546.704156131@linuxfoundation.org>
 References: <20140604232546.704156131@linuxfoundation.org>
@@ -30,44 +29,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christoph Hellwig <hch@lst.de>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit 50c6e282bdf5e8dabf8d7cf7b162545a55645fd9 upstream.
+commit 3234f5b06fc3094176a86772cc64baf3decc98fc upstream.
 
-Various filesystems don't bother checking for a NULL ACL in
-posix_acl_equiv_mode, and thus can dereference a NULL pointer when it
-gets passed one. This usually happens from the NFS server, as the ACL tools
-never pass a NULL ACL, but instead of one representing the mode bits.
-
-Instead of adding boilerplat to all filesystems put this check into one place,
-which will allow us to remove the check from other filesystems as well later
-on.
-
-Signed-off-by: Christoph Hellwig <hch@lst.de>
-Reported-by: Ben Greear <greearb@candelatech.com>
-Reported-by: Marco Munderloh <munderl@tnt.uni-hannover.de>,
-Cc: Chuck Lever <chuck.lever@oracle.com>
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Fixes: a53268be0cb9 ('rtlwifi: rtl8192cu: Fix too long disable of IRQs')
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/posix_acl.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/net/wireless/rtlwifi/rtl8192cu/hw.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/posix_acl.c
-+++ b/fs/posix_acl.c
-@@ -158,6 +158,12 @@ posix_acl_equiv_mode(const struct posix_
- 	umode_t mode = 0;
- 	int not_equiv = 0;
- 
-+	/*
-+	 * A null ACL can always be presented as mode bits.
-+	 */
-+	if (!acl)
-+		return 0;
-+
- 	FOREACH_ACL_ENTRY(pa, acl, pe) {
- 		switch (pa->e_tag) {
- 			case ACL_USER_OBJ:
+--- a/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c
+@@ -1001,7 +1001,7 @@ int rtl92cu_hw_init(struct ieee80211_hw
+ 	err = _rtl92cu_init_mac(hw);
+ 	if (err) {
+ 		RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG, "init mac failed!\n");
+-		return err;
++		goto exit;
+ 	}
+ 	err = rtl92c_download_fw(hw);
+ 	if (err) {
 
 
