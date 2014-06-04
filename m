@@ -1,58 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752425AbaFDWBa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 18:01:30 -0400
-Received: from smtprelay0121.hostedemail.com ([216.40.44.121]:42792 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751818AbaFDWB3 (ORCPT
+	id S1751910AbaFDWCm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 18:02:42 -0400
+Received: from mail-ig0-f169.google.com ([209.85.213.169]:33584 "EHLO
+	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751122AbaFDWCl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 18:01:29 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3873:3874:4321:5007:6248:7652:8660:8957:10004:10400:10848:11026:11232:11658:11914:12043:12438:12517:12519:12740:13069:13148:13230:13255:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: deer06_29c9a23778551
-X-Filterd-Recvd-Size: 1922
-Message-ID: <1401919283.26329.7.camel@joe-AO725>
-Subject: Re: [PATCH] scsi: mpt2sas: mpt2sas_base.c:  Cleaning up missing
- null-terminate after strncpy call
-From: Joe Perches <joe@perches.com>
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Cc: Nagalakshmi Nandigama <Nagalakshmi.Nandigama@lsi.com>,
-        Sreekanth Reddy <Sreekanth.Reddy@lsi.com>, support@lsi.com,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        DL-MPTFusionLinux@lsi.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 04 Jun 2014 15:01:23 -0700
-In-Reply-To: <1401917775-3222-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-References: <1401917775-3222-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 4 Jun 2014 18:02:41 -0400
+Date: Wed, 4 Jun 2014 15:02:38 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Mel Gorman <mgorman@suse.de>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Vlastimil Babka <vbabka@suse.cz>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Hugh Dickins <hughd@google.com>, Greg Thelen <gthelen@google.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Minchan Kim <minchan@kernel.org>,
+        Michal Nazarewicz <mina86@mina86.com>, Rik van Riel <riel@redhat.com>
+Subject: Re: [patch -mm 3/3] mm, compaction: avoid compacting memory for thp
+ if pageblock cannot become free
+In-Reply-To: <20140604110411.GK10819@suse.de>
+Message-ID: <alpine.DEB.2.02.1406041454070.13330@chino.kir.corp.google.com>
+References: <1399904111-23520-1-git-send-email-vbabka@suse.cz> <1400233673-11477-1-git-send-email-vbabka@suse.cz> <alpine.DEB.2.02.1405211954410.13243@chino.kir.corp.google.com> <537DB0E5.40602@suse.cz> <alpine.DEB.2.02.1405220127320.13630@chino.kir.corp.google.com>
+ <537DE799.3040400@suse.cz> <alpine.DEB.2.02.1406031728390.5312@chino.kir.corp.google.com> <alpine.DEB.2.02.1406031729410.5312@chino.kir.corp.google.com> <20140604110411.GK10819@suse.de>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-06-04 at 23:36 +0200, Rickard Strandqvist wrote:
-> Added a guaranteed null-terminate after call to strncpy.
+On Wed, 4 Jun 2014, Mel Gorman wrote:
 
-Next time you submit a patch series like this
-can you please use a cover letter?
+> > It's pointless to migrate pages within a pageblock if the entire pageblock will 
+> > not become free for a thp allocation.
+> > 
+> > If we encounter a page that cannot be migrated and a direct compactor other than 
+> > khugepaged is trying to allocate a hugepage for thp, then skip the entire 
+> > pageblock and avoid migrating pages needlessly.
+> > 
+> 
+> It's not completely pointless. A movable page may be placed within an
+> unmovable pageblock due to insufficient free memory or a pageblock changed
+> type. When this happens then partial migration moves the movable page
+> of out of the unmovable block. Future unmovable allocations can then be
+> placed with other unmovable pages instead of falling back to other blocks
+> and degrading fragmentation over time.
+> 
 
-That way I can reply to the cover letter with
-a comment about the series instead of multiple
-replies to various patches.
+Sorry, this should say that it's pointless when doing a HPAGE_PMD_ORDER 
+allocation and we're calling direct compaction for thp.  While the result 
+may be that there will be less external fragmentation in the longrun, I 
+don't think it's appropriate to do this at fault.
 
-I think all of these should be using strlcpy not
-strncpy.
+We keep a running tracker of how long it takes to fault 64MB of anonymous 
+memory with thp enabled in one of our production cells.  For an instance 
+that took 1.58225s in fault (not including the mmap() time or munmap() 
+time), here are the compaction stats:
 
-> diff --git a/drivers/scsi/mpt2sas/mpt2sas_base.c b/drivers/scsi/mpt2sas/mpt2sas_base.c
-[]
-> @@ -2097,7 +2097,8 @@ _base_display_ioc_capabilities(struct MPT2SAS_ADAPTER *ioc)
->  	u32 bios_version;
->  
->  	bios_version = le32_to_cpu(ioc->bios_pg3.BiosVersion);
-> -	strncpy(desc, ioc->manu_pg0.ChipName, 16);
-> +	strncpy(desc, ioc->manu_pg0.ChipName, sizeof(desc));
-> +	desc[sizeof(desc) - 1] = '\0';
+Before:
+compact_blocks_moved 508932592
+compact_pages_moved 93068626
+compact_pagemigrate_failed 199708939
+compact_stall 7014989
+compact_fail 6977371
+compact_success 37617
 
+After:
+compact_blocks_moved 508938635
+compact_pages_moved 93068667
+compact_pagemigrate_failed 199712677
+compact_stall 7015029
+compact_fail 6977411
+compact_success 37617
 
+Not one of the compaction stalls resulted in a thp page being allocated, 
+probably because the number of pages actually migrated is very low.  The 
+delta here is 6043 pageblocks scanned over 40 compaction calls, 41 pages 
+_total_ being successfully migrated and 3738 pages total being isolated 
+but unsuccessfully migrated.
+
+Those statistics are horrible.  We scan approximately 151 pageblocks per 
+compaction stall needlessly in this case and, on average, migrate a single 
+page but isolate and fail to migrate 93 pages.
+
+I believe my patch would reduce this pointless migration when an entire 
+pageblock will not be freed in the thp fault path.  I do need to factor in 
+Vlastimil's feedback concerning the PageBuddy order, but I think this is 
+generally the right approach for thp fault.
+
+Additionally, I need to figure out why those 3738 pages are isolated but 
+fail to migrate and it doesn't seem to be because of any race.  Perhaps 
+there will be a chance to do something similar to what I did in commit 
+119d6d59dcc0 ("mm, compaction: avoid isolating pinned pages") to avoid 
+even considering certain checks, but I'll have to identify the source(s) 
+of these failures first.
