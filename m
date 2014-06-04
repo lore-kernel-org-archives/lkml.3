@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756556AbaFEAWy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 20:22:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40157 "EHLO
+	id S1756587AbaFEAXd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 20:23:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40145 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753150AbaFDXW2 (ORCPT
+	with ESMTP id S1753135AbaFDXW1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:22:28 -0400
+	Wed, 4 Jun 2014 19:22:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Emil Goode <emilgoode@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.14 123/228] brcmsmac: fix deadlock on missing firmware
-Date: Wed,  4 Jun 2014 16:22:32 -0700
-Message-Id: <20140604232351.995775891@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Pawel Moll <pawel.moll@arm.com>
+Subject: [PATCH 3.14 128/228] clk: vexpress: NULL dereference on error path
+Date: Wed,  4 Jun 2014 16:22:37 -0700
+Message-Id: <20140604232352.141066508@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -29,83 +29,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Emil Goode <emilgoode@gmail.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 8fc1e8c240aab968db658b2d8d079b4391207a36 upstream.
+commit 6b4ed8b00e93bd31f24a25f59ed8d1b808d0cc00 upstream.
 
-When brcm80211 firmware is not installed networking hangs.
-A deadlock happens because we call ieee80211_unregister_hw()
-from the .start callback of struct ieee80211_ops. When .start
-is called we are under rtnl lock and ieee80211_unregister_hw()
-tries to take it again.
+If the allocation fails then we dereference the NULL in the error path.
+Just return directly.
 
-Function call stack:
-
-dev_change_flags()
-	__dev_change_flags()
-		__dev_open()
-			ASSERT_RTNL() <-- Assert rtnl lock
-			ops->ndo_open()
-
-.ndo_open = ieee80211_open,
-
-ieee80211_open()
-	ieee80211_do_open()
-		drv_start()
-			local->ops->start()
-
-.start = brcms_ops_start,
-
-brcms_ops_start()
-	brcms_remove()
-		ieee80211_unregister_hw()
-			rtnl_lock() <-- Here we deadlock
-
-Introduced by:
-commit 25b5632fb35ca61b8ae3eee235edcdc2883f7a5e
-("brcmsmac: request firmware in .start() callback")
-
-This patch fixes the bug by removing the call to brcms_remove()
-and moves the brcms_request_fw() call to the top of the .start
-callback to not initiate anything unless firmware is installed.
-
-Signed-off-by: Emil Goode <emilgoode@gmail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Fixes: ed27ff1db869 ('clk: Versatile Express clock generators ("osc") driver')
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Pawel Moll <pawel.moll@arm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/brcm80211/brcmsmac/mac80211_if.c |   14 ++++++--------
- 1 file changed, 6 insertions(+), 8 deletions(-)
+ drivers/clk/versatile/clk-vexpress-osc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/wireless/brcm80211/brcmsmac/mac80211_if.c
-+++ b/drivers/net/wireless/brcm80211/brcmsmac/mac80211_if.c
-@@ -426,6 +426,12 @@ static int brcms_ops_start(struct ieee80
- 	bool blocked;
- 	int err;
+--- a/drivers/clk/versatile/clk-vexpress-osc.c
++++ b/drivers/clk/versatile/clk-vexpress-osc.c
+@@ -102,7 +102,7 @@ void __init vexpress_osc_of_setup(struct
  
-+	if (!wl->ucode.bcm43xx_bomminor) {
-+		err = brcms_request_fw(wl, wl->wlc->hw->d11core);
-+		if (err)
-+			return -ENOENT;
-+	}
-+
- 	ieee80211_wake_queues(hw);
- 	spin_lock_bh(&wl->lock);
- 	blocked = brcms_rfkill_set_hw_state(wl);
-@@ -433,14 +439,6 @@ static int brcms_ops_start(struct ieee80
- 	if (!blocked)
- 		wiphy_rfkill_stop_polling(wl->pub->ieee_hw->wiphy);
+ 	osc = kzalloc(sizeof(*osc), GFP_KERNEL);
+ 	if (!osc)
+-		goto error;
++		return;
  
--	if (!wl->ucode.bcm43xx_bomminor) {
--		err = brcms_request_fw(wl, wl->wlc->hw->d11core);
--		if (err) {
--			brcms_remove(wl->wlc->hw->d11core);
--			return -ENOENT;
--		}
--	}
--
- 	spin_lock_bh(&wl->lock);
- 	/* avoid acknowledging frames before a non-monitor device is added */
- 	wl->mute_tx = true;
+ 	osc->func = vexpress_config_func_get_by_node(node);
+ 	if (!osc->func) {
 
 
