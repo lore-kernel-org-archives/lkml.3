@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754813AbaFDXeq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:34:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40860 "EHLO
+	id S1754800AbaFDXeo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 19:34:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40865 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754066AbaFDXYC (ORCPT
+	with ESMTP id S1754068AbaFDXYC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 4 Jun 2014 19:24:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Emil Goode <emilgoode@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.10 054/103] brcmsmac: fix deadlock on missing firmware
-Date: Wed,  4 Jun 2014 16:25:17 -0700
-Message-Id: <20140604232548.599184005@linuxfoundation.org>
+        Geert Uytterhoeven <geert+renesas@glider.be>
+Subject: [PATCH 3.10 055/103] Documentation: Update stable address in Chinese and Japanese translations
+Date: Wed,  4 Jun 2014 16:25:18 -0700
+Message-Id: <20140604232548.628355874@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232546.704156131@linuxfoundation.org>
 References: <20140604232546.704156131@linuxfoundation.org>
@@ -29,83 +28,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Emil Goode <emilgoode@gmail.com>
+From: Geert Uytterhoeven <geert+renesas@glider.be>
 
-commit 8fc1e8c240aab968db658b2d8d079b4391207a36 upstream.
+commit 98b0f811aade1b7c6e7806c86aa0befd5919d65f upstream.
 
-When brcm80211 firmware is not installed networking hangs.
-A deadlock happens because we call ieee80211_unregister_hw()
-from the .start callback of struct ieee80211_ops. When .start
-is called we are under rtnl lock and ieee80211_unregister_hw()
-tries to take it again.
+The English and Korean translations were updated, the Chinese and Japanese
+weren't.
 
-Function call stack:
-
-dev_change_flags()
-	__dev_change_flags()
-		__dev_open()
-			ASSERT_RTNL() <-- Assert rtnl lock
-			ops->ndo_open()
-
-.ndo_open = ieee80211_open,
-
-ieee80211_open()
-	ieee80211_do_open()
-		drv_start()
-			local->ops->start()
-
-.start = brcms_ops_start,
-
-brcms_ops_start()
-	brcms_remove()
-		ieee80211_unregister_hw()
-			rtnl_lock() <-- Here we deadlock
-
-Introduced by:
-commit 25b5632fb35ca61b8ae3eee235edcdc2883f7a5e
-("brcmsmac: request firmware in .start() callback")
-
-This patch fixes the bug by removing the call to brcms_remove()
-and moves the brcms_request_fw() call to the top of the .start
-callback to not initiate anything unless firmware is installed.
-
-Signed-off-by: Emil Goode <emilgoode@gmail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/brcm80211/brcmsmac/mac80211_if.c |   14 ++++++--------
- 1 file changed, 6 insertions(+), 8 deletions(-)
+ Documentation/ja_JP/HOWTO                   |    2 +-
+ Documentation/ja_JP/stable_kernel_rules.txt |    6 +++---
+ Documentation/zh_CN/HOWTO                   |    2 +-
+ Documentation/zh_CN/stable_kernel_rules.txt |    2 +-
+ 4 files changed, 6 insertions(+), 6 deletions(-)
 
---- a/drivers/net/wireless/brcm80211/brcmsmac/mac80211_if.c
-+++ b/drivers/net/wireless/brcm80211/brcmsmac/mac80211_if.c
-@@ -426,6 +426,12 @@ static int brcms_ops_start(struct ieee80
- 	bool blocked;
- 	int err;
+--- a/Documentation/ja_JP/HOWTO
++++ b/Documentation/ja_JP/HOWTO
+@@ -315,7 +315,7 @@ Andrew Morton が Linux-kernel メーリ
+ もし、2.6.x.y カーネルが存在しない場合には、番号が一番大きい 2.6.x が
+ 最新の安定版カーネルです。
  
-+	if (!wl->ucode.bcm43xx_bomminor) {
-+		err = brcms_request_fw(wl, wl->wlc->hw->d11core);
-+		if (err)
-+			return -ENOENT;
-+	}
-+
- 	ieee80211_wake_queues(hw);
- 	spin_lock_bh(&wl->lock);
- 	blocked = brcms_rfkill_set_hw_state(wl);
-@@ -433,14 +439,6 @@ static int brcms_ops_start(struct ieee80
- 	if (!blocked)
- 		wiphy_rfkill_stop_polling(wl->pub->ieee_hw->wiphy);
+-2.6.x.y は "stable" チーム <stable@kernel.org> でメンテされており、必
++2.6.x.y は "stable" チーム <stable@vger.kernel.org> でメンテされており、必
+ 要に応じてリリースされます。通常のリリース期間は 2週間毎ですが、差し迫っ
+ た問題がなければもう少し長くなることもあります。セキュリティ関連の問題
+ の場合はこれに対してだいたいの場合、すぐにリリースがされます。
+--- a/Documentation/ja_JP/stable_kernel_rules.txt
++++ b/Documentation/ja_JP/stable_kernel_rules.txt
+@@ -50,16 +50,16 @@ linux-2.6.29/Documentation/stable_kernel
  
--	if (!wl->ucode.bcm43xx_bomminor) {
--		err = brcms_request_fw(wl, wl->wlc->hw->d11core);
--		if (err) {
--			brcms_remove(wl->wlc->hw->d11core);
--			return -ENOENT;
--		}
--	}
--
- 	spin_lock_bh(&wl->lock);
- 	/* avoid acknowledging frames before a non-monitor device is added */
- 	wl->mute_tx = true;
+ -stable ツリーにパッチを送付する手続き-
+ 
+- - 上記の規則に従っているかを確認した後に、stable@kernel.org にパッチ
++ - 上記の規則に従っているかを確認した後に、stable@vger.kernel.org にパッチ
+    を送る。
+  - 送信者はパッチがキューに受け付けられた際には ACK を、却下された場合
+    には NAK を受け取る。この反応は開発者たちのスケジュールによって、数
+    日かかる場合がある。
+  - もし受け取られたら、パッチは他の開発者たちと関連するサブシステムの
+    メンテナーによるレビューのために -stable キューに追加される。
+- - パッチに stable@kernel.org のアドレスが付加されているときには、それ
++ - パッチに stable@vger.kernel.org のアドレスが付加されているときには、それ
+    が Linus のツリーに入る時に自動的に stable チームに email される。
+- - セキュリティパッチはこのエイリアス (stable@kernel.org) に送られるべ
++ - セキュリティパッチはこのエイリアス (stable@vger.kernel.org) に送られるべ
+    きではなく、代わりに security@kernel.org のアドレスに送られる。
+ 
+ レビューサイクル-
+--- a/Documentation/zh_CN/HOWTO
++++ b/Documentation/zh_CN/HOWTO
+@@ -237,7 +237,7 @@ kernel.org网站的pub/linux/kernel/v2.6
+ 如果没有2.6.x.y版本内核存在，那么最新的2.6.x版本内核就相当于是当前的稳定
+ 版内核。
+ 
+-2.6.x.y版本由“稳定版”小组（邮件地址<stable@kernel.org>）维护，一般隔周发
++2.6.x.y版本由“稳定版”小组（邮件地址<stable@vger.kernel.org>）维护，一般隔周发
+ 布新版本。
+ 
+ 内核源码中的Documentation/stable_kernel_rules.txt文件具体描述了可被稳定
+--- a/Documentation/zh_CN/stable_kernel_rules.txt
++++ b/Documentation/zh_CN/stable_kernel_rules.txt
+@@ -42,7 +42,7 @@ Documentation/stable_kernel_rules.txt �
+ 
+ 向稳定版代码树提交补丁的过程：
+ 
+-  - 在确认了补丁符合以上的规则后，将补丁发送到stable@kernel.org。
++  - 在确认了补丁符合以上的规则后，将补丁发送到stable@vger.kernel.org。
+   - 如果补丁被接受到队列里，发送者会收到一个ACK回复，如果没有被接受，收
+     到的是NAK回复。回复需要几天的时间，这取决于开发者的时间安排。
+   - 被接受的补丁会被加到稳定版本队列里，等待其他开发者的审查。
 
 
