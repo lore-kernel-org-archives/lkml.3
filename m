@@ -1,115 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751948AbaFDStE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 14:49:04 -0400
-Received: from us01smtprelay-2.synopsys.com ([198.182.44.111]:46854 "EHLO
-	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751290AbaFDStC convert rfc822-to-8bit (ORCPT
+	id S1751960AbaFDStx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 14:49:53 -0400
+Received: from mail-ve0-f180.google.com ([209.85.128.180]:48783 "EHLO
+	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751209AbaFDStv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 14:49:02 -0400
-From: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
-To: Alan Stern <stern@rowland.harvard.edu>,
-        "Yang,Wei" <Wei.Yang@windriver.com>
-CC: Peter Chen <Peter.Chen@freescale.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Andrzej Pietrasiewicz <andrzej.p@samsung.com>,
-        "Felipe Balbi" <balbi@ti.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        USB list <linux-usb@vger.kernel.org>,
-        "Kernel development list" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v1] USB:gadget: Fix a warning while loading
- g_mass_storage
-Thread-Topic: [PATCH v1] USB:gadget: Fix a warning while loading
- g_mass_storage
-Thread-Index: AQHPfw+CHIykYfVqlUeQGtcdMkWQpptf7RCAgACwf4CAAAb3gIAAGVEAgACy/AD//9d94A==
-Date: Wed, 4 Jun 2014 18:48:56 +0000
-Message-ID: <A2CA0424C0A6F04399FB9E1CD98E0304844B24EF@US01WEMBX2.internal.synopsys.com>
-References: <538E8F70.2010600@windriver.com>
- <Pine.LNX.4.44L0.1406040953400.15745-100000@netrider.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1406040953400.15745-100000@netrider.rowland.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.9.64.240]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 4 Jun 2014 14:49:51 -0400
 MIME-Version: 1.0
+In-Reply-To: <alpine.DEB.2.10.1406042004140.3319@nanos>
+References: <1401903034-20074-1-git-send-email-dianders@chromium.org>
+	<1401903034-20074-3-git-send-email-dianders@chromium.org>
+	<alpine.DEB.2.10.1406042004140.3319@nanos>
+Date: Wed, 4 Jun 2014 11:49:50 -0700
+X-Google-Sender-Auth: 4SuiZzu_Cwnzbh593LaOr7ZbT6o
+Message-ID: <CAD=FV=UDAcBeXewVinSG0WeoHkkw2zHe2ORp7BLW=NKxmKUiew@mail.gmail.com>
+Subject: Re: [PATCH 3/3] clocksource: exynos_mct: Optimize register reads with ldmia
+From: Doug Anderson <dianders@chromium.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Kukjin Kim <kgene.kim@samsung.com>, Tomasz Figa <t.figa@samsung.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Chirantan Ekbote <chirantan@chromium.org>,
+        David Riley <davidriley@chromium.org>, Olof Johansson <olof@lixom.net>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: linux-usb-owner@vger.kernel.org [mailto:linux-usb-owner@vger.kernel.org] On Behalf Of Alan Stern
-> Sent: Wednesday, June 04, 2014 6:57 AM
-> 
-> On Wed, 4 Jun 2014, Yang,Wei wrote:
-> 
-> > On 06/04/2014 09:45 AM, Peter Chen wrote:
-> > >
-> > >> commit d18f7116a5ddb8263fe62b05ad63e5ceb5875791
-> > >> Author: Robert Baldyga <r.baldyga@samsung.com>
-> > >> Date:   Thu Nov 21 13:49:18 2013 +0100
-> > >>
-> > >>       usb: gadget: s3c-hsotg: fix disconnect handling
-> > >>
-> > >>       This patch moves s3c_hsotg_disconnect function call from USBSusp
-> > >> interrupt
-> > >>       handler to SET_ADDRESS request handler.
-> > >>
-> > > It is a little strange we call gadget's disconnect at SET_ADDRESS?
-> > > How the udc calls gadget driver the disconnection has happened when
-> > > the usb cable is disconnected from the host?
-> > >
-> > > Usually, we call gadget's disconnect at two situations
-> > >
-> > > - udc's reset handler if udc's speed is not UNKNOWN, it is usually happened
-> > > when the host sends reset after enumeration.
-> > > - udc's disconnect handler, it is usually happened when the usb cable
-> > > is disconnected from host.
-> >
-> > Hmm, usually the two situations, but according to the commit log, s3c
-> > hsotg does not support Disconnected interrupt for device mode,
-> > so the second situation does not happen for s3c hsotg, therefore, he has
-> > to disconnect the connection before it is connected again.
-> 
-> Why does he need to do that?  Why not just skip the disconnect
-> notification if the hardware can't detect a disconnect?
-> 
-> It makes no sense at all to call a disconnect handler from within the
-> SET_ADDRESS routine.
+Thomas,
 
-FWIW, here is the section from the DWC2 databook that describes how a
-disconnect should be handled for the device:
+On Wed, Jun 4, 2014 at 11:05 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> On Wed, 4 Jun 2014, Doug Anderson wrote:
+>
+>> As we saw in (clocksource: exynos_mct: cache mct upper count), the
+>> time spent reading the MCT shows up fairly high in real-world
+>> profiles.  That means that it's worth some optimization.
+>>
+>> We get a roughly 10% speedup in userspace gettimeofday() by using an
+>> ldmia to read the two halfs of the MCT.  That seems like a worthwhile
+>> thing to do.
+>>
+>> Before: 1173084 us for 1000000 gettimeofday in userspace
+>> After:  1045674 us for 1000000 gettimeofday in userspace
+>>
+>> NOTE: we could actually do better than this if we really wanted to.
+>> Technically we could register the clocksource as a 32-bit timer and
+>> only use the "lower" half.  Doing so brings us down to 1014429 us for
+>> 1000000 gettimeofday in userspace (and doesn't even require assembly
+>> code).  That would be an alternative to this change.
+>
+> I was about to ask exactly that question: What's the advantage of the
+> 64 bit dance there? AFAICT nothing.
 
-When OTG_MODE is set to 0, 1, or 3, the device disconnect flow is as
-follows:
-	1. When the USB cable is unplugged or when the VBUS is switched
-	   off by the Host, the Device core triggers GINTSTS.OTGInt
-	   [bit 2] interrupt bit.
-	2. When the device application detects GINTSTS.OTGInt interrupt,
-	   it checks that the GOTGINT.SesEndDet (Session End Detected)
-	   bit is set to 1'b1.
+I debated whether to send out the 32-bit version, since I'd
+implemented both.  I'm happy to send out the 32-bit version too and
+people can pick which they like better.  Let me know.
 
-When OTG_MODE is set to 2 or 4, the device disconnect flow is as
-follows:
-	1. When the USB cable is unplugged or when the VBUS is switched
-	   off by the Host, the Device core triggers GINTSTS.USBRst
-	   [bit 12] interrupt bit.
-	2. When the device application detects GINTSTS.USBRst, the
-	   application sets a timeout check for SET ADDRESS Control Xfer
-	   from Host.
-	3. If application does not receive SET ADDRESS Control Xfer from
-	   Host before the timeout period, it is treated as a device
-	   disconnection.
+The final thing that pushed me over the edge to send the 64-bit
+version was that I didn't know enough about how MCT was used with
+respect to low power modes (we don't use AFTR / LPA modes on our
+system).  I could actually believe that we might want to set a timer
+for more than 178 seconds into the future for these low power modes.
+If that's the case, we still need to keep around the 64-bit read code
+for that case.  ...and once we have the 64-bit code then we might as
+well use it for the rest of the timers.
 
-OTG_MODE is a configuration parameter that is set when the core is
-built. From this discussion, it sounds like the s3c-hsotg core is
-built for either mode 2 or 4. So SET ADDRESS should be involved, but
-not in the way the driver is currently doing it.
+Perhaps Tomasz will comment on this.
 
-Unfortunately I don't have the s3c-hsotg hardware, so I can't work on this
-myself.
-
--- 
-Paul
-
+-Doug
