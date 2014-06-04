@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753121AbaFDXWZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:22:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40111 "EHLO
+	id S932280AbaFEAYz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 20:24:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40119 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751421AbaFDXWW (ORCPT
+	with ESMTP id S1753106AbaFDXWY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:22:22 -0400
+	Wed, 4 Jun 2014 19:22:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Carolyn Wyborny <carolyn.wyborny@intel.com>,
-        Christoph Paasch <christoph.paasch@uclouvain.be>,
-        Jeff Pieper <jeffrey.e.pieper@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Subject: [PATCH 3.14 119/228] igb: Fix Null-pointer dereference in igb_reset_q_vector
-Date: Wed,  4 Jun 2014 16:22:28 -0700
-Message-Id: <20140604232351.868091781@linuxfoundation.org>
+        Geert Uytterhoeven <geert+renesas@glider.be>
+Subject: [PATCH 3.14 124/228] Documentation: Update stable address in Chinese and Japanese translations
+Date: Wed,  4 Jun 2014 16:22:33 -0700
+Message-Id: <20140604232352.024574338@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -31,46 +28,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christoph Paasch <christoph.paasch@uclouvain.be>
+From: Geert Uytterhoeven <geert+renesas@glider.be>
 
-commit cb06d102327eadcd1bdc480bfd9f8876251d1007 upstream.
+commit 98b0f811aade1b7c6e7806c86aa0befd5919d65f upstream.
 
-When igb_set_interrupt_capability() calls
-igb_reset_interrupt_capability() (e.g., because CONFIG_PCI_MSI is unset),
-num_q_vectors has been set but no vector has yet been allocated.
+The English and Korean translations were updated, the Chinese and Japanese
+weren't.
 
-igb_reset_interrupt_capability() will then call igb_reset_q_vector,
-which assumes that the vector is allocated. As this is not the case, we
-are accessing a NULL-pointer.
-
-This patch fixes it by checking that q_vector is indeed different from
-NULL.
-
-Fixes: 02ef6e1d0b0023 (igb: Fix queue allocation method to accommodate changing during runtime)
-Cc: Carolyn Wyborny <carolyn.wyborny@intel.com>
-Signed-off-by: Christoph Paasch <christoph.paasch@uclouvain.be>
-Tested-by: Jeff Pieper <jeffrey.e.pieper@intel.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/intel/igb/igb_main.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ Documentation/ja_JP/HOWTO                   |    2 +-
+ Documentation/ja_JP/stable_kernel_rules.txt |    6 +++---
+ Documentation/zh_CN/HOWTO                   |    2 +-
+ Documentation/zh_CN/stable_kernel_rules.txt |    2 +-
+ 4 files changed, 6 insertions(+), 6 deletions(-)
 
---- a/drivers/net/ethernet/intel/igb/igb_main.c
-+++ b/drivers/net/ethernet/intel/igb/igb_main.c
-@@ -1014,6 +1014,12 @@ static void igb_reset_q_vector(struct ig
- {
- 	struct igb_q_vector *q_vector = adapter->q_vector[v_idx];
+--- a/Documentation/ja_JP/HOWTO
++++ b/Documentation/ja_JP/HOWTO
+@@ -315,7 +315,7 @@ Andrew Morton が Linux-kernel メーリ
+ もし、3.x.y カーネルが存在しない場合には、番号が一番大きい 3.x が
+ 最新の安定版カーネルです。
  
-+	/* Coming from igb_set_interrupt_capability, the vectors are not yet
-+	 * allocated. So, q_vector is NULL so we should stop here.
-+	 */
-+	if (!q_vector)
-+		return;
-+
- 	if (q_vector->tx.ring)
- 		adapter->tx_ring[q_vector->tx.ring->queue_index] = NULL;
+-3.x.y は "stable" チーム <stable@kernel.org> でメンテされており、必
++3.x.y は "stable" チーム <stable@vger.kernel.org> でメンテされており、必
+ 要に応じてリリースされます。通常のリリース期間は 2週間毎ですが、差し迫っ
+ た問題がなければもう少し長くなることもあります。セキュリティ関連の問題
+ の場合はこれに対してだいたいの場合、すぐにリリースがされます。
+--- a/Documentation/ja_JP/stable_kernel_rules.txt
++++ b/Documentation/ja_JP/stable_kernel_rules.txt
+@@ -50,16 +50,16 @@ linux-2.6.29/Documentation/stable_kernel
  
+ -stable ツリーにパッチを送付する手続き-
+ 
+- - 上記の規則に従っているかを確認した後に、stable@kernel.org にパッチ
++ - 上記の規則に従っているかを確認した後に、stable@vger.kernel.org にパッチ
+    を送る。
+  - 送信者はパッチがキューに受け付けられた際には ACK を、却下された場合
+    には NAK を受け取る。この反応は開発者たちのスケジュールによって、数
+    日かかる場合がある。
+  - もし受け取られたら、パッチは他の開発者たちと関連するサブシステムの
+    メンテナーによるレビューのために -stable キューに追加される。
+- - パッチに stable@kernel.org のアドレスが付加されているときには、それ
++ - パッチに stable@vger.kernel.org のアドレスが付加されているときには、それ
+    が Linus のツリーに入る時に自動的に stable チームに email される。
+- - セキュリティパッチはこのエイリアス (stable@kernel.org) に送られるべ
++ - セキュリティパッチはこのエイリアス (stable@vger.kernel.org) に送られるべ
+    きではなく、代わりに security@kernel.org のアドレスに送られる。
+ 
+ レビューサイクル-
+--- a/Documentation/zh_CN/HOWTO
++++ b/Documentation/zh_CN/HOWTO
+@@ -237,7 +237,7 @@ kernel.org网站的pub/linux/kernel/v2.6
+ 如果没有2.6.x.y版本内核存在，那么最新的2.6.x版本内核就相当于是当前的稳定
+ 版内核。
+ 
+-2.6.x.y版本由“稳定版”小组（邮件地址<stable@kernel.org>）维护，一般隔周发
++2.6.x.y版本由“稳定版”小组（邮件地址<stable@vger.kernel.org>）维护，一般隔周发
+ 布新版本。
+ 
+ 内核源码中的Documentation/stable_kernel_rules.txt文件具体描述了可被稳定
+--- a/Documentation/zh_CN/stable_kernel_rules.txt
++++ b/Documentation/zh_CN/stable_kernel_rules.txt
+@@ -42,7 +42,7 @@ Documentation/stable_kernel_rules.txt �
+ 
+ 向稳定版代码树提交补丁的过程：
+ 
+-  - 在确认了补丁符合以上的规则后，将补丁发送到stable@kernel.org。
++  - 在确认了补丁符合以上的规则后，将补丁发送到stable@vger.kernel.org。
+   - 如果补丁被接受到队列里，发送者会收到一个ACK回复，如果没有被接受，收
+     到的是NAK回复。回复需要几天的时间，这取决于开发者的时间安排。
+   - 被接受的补丁会被加到稳定版本队列里，等待其他开发者的审查。
 
 
