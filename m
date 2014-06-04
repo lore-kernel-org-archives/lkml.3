@@ -1,63 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752016AbaFDJc7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 05:32:59 -0400
-Received: from dns-bn1lp0143.outbound.protection.outlook.com ([207.46.163.143]:26220
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751633AbaFDJc5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 05:32:57 -0400
-From: Xiubo Li <Li.Xiubo@freescale.com>
-To: <claudiu.manoil@freescale.com>, <davem@davemloft.net>,
-        <jingchang.lu@freescale.com>, <netdev@vger.kernel.org>
-CC: <linux-kernel@vger.kernel.org>, Xiubo Li <Li.Xiubo@freescale.com>
-Subject: [PATCH] gianfar: Fix the section mismatch warnings.
-Date: Wed, 4 Jun 2014 16:49:16 +0800
-Message-ID: <1401871756-29231-1-git-send-email-Li.Xiubo@freescale.com>
-X-Mailer: git-send-email 1.8.0
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(199002)(189002)(80022001)(84676001)(88136002)(97736001)(74662001)(77156001)(79102001)(81542001)(47776003)(83322001)(6806004)(93916002)(83072002)(85852003)(19580395003)(87936001)(19580405001)(92566001)(81342001)(2201001)(62966002)(77096999)(50986999)(31966008)(46102001)(76482001)(89996001)(20776003)(92726001)(74502001)(102836001)(104166001)(50466002)(26826002)(68736004)(50226001)(44976005)(36756003)(86362001)(48376002)(64706001)(4396001)(104016001)(77982001)(87286001)(21056001)(99396002);DIR:OUT;SFP:;SCL:1;SRVR:BLUPR03MB503;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+	id S1752122AbaFDJdZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 05:33:25 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:42827 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751978AbaFDJdU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 05:33:20 -0400
+Date: Wed, 4 Jun 2014 11:32:55 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
+        ebiederm@xmission.com, hpa@zytor.com, mjg59@srcf.ucam.org,
+        greg@kroah.com, jkosina@suse.cz, dyoung@redhat.com,
+        chaowang@redhat.com, bhe@redhat.com, akpm@linux-foundation.org
+Subject: Re: [PATCH 03/13] kexec: Move segment verification code in a
+ separate function
+Message-ID: <20140604093254.GB4105@pd.tnic>
+References: <1401800822-27425-1-git-send-email-vgoyal@redhat.com>
+ <1401800822-27425-4-git-send-email-vgoyal@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Microsoft-Antispam: BL:0;ACTION:Default;RISK:Low;SCL:0;SPMLVL:NotSpam;PCL:0;RULEID:
-X-Forefront-PRVS: 0232B30BBC
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=Li.Xiubo@freescale.com; 
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1401800822-27425-4-git-send-email-vgoyal@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Building with CONFIG_DEBUG_SECTION_MISMATCH enabled, the following
-WARNING is occured:
+On Tue, Jun 03, 2014 at 09:06:52AM -0400, Vivek Goyal wrote:
+> Previously do_kimage_alloc() will allocate a kimage structure, copy
+> segment list from user space and then do the segment list sanity verification.
+> 
+> Break down this function in 3 parts. do_kimage_alloc_init() to do actual
+> allocation and basic initialization of kimage structure.
+> copy_user_segment_list() to copy segment list from user space and
+> sanity_check_segment_list() to verify the sanity of segment list as passed
+> by user space.
+> 
+> In later patches, I need to only allocate kimage and not copy segment
+> list from user space. So breaking down in smaller functions enables
+> re-use of code at other places.
 
-  LD      drivers/net/built-in.o
-WARNING: drivers/net/built-in.o(.text+0xcd4c): Section mismatch in
-reference from the function gfar_probe() to the function
-.init.text:gfar_init_addr_hash_table()
-The function gfar_probe() references
-the function __init gfar_init_addr_hash_table().
-This is often because gfar_probe lacks a __init
-annotation or the annotation of gfar_init_addr_hash_table is wrong.
+I haven't seen what's going on further in the patchset but from looking at
+kimage_normal_alloc() and kimage_crash_alloc()'s guts, they look very
+similar and could probably share a common __kimage_alloc which does
+do_kimage_alloc_init, copy_user_segment_list, sanity_check_segment_list
+and kimage_alloc_control_pages...
 
-Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
----
- drivers/net/ethernet/freescale/gianfar.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+One probably would have to actually write it down to see whether it
+makes sense though and is not too ugly :-)
 
-diff --git a/drivers/net/ethernet/freescale/gianfar.c b/drivers/net/ethernet/freescale/gianfar.c
-index a7fe6a7..1fde3e6 100644
---- a/drivers/net/ethernet/freescale/gianfar.c
-+++ b/drivers/net/ethernet/freescale/gianfar.c
-@@ -1242,7 +1242,7 @@ static void gfar_hw_init(struct gfar_private *priv)
- 		gfar_write_isrg(priv);
- }
- 
--static void __init gfar_init_addr_hash_table(struct gfar_private *priv)
-+static void gfar_init_addr_hash_table(struct gfar_private *priv)
- {
- 	struct gfar __iomem *regs = priv->gfargrp[0].regs;
- 
+> Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+> ---
+
+In any case, it looks ok, just two nitpicks below:
+
+Acked-by: Borislav Petkov <bp@suse.de>
+
+>  kernel/kexec.c | 182 ++++++++++++++++++++++++++++++++-------------------------
+>  1 file changed, 101 insertions(+), 81 deletions(-)
+
+...
+
+> +static struct kimage *do_kimage_alloc_init(void)
+> +{
+> +	struct kimage *image;
+> +
+> +	/* Allocate a controlling structure */
+> +	image = kzalloc(sizeof(*image), GFP_KERNEL);
+> +	if (!image)
+> +		return NULL;
+> +
+> +	image->head = 0;
+> +	image->entry = &image->head;
+> +	image->last_entry = &image->head;
+> +	image->control_page = ~0; /* By default this does not apply */
+> +	image->type = KEXEC_TYPE_DEFAULT;
+> +
+> +	/* Initialize the list of control pages */
+> +	INIT_LIST_HEAD(&image->control_pages);
+> +
+> +	/* Initialize the list of destination pages */
+> +	INIT_LIST_HEAD(&image->dest_pages);
+> +
+> +	/* Initialize the list of unusable pages */
+> +	INIT_LIST_HEAD(&image->unuseable_pages);
+
+If the "e" in "unuseable" bugs you too, like me, you could add this one
+to your patchset :-)
+
+http://lkml.kernel.org/r/1392819695-24116-1-git-send-email-bp@alien8.de
+
+...
+
+> @@ -258,22 +292,23 @@ static int kimage_normal_alloc(struct kimage **rimage, unsigned long entry,
+>  					   get_order(KEXEC_CONTROL_PAGE_SIZE));
+>  	if (!image->control_code_page) {
+>  		printk(KERN_ERR "Could not allocate control_code_buffer\n");
+> -		goto out_free;
+> +		goto out_free_image;
+>  	}
+>  
+>  	image->swap_page = kimage_alloc_control_pages(image, 0);
+>  	if (!image->swap_page) {
+>  		printk(KERN_ERR "Could not allocate swap buffer\n");
+> -		goto out_free;
+> +		goto out_free_control_pages;
+>  	}
+>  
+>  	*rimage = image;
+>  	return 0;
+>  
+> -out_free:
+> +
+
+Superfluous newline.
+
+> +out_free_control_pages:
+>  	kimage_free_page_list(&image->control_pages);
+> +out_free_image:
+>  	kfree(image);
+> -out:
+>  	return result;
+>  }
+>
+
 -- 
-1.8.5
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
