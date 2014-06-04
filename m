@@ -1,348 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753463AbaFDBlP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 21:41:15 -0400
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:44347 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752680AbaFDBlL (ORCPT
+	id S1753973AbaFDBnX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 21:43:23 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:50115 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753902AbaFDBnW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 21:41:11 -0400
+	Tue, 3 Jun 2014 21:43:22 -0400
+X-IronPort-AV: E=Sophos;i="4.98,969,1392134400"; 
+   d="scan'208";a="31413651"
+Message-ID: <538E7ACB.3010704@cn.fujitsu.com>
+Date: Wed, 4 Jun 2014 09:47:55 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-In-Reply-To: <1398346047-10276-1-git-send-email-yxlraid@gmail.com>
-References: <1398346047-10276-1-git-send-email-yxlraid@gmail.com>
-Date: Tue, 3 Jun 2014 18:41:10 -0700
-Message-ID: <CAPcyv4jZaR0x4ChMvBYCCq-sUgyvf6CraKj+Tn+qmcvUbxwezQ@mail.gmail.com>
-Subject: Re: [PATCH 1/3] libsas: modify SATA error handler
-From: Dan Williams <dan.j.williams@intel.com>
-To: Xiangliang Yu <yxlraid@gmail.com>
-Cc: Tejun Heo <tj@kernel.org>, James Bottomley <JBottomley@parallels.com>,
-        Todd E Brandt <todd.e.brandt@intel.com>,
-        Lukasz Dorau <lukasz.dorau@intel.com>,
-        "IDE/ATA development list" <linux-ide@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Peter Zijlstra <peterz@infradead.org>
+CC: <jjherne@linux.vnet.ibm.com>, Sasha Levin <sasha.levin@oracle.com>,
+        Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: workqueue: WARN at at kernel/workqueue.c:2176
+References: <53739F3B.4060608@linux.vnet.ibm.com> <53758B12.8060609@cn.fujitsu.com> <20140516115737.GP11096@twins.programming.kicks-ass.net> <CACvQF52-jUMzK32uoDCb8zn0RZsiC9uzUOq+ZBRXK22esYKS0g@mail.gmail.com> <20140516162945.GZ11096@twins.programming.kicks-ass.net> <53849EB7.9090302@linux.vnet.ibm.com> <20140527142637.GB19143@laptop.programming.kicks-ass.net> <53875F09.3090607@linux.vnet.ibm.com> <538DB076.4090704@cn.fujitsu.com> <538DC373.9@cn.fujitsu.com> <20140603142845.GP30445@twins.programming.kicks-ass.net>
+In-Reply-To: <20140603142845.GP30445@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.226.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, some notes below:
+On 06/03/2014 10:28 PM, Peter Zijlstra wrote:
+> On Tue, Jun 03, 2014 at 08:45:39PM +0800, Lai Jiangshan wrote:
+>>
+>> Hi, Peter,
+>>
+>> I rewrote the analyse. (scheduler_ipi() must be called before stopper-task,
+>> so the part for workqueue of the old analyse maybe be wrong.)
+> 
+> But I don't think there is any guarantee we'll do the wakeup before
+> running the stop work.
 
-On Thu, Apr 24, 2014 at 6:27 AM, Xiangliang Yu <yxlraid@gmail.com> wrote:
-> Add support for SATA port softreset and port multiplier error
-> handling.
+You are right, but the race window in my old analyse is too narrow to
+hit the WARN_ON(). so I rewrote the new analyse showing a much bigger window
+which can hit the WARN_ON() in workqueue.c
 
-Some more detailed notes about the approach and any caveats would be
-appreciated.
+> 
+> Suppose the initial task gets queued, and the thing gets send the
+> interrupt, meanwhile we'll do the stopper work wakeup !queueing, the
+> set_cpus_allowed_ptr() isn't crossing llc boundaries.
+> 
+> Now, the remote cpu preempts/schedules before the interrupt hits and
+> runs the stop task.
+> 
+> At which point we'll run __migrate_task() while the task is still queued
+> on the wake list.
+> 
+>> ---
+>> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+>> index 268a45e..1a198a5 100644
+>> --- a/kernel/sched/core.c
+>> +++ b/kernel/sched/core.c
+>> @@ -4530,7 +4530,7 @@ int set_cpus_allowed_ptr(struct task_struct *p, const struct cpumask *new_mask)
+>>  		goto out;
+>>  
+>>  	dest_cpu = cpumask_any_and(cpu_active_mask, new_mask);
+>> -	if (p->on_rq) {
+>> +	if (p->on_rq || p->state == TASK_WAKING) {
+>>  		struct migration_arg arg = { p, dest_cpu };
+>>  		/* Need help from migration thread: drop lock and wait. */
+>>  		task_rq_unlock(rq, p, &flags);
+> 
+> So while this will close the window somewhat, I don't think its entirely
+> closed.
 
->
-> Signed-off-by: Xiangliang Yu <yxlraid@gmail.com>
-> ---
->  drivers/scsi/libsas/sas_ata.c |  226 ++++++++++++++++++++++++++++++++++++++++-
->  include/scsi/libsas.h         |    6 +
->  2 files changed, 231 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/scsi/libsas/sas_ata.c b/drivers/scsi/libsas/sas_ata.c
-> index 766098a..29a19fd 100644
-> --- a/drivers/scsi/libsas/sas_ata.c
-> +++ b/drivers/scsi/libsas/sas_ata.c
-> @@ -442,6 +442,226 @@ static int sas_ata_hard_reset(struct ata_link *link, unsigned int *class,
->         return ret;
->  }
->
-> +static void sas_ata_freeze(struct ata_port *ap)
-> +{
-> +       struct domain_device *dev = ap->private_data;
-> +       struct sas_ha_struct *sas_ha = dev->port->ha;
-> +       struct Scsi_Host *host = sas_ha->core.shost;
-> +       struct sas_internal *i = to_sas_internal(host->transportt);
-> +
-> +       if (i->dft->lldd_dev_freeze)
-> +               i->dft->lldd_dev_freeze(dev);
-> +}
-> +
-> +static void sas_ata_thaw(struct ata_port *ap)
-> +{
-> +       struct domain_device *dev = ap->private_data;
-> +       struct sas_ha_struct *sas_ha = dev->port->ha;
-> +       struct Scsi_Host *host = sas_ha->core.shost;
-> +       struct sas_internal *i = to_sas_internal(host->transportt);
-> +
-> +       if (i->dft->lldd_dev_thaw)
-> +               i->dft->lldd_dev_thaw(dev);
-> +}
-> +
-> +static int sas_ata_wait_task_done(struct sas_task *task, unsigned long timeout,
-> +               int (*check_done)(struct sas_task *task))
-> +{
-
-Why do we need a custom check_done() routine?  Since we have a
-sas_task we can use the normal completion infrastructure.  See
-smp_execute_task().
-
-> +       struct ata_port *ap = task->uldd_task;
-> +       unsigned long deadline;
-> +       int done;
-> +
-> +       if (!check_done) {
-> +               SAS_DPRINTK("check function is null.\n");
-> +               return -1;
-> +       }
-> +
-> +       deadline = ata_deadline(jiffies, timeout);
-> +       done = check_done(task);
-> +
-> +       while (done && time_before(jiffies, deadline)) {
-> +               ata_msleep(ap, 1);
-> +
-> +               done = check_done(task);
-
-This can simply be:
-
-completion_done(&task->slow_task->completion)
-
-> +       }
-> +
-> +       return done;
-> +}
-> +
-> +static int sas_ata_exec_polled_cmd(struct ata_port *ap, struct ata_taskfile *tf,
-> +               int pmp, unsigned long timeout)
-> +{
-> +       struct domain_device *dev = ap->private_data;
-> +       struct sas_ha_struct *sas_ha = dev->port->ha;
-> +       struct Scsi_Host *host = sas_ha->core.shost;
-> +       struct sas_internal *i = to_sas_internal(host->transportt);
-> +       struct sas_task *task = NULL;
-> +       int ret = -1;
-> +
-> +       if (!i->dft->lldd_execute_task) {
-> +               SAS_DPRINTK("execute function is null.\n");
-> +               return ret;
-> +       }
-> +
-> +       task = sas_alloc_task(GFP_ATOMIC);
-
-I think this can be downgraded to GFP_NOIO.  We're in a sleepable context.
-
-> +       if (!task) {
-> +               SAS_DPRINTK("failed to alloc sas task.\n");
-> +               goto fail;
-> +       }
-> +
-> +       task->dev = dev;
-> +       task->task_proto = SAS_PROTOCOL_SATA;
-> +       task->uldd_task = ap;
-> +
-> +       ata_tf_to_fis(tf, pmp, 0, (u8 *)&task->ata_task.fis);
-> +       task->ata_task.retry_count = 1;
-> +       task->task_state_flags = SAS_TASK_STATE_PENDING;
-> +       task->task_state_flags |= SAS_TASK_NEED_DEV_RESET;
-> +
-> +       ret = i->dft->lldd_execute_task(task, 1, GFP_ATOMIC);
-
-Same here.
-
-> +       if (ret) {
-> +               SAS_DPRINTK("failed to send internal task.\n");
-> +               goto fail;
-> +       }
-> +
-> +       if (timeout) {
-> +               ret = sas_ata_wait_task_done(task, timeout,
-> +                               i->dft->lldd_wait_task_done);
-> +               if (ret) {
-> +                       SAS_DPRINTK("get wrong status.\n");
-> +                       goto fail;
-> +               }
-> +       }
-> +       list_del_init(&task->list);
-> +       sas_free_task(task);
-> +
-> +       return 0;
-> +fail:
-> +       if (task) {
-> +               list_del_init(&task->list);
-> +               sas_free_task(task);
-> +       }
-> +
-> +       return ret;
-> +}
-> +
-> +static int sas_ata_soft_reset(struct ata_link *link, unsigned int *class,
-> +                             unsigned long deadline)
-> +{
-> +       struct ata_taskfile tf;
-> +       struct ata_port *ap = link->ap;
-> +       struct domain_device *dev = ap->private_data;
-> +       struct sas_ha_struct *sas_ha = dev->port->ha;
-> +       struct Scsi_Host *host = sas_ha->core.shost;
-> +       struct sas_internal *i = to_sas_internal(host->transportt);
-> +       struct sas_phy *phy;
-> +       unsigned long now, msecs;
-> +       unsigned int pmp;
-> +       int ret = -1;
-> +       int (*check_ready)(struct ata_link *link);
-> +
-> +       phy = sas_get_local_phy(dev);
-> +       if (scsi_is_sas_phy_local(phy))
-> +               check_ready = local_ata_check_ready;
-> +       else
-> +               check_ready = smp_ata_check_ready;
-> +       sas_put_local_phy(phy);
-
-Does this attempt to support expander attached port multiplier's?
-Last I checked expanders do not support this so we should just fail
-this for non-local phys.
-
-> +
-> +       pmp = sata_srst_pmp(link);
-> +
-> +       msecs = 0;
-> +       now = jiffies;
-> +       if (time_after(deadline, now))
-> +               msecs = jiffies_to_msecs(deadline - now);
-> +
-> +       memset(&tf, 0, sizeof(struct ata_taskfile));
-> +       tf.ctl = ATA_SRST;
-> +       tf.device = ATA_DEVICE_OBS;
-> +
-> +       if (sas_ata_exec_polled_cmd(ap, &tf, pmp, msecs)) {
-> +               ret = -EIO;
-> +               goto fail;
-> +       }
-> +
-> +       tf.ctl &= ~ATA_SRST;
-> +       sas_ata_exec_polled_cmd(ap, &tf, pmp, msecs);
-
-What about lldd's that do not know how to handle ATA_SRST?  I think we
-need preparation patches to make SRST support opt-in, or teach all
-lldds how to handle these SRST sas_tasks.
-
-> +
-> +       ret = ata_wait_after_reset(link, deadline, check_ready);
-> +       if (ret) {
-> +               SAS_DPRINTK("device is not ready.\n");
-> +               ret = -EIO;
-> +               goto fail;
-> +       } else {
-> +               if (i->dft->lldd_dev_classify)
-> +                       *class = i->dft->lldd_dev_classify(dev);
-> +       }
-> +
-> +       return 0;
-> +
-> +fail:
-> +       SAS_DPRINTK("failed to reset.\n");
-> +       return ret;
-> +}
-> +
-> +/* According sata 3.0 spec 13.15.4.2, enable the device port */
-> +static int sas_ata_pmp_hard_reset(struct ata_link *link, unsigned int *class,
-> +                             unsigned long deadline)
-> +{
-> +       struct ata_port *ap = link->ap;
-> +       struct domain_device *dev = ap->private_data;
-> +       struct sas_ha_struct *sas_ha = dev->port->ha;
-> +       struct Scsi_Host *host = sas_ha->core.shost;
-> +       struct sas_internal *i = to_sas_internal(host->transportt);
-> +       int ret = -1;
-> +       u32 scontrol = 0;
-> +
-> +       set_bit(SAS_DEV_RESET, &dev->state);
-> +
-> +       ret = sata_scr_read(link, SCR_CONTROL, &scontrol);
-
-I think a comment is needed clarifying that these reads generate
-sas_tasks to a pmp and are not trying to read/write local SCR
-registers that do not exist on a SAS hba.
-
-> +       if (ret)
-> +               goto error;
-> +
-> +       /* enable device port */
-> +       scontrol = 0x1;
-> +       ret = sata_scr_write(link, SCR_CONTROL, scontrol);
-> +       if (ret)
-> +               goto error;
-> +
-> +       ata_msleep(ap, 1);
-> +
-> +       scontrol = 0x0;
-> +       ret = sata_scr_write(link, SCR_CONTROL, scontrol);
-> +       if (ret)
-> +               goto error;
-> +
-> +       ata_msleep(ap, 10);
-> +
-> +       /* check device link status */
-> +       if (ata_link_offline(link)) {
-> +               SAS_DPRINTK("link is offline.\n");
-> +               goto error;
-> +       }
-> +
-> +       /* clear X bit */
-> +       scontrol = 0xFFFFFFFF;
-> +       ret = sata_scr_write(link, SCR_ERROR, scontrol);
-> +       if (ret)
-> +               goto error;
-> +
-> +       /* may be need to wait for device sig */
-> +       ata_msleep(ap, 3);
-> +
-> +       /* check device class */
-> +       if (i->dft->lldd_dev_classify)
-> +               *class = i->dft->lldd_dev_classify(dev);
-> +
-> +       return 0;
-> +
-> +error:
-> +       SAS_DPRINTK("failed to hard reset.\n");
-> +       return ret;
-> +}
-> +
->  /*
->   * notify the lldd to forget the sas_task for this internal ata command
->   * that bypasses scsi-eh
-> @@ -551,8 +771,12 @@ void sas_ata_end_eh(struct ata_port *ap)
->  static struct ata_port_operations sas_sata_ops = {
->         .prereset               = ata_std_prereset,
->         .hardreset              = sas_ata_hard_reset,
-> +       .softreset              = sas_ata_soft_reset,
-> +       .pmp_hardreset          = sas_ata_pmp_hard_reset,
-> +       .freeze                 = sas_ata_freeze,
-> +       .thaw                   = sas_ata_thaw,
->         .postreset              = ata_std_postreset,
-> -       .error_handler          = ata_std_error_handler,
-> +       .error_handler          = sata_pmp_error_handler,
->         .post_internal_cmd      = sas_ata_post_internal,
->         .qc_defer               = ata_std_qc_defer,
->         .qc_prep                = ata_noop_qc_prep,
-> diff --git a/include/scsi/libsas.h b/include/scsi/libsas.h
-> index ef7872c..a26466a 100644
-> --- a/include/scsi/libsas.h
-> +++ b/include/scsi/libsas.h
-> @@ -689,6 +689,12 @@ struct sas_domain_function_template {
->         /* GPIO support */
->         int (*lldd_write_gpio)(struct sas_ha_struct *, u8 reg_type,
->                                u8 reg_index, u8 reg_count, u8 *write_data);
-> +
-> +       /* ATA EH functions */
-> +       void (*lldd_dev_freeze)(struct domain_device *);
-
-Why do we need to pass this all the way through to the lldd?  Can we
-get away with emulating this in sas_ata.c.
-
-> +       void (*lldd_dev_thaw)(struct domain_device *);
-
-Same note as lldd_dev_freeze
-
-> +       int (*lldd_wait_task_done)(struct sas_task *);
-
-Should not be needed.
-
-> +       int (*lldd_dev_classify)(struct domain_device *);
-
-I think this belongs in a different patch set.  If we solve device
-re-classification for soft reset we need to do the same for the
-sas_ata_hard_reset path.
