@@ -1,54 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932175AbaFEAOU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 20:14:20 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:39895 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753308AbaFEAOO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 20:14:14 -0400
-Message-ID: <538FB570.8000502@zytor.com>
-Date: Wed, 04 Jun 2014 17:10:24 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1753305AbaFDXWm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 19:22:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40242 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753231AbaFDXWk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 19:22:40 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Neil Greatorex <neil@fatboyfat.co.uk>,
+        Jason Cooper <jason@lakedaemon.net>
+Subject: [PATCH 3.14 158/228] bus: mvebu-mbus: allow several windows with the same target/attribute
+Date: Wed,  4 Jun 2014 16:23:07 -0700
+Message-Id: <20140604232353.090095689@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
+References: <20140604232347.966798903@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>, Nicolas Pitre <nicolas.pitre@linaro.org>
-CC: Dave Chinner <david@fromorbit.com>, hch@infradead.org,
-        linux-mtd@lists.infradead.org, logfs@logfs.org,
-        linux-afs@lists.infradead.org,
-        "Joseph S. Myers" <joseph@codesourcery.com>,
-        linux-arch@vger.kernel.org, linux-cifs@vger.kernel.org,
-        linux-scsi@vger.kernel.org, ceph-devel@vger.kernel.org,
-        cluster-devel@redhat.com, coda@cs.cmu.edu, geert@linux-m68k.org,
-        linux-ext4@vger.kernel.org, codalist@telemann.coda.cs.cmu.edu,
-        fuse-devel@lists.sourceforge.net, reiserfs-devel@vger.kernel.org,
-        xfs@oss.sgi.com, john.stultz@linaro.org, tglx@linutronix.de,
-        linux-nfs@vger.kernel.org, linux-ntfs-dev@lists.sourceforge.net,
-        samba-technical@lists.samba.org, linux-kernel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net, ocfs2-devel@oss.oracle.com,
-        linux-fsdevel@vger.kernel.org, lftan@altera.com,
-        linux-btrfs@vger.kernel.org
-Subject: Re: [RFC 00/32] making inode time stamps y2038 ready
-References: <1401480116-1973111-1-git-send-email-arnd@arndb.de> <201406041703.47592.arnd@arndb.de> <alpine.LFD.2.11.1406041308300.17310@knanqh.ubzr> <8770583.6XeZxCxOY8@wuerfel>
-In-Reply-To: <8770583.6XeZxCxOY8@wuerfel>
-X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/04/2014 12:24 PM, Arnd Bergmann wrote:
-> 
-> For other timekeeping stuff in the kernel, I agree that using some
-> 64-bit representation (nanoseconds, 32/32 unsigned seconds/nanoseconds,
-> ...) has advantages, that's exactly the point I was making earlier
-> against simply extending the internal time_t/timespec to 64-bit
-> seconds for everything.
-> 
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
-How much of a performance issue is it to make time_t 64 bits, and for
-the bits there are, how hard are they to fix?
+------------------
 
-	-hpa
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+
+commit b566e782be32145664d96ada3e389f17d32742e5 upstream.
+
+Having multiple windows with the same target and attribute is actually
+legal, and can be useful for PCIe windows, when PCIe BARs have a size
+that isn't a power of two, and we therefore need to create several
+MBus windows to cover the PCIe BAR for a given PCIe interface.
+
+Fixes: fddddb52a6c4 ('bus: introduce an Marvell EBU MBus driver')
+Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Link: https://lkml.kernel.org/r/1397823593-1932-7-git-send-email-thomas.petazzoni@free-electrons.com
+Tested-by: Neil Greatorex <neil@fatboyfat.co.uk>
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/bus/mvebu-mbus.c |    6 ------
+ 1 file changed, 6 deletions(-)
+
+--- a/drivers/bus/mvebu-mbus.c
++++ b/drivers/bus/mvebu-mbus.c
+@@ -222,12 +222,6 @@ static int mvebu_mbus_window_conflicts(s
+ 		 */
+ 		if ((u64)base < wend && end > wbase)
+ 			return 0;
+-
+-		/*
+-		 * Check if target/attribute conflicts
+-		 */
+-		if (target == wtarget && attr == wattr)
+-			return 0;
+ 	}
+ 
+ 	return 1;
 
 
