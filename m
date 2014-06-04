@@ -1,118 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752417AbaFDWXi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 18:23:38 -0400
-Received: from skprod3.natinst.com ([130.164.80.24]:54977 "EHLO ni.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751354AbaFDWXh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 18:23:37 -0400
-From: "Brad Mouring" <bmouring@ni.com>
-To: linux-rt-users@vger.kernel.org
-Cc: Thomas Gleixner <tglx@linutronix.de>, Steven Rostedt <rostedt@goodmis.org>,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>, Clark Williams <williams@redhat.com>,
-        Brad Mouring <brad.mouring@ni.com>
-Subject: [PATCH] rtmutex: Handle when top lock owner changes
-Date: Wed, 4 Jun 2014 17:22:37 -0500
-Message-Id: <1401920557-21387-1-git-send-email-brad.mouring@ni.com>
-X-Mailer: git-send-email 1.8.3-rc3
-In-Reply-To: <alpine.DEB.2.10.1406042217140.18296@nanos>
-References: <alpine.DEB.2.10.1406042217140.18296@nanos>
-X-MIMETrack: Itemize by SMTP Server on US-AUS-MGWOut2/AUS/H/NIC(Release 8.5.3FP5|July 31, 2013) at
- 06/04/2014 05:23:01 PM,
-	Serialize by Router on US-AUS-MGWOut2/AUS/H/NIC(Release 8.5.3FP5|July 31, 2013) at
- 06/04/2014 05:23:01 PM,
-	Serialize complete at 06/04/2014 05:23:01 PM
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
- definitions=2014-06-04_04:2014-06-04,2014-06-04,1970-01-01 signatures=0
+	id S1752464AbaFDWX6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 18:23:58 -0400
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:47953 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752133AbaFDWX4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 18:23:56 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140604222047.GA16855@tassilo.jf.intel.com>
+References: <1401918378-3842-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+	<20140604222047.GA16855@tassilo.jf.intel.com>
+Date: Thu, 5 Jun 2014 00:23:55 +0200
+Message-ID: <CAFo99gY_GZg7TY=H_UZBDL3dP2vL6NW-TCvtCDx+voY0uH80AA@mail.gmail.com>
+Subject: Re: [PATCH] tools: perf: util: parse-events.c: Cleaning up missing
+ null-terminate after strncpy call
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Andi Kleen <ak@linux.intel.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung.kim@lge.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Stephane Eranian <eranian@google.com>, David Ahern <dsahern@gmail.com>,
+        Vince Weaver <vincent.weaver@maine.edu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If, during walking the priority chain on a task blocking on a rtmutex,
-and the task is examining the waiter blocked on the lock owned by a task
-that is not blocking (the end of the chain), the current task is ejected
-from the processor and the owner of the end lock is scheduled in,
-releasing that lock, before the original task is scheduled back in, the
-task misses the fact that the previous owner of the current lock no
-longer holds it.
+Hi
 
-Consider the following scenario:
-Tasks A, B, C, and D
-Locks L1, L2, L3, and L4
+A little embarrassing, but I actually did not know that there was a
+better replacement for strncpy.
 
-D owns L4, C owns L3, B owns L2. C blocks on L4, B blocks on L3.
+Sorry, but I will send a new platch based on strlcpy instead then,
+snprintf i slow and unnecessary in this case.
 
-We have
-L2->B->L3->C->L4->D
+Best regards
+Rickard Strandqvist
 
-A comes along and blocks on L2.
-A->L2->B->L3->C->L4->D
 
-We walking the priority chain, and, while walking the chain, with
-task pointing to D, top_waiter at C->L4. We fail to take L4's pi_lock
-and are scheduled out.
-
-Let's assume that the chain changes prior to A being scheduled in.
-All of the owners finish with their locks and drop them. We have
-
-A->L2
-
-But, as things are still running, the chain can continue to change,
-leading to
-
-       A->L2->B
-C->L1->D->L2
-
-That is, B ends up winning L2, D blocks on L2 after grabbing L1,
-and L1 blocks C. A is scheduled back in and continues the walk.
-
-Since task was pointing to D, and D is indeed blocked, it will
-have a waiter (D->L2), and, sadly, the lock is orig_lock. The
-deadlock detection will come in and report a deadlock to userspace.
-
-This change provides an additional check for this situation before
-reporting a deadlock to userspace.
-
-Signed-off-by: Brad Mouring <brad.mouring@ni.com>
-Acked-by: Scot Salmon <scot.salmon@ni.com>
-Acked-by: Ben Shelton <ben.shelton@ni.com>
-Tested-by: Jeff Westfahl <jeff.westfahl@ni.com>
----
- kernel/locking/rtmutex.c | 20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
-
-diff --git a/kernel/locking/rtmutex.c b/kernel/locking/rtmutex.c
-index fbf152b..8ad7f7d 100644
---- a/kernel/locking/rtmutex.c
-+++ b/kernel/locking/rtmutex.c
-@@ -384,6 +384,26 @@ static int rt_mutex_adjust_prio_chain(struct task_struct *task,
- 
- 	/* Deadlock detection */
- 	if (lock == orig_lock || rt_mutex_owner(lock) == top_task) {
-+		/*
-+		 * If the prio chain has changed out from under us, set the task
-+		 * to the current owner of the lock in the current waiter and
-+		 * continue walking the prio chain
-+		 */
-+		if (rt_mutex_owner(lock) && rt_mutex_owner(lock) != task &&
-+			rt_mutex_owner(lock) != top_task) {
-+			/* Release the old task (blocked before the chain chaged) */
-+			raw_spin_unlock_irqrestore(&task->pi_lock, flags);
-+			put_task_struct(task);
-+
-+			/* Move to the owner of the lock now described in waiter */
-+			task = rt_mutex_owner(lock);
-+			get_task_struct(task);
-+
-+			/* Let's try this again */
-+			raw_spin_unlock(&lock->wait_lock);
-+			goto retry;
-+		}
-+
- 		debug_rt_mutex_deadlock(deadlock_detect, orig_waiter, lock);
- 		raw_spin_unlock(&lock->wait_lock);
- 		ret = deadlock_detect ? -EDEADLK : 0;
--- 
-1.8.3-rc3
-
+2014-06-05 0:20 GMT+02:00 Andi Kleen <ak@linux.intel.com>:
+> On Wed, Jun 04, 2014 at 11:46:18PM +0200, Rickard Strandqvist wrote:
+>> Added a guaranteed null-terminate after call to strncpy.
+>>
+>> This was partly found using a static code analysis program called cppcheck.
+>
+> Should just stop using strncpy. strncpy semantics don't make any
+> sense at all, and it's inefficient. I would just snprintf here
+>
+> -Andi
+>
+>>
+>> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+>> ---
+>>  tools/perf/util/parse-events.c |    4 +++-
+>>  1 file changed, 3 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+>> index 1e15df1..fad2976 100644
+>> --- a/tools/perf/util/parse-events.c
+>> +++ b/tools/perf/util/parse-events.c
+>> @@ -1216,8 +1216,10 @@ static void print_symbol_events(const char *event_glob, unsigned type,
+>>
+>>               if (strlen(syms->alias))
+>>                       snprintf(name, MAX_NAME_LEN, "%s OR %s", syms->symbol, syms->alias);
+>> -             else
+>> +             else {
+>>                       strncpy(name, syms->symbol, MAX_NAME_LEN);
+>> +                     name[sizeof(name) - 1] = '\0';
+>> +             }
+>>
+>>               printf("  %-50s [%s]\n", name, event_type_descriptors[type]);
+>>
+>> --
+>> 1.7.10.4
+>>
+>
+> --
+> ak@linux.intel.com -- Speaking for myself only
