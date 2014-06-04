@@ -1,76 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755089AbaFDXpr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:45:47 -0400
-Received: from mga01.intel.com ([192.55.52.88]:22197 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755072AbaFDXpo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:45:44 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,976,1392192000"; 
-   d="asc'?scan'208";a="549929254"
-Message-ID: <1401925517.19767.175.camel@jtkirshe-mobl>
-Subject: Re: [linux-nics] [PATCH] net: ethernet: intel: ixgbe: ixgbe_main.c:
- Cleaning up missing null-terminate after strncpy call
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Cc: Jesse Brandeburg <jesse.brandeburg@intel.com>, Don@isotope.jf.intel.com,
-        e1000-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        Linux@isotope.jf.intel.com, NICS <linux.nics@intel.com>,
-        Carolyn Wyborny <carolyn.wyborny@intel.com>, netdev@vger.kernel.org
-Date: Wed, 04 Jun 2014 16:45:17 -0700
-In-Reply-To: <1401917380-2772-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-References: <1401917380-2772-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-XKWcFaUQst+hbSnjUrfr"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
+	id S1755112AbaFDXqX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 19:46:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40684 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753853AbaFDXXe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 19:23:34 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Loic Poulain <loic.poulain@intel.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>
+Subject: [PATCH 3.10 012/103] 8250_core: Fix unwanted TX chars write
+Date: Wed,  4 Jun 2014 16:24:35 -0700
+Message-Id: <20140604232547.222696051@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140604232546.704156131@linuxfoundation.org>
+References: <20140604232546.704156131@linuxfoundation.org>
+User-Agent: quilt/0.63-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
---=-XKWcFaUQst+hbSnjUrfr
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+------------------
 
-On Wed, 2014-06-04 at 23:29 +0200, Rickard Strandqvist wrote:
-> Added a guaranteed null-terminate after call to strncpy.
->=20
-> This was partly found using a static code analysis program called
-> cppcheck.
->=20
-> Signed-off-by: Rickard Strandqvist
-> <rickard_strandqvist@spectrumdigital.se>
-> ---
->  drivers/net/ethernet/intel/ixgbe/ixgbe_main.c |    4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
+From: Loic Poulain <loic.poulain@intel.com>
 
-NAK, I won't be picking this patch up based on Mark's and Joe's
-feedback.
+commit b08c9c317e3f7764a91d522cd031639ba42b98cc upstream.
 
---=-XKWcFaUQst+hbSnjUrfr
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+On transmit-hold-register empty, serial8250_tx_chars
+should be called only if we don't use DMA.
+DMA has its own tx cycle.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Signed-off-by: Loic Poulain <loic.poulain@intel.com>
+Reviewed-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-iQIcBAABCgAGBQJTj6+NAAoJEOVv75VaS+3OVJUP/1YONvsZ0hxDz5IMn59SXzNf
-359R8nBq00KUIKxCgb9StrPdXCsxaAIPCDTmaU3/bixQq2R36lrlxT3im6MtoBDG
-R/Mbh/TDokG9/UTV+5RBw+n+s5sojeL2HRZzhrUCid0NmQVdJYdPWxji5d+DSBnT
-pYLBTyWV0drXYflK8S2nRtyE2qg7TwXN1L0ZMFadzN8T0D/1OFaXmhrVkQRnteYQ
-ozJ+O8rRDggltWn/nc+zHwvce7aDVXFJGo5pUTtsZ2dwC3p1nB/pkA/5ooT82Z2t
-zn8KD15XA9WSKRkaWmYOhV6+bahUar2uXhGJ8+EcUTkJEbuWZHLS9RBAAdgQVsAf
-m1rlouzi9Zxia2KP+HHixlsoPor/8lO39WVUPgmsDxMK3K88FE/R73DZ3pYUMdQo
-TK2OIR1LY2wEGVXqErHl80rLDp/ZVU/vj+fSjQzd47x3bMcMY/jsDgwU2akjms4O
-nC/cVox/xPg3LdzFCW4S1XEm+Q/2LkniclFhCpVUJzOWjldzbQ+Ng44LJYNxoxmS
-Qd9xRce9dKOOdNbWDXjEL0yvSTis9hi/8+glsfp080BoObN2QbtxynRfG9mLWRCk
-WObnciTF9ya4/AKpvV+RiW79dRVmdxRwb+1Hcagjj2umKaHV53bSbKIgJPJOXHoj
-aOK7rDaP1B3lVvbQLk1D
-=9W/H
------END PGP SIGNATURE-----
+---
+ drivers/tty/serial/8250/8250_core.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---=-XKWcFaUQst+hbSnjUrfr--
+--- a/drivers/tty/serial/8250/8250_core.c
++++ b/drivers/tty/serial/8250/8250_core.c
+@@ -1520,7 +1520,7 @@ int serial8250_handle_irq(struct uart_po
+ 			status = serial8250_rx_chars(up, status);
+ 	}
+ 	serial8250_modem_status(up);
+-	if (status & UART_LSR_THRE)
++	if (!up->dma && (status & UART_LSR_THRE))
+ 		serial8250_tx_chars(up);
+ 
+ 	spin_unlock_irqrestore(&port->lock, flags);
+
 
