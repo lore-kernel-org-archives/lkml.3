@@ -1,149 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752043AbaFDQM3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 12:12:29 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37696 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750767AbaFDQM1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 12:12:27 -0400
-From: Vlastimil Babka <vbabka@suse.cz>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Greg Thelen <gthelen@google.com>, Vlastimil Babka <vbabka@suse.cz>,
-        Minchan Kim <minchan@kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        David Rientjes <rientjes@google.com>
-Subject: [RFC PATCH 3/6] mm, compaction: remember position within pageblock in free pages scanner
-Date: Wed,  4 Jun 2014 18:11:47 +0200
-Message-Id: <1401898310-14525-3-git-send-email-vbabka@suse.cz>
-X-Mailer: git-send-email 1.8.4.5
-In-Reply-To: <1401898310-14525-1-git-send-email-vbabka@suse.cz>
-References: <alpine.DEB.2.02.1405211954410.13243@chino.kir.corp.google.com>
- <1401898310-14525-1-git-send-email-vbabka@suse.cz>
+	id S1752732AbaFDQNK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 12:13:10 -0400
+Received: from mail-qa0-f54.google.com ([209.85.216.54]:49028 "EHLO
+	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752652AbaFDQNE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 12:13:04 -0400
+Message-ID: <538F458D.9020603@mutualink.net>
+Date: Wed, 04 Jun 2014 12:13:01 -0400
+From: Mike Remski <mremski@mutualink.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Johan Hovold <jhovold@gmail.com>
+CC: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: Re: ftdi_sio BUG: NULL pointer dereference
+References: <20140602164957.GC13790@localhost> <538CB049.9020805@mutualink.net> <20140602174630.GD13790@localhost> <538DA0BD.5080208@mutualink.net> <20140604141937.GA11160@localhost> <538F2D51.2010508@mutualink.net> <20140604145200.GB11160@localhost> <538F3360.40407@mutualink.net> <20140604150938.GD11160@localhost> <538F3E3B.5080906@mutualink.net> <20140604160000.GF11160@localhost>
+In-Reply-To: <20140604160000.GF11160@localhost>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Unlike the migration scanner, the free scanner remembers the beginning of the
-last scanned pageblock in cc->free_pfn. It might be therefore rescanning pages
-uselessly when called several times during single compaction. This might have
-been useful when pages were returned to the buddy allocator after a failed
-migration, but this is no longer the case.
+On 06/04/2014 12:00 PM, Johan Hovold wrote:
+> On Wed, Jun 04, 2014 at 11:41:47AM -0400, Mike Remski wrote:
+>> Ok, had a chance to try the cdc-acm;  yes it's the ancient one that is
+>> in the base install of CentOS 6.4 (2.6.32-71.29.1 centos patched).  I'm
+>> hitting something similar;  I noticed there where a few commits for NULL
+>> pointer dereferences in cdc-acm.c.
+>>
+>> I'll poke into this a bit (yes, I know try a newer kernel, etc) and let
+>> you know what I find (or perhaps this looks similar to something already
+>> seen?).  This device is the same as the original ftdi crash, 1.2 is the
+>> same interface with bNumEndpoints == 0.
+>>
+>> Jun  4 11:35:20 nicA91A84 kernel: cdc_acm 5-2:1.2: This device cannot do
+>> calls on its own. It is not a modem.
+>> Jun  4 11:35:20 nicA91A84 kernel: BUG: unable to handle kernel NULL
+>> pointer dereference at 00000004
+>> Jun  4 11:35:20 nicA91A84 kernel: IP: [<f84f9c9e>]
+>> acm_probe+0x44e/0x127c [cdc_acm]
+>> Jun  4 11:35:20 nicA91A84 kernel: *pdpt = 00000000354eb001 *pde =
+>> 000000007f003067
+>> Jun  4 11:35:20 nicA91A84 kernel: Oops: 0000 [#1] SMP
+>> Jun  4 11:35:20 nicA91A84 kernel: last sysfs file:
+>> /sys/devices/pci0000:00/0000:00:1d.0/usb5/5-2/product
+> Yeah, you really need to update your kernel. You'll definitely need at
+> least commit 99f347caa456 ("USB: CDC ACM: Fix NULL pointer
+> dereference").
+>
+> No more reports until you've tried a recent kernel, ok? ;)
+>
+> Johan
+Agreed.  But I still have to understand it so I can backport the 
+appropriate fixes, no?
+I'll be quiet now.
 
-This patch changes the meaning of cc->free_pfn so that if it points to a
-middle of a pageblock, that pageblock is scanned only from cc->free_pfn to the
-end. isolate_freepages_block() will record the pfn of the last page it looked
-at, which is then used to update cc->free_pfn.
-
-In the mmtests stress-highalloc benchmark, this has resulted in lowering the
-ratio between pages scanned by both scanners, from 2.5 free pages per migrate
-page, to 2.25 free pages per migrate page, without affecting success rates.
-
-Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
-Cc: Minchan Kim <minchan@kernel.org>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Michal Nazarewicz <mina86@mina86.com>
-Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: David Rientjes <rientjes@google.com>
----
- mm/compaction.c | 33 ++++++++++++++++++++++++++++-----
- 1 file changed, 28 insertions(+), 5 deletions(-)
-
-diff --git a/mm/compaction.c b/mm/compaction.c
-index 27c73d7..ae7db5f 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -294,7 +294,7 @@ static bool suitable_migration_target(struct page *page)
-  * (even though it may still end up isolating some pages).
-  */
- static unsigned long isolate_freepages_block(struct compact_control *cc,
--				unsigned long blockpfn,
-+				unsigned long *start_pfn,
- 				unsigned long end_pfn,
- 				struct list_head *freelist,
- 				bool strict)
-@@ -304,6 +304,7 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
- 	unsigned long flags;
- 	bool locked = false;
- 	bool checked_pageblock = false;
-+	unsigned long blockpfn = *start_pfn;
- 
- 	cursor = pfn_to_page(blockpfn);
- 
-@@ -312,6 +313,9 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
- 		int isolated, i;
- 		struct page *page = cursor;
- 
-+		/* Record how far we have got within the block */
-+		*start_pfn = blockpfn;
-+
- 		/*
- 		 * Periodically drop the lock (if held) regardless of its
- 		 * contention, to give chance to IRQs. Abort async compaction
-@@ -438,6 +442,9 @@ isolate_freepages_range(struct compact_control *cc,
- 	LIST_HEAD(freelist);
- 
- 	for (pfn = start_pfn; pfn < end_pfn; pfn += isolated) {
-+		/* Protect pfn from changing by isolate_freepages_block */
-+		unsigned long isolate_start_pfn = pfn;
-+
- 		if (!pfn_valid(pfn) || cc->zone != page_zone(pfn_to_page(pfn)))
- 			break;
- 
-@@ -448,8 +455,8 @@ isolate_freepages_range(struct compact_control *cc,
- 		block_end_pfn = ALIGN(pfn + 1, pageblock_nr_pages);
- 		block_end_pfn = min(block_end_pfn, end_pfn);
- 
--		isolated = isolate_freepages_block(cc, pfn, block_end_pfn,
--						   &freelist, true);
-+		isolated = isolate_freepages_block(cc, &isolate_start_pfn,
-+						block_end_pfn, &freelist, true);
- 
- 		/*
- 		 * In strict mode, isolate_freepages_block() returns 0 if
-@@ -789,6 +796,7 @@ static void isolate_freepages(struct zone *zone,
- 				block_end_pfn = block_start_pfn,
- 				block_start_pfn -= pageblock_nr_pages) {
- 		unsigned long isolated;
-+		unsigned long isolate_start_pfn;
- 
- 		/*
- 		 * This can iterate a massively long zone without finding any
-@@ -822,11 +830,26 @@ static void isolate_freepages(struct zone *zone,
- 			continue;
- 
- 		/* Found a block suitable for isolating free pages from */
--		cc->free_pfn = block_start_pfn;
--		isolated = isolate_freepages_block(cc, block_start_pfn,
-+		isolate_start_pfn = block_start_pfn;
-+
-+		/* 
-+		 * If we are restarting the free scanner in this block, do not
-+		 * rescan the beginning of the block
-+		 */
-+		if (cc->free_pfn < block_end_pfn)
-+			isolate_start_pfn = cc->free_pfn;
-+
-+		isolated = isolate_freepages_block(cc, &isolate_start_pfn,
- 					block_end_pfn, freelist, false);
- 		nr_freepages += isolated;
- 
-+		/* 
-+		 * Remember where the free scanner should restart next time.
-+		 * This will point to the last page of pageblock we just
-+		 * scanned, if we scanned it fully.
-+		 */
-+		cc->free_pfn = isolate_start_pfn;
-+
- 		/*
- 		 * Set a flag that we successfully isolated in this pageblock.
- 		 * In the next loop iteration, zone->compact_cached_free_pfn
 -- 
-1.8.4.5
+Office: (978)401-4032 (x123 internally)
+Cell: (603) 759-6953
 
