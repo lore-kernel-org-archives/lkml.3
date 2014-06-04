@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752795AbaFDLgK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 07:36:10 -0400
-Received: from mail.dev.rtsoft.ru ([213.79.90.226]:58889 "EHLO dev.rtsoft.ru"
+	id S1752889AbaFDLhH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 07:37:07 -0400
+Received: from mail.dev.rtsoft.ru ([213.79.90.226]:58908 "EHLO dev.rtsoft.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752719AbaFDLgE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 07:36:04 -0400
+	id S1752759AbaFDLgJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 07:36:09 -0400
 From: nyushchenko@dev.rtsoft.ru
 To: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Thomas Gleixner <tglx@linutronix.de>, devicetree@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, lugovskoy@dev.rtsoft.ru,
         Nikita Yushchenko <nyushchenko@dev.rtsoft.ru>
-Subject: [PATCH 18/21] spi: use devm_irq_of_parse_and_map() where appropriate
-Date: Wed,  4 Jun 2014 15:13:18 +0400
-Message-Id: <1401880402-30091-19-git-send-email-nyushchenko@dev.rtsoft.ru>
+Subject: [PATCH 08/21] i2c: use devm_irq_of_parse_and_map() where appropriate
+Date: Wed,  4 Jun 2014 15:13:08 +0400
+Message-Id: <1401880402-30091-9-git-send-email-nyushchenko@dev.rtsoft.ru>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1401880402-30091-1-git-send-email-nyushchenko@dev.rtsoft.ru>
 References: <1401880402-30091-1-git-send-email-nyushchenko@dev.rtsoft.ru>
@@ -30,71 +30,100 @@ issues.
 
 Signed-off-by: Nikita Yushchenko <nyushchenko@dev.rtsoft.ru>
 ---
- drivers/spi/spi-bcm2835.c     |    2 +-
- drivers/spi/spi-mpc512x-psc.c |    9 ++++++++-
- drivers/spi/spi.c             |    8 +++++++-
- 3 files changed, 16 insertions(+), 3 deletions(-)
+ drivers/i2c/busses/i2c-mpc.c     |   12 ++++--------
+ drivers/i2c/busses/i2c-mv64xxx.c |    2 +-
+ drivers/i2c/busses/i2c-st.c      |    6 +++---
+ drivers/i2c/busses/i2c-wmt.c     |    6 +++---
+ 4 files changed, 11 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/spi/spi-bcm2835.c b/drivers/spi/spi-bcm2835.c
-index 6916745..93c0aec 100644
---- a/drivers/spi/spi-bcm2835.c
-+++ b/drivers/spi/spi-bcm2835.c
-@@ -337,7 +337,7 @@ static int bcm2835_spi_probe(struct platform_device *pdev)
- 		goto out_master_put;
+diff --git a/drivers/i2c/busses/i2c-mpc.c b/drivers/i2c/busses/i2c-mpc.c
+index f539163..f8e45a6 100644
+--- a/drivers/i2c/busses/i2c-mpc.c
++++ b/drivers/i2c/busses/i2c-mpc.c
+@@ -647,9 +647,11 @@ static int fsl_i2c_probe(struct platform_device *op)
+ 		goto fail_map;
  	}
  
--	bs->irq = irq_of_parse_and_map(pdev->dev.of_node, 0);
-+	bs->irq = devm_irq_of_parse_and_map(&pdev->dev, pdev->dev.of_node, 0);
- 	if (bs->irq <= 0) {
- 		dev_err(&pdev->dev, "could not get IRQ: %d\n", bs->irq);
- 		err = bs->irq ? bs->irq : -ENODEV;
-diff --git a/drivers/spi/spi-mpc512x-psc.c b/drivers/spi/spi-mpc512x-psc.c
-index 577d23a..8256317 100644
---- a/drivers/spi/spi-mpc512x-psc.c
-+++ b/drivers/spi/spi-mpc512x-psc.c
-@@ -571,6 +571,7 @@ static int mpc512x_psc_spi_of_probe(struct platform_device *op)
- {
- 	const u32 *regaddr_p;
- 	u64 regaddr64, size64;
-+	int irq;
+-	i2c->irq = irq_of_parse_and_map(op->dev.of_node, 0);
++	i2c->irq = devm_irq_of_parse_and_map(&op->dev, op->dev.of_node, 0);
++	if (i2c->irq < 0)
++		return i2c->irq;
+ 	if (i2c->irq) { /* no i2c->irq implies polling */
+-		result = request_irq(i2c->irq, mpc_i2c_isr,
++		result = devm_request_irq(&op->dev, i2c->irq, mpc_i2c_isr,
+ 				     IRQF_SHARED, "i2c-mpc", i2c);
+ 		if (result < 0) {
+ 			dev_err(i2c->dev, "failed to attach interrupt\n");
+@@ -719,9 +721,7 @@ static int fsl_i2c_probe(struct platform_device *op)
+  fail_add:
+ 	if (i2c->clk_per)
+ 		clk_disable_unprepare(i2c->clk_per);
+-	free_irq(i2c->irq, i2c);
+  fail_request:
+-	irq_dispose_mapping(i2c->irq);
+ 	iounmap(i2c->base);
+  fail_map:
+ 	kfree(i2c);
+@@ -737,10 +737,6 @@ static int fsl_i2c_remove(struct platform_device *op)
+ 	if (i2c->clk_per)
+ 		clk_disable_unprepare(i2c->clk_per);
  
- 	regaddr_p = of_get_address(op->dev.of_node, 0, &size64, NULL);
- 	if (!regaddr_p) {
-@@ -579,8 +580,14 @@ static int mpc512x_psc_spi_of_probe(struct platform_device *op)
+-	if (i2c->irq)
+-		free_irq(i2c->irq, i2c);
+-
+-	irq_dispose_mapping(i2c->irq);
+ 	iounmap(i2c->base);
+ 	kfree(i2c);
+ 	return 0;
+diff --git a/drivers/i2c/busses/i2c-mv64xxx.c b/drivers/i2c/busses/i2c-mv64xxx.c
+index 540ea69..65f95d0 100644
+--- a/drivers/i2c/busses/i2c-mv64xxx.c
++++ b/drivers/i2c/busses/i2c-mv64xxx.c
+@@ -755,7 +755,7 @@ mv64xxx_of_config(struct mv64xxx_i2c_data *drv_data,
+ 		rc = -EINVAL;
+ 		goto out;
  	}
- 	regaddr64 = of_translate_address(op->dev.of_node, regaddr_p);
+-	drv_data->irq = irq_of_parse_and_map(np, 0);
++	drv_data->irq = devm_irq_of_parse_and_map(dev, np, 0);
  
-+	irq = devm_irq_of_parse_and_map(&op->dev, op->dev.of_node, 0);
-+	if (irq <= 0) {
-+		dev_err(&op->dev, "could not locate irq\n");
-+		return irq ? irq : -EINVAL;
-+	}
-+
- 	return mpc512x_psc_spi_do_probe(&op->dev, (u32) regaddr64, (u32) size64,
--				irq_of_parse_and_map(op->dev.of_node, 0));
-+				irq);
- }
+ 	drv_data->rstc = devm_reset_control_get_optional(dev, NULL);
+ 	if (IS_ERR(drv_data->rstc)) {
+diff --git a/drivers/i2c/busses/i2c-st.c b/drivers/i2c/busses/i2c-st.c
+index 8720161..f2d0017 100644
+--- a/drivers/i2c/busses/i2c-st.c
++++ b/drivers/i2c/busses/i2c-st.c
+@@ -778,10 +778,10 @@ static int st_i2c_probe(struct platform_device *pdev)
+ 	if (IS_ERR(i2c_dev->base))
+ 		return PTR_ERR(i2c_dev->base);
  
- static int mpc512x_psc_spi_of_remove(struct platform_device *op)
-diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
-index 939edf4..0baf00e 100644
---- a/drivers/spi/spi.c
-+++ b/drivers/spi/spi.c
-@@ -1306,7 +1306,13 @@ static void of_register_spi_devices(struct spi_master *master)
- 		spi->max_speed_hz = value;
+-	i2c_dev->irq = irq_of_parse_and_map(np, 0);
+-	if (!i2c_dev->irq) {
++	i2c_dev->irq = devm_irq_of_parse_and_map(&pdev->dev, np, 0);
++	if (i2c_dev->irq <= 0) {
+ 		dev_err(&pdev->dev, "IRQ missing or invalid\n");
+-		return -EINVAL;
++		return i2c_dev->irq ? i2c_dev->irq : -EINVAL;
+ 	}
  
- 		/* IRQ */
--		spi->irq = irq_of_parse_and_map(nc, 0);
-+		spi->irq = devm_irq_of_parse_and_map(&master->dev, nc, 0);
-+		if (spi->irq < 0) {
-+			dev_err(&master->dev, "could not locate irq for %s (%d)\n",
-+					nc->full_name, spi->irq);
-+			spi_dev_put(spi);
-+			continue;
-+		}
+ 	i2c_dev->clk = of_clk_get_by_name(np, "ssc");
+diff --git a/drivers/i2c/busses/i2c-wmt.c b/drivers/i2c/busses/i2c-wmt.c
+index 2c8a3e4..6082b93 100644
+--- a/drivers/i2c/busses/i2c-wmt.c
++++ b/drivers/i2c/busses/i2c-wmt.c
+@@ -389,10 +389,10 @@ static int wmt_i2c_probe(struct platform_device *pdev)
+ 	if (IS_ERR(i2c_dev->base))
+ 		return PTR_ERR(i2c_dev->base);
  
- 		/* Store a pointer to the node in the device structure */
- 		of_node_get(nc);
+-	i2c_dev->irq = irq_of_parse_and_map(np, 0);
+-	if (!i2c_dev->irq) {
++	i2c_dev->irq = devm_irq_of_parse_and_map(&pdev->dev, np, 0);
++	if (i2c_dev->irq <= 0) {
+ 		dev_err(&pdev->dev, "irq missing or invalid\n");
+-		return -EINVAL;
++		return i2c_dev->irq ? i2c_dev->irq : -EINVAL;
+ 	}
+ 
+ 	i2c_dev->clk = of_clk_get(np, 0);
 -- 
 1.7.10.4
 
