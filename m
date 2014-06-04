@@ -1,33 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932118AbaFDXwM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:52:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40581 "EHLO
+	id S1753739AbaFDXXW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 19:23:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40506 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753749AbaFDXXY (ORCPT
+	with ESMTP id S1753668AbaFDXXQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:23:24 -0400
+	Wed, 4 Jun 2014 19:23:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Darren Hart <darren@dvhart.com>,
-        Davidlohr Bueso <davidlohr@hp.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Clark Williams <williams@redhat.com>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Carlos ODonell <carlos@redhat.com>, Jakub Jelinek <jakub@redhat.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: [PATCH 3.10 001/103] futex: Add another early deadlock detection check
-Date: Wed,  4 Jun 2014 16:24:24 -0700
-Message-Id: <20140604232546.846537526@linuxfoundation.org>
+        Alex Williamson <alex.williamson@redhat.com>,
+        Joerg Roedel <joro@8bytes.org>
+Subject: [PATCH 3.14 222/228] iommu/amd: Fix interrupt remapping for aliased devices
+Date: Wed,  4 Jun 2014 16:24:11 -0700
+Message-Id: <20140604232355.177331490@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140604232546.704156131@linuxfoundation.org>
-References: <20140604232546.704156131@linuxfoundation.org>
+In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
+References: <20140604232347.966798903@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -35,167 +25,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Alex Williamson <alex.williamson@redhat.com>
 
-commit 866293ee54227584ffcb4a42f69c1f365974ba7f upstream.
+commit e028a9e6b8a637af09ac4114083280df4a7045f1 upstream.
 
-Dave Jones trinity syscall fuzzer exposed an issue in the deadlock
-detection code of rtmutex:
-  http://lkml.kernel.org/r/20140429151655.GA14277@redhat.com
+An apparent cut and paste error prevents the correct flags from being
+set on the alias device resulting in MSI on conventional PCI devices
+failing to work.  This also produces error events from the IOMMU like:
 
-That underlying issue has been fixed with a patch to the rtmutex code,
-but the futex code must not call into rtmutex in that case because
-    - it can detect that issue early
-    - it avoids a different and more complex fixup for backing out
+AMD-Vi: Event logged [INVALID_DEVICE_REQUEST device=00:14.4 address=0x000000fdf8000000 flags=0x0a00]
 
-If the user space variable got manipulated to 0x80000000 which means
-no lock holder, but the waiters bit set and an active pi_state in the
-kernel is found we can figure out the recursive locking issue by
-looking at the pi_state owner. If that is the current task, then we
-can safely return -EDEADLK.
+Where 14.4 is a PCIe-to-PCI bridge with a device behind it trying to
+use MSI interrupts.
 
-The check should have been added in commit 59fa62451 (futex: Handle
-futex_pi OWNER_DIED take over correctly) already, but I did not see
-the above issue caused by user space manipulation back then.
-
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Dave Jones <davej@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Darren Hart <darren@dvhart.com>
-Cc: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Clark Williams <williams@redhat.com>
-Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: Roland McGrath <roland@hack.frob.com>
-Cc: Carlos ODonell <carlos@redhat.com>
-Cc: Jakub Jelinek <jakub@redhat.com>
-Cc: Michael Kerrisk <mtk.manpages@gmail.com>
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Link: http://lkml.kernel.org/r/20140512201701.097349971@linutronix.de
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+Signed-off-by: Joerg Roedel <joro@8bytes.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/futex.c |   47 ++++++++++++++++++++++++++++++++++-------------
- 1 file changed, 34 insertions(+), 13 deletions(-)
+ drivers/iommu/amd_iommu.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -594,7 +594,8 @@ void exit_pi_state_list(struct task_stru
+--- a/drivers/iommu/amd_iommu.c
++++ b/drivers/iommu/amd_iommu.c
+@@ -3999,7 +3999,7 @@ static struct irq_remap_table *get_irq_t
+ 	iommu_flush_dte(iommu, devid);
+ 	if (devid != alias) {
+ 		irq_lookup_table[alias] = table;
+-		set_dte_irq_entry(devid, table);
++		set_dte_irq_entry(alias, table);
+ 		iommu_flush_dte(iommu, alias);
+ 	}
  
- static int
- lookup_pi_state(u32 uval, struct futex_hash_bucket *hb,
--		union futex_key *key, struct futex_pi_state **ps)
-+		union futex_key *key, struct futex_pi_state **ps,
-+		struct task_struct *task)
- {
- 	struct futex_pi_state *pi_state = NULL;
- 	struct futex_q *this, *next;
-@@ -638,6 +639,16 @@ lookup_pi_state(u32 uval, struct futex_h
- 					return -EINVAL;
- 			}
- 
-+			/*
-+			 * Protect against a corrupted uval. If uval
-+			 * is 0x80000000 then pid is 0 and the waiter
-+			 * bit is set. So the deadlock check in the
-+			 * calling code has failed and we did not fall
-+			 * into the check above due to !pid.
-+			 */
-+			if (task && pi_state->owner == task)
-+				return -EDEADLK;
-+
- 			atomic_inc(&pi_state->refcount);
- 			*ps = pi_state;
- 
-@@ -787,7 +798,7 @@ retry:
- 	 * We dont have the lock. Look up the PI state (or create it if
- 	 * we are the first waiter):
- 	 */
--	ret = lookup_pi_state(uval, hb, key, ps);
-+	ret = lookup_pi_state(uval, hb, key, ps, task);
- 
- 	if (unlikely(ret)) {
- 		switch (ret) {
-@@ -1197,7 +1208,7 @@ void requeue_pi_wake_futex(struct futex_
-  *
-  * Return:
-  *  0 - failed to acquire the lock atomically;
-- *  1 - acquired the lock;
-+ * >0 - acquired the lock, return value is vpid of the top_waiter
-  * <0 - error
-  */
- static int futex_proxy_trylock_atomic(u32 __user *pifutex,
-@@ -1208,7 +1219,7 @@ static int futex_proxy_trylock_atomic(u3
- {
- 	struct futex_q *top_waiter = NULL;
- 	u32 curval;
--	int ret;
-+	int ret, vpid;
- 
- 	if (get_futex_value_locked(&curval, pifutex))
- 		return -EFAULT;
-@@ -1236,11 +1247,13 @@ static int futex_proxy_trylock_atomic(u3
- 	 * the contended case or if set_waiters is 1.  The pi_state is returned
- 	 * in ps in contended cases.
- 	 */
-+	vpid = task_pid_vnr(top_waiter->task);
- 	ret = futex_lock_pi_atomic(pifutex, hb2, key2, ps, top_waiter->task,
- 				   set_waiters);
--	if (ret == 1)
-+	if (ret == 1) {
- 		requeue_pi_wake_futex(top_waiter, key2, hb2);
--
-+		return vpid;
-+	}
- 	return ret;
- }
- 
-@@ -1272,7 +1285,6 @@ static int futex_requeue(u32 __user *uad
- 	struct futex_hash_bucket *hb1, *hb2;
- 	struct plist_head *head1;
- 	struct futex_q *this, *next;
--	u32 curval2;
- 
- 	if (requeue_pi) {
- 		/*
-@@ -1358,16 +1370,25 @@ retry_private:
- 		 * At this point the top_waiter has either taken uaddr2 or is
- 		 * waiting on it.  If the former, then the pi_state will not
- 		 * exist yet, look it up one more time to ensure we have a
--		 * reference to it.
-+		 * reference to it. If the lock was taken, ret contains the
-+		 * vpid of the top waiter task.
- 		 */
--		if (ret == 1) {
-+		if (ret > 0) {
- 			WARN_ON(pi_state);
- 			drop_count++;
- 			task_count++;
--			ret = get_futex_value_locked(&curval2, uaddr2);
--			if (!ret)
--				ret = lookup_pi_state(curval2, hb2, &key2,
--						      &pi_state);
-+			/*
-+			 * If we acquired the lock, then the user
-+			 * space value of uaddr2 should be vpid. It
-+			 * cannot be changed by the top waiter as it
-+			 * is blocked on hb2 lock if it tries to do
-+			 * so. If something fiddled with it behind our
-+			 * back the pi state lookup might unearth
-+			 * it. So we rather use the known value than
-+			 * rereading and handing potential crap to
-+			 * lookup_pi_state.
-+			 */
-+			ret = lookup_pi_state(ret, hb2, &key2, &pi_state, NULL);
- 		}
- 
- 		switch (ret) {
 
 
