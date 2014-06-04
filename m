@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755277AbaFDXwx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:52:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40552 "EHLO
+	id S1754796AbaFDXxK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 19:53:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40548 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753724AbaFDXXV (ORCPT
+	with ESMTP id S1753722AbaFDXXV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 4 Jun 2014 19:23:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Wenkai Du <wenkai.du@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Wolfram Sang <wsa@the-dreams.de>
-Subject: [PATCH 3.14 208/228] i2c: designware: Mask all interrupts during i2c controller enable
-Date: Wed,  4 Jun 2014 16:23:57 -0700
-Message-Id: <20140604232354.734412131@linuxfoundation.org>
+        Anton Blanchard <anton@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 3.14 217/228] powerpc: irq work racing with timer interrupt can result in timer interrupt hang
+Date: Wed,  4 Jun 2014 16:24:06 -0700
+Message-Id: <20140604232355.010193017@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -30,58 +29,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Du, Wenkai" <wenkai.du@intel.com>
+From: Anton Blanchard <anton@samba.org>
 
-commit 47bb27e78867997040a228328f2a631c3c7f2c82 upstream.
+commit 8050936caf125fbe54111ba5e696b68a360556ba upstream.
 
-There have been "i2c_designware 80860F41:00: controller timed out" errors
-on a number of Baytrail platforms. The issue is caused by incorrect value in
-Interrupt Mask Register (DW_IC_INTR_MASK)  when i2c core is being enabled.
-This causes call to __i2c_dw_enable() to immediately start the transfer which
-leads to timeout. There are 3 failure modes observed:
+I am seeing an issue where a CPU running perf eventually hangs.
+Traces show timer interrupts happening every 4 seconds even
+when a userspace task is running on the CPU. /proc/timer_list
+also shows pending hrtimers have not run in over an hour,
+including the scheduler.
 
-1. Failure in S0 to S3 resume path
+Looking closer, decrementers_next_tb is getting set to
+0xffffffffffffffff, and at that point we will never take
+a timer interrupt again.
 
-The default value after reset for DW_IC_INTR_MASK is 0x8ff. When we start
-the first transaction after resuming from system sleep, TX_EMPTY interrupt
-is already unmasked because of the hardware default.
+In __timer_interrupt() we set decrementers_next_tb to
+0xffffffffffffffff and rely on ->event_handler to update it:
 
-2. Failure in normal operational path
+        *next_tb = ~(u64)0;
+        if (evt->event_handler)
+                evt->event_handler(evt);
 
-This failure happens rarely and is hard to reproduce. Debug trace showed that
-DW_IC_INTR_MASK had value of 0x254 when failure occurred, which meant
-TX_EMPTY was unmasked.
+In this case ->event_handler is hrtimer_interrupt. This will eventually
+call back through the clockevents code with the next event to be
+programmed:
 
-3. Failure in S3 to S0 suspend path
+static int decrementer_set_next_event(unsigned long evt,
+                                      struct clock_event_device *dev)
+{
+        /* Don't adjust the decrementer if some irq work is pending */
+        if (test_irq_work_pending())
+                return 0;
+        __get_cpu_var(decrementers_next_tb) = get_tb_or_rtc() + evt;
 
-This failure also happens rarely and is hard to reproduce. Adding debug trace
-that read DW_IC_INTR_MASK made this failure not reproducible. But from ISR
-call trace we could conclude TX_EMPTY was unmasked when problem occurred.
+If irq work came in between these two points, we will return
+before updating decrementers_next_tb and we never process a timer
+interrupt again.
 
-The patch masks all interrupts before the controller is enabled to resolve the
-faulty DW_IC_INTR_MASK conditions.
+This looks to have been introduced by 0215f7d8c53f (powerpc: Fix races
+with irq_work). Fix it by removing the early exit and relying on
+code later on in the function to force an early decrementer:
 
-Signed-off-by: Wenkai Du <wenkai.du@intel.com>
-Acked-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-[wsa: improved the comment and removed typo in commit msg]
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+       /* We may have raced with new irq work */
+       if (test_irq_work_pending())
+               set_dec(1);
+
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/i2c/busses/i2c-designware-core.c |    3 +++
- 1 file changed, 3 insertions(+)
+ arch/powerpc/kernel/time.c |    3 ---
+ 1 file changed, 3 deletions(-)
 
---- a/drivers/i2c/busses/i2c-designware-core.c
-+++ b/drivers/i2c/busses/i2c-designware-core.c
-@@ -417,6 +417,9 @@ static void i2c_dw_xfer_init(struct dw_i
- 	 */
- 	dw_writel(dev, msgs[dev->msg_write_idx].addr | ic_tar, DW_IC_TAR);
- 
-+	/* enforce disabled interrupts (due to HW issues) */
-+	i2c_dw_disable_int(dev);
-+
- 	/* Enable the adapter */
- 	__i2c_dw_enable(dev, true);
+--- a/arch/powerpc/kernel/time.c
++++ b/arch/powerpc/kernel/time.c
+@@ -805,9 +805,6 @@ static void __init clocksource_init(void
+ static int decrementer_set_next_event(unsigned long evt,
+ 				      struct clock_event_device *dev)
+ {
+-	/* Don't adjust the decrementer if some irq work is pending */
+-	if (test_irq_work_pending())
+-		return 0;
+ 	__get_cpu_var(decrementers_next_tb) = get_tb_or_rtc() + evt;
+ 	set_dec(evt);
  
 
 
