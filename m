@@ -1,60 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752154AbaFDWOI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 18:14:08 -0400
-Received: from mga14.intel.com ([192.55.52.115]:23164 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751504AbaFDWOH convert rfc822-to-8bit (ORCPT
+	id S1751945AbaFDWRK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 18:17:10 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:35687 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751413AbaFDWRI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 18:14:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,975,1392192000"; 
-   d="scan'208";a="542593747"
-From: "Rustad, Mark D" <mark.d.rustad@intel.com>
-To: Joe Perches <joe@perches.com>
-CC: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>,
-        "Allan, Bruce W" <bruce.w.allan@intel.com>,
-        "Brandeburg, Jesse" <jesse.brandeburg@intel.com>,
-        "<linux-kernel@vger.kernel.org>" <linux-kernel@vger.kernel.org>,
-        "Ronciak, John" <john.ronciak@intel.com>,
-        Netdev <netdev@vger.kernel.org>,
-        Linux NICS <Linux-nics@isotope.jf.intel.com>
-Subject: Re: [E1000-devel] [PATCH] net: ethernet: intel: ixgbe:
- ixgbe_main.c: Cleaning up missing null-terminate after strncpy call
-Thread-Topic: [E1000-devel] [PATCH] net: ethernet: intel: ixgbe:
- ixgbe_main.c: Cleaning up missing null-terminate after strncpy call
-Thread-Index: AQHPgD/g1jrh158h6UGQxnT2rTe8NZth+XAA
-Date: Wed, 4 Jun 2014 22:14:05 +0000
-Message-ID: <21D85D78-EB7B-4C74-861B-43D7EDE350F7@intel.com>
-References: <1401917380-2772-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
- <1401918909.26329.5.camel@joe-AO725>
-In-Reply-To: <1401918909.26329.5.camel@joe-AO725>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.24.24.122]
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <A0FE3CB483B5B74BB5DD7066F205CD2C@intel.com>
-Content-Transfer-Encoding: 8BIT
+	Wed, 4 Jun 2014 18:17:08 -0400
+Date: Wed, 4 Jun 2014 15:17:04 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Jet Chen <jet.chen@intel.com>, LKML <linux-kernel@vger.kernel.org>,
+        lkp@01.org
+Subject: Re: [rcu] 5057f55e543: -23.5% qperf.udp.recv_bw
+Message-ID: <20140604221704.GH22231@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <538D9EA9.6070406@intel.com>
+ <20140603141720.GN22231@linux.vnet.ibm.com>
+ <20140604123338.GA1263@localhost>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20140604123338.GA1263@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14060422-7164-0000-0000-0000023B550A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Jun 4, 2014, at 2:55 PM, Joe Perches <joe@perches.com> wrote:
-
-> On Wed, 2014-06-04 at 23:29 +0200, Rickard Strandqvist wrote:
->> Added a guaranteed null-terminate after call to strncpy.
+On Wed, Jun 04, 2014 at 08:33:38PM +0800, Fengguang Wu wrote:
+> Hi Paul,
 > 
-> Perhaps all of these should be strlcpy
+> On Tue, Jun 03, 2014 at 07:17:20AM -0700, Paul E. McKenney wrote:
+> > On Tue, Jun 03, 2014 at 06:08:41PM +0800, Jet Chen wrote:
+> > > Hi Paul,
+> > > 
+> > > FYI, we noticed the below changes on
+> > > 
+> > > git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git rcu/fixes
+> > > commit 5057f55e543b7859cfd26bc281291795eac93f8a ("rcu: Bind RCU grace-period kthreads if NO_HZ_FULL")
+> > 
+> > My guess would be that some of these workloads generated enough callbacks
+> > that binding all the rcuo callback-offloading kthreads to CPU 0 resulted
+> > in a bottleneck.  If that was the case, CPU 0 would often hit 100%
+> > CPU utilization, and there would be more wait time on other CPUs because
+> > callback execution was delayed.
+> > 
+> > Does that match what you are seeing?
+> 
+> This is the /proc/stat contents on completion of test
+> brickland3/qperf/600s. It shows that CPU 0 is not busy.
 
-The code that is there seems fine. The length of the array exceeds the length of the literal, and the strncpy ensures that the entire buffer is initialized so no information can possibly leak from the kernel.
+Hmmm...  Might be sometimes busy, thus blocking grace periods?
+I posted a speculative fix at a558e309f99cf8b809691417324c6770e10bb614,
+please let me know how it goes!
 
-I think this is fine as it is without any patch.
+							Thanx, Paul
 
--- 
-Mark Rustad, Networking Division, Intel Corporation
+> cpu  1707 0 57716 8569826 33 0 14572 0 0 0
+> cpu0 2 0 575 69345 29 0 8 0 0 0
+> cpu1 0 0 86 72203 3 0 1 0 0 0
+> cpu2 116 0 386 71437 0 0 0 0 0 0
+> 
+> The columns of numbers are:
+> 
+> - user: normal processes executing in user mode
+> - nice: niced processes executing in user mode
+> - system: processes executing in kernel mode
+> - idle: twiddling thumbs
+> - iowait: waiting for I/O to complete
+> - irq: servicing interrupts
+> - softirq: servicing softirqs
+> - steal: involuntary wait
+> - guest: running a normal guest
+> - guest_nice: running a niced guest
+> 
+> cpu3 32 0 59 72213 0 0 0 0 0 0
+> cpu4 8 0 35 72272 0 0 0 0 0 0
+> cpu5 1 0 3 72318 0 0 0 0 0 0
+> cpu6 1 0 3 72320 0 0 0 0 0 0
+> cpu7 0 0 2 72327 0 0 0 0 0 0
+> cpu8 0 0 2 72323 0 0 0 0 0 0
+> cpu9 0 0 1 72323 0 0 0 0 0 0
+> cpu10 0 0 2 72314 0 0 0 0 0 0
+> cpu11 0 0 2 72317 0 0 0 0 0 0
+> cpu12 0 0 3 72311 0 0 0 0 0 0
+> cpu13 0 0 2 72313 0 0 0 0 0 0
+> cpu14 0 0 20 72296 0 0 0 0 0 0
+> cpu15 0 0 90 72192 0 0 1 0 0 0
+> cpu16 0 0 13 72288 0 0 1 0 0 0
+> cpu17 115 0 137 71848 0 0 0 0 0 0
+> cpu18 28 0 32 72106 0 0 0 0 0 0
+> cpu19 7 0 5 72256 0 0 0 0 0 0
+> cpu20 2 0 72 71938 0 0 0 0 0 0
+> cpu21 0 0 3 72273 0 0 0 0 0 0
+> cpu22 0 0 2 72284 0 0 0 0 0 0
+> cpu23 0 0 1 72284 0 0 0 0 0 0
+> cpu24 0 0 2 72279 0 0 0 0 0 0
+> cpu25 0 0 1 72281 0 0 0 0 0 0
+> cpu26 0 0 2 72274 0 0 0 0 0 0
+> cpu27 0 0 5 72274 0 0 0 0 0 0
+> cpu28 0 0 22 72255 0 0 0 0 0 0
+> cpu29 0 0 1 72273 0 0 0 0 0 0
+> cpu30 24 0 748 70165 0 0 407 0 0 0
+> cpu31 28 0 906 70251 0 0 465 0 0 0
+> cpu32 62 0 2276 68376 0 0 604 0 0 0
+> cpu33 27 0 1100 70059 0 0 453 0 0 0
+> cpu34 23 0 1359 69933 0 0 418 0 0 0
+> cpu35 32 0 1663 69109 0 0 775 0 0 0
+> cpu36 103 0 8569 60806 0 0 2306 0 0 0
+> cpu37 88 0 7052 63141 0 0 518 0 0 0
+> cpu38 51 0 2881 67927 0 0 498 0 0 0
+> cpu39 36 0 1705 69166 0 0 430 0 0 0
+> cpu40 99 0 8657 60720 0 0 1767 0 0 0
+> cpu41 103 0 7088 61185 0 0 1749 0 0 0
+> cpu42 42 0 1567 69244 0 0 525 0 0 0
+> cpu43 43 0 1661 68865 0 0 457 0 0 0
+> cpu44 39 0 2610 68046 0 0 660 0 0 0
+> cpu45 3 0 248 71852 0 0 30 0 0 0
+> cpu46 4 0 16 72140 0 0 6 0 0 0
+> cpu47 115 0 297 71435 0 0 159 0 0 0
+> cpu48 30 0 81 71940 0 0 61 0 0 0
+> cpu49 14 0 163 71815 0 0 118 0 0 0
+> cpu50 6 0 144 71832 0 0 129 0 0 0
+> cpu51 12 0 508 71217 0 0 276 0 0 0
+> cpu52 18 0 498 71082 0 0 378 0 0 0
+> cpu53 11 0 440 71236 0 0 282 0 0 0
+> cpu54 4 0 205 71710 0 0 144 0 0 0
+> cpu55 4 0 136 71898 0 0 78 0 0 0
+> cpu56 13 0 400 71305 0 0 288 0 0 0
+> cpu57 14 0 377 71346 0 0 316 0 0 0
+> cpu58 2 0 109 71954 0 0 73 0 0 0
+> cpu59 1 0 8 72174 0 0 3 0 0 0
+> cpu60 0 0 0 72191 0 0 0 0 0 0
+> cpu61 86 0 313 71749 0 0 0 0 0 0
+> cpu62 3 0 9 72173 0 0 0 0 0 0
+> cpu63 2 0 8 72175 0 0 0 0 0 0
+> cpu64 0 0 2 72178 0 0 0 0 0 0
+> cpu65 0 0 2 72177 0 0 0 0 0 0
+> cpu66 0 0 2 72175 0 0 0 0 0 0
+> cpu67 0 0 2 72173 0 0 0 0 0 0
+> cpu68 0 0 4 72169 0 0 0 0 0 0
+> cpu69 0 0 2 72168 0 0 0 0 0 0
+> cpu70 0 0 1 72166 0 0 0 0 0 0
+> cpu71 0 0 1 72164 0 0 0 0 0 0
+> cpu72 0 0 0 72163 0 0 0 0 0 0
+> cpu73 0 0 0 72161 0 0 0 0 0 0
+> cpu74 0 0 1 72158 0 0 0 0 0 0
+> cpu75 0 0 0 72156 0 0 0 0 0 0
+> cpu76 73 0 330 71709 0 0 0 0 0 0
+> cpu77 4 0 10 72137 0 0 0 0 0 0
+> cpu78 1 0 4 72145 0 0 0 0 0 0
+> cpu79 0 0 50 72077 0 0 0 0 0 0
+> cpu80 0 0 5 72138 0 0 0 0 0 0
+> cpu81 0 0 1 72141 0 0 0 0 0 0
+> cpu82 0 0 66 72074 0 0 0 0 0 0
+> cpu83 0 0 1 72137 0 0 0 0 0 0
+> cpu84 0 0 0 72136 0 0 0 0 0 0
+> cpu85 0 0 1 72133 0 0 0 0 0 0
+> cpu86 0 0 0 72131 0 0 0 0 0 0
+> cpu87 0 0 0 72129 0 0 0 0 0 0
+> cpu88 0 0 1 72127 0 0 0 0 0 0
+> cpu89 0 0 0 72124 0 0 0 0 0 0
+> cpu90 0 0 0 72122 0 0 0 0 0 0
+> cpu91 63 0 1377 70501 0 0 162 0 0 0
+> cpu92 2 0 14 72100 0 0 0 0 0 0
+> cpu93 1 0 5 72109 0 0 0 0 0 0
+> cpu94 0 0 4 72108 0 0 0 0 0 0
+> cpu95 1 0 4 72106 0 0 0 0 0 0
+> cpu96 0 0 1 72106 0 0 0 0 0 0
+> cpu97 0 0 0 72105 0 0 0 0 0 0
+> cpu98 0 0 1 72102 0 0 0 0 0 0
+> cpu99 0 0 2 72099 0 0 0 0 0 0
+> cpu100 0 0 1 72099 0 0 0 0 0 0
+> cpu101 0 0 0 72096 0 0 0 0 0 0
+> cpu102 0 0 0 72094 0 0 0 0 0 0
+> cpu103 0 0 1 72092 0 0 0 0 0 0
+> cpu104 0 0 0 72089 0 0 0 0 0 0
+> cpu105 0 0 1 72086 0 0 0 0 0 0
+> cpu106 66 0 363 71601 0 0 9 0 0 0
+> cpu107 2 0 4 72075 0 0 0 0 0 0
+> cpu108 0 0 2 72077 0 0 0 0 0 0
+> cpu109 0 0 8 72069 0 0 0 0 0 0
+> cpu110 0 0 1 72073 0 0 0 0 0 0
+> cpu111 0 0 9 72063 0 0 0 0 0 0
+> cpu112 0 0 1 72070 0 0 0 0 0 0
+> cpu113 0 0 0 72068 0 0 0 0 0 0
+> cpu114 0 0 1 72064 0 0 0 0 0 0
+> cpu115 0 0 1 72063 0 0 0 0 0 0
+> cpu116 0 0 1 72060 0 0 0 0 0 0
+> cpu117 0 0 0 72059 0 0 0 0 0 0
+> cpu118 0 0 0 72056 0 0 0 0 0 0
+> cpu119 0 0 1 72053 0 0 0 0 0 0
+> intr 5639794 132 0 0 9 856 0 0 0 1 0 0 0 0 0 0 0 31 0 0 0 0 0 0 311 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 0 2794 395 411 385 399 378 399 375 396 384 383 396 379 470 386 375 375 386 382 512 375 375 375 375 375 375 375 375 375 375 375 375 378 375 375 375 375 375 375 375 375 375 379 381 388 375 375 375 376 379 375 375 375 375 375 375 375 375 375 375 375 382 375 1 78 64 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+> ctxt 84441175
+> btime 1401871947
+> processes 23608
+> procs_running 2
+> procs_blocked 0
+> softirq 84702758 9 1574595 174 82369760 28 0 305 456968 84738 216181
+> 
+> Thanks,
+> Fengguang
+> 
 
