@@ -1,52 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751735AbaFDVXA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 17:23:00 -0400
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:51090 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751340AbaFDVW7 (ORCPT
+	id S1751848AbaFDVYJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 17:24:09 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:44371 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751339AbaFDVYH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 17:22:59 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140604172220.GI13930@laptop.programming.kicks-ass.net>
-References: <20140603114821.GA23711@gmail.com>
-	<1401832251.8843.3.camel@buesod1.americas.hpqcorp.net>
-	<20140604103003.GE11096@twins.programming.kicks-ass.net>
-	<CA+55aFzTGHrR2dr64BsMOE--QXqw_=mwqypmweebRe-1UkJGZA@mail.gmail.com>
-	<20140604172220.GI13930@laptop.programming.kicks-ass.net>
-Date: Wed, 4 Jun 2014 14:22:58 -0700
-X-Google-Sender-Auth: JzOE9xpGmtHBVYaNpZ5whRAphmQ
-Message-ID: <CA+55aFzsTqKhAOwEm+-M_ELzRFvPMYtUn8DNM9FiUMzaeZP0pw@mail.gmail.com>
-Subject: Re: [GIT PULL] locking tree changes for v3.16
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Davidlohr Bueso <davidlohr@hp.com>, Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>, Peter Anvin <hpa@zytor.com>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 4 Jun 2014 17:24:07 -0400
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Randy Dunlap <rdunlap@infradead.org>,
+        Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] Documentation: accounting: getdelays.c:  Cleaning up missing null-terminate after strncpy call
+Date: Wed,  4 Jun 2014 23:25:00 +0200
+Message-Id: <1401917100-2584-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 4, 2014 at 10:22 AM, Peter Zijlstra <peterz@infradead.org> wrote:
->
-> I _think_ tip/locking/core is empty and you could pull that into your
-> tree without getting tons of extra weird stuff, but if you prefer a tree
-> based on your git tree I'll have to do some manual stuff but that is
-> certainly possible.
+Added a guaranteed null-terminate after call to strncpy.
 
-I'd actually prefer against something like the v3.15-rc8 tag, just so
-that the tree is otherwise "pristine".
+This was partly found using a static code analysis program called cppcheck.
 
-> Also, this 'obviously' does not have the normal tip build coverage,
-> because I usually rely on the tip build robots to do that. But it does
-> build and run for all my local machines.
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+---
+ Documentation/accounting/getdelays.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-It would be great to have Davidlohr go over it too, and if possible
-have it run through the build robots. I'll pull it tomorrow or Friday
-if everything looks fine, and then we'll hopefully have this issue
-mostly closed.
+diff --git a/Documentation/accounting/getdelays.c b/Documentation/accounting/getdelays.c
+index c6a06b7..f405780 100644
+--- a/Documentation/accounting/getdelays.c
++++ b/Documentation/accounting/getdelays.c
+@@ -314,6 +314,7 @@ int main(int argc, char *argv[])
+ 			break;
+ 		case 'm':
+ 			strncpy(cpumask, optarg, sizeof(cpumask));
++			cpumask[sizeof(cpumask) - 1] = '\0';
+ 			maskset = 1;
+ 			printf("cpumask %s maskset %d\n", cpumask, maskset);
+ 			break;
+-- 
+1.7.10.4
 
-             Linus
