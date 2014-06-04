@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754846AbaFDXjt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:39:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40799 "EHLO
+	id S1754867AbaFDXkJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 19:40:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40793 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753897AbaFDXXx (ORCPT
+	with ESMTP id S1753965AbaFDXXw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:23:53 -0400
+	Wed, 4 Jun 2014 19:23:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Victor A. Santos" <victoraur.santos@gmail.com>
-Subject: [PATCH 3.10 039/103] USB: Nokia 305 should be treated as unusual dev
-Date: Wed,  4 Jun 2014 16:25:02 -0700
-Message-Id: <20140604232548.121836434@linuxfoundation.org>
+        Ilia Mirkin <imirkin@alum.mit.edu>, Ben Skeggs <bskeggs@redhat.com>
+Subject: [PATCH 3.10 051/103] drm/nouveau/acpi: allow non-optimus setups to load vbios from acpi
+Date: Wed,  4 Jun 2014 16:25:14 -0700
+Message-Id: <20140604232548.505270548@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232546.704156131@linuxfoundation.org>
 References: <20140604232546.704156131@linuxfoundation.org>
@@ -28,32 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Victor A. Santos" <victoraur.santos@gmail.com>
+From: Ilia Mirkin <imirkin@alum.mit.edu>
 
-commit f0ef5d41792a46a1085dead9dfb0bdb2c574638e upstream.
+commit a3d0b1218d351c6e6f3cea36abe22236a08cb246 upstream.
 
-Signed-off-by: Victor A. Santos <victoraur.santos@gmail.com>
+There appear to be a crop of new hardware where the vbios is not
+available from PROM/PRAMIN, but there is a valid _ROM method in ACPI.
+The data read from PCIROM almost invariably contains invalid
+instructions (still has the x86 opcodes), which makes this a low-risk
+way to try to obtain a valid vbios image.
+
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=76475
+Signed-off-by: Ilia Mirkin <imirkin@alum.mit.edu>
+Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/storage/unusual_devs.h |    7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/gpu/drm/nouveau/nouveau_acpi.c |    3 ---
+ 1 file changed, 3 deletions(-)
 
---- a/drivers/usb/storage/unusual_devs.h
-+++ b/drivers/usb/storage/unusual_devs.h
-@@ -234,6 +234,13 @@ UNUSUAL_DEV(  0x0421, 0x0495, 0x0370, 0x
- 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
- 		US_FL_MAX_SECTORS_64 ),
+--- a/drivers/gpu/drm/nouveau/nouveau_acpi.c
++++ b/drivers/gpu/drm/nouveau/nouveau_acpi.c
+@@ -372,9 +372,6 @@ bool nouveau_acpi_rom_supported(struct p
+ 	acpi_status status;
+ 	acpi_handle dhandle, rom_handle;
  
-+/* Patch submitted by Victor A. Santos <victoraur.santos@gmail.com> */
-+UNUSUAL_DEV(  0x0421, 0x05af, 0x0742, 0x0742,
-+		"Nokia",
-+		"305",
-+		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
-+		US_FL_MAX_SECTORS_64),
-+
- /* Patch submitted by Mikhail Zolotaryov <lebon@lebon.org.ua> */
- UNUSUAL_DEV(  0x0421, 0x06aa, 0x1110, 0x1110,
- 		"Nokia",
+-	if (!nouveau_dsm_priv.dsm_detected && !nouveau_dsm_priv.optimus_detected)
+-		return false;
+-
+ 	dhandle = DEVICE_ACPI_HANDLE(&pdev->dev);
+ 	if (!dhandle)
+ 		return false;
 
 
