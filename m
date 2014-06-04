@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754853AbaFDXkH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:40:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40796 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753977AbaFDXXw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753978AbaFDXXw (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 4 Jun 2014 19:23:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40769 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753897AbaFDXXt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 19:23:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniele Forsi <dforsi@gmail.com>
-Subject: [PATCH 3.10 038/103] usb: storage: shuttle_usbat: fix discs being detected twice
-Date: Wed,  4 Jun 2014 16:25:01 -0700
-Message-Id: <20140604232548.093126859@linuxfoundation.org>
+        Christoph Hellwig <hch@lst.de>, Ben Greear <greearb@candelatech.com>,
+        Chuck Lever <chuck.lever@oracle.com>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: [PATCH 3.10 046/103] posix_acl: handle NULL ACL in posix_acl_equiv_mode
+Date: Wed,  4 Jun 2014 16:25:09 -0700
+Message-Id: <20140604232548.334270966@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232546.704156131@linuxfoundation.org>
 References: <20140604232546.704156131@linuxfoundation.org>
@@ -28,32 +30,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniele Forsi <dforsi@gmail.com>
+From: Christoph Hellwig <hch@lst.de>
 
-commit df602c2d2358f02c6e49cffc5b49b9daa16db033 upstream.
+commit 50c6e282bdf5e8dabf8d7cf7b162545a55645fd9 upstream.
 
-Even if the USB-to-ATAPI converter supported multiple LUNs, this
-driver would always detect the same physical device or media because
-it doesn't use srb->device->lun in any way.
-Tested with an Hewlett-Packard CD-Writer Plus 8200e.
+Various filesystems don't bother checking for a NULL ACL in
+posix_acl_equiv_mode, and thus can dereference a NULL pointer when it
+gets passed one. This usually happens from the NFS server, as the ACL tools
+never pass a NULL ACL, but instead of one representing the mode bits.
 
-Signed-off-by: Daniele Forsi <dforsi@gmail.com>
+Instead of adding boilerplat to all filesystems put this check into one place,
+which will allow us to remove the check from other filesystems as well later
+on.
+
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+Reported-by: Ben Greear <greearb@candelatech.com>
+Reported-by: Marco Munderloh <munderl@tnt.uni-hannover.de>,
+Cc: Chuck Lever <chuck.lever@oracle.com>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/storage/shuttle_usbat.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/posix_acl.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/drivers/usb/storage/shuttle_usbat.c
-+++ b/drivers/usb/storage/shuttle_usbat.c
-@@ -1851,7 +1851,7 @@ static int usbat_probe(struct usb_interf
- 	us->transport_name = "Shuttle USBAT";
- 	us->transport = usbat_flash_transport;
- 	us->transport_reset = usb_stor_CB_reset;
--	us->max_lun = 1;
-+	us->max_lun = 0;
+--- a/fs/posix_acl.c
++++ b/fs/posix_acl.c
+@@ -158,6 +158,12 @@ posix_acl_equiv_mode(const struct posix_
+ 	umode_t mode = 0;
+ 	int not_equiv = 0;
  
- 	result = usb_stor_probe2(us);
- 	return result;
++	/*
++	 * A null ACL can always be presented as mode bits.
++	 */
++	if (!acl)
++		return 0;
++
+ 	FOREACH_ACL_ENTRY(pa, acl, pe) {
+ 		switch (pa->e_tag) {
+ 			case ACL_USER_OBJ:
 
 
