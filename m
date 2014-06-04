@@ -1,130 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751873AbaFDVA7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 17:00:59 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:54052 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751787AbaFDVA4 (ORCPT
+	id S1752040AbaFDVCS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 17:02:18 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43537 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751979AbaFDVCP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 17:00:56 -0400
-Date: Wed, 4 Jun 2014 23:00:52 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Dave P Martin <Dave.Martin@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Grant Grundler <grundler@chromium.org>, Joerg Roedel <joro@8bytes.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Linux IOMMU <iommu@lists.linux-foundation.org>,
-        Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Cho KyongHo <pullip.cho@samsung.com>, Hiroshi Doyu <hdoyu@nvidia.com>
-Subject: Re: [PATCH v2] devicetree: Add generic IOMMU device tree bindings
-Message-ID: <20140604210045.GB18710@mithrandir>
-References: <1400877218-4113-1-git-send-email-thierry.reding@gmail.com>
- <4545972.cM7IP1qTXQ@wuerfel>
- <CAL_Jsq+tkFNpjSEZboT+o69B_Z3a8e-ZVKaYDmLwtkyYoPy6VQ@mail.gmail.com>
- <5288123.eXagyPAxNq@wuerfel>
- <20140602104104.GD3855@e103592.cambridge.arm.com>
- <20140604143509.GF28484@ulmo>
- <20140604164132.GF6644@arm.com>
+	Wed, 4 Jun 2014 17:02:15 -0400
+Date: Wed, 4 Jun 2014 23:02:09 +0200
+From: Jean Delvare <jdelvare@suse.de>
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-next@vger.kernel.org, wsa@the-dreams.de,
+        linus.walleij@linaro.org, paul.gortmaker@windriver.com,
+        jg1.han@samsung.com, Stephen Rothwell <sfr@canb.auug.org.au>,
+        Jim Davis <jim.epost@gmail.com>
+Subject: Re: [PATCH] i2c: pca954x: Fix compilation without CONFIG_GPIOLIB
+Message-ID: <20140604230209.21182dd3@endymion.delvare>
+In-Reply-To: <1401900992-16581-1-git-send-email-laurent.pinchart@ideasonboard.com>
+References: <CA+r1Zhi9Qd4aZ2WJ02K4Gv=zg7QvG+r=t2VpiXRKXcYRc1vt=A@mail.gmail.com>
+	<1401900992-16581-1-git-send-email-laurent.pinchart@ideasonboard.com>
+Organization: SUSE Linux
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="dTy3Mrz/UPE2dbVg"
-Content-Disposition: inline
-In-Reply-To: <20140604164132.GF6644@arm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed,  4 Jun 2014 18:56:32 +0200, Laurent Pinchart wrote:
+> The pca954x driver recently switched to the GPIO descriptor API without
+> including the correct <linux/gpio/consumer.h> header. This breaks
+> compilation without CONFIG_GPIOLIB.
+> 
+> drivers/i2c/muxes/i2c-mux-pca954x.c: In function ‘pca954x_probe’:
+> drivers/i2c/muxes/i2c-mux-pca954x.c:204:2: error: implicit declaration
+> of function ‘devm_gpiod_get’ [-Werror=implicit-function-declaration]
+>   gpio = devm_gpiod_get(&client->dev, "reset");
+>   ^
+> drivers/i2c/muxes/i2c-mux-pca954x.c:204:7: warning: assignment makes
+> pointer from integer without a cast [enabled by default]
+>   gpio = devm_gpiod_get(&client->dev, "reset");
+>        ^
+> drivers/i2c/muxes/i2c-mux-pca954x.c:206:3: error: implicit declaration
+> of function ‘gpiod_direction_output’
+> [-Werror=implicit-function-declaration]
+>    gpiod_direction_output(gpio, 0);
+>    ^
+> cc1: some warnings being treated as errors
+> make[3]: *** [drivers/i2c/muxes/i2c-mux-pca954x.o] Error 1
+> 
+> Fix it by including the right header.
+> 
+> Reported-by: Jim Davis <jim.epost@gmail.com>
+> Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+> ---
+>  drivers/i2c/muxes/i2c-mux-pca954x.c | 3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
+> (...)
 
---dTy3Mrz/UPE2dbVg
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Acked-by: Jean Delvare <jdelvare@suse.de>
 
-On Wed, Jun 04, 2014 at 05:41:32PM +0100, Will Deacon wrote:
-> On Wed, Jun 04, 2014 at 03:35:10PM +0100, Thierry Reding wrote:
-> > On Mon, Jun 02, 2014 at 11:41:04AM +0100, Dave Martin wrote:
-> > > In the strictest sense, no.
-> > >=20
-> > > But for a large set of sane configurations, this probably works.
-> > >=20
-> > > Small sets of randomly-assigned IDs can just be enumerated one by one.
-> > >=20
-> > > We wouldn't be able to describe folding and bit shuffling, but we
-> > > probably don't want to encourage that anyway.
-> >=20
-> > I'm having some difficulty understanding this. You make it sound like
-> > there's a fairly arbitrary number of IDs that the SMMU can handle. So
-> > how is the mapping to devices defined? If you say encourage that does
-> > make it sound like the assignment of IDs is purely defined by some
-> > mechanism in software rather than in hardware. Or they are more or less
-> > randomly picked by someone. If that's the case, is that not something
-> > that should be dynamically allocated by the kernel rather than put into
-> > the device tree?
->=20
-> The set of StreamIDs that can be generated by a master is fixed in the
-> hardware. The SMMU can then be programmed to map these incoming IDs onto
-> a context ID (or a set of context IDs), which are the IDs used internally
-> by the SMMU to find the page tables etc.
->=20
-> The StreamID -> ContextID mapping is dynamic and controlled by software.
-> The Master -> StreamIDs mapping is fixed in the hardware.
-
-Okay, that sounds similar to what the Tegra SMMU does. The naming is
-slightly differently. "Master" is called "memory client", "StreamID"
-would be "SWGROUP" and "ContextID" I guess would map to what's called an
-"ASID" (Address Space ID) on Tegra.
-
-I'm not sure about the amount of leverage that we have to encourage the
-mappings that we think are easy to describe in DT and discourage those
-that we don't want. Last time I checked we were still playing catch up
-rather than being able to give recommendations to hardware engineers
-about what will result in sane DT content and what won't.
-
-Irrespective of the above, I still think that a generic binding based on
-an #iommu-cells and iommus property gives us the most flexibility. For
-easy cases, most of which are listed in the current proposal could
-easily be dealt with in convenience helpers. For the more complex cases
-drivers for those IOMMUs can define a specifier that make sense for the
-mappings they need to be able to describe.
-
-Also we're talking about a generic IOMMU binding here. That means that
-if some hardware comes along that's not "generic" and doesn't fit into
-the constraints set by this binding, then we still have the option of
-defining a completely different one for that particular case.
-
-Thierry
-
---dTy3Mrz/UPE2dbVg
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTj4j9AAoJEN0jrNd/PrOhthkP/3PIBa/lJxjOHVGl6FhiC0t4
-IbjaZ7cTtGPpmnAzVVJK6CW75XM4UUXdmSXefh/8qMFGmhUT+Y8x6lCgT8yTh7hG
-VAp2qAAeZNBzUjeDDfbMO+insDB+qqYkZs5KmG/y9gMuBHxkpP0rIgx3xsCDXtGs
-/8F+X/+ca06tqUW6zlCzVMvQoy3r8PU+UxyjztUz4qa6L1F5OeI6SU8+S13lsmE0
-RzWvUbDtehfuDvEr98JHcSjd+Mge7Ewj1G3637dIdO3nbdlOzwzrPgG6Om9gdExN
-Addh2mQ0DxUPVv0gDyNDB0UP5RdUsPUjILrERW1wxB2bLynMjcw7gtstvRRmEmTe
-99ZcuEe7d/SddSR0dCdmscYnI3oWw3b5nnU/KzcdaVAEtJyXtYAuJPZFRfvOA+JC
-t7D8Q5Ic037iW8Fsj17UfxqlgsoHVrfdhVGYZJ/nwsRtU6t4o/RQ9YIBFl3kGU6L
-cNzhHOhbKQssxPIQW0PdxPxdw+Ud3q1x4XI947eh0j2BRFnNBINo1ryOKkH2+uqc
-0xIf+W6IrNyuaJZVHbmmWuS7CKH9npNXOly+5YPKRqiIwxd4rkBZrvsEjm9sSbSX
-pNp/p9K3a9ixsFIOxKaUxhH+gSQZs2GwXQZ4c7nuCWBgYPvB5CMw7RA2/aWVXpuF
-RrtSvQiLY8FTipVjQHEQ
-=pRJk
------END PGP SIGNATURE-----
-
---dTy3Mrz/UPE2dbVg--
+-- 
+Jean Delvare
+SUSE L3 Support
