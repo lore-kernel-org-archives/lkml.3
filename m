@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754511AbaFDX1o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:27:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41045 "EHLO
+	id S1754191AbaFDXYU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 19:24:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40982 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754194AbaFDXYV (ORCPT
+	with ESMTP id S1754157AbaFDXYQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:24:21 -0400
+	Wed, 4 Jun 2014 19:24:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chris Leech <cleech@redhat.com>, Andy Grover <agrover@redhat.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.10 088/103] target: Dont allow setting WC emulation if device doesnt support
-Date: Wed,  4 Jun 2014 16:25:51 -0700
-Message-Id: <20140604232549.686493808@linuxfoundation.org>
+        Marcel Apfelbaum <marcel.a@redhat.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>
+Subject: [PATCH 3.10 085/103] PCI: shpchp: Check bridges secondary (not primary) bus speed
+Date: Wed,  4 Jun 2014 16:25:48 -0700
+Message-Id: <20140604232549.584592389@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232546.704156131@linuxfoundation.org>
 References: <20140604232546.704156131@linuxfoundation.org>
@@ -29,40 +30,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Grover <agrover@redhat.com>
+From: Marcel Apfelbaum <marcel.a@redhat.com>
 
-commit 07b8dae38b09bcfede7e726f172e39b5ce8390d9 upstream.
+commit 93fa9d32670f5592c8e56abc9928fc194e1e72fc upstream.
 
-Just like for pSCSI, if the transport sets get_write_cache, then it is
-not valid to enable write cache emulation for it. Return an error.
+When a new device is added below a hotplug bridge, the bridge's secondary
+bus speed and the device's bus speed must match.  The shpchp driver
+previously checked the bridge's *primary* bus speed, not the secondary bus
+speed.
 
-see https://bugzilla.redhat.com/show_bug.cgi?id=1082675
+This caused hot-add errors like:
 
-Reviewed-by: Chris Leech <cleech@redhat.com>
-Signed-off-by: Andy Grover <agrover@redhat.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+  shpchp 0000:00:03.0: Speed of bus ff and adapter 0 mismatch
+
+Check the secondary bus speed instead.
+
+[bhelgaas: changelog]
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=75251
+Fixes: 3749c51ac6c1 ("PCI: Make current and maximum bus speeds part of the PCI core")
+Signed-off-by: Marcel Apfelbaum <marcel.a@redhat.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/target_core_device.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/pci/hotplug/shpchp_ctrl.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/target/target_core_device.c
-+++ b/drivers/target/target_core_device.c
-@@ -796,10 +796,10 @@ int se_dev_set_emulate_write_cache(struc
- 		pr_err("emulate_write_cache not supported for pSCSI\n");
- 		return -EINVAL;
- 	}
--	if (dev->transport->get_write_cache) {
--		pr_warn("emulate_write_cache cannot be changed when underlying"
--			" HW reports WriteCacheEnabled, ignoring request\n");
--		return 0;
-+	if (flag &&
-+	    dev->transport->get_write_cache) {
-+		pr_err("emulate_write_cache not supported for this device\n");
-+		return -EINVAL;
+--- a/drivers/pci/hotplug/shpchp_ctrl.c
++++ b/drivers/pci/hotplug/shpchp_ctrl.c
+@@ -282,8 +282,8 @@ static int board_added(struct slot *p_sl
+ 		return WRONG_BUS_FREQUENCY;
  	}
  
- 	dev->dev_attrib.emulate_write_cache = flag;
+-	bsp = ctrl->pci_dev->bus->cur_bus_speed;
+-	msp = ctrl->pci_dev->bus->max_bus_speed;
++	bsp = ctrl->pci_dev->subordinate->cur_bus_speed;
++	msp = ctrl->pci_dev->subordinate->max_bus_speed;
+ 
+ 	/* Check if there are other slots or devices on the same bus */
+ 	if (!list_empty(&ctrl->pci_dev->subordinate->devices))
 
 
