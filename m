@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755736AbaFEAEW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 20:04:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40365 "EHLO
+	id S1755755AbaFEAEl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 20:04:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40361 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753466AbaFDXW4 (ORCPT
+	with ESMTP id S1753417AbaFDXW4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 4 Jun 2014 19:22:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Mike Snitzer <snitzer@redhat.com>
-Subject: [PATCH 3.14 187/228] dm crypt: fix cpu hotplug crash by removing per-cpu structure
-Date: Wed,  4 Jun 2014 16:23:36 -0700
-Message-Id: <20140604232354.035510029@linuxfoundation.org>
+        Arshad Hussain <arshad.hussain@calsoftinc.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.14 178/228] iscsi-target: Change BUG_ON to REJECT in iscsit_process_nop_out
+Date: Wed,  4 Jun 2014 16:23:27 -0700
+Message-Id: <20140604232353.737046035@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -29,224 +29,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit 610f2de3559c383caf8fbbf91e9968102dff7ca0 upstream.
+commit 7cbfcc953789ff864c2bf8365a82a3fba4869649 upstream.
 
-The DM crypt target used per-cpu structures to hold pointers to a
-ablkcipher_request structure.  The code assumed that the work item keeps
-executing on a single CPU, so it didn't use synchronization when
-accessing this structure.
+This patch changes an incorrect use of BUG_ON to instead generate a
+REJECT + PROTOCOL_ERROR in iscsit_process_nop_out() code.  This case
+can occur with traditional TCP where a flood of zeros in the data
+stream can reach this block for what is presumed to be a NOP-OUT with
+a solicited reply, but without a valid iscsi_cmd pointer.
 
-If a CPU is disabled by writing 0 to /sys/devices/system/cpu/cpu*/online,
-the work item could be moved to another CPU.  This causes dm-crypt
-crashes, like the following, because the code starts using an incorrect
-ablkcipher_request:
+This incorrect BUG_ON was introduced during the v3.11-rc timeframe
+with the following commit:
 
- smpboot: CPU 7 is now offline
- BUG: unable to handle kernel NULL pointer dereference at 0000000000000130
- IP: [<ffffffffa1862b3d>] crypt_convert+0x12d/0x3c0 [dm_crypt]
- ...
- Call Trace:
-  [<ffffffffa1864415>] ? kcryptd_crypt+0x305/0x470 [dm_crypt]
-  [<ffffffff81062060>] ? finish_task_switch+0x40/0xc0
-  [<ffffffff81052a28>] ? process_one_work+0x168/0x470
-  [<ffffffff8105366b>] ? worker_thread+0x10b/0x390
-  [<ffffffff81053560>] ? manage_workers.isra.26+0x290/0x290
-  [<ffffffff81058d9f>] ? kthread+0xaf/0xc0
-  [<ffffffff81058cf0>] ? kthread_create_on_node+0x120/0x120
-  [<ffffffff813464ac>] ? ret_from_fork+0x7c/0xb0
-  [<ffffffff81058cf0>] ? kthread_create_on_node+0x120/0x120
+commit 778de368964c5b7e8100cde9f549992d521e9c89
+Author: Nicholas Bellinger <nab@linux-iscsi.org>
+Date:   Fri Jun 14 16:07:47 2013 -0700
 
-Fix this bug by removing the per-cpu definition.  The structure
-ablkcipher_request is accessed via a pointer from convert_context.
-Consequently, if the work item is rescheduled to a different CPU, the
-thread still uses the same ablkcipher_request.
+    iscsi/isert-target: Refactor ISCSI_OP_NOOP RX handling
 
-This change may undermine performance improvements intended by commit
-c0297721 ("dm crypt: scale to multiple cpus") on select hardware.  In
-practice no performance difference was observed on recent hardware.  But
-regardless, correctness is more important than performance.
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Reported-by: Arshad Hussain <arshad.hussain@calsoftinc.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-crypt.c |   61 +++++++++-----------------------------------------
- 1 file changed, 12 insertions(+), 49 deletions(-)
+ drivers/target/iscsi/iscsi_target.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/md/dm-crypt.c
-+++ b/drivers/md/dm-crypt.c
-@@ -19,7 +19,6 @@
- #include <linux/crypto.h>
- #include <linux/workqueue.h>
- #include <linux/backing-dev.h>
--#include <linux/percpu.h>
- #include <linux/atomic.h>
- #include <linux/scatterlist.h>
- #include <asm/page.h>
-@@ -43,6 +42,7 @@ struct convert_context {
- 	struct bvec_iter iter_out;
- 	sector_t cc_sector;
- 	atomic_t cc_pending;
-+	struct ablkcipher_request *req;
- };
+--- a/drivers/target/iscsi/iscsi_target.c
++++ b/drivers/target/iscsi/iscsi_target.c
+@@ -1564,7 +1564,9 @@ int iscsit_process_nop_out(struct iscsi_
+ 	 * Initiator is expecting a NopIN ping reply..
+ 	 */
+ 	if (hdr->itt != RESERVED_ITT) {
+-		BUG_ON(!cmd);
++		if (!cmd)
++			return iscsit_add_reject(conn, ISCSI_REASON_PROTOCOL_ERROR,
++						(unsigned char *)hdr);
  
- /*
-@@ -111,15 +111,7 @@ struct iv_tcw_private {
- enum flags { DM_CRYPT_SUSPENDED, DM_CRYPT_KEY_VALID };
- 
- /*
-- * Duplicated per-CPU state for cipher.
-- */
--struct crypt_cpu {
--	struct ablkcipher_request *req;
--};
--
--/*
-- * The fields in here must be read only after initialization,
-- * changing state should be in crypt_cpu.
-+ * The fields in here must be read only after initialization.
-  */
- struct crypt_config {
- 	struct dm_dev *dev;
-@@ -150,12 +142,6 @@ struct crypt_config {
- 	sector_t iv_offset;
- 	unsigned int iv_size;
- 
--	/*
--	 * Duplicated per cpu state. Access through
--	 * per_cpu_ptr() only.
--	 */
--	struct crypt_cpu __percpu *cpu;
--
- 	/* ESSIV: struct crypto_cipher *essiv_tfm */
- 	void *iv_private;
- 	struct crypto_ablkcipher **tfms;
-@@ -192,11 +178,6 @@ static void clone_init(struct dm_crypt_i
- static void kcryptd_queue_crypt(struct dm_crypt_io *io);
- static u8 *iv_of_dmreq(struct crypt_config *cc, struct dm_crypt_request *dmreq);
- 
--static struct crypt_cpu *this_crypt_config(struct crypt_config *cc)
--{
--	return this_cpu_ptr(cc->cpu);
--}
--
- /*
-  * Use this to access cipher attributes that are the same for each CPU.
-  */
-@@ -903,16 +884,15 @@ static void kcryptd_async_done(struct cr
- static void crypt_alloc_req(struct crypt_config *cc,
- 			    struct convert_context *ctx)
- {
--	struct crypt_cpu *this_cc = this_crypt_config(cc);
- 	unsigned key_index = ctx->cc_sector & (cc->tfms_count - 1);
- 
--	if (!this_cc->req)
--		this_cc->req = mempool_alloc(cc->req_pool, GFP_NOIO);
-+	if (!ctx->req)
-+		ctx->req = mempool_alloc(cc->req_pool, GFP_NOIO);
- 
--	ablkcipher_request_set_tfm(this_cc->req, cc->tfms[key_index]);
--	ablkcipher_request_set_callback(this_cc->req,
-+	ablkcipher_request_set_tfm(ctx->req, cc->tfms[key_index]);
-+	ablkcipher_request_set_callback(ctx->req,
- 	    CRYPTO_TFM_REQ_MAY_BACKLOG | CRYPTO_TFM_REQ_MAY_SLEEP,
--	    kcryptd_async_done, dmreq_of_req(cc, this_cc->req));
-+	    kcryptd_async_done, dmreq_of_req(cc, ctx->req));
- }
- 
- /*
-@@ -921,7 +901,6 @@ static void crypt_alloc_req(struct crypt
- static int crypt_convert(struct crypt_config *cc,
- 			 struct convert_context *ctx)
- {
--	struct crypt_cpu *this_cc = this_crypt_config(cc);
- 	int r;
- 
- 	atomic_set(&ctx->cc_pending, 1);
-@@ -932,7 +911,7 @@ static int crypt_convert(struct crypt_co
- 
- 		atomic_inc(&ctx->cc_pending);
- 
--		r = crypt_convert_block(cc, ctx, this_cc->req);
-+		r = crypt_convert_block(cc, ctx, ctx->req);
- 
- 		switch (r) {
- 		/* async */
-@@ -941,7 +920,7 @@ static int crypt_convert(struct crypt_co
- 			reinit_completion(&ctx->restart);
- 			/* fall through*/
- 		case -EINPROGRESS:
--			this_cc->req = NULL;
-+			ctx->req = NULL;
- 			ctx->cc_sector++;
- 			continue;
- 
-@@ -1040,6 +1019,7 @@ static struct dm_crypt_io *crypt_io_allo
- 	io->sector = sector;
- 	io->error = 0;
- 	io->base_io = NULL;
-+	io->ctx.req = NULL;
- 	atomic_set(&io->io_pending, 0);
- 
- 	return io;
-@@ -1065,6 +1045,8 @@ static void crypt_dec_pending(struct dm_
- 	if (!atomic_dec_and_test(&io->io_pending))
- 		return;
- 
-+	if (io->ctx.req)
-+		mempool_free(io->ctx.req, cc->req_pool);
- 	mempool_free(io, cc->io_pool);
- 
- 	if (likely(!base_io))
-@@ -1492,8 +1474,6 @@ static int crypt_wipe_key(struct crypt_c
- static void crypt_dtr(struct dm_target *ti)
- {
- 	struct crypt_config *cc = ti->private;
--	struct crypt_cpu *cpu_cc;
--	int cpu;
- 
- 	ti->private = NULL;
- 
-@@ -1505,13 +1485,6 @@ static void crypt_dtr(struct dm_target *
- 	if (cc->crypt_queue)
- 		destroy_workqueue(cc->crypt_queue);
- 
--	if (cc->cpu)
--		for_each_possible_cpu(cpu) {
--			cpu_cc = per_cpu_ptr(cc->cpu, cpu);
--			if (cpu_cc->req)
--				mempool_free(cpu_cc->req, cc->req_pool);
--		}
--
- 	crypt_free_tfms(cc);
- 
- 	if (cc->bs)
-@@ -1530,9 +1503,6 @@ static void crypt_dtr(struct dm_target *
- 	if (cc->dev)
- 		dm_put_device(ti, cc->dev);
- 
--	if (cc->cpu)
--		free_percpu(cc->cpu);
--
- 	kzfree(cc->cipher);
- 	kzfree(cc->cipher_string);
- 
-@@ -1588,13 +1558,6 @@ static int crypt_ctr_cipher(struct dm_ta
- 	if (tmp)
- 		DMWARN("Ignoring unexpected additional cipher options");
- 
--	cc->cpu = __alloc_percpu(sizeof(*(cc->cpu)),
--				 __alignof__(struct crypt_cpu));
--	if (!cc->cpu) {
--		ti->error = "Cannot allocate per cpu state";
--		goto bad_mem;
--	}
--
- 	/*
- 	 * For compatibility with the original dm-crypt mapping format, if
- 	 * only the cipher name is supplied, use cbc-plain.
+ 		spin_lock_bh(&conn->cmd_lock);
+ 		list_add_tail(&cmd->i_conn_node, &conn->conn_cmd_list);
 
 
