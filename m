@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757261AbaFEAw7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 20:52:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39628 "EHLO
+	id S1757246AbaFEAw6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 20:52:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39637 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751867AbaFDXUk (ORCPT
+	with ESMTP id S1751872AbaFDXUk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 4 Jun 2014 19:20:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Aaro Koskinen <aaro.koskinen@iki.fi>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Viresh Kumar <viresh.kumar@linaro.org>, linux-mips@linux-mips.org,
-        cpufreq@vger.kernel.org, Ralf Baechle <ralf@linux-mips.org>
-Subject: [PATCH 3.14 003/228] MIPS/loongson2_cpufreq: Fix CPU clock rate setting
-Date: Wed,  4 Jun 2014 16:20:32 -0700
-Message-Id: <20140604232348.187603019@linuxfoundation.org>
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>
+Subject: [PATCH 3.14 005/228] rtmutex: Fix deadlock detector for real
+Date: Wed,  4 Jun 2014 16:20:34 -0700
+Message-Id: <20140604232348.257703545@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -31,75 +31,105 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit 8e8acb32960f42c81b1d50deac56a2c07bb6a18a upstream.
+commit 397335f004f41e5fcf7a795e94eb3ab83411a17c upstream.
 
-Loongson2 has been using (incorrectly) kHz for cpu_clk rate. This has
-been unnoticed, as loongson2_cpufreq was the only place where the rate
-was set/get. After commit 652ed95d5fa6074b3c4ea245deb0691f1acb6656
-(cpufreq: introduce cpufreq_generic_get() routine) things however broke,
-and now loops_per_jiffy adjustments are incorrect (1000 times too long).
-The patch fixes this by changing cpu_clk rate to Hz.
+The current deadlock detection logic does not work reliably due to the
+following early exit path:
 
-Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
-Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: linux-mips@linux-mips.org
-Cc: linux-kernel@vger.kernel.org
-Cc: cpufreq@vger.kernel.org
-Cc: Aaro Koskinen <aaro.koskinen@iki.fi>
-Patchwork: https://patchwork.linux-mips.org/patch/6678/
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+	/*
+	 * Drop out, when the task has no waiters. Note,
+	 * top_waiter can be NULL, when we are in the deboosting
+	 * mode!
+	 */
+	if (top_waiter && (!task_has_pi_waiters(task) ||
+			   top_waiter != task_top_pi_waiter(task)))
+		goto out_unlock_pi;
+
+So this not only exits when the task has no waiters, it also exits
+unconditionally when the current waiter is not the top priority waiter
+of the task.
+
+So in a nested locking scenario, it might abort the lock chain walk
+and therefor miss a potential deadlock.
+
+Simple fix: Continue the chain walk, when deadlock detection is
+enabled.
+
+We also avoid the whole enqueue, if we detect the deadlock right away
+(A-A). It's an optimization, but also prevents that another waiter who
+comes in after the detection and before the task has undone the damage
+observes the situation and detects the deadlock and returns
+-EDEADLOCK, which is wrong as the other task is not in a deadlock
+situation.
+
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
+Link: http://lkml.kernel.org/r/20140522031949.725272460@linutronix.de
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/mips/loongson/lemote-2f/clock.c |    5 +++--
- drivers/cpufreq/loongson2_cpufreq.c  |    4 ++--
- 2 files changed, 5 insertions(+), 4 deletions(-)
+ kernel/locking/rtmutex.c |   32 ++++++++++++++++++++++++++++----
+ 1 file changed, 28 insertions(+), 4 deletions(-)
 
---- a/arch/mips/loongson/lemote-2f/clock.c
-+++ b/arch/mips/loongson/lemote-2f/clock.c
-@@ -91,6 +91,7 @@ EXPORT_SYMBOL(clk_put);
+--- a/kernel/locking/rtmutex.c
++++ b/kernel/locking/rtmutex.c
+@@ -331,9 +331,16 @@ static int rt_mutex_adjust_prio_chain(st
+ 	 * top_waiter can be NULL, when we are in the deboosting
+ 	 * mode!
+ 	 */
+-	if (top_waiter && (!task_has_pi_waiters(task) ||
+-			   top_waiter != task_top_pi_waiter(task)))
+-		goto out_unlock_pi;
++	if (top_waiter) {
++		if (!task_has_pi_waiters(task))
++			goto out_unlock_pi;
++		/*
++		 * If deadlock detection is off, we stop here if we
++		 * are not the top pi waiter of the task.
++		 */
++		if (!detect_deadlock && top_waiter != task_top_pi_waiter(task))
++			goto out_unlock_pi;
++	}
  
- int clk_set_rate(struct clk *clk, unsigned long rate)
- {
-+	unsigned int rate_khz = rate / 1000;
- 	int ret = 0;
- 	int regval;
- 	int i;
-@@ -111,10 +112,10 @@ int clk_set_rate(struct clk *clk, unsign
- 		if (loongson2_clockmod_table[i].frequency ==
- 		    CPUFREQ_ENTRY_INVALID)
- 			continue;
--		if (rate == loongson2_clockmod_table[i].frequency)
-+		if (rate_khz == loongson2_clockmod_table[i].frequency)
- 			break;
+ 	/*
+ 	 * When deadlock detection is off then we check, if further
+@@ -349,7 +356,12 @@ static int rt_mutex_adjust_prio_chain(st
+ 		goto retry;
  	}
--	if (rate != loongson2_clockmod_table[i].frequency)
-+	if (rate_khz != loongson2_clockmod_table[i].frequency)
- 		return -ENOTSUPP;
  
- 	clk->rate = rate;
---- a/drivers/cpufreq/loongson2_cpufreq.c
-+++ b/drivers/cpufreq/loongson2_cpufreq.c
-@@ -62,7 +62,7 @@ static int loongson2_cpufreq_target(stru
- 	set_cpus_allowed_ptr(current, &cpus_allowed);
+-	/* Deadlock detection */
++	/*
++	 * Deadlock detection. If the lock is the same as the original
++	 * lock which caused us to walk the lock chain or if the
++	 * current lock is owned by the task which initiated the chain
++	 * walk, we detected a deadlock.
++	 */
+ 	if (lock == orig_lock || rt_mutex_owner(lock) == top_task) {
+ 		debug_rt_mutex_deadlock(deadlock_detect, orig_waiter, lock);
+ 		raw_spin_unlock(&lock->wait_lock);
+@@ -515,6 +527,18 @@ static int task_blocks_on_rt_mutex(struc
+ 	unsigned long flags;
+ 	int chain_walk = 0, res;
  
- 	/* setting the cpu frequency */
--	clk_set_rate(policy->clk, freq);
-+	clk_set_rate(policy->clk, freq * 1000);
- 
- 	return 0;
- }
-@@ -92,7 +92,7 @@ static int loongson2_cpufreq_cpu_init(st
- 	     i++)
- 		loongson2_clockmod_table[i].frequency = (rate * i) / 8;
- 
--	ret = clk_set_rate(cpuclk, rate);
-+	ret = clk_set_rate(cpuclk, rate * 1000);
- 	if (ret) {
- 		clk_put(cpuclk);
- 		return ret;
++	/*
++	 * Early deadlock detection. We really don't want the task to
++	 * enqueue on itself just to untangle the mess later. It's not
++	 * only an optimization. We drop the locks, so another waiter
++	 * can come in before the chain walk detects the deadlock. So
++	 * the other will detect the deadlock and return -EDEADLOCK,
++	 * which is wrong, as the other waiter is not in a deadlock
++	 * situation.
++	 */
++	if (detect_deadlock && owner == task)
++		return -EDEADLK;
++
+ 	raw_spin_lock_irqsave(&task->pi_lock, flags);
+ 	__rt_mutex_adjust_prio(task);
+ 	waiter->task = task;
 
 
