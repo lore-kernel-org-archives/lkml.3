@@ -1,69 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752242AbaFDKed (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 06:34:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46018 "EHLO mx1.redhat.com"
+	id S1752326AbaFDKev (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 06:34:51 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:48727 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751927AbaFDKec (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 06:34:32 -0400
-Date: Wed, 4 Jun 2014 12:35:45 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-kernel@vger.kernel.org, Ming Lei <tom.leiming@gmail.com>
-Subject: blk-mq: bitmap tag: performance degradation?
-Message-ID: <20140604103544.GA11350@dhcp-26-207.brq.redhat.com>
+	id S1752286AbaFDKeu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 06:34:50 -0400
+Date: Wed, 4 Jun 2014 12:34:23 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
+        ebiederm@xmission.com, hpa@zytor.com, mjg59@srcf.ucam.org,
+        greg@kroah.com, jkosina@suse.cz, dyoung@redhat.com,
+        chaowang@redhat.com, bhe@redhat.com, akpm@linux-foundation.org
+Subject: Re: [PATCH 05/13] kexec: Make kexec_segment user buffer pointer a
+ union
+Message-ID: <20140604103423.GD4105@pd.tnic>
+References: <1401800822-27425-1-git-send-email-vgoyal@redhat.com>
+ <1401800822-27425-6-git-send-email-vgoyal@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1401800822-27425-6-git-send-email-vgoyal@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jens, et al
+On Tue, Jun 03, 2014 at 09:06:54AM -0400, Vivek Goyal wrote:
+> So far kexec_segment->buf was always a user space pointer as user space
+> passed the array of kexec_segment structures and kernel copied it.
+> 
+> But with new system call, list of kexec segments will be prepared by
+> kernel and kexec_segment->buf will point to a kernel memory.
+> 
+> So while I was adding code where I made assumption that ->buf is pointing
+> to kernel memory, sparse started giving warning.
+> 
+> Make ->buf a union. And where a user space pointer is expected, access
+> it using ->buf and where a kernel space pointer is expected, access it
+> using ->kbuf. That takes care of sparse warnings.
+> 
+> Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
 
-With new bitmap tags I am observing performance degradation on 'null_blk'
-device with 512 queue depth. This is 'fio' config used:
-
-[global]
-bs=4k
-size=16g
-
-[nullb]
-filename=/dev/nullb0
-direct=1
-rw=randread
-numjobs=8
-
-
-I tried machines with 16 and 48 CPUs and it seems the more
-CPUs we have the worse the result. Here is 48 CPUs one:
-
-3.15.0-rc4+
-
-   READ: io=131072MB, aggrb=3128.7MB/s, minb=400391KB/s, maxb=407204KB/s,
-mint=41201msec, maxt=41902msec
-
-   548,549,235,428 cycles:k
-     3,759,335,303 L1-dcache-load-misses
-       419,021,008 cache-misses:k                                              
-
-      39.659121371 seconds time elapsed
-
-3.15.0-rc1.for-3.16-blk-mq-tagging+
-
-   READ: io=131072MB, aggrb=1951.8MB/s, minb=249824KB/s, maxb=255851KB/s,
-mint=65574msec, maxt=67156msec
-
- 1,063,669,976,651 cycles:k
-     4,572,746,591 L1-dcache-load-misses
-     1,127,037,813 cache-misses:k                                              
-
-      69.446112553 seconds time elapsed
-
-Thanks!
+Acked-by: Borislav Petkov <bp@suse.de>
 
 -- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
