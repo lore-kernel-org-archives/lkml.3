@@ -1,104 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752080AbaFDWNg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 18:13:36 -0400
-Received: from g4t3426.houston.hp.com ([15.201.208.54]:58915 "EHLO
-	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751255AbaFDWNf (ORCPT
+	id S1752154AbaFDWOI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 18:14:08 -0400
+Received: from mga14.intel.com ([192.55.52.115]:23164 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751504AbaFDWOH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 18:13:35 -0400
-Message-ID: <1401920011.2232.49.camel@j-VirtualBox>
-Subject: Re: [RFC PATCH 1/3] locking/mutex: Try to acquire mutex only if it
- is unlocked
-From: Jason Low <jason.low2@hp.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <peterz@infradead.org>, mingo@kernel.org,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        paulmck@linux.vnet.ibm.com, tim.c.chen@linux.intel.com,
-        peter@hurleysoftware.com, riel@redhat.com, hpa@zytor.com,
-        walken@google.com, davidlohr@hp.com, Waiman.Long@hp.com, aswin@hp.com,
-        scott.norton@hp.com, chegu_vinod@hp.com
-Date: Wed, 04 Jun 2014 15:13:31 -0700
-In-Reply-To: <alpine.DEB.2.10.1406042337110.18296@nanos>
-References: <1401908911-8947-1-git-send-email-jason.low2@hp.com>
-	  <1401908911-8947-2-git-send-email-jason.low2@hp.com>
-	  <20140604194322.GN13930@laptop.programming.kicks-ass.net>
-	 <1401917173.2232.14.camel@j-VirtualBox>
-	 <alpine.DEB.2.10.1406042337110.18296@nanos>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 4 Jun 2014 18:14:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,975,1392192000"; 
+   d="scan'208";a="542593747"
+From: "Rustad, Mark D" <mark.d.rustad@intel.com>
+To: Joe Perches <joe@perches.com>
+CC: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>,
+        "Allan, Bruce W" <bruce.w.allan@intel.com>,
+        "Brandeburg, Jesse" <jesse.brandeburg@intel.com>,
+        "<linux-kernel@vger.kernel.org>" <linux-kernel@vger.kernel.org>,
+        "Ronciak, John" <john.ronciak@intel.com>,
+        Netdev <netdev@vger.kernel.org>,
+        Linux NICS <Linux-nics@isotope.jf.intel.com>
+Subject: Re: [E1000-devel] [PATCH] net: ethernet: intel: ixgbe:
+ ixgbe_main.c: Cleaning up missing null-terminate after strncpy call
+Thread-Topic: [E1000-devel] [PATCH] net: ethernet: intel: ixgbe:
+ ixgbe_main.c: Cleaning up missing null-terminate after strncpy call
+Thread-Index: AQHPgD/g1jrh158h6UGQxnT2rTe8NZth+XAA
+Date: Wed, 4 Jun 2014 22:14:05 +0000
+Message-ID: <21D85D78-EB7B-4C74-861B-43D7EDE350F7@intel.com>
+References: <1401917380-2772-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+ <1401918909.26329.5.camel@joe-AO725>
+In-Reply-To: <1401918909.26329.5.camel@joe-AO725>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.24.24.122]
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <A0FE3CB483B5B74BB5DD7066F205CD2C@intel.com>
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-06-04 at 23:54 +0200, Thomas Gleixner wrote:
-> On Wed, 4 Jun 2014, Jason Low wrote:
-> > On Wed, 2014-06-04 at 21:43 +0200, Peter Zijlstra wrote:
-> > > >  /*
-> > > >   * A negative mutex count indicates that waiters are sleeping waiting for the
-> > > > - * mutex.
-> > > > + * mutex, and a count of one indicates the mutex is unlocked.
-> > > >   */
-> > > >  #define	MUTEX_SHOW_NO_WAITER(mutex)	(atomic_read(&(mutex)->count) >= 0)
-> > > > +#define	MUTEX_IS_UNLOCKED(mutex)	(atomic_read(&(mutex)->count) == 1)
-> > > 
-> > > So I recently saw that MUTEX_SHOW_NO_WAITER thing and cried a little;
-> > > and now you're adding more of that same nonsense.
-> > > 
-> > > Please make them inline functions, also can we rename the SHOW_NO_WAITER
-> > > thing, because its not at all clear to me wtf it does; should it be
-> > > called: mutex_no_waiters() or somesuch?
-> > 
-> > Okay, I can make them inline functions. I mainly added the macro to keep
-> > it consistent with the MUTEX_SHOW_NO_WAITER() check, but we can surely
-> 
-> Consistency with a digusting and nonsensical macro is not really a
-> good argument.
+On Jun 4, 2014, at 2:55 PM, Joe Perches <joe@perches.com> wrote:
 
-I agree :)
+> On Wed, 2014-06-04 at 23:29 +0200, Rickard Strandqvist wrote:
+>> Added a guaranteed null-terminate after call to strncpy.
+> 
+> Perhaps all of these should be strlcpy
 
-> > make this more clear. mutex_no_waiters() sounds fine, or perhaps
-> > something like mutex_has_no_waiters()?
-> 
-> Uuurg. So we end up with
-> 
->        if (!mutex_has_no_waiters(m))
-> 
-> if we check for waiters?
-> 
-> Can we please go with the most intuitive thing:
-> 
->     mutex_has_waiters()
-> 
-> and have the callsites prepend the '!' in case they want to check
-> there is no waiter?
+The code that is there seems fine. The length of the array exceeds the length of the literal, and the strncpy ensures that the entire buffer is initialized so no information can possibly leak from the kernel.
 
-Yes, !mutex_has_waiters() sounds like the better option to check for no
-waiters. Same with using the already provided mutex_is_locked()
-function.
+I think this is fine as it is without any patch.
 
-> For heavens sake, we do not name macros/inlines in a way which fits
-> the intended use case. We name them so they make sense.
-> 
-> Your change log blurbs about readability. I have no idea what your
-> understandig of readability is, but neither MUTEX_SHOW_NO_WAITERS nor
-> mutex_has_no_waiters qualify for me. Ditto for MUTEX_IS_UNLOCKED.
-> 
-> Care to look at the other lock implementations:
-> 
->      rt_mutex_has_waiters()
->      spin_is_locked()
->      ....
-> 
-> Why would it make sense to come up with reverse conventions for mutex?
-> 
-> Thanks,
-> 
-> 	tglx
-
-Thanks,
-Jason
-
+-- 
+Mark Rustad, Networking Division, Intel Corporation
 
