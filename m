@@ -1,57 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756447AbaFEAUV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 20:20:21 -0400
-Received: from mga14.intel.com ([192.55.52.115]:27819 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932237AbaFEAUQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 20:20:16 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,976,1392192000"; 
-   d="scan'208";a="542637438"
-Date: Thu, 5 Jun 2014 08:20:12 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build warning after merge of the ftrace tree
-Message-ID: <20140605002012.GA10446@localhost>
-References: <20140604160921.4f4e69c4@canb.auug.org.au>
- <20140604122612.366e2874@gandalf.local.home>
+	id S932272AbaFEAU5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 20:20:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40190 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753168AbaFDXWd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 19:22:33 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Hans de Goede <hdegoede@redhat.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: [PATCH 3.14 134/228] Input: synaptics - report INPUT_PROP_TOPBUTTONPAD property
+Date: Wed,  4 Jun 2014 16:22:43 -0700
+Message-Id: <20140604232352.319219021@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
+References: <20140604232347.966798903@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140604122612.366e2874@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 04, 2014 at 12:26:12PM -0400, Steven Rostedt wrote:
-> On Wed, 4 Jun 2014 16:09:21 +1000
-> Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> 
-> > Hi Steven,
-> > 
-> > After merging the ftrace tree, today's linux-next build (x86_64 allmodconfig)
-> > produced this warning:
-> > 
-> > kernel/trace/trace_benchmark.c: In function 'trace_do_benchmark':
-> > kernel/trace/trace_benchmark.c:38:6: warning: unused variable 'seedsq' [-Wunused-variable]
-> >   u64 seedsq;
-> >       ^
-> > 
-> > Introduced by commit 81dc9f0ef21e ("tracing: Add tracepoint benchmark tracepoint").
-> 
-> Hmm, I don't know why my tests missed this. I do a allmodconfig looking
-> for new warning messages too. Oh, but I do need to add this config to my
-> regular testing config :-/
-> 
-> I'm surprised Wu's bot didn't report it either.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
-Steven, it was reported, here is the email archive:
+------------------
 
-https://lists.01.org/pipermail/kbuild-all/2014-May/004749.html
+From: Hans de Goede <hdegoede@redhat.com>
 
-Thanks,
-Fengguang
+commit 43e19888b1fe2a3e8a5543030c5b286cde38b3f5 upstream.
+
+Check PNP ID of the PS/2 AUX port and report INPUT_PROP_TOPBUTTONPAD
+property for for touchpads with top button areas.
+
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/input/mouse/synaptics.c |   55 ++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 53 insertions(+), 2 deletions(-)
+
+--- a/drivers/input/mouse/synaptics.c
++++ b/drivers/input/mouse/synaptics.c
+@@ -117,6 +117,44 @@ void synaptics_reset(struct psmouse *psm
+ }
+ 
+ #ifdef CONFIG_MOUSE_PS2_SYNAPTICS
++/* This list has been kindly provided by Synaptics. */
++static const char * const topbuttonpad_pnp_ids[] = {
++	"LEN0017",
++	"LEN0018",
++	"LEN0019",
++	"LEN0023",
++	"LEN002A",
++	"LEN002B",
++	"LEN002C",
++	"LEN002D",
++	"LEN002E",
++	"LEN0033", /* Helix */
++	"LEN0034", /* T431s, T540, X1 Carbon 2nd */
++	"LEN0035", /* X240 */
++	"LEN0036", /* T440 */
++	"LEN0037",
++	"LEN0038",
++	"LEN0041",
++	"LEN0042", /* Yoga */
++	"LEN0045",
++	"LEN0046",
++	"LEN0047",
++	"LEN0048",
++	"LEN0049",
++	"LEN2000",
++	"LEN2001",
++	"LEN2002",
++	"LEN2003",
++	"LEN2004", /* L440 */
++	"LEN2005",
++	"LEN2006",
++	"LEN2007",
++	"LEN2008",
++	"LEN2009",
++	"LEN200A",
++	"LEN200B",
++	NULL
++};
+ 
+ /*****************************************************************************
+  *	Synaptics communications functions
+@@ -1255,8 +1293,10 @@ static void set_abs_position_params(stru
+ 	input_abs_set_res(dev, y_code, priv->y_res);
+ }
+ 
+-static void set_input_params(struct input_dev *dev, struct synaptics_data *priv)
++static void set_input_params(struct psmouse *psmouse,
++			     struct synaptics_data *priv)
+ {
++	struct input_dev *dev = psmouse->dev;
+ 	int i;
+ 
+ 	/* Things that apply to both modes */
+@@ -1325,6 +1365,17 @@ static void set_input_params(struct inpu
+ 
+ 	if (SYN_CAP_CLICKPAD(priv->ext_cap_0c)) {
+ 		__set_bit(INPUT_PROP_BUTTONPAD, dev->propbit);
++		/* See if this buttonpad has a top button area */
++		if (!strncmp(psmouse->ps2dev.serio->firmware_id, "PNP:", 4)) {
++			for (i = 0; topbuttonpad_pnp_ids[i]; i++) {
++				if (strstr(psmouse->ps2dev.serio->firmware_id,
++					   topbuttonpad_pnp_ids[i])) {
++					__set_bit(INPUT_PROP_TOPBUTTONPAD,
++						  dev->propbit);
++					break;
++				}
++			}
++		}
+ 		/* Clickpads report only left button */
+ 		__clear_bit(BTN_RIGHT, dev->keybit);
+ 		__clear_bit(BTN_MIDDLE, dev->keybit);
+@@ -1643,7 +1694,7 @@ static int __synaptics_init(struct psmou
+ 		     priv->capabilities, priv->ext_cap, priv->ext_cap_0c,
+ 		     priv->board_id, priv->firmware_id);
+ 
+-	set_input_params(psmouse->dev, priv);
++	set_input_params(psmouse, priv);
+ 
+ 	/*
+ 	 * Encode touchpad model so that it can be used to set
+
+
