@@ -1,76 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751547AbaFDUmA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 16:42:00 -0400
-Received: from www.linutronix.de ([62.245.132.108]:41178 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751082AbaFDUl7 (ORCPT
+	id S1751440AbaFDUsa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 16:48:30 -0400
+Received: from mxip6-inbound.gatech.edu ([130.207.182.15]:19360 "EHLO
+	mxip6-inbound.gatech.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751010AbaFDUs2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 16:41:59 -0400
-Date: Wed, 4 Jun 2014 22:41:52 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Brad Mouring <bmouring@ni.com>
-cc: Steven Rostedt <rostedt@goodmis.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Clark Williams <williams@redhat.com>
-Subject: Re: [PATCH 1/1] rtmutex: Handle when top lock owner changes
-In-Reply-To: <20140604200750.GA10343@linuxgetsreal>
-Message-ID: <alpine.DEB.2.10.1406042217140.18296@nanos>
-References: <1400855410-14773-1-git-send-email-brad.mouring@ni.com> <1400855410-14773-2-git-send-email-brad.mouring@ni.com> <20140603210609.62de6451@gandalf.local.home> <alpine.DEB.2.10.1406041623170.3319@nanos> <20140604114411.0fe51c1d@gandalf.local.home>
- <alpine.DEB.2.10.1406041951210.3319@nanos> <20140604192541.GA9496@linuxgetsreal> <alpine.DEB.2.10.1406042147080.18296@nanos> <20140604200750.GA10343@linuxgetsreal>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Wed, 4 Jun 2014 16:48:28 -0400
+X-Greylist: delayed 572 seconds by postgrey-1.27 at vger.kernel.org; Wed, 04 Jun 2014 16:48:28 EDT
+X-RemoteIP: 130.207.185.167
+X-Group: ZimbraSenderGroup
+X-Policy: $ZIMBRA
+X-MID: 88976381
+X-SBRS: None
+X-IronPort-AV: E=Sophos;i="4.98,975,1392181200"; 
+   d="scan'208";a="88976381"
+X-GT-Spam-Rating: (0%)
+Message-ID: <538F83DF.8090303@gatech.edu>
+Date: Wed, 04 Jun 2014 16:38:55 -0400
+From: Pranith Kumar <pranith@gatech.edu>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: peterz@infradead.org
+CC: linux-kernel@vger.kernel.org
+Subject: [RFC PATCH 1/1] remove redundant compare, cmpxchg already does it
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 4 Jun 2014, Brad Mouring wrote:
-> On Wed, Jun 04, 2014 at 09:53:16PM +0200, Thomas Gleixner wrote:
-> > Your change wreckages the rt_mutex_owner(lock) == top_task test
-> > simply because in that case:
-> > 
-> >    (rt_mutex_owner(lock) && rt_mutex_owner(lock) != task)
-> > 
-> > evaluates to true.
-> 
-> Ah. Yeah. I haven't tested this but it seems sane to me.
-> 
-> > 
-> > So we want this:
-> > 
-> > Index: tip/kernel/locking/rtmutex.c
-> > ===================================================================
-> > --- tip.orig/kernel/locking/rtmutex.c
-> > +++ tip/kernel/locking/rtmutex.c
-> > @@ -375,6 +375,26 @@ static int rt_mutex_adjust_prio_chain(st
-> >  	 * walk, we detected a deadlock.
-> >  	 */
-> >  	if (lock == orig_lock || rt_mutex_owner(lock) == top_task) {
-> > +		/*
-> > +		 * If the prio chain has changed out from under us, set the task
-> > +		 * to the current owner of the lock in the current waiter and
-> > +		 * continue walking the prio chain
-> > +		 */
-> > +		if (rt_mutex_owner(lock) && rt_mutex_owner(lock) != task &&
-> > +		    rt_mutex_owner(lock) != top_task) {
-> > +			/* Release the old owner */
+remove a redundant comparision
 
-That's not the old owner. It's the task which was blocked in the lock
-chain before we dropped the locks and got preemptible. So we come here
-just in the case that the task is now blocked on orig_lock.
+Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+---
+ kernel/locking/rwsem-xadd.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-We really want to be more than careful about the comments here. The
-damned thing is complex enough already, so confusing comments are
-actually worse than no comments.
-
-Care to resend?
-
-Thanks,
-
-	tglx
+diff --git a/kernel/locking/rwsem-xadd.c b/kernel/locking/rwsem-xadd.c
+index 1f99664b..6f8bd3c 100644
+--- a/kernel/locking/rwsem-xadd.c
++++ b/kernel/locking/rwsem-xadd.c
+@@ -249,8 +249,7 @@ static inline bool rwsem_try_write_lock(long count, struct rw_semaphore *sem)
+ {
+     if (!(count & RWSEM_ACTIVE_MASK)) {
+         /* try acquiring the write lock */
+-        if (sem->count == RWSEM_WAITING_BIAS &&
+-            cmpxchg(&sem->count, RWSEM_WAITING_BIAS,
++        if (cmpxchg(&sem->count, RWSEM_WAITING_BIAS,
+                 RWSEM_ACTIVE_WRITE_BIAS) == RWSEM_WAITING_BIAS) {
+             if (!list_is_singular(&sem->wait_list))
+                 rwsem_atomic_update(RWSEM_WAITING_BIAS, sem);
+-- 
+1.9.1
