@@ -1,82 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751645AbaFDUQk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 16:16:40 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42992 "EHLO mx2.suse.de"
+	id S1751500AbaFDU2E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 16:28:04 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43076 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750944AbaFDUQj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 16:16:39 -0400
-Date: Wed, 4 Jun 2014 22:16:33 +0200
+	id S1751010AbaFDU2C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 16:28:02 -0400
+Date: Wed, 4 Jun 2014 22:27:58 +0200
 From: Jan Kara <jack@suse.cz>
-To: Daniel Phillips <d.phillips@partner.samsung.com>
-Cc: Jan Kara <jack@suse.cz>, Christoph Hellwig <hch@infradead.org>,
-        Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: Re: [RFC][PATCH 1/2] Add a super operation for writeback
-Message-ID: <20140604201633.GB22927@quack.suse.cz>
-References: <538B9DEE.20800@phunq.net>
- <20140602031526.GS14410@dastard>
- <538CD855.90804@phunq.net>
- <20140603033322.GA14410@dastard>
- <538D72B7.3010700@phunq.net>
- <20140603075209.GD14410@dastard>
- <20140603140531.GB30706@quack.suse.cz>
- <20140603141444.GA21273@infradead.org>
- <20140603152155.GD30706@quack.suse.cz>
- <19f0e788-f6f2-4547-9cb2-a74d70d75cd0@partner.samsung.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] Reiserfs & ext3 changes for 3.16-rc1
+Message-ID: <20140604202758.GC22927@quack.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <19f0e788-f6f2-4547-9cb2-a74d70d75cd0@partner.samsung.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 03-06-14 15:37:39, Daniel Phillips wrote:
-> On Tuesday, June 3, 2014 8:21:55 AM PDT, Jan Kara wrote:
-> >On Tue 03-06-14 07:14:44, Christoph Hellwig wrote:
-> >>On Tue, Jun 03, 2014 at 04:05:31PM +0200, Jan Kara wrote:
-> >And I agree we went for per-bdi
-> >flushing to avoid two threads congesting a single device leading to
-> >suboptimal IO patterns during background writeback.
-> 
-> A proposal is on the table to implement s_ops->writeback() as a per-sb
-> operation in such a way that nothing changes in the current per-inode path.
-> Good or bad approach?
-  Having s_ops->writeback() is fine. But I just hate how you hook in that
-callback into the writeback code (and Dave has expressed similar concerns).
-The way you hook it up, filesystem still has to have one inode in the dirty
-list so that __writeback_inodes_wb() can find that inode, get superblock
-from it and ask for writeback to be done via callback. That's really ugly
-and no-go for me.
+  Hello Linus,
 
-> >So currently I'm convinced we want to go for per-sb dirty tracking. That
-> >also makes some speedups in that code noticeably simpler. I'm not
-> convinced
-> >about the per-sb flushing thread - if we don't regress the multiple sb on
-> >bdi case when we just let the threads from different superblocks contend
-> >for IO, then that would be a natural thing to do. But once we have to
-> >introduce some synchronization between threads to avoid regressions, I
-> >think it might be easier to just stay with per-bdi thread which switches
-> >between superblocks.
-> 
-> Could you elaborate on the means of switching between superblocks?  Do
-> you mean a new fs-writeback path just for data=journal class filesystems,
-> or are you suggesting changing the way all filesystems are driven?
-  So I suggest changing the way all filesystems are driven to a per-sb one.
-That makes sense for other reasons as well and allows clean incorporation
-of your writeback callback (either a fs will use generic callback which
-would do what generic writeback code does now, only with per-sb dirty lists
-instead of current per-bdi ones, or the fs can do its own stuff). I can
-write something (the switch isn't really that complex) but it will need
-quite some testing to verify we don't regress somewhere...
+  could you please pull from
 
+git://git.kernel.org/pub/scm/linux/kernel/git/jack/linux-fs.git for_linus
+
+to get big reiserfs cleanup from Jeff, an ext3 deadlock fix, and some small
+cleanups.
+
+Top of the tree is 166418ccefc3. The full shortlog is:
+
+Fabian Frederick (2):
+      reiserfs: remove obsolete __constant_cpu_to_le32
+      fs/jbd/revoke.c: replace shift loop by ilog2
+
+Jan Kara (1):
+      ext3: Fix deadlock in data=journal mode when fs is frozen
+
+Jeff Mahoney (30):
+      reiserfs: use per-fs commit workqueues
+      reiserfs: cleanup, rename key and item accessors to more friendly names
+      reiserfs: cleanup, reformat comments to normal kernel style
+      reiserfs: cleanup, remove nblocks argument from journal_end
+      reiserfs: cleanup, remove sb argument from journal_end
+      reiserfs: cleanup, remove sb argument from journal_mark_dirty
+      reiserfs: cleanup, remove blocks arg from journal_join
+      reiserfs: cleanup, remove unnecessary parens in dirent creation
+      reiserfs: cleanup, remove leading whitespace from labels
+      reiserfs: cleanup, remove unnecessary parens
+      reiserfs: cleanup, make hash detection saner
+      reiserfs: balance_leaf refactor, reformat balance_leaf comments
+      reiserfs: balance_leaf refactor, move state variables into tree_balance
+      reiserfs: balance_leaf refactor, pull out balance_leaf_insert_left
+      reiserfs: balance_leaf refactor, pull out balance_leaf_paste_left
+      reiserfs: balance_leaf refactor, pull out balance_leaf_insert_right
+      reiserfs: balance_leaf refactor, pull out balance_leaf_paste_right
+      reiserfs: balance_leaf refactor, pull out balance_leaf_new_nodes_insert
+      reiserfs: balance_leaf refactor, pull out balance_leaf_new_nodes_paste
+      reiserfs: balance_leaf refactor pull out balance_leaf_finish_node_insert
+      reiserfs: balance_leaf refactor, pull out balance_leaf_finish_node_paste
+      reiserfs: balance_leaf refactor, pull out balance_leaf{left, right, new_nodes, finish_node}
+      reiserfs: balance_leaf refactor, format balance_leaf_insert_left
+      reiserfs: balance_leaf refactor, format balance_leaf_paste_left
+      reiserfs: balance_leaf refactor, format balance_leaf_insert_right
+      reiserfs: balance_leaf refactor, format balance_leaf_paste_right
+      reiserfs: balance_leaf refactor, format balance_leaf_new_nodes_paste
+      reiserfs: balance_leaf refactor, format balance_leaf_finish_node
+      reiserfs: balance_leaf refactor, split up balance_leaf_when_delete
+      reiserfs: call truncate_setsize under tailpack mutex
+
+The diffstat is
+
+ fs/ext3/inode.c               |   33 +-
+ fs/jbd/revoke.c               |   12 +-
+ fs/reiserfs/bitmap.c          |  259 +++--
+ fs/reiserfs/dir.c             |  156 +--
+ fs/reiserfs/do_balan.c        | 2449 +++++++++++++++++++++++------------------
+ fs/reiserfs/file.c            |   90 +-
+ fs/reiserfs/fix_node.c        | 1008 ++++++++++-------
+ fs/reiserfs/hashes.c          |   15 +-
+ fs/reiserfs/ibalance.c        |  271 +++--
+ fs/reiserfs/inode.c           | 1206 +++++++++++---------
+ fs/reiserfs/ioctl.c           |   27 +-
+ fs/reiserfs/item_ops.c        |  108 +-
+ fs/reiserfs/journal.c         | 1339 ++++++++++++----------
+ fs/reiserfs/lbalance.c        |  501 +++++----
+ fs/reiserfs/namei.c           |  513 +++++----
+ fs/reiserfs/objectid.c        |  101 +-
+ fs/reiserfs/prints.c          |  176 +--
+ fs/reiserfs/reiserfs.h        | 1921 ++++++++++++++++++++------------
+ fs/reiserfs/resize.c          |   75 +-
+ fs/reiserfs/stree.c           |  892 ++++++++-------
+ fs/reiserfs/super.c           |  552 ++++++----
+ fs/reiserfs/tail_conversion.c |  161 +--
+ fs/reiserfs/xattr.c           |   70 +-
+ fs/reiserfs/xattr.h           |    3 +-
+ fs/reiserfs/xattr_acl.c       |   38 +-
+ 25 files changed, 7056 insertions(+), 4920 deletions(-)
+
+							Thanks
 								Honza
+
 -- 
 Jan Kara <jack@suse.cz>
 SUSE Labs, CR
