@@ -1,76 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753335AbaFDNMf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 09:12:35 -0400
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:25866 "EHLO
-	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753112AbaFDNMc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 09:12:32 -0400
-X-IronPort-AV: E=Sophos;i="4.98,973,1392159600"; 
-   d="scan'208";a="78028733"
-Date: Wed, 4 Jun 2014 15:12:23 +0200 (CEST)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@hadrien
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-cc: Julia Lawall <julia.lawall@lip6.fr>,
-        David Laight <David.Laight@aculab.com>,
-        linux-rdma <linux-rdma@vger.kernel.org>,
-        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
-        Linux Fbdev development list <linux-fbdev@vger.kernel.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ath10k@lists.infradead.org" <ath10k@lists.infradead.org>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        driverdevel <devel@driverdev.osuosl.org>,
-        "iss_storagedev@hp.com" <iss_storagedev@hp.com>,
-        scsi <linux-scsi@vger.kernel.org>,
-        linux-s390 <linux-s390@vger.kernel.org>,
-        "adi-buildroot-devel@lists.sourceforge.net" 
-	<adi-buildroot-devel@lists.sourceforge.net>,
-        Arnd Bergmann <arnd@arndb.de>, sebott@linux.vnet.ibm.com
-Subject: Re: [PATCH 0/10] use safer test on the result of
- find_first_zero_bit
-In-Reply-To: <CAMuHMdV2wP43Lxf-UtCum37HyMPSboRb6RLNTHzm_ZNOBeJR0g@mail.gmail.com>
-Message-ID: <alpine.DEB.2.10.1406041510520.2441@hadrien>
-References: <1401872880-23685-1-git-send-email-Julia.Lawall@lip6.fr> <CAMuHMdXsoFUXj4jLMWN6NY7Um19KwWO9Rhx=9=gqWu_K5Ev2kQ@mail.gmail.com> <alpine.DEB.2.10.1406041137270.2441@hadrien> <063D6719AE5E284EB5DD2968C1650D6D1725705F@AcuExch.aculab.com>
- <alpine.DEB.2.10.1406041148590.2441@hadrien> <CAMuHMdXPBQTYA0c=1hkC7943-_J59TVSFaEKsfY1F2ogV=Ld+A@mail.gmail.com> <alpine.DEB.2.10.1406041258200.2441@hadrien> <CAMuHMdV2wP43Lxf-UtCum37HyMPSboRb6RLNTHzm_ZNOBeJR0g@mail.gmail.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	id S1753369AbaFDNMx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 09:12:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14438 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752967AbaFDNMu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 09:12:50 -0400
+Message-ID: <538F1B33.6030706@redhat.com>
+Date: Wed, 04 Jun 2014 09:12:19 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131028 Thunderbird/17.0.10
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+CC: linux-kernel@vger.kernel.org, Oren Twaig <oren@scalemp.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Borislav Petkov <bp@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <ak@linux.intel.com>, Dave Jones <davej@redhat.com>,
+        Torsten Kaiser <just.for.lkml@googlemail.com>,
+        Jan Beulich <JBeulich@suse.com>, Jan Kiszka <jan.kiszka@siemens.com>,
+        Toshi Kani <toshi.kani@hp.com>, Andrew Jones <drjones@redhat.com>
+Subject: Re: [PATCH] x86, Clean up smp_num_siblings calculation
+References: <1401709892-9586-1-git-send-email-prarit@redhat.com> <538CA69F.1020305@windriver.com>
+In-Reply-To: <538CA69F.1020305@windriver.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
 
-On Wed, 4 Jun 2014, Geert Uytterhoeven wrote:
+On 06/02/2014 12:30 PM, Paul Gortmaker wrote:
 
-> Hi Julia,
->
-> On Wed, Jun 4, 2014 at 1:00 PM, Julia Lawall <julia.lawall@lip6.fr> wrote:
-> > OK, thanks.  I was only looking at the C code.
-> >
-> > But the C code contains a loop that is followed by:
-> >
-> >         if (!size)
-> >                 return result;
-> >         tmp = *p;
-> >
-> > found_first:
-> >         tmp |= ~0UL << size;
-> >         if (tmp == ~0UL)        /* Are any bits zero? */
-> >                 return result + size;   /* Nope. */
-> >
-> > In the first return, it would seem that result == size.  Could the second
-> > one be changed to just return size?  It should not hurt performance.
->
-> "size" may have been changed between function entry and this line.
-> So you have to store it in a temporary.
+<snip code>
 
-Sorry, after reflection it seems that indeed size + result is always the
-original size, so it is actually all of the code that uses >= that is
-doing something unnecessary.  == for the failure test is fine.
+> I wonder if this code is in need of an update?  I recall reading
+> this thread:
+> 
+> http://forum.osdev.org/viewtopic.php?f=1&t=23445
+> 
+> which suggests that we try CPUID with 0xb, and then 0x4 _before_
+> relying on the EBX[23:16] of the older CPUID 0x1.
+> 
+> AFAICT, the 0xb and 0x4 didn't exist when AP-485 was written ~2002.
+> 
+> http://datasheets.chipdb.org/Intel/x86/CPUID/24161821.pdf
 
-julia
+FWIW, I agree -- this whole chunk can be rewritten and I'll do that in [v3].
+
+> 
+> Also, there was a discussion of masking the "ht" flag in /proc/cpuinfo
+> for when it is "off" -- since the common sense interpretation of it
+> doesn't match the implementation in the specification:
+> 
+> http://codemonkey.org.uk/2009/11/10/common-hyperthreading-misconception/
+> https://lkml.org/lkml/2009/11/13/33
+> 
+> ...but I don't think that ever happened, even though Ingo thought it
+> would probably be OK if there was no obvious fallout.
+
+I have spoken to a few people about this to see if we anticipate any fallout
+from this.  The only concern that anyone raised is that some admin might get
+confused by the lack of the ht flag in /proc/cpuinfo.  I think that's bogus
+because it would have been the admin that disabled HT in the first place.  So
+AFAICT it should be safe to do.  I'm going to put together a 2/2 of patch only
+for the removal of ht if (smp_num_siblings == 1) and we'll see if the
+maintainers like it or not.
+
+P.
