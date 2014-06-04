@@ -1,42 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753520AbaFDQRY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 12:17:24 -0400
-Received: from mail-vc0-f173.google.com ([209.85.220.173]:34728 "EHLO
-	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753485AbaFDQRV (ORCPT
+	id S1752585AbaFDQXz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 12:23:55 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:37560 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753530AbaFDQXx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 12:17:21 -0400
+	Wed, 4 Jun 2014 12:23:53 -0400
+Date: Wed, 4 Jun 2014 12:23:50 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+Cc: linux-kernel@vger.kernel.org,
+        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ingo Molnar <mingo@redhat.com>, yrl.pp-manager.tt@hitachi.com
+Subject: Re: [V4 PATCH ftrace/core] ftrace: Introduce saved_cmdlines_size
+ file
+Message-ID: <20140604122350.5223264b@gandalf.local.home>
+In-Reply-To: <20140604071848.29340.82132.stgit@yunodevel>
+References: <538E8F38.2070706@hitachi.com>
+	<20140604071848.29340.82132.stgit@yunodevel>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <20140604103003.GE11096@twins.programming.kicks-ass.net>
-References: <20140603114821.GA23711@gmail.com>
-	<1401832251.8843.3.camel@buesod1.americas.hpqcorp.net>
-	<20140604103003.GE11096@twins.programming.kicks-ass.net>
-Date: Wed, 4 Jun 2014 09:17:20 -0700
-X-Google-Sender-Auth: 3xn9XXyf0SUosnW93oAcP1e6R8A
-Message-ID: <CA+55aFzTGHrR2dr64BsMOE--QXqw_=mwqypmweebRe-1UkJGZA@mail.gmail.com>
-Subject: Re: [GIT PULL] locking tree changes for v3.16
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Davidlohr Bueso <davidlohr@hp.com>, Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 4, 2014 at 3:30 AM, Peter Zijlstra <peterz@infradead.org> wrote:
->
-> Ingo is 'missing' most of the time, so while I sit here with a massive
-> queue of patches its nearly impossible for me to get anything merged :-(
 
-Ugh. I'd love to get this whole locking stuff sorted out. At worst,
-could you just set up a git tree of your own with the locking patches?
-Or I could even just take an emailed patch-series, although I do
-prefer the convenience of a git pull.. This has been going on for a
-_loong_ time now.
+Almost there ;-)
 
-              Linus
+On Wed, 04 Jun 2014 16:18:48 +0900
+Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com> wrote:
+
+
+> +
+> +static int allocate_cmdlines_buffer(unsigned int val,
+> +				    struct saved_cmdlines_buffer *s)
+> +{
+> +	s->map_cmdline_to_pid = kmalloc(val * sizeof(unsigned), GFP_KERNEL);
+
+s/sizeof(unsigned)/sizeof(*s->map_cmdline_to_pid)/
+
+For the same reason as the memset.
+
+Other than that, I think the rest looks good.
+
+-- Steve
+
+> +	if (!s->map_cmdline_to_pid)
+> +		return -ENOMEM;
+> +
+> +	s->saved_cmdlines = kmalloc(val * TASK_COMM_LEN, GFP_KERNEL);
+> +	if (!s->saved_cmdlines) {
+> +		kfree(s->map_cmdline_to_pid);
+> +		return -ENOMEM;
+> +	}
+> +
+> +	s->cmdline_idx = 0;
+> +	s->cmdline_num = val;
+> +	memset(&s->map_pid_to_cmdline, NO_CMDLINE_MAP,
+> +	       sizeof(s->map_pid_to_cmdline));
+> +	memset(s->map_cmdline_to_pid, NO_CMDLINE_MAP,
+> +	       val * sizeof(*s->map_cmdline_to_pid));
+> +
+> +	return 0;
+> +}
+> +
