@@ -1,57 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752414AbaFDV7V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 17:59:21 -0400
-Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:39275 "EHLO
-	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751508AbaFDV7T (ORCPT
+	id S1752498AbaFDV7p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 17:59:45 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:37618 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751563AbaFDV7o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 17:59:19 -0400
-Date: Wed, 4 Jun 2014 23:59:12 +0200
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Cc: Steffen Maier <maier@linux.vnet.ibm.com>, linux390@de.ibm.com,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] s390: scsi: zfcp_aux.c:  Cleaning up missing
+	Wed, 4 Jun 2014 17:59:44 -0400
+Message-ID: <1401919181.17510.36.camel@dabdike>
+Subject: Re: [PATCH] scsi: bfa: bfad_attr.c:  Cleaning up missing
  null-terminate after strncpy call
-Message-ID: <20140604215912.GA3702@osiris>
-References: <1401917471-2869-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1401917471-2869-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14060421-0542-0000-0000-0000094F5506
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: Anil Gurumurthy <anil.gurumurthy@qlogic.com>,
+        Sudarsana Kalluru <sudarsana.kalluru@qlogic.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Wed, 04 Jun 2014 14:59:41 -0700
+In-Reply-To: <1401917575-2954-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+References: <1401917575-2954-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.12.2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 04, 2014 at 11:31:11PM +0200, Rickard Strandqvist wrote:
+On Wed, 2014-06-04 at 23:32 +0200, Rickard Strandqvist wrote:
 > Added a guaranteed null-terminate after call to strncpy.
 > 
 > This was partly found using a static code analysis program called cppcheck.
 > 
 > Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 > ---
->  drivers/s390/scsi/zfcp_aux.c |    1 +
->  1 file changed, 1 insertion(+)
+>  drivers/scsi/bfa/bfad_attr.c |    3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
 > 
-> diff --git a/drivers/s390/scsi/zfcp_aux.c b/drivers/s390/scsi/zfcp_aux.c
-> index 8004b07..138b84a 100644
-> --- a/drivers/s390/scsi/zfcp_aux.c
-> +++ b/drivers/s390/scsi/zfcp_aux.c
-> @@ -102,6 +102,7 @@ static void __init zfcp_init_device_setup(char *devstr)
->  	if (!token || strlen(token) >= ZFCP_BUS_ID_SIZE)
->  		goto err_out;
->  	strncpy(busid, token, ZFCP_BUS_ID_SIZE);
-> +	busid[sizeof(busid) - 1] = '\0';
+> diff --git a/drivers/scsi/bfa/bfad_attr.c b/drivers/scsi/bfa/bfad_attr.c
+> index 40be670..06aa3dd 100644
+> --- a/drivers/scsi/bfa/bfad_attr.c
+> +++ b/drivers/scsi/bfa/bfad_attr.c
+> @@ -843,7 +843,8 @@ bfad_im_symbolic_name_show(struct device *dev, struct device_attribute *attr,
+>  
+>  	bfa_fcs_lport_get_attr(&bfad->bfa_fcs.fabric.bport, &port_attr);
+>  	strncpy(symname, port_attr.port_cfg.sym_name.symname,
+> -			BFA_SYMNAME_MAXLEN);
+> +			sizeof(symname));
+> +	symname[sizeof(symname) - 1] = '\0';
 
-Erm.. with
-	char busid[ZFCP_BUS_ID_SIZE];
-just a couple of lines above this seems to be rather pointless.
-However _if_ we change the code then replacing strncpy() with strlcpy()
-would be the way to go.
+So actually, this isn't the correct pattern for this type of potential
+problem, where the problem exists, the pattern is to replace strncpy()
+with strlcpy() which does a correct null termination on truncation.
+
+In this case I presume your static checker isn't sufficiently clever to
+see that there isn't a bug because port_attr.port_cfg.sym_name.symname
+is carefully copied to be NULL terminated and always less than
+BFA_SYMNAME_MAXLEN, so when copying out of it we can rely on the NULL
+termination fitting into BFA_SYMNAME_MAXLEN.
+
+James
+
 
