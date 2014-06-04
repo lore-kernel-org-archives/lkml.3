@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753045AbaFDXWR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:22:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40008 "EHLO
+	id S1756796AbaFEA2N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 20:28:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40076 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752951AbaFDXWK (ORCPT
+	with ESMTP id S1753033AbaFDXWR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:22:10 -0400
+	Wed, 4 Jun 2014 19:22:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thierry Reding <treding@nvidia.com>
-Subject: [PATCH 3.14 083/228] drm/tegra: Remove gratuitous pad field
-Date: Wed,  4 Jun 2014 16:21:52 -0700
-Message-Id: <20140604232350.736176382@linuxfoundation.org>
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Jason Cooper <jason@lakedaemon.net>
+Subject: [PATCH 3.14 104/228] ARM: orion5x: fix target ID for crypto SRAM window
+Date: Wed,  4 Jun 2014 16:22:13 -0700
+Message-Id: <20140604232351.377649197@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -28,42 +30,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thierry Reding <treding@nvidia.com>
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 
-commit cbfbbabb89b37f6bad05f478d906a385149f288d upstream.
+commit 1cc9d48145b81e307fab94a5cf6ee66ec2f0de60 upstream.
 
-The version of the drm_tegra_submit structure that was merged all the
-way back in 3.10 contains a pad field that was originally intended to
-properly pad the following __u64 field. Unfortunately it seems like a
-different field was dropped during review that caused this padding to
-become unnecessary, but the pad field wasn't removed at that time.
+In commit 4ca2c04085a1caa903e92a5fc0da25362150aac2 ('ARM: orion5x:
+Move to ID based window creation'), the mach-orion5x code was changed
+to use the new mvebu-mbus API. However, in the process, a mistake was
+made on the crypto SRAM window target ID: it should have been 0x9
+(verified in the datasheet) and not 0x0.
 
-One possible side-effect of this is that since the __u64 following the
-pad is now no longer properly aligned, the compiler may (or may not)
-introduce padding itself, which results in no predictable ABI.
-
-Rectify this by removing the pad field so that all fields are again
-naturally aligned. Technically this is breaking existing userspace ABI,
-but given that there aren't any (released) userspace drivers that make
-use of this yet, the fallout should be minimal.
-
-Fixes: d43f81cbaf43 ("drm/tegra: Add gr2d device")
-Signed-off-by: Thierry Reding <treding@nvidia.com>
+Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Acked-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Link: https://lkml.kernel.org/r/1397400006-4315-2-git-send-email-thomas.petazzoni@free-electrons.com
+Fixes: 4ca2c04085a1 ('ARM: orion5x: Move to ID based window creation')
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/uapi/drm/tegra_drm.h |    1 -
- 1 file changed, 1 deletion(-)
+ arch/arm/mach-orion5x/common.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/include/uapi/drm/tegra_drm.h
-+++ b/include/uapi/drm/tegra_drm.h
-@@ -114,7 +114,6 @@ struct drm_tegra_submit {
- 	__u32 num_waitchks;
- 	__u32 waitchk_mask;
- 	__u32 timeout;
--	__u32 pad;
- 	__u64 syncpts;
- 	__u64 cmdbufs;
- 	__u64 relocs;
+--- a/arch/arm/mach-orion5x/common.h
++++ b/arch/arm/mach-orion5x/common.h
+@@ -21,7 +21,7 @@ struct mv_sata_platform_data;
+ #define ORION_MBUS_DEVBUS_BOOT_ATTR   0x0f
+ #define ORION_MBUS_DEVBUS_TARGET(cs)  0x01
+ #define ORION_MBUS_DEVBUS_ATTR(cs)    (~(1 << cs))
+-#define ORION_MBUS_SRAM_TARGET        0x00
++#define ORION_MBUS_SRAM_TARGET        0x09
+ #define ORION_MBUS_SRAM_ATTR          0x00
+ 
+ /*
 
 
