@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754271AbaFDXaE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:30:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40978 "EHLO
+	id S1754630AbaFDXaj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 19:30:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40963 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754148AbaFDXYP (ORCPT
+	with ESMTP id S1754141AbaFDXYO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:24:15 -0400
+	Wed, 4 Jun 2014 19:24:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [PATCH 3.10 068/103] NFSd: Move default initialisers from create_client() to alloc_client()
-Date: Wed,  4 Jun 2014 16:25:31 -0700
-Message-Id: <20140604232549.017226129@linuxfoundation.org>
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Neil Greatorex <neil@fatboyfat.co.uk>,
+        Jason Cooper <jason@lakedaemon.net>
+Subject: [PATCH 3.10 076/103] bus: mvebu-mbus: allow several windows with the same target/attribute
+Date: Wed,  4 Jun 2014 16:25:39 -0700
+Message-Id: <20140604232549.291203676@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232546.704156131@linuxfoundation.org>
 References: <20140604232546.704156131@linuxfoundation.org>
@@ -29,71 +30,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <trond.myklebust@primarydata.com>
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 
-commit 5694c93e6c4954fa9424c215f75eeb919bddad64 upstream.
+commit b566e782be32145664d96ada3e389f17d32742e5 upstream.
 
-Aside from making it clearer what is non-trivial in create_client(), it
-also fixes a bug whereby we can call free_client() before idr_init()
-has been called.
+Having multiple windows with the same target and attribute is actually
+legal, and can be useful for PCIe windows, when PCIe BARs have a size
+that isn't a power of two, and we therefore need to create several
+MBus windows to cover the PCIe BAR for a given PCIe interface.
 
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Fixes: fddddb52a6c4 ('bus: introduce an Marvell EBU MBus driver')
+Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Link: https://lkml.kernel.org/r/1397823593-1932-7-git-send-email-thomas.petazzoni@free-electrons.com
+Tested-by: Neil Greatorex <neil@fatboyfat.co.uk>
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfsd/nfs4state.c |   24 ++++++++++++------------
- 1 file changed, 12 insertions(+), 12 deletions(-)
+ drivers/bus/mvebu-mbus.c |    6 ------
+ 1 file changed, 6 deletions(-)
 
---- a/fs/nfsd/nfs4state.c
-+++ b/fs/nfsd/nfs4state.c
-@@ -1081,6 +1081,18 @@ static struct nfs4_client *alloc_client(
- 		return NULL;
+--- a/drivers/bus/mvebu-mbus.c
++++ b/drivers/bus/mvebu-mbus.c
+@@ -250,12 +250,6 @@ static int mvebu_mbus_window_conflicts(s
+ 		 */
+ 		if ((u64)base < wend && end > wbase)
+ 			return 0;
+-
+-		/*
+-		 * Check if target/attribute conflicts
+-		 */
+-		if (target == wtarget && attr == wattr)
+-			return 0;
  	}
- 	clp->cl_name.len = name.len;
-+	INIT_LIST_HEAD(&clp->cl_sessions);
-+	idr_init(&clp->cl_stateids);
-+	atomic_set(&clp->cl_refcount, 0);
-+	clp->cl_cb_state = NFSD4_CB_UNKNOWN;
-+	INIT_LIST_HEAD(&clp->cl_idhash);
-+	INIT_LIST_HEAD(&clp->cl_openowners);
-+	INIT_LIST_HEAD(&clp->cl_delegations);
-+	INIT_LIST_HEAD(&clp->cl_lru);
-+	INIT_LIST_HEAD(&clp->cl_callbacks);
-+	INIT_LIST_HEAD(&clp->cl_revoked);
-+	spin_lock_init(&clp->cl_lock);
-+	rpc_init_wait_queue(&clp->cl_cb_waitq, "Backchannel slot table");
- 	return clp;
- }
  
-@@ -1315,7 +1327,6 @@ static struct nfs4_client *create_client
- 	if (clp == NULL)
- 		return NULL;
- 
--	INIT_LIST_HEAD(&clp->cl_sessions);
- 	ret = copy_cred(&clp->cl_cred, &rqstp->rq_cred);
- 	if (ret) {
- 		spin_lock(&nn->client_lock);
-@@ -1323,20 +1334,9 @@ static struct nfs4_client *create_client
- 		spin_unlock(&nn->client_lock);
- 		return NULL;
- 	}
--	idr_init(&clp->cl_stateids);
--	atomic_set(&clp->cl_refcount, 0);
--	clp->cl_cb_state = NFSD4_CB_UNKNOWN;
--	INIT_LIST_HEAD(&clp->cl_idhash);
--	INIT_LIST_HEAD(&clp->cl_openowners);
--	INIT_LIST_HEAD(&clp->cl_delegations);
--	INIT_LIST_HEAD(&clp->cl_lru);
--	INIT_LIST_HEAD(&clp->cl_callbacks);
--	INIT_LIST_HEAD(&clp->cl_revoked);
--	spin_lock_init(&clp->cl_lock);
- 	nfsd4_init_callback(&clp->cl_cb_null);
- 	clp->cl_time = get_seconds();
- 	clear_bit(0, &clp->cl_cb_slot_busy);
--	rpc_init_wait_queue(&clp->cl_cb_waitq, "Backchannel slot table");
- 	copy_verf(clp, verf);
- 	rpc_copy_addr((struct sockaddr *) &clp->cl_addr, sa);
- 	gen_confirm(clp);
+ 	return 1;
 
 
