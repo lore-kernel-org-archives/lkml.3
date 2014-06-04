@@ -1,93 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752040AbaFDJmG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 05:42:06 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:53344 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750992AbaFDJmE convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 05:42:04 -0400
-Message-ID: <538EE9E9.7090605@arm.com>
-Date: Wed, 04 Jun 2014 10:42:01 +0100
-From: Dietmar Eggemann <dietmar.eggemann@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1751936AbaFDJn3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 05:43:29 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57194 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750992AbaFDJn2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 05:43:28 -0400
+Message-ID: <538EEA3D.1080105@suse.cz>
+Date: Wed, 04 Jun 2014 11:43:25 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Vincent Guittot <vincent.guittot@linaro.org>
-CC: "peterz@infradead.org" <peterz@infradead.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        "efault@gmx.de" <efault@gmx.de>,
-        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>
-Subject: Re: [PATCH v2 04/11] sched: Allow all archs to set the power_orig
-References: <1400860385-14555-1-git-send-email-vincent.guittot@linaro.org> <1400860385-14555-5-git-send-email-vincent.guittot@linaro.org> <53888FF0.4020403@arm.com> <CAKfTPtB+2dsHjZw=KkYgbP4EnPebLjfdNeVDAStXFJ2h8wbm+g@mail.gmail.com>
-In-Reply-To: <CAKfTPtB+2dsHjZw=KkYgbP4EnPebLjfdNeVDAStXFJ2h8wbm+g@mail.gmail.com>
-X-OriginalArrivalTime: 04 Jun 2014 09:41:56.0383 (UTC) FILETIME=[39597AF0:01CF7FD9]
-X-MC-Unique: 114060410420102101
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+To: Richard Weinberger <richard.weinberger@gmail.com>
+CC: linux-kbuild@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Sam Ravnborg <sam@ravnborg.org>, rdunlap@infradead.org
+Subject: Re: [PATCH v2 3/5] kbuild: Use relative path for $(objtree)
+References: <1399639944-20551-1-git-send-email-mmarek@suse.cz>	<1399639944-20551-4-git-send-email-mmarek@suse.cz> <CAFLxGvyz-aX8rTveo9W3mqsQxPeg8cb7Oq59UiC1kMz4qTiYwg@mail.gmail.com>
+In-Reply-To: <CAFLxGvyz-aX8rTveo9W3mqsQxPeg8cb7Oq59UiC1kMz4qTiYwg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[...]
->> (1) We assume that the current way (update_cpu_power() calls
->> arch_scale_freq_power() to get the avg power(freq) over the time period
->> since the last call to arch_scale_freq_power()) is suitable
->> for us. Do you have another opinion here?
-> 
-> Using power (or power_freq as you mentioned below) is probably the
-> easiest and more straight forward solution. You can use it to scale
-> each element when updating entity runnable.
-> Nevertheless, I see to 2 potential issues:
-> - is power updated often enough to correctly follow the frequency
-> scaling ? we need to compare power update frequency with
-> runnable_avg_sum variation speed and the rate at which we will change
-> the CPU's frequency.
-> - the max value of runnable_avg_sum will be also scaled so a task
-> running on a CPU with less capacity could be seen as a "low" load even
-> if it's an always running tasks. So we need to find a way to reach the
-> max value for such situation
-
-I think I mixed two problems together here:
-
-Firstly, we need to scale cpu power in update_cpu_power() regarding
-uArch, frequency and rt/irq pressure.
-Here the freq related value we get back from arch_scale_freq_power(...,
-cpu) could be an instantaneous value (curr_freq(cpu)/max_freq(cpu)).
-
-Secondly, to be able to scale the runnable avg sum of a sched entity
-(se->avg->runnable_avg_sum), we preferable have a coefficient
-representing uArch diffs (cpu_power_orig(cpu)/cpu_power_orig(most
-powerful cpu in the system) and another coefficient (avg freq over 'now
-- sa->last_runnable_update'(cpu)/max_freq(cpu). This value would have to
-be retrieved from the arch in __update_entity_runnable_avg().
-
->> (2) Is the current layout of update_cpu_power() adequate for this, where
->> we scale power_orig related to freq and then related to rt/(irq):
+On 2014-06-04 11:03, Richard Weinberger wrote:
+> On Fri, May 9, 2014 at 2:52 PM, Michal Marek <mmarek@suse.cz> wrote:
+>> The main Makefile sets its working directory to the object tree and
+>> never changes it again. Therefore, we can use '.' instead of the
+>> absolute path. The only case where we need the absolute path is when
+>> creating the 'build' symlink in /lib/modules.
 >>
->>   power_orig = scale_cpu(SCHED_POWER_SCALE)
->>   power = scale_rt(scale_freq(power_orig))
+>> Acked-by: Sam Ravnborg <sam@ravnborg.org>
+>> Signed-off-by: Michal Marek <mmarek@suse.cz>
+>> ---
+>> v1->v2: Fix the 'build' symlink
 >>
->> or do we need an extra power_freq data member on the rq and do:
+>>  Makefile | 4 ++--
+>>  1 file changed, 2 insertions(+), 2 deletions(-)
 >>
->>   power_orig = scale_cpu(SCHED_POWER_SCALE)
->>   power_freq = scale_freq(power_orig))
->>   power = scale_rt(power_orig))
+>> diff --git a/Makefile b/Makefile
+>> index 60ccbfe..480503a 100644
+>> --- a/Makefile
+>> +++ b/Makefile
+>> @@ -154,7 +154,7 @@ _all: modules
+>>  endif
+>>
+>>  srctree                := $(if $(KBUILD_SRC),$(KBUILD_SRC),$(CURDIR))
+>> -objtree                := $(CURDIR)
+>> +objtree                := .
+>>  src            := $(srctree)
+>>  obj            := $(objtree)
+>>
+>> @@ -1057,7 +1057,7 @@ _modinst_:
+>>         @ln -s $(srctree) $(MODLIB)/source
+>>         @if [ ! $(objtree) -ef  $(MODLIB)/build ]; then \
+>>                 rm -f $(MODLIB)/build ; \
+>> -               ln -s $(objtree) $(MODLIB)/build ; \
+>> +               ln -s $(CURDIR) $(MODLIB)/build ; \
+>>         fi
+>>         @cp -f $(objtree)/modules.order $(MODLIB)/
+>>         @cp -f $(objtree)/modules.builtin $(MODLIB)/
 > 
-> do you really mean power = scale_rt(power_orig) or power=scale_rt(power_freq) ?
-
-No, I also think that power=scale_rt(power_freq) is correct.
-
->> In other words, do we consider rt/(irq) pressure when calculating freq
->> scale invariant task load or not?
+> This commit breaks the of-of-tree build of UML.
 > 
-> we should take power_freq which implies a new field
-[...]
+>   CC      arch/x86/um/user-offsets.s
+> /home/rw/linux-next/arch/x86/um/user-offsets.c:21:29: fatal error:
+> asm/syscalls_64.h: No such file or directory
+> compilation terminated.
+> make[2]: *** [arch/x86/um/user-offsets.s] Error 1
+> make[1]: *** [arch/x86/um/user-offsets.s] Error 2
+> make: *** [sub-make] Error 2
+> 
+> To reproduce run:
+> make defconfig ARCH=um O=/mnt/o && make linux ARCH=um O=/mnt/
+> 
+> If there is anything in UML which needs fixing, please tell. :-)
+
+I'll have a look, thanks for the report.
+
+Michal
 
