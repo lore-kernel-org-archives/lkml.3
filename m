@@ -1,98 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752818AbaFDPPR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 11:15:17 -0400
-Received: from g2t1383g.austin.hp.com ([15.217.136.92]:13530 "EHLO
-	g2t1383g.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752041AbaFDPPO (ORCPT
+	id S1752408AbaFDPQp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 11:16:45 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:38984 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751510AbaFDPQo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 11:15:14 -0400
-Date: Wed, 4 Jun 2014 10:14:10 -0500
-From: scameron@beardog.cce.hp.com
-To: Julia Lawall <julia.lawall@lip6.fr>
-Cc: kernel-janitors@vger.kernel.org,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        iss_storagedev@hp.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, scameron@beardog.cce.hp.com
-Subject: Re: [PATCH 6/10] hpsa: use safer test on the result of find_first_zero_bit
-Message-ID: <20140604151410.GF6970@beardog.cce.hp.com>
-References: <1401872880-23685-1-git-send-email-Julia.Lawall@lip6.fr> <1401872880-23685-7-git-send-email-Julia.Lawall@lip6.fr> <20140604145407.GD6970@beardog.cce.hp.com> <alpine.DEB.2.10.1406041706050.2441@hadrien>
-Mime-Version: 1.0
+	Wed, 4 Jun 2014 11:16:44 -0400
+Date: Wed, 4 Jun 2014 08:16:43 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Christoph Hellwig <hch@infradead.org>, Shaohua Li <shli@kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch]blk-mq: blk_mq_tag_to_rq should handle flush request
+Message-ID: <20140604151643.GA6344@infradead.org>
+References: <20140604111133.GA7826@infradead.org>
+ <538F2A11.4060800@kernel.dk>
+ <20140604142012.GA20056@infradead.org>
+ <538F331F.60101@kernel.dk>
+ <20140604145803.GA7826@infradead.org>
+ <538F34FB.7050003@kernel.dk>
+ <20140604150508.GA21551@infradead.org>
+ <538F365C.8050604@kernel.dk>
+ <20140604151020.GA13586@infradead.org>
+ <538F3733.6040207@kernel.dk>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.10.1406041706050.2441@hadrien>
-User-Agent: Mutt/1.4.2.2i
+In-Reply-To: <538F3733.6040207@kernel.dk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 04, 2014 at 05:06:44PM +0200, Julia Lawall wrote:
+On Wed, Jun 04, 2014 at 09:11:47AM -0600, Jens Axboe wrote:
+> On 2014-06-04 09:10, Christoph Hellwig wrote:
+> >On Wed, Jun 04, 2014 at 09:08:12AM -0600, Jens Axboe wrote:
+> >>>The performance regression is caused by "blk-mq: avoid code
+> >>>duplication", but I don't really understand why yet.
+> >>
+> >>Gah, looks like this one dropped the tag idling. I bet that is why.
+> >
+> >Ah, thanks.  It's indeed exactly the same sort of slow down I bisected
+> >back then, this should have rung a bell instead of keeping me occupied
+> >for hours..
 > 
-> 
-> On Wed, 4 Jun 2014, scameron@beardog.cce.hp.com wrote:
-> 
-> > On Wed, Jun 04, 2014 at 11:07:56AM +0200, Julia Lawall wrote:
-> > > From: Julia Lawall <Julia.Lawall@lip6.fr>
-> > >
-> > > Find_first_zero_bit considers BITS_PER_LONG bits at a time, and thus may
-> > > return a larger number than the maximum position argument if that position
-> > > is not a multiple of BITS_PER_LONG.
-> > >
-> > > The semantic match that finds this problem is as follows:
-> > > (http://coccinelle.lip6.fr/)
-> > >
-> > > // <smpl>
-> > > @@
-> > > expression e1,e2,e3;
-> > > statement S1,S2;
-> > > @@
-> > >
-> > > e1 = find_first_zero_bit(e2,e3)
-> > > ...
-> > > if (e1
-> > > - ==
-> > > + >=
-> > >   e3)
-> > > S1 else S2
-> > > // </smpl>
-> > >
-> > > Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-> > >
-> > > ---
-> > >  drivers/scsi/hpsa.c |    2 +-
-> > >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > >
-> > > diff -u -p a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
-> > > --- a/drivers/scsi/hpsa.c
-> > > +++ b/drivers/scsi/hpsa.c
-> > > @@ -4703,7 +4703,7 @@ static struct CommandList *cmd_alloc(str
-> > >  	spin_lock_irqsave(&h->lock, flags);
-> > >  	do {
-> > >  		i = find_first_zero_bit(h->cmd_pool_bits, h->nr_cmds);
-> > > -		if (i == h->nr_cmds) {
-> > > +		if (i >= h->nr_cmds) {
-> > >  			spin_unlock_irqrestore(&h->lock, flags);
-> > >  			return NULL;
-> > >  		}
-> >
-> > Thanks, Ack.
-> >
-> > You can add
-> >
-> > Reviewed-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
-> >
-> > to this patch if you want.
-> >
-> > You might also consider adding "Cc: stable@vger.kernel.org" to the sign-off area.
-> 
-> Actually, it seems that the function can never overshoot the specified
-> limit.  So the change is not needed.
+> Patch is committed :-)
 
-Well, that would explain why nobody has complained about it in all these years.
-I figured that must have been the case at least on x86, but I thought maybe
-other archictectures might behave differently, and the change seemed harmless
-in any case. 
-
--- steve
-
+Oh well, I had just prepared the same one for you, but I want to at
+least do basic sanity checking of my rebased tree with the fixes applied
+now that I'm done bisecting.
 
