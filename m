@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754240AbaFDXYZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:24:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41040 "EHLO
+	id S1752411AbaFDXZt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 19:25:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41079 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754157AbaFDXYU (ORCPT
+	with ESMTP id S1754219AbaFDXYY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:24:20 -0400
+	Wed, 4 Jun 2014 19:24:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Slava Shwartsman <valyushash@gmail.com>,
-        Sagi Grimberg <sagig@mellanox.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.10 087/103] Target/iser: Fix iscsit_accept_np and rdma_cm racy flow
-Date: Wed,  4 Jun 2014 16:25:50 -0700
-Message-Id: <20140604232549.651035417@linuxfoundation.org>
+        Wolfram Sang <wsa+renesas@sang-engineering.com>,
+        Wolfram Sang <wsa@the-dreams.de>
+Subject: [PATCH 3.10 093/103] i2c: rcar: bail out on zero length transfers
+Date: Wed,  4 Jun 2014 16:25:56 -0700
+Message-Id: <20140604232549.855619671@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232546.704156131@linuxfoundation.org>
 References: <20140604232546.704156131@linuxfoundation.org>
@@ -30,112 +29,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sagi Grimberg <sagig@mellanox.com>
+From: Wolfram Sang <wsa+renesas@sang-engineering.com>
 
-commit 531b7bf4bd795d9a09eac92504322a472c010bc8 upstream.
+commit d7653964c590ba846aa11a8f6edf409773cbc492 upstream.
 
-RDMA CM and iSCSI target flows are asynchronous and completely
-uncorrelated. Relying on the fact that iscsi_accept_np will be called
-after CM connection request event and will wait for it is a mistake.
+This hardware does not support zero length transfers. Instead, the
+driver does one (random) byte transfers currently with undefined results
+for the slaves. We now bail out.
 
-When attempting to login to a few targets this flow is racy and
-unpredictable, but for parallel login to dozens of targets will
-race and hang every time.
-
-The correct synchronizing mechanism in this case is pending on
-a semaphore rather than a wait_for_event. We keep the pending
-interruptible for iscsi_np cleanup stage.
-
-(Squash patch to remove dead code into parent - nab)
-
-Reported-by: Slava Shwartsman <valyushash@gmail.com>
-Signed-off-by: Sagi Grimberg <sagig@mellanox.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Wolfram Sang <wsa+renesas@sang-engineering.com>
+Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/ulp/isert/ib_isert.c |   25 ++++++-------------------
- drivers/infiniband/ulp/isert/ib_isert.h |    2 +-
- 2 files changed, 7 insertions(+), 20 deletions(-)
+ drivers/i2c/busses/i2c-rcar.c |    9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
---- a/drivers/infiniband/ulp/isert/ib_isert.c
-+++ b/drivers/infiniband/ulp/isert/ib_isert.c
-@@ -27,6 +27,7 @@
- #include <target/target_core_base.h>
- #include <target/target_core_fabric.h>
- #include <target/iscsi/iscsi_transport.h>
-+#include <linux/semaphore.h>
+--- a/drivers/i2c/busses/i2c-rcar.c
++++ b/drivers/i2c/busses/i2c-rcar.c
+@@ -541,6 +541,12 @@ static int rcar_i2c_master_xfer(struct i
  
- #include "isert_proto.h"
- #include "ib_isert.h"
-@@ -462,8 +463,8 @@ isert_connect_request(struct rdma_cm_id
- 	list_add_tail(&isert_conn->conn_accept_node, &isert_np->np_accept_list);
- 	mutex_unlock(&isert_np->np_accept_mutex);
+ 	ret = -EINVAL;
+ 	for (i = 0; i < num; i++) {
++		/* This HW can't send STOP after address phase */
++		if (msgs[i].len == 0) {
++			ret = -EOPNOTSUPP;
++			break;
++		}
++
+ 		/*-------------- spin lock -----------------*/
+ 		spin_lock_irqsave(&priv->lock, flags);
  
--	pr_debug("isert_connect_request() waking up np_accept_wq: %p\n", np);
--	wake_up(&isert_np->np_accept_wq);
-+	pr_debug("isert_connect_request() up np_sem np: %p\n", np);
-+	up(&isert_np->np_sem);
- 	return 0;
+@@ -605,7 +611,8 @@ static int rcar_i2c_master_xfer(struct i
  
- out_conn_dev:
-@@ -2042,7 +2043,7 @@ isert_setup_np(struct iscsi_np *np,
- 		pr_err("Unable to allocate struct isert_np\n");
- 		return -ENOMEM;
- 	}
--	init_waitqueue_head(&isert_np->np_accept_wq);
-+	sema_init(&isert_np->np_sem, 0);
- 	mutex_init(&isert_np->np_accept_mutex);
- 	INIT_LIST_HEAD(&isert_np->np_accept_list);
- 	init_completion(&isert_np->np_login_comp);
-@@ -2091,18 +2092,6 @@ out:
+ static u32 rcar_i2c_func(struct i2c_adapter *adap)
+ {
+-	return I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL;
++	/* This HW can't do SMBUS_QUICK and NOSTART */
++	return I2C_FUNC_I2C | (I2C_FUNC_SMBUS_EMUL & ~I2C_FUNC_SMBUS_QUICK);
  }
  
- static int
--isert_check_accept_queue(struct isert_np *isert_np)
--{
--	int empty;
--
--	mutex_lock(&isert_np->np_accept_mutex);
--	empty = list_empty(&isert_np->np_accept_list);
--	mutex_unlock(&isert_np->np_accept_mutex);
--
--	return empty;
--}
--
--static int
- isert_rdma_accept(struct isert_conn *isert_conn)
- {
- 	struct rdma_cm_id *cm_id = isert_conn->conn_cm_id;
-@@ -2186,16 +2175,14 @@ isert_accept_np(struct iscsi_np *np, str
- 	int max_accept = 0, ret;
- 
- accept_wait:
--	ret = wait_event_interruptible(isert_np->np_accept_wq,
--			!isert_check_accept_queue(isert_np) ||
--			np->np_thread_state == ISCSI_NP_THREAD_RESET);
-+	ret = down_interruptible(&isert_np->np_sem);
- 	if (max_accept > 5)
- 		return -ENODEV;
- 
- 	spin_lock_bh(&np->np_thread_lock);
- 	if (np->np_thread_state == ISCSI_NP_THREAD_RESET) {
- 		spin_unlock_bh(&np->np_thread_lock);
--		pr_err("ISCSI_NP_THREAD_RESET for isert_accept_np\n");
-+		pr_debug("ISCSI_NP_THREAD_RESET for isert_accept_np\n");
- 		return -ENODEV;
- 	}
- 	spin_unlock_bh(&np->np_thread_lock);
---- a/drivers/infiniband/ulp/isert/ib_isert.h
-+++ b/drivers/infiniband/ulp/isert/ib_isert.h
-@@ -131,7 +131,7 @@ struct isert_device {
- };
- 
- struct isert_np {
--	wait_queue_head_t	np_accept_wq;
-+	struct semaphore	np_sem;
- 	struct rdma_cm_id	*np_cm_id;
- 	struct mutex		np_accept_mutex;
- 	struct list_head	np_accept_list;
+ static const struct i2c_algorithm rcar_i2c_algo = {
 
 
