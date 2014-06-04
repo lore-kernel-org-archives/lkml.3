@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932368AbaFEAdK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 20:33:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39975 "EHLO
+	id S932401AbaFEAdb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 20:33:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39960 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752852AbaFDXVv (ORCPT
+	with ESMTP id S1752689AbaFDXVs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:21:51 -0400
+	Wed, 4 Jun 2014 19:21:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Atilla Filiz <atilla.filiz@essensium.com>,
-        Jonathan Cameron <jic23@kernel.org>
-Subject: [PATCH 3.14 085/228] iio:imu:mpu6050: Fixed segfault in Invensens MPU driver due to null dereference
-Date: Wed,  4 Jun 2014 16:21:54 -0700
-Message-Id: <20140604232350.794759306@linuxfoundation.org>
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.14 093/228] rt2x00: fix beaconing on USB
+Date: Wed,  4 Jun 2014 16:22:02 -0700
+Message-Id: <20140604232351.041903752@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -29,45 +29,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Atilla Filiz <atilla.filiz@essensium.com>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit b9b3a41893c3f1be67b5aacfa525969914bea0e9 upstream.
+commit 8834d3608cc516f13e2e510f4057c263f3d2ce42 upstream.
 
-The driver segfaults when the kernel boots with device tree as the
-platform data is then not present and the pointer is deferenced without
-checking it is not null.  This patch introduces such a check avoiding the
-crash.
+When disable beaconing we clear register with beacon and newer set it
+back, what make we stop send beacons infinitely.
 
-Signed-off-by: Atilla Filiz <atilla.filiz@essensium.com>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/iio/imu/inv_mpu6050/inv_mpu_core.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ drivers/net/wireless/rt2x00/rt2x00mac.c |   22 ++++++++++++----------
+ 1 file changed, 12 insertions(+), 10 deletions(-)
 
---- a/drivers/iio/imu/inv_mpu6050/inv_mpu_core.c
-+++ b/drivers/iio/imu/inv_mpu6050/inv_mpu_core.c
-@@ -661,6 +661,7 @@ static int inv_mpu_probe(struct i2c_clie
- {
- 	struct inv_mpu6050_state *st;
- 	struct iio_dev *indio_dev;
-+	struct inv_mpu6050_platform_data *pdata;
- 	int result;
+--- a/drivers/net/wireless/rt2x00/rt2x00mac.c
++++ b/drivers/net/wireless/rt2x00/rt2x00mac.c
+@@ -621,20 +621,18 @@ void rt2x00mac_bss_info_changed(struct i
+ 				      bss_conf->bssid);
  
- 	if (!i2c_check_functionality(client->adapter,
-@@ -673,8 +674,10 @@ static int inv_mpu_probe(struct i2c_clie
+ 	/*
+-	 * Update the beacon. This is only required on USB devices. PCI
+-	 * devices fetch beacons periodically.
+-	 */
+-	if (changes & BSS_CHANGED_BEACON && rt2x00_is_usb(rt2x00dev))
+-		rt2x00queue_update_beacon(rt2x00dev, vif);
+-
+-	/*
+ 	 * Start/stop beaconing.
+ 	 */
+ 	if (changes & BSS_CHANGED_BEACON_ENABLED) {
+ 		if (!bss_conf->enable_beacon && intf->enable_beacon) {
+-			rt2x00queue_clear_beacon(rt2x00dev, vif);
+ 			rt2x00dev->intf_beaconing--;
+ 			intf->enable_beacon = false;
++			/*
++			 * Clear beacon in the H/W for this vif. This is needed
++			 * to disable beaconing on this particular interface
++			 * and keep it running on other interfaces.
++			 */
++			rt2x00queue_clear_beacon(rt2x00dev, vif);
  
- 	st = iio_priv(indio_dev);
- 	st->client = client;
--	st->plat_data = *(struct inv_mpu6050_platform_data
--				*)dev_get_platdata(&client->dev);
-+	pdata = (struct inv_mpu6050_platform_data
-+			*)dev_get_platdata(&client->dev);
-+	if (pdata)
-+		st->plat_data = *pdata;
- 	/* power is turned on inside check chip type*/
- 	result = inv_check_and_setup_chip(st, id);
- 	if (result)
+ 			if (rt2x00dev->intf_beaconing == 0) {
+ 				/*
+@@ -645,11 +643,15 @@ void rt2x00mac_bss_info_changed(struct i
+ 				rt2x00queue_stop_queue(rt2x00dev->bcn);
+ 				mutex_unlock(&intf->beacon_skb_mutex);
+ 			}
+-
+-
+ 		} else if (bss_conf->enable_beacon && !intf->enable_beacon) {
+ 			rt2x00dev->intf_beaconing++;
+ 			intf->enable_beacon = true;
++			/*
++			 * Upload beacon to the H/W. This is only required on
++			 * USB devices. PCI devices fetch beacons periodically.
++			 */
++			if (rt2x00_is_usb(rt2x00dev))
++				rt2x00queue_update_beacon(rt2x00dev, vif);
+ 
+ 			if (rt2x00dev->intf_beaconing == 1) {
+ 				/*
 
 
