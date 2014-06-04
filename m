@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754678AbaFDXmZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:42:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40749 "EHLO
+	id S1754898AbaFDXmn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 19:42:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40745 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753923AbaFDXXn (ORCPT
+	with ESMTP id S1753921AbaFDXXm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:23:43 -0400
+	Wed, 4 Jun 2014 19:23:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Egbert Eich <eich@suse.de>, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        Jani Nikula <jani.nikula@intel.com>
-Subject: [PATCH 3.10 029/103] drm/i915: Break encoder->crtc link separately in intel_sanitize_crtc()
-Date: Wed,  4 Jun 2014 16:24:52 -0700
-Message-Id: <20140604232547.796704668@linuxfoundation.org>
+        NeilBrown <neilb@suse.de>
+Subject: [PATCH 3.10 028/103] md: avoid possible spinning md thread at shutdown.
+Date: Wed,  4 Jun 2014 16:24:51 -0700
+Message-Id: <20140604232547.764134204@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232546.704156131@linuxfoundation.org>
 References: <20140604232546.704156131@linuxfoundation.org>
@@ -30,116 +28,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Egbert Eich <eich@suse.de>
+From: NeilBrown <neilb@suse.de>
 
-commit 7f1950fbb989e8fc5463b307e062b4529d51c862 upstream.
+commit 0f62fb220aa4ebabe8547d3a9ce4a16d3c045f21 upstream.
 
-Depending on the SDVO output_flags SDVO may have multiple connectors
-linking to the same encoder (in intel_connector->encoder->base).
-Only one of those connectors should be active (ie link to the encoder
-thru drm_connector->encoder).
-If intel_connector_break_all_links() is called from intel_sanitize_crtc()
-we may break the crtc connection of an encoder thru an inactive connector
-in which case intel_connector_break_all_links() will not be called again
-for the active connector if this happens to come later in the list due to:
-    if (connector->encoder->base.crtc != &crtc->base)
-                                 continue;
-in intel_sanitize_crtc().
-This will however leave the drm_connector->encoder linkage for this
-active connector in place. Subsequently this will cause multiple
-warnings in intel_connector_check_state() to trigger and the driver
-will eventually die in drm_encoder_crtc_ok() (because of crtc == NULL).
+If an md array with externally managed metadata (e.g. DDF or IMSM)
+is in use, then we should not set safemode==2 at shutdown because:
 
-To avoid this remove intel_connector_break_all_links() and move its
-code to its two calling functions: intel_sanitize_crtc() and
-intel_sanitize_encoder().
-This allows to implement the link breaking more flexibly matching
-the surrounding code: ie. in intel_sanitize_crtc() we can break the
-crtc link separatly after the links to the encoders have been
-broken which avoids above problem.
+1/ this is ineffective: user-space need to be involved in any 'safemode' handling,
+2/ The safemode management code doesn't cope with safemode==2 on external metadata
+   and md_check_recover enters an infinite loop.
 
-This regression has been introduced in:
+Even at shutdown, an infinite-looping process can be problematic, so this
+could cause shutdown to hang.
 
-commit 24929352481f085c5f85d4d4cbc919ddf106d381
-Author: Daniel Vetter <daniel.vetter@ffwll.ch>
-Date:   Mon Jul 2 20:28:59 2012 +0200
-
-    drm/i915: read out the modeset hw state at load and resume time
-
-so goes back to the very beginning of the modeset rework.
-
-v2: This patch takes care of the concernes voiced by Chris Wilson
-and Daniel Vetter that only breaking links if the drm_connector
-is linked to an encoder may miss some links.
-v3: move all encoder handling to encoder loop as suggested by
-Daniel Vetter.
-
-Signed-off-by: Egbert Eich <eich@suse.de>
-Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Jani Nikula <jani.nikula@linux.intel.com>
-Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_display.c |   26 ++++++++++++++------------
- 1 file changed, 14 insertions(+), 12 deletions(-)
+ drivers/md/md.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -9123,15 +9123,6 @@ void intel_modeset_init(struct drm_devic
- 	intel_disable_fbc(dev);
- }
- 
--static void
--intel_connector_break_all_links(struct intel_connector *connector)
--{
--	connector->base.dpms = DRM_MODE_DPMS_OFF;
--	connector->base.encoder = NULL;
--	connector->encoder->connectors_active = false;
--	connector->encoder->base.crtc = NULL;
--}
--
- static void intel_enable_pipe_a(struct drm_device *dev)
- {
- 	struct intel_connector *connector;
-@@ -9213,8 +9204,17 @@ static void intel_sanitize_crtc(struct i
- 			if (connector->encoder->base.crtc != &crtc->base)
- 				continue;
- 
--			intel_connector_break_all_links(connector);
-+			connector->base.dpms = DRM_MODE_DPMS_OFF;
-+			connector->base.encoder = NULL;
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -8481,7 +8481,8 @@ static int md_notify_reboot(struct notif
+ 		if (mddev_trylock(mddev)) {
+ 			if (mddev->pers)
+ 				__md_stop_writes(mddev);
+-			mddev->safemode = 2;
++			if (mddev->persistent)
++				mddev->safemode = 2;
+ 			mddev_unlock(mddev);
  		}
-+		/* multiple connectors may have the same encoder:
-+		 *  handle them and break crtc link separately */
-+		list_for_each_entry(connector, &dev->mode_config.connector_list,
-+				    base.head)
-+			if (connector->encoder->base.crtc == &crtc->base) {
-+				connector->encoder->base.crtc = NULL;
-+				connector->encoder->connectors_active = false;
-+			}
- 
- 		WARN_ON(crtc->active);
- 		crtc->base.enabled = false;
-@@ -9285,6 +9285,8 @@ static void intel_sanitize_encoder(struc
- 				      drm_get_encoder_name(&encoder->base));
- 			encoder->disable(encoder);
- 		}
-+		encoder->base.crtc = NULL;
-+		encoder->connectors_active = false;
- 
- 		/* Inconsistent output/port/pipe state happens presumably due to
- 		 * a bug in one of the get_hw_state functions. Or someplace else
-@@ -9295,8 +9297,8 @@ static void intel_sanitize_encoder(struc
- 				    base.head) {
- 			if (connector->encoder != encoder)
- 				continue;
--
--			intel_connector_break_all_links(connector);
-+			connector->base.dpms = DRM_MODE_DPMS_OFF;
-+			connector->base.encoder = NULL;
- 		}
- 	}
- 	/* Enabled encoders without active connectors will be fixed in
+ 		need_delay = 1;
 
 
