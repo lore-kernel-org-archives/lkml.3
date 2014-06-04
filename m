@@ -1,80 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932878AbaFDHxc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 03:53:32 -0400
-Received: from casper.infradead.org ([85.118.1.10]:45301 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932176AbaFDHxb (ORCPT
+	id S933020AbaFDH45 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 03:56:57 -0400
+Received: from mout.kundenserver.de ([212.227.126.131]:59732 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932067AbaFDH44 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 03:53:31 -0400
-Date: Wed, 4 Jun 2014 09:53:24 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: umgwanakikbuti@gmail.com, mingo@kernel.org, tglx@linutronix.de,
-        nicolas.pitre@linaro.org, daniel.lezcano@linaro.org,
+	Wed, 4 Jun 2014 03:56:56 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Sebastian Reichel <sre@kernel.org>
+Cc: Carlos Chinea <carlos.chinea@nokia.com>,
+        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/6] sched,idle: Clear polling before descheduling the
- idle thread
-Message-ID: <20140604075324.GI30445@twins.programming.kicks-ass.net>
-References: <cover.1401841482.git.luto@amacapital.net>
- <ad9dcf321a5b74e72a1b63a0d59c8ddc68509c0f.1401841482.git.luto@amacapital.net>
+Subject: [PATCH] hsi: omap_ssi_port: use normal module refcounting
+Date: Wed, 04 Jun 2014 09:56:48 +0200
+Message-ID: <7426698.eEpYu3o0WK@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="kx4ftX6R+7MpDimS"
-Content-Disposition: inline
-In-Reply-To: <ad9dcf321a5b74e72a1b63a0d59c8ddc68509c0f.1401841482.git.luto@amacapital.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:TH6f1rPs0FXgoaGg4JYrx1j2T7wyq96g44MXD2x4ep4
+ LFbhSir7jOSdtGTAx84+u5OfjfwoLHKqnSEBxlR2KbF6HMgM5w
+ 2tBwNTz9l0huMWPe+eXU62Jp6S8RzmpmrLGN0VOI6CCRuyS9p/
+ J2useuavm7g7jLZ7GZQCCorGejDkioq+BfK8i03wbFsqI1RxiB
+ QG5rZdticAVcBNSr9t6Nb31lvopTVGa3MU1kJ8TrCpf7skLxqM
+ ueGzbRB5R+3goQ0w8eFEE/ZjLvjJQXOIaiY1tjCABEuU1kS8rU
+ MeGqpojxCvyroEON/+uNC1OQKNw6AewNJ5KkY7bQbnt4PSY651
+ 4HCQ3msQ1TWpSNpvY610=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The ref_module() function is used for internal housekeeping of the
+module code, it's not normally used by subsystems or device drivers,
+and the use of ref_module in the omap_ssi_port driver causes a link
+build error when modules are disabled:
 
---kx4ftX6R+7MpDimS
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+hsi/controllers/omap_ssi_port.c: In function 'ssi_port_probe':
+hsi/controllers/omap_ssi_port.c:1119:2: error: implicit declaration of function 'ref_module' [-Werror=implicit-function-declaration]
 
-On Tue, Jun 03, 2014 at 05:29:50PM -0700, Andy Lutomirski wrote:
-> @@ -229,6 +234,8 @@ static void cpu_idle_loop(void)
->  		 */
->  		preempt_set_need_resched();
->  		tick_nohz_idle_exit();
-> +		__current_clr_polling();
-> +		smp_mb__after_clear_bit();
+This changes the omap_ssi_port driver to use try_module_get()
+and module_put() instead, which is the normal way to ensure that
+the driver providing a device used in another module does not
+go away.
 
-barriers always need a comment, and I'm not entirely sure why you put
-this one here.
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Sebastian Reichel <sre@kernel.org>
+Cc: Carlos Chinea <carlos.chinea@nokia.com>
+Cc: Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>
 
-Merging the NR set and POLLING tests into a single atomic made the
-entire barrier situation somewhat more complicated and I really need to
-rethink that.
+diff --git a/drivers/hsi/controllers/omap_ssi_port.c b/drivers/hsi/controllers/omap_ssi_port.c
+index b8693f0..6eb7c28 100644
+--- a/drivers/hsi/controllers/omap_ssi_port.c
++++ b/drivers/hsi/controllers/omap_ssi_port.c
+@@ -1116,8 +1116,7 @@ static int __init ssi_port_probe(struct platform_device *pd)
+ 
+ 	dev_dbg(&pd->dev, "init ssi port...\n");
+ 
+-	err = ref_module(THIS_MODULE, ssi->owner);
+-	if (err) {
++	if (!try_module_get(ssi->owner)) {
+ 		dev_err(&pd->dev, "could not increment parent module refcount (err=%d)\n",
+ 			err);
+ 		return -ENODEV;
+@@ -1254,6 +1253,7 @@ static int __exit ssi_port_remove(struct platform_device *pd)
+ 
+ 	omap_ssi->port[omap_port->port_id] = NULL;
+ 	platform_set_drvdata(pd, NULL);
++	module_put(port->owner);
+ 	pm_runtime_disable(&pd->dev);
+ 
+ 	return 0;
 
->  		schedule_preempt_disabled();
->  	}
->  }
-> --=20
-> 1.9.3
->=20
-
---kx4ftX6R+7MpDimS
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTjtB0AAoJEHZH4aRLwOS6TtwP/0ev62LZNcJn8KMI8kAt0brE
-qNDKGCvhk71P9zRmUG335rc0BgvtqEerZFqcKnOwuvLyk8ZQZeCx/+1JEkUulrWS
-UTBpvYmzW/iFinQPhr+S8iL371fM/l5/DtdVDLTrSUmFpcvur+23NiWkdmnuoYv6
-Dsd+ovJPKF0z07ct/3uIDcBUHAFI5/CqKB5lJCG/HjM3/2oofED5L0qr809fds8m
-PN6F+zQ6cmTIVZ6qO0OzjdjBAfcH2JP1guMIwa9Sx6mEG/BIrDFvTe07hgHkN6hl
-LvF+3dFfaC0+0yR0PNeyNs98wpdMMwKMt+j3Vj6yEWWWtdX8UymAqUUL5BmdUpdB
-6ZHm27yeT1KSX9zNmuMQqEwTcnSTjfkdRzAH+dEnZ7PjCyUHP+I4RPQYn8n2utaC
-g/InxBa0yixph0uTthOk5Ja4OpU+d0k2NCYLa7kvEB54MRdB9H3HCU6p2YzK8Sp/
-PGmQuPO9GiN/Yq9l3yXxldJhjaglIiZtWeB2XOLOx+nnkc9Q3sV3WC1rgzUYwx90
-1Ua5F1vfvf5hXAb9TTLFhjw16C91pgDER3Cx9DjikSvllRQQk7Adz7xhxIlbmB8X
-8GYrGxIASANLv67rEJyjdy1CHD+hDRhD/QqRZ0HSFtFummLaWWcBdRCWfYHcibx3
-Wb/QNtvSKXRArL10pylN
-=9L8V
------END PGP SIGNATURE-----
-
---kx4ftX6R+7MpDimS--
