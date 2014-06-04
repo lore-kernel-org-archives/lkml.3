@@ -1,218 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753474AbaFDNd7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 09:33:59 -0400
-Received: from forward-corp1f.mail.yandex.net ([95.108.130.40]:39818 "EHLO
-	forward-corp1f.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752977AbaFDNd6 (ORCPT
+	id S1753509AbaFDNej (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 09:34:39 -0400
+Received: from mx0.aculab.com ([213.249.233.131]:58216 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1753481AbaFDNeg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 09:33:58 -0400
-X-Yandex-Uniq: 604b5804-69d3-41b5-ac89-2adcb95d532f
-Authentication-Results: smtpcorp4.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
-Date: Wed, 4 Jun 2014 17:33:50 +0400
-From: Stanislav Fomichev <stfomichev@yandex-team.ru>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: fweisbec@gmail.com, mingo@redhat.com, jovi.zhangwei@huawei.com,
-        namhyung.kim@lge.com, tom.zanussi@linux.intel.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2] tracing: let user specify tracing_thresh after
- selecting function_graph
-Message-ID: <20140604133350.GC26511@stfomichev-desktop.yandex.net>
-References: <1401815569-10513-1-git-send-email-stfomichev@yandex-team.ru>
- <20140603185720.79552fb8@gandalf.local.home>
+	Wed, 4 Jun 2014 09:34:36 -0400
+From: David Laight <David.Laight@ACULAB.COM>
+To: "'Julia Lawall'" <julia.lawall@lip6.fr>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+CC: linux-rdma <linux-rdma@vger.kernel.org>,
+        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
+        Linux Fbdev development list <linux-fbdev@vger.kernel.org>,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ath10k@lists.infradead.org" <ath10k@lists.infradead.org>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        driverdevel <devel@driverdev.osuosl.org>,
+        "iss_storagedev@hp.com" <iss_storagedev@hp.com>,
+        scsi <linux-scsi@vger.kernel.org>,
+        linux-s390 <linux-s390@vger.kernel.org>,
+        "adi-buildroot-devel@lists.sourceforge.net" 
+	<adi-buildroot-devel@lists.sourceforge.net>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "sebott@linux.vnet.ibm.com" <sebott@linux.vnet.ibm.com>
+Subject: RE: [PATCH 0/10] use safer test on the result of find_first_zero_bit
+Thread-Topic: [PATCH 0/10] use safer test on the result of
+ find_first_zero_bit
+Thread-Index: AQHPf9jD3P2Wp/I7I0O0KpvEWFb8KZtgszAA///xwwCAABGWgIAAAUyAgAACFQCAACLfgIAAFbFw
+Date: Wed, 4 Jun 2014 13:34:08 +0000
+Message-ID: <063D6719AE5E284EB5DD2968C1650D6D172571DB@AcuExch.aculab.com>
+References: <1401872880-23685-1-git-send-email-Julia.Lawall@lip6.fr>
+ <CAMuHMdXsoFUXj4jLMWN6NY7Um19KwWO9Rhx=9=gqWu_K5Ev2kQ@mail.gmail.com>
+ <alpine.DEB.2.10.1406041137270.2441@hadrien>
+ <063D6719AE5E284EB5DD2968C1650D6D1725705F@AcuExch.aculab.com>
+ <alpine.DEB.2.10.1406041148590.2441@hadrien>
+ <CAMuHMdXPBQTYA0c=1hkC7943-_J59TVSFaEKsfY1F2ogV=Ld+A@mail.gmail.com>
+ <alpine.DEB.2.10.1406041258200.2441@hadrien>
+ <CAMuHMdV2wP43Lxf-UtCum37HyMPSboRb6RLNTHzm_ZNOBeJR0g@mail.gmail.com>
+ <alpine.DEB.2.10.1406041510520.2441@hadrien>
+In-Reply-To: <alpine.DEB.2.10.1406041510520.2441@hadrien>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.202.99.200]
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140603185720.79552fb8@gandalf.local.home>
-User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Ideally there should be a callback for the tracer to deal with it, but
-> instead, you can for now just hardcode a function graph tracer callback
-> into tracing_max_lat_write(). Something like this:
+From: Julia Lawall
+> On Wed, 4 Jun 2014, Geert Uytterhoeven wrote:
 > 
-> 	if (ptr == &tracing_thresh)
-> 		ftrace_update_func_graph_thresh();
+> > Hi Julia,
+> >
+> > On Wed, Jun 4, 2014 at 1:00 PM, Julia Lawall <julia.lawall@lip6.fr> wrote:
+> > > OK, thanks.  I was only looking at the C code.
+> > >
+> > > But the C code contains a loop that is followed by:
+> > >
+> > >         if (!size)
+> > >                 return result;
+> > >         tmp = *p;
+> > >
+> > > found_first:
+> > >         tmp |= ~0UL << size;
+> > >         if (tmp == ~0UL)        /* Are any bits zero? */
+> > >                 return result + size;   /* Nope. */
+> > >
+> > > In the first return, it would seem that result == size.  Could the second
+> > > one be changed to just return size?  It should not hurt performance.
+> >
+> > "size" may have been changed between function entry and this line.
+> > So you have to store it in a temporary.
 > 
-> And then if the function tracer is active, stop it, and then restart it
-> with the tracing thresh function.
-Attached new patch which adds new callback and uses it in function_graph
-tracer (not sure whether I need to check graph_array in
-graph_trace_update_thresh). Maybe it makes sense to split it into two commits
-(add callback itself, use it in the function_graph tracer)?
+> Sorry, after reflection it seems that indeed size + result is always the
+> original size, so it is actually all of the code that uses >= that is
+> doing something unnecessary.  == for the failure test is fine.
 
-Btw, I also tried to use static_keys/jump_labels in places where
-tracing_thresh is checked, but got double faults. Is there a reason I
-can't use jump labels inside tracers?
+There is nothing wrong with defensive coding.
+The 'tmp |= ~0UL << size' ensures that the return value is 'correct'
+when there are no bits set.
+The function could have been defined so that this wasn't needed.
 
----
+If you assume that the 'no zero bits' is unlikely, then checking the
+return value from ffz() could well be slightly faster.
+Not that anything is likely to notice.
 
-Currently, tracing_thresh works only if we specify it before selecting
-function_graph tracer. If we do the opposite, tracing_thresh will change
-it's value, but it will not be applied.
-To fix it, we add update_thresh callback which is called whenever
-tracing_thresh is updated and for function_graph tracer we register
-handler which reinitializes tracer depending on tracing_thresh.
+	David
 
-Signed-off-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
----
- kernel/trace/trace.c                 | 60 +++++++++++++++++++++++++++++++-----
- kernel/trace/trace.h                 |  2 ++
- kernel/trace/trace_functions_graph.c | 10 ++++++
- 3 files changed, 65 insertions(+), 7 deletions(-)
-
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 737b0efa1a62..06fbb4b7e646 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -4077,10 +4077,9 @@ tracing_set_trace_write(struct file *filp, const char __user *ubuf,
- }
- 
- static ssize_t
--tracing_max_lat_read(struct file *filp, char __user *ubuf,
--		     size_t cnt, loff_t *ppos)
-+nsecs_read(unsigned long *ptr, char __user *ubuf,
-+	   size_t cnt, loff_t *ppos)
- {
--	unsigned long *ptr = filp->private_data;
- 	char buf[64];
- 	int r;
- 
-@@ -4092,10 +4091,9 @@ tracing_max_lat_read(struct file *filp, char __user *ubuf,
- }
- 
- static ssize_t
--tracing_max_lat_write(struct file *filp, const char __user *ubuf,
--		      size_t cnt, loff_t *ppos)
-+nsecs_write(unsigned long *ptr, const char __user *ubuf,
-+	    size_t cnt, loff_t *ppos)
- {
--	unsigned long *ptr = filp->private_data;
- 	unsigned long val;
- 	int ret;
- 
-@@ -4108,6 +4106,47 @@ tracing_max_lat_write(struct file *filp, const char __user *ubuf,
- 	return cnt;
- }
- 
-+static ssize_t
-+tracing_thresh_read(struct file *filp, char __user *ubuf,
-+		    size_t cnt, loff_t *ppos)
-+{
-+	return nsecs_read(&tracing_thresh, ubuf, cnt, ppos);
-+}
-+
-+static ssize_t
-+tracing_thresh_write(struct file *filp, const char __user *ubuf,
-+		     size_t cnt, loff_t *ppos)
-+{
-+	struct trace_array *tr = filp->private_data;
-+	int ret;
-+
-+	ret = nsecs_write(&tracing_thresh, ubuf, cnt, ppos);
-+	if (ret < 0)
-+		return ret;
-+
-+	if (tr->current_trace->update_thresh) {
-+		ret = tr->current_trace->update_thresh(tr);
-+		if (ret)
-+			return ret;
-+	}
-+
-+	return cnt;
-+}
-+
-+static ssize_t
-+tracing_max_lat_read(struct file *filp, char __user *ubuf,
-+		     size_t cnt, loff_t *ppos)
-+{
-+	return nsecs_read(filp->private_data, ubuf, cnt, ppos);
-+}
-+
-+static ssize_t
-+tracing_max_lat_write(struct file *filp, const char __user *ubuf,
-+		      size_t cnt, loff_t *ppos)
-+{
-+	return nsecs_write(filp->private_data, ubuf, cnt, ppos);
-+}
-+
- static int tracing_open_pipe(struct inode *inode, struct file *filp)
- {
- 	struct trace_array *tr = inode->i_private;
-@@ -5024,6 +5063,13 @@ static int snapshot_raw_open(struct inode *inode, struct file *filp)
- #endif /* CONFIG_TRACER_SNAPSHOT */
- 
- 
-+static const struct file_operations tracing_thresh_fops = {
-+	.open		= tracing_open_generic,
-+	.read		= tracing_thresh_read,
-+	.write		= tracing_thresh_write,
-+	.llseek		= generic_file_llseek,
-+};
-+
- static const struct file_operations tracing_max_lat_fops = {
- 	.open		= tracing_open_generic,
- 	.read		= tracing_max_lat_read,
-@@ -6359,7 +6405,7 @@ static __init int tracer_init_debugfs(void)
- #endif
- 
- 	trace_create_file("tracing_thresh", 0644, d_tracer,
--			&tracing_thresh, &tracing_max_lat_fops);
-+			&global_trace, &tracing_thresh_fops);
- 
- 	trace_create_file("README", 0444, d_tracer,
- 			NULL, &tracing_readme_fops);
-diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index 2e29d7ba5a52..960c523de47d 100644
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -321,6 +321,7 @@ struct tracer_flags {
-  * @reset: called when one switches to another tracer
-  * @start: called when tracing is unpaused (echo 1 > tracing_enabled)
-  * @stop: called when tracing is paused (echo 0 > tracing_enabled)
-+ * @update_thresh: called when tracing_thresh is updated
-  * @open: called when the trace file is opened
-  * @pipe_open: called when the trace_pipe file is opened
-  * @wait_pipe: override how the user waits for traces on trace_pipe
-@@ -340,6 +341,7 @@ struct tracer {
- 	void			(*reset)(struct trace_array *tr);
- 	void			(*start)(struct trace_array *tr);
- 	void			(*stop)(struct trace_array *tr);
-+	int			(*update_thresh)(struct trace_array *tr);
- 	void			(*open)(struct trace_iterator *iter);
- 	void			(*pipe_open)(struct trace_iterator *iter);
- 	void			(*wait_pipe)(struct trace_iterator *iter);
-diff --git a/kernel/trace/trace_functions_graph.c b/kernel/trace/trace_functions_graph.c
-index deff11200261..7440541a3b4f 100644
---- a/kernel/trace/trace_functions_graph.c
-+++ b/kernel/trace/trace_functions_graph.c
-@@ -450,6 +450,15 @@ static void graph_trace_reset(struct trace_array *tr)
- {
- 	tracing_stop_cmdline_record();
- 	unregister_ftrace_graph();
-+	set_graph_array(NULL);
-+}
-+
-+void graph_trace_update_thresh(struct trace_array *tr)
-+{
-+	if (graph_array) {
-+		graph_trace_reset(tr);
-+		graph_trace_init(tr);
-+	}
- }
- 
- static int max_bytes_for_cpu;
-@@ -1501,6 +1510,7 @@ static struct trace_event graph_trace_ret_event = {
- 
- static struct tracer graph_trace __tracer_data = {
- 	.name		= "function_graph",
-+	.update_thresh	= graph_trace_update_thresh,
- 	.open		= graph_trace_open,
- 	.pipe_open	= graph_trace_open,
- 	.close		= graph_trace_close,
--- 
-1.8.3.2
 
 
