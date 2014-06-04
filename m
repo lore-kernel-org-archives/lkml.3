@@ -1,393 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934451AbaFDAa4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 20:30:56 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:46367 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755501AbaFDAay (ORCPT
+	id S1755490AbaFDAaL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 20:30:11 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:64433 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755422AbaFDAaE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 20:30:54 -0400
-Date: Tue, 3 Jun 2014 20:30:52 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-Cc: linux-kernel@vger.kernel.org,
-        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Ingo Molnar <mingo@redhat.com>, yrl.pp-manager.tt@hitachi.com
-Subject: Re: [PATCH ftrace/core 2/2] ftrace: Introduce saved_cmdlines_size
- file
-Message-ID: <20140603203052.63bb819a@gandalf.local.home>
-In-Reply-To: <20140603042805.27308.92080.stgit@yunodevel>
-References: <20140603042800.27308.48050.stgit@yunodevel>
-	<20140603042805.27308.92080.stgit@yunodevel>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Tue, 3 Jun 2014 20:30:04 -0400
+Date: Tue, 3 Jun 2014 17:30:01 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Vlastimil Babka <vbabka@suse.cz>, Mel Gorman <mgorman@suse.de>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Hugh Dickins <hughd@google.com>,
+        Greg Thelen <gthelen@google.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Minchan Kim <minchan@kernel.org>,
+        Michal Nazarewicz <mina86@mina86.com>, Rik van Riel <riel@redhat.com>
+Subject: [patch -mm 3/3] mm, compaction: avoid compacting memory for thp if
+ pageblock cannot become free
+In-Reply-To: <alpine.DEB.2.02.1406031728390.5312@chino.kir.corp.google.com>
+Message-ID: <alpine.DEB.2.02.1406031729410.5312@chino.kir.corp.google.com>
+References: <1399904111-23520-1-git-send-email-vbabka@suse.cz> <1400233673-11477-1-git-send-email-vbabka@suse.cz> <alpine.DEB.2.02.1405211954410.13243@chino.kir.corp.google.com> <537DB0E5.40602@suse.cz> <alpine.DEB.2.02.1405220127320.13630@chino.kir.corp.google.com>
+ <537DE799.3040400@suse.cz> <alpine.DEB.2.02.1406031728390.5312@chino.kir.corp.google.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 03 Jun 2014 13:28:05 +0900
-Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com> wrote:
+It's pointless to migrate pages within a pageblock if the entire pageblock will 
+not become free for a thp allocation.
 
-> ---
->  kernel/trace/trace.c |  203 ++++++++++++++++++++++++++++++++++++++++++++------
->  1 file changed, 180 insertions(+), 23 deletions(-)
-> 
-> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-> index 135af32..473eb68 100644
-> --- a/kernel/trace/trace.c
-> +++ b/kernel/trace/trace.c
-> @@ -1285,22 +1285,82 @@ void tracing_reset_all_online_cpus(void)
->  	}
->  }
->  
-> -#define SAVED_CMDLINES 128
-> +#define SAVED_CMDLINES_DEFAULT 128
->  #define NO_CMDLINE_MAP UINT_MAX
-> -static unsigned map_pid_to_cmdline[PID_MAX_DEFAULT+1];
-> -static unsigned map_cmdline_to_pid[SAVED_CMDLINES];
-> -static char saved_cmdlines[SAVED_CMDLINES][TASK_COMM_LEN];
-> -static int cmdline_idx;
->  static arch_spinlock_t trace_cmdline_lock = __ARCH_SPIN_LOCK_UNLOCKED;
-> +struct saved_cmdlines_buffer {
-> +	unsigned map_pid_to_cmdline[PID_MAX_DEFAULT+1];
-> +	unsigned *map_cmdline_to_pid;
-> +	unsigned cmdline_num;
-> +	int cmdline_idx;
-> +	char *saved_cmdlines;
-> +};
-> +static struct saved_cmdlines_buffer *savedcmd;
->  
->  /* temporary disable recording */
->  static atomic_t trace_record_cmdline_disabled __read_mostly;
->  
-> -static void trace_init_cmdlines(void)
-> +static inline char *get_saved_cmdlines(int idx)
-> +{
-> +	return &savedcmd->saved_cmdlines[idx * TASK_COMM_LEN];
-> +}
-> +
-> +static inline void set_cmdline(int idx, const char *cmdline)
-> +{
-> +	memcpy(get_saved_cmdlines(idx), cmdline, TASK_COMM_LEN);
-> +}
-> +
-> +static int allocate_cmdlines_buffer(unsigned int val,
-> +				    struct saved_cmdlines_buffer *s)
->  {
-> -	memset(&map_pid_to_cmdline, NO_CMDLINE_MAP, sizeof(map_pid_to_cmdline));
-> -	memset(&map_cmdline_to_pid, NO_CMDLINE_MAP, sizeof(map_cmdline_to_pid));
-> -	cmdline_idx = 0;
-> +	s->map_cmdline_to_pid = kmalloc(val * sizeof(unsigned), GFP_KERNEL);
-> +	if (!s->map_cmdline_to_pid)
-> +		goto out;
-> +
-> +	s->saved_cmdlines = kmalloc(val * TASK_COMM_LEN, GFP_KERNEL);
-> +	if (!s->saved_cmdlines)
-> +		goto out_free_map_cmdline_to_pid;
-> +
-> +	return 0;
-> +
-> +out_free_map_cmdline_to_pid:
-> +	kfree(s->map_cmdline_to_pid);
-> +out:
-> +	return -ENOMEM;
-> +}
-> +
-> +static void trace_init_cmdlines_buffer(unsigned int val,
-> +				       struct saved_cmdlines_buffer *s)
-> +{
-> +	s->cmdline_idx = 0;
-> +	s->cmdline_num = val;
-> +	memset(&s->map_pid_to_cmdline, NO_CMDLINE_MAP,
-> +	       sizeof(s->map_pid_to_cmdline));
-> +	memset(s->map_cmdline_to_pid, NO_CMDLINE_MAP,
-> +	       val * sizeof(*s->map_cmdline_to_pid));
-> +}
+If we encounter a page that cannot be migrated and a direct compactor other than 
+khugepaged is trying to allocate a hugepage for thp, then skip the entire 
+pageblock and avoid migrating pages needlessly.
 
-Please combine the above two functions. Get rid of
-trace_init_cmdlines_buffer(). That is, move the contents of
-trace_init_cmdlines_buffer() into allocate_cmdline_buffer() just before
-the return 0. There's no reason that we need to have two functions, one
-to allocate and one to initialize it. The allocation can also
-initialize it.
+Signed-off-by: David Rientjes <rientjes@google.com>
+---
+ mm/compaction.c | 41 ++++++++++++++++++++++++++++-------------
+ 1 file changed, 28 insertions(+), 13 deletions(-)
 
-> +
-> +static int trace_create_savedcmd(void)
-> +{
-> +	int ret;
-> +
-> +	savedcmd = kmalloc(sizeof(struct saved_cmdlines_buffer), GFP_KERNEL);
-> +	if (!savedcmd)
-> +		goto out;
-
-	if (!savedcmd)
-		return -ENOMEM;
-
-> +
-> +	ret = allocate_cmdlines_buffer(SAVED_CMDLINES_DEFAULT, savedcmd);
-> +	if (ret < 0)
-> +		goto out_free;
-
-	if (ret < 0) {
-		kfree(savedcmd);
-		savedcmd = NULL;
-		return -ENOMEM;
-	}
-
-This function is small enough that we don't need to use gotos to make
-it clean.
-
-> +
-> +	trace_init_cmdlines_buffer(SAVED_CMDLINES_DEFAULT, savedcmd);
-> +
-> +	return 0;
-> +
-> +out_free:
-> +	kfree(savedcmd);
-> +	savedcmd = NULL;
-> +out:
-> +	return -ENOMEM;
->  }
->  
->  int is_tracing_stopped(void)
-> @@ -1457,9 +1517,9 @@ static int trace_save_cmdline(struct task_struct *tsk)
->  	if (!arch_spin_trylock(&trace_cmdline_lock))
->  		return 0;
->  
-> -	idx = map_pid_to_cmdline[tsk->pid];
-> +	idx = savedcmd->map_pid_to_cmdline[tsk->pid];
->  	if (idx == NO_CMDLINE_MAP) {
-> -		idx = (cmdline_idx + 1) % SAVED_CMDLINES;
-> +		idx = (savedcmd->cmdline_idx + 1) % savedcmd->cmdline_num;
->  
->  		/*
->  		 * Check whether the cmdline buffer at idx has a pid
-> @@ -1467,17 +1527,17 @@ static int trace_save_cmdline(struct task_struct *tsk)
->  		 * need to clear the map_pid_to_cmdline. Otherwise we
->  		 * would read the new comm for the old pid.
->  		 */
-> -		pid = map_cmdline_to_pid[idx];
-> +		pid = savedcmd->map_cmdline_to_pid[idx];
->  		if (pid != NO_CMDLINE_MAP)
-> -			map_pid_to_cmdline[pid] = NO_CMDLINE_MAP;
-> +			savedcmd->map_pid_to_cmdline[pid] = NO_CMDLINE_MAP;
->  
-> -		map_cmdline_to_pid[idx] = tsk->pid;
-> -		map_pid_to_cmdline[tsk->pid] = idx;
-> +		savedcmd->map_cmdline_to_pid[idx] = tsk->pid;
-> +		savedcmd->map_pid_to_cmdline[tsk->pid] = idx;
->  
-> -		cmdline_idx = idx;
-> +		savedcmd->cmdline_idx = idx;
->  	}
->  
-> -	memcpy(&saved_cmdlines[idx], tsk->comm, TASK_COMM_LEN);
-> +	set_cmdline(idx, tsk->comm);
->  
->  	arch_spin_unlock(&trace_cmdline_lock);
->  
-> @@ -1503,9 +1563,9 @@ static void __trace_find_cmdline(int pid, char comm[])
->  		return;
->  	}
->  
-> -	map = map_pid_to_cmdline[pid];
-> +	map = savedcmd->map_pid_to_cmdline[pid];
->  	if (map != NO_CMDLINE_MAP)
-> -		strcpy(comm, saved_cmdlines[map]);
-> +		strcpy(comm, get_saved_cmdlines(map));
->  	else
->  		strcpy(comm, "<...>");
->  }
-> @@ -3593,6 +3653,7 @@ static const char readme_msg[] =
->  	"  trace_options\t\t- Set format or modify how tracing happens\n"
->  	"\t\t\t  Disable an option by adding a suffix 'no' to the\n"
->  	"\t\t\t  option name\n"
-> +	"  saved_cmdlines_size\t- echo command number in here to store comm-pid list\n"
->  #ifdef CONFIG_DYNAMIC_FTRACE
->  	"\n  available_filter_functions - list of functions that can be filtered on\n"
->  	"  set_ftrace_filter\t- echo function name in here to only trace these\n"
-> @@ -3715,7 +3776,8 @@ static void *saved_cmdlines_next(struct seq_file *m, void *v, loff_t *pos)
->  
->  	(*pos)++;
->  
-> -	for (; ptr < &map_cmdline_to_pid[SAVED_CMDLINES]; ptr++) {
-> +	for (; ptr < &savedcmd->map_cmdline_to_pid[savedcmd->cmdline_num];
-> +	     ptr++) {
->  		if (*ptr == -1 || *ptr == NO_CMDLINE_MAP)
->  			continue;
->  
-> @@ -3733,7 +3795,7 @@ static void *saved_cmdlines_start(struct seq_file *m, loff_t *pos)
->  	preempt_disable();
->  	arch_spin_lock(&trace_cmdline_lock);
->  
-> -	v = &map_cmdline_to_pid[0];
-> +	v = &savedcmd->map_cmdline_to_pid[0];
->  	while (l <= *pos) {
->  		v = saved_cmdlines_next(m, v, &l);
->  		if (!v)
-> @@ -3774,11 +3836,95 @@ static int tracing_saved_cmdlines_open(struct inode *inode, struct file *filp)
->  	return seq_open(filp, &tracing_saved_cmdlines_seq_ops);
->  }
->  
-> +static int tracing_saved_cmdlines_close(struct inode *inode, struct file *filp)
-> +{
-> +	return seq_release(inode, filp);
-> +}
-> +
->  static const struct file_operations tracing_saved_cmdlines_fops = {
->  	.open		= tracing_saved_cmdlines_open,
->  	.read		= seq_read,
->  	.llseek		= seq_lseek,
-> -	.release	= seq_release,
-> +	.release	= tracing_saved_cmdlines_close,
-
-Confused. tracing_saved_cmdlines_close() just does a seq_release()
-passing in the same arguments. Why this change? Is there some clean up
-missing here?
-
-Oh, with the updates in ftrace/core, you don't need it anymore. Remove
-that helper function and just call seq_release() via .release.
-
-> +};
-> +
-> +static ssize_t
-> +tracing_saved_cmdlines_size_read(struct file *filp, char __user *ubuf,
-> +				 size_t cnt, loff_t *ppos)
-> +{
-> +	char buf[64];
-> +	int r;
-> +
-> +	arch_spin_lock(&trace_cmdline_lock);
-> +	r = sprintf(buf, "%u\n", savedcmd->cmdline_num);
-> +	arch_spin_unlock(&trace_cmdline_lock);
-> +
-> +	return simple_read_from_buffer(ubuf, cnt, ppos, buf, r);
-> +}
-> +
-> +static void free_saved_cmdlines_buffer(struct saved_cmdlines_buffer *s)
-> +{
-> +	kfree(s->saved_cmdlines);
-> +	kfree(s->map_cmdline_to_pid);
-> +	kfree(s);
-> +}
-> +
-> +static int tracing_resize_saved_cmdlines(unsigned int val)
-> +{
-> +	struct saved_cmdlines_buffer *s, *savedcmd_temp;
-> +	int err = -ENOMEM;
-
-You don't need err.
-
-> +
-> +	s = kmalloc(sizeof(struct saved_cmdlines_buffer), GFP_KERNEL);
-> +	if (!s)
-		return -ENOMEM;
-
-> +		goto out;
-> +
-> +	if (allocate_cmdlines_buffer(val, s) < 0)
-					{
-		kfree(s);
-		return -ENOMEM;
-	}
-
-Again, this function is small enough not to need the extra gotos.
-
-> +		goto out_free;
-> +
-> +	trace_init_cmdlines_buffer(val, s);
-> +
-> +	arch_spin_lock(&trace_cmdline_lock);
-> +	savedcmd_temp = savedcmd;
-> +	savedcmd = s;
-> +	arch_spin_unlock(&trace_cmdline_lock);
-> +	free_saved_cmdlines_buffer(savedcmd_temp);
-> +
-> +	return 0;
-> +
-> +out_free:
-> +	kfree(s);
-> +out:
-> +	return err;
-> +}
-> +
-> +static ssize_t
-> +tracing_saved_cmdlines_size_write(struct file *filp, const char __user *ubuf,
-> +				  size_t cnt, loff_t *ppos)
-> +{
-> +	unsigned long val;
-> +	int ret;
-> +
-> +	ret = kstrtoul_from_user(ubuf, cnt, 10, &val);
-> +	if (ret)
-> +		return ret;
-> +
-> +	/* must have at least 1 entry or less than PID_MAX_DEFAULT */
-> +	if (!val || val > PID_MAX_DEFAULT)
-> +		return -EINVAL;
-> +
-> +	ret = tracing_resize_saved_cmdlines((unsigned int)val);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	*ppos += cnt;
-> +
-> +	return cnt;
-> +}
-> +
-> +static const struct file_operations tracing_saved_cmdlines_size_fops = {
-> +	.open		= tracing_open_generic,
-> +	.read		= tracing_saved_cmdlines_size_read,
-> +	.write		= tracing_saved_cmdlines_size_write,
->  };
->  
->  static ssize_t
-> @@ -6375,6 +6521,9 @@ static __init int tracer_init_debugfs(void)
->  	trace_create_file("saved_cmdlines", 0444, d_tracer,
->  			NULL, &tracing_saved_cmdlines_fops);
->  
-> +	trace_create_file("saved_cmdlines_size", 0644, d_tracer,
-> +			  NULL, &tracing_saved_cmdlines_size_fops);
-> +
->  #ifdef CONFIG_DYNAMIC_FTRACE
->  	trace_create_file("dyn_ftrace_total_info", 0444, d_tracer,
->  			&ftrace_update_tot_cnt, &tracing_dyn_info_fops);
-> @@ -6621,7 +6770,8 @@ __init static int tracer_alloc_buffers(void)
->  	if (global_trace.buffer_disabled)
->  		tracing_off();
->  
-> -	trace_init_cmdlines();
-> +	if (trace_create_savedcmd() < 0)
-> +		goto out_free_trace_buffers;
-
-Actually, since the freeing of saved_cmdlines is easier, move the
-creation of it before the buffers, and if it fails, we don't need to
-worry about freeing the buffers. Then if the buffers fail, we just need
-to free the cmdlines.
-
--- Steve
-
->  
->  	if (trace_boot_clock) {
->  		ret = tracing_set_clock(&global_trace, trace_boot_clock);
-> @@ -6668,6 +6818,13 @@ __init static int tracer_alloc_buffers(void)
->  
->  	return 0;
->  
-> +out_free_trace_buffers:
-> +	ring_buffer_free(global_trace.trace_buffer.buffer);
-> +	free_percpu(global_trace.trace_buffer.data);
-> +#ifdef CONFIG_TRACER_MAX_TRACE
-> +	ring_buffer_free(global_trace.max_buffer.buffer);
-> +	free_percpu(global_trace.max_buffer.data);
-> +#endif
->  out_free_temp_buffer:
->  	ring_buffer_free(temp_buffer);
->  out_free_cpumask:
-
+diff --git a/mm/compaction.c b/mm/compaction.c
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -537,12 +537,12 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
+ 		if ((low_pfn & (MAX_ORDER_NR_PAGES - 1)) == 0) {
+ 			if (!pfn_valid(low_pfn)) {
+ 				low_pfn += MAX_ORDER_NR_PAGES - 1;
+-				continue;
++				goto next;
+ 			}
+ 		}
+ 
+ 		if (!pfn_valid_within(low_pfn))
+-			continue;
++			goto next;
+ 		nr_scanned++;
+ 
+ 		/*
+@@ -553,7 +553,7 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
+ 		 */
+ 		page = pfn_to_page(low_pfn);
+ 		if (page_zone(page) != zone)
+-			continue;
++			goto next;
+ 
+ 		if (!valid_page)
+ 			valid_page = page;
+@@ -599,7 +599,7 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
+ 					goto isolate_success;
+ 				}
+ 			}
+-			continue;
++			goto next;
+ 		}
+ 
+ 		/*
+@@ -616,7 +616,7 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
+ 			if (!locked)
+ 				goto next_pageblock;
+ 			low_pfn += (1 << compound_order(page)) - 1;
+-			continue;
++			goto next;
+ 		}
+ 
+ 		/*
+@@ -626,7 +626,7 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
+ 		 */
+ 		if (!page_mapping(page) &&
+ 		    page_count(page) > page_mapcount(page))
+-			continue;
++			goto next;
+ 
+ 		/* Check if it is ok to still hold the lock */
+ 		locked = compact_checklock_irqsave(&zone->lru_lock, &flags,
+@@ -636,17 +636,17 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
+ 
+ 		/* Recheck PageLRU and PageTransHuge under lock */
+ 		if (!PageLRU(page))
+-			continue;
++			goto next;
+ 		if (PageTransHuge(page)) {
+ 			low_pfn += (1 << compound_order(page)) - 1;
+-			continue;
++			goto next;
+ 		}
+ 
+ 		lruvec = mem_cgroup_page_lruvec(page, zone);
+ 
+ 		/* Try isolate the page */
+ 		if (__isolate_lru_page(page, mode) != 0)
+-			continue;
++			goto next;
+ 
+ 		VM_BUG_ON_PAGE(PageTransCompound(page), page);
+ 
+@@ -669,6 +669,24 @@ isolate_success:
+ 
+ next_pageblock:
+ 		low_pfn = ALIGN(low_pfn + 1, pageblock_nr_pages) - 1;
++
++next:
++		/*
++		 * It is too expensive for compaction to migrate pages from a
++		 * pageblock for thp page faults unless the entire pageblock
++		 * will become free.
++		 */
++		if ((cc->gfp_mask & __GFP_NO_KSWAPD) &&
++		    !(current->flags & PF_KTHREAD)) {
++			if (locked) {
++				spin_unlock_irqrestore(&zone->lru_lock, flags);
++				locked = false;
++			}
++			putback_movable_pages(migratelist);
++			cc->nr_migratepages = 0;
++			nr_isolated = 0;
++			low_pfn = ALIGN(low_pfn + 1, pageblock_nr_pages) - 1;
++		}
+ 	}
+ 
+ 	acct_isolated(zone, locked, cc);
+@@ -880,7 +898,7 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
+ 
+ 	cc->migrate_pfn = low_pfn;
+ 
+-	return ISOLATE_SUCCESS;
++	return cc->nr_migratepages ? ISOLATE_SUCCESS : ISOLATE_NONE;
+ }
+ 
+ static int compact_finished(struct zone *zone, struct compact_control *cc,
+@@ -1055,9 +1073,6 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
+ 			;
+ 		}
+ 
+-		if (!cc->nr_migratepages)
+-			continue;
+-
+ 		err = migrate_pages(&cc->migratepages, compaction_alloc,
+ 				compaction_free, (unsigned long)cc, cc->mode,
+ 				MR_COMPACTION);
