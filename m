@@ -1,96 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751790AbaFDSXl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 14:23:41 -0400
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:47953 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751596AbaFDSXZ (ORCPT
+	id S1751861AbaFDSYB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 14:24:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37073 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751230AbaFDSX7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 14:23:25 -0400
-From: abdoulaye berthe <berthe.ab@gmail.com>
-To: linus.walleij@linaro.org, gnurou@gmail.com, m@bues.ch,
-        linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: abdoulaye berthe <berthe.ab@gmail.com>
-Subject: [PATCH 2/2] gpio: gpiolib: set gpiochip_remove retval to void
-Date: Wed,  4 Jun 2014 20:22:35 +0200
-Message-Id: <1401906155-10543-3-git-send-email-berthe.ab@gmail.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1401906155-10543-1-git-send-email-berthe.ab@gmail.com>
-References: <CAAVeFuLMLfa-1RhcdSrKDUz7=eLqZurBSFSsN7N0x-0S+_btJA@mail.gmail.com>
- <1401906155-10543-1-git-send-email-berthe.ab@gmail.com>
+	Wed, 4 Jun 2014 14:23:59 -0400
+Date: Wed, 4 Jun 2014 11:27:39 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Dave Jones <davej@redhat.com>, linux-mm@kvack.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: Brandon Philips <brandon.philips@coreos.com>
+Subject: Bad rss-counter is back on 3.14-stable
+Message-ID: <20140604182739.GA30340@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This avoids handling gpiochip remove error in device
-remove handler.
+Hi all,
 
-Signed-off-by: abdoulaye berthe <berthe.ab@gmail.com>
----
- drivers/gpio/gpiolib.c      | 24 +++++++-----------------
- include/linux/gpio/driver.h |  2 +-
- 2 files changed, 8 insertions(+), 18 deletions(-)
+Dave, I saw you mention that you were seeing the "Bad rss-counter" line
+on 3.15-rc1, but I couldn't find any follow-up on this to see if anyone
+figured it out, or did it just "magically" go away?
 
-diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
-index f48817d..022543f 100644
---- a/drivers/gpio/gpiolib.c
-+++ b/drivers/gpio/gpiolib.c
-@@ -1263,10 +1263,9 @@ static void gpiochip_irqchip_remove(struct gpio_chip *gpiochip);
-  *
-  * A gpio_chip with any GPIOs still requested may not be removed.
-  */
--int gpiochip_remove(struct gpio_chip *chip)
-+void gpiochip_remove(struct gpio_chip *chip)
- {
- 	unsigned long	flags;
--	int		status = 0;
- 	unsigned	id;
- 
- 	acpi_gpiochip_remove(chip);
-@@ -1278,24 +1277,15 @@ int gpiochip_remove(struct gpio_chip *chip)
- 	of_gpiochip_remove(chip);
- 
- 	for (id = 0; id < chip->ngpio; id++) {
--		if (test_bit(FLAG_REQUESTED, &chip->desc[id].flags)) {
--			status = -EBUSY;
--			break;
--		}
--	}
--	if (status == 0) {
--		for (id = 0; id < chip->ngpio; id++)
--			chip->desc[id].chip = NULL;
--
--		list_del(&chip->list);
-+		if (test_bit(FLAG_REQUESTED, &chip->desc[id].flags))
-+			panic("gpio: removing gpiochip with gpios still requested\n");
- 	}
-+	for (id = 0; id < chip->ngpio; id++)
-+		chip->desc[id].chip = NULL;
- 
-+	list_del(&chip->list);
- 	spin_unlock_irqrestore(&gpio_lock, flags);
--
--	if (status == 0)
--		gpiochip_unexport(chip);
--
--	return status;
-+	gpiochip_unexport(chip);
- }
- EXPORT_SYMBOL_GPL(gpiochip_remove);
- 
-diff --git a/include/linux/gpio/driver.h b/include/linux/gpio/driver.h
-index 1827b43..ad5c4ef 100644
---- a/include/linux/gpio/driver.h
-+++ b/include/linux/gpio/driver.h
-@@ -138,7 +138,7 @@ extern const char *gpiochip_is_requested(struct gpio_chip *chip,
- 
- /* add/remove chips */
- extern int gpiochip_add(struct gpio_chip *chip);
--extern int __must_check gpiochip_remove(struct gpio_chip *chip);
-+extern void gpiochip_remove(struct gpio_chip *chip);
- extern struct gpio_chip *gpiochip_find(void *data,
- 			      int (*match)(struct gpio_chip *chip, void *data));
- 
--- 
-1.9.1
+I ask as Brandon is seeing this same message a lot on a 3.14.4 kernel,
+causing system crashes and problems:
 
+[16591492.449718] BUG: Bad rss-counter state mm:ffff8801ced99880 idx:0 val:-1836508
+[16591492.449737] BUG: Bad rss-counter state mm:ffff8801ced99880 idx:1 val:1836508
+
+[20783350.461716] BUG: Bad rss-counter state mm:ffff8801d2b1dc00 idx:0 val:-52518
+[20783350.461734] BUG: Bad rss-counter state mm:ffff8801d2b1dc00 idx:1 val:52518
+
+[21393387.112302] BUG: Bad rss-counter state mm:ffff8801d0104e00 idx:0 val:-1767569
+[21393387.112321] BUG: Bad rss-counter state mm:ffff8801d0104e00 idx:1 val:1767569
+
+[21430098.512837] BUG: Bad rss-counter state mm:ffff880100036680 idx:0 val:-2946
+[21430098.512854] BUG: Bad rss-counter state mm:ffff880100036680 idx:1 val:2946
+
+Anyone have any ideas of a 3.15-rc patch I should be including in
+3.14-stable to resolve this?
+
+thanks,
+
+greg k-h
