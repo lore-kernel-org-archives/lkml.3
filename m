@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752730AbaFDPED (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 11:04:03 -0400
-Received: from mx07-00178001.pphosted.com ([62.209.51.94]:47944 "EHLO
+	id S1753587AbaFDPEZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 11:04:25 -0400
+Received: from mx07-00178001.pphosted.com ([62.209.51.94]:47943 "EHLO
 	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752649AbaFDPAL (ORCPT
+	by vger.kernel.org with ESMTP id S1753211AbaFDPAL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 4 Jun 2014 11:00:11 -0400
 From: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
@@ -14,11 +14,10 @@ To: mturquette@linaro.org, robh+dt@kernel.org, pawel.moll@arm.com,
 Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         kernel@stlinux.com, Lee Jones <lee.jones@linaro.org>,
-        Gabriel Fernandez <gabriel.fernandez@linaro.org>,
-        Olivier Bideau <olivier.bideau@st.com>
-Subject: [PATCH RESEND 04/12] drivers: clk: st: STiH407: Support for A9 MUX Clocks
-Date: Wed,  4 Jun 2014 16:31:52 +0200
-Message-Id: <1401892320-18211-5-git-send-email-gabriel.fernandez@linaro.org>
+        Gabriel Fernandez <gabriel.fernandez@linaro.org>
+Subject: [PATCH RESEND 06/12] drivers: clk: st: Add polarity bit indication
+Date: Wed,  4 Jun 2014 16:31:54 +0200
+Message-Id: <1401892320-18211-7-git-send-email-gabriel.fernandez@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1401892320-18211-1-git-send-email-gabriel.fernandez@linaro.org>
 References: <1401892320-18211-1-git-send-email-gabriel.fernandez@linaro.org>
@@ -28,41 +27,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch supports the A9-mux clocks used by ClockGenA9
+This patch introduces polarity indication for pll power up bit
+and for standby bit in order to have same code between Orly 2
+and CAN.
 
 Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
-Signed-off-by: Olivier Bideau <olivier.bideau@st.com>
 ---
- drivers/clk/st/clkgen-mux.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
+ drivers/clk/st/clkgen-fsyn.c | 12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/clk/st/clkgen-mux.c b/drivers/clk/st/clkgen-mux.c
-index a329906..9bdedc8 100644
---- a/drivers/clk/st/clkgen-mux.c
-+++ b/drivers/clk/st/clkgen-mux.c
-@@ -580,6 +580,11 @@ static struct clkgen_mux_data stih416_a9_mux_data = {
- 	.shift = 0,
- 	.width = 2,
- };
-+static struct clkgen_mux_data stih407_a9_mux_data = {
-+	.offset = 0x1a4,
-+	.shift = 1,
-+	.width = 2,
-+};
+diff --git a/drivers/clk/st/clkgen-fsyn.c b/drivers/clk/st/clkgen-fsyn.c
+index 4f53ee0..5aae17c 100644
+--- a/drivers/clk/st/clkgen-fsyn.c
++++ b/drivers/clk/st/clkgen-fsyn.c
+@@ -67,6 +67,8 @@ struct clkgen_quadfs_data {
+ 	bool reset_present;
+ 	bool bwfilter_present;
+ 	bool lockstatus_present;
++	bool powerup_polarity;
++	bool standby_polarity;
+ 	bool nsdiv_present;
+ 	struct clkgen_field ndiv;
+ 	struct clkgen_field ref_bw;
+@@ -308,7 +310,7 @@ static int quadfs_pll_enable(struct clk_hw *hw)
+ 	/*
+ 	 * Power up the PLL
+ 	 */
+-	CLKGEN_WRITE(pll, npda, 1);
++	CLKGEN_WRITE(pll, npda, !pll->data->powerup_polarity);
  
- static struct of_device_id mux_of_match[] = {
- 	{
-@@ -610,6 +615,10 @@ static struct of_device_id mux_of_match[] = {
- 		.compatible = "st,stih416-clkgen-a9-mux",
- 		.data = &stih416_a9_mux_data,
- 	},
-+	{
-+		.compatible = "st,stih407-clkgen-a9-mux",
-+		.data = &stih407_a9_mux_data,
-+	},
- 	{}
- };
+ 	if (pll->lock)
+ 		spin_unlock_irqrestore(pll->lock, flags);
+@@ -335,7 +337,7 @@ static void quadfs_pll_disable(struct clk_hw *hw)
+ 	 * Powerdown the PLL and then put block into soft reset if we have
+ 	 * reset control.
+ 	 */
+-	CLKGEN_WRITE(pll, npda, 0);
++	CLKGEN_WRITE(pll, npda, pll->data->powerup_polarity);
  
+ 	if (pll->data->reset_present)
+ 		CLKGEN_WRITE(pll, nreset, 0);
+@@ -611,7 +613,7 @@ static int quadfs_fsynth_enable(struct clk_hw *hw)
+ 	if (fs->lock)
+ 		spin_lock_irqsave(fs->lock, flags);
+ 
+-	CLKGEN_WRITE(fs, nsb[fs->chan], 1);
++	CLKGEN_WRITE(fs, nsb[fs->chan], !fs->data->standby_polarity);
+ 
+ 	if (fs->lock)
+ 		spin_unlock_irqrestore(fs->lock, flags);
+@@ -631,7 +633,7 @@ static void quadfs_fsynth_disable(struct clk_hw *hw)
+ 	if (fs->lock)
+ 		spin_lock_irqsave(fs->lock, flags);
+ 
+-	CLKGEN_WRITE(fs, nsb[fs->chan], 0);
++	CLKGEN_WRITE(fs, nsb[fs->chan], !fs->data->standby_polarity);
+ 
+ 	if (fs->lock)
+ 		spin_unlock_irqrestore(fs->lock, flags);
+@@ -645,7 +647,7 @@ static int quadfs_fsynth_is_enabled(struct clk_hw *hw)
+ 	pr_debug("%s: %s enable bit = 0x%x\n",
+ 		 __func__, __clk_get_name(hw->clk), nsb);
+ 
+-	return !!nsb;
++	return fs->data->standby_polarity ? !nsb : !!nsb;
+ }
+ 
+ #define P15			(uint64_t)(1 << 15)
 -- 
 1.9.1
 
