@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752724AbaFDRbe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 13:31:34 -0400
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:39044 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752129AbaFDRbb (ORCPT
+	id S1752775AbaFDRcM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 13:32:12 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:33709 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752371AbaFDRb1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 13:31:31 -0400
+	Wed, 4 Jun 2014 13:31:27 -0400
 From: Andy Lutomirski <luto@amacapital.net>
 To: Peter Zijlstra <peterz@infradead.org>, umgwanakikbuti@gmail.com
 Cc: mingo@kernel.org, tglx@linutronix.de, nicolas.pitre@linaro.org,
         daniel.lezcano@linaro.org, linux-kernel@vger.kernel.org,
         Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH v2 5/5] sched: Optimize ttwu IPI
-Date: Wed,  4 Jun 2014 10:31:18 -0700
-Message-Id: <ce06f8b02e7e337be63e97597fc4b248d3aa6f9b.1401902905.git.luto@amacapital.net>
+Subject: [PATCH v2 3/5] sched,idle: Clear polling before descheduling the idle thread
+Date: Wed,  4 Jun 2014 10:31:16 -0700
+Message-Id: <b2059fcb4c613d520cb503b6fad6e47033c7c203.1401902905.git.luto@amacapital.net>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <cover.1401902905.git.luto@amacapital.net>
 References: <cover.1401902905.git.luto@amacapital.net>
@@ -24,190 +24,85 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Zijlstra <peterz@infradead.org>
+Currently, the only real guarantee provided by the polling bit is
+that, if you hold rq->lock and the polling bit is set, then you can
+set need_resched to force a reschedule.
 
-When enqueueing tasks on remote LLC domains, we send an IPI to do the
-work 'locally' and avoid bouncing all the cachelines over.
+The only reason the lock is needed is that the idle thread might not
+be running at all when setting its need_resched bit, and rq->lock
+keeps it pinned.
 
-However, when the remote CPU is idle (and polling, say x86 mwait), we
-don't need to send an IPI, we can simply kick the TIF word to wake it
-up and have the 'idle' loop do the work.
+This is easy to fix: just clear the polling bit before scheduling.
+Now the idle thread's polling bit is only ever set when
+rq->curr == rq->idle.
 
-So when _TIF_POLLING_NRFLAG is set, but _TIF_NEED_RESCHED is not (yet)
-set, set _TIF_NEED_RESCHED and avoid sending the IPI.
-
-[Edited by Andy Lutomirski, but this is mostly Peter Zijlstra's code.]
-
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Mike Galbraith <umgwanakikbuti@gmail.com>
-Much-requested-by: Andy Lutomirski <luto@amacapital.net>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 ---
- kernel/sched/core.c  | 54 ++++++++++++++++++++++++++++++++++++++++++++++------
- kernel/sched/idle.c  | 10 +++++++---
- kernel/sched/sched.h |  6 ++++++
- 3 files changed, 61 insertions(+), 9 deletions(-)
+ kernel/sched/idle.c | 26 +++++++++++++++++++++++++-
+ 1 file changed, 25 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index f6e4621..936a081 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -519,7 +519,7 @@ static inline void init_hrtick(void)
-  	__old;								\
- })
- 
--#ifdef TIF_POLLING_NRFLAG
-+#if defined(CONFIG_SMP) && defined(TIF_POLLING_NRFLAG)
- /*
-  * Atomically set TIF_NEED_RESCHED and test for TIF_POLLING_NRFLAG,
-  * this avoids any races wrt polling state changes and thereby avoids
-@@ -530,12 +530,44 @@ static bool set_nr_and_not_polling(struct task_struct *p)
- 	struct thread_info *ti = task_thread_info(p);
- 	return !(fetch_or(&ti->flags, _TIF_NEED_RESCHED) & _TIF_POLLING_NRFLAG);
- }
-+
-+/*
-+ * Atomically set TIF_NEED_RESCHED if TIF_POLLING_NRFLAG is set.
-+ *
-+ * If this returns true, then the idle task promises to call
-+ * sched_ttwu_pending() and reschedule soon.
-+ */
-+static bool set_nr_if_polling(struct task_struct *p)
-+{
-+	struct thread_info *ti = task_thread_info(p);
-+	typeof(ti->flags) old, val = ACCESS_ONCE(ti->flags);
-+
-+	for (;;) {
-+		if (!(val & _TIF_POLLING_NRFLAG))
-+			return false;
-+		if (val & _TIF_NEED_RESCHED)
-+			return true;
-+		old = cmpxchg(&ti->flags, val, val | _TIF_NEED_RESCHED);
-+		if (old == val)
-+			break;
-+		val = old;
-+	}
-+	return true;
-+}
-+
- #else
- static bool set_nr_and_not_polling(struct task_struct *p)
- {
- 	set_tsk_need_resched(p);
- 	return true;
- }
-+
-+#ifdef CONFIG_SMP
-+static bool set_nr_if_polling(struct task_struct *p)
-+{
-+	return false;
-+}
-+#endif
- #endif
- 
- /*
-@@ -1490,13 +1522,17 @@ static int ttwu_remote(struct task_struct *p, int wake_flags)
- }
- 
- #ifdef CONFIG_SMP
--static void sched_ttwu_pending(void)
-+void sched_ttwu_pending(void)
- {
- 	struct rq *rq = this_rq();
- 	struct llist_node *llist = llist_del_all(&rq->wake_list);
- 	struct task_struct *p;
-+	unsigned long flags;
- 
--	raw_spin_lock(&rq->lock);
-+	if (!llist)
-+		return;
-+
-+	raw_spin_lock_irqsave(&rq->lock, flags);
- 
- 	while (llist) {
- 		p = llist_entry(llist, struct task_struct, wake_entry);
-@@ -1504,7 +1540,7 @@ static void sched_ttwu_pending(void)
- 		ttwu_do_activate(rq, p, 0);
- 	}
- 
--	raw_spin_unlock(&rq->lock);
-+	raw_spin_unlock_irqrestore(&rq->lock, flags);
- }
- 
- void scheduler_ipi(void)
-@@ -1550,8 +1586,14 @@ void scheduler_ipi(void)
- 
- static void ttwu_queue_remote(struct task_struct *p, int cpu)
- {
--	if (llist_add(&p->wake_entry, &cpu_rq(cpu)->wake_list))
--		smp_send_reschedule(cpu);
-+	struct rq *rq = cpu_rq(cpu);
-+
-+	if (llist_add(&p->wake_entry, &cpu_rq(cpu)->wake_list)) {
-+		if (!set_nr_if_polling(rq->idle))
-+			smp_send_reschedule(cpu);
-+		else
-+			trace_sched_wake_idle_without_ipi(cpu);
-+	}
- }
- 
- bool cpus_share_cache(int this_cpu, int that_cpu)
 diff --git a/kernel/sched/idle.c b/kernel/sched/idle.c
-index 1065347..1234324 100644
+index 25b9423..1065347 100644
 --- a/kernel/sched/idle.c
 +++ b/kernel/sched/idle.c
-@@ -12,6 +12,8 @@
+@@ -67,6 +67,10 @@ void __weak arch_cpu_idle(void)
+  * cpuidle_idle_call - the main idle function
+  *
+  * NOTE: no locks or semaphores should be used here
++ *
++ * On archs that support TIF_POLLING_NRFLAG, is called with polling
++ * set, and it returns with polling set.  If it ever stops polling, it
++ * must clear the polling bit.
+  */
+ static void cpuidle_idle_call(void)
+ {
+@@ -175,10 +179,22 @@ exit_idle:
  
- #include <trace/events/power.h>
- 
-+#include "sched.h"
+ /*
+  * Generic idle loop implementation
++ *
++ * Called with polling cleared.
+  */
+ static void cpu_idle_loop(void)
+ {
+ 	while (1) {
++		/*
++		 * If the arch has a polling bit, we maintain an invariant:
++		 *
++		 * Our polling bit is clear if we're not scheduled (i.e. if
++		 * rq->curr != rq->idle).  This means that, if rq->idle has
++		 * the polling bit set, then setting need_resched is
++		 * guaranteed to cause the cpu to reschedule.
++		 */
 +
- static int __read_mostly cpu_idle_force_poll;
++		__current_set_polling();
+ 		tick_nohz_idle_enter();
  
- void cpu_idle_poll_ctrl(bool enable)
-@@ -237,12 +239,14 @@ static void cpu_idle_loop(void)
- 		__current_clr_polling();
- 
- 		/*
--		 * We promise to reschedule if need_resched is set while
--		 * polling is set.  That means that clearing polling
--		 * needs to be visible before rescheduling.
-+		 * We promise to call sched_ttwu_pending and reschedule
-+		 * if need_resched is set while polling is set.  That
-+		 * means that clearing polling needs to be visible
-+		 * before doing these things.
+ 		while (!need_resched()) {
+@@ -218,6 +234,15 @@ static void cpu_idle_loop(void)
  		 */
- 		smp_mb__after_clear_bit();
- 
-+		sched_ttwu_pending();
+ 		preempt_set_need_resched();
+ 		tick_nohz_idle_exit();
++		__current_clr_polling();
++
++		/*
++		 * We promise to reschedule if need_resched is set while
++		 * polling is set.  That means that clearing polling
++		 * needs to be visible before rescheduling.
++		 */
++		smp_mb__after_clear_bit();
++
  		schedule_preempt_disabled();
  	}
  }
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 600e229..99d9e81 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -670,6 +670,8 @@ extern int migrate_swap(struct task_struct *, struct task_struct *);
- 
- #ifdef CONFIG_SMP
- 
-+extern void sched_ttwu_pending(void);
-+
- #define rcu_dereference_check_sched_domain(p) \
- 	rcu_dereference_check((p), \
- 			      lockdep_is_held(&sched_domains_mutex))
-@@ -787,6 +789,10 @@ static inline unsigned int group_first_cpu(struct sched_group *group)
- 
- extern int group_balance_cpu(struct sched_group *sg);
- 
-+#else
-+
-+static inline void sched_ttwu_pending(void) { }
-+
- #endif /* CONFIG_SMP */
- 
- #include "stats.h"
+@@ -239,7 +264,6 @@ void cpu_startup_entry(enum cpuhp_state state)
+ 	 */
+ 	boot_init_stack_canary();
+ #endif
+-	__current_set_polling();
+ 	arch_cpu_idle_prepare();
+ 	cpu_idle_loop();
+ }
 -- 
 1.9.3
 
