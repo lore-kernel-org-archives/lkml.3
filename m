@@ -1,66 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753191AbaFDPnO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 11:43:14 -0400
-Received: from mail-ve0-f173.google.com ([209.85.128.173]:50478 "EHLO
-	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751701AbaFDPnN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 11:43:13 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140604153159.GA27096@infradead.org>
-References: <20140509120733.GA27918@kernel.org>
-	<20140509150018.GA26215@infradead.org>
-	<20140510040023.GA13788@kernel.org>
-	<5388912F.7010609@kernel.dk>
-	<20140604111133.GA7826@infradead.org>
-	<538F2A11.4060800@kernel.dk>
-	<20140604142012.GA20056@infradead.org>
-	<538F331F.60101@kernel.dk>
-	<20140604145803.GA7826@infradead.org>
-	<538F34FB.7050003@kernel.dk>
-	<20140604153159.GA27096@infradead.org>
-Date: Wed, 4 Jun 2014 23:43:11 +0800
-Message-ID: <CACVXFVNNTPrq29eS9GzJDequtFXCTNWPLJfzB4Z-XJVE5j8+aA@mail.gmail.com>
-Subject: Re: [patch]blk-mq: blk_mq_tag_to_rq should handle flush request
-From: Ming Lei <tom.leiming@gmail.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Jens Axboe <axboe@kernel.dk>, Shaohua Li <shli@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1753245AbaFDPnR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 11:43:17 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36928 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751701AbaFDPnQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 11:43:16 -0400
+From: Petr Mladek <pmladek@suse.cz>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Jan Beulich <jbeulich@suse.com>, Jiri Kosina <jkosina@suse.cz>,
+        linux-kernel@vger.kernel.org, x86@kernel.org,
+        Petr Mladek <pmladek@suse.cz>
+Subject: [PATCH] ftrace/x86: Use kernel identity mapping only when CONFIG_DEBUG_RODATA enabled
+Date: Wed,  4 Jun 2014 17:42:46 +0200
+Message-Id: <1401896566-8028-1-git-send-email-pmladek@suse.cz>
+X-Mailer: git-send-email 1.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 4, 2014 at 11:31 PM, Christoph Hellwig <hch@infradead.org> wrote:
-> On Wed, Jun 04, 2014 at 09:02:19AM -0600, Jens Axboe wrote:
->> >scsi_mq_find_tag only gets the scsi host, which may have multiple
->> >queues.  When called from scsi_find_tag we actually have a scsi device,
->> >so that's not an issue, but when called from scsi_host_find_tag the
->> >driver only provides the host.
->>
->> Only solution I see right now is to have the flush_rq in the shared
->> tags, but that would potentially be a regression for multiple
->> devices and heavy flush uses cases. I'll see if I can come up with
->> something better, or maybe Shaohua has an idea.
->
-> What about something like the following (untest, uncompiled, maybe
-> pseudo-code):
->
-> struct request *blk_mq_tag_to_rq(struct blk_mq_tags *tags, unsigned int tag)
-> {
->         struct request *rq = tags->rqs[tag];
->
->         if ((rq->cmd_flags & REQ_FLUSH_SEQ) && rq->q->flush_rq->tag == tag)
->                 return rq->q->flush_rq;
->         return rq;
-> }
+This is just a tiny optimization. The remapping is not needed when the
+kernel text mapping is read write all the time.
 
-Looks we thought it together, :-)
+Suggested-by: Jan Beulich <jbeulich@suse.com>
+Signed-off-by: Petr Mladek <pmladek@suse.cz>
+---
+ arch/x86/kernel/ftrace.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-Also maybe the flush_rq->tag need to be cleared in flush_end_io().
-
-
-Thanks,
+diff --git a/arch/x86/kernel/ftrace.c b/arch/x86/kernel/ftrace.c
+index cbc4a91b131e..a7a517bb793e 100644
+--- a/arch/x86/kernel/ftrace.c
++++ b/arch/x86/kernel/ftrace.c
+@@ -79,6 +79,7 @@ within(unsigned long addr, unsigned long start, unsigned long end)
+ 
+ static unsigned long text_ip_addr(unsigned long ip)
+ {
++#ifdef CONFIG_DEBUG_RODATA
+ 	/*
+ 	 * On x86_64, kernel text mappings are mapped read-only with
+ 	 * CONFIG_DEBUG_RODATA. So we use the kernel identity mapping instead
+@@ -89,7 +90,7 @@ static unsigned long text_ip_addr(unsigned long ip)
+ 	 */
+ 	if (within(ip, (unsigned long)_text, (unsigned long)_etext))
+ 		ip = (unsigned long)__va(__pa_symbol(ip));
+-
++#endif
+ 	return ip;
+ }
+ 
 -- 
-Ming Lei
+1.8.4
+
