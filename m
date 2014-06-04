@@ -1,374 +1,284 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755498AbaFDHSx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 03:18:53 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:40461 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754956AbaFDHSw (ORCPT
+	id S1755540AbaFDHVq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 03:21:46 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:54090 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755245AbaFDHVo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 03:18:52 -0400
-X-AuditID: 85900ec0-d0927b9000001514-5d-538ec8587918
-Subject: [V4 PATCH ftrace/core] ftrace: Introduce saved_cmdlines_size file
-To: linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>
-From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-Cc: Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Ingo Molnar <mingo@redhat.com>, yrl.pp-manager.tt@hitachi.com
-Date: Wed, 04 Jun 2014 16:18:48 +0900
-Message-ID: <20140604071848.29340.82132.stgit@yunodevel>
-In-Reply-To: <538E8F38.2070706@hitachi.com>
-References: <538E8F38.2070706@hitachi.com>
-User-Agent: StGit/0.16
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 4 Jun 2014 03:21:44 -0400
+From: Michael Welling <mwelling@ieee.org>
+To: Jonathan Cameron <jic23@kernel.org>, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Michael Welling <mwelling@ieee.org>
+Subject: [PATCH] iio: dac: mcp4902/mcp4912/mcp4922 dac driver
+Date: Wed,  4 Jun 2014 02:21:19 -0500
+Message-Id: <1401866479-8085-1-git-send-email-mwelling@ieee.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce saved_cmdlines_size file for changing the number of pid-comm list.
-saved_cmdlines can store 128 command names using SAVED_CMDLINES now, but
-'no-existing processes' names are often lost in saved_cmdlines when we
-read trace data. So, by introducing saved_cmdlines_size file, the rule storing
-128 command names is changed to the command numbers defined users.
+This patch provides an iio device driver for the Microchip
+MCP49x2 series DACs.
 
-When we write a value to saved_cmdlines_size, the number of the value will
-be stored in pid-comm list:
-
-	# echo 1024 > /sys/kernel/debug/tracing/saved_cmdlines_size
-
-Here, 1024 command names are stored. The default number is 128 and the maximum
-number is PID_MAX_DEFAULT (=32768 if CONFIG_BASE_SMALL is not set). So, if we
-want to avoid to lose command names, we need to set 32768 to
-saved_cmdlines_size.
-
-We can read the maximum number of the list:
-
-	# cat /sys/kernel/debug/tracing/saved_cmdlines_size
-	128
-
-Changes in V2:
-- Fix a racing problem of savedcmd between saved_cmdlines I/F and
-  nr_saved_cmdlines I/F. If one reads saved_cmdlines and writes a value to
-  nr_saved_cmdlines at the same time, then the write returns -EBUSY.
-
-  <How to test>
-  [terminal 1] Read saved_cmdlines
-  # while true; do cat saved_cmdlines > /dev/null; done;
-
-  [terminal 2] Write 1024 to nr_saved_cmdlines
-  # while true; do echo 1024 > nr_saved_cmdlines; done;
-  -bash: echo: write error: Device or resource busy
-  -bash: echo: write error: Device or resource busy
-  -bash: echo: write error: Device or resource busy
-
-Changes in V3:
-- Change 'nr_saved_cmdlines' to 'saved_cmdlines_size'
-- Delete two helper functions(trace_init_savedcmd() and
-  trace_create_and_init_saved_cmd())
-- Rebase this patch for current ftrace/core tree
-- Remove reader member in saved_cmdlines_buffer structure because the racing
-  problem does not occur even if we don't use the member in this patch
-- Fix several typos
-
-Changes in V4:
-- Remove trace_init_cmdlines_buffer()
-- Remove extra gotos in allocate_cmdlines_buffer(), trace_create_savedcmd(),
-  and tracing_resize_saved_cmdlines.
-- Use seq_release instead of tracing_saved_cmdlines_close
-- Move trace_create_savedcmd() before allocate_trace_buffers because freeing
-  of saved_cmdlines is easier than that of global_trace buffers.
-
-Signed-off-by: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Michael Welling <mwelling@ieee.org>
 ---
- kernel/trace/trace.c |  177 +++++++++++++++++++++++++++++++++++++++++++-------
- 1 file changed, 153 insertions(+), 24 deletions(-)
+ drivers/iio/dac/Kconfig   |   10 +++
+ drivers/iio/dac/Makefile  |    1 +
+ drivers/iio/dac/mcp49x2.c |  215 +++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 226 insertions(+)
+ create mode 100644 drivers/iio/dac/mcp49x2.c
 
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 135af32..ed9185c 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -1285,22 +1285,70 @@ void tracing_reset_all_online_cpus(void)
- 	}
- }
+diff --git a/drivers/iio/dac/Kconfig b/drivers/iio/dac/Kconfig
+index f378ca8..032d678 100644
+--- a/drivers/iio/dac/Kconfig
++++ b/drivers/iio/dac/Kconfig
+@@ -163,4 +163,14 @@ config MCP4725
+ 	  To compile this driver as a module, choose M here: the module
+ 	  will be called mcp4725.
  
--#define SAVED_CMDLINES 128
-+#define SAVED_CMDLINES_DEFAULT 128
- #define NO_CMDLINE_MAP UINT_MAX
--static unsigned map_pid_to_cmdline[PID_MAX_DEFAULT+1];
--static unsigned map_cmdline_to_pid[SAVED_CMDLINES];
--static char saved_cmdlines[SAVED_CMDLINES][TASK_COMM_LEN];
--static int cmdline_idx;
- static arch_spinlock_t trace_cmdline_lock = __ARCH_SPIN_LOCK_UNLOCKED;
-+struct saved_cmdlines_buffer {
-+	unsigned map_pid_to_cmdline[PID_MAX_DEFAULT+1];
-+	unsigned *map_cmdline_to_pid;
-+	unsigned cmdline_num;
-+	int cmdline_idx;
-+	char *saved_cmdlines;
++config MCP49X2
++	tristate "MCP4902, MCP4912, MCP4922 DAC driver"
++	depends on SPI
++	---help---
++	  Say yes here to build the driver for the Microchip MCP49x2
++	  series DAC devices.
++
++	  To compile this driver as a module, choose M here: the module
++	  will be called mcp49x2.
++
+ endmenu
+diff --git a/drivers/iio/dac/Makefile b/drivers/iio/dac/Makefile
+index bb84ad6..2fdfc2e 100644
+--- a/drivers/iio/dac/Makefile
++++ b/drivers/iio/dac/Makefile
+@@ -18,3 +18,4 @@ obj-$(CONFIG_AD5686) += ad5686.o
+ obj-$(CONFIG_AD7303) += ad7303.o
+ obj-$(CONFIG_MAX517) += max517.o
+ obj-$(CONFIG_MCP4725) += mcp4725.o
++obj-$(CONFIG_MCP49X2) += mcp49x2.o
+diff --git a/drivers/iio/dac/mcp49x2.c b/drivers/iio/dac/mcp49x2.c
+new file mode 100644
+index 0000000..0375046
+--- /dev/null
++++ b/drivers/iio/dac/mcp49x2.c
+@@ -0,0 +1,215 @@
++/*
++ * mcp49x2.c
++ *
++ * Driver for Microchip Digital to Analog Converters.
++ * Supports MCP4902, MCP4912, and MCP4922.
++ *
++ * Copyright (c) 2014 EMAC Inc.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ */
++
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/spi/spi.h>
++#include <linux/iio/iio.h>
++#include <linux/iio/sysfs.h>
++#include <linux/regulator/consumer.h>
++
++#define	MCP49X2_RES_MASK(x)		((1 << (x)) - 1)
++
++enum mcp49x2_supported_device_ids {
++	ID_MCP4902,
++	ID_MCP4912,
++	ID_MCP4922,
 +};
-+static struct saved_cmdlines_buffer *savedcmd;
- 
- /* temporary disable recording */
- static atomic_t trace_record_cmdline_disabled __read_mostly;
- 
--static void trace_init_cmdlines(void)
-+static inline char *get_saved_cmdlines(int idx)
-+{
-+	return &savedcmd->saved_cmdlines[idx * TASK_COMM_LEN];
++
++struct mcp49x2_state {
++	struct spi_device *spi;
++	unsigned int value[2];
++	unsigned int power_mode[2];
++	unsigned int vref_mv;
++	struct regulator *vref_reg;
++};
++
++#define MCP49X2_CHAN(chan, bits) {			\
++	.type = IIO_VOLTAGE,				\
++	.output = 1,					\
++	.indexed = 1,					\
++	.channel = chan,				\
++	.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),	\
++	.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),	\
++	.address = chan,				\
++	.scan_type = IIO_ST('u', bits, 16, 12-(bits)),	\
++	.ext_info = NULL,				\
 +}
 +
-+static inline void set_cmdline(int idx, const char *cmdline)
- {
--	memset(&map_pid_to_cmdline, NO_CMDLINE_MAP, sizeof(map_pid_to_cmdline));
--	memset(&map_cmdline_to_pid, NO_CMDLINE_MAP, sizeof(map_cmdline_to_pid));
--	cmdline_idx = 0;
-+	memcpy(get_saved_cmdlines(idx), cmdline, TASK_COMM_LEN);
++static int mcp49x2_spi_write(struct spi_device *spi, u8 addr, u32 val)
++{
++	u8 mosi[2];
++
++	mosi[1] = val & 0xff;
++	mosi[0] = (addr == 0) ? 0x00 : 0x80;
++	mosi[0] |= 0x30 | ((val >> 8) & 0x0f);
++
++	return spi_write(spi, mosi, 2);
 +}
 +
-+static int allocate_cmdlines_buffer(unsigned int val,
-+				    struct saved_cmdlines_buffer *s)
++static int mcp49x2_read_raw(struct iio_dev *indio_dev,
++		struct iio_chan_spec const *chan,
++		int *val,
++		int *val2,
++		long mask)
 +{
-+	s->map_cmdline_to_pid = kmalloc(val * sizeof(unsigned), GFP_KERNEL);
-+	if (!s->map_cmdline_to_pid)
-+		return -ENOMEM;
++	struct mcp49x2_state *state = iio_priv(indio_dev);
 +
-+	s->saved_cmdlines = kmalloc(val * TASK_COMM_LEN, GFP_KERNEL);
-+	if (!s->saved_cmdlines) {
-+		kfree(s->map_cmdline_to_pid);
-+		return -ENOMEM;
-+	}
-+
-+	s->cmdline_idx = 0;
-+	s->cmdline_num = val;
-+	memset(&s->map_pid_to_cmdline, NO_CMDLINE_MAP,
-+	       sizeof(s->map_pid_to_cmdline));
-+	memset(s->map_cmdline_to_pid, NO_CMDLINE_MAP,
-+	       val * sizeof(*s->map_cmdline_to_pid));
-+
-+	return 0;
-+}
-+
-+static int trace_create_savedcmd(void)
-+{
-+	int ret;
-+
-+	savedcmd = kmalloc(sizeof(struct saved_cmdlines_buffer), GFP_KERNEL);
-+	if (!savedcmd)
-+		return -ENOMEM;
-+
-+	ret = allocate_cmdlines_buffer(SAVED_CMDLINES_DEFAULT, savedcmd);
-+	if (ret < 0) {
-+		kfree(savedcmd);
-+		savedcmd = NULL;
-+		return -ENOMEM;
-+	}
-+
-+	return 0;
- }
- 
- int is_tracing_stopped(void)
-@@ -1457,9 +1505,9 @@ static int trace_save_cmdline(struct task_struct *tsk)
- 	if (!arch_spin_trylock(&trace_cmdline_lock))
- 		return 0;
- 
--	idx = map_pid_to_cmdline[tsk->pid];
-+	idx = savedcmd->map_pid_to_cmdline[tsk->pid];
- 	if (idx == NO_CMDLINE_MAP) {
--		idx = (cmdline_idx + 1) % SAVED_CMDLINES;
-+		idx = (savedcmd->cmdline_idx + 1) % savedcmd->cmdline_num;
- 
- 		/*
- 		 * Check whether the cmdline buffer at idx has a pid
-@@ -1467,17 +1515,17 @@ static int trace_save_cmdline(struct task_struct *tsk)
- 		 * need to clear the map_pid_to_cmdline. Otherwise we
- 		 * would read the new comm for the old pid.
- 		 */
--		pid = map_cmdline_to_pid[idx];
-+		pid = savedcmd->map_cmdline_to_pid[idx];
- 		if (pid != NO_CMDLINE_MAP)
--			map_pid_to_cmdline[pid] = NO_CMDLINE_MAP;
-+			savedcmd->map_pid_to_cmdline[pid] = NO_CMDLINE_MAP;
- 
--		map_cmdline_to_pid[idx] = tsk->pid;
--		map_pid_to_cmdline[tsk->pid] = idx;
-+		savedcmd->map_cmdline_to_pid[idx] = tsk->pid;
-+		savedcmd->map_pid_to_cmdline[tsk->pid] = idx;
- 
--		cmdline_idx = idx;
-+		savedcmd->cmdline_idx = idx;
- 	}
- 
--	memcpy(&saved_cmdlines[idx], tsk->comm, TASK_COMM_LEN);
-+	set_cmdline(idx, tsk->comm);
- 
- 	arch_spin_unlock(&trace_cmdline_lock);
- 
-@@ -1503,9 +1551,9 @@ static void __trace_find_cmdline(int pid, char comm[])
- 		return;
- 	}
- 
--	map = map_pid_to_cmdline[pid];
-+	map = savedcmd->map_pid_to_cmdline[pid];
- 	if (map != NO_CMDLINE_MAP)
--		strcpy(comm, saved_cmdlines[map]);
-+		strcpy(comm, get_saved_cmdlines(map));
- 	else
- 		strcpy(comm, "<...>");
- }
-@@ -3593,6 +3641,7 @@ static const char readme_msg[] =
- 	"  trace_options\t\t- Set format or modify how tracing happens\n"
- 	"\t\t\t  Disable an option by adding a suffix 'no' to the\n"
- 	"\t\t\t  option name\n"
-+	"  saved_cmdlines_size\t- echo command number in here to store comm-pid list\n"
- #ifdef CONFIG_DYNAMIC_FTRACE
- 	"\n  available_filter_functions - list of functions that can be filtered on\n"
- 	"  set_ftrace_filter\t- echo function name in here to only trace these\n"
-@@ -3715,7 +3764,8 @@ static void *saved_cmdlines_next(struct seq_file *m, void *v, loff_t *pos)
- 
- 	(*pos)++;
- 
--	for (; ptr < &map_cmdline_to_pid[SAVED_CMDLINES]; ptr++) {
-+	for (; ptr < &savedcmd->map_cmdline_to_pid[savedcmd->cmdline_num];
-+	     ptr++) {
- 		if (*ptr == -1 || *ptr == NO_CMDLINE_MAP)
- 			continue;
- 
-@@ -3733,7 +3783,7 @@ static void *saved_cmdlines_start(struct seq_file *m, loff_t *pos)
- 	preempt_disable();
- 	arch_spin_lock(&trace_cmdline_lock);
- 
--	v = &map_cmdline_to_pid[0];
-+	v = &savedcmd->map_cmdline_to_pid[0];
- 	while (l <= *pos) {
- 		v = saved_cmdlines_next(m, v, &l);
- 		if (!v)
-@@ -3782,6 +3832,79 @@ static const struct file_operations tracing_saved_cmdlines_fops = {
- };
- 
- static ssize_t
-+tracing_saved_cmdlines_size_read(struct file *filp, char __user *ubuf,
-+				 size_t cnt, loff_t *ppos)
-+{
-+	char buf[64];
-+	int r;
-+
-+	arch_spin_lock(&trace_cmdline_lock);
-+	r = sprintf(buf, "%u\n", savedcmd->cmdline_num);
-+	arch_spin_unlock(&trace_cmdline_lock);
-+
-+	return simple_read_from_buffer(ubuf, cnt, ppos, buf, r);
-+}
-+
-+static void free_saved_cmdlines_buffer(struct saved_cmdlines_buffer *s)
-+{
-+	kfree(s->saved_cmdlines);
-+	kfree(s->map_cmdline_to_pid);
-+	kfree(s);
-+}
-+
-+static int tracing_resize_saved_cmdlines(unsigned int val)
-+{
-+	struct saved_cmdlines_buffer *s, *savedcmd_temp;
-+
-+	s = kmalloc(sizeof(struct saved_cmdlines_buffer), GFP_KERNEL);
-+	if (!s)
-+		return -ENOMEM;
-+
-+	if (allocate_cmdlines_buffer(val, s) < 0) {
-+		kfree(s);
-+		return -ENOMEM;
-+	}
-+
-+	arch_spin_lock(&trace_cmdline_lock);
-+	savedcmd_temp = savedcmd;
-+	savedcmd = s;
-+	arch_spin_unlock(&trace_cmdline_lock);
-+	free_saved_cmdlines_buffer(savedcmd_temp);
-+
-+	return 0;
-+}
-+
-+static ssize_t
-+tracing_saved_cmdlines_size_write(struct file *filp, const char __user *ubuf,
-+				  size_t cnt, loff_t *ppos)
-+{
-+	unsigned long val;
-+	int ret;
-+
-+	ret = kstrtoul_from_user(ubuf, cnt, 10, &val);
-+	if (ret)
-+		return ret;
-+
-+	/* must have at least 1 entry or less than PID_MAX_DEFAULT */
-+	if (!val || val > PID_MAX_DEFAULT)
++	if (chan->address >= 2)
 +		return -EINVAL;
 +
-+	ret = tracing_resize_saved_cmdlines((unsigned int)val);
-+	if (ret < 0)
-+		return ret;
-+
-+	*ppos += cnt;
-+
-+	return cnt;
++	switch (mask) {
++	case IIO_CHAN_INFO_RAW:
++		*val = state->value[chan->address];
++		return IIO_VAL_INT;
++	case IIO_CHAN_INFO_SCALE:
++		*val = state->vref_mv;
++		*val2 = chan->scan_type.realbits;
++		return IIO_VAL_FRACTIONAL_LOG2;
++	default:
++		return -EINVAL;
++	}
 +}
 +
-+static const struct file_operations tracing_saved_cmdlines_size_fops = {
-+	.open		= tracing_open_generic,
-+	.read		= tracing_saved_cmdlines_size_read,
-+	.write		= tracing_saved_cmdlines_size_write,
++static int mcp49x2_write_raw(struct iio_dev *indio_dev,
++		struct iio_chan_spec const *chan,
++		int val,
++		int val2,
++		long mask)
++{
++	struct mcp49x2_state *state = iio_priv(indio_dev);
++
++	if (chan->address >= 2)
++		return -EINVAL;
++
++	switch (mask) {
++	case IIO_CHAN_INFO_RAW:
++		val &= MCP49X2_RES_MASK(chan->scan_type.realbits);
++		val <<= chan->scan_type.shift;
++		state->value[chan->address] = val;
++		return mcp49x2_spi_write(state->spi, chan->address, val);
++	default:
++		return -EINVAL;
++	}
++}
++
++static const struct iio_chan_spec mcp49x2_channels[3][2] = {
++	[ID_MCP4902] = { MCP49X2_CHAN(0, 8),	MCP49X2_CHAN(1, 8) },
++	[ID_MCP4912] = { MCP49X2_CHAN(0, 10),	MCP49X2_CHAN(1, 10) },
++	[ID_MCP4922] = { MCP49X2_CHAN(0, 12),	MCP49X2_CHAN(1, 12) },
 +};
 +
-+static ssize_t
- tracing_set_trace_read(struct file *filp, char __user *ubuf,
- 		       size_t cnt, loff_t *ppos)
- {
-@@ -6375,6 +6498,9 @@ static __init int tracer_init_debugfs(void)
- 	trace_create_file("saved_cmdlines", 0444, d_tracer,
- 			NULL, &tracing_saved_cmdlines_fops);
- 
-+	trace_create_file("saved_cmdlines_size", 0644, d_tracer,
-+			  NULL, &tracing_saved_cmdlines_size_fops);
++static const struct iio_info mcp49x2_info = {
++	.read_raw = &mcp49x2_read_raw,
++	.write_raw = &mcp49x2_write_raw,
++	.driver_module = THIS_MODULE,
++};
 +
- #ifdef CONFIG_DYNAMIC_FTRACE
- 	trace_create_file("dyn_ftrace_total_info", 0444, d_tracer,
- 			&ftrace_update_tot_cnt, &tracing_dyn_info_fops);
-@@ -6611,18 +6737,19 @@ __init static int tracer_alloc_buffers(void)
- 	if (!temp_buffer)
- 		goto out_free_cpumask;
- 
-+	if (trace_create_savedcmd() < 0)
-+		goto out_free_temp_buffer;
++static int mcp49x2_probe(struct spi_device *spi)
++{
++	struct iio_dev *indio_dev;
++	struct mcp49x2_state *state;
++	const struct spi_device_id *id;
++	int ret;
 +
- 	/* TODO: make the number of buffers hot pluggable with CPUS */
- 	if (allocate_trace_buffers(&global_trace, ring_buf_size) < 0) {
- 		printk(KERN_ERR "tracer: failed to allocate ring buffer!\n");
- 		WARN_ON(1);
--		goto out_free_temp_buffer;
-+		goto out_free_savedcmd;
- 	}
- 
- 	if (global_trace.buffer_disabled)
- 		tracing_off();
- 
--	trace_init_cmdlines();
--
- 	if (trace_boot_clock) {
- 		ret = tracing_set_clock(&global_trace, trace_boot_clock);
- 		if (ret < 0)
-@@ -6668,6 +6795,8 @@ __init static int tracer_alloc_buffers(void)
- 
- 	return 0;
- 
-+out_free_savedcmd:
-+	free_saved_cmdlines_buffer(savedcmd);
- out_free_temp_buffer:
- 	ring_buffer_free(temp_buffer);
- out_free_cpumask:
++	indio_dev = iio_device_alloc(sizeof(*state));
++	if (indio_dev == NULL)
++		return -ENOMEM;
++
++	state = iio_priv(indio_dev);
++	state->spi = spi;
++
++	state->vref_reg = devm_regulator_get(spi->dev, "vref");
++	if (!IS_ERR(state->vref_reg)) {
++		ret = regulator_enable(state->vref_reg);
++		if (ret) {
++			dev_err(dev, "Failed to enable vref regulator: %d\n",
++				ret);
++			goto error_free;
++		}
++
++		ret = regulator_get_voltage(state->vref_reg);
++		if (ret < 0)
++			goto error_disable_reg;
++
++		state->vref_mv = ret / 1000;
++	} else {
++		dev_info(dev, "Vref regulator not specified assuming 2.5V\n");
++		state->vref_mv = 2500;
++	}
++
++	spi_set_drvdata(spi, indio_dev);
++	id = spi_get_device_id(spi);
++	indio_dev->dev.parent = &spi->dev;
++	indio_dev->info = &mcp49x2_info;
++	indio_dev->modes = INDIO_DIRECT_MODE;
++	indio_dev->channels = mcp49x2_channels[id->driver_data];
++	indio_dev->num_channels = 2;
++	indio_dev->name = id->name;
++
++	ret = iio_device_register(indio_dev);
++
++	if (ret) {
++		dev_err(dev, "Failed to register iio device: %d\n",
++			ret);
++		goto error_disable_reg;
++	}
++
++	return 0;
++
++error_disable_reg:
++	if (!IS_ERR(state->vref_reg))
++		regulator_disable(state->vref_reg);
++error_free:
++	iio_device_free(indio_dev);
++
++	return ret;
++}
++
++static int mcp49x2_remove(struct spi_device *spi)
++{
++	struct iio_dev *indio_dev = spi_get_drvdata(spi);
++
++	iio_device_free(indio_dev);
++	return 0;
++}
++
++static const struct spi_device_id mcp49x2_id[] = {
++	{"mcp4902", ID_MCP4902},
++	{"mcp4912", ID_MCP4912},
++	{"mcp4922", ID_MCP4922},
++	{}
++};
++MODULE_DEVICE_TABLE(spi, mcp49x2_id);
++
++static struct spi_driver mcp49x2_driver = {
++	.driver = {
++		   .name = "mcp49x2",
++		   .owner = THIS_MODULE,
++		   },
++	.probe = mcp49x2_probe,
++	.remove = mcp49x2_remove,
++	.id_table = mcp49x2_id,
++};
++module_spi_driver(mcp49x2_driver);
++
++MODULE_AUTHOR("Michael Welling <mwelling@ieee.org>");
++MODULE_DESCRIPTION("Microchip MCP4902, MCP4912, MCP4922 DAC");
++MODULE_LICENSE("GPL v2");
+-- 
+1.7.9.5
 
