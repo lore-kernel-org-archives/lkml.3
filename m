@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752797AbaFDXVi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:21:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39886 "EHLO
+	id S932472AbaFEAfj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 20:35:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39947 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752681AbaFDXV2 (ORCPT
+	with ESMTP id S1752777AbaFDXVi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:21:28 -0400
+	Wed, 4 Jun 2014 19:21:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Neil Greatorex <neil@fatboyfat.co.uk>,
-        Jason Cooper <jason@lakedaemon.net>
-Subject: [PATCH 3.14 059/228] irqchip: armada-370-xp: fix invalid cast of signed value into unsigned variable
-Date: Wed,  4 Jun 2014 16:21:28 -0700
-Message-Id: <20140604232349.958616680@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [PATCH 3.14 076/228] drm/radeon/pm: dont walk the crtc list before it has been initialized (v2)
+Date: Wed,  4 Jun 2014 16:21:45 -0700
+Message-Id: <20140604232350.514504191@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -30,42 +28,122 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+From: Alex Deucher <alexdeucher@gmail.com>
 
-commit da343fc776e0bcb238b65d9d24610819b95d0ef4 upstream.
+commit 3ed9a335cfc64b2c83545f341cdddf2347b12b97 upstream.
 
-The armada_370_xp_alloc_msi() function returns a signed int, which is
-negative on error. However, we store the return value into an
-irq_hw_number_t, which is unsigned. Therefore, we actually never test
-if armada_370_xp_alloc_msi() returns an error or not, which may lead
-us to use hwirq numbers of as 0xffffffe4 (when
-armada_370_xp_alloc_msi() returns -ENOSPC).
+Avoids a crash in certain cases when thermal irqs are generated
+before the display structures have been initialized.
 
-This commit fixes that by storing the return value of
-armada_370_xp_alloc_msi() in a signed variable.
+v2: fix the vblank and vrefresh helpers as well
 
-Fixes: 31f614edb726fcc4d5aa0f2895fbdec9b04a3ca4 ('irqchip: armada-370-xp: implement MSI support')
-Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Link: https://lkml.kernel.org/r/1397823593-1932-2-git-send-email-thomas.petazzoni@free-electrons.com
-Tested-by: Neil Greatorex <neil@fatboyfat.co.uk>
-Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+bug:
+https://bugzilla.kernel.org/show_bug.cgi?id=73931
+
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/irqchip/irq-armada-370-xp.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/gpu/drm/radeon/r600_dpm.c  |   35 +++++++++++++++++++----------------
+ drivers/gpu/drm/radeon/radeon_pm.c |   28 ++++++++++++++++------------
+ 2 files changed, 35 insertions(+), 28 deletions(-)
 
---- a/drivers/irqchip/irq-armada-370-xp.c
-+++ b/drivers/irqchip/irq-armada-370-xp.c
-@@ -130,8 +130,7 @@ static int armada_370_xp_setup_msi_irq(s
- 				       struct msi_desc *desc)
- {
- 	struct msi_msg msg;
--	irq_hw_number_t hwirq;
--	int virq;
-+	int virq, hwirq;
+--- a/drivers/gpu/drm/radeon/r600_dpm.c
++++ b/drivers/gpu/drm/radeon/r600_dpm.c
+@@ -158,16 +158,18 @@ u32 r600_dpm_get_vblank_time(struct rade
+ 	u32 line_time_us, vblank_lines;
+ 	u32 vblank_time_us = 0xffffffff; /* if the displays are off, vblank time is max */
  
- 	hwirq = armada_370_xp_alloc_msi();
- 	if (hwirq < 0)
+-	list_for_each_entry(crtc, &dev->mode_config.crtc_list, head) {
+-		radeon_crtc = to_radeon_crtc(crtc);
+-		if (crtc->enabled && radeon_crtc->enabled && radeon_crtc->hw_mode.clock) {
+-			line_time_us = (radeon_crtc->hw_mode.crtc_htotal * 1000) /
+-				radeon_crtc->hw_mode.clock;
+-			vblank_lines = radeon_crtc->hw_mode.crtc_vblank_end -
+-				radeon_crtc->hw_mode.crtc_vdisplay +
+-				(radeon_crtc->v_border * 2);
+-			vblank_time_us = vblank_lines * line_time_us;
+-			break;
++	if (rdev->num_crtc && rdev->mode_info.mode_config_initialized) {
++		list_for_each_entry(crtc, &dev->mode_config.crtc_list, head) {
++			radeon_crtc = to_radeon_crtc(crtc);
++			if (crtc->enabled && radeon_crtc->enabled && radeon_crtc->hw_mode.clock) {
++				line_time_us = (radeon_crtc->hw_mode.crtc_htotal * 1000) /
++					radeon_crtc->hw_mode.clock;
++				vblank_lines = radeon_crtc->hw_mode.crtc_vblank_end -
++					radeon_crtc->hw_mode.crtc_vdisplay +
++					(radeon_crtc->v_border * 2);
++				vblank_time_us = vblank_lines * line_time_us;
++				break;
++			}
+ 		}
+ 	}
+ 
+@@ -181,14 +183,15 @@ u32 r600_dpm_get_vrefresh(struct radeon_
+ 	struct radeon_crtc *radeon_crtc;
+ 	u32 vrefresh = 0;
+ 
+-	list_for_each_entry(crtc, &dev->mode_config.crtc_list, head) {
+-		radeon_crtc = to_radeon_crtc(crtc);
+-		if (crtc->enabled && radeon_crtc->enabled && radeon_crtc->hw_mode.clock) {
+-			vrefresh = radeon_crtc->hw_mode.vrefresh;
+-			break;
++	if (rdev->num_crtc && rdev->mode_info.mode_config_initialized) {
++		list_for_each_entry(crtc, &dev->mode_config.crtc_list, head) {
++			radeon_crtc = to_radeon_crtc(crtc);
++			if (crtc->enabled && radeon_crtc->enabled && radeon_crtc->hw_mode.clock) {
++				vrefresh = radeon_crtc->hw_mode.vrefresh;
++				break;
++			}
+ 		}
+ 	}
+-
+ 	return vrefresh;
+ }
+ 
+--- a/drivers/gpu/drm/radeon/radeon_pm.c
++++ b/drivers/gpu/drm/radeon/radeon_pm.c
+@@ -1384,12 +1384,14 @@ static void radeon_pm_compute_clocks_old
+ 
+ 	rdev->pm.active_crtcs = 0;
+ 	rdev->pm.active_crtc_count = 0;
+-	list_for_each_entry(crtc,
+-		&ddev->mode_config.crtc_list, head) {
+-		radeon_crtc = to_radeon_crtc(crtc);
+-		if (radeon_crtc->enabled) {
+-			rdev->pm.active_crtcs |= (1 << radeon_crtc->crtc_id);
+-			rdev->pm.active_crtc_count++;
++	if (rdev->num_crtc && rdev->mode_info.mode_config_initialized) {
++		list_for_each_entry(crtc,
++				    &ddev->mode_config.crtc_list, head) {
++			radeon_crtc = to_radeon_crtc(crtc);
++			if (radeon_crtc->enabled) {
++				rdev->pm.active_crtcs |= (1 << radeon_crtc->crtc_id);
++				rdev->pm.active_crtc_count++;
++			}
+ 		}
+ 	}
+ 
+@@ -1456,12 +1458,14 @@ static void radeon_pm_compute_clocks_dpm
+ 	/* update active crtc counts */
+ 	rdev->pm.dpm.new_active_crtcs = 0;
+ 	rdev->pm.dpm.new_active_crtc_count = 0;
+-	list_for_each_entry(crtc,
+-		&ddev->mode_config.crtc_list, head) {
+-		radeon_crtc = to_radeon_crtc(crtc);
+-		if (crtc->enabled) {
+-			rdev->pm.dpm.new_active_crtcs |= (1 << radeon_crtc->crtc_id);
+-			rdev->pm.dpm.new_active_crtc_count++;
++	if (rdev->num_crtc && rdev->mode_info.mode_config_initialized) {
++		list_for_each_entry(crtc,
++				    &ddev->mode_config.crtc_list, head) {
++			radeon_crtc = to_radeon_crtc(crtc);
++			if (crtc->enabled) {
++				rdev->pm.dpm.new_active_crtcs |= (1 << radeon_crtc->crtc_id);
++				rdev->pm.dpm.new_active_crtc_count++;
++			}
+ 		}
+ 	}
+ 
 
 
