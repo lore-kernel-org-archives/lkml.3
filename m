@@ -1,61 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932219AbaFEATI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 20:19:08 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:37963 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932204AbaFEATF (ORCPT
+	id S1753212AbaFDXWf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 19:22:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40170 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753081AbaFDXWa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 20:19:05 -0400
-Message-ID: <538FB775.8070405@amacapital.net>
-Date: Wed, 04 Jun 2014 17:19:01 -0700
-From: Andy Lutomirski <luto@amacapital.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Wed, 4 Jun 2014 19:22:30 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Philipp Wolfer <ph.wolfer@gmail.com>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: [PATCH 3.14 141/228] Input: elantech - fix touchpad initialization on Gigabyte U2442
+Date: Wed,  4 Jun 2014 16:22:50 -0700
+Message-Id: <20140604232352.541025697@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
+References: <20140604232347.966798903@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-To: Borislav Petkov <bp@suse.de>, "H. Peter Anvin" <hpa@zytor.com>
-CC: linux-kernel@vger.kernel.org, mingo@kernel.org,
-        ricardo.neri-calderon@linux.intel.com, tglx@linutronix.de,
-        matt.fleming@intel.com, linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/efi] x86/efi: Check for unsafe dealing with FPU state
- in irq ctxt
-References: <tip-baa916f39b50ad91661534652110df40396acda0@git.kernel.org> <538F9AFA.5050806@zytor.com> <20140604224920.GB4126@pd.tnic>
-In-Reply-To: <20140604224920.GB4126@pd.tnic>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/04/2014 03:49 PM, Borislav Petkov wrote:
-> On Wed, Jun 04, 2014 at 03:17:30PM -0700, H. Peter Anvin wrote:
->> I seem to have lost track of this... does this actually solve
->> anything, or does it just mean we'll explode hard?
-> 
-> Not that hard - it'll warn once only.
-> 
-> AFAIR, the discussion stalled but we were going in the direction of not
-> calling into efi from pstore in irq context.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
-The kernel_fpu_begin thing has annoyed me in the past.  How bad would it
-be to allocate some percpu space and just do a full save/restore when
-kernel_fpu_begin happens in a context where it currently doesn't work?
+------------------
 
-I don't know how large the state is these days, but there must be some
-limit to how deeply interrupts and exceptions can nest.  For each IST
-entry, there is a hard limit to how deeply they can nest (once for all
-but debug and four times for debug IIRC), plus one NMI (nested ones
-don't touch FPU).  The most non-IST entries we can have must be bounded,
-too.
+From: Hans de Goede <hdegoede@redhat.com>
 
-Let's say there are at most 16 levels of nesting.  16 * state size *
-cpus isn't that much.
+commit 36189cc3cd57ab0f1cd75241f93fe01de928ac06 upstream.
 
-Of course, code in interrupts that nests kernel_fpu_begin itself could
-have a problem.  But this can be solved with a little bit of trickery in
-the entry code or something.
+The hw_version 3 Elantech touchpad on the Gigabyte U2442 does not accept
+0x0b as initialization value for r10, this stand-alone version of the
+driver: http://planet76.com/drivers/elantech/psmouse-elantech-v6.tar.bz2
+
+Uses 0x03 which does work, so this means not setting bit 3 of r10 which
+sets: "Enable Real H/W Resolution In Absolute mode"
+
+Which will result in half the x and y resolution we get with that bit set,
+so simply not setting it everywhere is not a solution. We've been unable to
+find a way to identify touchpads where setting the bit will fail, so this
+patch uses a dmi based blacklist for this.
+
+https://bugzilla.kernel.org/show_bug.cgi?id=61151
+
+Reported-by: Philipp Wolfer <ph.wolfer@gmail.com>
+Tested-by: Philipp Wolfer <ph.wolfer@gmail.com>
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ Documentation/input/elantech.txt |    5 ++++-
+ drivers/input/mouse/elantech.c   |   26 +++++++++++++++++++++++++-
+ drivers/input/mouse/elantech.h   |    1 +
+ 3 files changed, 30 insertions(+), 2 deletions(-)
+
+--- a/Documentation/input/elantech.txt
++++ b/Documentation/input/elantech.txt
+@@ -504,9 +504,12 @@ byte 5:
+ * reg_10
+ 
+    bit   7   6   5   4   3   2   1   0
+-         0   0   0   0   0   0   0   A
++         0   0   0   0   R   F   T   A
+ 
+          A: 1 = enable absolute tracking
++         T: 1 = enable two finger mode auto correct
++         F: 1 = disable ABS Position Filter
++         R: 1 = enable real hardware resolution
+ 
+ 6.2 Native absolute mode 6 byte packet format
+     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+--- a/drivers/input/mouse/elantech.c
++++ b/drivers/input/mouse/elantech.c
+@@ -11,6 +11,7 @@
+  */
+ 
+ #include <linux/delay.h>
++#include <linux/dmi.h>
+ #include <linux/slab.h>
+ #include <linux/module.h>
+ #include <linux/input.h>
+@@ -831,7 +832,11 @@ static int elantech_set_absolute_mode(st
+ 		break;
+ 
+ 	case 3:
+-		etd->reg_10 = 0x0b;
++		if (etd->set_hw_resolution)
++			etd->reg_10 = 0x0b;
++		else
++			etd->reg_10 = 0x03;
++
+ 		if (elantech_write_reg(psmouse, 0x10, etd->reg_10))
+ 			rc = -1;
+ 
+@@ -1331,6 +1336,22 @@ static int elantech_reconnect(struct psm
+ }
+ 
+ /*
++ * Some hw_version 3 models go into error state when we try to set bit 3 of r10
++ */
++static const struct dmi_system_id no_hw_res_dmi_table[] = {
++#if defined(CONFIG_DMI) && defined(CONFIG_X86)
++	{
++		/* Gigabyte U2442 */
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "GIGABYTE"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "U2442"),
++		},
++	},
++#endif
++	{ }
++};
++
++/*
+  * determine hardware version and set some properties according to it.
+  */
+ static int elantech_set_properties(struct elantech_data *etd)
+@@ -1389,6 +1410,9 @@ static int elantech_set_properties(struc
+ 	 */
+ 	etd->crc_enabled = ((etd->fw_version & 0x4000) == 0x4000);
+ 
++	/* Enable real hardware resolution on hw_version 3 ? */
++	etd->set_hw_resolution = !dmi_check_system(no_hw_res_dmi_table);
++
+ 	return 0;
+ }
+ 
+--- a/drivers/input/mouse/elantech.h
++++ b/drivers/input/mouse/elantech.h
+@@ -130,6 +130,7 @@ struct elantech_data {
+ 	bool jumpy_cursor;
+ 	bool reports_pressure;
+ 	bool crc_enabled;
++	bool set_hw_resolution;
+ 	unsigned char hw_version;
+ 	unsigned int fw_version;
+ 	unsigned int single_finger_reports;
 
 
-If we did this, then I think the x86 crypto code could get rid of all of
-its ridiculous async code.
-
---Andy
