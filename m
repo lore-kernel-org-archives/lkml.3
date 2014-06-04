@@ -1,64 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752126AbaFDJoy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 05:44:54 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:44545 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751340AbaFDJox (ORCPT
+	id S1752174AbaFDJqn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 05:46:43 -0400
+Received: from mx0.aculab.com ([213.249.233.131]:53639 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751746AbaFDJql convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 05:44:53 -0400
-Date: Wed, 4 Jun 2014 10:44:47 +0100
-From: Morten Rasmussen <morten.rasmussen@arm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Vincent Guittot <vincent.guittot@linaro.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
+	Wed, 4 Jun 2014 05:46:41 -0400
+From: David Laight <David.Laight@ACULAB.COM>
+To: "'Julia Lawall'" <julia.lawall@lip6.fr>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+CC: linux-rdma <linux-rdma@vger.kernel.org>,
+        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
+        Linux Fbdev development list <linux-fbdev@vger.kernel.org>,
+        Linux-sh list <linux-sh@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        "efault@gmx.de" <efault@gmx.de>,
-        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>
-Subject: Re: [PATCH v2 08/11] sched: get CPU's activity statistic
-Message-ID: <20140604094447.GI29593@e103034-lin>
-References: <1400860385-14555-1-git-send-email-vincent.guittot@linaro.org>
- <1400860385-14555-9-git-send-email-vincent.guittot@linaro.org>
- <20140528121001.GI19967@e103034-lin>
- <CAKfTPtDxeBfZK1AxCRqEG91pi--Ti1RYFoQPDhvMVnGTCspQ-g@mail.gmail.com>
- <20140528154703.GJ19967@e103034-lin>
- <20140603155007.GZ30445@twins.programming.kicks-ass.net>
- <CAKfTPtDUvH--WxFATTW6YRAvLuohzyNHDUq6DRdfxc7gRKCX6Q@mail.gmail.com>
- <20140604080809.GK30445@twins.programming.kicks-ass.net>
- <20140604085542.GH29593@e103034-lin>
- <20140604092313.GB11096@twins.programming.kicks-ass.net>
+        "ath10k@lists.infradead.org" <ath10k@lists.infradead.org>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        driverdevel <devel@driverdev.osuosl.org>,
+        "iss_storagedev@hp.com" <iss_storagedev@hp.com>,
+        scsi <linux-scsi@vger.kernel.org>,
+        linux-s390 <linux-s390@vger.kernel.org>,
+        "adi-buildroot-devel@lists.sourceforge.net" 
+	<adi-buildroot-devel@lists.sourceforge.net>
+Subject: RE: [PATCH 0/10] use safer test on the result of find_first_zero_bit
+Thread-Topic: [PATCH 0/10] use safer test on the result of
+ find_first_zero_bit
+Thread-Index: AQHPf9jD3P2Wp/I7I0O0KpvEWFb8KZtgszAA
+Date: Wed, 4 Jun 2014 09:46:17 +0000
+Message-ID: <063D6719AE5E284EB5DD2968C1650D6D1725705F@AcuExch.aculab.com>
+References: <1401872880-23685-1-git-send-email-Julia.Lawall@lip6.fr>
+ <CAMuHMdXsoFUXj4jLMWN6NY7Um19KwWO9Rhx=9=gqWu_K5Ev2kQ@mail.gmail.com>
+ <alpine.DEB.2.10.1406041137270.2441@hadrien>
+In-Reply-To: <alpine.DEB.2.10.1406041137270.2441@hadrien>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.202.99.200]
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140604092313.GB11096@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 04, 2014 at 10:23:13AM +0100, Peter Zijlstra wrote:
-> > f you had five tasks on one cpu that each have a 25% requirement you can
-> > get individual task runnable_avgs of up to 100% (cpu unweighted
-> > runnable_load_avg can get up 500%, I think), but the task running_avgs
-> > would be 20% each (total of 100%). 
+From: Julia Lawall
+> On Wed, 4 Jun 2014, Geert Uytterhoeven wrote:
 > 
-> Yeah, more or less so indeed. I had not considered the queueing effects
-> on runnable_avg yesterday, so good that that got raised.
+> > Hi Julia,
+> >
+> > On Wed, Jun 4, 2014 at 11:07 AM, Julia Lawall <Julia.Lawall@lip6.fr> wrote:
+> > > Find_first_zero_bit considers BITS_PER_LONG bits at a time, and thus may
+> > > return a larger number than the maximum position argument if that position
+> > > is not a multiple of BITS_PER_LONG.
+> >
+> > Shouldn't this be fixed in find_first_zero_bit() instead?
 > 
-> That does indeed invalidate my: runnable - running := extra cpu required
-> thing. It ends up being the extra cpu required for 0 latency but gobs of
-> idle time, which is something else entirely.
+> OK, I could do that as well.  Most of the callers currently test with >=.
+> Should they be left as is, or changed to use ==?
 
-Agreed, but I think it is still a useful estimate of the required
-compute capacity. If there is a significant difference between runnable
-and running on a cpu, the current mix of tasks is not good for latency.
-However, we need to treat it as a worst case estimate and not necessarily
-try to move exactly runnable-running worth of tasks to another cpu.
+Do we want to add an extra test to find_first_zero_bit() and effectively
+slow down all the calls - especially those where the length is a
+multiple of 8 (probably the most common).
 
-So far I haven't been able to come up with something better.
+Maybe the documented return code should be changed to allow for the
+existing behaviour.
+
+	David
+
+
+
