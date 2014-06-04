@@ -1,61 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752668AbaFDOsk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 10:48:40 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:42004 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752182AbaFDOsi (ORCPT
+	id S1752685AbaFDOt0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 10:49:26 -0400
+Received: from mail-we0-f178.google.com ([74.125.82.178]:35569 "EHLO
+	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751495AbaFDOtZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 10:48:38 -0400
-Message-ID: <538F31C5.3090901@hurleysoftware.com>
-Date: Wed, 04 Jun 2014 10:48:37 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Wed, 4 Jun 2014 10:49:25 -0400
+Date: Wed, 4 Jun 2014 16:46:39 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: =?utf-8?Q?Rapha=C3=ABl?= Poggi <poggi.raph@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-pwm@vger.kernel.org
+Subject: Re: pwm: atmel: problem when disable pwm
+Message-ID: <20140604144639.GI28484@ulmo>
+References: <CACqcpZDziJs7QUKVYwio=La5LyRzBd+xeeRW=dPFcPzw0Wrn5Q@mail.gmail.com>
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Valerio Vanni <valerio.vanni@inwind.it>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH 2/2] serial: core: Preserve termios c_cflag for console
- resume
-References: <7EC4C3FDEFF6492F91DEE16AEE0831E6@vanni.it> <1401891371-4946-1-git-send-email-peter@hurleysoftware.com> <1401891371-4946-2-git-send-email-peter@hurleysoftware.com> <20140604142232.GB1008@kroah.com> <538F3150.6040102@hurleysoftware.com>
-In-Reply-To: <538F3150.6040102@hurleysoftware.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="y96v7rNg6HAoELs5"
+Content-Disposition: inline
+In-Reply-To: <CACqcpZDziJs7QUKVYwio=La5LyRzBd+xeeRW=dPFcPzw0Wrn5Q@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/04/2014 10:46 AM, Peter Hurley wrote:
-> On 06/04/2014 10:22 AM, Greg Kroah-Hartman wrote:
->> On Wed, Jun 04, 2014 at 10:16:11AM -0400, Peter Hurley wrote:
->>> When a tty is opened for the serial console, the termios c_cflag
->>> settings are inherited from the console line settings.
->>> However, if the tty is subsequently closed, the termios settings
->>> are lost. This results in a garbled console if the console is later
->>> suspended and resumed.
->>>
->>> Preserve the termios c_cflag for the serial console when the tty
->>> is shutdown; this reflects the most recent line settings.
->>>
->>> Fixes: Bugzilla #69751, 'serial console does not wake from S3'
->>> Reported-by: Valerio Vanni <valerio.vanni@inwind.it>
->>> Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
->>> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
->>> ---
->>>   drivers/tty/serial/serial_core.c | 3 +++
->>>   1 file changed, 3 insertions(+)
->>
->> Same as before, regression, or just a normal "new feature"?
->
-> This was reported as a regression since 2.6.24, but that was likely
-> misreported, and more likely due to a userspace update which triggers
-> the bug.
->
-> I would be surprised if console resume _never_ worked if the serial tty
-> was opened then closed, but it probably has worked for a long time.
-                                          ^^^^^
-                                          hasn't
 
+--y96v7rNg6HAoELs5
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+Adding in the linux-pwm mailing list.
+
+On Wed, Jun 04, 2014 at 02:56:13PM +0200, Rapha=C3=ABl Poggi wrote:
+> Hello,
+>=20
+> I'm using the pwm-atmel driver to control led, but i'm facing a problem.
+>=20
+> When writing "echo 0 > /sys/class/leds/d1/brightness" (to switch off
+> the led) sometimes the led stayed active.
+>=20
+> After investigation I think this problem is due to this function:
+>=20
+> static void atmel_pwm_disable(struct pwm_chip *chip, struct pwm_device *p=
+wm)
+> {
+>     struct atmel_pwm_chip *atmel_pwm =3D to_atmel_pwm_chip(chip);
+>=20
+>     atmel_pwm_writel(atmel_pwm, PWM_DIS, 1 << pwm->hwpwm);
+>=20
+>     clk_disable(atmel_pwm->clk);
+> }
+>=20
+> By disable the pwm channel, I think the duty cycle "0" has not been
+> update, and the channel is disable and stayed in active state (high or
+> low depending of polarity).
+
+This sounds like a bug that could be fixed by this commit:
+
+	916030db4399 pwm: atmel: correct CDTY calculation
+
+What version of the kernel are you seeing this problem with? The above
+commit was first added in v3.15-rc1, so maybe try that or any later
+version to see if that fixes it.
+
+Thierry
+
+--y96v7rNg6HAoELs5
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTjzFPAAoJEN0jrNd/PrOhFwYP/jilqQOr3F9spUHB4AwtN8F4
+97kAO9/pUda4tAmGxjtHkDskhc8T//g12IpThz9HTmX+BdvxB7he/syy8iAeA5b5
+jjwdxnQ2QeQ89I9C7pyQOyMPMGW3VP+0hk1OMmGT6tImk2ZRZHJH6RGMRpGY1ovp
+1l3/L/VhBET7QDNi8dheAVCjeSBQZL51PX1h1e7b9Im+ttbiB9wL46B4kQsI1J5S
+qrOmHkJ7PxfBcJ5ghf1M64LNLnFj+aDMitrBuSBDAXCIfe1ikZliB4e2nfHCkO1C
+93n/dkzYAIwutrg5kHPwuPvXY/VfFpeZO6gPEN86Vdw8Q7lVo1KPTN2KCZQrJDyp
+/imFgkor8NGe1ZU9bRXMQRCcR/o1AUg8NPYUwKavi8baa0uIjT0+yF+eeLICujsz
+0xhn0PJgso6h6rebLquHnCa3i4Z2N69f7Nh3XHFLCUyF/KkXWBx3GUTAtJhsd06N
+QFi/mKmwci5Lnz2XEti3A/S/TArIz2BaCGWYkIGGBFxL6+fJ6Y4lJ/Pzsz4ys6Fz
+oKxxx+xpmnjPB2OIhJJ9/Yem0eDTHMwck7hEPserjqhHU8/SeRgx9N1YGdYZcSPY
+Z5OPcgUMfN4fhieHRgBhCyRCdnB70e0KTD8zqKM2KxCfk50ek3vYWFoh+UPPuAhT
+h+nVYTUXfEg6pP36PCos
+=M8dI
+-----END PGP SIGNATURE-----
+
+--y96v7rNg6HAoELs5--
