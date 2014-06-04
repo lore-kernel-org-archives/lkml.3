@@ -1,72 +1,247 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756371AbaFEASF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 20:18:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41732 "EHLO
+	id S932199AbaFEASg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 20:18:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40197 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756350AbaFEASA (ORCPT
+	with ESMTP id S1753211AbaFDXWf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 20:18:00 -0400
-Date: Wed, 4 Jun 2014 17:21:40 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Andre Tomt <andre@tomt.net>
-Cc: Dave Jones <davej@redhat.com>, linux-mm@kvack.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Brandon Philips <brandon.philips@coreos.com>
-Subject: Re: Bad rss-counter is back on 3.14-stable
-Message-ID: <20140605002140.GA24037@kroah.com>
-References: <20140604182739.GA30340@kroah.com>
- <538FADC6.1080604@tomt.net>
+	Wed, 4 Jun 2014 19:22:35 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        "Yan, Zheng" <zheng.z.yan@intel.com>, Sage Weil <sage@inktank.com>
+Subject: [PATCH 3.14 136/228] ceph: clear directorys completeness when creating file
+Date: Wed,  4 Jun 2014 16:22:45 -0700
+Message-Id: <20140604232352.385772830@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
+References: <20140604232347.966798903@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <538FADC6.1080604@tomt.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 05, 2014 at 01:37:42AM +0200, Andre Tomt wrote:
-> On 04. juni 2014 20:27, Greg KH wrote:
-> > Hi all,
-> > 
-> > Dave, I saw you mention that you were seeing the "Bad rss-counter" line
-> > on 3.15-rc1, but I couldn't find any follow-up on this to see if anyone
-> > figured it out, or did it just "magically" go away?
-> > 
-> > I ask as Brandon is seeing this same message a lot on a 3.14.4 kernel,
-> > causing system crashes and problems:
-> > 
-> > [16591492.449718] BUG: Bad rss-counter state mm:ffff8801ced99880 idx:0 val:-1836508
-> > [16591492.449737] BUG: Bad rss-counter state mm:ffff8801ced99880 idx:1 val:1836508
-> > 
-> > [20783350.461716] BUG: Bad rss-counter state mm:ffff8801d2b1dc00 idx:0 val:-52518
-> > [20783350.461734] BUG: Bad rss-counter state mm:ffff8801d2b1dc00 idx:1 val:52518
-> > 
-> > [21393387.112302] BUG: Bad rss-counter state mm:ffff8801d0104e00 idx:0 val:-1767569
-> > [21393387.112321] BUG: Bad rss-counter state mm:ffff8801d0104e00 idx:1 val:1767569
-> > 
-> > [21430098.512837] BUG: Bad rss-counter state mm:ffff880100036680 idx:0 val:-2946
-> > [21430098.512854] BUG: Bad rss-counter state mm:ffff880100036680 idx:1 val:2946
-> > 
-> > Anyone have any ideas of a 3.15-rc patch I should be including in
-> > 3.14-stable to resolve this?
-> 
-> I saw a bunch of similar errors on 3.14.x up to and including 3.14.4,
-> running Java (Tomcat) and Postgres on Xen PV. Have not seen it since
-> "mm: use paravirt friendly ops for NUMA hinting ptes" landed in 3.14.5.
-> 
-> 402e194dfc5b38d99f9c65b86e2666b29adebf8c in stable,
-> 29c7787075c92ca8af353acd5301481e6f37082f upstream
-> 
-> As I did not follow the original discussion I have no idea if this is
-> the same thing, and I'm way too lazy to look for it now. ;-)
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
-Ah, nice find.
+------------------
 
-Brandon, I think 3.14.5 is in the CoreOs tree, can you update to that on
-these boxes to see if it solves the issue?
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
 
-thanks,
+commit 0a8a70f96fe1bd3e07c15bb86fd247e76102398a upstream.
 
-greg k-h
+When creating a file, ceph_set_dentry_offset() puts the new dentry
+at the end of directory's d_subdirs, then set the dentry's offset
+based on directory's max offset. The offset does not reflect the
+real postion of the dentry in directory. Later readdir reply from
+MDS may change the dentry's position/offset. This inconsistency
+can cause missing/duplicate entries in readdir result if readdir
+is partly satisfied by dcache_readdir().
+
+The fix is clear directory's completeness after creating/renaming
+file. It prevents later readdir from using dcache_readdir().
+
+Fixes: http://tracker.ceph.com/issues/8025
+Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+Reviewed-by: Sage Weil <sage@inktank.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ fs/ceph/dir.c   |    9 +++----
+ fs/ceph/inode.c |   71 ++++++++++++--------------------------------------------
+ fs/ceph/super.h |    1 
+ 3 files changed, 21 insertions(+), 60 deletions(-)
+
+--- a/fs/ceph/dir.c
++++ b/fs/ceph/dir.c
+@@ -446,7 +446,6 @@ more:
+ 	if (atomic_read(&ci->i_release_count) == fi->dir_release_count) {
+ 		dout(" marking %p complete\n", inode);
+ 		__ceph_dir_set_complete(ci, fi->dir_release_count);
+-		ci->i_max_offset = ctx->pos;
+ 	}
+ 	spin_unlock(&ci->i_ceph_lock);
+ 
+@@ -932,14 +931,16 @@ static int ceph_rename(struct inode *old
+ 		 * to do it here.
+ 		 */
+ 
+-		/* d_move screws up d_subdirs order */
+-		ceph_dir_clear_complete(new_dir);
+-
+ 		d_move(old_dentry, new_dentry);
+ 
+ 		/* ensure target dentry is invalidated, despite
+ 		   rehashing bug in vfs_rename_dir */
+ 		ceph_invalidate_dentry_lease(new_dentry);
++
++		/* d_move screws up sibling dentries' offsets */
++		ceph_dir_clear_complete(old_dir);
++		ceph_dir_clear_complete(new_dir);
++
+ 	}
+ 	ceph_mdsc_put_request(req);
+ 	return err;
+--- a/fs/ceph/inode.c
++++ b/fs/ceph/inode.c
+@@ -752,7 +752,6 @@ static int fill_inode(struct inode *inod
+ 	    !__ceph_dir_is_complete(ci)) {
+ 		dout(" marking %p complete (empty)\n", inode);
+ 		__ceph_dir_set_complete(ci, atomic_read(&ci->i_release_count));
+-		ci->i_max_offset = 2;
+ 	}
+ no_change:
+ 	spin_unlock(&ci->i_ceph_lock);
+@@ -890,41 +889,6 @@ out_unlock:
+ }
+ 
+ /*
+- * Set dentry's directory position based on the current dir's max, and
+- * order it in d_subdirs, so that dcache_readdir behaves.
+- *
+- * Always called under directory's i_mutex.
+- */
+-static void ceph_set_dentry_offset(struct dentry *dn)
+-{
+-	struct dentry *dir = dn->d_parent;
+-	struct inode *inode = dir->d_inode;
+-	struct ceph_inode_info *ci;
+-	struct ceph_dentry_info *di;
+-
+-	BUG_ON(!inode);
+-
+-	ci = ceph_inode(inode);
+-	di = ceph_dentry(dn);
+-
+-	spin_lock(&ci->i_ceph_lock);
+-	if (!__ceph_dir_is_complete(ci)) {
+-		spin_unlock(&ci->i_ceph_lock);
+-		return;
+-	}
+-	di->offset = ceph_inode(inode)->i_max_offset++;
+-	spin_unlock(&ci->i_ceph_lock);
+-
+-	spin_lock(&dir->d_lock);
+-	spin_lock_nested(&dn->d_lock, DENTRY_D_LOCK_NESTED);
+-	list_move(&dn->d_u.d_child, &dir->d_subdirs);
+-	dout("set_dentry_offset %p %lld (%p %p)\n", dn, di->offset,
+-	     dn->d_u.d_child.prev, dn->d_u.d_child.next);
+-	spin_unlock(&dn->d_lock);
+-	spin_unlock(&dir->d_lock);
+-}
+-
+-/*
+  * splice a dentry to an inode.
+  * caller must hold directory i_mutex for this to be safe.
+  *
+@@ -933,7 +897,7 @@ static void ceph_set_dentry_offset(struc
+  * the caller) if we fail.
+  */
+ static struct dentry *splice_dentry(struct dentry *dn, struct inode *in,
+-				    bool *prehash, bool set_offset)
++				    bool *prehash)
+ {
+ 	struct dentry *realdn;
+ 
+@@ -965,8 +929,6 @@ static struct dentry *splice_dentry(stru
+ 	}
+ 	if ((!prehash || *prehash) && d_unhashed(dn))
+ 		d_rehash(dn);
+-	if (set_offset)
+-		ceph_set_dentry_offset(dn);
+ out:
+ 	return dn;
+ }
+@@ -987,7 +949,6 @@ int ceph_fill_trace(struct super_block *
+ {
+ 	struct ceph_mds_reply_info_parsed *rinfo = &req->r_reply_info;
+ 	struct inode *in = NULL;
+-	struct ceph_mds_reply_inode *ininfo;
+ 	struct ceph_vino vino;
+ 	struct ceph_fs_client *fsc = ceph_sb_to_client(sb);
+ 	int err = 0;
+@@ -1112,6 +1073,9 @@ int ceph_fill_trace(struct super_block *
+ 
+ 		/* rename? */
+ 		if (req->r_old_dentry && req->r_op == CEPH_MDS_OP_RENAME) {
++			struct inode *olddir = req->r_old_dentry_dir;
++			BUG_ON(!olddir);
++
+ 			dout(" src %p '%.*s' dst %p '%.*s'\n",
+ 			     req->r_old_dentry,
+ 			     req->r_old_dentry->d_name.len,
+@@ -1131,13 +1095,10 @@ int ceph_fill_trace(struct super_block *
+ 			   rehashing bug in vfs_rename_dir */
+ 			ceph_invalidate_dentry_lease(dn);
+ 
+-			/*
+-			 * d_move() puts the renamed dentry at the end of
+-			 * d_subdirs.  We need to assign it an appropriate
+-			 * directory offset so we can behave when dir is
+-			 * complete.
+-			 */
+-			ceph_set_dentry_offset(req->r_old_dentry);
++			/* d_move screws up sibling dentries' offsets */
++			ceph_dir_clear_complete(dir);
++			ceph_dir_clear_complete(olddir);
++
+ 			dout("dn %p gets new offset %lld\n", req->r_old_dentry,
+ 			     ceph_dentry(req->r_old_dentry)->offset);
+ 
+@@ -1164,8 +1125,9 @@ int ceph_fill_trace(struct super_block *
+ 
+ 		/* attach proper inode */
+ 		if (!dn->d_inode) {
++			ceph_dir_clear_complete(dir);
+ 			ihold(in);
+-			dn = splice_dentry(dn, in, &have_lease, true);
++			dn = splice_dentry(dn, in, &have_lease);
+ 			if (IS_ERR(dn)) {
+ 				err = PTR_ERR(dn);
+ 				goto done;
+@@ -1186,17 +1148,16 @@ int ceph_fill_trace(struct super_block *
+ 		   (req->r_op == CEPH_MDS_OP_LOOKUPSNAP ||
+ 		    req->r_op == CEPH_MDS_OP_MKSNAP)) {
+ 		struct dentry *dn = req->r_dentry;
++		struct inode *dir = req->r_locked_dir;
+ 
+ 		/* fill out a snapdir LOOKUPSNAP dentry */
+ 		BUG_ON(!dn);
+-		BUG_ON(!req->r_locked_dir);
+-		BUG_ON(ceph_snap(req->r_locked_dir) != CEPH_SNAPDIR);
+-		ininfo = rinfo->targeti.in;
+-		vino.ino = le64_to_cpu(ininfo->ino);
+-		vino.snap = le64_to_cpu(ininfo->snapid);
++		BUG_ON(!dir);
++		BUG_ON(ceph_snap(dir) != CEPH_SNAPDIR);
+ 		dout(" linking snapped dir %p to dn %p\n", in, dn);
++		ceph_dir_clear_complete(dir);
+ 		ihold(in);
+-		dn = splice_dentry(dn, in, NULL, true);
++		dn = splice_dentry(dn, in, NULL);
+ 		if (IS_ERR(dn)) {
+ 			err = PTR_ERR(dn);
+ 			goto done;
+@@ -1358,7 +1319,7 @@ retry_lookup:
+ 		}
+ 
+ 		if (!dn->d_inode) {
+-			dn = splice_dentry(dn, in, NULL, false);
++			dn = splice_dentry(dn, in, NULL);
+ 			if (IS_ERR(dn)) {
+ 				err = PTR_ERR(dn);
+ 				dn = NULL;
+--- a/fs/ceph/super.h
++++ b/fs/ceph/super.h
+@@ -266,7 +266,6 @@ struct ceph_inode_info {
+ 	struct timespec i_rctime;
+ 	u64 i_rbytes, i_rfiles, i_rsubdirs;
+ 	u64 i_files, i_subdirs;
+-	u64 i_max_offset;  /* largest readdir offset, set with complete dir */
+ 
+ 	struct rb_root i_fragtree;
+ 	struct mutex i_fragtree_mutex;
+
+
