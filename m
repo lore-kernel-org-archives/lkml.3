@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756043AbaFEAJd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 20:09:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40342 "EHLO
+	id S1753422AbaFDXWw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 19:22:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40321 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753427AbaFDXWy (ORCPT
+	with ESMTP id S1753395AbaFDXWu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:22:54 -0400
+	Wed, 4 Jun 2014 19:22:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        James Hogan <james.hogan@imgtec.com>
-Subject: [PATCH 3.14 169/228] metag: fix memory barriers
-Date: Wed,  4 Jun 2014 16:23:18 -0700
-Message-Id: <20140604232353.460343317@linuxfoundation.org>
+        Johannes Berg <johannes.berg@intel.com>,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Subject: [PATCH 3.14 163/228] iwlwifi: pcie: disable interrupts upon PCIe alloc
+Date: Wed,  4 Jun 2014 16:23:12 -0700
+Message-Id: <20140604232353.266291923@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -30,62 +29,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 
-commit 2425ce84026c385b73ae72039f90d042d49e0394 upstream.
+commit 83f7a85f1134c6e914453f5747435415a23d516b upstream.
 
-Volatile access doesn't really imply the compiler barrier. Volatile access
-is only ordered with respect to other volatile accesses, it isn't ordered
-with respect to general memory accesses. Gcc may reorder memory accesses
-around volatile access, as we can see in this simple example (if we
-compile it with optimization, both increments of *b will be collapsed to
-just one):
+In case RFKILL is in KILL position, the NIC will issue an
+interrupt straight away. This interrupt won't be sent
+because it is masked in the hardware.
+But if our interrupt service routine is called for another
+reason (SHARED_IRQ), then we'll look at the interrupt cause
+and service it. This can cause bad things if we are not
+ready yet.
+Explicitly clean the interrupt cause register to make sure
+we won't service anything before we are ready to.
 
-void fn(volatile int *a, long *b)
-{
-	(*b)++;
-	*a = 10;
-	(*b)++;
-}
-
-Consequently, we need the compiler barrier after a write to the volatile
-variable, to make sure that the compiler doesn't reorder the volatile
-write with something else.
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Acked-by: Peter Zijlstra <peterz@infradead.org>
-Signed-off-by: James Hogan <james.hogan@imgtec.com>
+Reported-and-tested-by: Alexander Monakov <amonakov@gmail.com>
+Reviewed-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/metag/include/asm/barrier.h |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/net/wireless/iwlwifi/pcie/trans.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
---- a/arch/metag/include/asm/barrier.h
-+++ b/arch/metag/include/asm/barrier.h
-@@ -15,6 +15,7 @@ static inline void wr_fence(void)
- 	volatile int *flushptr = (volatile int *) LINSYSEVENT_WR_FENCE;
- 	barrier();
- 	*flushptr = 0;
-+	barrier();
- }
+--- a/drivers/net/wireless/iwlwifi/pcie/trans.c
++++ b/drivers/net/wireless/iwlwifi/pcie/trans.c
+@@ -1563,6 +1563,10 @@ struct iwl_trans *iwl_trans_pcie_alloc(s
+ 	 * PCI Tx retries from interfering with C3 CPU state */
+ 	pci_write_config_byte(pdev, PCI_CFG_RETRY_TIMEOUT, 0x00);
  
- #else /* CONFIG_METAG_META21 */
-@@ -35,6 +36,7 @@ static inline void wr_fence(void)
- 	*flushptr = 0;
- 	*flushptr = 0;
- 	*flushptr = 0;
-+	barrier();
- }
++	trans->dev = &pdev->dev;
++	trans_pcie->pci_dev = pdev;
++	iwl_disable_interrupts(trans);
++
+ 	err = pci_enable_msi(pdev);
+ 	if (err) {
+ 		dev_err(&pdev->dev, "pci_enable_msi failed(0X%x)\n", err);
+@@ -1574,8 +1578,6 @@ struct iwl_trans *iwl_trans_pcie_alloc(s
+ 		}
+ 	}
  
- #endif /* !CONFIG_METAG_META21 */
-@@ -68,6 +70,7 @@ static inline void fence(void)
- 	volatile int *flushptr = (volatile int *) LINSYSEVENT_WR_ATOMIC_UNLOCK;
- 	barrier();
- 	*flushptr = 0;
-+	barrier();
- }
- #define smp_mb()        fence()
- #define smp_rmb()       fence()
+-	trans->dev = &pdev->dev;
+-	trans_pcie->pci_dev = pdev;
+ 	trans->hw_rev = iwl_read32(trans, CSR_HW_REV);
+ 	trans->hw_id = (pdev->device << 16) + pdev->subsystem_device;
+ 	snprintf(trans->hw_id_str, sizeof(trans->hw_id_str),
+@@ -1601,8 +1603,6 @@ struct iwl_trans *iwl_trans_pcie_alloc(s
+ 		goto out_pci_disable_msi;
+ 	}
+ 
+-	trans_pcie->inta_mask = CSR_INI_SET_MASK;
+-
+ 	if (iwl_pcie_alloc_ict(trans))
+ 		goto out_free_cmd_pool;
+ 
+@@ -1614,6 +1614,8 @@ struct iwl_trans *iwl_trans_pcie_alloc(s
+ 		goto out_free_ict;
+ 	}
+ 
++	trans_pcie->inta_mask = CSR_INI_SET_MASK;
++
+ 	return trans;
+ 
+ out_free_ict:
 
 
