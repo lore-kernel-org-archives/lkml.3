@@ -1,98 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751927AbaFDJcc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 05:32:32 -0400
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:39697 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750992AbaFDJcb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 05:32:31 -0400
+	id S1752016AbaFDJc7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 05:32:59 -0400
+Received: from dns-bn1lp0143.outbound.protection.outlook.com ([207.46.163.143]:26220
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751633AbaFDJc5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 05:32:57 -0400
+From: Xiubo Li <Li.Xiubo@freescale.com>
+To: <claudiu.manoil@freescale.com>, <davem@davemloft.net>,
+        <jingchang.lu@freescale.com>, <netdev@vger.kernel.org>
+CC: <linux-kernel@vger.kernel.org>, Xiubo Li <Li.Xiubo@freescale.com>
+Subject: [PATCH] gianfar: Fix the section mismatch warnings.
+Date: Wed, 4 Jun 2014 16:49:16 +0800
+Message-ID: <1401871756-29231-1-git-send-email-Li.Xiubo@freescale.com>
+X-Mailer: git-send-email 1.8.0
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(199002)(189002)(80022001)(84676001)(88136002)(97736001)(74662001)(77156001)(79102001)(81542001)(47776003)(83322001)(6806004)(93916002)(83072002)(85852003)(19580395003)(87936001)(19580405001)(92566001)(81342001)(2201001)(62966002)(77096999)(50986999)(31966008)(46102001)(76482001)(89996001)(20776003)(92726001)(74502001)(102836001)(104166001)(50466002)(26826002)(68736004)(50226001)(44976005)(36756003)(86362001)(48376002)(64706001)(4396001)(104016001)(77982001)(87286001)(21056001)(99396002);DIR:OUT;SFP:;SCL:1;SRVR:BLUPR03MB503;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
 MIME-Version: 1.0
-In-Reply-To: <20140604080809.GK30445@twins.programming.kicks-ass.net>
-References: <1400860385-14555-1-git-send-email-vincent.guittot@linaro.org>
- <1400860385-14555-9-git-send-email-vincent.guittot@linaro.org>
- <20140528121001.GI19967@e103034-lin> <CAKfTPtDxeBfZK1AxCRqEG91pi--Ti1RYFoQPDhvMVnGTCspQ-g@mail.gmail.com>
- <20140528154703.GJ19967@e103034-lin> <20140603155007.GZ30445@twins.programming.kicks-ass.net>
- <CAKfTPtDUvH--WxFATTW6YRAvLuohzyNHDUq6DRdfxc7gRKCX6Q@mail.gmail.com> <20140604080809.GK30445@twins.programming.kicks-ass.net>
-From: Vincent Guittot <vincent.guittot@linaro.org>
-Date: Wed, 4 Jun 2014 11:32:10 +0200
-Message-ID: <CAKfTPtBCG1Jq2b+fyoGuA=7yG_yUbsmaD+j-ZXXsPNGp5giKpg@mail.gmail.com>
-Subject: Re: [PATCH v2 08/11] sched: get CPU's activity statistic
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Morten Rasmussen <morten.rasmussen@arm.com>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        "efault@gmx.de" <efault@gmx.de>,
-        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-Microsoft-Antispam: BL:0;ACTION:Default;RISK:Low;SCL:0;SPMLVL:NotSpam;PCL:0;RULEID:
+X-Forefront-PRVS: 0232B30BBC
+Authentication-Results: spf=fail (sender IP is 192.88.168.50)
+ smtp.mailfrom=Li.Xiubo@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4 June 2014 10:08, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Wed, Jun 04, 2014 at 09:47:26AM +0200, Vincent Guittot wrote:
->> On 3 June 2014 17:50, Peter Zijlstra <peterz@infradead.org> wrote:
->> > On Wed, May 28, 2014 at 04:47:03PM +0100, Morten Rasmussen wrote:
->> >> Since we may do periodic load-balance every 10 ms or so, we will perform
->> >> a number of load-balances where runnable_avg_sum will mostly be
->> >> reflecting the state of the world before a change (new task queued or
->> >> moved a task to a different cpu). If you had have two tasks continuously
->> >> on one cpu and your other cpu is idle, and you move one of the tasks to
->> >> the other cpu, runnable_avg_sum will remain unchanged, 47742, on the
->> >> first cpu while it starts from 0 on the other one. 10 ms later it will
->> >> have increased a bit, 32 ms later it will be 47742/2, and 345 ms later
->> >> it reaches 47742. In the mean time the cpu doesn't appear fully utilized
->> >> and we might decide to put more tasks on it because we don't know if
->> >> runnable_avg_sum represents a partially utilized cpu (for example a 50%
->> >> task) or if it will continue to rise and eventually get to 47742.
->> >
->> > Ah, no, since we track per task, and update the per-cpu ones when we
->> > migrate tasks, the per-cpu values should be instantly updated.
->> >
->> > If we were to increase per task storage, we might as well also track
->> > running_avg not only runnable_avg.
->>
->> I agree that the removed running_avg should give more useful
->> information about the the load of a CPU.
->>
->> The main issue with running_avg is that it's disturbed by other tasks
->> (as point out previously). As a typical example,  if we have 2 tasks
->> with a load of 25% on 1 CPU, the unweighted runnable_load_avg will be
->> in the range of [100% - 50%] depending of the parallelism of the
->> runtime of the tasks whereas the reality is 50% and the use of
->> running_avg will return this value
->
-> I'm not sure I see how 100% is possible, but yes I agree that runnable
-> can indeed be inflated due to this queueing effect.
+Building with CONFIG_DEBUG_SECTION_MISMATCH enabled, the following
+WARNING is occured:
 
-In fact, it can be even worse than that because i forgot to take into
-account the geometric series effect which implies that it depends of
-the runtime (idletime) of the task
+  LD      drivers/net/built-in.o
+WARNING: drivers/net/built-in.o(.text+0xcd4c): Section mismatch in
+reference from the function gfar_probe() to the function
+.init.text:gfar_init_addr_hash_table()
+The function gfar_probe() references
+the function __init gfar_init_addr_hash_table().
+This is often because gfar_probe lacks a __init
+annotation or the annotation of gfar_init_addr_hash_table is wrong.
 
-Take 3 examples:
+Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+---
+ drivers/net/ethernet/freescale/gianfar.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-2 tasks that need to run 10ms  simultaneously each 40ms. If they share
-the same CPU, they will be on the runqueue 20ms (in fact a bit less
-for one of them), Their load (runnable_avg_sum/runnable_avg_period)
-will be 33% each so the unweighted runnable_load_avg of the CPU will
-be 66%
+diff --git a/drivers/net/ethernet/freescale/gianfar.c b/drivers/net/ethernet/freescale/gianfar.c
+index a7fe6a7..1fde3e6 100644
+--- a/drivers/net/ethernet/freescale/gianfar.c
++++ b/drivers/net/ethernet/freescale/gianfar.c
+@@ -1242,7 +1242,7 @@ static void gfar_hw_init(struct gfar_private *priv)
+ 		gfar_write_isrg(priv);
+ }
+ 
+-static void __init gfar_init_addr_hash_table(struct gfar_private *priv)
++static void gfar_init_addr_hash_table(struct gfar_private *priv)
+ {
+ 	struct gfar __iomem *regs = priv->gfargrp[0].regs;
+ 
+-- 
+1.8.5
 
-2 tasks that need to run 25ms simultaneously each 100ms. If they share
-the same CPU, they will be on the runqueue 50ms (in fact a bit less
-for one of them), Their load (runnable_avg_sum/runnable_avg_period)
-will be 74% each so the unweighted runnable_load_avg of the CPU will
-be 148%
-
-2 tasks that need to run 50ms  simultaneously each 200ms. If they
-share the same CPU, they will be on the runqueue 100ms (in fact a bit
-less for one of them), Their load
-(runnable_avg_sum/runnable_avg_period) will be 89% each so the
-unweighted runnable_load_avg of the CPU will be 180%
-
-Vincent
