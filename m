@@ -1,113 +1,341 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751735AbaFDVMp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 17:12:45 -0400
-Received: from mail-we0-f169.google.com ([74.125.82.169]:41095 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751609AbaFDVMn (ORCPT
+	id S1751619AbaFDVQT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 17:16:19 -0400
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:61155 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751129AbaFDVQR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 17:12:43 -0400
-Date: Wed, 4 Jun 2014 23:12:38 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Dave Martin <Dave.Martin@arm.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>, Arnd Bergmann <arnd@arndb.de>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Cho KyongHo <pullip.cho@samsung.com>,
-        Grant Grundler <grundler@chromium.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>, Will Deacon <Will.Deacon@arm.com>,
-        Joerg Roedel <joro@8bytes.org>, Hiroshi Doyu <hdoyu@nvidia.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] devicetree: Add generic IOMMU device tree bindings
-Message-ID: <20140604211237.GC18710@mithrandir>
-References: <1400877395-4235-1-git-send-email-thierry.reding@gmail.com>
- <538757B6.4010109@wwwdotorg.org>
- <20140530073006.GA24748@ulmo>
- <20140530112728.GB3949@e103592.cambridge.arm.com>
+	Wed, 4 Jun 2014 17:16:17 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="VywGB/WGlW4DM4P8"
-Content-Disposition: inline
-In-Reply-To: <20140530112728.GB3949@e103592.cambridge.arm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1401551204-6399-1-git-send-email-janne.kanniainen@gmail.com>
+References: <1401551204-6399-1-git-send-email-janne.kanniainen@gmail.com>
+From: Bryan Wu <cooloney@gmail.com>
+Date: Wed, 4 Jun 2014 14:15:56 -0700
+Message-ID: <CAK5ve-LcWHOEF==FhLyDOKv1CFe0EcxjsTYRHSx6jM=k=MKLFA@mail.gmail.com>
+Subject: Re: [PATCH] leds: USB: Add support for MSI GT683R led panels
+To: Janne Kanniainen <janne.kanniainen@gmail.com>
+Cc: "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
+        Linux LED Subsystem <linux-leds@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, May 31, 2014 at 8:46 AM, Janne Kanniainen
+<janne.kanniainen@gmail.com> wrote:
+> This driver adds support for USB controlled led panels that exist in MSI GT683R laptop.
+>
 
---VywGB/WGlW4DM4P8
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Thanks for this patch, basically it looks good to me. Just some picky
+improvement as bellow.
 
-On Fri, May 30, 2014 at 12:27:28PM +0100, Dave Martin wrote:
-> On Fri, May 30, 2014 at 08:30:08AM +0100, Thierry Reding wrote:
-[...]
-> > Arnd, can you take another look at this binding and see if there's
-> > anything else missing? If not I'll go through the document again and
-> > update all #address-cells/#size-cells references with #iommu-cells as
-> > appropriate and submit v3.
->=20
-> How do you envisage propagation of the master ID bits downstream of the
-> IOMMU would be described?
->=20
-> We will definitely need a way to describe this for GICv3.  How those
-> values are propagated is likely to vary between related SoCs and doesn't
-> feel like it should be baked into a driver, especially for the ARM SMMU
-> which may get reused in radically different SoC families from different
-> vendors.
+> Signed-off-by: Janne Kanniainen <janne.kanniainen@gmail.com>
+> ---
+>  drivers/leds/Kconfig       |   6 ++
+>  drivers/leds/Makefile      |   1 +
+>  drivers/leds/leds-gt683r.c | 241 +++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 248 insertions(+)
+>  create mode 100644 drivers/leds/leds-gt683r.c
+>
+> diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
+> index 6de9dfb..2cffa0c 100644
+> --- a/drivers/leds/Kconfig
+> +++ b/drivers/leds/Kconfig
+> @@ -487,6 +487,12 @@ config LEDS_BLINKM
+>           This option enables support for the BlinkM RGB LED connected
+>           through I2C. Say Y to enable support for the BlinkM LED.
+>
+> +config LEDS_GT683R
+> +       tristate "LED support for the MSI GT683R"
+> +       depends on LEDS_CLASS && USB
+> +       help
+> +         This option enables support for the MSI GT683R LEDS
+> +
+>  comment "LED Triggers"
+>  source "drivers/leds/trigger/Kconfig"
+>
+> diff --git a/drivers/leds/Makefile b/drivers/leds/Makefile
+> index 3cd76db..af5fb4e 100644
+> --- a/drivers/leds/Makefile
+> +++ b/drivers/leds/Makefile
+> @@ -54,6 +54,7 @@ obj-$(CONFIG_LEDS_ASIC3)              += leds-asic3.o
+>  obj-$(CONFIG_LEDS_MAX8997)             += leds-max8997.o
+>  obj-$(CONFIG_LEDS_LM355x)              += leds-lm355x.o
+>  obj-$(CONFIG_LEDS_BLINKM)              += leds-blinkm.o
+> +obj-$(CONFIG_LEDS_GT683R)              += leds-gt683r.o
+>
+>  # LED SPI Drivers
+>  obj-$(CONFIG_LEDS_DAC124S085)          += leds-dac124s085.o
+> diff --git a/drivers/leds/leds-gt683r.c b/drivers/leds/leds-gt683r.c
+> new file mode 100644
+> index 0000000..d67709c
+> --- /dev/null
+> +++ b/drivers/leds/leds-gt683r.c
+> @@ -0,0 +1,241 @@
+> +/*
+> + * MSI GT683R led driver
+> + *
+> + * Copyright (c) 2014 Janne Kanniainen <janne.kanniainen@gmail.com>
+> + *
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public License as
+> + * published by the Free Software Foundation; either version 2 of
+> + * the License, or (at your option) any later version.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + */
+> +
+> +#include <linux/module.h>
+> +#include <linux/kernel.h>
+> +#include <linux/usb.h>
+> +#include <linux/slab.h>
+> +#include <linux/leds.h>
+> +
 
-Well, we've had cases like these in the past (power sequences come to
-mind). Some concepts are just too difficult or unwieldy to be put into
-device tree. I think that this is one of them.
+You'd better keep these header files in alphabetic order.
 
-> The most likely types of remapping are the adding of a base offset or
-> some extra bits to the ID -- because not all MSIs to the GIC will
-> necessarily pass through the IOMMU.  It's also possible that we might
-> see ID squashing or folding in some systems.
+> +#define USB_DEVICE_ID_MSI_GT683R_LED_PANEL 0xff00
+> +#define USB_VENDOR_ID_MSI 0x1770
+> +
+> +#define GT683R_LED_MSG_TYPE_CTRL 0
+> +#define GT683R_LED_MSG_TYPE_INT 1
+> +
+> +#define GT683R_LED_FRONT 4
+> +#define GT683R_LED_SIDE 2
+> +#define GT683R_LED_BACK 1
+> +#define GT683R_LED_NORMAL 5
+> +#define GT683R_LED_BREATHING 3
+> +#define GT683R_LED_AUDIO 2
+> +#define GT683R_LED_OFF 0
+> +
+> +struct gt683r_led {
+> +       struct usb_device *usb_dev;
+> +
+> +       struct usb_endpoint_descriptor *ctrl_out_ep;
+> +       int ctrl_out_buffer_size;
+> +       char *ctrl_out_buffer;
+> +       struct usb_ctrlrequest *ctrl_out_request;
+> +       struct urb *ctrl_out_urb;
+> +
+> +       struct led_classdev led_dev;
+> +       struct mutex lock;
+> +       struct work_struct work;
+> +
+> +       enum led_brightness brightness;
+> +};
+> +
+> +static const struct usb_device_id gt683r_led_id[] = {
+> +       { USB_DEVICE(USB_VENDOR_ID_MSI, USB_DEVICE_ID_MSI_GT683R_LED_PANEL) },
+> +       { }
+> +};
+> +
+> +static char gt683r_led_select_leds[8] = {0x01, 0x02, 0x30, 0x00,
+> +                                        0x00, 0x00, 0x00, 0x00};
+> +static char gt683r_led_select_type[8] = {0x01, 0x02, 0x20, 0x00,
+> +                                        0x01, 0x00, 0x00, 0x00};
+> +
+> +static void gt683r_brightness_set(struct led_classdev *led_cdev,
+> +                                 enum led_brightness brightness)
+> +{
+> +       struct gt683r_led *led =
+> +                       container_of(led_cdev, struct gt683r_led, led_dev);
+> +
+> +       led->brightness = brightness;
+> +
+> +       schedule_work(&led->work);
+> +}
+> +
+> +static void gt683r_led_msg_snd_complete(struct urb *urb)
+> +{
+> +       usb_free_urb(urb);
+> +}
+> +
+> +static int gt683r_led_snd_msg(struct gt683r_led *led, char *msg)
+> +{
+> +       int result;
+> +
+> +       if (strlen(msg) > led->ctrl_out_buffer_size) {
+> +               dev_err(&led->usb_dev->dev, "Message to be send to device is too long\n");
+> +               return -EMSGSIZE;
+> +       }
+> +
+> +       led->ctrl_out_urb = usb_alloc_urb(0, GFP_KERNEL);
+> +       strcpy(led->ctrl_out_buffer, msg);
+> +       usb_fill_control_urb(led->ctrl_out_urb,
+> +                            led->usb_dev,
+> +                            usb_sndctrlpipe(led->usb_dev, led->ctrl_out_ep->bEndpointAddress),
+> +                            (unsigned char *) led->ctrl_out_request,
+> +                            led->ctrl_out_buffer,
+> +                            led->ctrl_out_buffer_size,
+> +                            gt683r_led_msg_snd_complete,
+> +                            led);
+> +
+> +       result = usb_submit_urb(led->ctrl_out_urb, GFP_KERNEL);
+> +
+No need this empty line.
 
-It can easily be argued that if the algorithm used to remap the ID
-varies, the compatibility of the device changes. Therefore I would
-expect any variant of the GICv3 that deviates from the "standard"
-mapping (if there is such a thing) to have its own compatible string.
+> +       if (result) {
+> +               dev_err(&led->usb_dev->dev, "Failed to submit urb\n");
+> +               return -ECOMM;
+> +       }
+> +
+> +       return 0;
+> +}
+> +
+> +static void gt683r_led_set(struct gt683r_led *led, char leds, char type)
+> +{
+> +       gt683r_led_select_leds[3] = leds;
+> +       gt683r_led_select_type[3] = type;
+> +       gt683r_led_snd_msg(led, gt683r_led_select_leds);
+> +       gt683r_led_snd_msg(led, gt683r_led_select_type);
+> +}
+> +
+> +static void gt683r_led_work(struct work_struct *work)
+> +{
+> +       struct gt683r_led *led =
+> +                       container_of(work, struct gt683r_led, work);
+> +
+> +       mutex_lock(&led->lock);
+> +
+> +       if (led->brightness)
+> +               gt683r_led_set(led, GT683R_LED_FRONT|GT683R_LED_SIDE|
+> +                              GT683R_LED_BACK, GT683R_LED_NORMAL);
 
-At that point there are two possibilities: a) handle the remapping in
-code hooked into the driver via matching of the compatible string or
-b) specifying a different specifier for each of these and keep the
-description in DT. From an implementation point of view, variant b) is
-likely going to be very similar to a), though (I'm thinking .of_xlate
-type of functions here).
+Please put space around "|"
 
-Thierry
+> +       else
+> +               gt683r_led_set(led, GT683R_LED_FRONT|GT683R_LED_SIDE|
+> +                              GT683R_LED_BACK, GT683R_LED_OFF);
+> +
+> +       mutex_unlock(&led->lock);
+> +}
+> +
+> +static struct led_classdev gt683r_led_dev = {
+> +       .name = "gt683r-led",
+> +       .brightness_set = gt683r_brightness_set,
+> +       .max_brightness = 1,
+> +       .flags = LED_CORE_SUSPENDRESUME,
+> +};
+> +
+> +static int gt683r_led_probe(struct usb_interface *intf,
+> +                           const struct usb_device_id *id)
+> +{
+> +       int ret = 0;
+> +       struct usb_endpoint_descriptor *endpoint;
+> +
+> +       struct gt683r_led *led = kzalloc(sizeof(struct gt683r_led), GFP_KERNEL);
+> +
 
---VywGB/WGlW4DM4P8
-Content-Type: application/pgp-signature
+I'd better to use devm_kzalloc() API here to make code simpler.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBAgAGBQJTj4vFAAoJEN0jrNd/PrOheCAP/i+lBZElAIcRlK6s2zrZYOSX
-92zTVfj0mb8G1wjEGuuFARffdwwjiiy6EvSMvFHelQr7eHdhBaWS1NnXDTArNeHe
-1GXXRMG7v3uJaIY7FDIHWxloL+v6/8FOpiQD8oyXwnZRE7cUwp1wikYO34fwRURH
-KQ4TwBNFYe8wXku1gffSYLKIF5HeN0zd+36f2E+JmbzEJEcvjagRSDdfV03uj3KA
-lqzwHNuIqBzsUVBCg7SI5fInfstUOTo/yRqXA6KYNms0twy7xC5wbKi5K2MQhAl4
-3xHrfwaC42Z6W2tXt8XGYRgS31V5nvq3Xg+sd/pr9v73jnwXzvyYNrlAuRBPvrPO
-UdKOpI8//EqU1+abQDpO0nZZtGEPYFqg7Rljz66gCav2faEn+44qZlAsQvDIzON3
-1FyEQIbFEUd/2m/RGEMO+Dhk0M0cpkVlmYteSvuNNRK/nrzCldYH8ubhGF5lFOCr
-dYfZfXXRS8JT3jH1o+i4eSts/cDQr29h9rE/fqhOercD2vc6DQjzC8UHFNgO78yN
-ozBhBd1EyQ1McT5SROrTqY1VXHjOAsADfP5pW2fbdDCyBnX3mVznqHYx0G5CINf7
-Ux1xscC6qGldF9+xFMTXJd8g5xAglPRZzXf9pP68ZJnxV+OJcuwsDixP3zcLIpMg
-UX+JzjNS4F7MccluPvrz
-=xLVK
------END PGP SIGNATURE-----
+> +       if (!led) {
+> +               ret = -ENOMEM;
+> +               goto fail;
+> +       }
+> +
+No need to check with devm_kzalloc() API
 
---VywGB/WGlW4DM4P8--
+
+> +       led->usb_dev = interface_to_usbdev(intf);
+> +       usb_set_intfdata(intf, led);
+> +       endpoint = &led->usb_dev->ep0.desc;
+> +
+> +       if (!led->ctrl_out_ep &&
+> +           usb_endpoint_xfer_control(endpoint) &&
+> +           usb_endpoint_dir_out(endpoint)) {
+> +               led->ctrl_out_ep = endpoint;
+> +               led->ctrl_out_buffer_size = endpoint->wMaxPacketSize;
+> +               led->ctrl_out_buffer = kmalloc(led->ctrl_out_buffer_size,
+> +                                              GFP_KERNEL);
+> +               if (!led->ctrl_out_buffer) {
+> +                       ret = -ENOMEM;
+> +                       goto fail;
+> +               }
+> +               led->ctrl_out_request = kmalloc(sizeof(struct usb_ctrlrequest),
+> +                                                    GFP_KERNEL);
+> +               if (!led->ctrl_out_request) {
+> +                       ret = -ENOMEM;
+> +                       goto fail;
+> +               }
+> +               led->ctrl_out_request->bRequestType = 0x22;
+> +               led->ctrl_out_request->bRequest = 0x09;
+> +               led->ctrl_out_request->wValue = cpu_to_le16(0x0301);
+> +               led->ctrl_out_request->wIndex = cpu_to_le16(0x0000);
+> +               led->ctrl_out_request->wLength = cpu_to_le16(0x0008);
+> +       }
+> +
+> +       if (!led->ctrl_out_ep) {
+> +               dev_err(&led->usb_dev->dev, "Could not find ctrl-out endpoint\n");
+> +               ret = -EIO;
+> +               goto fail;
+> +       }
+> +
+> +       led->led_dev = gt683r_led_dev;
+> +       ret = led_classdev_register(&led->usb_dev->dev, &led->led_dev);
+> +       if (ret) {
+> +               dev_err(&led->usb_dev->dev, "Could not register led_classdev\n");
+> +               goto fail;
+> +       }
+> +
+> +       mutex_init(&led->lock);
+> +       INIT_WORK(&led->work, gt683r_led_work);
+> +
+> +       return 0;
+> +fail:
+> +       kfree(led->ctrl_out_buffer);
+> +       led->ctrl_out_buffer = NULL;
+> +
+> +       kfree(led->ctrl_out_request);
+> +       led->ctrl_out_request = NULL;
+> +
+> +       kfree(led);
+> +       led = NULL;
+> +
+No need to check with devm_kzalloc() API
+
+> +       return ret;
+> +}
+> +
+> +static void gt683r_led_disconnect(struct usb_interface *intf)
+> +{
+> +       struct gt683r_led *led = usb_get_intfdata(intf);
+> +
+> +       led_classdev_unregister(&led->led_dev);
+> +       msleep(500);
+> +
+> +       kfree(led->ctrl_out_buffer);
+> +       led->ctrl_out_buffer = NULL;
+> +
+> +       kfree(led->ctrl_out_request);
+> +       led->ctrl_out_request = NULL;
+> +
+> +       kfree(led);
+> +       led = NULL;
+No need to check with devm_kzalloc() API
+
+> +}
+> +
+> +static struct usb_driver gt683r_led_driver = {
+> +       .probe = gt683r_led_probe,
+> +       .disconnect = gt683r_led_disconnect,
+> +       .name = "GT683R Led Driver",
+> +       .id_table = gt683r_led_id,
+> +};
+> +
+> +module_usb_driver(gt683r_led_driver);
+> +
+> +MODULE_AUTHOR("Janne Kanniainen");
+> +MODULE_DESCRIPTION("MSI GT683R led driver");
+> +MODULE_LICENSE("GPL");
+> --
+> 1.9.2
+>
+
+-Bryan
