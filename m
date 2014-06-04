@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756918AbaFEAaX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 20:30:23 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40035 "EHLO
+	id S1756935AbaFEAaq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 20:30:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40030 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752979AbaFDXWN (ORCPT
+	with ESMTP id S1752983AbaFDXWN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 4 Jun 2014 19:22:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Liu Hua <sdu.liu@huawei.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [PATCH 3.14 112/228] ARM: 8012/1: kdump: Avoid overflow when converting pfn to physaddr
-Date: Wed,  4 Jun 2014 16:22:21 -0700
-Message-Id: <20140604232351.646420399@linuxfoundation.org>
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        Lee Jones <lee.jones@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        Mark Rutland <mark.rutland@arm.com>,
+        Grant Likely <grant.likely@linaro.org>
+Subject: [PATCH 3.14 111/228] arm: dts: Fix missing device_type="memory" for ste-ccu8540
+Date: Wed,  4 Jun 2014 16:22:20 -0700
+Message-Id: <20140604232351.618108720@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -29,32 +33,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Liu Hua <sdu.liu@huawei.com>
+From: Leif Lindholm <leif.lindholm@linaro.org>
 
-commit 8fad87bca7ac9737e413ba5f1656f1114a8c314d upstream.
+commit bfaed5abad998bfc88a66e6e71c7b08dcf82f04e upstream.
 
-When we configure CONFIG_ARM_LPAE=y, pfn << PAGE_SHIFT will
-overflow if pfn >= 0x100000 in copy_oldmem_page.
-So use __pfn_to_phys for converting.
+The current .dts for ste-ccu8540 lacks a 'device_type = "memory"' for
+its memory node, relying on an old ppc quirk in order to discover its
+memory. Fix the data so that all parsing code can handle it correctly.
 
-Signed-off-by: Liu Hua <sdu.liu@huawei.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Leif Lindholm <leif.lindholm@linaro.org>
+Acked-by: Lee Jones <lee.jones@linaro.org>
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: devicetree@vger.kernel.org
+Cc: Mark Rutland <mark.rutland@arm.com>
+Signed-off-by: Grant Likely <grant.likely@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/kernel/crash_dump.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/boot/dts/ste-ccu8540.dts |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/arm/kernel/crash_dump.c
-+++ b/arch/arm/kernel/crash_dump.c
-@@ -39,7 +39,7 @@ ssize_t copy_oldmem_page(unsigned long p
- 	if (!csize)
- 		return 0;
+--- a/arch/arm/boot/dts/ste-ccu8540.dts
++++ b/arch/arm/boot/dts/ste-ccu8540.dts
+@@ -18,6 +18,7 @@
+ 	compatible = "st-ericsson,ccu8540", "st-ericsson,u8540";
  
--	vaddr = ioremap(pfn << PAGE_SHIFT, PAGE_SIZE);
-+	vaddr = ioremap(__pfn_to_phys(pfn), PAGE_SIZE);
- 	if (!vaddr)
- 		return -ENOMEM;
+ 	memory@0 {
++		device_type = "memory";
+ 		reg = <0x20000000 0x1f000000>, <0xc0000000 0x3f000000>;
+ 	};
  
 
 
