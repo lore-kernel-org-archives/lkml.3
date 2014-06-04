@@ -1,128 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751828AbaFDScq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 14:32:46 -0400
-Received: from ns.horizon.com ([71.41.210.147]:34779 "HELO ns.horizon.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1750780AbaFDScp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 14:32:45 -0400
-Date: 4 Jun 2014 14:32:44 -0400
-Message-ID: <20140604183244.30105.qmail@ns.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: dborkman@redhat.com, linux@horizon.com
-Subject: Re: [PATCH 1/3] lib: crc32: Greatly shrink CRC combining code
-Cc: akpm@linux-foundation.org, davem@davemloft.net,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <538F1535.3080500@redhat.com>
+	id S1751460AbaFDSfc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 14:35:32 -0400
+Received: from mail-qg0-f52.google.com ([209.85.192.52]:51569 "EHLO
+	mail-qg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751098AbaFDSfb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 14:35:31 -0400
+MIME-Version: 1.0
+In-Reply-To: <1401906155-10543-1-git-send-email-berthe.ab@gmail.com>
+References: <CAAVeFuLMLfa-1RhcdSrKDUz7=eLqZurBSFSsN7N0x-0S+_btJA@mail.gmail.com>
+	<1401906155-10543-1-git-send-email-berthe.ab@gmail.com>
+Date: Wed, 4 Jun 2014 20:35:30 +0200
+Message-ID: <CABprByY+wAbUrwFtneuFH-20E6uzFu8g+ixjOfJPZzMBSqAp0Q@mail.gmail.com>
+Subject: Re: [PATCH 0/2] gpiochip remove
+From: abdoulaye berthe <berthe.ab@gmail.com>
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>, m@bues.ch,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: abdoulaye berthe <berthe.ab@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for the nitpicks!
+I didn't modify the panic in the second patch as the initial goal of
+the patch was to avoid logging a message and continue as nothing
+happens however that happens to be a bad idea compared to a new
+proposal, I am ready to change it.
 
-> I think you might want to cc Andrew Morton <akpm@linux-foundation.org>
-> to let this go via akpm's tree for misc changes, perhaps?
-
-I don't care, but akpm is fine by me.  I'll send out a v2 after I resolve
-one minor point with you; see below.
-
-Once that's done, may I add a Reviewed-by: or Acked-by: line from you?
-
-> Looks good to me! Do you have any performance numbers to share?
-
-Actually, I didn't bother benchmarking it because the improvement was
-so obvious, but here's a quick test showing a 35.5x performance gain.
-
-     Old       New      Delta
-  0: 83005684  2314192 (-80691492)
-  1: 82730196  2313836 (-80416360)
-  2: 82805636  2312736 (-80492900)
-  3: 82648160  2344304 (-80303856)
-  4: 82531928  2314940 (-80216988)
-  5: 82669440  2312976 (-80356464)
-  6: 82528792  2313984 (-80214808)
-  7: 82415116  2313796 (-80101320)
-  8: 82451620  2314000 (-80137620)
-  9: 82811052  2329708 (-80481344)
- 10: 82903344  2311120 (-80592224)
- 11: 82549032  2313540 (-80235492)
- 12: 82564660  2330260 (-80234400)
- 13: 82289788  2312972 (-79976816)
- 14: 82535828  2312036 (-80223792)
- 15: 82664040  2313284 (-80350756)
- 16: 82629476  2309744 (-80319732)
- 17: 82806812  2329628 (-80477184)
- 18: 82379284  2312876 (-80066408)
- 19: 82483400  2313004 (-80170396)
- 20: 82651232  2314244 (-80336988)
- 21: 82327508  2330456 (-79997052)
- 22: 82641324  2330664 (-80310660)
- 23: 82538192  2314024 (-80224168)
-MIN: 82289788  2309744 (-79980044)
-
-Here's the test loop.  Although it's subject to compiler rearrangements,
-I tried to charge the loop overhead to the new code.
-
-static void
-do_test(uint64_t times[2])
-{
-	uint32_t crc0 = 1, crc1 = 1;
-	uint64_t t0, t1, sum0 = 0, sum1 = 0;
-	int i;
-
-	t1 = t0 = rdtsc();
-	for (i = 1024; i < 2048; i++) {
-		sum0 += t1;
-		crc0 = crc32_generic_shift(crc0, i, CRC32C_POLY_LE);
-		sum1 += rdtsc();
-		crc1 = crc32_generic_combine(crc1, 0, i, CRC32C_POLY_LE);
-		t1 = rdtsc();
-	}
-	times[0] = sum0 + t1 - sum1 - t0;	// Old code
-	times[1] = sum1 - sum0;			// New code
-	if (crc0 != crc1)
-		printf("Mismatch!  %08x != %08x\n", crc0, crc1);
-}
-
-It's possible to do a bit better with more effort (exploiting
-the precomputed CRC tables for modular reduction) but this fruit
-was hanging *so* low I couldn't resist grabbing it.
-
->> -extern u32  crc32_le_combine(u32 crc1, u32 crc2, size_t len2);
->> +u32  crc32_le_shift(u32 crc, size_t len) __attribute_const__;
-
-> Perhaps a newline here.
-
-Question: where do you think a newline should go?  It's not obvious
-to me.  My style has been to keep as much of a declaration on one line
-as possible so "git grep <function> include" is as informative as possible.
-
->> -extern u32  __crc32c_le_combine(u32 crc1, u32 crc2, size_t len2);
->> +u32  __crc32c_le_shift(u32 crc, size_t len) __attribute_const__;
-
-> Ditto. Or, put both *_shift() helper signatures before the crc32_le_combine
-> kdoc comment.
-
-Um, same basic question.  I agree that putting a declaration
-between the kdoc and the function is strange, but that doesn't
-seem to be what you're commenting in...
-
-Now that I've gotten an ack, I'm happy to be more aggressive about
-tweaking comments.  I just wanted to focus the diff on the code changes.
-
->> +/**
->> + * crc32_generic_shift - Append len 0 bytes to crc, in logarithmic time
->> + * @crc: The original little-endian CRC (i.e. lsbit is x^31 coefficient)
->> + * @len: The number of bytes.  @crc is multiplied by x^(8*@len)
->> + # @polynomial: The modulus used to reduce the result to 32 bits.
-
->      ^^ seems this should have been a '*'
-
-Yes, obviously.  Thanks for catching that.
-
->> +static u32 __attribute_const__ crc32_generic_shift(u32 crc, size_t len,
->> +				 u32 polynomial)
-
-> u32 polynomial is not correctly aligned to the opening '(' from the previous line.
-
-Thanks again.
+On Wed, Jun 4, 2014 at 8:22 PM, abdoulaye berthe <berthe.ab@gmail.com> wrote:
+> The aim of this patch is to make gpiochip_remove() behavior consistent,
+> especially when issuing a remove request while the chipio chip is still
+> requested. It is the 1st patch in a serie af 2 patches The 1st patch
+> updates users of the return value while the 2nd patch changes the return
+> value of gpiochip_remove from int to void.
+>
+> abdoulaye berthe (2):
+>   gpio: removes all usage of gpiochip_remove retval
+>   gpio: gpiolib: set gpiochip_remove retval to void
+>
+>  arch/arm/common/scoop.c                        | 10 ++--------
+>  arch/mips/txx9/generic/setup.c                 |  4 ++--
+>  arch/powerpc/platforms/83xx/mcu_mpc8349emitx.c |  3 ++-
+>  arch/sh/boards/mach-x3proto/gpio.c             |  6 ++----
+>  drivers/bcma/driver_gpio.c                     |  3 ++-
+>  drivers/gpio/gpio-74x164.c                     |  8 +++-----
+>  drivers/gpio/gpio-adnp.c                       |  9 +--------
+>  drivers/gpio/gpio-adp5520.c                    |  8 +-------
+>  drivers/gpio/gpio-adp5588.c                    |  6 +-----
+>  drivers/gpio/gpio-amd8111.c                    |  3 +--
+>  drivers/gpio/gpio-arizona.c                    |  3 ++-
+>  drivers/gpio/gpio-cs5535.c                     |  8 +-------
+>  drivers/gpio/gpio-da9052.c                     |  3 ++-
+>  drivers/gpio/gpio-da9055.c                     |  3 ++-
+>  drivers/gpio/gpio-dwapb.c                      |  2 +-
+>  drivers/gpio/gpio-em.c                         |  5 +----
+>  drivers/gpio/gpio-f7188x.c                     | 18 ++----------------
+>  drivers/gpio/gpio-generic.c                    |  3 ++-
+>  drivers/gpio/gpio-grgpio.c                     |  4 +---
+>  drivers/gpio/gpio-ich.c                        |  9 +--------
+>  drivers/gpio/gpio-it8761e.c                    |  6 +-----
+>  drivers/gpio/gpio-janz-ttl.c                   |  8 +-------
+>  drivers/gpio/gpio-kempld.c                     |  3 ++-
+>  drivers/gpio/gpio-lp3943.c                     |  3 ++-
+>  drivers/gpio/gpio-lynxpoint.c                  |  5 +----
+>  drivers/gpio/gpio-max730x.c                    | 12 ++++--------
+>  drivers/gpio/gpio-max732x.c                    |  7 +------
+>  drivers/gpio/gpio-mc33880.c                    | 11 +++--------
+>  drivers/gpio/gpio-mc9s08dz60.c                 |  3 ++-
+>  drivers/gpio/gpio-mcp23s08.c                   | 26 +++++++-------------------
+>  drivers/gpio/gpio-ml-ioh.c                     |  8 ++------
+>  drivers/gpio/gpio-msm-v2.c                     |  5 +----
+>  drivers/gpio/gpio-mxc.c                        |  2 +-
+>  drivers/gpio/gpio-octeon.c                     |  3 ++-
+>  drivers/gpio/gpio-palmas.c                     |  3 ++-
+>  drivers/gpio/gpio-pca953x.c                    |  7 +------
+>  drivers/gpio/gpio-pcf857x.c                    |  4 +---
+>  drivers/gpio/gpio-pch.c                        | 10 ++--------
+>  drivers/gpio/gpio-rc5t583.c                    |  3 ++-
+>  drivers/gpio/gpio-rcar.c                       |  5 +----
+>  drivers/gpio/gpio-rdc321x.c                    |  7 ++-----
+>  drivers/gpio/gpio-sch.c                        | 16 +++-------------
+>  drivers/gpio/gpio-sch311x.c                    |  6 ++----
+>  drivers/gpio/gpio-sodaville.c                  |  4 +---
+>  drivers/gpio/gpio-stmpe.c                      |  8 +-------
+>  drivers/gpio/gpio-sx150x.c                     |  7 ++-----
+>  drivers/gpio/gpio-syscon.c                     |  3 ++-
+>  drivers/gpio/gpio-tb10x.c                      |  5 +----
+>  drivers/gpio/gpio-tc3589x.c                    |  8 +-------
+>  drivers/gpio/gpio-timberdale.c                 |  5 +----
+>  drivers/gpio/gpio-tps6586x.c                   |  3 ++-
+>  drivers/gpio/gpio-tps65910.c                   |  3 ++-
+>  drivers/gpio/gpio-tps65912.c                   |  3 ++-
+>  drivers/gpio/gpio-ts5500.c                     |  6 +++---
+>  drivers/gpio/gpio-twl4030.c                    |  4 +---
+>  drivers/gpio/gpio-twl6040.c                    |  3 ++-
+>  drivers/gpio/gpio-ucb1400.c                    |  2 +-
+>  drivers/gpio/gpio-viperboard.c                 | 10 +++-------
+>  drivers/gpio/gpio-vx855.c                      |  3 +--
+>  drivers/gpio/gpio-wm831x.c                     |  3 ++-
+>  drivers/gpio/gpio-wm8350.c                     |  3 ++-
+>  drivers/gpio/gpio-wm8994.c                     |  3 ++-
+>  drivers/gpio/gpiolib.c                         | 24 +++++++-----------------
+>  drivers/hid/hid-cp2112.c                       |  6 ++----
+>  drivers/input/keyboard/adp5588-keys.c          |  4 +---
+>  drivers/input/keyboard/adp5589-keys.c          |  4 +---
+>  drivers/input/touchscreen/ad7879.c             | 10 +++-------
+>  drivers/leds/leds-pca9532.c                    | 10 ++--------
+>  drivers/leds/leds-tca6507.c                    |  7 ++-----
+>  drivers/media/dvb-frontends/cxd2820r_core.c    | 10 +++-------
+>  drivers/mfd/asic3.c                            |  3 ++-
+>  drivers/mfd/htc-i2cpld.c                       |  8 +-------
+>  drivers/mfd/sm501.c                            | 17 +++--------------
+>  drivers/mfd/tc6393xb.c                         | 13 ++++---------
+>  drivers/mfd/ucb1x00-core.c                     |  8 ++------
+>  drivers/pinctrl/pinctrl-abx500.c               | 15 +++------------
+>  drivers/pinctrl/pinctrl-adi2.c                 |  9 ++++-----
+>  drivers/pinctrl/pinctrl-as3722.c               | 11 ++---------
+>  drivers/pinctrl/pinctrl-baytrail.c             |  5 +----
+>  drivers/pinctrl/pinctrl-coh901.c               | 10 ++--------
+>  drivers/pinctrl/pinctrl-exynos5440.c           |  6 +-----
+>  drivers/pinctrl/pinctrl-msm.c                  | 11 ++---------
+>  drivers/pinctrl/pinctrl-nomadik.c              |  2 +-
+>  drivers/pinctrl/pinctrl-rockchip.c             | 16 ++++------------
+>  drivers/pinctrl/pinctrl-samsung.c              | 14 ++++----------
+>  drivers/pinctrl/pinctrl-sunxi.c                |  3 +--
+>  drivers/pinctrl/sh-pfc/gpio.c                  |  9 +++------
+>  drivers/pinctrl/spear/pinctrl-plgpio.c         |  3 +--
+>  drivers/pinctrl/vt8500/pinctrl-wmt.c           |  9 ++-------
+>  drivers/platform/x86/intel_pmic_gpio.c         |  3 +--
+>  drivers/ssb/driver_gpio.c                      |  3 ++-
+>  drivers/staging/vme/devices/vme_pio2_gpio.c    |  4 +---
+>  drivers/tty/serial/max310x.c                   | 10 ++++------
+>  drivers/video/fbdev/via/via-gpio.c             | 10 +++-------
+>  include/linux/gpio/driver.h                    |  2 +-
+>  sound/soc/codecs/wm5100.c                      |  5 +----
+>  sound/soc/codecs/wm8903.c                      |  6 +-----
+>  sound/soc/codecs/wm8962.c                      |  5 +----
+>  sound/soc/codecs/wm8996.c                      |  6 +-----
+>  99 files changed, 190 insertions(+), 478 deletions(-)
+>
+> --
+> 1.9.1
+>
