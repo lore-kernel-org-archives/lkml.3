@@ -1,99 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751859AbaFDT0i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 15:26:38 -0400
-Received: from mout.kundenserver.de ([212.227.17.10]:62599 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751132AbaFDT0e (ORCPT
+	id S1751645AbaFDT3T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 15:29:19 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:52460 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750925AbaFDT3S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 15:26:34 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-Cc: Dave Chinner <david@fromorbit.com>, hch@infradead.org,
-        linux-mtd@lists.infradead.org, "H. Peter Anvin" <hpa@zytor.com>,
-        logfs@logfs.org, linux-afs@lists.infradead.org,
-        "Joseph S. Myers" <joseph@codesourcery.com>,
-        linux-arch@vger.kernel.org, linux-cifs@vger.kernel.org,
-        linux-scsi@vger.kernel.org, ceph-devel@vger.kernel.org,
-        cluster-devel@redhat.com, coda@cs.cmu.edu, geert@linux-m68k.org,
-        linux-ext4@vger.kernel.org, codalist@telemann.coda.cs.cmu.edu,
-        fuse-devel@lists.sourceforge.net, reiserfs-devel@vger.kernel.org,
-        xfs@oss.sgi.com, john.stultz@linaro.org, tglx@linutronix.de,
-        linux-nfs@vger.kernel.org, linux-ntfs-dev@lists.sourceforge.net,
-        samba-technical@lists.samba.org, linux-kernel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net, ocfs2-devel@oss.oracle.com,
-        linux-fsdevel@vger.kernel.org, lftan@altera.com,
-        linux-btrfs@vger.kernel.org
-Subject: Re: [RFC 00/32] making inode time stamps y2038 ready
-Date: Wed, 04 Jun 2014 21:24:42 +0200
-Message-ID: <8770583.6XeZxCxOY8@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <alpine.LFD.2.11.1406041308300.17310@knanqh.ubzr>
-References: <1401480116-1973111-1-git-send-email-arnd@arndb.de> <201406041703.47592.arnd@arndb.de> <alpine.LFD.2.11.1406041308300.17310@knanqh.ubzr>
+	Wed, 4 Jun 2014 15:29:18 -0400
+Message-ID: <538F738A.6020003@wwwdotorg.org>
+Date: Wed, 04 Jun 2014 13:29:14 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:DM/lJrJE4mb6T+iFyCL5XBEfoTbYuOXvde6IKvCGOVz
- G55a3rrYOgf/FNXs0QU64TfDtDIUUWMfGh13elMZbO1rGrrAEg
- WDWFL6ziSZQCzZE7GmFTeRgbaUc0cLksPQudEA0QrLVCPKvcPy
- Cqd7r/0pYyfuKZ7kfVvM6xQgYN4QcioF4uYb5pmxgIZ/+MDuH/
- uyEiUHVHTKVaIHPpCBPyXHgy55+cgzKqvX24lMmjUyS+b4cOt3
- M9BdU4dIwjMKy2cUEyK94ex5FZ14BnAIBl6BxOtMmU4gt2qhcX
- K2+j3uLaokuufl//ecz94gIUH+90XftVgCzc/cwstCBgC36cWZ
- TlJ2MJ5Y4O+ZqNmO84Is=
+To: Vidya Sagar <vidyas@nvidia.com>, linux@arm.linux.org.uk,
+        bhelgaas@google.com, wangyijing@huawei.com, thierry.reding@gmail.com,
+        jason@lakedaemon.net, will.deacon@arm.com, swarren@nvidia.com,
+        kthota@nvidia.com
+CC: sagar.tv@gmail.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: fix debug prints relevant to PCI devices
+References: <1401909447-8434-1-git-send-email-vidyas@nvidia.com>
+In-Reply-To: <1401909447-8434-1-git-send-email-vidyas@nvidia.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 04 June 2014 13:30:32 Nicolas Pitre wrote:
-> On Wed, 4 Jun 2014, Arnd Bergmann wrote:
-> 
-> > On Tuesday 03 June 2014, Dave Chinner wrote:
-> > > Just ot be pedantic, inodes don't need 96 bit timestamps - some
-> > > filesystems can *support up to* 96 bit timestamps. If the kernel
-> > > only supports 64 bit timestamps and that's all the kernel can
-> > > represent, then the upper bits of the 96 bit on-disk inode
-> > > timestamps simply remain zero.
-> > 
-> > I meant the reverse: since we have file systems that can store
-> > 96-bit timestamps when using 64-bit kernels, we need to extend
-> > 32-bit kernels to have the same internal representation so we
-> > can actually read those file systems correctly.
-> > 
-> > > If you move the filesystem between kernels with different time
-> > > ranges, then the filesystem needs to be able to tell the kernel what
-> > > it's supported range is.  This is where having the VFS limit the
-> > > range of supported timestamps is important: the limit is the
-> > > min(kernel range, filesystem range). This allows the filesystems
-> > > to be indepenent of the kernel time representation, and the kernel
-> > > to be independent of the physical filesystem time encoding....
-> > 
-> > I agree it makes sense to let the kernel know about the limits
-> > of the file system it accesses, but for the reverse, we're probably
-> > better off just making the kernel representation large enough (i.e.
-> > 96 bits) so it can work with any known file system.
-> 
-> Depends...  96 bit handling may get prohibitive on 32-bit archs.
-> 
-> The important point here is for the kernel to be able to represent the 
-> time _range_ used by any known filesystem, not necessarily the time 
-> _precision_.
-> 
-> For example, a 64 bit representation can be made of 40 bits for seconds 
-> spanning 34865 years, and 24 bits for fractional seconds providing 
-> precision down to 60 nanosecs.  That ought to be plenty good on 32 bit 
-> systems while still being cheap to handle.
+On 06/04/2014 01:17 PM, Vidya Sagar wrote:
+> As per PCIe spec, fast back-to-back transactions feature
+> is not applicable to PCIe devices. Hence, do not print
+> that fast back-to-back trasactions are disabled when
+> there is a PCIe device found on the bus
 
-I have checked earlier that we don't do any computation on inode
-time stamps in common code, we just pass them around, so there is
-very little runtime overhead. There is a small bit of space overhead
-(12 byte) per inode, but that structure is already on the order of
-500 bytes.
+> @@ -298,6 +299,8 @@ void pcibios_fixup_bus(struct pci_bus *bus)
+>  	list_for_each_entry(dev, &bus->devices, bus_list) {
+>  		u16 status;
+>  
+> +		if (!has_pcie_dev)
+> +			has_pcie_dev = pci_pcie_cap(dev);
 
-For other timekeeping stuff in the kernel, I agree that using some
-64-bit representation (nanoseconds, 32/32 unsigned seconds/nanoseconds,
-...) has advantages, that's exactly the point I was making earlier
-against simply extending the internal time_t/timespec to 64-bit
-seconds for everything.
+This sets the flag if any PCIe device is detected, even if regular PCI
+devices are also detected. I assume the two can be mixed on a bus if
+there's a bridge (although perhaps that would be separate buses, and
+child buses don't get traversed by this function?)
 
-	Arnd
+>  	/*
+>  	 * Report what we did for this bus
+> +	 * (only if the bus doesn't have even one PCIe device)
+>  	 */
+> -	printk(KERN_INFO "PCI: bus%d: Fast back to back transfers %sabled\n",
+> -		bus->number, (features & PCI_COMMAND_FAST_BACK) ? "en" : "dis");
+> +	if (!has_pcie_dev)
+> +		printk(KERN_INFO "PCI: bus%d: Fast back to back transfers %sabled\n",
+> +			bus->number, (features & PCI_COMMAND_FAST_BACK) ? "en" : "dis");
+
+So, this skips printing the message if any PCIe device was found.
+
+Given that the message is relevant to PCI devices, more than being not
+relevant to PCIe devices, perhaps the logic should be inverted, so that
+the message is only printed if a PCI/non-PCIe device /is/ found, i.e.:
+
+...
+has_pci_device |= !pci_pcie_cap(dev);
+...
+if (has_pci_device)
+	printk(...);
+
