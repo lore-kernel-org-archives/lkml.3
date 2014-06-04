@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753665AbaFDXXO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:23:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40462 "EHLO
+	id S1755387AbaFDXzx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 19:55:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40511 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753600AbaFDXXK (ORCPT
+	with ESMTP id S1753674AbaFDXXQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:23:10 -0400
+	Wed, 4 Jun 2014 19:23:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hans de Goede <hdegoede@redhat.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.14 199/228] ACPI / video: Add use_native_backlight quirks for more systems
-Date: Wed,  4 Jun 2014 16:23:48 -0700
-Message-Id: <20140604232354.424970329@linuxfoundation.org>
+        Antti Palosaari <crope@iki.fi>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Subject: [PATCH 3.14 223/228] media: fc2580: fix tuning failure on 32-bit arch
+Date: Wed,  4 Jun 2014 16:24:12 -0700
+Message-Id: <20140604232355.212686922@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -29,77 +29,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: Antti Palosaari <crope@iki.fi>
 
-commit 43d9490244254d2d6adb0f3c6275c7b8d032a2dd upstream.
+commit 8845cc6415ec28ef8d57b3fb81c75ef9bce69c5f upstream.
 
-ThinkPad T430: extend the T430s entry to also cover the T430 (note we also
-have another entry for T430's with a different DMI_PRODUCT_VERSION).
+There was some frequency calculation overflows which caused tuning
+failure on 32-bit architecture. Use 64-bit numbers where needed in
+order to avoid calculation overflows.
 
-ThinkPad T430
-Reported-and-tested-by: edm <fuffi.il.fuffo@gmail.com>
-References: https://bugzilla.kernel.org/show_bug.cgi?id=51231
+Thanks for the Finnish person, who asked remain anonymous, reporting,
+testing and suggesting the fix.
 
-Thinkpad T530
-Reported-and-tested-by: Balint Szigeti <balint.szgt@gmail.com>
-References: https://bugzilla.redhat.com/show_bug.cgi?id=1089545
-
-Acer Aspire 5742G
-Reported-and-tested-by: AnAkkk <anakin.cs@gmail.com>
-References: https://bugzilla.kernel.org/show_bug.cgi?id=35622
-
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Antti Palosaari <crope@iki.fi>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/video.c |   20 ++++++++++++++++++--
- 1 file changed, 18 insertions(+), 2 deletions(-)
+ drivers/media/tuners/fc2580.c      |    6 +++---
+ drivers/media/tuners/fc2580_priv.h |    1 +
+ 2 files changed, 4 insertions(+), 3 deletions(-)
 
---- a/drivers/acpi/video.c
-+++ b/drivers/acpi/video.c
-@@ -459,10 +459,10 @@ static struct dmi_system_id video_dmi_ta
- 	},
- 	{
- 	 .callback = video_set_use_native_backlight,
--	 .ident = "ThinkPad T430s",
-+	 .ident = "ThinkPad T430 and T430s",
- 	 .matches = {
- 		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
--		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad T430s"),
-+		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad T430"),
- 		},
- 	},
- 	{
-@@ -474,6 +474,14 @@ static struct dmi_system_id video_dmi_ta
- 		},
- 	},
- 	{
-+	 .callback = video_set_use_native_backlight,
-+	 .ident = "ThinkPad T530",
-+	 .matches = {
-+		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
-+		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad T530"),
-+		},
-+	},
-+	{
- 	.callback = video_set_use_native_backlight,
- 	.ident = "ThinkPad X1 Carbon",
- 	.matches = {
-@@ -506,6 +514,14 @@ static struct dmi_system_id video_dmi_ta
- 		},
- 	},
- 	{
-+	 .callback = video_set_use_native_backlight,
-+	 .ident = "Acer Aspire 5742G",
-+	 .matches = {
-+		DMI_MATCH(DMI_SYS_VENDOR, "Acer"),
-+		DMI_MATCH(DMI_PRODUCT_NAME, "Aspire 5742G"),
-+		},
-+	},
-+	{
- 	 .callback = video_set_use_native_backlight,
- 	 .ident = "Acer Aspire V5-431",
- 	 .matches = {
+--- a/drivers/media/tuners/fc2580.c
++++ b/drivers/media/tuners/fc2580.c
+@@ -195,7 +195,7 @@ static int fc2580_set_params(struct dvb_
+ 
+ 	f_ref = 2UL * priv->cfg->clock / r_val;
+ 	n_val = div_u64_rem(f_vco, f_ref, &k_val);
+-	k_val_reg = 1UL * k_val * (1 << 20) / f_ref;
++	k_val_reg = div_u64(1ULL * k_val * (1 << 20), f_ref);
+ 
+ 	ret = fc2580_wr_reg(priv, 0x18, r18_val | ((k_val_reg >> 16) & 0xff));
+ 	if (ret < 0)
+@@ -348,8 +348,8 @@ static int fc2580_set_params(struct dvb_
+ 	if (ret < 0)
+ 		goto err;
+ 
+-	ret = fc2580_wr_reg(priv, 0x37, 1UL * priv->cfg->clock * \
+-			fc2580_if_filter_lut[i].mul / 1000000000);
++	ret = fc2580_wr_reg(priv, 0x37, div_u64(1ULL * priv->cfg->clock *
++			fc2580_if_filter_lut[i].mul, 1000000000));
+ 	if (ret < 0)
+ 		goto err;
+ 
+--- a/drivers/media/tuners/fc2580_priv.h
++++ b/drivers/media/tuners/fc2580_priv.h
+@@ -22,6 +22,7 @@
+ #define FC2580_PRIV_H
+ 
+ #include "fc2580.h"
++#include <linux/math64.h>
+ 
+ struct fc2580_reg_val {
+ 	u8 reg;
 
 
