@@ -1,45 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751596AbaFDTFY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 15:05:24 -0400
-Received: from mail-qa0-f44.google.com ([209.85.216.44]:62664 "EHLO
-	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750780AbaFDTFW (ORCPT
+	id S1751902AbaFDTIm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 15:08:42 -0400
+Received: from g2t2354.austin.hp.com ([15.217.128.53]:42607 "EHLO
+	g2t2354.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751747AbaFDTIk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 15:05:22 -0400
-Message-ID: <538F6DEB.2000601@redhat.com>
-Date: Wed, 04 Jun 2014 21:05:15 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Venkatesh Srinivas <venkateshs@google.com>
-CC: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org, hch@lst.de,
-        JBottomley@parallels.com, stable@vger.kernel.org,
-        Venkatesh Srinivas <vsrinivas@ops101.org>
-Subject: Re: [PATCH v3 5/6] virtio-scsi: fix various bad behavior on aborted
- requests
-References: <1401881699-1456-1-git-send-email-pbonzini@redhat.com>	<1401881699-1456-6-git-send-email-pbonzini@redhat.com> <CAHdzE-8KoMrg_jSuj-F9c=HnapCiLCg9bKCifduTaxx-DAJZRw@mail.gmail.com>
-In-Reply-To: <CAHdzE-8KoMrg_jSuj-F9c=HnapCiLCg9bKCifduTaxx-DAJZRw@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 4 Jun 2014 15:08:40 -0400
+From: Jason Low <jason.low2@hp.com>
+To: mingo@kernel.org, peterz@infradead.org, tglx@linutronix.de,
+        akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, paulmck@linux.vnet.ibm.com,
+        tim.c.chen@linux.intel.com, peter@hurleysoftware.com, riel@redhat.com,
+        hpa@zytor.com, walken@google.com, davidlohr@hp.com, Waiman.Long@hp.com,
+        aswin@hp.com, scott.norton@hp.com, chegu_vinod@hp.com,
+        jason.low2@hp.com
+Subject: [RFC PATCH 3/3] locking/mutex: Optimize mutex trylock slowpath
+Date: Wed,  4 Jun 2014 12:08:31 -0700
+Message-Id: <1401908911-8947-4-git-send-email-jason.low2@hp.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1401908911-8947-1-git-send-email-jason.low2@hp.com>
+References: <1401908911-8947-1-git-send-email-jason.low2@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 04/06/2014 19:29, Venkatesh Srinivas ha scritto:
-> Do you really want to poll the request VQs for completions if the TMF
-> was rejected?
+In __mutex_trylock_slowpath(), we acquire the wait_lock spinlock,
+xchg() lock->count with -1, then set lock->count back to 0 if there
+are no waiters, and return true if the prev lock count was 1.
 
-I wasn't sure, but bugs in this path are hard enough that I preferred 
-the safer patch.
+However, if we the mutex is already locked, then there may not be
+much point in attempting the above operations. In this patch, we only
+attempt the above operations if the mutex is unlocked.
 
-> TMF ABORT may return FUNCTION REJECTED if the command to abort
-> completed before the device saw the TMF ABORT message, for example. In
-> such cases, this would
-> unnecessarily lengthen the EH path.
+The new MUTEX_IS_UNLOCKED() macro is also used for this.
 
-The cost of virtscsi_poll_requests should be nothing compared to the 
-delay between the timeout and the invocation of the delayed_work, no?
+Signed-off-by: Jason Low <jason.low2@hp.com>
+---
+ kernel/locking/mutex.c |   27 ++++++++++++++++-----------
+ 1 files changed, 16 insertions(+), 11 deletions(-)
 
-Paolo
+diff --git a/kernel/locking/mutex.c b/kernel/locking/mutex.c
+index fc55f72..c65680d 100644
+--- a/kernel/locking/mutex.c
++++ b/kernel/locking/mutex.c
+@@ -821,21 +821,26 @@ static inline int __mutex_trylock_slowpath(atomic_t *lock_count)
+ {
+ 	struct mutex *lock = container_of(lock_count, struct mutex, count);
+ 	unsigned long flags;
+-	int prev;
++	int prev = 0;
+ 
+-	spin_lock_mutex(&lock->wait_lock, flags);
++	/*
++	 * Only need to trylock the mutex if it is unlocked.
++	 */
++	if (MUTEX_IS_UNLOCKED(lock)) {
++		spin_lock_mutex(&lock->wait_lock, flags);
+ 
+-	prev = atomic_xchg(&lock->count, -1);
+-	if (likely(prev == 1)) {
+-		mutex_set_owner(lock);
+-		mutex_acquire(&lock->dep_map, 0, 1, _RET_IP_);
+-	}
++		prev = atomic_xchg(&lock->count, -1);
++		if (likely(prev == 1)) {
++			mutex_set_owner(lock);
++			mutex_acquire(&lock->dep_map, 0, 1, _RET_IP_);
++		}
+ 
+-	/* Set it back to 0 if there are no waiters: */
+-	if (likely(list_empty(&lock->wait_list)))
+-		atomic_set(&lock->count, 0);
++		/* Set it back to 0 if there are no waiters: */
++		if (likely(list_empty(&lock->wait_list)))
++			atomic_set(&lock->count, 0);
+ 
+-	spin_unlock_mutex(&lock->wait_lock, flags);
++		spin_unlock_mutex(&lock->wait_lock, flags);
++	}
+ 
+ 	return prev == 1;
+ }
+-- 
+1.7.1
+
