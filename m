@@ -1,48 +1,235 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753689AbaFDOFW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 10:05:22 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:37407 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751508AbaFDOFU (ORCPT
+	id S1753760AbaFDOGL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 10:06:11 -0400
+Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:45600 "EHLO
+	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752800AbaFDOGJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 10:05:20 -0400
-Date: Wed, 4 Jun 2014 16:05:14 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Kevin Hilman <khilman@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linaro Networking <linaro-networking@linaro.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Subject: Re: [Query] Can we use normal timers (kernel/timer.c) while in
- NO_HZ_FULL mode?
-Message-ID: <20140604140512.GD13827@localhost.localdomain>
-References: <CAKohponiCH35ZBTicCkVV3KoJzCWrnJExeR9HqwSMv+QDp36gg@mail.gmail.com>
- <20140604132305.GB13827@localhost.localdomain>
- <CAKohpo=JRKO7x3izE7jG-MAUdXexNzxpG0FT5adNQmKi0+Bauw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKohpo=JRKO7x3izE7jG-MAUdXexNzxpG0FT5adNQmKi0+Bauw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 4 Jun 2014 10:06:09 -0400
+Subject: Re: [PATCH 1/4] GenWQE: Add sysfs interface for bitstream reload
+From: Frank Haverkamp <haver@linux.vnet.ibm.com>
+Reply-To: haver@linux.vnet.ibm.com
+To: Kleber Sacilotto de Souza <klebers@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org
+In-Reply-To: <1401890273-13067-2-git-send-email-klebers@linux.vnet.ibm.com>
+References: <1401890273-13067-1-git-send-email-klebers@linux.vnet.ibm.com>
+	 <1401890273-13067-2-git-send-email-klebers@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: IBM
+Date: Wed, 04 Jun 2014 16:05:59 +0200
+Message-ID: <1401890759.24099.8.camel@oc7383187364.ibm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14060414-4966-0000-0000-00000041FF5B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 04, 2014 at 07:14:43PM +0530, Viresh Kumar wrote:
-> On 4 June 2014 18:53, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> > Right, if we enqueue a timer when the tick is stopped, we call wake_up_nohz_cpu().
-> 
-> Ahh, I looked at __mod_timer() :)
-> 
-> BTW, shouldn't we do something similar for mod_timer_pinned()
-> as well ?
 
-Ah that looks right. In fact we should probably move the wake_up_nohz_cpu()
-to internal_add_timer().
+Am Mittwoch, den 04.06.2014, 10:57 -0300 schrieb Kleber Sacilotto de
+Souza:
+> This patch adds an interface on sysfs for userspace to request a card
+> bitstream reload. It sets the appropriate register and try to perform a
+> fundamental reset on the PCIe slot for the card to reload the bitstream
+> from the chosen partition.
+> 
+> Signed-off-by: Kleber Sacilotto de Souza <klebers@linux.vnet.ibm.com>
+> ---
+>  Documentation/ABI/testing/sysfs-driver-genwqe |    9 +++
+>  drivers/misc/genwqe/card_base.c               |   90 +++++++++++++++++++++++++
+>  drivers/misc/genwqe/card_sysfs.c              |   25 +++++++
+>  include/uapi/linux/genwqe/genwqe_card.h       |    1 +
+>  4 files changed, 125 insertions(+), 0 deletions(-)
+> 
+> diff --git a/Documentation/ABI/testing/sysfs-driver-genwqe b/Documentation/ABI/testing/sysfs-driver-genwqe
+> index 1870737..64ac6d5 100644
+> --- a/Documentation/ABI/testing/sysfs-driver-genwqe
+> +++ b/Documentation/ABI/testing/sysfs-driver-genwqe
+> @@ -25,6 +25,15 @@ Date:           Oct 2013
+>  Contact:        haver@linux.vnet.ibm.com
+>  Description:    Interface to set the next bitstream to be used.
+> 
+> +What:           /sys/class/genwqe/genwqe<n>_card/reload_bitstream
+> +Date:           May 2014
+> +Contact:        klebers@linux.vnet.ibm.com
+> +Description:    Interface to trigger a PCIe card reset to reload the bitstream.
+> +                  sudo sh -c 'echo 1 > \
+> +                    /sys/class/genwqe/genwqe0_card/reload_bitstream'
+> +                If successfully, the card will come back with the bitstream set
+> +                on 'next_bitstream'.
+> +
+>  What:           /sys/class/genwqe/genwqe<n>_card/tempsens
+>  Date:           Oct 2013
+>  Contact:        haver@linux.vnet.ibm.com
+> diff --git a/drivers/misc/genwqe/card_base.c b/drivers/misc/genwqe/card_base.c
+> index 74d51c9..e6cc3e1 100644
+> --- a/drivers/misc/genwqe/card_base.c
+> +++ b/drivers/misc/genwqe/card_base.c
+> @@ -761,6 +761,89 @@ static u64 genwqe_fir_checking(struct genwqe_dev *cd)
+>  }
+> 
+>  /**
+> + * genwqe_pci_fundamental_reset() - trigger a PCIe fundamental reset on the slot
+> + *
+> + * Note: pci_set_pcie_reset_state() is not implemented on all archs, so this
+> + * reset method will not work in all cases.
+> + *
+> + * Return: 0 on success or error code from pci_set_pcie_reset_state()
+> + */
+> +static int genwqe_pci_fundamental_reset(struct pci_dev *pci_dev)
+> +{
+> +	int rc;
+> +
+> +	/*
+> +	 * lock pci config space access from userspace,
+> +	 * save state and issue PCIe fundamental reset
+> +	 */
+> +	pci_cfg_access_lock(pci_dev);
+> +	pci_save_state(pci_dev);
+> +	rc = pci_set_pcie_reset_state(pci_dev, pcie_warm_reset);
+> +	if (!rc) {
+> +		/* keep PCIe reset asserted for 250ms */
+> +		msleep(250);
+> +		pci_set_pcie_reset_state(pci_dev, pcie_deassert_reset);
+> +		/* Wait for 2s to reload flash and train the link */
+> +		msleep(2000);
+> +	}
+> +	pci_restore_state(pci_dev);
+> +	pci_cfg_access_unlock(pci_dev);
+> +	return rc;
+> +}
+> +
+> +/*
+> + * genwqe_reload_bistream() - reload card bitstream
+> + *
+> + * Set the appropriate register and call fundamental reset to reaload the card
+> + * bitstream.
+> + *
+> + * Return: 0 on success, error code otherwise
+> + */
+> +static int genwqe_reload_bistream(struct genwqe_dev *cd)
+> +{
+> +	struct pci_dev *pci_dev = cd->pci_dev;
+> +	int rc;
+> +
+> +	dev_info(&pci_dev->dev,
+> +		 "[%s] resetting card for bitstream reload\n",
+> +		 __func__);
+> +
+> +	genwqe_stop(cd);
+> +
+> +	/*
+> +	 * Cause a CPLD reprogram with the 'next_bitstream'
+> +	 * partition on PCIe hot or fundamental reset
+> +	 */
+> +	__genwqe_writeq(cd, IO_SLC_CFGREG_SOFTRESET,
+> +			(cd->softreset & 0xcull) | 0x70ull);
+> +
+> +	rc = genwqe_pci_fundamental_reset(pci_dev);
+> +	if (rc) {
+> +		/*
+> +		 * A fundamental reset failure can be caused
+> +		 * by lack of support on the arch, so we just
+> +		 * log the error and try to start the card
+> +		 * again.
+> +		 */
+> +		dev_err(&pci_dev->dev,
+> +			"[%s] err: failed to reset card for bitstream reload\n",
+> +			__func__);
+> +	}
+> +
+> +	rc = genwqe_start(cd);
+> +	if (rc) {
+> +		dev_err(&pci_dev->dev,
+> +			"[%s] err: cannot start card services! (err=%d)\n",
+> +			__func__, rc);
+> +		return rc;
+> +	}
+> +	dev_info(&pci_dev->dev,
+> +		 "[%s] card reloaded\n", __func__);
+> +	return 0;
+> +}
+> +
+> +
+> +/**
+>   * genwqe_health_thread() - Health checking thread
+>   *
+>   * This thread is only started for the PF of the card.
+> @@ -846,6 +929,13 @@ static int genwqe_health_thread(void *data)
+>  			}
+>  		}
+> 
+> +		if (cd->card_state == GENWQE_CARD_RELOAD_BITSTREAM) {
+> +			/* Userspace requested card bitstream reload */
+> +			rc = genwqe_reload_bistream(cd);
+> +			if (rc)
+> +				goto fatal_error;
+> +		}
+> +
+>  		cd->last_gfir = gfir;
+>  		cond_resched();
+>  	}
+> diff --git a/drivers/misc/genwqe/card_sysfs.c b/drivers/misc/genwqe/card_sysfs.c
+> index a72a992..7232e40 100644
+> --- a/drivers/misc/genwqe/card_sysfs.c
+> +++ b/drivers/misc/genwqe/card_sysfs.c
+> @@ -223,6 +223,30 @@ static ssize_t next_bitstream_store(struct device *dev,
+>  }
+>  static DEVICE_ATTR_RW(next_bitstream);
+> 
+> +static ssize_t reload_bitstream_store(struct device *dev,
+> +				struct device_attribute *attr,
+> +				const char *buf, size_t count)
+> +{
+> +	int reload;
+> +	struct genwqe_dev *cd = dev_get_drvdata(dev);
+> +
+> +	if (kstrtoint(buf, 0, &reload) < 0)
+> +		return -EINVAL;
+> +
+> +	if (reload == 0x1) {
+> +		if (cd->card_state == GENWQE_CARD_UNUSED ||
+> +		    cd->card_state == GENWQE_CARD_USED)
+> +			cd->card_state = GENWQE_CARD_RELOAD_BITSTREAM;
+> +		else
+> +			return -EIO;
+> +	} else {
+> +		return -EINVAL;
+> +	}
+> +
+> +	return count;
+> +}
+> +static DEVICE_ATTR_WO(reload_bitstream);
+> +
+>  /*
+>   * Create device_attribute structures / params: name, mode, show, store
+>   * additional flag if valid in VF
+> @@ -239,6 +263,7 @@ static struct attribute *genwqe_attributes[] = {
+>  	&dev_attr_status.attr,
+>  	&dev_attr_freerunning_timer.attr,
+>  	&dev_attr_queue_working_time.attr,
+> +	&dev_attr_reload_bitstream.attr,
+>  	NULL,
+>  };
+> 
+> diff --git a/include/uapi/linux/genwqe/genwqe_card.h b/include/uapi/linux/genwqe/genwqe_card.h
+> index 795e957..4fc065f 100644
+> --- a/include/uapi/linux/genwqe/genwqe_card.h
+> +++ b/include/uapi/linux/genwqe/genwqe_card.h
+> @@ -328,6 +328,7 @@ enum genwqe_card_state {
+>  	GENWQE_CARD_UNUSED = 0,
+>  	GENWQE_CARD_USED = 1,
+>  	GENWQE_CARD_FATAL_ERROR = 2,
+> +	GENWQE_CARD_RELOAD_BITSTREAM = 3,
+>  	GENWQE_CARD_STATE_MAX,
+>  };
+> 
 
-And that concerns nohz idle as well. If mod_timer() selects a CPU that doesn't
-appear to be idle in get_nohz_timer_target() but then becomes idle afterward
-before we lock its timer base, the CPU may well miss the timer.
+Thanks for contributing those additions to our driver.
+
+Acked-by: Frank Haverkamp <haver@linux.vnet.ibm.com>
+
