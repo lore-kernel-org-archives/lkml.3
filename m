@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755493AbaFEAvV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 20:51:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39684 "EHLO
+	id S1757236AbaFEAvl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 20:51:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39646 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751789AbaFDXUq (ORCPT
+	with ESMTP id S1752068AbaFDXUp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:20:46 -0400
+	Wed, 4 Jun 2014 19:20:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Dumazet <edumazet@google.com>, Oleg Nesterov <oleg@redhat.com>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 014/228] coredump: fix va_list corruption
-Date: Wed,  4 Jun 2014 16:20:43 -0700
-Message-Id: <20140604232348.557735098@linuxfoundation.org>
+        Leif Lindholm <leif.lindholm@linaro.org>, linux-mips@linux-mips.org,
+        devicetree@vger.kernel.org, Mark Rutland <mark.rutland@arm.com>,
+        John Crispin <blogic@openwrt.org>,
+        Grant Likely <grant.likely@linaro.org>
+Subject: [PATCH 3.14 004/228] mips: dts: Fix missing device_type="memory" property in memory nodes
+Date: Wed,  4 Jun 2014 16:20:33 -0700
+Message-Id: <20140604232348.220747739@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -31,67 +31,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Leif Lindholm <leif.lindholm@linaro.org>
 
-commit 404ca80eb5c2727d78cd517d12108b040c522e12 upstream.
+commit dfc44f8030653b345fc6fb337558c3a07536823f upstream.
 
-A va_list needs to be copied in case it needs to be used twice.
+A few platforms lack a 'device_type = "memory"' for their memory
+nodes, relying on an old ppc quirk in order to discover its memory.
+Add the missing data so that all parsing code can find memory nodes
+correctly.
 
-Thanks to Hugh for debugging this issue, leading to various panics.
-
-Tested:
-
-  lpq84:~# echo "|/foobar12345 %h %h %h %h %h %h %h %h %h %h %h %h %h %h %h %h %h %h %h %h" >/proc/sys/kernel/core_pattern
-
-'produce_core' is simply : main() { *(int *)0 = 1;}
-
-  lpq84:~# ./produce_core
-  Segmentation fault (core dumped)
-  lpq84:~# dmesg | tail -1
-  [  614.352947] Core dump to |/foobar12345 lpq84 lpq84 lpq84 lpq84 lpq84 lpq84 lpq84 lpq84 lpq84 lpq84 lpq84 lpq84 lpq84 lpq84 lpq84 lpq84 lpq84 lpq84 lpq84 (null) pipe failed
-
-Notice the last argument was replaced by a NULL (we were lucky enough to
-not crash, but do not try this on your production machine !)
-
-After fix :
-
-  lpq83:~# echo "|/foobar12345 %h %h %h %h %h %h %h %h %h %h %h %h %h %h %h %h %h %h %h %h" >/proc/sys/kernel/core_pattern
-  lpq83:~# ./produce_core
-  Segmentation fault
-  lpq83:~# dmesg | tail -1
-  [  740.800441] Core dump to |/foobar12345 lpq83 lpq83 lpq83 lpq83 lpq83 lpq83 lpq83 lpq83 lpq83 lpq83 lpq83 lpq83 lpq83 lpq83 lpq83 lpq83 lpq83 lpq83 lpq83 lpq83 pipe failed
-
-Fixes: 5fe9d8ca21cc ("coredump: cn_vprintf() has no reason to call vsnprintf() twice")
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Diagnosed-by: Hugh Dickins <hughd@google.com>
-Acked-by: Oleg Nesterov <oleg@redhat.com>
-Cc: Neil Horman <nhorman@tuxdriver.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Leif Lindholm <leif.lindholm@linaro.org>
+Cc: linux-mips@linux-mips.org
+Cc: devicetree@vger.kernel.org
+Cc: Mark Rutland <mark.rutland@arm.com>
+Acked-by: John Crispin <blogic@openwrt.org>
+Signed-off-by: Grant Likely <grant.likely@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/coredump.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ arch/mips/lantiq/dts/easy50712.dts    |    1 +
+ arch/mips/ralink/dts/mt7620a_eval.dts |    1 +
+ arch/mips/ralink/dts/rt2880_eval.dts  |    1 +
+ arch/mips/ralink/dts/rt3052_eval.dts  |    1 +
+ arch/mips/ralink/dts/rt3883_eval.dts  |    1 +
+ 5 files changed, 5 insertions(+)
 
---- a/fs/coredump.c
-+++ b/fs/coredump.c
-@@ -73,10 +73,15 @@ static int expand_corename(struct core_n
- static int cn_vprintf(struct core_name *cn, const char *fmt, va_list arg)
- {
- 	int free, need;
-+	va_list arg_copy;
+--- a/arch/mips/lantiq/dts/easy50712.dts
++++ b/arch/mips/lantiq/dts/easy50712.dts
+@@ -8,6 +8,7 @@
+ 	};
  
- again:
- 	free = cn->size - cn->used;
--	need = vsnprintf(cn->corename + cn->used, free, fmt, arg);
-+
-+	va_copy(arg_copy, arg);
-+	need = vsnprintf(cn->corename + cn->used, free, fmt, arg_copy);
-+	va_end(arg_copy);
-+
- 	if (need < free) {
- 		cn->used += need;
- 		return 0;
+ 	memory@0 {
++		device_type = "memory";
+ 		reg = <0x0 0x2000000>;
+ 	};
+ 
+--- a/arch/mips/ralink/dts/mt7620a_eval.dts
++++ b/arch/mips/ralink/dts/mt7620a_eval.dts
+@@ -7,6 +7,7 @@
+ 	model = "Ralink MT7620A evaluation board";
+ 
+ 	memory@0 {
++		device_type = "memory";
+ 		reg = <0x0 0x2000000>;
+ 	};
+ 
+--- a/arch/mips/ralink/dts/rt2880_eval.dts
++++ b/arch/mips/ralink/dts/rt2880_eval.dts
+@@ -7,6 +7,7 @@
+ 	model = "Ralink RT2880 evaluation board";
+ 
+ 	memory@0 {
++		device_type = "memory";
+ 		reg = <0x8000000 0x2000000>;
+ 	};
+ 
+--- a/arch/mips/ralink/dts/rt3052_eval.dts
++++ b/arch/mips/ralink/dts/rt3052_eval.dts
+@@ -7,6 +7,7 @@
+ 	model = "Ralink RT3052 evaluation board";
+ 
+ 	memory@0 {
++		device_type = "memory";
+ 		reg = <0x0 0x2000000>;
+ 	};
+ 
+--- a/arch/mips/ralink/dts/rt3883_eval.dts
++++ b/arch/mips/ralink/dts/rt3883_eval.dts
+@@ -7,6 +7,7 @@
+ 	model = "Ralink RT3883 evaluation board";
+ 
+ 	memory@0 {
++		device_type = "memory";
+ 		reg = <0x0 0x2000000>;
+ 	};
+ 
 
 
