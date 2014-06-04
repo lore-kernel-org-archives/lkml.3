@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932782AbaFEAss (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 20:48:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39731 "EHLO
+	id S1752331AbaFDXUv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 19:20:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39697 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752339AbaFDXUw (ORCPT
+	with ESMTP id S1752180AbaFDXUs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:20:52 -0400
+	Wed, 4 Jun 2014 19:20:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eliad Peller <eliadx.peller@intel.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [PATCH 3.14 033/228] cfg80211: add cfg80211_sched_scan_stopped_rtnl
-Date: Wed,  4 Jun 2014 16:21:02 -0700
-Message-Id: <20140604232349.140130252@linuxfoundation.org>
+        Loic Poulain <loic.poulain@intel.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>
+Subject: [PATCH 3.14 017/228] serial: 8250: Fix thread unsafe __dma_tx_complete function
+Date: Wed,  4 Jun 2014 16:20:46 -0700
+Message-Id: <20140604232348.646542137@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -29,71 +29,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eliad Peller <eliad@wizery.com>
+From: Loic Poulain <loic.poulain@intel.com>
 
-commit 792e6aa7a15ea0fb16f8687e93caede1ea9118c7 upstream.
+commit f8fd1b0350d3a4581125f5eda6528f5a2c5f9183 upstream.
 
-Add locked-version for cfg80211_sched_scan_stopped.
-This is used for some users that might want to
-call it when rtnl is already locked.
+__dma_tx_complete is not protected against concurrent
+call of serial8250_tx_dma. it can lead to circular tail
+index corruption or parallel call of serial_tx_dma on the
+same data portion.
 
-Fixes: d43c6b6 ("mac80211: reschedule sched scan after HW restart")
-Signed-off-by: Eliad Peller <eliadx.peller@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+This patch fixes this issue by holding the port lock.
+
+Signed-off-by: Loic Poulain <loic.poulain@intel.com>
+Reviewed-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/net/cfg80211.h |   12 ++++++++++++
- net/wireless/scan.c    |   12 ++++++++++--
- 2 files changed, 22 insertions(+), 2 deletions(-)
+ drivers/tty/serial/8250/8250_dma.c |    9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
---- a/include/net/cfg80211.h
-+++ b/include/net/cfg80211.h
-@@ -3637,6 +3637,18 @@ void cfg80211_sched_scan_results(struct
- void cfg80211_sched_scan_stopped(struct wiphy *wiphy);
+--- a/drivers/tty/serial/8250/8250_dma.c
++++ b/drivers/tty/serial/8250/8250_dma.c
+@@ -20,12 +20,15 @@ static void __dma_tx_complete(void *para
+ 	struct uart_8250_port	*p = param;
+ 	struct uart_8250_dma	*dma = p->dma;
+ 	struct circ_buf		*xmit = &p->port.state->xmit;
+-
+-	dma->tx_running = 0;
++	unsigned long	flags;
  
- /**
-+ * cfg80211_sched_scan_stopped_rtnl - notify that the scheduled scan has stopped
-+ *
-+ * @wiphy: the wiphy on which the scheduled scan stopped
-+ *
-+ * The driver can call this function to inform cfg80211 that the
-+ * scheduled scan had to be stopped, for whatever reason.  The driver
-+ * is then called back via the sched_scan_stop operation when done.
-+ * This function should be called with rtnl locked.
-+ */
-+void cfg80211_sched_scan_stopped_rtnl(struct wiphy *wiphy);
+ 	dma_sync_single_for_cpu(dma->txchan->device->dev, dma->tx_addr,
+ 				UART_XMIT_SIZE, DMA_TO_DEVICE);
+ 
++	spin_lock_irqsave(&p->port.lock, flags);
 +
-+/**
-  * cfg80211_inform_bss_width_frame - inform cfg80211 of a received BSS frame
-  *
-  * @wiphy: the wiphy reporting the BSS
---- a/net/wireless/scan.c
-+++ b/net/wireless/scan.c
-@@ -284,14 +284,22 @@ void cfg80211_sched_scan_results(struct
++	dma->tx_running = 0;
++
+ 	xmit->tail += dma->tx_size;
+ 	xmit->tail &= UART_XMIT_SIZE - 1;
+ 	p->port.icount.tx += dma->tx_size;
+@@ -35,6 +38,8 @@ static void __dma_tx_complete(void *para
+ 
+ 	if (!uart_circ_empty(xmit) && !uart_tx_stopped(&p->port))
+ 		serial8250_tx_dma(p);
++
++	spin_unlock_irqrestore(&p->port.lock, flags);
  }
- EXPORT_SYMBOL(cfg80211_sched_scan_results);
  
--void cfg80211_sched_scan_stopped(struct wiphy *wiphy)
-+void cfg80211_sched_scan_stopped_rtnl(struct wiphy *wiphy)
- {
- 	struct cfg80211_registered_device *rdev = wiphy_to_dev(wiphy);
- 
-+	ASSERT_RTNL();
-+
- 	trace_cfg80211_sched_scan_stopped(wiphy);
- 
--	rtnl_lock();
- 	__cfg80211_stop_sched_scan(rdev, true);
-+}
-+EXPORT_SYMBOL(cfg80211_sched_scan_stopped_rtnl);
-+
-+void cfg80211_sched_scan_stopped(struct wiphy *wiphy)
-+{
-+	rtnl_lock();
-+	cfg80211_sched_scan_stopped_rtnl(wiphy);
- 	rtnl_unlock();
- }
- EXPORT_SYMBOL(cfg80211_sched_scan_stopped);
+ static void __dma_rx_complete(void *param)
 
 
