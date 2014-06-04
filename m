@@ -1,84 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753815AbaFDPGX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 11:06:23 -0400
-Received: from mout.kundenserver.de ([212.227.17.13]:62051 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753776AbaFDPGQ (ORCPT
+	id S1753874AbaFDPGi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 11:06:38 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:41037 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752316AbaFDPGe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 11:06:16 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Dave Chinner <david@fromorbit.com>
-Subject: Re: [RFC 00/32] making inode time stamps y2038 ready
-Date: Wed, 4 Jun 2014 17:03:47 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-35-generic; KDE/4.3.2; x86_64; ; )
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        "Joseph S. Myers" <joseph@codesourcery.com>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        john.stultz@linaro.org, hch@infradead.org, tglx@linutronix.de,
-        geert@linux-m68k.org, lftan@altera.com, linux-fsdevel@vger.kernel.org,
-        ceph-devel@vger.kernel.org, cluster-devel@redhat.com, coda@cs.cmu.edu,
-        codalist@telemann.coda.cs.cmu.edu, fuse-devel@lists.sourceforge.net,
-        linux-afs@lists.infradead.org, linux-btrfs@vger.kernel.org,
-        linux-cifs@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net, linux-mtd@lists.infradead.org,
-        linux-nfs@vger.kernel.org, linux-ntfs-dev@lists.sourceforge.net,
-        linux-scsi@vger.kernel.org, logfs@logfs.org,
-        ocfs2-devel@oss.oracle.com, reiserfs-devel@vger.kernel.org,
-        samba-technical@lists.samba.org, xfs@oss.sgi.com
-References: <1401480116-1973111-1-git-send-email-arnd@arndb.de> <5011138.W0gbOc20Qp@wuerfel> <20140603213802.GH14410@dastard>
-In-Reply-To: <20140603213802.GH14410@dastard>
+	Wed, 4 Jun 2014 11:06:34 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201406041703.47592.arnd@arndb.de>
-X-Provags-ID: V02:K0:s1xrSbJGgzru8gfa8MxhGBDhE9VbqVkmkEHBQt9CYbW
- nIkBl/8wTdfgs9V7pWhhbfIo0tfHW7bko3rH8i9iNri/uRHIfn
- eaYylJV4h90+Udh7hWpsur3TV35RwqMzQjb9KzK2fYhlWOB4Gu
- M+4d7Bzpj+pdwtx7C8ekGQFkBp0Q56Y/DULO/aCxN85bO356oW
- PzWS6LNdeBIaMYja86SS2BAgOZnb3qTNsVmb69iCMyG8tjZUvc
- XgQrQSj2TFQ5lggDtFSSOZifvWgBZGDZ67rZ/iHMF416IDS0Fr
- eVDHX1K4+fLWlW2tw0DYBHMntBHZ4Bkw02+sHFP7/MGGwDqBMZ
- KcipDzc4PYHgLTAj3IZg=
+In-Reply-To: <20140604144639.GI28484@ulmo>
+References: <CACqcpZDziJs7QUKVYwio=La5LyRzBd+xeeRW=dPFcPzw0Wrn5Q@mail.gmail.com>
+ <20140604144639.GI28484@ulmo>
+From: =?UTF-8?Q?Rapha=C3=ABl_Poggi?= <raphio98@gmail.com>
+Date: Wed, 4 Jun 2014 17:05:49 +0200
+Message-ID: <CACqcpZBPMkpMvqpuZJSCi9yPH2GbTStL-8hQ-Fs7H9ORKCthtQ@mail.gmail.com>
+Subject: Re: pwm: atmel: problem when disable pwm
+To: Thierry Reding <thierry.reding@gmail.com>, linux-kernel@vger.kernel.org,
+        inux-pwm@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 03 June 2014, Dave Chinner wrote:
-> On Tue, Jun 03, 2014 at 04:22:19PM +0200, Arnd Bergmann wrote:
-> > On Monday 02 June 2014 14:57:26 H. Peter Anvin wrote:
-> > > On 06/02/2014 12:55 PM, Arnd Bergmann wrote:
-> > The possible uses I can see for non-ktime_t types in the kernel are:
-> > * inodes need 96 bit timestamps to represent the full range of values
-> >   that can be stored in a file system, you made a convincing argument
-> >   for that. Almost everything else can fit into 64 bit on a 32-bit
-> >   kernel, in theory also on a 64-bit kernel if we want that.
-> 
-> Just ot be pedantic, inodes don't need 96 bit timestamps - some
-> filesystems can *support up to* 96 bit timestamps. If the kernel
-> only supports 64 bit timestamps and that's all the kernel can
-> represent, then the upper bits of the 96 bit on-disk inode
-> timestamps simply remain zero.
+Hello,
 
-I meant the reverse: since we have file systems that can store
-96-bit timestamps when using 64-bit kernels, we need to extend
-32-bit kernels to have the same internal representation so we
-can actually read those file systems correctly.
+Thanks for your answer.
 
-> If you move the filesystem between kernels with different time
-> ranges, then the filesystem needs to be able to tell the kernel what
-> it's supported range is.  This is where having the VFS limit the
-> range of supported timestamps is important: the limit is the
-> min(kernel range, filesystem range). This allows the filesystems
-> to be indepenent of the kernel time representation, and the kernel
-> to be independent of the physical filesystem time encoding....
+I'm seeing the problem with the version 3.10-at91. I tried with the
+newer version of the driver which add the 916030db4399 commit and I
+have the same bug.
 
-I agree it makes sense to let the kernel know about the limits
-of the file system it accesses, but for the reverse, we're probably
-better off just making the kernel representation large enough (i.e.
-96 bits) so it can work with any known file system. We need another
-check at the user space boundary to turn that into a value that the
-user can understand, but that's another problem.
-
-	Arnd
+2014-06-04 16:46 GMT+02:00 Thierry Reding <thierry.reding@gmail.com>:
+> Adding in the linux-pwm mailing list.
+>
+> On Wed, Jun 04, 2014 at 02:56:13PM +0200, Raphaël Poggi wrote:
+>> Hello,
+>>
+>> I'm using the pwm-atmel driver to control led, but i'm facing a problem.
+>>
+>> When writing "echo 0 > /sys/class/leds/d1/brightness" (to switch off
+>> the led) sometimes the led stayed active.
+>>
+>> After investigation I think this problem is due to this function:
+>>
+>> static void atmel_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
+>> {
+>>     struct atmel_pwm_chip *atmel_pwm = to_atmel_pwm_chip(chip);
+>>
+>>     atmel_pwm_writel(atmel_pwm, PWM_DIS, 1 << pwm->hwpwm);
+>>
+>>     clk_disable(atmel_pwm->clk);
+>> }
+>>
+>> By disable the pwm channel, I think the duty cycle "0" has not been
+>> update, and the channel is disable and stayed in active state (high or
+>> low depending of polarity).
+>
+> This sounds like a bug that could be fixed by this commit:
+>
+>         916030db4399 pwm: atmel: correct CDTY calculation
+>
+> What version of the kernel are you seeing this problem with? The above
+> commit was first added in v3.15-rc1, so maybe try that or any later
+> version to see if that fixes it.
+>
+> Thierry
