@@ -1,82 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752263AbaFDK0H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 06:26:07 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:56670 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751364AbaFDK0E (ORCPT
+	id S1752164AbaFDKaN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 06:30:13 -0400
+Received: from casper.infradead.org ([85.118.1.10]:46003 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751364AbaFDKaM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 06:26:04 -0400
-Date: Wed, 4 Jun 2014 11:25:59 +0100
-From: Morten Rasmussen <morten.rasmussen@arm.com>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        "efault@gmx.de" <efault@gmx.de>,
-        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>
-Subject: Re: [PATCH v2 08/11] sched: get CPU's activity statistic
-Message-ID: <20140604102559.GK29593@e103034-lin>
-References: <1400860385-14555-9-git-send-email-vincent.guittot@linaro.org>
- <20140528121001.GI19967@e103034-lin>
- <CAKfTPtDxeBfZK1AxCRqEG91pi--Ti1RYFoQPDhvMVnGTCspQ-g@mail.gmail.com>
- <20140528154703.GJ19967@e103034-lin>
- <20140603155007.GZ30445@twins.programming.kicks-ass.net>
- <CAKfTPtDUvH--WxFATTW6YRAvLuohzyNHDUq6DRdfxc7gRKCX6Q@mail.gmail.com>
- <20140604080809.GK30445@twins.programming.kicks-ass.net>
- <20140604085542.GH29593@e103034-lin>
- <20140604092313.GB11096@twins.programming.kicks-ass.net>
- <CAKfTPtBVyMMzXoFoL=kT8oP97BZ8S6P_2ySNhXLC1gR80jw6vA@mail.gmail.com>
+	Wed, 4 Jun 2014 06:30:12 -0400
+Date: Wed, 4 Jun 2014 12:30:03 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, "Paul E. McKenney" <paulmck@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] locking tree changes for v3.16
+Message-ID: <20140604103003.GE11096@twins.programming.kicks-ass.net>
+References: <20140603114821.GA23711@gmail.com>
+ <1401832251.8843.3.camel@buesod1.americas.hpqcorp.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="OvQTJYj2nBz/p38G"
 Content-Disposition: inline
-In-Reply-To: <CAKfTPtBVyMMzXoFoL=kT8oP97BZ8S6P_2ySNhXLC1gR80jw6vA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1401832251.8843.3.camel@buesod1.americas.hpqcorp.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 04, 2014 at 10:35:15AM +0100, Vincent Guittot wrote:
-> On 4 June 2014 11:23, Peter Zijlstra <peterz@infradead.org> wrote:
-> > On Wed, Jun 04, 2014 at 09:55:42AM +0100, Morten Rasmussen wrote:
-> >> Both running_avg and runnable_avg are affected by other tasks on the
-> >> same cpus, but in different ways. They are equal if you only have one
-> >> task on a cpu. If you have more, running_avg will give you the true
-> >> requirement of the tasks until the cpu is fully utilized. At which point
-> >> the task running_avg will drop if you add more tasks (the unweighted sum
-> >> of task running_avgs remains constant).
-> >>
-> >> runnable_avg on the other hand, might be affected as soon as you have
-> >> two task running on the same cpu if they are runnable at the same time.
-> >> That isn't necessarily a bad thing for load-balancing purposes, because
-> >> tasks that are runnable at the same time are likely to be run more
-> >> efficiently by placing them on different cpus. You might view as at sort
-> >> of built in concurrency factor, somewhat similar to what Yuyang is
-> >> proposing. runnable_avg increases rapidly when the cpu is over-utilized.
-> >
-> > Agreed.
-> >
-> >> > I'm not sure I see how 100% is possible, but yes I agree that runnable
-> >> > can indeed be inflated due to this queueing effect.
-> >>
-> >> You should only be able to get to 75% worst case for runnable_avg for
-> >> that example. The total running_avg is 50% no matter if the tasks
-> >> overlaps or not.
-> >
-> > Yes, 75% is what I ended up with.
-> 
-> Can you explain how you reach 75% as it depends on the runtime and a
-> runtime longer than 345ms will end to a 100% load whatever the
-> idletime was previously ?
 
-If the busy period of each task is long enough that the first one to run
-runs to completetion before the other task is scheduled you get 25% and
-50%. But as I said in my other reply, you can get higher task runnable
-if the tasks busy period is long enough that you switch between them
-before the first one completes.
+--OvQTJYj2nBz/p38G
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Tue, Jun 03, 2014 at 02:50:51PM -0700, Davidlohr Bueso wrote:
+> On Tue, 2014-06-03 at 13:48 +0200, Ingo Molnar wrote:
+> > Linus,
+> >=20
+> > Please pull the latest locking-core-for-linus git tree from:
+> >=20
+> >    git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git locking-co=
+re-for-linus
+> >=20
+> >    # HEAD: 3cf2f34e1a3d4d5ff209d087925cf950e52f4805 rwsem: Add comments=
+ to explain the meaning of the rwsem's count field
+> >=20
+> > The main changes in this cycle were:
+> >=20
+> >  - reduced/streamlined smp_mb__*() interface that allows more usecases=
+=20
+> >    and makes the existing ones less buggy, especially in rarer=20
+> >    architectures
+> >=20
+> >  - add rwsem implementation comments
+> >=20
+> >  - bump up lockdep limits
+>=20
+> So I guess the rwsem optimistic spinning stuff will be routed through
+> akpm then (which is already in -next for a while, through -mm).
+>=20
+> Also curious about why Peter's rewrite of the qrwlock_t was removed from
+> -tip... I noticed it was there for a few days then disappeared. What am
+> I missing?
+
+Ingo is 'missing' most of the time, so while I sit here with a massive
+queue of patches its nearly impossible for me to get anything merged :-(
+
+--OvQTJYj2nBz/p38G
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTjvUrAAoJEHZH4aRLwOS63mUP/RaZyNk7EfGmCh6ov89lU7sH
+EQQMTKOygdUWKzGqbMAOHRV45XUNs6CLekFc5GGDoYUQ2vDWvVVwl4Hjm1G7U8Pt
+PqrtUef1ppRFhM3NqBcWkBtqXyTASG3moUH5BQ678sp7RMlQYh0+JXlkRF4jzljq
+Cq6dgMq52dgciHGiErrUgfGfHds/y+fyC0QIKmJG2kegeGzZV1MiZuk0rNyGlEZ0
+Rde5KVmJdgF14pTLqsq12WAEpmL+sfJu6gqGdQ4cbjODcDN3zifzOcg0vXv9ZKq8
+idMBzNM4mwp37yuUMjYELE83Zgal3dNVTCUVcv+Bwc21iHsyILRGqpleF2yi2A5k
+quBc2yzGPpGBrH3A2sbK0B32LU5nJ2J8Gk7crZl8/Cd64qF6EMFpKEYEFlbpBliD
+vnqueO4RFdPIO/0ohtbsqWZTG70eeVg33xMAF+xzxxmkqFkDItNu0nHDXS1Bda8u
+xd3hO2IVugaTKSTP+BabIgIjXhLmdMLShvV7o6XMoyKJtYmoZ9clrOApD42zD4yS
+34S3QxOxjdDOzkpTkRoeXLX10Ti/2/PIBQtJbI6CT3QhA/vkkycqE+vunYCKOiP/
+UwQOxxvThAZ/7x3A4AUNyqmzzHPhmuQttu1h4K7S/SfC0HymZAC4NgB9tmGSQoF7
+LywN7qWIclDqoLrVh6cU
+=1rzR
+-----END PGP SIGNATURE-----
+
+--OvQTJYj2nBz/p38G--
