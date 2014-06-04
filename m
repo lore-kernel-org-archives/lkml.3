@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753422AbaFDXWw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:22:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40321 "EHLO
+	id S1756071AbaFEAJz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 20:09:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40327 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753395AbaFDXWu (ORCPT
+	with ESMTP id S1753405AbaFDXWv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:22:50 -0400
+	Wed, 4 Jun 2014 19:22:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johannes Berg <johannes.berg@intel.com>,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Subject: [PATCH 3.14 163/228] iwlwifi: pcie: disable interrupts upon PCIe alloc
-Date: Wed,  4 Jun 2014 16:23:12 -0700
-Message-Id: <20140604232353.266291923@linuxfoundation.org>
+        Lars-Peter Clausen <lars@metafoo.de>, Mark Brown <broonie@linaro.org>
+Subject: [PATCH 3.14 165/228] ASoC: dapm: Skip CODEC<->CODEC links in connect_dai_link_widgets()
+Date: Wed,  4 Jun 2014 16:23:14 -0700
+Message-Id: <20140604232353.334671950@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -29,68 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+From: Lars-Peter Clausen <lars@metafoo.de>
 
-commit 83f7a85f1134c6e914453f5747435415a23d516b upstream.
+commit ca5106ae3da0179dcee3ae21f3ea94f62e9fdb0c upstream.
 
-In case RFKILL is in KILL position, the NIC will issue an
-interrupt straight away. This interrupt won't be sent
-because it is masked in the hardware.
-But if our interrupt service routine is called for another
-reason (SHARED_IRQ), then we'll look at the interrupt cause
-and service it. This can cause bad things if we are not
-ready yet.
-Explicitly clean the interrupt cause register to make sure
-we won't service anything before we are ready to.
+For CODEC to CODEC DAI links the paths are created in snd_soc_dapm_new_pcm().
+Also for CODEC to CODEC links the widgets are connected cross-over via a DAI
+link widget, meaning that the capture widget of one CODEC will be connected to
+the playback widget of the other and vice versa. Whereas
+snd_soc_dapm_connect_dai_link_widgets() directly connects the playback widget of
+the CPU DAI to the playback widget of the CODEC DAI and the capture widget of
+the CPU DAI to the capture widget of the CODEC DAI. So not skipping
+CODEC<->CODEC links in snd_soc_dapm_connect_dai_link_widgets() will create
+incorrect connections between the two CODECs which will cause DAPM to detect
+active paths where there are none and unnecessarily power up widgets.
 
-Reported-and-tested-by: Alexander Monakov <amonakov@gmail.com>
-Reviewed-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Fixes: b893ea5 ("ASoC: sapm: Automatically connect DAI link widgets in DAPM graph.")
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/iwlwifi/pcie/trans.c |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ sound/soc/soc-dapm.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/drivers/net/wireless/iwlwifi/pcie/trans.c
-+++ b/drivers/net/wireless/iwlwifi/pcie/trans.c
-@@ -1563,6 +1563,10 @@ struct iwl_trans *iwl_trans_pcie_alloc(s
- 	 * PCI Tx retries from interfering with C3 CPU state */
- 	pci_write_config_byte(pdev, PCI_CFG_RETRY_TIMEOUT, 0x00);
+--- a/sound/soc/soc-dapm.c
++++ b/sound/soc/soc-dapm.c
+@@ -3649,8 +3649,11 @@ void snd_soc_dapm_connect_dai_link_widge
+ 		cpu_dai = rtd->cpu_dai;
+ 		codec_dai = rtd->codec_dai;
  
-+	trans->dev = &pdev->dev;
-+	trans_pcie->pci_dev = pdev;
-+	iwl_disable_interrupts(trans);
-+
- 	err = pci_enable_msi(pdev);
- 	if (err) {
- 		dev_err(&pdev->dev, "pci_enable_msi failed(0X%x)\n", err);
-@@ -1574,8 +1578,6 @@ struct iwl_trans *iwl_trans_pcie_alloc(s
- 		}
- 	}
+-		/* dynamic FE links have no fixed DAI mapping */
+-		if (rtd->dai_link->dynamic)
++		/*
++		 * dynamic FE links have no fixed DAI mapping.
++		 * CODEC<->CODEC links have no direct connection.
++		 */
++		if (rtd->dai_link->dynamic || rtd->dai_link->params)
+ 			continue;
  
--	trans->dev = &pdev->dev;
--	trans_pcie->pci_dev = pdev;
- 	trans->hw_rev = iwl_read32(trans, CSR_HW_REV);
- 	trans->hw_id = (pdev->device << 16) + pdev->subsystem_device;
- 	snprintf(trans->hw_id_str, sizeof(trans->hw_id_str),
-@@ -1601,8 +1603,6 @@ struct iwl_trans *iwl_trans_pcie_alloc(s
- 		goto out_pci_disable_msi;
- 	}
- 
--	trans_pcie->inta_mask = CSR_INI_SET_MASK;
--
- 	if (iwl_pcie_alloc_ict(trans))
- 		goto out_free_cmd_pool;
- 
-@@ -1614,6 +1614,8 @@ struct iwl_trans *iwl_trans_pcie_alloc(s
- 		goto out_free_ict;
- 	}
- 
-+	trans_pcie->inta_mask = CSR_INI_SET_MASK;
-+
- 	return trans;
- 
- out_free_ict:
+ 		/* there is no point in connecting BE DAI links with dummies */
 
 
