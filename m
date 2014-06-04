@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932549AbaFEAjJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 20:39:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39878 "EHLO
+	id S932535AbaFEAjI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 20:39:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39883 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752653AbaFDXV0 (ORCPT
+	with ESMTP id S1752586AbaFDXV1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:21:26 -0400
+	Wed, 4 Jun 2014 19:21:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chris Murphy <lists@colorremedies.com>,
-        Kent Overstreet <kmo@daterainc.com>, NeilBrown <neilb@suse.de>
-Subject: [PATCH 3.14 055/228] md/raid10: call wait_barrier() for each request submitted.
-Date: Wed,  4 Jun 2014 16:21:24 -0700
-Message-Id: <20140604232349.837812550@linuxfoundation.org>
+        NeilBrown <neilb@suse.de>
+Subject: [PATCH 3.14 056/228] md: avoid possible spinning md thread at shutdown.
+Date: Wed,  4 Jun 2014 16:21:25 -0700
+Message-Id: <20140604232349.868859867@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -31,58 +30,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: NeilBrown <neilb@suse.de>
 
-commit cc13b1d1500656a20e41960668f3392dda9fa6e2 upstream.
+commit 0f62fb220aa4ebabe8547d3a9ce4a16d3c045f21 upstream.
 
-wait_barrier() includes a counter, so we must call it precisely once
-(unless balanced by allow_barrier()) for each request submitted.
+If an md array with externally managed metadata (e.g. DDF or IMSM)
+is in use, then we should not set safemode==2 at shutdown because:
 
-Since
-commit 20d0189b1012a37d2533a87fb451f7852f2418d1
-    block: Introduce new bio_split()
-in 3.14-rc1, we don't call it for the extra requests generated when
-we need to split a bio.
+1/ this is ineffective: user-space need to be involved in any 'safemode' handling,
+2/ The safemode management code doesn't cope with safemode==2 on external metadata
+   and md_check_recover enters an infinite loop.
 
-When this happens the counter goes negative, any resync/recovery will
-never start, and  "mdadm --stop" will hang.
+Even at shutdown, an infinite-looping process can be problematic, so this
+could cause shutdown to hang.
 
-Reported-by: Chris Murphy <lists@colorremedies.com>
-Fixes: 20d0189b1012a37d2533a87fb451f7852f2418d1
-Cc: Kent Overstreet <kmo@daterainc.com>
 Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/raid10.c |   13 +++++++------
- 1 file changed, 7 insertions(+), 6 deletions(-)
+ drivers/md/md.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/md/raid10.c
-+++ b/drivers/md/raid10.c
-@@ -1172,6 +1172,13 @@ static void __make_request(struct mddev
- 	int max_sectors;
- 	int sectors;
- 
-+	/*
-+	 * Register the new request and wait if the reconstruction
-+	 * thread has put up a bar for new requests.
-+	 * Continue immediately if no resync is active currently.
-+	 */
-+	wait_barrier(conf);
-+
- 	sectors = bio_sectors(bio);
- 	while (test_bit(MD_RECOVERY_RESHAPE, &mddev->recovery) &&
- 	    bio->bi_iter.bi_sector < conf->reshape_progress &&
-@@ -1552,12 +1559,6 @@ static void make_request(struct mddev *m
- 
- 	md_write_start(mddev, bio);
- 
--	/*
--	 * Register the new request and wait if the reconstruction
--	 * thread has put up a bar for new requests.
--	 * Continue immediately if no resync is active currently.
--	 */
--	wait_barrier(conf);
- 
- 	do {
- 
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -8530,7 +8530,8 @@ static int md_notify_reboot(struct notif
+ 		if (mddev_trylock(mddev)) {
+ 			if (mddev->pers)
+ 				__md_stop_writes(mddev);
+-			mddev->safemode = 2;
++			if (mddev->persistent)
++				mddev->safemode = 2;
+ 			mddev_unlock(mddev);
+ 		}
+ 		need_delay = 1;
 
 
