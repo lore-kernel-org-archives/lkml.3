@@ -1,29 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752464AbaFDWX6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 18:23:58 -0400
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:47953 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752133AbaFDWX4 (ORCPT
+	id S1751980AbaFDWZw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 18:25:52 -0400
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:55698 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751547AbaFDWZu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 18:23:56 -0400
+	Wed, 4 Jun 2014 18:25:50 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140604222047.GA16855@tassilo.jf.intel.com>
-References: <1401918378-3842-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-	<20140604222047.GA16855@tassilo.jf.intel.com>
-Date: Thu, 5 Jun 2014 00:23:55 +0200
-Message-ID: <CAFo99gY_GZg7TY=H_UZBDL3dP2vL6NW-TCvtCDx+voY0uH80AA@mail.gmail.com>
-Subject: Re: [PATCH] tools: perf: util: parse-events.c: Cleaning up missing
+In-Reply-To: <1401919283.26329.7.camel@joe-AO725>
+References: <1401917775-3222-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+	<1401919283.26329.7.camel@joe-AO725>
+Date: Thu, 5 Jun 2014 00:25:49 +0200
+Message-ID: <CAFo99gaC_D=RbvTRbkSCsxUF7AWpbENEt63+gisdi5z=YL_t+Q@mail.gmail.com>
+Subject: Re: [PATCH] scsi: mpt2sas: mpt2sas_base.c: Cleaning up missing
  null-terminate after strncpy call
 From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Andi Kleen <ak@linux.intel.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung.kim@lge.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Stephane Eranian <eranian@google.com>, David Ahern <dsahern@gmail.com>,
-        Vince Weaver <vincent.weaver@maine.edu>,
+To: Joe Perches <joe@perches.com>
+Cc: Nagalakshmi Nandigama <Nagalakshmi.Nandigama@lsi.com>,
+        Sreekanth Reddy <Sreekanth.Reddy@lsi.com>, support@lsi.com,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        DL-MPTFusionLinux@lsi.com, linux-scsi@vger.kernel.org,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
@@ -35,49 +32,37 @@ Hi
 A little embarrassing, but I actually did not know that there was a
 better replacement for strncpy.
 
-Sorry, but I will send a new platch based on strlcpy instead then,
-snprintf i slow and unnecessary in this case.
+Sorry, but I will send a new platch based on strlcpy instead then.
+
+Will investigate cover letter then to.
+
 
 Best regards
 Rickard Strandqvist
 
 
-2014-06-05 0:20 GMT+02:00 Andi Kleen <ak@linux.intel.com>:
-> On Wed, Jun 04, 2014 at 11:46:18PM +0200, Rickard Strandqvist wrote:
+2014-06-05 0:01 GMT+02:00 Joe Perches <joe@perches.com>:
+> On Wed, 2014-06-04 at 23:36 +0200, Rickard Strandqvist wrote:
 >> Added a guaranteed null-terminate after call to strncpy.
->>
->> This was partly found using a static code analysis program called cppcheck.
 >
-> Should just stop using strncpy. strncpy semantics don't make any
-> sense at all, and it's inefficient. I would just snprintf here
+> Next time you submit a patch series like this
+> can you please use a cover letter?
 >
-> -Andi
+> That way I can reply to the cover letter with
+> a comment about the series instead of multiple
+> replies to various patches.
 >
->>
->> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
->> ---
->>  tools/perf/util/parse-events.c |    4 +++-
->>  1 file changed, 3 insertions(+), 1 deletion(-)
->>
->> diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
->> index 1e15df1..fad2976 100644
->> --- a/tools/perf/util/parse-events.c
->> +++ b/tools/perf/util/parse-events.c
->> @@ -1216,8 +1216,10 @@ static void print_symbol_events(const char *event_glob, unsigned type,
->>
->>               if (strlen(syms->alias))
->>                       snprintf(name, MAX_NAME_LEN, "%s OR %s", syms->symbol, syms->alias);
->> -             else
->> +             else {
->>                       strncpy(name, syms->symbol, MAX_NAME_LEN);
->> +                     name[sizeof(name) - 1] = '\0';
->> +             }
->>
->>               printf("  %-50s [%s]\n", name, event_type_descriptors[type]);
->>
->> --
->> 1.7.10.4
->>
+> I think all of these should be using strlcpy not
+> strncpy.
 >
-> --
-> ak@linux.intel.com -- Speaking for myself only
+>> diff --git a/drivers/scsi/mpt2sas/mpt2sas_base.c b/drivers/scsi/mpt2sas/mpt2sas_base.c
+> []
+>> @@ -2097,7 +2097,8 @@ _base_display_ioc_capabilities(struct MPT2SAS_ADAPTER *ioc)
+>>       u32 bios_version;
+>>
+>>       bios_version = le32_to_cpu(ioc->bios_pg3.BiosVersion);
+>> -     strncpy(desc, ioc->manu_pg0.ChipName, 16);
+>> +     strncpy(desc, ioc->manu_pg0.ChipName, sizeof(desc));
+>> +     desc[sizeof(desc) - 1] = '\0';
+>
+>
