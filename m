@@ -1,107 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751569AbaFDTjd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 15:39:33 -0400
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:40489 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751132AbaFDTjb (ORCPT
+	id S1751818AbaFDTlA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 15:41:00 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:35702 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751201AbaFDTk7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 15:39:31 -0400
+	Wed, 4 Jun 2014 15:40:59 -0400
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: [PATCH] smp,
+ ipi: Speed up IPI handling by invoking the callbacks in reverse order
+To: akpm@linux-foundation.org, fweisbec@gmail.com, peterz@infradead.org
+Cc: tglx@linutronix.de, hch@infradead.org, linux-kernel@vger.kernel.org,
+        srivatsa.bhat@linux.vnet.ibm.com
+Date: Thu, 05 Jun 2014 01:09:35 +0530
+Message-ID: <20140604193934.21321.19185.stgit@srivatsabhat.in.ibm.com>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-In-Reply-To: <20140604175031.GA4406@redhat.com>
-References: <1401800822-27425-1-git-send-email-vgoyal@redhat.com>
- <20140603131203.GA23395@redhat.com> <20140604092214.GA17528@dhcp-17-89.nay.redhat.com>
- <20140604175031.GA4406@redhat.com>
-From: Michael Kerrisk <mtk.manpages@gmail.com>
-Date: Wed, 4 Jun 2014 21:39:10 +0200
-X-Google-Sender-Auth: AcNpBoN4t03wNcDFQZjLaxsY1iM
-Message-ID: <CAHO5Pa0dxpq7YNe5eUMPE9Mn5m7XCnB1C5mZxrvt2-OqOpVZAA@mail.gmail.com>
-Subject: Re: [RFC PATCH 00/13][V3] kexec: A new system call to allow in kernel loading
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: WANG Chao <chaowang@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, kexec@lists.infradead.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, mjg59@srcf.ucam.org,
-        Greg Kroah-Hartman <greg@kroah.com>, Borislav Petkov <bp@alien8.de>,
-        Jiri Kosina <jkosina@suse.cz>, dyoung@redhat.com, bhe@redhat.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Michael Kerrisk-manpages <mtk.manpages@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14060419-5564-0000-0000-00000E1F3563
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vivek,
+The current implementation of lockless list (llist) has a drawback: if we
+want to traverse the list in FIFO order (oldest to newest), we need to
+reverse the list first (and this can be expensive if the list is large,
+since this is an O(n) operation).
 
-As per Documentation/SubmitChecklist , please CC linux-api@ on patces
-that change the ABI/API. See
-https://www.kernel.org/doc/man-pages/linux-api-ml.html.
+However, for callbacks that are queued using smp-call-function IPIs, the
+requirement is that:
+a. we invoke all of them, without missing any.
+b. we invoke them as soon as possible.
 
-Also, is there some draft man page for this new system call?
+In other words, we don't actually (need to) guarantee that the callbacks
+will be invoked in FIFO order. So don't bother reversing the list; just
+invoke the callbacks as they are (i.e., in reverse order). This would
+probably speed-up the smp-call-function interrupt handler a tiny bit, when
+flushing multiple pending callbacks upon receiving a single IPI.
 
-Thanks,
+But for debugging purposes, reverse the list and print it in the original
+(FIFO) order in the WARN_ON case.
 
-Michael
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+---
 
-On Wed, Jun 4, 2014 at 7:50 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> On Wed, Jun 04, 2014 at 05:22:14PM +0800, WANG Chao wrote:
->
-> [..]
->> > Index: kexec-tools/kexec/kexec.h
->> > ===================================================================
->> > --- kexec-tools.orig/kexec/kexec.h  2014-06-02 14:34:16.719774316 -0400
->> > +++ kexec-tools/kexec/kexec.h       2014-06-02 14:34:42.010036325 -0400
->> > @@ -156,6 +156,13 @@ struct kexec_info {
->> >     unsigned long kexec_flags;
->> >     unsigned long backup_src_start;
->> >     unsigned long backup_src_size;
->> > +   /* Set to 1 if we are using kexec2 syscall */
->> > +   unsigned long file_mode :1;
->> > +
->> > +   /* Filled by kernel image processing code */
->> > +   int initrd_fd;
->> > +   char *command_line;
->> > +   int command_line_len;
->> >  };
->> >
->> >  struct arch_map_entry {
->> > @@ -207,6 +214,7 @@ extern int file_types;
->> >  #define OPT_UNLOAD         'u'
->> >  #define OPT_TYPE           't'
->> >  #define OPT_PANIC          'p'
->> > +#define OPT_USE_KEXEC2_SYSCALL     's'
->> >  #define OPT_MEM_MIN             256
->> >  #define OPT_MEM_MAX             257
->> >  #define OPT_REUSE_INITRD   258
->> > @@ -230,6 +238,7 @@ extern int file_types;
->> >     { "mem-min",            1, 0, OPT_MEM_MIN }, \
->> >     { "mem-max",            1, 0, OPT_MEM_MAX }, \
->> >     { "reuseinitrd",        0, 0, OPT_REUSE_INITRD }, \
->> > +   { "use-kexec2-syscall", 0, 0, OPT_USE_KEXEC2_SYSCALL }, \
->> >     { "debug",              0, 0, OPT_DEBUG }, \
->> >
->> >  #define KEXEC_OPT_STR "h?vdfxluet:p"
->>
->> This line,
->> #define KEXEC_OPT_STR "h?vdfxluet:p"
->>
->> should be something like,
->> #define KEXEC_OPT_STR "h?vdfxluet:ps"
->
-> Thanks chao. I will fix it.
->
-> Thanks
-> Vivek
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+ kernel/smp.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
+diff --git a/kernel/smp.c b/kernel/smp.c
+index 5295388..be55094 100644
+--- a/kernel/smp.c
++++ b/kernel/smp.c
+@@ -229,7 +229,6 @@ static void flush_smp_call_function_queue(bool warn_cpu_offline)
+ 
+ 	head = &__get_cpu_var(call_single_queue);
+ 	entry = llist_del_all(head);
+-	entry = llist_reverse_order(entry);
+ 
+ 	/* There shouldn't be any pending callbacks on an offline CPU. */
+ 	if (unlikely(warn_cpu_offline && !cpu_online(smp_processor_id()) &&
+@@ -237,6 +236,8 @@ static void flush_smp_call_function_queue(bool warn_cpu_offline)
+ 		warned = true;
+ 		WARN(1, "IPI on offline CPU %d\n", smp_processor_id());
+ 
++		entry = llist_reverse_order(entry);
++
+ 		/*
+ 		 * We don't have to use the _safe() variant here
+ 		 * because we are not invoking the IPI handlers yet.
 
-
--- 
-Michael Kerrisk Linux man-pages maintainer;
-http://www.kernel.org/doc/man-pages/
-Author of "The Linux Programming Interface", http://blog.man7.org/
