@@ -1,75 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751410AbaFDR5g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 13:57:36 -0400
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:56281 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750780AbaFDR5f (ORCPT
+	id S1751329AbaFDSCB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 14:02:01 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:35145 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750973AbaFDSB7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 13:57:35 -0400
+	Wed, 4 Jun 2014 14:01:59 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: <linux-kernel@vger.kernel.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [PATCH] init: make rootdelay=N consistent with rootwait behaviour
+Date: Wed, 4 Jun 2014 14:01:35 -0400
+Message-ID: <1401904895-18791-1-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.9.1
 MIME-Version: 1.0
-In-Reply-To: <20140429151100.GC8754@linux.vnet.ibm.com>
-References: <1398205166.6345.7.camel@buesod1.americas.hpqcorp.net>
-	<1398722941.25549.16.camel@buesod1.americas.hpqcorp.net>
-	<20140428231002.GO4430@linux.vnet.ibm.com>
-	<1398732649.2970.89.camel@schen9-DESK>
-	<20140429151100.GC8754@linux.vnet.ibm.com>
-Date: Wed, 4 Jun 2014 13:57:34 -0400
-Message-ID: <CAJUuVQ4j93AXCij22eCdYT4L-hrshvbuisJQe8KPkYh2vx3+Xg@mail.gmail.com>
-Subject: Re: [PATCH v2] rwsem: Support optimistic spinning
-From: Andev <debiandev@gmail.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: Tim Chen <tim.c.chen@linux.intel.com>, Davidlohr Bueso <davidlohr@hp.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Currently rootdelay=N and rootwait behave differently (aside
+from the obvious unbounded wait duration) because they are
+at different places in the init sequence.
 
-On Tue, Apr 29, 2014 at 11:11 AM, Paul E. McKenney
-<paulmck@linux.vnet.ibm.com> wrote:
-> On Mon, Apr 28, 2014 at 05:50:49PM -0700, Tim Chen wrote:
->> On Mon, 2014-04-28 at 16:10 -0700, Paul E. McKenney wrote:
->>
->> > > +#ifdef CONFIG_SMP
->> > > +static inline bool rwsem_can_spin_on_owner(struct rw_semaphore *sem)
->> > > +{
->> > > + int retval;
->> > > + struct task_struct *owner;
->> > > +
->> > > + rcu_read_lock();
->> > > + owner = ACCESS_ONCE(sem->owner);
->> >
->> > OK, I'll bite...
->> >
->> > Why ACCESS_ONCE() instead of rcu_dereference()?
->>
->> We're using it as a speculative check on the sem->owner to see
->> if the owner is running on the cpu.  The rcu_read_lock
->> is used for ensuring that the owner->on_cpu memory is
->> still valid.
->
-> OK, so if we read complete garbage, all that happens is that we
-> lose a bit of performance?  If so, I am OK with it as long as there
-> is a comment (which Davidlohr suggested later in this thread).
->
->                                                         Thanx, Paul
->
+The difference manifests itself for md devices because the
+call to md_run_setup() lives between rootdelay and rootwait,
+so if you try to use rootdelay=20 to try and allow a slow
+RAID0 array to assemble, you get this:
 
-The latest code seems to be missing this comment. Could you please add this?
+[    4.526011] sd 6:0:0:0: [sdc] Attached SCSI removable disk
+[   22.972079] md: Waiting for all devices to be available before autodetect
 
+i.e. you've achieved nothing other than delaying the probing
+20s, when what you wanted was a 20s delay _after_ the probing
+for md devices was initiated.
+
+Here we move the rootdelay code to be right beside the rootwait
+code, so that their behaviour is consistent.
+
+It should be noted that in doing so, the actions based on the
+saved_root_name[0] and initrd_load() were previously put on
+hold by rootdelay=N and now currently will not be delayed.
+However, I think consistent behaviour is more important than
+matching historical behaviour of delaying the above two operations.
+
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+---
+ init/do_mounts.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/init/do_mounts.c b/init/do_mounts.c
+index 82f22885c87e..b6237c31b0e2 100644
+--- a/init/do_mounts.c
++++ b/init/do_mounts.c
+@@ -539,12 +539,6 @@ void __init prepare_namespace(void)
+ {
+ 	int is_floppy;
+ 
+-	if (root_delay) {
+-		printk(KERN_INFO "Waiting %d sec before mounting root device...\n",
+-		       root_delay);
+-		ssleep(root_delay);
+-	}
+-
+ 	/*
+ 	 * wait for the known devices to complete their probing
+ 	 *
+@@ -571,6 +565,12 @@ void __init prepare_namespace(void)
+ 	if (initrd_load())
+ 		goto out;
+ 
++	if (root_delay) {
++		pr_info("Waiting %d sec before mounting root device...\n",
++			root_delay);
++		ssleep(root_delay);
++	}
++
+ 	/* wait for any asynchronous scanning to complete */
+ 	if ((ROOT_DEV == 0) && root_wait) {
+ 		printk(KERN_INFO "Waiting for root device %s...\n",
 -- 
-Pratapa Rudra
+1.9.1
+
