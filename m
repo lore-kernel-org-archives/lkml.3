@@ -1,110 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755227AbaFDXvO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:51:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40604 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753772AbaFDXX0 (ORCPT
+	id S1755242AbaFDXvZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 19:51:25 -0400
+Received: from longford.logfs.org ([213.229.74.203]:43484 "EHLO
+	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752978AbaFDXvW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:23:26 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Leif Lindholm <leif.lindholm@linaro.org>, linux-mips@linux-mips.org,
-        devicetree@vger.kernel.org, Mark Rutland <mark.rutland@arm.com>,
-        John Crispin <blogic@openwrt.org>,
-        Grant Likely <grant.likely@linaro.org>
-Subject: [PATCH 3.10 003/103] mips: dts: Fix missing device_type="memory" property in memory nodes
-Date: Wed,  4 Jun 2014 16:24:26 -0700
-Message-Id: <20140604232546.940791093@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140604232546.704156131@linuxfoundation.org>
-References: <20140604232546.704156131@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Wed, 4 Jun 2014 19:51:22 -0400
+Date: Wed, 4 Jun 2014 19:49:29 -0400
+From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jiri Kosina <jkosina@suse.cz>, Rik van Riel <riel@redhat.com>,
+        linux-kernel@vger.kernel.org, peterz@infradead.org, cxie@redhat.com,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: Re: [PATCH] printk: Print cpu number along with time
+Message-ID: <20140604234929.GC31276@logfs.org>
+References: <20140423125352.704f9fb2@annuminas.surriel.com>
+ <alpine.LRH.2.00.1404232329020.1491@twin.jikos.cz>
+ <20140424005247.GA17713@logfs.org>
+ <20140424194024.GA25446@logfs.org>
+ <20140428234039.GC6358@logfs.org>
+ <20140428172219.4be61cf7.akpm@linux-foundation.org>
+ <20140604231506.GA31276@logfs.org>
+ <20140604162832.aba2abbbceb6308491a189d2@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140604162832.aba2abbbceb6308491a189d2@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On Wed, 4 June 2014 16:28:32 -0700, Andrew Morton wrote:
+> 
+> Sorry, it seems I'm better at losing stuff than I thought I was.
 
-------------------
+The trouble with forgetting stuff is that few people remember ever
+doing so.  But they do remember other people forgetting stuff.
 
-From: Leif Lindholm <leif.lindholm@linaro.org>
+> I've restored the patch to the input queue.
 
-commit dfc44f8030653b345fc6fb337558c3a07536823f upstream.
+Thanks!
 
-A few platforms lack a 'device_type = "memory"' for their memory
-nodes, relying on an old ppc quirk in order to discover its memory.
-Add the missing data so that all parsing code can find memory nodes
-correctly.
+Jörn
 
-Signed-off-by: Leif Lindholm <leif.lindholm@linaro.org>
-Cc: linux-mips@linux-mips.org
-Cc: devicetree@vger.kernel.org
-Cc: Mark Rutland <mark.rutland@arm.com>
-Acked-by: John Crispin <blogic@openwrt.org>
-Signed-off-by: Grant Likely <grant.likely@linaro.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- arch/mips/lantiq/dts/easy50712.dts    |    1 +
- arch/mips/ralink/dts/mt7620a_eval.dts |    1 +
- arch/mips/ralink/dts/rt2880_eval.dts  |    1 +
- arch/mips/ralink/dts/rt3052_eval.dts  |    1 +
- arch/mips/ralink/dts/rt3883_eval.dts  |    1 +
- 5 files changed, 5 insertions(+)
-
---- a/arch/mips/lantiq/dts/easy50712.dts
-+++ b/arch/mips/lantiq/dts/easy50712.dts
-@@ -8,6 +8,7 @@
- 	};
- 
- 	memory@0 {
-+		device_type = "memory";
- 		reg = <0x0 0x2000000>;
- 	};
- 
---- a/arch/mips/ralink/dts/mt7620a_eval.dts
-+++ b/arch/mips/ralink/dts/mt7620a_eval.dts
-@@ -7,6 +7,7 @@
- 	model = "Ralink MT7620A evaluation board";
- 
- 	memory@0 {
-+		device_type = "memory";
- 		reg = <0x0 0x2000000>;
- 	};
- 
---- a/arch/mips/ralink/dts/rt2880_eval.dts
-+++ b/arch/mips/ralink/dts/rt2880_eval.dts
-@@ -7,6 +7,7 @@
- 	model = "Ralink RT2880 evaluation board";
- 
- 	memory@0 {
-+		device_type = "memory";
- 		reg = <0x8000000 0x2000000>;
- 	};
- 
---- a/arch/mips/ralink/dts/rt3052_eval.dts
-+++ b/arch/mips/ralink/dts/rt3052_eval.dts
-@@ -7,6 +7,7 @@
- 	model = "Ralink RT3052 evaluation board";
- 
- 	memory@0 {
-+		device_type = "memory";
- 		reg = <0x0 0x2000000>;
- 	};
- 
---- a/arch/mips/ralink/dts/rt3883_eval.dts
-+++ b/arch/mips/ralink/dts/rt3883_eval.dts
-@@ -7,6 +7,7 @@
- 	model = "Ralink RT3883 evaluation board";
- 
- 	memory@0 {
-+		device_type = "memory";
- 		reg = <0x0 0x2000000>;
- 	};
- 
-
-
+--
+Maintenance in other professions and of other articles is concerned with
+the return of the item to its original state; in Software, maintenance
+is concerned with moving an item away from its original state.
+-- Les Belady
