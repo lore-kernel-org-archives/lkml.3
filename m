@@ -1,107 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752580AbaFDLHx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 07:07:53 -0400
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:58827 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751909AbaFDLHv (ORCPT
+	id S1752602AbaFDLJT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 07:09:19 -0400
+Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:50165 "EHLO
+	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752050AbaFDLJR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 07:07:51 -0400
+	Wed, 4 Jun 2014 07:09:17 -0400
+Date: Wed, 4 Jun 2014 13:09:12 +0200 (CEST)
+From: Sebastian Ott <sebott@linux.vnet.ibm.com>
+X-X-Sender: sebott@denkbrett
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+cc: kernel-janitors@vger.kernel.org,
+        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com,
+        linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 8/10] s390/pci: use safer test on the result of
+ find_first_zero_bit
+In-Reply-To: <1401872880-23685-9-git-send-email-Julia.Lawall@lip6.fr>
+Message-ID: <alpine.LFD.2.11.1406041308450.1560@denkbrett>
+References: <1401872880-23685-1-git-send-email-Julia.Lawall@lip6.fr> <1401872880-23685-9-git-send-email-Julia.Lawall@lip6.fr>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+Organization: =?ISO-8859-15?Q?=22IBM_Deutschland_Research_&_Development_GmbH_=2F_Vorsitzende_des_Aufsichtsrats=3A_Martina_Koederitz_Gesch=E4ftsf=FChrung=3A_Dirk_Wittkopp_Sitz_der_Gesellschaft=3A_B=F6blingen_=2F_Registergericht?=
+ =?ISO-8859-15?Q?=3A_Amtsgericht_Stuttgart=2C_HRB_243294=22?=
 MIME-Version: 1.0
-In-Reply-To: <20140604103619.GL29593@e103034-lin>
-References: <1400860385-14555-1-git-send-email-vincent.guittot@linaro.org>
- <1400860385-14555-9-git-send-email-vincent.guittot@linaro.org>
- <20140528121001.GI19967@e103034-lin> <CAKfTPtDxeBfZK1AxCRqEG91pi--Ti1RYFoQPDhvMVnGTCspQ-g@mail.gmail.com>
- <20140528154703.GJ19967@e103034-lin> <20140603155007.GZ30445@twins.programming.kicks-ass.net>
- <CAKfTPtDUvH--WxFATTW6YRAvLuohzyNHDUq6DRdfxc7gRKCX6Q@mail.gmail.com>
- <20140604080809.GK30445@twins.programming.kicks-ass.net> <CAKfTPtBCG1Jq2b+fyoGuA=7yG_yUbsmaD+j-ZXXsPNGp5giKpg@mail.gmail.com>
- <20140604101724.GD11096@twins.programming.kicks-ass.net> <20140604103619.GL29593@e103034-lin>
-From: Vincent Guittot <vincent.guittot@linaro.org>
-Date: Wed, 4 Jun 2014 13:07:29 +0200
-Message-ID: <CAKfTPtCVyLRG-fSge1shdw5aSDB3y=_qzU1DOVgCx0VBnn6mnA@mail.gmail.com>
-Subject: Re: [PATCH v2 08/11] sched: get CPU's activity statistic
-To: Morten Rasmussen <morten.rasmussen@arm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        "efault@gmx.de" <efault@gmx.de>,
-        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14060411-3548-0000-0000-0000095C9D8A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4 June 2014 12:36, Morten Rasmussen <morten.rasmussen@arm.com> wrote:
-> On Wed, Jun 04, 2014 at 11:17:24AM +0100, Peter Zijlstra wrote:
->> On Wed, Jun 04, 2014 at 11:32:10AM +0200, Vincent Guittot wrote:
->> > On 4 June 2014 10:08, Peter Zijlstra <peterz@infradead.org> wrote:
->> > > On Wed, Jun 04, 2014 at 09:47:26AM +0200, Vincent Guittot wrote:
->> > >> On 3 June 2014 17:50, Peter Zijlstra <peterz@infradead.org> wrote:
->> > >> > On Wed, May 28, 2014 at 04:47:03PM +0100, Morten Rasmussen wrote:
->> > >> >> Since we may do periodic load-balance every 10 ms or so, we will perform
->> > >> >> a number of load-balances where runnable_avg_sum will mostly be
->> > >> >> reflecting the state of the world before a change (new task queued or
->> > >> >> moved a task to a different cpu). If you had have two tasks continuously
->> > >> >> on one cpu and your other cpu is idle, and you move one of the tasks to
->> > >> >> the other cpu, runnable_avg_sum will remain unchanged, 47742, on the
->> > >> >> first cpu while it starts from 0 on the other one. 10 ms later it will
->> > >> >> have increased a bit, 32 ms later it will be 47742/2, and 345 ms later
->> > >> >> it reaches 47742. In the mean time the cpu doesn't appear fully utilized
->> > >> >> and we might decide to put more tasks on it because we don't know if
->> > >> >> runnable_avg_sum represents a partially utilized cpu (for example a 50%
->> > >> >> task) or if it will continue to rise and eventually get to 47742.
->> > >> >
->> > >> > Ah, no, since we track per task, and update the per-cpu ones when we
->> > >> > migrate tasks, the per-cpu values should be instantly updated.
->> > >> >
->> > >> > If we were to increase per task storage, we might as well also track
->> > >> > running_avg not only runnable_avg.
->> > >>
->> > >> I agree that the removed running_avg should give more useful
->> > >> information about the the load of a CPU.
->> > >>
->> > >> The main issue with running_avg is that it's disturbed by other tasks
->> > >> (as point out previously). As a typical example,  if we have 2 tasks
->> > >> with a load of 25% on 1 CPU, the unweighted runnable_load_avg will be
->> > >> in the range of [100% - 50%] depending of the parallelism of the
->> > >> runtime of the tasks whereas the reality is 50% and the use of
->> > >> running_avg will return this value
->> > >
->> > > I'm not sure I see how 100% is possible, but yes I agree that runnable
->> > > can indeed be inflated due to this queueing effect.
->>
->> Let me explain the 75%, take any one of the above scenarios. Lets call
->> the two tasks A and B, and let for a moment assume A always wins and
->> runs first, and then B.
->>
->> So A will be runnable for 25%, B otoh will be runnable the entire time A
->> is actually running plus its own running time, giving 50%. Together that
->> makes 75%.
->>
->> If you release the assumption that A runs first, but instead assume they
->> equally win the first execution, you get them averaging at 37.5% each,
->> which combined will still give 75%.
->
-> But that is assuming that the first task gets to run to completion of it
-> busy period. If it uses up its sched_slice and we switch to the other
-> tasks, they both get to wait.
->
-> For example, if the sched_slice is 5 ms and the busy period is 10 ms,
-> the execution pattern would be: A, B, A, B, idle, ... In that case A is
-> runnable for 15 ms and B is for 20 ms. Assuming that the overall period
-> is 40 ms, the A runnable is 37.5% and B is 50%.
+On Wed, 4 Jun 2014, Julia Lawall wrote:
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
+> 
+> Find_first_zero_bit considers BITS_PER_LONG bits at a time, and thus may
+> return a larger number than the maximum position argument if that position
+> is not a multiple of BITS_PER_LONG.
+> 
+> The semantic match that finds this problem is as follows:
+> (http://coccinelle.lip6.fr/)
+> 
+> // <smpl>
+> @@
+> expression e1,e2,e3;
+> statement S1,S2;
+> @@
+> 
+> e1 = find_first_zero_bit(e2,e3)
+> ...
+> if (e1 
+> - ==
+> + >=
+>   e3)
+> S1 else S2
+> // </smpl>
+> 
+> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+> 
+> ---
+>  arch/s390/pci/pci.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff -u -p a/arch/s390/pci/pci.c b/arch/s390/pci/pci.c
+> --- a/arch/s390/pci/pci.c
+> +++ b/arch/s390/pci/pci.c
+> @@ -566,7 +566,7 @@ static int zpci_alloc_iomap(struct zpci_
+> 
+>  	spin_lock(&zpci_iomap_lock);
+>  	entry = find_first_zero_bit(zpci_iomap, ZPCI_IOMAP_MAX_ENTRIES);
+> -	if (entry == ZPCI_IOMAP_MAX_ENTRIES) {
+> +	if (entry >= ZPCI_IOMAP_MAX_ENTRIES) {
+>  		spin_unlock(&zpci_iomap_lock);
+>  		return -ENOSPC;
+>  	}
+> @@ -746,7 +746,7 @@ static int zpci_alloc_domain(struct zpci
+>  {
+>  	spin_lock(&zpci_domain_lock);
+>  	zdev->domain = find_first_zero_bit(zpci_domain, ZPCI_NR_DEVICES);
+> -	if (zdev->domain == ZPCI_NR_DEVICES) {
+> +	if (zdev->domain >= ZPCI_NR_DEVICES) {
+>  		spin_unlock(&zpci_domain_lock);
+>  		return -ENOSPC;
+>  	}
+> 
+> 
 
-The exact value for your scheduling example above is:
-A runnable will be 47% and B runnable will be 60% (unless i make a
-mistake in my computation)
-and CPU runnable will be 60% too
+Thanks, applied.
+Sebastian
 
-Vincent
-
->
