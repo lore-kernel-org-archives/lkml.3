@@ -1,94 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751525AbaFDIw2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 04:52:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51474 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751128AbaFDIwZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 04:52:25 -0400
-Message-ID: <538EDE1A.8060305@redhat.com>
-Date: Wed, 04 Jun 2014 10:51:38 +0200
-From: Daniel Borkmann <dborkman@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1751660AbaFDIxY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 04:53:24 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:54271 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750992AbaFDIxV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 04:53:21 -0400
+Message-ID: <538EDE7A.70905@ti.com>
+Date: Wed, 4 Jun 2014 11:53:14 +0300
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Chema Gonzalez <chema@google.com>
-CC: Alexei Starovoitov <ast@plumgrid.com>, Ingo Molnar <mingo@kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>, David Miller <davem@davemloft.net>,
-        Eric Dumazet <edumazet@google.com>,
-        Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v6 net-next 1/4] net: flow_dissector: avoid multiple calls
- in eBPF
-References: <1398882591-30422-1-git-send-email-chema@google.com> <1401389758-13252-1-git-send-email-chema@google.com> <5387C8AD.6000909@redhat.com> <CA+ZOOTNobzzJPgQnVVZ+b6rRD=0_pdjUB8q5FQVkbO+dob0BSg@mail.gmail.com> <538C6FD8.9040305@redhat.com> <CAMEtUuyduk1sHBeVm=d5GYEgB4ma7sVFYeBLdapbeEpQY9nA1Q@mail.gmail.com> <538D884E.5030007@redhat.com> <CAMEtUuxK5hV_eORRLaSHSiwF5X82Ae91vL6W0-6au48v8H6bAA@mail.gmail.com> <CA+ZOOTPdDDeGxZVGXVRZmjkxqkGefgDLrawo_9YXbjwTQ_FLzA@mail.gmail.com>
-In-Reply-To: <CA+ZOOTPdDDeGxZVGXVRZmjkxqkGefgDLrawo_9YXbjwTQ_FLzA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: <dmitry.torokhov@gmail.com>
+CC: <rydberg@euromail.se>, <balbi@ti.com>, <dmurphy@ti.com>,
+        <mugunthanvnm@ti.com>, <nsekhar@ti.com>, <linux-input@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v6 4/7] Input: pixcir_i2c_ts: Use Type-B Multi-Touch protocol
+References: <1399374372-29123-1-git-send-email-rogerq@ti.com> <1399374372-29123-5-git-send-email-rogerq@ti.com> <5379BFCE.9050107@ti.com>
+In-Reply-To: <5379BFCE.9050107@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/03/2014 11:12 PM, Chema Gonzalez wrote:
-...
-> Your approach needs it too. Citing from your pseudo-code:
->
->> ld #5     <-- indicates to fill the first 5 slots of M[], so M[0] to M[4]
->> ld #keys  <-- triggers the extension to fill the M[] slots
->> ld M[0]   <-- loads nhoff from M[0] into accu
->
-> How does the "ld M[0]" know that the actual flow dissector has already
-> been called? What if the insn just before the "ld #5" was "jmp +2" ?
-> In that case, the "ld #keys" would have never been called.
+Hi Dmitry,
 
-But that case would be no different from doing something like ...
+We're still missing patches 4, 5 and 7 for 3.16, to get device tree and type-B support.
 
-[...]
-   jmp foo
-   ldi #42
-   st M[0]
-foo:
-   ld M[0]
-[...]
+Do you want me to send them separately?
 
-... and would then not pass the checker in check_load_and_stores(),
-which, as others have already stated, would need to be extended,
-of course. It's one possible approach.
+cheers,
+-roger
 
->> Anyway as I said before I'm not excited about either.
->> I don't think we should be adding classic BPF extensions any more.
->> The long term headache of supporting classic BPF extensions
->> outweighs the short term benefits.
-...
-> I see a couple of issues with (effectively) freezing classic BPF
-> development while waiting for direct eBPF access to happen. The first
-> one is that the kernel has to accept it. I can see many questions
-> about this, especially security and usability (I'll send an email
-> about the "split BPF out of core later"). Now, the main issue is
-> whether/when the tools will support it. IMO, this is useful iff I can
-> quickly write/reuse filters and run tcpdump filters based on them. I'm
-> trying to get upstream libpcap to accept support for raw (classic) BPF
-> filters, and it's taking a long time. I can imagine how they may be
-> less receptive about supporting a Linux-only eBPF mechanism. Tools do
-> matter.
+On 05/19/2014 11:24 AM, Roger Quadros wrote:
+> From: Roger Quadros <rogerq@ti.com>
+> 
+> Switch to using the Type-B Multi-Touch protocol.
+> 
+> Reviewed-by: Henrik Rydberg <rydberg@euromail.se>
+> Signed-off-by: Roger Quadros <rogerq@ti.com>
+> ---
+>  drivers/input/touchscreen/pixcir_i2c_ts.c | 125 ++++++++++++++++++++++--------
+>  1 file changed, 94 insertions(+), 31 deletions(-)
+> 
+> diff --git a/drivers/input/touchscreen/pixcir_i2c_ts.c b/drivers/input/touchscreen/pixcir_i2c_ts.c
+> index 8a7da61..627d2f5 100644
+> --- a/drivers/input/touchscreen/pixcir_i2c_ts.c
+> +++ b/drivers/input/touchscreen/pixcir_i2c_ts.c
+> @@ -23,9 +23,12 @@
+>  #include <linux/slab.h>
+>  #include <linux/i2c.h>
+>  #include <linux/input.h>
+> +#include <linux/input/mt.h>
+>  #include <linux/input/pixcir_ts.h>
+>  #include <linux/gpio.h>
+>  
+> +#define PIXCIR_MAX_SLOTS       2
+> +
+>  struct pixcir_i2c_ts_data {
+>  	struct i2c_client *client;
+>  	struct input_dev *input;
+> @@ -33,12 +36,25 @@ struct pixcir_i2c_ts_data {
+>  	bool running;
+>  };
+>  
+> -static void pixcir_ts_poscheck(struct pixcir_i2c_ts_data *data)
+> +struct pixcir_touch {
+> +	int x;
+> +	int y;
+> +};
+> +
+> +struct pixcir_report_data {
+> +	int num_touches;
+> +	struct pixcir_touch touches[PIXCIR_MAX_SLOTS];
+> +};
+> +
+> +static void pixcir_ts_parse(struct pixcir_i2c_ts_data *tsdata,
+> +			    struct pixcir_report_data *report)
+>  {
+> -	struct pixcir_i2c_ts_data *tsdata = data;
+>  	u8 rdbuf[10], wrbuf[1] = { 0 };
+> +	u8 *bufptr;
+>  	u8 touch;
+> -	int ret;
+> +	int ret, i;
+> +
+> +	memset(report, 0, sizeof(struct pixcir_report_data));
+>  
+>  	ret = i2c_master_send(tsdata->client, wrbuf, sizeof(wrbuf));
+>  	if (ret != sizeof(wrbuf)) {
+> @@ -56,45 +72,85 @@ static void pixcir_ts_poscheck(struct pixcir_i2c_ts_data *data)
+>  		return;
+>  	}
+>  
+> -	touch = rdbuf[0];
+> -	if (touch) {
+> -		u16 posx1 = (rdbuf[3] << 8) | rdbuf[2];
+> -		u16 posy1 = (rdbuf[5] << 8) | rdbuf[4];
+> -		u16 posx2 = (rdbuf[7] << 8) | rdbuf[6];
+> -		u16 posy2 = (rdbuf[9] << 8) | rdbuf[8];
+> -
+> -		input_report_key(tsdata->input, BTN_TOUCH, 1);
+> -		input_report_abs(tsdata->input, ABS_X, posx1);
+> -		input_report_abs(tsdata->input, ABS_Y, posy1);
+> -
+> -		input_report_abs(tsdata->input, ABS_MT_POSITION_X, posx1);
+> -		input_report_abs(tsdata->input, ABS_MT_POSITION_Y, posy1);
+> -		input_mt_sync(tsdata->input);
+> -
+> -		if (touch == 2) {
+> -			input_report_abs(tsdata->input,
+> -					 ABS_MT_POSITION_X, posx2);
+> -			input_report_abs(tsdata->input,
+> -					 ABS_MT_POSITION_Y, posy2);
+> -			input_mt_sync(tsdata->input);
+> -		}
+> -	} else {
+> -		input_report_key(tsdata->input, BTN_TOUCH, 0);
+> +	touch = rdbuf[0] & 0x7;
+> +	if (touch > PIXCIR_MAX_SLOTS)
+> +		touch = PIXCIR_MAX_SLOTS;
+> +
+> +	report->num_touches = touch;
+> +	bufptr = &rdbuf[2];
+> +
+> +	for (i = 0; i < touch; i++) {
+> +		report->touches[i].x = (bufptr[1] << 8) | bufptr[0];
+> +		report->touches[i].y = (bufptr[3] << 8) | bufptr[2];
+> +
+> +		bufptr = bufptr + 4;
+>  	}
+> +}
+> +
+> +static void pixcir_ts_report(struct pixcir_i2c_ts_data *ts,
+> +			     struct pixcir_report_data *report)
+> +{
+> +	struct input_mt_pos pos[PIXCIR_MAX_SLOTS];
+> +	int slots[PIXCIR_MAX_SLOTS];
+> +	struct pixcir_touch *touch;
+> +	int n, i, slot;
+> +	struct device *dev = &ts->client->dev;
+>  
+> -	input_sync(tsdata->input);
+> +	n = report->num_touches;
+> +	if (n > PIXCIR_MAX_SLOTS)
+> +		n = PIXCIR_MAX_SLOTS;
+> +
+> +	for (i = 0; i < n; i++) {
+> +		touch = &report->touches[i];
+> +		pos[i].x = touch->x;
+> +		pos[i].y = touch->y;
+> +	}
+> +
+> +	input_mt_assign_slots(ts->input, slots, pos, n);
+> +
+> +	for (i = 0; i < n; i++) {
+> +		touch = &report->touches[i];
+> +		slot = slots[i];
+> +
+> +		input_mt_slot(ts->input, slot);
+> +		input_mt_report_slot_state(ts->input,
+> +					   MT_TOOL_FINGER, true);
+> +
+> +		input_event(ts->input, EV_ABS, ABS_MT_POSITION_X, touch->x);
+> +		input_event(ts->input, EV_ABS, ABS_MT_POSITION_Y, touch->y);
+> +
+> +		dev_dbg(dev, "%d: slot %d, x %d, y %d\n",
+> +			i, slot, touch->x, touch->y);
+> +	}
+> +
+> +	input_mt_sync_frame(ts->input);
+> +	input_sync(ts->input);
+>  }
+>  
+>  static irqreturn_t pixcir_ts_isr(int irq, void *dev_id)
+>  {
+>  	struct pixcir_i2c_ts_data *tsdata = dev_id;
+>  	const struct pixcir_ts_platform_data *pdata = tsdata->chip;
+> +	struct pixcir_report_data report;
+>  
+>  	while (tsdata->running) {
+> -		pixcir_ts_poscheck(tsdata);
+> -
+> -		if (gpio_get_value(pdata->gpio_attb))
+> +		/* parse packet */
+> +		pixcir_ts_parse(tsdata, &report);
+> +
+> +		/* report it */
+> +		pixcir_ts_report(tsdata, &report);
+> +
+> +		if (gpio_get_value(pdata->gpio_attb)) {
+> +			if (report.num_touches) {
+> +				/*
+> +				 * Last report with no finger up?
+> +				 * Do it now then.
+> +				 */
+> +				input_mt_sync_frame(tsdata->input);
+> +				input_sync(tsdata->input);
+> +			}
+>  			break;
+> +		}
+>  
+>  		msleep(20);
+>  	}
+> @@ -333,6 +389,13 @@ static int pixcir_i2c_ts_probe(struct i2c_client *client,
+>  	input_set_abs_params(input, ABS_MT_POSITION_X, 0, pdata->x_max, 0, 0);
+>  	input_set_abs_params(input, ABS_MT_POSITION_Y, 0, pdata->y_max, 0, 0);
+>  
+> +	error = input_mt_init_slots(input, PIXCIR_MAX_SLOTS,
+> +				    INPUT_MT_DIRECT | INPUT_MT_DROP_UNUSED);
+> +	if (error) {
+> +		dev_err(dev, "Error initializing Multi-Touch slots\n");
+> +		return error;
+> +	}
+> +
+>  	input_set_drvdata(input, tsdata);
+>  
+>  	error = devm_gpio_request_one(dev, pdata->gpio_attb,
+> 
 
-Grepping through libpcap code, which tries to be platform independent,
-it seems after all the years, the only thing where you can see support
-for in their code is SKF_AD_PKTTYPE and SKF_AD_PROTOCOL. Perhaps they
-just don't care, perhaps they do, who knows, but it looks to me a bit
-that they are reluctant to these improvements, maybe for one reason
-that other OSes don't support it. That was also one of the reasons that
-led me to start writing bpf_asm (net/tools/) for having a small DSL
-for more easily trying out BPF code while having _full_ control over it.
-
-Maybe someone should start a binary-compatible Linux-only version of
-libpcap, where tcpdump will transparently make use of these low level
-improvements eventually. </rant> ;)
-
-Thanks,
-
-Daniel
