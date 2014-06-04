@@ -1,94 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752190AbaFDKYw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 06:24:52 -0400
-Received: from smtp25.sms.unimo.it ([155.185.44.25]:60291 "EHLO
-	smtp25.sms.unimo.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751728AbaFDKYu convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 06:24:50 -0400
-Subject: Re: BFQ speed tests [was Re: [PATCH RFC - TAKE TWO - 00/12] New version of the BFQ I/O Scheduler]
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.2\))
-Content-Type: text/plain; charset=windows-1252
-From: Paolo Valente <paolo.valente@unimore.it>
-In-Reply-To: <20140604100358.GA4799@amd.pavel.ucw.cz>
-Date: Wed, 4 Jun 2014 12:24:30 +0200
-Cc: Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>,
-        Li Zefan <lizefan@huawei.com>, Fabio Checconi <fchecconi@gmail.com>,
-        Arianna Avanzini <avanzini.arianna@gmail.com>,
-        linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <4888F93F-D58D-48DD-81A6-A6D61C452D92@unimore.it>
-References: <20140528221929.GG1419@htj.dyndns.org> <1401354343-5527-1-git-send-email-paolo.valente@unimore.it> <20140530160712.GG24871@htj.dyndns.org> <464F6CBE-A63E-46EF-A90D-BF8450430444@unimore.it> <20140530232804.GA5057@htj.dyndns.org> <20140602111432.GA3737@amd.pavel.ucw.cz> <20140602130226.GA14654@amd.pavel.ucw.cz> <FCFE0106-A4DD-4DEF-AAAE-040F3823A447@unimore.it> <20140604100358.GA4799@amd.pavel.ucw.cz>
-To: Pavel Machek <pavel@ucw.cz>
-X-Mailer: Apple Mail (2.1878.2)
-UNIMORE-X-SA-Score: -2.9
+	id S1752072AbaFDKYq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 06:24:46 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:57250 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751728AbaFDKYp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 06:24:45 -0400
+Date: Wed, 4 Jun 2014 12:24:20 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
+        ebiederm@xmission.com, hpa@zytor.com, mjg59@srcf.ucam.org,
+        greg@kroah.com, jkosina@suse.cz, dyoung@redhat.com,
+        chaowang@redhat.com, bhe@redhat.com, akpm@linux-foundation.org,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: Re: [PATCH 04/13] resource: Provide new functions to walk through
+ resources
+Message-ID: <20140604102420.GC4105@pd.tnic>
+References: <1401800822-27425-1-git-send-email-vgoyal@redhat.com>
+ <1401800822-27425-5-git-send-email-vgoyal@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1401800822-27425-5-git-send-email-vgoyal@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jun 03, 2014 at 09:06:53AM -0400, Vivek Goyal wrote:
+> @@ -322,7 +327,71 @@ int release_resource(struct resource *old)
+>  
+>  EXPORT_SYMBOL(release_resource);
+>  
+> -#if !defined(CONFIG_ARCH_HAS_WALK_MEMORY)
+> +/*
+> + * Finds the lowest iomem reosurce exists with-in [res->start.res->end)
+> + * the caller must specify res->start, res->end, res->flags and "name".
+> + * If found, returns 0, res is overwritten, if not found, returns -1.
+> + * This walks through whole tree and not just first level children.
+> + */
+> +static int find_next_iomem_res(struct resource *res, char *name)
+> +{
+> +	resource_size_t start, end;
+> +	struct resource *p;
+> +
+> +	BUG_ON(!res);
+> +
+> +	start = res->start;
+> +	end = res->end;
+> +	BUG_ON(start >= end);
+> +
+> +	read_lock(&resource_lock);
+> +	p = &iomem_resource;
+> +	while ((p = next_resource(p))) {
 
-Il giorno 04/giu/2014, alle ore 12:03, Pavel Machek <pavel@ucw.cz> ha scritto:
+Just a thought - this function differs from find_next_system_ram() only
+in the traversal mode through resources. I wonder if next_resource()
+could be given a flag, say TRAVERSE_SIBLINGS_ONLY or so and be called
+from both, once with the flag set and once without and thus save us the
+code duplication.
 
-> Hi!
-> 
->> Should this attempt be useless as well, I will, if you do not mind, try by asking you more details about your system and reproducing your configuration as much as I can.
->> 
-> 
-> Try making BFQ the default scheduler. That seems to break it for me,
-> when selected at runtime, it looks stable.
-> 
-> Anyway, here are some speed tests. Background load:
-> 
-> root@duo:/data/tmp# echo cfq > /sys/block/sda/queue/scheduler 
-> root@duo:/data/tmp# echo 3 > /proc/sys/vm/drop_caches
-> root@duo:/data/tmp# cat /dev/zero > delme; cat /dev/zero > delme;cat
-> /dev/zero > delme;cat /dev/zero > delme;cat /dev/zero > delme;cat
-> /dev/zero > delme
-> 
-> (Machine was running out of disk space.)
-> 
-> (I alternate between cfq and bfq).
-> 
-> Benchmark. I chose git describe because it is part of kernel build
-> sometimes .. and I actually wait for that.
-> 
-> pavel@duo:/data/l/linux-good$ time git describe
-> warning: refname 'HEAD' is ambiguous.
-> v3.15-rc8-144-g405dedd
-> 
-> Unfortunately, results are not too good for BFQ. (Can you replicate
-> the results?)
-> 
-> # BFQ
-> 10.24user 1.62system 467.02 (7m47.028s) elapsed 2.54%CPU
-> # CFQ
-> 8.55user 1.26system 69.57 (1m9.577s) elapsed 14.11%CPU
-> # BFQ
-> 11.70user 3.18system 1491.59 (24m51.599s) elapsed 0.99%CPU
-> # CFQ, no background load
-> 8.51user 0.75system 30.99 (0m30.994s) elapsed 29.91%CPU
-> # CFQ
-> 8.70user 1.36system 74.72 (1m14.720s) elapsed 13.48%CPU
-> 
+> +		if (p->flags != res->flags)
+> +			continue;
+> +		if (name && strcmp(p->name, name))
+> +			continue;
+> +		if (p->start > end) {
+> +			p = NULL;
+> +			break;
+> +		}
+> +		if ((p->end >= start) && (p->start < end))
+> +			break;
+> +	}
+> +
+> +	read_unlock(&resource_lock);
+> +	if (!p)
+> +		return -1;
+> +	/* copy data */
+> +	if (res->start < p->start)
+> +		res->start = p->start;
+> +	if (res->end > p->end)
+> +		res->end = p->end;
+> +	return 0;
+> +}
 
-Definitely bad, we are about to repeat the test …
+-- 
+Regards/Gruss,
+    Boris.
 
-Thanks,
-Paolo
-
-> 									Pavel
-> -- 
-> (english) http://www.livejournal.com/~pavelmachek
-> (cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
-
-
+Sent from a fat crate under my desk. Formatting is fine.
 --
-Paolo Valente                                                 
-Algogroup
-Dipartimento di Fisica, Informatica e Matematica		
-Via Campi, 213/B
-41125 Modena - Italy        				  
-homepage:  http://algogroup.unimore.it/people/paolo/
-
