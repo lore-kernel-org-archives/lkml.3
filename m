@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932595AbaFEAle (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 20:41:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39832 "EHLO
+	id S932613AbaFEAlr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 20:41:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39788 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752618AbaFDXVW (ORCPT
+	with ESMTP id S1752614AbaFDXVV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:21:22 -0400
+	Wed, 4 Jun 2014 19:21:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Neil Greatorex <neil@fatboyfat.co.uk>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Jason Cooper <jason@lakedaemon.net>
-Subject: [PATCH 3.14 061/228] irqchip: armada-370-xp: Fix releasing of MSIs
-Date: Wed,  4 Jun 2014 16:21:30 -0700
-Message-Id: <20140604232350.018975031@linuxfoundation.org>
+        Viresh Kumar <viresh.kumar@linaro.org>, linaro-kernel@lists.linaro.org,
+        linaro-networking@linaro.org, fweisbec@gmail.com,
+        arvind.chauhan@arm.com, Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 3.14 052/228] hrtimer: Set expiry time before switch_hrtimer_base()
+Date: Wed,  4 Jun 2014 16:21:21 -0700
+Message-Id: <20140604232349.750287014@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -30,39 +30,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Neil Greatorex <neil@fatboyfat.co.uk>
+From: Viresh Kumar <viresh.kumar@linaro.org>
 
-commit ff3c664505bf8a8334bca5045e87b85cfe4d2277 upstream.
+commit 84ea7fe37908254c3bd90910921f6e1045c1747a upstream.
 
-Store the value of d->hwirq in a local variable as the real value is wiped out
-by calling irq_dispose_mapping. Without this patch, the armada_370_xp_free_msi
-function would always free MSI#0, no matter what was passed to it.
+switch_hrtimer_base() calls hrtimer_check_target() which ensures that
+we do not migrate a timer to a remote cpu if the timer expires before
+the current programmed expiry time on that remote cpu.
 
-Fixes: 31f614edb726fcc4d5aa0f2895fbdec9b04a3ca4 ('irqchip: armada-370-xp: implement MSI support')
-Signed-off-by: Neil Greatorex <neil@fatboyfat.co.uk>
-Link: https://lkml.kernel.org/r/1397823593-1932-4-git-send-email-thomas.petazzoni@free-electrons.com
-Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Link: https://lkml.kernel.org/r/1397823593-1932-4-git-send-email-thomas.petazzoni@free-electrons.com
-Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+But __hrtimer_start_range_ns() calls switch_hrtimer_base() before the
+new expiry time is set. So the sanity check in hrtimer_check_target()
+is operating on stale or even uninitialized data.
+
+Update expiry time before calling switch_hrtimer_base().
+
+[ tglx: Rewrote changelog once again ]
+
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: linaro-kernel@lists.linaro.org
+Cc: linaro-networking@linaro.org
+Cc: fweisbec@gmail.com
+Cc: arvind.chauhan@arm.com
+Link: http://lkml.kernel.org/r/81999e148745fc51bbcd0615823fbab9b2e87e23.1399882253.git.viresh.kumar@linaro.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/irqchip/irq-armada-370-xp.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ kernel/hrtimer.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/drivers/irqchip/irq-armada-370-xp.c
-+++ b/drivers/irqchip/irq-armada-370-xp.c
-@@ -156,8 +156,10 @@ static void armada_370_xp_teardown_msi_i
- 					   unsigned int irq)
- {
- 	struct irq_data *d = irq_get_irq_data(irq);
-+	unsigned long hwirq = d->hwirq;
-+
- 	irq_dispose_mapping(irq);
--	armada_370_xp_free_msi(d->hwirq);
-+	armada_370_xp_free_msi(hwirq);
- }
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -1003,11 +1003,8 @@ int __hrtimer_start_range_ns(struct hrti
+ 	/* Remove an active timer from the queue: */
+ 	ret = remove_hrtimer(timer, base);
  
- static int armada_370_xp_check_msi_device(struct msi_chip *chip, struct pci_dev *dev,
+-	/* Switch the timer base, if necessary: */
+-	new_base = switch_hrtimer_base(timer, base, mode & HRTIMER_MODE_PINNED);
+-
+ 	if (mode & HRTIMER_MODE_REL) {
+-		tim = ktime_add_safe(tim, new_base->get_time());
++		tim = ktime_add_safe(tim, base->get_time());
+ 		/*
+ 		 * CONFIG_TIME_LOW_RES is a temporary way for architectures
+ 		 * to signal that they simply return xtime in
+@@ -1022,6 +1019,9 @@ int __hrtimer_start_range_ns(struct hrti
+ 
+ 	hrtimer_set_expires_range_ns(timer, tim, delta_ns);
+ 
++	/* Switch the timer base, if necessary: */
++	new_base = switch_hrtimer_base(timer, base, mode & HRTIMER_MODE_PINNED);
++
+ 	timer_stats_hrtimer_set_start_info(timer);
+ 
+ 	leftmost = enqueue_hrtimer(timer, new_base);
 
 
