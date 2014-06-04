@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752476AbaFDXVK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:21:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39741 "EHLO
+	id S1757201AbaFEAqx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 20:46:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39753 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752435AbaFDXVI (ORCPT
+	with ESMTP id S1752472AbaFDXVL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:21:08 -0400
+	Wed, 4 Jun 2014 19:21:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eyal Shapira <eyalx.shapira@intel.com>,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Subject: [PATCH 3.14 023/228] iwlwifi: mvm: avoid searching unnecessary columns
-Date: Wed,  4 Jun 2014 16:20:52 -0700
-Message-Id: <20140604232348.837748810@linuxfoundation.org>
+        Stephen Warren <swarren@nvidia.com>,
+        Terje Bergstrom <tbergstrom@nvidia.com>,
+        Thierry Reding <treding@nvidia.com>
+Subject: [PATCH 3.14 027/228] gpu: host1x: handle the correct # of syncpt regs
+Date: Wed,  4 Jun 2014 16:20:56 -0700
+Message-Id: <20140604232348.956731170@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -29,66 +30,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eyal Shapira <eyal@wizery.com>
+From: Stephen Warren <swarren@nvidia.com>
 
-commit d8fff919ecd7820084675c2814913445e95640ac upstream.
+commit 22bbd5d949dc7fdd72a4e78e767fa09d8e54b446 upstream.
 
-Don't search columns which are unlikely to succeed as previous
-columns searched with less aggressive modulation failed.
+BIT_WORD() truncates rather than rounds, so the loops in
+syncpt_thresh_isr() and _host1x_intr_disable_all_syncpt_intrs() use <=
+rather than < in an attempt to process the correct number of registers
+when rounding of the conversion of count of bits to count of words is
+necessary. However, when rounding isn't necessary because the value is
+already a multiple of the divisor (as is the case for all values of
+nb_pts the code actually sees), this causes one too many registers to
+be processed.
 
-Signed-off-by: Eyal Shapira <eyalx.shapira@intel.com>
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Solve this by using and explicit DIV_ROUND_UP() call, rather than
+BIT_WORD(), and comparing with < rather than <=.
+
+Fixes: 7ede0b0bf3e2 ("gpu: host1x: Add syncpoint wait and interrupts")
+Signed-off-by: Stephen Warren <swarren@nvidia.com>
+Acked-By: Terje Bergstrom <tbergstrom@nvidia.com>
+Signed-off-by: Thierry Reding <treding@nvidia.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/iwlwifi/mvm/rs.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ drivers/gpu/host1x/hw/intr_hw.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/net/wireless/iwlwifi/mvm/rs.c
-+++ b/drivers/net/wireless/iwlwifi/mvm/rs.c
-@@ -212,8 +212,8 @@ static const struct rs_tx_column rs_tx_c
- 			RS_COLUMN_LEGACY_ANT_B,
- 			RS_COLUMN_SISO_ANT_A,
- 			RS_COLUMN_SISO_ANT_B,
--			RS_COLUMN_MIMO2,
--			RS_COLUMN_MIMO2_SGI,
-+			RS_COLUMN_INVALID,
-+			RS_COLUMN_INVALID,
- 			RS_COLUMN_INVALID,
- 			RS_COLUMN_INVALID,
- 		},
-@@ -225,8 +225,8 @@ static const struct rs_tx_column rs_tx_c
- 			RS_COLUMN_LEGACY_ANT_A,
- 			RS_COLUMN_SISO_ANT_A,
- 			RS_COLUMN_SISO_ANT_B,
--			RS_COLUMN_MIMO2,
--			RS_COLUMN_MIMO2_SGI,
-+			RS_COLUMN_INVALID,
-+			RS_COLUMN_INVALID,
- 			RS_COLUMN_INVALID,
- 			RS_COLUMN_INVALID,
- 		},
-@@ -239,9 +239,9 @@ static const struct rs_tx_column rs_tx_c
- 			RS_COLUMN_MIMO2,
- 			RS_COLUMN_SISO_ANT_A_SGI,
- 			RS_COLUMN_SISO_ANT_B_SGI,
--			RS_COLUMN_MIMO2_SGI,
- 			RS_COLUMN_LEGACY_ANT_A,
- 			RS_COLUMN_LEGACY_ANT_B,
-+			RS_COLUMN_INVALID,
- 		},
- 		.checks = {
- 			rs_siso_allow,
-@@ -255,9 +255,9 @@ static const struct rs_tx_column rs_tx_c
- 			RS_COLUMN_MIMO2,
- 			RS_COLUMN_SISO_ANT_B_SGI,
- 			RS_COLUMN_SISO_ANT_A_SGI,
--			RS_COLUMN_MIMO2_SGI,
- 			RS_COLUMN_LEGACY_ANT_A,
- 			RS_COLUMN_LEGACY_ANT_B,
-+			RS_COLUMN_INVALID,
- 		},
- 		.checks = {
- 			rs_siso_allow,
+--- a/drivers/gpu/host1x/hw/intr_hw.c
++++ b/drivers/gpu/host1x/hw/intr_hw.c
+@@ -47,7 +47,7 @@ static irqreturn_t syncpt_thresh_isr(int
+ 	unsigned long reg;
+ 	int i, id;
+ 
+-	for (i = 0; i <= BIT_WORD(host->info->nb_pts); i++) {
++	for (i = 0; i < DIV_ROUND_UP(host->info->nb_pts, 32); i++) {
+ 		reg = host1x_sync_readl(host,
+ 			HOST1X_SYNC_SYNCPT_THRESH_CPU0_INT_STATUS(i));
+ 		for_each_set_bit(id, &reg, BITS_PER_LONG) {
+@@ -64,7 +64,7 @@ static void _host1x_intr_disable_all_syn
+ {
+ 	u32 i;
+ 
+-	for (i = 0; i <= BIT_WORD(host->info->nb_pts); ++i) {
++	for (i = 0; i < DIV_ROUND_UP(host->info->nb_pts, 32); ++i) {
+ 		host1x_sync_writel(host, 0xffffffffu,
+ 			HOST1X_SYNC_SYNCPT_THRESH_INT_DISABLE(i));
+ 		host1x_sync_writel(host, 0xffffffffu,
 
 
