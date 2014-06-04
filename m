@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753996AbaFDXXx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:23:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40775 "EHLO
+	id S1754598AbaFDXjQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 19:39:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40779 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753956AbaFDXXt (ORCPT
+	with ESMTP id S1753987AbaFDXXx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:23:49 -0400
+	Wed, 4 Jun 2014 19:23:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Javier Martin <javier.martin@vista-silicon.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [PATCH 3.10 047/103] [media] omap3isp: Defer probe when the IOMMU is not available
-Date: Wed,  4 Jun 2014 16:25:10 -0700
-Message-Id: <20140604232548.367880573@linuxfoundation.org>
+        Daniele Forsi <dforsi@gmail.com>
+Subject: [PATCH 3.10 040/103] USB: Nokia 5300 should be treated as unusual dev
+Date: Wed,  4 Jun 2014 16:25:03 -0700
+Message-Id: <20140604232548.154086336@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232546.704156131@linuxfoundation.org>
 References: <20140604232546.704156131@linuxfoundation.org>
@@ -30,40 +28,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+From: Daniele Forsi <dforsi@gmail.com>
 
-commit 7c0f812a5d65e712618af880dda4a5cc7ed79463 upstream.
+commit 6ed07d45d09bc2aa60e27b845543db9972e22a38 upstream.
 
-When the OMAP3 ISP driver is compiled in the kernel the device can be
-probed before the corresponding IOMMU is available. Defer the probe in
-that case, and fix a crash in the error path.
-
-Reported-by: Javier Martin <javier.martin@vista-silicon.com>
-Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Signed-off-by: Daniele Forsi <dforsi@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/platform/omap3isp/isp.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/usb/storage/unusual_devs.h |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/drivers/media/platform/omap3isp/isp.c
-+++ b/drivers/media/platform/omap3isp/isp.c
-@@ -2249,6 +2249,7 @@ static int isp_probe(struct platform_dev
- 	ret = iommu_attach_device(isp->domain, &pdev->dev);
- 	if (ret) {
- 		dev_err(&pdev->dev, "can't attach iommu device: %d\n", ret);
-+		ret = -EPROBE_DEFER;
- 		goto free_domain;
- 	}
+--- a/drivers/usb/storage/unusual_devs.h
++++ b/drivers/usb/storage/unusual_devs.h
+@@ -234,6 +234,13 @@ UNUSUAL_DEV(  0x0421, 0x0495, 0x0370, 0x
+ 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
+ 		US_FL_MAX_SECTORS_64 ),
  
-@@ -2287,6 +2288,7 @@ detach_dev:
- 	iommu_detach_device(isp->domain, &pdev->dev);
- free_domain:
- 	iommu_domain_free(isp->domain);
-+	isp->domain = NULL;
- error_isp:
- 	isp_xclk_cleanup(isp);
- 	omap3isp_put(isp);
++/* Reported by Daniele Forsi <dforsi@gmail.com> */
++UNUSUAL_DEV(  0x0421, 0x04b9, 0x0350, 0x0350,
++		"Nokia",
++		"5300",
++		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
++		US_FL_MAX_SECTORS_64 ),
++
+ /* Patch submitted by Victor A. Santos <victoraur.santos@gmail.com> */
+ UNUSUAL_DEV(  0x0421, 0x05af, 0x0742, 0x0742,
+ 		"Nokia",
 
 
