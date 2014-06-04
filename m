@@ -1,77 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752552AbaFDLHi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 07:07:38 -0400
-Received: from mail-ig0-f169.google.com ([209.85.213.169]:45487 "EHLO
-	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751909AbaFDLHf (ORCPT
+	id S1752580AbaFDLHx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 07:07:53 -0400
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:58827 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751909AbaFDLHv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 07:07:35 -0400
+	Wed, 4 Jun 2014 07:07:51 -0400
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.10.1406041258200.2441@hadrien>
-References: <1401872880-23685-1-git-send-email-Julia.Lawall@lip6.fr>
-	<CAMuHMdXsoFUXj4jLMWN6NY7Um19KwWO9Rhx=9=gqWu_K5Ev2kQ@mail.gmail.com>
-	<alpine.DEB.2.10.1406041137270.2441@hadrien>
-	<063D6719AE5E284EB5DD2968C1650D6D1725705F@AcuExch.aculab.com>
-	<alpine.DEB.2.10.1406041148590.2441@hadrien>
-	<CAMuHMdXPBQTYA0c=1hkC7943-_J59TVSFaEKsfY1F2ogV=Ld+A@mail.gmail.com>
-	<alpine.DEB.2.10.1406041258200.2441@hadrien>
-Date: Wed, 4 Jun 2014 13:07:34 +0200
-X-Google-Sender-Auth: IROjYfHMGqWZqhE7r4ymjiAEFqY
-Message-ID: <CAMuHMdV2wP43Lxf-UtCum37HyMPSboRb6RLNTHzm_ZNOBeJR0g@mail.gmail.com>
-Subject: Re: [PATCH 0/10] use safer test on the result of find_first_zero_bit
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Julia Lawall <julia.lawall@lip6.fr>
-Cc: David Laight <David.Laight@aculab.com>,
-        linux-rdma <linux-rdma@vger.kernel.org>,
-        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
-        Linux Fbdev development list <linux-fbdev@vger.kernel.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
+In-Reply-To: <20140604103619.GL29593@e103034-lin>
+References: <1400860385-14555-1-git-send-email-vincent.guittot@linaro.org>
+ <1400860385-14555-9-git-send-email-vincent.guittot@linaro.org>
+ <20140528121001.GI19967@e103034-lin> <CAKfTPtDxeBfZK1AxCRqEG91pi--Ti1RYFoQPDhvMVnGTCspQ-g@mail.gmail.com>
+ <20140528154703.GJ19967@e103034-lin> <20140603155007.GZ30445@twins.programming.kicks-ass.net>
+ <CAKfTPtDUvH--WxFATTW6YRAvLuohzyNHDUq6DRdfxc7gRKCX6Q@mail.gmail.com>
+ <20140604080809.GK30445@twins.programming.kicks-ass.net> <CAKfTPtBCG1Jq2b+fyoGuA=7yG_yUbsmaD+j-ZXXsPNGp5giKpg@mail.gmail.com>
+ <20140604101724.GD11096@twins.programming.kicks-ass.net> <20140604103619.GL29593@e103034-lin>
+From: Vincent Guittot <vincent.guittot@linaro.org>
+Date: Wed, 4 Jun 2014 13:07:29 +0200
+Message-ID: <CAKfTPtCVyLRG-fSge1shdw5aSDB3y=_qzU1DOVgCx0VBnn6mnA@mail.gmail.com>
+Subject: Re: [PATCH v2 08/11] sched: get CPU's activity statistic
+To: Morten Rasmussen <morten.rasmussen@arm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ath10k@lists.infradead.org" <ath10k@lists.infradead.org>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        driverdevel <devel@driverdev.osuosl.org>,
-        "iss_storagedev@hp.com" <iss_storagedev@hp.com>,
-        scsi <linux-scsi@vger.kernel.org>,
-        linux-s390 <linux-s390@vger.kernel.org>,
-        "adi-buildroot-devel@lists.sourceforge.net" 
-	<adi-buildroot-devel@lists.sourceforge.net>,
-        Arnd Bergmann <arnd@arndb.de>
-Content-Type: text/plain; charset=UTF-8
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        "efault@gmx.de" <efault@gmx.de>,
+        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Julia,
-
-On Wed, Jun 4, 2014 at 1:00 PM, Julia Lawall <julia.lawall@lip6.fr> wrote:
-> OK, thanks.  I was only looking at the C code.
+On 4 June 2014 12:36, Morten Rasmussen <morten.rasmussen@arm.com> wrote:
+> On Wed, Jun 04, 2014 at 11:17:24AM +0100, Peter Zijlstra wrote:
+>> On Wed, Jun 04, 2014 at 11:32:10AM +0200, Vincent Guittot wrote:
+>> > On 4 June 2014 10:08, Peter Zijlstra <peterz@infradead.org> wrote:
+>> > > On Wed, Jun 04, 2014 at 09:47:26AM +0200, Vincent Guittot wrote:
+>> > >> On 3 June 2014 17:50, Peter Zijlstra <peterz@infradead.org> wrote:
+>> > >> > On Wed, May 28, 2014 at 04:47:03PM +0100, Morten Rasmussen wrote:
+>> > >> >> Since we may do periodic load-balance every 10 ms or so, we will perform
+>> > >> >> a number of load-balances where runnable_avg_sum will mostly be
+>> > >> >> reflecting the state of the world before a change (new task queued or
+>> > >> >> moved a task to a different cpu). If you had have two tasks continuously
+>> > >> >> on one cpu and your other cpu is idle, and you move one of the tasks to
+>> > >> >> the other cpu, runnable_avg_sum will remain unchanged, 47742, on the
+>> > >> >> first cpu while it starts from 0 on the other one. 10 ms later it will
+>> > >> >> have increased a bit, 32 ms later it will be 47742/2, and 345 ms later
+>> > >> >> it reaches 47742. In the mean time the cpu doesn't appear fully utilized
+>> > >> >> and we might decide to put more tasks on it because we don't know if
+>> > >> >> runnable_avg_sum represents a partially utilized cpu (for example a 50%
+>> > >> >> task) or if it will continue to rise and eventually get to 47742.
+>> > >> >
+>> > >> > Ah, no, since we track per task, and update the per-cpu ones when we
+>> > >> > migrate tasks, the per-cpu values should be instantly updated.
+>> > >> >
+>> > >> > If we were to increase per task storage, we might as well also track
+>> > >> > running_avg not only runnable_avg.
+>> > >>
+>> > >> I agree that the removed running_avg should give more useful
+>> > >> information about the the load of a CPU.
+>> > >>
+>> > >> The main issue with running_avg is that it's disturbed by other tasks
+>> > >> (as point out previously). As a typical example,  if we have 2 tasks
+>> > >> with a load of 25% on 1 CPU, the unweighted runnable_load_avg will be
+>> > >> in the range of [100% - 50%] depending of the parallelism of the
+>> > >> runtime of the tasks whereas the reality is 50% and the use of
+>> > >> running_avg will return this value
+>> > >
+>> > > I'm not sure I see how 100% is possible, but yes I agree that runnable
+>> > > can indeed be inflated due to this queueing effect.
+>>
+>> Let me explain the 75%, take any one of the above scenarios. Lets call
+>> the two tasks A and B, and let for a moment assume A always wins and
+>> runs first, and then B.
+>>
+>> So A will be runnable for 25%, B otoh will be runnable the entire time A
+>> is actually running plus its own running time, giving 50%. Together that
+>> makes 75%.
+>>
+>> If you release the assumption that A runs first, but instead assume they
+>> equally win the first execution, you get them averaging at 37.5% each,
+>> which combined will still give 75%.
 >
-> But the C code contains a loop that is followed by:
+> But that is assuming that the first task gets to run to completion of it
+> busy period. If it uses up its sched_slice and we switch to the other
+> tasks, they both get to wait.
 >
->         if (!size)
->                 return result;
->         tmp = *p;
+> For example, if the sched_slice is 5 ms and the busy period is 10 ms,
+> the execution pattern would be: A, B, A, B, idle, ... In that case A is
+> runnable for 15 ms and B is for 20 ms. Assuming that the overall period
+> is 40 ms, the A runnable is 37.5% and B is 50%.
+
+The exact value for your scheduling example above is:
+A runnable will be 47% and B runnable will be 60% (unless i make a
+mistake in my computation)
+and CPU runnable will be 60% too
+
+Vincent
+
 >
-> found_first:
->         tmp |= ~0UL << size;
->         if (tmp == ~0UL)        /* Are any bits zero? */
->                 return result + size;   /* Nope. */
->
-> In the first return, it would seem that result == size.  Could the second
-> one be changed to just return size?  It should not hurt performance.
-
-"size" may have been changed between function entry and this line.
-So you have to store it in a temporary.
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
