@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753067AbaFDXWT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:22:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40023 "EHLO
+	id S1756739AbaFEA1G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 20:27:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40088 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752962AbaFDXWM (ORCPT
+	with ESMTP id S1753052AbaFDXWT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:22:12 -0400
+	Wed, 4 Jun 2014 19:22:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Jason Cooper <jason@lakedaemon.net>
-Subject: [PATCH 3.14 109/228] ARM: mvebu: fix NOR bus-width in Armada XP DB Device Tree
-Date: Wed,  4 Jun 2014 16:22:18 -0700
-Message-Id: <20140604232351.552633603@linuxfoundation.org>
+        Thomas Gleixner <tglx@linutronix.de>, Sekhar Nori <nsekhar@ti.com>
+Subject: [PATCH 3.14 107/228] ARM: common: edma: Fix xbar mapping
+Date: Wed,  4 Jun 2014 16:22:16 -0700
+Message-Id: <20140604232351.478768925@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -31,49 +28,173 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit f3aec8f3f05025e7b450102dae0759375346706e upstream.
+commit cf7eb979116c2568e8bc3b6a7269c7a359864ace upstream.
 
-The mvebu-devbus driver had a serious bug, which lead to a 8 bits bus
-width declared in the Device Tree being considered as a 16 bits bus
-width when configuring the hardware.
+This is another great example of trainwreck engineering:
 
-This bug in mvebu-devbus driver was compensated by a symetric mistake
-in the Armada XP DB Device Tree: a 8 bits bus width was declared, even
-though the hardware actually has a 16 bits bus width connection with
-the NOR flash.
+commit 2646a0e529 (ARM: edma: Add EDMA crossbar event mux support)
+added support for using EDMA on peripherals which have no direct EDMA
+event mapping.
 
-Now that we have fixed the mvebu-devbus driver to behave according to
-its Device Tree binding, this commit fixes the problematic Device Tree
-files as well.
+The code compiles and does not explode in your face, but that's it.
 
-This bug was introduced in commit
-b484ff42df475c5087d614c4d477273e1906bcb9 ('ARM: mvebu: Add support for
-NOR flash device on Armada XP-DB board') which was merged in v3.11.
+1) Reading an u16 array from an u32 device tree array simply does not
+   work. Even if the function is named "edma_of_read_u32_to_s16_array".
 
-Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Link: https://lkml.kernel.org/r/1397489361-5833-4-git-send-email-thomas.petazzoni@free-electrons.com
-Fixes: b484ff42df47 ('ARM: mvebu: Add support for NOR flash device on Armada XP-DB board')
-Acked-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Acked-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+   It merily calls of_property_read_u16_array. So the resulting 16bit
+   array will have every other entry = 0.
+
+2) The DT entry for the xbar registers related to xbar has length 0x10
+   instead of the real length: 0xfd0 - 0xf90 = 0x40.
+
+   Not a real problem as it does not cross a page boundary, but
+   wrong nevertheless.
+
+3) But none of this matters as the mapping never happens:
+
+   After reading nonsense edma_of_read_u32_to_s16_array() invalidates
+   the first array entry pair, so nobody can ever notice the
+   braindamage by immediate explosion.
+
+Seems the QA criteria for this code was solely not to explode when
+someone adds edma-xbar-event-map entries to the DT. Goal achieved,
+congratulations!
+
+Not really helpful if someone wants to use edma on a device which
+requires a xbar mapping.
+
+Fix the issues by:
+
+- annotating the device tree entry with "/bits/ 16" as documented in
+  the of_property_read_u16_array kernel doc
+
+- make the size of the xbar register mapping correct
+
+- invalidating the end of the array and not the start
+
+This convoluted mess wants to be completely rewritten as there is no
+point to keep the xbar_chan array memory and the iomapping of the xbar
+regs around forever. Marking the xbar mapped channels as used should
+be done right there.
+
+But that's a different issue and this patch is small enough to make it
+work and allows a simple backport for stable.
+
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Sekhar Nori <nsekhar@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/boot/dts/armada-xp-db.dts |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ Documentation/devicetree/bindings/dma/ti-edma.txt |    4 -
+ arch/arm/boot/dts/am33xx.dtsi                     |    2 
+ arch/arm/common/edma.c                            |   48 ++++++----------------
+ 3 files changed, 18 insertions(+), 36 deletions(-)
 
---- a/arch/arm/boot/dts/armada-xp-db.dts
-+++ b/arch/arm/boot/dts/armada-xp-db.dts
-@@ -40,7 +40,7 @@
- 			/* Device Bus parameters are required */
+--- a/Documentation/devicetree/bindings/dma/ti-edma.txt
++++ b/Documentation/devicetree/bindings/dma/ti-edma.txt
+@@ -29,6 +29,6 @@ edma: edma@49000000 {
+ 	dma-channels = <64>;
+ 	ti,edma-regions = <4>;
+ 	ti,edma-slots = <256>;
+-	ti,edma-xbar-event-map = <1 12
+-				  2 13>;
++	ti,edma-xbar-event-map = /bits/ 16 <1 12
++					    2 13>;
+ };
+--- a/arch/arm/boot/dts/am33xx.dtsi
++++ b/arch/arm/boot/dts/am33xx.dtsi
+@@ -140,7 +140,7 @@
+ 			compatible = "ti,edma3";
+ 			ti,hwmods = "tpcc", "tptc0", "tptc1", "tptc2";
+ 			reg =	<0x49000000 0x10000>,
+-				<0x44e10f90 0x10>;
++				<0x44e10f90 0x40>;
+ 			interrupts = <12 13 14>;
+ 			#dma-cells = <1>;
+ 			dma-channels = <64>;
+--- a/arch/arm/common/edma.c
++++ b/arch/arm/common/edma.c
+@@ -1423,55 +1423,38 @@ EXPORT_SYMBOL(edma_clear_event);
  
- 			/* Read parameters */
--			devbus,bus-width    = <8>;
-+			devbus,bus-width    = <16>;
- 			devbus,turn-off-ps  = <60000>;
- 			devbus,badr-skew-ps = <0>;
- 			devbus,acc-first-ps = <124000>;
+ #if IS_ENABLED(CONFIG_OF) && IS_ENABLED(CONFIG_DMADEVICES)
+ 
+-static int edma_of_read_u32_to_s16_array(const struct device_node *np,
+-					 const char *propname, s16 *out_values,
+-					 size_t sz)
++static int edma_xbar_event_map(struct device *dev, struct device_node *node,
++			       struct edma_soc_info *pdata, size_t sz)
+ {
+-	int ret;
+-
+-	ret = of_property_read_u16_array(np, propname, out_values, sz);
+-	if (ret)
+-		return ret;
+-
+-	/* Terminate it */
+-	*out_values++ = -1;
+-	*out_values++ = -1;
+-
+-	return 0;
+-}
+-
+-static int edma_xbar_event_map(struct device *dev,
+-			       struct device_node *node,
+-			       struct edma_soc_info *pdata, int len)
+-{
+-	int ret, i;
++	const char pname[] = "ti,edma-xbar-event-map";
+ 	struct resource res;
+ 	void __iomem *xbar;
+-	const s16 (*xbar_chans)[2];
++	s16 (*xbar_chans)[2];
++	size_t nelm = sz / sizeof(s16);
+ 	u32 shift, offset, mux;
++	int ret, i;
+ 
+-	xbar_chans = devm_kzalloc(dev,
+-				  len/sizeof(s16) + 2*sizeof(s16),
+-				  GFP_KERNEL);
++	xbar_chans = devm_kzalloc(dev, (nelm + 2) * sizeof(s16), GFP_KERNEL);
+ 	if (!xbar_chans)
+ 		return -ENOMEM;
+ 
+ 	ret = of_address_to_resource(node, 1, &res);
+ 	if (ret)
+-		return -EIO;
++		return -ENOMEM;
+ 
+ 	xbar = devm_ioremap(dev, res.start, resource_size(&res));
+ 	if (!xbar)
+ 		return -ENOMEM;
+ 
+-	ret = edma_of_read_u32_to_s16_array(node,
+-					    "ti,edma-xbar-event-map",
+-					    (s16 *)xbar_chans,
+-					    len/sizeof(u32));
++	ret = of_property_read_u16_array(node, pname, (u16 *)xbar_chans, nelm);
+ 	if (ret)
+ 		return -EIO;
+ 
+-	for (i = 0; xbar_chans[i][0] != -1; i++) {
++	/* Invalidate last entry for the other user of this mess */
++	nelm >>= 1;
++	xbar_chans[nelm][0] = xbar_chans[nelm][1] = -1;
++
++	for (i = 0; i < nelm; i++) {
+ 		shift = (xbar_chans[i][1] & 0x03) << 3;
+ 		offset = xbar_chans[i][1] & 0xfffffffc;
+ 		mux = readl(xbar + offset);
+@@ -1480,8 +1463,7 @@ static int edma_xbar_event_map(struct de
+ 		writel(mux, (xbar + offset));
+ 	}
+ 
+-	pdata->xbar_chans = xbar_chans;
+-
++	pdata->xbar_chans = (const s16 (*)[2]) xbar_chans;
+ 	return 0;
+ }
+ 
 
 
