@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751680AbaFDSzs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 14:55:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37332 "EHLO
+	id S1751494AbaFDS5o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 14:57:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37352 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751233AbaFDSzr (ORCPT
+	with ESMTP id S1750742AbaFDS5n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 14:55:47 -0400
-Date: Wed, 4 Jun 2014 11:59:26 -0700
+	Wed, 4 Jun 2014 14:57:43 -0400
+Date: Wed, 4 Jun 2014 12:01:23 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: Ritesh Harjani <ritesh.harjani@gmail.com>
 Cc: Catalin Marinas <catalin.marinas@arm.com>,
@@ -19,7 +19,7 @@ Cc: Catalin Marinas <catalin.marinas@arm.com>,
         linux-kernel@vger.kernel.org
 Subject: Re: [PATCH 1/1] device.h: arm,dma-iommu: Move out dma_iommu_mapping
  struct
-Message-ID: <20140604185926.GB30884@kroah.com>
+Message-ID: <20140604190123.GC30884@kroah.com>
 References: <1401869506-48129-1-git-send-email-ritesh.harjani@gmail.com>
  <1401869506-48129-2-git-send-email-ritesh.harjani@gmail.com>
  <20140604175145.GD20812@kroah.com>
@@ -34,43 +34,40 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Thu, Jun 05, 2014 at 12:16:28AM +0530, Ritesh Harjani wrote:
-> Hi Greg,
-> 
-> Thanks for reviewing.
-> 
-> On Wed, Jun 4, 2014 at 11:21 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> > On Wed, Jun 04, 2014 at 01:41:46PM +0530, ritesh.harjani@gmail.com wrote:
-> >> From: Ritesh Harjani <ritesh.harjani@gmail.com>
+> >> --- a/include/linux/device.h
+> >> +++ b/include/linux/device.h
+> >> @@ -705,6 +705,10 @@ struct device {
+> >>       /* arch specific additions */
+> >>       struct dev_archdata     archdata;
 > >>
-> >> This patch moves out *mapping pointer of dma_iommu_mapping
-> >> from arch/arm/include/asm/device.h to include/liunux/device.h
-> >
-> > Why?  Who else can use this becides arm devices?
-> 
-> Currently only arm and arm64 are the archs at this very moment but
-> later other archs can make use of this, as its an arch independent
-> code. (Similar to as some arch make use of iommu_area_alloc in
-> iommu-helper.c)
-> 
-> >
+> >> +#ifdef CONFIG_DMA_USE_IOMMU_HELPER_MAPPING
+> >> +     struct dma_iommu_mapping        *mapping;
+> >> +#endif
+> >> +
+> >>       struct device_node      *of_node; /* associated device tree node */
+> >>       struct acpi_dev_node    acpi_node; /* associated ACPI device node */
 > >>
-> >> Also, it moves out complete structre definition of dma_iommu_mapping
-> >> to include/linux/iommu-helper.h
-> >>
-> >> This is done since arm iommu's dma-mapping arch independent code,
-> >> needs to be moved out to lib/iommu-helper.c, this means
-> >> dma_iommu_mapping will be arch independent and later other archs
-> >> can make use of it.
 > >
-> > Will that really happen?  Do you have patches that do that?  I'd prefer
-> > to not do stuff like this until you have a patch series that needs it,
-> > otherwise this is just unneeded churn.
+> > Are you sure this will not break the build on systems that enable that
+> > option, yet do not include iommu-helper.h?
 > 
-> Yes, foll link has the patch series, (under review)
-> http://www.spinics.net/lists/arm-kernel/msg336896.html
+> They need to include iommu-helper.h wherever they are using this
+> structure members. Until then no this should
+> not break the build I think for the case you mentioned.
 
-Make this patch 1/3 of that series and resend, I don't want to take this
-one if the others are not accepted.
+Try it and find out :)
+
+> That's how it was done in arch/arm/include/asm/device.h
+
+Perhaps something else was pulling in that .h file?  device.h is used
+_everywhere_ you can not assume someone will have included another .h
+file before it.
+
+> Do I need to do this in diff way ?
+
+Yes, just predefine the structure in the .h file.
+
+And do you really need the #ifdef?
 
 thanks,
 
