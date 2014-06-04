@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754447AbaFDX0b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:26:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41074 "EHLO
+	id S1754476AbaFDX0p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 19:26:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41067 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754190AbaFDXYX (ORCPT
+	with ESMTP id S1754212AbaFDXYW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:24:23 -0400
+	Wed, 4 Jun 2014 19:24:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hans de Goede <hdegoede@redhat.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.10 092/103] ACPI / blacklist: Add dmi_enable_osi_linux quirk for Asus EEE PC 1015PX
-Date: Wed,  4 Jun 2014 16:25:55 -0700
-Message-Id: <20140604232549.819380138@linuxfoundation.org>
+        Aaron Lu <aaron.lu@intel.com>, Levente Kurusa <levex@linux.com>,
+        Tejun Heo <tj@kernel.org>
+Subject: [PATCH 3.10 091/103] libata: clean up ZPODD when a port is detached
+Date: Wed,  4 Jun 2014 16:25:54 -0700
+Message-Id: <20140604232549.789437779@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232546.704156131@linuxfoundation.org>
 References: <20140604232546.704156131@linuxfoundation.org>
@@ -29,49 +29,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: Levente Kurusa <levex@linux.com>
 
-commit f6e6e1b9fee88c90586787b71dc49bb3ce62bb89 upstream.
+commit a6f9bf4d2f965b862b95213303d154e02957eed8 upstream.
 
-Without this this EEE PC exports a non working WMI interface, with this it
-exports a working "good old" eeepc_laptop interface, fixing brightness control
-not working as well as rfkill being stuck in a permanent wireless blocked
-state.
+When a ZPODD device is unbound via sysfs, the ACPI notify handler
+is not removed. This causes panics as observed in Bug #74601. The
+panic only happens when the wake happens from outside the kernel
+(i.e. inserting a media or pressing a button). Add a loop to
+ata_port_detach which loops through the port's devices and checks
+if zpodd is enabled, if so call zpodd_exit.
 
-This is not an ideal way to fix this, but various attempts to fix this
-otherwise have failed, see:
-
-References: https://bugzilla.redhat.com/show_bug.cgi?id=1067181
-Reported-and-tested-by: lou.cardone@gmail.com
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Reviewed-by: Aaron Lu <aaron.lu@intel.com>
+Signed-off-by: Levente Kurusa <levex@linux.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/blacklist.c |   13 +++++++++++++
- 1 file changed, 13 insertions(+)
+ drivers/ata/libata-core.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
---- a/drivers/acpi/blacklist.c
-+++ b/drivers/acpi/blacklist.c
-@@ -327,6 +327,19 @@ static struct dmi_system_id acpi_osi_dmi
- 		     DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad T500"),
- 		},
- 	},
-+	/*
-+	 * Without this this EEEpc exports a non working WMI interface, with
-+	 * this it exports a working "good old" eeepc_laptop interface, fixing
-+	 * both brightness control, and rfkill not working.
-+	 */
-+	{
-+	.callback = dmi_enable_osi_linux,
-+	.ident = "Asus EEE PC 1015PX",
-+	.matches = {
-+		     DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK Computer INC."),
-+		     DMI_MATCH(DMI_PRODUCT_NAME, "1015PX"),
-+		},
-+	},
- 	{}
- };
+--- a/drivers/ata/libata-core.c
++++ b/drivers/ata/libata-core.c
+@@ -6300,6 +6300,8 @@ int ata_host_activate(struct ata_host *h
+ static void ata_port_detach(struct ata_port *ap)
+ {
+ 	unsigned long flags;
++	struct ata_link *link;
++	struct ata_device *dev;
  
+ 	if (!ap->ops->error_handler)
+ 		goto skip_eh;
+@@ -6319,6 +6321,13 @@ static void ata_port_detach(struct ata_p
+ 	cancel_delayed_work_sync(&ap->hotplug_task);
+ 
+  skip_eh:
++	/* clean up zpodd on port removal */
++	ata_for_each_link(link, ap, HOST_FIRST) {
++		ata_for_each_dev(dev, link, ALL) {
++			if (zpodd_dev_enabled(dev))
++				zpodd_exit(dev);
++		}
++	}
+ 	if (ap->pmp_link) {
+ 		int i;
+ 		for (i = 0; i < SATA_PMP_MAX_PORTS; i++)
 
 
