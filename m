@@ -1,41 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751799AbaFDXBB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:01:01 -0400
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:35833 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751122AbaFDXA7 (ORCPT
+	id S1751563AbaFDXDk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 19:03:40 -0400
+Received: from www.linutronix.de ([62.245.132.108]:41789 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750742AbaFDXDj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:00:59 -0400
-From: Peter Moody <pmoody@google.com>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: ananth@in.ibm.com, anil.s.keshavamurthy@intel.com, davem@davemloft.net,
-        linux-kernel@vger.kernel.org, Kees Cook <keescook@google.com>
-Subject: Re: splat in kretprobe in get_task_mm(current)
-References: <r3noay9dhad.fsf@perdido.sfo.corp.google.com>
-	<r3nfvjld5il.fsf@perdido.sfo.corp.google.com> <538ED2E3.1000707@hitachi.com>
-	<538F2837.3080800@hitachi.com> <r3nd2eobswp.fsf@perdido.sfo.corp.google.com>
-	<538FA28F.30407@hitachi.com>
-Date: Wed, 04 Jun 2014 16:00:13 -0700
-In-Reply-To: <538FA28F.30407@hitachi.com> (Masami Hiramatsu's message of "Thu\,
-	05 Jun 2014 07\:49\:51 +0900")
-Message-ID: <r3nha409t6q.fsf@perdido.sfo.corp.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Wed, 4 Jun 2014 19:03:39 -0400
+Date: Thu, 5 Jun 2014 01:03:33 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Brad Mouring <bmouring@ni.com>
+cc: linux-rt-users@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>, Clark Williams <williams@redhat.com>,
+        Brad Mouring <brad.mouring@ni.com>
+Subject: Re: [PATCH] rtmutex: Handle when top lock owner changes
+In-Reply-To: <1401920557-21387-1-git-send-email-brad.mouring@ni.com>
+Message-ID: <alpine.DEB.2.10.1406050041280.18296@nanos>
+References: <alpine.DEB.2.10.1406042217140.18296@nanos> <1401920557-21387-1-git-send-email-brad.mouring@ni.com>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-On Wed, Jun 04 2014 at 15:49, Masami Hiramatsu wrote:
+On Wed, 4 Jun 2014, Brad Mouring wrote:
 
-> Here, as you can see, calling mmput() in kretprobe handler is actually the root cause
-> of this problem.
+> If, during walking the priority chain on a task blocking on a rtmutex,
+> and the task is examining the waiter blocked on the lock owned by a task
+> that is not blocking (the end of the chain), the current task is ejected
+> from the processor and the owner of the end lock is scheduled in,
+> releasing that lock, before the original task is scheduled back in, the
+> task misses the fact that the previous owner of the current lock no
+> longer holds it.
 
-Indeed, deferring the mmput to a workqueue solved my issue.
+-ENOPARSE,
+ 
+> diff --git a/kernel/locking/rtmutex.c b/kernel/locking/rtmutex.c
+> index fbf152b..8ad7f7d 100644
+> --- a/kernel/locking/rtmutex.c
+> +++ b/kernel/locking/rtmutex.c
+> @@ -384,6 +384,26 @@ static int rt_mutex_adjust_prio_chain(struct task_struct *task,
+>  
+>  	/* Deadlock detection */
 
-Thanks for your quick reply today!
+Does not apply against 3.15-rc8
 
-Cheers,
-peter
+>  	if (lock == orig_lock || rt_mutex_owner(lock) == top_task) {
+> +		/*
+> +		 * If the prio chain has changed out from under us, set the task
+> +		 * to the current owner of the lock in the current waiter and
+> +		 * continue walking the prio chain
+> +		 */
+
+You are still describing what the code is doing, not WHY.
+
+    Why can it happen that the prio chain changed under us?
+
+    Why do we set task to the current owner of the lock ?
+
+    Why makes it sense to retry the chain walk from the very
+    beginning?
+
+    What are the conditions which make us go into that code path?
+
+> +		if (rt_mutex_owner(lock) && rt_mutex_owner(lock) != task &&
+> +			rt_mutex_owner(lock) != top_task) {
+> +			/* Release the old task (blocked before the chain chaged) */
+
+chaged?
+
+old task ?
+
+Again:
+
+> We really want to be more than careful about the comments here. The
+> damned thing is complex enough already, so confusing comments are
+> actually worse than no comments.
+
+This is not a speed code contest. Take your time, think about it, run
+it through your coworkers and then post again.
+
+Last warning.
+
+Thanks,
+
+	tglx
