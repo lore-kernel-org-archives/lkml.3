@@ -1,63 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752732AbaFDQNK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 12:13:10 -0400
-Received: from mail-qa0-f54.google.com ([209.85.216.54]:49028 "EHLO
-	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752652AbaFDQNE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 12:13:04 -0400
-Message-ID: <538F458D.9020603@mutualink.net>
-Date: Wed, 04 Jun 2014 12:13:01 -0400
-From: Mike Remski <mremski@mutualink.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Johan Hovold <jhovold@gmail.com>
-CC: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Re: ftdi_sio BUG: NULL pointer dereference
-References: <20140602164957.GC13790@localhost> <538CB049.9020805@mutualink.net> <20140602174630.GD13790@localhost> <538DA0BD.5080208@mutualink.net> <20140604141937.GA11160@localhost> <538F2D51.2010508@mutualink.net> <20140604145200.GB11160@localhost> <538F3360.40407@mutualink.net> <20140604150938.GD11160@localhost> <538F3E3B.5080906@mutualink.net> <20140604160000.GF11160@localhost>
-In-Reply-To: <20140604160000.GF11160@localhost>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752869AbaFDQNm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 12:13:42 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37743 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751589AbaFDQM3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 12:12:29 -0400
+From: Vlastimil Babka <vbabka@suse.cz>
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Greg Thelen <gthelen@google.com>, Vlastimil Babka <vbabka@suse.cz>,
+        Minchan Kim <minchan@kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        David Rientjes <rientjes@google.com>
+Subject: [RFC PATCH 6/6] mm, compaction: don't migrate in blocks that cannot be fully compacted in async direct compaction
+Date: Wed,  4 Jun 2014 18:11:50 +0200
+Message-Id: <1401898310-14525-6-git-send-email-vbabka@suse.cz>
+X-Mailer: git-send-email 1.8.4.5
+In-Reply-To: <1401898310-14525-1-git-send-email-vbabka@suse.cz>
+References: <alpine.DEB.2.02.1405211954410.13243@chino.kir.corp.google.com>
+ <1401898310-14525-1-git-send-email-vbabka@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/04/2014 12:00 PM, Johan Hovold wrote:
-> On Wed, Jun 04, 2014 at 11:41:47AM -0400, Mike Remski wrote:
->> Ok, had a chance to try the cdc-acm;  yes it's the ancient one that is
->> in the base install of CentOS 6.4 (2.6.32-71.29.1 centos patched).  I'm
->> hitting something similar;  I noticed there where a few commits for NULL
->> pointer dereferences in cdc-acm.c.
->>
->> I'll poke into this a bit (yes, I know try a newer kernel, etc) and let
->> you know what I find (or perhaps this looks similar to something already
->> seen?).  This device is the same as the original ftdi crash, 1.2 is the
->> same interface with bNumEndpoints == 0.
->>
->> Jun  4 11:35:20 nicA91A84 kernel: cdc_acm 5-2:1.2: This device cannot do
->> calls on its own. It is not a modem.
->> Jun  4 11:35:20 nicA91A84 kernel: BUG: unable to handle kernel NULL
->> pointer dereference at 00000004
->> Jun  4 11:35:20 nicA91A84 kernel: IP: [<f84f9c9e>]
->> acm_probe+0x44e/0x127c [cdc_acm]
->> Jun  4 11:35:20 nicA91A84 kernel: *pdpt = 00000000354eb001 *pde =
->> 000000007f003067
->> Jun  4 11:35:20 nicA91A84 kernel: Oops: 0000 [#1] SMP
->> Jun  4 11:35:20 nicA91A84 kernel: last sysfs file:
->> /sys/devices/pci0000:00/0000:00:1d.0/usb5/5-2/product
-> Yeah, you really need to update your kernel. You'll definitely need at
-> least commit 99f347caa456 ("USB: CDC ACM: Fix NULL pointer
-> dereference").
->
-> No more reports until you've tried a recent kernel, ok? ;)
->
-> Johan
-Agreed.  But I still have to understand it so I can backport the 
-appropriate fixes, no?
-I'll be quiet now.
+In direct compaction, we want to allocate the high-order page as soon as
+possible, so migrating from a block of pages that contains also unmigratable
+pages just adds to allocation latency.
 
+This patch therefore makes the migration scanner skip to the next cc->order
+aligned block of pages as soon as it cannot isolate a non-free page. Everything
+isolated up to that point is put back.
+
+In this mode, the nr_isolated limit to COMPACT_CLUSTER_MAX is not observed,
+allowing the scanner to scan the whole block at once, instead of migrating
+COMPACT_CLUSTER_MAX pages and then finding an unmigratable page in the next
+call. This might however have some implications on too_many_isolated.
+
+Also in this RFC PATCH, the "skipping mode" is tied to async migration mode,
+which is not optimal. What we most probably want is skipping in direct
+compactions, but not from kswapd and hugepaged.
+
+In very preliminary tests, this has reduced migrate_scanned, isolations and
+migrations by about 10%, while the success rate of stress-highalloc mmtests
+actually improved a bit.
+
+Cc: Minchan Kim <minchan@kernel.org>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Michal Nazarewicz <mina86@mina86.com>
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: David Rientjes <rientjes@google.com>
+---
+ mm/compaction.c | 48 +++++++++++++++++++++++++++++++++++-------------
+ 1 file changed, 35 insertions(+), 13 deletions(-)
+
+diff --git a/mm/compaction.c b/mm/compaction.c
+index 5909a88..c648ade 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -626,7 +626,7 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
+ 		}
+ 
+ 		if (!pfn_valid_within(low_pfn))
+-			continue;
++			goto isolation_failed;
+ 		nr_scanned++;
+ 
+ 		/*
+@@ -637,7 +637,7 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
+ 		 */
+ 		page = pfn_to_page(low_pfn);
+ 		if (page_zone(page) != zone)
+-			continue;
++			goto isolation_failed;
+ 
+ 		if (!valid_page)
+ 			valid_page = page;
+@@ -673,8 +673,12 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
+ 		if (PageBuddy(page)) {
+ 			unsigned long freepage_order = page_order_unsafe(page);
+ 
+-			if (freepage_order > 0 && freepage_order < MAX_ORDER)
+-				low_pfn += (1UL << freepage_order) - 1;
++			if (freepage_order > 0 && freepage_order < MAX_ORDER) {
++                                low_pfn += (1UL << freepage_order) - 1;
++                                if (next_capture_pfn)
++                                        next_capture_pfn = ALIGN(low_pfn + 1,
++                                                        (1UL << cc->order));
++			}
+ 			continue;
+ 		}
+ 
+@@ -690,7 +694,7 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
+ 					goto isolate_success;
+ 				}
+ 			}
+-			continue;
++			goto isolation_failed;
+ 		}
+ 
+ 		/*
+@@ -710,7 +714,7 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
+ 			if (next_capture_pfn)
+ 				next_capture_pfn =
+ 					ALIGN(low_pfn + 1, (1UL << cc->order));
+-			continue;
++			goto isolation_failed;
+ 		}
+ 
+ 		/*
+@@ -720,7 +724,7 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
+ 		 */
+ 		if (!page_mapping(page) &&
+ 		    page_count(page) > page_mapcount(page))
+-			continue;
++			goto isolation_failed;
+ 
+ 		/* If we already hold the lock, we can skip some rechecking */
+ 		if (locked)
+@@ -732,11 +736,11 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
+ 
+ 		/* Recheck PageLRU and PageTransHuge under lock */
+ 		if (!PageLRU(page))
+-			continue;
++			goto isolation_failed;
+ 		if (PageTransHuge(page)) {
+ 			low_pfn += (1 << compound_order(page)) - 1;
+ 			next_capture_pfn = low_pfn + 1;
+-			continue;
++			goto isolation_failed;
+ 		}
+ 
+ skip_recheck:
+@@ -744,7 +748,7 @@ skip_recheck:
+ 
+ 		/* Try isolate the page */
+ 		if (__isolate_lru_page(page, mode) != 0)
+-			continue;
++			goto isolation_failed;
+ 
+ 		VM_BUG_ON_PAGE(PageTransCompound(page), page);
+ 
+@@ -754,11 +758,14 @@ skip_recheck:
+ isolate_success:
+ 		cc->finished_update_migrate = true;
+ 		list_add(&page->lru, migratelist);
+-		cc->nr_migratepages++;
+ 		nr_isolated++;
+ 
+-		/* Avoid isolating too much */
+-		if (cc->nr_migratepages == COMPACT_CLUSTER_MAX) {
++		/*
++		 * Avoid isolating too much, except if we try to capture a
++		 * free page and want to find out at once if it can be done
++		 * or we should skip to the next block.
++		 */
++		if (!next_capture_pfn && nr_isolated == COMPACT_CLUSTER_MAX) {
+ 			++low_pfn;
+ 			break;
+ 		}
+@@ -769,6 +776,20 @@ next_pageblock:
+ 		low_pfn = ALIGN(low_pfn + 1, pageblock_nr_pages) - 1;
+ 		if (next_capture_pfn)
+ 			next_capture_pfn = low_pfn + 1;
++
++isolation_failed:
++		if (cc->mode == MIGRATE_ASYNC && next_capture_pfn) {
++			if (nr_isolated) {
++				if (locked) {
++					spin_unlock_irqrestore(&zone->lru_lock,
++									flags);
++					locked = false;
++				}
++				putback_movable_pages(migratelist);
++				nr_isolated = 0;
++			}
++			low_pfn = next_capture_pfn - 1;
++		}
+ 	}
+ 
+ 	/*
+@@ -778,6 +799,7 @@ next_pageblock:
+ 	if (unlikely(low_pfn > end_pfn))
+ 		end_pfn = low_pfn;
+ 
++	cc->nr_migratepages = nr_isolated;
+ 	acct_isolated(zone, locked, cc);
+ 
+ 	if (locked)
 -- 
-Office: (978)401-4032 (x123 internally)
-Cell: (603) 759-6953
+1.8.4.5
 
