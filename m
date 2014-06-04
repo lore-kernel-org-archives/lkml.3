@@ -1,44 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752508AbaFDLdT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 07:33:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50389 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751640AbaFDLdR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 07:33:17 -0400
-Message-ID: <538F03F0.8050506@redhat.com>
-Date: Wed, 04 Jun 2014 13:33:04 +0200
+	id S1752598AbaFDLfJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 07:35:09 -0400
+Received: from mail-we0-f180.google.com ([74.125.82.180]:41154 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752309AbaFDLfI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 07:35:08 -0400
 From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Bart Van Assche <bvanassche@acm.org>, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org
-CC: hch@lst.de, JBottomley@Parallels.com, venkateshs@google.com
-Subject: Re: [PATCH v2 0/6] virtio-scsi patches for 3.16 + midlayer fix
-References: <1401876703-10236-1-git-send-email-pbonzini@redhat.com> <538F0127.9040300@acm.org>
-In-Reply-To: <538F0127.9040300@acm.org>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+To: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Cc: hch@lst.de, JBottomley@Parallels.com, venkateshs@google.com
+Subject: [PATCH v3 0/6] virtio-scsi patches for 3.16 + midlayer fix
+Date: Wed,  4 Jun 2014 13:34:53 +0200
+Message-Id: <1401881699-1456-1-git-send-email-pbonzini@redhat.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 04/06/2014 13:21, Bart Van Assche ha scritto:
->
-> Thanks for the quick respin. However, since you are mentioning that in
-> v2 all occurrences of "scmd->result |= DID_TIME_OUT << 16" have been
-> addressed, this made me wonder whether you had noticed the following
-> code in scsi_decide_disposition() ?
->
-> 	switch (host_byte(scmd->result)) {
-> 	[ ... ]
-> 	case DID_ABORT:
-> 		if (scmd->eh_eflags & SCSI_EH_ABORT_SCHEDULED) {
-> 			scmd->result |= DID_TIME_OUT << 16;
-> 			return SUCCESS;
-> 		}
-
-Nope, I miscounted how many occurrences were left.  v3 on the way.
+As mentioned in the v1 submission, these patches were delayed a bit
+by the discussion and testing of patch 5.  Debugging the problem also
+led to the discovery of a midlayer bug fixed by patch 4.
 
 Paolo
+
+v1->v2: fix all occurrences of "scmd->result |= DID_TIME_OUT << 16"
+        in patch 4
+
+v2->v3: really fix all occurrences in patch 4
+
+Ming Lei (2):
+  virtio_scsi: remove ACCESS_ONCE() and smp_read_barrier_depends()
+  virtio-scsi: replace target spinlock with seqcount
+
+Paolo Bonzini (2):
+  virtio-scsi: avoid cancelling uninitialized work items
+  virtio-scsi: fix various bad behavior on aborted requests
+
+Ulrich Obergfell (1):
+  scsi_error: fix invalid setting of host byte
+
+Venkatesh Srinivas (1):
+  virtio-scsi: Implement change_queue_depth for virtscsi targets
+
+ drivers/scsi/scsi_error.c  |   6 +-
+ drivers/scsi/virtio_scsi.c | 148 +++++++++++++++++++++++++++------------------
+ 2 files changed, 93 insertions(+), 61 deletions(-)
+
+-- 
+1.8.3.1
+
