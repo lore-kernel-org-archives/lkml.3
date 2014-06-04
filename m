@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754455AbaFDXdX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:33:23 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40915 "EHLO
+	id S1754754AbaFDXdn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 19:33:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40922 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754101AbaFDXYK (ORCPT
+	with ESMTP id S1754071AbaFDXYJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:24:10 -0400
+	Wed, 4 Jun 2014 19:24:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [PATCH 3.10 083/103] x86-64, modify_ldt: Make support for 16-bit segments a runtime option
-Date: Wed,  4 Jun 2014 16:25:46 -0700
-Message-Id: <20140604232549.519397783@linuxfoundation.org>
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        James Hogan <james.hogan@imgtec.com>
+Subject: [PATCH 3.10 081/103] metag: fix memory barriers
+Date: Wed,  4 Jun 2014 16:25:44 -0700
+Message-Id: <20140604232549.455641610@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232546.704156131@linuxfoundation.org>
 References: <20140604232546.704156131@linuxfoundation.org>
@@ -28,86 +30,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit fa81511bb0bbb2b1aace3695ce869da9762624ff upstream.
+commit 2425ce84026c385b73ae72039f90d042d49e0394 upstream.
 
-Checkin:
+Volatile access doesn't really imply the compiler barrier. Volatile access
+is only ordered with respect to other volatile accesses, it isn't ordered
+with respect to general memory accesses. Gcc may reorder memory accesses
+around volatile access, as we can see in this simple example (if we
+compile it with optimization, both increments of *b will be collapsed to
+just one):
 
-b3b42ac2cbae x86-64, modify_ldt: Ban 16-bit segments on 64-bit kernels
+void fn(volatile int *a, long *b)
+{
+	(*b)++;
+	*a = 10;
+	(*b)++;
+}
 
-disabled 16-bit segments on 64-bit kernels due to an information
-leak.  However, it does seem that people are genuinely using Wine to
-run old 16-bit Windows programs on Linux.
+Consequently, we need the compiler barrier after a write to the volatile
+variable, to make sure that the compiler doesn't reorder the volatile
+write with something else.
 
-A proper fix for this ("espfix64") is coming in the upcoming merge
-window, but as a temporary fix, create a sysctl to allow the
-administrator to re-enable support for 16-bit segments.
-
-It adds a "/proc/sys/abi/ldt16" sysctl that defaults to zero (off). If
-you hit this issue and care about your old Windows program more than
-you care about a kernel stack address information leak, you can do
-
-   echo 1 > /proc/sys/abi/ldt16
-
-as root (add it to your startup scripts), and you should be ok.
-
-The sysctl table is only added if you have COMPAT support enabled on
-x86-64, but I assume anybody who runs old windows binaries very much
-does that ;)
-
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Link: http://lkml.kernel.org/r/CA%2B55aFw9BPoD10U1LfHbOMpHWZkvJTkMcfCs9s3urPr1YyWBxw@mail.gmail.com
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Acked-by: Peter Zijlstra <peterz@infradead.org>
+Signed-off-by: James Hogan <james.hogan@imgtec.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/ldt.c        |    4 +++-
- arch/x86/vdso/vdso32-setup.c |    8 ++++++++
- 2 files changed, 11 insertions(+), 1 deletion(-)
+ arch/metag/include/asm/barrier.h |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/arch/x86/kernel/ldt.c
-+++ b/arch/x86/kernel/ldt.c
-@@ -20,6 +20,8 @@
- #include <asm/mmu_context.h>
- #include <asm/syscalls.h>
+--- a/arch/metag/include/asm/barrier.h
++++ b/arch/metag/include/asm/barrier.h
+@@ -15,6 +15,7 @@ static inline void wr_fence(void)
+ 	volatile int *flushptr = (volatile int *) LINSYSEVENT_WR_FENCE;
+ 	barrier();
+ 	*flushptr = 0;
++	barrier();
+ }
  
-+int sysctl_ldt16 = 0;
-+
- #ifdef CONFIG_SMP
- static void flush_ldt(void *current_mm)
- {
-@@ -234,7 +236,7 @@ static int write_ldt(void __user *ptr, u
- 	 * IRET leaking the high bits of the kernel stack address.
- 	 */
- #ifdef CONFIG_X86_64
--	if (!ldt_info.seg_32bit) {
-+	if (!ldt_info.seg_32bit && !sysctl_ldt16) {
- 		error = -EINVAL;
- 		goto out_unlock;
- 	}
---- a/arch/x86/vdso/vdso32-setup.c
-+++ b/arch/x86/vdso/vdso32-setup.c
-@@ -41,6 +41,7 @@ enum {
- #ifdef CONFIG_X86_64
- #define vdso_enabled			sysctl_vsyscall32
- #define arch_setup_additional_pages	syscall32_setup_pages
-+extern int sysctl_ldt16;
- #endif
+ #else /* CONFIG_METAG_META21 */
+@@ -35,6 +36,7 @@ static inline void wr_fence(void)
+ 	*flushptr = 0;
+ 	*flushptr = 0;
+ 	*flushptr = 0;
++	barrier();
+ }
  
- /*
-@@ -379,6 +380,13 @@ static ctl_table abi_table2[] = {
- 		.maxlen		= sizeof(int),
- 		.mode		= 0644,
- 		.proc_handler	= proc_dointvec
-+	},
-+	{
-+		.procname	= "ldt16",
-+		.data		= &sysctl_ldt16,
-+		.maxlen		= sizeof(int),
-+		.mode		= 0644,
-+		.proc_handler	= proc_dointvec
- 	},
- 	{}
- };
+ #endif /* !CONFIG_METAG_META21 */
+@@ -68,6 +70,7 @@ static inline void fence(void)
+ 	volatile int *flushptr = (volatile int *) LINSYSEVENT_WR_ATOMIC_UNLOCK;
+ 	barrier();
+ 	*flushptr = 0;
++	barrier();
+ }
+ #define smp_mb()        fence()
+ #define smp_rmb()       fence()
 
 
