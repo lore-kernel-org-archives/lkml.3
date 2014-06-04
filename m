@@ -1,83 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753869AbaFDXXf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:23:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40665 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753751AbaFDXXc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:23:32 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andrew Victor <linux@maxim.org.za>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3.10 008/103] pata_at91: fix ata_host_activate() failure handling
-Date: Wed,  4 Jun 2014 16:24:31 -0700
-Message-Id: <20140604232547.100840737@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140604232546.704156131@linuxfoundation.org>
-References: <20140604232546.704156131@linuxfoundation.org>
-User-Agent: quilt/0.63-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	id S1755089AbaFDXpr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 19:45:47 -0400
+Received: from mga01.intel.com ([192.55.52.88]:22197 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755072AbaFDXpo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 19:45:44 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,976,1392192000"; 
+   d="asc'?scan'208";a="549929254"
+Message-ID: <1401925517.19767.175.camel@jtkirshe-mobl>
+Subject: Re: [linux-nics] [PATCH] net: ethernet: intel: ixgbe: ixgbe_main.c:
+ Cleaning up missing null-terminate after strncpy call
+From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: Jesse Brandeburg <jesse.brandeburg@intel.com>, Don@isotope.jf.intel.com,
+        e1000-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        Linux@isotope.jf.intel.com, NICS <linux.nics@intel.com>,
+        Carolyn Wyborny <carolyn.wyborny@intel.com>, netdev@vger.kernel.org
+Date: Wed, 04 Jun 2014 16:45:17 -0700
+In-Reply-To: <1401917380-2772-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+References: <1401917380-2772-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-XKWcFaUQst+hbSnjUrfr"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
 
-------------------
+--=-XKWcFaUQst+hbSnjUrfr
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+On Wed, 2014-06-04 at 23:29 +0200, Rickard Strandqvist wrote:
+> Added a guaranteed null-terminate after call to strncpy.
+>=20
+> This was partly found using a static code analysis program called
+> cppcheck.
+>=20
+> Signed-off-by: Rickard Strandqvist
+> <rickard_strandqvist@spectrumdigital.se>
+> ---
+>  drivers/net/ethernet/intel/ixgbe/ixgbe_main.c |    4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
 
-commit 27aa64b9d1bd0d23fd692c91763a48309b694311 upstream.
+NAK, I won't be picking this patch up based on Mark's and Joe's
+feedback.
 
-Add missing clk_put() call to ata_host_activate() failure path.
+--=-XKWcFaUQst+hbSnjUrfr
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
-Sergei says,
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-  "Hm, I have once fixed that (see that *if* (!ret)) but looks like a
-   later commit 477c87e90853d136b188c50c0e4a93d01cad872e (ARM:
-   at91/pata: use gpio_is_valid to check the gpio) broke it again. :-(
-   Would be good if the changelog did mention that..."
+iQIcBAABCgAGBQJTj6+NAAoJEOVv75VaS+3OVJUP/1YONvsZ0hxDz5IMn59SXzNf
+359R8nBq00KUIKxCgb9StrPdXCsxaAIPCDTmaU3/bixQq2R36lrlxT3im6MtoBDG
+R/Mbh/TDokG9/UTV+5RBw+n+s5sojeL2HRZzhrUCid0NmQVdJYdPWxji5d+DSBnT
+pYLBTyWV0drXYflK8S2nRtyE2qg7TwXN1L0ZMFadzN8T0D/1OFaXmhrVkQRnteYQ
+ozJ+O8rRDggltWn/nc+zHwvce7aDVXFJGo5pUTtsZ2dwC3p1nB/pkA/5ooT82Z2t
+zn8KD15XA9WSKRkaWmYOhV6+bahUar2uXhGJ8+EcUTkJEbuWZHLS9RBAAdgQVsAf
+m1rlouzi9Zxia2KP+HHixlsoPor/8lO39WVUPgmsDxMK3K88FE/R73DZ3pYUMdQo
+TK2OIR1LY2wEGVXqErHl80rLDp/ZVU/vj+fSjQzd47x3bMcMY/jsDgwU2akjms4O
+nC/cVox/xPg3LdzFCW4S1XEm+Q/2LkniclFhCpVUJzOWjldzbQ+Ng44LJYNxoxmS
+Qd9xRce9dKOOdNbWDXjEL0yvSTis9hi/8+glsfp080BoObN2QbtxynRfG9mLWRCk
+WObnciTF9ya4/AKpvV+RiW79dRVmdxRwb+1Hcagjj2umKaHV53bSbKIgJPJOXHoj
+aOK7rDaP1B3lVvbQLk1D
+=9W/H
+-----END PGP SIGNATURE-----
 
-Cc: Andrew Victor <linux@maxim.org.za>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
-Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/ata/pata_at91.c |   11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
-
---- a/drivers/ata/pata_at91.c
-+++ b/drivers/ata/pata_at91.c
-@@ -408,12 +408,13 @@ static int pata_at91_probe(struct platfo
- 
- 	host->private_data = info;
- 
--	return ata_host_activate(host, gpio_is_valid(irq) ? gpio_to_irq(irq) : 0,
--			gpio_is_valid(irq) ? ata_sff_interrupt : NULL,
--			irq_flags, &pata_at91_sht);
-+	ret = ata_host_activate(host, gpio_is_valid(irq) ? gpio_to_irq(irq) : 0,
-+				gpio_is_valid(irq) ? ata_sff_interrupt : NULL,
-+				irq_flags, &pata_at91_sht);
-+	if (ret)
-+		goto err_put;
- 
--	if (!ret)
--		return 0;
-+	return 0;
- 
- err_put:
- 	clk_put(info->mck);
-
+--=-XKWcFaUQst+hbSnjUrfr--
 
