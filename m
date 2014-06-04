@@ -1,149 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753460AbaFDNbX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 09:31:23 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:40607 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753029AbaFDNbV (ORCPT
+	id S1753412AbaFDNch (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 09:32:37 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:50674 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753029AbaFDNcg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 09:31:21 -0400
-Date: Wed, 4 Jun 2014 15:28:33 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Sumit Semwal <sumit.semwal@linaro.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] fence: Use smp_mb__before_atomic()
-Message-ID: <20140604132831.GC28484@ulmo>
-References: <1401287192-14701-1-git-send-email-thierry.reding@gmail.com>
- <20140528205145.GB10468@kroah.com>
- <20140530081504.GA16669@ulmo>
- <20140530160831.GA11182@kroah.com>
- <CAO_48GE_Y7DQj_nCZ=0gb_AY26_vtPsQybf9zuhsLW1nnaOuQw@mail.gmail.com>
+	Wed, 4 Jun 2014 09:32:36 -0400
+Date: Wed, 4 Jun 2014 14:32:01 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Yi Li <yi.li@linaro.org>
+Cc: "ard.biesheuvel@linaro.org" <ard.biesheuvel@linaro.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Sudeep Holla <Sudeep.Holla@arm.com>,
+        "steve.capper@linaro.org" <steve.capper@linaro.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "phoenix.liyi@huawei.com" <phoenix.liyi@huawei.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] ARM64:DMI: Add smbios/dmi support on arm64
+Message-ID: <20140604133200.GA4329@leverpostej>
+References: <1401811033-16478-1-git-send-email-yi.li@linaro.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="z4+8/lEcDcG5Ke9S"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAO_48GE_Y7DQj_nCZ=0gb_AY26_vtPsQybf9zuhsLW1nnaOuQw@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1401811033-16478-1-git-send-email-yi.li@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jun 03, 2014 at 04:57:13PM +0100, Yi Li wrote:
+> Add smbios/dmi support on arm64 system, it depends on
+> EFI boot.
 
---z4+8/lEcDcG5Ke9S
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+And what exactly does this provide us with?
 
-On Wed, Jun 04, 2014 at 04:57:07PM +0530, Sumit Semwal wrote:
-> Hi Greg,
->=20
->=20
-> On 30 May 2014 21:38, Greg Kroah-Hartman <gregkh@linuxfoundation.org> wro=
-te:
-> > On Fri, May 30, 2014 at 10:15:05AM +0200, Thierry Reding wrote:
-> >> On Wed, May 28, 2014 at 01:51:45PM -0700, Greg Kroah-Hartman wrote:
-> >> > On Wed, May 28, 2014 at 04:26:32PM +0200, Thierry Reding wrote:
-> >> > > From: Thierry Reding <treding@nvidia.com>
-> >> > >
-> >> > > Commit febdbfe8a91c (arch: Prepare for smp_mb__{before,after}_atom=
-ic())
-> >> > > deprecated the smp_mb__{before,after}_{atomic,clear}_{dec,inc,bit}=
-*()
-> >> > > functions in favour of the unified smp_mb__{before,after}_atomic().
-> >> > >
-> >> > > Signed-off-by: Thierry Reding <treding@nvidia.com>
-> >> > > ---
-> >> > >  drivers/base/fence.c | 4 ++--
-> >> >
-> >> > Where does this file come from?  I've not seen it before, and it's n=
-ot
-> >> > in my tree.
-> >>
-> >> I think it came in through Sumit's tree and it's only in linux-next I
-> >> believe.
-> >
-> > Odd, linux-next is for merging things in Linus's next release.
-> >
-> > And as I have never seen this code that will end up being my
-> > responsibility to maintain, it seems strange that it will be merged in
-> > the next kernel development cycle.
-> >
-> > What broke down here with our review process that required something to
-> > be merged without at least a cc: to me?
->=20
-> This is a new file added by Maarten's patches [1], that got reviewed
-> on dri-devel and other mailing lists. Since it was quite closely
-> associated with dma-buf, I figured I should take it through the
-> dma-buf tree.
->=20
-> I am sorry I didn't notice that you weren't CC'ed on these patches -
-> Sincere apologies, since I should've noticed that during the patch
-> review process - I would take part of the blame here as well  :(
->=20
-> I do realize now that atleast on my part, I should've asked you before
-> taking it through the dma-buf tree - I will make sure things like this
-> don't happen again through me.
->=20
-> May I request you to help us handle this - would it help if we add
-> Maarten as the maintainer for this file? Any other suggestions?
+What is exposed through SMBIOS/DMI, and why would I want to enable it?
 
-Perhaps something like the following would help?
+> 
+> Signed-off-by: Yi Li <yi.li@linaro.org>
+> ---
+> 
+> Changes since v1:
+>   -Followed Ard Biesheuvel's suggestion to rebase the patch on
+>    Matt Fleming's arm64-efi branch.
+> 
+>  arch/arm64/Kconfig           |   10 ++++++++++
+>  arch/arm64/include/asm/dmi.h |   28 ++++++++++++++++++++++++++++
+>  arch/arm64/kernel/setup.c    |    2 ++
+>  3 files changed, 40 insertions(+)
+>  create mode 100644 arch/arm64/include/asm/dmi.h
+> 
+> diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+> index 6c71f12..13ee261 100644
+> --- a/arch/arm64/Kconfig
+> +++ b/arch/arm64/Kconfig
+> @@ -294,6 +294,16 @@ config EFI
+>  	  allow the kernel to be booted as an EFI application. This
+>  	  is only useful on systems that have UEFI firmware.
+>  
+> +config DMI
+> +	bool "Enable support for SMBIOS (DMI) tables"
+> +	depends on EFI
+> +	default y
+> +	help
+> +	  This enables SMBIOS/DMI feature for systems.
+> +
+> +	  This option is only useful on systems that have UEFI firmware.
+> +	  However, even with this option, the resultant kernel should
+> +	  continue to boot on existing non-UEFI platforms.
+>  endmenu
+>  
+>  menu "Userspace binary formats"
+> diff --git a/arch/arm64/include/asm/dmi.h b/arch/arm64/include/asm/dmi.h
+> new file mode 100644
+> index 0000000..f2198bf
+> --- /dev/null
+> +++ b/arch/arm64/include/asm/dmi.h
+> @@ -0,0 +1,28 @@
+> +/*
+> + * arch/arm64/include/asm/dmi.h
+> + *
+> + * Copyright (C) 2013 Linaro Limited.
+> + * Written by: Yi Li (yi.li@linaro.org)
+> + *
+> + * based on arch/ia64/include/asm/dmi.h
+> + *
+> + * This file is subject to the terms and conditions of the GNU General Public
+> + * License.  See the file "COPYING" in the main directory of this archive
+> + * for more details.
+> + */
+> +
+> +
+> +#ifndef _ASM_DMI_H
+> +#define _ASM_DMI_H 1
+> +
+> +#include <linux/slab.h>
+> +#include <asm/io.h>
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index fb39c9c3f0c1..d582f54adec8 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -2867,7 +2867,9 @@ L:        linux-media@vger.kernel.org
- L:	dri-devel@lists.freedesktop.org
- L:	linaro-mm-sig@lists.linaro.org
- F:	drivers/base/dma-buf*
-+F:	drivers/base/fence.c
- F:	include/linux/dma-buf*
-+F:	include/linux/fence.h
- F:	Documentation/dma-buf-sharing.txt
- T:	git git://git.linaro.org/people/sumitsemwal/linux-dma-buf.git
-@@ -2936,6 +2938,8 @@ T:        git git://git.kernel.org/pub/scm/linux/kern=
-el/git/gregkh/driver-core.git
- S:	Supported
- F:	Documentation/kobject.txt
- F:	drivers/base/
-+X:	drivers/base/dma-buf*
-+X:	drivers/base/fence.c
- F:	fs/sysfs/
- F:	fs/debugfs/
- F:	include/linux/kobj*
+Shouldn't that be linux/efi.h?
 
-That removes Greg from the list generated by get_maintainer.pl for
-anything that touches the DMA-BUF files.
+Why do we need asm/io.h?
 
-Thinking about it, perhaps moving DMA-BUF into its own subdirectory
-would be an option too, to make the separation more obvious.
+> +
+> +/* Use efi mappings for DMI */
+> +#define dmi_early_remap(x, l)	efi_lookup_mapped_addr(x)
+> +#define dmi_early_unmap(x, l)
+> +#define dmi_remap(x, l)			efi_lookup_mapped_addr(x)
+> +#define dmi_unmap(x)
+> +#define dmi_alloc(l)			kzalloc(l, GFP_ATOMIC)
+> +
+> +#endif
 
-That is, if that's something that Greg wants.
+None of these seem to use anything from io.h directly.
 
-Thierry
-
---z4+8/lEcDcG5Ke9S
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTjx7/AAoJEN0jrNd/PrOh90UP/2ghsAZWKKnSkd2ia6+yBMzu
-ny80NRNXzhAbLDxzhKAm5g6OpDLPsChKO9ljsG2FnnCHhBEhlJO7k9jUBHVDoLNq
-q3GQ3d3K5OeJv4tfFvLdiM/Xe0BNbJ8u5IFIOxkE5URS9Wjcd5a9Hflq5dvbZ/L6
-N0ZY/xtgeB18pbPBSDC1pdAA0KVRwsMEb7wxHJnzp2p6rpb8eDp+IiPAP9CvJOUK
-FKQwDhRTQCo5uDDawwU+fST/lIWkrdWUDTJ63OAcUWhqrK7+96JIjXqP9P582sg/
-MX18yk9meHG5J8rbsMMA0en2aU0v2NByf8XROWzInodX7RqNtezBL5Y5iX+w8ABY
-b3CzdeLcYvdUDdrhL32znReEgIj6NVqFnsbuTwrBdqPrl1/EkK+yM+AihKPV2Q6k
-jVozj7yiykKhIi6myQVLJhrhgsbWUTLKbxjBY7mAuXUdPHVvOvwlI136DnO64SmE
-kTIvpZ6uqPuTvbewLhRsbX+piBo5DYX0Kv4vd7ZRhjIjVz7h8zRckI5EJ14tyUtT
-SY38NPIllmQXGCEYzUgdMIFlC6eaL1BM47TMv66+wG9JfJQn9OxNaDkYGZ94CBOY
-mgFlscwpwMistwxtNWwJSSwmP3QmTFUlRByhIJiUjvYMPQx87wMUTR95N7/IxfWh
-fsHfY+SzxRbtWbCV1JtW
-=LqJV
------END PGP SIGNATURE-----
-
---z4+8/lEcDcG5Ke9S--
+Cheers,
+Mark.
