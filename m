@@ -1,74 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751525AbaFDShb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 14:37:31 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:7046 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750777AbaFDSha (ORCPT
+	id S1751628AbaFDSlH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 14:41:07 -0400
+Received: from mga11.intel.com ([192.55.52.93]:15672 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750933AbaFDSlF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 14:37:30 -0400
-Date: Wed, 4 Jun 2014 14:37:28 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Petr Mladek <pmladek@suse.cz>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Jan Beulich <jbeulich@suse.com>, Jiri Kosina <jkosina@suse.cz>,
-        linux-kernel@vger.kernel.org, x86@kernel.org
-Subject: Re: [PATCH] ftrace/x86: Use kernel identity mapping only when
- CONFIG_DEBUG_RODATA enabled
-Message-ID: <20140604143728.22e8cbf5@gandalf.local.home>
-In-Reply-To: <1401896566-8028-1-git-send-email-pmladek@suse.cz>
-References: <1401896566-8028-1-git-send-email-pmladek@suse.cz>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Wed, 4 Jun 2014 14:41:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,974,1392192000"; 
+   d="scan'208";a="542517012"
+From: "Marciniszyn, Mike" <mike.marciniszyn@intel.com>
+To: Julia Lawall <Julia.Lawall@lip6.fr>, infinipath <infinipath@intel.com>
+CC: "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
+        Roland Dreier <roland@kernel.org>,
+        "Hefty, Sean" <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>,
+        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 9/10] IB/qib: use safer test on the result of
+ find_first_zero_bit
+Thread-Topic: [PATCH 9/10] IB/qib: use safer test on the result of
+ find_first_zero_bit
+Thread-Index: AQHPf9TDn7DxOifL6kaxD3HfCQ7N0JthSAGw
+Date: Wed, 4 Jun 2014 18:41:03 +0000
+Message-ID: <32E1700B9017364D9B60AED9960492BC21BE92E6@fmsmsx120.amr.corp.intel.com>
+References: <1401872880-23685-1-git-send-email-Julia.Lawall@lip6.fr>
+ <1401872880-23685-10-git-send-email-Julia.Lawall@lip6.fr>
+In-Reply-To: <1401872880-23685-10-git-send-email-Julia.Lawall@lip6.fr>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.1.200.107]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed,  4 Jun 2014 17:42:46 +0200
-Petr Mladek <pmladek@suse.cz> wrote:
-
-> This is just a tiny optimization. The remapping is not needed when the
-> kernel text mapping is read write all the time.
-
-This is true, but I think I rather have it still do it the same. The
-less variables in the code modification the better. The more changes
-per config option, the less things tend to get tested.
-
-This is a micro optimization to something that is hardly a fast path.
-
--- Steve
-
+> Subject: [PATCH 9/10] IB/qib: use safer test on the result of find_first_zero_bit
 > 
-> Suggested-by: Jan Beulich <jbeulich@suse.com>
-> Signed-off-by: Petr Mladek <pmladek@suse.cz>
-> ---
->  arch/x86/kernel/ftrace.c | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/arch/x86/kernel/ftrace.c b/arch/x86/kernel/ftrace.c
-> index cbc4a91b131e..a7a517bb793e 100644
-> --- a/arch/x86/kernel/ftrace.c
-> +++ b/arch/x86/kernel/ftrace.c
-> @@ -79,6 +79,7 @@ within(unsigned long addr, unsigned long start, unsigned long end)
->  
->  static unsigned long text_ip_addr(unsigned long ip)
->  {
-> +#ifdef CONFIG_DEBUG_RODATA
->  	/*
->  	 * On x86_64, kernel text mappings are mapped read-only with
->  	 * CONFIG_DEBUG_RODATA. So we use the kernel identity mapping instead
-> @@ -89,7 +90,7 @@ static unsigned long text_ip_addr(unsigned long ip)
->  	 */
->  	if (within(ip, (unsigned long)_text, (unsigned long)_etext))
->  		ip = (unsigned long)__va(__pa_symbol(ip));
-> -
-> +#endif
->  	return ip;
->  }
->  
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
 
+Thanks for the patch!
+
+Roland, I'm marking this as stable since a memory corruption can occur in the _set_bit().
+
+Cc: <stable@vger.kernel.org>
+Acked-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
