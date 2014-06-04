@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756645AbaFEAZX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 20:25:23 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40125 "EHLO
+	id S1756662AbaFEAZp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 20:25:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40114 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753095AbaFDXWY (ORCPT
+	with ESMTP id S1753092AbaFDXWX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:22:24 -0400
+	Wed, 4 Jun 2014 19:22:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ilia Mirkin <imirkin@alum.mit.edu>, Ben Skeggs <bskeggs@redhat.com>
-Subject: [PATCH 3.14 114/228] drm/nouveau/acpi: allow non-optimus setups to load vbios from acpi
-Date: Wed,  4 Jun 2014 16:22:23 -0700
-Message-Id: <20140604232351.703775333@linuxfoundation.org>
+        Carolyn Wyborny <carolyn.wyborny@intel.com>,
+        Christoph Paasch <christoph.paasch@uclouvain.be>,
+        Jeff Pieper <jeffrey.e.pieper@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Subject: [PATCH 3.14 120/228] igb: Unset IGB_FLAG_HAS_MSIX-flag when falling back to msi-only
+Date: Wed,  4 Jun 2014 16:22:29 -0700
+Message-Id: <20140604232351.900410705@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -28,36 +31,95 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ilia Mirkin <imirkin@alum.mit.edu>
+From: Christoph Paasch <christoph.paasch@uclouvain.be>
 
-commit a3d0b1218d351c6e6f3cea36abe22236a08cb246 upstream.
+commit b709323d2477614823a38c2f2a9a206e087e28fc upstream.
 
-There appear to be a crop of new hardware where the vbios is not
-available from PROM/PRAMIN, but there is a valid _ROM method in ACPI.
-The data read from PCIROM almost invariably contains invalid
-instructions (still has the x86 opcodes), which makes this a low-risk
-way to try to obtain a valid vbios image.
+Prior to cd14ef54d25 (igb: Change to use statically allocated array for
+MSIx entries), having msix_entries different from NULL was an indicator
+that MSIX is enabled.
+In igb_set_interrupt_capabiliy we may fall back to MSI-only. Prior to
+the above patch msix_entries was set to NULL by
+igb_reset_interrupt_capability.
 
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=76475
-Signed-off-by: Ilia Mirkin <imirkin@alum.mit.edu>
-Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
+However, now we are checking the flag for IGB_FLAG_HAS_MSIX and so the
+stack gets completly confused:
+
+[   42.659791] ------------[ cut here ]------------
+[   42.715032] WARNING: CPU: 7 PID: 0 at net/sched/sch_generic.c:264 dev_watchdog+0x15c/0x1fb()
+[   42.848263] NETDEV WATCHDOG: eth0 (igb): transmit queue 0 timed out
+[   42.923253] Modules linked in:
+[   42.959875] CPU: 7 PID: 0 Comm: swapper/7 Not tainted 3.14.0-rc2-mptcp #437
+[   43.043184] Hardware name: HP ProLiant DL165 G7, BIOS O37 01/26/2011
+[   43.119215]  0000000000000108 ffff88023fdc3da8 ffffffff81487847 0000000000000108
+[   43.208165]  ffff88023fdc3df8 ffff88023fdc3de8 ffffffff81034e7d ffff88023fdc3dd8
+[   43.297120]  ffffffff813fff10 ffff880236018000 ffff880236b178c0 0000000000000008
+[   43.386071] Call Trace:
+[   43.415303]  <IRQ>  [<ffffffff81487847>] dump_stack+0x49/0x62
+[   43.484174]  [<ffffffff81034e7d>] warn_slowpath_common+0x77/0x91
+[   43.556049]  [<ffffffff813fff10>] ? dev_watchdog+0x15c/0x1fb
+[   43.623759]  [<ffffffff81034f2b>] warn_slowpath_fmt+0x41/0x43
+[   43.692511]  [<ffffffff813fff10>] dev_watchdog+0x15c/0x1fb
+[   43.758141]  [<ffffffff813ffdb4>] ? __netdev_watchdog_up+0x64/0x64
+[   43.832091]  [<ffffffff8103cd04>] call_timer_fn+0x17/0x6f
+[   43.896682]  [<ffffffff8103cebe>] run_timer_softirq+0x162/0x1a2
+[   43.967511]  [<ffffffff81038520>] __do_softirq+0xcd/0x1cc
+[   44.032104]  [<ffffffff81038689>] irq_exit+0x3a/0x48
+[   44.091492]  [<ffffffff81026d43>] smp_apic_timer_interrupt+0x43/0x50
+[   44.167525]  [<ffffffff8148c24a>] apic_timer_interrupt+0x6a/0x70
+[   44.239392]  <EOI>  [<ffffffff8100992c>] ? default_idle+0x6/0x8
+[   44.310343]  [<ffffffff81009b31>] arch_cpu_idle+0x13/0x18
+[   44.374934]  [<ffffffff81066126>] cpu_startup_entry+0xa7/0x101
+[   44.444724]  [<ffffffff81025660>] start_secondary+0x1b2/0x1b7
+[   44.513472] ---[ end trace a5a075fd4e7f854f ]---
+[   44.568753] igb 0000:04:00.0 eth0: Reset adapter
+[   46.206945] random: nonblocking pool is initialized
+[   46.465670] irq 44: nobody cared (try booting with the "irqpoll" option)
+[   46.545862] CPU: 7 PID: 0 Comm: swapper/7 Tainted: G        W    3.14.0-rc2-mptcp #437
+[   46.640610] Hardware name: HP ProLiant DL165 G7, BIOS O37 01/26/2011
+[   46.716641]  ffff8802363f8c84 ffff88023fdc3e38 ffffffff81487847 00000000a03cdb6d
+[   46.805598]  ffff8802363f8c00 ffff88023fdc3e68 ffffffff81068489 0000007f81825400
+[   46.894539]  ffff8802363f8c00 0000000000000000 0000000000000000 ffff88023fdc3ea8
+[   46.983484] Call Trace:
+[   47.012714]  <IRQ>  [<ffffffff81487847>] dump_stack+0x49/0x62
+[   47.081585]  [<ffffffff81068489>] __report_bad_irq+0x35/0xc1
+[   47.149295]  [<ffffffff81068683>] note_interrupt+0x16e/0x1ea
+[   47.217006]  [<ffffffff8106679e>] handle_irq_event_percpu+0x116/0x12e
+[   47.294075]  [<ffffffff810667e9>] handle_irq_event+0x33/0x4f
+[   47.361787]  [<ffffffff81068c95>] handle_fasteoi_irq+0x83/0xd1
+[   47.431577]  [<ffffffff81003d5b>] handle_irq+0x1f/0x28
+[   47.493047]  [<ffffffff81003567>] do_IRQ+0x4e/0xd4
+[   47.550358]  [<ffffffff8148b06a>] common_interrupt+0x6a/0x6a
+[   47.618066]  <EOI>  [<ffffffff8100992c>] ? default_idle+0x6/0x8
+[   47.689016]  [<ffffffff81009b31>] arch_cpu_idle+0x13/0x18
+[   47.753605]  [<ffffffff81066126>] cpu_startup_entry+0xa7/0x101
+[   47.823397]  [<ffffffff81025660>] start_secondary+0x1b2/0x1b7
+[   47.892146] handlers:
+[   47.919301] [<ffffffff812fbd7d>] igb_intr
+
+So, this patch unsets the flag to indicate that we are not using MSIX.
+This patch does exactly this: Unsetting the flag when falling back to MSI.
+
+Fixes: cd14ef54d25b (igb: Change to use statically allocated array for MSIx entries)
+Cc: Carolyn Wyborny <carolyn.wyborny@intel.com>
+Signed-off-by: Christoph Paasch <christoph.paasch@uclouvain.be>
+Tested-by: Jeff Pieper <jeffrey.e.pieper@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/nouveau/nouveau_acpi.c |    3 ---
- 1 file changed, 3 deletions(-)
+ drivers/net/ethernet/intel/igb/igb_main.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/gpu/drm/nouveau/nouveau_acpi.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_acpi.c
-@@ -389,9 +389,6 @@ bool nouveau_acpi_rom_supported(struct p
- 	acpi_status status;
- 	acpi_handle dhandle, rom_handle;
+--- a/drivers/net/ethernet/intel/igb/igb_main.c
++++ b/drivers/net/ethernet/intel/igb/igb_main.c
+@@ -1127,6 +1127,7 @@ static void igb_set_interrupt_capability
  
--	if (!nouveau_dsm_priv.dsm_detected && !nouveau_dsm_priv.optimus_detected)
--		return false;
--
- 	dhandle = ACPI_HANDLE(&pdev->dev);
- 	if (!dhandle)
- 		return false;
+ 	/* If we can't do MSI-X, try MSI */
+ msi_only:
++	adapter->flags &= ~IGB_FLAG_HAS_MSIX;
+ #ifdef CONFIG_PCI_IOV
+ 	/* disable SR-IOV for non MSI-X configurations */
+ 	if (adapter->vf_data) {
 
 
