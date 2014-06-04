@@ -1,108 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755524AbaFDGZe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 02:25:34 -0400
-Received: from mail-qa0-f44.google.com ([209.85.216.44]:65164 "EHLO
-	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755221AbaFDGZc (ORCPT
+	id S1755294AbaFDGdX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 02:33:23 -0400
+Received: from xavier.telenet-ops.be ([195.130.132.52]:60252 "EHLO
+	xavier.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754049AbaFDGdW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 02:25:32 -0400
+	Wed, 4 Jun 2014 02:33:22 -0400
+Message-ID: <538EBDAA.7090709@acm.org>
+Date: Wed, 04 Jun 2014 08:33:14 +0200
+From: Bart Van Assche <bvanassche@acm.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <A2CA0424C0A6F04399FB9E1CD98E0304844B2141@US01WEMBX2.internal.synopsys.com>
-References: <1401791978-3555-1-git-send-email-gautam.vivek@samsung.com>
-	<A2CA0424C0A6F04399FB9E1CD98E0304844B2141@US01WEMBX2.internal.synopsys.com>
-Date: Wed, 4 Jun 2014 11:55:31 +0530
-X-Google-Sender-Auth: GdjeZUDTFcQ_JxZYNfzlhczZWdI
-Message-ID: <CAFp+6iGgyh9eBfHU-XY=v+81oXpNk+OHRd0oUAdVG2tDzgH=gQ@mail.gmail.com>
-Subject: Re: [PATCH] usb: dwc3: Keeping 'resource' related code together
-From: Vivek Gautam <gautam.vivek@samsung.com>
-To: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
-Cc: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "balbi@ti.com" <balbi@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "kishon@ti.com" <kishon@ti.com>
-Content-Type: text/plain; charset=UTF-8
+To: Paolo Bonzini <pbonzini@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org
+CC: hch@lst.de, JBottomley@Parallels.com, venkateshs@google.com,
+        Ulrich Obergfell <uobergfe@redhat.com>
+Subject: Re: [PATCH 4/6] scsi_error: fix invalid setting of host byte
+References: <1401823998-29167-1-git-send-email-pbonzini@redhat.com> <1401823998-29167-5-git-send-email-pbonzini@redhat.com>
+In-Reply-To: <1401823998-29167-5-git-send-email-pbonzini@redhat.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 06/03/14 21:33, Paolo Bonzini wrote:
+> From: Ulrich Obergfell <uobergfe@redhat.com>
+> 
+> After scsi_try_to_abort_cmd returns, the eh_abort_handler may have
+> already found that the command has completed in the device, causing
+> the host_byte to be nonzero (e.g. it could be DID_ABORT).  When
+> this happens, ORing DID_TIME_OUT into the host byte will corrupt
+> the result field and initiate an unwanted command retry.
+> 
+> Fix this by using set_host_byte instead, following the model of
+> commit 2082ebc45af9c9c648383b8cde0dc1948eadbf31.
+> 
+> Cc: stable@vger.kernel.org
+> Signed-off-by: Ulrich Obergfell <uobergfe@redhat.com>
+> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+> ---
+>  drivers/scsi/scsi_error.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/scsi/scsi_error.c b/drivers/scsi/scsi_error.c
+> index f17aa7aa7879..ab06ef6fd726 100644
+> --- a/drivers/scsi/scsi_error.c
+> +++ b/drivers/scsi/scsi_error.c
+> @@ -131,7 +131,7 @@ scmd_eh_abort_handler(struct work_struct *work)
+>  				    "aborting command %p\n", scmd));
+>  		rtn = scsi_try_to_abort_cmd(sdev->host->hostt, scmd);
+>  		if (rtn == SUCCESS) {
+> -			scmd->result |= DID_TIME_OUT << 16;
+> +			set_host_byte(scmd, DID_TIME_OUT);
+>  			if (scsi_host_eh_past_deadline(sdev->host)) {
+>  				SCSI_LOG_ERROR_RECOVERY(3,
+>  					scmd_printk(KERN_INFO, scmd,
 
+There are three other occurrences in scsi_error.c of "scmd->result |=
+DID_TIME_OUT << 16". Please modify all occurrences to keep the error
+handling code consistent.
 
-On Wed, Jun 4, 2014 at 12:41 AM, Paul Zimmerman
-<Paul.Zimmerman@synopsys.com> wrote:
->> From: linux-usb-owner@vger.kernel.org [mailto:linux-usb-owner@vger.kernel.org] On Behalf Of Vivek Gautam
->> Sent: Tuesday, June 03, 2014 3:40 AM
->>
->> Putting together the code related to getting the 'IORESOURCE_MEM'
->> and assigning the same to dwc->xhci_resources, for increasing
->> the readability.
->>
->> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
->> ---
->>
->> Based on 'next' branch of Felipe's usb tree.
->> Also cleanly applies to 'usb-next' branch of Greg's usb tree.
->>
->>  drivers/usb/dwc3/core.c |   38 +++++++++++++++++++-------------------
->>  1 file changed, 19 insertions(+), 19 deletions(-)
->>
->> diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
->> index 3f59c12..4ca925d 100644
->> --- a/drivers/usb/dwc3/core.c
->> +++ b/drivers/usb/dwc3/core.c
->> @@ -656,6 +656,25 @@ static int dwc3_probe(struct platform_device *pdev)
->>               return -ENODEV;
->>       }
->>
->> +     dwc->xhci_resources[0].start = res->start;
->> +     dwc->xhci_resources[0].end = dwc->xhci_resources[0].start +
->> +                                     DWC3_XHCI_REGS_END;
->> +     dwc->xhci_resources[0].flags = res->flags;
->> +     dwc->xhci_resources[0].name = res->name;
->> +
->> +     res->start += DWC3_GLOBALS_REGS_START;
->> +
->> +     /*
->> +      * Request memory region but exclude xHCI regs,
->> +      * since it will be requested by the xhci-plat driver.
->> +      */
->> +     regs = devm_ioremap_resource(dev, res);
->> +     if (IS_ERR(regs))
->> +             return PTR_ERR(regs);
->> +
->> +     dwc->regs       = regs;
->> +     dwc->regs_size  = resource_size(res);
->> +
->>       if (node) {
->>               dwc->maximum_speed = of_usb_get_maximum_speed(node);
->
-> I think this will break if the following dwc3_core_get_phy() call returns
-> -EPROBE_DEFER. Since you have incremented res->start above, the next time
-> this probe function is called, res->start will have the wrong value.
-> Provided I'm reading the code correctly of course :)
-
-True, my fault. This will surely throw an error in requesting memory
-region the next time probe
-is called.
-Thanks for catching this.
-
->
-> I think you could fix that by decrementing res->start back to its
-> original value just after the call to resource_size() above.
-
-Sure will put
-        res->start -= DWC3_GLOBALS_REGS_START;
-right after the call to resource_size() call.
-
-
-
--- 
-Best Regards
-Vivek Gautam
-Samsung R&D Institute, Bangalore
-India
+Bart.
