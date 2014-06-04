@@ -1,54 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753193AbaFDPAK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 11:00:10 -0400
-Received: from mx08-00178001.pphosted.com ([91.207.212.93]:36355 "EHLO
-	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752649AbaFDPAD (ORCPT
+	id S1753673AbaFDPFN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 11:05:13 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:42711 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752717AbaFDPFJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 11:00:03 -0400
-From: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
-To: mturquette@linaro.org, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org
-Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        kernel@stlinux.com, Lee Jones <lee.jones@linaro.org>,
-        Gabriel Fernandez <gabriel.fernandez@linaro.org>
-Subject: [PATCH RESEND 12/12] drivers: clk: st: Use round to closest divider flag
-Date: Wed,  4 Jun 2014 16:32:00 +0200
-Message-Id: <1401892320-18211-13-git-send-email-gabriel.fernandez@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1401892320-18211-1-git-send-email-gabriel.fernandez@linaro.org>
-References: <1401892320-18211-1-git-send-email-gabriel.fernandez@linaro.org>
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
- definitions=2014-06-04_03:2014-06-04,2014-06-04,1970-01-01 signatures=0
+	Wed, 4 Jun 2014 11:05:09 -0400
+Date: Wed, 4 Jun 2014 08:05:08 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Christoph Hellwig <hch@infradead.org>, Shaohua Li <shli@kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch]blk-mq: blk_mq_tag_to_rq should handle flush request
+Message-ID: <20140604150508.GA21551@infradead.org>
+References: <20140509120733.GA27918@kernel.org>
+ <20140509150018.GA26215@infradead.org>
+ <20140510040023.GA13788@kernel.org>
+ <5388912F.7010609@kernel.dk>
+ <20140604111133.GA7826@infradead.org>
+ <538F2A11.4060800@kernel.dk>
+ <20140604142012.GA20056@infradead.org>
+ <538F331F.60101@kernel.dk>
+ <20140604145803.GA7826@infradead.org>
+ <538F34FB.7050003@kernel.dk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <538F34FB.7050003@kernel.dk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch uses CLK_DIVIDER_ROUND_CLOSEST flag to specify
-the divider has to round to closest div.
+On Wed, Jun 04, 2014 at 09:02:19AM -0600, Jens Axboe wrote:
+> OK strange, there hasn't been that much churn since the last rebase.
+> In my for-linus, there's a patch for a single queue crash, but that
+> should just hit for the removal case. And then there's the atomic
+> schedule patch, but that issue was actually in the code base for
+> about a month, so not a new one either.
 
-Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
----
- drivers/clk/st/clkgen-mux.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+You're request initializaion optimization doesn't set up req->cmd and
+thus causes all BLOCK_PC I/O (including the SCSI LUN scan) to crash and
+burn.  The trivial fix is on your way.
 
-diff --git a/drivers/clk/st/clkgen-mux.c b/drivers/clk/st/clkgen-mux.c
-index 9bdedc8..79dc40b 100644
---- a/drivers/clk/st/clkgen-mux.c
-+++ b/drivers/clk/st/clkgen-mux.c
-@@ -774,7 +774,8 @@ void __init st_of_clkgen_vcc_setup(struct device_node *np)
- 		div->reg = reg + VCC_DIV_OFFSET;
- 		div->shift = 2 * i;
- 		div->width = 2;
--		div->flags = CLK_DIVIDER_POWER_OF_TWO;
-+		div->flags = CLK_DIVIDER_POWER_OF_TWO |
-+			CLK_DIVIDER_ROUND_CLOSEST;
- 
- 		mux->reg = reg + VCC_MUX_OFFSET;
- 		mux->shift = 2 * i;
--- 
-1.9.1
+The performance regression is caused by "blk-mq: avoid code
+duplication", but I don't really understand why yet.
 
