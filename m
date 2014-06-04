@@ -1,76 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753973AbaFDBnX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 21:43:23 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:50115 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753902AbaFDBnW (ORCPT
+	id S1754084AbaFDBpa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 21:45:30 -0400
+Received: from mail-by2lp0238.outbound.protection.outlook.com ([207.46.163.238]:28256
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752439AbaFDBp2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 21:43:22 -0400
-X-IronPort-AV: E=Sophos;i="4.98,969,1392134400"; 
-   d="scan'208";a="31413651"
-Message-ID: <538E7ACB.3010704@cn.fujitsu.com>
-Date: Wed, 4 Jun 2014 09:47:55 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	Tue, 3 Jun 2014 21:45:28 -0400
+From: Peter Chen <Peter.Chen@freescale.com>
+To: "Yang,Wei" <Wei.Yang@windriver.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        "Andrzej Pietrasiewicz" <andrzej.p@samsung.com>
+CC: Felipe Balbi <balbi@ti.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        USB list <linux-usb@vger.kernel.org>,
+        "Kernel development list" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH v1] USB:gadget: Fix a warning while loading g_mass_storage
+Thread-Topic: [PATCH v1] USB:gadget: Fix a warning while loading
+ g_mass_storage
+Thread-Index: AQHPfw914N6/1BltqEeVaM9JvGUSI5tfd7eAgACwf4CAAAVUAA==
+Date: Wed, 4 Jun 2014 01:45:23 +0000
+Message-ID: <411dd8052ca74ed38810f2a5248063e2@BL2PR03MB226.namprd03.prod.outlook.com>
+References: <Pine.LNX.4.44L0.1406031033010.1054-100000@iolanthe.rowland.org>
+ <538E745B.1020200@windriver.com>
+In-Reply-To: <538E745B.1020200@windriver.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [123.151.195.50]
+x-microsoft-antispam: BL:0;ACTION:Default;RISK:Low;SCL:0;SPMLVL:NotSpam;PCL:0;RULEID:
+x-forefront-prvs: 0232B30BBC
+x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(428001)(51704005)(189002)(199002)(83072002)(86362001)(85852003)(2171001)(76176999)(50986999)(76576001)(54356999)(92566001)(87936001)(2656002)(19580395003)(83322001)(19580405001)(101416001)(21056001)(74316001)(79102001)(81542001)(46102001)(31966008)(80022001)(81342001)(74502001)(99396002)(74662001)(77982001)(99286001)(33646001)(66066001)(64706001)(76482001)(4396001)(20776003)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BL2PR03MB225;H:BL2PR03MB226.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+authentication-results: spf=none (sender IP is )
+ smtp.mailfrom=Peter.Chen@freescale.com; 
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: <jjherne@linux.vnet.ibm.com>, Sasha Levin <sasha.levin@oracle.com>,
-        Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: workqueue: WARN at at kernel/workqueue.c:2176
-References: <53739F3B.4060608@linux.vnet.ibm.com> <53758B12.8060609@cn.fujitsu.com> <20140516115737.GP11096@twins.programming.kicks-ass.net> <CACvQF52-jUMzK32uoDCb8zn0RZsiC9uzUOq+ZBRXK22esYKS0g@mail.gmail.com> <20140516162945.GZ11096@twins.programming.kicks-ass.net> <53849EB7.9090302@linux.vnet.ibm.com> <20140527142637.GB19143@laptop.programming.kicks-ass.net> <53875F09.3090607@linux.vnet.ibm.com> <538DB076.4090704@cn.fujitsu.com> <538DC373.9@cn.fujitsu.com> <20140603142845.GP30445@twins.programming.kicks-ass.net>
-In-Reply-To: <20140603142845.GP30445@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.226.103]
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/03/2014 10:28 PM, Peter Zijlstra wrote:
-> On Tue, Jun 03, 2014 at 08:45:39PM +0800, Lai Jiangshan wrote:
->>
->> Hi, Peter,
->>
->> I rewrote the analyse. (scheduler_ipi() must be called before stopper-task,
->> so the part for workqueue of the old analyse maybe be wrong.)
+ 
 > 
-> But I don't think there is any guarantee we'll do the wakeup before
-> running the stop work.
+> commit d18f7116a5ddb8263fe62b05ad63e5ceb5875791
+> Author: Robert Baldyga <r.baldyga@samsung.com>
+> Date:   Thu Nov 21 13:49:18 2013 +0100
+> 
+>      usb: gadget: s3c-hsotg: fix disconnect handling
+> 
+>      This patch moves s3c_hsotg_disconnect function call from USBSusp
+> interrupt
+>      handler to SET_ADDRESS request handler.
+> 
 
-You are right, but the race window in my old analyse is too narrow to
-hit the WARN_ON(). so I rewrote the new analyse showing a much bigger window
-which can hit the WARN_ON() in workqueue.c
+It is a little strange we call gadget's disconnect at SET_ADDRESS?
+How the udc calls gadget driver the disconnection has happened when
+the usb cable is disconnected from the host?
 
-> 
-> Suppose the initial task gets queued, and the thing gets send the
-> interrupt, meanwhile we'll do the stopper work wakeup !queueing, the
-> set_cpus_allowed_ptr() isn't crossing llc boundaries.
-> 
-> Now, the remote cpu preempts/schedules before the interrupt hits and
-> runs the stop task.
-> 
-> At which point we'll run __migrate_task() while the task is still queued
-> on the wake list.
-> 
->> ---
->> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
->> index 268a45e..1a198a5 100644
->> --- a/kernel/sched/core.c
->> +++ b/kernel/sched/core.c
->> @@ -4530,7 +4530,7 @@ int set_cpus_allowed_ptr(struct task_struct *p, const struct cpumask *new_mask)
->>  		goto out;
->>  
->>  	dest_cpu = cpumask_any_and(cpu_active_mask, new_mask);
->> -	if (p->on_rq) {
->> +	if (p->on_rq || p->state == TASK_WAKING) {
->>  		struct migration_arg arg = { p, dest_cpu };
->>  		/* Need help from migration thread: drop lock and wait. */
->>  		task_rq_unlock(rq, p, &flags);
-> 
-> So while this will close the window somewhat, I don't think its entirely
-> closed.
+Usually, we call gadget's disconnect at two situations
 
+- udc's reset handler if udc's speed is not UNKNOWN, it is usually happened
+when the host sends reset after enumeration.
+- udc's disconnect handler, it is usually happened when the usb cable
+is disconnected from host.
+
+Peter
