@@ -1,15 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752967AbaFDMbM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 08:31:12 -0400
-Received: from mailout1.zih.tu-dresden.de ([141.30.67.72]:35959 "EHLO
+	id S1753031AbaFDMbW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 08:31:22 -0400
+Received: from mailout1.zih.tu-dresden.de ([141.30.67.72]:35972 "EHLO
 	mailout1.zih.tu-dresden.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752482AbaFDMbK (ORCPT
+	by vger.kernel.org with ESMTP id S1752992AbaFDMbU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 08:31:10 -0400
-X-Greylist: delayed 1419 seconds by postgrey-1.27 at vger.kernel.org; Wed, 04 Jun 2014 08:31:09 EDT
-Message-ID: <538F0BF6.9070904@tu-dresden.de>
-Date: Wed, 04 Jun 2014 14:07:18 +0200
+	Wed, 4 Jun 2014 08:31:20 -0400
+Message-ID: <538F0BEE.7070703@tu-dresden.de>
+Date: Wed, 04 Jun 2014 14:07:10 +0200
 From: Joseph Schuchart <joseph.schuchart@tu-dresden.de>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
@@ -19,10 +18,10 @@ CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
         Thomas Ilsche <thomas.ilsche@tu-dresden.de>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 3/3] Provide additional sample information on generic events
+Subject: [PATCH 1/3] Add missing calls to Py_DECREF
 References: <53031D2C.2050009@tu-dresden.de>	<20140307141857.GA3153@ghostprotocols.net>	<533D2283.3090703@tu-dresden.de> <87wqd5f7j5.fsf@sejong.aot.lge.com>
 In-Reply-To: <87wqd5f7j5.fsf@sejong.aot.lge.com>
-Content-Type: multipart/signed; protocol="application/pkcs7-signature"; micalg=sha1; boundary="------------ms090805000306010900010207"
+Content-Type: multipart/signed; protocol="application/pkcs7-signature"; micalg=sha1; boundary="------------ms020001060905000103020803"
 X-TUD-Virus-Scanned: mailout1.zih.tu-dresden.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,84 +29,109 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 This is a cryptographically signed message in MIME format.
 
---------------ms090805000306010900010207
+--------------ms020001060905000103020803
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: quoted-printable
 
-Provide additional sample information on generic events
-to Python scripts, including pid, tid, and cpu for which the event was
-recorded. At the moment, the pointer to the sample struct is passed to
-scripts, which seems to be of little use. The patch puts this information=
- in
-a dictionary for easy access by Python scripts.
+Add missing calls to Py_DECREF.
+
+The function PyObject_CallObject() returns a new PyObject reference=20
+on which Py_DECREF has to be called to avoid memory leaks.
+This patch adds these calls where necessary.
+
+It also marks handler_call_die() as NORETURN to make this clear and to=20
+avoid unnecessary else statements. Note that the abort() is necessary=20
+since Py_FatalError() does not return but seems to be missing the=20
+__noretun__ attribute in Python versions <=3D2.7
 
 Signed-off-by: Joseph Schuchart <joseph.schuchart@tu-dresden.de>
-Acked-by: Thomas Ilsche <thomas.ilsche@tu-dresden.de>
+
 ---
- .../util/scripting-engines/trace-event-python.c     | 21 +++++++++++++++=
-+++---
- 1 file changed, 18 insertions(+), 3 deletions(-)
+ tools/perf/util/scripting-engines/trace-event-python.c | 12 ++++++++++--=
+
+ 1 file changed, 10 insertions(+), 2 deletions(-)
 
 diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/too=
 ls/perf/util/scripting-engines/trace-event-python.c
-index 4f81dc7..c8d148b 100644
+index cd9774d..8454dc9 100644
 --- a/tools/perf/util/scripting-engines/trace-event-python.c
 +++ b/tools/perf/util/scripting-engines/trace-event-python.c
-@@ -445,7 +445,7 @@ static void python_process_general_event(struct perf_=
-sample *sample,
- 					 struct thread *thread,
- 					 struct addr_location *al)
+@@ -50,10 +50,14 @@ static int zero_flag_atom;
+=20
+ static PyObject *main_module, *main_dict;
+=20
++static void handler_call_die(const char *handler_name) NORETURN;
+ static void handler_call_die(const char *handler_name)
  {
--	PyObject *handler, *retval, *t, *dict, *callchain;
-+	PyObject *handler, *retval, *t, *dict, *callchain, *dict_sample;
- 	static char handler_name[64];
- 	unsigned n =3D 0;
+ 	PyErr_Print();
+ 	Py_FatalError("problem in Python trace event handler");
++	// Py_FatalError does not return
++	// but we have to make the compiler happy
++	abort();
+ }
 =20
-@@ -461,6 +461,10 @@ static void python_process_general_event(struct perf=
-_sample *sample,
- 	if (!dict)
- 		Py_FatalError("couldn't create Python dictionary");
+ /*
+@@ -97,6 +101,7 @@ static void define_value(enum print_arg_type field_typ=
+e,
+ 		retval =3D PyObject_CallObject(handler, t);
+ 		if (retval =3D=3D NULL)
+ 			handler_call_die(handler_name);
++		Py_DECREF(retval);
+ 	}
 =20
-+	dict_sample =3D PyDict_New();
-+	if (!dict_sample)
-+		Py_FatalError("couldn't create Python dictionary");
-+
- 	snprintf(handler_name, sizeof(handler_name), "%s", "process_event");
+ 	Py_DECREF(t);
+@@ -143,6 +148,7 @@ static void define_field(enum print_arg_type field_ty=
+pe,
+ 		retval =3D PyObject_CallObject(handler, t);
+ 		if (retval =3D=3D NULL)
+ 			handler_call_die(handler_name);
++		Py_DECREF(retval);
+ 	}
 =20
- 	handler =3D PyDict_GetItemString(main_dict, handler_name);
-@@ -470,8 +474,19 @@ static void python_process_general_event(struct perf=
-_sample *sample,
- 	pydict_set_item_string_decref(dict, "ev_name", PyString_FromString(perf=
-_evsel__name(evsel)));
- 	pydict_set_item_string_decref(dict, "attr", PyString_FromStringAndSize(=
-
- 			(const char *)&evsel->attr, sizeof(evsel->attr)));
--	pydict_set_item_string_decref(dict, "sample", PyString_FromStringAndSiz=
-e(
--			(const char *)sample, sizeof(*sample)));
-+
-+	pydict_set_item_string_decref(dict_sample, "pid",
-+			PyInt_FromLong(sample->pid));
-+	pydict_set_item_string_decref(dict_sample, "tid",
-+			PyInt_FromLong(sample->tid));
-+	pydict_set_item_string_decref(dict_sample, "cpu",
-+			PyInt_FromLong(sample->cpu));
-+	pydict_set_item_string_decref(dict_sample, "time",
-+			PyLong_FromUnsignedLongLong(sample->time));
-+	pydict_set_item_string_decref(dict_sample, "period",
-+			PyLong_FromUnsignedLongLong(sample->period));
-+	pydict_set_item_string_decref(dict, "sample", dict_sample);
-+
- 	pydict_set_item_string_decref(dict, "raw_buf", PyString_FromStringAndSi=
-ze(
- 			(const char *)sample->raw_data, sample->raw_size));
- 	pydict_set_item_string_decref(dict, "comm",
+ 	Py_DECREF(t);
+@@ -333,6 +339,7 @@ static void python_process_tracepoint(struct perf_sam=
+ple *sample,
+ 		retval =3D PyObject_CallObject(handler, t);
+ 		if (retval =3D=3D NULL)
+ 			handler_call_die(handler_name);
++		Py_DECREF(retval);
+ 	} else {
+ 		handler =3D PyDict_GetItemString(main_dict, "trace_unhandled");
+ 		if (handler && PyCallable_Check(handler)) {
+@@ -340,6 +347,7 @@ static void python_process_tracepoint(struct perf_sam=
+ple *sample,
+ 			retval =3D PyObject_CallObject(handler, t);
+ 			if (retval =3D=3D NULL)
+ 				handler_call_die("trace_unhandled");
++			Py_DECREF(retval);
+ 		}
+ 		Py_DECREF(dict);
+ 	}
+@@ -399,6 +407,7 @@ static void python_process_general_event(struct perf_=
+sample *sample,
+ 	retval =3D PyObject_CallObject(handler, t);
+ 	if (retval =3D=3D NULL)
+ 		handler_call_die(handler_name);
++	Py_DECREF(retval);
+ exit:
+ 	Py_DECREF(dict);
+ 	Py_DECREF(t);
+@@ -520,8 +529,7 @@ static int python_stop_script(void)
+ 	retval =3D PyObject_CallObject(handler, NULL);
+ 	if (retval =3D=3D NULL)
+ 		handler_call_die("trace_end");
+-	else
+-		Py_DECREF(retval);
++	Py_DECREF(retval);
+ out:
+ 	Py_XDECREF(main_dict);
+ 	Py_XDECREF(main_module);
 --=20
 1.8.1.2
 
 
 
---------------ms090805000306010900010207
+--------------ms020001060905000103020803
 Content-Type: application/pkcs7-signature; name="smime.p7s"
 Content-Transfer-Encoding: base64
 Content-Disposition: attachment; filename="smime.p7s"
@@ -190,8 +214,8 @@ kNC7VObz0hu0cs0xggPUMIID0AIBATCBkTCBhTELMAkGA1UEBhMCREUxKDAmBgNVBAoTH1Rl
 Y2huaXNjaGUgVW5pdmVyc2l0YWV0IERyZXNkZW4xDDAKBgNVBAsTA1pJSDEcMBoGA1UEAxMT
 VFUgRHJlc2RlbiBDQSAtIEcwMjEgMB4GCSqGSIb3DQEJARYRcGtpQHR1LWRyZXNkZW4uZGUC
 Bxa9PhauABkwCQYFKw4DAhoFAKCCAhcwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkq
-hkiG9w0BCQUxDxcNMTQwNjA0MTIwNzE4WjAjBgkqhkiG9w0BCQQxFgQUcVBCzACgBODu9358
-h4aT9qRlJIowbAYJKoZIhvcNAQkPMV8wXTALBglghkgBZQMEASowCwYJYIZIAWUDBAECMAoG
+hkiG9w0BCQUxDxcNMTQwNjA0MTIwNzEwWjAjBgkqhkiG9w0BCQQxFgQU22uGJliS4z1iYyOw
+fYSSaXOW64gwbAYJKoZIhvcNAQkPMV8wXTALBglghkgBZQMEASowCwYJYIZIAWUDBAECMAoG
 CCqGSIb3DQMHMA4GCCqGSIb3DQMCAgIAgDANBggqhkiG9w0DAgIBQDAHBgUrDgMCBzANBggq
 hkiG9w0DAgIBKDCBogYJKwYBBAGCNxAEMYGUMIGRMIGFMQswCQYDVQQGEwJERTEoMCYGA1UE
 ChMfVGVjaG5pc2NoZSBVbml2ZXJzaXRhZXQgRHJlc2RlbjEMMAoGA1UECxMDWklIMRwwGgYD
@@ -199,10 +223,10 @@ VQQDExNUVSBEcmVzZGVuIENBIC0gRzAyMSAwHgYJKoZIhvcNAQkBFhFwa2lAdHUtZHJlc2Rl
 bi5kZQIHFr0+Fq4AGTCBpAYLKoZIhvcNAQkQAgsxgZSggZEwgYUxCzAJBgNVBAYTAkRFMSgw
 JgYDVQQKEx9UZWNobmlzY2hlIFVuaXZlcnNpdGFldCBEcmVzZGVuMQwwCgYDVQQLEwNaSUgx
 HDAaBgNVBAMTE1RVIERyZXNkZW4gQ0EgLSBHMDIxIDAeBgkqhkiG9w0BCQEWEXBraUB0dS1k
-cmVzZGVuLmRlAgcWvT4WrgAZMA0GCSqGSIb3DQEBAQUABIIBADnp39OaS9gfmrJf4raegZrj
-iG7TR4byz3Ej8fnoC6IEJMf4Tdfyt6YaZUbiVsE4Ev2IHT6V21jKKn5ZA3s+pQUE3rQAbXKF
-EKE8hTLDw4MofoLfMpdwGnI47U06L20w/SNjW/Yul6swvjpoG+qNW/kBclDB3bHyzuPgrziR
-ezqYp/VDlQhudS9B60VzHn4SdfX/XsTcZ+/3kHbFRM4QdjggLKUTDVt1HBnPwqF7/ZHDVeWt
-BFAc4nq7XM2Rxh3we1n5bRtLLZhJyTPG3Emo2pBIZp3CFWl9ZTjoDKn6jw6e/IrhBxzNKQNU
-N/NoHFktrPS/TT/JsAIJnktaobsiSS8AAAAAAAA=
---------------ms090805000306010900010207--
+cmVzZGVuLmRlAgcWvT4WrgAZMA0GCSqGSIb3DQEBAQUABIIBADbga24V8Lk7pvT6T05Pyu5y
+CszdxJ/pnHhd3iQINiJeTgqkbb/NJrIE61GA4+sYx4c+ubGod+/JWKL6BjBLL4AqDQnNGeFj
+C8aUTgdHTydG54Ebo7Y5f6YzORbRb6iPSIYvpgISP3UTAzZ6FCvrZcKm02VD9A+g27fWjQTz
+Gauy5oAK+/E8+GGY8iKy2bfDDPIoRj9tZpTLkcaK5DW70AwxK1YBS7dahF+icguQB6IaOz8H
+n4VvpoO7lTAT63Cgpb4ZsU7I+91rJBklrLDHSQDJgZ1qjVDueTuvw9Nma/TX0TAF4KkcMJty
+8ej0VD4UCiBnbitQEHHB769PIETYYeQAAAAAAAA=
+--------------ms020001060905000103020803--
