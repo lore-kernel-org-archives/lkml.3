@@ -1,87 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751902AbaFDTIm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 15:08:42 -0400
-Received: from g2t2354.austin.hp.com ([15.217.128.53]:42607 "EHLO
-	g2t2354.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751747AbaFDTIk (ORCPT
+	id S1751969AbaFDTIt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 15:08:49 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:50248 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751747AbaFDTIq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 15:08:40 -0400
-From: Jason Low <jason.low2@hp.com>
-To: mingo@kernel.org, peterz@infradead.org, tglx@linutronix.de,
-        akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, paulmck@linux.vnet.ibm.com,
-        tim.c.chen@linux.intel.com, peter@hurleysoftware.com, riel@redhat.com,
-        hpa@zytor.com, walken@google.com, davidlohr@hp.com, Waiman.Long@hp.com,
-        aswin@hp.com, scott.norton@hp.com, chegu_vinod@hp.com,
-        jason.low2@hp.com
-Subject: [RFC PATCH 3/3] locking/mutex: Optimize mutex trylock slowpath
-Date: Wed,  4 Jun 2014 12:08:31 -0700
-Message-Id: <1401908911-8947-4-git-send-email-jason.low2@hp.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1401908911-8947-1-git-send-email-jason.low2@hp.com>
-References: <1401908911-8947-1-git-send-email-jason.low2@hp.com>
+	Wed, 4 Jun 2014 15:08:46 -0400
+From: Jack Miller <millerjo@us.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mikey@au1.ibm.com, anton@au1.ibm.com, miltonm@us.ibm.com
+Subject: shm: shm_exit scalability fixes
+Date: Wed,  4 Jun 2014 14:07:45 -0500
+Message-Id: <1401908868-14554-1-git-send-email-millerjo@us.ibm.com>
+X-Mailer: git-send-email 1.9.1
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14060419-7164-0000-0000-0000023A41A1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In __mutex_trylock_slowpath(), we acquire the wait_lock spinlock,
-xchg() lock->count with -1, then set lock->count back to 0 if there
-are no waiters, and return true if the prev lock count was 1.
+All -
 
-However, if we the mutex is already locked, then there may not be
-much point in attempting the above operations. In this patch, we only
-attempt the above operations if the mutex is unlocked.
+This is small set of patches our team has had kicking around for a few versions
+internally that fixes tasks getting hung on shm_exit when there are many
+threads hammering it at once.
 
-The new MUTEX_IS_UNLOCKED() macro is also used for this.
+Anton wrote a simple test to cause the issue:
 
-Signed-off-by: Jason Low <jason.low2@hp.com>
----
- kernel/locking/mutex.c |   27 ++++++++++++++++-----------
- 1 files changed, 16 insertions(+), 11 deletions(-)
+http://ozlabs.org/~anton/junkcode/bust_shm_exit.c
 
-diff --git a/kernel/locking/mutex.c b/kernel/locking/mutex.c
-index fc55f72..c65680d 100644
---- a/kernel/locking/mutex.c
-+++ b/kernel/locking/mutex.c
-@@ -821,21 +821,26 @@ static inline int __mutex_trylock_slowpath(atomic_t *lock_count)
- {
- 	struct mutex *lock = container_of(lock_count, struct mutex, count);
- 	unsigned long flags;
--	int prev;
-+	int prev = 0;
- 
--	spin_lock_mutex(&lock->wait_lock, flags);
-+	/*
-+	 * Only need to trylock the mutex if it is unlocked.
-+	 */
-+	if (MUTEX_IS_UNLOCKED(lock)) {
-+		spin_lock_mutex(&lock->wait_lock, flags);
- 
--	prev = atomic_xchg(&lock->count, -1);
--	if (likely(prev == 1)) {
--		mutex_set_owner(lock);
--		mutex_acquire(&lock->dep_map, 0, 1, _RET_IP_);
--	}
-+		prev = atomic_xchg(&lock->count, -1);
-+		if (likely(prev == 1)) {
-+			mutex_set_owner(lock);
-+			mutex_acquire(&lock->dep_map, 0, 1, _RET_IP_);
-+		}
- 
--	/* Set it back to 0 if there are no waiters: */
--	if (likely(list_empty(&lock->wait_list)))
--		atomic_set(&lock->count, 0);
-+		/* Set it back to 0 if there are no waiters: */
-+		if (likely(list_empty(&lock->wait_list)))
-+			atomic_set(&lock->count, 0);
- 
--	spin_unlock_mutex(&lock->wait_lock, flags);
-+		spin_unlock_mutex(&lock->wait_lock, flags);
-+	}
- 
- 	return prev == 1;
- }
--- 
-1.7.1
+Before applying this patchset, this test code will cause either hanging
+tracebacks or pthread out of memory errors.
+
+After this patchset, it will still produce output like:
+
+root@somehost:~# ./bust_shm_exit 1024 160
+...
+INFO: rcu_sched detected stalls on CPUs/tasks: {} (detected by 116, t=2111
+jiffies, g=241, c=240, q=7113)
+INFO: Stall ended before state dump start
+...
+
+But the task will continue to run along happily, so we consider this an
+improvement over hanging, even if it's a bit noisy.
+
+I didn't author these patches, but I'd be happy to take any feedback and
+address any issues.
+
+- Jack
 
