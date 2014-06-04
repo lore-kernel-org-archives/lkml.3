@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755475AbaFDX7B (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:59:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40454 "EHLO
+	id S1755461AbaFDX67 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 19:58:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40462 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753585AbaFDXXH (ORCPT
+	with ESMTP id S1753593AbaFDXXJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:23:07 -0400
+	Wed, 4 Jun 2014 19:23:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Wolfram Sang <wsa+renesas@sang-engineering.com>,
-        Wolfram Sang <wsa@the-dreams.de>
-Subject: [PATCH 3.14 207/228] i2c: rcar: bail out on zero length transfers
-Date: Wed,  4 Jun 2014 16:23:56 -0700
-Message-Id: <20140604232354.702433265@linuxfoundation.org>
+        Lan Tianyu <tianyu.lan@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.14 197/228] ACPI: Revert "ACPI: Remove CONFIG_ACPI_PROCFS_POWER and cm_sbsc.c"
+Date: Wed,  4 Jun 2014 16:23:46 -0700
+Message-Id: <20140604232354.358579689@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -29,46 +29,168 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wolfram Sang <wsa+renesas@sang-engineering.com>
+From: Lan Tianyu <tianyu.lan@intel.com>
 
-commit d7653964c590ba846aa11a8f6edf409773cbc492 upstream.
+commit e2a7c3d7812369daae56f069eab2e8f3e548d231 upstream.
 
-This hardware does not support zero length transfers. Instead, the
-driver does one (random) byte transfers currently with undefined results
-for the slaves. We now bail out.
+The commit 1e2d9cd and 7d7ee95 remove ACPI Proc Battery
+directory and breaks some old userspace tools. This patch
+is to revert 7d7ee95.
 
-Signed-off-by: Wolfram Sang <wsa+renesas@sang-engineering.com>
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+Fixes: 7d7ee958867a (ACPI: Remove CONFIG_ACPI_PROCFS_POWER and cm_sbsc.c)
+Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/i2c/busses/i2c-rcar.c |    9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+ drivers/acpi/Kconfig  |   17 ++++++++
+ drivers/acpi/Makefile |    1 
+ drivers/acpi/cm_sbs.c |  105 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 123 insertions(+)
 
---- a/drivers/i2c/busses/i2c-rcar.c
-+++ b/drivers/i2c/busses/i2c-rcar.c
-@@ -561,6 +561,12 @@ static int rcar_i2c_master_xfer(struct i
+--- a/drivers/acpi/Kconfig
++++ b/drivers/acpi/Kconfig
+@@ -56,6 +56,23 @@ config ACPI_PROCFS
  
- 	ret = -EINVAL;
- 	for (i = 0; i < num; i++) {
-+		/* This HW can't send STOP after address phase */
-+		if (msgs[i].len == 0) {
-+			ret = -EOPNOTSUPP;
-+			break;
-+		}
+ 	  Say N to delete /proc/acpi/ files that have moved to /sys/
+ 
++config ACPI_PROCFS_POWER
++	bool "Deprecated power /proc/acpi directories"
++	depends on PROC_FS
++	help
++	  For backwards compatibility, this option allows
++          deprecated power /proc/acpi/ directories to exist, even when
++          they have been replaced by functions in /sys.
++          The deprecated directories (and their replacements) include:
++	  /proc/acpi/battery/* (/sys/class/power_supply/*)
++	  /proc/acpi/ac_adapter/* (sys/class/power_supply/*)
++	  This option has no effect on /proc/acpi/ directories
++	  and functions, which do not yet exist in /sys
++	  This option, together with the proc directories, will be
++	  deleted in 2.6.39.
 +
- 		/*-------------- spin lock -----------------*/
- 		spin_lock_irqsave(&priv->lock, flags);
- 
-@@ -625,7 +631,8 @@ static int rcar_i2c_master_xfer(struct i
- 
- static u32 rcar_i2c_func(struct i2c_adapter *adap)
- {
--	return I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL;
-+	/* This HW can't do SMBUS_QUICK and NOSTART */
-+	return I2C_FUNC_I2C | (I2C_FUNC_SMBUS_EMUL & ~I2C_FUNC_SMBUS_QUICK);
- }
- 
- static const struct i2c_algorithm rcar_i2c_algo = {
++	  Say N to delete power /proc/acpi/ directories that have moved to /sys/
++
+ config ACPI_EC_DEBUGFS
+ 	tristate "EC read/write access through /sys/kernel/debug/ec"
+ 	default n
+--- a/drivers/acpi/Makefile
++++ b/drivers/acpi/Makefile
+@@ -47,6 +47,7 @@ acpi-y				+= sysfs.o
+ acpi-$(CONFIG_X86)		+= acpi_cmos_rtc.o
+ acpi-$(CONFIG_DEBUG_FS)		+= debugfs.o
+ acpi-$(CONFIG_ACPI_NUMA)	+= numa.o
++acpi-$(CONFIG_ACPI_PROCFS_POWER) += cm_sbs.o
+ ifdef CONFIG_ACPI_VIDEO
+ acpi-y				+= video_detect.o
+ endif
+--- /dev/null
++++ b/drivers/acpi/cm_sbs.c
+@@ -0,0 +1,105 @@
++/*
++ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License as published by
++ *  the Free Software Foundation; either version 2 of the License, or (at
++ *  your option) any later version.
++ *
++ *  This program is distributed in the hope that it will be useful, but
++ *  WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ *  General Public License for more details.
++ *
++ *  You should have received a copy of the GNU General Public License along
++ *  with this program; if not, write to the Free Software Foundation, Inc.,
++ *  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
++ *
++ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++ */
++
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/acpi.h>
++#include <linux/types.h>
++#include <linux/proc_fs.h>
++#include <linux/seq_file.h>
++#include <acpi/acpi_bus.h>
++#include <acpi/acpi_drivers.h>
++
++#define PREFIX "ACPI: "
++
++ACPI_MODULE_NAME("cm_sbs");
++#define ACPI_AC_CLASS		"ac_adapter"
++#define ACPI_BATTERY_CLASS	"battery"
++#define _COMPONENT		ACPI_SBS_COMPONENT
++static struct proc_dir_entry *acpi_ac_dir;
++static struct proc_dir_entry *acpi_battery_dir;
++
++static DEFINE_MUTEX(cm_sbs_mutex);
++
++static int lock_ac_dir_cnt;
++static int lock_battery_dir_cnt;
++
++struct proc_dir_entry *acpi_lock_ac_dir(void)
++{
++	mutex_lock(&cm_sbs_mutex);
++	if (!acpi_ac_dir)
++		acpi_ac_dir = proc_mkdir(ACPI_AC_CLASS, acpi_root_dir);
++	if (acpi_ac_dir) {
++		lock_ac_dir_cnt++;
++	} else {
++		printk(KERN_ERR PREFIX
++				  "Cannot create %s\n", ACPI_AC_CLASS);
++	}
++	mutex_unlock(&cm_sbs_mutex);
++	return acpi_ac_dir;
++}
++EXPORT_SYMBOL(acpi_lock_ac_dir);
++
++void acpi_unlock_ac_dir(struct proc_dir_entry *acpi_ac_dir_param)
++{
++	mutex_lock(&cm_sbs_mutex);
++	if (acpi_ac_dir_param)
++		lock_ac_dir_cnt--;
++	if (lock_ac_dir_cnt == 0 && acpi_ac_dir_param && acpi_ac_dir) {
++		remove_proc_entry(ACPI_AC_CLASS, acpi_root_dir);
++		acpi_ac_dir = NULL;
++	}
++	mutex_unlock(&cm_sbs_mutex);
++}
++EXPORT_SYMBOL(acpi_unlock_ac_dir);
++
++struct proc_dir_entry *acpi_lock_battery_dir(void)
++{
++	mutex_lock(&cm_sbs_mutex);
++	if (!acpi_battery_dir) {
++		acpi_battery_dir =
++		    proc_mkdir(ACPI_BATTERY_CLASS, acpi_root_dir);
++	}
++	if (acpi_battery_dir) {
++		lock_battery_dir_cnt++;
++	} else {
++		printk(KERN_ERR PREFIX
++				  "Cannot create %s\n", ACPI_BATTERY_CLASS);
++	}
++	mutex_unlock(&cm_sbs_mutex);
++	return acpi_battery_dir;
++}
++EXPORT_SYMBOL(acpi_lock_battery_dir);
++
++void acpi_unlock_battery_dir(struct proc_dir_entry *acpi_battery_dir_param)
++{
++	mutex_lock(&cm_sbs_mutex);
++	if (acpi_battery_dir_param)
++		lock_battery_dir_cnt--;
++	if (lock_battery_dir_cnt == 0 && acpi_battery_dir_param
++	    && acpi_battery_dir) {
++		remove_proc_entry(ACPI_BATTERY_CLASS, acpi_root_dir);
++		acpi_battery_dir = NULL;
++	}
++	mutex_unlock(&cm_sbs_mutex);
++	return;
++}
++EXPORT_SYMBOL(acpi_unlock_battery_dir);
 
 
