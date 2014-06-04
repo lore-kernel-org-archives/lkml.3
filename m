@@ -1,74 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752303AbaFDRCT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 13:02:19 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:48543 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750904AbaFDRCQ convert rfc822-to-8bit (ORCPT
+	id S1752433AbaFDRDK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 13:03:10 -0400
+Received: from mail-qa0-f48.google.com ([209.85.216.48]:33781 "EHLO
+	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751346AbaFDRDI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 13:02:16 -0400
-From: James Bottomley <jbottomley@parallels.com>
-To: "kys@microsoft.com" <kys@microsoft.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "hch@infradead.org" <hch@infradead.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "ohering@suse.com" <ohering@suse.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "jasowang@redhat.com" <jasowang@redhat.com>
-Subject: Re: [PATCH 1/1] [SCSI] Fix a bug in deriving the FLUSH_TIMEOUT from
- the basic I/O timeout
-Thread-Topic: [PATCH 1/1] [SCSI] Fix a bug in deriving the FLUSH_TIMEOUT
- from the basic I/O timeout
-Thread-Index: AQHPgAuS4RnOBmJ/q0aQf1y8l+Zt2ZthoquA
-Date: Wed, 4 Jun 2014 17:02:03 +0000
-Message-ID: <1401901323.17510.23.camel@dabdike>
-References: <1401899623-24194-1-git-send-email-kys@microsoft.com>
-In-Reply-To: <1401899623-24194-1-git-send-email-kys@microsoft.com>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [50.46.103.107]
-Content-Type: text/plain; charset=US-ASCII
-Content-ID: <ED224F46310D33429CDF39B8786CD8CF@sw.swsoft.com>
-Content-Transfer-Encoding: 7BIT
+	Wed, 4 Jun 2014 13:03:08 -0400
+Date: Wed, 4 Jun 2014 13:02:56 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Sebastian Ott <sebott@linux.vnet.ibm.com>
+Cc: Anatol Pomozov <anatol.pomozov@gmail.com>,
+        Benjamin LaHaise <bcrl@kvack.org>, linux-aio@kvack.org,
+        Kent Overstreet <kmo@daterainc.com>,
+        Gu Zheng <guz.fnst@cn.fujitsu.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] percpu-refcount: fix usage of this_cpu_ops (was Re:
+ hanging aio process)
+Message-ID: <20140604170256.GK5004@htj.dyndns.org>
+References: <alpine.LFD.2.11.1405201508450.1606@denkbrett>
+ <CAOMFOmWfQ2naF+1BE0wSQXpBoyxV6MPm021hY77B4sDpZNZ-Dw@mail.gmail.com>
+ <alpine.LFD.2.11.1405201945280.1631@denkbrett>
+ <CAOMFOmUT-WGbV57qDafM-NJ+=s1OzX-2Q6G6hAh6EV8Vt9yBZw@mail.gmail.com>
+ <alpine.LFD.2.11.1405210954110.1579@denkbrett>
+ <alpine.LFD.2.11.1405211042350.1579@denkbrett>
+ <CAOMFOmXXHBicH38onWgVAWhEXe2sE_RMiJXi=iMjJB15o7mOLQ@mail.gmail.com>
+ <alpine.LFD.2.11.1406041540520.21183@denkbrett>
+ <20140604161123.GG5004@htj.dyndns.org>
+ <alpine.LFD.2.11.1406041852220.1590@denkbrett>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.11.1406041852220.1590@denkbrett>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-06-04 at 09:33 -0700, K. Y. Srinivasan wrote:
-> Commit ID: 7e660100d85af860e7ad763202fff717adcdaacd added code to derive the
-> FLUSH_TIMEOUT from the basic I/O timeout. However, this patch did not use the
-> basic I/O timeout of the device. Fix this bug.
-> 
-> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> ---
->  drivers/scsi/sd.c |    4 +++-
->  1 files changed, 3 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
-> index e9689d5..54150b1 100644
-> --- a/drivers/scsi/sd.c
-> +++ b/drivers/scsi/sd.c
-> @@ -832,7 +832,9 @@ static int sd_setup_write_same_cmnd(struct scsi_device *sdp, struct request *rq)
->  
->  static int scsi_setup_flush_cmnd(struct scsi_device *sdp, struct request *rq)
->  {
-> -	rq->timeout *= SD_FLUSH_TIMEOUT_MULTIPLIER;
-> +	int timeout = sdp->request_queue->rq_timeout;
-> +
-> +	rq->timeout = (timeout * SD_FLUSH_TIMEOUT_MULTIPLIER);
+On Wed, Jun 04, 2014 at 06:56:14PM +0200, Sebastian Ott wrote:
+> In your git tree you've used me as the patch author but that should be
+> Heiko. Sorry if I didn't annotate this correctly - I just inlined the
+> git format-patch output..
 
-Could you share where you found this to be a problem?  It looks like a
-bug in block because all inbound requests being prepared should have a
-timeout set, so block would be the place to fix it.
+Oops, updated accordingly.
 
-I can't see how this can happen because we definitely add the timer
-after the request is prepared in my reading of the block code, unless
-I'm missing some path in block that violates this.
+Thanks.
 
-James
-
+-- 
+tejun
