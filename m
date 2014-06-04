@@ -1,74 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751477AbaFDTBq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 15:01:46 -0400
-Received: from g9t1613g.houston.hp.com ([15.240.0.71]:55911 "EHLO
-	g9t1613g.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750777AbaFDTBp (ORCPT
+	id S1751596AbaFDTFY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 15:05:24 -0400
+Received: from mail-qa0-f44.google.com ([209.85.216.44]:62664 "EHLO
+	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750780AbaFDTFW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 15:01:45 -0400
-From: Jason Low <jason.low2@hp.com>
-To: mingo@kernel.org, peterz@infradead.org, tglx@linutronix.de,
-        akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, paulmck@linux.vnet.ibm.com,
-        tim.c.chen@linux.intel.com, peter@hurleysoftware.com, riel@redhat.com,
-        hpa@zytor.com, walken@google.com, davidlohr@hp.com, Waiman.Long@hp.com,
-        aswin@hp.com, scott.norton@hp.com, chegu_vinod@hp.com,
-        Jason Low <jason.low2@hp.com>
-Subject: [RFC PATCH] rwsem: Avoid double checking before trylock for rwsem_try_write_lock()
-Date: Wed,  4 Jun 2014 12:01:11 -0700
-Message-Id: <1401908471-8765-1-git-send-email-jason.low2@hp.com>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 4 Jun 2014 15:05:22 -0400
+Message-ID: <538F6DEB.2000601@redhat.com>
+Date: Wed, 04 Jun 2014 21:05:15 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Venkatesh Srinivas <venkateshs@google.com>
+CC: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org, hch@lst.de,
+        JBottomley@parallels.com, stable@vger.kernel.org,
+        Venkatesh Srinivas <vsrinivas@ops101.org>
+Subject: Re: [PATCH v3 5/6] virtio-scsi: fix various bad behavior on aborted
+ requests
+References: <1401881699-1456-1-git-send-email-pbonzini@redhat.com>	<1401881699-1456-6-git-send-email-pbonzini@redhat.com> <CAHdzE-8KoMrg_jSuj-F9c=HnapCiLCg9bKCifduTaxx-DAJZRw@mail.gmail.com>
+In-Reply-To: <CAHdzE-8KoMrg_jSuj-F9c=HnapCiLCg9bKCifduTaxx-DAJZRw@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch applies on top of linux-next.
+Il 04/06/2014 19:29, Venkatesh Srinivas ha scritto:
+> Do you really want to poll the request VQs for completions if the TMF
+> was rejected?
 
-Commit 9b0fc9c09f1b added an extra check in rwsem_down_write_failed()
-for if there are known active lockers in order to avoid doing the cmpxchg()
-that would likely be unnecessary.
+I wasn't sure, but bugs in this path are hard enough that I preferred 
+the safer patch.
 
-However, a subsequent change was made such that we check for
-sem->count == RWSEM_WAITING_BIAS right before trying that cmpxchg().
-Thus, the first check added in commit 9b0fc9c09f1b now adds extra
-overhead. This patch deletes it.
+> TMF ABORT may return FUNCTION REJECTED if the command to abort
+> completed before the device saw the TMF ABORT message, for example. In
+> such cases, this would
+> unnecessarily lengthen the EH path.
 
-Note: we are now changing the rwsem_try_write_lock() as the relevant
-code was recently moved into that function.
+The cost of virtscsi_poll_requests should be nothing compared to the 
+delay between the timeout and the invocation of the delayed_work, no?
 
-Signed-off-by: Jason Low <jason.low2@hp.com>
----
- kernel/locking/rwsem-xadd.c |   16 +++++++---------
- 1 files changed, 7 insertions(+), 9 deletions(-)
-
-diff --git a/kernel/locking/rwsem-xadd.c b/kernel/locking/rwsem-xadd.c
-index 1f99664..6d01f2f 100644
---- a/kernel/locking/rwsem-xadd.c
-+++ b/kernel/locking/rwsem-xadd.c
-@@ -247,15 +247,13 @@ struct rw_semaphore __sched *rwsem_down_read_failed(struct rw_semaphore *sem)
- 
- static inline bool rwsem_try_write_lock(long count, struct rw_semaphore *sem)
- {
--	if (!(count & RWSEM_ACTIVE_MASK)) {
--		/* try acquiring the write lock */
--		if (sem->count == RWSEM_WAITING_BIAS &&
--		    cmpxchg(&sem->count, RWSEM_WAITING_BIAS,
--			    RWSEM_ACTIVE_WRITE_BIAS) == RWSEM_WAITING_BIAS) {
--			if (!list_is_singular(&sem->wait_list))
--				rwsem_atomic_update(RWSEM_WAITING_BIAS, sem);
--			return true;
--		}
-+	/* try acquiring the write lock */
-+	if (sem->count == RWSEM_WAITING_BIAS &&
-+	    cmpxchg(&sem->count, RWSEM_WAITING_BIAS,
-+		    RWSEM_ACTIVE_WRITE_BIAS) == RWSEM_WAITING_BIAS) {
-+		if (!list_is_singular(&sem->wait_list))
-+			rwsem_atomic_update(RWSEM_WAITING_BIAS, sem);
-+		return true;
- 	}
- 	return false;
- }
--- 
-1.7.1
-
+Paolo
