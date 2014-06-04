@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755070AbaFDXpi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:45:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40686 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753863AbaFDXXf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753869AbaFDXXf (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 4 Jun 2014 19:23:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40665 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753751AbaFDXXc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 19:23:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>,
-        Terje Bergstrom <tbergstrom@nvidia.com>,
-        Thierry Reding <treding@nvidia.com>
-Subject: [PATCH 3.10 013/103] gpu: host1x: handle the correct # of syncpt regs
-Date: Wed,  4 Jun 2014 16:24:36 -0700
-Message-Id: <20140604232547.252383421@linuxfoundation.org>
+        Andrew Victor <linux@maxim.org.za>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Tejun Heo <tj@kernel.org>
+Subject: [PATCH 3.10 008/103] pata_at91: fix ata_host_activate() failure handling
+Date: Wed,  4 Jun 2014 16:24:31 -0700
+Message-Id: <20140604232547.100840737@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232546.704156131@linuxfoundation.org>
 References: <20140604232546.704156131@linuxfoundation.org>
@@ -30,51 +33,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stephen Warren <swarren@nvidia.com>
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 
-commit 22bbd5d949dc7fdd72a4e78e767fa09d8e54b446 upstream.
+commit 27aa64b9d1bd0d23fd692c91763a48309b694311 upstream.
 
-BIT_WORD() truncates rather than rounds, so the loops in
-syncpt_thresh_isr() and _host1x_intr_disable_all_syncpt_intrs() use <=
-rather than < in an attempt to process the correct number of registers
-when rounding of the conversion of count of bits to count of words is
-necessary. However, when rounding isn't necessary because the value is
-already a multiple of the divisor (as is the case for all values of
-nb_pts the code actually sees), this causes one too many registers to
-be processed.
+Add missing clk_put() call to ata_host_activate() failure path.
 
-Solve this by using and explicit DIV_ROUND_UP() call, rather than
-BIT_WORD(), and comparing with < rather than <=.
+Sergei says,
 
-Fixes: 7ede0b0bf3e2 ("gpu: host1x: Add syncpoint wait and interrupts")
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
-Acked-By: Terje Bergstrom <tbergstrom@nvidia.com>
-Signed-off-by: Thierry Reding <treding@nvidia.com>
+  "Hm, I have once fixed that (see that *if* (!ret)) but looks like a
+   later commit 477c87e90853d136b188c50c0e4a93d01cad872e (ARM:
+   at91/pata: use gpio_is_valid to check the gpio) broke it again. :-(
+   Would be good if the changelog did mention that..."
+
+Cc: Andrew Victor <linux@maxim.org.za>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
+Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/host1x/hw/intr_hw.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/ata/pata_at91.c |   11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
---- a/drivers/gpu/host1x/hw/intr_hw.c
-+++ b/drivers/gpu/host1x/hw/intr_hw.c
-@@ -48,7 +48,7 @@ static irqreturn_t syncpt_thresh_isr(int
- 	unsigned long reg;
- 	int i, id;
+--- a/drivers/ata/pata_at91.c
++++ b/drivers/ata/pata_at91.c
+@@ -408,12 +408,13 @@ static int pata_at91_probe(struct platfo
  
--	for (i = 0; i <= BIT_WORD(host->info->nb_pts); i++) {
-+	for (i = 0; i < DIV_ROUND_UP(host->info->nb_pts, 32); i++) {
- 		reg = host1x_sync_readl(host,
- 			HOST1X_SYNC_SYNCPT_THRESH_CPU0_INT_STATUS(i));
- 		for_each_set_bit(id, &reg, BITS_PER_LONG) {
-@@ -65,7 +65,7 @@ static void _host1x_intr_disable_all_syn
- {
- 	u32 i;
+ 	host->private_data = info;
  
--	for (i = 0; i <= BIT_WORD(host->info->nb_pts); ++i) {
-+	for (i = 0; i < DIV_ROUND_UP(host->info->nb_pts, 32); ++i) {
- 		host1x_sync_writel(host, 0xffffffffu,
- 			HOST1X_SYNC_SYNCPT_THRESH_INT_DISABLE(i));
- 		host1x_sync_writel(host, 0xffffffffu,
+-	return ata_host_activate(host, gpio_is_valid(irq) ? gpio_to_irq(irq) : 0,
+-			gpio_is_valid(irq) ? ata_sff_interrupt : NULL,
+-			irq_flags, &pata_at91_sht);
++	ret = ata_host_activate(host, gpio_is_valid(irq) ? gpio_to_irq(irq) : 0,
++				gpio_is_valid(irq) ? ata_sff_interrupt : NULL,
++				irq_flags, &pata_at91_sht);
++	if (ret)
++		goto err_put;
+ 
+-	if (!ret)
+-		return 0;
++	return 0;
+ 
+ err_put:
+ 	clk_put(info->mck);
 
 
