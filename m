@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756248AbaFEAQg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 20:16:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40247 "EHLO
+	id S1751791AbaFDXWj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 19:22:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40216 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753264AbaFDXWk (ORCPT
+	with ESMTP id S1753231AbaFDXWh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:22:40 -0400
+	Wed, 4 Jun 2014 19:22:37 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Neil Greatorex <neil@fatboyfat.co.uk>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Jason Cooper <jason@lakedaemon.net>
-Subject: [PATCH 3.14 159/228] PCI: mvebu: split PCIe BARs into multiple MBus windows when needed
-Date: Wed,  4 Jun 2014 16:23:08 -0700
-Message-Id: <20140604232353.126468358@linuxfoundation.org>
+        "Chew, Kean ho" <kean.ho.chew@intel.com>,
+        "Chew, Chiau Ee" <chiau.ee.chew@intel.com>,
+        Jean Delvare <jdelvare@suse.de>, Wolfram Sang <wsa@the-dreams.de>,
+        "Chang, Rebecca Swee Fun" <rebecca.swee.fun.chang@intel.com>
+Subject: [PATCH 3.14 130/228] i2c: i801: enable Intel BayTrail SMBUS
+Date: Wed,  4 Jun 2014 16:22:39 -0700
+Message-Id: <20140604232352.202046308@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -31,175 +31,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+From: "Chew, Kean ho" <kean.ho.chew@intel.com>
 
-commit 398f5d5e10b6b917cd9d35ef21d545b0afbada22 upstream.
+commit 1b31e9b76ef8c62291e698dfdb973499986a7f68 upstream.
 
-MBus windows are used on Marvell platforms to map certain peripherals
-in the physical address space. In the PCIe context, MBus windows are
-needed to map PCIe I/O and memory regions in the physical address.
+Add Device ID of Intel BayTrail SMBus Controller.
 
-However, those MBus windows can only have power of two sizes, while
-PCIe BAR do not necessarily guarantee this. For this reason, the
-current pci-mvebu breaks on platforms where PCIe devices have BARs
-that don't sum up to a power of two size at the emulated bridge level.
-
-This commit fixes this by allowing the pci-mvebu driver to create
-multiple contiguous MBus windows (each having a power of two size) to
-cover a given PCIe BAR.
-
-To achieve this, two functions are added: mvebu_pcie_add_windows() and
-mvebu_pcie_del_windows() to respectively add and remove all the MBus
-windows that are needed to map the provided PCIe region base and
-size. The emulated PCI bridge code now calls those functions, instead
-of directly calling the mvebu-mbus driver functions.
-
-Fixes: 45361a4fe446 ('pci: PCIe driver for Marvell Armada 370/XP systems')
-Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Link: https://lkml.kernel.org/r/1397823593-1932-8-git-send-email-thomas.petazzoni@free-electrons.com
-Tested-by: Neil Greatorex <neil@fatboyfat.co.uk>
-Acked-by: Bjorn Helgaas <bhelgaas@google.com>
-Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+Signed-off-by: Chew, Kean ho <kean.ho.chew@intel.com>
+Signed-off-by: Chew, Chiau Ee <chiau.ee.chew@intel.com>
+Reviewed-by: Jean Delvare <jdelvare@suse.de>
+Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+Cc: "Chang, Rebecca Swee Fun" <rebecca.swee.fun.chang@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pci/host/pci-mvebu.c |   88 ++++++++++++++++++++++++++++++++++++-------
- 1 file changed, 74 insertions(+), 14 deletions(-)
+ Documentation/i2c/busses/i2c-i801 |    1 +
+ drivers/i2c/busses/Kconfig        |    1 +
+ drivers/i2c/busses/i2c-i801.c     |    3 +++
+ 3 files changed, 5 insertions(+)
 
---- a/drivers/pci/host/pci-mvebu.c
-+++ b/drivers/pci/host/pci-mvebu.c
-@@ -291,6 +291,58 @@ static int mvebu_pcie_hw_wr_conf(struct
- 	return PCIBIOS_SUCCESSFUL;
- }
+--- a/Documentation/i2c/busses/i2c-i801
++++ b/Documentation/i2c/busses/i2c-i801
+@@ -26,6 +26,7 @@ Supported adapters:
+   * Intel Wellsburg (PCH)
+   * Intel Coleto Creek (PCH)
+   * Intel Wildcat Point-LP (PCH)
++  * Intel BayTrail (SOC)
+    Datasheets: Publicly available at the Intel website
  
-+/*
-+ * Remove windows, starting from the largest ones to the smallest
-+ * ones.
-+ */
-+static void mvebu_pcie_del_windows(struct mvebu_pcie_port *port,
-+				   phys_addr_t base, size_t size)
-+{
-+	while (size) {
-+		size_t sz = 1 << (fls(size) - 1);
-+
-+		mvebu_mbus_del_window(base, sz);
-+		base += sz;
-+		size -= sz;
-+	}
-+}
-+
-+/*
-+ * MBus windows can only have a power of two size, but PCI BARs do not
-+ * have this constraint. Therefore, we have to split the PCI BAR into
-+ * areas each having a power of two size. We start from the largest
-+ * one (i.e highest order bit set in the size).
-+ */
-+static void mvebu_pcie_add_windows(struct mvebu_pcie_port *port,
-+				   unsigned int target, unsigned int attribute,
-+				   phys_addr_t base, size_t size,
-+				   phys_addr_t remap)
-+{
-+	size_t size_mapped = 0;
-+
-+	while (size) {
-+		size_t sz = 1 << (fls(size) - 1);
-+		int ret;
-+
-+		ret = mvebu_mbus_add_window_remap_by_id(target, attribute, base,
-+							sz, remap);
-+		if (ret) {
-+			dev_err(&port->pcie->pdev->dev,
-+				"Could not create MBus window at 0x%x, size 0x%x: %d\n",
-+				base, sz, ret);
-+			mvebu_pcie_del_windows(port, base - size_mapped,
-+					       size_mapped);
-+			return;
-+		}
-+
-+		size -= sz;
-+		size_mapped += sz;
-+		base += sz;
-+		if (remap != MVEBU_MBUS_NO_REMAP)
-+			remap += sz;
-+	}
-+}
-+
- static void mvebu_pcie_handle_iobase_change(struct mvebu_pcie_port *port)
- {
- 	phys_addr_t iobase;
-@@ -302,8 +354,8 @@ static void mvebu_pcie_handle_iobase_cha
+ On Intel Patsburg and later chipsets, both the normal host SMBus controller
+--- a/drivers/i2c/busses/Kconfig
++++ b/drivers/i2c/busses/Kconfig
+@@ -110,6 +110,7 @@ config I2C_I801
+ 	    Wellsburg (PCH)
+ 	    Coleto Creek (PCH)
+ 	    Wildcat Point-LP (PCH)
++	    BayTrail (SOC)
  
- 		/* If a window was configured, remove it */
- 		if (port->iowin_base) {
--			mvebu_mbus_del_window(port->iowin_base,
--					      port->iowin_size);
-+			mvebu_pcie_del_windows(port, port->iowin_base,
-+					       port->iowin_size);
- 			port->iowin_base = 0;
- 			port->iowin_size = 0;
- 		}
-@@ -331,9 +383,9 @@ static void mvebu_pcie_handle_iobase_cha
- 			    (port->bridge.iolimitupper << 16)) -
- 			    iobase) + 1;
+ 	  This driver can also be built as a module.  If so, the module
+ 	  will be called i2c-i801.
+--- a/drivers/i2c/busses/i2c-i801.c
++++ b/drivers/i2c/busses/i2c-i801.c
+@@ -60,6 +60,7 @@
+   Wellsburg (PCH) MS    0x8d7f     32     hard     yes     yes     yes
+   Coleto Creek (PCH)    0x23b0     32     hard     yes     yes     yes
+   Wildcat Point-LP (PCH)   0x9ca2     32     hard     yes     yes     yes
++  BayTrail (SOC)        0x0f12     32     hard     yes     yes     yes
  
--	mvebu_mbus_add_window_remap_by_id(port->io_target, port->io_attr,
--					  port->iowin_base, port->iowin_size,
--					  iobase);
-+	mvebu_pcie_add_windows(port, port->io_target, port->io_attr,
-+			       port->iowin_base, port->iowin_size,
-+			       iobase);
- }
+   Features supported by this driver:
+   Software PEC                     no
+@@ -161,6 +162,7 @@
+ 				 STATUS_ERROR_FLAGS)
  
- static void mvebu_pcie_handle_membase_change(struct mvebu_pcie_port *port)
-@@ -344,8 +396,8 @@ static void mvebu_pcie_handle_membase_ch
+ /* Older devices have their ID defined in <linux/pci_ids.h> */
++#define PCI_DEVICE_ID_INTEL_BAYTRAIL_SMBUS	0x0f12
+ #define PCI_DEVICE_ID_INTEL_COUGARPOINT_SMBUS	0x1c22
+ #define PCI_DEVICE_ID_INTEL_PATSBURG_SMBUS	0x1d22
+ /* Patsburg also has three 'Integrated Device Function' SMBus controllers */
+@@ -822,6 +824,7 @@ static DEFINE_PCI_DEVICE_TABLE(i801_ids)
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_WELLSBURG_SMBUS_MS2) },
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_COLETOCREEK_SMBUS) },
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_WILDCATPOINT_LP_SMBUS) },
++	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_BAYTRAIL_SMBUS) },
+ 	{ 0, }
+ };
  
- 		/* If a window was configured, remove it */
- 		if (port->memwin_base) {
--			mvebu_mbus_del_window(port->memwin_base,
--					      port->memwin_size);
-+			mvebu_pcie_del_windows(port, port->memwin_base,
-+					       port->memwin_size);
- 			port->memwin_base = 0;
- 			port->memwin_size = 0;
- 		}
-@@ -364,8 +416,9 @@ static void mvebu_pcie_handle_membase_ch
- 		(((port->bridge.memlimit & 0xFFF0) << 16) | 0xFFFFF) -
- 		port->memwin_base + 1;
- 
--	mvebu_mbus_add_window_by_id(port->mem_target, port->mem_attr,
--				    port->memwin_base, port->memwin_size);
-+	mvebu_pcie_add_windows(port, port->mem_target, port->mem_attr,
-+			       port->memwin_base, port->memwin_size,
-+			       MVEBU_MBUS_NO_REMAP);
- }
- 
- /*
-@@ -721,14 +774,21 @@ static resource_size_t mvebu_pcie_align_
- 
- 	/*
- 	 * On the PCI-to-PCI bridge side, the I/O windows must have at
--	 * least a 64 KB size and be aligned on their size, and the
--	 * memory windows must have at least a 1 MB size and be
--	 * aligned on their size
-+	 * least a 64 KB size and the memory windows must have at
-+	 * least a 1 MB size. Moreover, MBus windows need to have a
-+	 * base address aligned on their size, and their size must be
-+	 * a power of two. This means that if the BAR doesn't have a
-+	 * power of two size, several MBus windows will actually be
-+	 * created. We need to ensure that the biggest MBus window
-+	 * (which will be the first one) is aligned on its size, which
-+	 * explains the rounddown_pow_of_two() being done here.
- 	 */
- 	if (res->flags & IORESOURCE_IO)
--		return round_up(start, max_t(resource_size_t, SZ_64K, size));
-+		return round_up(start, max_t(resource_size_t, SZ_64K,
-+					     rounddown_pow_of_two(size)));
- 	else if (res->flags & IORESOURCE_MEM)
--		return round_up(start, max_t(resource_size_t, SZ_1M, size));
-+		return round_up(start, max_t(resource_size_t, SZ_1M,
-+					     rounddown_pow_of_two(size)));
- 	else
- 		return start;
- }
 
 
