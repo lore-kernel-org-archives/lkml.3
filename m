@@ -1,107 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752065AbaFDOhT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 10:37:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14387 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750933AbaFDOhQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 10:37:16 -0400
-From: Jiri Olsa <jolsa@kernel.org>
-To: linux-kernel@vger.kernel.org
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Jiri Olsa <jolsa@kernel.org>
-Subject: [PATCHv4 00/13] perf tools: Speedup DWARF unwind
-Date: Wed,  4 Jun 2014 16:36:49 +0200
-Message-Id: <1401892622-30848-1-git-send-email-jolsa@kernel.org>
+	id S1752207AbaFDOlq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 10:41:46 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:37029 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751101AbaFDOlp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 10:41:45 -0400
+Message-ID: <538F3020.6000609@oracle.com>
+Date: Wed, 04 Jun 2014 10:41:36 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: "linux-mm@kvack.org" <linux-mm@kvack.org>, Hugh Dickins <hughd@google.com>,
+        Dave Jones <davej@redhat.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: mm: NULL ptr deref in anon_vma_fork
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi,
-trying to speedup DWARF unwind report code by factoring
-related code:
-  - caching sample's registers access
-  - keep dso data file descriptor open for the
-    life of the dso object
-  - replace dso cache code by mapping dso data file
-    directly for the life of the dso object
+Hi all,
 
-The speedup is mainly for libunwind unwind. The libdw will benefit
-mainly from cached registers access, because it handles dso data
-accesses by itself.. and anyway it's still faster ;-).
+While fuzzing with trinity inside a KVM tools guest running the latest -next
+kernel I've stumbled on the following spew:
 
-On ~11GB perf data file with dwarf unwind data I've got
-around 30% speed up.
+(Note that that what the RIP got translated to seems wrong to me, I'd ignore that
+and look at mm/rmap.c:285 .)
 
-I've also got possitive test feedback from Jean Pihet:
-  https://wiki.linaro.org/LEG/Engineering/TOOLS/perf-callstack-unwinding#Speed_improvement
+[11075.253201] BUG: unable to handle kernel NULL pointer dereference at           (null)
+[11075.254437] IP: anon_vma_clone (mm/rmap.c:1768)
+[11075.255384] PGD 7a9616067 PUD 7932e0067 PMD 0
+[11075.256150] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+[11075.258315] Dumping ftrace buffer:
+[11075.260035]    (ftrace buffer empty)
+[11075.260035] Modules linked in:
+[11075.260035] CPU: 26 PID: 13162 Comm: timeout3 Tainted: G    B   W     3.15.0-rc8-next-20140603-sasha-00019-ge0df846-dirty #589
+[11075.260035] task: ffff8807a7b83000 ti: ffff8807931cc000 task.ti: ffff8807931cc000
+[11075.260035] RIP: anon_vma_clone (mm/rmap.c:1768)
+[11075.260035] RSP: 0018:ffff8807931cfcf0  EFLAGS: 00010282
+[11075.260035] RAX: ffff880da9d137c8 RBX: ffff8807a96a9200 RCX: 0000000000000200
+[11075.260035] RDX: 0000000000000001 RSI: 0000000000000050 RDI: ffff880da9d137c8
+[11075.260035] RBP: ffff8807931cfd30 R08: ffff880da9d10ff0 R09: 0000000000000000
+[11075.260035] R10: 0000000000000000 R11: 0000000000000000 R12: ffff8807aa9f8000
+[11075.260035] R13: ffff8807a96a9200 R14: ffff880da9d137c8 R15: 0000000000000000
+[11075.260035] FS:  00007f58eed93700(0000) GS:ffff880dabc00000(0000) knlGS:0000000000000000
+[11075.260035] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[11075.260035] CR2: 0000000000000000 CR3: 00000007932dd000 CR4: 00000000000006a0
+[11075.260035] DR0: 00000000006d6000 DR1: 0000000000000000 DR2: 0000000000000000
+[11075.260035] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000600
+[11075.260035] Stack:
+[11075.260035]  ffff880da9958800 ffff8807a99b2c78 ffff8807931cfd60 ffff880daa5c3000
+[11075.260035]  ffff8807a99b2c00 ffff880da9958800 00007f58eed939d0 ffff8807a99b2c00
+[11075.260035]  ffff8807931cfd60 ffffffffa62cb318 ffff880daa5c3000 ffff880da9958800
+[11075.260035] Call Trace:
+[11075.260035] anon_vma_fork (mm/rmap.c:285)
+[11075.260035] copy_process (kernel/fork.c:410 kernel/fork.c:835 kernel/fork.c:898 kernel/fork.c:1346)
+[11075.260035] ? trace_hardirqs_off_caller (kernel/locking/lockdep.c:2619)
+[11075.260035] do_fork (kernel/fork.c:1607)
+[11075.260035] ? get_parent_ip (kernel/sched/core.c:2519)
+[11075.260035] ? context_tracking_user_exit (./arch/x86/include/asm/paravirt.h:809 (discriminator 2) kernel/context_tracking.c:182 (discriminator 2))
+[11075.260035] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2564)
+[11075.260035] ? trace_hardirqs_on (kernel/locking/lockdep.c:2607)
+[11075.260035] SyS_clone (kernel/fork.c:1693)
+[11075.260035] stub_clone (arch/x86/kernel/entry_64.S:637)
+[11075.260035] ? tracesys (arch/x86/kernel/entry_64.S:542)
+[11075.260035] Code: b2 db 43 07 be d0 00 00 00 e8 18 48 02 00 48 85 c0 49 89 c6 0f 85 a7 00 00 00 e9 7f 00 00 00 0f 1f 80 00 00 00 00 4d 8b 7c 24 08 <49> 8b 1f 4c 39 eb 74 37 4d 85 ed 74 26 80 3d 7a 5b ec 05 00 75
+All code
+========
+   0:	b2 db                	mov    $0xdb,%dl
+   2:	43 07                	rex.XB (bad)
+   4:	be d0 00 00 00       	mov    $0xd0,%esi
+   9:	e8 18 48 02 00       	callq  0x24826
+   e:	48 85 c0             	test   %rax,%rax
+  11:	49 89 c6             	mov    %rax,%r14
+  14:	0f 85 a7 00 00 00    	jne    0xc1
+  1a:	e9 7f 00 00 00       	jmpq   0x9e
+  1f:	0f 1f 80 00 00 00 00 	nopl   0x0(%rax)
+  26:	4d 8b 7c 24 08       	mov    0x8(%r12),%r15
+  2b:*	49 8b 1f             	mov    (%r15),%rbx		<-- trapping instruction
+  2e:	4c 39 eb             	cmp    %r13,%rbx
+  31:	74 37                	je     0x6a
+  33:	4d 85 ed             	test   %r13,%r13
+  36:	74 26                	je     0x5e
+  38:	80 3d 7a 5b ec 05 00 	cmpb   $0x0,0x5ec5b7a(%rip)        # 0x5ec5bb9
+  3f:	75 00                	jne    0x41
 
-v4 changes:
-  - fixed changelog for patch 6 (David Ahern)
-  - added Reviewed-by from David Ahern for some patches
-  - other minor fixies pointed by David Ahern
-
-v3 changes:
-  - moved the cache logic into dso__data_fd (Namhyung Kim)
-  - omited test_dso_data__fd_limit variable,
-    dso data cache test changed accordingly (Namhyung Kim)
-  - several small fixies from review (Namhyung Kim)
-
-v2 changes:
-  - adding limit for open dso objects with sort of LRU
-    mechanism to pick up and close dso objects if we
-    are over the limit
-  - file mmaping changes are omitted, because I couldn't prove
-    the improvement exactly, will resubmit later
-  - added dso close logic in case of no memory
-  - added tests
+Code starting with the faulting instruction
+===========================================
+   0:	49 8b 1f             	mov    (%r15),%rbx
+   3:	4c 39 eb             	cmp    %r13,%rbx
+   6:	74 37                	je     0x3f
+   8:	4d 85 ed             	test   %r13,%r13
+   b:	74 26                	je     0x33
+   d:	80 3d 7a 5b ec 05 00 	cmpb   $0x0,0x5ec5b7a(%rip)        # 0x5ec5b8e
+  14:	75 00                	jne    0x16
+[11075.260035] RIP anon_vma_clone (mm/rmap.c:1768)
+[11075.260035]  RSP <ffff8807931cfcf0>
+[11075.260035] CR2: 0000000000000000
 
 
-Also reachable in here:
-  git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git
-  perf/core_unwind_speedup
-
-thanks,
-jirka
-
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jean Pihet <jean.pihet@linaro.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
----
-Jiri Olsa (13):
-      perf tools: Cache register accesses for unwind processing
-      perf tools: Separate dso data related variables
-      perf tools: Add data_fd into dso object
-      perf tools: Add global list of opened dso objects
-      perf tools: Add global count of opened dso objects
-      perf tools: Cache dso data file descriptor
-      perf tools: Add file size check and factor dso__data_read_offset
-      perf tools: Allow to close dso fd in case of open failure
-      perf tools: Add dso__data_* interface descriptons
-      perf tests: Spawn child for each test
-      perf tests: Allow reuse of test_file function
-      perf tests: Add test for caching dso file descriptors
-      perf tests: Add test for closing dso objects on EMFILE error
-
- tools/perf/tests/builtin-test.c    |  42 ++++++++++++++-
- tools/perf/tests/dso-data.c        | 214 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++--
- tools/perf/tests/tests.h           |   2 +
- tools/perf/util/dso.c              | 279 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++---------
- tools/perf/util/dso.h              |  50 +++++++++++++++++-
- tools/perf/util/event.h            |   5 ++
- tools/perf/util/perf_regs.c        |  10 +++-
- tools/perf/util/perf_regs.h        |   4 +-
- tools/perf/util/unwind-libunwind.c |   2 -
- 9 files changed, 572 insertions(+), 36 deletions(-)
+Thanks,
+Sasha
