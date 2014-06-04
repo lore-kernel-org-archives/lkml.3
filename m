@@ -1,48 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751578AbaFDTTU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 15:19:20 -0400
-Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:24254
-	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750925AbaFDTTT (ORCPT
+	id S1751747AbaFDTUJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 15:20:09 -0400
+Received: from qmta01.emeryville.ca.mail.comcast.net ([76.96.30.16]:57457 "EHLO
+	qmta01.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750780AbaFDTUH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 15:19:19 -0400
-X-IronPort-AV: E=Sophos;i="4.98,974,1392159600"; 
-   d="scan'208";a="65476315"
-Date: Wed, 4 Jun 2014 21:19:13 +0200 (CEST)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@localhost6.localdomain6
-To: "Marciniszyn, Mike" <mike.marciniszyn@intel.com>
-cc: Julia Lawall <Julia.Lawall@lip6.fr>, infinipath <infinipath@intel.com>,
-        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
-        Roland Dreier <roland@kernel.org>,
-        "Hefty, Sean" <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>,
-        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 9/10] IB/qib: use safer test on the result of
- find_first_zero_bit
-In-Reply-To: <32E1700B9017364D9B60AED9960492BC21BE92E6@fmsmsx120.amr.corp.intel.com>
-Message-ID: <alpine.DEB.2.02.1406042118420.1977@localhost6.localdomain6>
-References: <1401872880-23685-1-git-send-email-Julia.Lawall@lip6.fr> <1401872880-23685-10-git-send-email-Julia.Lawall@lip6.fr> <32E1700B9017364D9B60AED9960492BC21BE92E6@fmsmsx120.amr.corp.intel.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
+	Wed, 4 Jun 2014 15:20:07 -0400
+Date: Wed, 4 Jun 2014 14:20:03 -0500 (CDT)
+From: Christoph Lameter <cl@gentwo.org>
+To: akpm@linux-foundation.org
+cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Pekka Enberg <penberg@kernel.org>, mpm@selenic.com,
+        David Rientjes <rientjes@google.com>, Joonsoo Kim <js1304@gmail.com>
+Subject: [PATCH] SLAB Maintainer update
+Message-ID: <alpine.DEB.2.10.1406041417290.14004@gentwo.org>
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 4 Jun 2014, Marciniszyn, Mike wrote:
+As discussed in various threads on the side:
 
-> > Subject: [PATCH 9/10] IB/qib: use safer test on the result of find_first_zero_bit
-> > 
-> > From: Julia Lawall <Julia.Lawall@lip6.fr>
-> 
-> Thanks for the patch!
-> 
-> Roland, I'm marking this as stable since a memory corruption can occur in the _set_bit().
 
-No, it's not necessary.  It turns out that the result cannot be greater 
-than the requested maximum value.
+Remove one inactive maintainer, add two new ones and update
+my email address. Plus add Andrew. And fix the glob to include
+files like mm/slab_common.c
 
-julia
+Signed-off-by: Christoph Lameter <cl@linux.com>
+
+Index: linux/MAINTAINERS
+===================================================================
+--- linux.orig/MAINTAINERS	2014-06-04 14:13:49.404373350 -0500
++++ linux/MAINTAINERS	2014-06-04 14:16:51.804786701 -0500
+@@ -8104,13 +8104,15 @@
+ F:	drivers/usb/misc/sisusbvga/
+
+ SLAB ALLOCATOR
+-M:	Christoph Lameter <cl@linux-foundation.org>
++M:	Christoph Lameter <cl@linux.com>
+ M:	Pekka Enberg <penberg@kernel.org>
+-M:	Matt Mackall <mpm@selenic.com>
++M:	David Rientjes <rientjes@google.com>
++M:	Joonsoo Kim <iamjoonsoo.kim@lge.com>
++M:	Andrew Morton <akpm@linux-foundation.org>
+ L:	linux-mm@kvack.org
+ S:	Maintained
+ F:	include/linux/sl?b*.h
+-F:	mm/sl?b.c
++F:	mm/sl?b*
+
+ SLEEPABLE READ-COPY UPDATE (SRCU)
+ M:	Lai Jiangshan <laijs@cn.fujitsu.com>
+Index: linux/CREDITS
+===================================================================
+--- linux.orig/CREDITS	2014-06-04 14:13:49.404373350 -0500
++++ linux/CREDITS	2014-06-04 14:13:49.400373430 -0500
+@@ -9,6 +9,10 @@
+ 			Linus
+ ----------
+
++M: Matt Mackal
++E: mpm@selenic.com
++D: SLOB slab allocator
++
+ N: Matti Aarnio
+ E: mea@nic.funet.fi
+ D: Alpha systems hacking, IPv6 and other network related stuff
