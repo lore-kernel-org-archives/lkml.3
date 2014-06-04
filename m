@@ -1,63 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751606AbaFDJJB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 05:09:01 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:57806 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750997AbaFDJI7 (ORCPT
+	id S1750992AbaFDJKH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 05:10:07 -0400
+Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:7781 "EHLO
+	mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751327AbaFDJJ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 05:08:59 -0400
-Date: Wed, 4 Jun 2014 11:08:56 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Paolo Valente <paolo.valente@unimore.it>
-Cc: Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>,
-        Li Zefan <lizefan@huawei.com>, Fabio Checconi <fchecconi@gmail.com>,
-        Arianna Avanzini <avanzini.arianna@gmail.com>,
-        linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org
-Subject: Re: [PATCH RFC - TAKE TWO - 00/12] New version of the BFQ I/O
- Scheduler
-Message-ID: <20140604090856.GA1196@amd.pavel.ucw.cz>
-References: <20140528221929.GG1419@htj.dyndns.org>
- <1401354343-5527-1-git-send-email-paolo.valente@unimore.it>
- <20140530160712.GG24871@htj.dyndns.org>
- <464F6CBE-A63E-46EF-A90D-BF8450430444@unimore.it>
- <20140530232804.GA5057@htj.dyndns.org>
- <20140602111432.GA3737@amd.pavel.ucw.cz>
- <20140602130226.GA14654@amd.pavel.ucw.cz>
- <FCFE0106-A4DD-4DEF-AAAE-040F3823A447@unimore.it>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <FCFE0106-A4DD-4DEF-AAAE-040F3823A447@unimore.it>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 4 Jun 2014 05:09:59 -0400
+X-IronPort-AV: E=Sophos;i="4.98,972,1392159600"; 
+   d="scan'208";a="65385487"
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: linux-rdma@vger.kernel.org
+Cc: kernel-janitors@vger.kernel.org, linux-fbdev@vger.kernel.org,
+        linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ath10k@lists.infradead.org, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, devel@driverdev.osuosl.org,
+        iss_storagedev@hp.com, linux-scsi@vger.kernel.org,
+        linux-s390@vger.kernel.org, adi-buildroot-devel@lists.sourceforge.net
+Subject: [PATCH 0/10] use safer test on the result of find_first_zero_bit
+Date: Wed,  4 Jun 2014 11:07:50 +0200
+Message-Id: <1401872880-23685-1-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+Find_first_zero_bit considers BITS_PER_LONG bits at a time, and thus may
+return a larger number than the maximum position argument if that position
+is not a multiple of BITS_PER_LONG.
 
-> Should this attempt be useless as well, I will, if you do not mind,
->try by asking you more details about your system and reproducing your
->configuration as much as I can.
-
-It fails during boot or shortly after that when clicking in gnome2
-desktop. I had BFQ as a default scheduler.
-
-Now I set CFQ as a default and it boots (as expected).
-
-root@duo:~# cat /sys/block/sda/queue/scheduler 
-noop deadline [cfq] bfq 
-root@duo:~# echo bfq > /sys/block/sda/queue/scheduler
-root@duo:~# dmesg | grep WARN
-WARNING: CPU: 1 PID: 1 at net/wireless/reg.c:479
-regulatory_init+0x88/0xf5()
-root@duo:~# 
-
-Hmm, and I seem to have pretty much functional system.
-
-I'll try to do some benchmarks now.
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
