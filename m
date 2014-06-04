@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752208AbaFDJNA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 05:13:00 -0400
-Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:54265
-	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751764AbaFDJKA (ORCPT
+	id S1752179AbaFDJM6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 05:12:58 -0400
+Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:7781 "EHLO
+	mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751776AbaFDJKA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 4 Jun 2014 05:10:00 -0400
 X-IronPort-AV: E=Sophos;i="4.98,972,1392159600"; 
-   d="scan'208";a="65385492"
+   d="scan'208";a="65385496"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Omar Ramirez Luna <omar.ramirez@copitl.com>
-Cc: kernel-janitors@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 4/10] staging: tidspbridge: use safer test on the result of find_first_zero_bit
-Date: Wed,  4 Jun 2014 11:07:54 +0200
-Message-Id: <1401872880-23685-5-git-send-email-Julia.Lawall@lip6.fr>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: kernel-janitors@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Vineet Gupta <vgupta@synopsys.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH 5/10] ARC: use safer test on the result of find_first_zero_bit
+Date: Wed,  4 Jun 2014 11:07:55 +0200
+Message-Id: <1401872880-23685-6-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1401872880-23685-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1401872880-23685-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -51,28 +52,19 @@ S1 else S2
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- drivers/staging/tidspbridge/rmgr/node.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/arc/kernel/perf_event.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff -u -p a/drivers/staging/tidspbridge/rmgr/node.c b/drivers/staging/tidspbridge/rmgr/node.c
---- a/drivers/staging/tidspbridge/rmgr/node.c
-+++ b/drivers/staging/tidspbridge/rmgr/node.c
-@@ -935,7 +935,7 @@ int node_connect(struct node_object *nod
- 				 node2_type == NODE_DAISSOCKET)) {
- 		/* Find available pipe */
- 		pipe_id = find_first_zero_bit(hnode_mgr->pipe_map, MAXPIPES);
--		if (pipe_id == MAXPIPES) {
-+		if (pipe_id >= MAXPIPES) {
- 			status = -ECONNREFUSED;
- 			goto out_unlock;
- 		}
-@@ -1008,7 +1008,7 @@ int node_connect(struct node_object *nod
- 			status = -EINVAL;
- 			goto out_unlock;
- 		}
--		if (chnl_id == CHNL_MAXCHANNELS) {
-+		if (chnl_id >= CHNL_MAXCHANNELS) {
- 			status = -ECONNREFUSED;
- 			goto out_unlock;
- 		}
+diff -u -p a/arch/arc/kernel/perf_event.c b/arch/arc/kernel/perf_event.c
+--- a/arch/arc/kernel/perf_event.c
++++ b/arch/arc/kernel/perf_event.c
+@@ -205,7 +205,7 @@ static int arc_pmu_add(struct perf_event
+ 	if (__test_and_set_bit(idx, arc_pmu->used_mask)) {
+ 		idx = find_first_zero_bit(arc_pmu->used_mask,
+ 					  arc_pmu->n_counters);
+-		if (idx == arc_pmu->n_counters)
++		if (idx >= arc_pmu->n_counters)
+ 			return -EAGAIN;
+ 
+ 		__set_bit(idx, arc_pmu->used_mask);
 
