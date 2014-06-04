@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752588AbaFDOhv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 10:37:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2197 "EHLO mx1.redhat.com"
+	id S1752430AbaFDOhk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 10:37:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3223 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751630AbaFDOht (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 10:37:49 -0400
+	id S1752328AbaFDOhi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 10:37:38 -0400
 From: Jiri Olsa <jolsa@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@kernel.org>,
@@ -15,18 +15,17 @@ Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@kernel.org>,
         Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
         Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 13/13] perf tests: Add test for closing dso objects on EMFILE error
-Date: Wed,  4 Jun 2014 16:37:02 +0200
-Message-Id: <1401892622-30848-14-git-send-email-jolsa@kernel.org>
+Subject: [PATCH 09/13] perf tools: Add dso__data_* interface descriptons
+Date: Wed,  4 Jun 2014 16:36:58 +0200
+Message-Id: <1401892622-30848-10-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1401892622-30848-1-git-send-email-jolsa@kernel.org>
 References: <1401892622-30848-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Testing that perf properly closes opened dso objects
-and tries to reopen in case we run out of allowed file
-descriptors for dso data.
+Adding descriptions/explanations for dso__data_* interface
+functions.
 
 Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
@@ -37,122 +36,178 @@ Cc: Jean Pihet <jean.pihet@linaro.org>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Reviewed by: David Ahern <dsahern@gmail.com>
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/tests/builtin-test.c |  4 +++
- tools/perf/tests/dso-data.c     | 73 +++++++++++++++++++++++++++++++++++++++++
- tools/perf/tests/tests.h        |  1 +
- 3 files changed, 78 insertions(+)
+ tools/perf/util/dso.c | 59 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/dso.h | 38 +++++++++++++++++++++++++++++++++
+ 2 files changed, 97 insertions(+)
 
-diff --git a/tools/perf/tests/builtin-test.c b/tools/perf/tests/builtin-test.c
-index b8a6358..6f8b01b 100644
---- a/tools/perf/tests/builtin-test.c
-+++ b/tools/perf/tests/builtin-test.c
-@@ -60,6 +60,10 @@ static struct test {
- 		.func = test__dso_data_cache,
- 	},
- 	{
-+		.desc = "Test dso data reopen",
-+		.func = test__dso_data_reopen,
-+	},
-+	{
- 		.desc = "roundtrip evsel->name check",
- 		.func = test__perf_evsel__roundtrip_name_test,
- 	},
-diff --git a/tools/perf/tests/dso-data.c b/tools/perf/tests/dso-data.c
-index 2d30014..630808c 100644
---- a/tools/perf/tests/dso-data.c
-+++ b/tools/perf/tests/dso-data.c
-@@ -283,3 +283,76 @@ int test__dso_data_cache(void)
- 	TEST_ASSERT_VAL("failed leadking files", nr == nr_end);
- 	return 0;
+diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
+index c30752c..819f104 100644
+--- a/tools/perf/util/dso.c
++++ b/tools/perf/util/dso.c
+@@ -205,6 +205,13 @@ static int __open_dso(struct dso *dso, struct machine *machine)
+ 
+ static void check_data_close(void);
+ 
++/**
++ * dso_close - Open DSO data file
++ * @dso: dso object
++ *
++ * Open @dso's data file descriptor and updates
++ * list/count of open DSO objects.
++ */
+ static int open_dso(struct dso *dso, struct machine *machine)
+ {
+ 	int fd = __open_dso(dso, machine);
+@@ -231,6 +238,13 @@ static void close_data_fd(struct dso *dso)
+ 	}
  }
-+
-+int test__dso_data_reopen(void)
-+{
-+	struct machine machine;
-+	long nr_end, nr = open_files_cnt();
-+	int fd, fd_extra;
-+
-+#define dso_0 (dsos[0])
-+#define dso_1 (dsos[1])
-+#define dso_2 (dsos[2])
-+
-+	memset(&machine, 0, sizeof(machine));
-+
-+	/*
-+	 * Test scenario:
-+	 * - create 3 dso objects
-+	 * - set process file descriptor limit to current
-+	 *   files count + 3
-+	 * - test that the first dso gets closed when we
-+	 *   reach the files count limit
-+	 */
-+
-+	/* Make sure we are able to open 3 fds anyway */
-+	TEST_ASSERT_VAL("failed to set file limit",
-+			!set_fd_limit((nr + 3)));
-+
-+	TEST_ASSERT_VAL("failed to create dsos\n", !dsos__create(3, TEST_FILE_SIZE));
-+
-+	/* open dso_0 */
-+	fd = dso__data_fd(dso_0, &machine);
-+	TEST_ASSERT_VAL("failed to get fd", fd > 0);
-+
-+	/* open dso_1 */
-+	fd = dso__data_fd(dso_1, &machine);
-+	TEST_ASSERT_VAL("failed to get fd", fd > 0);
-+
-+	/*
-+	 * open extra file descriptor and we just
-+	 * reached the files count limit
-+	 */
-+	fd_extra = open("/dev/null", O_RDONLY);
-+	TEST_ASSERT_VAL("failed to open extra fd", fd_extra > 0);
-+
-+	/* open dso_2 */
-+	fd = dso__data_fd(dso_2, &machine);
-+	TEST_ASSERT_VAL("failed to get fd", fd > 0);
-+
-+	/*
-+	 * dso_0 should get closed, because we reached
-+	 * the file descriptor limit
-+	 */
-+	TEST_ASSERT_VAL("failed to close dso_0", dso_0->data.fd == -1);
-+
-+	/* open dso_0 */
-+	fd = dso__data_fd(dso_0, &machine);
-+	TEST_ASSERT_VAL("failed to get fd", fd > 0);
-+
-+	/*
-+	 * dso_1 should get closed, because we reached
-+	 * the file descriptor limit
-+	 */
-+	TEST_ASSERT_VAL("failed to close dso_1", dso_1->data.fd == -1);
-+
-+	/* cleanup everything */
-+	close(fd_extra);
-+	dsos__delete(3);
-+
-+	/* Make sure we did not leak any file descriptor. */
-+	nr_end = open_files_cnt();
-+	pr_debug("nr start %ld, nr stop %ld\n", nr, nr_end);
-+	TEST_ASSERT_VAL("failed leadking files", nr == nr_end);
-+	return 0;
-+}
-diff --git a/tools/perf/tests/tests.h b/tools/perf/tests/tests.h
-index ccc4deb..ed64790 100644
---- a/tools/perf/tests/tests.h
-+++ b/tools/perf/tests/tests.h
-@@ -29,6 +29,7 @@ int test__pmu(void);
- int test__attr(void);
- int test__dso_data(void);
- int test__dso_data_cache(void);
-+int test__dso_data_reopen(void);
- int test__parse_events(void);
- int test__hists_link(void);
- int test__python_use(void);
+ 
++/**
++ * dso_close - Close DSO data file
++ * @dso: dso object
++ *
++ * Close @dso's data file descriptor and updates
++ * list/count of open DSO objects.
++ */
+ static void close_dso(struct dso *dso)
+ {
+ 	close_data_fd(dso);
+@@ -276,6 +290,11 @@ static bool may_cache_fd(void)
+ 	return limit > (rlim_t) dso__data_open_cnt;
+ }
+ 
++/*
++ * Check and close LRU dso if we crossed allowed limit
++ * for opened dso file descriptors. The limit is half
++ * of the RLIMIT_NOFILE files opened.
++*/
+ static void check_data_close(void)
+ {
+ 	bool cache_fd = may_cache_fd();
+@@ -284,11 +303,25 @@ static void check_data_close(void)
+ 		close_first_dso();
+ }
+ 
++/**
++ * dso__data_close - Close DSO data file
++ * @dso: dso object
++ *
++ * External interface to close @dso's data file descriptor.
++ */
+ void dso__data_close(struct dso *dso)
+ {
+ 	close_dso(dso);
+ }
+ 
++/**
++ * dso__data_fd - Get dso's data file descriptor
++ * @dso: dso object
++ * @machine: machine object
++ *
++ * External interface to find dso's file, open it and
++ * returns file descriptor.
++ */
+ int dso__data_fd(struct dso *dso, struct machine *machine)
+ {
+ 	enum dso_binary_type binary_type_data[] = {
+@@ -445,6 +478,11 @@ static ssize_t dso_cache_read(struct dso *dso, u64 offset,
+ 		return dso_cache__read(dso, offset, data, size);
+ }
+ 
++/*
++ * Reads and caches dso data DSO__DATA_CACHE_SIZE size chunks
++ * in the rb_tree. Any read to already cached data is served
++ * by cached data.
++ */
+ static ssize_t cached_read(struct dso *dso, u64 offset, u8 *data, ssize_t size)
+ {
+ 	ssize_t r = 0;
+@@ -504,6 +542,17 @@ static ssize_t data_read_offset(struct dso *dso, u64 offset,
+ 	return cached_read(dso, offset, data, size);
+ }
+ 
++/**
++ * dso__data_read_offset - Read data from dso file offset
++ * @dso: dso object
++ * @machine: machine object
++ * @offset: file offset
++ * @data: buffer to store data
++ * @size: size of the @data buffer
++ *
++ * External interface to read data from dso file offset. Open
++ * dso data file and use cached_read to get the data.
++ */
+ ssize_t dso__data_read_offset(struct dso *dso, struct machine *machine,
+ 			      u64 offset, u8 *data, ssize_t size)
+ {
+@@ -513,6 +562,16 @@ ssize_t dso__data_read_offset(struct dso *dso, struct machine *machine,
+ 	return data_read_offset(dso, offset, data, size);
+ }
+ 
++/**
++ * dso__data_read_addr - Read data from dso address
++ * @dso: dso object
++ * @machine: machine object
++ * @add: virtual memory address
++ * @data: buffer to store data
++ * @size: size of the @data buffer
++ *
++ * External interface to read data from dso address.
++ */
+ ssize_t dso__data_read_addr(struct dso *dso, struct map *map,
+ 			    struct machine *machine, u64 addr,
+ 			    u8 *data, ssize_t size)
+diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
+index da47b13..ad553ba 100644
+--- a/tools/perf/util/dso.h
++++ b/tools/perf/util/dso.h
+@@ -149,6 +149,44 @@ char dso__symtab_origin(const struct dso *dso);
+ int dso__read_binary_type_filename(const struct dso *dso, enum dso_binary_type type,
+ 				   char *root_dir, char *filename, size_t size);
+ 
++/*
++ * The dso__data_* external interface provides following functions:
++ *   dso__data_fd
++ *   dso__data_close
++ *   dso__data_read_offset
++ *   dso__data_read_addr
++ *
++ * Please refer to the dso.c object code for each function and
++ * arguments documentation. Following text tries to explain the
++ * dso file descriptor caching.
++ *
++ * The dso__data* interface allows caching of opened file descriptors
++ * to speed up the dso data accesses. The idea is to leave the file
++ * descriptor opened ideally for the whole life of the dso object.
++ *
++ * The current usage of the dso__data_* interface is as follows:
++ *
++ * Get DSO's fd:
++ *   int fd = dso__data_fd(dso, machine);
++ *   USE 'fd' SOMEHOW
++ *
++ * Read DSO's data:
++ *   n = dso__data_read_offset(dso_0, &machine, 0, buf, BUFSIZE);
++ *   n = dso__data_read_addr(dso_0, &machine, 0, buf, BUFSIZE);
++ *
++ * Eventually close DSO's fd:
++ *   dso__data_close(dso);
++ *
++ * It is not necessary to close the DSO object data file. Each time new
++ * DSO data file is opened, the limit (RLIMIT_NOFILE/2) is checked. Once
++ * it is crossed, the oldest opened DSO object is closed.
++ *
++ * The dso__delete function calls close_dso function to ensure the
++ * data file descriptor gets closed/unmapped before the dso object
++ * is freed.
++ *
++ * TODO
++*/
+ int dso__data_fd(struct dso *dso, struct machine *machine);
+ void dso__data_close(struct dso *dso);
+ 
 -- 
 1.8.3.1
 
