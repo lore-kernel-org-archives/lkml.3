@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754364AbaFDXZV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:25:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41067 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754243AbaFDXYZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754240AbaFDXYZ (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 4 Jun 2014 19:24:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41040 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754157AbaFDXYU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 19:24:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: [PATCH 3.10 102/103] media: V4L2: ov7670: fix a wrong index, potentially Oopsing the kernel from user-space
-Date: Wed,  4 Jun 2014 16:26:05 -0700
-Message-Id: <20140604232550.160671185@linuxfoundation.org>
+        Slava Shwartsman <valyushash@gmail.com>,
+        Sagi Grimberg <sagig@mellanox.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.10 087/103] Target/iser: Fix iscsit_accept_np and rdma_cm racy flow
+Date: Wed,  4 Jun 2014 16:25:50 -0700
+Message-Id: <20140604232549.651035417@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232546.704156131@linuxfoundation.org>
 References: <20140604232546.704156131@linuxfoundation.org>
@@ -30,36 +30,112 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+From: Sagi Grimberg <sagig@mellanox.com>
 
-commit cfece5857ca51d1dcdb157017aba226f594e9dcf upstream.
+commit 531b7bf4bd795d9a09eac92504322a472c010bc8 upstream.
 
-Commit 75e2bdad8901a0b599e01a96229be922eef1e488 "ov7670: allow
-configuration of image size, clock speed, and I/O method" uses a wrong
-index to iterate an array. Apart from being wrong, it also uses an
-unchecked value from user-space, which can cause access to unmapped
-memory in the kernel, triggered by a normal desktop user with rights to
-use V4L2 devices.
+RDMA CM and iSCSI target flows are asynchronous and completely
+uncorrelated. Relying on the fact that iscsi_accept_np will be called
+after CM connection request event and will wait for it is a mistake.
 
-Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Acked-by: Jonathan Corbet <corbet@lwn.net>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+When attempting to login to a few targets this flow is racy and
+unpredictable, but for parallel login to dozens of targets will
+race and hang every time.
+
+The correct synchronizing mechanism in this case is pending on
+a semaphore rather than a wait_for_event. We keep the pending
+interruptible for iscsi_np cleanup stage.
+
+(Squash patch to remove dead code into parent - nab)
+
+Reported-by: Slava Shwartsman <valyushash@gmail.com>
+Signed-off-by: Sagi Grimberg <sagig@mellanox.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/i2c/ov7670.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/infiniband/ulp/isert/ib_isert.c |   25 ++++++-------------------
+ drivers/infiniband/ulp/isert/ib_isert.h |    2 +-
+ 2 files changed, 7 insertions(+), 20 deletions(-)
 
---- a/drivers/media/i2c/ov7670.c
-+++ b/drivers/media/i2c/ov7670.c
-@@ -1110,7 +1110,7 @@ static int ov7670_enum_framesizes(struct
- 	 * windows that fall outside that.
- 	 */
- 	for (i = 0; i < n_win_sizes; i++) {
--		struct ov7670_win_size *win = &info->devtype->win_sizes[index];
-+		struct ov7670_win_size *win = &info->devtype->win_sizes[i];
- 		if (info->min_width && win->width < info->min_width)
- 			continue;
- 		if (info->min_height && win->height < info->min_height)
+--- a/drivers/infiniband/ulp/isert/ib_isert.c
++++ b/drivers/infiniband/ulp/isert/ib_isert.c
+@@ -27,6 +27,7 @@
+ #include <target/target_core_base.h>
+ #include <target/target_core_fabric.h>
+ #include <target/iscsi/iscsi_transport.h>
++#include <linux/semaphore.h>
+ 
+ #include "isert_proto.h"
+ #include "ib_isert.h"
+@@ -462,8 +463,8 @@ isert_connect_request(struct rdma_cm_id
+ 	list_add_tail(&isert_conn->conn_accept_node, &isert_np->np_accept_list);
+ 	mutex_unlock(&isert_np->np_accept_mutex);
+ 
+-	pr_debug("isert_connect_request() waking up np_accept_wq: %p\n", np);
+-	wake_up(&isert_np->np_accept_wq);
++	pr_debug("isert_connect_request() up np_sem np: %p\n", np);
++	up(&isert_np->np_sem);
+ 	return 0;
+ 
+ out_conn_dev:
+@@ -2042,7 +2043,7 @@ isert_setup_np(struct iscsi_np *np,
+ 		pr_err("Unable to allocate struct isert_np\n");
+ 		return -ENOMEM;
+ 	}
+-	init_waitqueue_head(&isert_np->np_accept_wq);
++	sema_init(&isert_np->np_sem, 0);
+ 	mutex_init(&isert_np->np_accept_mutex);
+ 	INIT_LIST_HEAD(&isert_np->np_accept_list);
+ 	init_completion(&isert_np->np_login_comp);
+@@ -2091,18 +2092,6 @@ out:
+ }
+ 
+ static int
+-isert_check_accept_queue(struct isert_np *isert_np)
+-{
+-	int empty;
+-
+-	mutex_lock(&isert_np->np_accept_mutex);
+-	empty = list_empty(&isert_np->np_accept_list);
+-	mutex_unlock(&isert_np->np_accept_mutex);
+-
+-	return empty;
+-}
+-
+-static int
+ isert_rdma_accept(struct isert_conn *isert_conn)
+ {
+ 	struct rdma_cm_id *cm_id = isert_conn->conn_cm_id;
+@@ -2186,16 +2175,14 @@ isert_accept_np(struct iscsi_np *np, str
+ 	int max_accept = 0, ret;
+ 
+ accept_wait:
+-	ret = wait_event_interruptible(isert_np->np_accept_wq,
+-			!isert_check_accept_queue(isert_np) ||
+-			np->np_thread_state == ISCSI_NP_THREAD_RESET);
++	ret = down_interruptible(&isert_np->np_sem);
+ 	if (max_accept > 5)
+ 		return -ENODEV;
+ 
+ 	spin_lock_bh(&np->np_thread_lock);
+ 	if (np->np_thread_state == ISCSI_NP_THREAD_RESET) {
+ 		spin_unlock_bh(&np->np_thread_lock);
+-		pr_err("ISCSI_NP_THREAD_RESET for isert_accept_np\n");
++		pr_debug("ISCSI_NP_THREAD_RESET for isert_accept_np\n");
+ 		return -ENODEV;
+ 	}
+ 	spin_unlock_bh(&np->np_thread_lock);
+--- a/drivers/infiniband/ulp/isert/ib_isert.h
++++ b/drivers/infiniband/ulp/isert/ib_isert.h
+@@ -131,7 +131,7 @@ struct isert_device {
+ };
+ 
+ struct isert_np {
+-	wait_queue_head_t	np_accept_wq;
++	struct semaphore	np_sem;
+ 	struct rdma_cm_id	*np_cm_id;
+ 	struct mutex		np_accept_mutex;
+ 	struct list_head	np_accept_list;
 
 
