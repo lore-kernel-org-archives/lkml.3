@@ -1,67 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753359AbaFDPot (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 11:44:49 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:53329 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753299AbaFDPoo (ORCPT
+	id S1752855AbaFDPrS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 11:47:18 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:35200 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751738AbaFDPrR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 11:44:44 -0400
-Date: Wed, 4 Jun 2014 16:44:07 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Message-ID: <20140604154407.GM2520@sirena.org.uk>
-References: <4605709.T97aRyQTUM@wuerfel>
+	Wed, 4 Jun 2014 11:47:17 -0400
+Message-ID: <538F3F82.5060805@kernel.dk>
+Date: Wed, 04 Jun 2014 09:47:14 -0600
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="XbHSybK3LHOYQtWI"
-Content-Disposition: inline
-In-Reply-To: <4605709.T97aRyQTUM@wuerfel>
-X-Cookie: Your lucky color has faded.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 109.148.252.180
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regulator: add regulator_can_change_voltage stub
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Christoph Hellwig <hch@infradead.org>
+CC: Shaohua Li <shli@kernel.org>, linux-kernel@vger.kernel.org
+Subject: Re: [patch]blk-mq: blk_mq_tag_to_rq should handle flush request
+References: <20140509120733.GA27918@kernel.org> <20140509150018.GA26215@infradead.org> <20140510040023.GA13788@kernel.org> <5388912F.7010609@kernel.dk> <20140604111133.GA7826@infradead.org> <538F2A11.4060800@kernel.dk> <20140604142012.GA20056@infradead.org> <538F331F.60101@kernel.dk> <20140604145803.GA7826@infradead.org> <538F34FB.7050003@kernel.dk> <20140604153159.GA27096@infradead.org> <538F3DC4.4030104@kernel.dk>
+In-Reply-To: <538F3DC4.4030104@kernel.dk>
+Content-Type: multipart/mixed;
+ boundary="------------090407060304010502010500"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is a multi-part message in MIME format.
+--------------090407060304010502010500
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 
---XbHSybK3LHOYQtWI
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On 06/04/2014 09:39 AM, Jens Axboe wrote:
+> On 06/04/2014 09:31 AM, Christoph Hellwig wrote:
+>> On Wed, Jun 04, 2014 at 09:02:19AM -0600, Jens Axboe wrote:
+>>>> scsi_mq_find_tag only gets the scsi host, which may have multiple
+>>>> queues.  When called from scsi_find_tag we actually have a scsi device,
+>>>> so that's not an issue, but when called from scsi_host_find_tag the
+>>>> driver only provides the host.
+>>>
+>>> Only solution I see right now is to have the flush_rq in the shared
+>>> tags, but that would potentially be a regression for multiple
+>>> devices and heavy flush uses cases. I'll see if I can come up with
+>>> something better, or maybe Shaohua has an idea.
+>>
+>> What about something like the following (untest, uncompiled, maybe
+>> pseudo-code):
+>>
+>> struct request *blk_mq_tag_to_rq(struct blk_mq_tags *tags, unsigned int tag)
+>> {
+>> 	struct request *rq = tags->rqs[tag];
+>>
+>> 	if ((rq->cmd_flags & REQ_FLUSH_SEQ) && rq->q->flush_rq->tag == tag)
+>> 		return rq->q->flush_rq;
+>> 	return rq;
+> 
+> Ah yes, that'll work, the queue is always assigned. I'll make that change.
 
-On Wed, Jun 04, 2014 at 04:46:00PM +0200, Arnd Bergmann wrote:
-> When CONFIG_REGULATOR is not set, we cannot call
-> regulator_can_change_voltage() from a device driver, which results
-> in a build error like
+Something like this in complete form. Compile tested only, I'll test it
+on dev box. Probably doesn't matter too much, but I prefer to
+potentially have the faster path (non-flush) just fall inline.
 
-Applied, thanks.
 
---XbHSybK3LHOYQtWI
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+-- 
+Jens Axboe
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBAgAGBQJTjz7DAAoJELSic+t+oim99eoP/3zBLkyjQbnB2Ry6yhy1/THU
-qzehf6ZMfuelU58G/qnXGRuKwInkNzPYVnzgQJ1GS911wT6UjRGVrOC7rTItvl4S
-He59u1tcWUHeXZ5F+ZIQJ+dnFoysx5rS3S/lo/6ivFSqoBCD7828AbjAY9hJDCI+
-b/3sDlkp5Cu/o2WjY5jtY3LED0ok3smxnMZf2M4Zk7Qq3NcZw9zEhW9i0w2ECgS7
-QmB1DlLM3mpre1EicJ0OqAO4IcB0G1CjxSmiJzkOK6z9V0ugkWGt1cOIXUvIm+BA
-gaL2iSzFpL/U6bJy8MT1FuXmjNlgj7evPazAG0eCrB7B9rUMV52UDCyp4t/Gu97d
-CgGCsKtoNi4FYpLrsyME+7+enWVF7GOUUf6Lg/LL3MU1TOSxSlPO/7hvNzC8r3uN
-b+R7KjrxlV++IN16q/ggcaJnY6Cfts+pbSMskNu92xcbUX7BbzCFyjL6aYvC+dva
-fNy14nzPi+SMtLqtVlXaRlwVU22vMB9XW9WrthDjyNg/4Y36r6BWPXMPvSh+Ur9h
-dojploYBdm5K1fo/No+hTAuJDVv93XT6QLGxqwNLNu5jfxnCxfeCHG0ng6Pd4ZaP
-mvdKixY3qY6l6ZzxhWYFU16kCpIvpPEERWpypKKLDsTorVrMQCJce/EB//wKIpRs
-c7W3f4zRG0JyZiISBCns
-=5Jyd
------END PGP SIGNATURE-----
+--------------090407060304010502010500
+Content-Type: text/x-patch;
+ name="tag-to-request.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="tag-to-request.patch"
 
---XbHSybK3LHOYQtWI--
+diff --git a/block/blk-mq.c b/block/blk-mq.c
+index 4e8e8cf00815..4e4cd6208052 100644
+--- a/block/blk-mq.c
++++ b/block/blk-mq.c
+@@ -529,15 +529,20 @@ void blk_mq_kick_requeue_list(struct request_queue *q)
+ }
+ EXPORT_SYMBOL(blk_mq_kick_requeue_list);
+ 
+-struct request *blk_mq_tag_to_rq(struct blk_mq_hw_ctx *hctx, unsigned int tag)
++static inline bool is_flush_request(struct request *rq, unsigned int tag)
+ {
+-	struct request_queue *q = hctx->queue;
++	return ((rq->cmd_flags & REQ_FLUSH_SEQ) &&
++			rq->q->flush_rq->tag == tag);
++}
+ 
+-	if ((q->flush_rq->cmd_flags & REQ_FLUSH_SEQ) &&
+-	    q->flush_rq->tag == tag)
+-		return q->flush_rq;
++struct request *blk_mq_tag_to_rq(struct blk_mq_tags *tags, unsigned int tag)
++{
++	struct request *rq = tags->rqs[tag];
++
++	if (!is_flush_request(rq, tag))
++		return rq;
+ 
+-	return hctx->tags->rqs[tag];
++	return rq->q->flush_rq;
+ }
+ EXPORT_SYMBOL(blk_mq_tag_to_rq);
+ 
+@@ -566,7 +571,7 @@ static void blk_mq_timeout_check(void *__data, unsigned long *free_tags)
+ 		if (tag >= hctx->tags->nr_tags)
+ 			break;
+ 
+-		rq = blk_mq_tag_to_rq(hctx, tag++);
++		rq = blk_mq_tag_to_rq(hctx->tags, tag++);
+ 		if (rq->q != hctx->queue)
+ 			continue;
+ 		if (!test_bit(REQ_ATOM_STARTED, &rq->atomic_flags))
+diff --git a/drivers/block/mtip32xx/mtip32xx.c b/drivers/block/mtip32xx/mtip32xx.c
+index abc858b3528b..74abd49fabdc 100644
+--- a/drivers/block/mtip32xx/mtip32xx.c
++++ b/drivers/block/mtip32xx/mtip32xx.c
+@@ -193,7 +193,9 @@ static void mtip_put_int_command(struct driver_data *dd, struct mtip_cmd *cmd)
+ static struct request *mtip_rq_from_tag(struct driver_data *dd,
+ 					unsigned int tag)
+ {
+-	return blk_mq_tag_to_rq(dd->queue->queue_hw_ctx[0], tag);
++	struct blk_mq_hw_ctx *hctx = dd->queue->queue_hw_ctx[0];
++
++	return blk_mq_tag_to_rq(hctx->tags, tag);
+ }
+ 
+ static struct mtip_cmd *mtip_cmd_from_tag(struct driver_data *dd,
+diff --git a/include/linux/blk-mq.h b/include/linux/blk-mq.h
+index c15128833100..0feedebfde48 100644
+--- a/include/linux/blk-mq.h
++++ b/include/linux/blk-mq.h
+@@ -155,7 +155,7 @@ void blk_mq_free_request(struct request *rq);
+ bool blk_mq_can_queue(struct blk_mq_hw_ctx *);
+ struct request *blk_mq_alloc_request(struct request_queue *q, int rw,
+ 		gfp_t gfp, bool reserved);
+-struct request *blk_mq_tag_to_rq(struct blk_mq_hw_ctx *hctx, unsigned int tag);
++struct request *blk_mq_tag_to_rq(struct blk_mq_tags *tags, unsigned int tag);
+ 
+ struct blk_mq_hw_ctx *blk_mq_map_queue(struct request_queue *, const int ctx_index);
+ struct blk_mq_hw_ctx *blk_mq_alloc_single_hw_queue(struct blk_mq_tag_set *, unsigned int, int);
+
+--------------090407060304010502010500--
