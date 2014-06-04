@@ -1,81 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753438AbaFDNzJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 09:55:09 -0400
-Received: from casper.infradead.org ([85.118.1.10]:46914 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752513AbaFDNzG (ORCPT
+	id S1753467AbaFDN4E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 09:56:04 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:50926 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752800AbaFDN4B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 09:55:06 -0400
-Date: Wed, 4 Jun 2014 15:54:58 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: Andy Lutomirski <luto@amacapital.net>, umgwanakikbuti@gmail.com,
-        mingo@kernel.org, tglx@linutronix.de, nicolas.pitre@linaro.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/6] sched,trace: Add a tracepoint for remote wakeups via
- polling
-Message-ID: <20140604135458.GN30445@twins.programming.kicks-ass.net>
-References: <cover.1401841482.git.luto@amacapital.net>
- <c932da32f908d0c0c9ea5b7f7d5fff540eb8fec6.1401841482.git.luto@amacapital.net>
- <538F186A.2060801@linaro.org>
+	Wed, 4 Jun 2014 09:56:01 -0400
+Date: Wed, 4 Jun 2014 14:56:01 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Hiroshi Doyu <hdoyu@nvidia.com>,
+        Rob Herring <robherring2@gmail.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>, Mark Rutland <Mark.Rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Cho KyongHo <pullip.cho@samsung.com>,
+        Grant Grundler <grundler@chromium.org>,
+        Dave P Martin <Dave.Martin@arm.com>,
+        Marc Zyngier <Marc.Zyngier@arm.com>, Joerg Roedel <joro@8bytes.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Linux IOMMU <iommu@lists.linux-foundation.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] devicetree: Add generic IOMMU device tree bindings
+Message-ID: <20140604135600.GD6644@arm.com>
+References: <1400877218-4113-1-git-send-email-thierry.reding@gmail.com>
+ <4545972.cM7IP1qTXQ@wuerfel>
+ <87tx87rrp2.fsf@nvidia.com>
+ <4462924.8iRbdkOPp7@wuerfel>
+ <20140604134400.GE28484@ulmo>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="2roH7liMbLpZFZp3"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <538F186A.2060801@linaro.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20140604134400.GE28484@ulmo>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jun 04, 2014 at 02:44:03PM +0100, Thierry Reding wrote:
+> On Fri, May 30, 2014 at 09:54:37PM +0200, Arnd Bergmann wrote:
+> > On Friday 30 May 2014 22:29:13 Hiroshi Doyu wrote:
+> > > The disadvantage of this is that this limits the max number of streamIDs
+> > > to support. If # of streamID is increased later more than 64, this
+> > > format cannot cover any more. You have to predict the max # of streamIDs
+> > > in advance if steamID is statically assigned.
+> > > 
+> > 
+> > Well, the iommu specific binding could allow a variable #address-cells.
+> > That way, you just need to know the number of stream IDs for that instance
+> > of the iommu.
+> 
+> That sounds fairly complicated to me. I don't see what that buys us over
+> the clarity and simplicity that the above explicit notation gives us. Is
+> it not more common for a device to have a single master rather than a
+> whole bunch of them?
 
---2roH7liMbLpZFZp3
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I've never seen a device upstream of an ARM SMMU with a single stream-id;
+they always seem to have a whole bunch of them. Calxeda's SATA controller
+had 10 IDs, for example, and a PL330 DMA controller tends to have at least
+3.
 
-On Wed, Jun 04, 2014 at 03:00:26PM +0200, Daniel Lezcano wrote:
-> On 06/04/2014 02:29 AM, Andy Lutomirski wrote:
-> >Remote wakeups of polling CPUs are a valuable performance
-> >improvement; add a tracepoint to make it much easier to verify that
-> >they're working.
-> >
-> >Signed-off-by: Andy Lutomirski <luto@amacapital.net>
->=20
-> I don't think this trace makes sense. The polling state is x86 only and t=
-his
-> trace is in the generic code.
-
-Not so, there's PPC using it someplace (ISTR its doing a polling
-amortization of the idle hypercall or somesuch) and there's archs that
-have no other idle means that polling, as well as some for which its
-optional.
-
-There are indeed archs, like arm, that only do the WFI thing, and for
-those this is indeed all a NOP.
-
-
-
---2roH7liMbLpZFZp3
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTjyUyAAoJEHZH4aRLwOS6g40QAKU3BFQ1GiUTctfo1nG3hhfF
-IMwT0TH+ljrcRx9rXk0mMpAON5hOWjYRTOJgL3Sp3eXtzEE2U5PQKnXQt+/2Y1f7
-tc62laHiEq5+7azv865TGQ2B1EUgRUAjl4U3DXa8VtSBh7Hkyu2DXTPbnWasoc+I
-PHdpzNM+rQnbLm5AR+p4GcqrF3ZlfkAy4x4kqdujUGalOeVKjthW/tejyYqsTuEM
-xHDEeMmPtkzY1THJriOUcv5/OBr9Syg/LetpxDpcQtqTQnWGdplS6nUlTHj1/P/i
-0UaMUCB49kmiDMiOHzNcxbgY+1a57jNxS2BXHjqYh/50zJahHG/8nO6eyFn61okv
-DAzRoFeqYqtpKB5yJyRK9e7SSJwmdHg/7XJIWcYmNfHFk+S2OZGLvK6sU2+uJoGf
-uII4NCTDDGm5z/DU8pPn6sIpfYj529IaFdB09p3OnuwDa9x3JZnXljcarL+QXPOJ
-J7GO6HPtauKynCXqF34CtOCUuE4z/qDAUDFkuczT6/JH2L8wBqrkdLZdPR6/lM/D
-JAIPLFIYZaKzg6kOGEPwZDPKV3o2xSL10+uCwHgF9JZhOUFDdnueNwsnj+mVaCrw
-tvZScSI76HY4g1+6Zogou8Ri0Fm0Ua7DF6h4flfoirVpXx5YiGHEh5gcnfGjf5aC
-5fpgHdDExJLlfiTG8MQF
-=F5bB
------END PGP SIGNATURE-----
-
---2roH7liMbLpZFZp3--
+Will
