@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755496AbaFDX77 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:59:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40439 "EHLO
+	id S1753562AbaFDXXF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 19:23:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40387 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753565AbaFDXXG (ORCPT
+	with ESMTP id S1753511AbaFDXW7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:23:06 -0400
+	Wed, 4 Jun 2014 19:22:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        James Duley <jagduley@gmail.com>, Phillip Dixon <phil@dixon.gen.nz>,
-        Brandon Casey <drafnel@gmail.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.14 204/228] ACPI / TPM: Fix resume regression on Chromebooks
-Date: Wed,  4 Jun 2014 16:23:53 -0700
-Message-Id: <20140604232354.603646229@linuxfoundation.org>
+        Chris Leech <cleech@redhat.com>, Andy Grover <agrover@redhat.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.14 179/228] target: Dont allow setting WC emulation if device doesnt support
+Date: Wed,  4 Jun 2014 16:23:28 -0700
+Message-Id: <20140604232353.765618487@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -30,57 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+From: Andy Grover <agrover@redhat.com>
 
-commit f759546498d820670934c901a2fdf1ce948d2e5c upstream.
+commit 07b8dae38b09bcfede7e726f172e39b5ce8390d9 upstream.
 
-Chromebooks (at least Acer C720 and Pixel) implement an ACPI object
-for TPM, but don't implement the _DSM method to support PPI.  As
-a result, the TPM driver fails to load on those machines after
-commit 1569a4c4ceba (ACPI / TPM: detect PPI features by checking
-availability of _DSM functions) which causes them to fail to
-resume from system suspend, becuase they require the TPM hardware
-to be put into the right state during resume and the TPM driver
-is necessary for that.
+Just like for pSCSI, if the transport sets get_write_cache, then it is
+not valid to enable write cache emulation for it. Return an error.
 
-Fix the problem by making tpm_add_ppi() return 0 when tpm_ppi_handle
-is still NULL after walking the ACPI namespace in search for the PPI
-_DSM, which allows the TPM driver to load and operate the hardware
-(during system resume in particular), but avoid creating the PPI
-sysfs group in that case.
+see https://bugzilla.redhat.com/show_bug.cgi?id=1082675
 
-This change is based on a prototype patch from Jiang Liu.
-
-Fixes: 1569a4c4ceba (ACPI / TPM: detect PPI features by checking availability of _DSM functions)
-References: https://bugzilla.kernel.org/show_bug.cgi?id=74021
-Reported-by: James Duley <jagduley@gmail.com>
-Reported-by: Phillip Dixon <phil@dixon.gen.nz>
-Tested-by: Brandon Casey <drafnel@gmail.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Reviewed-by: Chris Leech <cleech@redhat.com>
+Signed-off-by: Andy Grover <agrover@redhat.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/char/tpm/tpm_ppi.c |    8 +++-----
- 1 file changed, 3 insertions(+), 5 deletions(-)
+ drivers/target/target_core_device.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/drivers/char/tpm/tpm_ppi.c
-+++ b/drivers/char/tpm/tpm_ppi.c
-@@ -328,13 +328,11 @@ int tpm_add_ppi(struct kobject *parent)
- 	/* Cache TPM ACPI handle and version string */
- 	acpi_walk_namespace(ACPI_TYPE_DEVICE, ACPI_ROOT_OBJECT, ACPI_UINT32_MAX,
- 			    ppi_callback, NULL, NULL, &tpm_ppi_handle);
--	if (tpm_ppi_handle == NULL)
--		return -ENODEV;
--
--	return sysfs_create_group(parent, &ppi_attr_grp);
-+	return tpm_ppi_handle ? sysfs_create_group(parent, &ppi_attr_grp) : 0;
- }
+--- a/drivers/target/target_core_device.c
++++ b/drivers/target/target_core_device.c
+@@ -798,10 +798,10 @@ int se_dev_set_emulate_write_cache(struc
+ 		pr_err("emulate_write_cache not supported for pSCSI\n");
+ 		return -EINVAL;
+ 	}
+-	if (dev->transport->get_write_cache) {
+-		pr_warn("emulate_write_cache cannot be changed when underlying"
+-			" HW reports WriteCacheEnabled, ignoring request\n");
+-		return 0;
++	if (flag &&
++	    dev->transport->get_write_cache) {
++		pr_err("emulate_write_cache not supported for this device\n");
++		return -EINVAL;
+ 	}
  
- void tpm_remove_ppi(struct kobject *parent)
- {
--	sysfs_remove_group(parent, &ppi_attr_grp);
-+	if (tpm_ppi_handle)
-+		sysfs_remove_group(parent, &ppi_attr_grp);
- }
+ 	dev->dev_attrib.emulate_write_cache = flag;
 
 
