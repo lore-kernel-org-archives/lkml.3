@@ -1,111 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753445AbaFDE5m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 00:57:42 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:33381 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750822AbaFDE5k convert rfc822-to-8bit (ORCPT
+	id S1755044AbaFDE7g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 00:59:36 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:56377 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754262AbaFDE7f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 00:57:40 -0400
-X-AuditID: cbfee68f-b7fef6d000003970-27-538ea741a452
-From: Namjae Jeon <namjae.jeon@samsung.com>
-To: "'Theodore Ts'o'" <tytso@mit.edu>, "'Dave Chinner'" <david@fromorbit.com>
-Cc: "'linux-ext4'" <linux-ext4@vger.kernel.org>, xfs@oss.sgi.com,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "'Ashish Sangwan'" <a.sangwan@samsung.com>,
-        "=?UTF-8?Q?'Luk=C3=A1=C5=A1_Czerner'?=" <lczerner@redhat.com>
-References: <003601cf6aa7$883103b0$98930b10$@samsung.com>
- <alpine.LFD.2.00.1405301238190.2009@localhost.localdomain>
- <000d01cf7ca3$98335c50$c89a14f0$@samsung.com>
- <alpine.LFD.2.00.1406021204540.2231@localhost.localdomain>
- <002201cf7e59$2e684c10$8b38e430$@samsung.com>
- <alpine.LFD.2.00.1406021450541.2231@localhost.localdomain>
- <20140602150258.GG30598@thunk.org>
-In-reply-to: <20140602150258.GG30598@thunk.org>
-Subject: RE: [PATCH v2 0/10] fs: Introduce FALLOC_FL_INSERT_RANGE for fallocate
-Date: Wed, 04 Jun 2014 13:57:37 +0900
-Message-id: <000e01cf7fb1$814ab6d0$83e02470$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 8BIT
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQOcBKJD5lk5ojpc7FDcCMzPaSWP+QCjXdQQAXmE8b8CRXdbEAIX9EgtAn5X6noBZB3wwJd0cicA
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrFIsWRmVeSWpSXmKPExsWyRsSkSNdxeV+wwdsjshZLJ15itthy7B6j
-	xbIHm1ksZs67w2axZ+9JFovLu+awWbT2/GS3WNR3i9GBw+PUIgmPpjNHmT1WX9jK6PF+31U2
-	j74tqxg9Pm+SC2CL4rJJSc3JLEst0rdL4MrY9eIaU8FSwYqnx3kaGE/ydjFyckgImEjs/DWH
-	CcIWk7hwbz1bFyMXh5DAUkaJ732fgRIcYEWvF6lCxBcxSny49B+q6C+jxPGZ71hBitgEtCX+
-	bBEFGSQi4CnR9PIVO0gNs8ALRokpr66xQzR8ZZI4tPgRK0gVp4C+xMaPe8GahQX8JXas8wMJ
-	swioSly6080MYvMKWEqs/dzBCGELSvyYfI8FxGYWUJeYNG8RM4StLfHk3QVWiA8UJHacfc0I
-	cUSMxMxDh5kgakQk9r14xwhyg4TAX3aJaRP6mCCWCUh8m3yIBeJLWYlNB5gh5khKHFxxg2UC
-	o8QsJKtnIVk9C8nqWUhWLGBkWcUomlqQXFCclF5krFecmFtcmpeul5yfu4kRGM+n/z3r38F4
-	94D1IcZkoPUTmaVEk/OB6SCvJN7Q2MzIwtTE1NjI3NKMNGElcd77D5OChATSE0tSs1NTC1KL
-	4otKc1KLDzEycXBKNTBOC/qgvMXFQ+6u+lZbXybXlbs+FezNv2ESrbT2kZNFyOK5e+4kS6Y9
-	ijyzU77Pt4PPr3Oqrbr+2nnPVXzemXA7tPibGpx/r8PjfKXNu1WY4/ExqzTmuonKOo+410dm
-	y+uqPfcOqY7c8n2OvM8T7ziZyts3ZdT3Rai/8DJ/KadgEhK4LNjgnxJLcUaioRZzUXEiAA9H
-	N6P9AgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrOKsWRmVeSWpSXmKPExsVy+t9jAV3H5X3BBu8bRC2WTrzEbLHl2D1G
-	i2UPNrNYzJx3h81iz96TLBaXd81hs2jt+clusajvFqMDh8epRRIeTWeOMnusvrCV0eP9vqts
-	Hn1bVjF6fN4kF8AW1cBok5GamJJapJCal5yfkpmXbqvkHRzvHG9qZmCoa2hpYa6kkJeYm2qr
-	5OIToOuWmQN0kJJCWWJOKVAoILG4WEnfDtOE0BA3XQuYxghd35AguB4jAzSQsIYxY9eLa0wF
-	SwUrnh7naWA8ydvFyMEhIWAi8XqRahcjJ5ApJnHh3nq2LkYuDiGBRYwSHy79h3L+Mkocn/mO
-	FaSBTUBb4s8WUZAGEQFPiaaXr9hBapgFXjBKTHl1jR2i4SuTxKHFj1hBqjgF9CU2ftwL1iws
-	4C+xY50fSJhFQFXi0p1uZhCbV8BSYu3nDkYIW1Dix+R7LCA2s4C6xKR5i5ghbG2JJ+8usEJc
-	qiCx4+xrRogjYiRmHjrMBFEjIrHvxTvGCYxCs5CMmoVk1Cwko2YhaVnAyLKKUTS1ILmgOCk9
-	10ivODG3uDQvXS85P3cTIzhZPJPewbiqweIQowAHoxIP74SbvcFCrIllxZW5hxglOJiVRHj1
-	FvQFC/GmJFZWpRblxxeV5qQWH2JMBvp0IrOUaHI+MJHllcQbGpuYGVkamRtaGBmbkyasJM57
-	sNU6UEggPbEkNTs1tSC1CGYLEwenVAOjv5dXVm9K6tzXuY7XJ9xhuVgV+XO3WOWHybYCrBFS
-	9ZNNj4mI9QQt2fN7BoeqxANNZXYL0XfMfyS897JuEBA9dWqzYusj+YhDQSs9GhXq1z6vzQo6
-	fnfmZmmLQ39PmDz4c2EHX8CsuFWPP15c+MwrMf7m/+sfC21nzgyseW3F8Lqvu2nuYfHVSizF
-	GYmGWsxFxYkAS0b23FoDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Wed, 4 Jun 2014 00:59:35 -0400
+Message-ID: <538EA7B4.5090902@wwwdotorg.org>
+Date: Tue, 03 Jun 2014 22:59:32 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: FanWu <fwu@marvell.com>
+CC: "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "swarren@nvidia.com" <swarren@nvidia.com>,
+        Chao Xie <cxie4@marvell.com>, Yilu Mao <ylmao@marvell.com>,
+        Ning Jiang <njiang1@marvell.com>, Xiaofan Tian <tianxf@marvell.com>,
+        Fangsuo Wu <fswu@marvell.com>
+Subject: Re: [PATCH v4] pinctrl: to avoid duplicated calling enable_pinmux_setting
+ for a pin
+References: <1401781077-31150-1-git-send-email-fwu@marvell.com> <538DFC8A.9030806@wwwdotorg.org> <538E7642.6080707@marvell.com>
+In-Reply-To: <538E7642.6080707@marvell.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Mon, Jun 02, 2014 at 03:06:13PM +0200, Lukáš Czerner wrote:
-> > > > So what will happen when there is not enough space when "inserting a
-> > > > range" ? And how should user proceed from there ?
-> > > If insert range fails with an ENOSPC error, user could use collapse
-> > > range on the same range to remove the hole.
-> > > And after freeing more space, he can again try inserting range.
-> > > Ofcourse, this type of guidance should be properly documented in
-> > > manpage. When updating fallocate(2) manpage, I will keep  in mind to
-> > > describe ENOSPC handling.
-> >
-> > Why collapse ? The hole is already there right ? Why not just use
-> > fallocate to allocate the space for the hole. And that's my point
-> > actually. Why not do it this way in the first place, because this is
-> > really counterintuitive.
+On 06/03/2014 07:28 PM, FanWu wrote:
+> On 06/04/2014 12:49 AM, Stephen Warren wrote:
+>> On 06/03/2014 01:37 AM, fwu@marvell.com wrote:
+>>> From: Fan Wu <fwu@marvell.com>
+>>>
+>>> What the patch did:
+>>> 1.To call pinmux_disable_setting ahead of pinmux_enable_setting in
+>>> each time of
+>>>    calling pinctrl_select_state
+>>> 2.Remove the HW disable operation in in pinmux_disable_setting function.
+>>> 3.Remove the disable ops in struct pinmux_ops
+>> ...
+>>> Signed-off-by: Fan Wu <fwu@marvell.com>
+>>> Signed-off-by: Stephen Warren <swarren@nvidia.com>
+>>
+>> As I mentioned in my previous email, I didn't sign this off. I made some
+>> suggestions for a better alternative in that email.
+>>
+>> If I *had* written that s-o-b, then it should be before yours in the
+>> patch description since you handled the patch last.
+>>
 > 
-> It's worse than that.  It's possible that the reason why you got the
-> ENOSPC warning was because the operation to move the extents down
-> required allocating a block, and it was *that* block allocation which
-> failed.  So it's not deterministic whether or not the file's extent
-> mappings were modified after a ENOSPC error, and so it's not clear
-> whether or not a collapse_range function will undo the range that had
-> been inserted --- or whether it ends up deleting existing data blocks.
+> The Signed-off didn't bother me.
+> I will Choose your option 2# and thanks for your suggestion about this :)
 > 
-> In generally, you really want system calls to have all-or-nothing
-> effects, where if the system call returns an error, the state of the
-> file has not been changed.  And for that reason, I agree with Lukáš
-> that it is really a good idea to decouple moving the blocks down, and
-> allocating space --- and to make sure that if there is any failure
-> while inserting the range, the state of the file is not modified at all.
-Okay, I will remove allocating space part in insert range patch.
-But renaming flags as FALLOC_FL_INSERT_HOLE is needed to concent with
-XFS people. Because Dave prefered to call it FALLOC_FL_INSERT_RANGE
-so that it looks like it is related to collapse range.
+> 
+>>> diff --git a/include/linux/pinctrl/pinmux.h
+>>> b/include/linux/pinctrl/pinmux.h
+>>
+>>> @@ -70,8 +70,6 @@ struct pinmux_ops {
+>>>                     unsigned * const num_groups);
+>>>       int (*enable) (struct pinctrl_dev *pctldev, unsigned
+>>> func_selector,
+>>>                  unsigned group_selector);
+>>> -    void (*disable) (struct pinctrl_dev *pctldev, unsigned
+>>> func_selector,
+>>> -             unsigned group_selector);
+>>
+>> This will cause a compile failure, since many drivers still set the
+>> .disable function pointer. You need to update all the driver files to
+>> remove those functions too. There's quite a bit of code in some of those
+>> functions, so you'd need the relevant driver maintainers to confirm it's
+>> OK to remove it. I think only the owners of pinctrl-egra and
+>> pinctrl-single have ack'd this concept so far.
+>>
+> 
+> For this part, I think I mentioned this before, simply removing disable
+> ops will introduce the compiling error.
+> I think there are several ways to handle this:
+> 1. Don't remove the disable ops in struct pinmux_ops in this patch but
+> to remove the disable ops in struct pinmux_ops after the another patch
+> is merged, which is used to remove all of the disable ops user in all
+> drivers.
+> 2. Just remove the disable ops in pinmux_ops in this patch, and make a
+> another patch ASAP to remove all the disable ops user in all drivers.
+> 3. Remove the disable ops in struct pinmux_ops and remove all the
+> disable ops user in all drivers, all in this patch.
+> 
+> 
+> For the solution 2, I just think it may be not a good way to include so
+> much content in a patch, which are not in a same code level.
+> 
+> I am just inclined to use solution 1# or 3#.
 
-Hi Dave.
-Do you have any objection about renaming as insert hole ?
-
-Thanks for opinions!
-
-> 
-> Cheers,
-> 
-> 					- Ted
+I would expect option 3.
 
