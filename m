@@ -1,68 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752427AbaFDLPe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 07:15:34 -0400
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:42537 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751967AbaFDLPd (ORCPT
+	id S1752589AbaFDLQV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 07:16:21 -0400
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:50850 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752294AbaFDLQU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 07:15:33 -0400
-Date: Wed, 4 Jun 2014 18:39:01 +0800
-From: Shaohua Li <shli@kernel.org>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Matias =?iso-8859-1?Q?Bj=F8rling?= <m@bjorling.me>, sbradshaw@micron.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] block: per-cpu counters for in-flight IO accounting
-Message-ID: <20140604103901.GA14383@kernel.org>
-References: <1399627061-5960-1-git-send-email-m@bjorling.me>
- <1399627061-5960-2-git-send-email-m@bjorling.me>
- <536CE25C.5040107@kernel.dk>
- <536D0537.7010905@kernel.dk>
- <20140530121119.GA1637@kernel.org>
- <53888C80.2020206@kernel.dk>
+	Wed, 4 Jun 2014 07:16:20 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <53888C80.2020206@kernel.dk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <538EE9E9.7090605@arm.com>
+References: <1400860385-14555-1-git-send-email-vincent.guittot@linaro.org>
+ <1400860385-14555-5-git-send-email-vincent.guittot@linaro.org>
+ <53888FF0.4020403@arm.com> <CAKfTPtB+2dsHjZw=KkYgbP4EnPebLjfdNeVDAStXFJ2h8wbm+g@mail.gmail.com>
+ <538EE9E9.7090605@arm.com>
+From: Vincent Guittot <vincent.guittot@linaro.org>
+Date: Wed, 4 Jun 2014 13:15:59 +0200
+Message-ID: <CAKfTPtB9bh1_ZeQSFsC2eoBaytDBNcmn8ZZpY7Weqxui75Z2kA@mail.gmail.com>
+Subject: Re: [PATCH v2 04/11] sched: Allow all archs to set the power_orig
+To: Dietmar Eggemann <dietmar.eggemann@arm.com>
+Cc: "peterz@infradead.org" <peterz@infradead.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        "efault@gmx.de" <efault@gmx.de>,
+        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 30, 2014 at 07:49:52AM -0600, Jens Axboe wrote:
-> On 2014-05-30 06:11, Shaohua Li wrote:
-> >On Fri, May 09, 2014 at 10:41:27AM -0600, Jens Axboe wrote:
-> >>On 05/09/2014 08:12 AM, Jens Axboe wrote:
-> >>>On 05/09/2014 03:17 AM, Matias Bjørling wrote:
-> >>>>With multi-million IOPS and multi-node workloads, the atomic_t in_flight
-> >>>>tracking becomes a bottleneck. Change the in-flight accounting to per-cpu
-> >>>>counters to elevate.
-> >>>
-> >>>The part stats are a pain in the butt, I've tried to come up with a
-> >>>great fix for them too. But I don't think the percpu conversion is
-> >>>necessarily the right one. The summing is part of the hotpath, so percpu
-> >>>counters aren't necessarily the right way to go. I don't have a better
-> >>>answer right now, otherwise it would have been fixed :-)
-> >>
-> >>Actual data point - this slows my test down ~14% compared to the stock
-> >>kernel. Also, if you experiment with this, you need to watch for the
-> >>out-of-core users of the part stats (like DM).
-> >
-> >I had a try with Matias's patch. Performance actually boost significantly.
-> >(there are other cache line issue though, eg, hd_struct_get). Jens, what did
-> >you run? part_in_flight() has 3 usages. 2 are for status output, which are cold
-> >path. part_round_stats_single() uses it too, but it's a cold path too as we
-> >simple data every jiffy. Are you using HZ=1000? maybe we should simple the data
-> >every 10ms instead of every jiffy?
-> 
-> I ran peak and normal benchmarks on a p320, on a 4 socket box (64
-> cores). The problem is the one hot path of part_in_flight(), summing
-> percpu for that is too expensive. On bigger systems than mine, it'd
-> be even worse.
+On 4 June 2014 11:42, Dietmar Eggemann <dietmar.eggemann@arm.com> wrote:
+> [...]
+>>> (1) We assume that the current way (update_cpu_power() calls
+>>> arch_scale_freq_power() to get the avg power(freq) over the time period
+>>> since the last call to arch_scale_freq_power()) is suitable
+>>> for us. Do you have another opinion here?
+>>
+>> Using power (or power_freq as you mentioned below) is probably the
+>> easiest and more straight forward solution. You can use it to scale
+>> each element when updating entity runnable.
+>> Nevertheless, I see to 2 potential issues:
+>> - is power updated often enough to correctly follow the frequency
+>> scaling ? we need to compare power update frequency with
+>> runnable_avg_sum variation speed and the rate at which we will change
+>> the CPU's frequency.
+>> - the max value of runnable_avg_sum will be also scaled so a task
+>> running on a CPU with less capacity could be seen as a "low" load even
+>> if it's an always running tasks. So we need to find a way to reach the
+>> max value for such situation
+>
+> I think I mixed two problems together here:
+>
+> Firstly, we need to scale cpu power in update_cpu_power() regarding
+> uArch, frequency and rt/irq pressure.
+> Here the freq related value we get back from arch_scale_freq_power(...,
+> cpu) could be an instantaneous value (curr_freq(cpu)/max_freq(cpu)).
+>
+> Secondly, to be able to scale the runnable avg sum of a sched entity
+> (se->avg->runnable_avg_sum), we preferable have a coefficient
+> representing uArch diffs (cpu_power_orig(cpu)/cpu_power_orig(most
+> powerful cpu in the system) and another coefficient (avg freq over 'now
 
-I run a null_blk test with 4 sockets, Matias has improvement. And I didn't find
-part_in_flight() is called in any hot path.
+AFAICT, the coefficient representing uArch diffs is already taken into
+account into power_freq thanks to scale_cpu, isn't it ?
 
-Thanks,
-Shaohua
+> - sa->last_runnable_update'(cpu)/max_freq(cpu). This value would have to
+> be retrieved from the arch in __update_entity_runnable_avg().
+>
+>>> (2) Is the current layout of update_cpu_power() adequate for this, where
+>>> we scale power_orig related to freq and then related to rt/(irq):
+>>>
+>>>   power_orig = scale_cpu(SCHED_POWER_SCALE)
+>>>   power = scale_rt(scale_freq(power_orig))
+>>>
+>>> or do we need an extra power_freq data member on the rq and do:
+>>>
+>>>   power_orig = scale_cpu(SCHED_POWER_SCALE)
+>>>   power_freq = scale_freq(power_orig))
+>>>   power = scale_rt(power_orig))
+>>
+>> do you really mean power = scale_rt(power_orig) or power=scale_rt(power_freq) ?
+>
+> No, I also think that power=scale_rt(power_freq) is correct.
+>
+>>> In other words, do we consider rt/(irq) pressure when calculating freq
+>>> scale invariant task load or not?
+>>
+>> we should take power_freq which implies a new field
+> [...]
+>
