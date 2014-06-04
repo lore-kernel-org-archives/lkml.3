@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757022AbaFEAcp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 20:32:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39968 "EHLO
+	id S932368AbaFEAdK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 20:33:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39975 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752858AbaFDXVw (ORCPT
+	with ESMTP id S1752852AbaFDXVv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:21:52 -0400
+	Wed, 4 Jun 2014 19:21:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nikita Yushchenko <nyushchenko@dev.rtsoft.ru>
-Subject: [PATCH 3.14 086/228] fsl-usb: do not test for PHY_CLK_VALID bit on controller version 1.6
-Date: Wed,  4 Jun 2014 16:21:55 -0700
-Message-Id: <20140604232350.823071524@linuxfoundation.org>
+        Atilla Filiz <atilla.filiz@essensium.com>,
+        Jonathan Cameron <jic23@kernel.org>
+Subject: [PATCH 3.14 085/228] iio:imu:mpu6050: Fixed segfault in Invensens MPU driver due to null dereference
+Date: Wed,  4 Jun 2014 16:21:54 -0700
+Message-Id: <20140604232350.794759306@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -28,40 +29,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nikita Yushchenko <nyushchenko@dev.rtsoft.ru>
+From: Atilla Filiz <atilla.filiz@essensium.com>
 
-commit d183c81929beeba842b74422f754446ef2b8b49c upstream.
+commit b9b3a41893c3f1be67b5aacfa525969914bea0e9 upstream.
 
-Per reference manuals of Freescale P1020 and P2020 SoCs, USB controller
-present in these SoCs has bit 17 of USBx_CONTROL register marked as
-Reserved - there is no PHY_CLK_VALID bit there.
+The driver segfaults when the kernel boots with device tree as the
+platform data is then not present and the pointer is deferenced without
+checking it is not null.  This patch introduces such a check avoiding the
+crash.
 
-Testing for this bit in ehci_fsl_setup_phy() behaves differently on two
-P1020RDB boards available here - on one board test passes and fsl-usb
-init succeeds, but on other board test fails, causing fsl-usb init to
-fail.
-
-This patch changes ehci_fsl_setup_phy() not to test PHY_CLK_VALID on
-controller version 1.6 that (per manual) does not have this bit.
-
-Signed-off-by: Nikita Yushchenko <nyushchenko@dev.rtsoft.ru>
+Signed-off-by: Atilla Filiz <atilla.filiz@essensium.com>
+Signed-off-by: Jonathan Cameron <jic23@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/ehci-fsl.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/iio/imu/inv_mpu6050/inv_mpu_core.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/host/ehci-fsl.c
-+++ b/drivers/usb/host/ehci-fsl.c
-@@ -248,7 +248,8 @@ static int ehci_fsl_setup_phy(struct usb
- 		break;
- 	}
+--- a/drivers/iio/imu/inv_mpu6050/inv_mpu_core.c
++++ b/drivers/iio/imu/inv_mpu6050/inv_mpu_core.c
+@@ -661,6 +661,7 @@ static int inv_mpu_probe(struct i2c_clie
+ {
+ 	struct inv_mpu6050_state *st;
+ 	struct iio_dev *indio_dev;
++	struct inv_mpu6050_platform_data *pdata;
+ 	int result;
  
--	if (pdata->have_sysif_regs && pdata->controller_ver &&
-+	if (pdata->have_sysif_regs &&
-+	    pdata->controller_ver > FSL_USB_VER_1_6 &&
- 	    (phy_mode == FSL_USB2_PHY_ULPI)) {
- 		/* check PHY_CLK_VALID to get phy clk valid */
- 		if (!(spin_event_timeout(in_be32(non_ehci + FSL_SOC_USB_CTRL) &
+ 	if (!i2c_check_functionality(client->adapter,
+@@ -673,8 +674,10 @@ static int inv_mpu_probe(struct i2c_clie
+ 
+ 	st = iio_priv(indio_dev);
+ 	st->client = client;
+-	st->plat_data = *(struct inv_mpu6050_platform_data
+-				*)dev_get_platdata(&client->dev);
++	pdata = (struct inv_mpu6050_platform_data
++			*)dev_get_platdata(&client->dev);
++	if (pdata)
++		st->plat_data = *pdata;
+ 	/* power is turned on inside check chip type*/
+ 	result = inv_check_and_setup_chip(st, id);
+ 	if (result)
 
 
