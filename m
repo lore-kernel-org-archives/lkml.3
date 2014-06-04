@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755053AbaFDXpJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:45:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40706 "EHLO
+	id S1755070AbaFDXpi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 19:45:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40686 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753875AbaFDXXh (ORCPT
+	with ESMTP id S1753863AbaFDXXf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:23:37 -0400
+	Wed, 4 Jun 2014 19:23:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Stephen Warren <swarren@nvidia.com>,
+        Terje Bergstrom <tbergstrom@nvidia.com>,
         Thierry Reding <treding@nvidia.com>
-Subject: [PATCH 3.10 032/103] drm/tegra: Remove gratuitous pad field
-Date: Wed,  4 Jun 2014 16:24:55 -0700
-Message-Id: <20140604232547.895885730@linuxfoundation.org>
+Subject: [PATCH 3.10 013/103] gpu: host1x: handle the correct # of syncpt regs
+Date: Wed,  4 Jun 2014 16:24:36 -0700
+Message-Id: <20140604232547.252383421@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232546.704156131@linuxfoundation.org>
 References: <20140604232546.704156131@linuxfoundation.org>
@@ -28,42 +30,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thierry Reding <treding@nvidia.com>
+From: Stephen Warren <swarren@nvidia.com>
 
-commit cbfbbabb89b37f6bad05f478d906a385149f288d upstream.
+commit 22bbd5d949dc7fdd72a4e78e767fa09d8e54b446 upstream.
 
-The version of the drm_tegra_submit structure that was merged all the
-way back in 3.10 contains a pad field that was originally intended to
-properly pad the following __u64 field. Unfortunately it seems like a
-different field was dropped during review that caused this padding to
-become unnecessary, but the pad field wasn't removed at that time.
+BIT_WORD() truncates rather than rounds, so the loops in
+syncpt_thresh_isr() and _host1x_intr_disable_all_syncpt_intrs() use <=
+rather than < in an attempt to process the correct number of registers
+when rounding of the conversion of count of bits to count of words is
+necessary. However, when rounding isn't necessary because the value is
+already a multiple of the divisor (as is the case for all values of
+nb_pts the code actually sees), this causes one too many registers to
+be processed.
 
-One possible side-effect of this is that since the __u64 following the
-pad is now no longer properly aligned, the compiler may (or may not)
-introduce padding itself, which results in no predictable ABI.
+Solve this by using and explicit DIV_ROUND_UP() call, rather than
+BIT_WORD(), and comparing with < rather than <=.
 
-Rectify this by removing the pad field so that all fields are again
-naturally aligned. Technically this is breaking existing userspace ABI,
-but given that there aren't any (released) userspace drivers that make
-use of this yet, the fallout should be minimal.
-
-Fixes: d43f81cbaf43 ("drm/tegra: Add gr2d device")
+Fixes: 7ede0b0bf3e2 ("gpu: host1x: Add syncpoint wait and interrupts")
+Signed-off-by: Stephen Warren <swarren@nvidia.com>
+Acked-By: Terje Bergstrom <tbergstrom@nvidia.com>
 Signed-off-by: Thierry Reding <treding@nvidia.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/uapi/drm/tegra_drm.h |    1 -
- 1 file changed, 1 deletion(-)
+ drivers/gpu/host1x/hw/intr_hw.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/include/uapi/drm/tegra_drm.h
-+++ b/include/uapi/drm/tegra_drm.h
-@@ -103,7 +103,6 @@ struct drm_tegra_submit {
- 	__u32 num_waitchks;
- 	__u32 waitchk_mask;
- 	__u32 timeout;
--	__u32 pad;
- 	__u64 syncpts;
- 	__u64 cmdbufs;
- 	__u64 relocs;
+--- a/drivers/gpu/host1x/hw/intr_hw.c
++++ b/drivers/gpu/host1x/hw/intr_hw.c
+@@ -48,7 +48,7 @@ static irqreturn_t syncpt_thresh_isr(int
+ 	unsigned long reg;
+ 	int i, id;
+ 
+-	for (i = 0; i <= BIT_WORD(host->info->nb_pts); i++) {
++	for (i = 0; i < DIV_ROUND_UP(host->info->nb_pts, 32); i++) {
+ 		reg = host1x_sync_readl(host,
+ 			HOST1X_SYNC_SYNCPT_THRESH_CPU0_INT_STATUS(i));
+ 		for_each_set_bit(id, &reg, BITS_PER_LONG) {
+@@ -65,7 +65,7 @@ static void _host1x_intr_disable_all_syn
+ {
+ 	u32 i;
+ 
+-	for (i = 0; i <= BIT_WORD(host->info->nb_pts); ++i) {
++	for (i = 0; i < DIV_ROUND_UP(host->info->nb_pts, 32); ++i) {
+ 		host1x_sync_writel(host, 0xffffffffu,
+ 			HOST1X_SYNC_SYNCPT_THRESH_INT_DISABLE(i));
+ 		host1x_sync_writel(host, 0xffffffffu,
 
 
