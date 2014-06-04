@@ -1,108 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751644AbaFDUI2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 16:08:28 -0400
-Received: from skprod3.natinst.com ([130.164.80.24]:41623 "EHLO ni.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750944AbaFDUI1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 16:08:27 -0400
-From: "Brad Mouring" <bmouring@ni.com>
-Date: Wed, 4 Jun 2014 15:07:51 -0500
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Brad Mouring <bmouring@ni.com>, Steven Rostedt <rostedt@goodmis.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Clark Williams <williams@redhat.com>
-Subject: Re: [PATCH 1/1] rtmutex: Handle when top lock owner changes
-Message-ID: <20140604200750.GA10343@linuxgetsreal>
-References: <1400855410-14773-1-git-send-email-brad.mouring@ni.com>
- <1400855410-14773-2-git-send-email-brad.mouring@ni.com>
- <20140603210609.62de6451@gandalf.local.home>
- <alpine.DEB.2.10.1406041623170.3319@nanos>
- <20140604114411.0fe51c1d@gandalf.local.home>
- <alpine.DEB.2.10.1406041951210.3319@nanos>
- <20140604192541.GA9496@linuxgetsreal>
- <alpine.DEB.2.10.1406042147080.18296@nanos>
+	id S1751915AbaFDUIu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 16:08:50 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:52161 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750997AbaFDUIs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 16:08:48 -0400
+Message-ID: <538F7CCE.3050508@kernel.dk>
+Date: Wed, 04 Jun 2014 14:08:46 -0600
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.10.1406042147080.18296@nanos>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-MIMETrack: Itemize by SMTP Server on US-AUS-MGWOut2/AUS/H/NIC(Release 8.5.3FP5|July 31, 2013) at
- 06/04/2014 03:07:52 PM,
-	Serialize by Router on US-AUS-MGWOut2/AUS/H/NIC(Release 8.5.3FP5|July 31, 2013) at
- 06/04/2014 03:07:52 PM,
-	Serialize complete at 06/04/2014 03:07:52 PM
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
- definitions=2014-06-04_04:2014-06-04,2014-06-04,1970-01-01 signatures=0
+To: =?UTF-8?B?TWF0aWFzIEJqw7hybGluZw==?= <m@bjorling.me>,
+        Shaohua Li <shli@kernel.org>
+CC: "Sam Bradshaw (sbradshaw)" <sbradshaw@micron.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] block: per-cpu counters for in-flight IO accounting
+References: <1399627061-5960-1-git-send-email-m@bjorling.me>	<1399627061-5960-2-git-send-email-m@bjorling.me>	<536CE25C.5040107@kernel.dk>	<536D0537.7010905@kernel.dk>	<20140530121119.GA1637@kernel.org>	<53888C80.2020206@kernel.dk>	<20140604103901.GA14383@kernel.org> <CAOu_J6nRZuktyozjychkLOA+1zwct2+7KPUxfNAghVOOOBfi+g@mail.gmail.com>
+In-Reply-To: <CAOu_J6nRZuktyozjychkLOA+1zwct2+7KPUxfNAghVOOOBfi+g@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 04, 2014 at 09:53:16PM +0200, Thomas Gleixner wrote:
-> On Wed, 4 Jun 2014, Brad Mouring wrote:
-> > On Wed, Jun 04, 2014 at 08:02:16PM +0200, Thomas Gleixner wrote:
-> > > I'll fixup the check so it wont break the real deadlock case and queue
-> > > it.
-> > 
-> > How would the change break the real deadlock case?
+On 06/04/2014 05:29 AM, Matias Bjørling wrote:
+> It's in
 > 
-> > >  	/* Deadlock detection */
-> > >  	if (lock == orig_lock || rt_mutex_owner(lock) == top_task) {
-> > > +		/*
-> > > +		 * If the prio chain has changed out from under us, set the task
-> > > +		 * to the current owner of the lock in the current waiter and
-> > > +		 * continue walking the prio chain
-> > > +		 */
-> > > +		if (rt_mutex_owner(lock) && rt_mutex_owner(lock) != task) {
+> blk_io_account_start
+>   part_round_stats
+>     part_round_state_single
+>       part_in_flight
 > 
-> No, sorry. That's wrong.
-> 
-> Your change wreckages the rt_mutex_owner(lock) == top_task test
-> simply because in that case:
-> 
->    (rt_mutex_owner(lock) && rt_mutex_owner(lock) != task)
-> 
-> evaluates to true.
+> I like the granularity idea.
 
-Ah. Yeah. I haven't tested this but it seems sane to me.
+And similarly from blk_io_account_done() - which makes it even worse,
+since it at both ends of the IO chain.
 
-> 
-> So we want this:
-> 
-> Index: tip/kernel/locking/rtmutex.c
-> ===================================================================
-> --- tip.orig/kernel/locking/rtmutex.c
-> +++ tip/kernel/locking/rtmutex.c
-> @@ -375,6 +375,26 @@ static int rt_mutex_adjust_prio_chain(st
->  	 * walk, we detected a deadlock.
->  	 */
->  	if (lock == orig_lock || rt_mutex_owner(lock) == top_task) {
-> +		/*
-> +		 * If the prio chain has changed out from under us, set the task
-> +		 * to the current owner of the lock in the current waiter and
-> +		 * continue walking the prio chain
-> +		 */
-> +		if (rt_mutex_owner(lock) && rt_mutex_owner(lock) != task &&
-> +		    rt_mutex_owner(lock) != top_task) {
-> +			/* Release the old owner */
-> +			raw_spin_unlock_irqrestore(&task->pi_lock, flags);
-> +			put_task_struct(task);
-> +
-> +			/* Move to the new owner */
-> +			task = rt_mutex_owner(lock);
-> +			get_task_struct(task);
-> +
-> +			/* Let's try this again */
-> +			raw_spin_unlock(&lock->wait_lock);
-> +			goto retry;
-> +		}
-> +
->  		debug_rt_mutex_deadlock(deadlock_detect, orig_waiter, lock);
->  		raw_spin_unlock(&lock->wait_lock);
->  		ret = deadlock_detect ? -EDEADLK : 0;
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-rt-users" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+-- 
+Jens Axboe
+
