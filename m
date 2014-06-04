@@ -1,42 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751661AbaFDTIg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 15:08:36 -0400
-Received: from g2t2352.austin.hp.com ([15.217.128.51]:20283 "EHLO
-	g2t2352.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750925AbaFDTIf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 15:08:35 -0400
-From: Jason Low <jason.low2@hp.com>
-To: mingo@kernel.org, peterz@infradead.org, tglx@linutronix.de,
-        akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, paulmck@linux.vnet.ibm.com,
-        tim.c.chen@linux.intel.com, peter@hurleysoftware.com, riel@redhat.com,
-        hpa@zytor.com, walken@google.com, davidlohr@hp.com, Waiman.Long@hp.com,
-        aswin@hp.com, scott.norton@hp.com, chegu_vinod@hp.com,
-        jason.low2@hp.com
-Subject: [RFC PATCH 0/3] locking/mutex: Modifications to mutex
-Date: Wed,  4 Jun 2014 12:08:28 -0700
-Message-Id: <1401908911-8947-1-git-send-email-jason.low2@hp.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1751969AbaFDTMo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 15:12:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54823 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750780AbaFDTMn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 15:12:43 -0400
+Date: Wed, 4 Jun 2014 15:12:28 -0400
+From: Dave Jones <davej@redhat.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-mm@kvack.org, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Brandon Philips <brandon.philips@coreos.com>
+Subject: Re: Bad rss-counter is back on 3.14-stable
+Message-ID: <20140604191228.GB12375@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Greg KH <gregkh@linuxfoundation.org>, linux-mm@kvack.org,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	Brandon Philips <brandon.philips@coreos.com>
+References: <20140604182739.GA30340@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140604182739.GA30340@kroah.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset contains modifications to mutex.
+On Wed, Jun 04, 2014 at 11:27:39AM -0700, Greg KH wrote:
+ > Hi all,
+ > 
+ > Dave, I saw you mention that you were seeing the "Bad rss-counter" line
+ > on 3.15-rc1, but I couldn't find any follow-up on this to see if anyone
+ > figured it out, or did it just "magically" go away?
+ > 
+ > I ask as Brandon is seeing this same message a lot on a 3.14.4 kernel,
+ > causing system crashes and problems:
+ > 
+ > [16591492.449718] BUG: Bad rss-counter state mm:ffff8801ced99880 idx:0 val:-1836508
+ > [16591492.449737] BUG: Bad rss-counter state mm:ffff8801ced99880 idx:1 val:1836508
+ > 
+ > [20783350.461716] BUG: Bad rss-counter state mm:ffff8801d2b1dc00 idx:0 val:-52518
+ > [20783350.461734] BUG: Bad rss-counter state mm:ffff8801d2b1dc00 idx:1 val:52518
+ > 
+ > [21393387.112302] BUG: Bad rss-counter state mm:ffff8801d0104e00 idx:0 val:-1767569
+ > [21393387.112321] BUG: Bad rss-counter state mm:ffff8801d0104e00 idx:1 val:1767569
+ > 
+ > [21430098.512837] BUG: Bad rss-counter state mm:ffff880100036680 idx:0 val:-2946
+ > [21430098.512854] BUG: Bad rss-counter state mm:ffff880100036680 idx:1 val:2946
+ > 
+ > Anyone have any ideas of a 3.15-rc patch I should be including in
+ > 3.14-stable to resolve this?
 
-Patch 1 further reduces unnecessary atomic xchg() operations upon entering
-the mutex slowpath in mutex_lock().
+hard to tell if they were the same issues I was seeing without the full
+backtrace. The only bad rss bugs that I recall being fixed for sure were
+the ones that Hugh nailed down right before 3.14 (887843961c4b)
 
-Patch 2 corrects/updates the documentation on mutex optimistic spinning.
+I've not seen anything in a while, but that may just be because I end up
+hitting other bugs before they get a chance to show.
 
-Patch 3 optimizes mutex trylock slowpath.
+Brandon, what kind of workload is that machine doing ? I wonder if I can
+add something to trinity to make it provoke it.
 
-Jason Low (3):
-  mutex: Try to acquire mutex only if it is unlocked
-  mutex: Correct documentation on mutex optimistic spinning
-  mutex: Optimize mutex trylock slowpath
-
- kernel/locking/mutex.c |   47 ++++++++++++++++++++++++++---------------------
- 1 files changed, 26 insertions(+), 21 deletions(-)
-
+	Dave
