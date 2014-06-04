@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753512AbaFDXW7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:22:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40371 "EHLO
+	id S1755633AbaFEACt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 20:02:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40382 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753479AbaFDXW5 (ORCPT
+	with ESMTP id S1753499AbaFDXW7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:22:57 -0400
+	Wed, 4 Jun 2014 19:22:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joe Thornber <ejt@redhat.com>, Mike Snitzer <snitzer@redhat.com>
-Subject: [PATCH 3.14 189/228] dm thin: add timeout to stop out-of-data-space mode holding IO forever
-Date: Wed,  4 Jun 2014 16:23:38 -0700
-Message-Id: <20140604232354.096959601@linuxfoundation.org>
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Vinod Koul <vinod.koul@intel.com>
+Subject: [PATCH 3.14 192/228] dmaengine: dw: went back to plain {request,free}_irq() calls
+Date: Wed,  4 Jun 2014 16:23:41 -0700
+Message-Id: <20140604232354.193045242@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -28,92 +29,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joe Thornber <ejt@redhat.com>
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 
-commit 85ad643b7e7e52d37620fb272a9fd577a8095647 upstream.
+commit 97977f7576a89cb9436c000ae703c0d515e748ac upstream.
 
-If the pool runs out of data space, dm-thin can be configured to
-either error IOs that would trigger provisioning, or hold those IOs
-until the pool is resized.  Unfortunately, holding IOs until the pool is
-resized can result in a cascade of tasks hitting the hung_task_timeout,
-which may render the system unavailable.
+The commit dbde5c29 "dw_dmac: use devm_* functions to simplify code" turns
+probe function to use devm_* helpers and simultaneously brings a regression. We
+need to ensure irq is disabled, followed by ensuring that don't schedule any
+more tasklets and then its safe to use tasklet_kill().
 
-Add a fixed timeout so IOs can only be held for a maximum of 60 seconds.
-If LVM is going to resize a thin-pool that is out of data space it needs
-to be prompt about it.
+The free_irq() will ensure that the irq is disabled and also wait till all
+scheduled interrupts are executed by invoking synchronize_irq(). So we need to
+only do tasklet_kill() after invoking free_irq().
 
-Signed-off-by: Joe Thornber <ejt@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Signed-off-by: Vinod Koul <vinod.koul@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-thin.c |   21 +++++++++++++++++++++
- 1 file changed, 21 insertions(+)
+ drivers/dma/dw/core.c |   11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
---- a/drivers/md/dm-thin.c
-+++ b/drivers/md/dm-thin.c
-@@ -25,6 +25,7 @@
- #define MAPPING_POOL_SIZE 1024
- #define PRISON_CELLS 1024
- #define COMMIT_PERIOD HZ
-+#define NO_SPACE_TIMEOUT (HZ * 60)
+--- a/drivers/dma/dw/core.c
++++ b/drivers/dma/dw/core.c
+@@ -1545,11 +1545,6 @@ int dw_dma_probe(struct dw_dma_chip *chi
+ 	/* Disable BLOCK interrupts as well */
+ 	channel_clear_bit(dw, MASK.BLOCK, dw->all_chan_mask);
  
- DECLARE_DM_KCOPYD_THROTTLE_WITH_MODULE_PARM(snapshot_copy_throttle,
- 		"A percentage of time allocated for copy on write");
-@@ -173,6 +174,7 @@ struct pool {
- 	struct workqueue_struct *wq;
- 	struct work_struct worker;
- 	struct delayed_work waker;
-+	struct delayed_work no_space_timeout;
+-	err = devm_request_irq(chip->dev, chip->irq, dw_dma_interrupt,
+-			       IRQF_SHARED, "dw_dmac", dw);
+-	if (err)
+-		return err;
+-
+ 	/* Create a pool of consistent memory blocks for hardware descriptors */
+ 	dw->desc_pool = dmam_pool_create("dw_dmac_desc_pool", chip->dev,
+ 					 sizeof(struct dw_desc), 4, 0);
+@@ -1560,6 +1555,11 @@ int dw_dma_probe(struct dw_dma_chip *chi
  
- 	unsigned long last_commit_jiffies;
- 	unsigned ref_count;
-@@ -1449,6 +1451,20 @@ static void do_waker(struct work_struct
- 	queue_delayed_work(pool->wq, &pool->waker, COMMIT_PERIOD);
- }
+ 	tasklet_init(&dw->tasklet, dw_dma_tasklet, (unsigned long)dw);
  
-+/*
-+ * We're holding onto IO to allow userland time to react.  After the
-+ * timeout either the pool will have been resized (and thus back in
-+ * PM_WRITE mode), or we degrade to PM_READ_ONLY and start erroring IO.
-+ */
-+static void do_no_space_timeout(struct work_struct *ws)
-+{
-+	struct pool *pool = container_of(to_delayed_work(ws), struct pool,
-+					 no_space_timeout);
++	err = request_irq(chip->irq, dw_dma_interrupt, IRQF_SHARED,
++			  "dw_dmac", dw);
++	if (err)
++		return err;
 +
-+	if (get_pool_mode(pool) == PM_OUT_OF_DATA_SPACE && !pool->pf.error_if_no_space)
-+		set_pool_mode(pool, PM_READ_ONLY);
-+}
-+
- /*----------------------------------------------------------------*/
+ 	INIT_LIST_HEAD(&dw->dma.channels);
+ 	for (i = 0; i < nr_channels; i++) {
+ 		struct dw_dma_chan	*dwc = &dw->chan[i];
+@@ -1664,6 +1664,7 @@ int dw_dma_remove(struct dw_dma_chip *ch
+ 	dw_dma_off(dw);
+ 	dma_async_device_unregister(&dw->dma);
  
- struct noflush_work {
-@@ -1574,6 +1590,9 @@ static void set_pool_mode(struct pool *p
- 		pool->process_discard = process_discard;
- 		pool->process_prepared_mapping = process_prepared_mapping;
- 		pool->process_prepared_discard = process_prepared_discard_passdown;
-+
-+		if (!pool->pf.error_if_no_space)
-+			queue_delayed_work(pool->wq, &pool->no_space_timeout, NO_SPACE_TIMEOUT);
- 		break;
++	free_irq(chip->irq, dw);
+ 	tasklet_kill(&dw->tasklet);
  
- 	case PM_WRITE:
-@@ -1956,6 +1975,7 @@ static struct pool *pool_create(struct m
- 
- 	INIT_WORK(&pool->worker, do_worker);
- 	INIT_DELAYED_WORK(&pool->waker, do_waker);
-+	INIT_DELAYED_WORK(&pool->no_space_timeout, do_no_space_timeout);
- 	spin_lock_init(&pool->lock);
- 	bio_list_init(&pool->deferred_bios);
- 	bio_list_init(&pool->deferred_flush_bios);
-@@ -2519,6 +2539,7 @@ static void pool_postsuspend(struct dm_t
- 	struct pool *pool = pt->pool;
- 
- 	cancel_delayed_work(&pool->waker);
-+	cancel_delayed_work(&pool->no_space_timeout);
- 	flush_workqueue(pool->wq);
- 	(void) commit(pool);
- }
+ 	list_for_each_entry_safe(dwc, _dwc, &dw->dma.channels,
 
 
