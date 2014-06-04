@@ -1,146 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753213AbaFDMdt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 08:33:49 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:33043 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751734AbaFDMdp (ORCPT
+	id S1753228AbaFDMeG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 08:34:06 -0400
+Received: from mga11.intel.com ([192.55.52.93]:58941 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752305AbaFDMdr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 08:33:45 -0400
-Message-ID: <538F121E.9020100@oracle.com>
-Date: Wed, 04 Jun 2014 08:33:34 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Wed, 4 Jun 2014 08:33:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,973,1392192000"; 
+   d="scan'208";a="542343285"
+Date: Wed, 4 Jun 2014 20:33:38 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Jet Chen <jet.chen@intel.com>, LKML <linux-kernel@vger.kernel.org>,
+        lkp@01.org
+Subject: Re: [rcu] 5057f55e543: -23.5% qperf.udp.recv_bw
+Message-ID: <20140604123338.GA1263@localhost>
+References: <538D9EA9.6070406@intel.com>
+ <20140603141720.GN22231@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Hugh Dickins <hughd@google.com>, Konstantin Khlebnikov <koct9i@gmail.com>
-CC: Dave Jones <davej@redhat.com>, "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: 3.15-rc8 mm/filemap.c:202 BUG
-References: <20140603042121.GA27177@redhat.com> <CALYGNiNV951SnBKdr0PEkgLbLCxy+YB6HJpafRr6CynO+a1sdQ@mail.gmail.com> <alpine.LSU.2.11.1406031524470.7878@eggly.anvils>
-In-Reply-To: <alpine.LSU.2.11.1406031524470.7878@eggly.anvils>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20140603141720.GN22231@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/03/2014 07:11 PM, Hugh Dickins wrote:
-> On Tue, 3 Jun 2014, Konstantin Khlebnikov wrote:
->> > On Tue, Jun 3, 2014 at 8:21 AM, Dave Jones <davej@redhat.com> wrote:
->>> > > I'm still seeing this one from time to time, though it takes me quite a while to hit it,
->>> > > despite my attempts at trying to narrow down the set of syscalls that cause it.
->>> > >
->>> > > kernel BUG at mm/filemap.c:202!
->>> > > invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
->>> > > CPU: 3 PID: 3013 Comm: trinity-c361 Not tainted 3.15.0-rc8+ #225
->>> > > task: ffff88006c610000 ti: ffff880055960000 task.ti: ffff880055960000
->>> > > RIP: 0010:[<ffffffffac158e28>]  [<ffffffffac158e28>] __delete_from_page_cache+0x318/0x360
->>> > > RSP: 0018:ffff880055963b90  EFLAGS: 00010046
->>> > > RAX: 0000000000000000 RBX: 0000000000000003 RCX: ffff880146f68388
->>> > > RDX: 000000000000022a RSI: ffffffffaca8db38 RDI: ffffffffaca62b17
->>> > > RBP: ffff880055963be0 R08: 0000000000000002 R09: ffff88000613d530
->>> > > R10: ffff880055963ba8 R11: ffff880007f49a40 R12: ffffea0006795880
->>> > > R13: ffff880143232ad0 R14: 0000000000000000 R15: ffff880143232ad8
->>> > > FS:  00007f1e40673700(0000) GS:ffff88024d180000(0000) knlGS:0000000000000000
->>> > > CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
->>> > > CR2: 00007f1e404e6000 CR3: 00000000603eb000 CR4: 00000000001407e0
->>> > > DR0: 0000000001bb1000 DR1: 0000000002537000 DR2: 00000000016a5000
->>> > > DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7: 0000000000000600
->>> > > Stack:
->>> > >  ffff880143232ae8 0000000000000000 ffff88000613d530 ffff88000613d568
->>> > >  0000000008828259 ffffea0006795880 ffff880143232ae8 0000000000000000
->>> > >  0000000000000002 0000000000000002 ffff880055963c08 ffffffffac158eae
->>> > > Call Trace:
->>> > >  [<ffffffffac158eae>] delete_from_page_cache+0x3e/0x70
->>> > >  [<ffffffffac16921b>] truncate_inode_page+0x5b/0x90
->>> > >  [<ffffffffac174493>] shmem_undo_range+0x363/0x790
->>> > >  [<ffffffffac1748d4>] shmem_truncate_range+0x14/0x30
->>> > >  [<ffffffffac174bcf>] shmem_fallocate+0x9f/0x340
->>> > >  [<ffffffffac324d40>] ? timerqueue_add+0x60/0xb0
->>> > >  [<ffffffffac1c5ff6>] do_fallocate+0x116/0x1a0
->>> > >  [<ffffffffac182260>] SyS_madvise+0x3c0/0x870
->>> > >  [<ffffffffac346b33>] ? __this_cpu_preempt_check+0x13/0x20
->>> > >  [<ffffffffac74c41f>] tracesys+0xdd/0xe2
->>> > > Code: ff ff 01 41 f6 c6 01 48 8b 45 c8 75 16 4c 89 30 e9 70 fe ff ff 66 0f 1f 44 00 00 0f 0b 66 0f 1f 44 00 00 0f 0b 66 0f 1f 44 00 00 <0f> 0b 66 0f 1f 44 00 00  41 54 9d e8 78 9e fd ff e9 8c fe ff ff
->>> > > RIP  [<ffffffffac158e28>] __delete_from_page_cache+0x318/0x360
->>> > >
->>> > > There was also another variant of the same BUG with a slighty different stack trace.
->>> > >
->>> > > kernel BUG at mm/filemap.c:202!
->>> > > invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
->>> > > CPU: 2 PID: 6928 Comm: trinity-c45 Not tainted 3.15.0-rc5+ #208
->>> > > task: ffff88023669d0a0 ti: ffff880186146000 task.ti: ffff880186146000
->>> > > RIP: 0010:[<ffffffff8415ba05>]  [<ffffffff8415ba05>] __delete_from_page_cache+0x315/0x320
->>> > > RSP: 0018:ffff880186147b18  EFLAGS: 00010046
->>> > > RAX: 0000000000000000 RBX: 0000000000000003 RCX: 0000000000000002
->>> > > RDX: 000000000000012a RSI: ffffffff84a9a83c RDI: ffffffff84a6e0c0
->>> > > RBP: ffff880186147b68 R08: 0000000000000002 R09: ffff88002669e668
->>> > > R10: ffff880186147b30 R11: 0000000000000000 R12: ffffea0008b067c0
->>> > > R13: ffff880025355670 R14: 0000000000000000 R15: ffff880025355678
->>> > > FS:  00007fc10026f740(0000) GS:ffff880244400000(0000) knlGS:0000000000000000
->>> > > CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
->>> > > CR2: 00002ab350f5c004 CR3: 000000018566c000 CR4: 00000000001407e0
->>> > > DR0: 0000000001989000 DR1: 0000000000944000 DR2: 0000000002494000
->>> > > DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7: 0000000000000600
->>> > > Stack:
->>> > >  ffff880025355688 ffff8800253556a0 ffff88002669e668 ffff88002669e6a0
->>> > >  000000008ea099ef ffffea0008b067c0 ffff880025355688 0000000000000000
->>> > >  0000000000000000 0000000000000002 ffff880186147b90 ffffffff8415ba4d
->>> > > Call Trace:
->>> > >  [<ffffffff8415ba4d>] delete_from_page_cache+0x3d/0x70
->>> > >  [<ffffffff8416b0ab>] truncate_inode_page+0x5b/0x90
->>> > >  [<ffffffff84175f0b>] shmem_undo_range+0x30b/0x780
->>> > >  [<ffffffff84176394>] shmem_truncate_range+0x14/0x30
->>> > >  [<ffffffff8417647d>] shmem_evict_inode+0xcd/0x150
->>> > >  [<ffffffff841e4b17>] evict+0xa7/0x170
->>> > >  [<ffffffff841e5435>] iput+0xf5/0x180
->>> > >  [<ffffffff841df8a0>] dentry_kill+0x260/0x2d0
->>> > >  [<ffffffff841df97c>] dput+0x6c/0x110
->>> > >  [<ffffffff841c92a9>] __fput+0x189/0x200
->>> > >  [<ffffffff841c936e>] ____fput+0xe/0x10
->>> > >  [<ffffffff84090484>] task_work_run+0xb4/0xe0
->>> > >  [<ffffffff8406ee42>] do_exit+0x302/0xb80
->>> > >  [<ffffffff84349e13>] ? __this_cpu_preempt_check+0x13/0x20
->>> > >  [<ffffffff8407073c>] do_group_exit+0x4c/0xc0
->>> > >  [<ffffffff840707c4>] SyS_exit_group+0x14/0x20
->>> > >  [<ffffffff8475bf64>] tracesys+0xdd/0xe2
->>> > > Code: 4c 89 30 e9 80 fe ff ff 48 8b 75 c0 4c 89 ff e8 82 8f 1c 00 84 c0 0f 85 6c fe ff ff e9 4f fe ff ff 0f 1f 44 00 00 e8 ae 95 5e 00 <0f> 0b e8 04 1c f1 ff 0f 0b 66 90 0f 1f 44 00 00 55 48 89 e5 41
->>> > >
->>> > >
->>> > > --
->>> > > To unsubscribe, send a message with 'unsubscribe linux-mm' in
->>> > > the body to majordomo@kvack.org.  For more info on Linux MM,
->>> > > see: http://www.linux-mm.org/ .
->>> > > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->> > 
->> > This might shine some light, CONFIG_DEBUG_VM should be =y.
->> > 
->> > --- a/mm/filemap.c
->> > +++ b/mm/filemap.c
->> > @@ -199,7 +199,7 @@ void __delete_from_page_cache(struct page *page,
->> > void *shadow)
->> >         __dec_zone_page_state(page, NR_FILE_PAGES);
->> >         if (PageSwapBacked(page))
->> >                 __dec_zone_page_state(page, NR_SHMEM);
->> > -       BUG_ON(page_mapped(page));
->> > +       VM_BUG_ON_PAGE(page_mapped(page), page);
->> > 
->> >         /*
->> >          * Some filesystems seem to re-dirty the page even after
-> Yes, there's a chance that will tell us more (but I don't have high
-> hopes of it).  I'm still stumped by this issue, just as before.
+Hi Paul,
+
+On Tue, Jun 03, 2014 at 07:17:20AM -0700, Paul E. McKenney wrote:
+> On Tue, Jun 03, 2014 at 06:08:41PM +0800, Jet Chen wrote:
+> > Hi Paul,
+> > 
+> > FYI, we noticed the below changes on
+> > 
+> > git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git rcu/fixes
+> > commit 5057f55e543b7859cfd26bc281291795eac93f8a ("rcu: Bind RCU grace-period kthreads if NO_HZ_FULL")
 > 
-> Sasha (or Dave), any update on whether you see this without THP?
-> and whether you see the remove_migration_pte oops without THP?
+> My guess would be that some of these workloads generated enough callbacks
+> that binding all the rcuo callback-offloading kthreads to CPU 0 resulted
+> in a bottleneck.  If that was the case, CPU 0 would often hit 100%
+> CPU utilization, and there would be more wait time on other CPUs because
+> callback execution was delayed.
+> 
+> Does that match what you are seeing?
 
-I'm pretty sure at this point that I only see both with THP enabled.
+This is the /proc/stat contents on completion of test
+brickland3/qperf/600s. It shows that CPU 0 is not busy.
 
-I've started seeing much less of them during fuzzing. Timing changes?
+cpu  1707 0 57716 8569826 33 0 14572 0 0 0
+cpu0 2 0 575 69345 29 0 8 0 0 0
+cpu1 0 0 86 72203 3 0 1 0 0 0
+cpu2 116 0 386 71437 0 0 0 0 0 0
 
+The columns of numbers are:
+
+- user: normal processes executing in user mode
+- nice: niced processes executing in user mode
+- system: processes executing in kernel mode
+- idle: twiddling thumbs
+- iowait: waiting for I/O to complete
+- irq: servicing interrupts
+- softirq: servicing softirqs
+- steal: involuntary wait
+- guest: running a normal guest
+- guest_nice: running a niced guest
+
+cpu3 32 0 59 72213 0 0 0 0 0 0
+cpu4 8 0 35 72272 0 0 0 0 0 0
+cpu5 1 0 3 72318 0 0 0 0 0 0
+cpu6 1 0 3 72320 0 0 0 0 0 0
+cpu7 0 0 2 72327 0 0 0 0 0 0
+cpu8 0 0 2 72323 0 0 0 0 0 0
+cpu9 0 0 1 72323 0 0 0 0 0 0
+cpu10 0 0 2 72314 0 0 0 0 0 0
+cpu11 0 0 2 72317 0 0 0 0 0 0
+cpu12 0 0 3 72311 0 0 0 0 0 0
+cpu13 0 0 2 72313 0 0 0 0 0 0
+cpu14 0 0 20 72296 0 0 0 0 0 0
+cpu15 0 0 90 72192 0 0 1 0 0 0
+cpu16 0 0 13 72288 0 0 1 0 0 0
+cpu17 115 0 137 71848 0 0 0 0 0 0
+cpu18 28 0 32 72106 0 0 0 0 0 0
+cpu19 7 0 5 72256 0 0 0 0 0 0
+cpu20 2 0 72 71938 0 0 0 0 0 0
+cpu21 0 0 3 72273 0 0 0 0 0 0
+cpu22 0 0 2 72284 0 0 0 0 0 0
+cpu23 0 0 1 72284 0 0 0 0 0 0
+cpu24 0 0 2 72279 0 0 0 0 0 0
+cpu25 0 0 1 72281 0 0 0 0 0 0
+cpu26 0 0 2 72274 0 0 0 0 0 0
+cpu27 0 0 5 72274 0 0 0 0 0 0
+cpu28 0 0 22 72255 0 0 0 0 0 0
+cpu29 0 0 1 72273 0 0 0 0 0 0
+cpu30 24 0 748 70165 0 0 407 0 0 0
+cpu31 28 0 906 70251 0 0 465 0 0 0
+cpu32 62 0 2276 68376 0 0 604 0 0 0
+cpu33 27 0 1100 70059 0 0 453 0 0 0
+cpu34 23 0 1359 69933 0 0 418 0 0 0
+cpu35 32 0 1663 69109 0 0 775 0 0 0
+cpu36 103 0 8569 60806 0 0 2306 0 0 0
+cpu37 88 0 7052 63141 0 0 518 0 0 0
+cpu38 51 0 2881 67927 0 0 498 0 0 0
+cpu39 36 0 1705 69166 0 0 430 0 0 0
+cpu40 99 0 8657 60720 0 0 1767 0 0 0
+cpu41 103 0 7088 61185 0 0 1749 0 0 0
+cpu42 42 0 1567 69244 0 0 525 0 0 0
+cpu43 43 0 1661 68865 0 0 457 0 0 0
+cpu44 39 0 2610 68046 0 0 660 0 0 0
+cpu45 3 0 248 71852 0 0 30 0 0 0
+cpu46 4 0 16 72140 0 0 6 0 0 0
+cpu47 115 0 297 71435 0 0 159 0 0 0
+cpu48 30 0 81 71940 0 0 61 0 0 0
+cpu49 14 0 163 71815 0 0 118 0 0 0
+cpu50 6 0 144 71832 0 0 129 0 0 0
+cpu51 12 0 508 71217 0 0 276 0 0 0
+cpu52 18 0 498 71082 0 0 378 0 0 0
+cpu53 11 0 440 71236 0 0 282 0 0 0
+cpu54 4 0 205 71710 0 0 144 0 0 0
+cpu55 4 0 136 71898 0 0 78 0 0 0
+cpu56 13 0 400 71305 0 0 288 0 0 0
+cpu57 14 0 377 71346 0 0 316 0 0 0
+cpu58 2 0 109 71954 0 0 73 0 0 0
+cpu59 1 0 8 72174 0 0 3 0 0 0
+cpu60 0 0 0 72191 0 0 0 0 0 0
+cpu61 86 0 313 71749 0 0 0 0 0 0
+cpu62 3 0 9 72173 0 0 0 0 0 0
+cpu63 2 0 8 72175 0 0 0 0 0 0
+cpu64 0 0 2 72178 0 0 0 0 0 0
+cpu65 0 0 2 72177 0 0 0 0 0 0
+cpu66 0 0 2 72175 0 0 0 0 0 0
+cpu67 0 0 2 72173 0 0 0 0 0 0
+cpu68 0 0 4 72169 0 0 0 0 0 0
+cpu69 0 0 2 72168 0 0 0 0 0 0
+cpu70 0 0 1 72166 0 0 0 0 0 0
+cpu71 0 0 1 72164 0 0 0 0 0 0
+cpu72 0 0 0 72163 0 0 0 0 0 0
+cpu73 0 0 0 72161 0 0 0 0 0 0
+cpu74 0 0 1 72158 0 0 0 0 0 0
+cpu75 0 0 0 72156 0 0 0 0 0 0
+cpu76 73 0 330 71709 0 0 0 0 0 0
+cpu77 4 0 10 72137 0 0 0 0 0 0
+cpu78 1 0 4 72145 0 0 0 0 0 0
+cpu79 0 0 50 72077 0 0 0 0 0 0
+cpu80 0 0 5 72138 0 0 0 0 0 0
+cpu81 0 0 1 72141 0 0 0 0 0 0
+cpu82 0 0 66 72074 0 0 0 0 0 0
+cpu83 0 0 1 72137 0 0 0 0 0 0
+cpu84 0 0 0 72136 0 0 0 0 0 0
+cpu85 0 0 1 72133 0 0 0 0 0 0
+cpu86 0 0 0 72131 0 0 0 0 0 0
+cpu87 0 0 0 72129 0 0 0 0 0 0
+cpu88 0 0 1 72127 0 0 0 0 0 0
+cpu89 0 0 0 72124 0 0 0 0 0 0
+cpu90 0 0 0 72122 0 0 0 0 0 0
+cpu91 63 0 1377 70501 0 0 162 0 0 0
+cpu92 2 0 14 72100 0 0 0 0 0 0
+cpu93 1 0 5 72109 0 0 0 0 0 0
+cpu94 0 0 4 72108 0 0 0 0 0 0
+cpu95 1 0 4 72106 0 0 0 0 0 0
+cpu96 0 0 1 72106 0 0 0 0 0 0
+cpu97 0 0 0 72105 0 0 0 0 0 0
+cpu98 0 0 1 72102 0 0 0 0 0 0
+cpu99 0 0 2 72099 0 0 0 0 0 0
+cpu100 0 0 1 72099 0 0 0 0 0 0
+cpu101 0 0 0 72096 0 0 0 0 0 0
+cpu102 0 0 0 72094 0 0 0 0 0 0
+cpu103 0 0 1 72092 0 0 0 0 0 0
+cpu104 0 0 0 72089 0 0 0 0 0 0
+cpu105 0 0 1 72086 0 0 0 0 0 0
+cpu106 66 0 363 71601 0 0 9 0 0 0
+cpu107 2 0 4 72075 0 0 0 0 0 0
+cpu108 0 0 2 72077 0 0 0 0 0 0
+cpu109 0 0 8 72069 0 0 0 0 0 0
+cpu110 0 0 1 72073 0 0 0 0 0 0
+cpu111 0 0 9 72063 0 0 0 0 0 0
+cpu112 0 0 1 72070 0 0 0 0 0 0
+cpu113 0 0 0 72068 0 0 0 0 0 0
+cpu114 0 0 1 72064 0 0 0 0 0 0
+cpu115 0 0 1 72063 0 0 0 0 0 0
+cpu116 0 0 1 72060 0 0 0 0 0 0
+cpu117 0 0 0 72059 0 0 0 0 0 0
+cpu118 0 0 0 72056 0 0 0 0 0 0
+cpu119 0 0 1 72053 0 0 0 0 0 0
+intr 5639794 132 0 0 9 856 0 0 0 1 0 0 0 0 0 0 0 31 0 0 0 0 0 0 311 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 42 0 2794 395 411 385 399 378 399 375 396 384 383 396 379 470 386 375 375 386 382 512 375 375 375 375 375 375 375 375 375 375 375 375 378 375 375 375 375 375 375 375 375 375 379 381 388 375 375 375 376 379 375 375 375 375 375 375 375 375 375 375 375 382 375 1 78 64 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+ctxt 84441175
+btime 1401871947
+processes 23608
+procs_running 2
+procs_blocked 0
+softirq 84702758 9 1574595 174 82369760 28 0 305 456968 84738 216181
 
 Thanks,
-Sasha
+Fengguang
