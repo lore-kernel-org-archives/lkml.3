@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757128AbaFEAk3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 20:40:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39864 "EHLO
+	id S1752637AbaFDXVX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 19:21:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39798 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752582AbaFDXVY (ORCPT
+	with ESMTP id S1752582AbaFDXVS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:21:24 -0400
+	Wed, 4 Jun 2014 19:21:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Egbert Eich <eich@suse.de>, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        Jani Nikula <jani.nikula@intel.com>
-Subject: [PATCH 3.14 065/228] drm/i915: Break encoder->crtc link separately in intel_sanitize_crtc()
-Date: Wed,  4 Jun 2014 16:21:34 -0700
-Message-Id: <20140604232350.143142318@linuxfoundation.org>
+        Mark Salter <msalter@redhat.com>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: [PATCH 3.14 040/228] arm64: fix pud_huge() for 2-level pagetables
+Date: Wed,  4 Jun 2014 16:21:09 -0700
+Message-Id: <20140604232349.368619695@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -30,116 +29,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Egbert Eich <eich@suse.de>
+From: Mark Salter <msalter@redhat.com>
 
-commit 7f1950fbb989e8fc5463b307e062b4529d51c862 upstream.
+commit 4797ec2dc83a43be35bad56037d1b53db9e2b5d5 upstream.
 
-Depending on the SDVO output_flags SDVO may have multiple connectors
-linking to the same encoder (in intel_connector->encoder->base).
-Only one of those connectors should be active (ie link to the encoder
-thru drm_connector->encoder).
-If intel_connector_break_all_links() is called from intel_sanitize_crtc()
-we may break the crtc connection of an encoder thru an inactive connector
-in which case intel_connector_break_all_links() will not be called again
-for the active connector if this happens to come later in the list due to:
-    if (connector->encoder->base.crtc != &crtc->base)
-                                 continue;
-in intel_sanitize_crtc().
-This will however leave the drm_connector->encoder linkage for this
-active connector in place. Subsequently this will cause multiple
-warnings in intel_connector_check_state() to trigger and the driver
-will eventually die in drm_encoder_crtc_ok() (because of crtc == NULL).
+The following happens when trying to run a kvm guest on a kernel
+configured for 64k pages. This doesn't happen with 4k pages:
 
-To avoid this remove intel_connector_break_all_links() and move its
-code to its two calling functions: intel_sanitize_crtc() and
-intel_sanitize_encoder().
-This allows to implement the link breaking more flexibly matching
-the surrounding code: ie. in intel_sanitize_crtc() we can break the
-crtc link separatly after the links to the encoders have been
-broken which avoids above problem.
+  BUG: failure at include/linux/mm.h:297/put_page_testzero()!
+  Kernel panic - not syncing: BUG!
+  CPU: 2 PID: 4228 Comm: qemu-system-aar Tainted: GF            3.13.0-0.rc7.31.sa2.k32v1.aarch64.debug #1
+  Call trace:
+  [<fffffe0000096034>] dump_backtrace+0x0/0x16c
+  [<fffffe00000961b4>] show_stack+0x14/0x1c
+  [<fffffe000066e648>] dump_stack+0x84/0xb0
+  [<fffffe0000668678>] panic+0xf4/0x220
+  [<fffffe000018ec78>] free_reserved_area+0x0/0x110
+  [<fffffe000018edd8>] free_pages+0x50/0x88
+  [<fffffe00000a759c>] kvm_free_stage2_pgd+0x30/0x40
+  [<fffffe00000a5354>] kvm_arch_destroy_vm+0x18/0x44
+  [<fffffe00000a1854>] kvm_put_kvm+0xf0/0x184
+  [<fffffe00000a1938>] kvm_vm_release+0x10/0x1c
+  [<fffffe00001edc1c>] __fput+0xb0/0x288
+  [<fffffe00001ede4c>] ____fput+0xc/0x14
+  [<fffffe00000d5a2c>] task_work_run+0xa8/0x11c
+  [<fffffe0000095c14>] do_notify_resume+0x54/0x58
 
-This regression has been introduced in:
+In arch/arm/kvm/mmu.c:unmap_range(), we end up doing an extra put_page()
+on the stage2 pgd which leads to the BUG in put_page_testzero(). This
+happens because a pud_huge() test in unmap_range() returns true when it
+should always be false with 2-level pages tables used by 64k pages.
+This patch removes support for huge puds if 2-level pagetables are
+being used.
 
-commit 24929352481f085c5f85d4d4cbc919ddf106d381
-Author: Daniel Vetter <daniel.vetter@ffwll.ch>
-Date:   Mon Jul 2 20:28:59 2012 +0200
-
-    drm/i915: read out the modeset hw state at load and resume time
-
-so goes back to the very beginning of the modeset rework.
-
-v2: This patch takes care of the concernes voiced by Chris Wilson
-and Daniel Vetter that only breaking links if the drm_connector
-is linked to an encoder may miss some links.
-v3: move all encoder handling to encoder loop as suggested by
-Daniel Vetter.
-
-Signed-off-by: Egbert Eich <eich@suse.de>
-Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Jani Nikula <jani.nikula@linux.intel.com>
-Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+Signed-off-by: Mark Salter <msalter@redhat.com>
+[catalin.marinas@arm.com: removed #ifndef around PUD_SIZE check]
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_display.c |   26 ++++++++++++++------------
- 1 file changed, 14 insertions(+), 12 deletions(-)
+ arch/arm64/mm/hugetlbpage.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -10989,15 +10989,6 @@ void intel_modeset_init(struct drm_devic
- 	intel_disable_fbc(dev);
+--- a/arch/arm64/mm/hugetlbpage.c
++++ b/arch/arm64/mm/hugetlbpage.c
+@@ -51,7 +51,11 @@ int pmd_huge(pmd_t pmd)
+ 
+ int pud_huge(pud_t pud)
+ {
++#ifndef __PAGETABLE_PMD_FOLDED
+ 	return !(pud_val(pud) & PUD_TABLE_BIT);
++#else
++	return 0;
++#endif
  }
  
--static void
--intel_connector_break_all_links(struct intel_connector *connector)
--{
--	connector->base.dpms = DRM_MODE_DPMS_OFF;
--	connector->base.encoder = NULL;
--	connector->encoder->connectors_active = false;
--	connector->encoder->base.crtc = NULL;
--}
--
- static void intel_enable_pipe_a(struct drm_device *dev)
- {
- 	struct intel_connector *connector;
-@@ -11079,8 +11070,17 @@ static void intel_sanitize_crtc(struct i
- 			if (connector->encoder->base.crtc != &crtc->base)
- 				continue;
- 
--			intel_connector_break_all_links(connector);
-+			connector->base.dpms = DRM_MODE_DPMS_OFF;
-+			connector->base.encoder = NULL;
- 		}
-+		/* multiple connectors may have the same encoder:
-+		 *  handle them and break crtc link separately */
-+		list_for_each_entry(connector, &dev->mode_config.connector_list,
-+				    base.head)
-+			if (connector->encoder->base.crtc == &crtc->base) {
-+				connector->encoder->base.crtc = NULL;
-+				connector->encoder->connectors_active = false;
-+			}
- 
- 		WARN_ON(crtc->active);
- 		crtc->base.enabled = false;
-@@ -11151,6 +11151,8 @@ static void intel_sanitize_encoder(struc
- 				      drm_get_encoder_name(&encoder->base));
- 			encoder->disable(encoder);
- 		}
-+		encoder->base.crtc = NULL;
-+		encoder->connectors_active = false;
- 
- 		/* Inconsistent output/port/pipe state happens presumably due to
- 		 * a bug in one of the get_hw_state functions. Or someplace else
-@@ -11161,8 +11163,8 @@ static void intel_sanitize_encoder(struc
- 				    base.head) {
- 			if (connector->encoder != encoder)
- 				continue;
--
--			intel_connector_break_all_links(connector);
-+			connector->base.dpms = DRM_MODE_DPMS_OFF;
-+			connector->base.encoder = NULL;
- 		}
- 	}
- 	/* Enabled encoders without active connectors will be fixed in
+ int pmd_huge_support(void)
 
 
