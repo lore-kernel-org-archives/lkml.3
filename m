@@ -1,106 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755401AbaFDAdo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 20:33:44 -0400
-Received: from smtprelay0002.hostedemail.com ([216.40.44.2]:39858 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752100AbaFDAdn (ORCPT
+	id S1754961AbaFDAiU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 20:38:20 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:62170 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752439AbaFDAiT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 20:33:43 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 40,2.5,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::::::::::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1542:1593:1594:171
-X-HE-Tag: sky06_2d1392de5c1d
-X-Filterd-Recvd-Size: 3673
-Message-ID: <1401842017.22133.30.camel@joe-AO725>
-Subject: Re: [PATCH RFC 1/2] MAINTAINERS: Add "R:" designated-reviewers tag
-From: Joe Perches <joe@perches.com>
-To: Ken Moffat <zarniwhoop@ntlworld.com>
-Cc: josh@joshtriplett.org, Dave Chinner <david@fromorbit.com>,
-        Steven Rostedt <rostedt@goodmis.org>, paulmck@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, dhowells@redhat.com, edumazet@google.com,
-        dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
-        sbw@mit.edu
-Date: Tue, 03 Jun 2014 17:33:37 -0700
-In-Reply-To: <20140603234816.GB26144@milliways>
-References: <20140602181658.GX22231@linux.vnet.ibm.com>
-	 <1401734669.7323.20.camel@joe-AO725>
-	 <20140602145020.400d4e0c@gandalf.local.home> <20140602185504.GA13569@cloud>
-	 <1401735917.7323.23.camel@joe-AO725> <20140602190951.GA13648@cloud>
-	 <1401736666.7323.25.camel@joe-AO725> <20140602231949.GV14410@dastard>
-	 <20140602235915.GB14801@cloud> <1401754325.7323.50.camel@joe-AO725>
-	 <20140603234816.GB26144@milliways>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	Tue, 3 Jun 2014 20:38:19 -0400
+MIME-Version: 1.0
+In-Reply-To: <CA+ZOOTOfq705CbUjx9ppw4gLxJ8JFCaFsphwhAS+NskHVjd86Q@mail.gmail.com>
+References: <1401692506-7796-1-git-send-email-ast@plumgrid.com>
+	<538C3C94.3080206@redhat.com>
+	<CAMEtUuzkjZCsReWH9cZs8AU0mJjZH9YOdCBTWusxe6-NZ9mQ=g@mail.gmail.com>
+	<538CAEA6.4060307@redhat.com>
+	<CAMEtUuwxJOgYgFjg9deQZOffeg6-JUGZXZ1Rj344eQmriQ0F0Q@mail.gmail.com>
+	<538D8DAA.7090105@redhat.com>
+	<CAMEtUuw8uyCGeLeUB0PXm5cCpqcsjPLZt6y9FcKjapbVPjWTuw@mail.gmail.com>
+	<538E319B.3000606@redhat.com>
+	<CAMEtUuzsHJioXZtuGje6UmwZmcmDZEn8PdkkYanA9j1sp242+Q@mail.gmail.com>
+	<CA+ZOOTOfq705CbUjx9ppw4gLxJ8JFCaFsphwhAS+NskHVjd86Q@mail.gmail.com>
+Date: Tue, 3 Jun 2014 17:38:17 -0700
+Message-ID: <CAMEtUuxU_FKL4TJ2wJtOngean2RjjJxBbYpxNjJQKjA7HtU2Bg@mail.gmail.com>
+Subject: Re: [PATCH v2 net-next 0/2] split BPF out of core networking
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Chema Gonzalez <chema@google.com>
+Cc: Daniel Borkmann <dborkman@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        Network Development <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-06-04 at 00:48 +0100, Ken Moffat wrote:
-> On Mon, Jun 02, 2014 at 05:12:05PM -0700, Joe Perches wrote:
-> > "Tested-by:" tags would be more helpful if the test
-> > cases that were used were somehow sent along with the
-> > signature.
-[]
-> Tested-by is usually used for a fix of some problem, often a
-> regression.  A good commit message will explain the problem.
+On Tue, Jun 3, 2014 at 2:40 PM, Chema Gonzalez <chema@google.com> wrote:
+> First of all, and just to join the crowd, kernel/bpf/ FTW.
+>
+> Now, I have some suggestions about eBPF. IMO classic BPF is an ISA
+> oriented to filter (meaning returning a single integer that states how
+> many bytes of the packet must be captured) packets (e.g. consider the
+> 6 load modes, where 3 provide access the packet -- abs, ind, msh --,
+> one to an skb field -- len--, the 5th one to the memory itself -- mem
+> --, and the 6th is an immediate set mode --imm-- ) that has been used
+> in other environments (seccomp, tracing, etc.) by (a) extending the
+> idea of a "packet" into a "buffer", and (b) adding ancillary loads.
+>
+> eBPF should be a generic ISA that can be used by many environments,
+> including those served today by classic BPF. IMO, we should get a
+> nicely-defined ISA (MIPS anyone?) and check what should go into eBPF
+> and what should not.
 
-It seems about half of the commits with tested-by are
-for regressions.
+Model eBPF based on MIPS ISA? Ouch.
+That would be one ugly ISA that is not JITable on x64.
 
-The latest commit message with your tested-by is great.
+eBPF ISA wasn't invented overnight. It was a gigantic effort that
+took a lot of time to narrow down x64 into _verifiable_ ISA.
+I had to take into account arm64, mips64, sparcv9 architectures too.
+Of course, minor things can be improved here or there.
+Ugliness of ISA hits compiler writers first. I've seen many
+times how cpu designers add new instructions only to be told
+by compiler guys that they just wasted silicon.
+Fact that llvm/gcc compile C into eBPF is the strongest
+statement that eBPF ISA is 99.9% complete.
+New instructions may or may not make sense.
+Let's examine your proposal:
 
-commit 18ee37a485653aa635cfab9a3710e9bcf5fbca01
-Author: Daniel Vetter <daniel.vetter@ffwll.ch>
-Date:   Fri May 30 16:41:23 2014 +0200
+> - 1. we should considering separating the eBPF ISA farther from classic BPF
+>   - eBPF still uses a_reg and x_reg as the names of the 2 op
+> registers. This is very confusing, especially when dealing with
+> translated filters that do move data between A and X. I've had a_reg
+> being X, and x_reg being A. We should rename them d_reg and s_reg.
 
-    drm/radeon: Resume fbcon last
- 
-[detailed explanation elided]
+that is renaming of two fields in sock_filter_int structure.
+No change to actual ISA.
 
-This commit log with your tested-by seems a bit
-mysterious though:
+You're proposing the following:
+diff --git a/include/linux/filter.h b/include/linux/filter.h
+index 0e463ee77bb2..bf50fa440ef8 100644
+--- a/include/linux/filter.h
++++ b/include/linux/filter.h
+@@ -287,8 +287,8 @@ enum {
 
-commit 74ad54f249de39bc040cce7237b1b854a9c6f0ad
-Author: Christian König <christian.koenig@amd.com>
-Date:   Tue May 13 12:50:54 2014 +0200
+ struct sock_filter_int {
+        __u8    code;           /* opcode */
+-       __u8    a_reg:4;        /* dest register */
+-       __u8    x_reg:4;        /* source register */
++       __u8    dst_reg:4;      /* dest register */
++       __u8    src_reg:4;      /* source register */
+        __s16   off;            /* signed offset */
+        __s32   imm;            /* signed immediate constant */
+ };
+sure. I thought comment was explicit enough, but I agree
+the fields could have been named better.
+Will do a patch to rename it.
 
-    drm/radeon: fix typo in finding PLL params
-    
-    Otherwise the limit is raised to high.
+>   - BPF_LD vs. BPF_LDX: this made sense in classic BPF, as there was
+> only one register, and d_reg was implicit in the name of the insn
+> code. Now, why are we keeping both in eBPF, when the register we're
+> writing to is made explicit in d_reg (I already forgot if d_reg was
+> a_reg or x_reg ;) ? Removing one of them will save us 1/8th of the
+> insns.
+>   - BPF_ST vs. BPF_STX: same here. Note that the current
+> sk_convert_filter() just converts all stores to BPF_STX.
 
-As the commit that introduces this error is:
+nope. No extra bits can be saved here.
+STX means:
+*(dest_reg + off) = src_reg;
+ST means:
+*(dest_reg + off) = imm;
+LDX means:
+dest_reg = *(src_reg + off)
 
-commit 3b333c55485fef0089ae7398906599d000df195e
-Author: Christian König <christian.koenig@amd.com>
-Date:   Thu Apr 24 18:39:59 2014 +0200
+LD we had to carry over from classic as only two non-generic
+instructions: LD_ABS and LD_IND.
 
-    drm/radeon: avoid high jitter with small frac divs
+> - 2. there are other insn that we should consider adding:
+>   - lui: AFAICT, there is no clean way to build a 64-bit number (you
+> can LD_IMM the upper part, lsh 32, and then add the lower part).
 
-This is the entirety of the commit log.
+correct. in tracing filters I do this:
++                       /* construct 64-bit address */
++                       emit(BPF_ALU64_IMM(BPF_MOV, BPF_REG_2, addr >>
+32), ctx);
++                       emit(BPF_ALU64_IMM(BPF_LSH, BPF_REG_2, 32), ctx);
++                       emit(BPF_ALU32_IMM(BPF_MOV, BPF_REG_1, (u32)
+addr), ctx);
++                       emit(BPF_ALU64_REG(BPF_OR, BPF_REG_1, BPF_REG_2), ctx);
 
-The calculation that was done here:
+so there is a way to construct 64-bit immediate.
+The question is how often do we need to do it? Is it in critical path?
+Naive answer "one instruction is better than 4" doesn't count.
+See my point above 'cpu designer vs compiler writer'.
+None of the risc ISAs have 64-bit imm and eBPF has to consider
+simplicity of JITs otherwise those architectures will have a hard time
+mapping eBPF to native. If JIT would be too difficult to do, then
+there will be no JIT. I don't want eBPF to become an instruction
+set that can be JITed only on one architecture...
 
-	max(fb_div_min, (9 - (fb_div % 10)) * 20 + 60)
+'mov dest_reg, imm64' may still be ok to add, since x64 can
+JIT it with one instruction, arm64 with 4 instructions, but JITs
+for other archs will be ugly. They can JIT it as load from memory,
+but I need to think it through. Let me explore it more carefully.
 
-Doesn't give any indication why 50 is better than 60.
+Two must have requirements for eBPF:
+1. verifiable instructions, meaning that verifier doesn't need to jump
+  hoops to prove safety of the program
+2. JITable as a minium on x64, arm64, otherwise programs will
+  run in interpreter and performance will be lost.
 
-> This is _often_ not like userspace programs where you can write a
-> testsuite to exercise the corner cases.  Kernel problems can be
-> tied up with intricate details of the hardware, or equally they
-> might happen only for certain usage, and for those it might not be
-> at all obvious what is "special" about the affected usage.
+Third requirement of compiler to actually being able to generate
+new instructions is also important, but it's not must have.
 
-Shrug.  Mostly where that wonderful test robot that
-Fengguang Wu put together can aid in finding regressions,
-it'd be nice if the tested-by: tests done could be added
-somehow.  And not in the commit log itself.
+>   - nop: I'd like to have a nop. Do I know why? Nope.
 
-It's certainly not possible for test cases to be mandatory.
+nope. Let's not add unnecessary instructions.
 
-cheers, Joe
+> I like the idea of every user (packet filter, seccomp, etc.) providing
+> a map of the bpf calls that are ok, as in the packet filter stating
+> that {1->__skb_get_pay_offset(), 2->__skb_get_nlattr(), ...}, but
+> seccomp providing a completely different (or even empty) map.
 
+yes. exactly.
+What you're describing is a configuration for generic eBPF verifier.
+The implementation details we'll debate when I rebase the verifier
+and post it for review :)
+
+Thanks!
