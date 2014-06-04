@@ -1,61 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751728AbaFDXMx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:12:53 -0400
-Received: from mail-vc0-f173.google.com ([209.85.220.173]:55344 "EHLO
-	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751387AbaFDXMv (ORCPT
+	id S1751554AbaFDXRB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 19:17:01 -0400
+Received: from longford.logfs.org ([213.229.74.203]:43474 "EHLO
+	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751321AbaFDXQ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:12:51 -0400
+	Wed, 4 Jun 2014 19:16:59 -0400
+Date: Wed, 4 Jun 2014 19:15:06 -0400
+From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jiri Kosina <jkosina@suse.cz>, Rik van Riel <riel@redhat.com>,
+        linux-kernel@vger.kernel.org, peterz@infradead.org, cxie@redhat.com,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: Re: [PATCH] printk: Print cpu number along with time
+Message-ID: <20140604231506.GA31276@logfs.org>
+References: <20140423125352.704f9fb2@annuminas.surriel.com>
+ <alpine.LRH.2.00.1404232329020.1491@twin.jikos.cz>
+ <20140424005247.GA17713@logfs.org>
+ <20140424194024.GA25446@logfs.org>
+ <20140428234039.GC6358@logfs.org>
+ <20140428172219.4be61cf7.akpm@linux-foundation.org>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.10.1406042048420.18296@nanos>
-References: <alpine.DEB.2.10.1406042048420.18296@nanos>
-Date: Wed, 4 Jun 2014 16:12:50 -0700
-X-Google-Sender-Auth: -uUMjeyV2ys99XPjPwwO37FZY-E
-Message-ID: <CA+55aFxTLKJuWvUUvVEi4LssQEMzA_3nMR=_LYjv4ksmkRO-ZQ@mail.gmail.com>
-Subject: Re: [GIT pull] irq core changes for 3.16
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140428172219.4be61cf7.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 4, 2014 at 12:34 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
->
-> Is what my script uses for years now, but this time it created a diff
-> with random extra content from all over the tree.
->
-> $BASE is 2ed9fd28c2884e9f41c133f86a7e377d7c0a96bf
+On Mon, 28 April 2014 17:22:19 -0700, Andrew Morton wrote:
+> On Mon, 28 Apr 2014 19:40:39 -0400 J__rn Engel <joern@logfs.org> wrote:
+> > On Thu, 24 April 2014 15:40:24 -0400, J__rn Engel wrote:
+> > > On Wed, 23 April 2014 20:52:47 -0400, J__rn Engel wrote:
+> > > > 
+> > > > I use the patch below for some time now.  While it doesn't avoid the
+> > > > log pollution in the first place, it lessens the impact somewhat.
+> > > 
+> > > Added a config option and ported it to current -linus.  Andrew, would
+> > > you take this patch?
+> > 
+> > Andrew?  Did you dislike this patch for some reason or just miss it in
+> > the thread?
+> 
+> Neither ;) I try to respond in some way to all patches unless I think it's clear
+> to the originator why I took no action.  And I think I'm pretty good at
+> not losing stuff.
+> 
+> otoh, it has only been four days, three of which I spent offline...
 
-You have criss-cross merges, so there are multiple merge-bases. You
-can see if it you use the "--all" flag to "git merge-base". For
-example, there's that "Merge branches 'linus' and 'irq/urgent' into
-irq/core" that does a back-merge of my tree, and there's also a "Merge
-tag 'irqchip-mvebu-3.16' of git://git.infradead.org/linux-mvebu into
-irq/core" that merges stuff that is already in my tree. So there is
-not a single unique shared base-point.
+Ping.  It is closer to 40 days now.  Can I fault this patch back into
+your memory?
 
-When that happens, doing the diff against one of the base points *can*
-happen to work, but generally gives other random cruft from the other
-shared part of the tree as part of the diff. It happened for your
-timer core pull too, you just didn't notice because the shared part
-was much smaller.
+Jörn
 
-Anyway, for the "there are multiple different commits in common" case,
-the only way to get a true diff is to generate the actual merge in a
-temporary branch, and see what the result is (and then just throw away
-the merge). The git merge facilities are much smarter than just
-diffing between two points, and will actually recursively merge up the
-different base points in order to generate the final merge result.
-
-But if it's rare, it doesn't much matter if the trivial "let's just
-diff against the base" doesn't always work. But this *is* one of the
-reasons why I suggest against back-merges, because it makes the
-history harder to figure out, and it causes these kinds of "there are
-many different independent base points" issues.
-
-                Linus
+--
+Good warriors cause others to come to them and do not go to others.
+-- Sun Tzu
