@@ -1,219 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752228AbaFDVoL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 17:44:11 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:55277 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752198AbaFDVoH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 17:44:07 -0400
-From: Stephane Eranian <eranian@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, jolsa@redhat.com,
-        zheng.z.yan@intel.com, maria.n.dimakopoulou@gmail.com
-Subject: [PATCH 4/9] perf/x86: add cross-HT counter exclusion infrastructure
-Date: Wed,  4 Jun 2014 23:34:13 +0200
-Message-Id: <1401917658-26065-5-git-send-email-eranian@google.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1401917658-26065-1-git-send-email-eranian@google.com>
-References: <1401917658-26065-1-git-send-email-eranian@google.com>
+	id S1752499AbaFDVqN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 17:46:13 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:34050 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751789AbaFDVqK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 17:46:10 -0400
+Date: Wed, 4 Jun 2014 17:45:53 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Hugh Dickins <hughd@google.com>
+Cc: Michal Hocko <mhocko@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Greg Thelen <gthelen@google.com>,
+        Michel Lespinasse <walken@google.com>, Tejun Heo <tj@kernel.org>,
+        Roman Gushchin <klamm@yandex-team.ru>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH v2 0/4] memcg: Low-limit reclaim
+Message-ID: <20140604214553.GV2878@cmpxchg.org>
+References: <20140528134905.GF2878@cmpxchg.org>
+ <20140528142144.GL9895@dhcp22.suse.cz>
+ <20140528152854.GG2878@cmpxchg.org>
+ <20140528155414.GN9895@dhcp22.suse.cz>
+ <20140528163335.GI2878@cmpxchg.org>
+ <20140603110743.GD1321@dhcp22.suse.cz>
+ <20140603142249.GP2878@cmpxchg.org>
+ <20140604144658.GB17612@dhcp22.suse.cz>
+ <20140604154408.GT2878@cmpxchg.org>
+ <alpine.LSU.2.11.1406041218080.9583@eggly.anvils>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LSU.2.11.1406041218080.9583@eggly.anvils>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
+On Wed, Jun 04, 2014 at 12:18:59PM -0700, Hugh Dickins wrote:
+> On Wed, 4 Jun 2014, Johannes Weiner wrote:
+> > On Wed, Jun 04, 2014 at 04:46:58PM +0200, Michal Hocko wrote:
+> > > 
+> > > In the other email I have suggested to add a knob with the configurable
+> > > default. Would you be OK with that?
+> > 
+> > No, I want to agree on whether we need that fallback code or not.  I'm
+> > not interested in merging code that you can't convince anybody else is
+> > needed.
+> 
+> I for one would welcome such a knob as Michal is proposing.
 
-This patch adds a new shared_regs style structure to the
-per-cpu x86 state (cpuc). It is used to coordinate access
-between counters which must be used with exclusion across
-HyperThreads on Intel processors. This new struct is not
-needed on each PMU, thus is is allocated on demand.
+Now we have a tie :-)
 
-Reviewed-by: Stephane Eranian <eranian@google.com>
-Signed-off-by: Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
----
- arch/x86/kernel/cpu/perf_event.h       |   40 ++++++++++++++++++--
- arch/x86/kernel/cpu/perf_event_intel.c |   63 +++++++++++++++++++++++++++++---
- 2 files changed, 94 insertions(+), 9 deletions(-)
+> I thought it was long ago agreed that the low limit was going to fallback
+> when it couldn't be satisfied.  But you seem implacably opposed to that
+> as default, and I can well believe that Google is so accustomed to OOMing
+> that it is more comfortable with OOMing as the default.  Okay.  But I
+> would expect there to be many who want the attempt towards isolation that
+> low limit offers, without a collapse to OOM at the first misjudgement.
 
-diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index 413799f..5da0a2b 100644
---- a/arch/x86/kernel/cpu/perf_event.h
-+++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -65,10 +65,11 @@ struct event_constraint {
- /*
-  * struct hw_perf_event.flags flags
-  */
--#define PERF_X86_EVENT_PEBS_LDLAT	0x1 /* ld+ldlat data address sampling */
--#define PERF_X86_EVENT_PEBS_ST		0x2 /* st data address sampling */
--#define PERF_X86_EVENT_PEBS_ST_HSW	0x4 /* haswell style st data sampling */
--#define PERF_X86_EVENT_COMMITTED	0x8 /* event passed commit_txn */
-+#define PERF_X86_EVENT_PEBS_LDLAT	0x01 /* ld+ldlat data address sampling */
-+#define PERF_X86_EVENT_PEBS_ST		0x02 /* st data address sampling */
-+#define PERF_X86_EVENT_PEBS_ST_HSW	0x04 /* haswell style st data sampling */
-+#define PERF_X86_EVENT_COMMITTED	0x08 /* event passed commit_txn */
-+#define PERF_X86_EVENT_EXCL		0x10 /* HT exclusivity on counter */
- 
- struct amd_nb {
- 	int nb_id;  /* NorthBridge id */
-@@ -119,6 +120,27 @@ struct intel_shared_regs {
- 	unsigned                core_id;	/* per-core: core id */
- };
- 
-+enum intel_excl_state_type {
-+	INTEL_EXCL_UNUSED    = 0, /* counter is unused */
-+	INTEL_EXCL_SHARED    = 1, /* counter can be used by both threads */
-+	INTEL_EXCL_EXCLUSIVE = 2, /* counter can be used by one thread only */
-+};
-+
-+struct intel_excl_states {
-+	enum intel_excl_state_type init_state[X86_PMC_IDX_MAX];
-+	enum intel_excl_state_type state[X86_PMC_IDX_MAX];
-+};
-+
-+struct intel_excl_cntrs {
-+	spinlock_t	lock;
-+	unsigned long	lock_flags;
-+
-+	struct intel_excl_states states[2];
-+
-+	int		refcnt;		/* per-core: #HT threads */
-+	unsigned	core_id;	/* per-core: core id */
-+};
-+
- #define MAX_LBR_ENTRIES		16
- 
- enum {
-@@ -181,6 +203,11 @@ struct cpu_hw_events {
- 	 * used on Intel NHM/WSM/SNB
- 	 */
- 	struct intel_shared_regs	*shared_regs;
-+	/*
-+	 * manage exclusive counter access between hyperthread
-+	 */
-+	struct intel_excl_cntrs		*excl_cntrs;
-+	int excl_thread_id; /* 0 or 1 */
- 
- 	/*
- 	 * AMD specific bits
-@@ -204,6 +231,10 @@ struct cpu_hw_events {
- #define EVENT_CONSTRAINT(c, n, m)	\
- 	__EVENT_CONSTRAINT(c, n, m, HWEIGHT(n), 0, 0)
- 
-+#define INTEL_EXCLEVT_CONSTRAINT(c, n)	\
-+	__EVENT_CONSTRAINT(c, n, ARCH_PERFMON_EVENTSEL_EVENT, HWEIGHT(n),\
-+			   0, PERF_X86_EVENT_EXCL)
-+
- /*
-  * The overlap flag marks event constraints with overlapping counter
-  * masks. This is the case if the counter mask of such an event is not
-@@ -499,6 +530,7 @@ do {									\
-  */
- #define PMU_FL_NO_HT_SHARING	0x1 /* no hyper-threading resource sharing */
- #define PMU_FL_HAS_RSP_1	0x2 /* has 2 equivalent offcore_rsp regs   */
-+#define PMU_FL_EXCL_CNTRS	0x4 /* has exclusive counter requirements  */
- 
- #define EVENT_VAR(_id)  event_attr_##_id
- #define EVENT_PTR(_id) &event_attr_##_id.attr.attr
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index e913e46..380fce2 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -1970,16 +1970,46 @@ struct intel_shared_regs *allocate_shared_regs(int cpu)
- 	return regs;
- }
- 
-+struct intel_excl_cntrs *allocate_excl_cntrs(int cpu)
-+{
-+	struct intel_excl_cntrs *c;
-+	int i;
-+
-+	c = kzalloc_node(sizeof(struct intel_excl_cntrs),
-+			 GFP_KERNEL, cpu_to_node(cpu));
-+	if (c) {
-+		spin_lock_init(&c->lock);
-+		for (i = 0; i < X86_PMC_IDX_MAX; i++) {
-+			c->states[0].state[i] = INTEL_EXCL_UNUSED;
-+			c->states[0].init_state[i] = INTEL_EXCL_UNUSED;
-+
-+			c->states[1].state[i] = INTEL_EXCL_UNUSED;
-+			c->states[1].init_state[i] = INTEL_EXCL_UNUSED;
-+		}
-+		c->core_id = -1;
-+	}
-+	return c;
-+}
-+
- static int intel_pmu_cpu_prepare(int cpu)
- {
- 	struct cpu_hw_events *cpuc = &per_cpu(cpu_hw_events, cpu);
- 
--	if (!(x86_pmu.extra_regs || x86_pmu.lbr_sel_map))
--		return NOTIFY_OK;
-+	if (x86_pmu.extra_regs || x86_pmu.lbr_sel_map) {
-+		cpuc->shared_regs = allocate_shared_regs(cpu);
-+		if (!cpuc->shared_regs)
-+			return NOTIFY_BAD;
-+	}
- 
--	cpuc->shared_regs = allocate_shared_regs(cpu);
--	if (!cpuc->shared_regs)
--		return NOTIFY_BAD;
-+	if (x86_pmu.flags & PMU_FL_EXCL_CNTRS) {
-+		cpuc->excl_cntrs = allocate_excl_cntrs(cpu);
-+		if (!cpuc->excl_cntrs) {
-+			if (cpuc->shared_regs)
-+				kfree(cpuc->shared_regs);
-+			return NOTIFY_BAD;
-+		}
-+		cpuc->excl_thread_id = 0;
-+	}
- 
- 	return NOTIFY_OK;
- }
-@@ -2020,12 +2050,29 @@ static void intel_pmu_cpu_starting(int cpu)
- 
- 	if (x86_pmu.lbr_sel_map)
- 		cpuc->lbr_sel = &cpuc->shared_regs->regs[EXTRA_REG_LBR];
-+
-+	if (x86_pmu.flags & PMU_FL_EXCL_CNTRS) {
-+		for_each_cpu(i, topology_thread_cpumask(cpu)) {
-+			struct intel_excl_cntrs *c;
-+
-+			c = per_cpu(cpu_hw_events, i).excl_cntrs;
-+			if (c && c->core_id == core_id) {
-+				cpuc->kfree_on_online[1] = cpuc->excl_cntrs;
-+				cpuc->excl_cntrs = c;
-+				cpuc->excl_thread_id = 1;
-+				break;
-+			}
-+		}
-+		cpuc->excl_cntrs->core_id = core_id;
-+		cpuc->excl_cntrs->refcnt++;
-+	}
- }
- 
- static void intel_pmu_cpu_dying(int cpu)
- {
- 	struct cpu_hw_events *cpuc = &per_cpu(cpu_hw_events, cpu);
- 	struct intel_shared_regs *pc;
-+	struct intel_excl_cntrs *c;
- 
- 	pc = cpuc->shared_regs;
- 	if (pc) {
-@@ -2033,6 +2080,12 @@ static void intel_pmu_cpu_dying(int cpu)
- 			kfree(pc);
- 		cpuc->shared_regs = NULL;
- 	}
-+	c = cpuc->excl_cntrs;
-+	if (c) {
-+		if (c->core_id == -1 || --c->refcnt == 0)
-+			kfree(c);
-+		cpuc->excl_cntrs = NULL;
-+	}
- 
- 	fini_debug_store_on_cpu(cpu);
- }
--- 
-1.7.9.5
+At the same time, I only see users like Google pushing the limits of
+the machine to a point where guarantees cover north of 90% of memory.
+I would expect more casual users to work with much smaller guarantees,
+and a good chunk of slack on top - otherwise they already had better
+be set up for the occasional OOM.  Is this an unreasonable assumption
+to make?
 
+I'm not opposed to this feature per se, but I'm really opposed to
+merging it for the partial hard bindings argument and for papering
+over deficiencies in our reclaim code, because I don't want any of
+that in the changelog, in the documentation, or in what we otherwise
+tell users about it.
