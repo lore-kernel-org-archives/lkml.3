@@ -1,69 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751929AbaFDRhK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 13:37:10 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:53648 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751609AbaFDRhF (ORCPT
+	id S1751644AbaFDRle (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 13:41:34 -0400
+Received: from qmta04.emeryville.ca.mail.comcast.net ([76.96.30.40]:44122 "EHLO
+	qmta04.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751374AbaFDRlc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 13:37:05 -0400
-Date: Wed, 4 Jun 2014 19:37:01 +0200
-From: Antoine =?iso-8859-1?Q?T=E9nart?= 
-	<antoine.tenart@free-electrons.com>
-To: Andrew Lunn <andrew@lunn.ch>
-Cc: Antoine =?iso-8859-1?Q?T=E9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        sebastian.hesselbarth@gmail.com, thomas.petazzoni@free-electrons.com,
-        zmxu@marvell.com, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, alexandre.belloni@free-electrons.com,
-        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 2/2] ARM: dts: berlin: enable i2c0 and i2c2
-Message-ID: <20140604173701.GC12859@kwain>
-References: <1401780790-17830-1-git-send-email-antoine.tenart@free-electrons.com>
- <1401780790-17830-3-git-send-email-antoine.tenart@free-electrons.com>
- <20140603080522.GB22742@lunn.ch>
- <20140604164841.GA12859@kwain>
- <20140604170340.GI6892@lunn.ch>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140604170340.GI6892@lunn.ch>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 4 Jun 2014 13:41:32 -0400
+Date: Wed, 4 Jun 2014 12:41:29 -0500 (CDT)
+From: Christoph Lameter <cl@gentwo.org>
+To: Jan Kara <jack@suse.cz>
+cc: Sasha Levin <sasha.levin@oracle.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Al Viro <viro@ZenIV.linux.org.uk>, Dave Jones <davej@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, Pekka Enberg <penberg@kernel.org>,
+        Matt Mackall <mpm@selenic.com>
+Subject: Re: fs: memory corruption in names_cache
+In-Reply-To: <20140604145857.GD14887@quack.suse.cz>
+Message-ID: <alpine.DEB.2.10.1406041238380.12633@gentwo.org>
+References: <538F2E1C.3050608@oracle.com> <20140604145857.GD14887@quack.suse.cz>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 04, 2014 at 07:03:40PM +0200, Andrew Lunn wrote:
-> On Wed, Jun 04, 2014 at 06:48:41PM +0200, Antoine Ténart wrote:
-> > 
-> > On Tue, Jun 03, 2014 at 10:05:22AM +0200, Andrew Lunn wrote:
-> > > On Tue, Jun 03, 2014 at 09:33:10AM +0200, Antoine Ténart wrote:
-> > > > Enable the I2C0 and I2C2 for the Marvell Berlin BG2G DMP. I2C1 and I2C3
-> > > > are also working on this board, but no devices seemed to be there.
-> > > 
-> > > Does this mean that IC0 and I2C2 have devices on them? Could you also
-> > > add nodes for the devices?
-> > 
-> > No devices I can add for now. I you prefer we can drop this patch, keep
-> > the other one and enable i2c nodes for the BG2Q DMP when they will be
-> > needed.
-> 
-> I was just wondering how you tested it, without having any devices?
+On Wed, 4 Jun 2014, Jan Kara wrote:
 
-I tested with the i2ctools. I could see one device on each bus at the
-address it should be. I also tested the pin muxing configurations.
+> On Wed 04-06-14 10:33:00, Sasha Levin wrote:
+> > Hi all,
+> >
+> > While fuzzing with trinity inside a KVM tools guest running the latest -next
+> > kernel I've stumbled on the following spew:
+>   Hum, I'd really suspect more a SLUB bug - the area has poisoning 0x6b
+> (POISON_FREE) instead of expected poisoning 0x5a (POISON_INUSE). Or maybe
+> I'm just mistaken - could some SLUB guy comment?
 
-I don't have lots of information on these I2C buses, at least my test
-results match what I know.
+Well yes that is really weird. The last byte is 0xa5 (end of object) which
+indicates that the padding space has been treated as an object. Could be
+metadata corruption. The slab is empty but there is an object allocated in
+there???
 
-> Is it that the devices on the bus don't have mainline drivers?
-
-Not with I2C support.
-
-Antoine
-
--- 
-Antoine Ténart, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
