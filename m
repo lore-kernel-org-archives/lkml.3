@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752876AbaFDLrl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 07:47:41 -0400
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:10022 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752776AbaFDLri (ORCPT
+	id S1752934AbaFDLrq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 07:47:46 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:6989 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752898AbaFDLrn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 07:47:38 -0400
+	Wed, 4 Jun 2014 07:47:43 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 04 Jun 2014 04:42:29 -0700
+	by hqnvupgp08.nvidia.com on Wed, 04 Jun 2014 04:42:34 -0700
 From: Mikko Perttunen <mperttunen@nvidia.com>
 To: <swarren@wwwdotorg.org>, <thierry.reding@gmail.com>, <tj@kernel.org>,
         <pdeschrijver@nvidia.com>
 CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
         <linux-tegra@vger.kernel.org>, <linux-ide@vger.kernel.org>,
         Mikko Perttunen <mperttunen@nvidia.com>
-Subject: [PATCH 4/9] clk: tegra: Enable hardware control of SATA PLL
-Date: Wed, 4 Jun 2014 14:32:34 +0300
-Message-ID: <1401881559-18469-5-git-send-email-mperttunen@nvidia.com>
+Subject: [PATCH 6/9] ARM: tegra: Export tegra_powergate_power_on
+Date: Wed, 4 Jun 2014 14:32:36 +0300
+Message-ID: <1401881559-18469-7-git-send-email-mperttunen@nvidia.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1401881559-18469-1-git-send-email-mperttunen@nvidia.com>
 References: <1401881559-18469-1-git-send-email-mperttunen@nvidia.com>
@@ -28,40 +28,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This makes the SATA PLL be controlled by hardware instead of software.
-This is required for working SATA support.
+This symbol needs to be exported to power on rails without using
+tegra_powergate_sequence_power_up. tegra_powergate_sequence_power_up
+cannot be used in situations where the driver wants to handle clocking
+by itself.
 
 Signed-off-by: Mikko Perttunen <mperttunen@nvidia.com>
 ---
- drivers/clk/tegra/clk-pll.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
+ arch/arm/mach-tegra/powergate.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/clk/tegra/clk-pll.c b/drivers/clk/tegra/clk-pll.c
-index 637b62c..f070c36 100644
---- a/drivers/clk/tegra/clk-pll.c
-+++ b/drivers/clk/tegra/clk-pll.c
-@@ -110,6 +110,9 @@
- #define XUSBIO_PLL_CFG0_SEQ_ENABLE		BIT(24)
- #define XUSBIO_PLL_CFG0_SEQ_START_STATE		BIT(25)
+diff --git a/arch/arm/mach-tegra/powergate.c b/arch/arm/mach-tegra/powergate.c
+index 50a9af4..254c42e 100644
+--- a/arch/arm/mach-tegra/powergate.c
++++ b/arch/arm/mach-tegra/powergate.c
+@@ -125,6 +125,7 @@ int tegra_powergate_power_on(int id)
  
-+#define SATA_PLL_CFG0		0x490
-+#define SATA_PLL_CFG0_PADPLL_RESET_SWCTL	BIT(0)
-+
- #define PLLE_MISC_PLLE_PTS	BIT(8)
- #define PLLE_MISC_IDDQ_SW_VALUE	BIT(13)
- #define PLLE_MISC_IDDQ_SW_CTRL	BIT(14)
-@@ -1361,6 +1364,11 @@ static int clk_plle_tegra114_enable(struct clk_hw *hw)
- 	val |= XUSBIO_PLL_CFG0_SEQ_ENABLE;
- 	pll_writel(val, XUSBIO_PLL_CFG0, pll);
+ 	return tegra_powergate_set(id, true);
+ }
++EXPORT_SYMBOL(tegra_powergate_power_on);
  
-+	/* Enable hw control of SATA pll */
-+	val = pll_readl(SATA_PLL_CFG0, pll);
-+	val &= ~SATA_PLL_CFG0_PADPLL_RESET_SWCTL;
-+	pll_writel(val, SATA_PLL_CFG0, pll);
-+
- out:
- 	if (pll->lock)
- 		spin_unlock_irqrestore(pll->lock, flags);
+ int tegra_powergate_power_off(int id)
+ {
 -- 
 1.8.1.5
 
