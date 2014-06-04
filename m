@@ -1,481 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751789AbaFDIyb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 04:54:31 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:48958 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751374AbaFDIy2 (ORCPT
+	id S1751879AbaFDIzp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 04:55:45 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:29338 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751710AbaFDIzn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 04:54:28 -0400
-Date: Wed, 4 Jun 2014 10:54:18 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: rafael.j.wysocki@intel.com, jacob.jun.pan@linux.intel.com
-Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org, lenb@kernel.org,
-        mingo@kernel.org, tglx@linutronix.de, hpa@zytor.com,
-        arjan@linux.intel.com, rui.zhang@intel.com, luto@amacapital.net
-Subject: [PATCH] idle, thermal, acpi: Remove home grown idle implementations
-Message-ID: <20140604085418.GA11096@twins.programming.kicks-ass.net>
+	Wed, 4 Jun 2014 04:55:43 -0400
+Date: Wed, 4 Jun 2014 09:55:42 +0100
+From: Morten Rasmussen <morten.rasmussen@arm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Vincent Guittot <vincent.guittot@linaro.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        "efault@gmx.de" <efault@gmx.de>,
+        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>
+Subject: Re: [PATCH v2 08/11] sched: get CPU's activity statistic
+Message-ID: <20140604085542.GH29593@e103034-lin>
+References: <1400860385-14555-1-git-send-email-vincent.guittot@linaro.org>
+ <1400860385-14555-9-git-send-email-vincent.guittot@linaro.org>
+ <20140528121001.GI19967@e103034-lin>
+ <CAKfTPtDxeBfZK1AxCRqEG91pi--Ti1RYFoQPDhvMVnGTCspQ-g@mail.gmail.com>
+ <20140528154703.GJ19967@e103034-lin>
+ <20140603155007.GZ30445@twins.programming.kicks-ass.net>
+ <CAKfTPtDUvH--WxFATTW6YRAvLuohzyNHDUq6DRdfxc7gRKCX6Q@mail.gmail.com>
+ <20140604080809.GK30445@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="7dLEKQsGm0Z6zEmU"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20140604080809.GK30445@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jun 04, 2014 at 09:08:09AM +0100, Peter Zijlstra wrote:
+> On Wed, Jun 04, 2014 at 09:47:26AM +0200, Vincent Guittot wrote:
+> > On 3 June 2014 17:50, Peter Zijlstra <peterz@infradead.org> wrote:
+> > > On Wed, May 28, 2014 at 04:47:03PM +0100, Morten Rasmussen wrote:
+> > >> Since we may do periodic load-balance every 10 ms or so, we will perform
+> > >> a number of load-balances where runnable_avg_sum will mostly be
+> > >> reflecting the state of the world before a change (new task queued or
+> > >> moved a task to a different cpu). If you had have two tasks continuously
+> > >> on one cpu and your other cpu is idle, and you move one of the tasks to
+> > >> the other cpu, runnable_avg_sum will remain unchanged, 47742, on the
+> > >> first cpu while it starts from 0 on the other one. 10 ms later it will
+> > >> have increased a bit, 32 ms later it will be 47742/2, and 345 ms later
+> > >> it reaches 47742. In the mean time the cpu doesn't appear fully utilized
+> > >> and we might decide to put more tasks on it because we don't know if
+> > >> runnable_avg_sum represents a partially utilized cpu (for example a 50%
+> > >> task) or if it will continue to rise and eventually get to 47742.
+> > >
+> > > Ah, no, since we track per task, and update the per-cpu ones when we
+> > > migrate tasks, the per-cpu values should be instantly updated.
+> > >
+> > > If we were to increase per task storage, we might as well also track
+> > > running_avg not only runnable_avg.
+> > 
+> > I agree that the removed running_avg should give more useful
+> > information about the the load of a CPU.
+> > 
+> > The main issue with running_avg is that it's disturbed by other tasks
+> > (as point out previously). As a typical example,  if we have 2 tasks
+> > with a load of 25% on 1 CPU, the unweighted runnable_load_avg will be
+> > in the range of [100% - 50%] depending of the parallelism of the
+> > runtime of the tasks whereas the reality is 50% and the use of
+> > running_avg will return this value
 
---7dLEKQsGm0Z6zEmU
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Both running_avg and runnable_avg are affected by other tasks on the
+same cpus, but in different ways. They are equal if you only have one
+task on a cpu. If you have more, running_avg will give you the true
+requirement of the tasks until the cpu is fully utilized. At which point
+the task running_avg will drop if you add more tasks (the unweighted sum
+of task running_avgs remains constant).
 
+runnable_avg on the other hand, might be affected as soon as you have
+two task running on the same cpu if they are runnable at the same time.
+That isn't necessarily a bad thing for load-balancing purposes, because
+tasks that are runnable at the same time are likely to be run more
+efficiently by placing them on different cpus. You might view as at sort
+of built in concurrency factor, somewhat similar to what Yuyang is
+proposing. runnable_avg increases rapidly when the cpu is over-utilized.
 
-I'm still sitting on this patch. Jacub you were going to make it play
-nice with QoS?
+> I'm not sure I see how 100% is possible, but yes I agree that runnable
+> can indeed be inflated due to this queueing effect.
 
----
-Subject: idle, thermal, acpi: Remove home grown idle implementations
-=46rom: Peter Zijlstra <peterz@infradead.org>
-Date: Wed Nov 20 14:32:37 CET 2013
+You should only be able to get to 75% worst case for runnable_avg for
+that example. The total running_avg is 50% no matter if the tasks
+overlaps or not.
 
-People are starting to grow their own idle implementations in various
-disgusting ways. Collapse the lot and use the generic idle code to
-provide a proper idle cycle implementation.
-
-This does not fully preseve existing behaviour in that the generic
-idle cycle function calls into the normal cpuidle governed idle
-routines and should thus respect things like QoS parameters and the
-like.
-
-If people want to over-ride the idle state they should talk to the
-cpuidle folks about extending the interface and attempt to preserve
-QoS guarantees, instead of jumping straight to the deepest possible C
-state -- Jacub Pan said he was going to do this.
-
-This is reported to work for intel_powerclamp by Jacub Pan, the
-acpi_pad driver is untested.
-
-Cc: rui.zhang@intel.com
-Cc: jacob.jun.pan@linux.intel.com
-Cc: lenb@kernel.org
-Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: hpa@zytor.com
-Cc: arjan@linux.intel.com
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
----
- drivers/acpi/acpi_pad.c            |   41 -----------
- drivers/thermal/intel_powerclamp.c |   38 ----------
- include/linux/cpu.h                |    2=20
- include/linux/sched.h              |    3=20
- kernel/sched/core.c                |    9 ++
- kernel/sched/idle.c                |  129 ++++++++++++++++++++++----------=
------
- kernel/time/tick-sched.c           |    2=20
- 7 files changed, 95 insertions(+), 129 deletions(-)
-
---- a/drivers/acpi/acpi_pad.c
-+++ b/drivers/acpi/acpi_pad.c
-@@ -40,9 +40,7 @@ static DEFINE_MUTEX(round_robin_lock);
- static unsigned long power_saving_mwait_eax;
-=20
- static unsigned char tsc_detected_unstable;
--static unsigned char tsc_marked_unstable;
- static unsigned char lapic_detected_unstable;
--static unsigned char lapic_marked_unstable;
-=20
- static void power_saving_mwait_init(void)
- {
-@@ -152,10 +150,9 @@ static int power_saving_thread(void *dat
- 	unsigned int tsk_index =3D (unsigned long)data;
- 	u64 last_jiffies =3D 0;
-=20
--	sched_setscheduler(current, SCHED_RR, &param);
-+	sched_setscheduler(current, SCHED_FIFO, &param);
-=20
- 	while (!kthread_should_stop()) {
--		int cpu;
- 		u64 expire_time;
-=20
- 		try_to_freeze();
-@@ -170,41 +167,7 @@ static int power_saving_thread(void *dat
-=20
- 		expire_time =3D jiffies + HZ * (100 - idle_pct) / 100;
-=20
--		while (!need_resched()) {
--			if (tsc_detected_unstable && !tsc_marked_unstable) {
--				/* TSC could halt in idle, so notify users */
--				mark_tsc_unstable("TSC halts in idle");
--				tsc_marked_unstable =3D 1;
--			}
--			if (lapic_detected_unstable && !lapic_marked_unstable) {
--				int i;
--				/* LAPIC could halt in idle, so notify users */
--				for_each_online_cpu(i)
--					clockevents_notify(
--						CLOCK_EVT_NOTIFY_BROADCAST_ON,
--						&i);
--				lapic_marked_unstable =3D 1;
--			}
--			local_irq_disable();
--			cpu =3D smp_processor_id();
--			if (lapic_marked_unstable)
--				clockevents_notify(
--					CLOCK_EVT_NOTIFY_BROADCAST_ENTER, &cpu);
--			stop_critical_timings();
--
--			mwait_idle_with_hints(power_saving_mwait_eax, 1);
--
--			start_critical_timings();
--			if (lapic_marked_unstable)
--				clockevents_notify(
--					CLOCK_EVT_NOTIFY_BROADCAST_EXIT, &cpu);
--			local_irq_enable();
--
--			if (jiffies > expire_time) {
--				do_sleep =3D 1;
--				break;
--			}
--		}
-+		play_idle(expire_time);
-=20
- 		/*
- 		 * current sched_rt has threshold for rt task running time.
---- a/drivers/thermal/intel_powerclamp.c
-+++ b/drivers/thermal/intel_powerclamp.c
-@@ -256,11 +256,6 @@ static u64 pkg_state_counter(void)
- 	return count;
- }
-=20
--static void noop_timer(unsigned long foo)
--{
--	/* empty... just the fact that we get the interrupt wakes us up */
--}
--
- static unsigned int get_compensation(int ratio)
- {
- 	unsigned int comp =3D 0;
-@@ -365,7 +360,6 @@ static bool powerclamp_adjust_controls(u
- static int clamp_thread(void *arg)
- {
- 	int cpunr =3D (unsigned long)arg;
--	DEFINE_TIMER(wakeup_timer, noop_timer, 0, 0);
- 	static const struct sched_param param =3D {
- 		.sched_priority =3D MAX_USER_RT_PRIO/2,
- 	};
-@@ -374,11 +368,9 @@ static int clamp_thread(void *arg)
-=20
- 	set_bit(cpunr, cpu_clamping_mask);
- 	set_freezable();
--	init_timer_on_stack(&wakeup_timer);
- 	sched_setscheduler(current, SCHED_FIFO, &param);
-=20
--	while (true =3D=3D clamping && !kthread_should_stop() &&
--		cpu_online(cpunr)) {
-+	while (clamping && !kthread_should_stop() && cpu_online(cpunr)) {
- 		int sleeptime;
- 		unsigned long target_jiffies;
- 		unsigned int guard;
-@@ -426,35 +418,11 @@ static int clamp_thread(void *arg)
- 		if (should_skip)
- 			continue;
-=20
--		target_jiffies =3D jiffies + duration_jiffies;
--		mod_timer(&wakeup_timer, target_jiffies);
- 		if (unlikely(local_softirq_pending()))
- 			continue;
--		/*
--		 * stop tick sched during idle time, interrupts are still
--		 * allowed. thus jiffies are updated properly.
--		 */
--		preempt_disable();
--		tick_nohz_idle_enter();
--		/* mwait until target jiffies is reached */
--		while (time_before(jiffies, target_jiffies)) {
--			unsigned long ecx =3D 1;
--			unsigned long eax =3D target_mwait;
--
--			/*
--			 * REVISIT: may call enter_idle() to notify drivers who
--			 * can save power during cpu idle. same for exit_idle()
--			 */
--			local_touch_nmi();
--			stop_critical_timings();
--			mwait_idle_with_hints(eax, ecx);
--			start_critical_timings();
--			atomic_inc(&idle_wakeup_counter);
--		}
--		tick_nohz_idle_exit();
--		preempt_enable();
-+
-+		play_idle(duration_jiffies);
- 	}
--	del_timer_sync(&wakeup_timer);
- 	clear_bit(cpunr, cpu_clamping_mask);
-=20
- 	return 0;
---- a/include/linux/cpu.h
-+++ b/include/linux/cpu.h
-@@ -255,6 +255,8 @@ enum cpuhp_state {
- 	CPUHP_ONLINE,
- };
-=20
-+void play_idle(unsigned long jiffies);
-+
- void cpu_startup_entry(enum cpuhp_state state);
- void cpu_idle(void);
-=20
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1892,6 +1892,7 @@ extern void thread_group_cputime_adjuste
- /*
-  * Per process flags
-  */
-+#define PF_IDLE		0x00000002	/* I am an IDLE thread */
- #define PF_EXITING	0x00000004	/* getting shut down */
- #define PF_EXITPIDONE	0x00000008	/* pi exit done on shut down */
- #define PF_VCPU		0x00000010	/* I'm a virtual CPU */
-@@ -2204,7 +2205,7 @@ extern struct task_struct *idle_task(int
-  */
- static inline bool is_idle_task(const struct task_struct *p)
- {
--	return p->pid =3D=3D 0;
-+	return !!(p->flags & PF_IDLE);
- }
- extern struct task_struct *curr_task(int cpu);
- extern void set_curr_task(int cpu, struct task_struct *p);
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -676,10 +676,12 @@ static void wake_up_idle_cpu(int cpu)
- 	if (cpu =3D=3D smp_processor_id())
- 		return;
-=20
--	if (set_nr_and_not_polling(rq->idle))
-+	rcu_read_lock();
-+	if (set_nr_and_not_polling(rq->curr))
- 		smp_send_reschedule(cpu);
- 	else
- 		trace_sched_wake_polling_cpu(cpu);
-+	rcu_read_unlock();
- }
-=20
- static bool wake_up_full_nohz_cpu(int cpu)
-@@ -1605,10 +1607,12 @@ static void ttwu_queue_remote(struct tas
- 	struct rq *rq =3D cpu_rq(cpu);
-=20
- 	if (llist_add(&p->wake_entry, &cpu_rq(cpu)->wake_list)) {
--		if (!set_nr_if_polling(rq->idle))
-+		rcu_read_lock();
-+		if (!set_nr_if_polling(rq->curr))
- 			smp_send_reschedule(cpu);
- 		else
- 			trace_sched_wake_polling_cpu(cpu);
-+		rcu_read_unlock();
- 	}
- }
-=20
-@@ -4537,6 +4541,7 @@ void init_idle(struct task_struct *idle,
- 	__sched_fork(0, idle);
- 	idle->state =3D TASK_RUNNING;
- 	idle->se.exec_start =3D sched_clock();
-+	idle->flags |=3D PF_IDLE;
-=20
- 	do_set_cpus_allowed(idle, cpumask_of(cpu));
- 	/*
---- a/kernel/sched/idle.c
-+++ b/kernel/sched/idle.c
-@@ -184,66 +184,94 @@ static void cpuidle_idle_call(void)
-  *
-  * Called with polling cleared.
-  */
--static void cpu_idle_loop(void)
-+static void do_idle(void)
- {
--	while (1) {
--		/*
--		 * If the arch has a polling bit, we maintain an invariant:
--		 *
--		 * The polling bit is clear if we're not scheduled (i.e. if
--		 * rq->curr !=3D rq->idle).  This means that, if rq->idle has
--		 * the polling bit set, then setting need_resched is
--		 * guaranteed to cause the cpu to reschedule.
--		 */
-+	/*
-+	 * If the arch has a polling bit, we maintain an invariant:
-+	 *
-+	 * The polling bit is clear if we're not scheduled (i.e. if rq->curr !=3D
-+	 * rq->idle).  This means that, if rq->idle has the polling bit set,
-+	 * then setting need_resched is guaranteed to cause the cpu to
-+	 * reschedule.
-+	 */
-=20
--		__current_set_polling();
--		tick_nohz_idle_enter();
-+	__current_set_polling();
-+	tick_nohz_idle_enter();
-=20
--		while (!need_resched()) {
--			check_pgt_cache();
--			rmb();
--
--			if (cpu_is_offline(smp_processor_id()))
--				arch_cpu_idle_dead();
--
--			local_irq_disable();
--			arch_cpu_idle_enter();
--
--			/*
--			 * In poll mode we reenable interrupts and spin.
--			 *
--			 * Also if we detected in the wakeup from idle
--			 * path that the tick broadcast device expired
--			 * for us, we don't want to go deep idle as we
--			 * know that the IPI is going to arrive right
--			 * away
--			 */
--			if (cpu_idle_force_poll || tick_check_broadcast_expired())
--				cpu_idle_poll();
--			else
--				cpuidle_idle_call();
-+	while (!need_resched()) {
-+		check_pgt_cache();
-+		rmb();
-=20
--			arch_cpu_idle_exit();
--		}
-+		if (cpu_is_offline(smp_processor_id()))
-+			arch_cpu_idle_dead();
-+
-+		local_irq_disable();
-+		arch_cpu_idle_enter();
-=20
- 		/*
--		 * Since we fell out of the loop above, we know
--		 * TIF_NEED_RESCHED must be set, propagate it into
--		 * PREEMPT_NEED_RESCHED.
-+		 * In poll mode we reenable interrupts and spin.
- 		 *
--		 * This is required because for polling idle loops we will
--		 * not have had an IPI to fold the state for us.
-+		 * Also if we detected in the wakeup from idle path that the
-+		 * tick broadcast device expired for us, we don't want to go
-+		 * deep idle as we know that the IPI is going to arrive right
-+		 * away
- 		 */
--		preempt_set_need_resched();
--		tick_nohz_idle_exit();
--		__current_clr_polling();
--		smp_mb__after_clear_bit();
--		sched_ttwu_pending();
--		schedule_preempt_disabled();
-+		if (cpu_idle_force_poll || tick_check_broadcast_expired())
-+			cpu_idle_poll();
-+		else
-+			cpuidle_idle_call();
-+
-+		arch_cpu_idle_exit();
- 	}
-+
-+	/*
-+	 * Since we fell out of the loop above, we know TIF_NEED_RESCHED must
-+	 * be set, propagate it into PREEMPT_NEED_RESCHED.
-+	 *
-+	 * This is required because for polling idle loops we will not have had
-+	 * an IPI to fold the state for us.
-+	 */
-+	preempt_set_need_resched();
-+	tick_nohz_idle_exit();
-+	__current_clr_polling();
-+	smp_mb__after_clear_bit();
-+	sched_ttwu_pending();
-+	schedule_preempt_disabled();
-+}
-+
-+static void play_idle_timer(unsigned long foo)
-+{
-+	set_tsk_need_resched(current);
-+}
-+
-+void play_idle(unsigned long duration)
-+{
-+	DEFINE_TIMER(wakeup_timer, play_idle_timer, 0, 0);
-+
-+	/*
-+	 * Only FIFO tasks can disable the tick since they don't need the forced
-+	 * preemption.
-+	 */
-+	WARN_ON_ONCE(current->policy !=3D SCHED_FIFO);
-+	WARN_ON_ONCE(current->nr_cpus_allowed !=3D 1);
-+	WARN_ON_ONCE(!(current->flags & PF_NO_SETAFFINITY));
-+	WARN_ON_ONCE(!(current->flags & PF_KTHREAD));
-+	rcu_sleep_check();
-+
-+	init_timer_on_stack(&wakeup_timer);
-+	mod_timer_pinned(&wakeup_timer, jiffies + duration);
-+
-+	preempt_disable();
-+	current->flags |=3D PF_IDLE;
-+	do_idle();
-+	current->flags &=3D ~PF_IDLE;
-+	del_timer_sync(&wakeup_timer);
-+	preempt_fold_need_resched();
-+	preempt_enable();
- }
-+EXPORT_SYMBOL_GPL(play_idle);
-=20
--void cpu_startup_entry(enum cpuhp_state state)
-+__noreturn void cpu_startup_entry(enum cpuhp_state state)
- {
- 	/*
- 	 * This #ifdef needs to die, but it's too late in the cycle to
-@@ -261,5 +289,6 @@ void cpu_startup_entry(enum cpuhp_state
- 	boot_init_stack_canary();
- #endif
- 	arch_cpu_idle_prepare();
--	cpu_idle_loop();
-+	while (1)
-+		do_idle();
- }
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -807,7 +807,6 @@ void tick_nohz_idle_enter(void)
-=20
- 	local_irq_enable();
- }
--EXPORT_SYMBOL_GPL(tick_nohz_idle_enter);
-=20
- /**
-  * tick_nohz_irq_exit - update next tick event from interrupt exit
-@@ -934,7 +933,6 @@ void tick_nohz_idle_exit(void)
-=20
- 	local_irq_enable();
- }
--EXPORT_SYMBOL_GPL(tick_nohz_idle_exit);
-=20
- static int tick_nohz_reprogram(struct tick_sched *ts, ktime_t now)
- {
-
---7dLEKQsGm0Z6zEmU
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTjt66AAoJEHZH4aRLwOS6yf4QAKrsGtMuzPaE5bSMrOfQmitS
-FizFsNFLmWspGHHBPqAskMTmMUzV8N6+usnslG8eSZ06KQVHfKzqEGBwWb5QX3wV
-6B3uwTVMYyJR0WwWEz9aBfy1q/+mwI59/zsmws4yNVPmdPeAC/bO6FEupYxStCDs
-/zpKTquGP/8SdlhThSRofxzS7IBADXwOhFGdVDHZALOE88e80j1zQhHt0lzLZWYo
-b5qtkn3f+SknJAfySVSj6zoVkoW7MRIuXX3rdnJx0ibTcubnto3UUJnzLV5Qc1hT
-0q6UGuwOk/WaZ4zgr5SAPgMO7qcJaRKVwK0p61kIel15pGb1pFDZimg6Nb/N/gaL
-TiFYTjLjZo14YyGpeUgjQ2Y3i2RuaoK82zuwu3ffvla9WUH65T/F2c7JMvKWcQYP
-XywTWxlMgh1mHB/jwQ9suQna9S1CbCZKk6Djg6C5EUVuZOf9O4cVGSuuWuiAE40i
-xcUMb26/QH/wzifbfEqhZu4R1+hqdxwbOeWIdmph+WSgWfDbVInNQDq4eY4q5EkI
-Y2NL879TBH0Z2ArBD1OxR7LJ2JDKstZf1HGxdlMuMiqrHoB6PXmlGzUvaHIhww9w
-bZfCUjIhcG6WKnKvRJPPLFfd1D3J3dgwMihsEPUzdD358t1n9RJxPBbVGXrOibyN
-krE7Tq+6M6Rt3SmIhHry
-=//1x
------END PGP SIGNATURE-----
-
---7dLEKQsGm0Z6zEmU--
+f you had five tasks on one cpu that each have a 25% requirement you can
+get individual task runnable_avgs of up to 100% (cpu unweighted
+runnable_load_avg can get up 500%, I think), but the task running_avgs
+would be 20% each (total of 100%). 
