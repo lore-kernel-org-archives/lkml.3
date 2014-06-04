@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756700AbaFEA0b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 20:26:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40092 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753065AbaFDXWT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753067AbaFDXWT (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 4 Jun 2014 19:22:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40023 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752962AbaFDXWM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 19:22:12 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Tedd Ho-Jeong An <tedd.an@intel.com>,
-        Gustavo Padovan <gustavo.padovan@collabora.co.uk>
-Subject: [PATCH 3.14 098/228] Revert "Bluetooth: Enable autosuspend for Intel Bluetooth device"
-Date: Wed,  4 Jun 2014 16:22:07 -0700
-Message-Id: <20140604232351.194835527@linuxfoundation.org>
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Jason Cooper <jason@lakedaemon.net>
+Subject: [PATCH 3.14 109/228] ARM: mvebu: fix NOR bus-width in Armada XP DB Device Tree
+Date: Wed,  4 Jun 2014 16:22:18 -0700
+Message-Id: <20140604232351.552633603@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -30,50 +31,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marcel Holtmann <marcel@holtmann.org>
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 
-commit 3c49aa852e00978ba2f1a4d1e4598a0c669a5347 upstream.
+commit f3aec8f3f05025e7b450102dae0759375346706e upstream.
 
-This reverts commit d2bee8fb6e18f6116aada39851918473761f7ab1.
+The mvebu-devbus driver had a serious bug, which lead to a 8 bits bus
+width declared in the Device Tree being considered as a 16 bits bus
+width when configuring the hardware.
 
-Enabling autosuspend for Intel Bluetooth devices has been shown to not
-work reliable. It does work for some people with certain combinations
-of USB host controllers, but for others it puts the device to sleep and
-it will not wake up for any event.
+This bug in mvebu-devbus driver was compensated by a symetric mistake
+in the Armada XP DB Device Tree: a 8 bits bus width was declared, even
+though the hardware actually has a 16 bits bus width connection with
+the NOR flash.
 
-These events can be important ones like HCI Inquiry Complete or HCI
-Connection Request. The events will arrive as soon as you poke the
-device with a new command, but that is not something we can do in
-these cases.
+Now that we have fixed the mvebu-devbus driver to behave according to
+its Device Tree binding, this commit fixes the problematic Device Tree
+files as well.
 
-Initially there were patches to the xHCI USB controller that fixed
-this for some people, but not for all. This could be well a problem
-somewhere in the USB subsystem or in the USB host controllers or
-just plain a hardware issue somewhere. At this moment we just do
-not know and the only safe action is to revert this patch.
+This bug was introduced in commit
+b484ff42df475c5087d614c4d477273e1906bcb9 ('ARM: mvebu: Add support for
+NOR flash device on Armada XP-DB board') which was merged in v3.11.
 
-Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
-Cc: Tedd Ho-Jeong An <tedd.an@intel.com>
-Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Link: https://lkml.kernel.org/r/1397489361-5833-4-git-send-email-thomas.petazzoni@free-electrons.com
+Fixes: b484ff42df47 ('ARM: mvebu: Add support for NOR flash device on Armada XP-DB board')
+Acked-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+Acked-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/bluetooth/btusb.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ arch/arm/boot/dts/armada-xp-db.dts |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/bluetooth/btusb.c
-+++ b/drivers/bluetooth/btusb.c
-@@ -1479,10 +1479,8 @@ static int btusb_probe(struct usb_interf
- 	if (id->driver_info & BTUSB_BCM92035)
- 		hdev->setup = btusb_setup_bcm92035;
+--- a/arch/arm/boot/dts/armada-xp-db.dts
++++ b/arch/arm/boot/dts/armada-xp-db.dts
+@@ -40,7 +40,7 @@
+ 			/* Device Bus parameters are required */
  
--	if (id->driver_info & BTUSB_INTEL) {
--		usb_enable_autosuspend(data->udev);
-+	if (id->driver_info & BTUSB_INTEL)
- 		hdev->setup = btusb_setup_intel;
--	}
- 
- 	/* Interface numbers are hardcoded in the specification */
- 	data->isoc = usb_ifnum_to_if(data->udev, 1);
+ 			/* Read parameters */
+-			devbus,bus-width    = <8>;
++			devbus,bus-width    = <16>;
+ 			devbus,turn-off-ps  = <60000>;
+ 			devbus,badr-skew-ps = <0>;
+ 			devbus,acc-first-ps = <124000>;
 
 
