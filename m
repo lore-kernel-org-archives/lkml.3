@@ -1,22 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757236AbaFEAvl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 20:51:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39646 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752068AbaFDXUp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752073AbaFDXUp (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 4 Jun 2014 19:20:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39608 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751789AbaFDXUj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 19:20:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Leif Lindholm <leif.lindholm@linaro.org>, linux-mips@linux-mips.org,
-        devicetree@vger.kernel.org, Mark Rutland <mark.rutland@arm.com>,
-        John Crispin <blogic@openwrt.org>,
-        Grant Likely <grant.likely@linaro.org>
-Subject: [PATCH 3.14 004/228] mips: dts: Fix missing device_type="memory" property in memory nodes
-Date: Wed,  4 Jun 2014 16:20:33 -0700
-Message-Id: <20140604232348.220747739@linuxfoundation.org>
+        Thomas Gleixner <tglx@linutronix.de>, Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Darren Hart <darren@dvhart.com>,
+        Davidlohr Bueso <davidlohr@hp.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Clark Williams <williams@redhat.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        Carlos ODonell <carlos@redhat.com>, Jakub Jelinek <jakub@redhat.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Subject: [PATCH 3.14 001/228] futex: Add another early deadlock detection check
+Date: Wed,  4 Jun 2014 16:20:30 -0700
+Message-Id: <20140604232348.113750838@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -31,80 +39,163 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Leif Lindholm <leif.lindholm@linaro.org>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit dfc44f8030653b345fc6fb337558c3a07536823f upstream.
+commit 866293ee54227584ffcb4a42f69c1f365974ba7f upstream.
 
-A few platforms lack a 'device_type = "memory"' for their memory
-nodes, relying on an old ppc quirk in order to discover its memory.
-Add the missing data so that all parsing code can find memory nodes
-correctly.
+Dave Jones trinity syscall fuzzer exposed an issue in the deadlock
+detection code of rtmutex:
+  http://lkml.kernel.org/r/20140429151655.GA14277@redhat.com
 
-Signed-off-by: Leif Lindholm <leif.lindholm@linaro.org>
-Cc: linux-mips@linux-mips.org
-Cc: devicetree@vger.kernel.org
-Cc: Mark Rutland <mark.rutland@arm.com>
-Acked-by: John Crispin <blogic@openwrt.org>
-Signed-off-by: Grant Likely <grant.likely@linaro.org>
+That underlying issue has been fixed with a patch to the rtmutex code,
+but the futex code must not call into rtmutex in that case because
+    - it can detect that issue early
+    - it avoids a different and more complex fixup for backing out
+
+If the user space variable got manipulated to 0x80000000 which means
+no lock holder, but the waiters bit set and an active pi_state in the
+kernel is found we can figure out the recursive locking issue by
+looking at the pi_state owner. If that is the current task, then we
+can safely return -EDEADLK.
+
+The check should have been added in commit 59fa62451 (futex: Handle
+futex_pi OWNER_DIED take over correctly) already, but I did not see
+the above issue caused by user space manipulation back then.
+
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Dave Jones <davej@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Darren Hart <darren@dvhart.com>
+Cc: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Clark Williams <williams@redhat.com>
+Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: Roland McGrath <roland@hack.frob.com>
+Cc: Carlos ODonell <carlos@redhat.com>
+Cc: Jakub Jelinek <jakub@redhat.com>
+Cc: Michael Kerrisk <mtk.manpages@gmail.com>
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Link: http://lkml.kernel.org/r/20140512201701.097349971@linutronix.de
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/mips/lantiq/dts/easy50712.dts    |    1 +
- arch/mips/ralink/dts/mt7620a_eval.dts |    1 +
- arch/mips/ralink/dts/rt2880_eval.dts  |    1 +
- arch/mips/ralink/dts/rt3052_eval.dts  |    1 +
- arch/mips/ralink/dts/rt3883_eval.dts  |    1 +
- 5 files changed, 5 insertions(+)
+ kernel/futex.c |   47 ++++++++++++++++++++++++++++++++++-------------
+ 1 file changed, 34 insertions(+), 13 deletions(-)
 
---- a/arch/mips/lantiq/dts/easy50712.dts
-+++ b/arch/mips/lantiq/dts/easy50712.dts
-@@ -8,6 +8,7 @@
- 	};
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -731,7 +731,8 @@ void exit_pi_state_list(struct task_stru
  
- 	memory@0 {
-+		device_type = "memory";
- 		reg = <0x0 0x2000000>;
- 	};
+ static int
+ lookup_pi_state(u32 uval, struct futex_hash_bucket *hb,
+-		union futex_key *key, struct futex_pi_state **ps)
++		union futex_key *key, struct futex_pi_state **ps,
++		struct task_struct *task)
+ {
+ 	struct futex_pi_state *pi_state = NULL;
+ 	struct futex_q *this, *next;
+@@ -772,6 +773,16 @@ lookup_pi_state(u32 uval, struct futex_h
+ 					return -EINVAL;
+ 			}
  
---- a/arch/mips/ralink/dts/mt7620a_eval.dts
-+++ b/arch/mips/ralink/dts/mt7620a_eval.dts
-@@ -7,6 +7,7 @@
- 	model = "Ralink MT7620A evaluation board";
++			/*
++			 * Protect against a corrupted uval. If uval
++			 * is 0x80000000 then pid is 0 and the waiter
++			 * bit is set. So the deadlock check in the
++			 * calling code has failed and we did not fall
++			 * into the check above due to !pid.
++			 */
++			if (task && pi_state->owner == task)
++				return -EDEADLK;
++
+ 			atomic_inc(&pi_state->refcount);
+ 			*ps = pi_state;
  
- 	memory@0 {
-+		device_type = "memory";
- 		reg = <0x0 0x2000000>;
- 	};
+@@ -921,7 +932,7 @@ retry:
+ 	 * We dont have the lock. Look up the PI state (or create it if
+ 	 * we are the first waiter):
+ 	 */
+-	ret = lookup_pi_state(uval, hb, key, ps);
++	ret = lookup_pi_state(uval, hb, key, ps, task);
  
---- a/arch/mips/ralink/dts/rt2880_eval.dts
-+++ b/arch/mips/ralink/dts/rt2880_eval.dts
-@@ -7,6 +7,7 @@
- 	model = "Ralink RT2880 evaluation board";
+ 	if (unlikely(ret)) {
+ 		switch (ret) {
+@@ -1333,7 +1344,7 @@ void requeue_pi_wake_futex(struct futex_
+  *
+  * Return:
+  *  0 - failed to acquire the lock atomically;
+- *  1 - acquired the lock;
++ * >0 - acquired the lock, return value is vpid of the top_waiter
+  * <0 - error
+  */
+ static int futex_proxy_trylock_atomic(u32 __user *pifutex,
+@@ -1344,7 +1355,7 @@ static int futex_proxy_trylock_atomic(u3
+ {
+ 	struct futex_q *top_waiter = NULL;
+ 	u32 curval;
+-	int ret;
++	int ret, vpid;
  
- 	memory@0 {
-+		device_type = "memory";
- 		reg = <0x8000000 0x2000000>;
- 	};
+ 	if (get_futex_value_locked(&curval, pifutex))
+ 		return -EFAULT;
+@@ -1372,11 +1383,13 @@ static int futex_proxy_trylock_atomic(u3
+ 	 * the contended case or if set_waiters is 1.  The pi_state is returned
+ 	 * in ps in contended cases.
+ 	 */
++	vpid = task_pid_vnr(top_waiter->task);
+ 	ret = futex_lock_pi_atomic(pifutex, hb2, key2, ps, top_waiter->task,
+ 				   set_waiters);
+-	if (ret == 1)
++	if (ret == 1) {
+ 		requeue_pi_wake_futex(top_waiter, key2, hb2);
+-
++		return vpid;
++	}
+ 	return ret;
+ }
  
---- a/arch/mips/ralink/dts/rt3052_eval.dts
-+++ b/arch/mips/ralink/dts/rt3052_eval.dts
-@@ -7,6 +7,7 @@
- 	model = "Ralink RT3052 evaluation board";
+@@ -1407,7 +1420,6 @@ static int futex_requeue(u32 __user *uad
+ 	struct futex_pi_state *pi_state = NULL;
+ 	struct futex_hash_bucket *hb1, *hb2;
+ 	struct futex_q *this, *next;
+-	u32 curval2;
  
- 	memory@0 {
-+		device_type = "memory";
- 		reg = <0x0 0x2000000>;
- 	};
+ 	if (requeue_pi) {
+ 		/*
+@@ -1495,16 +1507,25 @@ retry_private:
+ 		 * At this point the top_waiter has either taken uaddr2 or is
+ 		 * waiting on it.  If the former, then the pi_state will not
+ 		 * exist yet, look it up one more time to ensure we have a
+-		 * reference to it.
++		 * reference to it. If the lock was taken, ret contains the
++		 * vpid of the top waiter task.
+ 		 */
+-		if (ret == 1) {
++		if (ret > 0) {
+ 			WARN_ON(pi_state);
+ 			drop_count++;
+ 			task_count++;
+-			ret = get_futex_value_locked(&curval2, uaddr2);
+-			if (!ret)
+-				ret = lookup_pi_state(curval2, hb2, &key2,
+-						      &pi_state);
++			/*
++			 * If we acquired the lock, then the user
++			 * space value of uaddr2 should be vpid. It
++			 * cannot be changed by the top waiter as it
++			 * is blocked on hb2 lock if it tries to do
++			 * so. If something fiddled with it behind our
++			 * back the pi state lookup might unearth
++			 * it. So we rather use the known value than
++			 * rereading and handing potential crap to
++			 * lookup_pi_state.
++			 */
++			ret = lookup_pi_state(ret, hb2, &key2, &pi_state, NULL);
+ 		}
  
---- a/arch/mips/ralink/dts/rt3883_eval.dts
-+++ b/arch/mips/ralink/dts/rt3883_eval.dts
-@@ -7,6 +7,7 @@
- 	model = "Ralink RT3883 evaluation board";
- 
- 	memory@0 {
-+		device_type = "memory";
- 		reg = <0x0 0x2000000>;
- 	};
- 
+ 		switch (ret) {
 
 
