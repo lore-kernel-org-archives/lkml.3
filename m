@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754265AbaFDXY1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:24:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41088 "EHLO
+	id S1754216AbaFDXYW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 19:24:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41035 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754239AbaFDXYZ (ORCPT
+	with ESMTP id S1754190AbaFDXYU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:24:25 -0400
+	Wed, 4 Jun 2014 19:24:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Antti Palosaari <crope@iki.fi>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: [PATCH 3.10 101/103] media: fc2580: fix tuning failure on 32-bit arch
-Date: Wed,  4 Jun 2014 16:26:04 -0700
-Message-Id: <20140604232550.128184317@linuxfoundation.org>
+        Sagi Grimberg <sagig@mellanox.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.10 086/103] Target/iser: Fix wrong connection requests list addition
+Date: Wed,  4 Jun 2014 16:25:49 -0700
+Message-Id: <20140604232549.620068321@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232546.704156131@linuxfoundation.org>
 References: <20140604232546.704156131@linuxfoundation.org>
@@ -29,57 +29,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Antti Palosaari <crope@iki.fi>
+From: Sagi Grimberg <sagig@mellanox.com>
 
-commit 8845cc6415ec28ef8d57b3fb81c75ef9bce69c5f upstream.
+commit 9fe63c88b1d59f1ce054d6948ccd3096496ecedb upstream.
 
-There was some frequency calculation overflows which caused tuning
-failure on 32-bit architecture. Use 64-bit numbers where needed in
-order to avoid calculation overflows.
+Should be adding list_add_tail($new, $head) and not
+the other way around.
 
-Thanks for the Finnish person, who asked remain anonymous, reporting,
-testing and suggesting the fix.
-
-Signed-off-by: Antti Palosaari <crope@iki.fi>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Signed-off-by: Sagi Grimberg <sagig@mellanox.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/tuners/fc2580.c      |    6 +++---
- drivers/media/tuners/fc2580_priv.h |    1 +
- 2 files changed, 4 insertions(+), 3 deletions(-)
+ drivers/infiniband/ulp/isert/ib_isert.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/media/tuners/fc2580.c
-+++ b/drivers/media/tuners/fc2580.c
-@@ -195,7 +195,7 @@ static int fc2580_set_params(struct dvb_
+--- a/drivers/infiniband/ulp/isert/ib_isert.c
++++ b/drivers/infiniband/ulp/isert/ib_isert.c
+@@ -459,7 +459,7 @@ isert_connect_request(struct rdma_cm_id
+ 		goto out_conn_dev;
  
- 	f_ref = 2UL * priv->cfg->clock / r_val;
- 	n_val = div_u64_rem(f_vco, f_ref, &k_val);
--	k_val_reg = 1UL * k_val * (1 << 20) / f_ref;
-+	k_val_reg = div_u64(1ULL * k_val * (1 << 20), f_ref);
+ 	mutex_lock(&isert_np->np_accept_mutex);
+-	list_add_tail(&isert_np->np_accept_list, &isert_conn->conn_accept_node);
++	list_add_tail(&isert_conn->conn_accept_node, &isert_np->np_accept_list);
+ 	mutex_unlock(&isert_np->np_accept_mutex);
  
- 	ret = fc2580_wr_reg(priv, 0x18, r18_val | ((k_val_reg >> 16) & 0xff));
- 	if (ret < 0)
-@@ -348,8 +348,8 @@ static int fc2580_set_params(struct dvb_
- 	if (ret < 0)
- 		goto err;
- 
--	ret = fc2580_wr_reg(priv, 0x37, 1UL * priv->cfg->clock * \
--			fc2580_if_filter_lut[i].mul / 1000000000);
-+	ret = fc2580_wr_reg(priv, 0x37, div_u64(1ULL * priv->cfg->clock *
-+			fc2580_if_filter_lut[i].mul, 1000000000));
- 	if (ret < 0)
- 		goto err;
- 
---- a/drivers/media/tuners/fc2580_priv.h
-+++ b/drivers/media/tuners/fc2580_priv.h
-@@ -22,6 +22,7 @@
- #define FC2580_PRIV_H
- 
- #include "fc2580.h"
-+#include <linux/math64.h>
- 
- struct fc2580_reg_val {
- 	u8 reg;
+ 	pr_debug("isert_connect_request() waking up np_accept_wq: %p\n", np);
 
 
