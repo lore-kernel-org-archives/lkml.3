@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755409AbaFDX4e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:56:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40490 "EHLO
+	id S1755428AbaFDX4u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 19:56:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40485 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753649AbaFDXXN (ORCPT
+	with ESMTP id S1753647AbaFDXXN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 4 Jun 2014 19:23:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Guenter Roeck <linux@roeck-us.net>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 3.14 218/228] powerpc: Fix 64 bit builds with binutils 2.24
-Date: Wed,  4 Jun 2014 16:24:07 -0700
-Message-Id: <20140604232355.042921387@linuxfoundation.org>
+        Olof Johansson <olof@lixom.net>, Doug Anderson <dianders@chromium.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, Wolfram Sang <wsa@the-dreams.de>
+Subject: [PATCH 3.14 209/228] i2c: s3c2410: resume race fix
+Date: Wed,  4 Jun 2014 16:23:58 -0700
+Message-Id: <20140604232354.762939372@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -29,80 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guenter Roeck <linux@roeck-us.net>
+From: Olof Johansson <olof@lixom.net>
 
-commit 7998eb3dc700aaf499f93f50b3d77da834ef9e1d upstream.
+commit ce78cc071f5f541480e381cc0241d37590041a9d upstream.
 
-With binutils 2.24, various 64 bit builds fail with relocation errors
-such as
+Don't unmark the device as suspended until after it's been re-setup.
 
-arch/powerpc/kernel/built-in.o: In function `exc_debug_crit_book3e':
-	(.text+0x165ee): relocation truncated to fit: R_PPC64_ADDR16_HI
-	against symbol `interrupt_base_book3e' defined in .text section
-	in arch/powerpc/kernel/built-in.o
-arch/powerpc/kernel/built-in.o: In function `exc_debug_crit_book3e':
-	(.text+0x16602): relocation truncated to fit: R_PPC64_ADDR16_HI
-	against symbol `interrupt_end_book3e' defined in .text section
-	in arch/powerpc/kernel/built-in.o
+The main race would be w.r.t. an i2c driver that gets resumed at the same
+time (asyncronously), that is allowed to do a transfer since suspended
+is set to 0 before reinit, but really should have seen the -EIO return
+instead.
 
-The assembler maintainer says:
-
- I changed the ABI, something that had to be done but unfortunately
- happens to break the booke kernel code.  When building up a 64-bit
- value with lis, ori, shl, oris, ori or similar sequences, you now
- should use @high and @higha in place of @h and @ha.  @h and @ha
- (and their associated relocs R_PPC64_ADDR16_HI and R_PPC64_ADDR16_HA)
- now report overflow if the value is out of 32-bit signed range.
- ie. @h and @ha assume you're building a 32-bit value. This is needed
- to report out-of-range -mcmodel=medium toc pointer offsets in @toc@h
- and @toc@ha expressions, and for consistency I did the same for all
- other @h and @ha relocs.
-
-Replacing @h with @high in one strategic location fixes the relocation
-errors. This has to be done conditionally since the assembler either
-supports @h or @high but not both.
-
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Olof Johansson <olof@lixom.net>
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+Acked-by: Kukjin Kim <kgene.kim@samsung.com>
+Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/Makefile              |    4 +++-
- arch/powerpc/include/asm/ppc_asm.h |    7 ++++++-
- 2 files changed, 9 insertions(+), 2 deletions(-)
+ drivers/i2c/busses/i2c-s3c2410.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/powerpc/Makefile
-+++ b/arch/powerpc/Makefile
-@@ -149,7 +149,9 @@ endif
+--- a/drivers/i2c/busses/i2c-s3c2410.c
++++ b/drivers/i2c/busses/i2c-s3c2410.c
+@@ -1247,10 +1247,10 @@ static int s3c24xx_i2c_resume(struct dev
+ 	struct platform_device *pdev = to_platform_device(dev);
+ 	struct s3c24xx_i2c *i2c = platform_get_drvdata(pdev);
  
- CFLAGS-$(CONFIG_TUNE_CELL) += $(call cc-option,-mtune=cell)
+-	i2c->suspended = 0;
+ 	clk_prepare_enable(i2c->clk);
+ 	s3c24xx_i2c_init(i2c);
+ 	clk_disable_unprepare(i2c->clk);
++	i2c->suspended = 0;
  
--KBUILD_CPPFLAGS	+= -Iarch/$(ARCH)
-+asinstr := $(call as-instr,lis 9$(comma)foo@high,-DHAVE_AS_ATHIGH=1)
-+
-+KBUILD_CPPFLAGS	+= -Iarch/$(ARCH) $(asinstr)
- KBUILD_AFLAGS	+= -Iarch/$(ARCH)
- KBUILD_CFLAGS	+= -msoft-float -pipe -Iarch/$(ARCH) $(CFLAGS-y)
- CPP		= $(CC) -E $(KBUILD_CFLAGS)
---- a/arch/powerpc/include/asm/ppc_asm.h
-+++ b/arch/powerpc/include/asm/ppc_asm.h
-@@ -318,11 +318,16 @@ n:
- 	addi	reg,reg,(name - 0b)@l;
- 
- #ifdef __powerpc64__
-+#ifdef HAVE_AS_ATHIGH
-+#define __AS_ATHIGH high
-+#else
-+#define __AS_ATHIGH h
-+#endif
- #define LOAD_REG_IMMEDIATE(reg,expr)		\
- 	lis     reg,(expr)@highest;		\
- 	ori     reg,reg,(expr)@higher;	\
- 	rldicr  reg,reg,32,31;		\
--	oris    reg,reg,(expr)@h;		\
-+	oris    reg,reg,(expr)@__AS_ATHIGH;	\
- 	ori     reg,reg,(expr)@l;
- 
- #define LOAD_REG_ADDR(reg,name)			\
+ 	return 0;
+ }
 
 
