@@ -1,341 +1,417 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755136AbaFDFfd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 01:35:33 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:2928 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751101AbaFDFfc (ORCPT
+	id S932443AbaFDFqQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 01:46:16 -0400
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:52301 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751976AbaFDFqO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 01:35:32 -0400
-X-IronPort-AV: E=Sophos;i="4.98,970,1392134400"; 
-   d="scan'208";a="31422189"
-Message-ID: <538EAD90.9000706@cn.fujitsu.com>
-Date: Wed, 4 Jun 2014 13:24:32 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	Wed, 4 Jun 2014 01:46:14 -0400
+Date: Wed, 4 Jun 2014 14:46:07 +0900
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Weijie Yang <weijie.yang@samsung.com>
+Cc: "'Minchan Kim'" <minchan@kernel.org>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'Nitin Gupta'" <ngupta@vflare.org>,
+        "'Sergey Senozhatsky'" <sergey.senozhatsky@gmail.com>,
+        "'Bob Liu'" <bob.liu@oracle.com>,
+        "'Dan Streetman'" <ddstreet@ieee.org>,
+        "'Weijie Yang'" <weijie.yang.kh@gmail.com>,
+        "'Heesub Shin'" <heesub.shin@samsung.com>,
+        "'Davidlohr Bueso'" <davidlohr@hp.com>,
+        "'Joonsoo Kim'" <js1304@gmail.com>,
+        "'linux-kernel'" <linux-kernel@vger.kernel.org>,
+        "'Linux-MM'" <linux-mm@kvack.org>
+Subject: Re: [PATCH v3] zram: remove global tb_lock with fine grain lock
+Message-ID: <20140604054607.GA1099@swordfish>
+References: <000001cf7be2$385f9fd0$a91edf70$%yang@samsung.com>
 MIME-Version: 1.0
-To: Sebastian Ott <sebott@linux.vnet.ibm.com>
-CC: Anatol Pomozov <anatol.pomozov@gmail.com>,
-        Benjamin LaHaise <bcrl@kvack.org>, <linux-aio@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: hanging aio process
-References: <alpine.LFD.2.11.1405191908450.1847@denkbrett> <20140519180851.GD2915@kvack.org> <alpine.LFD.2.11.1405200950480.1606@denkbrett> <alpine.LFD.2.11.1405201508450.1606@denkbrett> <CAOMFOmWfQ2naF+1BE0wSQXpBoyxV6MPm021hY77B4sDpZNZ-Dw@mail.gmail.com> <alpine.LFD.2.11.1405201945280.1631@denkbrett> <CAOMFOmUT-WGbV57qDafM-NJ+=s1OzX-2Q6G6hAh6EV8Vt9yBZw@mail.gmail.com> <alpine.LFD.2.11.1405210954110.1579@denkbrett> <alpine.LFD.2.11.1405211042350.1579@denkbrett>  <CAOMFOmXXHBicH38onWgVAWhEXe2sE_RMiJXi=iMjJB15o7mOLQ@mail.gmail.com> <alpine.LFD.2.11.1405211643180.1579@denkbrett>
-In-Reply-To: <alpine.LFD.2.11.1405211643180.1579@denkbrett>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.226.100]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <000001cf7be2$385f9fd0$a91edf70$%yang@samsung.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Guys,
-What's the status of this issue? Has it been fixed?
+On (05/30/14 16:34), Weijie Yang wrote:
+> Currently, we use a rwlock tb_lock to protect concurrent access to
+> the whole zram meta table. However, according to the actual access model,
+> there is only a small chance for upper user to access the same table[index],
+> so the current lock granularity is too big.
+> 
+> The idea of optimization is to change the lock granularity from whole
+> meta table to per table entry (table -> table[index]), so that we can
+> protect concurrent access to the same table[index], meanwhile allow
+> the maximum concurrency.
+> With this in mind, several kinds of locks which could be used as a
+> per-entry lock were tested and compared:
+> 
+> Test environment:
+> x86-64 Intel Core2 Q8400, system memory 4GB, Ubuntu 12.04,
+> kernel v3.15.0-rc3 as base, zram with 4 max_comp_streams LZO.
+> 
+> iozone test:
+> iozone -t 4 -R -r 16K -s 200M -I +Z
+> (1GB zram with ext4 filesystem, take the average of 10 tests, KB/s)
+> 
+>       Test       base      CAS    spinlock    rwlock   bit_spinlock
+> -------------------------------------------------------------------
+>  Initial write  1381094   1425435   1422860   1423075   1421521
+>        Rewrite  1529479   1641199   1668762   1672855   1654910
+>           Read  8468009  11324979  11305569  11117273  10997202
+>        Re-read  8467476  11260914  11248059  11145336  10906486
+>   Reverse Read  6821393   8106334   8282174   8279195   8109186
+>    Stride read  7191093   8994306   9153982   8961224   9004434
+>    Random read  7156353   8957932   9167098   8980465   8940476
+> Mixed workload  4172747   5680814   5927825   5489578   5972253
+>   Random write  1483044   1605588   1594329   1600453   1596010
+>         Pwrite  1276644   1303108   1311612   1314228   1300960
+>          Pread  4324337   4632869   4618386   4457870   4500166
 
-Thanks,
-Gu
+Hello,
 
-On 05/21/2014 10:57 PM, Sebastian Ott wrote:
+besides Minchan's notes, here is my:
 
-> On Wed, 21 May 2014, Anatol Pomozov wrote:
->> On Wed, May 21, 2014 at 1:48 AM, Sebastian Ott
->> <sebott@linux.vnet.ibm.com> wrote:
->>> On Wed, 21 May 2014, Sebastian Ott wrote:
->>>> On Tue, 20 May 2014, Anatol Pomozov wrote:
->>>>> On Tue, May 20, 2014 at 11:09 AM, Sebastian Ott
->>>>> <sebott@linux.vnet.ibm.com> wrote:
->>>>>> On Tue, 20 May 2014, Anatol Pomozov wrote:
->>>>>>> On Tue, May 20, 2014 at 6:16 AM, Sebastian Ott
->>>>>>> <sebott@linux.vnet.ibm.com> wrote:
->>>>>>>> On Tue, 20 May 2014, Sebastian Ott wrote:
->>>>>>>>> On Mon, 19 May 2014, Benjamin LaHaise wrote:
->>>>>>>>>> It is entirely possible the bug isn't
->>>>>>>>>> caused by the referenced commit, as the commit you're pointing to merely
->>>>>>>>>> makes io_destroy() syscall wait for all aio outstanding to complete
->>>>>>>>>> before returning.
->>>>>>>>>
->>>>>>>>> I cannot reproduce this when I revert said commit (on top of 14186fe). If
->>>>>>>>> that matters - the arch is s390.
->>>>>>>>
->>>>>>>> Hm, ok - maybe that commit is really just highlighting a refcounting bug.
->>>>>>>> I just compared traces for a good and a few bad cases. The good case:
->>>>>>>> # tracer: function
->>>>>>>> #
->>>>>>>> # entries-in-buffer/entries-written: 16/16   #P:4
->>>>>>>> #
->>>>>>>> #                              _-----=> irqs-off
->>>>>>>> #                             / _----=> need-resched
->>>>>>>> #                            | / _---=> hardirq/softirq
->>>>>>>> #                            || / _--=> preempt-depth
->>>>>>>> #                            ||| /     delay
->>>>>>>> #           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
->>>>>>>> #              | |       |   ||||       |         |
->>>>>>>>              fio-732   [003] ....    17.989315: kill_ioctx <-SyS_io_destroy
->>>>>>>>              fio-739   [003] ....    18.000563: kill_ioctx <-SyS_io_destroy
->>>>>>>>      ksoftirqd/3-19    [003] ..s.    18.031673: free_ioctx_users <-percpu_ref_kill_rcu
->>>>>>>>      ksoftirqd/3-19    [003] ..s.    18.031679: free_ioctx_users <-percpu_ref_kill_rcu
->>>>>>>>              fio-737   [003] ....    18.038765: kill_ioctx <-SyS_io_destroy
->>>>>>>>      ksoftirqd/3-19    [003] ..s.    18.062488: free_ioctx_reqs <-percpu_ref_kill_rcu
->>>>>>>>      ksoftirqd/3-19    [003] ..s.    18.062494: free_ioctx_reqs <-percpu_ref_kill_rcu
->>>>>>>>      kworker/3:1-57    [003] ....    18.062499: free_ioctx <-process_one_work
->>>>>>>>      kworker/3:1-57    [003] ....    18.062506: free_ioctx <-process_one_work
->>>>>>>>      ksoftirqd/3-19    [003] ..s.    18.072275: free_ioctx_users <-percpu_ref_kill_rcu
->>>>>>>>              fio-738   [003] ....    18.102419: kill_ioctx <-SyS_io_destroy
->>>>>>>>           <idle>-0     [003] .ns.    18.111668: free_ioctx_reqs <-percpu_ref_kill_rcu
->>>>>>>>      kworker/3:1-57    [003] ....    18.111675: free_ioctx <-process_one_work
->>>>>>>>      ksoftirqd/3-19    [003] ..s.    18.138035: free_ioctx_users <-percpu_ref_kill_rcu
->>>>>>>>           <idle>-0     [003] .ns.    18.191665: free_ioctx_reqs <-percpu_ref_kill_rcu
->>>>>>>>      kworker/3:1-57    [003] ....    18.191671: free_ioctx <-process_one_work
->>>>>>>>
->>>>>>>> (4 fio workers, free_ioctx_reqs is called 4 times)
->>>>>>>>
->>>>>>>> One of the bad cases:
->>>>>>>> # tracer: function
->>>>>>>> #
->>>>>>>> # entries-in-buffer/entries-written: 14/14   #P:4
->>>>>>>> #
->>>>>>>> #                              _-----=> irqs-off
->>>>>>>> #                             / _----=> need-resched
->>>>>>>> #                            | / _---=> hardirq/softirq
->>>>>>>> #                            || / _--=> preempt-depth
->>>>>>>> #                            ||| /     delay
->>>>>>>> #           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
->>>>>>>> #              | |       |   ||||       |         |
->>>>>>>>              fio-834   [000] ....    51.127359: kill_ioctx <-SyS_io_destroy
->>>>>>>>           <idle>-0     [000] ..s.    51.170237: free_ioctx_users <-percpu_ref_kill_rcu
->>>>>>>>              fio-828   [001] ....    51.189717: kill_ioctx <-SyS_io_destroy
->>>>>>>>              fio-833   [001] ..s.    51.220178: free_ioctx_users <-percpu_ref_kill_rcu
->>>>>>>>           <idle>-0     [000] .ns.    51.220230: free_ioctx_reqs <-percpu_ref_kill_rcu
->>>>>>>>      kworker/0:3-661   [000] ....    51.220238: free_ioctx <-process_one_work
->>>>>>>>           <idle>-0     [001] .ns.    51.260188: free_ioctx_reqs <-percpu_ref_kill_rcu
->>>>>>>>      kworker/1:2-103   [001] ....    51.260198: free_ioctx <-process_one_work
->>>>>>>>              fio-833   [002] ....    51.287602: kill_ioctx <-SyS_io_destroy
->>>>>>>>            udevd-868   [002] ..s1    51.332519: free_ioctx_users <-percpu_ref_kill_rcu
->>>>>>>>           <idle>-0     [002] .ns.    51.450180: free_ioctx_reqs <-percpu_ref_kill_rcu
->>>>>>>>      kworker/2:2-191   [002] ....    51.450191: free_ioctx <-process_one_work
->>>>>>>>              fio-835   [003] ....    51.907530: kill_ioctx <-SyS_io_destroy
->>>>>>>>      ksoftirqd/3-19    [003] ..s.    52.000232: free_ioctx_users <-percpu_ref_kill_rcu
->>>>>>>>
->>>>>>>> (1 fio worker in D state, free_ioctx_reqs is called 3 times)
->>>>>>>
->>>>>>>
->>>>>>> Looking at the second trace: the first 3 io_destroy() calls cause
->>>>>>> free_ioctx_reqs(), but the last one does not call free_ioctx_reqs().
->>>>>>> Do you have more logs after the last line?
->>>>>>
->>>>>> Nope that was all.
->>>>>>
->>>>>>> If there is no more
->>>>>>> free_ioctx_reqs() then it means something keeps ctx->reqs refcounter.
->>>>>>> I suggest to add some logging to kernel to figure out what is the
->>>>>>> refcount value at this moment.
->>>>>>
->>>>>> Jep, I did that this morning (via atomic_read(&ctx->reqs.count) in
->>>>>> free_ioctx_users before percpu_ref_kill(&ctx->reqs); is called) and
->>>>>> the value was always the same
->>>>>>         1 + (1UL << 31)
->>>>>> even for the free_ioctx_users invocations that were not followed by
->>>>>> free_ioctx_reqs.
->>>>>
->>>>> Could you add atomic_read(&ctx->reqs.count) *after* the
->>>>> percpu_ref_kill(&ctx->reqs)?
->>>>
->>>> I already did that and it didn't change, always 1 + (1UL << 31) in all
->>>> cases, before and after percpu_ref_kill(&ctx->reqs). I'm not really
->>>> familiar with this percpu_ref stuff but it looks like the initial
->>>> reference is dropped asynchronous.
->>>
->>>
->>> cat /sys/kernel/debug/tracing/trace
->>> # tracer: function
->>> #
->>> # entries-in-buffer/entries-written: 25/25   #P:4
->>> #
->>> #                              _-----=> irqs-off
->>> #                             / _----=> need-resched
->>> #                            | / _---=> hardirq/softirq
->>> #                            || / _--=> preempt-depth
->>> #                            ||| /     delay
->>> #           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
->>> #              | |       |   ||||       |         |
->>>              fio-856   [001] ....   160.876428: SyS_io_destroy: 0000000074a18000
->>>              fio-856   [001] ....   160.876430: kill_ioctx <-SyS_io_destroy
->>>              fio-855   [000] ....   160.887737: SyS_io_destroy: 0000000074f40600
->>>              fio-855   [000] ....   160.887738: kill_ioctx <-SyS_io_destroy
->>>              fio-849   [001] ..s.   160.911948: free_ioctx_users <-percpu_ref_kill_rcu
->>>      ksoftirqd/0-3     [000] ..s.   160.932488: free_ioctx_users <-percpu_ref_kill_rcu
->>>              fio-854   [001] ....   160.938881: SyS_io_destroy: 0000000074ac0600
->>>              fio-854   [001] ....   160.938881: kill_ioctx <-SyS_io_destroy
->>>      ksoftirqd/1-11    [001] ..s.   160.942016: aio_confirm_reqs: 0000000074a18000 reqs=1
->>>      ksoftirqd/1-11    [001] ..s.   160.942016: free_ioctx_reqs <-percpu_ref_kill_rcu
->>>      kworker/1:2-465   [001] ....   160.942021: free_ioctx <-process_one_work
->>>              fio-856   [002] ....   160.942033: SyS_io_destroy: 0000000074a18000 done
->>>              fio-849   [002] ....   160.942641: SyS_io_destroy: 0000000074f28600
->>>              fio-849   [002] ....   160.942641: kill_ioctx <-SyS_io_destroy
->>>      ksoftirqd/1-11    [001] ..s.   160.961981: free_ioctx_users <-percpu_ref_kill_rcu
->>>           <idle>-0     [000] .ns.   160.962010: aio_confirm_reqs: 0000000074f40600 reqs=1
->>>           <idle>-0     [000] .ns.   160.962011: free_ioctx_reqs <-percpu_ref_kill_rcu
->>>      kworker/0:0-4     [000] ....   160.962016: free_ioctx <-process_one_work
->>>              fio-855   [001] ....   160.962017: SyS_io_destroy: 0000000074f40600 done
->>>      ksoftirqd/2-15    [002] ..s.   160.971998: free_ioctx_users <-percpu_ref_kill_rcu
->>>      ksoftirqd/1-11    [001] ..s.   160.994552: aio_confirm_reqs: 0000000074ac0600 reqs=2
->>
->> Here it is. aio context 0000000074ac0600 has refcount == 2 (one for
->> initial refcount and one grabbed by someone). You need to find the one
->> who grabbed the refcount and figure out why it does not drop it.
+
+Acked-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+
+
+
+on my machine, iozone -t 3 -R -r 16K -s 60M -I +Z
+(1G, ext4, 4 comp streams, lz4)
+
+                     base         patched
+---------------------------------------------
+  Initial write   1267216.62    1282043.88
+        Rewrite   1787684.31    1768297.56
+           Read   5337862.62    5494053.75
+        Re-read   5366939.12    5494465.25
+   Reverse Read   4482380.38    4768139.50
+    Stride read   4882019.75    4872308.62
+    Random read   4736583.62    4820052.88
+ Mixed workload   3570551.50    3803307.00
+   Random write   1736344.81    1718302.75
+         Pwrite   1304165.47    1307018.38
+          Pread   5053677.12    5098033.88
+         Fwrite   3147173.94    3161662.25
+          Fread   6448532.62    6452508.62
+
+
+	-ss
+
+> To enhance the possibility of access the same table[index] concurrently,
+> set zram a small disksize(10MB) and let threads run with large loop count.
 > 
-> I (hopefully) traced all gets and puts (of ctx->reqs). Hm gets and puts
-> are equal in numbers:
+> fio test:
+> fio --bs=32k --randrepeat=1 --randseed=100 --refill_buffers
+> --scramble_buffers=1 --direct=1 --loops=3000 --numjobs=4
+> --filename=/dev/zram0 --name=seq-write --rw=write --stonewall
+> --name=seq-read --rw=read --stonewall --name=seq-readwrite
+> --rw=rw --stonewall --name=rand-readwrite --rw=randrw --stonewall
+> (10MB zram raw block device, take the average of 10 tests, KB/s)
 > 
-> cat /sys/kernel/debug/tracing/trace | grep aio_complete | wc
->   49120  294720 3487520
-> cat /sys/kernel/debug/tracing/trace | grep do_io_submit | wc
->   49120  294720 3487520
+>     Test     base     CAS    spinlock    rwlock  bit_spinlock
+> -------------------------------------------------------------
+> seq-write   933789   999357   1003298    995961   1001958
+>  seq-read  5634130  6577930   6380861   6243912   6230006
+>    seq-rw  1405687  1638117   1640256   1633903   1634459
+>   rand-rw  1386119  1614664   1617211   1609267   1612471
 > 
-> cat /sys/kernel/debug/tracing/trace | grep -v aio_complete | grep -v do_io_submit
-> # tracer: function
-> #
-> # entries-in-buffer/entries-written: 98273/98273   #P:4
-> #
-> #                              _-----=> irqs-off
-> #                             / _----=> need-resched
-> #                            | / _---=> hardirq/softirq
-> #                            || / _--=> preempt-depth
-> #                            ||| /     delay
-> #           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
-> #              | |       |   ||||       |         |
->              fio-793   [002] ....    86.697232: SyS_io_setup: get_reqs
->              fio-794   [000] ....    86.697232: SyS_io_setup: get_reqs
->              fio-788   [003] ....    86.697235: SyS_io_setup: get_reqs
->              fio-795   [001] ....    86.697237: SyS_io_setup: get_reqs
->              fio-793   [000] ....    87.217093: SyS_io_destroy: 00000000796d0000
->              fio-793   [000] ....    87.217095: kill_ioctx <-SyS_io_destroy
->              fio-795   [003] ....    87.221408: SyS_io_destroy: 000000007a038000
->              fio-795   [003] ....    87.221409: kill_ioctx <-SyS_io_destroy
->              fio-788   [003] ....    87.226725: SyS_io_destroy: 00000000796c8000
->              fio-788   [003] ....    87.226726: kill_ioctx <-SyS_io_destroy
->              fio-794   [000] ....    87.227840: SyS_io_destroy: 0000000079420000
->              fio-794   [000] ....    87.227841: kill_ioctx <-SyS_io_destroy
->      ksoftirqd/3-19    [003] ..s.    87.244201: free_ioctx_users <-percpu_ref_kill_rcu
->      ksoftirqd/3-19    [003] ..s.    87.244201: free_ioctx_users: put_reqs
->      ksoftirqd/3-19    [003] ..s.    87.244205: free_ioctx_users <-percpu_ref_kill_rcu
->      ksoftirqd/3-19    [003] ..s.    87.244205: free_ioctx_users: put_reqs
->      ksoftirqd/0-3     [000] ..s.    87.251898: free_ioctx_users <-percpu_ref_kill_rcu
->      ksoftirqd/0-3     [000] ..s.    87.251898: free_ioctx_users: put_reqs
->      ksoftirqd/0-3     [000] ..s.    87.251903: free_ioctx_users <-percpu_ref_kill_rcu
->      ksoftirqd/0-3     [000] ..s.    87.251903: free_ioctx_users: put_reqs
->      ksoftirqd/0-3     [000] ..s.    87.271868: aio_confirm_reqs: 00000000796d0000 reqs=1
->      ksoftirqd/0-3     [000] ..s.    87.271868: free_ioctx_reqs <-percpu_ref_kill_rcu
->      ksoftirqd/0-3     [000] ..s.    87.271874: aio_confirm_reqs: 0000000079420000 reqs=6
->      kworker/0:1-53    [000] ....    87.271875: free_ioctx <-process_one_work
->              fio-793   [001] ....    87.271879: SyS_io_destroy: 00000000796d0000 done
->      ksoftirqd/3-19    [003] ..s.    87.271899: aio_confirm_reqs: 000000007a038000 reqs=1
->      ksoftirqd/3-19    [003] ..s.    87.271899: free_ioctx_reqs <-percpu_ref_kill_rcu
->              fio-795   [000] ....    87.271904: SyS_io_destroy: 000000007a038000 done
->      ksoftirqd/3-19    [003] ..s.    87.271905: aio_confirm_reqs: 00000000796c8000 reqs=1
->      ksoftirqd/3-19    [003] ..s.    87.271905: free_ioctx_reqs <-percpu_ref_kill_rcu
->      kworker/3:2-222   [003] ....    87.271909: free_ioctx <-process_one_work
->      kworker/3:2-222   [003] ....    87.271912: free_ioctx <-process_one_work
->              fio-788   [003] ....    87.271920: SyS_io_destroy: 00000000796c8000 done
+> All the optimization methods show a higher performance than the base,
+> however, it is hard to say which method is the most appropriate.
 > 
-> Hm..this time 5 additional refs. Again I've never worked with these percpu
-> refs but would it make sense to look for gets after kills (or is this
-> valid)?
+> On the other hand, zram is mostly used on small embedded system, so we
+> don't want to increase any memory footprint.
 > 
-> diff --git a/fs/aio.c b/fs/aio.c
-> index a0ed6c7..6f83c11 100644
-> --- a/fs/aio.c
-> +++ b/fs/aio.c
-> @@ -521,6 +521,13 @@ static void free_ioctx_reqs(struct percpu_ref *ref)
->  	schedule_work(&ctx->free_work);
+> This patch pick the bit_spinlock method, pack object size and page_flag
+> into an unsigned long table.value, so as to not increase any memory
+> overhead on both 32-bit and 64-bit system.
+> 
+> On the third hand, even though different kinds of locks have different
+> performances, we can ignore this difference, because:
+> if zram is used as zram swapfile, the swap subsystem can prevent concurrent
+> access to the same swapslot;
+> if zram is used as zram-blk for set up filesystem on it, the upper filesystem
+> and the page cache also prevent concurrent access of the same block mostly.
+> So we can ignore the different performances among locks.
+> 
+> Changes since v1: https://lkml.org/lkml/2014/5/5/1
+>   - replace CAS method with bit_spinlock method
+>   - rename zram_test_flag() to zram_test_zero()
+>   - add some comments
+> 
+> Changes since v2: https://lkml.org/lkml/2014/5/15/113
+>   - change size type from int to size_t in zram_set_obj_size()
+>   - refactor zram_set_obj_size() to make it readable
+>   - add comments
+> 
+> Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
+> ---
+>  drivers/block/zram/zram_drv.c |   89 ++++++++++++++++++++++++-----------------
+>  drivers/block/zram/zram_drv.h |   22 +++++++---
+>  2 files changed, 68 insertions(+), 43 deletions(-)
+> 
+> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+> index 9849b52..166e882 100644
+> --- a/drivers/block/zram/zram_drv.c
+> +++ b/drivers/block/zram/zram_drv.c
+> @@ -179,23 +179,32 @@ static ssize_t comp_algorithm_store(struct device *dev,
+>  	return len;
 >  }
 >  
-> +void aio_confirm_reqs(struct percpu_ref *ref)
-> +{
-> +	struct kioctx *ctx = container_of(ref, struct kioctx, reqs);
-> +
-> +	trace_printk("%p reqs=%d\n", ctx, atomic_read(&ref->count));
+> -/* flag operations needs meta->tb_lock */
+> -static int zram_test_flag(struct zram_meta *meta, u32 index,
+> -			enum zram_pageflags flag)
+> +static int zram_test_zero(struct zram_meta *meta, u32 index)
+>  {
+> -	return meta->table[index].flags & BIT(flag);
+> +	return meta->table[index].value & BIT(ZRAM_ZERO);
+>  }
+>  
+> -static void zram_set_flag(struct zram_meta *meta, u32 index,
+> -			enum zram_pageflags flag)
+> +static void zram_set_zero(struct zram_meta *meta, u32 index)
+>  {
+> -	meta->table[index].flags |= BIT(flag);
+> +	meta->table[index].value |= BIT(ZRAM_ZERO);
+>  }
+>  
+> -static void zram_clear_flag(struct zram_meta *meta, u32 index,
+> -			enum zram_pageflags flag)
+> +static void zram_clear_zero(struct zram_meta *meta, u32 index)
+>  {
+> -	meta->table[index].flags &= ~BIT(flag);
+> +	meta->table[index].value &= ~BIT(ZRAM_ZERO);
 > +}
 > +
->  /*
->   * When this function runs, the kioctx has been removed from the "hash table"
->   * and ctx->users has dropped to 0, so we know no more kiocbs can be submitted -
-> @@ -543,7 +550,8 @@ static void free_ioctx_users(struct percpu_ref *ref)
->  
->  	spin_unlock_irq(&ctx->ctx_lock);
->  
-> -	percpu_ref_kill(&ctx->reqs);
-> +	percpu_ref_kill_and_confirm(&ctx->reqs, aio_confirm_reqs);
-> +	trace_printk("put_reqs\n");
->  	percpu_ref_put(&ctx->reqs);
->  }
->  
-> @@ -695,6 +703,7 @@ static struct kioctx *ioctx_alloc(unsigned nr_events)
->  	spin_unlock(&aio_nr_lock);
->  
->  	percpu_ref_get(&ctx->users);	/* io_setup() will drop this ref */
-> +	trace_printk("get_reqs\n");
->  	percpu_ref_get(&ctx->reqs);	/* free_ioctx_users() will drop this */
->  
->  	err = ioctx_add_table(ctx, mm);
-> @@ -888,6 +897,7 @@ static inline struct kiocb *aio_get_req(struct kioctx *ctx)
->  	if (unlikely(!req))
->  		goto out_put;
->  
-> +	trace_printk("get_reqs\n");
->  	percpu_ref_get(&ctx->reqs);
->  
->  	req->ki_ctx = ctx;
-> @@ -1033,6 +1043,7 @@ void aio_complete(struct kiocb *iocb, long res, long res2)
->  	if (waitqueue_active(&ctx->wait))
->  		wake_up(&ctx->wait);
->  
-> +	trace_printk("put_reqs\n");
->  	percpu_ref_put(&ctx->reqs);
->  }
->  EXPORT_SYMBOL(aio_complete);
-> @@ -1220,6 +1231,8 @@ SYSCALL_DEFINE1(io_destroy, aio_context_t, ctx)
->  		struct completion requests_done =
->  			COMPLETION_INITIALIZER_ONSTACK(requests_done);
->  
-> +		trace_printk("%p\n", ioctx);
+> +static size_t zram_get_obj_size(struct zram_meta *meta, u32 index)
+> +{
+> +	return meta->table[index].value & (BIT(ZRAM_FLAG_SHIFT) - 1);
+> +}
 > +
->  		/* Pass requests_done to kill_ioctx() where it can be set
->  		 * in a thread-safe way. If we try to set it here then we have
->  		 * a race condition if two io_destroy() called simultaneously.
-> @@ -1232,6 +1245,7 @@ SYSCALL_DEFINE1(io_destroy, aio_context_t, ctx)
->  		 * is destroyed.
->  		 */
->  		wait_for_completion(&requests_done);
-> +		trace_printk("%p done\n", ioctx);
+> +static void zram_set_obj_size(struct zram_meta *meta,
+> +					u32 index, size_t size)
+> +{
+> +	unsigned long flags = meta->table[index].value >> ZRAM_FLAG_SHIFT;
+> +
+> +	meta->table[index].value = (flags << ZRAM_FLAG_SHIFT) | size;
+>  }
 >  
+>  static inline int is_partial_io(struct bio_vec *bvec)
+> @@ -255,7 +264,6 @@ static struct zram_meta *zram_meta_alloc(u64 disksize)
+>  		goto free_table;
+>  	}
+>  
+> -	rwlock_init(&meta->tb_lock);
+>  	return meta;
+>  
+>  free_table:
+> @@ -304,19 +312,24 @@ static void handle_zero_page(struct bio_vec *bvec)
+>  	flush_dcache_page(page);
+>  }
+>  
+> -/* NOTE: caller should hold meta->tb_lock with write-side */
+> +/*
+> + * To protect concurrent access to the same index entry,
+> + * caller should hold this table index entry's bit_spinlock to
+> + * indicate this index entry is accessing.
+> + */
+>  static void zram_free_page(struct zram *zram, size_t index)
+>  {
+>  	struct zram_meta *meta = zram->meta;
+>  	unsigned long handle = meta->table[index].handle;
+> +	size_t size;
+>  
+>  	if (unlikely(!handle)) {
+>  		/*
+>  		 * No memory is allocated for zero filled pages.
+>  		 * Simply clear zero page flag.
+>  		 */
+> -		if (zram_test_flag(meta, index, ZRAM_ZERO)) {
+> -			zram_clear_flag(meta, index, ZRAM_ZERO);
+> +		if (zram_test_zero(meta, index)) {
+> +			zram_clear_zero(meta, index);
+>  			atomic64_dec(&zram->stats.zero_pages);
+>  		}
+>  		return;
+> @@ -324,27 +337,28 @@ static void zram_free_page(struct zram *zram, size_t index)
+>  
+>  	zs_free(meta->mem_pool, handle);
+>  
+> -	atomic64_sub(meta->table[index].size, &zram->stats.compr_data_size);
+> +	size = zram_get_obj_size(meta, index);
+> +	atomic64_sub(size, &zram->stats.compr_data_size);
+>  	atomic64_dec(&zram->stats.pages_stored);
+>  
+>  	meta->table[index].handle = 0;
+> -	meta->table[index].size = 0;
+> +	zram_set_obj_size(meta, index, 0);
+>  }
+>  
+>  static int zram_decompress_page(struct zram *zram, char *mem, u32 index)
+>  {
+> -	int ret = 0;
+>  	unsigned char *cmem;
+>  	struct zram_meta *meta = zram->meta;
+>  	unsigned long handle;
+> -	u16 size;
+> +	size_t size;
+> +	int ret = 0;
+>  
+> -	read_lock(&meta->tb_lock);
+> +	bit_spin_lock(ZRAM_ACCESS, &meta->table[index].value);
+>  	handle = meta->table[index].handle;
+> -	size = meta->table[index].size;
+> +	size = zram_get_obj_size(meta, index);
+>  
+> -	if (!handle || zram_test_flag(meta, index, ZRAM_ZERO)) {
+> -		read_unlock(&meta->tb_lock);
+> +	if (!handle || zram_test_zero(meta, index)) {
+> +		bit_spin_unlock(ZRAM_ACCESS, &meta->table[index].value);
+>  		clear_page(mem);
 >  		return 0;
 >  	}
-> @@ -1457,6 +1471,7 @@ static int io_submit_one(struct kioctx *ctx, struct iocb __user *user_iocb,
->  	return 0;
->  out_put_req:
->  	put_reqs_available(ctx, 1);
-> +	trace_printk("put_reqs\n");
->  	percpu_ref_put(&ctx->reqs);
->  	kiocb_free(req);
->  	return ret;
-> @@ -1512,6 +1527,10 @@ long do_io_submit(aio_context_t ctx_id, long nr,
->  	blk_finish_plug(&plug);
+> @@ -355,7 +369,7 @@ static int zram_decompress_page(struct zram *zram, char *mem, u32 index)
+>  	else
+>  		ret = zcomp_decompress(zram->comp, cmem, size, mem);
+>  	zs_unmap_object(meta->mem_pool, handle);
+> -	read_unlock(&meta->tb_lock);
+> +	bit_spin_unlock(ZRAM_ACCESS, &meta->table[index].value);
 >  
->  	percpu_ref_put(&ctx->users);
-> +
-> +	if (i != nr)
-> +		pr_warn("nr=%d i=%d\n", nr, i);
-> +
->  	return i ? i : ret;
+>  	/* Should NEVER happen. Return bio error if it does. */
+>  	if (unlikely(ret)) {
+> @@ -376,14 +390,14 @@ static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
+>  	struct zram_meta *meta = zram->meta;
+>  	page = bvec->bv_page;
+>  
+> -	read_lock(&meta->tb_lock);
+> +	bit_spin_lock(ZRAM_ACCESS, &meta->table[index].value);
+>  	if (unlikely(!meta->table[index].handle) ||
+> -			zram_test_flag(meta, index, ZRAM_ZERO)) {
+> -		read_unlock(&meta->tb_lock);
+> +			zram_test_zero(meta, index)) {
+> +		bit_spin_unlock(ZRAM_ACCESS, &meta->table[index].value);
+>  		handle_zero_page(bvec);
+>  		return 0;
+>  	}
+> -	read_unlock(&meta->tb_lock);
+> +	bit_spin_unlock(ZRAM_ACCESS, &meta->table[index].value);
+>  
+>  	if (is_partial_io(bvec))
+>  		/* Use  a temporary buffer to decompress the page */
+> @@ -461,10 +475,10 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+>  	if (page_zero_filled(uncmem)) {
+>  		kunmap_atomic(user_mem);
+>  		/* Free memory associated with this sector now. */
+> -		write_lock(&zram->meta->tb_lock);
+> +		bit_spin_lock(ZRAM_ACCESS, &meta->table[index].value);
+>  		zram_free_page(zram, index);
+> -		zram_set_flag(meta, index, ZRAM_ZERO);
+> -		write_unlock(&zram->meta->tb_lock);
+> +		zram_set_zero(meta, index);
+> +		bit_spin_unlock(ZRAM_ACCESS, &meta->table[index].value);
+>  
+>  		atomic64_inc(&zram->stats.zero_pages);
+>  		ret = 0;
+> @@ -514,12 +528,12 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+>  	 * Free memory associated with this sector
+>  	 * before overwriting unused sectors.
+>  	 */
+> -	write_lock(&zram->meta->tb_lock);
+> +	bit_spin_lock(ZRAM_ACCESS, &meta->table[index].value);
+>  	zram_free_page(zram, index);
+>  
+>  	meta->table[index].handle = handle;
+> -	meta->table[index].size = clen;
+> -	write_unlock(&zram->meta->tb_lock);
+> +	zram_set_obj_size(meta, index, clen);
+> +	bit_spin_unlock(ZRAM_ACCESS, &meta->table[index].value);
+>  
+>  	/* Update stats */
+>  	atomic64_add(clen, &zram->stats.compr_data_size);
+> @@ -560,6 +574,7 @@ static void zram_bio_discard(struct zram *zram, u32 index,
+>  			     int offset, struct bio *bio)
+>  {
+>  	size_t n = bio->bi_iter.bi_size;
+> +	struct zram_meta *meta = zram->meta;
+>  
+>  	/*
+>  	 * zram manages data in physical block size units. Because logical block
+> @@ -584,9 +599,9 @@ static void zram_bio_discard(struct zram *zram, u32 index,
+>  		 * Discard request can be large so the lock hold times could be
+>  		 * lengthy.  So take the lock once per page.
+>  		 */
+> -		write_lock(&zram->meta->tb_lock);
+> +		bit_spin_lock(ZRAM_ACCESS, &meta->table[index].value);
+>  		zram_free_page(zram, index);
+> -		write_unlock(&zram->meta->tb_lock);
+> +		bit_spin_unlock(ZRAM_ACCESS, &meta->table[index].value);
+>  		index++;
+>  		n -= PAGE_SIZE;
+>  	}
+> @@ -804,9 +819,9 @@ static void zram_slot_free_notify(struct block_device *bdev,
+>  	zram = bdev->bd_disk->private_data;
+>  	meta = zram->meta;
+>  
+> -	write_lock(&meta->tb_lock);
+> +	bit_spin_lock(ZRAM_ACCESS, &meta->table[index].value);
+>  	zram_free_page(zram, index);
+> -	write_unlock(&meta->tb_lock);
+> +	bit_spin_unlock(ZRAM_ACCESS, &meta->table[index].value);
+>  	atomic64_inc(&zram->stats.notify_free);
 >  }
 >  
+> diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
+> index 7f21c14..71bc4ad 100644
+> --- a/drivers/block/zram/zram_drv.h
+> +++ b/drivers/block/zram/zram_drv.h
+> @@ -51,10 +51,22 @@ static const size_t max_zpage_size = PAGE_SIZE / 4 * 3;
+>  #define ZRAM_SECTOR_PER_LOGICAL_BLOCK	\
+>  	(1 << (ZRAM_LOGICAL_BLOCK_SHIFT - SECTOR_SHIFT))
+>  
+> -/* Flags for zram pages (table[page_no].flags) */
+> +/*
+> + * The lower ZRAM_FLAG_SHIFT bits of table.value is for
+> + * object size (excluding header), the higher bits is for
+> + * zram_pageflags. By this means, it won't increase any
+> + * memory overhead on both 32-bit and 64-bit system.
+> + * zram is mostly used on small embedded system, so we
+> + * don't want to increase memory footprint. That is why
+> + * we pack size and flag into table.value.
+> + */
+> +#define ZRAM_FLAG_SHIFT 24
+> +
+> +/* Flags for zram pages (table[page_no].value) */
+>  enum zram_pageflags {
+>  	/* Page consists entirely of zeros */
+> -	ZRAM_ZERO,
+> +	ZRAM_ZERO = ZRAM_FLAG_SHIFT + 1,
+> +	ZRAM_ACCESS,  /* page in now accessed */
+>  
+>  	__NR_ZRAM_PAGEFLAGS,
+>  };
+> @@ -64,9 +76,8 @@ enum zram_pageflags {
+>  /* Allocated for each disk page */
+>  struct table {
+>  	unsigned long handle;
+> -	u16 size;	/* object size (excluding header) */
+> -	u8 flags;
+> -} __aligned(4);
+> +	unsigned long value;
+> +};
+>  
+>  struct zram_stats {
+>  	atomic64_t compr_data_size;	/* compressed size of pages stored */
+> @@ -81,7 +92,6 @@ struct zram_stats {
+>  };
+>  
+>  struct zram_meta {
+> -	rwlock_t tb_lock;	/* protect table */
+>  	struct table *table;
+>  	struct zs_pool *mem_pool;
+>  };
+> -- 
+> 1.7.10.4
 > 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-aio' in
-> the body to majordomo@kvack.org.  For more info on Linux AIO,
-> see: http://www.kvack.org/aio/
-> Don't email: <a href=mailto:"aart@kvack.org">aart@kvack.org</a>
-> .
 > 
-
-
