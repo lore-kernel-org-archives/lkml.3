@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751949AbaFDVhG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 17:37:06 -0400
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:34048 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751507AbaFDVhE (ORCPT
+	id S1751887AbaFDVi5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 17:38:57 -0400
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:47357 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751329AbaFDVi4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 17:37:04 -0400
+	Wed, 4 Jun 2014 17:38:56 -0400
 From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Nagalakshmi Nandigama <Nagalakshmi.Nandigama@lsi.com>,
-        Sreekanth Reddy <Sreekanth.Reddy@lsi.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Valentina Manea <valentina.manea.m@gmail.com>
 Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        support@lsi.com, "James E.J. Bottomley" <JBottomley@parallels.com>,
-        DL-MPTFusionLinux@lsi.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] scsi: mpt3sas: mpt3sas_base.c:  Cleaning up missing null-terminate after strncpy call
-Date: Wed,  4 Jun 2014 23:37:58 +0200
-Message-Id: <1401917878-3324-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+        navin patidar <navinp@cdac.in>, linux-usb@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: usbip: stub_main.c:  Cleaning up missing null-terminate after strncpy call
+Date: Wed,  4 Jun 2014 23:39:49 +0200
+Message-Id: <1401917989-3427-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,23 +27,21 @@ This was partly found using a static code analysis program called cppcheck.
 
 Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- drivers/scsi/mpt3sas/mpt3sas_base.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/staging/usbip/stub_main.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/scsi/mpt3sas/mpt3sas_base.c b/drivers/scsi/mpt3sas/mpt3sas_base.c
-index 0cf4f70..b9a74f4 100644
---- a/drivers/scsi/mpt3sas/mpt3sas_base.c
-+++ b/drivers/scsi/mpt3sas/mpt3sas_base.c
-@@ -2233,7 +2233,8 @@ _base_display_ioc_capabilities(struct MPT3SAS_ADAPTER *ioc)
- 	u32 bios_version;
+diff --git a/drivers/staging/usbip/stub_main.c b/drivers/staging/usbip/stub_main.c
+index 9c5832a..f1eb6a2 100644
+--- a/drivers/staging/usbip/stub_main.c
++++ b/drivers/staging/usbip/stub_main.c
+@@ -166,6 +166,7 @@ static ssize_t store_match_busid(struct device_driver *dev, const char *buf,
+ 		return -EINVAL;
  
- 	bios_version = le32_to_cpu(ioc->bios_pg3.BiosVersion);
--	strncpy(desc, ioc->manu_pg0.ChipName, 16);
-+	strncpy(desc, ioc->manu_pg0.ChipName, sizeof(desc));
-+	desc[sizeof(desc) - 1] = '\0';
- 	pr_info(MPT3SAS_FMT "%s: FWVersion(%02d.%02d.%02d.%02d), "\
- 	   "ChipRevision(0x%02x), BiosVersion(%02d.%02d.%02d.%02d)\n",
- 	    ioc->name, desc,
+ 	strncpy(busid, buf + 4, BUSID_SIZE);
++	busid[BUSID_SIZE - 1] = '\0';
+ 
+ 	if (!strncmp(buf, "add ", 4)) {
+ 		if (add_match_busid(busid) < 0)
 -- 
 1.7.10.4
 
