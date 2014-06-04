@@ -1,74 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752174AbaFDJqn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 05:46:43 -0400
-Received: from mx0.aculab.com ([213.249.233.131]:53639 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751746AbaFDJql convert rfc822-to-8bit (ORCPT
+	id S1752198AbaFDJry (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 05:47:54 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:55352 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751332AbaFDJrx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 05:46:41 -0400
-From: David Laight <David.Laight@ACULAB.COM>
-To: "'Julia Lawall'" <julia.lawall@lip6.fr>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-CC: linux-rdma <linux-rdma@vger.kernel.org>,
-        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
-        Linux Fbdev development list <linux-fbdev@vger.kernel.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ath10k@lists.infradead.org" <ath10k@lists.infradead.org>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        driverdevel <devel@driverdev.osuosl.org>,
-        "iss_storagedev@hp.com" <iss_storagedev@hp.com>,
-        scsi <linux-scsi@vger.kernel.org>,
-        linux-s390 <linux-s390@vger.kernel.org>,
-        "adi-buildroot-devel@lists.sourceforge.net" 
-	<adi-buildroot-devel@lists.sourceforge.net>
-Subject: RE: [PATCH 0/10] use safer test on the result of find_first_zero_bit
-Thread-Topic: [PATCH 0/10] use safer test on the result of
- find_first_zero_bit
-Thread-Index: AQHPf9jD3P2Wp/I7I0O0KpvEWFb8KZtgszAA
-Date: Wed, 4 Jun 2014 09:46:17 +0000
-Message-ID: <063D6719AE5E284EB5DD2968C1650D6D1725705F@AcuExch.aculab.com>
-References: <1401872880-23685-1-git-send-email-Julia.Lawall@lip6.fr>
- <CAMuHMdXsoFUXj4jLMWN6NY7Um19KwWO9Rhx=9=gqWu_K5Ev2kQ@mail.gmail.com>
- <alpine.DEB.2.10.1406041137270.2441@hadrien>
-In-Reply-To: <alpine.DEB.2.10.1406041137270.2441@hadrien>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.202.99.200]
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
+	Wed, 4 Jun 2014 05:47:53 -0400
+Date: Wed, 4 Jun 2014 13:47:33 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Joonsoo Kim <js1304@gmail.com>
+CC: Joonsoo Kim <iamjoonsoo.kim@lge.com>, Christoph Lameter <cl@gentwo.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux Memory Management List <linux-mm@kvack.org>
+Subject: Re: [PATCH -mm 7/8] slub: make dead caches discard free slabs
+ immediately
+Message-ID: <20140604094730.GH6013@esperanza>
+References: <cover.1401457502.git.vdavydov@parallels.com>
+ <5d2fbc894a2c62597e7196bb1ebb8357b15529ab.1401457502.git.vdavydov@parallels.com>
+ <alpine.DEB.2.10.1405300955120.11943@gentwo.org>
+ <20140531110456.GC25076@esperanza>
+ <20140602042435.GA17964@js1304-P5Q-DELUXE>
+ <20140602114741.GA1039@esperanza>
+ <CAAmzW4P=kUAJwozBPPos+uUewzSDnE43P6NcGYKNpBjjfv1EWA@mail.gmail.com>
+ <20140603081655.GA6013@esperanza>
+ <CAAmzW4O-tAw9t=gEHhbKiG+vfDsuCsOB1dyB_2iwO1qeFjtYmQ@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <CAAmzW4O-tAw9t=gEHhbKiG+vfDsuCsOB1dyB_2iwO1qeFjtYmQ@mail.gmail.com>
+X-Originating-IP: [109.195.248.178]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall
-> On Wed, 4 Jun 2014, Geert Uytterhoeven wrote:
-> 
-> > Hi Julia,
-> >
-> > On Wed, Jun 4, 2014 at 11:07 AM, Julia Lawall <Julia.Lawall@lip6.fr> wrote:
-> > > Find_first_zero_bit considers BITS_PER_LONG bits at a time, and thus may
-> > > return a larger number than the maximum position argument if that position
-> > > is not a multiple of BITS_PER_LONG.
-> >
-> > Shouldn't this be fixed in find_first_zero_bit() instead?
-> 
-> OK, I could do that as well.  Most of the callers currently test with >=.
-> Should they be left as is, or changed to use ==?
+On Wed, Jun 04, 2014 at 05:53:29PM +0900, Joonsoo Kim wrote:
+> Consider __slab_free(). After put_cpu_partial() in __slab_free() is called,
+> we attempt to update stat. There is possibility that this operation could be
+> use-after-free with your solution. Until now, we have just stat operation, but
+> it could be more. I don't like to impose this constraint to the slab free path.
 
-Do we want to add an extra test to find_first_zero_bit() and effectively
-slow down all the calls - especially those where the length is a
-multiple of 8 (probably the most common).
+We can move stats update before object free I guess, but I admit this is
+not going to be a flexible solution, because every future modifications
+to slab_free should be done with great care then, otherwise it may break
+things.
 
-Maybe the documented return code should be changed to allow for the
-existing behaviour.
+> So IMHO, it is better that we should defer to destroy kmem_cache
+> until last kfree() caller returns. Is it fair enough? :)
 
-	David
+Actually, I was thinking about it (even discussed with Christoph), but
+the problem is that there is currently no way to wait for all currently
+executing kfree's to complete, because SLUB's version can be preempted
+at any time.
 
+One way to solve this is to make slab_free non-preemptable and call
+synchronize_sched before kmem_cache_destroy (or use call_rcu_sched).
+When I started to implement this approach I found the resulting code a
+bit ugly. Also, Christoph had some concerns about it (see
+https://lkml.org/lkml/2014/5/23/524). That's why I tried to go with this
+patch set first, but that doesn't mean that I'm 100% sure in it :-) I'll
+send the implementations of the other approach (with prempt_disable)
+soon.
 
-
+Thanks.
