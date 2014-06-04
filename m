@@ -1,103 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934490AbaFDAbm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 20:31:42 -0400
-Received: from mail-ig0-f178.google.com ([209.85.213.178]:65371 "EHLO
-	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755294AbaFDAaB (ORCPT
+	id S934471AbaFDAbk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 20:31:40 -0400
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:33326 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755384AbaFDAaH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 20:30:01 -0400
-Date: Tue, 3 Jun 2014 17:29:58 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Vlastimil Babka <vbabka@suse.cz>, Mel Gorman <mgorman@suse.de>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Hugh Dickins <hughd@google.com>,
-        Greg Thelen <gthelen@google.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Minchan Kim <minchan@kernel.org>,
-        Michal Nazarewicz <mina86@mina86.com>, Rik van Riel <riel@redhat.com>
-Subject: [patch -mm 2/3] mm, compaction: pass gfp mask to compact_control
-In-Reply-To: <alpine.DEB.2.02.1406031728390.5312@chino.kir.corp.google.com>
-Message-ID: <alpine.DEB.2.02.1406031729260.5312@chino.kir.corp.google.com>
-References: <1399904111-23520-1-git-send-email-vbabka@suse.cz> <1400233673-11477-1-git-send-email-vbabka@suse.cz> <alpine.DEB.2.02.1405211954410.13243@chino.kir.corp.google.com> <537DB0E5.40602@suse.cz> <alpine.DEB.2.02.1405220127320.13630@chino.kir.corp.google.com>
- <537DE799.3040400@suse.cz> <alpine.DEB.2.02.1406031728390.5312@chino.kir.corp.google.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 3 Jun 2014 20:30:07 -0400
+From: Andy Lutomirski <luto@amacapital.net>
+To: Peter Zijlstra <peterz@infradead.org>, umgwanakikbuti@gmail.com
+Cc: mingo@kernel.org, tglx@linutronix.de, nicolas.pitre@linaro.org,
+        daniel.lezcano@linaro.org, linux-kernel@vger.kernel.org,
+        Andy Lutomirski <luto@amacapital.net>
+Subject: [PATCH 6/6] sched: Optimize ttwu IPI
+Date: Tue,  3 Jun 2014 17:29:52 -0700
+Message-Id: <e5b520c841ba15e1c9befb5239feadb9177c873c.1401841482.git.luto@amacapital.net>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <cover.1401841482.git.luto@amacapital.net>
+References: <cover.1401841482.git.luto@amacapital.net>
+In-Reply-To: <cover.1401841482.git.luto@amacapital.net>
+References: <cover.1401841482.git.luto@amacapital.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-struct compact_control currently converts the gfp mask to a migratetype, but we 
-need the entire gfp mask in a follow-up patch.
+From: Peter Zijlstra <peterz@infradead.org>
 
-Pass the entire gfp mask as part of struct compact_control.
+When enqueueing tasks on remote LLC domains, we send an IPI to do the
+work 'locally' and avoid bouncing all the cachelines over.
 
-Signed-off-by: David Rientjes <rientjes@google.com>
+However, when the remote CPU is idle (and polling, say x86 mwait), we
+don't need to send an IPI, we can simply kick the TIF word to wake it
+up and have the 'idle' loop do the work.
+
+So when _TIF_POLLING_NRFLAG is set, but _TIF_NEED_RESCHED is not (yet)
+set, set _TIF_NEED_RESCHED and avoid sending the IPI.
+
+[Edited by Andy Lutomirski, but this is mostly Peter Zijlstra's code.]
+
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Mike Galbraith <umgwanakikbuti@gmail.com>
+Much-requested-by: Andy Lutomirski <luto@amacapital.net>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 ---
- mm/compaction.c | 12 +++++++-----
- mm/internal.h   |  2 +-
- 2 files changed, 8 insertions(+), 6 deletions(-)
+ kernel/sched/core.c  | 54 ++++++++++++++++++++++++++++++++++++++++++++++------
+ kernel/sched/idle.c  |  3 +++
+ kernel/sched/sched.h |  6 ++++++
+ 3 files changed, 57 insertions(+), 6 deletions(-)
 
-diff --git a/mm/compaction.c b/mm/compaction.c
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -883,8 +883,8 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
- 	return ISOLATE_SUCCESS;
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index dfc3e23..af52702 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -519,7 +519,7 @@ static inline void init_hrtick(void)
+  	__old;								\
+ })
+ 
+-#ifdef TIF_POLLING_NRFLAG
++#if defined(CONFIG_SMP) && defined(TIF_POLLING_NRFLAG)
+ /*
+  * Atomically set TIF_NEED_RESCHED and test for TIF_POLLING_NRFLAG,
+  * this avoids any races wrt polling state changes and thereby avoids
+@@ -530,12 +530,44 @@ static bool set_nr_and_not_polling(struct task_struct *p)
+ 	struct thread_info *ti = task_thread_info(p);
+ 	return !(fetch_or(&ti->flags, _TIF_NEED_RESCHED) & _TIF_POLLING_NRFLAG);
+ }
++
++/*
++ * Atomically set TIF_NEED_RESCHED if TIF_POLLING_NRFLAG is set.
++ *
++ * If this returns true, then the idle task promises to call
++ * sched_ttwu_pending() and reschedule soon.
++ */
++static bool set_nr_if_polling(struct task_struct *p)
++{
++	struct thread_info *ti = task_thread_info(p);
++	typeof(ti->flags) old, val = ACCESS_ONCE(ti->flags);
++
++	for (;;) {
++		if (!(val & _TIF_POLLING_NRFLAG))
++			return false;
++		if (val & _TIF_NEED_RESCHED)
++			return true;
++		old = cmpxchg(&ti->flags, val, val | _TIF_NEED_RESCHED);
++		if (old == val)
++			break;
++		val = old;
++	}
++	return true;
++}
++
+ #else
+ static bool set_nr_and_not_polling(struct task_struct *p)
+ {
+ 	set_tsk_need_resched(p);
+ 	return true;
+ }
++
++#ifdef CONFIG_SMP
++static bool set_nr_if_polling(struct task_struct *p)
++{
++	return false;
++}
++#endif
+ #endif
+ 
+ /*
+@@ -1490,13 +1522,17 @@ static int ttwu_remote(struct task_struct *p, int wake_flags)
  }
  
--static int compact_finished(struct zone *zone,
--			    struct compact_control *cc)
-+static int compact_finished(struct zone *zone, struct compact_control *cc,
-+			    const int migratetype)
+ #ifdef CONFIG_SMP
+-static void sched_ttwu_pending(void)
++void sched_ttwu_pending(void)
  {
- 	unsigned int order;
- 	unsigned long watermark;
-@@ -930,7 +930,7 @@ static int compact_finished(struct zone *zone,
- 		struct free_area *area = &zone->free_area[order];
+ 	struct rq *rq = this_rq();
+ 	struct llist_node *llist = llist_del_all(&rq->wake_list);
+ 	struct task_struct *p;
++	unsigned long flags;
  
- 		/* Job done if page is free of the right migratetype */
--		if (!list_empty(&area->free_list[cc->migratetype]))
-+		if (!list_empty(&area->free_list[migratetype]))
- 			return COMPACT_PARTIAL;
+-	raw_spin_lock(&rq->lock);
++	if (!llist)
++		return;
++
++	raw_spin_lock_irqsave(&rq->lock, flags);
  
- 		/* Job done if allocation would set block type */
-@@ -996,6 +996,7 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
- 	int ret;
- 	unsigned long start_pfn = zone->zone_start_pfn;
- 	unsigned long end_pfn = zone_end_pfn(zone);
-+	const int migratetype = gfpflags_to_migratetype(cc->gfp_mask);
- 	const bool sync = cc->mode != MIGRATE_ASYNC;
+ 	while (llist) {
+ 		p = llist_entry(llist, struct task_struct, wake_entry);
+@@ -1504,7 +1540,7 @@ static void sched_ttwu_pending(void)
+ 		ttwu_do_activate(rq, p, 0);
+ 	}
  
- 	ret = compaction_suitable(zone, cc->order);
-@@ -1038,7 +1039,8 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
+-	raw_spin_unlock(&rq->lock);
++	raw_spin_unlock_irqrestore(&rq->lock, flags);
+ }
  
- 	migrate_prep_local();
+ void scheduler_ipi(void)
+@@ -1550,8 +1586,14 @@ void scheduler_ipi(void)
  
--	while ((ret = compact_finished(zone, cc)) == COMPACT_CONTINUE) {
-+	while ((ret = compact_finished(zone, cc, migratetype)) ==
-+						COMPACT_CONTINUE) {
- 		int err;
+ static void ttwu_queue_remote(struct task_struct *p, int cpu)
+ {
+-	if (llist_add(&p->wake_entry, &cpu_rq(cpu)->wake_list))
+-		smp_send_reschedule(cpu);
++	struct rq *rq = cpu_rq(cpu);
++
++	if (llist_add(&p->wake_entry, &cpu_rq(cpu)->wake_list)) {
++		if (!set_nr_if_polling(rq->idle))
++			smp_send_reschedule(cpu);
++		else
++			trace_sched_wake_polling_cpu(cpu);
++	}
+ }
  
- 		switch (isolate_migratepages(zone, cc)) {
-@@ -1096,7 +1098,7 @@ static unsigned long compact_zone_order(struct zone *zone, int order,
- 		.nr_freepages = 0,
- 		.nr_migratepages = 0,
- 		.order = order,
--		.migratetype = gfpflags_to_migratetype(gfp_mask),
-+		.gfp_mask = gfp_mask,
- 		.zone = zone,
- 		.mode = mode,
- 	};
-diff --git a/mm/internal.h b/mm/internal.h
---- a/mm/internal.h
-+++ b/mm/internal.h
-@@ -142,7 +142,7 @@ struct compact_control {
- 	bool finished_update_migrate;
+ bool cpus_share_cache(int this_cpu, int that_cpu)
+diff --git a/kernel/sched/idle.c b/kernel/sched/idle.c
+index 4de3a24..9d90909 100644
+--- a/kernel/sched/idle.c
++++ b/kernel/sched/idle.c
+@@ -12,6 +12,8 @@
  
- 	int order;			/* order a direct compactor needs */
--	int migratetype;		/* MOVABLE, RECLAIMABLE etc */
-+	const gfp_t gfp_mask;		/* gfp mask of a direct compactor */
- 	struct zone *zone;
- 	bool contended;			/* True if a lock was contended, or
- 					 * need_resched() true during async
+ #include <trace/events/power.h>
+ 
++#include "sched.h"
++
+ static int __read_mostly cpu_idle_force_poll;
+ 
+ void cpu_idle_poll_ctrl(bool enable)
+@@ -236,6 +238,7 @@ static void cpu_idle_loop(void)
+ 		tick_nohz_idle_exit();
+ 		__current_clr_polling();
+ 		smp_mb__after_clear_bit();
++		sched_ttwu_pending();
+ 		schedule_preempt_disabled();
+ 	}
+ }
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 600e229..99d9e81 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -670,6 +670,8 @@ extern int migrate_swap(struct task_struct *, struct task_struct *);
+ 
+ #ifdef CONFIG_SMP
+ 
++extern void sched_ttwu_pending(void);
++
+ #define rcu_dereference_check_sched_domain(p) \
+ 	rcu_dereference_check((p), \
+ 			      lockdep_is_held(&sched_domains_mutex))
+@@ -787,6 +789,10 @@ static inline unsigned int group_first_cpu(struct sched_group *group)
+ 
+ extern int group_balance_cpu(struct sched_group *sg);
+ 
++#else
++
++static inline void sched_ttwu_pending(void) { }
++
+ #endif /* CONFIG_SMP */
+ 
+ #include "stats.h"
+-- 
+1.9.3
+
