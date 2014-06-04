@@ -1,90 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932959AbaFDGuA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 02:50:00 -0400
-Received: from casper.infradead.org ([85.118.1.10]:45049 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932747AbaFDGt4 (ORCPT
+	id S932830AbaFDGt6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 02:49:58 -0400
+Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:62380 "EHLO
+	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932723AbaFDGty (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 02:49:56 -0400
-Date: Wed, 4 Jun 2014 08:49:46 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: jjherne@linux.vnet.ibm.com, Sasha Levin <sasha.levin@oracle.com>,
-        Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: workqueue: WARN at at kernel/workqueue.c:2176
-Message-ID: <20140604064946.GF30445@twins.programming.kicks-ass.net>
-References: <53758B12.8060609@cn.fujitsu.com>
- <20140516115737.GP11096@twins.programming.kicks-ass.net>
- <CACvQF52-jUMzK32uoDCb8zn0RZsiC9uzUOq+ZBRXK22esYKS0g@mail.gmail.com>
- <20140516162945.GZ11096@twins.programming.kicks-ass.net>
- <53849EB7.9090302@linux.vnet.ibm.com>
- <20140527142637.GB19143@laptop.programming.kicks-ass.net>
- <53875F09.3090607@linux.vnet.ibm.com>
- <538DB076.4090704@cn.fujitsu.com>
- <20140603141659.GO30445@twins.programming.kicks-ass.net>
- <538E840D.2040300@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="2504uJlMzHih+KB5"
-Content-Disposition: inline
-In-Reply-To: <538E840D.2040300@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Wed, 4 Jun 2014 02:49:54 -0400
+Message-ID: <1401864591.14072.2.camel@x220>
+Subject: Re: [PATCH 03/32] perf tools: Kbuild source related fixies
+From: Paul Bolle <pebolle@tiscali.nl>
+To: David Ahern <dsahern@gmail.com>
+Cc: Alexis Berlemont <alexis.berlemont@gmail.com>,
+        linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
+        mingo@kernel.org, sam@ravnborg.org, mmarek@suse.cz,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>, Borislav Petkov <bp@alien8.de>,
+        linux-kbuild@vger.kernel.org, Stephane Eranian <eranian@google.com>
+Date: Wed, 04 Jun 2014 08:49:51 +0200
+In-Reply-To: <538E7B2F.2000100@gmail.com>
+References: <1401833185-10347-1-git-send-email-alexis.berlemont@gmail.com>
+	 <1401833185-10347-4-git-send-email-alexis.berlemont@gmail.com>
+	 <538E7B2F.2000100@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 04 Jun 2014 06:49:51.0729 (UTC) FILETIME=[2F604E10:01CF7FC1]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2014-06-03 at 19:49 -0600, David Ahern wrote:
+> On 6/3/14, 4:05 PM, Alexis Berlemont wrote:
+> > From: Jiri Olsa <jolsa@redhat.com>
+> > diff --git a/tools/perf/builtin-lock.c b/tools/perf/builtin-lock.c
+> > index c852c7a..b255c20 100644
+> > --- a/tools/perf/builtin-lock.c
+> > +++ b/tools/perf/builtin-lock.c
+> > @@ -992,9 +992,11 @@ int cmd_lock(int argc, const char **argv, const char *prefix __maybe_unused)
+> >   				usage_with_options(report_usage, report_options);
+> >   		}
+> >   		rc = __cmd_report(false);
+> > +#ifdef CONFIG_BULTIN_SCRIPT
+> >   	} else if (!strcmp(argv[0], "script")) {
+> >   		/* Aliased to 'perf script' */
+> > -		return cmd_script(argc, argv, prefix);
+> > +		rc = cmd_script(argc, argv, prefix);
+> > +#endif
+> >   	} else if (!strcmp(argv[0], "info")) {
+> >   		if (argc) {
+> >   			argc = parse_options(argc, argv,
+> 
+> Since you are not adding builtin-cmds.h as an included file this change 
+> takes away functionality.
 
---2504uJlMzHih+KB5
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+And I guess that, because of the typo in CONFIG_BULTIN_SCRIPT, that
+would also be true if builtin-cmds.h were actually included.
 
-On Wed, Jun 04, 2014 at 10:27:25AM +0800, Lai Jiangshan wrote:
-> > Hmm, yes I think you're right. A queued wakeup can miss an affinity
-> > change like that.
-> >=20
-> > Something like the below ought to cure that I suppose..
->=20
-> As a non-scheduler developer, I can't find anything wrong with the patch
-> (I searched all on_rq in kernel/sched).
-
-You did fine finding that hole, so who knows, you might become one real
-soon now ;-)
-
-> but I think __migrate_task() is slow path comparing to sched_ttwu_pending=
-().
-> So I prefer to change set_cpus_allowed_ptr() and __migrate_task() rather =
-than
-> to sched_ttwu_pending().
-
-Yes, I agree, something there would be better, but I couldn't find
-anything without holes in.
+>  Each patch should ensure that existing options 
+> continue to work after the change.
+> 
+> ditto for all of the other changes to other files.
 
 
+Paul Bolle
 
---2504uJlMzHih+KB5
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTjsGKAAoJEHZH4aRLwOS6gDUQAIUXKx4afQOsdMh8+7RJiEBU
-7wostf98eHEnoGm55l3pbP99SwD+VLqvvy5csUTxmZlhbjpB2iWmrpvKvTzITApv
-jUId+UN+9Fv2ycXK1201CykoClWeN/s2RsczkziZT1F9ZSfLoznaRFAzgvgmK/JX
-sbqhZSjY+/hvwF/W8rc5DqX+IuDPkVKIhrFx/TBXV+2BFJ+tsUdJuDT5C5E3b0cS
-66wCyaiWEGlJaixhhDgfTovZewTSFTIighNeQSEJWW3upVk+zkuSt6+yYuIyazu7
-KebVB7bFwEvkquqeCy4BZdR85LLZxafPLcCpuC5c5KrksXsHcAYdmXPlQsIqtMeq
-Wq/aWG5jA+U9gWKJSOVWyaEOb50Wl13BkIThoWQ5qT40Nm6HdXgpPhY/72EkFvpI
-UCF495gftXtq8NA6A+hgcovWmnFVIz4IvvJY76IPy6pCEDPPS/8HvynWDCRL5PlN
-U/byNI1WXvCgZ9Z2BrgDM57WZa7a0zDx+EZePuAleCgDPMdgo+/uvWc7Fm8h45ZE
-j/3hanF/nEA6He621bGZM4+xOTYCyi1ujAOnWkKm+1T72J7tvbzDckIaQU4VaQU2
-UdB1TVLtpbwugfSd5VXXNRGVrkFuV5l8vQGPmOkQbAuPNFR+ssf857eGpAxBSvpM
-m4oHsHPJYrJnViy6DtOr
-=6EzU
------END PGP SIGNATURE-----
-
---2504uJlMzHih+KB5--
