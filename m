@@ -1,86 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753397AbaFDBbE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 21:31:04 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:12026 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750723AbaFDBbB (ORCPT
+	id S1752745AbaFDBi7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 21:38:59 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:40261 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750723AbaFDBi4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 21:31:01 -0400
-X-IronPort-AV: E=Sophos;i="4.98,969,1392134400"; 
-   d="scan'208";a="31413105"
-Message-ID: <538E77E4.8010406@cn.fujitsu.com>
-Date: Wed, 4 Jun 2014 09:35:32 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	Tue, 3 Jun 2014 21:38:56 -0400
+Message-ID: <538E7890.3020600@oracle.com>
+Date: Wed, 04 Jun 2014 09:38:24 +0800
+From: Bob Liu <bob.liu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: <paulmck@linux.vnet.ibm.com>
-CC: <josh@joshtriplett.org>, Joe Perches <joe@perches.com>,
-        <linux-kernel@vger.kernel.org>, <mingo@kernel.org>,
-        <dipankar@in.ibm.com>, <akpm@linux-foundation.org>,
-        <mathieu.desnoyers@efficios.com>, <niv@us.ibm.com>,
-        <tglx@linutronix.de>, <peterz@infradead.org>, <rostedt@goodmis.org>,
-        <dhowells@redhat.com>, <edumazet@google.com>, <dvhart@linux.intel.com>,
-        <fweisbec@gmail.com>, <oleg@redhat.com>, <sbw@mit.edu>
-Subject: Re: [PATCH RFC 1/2] MAINTAINERS: Add "R:" designated-reviewers tag
-References: <1401728420-3572-1-git-send-email-paulmck@linux.vnet.ibm.com> <1401729778.5770.20.camel@joe-AO725> <20140602174837.GA13257@cloud> <1401731968.7323.4.camel@joe-AO725> <20140602181658.GX22231@linux.vnet.ibm.com> <20140602185635.GB13569@cloud> <20140602190821.GZ22231@linux.vnet.ibm.com> <20140602191155.GB13648@cloud> <20140602192729.GB22231@linux.vnet.ibm.com>
-In-Reply-To: <20140602192729.GB22231@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
+To: Dan Streetman <ddstreet@ieee.org>
+CC: Seth Jennings <sjennings@variantweb.net>, Minchan Kim <minchan@kernel.org>,
+        Weijie Yang <weijie.yang@samsung.com>, Nitin Gupta <ngupta@vflare.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Linux-MM <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv4 0/6] mm/zpool: add common api for zswap to use zbud/zsmalloc
+References: <1400958369-3588-1-git-send-email-ddstreet@ieee.org> <1401747586-11861-1-git-send-email-ddstreet@ieee.org>
+In-Reply-To: <1401747586-11861-1-git-send-email-ddstreet@ieee.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.226.103]
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/03/2014 03:27 AM, Paul E. McKenney wrote:
-> On Mon, Jun 02, 2014 at 12:11:55PM -0700, josh@joshtriplett.org wrote:
->> On Mon, Jun 02, 2014 at 12:08:21PM -0700, Paul E. McKenney wrote:
->>> On Mon, Jun 02, 2014 at 11:56:35AM -0700, josh@joshtriplett.org wrote:
->>>> On Mon, Jun 02, 2014 at 11:16:58AM -0700, Paul E. McKenney wrote:
->>>>> On Mon, Jun 02, 2014 at 10:59:28AM -0700, Joe Perches wrote:
->>>>>> On Mon, 2014-06-02 at 10:48 -0700, josh@joshtriplett.org wrote:
->>>>>>> On Mon, Jun 02, 2014 at 10:22:58AM -0700, Joe Perches wrote:
->>>>>>>> On Mon, 2014-06-02 at 10:00 -0700, Paul E. McKenney wrote:
->>>>>>>>> A ksummit-discuss email thread looked at the difficulty recruiting
->>>>>>>>> and retaining reviewers.
->>>>>>>>
->>>>>>>> []
->>>>>>>>
->>>>>>>>> Paul Walmsley also noted the need for patch
->>>>>>>>> submitters to know who the key reviewers are and suggested adding an
->>>>>>>>> "R:" tag to the MAINTAINERS file to record this information on a
->>>>>>>>> per-subsystem basis.
->>>>>>>>
->>>>>>>> I'm not sure of the value of this.
->>>>>>>>
->>>>>>>> Why not just mark the actual reviewers as maintainers?
->>>>>>>
->>>>>>> As discussed in the kernel summit discussion, being a regular patch
->>>>>>> reviewer isn't the same thing as being *the* maintainer.
->>>>>>
->>>>>> I think it's not particularly important or valuable
->>>>>> here to make that distinction.
->>>>>>
->>>>>> What real difference does it make?
->>>>>
->>>>> In the particular case of Josh, none, at least from my viewpoint.  He of
->>>>> course might or might not want to take on additional maintainership
->>>>> responsibility at this particular point in time, in which case, I would
->>>>> be more than happy to have him as a designated maintainer.
->>>>
->>>> For the record, I'd be happy to be listed as a co-maintainer for RCU. :)
->>>
->>> I would be happy to put you down as maintainer and Steven down as
->>> official reviewer.  ;-)
->>
->> I'd suggest adding Mathieu Desnoyers, Oleg Nesterov, and Lai Jiangshan
->> as reviewers as well, with their consent.
-> 
-> Mathieu, Oleg, Lai, any objections?
-> 
-> 							
 
-I agree to add me.
 
-Thanks,
-Lai
+On 06/03/2014 06:19 AM, Dan Streetman wrote:
+> In order to allow zswap users to choose between zbud and zsmalloc for
+> the compressed storage pool, this patch set adds a new api "zpool" that
+> provides an interface to both zbud and zsmalloc.  Only minor changes
+> to zbud's interface were needed.  This does not include implementing
+> shrinking in zsmalloc, which will be sent separately.
+> 
+> I believe Seth originally was using zsmalloc for swap, but there were
+> concerns about how significant the impact of shrinking zsmalloc would
+> be when zswap had to start reclaiming pages.  That still may be an
+> issue, but this at least allows users to choose themselves whether
+> they want a lower-density or higher-density compressed storage medium.
+> At least for situations where zswap reclaim is never or rarely reached,
+> it probably makes sense to use the higher density of zsmalloc.
+> 
+
+Nice job!
+I also made a attempt last year, but didn't finish.
+
+> Note this patch set does not change zram to use zpool, although that
+> change should be possible as well.
+> 
+
+This version looks good to me!
+
+Reviewed-by: Bob Liu <bob.liu@oracle.com>
+
+> ---
+> 
+> Changes since v3 : https://lkml.org/lkml/2014/5/24/130
+>   -In zpool_shrink() use # pages instead of # bytes
+>   -Add reclaimed param to zpool_shrink() to indicate to caller
+>    # pages actually reclaimed
+>   -move module usage counting to zpool, from zbud/zsmalloc
+>   -update zbud_zpool_shrink() to call zbud_reclaim_page() in a
+>    loop until requested # pages have been reclaimed (or error)
+> 
+> Changes since v2 : https://lkml.org/lkml/2014/5/7/927
+>   -Change zpool to use driver registration instead of hardcoding
+>    implementations
+>   -Add module use counting in zbud/zsmalloc
+> 
+> Changes since v1 https://lkml.org/lkml/2014/4/19/97
+>  -remove zsmalloc shrinking
+>  -change zbud size param type from unsigned int to size_t
+>  -remove zpool fallback creation
+>  -zswap manually falls back to zbud if specified type fails
+> 
+> 
+> Dan Streetman (6):
+>   mm/zbud: zbud_alloc() minor param change
+>   mm/zbud: change zbud_alloc size type to size_t
+>   mm/zpool: implement common zpool api to zbud/zsmalloc
+>   mm/zpool: zbud/zsmalloc implement zpool
+>   mm/zpool: update zswap to use zpool
+>   mm/zpool: prevent zbud/zsmalloc from unloading when used
+> 
+>  include/linux/zbud.h  |   2 +-
+>  include/linux/zpool.h | 224 ++++++++++++++++++++++++++++++++++++++++++++++++++
+>  mm/Kconfig            |  43 ++++++----
+>  mm/Makefile           |   1 +
+>  mm/zbud.c             | 123 +++++++++++++++++++++++----
+>  mm/zpool.c            | 206 ++++++++++++++++++++++++++++++++++++++++++++++
+>  mm/zsmalloc.c         |  83 +++++++++++++++++++
+>  mm/zswap.c            |  76 ++++++++++-------
+>  8 files changed, 694 insertions(+), 64 deletions(-)
+>  create mode 100644 include/linux/zpool.h
+>  create mode 100644 mm/zpool.c
+> 
+
+-- 
+Regards,
+-Bob
