@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932582AbaFEAku (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 20:40:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39832 "EHLO
+	id S1757138AbaFEAlI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 20:41:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39850 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752632AbaFDXVX (ORCPT
+	with ESMTP id S1752622AbaFDXVX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 4 Jun 2014 19:21:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jani Nikula <jani.nikula@linux.intel.com>, Egbert Eich <eich@suse.de>,
-        bitlord <bitlord0xff@gmail.com>,
+        max <manikulin@gmail.com>, Alan Stern <stern@rowland.harvard.edu>,
         Daniel Vetter <daniel.vetter@ffwll.ch>,
         Jani Nikula <jani.nikula@intel.com>
-Subject: [PATCH 3.14 064/228] drm/i915: Dont WARN nor handle unexpected hpd interrupts on gmch platforms
-Date: Wed,  4 Jun 2014 16:21:33 -0700
-Message-Id: <20140604232350.111431164@linuxfoundation.org>
+Subject: [PATCH 3.14 063/228] drm/i915: Dont check gmch state on inherited configs
+Date: Wed,  4 Jun 2014 16:21:32 -0700
+Message-Id: <20140604232350.078506322@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -33,68 +32,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit 3ff04a160a891e56cdcee5c198d4c764d1c8c78b upstream.
+commit 9953599bc02dbc1d3330e6a0bfc6c50e9dffcac6 upstream.
 
-The status bits are unconditionally set, the control bits only enable
-the actual interrupt generation. Which means if we get some random
-other interrupts we'll bogusly complain about them.
+... our current modeset code isn't good enough yet to handle this. The
+scenario is:
 
-So restrict the WARN to platforms with a sane hotplug interrupt
-handling scheme. And even more important also don't attempt to process
-the hpd bit since we've detected a storm already. Instead just clear
-the bit silently.
+1. BIOS sets up a cloned config with lvds+external screen on the same
+pipe, e.g. pipe B.
 
-This WARN has been introduced in
+2. We read out that state for pipe B and assign the gmch_pfit state to
+it.
 
-commit b8f102e8bf71cacf33326360fdf9dcfd1a63925b
-Author: Egbert Eich <eich@suse.de>
-Date:   Fri Jul 26 14:14:24 2013 +0200
+3. The initial modeset switches the lvds to pipe A but due to lack of
+atomic modeset we don't recompute the config of pipe B.
 
-    drm/i915: Add messages useful for HPD storm detection debugging (v2)
+-> both pipes now claim (in the sw pipe config structure) to use the
+gmch_pfit, which just won't work.
 
-before that we silently handled the hpd event and so partially
-defeated the storm detection.
-
-v2: Pimp commit message (Jani)
-
-Cc: Jani Nikula <jani.nikula@linux.intel.com>
-Cc: Egbert Eich <eich@suse.de>
-Cc: bitlord <bitlord0xff@gmail.com>
-Reported-by: bitlord <bitlord0xff@gmail.com>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=74081
+Tested-by: max <manikulin@gmail.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Jani Nikula <jani.nikula@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/i915_irq.c |   18 ++++++++++++++----
- 1 file changed, 14 insertions(+), 4 deletions(-)
+ drivers/gpu/drm/i915/intel_display.c |   23 ++++++++++++++++++-----
+ drivers/gpu/drm/i915/intel_drv.h     |    3 ++-
+ 2 files changed, 20 insertions(+), 6 deletions(-)
 
---- a/drivers/gpu/drm/i915/i915_irq.c
-+++ b/drivers/gpu/drm/i915/i915_irq.c
-@@ -1252,10 +1252,20 @@ static inline void intel_hpd_irq_handler
- 	spin_lock(&dev_priv->irq_lock);
- 	for (i = 1; i < HPD_NUM_PINS; i++) {
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -9354,11 +9354,22 @@ intel_pipe_config_compare(struct drm_dev
+ 	PIPE_CONF_CHECK_I(pipe_src_w);
+ 	PIPE_CONF_CHECK_I(pipe_src_h);
  
--		WARN_ONCE(hpd[i] & hotplug_trigger &&
--			  dev_priv->hpd_stats[i].hpd_mark == HPD_DISABLED,
--			  "Received HPD interrupt (0x%08x) on pin %d (0x%08x) although disabled\n",
--			  hotplug_trigger, i, hpd[i]);
-+		if (hpd[i] & hotplug_trigger &&
-+		    dev_priv->hpd_stats[i].hpd_mark == HPD_DISABLED) {
-+			/*
-+			 * On GMCH platforms the interrupt mask bits only
-+			 * prevent irq generation, not the setting of the
-+			 * hotplug bits itself. So only WARN about unexpected
-+			 * interrupts on saner platforms.
-+			 */
-+			WARN_ONCE(INTEL_INFO(dev)->gen >= 5 && !IS_VALLEYVIEW(dev),
-+				  "Received HPD interrupt (0x%08x) on pin %d (0x%08x) although disabled\n",
-+				  hotplug_trigger, i, hpd[i]);
+-	PIPE_CONF_CHECK_I(gmch_pfit.control);
+-	/* pfit ratios are autocomputed by the hw on gen4+ */
+-	if (INTEL_INFO(dev)->gen < 4)
+-		PIPE_CONF_CHECK_I(gmch_pfit.pgm_ratios);
+-	PIPE_CONF_CHECK_I(gmch_pfit.lvds_border_bits);
++	/*
++	 * FIXME: BIOS likes to set up a cloned config with lvds+external
++	 * screen. Since we don't yet re-compute the pipe config when moving
++	 * just the lvds port away to another pipe the sw tracking won't match.
++	 *
++	 * Proper atomic modesets with recomputed global state will fix this.
++	 * Until then just don't check gmch state for inherited modes.
++	 */
++	if (!PIPE_CONF_QUIRK(PIPE_CONFIG_QUIRK_INHERITED_MODE)) {
++		PIPE_CONF_CHECK_I(gmch_pfit.control);
++		/* pfit ratios are autocomputed by the hw on gen4+ */
++		if (INTEL_INFO(dev)->gen < 4)
++			PIPE_CONF_CHECK_I(gmch_pfit.pgm_ratios);
++		PIPE_CONF_CHECK_I(gmch_pfit.lvds_border_bits);
++	}
 +
-+			continue;
-+		}
+ 	PIPE_CONF_CHECK_I(pch_pfit.enabled);
+ 	if (current_config->pch_pfit.enabled) {
+ 		PIPE_CONF_CHECK_I(pch_pfit.pos);
+@@ -11193,6 +11204,8 @@ static void intel_modeset_readout_hw_sta
+ 			    base.head) {
+ 		memset(&crtc->config, 0, sizeof(crtc->config));
  
- 		if (!(hpd[i] & hotplug_trigger) ||
- 		    dev_priv->hpd_stats[i].hpd_mark != HPD_ENABLED)
++		crtc->config.quirks |= PIPE_CONFIG_QUIRK_INHERITED_MODE;
++
+ 		crtc->active = dev_priv->display.get_pipe_config(crtc,
+ 								 &crtc->config);
+ 
+--- a/drivers/gpu/drm/i915/intel_drv.h
++++ b/drivers/gpu/drm/i915/intel_drv.h
+@@ -219,7 +219,8 @@ struct intel_crtc_config {
+ 	 * tracked with quirk flags so that fastboot and state checker can act
+ 	 * accordingly.
+ 	 */
+-#define PIPE_CONFIG_QUIRK_MODE_SYNC_FLAGS (1<<0) /* unreliable sync mode.flags */
++#define PIPE_CONFIG_QUIRK_MODE_SYNC_FLAGS	(1<<0) /* unreliable sync mode.flags */
++#define PIPE_CONFIG_QUIRK_INHERITED_MODE	(1<<1) /* mode inherited from firmware */
+ 	unsigned long quirks;
+ 
+ 	/* User requested mode, only valid as a starting point to
 
 
