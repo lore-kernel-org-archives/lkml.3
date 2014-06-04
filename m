@@ -1,86 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751329AbaFDSCB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 14:02:01 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:35145 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750973AbaFDSB7 (ORCPT
+	id S1751387AbaFDSCY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 14:02:24 -0400
+Received: from www.linutronix.de ([62.245.132.108]:40462 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750717AbaFDSCW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 14:01:59 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: <linux-kernel@vger.kernel.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [PATCH] init: make rootdelay=N consistent with rootwait behaviour
-Date: Wed, 4 Jun 2014 14:01:35 -0400
-Message-ID: <1401904895-18791-1-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: git-send-email 1.9.1
+	Wed, 4 Jun 2014 14:02:22 -0400
+Date: Wed, 4 Jun 2014 20:02:16 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Steven Rostedt <rostedt@goodmis.org>
+cc: Brad Mouring <bmouring@ni.com>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Clark Williams <williams@redhat.com>
+Subject: Re: [PATCH 1/1] rtmutex: Handle when top lock owner changes
+In-Reply-To: <20140604114411.0fe51c1d@gandalf.local.home>
+Message-ID: <alpine.DEB.2.10.1406041951210.3319@nanos>
+References: <1400855410-14773-1-git-send-email-brad.mouring@ni.com> <1400855410-14773-2-git-send-email-brad.mouring@ni.com> <20140603210609.62de6451@gandalf.local.home> <alpine.DEB.2.10.1406041623170.3319@nanos> <20140604114411.0fe51c1d@gandalf.local.home>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently rootdelay=N and rootwait behave differently (aside
-from the obvious unbounded wait duration) because they are
-at different places in the init sequence.
+On Wed, 4 Jun 2014, Steven Rostedt wrote:
 
-The difference manifests itself for md devices because the
-call to md_run_setup() lives between rootdelay and rootwait,
-so if you try to use rootdelay=20 to try and allow a slow
-RAID0 array to assemble, you get this:
+> On Wed, 4 Jun 2014 17:32:37 +0200 (CEST)
+> Thomas Gleixner <tglx@linutronix.de> wrote:
+> 
+> > T3 releases L3
+> > T2 gets L3
+> > T2 drops L3 and L2
+> > T2 blocks on L4 held by T4
+> > T4 blocked on L5 held by T5
+> > 
+> > So we happily boost T4 and T5. Not what we really want to do.
+> > 
+> > Nasty, isn't it ?
+> > 
+> 
+> Actually, we may go up a chain, but we never do any unnecessary
+> boosting. That's because the boost is done with rt_mutex_adjust_prio()
+> which gets the prio from rt_mutex_getprio() which reads the
+> task->normal_prio and compares it to the task_top_pi_waiter(task)->prio,
+> which will always be correct as we have the necessary locks.
 
-[    4.526011] sd 6:0:0:0: [sdc] Attached SCSI removable disk
-[   22.972079] md: Waiting for all devices to be available before autodetect
-
-i.e. you've achieved nothing other than delaying the probing
-20s, when what you wanted was a 20s delay _after_ the probing
-for md devices was initiated.
-
-Here we move the rootdelay code to be right beside the rootwait
-code, so that their behaviour is consistent.
-
-It should be noted that in doing so, the actions based on the
-saved_root_name[0] and initrd_load() were previously put on
-hold by rootdelay=N and now currently will not be delayed.
-However, I think consistent behaviour is more important than
-matching historical behaviour of delaying the above two operations.
-
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
----
- init/do_mounts.c | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
-
-diff --git a/init/do_mounts.c b/init/do_mounts.c
-index 82f22885c87e..b6237c31b0e2 100644
---- a/init/do_mounts.c
-+++ b/init/do_mounts.c
-@@ -539,12 +539,6 @@ void __init prepare_namespace(void)
- {
- 	int is_floppy;
+Indeed.
  
--	if (root_delay) {
--		printk(KERN_INFO "Waiting %d sec before mounting root device...\n",
--		       root_delay);
--		ssleep(root_delay);
--	}
--
- 	/*
- 	 * wait for the known devices to complete their probing
- 	 *
-@@ -571,6 +565,12 @@ void __init prepare_namespace(void)
- 	if (initrd_load())
- 		goto out;
- 
-+	if (root_delay) {
-+		pr_info("Waiting %d sec before mounting root device...\n",
-+			root_delay);
-+		ssleep(root_delay);
-+	}
-+
- 	/* wait for any asynchronous scanning to complete */
- 	if ((ROOT_DEV == 0) && root_wait) {
- 		printk(KERN_INFO "Waiting for root device %s...\n",
--- 
-1.9.1
+> And we don't even need to worry about the chain we miss. That is, if
+> task A is blocked on a lock owned by D at the time, but as we go up the
+> chain, D releases the lock and B grabs it, B will still up its priority
+> based on the waiters of the lock (that is A), and if B blocks, it will
+> boost the tasks that own the lock it blocks on, where B is still
+> influenced by A.
+> 
+> The fact that we only update the prio based on the actual waiters and
+> don't carry a prio up the chain (which you designed, and I thought was
+> quite ingenious by the way), we may waste time going up a chain, but
+> the priority inheritance is still accurate.
+
+Duh. I actually had to lookup my notes from back then. There is even a
+lenghty IRC discussion about not propagating the least waiters prio,
+but lookup the actual lock waiters. Good, so we just walk for nothing
+and waste some cpu cycles.
+
+My brain still suffers from 3 days staring into futex.c
+
+I'll fixup the check so it wont break the real deadlock case and queue
+it.
+
+Thanks,
+
+	tglx
 
