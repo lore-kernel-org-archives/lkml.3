@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754587AbaFDXiw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:38:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40811 "EHLO
+	id S1753996AbaFDXXx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 19:23:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40775 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753999AbaFDXXy (ORCPT
+	with ESMTP id S1753956AbaFDXXt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:23:54 -0400
+	Wed, 4 Jun 2014 19:23:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Clemens Ladisch <clemens@ladisch.de>, Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.10 042/103] ALSA: usb-audio: work around corrupted TEAC UD-H01 feedback data
-Date: Wed,  4 Jun 2014 16:25:05 -0700
-Message-Id: <20140604232548.212166443@linuxfoundation.org>
+        Javier Martin <javier.martin@vista-silicon.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [PATCH 3.10 047/103] [media] omap3isp: Defer probe when the IOMMU is not available
+Date: Wed,  4 Jun 2014 16:25:10 -0700
+Message-Id: <20140604232548.367880573@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232546.704156131@linuxfoundation.org>
 References: <20140604232546.704156131@linuxfoundation.org>
@@ -28,69 +30,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Clemens Ladisch <clemens@ladisch.de>
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 
-commit 7040b6d1febfdbd9c1595efb751d492cd2503f96 upstream.
+commit 7c0f812a5d65e712618af880dda4a5cc7ed79463 upstream.
 
-The TEAC UD-H01 firmware sends wrong feedback frequency values, thus
-causing the PC to send the samples at a wrong rate, which results in
-clicks and crackles in the output.
+When the OMAP3 ISP driver is compiled in the kernel the device can be
+probed before the corresponding IOMMU is available. Defer the probe in
+that case, and fix a crash in the error path.
 
-Add a workaround to detect and fix the corruption.
-
-Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
-[mick37@gmx.de: use sender->udh01_fb_quirk rather than
- ep->udh01_fb_quirk in snd_usb_handle_sync_urb()]
-Reported-and-tested-by: Mick <mick37@gmx.de>
-Reported-and-tested-by: Andrea Messa <andr.messa@tiscali.it>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Reported-by: Javier Martin <javier.martin@vista-silicon.com>
+Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/usb/card.h     |    1 +
- sound/usb/endpoint.c |   15 ++++++++++++++-
- 2 files changed, 15 insertions(+), 1 deletion(-)
+ drivers/media/platform/omap3isp/isp.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/sound/usb/card.h
-+++ b/sound/usb/card.h
-@@ -90,6 +90,7 @@ struct snd_usb_endpoint {
- 	unsigned int curframesize;      /* current packet size in frames (for capture) */
- 	unsigned int syncmaxsize;	/* sync endpoint packet size */
- 	unsigned int fill_max:1;	/* fill max packet size always */
-+	unsigned int udh01_fb_quirk:1;	/* corrupted feedback data */
- 	unsigned int datainterval;      /* log_2 of data packet interval */
- 	unsigned int syncinterval;	/* P for adaptive mode, 0 otherwise */
- 	unsigned char silence_value;
---- a/sound/usb/endpoint.c
-+++ b/sound/usb/endpoint.c
-@@ -467,6 +467,10 @@ struct snd_usb_endpoint *snd_usb_add_end
- 			ep->syncinterval = 3;
- 
- 		ep->syncmaxsize = le16_to_cpu(get_endpoint(alts, 1)->wMaxPacketSize);
-+
-+		if (chip->usb_id == USB_ID(0x0644, 0x8038) /* TEAC UD-H01 */ &&
-+		    ep->syncmaxsize == 4)
-+			ep->udh01_fb_quirk = 1;
+--- a/drivers/media/platform/omap3isp/isp.c
++++ b/drivers/media/platform/omap3isp/isp.c
+@@ -2249,6 +2249,7 @@ static int isp_probe(struct platform_dev
+ 	ret = iommu_attach_device(isp->domain, &pdev->dev);
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "can't attach iommu device: %d\n", ret);
++		ret = -EPROBE_DEFER;
+ 		goto free_domain;
  	}
  
- 	list_add_tail(&ep->list, &chip->ep_list);
-@@ -1075,7 +1079,16 @@ void snd_usb_handle_sync_urb(struct snd_
- 	if (f == 0)
- 		return;
- 
--	if (unlikely(ep->freqshift == INT_MIN)) {
-+	if (unlikely(sender->udh01_fb_quirk)) {
-+		/*
-+		 * The TEAC UD-H01 firmware sometimes changes the feedback value
-+		 * by +/- 0x1.0000.
-+		 */
-+		if (f < ep->freqn - 0x8000)
-+			f += 0x10000;
-+		else if (f > ep->freqn + 0x8000)
-+			f -= 0x10000;
-+	} else if (unlikely(ep->freqshift == INT_MIN)) {
- 		/*
- 		 * The first time we see a feedback value, determine its format
- 		 * by shifting it left or right until it matches the nominal
+@@ -2287,6 +2288,7 @@ detach_dev:
+ 	iommu_detach_device(isp->domain, &pdev->dev);
+ free_domain:
+ 	iommu_domain_free(isp->domain);
++	isp->domain = NULL;
+ error_isp:
+ 	isp_xclk_cleanup(isp);
+ 	omap3isp_put(isp);
 
 
