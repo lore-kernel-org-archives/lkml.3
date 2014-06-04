@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752839AbaFDXVl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:21:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39910 "EHLO
+	id S1752932AbaFDXV4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 19:21:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39968 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752689AbaFDXVa (ORCPT
+	with ESMTP id S1752843AbaFDXVy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:21:30 -0400
+	Wed, 4 Jun 2014 19:21:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.14 077/228] drm/radeon: dont allow runpm=1 on systems with out ATPX
-Date: Wed,  4 Jun 2014 16:21:46 -0700
-Message-Id: <20140604232350.550151513@linuxfoundation.org>
+        Daniele Forsi <dforsi@gmail.com>
+Subject: [PATCH 3.14 090/228] usb: storage: shuttle_usbat: fix discs being detected twice
+Date: Wed,  4 Jun 2014 16:21:59 -0700
+Message-Id: <20140604232350.940701534@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -28,39 +28,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexdeucher@gmail.com>
+From: Daniele Forsi <dforsi@gmail.com>
 
-commit 73acacc7397fe854ed2ab75f1c940fa00faaf15e upstream.
+commit df602c2d2358f02c6e49cffc5b49b9daa16db033 upstream.
 
-vgaswitcheroo and the ATPX ACPI methods are required to
-power down the dGPU.
+Even if the USB-to-ATAPI converter supported multiple LUNs, this
+driver would always detect the same physical device or media because
+it doesn't use srb->device->lun in any way.
+Tested with an Hewlett-Packard CD-Writer Plus 8200e.
 
-bug:
-https://bugzilla.kernel.org/show_bug.cgi?id=73901
-
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Daniele Forsi <dforsi@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_kms.c |    8 +++-----
- 1 file changed, 3 insertions(+), 5 deletions(-)
+ drivers/usb/storage/shuttle_usbat.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/radeon/radeon_kms.c
-+++ b/drivers/gpu/drm/radeon/radeon_kms.c
-@@ -107,11 +107,9 @@ int radeon_driver_load_kms(struct drm_de
- 		flags |= RADEON_IS_PCI;
- 	}
+--- a/drivers/usb/storage/shuttle_usbat.c
++++ b/drivers/usb/storage/shuttle_usbat.c
+@@ -1851,7 +1851,7 @@ static int usbat_probe(struct usb_interf
+ 	us->transport_name = "Shuttle USBAT";
+ 	us->transport = usbat_flash_transport;
+ 	us->transport_reset = usb_stor_CB_reset;
+-	us->max_lun = 1;
++	us->max_lun = 0;
  
--	if (radeon_runtime_pm == 1)
--		flags |= RADEON_IS_PX;
--	else if ((radeon_runtime_pm == -1) &&
--		 radeon_has_atpx() &&
--		 ((flags & RADEON_IS_IGP) == 0))
-+	if ((radeon_runtime_pm != 0) &&
-+	    radeon_has_atpx() &&
-+	    ((flags & RADEON_IS_IGP) == 0))
- 		flags |= RADEON_IS_PX;
- 
- 	/* radeon_device_init should report only fatal error
+ 	result = usb_stor_probe2(us);
+ 	return result;
 
 
