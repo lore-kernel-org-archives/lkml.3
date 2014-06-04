@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753305AbaFDXWm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:22:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40242 "EHLO
+	id S1756214AbaFEAOJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 20:14:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40274 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753231AbaFDXWk (ORCPT
+	with ESMTP id S1753310AbaFDXWn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:22:40 -0400
+	Wed, 4 Jun 2014 19:22:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Neil Greatorex <neil@fatboyfat.co.uk>,
-        Jason Cooper <jason@lakedaemon.net>
-Subject: [PATCH 3.14 158/228] bus: mvebu-mbus: allow several windows with the same target/attribute
-Date: Wed,  4 Jun 2014 16:23:07 -0700
-Message-Id: <20140604232353.090095689@linuxfoundation.org>
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [PATCH 3.14 151/228] nfsd4: warn on finding lockowner without stateids
+Date: Wed,  4 Jun 2014 16:23:00 -0700
+Message-Id: <20140604232352.868616884@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -30,40 +28,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit b566e782be32145664d96ada3e389f17d32742e5 upstream.
+commit 27b11428b7de097c42f205beabb1764f4365443b upstream.
 
-Having multiple windows with the same target and attribute is actually
-legal, and can be useful for PCIe windows, when PCIe BARs have a size
-that isn't a power of two, and we therefore need to create several
-MBus windows to cover the PCIe BAR for a given PCIe interface.
+The current code assumes a one-to-one lockowner<->lock stateid
+correspondance.
 
-Fixes: fddddb52a6c4 ('bus: introduce an Marvell EBU MBus driver')
-Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Link: https://lkml.kernel.org/r/1397823593-1932-7-git-send-email-thomas.petazzoni@free-electrons.com
-Tested-by: Neil Greatorex <neil@fatboyfat.co.uk>
-Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/bus/mvebu-mbus.c |    6 ------
- 1 file changed, 6 deletions(-)
+ fs/nfsd/nfs4state.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/bus/mvebu-mbus.c
-+++ b/drivers/bus/mvebu-mbus.c
-@@ -222,12 +222,6 @@ static int mvebu_mbus_window_conflicts(s
- 		 */
- 		if ((u64)base < wend && end > wbase)
- 			return 0;
--
--		/*
--		 * Check if target/attribute conflicts
--		 */
--		if (target == wtarget && attr == wattr)
--			return 0;
- 	}
+--- a/fs/nfsd/nfs4state.c
++++ b/fs/nfsd/nfs4state.c
+@@ -4156,6 +4156,10 @@ static bool same_lockowner_ino(struct nf
  
- 	return 1;
+ 	if (!same_owner_str(&lo->lo_owner, owner, clid))
+ 		return false;
++	if (list_empty(&lo->lo_owner.so_stateids)) {
++		WARN_ON_ONCE(1);
++		return false;
++	}
+ 	lst = list_first_entry(&lo->lo_owner.so_stateids,
+ 			       struct nfs4_ol_stateid, st_perstateowner);
+ 	return lst->st_file->fi_inode == inode;
 
 
