@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932365AbaFEAc3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 20:32:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39964 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752875AbaFDXVw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752874AbaFDXVw (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 4 Jun 2014 19:21:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39961 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752842AbaFDXVt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 19:21:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
-        Boris BREZILLON <b.brezillon@overkiz.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>, Felipe Balbi <balbi@ti.com>
-Subject: [PATCH 3.14 087/228] usb: gadget: at91-udc: fix irq and iomem resource retrieval
-Date: Wed,  4 Jun 2014 16:21:56 -0700
-Message-Id: <20140604232350.853223527@linuxfoundation.org>
+        Clemens Ladisch <clemens@ladisch.de>, Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.14 094/228] ALSA: usb-audio: work around corrupted TEAC UD-H01 feedback data
+Date: Wed,  4 Jun 2014 16:22:03 -0700
+Message-Id: <20140604232351.071498095@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -30,42 +28,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+From: Clemens Ladisch <clemens@ladisch.de>
 
-commit 886c7c426d465732ec9d1b2bbdda5642fc2e7e05 upstream.
+commit 7040b6d1febfdbd9c1595efb751d492cd2503f96 upstream.
 
-When using dt resources retrieval (interrupts and reg properties) there is
-no predefined order for these resources in the platform dev resource
-table. Also don't expect the number of resource to be always 2.
+The TEAC UD-H01 firmware sends wrong feedback frequency values, thus
+causing the PC to send the samples at a wrong rate, which results in
+clicks and crackles in the output.
 
-Signed-off-by: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-Acked-by: Boris BREZILLON <b.brezillon@overkiz.com>
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Add a workaround to detect and fix the corruption.
+
+Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+[mick37@gmx.de: use sender->udh01_fb_quirk rather than
+ ep->udh01_fb_quirk in snd_usb_handle_sync_urb()]
+Reported-and-tested-by: Mick <mick37@gmx.de>
+Reported-and-tested-by: Andrea Messa <andr.messa@tiscali.it>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/gadget/at91_udc.c |   10 ----------
- 1 file changed, 10 deletions(-)
+ sound/usb/card.h     |    1 +
+ sound/usb/endpoint.c |   15 ++++++++++++++-
+ 2 files changed, 15 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/gadget/at91_udc.c
-+++ b/drivers/usb/gadget/at91_udc.c
-@@ -1709,16 +1709,6 @@ static int at91udc_probe(struct platform
- 		return -ENODEV;
+--- a/sound/usb/card.h
++++ b/sound/usb/card.h
+@@ -92,6 +92,7 @@ struct snd_usb_endpoint {
+ 	unsigned int curframesize;      /* current packet size in frames (for capture) */
+ 	unsigned int syncmaxsize;	/* sync endpoint packet size */
+ 	unsigned int fill_max:1;	/* fill max packet size always */
++	unsigned int udh01_fb_quirk:1;	/* corrupted feedback data */
+ 	unsigned int datainterval;      /* log_2 of data packet interval */
+ 	unsigned int syncinterval;	/* P for adaptive mode, 0 otherwise */
+ 	unsigned char silence_value;
+--- a/sound/usb/endpoint.c
++++ b/sound/usb/endpoint.c
+@@ -469,6 +469,10 @@ struct snd_usb_endpoint *snd_usb_add_end
+ 			ep->syncinterval = 3;
+ 
+ 		ep->syncmaxsize = le16_to_cpu(get_endpoint(alts, 1)->wMaxPacketSize);
++
++		if (chip->usb_id == USB_ID(0x0644, 0x8038) /* TEAC UD-H01 */ &&
++		    ep->syncmaxsize == 4)
++			ep->udh01_fb_quirk = 1;
  	}
  
--	if (pdev->num_resources != 2) {
--		DBG("invalid num_resources\n");
--		return -ENODEV;
--	}
--	if ((pdev->resource[0].flags != IORESOURCE_MEM)
--			|| (pdev->resource[1].flags != IORESOURCE_IRQ)) {
--		DBG("invalid resource type\n");
--		return -ENODEV;
--	}
--
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	if (!res)
- 		return -ENXIO;
+ 	list_add_tail(&ep->list, &chip->ep_list);
+@@ -1099,7 +1103,16 @@ void snd_usb_handle_sync_urb(struct snd_
+ 	if (f == 0)
+ 		return;
+ 
+-	if (unlikely(ep->freqshift == INT_MIN)) {
++	if (unlikely(sender->udh01_fb_quirk)) {
++		/*
++		 * The TEAC UD-H01 firmware sometimes changes the feedback value
++		 * by +/- 0x1.0000.
++		 */
++		if (f < ep->freqn - 0x8000)
++			f += 0x10000;
++		else if (f > ep->freqn + 0x8000)
++			f -= 0x10000;
++	} else if (unlikely(ep->freqshift == INT_MIN)) {
+ 		/*
+ 		 * The first time we see a feedback value, determine its format
+ 		 * by shifting it left or right until it matches the nominal
 
 
