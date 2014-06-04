@@ -1,49 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751965AbaFDUIw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 16:08:52 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:33540 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750997AbaFDUIu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 16:08:50 -0400
-Message-ID: <538F7C7D.9040606@linux.vnet.ibm.com>
-Date: Thu, 05 Jun 2014 01:37:25 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	id S1751905AbaFDUKD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 16:10:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59712 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751010AbaFDUKC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 16:10:02 -0400
+Date: Wed, 4 Jun 2014 16:09:42 -0400
+From: Rik van Riel <riel@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, mgorman@suse.de, mingo@kernel.org
+Subject: [PATCH] sched,numa: ensure task_numa_migrate checks the preferred
+ node
+Message-ID: <20140604160942.6969b101@cuia.bos.redhat.com>
+Organization: Red Hat, Inc
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: akpm@linux-foundation.org, fweisbec@gmail.com, tglx@linutronix.de,
-        hch@infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] smp, ipi: Speed up IPI handling by invoking the callbacks
- in reverse order
-References: <20140604193934.21321.19185.stgit@srivatsabhat.in.ibm.com> <20140604194731.GO13930@laptop.programming.kicks-ass.net>
-In-Reply-To: <20140604194731.GO13930@laptop.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14060420-3568-0000-0000-000005A09DDB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/05/2014 01:17 AM, Peter Zijlstra wrote:
-> On Thu, Jun 05, 2014 at 01:09:35AM +0530, Srivatsa S. Bhat wrote:
->> The current implementation of lockless list (llist) has a drawback: if we
->> want to traverse the list in FIFO order (oldest to newest), we need to
->> reverse the list first (and this can be expensive if the list is large,
->> since this is an O(n) operation).
-> 
-> Have you actually looked at the queue depth of this thing? Large queues
-> are a problem for interrupt latency.
-> 
+The first thing task_numa_migrate does is check to see if there is
+CPU capacity available on the preferred node, in order to move the
+task there.
 
-Actually, I wrote this patch just by looking at the code and realizing
-that we don't need to reverse the list. In practice, I haven't actually
-seen any noticeable interrupt latencies or large queues so far. So I think
-this patch is just a very tiny optimization, that's all.
+However, if the preferred node is all busy, we would skip considering
+that node for tasks swaps in the subsequent loop. This prevents NUMA
+convergence of tasks on busy systems.
 
-Regards,
-Srivatsa S. Bhat
+However, swapping locations with a task on our preferred nid, when
+the preferred nid is busy, is perfectly fine.
+
+The fix is to also look for a CPU on our preferred nid when it is
+totally busy.
+
+This changes "perf bench numa mem -p 4 -t 20 -m -0 -P 1000" from
+not converging in 15 minutes on my 4 node system, to converging in
+10-20 seconds.
+
+Signed-off-by: Rik van Riel <riel@redhat.com>
+Cc: stable@vger.kernel.org
+---
+This is a safe, simple patch to fix NUMA convergence, which is why
+it should go to -stable, IMHO.
+
+ kernel/sched/fair.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index e5884d8..824e241 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -1425,9 +1425,8 @@ static int task_numa_migrate(struct task_struct *p)
+ 	groupimp = group_weight(p, env.dst_nid, false) - groupweight;
+ 	update_numa_stats(&env.dst_stats, env.dst_nid);
+ 
+-	/* If the preferred nid has capacity, try to use it. */
+-	if (env.dst_stats.has_capacity)
+-		task_numa_find_cpu(&env, taskimp, groupimp);
++	/* Try to find a spot on the preferred nid. */
++	task_numa_find_cpu(&env, taskimp, groupimp);
+ 
+ 	/* No space available on the preferred nid. Look elsewhere. */
+ 	if (env.best_cpu == -1) {
 
