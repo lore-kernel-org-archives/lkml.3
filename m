@@ -1,54 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754199AbaFDQ0w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 12:26:52 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:35204 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751443AbaFDQ0P (ORCPT
+	id S1753410AbaFDQ2o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 12:28:44 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:50754 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751948AbaFDQ2n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 12:26:15 -0400
-Date: Wed, 4 Jun 2014 12:26:12 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Fengguang Wu <fengguang.wu@intel.com>
-Subject: Re: linux-next: build warning after merge of the ftrace tree
-Message-ID: <20140604122612.366e2874@gandalf.local.home>
-In-Reply-To: <20140604160921.4f4e69c4@canb.auug.org.au>
-References: <20140604160921.4f4e69c4@canb.auug.org.au>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Wed, 4 Jun 2014 12:28:43 -0400
+Message-ID: <538F4938.7040309@kernel.dk>
+Date: Wed, 04 Jun 2014 10:28:40 -0600
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Ming Lei <tom.leiming@gmail.com>
+CC: Christoph Hellwig <hch@infradead.org>, Shaohua Li <shli@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [patch]blk-mq: blk_mq_tag_to_rq should handle flush request
+References: <20140509120733.GA27918@kernel.org>	<20140509150018.GA26215@infradead.org>	<20140510040023.GA13788@kernel.org>	<5388912F.7010609@kernel.dk>	<20140604111133.GA7826@infradead.org>	<538F2A11.4060800@kernel.dk>	<20140604142012.GA20056@infradead.org>	<538F331F.60101@kernel.dk>	<20140604145803.GA7826@infradead.org>	<538F34FB.7050003@kernel.dk>	<20140604153159.GA27096@infradead.org>	<CACVXFVNNTPrq29eS9GzJDequtFXCTNWPLJfzB4Z-XJVE5j8+aA@mail.gmail.com>	<538F3FB5.2020102@kernel.dk>	<CACVXFVM-aJwBgrvgT-nNbbi81vE4qeS1LgsS5cFGiz5cbsApZw@mail.gmail.com>	<538F44AD.4090906@kernel.dk> <CACVXFVOxx973ho9yN0W95YCj2XQBoYqyu4aD4bZ_9Pv89XGgnQ@mail.gmail.com>
+In-Reply-To: <CACVXFVOxx973ho9yN0W95YCj2XQBoYqyu4aD4bZ_9Pv89XGgnQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 4 Jun 2014 16:09:21 +1000
-Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-
-> Hi Steven,
+On 06/04/2014 10:26 AM, Ming Lei wrote:
+> On Thu, Jun 5, 2014 at 12:09 AM, Jens Axboe <axboe@kernel.dk> wrote:
+>> On 06/04/2014 10:00 AM, Ming Lei wrote:
+>>> On Wed, Jun 4, 2014 at 11:48 PM, Jens Axboe <axboe@kernel.dk> wrote:
+>>>> On 06/04/2014 09:43 AM, Ming Lei wrote:
+>>>>> On Wed, Jun 4, 2014 at 11:31 PM, Christoph Hellwig <hch@infradead.org> wrote:
+>>>>>> On Wed, Jun 04, 2014 at 09:02:19AM -0600, Jens Axboe wrote:
+>>>>>>>> scsi_mq_find_tag only gets the scsi host, which may have multiple
+>>>>>>>> queues.  When called from scsi_find_tag we actually have a scsi device,
+>>>>>>>> so that's not an issue, but when called from scsi_host_find_tag the
+>>>>>>>> driver only provides the host.
+>>>>>>>
+>>>>>>> Only solution I see right now is to have the flush_rq in the shared
+>>>>>>> tags, but that would potentially be a regression for multiple
+>>>>>>> devices and heavy flush uses cases. I'll see if I can come up with
+>>>>>>> something better, or maybe Shaohua has an idea.
+>>>>>>
+>>>>>> What about something like the following (untest, uncompiled, maybe
+>>>>>> pseudo-code):
+>>>>>>
+>>>>>> struct request *blk_mq_tag_to_rq(struct blk_mq_tags *tags, unsigned int tag)
+>>>>>> {
+>>>>>>         struct request *rq = tags->rqs[tag];
+>>>>>>
+>>>>>>         if ((rq->cmd_flags & REQ_FLUSH_SEQ) && rq->q->flush_rq->tag == tag)
+>>>>>>                 return rq->q->flush_rq;
+>>>>>>         return rq;
+>>>>>> }
+>>>>>
+>>>>> Looks we thought it together, :-)
+>>>>>
+>>>>> Also maybe the flush_rq->tag need to be cleared in flush_end_io().
+>>>>
+>>>> It clears the command flag, so that should be enough.
+>>>
+>>> Only the flush_rq's command flag is cleared, and its parent request
+>>> flag isn't cleared.
+>>
+>> Good point. Care to send in a patch? We can just clear it to -1U, at
+>> least in blk-mq that's defined as an invalid tag.
 > 
-> After merging the ftrace tree, today's linux-next build (x86_64 allmodconfig)
-> produced this warning:
-> 
-> kernel/trace/trace_benchmark.c: In function 'trace_do_benchmark':
-> kernel/trace/trace_benchmark.c:38:6: warning: unused variable 'seedsq' [-Wunused-variable]
->   u64 seedsq;
->       ^
-> 
-> Introduced by commit 81dc9f0ef21e ("tracing: Add tracepoint benchmark tracepoint").
+> Attachment patch should be enough.
 
-Hmm, I don't know why my tests missed this. I do a allmodconfig looking
-for new warning messages too. Oh, but I do need to add this config to my
-regular testing config :-/
+Yep, looks fine. Care to send as a proper patch, then I will include it?
 
-I'm surprised Wu's bot didn't report it either.
+-- 
+Jens Axboe
 
-I'm not going to rebase, but I'll add a patch to nuke it.
-
-Thanks!
-
--- Steve
