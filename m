@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754482AbaFDXeN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:34:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40915 "EHLO
+	id S1754827AbaFDXer (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 19:34:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40858 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754090AbaFDXYI (ORCPT
+	with ESMTP id S1754059AbaFDXYB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:24:08 -0400
+	Wed, 4 Jun 2014 19:24:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
-        Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.10 080/103] ASoC: wm8962: Update register CLASS_D_CONTROL_1 to be non-volatile
-Date: Wed,  4 Jun 2014 16:25:43 -0700
-Message-Id: <20140604232549.423209759@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.10 067/103] ALSA: hda - Fix onboard audio on Intel H97/Z97 chipsets
+Date: Wed,  4 Jun 2014 16:25:30 -0700
+Message-Id: <20140604232548.987975530@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232546.704156131@linuxfoundation.org>
 References: <20140604232546.704156131@linuxfoundation.org>
@@ -30,86 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 44330ab516c15dda8a1e660eeaf0003f84e43e3f upstream.
+commit 77f07800cb456bed6e5c345e6e4e83e8eda62437 upstream.
 
-The register CLASS_D_CONTROL_1 is marked as volatile because it contains
-a bit, DAC_MUTE, which is also mirrored in the ADC_DAC_CONTROL_1
-register. This causes problems for the "Speaker Switch" control, which
-will report an error if the CODEC is suspended because it relies on a
-volatile register.
+The recent Intel H97/Z97 chipsets need the similar setups like other
+Intel chipsets for snooping, etc.  Especially without snooping, the
+audio playback stutters or gets corrupted.  This fix patch just adds
+the corresponding PCI ID entry with the proper flags.
 
-To resolve this issue mark CLASS_D_CONTROL_1 as non-volatile and
-manually keep the register cache in sync by updating both bits when
-changing the mute status.
-
-Reported-by: Shawn Guo <shawn.guo@linaro.org>
-Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Tested-by: Shawn Guo <shawn.guo@linaro.org>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Reported-and-tested-by: Arthur Borsboom <arthurborsboom@gmail.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/wm8962.c |   15 ++++++++++++---
- sound/soc/codecs/wm8962.h |    4 ++++
- 2 files changed, 16 insertions(+), 3 deletions(-)
+ sound/pci/hda/hda_intel.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/sound/soc/codecs/wm8962.c
-+++ b/sound/soc/codecs/wm8962.c
-@@ -153,6 +153,7 @@ static struct reg_default wm8962_reg[] =
- 	{ 40, 0x0000 },   /* R40    - SPKOUTL volume */
- 	{ 41, 0x0000 },   /* R41    - SPKOUTR volume */
- 
-+	{ 49, 0x0010 },   /* R49    - Class D Control 1 */
- 	{ 51, 0x0003 },   /* R51    - Class D Control 2 */
- 
- 	{ 56, 0x0506 },   /* R56    - Clocking 4 */
-@@ -794,7 +795,6 @@ static bool wm8962_volatile_register(str
- 	case WM8962_ALC2:
- 	case WM8962_THERMAL_SHUTDOWN_STATUS:
- 	case WM8962_ADDITIONAL_CONTROL_4:
--	case WM8962_CLASS_D_CONTROL_1:
- 	case WM8962_DC_SERVO_6:
- 	case WM8962_INTERRUPT_STATUS_1:
- 	case WM8962_INTERRUPT_STATUS_2:
-@@ -2901,13 +2901,22 @@ static int wm8962_set_fll(struct snd_soc
- static int wm8962_mute(struct snd_soc_dai *dai, int mute)
- {
- 	struct snd_soc_codec *codec = dai->codec;
--	int val;
-+	int val, ret;
- 
- 	if (mute)
--		val = WM8962_DAC_MUTE;
-+		val = WM8962_DAC_MUTE | WM8962_DAC_MUTE_ALT;
- 	else
- 		val = 0;
- 
-+	/**
-+	 * The DAC mute bit is mirrored in two registers, update both to keep
-+	 * the register cache consistent.
-+	 */
-+	ret = snd_soc_update_bits(codec, WM8962_CLASS_D_CONTROL_1,
-+				  WM8962_DAC_MUTE_ALT, val);
-+	if (ret < 0)
-+		return ret;
-+
- 	return snd_soc_update_bits(codec, WM8962_ADC_DAC_CONTROL_1,
- 				   WM8962_DAC_MUTE, val);
- }
---- a/sound/soc/codecs/wm8962.h
-+++ b/sound/soc/codecs/wm8962.h
-@@ -1954,6 +1954,10 @@
- #define WM8962_SPKOUTL_ENA_MASK                 0x0040  /* SPKOUTL_ENA */
- #define WM8962_SPKOUTL_ENA_SHIFT                     6  /* SPKOUTL_ENA */
- #define WM8962_SPKOUTL_ENA_WIDTH                     1  /* SPKOUTL_ENA */
-+#define WM8962_DAC_MUTE_ALT                     0x0010  /* DAC_MUTE */
-+#define WM8962_DAC_MUTE_ALT_MASK                0x0010  /* DAC_MUTE */
-+#define WM8962_DAC_MUTE_ALT_SHIFT                    4  /* DAC_MUTE */
-+#define WM8962_DAC_MUTE_ALT_WIDTH                    1  /* DAC_MUTE */
- #define WM8962_SPKOUTL_PGA_MUTE                 0x0002  /* SPKOUTL_PGA_MUTE */
- #define WM8962_SPKOUTL_PGA_MUTE_MASK            0x0002  /* SPKOUTL_PGA_MUTE */
- #define WM8962_SPKOUTL_PGA_MUTE_SHIFT                1  /* SPKOUTL_PGA_MUTE */
+--- a/sound/pci/hda/hda_intel.c
++++ b/sound/pci/hda/hda_intel.c
+@@ -3856,6 +3856,9 @@ static DEFINE_PCI_DEVICE_TABLE(azx_ids)
+ 	/* Lynx Point */
+ 	{ PCI_DEVICE(0x8086, 0x8c20),
+ 	  .driver_data = AZX_DRIVER_PCH | AZX_DCAPS_INTEL_PCH },
++	/* 9 Series */
++	{ PCI_DEVICE(0x8086, 0x8ca0),
++	  .driver_data = AZX_DRIVER_PCH | AZX_DCAPS_INTEL_PCH },
+ 	/* Wellsburg */
+ 	{ PCI_DEVICE(0x8086, 0x8d20),
+ 	  .driver_data = AZX_DRIVER_PCH | AZX_DCAPS_INTEL_PCH },
 
 
