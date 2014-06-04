@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752438AbaFDX5s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:57:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40473 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753589AbaFDXXL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753620AbaFDXXL (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 4 Jun 2014 19:23:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40459 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753589AbaFDXXJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 19:23:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Igor Mammedov <imammedo@redhat.com>, Toshi Kani <toshi.kani@hp.com>,
+        Lv Zheng <lv.zheng@intel.com>,
         "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.14 201/228] ACPI / processor: do not mark present at boot but not onlined CPU as onlined
-Date: Wed,  4 Jun 2014 16:23:50 -0700
-Message-Id: <20140604232354.493924925@linuxfoundation.org>
+Subject: [PATCH 3.14 196/228] ACPICA: Tables: Restore old behavor to favor 32-bit FADT addresses.
+Date: Wed,  4 Jun 2014 16:23:45 -0700
+Message-Id: <20140604232354.322453264@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -29,42 +29,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Igor Mammedov <imammedo@redhat.com>
+From: Lv Zheng <lv.zheng@intel.com>
 
-commit 0b9d46dd7debf8e6dc8614106f1c1909fa8de64d upstream.
+commit 85dbd5801f62b66e2aa7826aaefcaebead44c8a6 upstream.
 
-acpi_processor_add() assumes that present at boot CPUs
-are always onlined, it is not so if a CPU failed to become
-onlined. As result acpi_processor_add() will mark such CPU
-device as onlined in sysfs and following attempts to
-online/offline it using /sys/device/system/cpu/cpuX/online
-attribute will fail.
+We need to find a smarter way to switch to 64-bit FADT addresses according
+to the bug report.  This patch reverts Linux to the original behavior.
 
-Do not poke into device internals in acpi_processor_add()
-and touch "struct device { .offline }" attribute, since
-for CPUs onlined at boot it's set by:
-  topology_init() -> arch_register_cpu() -> register_cpu()
-before ACPI device tree is parsed, and for hotplugged
-CPUs it's set when userspace onlines CPU via sysfs.
-
-Signed-off-by: Igor Mammedov <imammedo@redhat.com>
-Acked-by: Toshi Kani <toshi.kani@hp.com>
+Fixes: 0249ed2444d6 (ACPICA: Add option to favor 32-bit FADT addresses.)
+References: https://bugzilla.kernel.org/show_bug.cgi?id=74021
+Reported-and-tested-by: Oswald Buddenhagen <ossi@kde.org>
+Signed-off-by: Lv Zheng <lv.zheng@intel.com>
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/acpi_processor.c |    1 -
- 1 file changed, 1 deletion(-)
+ drivers/acpi/acpica/acglobal.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/acpi/acpi_processor.c
-+++ b/drivers/acpi/acpi_processor.c
-@@ -405,7 +405,6 @@ static int acpi_processor_add(struct acp
- 		goto err;
+--- a/drivers/acpi/acpica/acglobal.h
++++ b/drivers/acpi/acpica/acglobal.h
+@@ -132,9 +132,9 @@ u8 ACPI_INIT_GLOBAL(acpi_gbl_do_not_use_
+  * address. Although ACPICA adheres to the ACPI specification which
+  * requires the use of the corresponding 64-bit address if it is non-zero,
+  * some machines have been found to have a corrupted non-zero 64-bit
+- * address. Default is FALSE, do not favor the 32-bit addresses.
++ * address. Default is TRUE, favor the 32-bit addresses.
+  */
+-u8 ACPI_INIT_GLOBAL(acpi_gbl_use32_bit_fadt_addresses, FALSE);
++u8 ACPI_INIT_GLOBAL(acpi_gbl_use32_bit_fadt_addresses, TRUE);
  
- 	pr->dev = dev;
--	dev->offline = pr->flags.need_hotplug_init;
- 
- 	/* Trigger the processor driver's .probe() if present. */
- 	if (device_attach(dev) >= 0)
+ /*
+  * Optionally truncate I/O addresses to 16 bits. Provides compatibility
 
 
