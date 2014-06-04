@@ -1,124 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753412AbaFDNch (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 09:32:37 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:50674 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753029AbaFDNcg (ORCPT
+	id S1753474AbaFDNd7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 09:33:59 -0400
+Received: from forward-corp1f.mail.yandex.net ([95.108.130.40]:39818 "EHLO
+	forward-corp1f.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752977AbaFDNd6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 09:32:36 -0400
-Date: Wed, 4 Jun 2014 14:32:01 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Yi Li <yi.li@linaro.org>
-Cc: "ard.biesheuvel@linaro.org" <ard.biesheuvel@linaro.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Sudeep Holla <Sudeep.Holla@arm.com>,
-        "steve.capper@linaro.org" <steve.capper@linaro.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "phoenix.liyi@huawei.com" <phoenix.liyi@huawei.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] ARM64:DMI: Add smbios/dmi support on arm64
-Message-ID: <20140604133200.GA4329@leverpostej>
-References: <1401811033-16478-1-git-send-email-yi.li@linaro.org>
+	Wed, 4 Jun 2014 09:33:58 -0400
+X-Yandex-Uniq: 604b5804-69d3-41b5-ac89-2adcb95d532f
+Authentication-Results: smtpcorp4.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
+Date: Wed, 4 Jun 2014 17:33:50 +0400
+From: Stanislav Fomichev <stfomichev@yandex-team.ru>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: fweisbec@gmail.com, mingo@redhat.com, jovi.zhangwei@huawei.com,
+        namhyung.kim@lge.com, tom.zanussi@linux.intel.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2] tracing: let user specify tracing_thresh after
+ selecting function_graph
+Message-ID: <20140604133350.GC26511@stfomichev-desktop.yandex.net>
+References: <1401815569-10513-1-git-send-email-stfomichev@yandex-team.ru>
+ <20140603185720.79552fb8@gandalf.local.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1401811033-16478-1-git-send-email-yi.li@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140603185720.79552fb8@gandalf.local.home>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 03, 2014 at 04:57:13PM +0100, Yi Li wrote:
-> Add smbios/dmi support on arm64 system, it depends on
-> EFI boot.
-
-And what exactly does this provide us with?
-
-What is exposed through SMBIOS/DMI, and why would I want to enable it?
-
+> Ideally there should be a callback for the tracer to deal with it, but
+> instead, you can for now just hardcode a function graph tracer callback
+> into tracing_max_lat_write(). Something like this:
 > 
-> Signed-off-by: Yi Li <yi.li@linaro.org>
-> ---
+> 	if (ptr == &tracing_thresh)
+> 		ftrace_update_func_graph_thresh();
 > 
-> Changes since v1:
->   -Followed Ard Biesheuvel's suggestion to rebase the patch on
->    Matt Fleming's arm64-efi branch.
-> 
->  arch/arm64/Kconfig           |   10 ++++++++++
->  arch/arm64/include/asm/dmi.h |   28 ++++++++++++++++++++++++++++
->  arch/arm64/kernel/setup.c    |    2 ++
->  3 files changed, 40 insertions(+)
->  create mode 100644 arch/arm64/include/asm/dmi.h
-> 
-> diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-> index 6c71f12..13ee261 100644
-> --- a/arch/arm64/Kconfig
-> +++ b/arch/arm64/Kconfig
-> @@ -294,6 +294,16 @@ config EFI
->  	  allow the kernel to be booted as an EFI application. This
->  	  is only useful on systems that have UEFI firmware.
->  
-> +config DMI
-> +	bool "Enable support for SMBIOS (DMI) tables"
-> +	depends on EFI
-> +	default y
-> +	help
-> +	  This enables SMBIOS/DMI feature for systems.
-> +
-> +	  This option is only useful on systems that have UEFI firmware.
-> +	  However, even with this option, the resultant kernel should
-> +	  continue to boot on existing non-UEFI platforms.
->  endmenu
->  
->  menu "Userspace binary formats"
-> diff --git a/arch/arm64/include/asm/dmi.h b/arch/arm64/include/asm/dmi.h
-> new file mode 100644
-> index 0000000..f2198bf
-> --- /dev/null
-> +++ b/arch/arm64/include/asm/dmi.h
-> @@ -0,0 +1,28 @@
-> +/*
-> + * arch/arm64/include/asm/dmi.h
-> + *
-> + * Copyright (C) 2013 Linaro Limited.
-> + * Written by: Yi Li (yi.li@linaro.org)
-> + *
-> + * based on arch/ia64/include/asm/dmi.h
-> + *
-> + * This file is subject to the terms and conditions of the GNU General Public
-> + * License.  See the file "COPYING" in the main directory of this archive
-> + * for more details.
-> + */
-> +
-> +
-> +#ifndef _ASM_DMI_H
-> +#define _ASM_DMI_H 1
-> +
-> +#include <linux/slab.h>
-> +#include <asm/io.h>
+> And then if the function tracer is active, stop it, and then restart it
+> with the tracing thresh function.
+Attached new patch which adds new callback and uses it in function_graph
+tracer (not sure whether I need to check graph_array in
+graph_trace_update_thresh). Maybe it makes sense to split it into two commits
+(add callback itself, use it in the function_graph tracer)?
 
-Shouldn't that be linux/efi.h?
+Btw, I also tried to use static_keys/jump_labels in places where
+tracing_thresh is checked, but got double faults. Is there a reason I
+can't use jump labels inside tracers?
 
-Why do we need asm/io.h?
+---
 
-> +
-> +/* Use efi mappings for DMI */
-> +#define dmi_early_remap(x, l)	efi_lookup_mapped_addr(x)
-> +#define dmi_early_unmap(x, l)
-> +#define dmi_remap(x, l)			efi_lookup_mapped_addr(x)
-> +#define dmi_unmap(x)
-> +#define dmi_alloc(l)			kzalloc(l, GFP_ATOMIC)
-> +
-> +#endif
+Currently, tracing_thresh works only if we specify it before selecting
+function_graph tracer. If we do the opposite, tracing_thresh will change
+it's value, but it will not be applied.
+To fix it, we add update_thresh callback which is called whenever
+tracing_thresh is updated and for function_graph tracer we register
+handler which reinitializes tracer depending on tracing_thresh.
 
-None of these seem to use anything from io.h directly.
+Signed-off-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
+---
+ kernel/trace/trace.c                 | 60 +++++++++++++++++++++++++++++++-----
+ kernel/trace/trace.h                 |  2 ++
+ kernel/trace/trace_functions_graph.c | 10 ++++++
+ 3 files changed, 65 insertions(+), 7 deletions(-)
 
-Cheers,
-Mark.
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 737b0efa1a62..06fbb4b7e646 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -4077,10 +4077,9 @@ tracing_set_trace_write(struct file *filp, const char __user *ubuf,
+ }
+ 
+ static ssize_t
+-tracing_max_lat_read(struct file *filp, char __user *ubuf,
+-		     size_t cnt, loff_t *ppos)
++nsecs_read(unsigned long *ptr, char __user *ubuf,
++	   size_t cnt, loff_t *ppos)
+ {
+-	unsigned long *ptr = filp->private_data;
+ 	char buf[64];
+ 	int r;
+ 
+@@ -4092,10 +4091,9 @@ tracing_max_lat_read(struct file *filp, char __user *ubuf,
+ }
+ 
+ static ssize_t
+-tracing_max_lat_write(struct file *filp, const char __user *ubuf,
+-		      size_t cnt, loff_t *ppos)
++nsecs_write(unsigned long *ptr, const char __user *ubuf,
++	    size_t cnt, loff_t *ppos)
+ {
+-	unsigned long *ptr = filp->private_data;
+ 	unsigned long val;
+ 	int ret;
+ 
+@@ -4108,6 +4106,47 @@ tracing_max_lat_write(struct file *filp, const char __user *ubuf,
+ 	return cnt;
+ }
+ 
++static ssize_t
++tracing_thresh_read(struct file *filp, char __user *ubuf,
++		    size_t cnt, loff_t *ppos)
++{
++	return nsecs_read(&tracing_thresh, ubuf, cnt, ppos);
++}
++
++static ssize_t
++tracing_thresh_write(struct file *filp, const char __user *ubuf,
++		     size_t cnt, loff_t *ppos)
++{
++	struct trace_array *tr = filp->private_data;
++	int ret;
++
++	ret = nsecs_write(&tracing_thresh, ubuf, cnt, ppos);
++	if (ret < 0)
++		return ret;
++
++	if (tr->current_trace->update_thresh) {
++		ret = tr->current_trace->update_thresh(tr);
++		if (ret)
++			return ret;
++	}
++
++	return cnt;
++}
++
++static ssize_t
++tracing_max_lat_read(struct file *filp, char __user *ubuf,
++		     size_t cnt, loff_t *ppos)
++{
++	return nsecs_read(filp->private_data, ubuf, cnt, ppos);
++}
++
++static ssize_t
++tracing_max_lat_write(struct file *filp, const char __user *ubuf,
++		      size_t cnt, loff_t *ppos)
++{
++	return nsecs_write(filp->private_data, ubuf, cnt, ppos);
++}
++
+ static int tracing_open_pipe(struct inode *inode, struct file *filp)
+ {
+ 	struct trace_array *tr = inode->i_private;
+@@ -5024,6 +5063,13 @@ static int snapshot_raw_open(struct inode *inode, struct file *filp)
+ #endif /* CONFIG_TRACER_SNAPSHOT */
+ 
+ 
++static const struct file_operations tracing_thresh_fops = {
++	.open		= tracing_open_generic,
++	.read		= tracing_thresh_read,
++	.write		= tracing_thresh_write,
++	.llseek		= generic_file_llseek,
++};
++
+ static const struct file_operations tracing_max_lat_fops = {
+ 	.open		= tracing_open_generic,
+ 	.read		= tracing_max_lat_read,
+@@ -6359,7 +6405,7 @@ static __init int tracer_init_debugfs(void)
+ #endif
+ 
+ 	trace_create_file("tracing_thresh", 0644, d_tracer,
+-			&tracing_thresh, &tracing_max_lat_fops);
++			&global_trace, &tracing_thresh_fops);
+ 
+ 	trace_create_file("README", 0444, d_tracer,
+ 			NULL, &tracing_readme_fops);
+diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+index 2e29d7ba5a52..960c523de47d 100644
+--- a/kernel/trace/trace.h
++++ b/kernel/trace/trace.h
+@@ -321,6 +321,7 @@ struct tracer_flags {
+  * @reset: called when one switches to another tracer
+  * @start: called when tracing is unpaused (echo 1 > tracing_enabled)
+  * @stop: called when tracing is paused (echo 0 > tracing_enabled)
++ * @update_thresh: called when tracing_thresh is updated
+  * @open: called when the trace file is opened
+  * @pipe_open: called when the trace_pipe file is opened
+  * @wait_pipe: override how the user waits for traces on trace_pipe
+@@ -340,6 +341,7 @@ struct tracer {
+ 	void			(*reset)(struct trace_array *tr);
+ 	void			(*start)(struct trace_array *tr);
+ 	void			(*stop)(struct trace_array *tr);
++	int			(*update_thresh)(struct trace_array *tr);
+ 	void			(*open)(struct trace_iterator *iter);
+ 	void			(*pipe_open)(struct trace_iterator *iter);
+ 	void			(*wait_pipe)(struct trace_iterator *iter);
+diff --git a/kernel/trace/trace_functions_graph.c b/kernel/trace/trace_functions_graph.c
+index deff11200261..7440541a3b4f 100644
+--- a/kernel/trace/trace_functions_graph.c
++++ b/kernel/trace/trace_functions_graph.c
+@@ -450,6 +450,15 @@ static void graph_trace_reset(struct trace_array *tr)
+ {
+ 	tracing_stop_cmdline_record();
+ 	unregister_ftrace_graph();
++	set_graph_array(NULL);
++}
++
++void graph_trace_update_thresh(struct trace_array *tr)
++{
++	if (graph_array) {
++		graph_trace_reset(tr);
++		graph_trace_init(tr);
++	}
+ }
+ 
+ static int max_bytes_for_cpu;
+@@ -1501,6 +1510,7 @@ static struct trace_event graph_trace_ret_event = {
+ 
+ static struct tracer graph_trace __tracer_data = {
+ 	.name		= "function_graph",
++	.update_thresh	= graph_trace_update_thresh,
+ 	.open		= graph_trace_open,
+ 	.pipe_open	= graph_trace_open,
+ 	.close		= graph_trace_close,
+-- 
+1.8.3.2
+
+
