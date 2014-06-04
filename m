@@ -1,64 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932729AbaFEAq6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 20:46:58 -0400
-Received: from linuxhacker.ru ([217.76.32.60]:47130 "EHLO fiona.linuxhacker.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757204AbaFEAqz convert rfc822-to-8bit (ORCPT
+	id S932711AbaFEAqw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 20:46:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39757 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752435AbaFDXVL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 20:46:55 -0400
-Subject: Re: [patch v2] mm, pcp: allow restoring percpu_pagelist_fraction default
-Mime-Version: 1.0 (Apple Message framework v1283)
-Content-Type: text/plain; charset=us-ascii
-From: Oleg Drokin <green@linuxhacker.ru>
-In-Reply-To: <alpine.DEB.2.02.1406041734150.17045@chino.kir.corp.google.com>
-Date: Wed, 4 Jun 2014 20:46:05 -0400
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Cody P Schafer <cody@linux.vnet.ibm.com>,
-        Randy Dunlap <rdunlap@infradead.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-doc@vger.kernel.org,
-        devel@driverdev.osuosl.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <FB428F94-91FA-4E4F-8DA3-060C3C41F261@linuxhacker.ru>
-References: <1399166883-514-1-git-send-email-green@linuxhacker.ru> <alpine.DEB.2.02.1406021837490.13072@chino.kir.corp.google.com> <B549468A-10FC-4897-8720-7C9FEC6FD03A@linuxhacker.ru> <alpine.DEB.2.02.1406022056300.20536@chino.kir.corp.google.com> <2C763027-307F-4BC0-8C0A-7E3D5957A4DA@linuxhacker.ru> <alpine.DEB.2.02.1406031819580.8682@chino.kir.corp.google.com> <85AFB547-D3A1-4818-AD82-FF90909775D2@linuxhacker.ru> <alpine.DEB.2.02.1406041734150.17045@chino.kir.corp.google.com>
-To: David Rientjes <rientjes@google.com>
-X-Mailer: Apple Mail (2.1283)
+	Wed, 4 Jun 2014 19:21:11 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Deborah Townsend <dstownse@us.ibm.com>, Jiri Bohac <jbohac@suse.cz>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 3.14 028/228] timer: Prevent overflow in apply_slack
+Date: Wed,  4 Jun 2014 16:20:57 -0700
+Message-Id: <20140604232348.986120421@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
+References: <20140604232347.966798903@linuxfoundation.org>
+User-Agent: quilt/0.63-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello!
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
-On Jun 4, 2014, at 8:34 PM, David Rientjes wrote:
-> @@ -5850,23 +5851,39 @@ int percpu_pagelist_fraction_sysctl_handler(ctl_table *table, int write,
-> 	void __user *buffer, size_t *length, loff_t *ppos)
-> {
-> 	struct zone *zone;
-> -	unsigned int cpu;
-> +	int old_percpu_pagelist_fraction;
-> 	int ret;
-> 
-> +	mutex_lock(&pcp_batch_high_lock);
-> +	old_percpu_pagelist_fraction = percpu_pagelist_fraction;
-> +
-> 	ret = proc_dointvec_minmax(table, write, buffer, length, ppos);
-> -	if (!write || (ret < 0))
-> -		return ret;
-> +	if (!write || ret < 0)
-> +		goto out;
-> +
-> +	/* Sanity checking to avoid pcp imbalance */
-> +	if (percpu_pagelist_fraction &&
-> +	    percpu_pagelist_fraction < MIN_PERCPU_PAGELIST_FRACTION) {
-> +		percpu_pagelist_fraction = old_percpu_pagelist_fraction;
-> +		ret = -EINVAL;
-> +		goto out;
-> +	}
-> +
-> +	ret = 0;
+------------------
 
-Minor nitpick I guess, but ret cannot be anything but 0 here I think (until somebody changes the way proc_dointvec_minmax for write=true operates)?
+From: Jiri Bohac <jbohac@suse.cz>
 
-The patch is good otherwise.
+commit 98a01e779f3c66b0b11cd7e64d531c0e41c95762 upstream.
 
-Thanks.
+On architectures with sizeof(int) < sizeof (long), the
+computation of mask inside apply_slack() can be undefined if the
+computed bit is > 32.
+
+E.g. with: expires = 0xffffe6f5 and slack = 25, we get:
+
+expires_limit = 0x20000000e
+bit = 33
+mask = (1 << 33) - 1  /* undefined */
+
+On x86, mask becomes 1 and and the slack is not applied properly.
+On s390, mask is -1, expires is set to 0 and the timer fires immediately.
+
+Use 1UL << bit to solve that issue.
+
+Suggested-by: Deborah Townsend <dstownse@us.ibm.com>
+Signed-off-by: Jiri Bohac <jbohac@suse.cz>
+Link: http://lkml.kernel.org/r/20140418152310.GA13654@midget.suse.cz
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ kernel/timer.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/kernel/timer.c
++++ b/kernel/timer.c
+@@ -822,7 +822,7 @@ unsigned long apply_slack(struct timer_l
+ 
+ 	bit = find_last_bit(&mask, BITS_PER_LONG);
+ 
+-	mask = (1 << bit) - 1;
++	mask = (1UL << bit) - 1;
+ 
+ 	expires_limit = expires_limit & ~(mask);
+ 
+
+
