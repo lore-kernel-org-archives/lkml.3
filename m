@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756128AbaFEALy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 20:11:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40304 "EHLO
+	id S1753356AbaFDXWr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 19:22:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40280 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753359AbaFDXWs (ORCPT
+	with ESMTP id S1753231AbaFDXWp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:22:48 -0400
+	Wed, 4 Jun 2014 19:22:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Ron <ron@debian.org>
-Subject: [PATCH 3.14 173/228] sysfs: make sure read buffer is zeroed
-Date: Wed,  4 Jun 2014 16:23:22 -0700
-Message-Id: <20140604232353.580003687@linuxfoundation.org>
+        Daeseok Youn <daeseok.youn@gmail.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 3.14 153/228] workqueue: fix bugs in wq_update_unbound_numa() failure path
+Date: Wed,  4 Jun 2014 16:23:02 -0700
+Message-Id: <20140604232352.937710266@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -28,49 +29,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Daeseok Youn <daeseok.youn@gmail.com>
 
-commit f5c16f29bf5e57ba4051fc7785ba7f035f798c71 upstream.
+commit 77f300b198f93328c26191b52655ce1b62e202cf upstream.
 
-13c589d5b0ac ("sysfs: use seq_file when reading regular files")
-switched sysfs from custom read implementation to seq_file to enable
-later transition to kernfs.  After the change, the buffer passed to
-->show() is acquired through seq_get_buf(); unfortunately, this
-introduces a subtle behavior change.  Before the commit, the buffer
-passed to ->show() was always zero as it was allocated using
-get_zeroed_page().  Because seq_file doesn't clear buffers on
-allocation and neither does seq_get_buf(), after the commit, depending
-on the behavior of ->show(), we may end up exposing uninitialized data
-to userland thus possibly altering userland visible behavior and
-leaking information.
+wq_update_unbound_numa() failure path has the following two bugs.
 
-Fix it by explicitly clearing the buffer.
+- alloc_unbound_pwq() is called without holding wq->mutex; however, if
+  the allocation fails, it jumps to out_unlock which tries to unlock
+  wq->mutex.
 
+- The function should switch to dfl_pwq on failure but didn't do so
+  after alloc_unbound_pwq() failure.
+
+Fix it by regrabbing wq->mutex and jumping to use_dfl_pwq on
+alloc_unbound_pwq() failure.
+
+Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+Acked-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Ron <ron@debian.org>
-Fixes: 13c589d5b0ac ("sysfs: use seq_file when reading regular files")
+Fixes: 4c16bd327c74 ("workqueue: implement NUMA affinity for unbound workqueues")
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/sysfs/file.c |    3 ++-
+ kernel/workqueue.c |    3 ++-
  1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/fs/sysfs/file.c
-+++ b/fs/sysfs/file.c
-@@ -47,12 +47,13 @@ static int sysfs_kf_seq_show(struct seq_
- 	ssize_t count;
- 	char *buf;
- 
--	/* acquire buffer and ensure that it's >= PAGE_SIZE */
-+	/* acquire buffer and ensure that it's >= PAGE_SIZE and clear */
- 	count = seq_get_buf(sf, &buf);
- 	if (count < PAGE_SIZE) {
- 		seq_commit(sf, -1);
- 		return 0;
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -4093,7 +4093,8 @@ static void wq_update_unbound_numa(struc
+ 	if (!pwq) {
+ 		pr_warning("workqueue: allocation failed while updating NUMA affinity of \"%s\"\n",
+ 			   wq->name);
+-		goto out_unlock;
++		mutex_lock(&wq->mutex);
++		goto use_dfl_pwq;
  	}
-+	memset(buf, 0, PAGE_SIZE);
  
  	/*
- 	 * Invoke show().  Control may reach here via seq file lseek even
 
 
