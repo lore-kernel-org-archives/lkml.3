@@ -1,57 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751640AbaFDRg6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 13:36:58 -0400
-Received: from casper.infradead.org ([85.118.1.10]:47852 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750944AbaFDRg5 (ORCPT
+	id S1751929AbaFDRhK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 13:37:10 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:53648 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751609AbaFDRhF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 13:36:57 -0400
-Date: Wed, 4 Jun 2014 19:36:55 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: umgwanakikbuti@gmail.com, mingo@kernel.org, tglx@linutronix.de,
-        nicolas.pitre@linaro.org, daniel.lezcano@linaro.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 3/5] sched,idle: Clear polling before descheduling the
- idle thread
-Message-ID: <20140604173655.GK13930@laptop.programming.kicks-ass.net>
-References: <cover.1401902905.git.luto@amacapital.net>
- <b2059fcb4c613d520cb503b6fad6e47033c7c203.1401902905.git.luto@amacapital.net>
+	Wed, 4 Jun 2014 13:37:05 -0400
+Date: Wed, 4 Jun 2014 19:37:01 +0200
+From: Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>
+To: Andrew Lunn <andrew@lunn.ch>
+Cc: Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        sebastian.hesselbarth@gmail.com, thomas.petazzoni@free-electrons.com,
+        zmxu@marvell.com, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, alexandre.belloni@free-electrons.com,
+        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 2/2] ARM: dts: berlin: enable i2c0 and i2c2
+Message-ID: <20140604173701.GC12859@kwain>
+References: <1401780790-17830-1-git-send-email-antoine.tenart@free-electrons.com>
+ <1401780790-17830-3-git-send-email-antoine.tenart@free-electrons.com>
+ <20140603080522.GB22742@lunn.ch>
+ <20140604164841.GA12859@kwain>
+ <20140604170340.GI6892@lunn.ch>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <b2059fcb4c613d520cb503b6fad6e47033c7c203.1401902905.git.luto@amacapital.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140604170340.GI6892@lunn.ch>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 04, 2014 at 10:31:16AM -0700, Andy Lutomirski wrote:
-> @@ -218,6 +234,15 @@ static void cpu_idle_loop(void)
->  		 */
->  		preempt_set_need_resched();
->  		tick_nohz_idle_exit();
-> +		__current_clr_polling();
-> +
-> +		/*
-> +		 * We promise to reschedule if need_resched is set while
-> +		 * polling is set.  That means that clearing polling
-> +		 * needs to be visible before rescheduling.
-> +		 */
-> +		smp_mb__after_clear_bit();
-> +
->  		schedule_preempt_disabled();
->  	}
->  }
+On Wed, Jun 04, 2014 at 07:03:40PM +0200, Andrew Lunn wrote:
+> On Wed, Jun 04, 2014 at 06:48:41PM +0200, Antoine Ténart wrote:
+> > 
+> > On Tue, Jun 03, 2014 at 10:05:22AM +0200, Andrew Lunn wrote:
+> > > On Tue, Jun 03, 2014 at 09:33:10AM +0200, Antoine Ténart wrote:
+> > > > Enable the I2C0 and I2C2 for the Marvell Berlin BG2G DMP. I2C1 and I2C3
+> > > > are also working on this board, but no devices seemed to be there.
+> > > 
+> > > Does this mean that IC0 and I2C2 have devices on them? Could you also
+> > > add nodes for the devices?
+> > 
+> > No devices I can add for now. I you prefer we can drop this patch, keep
+> > the other one and enable i2c nodes for the BG2Q DMP when they will be
+> > needed.
+> 
+> I was just wondering how you tested it, without having any devices?
 
-I recently renamed those barriers, its now called:
+I tested with the i2ctools. I could see one device on each bus at the
+address it should be. I also tested the pin muxing configurations.
 
-  smp_mb__after_atomic();
+I don't have lots of information on these I2C buses, at least my test
+results match what I know.
 
-It'll still compile with the old names, and even work, but you'll get
-__deprecated warns and horrid code generation.
+> Is it that the devices on the bus don't have mainline drivers?
 
-I'll fix up when applying these patches, no need to resend.
+Not with I2C support.
 
-Thanks!
+Antoine
+
+-- 
+Antoine Ténart, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
