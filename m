@@ -1,155 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753249AbaFDBWq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 21:22:46 -0400
-Received: from mail-ig0-f177.google.com ([209.85.213.177]:54316 "EHLO
-	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752180AbaFDBWo (ORCPT
+	id S1752677AbaFDB2p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 21:28:45 -0400
+Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:49504 "EHLO
+	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751962AbaFDB2o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 21:22:44 -0400
-Date: Tue, 3 Jun 2014 18:22:41 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Oleg Drokin <green@linuxhacker.ru>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Cody P Schafer <cody@linux.vnet.ibm.com>,
-        Randy Dunlap <rdunlap@infradead.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-doc@vger.kernel.org,
-        devel@driverdev.osuosl.org
-Subject: [patch] mm, pcp: allow restoring percpu_pagelist_fraction default
-In-Reply-To: <2C763027-307F-4BC0-8C0A-7E3D5957A4DA@linuxhacker.ru>
-Message-ID: <alpine.DEB.2.02.1406031819580.8682@chino.kir.corp.google.com>
-References: <1399166883-514-1-git-send-email-green@linuxhacker.ru> <alpine.DEB.2.02.1406021837490.13072@chino.kir.corp.google.com> <B549468A-10FC-4897-8720-7C9FEC6FD03A@linuxhacker.ru> <alpine.DEB.2.02.1406022056300.20536@chino.kir.corp.google.com>
- <2C763027-307F-4BC0-8C0A-7E3D5957A4DA@linuxhacker.ru>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 3 Jun 2014 21:28:44 -0400
+Message-ID: <538E7642.6080707@marvell.com>
+Date: Wed, 4 Jun 2014 09:28:34 +0800
+From: FanWu <fwu@marvell.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "swarren@nvidia.com" <swarren@nvidia.com>,
+        Chao Xie <cxie4@marvell.com>, Yilu Mao <ylmao@marvell.com>,
+        Ning Jiang <njiang1@marvell.com>, Xiaofan Tian <tianxf@marvell.com>,
+        Fangsuo Wu <fswu@marvell.com>
+Subject: Re: [PATCH v4] pinctrl: to avoid duplicated calling enable_pinmux_setting
+ for a pin
+References: <1401781077-31150-1-git-send-email-fwu@marvell.com> <538DFC8A.9030806@wwwdotorg.org>
+In-Reply-To: <538DFC8A.9030806@wwwdotorg.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
+ definitions=2014-06-03_09:2014-06-02,2014-06-03,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1402240000 definitions=main-1406040018
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the percpu_pagelist_fraction sysctl is set by the user, it is 
-impossible to restore it to the kernel default since the user cannot 
-write 0 to the sysctl.
+On 06/04/2014 12:49 AM, Stephen Warren wrote:
+> On 06/03/2014 01:37 AM, fwu@marvell.com wrote:
+>> From: Fan Wu <fwu@marvell.com>
+>>
+>> What the patch did:
+>> 1.To call pinmux_disable_setting ahead of pinmux_enable_setting in each time of
+>>    calling pinctrl_select_state
+>> 2.Remove the HW disable operation in in pinmux_disable_setting function.
+>> 3.Remove the disable ops in struct pinmux_ops
+> ...
+>> Signed-off-by: Fan Wu <fwu@marvell.com>
+>> Signed-off-by: Stephen Warren <swarren@nvidia.com>
+>
+> As I mentioned in my previous email, I didn't sign this off. I made some
+> suggestions for a better alternative in that email.
+>
+> If I *had* written that s-o-b, then it should be before yours in the
+> patch description since you handled the patch last.
+>
 
-This patch allows the user to write 0 to restore the default behavior.  
-It still requires a fraction equal to or larger than 8, however, as stated 
-by the documentation for sanity.  If a value in the range [1, 7] is 
-written, the sysctl will return EINVAL.
+The Signed-off didn't bother me.
+I will Choose your option 2# and thanks for your suggestion about this :)
 
-This also fixes a division by zero identified by Oleg that occurs if a 
-write() occurs with zero length and the value hasn't been changed before 
-(so that percpu_pagelist_fraction is still 0).
 
-Reported-by: Oleg Drokin <green@linuxhacker.ru>
-Cc: stable@vger.kernel.org
-Signed-off-by: David Rientjes <rientjes@google.com>
----
- Documentation/sysctl/vm.txt |  3 ++-
- kernel/sysctl.c             |  3 +--
- mm/page_alloc.c             | 30 +++++++++++++++++++++---------
- 3 files changed, 24 insertions(+), 12 deletions(-)
+>> diff --git a/include/linux/pinctrl/pinmux.h b/include/linux/pinctrl/pinmux.h
+>
+>> @@ -70,8 +70,6 @@ struct pinmux_ops {
+>>   				  unsigned * const num_groups);
+>>   	int (*enable) (struct pinctrl_dev *pctldev, unsigned func_selector,
+>>   		       unsigned group_selector);
+>> -	void (*disable) (struct pinctrl_dev *pctldev, unsigned func_selector,
+>> -			 unsigned group_selector);
+>
+> This will cause a compile failure, since many drivers still set the
+> .disable function pointer. You need to update all the driver files to
+> remove those functions too. There's quite a bit of code in some of those
+> functions, so you'd need the relevant driver maintainers to confirm it's
+> OK to remove it. I think only the owners of pinctrl-egra and
+> pinctrl-single have ack'd this concept so far.
+>
 
-diff --git a/Documentation/sysctl/vm.txt b/Documentation/sysctl/vm.txt
---- a/Documentation/sysctl/vm.txt
-+++ b/Documentation/sysctl/vm.txt
-@@ -702,7 +702,8 @@ The batch value of each per cpu pagelist is also updated as a result.  It is
- set to pcp->high/4.  The upper limit of batch is (PAGE_SHIFT * 8)
- 
- The initial value is zero.  Kernel does not use this value at boot time to set
--the high water marks for each per cpu page list.
-+the high water marks for each per cpu page list.  If the user writes '0' to this
-+sysctl, it will revert to this default behavior.
- 
- ==============================================================
- 
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -136,7 +136,6 @@ static unsigned long dirty_bytes_min = 2 * PAGE_SIZE;
- /* this is needed for the proc_dointvec_minmax for [fs_]overflow UID and GID */
- static int maxolduid = 65535;
- static int minolduid;
--static int min_percpu_pagelist_fract = 8;
- 
- static int ngroups_max = NGROUPS_MAX;
- static const int cap_last_cap = CAP_LAST_CAP;
-@@ -1305,7 +1304,7 @@ static struct ctl_table vm_table[] = {
- 		.maxlen		= sizeof(percpu_pagelist_fraction),
- 		.mode		= 0644,
- 		.proc_handler	= percpu_pagelist_fraction_sysctl_handler,
--		.extra1		= &min_percpu_pagelist_fract,
-+		.extra1		= &zero,
- 	},
- #ifdef CONFIG_MMU
- 	{
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -69,6 +69,7 @@
- 
- /* prevent >1 _updater_ of zone percpu pageset ->high and ->batch fields */
- static DEFINE_MUTEX(pcp_batch_high_lock);
-+#define MIN_PERCPU_PAGELIST_FRACTION	(8)
- 
- #ifdef CONFIG_USE_PERCPU_NUMA_NODE_ID
- DEFINE_PER_CPU(int, numa_node);
-@@ -4107,7 +4108,7 @@ static void __meminit zone_init_free_lists(struct zone *zone)
- 	memmap_init_zone((size), (nid), (zone), (start_pfn), MEMMAP_EARLY)
- #endif
- 
--static int __meminit zone_batchsize(struct zone *zone)
-+static int zone_batchsize(struct zone *zone)
- {
- #ifdef CONFIG_MMU
- 	int batch;
-@@ -4223,8 +4224,8 @@ static void pageset_set_high(struct per_cpu_pageset *p,
- 	pageset_update(&p->pcp, high, batch);
- }
- 
--static void __meminit pageset_set_high_and_batch(struct zone *zone,
--		struct per_cpu_pageset *pcp)
-+static void pageset_set_high_and_batch(struct zone *zone,
-+				       struct per_cpu_pageset *pcp)
- {
- 	if (percpu_pagelist_fraction)
- 		pageset_set_high(pcp,
-@@ -5849,21 +5850,32 @@ int lowmem_reserve_ratio_sysctl_handler(ctl_table *table, int write,
- int percpu_pagelist_fraction_sysctl_handler(ctl_table *table, int write,
- 	void __user *buffer, size_t *length, loff_t *ppos)
- {
-+	const int old_percpu_pagelist_fraction = percpu_pagelist_fraction;
- 	struct zone *zone;
--	unsigned int cpu;
- 	int ret;
- 
- 	ret = proc_dointvec_minmax(table, write, buffer, length, ppos);
--	if (!write || (ret < 0))
-+	if (!write || ret < 0)
- 		return ret;
- 
-+	/* Sanity checking to avoid pcp imbalance */
-+	if (percpu_pagelist_fraction &&
-+	    percpu_pagelist_fraction < MIN_PERCPU_PAGELIST_FRACTION) {
-+		percpu_pagelist_fraction = old_percpu_pagelist_fraction;
-+		return -EINVAL;
-+	}
-+
-+	/* No change? */
-+	if (percpu_pagelist_fraction == old_percpu_pagelist_fraction)
-+		return 0;
-+
- 	mutex_lock(&pcp_batch_high_lock);
- 	for_each_populated_zone(zone) {
--		unsigned long  high;
--		high = zone->managed_pages / percpu_pagelist_fraction;
-+		unsigned int cpu;
-+
- 		for_each_possible_cpu(cpu)
--			pageset_set_high(per_cpu_ptr(zone->pageset, cpu),
--					 high);
-+			pageset_set_high_and_batch(zone,
-+					per_cpu_ptr(zone->pageset, cpu));
- 	}
- 	mutex_unlock(&pcp_batch_high_lock);
- 	return 0;
+For this part, I think I mentioned this before, simply removing disable 
+ops will introduce the compiling error.
+I think there are several ways to handle this:
+1. Don't remove the disable ops in struct pinmux_ops in this patch but 
+to remove the disable ops in struct pinmux_ops after the another patch 
+is merged, which is used to remove all of the disable ops user in all 
+drivers.
+2. Just remove the disable ops in pinmux_ops in this patch, and make a 
+another patch ASAP to remove all the disable ops user in all drivers.
+3. Remove the disable ops in struct pinmux_ops and remove all the 
+disable ops user in all drivers, all in this patch.
+
+
+For the solution 2, I just think it may be not a good way to include so 
+much content in a patch, which are not in a same code level.
+
+I am just inclined to use solution 1# or 3#.
+
+Please share your comments.
+
+Great thanks for this !
+
