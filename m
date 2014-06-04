@@ -1,85 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753815AbaFDBtm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 21:49:42 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:62274 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751510AbaFDBtk (ORCPT
+	id S1754200AbaFDBux (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 21:50:53 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:37585 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751574AbaFDBuv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 21:49:40 -0400
-Message-ID: <538E7B2F.2000100@gmail.com>
-Date: Tue, 03 Jun 2014 19:49:35 -0600
+	Tue, 3 Jun 2014 21:50:51 -0400
+Message-ID: <538E7B77.6010700@gmail.com>
+Date: Tue, 03 Jun 2014 19:50:47 -0600
 From: David Ahern <dsahern@gmail.com>
 User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
 To: Alexis Berlemont <alexis.berlemont@gmail.com>,
         linux-kernel@vger.kernel.org
-CC: Jiri Olsa <jolsa@redhat.com>, mingo@kernel.org, sam@ravnborg.org,
-        mmarek@suse.cz, Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, Borislav Petkov <bp@alien8.de>,
-        linux-kbuild@vger.kernel.org, Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 03/32] perf tools: Kbuild source related fixies
-References: <1401833185-10347-1-git-send-email-alexis.berlemont@gmail.com> <1401833185-10347-4-git-send-email-alexis.berlemont@gmail.com>
-In-Reply-To: <1401833185-10347-4-git-send-email-alexis.berlemont@gmail.com>
+CC: jolsa@redhat.com, mingo@kernel.org, sam@ravnborg.org, mmarek@suse.cz
+Subject: Re: [PATCH 05/32] perf kbuild: fix recursive invocation of config/features-checks
+References: <1401833185-10347-1-git-send-email-alexis.berlemont@gmail.com> <1401833185-10347-6-git-send-email-alexis.berlemont@gmail.com>
+In-Reply-To: <1401833185-10347-6-git-send-email-alexis.berlemont@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/3/14, 4:05 PM, Alexis Berlemont wrote:
-> From: Jiri Olsa <jolsa@redhat.com>
->
-> Fixing several sources config dependencies to allow
-> separate config builds.
->
-> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Namhyung Kim <namhyung@kernel.org>
-> Cc: Borislav Petkov <bp@alien8.de>
-> Cc: Michal Marek <mmarek@suse.cz>
-> Cc: linux-kbuild@vger.kernel.org
-> Cc: Stephane Eranian <eranian@google.com>
-> ---
->   tools/perf/builtin-lock.c        |  4 +++-
->   tools/perf/builtin-sched.c       |  2 ++
->   tools/perf/perf.c                |  6 ++++++
->   tools/perf/perf.h                |  2 ++
->   tools/perf/ui/browsers/scripts.c |  4 ++++
->   tools/perf/ui/setup.c            | 10 +++++++++-
->   6 files changed, 26 insertions(+), 2 deletions(-)
->
-> diff --git a/tools/perf/builtin-lock.c b/tools/perf/builtin-lock.c
-> index c852c7a..b255c20 100644
-> --- a/tools/perf/builtin-lock.c
-> +++ b/tools/perf/builtin-lock.c
-> @@ -992,9 +992,11 @@ int cmd_lock(int argc, const char **argv, const char *prefix __maybe_unused)
->   				usage_with_options(report_usage, report_options);
->   		}
->   		rc = __cmd_report(false);
-> +#ifdef CONFIG_BULTIN_SCRIPT
->   	} else if (!strcmp(argv[0], "script")) {
->   		/* Aliased to 'perf script' */
-> -		return cmd_script(argc, argv, prefix);
-> +		rc = cmd_script(argc, argv, prefix);
-> +#endif
->   	} else if (!strcmp(argv[0], "info")) {
->   		if (argc) {
->   			argc = parse_options(argc, argv,
-
-Since you are not adding builtin-cmds.h as an included file this change 
-takes away functionality. Each patch should ensure that existing options 
-continue to work after the change.
-
-ditto for all of the other changes to other files.
+you are missing a commit message as to why the below change is needed. 
+What happens without this patch. What happens with this patch.
 
 David
+
+On 6/3/14, 4:05 PM, Alexis Berlemont wrote:
+> ---
+>   tools/perf/Makefile.kbuild | 2 +-
+>   tools/perf/config/Makefile | 4 ++--
+>   2 files changed, 3 insertions(+), 3 deletions(-)
+>
+> diff --git a/tools/perf/Makefile.kbuild b/tools/perf/Makefile.kbuild
+> index 1e3621f..b2d0d08 100644
+> --- a/tools/perf/Makefile.kbuild
+> +++ b/tools/perf/Makefile.kbuild
+> @@ -90,7 +90,7 @@ VPATH += $(src-perf)
+>
+>   export src-perf obj-perf
+>
+> -OUTPUT := $(obj-perf)
+> +OUTPUT := $(obj-perf)/
+>
+>   export OUTPUT
+>
+> diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+> index 78ee62d..1760f57 100644
+> --- a/tools/perf/config/Makefile
+> +++ b/tools/perf/config/Makefile
+> @@ -135,7 +135,7 @@ endif
+>
+>   feature_check = $(eval $(feature_check_code))
+>   define feature_check_code
+> -  feature-$(1) := $(shell $(MAKE) OUTPUT=$(OUTPUT_FEATURES) CFLAGS="$(EXTRA_CFLAGS) $(FEATURE_CHECK_CFLAGS-$(1))" LDFLAGS="$(LDFLAGS) $(FEATURE_CHECK_LDFLAGS-$(1))" -C config/feature-checks test-$1.bin >/dev/null 2>/dev/null && echo 1 || echo 0)
+> +  feature-$(1) := $(shell $(MAKE) OUTPUT=$(OUTPUT_FEATURES) CFLAGS="$(EXTRA_CFLAGS) $(FEATURE_CHECK_CFLAGS-$(1))" LDFLAGS="$(LDFLAGS) $(FEATURE_CHECK_LDFLAGS-$(1))" -C $(src-perf)/config/feature-checks test-$1.bin >/dev/null 2>/dev/null && echo 1 || echo 0)
+>   endef
+>
+>   feature_set = $(eval $(feature_set_code))
+> @@ -234,7 +234,7 @@ ifeq ($(feature-all), 1)
+>     #
+>     $(foreach feat,$(CORE_FEATURE_TESTS),$(call feature_set,$(feat)))
+>   else
+> -  $(shell $(MAKE) OUTPUT=$(OUTPUT_FEATURES) CFLAGS="$(EXTRA_CFLAGS)" LDFLAGS=$(LDFLAGS) -i -j -C config/feature-checks $(addsuffix .bin,$(CORE_FEATURE_TESTS)) >/dev/null 2>&1)
+> +  $(shell $(MAKE) OUTPUT=$(OUTPUT_FEATURES) CFLAGS="$(EXTRA_CFLAGS)" LDFLAGS=$(LDFLAGS) -i -j -C $(src-perf)/config/feature-checks $(addsuffix .bin,$(CORE_FEATURE_TESTS)) >/dev/null 2>&1)
+>     $(foreach feat,$(CORE_FEATURE_TESTS),$(call feature_check,$(feat)))
+>   endif
+>
+>
+
