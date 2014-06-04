@@ -1,106 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753575AbaFDOEQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 10:04:16 -0400
-Received: from relay.parallels.com ([195.214.232.42]:56724 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753522AbaFDOEO (ORCPT
+	id S1753689AbaFDOFW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 10:05:22 -0400
+Received: from mail-we0-f172.google.com ([74.125.82.172]:37407 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751508AbaFDOFU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 10:04:14 -0400
-Message-ID: <1401890647.4484.7.camel@tkhai>
-Subject: [PATCH RESEND 2/2] sched/rt: Fix rt_prio()
-From: Kirill Tkhai <ktkhai@parallels.com>
-To: <linux-kernel@vger.kernel.org>
-CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Juri Lelli <juri.lelli@gmail.com>, <tkhai@yandex.ru>
-Date: Wed, 4 Jun 2014 18:04:07 +0400
-In-Reply-To: <20140604124735.3951.61242.stgit@tkhai>
-References: <20140604124735.3951.61242.stgit@tkhai>
-Organization: Parallels
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b3 
+	Wed, 4 Jun 2014 10:05:20 -0400
+Date: Wed, 4 Jun 2014 16:05:14 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Kevin Hilman <khilman@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linaro Networking <linaro-networking@linaro.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Subject: Re: [Query] Can we use normal timers (kernel/timer.c) while in
+ NO_HZ_FULL mode?
+Message-ID: <20140604140512.GD13827@localhost.localdomain>
+References: <CAKohponiCH35ZBTicCkVV3KoJzCWrnJExeR9HqwSMv+QDp36gg@mail.gmail.com>
+ <20140604132305.GB13827@localhost.localdomain>
+ <CAKohpo=JRKO7x3izE7jG-MAUdXexNzxpG0FT5adNQmKi0+Bauw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.30.26.172]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKohpo=JRKO7x3izE7jG-MAUdXexNzxpG0FT5adNQmKi0+Bauw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jun 04, 2014 at 07:14:43PM +0530, Viresh Kumar wrote:
+> On 4 June 2014 18:53, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> > Right, if we enqueue a timer when the tick is stopped, we call wake_up_nohz_cpu().
+> 
+> Ahh, I looked at __mod_timer() :)
+> 
+> BTW, shouldn't we do something similar for mod_timer_pinned()
+> as well ?
 
-The set of rt_prio() contains dl_prio() subset. Fix that.
+Ah that looks right. In fact we should probably move the wake_up_nohz_cpu()
+to internal_add_timer().
 
-Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
-CC: Juri Lelli <juri.lelli@gmail.com>
-CC: Peter Zijlstra <peterz@infradead.org>
-CC: Ingo Molnar <mingo@kernel.org>
----
- include/linux/sched/deadline.h |    8 +-------
- include/linux/sched/prio.h     |    8 +++++---
- include/linux/sched/rt.h       |    2 +-
- 3 files changed, 7 insertions(+), 11 deletions(-)
-
-diff --git a/include/linux/sched/deadline.h b/include/linux/sched/deadline.h
-index 9d303b8..e529305 100644
---- a/include/linux/sched/deadline.h
-+++ b/include/linux/sched/deadline.h
-@@ -1,13 +1,7 @@
- #ifndef _SCHED_DEADLINE_H
- #define _SCHED_DEADLINE_H
- 
--/*
-- * SCHED_DEADLINE tasks has negative priorities, reflecting
-- * the fact that any of them has higher prio than RT and
-- * NORMAL/BATCH tasks.
-- */
--
--#define MAX_DL_PRIO		0
-+#include <linux/sched/prio.h>
- 
- static inline int dl_prio(int prio)
- {
-diff --git a/include/linux/sched/prio.h b/include/linux/sched/prio.h
-index d9cf5a5..0d6c552 100644
---- a/include/linux/sched/prio.h
-+++ b/include/linux/sched/prio.h
-@@ -6,18 +6,20 @@
- #define NICE_WIDTH	(MAX_NICE - MIN_NICE + 1)
- 
- /*
-- * Priority of a process goes from 0..MAX_PRIO-1, valid RT
-- * priority is 0..MAX_RT_PRIO-1, and SCHED_NORMAL/SCHED_BATCH
-+ * Priority of a process goes from MAX_DL_PRIO-1..MAX_PRIO-1,
-+ * SCHED_DEADLINE tasks have negative priorities, valid RT
-+ * value is 0..MAX_RT_PRIO-1, and SCHED_NORMAL/SCHED_BATCH
-  * tasks are in the range MAX_RT_PRIO..MAX_PRIO-1. Priority
-  * values are inverted: lower p->prio value means higher priority.
-  *
-  * The MAX_USER_RT_PRIO value allows the actual maximum
-  * RT priority to be separate from the value exported to
-  * user-space.  This allows kernel threads to set their
-- * priority to a value higher than any user task. Note:
-+ * priority to a value higher than any user RT task. Note:
-  * MAX_RT_PRIO must not be smaller than MAX_USER_RT_PRIO.
-  */
- 
-+#define MAX_DL_PRIO		0
- #define MAX_USER_RT_PRIO	100
- #define MAX_RT_PRIO		MAX_USER_RT_PRIO
- 
-diff --git a/include/linux/sched/rt.h b/include/linux/sched/rt.h
-index 6341f5b..dca43ed 100644
---- a/include/linux/sched/rt.h
-+++ b/include/linux/sched/rt.h
-@@ -5,7 +5,7 @@
- 
- static inline int rt_prio(int prio)
- {
--	if (unlikely(prio < MAX_RT_PRIO))
-+	if (unlikely(prio < MAX_RT_PRIO && prio >= MAX_DL_PRIO))
- 		return 1;
- 	return 0;
- }
-
-
-
-
-
+And that concerns nohz idle as well. If mod_timer() selects a CPU that doesn't
+appear to be idle in get_nohz_timer_target() but then becomes idle afterward
+before we lock its timer base, the CPU may well miss the timer.
