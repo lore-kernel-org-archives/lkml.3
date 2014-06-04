@@ -1,106 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755536AbaFDAci (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 20:32:38 -0400
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:33728 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752160AbaFDA35 (ORCPT
+	id S1755401AbaFDAdo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 20:33:44 -0400
+Received: from smtprelay0002.hostedemail.com ([216.40.44.2]:39858 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752100AbaFDAdn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 20:29:57 -0400
-Date: Tue, 3 Jun 2014 17:29:54 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Vlastimil Babka <vbabka@suse.cz>, Mel Gorman <mgorman@suse.de>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Hugh Dickins <hughd@google.com>,
-        Greg Thelen <gthelen@google.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Minchan Kim <minchan@kernel.org>,
-        Michal Nazarewicz <mina86@mina86.com>, Rik van Riel <riel@redhat.com>
-Subject: [patch -mm 1/3] mm: rename allocflags_to_migratetype for clarity
-In-Reply-To: <537DE799.3040400@suse.cz>
-Message-ID: <alpine.DEB.2.02.1406031728390.5312@chino.kir.corp.google.com>
-References: <1399904111-23520-1-git-send-email-vbabka@suse.cz> <1400233673-11477-1-git-send-email-vbabka@suse.cz> <alpine.DEB.2.02.1405211954410.13243@chino.kir.corp.google.com> <537DB0E5.40602@suse.cz> <alpine.DEB.2.02.1405220127320.13630@chino.kir.corp.google.com>
- <537DE799.3040400@suse.cz>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 3 Jun 2014 20:33:43 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 40,2.5,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::::::::::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1542:1593:1594:171
+X-HE-Tag: sky06_2d1392de5c1d
+X-Filterd-Recvd-Size: 3673
+Message-ID: <1401842017.22133.30.camel@joe-AO725>
+Subject: Re: [PATCH RFC 1/2] MAINTAINERS: Add "R:" designated-reviewers tag
+From: Joe Perches <joe@perches.com>
+To: Ken Moffat <zarniwhoop@ntlworld.com>
+Cc: josh@joshtriplett.org, Dave Chinner <david@fromorbit.com>,
+        Steven Rostedt <rostedt@goodmis.org>, paulmck@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, dhowells@redhat.com, edumazet@google.com,
+        dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
+        sbw@mit.edu
+Date: Tue, 03 Jun 2014 17:33:37 -0700
+In-Reply-To: <20140603234816.GB26144@milliways>
+References: <20140602181658.GX22231@linux.vnet.ibm.com>
+	 <1401734669.7323.20.camel@joe-AO725>
+	 <20140602145020.400d4e0c@gandalf.local.home> <20140602185504.GA13569@cloud>
+	 <1401735917.7323.23.camel@joe-AO725> <20140602190951.GA13648@cloud>
+	 <1401736666.7323.25.camel@joe-AO725> <20140602231949.GV14410@dastard>
+	 <20140602235915.GB14801@cloud> <1401754325.7323.50.camel@joe-AO725>
+	 <20140603234816.GB26144@milliways>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The page allocator has gfp flags (like __GFP_WAIT) and alloc flags (like 
-ALLOC_CPUSET) that have separate semantics.
+On Wed, 2014-06-04 at 00:48 +0100, Ken Moffat wrote:
+> On Mon, Jun 02, 2014 at 05:12:05PM -0700, Joe Perches wrote:
+> > "Tested-by:" tags would be more helpful if the test
+> > cases that were used were somehow sent along with the
+> > signature.
+[]
+> Tested-by is usually used for a fix of some problem, often a
+> regression.  A good commit message will explain the problem.
 
-The function allocflags_to_migratetype() actually takes gfp flags, not alloc 
-flags, and returns a migratetype.  Rename it to gfpflags_to_migratetype().
+It seems about half of the commits with tested-by are
+for regressions.
 
-Signed-off-by: David Rientjes <rientjes@google.com>
----
- include/linux/gfp.h | 2 +-
- mm/compaction.c     | 4 ++--
- mm/page_alloc.c     | 6 +++---
- 3 files changed, 6 insertions(+), 6 deletions(-)
+The latest commit message with your tested-by is great.
 
-diff --git a/include/linux/gfp.h b/include/linux/gfp.h
---- a/include/linux/gfp.h
-+++ b/include/linux/gfp.h
-@@ -156,7 +156,7 @@ struct vm_area_struct;
- #define GFP_DMA32	__GFP_DMA32
+commit 18ee37a485653aa635cfab9a3710e9bcf5fbca01
+Author: Daniel Vetter <daniel.vetter@ffwll.ch>
+Date:   Fri May 30 16:41:23 2014 +0200
+
+    drm/radeon: Resume fbcon last
  
- /* Convert GFP flags to their corresponding migrate type */
--static inline int allocflags_to_migratetype(gfp_t gfp_flags)
-+static inline int gfpflags_to_migratetype(const gfp_t gfp_flags)
- {
- 	WARN_ON((gfp_flags & GFP_MOVABLE_MASK) == GFP_MOVABLE_MASK);
- 
-diff --git a/mm/compaction.c b/mm/compaction.c
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -1096,7 +1096,7 @@ static unsigned long compact_zone_order(struct zone *zone, int order,
- 		.nr_freepages = 0,
- 		.nr_migratepages = 0,
- 		.order = order,
--		.migratetype = allocflags_to_migratetype(gfp_mask),
-+		.migratetype = gfpflags_to_migratetype(gfp_mask),
- 		.zone = zone,
- 		.mode = mode,
- 	};
-@@ -1145,7 +1145,7 @@ unsigned long try_to_compact_pages(struct zonelist *zonelist,
- 	count_compact_event(COMPACTSTALL);
- 
- #ifdef CONFIG_CMA
--	if (allocflags_to_migratetype(gfp_mask) == MIGRATE_MOVABLE)
-+	if (gfpflags_to_migratetype(gfp_mask) == MIGRATE_MOVABLE)
- 		alloc_flags |= ALLOC_CMA;
- #endif
- 	/* Compact each zone in the list */
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -2473,7 +2473,7 @@ gfp_to_alloc_flags(gfp_t gfp_mask)
- 			alloc_flags |= ALLOC_NO_WATERMARKS;
- 	}
- #ifdef CONFIG_CMA
--	if (allocflags_to_migratetype(gfp_mask) == MIGRATE_MOVABLE)
-+	if (gfpflags_to_migratetype(gfp_mask) == MIGRATE_MOVABLE)
- 		alloc_flags |= ALLOC_CMA;
- #endif
- 	return alloc_flags;
-@@ -2716,7 +2716,7 @@ __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order,
- 	struct zone *preferred_zone;
- 	struct zoneref *preferred_zoneref;
- 	struct page *page = NULL;
--	int migratetype = allocflags_to_migratetype(gfp_mask);
-+	int migratetype = gfpflags_to_migratetype(gfp_mask);
- 	unsigned int cpuset_mems_cookie;
- 	int alloc_flags = ALLOC_WMARK_LOW|ALLOC_CPUSET|ALLOC_FAIR;
- 	int classzone_idx;
-@@ -2750,7 +2750,7 @@ retry_cpuset:
- 	classzone_idx = zonelist_zone_idx(preferred_zoneref);
- 
- #ifdef CONFIG_CMA
--	if (allocflags_to_migratetype(gfp_mask) == MIGRATE_MOVABLE)
-+	if (gfpflags_to_migratetype(gfp_mask) == MIGRATE_MOVABLE)
- 		alloc_flags |= ALLOC_CMA;
- #endif
- retry:
+[detailed explanation elided]
+
+This commit log with your tested-by seems a bit
+mysterious though:
+
+commit 74ad54f249de39bc040cce7237b1b854a9c6f0ad
+Author: Christian König <christian.koenig@amd.com>
+Date:   Tue May 13 12:50:54 2014 +0200
+
+    drm/radeon: fix typo in finding PLL params
+    
+    Otherwise the limit is raised to high.
+
+As the commit that introduces this error is:
+
+commit 3b333c55485fef0089ae7398906599d000df195e
+Author: Christian König <christian.koenig@amd.com>
+Date:   Thu Apr 24 18:39:59 2014 +0200
+
+    drm/radeon: avoid high jitter with small frac divs
+
+This is the entirety of the commit log.
+
+The calculation that was done here:
+
+	max(fb_div_min, (9 - (fb_div % 10)) * 20 + 60)
+
+Doesn't give any indication why 50 is better than 60.
+
+> This is _often_ not like userspace programs where you can write a
+> testsuite to exercise the corner cases.  Kernel problems can be
+> tied up with intricate details of the hardware, or equally they
+> might happen only for certain usage, and for those it might not be
+> at all obvious what is "special" about the affected usage.
+
+Shrug.  Mostly where that wonderful test robot that
+Fengguang Wu put together can aid in finding regressions,
+it'd be nice if the tested-by: tests done could be added
+somehow.  And not in the commit log itself.
+
+It's certainly not possible for test cases to be mandatory.
+
+cheers, Joe
+
