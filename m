@@ -1,100 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752284AbaFDKj0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 06:39:26 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:52916 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752050AbaFDKjY (ORCPT
+	id S1752344AbaFDKlb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 06:41:31 -0400
+Received: from casper.infradead.org ([85.118.1.10]:46032 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752027AbaFDKl3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 06:39:24 -0400
-Date: Wed, 4 Jun 2014 11:38:46 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arvind Chauhan <arvind.chauhan@arm.com>,
-        Eduardo Valentin <edubezval@gmail.com>, Pavel Machek <pavel@ucw.cz>,
-        Liam Girdwood <lgirdwood@gmail.com>
-Message-ID: <20140604103846.GF2520@sirena.org.uk>
-References: <1780c3205893be8567fa29ccd86674e2f32555b4.1401192160.git.viresh.kumar@linaro.org>
- <20140527192923.GC12304@sirena.org.uk>
- <CAKohpo=AnusM2FGs=JLozSyTc0N7SDXQxe+rPiLEHP6ewxY4ow@mail.gmail.com>
- <20140528173858.GG5099@sirena.org.uk>
- <CAKohpo=T3BG9X0gHfRA-x8B3ou3Y=XHcs=OTYAHikX61iAJ9xw@mail.gmail.com>
- <20140603145347.GE31751@sirena.org.uk>
- <CAKohpo=VLCf2nz1WsL-iGw6BWwpmqZ+8JwGFFHFFtjZyAS9LrA@mail.gmail.com>
- <20140603154854.GG31751@sirena.org.uk>
- <CAKohpon9G=JdZ1jSStHZH29VZDggZXm+EOqDAwedk2K0ZxD0Qg@mail.gmail.com>
+	Wed, 4 Jun 2014 06:41:29 -0400
+Date: Wed, 4 Jun 2014 12:41:22 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: riel@redhat.com, laijs@cn.fujitsu.com
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org
+Subject: [PATCH] sched: Fix migration_cpu_stop() return value
+Message-ID: <20140604104122.GL30445@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="FeAIMMcddNRN4P4/"
+	protocol="application/pgp-signature"; boundary="KnDXMCVtq+otksxP"
 Content-Disposition: inline
-In-Reply-To: <CAKohpon9G=JdZ1jSStHZH29VZDggZXm+EOqDAwedk2K0ZxD0Qg@mail.gmail.com>
-X-Cookie: Your lucky color has faded.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 109.148.252.180
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/2] regulators: Add definition of
- regulator_set_voltage_time() for !CONFIG_REGULATOR
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---FeAIMMcddNRN4P4/
+--KnDXMCVtq+otksxP
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Wed, Jun 04, 2014 at 11:16:37AM +0530, Viresh Kumar wrote:
+A while ago I did a similar patch for some debugging, but looking at it
+again today I realized we should probably fix this anyway.
 
-> - But for platforms without regulators support (CONFIG_REGULATOR=n),
-> regulator_get() will return NULL (a valid regulator though) and
-> regulator_set_voltage() will fail. Because the platform doesn't care much
-> about regulators it must go on and change frequency as if nothing
-> happened.
+---
+Subject: sched: Fix migration_cpu_stop() return value
 
-No, approximately none of this is true.  CONFIG_REGULATOR tells you
-nothing about the hardware, it tells you what someone selected in the
-kernel config.  There is nothing stopping anyone enabling the API on any
-platform, and there is nothing stopping anyone disabling the API when
-building a kernel for a platform which can do something with regulators
-with CONFIG_REGULATOR disabled.
+There are a number of migration_cpu_stop() users; and some actually care
+about the success of the migration. So report this.
 
-Please, go and *think* about what's going on here.  I've repeatedly
-asked you to consider the case where we need to raise the voltage prior
-to raising the frequency for cpufreq but you've not responded to these
-requests either directly or in showing any sign of having understood the
-issue.
+In particular migrate_task_to() as used from task_numa_migrate()
+actually tests this return value.
 
-If the code fails to change the voltage it needs to handle that
-(including remembering that attempts to lower the voltage fail); if the
-code handles the errors sensibly I would expect that to handle
-everything.
+Also change set_cpus_allowed_ptr() to propagate this return value, since
+it already returns other errors.
 
---FeAIMMcddNRN4P4/
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+---
+ kernel/sched/core.c |   15 +++++++++++----
+ 1 file changed, 11 insertions(+), 4 deletions(-)
+
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -4633,11 +4633,13 @@ int set_cpus_allowed_ptr(struct task_str
+ 	dest_cpu =3D cpumask_any_and(cpu_active_mask, new_mask);
+ 	if (p->on_rq) {
+ 		struct migration_arg arg =3D { p, dest_cpu };
++
+ 		/* Need help from migration thread: drop lock and wait. */
+ 		task_rq_unlock(rq, p, &flags);
+-		stop_one_cpu(cpu_of(rq), migration_cpu_stop, &arg);
++		ret =3D stop_one_cpu(cpu_of(rq), migration_cpu_stop, &arg);
+ 		tlb_migrate_finish(p->mm);
+-		return 0;
++
++		return ret;
+ 	}
+ out:
+ 	task_rq_unlock(rq, p, &flags);
+@@ -4747,19 +4749,24 @@ void sched_setnuma(struct task_struct *p
+  * migration_cpu_stop - this will be executed by a highprio stopper thread
+  * and performs thread migration by bumping thread off CPU then
+  * 'pushing' onto another runqueue.
++ *
++ * Returns 0 on success, -EAGAIN on failure to migrate.
+  */
+ static int migration_cpu_stop(void *data)
+ {
+ 	struct migration_arg *arg =3D data;
++	int ret =3D 0;
+=20
+ 	/*
+ 	 * The original target cpu might have gone down and we might
+ 	 * be on another cpu but it doesn't matter.
+ 	 */
+ 	local_irq_disable();
+-	__migrate_task(arg->task, raw_smp_processor_id(), arg->dest_cpu);
++	if (!__migrate_task(arg->task, raw_smp_processor_id(), arg->dest_cpu))
++		ret =3D -EAGAIN;
+ 	local_irq_enable();
+-	return 0;
++
++	return ret;
+ }
+=20
+ #ifdef CONFIG_HOTPLUG_CPU
+
+--KnDXMCVtq+otksxP
+Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJTjvczAAoJELSic+t+oim9AEMQAJVEwGI59MNoz7sFpAYba7Lz
-3PJUK+QsWIXiMzvikzSbf9Cc7+JvISb1vRywEvTCZlGhvODXd51tTQDCZw7aIKFn
-wgN/5c5rmIzekqz+hrCpG4E2LHmL1QQ+x5gIzecWak38PL8AlSil/TsEOo65GZ9Q
-06gQHctBK64yhPywpKkVdfDr7ShlWYe0+9BFYTi0DzArglR2XaIaxwFryMY66ivo
-kW/TofAt84eV/KU1rRIsFnz5HUzxn+Id+tSg8yjOOw3pix3AmffLnJqZCPXyF1w9
-3pwIlJu/MyCaLtCWBJy2HzVxDL8y4IfL45fcqoBqz+hzZ6UGm0c6iP2UVpjvW11+
-xAmUOZSTN7oBRECeSf4/IyH239UM7LuHTUrHRF89Hg7DN4ALFhAgSUacOiA+XidM
-KU3XnOqf0aOwFr6kSdr8tDFgLuF9Xwo+ITYsEX6fzy4NqbE0kx0fM0EpUVtXz6rn
-xz94BVsxtgSnayMexg2Q0D0+EXZiLSf/XTveGJwP8YH4T1bpv0iGVdPu02gMifLQ
-rwJZ3gFeSGKRaYB6Rs71zIwy2x5m/+ZUUAgBUTrldS4GBRfnvE/HikN/cjh2zPlZ
-VE8e7gv0ke02Cy9yfMM6Iy/u0sCEIuO/Y39+g7u3JLl75QFLLoXb2NNellQT9XEP
-w8LHe0tKQJ5oo4T3EnuS
-=J+fe
+iQIcBAEBAgAGBQJTjvfSAAoJEHZH4aRLwOS6XMYP/Ah/ZCtyoA6HhXEcPeMZuij7
+PPae9EFbURDqEwMAnrWu7UI2NoU7wDBOEOUqT9nS/LG1PxJaGssdrgQDEnAKbzXH
+9GgHb/0PGOCqZHmhxow0WVcRWdQFSsYbJOshmzrZ3A7am5fS4ZykJW6Zi/k3MngS
+p3yYShHaCrwFmMLZYHnzyDIM60fyge4co5p/LafUhwLtyv2xTtdb4Rj+eypPj7vS
+9aX+KX5+On418tAeyzN3rBKJ6xlWgaB8dhHUcud8RJVMLSFrrKmVj83u/sE9QNkH
+SmX1bw/lebE1GZFWrMQSr3BO/lswOLSnqOfSAaLXNYnTdRz3N5dVxAGqFUMuJ0c1
+Cui3MZAI6E7cwXO0hxyrr27W7yXzV+ynhtqhT4uIzeHXty6594NorSxo48bAeMBS
+vWTe9k3Agg5GMGex91gn1x33N4ze+aNSrf2TBY6VjfHAulQ3pgA4/Iy7F9gABzuC
++Be905YRfZ1jfbXyrZ8FmpkZUGm77biJEhj5jFPHIxWKB8iB81TsXnZQNGikxYhY
+4gw+30EsgjXJ3YLZqMz8po5AK9EUBz8gGd4OXzo2edNqaf5gA9CVo3huZDhHX6wH
+Bj+qqS3GroSpYR1ZmSAlOJif1H1bHUCQ+Z4rirBZAX7RpDHA+JluFptk5Vw/Y49v
+S8KjTz9yTBYG6i2rKiVV
+=MJw8
 -----END PGP SIGNATURE-----
 
---FeAIMMcddNRN4P4/--
+--KnDXMCVtq+otksxP--
