@@ -1,90 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751440AbaFDTxW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 15:53:22 -0400
-Received: from www.linutronix.de ([62.245.132.108]:41007 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750997AbaFDTxV (ORCPT
+	id S1751596AbaFDTyD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 15:54:03 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:52940 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750973AbaFDTyB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 15:53:21 -0400
-Date: Wed, 4 Jun 2014 21:53:16 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Brad Mouring <bmouring@ni.com>
-cc: Steven Rostedt <rostedt@goodmis.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Clark Williams <williams@redhat.com>
-Subject: Re: [PATCH 1/1] rtmutex: Handle when top lock owner changes
-In-Reply-To: <20140604192541.GA9496@linuxgetsreal>
-Message-ID: <alpine.DEB.2.10.1406042147080.18296@nanos>
-References: <1400855410-14773-1-git-send-email-brad.mouring@ni.com> <1400855410-14773-2-git-send-email-brad.mouring@ni.com> <20140603210609.62de6451@gandalf.local.home> <alpine.DEB.2.10.1406041623170.3319@nanos> <20140604114411.0fe51c1d@gandalf.local.home>
- <alpine.DEB.2.10.1406041951210.3319@nanos> <20140604192541.GA9496@linuxgetsreal>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Wed, 4 Jun 2014 15:54:01 -0400
+From: Nishanth Menon <nm@ti.com>
+To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>
+CC: Alban Bedel <alban.bedel@avionic-design.de>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-omap@vger.kernel.org>, Nishanth Menon <nm@ti.com>
+Subject: [PATCH] regulator: core: print error value when constraints are not applied
+Date: Wed, 4 Jun 2014 14:53:25 -0500
+Message-ID: <1401911605-5157-1-git-send-email-nm@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 4 Jun 2014, Brad Mouring wrote:
-> On Wed, Jun 04, 2014 at 08:02:16PM +0200, Thomas Gleixner wrote:
-> > I'll fixup the check so it wont break the real deadlock case and queue
-> > it.
-> 
-> How would the change break the real deadlock case?
+With commit 064d5cd110f94ce41ca5681dcda8b77fa63d5b95
+(regulator: core: Fix the init of DT defined fixed regulators)
+We ensure that regulator must be capable of providing it's current
+voltage when constraints are used, however adding the return value in
+the print is a little more informative to explain the nature of the
+failure involved.
 
-> >  	/* Deadlock detection */
-> >  	if (lock == orig_lock || rt_mutex_owner(lock) == top_task) {
-> > +		/*
-> > +		 * If the prio chain has changed out from under us, set the task
-> > +		 * to the current owner of the lock in the current waiter and
-> > +		 * continue walking the prio chain
-> > +		 */
-> > +		if (rt_mutex_owner(lock) && rt_mutex_owner(lock) != task) {
+So, instead of providing message such as:
+smps9: failed to get the current voltage
 
-No, sorry. That's wrong.
+having error value added to the message such as:
+smps9: failed to get the current voltage(-22)
 
-Your change wreckages the rt_mutex_owner(lock) == top_task test
-simply because in that case:
+is a little more informative for debugging the error.
 
-   (rt_mutex_owner(lock) && rt_mutex_owner(lock) != task)
+Signed-off-by: Nishanth Menon <nm@ti.com>
+---
+ drivers/regulator/core.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
-evaluates to true.
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index 4c1f999..b4902ab 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -846,7 +846,9 @@ static int machine_constraints_voltage(struct regulator_dev *rdev,
+ 	    rdev->constraints->min_uV == rdev->constraints->max_uV) {
+ 		int current_uV = _regulator_get_voltage(rdev);
+ 		if (current_uV < 0) {
+-			rdev_err(rdev, "failed to get the current voltage\n");
++			rdev_err(rdev,
++				 "failed to get the current voltage(%d)\n",
++				 current_uV);
+ 			return current_uV;
+ 		}
+ 		if (current_uV < rdev->constraints->min_uV ||
+@@ -856,8 +858,8 @@ static int machine_constraints_voltage(struct regulator_dev *rdev,
+ 				rdev->constraints->max_uV);
+ 			if (ret < 0) {
+ 				rdev_err(rdev,
+-					"failed to apply %duV constraint\n",
+-					rdev->constraints->min_uV);
++					"failed to apply %duV constraint(%d)\n",
++					rdev->constraints->min_uV, ret);
+ 				return ret;
+ 			}
+ 		}
+-- 
+1.7.9.5
 
-So we want this:
-
-Index: tip/kernel/locking/rtmutex.c
-===================================================================
---- tip.orig/kernel/locking/rtmutex.c
-+++ tip/kernel/locking/rtmutex.c
-@@ -375,6 +375,26 @@ static int rt_mutex_adjust_prio_chain(st
- 	 * walk, we detected a deadlock.
- 	 */
- 	if (lock == orig_lock || rt_mutex_owner(lock) == top_task) {
-+		/*
-+		 * If the prio chain has changed out from under us, set the task
-+		 * to the current owner of the lock in the current waiter and
-+		 * continue walking the prio chain
-+		 */
-+		if (rt_mutex_owner(lock) && rt_mutex_owner(lock) != task &&
-+		    rt_mutex_owner(lock) != top_task) {
-+			/* Release the old owner */
-+			raw_spin_unlock_irqrestore(&task->pi_lock, flags);
-+			put_task_struct(task);
-+
-+			/* Move to the new owner */
-+			task = rt_mutex_owner(lock);
-+			get_task_struct(task);
-+
-+			/* Let's try this again */
-+			raw_spin_unlock(&lock->wait_lock);
-+			goto retry;
-+		}
-+
- 		debug_rt_mutex_deadlock(deadlock_detect, orig_waiter, lock);
- 		raw_spin_unlock(&lock->wait_lock);
- 		ret = deadlock_detect ? -EDEADLK : 0;
