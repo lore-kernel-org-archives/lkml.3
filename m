@@ -1,114 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752828AbaFDM3S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 08:29:18 -0400
-Received: from casper.infradead.org ([85.118.1.10]:46469 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751660AbaFDM3R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 08:29:17 -0400
-Date: Wed, 4 Jun 2014 14:29:09 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Kirill Tkhai <tkhai@yandex.ru>
-Cc: "riel@redhat.com" <riel@redhat.com>,
-        "laijs@cn.fujitsu.com" <laijs@cn.fujitsu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@kernel.org" <mingo@kernel.org>
-Subject: Re: [PATCH] sched: Fix migration_cpu_stop() return value
-Message-ID: <20140604122909.GE13658@twins.programming.kicks-ass.net>
-References: <20140604104122.GL30445@twins.programming.kicks-ass.net>
- <5962011401880725@web26h.yandex.ru>
- <20140604120338.GH13930@laptop.programming.kicks-ass.net>
+	id S1752892AbaFDMaa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 08:30:30 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:48172 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751734AbaFDMa2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 08:30:28 -0400
+Message-ID: <538F1160.1000803@ti.com>
+Date: Wed, 4 Jun 2014 15:30:24 +0300
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: linux-kernel <linux-kernel@vger.kernel.org>,
+        Linux Fbdev development list <linux-fbdev@vger.kernel.org>
+Subject: [GIT PULL] omap fbdev changes for 3.16
+X-Enigmail-Version: 1.6
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="bNvn4bxlrUVLu6cT"
-Content-Disposition: inline
-In-Reply-To: <20140604120338.GH13930@laptop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	protocol="application/pgp-signature";
+	boundary="rrL5eOVJqHcXctxcTWtUtcDFxbgK2Pgrp"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---bNvn4bxlrUVLu6cT
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
+--rrL5eOVJqHcXctxcTWtUtcDFxbgK2Pgrp
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: quoted-printable
 
-On Wed, Jun 04, 2014 at 02:03:38PM +0200, Peter Zijlstra wrote:
-> On Wed, Jun 04, 2014 at 03:18:45PM +0400, Kirill Tkhai wrote:
-> > Hi, Peter,
-> >=20
-> > 04.06.2014, 14:41, "Peter Zijlstra" <peterz@infradead.org>:
-> > > =A0A while ago I did a similar patch for some debugging, but looking =
-at it
-> > > =A0again today I realized we should probably fix this anyway.
-> > >
-> > > =A0---
-> > > =A0Subject: sched: Fix migration_cpu_stop() return value
-> > >
-> > > =A0There are a number of migration_cpu_stop() users; and some actuall=
-y care
-> > > =A0about the success of the migration. So report this.
-> > >
-> > > =A0In particular migrate_task_to() as used from task_numa_migrate()
-> > > =A0actually tests this return value.
-> > >
-> > > =A0Also change set_cpus_allowed_ptr() to propagate this return value,=
- since
-> > > =A0it already returns other errors.
-> > >
-> > > =A0Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
-> > > =A0Cc: Ingo Molnar <mingo@redhat.com>
-> > > =A0Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-> > > =A0---
-> > > =A0=A0kernel/sched/core.c | =A0=A015 +++++++++++----
-> > > =A0=A01 file changed, 11 insertions(+), 4 deletions(-)
-> > (snipped everything because of bad email editor)
-> >=20
-> > In set_cpus_allowed_ptr() p->on_rq branch can not fail.
-> >=20
-> > We've changed affinity and released rq's lock, so task can migrate
-> > on allowed cpu only (even if migration_cpu_stop fails).
-> >=20
-> > And it's a little ambiguously how user should react on this EAGAIN.
->=20
-> Try again? So one reason it might fail is because the task got migrated
-> in between the stop_cpu_call(migration_cpu_stop) call getting to
-> __migrate_task().
->=20
-> Esp. if you look at migrate_task_to() its fairly easy to fail this.
-> Currently it reports success, even though we completely failed to
-> migrate.
->=20
-> On -EAGAIN, re-evaluate the target and try again (later). Like for the
-> numa case, we'll try again on the next task_numa_migrate() call if its
-> still relevant.
+Hi Linus,
 
-Argh, I just realized that the one case the numa code is interested in
-is actually reported as success (task_cpu() !=3D cpu).
+Please pull the omap fbdev changes for 3.16.
 
-I'll go make a new patch..
+ Tomi
 
---bNvn4bxlrUVLu6cT
-Content-Type: application/pgp-signature
+The following changes since commit 89ca3b881987f5a4be4c5dbaa7f0df12bbdde2=
+fd:
+
+  Linux 3.15-rc4 (2014-05-04 18:14:42 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/tomba/linux.git tags/fbde=
+v-omap-3.16
+
+for you to fetch changes up to f2dd36ac9974cc2353bcbb8e6b643fb96030564c:
+
+  OMAPDSS: move 'compatible' converter to omapdss driver (2014-05-28 09:2=
+5:15 +0300)
+
+----------------------------------------------------------------
+fbdev changes for 3.16 (omap)
+
+* DT support for the panel drivers that were still missing it
+* TI AM43xx support
+* TI OMAP5 support
+
+----------------------------------------------------------------
+Archit Taneja (4):
+      omapdss: remove check for simpler port/endpoint binding
+      OMAPDSS: HDMI: support larger register offsets for OMAP5 HDMI core
+      OMAPDSS: HDMI: PHY changes for OMAP5
+      OMAPDSS: HDMI: PLL changes for OMAP5
+
+Arnd Bergmann (1):
+      video: omap2dss: fix LPAE warnings
+
+Fabian Frederick (1):
+      OMAPDSS: add __exit to dss_uninit_ports
+
+Jyri Sarha (1):
+      OMAPDSS: hdmi5_core: Fix compilation with OMAP5_DSS_HDMI_AUDIO
+
+Marek Belisko (2):
+      omapdss: panel-tpo-td028ec1: Add DT support.
+      omapdss: panel-tpo-td028ec1: Add module alias
+
+Sathya Prakash M R (1):
+      OMAPDSS: Add DSS features for AM43xx
+
+Tomi Valkeinen (33):
+      OMAPDSS: panel-dpi: use gpiod for enable gpio
+      OMAPDSS: panel-dpi: Add DT support
+      Doc/DT: Add DT binding documentation for MIPI DPI Panel
+      OMAPDSS: connector-hdmi: hpd support
+      Doc/DT: hdmi-connector: add HPD GPIO documentation
+      OMAPDSS: HDMI: lane config support
+      Doc/DT: ti,omap4-dss: hdmi lanes
+      OMAPDSS: HDMI4: set regulator voltage to 1.8V
+      OMAPDSS: DSI: set regulator voltage to 1.8V
+      OMAPDSS: remove venc_panel.c
+      OMAPDSS: remove unused macros
+      ARM: OMAP: add detection of omap5-dss
+      OMAPDSS: DSS & DISPC DT support for OMAP5
+      OMAPDSS: features: fix OMAP5 features
+      OMAPDSS: DPI: fix LCD3 DSI source
+      OMAPDSS: DSI: Add OMAP5 DSI module IDs
+      OMAPDSS: HDMI: improve Makefile
+      OMAPDSS: HDMI: move irq & phy pwr handling
+      OMAPDSS: HDMI: Add OMAP5 HDMI support
+      OMAPDSS: HDMI: cleanup ioremaps
+      Doc/DT: Add OMAP5 DSS DT bindings
+      OMAPDSS: Fix writes to DISPC_POL_FREQ
+      OMAPDSS: panel-dpi: enable-gpio
+      OMAPDSS: panel-lgphilips-lb035q02: use gpiod for enable gpio
+      OMAPDSS: panel-lgphilips-lb035q02: Add DT support
+      Doc/DT: Add binding doc for lgphilips,lb035q02.txt
+      OMAPDSS: Panel TPO-TD043MTEA1 DT support
+      Doc/DT: Add DT binding documentation for TPO td043mtea1 panel
+      OMAPDSS: panel NEC-NL8048HL11 DT support
+      OMAPDSS: HDMI: cleanup WP ioremaps
+      OMAPDSS: HDMI: remove unused defines
+      OMAPDSS: HDMI: fix devm_ioremap_resource error checks
+      OMAPDSS: move 'compatible' converter to omapdss driver
+
+Tony Lindgren (3):
+      OMAPDSS: panel-sharp-ls037v7dw01: update to use gpiod
+      OMAPDSS: panel sharp-ls037v7dw01 DT support
+      Doc/DT: Add DT binding documentation for SHARP LS037V7DW01
+
+ .../devicetree/bindings/video/hdmi-connector.txt   |   1 +
+ .../bindings/video/lgphilips,lb035q02.txt          |  33 +
+ .../devicetree/bindings/video/panel-dpi.txt        |  45 +
+ .../bindings/video/sharp,ls037v7dw01.txt           |  43 +
+ .../devicetree/bindings/video/ti,omap4-dss.txt     |   4 +
+ .../devicetree/bindings/video/ti,omap5-dss.txt     |  96 +++
+ .../bindings/video/toppoly,td028ttec1.txt          |  30 +
+ .../devicetree/bindings/video/tpo,td043mtea1.txt   |  33 +
+ arch/arm/mach-omap2/display.c                      |  62 +-
+ drivers/video/fbdev/omap2/Makefile                 |   2 +-
+ .../fbdev/omap2/displays-new/connector-hdmi.c      |  25 +-
+ drivers/video/fbdev/omap2/displays-new/panel-dpi.c |  95 ++-
+ .../omap2/displays-new/panel-lgphilips-lb035q02.c  |  77 +-
+ .../omap2/displays-new/panel-nec-nl8048hl11.c      |  45 +-
+ .../omap2/displays-new/panel-sharp-ls037v7dw01.c   | 210 +++--
+ .../omap2/displays-new/panel-tpo-td028ttec1.c      |  33 +-
+ .../omap2/displays-new/panel-tpo-td043mtea1.c      |  42 +-
+ drivers/video/fbdev/omap2/dss/Kconfig              |  26 +-
+ drivers/video/fbdev/omap2/dss/Makefile             |   7 +-
+ drivers/video/fbdev/omap2/dss/core.c               |   6 +
+ drivers/video/fbdev/omap2/dss/dispc.c              |  22 +-
+ drivers/video/fbdev/omap2/dss/dpi.c                |   4 +
+ drivers/video/fbdev/omap2/dss/dsi.c                |  18 +
+ drivers/video/fbdev/omap2/dss/dss.c                |  20 +-
+ drivers/video/fbdev/omap2/dss/dss.h                |   3 +
+ drivers/video/fbdev/omap2/dss/dss_features.c       |  70 +-
+ drivers/video/fbdev/omap2/dss/hdmi.h               |  17 +-
+ drivers/video/fbdev/omap2/dss/hdmi4.c              | 113 ++-
+ drivers/video/fbdev/omap2/dss/hdmi4_core.c         |  28 +-
+ drivers/video/fbdev/omap2/dss/hdmi5.c              | 829 +++++++++++++++=
++++
+ drivers/video/fbdev/omap2/dss/hdmi5_core.c         | 922 +++++++++++++++=
+++++++
+ drivers/video/fbdev/omap2/dss/hdmi5_core.h         | 306 +++++++
+ drivers/video/fbdev/omap2/dss/hdmi_common.c        |  41 +
+ drivers/video/fbdev/omap2/dss/hdmi_phy.c           | 265 ++++--
+ drivers/video/fbdev/omap2/dss/hdmi_pll.c           | 107 ++-
+ drivers/video/fbdev/omap2/dss/hdmi_wp.c            |  29 +-
+ drivers/video/fbdev/omap2/dss/omapdss-boot-init.c  | 229 +++++
+ drivers/video/fbdev/omap2/dss/venc_panel.c         | 232 ------
+ include/video/omapdss.h                            |   8 +-
+ 39 files changed, 3604 insertions(+), 574 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/video/lgphilips,lb0=
+35q02.txt
+ create mode 100644 Documentation/devicetree/bindings/video/panel-dpi.txt=
+
+ create mode 100644 Documentation/devicetree/bindings/video/sharp,ls037v7=
+dw01.txt
+ create mode 100644 Documentation/devicetree/bindings/video/ti,omap5-dss.=
+txt
+ create mode 100644 Documentation/devicetree/bindings/video/toppoly,td028=
+ttec1.txt
+ create mode 100644 Documentation/devicetree/bindings/video/tpo,td043mtea=
+1.txt
+ create mode 100644 drivers/video/fbdev/omap2/dss/hdmi5.c
+ create mode 100644 drivers/video/fbdev/omap2/dss/hdmi5_core.c
+ create mode 100644 drivers/video/fbdev/omap2/dss/hdmi5_core.h
+ create mode 100644 drivers/video/fbdev/omap2/dss/omapdss-boot-init.c
+ delete mode 100644 drivers/video/fbdev/omap2/dss/venc_panel.c
+
+
+--rrL5eOVJqHcXctxcTWtUtcDFxbgK2Pgrp
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Version: GnuPG v1
 
-iQIcBAEBAgAGBQJTjxEVAAoJEHZH4aRLwOS6118P/3AHwKzN1Fap3eoxkRIxztSd
-z4U0FTXhG6AKMoNsm+f6ZTxRfEorxlNl6MZxwcB0/dNdNxpkxVWO/YtfZjcksDvS
-DJQLwVLgCPBfZkSkc4w93Q+q2J8fEyJaQwpb2P/c2DWy1IPKmxLhZaLiXetnNl6x
-wpddrwLgRsfDTY12lX4qe2cs4711+j+lBe/C8pEA9KpP4s2g0USmdnBGOCrtbcN0
-lfJSaHeHoDZ9sGb/TnxOtDeSBffxLAEZ9C4Zp3u9s/b5Cilf1u9L6vsxzNR6kDeX
-BhE32odeUzl0OhFhDsp73YBUcSTjUYQN7DUqWMAOolb5RuXEf4LukagMO64ICaIZ
-XiqXMf/LaLoPvfyEfZmoj3LcroevBAzjMagnxzjCYZRRwt+VYVKysNOB6anwFARl
-xs4ZBkn34jTT1hs+83n22Wr1b51n2q8X+k5T/9o7KsE1MA+CcWAT+ac729JQE+v+
-8VNK6/Ct5SUSU5wsHQ5Ox0/nMD5TX9V+m9AwqZowiFl4iz3NSWEMiFUTvuBAI/PT
-DTKf4kO0hs5WN6iLdF6BnpdEPgJBw4NXl6n0al7A4i6Ng2qIpeMxzAfZ55tS8aPZ
-el/5nP2wTRytOtsK7Pdx/dOe9miPdmWkcVUC3OqqycOFepd2mVz4PsJQHmxZmOZJ
-9nj5Hh7E5Z32IQGUw+kW
-=wXAe
+iQIcBAEBAgAGBQJTjxFgAAoJEPo9qoy8lh71BzkP/RAcusGaORXPox8VC2KIKJav
+lg5e/oXClCzMyKnPNjjW3ePWYx21oNNh7jtTfZrpPrqv6+5FEiADvAjxjdPqK5CY
+ZlbkcTqTJpZIgNoqXySoKAU4khL9N94ZFxjGjkfWQmxxrlj6g/haKhd4wgIazSZ6
+gBoBpHj++0wDWztk5B2v/TOudV8BE5ApqyvFlFTM8eHYwT8VVBUE43zj+6oWVg8b
+EHUM/TfS/CWGJy5A3iv6Yz1aPu40pUUJcsIK2paMJvkHA1mtMsJSoyt8egul0E1Q
+tkE2RTUnftYsfXgCFLLpbRvewtFyPhPseniWJu6Y5qbwmdNlhSiCMcPBeJIhhny8
+7Gdvn0ek58xaLE7aaF1KfHC0s3mSSM1kurYdD0E0w3zz+1AFCQ75fda6WvqI6E1+
+Vncwd/Lcy6cDhbJUBfMy4xBCgC4Gbq83zZKbFemir1TY4/KmYflh3kA9eqHtIC1F
+Vt1xhSpN8lGuKxDaUzhcMOe4BiQaXoOloHHo+QcsMmcvjmZYJMZjd4c9FLo31nkf
+xvVUds3Fn1oTtnh9HCLKeQaq2Mj3fgS/1R+lpKH0p/LmF4LmiUoLk/sOvSVdJmnr
+mCXneavJ4DyYpCL2f3x9cj/nea+TJNFx3bZGM8uyDwinL5181vf2RJnOKJVvkkst
+bB/5Nx2h0qq+KZeF4Wr+
+=YFEs
 -----END PGP SIGNATURE-----
 
---bNvn4bxlrUVLu6cT--
+--rrL5eOVJqHcXctxcTWtUtcDFxbgK2Pgrp--
