@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932089AbaFDXrc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:47:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40674 "EHLO
+	id S1755176AbaFDXrb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 19:47:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40679 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753846AbaFDXXd (ORCPT
+	with ESMTP id S1753847AbaFDXXd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 4 Jun 2014 19:23:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dave Jones <davej@redhat.com>, Hugh Dickins <hughd@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.10 010/103] mm: make fixup_user_fault() check the vma access rights too
-Date: Wed,  4 Jun 2014 16:24:33 -0700
-Message-Id: <20140604232547.163123610@linuxfoundation.org>
+        Loic Poulain <loic.poulain@intel.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>
+Subject: [PATCH 3.10 011/103] serial: 8250: Fix thread unsafe __dma_tx_complete function
+Date: Wed,  4 Jun 2014 16:24:34 -0700
+Message-Id: <20140604232547.194084498@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232546.704156131@linuxfoundation.org>
 References: <20140604232546.704156131@linuxfoundation.org>
@@ -29,55 +29,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Loic Poulain <loic.poulain@intel.com>
 
-commit 1b17844b29ae042576bea588164f2f1e9590a8bc upstream.
+commit f8fd1b0350d3a4581125f5eda6528f5a2c5f9183 upstream.
 
-fixup_user_fault() is used by the futex code when the direct user access
-fails, and the futex code wants it to either map in the page in a usable
-form or return an error.  It relied on handle_mm_fault() to map the
-page, and correctly checked the error return from that, but while that
-does map the page, it doesn't actually guarantee that the page will be
-mapped with sufficient permissions to be then accessed.
+__dma_tx_complete is not protected against concurrent
+call of serial8250_tx_dma. it can lead to circular tail
+index corruption or parallel call of serial_tx_dma on the
+same data portion.
 
-So do the appropriate tests of the vma access rights by hand.
+This patch fixes this issue by holding the port lock.
 
-[ Side note: arguably handle_mm_fault() could just do that itself, but
-  we have traditionally done it in the caller, because some callers -
-  notably get_user_pages() - have been able to access pages even when
-  they are mapped with PROT_NONE.  Maybe we should re-visit that design
-  decision, but in the meantime this is the minimal patch. ]
-
-Found by Dave Jones running his trinity tool.
-
-Reported-by: Dave Jones <davej@redhat.com>
-Acked-by: Hugh Dickins <hughd@google.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Loic Poulain <loic.poulain@intel.com>
+Reviewed-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/memory.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/tty/serial/8250/8250_dma.c |    9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -1937,12 +1937,17 @@ int fixup_user_fault(struct task_struct
- 		     unsigned long address, unsigned int fault_flags)
- {
- 	struct vm_area_struct *vma;
-+	vm_flags_t vm_flags;
- 	int ret;
+--- a/drivers/tty/serial/8250/8250_dma.c
++++ b/drivers/tty/serial/8250/8250_dma.c
+@@ -20,12 +20,15 @@ static void __dma_tx_complete(void *para
+ 	struct uart_8250_port	*p = param;
+ 	struct uart_8250_dma	*dma = p->dma;
+ 	struct circ_buf		*xmit = &p->port.state->xmit;
+-
+-	dma->tx_running = 0;
++	unsigned long	flags;
  
- 	vma = find_extend_vma(mm, address);
- 	if (!vma || address < vma->vm_start)
- 		return -EFAULT;
+ 	dma_sync_single_for_cpu(dma->txchan->device->dev, dma->tx_addr,
+ 				UART_XMIT_SIZE, DMA_TO_DEVICE);
  
-+	vm_flags = (fault_flags & FAULT_FLAG_WRITE) ? VM_WRITE : VM_READ;
-+	if (!(vm_flags & vma->vm_flags))
-+		return -EFAULT;
++	spin_lock_irqsave(&p->port.lock, flags);
 +
- 	ret = handle_mm_fault(mm, vma, address, fault_flags);
- 	if (ret & VM_FAULT_ERROR) {
- 		if (ret & VM_FAULT_OOM)
++	dma->tx_running = 0;
++
+ 	xmit->tail += dma->tx_size;
+ 	xmit->tail &= UART_XMIT_SIZE - 1;
+ 	p->port.icount.tx += dma->tx_size;
+@@ -35,6 +38,8 @@ static void __dma_tx_complete(void *para
+ 
+ 	if (!uart_circ_empty(xmit) && !uart_tx_stopped(&p->port))
+ 		serial8250_tx_dma(p);
++
++	spin_unlock_irqrestore(&p->port.lock, flags);
+ }
+ 
+ static void __dma_rx_complete(void *param)
 
 
