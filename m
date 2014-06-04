@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754907AbaFDXm5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:42:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40739 "EHLO
+	id S1754922AbaFDXn0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 19:43:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40728 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753914AbaFDXXm (ORCPT
+	with ESMTP id S1753901AbaFDXXl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:23:42 -0400
+	Wed, 4 Jun 2014 19:23:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Viresh Kumar <viresh.kumar@linaro.org>, linaro-kernel@lists.linaro.org,
-        linaro-networking@linaro.org, fweisbec@gmail.com,
-        arvind.chauhan@arm.com, Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 3.10 027/103] hrtimer: Set expiry time before switch_hrtimer_base()
-Date: Wed,  4 Jun 2014 16:24:50 -0700
-Message-Id: <20140604232547.731156192@linuxfoundation.org>
+        Leon Ma <xindong.ma@intel.com>, Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 3.10 026/103] hrtimer: Prevent remote enqueue of leftmost timers
+Date: Wed,  4 Jun 2014 16:24:49 -0700
+Message-Id: <20140604232547.699091226@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232546.704156131@linuxfoundation.org>
 References: <20140604232546.704156131@linuxfoundation.org>
@@ -30,59 +28,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Viresh Kumar <viresh.kumar@linaro.org>
+From: Leon Ma <xindong.ma@intel.com>
 
-commit 84ea7fe37908254c3bd90910921f6e1045c1747a upstream.
+commit 012a45e3f4af68e86d85cce060c6c2fed56498b2 upstream.
 
-switch_hrtimer_base() calls hrtimer_check_target() which ensures that
-we do not migrate a timer to a remote cpu if the timer expires before
-the current programmed expiry time on that remote cpu.
+If a cpu is idle and starts an hrtimer which is not pinned on that
+same cpu, the nohz code might target the timer to a different cpu.
 
-But __hrtimer_start_range_ns() calls switch_hrtimer_base() before the
-new expiry time is set. So the sanity check in hrtimer_check_target()
-is operating on stale or even uninitialized data.
+In the case that we switch the cpu base of the timer we already have a
+sanity check in place, which determines whether the timer is earlier
+than the current leftmost timer on the target cpu. In that case we
+enqueue the timer on the current cpu because we cannot reprogram the
+clock event device on the target.
 
-Update expiry time before calling switch_hrtimer_base().
+If the timers base is already the target CPU we do not have this
+sanity check in place so we enqueue the timer as the leftmost timer in
+the target cpus rb tree, but we cannot reprogram the clock event
+device on the target cpu. So the timer expires late and subsequently
+prevents the reprogramming of the target cpu clock event device until
+the previously programmed event fires or a timer with an earlier
+expiry time gets enqueued on the target cpu itself.
 
-[ tglx: Rewrote changelog once again ]
+Add the same target check as we have for the switch base case and
+start the timer on the current cpu if it would become the leftmost
+timer on the target.
 
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: linaro-kernel@lists.linaro.org
-Cc: linaro-networking@linaro.org
-Cc: fweisbec@gmail.com
-Cc: arvind.chauhan@arm.com
-Link: http://lkml.kernel.org/r/81999e148745fc51bbcd0615823fbab9b2e87e23.1399882253.git.viresh.kumar@linaro.org
+[ tglx: Rewrote subject and changelog ]
+
+Signed-off-by: Leon Ma <xindong.ma@intel.com>
+Link: http://lkml.kernel.org/r/1398847391-5994-1-git-send-email-xindong.ma@intel.com
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/hrtimer.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ kernel/hrtimer.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
 --- a/kernel/hrtimer.c
 +++ b/kernel/hrtimer.c
-@@ -999,11 +999,8 @@ int __hrtimer_start_range_ns(struct hrti
- 	/* Remove an active timer from the queue: */
- 	ret = remove_hrtimer(timer, base);
- 
--	/* Switch the timer base, if necessary: */
--	new_base = switch_hrtimer_base(timer, base, mode & HRTIMER_MODE_PINNED);
--
- 	if (mode & HRTIMER_MODE_REL) {
--		tim = ktime_add_safe(tim, new_base->get_time());
-+		tim = ktime_add_safe(tim, base->get_time());
- 		/*
- 		 * CONFIG_TIME_LOW_RES is a temporary way for architectures
- 		 * to signal that they simply return xtime in
-@@ -1018,6 +1015,9 @@ int __hrtimer_start_range_ns(struct hrti
- 
- 	hrtimer_set_expires_range_ns(timer, tim, delta_ns);
- 
-+	/* Switch the timer base, if necessary: */
-+	new_base = switch_hrtimer_base(timer, base, mode & HRTIMER_MODE_PINNED);
-+
- 	timer_stats_hrtimer_set_start_info(timer);
- 
- 	leftmost = enqueue_hrtimer(timer, new_base);
+@@ -245,6 +245,11 @@ again:
+ 			goto again;
+ 		}
+ 		timer->base = new_base;
++	} else {
++		if (cpu != this_cpu && hrtimer_check_target(timer, new_base)) {
++			cpu = this_cpu;
++			goto again;
++		}
+ 	}
+ 	return new_base;
+ }
 
 
