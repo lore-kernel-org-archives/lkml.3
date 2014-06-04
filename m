@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751861AbaFDVdn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 17:33:43 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:51571 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751376AbaFDVdl (ORCPT
+	id S1751995AbaFDVfW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 17:35:22 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:53319 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751538AbaFDVfV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 17:33:41 -0400
+	Wed, 4 Jun 2014 17:35:21 -0400
 From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Robert Jennings <rcj@linux.vnet.ibm.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>
+To: Nagalakshmi Nandigama <Nagalakshmi.Nandigama@lsi.com>,
+        Sreekanth Reddy <Sreekanth.Reddy@lsi.com>
 Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Subject: [PATCH] scsi: ibmvscsi: ibmvscsi.c:  Cleaning up missing null-terminate after strncpy call
-Date: Wed,  4 Jun 2014 23:34:35 +0200
-Message-Id: <1401917675-3044-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+        support@lsi.com, "James E.J. Bottomley" <JBottomley@parallels.com>,
+        DL-MPTFusionLinux@lsi.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] scsi: mpt2sas: mpt2sas_base.c:  Cleaning up missing null-terminate after strncpy call
+Date: Wed,  4 Jun 2014 23:36:15 +0200
+Message-Id: <1401917775-3222-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,26 +28,23 @@ This was partly found using a static code analysis program called cppcheck.
 
 Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- drivers/scsi/ibmvscsi/ibmvscsi.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/scsi/mpt2sas/mpt2sas_base.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/scsi/ibmvscsi/ibmvscsi.c b/drivers/scsi/ibmvscsi/ibmvscsi.c
-index fa76440..e214f9e 100644
---- a/drivers/scsi/ibmvscsi/ibmvscsi.c
-+++ b/drivers/scsi/ibmvscsi/ibmvscsi.c
-@@ -250,9 +250,11 @@ static void gather_partition_info(void)
- 	}
+diff --git a/drivers/scsi/mpt2sas/mpt2sas_base.c b/drivers/scsi/mpt2sas/mpt2sas_base.c
+index bde63f7..4c3eceb 100644
+--- a/drivers/scsi/mpt2sas/mpt2sas_base.c
++++ b/drivers/scsi/mpt2sas/mpt2sas_base.c
+@@ -2097,7 +2097,8 @@ _base_display_ioc_capabilities(struct MPT2SAS_ADAPTER *ioc)
+ 	u32 bios_version;
  
- 	ppartition_name = of_get_property(rootdn, "ibm,partition-name", NULL);
--	if (ppartition_name)
-+	if (ppartition_name) {
- 		strncpy(partition_name, ppartition_name,
- 				sizeof(partition_name));
-+		partition_name[sizeof(partition_name) - 1] = '\0';
-+	}
- 	p_number_ptr = of_get_property(rootdn, "ibm,partition-no", NULL);
- 	if (p_number_ptr)
- 		partition_number = of_read_number(p_number_ptr, 1);
+ 	bios_version = le32_to_cpu(ioc->bios_pg3.BiosVersion);
+-	strncpy(desc, ioc->manu_pg0.ChipName, 16);
++	strncpy(desc, ioc->manu_pg0.ChipName, sizeof(desc));
++	desc[sizeof(desc) - 1] = '\0';
+ 	printk(MPT2SAS_INFO_FMT "%s: FWVersion(%02d.%02d.%02d.%02d), "
+ 	   "ChipRevision(0x%02x), BiosVersion(%02d.%02d.%02d.%02d)\n",
+ 	    ioc->name, desc,
 -- 
 1.7.10.4
 
