@@ -1,56 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752761AbaFDMIe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 08:08:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26139 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752497AbaFDMId (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 08:08:33 -0400
-Date: Wed, 4 Jun 2014 14:08:01 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        David Ahern <dsahern@gmail.com>, Namhyung Kim <namhyung@kernel.org>
-Subject: Re: Fw: Re: [PATCH 1/1] powerpc/perf: Adjust callchain based on
- DWARF debug info
-Message-ID: <20140604120801.GE5555@krava.brq.redhat.com>
-References: <20140530155925.GF7427@krava.brq.redhat.com>
- <20140602141219.GB7861@krava.brq.redhat.com>
- <20140603074710.GA30870@us.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140603074710.GA30870@us.ibm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1752790AbaFDMKN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 08:10:13 -0400
+Received: from mail-ig0-f178.google.com ([209.85.213.178]:46756 "EHLO
+	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752497AbaFDMKL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 08:10:11 -0400
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: wsa@the-dreams.de, grant.likely@linaro.org, linux-i2c@vger.kernel.org,
+        devicetree@vger.kernel.org, linus.walleij@linaro.org
+Subject: [PATCH 0/7] i2c: Relax mandatory I2C ID table passing
+Date: Wed,  4 Jun 2014 13:09:49 +0100
+Message-Id: <1401883796-17841-1-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 03, 2014 at 12:47:10AM -0700, Sukadev Bhattiprolu wrote:
+Hi Wolfram,
 
-SNIP
+As previously discussed I believe it should be okay for an I2C device
+driver _not_ supply an I2C ID table to match to.  The I2C subsystem
+should be able to match via other means, such as via OF and/or ACPI
+tables.  The blocking factor during our previous conversation was
+to keep registering via sysfs up and running.  This set does that.
 
-> | 
-> | 
-> | could you please change this, so it's nop for arch != powerpc
-> | via #ifdef I guess.. or some other smart way ;-)
-> 
-> I was trying to avoid the #ifdef in the middle of the function.
-> 
-> How about adding a PERF_CONTEXT_IGNORE and doing something like this:
+After thinking more deeply about the problem, it occurred to me that
+any I2C device driver which issues an {of,acpi}_match)_device()
+would also fail their probe().  Bolted on to this set is a new, more
+generic way for these devices to match against any of the tables
+which are present in the kernel today i.e. OF, ACPI and I2C.
 
-hum, 2 arch calls.. seems too complicated.. :-\
+NB: ACPI is not fully supported, but OF is.
 
-so if you are already introducing PERF_CONTEXT_IGNORE, why
-dont we go with the chain duplication/fixing in arch code
-you mentioned before?
+I hope this ticks all of your boxes.
 
-this way the callchain loop stays simple and it's extendbable
-to future changes (I think u mentioned we could change more
-than one entry in future..?)
+Kind regards,
+Lee
 
-thoughts.. anyone? ;-)
+ drivers/i2c/i2c-core.c          | 65 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-------
+ drivers/of/device.c             | 16 +++++++++++++++-
+ include/acpi/platform/aclinux.h |  5 +++--
+ include/linux/i2c.h             | 19 +++++++++++++++++++
+ include/linux/match.h           | 40 ++++++++++++++++++++++++++++++++++++++++
+ 5 files changed, 135 insertions(+), 10 deletions(-)
 
-thanks,
-jirka
