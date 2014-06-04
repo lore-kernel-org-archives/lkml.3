@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753368AbaFDPAZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 11:00:25 -0400
-Received: from mx07-00178001.pphosted.com ([62.209.51.94]:50204 "EHLO
+	id S1753427AbaFDPAk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 11:00:40 -0400
+Received: from mx07-00178001.pphosted.com ([62.209.51.94]:50248 "EHLO
 	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752782AbaFDPAV (ORCPT
+	by vger.kernel.org with ESMTP id S1752065AbaFDPAf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 11:00:21 -0400
+	Wed, 4 Jun 2014 11:00:35 -0400
 From: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
 To: Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
         Maxime Coquelin <maxime.coquelin@st.com>,
@@ -19,31 +19,95 @@ To: Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
 Cc: linux-arm-kernel@lists.infradead.org, kernel@stlinux.com,
         devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
         Lee Jones <lee.jones@linaro.org>,
-        Gabriel Fernandez <gabriel.fernandez@linaro.org>
-Subject: [PATCH 0/4] Enables STMicroelectronics Flexgen Clock support
-Date: Wed,  4 Jun 2014 16:32:48 +0200
-Message-Id: <1401892372-18279-1-git-send-email-gabriel.fernandez@linaro.org>
+        Gabriel Fernandez <gabriel.fernandez@linaro.org>,
+        Olivier Bideau <olivier.bideau@st.com>
+Subject: [PATCH 4/4] ARM: STi: DT: STiH407: 407 DT Entry for clockgenA9
+Date: Wed,  4 Jun 2014 16:32:52 +0200
+Message-Id: <1401892372-18279-5-git-send-email-gabriel.fernandez@linaro.org>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1401892372-18279-1-git-send-email-gabriel.fernandez@linaro.org>
+References: <1401892372-18279-1-git-send-email-gabriel.fernandez@linaro.org>
 X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
  definitions=2014-06-04_03:2014-06-04,2014-06-04,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These patches enables clock drivers for STih407 boards.
+Patch adds DT entries for clockgen A9
 
-Gabriel Fernandez (4):
-  ARM: STi: DT: STiH407: 407 DT Entry for clockgen A0
-  ARM: STi: DT: STiH407: 407 DT Entry for clockgen C0
-  ARM: STi: DT: STiH407: 407 DT Entry for clockgen D0/D2/D3
-  ARM: STi: DT: STiH407: 407 DT Entry for clockgenA9
+Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
+Signed-off-by: Olivier Bideau <olivier.bideau@st.com>
+---
+ arch/arm/boot/dts/stih407-clock.dtsi | 55 ++++++++++++++++++++++++++++++++++--
+ 1 file changed, 52 insertions(+), 3 deletions(-)
 
- arch/arm/boot/dts/stih407-clock.dtsi     | 295 ++++++++++++++++++++++++++++++-
- arch/arm/boot/dts/stih407.dtsi           |  18 +-
- include/dt-bindings/clock/stih407-clks.h |  11 ++
- 3 files changed, 307 insertions(+), 17 deletions(-)
- create mode 100644 include/dt-bindings/clock/stih407-clks.h
-
+diff --git a/arch/arm/boot/dts/stih407-clock.dtsi b/arch/arm/boot/dts/stih407-clock.dtsi
+index 6e59011..b4318e1 100644
+--- a/arch/arm/boot/dts/stih407-clock.dtsi
++++ b/arch/arm/boot/dts/stih407-clock.dtsi
+@@ -24,10 +24,59 @@
+ 		/*
+ 		 * ARM Peripheral clock for timers
+ 		 */
+-		arm_periph_clk: arm-periph-clk {
++		arm_periph_clk: clk-m-a9-periphs {
+ 			#clock-cells = <0>;
+-			compatible = "fixed-clock";
+-			clock-frequency = <600000000>;
++			compatible = "fixed-factor-clock";
++
++			clocks = <&clk_m_a9>;
++			clock-div = <2>;
++			clock-mult = <1>;
++		};
++
++		/*
++		 * A9 PLL.
++		 */
++		clockgen-a9@92b0000 {
++			compatible = "st,clkgen-c32";
++			reg = <0x92b0000 0xffff>;
++
++			clockgen_a9_pll: clockgen-a9-pll {
++				#clock-cells = <1>;
++				compatible = "st,stih407-plls-c32-a9", "st,clkgen-plls-c32";
++
++				clocks = <&clk_sysin>;
++
++				clock-output-names = "clockgen-a9-pll-odf";
++			};
++		};
++
++		/*
++		 * ARM CPU related clocks.
++		 */
++		clk_m_a9: clk-m-a9@92b0000 {
++			#clock-cells = <0>;
++			compatible = "st,stih407-clkgen-a9-mux", "st,clkgen-mux";
++			reg = <0x92b0000 0x10000>;
++
++			clocks = <&clockgen_a9_pll 0>,
++				 <&clockgen_a9_pll 0>,
++				 <&clk_s_c0_flexgen 13>,
++				 <&clk_m_a9_ext2f_div2>;
++		};
++
++		/*
++		 * ARM Peripheral clock for timers
++		 */
++		clk_m_a9_ext2f_div2: clk-m-a9-ext2f-div2s {
++			#clock-cells = <0>;
++			compatible = "fixed-factor-clock";
++
++			clocks = <&clk_s_c0_flexgen 13>;
++
++			clock-output-names = "clk-m-a9-ext2f-div2";
++
++			clock-div = <2>;
++			clock-mult = <1>;
+ 		};
+ 
+ 		/*
 -- 
 1.9.1
 
