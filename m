@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754784AbaFDXen (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:34:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40898 "EHLO
+	id S1754766AbaFDXem (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 19:34:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40871 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754075AbaFDXYH (ORCPT
+	with ESMTP id S1754069AbaFDXYD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:24:07 -0400
+	Wed, 4 Jun 2014 19:24:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [PATCH 3.10 069/103] NFSd: call rpc_destroy_wait_queue() from free_client()
-Date: Wed,  4 Jun 2014 16:25:32 -0700
-Message-Id: <20140604232549.046090007@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Pawel Moll <pawel.moll@arm.com>
+Subject: [PATCH 3.10 057/103] clk: vexpress: NULL dereference on error path
+Date: Wed,  4 Jun 2014 16:25:20 -0700
+Message-Id: <20140604232548.690349689@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232546.704156131@linuxfoundation.org>
 References: <20140604232546.704156131@linuxfoundation.org>
@@ -29,29 +29,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <trond.myklebust@primarydata.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 4cb57e3032d4e4bf5e97780e9907da7282b02b0c upstream.
+commit 6b4ed8b00e93bd31f24a25f59ed8d1b808d0cc00 upstream.
 
-Mainly to ensure that we don't leave any hanging timers.
+If the allocation fails then we dereference the NULL in the error path.
+Just return directly.
 
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Fixes: ed27ff1db869 ('clk: Versatile Express clock generators ("osc") driver')
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Pawel Moll <pawel.moll@arm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfsd/nfs4state.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/clk/versatile/clk-vexpress-osc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/nfsd/nfs4state.c
-+++ b/fs/nfsd/nfs4state.c
-@@ -1110,6 +1110,7 @@ free_client(struct nfs4_client *clp)
- 		WARN_ON_ONCE(atomic_read(&ses->se_ref));
- 		free_session(ses);
- 	}
-+	rpc_destroy_wait_queue(&clp->cl_cb_waitq);
- 	free_svc_cred(&clp->cl_cred);
- 	kfree(clp->cl_name.data);
- 	idr_destroy(&clp->cl_stateids);
+--- a/drivers/clk/versatile/clk-vexpress-osc.c
++++ b/drivers/clk/versatile/clk-vexpress-osc.c
+@@ -102,7 +102,7 @@ void __init vexpress_osc_of_setup(struct
+ 
+ 	osc = kzalloc(sizeof(*osc), GFP_KERNEL);
+ 	if (!osc)
+-		goto error;
++		return;
+ 
+ 	osc->func = vexpress_config_func_get_by_node(node);
+ 	if (!osc->func) {
 
 
