@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753544AbaFDXXC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:23:02 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40391 "EHLO
+	id S1755577AbaFEABr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 20:01:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40406 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753479AbaFDXXA (ORCPT
+	with ESMTP id S1753536AbaFDXXC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:23:00 -0400
+	Wed, 4 Jun 2014 19:23:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.14 180/228] target: fix memory leak on XCOPY
-Date: Wed,  4 Jun 2014 16:23:29 -0700
-Message-Id: <20140604232353.793982025@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Ben Widawsky <ben@bwidawsk.net>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [PATCH 3.14 183/228] drm/i915: Fix unsafe loop iteration over vma whilst unbinding them
+Date: Wed,  4 Jun 2014 16:23:32 -0700
+Message-Id: <20140604232353.912436003@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -29,51 +30,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit 1e1110c43b1cda9fe77fc4a04835e460550e6b3c upstream.
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-On each processed XCOPY command, two "kmalloc-512" memory objects are
-leaked. These represent two allocations of struct xcopy_pt_cmd in
-target_core_xcopy.c.
+This is commit df6f783a4ef6790780a67c491897ac upstream.
 
-The reason for the memory leak is that the cmd_kref field is not
-initialized (thus, it is zero because the allocations were done with
-kzalloc). When we decrement zero kref in target_put_sess_cmd, the result
-is not zero, thus target_release_cmd_kref is not called.
+On non-LLC platforms, when changing the cache level of an object, we may
+need to unbind it so that prefetching across page boundaries does not
+cross into a different memory domain. This requires us to unbind
+conflicting vma, but we did so iterating over the objects vma in an
+unsafe manner (as the list was being modified as we iterated).
 
-This patch fixes the bug by moving kref initialization from
-target_get_sess_cmd to transport_init_se_cmd (this function is called from
-target_core_xcopy.c, so it will correctly initialize cmd_kref). It can be
-easily verified that all code that calls target_get_sess_cmd also calls
-transport_init_se_cmd earlier, thus moving kref_init shouldn't introduce
-any new problems.
+The regression was introduced in
+commit 3089c6f239d7d2c4cb2dd5c353e8984cf79af1d7
+Author: Ben Widawsky <ben@bwidawsk.net>
+Date:   Wed Jul 31 17:00:03 2013 -0700
 
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+    drm/i915: make caching operate on all address spaces
+apparently as far back as v3.12-rc1, but it has only just begun to
+trigger real world bug reports.
+
+Reported-and-tested-by: Nikolay Martynov <mar.kolya@gmail.com>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=76384
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Ben Widawsky <ben@bwidawsk.net>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/target/target_core_transport.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/i915/i915_gem.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/target/target_core_transport.c
-+++ b/drivers/target/target_core_transport.c
-@@ -1102,6 +1102,7 @@ void transport_init_se_cmd(
- 	init_completion(&cmd->cmd_wait_comp);
- 	init_completion(&cmd->task_stop_comp);
- 	spin_lock_init(&cmd->t_state_lock);
-+	kref_init(&cmd->cmd_kref);
- 	cmd->transport_state = CMD_T_DEV_ACTIVE;
+--- a/drivers/gpu/drm/i915/i915_gem.c
++++ b/drivers/gpu/drm/i915/i915_gem.c
+@@ -3529,7 +3529,7 @@ int i915_gem_object_set_cache_level(stru
+ {
+ 	struct drm_device *dev = obj->base.dev;
+ 	drm_i915_private_t *dev_priv = dev->dev_private;
+-	struct i915_vma *vma;
++	struct i915_vma *vma, *next;
+ 	int ret;
  
- 	cmd->se_tfo = tfo;
-@@ -2292,7 +2293,6 @@ int target_get_sess_cmd(struct se_sessio
- 	unsigned long flags;
- 	int ret = 0;
+ 	if (obj->cache_level == cache_level)
+@@ -3540,7 +3540,7 @@ int i915_gem_object_set_cache_level(stru
+ 		return -EBUSY;
+ 	}
  
--	kref_init(&se_cmd->cmd_kref);
- 	/*
- 	 * Add a second kref if the fabric caller is expecting to handle
- 	 * fabric acknowledgement that requires two target_put_sess_cmd()
+-	list_for_each_entry(vma, &obj->vma_list, vma_link) {
++	list_for_each_entry_safe(vma, next, &obj->vma_list, vma_link) {
+ 		if (!i915_gem_valid_gtt_space(dev, &vma->node, cache_level)) {
+ 			ret = i915_vma_unbind(vma);
+ 			if (ret)
 
 
