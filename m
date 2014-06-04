@@ -1,100 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752677AbaFDB2p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 21:28:45 -0400
-Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:49504 "EHLO
-	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751962AbaFDB2o (ORCPT
+	id S1753397AbaFDBbE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 21:31:04 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:12026 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750723AbaFDBbB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 21:28:44 -0400
-Message-ID: <538E7642.6080707@marvell.com>
-Date: Wed, 4 Jun 2014 09:28:34 +0800
-From: FanWu <fwu@marvell.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Tue, 3 Jun 2014 21:31:01 -0400
+X-IronPort-AV: E=Sophos;i="4.98,969,1392134400"; 
+   d="scan'208";a="31413105"
+Message-ID: <538E77E4.8010406@cn.fujitsu.com>
+Date: Wed, 4 Jun 2014 09:35:32 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "swarren@nvidia.com" <swarren@nvidia.com>,
-        Chao Xie <cxie4@marvell.com>, Yilu Mao <ylmao@marvell.com>,
-        Ning Jiang <njiang1@marvell.com>, Xiaofan Tian <tianxf@marvell.com>,
-        Fangsuo Wu <fswu@marvell.com>
-Subject: Re: [PATCH v4] pinctrl: to avoid duplicated calling enable_pinmux_setting
- for a pin
-References: <1401781077-31150-1-git-send-email-fwu@marvell.com> <538DFC8A.9030806@wwwdotorg.org>
-In-Reply-To: <538DFC8A.9030806@wwwdotorg.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: <paulmck@linux.vnet.ibm.com>
+CC: <josh@joshtriplett.org>, Joe Perches <joe@perches.com>,
+        <linux-kernel@vger.kernel.org>, <mingo@kernel.org>,
+        <dipankar@in.ibm.com>, <akpm@linux-foundation.org>,
+        <mathieu.desnoyers@efficios.com>, <niv@us.ibm.com>,
+        <tglx@linutronix.de>, <peterz@infradead.org>, <rostedt@goodmis.org>,
+        <dhowells@redhat.com>, <edumazet@google.com>, <dvhart@linux.intel.com>,
+        <fweisbec@gmail.com>, <oleg@redhat.com>, <sbw@mit.edu>
+Subject: Re: [PATCH RFC 1/2] MAINTAINERS: Add "R:" designated-reviewers tag
+References: <1401728420-3572-1-git-send-email-paulmck@linux.vnet.ibm.com> <1401729778.5770.20.camel@joe-AO725> <20140602174837.GA13257@cloud> <1401731968.7323.4.camel@joe-AO725> <20140602181658.GX22231@linux.vnet.ibm.com> <20140602185635.GB13569@cloud> <20140602190821.GZ22231@linux.vnet.ibm.com> <20140602191155.GB13648@cloud> <20140602192729.GB22231@linux.vnet.ibm.com>
+In-Reply-To: <20140602192729.GB22231@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
- definitions=2014-06-03_09:2014-06-02,2014-06-03,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1402240000 definitions=main-1406040018
+X-Originating-IP: [10.167.226.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/04/2014 12:49 AM, Stephen Warren wrote:
-> On 06/03/2014 01:37 AM, fwu@marvell.com wrote:
->> From: Fan Wu <fwu@marvell.com>
+On 06/03/2014 03:27 AM, Paul E. McKenney wrote:
+> On Mon, Jun 02, 2014 at 12:11:55PM -0700, josh@joshtriplett.org wrote:
+>> On Mon, Jun 02, 2014 at 12:08:21PM -0700, Paul E. McKenney wrote:
+>>> On Mon, Jun 02, 2014 at 11:56:35AM -0700, josh@joshtriplett.org wrote:
+>>>> On Mon, Jun 02, 2014 at 11:16:58AM -0700, Paul E. McKenney wrote:
+>>>>> On Mon, Jun 02, 2014 at 10:59:28AM -0700, Joe Perches wrote:
+>>>>>> On Mon, 2014-06-02 at 10:48 -0700, josh@joshtriplett.org wrote:
+>>>>>>> On Mon, Jun 02, 2014 at 10:22:58AM -0700, Joe Perches wrote:
+>>>>>>>> On Mon, 2014-06-02 at 10:00 -0700, Paul E. McKenney wrote:
+>>>>>>>>> A ksummit-discuss email thread looked at the difficulty recruiting
+>>>>>>>>> and retaining reviewers.
+>>>>>>>>
+>>>>>>>> []
+>>>>>>>>
+>>>>>>>>> Paul Walmsley also noted the need for patch
+>>>>>>>>> submitters to know who the key reviewers are and suggested adding an
+>>>>>>>>> "R:" tag to the MAINTAINERS file to record this information on a
+>>>>>>>>> per-subsystem basis.
+>>>>>>>>
+>>>>>>>> I'm not sure of the value of this.
+>>>>>>>>
+>>>>>>>> Why not just mark the actual reviewers as maintainers?
+>>>>>>>
+>>>>>>> As discussed in the kernel summit discussion, being a regular patch
+>>>>>>> reviewer isn't the same thing as being *the* maintainer.
+>>>>>>
+>>>>>> I think it's not particularly important or valuable
+>>>>>> here to make that distinction.
+>>>>>>
+>>>>>> What real difference does it make?
+>>>>>
+>>>>> In the particular case of Josh, none, at least from my viewpoint.  He of
+>>>>> course might or might not want to take on additional maintainership
+>>>>> responsibility at this particular point in time, in which case, I would
+>>>>> be more than happy to have him as a designated maintainer.
+>>>>
+>>>> For the record, I'd be happy to be listed as a co-maintainer for RCU. :)
+>>>
+>>> I would be happy to put you down as maintainer and Steven down as
+>>> official reviewer.  ;-)
 >>
->> What the patch did:
->> 1.To call pinmux_disable_setting ahead of pinmux_enable_setting in each time of
->>    calling pinctrl_select_state
->> 2.Remove the HW disable operation in in pinmux_disable_setting function.
->> 3.Remove the disable ops in struct pinmux_ops
-> ...
->> Signed-off-by: Fan Wu <fwu@marvell.com>
->> Signed-off-by: Stephen Warren <swarren@nvidia.com>
->
-> As I mentioned in my previous email, I didn't sign this off. I made some
-> suggestions for a better alternative in that email.
->
-> If I *had* written that s-o-b, then it should be before yours in the
-> patch description since you handled the patch last.
->
+>> I'd suggest adding Mathieu Desnoyers, Oleg Nesterov, and Lai Jiangshan
+>> as reviewers as well, with their consent.
+> 
+> Mathieu, Oleg, Lai, any objections?
+> 
+> 							
 
-The Signed-off didn't bother me.
-I will Choose your option 2# and thanks for your suggestion about this :)
+I agree to add me.
 
-
->> diff --git a/include/linux/pinctrl/pinmux.h b/include/linux/pinctrl/pinmux.h
->
->> @@ -70,8 +70,6 @@ struct pinmux_ops {
->>   				  unsigned * const num_groups);
->>   	int (*enable) (struct pinctrl_dev *pctldev, unsigned func_selector,
->>   		       unsigned group_selector);
->> -	void (*disable) (struct pinctrl_dev *pctldev, unsigned func_selector,
->> -			 unsigned group_selector);
->
-> This will cause a compile failure, since many drivers still set the
-> .disable function pointer. You need to update all the driver files to
-> remove those functions too. There's quite a bit of code in some of those
-> functions, so you'd need the relevant driver maintainers to confirm it's
-> OK to remove it. I think only the owners of pinctrl-egra and
-> pinctrl-single have ack'd this concept so far.
->
-
-For this part, I think I mentioned this before, simply removing disable 
-ops will introduce the compiling error.
-I think there are several ways to handle this:
-1. Don't remove the disable ops in struct pinmux_ops in this patch but 
-to remove the disable ops in struct pinmux_ops after the another patch 
-is merged, which is used to remove all of the disable ops user in all 
-drivers.
-2. Just remove the disable ops in pinmux_ops in this patch, and make a 
-another patch ASAP to remove all the disable ops user in all drivers.
-3. Remove the disable ops in struct pinmux_ops and remove all the 
-disable ops user in all drivers, all in this patch.
-
-
-For the solution 2, I just think it may be not a good way to include so 
-much content in a patch, which are not in a same code level.
-
-I am just inclined to use solution 1# or 3#.
-
-Please share your comments.
-
-Great thanks for this !
-
+Thanks,
+Lai
