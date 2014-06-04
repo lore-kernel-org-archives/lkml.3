@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755755AbaFEAEl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 20:04:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40361 "EHLO
+	id S1753452AbaFDXWz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 19:22:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40330 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753417AbaFDXW4 (ORCPT
+	with ESMTP id S1753417AbaFDXWw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:22:56 -0400
+	Wed, 4 Jun 2014 19:22:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Arshad Hussain <arshad.hussain@calsoftinc.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.14 178/228] iscsi-target: Change BUG_ON to REJECT in iscsit_process_nop_out
-Date: Wed,  4 Jun 2014 16:23:27 -0700
-Message-Id: <20140604232353.737046035@linuxfoundation.org>
+        Shawn Guo <shawn.guo@linaro.org>,
+        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
+        Mark Brown <broonie@linaro.org>
+Subject: [PATCH 3.14 166/228] ASoC: wm8962: Update register CLASS_D_CONTROL_1 to be non-volatile
+Date: Wed,  4 Jun 2014 16:23:15 -0700
+Message-Id: <20140604232353.366967440@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -29,45 +30,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 
-commit 7cbfcc953789ff864c2bf8365a82a3fba4869649 upstream.
+commit 44330ab516c15dda8a1e660eeaf0003f84e43e3f upstream.
 
-This patch changes an incorrect use of BUG_ON to instead generate a
-REJECT + PROTOCOL_ERROR in iscsit_process_nop_out() code.  This case
-can occur with traditional TCP where a flood of zeros in the data
-stream can reach this block for what is presumed to be a NOP-OUT with
-a solicited reply, but without a valid iscsi_cmd pointer.
+The register CLASS_D_CONTROL_1 is marked as volatile because it contains
+a bit, DAC_MUTE, which is also mirrored in the ADC_DAC_CONTROL_1
+register. This causes problems for the "Speaker Switch" control, which
+will report an error if the CODEC is suspended because it relies on a
+volatile register.
 
-This incorrect BUG_ON was introduced during the v3.11-rc timeframe
-with the following commit:
+To resolve this issue mark CLASS_D_CONTROL_1 as non-volatile and
+manually keep the register cache in sync by updating both bits when
+changing the mute status.
 
-commit 778de368964c5b7e8100cde9f549992d521e9c89
-Author: Nicholas Bellinger <nab@linux-iscsi.org>
-Date:   Fri Jun 14 16:07:47 2013 -0700
-
-    iscsi/isert-target: Refactor ISCSI_OP_NOOP RX handling
-
-Reported-by: Arshad Hussain <arshad.hussain@calsoftinc.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Reported-by: Shawn Guo <shawn.guo@linaro.org>
+Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Tested-by: Shawn Guo <shawn.guo@linaro.org>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/iscsi/iscsi_target.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ sound/soc/codecs/wm8962.c |   15 ++++++++++++---
+ sound/soc/codecs/wm8962.h |    4 ++++
+ 2 files changed, 16 insertions(+), 3 deletions(-)
 
---- a/drivers/target/iscsi/iscsi_target.c
-+++ b/drivers/target/iscsi/iscsi_target.c
-@@ -1564,7 +1564,9 @@ int iscsit_process_nop_out(struct iscsi_
- 	 * Initiator is expecting a NopIN ping reply..
- 	 */
- 	if (hdr->itt != RESERVED_ITT) {
--		BUG_ON(!cmd);
-+		if (!cmd)
-+			return iscsit_add_reject(conn, ISCSI_REASON_PROTOCOL_ERROR,
-+						(unsigned char *)hdr);
+--- a/sound/soc/codecs/wm8962.c
++++ b/sound/soc/codecs/wm8962.c
+@@ -154,6 +154,7 @@ static struct reg_default wm8962_reg[] =
+ 	{ 40, 0x0000 },   /* R40    - SPKOUTL volume */
+ 	{ 41, 0x0000 },   /* R41    - SPKOUTR volume */
  
- 		spin_lock_bh(&conn->cmd_lock);
- 		list_add_tail(&cmd->i_conn_node, &conn->conn_cmd_list);
++	{ 49, 0x0010 },   /* R49    - Class D Control 1 */
+ 	{ 51, 0x0003 },   /* R51    - Class D Control 2 */
+ 
+ 	{ 56, 0x0506 },   /* R56    - Clocking 4 */
+@@ -795,7 +796,6 @@ static bool wm8962_volatile_register(str
+ 	case WM8962_ALC2:
+ 	case WM8962_THERMAL_SHUTDOWN_STATUS:
+ 	case WM8962_ADDITIONAL_CONTROL_4:
+-	case WM8962_CLASS_D_CONTROL_1:
+ 	case WM8962_DC_SERVO_6:
+ 	case WM8962_INTERRUPT_STATUS_1:
+ 	case WM8962_INTERRUPT_STATUS_2:
+@@ -2922,13 +2922,22 @@ static int wm8962_set_fll(struct snd_soc
+ static int wm8962_mute(struct snd_soc_dai *dai, int mute)
+ {
+ 	struct snd_soc_codec *codec = dai->codec;
+-	int val;
++	int val, ret;
+ 
+ 	if (mute)
+-		val = WM8962_DAC_MUTE;
++		val = WM8962_DAC_MUTE | WM8962_DAC_MUTE_ALT;
+ 	else
+ 		val = 0;
+ 
++	/**
++	 * The DAC mute bit is mirrored in two registers, update both to keep
++	 * the register cache consistent.
++	 */
++	ret = snd_soc_update_bits(codec, WM8962_CLASS_D_CONTROL_1,
++				  WM8962_DAC_MUTE_ALT, val);
++	if (ret < 0)
++		return ret;
++
+ 	return snd_soc_update_bits(codec, WM8962_ADC_DAC_CONTROL_1,
+ 				   WM8962_DAC_MUTE, val);
+ }
+--- a/sound/soc/codecs/wm8962.h
++++ b/sound/soc/codecs/wm8962.h
+@@ -1954,6 +1954,10 @@
+ #define WM8962_SPKOUTL_ENA_MASK                 0x0040  /* SPKOUTL_ENA */
+ #define WM8962_SPKOUTL_ENA_SHIFT                     6  /* SPKOUTL_ENA */
+ #define WM8962_SPKOUTL_ENA_WIDTH                     1  /* SPKOUTL_ENA */
++#define WM8962_DAC_MUTE_ALT                     0x0010  /* DAC_MUTE */
++#define WM8962_DAC_MUTE_ALT_MASK                0x0010  /* DAC_MUTE */
++#define WM8962_DAC_MUTE_ALT_SHIFT                    4  /* DAC_MUTE */
++#define WM8962_DAC_MUTE_ALT_WIDTH                    1  /* DAC_MUTE */
+ #define WM8962_SPKOUTL_PGA_MUTE                 0x0002  /* SPKOUTL_PGA_MUTE */
+ #define WM8962_SPKOUTL_PGA_MUTE_MASK            0x0002  /* SPKOUTL_PGA_MUTE */
+ #define WM8962_SPKOUTL_PGA_MUTE_SHIFT                1  /* SPKOUTL_PGA_MUTE */
 
 
