@@ -1,50 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752856AbaFDLm3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 07:42:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7325 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752409AbaFDLm1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 07:42:27 -0400
-Date: Wed, 4 Jun 2014 13:42:21 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH v2 2/4] tools lib traceevent: Add options to plugins
-Message-ID: <20140604114221.GD5555@krava.brq.redhat.com>
-References: <20140603032012.088137043@goodmis.org>
- <20140603032223.896255043@goodmis.org>
- <87lhtecwph.fsf@sejong.aot.lge.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87lhtecwph.fsf@sejong.aot.lge.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1752886AbaFDLnF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 07:43:05 -0400
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:43460 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752485AbaFDLfI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 07:35:08 -0400
+From: Paolo Bonzini <pbonzini@redhat.com>
+To: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Cc: hch@lst.de, JBottomley@Parallels.com, venkateshs@google.com,
+        Ming Lei <tom.leiming@gmail.com>
+Subject: [PATCH v3 1/6] virtio_scsi: remove ACCESS_ONCE() and smp_read_barrier_depends()
+Date: Wed,  4 Jun 2014 13:34:54 +0200
+Message-Id: <1401881699-1456-2-git-send-email-pbonzini@redhat.com>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1401881699-1456-1-git-send-email-pbonzini@redhat.com>
+References: <1401881699-1456-1-git-send-email-pbonzini@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 03, 2014 at 03:51:22PM +0900, Namhyung Kim wrote:
-> On Mon, 02 Jun 2014 23:20:14 -0400, Steven Rostedt wrote:
-> > +void traceevent_plugin_free_options_list(char **list)
-> > +{
-> > +	int i;
-> > +
-> > +	if (!list)
-> > +		return;
-> > +
-> > +	if (list == (char **)((unsigned long)-1))
-> 
-> It also should be:
-> 
-> 	if (list == INVALID_PLUGIN_LIST_OPTION)
-> 
-> 
-> Other than that, the series looks good to me now!
+From: Ming Lei <tom.leiming@gmail.com>
 
-can I use your Acked-by?
+Access to tgt->req_vq is strictly serialized by spin_lock
+of tgt->tgt_lock, so the ACCESS_ONCE() isn't necessary.
 
-thanks,
-jirka
+smp_read_barrier_depends() in virtscsi_req_done was introduced
+to order reading req_vq and decreasing tgt->reqs, but it isn't
+needed now because req_vq is read from
+scsi->req_vqs[vq->index - VIRTIO_SCSI_VQ_BASE] instead of
+tgt->req_vq, so remove the unnecessary barrier.
+
+Also remove related comment about the barrier.
+
+Cc: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Ming Lei <tom.leiming@gmail.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+---
+ drivers/scsi/virtio_scsi.c | 53 ++++++----------------------------------------
+ 1 file changed, 6 insertions(+), 47 deletions(-)
+
+diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
+index db3b494e5926..fc054935eb1f 100644
+--- a/drivers/scsi/virtio_scsi.c
++++ b/drivers/scsi/virtio_scsi.c
+@@ -73,17 +73,12 @@ struct virtio_scsi_vq {
+  * queue, and also lets the driver optimize the IRQ affinity for the virtqueues
+  * (each virtqueue's affinity is set to the CPU that "owns" the queue).
+  *
+- * An interesting effect of this policy is that only writes to req_vq need to
+- * take the tgt_lock.  Read can be done outside the lock because:
++ * tgt_lock is held to serialize reading and writing req_vq. Reading req_vq
++ * could be done locklessly, but we do not do it yet.
+  *
+- * - writes of req_vq only occur when atomic_inc_return(&tgt->reqs) returns 1.
+- *   In that case, no other CPU is reading req_vq: even if they were in
+- *   virtscsi_queuecommand_multi, they would be spinning on tgt_lock.
+- *
+- * - reads of req_vq only occur when the target is not idle (reqs != 0).
+- *   A CPU that enters virtscsi_queuecommand_multi will not modify req_vq.
+- *
+- * Similarly, decrements of reqs are never concurrent with writes of req_vq.
++ * Decrements of reqs are never concurrent with writes of req_vq: before the
++ * decrement reqs will be != 0; after the decrement the virtqueue completion
++ * routine will not use the req_vq so it can be changed by a new request.
+  * Thus they can happen outside the tgt_lock, provided of course we make reqs
+  * an atomic_t.
+  */
+@@ -238,38 +233,6 @@ static void virtscsi_req_done(struct virtqueue *vq)
+ 	int index = vq->index - VIRTIO_SCSI_VQ_BASE;
+ 	struct virtio_scsi_vq *req_vq = &vscsi->req_vqs[index];
+ 
+-	/*
+-	 * Read req_vq before decrementing the reqs field in
+-	 * virtscsi_complete_cmd.
+-	 *
+-	 * With barriers:
+-	 *
+-	 * 	CPU #0			virtscsi_queuecommand_multi (CPU #1)
+-	 * 	------------------------------------------------------------
+-	 * 	lock vq_lock
+-	 * 	read req_vq
+-	 * 	read reqs (reqs = 1)
+-	 * 	write reqs (reqs = 0)
+-	 * 				increment reqs (reqs = 1)
+-	 * 				write req_vq
+-	 *
+-	 * Possible reordering without barriers:
+-	 *
+-	 * 	CPU #0			virtscsi_queuecommand_multi (CPU #1)
+-	 * 	------------------------------------------------------------
+-	 * 	lock vq_lock
+-	 * 	read reqs (reqs = 1)
+-	 * 	write reqs (reqs = 0)
+-	 * 				increment reqs (reqs = 1)
+-	 * 				write req_vq
+-	 * 	read (wrong) req_vq
+-	 *
+-	 * We do not need a full smp_rmb, because req_vq is required to get
+-	 * to tgt->reqs: tgt is &vscsi->tgt[sc->device->id], where sc is stored
+-	 * in the virtqueue as the user token.
+-	 */
+-	smp_read_barrier_depends();
+-
+ 	virtscsi_vq_done(vscsi, req_vq, virtscsi_complete_cmd);
+ };
+ 
+@@ -560,12 +523,8 @@ static struct virtio_scsi_vq *virtscsi_pick_vq(struct virtio_scsi *vscsi,
+ 
+ 	spin_lock_irqsave(&tgt->tgt_lock, flags);
+ 
+-	/*
+-	 * The memory barrier after atomic_inc_return matches
+-	 * the smp_read_barrier_depends() in virtscsi_req_done.
+-	 */
+ 	if (atomic_inc_return(&tgt->reqs) > 1)
+-		vq = ACCESS_ONCE(tgt->req_vq);
++		vq = tgt->req_vq;
+ 	else {
+ 		queue_num = smp_processor_id();
+ 		while (unlikely(queue_num >= vscsi->num_queues))
+-- 
+1.8.3.1
+
+
