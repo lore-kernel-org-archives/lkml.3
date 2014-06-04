@@ -1,69 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752956AbaFDMzA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 08:55:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22568 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752305AbaFDMy6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 08:54:58 -0400
-Date: Wed, 4 Jun 2014 08:53:48 -0400 (EDT)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
-To: Peter Zijlstra <peterz@infradead.org>
-cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        John David Anglin <dave.anglin@bell.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>, jejb@parisc-linux.org,
-        deller@gmx.de, linux-parisc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, chegu_vinod@hp.com,
-        paulmck@linux.vnet.ibm.com, Waiman.Long@hp.com, tglx@linutronix.de,
-        riel@redhat.com, akpm@linux-foundation.org, davidlohr@hp.com,
-        hpa@zytor.com, andi@firstfloor.org, aswin@hp.com, scott.norton@hp.com,
-        Jason Low <jason.low2@hp.com>
-Subject: Re: [PATCH] fix a race condition in cancelable mcs spinlocks
-In-Reply-To: <20140603075616.GJ11096@twins.programming.kicks-ass.net>
-Message-ID: <alpine.LRH.2.02.1406040838090.4046@file01.intranet.prod.int.rdu2.redhat.com>
-References: <alpine.LRH.2.02.1406011342470.20831@file01.intranet.prod.int.rdu2.redhat.com> <20140601192026.GE16155@laptop.programming.kicks-ass.net> <BLU0-SMTP387BD0AE22A4EAD432D65F97210@phx.gbl> <20140601213003.GG16155@laptop.programming.kicks-ass.net>
- <1401739000.12939.34.camel@dabdike.int.hansenpartnership.com> <20140603075616.GJ11096@twins.programming.kicks-ass.net>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+	id S1753091AbaFDM46 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 08:56:58 -0400
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:63300 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752746AbaFDM4y convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 08:56:54 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+From: =?UTF-8?Q?Rapha=C3=ABl_Poggi?= <poggi.raph@gmail.com>
+Date: Wed, 4 Jun 2014 14:56:13 +0200
+X-Google-Sender-Auth: y9CWeIUnUWytvvM5Bg81j4f3bvM
+Message-ID: <CACqcpZDziJs7QUKVYwio=La5LyRzBd+xeeRW=dPFcPzw0Wrn5Q@mail.gmail.com>
+Subject: pwm: atmel: problem when disable pwm
+To: linux-kernel@vger.kernel.org
+Cc: thierry.reding@gmail.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
+I'm using the pwm-atmel driver to control led, but i'm facing a problem.
 
-On Tue, 3 Jun 2014, Peter Zijlstra wrote:
+When writing "echo 0 > /sys/class/leds/d1/brightness" (to switch off
+the led) sometimes the led stayed active.
 
-> On Mon, Jun 02, 2014 at 12:56:40PM -0700, James Bottomley wrote:
-> > Architecturally, there is a way we could emulate the atomic exchange
-> > instructions.  We could have a special section of memory that always
-> > triggers a page trap.  In the Q state dtlb trap handlers we could
-> > recognise the "atomic" section of memory and wrap the attempted
-> > modification in a semaphore.  This would add a bit of overhead, but not
-> > a huge amount if we do it in the trap handlers like the TMPALIAS
-> > flushes.  This involves a lot of work for us because we have to decode
-> > the instructions in software, recognise the operations and manually
-> > apply the hashed semaphores around them.  If we did it like this, all
-> > we'd need by way of mainline support is that variables treated as
-> > atomically exchangeable should be in a separate section (because it's a
-> > page fault handler effectively, we need them all separated from "normal"
-> > code).  This would probably require some type of variable marker and if
-> > we ever saw a xchg or cmpxchg on a variable without the marker, we could
-> > break the build.
-> 
-> Cute, but I don't think that's entirely feasible given how these things
-> can be embedded in other structures (some dynamically allocated etc..).
+After investigation I think this problem is due to this function:
 
-We could deliberately misalign all the atomic variables - then, we would 
-take the alignment trap (that is already written) and take the atomic 
-spinlock in it.
+static void atmel_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
+{
+    struct atmel_pwm_chip *atmel_pwm = to_atmel_pwm_chip(chip);
 
-I've got another idea - we could stop the other CPUs while xchg or cmpxchg 
-is being executed. But there is a problem if the other CPU has interrupts 
-disabled. Could we mask interrupts on PA-RISC in such a way that they are 
-all disabled except one IPI that stops the CPU temporarily? Maybe do not 
-mask interrupts with PSW I-bit and mask them with EIEM instead (leaving 
-the one interrupt for cmpxchg IPI enabled)?
+    atmel_pwm_writel(atmel_pwm, PWM_DIS, 1 << pwm->hwpwm);
 
-Mikulas
+    clk_disable(atmel_pwm->clk);
+}
+
+By disable the pwm channel, I think the duty cycle "0" has not been
+update, and the channel is disable and stayed in active state (high or
+low depending of polarity).
+
+I have fixing the problem with this patch:
+
+pwm: atmel: improve disable of pwm
+
+Signed-off-by: Raphaël Poggi <poggi.raph@gmail.com>
+---
+ drivers/pwm/pwm-atmel.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/pwm/pwm-atmel.c b/drivers/pwm/pwm-atmel.c
+index 0adc952..a227c89 100644
+--- a/drivers/pwm/pwm-atmel.c
++++ b/drivers/pwm/pwm-atmel.c
+@@ -236,16 +236,17 @@ static int atmel_pwm_enable(struct pwm_chip
+*chip, struct pwm_device *pwm)
+                return ret;
+        }
+
+-       atmel_pwm_writel(atmel_pwm, PWM_ENA, 1 << pwm->hwpwm);
+-
+        return 0;
+ }
+
+ static void atmel_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
+ {
+        struct atmel_pwm_chip *atmel_pwm = to_atmel_pwm_chip(chip);
++       unsigned long clk_rate = clk_get_rate(atmel_pwm->clk);
++       unsigned long clk_period = 1000000000/clk_rate;
++       unsigned int pwm_period = atmel_pwm_ch_readl(atmel_pwm,
+pwm->hwpwm, PWMV2_CPRD);
+
+-       atmel_pwm_writel(atmel_pwm, PWM_DIS, 1 << pwm->hwpwm);
++       ndelay(pwm_period * clk_period);
+
+        clk_disable(atmel_pwm->clk);
+ }
+
+With this patch instead of disable / enable pwm channel, we wait nsec
+depending of MCK rate and pwm period and then disable the clock. By
+doing this, we are sure that the duty cycle has been update and
+disable in good state.
+
+Is this seems right for you or my patch/fix is stupid ?
+
+Maybe my problem is not due to this function, if so do you have any
+idea of where it can come from ?
+
+Thanks,
+Raphaël
