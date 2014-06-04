@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753723AbaFEAgo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 20:36:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39939 "EHLO
+	id S1757039AbaFEAg6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 20:36:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39935 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752687AbaFDXVf (ORCPT
+	with ESMTP id S1752746AbaFDXVf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 4 Jun 2014 19:21:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.14 072/228] drm/radeon/si: make sure mc ucode is loaded before checking the size
-Date: Wed,  4 Jun 2014 16:21:41 -0700
-Message-Id: <20140604232350.363497933@linuxfoundation.org>
+Subject: [PATCH 3.14 071/228] drm/radeon: re-enable mclk dpm on R7 260X asics
+Date: Wed,  4 Jun 2014 16:21:40 -0700
+Message-Id: <20140604232350.334876252@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -30,34 +30,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alex Deucher <alexdeucher@gmail.com>
 
-commit 8c79bae6a30f606b7a4e17c994bc5f72f8fdaf11 upstream.
+commit 7e1858f9aff7d608b3d0abad4bda0130de887b89 upstream.
 
-Avoid a possible segfault.
+If the new mc ucode is available.
 
-Noticed-by: Dan Carpenter <dan.carpenter@oracle.com>
 Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/si.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/ci_dpm.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/radeon/si.c
-+++ b/drivers/gpu/drm/radeon/si.c
-@@ -1472,11 +1472,13 @@ int si_mc_load_microcode(struct radeon_d
- 	const __be32 *fw_data;
- 	u32 running, blackout = 0;
- 	u32 *io_mc_regs;
--	int i, regs_size, ucode_size = rdev->mc_fw->size / 4;
-+	int i, regs_size, ucode_size;
+--- a/drivers/gpu/drm/radeon/ci_dpm.c
++++ b/drivers/gpu/drm/radeon/ci_dpm.c
+@@ -21,8 +21,10 @@
+  *
+  */
  
- 	if (!rdev->mc_fw)
- 		return -EINVAL;
++#include <linux/firmware.h>
+ #include "drmP.h"
+ #include "radeon.h"
++#include "radeon_ucode.h"
+ #include "cikd.h"
+ #include "r600_dpm.h"
+ #include "ci_dpm.h"
+@@ -5106,9 +5108,11 @@ int ci_dpm_init(struct radeon_device *rd
+ 	pi->mclk_dpm_key_disabled = 0;
+ 	pi->pcie_dpm_key_disabled = 0;
  
-+	ucode_size = rdev->mc_fw->size / 4;
-+
- 	switch (rdev->family) {
- 	case CHIP_TAHITI:
- 		io_mc_regs = (u32 *)&tahiti_io_mc_regs;
+-	/* mclk dpm is unstable on some R7 260X cards */
+-	if (rdev->pdev->device == 0x6658)
++	/* mclk dpm is unstable on some R7 260X cards with the old mc ucode */
++	if ((rdev->pdev->device == 0x6658) &&
++	    (rdev->mc_fw->size == (BONAIRE_MC_UCODE_SIZE * 4))) {
+ 		pi->mclk_dpm_key_disabled = 1;
++	}
+ 
+ 	pi->caps_sclk_ds = true;
+ 
 
 
