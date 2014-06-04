@@ -1,62 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752554AbaFDVq6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 17:46:58 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:48316 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751405AbaFDVq4 (ORCPT
+	id S1752565AbaFDVrQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 17:47:16 -0400
+Received: from g2t2354.austin.hp.com ([15.217.128.53]:45101 "EHLO
+	g2t2354.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751405AbaFDVrO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 17:46:56 -0400
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Stanislav Fomichev <stfomichev@yandex-team.ru>,
-        Namhyung Kim <namhyung@kernel.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH] tools: perf: util: svghelper.c:  Cleaning up missing null-terminate after strncpy call
-Date: Wed,  4 Jun 2014 23:47:50 +0200
-Message-Id: <1401918470-3947-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	Wed, 4 Jun 2014 17:47:14 -0400
+Message-ID: <1401918431.2232.32.camel@j-VirtualBox>
+Subject: Re: [RFC PATCH 3/3] locking/mutex: Optimize mutex trylock slowpath
+From: Jason Low <jason.low2@hp.com>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: mingo@kernel.org, peterz@infradead.org, tglx@linutronix.de,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        paulmck@linux.vnet.ibm.com, tim.c.chen@linux.intel.com,
+        peter@hurleysoftware.com, riel@redhat.com, hpa@zytor.com,
+        walken@google.com, Waiman.Long@hp.com, aswin@hp.com,
+        scott.norton@hp.com, chegu_vinod@hp.com
+Date: Wed, 04 Jun 2014 14:47:11 -0700
+In-Reply-To: <1401913714.13877.11.camel@buesod1.americas.hpqcorp.net>
+References: <1401908911-8947-1-git-send-email-jason.low2@hp.com>
+	 <1401908911-8947-4-git-send-email-jason.low2@hp.com>
+	 <1401913714.13877.11.camel@buesod1.americas.hpqcorp.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added a guaranteed null-terminate after call to strncpy.
+On Wed, 2014-06-04 at 13:28 -0700, Davidlohr Bueso wrote:
+> On Wed, 2014-06-04 at 12:08 -0700, Jason Low wrote:
+> > In __mutex_trylock_slowpath(), we acquire the wait_lock spinlock,
+> > xchg() lock->count with -1, then set lock->count back to 0 if there
+> > are no waiters, and return true if the prev lock count was 1.
+> > 
+> > However, if we the mutex is already locked, then there may not be
+>              ^^ leave that out.
+> 
+> > much point in attempting the above operations. 
+> 
+> Isn't this redundant? I mean, if we enter the slowpath its because
+> __mutex_fastpath_trylock() already failed so we already know that the
+> lock is taken.
 
-This was partly found using a static code analysis program called cppcheck.
+This function is really just used as an alternative method of trylock
+for !__HAVE_ARCH_CMPXCHG.  In that case, the fastpath can call directly
+into the slowpath function, without checking for if the lock is taken.
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
----
- tools/perf/util/svghelper.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+> What kind of testing has this change been put through? Any advantages?
+> (ie: how many cycles are we saving here?), the trylock mechanism is
+> already pretty darn fast.
 
-diff --git a/tools/perf/util/svghelper.c b/tools/perf/util/svghelper.c
-index 43262b8..cdcb332 100644
---- a/tools/perf/util/svghelper.c
-+++ b/tools/perf/util/svghelper.c
-@@ -255,9 +255,10 @@ static char *cpu_model(void)
- 	/* CPU type */
- 	file = fopen("/proc/cpuinfo", "r");
- 	if (file) {
--		while (fgets(buf, 255, file)) {
-+		while (fgets(buf, sizeof(buf), file)) {
- 			if (strstr(buf, "model name")) {
--				strncpy(cpu_m, &buf[13], 255);
-+				strncpy(cpu_m, &buf[13], sizeof(cpu_m));
-+				cpu_m[sizeof(cpu_m) - 1] = '\0';
- 				break;
- 			}
- 		}
-@@ -267,7 +268,7 @@ static char *cpu_model(void)
- 	/* CPU type */
- 	file = fopen("/sys/devices/system/cpu/cpu0/cpufreq/scaling_available_frequencies", "r");
- 	if (file) {
--		while (fgets(buf, 255, file)) {
-+		while (fgets(buf, sizeof(buf), file)) {
- 			unsigned int freq;
- 			freq = strtoull(buf, NULL, 10);
- 			if (freq > max_freq)
--- 
-1.7.10.4
+While I did run tests with this patch, this particular patch shouldn't
+show benefits on my machine as it should be using the more efficient
+atomic_cmpxchg. The advantage is in !__HAVE_ARCH_CMPXCHG, where we would
+avoid taking a spinlock and 2 atomic operations when the mutex is
+already taken.
+
+Thanks.
 
