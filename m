@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752724AbaFDXVc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:21:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39883 "EHLO
+	id S1752682AbaFDXV2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 19:21:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39823 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752688AbaFDXVa (ORCPT
+	with ESMTP id S1752587AbaFDXVU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:21:30 -0400
+	Wed, 4 Jun 2014 19:21:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.14 068/228] drm/radeon: disable mclk dpm on R7 260X
-Date: Wed,  4 Jun 2014 16:21:37 -0700
-Message-Id: <20140604232350.247206194@linuxfoundation.org>
+        Leon Yu <chianglungyu@gmail.com>, Benjamin LaHaise <bcrl@kvack.org>
+Subject: [PATCH 3.14 043/228] aio: fix potential leak in aio_run_iocb().
+Date: Wed,  4 Jun 2014 16:21:12 -0700
+Message-Id: <20140604232349.464128345@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -28,36 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexdeucher@gmail.com>
+From: Leon Yu <chianglungyu@gmail.com>
 
-commit 57700ad1f2f21d5d7ab7ee0e58d11b5954852434 upstream.
+commit 754320d6e166d3a12cb4810a452bde00afbd4e9a upstream.
 
-Setting higher mclks seems to cause stability issues
-on some R7 260X boards.  Disable it for now for stability
-until we find a proper fix.
+iovec should be reclaimed whenever caller of rw_copy_check_uvector() returns,
+but it doesn't hold when failure happens right after aio_setup_vectored_rw().
 
-bug:
-https://bugs.freedesktop.org/show_bug.cgi?id=75992
+Fix that in a such way to avoid hairy goto.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Leon Yu <chianglungyu@gmail.com>
+Signed-off-by: Benjamin LaHaise <bcrl@kvack.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/ci_dpm.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ fs/aio.c |    6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
---- a/drivers/gpu/drm/radeon/ci_dpm.c
-+++ b/drivers/gpu/drm/radeon/ci_dpm.c
-@@ -5106,6 +5106,10 @@ int ci_dpm_init(struct radeon_device *rd
- 	pi->mclk_dpm_key_disabled = 0;
- 	pi->pcie_dpm_key_disabled = 0;
- 
-+	/* mclk dpm is unstable on some R7 260X cards */
-+	if (rdev->pdev->device == 0x6658)
-+		pi->mclk_dpm_key_disabled = 1;
-+
- 	pi->caps_sclk_ds = true;
- 
- 	pi->mclk_strobe_mode_threshold = 40000;
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -1299,10 +1299,8 @@ rw_common:
+ 						&iovec, compat)
+ 			: aio_setup_single_vector(req, rw, buf, &nr_segs,
+ 						  iovec);
+-		if (ret)
+-			return ret;
+-
+-		ret = rw_verify_area(rw, file, &req->ki_pos, req->ki_nbytes);
++		if (!ret)
++			ret = rw_verify_area(rw, file, &req->ki_pos, req->ki_nbytes);
+ 		if (ret < 0) {
+ 			if (iovec != &inline_vec)
+ 				kfree(iovec);
 
 
