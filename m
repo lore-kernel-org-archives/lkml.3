@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932613AbaFEAlr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 20:41:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39788 "EHLO
+	id S1755354AbaFEAmF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 20:42:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39832 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752614AbaFDXVV (ORCPT
+	with ESMTP id S1752603AbaFDXVV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 4 Jun 2014 19:21:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Viresh Kumar <viresh.kumar@linaro.org>, linaro-kernel@lists.linaro.org,
-        linaro-networking@linaro.org, fweisbec@gmail.com,
-        arvind.chauhan@arm.com, Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 3.14 052/228] hrtimer: Set expiry time before switch_hrtimer_base()
-Date: Wed,  4 Jun 2014 16:21:21 -0700
-Message-Id: <20140604232349.750287014@linuxfoundation.org>
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [PATCH 3.14 035/228] mac80211: fix suspend vs. association race
+Date: Wed,  4 Jun 2014 16:21:04 -0700
+Message-Id: <20140604232349.197549348@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -30,59 +29,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Viresh Kumar <viresh.kumar@linaro.org>
+From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 
-commit 84ea7fe37908254c3bd90910921f6e1045c1747a upstream.
+commit c52666aef9f2dff39276eb53f15d99e2e229870f upstream.
 
-switch_hrtimer_base() calls hrtimer_check_target() which ensures that
-we do not migrate a timer to a remote cpu if the timer expires before
-the current programmed expiry time on that remote cpu.
+If the association is in progress while we suspend, the
+stack will be in a messed up state. Clean it before we
+suspend.
 
-But __hrtimer_start_range_ns() calls switch_hrtimer_base() before the
-new expiry time is set. So the sanity check in hrtimer_check_target()
-is operating on stale or even uninitialized data.
+This patch completes Johannes's patch:
 
-Update expiry time before calling switch_hrtimer_base().
+1a1cb744de160ee70086a77afff605bbc275d291
+Author: Johannes Berg <johannes.berg@intel.com>
 
-[ tglx: Rewrote changelog once again ]
+    mac80211: fix suspend vs. authentication race
 
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: linaro-kernel@lists.linaro.org
-Cc: linaro-networking@linaro.org
-Cc: fweisbec@gmail.com
-Cc: arvind.chauhan@arm.com
-Link: http://lkml.kernel.org/r/81999e148745fc51bbcd0615823fbab9b2e87e23.1399882253.git.viresh.kumar@linaro.org
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Fixes: 12e7f517029d ("mac80211: cleanup generic suspend/resume procedures")
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/hrtimer.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ net/mac80211/mlme.c |   20 +++++++++++++-------
+ 1 file changed, 13 insertions(+), 7 deletions(-)
 
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -1003,11 +1003,8 @@ int __hrtimer_start_range_ns(struct hrti
- 	/* Remove an active timer from the queue: */
- 	ret = remove_hrtimer(timer, base);
+--- a/net/mac80211/mlme.c
++++ b/net/mac80211/mlme.c
+@@ -3511,18 +3511,24 @@ void ieee80211_mgd_quiesce(struct ieee80
  
--	/* Switch the timer base, if necessary: */
--	new_base = switch_hrtimer_base(timer, base, mode & HRTIMER_MODE_PINNED);
--
- 	if (mode & HRTIMER_MODE_REL) {
--		tim = ktime_add_safe(tim, new_base->get_time());
-+		tim = ktime_add_safe(tim, base->get_time());
- 		/*
- 		 * CONFIG_TIME_LOW_RES is a temporary way for architectures
- 		 * to signal that they simply return xtime in
-@@ -1022,6 +1019,9 @@ int __hrtimer_start_range_ns(struct hrti
+ 	sdata_lock(sdata);
  
- 	hrtimer_set_expires_range_ns(timer, tim, delta_ns);
- 
-+	/* Switch the timer base, if necessary: */
-+	new_base = switch_hrtimer_base(timer, base, mode & HRTIMER_MODE_PINNED);
+-	if (ifmgd->auth_data) {
++	if (ifmgd->auth_data || ifmgd->assoc_data) {
++		const u8 *bssid = ifmgd->auth_data ?
++				ifmgd->auth_data->bss->bssid :
++				ifmgd->assoc_data->bss->bssid;
 +
- 	timer_stats_hrtimer_set_start_info(timer);
- 
- 	leftmost = enqueue_hrtimer(timer, new_base);
+ 		/*
+-		 * If we are trying to authenticate while suspending, cfg80211
+-		 * won't know and won't actually abort those attempts, thus we
+-		 * need to do that ourselves.
++		 * If we are trying to authenticate / associate while suspending,
++		 * cfg80211 won't know and won't actually abort those attempts,
++		 * thus we need to do that ourselves.
+ 		 */
+-		ieee80211_send_deauth_disassoc(sdata,
+-					       ifmgd->auth_data->bss->bssid,
++		ieee80211_send_deauth_disassoc(sdata, bssid,
+ 					       IEEE80211_STYPE_DEAUTH,
+ 					       WLAN_REASON_DEAUTH_LEAVING,
+ 					       false, frame_buf);
+-		ieee80211_destroy_auth_data(sdata, false);
++		if (ifmgd->assoc_data)
++			ieee80211_destroy_assoc_data(sdata, false);
++		if (ifmgd->auth_data)
++			ieee80211_destroy_auth_data(sdata, false);
+ 		cfg80211_tx_mlme_mgmt(sdata->dev, frame_buf,
+ 				      IEEE80211_DEAUTH_FRAME_LEN);
+ 	}
 
 
