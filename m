@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754570AbaFDXk5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:40:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40789 "EHLO
+	id S1754881AbaFDXlY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 19:41:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40779 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753960AbaFDXXv (ORCPT
+	with ESMTP id S1753957AbaFDXXu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:23:51 -0400
+	Wed, 4 Jun 2014 19:23:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Hutchings <ben@decadent.org.uk>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.10 050/103] rtl8192cu: Fix unbalanced irq enable in error path of rtl92cu_hw_init()
-Date: Wed,  4 Jun 2014 16:25:13 -0700
-Message-Id: <20140604232548.459932457@linuxfoundation.org>
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Shawn Guo <shawn.guo@freescale.com>, Olof Johansson <olof@lixom.net>
+Subject: [PATCH 3.10 048/103] ARM: dts: i.MX53: Fix ipu register space size
+Date: Wed,  4 Jun 2014 16:25:11 -0700
+Message-Id: <20140604232548.401743282@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232546.704156131@linuxfoundation.org>
 References: <20140604232546.704156131@linuxfoundation.org>
@@ -29,29 +29,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Sascha Hauer <s.hauer@pengutronix.de>
 
-commit 3234f5b06fc3094176a86772cc64baf3decc98fc upstream.
+commit 6d66da89bf4422c0a0693627fb3e25f74af50f92 upstream.
 
-Fixes: a53268be0cb9 ('rtlwifi: rtl8192cu: Fix too long disable of IRQs')
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+The IPU register space is 128MB, not 2GB.
+
+Fixes: abed9a6bf2bb 'ARM i.MX53: Add IPU support'
+Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
+Acked-by: Shawn Guo <shawn.guo@freescale.com>
+Signed-off-by: Olof Johansson <olof@lixom.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rtlwifi/rtl8192cu/hw.c |    2 +-
+ arch/arm/boot/dts/imx53.dtsi |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c
-@@ -1001,7 +1001,7 @@ int rtl92cu_hw_init(struct ieee80211_hw
- 	err = _rtl92cu_init_mac(hw);
- 	if (err) {
- 		RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG, "init mac failed!\n");
--		return err;
-+		goto exit;
- 	}
- 	err = rtl92c_download_fw(hw);
- 	if (err) {
+--- a/arch/arm/boot/dts/imx53.dtsi
++++ b/arch/arm/boot/dts/imx53.dtsi
+@@ -71,7 +71,7 @@
+ 		ipu: ipu@18000000 {
+ 			#crtc-cells = <1>;
+ 			compatible = "fsl,imx53-ipu";
+-			reg = <0x18000000 0x080000000>;
++			reg = <0x18000000 0x08000000>;
+ 			interrupts = <11 10>;
+ 			clocks = <&clks 59>, <&clks 110>, <&clks 61>;
+ 			clock-names = "bus", "di0", "di1";
 
 
