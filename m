@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752889AbaFDLhH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 07:37:07 -0400
-Received: from mail.dev.rtsoft.ru ([213.79.90.226]:58908 "EHLO dev.rtsoft.ru"
+	id S1752870AbaFDLhF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 07:37:05 -0400
+Received: from mail.dev.rtsoft.ru ([213.79.90.226]:58925 "EHLO dev.rtsoft.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752759AbaFDLgJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752767AbaFDLgJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 4 Jun 2014 07:36:09 -0400
 From: nyushchenko@dev.rtsoft.ru
 To: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
@@ -12,9 +12,9 @@ To: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
         Thomas Gleixner <tglx@linutronix.de>, devicetree@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, lugovskoy@dev.rtsoft.ru,
         Nikita Yushchenko <nyushchenko@dev.rtsoft.ru>
-Subject: [PATCH 08/21] i2c: use devm_irq_of_parse_and_map() where appropriate
-Date: Wed,  4 Jun 2014 15:13:08 +0400
-Message-Id: <1401880402-30091-9-git-send-email-nyushchenko@dev.rtsoft.ru>
+Subject: [PATCH 10/21] media: use devm_irq_of_parse_and_map() where appropriate
+Date: Wed,  4 Jun 2014 15:13:10 +0400
+Message-Id: <1401880402-30091-11-git-send-email-nyushchenko@dev.rtsoft.ru>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1401880402-30091-1-git-send-email-nyushchenko@dev.rtsoft.ru>
 References: <1401880402-30091-1-git-send-email-nyushchenko@dev.rtsoft.ru>
@@ -30,100 +30,147 @@ issues.
 
 Signed-off-by: Nikita Yushchenko <nyushchenko@dev.rtsoft.ru>
 ---
- drivers/i2c/busses/i2c-mpc.c     |   12 ++++--------
- drivers/i2c/busses/i2c-mv64xxx.c |    2 +-
- drivers/i2c/busses/i2c-st.c      |    6 +++---
- drivers/i2c/busses/i2c-wmt.c     |    6 +++---
- 4 files changed, 11 insertions(+), 15 deletions(-)
+ drivers/media/platform/exynos4-is/fimc-is.c |   14 ++++++--------
+ drivers/media/platform/fsl-viu.c            |   25 +++++++++----------------
+ 2 files changed, 15 insertions(+), 24 deletions(-)
 
-diff --git a/drivers/i2c/busses/i2c-mpc.c b/drivers/i2c/busses/i2c-mpc.c
-index f539163..f8e45a6 100644
---- a/drivers/i2c/busses/i2c-mpc.c
-+++ b/drivers/i2c/busses/i2c-mpc.c
-@@ -647,9 +647,11 @@ static int fsl_i2c_probe(struct platform_device *op)
- 		goto fail_map;
+diff --git a/drivers/media/platform/exynos4-is/fimc-is.c b/drivers/media/platform/exynos4-is/fimc-is.c
+index 128b73b..b90b9c1 100644
+--- a/drivers/media/platform/exynos4-is/fimc-is.c
++++ b/drivers/media/platform/exynos4-is/fimc-is.c
+@@ -810,10 +810,10 @@ static int fimc_is_probe(struct platform_device *pdev)
+ 	if (!is->pmu_regs)
+ 		return -ENOMEM;
+ 
+-	is->irq = irq_of_parse_and_map(dev->of_node, 0);
+-	if (is->irq < 0) {
++	is->irq = devm_irq_of_parse_and_map(dev, dev->of_node, 0);
++	if (is->irq <= 0) {
+ 		dev_err(dev, "no irq found\n");
+-		return is->irq;
++		return is->irq ? is->irq : -EINVAL;
  	}
  
--	i2c->irq = irq_of_parse_and_map(op->dev.of_node, 0);
-+	i2c->irq = devm_irq_of_parse_and_map(&op->dev, op->dev.of_node, 0);
-+	if (i2c->irq < 0)
-+		return i2c->irq;
- 	if (i2c->irq) { /* no i2c->irq implies polling */
--		result = request_irq(i2c->irq, mpc_i2c_isr,
-+		result = devm_request_irq(&op->dev, i2c->irq, mpc_i2c_isr,
- 				     IRQF_SHARED, "i2c-mpc", i2c);
- 		if (result < 0) {
- 			dev_err(i2c->dev, "failed to attach interrupt\n");
-@@ -719,9 +721,7 @@ static int fsl_i2c_probe(struct platform_device *op)
-  fail_add:
- 	if (i2c->clk_per)
- 		clk_disable_unprepare(i2c->clk_per);
--	free_irq(i2c->irq, i2c);
-  fail_request:
--	irq_dispose_mapping(i2c->irq);
- 	iounmap(i2c->base);
-  fail_map:
- 	kfree(i2c);
-@@ -737,10 +737,6 @@ static int fsl_i2c_remove(struct platform_device *op)
- 	if (i2c->clk_per)
- 		clk_disable_unprepare(i2c->clk_per);
+ 	ret = fimc_is_get_clocks(is);
+@@ -822,7 +822,8 @@ static int fimc_is_probe(struct platform_device *pdev)
  
--	if (i2c->irq)
--		free_irq(i2c->irq, i2c);
+ 	platform_set_drvdata(pdev, is);
+ 
+-	ret = request_irq(is->irq, fimc_is_irq_handler, 0, dev_name(dev), is);
++	ret = devm_request_irq(dev, is->irq, fimc_is_irq_handler, 0,
++			dev_name(dev), is);
+ 	if (ret < 0) {
+ 		dev_err(dev, "irq request failed\n");
+ 		goto err_clk;
+@@ -832,7 +833,7 @@ static int fimc_is_probe(struct platform_device *pdev)
+ 	if (!pm_runtime_enabled(dev)) {
+ 		ret = fimc_is_runtime_resume(dev);
+ 		if (ret < 0)
+-			goto err_irq;
++			goto err_clk;
+ 	}
+ 
+ 	ret = pm_runtime_get_sync(dev);
+@@ -874,8 +875,6 @@ err_vb:
+ err_pm:
+ 	if (!pm_runtime_enabled(dev))
+ 		fimc_is_runtime_suspend(dev);
+-err_irq:
+-	free_irq(is->irq, is);
+ err_clk:
+ 	fimc_is_put_clocks(is);
+ 	return ret;
+@@ -929,7 +928,6 @@ static int fimc_is_remove(struct platform_device *pdev)
+ 	pm_runtime_set_suspended(dev);
+ 	if (!pm_runtime_status_suspended(dev))
+ 		fimc_is_runtime_suspend(dev);
+-	free_irq(is->irq, is);
+ 	fimc_is_unregister_subdevs(is);
+ 	vb2_dma_contig_cleanup_ctx(is->alloc_ctx);
+ 	fimc_is_put_clocks(is);
+diff --git a/drivers/media/platform/fsl-viu.c b/drivers/media/platform/fsl-viu.c
+index dbf0ce3..ca9c04f 100644
+--- a/drivers/media/platform/fsl-viu.c
++++ b/drivers/media/platform/fsl-viu.c
+@@ -1495,34 +1495,31 @@ static int viu_of_probe(struct platform_device *op)
+ 		return -ENODEV;
+ 	}
+ 
+-	viu_irq = irq_of_parse_and_map(op->dev.of_node, 0);
+-	if (viu_irq == NO_IRQ) {
++	viu_irq = devm_irq_of_parse_and_map(&op->dev, op->dev.of_node, 0);
++	if (viu_irq <= 0) {
+ 		dev_err(&op->dev, "Error while mapping the irq\n");
+-		return -EINVAL;
++		return viu_irq ? viu_irq : -EINVAL;
+ 	}
+ 
+ 	/* request mem region */
+ 	if (!devm_request_mem_region(&op->dev, r.start,
+ 				     sizeof(struct viu_reg), DRV_NAME)) {
+ 		dev_err(&op->dev, "Error while requesting mem region\n");
+-		ret = -EBUSY;
+-		goto err;
++		return -EBUSY;
+ 	}
+ 
+ 	/* remap registers */
+ 	viu_regs = devm_ioremap(&op->dev, r.start, sizeof(struct viu_reg));
+ 	if (!viu_regs) {
+ 		dev_err(&op->dev, "Can't map register set\n");
+-		ret = -ENOMEM;
+-		goto err;
++		return -ENOMEM;
+ 	}
+ 
+ 	/* Prepare our private structure */
+ 	viu_dev = devm_kzalloc(&op->dev, sizeof(struct viu_dev), GFP_ATOMIC);
+ 	if (!viu_dev) {
+ 		dev_err(&op->dev, "Can't allocate private structure\n");
+-		ret = -ENOMEM;
+-		goto err;
++		return -ENOMEM;
+ 	}
+ 
+ 	viu_dev->vr = viu_regs;
+@@ -1538,7 +1535,7 @@ static int viu_of_probe(struct platform_device *op)
+ 	ret = v4l2_device_register(viu_dev->dev, &viu_dev->v4l2_dev);
+ 	if (ret < 0) {
+ 		dev_err(&op->dev, "v4l2_device_register() failed: %d\n", ret);
+-		goto err;
++		return ret;
+ 	}
+ 
+ 	ad = i2c_get_adapter(0);
+@@ -1597,7 +1594,8 @@ static int viu_of_probe(struct platform_device *op)
+ 	viu_reset(viu_dev->vr);
+ 
+ 	/* install interrupt handler */
+-	if (request_irq(viu_dev->irq, viu_intr, 0, "viu", (void *)viu_dev)) {
++	if (devm_request_irq(&op->dev, viu_dev->irq, viu_intr, 0, "viu",
++				(void *)viu_dev)) {
+ 		dev_err(&op->dev, "Request VIU IRQ failed.\n");
+ 		ret = -ENODEV;
+ 		goto err_irq;
+@@ -1616,8 +1614,6 @@ err_vdev:
+ 	mutex_unlock(&viu_dev->lock);
+ 	i2c_put_adapter(ad);
+ 	v4l2_device_unregister(&viu_dev->v4l2_dev);
+-err:
+-	irq_dispose_mapping(viu_irq);
+ 	return ret;
+ }
+ 
+@@ -1629,9 +1625,6 @@ static int viu_of_remove(struct platform_device *op)
+ 					      struct v4l2_subdev, list);
+ 	struct i2c_client *client = v4l2_get_subdevdata(sdev);
+ 
+-	free_irq(dev->irq, (void *)dev);
+-	irq_dispose_mapping(dev->irq);
 -
--	irq_dispose_mapping(i2c->irq);
- 	iounmap(i2c->base);
- 	kfree(i2c);
- 	return 0;
-diff --git a/drivers/i2c/busses/i2c-mv64xxx.c b/drivers/i2c/busses/i2c-mv64xxx.c
-index 540ea69..65f95d0 100644
---- a/drivers/i2c/busses/i2c-mv64xxx.c
-+++ b/drivers/i2c/busses/i2c-mv64xxx.c
-@@ -755,7 +755,7 @@ mv64xxx_of_config(struct mv64xxx_i2c_data *drv_data,
- 		rc = -EINVAL;
- 		goto out;
- 	}
--	drv_data->irq = irq_of_parse_and_map(np, 0);
-+	drv_data->irq = devm_irq_of_parse_and_map(dev, np, 0);
+ 	clk_disable_unprepare(dev->clk);
  
- 	drv_data->rstc = devm_reset_control_get_optional(dev, NULL);
- 	if (IS_ERR(drv_data->rstc)) {
-diff --git a/drivers/i2c/busses/i2c-st.c b/drivers/i2c/busses/i2c-st.c
-index 8720161..f2d0017 100644
---- a/drivers/i2c/busses/i2c-st.c
-+++ b/drivers/i2c/busses/i2c-st.c
-@@ -778,10 +778,10 @@ static int st_i2c_probe(struct platform_device *pdev)
- 	if (IS_ERR(i2c_dev->base))
- 		return PTR_ERR(i2c_dev->base);
- 
--	i2c_dev->irq = irq_of_parse_and_map(np, 0);
--	if (!i2c_dev->irq) {
-+	i2c_dev->irq = devm_irq_of_parse_and_map(&pdev->dev, np, 0);
-+	if (i2c_dev->irq <= 0) {
- 		dev_err(&pdev->dev, "IRQ missing or invalid\n");
--		return -EINVAL;
-+		return i2c_dev->irq ? i2c_dev->irq : -EINVAL;
- 	}
- 
- 	i2c_dev->clk = of_clk_get_by_name(np, "ssc");
-diff --git a/drivers/i2c/busses/i2c-wmt.c b/drivers/i2c/busses/i2c-wmt.c
-index 2c8a3e4..6082b93 100644
---- a/drivers/i2c/busses/i2c-wmt.c
-+++ b/drivers/i2c/busses/i2c-wmt.c
-@@ -389,10 +389,10 @@ static int wmt_i2c_probe(struct platform_device *pdev)
- 	if (IS_ERR(i2c_dev->base))
- 		return PTR_ERR(i2c_dev->base);
- 
--	i2c_dev->irq = irq_of_parse_and_map(np, 0);
--	if (!i2c_dev->irq) {
-+	i2c_dev->irq = devm_irq_of_parse_and_map(&pdev->dev, np, 0);
-+	if (i2c_dev->irq <= 0) {
- 		dev_err(&pdev->dev, "irq missing or invalid\n");
--		return -EINVAL;
-+		return i2c_dev->irq ? i2c_dev->irq : -EINVAL;
- 	}
- 
- 	i2c_dev->clk = of_clk_get(np, 0);
+ 	video_unregister_device(dev->vdev);
 -- 
 1.7.10.4
 
