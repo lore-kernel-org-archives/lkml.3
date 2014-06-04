@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754096AbaFDXYI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:24:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40886 "EHLO
+	id S1754482AbaFDXeN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 19:34:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40915 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754071AbaFDXYF (ORCPT
+	with ESMTP id S1754090AbaFDXYI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:24:05 -0400
+	Wed, 4 Jun 2014 19:24:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Chew, Kean ho" <kean.ho.chew@intel.com>,
-        "Chew, Chiau Ee" <chiau.ee.chew@intel.com>,
-        Jean Delvare <jdelvare@suse.de>, Wolfram Sang <wsa@the-dreams.de>,
-        "Chang, Rebecca Swee Fun" <rebecca.swee.fun.chang@intel.com>
-Subject: [PATCH 3.10 060/103] i2c: i801: enable Intel BayTrail SMBUS
-Date: Wed,  4 Jun 2014 16:25:23 -0700
-Message-Id: <20140604232548.781871355@linuxfoundation.org>
+        Shawn Guo <shawn.guo@linaro.org>,
+        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
+        Mark Brown <broonie@linaro.org>
+Subject: [PATCH 3.10 080/103] ASoC: wm8962: Update register CLASS_D_CONTROL_1 to be non-volatile
+Date: Wed,  4 Jun 2014 16:25:43 -0700
+Message-Id: <20140604232549.423209759@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232546.704156131@linuxfoundation.org>
 References: <20140604232546.704156131@linuxfoundation.org>
@@ -31,70 +30,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Chew, Kean ho" <kean.ho.chew@intel.com>
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 
-commit 1b31e9b76ef8c62291e698dfdb973499986a7f68 upstream.
+commit 44330ab516c15dda8a1e660eeaf0003f84e43e3f upstream.
 
-Add Device ID of Intel BayTrail SMBus Controller.
+The register CLASS_D_CONTROL_1 is marked as volatile because it contains
+a bit, DAC_MUTE, which is also mirrored in the ADC_DAC_CONTROL_1
+register. This causes problems for the "Speaker Switch" control, which
+will report an error if the CODEC is suspended because it relies on a
+volatile register.
 
-Signed-off-by: Chew, Kean ho <kean.ho.chew@intel.com>
-Signed-off-by: Chew, Chiau Ee <chiau.ee.chew@intel.com>
-Reviewed-by: Jean Delvare <jdelvare@suse.de>
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
-Cc: "Chang, Rebecca Swee Fun" <rebecca.swee.fun.chang@intel.com>
+To resolve this issue mark CLASS_D_CONTROL_1 as non-volatile and
+manually keep the register cache in sync by updating both bits when
+changing the mute status.
+
+Reported-by: Shawn Guo <shawn.guo@linaro.org>
+Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Tested-by: Shawn Guo <shawn.guo@linaro.org>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- Documentation/i2c/busses/i2c-i801 |    1 +
- drivers/i2c/busses/Kconfig        |    1 +
- drivers/i2c/busses/i2c-i801.c     |    3 +++
- 3 files changed, 5 insertions(+)
+ sound/soc/codecs/wm8962.c |   15 ++++++++++++---
+ sound/soc/codecs/wm8962.h |    4 ++++
+ 2 files changed, 16 insertions(+), 3 deletions(-)
 
---- a/Documentation/i2c/busses/i2c-i801
-+++ b/Documentation/i2c/busses/i2c-i801
-@@ -26,6 +26,7 @@ Supported adapters:
-   * Intel Wellsburg (PCH)
-   * Intel Coleto Creek (PCH)
-   * Intel Wildcat Point-LP (PCH)
-+  * Intel BayTrail (SOC)
-    Datasheets: Publicly available at the Intel website
+--- a/sound/soc/codecs/wm8962.c
++++ b/sound/soc/codecs/wm8962.c
+@@ -153,6 +153,7 @@ static struct reg_default wm8962_reg[] =
+ 	{ 40, 0x0000 },   /* R40    - SPKOUTL volume */
+ 	{ 41, 0x0000 },   /* R41    - SPKOUTR volume */
  
- On Intel Patsburg and later chipsets, both the normal host SMBus controller
---- a/drivers/i2c/busses/Kconfig
-+++ b/drivers/i2c/busses/Kconfig
-@@ -110,6 +110,7 @@ config I2C_I801
- 	    Wellsburg (PCH)
- 	    Coleto Creek (PCH)
- 	    Wildcat Point-LP (PCH)
-+	    BayTrail (SOC)
++	{ 49, 0x0010 },   /* R49    - Class D Control 1 */
+ 	{ 51, 0x0003 },   /* R51    - Class D Control 2 */
  
- 	  This driver can also be built as a module.  If so, the module
- 	  will be called i2c-i801.
---- a/drivers/i2c/busses/i2c-i801.c
-+++ b/drivers/i2c/busses/i2c-i801.c
-@@ -60,6 +60,7 @@
-   Wellsburg (PCH) MS    0x8d7f     32     hard     yes     yes     yes
-   Coleto Creek (PCH)    0x23b0     32     hard     yes     yes     yes
-   Wildcat Point-LP (PCH)   0x9ca2     32     hard     yes     yes     yes
-+  BayTrail (SOC)        0x0f12     32     hard     yes     yes     yes
+ 	{ 56, 0x0506 },   /* R56    - Clocking 4 */
+@@ -794,7 +795,6 @@ static bool wm8962_volatile_register(str
+ 	case WM8962_ALC2:
+ 	case WM8962_THERMAL_SHUTDOWN_STATUS:
+ 	case WM8962_ADDITIONAL_CONTROL_4:
+-	case WM8962_CLASS_D_CONTROL_1:
+ 	case WM8962_DC_SERVO_6:
+ 	case WM8962_INTERRUPT_STATUS_1:
+ 	case WM8962_INTERRUPT_STATUS_2:
+@@ -2901,13 +2901,22 @@ static int wm8962_set_fll(struct snd_soc
+ static int wm8962_mute(struct snd_soc_dai *dai, int mute)
+ {
+ 	struct snd_soc_codec *codec = dai->codec;
+-	int val;
++	int val, ret;
  
-   Features supported by this driver:
-   Software PEC                     no
-@@ -162,6 +163,7 @@
- 				 STATUS_ERROR_FLAGS)
+ 	if (mute)
+-		val = WM8962_DAC_MUTE;
++		val = WM8962_DAC_MUTE | WM8962_DAC_MUTE_ALT;
+ 	else
+ 		val = 0;
  
- /* Older devices have their ID defined in <linux/pci_ids.h> */
-+#define PCI_DEVICE_ID_INTEL_BAYTRAIL_SMBUS	0x0f12
- #define PCI_DEVICE_ID_INTEL_COUGARPOINT_SMBUS	0x1c22
- #define PCI_DEVICE_ID_INTEL_PATSBURG_SMBUS	0x1d22
- /* Patsburg also has three 'Integrated Device Function' SMBus controllers */
-@@ -823,6 +825,7 @@ static DEFINE_PCI_DEVICE_TABLE(i801_ids)
- 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_WELLSBURG_SMBUS_MS2) },
- 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_COLETOCREEK_SMBUS) },
- 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_WILDCATPOINT_LP_SMBUS) },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_BAYTRAIL_SMBUS) },
- 	{ 0, }
- };
- 
++	/**
++	 * The DAC mute bit is mirrored in two registers, update both to keep
++	 * the register cache consistent.
++	 */
++	ret = snd_soc_update_bits(codec, WM8962_CLASS_D_CONTROL_1,
++				  WM8962_DAC_MUTE_ALT, val);
++	if (ret < 0)
++		return ret;
++
+ 	return snd_soc_update_bits(codec, WM8962_ADC_DAC_CONTROL_1,
+ 				   WM8962_DAC_MUTE, val);
+ }
+--- a/sound/soc/codecs/wm8962.h
++++ b/sound/soc/codecs/wm8962.h
+@@ -1954,6 +1954,10 @@
+ #define WM8962_SPKOUTL_ENA_MASK                 0x0040  /* SPKOUTL_ENA */
+ #define WM8962_SPKOUTL_ENA_SHIFT                     6  /* SPKOUTL_ENA */
+ #define WM8962_SPKOUTL_ENA_WIDTH                     1  /* SPKOUTL_ENA */
++#define WM8962_DAC_MUTE_ALT                     0x0010  /* DAC_MUTE */
++#define WM8962_DAC_MUTE_ALT_MASK                0x0010  /* DAC_MUTE */
++#define WM8962_DAC_MUTE_ALT_SHIFT                    4  /* DAC_MUTE */
++#define WM8962_DAC_MUTE_ALT_WIDTH                    1  /* DAC_MUTE */
+ #define WM8962_SPKOUTL_PGA_MUTE                 0x0002  /* SPKOUTL_PGA_MUTE */
+ #define WM8962_SPKOUTL_PGA_MUTE_MASK            0x0002  /* SPKOUTL_PGA_MUTE */
+ #define WM8962_SPKOUTL_PGA_MUTE_SHIFT                1  /* SPKOUTL_PGA_MUTE */
 
 
