@@ -1,50 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932632AbaFEAoJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 20:44:09 -0400
-Received: from mail-ve0-f181.google.com ([209.85.128.181]:56103 "EHLO
-	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752088AbaFEAoF (ORCPT
+	id S1752550AbaFDXVP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 19:21:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39744 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752437AbaFDXVJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 20:44:05 -0400
-Message-ID: <1401929039.16832.1.camel@phoenix>
-Subject: [PATCH] regulator: ltc3589: Use of_get_child_by_name
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Philipp Zabel <p.zabel@pengutronix.de>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Date: Thu, 05 Jun 2014 08:43:59 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 4 Jun 2014 19:21:09 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Eyal Shapira <eyalx.shapira@intel.com>,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Subject: [PATCH 3.14 024/228] iwlwifi: mvm: rs: fix and cleanup rs_get_rate_action
+Date: Wed,  4 Jun 2014 16:20:53 -0700
+Message-Id: <20140604232348.867215532@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
+References: <20140604232347.966798903@linuxfoundation.org>
+User-Agent: quilt/0.63-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-of_find_node_by_name() walks the allnodes list, and can thus walk
-outside of the parent node. Use of_get_child_by_name() instead.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
+------------------
+
+From: Eyal Shapira <eyal@wizery.com>
+
+commit e53839eb9882c99d3781eab0fe1b2d4369a6a2cc upstream.
+
+Change the down/upscale decision logic a bit to be based
+on different success ratio thresholds. This fixes the implementation
+compared to the rate scale algorithm which was planned to yield
+optimal results. Also fix a case where a lower rate wasn't explored
+despite being a potential for better throughput.
+While at it rewrite rs_get_rate_action to be more clear and clean.
+
+Signed-off-by: Eyal Shapira <eyalx.shapira@intel.com>
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- drivers/regulator/ltc3589.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/wireless/iwlwifi/mvm/rs.c |  135 +++++++++++++++-------------------
+ drivers/net/wireless/iwlwifi/mvm/rs.h |    1 
+ 2 files changed, 64 insertions(+), 72 deletions(-)
 
-diff --git a/drivers/regulator/ltc3589.c b/drivers/regulator/ltc3589.c
-index 110a99e..c810518 100644
---- a/drivers/regulator/ltc3589.c
-+++ b/drivers/regulator/ltc3589.c
-@@ -255,7 +255,7 @@ static int ltc3589_parse_regulators_dt(struct ltc3589 *ltc3589)
- 	struct device_node *node;
- 	int i, ret;
+--- a/drivers/net/wireless/iwlwifi/mvm/rs.c
++++ b/drivers/net/wireless/iwlwifi/mvm/rs.c
+@@ -1644,85 +1644,76 @@ static enum rs_action rs_get_rate_action
+ {
+ 	enum rs_action action = RS_ACTION_STAY;
  
--	node = of_find_node_by_name(dev->of_node, "regulators");
-+	node = of_get_child_by_name(dev->of_node, "regulators");
- 	if (!node) {
- 		dev_err(dev, "regulators node not found\n");
- 		return -EINVAL;
--- 
-1.8.3.2
-
+-	/* Too many failures, decrease rate */
+ 	if ((sr <= RS_SR_FORCE_DECREASE) || (current_tpt == 0)) {
+ 		IWL_DEBUG_RATE(mvm,
+-			       "decrease rate because of low SR\n");
+-		action = RS_ACTION_DOWNSCALE;
+-	/* No throughput measured yet for adjacent rates; try increase. */
+-	} else if ((low_tpt == IWL_INVALID_VALUE) &&
+-		   (high_tpt == IWL_INVALID_VALUE)) {
+-		if (high != IWL_RATE_INVALID && sr >= IWL_RATE_INCREASE_TH) {
+-			IWL_DEBUG_RATE(mvm,
+-				       "Good SR and no high rate measurement. "
+-				       "Increase rate\n");
+-			action = RS_ACTION_UPSCALE;
+-		} else if (low != IWL_RATE_INVALID) {
+-			IWL_DEBUG_RATE(mvm,
+-				       "Remain in current rate\n");
+-			action = RS_ACTION_STAY;
+-		}
++			       "Decrease rate because of low SR\n");
++		return RS_ACTION_DOWNSCALE;
+ 	}
+ 
+-	/* Both adjacent throughputs are measured, but neither one has better
+-	 * throughput; we're using the best rate, don't change it!
+-	 */
+-	else if ((low_tpt != IWL_INVALID_VALUE) &&
+-		 (high_tpt != IWL_INVALID_VALUE) &&
+-		 (low_tpt < current_tpt) &&
+-		 (high_tpt < current_tpt)) {
+-		IWL_DEBUG_RATE(mvm,
+-			       "Both high and low are worse. "
+-			       "Maintain rate\n");
+-		action = RS_ACTION_STAY;
+-	}
+-
+-	/* At least one adjacent rate's throughput is measured,
+-	 * and may have better performance.
+-	 */
+-	else {
+-		/* Higher adjacent rate's throughput is measured */
+-		if (high_tpt != IWL_INVALID_VALUE) {
+-			/* Higher rate has better throughput */
+-			if (high_tpt > current_tpt &&
+-			    sr >= IWL_RATE_INCREASE_TH) {
+-				IWL_DEBUG_RATE(mvm,
+-					       "Higher rate is better and good "
+-					       "SR. Increate rate\n");
+-				action = RS_ACTION_UPSCALE;
+-			} else {
+-				IWL_DEBUG_RATE(mvm,
+-					       "Higher rate isn't better OR "
+-					       "no good SR. Maintain rate\n");
+-				action = RS_ACTION_STAY;
+-			}
+-
+-		/* Lower adjacent rate's throughput is measured */
+-		} else if (low_tpt != IWL_INVALID_VALUE) {
+-			/* Lower rate has better throughput */
+-			if (low_tpt > current_tpt) {
+-				IWL_DEBUG_RATE(mvm,
+-					       "Lower rate is better. "
+-					       "Decrease rate\n");
+-				action = RS_ACTION_DOWNSCALE;
+-			} else if (sr >= IWL_RATE_INCREASE_TH) {
+-				IWL_DEBUG_RATE(mvm,
+-					       "Lower rate isn't better and "
+-					       "good SR. Increase rate\n");
+-				action = RS_ACTION_UPSCALE;
+-			}
+-		}
++	if ((low_tpt == IWL_INVALID_VALUE) &&
++	    (high_tpt == IWL_INVALID_VALUE) &&
++	    (high != IWL_RATE_INVALID)) {
++		IWL_DEBUG_RATE(mvm,
++			       "No data about high/low rates. Increase rate\n");
++		return RS_ACTION_UPSCALE;
+ 	}
+ 
+-	/* Sanity check; asked for decrease, but success rate or throughput
+-	 * has been good at old rate.  Don't change it.
+-	 */
+-	if ((action == RS_ACTION_DOWNSCALE) && (low != IWL_RATE_INVALID) &&
+-	    ((sr > IWL_RATE_HIGH_TH) ||
+-	     (current_tpt > (100 * tbl->expected_tpt[low])))) {
++	if ((high_tpt == IWL_INVALID_VALUE) &&
++	    (high != IWL_RATE_INVALID) &&
++	    (low_tpt != IWL_INVALID_VALUE) &&
++	    (low_tpt < current_tpt)) {
+ 		IWL_DEBUG_RATE(mvm,
+-			       "Sanity check failed. Maintain rate\n");
+-		action = RS_ACTION_STAY;
++			       "No data about high rate and low rate is worse. Increase rate\n");
++		return RS_ACTION_UPSCALE;
++	}
++
++	if ((high_tpt != IWL_INVALID_VALUE) &&
++	    (high_tpt > current_tpt)) {
++		IWL_DEBUG_RATE(mvm,
++			       "Higher rate is better. Increate rate\n");
++		return RS_ACTION_UPSCALE;
++	}
++
++	if ((low_tpt != IWL_INVALID_VALUE) &&
++	    (high_tpt != IWL_INVALID_VALUE) &&
++	    (low_tpt < current_tpt) &&
++	    (high_tpt < current_tpt)) {
++		IWL_DEBUG_RATE(mvm,
++			       "Both high and low are worse. Maintain rate\n");
++		return RS_ACTION_STAY;
++	}
++
++	if ((low_tpt != IWL_INVALID_VALUE) &&
++	    (low_tpt > current_tpt)) {
++		IWL_DEBUG_RATE(mvm,
++			       "Lower rate is better\n");
++		action = RS_ACTION_DOWNSCALE;
++		goto out;
++	}
++
++	if ((low_tpt == IWL_INVALID_VALUE) &&
++	    (low != IWL_RATE_INVALID)) {
++		IWL_DEBUG_RATE(mvm,
++			       "No data about lower rate\n");
++		action = RS_ACTION_DOWNSCALE;
++		goto out;
++	}
++
++	IWL_DEBUG_RATE(mvm, "Maintain rate\n");
++
++out:
++	if ((action == RS_ACTION_DOWNSCALE) && (low != IWL_RATE_INVALID)) {
++		if (sr >= RS_SR_NO_DECREASE) {
++			IWL_DEBUG_RATE(mvm,
++				       "SR is above NO DECREASE. Avoid downscale\n");
++			action = RS_ACTION_STAY;
++		} else if (current_tpt > (100 * tbl->expected_tpt[low])) {
++			IWL_DEBUG_RATE(mvm,
++				       "Current TPT is higher than max expected in low rate. Avoid downscale\n");
++			action = RS_ACTION_STAY;
++		} else {
++			IWL_DEBUG_RATE(mvm, "Decrease rate\n");
++		}
+ 	}
+ 
+ 	return action;
+--- a/drivers/net/wireless/iwlwifi/mvm/rs.h
++++ b/drivers/net/wireless/iwlwifi/mvm/rs.h
+@@ -156,6 +156,7 @@ enum {
+ #define IWL_RATE_HIGH_TH		10880	/*  85% */
+ #define IWL_RATE_INCREASE_TH		6400	/*  50% */
+ #define RS_SR_FORCE_DECREASE		1920	/*  15% */
++#define RS_SR_NO_DECREASE		10880	/*  85% */
+ 
+ #define LINK_QUAL_AGG_TIME_LIMIT_DEF	(4000) /* 4 milliseconds */
+ #define LINK_QUAL_AGG_TIME_LIMIT_MAX	(8000)
 
 
