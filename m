@@ -1,67 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751905AbaFDUKD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 16:10:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59712 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751010AbaFDUKC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 16:10:02 -0400
-Date: Wed, 4 Jun 2014 16:09:42 -0400
-From: Rik van Riel <riel@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: peterz@infradead.org, mgorman@suse.de, mingo@kernel.org
-Subject: [PATCH] sched,numa: ensure task_numa_migrate checks the preferred
- node
-Message-ID: <20140604160942.6969b101@cuia.bos.redhat.com>
-Organization: Red Hat, Inc
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1751735AbaFDULn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 16:11:43 -0400
+Received: from g4t3425.houston.hp.com ([15.201.208.53]:40528 "EHLO
+	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750944AbaFDULm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 16:11:42 -0400
+Message-ID: <1401912696.13877.5.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [RFC PATCH 2/3] locking/mutex: Correct documentation on mutex
+ optimistic spinning
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Jason Low <jason.low2@hp.com>
+Cc: mingo@kernel.org, peterz@infradead.org, tglx@linutronix.de,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        paulmck@linux.vnet.ibm.com, tim.c.chen@linux.intel.com,
+        peter@hurleysoftware.com, riel@redhat.com, hpa@zytor.com,
+        walken@google.com, Waiman.Long@hp.com, aswin@hp.com,
+        scott.norton@hp.com, chegu_vinod@hp.com
+Date: Wed, 04 Jun 2014 13:11:36 -0700
+In-Reply-To: <1401908911-8947-3-git-send-email-jason.low2@hp.com>
+References: <1401908911-8947-1-git-send-email-jason.low2@hp.com>
+	 <1401908911-8947-3-git-send-email-jason.low2@hp.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The first thing task_numa_migrate does is check to see if there is
-CPU capacity available on the preferred node, in order to move the
-task there.
+On Wed, 2014-06-04 at 12:08 -0700, Jason Low wrote:
+> The mutex optimistic spinning documentation states that we spin for
+> acquisition when we find that there are no pending waiters. However,
+> in actuality, whether or not there are waiters for the mutex doesn't
+> determine if we will spin for it.
+> 
+> This patch removes that statement and also adds a comment which
+> mentions that we spin for the mutex while we don't need to reschedule.
+> 
+> Signed-off-by: Jason Low <jason.low2@hp.com>
 
-However, if the preferred node is all busy, we would skip considering
-that node for tasks swaps in the subsequent loop. This prevents NUMA
-convergence of tasks on busy systems.
+Acked-by: Davidlohr Bueso <davidlohr@hp.com>
 
-However, swapping locations with a task on our preferred nid, when
-the preferred nid is busy, is perfectly fine.
+I think this could go in with v4 of the mutex doc rewrite patch...
+guessing for 3.17 now.
 
-The fix is to also look for a CPU on our preferred nid when it is
-totally busy.
-
-This changes "perf bench numa mem -p 4 -t 20 -m -0 -P 1000" from
-not converging in 15 minutes on my 4 node system, to converging in
-10-20 seconds.
-
-Signed-off-by: Rik van Riel <riel@redhat.com>
-Cc: stable@vger.kernel.org
----
-This is a safe, simple patch to fix NUMA convergence, which is why
-it should go to -stable, IMHO.
-
- kernel/sched/fair.c | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
-
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index e5884d8..824e241 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -1425,9 +1425,8 @@ static int task_numa_migrate(struct task_struct *p)
- 	groupimp = group_weight(p, env.dst_nid, false) - groupweight;
- 	update_numa_stats(&env.dst_stats, env.dst_nid);
- 
--	/* If the preferred nid has capacity, try to use it. */
--	if (env.dst_stats.has_capacity)
--		task_numa_find_cpu(&env, taskimp, groupimp);
-+	/* Try to find a spot on the preferred nid. */
-+	task_numa_find_cpu(&env, taskimp, groupimp);
- 
- 	/* No space available on the preferred nid. Look elsewhere. */
- 	if (env.best_cpu == -1) {
+Thanks,
+Davidlohr
 
