@@ -1,151 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753753AbaFDBGO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 21:06:14 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:8639 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752439AbaFDBGM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 21:06:12 -0400
-Date: Tue, 3 Jun 2014 21:06:09 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: "Brad Mouring" <bmouring@ni.com>
-Cc: linux-rt-users@vger.kernel.org, Brad Mouring <brad.mouring@ni.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Clark Williams <williams@redhat.com>
-Subject: Re: [PATCH 1/1] rtmutex: Handle when top lock owner changes
-Message-ID: <20140603210609.62de6451@gandalf.local.home>
-In-Reply-To: <1400855410-14773-2-git-send-email-brad.mouring@ni.com>
-References: <1400855410-14773-1-git-send-email-brad.mouring@ni.com>
-	<1400855410-14773-2-git-send-email-brad.mouring@ni.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	id S1754046AbaFDBHk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 21:07:40 -0400
+Received: from ozlabs.org ([103.22.144.67]:44398 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751833AbaFDBHj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jun 2014 21:07:39 -0400
+Date: Wed, 4 Jun 2014 11:07:31 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Benjamin LaHaise <bcrl@kvack.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: failed to fetch the aio tree
+Message-ID: <20140604110731.11226e7b@canb.auug.org.au>
+In-Reply-To: <20140604004300.GM5097@kvack.org>
+References: <20140604090846.3b4fd54c@canb.auug.org.au>
+	<20140604004300.GM5097@kvack.org>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/rH.__3P2mhF/C+F8o0PrtX9"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added LKML and Thomas et. al., as this looks to be mainline too, and
-we've been having so much fun with futexes lately.
+--Sig_/rH.__3P2mhF/C+F8o0PrtX9
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-What I've thought about is this scenario. In
-rt_mutex_adjust_prio_chain(), at the bottom of the loop, just before
-goto again is called, all locks are released, and we are fully
-preemptible. That means, at than moment, anything can happen.
+Hi Ben,
 
-The reason we are in this code is because we blocked on a lock and we
-are pushing the inheritance up as well as checking for deadlocks. But,
-there's a flaw here in the deadlock case. Lets say we have this.
+On Tue, 3 Jun 2014 20:43:00 -0400 Benjamin LaHaise <bcrl@kvack.org> wrote:
+>
+> On Wed, Jun 04, 2014 at 09:08:46AM +1000, Stephen Rothwell wrote:
+> >=20
+> > Fetching the aio tree (git://git.kvack.org/~bcrl/aio-next.git#master)
+> > for the past 3 days has produced this error:
+> >=20
+> > fatal: unable to connect to git.kvack.org:
+> > git.kvack.org[0: 205.233.56.16]: errno=3DConnection refused
+>=20
+> Whoops, it looks like the system upgrade that took place on the weekend=20
+> didn't managed to restart git-daemon.  That should be fixed now.  Thanks=
+=20
+> for the report.
 
-Tasks A, B, C and D
+Yep, all good.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Locks L1, L2, L3, L4.
+--Sig_/rH.__3P2mhF/C+F8o0PrtX9
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-D owns L4, C owns L3, B owns L2. C tries to take L4 and blocks, B tries
-to take L3, blocks. We then have:
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-  L2->B->L3->C->L4->D
+iQIcBAEBCAAGBQJTjnFZAAoJEMDTa8Ir7ZwVfvMQAIP87pCOjR/Ol5al2bJzCu9y
+slAjnk1cdQXUvVLivf7HBBFjMp3PPi60K+L0KOKtCCS0A8xMc9jp4jikKDLK9Of/
+cWb4XNGkhYn+3NIptTuaeRmZLGylVwcD2EZnS4RIt9+vtT9JARDQ/u51BTlJbthS
+6TnWAoer2p+45pLbCC2RCWpuukFzLgHWfApkFhE/9FSd21nsgoft2W4OA0sU3c9S
+KQuqRu+x1QskbZYekfFtnvcpt/dJo5dT28Dii4Ce8d5n6RvL5YzUAn2qnx7LAPiQ
+R2EQcL56O4Co5cv4Pu/3xgeM08nbg/jlcHfAEkKgMfZA6oLRIspw/mSZoFxE8nwa
+pJref/l6rv2/eEY3upS/6wc6VKTDPsHQ+ecYQ8dvTtt2KVUfgxvQeBGxOyaouVuM
+9tkhDw4vYUcWubcmR1izpdD02ltvV3Euw0ZP4bl/eUAuo38PpsLAAA8xsa614yxU
+/eyTCmKkw54tG1XwckMkTR0uy2Bwa7N224gQH+dHBVsRn+oLiIZP9hTSt7IuJl/V
+dZujjq9oVkP83Zi3G6wMXYFzjEmAHEFoaVns9oyJzdu9jUf+G/7yLRIOQAIZyuTu
+hwVzFIQjzU8/+M1gKfS1/zEOwWebn1IaBCUxTRVmayMfpXP7D4666qGG+Ku+jVz7
+MXiAbiu9yYwBn2Lq4vyr
+=OnHD
+-----END PGP SIGNATURE-----
 
-Perfectly fine. Then A comes along and blocks on L2, where we would
-have:
-
-  A->L2->B->L3->C->L4->D
-
-Lets say that A on its chain walk just before that goto again, and task
-is D. top_waiter is C. As all locks are released and preemption is
-enabled, lots of things can happen. Lets say they all release their
-locks! And now we just have:
-
-  A->L2
-
-but things are still running, and they take the locks such that we have:
-
-  C->L1->D->L2->B
-         A->L2
-
-That is, B grabbed L2 (stole it from A), D grabbed L1, D blocked on L2
-and C blocked on L1. Now A gets scheduled in and continues.
-
-  task->pi_blocked_on
-
-Yep, as task is D, and it's blocked on L1 that is true.
-
-  orig_waiter && !rt_mutex_owner(orig_lock)
-
-well, L1 has a owner, thus it wont exit due to this.
-
-  top_waiter && (!task_has_pi_waiters(task) ||
-		top_waiter != task_top_pi_waiter(task))
-
-top_waiter is C, and D has pi_waiters, and C is still the top pi waiter
-for D.
-
-Then we get to the test.
-
-  lock == orig_lock || rt_mutex_owner(lock) == top_task
-
-lock happens to be L2 and this is the original lock we wanted to take.
-This reports a deadlock, but no deadlock scenario ever occurred.
-
-I'm not sure if Brad's patch addresses this, but when reviewing
-possible scenarios, this came to my mind.
-
--- Steve
-
-
-
-On Fri, 23 May 2014 09:30:10 -0500
-"Brad Mouring" <bmouring@ni.com> wrote:
-
-> If, during walking the priority chain on a task blocking on a rtmutex,
-> and the task is examining the waiter blocked on the lock owned by a task
-> that is not blocking (the end of the chain), the current task is ejected
-> from the processor and the owner of the end lock is scheduled in,
-> releasing that lock, before the original task is scheduled back in, the
-> task misses the fact that the previous owner of the current lock no
-> longer holds it.
-> 
-> Signed-off-by: Brad Mouring <brad.mouring@ni.com>
-> Acked-by: Scot Salmon <scot.salmon@ni.com>
-> Acked-by: Ben Shelton <ben.shelton@ni.com>
-> Tested-by: Jeff Westfahl <jeff.westfahl@ni.com>
-> ---
->  kernel/locking/rtmutex.c | 19 +++++++++++++++++++
->  1 file changed, 19 insertions(+)
-> 
-> diff --git a/kernel/locking/rtmutex.c b/kernel/locking/rtmutex.c
-> index fbf152b..029a9ab 100644
-> --- a/kernel/locking/rtmutex.c
-> +++ b/kernel/locking/rtmutex.c
-> @@ -384,6 +384,25 @@ static int rt_mutex_adjust_prio_chain(struct task_struct *task,
->  
->  	/* Deadlock detection */
->  	if (lock == orig_lock || rt_mutex_owner(lock) == top_task) {
-> +		/*
-> +		 * If the prio chain has changed out from under us, set the task
-> +		 * to the current owner of the lock in the current waiter and
-> +		 * continue walking the prio chain
-> +		 */
-> +		if (rt_mutex_owner(lock) && rt_mutex_owner(lock) != task) {
-> +			/* Release the old owner */
-> +			raw_spin_unlock_irqrestore(&task->pi_lock, flags);
-> +			put_task_struct(task);
-> +
-> +			/* Move to the new owner */
-> +			task = rt_mutex_owner(lock);
-> +			get_task_struct(task);
-> +
-> +			/* Let's try this again */
-> +			raw_spin_unlock(&lock->wait_lock);
-> +			goto retry;
-> +		}
-> +
->  		debug_rt_mutex_deadlock(deadlock_detect, orig_waiter, lock);
->  		raw_spin_unlock(&lock->wait_lock);
->  		ret = deadlock_detect ? -EDEADLK : 0;
-
+--Sig_/rH.__3P2mhF/C+F8o0PrtX9--
