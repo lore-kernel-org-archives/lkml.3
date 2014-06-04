@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754163AbaFDX6J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:58:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40470 "EHLO
+	id S1754411AbaFDX6e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 19:58:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40459 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753611AbaFDXXL (ORCPT
+	with ESMTP id S1753594AbaFDXXK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:23:11 -0400
+	Wed, 4 Jun 2014 19:23:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hans de Goede <hdegoede@redhat.com>,
+        Lan Tianyu <tianyu.lan@intel.com>,
         "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.14 200/228] ACPI / blacklist: Add dmi_enable_osi_linux quirk for Asus EEE PC 1015PX
-Date: Wed,  4 Jun 2014 16:23:49 -0700
-Message-Id: <20140604232354.458338256@linuxfoundation.org>
+Subject: [PATCH 3.14 198/228] ACPI: Revert "ACPI / Battery: Remove batterys proc directory"
+Date: Wed,  4 Jun 2014 16:23:47 -0700
+Message-Id: <20140604232354.388494717@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -29,49 +29,409 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: Lan Tianyu <tianyu.lan@intel.com>
 
-commit f6e6e1b9fee88c90586787b71dc49bb3ce62bb89 upstream.
+commit 3a670cc79342c36d308decd5f90351830ed1685c upstream.
 
-Without this this EEE PC exports a non working WMI interface, with this it
-exports a working "good old" eeepc_laptop interface, fixing brightness control
-not working as well as rfkill being stuck in a permanent wireless blocked
-state.
+The commit 1e2d9cd and 7d7ee95 remove ACPI Proc Battery
+directory and breaks some old userspace tools. This patch
+is to revert commit 1e2d9cd.
 
-This is not an ideal way to fix this, but various attempts to fix this
-otherwise have failed, see:
-
-References: https://bugzilla.redhat.com/show_bug.cgi?id=1067181
-Reported-and-tested-by: lou.cardone@gmail.com
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Fixes: 1e2d9cdfb449 (ACPI / Battery: Remove battery's proc directory)
+Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/blacklist.c |   13 +++++++++++++
- 1 file changed, 13 insertions(+)
+ drivers/acpi/battery.c |  329 ++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 328 insertions(+), 1 deletion(-)
 
---- a/drivers/acpi/blacklist.c
-+++ b/drivers/acpi/blacklist.c
-@@ -374,6 +374,19 @@ static struct dmi_system_id acpi_osi_dmi
- 		     DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad T500"),
- 		},
- 	},
-+	/*
-+	 * Without this this EEEpc exports a non working WMI interface, with
-+	 * this it exports a working "good old" eeepc_laptop interface, fixing
-+	 * both brightness control, and rfkill not working.
-+	 */
-+	{
-+	.callback = dmi_enable_osi_linux,
-+	.ident = "Asus EEE PC 1015PX",
-+	.matches = {
-+		     DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK Computer INC."),
-+		     DMI_MATCH(DMI_PRODUCT_NAME, "1015PX"),
-+		},
-+	},
- 	{}
+--- a/drivers/acpi/battery.c
++++ b/drivers/acpi/battery.c
+@@ -36,6 +36,12 @@
+ #include <linux/suspend.h>
+ #include <asm/unaligned.h>
+ 
++#ifdef CONFIG_ACPI_PROCFS_POWER
++#include <linux/proc_fs.h>
++#include <linux/seq_file.h>
++#include <asm/uaccess.h>
++#endif
++
+ #include <linux/acpi.h>
+ #include <linux/power_supply.h>
+ 
+@@ -66,6 +72,19 @@ static unsigned int cache_time = 1000;
+ module_param(cache_time, uint, 0644);
+ MODULE_PARM_DESC(cache_time, "cache time in milliseconds");
+ 
++#ifdef CONFIG_ACPI_PROCFS_POWER
++extern struct proc_dir_entry *acpi_lock_battery_dir(void);
++extern void *acpi_unlock_battery_dir(struct proc_dir_entry *acpi_battery_dir);
++
++enum acpi_battery_files {
++	info_tag = 0,
++	state_tag,
++	alarm_tag,
++	ACPI_BATTERY_NUMFILES,
++};
++
++#endif
++
+ static const struct acpi_device_id battery_device_ids[] = {
+ 	{"PNP0C0A", 0},
+ 	{"", 0},
+@@ -301,6 +320,14 @@ static enum power_supply_property energy
+ 	POWER_SUPPLY_PROP_SERIAL_NUMBER,
  };
  
++#ifdef CONFIG_ACPI_PROCFS_POWER
++inline char *acpi_battery_units(struct acpi_battery *battery)
++{
++	return (battery->power_unit == ACPI_BATTERY_POWER_UNIT_MA) ?
++		"mA" : "mW";
++}
++#endif
++
+ /* --------------------------------------------------------------------------
+                                Battery Management
+    -------------------------------------------------------------------------- */
+@@ -719,6 +746,279 @@ static void acpi_battery_refresh(struct
+ }
+ 
+ /* --------------------------------------------------------------------------
++                              FS Interface (/proc)
++   -------------------------------------------------------------------------- */
++
++#ifdef CONFIG_ACPI_PROCFS_POWER
++static struct proc_dir_entry *acpi_battery_dir;
++
++static int acpi_battery_print_info(struct seq_file *seq, int result)
++{
++	struct acpi_battery *battery = seq->private;
++
++	if (result)
++		goto end;
++
++	seq_printf(seq, "present:                 %s\n",
++		   acpi_battery_present(battery) ? "yes" : "no");
++	if (!acpi_battery_present(battery))
++		goto end;
++	if (battery->design_capacity == ACPI_BATTERY_VALUE_UNKNOWN)
++		seq_printf(seq, "design capacity:         unknown\n");
++	else
++		seq_printf(seq, "design capacity:         %d %sh\n",
++			   battery->design_capacity,
++			   acpi_battery_units(battery));
++
++	if (battery->full_charge_capacity == ACPI_BATTERY_VALUE_UNKNOWN)
++		seq_printf(seq, "last full capacity:      unknown\n");
++	else
++		seq_printf(seq, "last full capacity:      %d %sh\n",
++			   battery->full_charge_capacity,
++			   acpi_battery_units(battery));
++
++	seq_printf(seq, "battery technology:      %srechargeable\n",
++		   (!battery->technology)?"non-":"");
++
++	if (battery->design_voltage == ACPI_BATTERY_VALUE_UNKNOWN)
++		seq_printf(seq, "design voltage:          unknown\n");
++	else
++		seq_printf(seq, "design voltage:          %d mV\n",
++			   battery->design_voltage);
++	seq_printf(seq, "design capacity warning: %d %sh\n",
++		   battery->design_capacity_warning,
++		   acpi_battery_units(battery));
++	seq_printf(seq, "design capacity low:     %d %sh\n",
++		   battery->design_capacity_low,
++		   acpi_battery_units(battery));
++	seq_printf(seq, "cycle count:		  %i\n", battery->cycle_count);
++	seq_printf(seq, "capacity granularity 1:  %d %sh\n",
++		   battery->capacity_granularity_1,
++		   acpi_battery_units(battery));
++	seq_printf(seq, "capacity granularity 2:  %d %sh\n",
++		   battery->capacity_granularity_2,
++		   acpi_battery_units(battery));
++	seq_printf(seq, "model number:            %s\n", battery->model_number);
++	seq_printf(seq, "serial number:           %s\n", battery->serial_number);
++	seq_printf(seq, "battery type:            %s\n", battery->type);
++	seq_printf(seq, "OEM info:                %s\n", battery->oem_info);
++      end:
++	if (result)
++		seq_printf(seq, "ERROR: Unable to read battery info\n");
++	return result;
++}
++
++static int acpi_battery_print_state(struct seq_file *seq, int result)
++{
++	struct acpi_battery *battery = seq->private;
++
++	if (result)
++		goto end;
++
++	seq_printf(seq, "present:                 %s\n",
++		   acpi_battery_present(battery) ? "yes" : "no");
++	if (!acpi_battery_present(battery))
++		goto end;
++
++	seq_printf(seq, "capacity state:          %s\n",
++			(battery->state & 0x04) ? "critical" : "ok");
++	if ((battery->state & 0x01) && (battery->state & 0x02))
++		seq_printf(seq,
++			   "charging state:          charging/discharging\n");
++	else if (battery->state & 0x01)
++		seq_printf(seq, "charging state:          discharging\n");
++	else if (battery->state & 0x02)
++		seq_printf(seq, "charging state:          charging\n");
++	else
++		seq_printf(seq, "charging state:          charged\n");
++
++	if (battery->rate_now == ACPI_BATTERY_VALUE_UNKNOWN)
++		seq_printf(seq, "present rate:            unknown\n");
++	else
++		seq_printf(seq, "present rate:            %d %s\n",
++			   battery->rate_now, acpi_battery_units(battery));
++
++	if (battery->capacity_now == ACPI_BATTERY_VALUE_UNKNOWN)
++		seq_printf(seq, "remaining capacity:      unknown\n");
++	else
++		seq_printf(seq, "remaining capacity:      %d %sh\n",
++			   battery->capacity_now, acpi_battery_units(battery));
++	if (battery->voltage_now == ACPI_BATTERY_VALUE_UNKNOWN)
++		seq_printf(seq, "present voltage:         unknown\n");
++	else
++		seq_printf(seq, "present voltage:         %d mV\n",
++			   battery->voltage_now);
++      end:
++	if (result)
++		seq_printf(seq, "ERROR: Unable to read battery state\n");
++
++	return result;
++}
++
++static int acpi_battery_print_alarm(struct seq_file *seq, int result)
++{
++	struct acpi_battery *battery = seq->private;
++
++	if (result)
++		goto end;
++
++	if (!acpi_battery_present(battery)) {
++		seq_printf(seq, "present:                 no\n");
++		goto end;
++	}
++	seq_printf(seq, "alarm:                   ");
++	if (!battery->alarm)
++		seq_printf(seq, "unsupported\n");
++	else
++		seq_printf(seq, "%u %sh\n", battery->alarm,
++				acpi_battery_units(battery));
++      end:
++	if (result)
++		seq_printf(seq, "ERROR: Unable to read battery alarm\n");
++	return result;
++}
++
++static ssize_t acpi_battery_write_alarm(struct file *file,
++					const char __user * buffer,
++					size_t count, loff_t * ppos)
++{
++	int result = 0;
++	char alarm_string[12] = { '\0' };
++	struct seq_file *m = file->private_data;
++	struct acpi_battery *battery = m->private;
++
++	if (!battery || (count > sizeof(alarm_string) - 1))
++		return -EINVAL;
++	if (!acpi_battery_present(battery)) {
++		result = -ENODEV;
++		goto end;
++	}
++	if (copy_from_user(alarm_string, buffer, count)) {
++		result = -EFAULT;
++		goto end;
++	}
++	alarm_string[count] = '\0';
++	battery->alarm = simple_strtol(alarm_string, NULL, 0);
++	result = acpi_battery_set_alarm(battery);
++      end:
++	if (!result)
++		return count;
++	return result;
++}
++
++typedef int(*print_func)(struct seq_file *seq, int result);
++
++static print_func acpi_print_funcs[ACPI_BATTERY_NUMFILES] = {
++	acpi_battery_print_info,
++	acpi_battery_print_state,
++	acpi_battery_print_alarm,
++};
++
++static int acpi_battery_read(int fid, struct seq_file *seq)
++{
++	struct acpi_battery *battery = seq->private;
++	int result = acpi_battery_update(battery);
++	return acpi_print_funcs[fid](seq, result);
++}
++
++#define DECLARE_FILE_FUNCTIONS(_name) \
++static int acpi_battery_read_##_name(struct seq_file *seq, void *offset) \
++{ \
++	return acpi_battery_read(_name##_tag, seq); \
++} \
++static int acpi_battery_##_name##_open_fs(struct inode *inode, struct file *file) \
++{ \
++	return single_open(file, acpi_battery_read_##_name, PDE_DATA(inode)); \
++}
++
++DECLARE_FILE_FUNCTIONS(info);
++DECLARE_FILE_FUNCTIONS(state);
++DECLARE_FILE_FUNCTIONS(alarm);
++
++#undef DECLARE_FILE_FUNCTIONS
++
++#define FILE_DESCRIPTION_RO(_name) \
++	{ \
++	.name = __stringify(_name), \
++	.mode = S_IRUGO, \
++	.ops = { \
++		.open = acpi_battery_##_name##_open_fs, \
++		.read = seq_read, \
++		.llseek = seq_lseek, \
++		.release = single_release, \
++		.owner = THIS_MODULE, \
++		}, \
++	}
++
++#define FILE_DESCRIPTION_RW(_name) \
++	{ \
++	.name = __stringify(_name), \
++	.mode = S_IFREG | S_IRUGO | S_IWUSR, \
++	.ops = { \
++		.open = acpi_battery_##_name##_open_fs, \
++		.read = seq_read, \
++		.llseek = seq_lseek, \
++		.write = acpi_battery_write_##_name, \
++		.release = single_release, \
++		.owner = THIS_MODULE, \
++		}, \
++	}
++
++static const struct battery_file {
++	struct file_operations ops;
++	umode_t mode;
++	const char *name;
++} acpi_battery_file[] = {
++	FILE_DESCRIPTION_RO(info),
++	FILE_DESCRIPTION_RO(state),
++	FILE_DESCRIPTION_RW(alarm),
++};
++
++#undef FILE_DESCRIPTION_RO
++#undef FILE_DESCRIPTION_RW
++
++static int acpi_battery_add_fs(struct acpi_device *device)
++{
++	struct proc_dir_entry *entry = NULL;
++	int i;
++
++	printk(KERN_WARNING PREFIX "Deprecated procfs I/F for battery is loaded,"
++			" please retry with CONFIG_ACPI_PROCFS_POWER cleared\n");
++	if (!acpi_device_dir(device)) {
++		acpi_device_dir(device) = proc_mkdir(acpi_device_bid(device),
++						     acpi_battery_dir);
++		if (!acpi_device_dir(device))
++			return -ENODEV;
++	}
++
++	for (i = 0; i < ACPI_BATTERY_NUMFILES; ++i) {
++		entry = proc_create_data(acpi_battery_file[i].name,
++					 acpi_battery_file[i].mode,
++					 acpi_device_dir(device),
++					 &acpi_battery_file[i].ops,
++					 acpi_driver_data(device));
++		if (!entry)
++			return -ENODEV;
++	}
++	return 0;
++}
++
++static void acpi_battery_remove_fs(struct acpi_device *device)
++{
++	int i;
++	if (!acpi_device_dir(device))
++		return;
++	for (i = 0; i < ACPI_BATTERY_NUMFILES; ++i)
++		remove_proc_entry(acpi_battery_file[i].name,
++				  acpi_device_dir(device));
++
++	remove_proc_entry(acpi_device_bid(device), acpi_battery_dir);
++	acpi_device_dir(device) = NULL;
++}
++
++#endif
++
++/* --------------------------------------------------------------------------
+                                  Driver Interface
+    -------------------------------------------------------------------------- */
+ 
+@@ -791,6 +1091,15 @@ static int acpi_battery_add(struct acpi_
+ 	result = acpi_battery_update(battery);
+ 	if (result)
+ 		goto fail;
++#ifdef CONFIG_ACPI_PROCFS_POWER
++	result = acpi_battery_add_fs(device);
++#endif
++	if (result) {
++#ifdef CONFIG_ACPI_PROCFS_POWER
++		acpi_battery_remove_fs(device);
++#endif
++		goto fail;
++	}
+ 
+ 	printk(KERN_INFO PREFIX "%s Slot [%s] (battery %s)\n",
+ 		ACPI_BATTERY_DEVICE_NAME, acpi_device_bid(device),
+@@ -817,6 +1126,9 @@ static int acpi_battery_remove(struct ac
+ 		return -EINVAL;
+ 	battery = acpi_driver_data(device);
+ 	unregister_pm_notifier(&battery->pm_nb);
++#ifdef CONFIG_ACPI_PROCFS_POWER
++	acpi_battery_remove_fs(device);
++#endif
+ 	sysfs_remove_battery(battery);
+ 	mutex_destroy(&battery->lock);
+ 	mutex_destroy(&battery->sysfs_lock);
+@@ -867,7 +1179,19 @@ static void __init acpi_battery_init_asy
+ 
+ 	if (dmi_check_system(bat_dmi_table))
+ 		battery_bix_broken_package = 1;
+-	acpi_bus_register_driver(&acpi_battery_driver);
++
++#ifdef CONFIG_ACPI_PROCFS_POWER
++	acpi_battery_dir = acpi_lock_battery_dir();
++	if (!acpi_battery_dir)
++		return;
++#endif
++	if (acpi_bus_register_driver(&acpi_battery_driver) < 0) {
++#ifdef CONFIG_ACPI_PROCFS_POWER
++		acpi_unlock_battery_dir(acpi_battery_dir);
++#endif
++		return;
++	}
++	return;
+ }
+ 
+ static int __init acpi_battery_init(void)
+@@ -879,6 +1203,9 @@ static int __init acpi_battery_init(void
+ static void __exit acpi_battery_exit(void)
+ {
+ 	acpi_bus_unregister_driver(&acpi_battery_driver);
++#ifdef CONFIG_ACPI_PROCFS_POWER
++	acpi_unlock_battery_dir(acpi_battery_dir);
++#endif
+ }
+ 
+ module_init(acpi_battery_init);
 
 
