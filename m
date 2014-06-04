@@ -1,125 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754444AbaFDXsq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:48:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40634 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753810AbaFDXX3 (ORCPT
+	id S1754752AbaFDXsw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 19:48:52 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:46773 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753810AbaFDXsu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:23:29 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [PATCH 3.10 017/103] mac80211: fix suspend vs. authentication race
-Date: Wed,  4 Jun 2014 16:24:40 -0700
-Message-Id: <20140604232547.385664294@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140604232546.704156131@linuxfoundation.org>
-References: <20140604232546.704156131@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Wed, 4 Jun 2014 19:48:50 -0400
+Date: Thu, 5 Jun 2014 00:46:57 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Vidya Sagar <vidyas@nvidia.com>, bhelgaas@google.com,
+        wangyijing@huawei.com, thierry.reding@gmail.com, jason@lakedaemon.net,
+        will.deacon@arm.com, swarren@nvidia.com, kthota@nvidia.com,
+        sagar.tv@gmail.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: fix debug prints relevant to PCI devices
+Message-ID: <20140604234657.GD23430@n2100.arm.linux.org.uk>
+References: <1401909447-8434-1-git-send-email-vidyas@nvidia.com> <538F738A.6020003@wwwdotorg.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <538F738A.6020003@wwwdotorg.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On Wed, Jun 04, 2014 at 01:29:14PM -0600, Stephen Warren wrote:
+> On 06/04/2014 01:17 PM, Vidya Sagar wrote:
+> > As per PCIe spec, fast back-to-back transactions feature
+> > is not applicable to PCIe devices. Hence, do not print
+> > that fast back-to-back trasactions are disabled when
+> > there is a PCIe device found on the bus
+> 
+> > @@ -298,6 +299,8 @@ void pcibios_fixup_bus(struct pci_bus *bus)
+> >  	list_for_each_entry(dev, &bus->devices, bus_list) {
+> >  		u16 status;
+> >  
+> > +		if (!has_pcie_dev)
+> > +			has_pcie_dev = pci_pcie_cap(dev);
+> 
+> This sets the flag if any PCIe device is detected, even if regular PCI
+> devices are also detected. I assume the two can be mixed on a bus if
+> there's a bridge (although perhaps that would be separate buses, and
+> child buses don't get traversed by this function?)
 
-------------------
+This function gets caller per PCI bus - if there's a bridge between
+(which there should be between PCIe and PCI) then they are by definition
+separate buses.  (I'm guessing that there aren't transparent bridges
+between PCI and PCIe.)
 
-From: Johannes Berg <johannes.berg@intel.com>
-
-commit 1a1cb744de160ee70086a77afff605bbc275d291 upstream.
-
-Since Stanislaw's patch removing the quiescing code, mac80211 had
-a race regarding suspend vs. authentication: as cfg80211 doesn't
-track authentication attempts, it can't abort them. Therefore the
-attempts may be kept running while suspending, which can lead to
-all kinds of issues, in at least some cases causing an error in
-iwlmvm firmware.
-
-Fix this by aborting the authentication attempt when suspending.
-
-Cc: stable@vger.kernel.org
-Fixes: 12e7f517029d ("mac80211: cleanup generic suspend/resume procedures")
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- net/mac80211/ieee80211_i.h |    1 +
- net/mac80211/mlme.c        |   26 ++++++++++++++++++++++++++
- net/mac80211/pm.c          |   14 +++++++++++---
- 3 files changed, 38 insertions(+), 3 deletions(-)
-
---- a/net/mac80211/ieee80211_i.h
-+++ b/net/mac80211/ieee80211_i.h
-@@ -1270,6 +1270,7 @@ void ieee80211_sta_reset_conn_monitor(st
- void ieee80211_mgd_stop(struct ieee80211_sub_if_data *sdata);
- void ieee80211_mgd_conn_tx_status(struct ieee80211_sub_if_data *sdata,
- 				  __le16 fc, bool acked);
-+void ieee80211_mgd_quiesce(struct ieee80211_sub_if_data *sdata);
- void ieee80211_sta_restart(struct ieee80211_sub_if_data *sdata);
- 
- /* IBSS code */
---- a/net/mac80211/mlme.c
-+++ b/net/mac80211/mlme.c
-@@ -3754,6 +3754,32 @@ static void ieee80211_restart_sta_timer(
- }
- 
- #ifdef CONFIG_PM
-+void ieee80211_mgd_quiesce(struct ieee80211_sub_if_data *sdata)
-+{
-+	struct ieee80211_if_managed *ifmgd = &sdata->u.mgd;
-+	u8 frame_buf[IEEE80211_DEAUTH_FRAME_LEN];
-+
-+	mutex_lock(&ifmgd->mtx);
-+
-+	if (ifmgd->auth_data) {
-+		/*
-+		 * If we are trying to authenticate while suspending, cfg80211
-+		 * won't know and won't actually abort those attempts, thus we
-+		 * need to do that ourselves.
-+		 */
-+		ieee80211_send_deauth_disassoc(sdata,
-+					       ifmgd->auth_data->bss->bssid,
-+					       IEEE80211_STYPE_DEAUTH,
-+					       WLAN_REASON_DEAUTH_LEAVING,
-+					       false, frame_buf);
-+		ieee80211_destroy_auth_data(sdata, false);
-+		cfg80211_send_deauth(sdata->dev, frame_buf,
-+				     IEEE80211_DEAUTH_FRAME_LEN);
-+	}
-+
-+	mutex_unlock(&ifmgd->mtx);
-+}
-+
- void ieee80211_sta_restart(struct ieee80211_sub_if_data *sdata)
- {
- 	struct ieee80211_if_managed *ifmgd = &sdata->u.mgd;
---- a/net/mac80211/pm.c
-+++ b/net/mac80211/pm.c
-@@ -101,10 +101,18 @@ int __ieee80211_suspend(struct ieee80211
- 
- 	/* remove all interfaces that were created in the driver */
- 	list_for_each_entry(sdata, &local->interfaces, list) {
--		if (!ieee80211_sdata_running(sdata) ||
--		    sdata->vif.type == NL80211_IFTYPE_AP_VLAN ||
--		    sdata->vif.type == NL80211_IFTYPE_MONITOR)
-+		if (!ieee80211_sdata_running(sdata))
- 			continue;
-+		switch (sdata->vif.type) {
-+		case NL80211_IFTYPE_AP_VLAN:
-+		case NL80211_IFTYPE_MONITOR:
-+			continue;
-+		case NL80211_IFTYPE_STATION:
-+			ieee80211_mgd_quiesce(sdata);
-+			break;
-+		default:
-+			break;
-+		}
- 
- 		drv_remove_interface(local, sdata);
- 	}
-
-
+-- 
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
