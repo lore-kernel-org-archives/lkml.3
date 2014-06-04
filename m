@@ -1,139 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753220AbaFDPMX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 11:12:23 -0400
-Received: from skprod3.natinst.com ([130.164.80.24]:47588 "EHLO ni.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752387AbaFDPMV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 11:12:21 -0400
-From: "Brad Mouring" <bmouring@ni.com>
-Date: Wed, 4 Jun 2014 10:11:29 -0500
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Brad Mouring <bmouring@ni.com>, linux-rt-users@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Clark Williams <williams@redhat.com>
-Subject: Re: [PATCH 1/1] rtmutex: Handle when top lock owner changes
-Message-ID: <20140604151129.GA4531@linuxgetsreal>
-References: <1400855410-14773-1-git-send-email-brad.mouring@ni.com>
- <1400855410-14773-2-git-send-email-brad.mouring@ni.com>
- <20140603210609.62de6451@gandalf.local.home>
- <20140604130525.GA1621@linuxgetsreal>
- <20140604101612.0d47b399@gandalf.local.home>
- <20140604143830.GA3393@linuxgetsreal>
- <20140604105823.0c7124c4@gandalf.local.home>
+	id S1753214AbaFDPMg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 11:12:36 -0400
+Received: from mail-qa0-f43.google.com ([209.85.216.43]:59828 "EHLO
+	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753245AbaFDPMe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 11:12:34 -0400
+Message-ID: <538F375F.90001@mutualink.net>
+Date: Wed, 04 Jun 2014 11:12:31 -0400
+From: Mike Remski <mremski@mutualink.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <20140604105823.0c7124c4@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-MIMETrack: Itemize by SMTP Server on US-AUS-MGWOut1/AUS/H/NIC(Release 8.5.3FP5|July 31, 2013) at
- 06/04/2014 10:11:30 AM,
-	Serialize by Router on US-AUS-MGWOut1/AUS/H/NIC(Release 8.5.3FP5|July 31, 2013) at
- 06/04/2014 10:11:31 AM,
-	Serialize complete at 06/04/2014 10:11:31 AM
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
- definitions=2014-06-04_03:2014-06-04,2014-06-04,1970-01-01 signatures=0
+To: Johan Hovold <jhovold@gmail.com>
+CC: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: Re: ftdi_sio BUG: NULL pointer dereference
+References: <20140602162027.GB13790@localhost> <538CA54C.4040803@mutualink.net> <20140602164957.GC13790@localhost> <538CB049.9020805@mutualink.net> <20140602174630.GD13790@localhost> <538DA0BD.5080208@mutualink.net> <20140604141937.GA11160@localhost> <538F2D51.2010508@mutualink.net> <20140604145200.GB11160@localhost> <538F3360.40407@mutualink.net> <20140604150938.GD11160@localhost>
+In-Reply-To: <20140604150938.GD11160@localhost>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 04, 2014 at 10:58:23AM -0400, Steven Rostedt wrote:
-> On Wed, 4 Jun 2014 09:38:30 -0500
-> "Brad Mouring" <bmouring@ni.com> wrote:
-> 
-> > On Wed, Jun 04, 2014 at 10:16:12AM -0400, Steven Rostedt wrote:
-> > > On Wed, 4 Jun 2014 08:05:25 -0500
-> > > "Brad Mouring" <bmouring@ni.com> wrote:
-> > > 
-> > >  >          A->L2
-> > > > 
-> > > > This is a slight variation on what I was seeing. To use the nomenclature
-> > > > that you proposed at the start, rewinding to the point
-> > > > 
-> > > >    A->L2->B->L3->C->L4->D
-> > > > 
-> > > > Let's assume things continue to unfold as you explain. Task is D,
-> > > > top_waiter is C. A is scheduled out and the chain shuffles.
-> > > > 
-> > > >        A->L2->B
-> > > > C->L4->D->'
-> > > 
-> > > But isn't that a lock ordering problem there?
-> > > 
-> > > If B can block on L3 owned by C, I see the following:
-> > > 
-> > >   B->L3->C->L4->D->L2->B
-> > > 
-> > > Deadlock!
-> > Yes, it could be. But currently no one owns L3. B is currently not
-> > blocked. Under these circumstances, there is no deadlock. Also, I
-> > somewhat arbitrarily picked L4, it could be Lfoo that C blocks on
-> > since the process is
-> 
-> OK, then you should have used L1, which basically makes it exactly my
-> scenario ;-)
-
-Heh, fair point.
-
-> 
-> > ...
-> > waiter = D->pi_blocked_on
-> > 
-> > // waiter is real_waiter D->L2
-> > 
-> > // orig_waiter still there, orig_lock still has an owner
-> > 
-> > // top_waiter was pointing to C->L4, now points to C->Lfoo
-> > // D does have top_waiters, and, as noted above, it aliased
-> > // to encompass a different waiter scenario
-> > 
-> > > 
-> > > In my scenario I was very careful to point out that the lock ordering
-> > > was: L1->L2->L3->L4
-> > > 
-> > > But you show that we can have both:
-> > > 
-> > >    L2-> ... ->L4
-> > > 
-> > >     and
-> > > 
-> > >    L4-> ... ->L2
-> > > 
-> > > Which is a reverse of lock ordering and a possible deadlock can occur.
-> > 
-> > So the numbering/ordering of the locks is really somewhat arbitrary.
-> > Here we *can* have L2-> ... ->L4 (if B decides to block on L2, it
-> > could just as easily block on L8), and we absolutely have
-> > L4-> ... ->L2. A deadlock *could* occur, but all of the traces that
-> > I dug through, no actual deadlocks occurred.
-> 
-> Heh, but that shows the code is broken. I'm not saying that our
-> deadlock detector is not returning false positives, I'm just stating
-> that you probably need to fix your code.
-> 
-> Yes, you can have a locking order of L1 -> L2 and also L2 -> L1, and if
-> you are lucky, that may never trigger any deadlocks. But why do you
-> think the kernel folks have put so much effort into lockdep. Lockdep
-> doesn't tell you that there is a deadlock (although it could), what it
-> is so useful with is to tell us where there are possible deadlocks.
-> 
-> If your code does take L1 -> L2 and then L2 -> L1, you have a chance of
-> hitting a deadlock right there. If you were to run the userspace
-> lockdep, it would spit out a nice warning for you.
-
-What I was saying is that the code can take L1 -> L2 and L2 -> Lfoo.
-And, in fact, a quick glance back over my notes supports just this
-behavior. It was unfortunate that I decided to come up with an example
-without thinking it through first.
+On 06/04/2014 11:09 AM, Johan Hovold wrote:
+> On Wed, Jun 04, 2014 at 10:55:28AM -0400, Mike Remski wrote:
+>> On 06/04/2014 10:52 AM, Johan Hovold wrote:
+>>> On Wed, Jun 04, 2014 at 10:29:37AM -0400, Mike Remski wrote:
+>>>> On 06/04/2014 10:19 AM, Johan Hovold wrote:
+>>>>> >From 4ddea3a573b8c15beefb67bc35c440850063d79d Mon Sep 17 00:00:00 2001
+>>>>> From: Johan Hovold <johan@kernel.org>
+>>>>> Date: Wed, 4 Jun 2014 14:09:43 +0200
+>>>>> Subject: [PATCH 1/5] USB: ftdi_sio: fix null deref at port probe
+>>>>>
+>>>>> Fix NULL-pointer dereference when probing an interface with no
+>>>>> endpoints.
+>>>>>
+>>>>> These devices have two bulk endpoints per interface, but this avoids
+>>>>> crashing the kernel if a user forces a non-FTDI device to be probed.
+>>>>>
+>>>>> Note that the iterator variable was made unsigned in order to avoid
+>>>>> a maybe-uninitialized compiler warning for ep_desc after the loop.
+>>>>>
+>>>>> Fixes: 895f28badce9 ("USB: ftdi_sio: fix hi-speed device packet size
+>>>>> calculation")
+>>>>>
+>>>>> Reported-by: Mike Remski <mremski@mutualink.net>
+>>>>> Cc: <stable@vger.kernel.org>	# 2.3.61
+>>>>> Signed-off-by: Johan Hovold <johan@kernel.org>
+>>>>> ---
+>>>>>     drivers/usb/serial/ftdi_sio.c | 7 +++++--
+>>>>>     1 file changed, 5 insertions(+), 2 deletions(-)
+>>>>>
+>>>>> diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
+>>>>> index 7c6e1dedeb06..3019141397eb 100644
+>>>>> --- a/drivers/usb/serial/ftdi_sio.c
+>>>>> +++ b/drivers/usb/serial/ftdi_sio.c
+>>>>> @@ -1564,14 +1564,17 @@ static void ftdi_set_max_packet_size(struct usb_serial_port *port)
+>>>>>     	struct usb_device *udev = serial->dev;
+>>>>>     
+>>>>>     	struct usb_interface *interface = serial->interface;
+>>>>> -	struct usb_endpoint_descriptor *ep_desc = &interface->cur_altsetting->endpoint[1].desc;
+>>>>> +	struct usb_endpoint_descriptor *ep_desc;
+>>>>>     
+>>>>>     	unsigned num_endpoints;
+>>>>> -	int i;
+>>>>> +	unsigned i;
+>>>>>     
+>>>>>     	num_endpoints = interface->cur_altsetting->desc.bNumEndpoints;
+>>>>>     	dev_info(&udev->dev, "Number of endpoints %d\n", num_endpoints);
+>>>>>     
+>>>>> +	if (!num_endpoints)
+>>>>> +		return;
+>>>>> +
+>>>>>     	/* NOTE: some customers have programmed FT232R/FT245R devices
+>>>>>     	 * with an endpoint size of 0 - not good.  In this case, we
+>>>>>     	 * want to override the endpoint descriptor setting and use a
+>>>> Thanks Johan.  I tried to get the cdc_acm working;  did not have much
+>>>> luck/time (typical overcommit on workload) I will retry with the commit
+>>>> mentioned.
+>>>> I will try the patch today and get back to you.  Nice on the ep_desc:
+>>>> looking at the code priv->max_packet_size is attached to the port, your
+>>>> change would use the last thing off of cur_altsetting->endpoint[], but
+>>>> I'm wondering if we should actually be setting priv->max_packet_size to
+>>>> whatever the max is of all endpoint[].desc->wMaxPacketSize?
+>>>>
+>>>> Thoughts?
+>>> This is the exact same behaviour as the old code (minus the NULL-deref).
+>>>
+>>> These device have two bulk endpoints per interface and they are supposed
+>>> to be using the same max packet size (64 or 512 depending on device and
+>>> host).
+>>>
+>>> This value is also used during depacketisation of incoming data (and
+>>> packetisation of outgoing data for legacy devices). I'm pretty convinced
+>>> you're using the wrong driver, something which would lead to corruption
+>>> of incoming data when the (non-existing) status bytes are stripped from
+>>> the stream.
+>>>
+>>> You really should try cdc-acm.
+>>>
+>>> Johan
+>> Sorry, forgot to add:
+>> Tested patch and it works as desired.
+> Thanks, I'll add a Tested-by tag then.
 >
-> But this is off topic, as I have shown that there exists an example
-> that the userspace code would never deadlock but our deadlock detector
-> would say it did.
-> 
-> -- Steve
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-rt-users" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Johan
+Thanks for quick response.  I'll let you know the results of cdc-acm 
+(had to pull in the commit you mentioned).
+
+-- 
+Office: (978)401-4032 (x123 internally)
+Cell: (603) 759-6953
+
