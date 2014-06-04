@@ -1,61 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751848AbaFDVRg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 17:17:36 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:54168 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751410AbaFDVRf (ORCPT
+	id S1751639AbaFDVUU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 17:20:20 -0400
+Received: from mail-ve0-f180.google.com ([209.85.128.180]:33012 "EHLO
+	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750742AbaFDVUS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 17:17:35 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Jacob Pan <jacob.jun.pan@linux.intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, rafael.j.wysocki@intel.com,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        lenb@kernel.org, mingo@kernel.org, tglx@linutronix.de, hpa@zytor.com,
-        arjan@linux.intel.com, rui.zhang@intel.com, luto@amacapital.net
-Subject: Re: [PATCH] idle, thermal, acpi: Remove home grown idle implementations
-Date: Wed, 04 Jun 2014 23:34:51 +0200
-Message-ID: <1509308.hu7EZQqxxC@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140604015812.140a00d1@jacob-desktop>
-References: <20140604085418.GA11096@twins.programming.kicks-ass.net> <20140604015812.140a00d1@jacob-desktop>
+	Wed, 4 Jun 2014 17:20:18 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <538E7C20.2060407@gmail.com>
+References: <1401833185-10347-1-git-send-email-alexis.berlemont@gmail.com>
+	<1401833185-10347-8-git-send-email-alexis.berlemont@gmail.com>
+	<538E7C20.2060407@gmail.com>
+Date: Wed, 4 Jun 2014 23:20:17 +0200
+Message-ID: <CAMesUR48d0U86m_Kzsy4HES68KCaLJg8s+i+aoB=hBE-rP9z4A@mail.gmail.com>
+Subject: Re: [PATCH 07/32] perf kbuild: remove useless #ifdef directives
+From: Alexis Berlemont <alexis.berlemont@gmail.com>
+To: David Ahern <dsahern@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>, sam@ravnborg.org,
+        Michal Marek <mmarek@suse.cz>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, June 04, 2014 01:58:12 AM Jacob Pan wrote:
-> On Wed, 4 Jun 2014 10:54:18 +0200
-> Peter Zijlstra <peterz@infradead.org> wrote:
-> 
-> > 
-> > I'm still sitting on this patch. Jacub you were going to make it play
-> > nice with QoS?
-> > 
-> I had a patchset to work through system PM QOS and still maintain the
-> idle injection efficiency. When I saw you did not merge the patch
-> below, I thought you have abandoned it :)
-> 
-> The only issue as per our last discussion is the lack of notification
-> when PM QOS cannot be met. But that is intrinsic to PM QOS itself.
-> 
-> I also consulted with Arjan and looked at directly intercept with
-> intel_idle since both intel_powerclamp and intel_idle are arch specific
-> drivers. But I think that is hard to do at per idle period basis,
-> since we should still allow "natural" idle during the forced idle time.
-> 
-> So, I think we can take a two stepped approach,
-> 1. integrate your patch with a
-> updated version of https://lkml.org/lkml/2013/11/26/534 such that there
-> is no performance/efficiency regression.
-> 2. add notification mechanism to system qos when constraints cannot be
-> met.
+On Wed, Jun 4, 2014 at 3:53 AM, David Ahern <dsahern@gmail.com> wrote:
+> missing commit message as to why the ifdef directives useless.
+>
 
-And then there's a question about how the notification would be supposed to
-work.  So I guess we can proceed with 1. and really leave 2. for some time
-in the future ATM.
+If I remember well, after having rebased Jiri Olsa's patches on the
+current branch. The build procedure was not working correctly. So, the
+first commits tried to fix the issues. The ifdef directives were no
+more needed because they were moved elsewhere in more recent versions
+(I think Jiri Olsa's patches were released in April 2013)
 
-Rafael
+I now understand that these changes should have been integrated into
+jiri's rebased commits. I will fix that.
 
+> if I build perf after applying this patch and I don't have devel code for
+> tui and gui will it still build?
+>
+
+Sidenote: after having applied _all_ the patches. If you build perf
+and you don't have the tui / gui devel code, the absence of headers
+will be detected by features test
+(linux/tools/perf/config/features-checks/*) and the .config will be
+updated accordingly. So, at build time, it should be ok. By the way, I
+updated the non-regression procedure (available through the target
+build-test); many .config files were automatically generated in
+linux/tools/perf/tests/configs thanks a python script (which relies on
+kconfiglib):
+* for each option, there is a .config file in which the option is disabled
+* a minimal .config file (nearly everything disabled) and a defconfig
+/ allyesconfig file are  also tested.
+
+Alexis.
+
+> David
+>
+>
+> On 6/3/14, 4:06 PM, Alexis Berlemont wrote:
+>>
+>> ---
+>>   tools/perf/ui/setup.c | 8 --------
+>>   1 file changed, 8 deletions(-)
+>>
+>> diff --git a/tools/perf/ui/setup.c b/tools/perf/ui/setup.c
+>> index 66ecd08..cb69740 100644
+>> --- a/tools/perf/ui/setup.c
+>> +++ b/tools/perf/ui/setup.c
+>> @@ -71,20 +71,16 @@ void setup_browser(bool fallback_to_pager)
+>>
+>>         switch (use_browser) {
+>>         case 2:
+>> -#if defined(CONFIG_GUI) || !defined(CONFIG_KBUILD)
+>>                 if (setup_gtk_browser() == 0)
+>>                         break;
+>>                 printf("GTK browser requested but could not find %s\n",
+>>                        PERF_GTK_DSO);
+>>                 sleep(1);
+>> -#endif
+>>                 /* fall through */
+>> -#if defined(CONFIG_TUI) || !defined(CONFIG_KBUILD)
+>>         case 1:
+>>                 use_browser = 1;
+>>                 if (ui__init() == 0)
+>>                         break;
+>> -#endif
+>>                 /* fall through */
+>>         default:
+>>                 use_browser = 0;
+>> @@ -100,16 +96,12 @@ void exit_browser(bool wait_for_ok __maybe_unused)
+>>   {
+>>         switch (use_browser) {
+>>         case 2:
+>> -#if defined(CONFIG_GUI) || !defined(CONFIG_KBUILD)
+>>                 exit_gtk_browser(wait_for_ok);
+>>                 break;
+>> -#endif
+>>
+>> -#if defined(CONFIG_TUI) || !defined(CONFIG_KBUILD)
+>>         case 1:
+>>                 ui__exit(wait_for_ok);
+>>                 break;
+>> -#endif
+>>
+>>         default:
+>>                 break;
+>>
+>
