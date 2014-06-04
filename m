@@ -1,163 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751661AbaFDEdL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 00:33:11 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:52602 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750805AbaFDEdJ (ORCPT
+	id S1751910AbaFDElo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 00:41:44 -0400
+Received: from mail-bl2lp0204.outbound.protection.outlook.com ([207.46.163.204]:25634
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750717AbaFDElm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 00:33:09 -0400
-From: <Wei.Yang@windriver.com>
-To: <balbi@ti.com>, <stern@rowland.harvard.edu>
-CC: <mina86@mina86.com>, <andrzej.p@samsung.com>, <gregkh@linuxfoundation.org>,
-        <wei.yang@windriver.com>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2] USB:gadget: Fix a warning while loading g_mass_storage
-Date: Wed, 4 Jun 2014 12:32:47 +0800
-Message-ID: <1401856367-12553-1-git-send-email-Wei.Yang@windriver.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1401788235-22621-1-git-send-email-Wei.Yang@windriver.com>
-References: <1401788235-22621-1-git-send-email-Wei.Yang@windriver.com>
+	Wed, 4 Jun 2014 00:41:42 -0400
+From: Peter Chen <Peter.Chen@freescale.com>
+To: "Yang,Wei" <Wei.Yang@windriver.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        "Andrzej Pietrasiewicz" <andrzej.p@samsung.com>
+CC: Felipe Balbi <balbi@ti.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        USB list <linux-usb@vger.kernel.org>,
+        "Kernel development list" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH v1] USB:gadget: Fix a warning while loading g_mass_storage
+Thread-Topic: [PATCH v1] USB:gadget: Fix a warning while loading
+ g_mass_storage
+Thread-Index: AQHPfw914N6/1BltqEeVaM9JvGUSI5tfd7eAgACwf4CAAAVUAIAAGvUAgAAWeeA=
+Date: Wed, 4 Jun 2014 04:41:20 +0000
+Message-ID: <1671f94cdace4264b3064749b9fec948@BL2PR03MB226.namprd03.prod.outlook.com>
+References: <Pine.LNX.4.44L0.1406031033010.1054-100000@iolanthe.rowland.org>
+ <538E745B.1020200@windriver.com>
+ <411dd8052ca74ed38810f2a5248063e2@BL2PR03MB226.namprd03.prod.outlook.com>
+ <538E8F70.2010600@windriver.com>
+In-Reply-To: <538E8F70.2010600@windriver.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [123.151.195.50]
+x-microsoft-antispam: BL:0;ACTION:Default;RISK:Low;SCL:0;SPMLVL:NotSpam;PCL:0;RULEID:
+x-forefront-prvs: 0232B30BBC
+x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(428001)(51704005)(377454003)(189002)(199002)(479174003)(24454002)(33646001)(74502001)(50986999)(54356999)(87936001)(31966008)(2171001)(74662001)(76176999)(83322001)(19580405001)(76576001)(19580395003)(99396002)(93886002)(66066001)(80022001)(99286001)(74316001)(85852003)(79102001)(20776003)(64706001)(4396001)(92566001)(86362001)(81542001)(81342001)(46102001)(2656002)(83072002)(76482001)(77982001)(101416001)(21056001)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BL2PR03MB226;H:BL2PR03MB226.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+authentication-results: spf=none (sender IP is )
+ smtp.mailfrom=Peter.Chen@freescale.com; 
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yang Wei <Wei.Yang@windriver.com>
-
-While loading g_mass_storage module, the following warning is triggered.
-
-WARNING: at drivers/usb/gadget/composite.c:
-usb_composite_setup_continue: Unexpected call
-Modules linked in: fat vfat minix nls_cp437 nls_iso8859_1 g_mass_storage
-[<800179cc>] (unwind_backtrace+0x0/0x104) from [<80619608>] (dump_stack+0x20/0x24)
-[<80619608>] (dump_stack+0x20/0x24) from [<80025100>] (warn_slowpath_common+0x64/0x74)
-[<80025100>] (warn_slowpath_common+0x64/0x74) from [<800251cc>] (warn_slowpath_fmt+0x40/0x48)
-[<800251cc>] (warn_slowpath_fmt+0x40/0x48) from [<7f047774>] (usb_composite_setup_continue+0xb4/0xbc [g_mass_storage])
-[<7f047774>] (usb_composite_setup_continue+0xb4/0xbc [g_mass_storage]) from [<7f047ad4>] (handle_exception+0x358/0x3e4 [g_mass_storage])
-[<7f047ad4>] (handle_exception+0x358/0x3e4 [g_mass_storage]) from [<7f048080>] (fsg_main_thread+0x520/0x157c [g_mass_storage])
-[<7f048080>] (fsg_main_thread+0x520/0x157c [g_mass_storage]) from [<8004bc90>] (kthread+0x98/0x9c)
-[<8004bc90>] (kthread+0x98/0x9c) from [<8000faec>] (kernel_thread_exit+0x0/0x8) 
-
-The root cause is that  Robert once introduced the following patch to fix
-disconnect handling of s3c-hsotg.
-[
-commit d18f7116a5ddb8263fe62b05ad63e5ceb5875791
-Author: Robert Baldyga <r.baldyga@samsung.com>
-Date:   Thu Nov 21 13:49:18 2013 +0100
-
-    usb: gadget: s3c-hsotg: fix disconnect handling
-
-	    This patch moves s3c_hsotg_disconnect function call from USBSusp interrupt
-		handler to SET_ADDRESS request handler.
-
-		It's because disconnected state can't be detected directly, because this
-		hardware doesn't support Disconnected interrupt for device mode. For both
-		Suspend and Disconnect events there is one interrupt USBSusp, but calling
-		s3c_hsotg_disconnect from this interrupt handler causes config reset in
-		composite layer, which is not undesirable for Suspended state.
-
-		For this reason s3c_hsotg_disconnect is called from SET_ADDRESS request
-		handler, which occurs always after disconnection, so we do disconnect
-		immediately before we are connected again. It's probably only way we
-		can do handle disconnection correctly.
-
-Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com> 
-]
-
-So it also means that s3c_hsotg_disconnect is called from SET_ADDRESS request handler,
-ultimately reset_config would finally be called, it raises a FSG_STATE_CONFIG_CHANGE exception,
-and set common->new_fsg to NULL, and then wakes up fsg_main_thread to handle this exception.
-After handling SET_ADDRESS, subsequently the irq hanler of s3c-hsotg would also invokes composite_setup()
-function to handle USB_REQ_SET_CONFIGURATION request, set_config would be invoked, it
-not only raises a FSG_STATE_CONFIG_CHANGE and set common->new_fsg to new_fsg but also makes
-cdev->delayed_status plus one. If the execution ordering just likes the following scenario, the warning
-would be triggered.
-
-irq handler
- |
- |-> s3c_hsotg_disconnect()
-       |
-       |-> common->new_fsg = NULL
-       |-> common->state = FSG_STATE_CONFIG
-       |-> wakes up fsg_main_thread.
- |->set USB device address.
-
-fsg_main_thread
-             |
-             |-> handle_exception
-                     |
-                     |-> common->state = FSG_STATE_IDLE
-                     |-> do_set_interface()
- irq happens -------------->
-
-irq handler needs to handle USB_REQ_SET_CONFIGURATION request
- |
- |-> set_config()
-        |
-        |-> common->new_fsg = new_fsg;
-        |-> common->state = FSG_STATE_CONFIG
-        |-> cdev->delayed_status++
-        |-> wakes up fsg_main_thread
-
-fsg_main_thread
-             |
-			 |-> Now the common->state = FSG_STATE_CONFIG and common->new_fsg is not equal to NULL
-             |-> if(common->new_fsg)
-                       |-> usb_composite_setup_continue()
-                                      |-> cdev->delayed_status--
-             |-> fsg_main_thread still finds the common->state is equal to FSG_STATE_IDLE
-             |-> so it invokes handle_exception again, subsequently the usb_composite_setup_continue
-             |-> is executed again. It would fininally results in the warning.
-
-So we also need to define a variable(struct fsg_dev *new) and then save common->new_fsg
-to it with the common->lock protection.
-
-Signed-off-by: Yang Wei <Wei.Yang@windriver.com>
----
- drivers/usb/gadget/f_mass_storage.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
-
-                Changes in v2:
-
-                 Only rephrase the commit log to make sense this issue.
-		
-		Wei
-
-diff --git a/drivers/usb/gadget/f_mass_storage.c b/drivers/usb/gadget/f_mass_storage.c
-index b963939..e3b1798 100644
---- a/drivers/usb/gadget/f_mass_storage.c
-+++ b/drivers/usb/gadget/f_mass_storage.c
-@@ -2342,6 +2342,7 @@ static void handle_exception(struct fsg_common *common)
- 	struct fsg_buffhd	*bh;
- 	enum fsg_state		old_state;
- 	struct fsg_lun		*curlun;
-+	struct fsg_dev   *new;
- 	unsigned int		exception_req_tag;
  
- 	/*
-@@ -2421,6 +2422,7 @@ static void handle_exception(struct fsg_common *common)
- 		}
- 		common->state = FSG_STATE_IDLE;
- 	}
-+	new = common->new_fsg;
- 	spin_unlock_irq(&common->lock);
- 
- 	/* Carry out any extra actions required for the exception */
-@@ -2460,8 +2462,8 @@ static void handle_exception(struct fsg_common *common)
- 		break;
- 
- 	case FSG_STATE_CONFIG_CHANGE:
--		do_set_interface(common, common->new_fsg);
--		if (common->new_fsg)
-+		do_set_interface(common, new);
-+		if (new)
- 			usb_composite_setup_continue(common->cdev);
- 		break;
- 
--- 
-1.7.9.5
+> On 06/04/2014 09:45 AM, Peter Chen wrote:
+> >
+> >> commit d18f7116a5ddb8263fe62b05ad63e5ceb5875791
+> >> Author: Robert Baldyga <r.baldyga@samsung.com>
+> >> Date:   Thu Nov 21 13:49:18 2013 +0100
+> >>
+> >>       usb: gadget: s3c-hsotg: fix disconnect handling
+> >>
+> >>       This patch moves s3c_hsotg_disconnect function call from
+> >> USBSusp interrupt
+> >>       handler to SET_ADDRESS request handler.
+> >>
+> > It is a little strange we call gadget's disconnect at SET_ADDRESS?
+> > How the udc calls gadget driver the disconnection has happened when
+> > the usb cable is disconnected from the host?
+> >
+> > Usually, we call gadget's disconnect at two situations
+> >
+> > - udc's reset handler if udc's speed is not UNKNOWN, it is usually
+> > happened when the host sends reset after enumeration.
+> > - udc's disconnect handler, it is usually happened when the usb cable
+> > is disconnected from host.
+> 
+> Hmm, usually the two situations, but according to the commit log, s3c
+> hsotg does not support Disconnected interrupt for device mode, so the
+> second situation does not happen for s3c hsotg, therefore, he has to
+> disconnect the connection before it is connected again.
+> 
+
+Then, it seems Samsung uses other solution to detect disconnection, otherwise
+how it notifies the app it has disconnected, eg, we disconnect usb cable with
+pc for android phone, the usb icon should be disappeared.
+
+Peter
 
