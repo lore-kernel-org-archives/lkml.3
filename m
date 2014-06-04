@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932488AbaFEAf7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 20:35:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39942 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752770AbaFDXVg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752769AbaFDXVg (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 4 Jun 2014 19:21:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39901 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752587AbaFDXV3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 19:21:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.14 074/228] drm/radeon: properly unregister hwmon interface (v2)
-Date: Wed,  4 Jun 2014 16:21:43 -0700
-Message-Id: <20140604232350.430849457@linuxfoundation.org>
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Neil Greatorex <neil@fatboyfat.co.uk>,
+        Jason Cooper <jason@lakedaemon.net>
+Subject: [PATCH 3.14 060/228] irqchip: armada-370-xp: implement the ->check_device() msi_chip operation
+Date: Wed,  4 Jun 2014 16:21:29 -0700
+Message-Id: <20140604232349.987874180@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -28,82 +30,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexdeucher@gmail.com>
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 
-commit cb3e4e7c59e4b43ac378631f6101f5c8de3a27a5 upstream.
+commit 830cbe4b7a918613276aa3d3b28d24410623f92c upstream.
 
-Need to properly unregister the hwmon device on driver
-unload.
+Until now, we were leaving the ->check_device() msi_chip operation
+empty, which leads the PCI core to believe that we support both MSI
+and MSI-X. In fact, we do not support MSI-X, so we have to tell this
+to the PCI core by providing an implementation of this operation.
 
-v2: minor clean up
-
-bug:
-https://bugzilla.kernel.org/show_bug.cgi?id=73931
-
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Fixes: 31f614edb726fcc4d5aa0f2895fbdec9b04a3ca4 ('irqchip: armada-370-xp: implement MSI support')
+Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Link: https://lkml.kernel.org/r/1397823593-1932-3-git-send-email-thomas.petazzoni@free-electrons.com
+Tested-by: Neil Greatorex <neil@fatboyfat.co.uk>
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_pm.c |   21 +++++++++++++++------
- 1 file changed, 15 insertions(+), 6 deletions(-)
+ drivers/irqchip/irq-armada-370-xp.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
---- a/drivers/gpu/drm/radeon/radeon_pm.c
-+++ b/drivers/gpu/drm/radeon/radeon_pm.c
-@@ -603,7 +603,6 @@ static const struct attribute_group *hwm
- static int radeon_hwmon_init(struct radeon_device *rdev)
- {
- 	int err = 0;
--	struct device *hwmon_dev;
- 
- 	switch (rdev->pm.int_thermal_type) {
- 	case THERMAL_TYPE_RV6XX:
-@@ -616,11 +615,11 @@ static int radeon_hwmon_init(struct rade
- 	case THERMAL_TYPE_KV:
- 		if (rdev->asic->pm.get_temperature == NULL)
- 			return err;
--		hwmon_dev = hwmon_device_register_with_groups(rdev->dev,
--							      "radeon", rdev,
--							      hwmon_groups);
--		if (IS_ERR(hwmon_dev)) {
--			err = PTR_ERR(hwmon_dev);
-+		rdev->pm.int_hwmon_dev = hwmon_device_register_with_groups(rdev->dev,
-+									   "radeon", rdev,
-+									   hwmon_groups);
-+		if (IS_ERR(rdev->pm.int_hwmon_dev)) {
-+			err = PTR_ERR(rdev->pm.int_hwmon_dev);
- 			dev_err(rdev->dev,
- 				"Unable to register hwmon device: %d\n", err);
- 		}
-@@ -632,6 +631,12 @@ static int radeon_hwmon_init(struct rade
- 	return err;
+--- a/drivers/irqchip/irq-armada-370-xp.c
++++ b/drivers/irqchip/irq-armada-370-xp.c
+@@ -160,6 +160,15 @@ static void armada_370_xp_teardown_msi_i
+ 	armada_370_xp_free_msi(d->hwirq);
  }
  
-+static void radeon_hwmon_fini(struct radeon_device *rdev)
++static int armada_370_xp_check_msi_device(struct msi_chip *chip, struct pci_dev *dev,
++					  int nvec, int type)
 +{
-+	if (rdev->pm.int_hwmon_dev)
-+		hwmon_device_unregister(rdev->pm.int_hwmon_dev);
++	/* We support MSI, but not MSI-X */
++	if (type == PCI_CAP_ID_MSI)
++		return 0;
++	return -EINVAL;
 +}
 +
- static void radeon_dpm_thermal_work_handler(struct work_struct *work)
- {
- 	struct radeon_device *rdev =
-@@ -1331,6 +1336,8 @@ static void radeon_pm_fini_old(struct ra
- 		device_remove_file(rdev->dev, &dev_attr_power_method);
- 	}
+ static struct irq_chip armada_370_xp_msi_irq_chip = {
+ 	.name = "armada_370_xp_msi_irq",
+ 	.irq_enable = unmask_msi_irq,
+@@ -198,6 +207,7 @@ static int armada_370_xp_msi_init(struct
  
-+	radeon_hwmon_fini(rdev);
-+
- 	if (rdev->pm.power_state)
- 		kfree(rdev->pm.power_state);
- }
-@@ -1350,6 +1357,8 @@ static void radeon_pm_fini_dpm(struct ra
- 	}
- 	radeon_dpm_fini(rdev);
+ 	msi_chip->setup_irq = armada_370_xp_setup_msi_irq;
+ 	msi_chip->teardown_irq = armada_370_xp_teardown_msi_irq;
++	msi_chip->check_device = armada_370_xp_check_msi_device;
+ 	msi_chip->of_node = node;
  
-+	radeon_hwmon_fini(rdev);
-+
- 	if (rdev->pm.power_state)
- 		kfree(rdev->pm.power_state);
- }
+ 	armada_370_xp_msi_domain =
 
 
