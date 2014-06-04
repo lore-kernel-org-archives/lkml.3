@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755577AbaFEABr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 20:01:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40406 "EHLO
+	id S1755594AbaFEACD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 20:02:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40401 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753536AbaFDXXC (ORCPT
+	with ESMTP id S1753521AbaFDXXB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:23:02 -0400
+	Wed, 4 Jun 2014 19:23:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Ben Widawsky <ben@bwidawsk.net>,
+        Imre Deak <imre.deak@intel.com>, Takashi Iwai <tiwai@suse.de>,
         Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [PATCH 3.14 183/228] drm/i915: Fix unsafe loop iteration over vma whilst unbinding them
-Date: Wed,  4 Jun 2014 16:23:32 -0700
-Message-Id: <20140604232353.912436003@linuxfoundation.org>
+Subject: [PATCH 3.14 182/228] drm/i915: move power domain init earlier during system resume
+Date: Wed,  4 Jun 2014 16:23:31 -0700
+Message-Id: <20140604232353.879674956@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -31,54 +30,219 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+From: Imre Deak <imre.deak@intel.com>
 
-This is commit df6f783a4ef6790780a67c491897ac upstream.
+This is commit 76c4b250080fff6e4befaa36199424 upstream.
 
-On non-LLC platforms, when changing the cache level of an object, we may
-need to unbind it so that prefetching across page boundaries does not
-cross into a different memory domain. This requires us to unbind
-conflicting vma, but we did so iterating over the objects vma in an
-unsafe manner (as the list was being modified as we iterated).
+During resume the intel hda audio driver depends on the i915 driver
+reinitializing the audio power domain. Since the order of calling the
+i915 resume handler wrt. that of the audio driver is not guaranteed,
+move the power domain reinitialization step to the resume_early
+handler. This is guaranteed to run before the resume handler of any
+other driver.
 
-The regression was introduced in
-commit 3089c6f239d7d2c4cb2dd5c353e8984cf79af1d7
-Author: Ben Widawsky <ben@bwidawsk.net>
-Date:   Wed Jul 31 17:00:03 2013 -0700
+The power domain initialization in turn requires us to enable the i915
+pci device first, so move that part earlier too.
 
-    drm/i915: make caching operate on all address spaces
-apparently as far back as v3.12-rc1, but it has only just begun to
-trigger real world bug reports.
+Accordingly disabling of the i915 pci device should happen after the
+audio suspend handler ran. So move the disabling later from the i915
+resume handler to the resume_late handler.
 
-Reported-and-tested-by: Nikolay Martynov <mar.kolya@gmail.com>
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=76384
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Ben Widawsky <ben@bwidawsk.net>
+v2:
+- move intel_uncore_sanitize/early_sanitize earlier too, so they don't
+  get reordered wrt. intel_power_domains_init_hw()
+
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=76152
+Signed-off-by: Imre Deak <imre.deak@intel.com>
+Reviewed-by: Takashi Iwai <tiwai@suse.de>
+[danvet: Add cc: stable and loud comments that this is just a hack.]
+[danvet: Fix "Should it be static?" sparse warning reported by Wu
+Fengguang's kbuilder.]
 Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/gpu/drm/i915/i915_gem.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/i915/i915_drv.c |   90 +++++++++++++++++++++++++++++++++-------
+ 1 file changed, 75 insertions(+), 15 deletions(-)
 
---- a/drivers/gpu/drm/i915/i915_gem.c
-+++ b/drivers/gpu/drm/i915/i915_gem.c
-@@ -3529,7 +3529,7 @@ int i915_gem_object_set_cache_level(stru
- {
- 	struct drm_device *dev = obj->base.dev;
- 	drm_i915_private_t *dev_priv = dev->dev_private;
--	struct i915_vma *vma;
-+	struct i915_vma *vma, *next;
- 	int ret;
+--- a/drivers/gpu/drm/i915/i915_drv.c
++++ b/drivers/gpu/drm/i915/i915_drv.c
+@@ -614,15 +614,20 @@ static void intel_resume_hotplug(struct
+ 	drm_helper_hpd_irq_event(dev);
+ }
  
- 	if (obj->cache_level == cache_level)
-@@ -3540,7 +3540,7 @@ int i915_gem_object_set_cache_level(stru
- 		return -EBUSY;
++static int i915_drm_thaw_early(struct drm_device *dev)
++{
++	intel_uncore_early_sanitize(dev);
++	intel_uncore_sanitize(dev);
++	intel_power_domains_init_hw(dev);
++
++	return 0;
++}
++
+ static int __i915_drm_thaw(struct drm_device *dev, bool restore_gtt_mappings)
+ {
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+ 	int error = 0;
+ 
+-	intel_uncore_early_sanitize(dev);
+-
+-	intel_uncore_sanitize(dev);
+-
+ 	if (drm_core_check_feature(dev, DRIVER_MODESET) &&
+ 	    restore_gtt_mappings) {
+ 		mutex_lock(&dev->struct_mutex);
+@@ -630,8 +635,6 @@ static int __i915_drm_thaw(struct drm_de
+ 		mutex_unlock(&dev->struct_mutex);
  	}
  
--	list_for_each_entry(vma, &obj->vma_list, vma_link) {
-+	list_for_each_entry_safe(vma, next, &obj->vma_list, vma_link) {
- 		if (!i915_gem_valid_gtt_space(dev, &vma->node, cache_level)) {
- 			ret = i915_vma_unbind(vma);
- 			if (ret)
+-	intel_power_domains_init_hw(dev);
+-
+ 	i915_restore_state(dev);
+ 	intel_opregion_setup(dev);
+ 
+@@ -700,19 +703,33 @@ static int i915_drm_thaw(struct drm_devi
+ 	return __i915_drm_thaw(dev, true);
+ }
+ 
+-int i915_resume(struct drm_device *dev)
++static int i915_resume_early(struct drm_device *dev)
+ {
+-	struct drm_i915_private *dev_priv = dev->dev_private;
+-	int ret;
+-
+ 	if (dev->switch_power_state == DRM_SWITCH_POWER_OFF)
+ 		return 0;
+ 
++	/*
++	 * We have a resume ordering issue with the snd-hda driver also
++	 * requiring our device to be power up. Due to the lack of a
++	 * parent/child relationship we currently solve this with an early
++	 * resume hook.
++	 *
++	 * FIXME: This should be solved with a special hdmi sink device or
++	 * similar so that power domains can be employed.
++	 */
+ 	if (pci_enable_device(dev->pdev))
+ 		return -EIO;
+ 
+ 	pci_set_master(dev->pdev);
+ 
++	return i915_drm_thaw_early(dev);
++}
++
++int i915_resume(struct drm_device *dev)
++{
++	struct drm_i915_private *dev_priv = dev->dev_private;
++	int ret;
++
+ 	/*
+ 	 * Platforms with opregion should have sane BIOS, older ones (gen3 and
+ 	 * earlier) need to restore the GTT mappings since the BIOS might clear
+@@ -726,6 +743,14 @@ int i915_resume(struct drm_device *dev)
+ 	return 0;
+ }
+ 
++static int i915_resume_legacy(struct drm_device *dev)
++{
++	i915_resume_early(dev);
++	i915_resume(dev);
++
++	return 0;
++}
++
+ /**
+  * i915_reset - reset chip after a hang
+  * @dev: drm device to reset
+@@ -846,7 +871,6 @@ static int i915_pm_suspend(struct device
+ {
+ 	struct pci_dev *pdev = to_pci_dev(dev);
+ 	struct drm_device *drm_dev = pci_get_drvdata(pdev);
+-	int error;
+ 
+ 	if (!drm_dev || !drm_dev->dev_private) {
+ 		dev_err(dev, "DRM not initialized, aborting suspend.\n");
+@@ -856,9 +880,25 @@ static int i915_pm_suspend(struct device
+ 	if (drm_dev->switch_power_state == DRM_SWITCH_POWER_OFF)
+ 		return 0;
+ 
+-	error = i915_drm_freeze(drm_dev);
+-	if (error)
+-		return error;
++	return i915_drm_freeze(drm_dev);
++}
++
++static int i915_pm_suspend_late(struct device *dev)
++{
++	struct pci_dev *pdev = to_pci_dev(dev);
++	struct drm_device *drm_dev = pci_get_drvdata(pdev);
++
++	/*
++	 * We have a suspedn ordering issue with the snd-hda driver also
++	 * requiring our device to be power up. Due to the lack of a
++	 * parent/child relationship we currently solve this with an late
++	 * suspend hook.
++	 *
++	 * FIXME: This should be solved with a special hdmi sink device or
++	 * similar so that power domains can be employed.
++	 */
++	if (drm_dev->switch_power_state == DRM_SWITCH_POWER_OFF)
++		return 0;
+ 
+ 	pci_disable_device(pdev);
+ 	pci_set_power_state(pdev, PCI_D3hot);
+@@ -866,6 +906,14 @@ static int i915_pm_suspend(struct device
+ 	return 0;
+ }
+ 
++static int i915_pm_resume_early(struct device *dev)
++{
++	struct pci_dev *pdev = to_pci_dev(dev);
++	struct drm_device *drm_dev = pci_get_drvdata(pdev);
++
++	return i915_resume_early(drm_dev);
++}
++
+ static int i915_pm_resume(struct device *dev)
+ {
+ 	struct pci_dev *pdev = to_pci_dev(dev);
+@@ -887,6 +935,14 @@ static int i915_pm_freeze(struct device
+ 	return i915_drm_freeze(drm_dev);
+ }
+ 
++static int i915_pm_thaw_early(struct device *dev)
++{
++	struct pci_dev *pdev = to_pci_dev(dev);
++	struct drm_device *drm_dev = pci_get_drvdata(pdev);
++
++	return i915_drm_thaw_early(drm_dev);
++}
++
+ static int i915_pm_thaw(struct device *dev)
+ {
+ 	struct pci_dev *pdev = to_pci_dev(dev);
+@@ -948,10 +1004,14 @@ static int i915_runtime_resume(struct de
+ 
+ static const struct dev_pm_ops i915_pm_ops = {
+ 	.suspend = i915_pm_suspend,
++	.suspend_late = i915_pm_suspend_late,
++	.resume_early = i915_pm_resume_early,
+ 	.resume = i915_pm_resume,
+ 	.freeze = i915_pm_freeze,
++	.thaw_early = i915_pm_thaw_early,
+ 	.thaw = i915_pm_thaw,
+ 	.poweroff = i915_pm_poweroff,
++	.restore_early = i915_pm_resume_early,
+ 	.restore = i915_pm_resume,
+ 	.runtime_suspend = i915_runtime_suspend,
+ 	.runtime_resume = i915_runtime_resume,
+@@ -994,7 +1054,7 @@ static struct drm_driver driver = {
+ 
+ 	/* Used in place of i915_pm_ops for non-DRIVER_MODESET */
+ 	.suspend = i915_suspend,
+-	.resume = i915_resume,
++	.resume = i915_resume_legacy,
+ 
+ 	.device_is_agp = i915_driver_device_is_agp,
+ 	.master_create = i915_master_create,
 
 
