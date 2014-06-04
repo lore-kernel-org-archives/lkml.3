@@ -1,56 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752216AbaFDLES (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 07:04:18 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58758 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751845AbaFDLER (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 07:04:17 -0400
-Date: Wed, 4 Jun 2014 12:04:11 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: David Rientjes <rientjes@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Vlastimil Babka <vbabka@suse.cz>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Hugh Dickins <hughd@google.com>, Greg Thelen <gthelen@google.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Minchan Kim <minchan@kernel.org>,
-        Michal Nazarewicz <mina86@mina86.com>, Rik van Riel <riel@redhat.com>
-Subject: Re: [patch -mm 3/3] mm, compaction: avoid compacting memory for thp
- if pageblock cannot become free
-Message-ID: <20140604110411.GK10819@suse.de>
-References: <1399904111-23520-1-git-send-email-vbabka@suse.cz>
- <1400233673-11477-1-git-send-email-vbabka@suse.cz>
- <alpine.DEB.2.02.1405211954410.13243@chino.kir.corp.google.com>
- <537DB0E5.40602@suse.cz>
- <alpine.DEB.2.02.1405220127320.13630@chino.kir.corp.google.com>
- <537DE799.3040400@suse.cz>
- <alpine.DEB.2.02.1406031728390.5312@chino.kir.corp.google.com>
- <alpine.DEB.2.02.1406031729410.5312@chino.kir.corp.google.com>
+	id S1752383AbaFDLF3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 07:05:29 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:55364 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752284AbaFDLF1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 07:05:27 -0400
+Date: Wed, 4 Jun 2014 12:05:18 +0100
+From: Peter Griffin <peter.griffin@linaro.org>
+To: Maxime Coquelin <maxime.coquelin@st.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        patrice.chotard@st.com, srinivas.kandagatla@gmail.com,
+        chris@printf.net, ulf.hansson@linaro.org, kernel@stlinux.com,
+        lee.jones@linaro.org, linux-mmc@vger.kernel.org,
+        devicetree@vger.kernel.org,
+        Giuseppe Cavallaro <peppe.cavallaro@st.com>
+Subject: Re: [PATCH 1/8] mmc: sdhci-st: Intial support for ST SDHCI controller
+Message-ID: <20140604110518.GA1722@griffinp-ThinkPad-X1-Carbon-2nd>
+References: <1400771902-26553-1-git-send-email-peter.griffin@linaro.org>
+ <1400771902-26553-2-git-send-email-peter.griffin@linaro.org>
+ <537E1AB8.9000909@st.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1406031729410.5312@chino.kir.corp.google.com>
+In-Reply-To: <537E1AB8.9000909@st.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 03, 2014 at 05:30:01PM -0700, David Rientjes wrote:
-> It's pointless to migrate pages within a pageblock if the entire pageblock will 
-> not become free for a thp allocation.
-> 
-> If we encounter a page that cannot be migrated and a direct compactor other than 
-> khugepaged is trying to allocate a hugepage for thp, then skip the entire 
-> pageblock and avoid migrating pages needlessly.
-> 
+Hi Maxime,
 
-It's not completely pointless. A movable page may be placed within an
-unmovable pageblock due to insufficient free memory or a pageblock changed
-type. When this happens then partial migration moves the movable page
-of out of the unmovable block. Future unmovable allocations can then be
-placed with other unmovable pages instead of falling back to other blocks
-and degrading fragmentation over time.
+Thanks fo reviewing, see my comments below: -
 
--- 
-Mel Gorman
-SUSE Labs
+> >+struct st_mmc_platform_data {
+> >+	struct  reset_control	*rstc;
+> >+};
+> Since it uses the generic reset framework, could we imagine moving
+> the reset to the sdhci_pltfm_host struct?
+> Doing this, we could get rid of st_mmc_platform_data.
+
+Yes I agree, I will send some RFC patches which moves the reset controller
+stuff into the generic code.
+
+For v2 of this series I've removed the reset code, as stih416 doesn't have
+seperate reset line each controller, so it will mainly be 
+useful for stih407 SoC, which needs additional patches on top of this 
+set.
+
+> >+	switch (width) {
+> >+	case MMC_BUS_WIDTH_8:
+> >+		ctrl |= SDHCI_CTRL_8BITBUS;
+> >+		ctrl &= ~SDHCI_CTRL_4BITBUS;
+> >+		break;
+> >+	case MMC_BUS_WIDTH_4:
+> >+		ctrl |= SDHCI_CTRL_4BITBUS;
+> >+		ctrl &= ~SDHCI_CTRL_8BITBUS;
+> >+		break;
+> >+	default:
+> >+		ctrl &= ~(SDHCI_CTRL_8BITBUS | SDHCI_CTRL_4BITBUS);
+> >+		break;
+> You can remove the break here.
+
+Ok, removed in v2
+
+> >+	switch (reg) {
+> >+	case SDHCI_CAPABILITIES:
+> >+		ret = readl(host->ioaddr + reg);
+> >+		/* Support 3.3V and 1.8V */
+> >+		ret &= ~SDHCI_CAN_VDD_300;
+> >+		break;
+> >+	default:
+> >+		ret = readl(host->ioaddr + reg);
+> 
+> Could we use readl_relaxed?
+
+Yes, I've updated to use readl_relaxed in v2
+
+> >+	dev_dbg(&pdev->dev, "SDHCI ST platform driver\n");
+> You can remove this I think.
+
+Removed in v2
+
+> >+		host_version, ((host_version & SDHCI_VENDOR_VER_MASK) >>
+> >+			       SDHCI_VENDOR_VER_SHIFT));
+> Maybe you could change to dev_info here. It might be interresting to
+> always have IP version.
+
+Changed to dev_info in v2
+
+Regards,
+
+Peter.
