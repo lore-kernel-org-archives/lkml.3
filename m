@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756601AbaFEAX7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 20:23:59 -0400
+	id S1756633AbaFEAYW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 20:24:22 -0400
 Received: from mail.linuxfoundation.org ([140.211.169.12]:40125 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753126AbaFDXW0 (ORCPT
+	with ESMTP id S1753117AbaFDXWZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:22:26 -0400
+	Wed, 4 Jun 2014 19:22:25 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>
-Subject: [PATCH 3.14 127/228] crypto: crypto_wq - Fix late crypto work queue initialization
-Date: Wed,  4 Jun 2014 16:22:36 -0700
-Message-Id: <20140604232352.112650002@linuxfoundation.org>
+        cgroups@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Li Zefan <lizefan@huawei.com>, Aristeu Rozanski <arozansk@redhat.com>
+Subject: [PATCH 3.14 125/228] device_cgroup: rework device access check and exception checking
+Date: Wed,  4 Jun 2014 16:22:34 -0700
+Message-Id: <20140604232352.053369539@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -29,36 +30,350 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tim Chen <tim.c.chen@linux.intel.com>
+From: Aristeu Rozanski <aris@redhat.com>
 
-commit 130fa5bc81b44b6cc1fbdea3abf6db0da22964e0 upstream.
+commit 79d719749d23234e9b725098aa49133f3ef7299d upstream.
 
-The crypto algorithm modules utilizing the crypto daemon could
-be used early when the system start up.  Using module_init
-does not guarantee that the daemon's work queue is initialized
-when the cypto alorithm depending on crypto_wq starts.  It is necessary
-to initialize the crypto work queue earlier at the subsystem
-init time to make sure that it is initialized
-when used.
+Whenever a device file is opened and checked against current device
+cgroup rules, it uses the same function (may_access()) as when a new
+exception rule is added by writing devices.{allow,deny}. And in both
+cases, the algorithm is the same, doesn't matter the behavior.
 
-Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+First problem is having device access to be considered the same as rule
+checking. Consider the following structure:
+
+	A	(default behavior: allow, exceptions disallow access)
+	 \
+	  B	(default behavior: allow, exceptions disallow access)
+
+A new exception is added to B by writing devices.deny:
+
+	c 12:34 rw
+
+When checking if that exception is allowed in may_access():
+
+	if (dev_cgroup->behavior == DEVCG_DEFAULT_ALLOW) {
+		if (behavior == DEVCG_DEFAULT_ALLOW) {
+			/* the exception will deny access to certain devices */
+			return true;
+
+Which is ok, since B is not getting more privileges than A, it doesn't
+matter and the rule is accepted
+
+Now, consider it's a device file open check and the process belongs to
+cgroup B. The access will be generated as:
+
+	behavior: allow
+	exception: c 12:34 rw
+
+The very same chunk of code will allow it, even if there's an explicit
+exception telling to do otherwise.
+
+A simple test case:
+
+	# mkdir new_group
+	# cd new_group
+	# echo $$ >tasks
+	# echo "c 1:3 w" >devices.deny
+	# echo >/dev/null
+	# echo $?
+	0
+
+This is a serious bug and was introduced on
+
+	c39a2a3018f8 devcg: prepare may_access() for hierarchy support
+
+To solve this problem, the device file open function was split from the
+new exception check.
+
+Second problem is how exceptions are processed by may_access(). The
+first part of the said function tries to match fully with an existing
+exception:
+
+	list_for_each_entry_rcu(ex, &dev_cgroup->exceptions, list) {
+		if ((refex->type & DEV_BLOCK) && !(ex->type & DEV_BLOCK))
+			continue;
+		if ((refex->type & DEV_CHAR) && !(ex->type & DEV_CHAR))
+			continue;
+		if (ex->major != ~0 && ex->major != refex->major)
+			continue;
+		if (ex->minor != ~0 && ex->minor != refex->minor)
+			continue;
+		if (refex->access & (~ex->access))
+			continue;
+		match = true;
+		break;
+	}
+
+That means the new exception should be contained into an existing one to
+be considered a match:
+
+	New exception		Existing	match?	notes
+	b 12:34 rwm		b 12:34 rwm	yes
+	b 12:34 r		b *:34 rw	yes
+	b 12:34 rw		b 12:34 w	no	extra "r"
+	b *:34 rw		b 12:34 rw	no	too broad "*"
+	b *:34 rw		b *:34 rwm	yes
+
+Which is fine in some cases. Consider:
+
+	A	(default behavior: deny, exceptions allow access)
+	 \
+	  B	(default behavior: deny, exceptions allow access)
+
+In this case the full match makes sense, the new exception cannot add
+more access than the parent allows
+
+But this doesn't always work, consider:
+
+	A	(default behavior: allow, exceptions disallow access)
+	 \
+	  B	(default behavior: deny, exceptions allow access)
+
+In this case, a new exception in B shouldn't match any of the exceptions
+in A, after all you can't allow something that was forbidden by A. But
+consider this scenario:
+
+	New exception	Existing in A	match?	outcome
+	b 12:34 rw	b 12:34 r	no	exception is accepted
+
+Because the new exception has "w" as extra, it doesn't match, so it'll
+be added to B's exception list.
+
+The same problem can happen during a file access check. Consider a
+cgroup with allow as default behavior:
+
+	Access		Exception	match?
+	b 12:34 rw	b 12:34 r	no
+
+In this case, the access didn't match any of the exceptions in the
+cgroup, which is required since exceptions will disallow access.
+
+To solve this problem, two new functions were created to match an
+exception either fully or partially. In the example above, a partial
+check will be performed and it'll produce a match since at least
+"b 12:34 r" from "b 12:34 rw" access matches.
+
+Cc: cgroups@vger.kernel.org
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Serge Hallyn <serge.hallyn@canonical.com>
+Cc: Li Zefan <lizefan@huawei.com>
+Signed-off-by: Aristeu Rozanski <arozansk@redhat.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- crypto/crypto_wq.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ security/device_cgroup.c |  162 +++++++++++++++++++++++++++++++++++------------
+ 1 file changed, 122 insertions(+), 40 deletions(-)
 
---- a/crypto/crypto_wq.c
-+++ b/crypto/crypto_wq.c
-@@ -33,7 +33,7 @@ static void __exit crypto_wq_exit(void)
- 	destroy_workqueue(kcrypto_wq);
+--- a/security/device_cgroup.c
++++ b/security/device_cgroup.c
+@@ -308,57 +308,139 @@ static int devcgroup_seq_show(struct seq
  }
  
--module_init(crypto_wq_init);
-+subsys_initcall(crypto_wq_init);
- module_exit(crypto_wq_exit);
+ /**
+- * may_access - verifies if a new exception is part of what is allowed
+- *		by a dev cgroup based on the default policy +
+- *		exceptions. This is used to make sure a child cgroup
+- *		won't have more privileges than its parent or to
+- *		verify if a certain access is allowed.
+- * @dev_cgroup: dev cgroup to be tested against
+- * @refex: new exception
+- * @behavior: behavior of the exception
++ * match_exception	- iterates the exception list trying to match a rule
++ * 			  based on type, major, minor and access type. It is
++ * 			  considered a match if an exception is found that
++ * 			  will contain the entire range of provided parameters.
++ * @exceptions: list of exceptions
++ * @type: device type (DEV_BLOCK or DEV_CHAR)
++ * @major: device file major number, ~0 to match all
++ * @minor: device file minor number, ~0 to match all
++ * @access: permission mask (ACC_READ, ACC_WRITE, ACC_MKNOD)
++ *
++ * returns: true in case it matches an exception completely
+  */
+-static bool may_access(struct dev_cgroup *dev_cgroup,
+-		       struct dev_exception_item *refex,
+-		       enum devcg_behavior behavior)
++static bool match_exception(struct list_head *exceptions, short type,
++			    u32 major, u32 minor, short access)
+ {
+ 	struct dev_exception_item *ex;
+-	bool match = false;
  
- MODULE_LICENSE("GPL");
+-	rcu_lockdep_assert(rcu_read_lock_held() ||
+-			   lockdep_is_held(&devcgroup_mutex),
+-			   "device_cgroup::may_access() called without proper synchronization");
++	list_for_each_entry_rcu(ex, exceptions, list) {
++		if ((type & DEV_BLOCK) && !(ex->type & DEV_BLOCK))
++			continue;
++		if ((type & DEV_CHAR) && !(ex->type & DEV_CHAR))
++			continue;
++		if (ex->major != ~0 && ex->major != major)
++			continue;
++		if (ex->minor != ~0 && ex->minor != minor)
++			continue;
++		/* provided access cannot have more than the exception rule */
++		if (access & (~ex->access))
++			continue;
++		return true;
++	}
++	return false;
++}
++
++/**
++ * match_exception_partial - iterates the exception list trying to match a rule
++ * 			     based on type, major, minor and access type. It is
++ * 			     considered a match if an exception's range is
++ * 			     found to contain *any* of the devices specified by
++ * 			     provided parameters. This is used to make sure no
++ * 			     extra access is being granted that is forbidden by
++ * 			     any of the exception list.
++ * @exceptions: list of exceptions
++ * @type: device type (DEV_BLOCK or DEV_CHAR)
++ * @major: device file major number, ~0 to match all
++ * @minor: device file minor number, ~0 to match all
++ * @access: permission mask (ACC_READ, ACC_WRITE, ACC_MKNOD)
++ *
++ * returns: true in case the provided range mat matches an exception completely
++ */
++static bool match_exception_partial(struct list_head *exceptions, short type,
++				    u32 major, u32 minor, short access)
++{
++	struct dev_exception_item *ex;
+ 
+-	list_for_each_entry_rcu(ex, &dev_cgroup->exceptions, list) {
+-		if ((refex->type & DEV_BLOCK) && !(ex->type & DEV_BLOCK))
++	list_for_each_entry_rcu(ex, exceptions, list) {
++		if ((type & DEV_BLOCK) && !(ex->type & DEV_BLOCK))
+ 			continue;
+-		if ((refex->type & DEV_CHAR) && !(ex->type & DEV_CHAR))
++		if ((type & DEV_CHAR) && !(ex->type & DEV_CHAR))
+ 			continue;
+-		if (ex->major != ~0 && ex->major != refex->major)
++		/*
++		 * We must be sure that both the exception and the provided
++		 * range aren't masking all devices
++		 */
++		if (ex->major != ~0 && major != ~0 && ex->major != major)
+ 			continue;
+-		if (ex->minor != ~0 && ex->minor != refex->minor)
++		if (ex->minor != ~0 && minor != ~0 && ex->minor != minor)
+ 			continue;
+-		if (refex->access & (~ex->access))
++		/*
++		 * In order to make sure the provided range isn't matching
++		 * an exception, all its access bits shouldn't match the
++		 * exception's access bits
++		 */
++		if (!(access & ex->access))
+ 			continue;
+-		match = true;
+-		break;
++		return true;
+ 	}
++	return false;
++}
++
++/**
++ * verify_new_ex - verifies if a new exception is part of what is allowed
++ *		   by a dev cgroup based on the default policy +
++ *		   exceptions. This is used to make sure a child cgroup
++ *		   won't have more privileges than its parent
++ * @dev_cgroup: dev cgroup to be tested against
++ * @refex: new exception
++ * @behavior: behavior of the exception's dev_cgroup
++ */
++static bool verify_new_ex(struct dev_cgroup *dev_cgroup,
++		          struct dev_exception_item *refex,
++		          enum devcg_behavior behavior)
++{
++	bool match = false;
++
++	rcu_lockdep_assert(rcu_read_lock_held() ||
++			   lockdep_is_held(&devcgroup_mutex),
++			   "device_cgroup:verify_new_ex called without proper synchronization");
+ 
+ 	if (dev_cgroup->behavior == DEVCG_DEFAULT_ALLOW) {
+ 		if (behavior == DEVCG_DEFAULT_ALLOW) {
+-			/* the exception will deny access to certain devices */
++			/*
++			 * new exception in the child doesn't matter, only
++			 * adding extra restrictions
++			 */
+ 			return true;
+ 		} else {
+-			/* the exception will allow access to certain devices */
++			/*
++			 * new exception in the child will add more devices
++			 * that can be acessed, so it can't match any of
++			 * parent's exceptions, even slightly
++			 */
++			match = match_exception_partial(&dev_cgroup->exceptions,
++							refex->type,
++							refex->major,
++							refex->minor,
++							refex->access);
++
+ 			if (match)
+-				/*
+-				 * a new exception allowing access shouldn't
+-				 * match an parent's exception
+-				 */
+ 				return false;
+ 			return true;
+ 		}
+ 	} else {
+-		/* only behavior == DEVCG_DEFAULT_DENY allowed here */
++		/*
++		 * Only behavior == DEVCG_DEFAULT_DENY allowed here, therefore
++		 * the new exception will add access to more devices and must
++		 * be contained completely in an parent's exception to be
++		 * allowed
++		 */
++		match = match_exception(&dev_cgroup->exceptions, refex->type,
++					refex->major, refex->minor,
++					refex->access);
++
+ 		if (match)
+ 			/* parent has an exception that matches the proposed */
+ 			return true;
+@@ -380,7 +462,7 @@ static int parent_has_perm(struct dev_cg
+ 
+ 	if (!parent)
+ 		return 1;
+-	return may_access(parent, ex, childcg->behavior);
++	return verify_new_ex(parent, ex, childcg->behavior);
+ }
+ 
+ /**
+@@ -708,18 +790,18 @@ static int __devcgroup_check_permission(
+ 				        short access)
+ {
+ 	struct dev_cgroup *dev_cgroup;
+-	struct dev_exception_item ex;
+-	int rc;
+-
+-	memset(&ex, 0, sizeof(ex));
+-	ex.type = type;
+-	ex.major = major;
+-	ex.minor = minor;
+-	ex.access = access;
++	bool rc;
+ 
+ 	rcu_read_lock();
+ 	dev_cgroup = task_devcgroup(current);
+-	rc = may_access(dev_cgroup, &ex, dev_cgroup->behavior);
++	if (dev_cgroup->behavior == DEVCG_DEFAULT_ALLOW)
++		/* Can't match any of the exceptions, even partially */
++		rc = !match_exception_partial(&dev_cgroup->exceptions,
++					      type, major, minor, access);
++	else
++		/* Need to match completely one exception to be allowed */
++		rc = match_exception(&dev_cgroup->exceptions, type, major,
++				     minor, access);
+ 	rcu_read_unlock();
+ 
+ 	if (!rc)
 
 
