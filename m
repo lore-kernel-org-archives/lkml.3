@@ -1,26 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756867AbaFEA27 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 20:28:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40049 "EHLO
+	id S1756852AbaFEA25 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 20:28:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40062 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753015AbaFDXWP (ORCPT
+	with ESMTP id S1752954AbaFDXWQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:22:15 -0400
+	Wed, 4 Jun 2014 19:22:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Rik van Riel <riel@redhat.com>, Michal Hocko <mhocko@suse.cz>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Nishanth Aravamudan <nacc@linux.vnet.ibm.com>,
-        Luiz Capitulino <lcapitulino@redhat.com>,
-        Masayoshi Mizuma <m.mizuma@jp.fujitsu.com>,
+        Vlastimil Babka <vbabka@suse.cz>,
+        Heesub Shin <heesub.shin@samsung.com>,
+        Minchan Kim <minchan@kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Dongjun Shin <d.j.shin@samsung.com>,
+        Sunghwan Yun <sunghwan.yun@samsung.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 101/228] mm/page-writeback.c: fix divide by zero in pos_ratio_polynom
-Date: Wed,  4 Jun 2014 16:22:10 -0700
-Message-Id: <20140604232351.287321795@linuxfoundation.org>
+Subject: [PATCH 3.14 102/228] mm/compaction: make isolate_freepages start at pageblock boundary
+Date: Wed,  4 Jun 2014 16:22:11 -0700
+Message-Id: <20140604232351.317982958@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -35,61 +39,102 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rik van Riel <riel@redhat.com>
+From: Vlastimil Babka <vbabka@suse.cz>
 
-commit d5c9fde3dae750889168807038243ff36431d276 upstream.
+commit 49e068f0b73dd042c186ffa9b420a9943e90389a upstream.
 
-It is possible for "limit - setpoint + 1" to equal zero, after getting
-truncated to a 32 bit variable, and resulting in a divide by zero error.
+The compaction freepage scanner implementation in isolate_freepages()
+starts by taking the current cc->free_pfn value as the first pfn.  In a
+for loop, it scans from this first pfn to the end of the pageblock, and
+then subtracts pageblock_nr_pages from the first pfn to obtain the first
+pfn for the next for loop iteration.
 
-Using the fully 64 bit divide functions avoids this problem.  It also
-will cause pos_ratio_polynom() to return the correct value when
-(setpoint - limit) exceeds 2^32.
+This means that when cc->free_pfn starts at offset X rather than being
+aligned on pageblock boundary, the scanner will start at offset X in all
+scanned pageblock, ignoring potentially many free pages.  Currently this
+can happen when
 
-Also uninline pos_ratio_polynom, at Andrew's request.
+ a) zone's end pfn is not pageblock aligned, or
 
-Signed-off-by: Rik van Riel <riel@redhat.com>
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
-Cc: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+ b) through zone->compact_cached_free_pfn with CONFIG_HOLES_IN_ZONE
+    enabled and a hole spanning the beginning of a pageblock
+
+This patch fixes the problem by aligning the initial pfn in
+isolate_freepages() to pageblock boundary.  This also permits replacing
+the end-of-pageblock alignment within the for loop with a simple
+pageblock_nr_pages increment.
+
+Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+Reported-by: Heesub Shin <heesub.shin@samsung.com>
+Acked-by: Minchan Kim <minchan@kernel.org>
 Cc: Mel Gorman <mgorman@suse.de>
-Cc: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
-Cc: Luiz Capitulino <lcapitulino@redhat.com>
-Cc: Masayoshi Mizuma <m.mizuma@jp.fujitsu.com>
+Acked-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Cc: Michal Nazarewicz <mina86@mina86.com>
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Christoph Lameter <cl@linux.com>
+Acked-by: Rik van Riel <riel@redhat.com>
+Cc: Dongjun Shin <d.j.shin@samsung.com>
+Cc: Sunghwan Yun <sunghwan.yun@samsung.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/page-writeback.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ mm/compaction.c |   22 ++++++++++++----------
+ 1 file changed, 12 insertions(+), 10 deletions(-)
 
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -593,14 +593,14 @@ unsigned long bdi_dirty_limit(struct bac
-  * (5) the closer to setpoint, the smaller |df/dx| (and the reverse)
-  *     => fast response on large errors; small oscillation near setpoint
-  */
--static inline long long pos_ratio_polynom(unsigned long setpoint,
-+static long long pos_ratio_polynom(unsigned long setpoint,
- 					  unsigned long dirty,
- 					  unsigned long limit)
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -666,16 +666,20 @@ static void isolate_freepages(struct zon
+ 				struct compact_control *cc)
  {
- 	long long pos_ratio;
- 	long x;
+ 	struct page *page;
+-	unsigned long high_pfn, low_pfn, pfn, z_end_pfn, end_pfn;
++	unsigned long high_pfn, low_pfn, pfn, z_end_pfn;
+ 	int nr_freepages = cc->nr_freepages;
+ 	struct list_head *freelist = &cc->freepages;
  
--	x = div_s64(((s64)setpoint - (s64)dirty) << RATELIMIT_CALC_SHIFT,
-+	x = div64_s64(((s64)setpoint - (s64)dirty) << RATELIMIT_CALC_SHIFT,
- 		    limit - setpoint + 1);
- 	pos_ratio = x;
- 	pos_ratio = pos_ratio * x >> RATELIMIT_CALC_SHIFT;
-@@ -842,7 +842,7 @@ static unsigned long bdi_position_ratio(
- 	x_intercept = bdi_setpoint + span;
+ 	/*
+ 	 * Initialise the free scanner. The starting point is where we last
+-	 * scanned from (or the end of the zone if starting). The low point
+-	 * is the end of the pageblock the migration scanner is using.
++	 * successfully isolated from, zone-cached value, or the end of the
++	 * zone when isolating for the first time. We need this aligned to
++	 * the pageblock boundary, because we do pfn -= pageblock_nr_pages
++	 * in the for loop.
++	 * The low boundary is the end of the pageblock the migration scanner
++	 * is using.
+ 	 */
+-	pfn = cc->free_pfn;
++	pfn = cc->free_pfn & ~(pageblock_nr_pages-1);
+ 	low_pfn = ALIGN(cc->migrate_pfn + 1, pageblock_nr_pages);
  
- 	if (bdi_dirty < x_intercept - span / 4) {
--		pos_ratio = div_u64(pos_ratio * (x_intercept - bdi_dirty),
-+		pos_ratio = div64_u64(pos_ratio * (x_intercept - bdi_dirty),
- 				    x_intercept - bdi_setpoint + 1);
- 	} else
- 		pos_ratio /= 4;
+ 	/*
+@@ -695,6 +699,7 @@ static void isolate_freepages(struct zon
+ 	for (; pfn >= low_pfn && cc->nr_migratepages > nr_freepages;
+ 					pfn -= pageblock_nr_pages) {
+ 		unsigned long isolated;
++		unsigned long end_pfn;
+ 
+ 		/*
+ 		 * This can iterate a massively long zone without finding any
+@@ -729,13 +734,10 @@ static void isolate_freepages(struct zon
+ 		isolated = 0;
+ 
+ 		/*
+-		 * As pfn may not start aligned, pfn+pageblock_nr_page
+-		 * may cross a MAX_ORDER_NR_PAGES boundary and miss
+-		 * a pfn_valid check. Ensure isolate_freepages_block()
+-		 * only scans within a pageblock
++		 * Take care when isolating in last pageblock of a zone which
++		 * ends in the middle of a pageblock.
+ 		 */
+-		end_pfn = ALIGN(pfn + 1, pageblock_nr_pages);
+-		end_pfn = min(end_pfn, z_end_pfn);
++		end_pfn = min(pfn + pageblock_nr_pages, z_end_pfn);
+ 		isolated = isolate_freepages_block(cc, pfn, end_pfn,
+ 						   freelist, false);
+ 		nr_freepages += isolated;
 
 
