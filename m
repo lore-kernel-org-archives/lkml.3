@@ -1,29 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751834AbaFDWIe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 18:08:34 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:37340 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751370AbaFDWId (ORCPT
+	id S1751799AbaFDWLu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 18:11:50 -0400
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:46602 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751443AbaFDWLs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 18:08:33 -0400
-Date: Wed, 04 Jun 2014 15:08:32 -0700 (PDT)
-Message-Id: <20140604.150832.2139446489146153677.davem@davemloft.net>
-To: linux@rasmusvillemoes.dk
-Cc: trivial@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH trivial] include/linux/socket.h: Fix comment
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1401895339-28299-1-git-send-email-linux@rasmusvillemoes.dk>
-References: <1401895339-28299-1-git-send-email-linux@rasmusvillemoes.dk>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Wed, 4 Jun 2014 18:11:48 -0400
+Message-ID: <538F99AA.2080005@cogentembedded.com>
+Date: Thu, 05 Jun 2014 02:11:54 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Sasha Levin <sasha.levin@oracle.com>, davem@davemloft.net,
+        kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
+        kaber@trash.net
+CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, dsahern@gmail.com
+Subject: Re: [PATCH] net: Revert "fib_trie: use seq_file_net rather than seq->private"
+References: <1401919352-32263-1-git-send-email-sasha.levin@oracle.com>
+In-Reply-To: <1401919352-32263-1-git-send-email-sasha.levin@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 04 Jun 2014 15:08:33 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06/05/2014 02:02 AM, Sasha Levin wrote:
 
-Networking patches should be at a minimum CC:'d to netdev@vger.kernel.org,
-thank you.
+> This reverts commit 30f38d2fdd79f13fc929489f7e6e517b4a4bfe63.
+
+> fib_triestat is surrounded by a big lie: while it claims that it's a
+> seq_file (fib_triestat_seq_open, fib_triestat_seq_show), it isn't:
+
+> 	static const struct file_operations fib_triestat_fops = {
+> 	        .owner  = THIS_MODULE,
+> 	        .open   = fib_triestat_seq_open,
+> 	        .read   = seq_read,
+> 	        .llseek = seq_lseek,
+> 	        .release = single_release_net,
+> 	};
+
+> Yes, fib_triestat is just a regular file.
+
+> A small detail (assuming CONFIG_NET_NS=y) is that while for seq_files
+> you could do seq_file_net() to get the net ptr, doing so for a regular
+> file would be wrong and would dereference an invalid pointer.
+>
+> The fib_triestat lie claimed a victim, and trying to show the file would
+> be bad for the kernel. This patch just reverts the issue and fixes
+> fib_triestat, which still needs a rewrite to either be a seq_file or
+> stop claiming it is.
+
+> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+> ---
+>   net/ipv4/fib_trie.c |    2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
+
+> diff --git a/net/ipv4/fib_trie.c b/net/ipv4/fib_trie.c
+> index 243c7f4..5afeb5a 100644
+> --- a/net/ipv4/fib_trie.c
+> +++ b/net/ipv4/fib_trie.c
+> @@ -2166,7 +2166,7 @@ static void fib_table_print(struct seq_file *seq, struct fib_table *tb)
+>
+>   static int fib_triestat_seq_show(struct seq_file *seq, void *v)
+>   {
+> -	struct net *net = seq_file_net(seq);
+> +	struct net *net = (struct net *)seq->private;
+
+    'void *' doesn't need any explicit casting to another pointer type, the 
+cast it automatic.
+
+WBR, Sergei
+
