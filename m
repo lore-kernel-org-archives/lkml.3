@@ -1,90 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752685AbaFDOt0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 10:49:26 -0400
-Received: from mail-we0-f178.google.com ([74.125.82.178]:35569 "EHLO
-	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751495AbaFDOtZ (ORCPT
+	id S1752150AbaFDOu7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 10:50:59 -0400
+Received: from mail-qg0-f51.google.com ([209.85.192.51]:37998 "EHLO
+	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750933AbaFDOu5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 10:49:25 -0400
-Date: Wed, 4 Jun 2014 16:46:39 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: =?utf-8?Q?Rapha=C3=ABl?= Poggi <poggi.raph@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-pwm@vger.kernel.org
-Subject: Re: pwm: atmel: problem when disable pwm
-Message-ID: <20140604144639.GI28484@ulmo>
-References: <CACqcpZDziJs7QUKVYwio=La5LyRzBd+xeeRW=dPFcPzw0Wrn5Q@mail.gmail.com>
+	Wed, 4 Jun 2014 10:50:57 -0400
+Date: Wed, 4 Jun 2014 10:50:53 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Jens Axboe <axboe@kernel.dk>, Paolo Valente <paolo.valente@unimore.it>,
+        Li Zefan <lizefan@huawei.com>, Fabio Checconi <fchecconi@gmail.com>,
+        Arianna Avanzini <avanzini.arianna@gmail.com>,
+        Paolo Valente <posta_paolo@yahoo.it>, linux-kernel@vger.kernel.org,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org
+Subject: Re: [PATCH RFC - TAKE TWO - 00/12] New version of the BFQ I/O
+ Scheduler
+Message-ID: <20140604145053.GE5004@htj.dyndns.org>
+References: <538926F6.7080409@kernel.dk>
+ <20140531051635.GA19925@mtj.dyndns.org>
+ <538C8A47.1050502@kernel.dk>
+ <20140602172454.GA8912@htj.dyndns.org>
+ <538CB515.3090700@kernel.dk>
+ <20140602174250.GC8912@htj.dyndns.org>
+ <538CB87C.7030600@kernel.dk>
+ <20140602185138.GD8912@htj.dyndns.org>
+ <20140602205713.GB8357@kernel.dk>
+ <20140604143136.GA1920@infradead.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="y96v7rNg6HAoELs5"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CACqcpZDziJs7QUKVYwio=La5LyRzBd+xeeRW=dPFcPzw0Wrn5Q@mail.gmail.com>
+In-Reply-To: <20140604143136.GA1920@infradead.org>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hey, Christoph.
 
---y96v7rNg6HAoELs5
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, Jun 04, 2014 at 07:31:36AM -0700, Christoph Hellwig wrote:
+> I don't really think there's anything inherently counter productive
+> to spinning rust (at least for somewhat modern spinning rust and
+> infrastructure) in blk-mq.  I'd really like to get rid of the old
+> request layer in a reasonable amount of time, and for SCSI I'm very
+> reluctant to add more integration between the old and new code.  I'd
+> really planning on not maintaining the old request based SCSI code
+> for a long time once we get positive reports in from users of various
+> kinds of older hardware.
 
-Adding in the linux-pwm mailing list.
+Hmmm... the biggest thing is ioscheds.  They heavily rely on being
+strongly synchronized and are pretty important for rotating rusts.
+Maybe they can be made to work with blk-mq by forcing single queue or
+something but do we wnat that?
 
-On Wed, Jun 04, 2014 at 02:56:13PM +0200, Rapha=C3=ABl Poggi wrote:
-> Hello,
->=20
-> I'm using the pwm-atmel driver to control led, but i'm facing a problem.
->=20
-> When writing "echo 0 > /sys/class/leds/d1/brightness" (to switch off
-> the led) sometimes the led stayed active.
->=20
-> After investigation I think this problem is due to this function:
->=20
-> static void atmel_pwm_disable(struct pwm_chip *chip, struct pwm_device *p=
-wm)
-> {
->     struct atmel_pwm_chip *atmel_pwm =3D to_atmel_pwm_chip(chip);
->=20
->     atmel_pwm_writel(atmel_pwm, PWM_DIS, 1 << pwm->hwpwm);
->=20
->     clk_disable(atmel_pwm->clk);
-> }
->=20
-> By disable the pwm channel, I think the duty cycle "0" has not been
-> update, and the channel is disable and stayed in active state (high or
-> low depending of polarity).
+Thanks.
 
-This sounds like a bug that could be fixed by this commit:
-
-	916030db4399 pwm: atmel: correct CDTY calculation
-
-What version of the kernel are you seeing this problem with? The above
-commit was first added in v3.15-rc1, so maybe try that or any later
-version to see if that fixes it.
-
-Thierry
-
---y96v7rNg6HAoELs5
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTjzFPAAoJEN0jrNd/PrOhFwYP/jilqQOr3F9spUHB4AwtN8F4
-97kAO9/pUda4tAmGxjtHkDskhc8T//g12IpThz9HTmX+BdvxB7he/syy8iAeA5b5
-jjwdxnQ2QeQ89I9C7pyQOyMPMGW3VP+0hk1OMmGT6tImk2ZRZHJH6RGMRpGY1ovp
-1l3/L/VhBET7QDNi8dheAVCjeSBQZL51PX1h1e7b9Im+ttbiB9wL46B4kQsI1J5S
-qrOmHkJ7PxfBcJ5ghf1M64LNLnFj+aDMitrBuSBDAXCIfe1ikZliB4e2nfHCkO1C
-93n/dkzYAIwutrg5kHPwuPvXY/VfFpeZO6gPEN86Vdw8Q7lVo1KPTN2KCZQrJDyp
-/imFgkor8NGe1ZU9bRXMQRCcR/o1AUg8NPYUwKavi8baa0uIjT0+yF+eeLICujsz
-0xhn0PJgso6h6rebLquHnCa3i4Z2N69f7Nh3XHFLCUyF/KkXWBx3GUTAtJhsd06N
-QFi/mKmwci5Lnz2XEti3A/S/TArIz2BaCGWYkIGGBFxL6+fJ6Y4lJ/Pzsz4ys6Fz
-oKxxx+xpmnjPB2OIhJJ9/Yem0eDTHMwck7hEPserjqhHU8/SeRgx9N1YGdYZcSPY
-Z5OPcgUMfN4fhieHRgBhCyRCdnB70e0KTD8zqKM2KxCfk50ek3vYWFoh+UPPuAhT
-h+nVYTUXfEg6pP36PCos
-=M8dI
------END PGP SIGNATURE-----
-
---y96v7rNg6HAoELs5--
+-- 
+tejun
