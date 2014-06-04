@@ -1,223 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753181AbaFDPoe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 11:44:34 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:34027 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751434AbaFDPoc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 11:44:32 -0400
-Date: Wed, 4 Jun 2014 11:44:08 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Greg Thelen <gthelen@google.com>,
-        Michel Lespinasse <walken@google.com>, Tejun Heo <tj@kernel.org>,
-        Hugh Dickins <hughd@google.com>, Roman Gushchin <klamm@yandex-team.ru>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH v2 0/4] memcg: Low-limit reclaim
-Message-ID: <20140604154408.GT2878@cmpxchg.org>
-References: <1398688005-26207-1-git-send-email-mhocko@suse.cz>
- <20140528121023.GA10735@dhcp22.suse.cz>
- <20140528134905.GF2878@cmpxchg.org>
- <20140528142144.GL9895@dhcp22.suse.cz>
- <20140528152854.GG2878@cmpxchg.org>
- <20140528155414.GN9895@dhcp22.suse.cz>
- <20140528163335.GI2878@cmpxchg.org>
- <20140603110743.GD1321@dhcp22.suse.cz>
- <20140603142249.GP2878@cmpxchg.org>
- <20140604144658.GB17612@dhcp22.suse.cz>
+	id S1753359AbaFDPot (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 11:44:49 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:53329 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753299AbaFDPoo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 11:44:44 -0400
+Date: Wed, 4 Jun 2014 16:44:07 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Message-ID: <20140604154407.GM2520@sirena.org.uk>
+References: <4605709.T97aRyQTUM@wuerfel>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="XbHSybK3LHOYQtWI"
 Content-Disposition: inline
-In-Reply-To: <20140604144658.GB17612@dhcp22.suse.cz>
+In-Reply-To: <4605709.T97aRyQTUM@wuerfel>
+X-Cookie: Your lucky color has faded.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 109.148.252.180
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regulator: add regulator_can_change_voltage stub
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 04, 2014 at 04:46:58PM +0200, Michal Hocko wrote:
-> On Tue 03-06-14 10:22:49, Johannes Weiner wrote:
-> > On Tue, Jun 03, 2014 at 01:07:43PM +0200, Michal Hocko wrote:
-> [...]
-> > > If we consider that memcg and its limits are not zone aware while the
-> > > page allocator and reclaim are zone oriented then I can see a problem
-> > > of unexpected reclaim failure although there is no over commit on the
-> > > low_limit globally. And we do not have in-kernel effective measures to
-> > > mitigate this inherent problem. At least not now and I am afraid it is
-> > > a long route to have something that would work reasonably well in such
-> > > cases.
-> > 
-> > Which "inherent problem"?
-> 
-> zone unawareness of the limit vs. allocation/reclaim which are zone
-> oriented.
 
-This is a quote from another subthread where you haven't responded:
+--XbHSybK3LHOYQtWI
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
----
+On Wed, Jun 04, 2014 at 04:46:00PM +0200, Arnd Bergmann wrote:
+> When CONFIG_REGULATOR is not set, we cannot call
+> regulator_can_change_voltage() from a device driver, which results
+> in a build error like
 
-> > > > But who actually cares if an individual zone can be reclaimed?
-> > > > 
-> > > > Userspace allocations can fall back to any other zone.  Unless there
-> > > > are hard bindings, but hopefully nobody binds a memcg to a node that
-> > > > is smaller than that memcg's guarantee. 
-> > > 
-> > > The protected group might spill over to another group and eat it when
-> > > another group would be simply pushed out from the node it is bound to.
-> > 
-> > I don't really understand the point you're trying to make.
-> 
-> I was just trying to show a case where individual zone matters. To make
-> it more specific consider 2 groups A (with low-limit 60% RAM) and B
-> (say with low-limit 10% RAM) and bound to a node X (25% of RAM). Now
-> having 70% of RAM reserved for guarantee makes some sense, right? B is
-> not over-committing the node it is bound to. Yet the A's allocations
-> might make pressure on X regardless that the whole system is still doing
-> good. This can lead to a situation where X gets depleted and nothing
-> would be reclaimable leading to an OOM condition.
+Applied, thanks.
 
-Once you assume control of memory *placement* in the system like this,
-you can not also pretend to be clueless and have unreclaimable memory
-of this magnitude spread around into nodes used by other bound tasks.
+--XbHSybK3LHOYQtWI
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-If we were to actively support such configurations, we should be doing
-direct NUMA balancing and migrate these pages out of node X when B
-needs to allocate.  That would fix the problem for all unevictable
-memory, not just memcg guarantees, and would prefer node-offloading
-over swapping in cases where swap is available.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-But really, this whole scenario sounds contrived to me.  And there is
-nothing specific about memcg guarantees in there.
+iQIcBAEBAgAGBQJTjz7DAAoJELSic+t+oim99eoP/3zBLkyjQbnB2Ry6yhy1/THU
+qzehf6ZMfuelU58G/qnXGRuKwInkNzPYVnzgQJ1GS911wT6UjRGVrOC7rTItvl4S
+He59u1tcWUHeXZ5F+ZIQJ+dnFoysx5rS3S/lo/6ivFSqoBCD7828AbjAY9hJDCI+
+b/3sDlkp5Cu/o2WjY5jtY3LED0ok3smxnMZf2M4Zk7Qq3NcZw9zEhW9i0w2ECgS7
+QmB1DlLM3mpre1EicJ0OqAO4IcB0G1CjxSmiJzkOK6z9V0ugkWGt1cOIXUvIm+BA
+gaL2iSzFpL/U6bJy8MT1FuXmjNlgj7evPazAG0eCrB7B9rUMV52UDCyp4t/Gu97d
+CgGCsKtoNi4FYpLrsyME+7+enWVF7GOUUf6Lg/LL3MU1TOSxSlPO/7hvNzC8r3uN
+b+R7KjrxlV++IN16q/ggcaJnY6Cfts+pbSMskNu92xcbUX7BbzCFyjL6aYvC+dva
+fNy14nzPi+SMtLqtVlXaRlwVU22vMB9XW9WrthDjyNg/4Y36r6BWPXMPvSh+Ur9h
+dojploYBdm5K1fo/No+hTAuJDVv93XT6QLGxqwNLNu5jfxnCxfeCHG0ng6Pd4ZaP
+mvdKixY3qY6l6ZzxhWYFU16kCpIvpPEERWpypKKLDsTorVrMQCJce/EB//wKIpRs
+c7W3f4zRG0JyZiISBCns
+=5Jyd
+-----END PGP SIGNATURE-----
 
----
-
-> > > So to me it sounds more responsible to promise only as much as we can
-> > > handle. I think that fallback mode is not crippling the semantic of
-> > > the knob as it triggers only for limit overcommit or strange corner
-> > > cases. We have agreed that we do not care about the first one and
-> > > handling the later one by potentially fatal action doesn't sounds very
-> > > user friendly to me.
-> > 
-> > It *absolutely* cripples the semantics.  Think about the security use
-> > cases of mlock for example, where certain memory may never hit the
-> > platter.  This wouldn't be possible with your watered down guarantees.
-> 
-> Is this really a use case? It sounds like a weak one to me. Because
-> any sudden memory consumption above the limit can reclaim your
-> to-protect-page it will hit the platter and you cannot do anything about
-> this. So yeah, this is not mlock.
-
-You are right, that is a weak usecase.
-
-It doesn't change the fact that it does severely weaken the semantics
-and turns it into another best-effort mechanism that the user can't
-count on.  This sucks.  It sucked with soft limits and it will suck
-again.  The irony is that Greg even pointed out you should be doing
-soft limits if you want this sort of behavior.
-
-> > And it's the user who makes the promise, not us.  I'd rather have the
-> > responsibility with the user.  Provide mechanism, not policy.
-> 
-> And that user is the application writer, not its administrator. And
-> memcg is more of an admin interface than a development API.
-> 
-> > > For example, if we get back to the NUMA case then a graceful fallback
-> > > allows to migrate offending tasks off the node and reduce reclaim on the
-> > > protected group. This can be done simply by watching the breach counter
-> > > and act upon it. On the other hand if the default policy is OOM then
-> > > the possible actions are much more reduced (action would have to be
-> > > pro-active with hopes that they are faster than OOM).
-> > 
-> > It's really frustrating that you just repeat arguments to which I
-> > already responded.
-> 
-> No you haven't responded. You are dismissing the issue in the first
-> place. Can you guarantee that there is no OOM when low_limits do not
-> overcommit the machine and node bound tasks live in a group which
-> doesn't overcommit the node?
-
-I was referring to the quote on NUMA configurations above.
-
-You can not make this guarantee even *without* the low limit set
-because of other sources of unreclaimable memory.
-
-> > Again, how is this different from mlock?
-> 
-> Sigh. The first thing is that this is not mlock. You are operating on
-> per-group basis. You are running a load which can make its own decisions
-> on the NUMA placement etc... With mlock you are explicit about which
-> memory is locked (potentially even the placement). So the situation is
-> very much different I would say.
-
-It is still unreclaimable memory, just like mlock and anon without
-swap.  I still don't see how it's different, and making unfounded
-claims that it is won't change that.  Provide an example.
-
-> > And again, if this really is a problem (which I doubt), we should fix
-> > it at the root and implement direct migration, rather than design an
-> > interface around it.
-> 
-> Why would we do something like that in the kernel when we have tools to
-> migrate tasks from the userspace?
-
-This is again in reference to partial NUMA bindings.  We can not
-reclaim guaranteed memory, but we could direct-migrate unbound
-unreclaimable memory to another node at allocation time as part of the
-reclaim cycle.
-
-If unbound unreclaimable memory spilling into random nodes making them
-unreclaimable and causing OOMs for node-bound tasks truly is a
-problem, then a) it's not a new one because of mlock and swapless anon
-and b) it shouldn't be solved by weakening guarantee semantics, but by
-something like direct migrate.
-
-> > > > > So call me a chicken but I would sleep calmer if we start weaker and add
-> > > > > an additional guarantees later when somebody really insists on rseeing
-> > > > > an OOM rather than get reclaimed.
-> > > > > The proposed counter can tell us more how good we are at not touching
-> > > > > groups with the limit and we can eventually debug those corner cases
-> > > > > without affecting the loads too much.
-> > > > 
-> > > > More realistically, potential bugs are never reported with a silent
-> > > > counter, which further widens the gap between our assumptions on how
-> > > > the VM behaves and what happens in production.
-> > > 
-> > > OOM driven reports are arguably worse and without easy workaround on the
-> > > other hand.
-> > 
-> > The workaround is obviously to lower the guarantees and/or fix the
-> > NUMA bindings in such cases.
-> 
-> How? Do not use low_limit on node bound loads? Use cumulative low_limit
-> smaller than any node which has bindings? How is the feature still
-> useful?
-
-You completely lost me.  Why can I not use the low limit in
-combination with hard bindings?  And yes, the low limit of a group of
-tasks would have to be smaller than the nodes that group is bound to.
-
-> > I really don't think you have a point here, because there is not a
-> > single concrete example backing up your arguments.
-> > 
-> > Please remove the fallback code from your changes.  They weaken the
-> > feature and add more complexity without reasonable justification - at
-> > least you didn't convince anybody else involved in the discussion.
-> 
-> OK, so you are simply ignoring the usecase I've provided to you and then
-> claim the usefulness of the OOM default without providing any usecases
-> (we are still talking about setups which do not overcommit low_limit).
-
-I'm not ignoring it, I think I addressed all usecases that you
-mentioned.  If I'm missing one, please point it out to me.
-
-> > Because this is user-visible ABI that we are stuck with once released,
-> > the patches should not be merged until we agree on the behavior.
-> 
-> In the other email I have suggested to add a knob with the configurable
-> default. Would you be OK with that?
-
-No, I want to agree on whether we need that fallback code or not.  I'm
-not interested in merging code that you can't convince anybody else is
-needed.
+--XbHSybK3LHOYQtWI--
