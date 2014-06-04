@@ -1,65 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751969AbaFDTMo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 15:12:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54823 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750780AbaFDTMn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 15:12:43 -0400
-Date: Wed, 4 Jun 2014 15:12:28 -0400
-From: Dave Jones <davej@redhat.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: linux-mm@kvack.org, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Brandon Philips <brandon.philips@coreos.com>
-Subject: Re: Bad rss-counter is back on 3.14-stable
-Message-ID: <20140604191228.GB12375@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Greg KH <gregkh@linuxfoundation.org>, linux-mm@kvack.org,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Brandon Philips <brandon.philips@coreos.com>
-References: <20140604182739.GA30340@kroah.com>
+	id S1751490AbaFDTR5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 15:17:57 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:10003 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751010AbaFDTR4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 15:17:56 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 04 Jun 2014 12:10:00 -0700
+From: Vidya Sagar <vidyas@nvidia.com>
+To: <linux@arm.linux.org.uk>, <bhelgaas@google.com>, <wangyijing@huawei.com>,
+        <thierry.reding@gmail.com>, <jason@lakedaemon.net>,
+        <will.deacon@arm.com>, <swarren@nvidia.com>, <kthota@nvidia.com>,
+        <vidyas@nvidia.com>
+CC: <sagar.tv@gmail.com>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH] ARM: fix debug prints relevant to PCI devices
+Date: Thu, 5 Jun 2014 00:47:27 +0530
+Message-ID: <1401909447-8434-1-git-send-email-vidyas@nvidia.com>
+X-Mailer: git-send-email 1.8.1.5
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140604182739.GA30340@kroah.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 04, 2014 at 11:27:39AM -0700, Greg KH wrote:
- > Hi all,
- > 
- > Dave, I saw you mention that you were seeing the "Bad rss-counter" line
- > on 3.15-rc1, but I couldn't find any follow-up on this to see if anyone
- > figured it out, or did it just "magically" go away?
- > 
- > I ask as Brandon is seeing this same message a lot on a 3.14.4 kernel,
- > causing system crashes and problems:
- > 
- > [16591492.449718] BUG: Bad rss-counter state mm:ffff8801ced99880 idx:0 val:-1836508
- > [16591492.449737] BUG: Bad rss-counter state mm:ffff8801ced99880 idx:1 val:1836508
- > 
- > [20783350.461716] BUG: Bad rss-counter state mm:ffff8801d2b1dc00 idx:0 val:-52518
- > [20783350.461734] BUG: Bad rss-counter state mm:ffff8801d2b1dc00 idx:1 val:52518
- > 
- > [21393387.112302] BUG: Bad rss-counter state mm:ffff8801d0104e00 idx:0 val:-1767569
- > [21393387.112321] BUG: Bad rss-counter state mm:ffff8801d0104e00 idx:1 val:1767569
- > 
- > [21430098.512837] BUG: Bad rss-counter state mm:ffff880100036680 idx:0 val:-2946
- > [21430098.512854] BUG: Bad rss-counter state mm:ffff880100036680 idx:1 val:2946
- > 
- > Anyone have any ideas of a 3.15-rc patch I should be including in
- > 3.14-stable to resolve this?
+As per PCIe spec, fast back-to-back transactions feature
+is not applicable to PCIe devices. Hence, do not print
+that fast back-to-back trasactions are disabled when
+there is a PCIe device found on the bus
 
-hard to tell if they were the same issues I was seeing without the full
-backtrace. The only bad rss bugs that I recall being fixed for sure were
-the ones that Hugh nailed down right before 3.14 (887843961c4b)
+Signed-off-by: Vidya Sagar <vidyas@nvidia.com>
+---
+ arch/arm/kernel/bios32.c | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
-I've not seen anything in a while, but that may just be because I end up
-hitting other bugs before they get a chance to show.
+diff --git a/arch/arm/kernel/bios32.c b/arch/arm/kernel/bios32.c
+index 17a26c1..95ad3fb 100644
+--- a/arch/arm/kernel/bios32.c
++++ b/arch/arm/kernel/bios32.c
+@@ -290,6 +290,7 @@ void pcibios_fixup_bus(struct pci_bus *bus)
+ {
+ 	struct pci_dev *dev;
+ 	u16 features = PCI_COMMAND_SERR | PCI_COMMAND_PARITY | PCI_COMMAND_FAST_BACK;
++	int has_pcie_dev = 0;
+ 
+ 	/*
+ 	 * Walk the devices on this bus, working out what we can
+@@ -298,6 +299,8 @@ void pcibios_fixup_bus(struct pci_bus *bus)
+ 	list_for_each_entry(dev, &bus->devices, bus_list) {
+ 		u16 status;
+ 
++		if (!has_pcie_dev)
++			has_pcie_dev = pci_pcie_cap(dev);
+ 		pci_read_config_word(dev, PCI_STATUS, &status);
+ 
+ 		/*
+@@ -354,9 +357,11 @@ void pcibios_fixup_bus(struct pci_bus *bus)
+ 
+ 	/*
+ 	 * Report what we did for this bus
++	 * (only if the bus doesn't have even one PCIe device)
+ 	 */
+-	printk(KERN_INFO "PCI: bus%d: Fast back to back transfers %sabled\n",
+-		bus->number, (features & PCI_COMMAND_FAST_BACK) ? "en" : "dis");
++	if (!has_pcie_dev)
++		printk(KERN_INFO "PCI: bus%d: Fast back to back transfers %sabled\n",
++			bus->number, (features & PCI_COMMAND_FAST_BACK) ? "en" : "dis");
+ }
+ EXPORT_SYMBOL(pcibios_fixup_bus);
+ 
+-- 
+1.8.1.5
 
-Brandon, what kind of workload is that machine doing ? I wonder if I can
-add something to trinity to make it provoke it.
-
-	Dave
