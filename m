@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753739AbaFDXXW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:23:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40506 "EHLO
+	id S932132AbaFDXwf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 19:52:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40555 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753668AbaFDXXQ (ORCPT
+	with ESMTP id S1753730AbaFDXXW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:23:16 -0400
+	Wed, 4 Jun 2014 19:23:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Joerg Roedel <joro@8bytes.org>
-Subject: [PATCH 3.14 222/228] iommu/amd: Fix interrupt remapping for aliased devices
-Date: Wed,  4 Jun 2014 16:24:11 -0700
-Message-Id: <20140604232355.177331490@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Eliad Peller <eliadx.peller@intel.com>,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Subject: [PATCH 3.14 225/228] iwlwifi: add rs_rate_scale_clear_tbl_windows helper function
+Date: Wed,  4 Jun 2014 16:24:14 -0700
+Message-Id: <20140604232355.271692360@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -29,37 +29,96 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Williamson <alex.williamson@redhat.com>
+From: Eliad Peller <eliad@wizery.com>
 
-commit e028a9e6b8a637af09ac4114083280df4a7045f1 upstream.
+commit 3ca71f603bb1a0f55e1ba24618ba45617bc36f70 upstream.
 
-An apparent cut and paste error prevents the correct flags from being
-set on the alias device resulting in MSI on conventional PCI devices
-failing to work.  This also produces error events from the IOMMU like:
+instead of duplicating the same loop multiple times,
+use a new function for it.
 
-AMD-Vi: Event logged [INVALID_DEVICE_REQUEST device=00:14.4 address=0x000000fdf8000000 flags=0x0a00]
+this will be later used also for clearing other
+windows in the table.
 
-Where 14.4 is a PCIe-to-PCI bridge with a device behind it trying to
-use MSI interrupts.
-
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-Signed-off-by: Joerg Roedel <joro@8bytes.org>
+Signed-off-by: Eliad Peller <eliadx.peller@intel.com>
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/iommu/amd_iommu.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/wireless/iwlwifi/mvm/rs.c |   23 ++++++++++++-----------
+ 1 file changed, 12 insertions(+), 11 deletions(-)
 
---- a/drivers/iommu/amd_iommu.c
-+++ b/drivers/iommu/amd_iommu.c
-@@ -3999,7 +3999,7 @@ static struct irq_remap_table *get_irq_t
- 	iommu_flush_dte(iommu, devid);
- 	if (devid != alias) {
- 		irq_lookup_table[alias] = table;
--		set_dte_irq_entry(devid, table);
-+		set_dte_irq_entry(alias, table);
- 		iommu_flush_dte(iommu, alias);
- 	}
+--- a/drivers/net/wireless/iwlwifi/mvm/rs.c
++++ b/drivers/net/wireless/iwlwifi/mvm/rs.c
+@@ -519,6 +519,14 @@ static void rs_rate_scale_clear_window(s
+ 	window->average_tpt = IWL_INVALID_VALUE;
+ }
  
++static void rs_rate_scale_clear_tbl_windows(struct iwl_scale_tbl_info *tbl)
++{
++	int i;
++
++	for (i = 0; i < IWL_RATE_COUNT; i++)
++		rs_rate_scale_clear_window(&tbl->win[i]);
++}
++
+ static inline u8 rs_is_valid_ant(u8 valid_antenna, u8 ant_type)
+ {
+ 	return (ant_type & valid_antenna) == ant_type;
+@@ -1397,7 +1405,6 @@ static u32 rs_bw_from_sta_bw(struct ieee
+ static void rs_stay_in_table(struct iwl_lq_sta *lq_sta, bool force_search)
+ {
+ 	struct iwl_scale_tbl_info *tbl;
+-	int i;
+ 	int active_tbl;
+ 	int flush_interval_passed = 0;
+ 	struct iwl_mvm *mvm;
+@@ -1458,9 +1465,7 @@ static void rs_stay_in_table(struct iwl_
+ 
+ 				IWL_DEBUG_RATE(mvm,
+ 					       "LQ: stay in table clear win\n");
+-				for (i = 0; i < IWL_RATE_COUNT; i++)
+-					rs_rate_scale_clear_window(
+-						&(tbl->win[i]));
++				rs_rate_scale_clear_tbl_windows(tbl);
+ 			}
+ 		}
+ 
+@@ -1469,8 +1474,7 @@ static void rs_stay_in_table(struct iwl_
+ 		 * "search" table). */
+ 		if (lq_sta->rs_state == RS_STATE_SEARCH_CYCLE_STARTED) {
+ 			IWL_DEBUG_RATE(mvm, "Clearing up window stats\n");
+-			for (i = 0; i < IWL_RATE_COUNT; i++)
+-				rs_rate_scale_clear_window(&(tbl->win[i]));
++			rs_rate_scale_clear_tbl_windows(tbl);
+ 		}
+ 	}
+ }
+@@ -1751,7 +1755,6 @@ static void rs_rate_scale_perform(struct
+ 	int low = IWL_RATE_INVALID;
+ 	int high = IWL_RATE_INVALID;
+ 	int index;
+-	int i;
+ 	struct iwl_rate_scale_data *window = NULL;
+ 	int current_tpt = IWL_INVALID_VALUE;
+ 	int low_tpt = IWL_INVALID_VALUE;
+@@ -2036,8 +2039,7 @@ lq_update:
+ 		if (lq_sta->search_better_tbl) {
+ 			/* Access the "search" table, clear its history. */
+ 			tbl = &(lq_sta->lq_info[(1 - lq_sta->active_tbl)]);
+-			for (i = 0; i < IWL_RATE_COUNT; i++)
+-				rs_rate_scale_clear_window(&(tbl->win[i]));
++			rs_rate_scale_clear_tbl_windows(tbl);
+ 
+ 			/* Use new "search" start rate */
+ 			index = tbl->rate.index;
+@@ -2301,8 +2303,7 @@ void iwl_mvm_rs_rate_init(struct iwl_mvm
+ 	lq_sta->lq.sta_id = sta_priv->sta_id;
+ 
+ 	for (j = 0; j < LQ_SIZE; j++)
+-		for (i = 0; i < IWL_RATE_COUNT; i++)
+-			rs_rate_scale_clear_window(&lq_sta->lq_info[j].win[i]);
++		rs_rate_scale_clear_tbl_windows(&lq_sta->lq_info[j]);
+ 
+ 	lq_sta->flush_timer = 0;
+ 	lq_sta->last_tx = jiffies;
 
 
