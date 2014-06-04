@@ -1,126 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753303AbaFDPAQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 11:00:16 -0400
-Received: from mx07-00178001.pphosted.com ([62.209.51.94]:47920 "EHLO
-	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752782AbaFDPAF (ORCPT
+	id S1752969AbaFDPCz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 11:02:55 -0400
+Received: from mx08-00178001.pphosted.com ([91.207.212.93]:36415 "EHLO
+	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752449AbaFDPAT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 11:00:05 -0400
+	Wed, 4 Jun 2014 11:00:19 -0400
 From: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
-To: mturquette@linaro.org, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org
-Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        kernel@stlinux.com, Lee Jones <lee.jones@linaro.org>,
-        Gabriel Fernandez <gabriel.fernandez@linaro.org>
-Subject: [PATCH RESEND 01/12] clk: st: Update ST clock binding documentation
-Date: Wed,  4 Jun 2014 16:31:49 +0200
-Message-Id: <1401892320-18211-2-git-send-email-gabriel.fernandez@linaro.org>
+To: Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
+        Maxime Coquelin <maxime.coquelin@st.com>,
+        Patrice Chotard <patrice.chotard@st.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, olof@lixom.net
+Cc: linux-arm-kernel@lists.infradead.org, kernel@stlinux.com,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Lee Jones <lee.jones@linaro.org>,
+        Gabriel Fernandez <gabriel.fernandez@linaro.org>,
+        Olivier Bideau <olivier.bideau@st.com>
+Subject: [PATCH 3/4] ARM: STi: DT: STiH407: 407 DT Entry for clockgen D0/D2/D3
+Date: Wed,  4 Jun 2014 16:32:51 +0200
+Message-Id: <1401892372-18279-4-git-send-email-gabriel.fernandez@linaro.org>
 X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1401892320-18211-1-git-send-email-gabriel.fernandez@linaro.org>
-References: <1401892320-18211-1-git-send-email-gabriel.fernandez@linaro.org>
+In-Reply-To: <1401892372-18279-1-git-send-email-gabriel.fernandez@linaro.org>
+References: <1401892372-18279-1-git-send-email-gabriel.fernandez@linaro.org>
 X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
  definitions=2014-06-04_03:2014-06-04,2014-06-04,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds new compatibilities to support STiH407 SoC.
+Patch adds DT entries for clockgen D0/D2/D3
 
 Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
+Signed-off-by: Olivier Bideau <olivier.bideau@st.com>
 ---
- .../devicetree/bindings/clock/st/st,clkgen-mux.txt   |  2 +-
- .../devicetree/bindings/clock/st/st,clkgen-pll.txt   |  5 ++++-
- .../devicetree/bindings/clock/st/st,clkgen.txt       | 20 ++++++++++++++++----
- .../devicetree/bindings/clock/st/st,quadfs.txt       |  3 +++
- 4 files changed, 24 insertions(+), 6 deletions(-)
+ arch/arm/boot/dts/stih407-clock.dtsi | 126 +++++++++++++++++++++++++++++++++++
+ 1 file changed, 126 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/clock/st/st,clkgen-mux.txt b/Documentation/devicetree/bindings/clock/st/st,clkgen-mux.txt
-index 943e080..2d92fc8 100644
---- a/Documentation/devicetree/bindings/clock/st/st,clkgen-mux.txt
-+++ b/Documentation/devicetree/bindings/clock/st/st,clkgen-mux.txt
-@@ -17,7 +17,7 @@ Required properties:
- 	"st,stih416-clkgenf-vcc-sd",	"st,clkgen-mux"
- 	"st,stih415-clkgen-a9-mux",	"st,clkgen-mux"
- 	"st,stih416-clkgen-a9-mux",	"st,clkgen-mux"
--
-+	"st,stih407-clkgen-a9-mux",	"st,clkgen-mux"
- 
- - #clock-cells : from common clock binding; shall be set to 0.
- 
-diff --git a/Documentation/devicetree/bindings/clock/st/st,clkgen-pll.txt b/Documentation/devicetree/bindings/clock/st/st,clkgen-pll.txt
-index 81eb385..b852925 100644
---- a/Documentation/devicetree/bindings/clock/st/st,clkgen-pll.txt
-+++ b/Documentation/devicetree/bindings/clock/st/st,clkgen-pll.txt
-@@ -19,11 +19,14 @@ Required properties:
- 	"st,stih415-plls-c32-ddr",	"st,clkgen-plls-c32"
- 	"st,stih416-plls-c32-a9",	"st,clkgen-plls-c32"
- 	"st,stih416-plls-c32-ddr",	"st,clkgen-plls-c32"
-+	"st,stih407-plls-c32-a0",	"st,clkgen-plls-c32"
-+	"st,stih407-plls-c32-a9",	"st,clkgen-plls-c32"
-+	"st,stih407-plls-c32-c0_0",	"st,clkgen-plls-c32"
-+	"st,stih407-plls-c32-c0_1",	"st,clkgen-plls-c32"
- 
- 	"st,stih415-gpu-pll-c32",	"st,clkgengpu-pll-c32"
- 	"st,stih416-gpu-pll-c32",	"st,clkgengpu-pll-c32"
- 
--
- - #clock-cells : From common clock binding; shall be set to 1.
- 
- - clocks : From common clock binding
-diff --git a/Documentation/devicetree/bindings/clock/st/st,clkgen.txt b/Documentation/devicetree/bindings/clock/st/st,clkgen.txt
-index 49ec5ae..55506c2 100644
---- a/Documentation/devicetree/bindings/clock/st/st,clkgen.txt
-+++ b/Documentation/devicetree/bindings/clock/st/st,clkgen.txt
-@@ -24,16 +24,28 @@ address is common of all subnode.
- 		quadfs_node {
- 			...
+diff --git a/arch/arm/boot/dts/stih407-clock.dtsi b/arch/arm/boot/dts/stih407-clock.dtsi
+index 85cc135..6e59011 100644
+--- a/arch/arm/boot/dts/stih407-clock.dtsi
++++ b/arch/arm/boot/dts/stih407-clock.dtsi
+@@ -139,5 +139,131 @@
+ 						     "clk-compo-dvp";
+ 			};
  		};
 +
-+		mux_node {
-+			...
++		clk_s_d0_quadfs: clk-s-d0-quadfs@9104000 {
++			#clock-cells = <1>;
++			compatible = "st,stih407-quadfs660-D", "st,quadfs";
++			reg = <0x9104000 0x1000>;
++
++			clocks = <&clk_sysin>;
++
++			clock-output-names = "clk-s-d0-fs0-ch0",
++					     "clk-s-d0-fs0-ch1",
++					     "clk-s-d0-fs0-ch2",
++					     "clk-s-d0-fs0-ch3";
 +		};
 +
-+		vcc_node {
-+			...
++		clockgen-d0@09104000 {
++			compatible = "st,clkgen-c32";
++			reg = <0x9104000 0x1000>;
++
++			clk_s_d0_flexgen: clk-s-d0-flexgen {
++				#clock-cells = <1>;
++				compatible = "st,flexgen";
++
++				clocks = <&clk_s_d0_quadfs 0>,
++					 <&clk_s_d0_quadfs 1>,
++					 <&clk_s_d0_quadfs 2>,
++					 <&clk_s_d0_quadfs 3>,
++					 <&clk_sysin>;
++
++				clock-output-names = "clk-pcm-0",
++						     "clk-pcm-1",
++						     "clk-pcm-2",
++						     "clk-spdiff";
++			};
 +		};
- 		...
++
++		clk_s_d2_quadfs: clk-s-d2-quadfs@9106000 {
++			#clock-cells = <1>;
++			compatible = "st,stih407-quadfs660-D", "st,quadfs";
++			reg = <0x9106000 0x1000>;
++
++			clocks = <&clk_sysin>;
++
++			clock-output-names = "clk-s-d2-fs0-ch0",
++					     "clk-s-d2-fs0-ch1",
++					     "clk-s-d2-fs0-ch2",
++					     "clk-s-d2-fs0-ch3";
++		};
++
++		clk_tmdsout_hdmi: clk-tmdsout-hdmi {
++			#clock-cells = <0>;
++			compatible = "fixed-clock";
++			clock-frequency = <0>;
++		};
++
++		clockgen-d2@x9106000 {
++			compatible = "st,clkgen-c32";
++			reg = <0x9106000 0x1000>;
++
++			clk_s_d2_flexgen: clk-s-d2-flexgen {
++				#clock-cells = <1>;
++				compatible = "st,flexgen";
++
++				clocks = <&clk_s_d2_quadfs 0>,
++					 <&clk_s_d2_quadfs 1>,
++					 <&clk_s_d2_quadfs 2>,
++					 <&clk_s_d2_quadfs 3>,
++					 <&clk_sysin>,
++					 <&clk_sysin>,
++					 <&clk_tmdsout_hdmi>;
++
++				clock-output-names = "clk-pix-main-disp",
++						     "clk-pix-pip",
++						     "clk-pix-gdp1",
++						     "clk-pix-gdp2",
++						     "clk-pix-gdp3",
++						     "clk-pix-gdp4",
++						     "clk-pix-aux-disp",
++						     "clk-denc",
++						     "clk-pix-hddac",
++						     "clk-hddac",
++						     "clk-sddac",
++						     "clk-pix-dvo",
++						     "clk-dvo",
++						     "clk-pix-hdmi",
++						     "",
++						     "clk-ref-hdmiphy";
++						     };
++		};
++
++		clk_s_d3_quadfs: clk-s-d3-quadfs@9107000 {
++			#clock-cells = <1>;
++			compatible = "st,stih407-quadfs660-D", "st,quadfs";
++			reg = <0x9107000 0x1000>;
++
++			clocks = <&clk_sysin>;
++
++			clock-output-names = "clk-s-d3-fs0-ch0",
++					     "clk-s-d3-fs0-ch1",
++					     "clk-s-d3-fs0-ch2",
++					     "clk-s-d3-fs0-ch3";
++		};
++
++		clockgen-d3@9107000 {
++			compatible = "st,clkgen-c32";
++			reg = <0x9107000 0x1000>;
++
++			clk_s_d3_flexgen: clk-s-d3-flexgen {
++				#clock-cells = <1>;
++				compatible = "st,flexgen";
++
++				clocks = <&clk_s_d3_quadfs 0>,
++					 <&clk_s_d3_quadfs 1>,
++					 <&clk_s_d3_quadfs 2>,
++					 <&clk_s_d3_quadfs 3>,
++					 <&clk_sysin>;
++
++				clock-output-names = "clk-stfe-frc1",
++						     "clk-tsout-0",
++						     "clk-tsout-1",
++						     "clk-mchi",
++						     "clk-vsens-compo",
++						     "clk-frc1-remote",
++						     "clk-lpc-0",
++						     "clk-lpc-1";
++			};
++		};
  	};
- 
- This binding uses the common clock binding[1].
--Each subnode should use the binding discribe in [2]..[4]
-+Each subnode should use the binding discribe in [2]..[7]
- 
- [1] Documentation/devicetree/bindings/clock/clock-bindings.txt
--[2] Documentation/devicetree/bindings/clock/st,quadfs.txt
--[3] Documentation/devicetree/bindings/clock/st,quadfs.txt
--[4] Documentation/devicetree/bindings/clock/st,quadfs.txt
-+[2] Documentation/devicetree/bindings/clock/st,clkgen-divmux.txt
-+[3] Documentation/devicetree/bindings/clock/st,clkgen-mux.txt
-+[4] Documentation/devicetree/bindings/clock/st,clkgen-pll.txt
-+[5] Documentation/devicetree/bindings/clock/st,clkgen-prediv.txt
-+[6] Documentation/devicetree/bindings/clock/st,vcc.txt
-+[7] Documentation/devicetree/bindings/clock/st,quadfs.txt
-+
- 
- Required properties:
- - reg : A Base address and length of the register set.
-diff --git a/Documentation/devicetree/bindings/clock/st/st,quadfs.txt b/Documentation/devicetree/bindings/clock/st/st,quadfs.txt
-index ec86d62..c0a4045 100644
---- a/Documentation/devicetree/bindings/clock/st/st,quadfs.txt
-+++ b/Documentation/devicetree/bindings/clock/st/st,quadfs.txt
-@@ -15,6 +15,9 @@ Required properties:
-   "st,stih416-quadfs432",	"st,quadfs"
-   "st,stih416-quadfs660-E",	"st,quadfs"
-   "st,stih416-quadfs660-F",	"st,quadfs"
-+  "st,stih407-quadfs660-C",	"st,quadfs"
-+  "st,stih407-quadfs660-D",	"st,quadfs"
-+
- 
- - #clock-cells : from common clock binding; shall be set to 1.
- 
+ };
 -- 
 1.9.1
 
