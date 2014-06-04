@@ -1,51 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751735AbaFDULn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 16:11:43 -0400
-Received: from g4t3425.houston.hp.com ([15.201.208.53]:40528 "EHLO
-	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750944AbaFDULm (ORCPT
+	id S1751988AbaFDUMW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 16:12:22 -0400
+Received: from mail-vc0-f181.google.com ([209.85.220.181]:61355 "EHLO
+	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751000AbaFDUMV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 16:11:42 -0400
-Message-ID: <1401912696.13877.5.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [RFC PATCH 2/3] locking/mutex: Correct documentation on mutex
- optimistic spinning
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Jason Low <jason.low2@hp.com>
-Cc: mingo@kernel.org, peterz@infradead.org, tglx@linutronix.de,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        paulmck@linux.vnet.ibm.com, tim.c.chen@linux.intel.com,
-        peter@hurleysoftware.com, riel@redhat.com, hpa@zytor.com,
-        walken@google.com, Waiman.Long@hp.com, aswin@hp.com,
-        scott.norton@hp.com, chegu_vinod@hp.com
-Date: Wed, 04 Jun 2014 13:11:36 -0700
-In-Reply-To: <1401908911-8947-3-git-send-email-jason.low2@hp.com>
-References: <1401908911-8947-1-git-send-email-jason.low2@hp.com>
-	 <1401908911-8947-3-git-send-email-jason.low2@hp.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 4 Jun 2014 16:12:21 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140604083726.GN1730@lahna.fi.intel.com>
+References: <1401800524-28934-1-git-send-email-mika.westerberg@linux.intel.com>
+	<CANLzEksLB1=+TePxgPRBhsGKpC-4tWB8JOh-Ey80Hj43LkVn=g@mail.gmail.com>
+	<20140604083726.GN1730@lahna.fi.intel.com>
+Date: Wed, 4 Jun 2014 13:12:20 -0700
+X-Google-Sender-Auth: XHbkyzPjp8PCA6Joi4Zt5e6T4VE
+Message-ID: <CANLzEkuAxGrRHtb=vFAm9AGws7Qyg3A_oQpAGGFaYEqP2A2g8g@mail.gmail.com>
+Subject: Re: [PATCH] platform/chrome: Add support for Acer C720
+From: Benson Leung <bleung@chromium.org>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: Olof Johansson <olof@lixom.net>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-06-04 at 12:08 -0700, Jason Low wrote:
-> The mutex optimistic spinning documentation states that we spin for
-> acquisition when we find that there are no pending waiters. However,
-> in actuality, whether or not there are waiters for the mutex doesn't
-> determine if we will spin for it.
-> 
-> This patch removes that statement and also adds a comment which
-> mentions that we spin for the mutex while we don't need to reschedule.
-> 
-> Signed-off-by: Jason Low <jason.low2@hp.com>
+Hi Mika,
 
-Acked-by: Davidlohr Bueso <davidlohr@hp.com>
 
-I think this could go in with v4 of the mutex doc rewrite patch...
-guessing for 3.17 now.
+On Wed, Jun 4, 2014 at 1:37 AM, Mika Westerberg
+<mika.westerberg@linux.intel.com> wrote:
+> Do you mind including $subject patch (with your suggested change above)
+> with your patch series once v3.16-rc1 is released? Please let me know if
+> you want me to do the change and send the patch myself.
 
-Thanks,
-Davidlohr
+I'll include your Acer C720 patch along with the rest of my patches
+when v3.16-rc1 is released.
 
+Thanks!
+
+-- 
+Benson Leung
+Software Engineer, Chrom* OS
+bleung@chromium.org
