@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755036AbaFDXog (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:44:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40710 "EHLO
+	id S1755020AbaFDXof (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 19:44:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40714 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753880AbaFDXXi (ORCPT
+	with ESMTP id S1753883AbaFDXXi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 4 Jun 2014 19:23:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Atilla Filiz <atilla.filiz@essensium.com>,
-        Jonathan Cameron <jic23@kernel.org>
-Subject: [PATCH 3.10 033/103] iio:imu:mpu6050: Fixed segfault in Invensens MPU driver due to null dereference
-Date: Wed,  4 Jun 2014 16:24:56 -0700
-Message-Id: <20140604232547.931622065@linuxfoundation.org>
+        Nikita Yushchenko <nyushchenko@dev.rtsoft.ru>
+Subject: [PATCH 3.10 034/103] fsl-usb: do not test for PHY_CLK_VALID bit on controller version 1.6
+Date: Wed,  4 Jun 2014 16:24:57 -0700
+Message-Id: <20140604232547.961299888@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232546.704156131@linuxfoundation.org>
 References: <20140604232546.704156131@linuxfoundation.org>
@@ -29,45 +28,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Atilla Filiz <atilla.filiz@essensium.com>
+From: Nikita Yushchenko <nyushchenko@dev.rtsoft.ru>
 
-commit b9b3a41893c3f1be67b5aacfa525969914bea0e9 upstream.
+commit d183c81929beeba842b74422f754446ef2b8b49c upstream.
 
-The driver segfaults when the kernel boots with device tree as the
-platform data is then not present and the pointer is deferenced without
-checking it is not null.  This patch introduces such a check avoiding the
-crash.
+Per reference manuals of Freescale P1020 and P2020 SoCs, USB controller
+present in these SoCs has bit 17 of USBx_CONTROL register marked as
+Reserved - there is no PHY_CLK_VALID bit there.
 
-Signed-off-by: Atilla Filiz <atilla.filiz@essensium.com>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+Testing for this bit in ehci_fsl_setup_phy() behaves differently on two
+P1020RDB boards available here - on one board test passes and fsl-usb
+init succeeds, but on other board test fails, causing fsl-usb init to
+fail.
+
+This patch changes ehci_fsl_setup_phy() not to test PHY_CLK_VALID on
+controller version 1.6 that (per manual) does not have this bit.
+
+Signed-off-by: Nikita Yushchenko <nyushchenko@dev.rtsoft.ru>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/iio/imu/inv_mpu6050/inv_mpu_core.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ drivers/usb/host/ehci-fsl.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/iio/imu/inv_mpu6050/inv_mpu_core.c
-+++ b/drivers/iio/imu/inv_mpu6050/inv_mpu_core.c
-@@ -660,6 +660,7 @@ static int inv_mpu_probe(struct i2c_clie
- {
- 	struct inv_mpu6050_state *st;
- 	struct iio_dev *indio_dev;
-+	struct inv_mpu6050_platform_data *pdata;
- 	int result;
- 
- 	if (!i2c_check_functionality(client->adapter,
-@@ -675,8 +676,10 @@ static int inv_mpu_probe(struct i2c_clie
+--- a/drivers/usb/host/ehci-fsl.c
++++ b/drivers/usb/host/ehci-fsl.c
+@@ -261,7 +261,8 @@ static int ehci_fsl_setup_phy(struct usb
+ 		break;
  	}
- 	st = iio_priv(indio_dev);
- 	st->client = client;
--	st->plat_data = *(struct inv_mpu6050_platform_data
--				*)dev_get_platdata(&client->dev);
-+	pdata = (struct inv_mpu6050_platform_data
-+			*)dev_get_platdata(&client->dev);
-+	if (pdata)
-+		st->plat_data = *pdata;
- 	/* power is turned on inside check chip type*/
- 	result = inv_check_and_setup_chip(st, id);
- 	if (result)
+ 
+-	if (pdata->have_sysif_regs && pdata->controller_ver &&
++	if (pdata->have_sysif_regs &&
++	    pdata->controller_ver > FSL_USB_VER_1_6 &&
+ 	    (phy_mode == FSL_USB2_PHY_ULPI)) {
+ 		/* check PHY_CLK_VALID to get phy clk valid */
+ 		if (!spin_event_timeout(in_be32(non_ehci + FSL_SOC_USB_CTRL) &
 
 
