@@ -1,89 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753511AbaFDOEM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 10:04:12 -0400
-Received: from relay.parallels.com ([195.214.232.42]:56712 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752074AbaFDOEI (ORCPT
+	id S1753610AbaFDOES (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 10:04:18 -0400
+Received: from mail-qg0-f50.google.com ([209.85.192.50]:61396 "EHLO
+	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752074AbaFDOEN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 10:04:08 -0400
-Message-ID: <1401890642.4484.6.camel@tkhai>
-Subject: [PATCH RESEND 1/2] sched/dl: Add necessary dl_{task,prio}
-From: Kirill Tkhai <ktkhai@parallels.com>
-To: <linux-kernel@vger.kernel.org>
-CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Juri Lelli <juri.lelli@gmail.com>, <tkhai@yandex.ru>
-Date: Wed, 4 Jun 2014 18:04:02 +0400
-In-Reply-To: <20140604124735.3951.61242.stgit@tkhai>
-References: <20140604124735.3951.61242.stgit@tkhai>
-Organization: Parallels
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b3 
+	Wed, 4 Jun 2014 10:04:13 -0400
+Date: Wed, 4 Jun 2014 10:04:08 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Joerg Roedel <joro@8bytes.org>
+Cc: Shuah Khan <shuah.kh@samsung.com>, Eli Billauer <eli.billauer@gmail.com>,
+        devel@driverdev.osuosl.org, gregkh@linuxfoundation.org,
+        bhelgaas@google.com, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, iommu@lists.linux-foundation.org,
+        discuss@x86-64.org
+Subject: Re: [PATCH v2 1/4] dma-mapping: Add devm_ interface for
+ dma_map_single()
+Message-ID: <20140604140408.GC5004@htj.dyndns.org>
+References: <1401606077-1739-1-git-send-email-eli.billauer@gmail.com>
+ <1401606077-1739-2-git-send-email-eli.billauer@gmail.com>
+ <538E3D04.9060808@samsung.com>
+ <20140603233907.GB23880@8bytes.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.30.26.172]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140603233907.GB23880@8bytes.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
-Add some symmetric to rt checks.
+On Wed, Jun 04, 2014 at 01:39:07AM +0200, Joerg Roedel wrote:
+> I fully agree with the points Shuah brought up here. I don't think it is
+> a good idea to add this kind of resource management to runtime-allocated
+> (and de-allocated) resources of device drivers.
+>
+> Also DMA handles are not something that could be garbage collected at
+> driver unload time. They are a limited resource that may be used up at
+> some point. And the whole point of a devm-API is that code can be
+> simpler because we don't need to de-allocate everything on the
+> error-path or at unload time, no?
 
-Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
-CC: Juri Lelli <juri.lelli@gmail.com>
-CC: Peter Zijlstra <peterz@infradead.org>
-CC: Ingo Molnar <mingo@kernel.org>
----
- kernel/locking/mutex.c |    8 +++++---
- kernel/sched/core.c    |    4 ++--
- 2 files changed, 7 insertions(+), 5 deletions(-)
+Hmmm?  Don't we have drivers which map dma buffers on device init and
+release them on exit?  For dynamic usages, its usefulness is limited
+especially given that dynamic tracking of buffers usually would
+involve tracking of other information too in addition to dma buffer
+pointer themselves.  If alloc on init and free on exit is a very rare
+usage pattern, I have no objection against not adding devm interface
+for dma mappings.
 
-diff --git a/kernel/locking/mutex.c b/kernel/locking/mutex.c
-index bc73d33..cb9f381 100644
---- a/kernel/locking/mutex.c
-+++ b/kernel/locking/mutex.c
-@@ -21,6 +21,7 @@
- #include <linux/ww_mutex.h>
- #include <linux/sched.h>
- #include <linux/sched/rt.h>
-+#include <linux/sched/deadline.h>
- #include <linux/export.h>
- #include <linux/spinlock.h>
- #include <linux/interrupt.h>
-@@ -459,10 +460,11 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
- 		/*
- 		 * When there's no owner, we might have preempted between the
- 		 * owner acquiring the lock and setting the owner field. If
--		 * we're an RT task that will live-lock because we won't let
--		 * the owner complete.
-+		 * we're an RT or DL task that will live-lock because we won't
-+		 * let the owner complete.
- 		 */
--		if (!owner && (need_resched() || rt_task(task)))
-+		if (!owner &&
-+		    (need_resched() || rt_task(task) || dl_task(task)))
- 			break;
- 
- 		/*
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 240aa83..ba7617a 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -962,11 +962,11 @@ static int effective_prio(struct task_struct *p)
- {
- 	p->normal_prio = normal_prio(p);
- 	/*
--	 * If we are RT tasks or we were boosted to RT priority,
-+	 * If we are RT or DL tasks or we were boosted to RT or DL priority,
- 	 * keep the priority unchanged. Otherwise, update priority
- 	 * to the normal priority:
- 	 */
--	if (!rt_prio(p->prio))
-+	if (!rt_prio(p->prio) && !dl_prio(p->prio))
- 		return p->normal_prio;
- 	return p->prio;
- }
+Thanks.
 
-
-
-
+-- 
+tejun
