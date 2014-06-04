@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754018AbaFDXX4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:23:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40807 "EHLO
+	id S1754265AbaFDXY1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 19:24:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41088 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753956AbaFDXXy (ORCPT
+	with ESMTP id S1754239AbaFDXYZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:23:54 -0400
+	Wed, 4 Jun 2014 19:24:25 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.10 041/103] rt2x00: fix beaconing on USB
-Date: Wed,  4 Jun 2014 16:25:04 -0700
-Message-Id: <20140604232548.182694161@linuxfoundation.org>
+        Antti Palosaari <crope@iki.fi>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Subject: [PATCH 3.10 101/103] media: fc2580: fix tuning failure on 32-bit arch
+Date: Wed,  4 Jun 2014 16:26:04 -0700
+Message-Id: <20140604232550.128184317@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232546.704156131@linuxfoundation.org>
 References: <20140604232546.704156131@linuxfoundation.org>
@@ -29,67 +29,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Antti Palosaari <crope@iki.fi>
 
-commit 8834d3608cc516f13e2e510f4057c263f3d2ce42 upstream.
+commit 8845cc6415ec28ef8d57b3fb81c75ef9bce69c5f upstream.
 
-When disable beaconing we clear register with beacon and newer set it
-back, what make we stop send beacons infinitely.
+There was some frequency calculation overflows which caused tuning
+failure on 32-bit architecture. Use 64-bit numbers where needed in
+order to avoid calculation overflows.
 
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Thanks for the Finnish person, who asked remain anonymous, reporting,
+testing and suggesting the fix.
+
+Signed-off-by: Antti Palosaari <crope@iki.fi>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rt2x00/rt2x00mac.c |   22 ++++++++++++----------
- 1 file changed, 12 insertions(+), 10 deletions(-)
+ drivers/media/tuners/fc2580.c      |    6 +++---
+ drivers/media/tuners/fc2580_priv.h |    1 +
+ 2 files changed, 4 insertions(+), 3 deletions(-)
 
---- a/drivers/net/wireless/rt2x00/rt2x00mac.c
-+++ b/drivers/net/wireless/rt2x00/rt2x00mac.c
-@@ -623,20 +623,18 @@ void rt2x00mac_bss_info_changed(struct i
- 				      bss_conf->bssid);
+--- a/drivers/media/tuners/fc2580.c
++++ b/drivers/media/tuners/fc2580.c
+@@ -195,7 +195,7 @@ static int fc2580_set_params(struct dvb_
  
- 	/*
--	 * Update the beacon. This is only required on USB devices. PCI
--	 * devices fetch beacons periodically.
--	 */
--	if (changes & BSS_CHANGED_BEACON && rt2x00_is_usb(rt2x00dev))
--		rt2x00queue_update_beacon(rt2x00dev, vif);
--
--	/*
- 	 * Start/stop beaconing.
- 	 */
- 	if (changes & BSS_CHANGED_BEACON_ENABLED) {
- 		if (!bss_conf->enable_beacon && intf->enable_beacon) {
--			rt2x00queue_clear_beacon(rt2x00dev, vif);
- 			rt2x00dev->intf_beaconing--;
- 			intf->enable_beacon = false;
-+			/*
-+			 * Clear beacon in the H/W for this vif. This is needed
-+			 * to disable beaconing on this particular interface
-+			 * and keep it running on other interfaces.
-+			 */
-+			rt2x00queue_clear_beacon(rt2x00dev, vif);
+ 	f_ref = 2UL * priv->cfg->clock / r_val;
+ 	n_val = div_u64_rem(f_vco, f_ref, &k_val);
+-	k_val_reg = 1UL * k_val * (1 << 20) / f_ref;
++	k_val_reg = div_u64(1ULL * k_val * (1 << 20), f_ref);
  
- 			if (rt2x00dev->intf_beaconing == 0) {
- 				/*
-@@ -647,11 +645,15 @@ void rt2x00mac_bss_info_changed(struct i
- 				rt2x00queue_stop_queue(rt2x00dev->bcn);
- 				mutex_unlock(&intf->beacon_skb_mutex);
- 			}
--
--
- 		} else if (bss_conf->enable_beacon && !intf->enable_beacon) {
- 			rt2x00dev->intf_beaconing++;
- 			intf->enable_beacon = true;
-+			/*
-+			 * Upload beacon to the H/W. This is only required on
-+			 * USB devices. PCI devices fetch beacons periodically.
-+			 */
-+			if (rt2x00_is_usb(rt2x00dev))
-+				rt2x00queue_update_beacon(rt2x00dev, vif);
+ 	ret = fc2580_wr_reg(priv, 0x18, r18_val | ((k_val_reg >> 16) & 0xff));
+ 	if (ret < 0)
+@@ -348,8 +348,8 @@ static int fc2580_set_params(struct dvb_
+ 	if (ret < 0)
+ 		goto err;
  
- 			if (rt2x00dev->intf_beaconing == 1) {
- 				/*
+-	ret = fc2580_wr_reg(priv, 0x37, 1UL * priv->cfg->clock * \
+-			fc2580_if_filter_lut[i].mul / 1000000000);
++	ret = fc2580_wr_reg(priv, 0x37, div_u64(1ULL * priv->cfg->clock *
++			fc2580_if_filter_lut[i].mul, 1000000000));
+ 	if (ret < 0)
+ 		goto err;
+ 
+--- a/drivers/media/tuners/fc2580_priv.h
++++ b/drivers/media/tuners/fc2580_priv.h
+@@ -22,6 +22,7 @@
+ #define FC2580_PRIV_H
+ 
+ #include "fc2580.h"
++#include <linux/math64.h>
+ 
+ struct fc2580_reg_val {
+ 	u8 reg;
 
 
