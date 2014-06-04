@@ -1,162 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753035AbaFDPsU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 11:48:20 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37064 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751592AbaFDPsS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 11:48:18 -0400
-From: Takashi Iwai <tiwai@suse.de>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Ming Lei <ming.lei@canonical.com>, Tom Gundersen <teg@jklm.no>,
-        Abhay Salunke <Abhay_Salunke@dell.com>, Stefan Roese <sr@denx.de>,
-        Arnd Bergmann <arnd@arndb.de>, Kay Sievers <kay@vrfy.org>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2] firmware loader: allow disabling of udev as firmware loader
-Date: Wed,  4 Jun 2014 17:48:15 +0200
-Message-Id: <1401896895-14262-1-git-send-email-tiwai@suse.de>
-X-Mailer: git-send-email 1.9.3
+	id S1752551AbaFDPvP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 11:51:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35106 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751580AbaFDPvP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 11:51:15 -0400
+Date: Wed, 4 Jun 2014 08:54:54 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Kleber Sacilotto de Souza <klebers@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, haver@linux.vnet.ibm.com
+Subject: Re: [PATCH 4/4] GenWQE: Increase driver version number
+Message-ID: <20140604155454.GA2866@kroah.com>
+References: <1401890273-13067-1-git-send-email-klebers@linux.vnet.ibm.com>
+ <1401890273-13067-5-git-send-email-klebers@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1401890273-13067-5-git-send-email-klebers@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[The patch was originally proposed by Tom Gundersen, and rewritten
- afterwards by me; most of changelogs below borrowed from Tom's
- original patch -- tiwai]
+On Wed, Jun 04, 2014 at 10:57:53AM -0300, Kleber Sacilotto de Souza wrote:
+> Increase genwqe driver version number.
+> 
+> Signed-off-by: Kleber Sacilotto de Souza <klebers@linux.vnet.ibm.com>
+> ---
+>  drivers/misc/genwqe/genwqe_driver.h |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/misc/genwqe/genwqe_driver.h b/drivers/misc/genwqe/genwqe_driver.h
+> index cd52631..a506e9a 100644
+> --- a/drivers/misc/genwqe/genwqe_driver.h
+> +++ b/drivers/misc/genwqe/genwqe_driver.h
+> @@ -36,7 +36,7 @@
+>  #include <asm/byteorder.h>
+>  #include <linux/genwqe/genwqe_card.h>
+>  
+> -#define DRV_VERS_STRING		"2.0.15"
+> +#define DRV_VERS_STRING		"2.0.21"
 
-Currently (at least) the dell-rbu driver selects FW_LOADER_USER_HELPER,
-which means that distros can't really stop loading firmware through
-udev without breaking other users (though some have).
+Why is this even needed?  Can't you go off of the kernel version number
+now?  Who needs / wants this number?
 
-Ideally we would remove/disable the udev firmware helper in both the
-kernel and in udev, but if we were to disable it in udev and not the
-kernel, the result would be (seemingly) hung kernels as no one would
-be around to cancel firmware requests.
+thanks,
 
-This patch allows udev firmware loading to be disabled while still
-allowing non-udev firmware loading, as done by the dell-rbu driver, to
-continue working. This is achieved by only using the fallback
-mechanism when the uevent is suppressed.
-
-The patch renames the user-selectable Kconfig from FW_LOADER_USER_HELPER
-to FW_LOADER_USER_HELPER_FALLBACK, and the former is reverse-selected
-by the latter or the drivers that need userhelper like dell-rbu.
-
-Also, the "default y" is removed together with this change, since it's
-been deprecated in udev upstream, thus rather better to disable it
-nowadays.
-
-Tested with
-    FW_LOADER_USER_HELPER=n
-    LATTICE_ECP3_CONFIG=y
-    DELL_RBU=y
-and udev without the firmware loading support, but I don't have the
-hardware to test the lattice/dell drivers, so additional testing would
-be appreciated.
-
-Reviewed-by: Tom Gundersen <teg@jklm.no>
-Cc: Ming Lei <ming.lei@canonical.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Abhay Salunke <Abhay_Salunke@dell.com>
-Cc: Stefan Roese <sr@denx.de>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Kay Sievers <kay@vrfy.org>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
----
- drivers/base/Kconfig          | 10 ++++++++--
- drivers/base/firmware_class.c | 15 ++++++++++-----
- include/linux/firmware.h      |  2 +-
- 3 files changed, 19 insertions(+), 8 deletions(-)
-
-diff --git a/drivers/base/Kconfig b/drivers/base/Kconfig
-index 8fa8deab6449..d0bb32e4c416 100644
---- a/drivers/base/Kconfig
-+++ b/drivers/base/Kconfig
-@@ -144,15 +144,21 @@ config EXTRA_FIRMWARE_DIR
- 	  some other directory containing the firmware files.
- 
- config FW_LOADER_USER_HELPER
-+	bool
-+
-+config FW_LOADER_USER_HELPER_FALLBACK
- 	bool "Fallback user-helper invocation for firmware loading"
- 	depends on FW_LOADER
--	default y
-+	select FW_LOADER_USER_HELPER
- 	help
- 	  This option enables / disables the invocation of user-helper
- 	  (e.g. udev) for loading firmware files as a fallback after the
- 	  direct file loading in kernel fails.  The user-mode helper is
- 	  no longer required unless you have a special firmware file that
--	  resides in a non-standard path.
-+	  resides in a non-standard path. Moreover, the udev support has
-+	  been deprecated upstream.
-+
-+	  If you are unsure about this, say N here.
- 
- config DEBUG_DRIVER
- 	bool "Driver Core verbose debug messages"
-diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
-index d276e33880be..46ea5f4c3bb5 100644
---- a/drivers/base/firmware_class.c
-+++ b/drivers/base/firmware_class.c
-@@ -100,9 +100,14 @@ static inline long firmware_loading_timeout(void)
- #define FW_OPT_UEVENT	(1U << 0)
- #define FW_OPT_NOWAIT	(1U << 1)
- #ifdef CONFIG_FW_LOADER_USER_HELPER
--#define FW_OPT_FALLBACK	(1U << 2)
-+#define FW_OPT_USERHELPER	(1U << 2)
- #else
--#define FW_OPT_FALLBACK	0
-+#define FW_OPT_USERHELPER	0
-+#endif
-+#ifdef CONFIG_FW_LOADER_USER_HELPER_FALLBACK
-+#define FW_OPT_FALLBACK		FW_OPT_USERHELPER
-+#else
-+#define FW_OPT_FALLBACK		0
- #endif
- 
- struct firmware_cache {
-@@ -1111,7 +1116,7 @@ _request_firmware(const struct firmware **firmware_p, const char *name,
- 
- 	ret = fw_get_filesystem_firmware(device, fw->priv);
- 	if (ret) {
--		if (opt_flags & FW_OPT_FALLBACK) {
-+		if (opt_flags & FW_OPT_USERHELPER) {
- 			dev_warn(device,
- 				 "Direct firmware load failed with error %d\n",
- 				 ret);
-@@ -1171,7 +1176,7 @@ request_firmware(const struct firmware **firmware_p, const char *name,
- }
- EXPORT_SYMBOL(request_firmware);
- 
--#ifdef CONFIG_FW_LOADER_USER_HELPER
-+#ifdef CONFIG_FW_LOADER_USER_HELPER_FALLBACK
- /**
-  * request_firmware: - load firmware directly without usermode helper
-  * @firmware_p: pointer to firmware image
-@@ -1277,7 +1282,7 @@ request_firmware_nowait(
- 	fw_work->context = context;
- 	fw_work->cont = cont;
- 	fw_work->opt_flags = FW_OPT_NOWAIT | FW_OPT_FALLBACK |
--		(uevent ? FW_OPT_UEVENT : 0);
-+		(uevent ? FW_OPT_UEVENT : FW_OPT_USERHELPER);
- 
- 	if (!try_module_get(module)) {
- 		kfree(fw_work);
-diff --git a/include/linux/firmware.h b/include/linux/firmware.h
-index 59529330efd6..67e5b801af0c 100644
---- a/include/linux/firmware.h
-+++ b/include/linux/firmware.h
-@@ -68,7 +68,7 @@ static inline void release_firmware(const struct firmware *fw)
- 
- #endif
- 
--#ifdef CONFIG_FW_LOADER_USER_HELPER
-+#ifdef CONFIG_FW_LOADER_USER_HELPER_FALLBACK
- int request_firmware_direct(const struct firmware **fw, const char *name,
- 			    struct device *device);
- #else
--- 
-1.9.3
-
+greg k-h
