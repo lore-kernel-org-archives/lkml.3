@@ -1,99 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753587AbaFDPEZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 11:04:25 -0400
-Received: from mx07-00178001.pphosted.com ([62.209.51.94]:47943 "EHLO
-	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753211AbaFDPAL (ORCPT
+	id S1753640AbaFDPEk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 11:04:40 -0400
+Received: from mxout1.netvision.net.il ([194.90.9.20]:53322 "EHLO
+	mxout1.netvision.net.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753036AbaFDPEi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 11:00:11 -0400
-From: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
-To: mturquette@linaro.org, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org
-Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        kernel@stlinux.com, Lee Jones <lee.jones@linaro.org>,
-        Gabriel Fernandez <gabriel.fernandez@linaro.org>
-Subject: [PATCH RESEND 06/12] drivers: clk: st: Add polarity bit indication
-Date: Wed,  4 Jun 2014 16:31:54 +0200
-Message-Id: <1401892320-18211-7-git-send-email-gabriel.fernandez@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1401892320-18211-1-git-send-email-gabriel.fernandez@linaro.org>
-References: <1401892320-18211-1-git-send-email-gabriel.fernandez@linaro.org>
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
- definitions=2014-06-04_03:2014-06-04,2014-06-04,1970-01-01 signatures=0
+	Wed, 4 Jun 2014 11:04:38 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: text/plain; CHARSET=US-ASCII; format=flowed
+Message-id: <538F3548.4050101@gmail.com>
+Date: Wed, 04 Jun 2014 18:03:36 +0300
+From: Eli Billauer <eli.billauer@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12)
+ Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
+To: Tejun Heo <tj@kernel.org>
+Cc: Joerg Roedel <joro@8bytes.org>, Shuah Khan <shuah.kh@samsung.com>,
+        devel@driverdev.osuosl.org, gregkh@linuxfoundation.org,
+        bhelgaas@google.com, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, iommu@lists.linux-foundation.org,
+        discuss@x86-64.org
+Subject: Re: [PATCH v2 1/4] dma-mapping: Add devm_ interface for
+ dma_map_single()
+References: <1401606077-1739-1-git-send-email-eli.billauer@gmail.com>
+ <1401606077-1739-2-git-send-email-eli.billauer@gmail.com>
+ <538E3D04.9060808@samsung.com> <20140603233907.GB23880@8bytes.org>
+ <20140604140408.GC5004@htj.dyndns.org> <20140604141211.GC23880@8bytes.org>
+ <20140604141416.GD5004@htj.dyndns.org>
+In-reply-to: <20140604141416.GD5004@htj.dyndns.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces polarity indication for pll power up bit
-and for standby bit in order to have same code between Orly 2
-and CAN.
+Hi,
 
-Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
----
- drivers/clk/st/clkgen-fsyn.c | 12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
+I believe that I need a managed dma_map_single() my own driver, which 
+doesn't fall in the case of a single use: The driver allocates its 
+buffers with __get_free_pages() (or the to-be managed version of it). 
+Then it cuts the allocated memory into smaller buffers (in some cases, 
+and with certain alignment rules), and  then calls dma_map_single() to 
+do the DMA mapping for each. The buffers are held along the driver's 
+lifetime, with DMA sync API juggling control back and forth to the 
+hardware. Note that the DMA is noncoherent.
 
-diff --git a/drivers/clk/st/clkgen-fsyn.c b/drivers/clk/st/clkgen-fsyn.c
-index 4f53ee0..5aae17c 100644
---- a/drivers/clk/st/clkgen-fsyn.c
-+++ b/drivers/clk/st/clkgen-fsyn.c
-@@ -67,6 +67,8 @@ struct clkgen_quadfs_data {
- 	bool reset_present;
- 	bool bwfilter_present;
- 	bool lockstatus_present;
-+	bool powerup_polarity;
-+	bool standby_polarity;
- 	bool nsdiv_present;
- 	struct clkgen_field ndiv;
- 	struct clkgen_field ref_bw;
-@@ -308,7 +310,7 @@ static int quadfs_pll_enable(struct clk_hw *hw)
- 	/*
- 	 * Power up the PLL
- 	 */
--	CLKGEN_WRITE(pll, npda, 1);
-+	CLKGEN_WRITE(pll, npda, !pll->data->powerup_polarity);
- 
- 	if (pll->lock)
- 		spin_unlock_irqrestore(pll->lock, flags);
-@@ -335,7 +337,7 @@ static void quadfs_pll_disable(struct clk_hw *hw)
- 	 * Powerdown the PLL and then put block into soft reset if we have
- 	 * reset control.
- 	 */
--	CLKGEN_WRITE(pll, npda, 0);
-+	CLKGEN_WRITE(pll, npda, pll->data->powerup_polarity);
- 
- 	if (pll->data->reset_present)
- 		CLKGEN_WRITE(pll, nreset, 0);
-@@ -611,7 +613,7 @@ static int quadfs_fsynth_enable(struct clk_hw *hw)
- 	if (fs->lock)
- 		spin_lock_irqsave(fs->lock, flags);
- 
--	CLKGEN_WRITE(fs, nsb[fs->chan], 1);
-+	CLKGEN_WRITE(fs, nsb[fs->chan], !fs->data->standby_polarity);
- 
- 	if (fs->lock)
- 		spin_unlock_irqrestore(fs->lock, flags);
-@@ -631,7 +633,7 @@ static void quadfs_fsynth_disable(struct clk_hw *hw)
- 	if (fs->lock)
- 		spin_lock_irqsave(fs->lock, flags);
- 
--	CLKGEN_WRITE(fs, nsb[fs->chan], 0);
-+	CLKGEN_WRITE(fs, nsb[fs->chan], !fs->data->standby_polarity);
- 
- 	if (fs->lock)
- 		spin_unlock_irqrestore(fs->lock, flags);
-@@ -645,7 +647,7 @@ static int quadfs_fsynth_is_enabled(struct clk_hw *hw)
- 	pr_debug("%s: %s enable bit = 0x%x\n",
- 		 __func__, __clk_get_name(hw->clk), nsb);
- 
--	return !!nsb;
-+	return fs->data->standby_polarity ? !nsb : !!nsb;
- }
- 
- #define P15			(uint64_t)(1 << 15)
--- 
-1.9.1
+Once could argue, that since dma_map_noncoherent() calls 
+__get_free_pages() under the hood, I could request the larger chunk from 
+dma_map_noncoherent(), and cut it into smaller DMA buffers. My concern 
+is that the dma_sync_single_*() functions expect a DMA handle, not a 
+physical address I've made up with my own buffer splitting. I don't see 
+any problem with this trick on platforms I've worked with, but I'm not 
+sure if this is the proper way to go. dma_map_single(), on the other 
+hand, returns a DMA handle.
+
+The DMA pool functions could be interesting, but I understand that they 
+would supply me with coherent memory only.
+
+Anything I missed?
+
+Thanks,
+    Eli
+
+On 04/06/14 17:14, Tejun Heo wrote:
+> Hello,
+>
+> On Wed, Jun 04, 2014 at 04:12:11PM +0200, Joerg Roedel wrote:
+>    
+>> Yes, but those drivers usually get DMA buffers at init time with the
+>> dma_alloc_* interfaces. The dma_map_* interfaces discussed here belong
+>> to the streaming DMA-API, so they are usually used for only one DMA
+>> transaction before dma_unmap_* is called on them.
+>>
+>> A devm interface for the dma_alloc_* family of functions would
+>> actually make sense, but not for the dma_map_* functions.
+>>      
+> Ah, okay.  Fair enough.
+>
+> Thanks.
+>
+>    
+
 
