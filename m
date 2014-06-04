@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932422AbaFEAeR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 20:34:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39951 "EHLO
+	id S1752797AbaFDXVi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 19:21:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39886 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752681AbaFDXVj (ORCPT
+	with ESMTP id S1752681AbaFDXV2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:21:39 -0400
+	Wed, 4 Jun 2014 19:21:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tuomas Tynkkynen <ttynkkynen@nvidia.com>,
-        Mikko Perttunen <mperttunen@nvidia.com>,
-        Thierry Reding <treding@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>
-Subject: [PATCH 3.14 084/228] clk: tegra: Fix wrong value written to PLLE_AUX
-Date: Wed,  4 Jun 2014 16:21:53 -0700
-Message-Id: <20140604232350.766069193@linuxfoundation.org>
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Neil Greatorex <neil@fatboyfat.co.uk>,
+        Jason Cooper <jason@lakedaemon.net>
+Subject: [PATCH 3.14 059/228] irqchip: armada-370-xp: fix invalid cast of signed value into unsigned variable
+Date: Wed,  4 Jun 2014 16:21:28 -0700
+Message-Id: <20140604232349.958616680@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -31,36 +30,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 
-commit d2c834abe2b39a2d5a6c38ef44de87c97cbb34b4 upstream.
+commit da343fc776e0bcb238b65d9d24610819b95d0ef4 upstream.
 
-The value written to PLLE_AUX was incorrect due to a wrong variable
-being used. Without this fix SATA does not work.
+The armada_370_xp_alloc_msi() function returns a signed int, which is
+negative on error. However, we store the return value into an
+irq_hw_number_t, which is unsigned. Therefore, we actually never test
+if armada_370_xp_alloc_msi() returns an error or not, which may lead
+us to use hwirq numbers of as 0xffffffe4 (when
+armada_370_xp_alloc_msi() returns -ENOSPC).
 
-Signed-off-by: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
-Tested-by: Mikko Perttunen <mperttunen@nvidia.com>
-Reviewed-by: Thierry Reding <treding@nvidia.com>
-Tested-by: Thierry Reding <treding@nvidia.com>
-Acked-by: Thierry Reding <treding@nvidia.com>
-Signed-off-by: Mike Turquette <mturquette@linaro.org>
-[mturquette@linaro.org: improved changelog]
+This commit fixes that by storing the return value of
+armada_370_xp_alloc_msi() in a signed variable.
+
+Fixes: 31f614edb726fcc4d5aa0f2895fbdec9b04a3ca4 ('irqchip: armada-370-xp: implement MSI support')
+Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Link: https://lkml.kernel.org/r/1397823593-1932-2-git-send-email-thomas.petazzoni@free-electrons.com
+Tested-by: Neil Greatorex <neil@fatboyfat.co.uk>
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/clk/tegra/clk-pll.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/irqchip/irq-armada-370-xp.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/drivers/clk/tegra/clk-pll.c
-+++ b/drivers/clk/tegra/clk-pll.c
-@@ -1718,7 +1718,7 @@ struct clk *tegra_clk_register_plle_tegr
- 					"pll_re_vco");
- 	} else {
- 		val_aux &= ~(PLLE_AUX_PLLRE_SEL | PLLE_AUX_PLLP_SEL);
--		pll_writel(val, pll_params->aux_reg, pll);
-+		pll_writel(val_aux, pll_params->aux_reg, pll);
- 	}
+--- a/drivers/irqchip/irq-armada-370-xp.c
++++ b/drivers/irqchip/irq-armada-370-xp.c
+@@ -130,8 +130,7 @@ static int armada_370_xp_setup_msi_irq(s
+ 				       struct msi_desc *desc)
+ {
+ 	struct msi_msg msg;
+-	irq_hw_number_t hwirq;
+-	int virq;
++	int virq, hwirq;
  
- 	clk = _tegra_clk_register_pll(pll, name, parent_name, flags,
+ 	hwirq = armada_370_xp_alloc_msi();
+ 	if (hwirq < 0)
 
 
