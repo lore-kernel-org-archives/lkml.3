@@ -1,83 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752482AbaFDLRc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 07:17:32 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:20577 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751732AbaFDLRb (ORCPT
+	id S1752625AbaFDLSw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 07:18:52 -0400
+Received: from forward1h.mail.yandex.net ([84.201.187.146]:53841 "EHLO
+	forward1h.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752072AbaFDLSv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 07:17:31 -0400
-Date: Wed, 4 Jun 2014 12:17:30 +0100
-From: Morten Rasmussen <morten.rasmussen@arm.com>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: "peterz@infradead.org" <peterz@infradead.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        "efault@gmx.de" <efault@gmx.de>,
-        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>
-Subject: Re: [PATCH v2 04/11] sched: Allow all archs to set the power_orig
-Message-ID: <20140604111730.GM29593@e103034-lin>
-References: <1400860385-14555-1-git-send-email-vincent.guittot@linaro.org>
- <1400860385-14555-5-git-send-email-vincent.guittot@linaro.org>
- <20140603132217.GD29593@e103034-lin>
- <CAKfTPtB2XC3hVN4LuRjvd3JB5GZ9=R5Tq6F52iYxO3nCJ04Cew@mail.gmail.com>
+	Wed, 4 Jun 2014 07:18:51 -0400
+From: Kirill Tkhai <tkhai@yandex.ru>
+To: Peter Zijlstra <peterz@infradead.org>, "riel@redhat.com" <riel@redhat.com>,
+        "laijs@cn.fujitsu.com" <laijs@cn.fujitsu.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@kernel.org" <mingo@kernel.org>
+In-Reply-To: <20140604104122.GL30445@twins.programming.kicks-ass.net>
+References: <20140604104122.GL30445@twins.programming.kicks-ass.net>
+Subject: Re: [PATCH] sched: Fix migration_cpu_stop() return value
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKfTPtB2XC3hVN4LuRjvd3JB5GZ9=R5Tq6F52iYxO3nCJ04Cew@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Message-Id: <5962011401880725@web26h.yandex.ru>
+X-Mailer: Yamail [ http://yandex.ru ] 5.0
+Date: Wed, 04 Jun 2014 15:18:45 +0400
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=koi8-r
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 03, 2014 at 03:02:18PM +0100, Vincent Guittot wrote:
-> On 3 June 2014 15:22, Morten Rasmussen <morten.rasmussen@arm.com> wrote:
-> > On Fri, May 23, 2014 at 04:52:58PM +0100, Vincent Guittot wrote:
-> >> power_orig is only changed for system with a SMT sched_domain level in order to
-> >> reflect the lower capacity of CPUs. Heterogenous system also have to reflect an
-> >> original capacity that is different from the default value.
-> >>
-> >> Create a more generic function arch_scale_cpu_power that can be also used by
-> >> non SMT platform to set power_orig.
-> >
-> > I did a quick test of the patch set with adjusting cpu_power on
-> > big.LITTLE (ARM TC2) to reflect the different compute capacities of the
-> > A15s and A7s. I ran the sysbench cpu benchmark with 5 threads with and
-> > without the patches applied, but with non-default cpu_powers.
-> >
-> > I didn't see any difference in the load-balance. Three tasks ended up on
-> > the two A15s and two tasks ended up on two of the three A7s leaving one
-> > unused in both cases.
-> >
-> > Using default cpu_power I get one task on each of the five cpus (best
-> > throughput). Unless I messed something up, it seems that setting
-> > cpu_power doesn't give me the best throughput with these patches
-> > applied.
-> 
-> That's normal this patchset is necessary but not enough to solve the
-> issue you mention. We also need to fix the way the imbalance is
-> calculated for such situation. I have planned to push that in another
-> patchset in order to not mix too much thing together
+Hi, Peter,
 
-Based on the commit messages I was just lead to believe that this was a
-self-contained patch set that also addressed issues related to handling
-heterogeneous systems. Maybe it would be worth mentioning that this set
-is only part of the solution somewhere?
+04.06.2014, 14:41, "Peter Zijlstra" <peterz@infradead.org>:
+> šA while ago I did a similar patch for some debugging, but looking at it
+> šagain today I realized we should probably fix this anyway.
+>
+> š---
+> šSubject: sched: Fix migration_cpu_stop() return value
+>
+> šThere are a number of migration_cpu_stop() users; and some actually care
+> šabout the success of the migration. So report this.
+>
+> šIn particular migrate_task_to() as used from task_numa_migrate()
+> šactually tests this return value.
+>
+> šAlso change set_cpus_allowed_ptr() to propagate this return value, since
+> šit already returns other errors.
+>
+> šCc: Lai Jiangshan <laijs@cn.fujitsu.com>
+> šCc: Ingo Molnar <mingo@redhat.com>
+> šSigned-off-by: Peter Zijlstra <peterz@infradead.org>
+> š---
+> šškernel/sched/core.c | šš15 +++++++++++----
+> šš1 file changed, 11 insertions(+), 4 deletions(-)
+(snipped everything because of bad email editor)
 
-It is a bit unclear to me how these changes, which appear to mainly
-improve factoring rt and irq time into cpu_power, will solve the
-cpu_power issues related to heterogeneous systems. Can you share your
-plans for the follow up patch set? I think it would be better to review
-the solution as a whole.
+In set_cpus_allowed_ptr() p->on_rq branch can not fail.
 
-I absolutely agree that the imbalance calculation needs to fixed, but I
-don't think the current rq runnable_avg_sum is the right choice for that
-purpose for the reasons I pointed out the in other thread.
+We've changed affinity and released rq's lock, so task can migrate
+on allowed cpu only (even if migration_cpu_stop fails).
 
-Morten
+And it's a little ambiguously how user should react on this EAGAIN.
+
+Regards,
+Kirill.
