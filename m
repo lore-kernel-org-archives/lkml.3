@@ -1,30 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752133AbaFDXUq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:20:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39622 "EHLO
+	id S1755493AbaFEAvV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 20:51:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39684 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751843AbaFDXUj (ORCPT
+	with ESMTP id S1751789AbaFDXUq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:20:39 -0400
+	Wed, 4 Jun 2014 19:20:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Darren Hart <darren@dvhart.com>,
-        Davidlohr Bueso <davidlohr@hp.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Clark Williams <williams@redhat.com>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Carlos ODonell <carlos@redhat.com>, Jakub Jelinek <jakub@redhat.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: [PATCH 3.14 002/228] futex: Prevent attaching to kernel threads
-Date: Wed,  4 Jun 2014 16:20:31 -0700
-Message-Id: <20140604232348.156984727@linuxfoundation.org>
+        Eric Dumazet <edumazet@google.com>, Oleg Nesterov <oleg@redhat.com>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.14 014/228] coredump: fix va_list corruption
+Date: Wed,  4 Jun 2014 16:20:43 -0700
+Message-Id: <20140604232348.557735098@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -39,55 +31,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Eric Dumazet <edumazet@google.com>
 
-commit f0d71b3dcb8332f7971b5f2363632573e6d9486a upstream.
+commit 404ca80eb5c2727d78cd517d12108b040c522e12 upstream.
 
-We happily allow userspace to declare a random kernel thread to be the
-owner of a user space PI futex.
+A va_list needs to be copied in case it needs to be used twice.
 
-Found while analysing the fallout of Dave Jones syscall fuzzer.
+Thanks to Hugh for debugging this issue, leading to various panics.
 
-We also should validate the thread group for private futexes and find
-some fast way to validate whether the "alleged" owner has RW access on
-the file which backs the SHM, but that's a separate issue.
+Tested:
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Dave Jones <davej@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Darren Hart <darren@dvhart.com>
-Cc: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Clark Williams <williams@redhat.com>
-Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: Roland McGrath <roland@hack.frob.com>
-Cc: Carlos ODonell <carlos@redhat.com>
-Cc: Jakub Jelinek <jakub@redhat.com>
-Cc: Michael Kerrisk <mtk.manpages@gmail.com>
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Link: http://lkml.kernel.org/r/20140512201701.194824402@linutronix.de
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+  lpq84:~# echo "|/foobar12345 %h %h %h %h %h %h %h %h %h %h %h %h %h %h %h %h %h %h %h %h" >/proc/sys/kernel/core_pattern
+
+'produce_core' is simply : main() { *(int *)0 = 1;}
+
+  lpq84:~# ./produce_core
+  Segmentation fault (core dumped)
+  lpq84:~# dmesg | tail -1
+  [  614.352947] Core dump to |/foobar12345 lpq84 lpq84 lpq84 lpq84 lpq84 lpq84 lpq84 lpq84 lpq84 lpq84 lpq84 lpq84 lpq84 lpq84 lpq84 lpq84 lpq84 lpq84 lpq84 (null) pipe failed
+
+Notice the last argument was replaced by a NULL (we were lucky enough to
+not crash, but do not try this on your production machine !)
+
+After fix :
+
+  lpq83:~# echo "|/foobar12345 %h %h %h %h %h %h %h %h %h %h %h %h %h %h %h %h %h %h %h %h" >/proc/sys/kernel/core_pattern
+  lpq83:~# ./produce_core
+  Segmentation fault
+  lpq83:~# dmesg | tail -1
+  [  740.800441] Core dump to |/foobar12345 lpq83 lpq83 lpq83 lpq83 lpq83 lpq83 lpq83 lpq83 lpq83 lpq83 lpq83 lpq83 lpq83 lpq83 lpq83 lpq83 lpq83 lpq83 lpq83 lpq83 pipe failed
+
+Fixes: 5fe9d8ca21cc ("coredump: cn_vprintf() has no reason to call vsnprintf() twice")
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Diagnosed-by: Hugh Dickins <hughd@google.com>
+Acked-by: Oleg Nesterov <oleg@redhat.com>
+Cc: Neil Horman <nhorman@tuxdriver.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/futex.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ fs/coredump.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -800,6 +800,11 @@ lookup_pi_state(u32 uval, struct futex_h
- 	if (!p)
- 		return -ESRCH;
+--- a/fs/coredump.c
++++ b/fs/coredump.c
+@@ -73,10 +73,15 @@ static int expand_corename(struct core_n
+ static int cn_vprintf(struct core_name *cn, const char *fmt, va_list arg)
+ {
+ 	int free, need;
++	va_list arg_copy;
  
-+	if (!p->mm) {
-+		put_task_struct(p);
-+		return -EPERM;
-+	}
+ again:
+ 	free = cn->size - cn->used;
+-	need = vsnprintf(cn->corename + cn->used, free, fmt, arg);
 +
- 	/*
- 	 * We need to look at the task state flags to figure out,
- 	 * whether the task is exiting. To protect against the do_exit
++	va_copy(arg_copy, arg);
++	need = vsnprintf(cn->corename + cn->used, free, fmt, arg_copy);
++	va_end(arg_copy);
++
+ 	if (need < free) {
+ 		cn->used += need;
+ 		return 0;
 
 
