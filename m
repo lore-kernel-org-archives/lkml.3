@@ -1,181 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752942AbaFDO43 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 10:56:29 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:34017 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751890AbaFDO41 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 10:56:27 -0400
-Date: Wed, 4 Jun 2014 10:56:10 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>,
-        Linux-FSDevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH] mm: page_alloc: Reset fair zone allocation policy only
- when batch counts are expired
-Message-ID: <20140604145610.GS2878@cmpxchg.org>
-References: <20140529090432.GY23991@suse.de>
- <20140529143832.GJ2878@cmpxchg.org>
- <20140529171608.GB23991@suse.de>
+	id S1752354AbaFDO53 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 10:57:29 -0400
+Received: from mail-ve0-f181.google.com ([209.85.128.181]:35952 "EHLO
+	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751572AbaFDO52 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 10:57:28 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140529171608.GB23991@suse.de>
+In-Reply-To: <20140604074416.GH30445@twins.programming.kicks-ass.net>
+References: <cover.1401841482.git.luto@amacapital.net> <ad9dcf321a5b74e72a1b63a0d59c8ddc68509c0f.1401841482.git.luto@amacapital.net>
+ <20140604074416.GH30445@twins.programming.kicks-ass.net>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 4 Jun 2014 07:57:07 -0700
+Message-ID: <CALCETrV3EQg0t_nvBZcsPKXiT2mrkDd_8AbVkJ=vADSToc6bKg@mail.gmail.com>
+Subject: Re: [PATCH 4/6] sched,idle: Clear polling before descheduling the
+ idle thread
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Mike Galbraith <umgwanakikbuti@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, nicolas.pitre@linaro.org,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 29, 2014 at 06:16:08PM +0100, Mel Gorman wrote:
-> On Thu, May 29, 2014 at 10:38:32AM -0400, Johannes Weiner wrote:
-> > Hi Mel!
-> > 
-> > On Thu, May 29, 2014 at 10:04:32AM +0100, Mel Gorman wrote:
-> > > The fair zone allocation policy round-robins allocations between zones on
-> > > a node to avoid age inversion problems during reclaim using a counter to
-> > > manage the round-robin. If the first allocation fails, the batch counts get
-> > > reset and the allocation is attempted again before going into the slow path.
-> > > There are at least two problems with this
-> > > 
-> > > 1. If the eligible zones are below the low watermark we reset the counts
-> > >    even though the batches might be fine.
-> > 
-> > The idea behind setting the batches to high-low was that they should
-> > be roughly exhausted by the time the low watermark is hit.  And that
-> > misconception must be the crux of this patch, because if they *were*
-> > to exhaust together this patch wouldn't make a difference.
-> > 
-> > But once they diverge, we reset the batches prematurely, which means
-> > not everybody is getting their fair share, and that reverts us back to
-> > an imbalance in zone utilization.
-> > 
-> > So I think the changelog should include why this assumption was wrong.
-> > 
-> 
-> They won't exhaust together when there are multiple allocation requests
-> simply on the basis that there is no lock there and there is per-cpu
-> accounting drift for vmstats. You'd at least expect them to drift by the
-> per-cpu update threshold.
+On Wed, Jun 4, 2014 at 12:44 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Tue, Jun 03, 2014 at 05:29:50PM -0700, Andy Lutomirski wrote:
+>> Currently, the only real guarantee provided by the polling bit is
+>> that, if you hold rq->lock and the polling bit is set, then you can
+>> set need_resched to force a reschedule.
+>>
+>> The only reason the lock is needed is that the idle thread might not
+>> be running at all when setting its need_resched bit, and rq->lock
+>> keeps it pinned.
+>>
+>> This is easy to fix: just clear the polling bit before scheduling.
+>> Now the polling bit is only ever set when rq->curr == rq->idle.
+>
+> Yah, except of course:
+>
+>   lkml.kernel.org/r/20131120162736.508462614@infradead.org
 
-Yeah, that's true.  I just didn't think it would make such a big
-difference, and the numbers I gathered on my local machines showed
-that allocation distribution was reliably proportional to zone size.
-But it might really depend on the machine, and definitely on the
-workload, which why I was curious about the allocation numbers.
+Wow, that code was ugly.
 
-> > > When resetting batch counts, it was expected that the count would be <=
-> > > 0 but the bizarre side-effect is that we are resetting counters that were
-> > > initially postive so (high - low - batch) potentially sets a high positive
-> > > batch count to close to 0. This leads to a premature reset in the near
-> > > future, more overhead and more ... screwing around.
-> > 
-> > We're just adding the missing delta between the "should" and "is"
-> > value to the existing batch, so a high batch value means small delta,
-> > and we *add* a value close to 0, we don't *set* the batch close to 0.
-> > 
-> > I think this one is a red herring as well.
-> > 
-> 
-> There are still boundary issues that results in screwing around and
-> maybe I should have focused on this one instead. The situation I had in
-> mind started out as follows
-> 
-> high zone alloc batch	1000	low watermark not ok
-> low zone alloc batch	   0	low watermark     ok
-> 
-> during the fairness cycle, no action can take place. The higher zone is not
-> allowed to allcoate at below the low watermark and must always enter the
-> slow path. The lower zone also temporarily cannot be used. At this point, a
-> reset takes place and the system continues until the low watermark is reached
-> 
-> high zone alloc batch	1000	low watermark not ok
-> low zone allooc batch	 100	low watermark not ok
-> 
-> During this window, every ALLOC_FAIR is going to fail to due watermarks but
-> still do another zone batch reset and recycle every time before falling
-> into the slow path.  It ends up being more zonelist traversals which is
-> why I moved the reset check inside get_page_from_freelist to detect the
-> difference between ALLOC_FAIL failures and watermarks failures.
-> 
-> The differences in timing when watermarks are hit may also account for
-> some of the drift for when the alloc batches get depleted.
+Can you be persuaded to hold off on that patch until after this series
+is done?  I think the cpu_startup_entry change will just muddy the
+waters for now.
 
-That makes sense, especially in a highly concurrent workload where the
-batches might be reset over and over between the first allocator
-entering the slowpath and kswapd actually restoring any of the
-watermarks.
+>
+> which I really need to rebase and post again :/
+>
+> In any case, this is useful even with that, although then we really must
+> do something like:
+>
+>   rcu_read_lock();
+>   if (!set_nr_if_polling(rq->curr))
+>         smp_send_reschedule(rq->cpu);
+>   rcu_read_unlock();
+>
+> Because there's other tasks than rq->idle which might be 'idle', joy!
 
-> > > The user-visible effect depends on zone sizes and a host of other effects
-> > > the obvious one is that single-node machines with multiple zones will see
-> > > degraded performance for streaming readers at least. The effect is also
-> > > visible on NUMA machines but it may be harder to identify in the midst of
-> > > other noise.
-> > > 
-> > > Comparison is tiobench with data size 2*RAM on ext3 on a small single-node
-> > > machine and on an ext3 filesystem. Baseline kernel is mmotm with the
-> > > shrinker and proportional reclaim patches on top.
-> > > 
-> > >                                       3.15.0-rc5            3.15.0-rc5
-> > >                                   mmotm-20140528         fairzone-v1r1
-> > > Mean   SeqRead-MB/sec-1         120.95 (  0.00%)      133.59 ( 10.45%)
-> > > Mean   SeqRead-MB/sec-2         100.81 (  0.00%)      113.61 ( 12.70%)
-> > > Mean   SeqRead-MB/sec-4          93.75 (  0.00%)      104.75 ( 11.74%)
-> > > Mean   SeqRead-MB/sec-8          85.35 (  0.00%)       91.21 (  6.86%)
-> > > Mean   SeqRead-MB/sec-16         68.91 (  0.00%)       74.77 (  8.49%)
-> > > Mean   RandRead-MB/sec-1          1.08 (  0.00%)        1.07 ( -0.93%)
-> > > Mean   RandRead-MB/sec-2          1.28 (  0.00%)        1.25 ( -2.34%)
-> > > Mean   RandRead-MB/sec-4          1.54 (  0.00%)        1.51 ( -1.73%)
-> > > Mean   RandRead-MB/sec-8          1.67 (  0.00%)        1.70 (  2.20%)
-> > > Mean   RandRead-MB/sec-16         1.74 (  0.00%)        1.73 ( -0.19%)
-> > > Mean   SeqWrite-MB/sec-1        113.73 (  0.00%)      113.88 (  0.13%)
-> > > Mean   SeqWrite-MB/sec-2        103.76 (  0.00%)      104.13 (  0.36%)
-> > > Mean   SeqWrite-MB/sec-4         98.45 (  0.00%)       98.44 ( -0.01%)
-> > > Mean   SeqWrite-MB/sec-8         93.11 (  0.00%)       92.79 ( -0.34%)
-> > > Mean   SeqWrite-MB/sec-16        87.64 (  0.00%)       87.85 (  0.24%)
-> > > Mean   RandWrite-MB/sec-1         1.38 (  0.00%)        1.36 ( -1.21%)
-> > > Mean   RandWrite-MB/sec-2         1.35 (  0.00%)        1.35 (  0.25%)
-> > > Mean   RandWrite-MB/sec-4         1.33 (  0.00%)        1.35 (  1.00%)
-> > > Mean   RandWrite-MB/sec-8         1.31 (  0.00%)        1.29 ( -1.53%)
-> > > Mean   RandWrite-MB/sec-16        1.27 (  0.00%)        1.28 (  0.79%)
-> > > 
-> > > Streaming readers see a huge boost. Random random readers, sequential
-> > > writers and random writers are all in the noise.
-> > 
-> > Impressive, but I would really like to understand what's going on
-> > there.
-> > 
-> > Did you record the per-zone allocation numbers by any chance as well,
-> > so we can see the difference in zone utilization?
-> 
-> No, I didn't record per-zone usage because at the time when the low
-> watermarks are being hit, it would have been less useful anyway.
+Is this really a problem?
 
-I just meant the pgalloc_* numbers from /proc/vmstat before and after
-the workload to see if the distribution really runs out of whack and
-are not in proportion to the zone sizes over the course of the load.
+It's certainly the case that a non-idle (in the sense of != rq->idle)
+task can have the polling bit set, but so what?  I'm perfectly happy
+to wake these ersatz idle things via IPI instead of via
+TIF_NEED_RESCHED.  I think that all of the code that plays with the
+polling bit after all these patches are applied either holds rq->lock
+(which prevents the task from going away) or acts directly on
+rq->idle, which really has no business being deallocated.
 
-> > > @@ -1960,11 +1982,13 @@ zonelist_scan:
-> > >  		 * time the page has in memory before being reclaimed.
-> > >  		 */
-> > >  		if (alloc_flags & ALLOC_FAIR) {
-> > > -			if (!zone_local(preferred_zone, zone))
-> > > -				continue;
-> > >  			if (zone_page_state(zone, NR_ALLOC_BATCH) <= 0)
-> > >  				continue;
-> > > +			batch_depleted = false;
-> > > +			if (!zone_local(preferred_zone, zone))
-> > > +				continue;
-> > 
-> > This only resets the local batches once the first non-local zone's
-> > batch is exhausted as well.  Which means that once we start spilling,
-> > the fairness pass will never consider local zones again until the
-> > first spill-over target is exhausted too. 
-> 
-> Yes, you're right. The intent was that the reset would only task place
-> after all local zones had used their allocation batch but it got mucked
-> up along the way.
+I think that the RCU solution is actually racy, too.  Consider:
 
-I thought this might have been an intentional change as per the NUMA
-spilling behavior mentioned in the changelog.  Very well, then :)
+If rq->curr is one some thermal sort-of-idle thing that has polling
+set, and no one has made those tasks respect the new polling semantics
+from this patch, then this could happen:
+
+CPU A:
+rcu_read_lock();
+load rq->curr
+
+                           CPU B:
+                           deschedule rq->curr and schedule somthing else
+
+CPU A:
+set_nr_if_polling(rq->curr) returns true
+no IPI sent
+rcu_read_unlock()
+
+RCU prevents us from a use-after-free, but we can still fail to send
+the required IPI.
+
+Using rq->idle in combination with this patch should prevent that
+race.  It's possible for there to be weird timing things that cause
+unnecessary IPIs to be sent, but my workload (which, I suspect, is
+unusually heavy on remote wakeups from idle) sees something like 99%
+of them avoiding the IPI.
+
+--Andy
