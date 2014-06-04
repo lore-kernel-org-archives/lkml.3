@@ -1,102 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752354AbaFDO53 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 10:57:29 -0400
-Received: from mail-ve0-f181.google.com ([209.85.128.181]:35952 "EHLO
-	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751572AbaFDO52 (ORCPT
+	id S1752976AbaFDO6H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 10:58:07 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:55271 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751588AbaFDO6F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 10:57:28 -0400
+	Wed, 4 Jun 2014 10:58:05 -0400
+Date: Wed, 4 Jun 2014 07:58:03 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Christoph Hellwig <hch@infradead.org>, Shaohua Li <shli@kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch]blk-mq: blk_mq_tag_to_rq should handle flush request
+Message-ID: <20140604145803.GA7826@infradead.org>
+References: <20140509120733.GA27918@kernel.org>
+ <20140509150018.GA26215@infradead.org>
+ <20140510040023.GA13788@kernel.org>
+ <5388912F.7010609@kernel.dk>
+ <20140604111133.GA7826@infradead.org>
+ <538F2A11.4060800@kernel.dk>
+ <20140604142012.GA20056@infradead.org>
+ <538F331F.60101@kernel.dk>
 MIME-Version: 1.0
-In-Reply-To: <20140604074416.GH30445@twins.programming.kicks-ass.net>
-References: <cover.1401841482.git.luto@amacapital.net> <ad9dcf321a5b74e72a1b63a0d59c8ddc68509c0f.1401841482.git.luto@amacapital.net>
- <20140604074416.GH30445@twins.programming.kicks-ass.net>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 4 Jun 2014 07:57:07 -0700
-Message-ID: <CALCETrV3EQg0t_nvBZcsPKXiT2mrkDd_8AbVkJ=vADSToc6bKg@mail.gmail.com>
-Subject: Re: [PATCH 4/6] sched,idle: Clear polling before descheduling the
- idle thread
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Mike Galbraith <umgwanakikbuti@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, nicolas.pitre@linaro.org,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <538F331F.60101@kernel.dk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 4, 2014 at 12:44 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Tue, Jun 03, 2014 at 05:29:50PM -0700, Andy Lutomirski wrote:
->> Currently, the only real guarantee provided by the polling bit is
->> that, if you hold rq->lock and the polling bit is set, then you can
->> set need_resched to force a reschedule.
->>
->> The only reason the lock is needed is that the idle thread might not
->> be running at all when setting its need_resched bit, and rq->lock
->> keeps it pinned.
->>
->> This is easy to fix: just clear the polling bit before scheduling.
->> Now the polling bit is only ever set when rq->curr == rq->idle.
->
-> Yah, except of course:
->
->   lkml.kernel.org/r/20131120162736.508462614@infradead.org
+On Wed, Jun 04, 2014 at 08:54:23AM -0600, Jens Axboe wrote:
+> >It's not as simple as the added code wants to get a queue from the
+> >hwctx, which we can't get at.  I was planning to look into this, but
+> >there are various other regressions in the recent block updates that I
+> >need to fix before I can even test a tree with this one reverted.
+> 
+> Which regressions? Performance or crashes?
 
-Wow, that code was ugly.
+Both.  I've tracked down the SCSI boot crash and you'll have a patch for
+that soon, still working on bisecting the performance crawl, but I'm
+getting close.
 
-Can you be persuaded to hold off on that patch until after this series
-is done?  I think the cpu_startup_entry change will just muddy the
-waters for now.
+> >If you can get to sorting this out soon I'd love you to handle it,
+> >otherwise I'll look into it as soon as I can.
+> 
+> Just took a look at it, but I don't see the problematic path. I'm
+> looking at wip-9.
 
->
-> which I really need to rebase and post again :/
->
-> In any case, this is useful even with that, although then we really must
-> do something like:
->
->   rcu_read_lock();
->   if (!set_nr_if_polling(rq->curr))
->         smp_send_reschedule(rq->cpu);
->   rcu_read_unlock();
->
-> Because there's other tasks than rq->idle which might be 'idle', joy!
+scsi_mq_find_tag only gets the scsi host, which may have multiple
+queues.  When called from scsi_find_tag we actually have a scsi device,
+so that's not an issue, but when called from scsi_host_find_tag the
+driver only provides the host.
 
-Is this really a problem?
-
-It's certainly the case that a non-idle (in the sense of != rq->idle)
-task can have the polling bit set, but so what?  I'm perfectly happy
-to wake these ersatz idle things via IPI instead of via
-TIF_NEED_RESCHED.  I think that all of the code that plays with the
-polling bit after all these patches are applied either holds rq->lock
-(which prevents the task from going away) or acts directly on
-rq->idle, which really has no business being deallocated.
-
-I think that the RCU solution is actually racy, too.  Consider:
-
-If rq->curr is one some thermal sort-of-idle thing that has polling
-set, and no one has made those tasks respect the new polling semantics
-from this patch, then this could happen:
-
-CPU A:
-rcu_read_lock();
-load rq->curr
-
-                           CPU B:
-                           deschedule rq->curr and schedule somthing else
-
-CPU A:
-set_nr_if_polling(rq->curr) returns true
-no IPI sent
-rcu_read_unlock()
-
-RCU prevents us from a use-after-free, but we can still fail to send
-the required IPI.
-
-Using rq->idle in combination with this patch should prevent that
-race.  It's possible for there to be weird timing things that cause
-unnecessary IPIs to be sent, but my workload (which, I suspect, is
-unusually heavy on remote wakeups from idle) sees something like 99%
-of them avoiding the IPI.
-
---Andy
