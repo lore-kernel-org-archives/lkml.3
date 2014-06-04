@@ -1,95 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751883AbaFDQ7b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 12:59:31 -0400
-Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:25891
-	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750822AbaFDQ7a (ORCPT
+	id S1752208AbaFDRAG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 13:00:06 -0400
+Received: from mail-qg0-f41.google.com ([209.85.192.41]:54374 "EHLO
+	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751376AbaFDRAF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 12:59:30 -0400
-X-IronPort-AV: E=Sophos;i="4.98,974,1392159600"; 
-   d="scan'208";a="65463618"
-Date: Wed, 4 Jun 2014 18:59:22 +0200 (CEST)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@hadrien
-To: Jens Axboe <axboe@kernel.dk>
-cc: scameron@beardog.cce.hp.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 7/10] cciss: use safer test on the result of
- find_first_zero_bit
-In-Reply-To: <538F4F99.2020502@kernel.dk>
-Message-ID: <alpine.DEB.2.10.1406041858170.2441@hadrien>
-References: <20140604145135.GC6970@beardog.cce.hp.com> <538F4F99.2020502@kernel.dk>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Wed, 4 Jun 2014 13:00:05 -0400
+Date: Wed, 4 Jun 2014 12:59:53 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Kent Overstreet <kmo@daterainc.com>,
+        Sebastian Ott <sebott@linux.vnet.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Christoph Lameter <cl@linux-foundation.org>
+Subject: Re: [GIT PULL] last minute percpu fix for v3.15-rc8
+Message-ID: <20140604165953.GJ5004@htj.dyndns.org>
+References: <20140604163700.GH5004@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140604163700.GH5004@htj.dyndns.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello, again.
 
+My script applied the patch with the wrong author.  It should have
+been Heiko instead of Sebastian.  I fixed up percpu/for-3.15-fixes
+branch accordingly.  The updated pull-request output follows.  There
+is no content change.
 
-On Wed, 4 Jun 2014, Jens Axboe wrote:
+Thanks.
 
-> On 06/04/2014 08:51 AM, scameron@beardog.cce.hp.com wrote:
-> >> Find_first_zero_bit considers BITS_PER_LONG bits at a time, and thus may
-> >> return a larger number than the maximum position argument if that position
-> >> is not a multiple of BITS_PER_LONG.
-> >>
-> >> The semantic match that finds this problem is as follows:
-> >> (http://coccinelle.lip6.fr/)
-> >>
-> >> // <smpl>
-> >> @@
-> >> expression e1,e2,e3;
-> >> statement S1,S2;
-> >> @@
-> >>
-> >> e1 = find_first_zero_bit(e2,e3)
-> >> ...
-> >> if (e1
-> >> - ==
-> >> + >=
-> >>   e3)
-> >> S1 else S2
-> >> // </smpl>
-> >>
-> >> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-> >>
-> >> ---
-> >>  drivers/block/cciss.c |    2 +-
-> >>  1 file changed, 1 insertion(+), 1 deletion(-)
-> >>
-> >> diff -u -p a/drivers/block/cciss.c b/drivers/block/cciss.c
-> >> --- a/drivers/block/cciss.c
-> >> +++ b/drivers/block/cciss.c
-> >> @@ -980,7 +980,7 @@ static CommandList_struct *cmd_alloc(ctl
-> >>
-> >>  	do {
-> >>  		i = find_first_zero_bit(h->cmd_pool_bits, h->nr_cmds);
-> >> -		if (i == h->nr_cmds)
-> >> +		if (i >= h->nr_cmds)
-> >>  			return NULL;
-> >>  	} while (test_and_set_bit(i, h->cmd_pool_bits) != 0);
-> >>  	c = h->cmd_pool + i;
-> >
-> >
-> > Thanks. Ack.
-> >
-> > You can add
-> >
-> > Reviewed-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
-> >
-> > to this patch if you want.
-> >
-> > You might consider adding "Cc: stable@vger.kernel.org" into the
-> > sign-off area as well.
->
-> There are two such instances in cciss.c, btw.
+The following changes since commit 5a838c3b60e3a36ade764cf7751b8f17d7c9c2da:
 
-Actually, there seem to be three, and I didn't find the other two because
-the assignment is inlined into the test.  But the patch isn't needed
-anyway, because it turns out that the result never goes over the bound
-value.
+  percpu: make pcpu_alloc_chunk() use pcpu_mem_free() instead of kfree() (2014-04-14 16:18:06 -0400)
 
-thanks,
-julia
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/percpu.git for-3.15-fixes
+
+for you to fetch changes up to 00930b6b56d260b13924b9600aa37652f538edbf:
+
+  percpu-refcount: fix usage of this_cpu_ops (2014-06-04 12:57:24 -0400)
+
+----------------------------------------------------------------
+Heiko Carstens (1):
+      percpu-refcount: fix usage of this_cpu_ops
+
+ include/linux/percpu-refcount.h | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/include/linux/percpu-refcount.h b/include/linux/percpu-refcount.h
+index 95961f0..0afb48f 100644
+--- a/include/linux/percpu-refcount.h
++++ b/include/linux/percpu-refcount.h
+@@ -110,7 +110,7 @@ static inline void percpu_ref_get(struct percpu_ref *ref)
+ 	pcpu_count = ACCESS_ONCE(ref->pcpu_count);
+ 
+ 	if (likely(REF_STATUS(pcpu_count) == PCPU_REF_PTR))
+-		__this_cpu_inc(*pcpu_count);
++		this_cpu_inc(*pcpu_count);
+ 	else
+ 		atomic_inc(&ref->count);
+ 
+@@ -139,7 +139,7 @@ static inline bool percpu_ref_tryget(struct percpu_ref *ref)
+ 	pcpu_count = ACCESS_ONCE(ref->pcpu_count);
+ 
+ 	if (likely(REF_STATUS(pcpu_count) == PCPU_REF_PTR)) {
+-		__this_cpu_inc(*pcpu_count);
++		this_cpu_inc(*pcpu_count);
+ 		ret = true;
+ 	}
+ 
+@@ -164,7 +164,7 @@ static inline void percpu_ref_put(struct percpu_ref *ref)
+ 	pcpu_count = ACCESS_ONCE(ref->pcpu_count);
+ 
+ 	if (likely(REF_STATUS(pcpu_count) == PCPU_REF_PTR))
+-		__this_cpu_dec(*pcpu_count);
++		this_cpu_dec(*pcpu_count);
+ 	else if (unlikely(atomic_dec_and_test(&ref->count)))
+ 		ref->release(ref);
+ 
