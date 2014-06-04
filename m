@@ -1,67 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752093AbaFDVjl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 17:39:41 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:56629 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751890AbaFDVjj (ORCPT
+	id S1752099AbaFDVko (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 17:40:44 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:60847 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751791AbaFDVkm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 17:39:39 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Morten Rasmussen <morten.rasmussen@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
-        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        Dietmar Eggemann <Dietmar.Eggemann@arm.com>
-Subject: Re: [RFC PATCH 06/16] arm: topology: Define TC2 sched energy and provide it to scheduler
-Date: Wed, 04 Jun 2014 23:56:55 +0200
-Message-ID: <2484761.vkWavnsDx3@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140604172712.GJ13930@laptop.programming.kicks-ass.net>
-References: <1400869003-27769-1-git-send-email-morten.rasmussen@arm.com> <20140604160230.GS29593@e103034-lin> <20140604172712.GJ13930@laptop.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Wed, 4 Jun 2014 17:40:42 -0400
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Jason Wessel <jason.wessel@windriver.com>,
+        Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: kgdb-bugreport@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: [PATCH] kernel: debug: kdb: kdb_io.c:  Cleaning up missing null-terminate after strncpy call
+Date: Wed,  4 Jun 2014 23:41:36 +0200
+Message-Id: <1401918096-3516-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, June 04, 2014 07:27:12 PM Peter Zijlstra wrote:
-> On Wed, Jun 04, 2014 at 05:02:30PM +0100, Morten Rasmussen wrote:
-> > On Tue, Jun 03, 2014 at 12:50:15PM +0100, Peter Zijlstra wrote:
-> > > On Fri, May 23, 2014 at 07:16:33PM +0100, Morten Rasmussen wrote:
-> > > > +static struct capacity_state cap_states_cluster_a7[] = {
-> > > > +	/* Cluster only power */
-> > > > +	 { .cap =  358, .power = 2967, }, /*  350 MHz */
-> > > > +	 { .cap =  410, .power = 2792, }, /*  400 MHz */
-> > > > +	 { .cap =  512, .power = 2810, }, /*  500 MHz */
-> > > > +	 { .cap =  614, .power = 2815, }, /*  600 MHz */
-> > > > +	 { .cap =  717, .power = 2919, }, /*  700 MHz */
-> > > > +	 { .cap =  819, .power = 2847, }, /*  800 MHz */
-> > > > +	 { .cap =  922, .power = 3917, }, /*  900 MHz */
-> > > > +	 { .cap = 1024, .power = 4905, }, /* 1000 MHz */
-> > > > +	};
-> > > 
-> > > So one thing I remember was that we spoke about restricting this to
-> > > frequency levels where the voltage changed.
-> > > 
-> > > Because voltage jumps were the biggest factor to energy usage.
-> > > 
-> > > Any word on that?
-> > 
-> > Since we don't drive P-state changes from the scheduler, I think we
-> > could leave out P-states from the table without too much trouble. Good
-> > point.
-> 
-> Well, we eventually want to go there I think. Although we still needed
-> to come up with something for Intel, because I'm not at all sure how all
-> that works.
+Added a guaranteed null-terminate after call to strncpy.
 
-Do you mean power numbers or how P-states work on Intel in general?
+This was partly found using a static code analysis program called cppcheck.
 
-Rafael
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+---
+ kernel/debug/kdb/kdb_io.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/debug/kdb/kdb_io.c b/kernel/debug/kdb/kdb_io.c
+index 14ff484..0cd0e28 100644
+--- a/kernel/debug/kdb/kdb_io.c
++++ b/kernel/debug/kdb/kdb_io.c
+@@ -441,8 +441,10 @@ poll_again:
+ 
+ char *kdb_getstr(char *buffer, size_t bufsize, char *prompt)
+ {
+-	if (prompt && kdb_prompt_str != prompt)
+-		strncpy(kdb_prompt_str, prompt, CMD_BUFLEN);
++	if (prompt && kdb_prompt_str != prompt) {
++		strncpy(kdb_prompt_str, prompt, sizeof(kdb_prompt_str));
++		kdb_prompt_str[sizeof(kdb_prompt_str) - 1] = '\0'
++	}
+ 	kdb_printf(kdb_prompt_str);
+ 	kdb_nextline = 1;	/* Prompt and input resets line number */
+ 	return kdb_read(buffer, bufsize);
+-- 
+1.7.10.4
 
