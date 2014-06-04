@@ -1,82 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751936AbaFDJn3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 05:43:29 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57194 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750992AbaFDJn2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 05:43:28 -0400
-Message-ID: <538EEA3D.1080105@suse.cz>
-Date: Wed, 04 Jun 2014 11:43:25 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1752126AbaFDJoy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 05:44:54 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:44545 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751340AbaFDJox (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 05:44:53 -0400
+Date: Wed, 4 Jun 2014 10:44:47 +0100
+From: Morten Rasmussen <morten.rasmussen@arm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Vincent Guittot <vincent.guittot@linaro.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        "efault@gmx.de" <efault@gmx.de>,
+        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>
+Subject: Re: [PATCH v2 08/11] sched: get CPU's activity statistic
+Message-ID: <20140604094447.GI29593@e103034-lin>
+References: <1400860385-14555-1-git-send-email-vincent.guittot@linaro.org>
+ <1400860385-14555-9-git-send-email-vincent.guittot@linaro.org>
+ <20140528121001.GI19967@e103034-lin>
+ <CAKfTPtDxeBfZK1AxCRqEG91pi--Ti1RYFoQPDhvMVnGTCspQ-g@mail.gmail.com>
+ <20140528154703.GJ19967@e103034-lin>
+ <20140603155007.GZ30445@twins.programming.kicks-ass.net>
+ <CAKfTPtDUvH--WxFATTW6YRAvLuohzyNHDUq6DRdfxc7gRKCX6Q@mail.gmail.com>
+ <20140604080809.GK30445@twins.programming.kicks-ass.net>
+ <20140604085542.GH29593@e103034-lin>
+ <20140604092313.GB11096@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-To: Richard Weinberger <richard.weinberger@gmail.com>
-CC: linux-kbuild@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Sam Ravnborg <sam@ravnborg.org>, rdunlap@infradead.org
-Subject: Re: [PATCH v2 3/5] kbuild: Use relative path for $(objtree)
-References: <1399639944-20551-1-git-send-email-mmarek@suse.cz>	<1399639944-20551-4-git-send-email-mmarek@suse.cz> <CAFLxGvyz-aX8rTveo9W3mqsQxPeg8cb7Oq59UiC1kMz4qTiYwg@mail.gmail.com>
-In-Reply-To: <CAFLxGvyz-aX8rTveo9W3mqsQxPeg8cb7Oq59UiC1kMz4qTiYwg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140604092313.GB11096@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-06-04 11:03, Richard Weinberger wrote:
-> On Fri, May 9, 2014 at 2:52 PM, Michal Marek <mmarek@suse.cz> wrote:
->> The main Makefile sets its working directory to the object tree and
->> never changes it again. Therefore, we can use '.' instead of the
->> absolute path. The only case where we need the absolute path is when
->> creating the 'build' symlink in /lib/modules.
->>
->> Acked-by: Sam Ravnborg <sam@ravnborg.org>
->> Signed-off-by: Michal Marek <mmarek@suse.cz>
->> ---
->> v1->v2: Fix the 'build' symlink
->>
->>  Makefile | 4 ++--
->>  1 file changed, 2 insertions(+), 2 deletions(-)
->>
->> diff --git a/Makefile b/Makefile
->> index 60ccbfe..480503a 100644
->> --- a/Makefile
->> +++ b/Makefile
->> @@ -154,7 +154,7 @@ _all: modules
->>  endif
->>
->>  srctree                := $(if $(KBUILD_SRC),$(KBUILD_SRC),$(CURDIR))
->> -objtree                := $(CURDIR)
->> +objtree                := .
->>  src            := $(srctree)
->>  obj            := $(objtree)
->>
->> @@ -1057,7 +1057,7 @@ _modinst_:
->>         @ln -s $(srctree) $(MODLIB)/source
->>         @if [ ! $(objtree) -ef  $(MODLIB)/build ]; then \
->>                 rm -f $(MODLIB)/build ; \
->> -               ln -s $(objtree) $(MODLIB)/build ; \
->> +               ln -s $(CURDIR) $(MODLIB)/build ; \
->>         fi
->>         @cp -f $(objtree)/modules.order $(MODLIB)/
->>         @cp -f $(objtree)/modules.builtin $(MODLIB)/
+On Wed, Jun 04, 2014 at 10:23:13AM +0100, Peter Zijlstra wrote:
+> > f you had five tasks on one cpu that each have a 25% requirement you can
+> > get individual task runnable_avgs of up to 100% (cpu unweighted
+> > runnable_load_avg can get up 500%, I think), but the task running_avgs
+> > would be 20% each (total of 100%). 
 > 
-> This commit breaks the of-of-tree build of UML.
+> Yeah, more or less so indeed. I had not considered the queueing effects
+> on runnable_avg yesterday, so good that that got raised.
 > 
->   CC      arch/x86/um/user-offsets.s
-> /home/rw/linux-next/arch/x86/um/user-offsets.c:21:29: fatal error:
-> asm/syscalls_64.h: No such file or directory
-> compilation terminated.
-> make[2]: *** [arch/x86/um/user-offsets.s] Error 1
-> make[1]: *** [arch/x86/um/user-offsets.s] Error 2
-> make: *** [sub-make] Error 2
-> 
-> To reproduce run:
-> make defconfig ARCH=um O=/mnt/o && make linux ARCH=um O=/mnt/
-> 
-> If there is anything in UML which needs fixing, please tell. :-)
+> That does indeed invalidate my: runnable - running := extra cpu required
+> thing. It ends up being the extra cpu required for 0 latency but gobs of
+> idle time, which is something else entirely.
 
-I'll have a look, thanks for the report.
+Agreed, but I think it is still a useful estimate of the required
+compute capacity. If there is a significant difference between runnable
+and running on a cpu, the current mix of tasks is not good for latency.
+However, we need to treat it as a worst case estimate and not necessarily
+try to move exactly runnable-running worth of tasks to another cpu.
 
-Michal
-
+So far I haven't been able to come up with something better.
