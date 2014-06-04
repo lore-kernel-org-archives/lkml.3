@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755299AbaFDXxt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:53:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40538 "EHLO
+	id S1755313AbaFDXyK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 19:54:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40531 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753711AbaFDXXU (ORCPT
+	with ESMTP id S1753702AbaFDXXT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:23:20 -0400
+	Wed, 4 Jun 2014 19:23:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
@@ -15,9 +15,9 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Kyungmin Park <kyungmin.park@samsung.com>,
         Stephen Boyd <sboyd@codeaurora.org>,
         Mike Turquette <mturquette@linaro.org>
-Subject: [PATCH 3.14 215/228] clk: Fix slab corruption in clk_unregister()
-Date: Wed,  4 Jun 2014 16:24:04 -0700
-Message-Id: <20140604232354.952414945@linuxfoundation.org>
+Subject: [PATCH 3.14 214/228] clk: Fix double free due to devm_clk_register()
+Date: Wed,  4 Jun 2014 16:24:03 -0700
+Message-Id: <20140604232354.923682688@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -34,74 +34,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Stephen Boyd <sboyd@codeaurora.org>
 
-commit 874f224cc52d64c912087e68e3724be95ad80ee7 upstream.
+commit 293ba3b4a4fd54891b900f2911d1a57e1ed4a843 upstream.
 
-When a clock is unregsitered, we iterate over the list of
-children and reparent them to NULL (i.e. orphan list). While
-iterating the list, we should use the safe iterators because the
-children list for this clock is changing when we reparent the
-children to NULL. Failure to iterate safely can lead to slab
-corruption like this:
+Now that clk_unregister() frees the struct clk we're
+unregistering we'll free memory twice: first we'll call kfree()
+in __clk_release() with an address kmalloc doesn't know about and
+second we'll call kfree() in the devres layer. Remove the
+allocation of struct clk in devm_clk_register() and let
+clk_release() handle it. This fixes slab errors like:
 
 =============================================================================
-BUG kmalloc-128 (Not tainted): Poison overwritten
+BUG kmalloc-128 (Not tainted): Invalid object pointer 0xed08e8d0
 -----------------------------------------------------------------------------
 
 Disabling lock debugging due to kernel taint
-INFO: 0xed0c4900-0xed0c4903. First byte 0x0 instead of 0x6b
-INFO: Allocated in clk_register+0x20/0x1bc age=297 cpu=2 pid=70
- __slab_alloc.isra.39.constprop.42+0x410/0x454
- kmem_cache_alloc_trace+0x200/0x24c
- clk_register+0x20/0x1bc
- devm_clk_register+0x34/0x68
- 0xbf0000f0
- platform_drv_probe+0x18/0x48
- driver_probe_device+0x94/0x360
- __driver_attach+0x94/0x98
- bus_for_each_dev+0x54/0x88
- bus_add_driver+0xe8/0x204
- driver_register+0x78/0xf4
- do_one_initcall+0xc4/0x17c
- load_module+0x19ac/0x2294
- SyS_init_module+0xa4/0x110
- ret_fast_syscall+0x0/0x48
-INFO: Freed in clk_unregister+0xd4/0x140 age=23 cpu=2 pid=73
- __slab_free+0x38/0x41c
- clk_unregister+0xd4/0x140
- release_nodes+0x164/0x1d8
- __device_release_driver+0x60/0xb0
- driver_detach+0xb4/0xb8
- bus_remove_driver+0x5c/0xc4
- SyS_delete_module+0x148/0x1d8
- ret_fast_syscall+0x0/0x48
-INFO: Slab 0xeec50b90 objects=25 used=0 fp=0xed0c5400 flags=0x4080
-INFO: Object 0xed0c48c0 @offset=2240 fp=0xed0c4a00
-
-Bytes b4 ed0c48b0: 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a  ZZZZZZZZZZZZZZZZ
-Object ed0c48c0: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
-Object ed0c48d0: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
-Object ed0c48e0: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
-Object ed0c48f0: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
-Object ed0c4900: 00 00 00 00 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  ....kkkkkkkkkkkk
-Object ed0c4910: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
-Object ed0c4920: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
-Object ed0c4930: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b a5  kkkkkkkkkkkkkkk.
-Redzone ed0c4940: bb bb bb bb                                      ....
-Padding ed0c49e8: 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a  ZZZZZZZZZZZZZZZZ
-Padding ed0c49f8: 5a 5a 5a 5a 5a 5a 5a 5a                          ZZZZZZZZ
-CPU: 3 PID: 75 Comm: mdev Tainted: G    B         3.14.0-11033-g2054ba5ca781 #35
+INFO: Slab 0xeec503f8 objects=25 used=15 fp=0xed08ea00 flags=0x4081
+CPU: 2 PID: 73 Comm: rmmod Tainted: G    B         3.14.0-11032-g526e9c764381 #34
 [<c0014be0>] (unwind_backtrace) from [<c0012240>] (show_stack+0x10/0x14)
-[<c0012240>] (show_stack) from [<c04b74a0>] (dump_stack+0x70/0xbc)
-[<c04b74a0>] (dump_stack) from [<c00f7a78>] (check_bytes_and_report+0xbc/0x100)
-[<c00f7a78>] (check_bytes_and_report) from [<c00f7c48>] (check_object+0x18c/0x218)
-[<c00f7c48>] (check_object) from [<c00f7efc>] (__free_slab+0x104/0x144)
-[<c00f7efc>] (__free_slab) from [<c04b6668>] (__slab_free+0x3dc/0x41c)
-[<c04b6668>] (__slab_free) from [<c014c008>] (load_elf_binary+0x88/0x12b4)
-[<c014c008>] (load_elf_binary) from [<c0105a44>] (search_binary_handler+0x78/0x18c)
-[<c0105a44>] (search_binary_handler) from [<c0106fc0>] (do_execve+0x490/0x5dc)
-[<c0106fc0>] (do_execve) from [<c0036b8c>] (____call_usermodehelper+0x134/0x168)
-[<c0036b8c>] (____call_usermodehelper) from [<c000f048>] (ret_from_fork+0x14/0x2c)
-FIX kmalloc-128: Restoring 0xed0c4900-0xed0c4903=0x6b
+[<c0012240>] (show_stack) from [<c04b74dc>] (dump_stack+0x70/0xbc)
+[<c04b74dc>] (dump_stack) from [<c00f6778>] (slab_err+0x74/0x84)
+[<c00f6778>] (slab_err) from [<c04b6278>] (free_debug_processing+0x2cc/0x31c)
+[<c04b6278>] (free_debug_processing) from [<c04b6300>] (__slab_free+0x38/0x41c)
+[<c04b6300>] (__slab_free) from [<c03931bc>] (clk_unregister+0xd4/0x140)
+[<c03931bc>] (clk_unregister) from [<c02fb774>] (release_nodes+0x164/0x1d8)
+[<c02fb774>] (release_nodes) from [<c02f8698>] (__device_release_driver+0x60/0xb0)
+[<c02f8698>] (__device_release_driver) from [<c02f9080>] (driver_detach+0xb4/0xb8)
+[<c02f9080>] (driver_detach) from [<c02f8480>] (bus_remove_driver+0x5c/0xc4)
+[<c02f8480>] (bus_remove_driver) from [<c008c9b8>] (SyS_delete_module+0x148/0x1d8)
+[<c008c9b8>] (SyS_delete_module) from [<c000ef80>] (ret_fast_syscall+0x0/0x48)
+FIX kmalloc-128: Object at 0xed08e8d0 not freed
 
 Fixes: fcb0ee6a3d33 (clk: Implement clk_unregister)
 Cc: Jiada Wang <jiada_wang@mentor.com>
@@ -112,22 +73,122 @@ Signed-off-by: Mike Turquette <mturquette@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/clk/clk.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/clk/clk.c |   71 ++++++++++++++++++++++--------------------------------
+ 1 file changed, 30 insertions(+), 41 deletions(-)
 
 --- a/drivers/clk/clk.c
 +++ b/drivers/clk/clk.c
-@@ -2133,9 +2133,10 @@ void clk_unregister(struct clk *clk)
+@@ -1977,9 +1977,28 @@ struct clk *__clk_register(struct device
+ }
+ EXPORT_SYMBOL_GPL(__clk_register);
  
- 	if (!hlist_empty(&clk->children)) {
- 		struct clk *child;
-+		struct hlist_node *t;
+-static int _clk_register(struct device *dev, struct clk_hw *hw, struct clk *clk)
++/**
++ * clk_register - allocate a new clock, register it and return an opaque cookie
++ * @dev: device that is registering this clock
++ * @hw: link to hardware-specific clock data
++ *
++ * clk_register is the primary interface for populating the clock tree with new
++ * clock nodes.  It returns a pointer to the newly allocated struct clk which
++ * cannot be dereferenced by driver code but may be used in conjuction with the
++ * rest of the clock API.  In the event of an error clk_register will return an
++ * error code; drivers must test for an error code after calling clk_register.
++ */
++struct clk *clk_register(struct device *dev, struct clk_hw *hw)
+ {
+ 	int i, ret;
++	struct clk *clk;
++
++	clk = kzalloc(sizeof(*clk), GFP_KERNEL);
++	if (!clk) {
++		pr_err("%s: could not allocate clk\n", __func__);
++		ret = -ENOMEM;
++		goto fail_out;
++	}
  
- 		/* Reparent all children to the orphan list. */
--		hlist_for_each_entry(child, &clk->children, child_node)
-+		hlist_for_each_entry_safe(child, t, &clk->children, child_node)
- 			clk_set_parent(child, NULL);
+ 	clk->name = kstrdup(hw->init->name, GFP_KERNEL);
+ 	if (!clk->name) {
+@@ -2019,7 +2038,7 @@ static int _clk_register(struct device *
+ 
+ 	ret = __clk_init(dev, clk);
+ 	if (!ret)
+-		return 0;
++		return clk;
+ 
+ fail_parent_names_copy:
+ 	while (--i >= 0)
+@@ -2028,36 +2047,6 @@ fail_parent_names_copy:
+ fail_parent_names:
+ 	kfree(clk->name);
+ fail_name:
+-	return ret;
+-}
+-
+-/**
+- * clk_register - allocate a new clock, register it and return an opaque cookie
+- * @dev: device that is registering this clock
+- * @hw: link to hardware-specific clock data
+- *
+- * clk_register is the primary interface for populating the clock tree with new
+- * clock nodes.  It returns a pointer to the newly allocated struct clk which
+- * cannot be dereferenced by driver code but may be used in conjuction with the
+- * rest of the clock API.  In the event of an error clk_register will return an
+- * error code; drivers must test for an error code after calling clk_register.
+- */
+-struct clk *clk_register(struct device *dev, struct clk_hw *hw)
+-{
+-	int ret;
+-	struct clk *clk;
+-
+-	clk = kzalloc(sizeof(*clk), GFP_KERNEL);
+-	if (!clk) {
+-		pr_err("%s: could not allocate clk\n", __func__);
+-		ret = -ENOMEM;
+-		goto fail_out;
+-	}
+-
+-	ret = _clk_register(dev, hw, clk);
+-	if (!ret)
+-		return clk;
+-
+ 	kfree(clk);
+ fail_out:
+ 	return ERR_PTR(ret);
+@@ -2166,7 +2155,7 @@ EXPORT_SYMBOL_GPL(clk_unregister);
+ 
+ static void devm_clk_release(struct device *dev, void *res)
+ {
+-	clk_unregister(res);
++	clk_unregister(*(struct clk **)res);
+ }
+ 
+ /**
+@@ -2181,18 +2170,18 @@ static void devm_clk_release(struct devi
+ struct clk *devm_clk_register(struct device *dev, struct clk_hw *hw)
+ {
+ 	struct clk *clk;
+-	int ret;
++	struct clk **clkp;
+ 
+-	clk = devres_alloc(devm_clk_release, sizeof(*clk), GFP_KERNEL);
+-	if (!clk)
++	clkp = devres_alloc(devm_clk_release, sizeof(*clkp), GFP_KERNEL);
++	if (!clkp)
+ 		return ERR_PTR(-ENOMEM);
+ 
+-	ret = _clk_register(dev, hw, clk);
+-	if (!ret) {
+-		devres_add(dev, clk);
++	clk = clk_register(dev, hw);
++	if (!IS_ERR(clk)) {
++		*clkp = clk;
++		devres_add(dev, clkp);
+ 	} else {
+-		devres_free(clk);
+-		clk = ERR_PTR(ret);
++		devres_free(clkp);
  	}
  
+ 	return clk;
 
 
