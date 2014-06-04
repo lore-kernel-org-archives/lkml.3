@@ -1,45 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753238AbaFDPKS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 11:10:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34618 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751790AbaFDPKQ (ORCPT
+	id S1753452AbaFDPKY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 11:10:24 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:34575 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751510AbaFDPKV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 11:10:16 -0400
-Date: Wed, 4 Jun 2014 08:10:12 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: "Adithya.K" <linux.challenge1@gmail.com>
-Cc: omar.ramirez@copitl.com, rashika.kheria@gmail.com, freemangordon@abv.bg,
-        dan.carpenter@oracle.com, ody.guru@gmail.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging:tidspbridge Fix minor checkpatch.pl warning.
-Message-ID: <20140604151012.GA2218@kroah.com>
-References: <y>
- <1401893916-23366-1-git-send-email-linux.challenge1@gmail.com>
+	Wed, 4 Jun 2014 11:10:21 -0400
+Date: Wed, 4 Jun 2014 08:10:20 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Christoph Hellwig <hch@infradead.org>, Shaohua Li <shli@kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch]blk-mq: blk_mq_tag_to_rq should handle flush request
+Message-ID: <20140604151020.GA13586@infradead.org>
+References: <20140510040023.GA13788@kernel.org>
+ <5388912F.7010609@kernel.dk>
+ <20140604111133.GA7826@infradead.org>
+ <538F2A11.4060800@kernel.dk>
+ <20140604142012.GA20056@infradead.org>
+ <538F331F.60101@kernel.dk>
+ <20140604145803.GA7826@infradead.org>
+ <538F34FB.7050003@kernel.dk>
+ <20140604150508.GA21551@infradead.org>
+ <538F365C.8050604@kernel.dk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1401893916-23366-1-git-send-email-linux.challenge1@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <538F365C.8050604@kernel.dk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 04, 2014 at 08:28:36PM +0530, Adithya.K wrote:
-> From: Adithya K <linux.challenge1@gmail.com>
+On Wed, Jun 04, 2014 at 09:08:12AM -0600, Jens Axboe wrote:
+> >The performance regression is caused by "blk-mq: avoid code
+> >duplication", but I don't really understand why yet.
 > 
-> Fixed few checkpatch.pl warnings.
+> Gah, looks like this one dropped the tag idling. I bet that is why.
 
-Be specific about _what_ warnings you fixed.  And if you fix more than
-one type of warning, please break it up into different patches (each
-patch only can do one thing.)
+Ah, thanks.  It's indeed exactly the same sort of slow down I bisected
+back then, this should have rung a bell instead of keeping me occupied
+for hours..
 
-> Signed-off-by: Adithya K <linux.challenge1@gmail.com>
-
-I need a "full" name for a kernel patch.  I have to ask, is your last
-name really just one letter?
-
-thanks,
-
-greg k-h
