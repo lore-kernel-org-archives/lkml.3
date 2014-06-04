@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757242AbaFEAwj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 20:52:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39646 "EHLO
+	id S1757261AbaFEAw7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 20:52:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39628 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751884AbaFDXUm (ORCPT
+	with ESMTP id S1751867AbaFDXUk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:20:42 -0400
+	Wed, 4 Jun 2014 19:20:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>, Rob Herring <robh@kernel.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Grant Likely <grant.likely@linaro.org>
-Subject: [PATCH 3.14 007/228] of/irq: do irq resolution in platform_get_irq
-Date: Wed,  4 Jun 2014 16:20:36 -0700
-Message-Id: <20140604232348.319944076@linuxfoundation.org>
+        Aaro Koskinen <aaro.koskinen@iki.fi>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Viresh Kumar <viresh.kumar@linaro.org>, linux-mips@linux-mips.org,
+        cpufreq@vger.kernel.org, Ralf Baechle <ralf@linux-mips.org>
+Subject: [PATCH 3.14 003/228] MIPS/loongson2_cpufreq: Fix CPU clock rate setting
+Date: Wed,  4 Jun 2014 16:20:32 -0700
+Message-Id: <20140604232348.187603019@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -30,144 +31,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rob Herring <robh@kernel.org>
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
 
-commit 9ec36cafe43bf835f8f29273597a5b0cbc8267ef upstream.
+commit 8e8acb32960f42c81b1d50deac56a2c07bb6a18a upstream.
 
-Currently we get the following kind of errors if we try to use interrupt
-phandles to irqchips that have not yet initialized:
+Loongson2 has been using (incorrectly) kHz for cpu_clk rate. This has
+been unnoticed, as loongson2_cpufreq was the only place where the rate
+was set/get. After commit 652ed95d5fa6074b3c4ea245deb0691f1acb6656
+(cpufreq: introduce cpufreq_generic_get() routine) things however broke,
+and now loops_per_jiffy adjustments are incorrect (1000 times too long).
+The patch fixes this by changing cpu_clk rate to Hz.
 
-irq: no irq domain found for /ocp/pinmux@48002030 !
-------------[ cut here ]------------
-WARNING: CPU: 0 PID: 1 at drivers/of/platform.c:171 of_device_alloc+0x144/0x184()
-Modules linked in:
-CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.12.0-00038-g42a9708 #1012
-(show_stack+0x14/0x1c)
-(dump_stack+0x6c/0xa0)
-(warn_slowpath_common+0x64/0x84)
-(warn_slowpath_null+0x1c/0x24)
-(of_device_alloc+0x144/0x184)
-(of_platform_device_create_pdata+0x44/0x9c)
-(of_platform_bus_create+0xd0/0x170)
-(of_platform_bus_create+0x12c/0x170)
-(of_platform_populate+0x60/0x98)
-
-This is because we're wrongly trying to populate resources that are not
-yet available. It's perfectly valid to create irqchips dynamically, so
-let's fix up the issue by resolving the interrupt resources when
-platform_get_irq is called.
-
-And then we also need to accept the fact that some irqdomains do not
-exist that early on, and only get initialized later on. So we can
-make the current WARN_ON into just into a pr_debug().
-
-We still attempt to populate irq resources when we create the devices.
-This allows current drivers which don't use platform_get_irq to continue
-to function. Once all drivers are fixed, this code can be removed.
-
-Suggested-by: Russell King <linux@arm.linux.org.uk>
-Signed-off-by: Rob Herring <robh@kernel.org>
-Signed-off-by: Tony Lindgren <tony@atomide.com>
-Tested-by: Tony Lindgren <tony@atomide.com>
-Signed-off-by: Grant Likely <grant.likely@linaro.org>
+Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: linux-mips@linux-mips.org
+Cc: linux-kernel@vger.kernel.org
+Cc: cpufreq@vger.kernel.org
+Cc: Aaro Koskinen <aaro.koskinen@iki.fi>
+Patchwork: https://patchwork.linux-mips.org/patch/6678/
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/base/platform.c |    7 ++++++-
- drivers/of/irq.c        |   26 ++++++++++++++++++++++++++
- drivers/of/platform.c   |    4 +++-
- include/linux/of_irq.h  |    5 +++++
- 4 files changed, 40 insertions(+), 2 deletions(-)
+ arch/mips/loongson/lemote-2f/clock.c |    5 +++--
+ drivers/cpufreq/loongson2_cpufreq.c  |    4 ++--
+ 2 files changed, 5 insertions(+), 4 deletions(-)
 
---- a/drivers/base/platform.c
-+++ b/drivers/base/platform.c
-@@ -13,6 +13,7 @@
- #include <linux/string.h>
- #include <linux/platform_device.h>
- #include <linux/of_device.h>
-+#include <linux/of_irq.h>
- #include <linux/module.h>
- #include <linux/init.h>
- #include <linux/dma-mapping.h>
-@@ -87,7 +88,11 @@ int platform_get_irq(struct platform_dev
- 		return -ENXIO;
- 	return dev->archdata.irqs[num];
- #else
--	struct resource *r = platform_get_resource(dev, IORESOURCE_IRQ, num);
-+	struct resource *r;
-+	if (IS_ENABLED(CONFIG_OF_IRQ) && dev->dev.of_node)
-+		return of_irq_get(dev->dev.of_node, num);
-+
-+	r = platform_get_resource(dev, IORESOURCE_IRQ, num);
+--- a/arch/mips/loongson/lemote-2f/clock.c
++++ b/arch/mips/loongson/lemote-2f/clock.c
+@@ -91,6 +91,7 @@ EXPORT_SYMBOL(clk_put);
  
- 	return r ? r->start : -ENXIO;
- #endif
---- a/drivers/of/irq.c
-+++ b/drivers/of/irq.c
-@@ -380,6 +380,32 @@ int of_irq_to_resource(struct device_nod
- EXPORT_SYMBOL_GPL(of_irq_to_resource);
- 
- /**
-+ * of_irq_get - Decode a node's IRQ and return it as a Linux irq number
-+ * @dev: pointer to device tree node
-+ * @index: zero-based index of the irq
-+ *
-+ * Returns Linux irq number on success, or -EPROBE_DEFER if the irq domain
-+ * is not yet created.
-+ *
-+ */
-+int of_irq_get(struct device_node *dev, int index)
-+{
-+	int rc;
-+	struct of_phandle_args oirq;
-+	struct irq_domain *domain;
-+
-+	rc = of_irq_parse_one(dev, index, &oirq);
-+	if (rc)
-+		return rc;
-+
-+	domain = irq_find_host(oirq.np);
-+	if (!domain)
-+		return -EPROBE_DEFER;
-+
-+	return irq_create_of_mapping(&oirq);
-+}
-+
-+/**
-  * of_irq_count - Count the number of IRQs a node uses
-  * @dev: pointer to device tree node
-  */
---- a/drivers/of/platform.c
-+++ b/drivers/of/platform.c
-@@ -168,7 +168,9 @@ struct platform_device *of_device_alloc(
- 			rc = of_address_to_resource(np, i, res);
- 			WARN_ON(rc);
- 		}
--		WARN_ON(of_irq_to_resource_table(np, res, num_irq) != num_irq);
-+		if (of_irq_to_resource_table(np, res, num_irq) != num_irq)
-+			pr_debug("not all legacy IRQ resources mapped for %s\n",
-+				 np->name);
- 	}
- 
- 	dev->dev.of_node = of_node_get(np);
---- a/include/linux/of_irq.h
-+++ b/include/linux/of_irq.h
-@@ -44,11 +44,16 @@ extern void of_irq_init(const struct of_
- 
- #ifdef CONFIG_OF_IRQ
- extern int of_irq_count(struct device_node *dev);
-+extern int of_irq_get(struct device_node *dev, int index);
- #else
- static inline int of_irq_count(struct device_node *dev)
+ int clk_set_rate(struct clk *clk, unsigned long rate)
  {
++	unsigned int rate_khz = rate / 1000;
+ 	int ret = 0;
+ 	int regval;
+ 	int i;
+@@ -111,10 +112,10 @@ int clk_set_rate(struct clk *clk, unsign
+ 		if (loongson2_clockmod_table[i].frequency ==
+ 		    CPUFREQ_ENTRY_INVALID)
+ 			continue;
+-		if (rate == loongson2_clockmod_table[i].frequency)
++		if (rate_khz == loongson2_clockmod_table[i].frequency)
+ 			break;
+ 	}
+-	if (rate != loongson2_clockmod_table[i].frequency)
++	if (rate_khz != loongson2_clockmod_table[i].frequency)
+ 		return -ENOTSUPP;
+ 
+ 	clk->rate = rate;
+--- a/drivers/cpufreq/loongson2_cpufreq.c
++++ b/drivers/cpufreq/loongson2_cpufreq.c
+@@ -62,7 +62,7 @@ static int loongson2_cpufreq_target(stru
+ 	set_cpus_allowed_ptr(current, &cpus_allowed);
+ 
+ 	/* setting the cpu frequency */
+-	clk_set_rate(policy->clk, freq);
++	clk_set_rate(policy->clk, freq * 1000);
+ 
  	return 0;
  }
-+static inline int of_irq_get(struct device_node *dev, int index)
-+{
-+	return 0;
-+}
- #endif
+@@ -92,7 +92,7 @@ static int loongson2_cpufreq_cpu_init(st
+ 	     i++)
+ 		loongson2_clockmod_table[i].frequency = (rate * i) / 8;
  
- #if defined(CONFIG_OF)
+-	ret = clk_set_rate(cpuclk, rate);
++	ret = clk_set_rate(cpuclk, rate * 1000);
+ 	if (ret) {
+ 		clk_put(cpuclk);
+ 		return ret;
 
 
