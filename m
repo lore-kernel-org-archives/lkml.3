@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754668AbaFDXcF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:32:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40950 "EHLO
+	id S1754686AbaFDXcH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 19:32:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40928 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751566AbaFDXYM (ORCPT
+	with ESMTP id S1754118AbaFDXYM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 4 Jun 2014 19:24:12 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daeseok Youn <daeseok.youn@gmail.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3.10 073/103] workqueue: fix bugs in wq_update_unbound_numa() failure path
-Date: Wed,  4 Jun 2014 16:25:36 -0700
-Message-Id: <20140604232549.172488228@linuxfoundation.org>
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [PATCH 3.10 072/103] nfsd4: remove lockowner when removing lock stateid
+Date: Wed,  4 Jun 2014 16:25:35 -0700
+Message-Id: <20140604232549.134139456@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232546.704156131@linuxfoundation.org>
 References: <20140604232546.704156131@linuxfoundation.org>
@@ -29,43 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daeseok Youn <daeseok.youn@gmail.com>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit 77f300b198f93328c26191b52655ce1b62e202cf upstream.
+commit a1b8ff4c97b4375d21b6d6c45d75877303f61b3b upstream.
 
-wq_update_unbound_numa() failure path has the following two bugs.
+The nfsv4 state code has always assumed a one-to-one correspondance
+between lock stateid's and lockowners even if it appears not to in some
+places.
 
-- alloc_unbound_pwq() is called without holding wq->mutex; however, if
-  the allocation fails, it jumps to out_unlock which tries to unlock
-  wq->mutex.
+We may actually change that, but for now when FREE_STATEID releases a
+lock stateid it also needs to release the parent lockowner.
 
-- The function should switch to dfl_pwq on failure but didn't do so
-  after alloc_unbound_pwq() failure.
+Symptoms were a subsequent LOCK crashing in find_lockowner_str when it
+calls same_lockowner_ino on a lockowner that unexpectedly has an empty
+so_stateids list.
 
-Fix it by regrabbing wq->mutex and jumping to use_dfl_pwq on
-alloc_unbound_pwq() failure.
-
-Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
-Acked-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Fixes: 4c16bd327c74 ("workqueue: implement NUMA affinity for unbound workqueues")
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/workqueue.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ fs/nfsd/nfs4state.c |   11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
 
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -4043,7 +4043,8 @@ static void wq_update_unbound_numa(struc
- 	if (!pwq) {
- 		pr_warning("workqueue: allocation failed while updating NUMA affinity of \"%s\"\n",
- 			   wq->name);
--		goto out_unlock;
-+		mutex_lock(&wq->mutex);
-+		goto use_dfl_pwq;
- 	}
+--- a/fs/nfsd/nfs4state.c
++++ b/fs/nfsd/nfs4state.c
+@@ -3599,9 +3599,16 @@ out:
+ static __be32
+ nfsd4_free_lock_stateid(struct nfs4_ol_stateid *stp)
+ {
+-	if (check_for_locks(stp->st_file, lockowner(stp->st_stateowner)))
++	struct nfs4_lockowner *lo = lockowner(stp->st_stateowner);
++
++	if (check_for_locks(stp->st_file, lo))
+ 		return nfserr_locks_held;
+-	release_lock_stateid(stp);
++	/*
++	 * Currently there's a 1-1 lock stateid<->lockowner
++	 * correspondance, and we have to delete the lockowner when we
++	 * delete the lock stateid:
++	 */
++	unhash_lockowner(lo);
+ 	return nfs_ok;
+ }
  
- 	/*
 
 
