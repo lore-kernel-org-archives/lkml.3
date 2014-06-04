@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756618AbaFEAYU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 20:24:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40119 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751421AbaFDXWZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753121AbaFDXWZ (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 4 Jun 2014 19:22:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40111 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751421AbaFDXWW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 19:22:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        cgroups@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
-        Aristeu Rozanski <arozansk@redhat.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3.14 126/228] device_cgroup: check if exception removal is allowed
-Date: Wed,  4 Jun 2014 16:22:35 -0700
-Message-Id: <20140604232352.082942702@linuxfoundation.org>
+        Carolyn Wyborny <carolyn.wyborny@intel.com>,
+        Christoph Paasch <christoph.paasch@uclouvain.be>,
+        Jeff Pieper <jeffrey.e.pieper@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Subject: [PATCH 3.14 119/228] igb: Fix Null-pointer dereference in igb_reset_q_vector
+Date: Wed,  4 Jun 2014 16:22:28 -0700
+Message-Id: <20140604232351.868091781@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -30,123 +31,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Aristeu Rozanski <aris@redhat.com>
+From: Christoph Paasch <christoph.paasch@uclouvain.be>
 
-commit d2c2b11cfa134f4fbdcc34088824da26a084d8de upstream.
+commit cb06d102327eadcd1bdc480bfd9f8876251d1007 upstream.
 
-[PATCH v3 1/2] device_cgroup: check if exception removal is allowed
+When igb_set_interrupt_capability() calls
+igb_reset_interrupt_capability() (e.g., because CONFIG_PCI_MSI is unset),
+num_q_vectors has been set but no vector has yet been allocated.
 
-When the device cgroup hierarchy was introduced in
-	bd2953ebbb53 - devcg: propagate local changes down the hierarchy
+igb_reset_interrupt_capability() will then call igb_reset_q_vector,
+which assumes that the vector is allocated. As this is not the case, we
+are accessing a NULL-pointer.
 
-a specific case was overlooked. Consider the hierarchy bellow:
+This patch fixes it by checking that q_vector is indeed different from
+NULL.
 
-	A	default policy: ALLOW, exceptions will deny access
-	 \
-	  B	default policy: ALLOW, exceptions will deny access
-
-There's no need to verify when an new exception is added to B because
-in this case exceptions will deny access to further devices, which is
-always fine. Hierarchy in device cgroup only makes sure B won't have
-more access than A.
-
-But when an exception is removed (by writing devices.allow), it isn't
-checked if the user is in fact removing an inherited exception from A,
-thus giving more access to B.
-
-Example:
-
-	# echo 'a' >A/devices.allow
-	# echo 'c 1:3 rw' >A/devices.deny
-	# echo $$ >A/B/tasks
-	# echo >/dev/null
-	-bash: /dev/null: Operation not permitted
-	# echo 'c 1:3 w' >A/B/devices.allow
-	# echo >/dev/null
-	#
-
-This shouldn't be allowed and this patch fixes it by making sure to never allow
-exceptions in this case to be removed if the exception is partially or fully
-present on the parent.
-
-v3: missing '*' in function description
-v2: improved log message and formatting fixes
-
-Cc: cgroups@vger.kernel.org
-Cc: Li Zefan <lizefan@huawei.com>
-Signed-off-by: Aristeu Rozanski <arozansk@redhat.com>
-Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Fixes: 02ef6e1d0b0023 (igb: Fix queue allocation method to accommodate changing during runtime)
+Cc: Carolyn Wyborny <carolyn.wyborny@intel.com>
+Signed-off-by: Christoph Paasch <christoph.paasch@uclouvain.be>
+Tested-by: Jeff Pieper <jeffrey.e.pieper@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- security/device_cgroup.c |   41 ++++++++++++++++++++++++++++++++++++++---
- 1 file changed, 38 insertions(+), 3 deletions(-)
+ drivers/net/ethernet/intel/igb/igb_main.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/security/device_cgroup.c
-+++ b/security/device_cgroup.c
-@@ -466,6 +466,37 @@ static int parent_has_perm(struct dev_cg
- }
+--- a/drivers/net/ethernet/intel/igb/igb_main.c
++++ b/drivers/net/ethernet/intel/igb/igb_main.c
+@@ -1014,6 +1014,12 @@ static void igb_reset_q_vector(struct ig
+ {
+ 	struct igb_q_vector *q_vector = adapter->q_vector[v_idx];
  
- /**
-+ * parent_allows_removal - verify if it's ok to remove an exception
-+ * @childcg: child cgroup from where the exception will be removed
-+ * @ex: exception being removed
-+ *
-+ * When removing an exception in cgroups with default ALLOW policy, it must
-+ * be checked if removing it will give the child cgroup more access than the
-+ * parent.
-+ *
-+ * Return: true if it's ok to remove exception, false otherwise
-+ */
-+static bool parent_allows_removal(struct dev_cgroup *childcg,
-+				  struct dev_exception_item *ex)
-+{
-+	struct dev_cgroup *parent = css_to_devcgroup(css_parent(&childcg->css));
-+
-+	if (!parent)
-+		return true;
-+
-+	/* It's always allowed to remove access to devices */
-+	if (childcg->behavior == DEVCG_DEFAULT_DENY)
-+		return true;
-+
-+	/*
-+	 * Make sure you're not removing part or a whole exception existing in
-+	 * the parent cgroup
++	/* Coming from igb_set_interrupt_capability, the vectors are not yet
++	 * allocated. So, q_vector is NULL so we should stop here.
 +	 */
-+	return !match_exception_partial(&parent->exceptions, ex->type,
-+					ex->major, ex->minor, ex->access);
-+}
++	if (!q_vector)
++		return;
 +
-+/**
-  * may_allow_all - checks if it's possible to change the behavior to
-  *		   allow based on parent's rules.
-  * @parent: device cgroup's parent
-@@ -700,17 +731,21 @@ static int devcgroup_update_access(struc
+ 	if (q_vector->tx.ring)
+ 		adapter->tx_ring[q_vector->tx.ring->queue_index] = NULL;
  
- 	switch (filetype) {
- 	case DEVCG_ALLOW:
--		if (!parent_has_perm(devcgroup, &ex))
--			return -EPERM;
- 		/*
- 		 * If the default policy is to allow by default, try to remove
- 		 * an matching exception instead. And be silent about it: we
- 		 * don't want to break compatibility
- 		 */
- 		if (devcgroup->behavior == DEVCG_DEFAULT_ALLOW) {
-+			/* Check if the parent allows removing it first */
-+			if (!parent_allows_removal(devcgroup, &ex))
-+				return -EPERM;
- 			dev_exception_rm(devcgroup, &ex);
--			return 0;
-+			break;
- 		}
-+
-+		if (!parent_has_perm(devcgroup, &ex))
-+			return -EPERM;
- 		rc = dev_exception_add(devcgroup, &ex);
- 		break;
- 	case DEVCG_DENY:
 
 
