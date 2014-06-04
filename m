@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757059AbaFEAh2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 20:37:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39931 "EHLO
+	id S1757085AbaFEAht (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 20:37:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39928 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752734AbaFDXVe (ORCPT
+	with ESMTP id S1751591AbaFDXVe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 4 Jun 2014 19:21:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.14 070/228] drm/radeon: add support for newer mc ucode on CI (v2)
-Date: Wed,  4 Jun 2014 16:21:39 -0700
-Message-Id: <20140604232350.306289434@linuxfoundation.org>
+Subject: [PATCH 3.14 069/228] drm/radeon: add support for newer mc ucode on SI (v2)
+Date: Wed,  4 Jun 2014 16:21:38 -0700
+Message-Id: <20140604232350.275752933@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -30,42 +30,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alex Deucher <alexdeucher@gmail.com>
 
-commit 277babc374f6ecab6af182554f5d9f35a7768755 upstream.
+commit 1ebe92802eaf0569784dce843bc28a78842d236c upstream.
 
-Fixes mclk stability on certain asics.
+May fix stability issues with some newer cards.
 
 v2: print out mc firmware version used and size
-
-bug:
-https://bugs.freedesktop.org/show_bug.cgi?id=75992
 
 Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/cik.c          |   26 +++++++++++++++++---------
- drivers/gpu/drm/radeon/radeon_ucode.h |    4 +++-
- 2 files changed, 20 insertions(+), 10 deletions(-)
+ drivers/gpu/drm/radeon/radeon_ucode.h |    3 ++
+ drivers/gpu/drm/radeon/si.c           |   35 +++++++++++++++++++++-------------
+ 2 files changed, 25 insertions(+), 13 deletions(-)
 
---- a/drivers/gpu/drm/radeon/cik.c
-+++ b/drivers/gpu/drm/radeon/cik.c
-@@ -38,6 +38,7 @@ MODULE_FIRMWARE("radeon/BONAIRE_me.bin")
- MODULE_FIRMWARE("radeon/BONAIRE_ce.bin");
- MODULE_FIRMWARE("radeon/BONAIRE_mec.bin");
- MODULE_FIRMWARE("radeon/BONAIRE_mc.bin");
-+MODULE_FIRMWARE("radeon/BONAIRE_mc2.bin");
- MODULE_FIRMWARE("radeon/BONAIRE_rlc.bin");
- MODULE_FIRMWARE("radeon/BONAIRE_sdma.bin");
- MODULE_FIRMWARE("radeon/BONAIRE_smc.bin");
-@@ -46,6 +47,7 @@ MODULE_FIRMWARE("radeon/HAWAII_me.bin");
- MODULE_FIRMWARE("radeon/HAWAII_ce.bin");
- MODULE_FIRMWARE("radeon/HAWAII_mec.bin");
- MODULE_FIRMWARE("radeon/HAWAII_mc.bin");
-+MODULE_FIRMWARE("radeon/HAWAII_mc2.bin");
- MODULE_FIRMWARE("radeon/HAWAII_rlc.bin");
- MODULE_FIRMWARE("radeon/HAWAII_sdma.bin");
- MODULE_FIRMWARE("radeon/HAWAII_smc.bin");
-@@ -1702,7 +1704,7 @@ int ci_mc_load_microcode(struct radeon_d
+--- a/drivers/gpu/drm/radeon/radeon_ucode.h
++++ b/drivers/gpu/drm/radeon/radeon_ucode.h
+@@ -57,6 +57,9 @@
+ #define BTC_MC_UCODE_SIZE            6024
+ #define CAYMAN_MC_UCODE_SIZE         6037
+ #define SI_MC_UCODE_SIZE             7769
++#define TAHITI_MC_UCODE_SIZE         7808
++#define PITCAIRN_MC_UCODE_SIZE       7775
++#define VERDE_MC_UCODE_SIZE          7875
+ #define OLAND_MC_UCODE_SIZE          7863
+ #define CIK_MC_UCODE_SIZE            7866
+ #define HAWAII_MC_UCODE_SIZE         7933
+--- a/drivers/gpu/drm/radeon/si.c
++++ b/drivers/gpu/drm/radeon/si.c
+@@ -39,30 +39,35 @@ MODULE_FIRMWARE("radeon/TAHITI_pfp.bin")
+ MODULE_FIRMWARE("radeon/TAHITI_me.bin");
+ MODULE_FIRMWARE("radeon/TAHITI_ce.bin");
+ MODULE_FIRMWARE("radeon/TAHITI_mc.bin");
++MODULE_FIRMWARE("radeon/TAHITI_mc2.bin");
+ MODULE_FIRMWARE("radeon/TAHITI_rlc.bin");
+ MODULE_FIRMWARE("radeon/TAHITI_smc.bin");
+ MODULE_FIRMWARE("radeon/PITCAIRN_pfp.bin");
+ MODULE_FIRMWARE("radeon/PITCAIRN_me.bin");
+ MODULE_FIRMWARE("radeon/PITCAIRN_ce.bin");
+ MODULE_FIRMWARE("radeon/PITCAIRN_mc.bin");
++MODULE_FIRMWARE("radeon/PITCAIRN_mc2.bin");
+ MODULE_FIRMWARE("radeon/PITCAIRN_rlc.bin");
+ MODULE_FIRMWARE("radeon/PITCAIRN_smc.bin");
+ MODULE_FIRMWARE("radeon/VERDE_pfp.bin");
+ MODULE_FIRMWARE("radeon/VERDE_me.bin");
+ MODULE_FIRMWARE("radeon/VERDE_ce.bin");
+ MODULE_FIRMWARE("radeon/VERDE_mc.bin");
++MODULE_FIRMWARE("radeon/VERDE_mc2.bin");
+ MODULE_FIRMWARE("radeon/VERDE_rlc.bin");
+ MODULE_FIRMWARE("radeon/VERDE_smc.bin");
+ MODULE_FIRMWARE("radeon/OLAND_pfp.bin");
+ MODULE_FIRMWARE("radeon/OLAND_me.bin");
+ MODULE_FIRMWARE("radeon/OLAND_ce.bin");
+ MODULE_FIRMWARE("radeon/OLAND_mc.bin");
++MODULE_FIRMWARE("radeon/OLAND_mc2.bin");
+ MODULE_FIRMWARE("radeon/OLAND_rlc.bin");
+ MODULE_FIRMWARE("radeon/OLAND_smc.bin");
+ MODULE_FIRMWARE("radeon/HAINAN_pfp.bin");
+ MODULE_FIRMWARE("radeon/HAINAN_me.bin");
+ MODULE_FIRMWARE("radeon/HAINAN_ce.bin");
+ MODULE_FIRMWARE("radeon/HAINAN_mc.bin");
++MODULE_FIRMWARE("radeon/HAINAN_mc2.bin");
+ MODULE_FIRMWARE("radeon/HAINAN_rlc.bin");
+ MODULE_FIRMWARE("radeon/HAINAN_smc.bin");
+ 
+@@ -1467,7 +1472,7 @@ int si_mc_load_microcode(struct radeon_d
  	const __be32 *fw_data;
  	u32 running, blackout = 0;
  	u32 *io_mc_regs;
@@ -74,86 +103,112 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
  
  	if (!rdev->mc_fw)
  		return -EINVAL;
-@@ -1710,12 +1712,10 @@ int ci_mc_load_microcode(struct radeon_d
+@@ -1475,28 +1480,23 @@ int si_mc_load_microcode(struct radeon_d
  	switch (rdev->family) {
- 	case CHIP_BONAIRE:
- 		io_mc_regs = (u32 *)&bonaire_io_mc_regs;
--		ucode_size = CIK_MC_UCODE_SIZE;
- 		regs_size = BONAIRE_IO_MC_REGS_SIZE;
+ 	case CHIP_TAHITI:
+ 		io_mc_regs = (u32 *)&tahiti_io_mc_regs;
+-		ucode_size = SI_MC_UCODE_SIZE;
+ 		regs_size = TAHITI_IO_MC_REGS_SIZE;
  		break;
- 	case CHIP_HAWAII:
- 		io_mc_regs = (u32 *)&hawaii_io_mc_regs;
--		ucode_size = HAWAII_MC_UCODE_SIZE;
- 		regs_size = HAWAII_IO_MC_REGS_SIZE;
+ 	case CHIP_PITCAIRN:
+ 		io_mc_regs = (u32 *)&pitcairn_io_mc_regs;
+-		ucode_size = SI_MC_UCODE_SIZE;
+ 		regs_size = TAHITI_IO_MC_REGS_SIZE;
  		break;
+ 	case CHIP_VERDE:
  	default:
-@@ -1782,7 +1782,7 @@ static int cik_init_microcode(struct rad
+ 		io_mc_regs = (u32 *)&verde_io_mc_regs;
+-		ucode_size = SI_MC_UCODE_SIZE;
+ 		regs_size = TAHITI_IO_MC_REGS_SIZE;
+ 		break;
+ 	case CHIP_OLAND:
+ 		io_mc_regs = (u32 *)&oland_io_mc_regs;
+-		ucode_size = OLAND_MC_UCODE_SIZE;
+ 		regs_size = TAHITI_IO_MC_REGS_SIZE;
+ 		break;
+ 	case CHIP_HAINAN:
+ 		io_mc_regs = (u32 *)&hainan_io_mc_regs;
+-		ucode_size = OLAND_MC_UCODE_SIZE;
+ 		regs_size = TAHITI_IO_MC_REGS_SIZE;
+ 		break;
+ 	}
+@@ -1552,7 +1552,7 @@ static int si_init_microcode(struct rade
  	const char *chip_name;
- 	size_t pfp_req_size, me_req_size, ce_req_size,
- 		mec_req_size, rlc_req_size, mc_req_size = 0,
--		sdma_req_size, smc_req_size = 0;
-+		sdma_req_size, smc_req_size = 0, mc2_req_size = 0;
+ 	const char *rlc_chip_name;
+ 	size_t pfp_req_size, me_req_size, ce_req_size, rlc_req_size, mc_req_size;
+-	size_t smc_req_size;
++	size_t smc_req_size, mc2_req_size;
  	char fw_name[30];
  	int err;
  
-@@ -1796,7 +1796,8 @@ static int cik_init_microcode(struct rad
- 		ce_req_size = CIK_CE_UCODE_SIZE * 4;
- 		mec_req_size = CIK_MEC_UCODE_SIZE * 4;
- 		rlc_req_size = BONAIRE_RLC_UCODE_SIZE * 4;
--		mc_req_size = CIK_MC_UCODE_SIZE * 4;
-+		mc_req_size = BONAIRE_MC_UCODE_SIZE * 4;
-+		mc2_req_size = BONAIRE_MC2_UCODE_SIZE * 4;
- 		sdma_req_size = CIK_SDMA_UCODE_SIZE * 4;
- 		smc_req_size = ALIGN(BONAIRE_SMC_UCODE_SIZE, 4);
+@@ -1567,6 +1567,7 @@ static int si_init_microcode(struct rade
+ 		ce_req_size = SI_CE_UCODE_SIZE * 4;
+ 		rlc_req_size = SI_RLC_UCODE_SIZE * 4;
+ 		mc_req_size = SI_MC_UCODE_SIZE * 4;
++		mc2_req_size = TAHITI_MC_UCODE_SIZE * 4;
+ 		smc_req_size = ALIGN(TAHITI_SMC_UCODE_SIZE, 4);
  		break;
-@@ -1808,6 +1809,7 @@ static int cik_init_microcode(struct rad
- 		mec_req_size = CIK_MEC_UCODE_SIZE * 4;
- 		rlc_req_size = BONAIRE_RLC_UCODE_SIZE * 4;
- 		mc_req_size = HAWAII_MC_UCODE_SIZE * 4;
-+		mc2_req_size = HAWAII_MC2_UCODE_SIZE * 4;
- 		sdma_req_size = CIK_SDMA_UCODE_SIZE * 4;
- 		smc_req_size = ALIGN(HAWAII_SMC_UCODE_SIZE, 4);
+ 	case CHIP_PITCAIRN:
+@@ -1577,6 +1578,7 @@ static int si_init_microcode(struct rade
+ 		ce_req_size = SI_CE_UCODE_SIZE * 4;
+ 		rlc_req_size = SI_RLC_UCODE_SIZE * 4;
+ 		mc_req_size = SI_MC_UCODE_SIZE * 4;
++		mc2_req_size = PITCAIRN_MC_UCODE_SIZE * 4;
+ 		smc_req_size = ALIGN(PITCAIRN_SMC_UCODE_SIZE, 4);
  		break;
-@@ -1903,16 +1905,22 @@ static int cik_init_microcode(struct rad
+ 	case CHIP_VERDE:
+@@ -1587,6 +1589,7 @@ static int si_init_microcode(struct rade
+ 		ce_req_size = SI_CE_UCODE_SIZE * 4;
+ 		rlc_req_size = SI_RLC_UCODE_SIZE * 4;
+ 		mc_req_size = SI_MC_UCODE_SIZE * 4;
++		mc2_req_size = VERDE_MC_UCODE_SIZE * 4;
+ 		smc_req_size = ALIGN(VERDE_SMC_UCODE_SIZE, 4);
+ 		break;
+ 	case CHIP_OLAND:
+@@ -1596,7 +1599,7 @@ static int si_init_microcode(struct rade
+ 		me_req_size = SI_PM4_UCODE_SIZE * 4;
+ 		ce_req_size = SI_CE_UCODE_SIZE * 4;
+ 		rlc_req_size = SI_RLC_UCODE_SIZE * 4;
+-		mc_req_size = OLAND_MC_UCODE_SIZE * 4;
++		mc_req_size = mc2_req_size = OLAND_MC_UCODE_SIZE * 4;
+ 		smc_req_size = ALIGN(OLAND_SMC_UCODE_SIZE, 4);
+ 		break;
+ 	case CHIP_HAINAN:
+@@ -1606,7 +1609,7 @@ static int si_init_microcode(struct rade
+ 		me_req_size = SI_PM4_UCODE_SIZE * 4;
+ 		ce_req_size = SI_CE_UCODE_SIZE * 4;
+ 		rlc_req_size = SI_RLC_UCODE_SIZE * 4;
+-		mc_req_size = OLAND_MC_UCODE_SIZE * 4;
++		mc_req_size = mc2_req_size = OLAND_MC_UCODE_SIZE * 4;
+ 		smc_req_size = ALIGN(HAINAN_SMC_UCODE_SIZE, 4);
+ 		break;
+ 	default: BUG();
+@@ -1659,16 +1662,22 @@ static int si_init_microcode(struct rade
+ 		err = -EINVAL;
+ 	}
  
- 	/* No SMC, MC ucode on APUs */
- 	if (!(rdev->flags & RADEON_IS_IGP)) {
--		snprintf(fw_name, sizeof(fw_name), "radeon/%s_mc.bin", chip_name);
-+		snprintf(fw_name, sizeof(fw_name), "radeon/%s_mc2.bin", chip_name);
- 		err = request_firmware(&rdev->mc_fw, fw_name, rdev->dev);
--		if (err)
--			goto out;
--		if (rdev->mc_fw->size != mc_req_size) {
-+		if (err) {
-+			snprintf(fw_name, sizeof(fw_name), "radeon/%s_mc.bin", chip_name);
-+			err = request_firmware(&rdev->mc_fw, fw_name, rdev->dev);
-+			if (err)
-+				goto out;
-+		}
-+		if ((rdev->mc_fw->size != mc_req_size) &&
-+		    (rdev->mc_fw->size != mc2_req_size)){
- 			printk(KERN_ERR
- 			       "cik_mc: Bogus length %zu in firmware \"%s\"\n",
- 			       rdev->mc_fw->size, fw_name);
- 			err = -EINVAL;
- 		}
-+		DRM_INFO("%s: %zu bytes\n", fw_name, rdev->mc_fw->size);
+-	snprintf(fw_name, sizeof(fw_name), "radeon/%s_mc.bin", chip_name);
++	snprintf(fw_name, sizeof(fw_name), "radeon/%s_mc2.bin", chip_name);
+ 	err = request_firmware(&rdev->mc_fw, fw_name, rdev->dev);
+-	if (err)
+-		goto out;
+-	if (rdev->mc_fw->size != mc_req_size) {
++	if (err) {
++		snprintf(fw_name, sizeof(fw_name), "radeon/%s_mc.bin", chip_name);
++		err = request_firmware(&rdev->mc_fw, fw_name, rdev->dev);
++		if (err)
++			goto out;
++	}
++	if ((rdev->mc_fw->size != mc_req_size) &&
++	    (rdev->mc_fw->size != mc2_req_size)) {
+ 		printk(KERN_ERR
+ 		       "si_mc: Bogus length %zu in firmware \"%s\"\n",
+ 		       rdev->mc_fw->size, fw_name);
+ 		err = -EINVAL;
+ 	}
++	DRM_INFO("%s: %zu bytes\n", fw_name, rdev->mc_fw->size);
  
- 		snprintf(fw_name, sizeof(fw_name), "radeon/%s_smc.bin", chip_name);
- 		err = request_firmware(&rdev->smc_fw, fw_name, rdev->dev);
---- a/drivers/gpu/drm/radeon/radeon_ucode.h
-+++ b/drivers/gpu/drm/radeon/radeon_ucode.h
-@@ -61,8 +61,10 @@
- #define PITCAIRN_MC_UCODE_SIZE       7775
- #define VERDE_MC_UCODE_SIZE          7875
- #define OLAND_MC_UCODE_SIZE          7863
--#define CIK_MC_UCODE_SIZE            7866
-+#define BONAIRE_MC_UCODE_SIZE        7866
-+#define BONAIRE_MC2_UCODE_SIZE       7948
- #define HAWAII_MC_UCODE_SIZE         7933
-+#define HAWAII_MC2_UCODE_SIZE        8091
- 
- /* SDMA */
- #define CIK_SDMA_UCODE_SIZE          1050
+ 	snprintf(fw_name, sizeof(fw_name), "radeon/%s_smc.bin", chip_name);
+ 	err = request_firmware(&rdev->smc_fw, fw_name, rdev->dev);
 
 
