@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753212AbaFDXWf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:22:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40170 "EHLO
+	id S932231AbaFEATh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 20:19:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40194 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753081AbaFDXWa (ORCPT
+	with ESMTP id S1753204AbaFDXWe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:22:30 -0400
+	Wed, 4 Jun 2014 19:22:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Philipp Wolfer <ph.wolfer@gmail.com>,
-        Hans de Goede <hdegoede@redhat.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [PATCH 3.14 141/228] Input: elantech - fix touchpad initialization on Gigabyte U2442
-Date: Wed,  4 Jun 2014 16:22:50 -0700
-Message-Id: <20140604232352.541025697@linuxfoundation.org>
+        Dave Ertman <davidx.m.ertman@intel.com>,
+        Jeff Pieper <jeffrey.e.pieper@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 3.14 135/228] e1000e: Fix no connectivity when driver loaded with cable out
+Date: Wed,  4 Jun 2014 16:22:44 -0700
+Message-Id: <20140604232352.355639482@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -30,117 +31,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: David Ertman <davidx.m.ertman@intel.com>
 
-commit 36189cc3cd57ab0f1cd75241f93fe01de928ac06 upstream.
+commit b20a774495671f037e7160ea2ce8789af6b61533 upstream.
 
-The hw_version 3 Elantech touchpad on the Gigabyte U2442 does not accept
-0x0b as initialization value for r10, this stand-alone version of the
-driver: http://planet76.com/drivers/elantech/psmouse-elantech-v6.tar.bz2
+In commit da1e2046e5, the flow for enabling/disabling an Si errata
+workaround (e1000_lv_jumbo_workaround_ich8lan) was changed to fix a problem
+with iAMT connections dropping on interface down with jumbo frames set.
+Part of this change was to move the function call disabling the workaround
+to e1000e_down() from the e1000_setup_rctl() function.  The mechanic for
+disabling of this workaround involves writing several MAC and PHY registers
+back to hardware defaults.
 
-Uses 0x03 which does work, so this means not setting bit 3 of r10 which
-sets: "Enable Real H/W Resolution In Absolute mode"
+After this commit, when the driver is loaded with the cable out, the PHY
+registers are not programmed with the correct default values.  This causes
+the device to be capable of transmitting packets, but is unable to recieve
+them until this workaround is called.
 
-Which will result in half the x and y resolution we get with that bit set,
-so simply not setting it everywhere is not a solution. We've been unable to
-find a way to identify touchpads where setting the bit will fail, so this
-patch uses a dmi based blacklist for this.
+The flow of e1000e's open code relies upon calling the above workaround to
+expicitly program these registers either with jumbo frame appropriate settings
+or h/w defaults on 82579 and newer hardware.
 
-https://bugzilla.kernel.org/show_bug.cgi?id=61151
+Fix this issue by adding logic to e1000_setup_rctl() that not only calls
+e1000_lv_jumbo_workaround_ich8lan() when jumbo frames are set, to enable the
+workaround, but also calls this function to explicitly disable the workaround
+in the case that jumbo frames are not set.
 
-Reported-by: Philipp Wolfer <ph.wolfer@gmail.com>
-Tested-by: Philipp Wolfer <ph.wolfer@gmail.com>
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Signed-off-by: Dave Ertman <davidx.m.ertman@intel.com>
+Tested-by: Jeff Pieper <jeffrey.e.pieper@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- Documentation/input/elantech.txt |    5 ++++-
- drivers/input/mouse/elantech.c   |   26 +++++++++++++++++++++++++-
- drivers/input/mouse/elantech.h   |    1 +
- 3 files changed, 30 insertions(+), 2 deletions(-)
+ drivers/net/ethernet/intel/e1000e/netdev.c |   20 +++++++++++++++-----
+ 1 file changed, 15 insertions(+), 5 deletions(-)
 
---- a/Documentation/input/elantech.txt
-+++ b/Documentation/input/elantech.txt
-@@ -504,9 +504,12 @@ byte 5:
- * reg_10
+--- a/drivers/net/ethernet/intel/e1000e/netdev.c
++++ b/drivers/net/ethernet/intel/e1000e/netdev.c
+@@ -2976,11 +2976,21 @@ static void e1000_setup_rctl(struct e100
+ 	u32 rctl, rfctl;
+ 	u32 pages = 0;
  
-    bit   7   6   5   4   3   2   1   0
--         0   0   0   0   0   0   0   A
-+         0   0   0   0   R   F   T   A
- 
-          A: 1 = enable absolute tracking
-+         T: 1 = enable two finger mode auto correct
-+         F: 1 = disable ABS Position Filter
-+         R: 1 = enable real hardware resolution
- 
- 6.2 Native absolute mode 6 byte packet format
-     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
---- a/drivers/input/mouse/elantech.c
-+++ b/drivers/input/mouse/elantech.c
-@@ -11,6 +11,7 @@
-  */
- 
- #include <linux/delay.h>
-+#include <linux/dmi.h>
- #include <linux/slab.h>
- #include <linux/module.h>
- #include <linux/input.h>
-@@ -831,7 +832,11 @@ static int elantech_set_absolute_mode(st
- 		break;
- 
- 	case 3:
--		etd->reg_10 = 0x0b;
-+		if (etd->set_hw_resolution)
-+			etd->reg_10 = 0x0b;
+-	/* Workaround Si errata on PCHx - configure jumbo frame flow */
+-	if ((hw->mac.type >= e1000_pch2lan) &&
+-	    (adapter->netdev->mtu > ETH_DATA_LEN) &&
+-	    e1000_lv_jumbo_workaround_ich8lan(hw, true))
+-		e_dbg("failed to enable jumbo frame workaround mode\n");
++	/* Workaround Si errata on PCHx - configure jumbo frame flow.
++	 * If jumbo frames not set, program related MAC/PHY registers
++	 * to h/w defaults
++	 */
++	if (hw->mac.type >= e1000_pch2lan) {
++		s32 ret_val;
++
++		if (adapter->netdev->mtu > ETH_DATA_LEN)
++			ret_val = e1000_lv_jumbo_workaround_ich8lan(hw, true);
 +		else
-+			etd->reg_10 = 0x03;
++			ret_val = e1000_lv_jumbo_workaround_ich8lan(hw, false);
 +
- 		if (elantech_write_reg(psmouse, 0x10, etd->reg_10))
- 			rc = -1;
++		if (ret_val)
++			e_dbg("failed to enable|disable jumbo frame workaround mode\n");
++	}
  
-@@ -1331,6 +1336,22 @@ static int elantech_reconnect(struct psm
- }
- 
- /*
-+ * Some hw_version 3 models go into error state when we try to set bit 3 of r10
-+ */
-+static const struct dmi_system_id no_hw_res_dmi_table[] = {
-+#if defined(CONFIG_DMI) && defined(CONFIG_X86)
-+	{
-+		/* Gigabyte U2442 */
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "GIGABYTE"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "U2442"),
-+		},
-+	},
-+#endif
-+	{ }
-+};
-+
-+/*
-  * determine hardware version and set some properties according to it.
-  */
- static int elantech_set_properties(struct elantech_data *etd)
-@@ -1389,6 +1410,9 @@ static int elantech_set_properties(struc
- 	 */
- 	etd->crc_enabled = ((etd->fw_version & 0x4000) == 0x4000);
- 
-+	/* Enable real hardware resolution on hw_version 3 ? */
-+	etd->set_hw_resolution = !dmi_check_system(no_hw_res_dmi_table);
-+
- 	return 0;
- }
- 
---- a/drivers/input/mouse/elantech.h
-+++ b/drivers/input/mouse/elantech.h
-@@ -130,6 +130,7 @@ struct elantech_data {
- 	bool jumpy_cursor;
- 	bool reports_pressure;
- 	bool crc_enabled;
-+	bool set_hw_resolution;
- 	unsigned char hw_version;
- 	unsigned int fw_version;
- 	unsigned int single_finger_reports;
+ 	/* Program MC offset vector base */
+ 	rctl = er32(RCTL);
 
 
