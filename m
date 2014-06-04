@@ -1,79 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752677AbaFDMSU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 08:18:20 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:62268 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752164AbaFDMSS (ORCPT
+	id S1752751AbaFDMUG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 08:20:06 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:57633 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752611AbaFDMUE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 08:18:18 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        wsa@the-dreams.de, grant.likely@linaro.org, linux-i2c@vger.kernel.org,
-        devicetree@vger.kernel.org, linus.walleij@linaro.org,
-        Lv Zheng <lv.zheng@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        linux-acpi@vger.kernel.org, devel@acpica.org
-Subject: Re: [PATCH 1/7] ACPICA: Only include ACPI asm files if ACPI is enabled
-Date: Wed, 04 Jun 2014 14:35:33 +0200
-Message-ID: <3061297.feg5DGUjIt@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1401883796-17841-2-git-send-email-lee.jones@linaro.org>
-References: <1401883796-17841-1-git-send-email-lee.jones@linaro.org> <1401883796-17841-2-git-send-email-lee.jones@linaro.org>
+	Wed, 4 Jun 2014 08:20:04 -0400
+Message-ID: <538F0EED.7030504@hitachi.com>
+Date: Wed, 04 Jun 2014 21:19:57 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, linux-kernel@vger.kernel.org,
+        Namhyung Kim <namhyung@kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH -tip ] [BUGFIX] perf/probe: Fix perf probe to find correct
+ variable DIE
+References: <20140529105232.28251.30447.stgit@ltc230.yrl.intra.hitachi.co.jp> <20140529121930.30879.87092.stgit@ltc230.yrl.intra.hitachi.co.jp> <53872A72.6040007@hitachi.com> <20140603203823.GG3696@kernel.org> <538ED7DE.5070508@hitachi.com> <20140604113124.GC5555@krava.brq.redhat.com>
+In-Reply-To: <20140604113124.GC5555@krava.brq.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, June 04, 2014 01:09:50 PM Lee Jones wrote:
-> Any drivers which support ACPI and Device Tree probing need to include
-> both respective header files.  Without this patch, if a driver is being
-> used on a platform which does not support ACPI and subsequently does not
-> have the config option enabled, but includes linux/acpi.h the build
-> breaks with:
+(2014/06/04 20:31), Jiri Olsa wrote:
+> On Wed, Jun 04, 2014 at 05:25:02PM +0900, Masami Hiramatsu wrote:
+>> (2014/06/04 5:38), Arnaldo Carvalho de Melo wrote:
+>>> Now trying to reference a bogus member name:
+>>>
+>>> [root@zoo ~]# perf probe 'vfs_getname=getname_flags:65 pathname=result->BOGUS:string'
+>>> result(type:filename) has no member BOGUS.
+>>> Failed to find 'result' in this function.
+>>>   Error: Failed to add events. (-22)
+>>> [root@zoo ~]#
+>>>
+>>> No segfault, albeit it produces a bogus error message, as it clearly
+>>> _finds_ the 'result' variable, its just that it is of a struct type that
+>>> _has_ no such 'BOGUS' _member_.
+>>
+>> Right, I'll fix that.
 > 
->   In file included from ../include/acpi/platform/acenv.h:150:0,
->                    from ../include/acpi/acpi.h:56,
->                    from ../include/linux/match.h:2,
->                    from ../drivers/i2c/i2c-core.c:43:
->   ../include/acpi/platform/aclinux.h:73:23:
->    fatal error: asm/acenv.h: No such file or directory
->    #include <asm/acenv.h>
->                        ^
+> should I wait for new patchset, or should I take those 2?
 
-Which kernel does this happen with?
+No, those 2 patches are urgently required, because one fixes SEGV critical
+error, and the other fixes a wrong behavior (catch up to the latest
+dwarf), which is also degradation.
+I think changing error messages is a kind of usability enhancement.
 
-> Cc: Lv Zheng <lv.zheng@intel.com>
-> Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> Cc: linux-acpi@vger.kernel.org
-> Cc: devel@acpica.org
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> ---
->  include/acpi/platform/aclinux.h | 5 +++--
->  1 file changed, 3 insertions(+), 2 deletions(-)
-> 
-> diff --git a/include/acpi/platform/aclinux.h b/include/acpi/platform/aclinux.h
-> index cd1f052..fdf7663 100644
-> --- a/include/acpi/platform/aclinux.h
-> +++ b/include/acpi/platform/aclinux.h
-> @@ -70,9 +70,10 @@
->  #ifdef EXPORT_ACPI_INTERFACES
->  #include <linux/export.h>
->  #endif
-> -#include <asm/acenv.h>
->  
-> -#ifndef CONFIG_ACPI
-> +#ifdef CONFIG_ACPI
-> +#include <asm/acenv.h>
-> +#else
->  
->  /* External globals for __KERNEL__, stubs is needed */
->  
-> 
+Thank you,
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
