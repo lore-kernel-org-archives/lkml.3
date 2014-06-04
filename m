@@ -1,74 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753410AbaFDQ2o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 12:28:44 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:50754 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751948AbaFDQ2n (ORCPT
+	id S1753381AbaFDQa7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 12:30:59 -0400
+Received: from mail-we0-f175.google.com ([74.125.82.175]:50428 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751615AbaFDQa5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 12:28:43 -0400
-Message-ID: <538F4938.7040309@kernel.dk>
-Date: Wed, 04 Jun 2014 10:28:40 -0600
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Ming Lei <tom.leiming@gmail.com>
-CC: Christoph Hellwig <hch@infradead.org>, Shaohua Li <shli@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [patch]blk-mq: blk_mq_tag_to_rq should handle flush request
-References: <20140509120733.GA27918@kernel.org>	<20140509150018.GA26215@infradead.org>	<20140510040023.GA13788@kernel.org>	<5388912F.7010609@kernel.dk>	<20140604111133.GA7826@infradead.org>	<538F2A11.4060800@kernel.dk>	<20140604142012.GA20056@infradead.org>	<538F331F.60101@kernel.dk>	<20140604145803.GA7826@infradead.org>	<538F34FB.7050003@kernel.dk>	<20140604153159.GA27096@infradead.org>	<CACVXFVNNTPrq29eS9GzJDequtFXCTNWPLJfzB4Z-XJVE5j8+aA@mail.gmail.com>	<538F3FB5.2020102@kernel.dk>	<CACVXFVM-aJwBgrvgT-nNbbi81vE4qeS1LgsS5cFGiz5cbsApZw@mail.gmail.com>	<538F44AD.4090906@kernel.dk> <CACVXFVOxx973ho9yN0W95YCj2XQBoYqyu4aD4bZ_9Pv89XGgnQ@mail.gmail.com>
-In-Reply-To: <CACVXFVOxx973ho9yN0W95YCj2XQBoYqyu4aD4bZ_9Pv89XGgnQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 4 Jun 2014 12:30:57 -0400
+From: Peter Griffin <peter.griffin@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        chris@printf.net, ulf.hansson@linaro.org, maxime.coquelin@st.com,
+        patrice.chotard@st.com, srinivas.kandagatla@gmail.com
+Cc: peter.griffin@linaro.org, kernel@stlinux.com, linux-mmc@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: [PATCH v3 00/10] Add SDHCI support for ST Microelectronics SoCs
+Date: Wed,  4 Jun 2014 17:30:14 +0100
+Message-Id: <1401899424-1365-1-git-send-email-peter.griffin@linaro.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/04/2014 10:26 AM, Ming Lei wrote:
-> On Thu, Jun 5, 2014 at 12:09 AM, Jens Axboe <axboe@kernel.dk> wrote:
->> On 06/04/2014 10:00 AM, Ming Lei wrote:
->>> On Wed, Jun 4, 2014 at 11:48 PM, Jens Axboe <axboe@kernel.dk> wrote:
->>>> On 06/04/2014 09:43 AM, Ming Lei wrote:
->>>>> On Wed, Jun 4, 2014 at 11:31 PM, Christoph Hellwig <hch@infradead.org> wrote:
->>>>>> On Wed, Jun 04, 2014 at 09:02:19AM -0600, Jens Axboe wrote:
->>>>>>>> scsi_mq_find_tag only gets the scsi host, which may have multiple
->>>>>>>> queues.  When called from scsi_find_tag we actually have a scsi device,
->>>>>>>> so that's not an issue, but when called from scsi_host_find_tag the
->>>>>>>> driver only provides the host.
->>>>>>>
->>>>>>> Only solution I see right now is to have the flush_rq in the shared
->>>>>>> tags, but that would potentially be a regression for multiple
->>>>>>> devices and heavy flush uses cases. I'll see if I can come up with
->>>>>>> something better, or maybe Shaohua has an idea.
->>>>>>
->>>>>> What about something like the following (untest, uncompiled, maybe
->>>>>> pseudo-code):
->>>>>>
->>>>>> struct request *blk_mq_tag_to_rq(struct blk_mq_tags *tags, unsigned int tag)
->>>>>> {
->>>>>>         struct request *rq = tags->rqs[tag];
->>>>>>
->>>>>>         if ((rq->cmd_flags & REQ_FLUSH_SEQ) && rq->q->flush_rq->tag == tag)
->>>>>>                 return rq->q->flush_rq;
->>>>>>         return rq;
->>>>>> }
->>>>>
->>>>> Looks we thought it together, :-)
->>>>>
->>>>> Also maybe the flush_rq->tag need to be cleared in flush_end_io().
->>>>
->>>> It clears the command flag, so that should be enough.
->>>
->>> Only the flush_rq's command flag is cleared, and its parent request
->>> flag isn't cleared.
->>
->> Good point. Care to send in a patch? We can just clear it to -1U, at
->> least in blk-mq that's defined as an invalid tag.
-> 
-> Attachment patch should be enough.
+This series adds a SDHCI platform driver for ST SoCs, along with
+the additional device tree bindings and configuration to enable
+the controller to work properly.
 
-Yep, looks fine. Care to send as a proper patch, then I will include it?
+Initially it supports the stih416 and stih415 SoCs, and has
+been tested on a stih416-b2020 board.
+
+regards,
+
+Peter.
+
+Changes since v1
+- Whitespace cleanups
+- Use readl_relaxed io accessor
+- Add update to MAINTAINERS
+- Remove reset controller code from platform driver
+- Remove #ifdef around sleep ops
+- Use sdhci_pltfm_clk_get_max_clock lib function
+- Pass bus-width etc through board device tree node
+- Remove unncessary header
+- Remove / change some debug messages
+- Remove final break from switch case
+
+Changes since v2
+- Update CC list with alkml and lkml lists
+
+Peter Griffin (10):
+  mmc: sdhci-st: Intial support for ST SDHCI controller
+  mmc: sdhci-st: ST Microelectronics SDHCI binding documentation.
+  ARM: STi: DT: Add sdhci pins for stih416
+  ARM: STi: DT: Add sdhci controller for stih416
+  ARM: STi: DT: Add sdhci pin configuration for stih415
+  ARM: STi: DT: Add sdhci controller for stih415
+  ARM: STi: DT: Enable mmc0 for both stih415 and stih416 SoCs
+  ARM: STi: DT: Enable second sdhci controller for stih416 b2020 boards.
+  ARM: update multi_v7_defconfig for STI
+  MAINTAINERS: Add sdhci-st file to ARCH/STI architecture
+
+ Documentation/devicetree/bindings/mmc/sdhci-st.txt |  33 ++++
+ MAINTAINERS                                        |   1 +
+ arch/arm/boot/dts/stih415-pinctrl.dtsi             |  21 +++
+ arch/arm/boot/dts/stih415.dtsi                     |  12 ++
+ arch/arm/boot/dts/stih416-b2020-revE.dts           |   6 +
+ arch/arm/boot/dts/stih416-b2020.dts                |   8 +
+ arch/arm/boot/dts/stih416-pinctrl.dtsi             |  39 ++++
+ arch/arm/boot/dts/stih416.dtsi                     |  24 +++
+ arch/arm/boot/dts/stih41x-b2020.dtsi               |   4 +
+ arch/arm/boot/dts/stih41x-b2020x.dtsi              |   4 +
+ arch/arm/configs/multi_v7_defconfig                |   1 +
+ drivers/mmc/host/Kconfig                           |  12 ++
+ drivers/mmc/host/Makefile                          |   1 +
+ drivers/mmc/host/sdhci-st.c                        | 201 +++++++++++++++++++++
+ 14 files changed, 367 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/mmc/sdhci-st.txt
+ create mode 100644 drivers/mmc/host/sdhci-st.c
 
 -- 
-Jens Axboe
+1.9.1
 
