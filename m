@@ -1,77 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751867AbaFDV0R (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 17:26:17 -0400
-Received: from g4t3427.houston.hp.com ([15.201.208.55]:6606 "EHLO
-	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751329AbaFDV0Q (ORCPT
+	id S1751962AbaFDV1S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 17:27:18 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:34111 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751826AbaFDV1Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 17:26:16 -0400
-Message-ID: <1401917173.2232.14.camel@j-VirtualBox>
-Subject: Re: [RFC PATCH 1/3] locking/mutex: Try to acquire mutex only if it
- is unlocked
-From: Jason Low <jason.low2@hp.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: mingo@kernel.org, tglx@linutronix.de, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, paulmck@linux.vnet.ibm.com,
-        tim.c.chen@linux.intel.com, peter@hurleysoftware.com, riel@redhat.com,
-        hpa@zytor.com, walken@google.com, davidlohr@hp.com, Waiman.Long@hp.com,
-        aswin@hp.com, scott.norton@hp.com, chegu_vinod@hp.com
-Date: Wed, 04 Jun 2014 14:26:13 -0700
-In-Reply-To: <20140604194322.GN13930@laptop.programming.kicks-ass.net>
-References: <1401908911-8947-1-git-send-email-jason.low2@hp.com>
-	 <1401908911-8947-2-git-send-email-jason.low2@hp.com>
-	 <20140604194322.GN13930@laptop.programming.kicks-ass.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 4 Jun 2014 17:27:16 -0400
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Randy Dunlap <rdunlap@infradead.org>,
+        Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: Stefan Weil <sw@weilnetz.de>, Jiri Kosina <jkosina@suse.cz>,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] Documentation: laptops: hpfall.c:  Cleaning up missing null-terminate after strncpy call
+Date: Wed,  4 Jun 2014 23:28:10 +0200
+Message-Id: <1401917290-2689-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-06-04 at 21:43 +0200, Peter Zijlstra wrote:
-> On Wed, Jun 04, 2014 at 12:08:29PM -0700, Jason Low wrote:
-> > Upon entering the slowpath in __mutex_lock_common(), we try once more
-> > to acquire the mutex. We only try to acquire it if MUTEX_SHOW_NO_WAITER
-> > (lock->count >= 0) is true in order to avoid using the atomic xchg()
-> > operation whenever it is not necessary. However, we really only need
-> > to try to acquire if the mutex is free (lock->count == 1).
-> > 
-> > This patch changes it so that we only try-acquire the mutex upon
-> > entering the slowpath if it is unlocked, rather than if there are
-> > no waiters. This helps further reduce unncessary atomic xchg()
-> > operations. Furthermore, this patch introduces and uses a new
-> > MUTEX_IS_UNLOCKED() macro to improve readbability.
-> > 
-> > Signed-off-by: Jason Low <jason.low2@hp.com>
-> > ---
-> >  kernel/locking/mutex.c |   10 ++++++----
-> >  1 files changed, 6 insertions(+), 4 deletions(-)
-> > 
-> > diff --git a/kernel/locking/mutex.c b/kernel/locking/mutex.c
-> > index bc73d33..0925968 100644
-> > --- a/kernel/locking/mutex.c
-> > +++ b/kernel/locking/mutex.c
-> > @@ -48,9 +48,10 @@
-> >  
-> >  /*
-> >   * A negative mutex count indicates that waiters are sleeping waiting for the
-> > - * mutex.
-> > + * mutex, and a count of one indicates the mutex is unlocked.
-> >   */
-> >  #define	MUTEX_SHOW_NO_WAITER(mutex)	(atomic_read(&(mutex)->count) >= 0)
-> > +#define	MUTEX_IS_UNLOCKED(mutex)	(atomic_read(&(mutex)->count) == 1)
-> 
-> So I recently saw that MUTEX_SHOW_NO_WAITER thing and cried a little;
-> and now you're adding more of that same nonsense.
-> 
-> Please make them inline functions, also can we rename the SHOW_NO_WAITER
-> thing, because its not at all clear to me wtf it does; should it be
-> called: mutex_no_waiters() or somesuch?
+Added a guaranteed null-terminate after call to strncpy.
 
-Okay, I can make them inline functions. I mainly added the macro to keep
-it consistent with the MUTEX_SHOW_NO_WAITER() check, but we can surely
-make this more clear. mutex_no_waiters() sounds fine, or perhaps
-something like mutex_has_no_waiters()?
+This was partly found using a static code analysis program called cppcheck.
+
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+---
+ Documentation/laptops/hpfall.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/Documentation/laptops/hpfall.c b/Documentation/laptops/hpfall.c
+index b85dbba..6708432 100644
+--- a/Documentation/laptops/hpfall.c
++++ b/Documentation/laptops/hpfall.c
+@@ -28,6 +28,7 @@ int set_unload_heads_path(char *device)
+ 	if (strlen(device) <= 5 || strncmp(device, "/dev/", 5) != 0)
+ 		return -EINVAL;
+ 	strncpy(devname, device + 5, sizeof(devname));
++	devname[sizeof(devname) - 1] = '\0';
+ 
+ 	snprintf(unload_heads_path, sizeof(unload_heads_path) - 1,
+ 				"/sys/block/%s/device/unload_heads", devname);
+-- 
+1.7.10.4
 
