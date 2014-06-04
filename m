@@ -1,128 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752172AbaFDR3d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 13:29:33 -0400
-Received: from mail-ve0-f182.google.com ([209.85.128.182]:56500 "EHLO
-	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751094AbaFDR3b (ORCPT
+	id S1752303AbaFDRal (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 13:30:41 -0400
+Received: from mail-qa0-f52.google.com ([209.85.216.52]:51193 "EHLO
+	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751884AbaFDRag (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 13:29:31 -0400
+	Wed, 4 Jun 2014 13:30:36 -0400
+Date: Wed, 4 Jun 2014 13:30:32 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Arnd Bergmann <arnd@arndb.de>
+cc: Dave Chinner <david@fromorbit.com>, hch@infradead.org,
+        linux-mtd@lists.infradead.org, "H. Peter Anvin" <hpa@zytor.com>,
+        logfs@logfs.org, linux-afs@lists.infradead.org,
+        "Joseph S. Myers" <joseph@codesourcery.com>,
+        linux-arch@vger.kernel.org, linux-cifs@vger.kernel.org,
+        linux-scsi@vger.kernel.org, ceph-devel@vger.kernel.org,
+        cluster-devel@redhat.com, coda@cs.cmu.edu, geert@linux-m68k.org,
+        linux-ext4@vger.kernel.org, codalist@telemann.coda.cs.cmu.edu,
+        fuse-devel@lists.sourceforge.net, reiserfs-devel@vger.kernel.org,
+        xfs@oss.sgi.com, john.stultz@linaro.org, tglx@linutronix.de,
+        linux-nfs@vger.kernel.org, linux-ntfs-dev@lists.sourceforge.net,
+        samba-technical@lists.samba.org, linux-kernel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net, ocfs2-devel@oss.oracle.com,
+        linux-fsdevel@vger.kernel.org, lftan@altera.com,
+        linux-btrfs@vger.kernel.org
+Subject: Re: [RFC 00/32] making inode time stamps y2038 ready
+In-Reply-To: <201406041703.47592.arnd@arndb.de>
+Message-ID: <alpine.LFD.2.11.1406041308300.17310@knanqh.ubzr>
+References: <1401480116-1973111-1-git-send-email-arnd@arndb.de> <5011138.W0gbOc20Qp@wuerfel> <20140603213802.GH14410@dastard> <201406041703.47592.arnd@arndb.de>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
 MIME-Version: 1.0
-In-Reply-To: <1401883796-17841-4-git-send-email-lee.jones@linaro.org>
-References: <1401883796-17841-1-git-send-email-lee.jones@linaro.org>
-	<1401883796-17841-4-git-send-email-lee.jones@linaro.org>
-Date: Wed, 4 Jun 2014 12:29:29 -0500
-Message-ID: <CAL_JsqJOEipHyjD2NCjQd1BvLumnM3PkVDqUjrMNfXCOmXcNAA@mail.gmail.com>
-Subject: Re: [PATCH 3/7] i2c: Add the ability to match device to compatible
- string without an of_node
-From: Rob Herring <robherring2@gmail.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "wsa@the-dreams.de" <wsa@the-dreams.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 4, 2014 at 7:09 AM, Lee Jones <lee.jones@linaro.org> wrote:
-> A great deal of I2C devices are currently matched via DT node name, and
-> as such the compatible naming convention of '<vendor>,<device>' has gone
-> somewhat awry - some nodes don't supply one, some supply an arbitrary
-> string and others the correct device name with an arbitrary vendor prefix.
->
-> In an effort to correct this problem we have to supply a mechanism to
-> match a device by compatible string AND by simple device name.  This
-> function strips off the '<vendor>,' part of a supplied compatible string
-> and attempts to match without it.
->
-> The plan is to remove this function once all of the compatible strings
-> for each device have been brought into line.
+On Wed, 4 Jun 2014, Arnd Bergmann wrote:
 
-Then should you add a warning for cases needing to be fixed?
+> On Tuesday 03 June 2014, Dave Chinner wrote:
+> > Just ot be pedantic, inodes don't need 96 bit timestamps - some
+> > filesystems can *support up to* 96 bit timestamps. If the kernel
+> > only supports 64 bit timestamps and that's all the kernel can
+> > represent, then the upper bits of the 96 bit on-disk inode
+> > timestamps simply remain zero.
+> 
+> I meant the reverse: since we have file systems that can store
+> 96-bit timestamps when using 64-bit kernels, we need to extend
+> 32-bit kernels to have the same internal representation so we
+> can actually read those file systems correctly.
+> 
+> > If you move the filesystem between kernels with different time
+> > ranges, then the filesystem needs to be able to tell the kernel what
+> > it's supported range is.  This is where having the VFS limit the
+> > range of supported timestamps is important: the limit is the
+> > min(kernel range, filesystem range). This allows the filesystems
+> > to be indepenent of the kernel time representation, and the kernel
+> > to be independent of the physical filesystem time encoding....
+> 
+> I agree it makes sense to let the kernel know about the limits
+> of the file system it accesses, but for the reverse, we're probably
+> better off just making the kernel representation large enough (i.e.
+> 96 bits) so it can work with any known file system.
 
-Rob
+Depends...  96 bit handling may get prohibitive on 32-bit archs.
 
->
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> ---
->  drivers/i2c/i2c-core.c | 25 +++++++++++++++++++++++++
->  include/linux/i2c.h    | 10 ++++++++++
->  2 files changed, 35 insertions(+)
->
-> diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
-> index d3802dc..7dcd5c3 100644
-> --- a/drivers/i2c/i2c-core.c
-> +++ b/drivers/i2c/i2c-core.c
-> @@ -1090,6 +1090,31 @@ struct i2c_adapter *of_find_i2c_adapter_by_node(struct device_node *node)
->         return i2c_verify_adapter(dev);
->  }
->  EXPORT_SYMBOL(of_find_i2c_adapter_by_node);
-> +
-> +const struct of_device_id
-> +*i2c_of_match_device_strip_vendor(const struct of_device_id *matches,
-> +                                 struct device *dev)
-> +{
-> +       const struct i2c_client *client = i2c_verify_client(dev);
-> +       const char *name;
-> +
-> +       if (!(client && matches))
-> +               return NULL;
-> +
-> +       for (; matches->compatible[0]; matches++) {
-> +               name = strchr(matches->compatible, ',');
-> +               if (!name)
-> +                       name = matches->compatible;
-> +               else
-> +                       name++;
-> +
-> +               if (!strncmp(client->name, name, strlen(client->name)))
-> +                       return matches;
-> +       }
-> +
-> +       return NULL;
-> +}
-> +EXPORT_SYMBOL_GPL(i2c_of_match_device_strip_vendor);
->  #else
->  static void of_i2c_register_devices(struct i2c_adapter *adap) { }
->  #endif /* CONFIG_OF */
-> diff --git a/include/linux/i2c.h b/include/linux/i2c.h
-> index b556e0a..f7ec75b 100644
-> --- a/include/linux/i2c.h
-> +++ b/include/linux/i2c.h
-> @@ -564,6 +564,9 @@ extern struct i2c_client *of_find_i2c_device_by_node(struct device_node *node);
->  /* must call put_device() when done with returned i2c_adapter device */
->  extern struct i2c_adapter *of_find_i2c_adapter_by_node(struct device_node *node);
->
-> +extern const struct of_device_id
-> +*i2c_of_match_device_strip_vendor(const struct of_device_id *matches,
-> +                                 struct device *dev);
->  #else
->
->  static inline struct i2c_client *of_find_i2c_device_by_node(struct device_node *node)
-> @@ -575,6 +578,13 @@ static inline struct i2c_adapter *of_find_i2c_adapter_by_node(struct device_node
->  {
->         return NULL;
->  }
-> +
-> +const struct of_device_id
-> +*i2c_of_match_device_strip_vendor(const struct of_device_id *matches,
-> +                                 struct device *dev)
-> +{
-> +       return NULL;
-> +}
->  #endif /* CONFIG_OF */
->
->  #endif /* _LINUX_I2C_H */
-> --
-> 1.8.3.2
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe devicetree" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+The important point here is for the kernel to be able to represent the 
+time _range_ used by any known filesystem, not necessarily the time 
+_precision_.
+
+For example, a 64 bit representation can be made of 40 bits for seconds 
+spanning 34865 years, and 24 bits for fractional seconds providing 
+precision down to 60 nanosecs.  That ought to be plenty good on 32 bit 
+systems while still being cheap to handle.
+
+
+Nicolas
