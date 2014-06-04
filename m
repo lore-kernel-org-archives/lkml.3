@@ -1,51 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753106AbaFDPUB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 11:20:01 -0400
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:33888 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752776AbaFDPT7 (ORCPT
+	id S1753169AbaFDPUu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 11:20:50 -0400
+Received: from mail-we0-f177.google.com ([74.125.82.177]:62238 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751434AbaFDPTS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 11:19:59 -0400
-Message-ID: <538F391B.8070005@kernel.dk>
-Date: Wed, 04 Jun 2014 09:19:55 -0600
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>
-CC: Shaohua Li <shli@kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: [patch]blk-mq: blk_mq_tag_to_rq should handle flush request
-References: <20140604111133.GA7826@infradead.org> <538F2A11.4060800@kernel.dk> <20140604142012.GA20056@infradead.org> <538F331F.60101@kernel.dk> <20140604145803.GA7826@infradead.org> <538F34FB.7050003@kernel.dk> <20140604150508.GA21551@infradead.org> <538F365C.8050604@kernel.dk> <20140604151020.GA13586@infradead.org> <538F3733.6040207@kernel.dk> <20140604151643.GA6344@infradead.org>
-In-Reply-To: <20140604151643.GA6344@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 4 Jun 2014 11:19:18 -0400
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Andrew Bresticker <abrestic@chromium.org>, devicetree@vger.kernel.org,
+        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 2/4] of: Add NVIDIA Tegra XUSB pad controller binding
+Date: Wed,  4 Jun 2014 17:16:28 +0200
+Message-Id: <1401894990-30092-2-git-send-email-thierry.reding@gmail.com>
+X-Mailer: git-send-email 1.9.2
+In-Reply-To: <1401894990-30092-1-git-send-email-thierry.reding@gmail.com>
+References: <1401894990-30092-1-git-send-email-thierry.reding@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-06-04 09:16, Christoph Hellwig wrote:
-> On Wed, Jun 04, 2014 at 09:11:47AM -0600, Jens Axboe wrote:
->> On 2014-06-04 09:10, Christoph Hellwig wrote:
->>> On Wed, Jun 04, 2014 at 09:08:12AM -0600, Jens Axboe wrote:
->>>>> The performance regression is caused by "blk-mq: avoid code
->>>>> duplication", but I don't really understand why yet.
->>>>
->>>> Gah, looks like this one dropped the tag idling. I bet that is why.
->>>
->>> Ah, thanks.  It's indeed exactly the same sort of slow down I bisected
->>> back then, this should have rung a bell instead of keeping me occupied
->>> for hours..
->>
->> Patch is committed :-)
->
-> Oh well, I had just prepared the same one for you, but I want to at
-> least do basic sanity checking of my rebased tree with the fixes applied
-> now that I'm done bisecting.
+From: Thierry Reding <treding@nvidia.com>
 
-Please do. If there's anything else I need, let me know. It wasn't clear 
-to me if the cdb patch was in blk-mq or scsi-mq. I'll flush my queue out 
-this afternoon, so that -rc1 will hopefully have everything in a sane state.
+This patch adds the device tree binding documentation for the XUSB pad
+controller found on NVIDIA Tegra SoCs. It exposes both pinmuxing and PHY
+capabilities.
 
+Signed-off-by: Thierry Reding <treding@nvidia.com>
+---
+ .../pinctrl/nvidia,tegra124-xusb-padctl.txt        | 135 +++++++++++++++++++++
+ 1 file changed, 135 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/pinctrl/nvidia,tegra124-xusb-padctl.txt
+
+diff --git a/Documentation/devicetree/bindings/pinctrl/nvidia,tegra124-xusb-padctl.txt b/Documentation/devicetree/bindings/pinctrl/nvidia,tegra124-xusb-padctl.txt
+new file mode 100644
+index 000000000000..8af59bbcdaa0
+--- /dev/null
++++ b/Documentation/devicetree/bindings/pinctrl/nvidia,tegra124-xusb-padctl.txt
+@@ -0,0 +1,135 @@
++Device tree binding for NVIDIA Tegra XUSB pad controller
++========================================================
++
++The Tegra XUSB pad controller manages a set of lanes, each of which can be
++assigned to one out of a set of different pads. Some of these pads have an
++associated PHY that must be powered up before the pad can be used.
++
++This document defines the device-specific binding for the XUSB pad controller.
++
++Refer to pinctrl-bindings.txt in this directory for generic information about
++pin controller device tree bindings and ../phy/phy-bindings.txt for details on
++how to describe and reference PHYs in device trees.
++
++Required properties:
++--------------------
++- compatible: should be "nvidia,tegra124-xusb-padctl"
++- reg: Physical base address and length of the controller's registers.
++- resets: Must contain an entry for each entry in reset-names.
++  See ../reset/reset.txt for details.
++- reset-names: Must include the following entries:
++  - padctl
++- #address-cells: Should be 0.
++- #size-cells: Should be 0.
++- #phy-cells: Should be 1. The specifier is the index of the PHY to reference.
++  Possible values are:
++  - 0: PCIe
++  - 1: SATA
++
++Lane muxing:
++------------
++
++Child nodes contain the pinmux configurations following the conventions from
++the pinctrl-bindings.txt document. Typically a single, static configuration is
++given and applied at boot time.
++
++Each subnode describes groups of lanes along with parameters and pads that
++they should be assigned to. The name of these subnodes is not important. All
++subnodes should be parsed solely based on their content.
++
++Each subnode only applies the parameters that are explicitly listed. In other
++words, if a subnode that lists a function but no pin configuration parameters
++implies no information about any pin configuration parameters. Similarly, a
++subnode that describes only an IDDQ parameter implies no information about
++what function the pins are assigned to. For this reason even seemingly boolean
++values are actually tristates in this binding: unspecified, off or on.
++Unspecified is represented as an absent property, and off/on are represented
++as integer values 0 and 1.
++
++Required properties:
++- nvidia,lanes: An array of strings. Each string is the name of a lane.
++
++Optional properties:
++- nvidia,function: A string that is the name of the function (pad) that the
++  pin or group should be assigned to. Valid values for function names are
++  listed below.
++- nvidia,iddq: Enables IDDQ mode of the lane. (0: no, 1: yes)
++
++Note that not all of these properties are valid for all lanes. Lanes can be
++divided into three groups:
++
++  - otg-0, otg-1, otg-2:
++
++    Valid functions for this group are: "snps", "xusb", "uart", "rsvd".
++
++    The nvidia,iddq property does not apply to this group.
++
++  - ulpi-0, hsic-0, hsic-1:
++
++    Valid functions for this group are: "snps", "xusb".
++
++    The nvidia,iddq property does not apply to this group.
++
++  - pcie-0, pcie-1, pcie-2, pcie-3, pcie-4, sata-0:
++
++    Valid functions for this group are: "pcie", "usb3", "sata", "rsvd".
++
++
++Example:
++========
++
++SoC file extract:
++-----------------
++
++	padctl@0,7009f000 {
++		compatible = "nvidia,tegra124-xusb-padctl";
++		reg = <0x0 0x7009f000 0x0 0x1000>;
++		resets = <&tegra_car 142>;
++		reset-names = "padctl";
++
++		#address-cells = <0>;
++		#size-cells = <0>;
++		#phy-cells = <1>;
++	};
++
++Board file extract:
++-------------------
++
++	pcie-controller@0,01003000 {
++		...
++
++		phys = <&padctl 0>;
++		phy-names = "pcie";
++
++		...
++	};
++
++	...
++
++	padctl: padctl@0,7009f000 {
++		pinmux {
++			pinctrl-0 = <&padctl_default>;
++			pinctrl-names = "default";
++
++			padctl_default: pinmux {
++				usb3 {
++					nvidia,lanes = "pcie-0", "pcie-1";
++					nvidia,function = "usb3";
++					nvidia,iddq = <0>;
++				};
++
++				pcie {
++					nvidia,lanes = "pcie-2", "pcie-3",
++						       "pcie-4";
++					nvidia,function = "pcie";
++					nvidia,iddq = <0>;
++				};
++
++				sata {
++					nvidia,lanes = "sata-0";
++					nvidia,function = "sata";
++					nvidia,iddq = <0>;
++				};
++			};
++		};
++	};
 -- 
-Jens Axboe
+1.9.2
 
