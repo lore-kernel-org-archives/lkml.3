@@ -1,107 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751900AbaFDQhO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 12:37:14 -0400
-Received: from mail-qa0-f47.google.com ([209.85.216.47]:44884 "EHLO
-	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751049AbaFDQhN (ORCPT
+	id S1751958AbaFDQje (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 12:39:34 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:52970 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750871AbaFDQjc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 12:37:13 -0400
-Date: Wed, 4 Jun 2014 12:37:00 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Kent Overstreet <kmo@daterainc.com>,
-        Sebastian Ott <sebott@linux.vnet.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Christoph Lameter <cl@linux-foundation.org>
-Subject: [GIT PULL] last minute percpu fix for v3.15-rc8
-Message-ID: <20140604163700.GH5004@htj.dyndns.org>
+	Wed, 4 Jun 2014 12:39:32 -0400
+Date: Wed, 4 Jun 2014 17:39:33 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Thierry Reding <thierry.reding@gmail.com>, Hiroshi Doyu <hdoyu@nvidia.com>,
+        Rob Herring <robherring2@gmail.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>, Mark Rutland <Mark.Rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Cho KyongHo <pullip.cho@samsung.com>,
+        Grant Grundler <grundler@chromium.org>,
+        Dave P Martin <Dave.Martin@arm.com>,
+        Marc Zyngier <Marc.Zyngier@arm.com>, Joerg Roedel <joro@8bytes.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Linux IOMMU <iommu@lists.linux-foundation.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] devicetree: Add generic IOMMU device tree bindings
+Message-ID: <20140604163933.GE6644@arm.com>
+References: <1400877218-4113-1-git-send-email-thierry.reding@gmail.com>
+ <20140604134400.GE28484@ulmo>
+ <20140604135600.GD6644@arm.com>
+ <13061821.NYx1AfEhs0@wuerfel>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <13061821.NYx1AfEhs0@wuerfel>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Linus.
+On Wed, Jun 04, 2014 at 03:01:15PM +0100, Arnd Bergmann wrote:
+> On Wednesday 04 June 2014 14:56:01 Will Deacon wrote:
+> > On Wed, Jun 04, 2014 at 02:44:03PM +0100, Thierry Reding wrote:
+> > > On Fri, May 30, 2014 at 09:54:37PM +0200, Arnd Bergmann wrote:
+> > > > On Friday 30 May 2014 22:29:13 Hiroshi Doyu wrote:
+> > > > > The disadvantage of this is that this limits the max number of streamIDs
+> > > > > to support. If # of streamID is increased later more than 64, this
+> > > > > format cannot cover any more. You have to predict the max # of streamIDs
+> > > > > in advance if steamID is statically assigned.
+> > > > > 
+> > > > 
+> > > > Well, the iommu specific binding could allow a variable #address-cells.
+> > > > That way, you just need to know the number of stream IDs for that instance
+> > > > of the iommu.
+> > > 
+> > > That sounds fairly complicated to me. I don't see what that buys us over
+> > > the clarity and simplicity that the above explicit notation gives us. Is
+> > > it not more common for a device to have a single master rather than a
+> > > whole bunch of them?
+> > 
+> > I've never seen a device upstream of an ARM SMMU with a single stream-id;
+> > they always seem to have a whole bunch of them. Calxeda's SATA controller
+> > had 10 IDs, for example, and a PL330 DMA controller tends to have at least
+> > 3.
+> 
+> What are those good for? Would we just always use the first one?
 
-It is very late but this is an important percpu-refcount fix from
-Sebastian Ott.  The problem is that percpu_ref_*() used __this_cpu_*()
-instead of this_cpu_*().  The difference between the two is that the
-latter is atomic on the local cpu while the former is not.
-this_cpu_inc() is guaranteed to increment the percpu counter on the
-cpu that the operation is executed on without any synchronization;
-however, __this_cpu_inc() doesn't and if the local cpu invokes the
-function from different contexts (e.g. process and irq) of the same
-CPU, it's not guaranteed to actually increment as it may be
-implemented as rmw.
+I think It's just an artifact of how these systems tend to be built. The
+StreamID is constructed out of bits on the bus (AXI and sideband), so a
+DMA controller could easily have one ID for reads, one for writes,
+one for execute. Masters capable of multiple outstanding transactions
+could also have sets of IDs too.
 
-This bug existed from the get-go but it hasn't been noticed earlier
-probably because on x86 __this_cpu_inc() is equivalent to
-this_cpu_inc() as both get translated into single instruction;
-however, s390 uses the generic rmw implementation and gets affected by
-the bug.  Kudos to Sebastian and Heiko for diagnosing it.
+The SMMU driver would point them all at the same context bank, as far as I
+can tell, but that means the driver does need to be aware of the incoming
+IDs.
 
-The change is very low risk and fixes a critical issue on the affected
-architectures, so I think it's a good candidate for inclusion although
-it's very late in the devel cycle.  On the other hand, this has been
-broken since v3.11, so backporting it through -stable post -rc1 won't
-be the end of the world.
+Rob might know how they constructed the IDs on the Calxeda SATA controller?
 
-I'll ping Christoph whether __this_cpu_*() ops can be better annotated
-so that it can trigger lockdep warning when used from multiple
-contexts.
-
-Thanks.
-
-The following changes since commit 5a838c3b60e3a36ade764cf7751b8f17d7c9c2da:
-
-  percpu: make pcpu_alloc_chunk() use pcpu_mem_free() instead of kfree() (2014-04-14 16:18:06 -0400)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/percpu.git for-3.15-fixes
-
-for you to fetch changes up to 0c36b390a546055b6815d4b93a2c9fed4d980ffb:
-
-  percpu-refcount: fix usage of this_cpu_ops (2014-06-04 12:12:29 -0400)
-
-----------------------------------------------------------------
-Sebastian Ott (1):
-      percpu-refcount: fix usage of this_cpu_ops
-
- include/linux/percpu-refcount.h | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/include/linux/percpu-refcount.h b/include/linux/percpu-refcount.h
-index 95961f0..0afb48f 100644
---- a/include/linux/percpu-refcount.h
-+++ b/include/linux/percpu-refcount.h
-@@ -110,7 +110,7 @@ static inline void percpu_ref_get(struct percpu_ref *ref)
- 	pcpu_count = ACCESS_ONCE(ref->pcpu_count);
- 
- 	if (likely(REF_STATUS(pcpu_count) == PCPU_REF_PTR))
--		__this_cpu_inc(*pcpu_count);
-+		this_cpu_inc(*pcpu_count);
- 	else
- 		atomic_inc(&ref->count);
- 
-@@ -139,7 +139,7 @@ static inline bool percpu_ref_tryget(struct percpu_ref *ref)
- 	pcpu_count = ACCESS_ONCE(ref->pcpu_count);
- 
- 	if (likely(REF_STATUS(pcpu_count) == PCPU_REF_PTR)) {
--		__this_cpu_inc(*pcpu_count);
-+		this_cpu_inc(*pcpu_count);
- 		ret = true;
- 	}
- 
-@@ -164,7 +164,7 @@ static inline void percpu_ref_put(struct percpu_ref *ref)
- 	pcpu_count = ACCESS_ONCE(ref->pcpu_count);
- 
- 	if (likely(REF_STATUS(pcpu_count) == PCPU_REF_PTR))
--		__this_cpu_dec(*pcpu_count);
-+		this_cpu_dec(*pcpu_count);
- 	else if (unlikely(atomic_dec_and_test(&ref->count)))
- 		ref->release(ref);
- 
+Will
