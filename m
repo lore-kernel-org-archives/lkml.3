@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752747AbaFDXVf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:21:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39905 "EHLO
+	id S1757059AbaFEAh2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 20:37:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39931 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752687AbaFDXV3 (ORCPT
+	with ESMTP id S1752734AbaFDXVe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:21:29 -0400
+	Wed, 4 Jun 2014 19:21:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Leon Ma <xindong.ma@intel.com>, Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 3.14 051/228] hrtimer: Prevent remote enqueue of leftmost timers
-Date: Wed,  4 Jun 2014 16:21:20 -0700
-Message-Id: <20140604232349.712903879@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [PATCH 3.14 070/228] drm/radeon: add support for newer mc ucode on CI (v2)
+Date: Wed,  4 Jun 2014 16:21:39 -0700
+Message-Id: <20140604232350.306289434@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -28,55 +28,132 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Leon Ma <xindong.ma@intel.com>
+From: Alex Deucher <alexdeucher@gmail.com>
 
-commit 012a45e3f4af68e86d85cce060c6c2fed56498b2 upstream.
+commit 277babc374f6ecab6af182554f5d9f35a7768755 upstream.
 
-If a cpu is idle and starts an hrtimer which is not pinned on that
-same cpu, the nohz code might target the timer to a different cpu.
+Fixes mclk stability on certain asics.
 
-In the case that we switch the cpu base of the timer we already have a
-sanity check in place, which determines whether the timer is earlier
-than the current leftmost timer on the target cpu. In that case we
-enqueue the timer on the current cpu because we cannot reprogram the
-clock event device on the target.
+v2: print out mc firmware version used and size
 
-If the timers base is already the target CPU we do not have this
-sanity check in place so we enqueue the timer as the leftmost timer in
-the target cpus rb tree, but we cannot reprogram the clock event
-device on the target cpu. So the timer expires late and subsequently
-prevents the reprogramming of the target cpu clock event device until
-the previously programmed event fires or a timer with an earlier
-expiry time gets enqueued on the target cpu itself.
+bug:
+https://bugs.freedesktop.org/show_bug.cgi?id=75992
 
-Add the same target check as we have for the switch base case and
-start the timer on the current cpu if it would become the leftmost
-timer on the target.
-
-[ tglx: Rewrote subject and changelog ]
-
-Signed-off-by: Leon Ma <xindong.ma@intel.com>
-Link: http://lkml.kernel.org/r/1398847391-5994-1-git-send-email-xindong.ma@intel.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/hrtimer.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/gpu/drm/radeon/cik.c          |   26 +++++++++++++++++---------
+ drivers/gpu/drm/radeon/radeon_ucode.h |    4 +++-
+ 2 files changed, 20 insertions(+), 10 deletions(-)
 
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -247,6 +247,11 @@ again:
- 			goto again;
- 		}
- 		timer->base = new_base;
-+	} else {
-+		if (cpu != this_cpu && hrtimer_check_target(timer, new_base)) {
-+			cpu = this_cpu;
-+			goto again;
+--- a/drivers/gpu/drm/radeon/cik.c
++++ b/drivers/gpu/drm/radeon/cik.c
+@@ -38,6 +38,7 @@ MODULE_FIRMWARE("radeon/BONAIRE_me.bin")
+ MODULE_FIRMWARE("radeon/BONAIRE_ce.bin");
+ MODULE_FIRMWARE("radeon/BONAIRE_mec.bin");
+ MODULE_FIRMWARE("radeon/BONAIRE_mc.bin");
++MODULE_FIRMWARE("radeon/BONAIRE_mc2.bin");
+ MODULE_FIRMWARE("radeon/BONAIRE_rlc.bin");
+ MODULE_FIRMWARE("radeon/BONAIRE_sdma.bin");
+ MODULE_FIRMWARE("radeon/BONAIRE_smc.bin");
+@@ -46,6 +47,7 @@ MODULE_FIRMWARE("radeon/HAWAII_me.bin");
+ MODULE_FIRMWARE("radeon/HAWAII_ce.bin");
+ MODULE_FIRMWARE("radeon/HAWAII_mec.bin");
+ MODULE_FIRMWARE("radeon/HAWAII_mc.bin");
++MODULE_FIRMWARE("radeon/HAWAII_mc2.bin");
+ MODULE_FIRMWARE("radeon/HAWAII_rlc.bin");
+ MODULE_FIRMWARE("radeon/HAWAII_sdma.bin");
+ MODULE_FIRMWARE("radeon/HAWAII_smc.bin");
+@@ -1702,7 +1704,7 @@ int ci_mc_load_microcode(struct radeon_d
+ 	const __be32 *fw_data;
+ 	u32 running, blackout = 0;
+ 	u32 *io_mc_regs;
+-	int i, ucode_size, regs_size;
++	int i, regs_size, ucode_size = rdev->mc_fw->size / 4;
+ 
+ 	if (!rdev->mc_fw)
+ 		return -EINVAL;
+@@ -1710,12 +1712,10 @@ int ci_mc_load_microcode(struct radeon_d
+ 	switch (rdev->family) {
+ 	case CHIP_BONAIRE:
+ 		io_mc_regs = (u32 *)&bonaire_io_mc_regs;
+-		ucode_size = CIK_MC_UCODE_SIZE;
+ 		regs_size = BONAIRE_IO_MC_REGS_SIZE;
+ 		break;
+ 	case CHIP_HAWAII:
+ 		io_mc_regs = (u32 *)&hawaii_io_mc_regs;
+-		ucode_size = HAWAII_MC_UCODE_SIZE;
+ 		regs_size = HAWAII_IO_MC_REGS_SIZE;
+ 		break;
+ 	default:
+@@ -1782,7 +1782,7 @@ static int cik_init_microcode(struct rad
+ 	const char *chip_name;
+ 	size_t pfp_req_size, me_req_size, ce_req_size,
+ 		mec_req_size, rlc_req_size, mc_req_size = 0,
+-		sdma_req_size, smc_req_size = 0;
++		sdma_req_size, smc_req_size = 0, mc2_req_size = 0;
+ 	char fw_name[30];
+ 	int err;
+ 
+@@ -1796,7 +1796,8 @@ static int cik_init_microcode(struct rad
+ 		ce_req_size = CIK_CE_UCODE_SIZE * 4;
+ 		mec_req_size = CIK_MEC_UCODE_SIZE * 4;
+ 		rlc_req_size = BONAIRE_RLC_UCODE_SIZE * 4;
+-		mc_req_size = CIK_MC_UCODE_SIZE * 4;
++		mc_req_size = BONAIRE_MC_UCODE_SIZE * 4;
++		mc2_req_size = BONAIRE_MC2_UCODE_SIZE * 4;
+ 		sdma_req_size = CIK_SDMA_UCODE_SIZE * 4;
+ 		smc_req_size = ALIGN(BONAIRE_SMC_UCODE_SIZE, 4);
+ 		break;
+@@ -1808,6 +1809,7 @@ static int cik_init_microcode(struct rad
+ 		mec_req_size = CIK_MEC_UCODE_SIZE * 4;
+ 		rlc_req_size = BONAIRE_RLC_UCODE_SIZE * 4;
+ 		mc_req_size = HAWAII_MC_UCODE_SIZE * 4;
++		mc2_req_size = HAWAII_MC2_UCODE_SIZE * 4;
+ 		sdma_req_size = CIK_SDMA_UCODE_SIZE * 4;
+ 		smc_req_size = ALIGN(HAWAII_SMC_UCODE_SIZE, 4);
+ 		break;
+@@ -1903,16 +1905,22 @@ static int cik_init_microcode(struct rad
+ 
+ 	/* No SMC, MC ucode on APUs */
+ 	if (!(rdev->flags & RADEON_IS_IGP)) {
+-		snprintf(fw_name, sizeof(fw_name), "radeon/%s_mc.bin", chip_name);
++		snprintf(fw_name, sizeof(fw_name), "radeon/%s_mc2.bin", chip_name);
+ 		err = request_firmware(&rdev->mc_fw, fw_name, rdev->dev);
+-		if (err)
+-			goto out;
+-		if (rdev->mc_fw->size != mc_req_size) {
++		if (err) {
++			snprintf(fw_name, sizeof(fw_name), "radeon/%s_mc.bin", chip_name);
++			err = request_firmware(&rdev->mc_fw, fw_name, rdev->dev);
++			if (err)
++				goto out;
 +		}
- 	}
- 	return new_base;
- }
++		if ((rdev->mc_fw->size != mc_req_size) &&
++		    (rdev->mc_fw->size != mc2_req_size)){
+ 			printk(KERN_ERR
+ 			       "cik_mc: Bogus length %zu in firmware \"%s\"\n",
+ 			       rdev->mc_fw->size, fw_name);
+ 			err = -EINVAL;
+ 		}
++		DRM_INFO("%s: %zu bytes\n", fw_name, rdev->mc_fw->size);
+ 
+ 		snprintf(fw_name, sizeof(fw_name), "radeon/%s_smc.bin", chip_name);
+ 		err = request_firmware(&rdev->smc_fw, fw_name, rdev->dev);
+--- a/drivers/gpu/drm/radeon/radeon_ucode.h
++++ b/drivers/gpu/drm/radeon/radeon_ucode.h
+@@ -61,8 +61,10 @@
+ #define PITCAIRN_MC_UCODE_SIZE       7775
+ #define VERDE_MC_UCODE_SIZE          7875
+ #define OLAND_MC_UCODE_SIZE          7863
+-#define CIK_MC_UCODE_SIZE            7866
++#define BONAIRE_MC_UCODE_SIZE        7866
++#define BONAIRE_MC2_UCODE_SIZE       7948
+ #define HAWAII_MC_UCODE_SIZE         7933
++#define HAWAII_MC2_UCODE_SIZE        8091
+ 
+ /* SDMA */
+ #define CIK_SDMA_UCODE_SIZE          1050
 
 
