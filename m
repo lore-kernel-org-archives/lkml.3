@@ -1,57 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753192AbaFDPX5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 11:23:57 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:61589 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752039AbaFDPXy (ORCPT
+	id S1752472AbaFDP0Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 11:26:16 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:42509 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751434AbaFDP0O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 11:23:54 -0400
+	Wed, 4 Jun 2014 11:26:14 -0400
+Date: Wed, 4 Jun 2014 11:26:13 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
+cc: Wei.Yang@windriver.com, Michal Nazarewicz <mina86@mina86.com>,
+        Felipe Balbi <balbi@ti.com>, <gregkh@linuxfoundation.org>,
+        USB list <linux-usb@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v1] USB:gadget: Fix a warning while loading g_mass_storage
+In-Reply-To: <538F0BBD.2000605@samsung.com>
+Message-ID: <Pine.LNX.4.44L0.1406041100500.922-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-In-Reply-To: <538E092F.9040004@linux.intel.com>
-References: <1401750890-31854-1-git-send-email-reyad.attiyat@gmail.com>
- <1401750890-31854-4-git-send-email-reyad.attiyat@gmail.com> <538E092F.9040004@linux.intel.com>
-From: Reyad Attiyat <reyad.attiyat@gmail.com>
-Date: Wed, 4 Jun 2014 10:23:32 -0500
-Message-ID: <CA+BWVUTxnS_C+EXm1SuShywk998+E5KfTdtTrS6_a0+k+4U4ig@mail.gmail.com>
-Subject: Re: [PATCHv2 3/3] IIO: hid-sensor-magn-3d: Add in support for
- True/Magnetic North HID usages
-To: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
-        Jonathan Cameron <jic23@kernel.org>,
-        linux-input <linux-input@vger.kernel.org>,
-        Jiri Kosina <jkosina@suse.cz>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Srinivas,
+On Wed, 4 Jun 2014, Andrzej Pietrasiewicz wrote:
 
-On Tue, Jun 3, 2014 at 12:43 PM, Srinivas Pandruvada
-<srinivas.pandruvada@linux.intel.com> wrote:
+> When Sebastian introduced the function registration interface I didn't
+> specially like the naming: struct usb_function_instance is something
+> different than an instance of struct usb_function.
 
->
-> May be we should have a field in const struct iio_chan_spec, so that we
-> can dynamically enable disable channels. In this way we can statically
-> define channels, but can be enabled/disabled dynamically.
->
-Would this require changing iio subsystem to create sysfs entries only
-when enabled? Would we need to add functions to disable and enable
-later on?
->
-> I think we need to present angle in radians. Are you basing change present
-> in linux-next? This will automatically do in this function.
->
-I'll look into this. What function should I use to make the iio chanel
-to report radians?
->
->
-> I don't see kfree. Try devm_kcalloc?
->
-I changed kmemdup to kcalloc so there is still a kfree in the exsiting
-code. I can change this to devm_kcalloc but only if we don't go with
-static channels that are enabled as found.
+What is the difference in purpose between usb_function and
+usb_function_instance?  I can't tell just by reading the header file.  
+Does one of them get created dynamically when the host sets the
+appropriate config?
 
-Thanks,
-Reyad Attiyat
+It's quite noticeable that composite.h does not contain nearly enough
+documentation.  Only four of the structures defined there have any
+kerneldoc, and none of the functions do.
+
+Also, there seems to be some confusion between structures that 
+represent drivers and those that represent devices (or parts of a 
+device).  For example, struct usb_function contains instance data as 
+well as driver callbacks.
+
+> The purpose of fsg_alloc_inst() is to create a usb_function_instance
+> whose container_of is struct fsg_opts. In fact it is struct fsg_opts
+> which is actually allocated; one of its members is struct fsg_common
+> which is also allocated - individually for each struct usb_function_instance.
+> 
+> Among traditional gadgets there is no gadget which uses mass storage function
+> more than once. On the other hand, when gadgets are created with configfs
+> it is forbidden to link a given function more than once into a given
+> config,
+
+What is the reason for this restriction?
+
+>  that is a struct usb_function_instance can be referenced by more
+> than one config, but can be referenced only once in a given config;
+> each symbolic link corresponds to an instance of struct usb_function
+> (don't confuse with struct usb_function_instance).
+
+It's extremely easy to confuse them, since I don't understand the 
+differences between them.  It even seems like you confused them in this 
+description: You mentioned "link a given function", "link corresponds 
+to an instance of struct usb_function", and "struct 
+usb_function_instance can be referenced by more than one config".  
+What's the difference between linking a usb_function and referencing a 
+usb_function_instance?  Normally "linking" and "referencing" mean more 
+or less the same thing.
+
+> So yes, an fsg_common can be shared among instances of struct usb_function,
+> but neither with traditional gadgets as they are now nor with configfs
+> is it possible to have the same fsg_common referenced more than once
+> in a given config.
+
+That's a relief.  But it still seems like a bad design.  If there can 
+be only one struct fsg_dev associated with struct fsg_common, why have 
+separate structures?  And if there can be multiple fsg_dev structures 
+associated with struct fsg_common, why does struct fsg_common contain a 
+pointer to an fsg_dev (in fact, two of them)?
+
+The issue that started these thoughts was the way fsg_common.new_fsg 
+gets used, as modified by the patch in the thread's original email.  
+It's not clear why new_fsg is needed at all.
+
+Alan Stern
+
