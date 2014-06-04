@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754216AbaFDXYW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:24:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41035 "EHLO
+	id S1754160AbaFDXYQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 19:24:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40868 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754190AbaFDXYU (ORCPT
+	with ESMTP id S1754020AbaFDXYD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:24:20 -0400
+	Wed, 4 Jun 2014 19:24:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sagi Grimberg <sagig@mellanox.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.10 086/103] Target/iser: Fix wrong connection requests list addition
-Date: Wed,  4 Jun 2014 16:25:49 -0700
-Message-Id: <20140604232549.620068321@linuxfoundation.org>
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>
+Subject: [PATCH 3.10 056/103] crypto: crypto_wq - Fix late crypto work queue initialization
+Date: Wed,  4 Jun 2014 16:25:19 -0700
+Message-Id: <20140604232548.662237419@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232546.704156131@linuxfoundation.org>
 References: <20140604232546.704156131@linuxfoundation.org>
@@ -29,31 +29,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sagi Grimberg <sagig@mellanox.com>
+From: Tim Chen <tim.c.chen@linux.intel.com>
 
-commit 9fe63c88b1d59f1ce054d6948ccd3096496ecedb upstream.
+commit 130fa5bc81b44b6cc1fbdea3abf6db0da22964e0 upstream.
 
-Should be adding list_add_tail($new, $head) and not
-the other way around.
+The crypto algorithm modules utilizing the crypto daemon could
+be used early when the system start up.  Using module_init
+does not guarantee that the daemon's work queue is initialized
+when the cypto alorithm depending on crypto_wq starts.  It is necessary
+to initialize the crypto work queue earlier at the subsystem
+init time to make sure that it is initialized
+when used.
 
-Signed-off-by: Sagi Grimberg <sagig@mellanox.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/ulp/isert/ib_isert.c |    2 +-
+ crypto/crypto_wq.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/infiniband/ulp/isert/ib_isert.c
-+++ b/drivers/infiniband/ulp/isert/ib_isert.c
-@@ -459,7 +459,7 @@ isert_connect_request(struct rdma_cm_id
- 		goto out_conn_dev;
+--- a/crypto/crypto_wq.c
++++ b/crypto/crypto_wq.c
+@@ -33,7 +33,7 @@ static void __exit crypto_wq_exit(void)
+ 	destroy_workqueue(kcrypto_wq);
+ }
  
- 	mutex_lock(&isert_np->np_accept_mutex);
--	list_add_tail(&isert_np->np_accept_list, &isert_conn->conn_accept_node);
-+	list_add_tail(&isert_conn->conn_accept_node, &isert_np->np_accept_list);
- 	mutex_unlock(&isert_np->np_accept_mutex);
+-module_init(crypto_wq_init);
++subsys_initcall(crypto_wq_init);
+ module_exit(crypto_wq_exit);
  
- 	pr_debug("isert_connect_request() waking up np_accept_wq: %p\n", np);
+ MODULE_LICENSE("GPL");
 
 
