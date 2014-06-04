@@ -1,20 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751962AbaFDV1S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 17:27:18 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:34111 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751826AbaFDV1Q (ORCPT
+	id S1751974AbaFDV2s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 17:28:48 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:35482 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751339AbaFDV2q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 17:27:16 -0400
+	Wed, 4 Jun 2014 17:28:46 -0400
 From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Randy Dunlap <rdunlap@infradead.org>,
-        Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Cc: Stefan Weil <sw@weilnetz.de>, Jiri Kosina <jkosina@suse.cz>,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] Documentation: laptops: hpfall.c:  Cleaning up missing null-terminate after strncpy call
-Date: Wed,  4 Jun 2014 23:28:10 +0200
-Message-Id: <1401917290-2689-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        Carolyn Wyborny <carolyn.wyborny@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        Greg Rose <gregory.v.rose@intel.com>,
+        Alex Duyck <alexander.h.duyck@intel.com>,
+        John Ronciak <john.ronciak@intel.com>,
+        Mitch Williams <mitch.a.williams@intel.com>,
+        Linux NICS <linux.nics@intel.com>, e1000-devel@lists.sourceforge.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] net: ethernet: intel: ixgbe: ixgbe_main.c:  Cleaning up missing null-terminate after strncpy call
+Date: Wed,  4 Jun 2014 23:29:40 +0200
+Message-Id: <1401917380-2772-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,21 +34,25 @@ This was partly found using a static code analysis program called cppcheck.
 
 Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- Documentation/laptops/hpfall.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/ethernet/intel/ixgbe/ixgbe_main.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/Documentation/laptops/hpfall.c b/Documentation/laptops/hpfall.c
-index b85dbba..6708432 100644
---- a/Documentation/laptops/hpfall.c
-+++ b/Documentation/laptops/hpfall.c
-@@ -28,6 +28,7 @@ int set_unload_heads_path(char *device)
- 	if (strlen(device) <= 5 || strncmp(device, "/dev/", 5) != 0)
- 		return -EINVAL;
- 	strncpy(devname, device + 5, sizeof(devname));
-+	devname[sizeof(devname) - 1] = '\0';
+diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+index d62e7a2..58322e4 100644
+--- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
++++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+@@ -8237,8 +8237,10 @@ skip_sriov:
+ 	ixgbe_check_minimum_link(adapter, expected_gts);
  
- 	snprintf(unload_heads_path, sizeof(unload_heads_path) - 1,
- 				"/sys/block/%s/device/unload_heads", devname);
+ 	err = ixgbe_read_pba_string_generic(hw, part_str, IXGBE_PBANUM_LENGTH);
+-	if (err)
++	if (err) {
+ 		strncpy(part_str, "Unknown", IXGBE_PBANUM_LENGTH);
++		part_str[sizeof(part_str) - 1] = '\0';
++	}
+ 	if (ixgbe_is_sfp(hw) && hw->phy.sfp_type != ixgbe_sfp_type_not_present)
+ 		e_dev_info("MAC: %d, PHY: %d, SFP+: %d, PBA No: %s\n",
+ 			   hw->mac.type, hw->phy.type, hw->phy.sfp_type,
 -- 
 1.7.10.4
 
