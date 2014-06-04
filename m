@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756100AbaFEALO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 20:11:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40301 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753378AbaFDXWt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753379AbaFDXWt (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 4 Jun 2014 19:22:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40297 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753354AbaFDXWr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 19:22:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Krzysztof Chojnowski <frirajder@gmail.com>,
-        Andy Grover <agrover@redhat.com>, Sagi Grimberg <sagig@mellanox.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.14 175/228] target: Allow non-supporting backends to set pi_prot_type to 0
-Date: Wed,  4 Jun 2014 16:23:24 -0700
-Message-Id: <20140604232353.640136740@linuxfoundation.org>
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [PATCH 3.14 171/228] x86-64, modify_ldt: Make support for 16-bit segments a runtime option
+Date: Wed,  4 Jun 2014 16:23:20 -0700
+Message-Id: <20140604232353.520079349@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -30,37 +28,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Grover <agrover@redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit 448ba904160f9d8f69217c28a1692cee5afbff88 upstream.
+commit fa81511bb0bbb2b1aace3695ce869da9762624ff upstream.
 
-Userspace tools assume if a value is read from configfs, it is valid
-and will not cause an error if the same value is written back. The only
-valid value for pi_prot_type for backends not supporting DIF is 0, so allow
-this particular value to be set without returning an error.
+Checkin:
 
-Reported-by: Krzysztof Chojnowski <frirajder@gmail.com>
-Signed-off-by: Andy Grover <agrover@redhat.com>
-Reviewed-by: Sagi Grimberg <sagig@mellanox.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+b3b42ac2cbae x86-64, modify_ldt: Ban 16-bit segments on 64-bit kernels
+
+disabled 16-bit segments on 64-bit kernels due to an information
+leak.  However, it does seem that people are genuinely using Wine to
+run old 16-bit Windows programs on Linux.
+
+A proper fix for this ("espfix64") is coming in the upcoming merge
+window, but as a temporary fix, create a sysctl to allow the
+administrator to re-enable support for 16-bit segments.
+
+It adds a "/proc/sys/abi/ldt16" sysctl that defaults to zero (off). If
+you hit this issue and care about your old Windows program more than
+you care about a kernel stack address information leak, you can do
+
+   echo 1 > /proc/sys/abi/ldt16
+
+as root (add it to your startup scripts), and you should be ok.
+
+The sysctl table is only added if you have COMPAT support enabled on
+x86-64, but I assume anybody who runs old windows binaries very much
+does that ;)
+
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Link: http://lkml.kernel.org/r/CA%2B55aFw9BPoD10U1LfHbOMpHWZkvJTkMcfCs9s3urPr1YyWBxw@mail.gmail.com
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/target_core_device.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ arch/x86/kernel/ldt.c        |    4 +++-
+ arch/x86/vdso/vdso32-setup.c |    8 ++++++++
+ 2 files changed, 11 insertions(+), 1 deletion(-)
 
---- a/drivers/target/target_core_device.c
-+++ b/drivers/target/target_core_device.c
-@@ -936,6 +936,10 @@ int se_dev_set_pi_prot_type(struct se_de
- 		return 0;
- 	}
- 	if (!dev->transport->init_prot || !dev->transport->free_prot) {
-+		/* 0 is only allowed value for non-supporting backends */
-+		if (flag == 0)
-+			return 0;
+--- a/arch/x86/kernel/ldt.c
++++ b/arch/x86/kernel/ldt.c
+@@ -20,6 +20,8 @@
+ #include <asm/mmu_context.h>
+ #include <asm/syscalls.h>
+ 
++int sysctl_ldt16 = 0;
 +
- 		pr_err("DIF protection not supported by backend: %s\n",
- 		       dev->transport->name);
- 		return -ENOSYS;
+ #ifdef CONFIG_SMP
+ static void flush_ldt(void *current_mm)
+ {
+@@ -234,7 +236,7 @@ static int write_ldt(void __user *ptr, u
+ 	 * IRET leaking the high bits of the kernel stack address.
+ 	 */
+ #ifdef CONFIG_X86_64
+-	if (!ldt_info.seg_32bit) {
++	if (!ldt_info.seg_32bit && !sysctl_ldt16) {
+ 		error = -EINVAL;
+ 		goto out_unlock;
+ 	}
+--- a/arch/x86/vdso/vdso32-setup.c
++++ b/arch/x86/vdso/vdso32-setup.c
+@@ -41,6 +41,7 @@ enum {
+ #ifdef CONFIG_X86_64
+ #define vdso_enabled			sysctl_vsyscall32
+ #define arch_setup_additional_pages	syscall32_setup_pages
++extern int sysctl_ldt16;
+ #endif
+ 
+ /*
+@@ -379,6 +380,13 @@ static struct ctl_table abi_table2[] = {
+ 		.maxlen		= sizeof(int),
+ 		.mode		= 0644,
+ 		.proc_handler	= proc_dointvec
++	},
++	{
++		.procname	= "ldt16",
++		.data		= &sysctl_ldt16,
++		.maxlen		= sizeof(int),
++		.mode		= 0644,
++		.proc_handler	= proc_dointvec
+ 	},
+ 	{}
+ };
 
 
