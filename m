@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753356AbaFDXWr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:22:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40280 "EHLO
+	id S1756131AbaFEAMV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 20:12:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40293 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753231AbaFDXWp (ORCPT
+	with ESMTP id S1753342AbaFDXWq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:22:45 -0400
+	Wed, 4 Jun 2014 19:22:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daeseok Youn <daeseok.youn@gmail.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3.14 153/228] workqueue: fix bugs in wq_update_unbound_numa() failure path
-Date: Wed,  4 Jun 2014 16:23:02 -0700
-Message-Id: <20140604232352.937710266@linuxfoundation.org>
+        Jianyu Zhan <nasa4836@gmail.com>, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 3.14 162/228] percpu: make pcpu_alloc_chunk() use pcpu_mem_free() instead of kfree()
+Date: Wed,  4 Jun 2014 16:23:11 -0700
+Message-Id: <20140604232353.219024219@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -29,43 +28,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daeseok Youn <daeseok.youn@gmail.com>
+From: Jianyu Zhan <nasa4836@gmail.com>
 
-commit 77f300b198f93328c26191b52655ce1b62e202cf upstream.
+commit 5a838c3b60e3a36ade764cf7751b8f17d7c9c2da upstream.
 
-wq_update_unbound_numa() failure path has the following two bugs.
+pcpu_chunk_struct_size = sizeof(struct pcpu_chunk) +
+	BITS_TO_LONGS(pcpu_unit_pages) * sizeof(unsigned long)
 
-- alloc_unbound_pwq() is called without holding wq->mutex; however, if
-  the allocation fails, it jumps to out_unlock which tries to unlock
-  wq->mutex.
+It hardly could be ever bigger than PAGE_SIZE even for large-scale machine,
+but for consistency with its couterpart pcpu_mem_zalloc(),
+use pcpu_mem_free() instead.
 
-- The function should switch to dfl_pwq on failure but didn't do so
-  after alloc_unbound_pwq() failure.
+Commit b4916cb17c26 ("percpu: make pcpu_free_chunk() use
+pcpu_mem_free() instead of kfree()") addressed this problem, but
+missed this one.
 
-Fix it by regrabbing wq->mutex and jumping to use_dfl_pwq on
-alloc_unbound_pwq() failure.
+tj: commit message updated
 
-Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
-Acked-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Fixes: 4c16bd327c74 ("workqueue: implement NUMA affinity for unbound workqueues")
+Fixes: 099a19d91ca4 ("percpu: allow limited allocation before slab is online)
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/workqueue.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ mm/percpu.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -4093,7 +4093,8 @@ static void wq_update_unbound_numa(struc
- 	if (!pwq) {
- 		pr_warning("workqueue: allocation failed while updating NUMA affinity of \"%s\"\n",
- 			   wq->name);
--		goto out_unlock;
-+		mutex_lock(&wq->mutex);
-+		goto use_dfl_pwq;
+--- a/mm/percpu.c
++++ b/mm/percpu.c
+@@ -612,7 +612,7 @@ static struct pcpu_chunk *pcpu_alloc_chu
+ 	chunk->map = pcpu_mem_zalloc(PCPU_DFL_MAP_ALLOC *
+ 						sizeof(chunk->map[0]));
+ 	if (!chunk->map) {
+-		kfree(chunk);
++		pcpu_mem_free(chunk, pcpu_chunk_struct_size);
+ 		return NULL;
  	}
  
- 	/*
 
 
