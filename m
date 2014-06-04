@@ -1,71 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751628AbaFDTuv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 15:50:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26642 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751010AbaFDTuu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 15:50:50 -0400
-Date: Wed, 4 Jun 2014 22:51:12 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Paolo Bonzini <pbonzini@redhat.com>, netdev@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        David Miller <davem@davemloft.net>
-Subject: Re: [PULL 2/2] vhost: replace rcu with mutex
-Message-ID: <20140604195112.GB10676@redhat.com>
-References: <1401744482-17764-1-git-send-email-mst@redhat.com>
- <1401744482-17764-3-git-send-email-mst@redhat.com>
- <1401746280.3645.187.camel@edumazet-glaptop2.roam.corp.google.com>
- <538DC422.1050303@redhat.com>
- <1401803863.3645.208.camel@edumazet-glaptop2.roam.corp.google.com>
+	id S1751440AbaFDTxW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 15:53:22 -0400
+Received: from www.linutronix.de ([62.245.132.108]:41007 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750997AbaFDTxV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 15:53:21 -0400
+Date: Wed, 4 Jun 2014 21:53:16 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Brad Mouring <bmouring@ni.com>
+cc: Steven Rostedt <rostedt@goodmis.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Clark Williams <williams@redhat.com>
+Subject: Re: [PATCH 1/1] rtmutex: Handle when top lock owner changes
+In-Reply-To: <20140604192541.GA9496@linuxgetsreal>
+Message-ID: <alpine.DEB.2.10.1406042147080.18296@nanos>
+References: <1400855410-14773-1-git-send-email-brad.mouring@ni.com> <1400855410-14773-2-git-send-email-brad.mouring@ni.com> <20140603210609.62de6451@gandalf.local.home> <alpine.DEB.2.10.1406041623170.3319@nanos> <20140604114411.0fe51c1d@gandalf.local.home>
+ <alpine.DEB.2.10.1406041951210.3319@nanos> <20140604192541.GA9496@linuxgetsreal>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1401803863.3645.208.camel@edumazet-glaptop2.roam.corp.google.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 03, 2014 at 06:57:43AM -0700, Eric Dumazet wrote:
-> On Tue, 2014-06-03 at 14:48 +0200, Paolo Bonzini wrote:
-> > Il 02/06/2014 23:58, Eric Dumazet ha scritto:
-> > > This looks dubious
-> > >
-> > > What about using kfree_rcu() instead ?
-> > 
-> > It would lead to unbound allocation from userspace.
+On Wed, 4 Jun 2014, Brad Mouring wrote:
+> On Wed, Jun 04, 2014 at 08:02:16PM +0200, Thomas Gleixner wrote:
+> > I'll fixup the check so it wont break the real deadlock case and queue
+> > it.
 > 
-> Look at how we did this in commit
-> c3059477fce2d956a0bb3e04357324780c5d8eeb
-> 
-> > 
-> > > translate_desc() still uses rcu_read_lock(), its not clear if the mutex
-> > > is really held.
-> > 
-> > Yes, vhost_get_vq_desc must be called with the vq mutex held.
-> > 
-> > The rcu_read_lock/unlock in translate_desc is unnecessary.
-> 
-> Yep, this is what I pointed out. This is not only necessary, but
-> confusing and might be incorrectly copy/pasted in the future.
-> 
-> This patch is a partial one and leaves confusion.
-> 
-> Some places uses the proper 
-> 
-> mp = rcu_dereference_protected(dev->memory,
-> 		 lockdep_is_held(&dev->mutex));
-> 
-> others use the now incorrect :
-> 
-> rcu_read_lock();
-> mp = rcu_dereference(dev->memory);
-> ...
-> 
+> How would the change break the real deadlock case?
 
-I agree, working on a cleanup patch on top now.
+> >  	/* Deadlock detection */
+> >  	if (lock == orig_lock || rt_mutex_owner(lock) == top_task) {
+> > +		/*
+> > +		 * If the prio chain has changed out from under us, set the task
+> > +		 * to the current owner of the lock in the current waiter and
+> > +		 * continue walking the prio chain
+> > +		 */
+> > +		if (rt_mutex_owner(lock) && rt_mutex_owner(lock) != task) {
 
--- 
-MST
+No, sorry. That's wrong.
+
+Your change wreckages the rt_mutex_owner(lock) == top_task test
+simply because in that case:
+
+   (rt_mutex_owner(lock) && rt_mutex_owner(lock) != task)
+
+evaluates to true.
+
+So we want this:
+
+Index: tip/kernel/locking/rtmutex.c
+===================================================================
+--- tip.orig/kernel/locking/rtmutex.c
++++ tip/kernel/locking/rtmutex.c
+@@ -375,6 +375,26 @@ static int rt_mutex_adjust_prio_chain(st
+ 	 * walk, we detected a deadlock.
+ 	 */
+ 	if (lock == orig_lock || rt_mutex_owner(lock) == top_task) {
++		/*
++		 * If the prio chain has changed out from under us, set the task
++		 * to the current owner of the lock in the current waiter and
++		 * continue walking the prio chain
++		 */
++		if (rt_mutex_owner(lock) && rt_mutex_owner(lock) != task &&
++		    rt_mutex_owner(lock) != top_task) {
++			/* Release the old owner */
++			raw_spin_unlock_irqrestore(&task->pi_lock, flags);
++			put_task_struct(task);
++
++			/* Move to the new owner */
++			task = rt_mutex_owner(lock);
++			get_task_struct(task);
++
++			/* Let's try this again */
++			raw_spin_unlock(&lock->wait_lock);
++			goto retry;
++		}
++
+ 		debug_rt_mutex_deadlock(deadlock_detect, orig_waiter, lock);
+ 		raw_spin_unlock(&lock->wait_lock);
+ 		ret = deadlock_detect ? -EDEADLK : 0;
