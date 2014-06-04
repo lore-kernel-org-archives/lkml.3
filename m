@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752179AbaFDJM6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 05:12:58 -0400
-Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:7781 "EHLO
-	mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751776AbaFDJKA (ORCPT
+	id S1752256AbaFDJNr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 05:13:47 -0400
+Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:54263
+	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751136AbaFDJKA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 4 Jun 2014 05:10:00 -0400
 X-IronPort-AV: E=Sophos;i="4.98,972,1392159600"; 
-   d="scan'208";a="65385496"
+   d="scan'208";a="65385490"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: kernel-janitors@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Vineet Gupta <vgupta@synopsys.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 5/10] ARC: use safer test on the result of find_first_zero_bit
-Date: Wed,  4 Jun 2014 11:07:55 +0200
-Message-Id: <1401872880-23685-6-git-send-email-Julia.Lawall@lip6.fr>
+To: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
+Cc: kernel-janitors@vger.kernel.org, Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 3/10] video: use safer test on the result of find_first_zero_bit
+Date: Wed,  4 Jun 2014 11:07:53 +0200
+Message-Id: <1401872880-23685-4-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1401872880-23685-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1401872880-23685-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -52,19 +50,19 @@ S1 else S2
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- arch/arc/kernel/perf_event.c |    2 +-
+ drivers/video/fbdev/sh_mobile_meram.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff -u -p a/arch/arc/kernel/perf_event.c b/arch/arc/kernel/perf_event.c
---- a/arch/arc/kernel/perf_event.c
-+++ b/arch/arc/kernel/perf_event.c
-@@ -205,7 +205,7 @@ static int arc_pmu_add(struct perf_event
- 	if (__test_and_set_bit(idx, arc_pmu->used_mask)) {
- 		idx = find_first_zero_bit(arc_pmu->used_mask,
- 					  arc_pmu->n_counters);
--		if (idx == arc_pmu->n_counters)
-+		if (idx >= arc_pmu->n_counters)
- 			return -EAGAIN;
+diff -u -p a/drivers/video/fbdev/sh_mobile_meram.c b/drivers/video/fbdev/sh_mobile_meram.c
+--- a/drivers/video/fbdev/sh_mobile_meram.c
++++ b/drivers/video/fbdev/sh_mobile_meram.c
+@@ -222,7 +222,7 @@ static int meram_plane_alloc(struct sh_m
+ 	unsigned long idx;
  
- 		__set_bit(idx, arc_pmu->used_mask);
+ 	idx = find_first_zero_bit(&priv->used_icb, 28);
+-	if (idx == 28)
++	if (idx >= 28)
+ 		return -ENOMEM;
+ 	plane->cache = &priv->icbs[idx];
+ 
 
