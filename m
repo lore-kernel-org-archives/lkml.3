@@ -1,171 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752347AbaFDQH0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 12:07:26 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37518 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751213AbaFDQHY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 12:07:24 -0400
-Message-ID: <538F4434.2080802@suse.cz>
-Date: Wed, 04 Jun 2014 18:07:16 +0200
-From: Vlastimil Babka <vbabka@suse.cz>
+	id S1752458AbaFDQJU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 12:09:20 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:53736 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751376AbaFDQJT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 12:09:19 -0400
+Message-ID: <538F44AD.4090906@kernel.dk>
+Date: Wed, 04 Jun 2014 10:09:17 -0600
+From: Jens Axboe <axboe@kernel.dk>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: Mel Gorman <mgorman@suse.de>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Hugh Dickins <hughd@google.com>, Greg Thelen <gthelen@google.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Minchan Kim <minchan@kernel.org>,
-        Michal Nazarewicz <mina86@mina86.com>, Rik van Riel <riel@redhat.com>
-Subject: Re: [patch -mm 3/3] mm, compaction: avoid compacting memory for thp
- if pageblock cannot become free
-References: <1399904111-23520-1-git-send-email-vbabka@suse.cz> <1400233673-11477-1-git-send-email-vbabka@suse.cz> <alpine.DEB.2.02.1405211954410.13243@chino.kir.corp.google.com> <537DB0E5.40602@suse.cz> <alpine.DEB.2.02.1405220127320.13630@chino.kir.corp.google.com> <537DE799.3040400@suse.cz> <alpine.DEB.2.02.1406031728390.5312@chino.kir.corp.google.com> <alpine.DEB.2.02.1406031729410.5312@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.02.1406031729410.5312@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Ming Lei <tom.leiming@gmail.com>
+CC: Christoph Hellwig <hch@infradead.org>, Shaohua Li <shli@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [patch]blk-mq: blk_mq_tag_to_rq should handle flush request
+References: <20140509120733.GA27918@kernel.org>	<20140509150018.GA26215@infradead.org>	<20140510040023.GA13788@kernel.org>	<5388912F.7010609@kernel.dk>	<20140604111133.GA7826@infradead.org>	<538F2A11.4060800@kernel.dk>	<20140604142012.GA20056@infradead.org>	<538F331F.60101@kernel.dk>	<20140604145803.GA7826@infradead.org>	<538F34FB.7050003@kernel.dk>	<20140604153159.GA27096@infradead.org>	<CACVXFVNNTPrq29eS9GzJDequtFXCTNWPLJfzB4Z-XJVE5j8+aA@mail.gmail.com>	<538F3FB5.2020102@kernel.dk> <CACVXFVM-aJwBgrvgT-nNbbi81vE4qeS1LgsS5cFGiz5cbsApZw@mail.gmail.com>
+In-Reply-To: <CACVXFVM-aJwBgrvgT-nNbbi81vE4qeS1LgsS5cFGiz5cbsApZw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/04/2014 02:30 AM, David Rientjes wrote:
-> It's pointless to migrate pages within a pageblock if the entire pageblock will
-> not become free for a thp allocation.
->
-> If we encounter a page that cannot be migrated and a direct compactor other than
-> khugepaged is trying to allocate a hugepage for thp, then skip the entire
-> pageblock and avoid migrating pages needlessly.
+On 06/04/2014 10:00 AM, Ming Lei wrote:
+> On Wed, Jun 4, 2014 at 11:48 PM, Jens Axboe <axboe@kernel.dk> wrote:
+>> On 06/04/2014 09:43 AM, Ming Lei wrote:
+>>> On Wed, Jun 4, 2014 at 11:31 PM, Christoph Hellwig <hch@infradead.org> wrote:
+>>>> On Wed, Jun 04, 2014 at 09:02:19AM -0600, Jens Axboe wrote:
+>>>>>> scsi_mq_find_tag only gets the scsi host, which may have multiple
+>>>>>> queues.  When called from scsi_find_tag we actually have a scsi device,
+>>>>>> so that's not an issue, but when called from scsi_host_find_tag the
+>>>>>> driver only provides the host.
+>>>>>
+>>>>> Only solution I see right now is to have the flush_rq in the shared
+>>>>> tags, but that would potentially be a regression for multiple
+>>>>> devices and heavy flush uses cases. I'll see if I can come up with
+>>>>> something better, or maybe Shaohua has an idea.
+>>>>
+>>>> What about something like the following (untest, uncompiled, maybe
+>>>> pseudo-code):
+>>>>
+>>>> struct request *blk_mq_tag_to_rq(struct blk_mq_tags *tags, unsigned int tag)
+>>>> {
+>>>>         struct request *rq = tags->rqs[tag];
+>>>>
+>>>>         if ((rq->cmd_flags & REQ_FLUSH_SEQ) && rq->q->flush_rq->tag == tag)
+>>>>                 return rq->q->flush_rq;
+>>>>         return rq;
+>>>> }
+>>>
+>>> Looks we thought it together, :-)
+>>>
+>>> Also maybe the flush_rq->tag need to be cleared in flush_end_io().
+>>
+>> It clears the command flag, so that should be enough.
+> 
+> Only the flush_rq's command flag is cleared, and its parent request
+> flag isn't cleared.
 
-The problem here is that if you encounter a PageBuddy with order > 0, in 
-the next iteration you will see a page that's neither PageBuddy nor 
-PageLRU and skip the rest of the pageblock.
+Good point. Care to send in a patch? We can just clear it to -1U, at
+least in blk-mq that's defined as an invalid tag.
 
-I was working on slightly different approach, which is not properly 
-tested yet so I will just post a RFC for discussion.
-
-> Signed-off-by: David Rientjes <rientjes@google.com>
-> ---
->   mm/compaction.c | 41 ++++++++++++++++++++++++++++-------------
->   1 file changed, 28 insertions(+), 13 deletions(-)
->
-> diff --git a/mm/compaction.c b/mm/compaction.c
-> --- a/mm/compaction.c
-> +++ b/mm/compaction.c
-> @@ -537,12 +537,12 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
->   		if ((low_pfn & (MAX_ORDER_NR_PAGES - 1)) == 0) {
->   			if (!pfn_valid(low_pfn)) {
->   				low_pfn += MAX_ORDER_NR_PAGES - 1;
-> -				continue;
-> +				goto next;
->   			}
->   		}
->
->   		if (!pfn_valid_within(low_pfn))
-> -			continue;
-> +			goto next;
->   		nr_scanned++;
->
->   		/*
-> @@ -553,7 +553,7 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
->   		 */
->   		page = pfn_to_page(low_pfn);
->   		if (page_zone(page) != zone)
-> -			continue;
-> +			goto next;
->
->   		if (!valid_page)
->   			valid_page = page;
-> @@ -599,7 +599,7 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
->   					goto isolate_success;
->   				}
->   			}
-> -			continue;
-> +			goto next;
->   		}
->
->   		/*
-> @@ -616,7 +616,7 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
->   			if (!locked)
->   				goto next_pageblock;
->   			low_pfn += (1 << compound_order(page)) - 1;
-> -			continue;
-> +			goto next;
->   		}
->
->   		/*
-> @@ -626,7 +626,7 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
->   		 */
->   		if (!page_mapping(page) &&
->   		    page_count(page) > page_mapcount(page))
-> -			continue;
-> +			goto next;
->
->   		/* Check if it is ok to still hold the lock */
->   		locked = compact_checklock_irqsave(&zone->lru_lock, &flags,
-> @@ -636,17 +636,17 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
->
->   		/* Recheck PageLRU and PageTransHuge under lock */
->   		if (!PageLRU(page))
-> -			continue;
-> +			goto next;
->   		if (PageTransHuge(page)) {
->   			low_pfn += (1 << compound_order(page)) - 1;
-> -			continue;
-> +			goto next;
->   		}
->
->   		lruvec = mem_cgroup_page_lruvec(page, zone);
->
->   		/* Try isolate the page */
->   		if (__isolate_lru_page(page, mode) != 0)
-> -			continue;
-> +			goto next;
->
->   		VM_BUG_ON_PAGE(PageTransCompound(page), page);
->
-> @@ -669,6 +669,24 @@ isolate_success:
->
->   next_pageblock:
->   		low_pfn = ALIGN(low_pfn + 1, pageblock_nr_pages) - 1;
-> +
-> +next:
-> +		/*
-> +		 * It is too expensive for compaction to migrate pages from a
-> +		 * pageblock for thp page faults unless the entire pageblock
-> +		 * will become free.
-> +		 */
-> +		if ((cc->gfp_mask & __GFP_NO_KSWAPD) &&
-> +		    !(current->flags & PF_KTHREAD)) {
-> +			if (locked) {
-> +				spin_unlock_irqrestore(&zone->lru_lock, flags);
-> +				locked = false;
-> +			}
-> +			putback_movable_pages(migratelist);
-> +			cc->nr_migratepages = 0;
-> +			nr_isolated = 0;
-> +			low_pfn = ALIGN(low_pfn + 1, pageblock_nr_pages) - 1;
-> +		}
->   	}
->
->   	acct_isolated(zone, locked, cc);
-> @@ -880,7 +898,7 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
->
->   	cc->migrate_pfn = low_pfn;
->
-> -	return ISOLATE_SUCCESS;
-> +	return cc->nr_migratepages ? ISOLATE_SUCCESS : ISOLATE_NONE;
->   }
->
->   static int compact_finished(struct zone *zone, struct compact_control *cc,
-> @@ -1055,9 +1073,6 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
->   			;
->   		}
->
-> -		if (!cc->nr_migratepages)
-> -			continue;
-> -
->   		err = migrate_pages(&cc->migratepages, compaction_alloc,
->   				compaction_free, (unsigned long)cc, cc->mode,
->   				MR_COMPACTION);
->
+-- 
+Jens Axboe
 
