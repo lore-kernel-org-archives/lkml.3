@@ -1,77 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751583AbaFDSHT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 14:07:19 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:36602 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751510AbaFDSHP (ORCPT
+	id S1751440AbaFDSMa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 14:12:30 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:42117 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751197AbaFDSM2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 14:07:15 -0400
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Anil Gurumurthy <anil.gurumurthy@qlogic.com>,
-        Sudarsana Kalluru <sudarsana.kalluru@qlogic.com>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] scsi: bfa: bfad_attr.c:  Optimization of the Code
-Date: Wed,  4 Jun 2014 20:08:08 +0200
-Message-Id: <1401905288-32642-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	Wed, 4 Jun 2014 14:12:28 -0400
+Date: Wed, 4 Jun 2014 14:12:25 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Brad Mouring <bmouring@ni.com>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Clark Williams <williams@redhat.com>
+Subject: Re: [PATCH 1/1] rtmutex: Handle when top lock owner changes
+Message-ID: <20140604141225.1c26ae96@gandalf.local.home>
+In-Reply-To: <alpine.DEB.2.10.1406041951210.3319@nanos>
+References: <1400855410-14773-1-git-send-email-brad.mouring@ni.com>
+	<1400855410-14773-2-git-send-email-brad.mouring@ni.com>
+	<20140603210609.62de6451@gandalf.local.home>
+	<alpine.DEB.2.10.1406041623170.3319@nanos>
+	<20140604114411.0fe51c1d@gandalf.local.home>
+	<alpine.DEB.2.10.1406041951210.3319@nanos>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Minimized the use of snprintf()
-And removed a variable that was only used for the temporary storage.
+On Wed, 4 Jun 2014 20:02:16 +0200 (CEST)
+Thomas Gleixner <tglx@linutronix.de> wrote:
 
-This was partly found using a static code analysis program called cppcheck.
+ 
+> My brain still suffers from 3 days staring into futex.c
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
----
- drivers/scsi/bfa/bfad_attr.c |   14 ++++++++------
- 1 file changed, 8 insertions(+), 6 deletions(-)
+Hopefully that's not permanent damage.
 
-diff --git a/drivers/scsi/bfa/bfad_attr.c b/drivers/scsi/bfa/bfad_attr.c
-index 40be670..5f5917a 100644
---- a/drivers/scsi/bfa/bfad_attr.c
-+++ b/drivers/scsi/bfa/bfad_attr.c
-@@ -839,12 +839,10 @@ bfad_im_symbolic_name_show(struct device *dev, struct device_attribute *attr,
- 			(struct bfad_im_port_s *) shost->hostdata[0];
- 	struct bfad_s *bfad = im_port->bfad;
- 	struct bfa_lport_attr_s port_attr;
--	char symname[BFA_SYMNAME_MAXLEN];
- 
- 	bfa_fcs_lport_get_attr(&bfad->bfa_fcs.fabric.bport, &port_attr);
--	strncpy(symname, port_attr.port_cfg.sym_name.symname,
--			BFA_SYMNAME_MAXLEN);
--	return snprintf(buf, PAGE_SIZE, "%s\n", symname);
-+	return snprintf(buf, PAGE_SIZE, "%s\n",
-+			port_attr.port_cfg.sym_name.symname);
- }
- 
- static ssize_t
-@@ -865,7 +863,9 @@ static ssize_t
- bfad_im_drv_version_show(struct device *dev, struct device_attribute *attr,
- 				char *buf)
- {
--	return snprintf(buf, PAGE_SIZE, "%s\n", BFAD_DRIVER_VERSION);
-+	strncpy(buf, BFAD_DRIVER_VERSION  "\n" , PAGE_SIZE);
-+	buf[PAGE_SIZE - 1] = '\0';
-+	return strlen(buf);
- }
- 
- static ssize_t
-@@ -913,7 +913,9 @@ static ssize_t
- bfad_im_drv_name_show(struct device *dev, struct device_attribute *attr,
- 				char *buf)
- {
--	return snprintf(buf, PAGE_SIZE, "%s\n", BFAD_DRIVER_NAME);
-+	strncpy(buf, BFAD_DRIVER_NAME  "\n" , PAGE_SIZE);
-+	buf[PAGE_SIZE - 1] = '\0';
-+	return strlen(buf);
- }
- 
- static ssize_t
--- 
-1.7.10.4
+> 
+> I'll fixup the check so it wont break the real deadlock case and queue
+> it.
+> 
 
+Cool. Could you include my write up on the locking scenario in the
+change log so that it is documented somewhere other than mail archives.
+
+Thanks,
+
+-- Steve
