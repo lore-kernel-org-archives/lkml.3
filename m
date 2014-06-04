@@ -1,95 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753759AbaFDPGG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 11:06:06 -0400
-Received: from mx08-00178001.pphosted.com ([91.207.212.93]:40982 "EHLO
-	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753145AbaFDPAH (ORCPT
+	id S1753815AbaFDPGX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 11:06:23 -0400
+Received: from mout.kundenserver.de ([212.227.17.13]:62051 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753776AbaFDPGQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 11:00:07 -0400
-From: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
-To: Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
-        Maxime Coquelin <maxime.coquelin@st.com>,
-        Patrice Chotard <patrice.chotard@st.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, olof@lixom.net
-Cc: linux-arm-kernel@lists.infradead.org, kernel@stlinux.com,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Lee Jones <lee.jones@linaro.org>,
-        Gabriel Fernandez <gabriel.fernandez@linaro.org>,
-        Olivier Bideau <olivier.bideau@st.com>
-Subject: [PATCH 1/4] ARM: STi: DT: STiH407: 407 DT Entry for clockgen A0
-Date: Wed,  4 Jun 2014 16:32:49 +0200
-Message-Id: <1401892372-18279-2-git-send-email-gabriel.fernandez@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1401892372-18279-1-git-send-email-gabriel.fernandez@linaro.org>
-References: <1401892372-18279-1-git-send-email-gabriel.fernandez@linaro.org>
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
- definitions=2014-06-04_03:2014-06-04,2014-06-04,1970-01-01 signatures=0
+	Wed, 4 Jun 2014 11:06:16 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Dave Chinner <david@fromorbit.com>
+Subject: Re: [RFC 00/32] making inode time stamps y2038 ready
+Date: Wed, 4 Jun 2014 17:03:47 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-35-generic; KDE/4.3.2; x86_64; ; )
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        "Joseph S. Myers" <joseph@codesourcery.com>,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        john.stultz@linaro.org, hch@infradead.org, tglx@linutronix.de,
+        geert@linux-m68k.org, lftan@altera.com, linux-fsdevel@vger.kernel.org,
+        ceph-devel@vger.kernel.org, cluster-devel@redhat.com, coda@cs.cmu.edu,
+        codalist@telemann.coda.cs.cmu.edu, fuse-devel@lists.sourceforge.net,
+        linux-afs@lists.infradead.org, linux-btrfs@vger.kernel.org,
+        linux-cifs@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net, linux-mtd@lists.infradead.org,
+        linux-nfs@vger.kernel.org, linux-ntfs-dev@lists.sourceforge.net,
+        linux-scsi@vger.kernel.org, logfs@logfs.org,
+        ocfs2-devel@oss.oracle.com, reiserfs-devel@vger.kernel.org,
+        samba-technical@lists.samba.org, xfs@oss.sgi.com
+References: <1401480116-1973111-1-git-send-email-arnd@arndb.de> <5011138.W0gbOc20Qp@wuerfel> <20140603213802.GH14410@dastard>
+In-Reply-To: <20140603213802.GH14410@dastard>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201406041703.47592.arnd@arndb.de>
+X-Provags-ID: V02:K0:s1xrSbJGgzru8gfa8MxhGBDhE9VbqVkmkEHBQt9CYbW
+ nIkBl/8wTdfgs9V7pWhhbfIo0tfHW7bko3rH8i9iNri/uRHIfn
+ eaYylJV4h90+Udh7hWpsur3TV35RwqMzQjb9KzK2fYhlWOB4Gu
+ M+4d7Bzpj+pdwtx7C8ekGQFkBp0Q56Y/DULO/aCxN85bO356oW
+ PzWS6LNdeBIaMYja86SS2BAgOZnb3qTNsVmb69iCMyG8tjZUvc
+ XgQrQSj2TFQ5lggDtFSSOZifvWgBZGDZ67rZ/iHMF416IDS0Fr
+ eVDHX1K4+fLWlW2tw0DYBHMntBHZ4Bkw02+sHFP7/MGGwDqBMZ
+ KcipDzc4PYHgLTAj3IZg=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Patch adds DT entries for clockgen A0
+On Tuesday 03 June 2014, Dave Chinner wrote:
+> On Tue, Jun 03, 2014 at 04:22:19PM +0200, Arnd Bergmann wrote:
+> > On Monday 02 June 2014 14:57:26 H. Peter Anvin wrote:
+> > > On 06/02/2014 12:55 PM, Arnd Bergmann wrote:
+> > The possible uses I can see for non-ktime_t types in the kernel are:
+> > * inodes need 96 bit timestamps to represent the full range of values
+> >   that can be stored in a file system, you made a convincing argument
+> >   for that. Almost everything else can fit into 64 bit on a 32-bit
+> >   kernel, in theory also on a 64-bit kernel if we want that.
+> 
+> Just ot be pedantic, inodes don't need 96 bit timestamps - some
+> filesystems can *support up to* 96 bit timestamps. If the kernel
+> only supports 64 bit timestamps and that's all the kernel can
+> represent, then the upper bits of the 96 bit on-disk inode
+> timestamps simply remain zero.
 
-Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
-Signed-off-by: Olivier Bideau <olivier.bideau@st.com>
----
- arch/arm/boot/dts/stih407-clock.dtsi | 32 ++++++++++++++++++++++++++++++++
- 1 file changed, 32 insertions(+)
+I meant the reverse: since we have file systems that can store
+96-bit timestamps when using 64-bit kernels, we need to extend
+32-bit kernels to have the same internal representation so we
+can actually read those file systems correctly.
 
-diff --git a/arch/arm/boot/dts/stih407-clock.dtsi b/arch/arm/boot/dts/stih407-clock.dtsi
-index 800f46f..e03e86e 100644
---- a/arch/arm/boot/dts/stih407-clock.dtsi
-+++ b/arch/arm/boot/dts/stih407-clock.dtsi
-@@ -7,6 +7,10 @@
-  */
- / {
- 	clocks {
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+		ranges;
-+
- 		/*
- 		 * Fixed 30MHz oscillator inputs to SoC
- 		 */
-@@ -35,5 +39,33 @@
- 			clock-frequency = <200000000>;
- 			clock-output-names = "clk-s-icn-reg-0";
- 		};
-+
-+		/*
-+		 * ClockGenAs on SASG2
-+		 */
-+		clockgen-a@090ff000 {
-+			compatible = "st,clkgen-c32";
-+			reg = <0x90ff000 0x1000>;
-+
-+			clk_s_a0_pll: clk-s-a0-pll {
-+				#clock-cells = <1>;
-+				compatible = "st,stih407-plls-c32-a0", "st,clkgen-plls-c32";
-+
-+				clocks = <&clk_sysin>;
-+
-+				clock-output-names = "clk-s-a0-pll-ofd-0";
-+			};
-+
-+			clk_s_a0_flexgen: clk-s-a0-flexgen {
-+				compatible = "st,flexgen";
-+
-+				#clock-cells = <1>;
-+
-+				clocks = <&clk_s_a0_pll 0>,
-+					 <&clk_sysin>;
-+
-+				clock-output-names = "clk-ic-lmi0";
-+			};
-+		};
- 	};
- };
--- 
-1.9.1
+> If you move the filesystem between kernels with different time
+> ranges, then the filesystem needs to be able to tell the kernel what
+> it's supported range is.  This is where having the VFS limit the
+> range of supported timestamps is important: the limit is the
+> min(kernel range, filesystem range). This allows the filesystems
+> to be indepenent of the kernel time representation, and the kernel
+> to be independent of the physical filesystem time encoding....
 
+I agree it makes sense to let the kernel know about the limits
+of the file system it accesses, but for the reverse, we're probably
+better off just making the kernel representation large enough (i.e.
+96 bits) so it can work with any known file system. We need another
+check at the user space boundary to turn that into a value that the
+user can understand, but that's another problem.
+
+	Arnd
