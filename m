@@ -1,284 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755540AbaFDHVq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 03:21:46 -0400
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:54090 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755245AbaFDHVo (ORCPT
+	id S1755479AbaFDH32 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 03:29:28 -0400
+Received: from srv01.voixit.com ([78.47.68.188]:40176 "EHLO srv01.voixit.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754956AbaFDH31 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 03:21:44 -0400
-From: Michael Welling <mwelling@ieee.org>
-To: Jonathan Cameron <jic23@kernel.org>, linux-iio@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Michael Welling <mwelling@ieee.org>
-Subject: [PATCH] iio: dac: mcp4902/mcp4912/mcp4922 dac driver
-Date: Wed,  4 Jun 2014 02:21:19 -0500
-Message-Id: <1401866479-8085-1-git-send-email-mwelling@ieee.org>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 4 Jun 2014 03:29:27 -0400
+Subject: Re: [PATCH RFC - TAKE TWO - 11/12] block, bfq: boost the throughput on NCQ-capable flash-based devices
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.2\))
+Content-Type: text/plain; charset=windows-1252
+From: Paolo Valente <paolo.valente@unimore.it>
+In-Reply-To: <20140603171124.GE26210@htj.dyndns.org>
+Date: Wed, 4 Jun 2014 09:29:20 +0200
+Cc: Jens Axboe <axboe@kernel.dk>, Li Zefan <lizefan@huawei.com>,
+        Fabio Checconi <fchecconi@gmail.com>,
+        Arianna Avanzini <avanzini.arianna@gmail.com>,
+        linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <03CDD106-DB18-4E8F-B3D6-2AAD45782A06@unimore.it>
+References: <20140528221929.GG1419@htj.dyndns.org> <1401354343-5527-1-git-send-email-paolo.valente@unimore.it> <1401354343-5527-12-git-send-email-paolo.valente@unimore.it> <20140531115216.GB5057@htj.dyndns.org> <36BFDB73-AEC2-4B87-9FD6-205E9431E722@unimore.it> <20140603171124.GE26210@htj.dyndns.org>
+To: Tejun Heo <tj@kernel.org>
+X-Mailer: Apple Mail (2.1878.2)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch provides an iio device driver for the Microchip
-MCP49x2 series DACs.
 
-Signed-off-by: Michael Welling <mwelling@ieee.org>
----
- drivers/iio/dac/Kconfig   |   10 +++
- drivers/iio/dac/Makefile  |    1 +
- drivers/iio/dac/mcp49x2.c |  215 +++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 226 insertions(+)
- create mode 100644 drivers/iio/dac/mcp49x2.c
+Il giorno 03/giu/2014, alle ore 19:11, Tejun Heo <tj@kernel.org> ha scritto:
 
-diff --git a/drivers/iio/dac/Kconfig b/drivers/iio/dac/Kconfig
-index f378ca8..032d678 100644
---- a/drivers/iio/dac/Kconfig
-+++ b/drivers/iio/dac/Kconfig
-@@ -163,4 +163,14 @@ config MCP4725
- 	  To compile this driver as a module, choose M here: the module
- 	  will be called mcp4725.
- 
-+config MCP49X2
-+	tristate "MCP4902, MCP4912, MCP4922 DAC driver"
-+	depends on SPI
-+	---help---
-+	  Say yes here to build the driver for the Microchip MCP49x2
-+	  series DAC devices.
-+
-+	  To compile this driver as a module, choose M here: the module
-+	  will be called mcp49x2.
-+
- endmenu
-diff --git a/drivers/iio/dac/Makefile b/drivers/iio/dac/Makefile
-index bb84ad6..2fdfc2e 100644
---- a/drivers/iio/dac/Makefile
-+++ b/drivers/iio/dac/Makefile
-@@ -18,3 +18,4 @@ obj-$(CONFIG_AD5686) += ad5686.o
- obj-$(CONFIG_AD7303) += ad7303.o
- obj-$(CONFIG_MAX517) += max517.o
- obj-$(CONFIG_MCP4725) += mcp4725.o
-+obj-$(CONFIG_MCP49X2) += mcp49x2.o
-diff --git a/drivers/iio/dac/mcp49x2.c b/drivers/iio/dac/mcp49x2.c
-new file mode 100644
-index 0000000..0375046
---- /dev/null
-+++ b/drivers/iio/dac/mcp49x2.c
-@@ -0,0 +1,215 @@
-+/*
-+ * mcp49x2.c
-+ *
-+ * Driver for Microchip Digital to Analog Converters.
-+ * Supports MCP4902, MCP4912, and MCP4922.
-+ *
-+ * Copyright (c) 2014 EMAC Inc.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/init.h>
-+#include <linux/spi/spi.h>
-+#include <linux/iio/iio.h>
-+#include <linux/iio/sysfs.h>
-+#include <linux/regulator/consumer.h>
-+
-+#define	MCP49X2_RES_MASK(x)		((1 << (x)) - 1)
-+
-+enum mcp49x2_supported_device_ids {
-+	ID_MCP4902,
-+	ID_MCP4912,
-+	ID_MCP4922,
-+};
-+
-+struct mcp49x2_state {
-+	struct spi_device *spi;
-+	unsigned int value[2];
-+	unsigned int power_mode[2];
-+	unsigned int vref_mv;
-+	struct regulator *vref_reg;
-+};
-+
-+#define MCP49X2_CHAN(chan, bits) {			\
-+	.type = IIO_VOLTAGE,				\
-+	.output = 1,					\
-+	.indexed = 1,					\
-+	.channel = chan,				\
-+	.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),	\
-+	.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),	\
-+	.address = chan,				\
-+	.scan_type = IIO_ST('u', bits, 16, 12-(bits)),	\
-+	.ext_info = NULL,				\
-+}
-+
-+static int mcp49x2_spi_write(struct spi_device *spi, u8 addr, u32 val)
-+{
-+	u8 mosi[2];
-+
-+	mosi[1] = val & 0xff;
-+	mosi[0] = (addr == 0) ? 0x00 : 0x80;
-+	mosi[0] |= 0x30 | ((val >> 8) & 0x0f);
-+
-+	return spi_write(spi, mosi, 2);
-+}
-+
-+static int mcp49x2_read_raw(struct iio_dev *indio_dev,
-+		struct iio_chan_spec const *chan,
-+		int *val,
-+		int *val2,
-+		long mask)
-+{
-+	struct mcp49x2_state *state = iio_priv(indio_dev);
-+
-+	if (chan->address >= 2)
-+		return -EINVAL;
-+
-+	switch (mask) {
-+	case IIO_CHAN_INFO_RAW:
-+		*val = state->value[chan->address];
-+		return IIO_VAL_INT;
-+	case IIO_CHAN_INFO_SCALE:
-+		*val = state->vref_mv;
-+		*val2 = chan->scan_type.realbits;
-+		return IIO_VAL_FRACTIONAL_LOG2;
-+	default:
-+		return -EINVAL;
-+	}
-+}
-+
-+static int mcp49x2_write_raw(struct iio_dev *indio_dev,
-+		struct iio_chan_spec const *chan,
-+		int val,
-+		int val2,
-+		long mask)
-+{
-+	struct mcp49x2_state *state = iio_priv(indio_dev);
-+
-+	if (chan->address >= 2)
-+		return -EINVAL;
-+
-+	switch (mask) {
-+	case IIO_CHAN_INFO_RAW:
-+		val &= MCP49X2_RES_MASK(chan->scan_type.realbits);
-+		val <<= chan->scan_type.shift;
-+		state->value[chan->address] = val;
-+		return mcp49x2_spi_write(state->spi, chan->address, val);
-+	default:
-+		return -EINVAL;
-+	}
-+}
-+
-+static const struct iio_chan_spec mcp49x2_channels[3][2] = {
-+	[ID_MCP4902] = { MCP49X2_CHAN(0, 8),	MCP49X2_CHAN(1, 8) },
-+	[ID_MCP4912] = { MCP49X2_CHAN(0, 10),	MCP49X2_CHAN(1, 10) },
-+	[ID_MCP4922] = { MCP49X2_CHAN(0, 12),	MCP49X2_CHAN(1, 12) },
-+};
-+
-+static const struct iio_info mcp49x2_info = {
-+	.read_raw = &mcp49x2_read_raw,
-+	.write_raw = &mcp49x2_write_raw,
-+	.driver_module = THIS_MODULE,
-+};
-+
-+static int mcp49x2_probe(struct spi_device *spi)
-+{
-+	struct iio_dev *indio_dev;
-+	struct mcp49x2_state *state;
-+	const struct spi_device_id *id;
-+	int ret;
-+
-+	indio_dev = iio_device_alloc(sizeof(*state));
-+	if (indio_dev == NULL)
-+		return -ENOMEM;
-+
-+	state = iio_priv(indio_dev);
-+	state->spi = spi;
-+
-+	state->vref_reg = devm_regulator_get(spi->dev, "vref");
-+	if (!IS_ERR(state->vref_reg)) {
-+		ret = regulator_enable(state->vref_reg);
-+		if (ret) {
-+			dev_err(dev, "Failed to enable vref regulator: %d\n",
-+				ret);
-+			goto error_free;
-+		}
-+
-+		ret = regulator_get_voltage(state->vref_reg);
-+		if (ret < 0)
-+			goto error_disable_reg;
-+
-+		state->vref_mv = ret / 1000;
-+	} else {
-+		dev_info(dev, "Vref regulator not specified assuming 2.5V\n");
-+		state->vref_mv = 2500;
-+	}
-+
-+	spi_set_drvdata(spi, indio_dev);
-+	id = spi_get_device_id(spi);
-+	indio_dev->dev.parent = &spi->dev;
-+	indio_dev->info = &mcp49x2_info;
-+	indio_dev->modes = INDIO_DIRECT_MODE;
-+	indio_dev->channels = mcp49x2_channels[id->driver_data];
-+	indio_dev->num_channels = 2;
-+	indio_dev->name = id->name;
-+
-+	ret = iio_device_register(indio_dev);
-+
-+	if (ret) {
-+		dev_err(dev, "Failed to register iio device: %d\n",
-+			ret);
-+		goto error_disable_reg;
-+	}
-+
-+	return 0;
-+
-+error_disable_reg:
-+	if (!IS_ERR(state->vref_reg))
-+		regulator_disable(state->vref_reg);
-+error_free:
-+	iio_device_free(indio_dev);
-+
-+	return ret;
-+}
-+
-+static int mcp49x2_remove(struct spi_device *spi)
-+{
-+	struct iio_dev *indio_dev = spi_get_drvdata(spi);
-+
-+	iio_device_free(indio_dev);
-+	return 0;
-+}
-+
-+static const struct spi_device_id mcp49x2_id[] = {
-+	{"mcp4902", ID_MCP4902},
-+	{"mcp4912", ID_MCP4912},
-+	{"mcp4922", ID_MCP4922},
-+	{}
-+};
-+MODULE_DEVICE_TABLE(spi, mcp49x2_id);
-+
-+static struct spi_driver mcp49x2_driver = {
-+	.driver = {
-+		   .name = "mcp49x2",
-+		   .owner = THIS_MODULE,
-+		   },
-+	.probe = mcp49x2_probe,
-+	.remove = mcp49x2_remove,
-+	.id_table = mcp49x2_id,
-+};
-+module_spi_driver(mcp49x2_driver);
-+
-+MODULE_AUTHOR("Michael Welling <mwelling@ieee.org>");
-+MODULE_DESCRIPTION("Microchip MCP4902, MCP4912, MCP4922 DAC");
-+MODULE_LICENSE("GPL v2");
--- 
-1.7.9.5
+> Hello,
+> 
+> On Mon, Jun 02, 2014 at 11:26:07AM +0200, Paolo Valente wrote:
+>>>> #define cond_for_expiring_non_wr  (bfqd->hw_tag && \
+>>>> -				   bfqd->wr_busy_queues > 0)
+>>>> +				   (bfqd->wr_busy_queues > 0 || \
+>>>> +				    (symmetric_scenario && \
+>>>> +				     blk_queue_nonrot(bfqd->queue))))
+>>> 
+>>> 	expire_non_wr = zzz;
+>>> 
+>> 
+>> The solution you propose is the first that came to my mind. But then
+>> I went for a clumsy macro-based solution because: 1) the whole
+>> function is all about evaluating a long logical expression, 2) the
+>> macro-based solution allows the short-circuit to be used at best,
+>> and the number of steps to be minimized. For example, with async
+>> queues, only one condition is evaluated.
+>> 
+>> Defining three variables entails instead that the value of all the
+>> variables is computed every time, even if most of the times there is
+>> no need to.
+>> 
+>> Would this gain be negligible (sorry for my ignorance), or would
+>> not it be however enough to justify these unusual macros?
+> 
+> The compiler should be able to optimize those to basically the same
+> code.  AFAICS, everything the code tests is trivially known to be
+> without side-effect to the compiler.  Besides, even if the compiler
+> generates slightly less efficient code, which it shouldn't, it's
+> highly unlikely that this level of micro CPU cycle optimization would
+> be measureable for something as heavy as [bc]fq.
+> 
+
+Thanks a lot for answering this question.
+
+>>> This optimization may be theoretically interesting but doesn't seem
+>>> practical at all and would make the sytem behave distinctively
+>>> differently depending on something which is extremely subtle and seems
+>>> completely unrelated.  Furthermore, on any system which uses blkcg,
+>>> ext4, btrfs or has any task which has non-zero nice value, it won't
+>>> make any difference.  Its value is only theoretical.
+>> 
+>> Turning on idling unconditionally when blkcg is used, is one of the
+>> first solutions we have considered. But there seem to be practical
+>> scenarios where this would cause an unjustified loss of
+>> throughput. The main example for us was ulatencyd, which AFAIK
+>> creates one group for each process and, by default, assigns to all
+>> processes the same weight. But the assigned weight is not the one
+>> associated to the default ioprio.
+> 
+> Isn't the optimization "not idling" when these conditions are met?
+
+Yes, not idling is the way to go in this case.
+
+> Shouldn't the comparison be against the benefit of "not idling
+> selectively" vs "always idling" when blkcg is in use?
+> 
+
+Exactly. I’m sorry if I wrote things/sentences that did not let this point be clear. Maybe this lack of clarity is a further consequence of the annoying “not not” scheme adopted in the code and in the comments.
+
+> Another problem there is that this not only depends on the number of
+> processes but the number of threads in it.  cgroup is moving away from
+> allowing threads of a single process in different cgroups, so this
+> means that the operation can fluctuate in a very unexpected manner.
+> 
+> I'm not really convinced about the approach.  With rotating disks, we
+> know that allowing queue depth > 1 generaly lowers both throughput and
+> responsiveness and brings benefits in quite restricted cases.  It
+> seems rather backwards to always allow QD > 1 and then try to optimize
+> in an attempt to recover what's lost.  Wouldn't it make far more sense
+> to actively maintain QD == 1 by default and allow QD > 1 in specific
+> cases where it can be determined to be more beneficial than harmful?
+> 
+
+Although QD == 1 is not denoted explicitly as default, what you suggest is exactly what bfq does. 
+
+>> I do not know how widespread a mechanism like ulatencyd is
+>> precisely, but in the symmetric scenario it creates, the throughput
+>> on, e.g., an HDD would drop by half if the workload is mostly random
+>> and we removed the more complex mechanism we set up.  Wouldn't this
+>> be bad?
+> 
+> It looks like a lot of complexity for optimization for a very
+> specific, likely unreliable (in terms of its triggering condition),
+> use case.  The triggering condition is just too specific.
+
+Actually we have been asked several times to improve random-I/O performance on HDDs over the last years, by people recording, for the typical tasks performed by their machines, much lower throughput than with the other schedulers. Major problems have been reported for server workloads (database, web), and for btrfs. According to the feedback received after introducing this optimization in bfq, those problems seem to be finally gone.
+
+> 
+>>> Another thing to consider is that virtually all remotely modern
+>>> devices, rotational or not, are queued. At this point, it's rather
+>>> pointless to design one behavior for !queued and another for queued.
+>>> Things should just be designed for queued devices.
+>> 
+>> I am sorry for expressing doubts again (mainly because of my
+>> ignorance), but a few months ago I had to work with some portable
+>> devices for a company specialized in ARM systems. As an HDD, they
+>> were using a Toshiba MK6006GAH. If I remember well, this device had
+>> no NCQ. Instead of the improvements that we obtained by using bfq
+>> with this slow device, removing the differentiated behavior of bfq
+>> with respect to queued/!queued devices would have caused just a loss
+>> of throughput.
+> 
+> Heh, that's 60GB ATA-100 hard drive.  Had no idea those are still
+> being produced.  However, my point still is that the design should be
+> focused on queued devices.  They're predominant in the market and
+> it'll only continue to become more so.  What bothers me is that the
+> scheduler essentially loses control and shows sub-optimal behavior on
+> queued devices by default and that's how it's gonna perform in vast
+> majority of the use cases.
+> 
+
+According to our experiments, this differential behavior of bfq is only beneficial, and there is apparently no performance loss with respect to any of the other schedulers and for any scenario.
+
+>>> I don't know what
+>>> the solution is but given that the benefits of NCQ for rotational
+>>> devices is extremely limited, sticking with single request model in
+>>> most cases and maybe allowing queued operation for specific workloads
+>>> might be a better approach.  As for ssds, just do something simple.
+>>> It's highly likely that most ssds won't travel this code path in the
+>>> near future anyway.
+>> 
+>> This is the point that worries me mostly. As I pointed out in one of my previous emails, dispatching requests to an SSD  without control causes high latencies, or even complete unresponsiveness (Figure 8 in
+>> http://algogroup.unimore.it/people/paolo/disk_sched/extra_results.php
+>> or Figure 9 in
+>> http://algogroup.unimore.it/people/paolo/disk_sched/results.php).
+>> 
+>> I am of course aware that efficiency is a critical issue with fast
+>> devices, and is probably destined to become more and more critical
+>> in the future. But, as a user, I would be definitely unhappy with a
+>> system that can, e.g., update itself in one minute instead of five,
+>> but, during that minute may become unresponsive. In particular, I
+>> would not be pleased to buy a more expensive SSD and get a much less
+>> responsive system than that I had with a cheaper HDD and bfq fully
+>> working.
+> 
+> blk-mq is right around the corner and newer devices won't travel this
+> path at all.  Hopefully, ahci too will be served through blk-mq too
+> when it's connected to ssds, so its usefulness for high performance
+> devices will diminsh rather quickly over the coming several years.  It
+> sure would be nice to still be able to carry some optimizations but it
+> does shift the trade-off balance in terms of how much extra complexity
+> is justified.
+> 
+
+For users (like me), who will not like losing responsiveness in return for a shorter duration of operations that are usually executed in the background, the best solution is IMHO to leave the possibility to choose whether to preserve responsiveness or to squeeze every MB/s out of the device and/or keep the usage of every core low.
+
+Besides, turning back to bfq, if its low-latency heuristics are disabled for non rotational devices, then, according to our results with slower devices, such as SD Cards and eMMCs, latency becomes easily unbearable, with no throughput gain.
+
+Thanks,
+Paolo
+
+> Thanks.
+> 
+> -- 
+> tejun
+
+
+--
+Paolo Valente                                                 
+Algogroup
+Dipartimento di Fisica, Informatica e Matematica		
+Via Campi, 213/B
+41125 Modena - Italy        				  
+homepage:  http://algogroup.unimore.it/people/paolo/
 
