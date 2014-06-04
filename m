@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753329AbaFDXWo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:22:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40266 "EHLO
+	id S1756159AbaFEAM5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 20:12:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40286 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753231AbaFDXWm (ORCPT
+	with ESMTP id S1753332AbaFDXWp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:22:42 -0400
+	Wed, 4 Jun 2014 19:22:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [PATCH 3.14 149/228] NFSd: call rpc_destroy_wait_queue() from free_client()
-Date: Wed,  4 Jun 2014 16:22:58 -0700
-Message-Id: <20140604232352.803474182@linuxfoundation.org>
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 3.14 154/228] workqueue: fix a possible race condition between rescuer and pwq-release
+Date: Wed,  4 Jun 2014 16:23:03 -0700
+Message-Id: <20140604232352.968416244@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -29,29 +28,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <trond.myklebust@primarydata.com>
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
 
-commit 4cb57e3032d4e4bf5e97780e9907da7282b02b0c upstream.
+commit 77668c8b559e4fe2acf2a0749c7c83cde49a5025 upstream.
 
-Mainly to ensure that we don't leave any hanging timers.
+There is a race condition between rescuer_thread() and
+pwq_unbound_release_workfn().
 
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Even after a pwq is scheduled for rescue, the associated work items
+may be consumed by any worker.  If all of them are consumed before the
+rescuer gets to them and the pwq's base ref was put due to attribute
+change, the pwq may be released while still being linked on
+@wq->maydays list making the rescuer dereference already freed pwq
+later.
+
+Make send_mayday() pin the target pwq until the rescuer is done with
+it.
+
+tj: Updated comment and patch description.
+
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfsd/nfs4state.c |    1 +
- 1 file changed, 1 insertion(+)
+ kernel/workqueue.c |   12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
---- a/fs/nfsd/nfs4state.c
-+++ b/fs/nfsd/nfs4state.c
-@@ -1107,6 +1107,7 @@ free_client(struct nfs4_client *clp)
- 		WARN_ON_ONCE(atomic_read(&ses->se_ref));
- 		free_session(ses);
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -1909,6 +1909,12 @@ static void send_mayday(struct work_stru
+ 
+ 	/* mayday mayday mayday */
+ 	if (list_empty(&pwq->mayday_node)) {
++		/*
++		 * If @pwq is for an unbound wq, its base ref may be put at
++		 * any time due to an attribute change.  Pin @pwq until the
++		 * rescuer is done with it.
++		 */
++		get_pwq(pwq);
+ 		list_add_tail(&pwq->mayday_node, &wq->maydays);
+ 		wake_up_process(wq->rescuer->task);
  	}
-+	rpc_destroy_wait_queue(&clp->cl_cb_waitq);
- 	free_svc_cred(&clp->cl_cred);
- 	kfree(clp->cl_name.data);
- 	idr_destroy(&clp->cl_stateids);
+@@ -2438,6 +2444,12 @@ repeat:
+ 		process_scheduled_works(rescuer);
+ 
+ 		/*
++		 * Put the reference grabbed by send_mayday().  @pool won't
++		 * go away while we're holding its lock.
++		 */
++		put_pwq(pwq);
++
++		/*
+ 		 * Leave this pool.  If keep_working() is %true, notify a
+ 		 * regular worker; otherwise, we end up with 0 concurrency
+ 		 * and stalling the execution.
 
 
