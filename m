@@ -1,63 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752622AbaFDP2J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 11:28:09 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:33483 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751363AbaFDP2H (ORCPT
+	id S1752243AbaFDPcB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 11:32:01 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:49159 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751434AbaFDPcA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 11:28:07 -0400
-Message-ID: <538F3B04.1080007@kernel.dk>
-Date: Wed, 04 Jun 2014 09:28:04 -0600
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>
-CC: Shaohua Li <shli@kernel.org>, linux-kernel@vger.kernel.org
+	Wed, 4 Jun 2014 11:32:00 -0400
+Date: Wed, 4 Jun 2014 08:31:59 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Christoph Hellwig <hch@infradead.org>, Shaohua Li <shli@kernel.org>,
+        linux-kernel@vger.kernel.org
 Subject: Re: [patch]blk-mq: blk_mq_tag_to_rq should handle flush request
-References: <20140510040023.GA13788@kernel.org> <5388912F.7010609@kernel.dk> <20140604111133.GA7826@infradead.org> <538F2A11.4060800@kernel.dk> <20140604142012.GA20056@infradead.org> <538F331F.60101@kernel.dk> <20140604145803.GA7826@infradead.org> <538F34FB.7050003@kernel.dk> <20140604150508.GA21551@infradead.org> <538F365C.8050604@kernel.dk> <20140604152217.GA8781@infradead.org>
-In-Reply-To: <20140604152217.GA8781@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Message-ID: <20140604153159.GA27096@infradead.org>
+References: <20140509120733.GA27918@kernel.org>
+ <20140509150018.GA26215@infradead.org>
+ <20140510040023.GA13788@kernel.org>
+ <5388912F.7010609@kernel.dk>
+ <20140604111133.GA7826@infradead.org>
+ <538F2A11.4060800@kernel.dk>
+ <20140604142012.GA20056@infradead.org>
+ <538F331F.60101@kernel.dk>
+ <20140604145803.GA7826@infradead.org>
+ <538F34FB.7050003@kernel.dk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <538F34FB.7050003@kernel.dk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-06-04 09:22, Christoph Hellwig wrote:
-> On Wed, Jun 04, 2014 at 09:08:12AM -0600, Jens Axboe wrote:
->> On 2014-06-04 09:05, Christoph Hellwig wrote:
->>> On Wed, Jun 04, 2014 at 09:02:19AM -0600, Jens Axboe wrote:
->>>> OK strange, there hasn't been that much churn since the last rebase.
->>>> In my for-linus, there's a patch for a single queue crash, but that
->>>> should just hit for the removal case. And then there's the atomic
->>>> schedule patch, but that issue was actually in the code base for
->>>> about a month, so not a new one either.
->>>
->>> You're request initializaion optimization doesn't set up req->cmd and
->>> thus causes all BLOCK_PC I/O (including the SCSI LUN scan) to crash and
->>> burn.  The trivial fix is on your way.
->>
->> OK. That'll arguably be a good cleanup as well, getting that
->> initialized in the right place. I hate the 'lets clear all the
->> memory' part of rq init, it's not super cheap to do.
->
-> What would the right place be?  We don't really know if a request is
-> going to be used for BLOCK_PC purposes until it has been returned to
-> the caller.
+On Wed, Jun 04, 2014 at 09:02:19AM -0600, Jens Axboe wrote:
+> >scsi_mq_find_tag only gets the scsi host, which may have multiple
+> >queues.  When called from scsi_find_tag we actually have a scsi device,
+> >so that's not an issue, but when called from scsi_host_find_tag the
+> >driver only provides the host.
+> 
+> Only solution I see right now is to have the flush_rq in the shared
+> tags, but that would potentially be a regression for multiple
+> devices and heavy flush uses cases. I'll see if I can come up with
+> something better, or maybe Shaohua has an idea.
 
-Probably split the init, so instead of directly assigning the type as 
-BLOCK_PC (or similar), then have an init function for that that clears 
-the parts.
+What about something like the following (untest, uncompiled, maybe
+pseudo-code):
 
-> I also found another issue when just initializing req->cmd instead
-> of blindly reverting the patch due to the lack of req->biotail
-> initialization.  For now I'll got back to a revert of that patch
-> for my scsi-mq tree, and I'd prefer to keep that for mainline as well
-> until this has been throughoutly tested.
+struct request *blk_mq_tag_to_rq(struct blk_mq_tags *tags, unsigned int tag)
+{
+	struct request *rq = tags->rqs[tag];
 
-That's fine. I'll get this cleaned up, or consider a revert in the block 
-tree as well.
-
--- 
-Jens Axboe
+	if ((rq->cmd_flags & REQ_FLUSH_SEQ) && rq->q->flush_rq->tag == tag)
+		return rq->q->flush_rq;
+	return rq;
+}
 
