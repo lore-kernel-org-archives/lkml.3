@@ -1,56 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754752AbaFDXsw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:48:52 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:46773 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753810AbaFDXsu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:48:50 -0400
-Date: Thu, 5 Jun 2014 00:46:57 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Vidya Sagar <vidyas@nvidia.com>, bhelgaas@google.com,
-        wangyijing@huawei.com, thierry.reding@gmail.com, jason@lakedaemon.net,
-        will.deacon@arm.com, swarren@nvidia.com, kthota@nvidia.com,
-        sagar.tv@gmail.com, linux-arm-kernel@lists.infradead.org,
+	id S1754777AbaFDXtK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 19:49:10 -0400
+Received: from mail.kernel.org ([198.145.19.201]:48796 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754389AbaFDXsv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 19:48:51 -0400
+Date: Thu, 5 Jun 2014 01:48:46 +0200
+From: Sebastian Reichel <sre@kernel.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Carlos Chinea <carlos.chinea@nokia.com>,
+        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: fix debug prints relevant to PCI devices
-Message-ID: <20140604234657.GD23430@n2100.arm.linux.org.uk>
-References: <1401909447-8434-1-git-send-email-vidyas@nvidia.com> <538F738A.6020003@wwwdotorg.org>
+Subject: Re: [PATCH v2] hsi: omap_ssi_port: use normal module refcounting
+Message-ID: <20140604234846.GA16356@earth.universe>
+References: <7426698.eEpYu3o0WK@wuerfel>
+ <4579153.ES6XlsZ43F@wuerfel>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="RnlQjJ0d97Da+TV1"
 Content-Disposition: inline
-In-Reply-To: <538F738A.6020003@wwwdotorg.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <4579153.ES6XlsZ43F@wuerfel>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 04, 2014 at 01:29:14PM -0600, Stephen Warren wrote:
-> On 06/04/2014 01:17 PM, Vidya Sagar wrote:
-> > As per PCIe spec, fast back-to-back transactions feature
-> > is not applicable to PCIe devices. Hence, do not print
-> > that fast back-to-back trasactions are disabled when
-> > there is a PCIe device found on the bus
-> 
-> > @@ -298,6 +299,8 @@ void pcibios_fixup_bus(struct pci_bus *bus)
-> >  	list_for_each_entry(dev, &bus->devices, bus_list) {
-> >  		u16 status;
-> >  
-> > +		if (!has_pcie_dev)
-> > +			has_pcie_dev = pci_pcie_cap(dev);
-> 
-> This sets the flag if any PCIe device is detected, even if regular PCI
-> devices are also detected. I assume the two can be mixed on a bus if
-> there's a bridge (although perhaps that would be separate buses, and
-> child buses don't get traversed by this function?)
 
-This function gets caller per PCI bus - if there's a bridge between
-(which there should be between PCIe and PCI) then they are by definition
-separate buses.  (I'm guessing that there aren't transparent bridges
-between PCI and PCIe.)
+--RnlQjJ0d97Da+TV1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
--- 
-FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
-improving, and getting towards what was expected from it.
+Hi,
+
+On Wed, Jun 04, 2014 at 10:00:59AM +0200, Arnd Bergmann wrote:
+> The ref_module() function is used for internal housekeeping of the
+> module code, it's not normally used by subsystems or device drivers,
+> and the use of ref_module in the omap_ssi_port driver causes a link
+> build error when modules are disabled:
+>=20
+> hsi/controllers/omap_ssi_port.c: In function 'ssi_port_probe':
+> hsi/controllers/omap_ssi_port.c:1119:2: error: implicit declaration of fu=
+nction 'ref_module' [-Werror=3Dimplicit-function-declaration]
+>=20
+> This changes the omap_ssi_port driver to use try_module_get()
+> and module_put() instead, which is the normal way to ensure that
+> the driver providing a device used in another module does not
+> go away.
+
+Thanks, applied:
+
+https://git.kernel.org/cgit/linux/kernel/git/sre/linux-hsi.git/commit/?h=3D=
+for-next&id=3Db357d7b58f379ebe8038cd97b6204f2f5c52220d
+
+-- Sebastian
+
+--RnlQjJ0d97Da+TV1
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBCgAGBQJTj7BeAAoJENju1/PIO/qac5YP/3iVFD6UynjVHKWwkRFmiUgS
++iJntl+MclSfLiXdeEGnlxyqd0faSrG2hbJLen7d5Cr+968q8NGBqaFRuXFbg5S9
++RkE2oudi4j2TgIvYTfOf9iOLXpesWvV8pugLGVTUdZWmXmp6r5fyBgVfRgh0+T4
+nF/5ZSZSYBbdqEXTokyLVLuFS/DRB6QqBxG40IFhwiTMj56mQFWSO9LTJpkPumKf
+JOvAJfOTG9pto9tidpgNr85SyJOkszfJlTNrfTOGyA1zSFuFUF0htEdCFdmTdL7K
+wfAl024qBFq85WN2q4ULP1oWmkk7OPjDqCFAUDQMhNiCQ51l74oHyRta29m/pIWP
+mdMKsJ+07mkoyip0dc8hEsWboabdFCknrC3eTu4WYBoGJcjquEhE+7BlAeMGxhBP
+c7fAG243urI+z6qwF26yXXBbNioUbLnZymNRNev/M1su6NabC05Wj0B7isCtobN2
+o4AdwF+yTeaklHsRFsRzkiOVFISzQqdkyIybNDVYci7Jl0/vNW60J/bU2n0oH2fL
+RmDaN5fKUAChHq+EUa/aEwF9fj4tEyuKhZYe2iAcX6yXBFbF0RLkDrh8zogELQL1
+UidJ4+ZrcHu8Em8b79X+wQvQubth7PmS1ukAXXmGJe85Fzl+XV10PGHY5ChAWci4
+DnoifoX3xorsSIBIJlEg
+=uzPR
+-----END PGP SIGNATURE-----
+
+--RnlQjJ0d97Da+TV1--
