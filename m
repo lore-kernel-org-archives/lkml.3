@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753820AbaFDXX3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:23:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40571 "EHLO
+	id S1754444AbaFDXsq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 19:48:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40634 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753745AbaFDXXY (ORCPT
+	with ESMTP id S1753810AbaFDXX3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:23:24 -0400
+	Wed, 4 Jun 2014 19:23:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Subject: [PATCH 3.14 224/228] iwlwifi: mvm: disable beacon filtering
-Date: Wed,  4 Jun 2014 16:24:13 -0700
-Message-Id: <20140604232355.241236355@linuxfoundation.org>
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [PATCH 3.10 017/103] mac80211: fix suspend vs. authentication race
+Date: Wed,  4 Jun 2014 16:24:40 -0700
+Message-Id: <20140604232547.385664294@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
-References: <20140604232347.966798903@linuxfoundation.org>
+In-Reply-To: <20140604232546.704156131@linuxfoundation.org>
+References: <20140604232546.704156131@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -24,33 +24,102 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit 7bacc782270ff7db3b9f29fa5d24ad2ee1e8e81d upstream.
+commit 1a1cb744de160ee70086a77afff605bbc275d291 upstream.
 
-This feature has been causing trouble - disable it for now.
+Since Stanislaw's patch removing the quiescing code, mac80211 had
+a race regarding suspend vs. authentication: as cfg80211 doesn't
+track authentication attempts, it can't abort them. Therefore the
+attempts may be kept running while suspending, which can lead to
+all kinds of issues, in at least some cases causing an error in
+iwlmvm firmware.
 
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Fix this by aborting the authentication attempt when suspending.
+
+Cc: stable@vger.kernel.org
+Fixes: 12e7f517029d ("mac80211: cleanup generic suspend/resume procedures")
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/iwlwifi/mvm/mac80211.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/mac80211/ieee80211_i.h |    1 +
+ net/mac80211/mlme.c        |   26 ++++++++++++++++++++++++++
+ net/mac80211/pm.c          |   14 +++++++++++---
+ 3 files changed, 38 insertions(+), 3 deletions(-)
 
---- a/drivers/net/wireless/iwlwifi/mvm/mac80211.c
-+++ b/drivers/net/wireless/iwlwifi/mvm/mac80211.c
-@@ -606,7 +606,7 @@ static int iwl_mvm_mac_add_interface(str
- 	if (ret)
- 		goto out_remove_mac;
+--- a/net/mac80211/ieee80211_i.h
++++ b/net/mac80211/ieee80211_i.h
+@@ -1270,6 +1270,7 @@ void ieee80211_sta_reset_conn_monitor(st
+ void ieee80211_mgd_stop(struct ieee80211_sub_if_data *sdata);
+ void ieee80211_mgd_conn_tx_status(struct ieee80211_sub_if_data *sdata,
+ 				  __le16 fc, bool acked);
++void ieee80211_mgd_quiesce(struct ieee80211_sub_if_data *sdata);
+ void ieee80211_sta_restart(struct ieee80211_sub_if_data *sdata);
  
--	if (!mvm->bf_allowed_vif &&
-+	if (!mvm->bf_allowed_vif && false &&
- 	    vif->type == NL80211_IFTYPE_STATION && !vif->p2p &&
- 	    mvm->fw->ucode_capa.flags & IWL_UCODE_TLV_FLAGS_BF_UPDATED){
- 		mvm->bf_allowed_vif = mvmvif;
+ /* IBSS code */
+--- a/net/mac80211/mlme.c
++++ b/net/mac80211/mlme.c
+@@ -3754,6 +3754,32 @@ static void ieee80211_restart_sta_timer(
+ }
+ 
+ #ifdef CONFIG_PM
++void ieee80211_mgd_quiesce(struct ieee80211_sub_if_data *sdata)
++{
++	struct ieee80211_if_managed *ifmgd = &sdata->u.mgd;
++	u8 frame_buf[IEEE80211_DEAUTH_FRAME_LEN];
++
++	mutex_lock(&ifmgd->mtx);
++
++	if (ifmgd->auth_data) {
++		/*
++		 * If we are trying to authenticate while suspending, cfg80211
++		 * won't know and won't actually abort those attempts, thus we
++		 * need to do that ourselves.
++		 */
++		ieee80211_send_deauth_disassoc(sdata,
++					       ifmgd->auth_data->bss->bssid,
++					       IEEE80211_STYPE_DEAUTH,
++					       WLAN_REASON_DEAUTH_LEAVING,
++					       false, frame_buf);
++		ieee80211_destroy_auth_data(sdata, false);
++		cfg80211_send_deauth(sdata->dev, frame_buf,
++				     IEEE80211_DEAUTH_FRAME_LEN);
++	}
++
++	mutex_unlock(&ifmgd->mtx);
++}
++
+ void ieee80211_sta_restart(struct ieee80211_sub_if_data *sdata)
+ {
+ 	struct ieee80211_if_managed *ifmgd = &sdata->u.mgd;
+--- a/net/mac80211/pm.c
++++ b/net/mac80211/pm.c
+@@ -101,10 +101,18 @@ int __ieee80211_suspend(struct ieee80211
+ 
+ 	/* remove all interfaces that were created in the driver */
+ 	list_for_each_entry(sdata, &local->interfaces, list) {
+-		if (!ieee80211_sdata_running(sdata) ||
+-		    sdata->vif.type == NL80211_IFTYPE_AP_VLAN ||
+-		    sdata->vif.type == NL80211_IFTYPE_MONITOR)
++		if (!ieee80211_sdata_running(sdata))
+ 			continue;
++		switch (sdata->vif.type) {
++		case NL80211_IFTYPE_AP_VLAN:
++		case NL80211_IFTYPE_MONITOR:
++			continue;
++		case NL80211_IFTYPE_STATION:
++			ieee80211_mgd_quiesce(sdata);
++			break;
++		default:
++			break;
++		}
+ 
+ 		drv_remove_interface(local, sdata);
+ 	}
 
 
