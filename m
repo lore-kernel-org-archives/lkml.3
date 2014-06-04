@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752411AbaFDXZt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:25:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41079 "EHLO
+	id S1754387AbaFDXZr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 19:25:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41084 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754219AbaFDXYY (ORCPT
+	with ESMTP id S1754227AbaFDXYY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 4 Jun 2014 19:24:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Wolfram Sang <wsa+renesas@sang-engineering.com>,
-        Wolfram Sang <wsa@the-dreams.de>
-Subject: [PATCH 3.10 093/103] i2c: rcar: bail out on zero length transfers
-Date: Wed,  4 Jun 2014 16:25:56 -0700
-Message-Id: <20140604232549.855619671@linuxfoundation.org>
+        Arnd Bergmann <arnd@arndb.de>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 3.10 084/103] genirq: Provide irq_force_affinity fallback for non-SMP
+Date: Wed,  4 Jun 2014 16:25:47 -0700
+Message-Id: <20140604232549.550989246@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232546.704156131@linuxfoundation.org>
 References: <20140604232546.704156131@linuxfoundation.org>
@@ -29,46 +31,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wolfram Sang <wsa+renesas@sang-engineering.com>
+From: Arnd Bergmann <arnd@arndb.de>
 
-commit d7653964c590ba846aa11a8f6edf409773cbc492 upstream.
+commit 4c88d7f9b0d5fb0588c3386be62115cc2eaa8f9f upstream.
 
-This hardware does not support zero length transfers. Instead, the
-driver does one (random) byte transfers currently with undefined results
-for the slaves. We now bail out.
+Patch 01f8fa4f01d "genirq: Allow forcing cpu affinity of interrupts" added
+an irq_force_affinity() function, and 30ccf03b4a6 "clocksource: Exynos_mct:
+Use irq_force_affinity() in cpu bringup" subsequently uses it. However, the
+driver can be used with CONFIG_SMP disabled, but the function declaration
+is only available for CONFIG_SMP, leading to this build error:
 
-Signed-off-by: Wolfram Sang <wsa+renesas@sang-engineering.com>
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+drivers/clocksource/exynos_mct.c:431:3: error: implicit declaration of function 'irq_force_affinity' [-Werror=implicit-function-declaration]
+   irq_force_affinity(mct_irqs[MCT_L0_IRQ + cpu], cpumask_of(cpu));
+
+This patch introduces a dummy helper function for the non-SMP case
+that always returns success, to get rid of the build error.
+Since the patches causing the problem are marked for stable backports,
+this one should be as well.
+
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Acked-by: Kukjin Kim <kgene.kim@samsung.com>
+Link: http://lkml.kernel.org/r/5619084.0zmrrIUZLV@wuerfel
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/i2c/busses/i2c-rcar.c |    9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+ include/linux/interrupt.h |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/drivers/i2c/busses/i2c-rcar.c
-+++ b/drivers/i2c/busses/i2c-rcar.c
-@@ -541,6 +541,12 @@ static int rcar_i2c_master_xfer(struct i
- 
- 	ret = -EINVAL;
- 	for (i = 0; i < num; i++) {
-+		/* This HW can't send STOP after address phase */
-+		if (msgs[i].len == 0) {
-+			ret = -EOPNOTSUPP;
-+			break;
-+		}
-+
- 		/*-------------- spin lock -----------------*/
- 		spin_lock_irqsave(&priv->lock, flags);
- 
-@@ -605,7 +611,8 @@ static int rcar_i2c_master_xfer(struct i
- 
- static u32 rcar_i2c_func(struct i2c_adapter *adap)
- {
--	return I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL;
-+	/* This HW can't do SMBUS_QUICK and NOSTART */
-+	return I2C_FUNC_I2C | (I2C_FUNC_SMBUS_EMUL & ~I2C_FUNC_SMBUS_QUICK);
+--- a/include/linux/interrupt.h
++++ b/include/linux/interrupt.h
+@@ -308,6 +308,11 @@ static inline int irq_set_affinity(unsig
+ 	return -EINVAL;
  }
  
- static const struct i2c_algorithm rcar_i2c_algo = {
++static inline int irq_force_affinity(unsigned int irq, const struct cpumask *cpumask)
++{
++	return 0;
++}
++
+ static inline int irq_can_set_affinity(unsigned int irq)
+ {
+ 	return 0;
 
 
