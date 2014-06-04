@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757185AbaFEAno (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 20:43:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39788 "EHLO
+	id S932629AbaFEAnn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 20:43:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39783 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752555AbaFDXVQ (ORCPT
+	with ESMTP id S1752437AbaFDXVQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 4 Jun 2014 19:21:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Grant Likely <grant.likely@linaro.org>,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Mark Brown <broonie@kernel.org>
-Subject: [PATCH 3.14 049/228] drivercore: deferral race condition fix
-Date: Wed,  4 Jun 2014 16:21:18 -0700
-Message-Id: <20140604232349.651785931@linuxfoundation.org>
+        Stuart Hayes <stuart.w.hayes@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 3.14 050/228] hrtimer: Prevent all reprogramming if hang detected
+Date: Wed,  4 Jun 2014 16:21:19 -0700
+Message-Id: <20140604232349.680060663@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -30,123 +29,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Grant Likely <grant.likely@linaro.org>
+From: Stuart Hayes <stuart.w.hayes@gmail.com>
 
-commit 58b116bce13612e5aa6fcd49ecbd4cf8bb59e835 upstream.
+commit 6c6c0d5a1c949d2e084706f9e5fb1fccc175b265 upstream.
 
-When the kernel is built with CONFIG_PREEMPT it is possible to reach a state
-when all modules loaded but some driver still stuck in the deferred list
-and there is a need for external event to kick the deferred queue to probe
-these drivers.
+If the last hrtimer interrupt detected a hang it sets hang_detected=1
+and programs the clock event device with a delay to let the system
+make progress.
 
-The issue has been observed on embedded systems with CONFIG_PREEMPT enabled,
-audio support built as modules and using nfsroot for root filesystem.
+If hang_detected == 1, we prevent reprogramming of the clock event
+device in hrtimer_reprogram() but not in hrtimer_force_reprogram().
 
-The following log fragment shows such sequence when all audio modules
-were loaded but the sound card is not present since the machine driver has
-failed to probe due to missing dependency during it's probe.
-The board is am335x-evmsk (McASP<->tlv320aic3106 codec) with davinci-evm
-machine driver:
+This can lead to the following situation:
 
-...
-[   12.615118] davinci-mcasp 4803c000.mcasp: davinci_mcasp_probe: ENTER
-[   12.719969] davinci_evm sound.3: davinci_evm_probe: ENTER
-[   12.725753] davinci_evm sound.3: davinci_evm_probe: snd_soc_register_card
-[   12.753846] davinci-mcasp 4803c000.mcasp: davinci_mcasp_probe: snd_soc_register_component
-[   12.922051] davinci-mcasp 4803c000.mcasp: davinci_mcasp_probe: snd_soc_register_component DONE
-[   12.950839] davinci_evm sound.3: ASoC: platform (null) not registered
-[   12.957898] davinci_evm sound.3: davinci_evm_probe: snd_soc_register_card DONE (-517)
-[   13.099026] davinci-mcasp 4803c000.mcasp: Kicking the deferred list
-[   13.177838] davinci-mcasp 4803c000.mcasp: really_probe: probe_count = 2
-[   13.194130] davinci_evm sound.3: snd_soc_register_card failed (-517)
-[   13.346755] davinci_mcasp_driver_init: LEAVE
-[   13.377446] platform sound.3: Driver davinci_evm requests probe deferral
-[   13.592527] platform sound.3: really_probe: probe_count = 0
+hrtimer_interrupt()
+   hang_detected = 1;
+   program ce device to Xms from now (hang delay)
 
-In the log the machine driver enters it's probe at 12.719969 (this point it
-has been removed from the deferred lists). McASP driver already executing
-it's probing (since 12.615118).
-The machine driver tries to construct the sound card (12.950839) but did
-not found one of the components so it fails. After this McASP driver
-registers all the ASoC components (the machine driver still in it's probe
-function after it failed to construct the card) and the deferred work is
-prepared at 13.099026 (note that this time the machine driver is not in the
-lists so it is not going to be handled when the work is executing).
-Lastly the machine driver exit from it's probe and the core places it to
-the deferred list but there will be no other driver going to load and the
-deferred queue is not going to be kicked again - till we have external event
-like connecting USB stick, etc.
+We have two timers pending:
+   T1 expires 50ms from now
+   T2 expires 5s from now
 
-The proposed solution is to try the deferred queue once more when the last
-driver is asking for deferring and we had drivers loaded while this last
-driver was probing.
+Now T1 gets canceled, which causes hrtimer_force_reprogram() to be
+invoked, which in turn programs the clock event device to T2 (5
+seconds from now).
 
-This way we can avoid drivers stuck in the deferred queue.
+Any hrtimer_start after that will not reprogram the hardware due to
+hang_detected still being set. So we effectivly block all timers until
+the T2 event fires and cleans up the hang situation.
 
-Signed-off-by: Grant Likely <grant.likely@linaro.org>
-Reviewed-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Tested-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Mark Brown <broonie@kernel.org>
+Add a check for hang_detected to hrtimer_force_reprogram() which
+prevents the reprogramming of the hang delay in the hardware
+timer. The subsequent hrtimer_interrupt will resolve all outstanding
+issues.
+
+[ tglx: Rewrote subject and changelog and fixed up the comment in
+  	hrtimer_force_reprogram() ]
+
+Signed-off-by: Stuart Hayes <stuart.w.hayes@gmail.com>
+Link: http://lkml.kernel.org/r/53602DC6.2060101@gmail.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/base/dd.c |   17 +++++++++++++++++
+ kernel/hrtimer.c |   17 +++++++++++++++++
  1 file changed, 17 insertions(+)
 
---- a/drivers/base/dd.c
-+++ b/drivers/base/dd.c
-@@ -52,6 +52,7 @@ static DEFINE_MUTEX(deferred_probe_mutex
- static LIST_HEAD(deferred_probe_pending_list);
- static LIST_HEAD(deferred_probe_active_list);
- static struct workqueue_struct *deferred_wq;
-+static atomic_t deferred_trigger_count = ATOMIC_INIT(0);
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -582,6 +582,23 @@ hrtimer_force_reprogram(struct hrtimer_c
  
- /**
-  * deferred_probe_work_func() - Retry probing devices in the active list.
-@@ -135,6 +136,17 @@ static bool driver_deferred_probe_enable
-  * This functions moves all devices from the pending list to the active
-  * list and schedules the deferred probe workqueue to process them.  It
-  * should be called anytime a driver is successfully bound to a device.
-+ *
-+ * Note, there is a race condition in multi-threaded probe. In the case where
-+ * more than one device is probing at the same time, it is possible for one
-+ * probe to complete successfully while another is about to defer. If the second
-+ * depends on the first, then it will get put on the pending list after the
-+ * trigger event has already occured and will be stuck there.
-+ *
-+ * The atomic 'deferred_trigger_count' is used to determine if a successful
-+ * trigger has occurred in the midst of probing a driver. If the trigger count
-+ * changes in the midst of a probe, then deferred processing should be triggered
-+ * again.
-  */
- static void driver_deferred_probe_trigger(void)
- {
-@@ -147,6 +159,7 @@ static void driver_deferred_probe_trigge
- 	 * into the active list so they can be retried by the workqueue
- 	 */
- 	mutex_lock(&deferred_probe_mutex);
-+	atomic_inc(&deferred_trigger_count);
- 	list_splice_tail_init(&deferred_probe_pending_list,
- 			      &deferred_probe_active_list);
- 	mutex_unlock(&deferred_probe_mutex);
-@@ -265,6 +278,7 @@ static DECLARE_WAIT_QUEUE_HEAD(probe_wai
- static int really_probe(struct device *dev, struct device_driver *drv)
- {
- 	int ret = 0;
-+	int local_trigger_count = atomic_read(&deferred_trigger_count);
+ 	cpu_base->expires_next.tv64 = expires_next.tv64;
  
- 	atomic_inc(&probe_count);
- 	pr_debug("bus: '%s': %s: probing driver %s with device %s\n",
-@@ -310,6 +324,9 @@ probe_failed:
- 		/* Driver requested deferred probing */
- 		dev_info(dev, "Driver %s requests probe deferral\n", drv->name);
- 		driver_deferred_probe_add(dev);
-+		/* Did a trigger occur while probing? Need to re-trigger if yes */
-+		if (local_trigger_count != atomic_read(&deferred_trigger_count))
-+			driver_deferred_probe_trigger();
- 	} else if (ret != -ENODEV && ret != -ENXIO) {
- 		/* driver matched but the probe failed */
- 		printk(KERN_WARNING
++	/*
++	 * If a hang was detected in the last timer interrupt then we
++	 * leave the hang delay active in the hardware. We want the
++	 * system to make progress. That also prevents the following
++	 * scenario:
++	 * T1 expires 50ms from now
++	 * T2 expires 5s from now
++	 *
++	 * T1 is removed, so this code is called and would reprogram
++	 * the hardware to 5s from now. Any hrtimer_start after that
++	 * will not reprogram the hardware due to hang_detected being
++	 * set. So we'd effectivly block all timers until the T2 event
++	 * fires.
++	 */
++	if (cpu_base->hang_detected)
++		return;
++
+ 	if (cpu_base->expires_next.tv64 != KTIME_MAX)
+ 		tick_program_event(cpu_base->expires_next, 1);
+ }
 
 
