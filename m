@@ -1,223 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751660AbaFDIxY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 04:53:24 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:54271 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750992AbaFDIxV (ORCPT
+	id S1751700AbaFDIxf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 04:53:35 -0400
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:52605 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751664AbaFDIxa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 04:53:21 -0400
-Message-ID: <538EDE7A.70905@ti.com>
-Date: Wed, 4 Jun 2014 11:53:14 +0300
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Wed, 4 Jun 2014 04:53:30 -0400
 MIME-Version: 1.0
-To: <dmitry.torokhov@gmail.com>
-CC: <rydberg@euromail.se>, <balbi@ti.com>, <dmurphy@ti.com>,
-        <mugunthanvnm@ti.com>, <nsekhar@ti.com>, <linux-input@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v6 4/7] Input: pixcir_i2c_ts: Use Type-B Multi-Touch protocol
-References: <1399374372-29123-1-git-send-email-rogerq@ti.com> <1399374372-29123-5-git-send-email-rogerq@ti.com> <5379BFCE.9050107@ti.com>
-In-Reply-To: <5379BFCE.9050107@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140603081655.GA6013@esperanza>
+References: <cover.1401457502.git.vdavydov@parallels.com>
+	<5d2fbc894a2c62597e7196bb1ebb8357b15529ab.1401457502.git.vdavydov@parallels.com>
+	<alpine.DEB.2.10.1405300955120.11943@gentwo.org>
+	<20140531110456.GC25076@esperanza>
+	<20140602042435.GA17964@js1304-P5Q-DELUXE>
+	<20140602114741.GA1039@esperanza>
+	<CAAmzW4P=kUAJwozBPPos+uUewzSDnE43P6NcGYKNpBjjfv1EWA@mail.gmail.com>
+	<20140603081655.GA6013@esperanza>
+Date: Wed, 4 Jun 2014 17:53:29 +0900
+Message-ID: <CAAmzW4O-tAw9t=gEHhbKiG+vfDsuCsOB1dyB_2iwO1qeFjtYmQ@mail.gmail.com>
+Subject: Re: [PATCH -mm 7/8] slub: make dead caches discard free slabs immediately
+From: Joonsoo Kim <js1304@gmail.com>
+To: Vladimir Davydov <vdavydov@parallels.com>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>, Christoph Lameter <cl@gentwo.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux Memory Management List <linux-mm@kvack.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry,
+2014-06-03 17:16 GMT+09:00 Vladimir Davydov <vdavydov@parallels.com>:
+> On Mon, Jun 02, 2014 at 11:03:51PM +0900, Joonsoo Kim wrote:
+>> 2014-06-02 20:47 GMT+09:00 Vladimir Davydov <vdavydov@parallels.com>:
+>> > Hi Joonsoo,
+>> >
+>> > On Mon, Jun 02, 2014 at 01:24:36PM +0900, Joonsoo Kim wrote:
+>> >> On Sat, May 31, 2014 at 03:04:58PM +0400, Vladimir Davydov wrote:
+>> >> > On Fri, May 30, 2014 at 09:57:10AM -0500, Christoph Lameter wrote:
+>> >> > > On Fri, 30 May 2014, Vladimir Davydov wrote:
+>> >> > >
+>> >> > > > (3) is a bit more difficult, because slabs are added to per-cpu partial
+>> >> > > > lists lock-less. Fortunately, we only have to handle the __slab_free
+>> >> > > > case, because, as there shouldn't be any allocation requests dispatched
+>> >> > > > to a dead memcg cache, get_partial_node() should never be called. In
+>> >> > > > __slab_free we use cmpxchg to modify kmem_cache_cpu->partial (see
+>> >> > > > put_cpu_partial) so that setting ->partial to a special value, which
+>> >> > > > will make put_cpu_partial bail out, will do the trick.
+>> > [...]
+>> >> I think that we can do (3) easily.
+>> >> If we check memcg_cache_dead() in the end of put_cpu_partial() rather
+>> >> than in the begin of put_cpu_partial(), we can avoid the race you
+>> >> mentioned. If someone do put_cpu_partial() before dead flag is set,
+>> >> it can be zapped by who set dead flag. And if someone do
+>> >> put_cpu_partial() after dead flag is set, it can be zapped by who
+>> >> do put_cpu_partial().
+>> >
+>> > After put_cpu_partial() adds a frozen slab to a per cpu partial list,
+>> > the slab becomes visible to other threads, which means it can be
+>> > unfrozen and freed. The latter can trigger cache destruction. Hence we
+>> > shouldn't touch the cache, in particular call memcg_cache_dead() on it,
+>> > after calling put_cpu_partial(), otherwise we can get use-after-free.
+>> >
+>> > However, what you propose makes sense if we disable irqs before adding a
+>> > slab to a partial list and enable them only after checking if the cache
+>> > is dead and unfreezing all partials if so, i.e.
+>> >
+>> > diff --git a/mm/slub.c b/mm/slub.c
+>> > index d96faa2464c3..14b9e9a8677c 100644
+>> > --- a/mm/slub.c
+>> > +++ b/mm/slub.c
+>> > @@ -2030,8 +2030,15 @@ static void put_cpu_partial(struct kmem_cache *s, struct page *page, int drain)
+>> >         struct page *oldpage;
+>> >         int pages;
+>> >         int pobjects;
+>> > +       unsigned long flags;
+>> > +       int irq_saved = 0;
+>> >
+>> >         do {
+>> > +               if (irq_saved) {
+>> > +                       local_irq_restore(flags);
+>> > +                       irq_saved = 0;
+>> > +               }
+>> > +
+>> >                 pages = 0;
+>> >                 pobjects = 0;
+>> >                 oldpage = this_cpu_read(s->cpu_slab->partial);
+>> > @@ -2062,8 +2069,16 @@ static void put_cpu_partial(struct kmem_cache *s, struct page *page, int drain)
+>> >                 page->pobjects = pobjects;
+>> >                 page->next = oldpage;
+>> >
+>> > +               local_irq_save(flags);
+>> > +               irq_saved = 1;
+>> > +
+>> >         } while (this_cpu_cmpxchg(s->cpu_slab->partial, oldpage, page)
+>> >                                                                 != oldpage);
+>> > +
+>> > +       if (memcg_cache_dead(s))
+>> > +               unfreeze_partials(s, this_cpu_ptr(s->cpu_slab));
+>> > +
+>> > +       local_irq_restore(flags);
+>> >  #endif
+>> >  }
+>> >
+>> >
+>> > That would be safe against possible cache destruction, because to remove
+>> > a slab from a per cpu partial list we have to run on the cpu it was
+>> > frozen on. Disabling irqs makes it impossible.
+>>
+>> Hmm... this is also a bit ugly.
+>> How about following change?
+>>
+>> Thanks.
+>>
+>> diff --git a/mm/slub.c b/mm/slub.c
+>> index 2b1ce69..6adab87 100644
+>> --- a/mm/slub.c
+>> +++ b/mm/slub.c
+>> @@ -2058,6 +2058,21 @@ static void put_cpu_partial(struct kmem_cache
+>> *s, struct page *page, int drain)
+>>
+>>         } while (this_cpu_cmpxchg(s->cpu_slab->partial, oldpage, page)
+>>                                                                 != oldpage);
+>> +
+>> +       if (memcg_cache_dead(s)) {
+>> +               bool done = false;
+>> +               unsigned long flags;
+>
+> Suppose we are preempted here. In the meanwhile all objects are freed to
+> the cache, all frozen pages are unfrozen and also freed. The cache
+> destruction is then scheduled (patch 2 of this set). Then when this
+> thread continues execution it will operate on the cache that was
+> destroyed - use-after-free.
+>
+> I admit, this is very unlikely, but can we ignore this possibility?
+>
 
-We're still missing patches 4, 5 and 7 for 3.16, to get device tree and type-B support.
+Hello,
 
-Do you want me to send them separately?
+>From your comment, now, I realize that your cache destruction solution
+has severe problem.
 
-cheers,
--roger
+With you solution, kmem_cache can be destroyed before last kfree() caller
+has returned. It means that we can't safely do anything related to
+the kmem_cache after losing control about that slab where we try to free
+object in free path.
 
-On 05/19/2014 11:24 AM, Roger Quadros wrote:
-> From: Roger Quadros <rogerq@ti.com>
-> 
-> Switch to using the Type-B Multi-Touch protocol.
-> 
-> Reviewed-by: Henrik Rydberg <rydberg@euromail.se>
-> Signed-off-by: Roger Quadros <rogerq@ti.com>
-> ---
->  drivers/input/touchscreen/pixcir_i2c_ts.c | 125 ++++++++++++++++++++++--------
->  1 file changed, 94 insertions(+), 31 deletions(-)
-> 
-> diff --git a/drivers/input/touchscreen/pixcir_i2c_ts.c b/drivers/input/touchscreen/pixcir_i2c_ts.c
-> index 8a7da61..627d2f5 100644
-> --- a/drivers/input/touchscreen/pixcir_i2c_ts.c
-> +++ b/drivers/input/touchscreen/pixcir_i2c_ts.c
-> @@ -23,9 +23,12 @@
->  #include <linux/slab.h>
->  #include <linux/i2c.h>
->  #include <linux/input.h>
-> +#include <linux/input/mt.h>
->  #include <linux/input/pixcir_ts.h>
->  #include <linux/gpio.h>
->  
-> +#define PIXCIR_MAX_SLOTS       2
-> +
->  struct pixcir_i2c_ts_data {
->  	struct i2c_client *client;
->  	struct input_dev *input;
-> @@ -33,12 +36,25 @@ struct pixcir_i2c_ts_data {
->  	bool running;
->  };
->  
-> -static void pixcir_ts_poscheck(struct pixcir_i2c_ts_data *data)
-> +struct pixcir_touch {
-> +	int x;
-> +	int y;
-> +};
-> +
-> +struct pixcir_report_data {
-> +	int num_touches;
-> +	struct pixcir_touch touches[PIXCIR_MAX_SLOTS];
-> +};
-> +
-> +static void pixcir_ts_parse(struct pixcir_i2c_ts_data *tsdata,
-> +			    struct pixcir_report_data *report)
->  {
-> -	struct pixcir_i2c_ts_data *tsdata = data;
->  	u8 rdbuf[10], wrbuf[1] = { 0 };
-> +	u8 *bufptr;
->  	u8 touch;
-> -	int ret;
-> +	int ret, i;
-> +
-> +	memset(report, 0, sizeof(struct pixcir_report_data));
->  
->  	ret = i2c_master_send(tsdata->client, wrbuf, sizeof(wrbuf));
->  	if (ret != sizeof(wrbuf)) {
-> @@ -56,45 +72,85 @@ static void pixcir_ts_poscheck(struct pixcir_i2c_ts_data *data)
->  		return;
->  	}
->  
-> -	touch = rdbuf[0];
-> -	if (touch) {
-> -		u16 posx1 = (rdbuf[3] << 8) | rdbuf[2];
-> -		u16 posy1 = (rdbuf[5] << 8) | rdbuf[4];
-> -		u16 posx2 = (rdbuf[7] << 8) | rdbuf[6];
-> -		u16 posy2 = (rdbuf[9] << 8) | rdbuf[8];
-> -
-> -		input_report_key(tsdata->input, BTN_TOUCH, 1);
-> -		input_report_abs(tsdata->input, ABS_X, posx1);
-> -		input_report_abs(tsdata->input, ABS_Y, posy1);
-> -
-> -		input_report_abs(tsdata->input, ABS_MT_POSITION_X, posx1);
-> -		input_report_abs(tsdata->input, ABS_MT_POSITION_Y, posy1);
-> -		input_mt_sync(tsdata->input);
-> -
-> -		if (touch == 2) {
-> -			input_report_abs(tsdata->input,
-> -					 ABS_MT_POSITION_X, posx2);
-> -			input_report_abs(tsdata->input,
-> -					 ABS_MT_POSITION_Y, posy2);
-> -			input_mt_sync(tsdata->input);
-> -		}
-> -	} else {
-> -		input_report_key(tsdata->input, BTN_TOUCH, 0);
-> +	touch = rdbuf[0] & 0x7;
-> +	if (touch > PIXCIR_MAX_SLOTS)
-> +		touch = PIXCIR_MAX_SLOTS;
-> +
-> +	report->num_touches = touch;
-> +	bufptr = &rdbuf[2];
-> +
-> +	for (i = 0; i < touch; i++) {
-> +		report->touches[i].x = (bufptr[1] << 8) | bufptr[0];
-> +		report->touches[i].y = (bufptr[3] << 8) | bufptr[2];
-> +
-> +		bufptr = bufptr + 4;
->  	}
-> +}
-> +
-> +static void pixcir_ts_report(struct pixcir_i2c_ts_data *ts,
-> +			     struct pixcir_report_data *report)
-> +{
-> +	struct input_mt_pos pos[PIXCIR_MAX_SLOTS];
-> +	int slots[PIXCIR_MAX_SLOTS];
-> +	struct pixcir_touch *touch;
-> +	int n, i, slot;
-> +	struct device *dev = &ts->client->dev;
->  
-> -	input_sync(tsdata->input);
-> +	n = report->num_touches;
-> +	if (n > PIXCIR_MAX_SLOTS)
-> +		n = PIXCIR_MAX_SLOTS;
-> +
-> +	for (i = 0; i < n; i++) {
-> +		touch = &report->touches[i];
-> +		pos[i].x = touch->x;
-> +		pos[i].y = touch->y;
-> +	}
-> +
-> +	input_mt_assign_slots(ts->input, slots, pos, n);
-> +
-> +	for (i = 0; i < n; i++) {
-> +		touch = &report->touches[i];
-> +		slot = slots[i];
-> +
-> +		input_mt_slot(ts->input, slot);
-> +		input_mt_report_slot_state(ts->input,
-> +					   MT_TOOL_FINGER, true);
-> +
-> +		input_event(ts->input, EV_ABS, ABS_MT_POSITION_X, touch->x);
-> +		input_event(ts->input, EV_ABS, ABS_MT_POSITION_Y, touch->y);
-> +
-> +		dev_dbg(dev, "%d: slot %d, x %d, y %d\n",
-> +			i, slot, touch->x, touch->y);
-> +	}
-> +
-> +	input_mt_sync_frame(ts->input);
-> +	input_sync(ts->input);
->  }
->  
->  static irqreturn_t pixcir_ts_isr(int irq, void *dev_id)
->  {
->  	struct pixcir_i2c_ts_data *tsdata = dev_id;
->  	const struct pixcir_ts_platform_data *pdata = tsdata->chip;
-> +	struct pixcir_report_data report;
->  
->  	while (tsdata->running) {
-> -		pixcir_ts_poscheck(tsdata);
-> -
-> -		if (gpio_get_value(pdata->gpio_attb))
-> +		/* parse packet */
-> +		pixcir_ts_parse(tsdata, &report);
-> +
-> +		/* report it */
-> +		pixcir_ts_report(tsdata, &report);
-> +
-> +		if (gpio_get_value(pdata->gpio_attb)) {
-> +			if (report.num_touches) {
-> +				/*
-> +				 * Last report with no finger up?
-> +				 * Do it now then.
-> +				 */
-> +				input_mt_sync_frame(tsdata->input);
-> +				input_sync(tsdata->input);
-> +			}
->  			break;
-> +		}
->  
->  		msleep(20);
->  	}
-> @@ -333,6 +389,13 @@ static int pixcir_i2c_ts_probe(struct i2c_client *client,
->  	input_set_abs_params(input, ABS_MT_POSITION_X, 0, pdata->x_max, 0, 0);
->  	input_set_abs_params(input, ABS_MT_POSITION_Y, 0, pdata->y_max, 0, 0);
->  
-> +	error = input_mt_init_slots(input, PIXCIR_MAX_SLOTS,
-> +				    INPUT_MT_DIRECT | INPUT_MT_DROP_UNUSED);
-> +	if (error) {
-> +		dev_err(dev, "Error initializing Multi-Touch slots\n");
-> +		return error;
-> +	}
-> +
->  	input_set_drvdata(input, tsdata);
->  
->  	error = devm_gpio_request_one(dev, pdata->gpio_attb,
-> 
+Consider __slab_free(). After put_cpu_partial() in __slab_free() is called,
+we attempt to update stat. There is possibility that this operation could be
+use-after-free with your solution. Until now, we have just stat operation, but
+it could be more. I don't like to impose this constraint to the slab free path.
+So IMHO, it is better that we should defer to destroy kmem_cache
+until last kfree() caller returns. Is it fair enough? :)
 
+Thanks.
