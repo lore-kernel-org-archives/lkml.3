@@ -1,64 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755260AbaFDDRH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jun 2014 23:17:07 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:48614 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754239AbaFDDRF (ORCPT
+	id S1754755AbaFDDZk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jun 2014 23:25:40 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:59869 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754087AbaFDDZi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jun 2014 23:17:05 -0400
-Message-ID: <538E8FAA.7010302@hitachi.com>
-Date: Wed, 04 Jun 2014 12:16:58 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Tue, 3 Jun 2014 23:25:38 -0400
+Date: Tue, 3 Jun 2014 20:25:33 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Francesco Ruggeri <fruggeri@aristanetworks.com>,
+        linux-kernel@vger.kernel.org, hare@suse.de, fruggeri@arista.com
+Subject: Re: pci: kernel crash in bus_find_device
+Message-ID: <20140604032533.GA22469@roeck-us.net>
+References: <20140603225502.F1C5122C07D5@bs320.sjc.aristanetworks.com>
+ <20140603232100.GA15247@kroah.com>
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Denys Vlasenko <dvlasenk@redhat.com>,
-        Jim Keniston <jkenisto@us.ibm.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Re: [PATCH] uprobes/x86: Rename arch_uprobe->def into ->dflt,
- minor comment updates
-References: <20140601192520.GA14539@redhat.com> <20140603182142.GA5097@gmail.com> <20140603183057.GA31382@redhat.com> <20140603183919.GC7664@gmail.com> <20140603191315.GA32736@redhat.com>
-In-Reply-To: <20140603191315.GA32736@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140603232100.GA15247@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/06/04 4:13), Oleg Nesterov wrote:
-> On 06/03, Ingo Molnar wrote:
->>
->> * Oleg Nesterov <oleg@redhat.com> wrote:
->>
->>> And this is how it was named when I wrote this code. Unfortunately gcc
->>> dislikes this name ;) So I renamed it to ->def. Then I was asked to
->>> rename it and I agree, ->def doesn't look good.
->>>
->>> Could you suggest something better?
->>
->> So exactly what do those fields do? If it's scratch register handling,
->> would it be logical to name it arch_uprobe->scratch, or so?
+On Tue, Jun 03, 2014 at 04:21:00PM -0700, Greg KH wrote:
+> On Tue, Jun 03, 2014 at 03:55:02PM -0700, Francesco Ruggeri wrote:
+> > In-Reply-To: <20140523023141.GC13900@kroah.com>
+> > 
+> > 
+> > Hi Guenter,
+> > I got back to looking into this crash.
+> > Just as an example, the attached diffs also fix my bus_find_device problem for
+> > traversals that start from the head of the list and traverse it completely.
+> > They are very specific to the case of bus_find_device, and a complete solution
+> > would affect a lot of code.
+> > The main issue seems to be that when a device is found in a klist by say
+> > bus_find_device the klist_node reference should be returned to the caller,
+> > who should then decide whether to use it for the next klist search, drop it or
+> > maybe exchange it for a struct device reference. When resuming a search one
+> > should already hold a klist_node reference from the previous search.
+> > This model is broken by several functions using struct devices such as
+> > bus_find_device, which resume klist searches on the implicit assumption that
+> > holding a reference to the struct device is enough to acquire one on the
+> > klist_node. 
+> > The only reason that this has not been a big issue so far is probably that
+> > on most systems struct devices are not destroyed and created very often.
 > 
-> Not only, ->fixups encodes other flags. and ->ilen is used by UPROBE_FIX_CALL.
+> Not true, this happens on every USB device insertion and removal, and on
+> startup and shutdown.  What makes PCI special that we aren't hitting
+> these issues in USB and other subsystems that do a lot of device
+> creation/removal?
 > 
-> arch_uprobe->def contains the arguments for default_xol_ops methods, currently
-> this handles everything except relative jmp/call insns.
-> 
-> So perhaps ->dflt is not that ugly in this case? I simply do not see anything
-> better. But again, I agree with any name in advance.
+Look for callers of bus_find_device. Unless I am missing something, only pci
+and scsi code call it with non-NULL 'start' argument, and the scsi use is
+limited to a walk through scsi devices for a proc file.
 
-Hmm, how about ->defparam ? :)
+Makes me wonder if the start argument should go away, and if pci and scsi
+should use another means to walk through devices.
 
-Thank you,
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+Guenter
