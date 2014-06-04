@@ -1,69 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753288AbaFDNCX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 09:02:23 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:34564 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753051AbaFDNCV (ORCPT
+	id S1753237AbaFDNDe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 09:03:34 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:62649 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752305AbaFDNDd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 09:02:21 -0400
-Message-ID: <538F18B6.7070102@ti.com>
-Date: Wed, 4 Jun 2014 08:01:42 -0500
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Wed, 4 Jun 2014 09:03:33 -0400
+Message-ID: <538F1936.4000905@linaro.org>
+Date: Wed, 04 Jun 2014 15:03:50 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Grazvydas Ignotas <notasas@gmail.com>
-CC: <dbaryshkov@gmail.com>, Tony Lindgren <tony@atomide.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Felipe Balbi <balbi@ti.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        <dwmw2@infradead.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH V2 2/2] power: twl4030_charger: attempt to power off in
- case of critical events
-References: <1401313610-14252-1-git-send-email-nm@ti.com>	<1401313610-14252-3-git-send-email-nm@ti.com> <CANOLnOPb1xbqb5WXaK5-kdCezVuDhNxTtE5VV_MbCi4WTd2=oA@mail.gmail.com>
-In-Reply-To: <CANOLnOPb1xbqb5WXaK5-kdCezVuDhNxTtE5VV_MbCi4WTd2=oA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
+To: Andy Lutomirski <luto@amacapital.net>,
+        Peter Zijlstra <peterz@infradead.org>, umgwanakikbuti@gmail.com
+CC: mingo@kernel.org, tglx@linutronix.de, nicolas.pitre@linaro.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/6] sched,idle: Clarify where TIF_NRFLAG_POLLING is set
+References: <cover.1401841482.git.luto@amacapital.net> <1f7b2a25440561e49fb6d0bace3532b5df832ffd.1401841482.git.luto@amacapital.net>
+In-Reply-To: <1f7b2a25440561e49fb6d0bace3532b5df832ffd.1401841482.git.luto@amacapital.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/04/2014 05:04 AM, Grazvydas Ignotas wrote:
-> On Thu, May 29, 2014 at 12:46 AM, Nishanth Menon <nm@ti.com> wrote:
->> Attempt to power off in case of critical events such as battery removal,
->> over voltage events.
->>
->> There is no guarentee that we'd be in a safe scenario here, but the very
->> least we can try to do is to power off the device to prevent damage to
->> the system instead of just printing a message and hoping for the best.
-> 
-> At least "battery temperature out of range" does seem to happen quite
-> often while charging on hot summer day. I'd prefer my pandora to not
-> shutdown in such case, it could just stop charging instead.
-Yeah, We could call
-  twl4030_charger_enable_ac(false);
-  twl4030_charger_enable_usb(bci, false);
+On 06/04/2014 02:29 AM, Andy Lutomirski wrote:
+> This doesn't change functionality at all, but I've misread this code
+> so many times that I want to make it a bit more obvious.
+>
+> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+> ---
+>   kernel/sched/idle.c | 12 +++++++++++-
+>   1 file changed, 11 insertions(+), 1 deletion(-)
+>
+> diff --git a/kernel/sched/idle.c b/kernel/sched/idle.c
+> index 25b9423..2ec9f47 100644
+> --- a/kernel/sched/idle.c
+> +++ b/kernel/sched/idle.c
+> @@ -67,6 +67,10 @@ void __weak arch_cpu_idle(void)
+>    * cpuidle_idle_call - the main idle function
+>    *
+>    * NOTE: no locks or semaphores should be used here
+> + *
+> + * On archs that support TIF_POLLING_NRFLAG, is called with polling
+> + * set, and it returns with polling set.  If it ever stops polling, it
+> + * must clear the polling bit.
+>    */
+>   static void cpuidle_idle_call(void)
+>   {
+> @@ -178,7 +182,14 @@ exit_idle:
+>    */
+>   static void cpu_idle_loop(void)
+>   {
+> +	__current_set_polling();
+> +
+>   	while (1) {
+> +		/*
+> +		 * Invariant: polling is set here (assuming that the arch
+> +		 * has a polling bit.
+> +		 */
+> +
 
-But then, is that sufficient?
->From the TRM:
-7.5.8 Battery Temperature Out-of-Range Detection
-Battery temperature out-of-range detection detects whether the battery
-temperature is within a specific
-range. Detection is possible for two temperature ranges. When the
-battery temperature is not in the
-2–50°C range or is in the 3–43°C range, the TBATOR1 and TBATOR2 status
-bits rise and an interrupt is
-generated.
-This MADC monitoring function can be enabled by writing to the
-TBATOR1EN (BCIMFEN2[3]) and
-TBATOR2EN (BCIMFEN2[1]) fields.
+nit : extra line
 
-Battery pack at high temperature is a risk, no? and it may not be just
-charger that might be causing such a condition. Is'nt it safer to shut
-the device down in such a case?
+>   		tick_nohz_idle_enter();
+>
+>   		while (!need_resched()) {
+> @@ -239,7 +250,6 @@ void cpu_startup_entry(enum cpuhp_state state)
+>   	 */
+>   	boot_init_stack_canary();
+>   #endif
+> -	__current_set_polling();
+
+I don't get the connection with the patch description.
+
+>   	arch_cpu_idle_prepare();
+>   	cpu_idle_loop();
+>   }
+>
+
 
 -- 
-Regards,
-Nishanth Menon
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
