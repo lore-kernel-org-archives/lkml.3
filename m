@@ -1,81 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752417AbaFDL13 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 07:27:29 -0400
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:42296 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751640AbaFDL12 (ORCPT
+	id S1752536AbaFDL3f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 07:29:35 -0400
+Received: from mail-ig0-f174.google.com ([209.85.213.174]:33712 "EHLO
+	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752401AbaFDL3e convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 07:27:28 -0400
+	Wed, 4 Jun 2014 07:29:34 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140530160831.GA11182@kroah.com>
-References: <1401287192-14701-1-git-send-email-thierry.reding@gmail.com>
- <20140528205145.GB10468@kroah.com> <20140530081504.GA16669@ulmo> <20140530160831.GA11182@kroah.com>
-From: Sumit Semwal <sumit.semwal@linaro.org>
-Date: Wed, 4 Jun 2014 16:57:07 +0530
-Message-ID: <CAO_48GE_Y7DQj_nCZ=0gb_AY26_vtPsQybf9zuhsLW1nnaOuQw@mail.gmail.com>
-Subject: Re: [PATCH] fence: Use smp_mb__before_atomic()
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Thierry Reding <thierry.reding@gmail.com>,
-        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+X-Originating-IP: [130.226.142.243]
+In-Reply-To: <20140604103901.GA14383@kernel.org>
+References: <1399627061-5960-1-git-send-email-m@bjorling.me>
+	<1399627061-5960-2-git-send-email-m@bjorling.me>
+	<536CE25C.5040107@kernel.dk>
+	<536D0537.7010905@kernel.dk>
+	<20140530121119.GA1637@kernel.org>
+	<53888C80.2020206@kernel.dk>
+	<20140604103901.GA14383@kernel.org>
+Date: Wed, 4 Jun 2014 13:29:33 +0200
+Message-ID: <CAOu_J6nRZuktyozjychkLOA+1zwct2+7KPUxfNAghVOOOBfi+g@mail.gmail.com>
+Subject: Re: [PATCH] block: per-cpu counters for in-flight IO accounting
+From: =?UTF-8?Q?Matias_Bj=C3=B8rling?= <m@bjorling.me>
+To: Shaohua Li <shli@kernel.org>
+Cc: Jens Axboe <axboe@kernel.dk>,
+        "Sam Bradshaw (sbradshaw)" <sbradshaw@micron.com>,
         LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+It's in
 
+blk_io_account_start
+  part_round_stats
+    part_round_state_single
+      part_in_flight
 
-On 30 May 2014 21:38, Greg Kroah-Hartman <gregkh@linuxfoundation.org> wrote:
-> On Fri, May 30, 2014 at 10:15:05AM +0200, Thierry Reding wrote:
->> On Wed, May 28, 2014 at 01:51:45PM -0700, Greg Kroah-Hartman wrote:
->> > On Wed, May 28, 2014 at 04:26:32PM +0200, Thierry Reding wrote:
->> > > From: Thierry Reding <treding@nvidia.com>
->> > >
->> > > Commit febdbfe8a91c (arch: Prepare for smp_mb__{before,after}_atomic())
->> > > deprecated the smp_mb__{before,after}_{atomic,clear}_{dec,inc,bit}*()
->> > > functions in favour of the unified smp_mb__{before,after}_atomic().
->> > >
->> > > Signed-off-by: Thierry Reding <treding@nvidia.com>
->> > > ---
->> > >  drivers/base/fence.c | 4 ++--
+I like the granularity idea.
+
+Thanks,
+Matias
+
+On Wed, Jun 4, 2014 at 12:39 PM, Shaohua Li <shli@kernel.org> wrote:
+> On Fri, May 30, 2014 at 07:49:52AM -0600, Jens Axboe wrote:
+>> On 2014-05-30 06:11, Shaohua Li wrote:
+>> >On Fri, May 09, 2014 at 10:41:27AM -0600, Jens Axboe wrote:
+>> >>On 05/09/2014 08:12 AM, Jens Axboe wrote:
+>> >>>On 05/09/2014 03:17 AM, Matias Bjørling wrote:
+>> >>>>With multi-million IOPS and multi-node workloads, the atomic_t in_flight
+>> >>>>tracking becomes a bottleneck. Change the in-flight accounting to per-cpu
+>> >>>>counters to elevate.
+>> >>>
+>> >>>The part stats are a pain in the butt, I've tried to come up with a
+>> >>>great fix for them too. But I don't think the percpu conversion is
+>> >>>necessarily the right one. The summing is part of the hotpath, so percpu
+>> >>>counters aren't necessarily the right way to go. I don't have a better
+>> >>>answer right now, otherwise it would have been fixed :-)
+>> >>
+>> >>Actual data point - this slows my test down ~14% compared to the stock
+>> >>kernel. Also, if you experiment with this, you need to watch for the
+>> >>out-of-core users of the part stats (like DM).
 >> >
->> > Where does this file come from?  I've not seen it before, and it's not
->> > in my tree.
+>> >I had a try with Matias's patch. Performance actually boost significantly.
+>> >(there are other cache line issue though, eg, hd_struct_get). Jens, what did
+>> >you run? part_in_flight() has 3 usages. 2 are for status output, which are cold
+>> >path. part_round_stats_single() uses it too, but it's a cold path too as we
+>> >simple data every jiffy. Are you using HZ=1000? maybe we should simple the data
+>> >every 10ms instead of every jiffy?
 >>
->> I think it came in through Sumit's tree and it's only in linux-next I
->> believe.
+>> I ran peak and normal benchmarks on a p320, on a 4 socket box (64
+>> cores). The problem is the one hot path of part_in_flight(), summing
+>> percpu for that is too expensive. On bigger systems than mine, it'd
+>> be even worse.
 >
-> Odd, linux-next is for merging things in Linus's next release.
+> I run a null_blk test with 4 sockets, Matias has improvement. And I didn't find
+> part_in_flight() is called in any hot path.
 >
-> And as I have never seen this code that will end up being my
-> responsibility to maintain, it seems strange that it will be merged in
-> the next kernel development cycle.
->
-> What broke down here with our review process that required something to
-> be merged without at least a cc: to me?
-
-This is a new file added by Maarten's patches [1], that got reviewed
-on dri-devel and other mailing lists. Since it was quite closely
-associated with dma-buf, I figured I should take it through the
-dma-buf tree.
-
-I am sorry I didn't notice that you weren't CC'ed on these patches -
-Sincere apologies, since I should've noticed that during the patch
-review process - I would take part of the blame here as well  :(
-
-I do realize now that atleast on my part, I should've asked you before
-taking it through the dma-buf tree - I will make sure things like this
-don't happen again through me.
-
-May I request you to help us handle this - would it help if we add
-Maarten as the maintainer for this file? Any other suggestions?
-
->
-> greg k-h
-
-Best regards,
-~Sumit.
-
-[1]: https://lkml.org/lkml/2014/2/24/824
+> Thanks,
+> Shaohua
