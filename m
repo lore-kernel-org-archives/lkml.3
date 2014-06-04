@@ -1,144 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933109AbaFDIAF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 04:00:05 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55383 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753109AbaFDIAB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 04:00:01 -0400
-Date: Wed, 4 Jun 2014 09:59:59 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Bjorn Helgaas <bhelgaas@google.com>
-cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>, Ales Novak <alnovak@suse.cz>,
-        Adam Radford <aradford@gmail.com>
-Subject: Re: [PATCH] PCI: add quirk for 3ware 9650SE controller
-In-Reply-To: <CAErSpo7rsCGKLauH+Te1P1yJbnZAjWo18oYUYhcetecHgk+kUg@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1406040958270.11302@pobox.suse.cz>
-References: <alpine.LNX.2.00.1308271141080.2077@pobox.suse.cz> <alpine.LNX.2.00.1308271144420.2077@pobox.suse.cz> <alpine.LNX.2.00.1308281745460.4557@pobox.suse.cz> <CAErSpo6saRNMw6Js0PLXZzYDdH0M3ypSFLDxVxp0G02aetp0Dw@mail.gmail.com>
- <alpine.LNX.2.00.1309061150140.26934@pobox.suse.cz> <CAErSpo5ExXsbSd+jYP5JYwq-RBf-dx1T_AZx6CV4=6-AfTTynQ@mail.gmail.com> <alpine.LNX.2.00.1309271106090.18703@pobox.suse.cz> <alpine.LNX.2.00.1310301125400.19090@pobox.suse.cz>
- <CAErSpo7qORQjs62zdi-5et2WnWwy3weMs56G84rWhNrW59F5WQ@mail.gmail.com> <alpine.LNX.2.00.1311051402500.2779@pobox.suse.cz> <CAErSpo4J2+XVb=aTGM9u3Kaeo-TOrvfe1=9PuyKx6jq=NnLgaw@mail.gmail.com>
- <CAErSpo7rsCGKLauH+Te1P1yJbnZAjWo18oYUYhcetecHgk+kUg@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1754509AbaFDIBe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 04:01:34 -0400
+Received: from mout.kundenserver.de ([212.227.17.13]:54306 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751140AbaFDIBd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 04:01:33 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Sebastian Reichel <sre@kernel.org>
+Cc: Carlos Chinea <carlos.chinea@nokia.com>,
+        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2] hsi: omap_ssi_port: use normal module refcounting
+Date: Wed, 04 Jun 2014 10:00:59 +0200
+Message-ID: <4579153.ES6XlsZ43F@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <7426698.eEpYu3o0WK@wuerfel>
+References: <7426698.eEpYu3o0WK@wuerfel>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:chzBIY1byMuxca8CpwyUksxcTEeiFaYx3ZYR7gEq99/
+ U+ddI86fDURgkszpHNnYXjA0vSHR35AZlV5ktQclUq7wkd24BB
+ 6yZrWb/GfELUWSNDE5HL7NcpQqvhQKMamMNm4nCqhRuxx6F2jt
+ LaD5fOPbxJJSRpTOLcBlmA9FbAWsclKa/Wsa+vuboylpkpj/DX
+ vOEbriiGkyCgfZXGVVFXGkyFxB3eirijva9f6cR69ZWGvSy8Dp
+ xfvcwjQgzGKjZbVv21B2sZuruj1mLBTkRBDGEgzFKLcXiSSbwe
+ xj/Cwn9/L3gJ6ITfRosZGlENNh3ZatvFF2LojU2eDP89JhaksX
+ llPFIUeOpGZAyGMtfL9M=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 3 Jun 2014, Bjorn Helgaas wrote:
+The ref_module() function is used for internal housekeeping of the
+module code, it's not normally used by subsystems or device drivers,
+and the use of ref_module in the omap_ssi_port driver causes a link
+build error when modules are disabled:
 
-> >>> > Attached is dmesg output leading to timeouts (that are cured by my
-> >>> > original patch in this thread) and lspci.
-> >>>
-> >>> I opened https://bugzilla.kernel.org/show_bug.cgi?id=64141 for this
-> >>> issue and attached your dmesg log and lspci output.
-> >>>
-> >>> > Please let me know if there is anything else I could do, or if you are
-> >>> > going to proceed with my patch adding the quirk.
-> >>>
-> >>> Your quirk keeps us from disabling MSIs on the device during
-> >>> enumeration.  But even if the BIOS left MSIs enabled, there's nothing
-> >>> to field the MSI until after the driver claims the device.  So I don't
-> >>> believe this has to be done as a quirk.  It should work just as well
-> >>> to do something in the driver when it claims the device.
-> >>>
-> >>> I guess another way to say this is that I don't think we understand
-> >>> what the real problem is, and if we just add a quirk to work around
-> >>> it, we might miss the chance to fix the real problem, and we may never
-> >>> be able to remove the special-case code we're adding in the generic
-> >>> path.
-> >>>
-> >>> I know you said you tried doing something in the driver, and it didn't
-> >>> work.  I don't know exactly what you tried, but twa_probe() looks
-> >>> strange to me.  The other drivers I looked at do all their PCI
-> >>> initialization before the scsi_host_alloc() / scsi_add_host() /
-> >>> scsi_scan_host() stuff.  But twa_probe() has PCI stuff scattered
-> >>> around between those three SCSI calls.  In particular, it does the MSI
-> >>> setup way down near the end, after scsi_add_host(), which seems like
-> >>> just the sort of thing that could explain this problem.
-> >>
-> >> What I tried was patch below, but it didn't have any observable effect --
-> >> the commands sent to the controller would still time out the same way.
-> >>
-> >> Debugging this is not really straightforward for me unfortunately, as I
-> >> don't own the system myself.
-> >>
-> >> I agree that we don't fully understand what is happening, but the quirk
-> >> was the only way I have been able to come up with to make the device
-> >> functioning again (apart from reverting d5dea7d95).
-> >>
-> >> Any other ideas are welcome.
-> >
-> > This patch looks like a good start, but there's a whole lot of other
-> > PCI-related initialization that I would suggest moving as well --
-> > pci_request_regions(), ioremap(), pci_set_drvdata(), pci_enable_msi,
-> > request_irq(), etc.  I would do this myself, but there are some pieces
-> > that don't look completely trivial, e.g., things like
-> > TW_DISABLE_INTERRUPTS() and twa_reset_sequence() don't look like
-> > they're SCSI-specific, but they are currently implemented using
-> > tw_dev, which looks like it's allocated by scsi_host_alloc().
-> > Untangling all this looks like more work than I want to sign up to.
-> >
-> > But I really don't want to put the quirk in because it's just a quick
-> > hack that apparently just covers up bugs in the driver, and it will be
-> > an annoyance in the PCI core forever.
-> 
-> Just FYI, I reassigned
-> https://bugzilla.kernel.org/show_bug.cgi?id=64141 from PCI to SCSI,
-> since I don't think there's a PCI core problem here.  I don't know if
-> SCSI pay attention to bugzilla at all; I'm just mentioning it here in
-> case anybody still cares about this problem and was hoping that I was
-> going to do something.
+hsi/controllers/omap_ssi_port.c: In function 'ssi_port_probe':
+hsi/controllers/omap_ssi_port.c:1119:2: error: implicit declaration of function 'ref_module' [-Werror=implicit-function-declaration]
 
-I am adding to CC Ales Novak, who has been handling this bug on our side 
-lately.
+This changes the omap_ssi_port driver to use try_module_get()
+and module_put() instead, which is the normal way to ensure that
+the driver providing a device used in another module does not
+go away.
 
-> 
-> Bjorn
-> 
-> >> ---
-> >>  drivers/scsi/3w-9xxx.c |   10 +++++-----
-> >>  1 files changed, 5 insertions(+), 5 deletions(-)
-> >>
-> >> diff --git a/drivers/scsi/3w-9xxx.c b/drivers/scsi/3w-9xxx.c
-> >> index ba754c3..bad7faf 100644
-> >> --- a/drivers/scsi/3w-9xxx.c
-> >> +++ b/drivers/scsi/3w-9xxx.c
-> >> @@ -2055,6 +2055,11 @@ static int __devinit twa_probe(struct pci_dev *pdev, const struct pci_device_id
-> >>                         goto out_disable_device;
-> >>                 }
-> >>
-> >> +       /* Try to enable MSI */
-> >> +       if (use_msi && (pdev->device != PCI_DEVICE_ID_3WARE_9000) &&
-> >> +           !pci_enable_msi(pdev))
-> >> +               set_bit(TW_USING_MSI, &tw_dev->flags);
-> >> +
-> >>         host = scsi_host_alloc(&driver_template, sizeof(TW_Device_Extension));
-> >>         if (!host) {
-> >>                 TW_PRINTK(host, TW_DRIVER, 0x24, "Failed to allocate memory for device extension");
-> >> @@ -2134,11 +2139,6 @@ static int __devinit twa_probe(struct pci_dev *pdev, const struct pci_device_id
-> >>                le32_to_cpu(*(int *)twa_get_param(tw_dev, 2, TW_INFORMATION_TABLE,
-> >>                                      TW_PARAM_PORTCOUNT, TW_PARAM_PORTCOUNT_LENGTH)));
-> >>
-> >> -       /* Try to enable MSI */
-> >> -       if (use_msi && (pdev->device != PCI_DEVICE_ID_3WARE_9000) &&
-> >> -           !pci_enable_msi(pdev))
-> >> -               set_bit(TW_USING_MSI, &tw_dev->flags);
-> >> -
-> >>         /* Now setup the interrupt handler */
-> >>         retval = request_irq(pdev->irq, twa_interrupt, IRQF_SHARED, "3w-9xxx", tw_dev);
-> >>         if (retval) {
-> >>
-> >>
-> >> --
-> >> Jiri Kosina
-> >> SUSE Labs
-> 
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Sebastian Reichel <sre@kernel.org>
+Cc: Carlos Chinea <carlos.chinea@nokia.com>
+Cc: Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>
+---
+v2: fix a stupid typo, I accidentally sent out the wrong version of the patch
 
--- 
-Jiri Kosina
-SUSE Labs
+diff --git a/drivers/hsi/controllers/omap_ssi_port.c b/drivers/hsi/controllers/omap_ssi_port.c
+index b8693f0..29aea0b 100644
+--- a/drivers/hsi/controllers/omap_ssi_port.c
++++ b/drivers/hsi/controllers/omap_ssi_port.c
+@@ -1116,8 +1116,7 @@ static int __init ssi_port_probe(struct platform_device *pd)
+ 
+ 	dev_dbg(&pd->dev, "init ssi port...\n");
+ 
+-	err = ref_module(THIS_MODULE, ssi->owner);
+-	if (err) {
++	if (!try_module_get(ssi->owner)) {
+ 		dev_err(&pd->dev, "could not increment parent module refcount (err=%d)\n",
+ 			err);
+ 		return -ENODEV;
+@@ -1254,6 +1253,7 @@ static int __exit ssi_port_remove(struct platform_device *pd)
+ 
+ 	omap_ssi->port[omap_port->port_id] = NULL;
+ 	platform_set_drvdata(pd, NULL);
++	module_put(ssi->owner);
+ 	pm_runtime_disable(&pd->dev);
+ 
+ 	return 0;
+
