@@ -1,83 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752504AbaFDPi1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 11:38:27 -0400
-Received: from mga02.intel.com ([134.134.136.20]:17807 "EHLO mga02.intel.com"
+	id S1752749AbaFDPji (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 11:39:38 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:60173 "EHLO e8.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751701AbaFDPi0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 11:38:26 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,973,1392192000"; 
-   d="scan'208";a="551534082"
-Message-ID: <538F3E6A.4080905@linux.intel.com>
-Date: Wed, 04 Jun 2014 08:42:34 -0700
-From: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	id S1751554AbaFDPjg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 11:39:36 -0400
+Date: Wed, 4 Jun 2014 08:39:11 -0700
+From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        David Ahern <dsahern@gmail.com>, Namhyung Kim <namhyung@kernel.org>
+Subject: Re: Fw: Re: [PATCH 1/1] powerpc/perf: Adjust callchain based on
+ DWARF debug info
+Message-ID: <20140604153910.GA16430@us.ibm.com>
+References: <20140530155925.GF7427@krava.brq.redhat.com>
+ <20140602141219.GB7861@krava.brq.redhat.com>
+ <20140603074710.GA30870@us.ibm.com>
+ <20140604120801.GE5555@krava.brq.redhat.com>
 MIME-Version: 1.0
-To: Reyad Attiyat <reyad.attiyat@gmail.com>
-CC: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
-        Jonathan Cameron <jic23@kernel.org>,
-        linux-input <linux-input@vger.kernel.org>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: Re: [PATCHv2 3/3] IIO: hid-sensor-magn-3d: Add in support for True/Magnetic
- North HID usages
-References: <1401750890-31854-1-git-send-email-reyad.attiyat@gmail.com> <1401750890-31854-4-git-send-email-reyad.attiyat@gmail.com> <538E092F.9040004@linux.intel.com> <CA+BWVUTxnS_C+EXm1SuShywk998+E5KfTdtTrS6_a0+k+4U4ig@mail.gmail.com>
-In-Reply-To: <CA+BWVUTxnS_C+EXm1SuShywk998+E5KfTdtTrS6_a0+k+4U4ig@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140604120801.GE5555@krava.brq.redhat.com>
+X-Operating-System: Linux 2.0.32 on an i486
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14060415-0320-0000-0000-000003757FE6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/04/2014 08:23 AM, Reyad Attiyat wrote:
-> Hey Srinivas,
->
-> On Tue, Jun 3, 2014 at 12:43 PM, Srinivas Pandruvada
-> <srinivas.pandruvada@linux.intel.com> wrote:
->
->>
->> May be we should have a field in const struct iio_chan_spec, so that we
->> can dynamically enable disable channels. In this way we can statically
->> define channels, but can be enabled/disabled dynamically.
->>
-> Would this require changing iio subsystem to create sysfs entries only
-> when enabled? Would we need to add functions to disable and enable
-> later on?
+Jiri Olsa [jolsa@redhat.com] wrote:
+| On Tue, Jun 03, 2014 at 12:47:10AM -0700, Sukadev Bhattiprolu wrote:
+| 
+| SNIP
+| 
+| > | 
+| > | 
+| > | could you please change this, so it's nop for arch != powerpc
+| > | via #ifdef I guess.. or some other smart way ;-)
+| > 
+| > I was trying to avoid the #ifdef in the middle of the function.
+| > 
+| > How about adding a PERF_CONTEXT_IGNORE and doing something like this:
+| 
+| hum, 2 arch calls.. seems too complicated.. :-\
 
-This is just a thought. You don't have to change it. I am sure Jonathan 
-will have some opinion this.
+Other than an 'arch_' prefix in their name the non-powerpc functions
+themselves are trivial, no ? 
 
->>
->> I think we need to present angle in radians. Are you basing change present
->> in linux-next? This will automatically do in this function.
->>
-> I'll look into this. What function should I use to make the iio chanel
-> to report radians?
-I think it will work if the existing sequence is maintained
-  st->scale_precision = hid_sensor_format_scale(
-                                 HID_USAGE_SENSOR_COMPASS_3D,
-                                 &st->magn[CHANNEL_SCAN_INDEX_X],
-                                 &st->scale_pre_decml, 
-&st->scale_post_decml);
+| 
+| so if you are already introducing PERF_CONTEXT_IGNORE, why
+| dont we go with the chain duplication/fixing in arch code
+| you mentioned before?
+| 
+| this way the callchain loop stays simple and it's extendbable
+| to future changes (I think u mentioned we could change more
+| than one entry in future..?)
 
-So as long as you call this function, the scale value to user space will
-be returned correctly.
+The memdup() on each call chain entry can impact performance for
+powerpc.  AFAICT, only one entry needs to be adjusted, so the memdup()
+looked like an overkill.
 
->>
->>
->> I don't see kfree. Try devm_kcalloc?
->>
-> I changed kmemdup to kcalloc so there is still a kfree in the exsiting
-> code. I can change this to devm_kcalloc but only if we don't go with
-> static channels that are enabled as found.
->
-Since you are changing this part, devm_ calls are preferred, I think.
-
-Thanks,
-Srinivas
-
-
-> Thanks,
-> Reyad Attiyat
->
+| 
+| thoughts.. anyone? ;-)
+| 
+| thanks,
+| jirka
 
