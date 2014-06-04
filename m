@@ -1,158 +1,481 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751700AbaFDIxf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 04:53:35 -0400
-Received: from mail-vc0-f176.google.com ([209.85.220.176]:52605 "EHLO
-	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751664AbaFDIxa (ORCPT
+	id S1751789AbaFDIyb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 04:54:31 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:48958 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751374AbaFDIy2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 04:53:30 -0400
+	Wed, 4 Jun 2014 04:54:28 -0400
+Date: Wed, 4 Jun 2014 10:54:18 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: rafael.j.wysocki@intel.com, jacob.jun.pan@linux.intel.com
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org, lenb@kernel.org,
+        mingo@kernel.org, tglx@linutronix.de, hpa@zytor.com,
+        arjan@linux.intel.com, rui.zhang@intel.com, luto@amacapital.net
+Subject: [PATCH] idle, thermal, acpi: Remove home grown idle implementations
+Message-ID: <20140604085418.GA11096@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-In-Reply-To: <20140603081655.GA6013@esperanza>
-References: <cover.1401457502.git.vdavydov@parallels.com>
-	<5d2fbc894a2c62597e7196bb1ebb8357b15529ab.1401457502.git.vdavydov@parallels.com>
-	<alpine.DEB.2.10.1405300955120.11943@gentwo.org>
-	<20140531110456.GC25076@esperanza>
-	<20140602042435.GA17964@js1304-P5Q-DELUXE>
-	<20140602114741.GA1039@esperanza>
-	<CAAmzW4P=kUAJwozBPPos+uUewzSDnE43P6NcGYKNpBjjfv1EWA@mail.gmail.com>
-	<20140603081655.GA6013@esperanza>
-Date: Wed, 4 Jun 2014 17:53:29 +0900
-Message-ID: <CAAmzW4O-tAw9t=gEHhbKiG+vfDsuCsOB1dyB_2iwO1qeFjtYmQ@mail.gmail.com>
-Subject: Re: [PATCH -mm 7/8] slub: make dead caches discard free slabs immediately
-From: Joonsoo Kim <js1304@gmail.com>
-To: Vladimir Davydov <vdavydov@parallels.com>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>, Christoph Lameter <cl@gentwo.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux Memory Management List <linux-mm@kvack.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="7dLEKQsGm0Z6zEmU"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-06-03 17:16 GMT+09:00 Vladimir Davydov <vdavydov@parallels.com>:
-> On Mon, Jun 02, 2014 at 11:03:51PM +0900, Joonsoo Kim wrote:
->> 2014-06-02 20:47 GMT+09:00 Vladimir Davydov <vdavydov@parallels.com>:
->> > Hi Joonsoo,
->> >
->> > On Mon, Jun 02, 2014 at 01:24:36PM +0900, Joonsoo Kim wrote:
->> >> On Sat, May 31, 2014 at 03:04:58PM +0400, Vladimir Davydov wrote:
->> >> > On Fri, May 30, 2014 at 09:57:10AM -0500, Christoph Lameter wrote:
->> >> > > On Fri, 30 May 2014, Vladimir Davydov wrote:
->> >> > >
->> >> > > > (3) is a bit more difficult, because slabs are added to per-cpu partial
->> >> > > > lists lock-less. Fortunately, we only have to handle the __slab_free
->> >> > > > case, because, as there shouldn't be any allocation requests dispatched
->> >> > > > to a dead memcg cache, get_partial_node() should never be called. In
->> >> > > > __slab_free we use cmpxchg to modify kmem_cache_cpu->partial (see
->> >> > > > put_cpu_partial) so that setting ->partial to a special value, which
->> >> > > > will make put_cpu_partial bail out, will do the trick.
->> > [...]
->> >> I think that we can do (3) easily.
->> >> If we check memcg_cache_dead() in the end of put_cpu_partial() rather
->> >> than in the begin of put_cpu_partial(), we can avoid the race you
->> >> mentioned. If someone do put_cpu_partial() before dead flag is set,
->> >> it can be zapped by who set dead flag. And if someone do
->> >> put_cpu_partial() after dead flag is set, it can be zapped by who
->> >> do put_cpu_partial().
->> >
->> > After put_cpu_partial() adds a frozen slab to a per cpu partial list,
->> > the slab becomes visible to other threads, which means it can be
->> > unfrozen and freed. The latter can trigger cache destruction. Hence we
->> > shouldn't touch the cache, in particular call memcg_cache_dead() on it,
->> > after calling put_cpu_partial(), otherwise we can get use-after-free.
->> >
->> > However, what you propose makes sense if we disable irqs before adding a
->> > slab to a partial list and enable them only after checking if the cache
->> > is dead and unfreezing all partials if so, i.e.
->> >
->> > diff --git a/mm/slub.c b/mm/slub.c
->> > index d96faa2464c3..14b9e9a8677c 100644
->> > --- a/mm/slub.c
->> > +++ b/mm/slub.c
->> > @@ -2030,8 +2030,15 @@ static void put_cpu_partial(struct kmem_cache *s, struct page *page, int drain)
->> >         struct page *oldpage;
->> >         int pages;
->> >         int pobjects;
->> > +       unsigned long flags;
->> > +       int irq_saved = 0;
->> >
->> >         do {
->> > +               if (irq_saved) {
->> > +                       local_irq_restore(flags);
->> > +                       irq_saved = 0;
->> > +               }
->> > +
->> >                 pages = 0;
->> >                 pobjects = 0;
->> >                 oldpage = this_cpu_read(s->cpu_slab->partial);
->> > @@ -2062,8 +2069,16 @@ static void put_cpu_partial(struct kmem_cache *s, struct page *page, int drain)
->> >                 page->pobjects = pobjects;
->> >                 page->next = oldpage;
->> >
->> > +               local_irq_save(flags);
->> > +               irq_saved = 1;
->> > +
->> >         } while (this_cpu_cmpxchg(s->cpu_slab->partial, oldpage, page)
->> >                                                                 != oldpage);
->> > +
->> > +       if (memcg_cache_dead(s))
->> > +               unfreeze_partials(s, this_cpu_ptr(s->cpu_slab));
->> > +
->> > +       local_irq_restore(flags);
->> >  #endif
->> >  }
->> >
->> >
->> > That would be safe against possible cache destruction, because to remove
->> > a slab from a per cpu partial list we have to run on the cpu it was
->> > frozen on. Disabling irqs makes it impossible.
->>
->> Hmm... this is also a bit ugly.
->> How about following change?
->>
->> Thanks.
->>
->> diff --git a/mm/slub.c b/mm/slub.c
->> index 2b1ce69..6adab87 100644
->> --- a/mm/slub.c
->> +++ b/mm/slub.c
->> @@ -2058,6 +2058,21 @@ static void put_cpu_partial(struct kmem_cache
->> *s, struct page *page, int drain)
->>
->>         } while (this_cpu_cmpxchg(s->cpu_slab->partial, oldpage, page)
->>                                                                 != oldpage);
->> +
->> +       if (memcg_cache_dead(s)) {
->> +               bool done = false;
->> +               unsigned long flags;
->
-> Suppose we are preempted here. In the meanwhile all objects are freed to
-> the cache, all frozen pages are unfrozen and also freed. The cache
-> destruction is then scheduled (patch 2 of this set). Then when this
-> thread continues execution it will operate on the cache that was
-> destroyed - use-after-free.
->
-> I admit, this is very unlikely, but can we ignore this possibility?
->
 
-Hello,
+--7dLEKQsGm0Z6zEmU
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
->From your comment, now, I realize that your cache destruction solution
-has severe problem.
 
-With you solution, kmem_cache can be destroyed before last kfree() caller
-has returned. It means that we can't safely do anything related to
-the kmem_cache after losing control about that slab where we try to free
-object in free path.
+I'm still sitting on this patch. Jacub you were going to make it play
+nice with QoS?
 
-Consider __slab_free(). After put_cpu_partial() in __slab_free() is called,
-we attempt to update stat. There is possibility that this operation could be
-use-after-free with your solution. Until now, we have just stat operation, but
-it could be more. I don't like to impose this constraint to the slab free path.
-So IMHO, it is better that we should defer to destroy kmem_cache
-until last kfree() caller returns. Is it fair enough? :)
+---
+Subject: idle, thermal, acpi: Remove home grown idle implementations
+=46rom: Peter Zijlstra <peterz@infradead.org>
+Date: Wed Nov 20 14:32:37 CET 2013
 
-Thanks.
+People are starting to grow their own idle implementations in various
+disgusting ways. Collapse the lot and use the generic idle code to
+provide a proper idle cycle implementation.
+
+This does not fully preseve existing behaviour in that the generic
+idle cycle function calls into the normal cpuidle governed idle
+routines and should thus respect things like QoS parameters and the
+like.
+
+If people want to over-ride the idle state they should talk to the
+cpuidle folks about extending the interface and attempt to preserve
+QoS guarantees, instead of jumping straight to the deepest possible C
+state -- Jacub Pan said he was going to do this.
+
+This is reported to work for intel_powerclamp by Jacub Pan, the
+acpi_pad driver is untested.
+
+Cc: rui.zhang@intel.com
+Cc: jacob.jun.pan@linux.intel.com
+Cc: lenb@kernel.org
+Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: hpa@zytor.com
+Cc: arjan@linux.intel.com
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+---
+ drivers/acpi/acpi_pad.c            |   41 -----------
+ drivers/thermal/intel_powerclamp.c |   38 ----------
+ include/linux/cpu.h                |    2=20
+ include/linux/sched.h              |    3=20
+ kernel/sched/core.c                |    9 ++
+ kernel/sched/idle.c                |  129 ++++++++++++++++++++++----------=
+-----
+ kernel/time/tick-sched.c           |    2=20
+ 7 files changed, 95 insertions(+), 129 deletions(-)
+
+--- a/drivers/acpi/acpi_pad.c
++++ b/drivers/acpi/acpi_pad.c
+@@ -40,9 +40,7 @@ static DEFINE_MUTEX(round_robin_lock);
+ static unsigned long power_saving_mwait_eax;
+=20
+ static unsigned char tsc_detected_unstable;
+-static unsigned char tsc_marked_unstable;
+ static unsigned char lapic_detected_unstable;
+-static unsigned char lapic_marked_unstable;
+=20
+ static void power_saving_mwait_init(void)
+ {
+@@ -152,10 +150,9 @@ static int power_saving_thread(void *dat
+ 	unsigned int tsk_index =3D (unsigned long)data;
+ 	u64 last_jiffies =3D 0;
+=20
+-	sched_setscheduler(current, SCHED_RR, &param);
++	sched_setscheduler(current, SCHED_FIFO, &param);
+=20
+ 	while (!kthread_should_stop()) {
+-		int cpu;
+ 		u64 expire_time;
+=20
+ 		try_to_freeze();
+@@ -170,41 +167,7 @@ static int power_saving_thread(void *dat
+=20
+ 		expire_time =3D jiffies + HZ * (100 - idle_pct) / 100;
+=20
+-		while (!need_resched()) {
+-			if (tsc_detected_unstable && !tsc_marked_unstable) {
+-				/* TSC could halt in idle, so notify users */
+-				mark_tsc_unstable("TSC halts in idle");
+-				tsc_marked_unstable =3D 1;
+-			}
+-			if (lapic_detected_unstable && !lapic_marked_unstable) {
+-				int i;
+-				/* LAPIC could halt in idle, so notify users */
+-				for_each_online_cpu(i)
+-					clockevents_notify(
+-						CLOCK_EVT_NOTIFY_BROADCAST_ON,
+-						&i);
+-				lapic_marked_unstable =3D 1;
+-			}
+-			local_irq_disable();
+-			cpu =3D smp_processor_id();
+-			if (lapic_marked_unstable)
+-				clockevents_notify(
+-					CLOCK_EVT_NOTIFY_BROADCAST_ENTER, &cpu);
+-			stop_critical_timings();
+-
+-			mwait_idle_with_hints(power_saving_mwait_eax, 1);
+-
+-			start_critical_timings();
+-			if (lapic_marked_unstable)
+-				clockevents_notify(
+-					CLOCK_EVT_NOTIFY_BROADCAST_EXIT, &cpu);
+-			local_irq_enable();
+-
+-			if (jiffies > expire_time) {
+-				do_sleep =3D 1;
+-				break;
+-			}
+-		}
++		play_idle(expire_time);
+=20
+ 		/*
+ 		 * current sched_rt has threshold for rt task running time.
+--- a/drivers/thermal/intel_powerclamp.c
++++ b/drivers/thermal/intel_powerclamp.c
+@@ -256,11 +256,6 @@ static u64 pkg_state_counter(void)
+ 	return count;
+ }
+=20
+-static void noop_timer(unsigned long foo)
+-{
+-	/* empty... just the fact that we get the interrupt wakes us up */
+-}
+-
+ static unsigned int get_compensation(int ratio)
+ {
+ 	unsigned int comp =3D 0;
+@@ -365,7 +360,6 @@ static bool powerclamp_adjust_controls(u
+ static int clamp_thread(void *arg)
+ {
+ 	int cpunr =3D (unsigned long)arg;
+-	DEFINE_TIMER(wakeup_timer, noop_timer, 0, 0);
+ 	static const struct sched_param param =3D {
+ 		.sched_priority =3D MAX_USER_RT_PRIO/2,
+ 	};
+@@ -374,11 +368,9 @@ static int clamp_thread(void *arg)
+=20
+ 	set_bit(cpunr, cpu_clamping_mask);
+ 	set_freezable();
+-	init_timer_on_stack(&wakeup_timer);
+ 	sched_setscheduler(current, SCHED_FIFO, &param);
+=20
+-	while (true =3D=3D clamping && !kthread_should_stop() &&
+-		cpu_online(cpunr)) {
++	while (clamping && !kthread_should_stop() && cpu_online(cpunr)) {
+ 		int sleeptime;
+ 		unsigned long target_jiffies;
+ 		unsigned int guard;
+@@ -426,35 +418,11 @@ static int clamp_thread(void *arg)
+ 		if (should_skip)
+ 			continue;
+=20
+-		target_jiffies =3D jiffies + duration_jiffies;
+-		mod_timer(&wakeup_timer, target_jiffies);
+ 		if (unlikely(local_softirq_pending()))
+ 			continue;
+-		/*
+-		 * stop tick sched during idle time, interrupts are still
+-		 * allowed. thus jiffies are updated properly.
+-		 */
+-		preempt_disable();
+-		tick_nohz_idle_enter();
+-		/* mwait until target jiffies is reached */
+-		while (time_before(jiffies, target_jiffies)) {
+-			unsigned long ecx =3D 1;
+-			unsigned long eax =3D target_mwait;
+-
+-			/*
+-			 * REVISIT: may call enter_idle() to notify drivers who
+-			 * can save power during cpu idle. same for exit_idle()
+-			 */
+-			local_touch_nmi();
+-			stop_critical_timings();
+-			mwait_idle_with_hints(eax, ecx);
+-			start_critical_timings();
+-			atomic_inc(&idle_wakeup_counter);
+-		}
+-		tick_nohz_idle_exit();
+-		preempt_enable();
++
++		play_idle(duration_jiffies);
+ 	}
+-	del_timer_sync(&wakeup_timer);
+ 	clear_bit(cpunr, cpu_clamping_mask);
+=20
+ 	return 0;
+--- a/include/linux/cpu.h
++++ b/include/linux/cpu.h
+@@ -255,6 +255,8 @@ enum cpuhp_state {
+ 	CPUHP_ONLINE,
+ };
+=20
++void play_idle(unsigned long jiffies);
++
+ void cpu_startup_entry(enum cpuhp_state state);
+ void cpu_idle(void);
+=20
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1892,6 +1892,7 @@ extern void thread_group_cputime_adjuste
+ /*
+  * Per process flags
+  */
++#define PF_IDLE		0x00000002	/* I am an IDLE thread */
+ #define PF_EXITING	0x00000004	/* getting shut down */
+ #define PF_EXITPIDONE	0x00000008	/* pi exit done on shut down */
+ #define PF_VCPU		0x00000010	/* I'm a virtual CPU */
+@@ -2204,7 +2205,7 @@ extern struct task_struct *idle_task(int
+  */
+ static inline bool is_idle_task(const struct task_struct *p)
+ {
+-	return p->pid =3D=3D 0;
++	return !!(p->flags & PF_IDLE);
+ }
+ extern struct task_struct *curr_task(int cpu);
+ extern void set_curr_task(int cpu, struct task_struct *p);
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -676,10 +676,12 @@ static void wake_up_idle_cpu(int cpu)
+ 	if (cpu =3D=3D smp_processor_id())
+ 		return;
+=20
+-	if (set_nr_and_not_polling(rq->idle))
++	rcu_read_lock();
++	if (set_nr_and_not_polling(rq->curr))
+ 		smp_send_reschedule(cpu);
+ 	else
+ 		trace_sched_wake_polling_cpu(cpu);
++	rcu_read_unlock();
+ }
+=20
+ static bool wake_up_full_nohz_cpu(int cpu)
+@@ -1605,10 +1607,12 @@ static void ttwu_queue_remote(struct tas
+ 	struct rq *rq =3D cpu_rq(cpu);
+=20
+ 	if (llist_add(&p->wake_entry, &cpu_rq(cpu)->wake_list)) {
+-		if (!set_nr_if_polling(rq->idle))
++		rcu_read_lock();
++		if (!set_nr_if_polling(rq->curr))
+ 			smp_send_reschedule(cpu);
+ 		else
+ 			trace_sched_wake_polling_cpu(cpu);
++		rcu_read_unlock();
+ 	}
+ }
+=20
+@@ -4537,6 +4541,7 @@ void init_idle(struct task_struct *idle,
+ 	__sched_fork(0, idle);
+ 	idle->state =3D TASK_RUNNING;
+ 	idle->se.exec_start =3D sched_clock();
++	idle->flags |=3D PF_IDLE;
+=20
+ 	do_set_cpus_allowed(idle, cpumask_of(cpu));
+ 	/*
+--- a/kernel/sched/idle.c
++++ b/kernel/sched/idle.c
+@@ -184,66 +184,94 @@ static void cpuidle_idle_call(void)
+  *
+  * Called with polling cleared.
+  */
+-static void cpu_idle_loop(void)
++static void do_idle(void)
+ {
+-	while (1) {
+-		/*
+-		 * If the arch has a polling bit, we maintain an invariant:
+-		 *
+-		 * The polling bit is clear if we're not scheduled (i.e. if
+-		 * rq->curr !=3D rq->idle).  This means that, if rq->idle has
+-		 * the polling bit set, then setting need_resched is
+-		 * guaranteed to cause the cpu to reschedule.
+-		 */
++	/*
++	 * If the arch has a polling bit, we maintain an invariant:
++	 *
++	 * The polling bit is clear if we're not scheduled (i.e. if rq->curr !=3D
++	 * rq->idle).  This means that, if rq->idle has the polling bit set,
++	 * then setting need_resched is guaranteed to cause the cpu to
++	 * reschedule.
++	 */
+=20
+-		__current_set_polling();
+-		tick_nohz_idle_enter();
++	__current_set_polling();
++	tick_nohz_idle_enter();
+=20
+-		while (!need_resched()) {
+-			check_pgt_cache();
+-			rmb();
+-
+-			if (cpu_is_offline(smp_processor_id()))
+-				arch_cpu_idle_dead();
+-
+-			local_irq_disable();
+-			arch_cpu_idle_enter();
+-
+-			/*
+-			 * In poll mode we reenable interrupts and spin.
+-			 *
+-			 * Also if we detected in the wakeup from idle
+-			 * path that the tick broadcast device expired
+-			 * for us, we don't want to go deep idle as we
+-			 * know that the IPI is going to arrive right
+-			 * away
+-			 */
+-			if (cpu_idle_force_poll || tick_check_broadcast_expired())
+-				cpu_idle_poll();
+-			else
+-				cpuidle_idle_call();
++	while (!need_resched()) {
++		check_pgt_cache();
++		rmb();
+=20
+-			arch_cpu_idle_exit();
+-		}
++		if (cpu_is_offline(smp_processor_id()))
++			arch_cpu_idle_dead();
++
++		local_irq_disable();
++		arch_cpu_idle_enter();
+=20
+ 		/*
+-		 * Since we fell out of the loop above, we know
+-		 * TIF_NEED_RESCHED must be set, propagate it into
+-		 * PREEMPT_NEED_RESCHED.
++		 * In poll mode we reenable interrupts and spin.
+ 		 *
+-		 * This is required because for polling idle loops we will
+-		 * not have had an IPI to fold the state for us.
++		 * Also if we detected in the wakeup from idle path that the
++		 * tick broadcast device expired for us, we don't want to go
++		 * deep idle as we know that the IPI is going to arrive right
++		 * away
+ 		 */
+-		preempt_set_need_resched();
+-		tick_nohz_idle_exit();
+-		__current_clr_polling();
+-		smp_mb__after_clear_bit();
+-		sched_ttwu_pending();
+-		schedule_preempt_disabled();
++		if (cpu_idle_force_poll || tick_check_broadcast_expired())
++			cpu_idle_poll();
++		else
++			cpuidle_idle_call();
++
++		arch_cpu_idle_exit();
+ 	}
++
++	/*
++	 * Since we fell out of the loop above, we know TIF_NEED_RESCHED must
++	 * be set, propagate it into PREEMPT_NEED_RESCHED.
++	 *
++	 * This is required because for polling idle loops we will not have had
++	 * an IPI to fold the state for us.
++	 */
++	preempt_set_need_resched();
++	tick_nohz_idle_exit();
++	__current_clr_polling();
++	smp_mb__after_clear_bit();
++	sched_ttwu_pending();
++	schedule_preempt_disabled();
++}
++
++static void play_idle_timer(unsigned long foo)
++{
++	set_tsk_need_resched(current);
++}
++
++void play_idle(unsigned long duration)
++{
++	DEFINE_TIMER(wakeup_timer, play_idle_timer, 0, 0);
++
++	/*
++	 * Only FIFO tasks can disable the tick since they don't need the forced
++	 * preemption.
++	 */
++	WARN_ON_ONCE(current->policy !=3D SCHED_FIFO);
++	WARN_ON_ONCE(current->nr_cpus_allowed !=3D 1);
++	WARN_ON_ONCE(!(current->flags & PF_NO_SETAFFINITY));
++	WARN_ON_ONCE(!(current->flags & PF_KTHREAD));
++	rcu_sleep_check();
++
++	init_timer_on_stack(&wakeup_timer);
++	mod_timer_pinned(&wakeup_timer, jiffies + duration);
++
++	preempt_disable();
++	current->flags |=3D PF_IDLE;
++	do_idle();
++	current->flags &=3D ~PF_IDLE;
++	del_timer_sync(&wakeup_timer);
++	preempt_fold_need_resched();
++	preempt_enable();
+ }
++EXPORT_SYMBOL_GPL(play_idle);
+=20
+-void cpu_startup_entry(enum cpuhp_state state)
++__noreturn void cpu_startup_entry(enum cpuhp_state state)
+ {
+ 	/*
+ 	 * This #ifdef needs to die, but it's too late in the cycle to
+@@ -261,5 +289,6 @@ void cpu_startup_entry(enum cpuhp_state
+ 	boot_init_stack_canary();
+ #endif
+ 	arch_cpu_idle_prepare();
+-	cpu_idle_loop();
++	while (1)
++		do_idle();
+ }
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -807,7 +807,6 @@ void tick_nohz_idle_enter(void)
+=20
+ 	local_irq_enable();
+ }
+-EXPORT_SYMBOL_GPL(tick_nohz_idle_enter);
+=20
+ /**
+  * tick_nohz_irq_exit - update next tick event from interrupt exit
+@@ -934,7 +933,6 @@ void tick_nohz_idle_exit(void)
+=20
+ 	local_irq_enable();
+ }
+-EXPORT_SYMBOL_GPL(tick_nohz_idle_exit);
+=20
+ static int tick_nohz_reprogram(struct tick_sched *ts, ktime_t now)
+ {
+
+--7dLEKQsGm0Z6zEmU
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTjt66AAoJEHZH4aRLwOS6yf4QAKrsGtMuzPaE5bSMrOfQmitS
+FizFsNFLmWspGHHBPqAskMTmMUzV8N6+usnslG8eSZ06KQVHfKzqEGBwWb5QX3wV
+6B3uwTVMYyJR0WwWEz9aBfy1q/+mwI59/zsmws4yNVPmdPeAC/bO6FEupYxStCDs
+/zpKTquGP/8SdlhThSRofxzS7IBADXwOhFGdVDHZALOE88e80j1zQhHt0lzLZWYo
+b5qtkn3f+SknJAfySVSj6zoVkoW7MRIuXX3rdnJx0ibTcubnto3UUJnzLV5Qc1hT
+0q6UGuwOk/WaZ4zgr5SAPgMO7qcJaRKVwK0p61kIel15pGb1pFDZimg6Nb/N/gaL
+TiFYTjLjZo14YyGpeUgjQ2Y3i2RuaoK82zuwu3ffvla9WUH65T/F2c7JMvKWcQYP
+XywTWxlMgh1mHB/jwQ9suQna9S1CbCZKk6Djg6C5EUVuZOf9O4cVGSuuWuiAE40i
+xcUMb26/QH/wzifbfEqhZu4R1+hqdxwbOeWIdmph+WSgWfDbVInNQDq4eY4q5EkI
+Y2NL879TBH0Z2ArBD1OxR7LJ2JDKstZf1HGxdlMuMiqrHoB6PXmlGzUvaHIhww9w
+bZfCUjIhcG6WKnKvRJPPLFfd1D3J3dgwMihsEPUzdD358t1n9RJxPBbVGXrOibyN
+krE7Tq+6M6Rt3SmIhHry
+=//1x
+-----END PGP SIGNATURE-----
+
+--7dLEKQsGm0Z6zEmU--
