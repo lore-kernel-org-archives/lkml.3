@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755392AbaFEAjr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 20:39:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39875 "EHLO
+	id S1757128AbaFEAk3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 20:40:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39864 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752646AbaFDXVZ (ORCPT
+	with ESMTP id S1752582AbaFDXVY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:21:25 -0400
+	Wed, 4 Jun 2014 19:21:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mike Snitzer <snitzer@redhat.com>, Joe Thornber <ejt@redhat.com>
-Subject: [PATCH 3.14 054/228] dm cache: fix writethrough mode quiescing in cache_map
-Date: Wed,  4 Jun 2014 16:21:23 -0700
-Message-Id: <20140604232349.804157341@linuxfoundation.org>
+        Egbert Eich <eich@suse.de>, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Jani Nikula <jani.nikula@linux.intel.com>,
+        Jani Nikula <jani.nikula@intel.com>
+Subject: [PATCH 3.14 065/228] drm/i915: Break encoder->crtc link separately in intel_sanitize_crtc()
+Date: Wed,  4 Jun 2014 16:21:34 -0700
+Message-Id: <20140604232350.143142318@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -28,33 +30,116 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mike Snitzer <snitzer@redhat.com>
+From: Egbert Eich <eich@suse.de>
 
-commit 131cd131a9ff63d4b84f3fe15073a2984ac30066 upstream.
+commit 7f1950fbb989e8fc5463b307e062b4529d51c862 upstream.
 
-Commit 2ee57d58735 ("dm cache: add passthrough mode") inadvertently
-removed the deferred set reference that was taken in cache_map()'s
-writethrough mode support.  Restore taking this reference.
+Depending on the SDVO output_flags SDVO may have multiple connectors
+linking to the same encoder (in intel_connector->encoder->base).
+Only one of those connectors should be active (ie link to the encoder
+thru drm_connector->encoder).
+If intel_connector_break_all_links() is called from intel_sanitize_crtc()
+we may break the crtc connection of an encoder thru an inactive connector
+in which case intel_connector_break_all_links() will not be called again
+for the active connector if this happens to come later in the list due to:
+    if (connector->encoder->base.crtc != &crtc->base)
+                                 continue;
+in intel_sanitize_crtc().
+This will however leave the drm_connector->encoder linkage for this
+active connector in place. Subsequently this will cause multiple
+warnings in intel_connector_check_state() to trigger and the driver
+will eventually die in drm_encoder_crtc_ok() (because of crtc == NULL).
 
-This issue was found with code inspection.
+To avoid this remove intel_connector_break_all_links() and move its
+code to its two calling functions: intel_sanitize_crtc() and
+intel_sanitize_encoder().
+This allows to implement the link breaking more flexibly matching
+the surrounding code: ie. in intel_sanitize_crtc() we can break the
+crtc link separatly after the links to the encoders have been
+broken which avoids above problem.
 
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-Acked-by: Joe Thornber <ejt@redhat.com>
+This regression has been introduced in:
+
+commit 24929352481f085c5f85d4d4cbc919ddf106d381
+Author: Daniel Vetter <daniel.vetter@ffwll.ch>
+Date:   Mon Jul 2 20:28:59 2012 +0200
+
+    drm/i915: read out the modeset hw state at load and resume time
+
+so goes back to the very beginning of the modeset rework.
+
+v2: This patch takes care of the concernes voiced by Chris Wilson
+and Daniel Vetter that only breaking links if the drm_connector
+is linked to an encoder may miss some links.
+v3: move all encoder handling to encoder loop as suggested by
+Daniel Vetter.
+
+Signed-off-by: Egbert Eich <eich@suse.de>
+Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Jani Nikula <jani.nikula@linux.intel.com>
+Signed-off-by: Jani Nikula <jani.nikula@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-cache-target.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/gpu/drm/i915/intel_display.c |   26 ++++++++++++++------------
+ 1 file changed, 14 insertions(+), 12 deletions(-)
 
---- a/drivers/md/dm-cache-target.c
-+++ b/drivers/md/dm-cache-target.c
-@@ -2506,6 +2506,7 @@ static int cache_map(struct dm_target *t
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -10989,15 +10989,6 @@ void intel_modeset_init(struct drm_devic
+ 	intel_disable_fbc(dev);
+ }
  
- 		} else {
- 			inc_hit_counter(cache, bio);
-+			pb->all_io_entry = dm_deferred_entry_inc(cache->all_io_ds);
+-static void
+-intel_connector_break_all_links(struct intel_connector *connector)
+-{
+-	connector->base.dpms = DRM_MODE_DPMS_OFF;
+-	connector->base.encoder = NULL;
+-	connector->encoder->connectors_active = false;
+-	connector->encoder->base.crtc = NULL;
+-}
+-
+ static void intel_enable_pipe_a(struct drm_device *dev)
+ {
+ 	struct intel_connector *connector;
+@@ -11079,8 +11070,17 @@ static void intel_sanitize_crtc(struct i
+ 			if (connector->encoder->base.crtc != &crtc->base)
+ 				continue;
  
- 			if (bio_data_dir(bio) == WRITE && writethrough_mode(&cache->features) &&
- 			    !is_dirty(cache, lookup_result.cblock))
+-			intel_connector_break_all_links(connector);
++			connector->base.dpms = DRM_MODE_DPMS_OFF;
++			connector->base.encoder = NULL;
+ 		}
++		/* multiple connectors may have the same encoder:
++		 *  handle them and break crtc link separately */
++		list_for_each_entry(connector, &dev->mode_config.connector_list,
++				    base.head)
++			if (connector->encoder->base.crtc == &crtc->base) {
++				connector->encoder->base.crtc = NULL;
++				connector->encoder->connectors_active = false;
++			}
+ 
+ 		WARN_ON(crtc->active);
+ 		crtc->base.enabled = false;
+@@ -11151,6 +11151,8 @@ static void intel_sanitize_encoder(struc
+ 				      drm_get_encoder_name(&encoder->base));
+ 			encoder->disable(encoder);
+ 		}
++		encoder->base.crtc = NULL;
++		encoder->connectors_active = false;
+ 
+ 		/* Inconsistent output/port/pipe state happens presumably due to
+ 		 * a bug in one of the get_hw_state functions. Or someplace else
+@@ -11161,8 +11163,8 @@ static void intel_sanitize_encoder(struc
+ 				    base.head) {
+ 			if (connector->encoder != encoder)
+ 				continue;
+-
+-			intel_connector_break_all_links(connector);
++			connector->base.dpms = DRM_MODE_DPMS_OFF;
++			connector->base.encoder = NULL;
+ 		}
+ 	}
+ 	/* Enabled encoders without active connectors will be fixed in
 
 
