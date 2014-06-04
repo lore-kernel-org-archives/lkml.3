@@ -1,86 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755514AbaFDHo3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 03:44:29 -0400
-Received: from casper.infradead.org ([85.118.1.10]:45240 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755321AbaFDHo2 (ORCPT
+	id S932723AbaFDHrt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 03:47:49 -0400
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:52164 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932067AbaFDHrr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 03:44:28 -0400
-Date: Wed, 4 Jun 2014 09:44:16 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: umgwanakikbuti@gmail.com, mingo@kernel.org, tglx@linutronix.de,
-        nicolas.pitre@linaro.org, daniel.lezcano@linaro.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/6] sched,idle: Clear polling before descheduling the
- idle thread
-Message-ID: <20140604074416.GH30445@twins.programming.kicks-ass.net>
-References: <cover.1401841482.git.luto@amacapital.net>
- <ad9dcf321a5b74e72a1b63a0d59c8ddc68509c0f.1401841482.git.luto@amacapital.net>
+	Wed, 4 Jun 2014 03:47:47 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="+Td065rRKAY1Vpy0"
-Content-Disposition: inline
-In-Reply-To: <ad9dcf321a5b74e72a1b63a0d59c8ddc68509c0f.1401841482.git.luto@amacapital.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20140603155007.GZ30445@twins.programming.kicks-ass.net>
+References: <1400860385-14555-1-git-send-email-vincent.guittot@linaro.org>
+ <1400860385-14555-9-git-send-email-vincent.guittot@linaro.org>
+ <20140528121001.GI19967@e103034-lin> <CAKfTPtDxeBfZK1AxCRqEG91pi--Ti1RYFoQPDhvMVnGTCspQ-g@mail.gmail.com>
+ <20140528154703.GJ19967@e103034-lin> <20140603155007.GZ30445@twins.programming.kicks-ass.net>
+From: Vincent Guittot <vincent.guittot@linaro.org>
+Date: Wed, 4 Jun 2014 09:47:26 +0200
+Message-ID: <CAKfTPtDUvH--WxFATTW6YRAvLuohzyNHDUq6DRdfxc7gRKCX6Q@mail.gmail.com>
+Subject: Re: [PATCH v2 08/11] sched: get CPU's activity statistic
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Morten Rasmussen <morten.rasmussen@arm.com>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        "efault@gmx.de" <efault@gmx.de>,
+        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 3 June 2014 17:50, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Wed, May 28, 2014 at 04:47:03PM +0100, Morten Rasmussen wrote:
+>> Since we may do periodic load-balance every 10 ms or so, we will perform
+>> a number of load-balances where runnable_avg_sum will mostly be
+>> reflecting the state of the world before a change (new task queued or
+>> moved a task to a different cpu). If you had have two tasks continuously
+>> on one cpu and your other cpu is idle, and you move one of the tasks to
+>> the other cpu, runnable_avg_sum will remain unchanged, 47742, on the
+>> first cpu while it starts from 0 on the other one. 10 ms later it will
+>> have increased a bit, 32 ms later it will be 47742/2, and 345 ms later
+>> it reaches 47742. In the mean time the cpu doesn't appear fully utilized
+>> and we might decide to put more tasks on it because we don't know if
+>> runnable_avg_sum represents a partially utilized cpu (for example a 50%
+>> task) or if it will continue to rise and eventually get to 47742.
+>
+> Ah, no, since we track per task, and update the per-cpu ones when we
+> migrate tasks, the per-cpu values should be instantly updated.
+>
+> If we were to increase per task storage, we might as well also track
+> running_avg not only runnable_avg.
 
---+Td065rRKAY1Vpy0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I agree that the removed running_avg should give more useful
+information about the the load of a CPU.
 
-On Tue, Jun 03, 2014 at 05:29:50PM -0700, Andy Lutomirski wrote:
-> Currently, the only real guarantee provided by the polling bit is
-> that, if you hold rq->lock and the polling bit is set, then you can
-> set need_resched to force a reschedule.
->=20
-> The only reason the lock is needed is that the idle thread might not
-> be running at all when setting its need_resched bit, and rq->lock
-> keeps it pinned.
->=20
-> This is easy to fix: just clear the polling bit before scheduling.
-> Now the polling bit is only ever set when rq->curr =3D=3D rq->idle.
+The main issue with running_avg is that it's disturbed by other tasks
+(as point out previously). As a typical example,  if we have 2 tasks
+with a load of 25% on 1 CPU, the unweighted runnable_load_avg will be
+in the range of [100% - 50%] depending of the parallelism of the
+runtime of the tasks whereas the reality is 50% and the use of
+running_avg will return this value
 
-Yah, except of course:
-
-  lkml.kernel.org/r/20131120162736.508462614@infradead.org
-
-which I really need to rebase and post again :/
-
-In any case, this is useful even with that, although then we really must
-do something like:
-
-  rcu_read_lock();
-  if (!set_nr_if_polling(rq->curr))
-  	smp_send_reschedule(rq->cpu);
-  rcu_read_unlock();
-
-Because there's other tasks than rq->idle which might be 'idle', joy!
-
---+Td065rRKAY1Vpy0
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTjs5QAAoJEHZH4aRLwOS6HNQP+wV1r0AV7jiYTZzVsa2ET5r8
-zZZcndwKzgq0vaTSpWcDp3MEFh/2XPxsqq089PZ8cOeYpFeqzTyGMX21IaA2P38U
-R/g7RWvFMP4OkbZirBZbHHWMGbDBcm/eQd9LDRXdnLQGdP8//QOLY7bvkfI1Bsp6
-uooQJvTsHBJdSfoWfwO+dak9CAFpvzJnxk/hTyeQ3Dy38vE+UCx9HmnGG07Eeoby
-uLBycQUBoyFSMj9wGuqNPQHET4Yl7/mUziQwblvcTiix7TwBLH7JTSIS/F628rEq
-wKyHCQMC7JYY8UiDzojgvBRIzsLKlfSEbswFZNPKmSMGufzfYz1WEjJTTSbIpyS4
-2cPQ1z4zTOMPSSV032ccJgOsYGFnmYN2AZ295KoZ8acdm9U+sGDjwkyg9/GO5tEG
-pj3hmqz+KxJkOh5Sz/Q+sVSWUDm5ClxvI6uWSyHHWoAKEnOd5xYydWC/exGQXjGg
-qXrMYdxdEUveqVeJc5aZRgwQwMCeNabOLFk8H+DXYGeJ9X+C1UQkMdJIK2e7O/zt
-r6OzbtzA5r7GxljyQnWuB+fWX1e4EEwzmkPcKN//7yTTmJnT9NlnWN0IyaivDG3H
-v1r3COOV3bVIf2FR1tMBE7y1X7sDDKpb+DOs7uTqvH9yjKv7CESAV64TaCnRVrKh
-nn1c8vGCQ3eEy0NKcJyM
-=3dA6
------END PGP SIGNATURE-----
-
---+Td065rRKAY1Vpy0--
+Vincent
