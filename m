@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756587AbaFEAXd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 20:23:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40145 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753135AbaFDXW1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753144AbaFDXW1 (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 4 Jun 2014 19:22:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40070 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752952AbaFDXWV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 19:22:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Dan Carpenter <dan.carpenter@oracle.com>,
-        Pawel Moll <pawel.moll@arm.com>
-Subject: [PATCH 3.14 128/228] clk: vexpress: NULL dereference on error path
-Date: Wed,  4 Jun 2014 16:22:37 -0700
-Message-Id: <20140604232352.141066508@linuxfoundation.org>
+        Sibai Li <sibai.li@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Subject: [PATCH 3.14 118/228] i40e: potential array underflow in i40e_vc_process_vf_msg()
+Date: Wed,  4 Jun 2014 16:22:27 -0700
+Message-Id: <20140604232351.831301901@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -31,30 +32,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 6b4ed8b00e93bd31f24a25f59ed8d1b808d0cc00 upstream.
+commit c243e96335c56e56dcf6a00593104554fb06b689 upstream.
 
-If the allocation fails then we dereference the NULL in the error path.
-Just return directly.
+If "vf_id" is smaller than hw->func_caps.vf_base_id then it leads to
+an array underflow of the pf->vf[] array.  This is unlikely to happen
+unless the hardware is bad, but it's a small change and it silences a
+static checker warning.
 
-Fixes: ed27ff1db869 ('clk: Versatile Express clock generators ("osc") driver')
+Fixes: 7efa84b7abc1 ('i40e: support VFs on PFs other than 0')
 Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Pawel Moll <pawel.moll@arm.com>
+Tested-by: Sibai Li <sibai.li@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/clk/versatile/clk-vexpress-osc.c |    2 +-
+ drivers/net/ethernet/intel/i40e/i40e_virtchnl_pf.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/clk/versatile/clk-vexpress-osc.c
-+++ b/drivers/clk/versatile/clk-vexpress-osc.c
-@@ -102,7 +102,7 @@ void __init vexpress_osc_of_setup(struct
+--- a/drivers/net/ethernet/intel/i40e/i40e_virtchnl_pf.c
++++ b/drivers/net/ethernet/intel/i40e/i40e_virtchnl_pf.c
+@@ -1776,7 +1776,7 @@ int i40e_vc_process_vf_msg(struct i40e_p
+ 			   u32 v_retval, u8 *msg, u16 msglen)
+ {
+ 	struct i40e_hw *hw = &pf->hw;
+-	int local_vf_id = vf_id - hw->func_caps.vf_base_id;
++	unsigned int local_vf_id = vf_id - hw->func_caps.vf_base_id;
+ 	struct i40e_vf *vf;
+ 	int ret;
  
- 	osc = kzalloc(sizeof(*osc), GFP_KERNEL);
- 	if (!osc)
--		goto error;
-+		return;
- 
- 	osc->func = vexpress_config_func_get_by_node(node);
- 	if (!osc->func) {
 
 
