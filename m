@@ -1,57 +1,267 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932394AbaFDGWE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 02:22:04 -0400
-Received: from mout.perfora.net ([74.208.4.194]:54835 "EHLO mout.perfora.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755415AbaFDGWB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 02:22:01 -0400
-Message-ID: <538EBACB.70100@ziswiler.com>
-Date: Wed, 04 Jun 2014 08:20:59 +0200
-From: Marcel Ziswiler <marcel@ziswiler.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1755495AbaFDGWe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 02:22:34 -0400
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:54371 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755473AbaFDGWc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 02:22:32 -0400
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: Stephen Warren <swarren@wwwdotorg.org>, thierry.reding@gmail.com,
-        linux@arm.linux.org.uk, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org, stefan@agner.ch
-Subject: Re: [PATCH 2/3] arm: tegra: enable igb, stmpe, i2c chardev, spidev,
- lm95245, pwm leds
-References: <c5522b0efcbfc7690dcde6aaf78b9dd568f99604.1401665237.git.marcel@ziswiler.com> <39a8704a4c8170d6b0620a1e5e44042eae6d8810.1401665237.git.marcel@ziswiler.com> <538CA24B.1010602@wwwdotorg.org> <538CA635.4050502@ziswiler.com> <20140602221627.GP31751@sirena.org.uk> <538D64FD.2010909@ziswiler.com> <20140603094537.GQ31751@sirena.org.uk>
-In-Reply-To: <20140603094537.GQ31751@sirena.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:kBmjMysnWWJm6WjrLtnBtS4JXldtz2J6Ynb3a2cI49X
- UbqOFSVyNJaIJyJOmq7lOXousQLXBPJmK1YNJN8UXrARiZ1sj0
- aG95EMpAy26PQ20F0yZtYOBklwPVlMnL7yugIMh/RdVMN9CB+t
- 0qXnoYyzrEunpZ5wY97wgZZn1GtJFUANg/eMim3FM4dqoF6ntt
- qbu9aX/+HPdmOspB8ZPR0NQt/l5hnwzalAMu2SOIqJByvfOQUc
- ck4wsiew4QuS0IkndpNhIt8SSUgUdtSSc8KGieumHT+WqfND5T
- pWCr7fiJHsyZCre1sxYyxhLafsRY8ytXv0RMLL2q3Qbe3Q0zI0
- t0B/8CqeaSRfcTLfui9s=
+In-Reply-To: <538E2199.5060309@gmail.com>
+References: <538E2199.5060309@gmail.com>
+Date: Tue, 3 Jun 2014 23:22:32 -0700
+Message-ID: <CANqkERB9xxiivEt0B5ECObCE24wRTE8dBRFZAFkSDYDrfQw53w@mail.gmail.com>
+Subject: Re: [PATCH] staging: android: binder.c: binder_ioctl() cleanup
+From: Brian Swetland <swetland@google.com>
+To: Tair Rzayev <tair.rzayev@gmail.com>,
+        =?UTF-8?B?QXJ2ZSBIasO4bm5ldsOlZw==?= <arve@android.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/03/2014 11:45 AM, Mark Brown wrote:
-> When you say "generic user space access" you are describing a specific
-> detail of how this device happens to be controlled with your software.
+Arve's probably the best person to loop in on binder driver patches
+(considering he wrote it).
 
-No, not at all. In fact I did not even specify neither the exact type of 
-device apart from it being a SPI device nor any property of the software 
-apart from the generic user space access thereof implemented in the 
-Linux kernel. I really don't see any difference to i2c chardev which is 
-already enabled in multi_v7_defconfig.
+Brian
 
-> This is not a description of your hardware, it is a description of how
-> it is controlled with your current software.
-
-Sorry, but I really don't know what you are referring to. It's a pure 
-hardware description of some pins being the SPI bus namely MISO/MOSI and 
-the clock plus an accompanying chip-select pin.
-
-I fear for some reason or another you have some affinity against spidev 
-which strikes me odd. Admittedly it is not perfect but it is the only 
-generic SPI user space access currently implemented in the Linux kernel 
-and so far did its job perfectly for many of our customers.
+On Tue, Jun 3, 2014 at 12:27 PM, Tair Rzayev <tair.rzayev@gmail.com> wrote:
+> binder_ioctl() is quite huge and checkpatch dirty - mostly because of
+> the amount of code for the BINDER_WRITE_READ and BINDER_SET_CONTEXT_MGR.
+> Moved that code into the new binder_ioctl_write_read() and
+> binder_ioctl_set_ctx_mgr()
+>
+> Signed-off-by: Tair Rzayev <tair.rzayev@gmail.com>
+> ---
+>  drivers/staging/android/binder.c | 186 ++++++++++++++++++++++-----------------
+>  1 file changed, 107 insertions(+), 79 deletions(-)
+>
+> diff --git a/drivers/staging/android/binder.c b/drivers/staging/android/binder.c
+> index 989f809..ed432e3 100644
+> --- a/drivers/staging/android/binder.c
+> +++ b/drivers/staging/android/binder.c
+> @@ -2594,6 +2594,106 @@ static unsigned int binder_poll(struct file *filp,
+>         return 0;
+>  }
+>
+> +static int binder_ioctl_write_read(struct file *filp,
+> +                               unsigned int cmd, unsigned long arg,
+> +                               struct binder_thread *thread)
+> +{
+> +       int ret = 0;
+> +       struct binder_proc *proc = filp->private_data;
+> +       unsigned int size = _IOC_SIZE(cmd);
+> +       void __user *ubuf = (void __user *)arg;
+> +       struct binder_write_read bwr;
+> +
+> +       if (size != sizeof(struct binder_write_read)) {
+> +               ret = -EINVAL;
+> +               goto out;
+> +       }
+> +       if (copy_from_user(&bwr, ubuf, sizeof(bwr))) {
+> +               ret = -EFAULT;
+> +               goto out;
+> +       }
+> +       binder_debug(BINDER_DEBUG_READ_WRITE,
+> +                    "%d:%d write %lld at %016llx, read %lld at %016llx\n",
+> +                    proc->pid, thread->pid,
+> +                    (u64)bwr.write_size, (u64)bwr.write_buffer,
+> +                    (u64)bwr.read_size, (u64)bwr.read_buffer);
+> +
+> +       if (bwr.write_size > 0) {
+> +               ret = binder_thread_write(proc, thread,
+> +                                         bwr.write_buffer,
+> +                                         bwr.write_size,
+> +                                         &bwr.write_consumed);
+> +               trace_binder_write_done(ret);
+> +               if (ret < 0) {
+> +                       bwr.read_consumed = 0;
+> +                       if (copy_to_user(ubuf, &bwr, sizeof(bwr)))
+> +                               ret = -EFAULT;
+> +                       goto out;
+> +               }
+> +       }
+> +       if (bwr.read_size > 0) {
+> +               ret = binder_thread_read(proc, thread, bwr.read_buffer,
+> +                                        bwr.read_size,
+> +                                        &bwr.read_consumed,
+> +                                        filp->f_flags & O_NONBLOCK);
+> +               trace_binder_read_done(ret);
+> +               if (!list_empty(&proc->todo))
+> +                       wake_up_interruptible(&proc->wait);
+> +               if (ret < 0) {
+> +                       if (copy_to_user(ubuf, &bwr, sizeof(bwr)))
+> +                               ret = -EFAULT;
+> +                       goto out;
+> +               }
+> +       }
+> +       binder_debug(BINDER_DEBUG_READ_WRITE,
+> +                    "%d:%d wrote %lld of %lld, read return %lld of %lld\n",
+> +                    proc->pid, thread->pid,
+> +                    (u64)bwr.write_consumed, (u64)bwr.write_size,
+> +                    (u64)bwr.read_consumed, (u64)bwr.read_size);
+> +       if (copy_to_user(ubuf, &bwr, sizeof(bwr))) {
+> +               ret = -EFAULT;
+> +               goto out;
+> +       }
+> +out:
+> +       return ret;
+> +}
+> +
+> +static int binder_ioctl_set_ctx_mgr(struct file *filp)
+> +{
+> +       int ret = 0;
+> +       struct binder_proc *proc = filp->private_data;
+> +       kuid_t curr_euid = current_euid();
+> +
+> +       if (binder_context_mgr_node != NULL) {
+> +               pr_err("BINDER_SET_CONTEXT_MGR already set\n");
+> +               ret = -EBUSY;
+> +               goto out;
+> +       }
+> +       if (uid_valid(binder_context_mgr_uid)) {
+> +               if (!uid_eq(binder_context_mgr_uid, curr_euid)) {
+> +                       pr_err("BINDER_SET_CONTEXT_MGR bad uid %d != %d\n",
+> +                              from_kuid(&init_user_ns, curr_euid),
+> +                              from_kuid(&init_user_ns,
+> +                                       binder_context_mgr_uid));
+> +                       ret = -EPERM;
+> +                       goto out;
+> +               }
+> +       } else {
+> +               binder_context_mgr_uid = curr_euid;
+> +       }
+> +       binder_context_mgr_node = binder_new_node(proc, 0, 0);
+> +       if (binder_context_mgr_node == NULL) {
+> +               ret = -ENOMEM;
+> +               goto out;
+> +       }
+> +       binder_context_mgr_node->local_weak_refs++;
+> +       binder_context_mgr_node->local_strong_refs++;
+> +       binder_context_mgr_node->has_strong_ref = 1;
+> +       binder_context_mgr_node->has_weak_ref = 1;
+> +out:
+> +       return ret;
+> +}
+> +
+>  static long binder_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+>  {
+>         int ret;
+> @@ -2601,9 +2701,9 @@ static long binder_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+>         struct binder_thread *thread;
+>         unsigned int size = _IOC_SIZE(cmd);
+>         void __user *ubuf = (void __user *)arg;
+> -       kuid_t curr_euid = current_euid();
+>
+> -       /*pr_info("binder_ioctl: %d:%d %x %lx\n", proc->pid, current->pid, cmd, arg);*/
+> +       /*pr_info("binder_ioctl: %d:%d %x %lx\n",
+> +                       proc->pid, current->pid, cmd, arg);*/
+>
+>         trace_binder_ioctl(cmd, arg);
+>
+> @@ -2619,61 +2719,11 @@ static long binder_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+>         }
+>
+>         switch (cmd) {
+> -       case BINDER_WRITE_READ: {
+> -               struct binder_write_read bwr;
+> -
+> -               if (size != sizeof(struct binder_write_read)) {
+> -                       ret = -EINVAL;
+> +       case BINDER_WRITE_READ:
+> +               ret = binder_ioctl_write_read(filp, cmd, arg, thread);
+> +               if (ret)
+>                         goto err;
+> -               }
+> -               if (copy_from_user(&bwr, ubuf, sizeof(bwr))) {
+> -                       ret = -EFAULT;
+> -                       goto err;
+> -               }
+> -               binder_debug(BINDER_DEBUG_READ_WRITE,
+> -                            "%d:%d write %lld at %016llx, read %lld at %016llx\n",
+> -                            proc->pid, thread->pid,
+> -                            (u64)bwr.write_size, (u64)bwr.write_buffer,
+> -                            (u64)bwr.read_size, (u64)bwr.read_buffer);
+> -
+> -               if (bwr.write_size > 0) {
+> -                       ret = binder_thread_write(proc, thread,
+> -                                                 bwr.write_buffer,
+> -                                                 bwr.write_size,
+> -                                                 &bwr.write_consumed);
+> -                       trace_binder_write_done(ret);
+> -                       if (ret < 0) {
+> -                               bwr.read_consumed = 0;
+> -                               if (copy_to_user(ubuf, &bwr, sizeof(bwr)))
+> -                                       ret = -EFAULT;
+> -                               goto err;
+> -                       }
+> -               }
+> -               if (bwr.read_size > 0) {
+> -                       ret = binder_thread_read(proc, thread, bwr.read_buffer,
+> -                                                bwr.read_size,
+> -                                                &bwr.read_consumed,
+> -                                                filp->f_flags & O_NONBLOCK);
+> -                       trace_binder_read_done(ret);
+> -                       if (!list_empty(&proc->todo))
+> -                               wake_up_interruptible(&proc->wait);
+> -                       if (ret < 0) {
+> -                               if (copy_to_user(ubuf, &bwr, sizeof(bwr)))
+> -                                       ret = -EFAULT;
+> -                               goto err;
+> -                       }
+> -               }
+> -               binder_debug(BINDER_DEBUG_READ_WRITE,
+> -                            "%d:%d wrote %lld of %lld, read return %lld of %lld\n",
+> -                            proc->pid, thread->pid,
+> -                            (u64)bwr.write_consumed, (u64)bwr.write_size,
+> -                            (u64)bwr.read_consumed, (u64)bwr.read_size);
+> -               if (copy_to_user(ubuf, &bwr, sizeof(bwr))) {
+> -                       ret = -EFAULT;
+> -                       goto err;
+> -               }
+>                 break;
+> -       }
+>         case BINDER_SET_MAX_THREADS:
+>                 if (copy_from_user(&proc->max_threads, ubuf, sizeof(proc->max_threads))) {
+>                         ret = -EINVAL;
+> @@ -2681,31 +2731,9 @@ static long binder_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+>                 }
+>                 break;
+>         case BINDER_SET_CONTEXT_MGR:
+> -               if (binder_context_mgr_node != NULL) {
+> -                       pr_err("BINDER_SET_CONTEXT_MGR already set\n");
+> -                       ret = -EBUSY;
+> +               ret = binder_ioctl_set_ctx_mgr(filp);
+> +               if (ret)
+>                         goto err;
+> -               }
+> -               if (uid_valid(binder_context_mgr_uid)) {
+> -                       if (!uid_eq(binder_context_mgr_uid, curr_euid)) {
+> -                               pr_err("BINDER_SET_CONTEXT_MGR bad uid %d != %d\n",
+> -                                      from_kuid(&init_user_ns, curr_euid),
+> -                                      from_kuid(&init_user_ns, binder_context_mgr_uid));
+> -                               ret = -EPERM;
+> -                               goto err;
+> -                       }
+> -               } else {
+> -                       binder_context_mgr_uid = curr_euid;
+> -               }
+> -               binder_context_mgr_node = binder_new_node(proc, 0, 0);
+> -               if (binder_context_mgr_node == NULL) {
+> -                       ret = -ENOMEM;
+> -                       goto err;
+> -               }
+> -               binder_context_mgr_node->local_weak_refs++;
+> -               binder_context_mgr_node->local_strong_refs++;
+> -               binder_context_mgr_node->has_strong_ref = 1;
+> -               binder_context_mgr_node->has_weak_ref = 1;
+>                 break;
+>         case BINDER_THREAD_EXIT:
+>                 binder_debug(BINDER_DEBUG_THREADS, "%d:%d exit\n",
+> --
+> 1.9.1
+>
+>
