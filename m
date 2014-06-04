@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756903AbaFEA35 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 20:29:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40038 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752956AbaFDXWO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752992AbaFDXWO (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 4 Jun 2014 19:22:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40017 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752956AbaFDXWL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 19:22:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Hutchings <ben@decadent.org.uk>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.14 113/228] rtl8192cu: Fix unbalanced irq enable in error path of rtl92cu_hw_init()
-Date: Wed,  4 Jun 2014 16:22:22 -0700
-Message-Id: <20140604232351.675801833@linuxfoundation.org>
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Jason Cooper <jason@lakedaemon.net>
+Subject: [PATCH 3.14 108/228] ARM: mvebu: fix NOR bus-width in Armada XP GP Device Tree
+Date: Wed,  4 Jun 2014 16:22:17 -0700
+Message-Id: <20140604232351.515363952@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -29,29 +31,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 
-commit 3234f5b06fc3094176a86772cc64baf3decc98fc upstream.
+commit 1a88f809ccb5db1509a7514b187c00b3a995fc82 upstream.
 
-Fixes: a53268be0cb9 ('rtlwifi: rtl8192cu: Fix too long disable of IRQs')
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+The mvebu-devbus driver had a serious bug, which lead to a 8 bits bus
+width declared in the Device Tree being considered as a 16 bits bus
+width when configuring the hardware.
+
+This bug in mvebu-devbus driver was compensated by a symetric mistake
+in the Armada XP GP Device Tree: a 8 bits bus width was declared, even
+though the hardware actually has a 16 bits bus width connection with
+the NOR flash.
+
+Now that we have fixed the mvebu-devbus driver to behave according to
+its Device Tree binding, this commit fixes the problematic Device Tree
+files as well.
+
+This bug was introduced in commit
+da8d1b38356853c37116f9afa29f15648d7fb159 ('ARM: mvebu: Add support for
+NOR flash device on Armada XP-GP board') which was merged in v3.10.
+
+Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Link: https://lkml.kernel.org/r/1397489361-5833-3-git-send-email-thomas.petazzoni@free-electrons.com
+Fixes: da8d1b383568 ('ARM: mvebu: Add support for NOR flash device on Armada XP-GP board')
+Acked-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+Acked-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rtlwifi/rtl8192cu/hw.c |    2 +-
+ arch/arm/boot/dts/armada-xp-gp.dts |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c
-@@ -1001,7 +1001,7 @@ int rtl92cu_hw_init(struct ieee80211_hw
- 	err = _rtl92cu_init_mac(hw);
- 	if (err) {
- 		RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG, "init mac failed!\n");
--		return err;
-+		goto exit;
- 	}
- 	err = rtl92c_download_fw(hw);
- 	if (err) {
+--- a/arch/arm/boot/dts/armada-xp-gp.dts
++++ b/arch/arm/boot/dts/armada-xp-gp.dts
+@@ -49,7 +49,7 @@
+ 			/* Device Bus parameters are required */
+ 
+ 			/* Read parameters */
+-			devbus,bus-width    = <8>;
++			devbus,bus-width    = <16>;
+ 			devbus,turn-off-ps  = <60000>;
+ 			devbus,badr-skew-ps = <0>;
+ 			devbus,acc-first-ps = <124000>;
 
 
