@@ -1,136 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751735AbaFDS2Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 14:28:25 -0400
-Received: from mga11.intel.com ([192.55.52.93]:29529 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751651AbaFDS2X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 14:28:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,974,1392192000"; 
-   d="scan'208";a="549806005"
-Date: Wed, 4 Jun 2014 12:28:22 -0600 (MDT)
-From: Keith Busch <keith.busch@intel.com>
-X-X-Sender: vmware@localhost.localdom
-To: =?ISO-8859-15?Q?Matias_Bj=F8rling?= <m@bjorling.me>
-cc: Keith Busch <keith.busch@intel.com>, willy@linux.intel.com,
-        sbradshaw@micron.com, axboe@kernel.dk, linux-kernel@vger.kernel.org,
-        linux-nvme@lists.infradead.org, hch@infradead.org
-Subject: Re: [PATCH v5] conversion to blk-mq
-In-Reply-To: <538EE3E6.60408@bjorling.me>
-Message-ID: <alpine.LRH.2.03.1406041146280.11244@AMR>
-References: <1401742510-10827-1-git-send-email-m@bjorling.me> <alpine.LRH.2.03.1406021642480.11244@AMR> <alpine.LRH.2.03.1406021702530.11244@AMR> <538E2C2E.1010500@bjorling.me> <alpine.LRH.2.03.1406031553280.11244@AMR> <alpine.LRH.2.03.1406031625120.11244@AMR>
- <538EE3E6.60408@bjorling.me>
-User-Agent: Alpine 2.03 (LRH 1266 2009-07-14)
+	id S1751596AbaFDScO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 14:32:14 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:50573 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751286AbaFDScM convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 14:32:12 -0400
+Date: Wed, 4 Jun 2014 14:32:09 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: "Chen, Gong" <gong.chen@linux.intel.com>,
+        "Luck, Tony" <tony.luck@intel.com>, Borislav Petkov <bp@alien8.de>,
+        "m.chehab@samsung.com" <m.chehab@samsung.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/7 v6] trace, RAS: Add eMCA trace event interface
+Message-ID: <20140604143209.28ccc4e3@gandalf.local.home>
+In-Reply-To: <20140603103544.207eaa6e@gandalf.local.home>
+References: <1401247938-22125-2-git-send-email-gong.chen@linux.intel.com>
+	<20140528112832.5f83c66b@gandalf.local.home>
+	<20140528163452.GF17196@pd.tnic>
+	<20140528125625.6f6dcf7f@gandalf.local.home>
+	<20140530092232.GA13495@gchen.bj.intel.com>
+	<20140530100716.GE28131@pd.tnic>
+	<3908561D78D1C84285E8C5FCA982C28F32823D2B@ORSMSX114.amr.corp.intel.com>
+	<20140530210759.267a854e@gandalf.local.home>
+	<3908561D78D1C84285E8C5FCA982C28F3282545B@ORSMSX114.amr.corp.intel.com>
+	<20140602125748.7093ced8@gandalf.local.home>
+	<20140603083606.GA15476@gchen.bj.intel.com>
+	<20140603103544.207eaa6e@gandalf.local.home>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1891402715-1401906502=:11244"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Tue, 3 Jun 2014 10:35:44 -0400
+Steven Rostedt <rostedt@goodmis.org> wrote:
 
---8323328-1891402715-1401906502=:11244
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8BIT
 
-On Wed, 4 Jun 2014, Matias Bjørling wrote:
-> On 06/04/2014 12:27 AM, Keith Busch wrote:
->>> On Tue, 3 Jun 2014, Matias Bjorling wrote:
->>>> 
->>>> Keith, will you take the nvmemq_wip_v6 branch for a spin? Thanks!
->> 
->> BTW, if you want to test this out yourself, it's pretty simple to
->> recreate. I just run a simple user admin program sending nvme passthrough
->> commands in a tight loop, then run:
->>
->>   # echo 1 > /sys/bus/pci/devices/<bdf>/remove
->
-> I can't recreate- I use the nvme_get_feature program to continuously hit the 
-> ioctl path, testing using your nvme qemu branch.
+> I'll still need to add that __get_dynamic_array_len() helper. I'll send
+> you something tonight.
+> 
 
-Okay, I'll try to fix it.
+I got caught up in other work, but I wrote it this morning and I'm
+adding it to my 3.16 queue. Thus, you can use this:
 
-I think there are multiple problems, but the first is that since there
-is no gendisk associated with the admin_q, the QUEUE_FLAG_INIT_DONE flag
-is never set, and blk_mq_queue_enter returns successful whenever this
-flag is not set even though this queue is dying, so we enter with all
-its invalid pointers.
+-- Steve
 
-Here's a couple diff's. The first fixes the kernel oops by not entering a
-dying queue. The second is just a few unrelated clean-ups in nvme-core.c.
+>From beba4bb096201ceec0e8cfb7ce3172a53015bdaf Mon Sep 17 00:00:00 2001
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+Date: Wed, 4 Jun 2014 14:29:33 -0400
+Subject: [PATCH] tracing: Add __get_dynamic_array_len() macro for trace events
 
-I still can't complete my current hot-removal test, though; something
-appears hung, but haven't nailed that down yet.
+If a trace event uses a dynamic array for something other than a string
+then there's currently no way the TP_printk() can figure out what size
+it is. A __get_dynamic_array_len() is required to know the length.
 
-Please let me know what you think! Thanks.
+This also simplifies the __get_bitmask() macro which required it as well,
+but instead just hardcoded it.
 
-diff --git a/block/blk-mq.c b/block/blk-mq.c
-index d10013b..5a9ae8a 100644
---- a/block/blk-mq.c
-+++ b/block/blk-mq.c
-@@ -105,6 +105,10 @@ static int blk_mq_queue_enter(struct request_queue *q)
-  	__percpu_counter_add(&q->mq_usage_counter, 1, 1000000);
-  	smp_wmb();
-  	/* we have problems to freeze the queue if it's initializing */
-+	if (blk_queue_dying(q)) {
-+		__percpu_counter_add(&q->mq_usage_counter, -1, 1000000);
-+		ret = -ENODEV;
-+	}
-  	if (!blk_queue_bypass(q) || !blk_queue_init_done(q))
-  		return 0;
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ include/trace/ftrace.h | 11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/block/nvme-core.c b/drivers/block/nvme-core.c
-index 243a5e6..22e9c82 100644
---- a/drivers/block/nvme-core.c
-+++ b/drivers/block/nvme-core.c
-@@ -98,7 +98,6 @@ struct nvme_queue {
-  	u8 cq_phase;
-  	u8 cqe_seen;
-  	u8 q_suspended;
--	cpumask_var_t cpu_mask;
-  	struct async_cmd_info cmdinfo;
-  	struct blk_mq_hw_ctx *hctx;
-  };
-@@ -1055,8 +1054,6 @@ static void nvme_free_queue(struct nvme_queue *nvmeq)
-  				(void *)nvmeq->cqes, nvmeq->cq_dma_addr);
-  	dma_free_coherent(nvmeq->q_dmadev, SQ_SIZE(nvmeq->q_depth),
-  					nvmeq->sq_cmds, nvmeq->sq_dma_addr);
--	if (nvmeq->qid)
--		free_cpumask_var(nvmeq->cpu_mask);
-  	kfree(nvmeq);
-  }
+diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
+index 9b7a989..0fd06fe 100644
+--- a/include/trace/ftrace.h
++++ b/include/trace/ftrace.h
+@@ -203,6 +203,10 @@
+ #define __get_dynamic_array(field)	\
+ 		((void *)__entry + (__entry->__data_loc_##field & 0xffff))
+ 
++#undef __get_dynamic_array_len
++#define __get_dynamic_array_len(field)	\
++		((__entry->__data_loc_##field >> 16) & 0xffff)
++
+ #undef __get_str
+ #define __get_str(field) (char *)__get_dynamic_array(field)
+ 
+@@ -211,7 +215,7 @@
+ 	({								\
+ 		void *__bitmask = __get_dynamic_array(field);		\
+ 		unsigned int __bitmask_size;				\
+-		__bitmask_size = (__entry->__data_loc_##field >> 16) & 0xffff; \
++		__bitmask_size = __get_dynamic_array_len(field);	\
+ 		ftrace_print_bitmask_seq(p, __bitmask, __bitmask_size);	\
+ 	})
+ 
+@@ -636,6 +640,7 @@ static inline void ftrace_test_probe_##call(void)			\
+ #undef __print_symbolic
+ #undef __print_hex
+ #undef __get_dynamic_array
++#undef __get_dynamic_array_len
+ #undef __get_str
+ #undef __get_bitmask
+ 
+@@ -700,6 +705,10 @@ __attribute__((section("_ftrace_events"))) *__event_##call = &event_##call
+ #define __get_dynamic_array(field)	\
+ 		((void *)__entry + (__entry->__data_loc_##field & 0xffff))
+ 
++#undef __get_dynamic_array_len
++#define __get_dynamic_array_len(field)	\
++		((__entry->__data_loc_##field >> 16) & 0xffff)
++
+ #undef __get_str
+ #define __get_str(field) (char *)__get_dynamic_array(field)
+ 
+-- 
+1.8.1.4
 
-@@ -1066,9 +1063,9 @@ static void nvme_free_queues(struct nvme_dev *dev, int lowest)
-
-  	for (i = dev->queue_count - 1; i >= lowest; i--) {
-  		struct nvme_queue *nvmeq = dev->queues[i];
--		nvme_free_queue(nvmeq);
-  		dev->queue_count--;
-  		dev->queues[i] = NULL;
-+		nvme_free_queue(nvmeq);
-  	}
-  }
-
-@@ -1142,9 +1139,6 @@ static struct nvme_queue *nvme_alloc_queue(struct nvme_dev *dev, int qid,
-  	if (!nvmeq->sq_cmds)
-  		goto free_cqdma;
-
--	if (qid && !zalloc_cpumask_var(&nvmeq->cpu_mask, GFP_KERNEL))
--		goto free_sqdma;
--
-  	nvmeq->q_dmadev = dmadev;
-  	nvmeq->dev = dev;
-  	snprintf(nvmeq->irqname, sizeof(nvmeq->irqname), "nvme%dq%d",
-@@ -1162,9 +1156,6 @@ static struct nvme_queue *nvme_alloc_queue(struct nvme_dev *dev, int qid,
-
-  	return nvmeq;
-
-- free_sqdma:
--	dma_free_coherent(dmadev, SQ_SIZE(depth), (void *)nvmeq->sq_cmds,
--							nvmeq->sq_dma_addr);
-   free_cqdma:
-  	dma_free_coherent(dmadev, CQ_SIZE(depth), (void *)nvmeq->cqes,
-  							nvmeq->cq_dma_addr);
---8323328-1891402715-1401906502=:11244--
