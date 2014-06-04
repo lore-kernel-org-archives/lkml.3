@@ -1,63 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752886AbaFDMhO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 08:37:14 -0400
-Received: from mail-we0-f180.google.com ([74.125.82.180]:48752 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752737AbaFDMhM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 08:37:12 -0400
-From: Daniel Thompson <daniel.thompson@linaro.org>
-To: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>
-Cc: Daniel Thompson <daniel.thompson@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        patches@linaro.org, linaro-kernel@lists.linaro.org
-Subject: [PATCH] irqchip: nvic: Use the generic noop function
-Date: Wed,  4 Jun 2014 13:37:05 +0100
-Message-Id: <1401885425-12378-1-git-send-email-daniel.thompson@linaro.org>
-X-Mailer: git-send-email 1.9.0
+	id S1752994AbaFDMjH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 08:39:07 -0400
+Received: from mx12.netapp.com ([216.240.18.77]:19463 "EHLO mx12.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752359AbaFDMjE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 08:39:04 -0400
+X-IronPort-AV: E=Sophos;i="4.98,973,1392192000"; 
+   d="scan'208";a="168208754"
+Message-ID: <538F1361.6060400@netapp.com>
+Date: Wed, 4 Jun 2014 08:38:57 -0400
+From: Anna Schumaker <Anna.Schumaker@netapp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Trond Myklebust <trond.myklebust@fys.uio.no>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+CC: <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: bad commits in the nfs tree
+References: <20140604083411.4296bcd5@canb.auug.org.au> <CAABAsM4hpz_vCK=AbLUzBnVCr3-_5KhJUqif3YP3Yjp+-ojx8w@mail.gmail.com>
+In-Reply-To: <CAABAsM4hpz_vCK=AbLUzBnVCr3-_5KhJUqif3YP3Yjp+-ojx8w@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using the generic function saves looking up this custom one in a source
-navigator.
+On 06/03/2014 06:46 PM, Trond Myklebust wrote:
+> On Tue, Jun 3, 2014 at 6:34 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>> Hi Trond,
+>>
+>> I noticed in the nfs tree this morning 2 commits that have been
+>> cherry-picked from Linus' tree:
+>>
+>> cc6d854967ce    Linux 3.15-rc8
+>> 2b267bb3a8e5    powerpc: Wire renameat2() syscall
+>>
+>> These are part of a branch that you merged from Anna Schumaker.  It
+>> looks like they may have been included when Anna was trying to rebase
+>> the rest of the branch onto v3.15-rc8?
+>>
+>> Please fix this up before asking Linus to pull your tree.
+>>
+> 
+> Thanks Stephen! We're still ironing out the kinks in a new process for
+> the NFS client maintenance, and appreciate your patience.
+> 
+> Anna, let's avoid the mess that is 3.15-rc8 for now. Please rebase on
+> top of commit b5968725f46d (Push the file layout driver into a
+> subdirectory) from my nfs-for-next branch and retag the resulting
+> branch using the same commit information as earlier.
+> I'll pull the new tag once you send the word that all is ready...
 
-Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Jason Cooper <jason@lakedaemon.net>
----
- drivers/irqchip/irq-nvic.c | 10 +---------
- 1 file changed, 1 insertion(+), 9 deletions(-)
+Sure.  I'll take care of that right away!
 
-diff --git a/drivers/irqchip/irq-nvic.c b/drivers/irqchip/irq-nvic.c
-index 70bdf6e..c935c61 100644
---- a/drivers/irqchip/irq-nvic.c
-+++ b/drivers/irqchip/irq-nvic.c
-@@ -49,14 +49,6 @@ nvic_handle_irq(irq_hw_number_t hwirq, struct pt_regs *regs)
- 	handle_IRQ(irq, regs);
- }
- 
--static void nvic_eoi(struct irq_data *d)
--{
--	/*
--	 * This is a no-op as end of interrupt is signaled by the exception
--	 * return sequence.
--	 */
--}
--
- static int __init nvic_of_init(struct device_node *node,
- 			       struct device_node *parent)
- {
-@@ -102,7 +94,7 @@ static int __init nvic_of_init(struct device_node *node,
- 		gc->chip_types[0].regs.disable = NVIC_ICER;
- 		gc->chip_types[0].chip.irq_mask = irq_gc_mask_disable_reg;
- 		gc->chip_types[0].chip.irq_unmask = irq_gc_unmask_enable_reg;
--		gc->chip_types[0].chip.irq_eoi = nvic_eoi;
-+		gc->chip_types[0].chip.irq_eoi = irq_gc_noop;
- 
- 		/* disable interrupts */
- 		writel_relaxed(~0, gc->reg_base + NVIC_ICER);
--- 
-1.9.0
+Anna
+> 
+> Thanks
+>    Trond
+> 
 
