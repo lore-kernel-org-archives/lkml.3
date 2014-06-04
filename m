@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756309AbaFEARX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 20:17:23 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40221 "EHLO
+	id S1756296AbaFEARV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 20:17:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40225 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753169AbaFDXWh (ORCPT
+	with ESMTP id S1753237AbaFDXWi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:22:37 -0400
+	Wed, 4 Jun 2014 19:22:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anssi Hannula <anssi.hannula@iki.fi>,
-        Stephan Raue <stephan@openelec.tv>, Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.14 146/228] ALSA: hda - hdmi: Set converter channel count even without sink
-Date: Wed,  4 Jun 2014 16:22:55 -0700
-Message-Id: <20140604232352.714226121@linuxfoundation.org>
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 3.14 155/228] workqueue: make rescuer_thread() empty wq->maydays list before exiting
+Date: Wed,  4 Jun 2014 16:23:04 -0700
+Message-Id: <20140604232352.997143504@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -29,55 +28,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anssi Hannula <anssi.hannula@iki.fi>
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
 
-commit f06ab794af7055d0949b09885f79f8b493deec64 upstream.
+commit 4d595b866d2c653dc90a492b9973a834eabfa354 upstream.
 
-Since commit 1df5a06a ("ALSA: hda - hdmi: Fix programmed active channel
-count") channel count is no longer being set if monitor_present is 0.
-This is because setting the count was moved after the CA value is
-determined, which is only after the monitor_present check in
-hdmi_setup_audio_infoframe().
+After a @pwq is scheduled for emergency execution, other workers may
+consume the affectd work items before the rescuer gets to them.  This
+means that a workqueue many have pwqs queued on @wq->maydays list
+while not having any work item pending or in-flight.  If
+destroy_workqueue() executes in such condition, the rescuer may exit
+without emptying @wq->maydays.
 
-Unfortunately, in some cases, such as with a non-spec-compliant codec or
-with a problematic video driver, monitor_present is always 0. As a
-specific example, this seems to happen with gen1 ATV (SiI1390 codec),
-causing left-channel-only stereo playback (multi-channel playback has
-apparently never worked with this codec despite it reporting 8 channels,
-reason unknown).
+This currently doesn't cause any actual harm.  destroy_workqueue() can
+safely destroy all the involved data structures whether @wq->maydays
+is populated or not as nobody access the list once the rescuer exits.
 
-Simply setting converter channel count without setting the pin infoframe
-and channel mapping as well does not theoretically make much sense as
-this will just mean they are out-of-sync and multichannel playback will
-have a wrong channel mapping.
+However, this is nasty and makes future development difficult.  Let's
+update rescuer_thread() so that it empties @wq->maydays after seeing
+should_stop to guarantee that the list is empty on rescuer exit.
 
-However, adding back just setting the converter channel count even in
-no-monitor case is the safest change which at least fixes the stereo
-playback regression on SiI1390 codec. Do that.
+tj: Updated comment and patch description.
 
-Signed-off-by: Anssi Hannula <anssi.hannula@iki.fi>
-Reported-by: Stephan Raue <stephan@openelec.tv>
-Tested-by: Stephan Raue <stephan@openelec.tv>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_hdmi.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ kernel/workqueue.c |   21 ++++++++++++++++-----
+ 1 file changed, 16 insertions(+), 5 deletions(-)
 
---- a/sound/pci/hda/patch_hdmi.c
-+++ b/sound/pci/hda/patch_hdmi.c
-@@ -1123,8 +1123,10 @@ static void hdmi_setup_audio_infoframe(s
- 					    AMP_OUT_UNMUTE);
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -2397,6 +2397,7 @@ static int rescuer_thread(void *__rescue
+ 	struct worker *rescuer = __rescuer;
+ 	struct workqueue_struct *wq = rescuer->rescue_wq;
+ 	struct list_head *scheduled = &rescuer->scheduled;
++	bool should_stop;
  
- 	eld = &per_pin->sink_eld;
--	if (!eld->monitor_present)
-+	if (!eld->monitor_present) {
-+		hdmi_set_channel_count(codec, per_pin->cvt_nid, channels);
- 		return;
+ 	set_user_nice(current, RESCUER_NICE_LEVEL);
+ 
+@@ -2408,11 +2409,15 @@ static int rescuer_thread(void *__rescue
+ repeat:
+ 	set_current_state(TASK_INTERRUPTIBLE);
+ 
+-	if (kthread_should_stop()) {
+-		__set_current_state(TASK_RUNNING);
+-		rescuer->task->flags &= ~PF_WQ_WORKER;
+-		return 0;
+-	}
++	/*
++	 * By the time the rescuer is requested to stop, the workqueue
++	 * shouldn't have any work pending, but @wq->maydays may still have
++	 * pwq(s) queued.  This can happen by non-rescuer workers consuming
++	 * all the work items before the rescuer got to them.  Go through
++	 * @wq->maydays processing before acting on should_stop so that the
++	 * list is always empty on exit.
++	 */
++	should_stop = kthread_should_stop();
+ 
+ 	/* see whether any pwq is asking for help */
+ 	spin_lock_irq(&wq_mayday_lock);
+@@ -2464,6 +2469,12 @@ repeat:
+ 
+ 	spin_unlock_irq(&wq_mayday_lock);
+ 
++	if (should_stop) {
++		__set_current_state(TASK_RUNNING);
++		rescuer->task->flags &= ~PF_WQ_WORKER;
++		return 0;
 +	}
- 
- 	if (!non_pcm && per_pin->chmap_set)
- 		ca = hdmi_manual_channel_allocation(channels, per_pin->chmap);
++
+ 	/* rescuers should never participate in concurrency management */
+ 	WARN_ON_ONCE(!(rescuer->flags & WORKER_NOT_RUNNING));
+ 	schedule();
 
 
