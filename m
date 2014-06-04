@@ -1,43 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751915AbaFDUIu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 16:08:50 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:52161 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750997AbaFDUIs (ORCPT
+	id S1751965AbaFDUIw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 16:08:52 -0400
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:33540 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750997AbaFDUIu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 16:08:48 -0400
-Message-ID: <538F7CCE.3050508@kernel.dk>
-Date: Wed, 04 Jun 2014 14:08:46 -0600
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Wed, 4 Jun 2014 16:08:50 -0400
+Message-ID: <538F7C7D.9040606@linux.vnet.ibm.com>
+Date: Thu, 05 Jun 2014 01:37:25 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-To: =?UTF-8?B?TWF0aWFzIEJqw7hybGluZw==?= <m@bjorling.me>,
-        Shaohua Li <shli@kernel.org>
-CC: "Sam Bradshaw (sbradshaw)" <sbradshaw@micron.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] block: per-cpu counters for in-flight IO accounting
-References: <1399627061-5960-1-git-send-email-m@bjorling.me>	<1399627061-5960-2-git-send-email-m@bjorling.me>	<536CE25C.5040107@kernel.dk>	<536D0537.7010905@kernel.dk>	<20140530121119.GA1637@kernel.org>	<53888C80.2020206@kernel.dk>	<20140604103901.GA14383@kernel.org> <CAOu_J6nRZuktyozjychkLOA+1zwct2+7KPUxfNAghVOOOBfi+g@mail.gmail.com>
-In-Reply-To: <CAOu_J6nRZuktyozjychkLOA+1zwct2+7KPUxfNAghVOOOBfi+g@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Peter Zijlstra <peterz@infradead.org>
+CC: akpm@linux-foundation.org, fweisbec@gmail.com, tglx@linutronix.de,
+        hch@infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] smp, ipi: Speed up IPI handling by invoking the callbacks
+ in reverse order
+References: <20140604193934.21321.19185.stgit@srivatsabhat.in.ibm.com> <20140604194731.GO13930@laptop.programming.kicks-ass.net>
+In-Reply-To: <20140604194731.GO13930@laptop.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14060420-3568-0000-0000-000005A09DDB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/04/2014 05:29 AM, Matias Bjørling wrote:
-> It's in
+On 06/05/2014 01:17 AM, Peter Zijlstra wrote:
+> On Thu, Jun 05, 2014 at 01:09:35AM +0530, Srivatsa S. Bhat wrote:
+>> The current implementation of lockless list (llist) has a drawback: if we
+>> want to traverse the list in FIFO order (oldest to newest), we need to
+>> reverse the list first (and this can be expensive if the list is large,
+>> since this is an O(n) operation).
 > 
-> blk_io_account_start
->   part_round_stats
->     part_round_state_single
->       part_in_flight
+> Have you actually looked at the queue depth of this thing? Large queues
+> are a problem for interrupt latency.
 > 
-> I like the granularity idea.
 
-And similarly from blk_io_account_done() - which makes it even worse,
-since it at both ends of the IO chain.
+Actually, I wrote this patch just by looking at the code and realizing
+that we don't need to reverse the list. In practice, I haven't actually
+seen any noticeable interrupt latencies or large queues so far. So I think
+this patch is just a very tiny optimization, that's all.
 
--- 
-Jens Axboe
+Regards,
+Srivatsa S. Bhat
 
