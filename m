@@ -1,153 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752144AbaFDWUw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 18:20:52 -0400
-Received: from mail-ie0-f201.google.com ([209.85.223.201]:56908 "EHLO
-	mail-ie0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751728AbaFDWUs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 18:20:48 -0400
-From: Doug Anderson <dianders@chromium.org>
-To: Stephen Warren <swarren@nvidia.com>, Thierry Reding <treding@nvidia.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>, olof@lixom.net
-Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Doug Anderson <dianders@chromium.org>, ben-linux@fluff.org,
-        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 3/3] ARM: dts: Use the cros-ec-keyboard fragment in exynos5250-snow
-Date: Wed,  4 Jun 2014 15:20:20 -0700
-Message-Id: <1401920421-25729-3-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 2.0.0.526.g5318336
-In-Reply-To: <1401920421-25729-1-git-send-email-dianders@chromium.org>
-References: <1401920421-25729-1-git-send-email-dianders@chromium.org>
+	id S1752218AbaFDWVL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 18:21:11 -0400
+Received: from mga11.intel.com ([192.55.52.93]:21394 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752128AbaFDWUv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 18:20:51 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,975,1392192000"; 
+   d="scan'208";a="542596258"
+Date: Wed, 4 Jun 2014 15:20:47 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung.kim@lge.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Stephane Eranian <eranian@google.com>, David Ahern <dsahern@gmail.com>,
+        Vince Weaver <vincent.weaver@maine.edu>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] tools: perf: util: parse-events.c:  Cleaning up missing
+ null-terminate after strncpy call
+Message-ID: <20140604222047.GA16855@tassilo.jf.intel.com>
+References: <1401918378-3842-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1401918378-3842-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Doug Anderson <dianders@chromium.org>
----
- arch/arm/boot/dts/exynos5250-snow.dts | 93 ++---------------------------------
- 1 file changed, 3 insertions(+), 90 deletions(-)
+On Wed, Jun 04, 2014 at 11:46:18PM +0200, Rickard Strandqvist wrote:
+> Added a guaranteed null-terminate after call to strncpy.
+> 
+> This was partly found using a static code analysis program called cppcheck.
 
-diff --git a/arch/arm/boot/dts/exynos5250-snow.dts b/arch/arm/boot/dts/exynos5250-snow.dts
-index 079fdf9..7bd2df1 100644
---- a/arch/arm/boot/dts/exynos5250-snow.dts
-+++ b/arch/arm/boot/dts/exynos5250-snow.dts
-@@ -137,7 +137,7 @@
- 				sbs,poll-retry-count = <1>;
- 			};
- 
--			ec: embedded-controller {
-+			cros_ec: embedded-controller {
- 				compatible = "google,cros-ec-i2c";
- 				reg = <0x1e>;
- 				interrupts = <6 0>;
-@@ -145,95 +145,6 @@
- 				pinctrl-names = "default";
- 				pinctrl-0 = <&ec_irq>;
- 				wakeup-source;
--
--				keyboard-controller {
--				        compatible = "google,cros-ec-keyb";
--				        keypad,num-rows = <8>;
--				        keypad,num-columns = <13>;
--				        google,needs-ghost-filter;
--					linux,keymap = <0x0001007d	/* L_META */
--							0x0002003b	/* F1 */
--							0x00030030	/* B */
--							0x00040044	/* F10 */
--							0x00060031	/* N */
--							0x0008000d	/* = */
--							0x000a0064	/* R_ALT */
--
--							0x01010001	/* ESC */
--							0x0102003e	/* F4 */
--							0x01030022	/* G */
--							0x01040041	/* F7 */
--							0x01060023	/* H */
--							0x01080028	/* ' */
--							0x01090043	/* F9 */
--							0x010b000e	/* BKSPACE */
--
--							0x0200001d	/* L_CTRL */
--							0x0201000f	/* TAB */
--							0x0202003d	/* F3 */
--							0x02030014	/* T */
--							0x02040040	/* F6 */
--							0x0205001b	/* ] */
--							0x02060015	/* Y */
--							0x02070056	/* 102ND */
--							0x0208001a	/* [ */
--							0x02090042	/* F8 */
--
--							0x03010029	/* GRAVE */
--							0x0302003c	/* F2 */
--							0x03030006	/* 5 */
--							0x0304003f	/* F5 */
--							0x03060007	/* 6 */
--							0x0308000c	/* - */
--							0x030b002b	/* \ */
--
--							0x04000061	/* R_CTRL */
--							0x0401001e	/* A */
--							0x04020020	/* D */
--							0x04030021	/* F */
--							0x0404001f	/* S */
--							0x04050025	/* K */
--							0x04060024	/* J */
--							0x04080027	/* ; */
--							0x04090026	/* L */
--							0x040a002b	/* \ */
--							0x040b001c	/* ENTER */
--
--							0x0501002c	/* Z */
--							0x0502002e	/* C */
--							0x0503002f	/* V */
--							0x0504002d	/* X */
--							0x05050033	/* , */
--							0x05060032	/* M */
--							0x0507002a	/* L_SHIFT */
--							0x05080035	/* / */
--							0x05090034	/* . */
--							0x050B0039	/* SPACE */
--
--							0x06010002	/* 1 */
--							0x06020004	/* 3 */
--							0x06030005	/* 4 */
--							0x06040003	/* 2 */
--							0x06050009	/* 8 */
--							0x06060008	/* 7 */
--							0x0608000b	/* 0 */
--							0x0609000a	/* 9 */
--							0x060a0038	/* L_ALT */
--							0x060b006c	/* DOWN */
--							0x060c006a	/* RIGHT */
--
--							0x07010010	/* Q */
--							0x07020012	/* E */
--							0x07030013	/* R */
--							0x07040011	/* W */
--							0x07050017	/* I */
--							0x07060016	/* U */
--							0x07070036	/* R_SHIFT */
--							0x07080019	/* P */
--							0x07090018	/* O */
--							0x070b0067	/* UP */
--							0x070c0069>;	/* LEFT */
--				};
- 			};
- 
- 			power-regulator {
-@@ -431,3 +342,5 @@
- 		};
- 	};
- };
-+
-+#include "cros-ec-keyboard.dtsi"
+Should just stop using strncpy. strncpy semantics don't make any
+sense at all, and it's inefficient. I would just snprintf here
+
+-Andi
+
+> 
+> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+> ---
+>  tools/perf/util/parse-events.c |    4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+> 
+> diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+> index 1e15df1..fad2976 100644
+> --- a/tools/perf/util/parse-events.c
+> +++ b/tools/perf/util/parse-events.c
+> @@ -1216,8 +1216,10 @@ static void print_symbol_events(const char *event_glob, unsigned type,
+>  
+>  		if (strlen(syms->alias))
+>  			snprintf(name, MAX_NAME_LEN, "%s OR %s", syms->symbol, syms->alias);
+> -		else
+> +		else {
+>  			strncpy(name, syms->symbol, MAX_NAME_LEN);
+> +			name[sizeof(name) - 1] = '\0';
+> +		}
+>  
+>  		printf("  %-50s [%s]\n", name, event_type_descriptors[type]);
+>  
+> -- 
+> 1.7.10.4
+> 
+
 -- 
-2.0.0.526.g5318336
-
+ak@linux.intel.com -- Speaking for myself only
