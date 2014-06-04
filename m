@@ -1,41 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752947AbaFDPLv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 11:11:51 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:43845 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752652AbaFDPLu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 11:11:50 -0400
-Message-ID: <538F3733.6040207@kernel.dk>
-Date: Wed, 04 Jun 2014 09:11:47 -0600
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1753220AbaFDPMX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 11:12:23 -0400
+Received: from skprod3.natinst.com ([130.164.80.24]:47588 "EHLO ni.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752387AbaFDPMV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 11:12:21 -0400
+From: "Brad Mouring" <bmouring@ni.com>
+Date: Wed, 4 Jun 2014 10:11:29 -0500
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Brad Mouring <bmouring@ni.com>, linux-rt-users@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Clark Williams <williams@redhat.com>
+Subject: Re: [PATCH 1/1] rtmutex: Handle when top lock owner changes
+Message-ID: <20140604151129.GA4531@linuxgetsreal>
+References: <1400855410-14773-1-git-send-email-brad.mouring@ni.com>
+ <1400855410-14773-2-git-send-email-brad.mouring@ni.com>
+ <20140603210609.62de6451@gandalf.local.home>
+ <20140604130525.GA1621@linuxgetsreal>
+ <20140604101612.0d47b399@gandalf.local.home>
+ <20140604143830.GA3393@linuxgetsreal>
+ <20140604105823.0c7124c4@gandalf.local.home>
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>
-CC: Shaohua Li <shli@kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: [patch]blk-mq: blk_mq_tag_to_rq should handle flush request
-References: <20140510040023.GA13788@kernel.org> <5388912F.7010609@kernel.dk> <20140604111133.GA7826@infradead.org> <538F2A11.4060800@kernel.dk> <20140604142012.GA20056@infradead.org> <538F331F.60101@kernel.dk> <20140604145803.GA7826@infradead.org> <538F34FB.7050003@kernel.dk> <20140604150508.GA21551@infradead.org> <538F365C.8050604@kernel.dk> <20140604151020.GA13586@infradead.org>
-In-Reply-To: <20140604151020.GA13586@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140604105823.0c7124c4@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-MIMETrack: Itemize by SMTP Server on US-AUS-MGWOut1/AUS/H/NIC(Release 8.5.3FP5|July 31, 2013) at
+ 06/04/2014 10:11:30 AM,
+	Serialize by Router on US-AUS-MGWOut1/AUS/H/NIC(Release 8.5.3FP5|July 31, 2013) at
+ 06/04/2014 10:11:31 AM,
+	Serialize complete at 06/04/2014 10:11:31 AM
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
+ definitions=2014-06-04_03:2014-06-04,2014-06-04,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-06-04 09:10, Christoph Hellwig wrote:
-> On Wed, Jun 04, 2014 at 09:08:12AM -0600, Jens Axboe wrote:
->>> The performance regression is caused by "blk-mq: avoid code
->>> duplication", but I don't really understand why yet.
->>
->> Gah, looks like this one dropped the tag idling. I bet that is why.
+On Wed, Jun 04, 2014 at 10:58:23AM -0400, Steven Rostedt wrote:
+> On Wed, 4 Jun 2014 09:38:30 -0500
+> "Brad Mouring" <bmouring@ni.com> wrote:
+> 
+> > On Wed, Jun 04, 2014 at 10:16:12AM -0400, Steven Rostedt wrote:
+> > > On Wed, 4 Jun 2014 08:05:25 -0500
+> > > "Brad Mouring" <bmouring@ni.com> wrote:
+> > > 
+> > >  >          A->L2
+> > > > 
+> > > > This is a slight variation on what I was seeing. To use the nomenclature
+> > > > that you proposed at the start, rewinding to the point
+> > > > 
+> > > >    A->L2->B->L3->C->L4->D
+> > > > 
+> > > > Let's assume things continue to unfold as you explain. Task is D,
+> > > > top_waiter is C. A is scheduled out and the chain shuffles.
+> > > > 
+> > > >        A->L2->B
+> > > > C->L4->D->'
+> > > 
+> > > But isn't that a lock ordering problem there?
+> > > 
+> > > If B can block on L3 owned by C, I see the following:
+> > > 
+> > >   B->L3->C->L4->D->L2->B
+> > > 
+> > > Deadlock!
+> > Yes, it could be. But currently no one owns L3. B is currently not
+> > blocked. Under these circumstances, there is no deadlock. Also, I
+> > somewhat arbitrarily picked L4, it could be Lfoo that C blocks on
+> > since the process is
+> 
+> OK, then you should have used L1, which basically makes it exactly my
+> scenario ;-)
+
+Heh, fair point.
+
+> 
+> > ...
+> > waiter = D->pi_blocked_on
+> > 
+> > // waiter is real_waiter D->L2
+> > 
+> > // orig_waiter still there, orig_lock still has an owner
+> > 
+> > // top_waiter was pointing to C->L4, now points to C->Lfoo
+> > // D does have top_waiters, and, as noted above, it aliased
+> > // to encompass a different waiter scenario
+> > 
+> > > 
+> > > In my scenario I was very careful to point out that the lock ordering
+> > > was: L1->L2->L3->L4
+> > > 
+> > > But you show that we can have both:
+> > > 
+> > >    L2-> ... ->L4
+> > > 
+> > >     and
+> > > 
+> > >    L4-> ... ->L2
+> > > 
+> > > Which is a reverse of lock ordering and a possible deadlock can occur.
+> > 
+> > So the numbering/ordering of the locks is really somewhat arbitrary.
+> > Here we *can* have L2-> ... ->L4 (if B decides to block on L2, it
+> > could just as easily block on L8), and we absolutely have
+> > L4-> ... ->L2. A deadlock *could* occur, but all of the traces that
+> > I dug through, no actual deadlocks occurred.
+> 
+> Heh, but that shows the code is broken. I'm not saying that our
+> deadlock detector is not returning false positives, I'm just stating
+> that you probably need to fix your code.
+> 
+> Yes, you can have a locking order of L1 -> L2 and also L2 -> L1, and if
+> you are lucky, that may never trigger any deadlocks. But why do you
+> think the kernel folks have put so much effort into lockdep. Lockdep
+> doesn't tell you that there is a deadlock (although it could), what it
+> is so useful with is to tell us where there are possible deadlocks.
+> 
+> If your code does take L1 -> L2 and then L2 -> L1, you have a chance of
+> hitting a deadlock right there. If you were to run the userspace
+> lockdep, it would spit out a nice warning for you.
+
+What I was saying is that the code can take L1 -> L2 and L2 -> Lfoo.
+And, in fact, a quick glance back over my notes supports just this
+behavior. It was unfortunate that I decided to come up with an example
+without thinking it through first.
 >
-> Ah, thanks.  It's indeed exactly the same sort of slow down I bisected
-> back then, this should have rung a bell instead of keeping me occupied
-> for hours..
-
-Patch is committed :-)
-
--- 
-Jens Axboe
-
+> But this is off topic, as I have shown that there exists an example
+> that the userspace code would never deadlock but our deadlock detector
+> would say it did.
+> 
+> -- Steve
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-rt-users" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
