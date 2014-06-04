@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752874AbaFDXVw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:21:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39961 "EHLO
+	id S1757022AbaFEAcp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 20:32:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39968 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752842AbaFDXVt (ORCPT
+	with ESMTP id S1752858AbaFDXVw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:21:49 -0400
+	Wed, 4 Jun 2014 19:21:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Clemens Ladisch <clemens@ladisch.de>, Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.14 094/228] ALSA: usb-audio: work around corrupted TEAC UD-H01 feedback data
-Date: Wed,  4 Jun 2014 16:22:03 -0700
-Message-Id: <20140604232351.071498095@linuxfoundation.org>
+        Nikita Yushchenko <nyushchenko@dev.rtsoft.ru>
+Subject: [PATCH 3.14 086/228] fsl-usb: do not test for PHY_CLK_VALID bit on controller version 1.6
+Date: Wed,  4 Jun 2014 16:21:55 -0700
+Message-Id: <20140604232350.823071524@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -28,69 +28,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Clemens Ladisch <clemens@ladisch.de>
+From: Nikita Yushchenko <nyushchenko@dev.rtsoft.ru>
 
-commit 7040b6d1febfdbd9c1595efb751d492cd2503f96 upstream.
+commit d183c81929beeba842b74422f754446ef2b8b49c upstream.
 
-The TEAC UD-H01 firmware sends wrong feedback frequency values, thus
-causing the PC to send the samples at a wrong rate, which results in
-clicks and crackles in the output.
+Per reference manuals of Freescale P1020 and P2020 SoCs, USB controller
+present in these SoCs has bit 17 of USBx_CONTROL register marked as
+Reserved - there is no PHY_CLK_VALID bit there.
 
-Add a workaround to detect and fix the corruption.
+Testing for this bit in ehci_fsl_setup_phy() behaves differently on two
+P1020RDB boards available here - on one board test passes and fsl-usb
+init succeeds, but on other board test fails, causing fsl-usb init to
+fail.
 
-Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
-[mick37@gmx.de: use sender->udh01_fb_quirk rather than
- ep->udh01_fb_quirk in snd_usb_handle_sync_urb()]
-Reported-and-tested-by: Mick <mick37@gmx.de>
-Reported-and-tested-by: Andrea Messa <andr.messa@tiscali.it>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+This patch changes ehci_fsl_setup_phy() not to test PHY_CLK_VALID on
+controller version 1.6 that (per manual) does not have this bit.
+
+Signed-off-by: Nikita Yushchenko <nyushchenko@dev.rtsoft.ru>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/usb/card.h     |    1 +
- sound/usb/endpoint.c |   15 ++++++++++++++-
- 2 files changed, 15 insertions(+), 1 deletion(-)
+ drivers/usb/host/ehci-fsl.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/sound/usb/card.h
-+++ b/sound/usb/card.h
-@@ -92,6 +92,7 @@ struct snd_usb_endpoint {
- 	unsigned int curframesize;      /* current packet size in frames (for capture) */
- 	unsigned int syncmaxsize;	/* sync endpoint packet size */
- 	unsigned int fill_max:1;	/* fill max packet size always */
-+	unsigned int udh01_fb_quirk:1;	/* corrupted feedback data */
- 	unsigned int datainterval;      /* log_2 of data packet interval */
- 	unsigned int syncinterval;	/* P for adaptive mode, 0 otherwise */
- 	unsigned char silence_value;
---- a/sound/usb/endpoint.c
-+++ b/sound/usb/endpoint.c
-@@ -469,6 +469,10 @@ struct snd_usb_endpoint *snd_usb_add_end
- 			ep->syncinterval = 3;
- 
- 		ep->syncmaxsize = le16_to_cpu(get_endpoint(alts, 1)->wMaxPacketSize);
-+
-+		if (chip->usb_id == USB_ID(0x0644, 0x8038) /* TEAC UD-H01 */ &&
-+		    ep->syncmaxsize == 4)
-+			ep->udh01_fb_quirk = 1;
+--- a/drivers/usb/host/ehci-fsl.c
++++ b/drivers/usb/host/ehci-fsl.c
+@@ -248,7 +248,8 @@ static int ehci_fsl_setup_phy(struct usb
+ 		break;
  	}
  
- 	list_add_tail(&ep->list, &chip->ep_list);
-@@ -1099,7 +1103,16 @@ void snd_usb_handle_sync_urb(struct snd_
- 	if (f == 0)
- 		return;
- 
--	if (unlikely(ep->freqshift == INT_MIN)) {
-+	if (unlikely(sender->udh01_fb_quirk)) {
-+		/*
-+		 * The TEAC UD-H01 firmware sometimes changes the feedback value
-+		 * by +/- 0x1.0000.
-+		 */
-+		if (f < ep->freqn - 0x8000)
-+			f += 0x10000;
-+		else if (f > ep->freqn + 0x8000)
-+			f -= 0x10000;
-+	} else if (unlikely(ep->freqshift == INT_MIN)) {
- 		/*
- 		 * The first time we see a feedback value, determine its format
- 		 * by shifting it left or right until it matches the nominal
+-	if (pdata->have_sysif_regs && pdata->controller_ver &&
++	if (pdata->have_sysif_regs &&
++	    pdata->controller_ver > FSL_USB_VER_1_6 &&
+ 	    (phy_mode == FSL_USB2_PHY_ULPI)) {
+ 		/* check PHY_CLK_VALID to get phy clk valid */
+ 		if (!(spin_event_timeout(in_be32(non_ehci + FSL_SOC_USB_CTRL) &
 
 
