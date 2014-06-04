@@ -1,35 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751513AbaFDTrh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 15:47:37 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:52434 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751197AbaFDTrg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 15:47:36 -0400
-Date: Wed, 4 Jun 2014 21:47:31 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: akpm@linux-foundation.org, fweisbec@gmail.com, tglx@linutronix.de,
-        hch@infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] smp, ipi: Speed up IPI handling by invoking the
- callbacks in reverse order
-Message-ID: <20140604194731.GO13930@laptop.programming.kicks-ass.net>
-References: <20140604193934.21321.19185.stgit@srivatsabhat.in.ibm.com>
+	id S1751628AbaFDTuv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 15:50:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26642 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751010AbaFDTuu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 15:50:50 -0400
+Date: Wed, 4 Jun 2014 22:51:12 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Paolo Bonzini <pbonzini@redhat.com>, netdev@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        David Miller <davem@davemloft.net>
+Subject: Re: [PULL 2/2] vhost: replace rcu with mutex
+Message-ID: <20140604195112.GB10676@redhat.com>
+References: <1401744482-17764-1-git-send-email-mst@redhat.com>
+ <1401744482-17764-3-git-send-email-mst@redhat.com>
+ <1401746280.3645.187.camel@edumazet-glaptop2.roam.corp.google.com>
+ <538DC422.1050303@redhat.com>
+ <1401803863.3645.208.camel@edumazet-glaptop2.roam.corp.google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140604193934.21321.19185.stgit@srivatsabhat.in.ibm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1401803863.3645.208.camel@edumazet-glaptop2.roam.corp.google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 05, 2014 at 01:09:35AM +0530, Srivatsa S. Bhat wrote:
-> The current implementation of lockless list (llist) has a drawback: if we
-> want to traverse the list in FIFO order (oldest to newest), we need to
-> reverse the list first (and this can be expensive if the list is large,
-> since this is an O(n) operation).
+On Tue, Jun 03, 2014 at 06:57:43AM -0700, Eric Dumazet wrote:
+> On Tue, 2014-06-03 at 14:48 +0200, Paolo Bonzini wrote:
+> > Il 02/06/2014 23:58, Eric Dumazet ha scritto:
+> > > This looks dubious
+> > >
+> > > What about using kfree_rcu() instead ?
+> > 
+> > It would lead to unbound allocation from userspace.
+> 
+> Look at how we did this in commit
+> c3059477fce2d956a0bb3e04357324780c5d8eeb
+> 
+> > 
+> > > translate_desc() still uses rcu_read_lock(), its not clear if the mutex
+> > > is really held.
+> > 
+> > Yes, vhost_get_vq_desc must be called with the vq mutex held.
+> > 
+> > The rcu_read_lock/unlock in translate_desc is unnecessary.
+> 
+> Yep, this is what I pointed out. This is not only necessary, but
+> confusing and might be incorrectly copy/pasted in the future.
+> 
+> This patch is a partial one and leaves confusion.
+> 
+> Some places uses the proper 
+> 
+> mp = rcu_dereference_protected(dev->memory,
+> 		 lockdep_is_held(&dev->mutex));
+> 
+> others use the now incorrect :
+> 
+> rcu_read_lock();
+> mp = rcu_dereference(dev->memory);
+> ...
+> 
 
-Have you actually looked at the queue depth of this thing? Large queues
-are a problem for interrupt latency.
+I agree, working on a cleanup patch on top now.
+
+-- 
+MST
