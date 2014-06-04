@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752992AbaFDXWO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:22:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40017 "EHLO
+	id S1756918AbaFEAaX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 20:30:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40035 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752956AbaFDXWL (ORCPT
+	with ESMTP id S1752979AbaFDXWN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:22:11 -0400
+	Wed, 4 Jun 2014 19:22:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Jason Cooper <jason@lakedaemon.net>
-Subject: [PATCH 3.14 108/228] ARM: mvebu: fix NOR bus-width in Armada XP GP Device Tree
-Date: Wed,  4 Jun 2014 16:22:17 -0700
-Message-Id: <20140604232351.515363952@linuxfoundation.org>
+        Liu Hua <sdu.liu@huawei.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [PATCH 3.14 112/228] ARM: 8012/1: kdump: Avoid overflow when converting pfn to physaddr
+Date: Wed,  4 Jun 2014 16:22:21 -0700
+Message-Id: <20140604232351.646420399@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -31,49 +29,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+From: Liu Hua <sdu.liu@huawei.com>
 
-commit 1a88f809ccb5db1509a7514b187c00b3a995fc82 upstream.
+commit 8fad87bca7ac9737e413ba5f1656f1114a8c314d upstream.
 
-The mvebu-devbus driver had a serious bug, which lead to a 8 bits bus
-width declared in the Device Tree being considered as a 16 bits bus
-width when configuring the hardware.
+When we configure CONFIG_ARM_LPAE=y, pfn << PAGE_SHIFT will
+overflow if pfn >= 0x100000 in copy_oldmem_page.
+So use __pfn_to_phys for converting.
 
-This bug in mvebu-devbus driver was compensated by a symetric mistake
-in the Armada XP GP Device Tree: a 8 bits bus width was declared, even
-though the hardware actually has a 16 bits bus width connection with
-the NOR flash.
-
-Now that we have fixed the mvebu-devbus driver to behave according to
-its Device Tree binding, this commit fixes the problematic Device Tree
-files as well.
-
-This bug was introduced in commit
-da8d1b38356853c37116f9afa29f15648d7fb159 ('ARM: mvebu: Add support for
-NOR flash device on Armada XP-GP board') which was merged in v3.10.
-
-Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Link: https://lkml.kernel.org/r/1397489361-5833-3-git-send-email-thomas.petazzoni@free-electrons.com
-Fixes: da8d1b383568 ('ARM: mvebu: Add support for NOR flash device on Armada XP-GP board')
-Acked-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Acked-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+Signed-off-by: Liu Hua <sdu.liu@huawei.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/boot/dts/armada-xp-gp.dts |    2 +-
+ arch/arm/kernel/crash_dump.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/arm/boot/dts/armada-xp-gp.dts
-+++ b/arch/arm/boot/dts/armada-xp-gp.dts
-@@ -49,7 +49,7 @@
- 			/* Device Bus parameters are required */
+--- a/arch/arm/kernel/crash_dump.c
++++ b/arch/arm/kernel/crash_dump.c
+@@ -39,7 +39,7 @@ ssize_t copy_oldmem_page(unsigned long p
+ 	if (!csize)
+ 		return 0;
  
- 			/* Read parameters */
--			devbus,bus-width    = <8>;
-+			devbus,bus-width    = <16>;
- 			devbus,turn-off-ps  = <60000>;
- 			devbus,badr-skew-ps = <0>;
- 			devbus,acc-first-ps = <124000>;
+-	vaddr = ioremap(pfn << PAGE_SHIFT, PAGE_SIZE);
++	vaddr = ioremap(__pfn_to_phys(pfn), PAGE_SIZE);
+ 	if (!vaddr)
+ 		return -ENOMEM;
+ 
 
 
