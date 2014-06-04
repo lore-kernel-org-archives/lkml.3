@@ -1,94 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753351AbaFDNEx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 09:04:53 -0400
-Received: from mail-qg0-f44.google.com ([209.85.192.44]:45316 "EHLO
-	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753249AbaFDNEu (ORCPT
+	id S1753142AbaFDNJ3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 09:09:29 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:40185 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752870AbaFDNJ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 09:04:50 -0400
-Date: Wed, 4 Jun 2014 09:04:46 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Paolo Valente <paolo.valente@unimore.it>
-Cc: Jens Axboe <axboe@kernel.dk>, Li Zefan <lizefan@huawei.com>,
-        Fabio Checconi <fchecconi@gmail.com>,
-        Arianna Avanzini <avanzini.arianna@gmail.com>,
-        linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org,
-        Mauro Andreolini <mauro.andreolini@unimore.it>
-Subject: Re: [PATCH RFC - TAKE TWO - 10/12] block, bfq: add Early Queue Merge
- (EQM)
-Message-ID: <20140604130446.GA5004@htj.dyndns.org>
-References: <20140528221929.GG1419@htj.dyndns.org>
- <1401354343-5527-1-git-send-email-paolo.valente@unimore.it>
- <1401354343-5527-11-git-send-email-paolo.valente@unimore.it>
- <20140601000331.GA29085@htj.dyndns.org>
- <3B7B1A46-46EB-4C52-A52C-4F79C71D14C2@unimore.it>
- <20140603162844.GD26210@htj.dyndns.org>
- <91383F1F-69C3-4B88-B51E-30204818F1AB@unimore.it>
+	Wed, 4 Jun 2014 09:09:28 -0400
+Date: Wed, 4 Jun 2014 14:09:18 +0100
+From: Morten Rasmussen <morten.rasmussen@arm.com>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        "efault@gmx.de" <efault@gmx.de>,
+        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>
+Subject: Re: [PATCH v2 08/11] sched: get CPU's activity statistic
+Message-ID: <20140604130918.GO29593@e103034-lin>
+References: <20140528154703.GJ19967@e103034-lin>
+ <20140603155007.GZ30445@twins.programming.kicks-ass.net>
+ <CAKfTPtDUvH--WxFATTW6YRAvLuohzyNHDUq6DRdfxc7gRKCX6Q@mail.gmail.com>
+ <20140604080809.GK30445@twins.programming.kicks-ass.net>
+ <CAKfTPtBCG1Jq2b+fyoGuA=7yG_yUbsmaD+j-ZXXsPNGp5giKpg@mail.gmail.com>
+ <20140604101724.GD11096@twins.programming.kicks-ass.net>
+ <20140604103619.GL29593@e103034-lin>
+ <CAKfTPtCVyLRG-fSge1shdw5aSDB3y=_qzU1DOVgCx0VBnn6mnA@mail.gmail.com>
+ <20140604112342.GN29593@e103034-lin>
+ <CAKfTPtCsxkypo_4e9zTHV_XPUt7-Bybot2uNOHUZVfbd=7vXHw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <91383F1F-69C3-4B88-B51E-30204818F1AB@unimore.it>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CAKfTPtCsxkypo_4e9zTHV_XPUt7-Bybot2uNOHUZVfbd=7vXHw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Wed, Jun 04, 2014 at 01:47:36PM +0200, Paolo Valente wrote:
-> > I think I'm a bit confused because it's named "early" queue merge
-> > while it actually moves queue merging later than cfq - set_request()
-> > happens before bio/rq merging.
+On Wed, Jun 04, 2014 at 12:52:46PM +0100, Vincent Guittot wrote:
+> On 4 June 2014 13:23, Morten Rasmussen <morten.rasmussen@arm.com> wrote:
+> > I get:
+> >
+> > A: 15/40 ms = 37.5%
+> > B: 20/40 ms = 50%
+> >
+> > Schedule:
+> >
+> >    | 5 ms | 5 ms | 5 ms | 5 ms | 5 ms | 5 ms | 5 ms | 5 ms | 5 ms |
+> > A:   run     rq     run  ----------- sleeping -------------  run
+> > B:   rq      run    rq    run   ---- sleeping -------------  rq
+> >
+> >> and CPU runnable will be 60% too
+> >
+> > rq->avg.runnable_avg_sum should be 50%. You have two tasks running for
+> > 20 ms every 40 ms.
+> >
+> > Right?
 > 
-> 
-> There is probably something I am missing here, because, as can be seen in blk-core.c,
-> around line 1495, elv_set_request() is invoked in the context of the get_request() function,
-> which in its turn is called from blk_queue_bio() *after* attempting both a plug merge
-> and a merge with one of the requests in the block layer's cache. The first
-> attempt is lockless and doesn't involve the I/O scheduler, but the
-> second attempt includes invoking the allow_merge_fn hook of the scheduler
-> (elv_merge() -> elv_rq_merge_ok() -> elv_iosched_allow_merge()).
+> ok, i see the misunderstood.
+> it's depends of what we mean by runnable. You take the % of time
+> whereas i take the runnable_avg_sum/period
 
-Ah, you're right, set_request doesn't happen if a bio is merged into
-an existing request.
+Right. There is a difference.
 
-> > Oh, as long as it makes measureable difference, I have no objection;
-> > however, I do think more explanation and comments would be nice.  I
-> > still can't quite understand why retrying on each merge attempt would
-> > make so much difference.  Maybe I just failed to understand what you
-> > wrote in the commit message.
 > 
-> If we remember well, one of the problems was exactly that a different request
-> may become the head request of the in-service queue between two rq merge
-> attempts. If we do not retry on every attempt, we lose the chance
-> to merge the queue at hand with the in-service queue. The two queues may
-> then diverge, and hence have no other opportunity to be merged.
-> 
-> > Is it because the cooperating tasks
-> > issue IOs which grow large and close enough after merges but not on
-> > the first bio issuance?  If so, why isn't doing it on rq merge time
-> > enough?  Is the timing sensitive enough for certain workloads that
-> > waiting till unplug time misses the opportunity?  But plugging should
-> > be relatively short compared to the time actual IOs take, so why would
-> > it be that sensitive?  What am I missing here?
-> 
-> The problem is not the duration of the plugging, but the fact that, if a request merge
-> succeeds for a bio, then there will be no set_request invocation for that bio.
-> Therefore, without early merging, there will be no queue merge at all.
-> 
-> If my replies are correct and convince you, then I will use them to integrate and
-> hopefully improve the documentation for this patch.
+> so A is on_rq 15/40 ms = 37.5% of the time which gives a
+> runnable_avg_sum/runnable_avg_period of 47%
+> B is on_rq  20/40 ms = 50% of the time which gives a
+> runnable_avg_sum/runnable_avg_period of 60%
+> and CPU has a task on its rq 20/40ms = 50% of the time which gives a
+> runnable_avg_sum/runnable_avg_period of 60%
 
-Ah, okay, so it's about missing the chance to look for cooperating
-queues when merge succeeds.  Yeah, that makes a lot more sense to me.
-If that's the case, wouldn't it be better to try finding cooperating
-queues after each merge success rather than each allow_merge()
-invocation?  And let's please document what we're catching with the
-extra attempts.
-
-Thanks.
-
--- 
-tejun
+Yes, that seems about right.
