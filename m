@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754617AbaFDX3R (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:29:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40973 "EHLO
+	id S1754600AbaFDX3Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 19:29:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40987 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754163AbaFDXYR (ORCPT
+	with ESMTP id S1754020AbaFDXYQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:24:17 -0400
+	Wed, 4 Jun 2014 19:24:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Olof Johansson <olof@lixom.net>, Doug Anderson <dianders@chromium.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, Wolfram Sang <wsa@the-dreams.de>
-Subject: [PATCH 3.10 095/103] i2c: s3c2410: resume race fix
-Date: Wed,  4 Jun 2014 16:25:58 -0700
-Message-Id: <20140604232549.916259286@linuxfoundation.org>
+        Wenkai Du <wenkai.du@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Wolfram Sang <wsa@the-dreams.de>
+Subject: [PATCH 3.10 094/103] i2c: designware: Mask all interrupts during i2c controller enable
+Date: Wed,  4 Jun 2014 16:25:57 -0700
+Message-Id: <20140604232549.882713761@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232546.704156131@linuxfoundation.org>
 References: <20140604232546.704156131@linuxfoundation.org>
@@ -29,40 +30,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Olof Johansson <olof@lixom.net>
+From: "Du, Wenkai" <wenkai.du@intel.com>
 
-commit ce78cc071f5f541480e381cc0241d37590041a9d upstream.
+commit 47bb27e78867997040a228328f2a631c3c7f2c82 upstream.
 
-Don't unmark the device as suspended until after it's been re-setup.
+There have been "i2c_designware 80860F41:00: controller timed out" errors
+on a number of Baytrail platforms. The issue is caused by incorrect value in
+Interrupt Mask Register (DW_IC_INTR_MASK)  when i2c core is being enabled.
+This causes call to __i2c_dw_enable() to immediately start the transfer which
+leads to timeout. There are 3 failure modes observed:
 
-The main race would be w.r.t. an i2c driver that gets resumed at the same
-time (asyncronously), that is allowed to do a transfer since suspended
-is set to 0 before reinit, but really should have seen the -EIO return
-instead.
+1. Failure in S0 to S3 resume path
 
-Signed-off-by: Olof Johansson <olof@lixom.net>
-Signed-off-by: Doug Anderson <dianders@chromium.org>
-Acked-by: Kukjin Kim <kgene.kim@samsung.com>
+The default value after reset for DW_IC_INTR_MASK is 0x8ff. When we start
+the first transaction after resuming from system sleep, TX_EMPTY interrupt
+is already unmasked because of the hardware default.
+
+2. Failure in normal operational path
+
+This failure happens rarely and is hard to reproduce. Debug trace showed that
+DW_IC_INTR_MASK had value of 0x254 when failure occurred, which meant
+TX_EMPTY was unmasked.
+
+3. Failure in S3 to S0 suspend path
+
+This failure also happens rarely and is hard to reproduce. Adding debug trace
+that read DW_IC_INTR_MASK made this failure not reproducible. But from ISR
+call trace we could conclude TX_EMPTY was unmasked when problem occurred.
+
+The patch masks all interrupts before the controller is enabled to resolve the
+faulty DW_IC_INTR_MASK conditions.
+
+Signed-off-by: Wenkai Du <wenkai.du@intel.com>
+Acked-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+[wsa: improved the comment and removed typo in commit msg]
 Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/i2c/busses/i2c-s3c2410.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/i2c/busses/i2c-designware-core.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/i2c/busses/i2c-s3c2410.c
-+++ b/drivers/i2c/busses/i2c-s3c2410.c
-@@ -1204,10 +1204,10 @@ static int s3c24xx_i2c_resume(struct dev
- 	struct platform_device *pdev = to_platform_device(dev);
- 	struct s3c24xx_i2c *i2c = platform_get_drvdata(pdev);
+--- a/drivers/i2c/busses/i2c-designware-core.c
++++ b/drivers/i2c/busses/i2c-designware-core.c
+@@ -380,6 +380,9 @@ static void i2c_dw_xfer_init(struct dw_i
+ 		ic_con &= ~DW_IC_CON_10BITADDR_MASTER;
+ 	dw_writel(dev, ic_con, DW_IC_CON);
  
--	i2c->suspended = 0;
- 	clk_prepare_enable(i2c->clk);
- 	s3c24xx_i2c_init(i2c);
- 	clk_disable_unprepare(i2c->clk);
-+	i2c->suspended = 0;
++	/* enforce disabled interrupts (due to HW issues) */
++	i2c_dw_disable_int(dev);
++
+ 	/* Enable the adapter */
+ 	__i2c_dw_enable(dev, true);
  
- 	return 0;
- }
 
 
