@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752756AbaFDPBP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 11:01:15 -0400
-Received: from mx07-00178001.pphosted.com ([62.209.51.94]:48028 "EHLO
-	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752438AbaFDPAg (ORCPT
+	id S1753335AbaFDPAU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 11:00:20 -0400
+Received: from mx08-00178001.pphosted.com ([91.207.212.93]:36408 "EHLO
+	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752782AbaFDPAS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 11:00:36 -0400
+	Wed, 4 Jun 2014 11:00:18 -0400
 From: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
 To: mturquette@linaro.org, robh+dt@kernel.org, pawel.moll@arm.com,
         mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
@@ -14,11 +14,10 @@ To: mturquette@linaro.org, robh+dt@kernel.org, pawel.moll@arm.com,
 Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         kernel@stlinux.com, Lee Jones <lee.jones@linaro.org>,
-        Gabriel Fernandez <gabriel.fernandez@linaro.org>,
-        Olivier Bideau <olivier.bideau@st.com>
-Subject: [PATCH RESEND 09/12] drivers: clk: st: STiH407: Support for clockgenD0/D2/D3
-Date: Wed,  4 Jun 2014 16:31:57 +0200
-Message-Id: <1401892320-18211-10-git-send-email-gabriel.fernandez@linaro.org>
+        Gabriel Fernandez <gabriel.fernandez@linaro.org>
+Subject: [PATCH RESEND 02/12] clk: st: Adds Flexgen clock binding
+Date: Wed,  4 Jun 2014 16:31:50 +0200
+Message-Id: <1401892320-18211-3-git-send-email-gabriel.fernandez@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1401892320-18211-1-git-send-email-gabriel.fernandez@linaro.org>
 References: <1401892320-18211-1-git-send-email-gabriel.fernandez@linaro.org>
@@ -28,79 +27,94 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch added support for ClockGenD0/D2/D3
-It includes one 660 Quadfs.
+A Flexgen structure is composed by:
+- a clock cross bar (represented by a mux element)
+- a pre and final dividers (represented by a divider and gate elements)
 
 Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
-Signed-off-by: Olivier Bideau <olivier.bideau@st.com>
 ---
- drivers/clk/st/clkgen-fsyn.c | 46 ++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 46 insertions(+)
+ .../devicetree/bindings/clock/st/st,clkgen.txt     |  5 +++
+ .../devicetree/bindings/clock/st/st,flexgen.txt    | 48 ++++++++++++++++++++++
+ 2 files changed, 53 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/clock/st/st,flexgen.txt
 
-diff --git a/drivers/clk/st/clkgen-fsyn.c b/drivers/clk/st/clkgen-fsyn.c
-index 68c6786..d7a0341 100644
---- a/drivers/clk/st/clkgen-fsyn.c
-+++ b/drivers/clk/st/clkgen-fsyn.c
-@@ -298,6 +298,48 @@ static struct clkgen_quadfs_data st_fs660c32_C_407 = {
- 	.get_rate	= clk_fs660c32_dig_get_rate,
- };
- 
-+static struct clkgen_quadfs_data st_fs660c32_D_407 = {
-+	.nrst_present = true,
-+	.nrst	= { CLKGEN_FIELD(0x2a0, 0x1, 0),
-+		    CLKGEN_FIELD(0x2a0, 0x1, 1),
-+		    CLKGEN_FIELD(0x2a0, 0x1, 2),
-+		    CLKGEN_FIELD(0x2a0, 0x1, 3) },
-+	.ndiv	= CLKGEN_FIELD(0x2a4, 0x7, 16),
-+	.pe	= { CLKGEN_FIELD(0x2b4, 0x7fff, 0),
-+		    CLKGEN_FIELD(0x2b8, 0x7fff, 0),
-+		    CLKGEN_FIELD(0x2bc, 0x7fff, 0),
-+		    CLKGEN_FIELD(0x2c0, 0x7fff, 0) },
-+	.sdiv	= { CLKGEN_FIELD(0x2b4, 0xf, 20),
-+		    CLKGEN_FIELD(0x2b8, 0xf, 20),
-+		    CLKGEN_FIELD(0x2bc, 0xf, 20),
-+		    CLKGEN_FIELD(0x2c0, 0xf, 20) },
-+	.npda	= CLKGEN_FIELD(0x2a0, 0x1, 12),
-+	.nsb	= { CLKGEN_FIELD(0x2a0, 0x1, 8),
-+		    CLKGEN_FIELD(0x2a0, 0x1, 9),
-+		    CLKGEN_FIELD(0x2a0, 0x1, 10),
-+		    CLKGEN_FIELD(0x2a0, 0x1, 11) },
-+	.nsdiv_present = true,
-+	.nsdiv	= { CLKGEN_FIELD(0x2b4, 0x1, 24),
-+		    CLKGEN_FIELD(0x2b8, 0x1, 24),
-+		    CLKGEN_FIELD(0x2bc, 0x1, 24),
-+		    CLKGEN_FIELD(0x2c0, 0x1, 24) },
-+	.mdiv	= { CLKGEN_FIELD(0x2b4, 0x1f, 15),
-+		    CLKGEN_FIELD(0x2b8, 0x1f, 15),
-+		    CLKGEN_FIELD(0x2bc, 0x1f, 15),
-+		    CLKGEN_FIELD(0x2c0, 0x1f, 15) },
-+	.en	= { CLKGEN_FIELD(0x2ac, 0x1, 0),
-+		    CLKGEN_FIELD(0x2ac, 0x1, 1),
-+		    CLKGEN_FIELD(0x2ac, 0x1, 2),
-+		    CLKGEN_FIELD(0x2ac, 0x1, 3) },
-+	.lockstatus_present = true,
-+	.lock_status = CLKGEN_FIELD(0x2A0, 0x1, 24),
-+	.powerup_polarity = 1,
-+	.standby_polarity = 1,
-+	.pll_ops	= &st_quadfs_pll_c32_ops,
-+	.rtbl		= fs660c32_rtbl,
-+	.rtbl_cnt	= ARRAY_SIZE(fs660c32_rtbl),
-+	.get_rate	= clk_fs660c32_dig_get_rate,};
+diff --git a/Documentation/devicetree/bindings/clock/st/st,clkgen.txt b/Documentation/devicetree/bindings/clock/st/st,clkgen.txt
+index 55506c2..afb65e6 100644
+--- a/Documentation/devicetree/bindings/clock/st/st,clkgen.txt
++++ b/Documentation/devicetree/bindings/clock/st/st,clkgen.txt
+@@ -32,6 +32,10 @@ address is common of all subnode.
+ 		vcc_node {
+ 			...
+ 		};
 +
- /**
-  * DOC: A Frequency Synthesizer that multiples its input clock by a fixed factor
-  *
-@@ -985,6 +1027,10 @@ static struct of_device_id quadfs_of_match[] = {
- 		.compatible = "st,stih407-quadfs660-C",
- 		.data = (void *)&st_fs660c32_C_407
- 	},
-+	{
-+		.compatible = "st,stih407-quadfs660-D",
-+		.data = (void *)&st_fs660c32_D_407
-+	},
- 	{}
- };
++		flexgen_node {
++			...
++		};
+ 		...
+ 	};
  
+@@ -45,6 +49,7 @@ Each subnode should use the binding discribe in [2]..[7]
+ [5] Documentation/devicetree/bindings/clock/st,clkgen-prediv.txt
+ [6] Documentation/devicetree/bindings/clock/st,vcc.txt
+ [7] Documentation/devicetree/bindings/clock/st,quadfs.txt
++[8] Documentation/devicetree/bindings/clock/st,flexgen.txt
+ 
+ 
+ Required properties:
+diff --git a/Documentation/devicetree/bindings/clock/st/st,flexgen.txt b/Documentation/devicetree/bindings/clock/st/st,flexgen.txt
+new file mode 100644
+index 0000000..ce908dd
+--- /dev/null
++++ b/Documentation/devicetree/bindings/clock/st/st,flexgen.txt
+@@ -0,0 +1,48 @@
++Binding for a type of flexgen structure found on certain
++STMicroelectronics consumer electronics SoC devices
++
++This structure includes:
++- a clock cross bar (represented by a mux element)
++- a pre and final dividers (represented by a divider and gate elements)
++
++This binding uses the common clock binding[1].
++
++[1] Documentation/devicetree/bindings/clock/clock-bindings.txt
++
++Required properties:
++- compatible : shall be:
++  "st,flexgen"
++
++- #clock-cells : from common clock binding; shall be set to 1.
++
++- clocks : from common clock binding
++
++- clock-output-names : From common clock binding. The block has 4
++                       clock outputs but not all of them in a specific instance
++                       have to be used in the SoC. If a clock name is left as
++                       an empty string then no clock will be created for the
++                       output associated with that string index. If fewer than
++                       4 strings are provided then no clocks will be created
++                       for the remaining outputs.
++
++Example:
++
++	clockgenD2@x9106000 {
++		compatible = "st,clkgen-c32";
++		reg = <0x9106000 0x1000>;
++
++		CLK_S_D2_FLEXGEN: CLK_S_D2_FLEXGEN {
++			compatible = "st,flexgen";
++
++			#clock-cells = <1>;
++			clocks = <&CLK_S_D2_QUADFS 0>,
++				 <&CLK_S_D2_QUADFS 1>,
++				 <&CLK_S_D2_QUADFS 2>,
++				 <&CLK_S_D2_QUADFS 3>;
++
++			clock-output-names = "CLK_PIX_MAIN_DISP",
++					     "CLK_PIX_PIP",
++					     "CLK_PIX_GDP1",
++					     "CLK_PIX_GDP2";
++		};
++	};
 -- 
 1.9.1
 
