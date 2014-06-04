@@ -1,95 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753179AbaFDMdo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 08:33:44 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:53123 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751734AbaFDMdn (ORCPT
+	id S1753213AbaFDMdt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 08:33:49 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:33043 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751734AbaFDMdp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 08:33:43 -0400
-Date: Wed, 4 Jun 2014 13:33:00 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arvind Chauhan <arvind.chauhan@arm.com>,
-        Eduardo Valentin <edubezval@gmail.com>, Pavel Machek <pavel@ucw.cz>,
-        Liam Girdwood <lgirdwood@gmail.com>
-Message-ID: <20140604123300.GI2520@sirena.org.uk>
-References: <20140527192923.GC12304@sirena.org.uk>
- <CAKohpo=AnusM2FGs=JLozSyTc0N7SDXQxe+rPiLEHP6ewxY4ow@mail.gmail.com>
- <20140528173858.GG5099@sirena.org.uk>
- <CAKohpo=T3BG9X0gHfRA-x8B3ou3Y=XHcs=OTYAHikX61iAJ9xw@mail.gmail.com>
- <20140603145347.GE31751@sirena.org.uk>
- <CAKohpo=VLCf2nz1WsL-iGw6BWwpmqZ+8JwGFFHFFtjZyAS9LrA@mail.gmail.com>
- <20140603154854.GG31751@sirena.org.uk>
- <CAKohpon9G=JdZ1jSStHZH29VZDggZXm+EOqDAwedk2K0ZxD0Qg@mail.gmail.com>
- <20140604103846.GF2520@sirena.org.uk>
- <CAKohpomS24eoqJ7h9d_5mPsyXhmnRSMW4fiCT0JnLRy5U6ARgw@mail.gmail.com>
+	Wed, 4 Jun 2014 08:33:45 -0400
+Message-ID: <538F121E.9020100@oracle.com>
+Date: Wed, 04 Jun 2014 08:33:34 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="y96v7rNg6HAoELs5"
-Content-Disposition: inline
-In-Reply-To: <CAKohpomS24eoqJ7h9d_5mPsyXhmnRSMW4fiCT0JnLRy5U6ARgw@mail.gmail.com>
-X-Cookie: Your lucky color has faded.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 109.148.252.180
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/2] regulators: Add definition of
- regulator_set_voltage_time() for !CONFIG_REGULATOR
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Hugh Dickins <hughd@google.com>, Konstantin Khlebnikov <koct9i@gmail.com>
+CC: Dave Jones <davej@redhat.com>, "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: 3.15-rc8 mm/filemap.c:202 BUG
+References: <20140603042121.GA27177@redhat.com> <CALYGNiNV951SnBKdr0PEkgLbLCxy+YB6HJpafRr6CynO+a1sdQ@mail.gmail.com> <alpine.LSU.2.11.1406031524470.7878@eggly.anvils>
+In-Reply-To: <alpine.LSU.2.11.1406031524470.7878@eggly.anvils>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06/03/2014 07:11 PM, Hugh Dickins wrote:
+> On Tue, 3 Jun 2014, Konstantin Khlebnikov wrote:
+>> > On Tue, Jun 3, 2014 at 8:21 AM, Dave Jones <davej@redhat.com> wrote:
+>>> > > I'm still seeing this one from time to time, though it takes me quite a while to hit it,
+>>> > > despite my attempts at trying to narrow down the set of syscalls that cause it.
+>>> > >
+>>> > > kernel BUG at mm/filemap.c:202!
+>>> > > invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+>>> > > CPU: 3 PID: 3013 Comm: trinity-c361 Not tainted 3.15.0-rc8+ #225
+>>> > > task: ffff88006c610000 ti: ffff880055960000 task.ti: ffff880055960000
+>>> > > RIP: 0010:[<ffffffffac158e28>]  [<ffffffffac158e28>] __delete_from_page_cache+0x318/0x360
+>>> > > RSP: 0018:ffff880055963b90  EFLAGS: 00010046
+>>> > > RAX: 0000000000000000 RBX: 0000000000000003 RCX: ffff880146f68388
+>>> > > RDX: 000000000000022a RSI: ffffffffaca8db38 RDI: ffffffffaca62b17
+>>> > > RBP: ffff880055963be0 R08: 0000000000000002 R09: ffff88000613d530
+>>> > > R10: ffff880055963ba8 R11: ffff880007f49a40 R12: ffffea0006795880
+>>> > > R13: ffff880143232ad0 R14: 0000000000000000 R15: ffff880143232ad8
+>>> > > FS:  00007f1e40673700(0000) GS:ffff88024d180000(0000) knlGS:0000000000000000
+>>> > > CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+>>> > > CR2: 00007f1e404e6000 CR3: 00000000603eb000 CR4: 00000000001407e0
+>>> > > DR0: 0000000001bb1000 DR1: 0000000002537000 DR2: 00000000016a5000
+>>> > > DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7: 0000000000000600
+>>> > > Stack:
+>>> > >  ffff880143232ae8 0000000000000000 ffff88000613d530 ffff88000613d568
+>>> > >  0000000008828259 ffffea0006795880 ffff880143232ae8 0000000000000000
+>>> > >  0000000000000002 0000000000000002 ffff880055963c08 ffffffffac158eae
+>>> > > Call Trace:
+>>> > >  [<ffffffffac158eae>] delete_from_page_cache+0x3e/0x70
+>>> > >  [<ffffffffac16921b>] truncate_inode_page+0x5b/0x90
+>>> > >  [<ffffffffac174493>] shmem_undo_range+0x363/0x790
+>>> > >  [<ffffffffac1748d4>] shmem_truncate_range+0x14/0x30
+>>> > >  [<ffffffffac174bcf>] shmem_fallocate+0x9f/0x340
+>>> > >  [<ffffffffac324d40>] ? timerqueue_add+0x60/0xb0
+>>> > >  [<ffffffffac1c5ff6>] do_fallocate+0x116/0x1a0
+>>> > >  [<ffffffffac182260>] SyS_madvise+0x3c0/0x870
+>>> > >  [<ffffffffac346b33>] ? __this_cpu_preempt_check+0x13/0x20
+>>> > >  [<ffffffffac74c41f>] tracesys+0xdd/0xe2
+>>> > > Code: ff ff 01 41 f6 c6 01 48 8b 45 c8 75 16 4c 89 30 e9 70 fe ff ff 66 0f 1f 44 00 00 0f 0b 66 0f 1f 44 00 00 0f 0b 66 0f 1f 44 00 00 <0f> 0b 66 0f 1f 44 00 00  41 54 9d e8 78 9e fd ff e9 8c fe ff ff
+>>> > > RIP  [<ffffffffac158e28>] __delete_from_page_cache+0x318/0x360
+>>> > >
+>>> > > There was also another variant of the same BUG with a slighty different stack trace.
+>>> > >
+>>> > > kernel BUG at mm/filemap.c:202!
+>>> > > invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+>>> > > CPU: 2 PID: 6928 Comm: trinity-c45 Not tainted 3.15.0-rc5+ #208
+>>> > > task: ffff88023669d0a0 ti: ffff880186146000 task.ti: ffff880186146000
+>>> > > RIP: 0010:[<ffffffff8415ba05>]  [<ffffffff8415ba05>] __delete_from_page_cache+0x315/0x320
+>>> > > RSP: 0018:ffff880186147b18  EFLAGS: 00010046
+>>> > > RAX: 0000000000000000 RBX: 0000000000000003 RCX: 0000000000000002
+>>> > > RDX: 000000000000012a RSI: ffffffff84a9a83c RDI: ffffffff84a6e0c0
+>>> > > RBP: ffff880186147b68 R08: 0000000000000002 R09: ffff88002669e668
+>>> > > R10: ffff880186147b30 R11: 0000000000000000 R12: ffffea0008b067c0
+>>> > > R13: ffff880025355670 R14: 0000000000000000 R15: ffff880025355678
+>>> > > FS:  00007fc10026f740(0000) GS:ffff880244400000(0000) knlGS:0000000000000000
+>>> > > CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+>>> > > CR2: 00002ab350f5c004 CR3: 000000018566c000 CR4: 00000000001407e0
+>>> > > DR0: 0000000001989000 DR1: 0000000000944000 DR2: 0000000002494000
+>>> > > DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7: 0000000000000600
+>>> > > Stack:
+>>> > >  ffff880025355688 ffff8800253556a0 ffff88002669e668 ffff88002669e6a0
+>>> > >  000000008ea099ef ffffea0008b067c0 ffff880025355688 0000000000000000
+>>> > >  0000000000000000 0000000000000002 ffff880186147b90 ffffffff8415ba4d
+>>> > > Call Trace:
+>>> > >  [<ffffffff8415ba4d>] delete_from_page_cache+0x3d/0x70
+>>> > >  [<ffffffff8416b0ab>] truncate_inode_page+0x5b/0x90
+>>> > >  [<ffffffff84175f0b>] shmem_undo_range+0x30b/0x780
+>>> > >  [<ffffffff84176394>] shmem_truncate_range+0x14/0x30
+>>> > >  [<ffffffff8417647d>] shmem_evict_inode+0xcd/0x150
+>>> > >  [<ffffffff841e4b17>] evict+0xa7/0x170
+>>> > >  [<ffffffff841e5435>] iput+0xf5/0x180
+>>> > >  [<ffffffff841df8a0>] dentry_kill+0x260/0x2d0
+>>> > >  [<ffffffff841df97c>] dput+0x6c/0x110
+>>> > >  [<ffffffff841c92a9>] __fput+0x189/0x200
+>>> > >  [<ffffffff841c936e>] ____fput+0xe/0x10
+>>> > >  [<ffffffff84090484>] task_work_run+0xb4/0xe0
+>>> > >  [<ffffffff8406ee42>] do_exit+0x302/0xb80
+>>> > >  [<ffffffff84349e13>] ? __this_cpu_preempt_check+0x13/0x20
+>>> > >  [<ffffffff8407073c>] do_group_exit+0x4c/0xc0
+>>> > >  [<ffffffff840707c4>] SyS_exit_group+0x14/0x20
+>>> > >  [<ffffffff8475bf64>] tracesys+0xdd/0xe2
+>>> > > Code: 4c 89 30 e9 80 fe ff ff 48 8b 75 c0 4c 89 ff e8 82 8f 1c 00 84 c0 0f 85 6c fe ff ff e9 4f fe ff ff 0f 1f 44 00 00 e8 ae 95 5e 00 <0f> 0b e8 04 1c f1 ff 0f 0b 66 90 0f 1f 44 00 00 55 48 89 e5 41
+>>> > >
+>>> > >
+>>> > > --
+>>> > > To unsubscribe, send a message with 'unsubscribe linux-mm' in
+>>> > > the body to majordomo@kvack.org.  For more info on Linux MM,
+>>> > > see: http://www.linux-mm.org/ .
+>>> > > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>> > 
+>> > This might shine some light, CONFIG_DEBUG_VM should be =y.
+>> > 
+>> > --- a/mm/filemap.c
+>> > +++ b/mm/filemap.c
+>> > @@ -199,7 +199,7 @@ void __delete_from_page_cache(struct page *page,
+>> > void *shadow)
+>> >         __dec_zone_page_state(page, NR_FILE_PAGES);
+>> >         if (PageSwapBacked(page))
+>> >                 __dec_zone_page_state(page, NR_SHMEM);
+>> > -       BUG_ON(page_mapped(page));
+>> > +       VM_BUG_ON_PAGE(page_mapped(page), page);
+>> > 
+>> >         /*
+>> >          * Some filesystems seem to re-dirty the page even after
+> Yes, there's a chance that will tell us more (but I don't have high
+> hopes of it).  I'm still stumped by this issue, just as before.
+> 
+> Sasha (or Dave), any update on whether you see this without THP?
+> and whether you see the remove_migration_pte oops without THP?
 
---y96v7rNg6HAoELs5
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+I'm pretty sure at this point that I only see both with THP enabled.
 
-On Wed, Jun 04, 2014 at 04:27:48PM +0530, Viresh Kumar wrote:
-> On 4 June 2014 16:08, Mark Brown <broonie@kernel.org> wrote:
-> > Please, go and *think* about what's going on here.  I've repeatedly
+I've started seeing much less of them during fuzzing. Timing changes?
 
-> > If the code fails to change the voltage it needs to handle that
-> > (including remembering that attempts to lower the voltage fail); if the
-> > code handles the errors sensibly I would expect that to handle
-> > everything.
 
-> That's what I was asking, how should the code handle it? Code also
-> has to take care of platforms which haven't configured regulators
-> in kernel and want to use this generic driver.
-
-If the code gets an error back when it tries to change the voltage then
-it should assume that the attempt to change the voltage did not succeed.
-Should an attempt to change the voltage not succeed it seems reasonable
-to assume that the voltage did not change and is the same as before.
-The obvious thing would therefore appear to be for the code to proceed
-with that assumption and act accordingly.
-
---y96v7rNg6HAoELs5
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTjxH5AAoJELSic+t+oim9EoMP/3vlAKcgrF3MFhq8bGisqJgX
-B1noqP1XKZC+Z8v4KydVVA7w7C19+ah6cBAG7Wq+uze90c6o4SumT+PyWs1lyrew
-hAZMh79OS9qPj77LI1L3b/ohRfNgAtvHjvg+a3FThUMMX/ZbMLowjRD5OmTjURTY
-SAFwqtJ5pUabexKNUl6B6+EPuDu0Rg9vdvBIOoo8XnUrO9szDks8XIRvWRp8UC9Z
-v4zjjcT8HAxLr9J+zs5hzNppl6pg0dhQC8yYUaympkwlczBX8tFKv5yoRuOroh7U
-1U/vq0dBhxaadZOAAPPbsyjAubEGi0SMSChP7eGm/z+qhQ2aTGrpFEuDHlgY23SP
-upd0fX8HvcoCG1KvSYJMwLMpz6lg3I6NCgxgzeMXIHnogl2qjBrnJT6hCmJ/saNf
-oru/uwVBRyXQKJ1EFEGRLZq6m/OQw59NoqyogqcTFfLWCEKPRG/ABPyo2yADDEUp
-zCJAk6PRGKgHTlqmBLluyNbAyCIQp7LO3+LpL61151Mr5rOyqvzQRIoo4aFWj1Bo
-r/rXr/5nx2+f6zThnc10b2WKD6J3851WKbpEfsfWbDTClQfr9Gq1fMeo1FI4Mksh
-8b1G/akJMIJ+d48FqXoRchMIC2kdwCzOtP66wLwXJ+XTqeNNzGQ1QxLN7MTCkBkk
-EMg7HSeWYVL4TNEcs0r5
-=/ily
------END PGP SIGNATURE-----
-
---y96v7rNg6HAoELs5--
+Thanks,
+Sasha
