@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755313AbaFDXyK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 19:54:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40531 "EHLO
+	id S1755332AbaFDXyb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 19:54:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40526 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753702AbaFDXXT (ORCPT
+	with ESMTP id S1753673AbaFDXXS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:23:19 -0400
+	Wed, 4 Jun 2014 19:23:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jiada Wang <jiada_wang@mentor.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Mike Turquette <mturquette@linaro.org>
-Subject: [PATCH 3.14 214/228] clk: Fix double free due to devm_clk_register()
-Date: Wed,  4 Jun 2014 16:24:03 -0700
-Message-Id: <20140604232354.923682688@linuxfoundation.org>
+        Harald Freudenberger <freude@linux.vnet.ibm.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>
+Subject: [PATCH 3.14 213/228] crypto: s390 - fix aes,des ctr mode concurrency finding.
+Date: Wed,  4 Jun 2014 16:24:02 -0700
+Message-Id: <20140604232354.887680825@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
 References: <20140604232347.966798903@linuxfoundation.org>
@@ -32,163 +29,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stephen Boyd <sboyd@codeaurora.org>
+From: Harald Freudenberger <freude@linux.vnet.ibm.com>
 
-commit 293ba3b4a4fd54891b900f2911d1a57e1ed4a843 upstream.
+commit 3901c1124ec5099254a9396085f7798153a7293f upstream.
 
-Now that clk_unregister() frees the struct clk we're
-unregistering we'll free memory twice: first we'll call kfree()
-in __clk_release() with an address kmalloc doesn't know about and
-second we'll call kfree() in the devres layer. Remove the
-allocation of struct clk in devm_clk_register() and let
-clk_release() handle it. This fixes slab errors like:
+An additional testcase found an issue with the last
+series of patches applied: the fallback solution may
+not save the iv value after operation. This very small
+fix just makes sure the iv is copied back to the
+walk/desc struct.
 
-=============================================================================
-BUG kmalloc-128 (Not tainted): Invalid object pointer 0xed08e8d0
------------------------------------------------------------------------------
-
-Disabling lock debugging due to kernel taint
-INFO: Slab 0xeec503f8 objects=25 used=15 fp=0xed08ea00 flags=0x4081
-CPU: 2 PID: 73 Comm: rmmod Tainted: G    B         3.14.0-11032-g526e9c764381 #34
-[<c0014be0>] (unwind_backtrace) from [<c0012240>] (show_stack+0x10/0x14)
-[<c0012240>] (show_stack) from [<c04b74dc>] (dump_stack+0x70/0xbc)
-[<c04b74dc>] (dump_stack) from [<c00f6778>] (slab_err+0x74/0x84)
-[<c00f6778>] (slab_err) from [<c04b6278>] (free_debug_processing+0x2cc/0x31c)
-[<c04b6278>] (free_debug_processing) from [<c04b6300>] (__slab_free+0x38/0x41c)
-[<c04b6300>] (__slab_free) from [<c03931bc>] (clk_unregister+0xd4/0x140)
-[<c03931bc>] (clk_unregister) from [<c02fb774>] (release_nodes+0x164/0x1d8)
-[<c02fb774>] (release_nodes) from [<c02f8698>] (__device_release_driver+0x60/0xb0)
-[<c02f8698>] (__device_release_driver) from [<c02f9080>] (driver_detach+0xb4/0xb8)
-[<c02f9080>] (driver_detach) from [<c02f8480>] (bus_remove_driver+0x5c/0xc4)
-[<c02f8480>] (bus_remove_driver) from [<c008c9b8>] (SyS_delete_module+0x148/0x1d8)
-[<c008c9b8>] (SyS_delete_module) from [<c000ef80>] (ret_fast_syscall+0x0/0x48)
-FIX kmalloc-128: Object at 0xed08e8d0 not freed
-
-Fixes: fcb0ee6a3d33 (clk: Implement clk_unregister)
-Cc: Jiada Wang <jiada_wang@mentor.com>
-Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
-Cc: Kyungmin Park <kyungmin.park@samsung.com>
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-Signed-off-by: Mike Turquette <mturquette@linaro.org>
+Signed-off-by: Harald Freudenberger <freude@linux.vnet.ibm.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/clk/clk.c |   71 ++++++++++++++++++++++--------------------------------
- 1 file changed, 30 insertions(+), 41 deletions(-)
+ arch/s390/crypto/aes_s390.c |    3 +++
+ arch/s390/crypto/des_s390.c |    3 +++
+ 2 files changed, 6 insertions(+)
 
---- a/drivers/clk/clk.c
-+++ b/drivers/clk/clk.c
-@@ -1977,9 +1977,28 @@ struct clk *__clk_register(struct device
- }
- EXPORT_SYMBOL_GPL(__clk_register);
- 
--static int _clk_register(struct device *dev, struct clk_hw *hw, struct clk *clk)
-+/**
-+ * clk_register - allocate a new clock, register it and return an opaque cookie
-+ * @dev: device that is registering this clock
-+ * @hw: link to hardware-specific clock data
-+ *
-+ * clk_register is the primary interface for populating the clock tree with new
-+ * clock nodes.  It returns a pointer to the newly allocated struct clk which
-+ * cannot be dereferenced by driver code but may be used in conjuction with the
-+ * rest of the clock API.  In the event of an error clk_register will return an
-+ * error code; drivers must test for an error code after calling clk_register.
-+ */
-+struct clk *clk_register(struct device *dev, struct clk_hw *hw)
- {
- 	int i, ret;
-+	struct clk *clk;
-+
-+	clk = kzalloc(sizeof(*clk), GFP_KERNEL);
-+	if (!clk) {
-+		pr_err("%s: could not allocate clk\n", __func__);
-+		ret = -ENOMEM;
-+		goto fail_out;
-+	}
- 
- 	clk->name = kstrdup(hw->init->name, GFP_KERNEL);
- 	if (!clk->name) {
-@@ -2019,7 +2038,7 @@ static int _clk_register(struct device *
- 
- 	ret = __clk_init(dev, clk);
- 	if (!ret)
--		return 0;
-+		return clk;
- 
- fail_parent_names_copy:
- 	while (--i >= 0)
-@@ -2028,36 +2047,6 @@ fail_parent_names_copy:
- fail_parent_names:
- 	kfree(clk->name);
- fail_name:
--	return ret;
--}
--
--/**
-- * clk_register - allocate a new clock, register it and return an opaque cookie
-- * @dev: device that is registering this clock
-- * @hw: link to hardware-specific clock data
-- *
-- * clk_register is the primary interface for populating the clock tree with new
-- * clock nodes.  It returns a pointer to the newly allocated struct clk which
-- * cannot be dereferenced by driver code but may be used in conjuction with the
-- * rest of the clock API.  In the event of an error clk_register will return an
-- * error code; drivers must test for an error code after calling clk_register.
-- */
--struct clk *clk_register(struct device *dev, struct clk_hw *hw)
--{
--	int ret;
--	struct clk *clk;
--
--	clk = kzalloc(sizeof(*clk), GFP_KERNEL);
--	if (!clk) {
--		pr_err("%s: could not allocate clk\n", __func__);
--		ret = -ENOMEM;
--		goto fail_out;
--	}
--
--	ret = _clk_register(dev, hw, clk);
--	if (!ret)
--		return clk;
--
- 	kfree(clk);
- fail_out:
- 	return ERR_PTR(ret);
-@@ -2166,7 +2155,7 @@ EXPORT_SYMBOL_GPL(clk_unregister);
- 
- static void devm_clk_release(struct device *dev, void *res)
- {
--	clk_unregister(res);
-+	clk_unregister(*(struct clk **)res);
- }
- 
- /**
-@@ -2181,18 +2170,18 @@ static void devm_clk_release(struct devi
- struct clk *devm_clk_register(struct device *dev, struct clk_hw *hw)
- {
- 	struct clk *clk;
--	int ret;
-+	struct clk **clkp;
- 
--	clk = devres_alloc(devm_clk_release, sizeof(*clk), GFP_KERNEL);
--	if (!clk)
-+	clkp = devres_alloc(devm_clk_release, sizeof(*clkp), GFP_KERNEL);
-+	if (!clkp)
- 		return ERR_PTR(-ENOMEM);
- 
--	ret = _clk_register(dev, hw, clk);
--	if (!ret) {
--		devres_add(dev, clk);
-+	clk = clk_register(dev, hw);
-+	if (!IS_ERR(clk)) {
-+		*clkp = clk;
-+		devres_add(dev, clkp);
- 	} else {
--		devres_free(clk);
--		clk = ERR_PTR(ret);
-+		devres_free(clkp);
+--- a/arch/s390/crypto/aes_s390.c
++++ b/arch/s390/crypto/aes_s390.c
+@@ -820,6 +820,9 @@ static int ctr_aes_crypt(struct blkciphe
+ 		else
+ 			memcpy(walk->iv, ctrptr, AES_BLOCK_SIZE);
+ 		spin_unlock(&ctrblk_lock);
++	} else {
++		if (!nbytes)
++			memcpy(walk->iv, ctrptr, AES_BLOCK_SIZE);
  	}
- 
- 	return clk;
+ 	/*
+ 	 * final block may be < AES_BLOCK_SIZE, copy only nbytes
+--- a/arch/s390/crypto/des_s390.c
++++ b/arch/s390/crypto/des_s390.c
+@@ -429,6 +429,9 @@ static int ctr_desall_crypt(struct blkci
+ 		else
+ 			memcpy(walk->iv, ctrptr, DES_BLOCK_SIZE);
+ 		spin_unlock(&ctrblk_lock);
++	} else {
++		if (!nbytes)
++			memcpy(walk->iv, ctrptr, DES_BLOCK_SIZE);
+ 	}
+ 	/* final block may be < DES_BLOCK_SIZE, copy only nbytes */
+ 	if (nbytes) {
 
 
