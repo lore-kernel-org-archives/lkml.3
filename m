@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754158AbaFEFM2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 01:12:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43697 "EHLO
+	id S1753917AbaFEFM0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 01:12:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43691 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752146AbaFEEUL (ORCPT
+	with ESMTP id S1752154AbaFEEUL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 5 Jun 2014 00:20:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Patrick McHardy <kaber@trash.net>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Mathias Krause <minipli@googlemail.com>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.4 022/214] filter: prevent nla extensions to peek beyond the end of the message
-Date: Wed,  4 Jun 2014 21:16:25 -0700
-Message-Id: <20140605041642.768058331@linuxfoundation.org>
+        Chen Yucong <slaoub@gmail.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Andi Kleen <ak@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.4 043/214] hwpoison, hugetlb: lock_page/unlock_page does not match for handling a free hugepage
+Date: Wed,  4 Jun 2014 21:16:46 -0700
+Message-Id: <20140605041645.385769087@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -30,81 +30,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Krause <minipli@googlemail.com>
+From: Chen Yucong <slaoub@gmail.com>
 
-[ Upstream commit 05ab8f2647e4221cbdb3856dd7d32bd5407316b3 ]
+commit b985194c8c0a130ed155b71662e39f7eaea4876f upstream.
 
-The BPF_S_ANC_NLATTR and BPF_S_ANC_NLATTR_NEST extensions fail to check
-for a minimal message length before testing the supplied offset to be
-within the bounds of the message. This allows the subtraction of the nla
-header to underflow and therefore -- as the data type is unsigned --
-allowing far to big offset and length values for the search of the
-netlink attribute.
+For handling a free hugepage in memory failure, the race will happen if
+another thread hwpoisoned this hugepage concurrently.  So we need to
+check PageHWPoison instead of !PageHWPoison.
 
-The remainder calculation for the BPF_S_ANC_NLATTR_NEST extension is
-also wrong. It has the minuend and subtrahend mixed up, therefore
-calculates a huge length value, allowing to overrun the end of the
-message while looking for the netlink attribute.
+If hwpoison_filter(p) returns true or a race happens, then we need to
+unlock_page(hpage).
 
-The following three BPF snippets will trigger the bugs when attached to
-a UNIX datagram socket and parsing a message with length 1, 2 or 3.
-
- ,-[ PoC for missing size check in BPF_S_ANC_NLATTR ]--
- | ld	#0x87654321
- | ldx	#42
- | ld	#nla
- | ret	a
- `---
-
- ,-[ PoC for the same bug in BPF_S_ANC_NLATTR_NEST ]--
- | ld	#0x87654321
- | ldx	#42
- | ld	#nlan
- | ret	a
- `---
-
- ,-[ PoC for wrong remainder calculation in BPF_S_ANC_NLATTR_NEST ]--
- | ; (needs a fake netlink header at offset 0)
- | ld	#0
- | ldx	#42
- | ld	#nlan
- | ret	a
- `---
-
-Fix the first issue by ensuring the message length fulfills the minimal
-size constrains of a nla header. Fix the second bug by getting the math
-for the remainder calculation right.
-
-Fixes: 4738c1db15 ("[SKFILTER]: Add SKF_ADF_NLATTR instruction")
-Fixes: d214c7537b ("filter: add SKF_AD_NLATTR_NEST to look for nested..")
-Cc: Patrick McHardy <kaber@trash.net>
-Cc: Pablo Neira Ayuso <pablo@netfilter.org>
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Acked-by: Daniel Borkmann <dborkman@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Chen Yucong <slaoub@gmail.com>
+Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Tested-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Reviewed-by: Andi Kleen <ak@linux.intel.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/core/filter.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/net/core/filter.c
-+++ b/net/core/filter.c
-@@ -338,11 +338,15 @@ load_b:
- 
- 			if (skb_is_nonlinear(skb))
- 				return 0;
-+			if (skb->len < sizeof(struct nlattr))
-+				return 0;
-+			if (skb->len < sizeof(struct nlattr))
-+				return 0;
- 			if (A > skb->len - sizeof(struct nlattr))
- 				return 0;
- 
- 			nla = (struct nlattr *)&skb->data[A];
--			if (nla->nla_len > A - skb->len)
-+			if (nla->nla_len > skb->len - A)
- 				return 0;
- 
- 			nla = nla_find_nested(nla, X);
+---
+ mm/memory-failure.c |   15 ++++++++-------
+ 1 file changed, 8 insertions(+), 7 deletions(-)
+
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -1061,15 +1061,16 @@ int memory_failure(unsigned long pfn, in
+ 			return 0;
+ 		} else if (PageHuge(hpage)) {
+ 			/*
+-			 * Check "just unpoisoned", "filter hit", and
+-			 * "race with other subpage."
++			 * Check "filter hit" and "race with other subpage."
+ 			 */
+ 			lock_page(hpage);
+-			if (!PageHWPoison(hpage)
+-			    || (hwpoison_filter(p) && TestClearPageHWPoison(p))
+-			    || (p != hpage && TestSetPageHWPoison(hpage))) {
+-				atomic_long_sub(nr_pages, &mce_bad_pages);
+-				return 0;
++			if (PageHWPoison(hpage)) {
++				if ((hwpoison_filter(p) && TestClearPageHWPoison(p))
++				    || (p != hpage && TestSetPageHWPoison(hpage))) {
++					atomic_long_sub(nr_pages, &mce_bad_pages);
++					unlock_page(hpage);
++					return 0;
++				}
+ 			}
+ 			set_page_hwpoison_huge_page(hpage);
+ 			res = dequeue_hwpoisoned_huge_page(hpage);
 
 
