@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754058AbaFEE0v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 00:26:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44566 "EHLO
+	id S1753686AbaFEEW3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 00:22:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44524 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753696AbaFEEWb (ORCPT
+	with ESMTP id S1753663AbaFEEW0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 00:22:31 -0400
+	Thu, 5 Jun 2014 00:22:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Hauke Mehrtens <hauke@hauke-m.de>,
-        "John W. Linville" <linville@tuxdriver.com>,
+        Maxim Mikityanskiy <maxtram95@gmail.com>,
+        Anisse Astier <anisse@astier.eu>, "Lee, Chun-Yi" <jlee@suse.com>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
         Ben Hutchings <ben@decadent.org.uk>,
         Qiang Huang <h.huangqiang@huawei.com>
-Subject: [PATCH 3.4 203/214] b43: ensue that BCMA is "y" when B43 is "y"
-Date: Wed,  4 Jun 2014 21:19:26 -0700
-Message-Id: <20140605041706.733125839@linuxfoundation.org>
+Subject: [PATCH 3.4 197/214] msi-wmi: Fix memory leak
+Date: Wed,  4 Jun 2014 21:19:20 -0700
+Message-Id: <20140605041705.934514295@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -30,48 +30,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hauke Mehrtens <hauke@hauke-m.de>
+From: Maxim Mikityanskiy <maxtram95@gmail.com>
 
-commit 693026ef2e751fd94d2e6c71028e68343cc875d5 upstream.
+commit 51c94491c82c3d9029f6e87a1a153db321d88e35 upstream.
 
-When b43 gets build into the kernel and it should use bcma we have to
-ensure that bcma was also build into the kernel and not as a module.
-In this patch this is also done for SSB, although you can not
-build b43 without ssb support for now.
+Fix memory leak - don't forget to kfree ACPI object when returning from
+msi_wmi_notify() after suppressing key event.
 
-This fixes a build problem reported by Randy Dunlap in
-5187EB95.2060605@infradead.org
-
-Reported-By: Randy Dunlap <rdunlap@infradead.org>
-Signed-off-by: Hauke Mehrtens <hauke@hauke-m.de>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Maxim Mikityanskiy <maxtram95@gmail.com>
+Acked-by: Anisse Astier <anisse@astier.eu>
+Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
+Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Cc: Qiang Huang <h.huangqiang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/b43/Kconfig |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/platform/x86/msi-wmi.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/net/wireless/b43/Kconfig
-+++ b/drivers/net/wireless/b43/Kconfig
-@@ -28,7 +28,7 @@ config B43
+--- a/drivers/platform/x86/msi-wmi.c
++++ b/drivers/platform/x86/msi-wmi.c
+@@ -176,7 +176,7 @@ static void msi_wmi_notify(u32 value, vo
+ 				pr_debug("Suppressed key event 0x%X - "
+ 					 "Last press was %lld us ago\n",
+ 					 key->code, ktime_to_us(diff));
+-				return;
++				goto msi_wmi_notify_exit;
+ 			}
+ 			last_pressed[key->code - SCANCODE_BASE] = cur;
  
- config B43_BCMA
- 	bool "Support for BCMA bus"
--	depends on B43 && BCMA
-+	depends on B43 && (BCMA = y || BCMA = B43)
- 	default y
+@@ -195,6 +195,8 @@ static void msi_wmi_notify(u32 value, vo
+ 			pr_info("Unknown key pressed - %x\n", eventcode);
+ 	} else
+ 		pr_info("Unknown event received\n");
++
++msi_wmi_notify_exit:
+ 	kfree(response.pointer);
+ }
  
- config B43_BCMA_EXTRA
-@@ -39,7 +39,7 @@ config B43_BCMA_EXTRA
- 
- config B43_SSB
- 	bool
--	depends on B43 && SSB
-+	depends on B43 && (SSB = y || SSB = B43)
- 	default y
- 
- # Auto-select SSB PCI-HOST support, if possible
 
 
