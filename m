@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752435AbaFEEpj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 00:45:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44171 "EHLO
+	id S1753053AbaFEEVT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 00:21:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44128 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752818AbaFEEVV (ORCPT
+	with ESMTP id S1752818AbaFEEVR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 00:21:21 -0400
+	Thu, 5 Jun 2014 00:21:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Sunil K. Pandey" <sunil.k.pandey@intel.com>,
-        "Kevin B. Smith" <kevin.b.smith@intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Ben Hutchings <ben@decadent.org.uk>, Rui Xiang <rui.xiang@huawei.com>
-Subject: [PATCH 3.4 130/214] x86, build, icc: Remove uninitialized_var() from compiler-intel.h
-Date: Wed,  4 Jun 2014 21:18:13 -0700
-Message-Id: <20140605041657.181599514@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        David Henningsson <david.henningsson@canonical.com>,
+        Takashi Iwai <tiwai@suse.de>, Ben Hutchings <ben@decadent.org.uk>,
+        Weng Meiling <wengmeiling.weng@huawei.com>
+Subject: [PATCH 3.4 124/214] ALSA: hda - Fix oops caused by recent commit "Fix internal mic for Lenovo Ideapad U300s"
+Date: Wed,  4 Jun 2014 21:18:07 -0700
+Message-Id: <20140605041656.372911597@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -29,36 +29,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "H. Peter Anvin" <hpa@linux.intel.com>
+From: David Henningsson <david.henningsson@canonical.com>
 
-commit 503cf95c061a0551eb684da364509297efbe55d9 upstream.
+commit 83b0c6ba999643ee8ad6329f26e1cdc870e1a920 upstream.
 
-When compiling with icc, <linux/compiler-gcc.h> ends up included
-because the icc environment defines __GNUC__.  Thus, we neither need
-nor want to have this macro defined in both compiler-gcc.h and
-compiler-intel.h, and the fact that they are inconsistent just makes
-the compiler spew warnings.
+Make sure we don't dereference the "quirk" pointer when it is null.
 
-Reported-by: Sunil K. Pandey <sunil.k.pandey@intel.com>
-Cc: Kevin B. Smith <kevin.b.smith@intel.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Link: http://lkml.kernel.org/n/tip-0mbwou1zt7pafij09b897lg3@git.kernel.org
-[bwh: Backported to 3.2: adjust context]
+Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Cc: Rui Xiang <rui.xiang@huawei.com>
+Cc: Weng Meiling <wengmeiling.weng@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/compiler-intel.h |    2 --
- 1 file changed, 2 deletions(-)
+ sound/pci/hda/patch_conexant.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/include/linux/compiler-intel.h
-+++ b/include/linux/compiler-intel.h
-@@ -27,5 +27,3 @@
- #define __must_be_array(a) 0
+--- a/sound/pci/hda/patch_conexant.c
++++ b/sound/pci/hda/patch_conexant.c
+@@ -4430,7 +4430,9 @@ static void apply_fixup(struct hda_codec
+ 	 struct conexant_spec *spec = codec->spec;
  
- #endif
--
--#define uninitialized_var(x) x
+ 	quirk = snd_pci_quirk_lookup(codec->bus->pci, quirk);
+-	if (quirk && table[quirk->value]) {
++	if (!quirk)
++		return;
++	if (table[quirk->value]) {
+ 		snd_printdd(KERN_INFO "hda_codec: applying pincfg for %s\n",
+ 			    quirk->name);
+ 		apply_pincfg(codec, table[quirk->value]);
 
 
