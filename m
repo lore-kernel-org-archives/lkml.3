@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754162AbaFEEsj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 00:48:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44123 "EHLO
+	id S1752966AbaFEEVO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 00:21:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44067 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752965AbaFEEVP (ORCPT
+	with ESMTP id S1752879AbaFEEVI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 00:21:15 -0400
+	Thu, 5 Jun 2014 00:21:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bjorn Helgaas <bhelgaas@google.com>,
+        Seth Forshee <seth.forshee@canonical.com>,
+        Daniel Kurtz <djkurtz@chromium.org>, Alan Swanson <swanson@ukfsn.org>,
+        Arteom <arutemus@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Ben Hutchings <ben@decadent.org.uk>,
         Qiang Huang <h.huangqiang@huawei.com>
-Subject: [PATCH 3.4 120/214] PCI: shpchp: Use per-slot workqueues to avoid deadlock
-Date: Wed,  4 Jun 2014 21:18:03 -0700
-Message-Id: <20140605041655.818356819@linuxfoundation.org>
+Subject: [PATCH 3.4 109/214] Input: synaptics - adjust threshold for treating position values as negative
+Date: Wed,  4 Jun 2014 21:17:52 -0700
+Message-Id: <20140605041654.328640868@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -28,184 +31,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bjorn Helgaas <bhelgaas@google.com>
+From: Seth Forshee <seth.forshee@canonical.com>
 
-commit f652e7d2916fe2fcf9e7d709aa5b7476b431e2dd upstream.
+commit 824efd37415961d38821ecbd9694e213fb2e8b32 upstream.
 
-When we have an SHPC-capable bridge with a second SHPC-capable bridge
-below it, pushing the upstream bridge's attention button causes a
-deadlock.
+Commit c039450 (Input: synaptics - handle out of bounds values from the
+hardware) caused any hardware reported values over 7167 to be treated as
+a wrapped-around negative value. It turns out that some firmware uses
+the value 8176 to indicate a finger near the edge of the touchpad whose
+actual position cannot be determined. This value now gets treated as
+negative, which can cause pointer jumps and broken edge scrolling on
+these machines.
 
-The deadlock happens because we use the shpchp_wq workqueue to run
-shpchp_pushbutton_thread(), which uses shpchp_disable_slot() to remove
-devices below the upstream bridge.  When we remove the downstream bridge,
-we call shpc_remove(), the shpchp driver's .remove() method.  That calls
-flush_workqueue(shpchp_wq), which deadlocks because the
-shpchp_pushbutton_thread() work item is still running.
+I only know of one touchpad which reports negative values, and this
+hardware never reports any value lower than -8 (i.e. 8184). Moving the
+threshold for treating a value as negative up to 8176 should work fine
+then for any hardware we currently know about, and since we're dealing
+with unspecified behavior it's probably the best we can do. The special
+8176 value is also likely to result in sudden jumps in position, so
+let's also clamp this to the maximum specified value for the axis.
 
-This patch avoids the deadlock by creating a workqueue for every slot
-and removing the single shared workqueue.
+BugLink: http://bugs.launchpad.net/bugs/1046512
+https://bugzilla.kernel.org/show_bug.cgi?id=46371
 
-Here's the call path that leads to the deadlock:
-
-  shpchp_queue_pushbutton_work
-    queue_work(shpchp_wq)		# shpchp_pushbutton_thread
-    ...
-
-  shpchp_pushbutton_thread
-    shpchp_disable_slot
-      remove_board
-        shpchp_unconfigure_device
-          pci_stop_and_remove_bus_device
-            ...
-              shpc_remove		# shpchp driver .remove method
-                hpc_release_ctlr
-                  cleanup_slots
-                    flush_workqueue(shpchp_wq)
-
-This change is based on code inspection, since we don't have hardware
-with this topology.
-
-Based-on-patch-by: Yijing Wang <wangyijing@huawei.com>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-[bwh: Backported to 3.2: adjust context]
+Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
+Reviewed-by: Daniel Kurtz <djkurtz@chromium.org>
+Tested-by: Alan Swanson <swanson@ukfsn.org>
+Tested-by: Arteom <arutemus@gmail.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-[hq: Backported to 3.4: adjust context]
-Signed-off-by: Qiang Huang <h.huangqiang@huawei.com>
+Cc: Qiang Huang <h.huangqiang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/pci/hotplug/shpchp.h      |    2 +-
- drivers/pci/hotplug/shpchp_core.c |   26 ++++++++++++++------------
- drivers/pci/hotplug/shpchp_ctrl.c |    6 +++---
- 3 files changed, 18 insertions(+), 16 deletions(-)
 
---- a/drivers/pci/hotplug/shpchp.h
-+++ b/drivers/pci/hotplug/shpchp.h
-@@ -46,7 +46,6 @@
- extern bool shpchp_poll_mode;
- extern int shpchp_poll_time;
- extern bool shpchp_debug;
--extern struct workqueue_struct *shpchp_wq;
+---
+ drivers/input/mouse/synaptics.c |   31 +++++++++++++++++++++++--------
+ 1 file changed, 23 insertions(+), 8 deletions(-)
+
+--- a/drivers/input/mouse/synaptics.c
++++ b/drivers/input/mouse/synaptics.c
+@@ -53,14 +53,19 @@
+ #define ABS_POS_BITS 13
  
- #define dbg(format, arg...)						\
- do {									\
-@@ -90,6 +89,7 @@ struct slot {
- 	struct list_head	slot_list;
- 	struct delayed_work work;	/* work for button event */
- 	struct mutex lock;
-+	struct workqueue_struct *wq;
- 	u8 hp_slot;
- };
+ /*
+- * Any position values from the hardware above the following limits are
+- * treated as "wrapped around negative" values that have been truncated to
+- * the 13-bit reporting range of the hardware. These are just reasonable
+- * guesses and can be adjusted if hardware is found that operates outside
+- * of these parameters.
++ * These values should represent the absolute maximum value that will
++ * be reported for a positive position value. Some Synaptics firmware
++ * uses this value to indicate a finger near the edge of the touchpad
++ * whose precise position cannot be determined.
++ *
++ * At least one touchpad is known to report positions in excess of this
++ * value which are actually negative values truncated to the 13-bit
++ * reporting range. These values have never been observed to be lower
++ * than 8184 (i.e. -8), so we treat all values greater than 8176 as
++ * negative and any other value as positive.
+  */
+-#define X_MAX_POSITIVE (((1 << ABS_POS_BITS) + XMAX) / 2)
+-#define Y_MAX_POSITIVE (((1 << ABS_POS_BITS) + YMAX) / 2)
++#define X_MAX_POSITIVE 8176
++#define Y_MAX_POSITIVE 8176
  
---- a/drivers/pci/hotplug/shpchp_core.c
-+++ b/drivers/pci/hotplug/shpchp_core.c
-@@ -39,7 +39,6 @@
- bool shpchp_debug;
- bool shpchp_poll_mode;
- int shpchp_poll_time;
--struct workqueue_struct *shpchp_wq;
- 
- #define DRIVER_VERSION	"0.4"
- #define DRIVER_AUTHOR	"Dan Zink <dan.zink@compaq.com>, Greg Kroah-Hartman <greg@kroah.com>, Dely Sy <dely.l.sy@intel.com>"
-@@ -122,6 +121,14 @@ static int init_slots(struct controller
- 		slot->device = ctrl->slot_device_offset + i;
- 		slot->hpc_ops = ctrl->hpc_ops;
- 		slot->number = ctrl->first_slot + (ctrl->slot_num_inc * i);
-+
-+		snprintf(name, sizeof(name), "shpchp-%d", slot->number);
-+		slot->wq = alloc_workqueue(name, 0, 0);
-+		if (!slot->wq) {
-+			retval = -ENOMEM;
-+			goto error_info;
-+		}
-+
- 		mutex_init(&slot->lock);
- 		INIT_DELAYED_WORK(&slot->work, shpchp_queue_pushbutton_work);
- 
-@@ -141,7 +148,7 @@ static int init_slots(struct controller
- 		if (retval) {
- 			ctrl_err(ctrl, "pci_hp_register failed with error %d\n",
- 				 retval);
--			goto error_info;
-+			goto error_slotwq;
- 		}
- 
- 		get_power_status(hotplug_slot, &info->power_status);
-@@ -153,6 +160,8 @@ static int init_slots(struct controller
+ /*
+  * Synaptics touchpads report the y coordinate from bottom to top, which is
+@@ -583,11 +588,21 @@ static int synaptics_parse_hw_state(cons
+ 		hw->right = (buf[0] & 0x02) ? 1 : 0;
  	}
  
- 	return 0;
-+error_slotwq:
-+	destroy_workqueue(slot->wq);
- error_info:
- 	kfree(info);
- error_hpslot:
-@@ -173,7 +182,7 @@ void cleanup_slots(struct controller *ct
- 		slot = list_entry(tmp, struct slot, slot_list);
- 		list_del(&slot->slot_list);
- 		cancel_delayed_work(&slot->work);
--		flush_workqueue(shpchp_wq);
-+		destroy_workqueue(slot->wq);
- 		pci_hp_deregister(slot->hotplug_slot);
- 	}
- }
-@@ -356,18 +365,12 @@ static struct pci_driver shpc_driver = {
- 
- static int __init shpcd_init(void)
- {
--	int retval = 0;
--
--	shpchp_wq = alloc_ordered_workqueue("shpchp", 0);
--	if (!shpchp_wq)
--		return -ENOMEM;
-+	int retval;
- 
- 	retval = pci_register_driver(&shpc_driver);
- 	dbg("%s: pci_register_driver = %d\n", __func__, retval);
- 	info(DRIVER_DESC " version: " DRIVER_VERSION "\n");
--	if (retval) {
--		destroy_workqueue(shpchp_wq);
--	}
+-	/* Convert wrap-around values to negative */
++	/*
++	 * Convert wrap-around values to negative. (X|Y)_MAX_POSITIVE
++	 * is used by some firmware to indicate a finger at the edge of
++	 * the touchpad whose precise position cannot be determined, so
++	 * convert these values to the maximum axis value.
++	 */
+ 	if (hw->x > X_MAX_POSITIVE)
+ 		hw->x -= 1 << ABS_POS_BITS;
++	else if (hw->x == X_MAX_POSITIVE)
++		hw->x = XMAX;
 +
- 	return retval;
- }
- 
-@@ -375,7 +378,6 @@ static void __exit shpcd_cleanup(void)
- {
- 	dbg("unload_shpchpd()\n");
- 	pci_unregister_driver(&shpc_driver);
--	destroy_workqueue(shpchp_wq);
- 	info(DRIVER_DESC " version: " DRIVER_VERSION " unloaded\n");
- }
- 
---- a/drivers/pci/hotplug/shpchp_ctrl.c
-+++ b/drivers/pci/hotplug/shpchp_ctrl.c
-@@ -51,7 +51,7 @@ static int queue_interrupt_event(struct
- 	info->p_slot = p_slot;
- 	INIT_WORK(&info->work, interrupt_event_handler);
- 
--	queue_work(shpchp_wq, &info->work);
-+	queue_work(p_slot->wq, &info->work);
+ 	if (hw->y > Y_MAX_POSITIVE)
+ 		hw->y -= 1 << ABS_POS_BITS;
++	else if (hw->y == Y_MAX_POSITIVE)
++		hw->y = YMAX;
  
  	return 0;
  }
-@@ -456,7 +456,7 @@ void shpchp_queue_pushbutton_work(struct
- 		kfree(info);
- 		goto out;
- 	}
--	queue_work(shpchp_wq, &info->work);
-+	queue_work(p_slot->wq, &info->work);
-  out:
- 	mutex_unlock(&p_slot->lock);
- }
-@@ -504,7 +504,7 @@ static void handle_button_press_event(st
- 		p_slot->hpc_ops->green_led_blink(p_slot);
- 		p_slot->hpc_ops->set_attention_status(p_slot, 0);
- 
--		queue_delayed_work(shpchp_wq, &p_slot->work, 5*HZ);
-+		queue_delayed_work(p_slot->wq, &p_slot->work, 5*HZ);
- 		break;
- 	case BLINKINGOFF_STATE:
- 	case BLINKINGON_STATE:
 
 
