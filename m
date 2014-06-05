@@ -1,53 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751438AbaFEJqs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 05:46:48 -0400
-Received: from mga03.intel.com ([143.182.124.21]:57838 "EHLO mga03.intel.com"
+	id S1751255AbaFEJ4v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 05:56:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19432 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750833AbaFEJqr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 05:46:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,980,1392192000"; 
-   d="scan'208";a="441186874"
-Date: Thu, 5 Jun 2014 12:46:42 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Chew Chiau Ee <chiau.ee.chew@intel.com>
-Cc: Mark Brown <broonie@kernel.org>, Eric Miao <eric.y.miao@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, linux-spi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] spi/pxa2xx: change default supported DMA burst size to 1
-Message-ID: <20140605094642.GJ5214@lahna.fi.intel.com>
-References: <1401990309-12492-1-git-send-email-chiau.ee.chew@intel.com>
+	id S1750864AbaFEJ4u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jun 2014 05:56:50 -0400
+Date: Thu, 5 Jun 2014 17:56:03 +0800
+From: WANG Chao <chaowang@redhat.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
+        ebiederm@xmission.com, hpa@zytor.com, mjg59@srcf.ucam.org,
+        greg@kroah.com, bp@alien8.de, jkosina@suse.cz, dyoung@redhat.com,
+        bhe@redhat.com, akpm@linux-foundation.org
+Subject: Re: [PATCH 06/13] kexec: New syscall kexec_file_load() declaration
+Message-ID: <20140605095603.GD3876@dhcp-17-89.nay.redhat.com>
+References: <1401800822-27425-1-git-send-email-vgoyal@redhat.com>
+ <1401800822-27425-7-git-send-email-vgoyal@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1401990309-12492-1-git-send-email-chiau.ee.chew@intel.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1401800822-27425-7-git-send-email-vgoyal@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 06, 2014 at 01:45:09AM +0800, Chew Chiau Ee wrote:
-> From: Chew, Chiau Ee <chiau.ee.chew@intel.com>
-> 
-> This is to fix the SPI DMA transfer failure for speed less than 1M.
-> If using current DMA burst size setting (16), the Rx data bytes are
-> invalid due to each data byte is multiplied according to the burst
-> size setting.
-> 
-> Let's said supposedly we shall receive the following 18 bytes of data:
-> 01 02 03 04 05 06 07 08 09 10 11 12 13 14 15 16 17 18
-> Instead, the data bytes received consist of "16 bytes of '01' +
-> 2 bytes of '02'" :
-> 01 01 01 01 01 01 01 01 01 01 01 01 01 01 01 01 02 02
-> 
-> Signed-off-by: Chew, Chiau Ee <chiau.ee.chew@intel.com>
-> Cc: Mika Westerberg <mika.westerberg@linux.intel.com>
+On 06/03/14 at 09:06am, Vivek Goyal wrote:
+> This is the new syscall kexec_file_load() declaration/interface. I have
+> reserved the syscall number only for x86_64 so far. Other architectures
+> (including i386) can reserve syscall number when they enable the support
+> for this new syscall.
 
-Works for me (and individual chips can tune this by passing custom
-dma_burst_size if needed).
+Hi, Vivek
 
-Acked-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+I have a comment below about the kexec_file_load args.
+
+[..]
+> diff --git a/kernel/kexec.c b/kernel/kexec.c
+> index c435c5f..a3044e6 100644
+> --- a/kernel/kexec.c
+> +++ b/kernel/kexec.c
+> @@ -1098,6 +1098,13 @@ COMPAT_SYSCALL_DEFINE4(kexec_load, compat_ulong_t, entry,
+>  }
+>  #endif
+>  
+> +SYSCALL_DEFINE5(kexec_file_load, int, kernel_fd, int, initrd_fd,
+> +		const char __user *, cmdline_ptr, unsigned long,
+> +		cmdline_len, unsigned long, flags)
+
+initrd is optional for system boot.
+
+How about using int *kernel_fd and int *initrd_fd as the argument? Then
+if I don't need initrd, in userspace I can do this:
+
+kexec_file_load(&kernel_fd, NULL, ...)
+
+And even you can remove KEXEC_FILE_UNLOAD flag, because you could tell
+that one wants to unload if the following is invoked:
+
+kexec_file_load(NULL, NULL, ...)
+
+Thanks
+WANG Chao
