@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753935AbaFEEll (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 00:41:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44256 "EHLO
+	id S1753183AbaFEEVi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 00:21:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44232 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753074AbaFEEVj (ORCPT
+	with ESMTP id S1753074AbaFEEVe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 00:21:39 -0400
+	Thu, 5 Jun 2014 00:21:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Seth Forshee <seth.forshee@canonical.com>,
-        Josh Boyer <jwboyer@redhat.com>, Matthew Garrett <mjg59@srcf.ucam.org>,
-        Seiji Aguchi <seiji.aguchi@hds.com>, Tony Luck <tony.luck@intel.com>,
-        Matt Fleming <matt.fleming@intel.com>,
+        Seiji Aguchi <seiji.aguchi@hds.com>, Mike Waychison <mikew@google.com>,
+        Tony Luck <tony.luck@intel.com>, Ben Hutchings <ben@decadent.org.uk>,
         Rui Xiang <rui.xiang@huawei.com>
-Subject: [PATCH 3.4 146/214] efivars: Allow disabling use as a pstore backend
-Date: Wed,  4 Jun 2014 21:18:29 -0700
-Message-Id: <20140605041659.436192235@linuxfoundation.org>
+Subject: [PATCH 3.4 142/214] efi_pstore: Check remaining space with QueryVariableInfo() before writing data
+Date: Wed,  4 Jun 2014 21:18:25 -0700
+Message-Id: <20140605041658.847356328@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -30,149 +28,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Seth Forshee <seth.forshee@canonical.com>
+From: Seiji Aguchi <seiji.aguchi@hds.com>
 
-commit ed9dc8ce7a1c8115dba9483a9b51df8b63a2e0ef upstream.
+commit d80a361d779a9f19498943d1ca84243209cd5647 upstream.
 
-Add a new option, CONFIG_EFI_VARS_PSTORE, which can be set to N to
-avoid using efivars as a backend to pstore, as some users may want to
-compile out the code completely.
+[Issue]
 
-Set the default to Y to maintain backwards compatability, since this
-feature has always been enabled until now.
+As discussed in a thread below, Running out of space in EFI isn't a well-tested scenario.
+And we wouldn't expect all firmware to handle it gracefully.
+http://marc.info/?l=linux-kernel&m=134305325801789&w=2
 
-Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
-Cc: Josh Boyer <jwboyer@redhat.com>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Seiji Aguchi <seiji.aguchi@hds.com>
-Cc: Tony Luck <tony.luck@intel.com>
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
-[xr: Backported to 3.4: adjust context]
-Signed-off-by: Rui Xiang <rui.xiang@huawei.com>
+On the other hand, current efi_pstore doesn't check a remaining space of storage at writing time.
+Therefore, efi_pstore may not work if it tries to write a large amount of data.
+
+[Patch Description]
+
+To avoid handling the situation above, this patch checks if there is a space enough to log with
+QueryVariableInfo() before writing data.
+
+Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
+Acked-by: Mike Waychison <mikew@google.com>
+Signed-off-by: Tony Luck <tony.luck@intel.com>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Cc: Rui Xiang <rui.xiang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/firmware/Kconfig   |    9 ++++++
- drivers/firmware/efivars.c |   63 ++++++++++++++-------------------------------
- 2 files changed, 29 insertions(+), 43 deletions(-)
+ drivers/firmware/efivars.c |   18 ++++++++++++++++++
+ include/linux/efi.h        |    1 +
+ 2 files changed, 19 insertions(+)
 
---- a/drivers/firmware/Kconfig
-+++ b/drivers/firmware/Kconfig
-@@ -53,6 +53,15 @@ config EFI_VARS
- 	  Subsequent efibootmgr releases may be found at:
- 	  <http://linux.dell.com/efibootmgr>
- 
-+config EFI_VARS_PSTORE
-+	bool "Register efivars backend for pstore"
-+	depends on EFI_VARS && PSTORE
-+	default y
-+	help
-+	  Say Y here to enable use efivars as a backend to pstore. This
-+	  will allow writing console messages, crash dumps, or anything
-+	  else supported by pstore to EFI variables.
-+
- config EFI_PCDP
- 	bool "Console device selection via EFI PCDP or HCDP table"
- 	depends on ACPI && EFI && IA64
 --- a/drivers/firmware/efivars.c
 +++ b/drivers/firmware/efivars.c
-@@ -662,8 +662,6 @@ static struct kobj_type efivar_ktype = {
- 	.default_attrs = def_attrs,
- };
+@@ -710,12 +710,29 @@ static int efi_pstore_write(enum pstore_
+ 	struct efivars *efivars = psi->data;
+ 	struct efivar_entry *entry, *found = NULL;
+ 	int i, ret = 0;
++	u64 storage_space, remaining_space, max_variable_size;
++	efi_status_t status = EFI_NOT_FOUND;
  
--static struct pstore_info efi_pstore_info;
--
- static inline void
- efivar_unregister(struct efivar_entry *var)
- {
-@@ -700,7 +698,7 @@ static int efi_status_to_err(efi_status_
- 	return err;
- }
+ 	sprintf(stub_name, "dump-type%u-%u-", type, part);
+ 	sprintf(name, "%s%lu", stub_name, get_seconds());
  
--#ifdef CONFIG_PSTORE
-+#ifdef CONFIG_EFI_VARS_PSTORE
+ 	spin_lock(&efivars->lock);
  
- static int efi_pstore_open(struct pstore_info *psi)
- {
-@@ -853,37 +851,6 @@ static int efi_pstore_erase(enum pstore_
- 
- 	return 0;
- }
--#else
--static int efi_pstore_open(struct pstore_info *psi)
--{
--	return 0;
--}
--
--static int efi_pstore_close(struct pstore_info *psi)
--{
--	return 0;
--}
--
--static ssize_t efi_pstore_read(u64 *id, enum pstore_type_id *type,
--			       struct timespec *timespec,
--			       char **buf, struct pstore_info *psi)
--{
--	return -1;
--}
--
--static int efi_pstore_write(enum pstore_type_id type,
--		enum kmsg_dump_reason reason, u64 *id,
--		unsigned int part, size_t size, struct pstore_info *psi)
--{
--	return 0;
--}
--
--static int efi_pstore_erase(enum pstore_type_id type, u64 id,
--			    struct pstore_info *psi)
--{
--	return 0;
--}
--#endif
- 
- static struct pstore_info efi_pstore_info = {
- 	.owner		= THIS_MODULE,
-@@ -895,6 +862,24 @@ static struct pstore_info efi_pstore_inf
- 	.erase		= efi_pstore_erase,
- };
- 
-+static void efivar_pstore_register(struct efivars *efivars)
-+{
-+	efivars->efi_pstore_info = efi_pstore_info;
-+	efivars->efi_pstore_info.buf = kmalloc(4096, GFP_KERNEL);
-+	if (efivars->efi_pstore_info.buf) {
-+		efivars->efi_pstore_info.bufsize = 1024;
-+		efivars->efi_pstore_info.data = efivars;
-+		spin_lock_init(&efivars->efi_pstore_info.buf_lock);
-+		pstore_register(&efivars->efi_pstore_info);
++	/*
++	 * Check if there is a space enough to log.
++	 * size: a size of logging data
++	 * DUMP_NAME_LEN * 2: a maximum size of variable name
++	 */
++	status = efivars->ops->query_variable_info(PSTORE_EFI_ATTRIBUTES,
++						   &storage_space,
++						   &remaining_space,
++						   &max_variable_size);
++	if (status || remaining_space < size + DUMP_NAME_LEN * 2) {
++		spin_unlock(&efivars->lock);
++		*id = part;
++		return -ENOSPC;
 +	}
-+}
-+#else
-+static void efivar_pstore_register(struct efivars *efivars)
-+{
-+	return;
-+}
-+#endif
 +
- static ssize_t efivar_create(struct file *filp, struct kobject *kobj,
- 			     struct bin_attribute *bin_attr,
- 			     char *buf, loff_t pos, size_t count)
-@@ -1365,15 +1350,7 @@ int register_efivars(struct efivars *efi
+ 	for (i = 0; i < DUMP_NAME_LEN; i++)
+ 		efi_name[i] = stub_name[i];
+ 
+@@ -1324,6 +1341,7 @@ efivars_init(void)
+ 	ops.get_variable = efi.get_variable;
+ 	ops.set_variable = efi.set_variable;
+ 	ops.get_next_variable = efi.get_next_variable;
++	ops.query_variable_info = efi.query_variable_info;
+ 	error = register_efivars(&__efivars, &ops, efi_kobj);
  	if (error)
- 		unregister_efivars(efivars);
+ 		goto err_put;
+--- a/include/linux/efi.h
++++ b/include/linux/efi.h
+@@ -652,6 +652,7 @@ struct efivar_operations {
+ 	efi_get_variable_t *get_variable;
+ 	efi_get_next_variable_t *get_next_variable;
+ 	efi_set_variable_t *set_variable;
++	efi_query_variable_info_t *query_variable_info;
+ };
  
--	efivars->efi_pstore_info = efi_pstore_info;
--
--	efivars->efi_pstore_info.buf = kmalloc(4096, GFP_KERNEL);
--	if (efivars->efi_pstore_info.buf) {
--		efivars->efi_pstore_info.bufsize = 1024;
--		efivars->efi_pstore_info.data = efivars;
--		spin_lock_init(&efivars->efi_pstore_info.buf_lock);
--		pstore_register(&efivars->efi_pstore_info);
--	}
-+	efivar_pstore_register(efivars);
- 
- out:
- 	kfree(variable_name);
+ struct efivars {
 
 
