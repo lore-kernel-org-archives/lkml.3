@@ -1,66 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752059AbaFEOB2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 10:01:28 -0400
-Received: from mail-yh0-f52.google.com ([209.85.213.52]:54908 "EHLO
-	mail-yh0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751374AbaFEOB0 (ORCPT
+	id S1751791AbaFEODH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 10:03:07 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:62826 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750853AbaFEODG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 10:01:26 -0400
+	Thu, 5 Jun 2014 10:03:06 -0400
+Message-ID: <53907895.8090102@kernel.dk>
+Date: Thu, 05 Jun 2014 08:03:01 -0600
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <20140605134841.GL3213@twins.programming.kicks-ass.net>
-References: <1401917658-26065-1-git-send-email-eranian@google.com>
-	<1401917658-26065-6-git-send-email-eranian@google.com>
-	<20140605134841.GL3213@twins.programming.kicks-ass.net>
-Date: Thu, 5 Jun 2014 17:01:25 +0300
-Message-ID: <CAHzUATjSd0Cio25RvwNaph0vFZYQB-pKBt=xz7C=_MhZvpFXxQ@mail.gmail.com>
-Subject: Re: [PATCH 5/9] perf/x86: implement cross-HT corruption bug workaround
-From: Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, ak@linux.intel.com, jolsa@redhat.com,
-        zheng.z.yan@intel.com
-Content-Type: text/plain; charset=UTF-8
+To: Alexander Gordeev <agordeev@redhat.com>
+CC: linux-kernel@vger.kernel.org, Ming Lei <tom.leiming@gmail.com>
+Subject: Re: blk-mq: bitmap tag: performance degradation?
+References: <20140604103544.GA11350@dhcp-26-207.brq.redhat.com> <538F2AC2.1060904@kernel.dk> <20140605140127.GA22198@dhcp-26-207.brq.redhat.com>
+In-Reply-To: <20140605140127.GA22198@dhcp-26-207.brq.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Are you saying it is illegal to call kmalloc() from
-this context?
+On 2014-06-05 08:01, Alexander Gordeev wrote:
+> On Wed, Jun 04, 2014 at 08:18:42AM -0600, Jens Axboe wrote:
+>> A null_blk test is the absolute best case for percpu_ida, since
+>> there are enough tags and everything is localized. The above test is
+>> more useful for testing blk-mq than any real world application of
+>> the tagging.
+>>
+>> I've done considerable testing on both 2 and 4 socket (32 and 64
+>> CPUs) and bitmap tagging is better in a much wider range of
+>> applications. This includes even high tag depth devices like nvme,
+>> and more normal ranges like mtip32xx and scsi-mq setups.
+>
+> Just for the record: bitmap tags on a 48 CPU box with NVMe device
+> indeed shows almost the same performance/cache rate as the stock
+> kernel.
 
-kmalloc is needed because we need to allocate
-a new constraint struct since the static constraint
-cannot be modified.
+Thanks for confirming. It's one of the dangers of null_blk, it's not 
+always a very accurate simulation of what a real device will do. I think 
+it's mostly a completion side thing, would be great with a small device 
+that supported msi-x and could be used as an irq trigger :-)
 
-Worst case we can statically allocate a second
-constraint struct in the event struct.
+-- 
+Jens Axboe
 
-On Thu, Jun 5, 2014 at 4:48 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Wed, Jun 04, 2014 at 11:34:14PM +0200, Stephane Eranian wrote:
->
->> +static struct event_constraint *
->> +intel_get_excl_constraints(struct cpu_hw_events *cpuc, struct perf_event *event,
->> +                        struct event_constraint *c)
->> +{
->
->> +     if (!(c->flags & PERF_X86_EVENT_DYNAMIC)) {
->> +
->> +             /*
->> +              * in case we fail, we assume no counter
->> +              * is supported to be on the safe side
->> +              */
->> +             cx = kmalloc(sizeof(*cx), GFP_KERNEL);
->> +             if (!cx)
->> +                     return &emptyconstraint;
->> +
->
-> Ok, so forgive me if I'm wrong, but the way we get here is through:
->
-> x86_schedule_event()
->   ->start_scheduling()
->     spin_lock()
->   ->get_event_constraints()
->     intel_get_excl_constraints()
->       kmalloc(.gfp=GFP_KERNEL)
->
-> How can that ever work?
