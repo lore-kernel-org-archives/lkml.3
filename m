@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753559AbaFEEoO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 00:44:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44195 "EHLO
+	id S1753111AbaFEEV0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 00:21:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44189 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753127AbaFEEV3 (ORCPT
+	with ESMTP id S1753031AbaFEEVX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 00:21:29 -0400
+	Thu, 5 Jun 2014 00:21:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "samix.lebsir" <samix.lebsir@intel.com>,
-        Alan Cox <alan@linux.intel.com>, Ben Hutchings <ben@decadent.org.uk>,
-        Rui Xiang <rui.xiang@huawei.com>
-Subject: [PATCH 3.4 135/214] char: n_gsm: remove message filtering for contipated DLCI
-Date: Wed,  4 Jun 2014 21:18:18 -0700
-Message-Id: <20140605041657.862129320@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>, Ben Hutchings <ben@decadent.org.uk>,
+        Weng Meiling <wengmeiling.weng@huawei.com>
+Subject: [PATCH 3.4 126/214] ALSA: hda/conexant - Correct vendor IDs for new codecs
+Date: Wed,  4 Jun 2014 21:18:09 -0700
+Message-Id: <20140605041656.640178195@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -28,112 +27,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "samix.lebsir" <samix.lebsir@intel.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 10c6c383e43565c9c6ec07ff8eb2825f8091bdf0 upstream.
+commit 2d825fd82eb765412a558a56e193b77117d56699 upstream.
 
-The design of uplink flow control in the mux driver is
-that for constipated channels data will backup into the
-per-channel fifos, and any messages that make it to the
-outbound message queue will still go out.
-Code was added to also stop messages that were in the outbound
-queue but this requires filtering through all the messages on the
-queue for stopped dlcis and changes some of the mux logic unneccessarily.
+Never trust datasheet...
 
-The message fiiltering was removed to be in line w/ the original design
-as the message filtering does not provide any solution.
-Extra debug messages used during investigation were also removed.
-
-Signed-off-by: samix.lebsir <samix.lebsir@intel.com>
-Signed-off-by: Alan Cox <alan@linux.intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Cc: Rui Xiang <rui.xiang@huawei.com>
+Cc: Weng Meiling <wengmeiling.weng@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/n_gsm.c |   25 +------------------------
- 1 file changed, 1 insertion(+), 24 deletions(-)
+ sound/pci/hda/patch_conexant.c |   15 +++++++++------
+ 1 file changed, 9 insertions(+), 6 deletions(-)
 
---- a/drivers/tty/n_gsm.c
-+++ b/drivers/tty/n_gsm.c
-@@ -691,10 +691,6 @@ static void gsm_data_kick(struct gsm_mux
- 			msg = msg->next;
- 			continue;
- 		}
--		if (gsm->dlci[msg->addr]->constipated) {
--			msg = msg->next;
--			continue;
--		}
- 		if (gsm->encoding != 0) {
- 			gsm->txframe[0] = GSM1_SOF;
- 			len = gsm_stuff_frame(msg->data,
-@@ -748,8 +744,6 @@ static void __gsm_data_queue(struct gsm_
- 	u8 *dp = msg->data;
- 	u8 *fcs = dp + msg->len;
+--- a/sound/pci/hda/patch_conexant.c
++++ b/sound/pci/hda/patch_conexant.c
+@@ -4572,10 +4572,6 @@ static int patch_conexant_auto(struct hd
+  */
  
--	WARN_ONCE(dlci->constipated, "%s: queueing from a constipated DLCI",
--		__func__);
- 	/* Fill in the header */
- 	if (gsm->encoding == 0) {
- 		if (msg->len < 128)
-@@ -959,9 +953,6 @@ static void gsm_dlci_data_sweep(struct g
- 			break;
- 		dlci = gsm->dlci[i];
- 		if (dlci == NULL || dlci->constipated) {
--			if (dlci && (debug & 0x20))
--				pr_info("%s: DLCI %d is constipated",
--					__func__, i);
- 			i++;
- 			continue;
- 		}
-@@ -991,12 +982,8 @@ static void gsm_dlci_data_kick(struct gs
- 	unsigned long flags;
- 	int sweep;
+ static const struct hda_codec_preset snd_hda_preset_conexant[] = {
+-	{ .id = 0x14f11510, .name = "CX20751/2",
+-	  .patch = patch_conexant_auto },
+-	{ .id = 0x14f11511, .name = "CX20753/4",
+-	  .patch = patch_conexant_auto },
+ 	{ .id = 0x14f15045, .name = "CX20549 (Venice)",
+ 	  .patch = patch_cxt5045 },
+ 	{ .id = 0x14f15047, .name = "CX20551 (Waikiki)",
+@@ -4610,11 +4606,15 @@ static const struct hda_codec_preset snd
+ 	  .patch = patch_conexant_auto },
+ 	{ .id = 0x14f150b9, .name = "CX20665",
+ 	  .patch = patch_conexant_auto },
++	{ .id = 0x14f1510f, .name = "CX20751/2",
++	  .patch = patch_conexant_auto },
++	{ .id = 0x14f15110, .name = "CX20751/2",
++	  .patch = patch_conexant_auto },
++	{ .id = 0x14f15111, .name = "CX20753/4",
++	  .patch = patch_conexant_auto },
+ 	{} /* terminator */
+ };
  
--	if (dlci->constipated) {
--		if (debug & 0x20)
--			pr_info("%s: DLCI %d is constipated",
--				__func__, dlci->addr);
-+	if (dlci->constipated)
- 		return;
--	}
+-MODULE_ALIAS("snd-hda-codec-id:14f11510");
+-MODULE_ALIAS("snd-hda-codec-id:14f11511");
+ MODULE_ALIAS("snd-hda-codec-id:14f15045");
+ MODULE_ALIAS("snd-hda-codec-id:14f15047");
+ MODULE_ALIAS("snd-hda-codec-id:14f15051");
+@@ -4632,6 +4632,9 @@ MODULE_ALIAS("snd-hda-codec-id:14f150ab"
+ MODULE_ALIAS("snd-hda-codec-id:14f150ac");
+ MODULE_ALIAS("snd-hda-codec-id:14f150b8");
+ MODULE_ALIAS("snd-hda-codec-id:14f150b9");
++MODULE_ALIAS("snd-hda-codec-id:14f1510f");
++MODULE_ALIAS("snd-hda-codec-id:14f15110");
++MODULE_ALIAS("snd-hda-codec-id:14f15111");
  
- 	spin_lock_irqsave(&dlci->gsm->tx_lock, flags);
- 	/* If we have nothing running then we need to fire up */
-@@ -1072,15 +1059,9 @@ static void gsm_process_modem(struct tty
- 	/* Flow control/ready to communicate */
- 	fc = (modem & MDM_FC) || !(modem & MDM_RTR);
- 	if (fc && !dlci->constipated) {
--		if (debug & 0x20)
--			pr_info("%s: DLCI %d START constipated (tx_bytes=%d)",
--				__func__, dlci->addr, dlci->gsm->tx_bytes);
- 		/* Need to throttle our output on this device */
- 		dlci->constipated = 1;
- 	} else if (!fc && dlci->constipated) {
--		if (debug & 0x20)
--			pr_info("%s: DLCI %d END constipated (tx_bytes=%d)",
--				__func__, dlci->addr, dlci->gsm->tx_bytes);
- 		dlci->constipated = 0;
- 		gsm_dlci_data_kick(dlci);
- 	}
-@@ -1257,8 +1238,6 @@ static void gsm_control_message(struct g
- 		break;
- 	case CMD_FCON:
- 		/* Modem can accept data again */
--		if (debug & 0x20)
--			pr_info("%s: GSM END constipation", __func__);
- 		gsm->constipated = 0;
- 		gsm_control_reply(gsm, CMD_FCON, NULL, 0);
- 		/* Kick the link in case it is idling */
-@@ -1268,8 +1247,6 @@ static void gsm_control_message(struct g
- 		break;
- 	case CMD_FCOFF:
- 		/* Modem wants us to STFU */
--		if (debug & 0x20)
--			pr_info("%s: GSM START constipation", __func__);
- 		gsm->constipated = 1;
- 		gsm_control_reply(gsm, CMD_FCOFF, NULL, 0);
- 		break;
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("Conexant HD-audio codec");
 
 
