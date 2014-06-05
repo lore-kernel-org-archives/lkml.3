@@ -1,182 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751964AbaFEMc0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 08:32:26 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:7230 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751785AbaFEMbE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 08:31:04 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 05 Jun 2014 05:23:04 -0700
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: Russell King <linux@arm.linux.org.uk>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-tegra@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/5] ARM: tegra: export apb dma readl/writel
-Date: Thu, 5 Jun 2014 15:30:43 +0300
-Message-ID: <1401971448-18448-2-git-send-email-pdeschrijver@nvidia.com>
-X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
-In-Reply-To: <1401971448-18448-1-git-send-email-pdeschrijver@nvidia.com>
-References: <1401971448-18448-1-git-send-email-pdeschrijver@nvidia.com>
-X-NVConfidentiality: public
+	id S1751989AbaFEMcv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 08:32:51 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59154 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751967AbaFEMct (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jun 2014 08:32:49 -0400
+Message-ID: <5390636D.2090809@suse.de>
+Date: Thu, 05 Jun 2014 14:32:45 +0200
+From: Alexander Graf <agraf@suse.de>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Alexey Kardashevskiy <aik@ozlabs.ru>, linuxppc-dev@lists.ozlabs.org,
+        Paul Mackerras <paulus@samba.org>, Gleb Natapov <gleb@kernel.org>,
+        Paolo Bonzini <pbonzini@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kvm-ppc@vger.kernel.org
+Subject: Re: [PATCH 3/3] PPC: KVM: Add support for 64bit TCE windows
+References: <1401953144-19186-1-git-send-email-aik@ozlabs.ru>	 <1401953144-19186-4-git-send-email-aik@ozlabs.ru>	 <1401953908.3247.121.camel@pasglop> <539037DB.5080706@ozlabs.ru>	 <1401964037.3247.129.camel@pasglop> <53905ADB.8000100@suse.de> <1401971411.3247.132.camel@pasglop>
+In-Reply-To: <1401971411.3247.132.camel@pasglop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Export APB DMA readl and writel. These are needed because we can't access
-the fuses directly on Tegra20 without potentially causing a system hang.
-Also have the APB DMA readl and writel return an error in case of a read
-failure instead of just returning zero or ignore write failures.
 
-Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
----
- arch/arm/mach-tegra/apbio.c |   51 ++++++++++++++++++++++++++----------------
- include/linux/tegra-soc.h   |   14 +++++++++++
- 2 files changed, 45 insertions(+), 20 deletions(-)
+On 05.06.14 14:30, Benjamin Herrenschmidt wrote:
+> On Thu, 2014-06-05 at 13:56 +0200, Alexander Graf wrote:
+>> What if we ask user space to give us a pointer to user space allocated
+>> memory along with the TCE registration? We would still ask user space to
+>> only use the returned fd for TCE modifications, but would have some
+>> nicely swappable memory we can store the TCE entries in.
+> That isn't going to work terribly well for VFIO :-) But yes, for
+> emulated devices, we could improve things a bit, including for
+> the 32-bit TCE tables.
+>
+> For emulated, the real mode path could walk the page tables and fallback
+> to virtual mode & get_user if the page isn't present, thus operating
+> directly on qemu memory TCE tables instead of the current pinned stuff.
+>
+> However that has a cost in performance, but since that's really only
+> used for emulated devices and PAPR VIOs, it might not be a huge issue.
+>
+> But for VFIO we don't have much choice, we need to create something the
+> HW can access.
 
-diff --git a/arch/arm/mach-tegra/apbio.c b/arch/arm/mach-tegra/apbio.c
-index bc47197..e0bf49d 100644
---- a/arch/arm/mach-tegra/apbio.c
-+++ b/arch/arm/mach-tegra/apbio.c
-@@ -32,8 +32,8 @@ static u32 *tegra_apb_bb;
- static dma_addr_t tegra_apb_bb_phys;
- static DECLARE_COMPLETION(tegra_apb_wait);
- 
--static u32 tegra_apb_readl_direct(unsigned long offset);
--static void tegra_apb_writel_direct(u32 value, unsigned long offset);
-+static int tegra_apb_readl_direct(unsigned long offset, u32 *value);
-+static int tegra_apb_writel_direct(u32 value, unsigned long offset);
- 
- static struct dma_chan *tegra_apb_dma_chan;
- static struct dma_slave_config dma_sconfig;
-@@ -128,58 +128,64 @@ static int do_dma_transfer(unsigned long apb_add,
- 	return 0;
- }
- 
--static u32 tegra_apb_readl_using_dma(unsigned long offset)
-+int tegra_apb_readl_using_dma(unsigned long offset, u32 *value)
- {
- 	int ret;
- 
- 	if (!tegra_apb_dma_chan && !tegra_apb_dma_init())
--		return tegra_apb_readl_direct(offset);
-+		return tegra_apb_readl_direct(offset, value);
- 
- 	mutex_lock(&tegra_apb_dma_lock);
- 	ret = do_dma_transfer(offset, DMA_DEV_TO_MEM);
--	if (ret < 0) {
-+	if (ret < 0)
- 		pr_err("error in reading offset 0x%08lx using dma\n", offset);
--		*(u32 *)tegra_apb_bb = 0;
--	}
-+	else
-+		*value = *tegra_apb_bb;
-+
- 	mutex_unlock(&tegra_apb_dma_lock);
--	return *((u32 *)tegra_apb_bb);
-+
-+	return ret;
- }
- 
--static void tegra_apb_writel_using_dma(u32 value, unsigned long offset)
-+int tegra_apb_writel_using_dma(u32 value, unsigned long offset)
- {
- 	int ret;
- 
--	if (!tegra_apb_dma_chan && !tegra_apb_dma_init()) {
--		tegra_apb_writel_direct(value, offset);
--		return;
--	}
-+	if (!tegra_apb_dma_chan && !tegra_apb_dma_init())
-+		return tegra_apb_writel_direct(value, offset);
- 
- 	mutex_lock(&tegra_apb_dma_lock);
- 	*((u32 *)tegra_apb_bb) = value;
- 	ret = do_dma_transfer(offset, DMA_MEM_TO_DEV);
-+	mutex_unlock(&tegra_apb_dma_lock);
- 	if (ret < 0)
- 		pr_err("error in writing offset 0x%08lx using dma\n", offset);
--	mutex_unlock(&tegra_apb_dma_lock);
-+
-+	return ret;
- }
- #else
- #define tegra_apb_readl_using_dma tegra_apb_readl_direct
- #define tegra_apb_writel_using_dma tegra_apb_writel_direct
- #endif
- 
--typedef u32 (*apbio_read_fptr)(unsigned long offset);
--typedef void (*apbio_write_fptr)(u32 value, unsigned long offset);
-+typedef int (*apbio_read_fptr)(unsigned long offset, u32 *value);
-+typedef int (*apbio_write_fptr)(u32 value, unsigned long offset);
- 
- static apbio_read_fptr apbio_read;
- static apbio_write_fptr apbio_write;
- 
--static u32 tegra_apb_readl_direct(unsigned long offset)
-+static int tegra_apb_readl_direct(unsigned long offset, u32 *value)
- {
--	return readl(IO_ADDRESS(offset));
-+	*value = readl(IO_ADDRESS(offset));
-+
-+	return 0;
- }
- 
--static void tegra_apb_writel_direct(u32 value, unsigned long offset)
-+static int tegra_apb_writel_direct(u32 value, unsigned long offset)
- {
- 	writel(value, IO_ADDRESS(offset));
-+
-+	return 0;
- }
- 
- void tegra_apb_io_init(void)
-@@ -197,7 +203,12 @@ void tegra_apb_io_init(void)
- 
- u32 tegra_apb_readl(unsigned long offset)
- {
--	return apbio_read(offset);
-+	u32 val;
-+
-+	if (apbio_read(offset, &val) < 0)
-+		return 0;
-+	else
-+		return val;
- }
- 
- void tegra_apb_writel(u32 value, unsigned long offset)
-diff --git a/include/linux/tegra-soc.h b/include/linux/tegra-soc.h
-index 95f611d..b02d73b 100644
---- a/include/linux/tegra-soc.h
-+++ b/include/linux/tegra-soc.h
-@@ -19,4 +19,18 @@
- 
- u32 tegra_read_chipid(void);
- 
-+
-+#if defined(CONFIG_TEGRA20_APB_DMA)
-+int tegra_apb_readl_using_dma(unsigned long offset, u32 *value);
-+int tegra_apb_writel_using_dma(u32 value, unsigned long offset);
-+#else
-+static inline int tegra_apb_readl_using_dma(unsigned long offset, u32 *value)
-+{
-+	return -EINVAL;
-+}
-+static inline int tegra_apb_writel_using_dma(u32 value, unsigned long offset)
-+{
-+	return -EINVAL;
-+}
-+#endif
- #endif /* __LINUX_TEGRA_SOC_H_ */
--- 
-1.7.7.rc0.72.g4b5ea.dirty
+But we need to create separate tables for VFIO anyways, because these 
+TCE tables contain virtual addresses, no?
+
+
+Alex
+
+>
+>> In fact, the code as is today can allocate an arbitrary amount of pinned
+>> kernel memory from within user space without any checks.
+> Right. We should at least account it in the locked limit.
+>
+> Cheers,
+> Ben.
+>
+>
 
