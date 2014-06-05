@@ -1,85 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757031AbaFEAec (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 20:34:32 -0400
-Received: from mx7.pku.edu.cn ([162.105.129.170]:56367 "EHLO mail.pku.edu.cn"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753715AbaFEAe3 convert rfc822-to-8bit (ORCPT
+	id S932461AbaFEAel (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 20:34:41 -0400
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:40554 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932445AbaFEAej (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 20:34:29 -0400
-X-Spam-Flag: NO
-X-Spam-Score: -307.475
-Date: Thu, 5 Jun 2014 08:34:12 +0800 (CST)
-From: =?gbk?B?WHVldGFvIEd1YW4g?= <gxt@pku.edu.cn>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>, linux-kernel@vger.kernel.org,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Message-ID: <1001589690.39308.1401928452253.JavaMail.root@bj-mail03.pku.edu.cn>
-In-Reply-To: <1401820203-21556-1-git-send-email-sboyd@codeaurora.org>
-Subject: =?utf-8?Q?=E5=9B=9E=E5=A4=8D=EF=BC=9A_[PATCH]_unicore32:_Remove_?=
- =?utf-8?Q?ARCH=5FHAS=5FCPUFREQ_config_option?=
+	Wed, 4 Jun 2014 20:34:39 -0400
+Date: Wed, 4 Jun 2014 17:34:36 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Oleg Drokin <green@linuxhacker.ru>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Randy Dunlap <rdunlap@infradead.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-doc@vger.kernel.org,
+        devel@driverdev.osuosl.org
+Subject: [patch v2] mm, pcp: allow restoring percpu_pagelist_fraction
+ default
+In-Reply-To: <85AFB547-D3A1-4818-AD82-FF90909775D2@linuxhacker.ru>
+Message-ID: <alpine.DEB.2.02.1406041734150.17045@chino.kir.corp.google.com>
+References: <1399166883-514-1-git-send-email-green@linuxhacker.ru> <alpine.DEB.2.02.1406021837490.13072@chino.kir.corp.google.com> <B549468A-10FC-4897-8720-7C9FEC6FD03A@linuxhacker.ru> <alpine.DEB.2.02.1406022056300.20536@chino.kir.corp.google.com>
+ <2C763027-307F-4BC0-8C0A-7E3D5957A4DA@linuxhacker.ru> <alpine.DEB.2.02.1406031819580.8682@chino.kir.corp.google.com> <85AFB547-D3A1-4818-AD82-FF90909775D2@linuxhacker.ru>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [162.105.129.134]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+If the percpu_pagelist_fraction sysctl is set by the user, it is impossible to 
+restore it to the kernel default since the user cannot write 0 to the sysctl.
 
------ Stephen Boyd <sboyd@codeaurora.org> 写道：
-> This config exists entirely to hide the cpufreq menu from the
-> kernel configuration unless a platform has selected it. Nothing
-> is actually built if this config is 'Y' and it just leads to more
-> patches that add a select under a platform Kconfig so that some
-> other CPUfreq option can be chosen. Let's remove the option so
-> that we can always enable CPUfreq drivers on unicore32 platforms.
-> 
-> Cc: Viresh Kumar <viresh.kumar@linaro.org>
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+This patch allows the user to write 0 to restore the default behavior.  It
+still requires a fraction equal to or larger than 8, however, as stated by the 
+documentation for sanity.  If a value in the range [1, 7] is written, the sysctl 
+will return EINVAL.
 
-Thanks, I'll push it in my repo.
+Reported-by: Oleg Drokin <green@linuxhacker.ru>
+Signed-off-by: David Rientjes <rientjes@google.com>
+---
+ Documentation/sysctl/vm.txt |  3 ++-
+ kernel/sysctl.c             |  3 +--
+ mm/page_alloc.c             | 41 +++++++++++++++++++++++++++++------------
+ 3 files changed, 32 insertions(+), 15 deletions(-)
 
-Signed-off-by: Xuetao Guan <gxt@mprc.pku.edu.cn>
-
-> ---
->  arch/unicore32/Kconfig | 6 ------
->  1 file changed, 6 deletions(-)
-> 
-> diff --git a/arch/unicore32/Kconfig b/arch/unicore32/Kconfig
-> index aafad6fa1667..928237a7b9ca 100644
-> --- a/arch/unicore32/Kconfig
-> +++ b/arch/unicore32/Kconfig
-> @@ -51,9 +51,6 @@ config ARCH_HAS_ILOG2_U32
->  config ARCH_HAS_ILOG2_U64
->  	bool
->  
-> -config ARCH_HAS_CPUFREQ
-> -	bool
-> -
->  config GENERIC_HWEIGHT
->  	def_bool y
->  
-> @@ -87,7 +84,6 @@ config ARCH_PUV3
->  	select GENERIC_CLOCKEVENTS
->  	select HAVE_CLK
->  	select ARCH_REQUIRE_GPIOLIB
-> -	select ARCH_HAS_CPUFREQ
->  
->  # CONFIGs for ARCH_PUV3
->  
-> @@ -198,9 +194,7 @@ menu "Power management options"
->  
->  source "kernel/power/Kconfig"
->  
-> -if ARCH_HAS_CPUFREQ
->  source "drivers/cpufreq/Kconfig"
-> -endif
->  
->  config ARCH_SUSPEND_POSSIBLE
->  	def_bool y if !ARCH_FPGA
-> -- 
-> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-> hosted by The Linux Foundation
-> 
-
+diff --git a/Documentation/sysctl/vm.txt b/Documentation/sysctl/vm.txt
+--- a/Documentation/sysctl/vm.txt
++++ b/Documentation/sysctl/vm.txt
+@@ -702,7 +702,8 @@ The batch value of each per cpu pagelist is also updated as a result.  It is
+ set to pcp->high/4.  The upper limit of batch is (PAGE_SHIFT * 8)
+ 
+ The initial value is zero.  Kernel does not use this value at boot time to set
+-the high water marks for each per cpu page list.
++the high water marks for each per cpu page list.  If the user writes '0' to this
++sysctl, it will revert to this default behavior.
+ 
+ ==============================================================
+ 
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -136,7 +136,6 @@ static unsigned long dirty_bytes_min = 2 * PAGE_SIZE;
+ /* this is needed for the proc_dointvec_minmax for [fs_]overflow UID and GID */
+ static int maxolduid = 65535;
+ static int minolduid;
+-static int min_percpu_pagelist_fract = 8;
+ 
+ static int ngroups_max = NGROUPS_MAX;
+ static const int cap_last_cap = CAP_LAST_CAP;
+@@ -1305,7 +1304,7 @@ static struct ctl_table vm_table[] = {
+ 		.maxlen		= sizeof(percpu_pagelist_fraction),
+ 		.mode		= 0644,
+ 		.proc_handler	= percpu_pagelist_fraction_sysctl_handler,
+-		.extra1		= &min_percpu_pagelist_fract,
++		.extra1		= &zero,
+ 	},
+ #ifdef CONFIG_MMU
+ 	{
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -69,6 +69,7 @@
+ 
+ /* prevent >1 _updater_ of zone percpu pageset ->high and ->batch fields */
+ static DEFINE_MUTEX(pcp_batch_high_lock);
++#define MIN_PERCPU_PAGELIST_FRACTION	(8)
+ 
+ #ifdef CONFIG_USE_PERCPU_NUMA_NODE_ID
+ DEFINE_PER_CPU(int, numa_node);
+@@ -4107,7 +4108,7 @@ static void __meminit zone_init_free_lists(struct zone *zone)
+ 	memmap_init_zone((size), (nid), (zone), (start_pfn), MEMMAP_EARLY)
+ #endif
+ 
+-static int __meminit zone_batchsize(struct zone *zone)
++static int zone_batchsize(struct zone *zone)
+ {
+ #ifdef CONFIG_MMU
+ 	int batch;
+@@ -4223,8 +4224,8 @@ static void pageset_set_high(struct per_cpu_pageset *p,
+ 	pageset_update(&p->pcp, high, batch);
+ }
+ 
+-static void __meminit pageset_set_high_and_batch(struct zone *zone,
+-		struct per_cpu_pageset *pcp)
++static void pageset_set_high_and_batch(struct zone *zone,
++				       struct per_cpu_pageset *pcp)
+ {
+ 	if (percpu_pagelist_fraction)
+ 		pageset_set_high(pcp,
+@@ -5850,23 +5851,39 @@ int percpu_pagelist_fraction_sysctl_handler(ctl_table *table, int write,
+ 	void __user *buffer, size_t *length, loff_t *ppos)
+ {
+ 	struct zone *zone;
+-	unsigned int cpu;
++	int old_percpu_pagelist_fraction;
+ 	int ret;
+ 
++	mutex_lock(&pcp_batch_high_lock);
++	old_percpu_pagelist_fraction = percpu_pagelist_fraction;
++
+ 	ret = proc_dointvec_minmax(table, write, buffer, length, ppos);
+-	if (!write || (ret < 0))
+-		return ret;
++	if (!write || ret < 0)
++		goto out;
++
++	/* Sanity checking to avoid pcp imbalance */
++	if (percpu_pagelist_fraction &&
++	    percpu_pagelist_fraction < MIN_PERCPU_PAGELIST_FRACTION) {
++		percpu_pagelist_fraction = old_percpu_pagelist_fraction;
++		ret = -EINVAL;
++		goto out;
++	}
++
++	ret = 0;
++	/* No change? */
++	if (percpu_pagelist_fraction == old_percpu_pagelist_fraction)
++		goto out;
+ 
+-	mutex_lock(&pcp_batch_high_lock);
+ 	for_each_populated_zone(zone) {
+-		unsigned long  high;
+-		high = zone->managed_pages / percpu_pagelist_fraction;
++		unsigned int cpu;
++
+ 		for_each_possible_cpu(cpu)
+-			pageset_set_high(per_cpu_ptr(zone->pageset, cpu),
+-					 high);
++			pageset_set_high_and_batch(zone,
++					per_cpu_ptr(zone->pageset, cpu));
+ 	}
++out:
+ 	mutex_unlock(&pcp_batch_high_lock);
+-	return 0;
++	return ret;
+ }
+ 
+ int hashdist = HASHDIST_DEFAULT;
