@@ -1,76 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752524AbaFEQLI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 12:11:08 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:52687 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750907AbaFEQLD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 12:11:03 -0400
-Date: Thu, 5 Jun 2014 18:08:42 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Matt Fleming <matt.fleming@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Ricardo Neri <ricardo.neri-calderon@linux.intel.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>
-Subject: Re: [tip:x86/efi] x86/efi: Check for unsafe dealing with FPU state
- in irq ctxt
-Message-ID: <20140605160842.GE16642@pd.tnic>
-References: <tip-baa916f39b50ad91661534652110df40396acda0@git.kernel.org>
- <538F9AFA.5050806@zytor.com>
- <20140604224920.GB4126@pd.tnic>
- <538FB775.8070405@amacapital.net>
- <20140605071805.GA16647@pd.tnic>
- <CAL01qpuj6jvH4XLvhHAszbqmSPXfW=VOdv+TqMwBuDnArL=ofw@mail.gmail.com>
- <20140605090206.GA16642@pd.tnic>
- <CALCETrU2TZhxOZyCvBd1nLDiU4ceiSx_Sd2bsDUCX5arOFidBg@mail.gmail.com>
- <20140605155307.GD16642@pd.tnic>
- <CALCETrVqqgExhuAYawh_7tc8-Nm8GGiMxmtw25mLFoxru-odZg@mail.gmail.com>
+	id S1752543AbaFEQMM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 12:12:12 -0400
+Received: from mail-vc0-f181.google.com ([209.85.220.181]:42637 "EHLO
+	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751140AbaFEQMK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jun 2014 12:12:10 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CALCETrVqqgExhuAYawh_7tc8-Nm8GGiMxmtw25mLFoxru-odZg@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Originating-IP: [2620:0:1000:157d:9976:468b:708c:bed5]
+In-Reply-To: <53909219.6090200@wwwdotorg.org>
+References: <1401920421-25729-1-git-send-email-dianders@chromium.org>
+	<53909219.6090200@wwwdotorg.org>
+Date: Thu, 5 Jun 2014 09:12:09 -0700
+Message-ID: <CAOesGMh8j4S2E-3xqMuK5OWJfYfOUh0OPvfMEZfrssAwfqRU_g@mail.gmail.com>
+Subject: Re: [PATCH 1/3] ARM: dts: Create a cros-ec-keyboard fragment
+From: Olof Johansson <olof@lixom.net>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Doug Anderson <dianders@chromium.org>, "arm@kernel.org" <arm@kernel.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        Thierry Reding <treding@nvidia.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 05, 2014 at 09:01:02AM -0700, Andy Lutomirski wrote:
-> NMI might be okay.  I haven't checked.
+On Thu, Jun 5, 2014 at 8:51 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 06/04/2014 04:20 PM, Doug Anderson wrote:
+>> All ChromeOS ARM devices that have the standard "CrOS EC" have the
+>> same keyboard mapping.  It's silly to include this same definition
+>> everywhere.  Let's create a "dtsi" fragment that we can include from
+>> many different boards.
+>>
+>> This fragment is based on what's currently in tegra124-venice2.dts
+>
+> This series looks fine to me. Given it touches both Tegra and Exynos,
+> should it be merged into a topic branch in arm-soc, so that it can be
+> pulled into both Tegra/Exynos trees to resolve any conflicts. So,
+>
+> Acked-by: Stephen Warren <swarren@nvidia.com>
+>
+> If you want, I'm happy to apply this to a topic branch and send a pull
+> request to arm-soc.
 
-Well, if efi decides to do FPU math and it happens in NMI, we will have
-to provide for proper contexts handling.
+Sounds good.
 
-> It has to change back, though.  Completely unrealistic and useless example:
-> 
-> int ctxt = what_context_im_in();
-> 
-> set_up_the_fpu(ctxt);
-> 
-> // kprobe fires and changes the context
-> // kprobe does something
 
-And since we're being completely unrealistic, kprobe decides to use the
-fpu too and uses it...
-
-> // kprobe changes the context back
-> 
-> use the FPU.  Life is good.
-> 
-> put_back_the_fpu(ctxt);
-
-So you probably need some way of mapping preallocated, per-cpu FPU
-contexts to their users which can get and put them.
-
-It's a whole different question whether that makes sense though, at all
-or we simply remain conservative and don't do any efi in NMI context...
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+-Olof
