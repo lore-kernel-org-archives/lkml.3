@@ -1,338 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752035AbaFEMzI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 08:55:08 -0400
-Received: from mga03.intel.com ([143.182.124.21]:20226 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751572AbaFEMx2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 08:53:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,981,1392192000"; 
-   d="scan'208";a="441253805"
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Felipe Balbi <balbi@ti.com>, Vivek Gautam <gautam.vivek@samsung.com>,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: [PATCHv2 2/6] phy: improved lookup method
-Date: Thu,  5 Jun 2014 15:52:54 +0300
-Message-Id: <1401972778-5880-3-git-send-email-heikki.krogerus@linux.intel.com>
-X-Mailer: git-send-email 2.0.0.rc4
-In-Reply-To: <1401972778-5880-1-git-send-email-heikki.krogerus@linux.intel.com>
-References: <1401972778-5880-1-git-send-email-heikki.krogerus@linux.intel.com>
+	id S1751591AbaFEM6O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 08:58:14 -0400
+Received: from smtprelay4.synopsys.com ([198.182.44.111]:59196 "EHLO
+	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750926AbaFEM6M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jun 2014 08:58:12 -0400
+From: Alexey Brodkin <Alexey.Brodkin@synopsys.com>
+To: netdev@vger.kernel.org
+Cc: Alexey Brodkin <Alexey.Brodkin@synopsys.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Giuseppe Cavallaro <peppe.cavallaro@st.com>,
+        Chen-Yu Tsai <wens@csie.org>, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, Vineet Gupta <Vineet.Gupta1@synopsys.com>
+Subject: [PATCH] stmmac: extend DMA initialization delay to 2.5 seconds
+Date: Thu,  5 Jun 2014 16:58:00 +0400
+Message-Id: <1401973080-10085-1-git-send-email-abrodkin@synopsys.com>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removes the need for the phys to be aware of their users
-even when not using DT. The method is copied from clkdev.c.
+On some platforms existing 100 msecond delay is not enough for DMA block to
+recover after reset. This is because MAC DMA waits for all PHY input clocks
+to present and depending on the board reset bit deassertion may take much
+longer than previously used 100 milliseconds
 
-Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+I have a board that requires more than 2 seconds for DMA to zero "reset" bit.
+If for other boards it's still not long enough this value should be extended
+once again.
+
+In the same change I convert "mdelay" to "msleep" to make CPU available for
+other processes during DMA init delay which is especially useful in case of
+delay for a few seconds.
+
+Signed-off-by: Alexey Brodkin <abrodkin@synopsys.com>
+
+Cc: David S. Miller <davem@davemloft.net>
+Cc: Hans de Goede <hdegoede@redhat.com>
+Cc: Giuseppe Cavallaro <peppe.cavallaro@st.com>
+Cc: Chen-Yu Tsai <wens@csie.org>
+Cc: linux-kernel@vger.kernel.org
+Cc: devicetree@vger.kernel.org
+Cc: Vineet Gupta <vgupta@synopsys.com>
 ---
- Documentation/phy.txt   |  66 ++++++++---------------
- drivers/phy/phy-core.c  | 135 +++++++++++++++++++++++++++++++++++++++++++++++-
- include/linux/phy/phy.h |  27 ++++++++++
- 3 files changed, 183 insertions(+), 45 deletions(-)
+ drivers/net/ethernet/stmicro/stmmac/dwmac1000_dma.c | 4 ++--
+ drivers/net/ethernet/stmicro/stmmac/dwmac100_dma.c  | 4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/Documentation/phy.txt b/Documentation/phy.txt
-index ebff6ee..441dc10 100644
---- a/Documentation/phy.txt
-+++ b/Documentation/phy.txt
-@@ -53,17 +53,13 @@ unregister the PHY.
- The PHY driver should create the PHY in order for other peripheral controllers
- to make use of it. The PHY framework provides 2 APIs to create the PHY.
- 
--struct phy *phy_create(struct device *dev, const struct phy_ops *ops,
--        struct phy_init_data *init_data);
--struct phy *devm_phy_create(struct device *dev, const struct phy_ops *ops,
--	struct phy_init_data *init_data);
-+struct phy *phy_create(struct device *dev, const struct phy_ops *ops);
-+struct phy *devm_phy_create(struct device *dev, const struct phy_ops *ops);
- 
- The PHY drivers can use one of the above 2 APIs to create the PHY by passing
--the device pointer, phy ops and init_data.
-+the device pointer and phy ops.
- phy_ops is a set of function pointers for performing PHY operations such as
--init, exit, power_on and power_off. *init_data* is mandatory to get a reference
--to the PHY in the case of non-dt boot. See section *Board File Initialization*
--on how init_data should be used.
-+init, exit, power_on and power_off.
- 
- Inorder to dereference the private data (in phy_ops), the phy provider driver
- can use phy_set_drvdata() after creating the PHY and use phy_get_drvdata() in
-@@ -135,42 +131,24 @@ There are exported APIs like phy_pm_runtime_get, phy_pm_runtime_get_sync,
- phy_pm_runtime_put, phy_pm_runtime_put_sync, phy_pm_runtime_allow and
- phy_pm_runtime_forbid for performing PM operations.
- 
--8. Board File Initialization
--
--Certain board file initialization is necessary in order to get a reference
--to the PHY in the case of non-dt boot.
--Say we have a single device that implements 3 PHYs that of USB, SATA and PCIe,
--then in the board file the following initialization should be done.
--
--struct phy_consumer consumers[] = {
--	PHY_CONSUMER("dwc3.0", "usb"),
--	PHY_CONSUMER("pcie.0", "pcie"),
--	PHY_CONSUMER("sata.0", "sata"),
--};
--PHY_CONSUMER takes 2 parameters, first is the device name of the controller
--(PHY consumer) and second is the port name.
--
--struct phy_init_data init_data = {
--	.consumers = consumers,
--	.num_consumers = ARRAY_SIZE(consumers),
--};
--
--static const struct platform_device pipe3_phy_dev = {
--	.name = "pipe3-phy",
--	.id = -1,
--	.dev = {
--		.platform_data = {
--			.init_data = &init_data,
--		},
--	},
--};
--
--then, while doing phy_create, the PHY driver should pass this init_data
--	phy_create(dev, ops, pdata->init_data);
--
--and the controller driver (phy consumer) should pass the port name along with
--the device to get a reference to the PHY
--	phy_get(dev, "pcie");
-+8. PHY Mappings
-+
-+In order to get reference to a PHY without help from DeviceTree, the framework
-+offers lookups which can be compared to clkdev that allow clk structures to be
-+bound to devices. A lookup can be made statically by directly registering
-+phy_lookup structure which contains the name of the PHY device, the name of the
-+device which the PHY will be bind to and Connection ID string. Alternatively a
-+lookup can be made during runtime when a handle to the struct phy already
-+exists.
-+
-+The framework offers the following APIs for registering and unregistering the
-+lookups.
-+
-+void phy_register_lookup(struct phy_lookup *pl);
-+int phy_create_lookup(struct phy *phy, const char *con_id, const char *dev_id);
-+
-+void phy_unregister_lookup(struct phy_lookup *pl);
-+void phy_remove_lookup(struct phy *phy, const char *con_id, const char *dev_id);
- 
- 9. DeviceTree Binding
- 
-diff --git a/drivers/phy/phy-core.c b/drivers/phy/phy-core.c
-index c64a2f3..38034fd 100644
---- a/drivers/phy/phy-core.c
-+++ b/drivers/phy/phy-core.c
-@@ -25,6 +25,7 @@
- static struct class *phy_class;
- static DEFINE_MUTEX(phy_provider_mutex);
- static LIST_HEAD(phy_provider_list);
-+static LIST_HEAD(phys);
- static DEFINE_IDA(phy_ida);
- 
- static void devm_phy_release(struct device *dev, void *res)
-@@ -83,6 +84,138 @@ static struct phy *phy_lookup(struct device *device, const char *port)
- 	return ERR_PTR(-ENODEV);
- }
- 
-+/**
-+ * phy_register_lookup() - register PHY/device association
-+ * @pl: association to register
-+ */
-+void phy_register_lookup(struct phy_lookup *pl)
-+{
-+	mutex_lock(&phy_provider_mutex);
-+	list_add_tail(&pl->node, &phys);
-+	mutex_unlock(&phy_provider_mutex);
-+}
-+
-+/**
-+ * phy_unregister_lookup() - remove PHY/device association
-+ * @pl: association to be removed
-+ */
-+void phy_unregister_lookup(struct phy_lookup *pl)
-+{
-+	mutex_lock(&phy_provider_mutex);
-+	list_del(&pl->node);
-+	mutex_unlock(&phy_provider_mutex);
-+}
-+
-+/**
-+ * phy_create_lookup() - allocate and register PHY/device association
-+ * @phy: the phy of the association
-+ * @con_id: connection ID string on device
-+ * @dev_id: the device of the association
-+ *
-+ * Creates and registers phy_lookup entry.
-+ */
-+int phy_create_lookup(struct phy *phy, const char *con_id, const char *dev_id)
-+{
-+	struct phy_lookup *pl;
-+
-+	if (!phy || (!dev_id && !con_id))
-+		return -EINVAL;
-+
-+	pl = kzalloc(sizeof(*pl), GFP_KERNEL);
-+	if (!pl)
-+		return -ENOMEM;
-+
-+	pl->phy_name = dev_name(&phy->dev);
-+	pl->dev_id = dev_id;
-+	pl->con_id = con_id;
-+
-+	phy_register_lookup(pl);
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(phy_create_lookup);
-+
-+/**
-+ * phy_remove_lookup() - find and remove PHY/device association
-+ * @phy: the phy of the association
-+ * @con_id: connection ID string on device
-+ * @dev_id: the device of the association
-+ *
-+ * Finds and unregisters phy_lookup entry that was created with
-+ * phy_create_lookup().
-+ */
-+void phy_remove_lookup(struct phy *phy, const char *con_id, const char *dev_id)
-+{
-+	struct phy_lookup *pl;
-+
-+	if (!phy || (!dev_id && !con_id))
-+		return;
-+
-+	list_for_each_entry(pl, &phys, node)
-+		if (!strcmp(pl->phy_name, dev_name(&phy->dev)) &&
-+		    !strcmp(pl->dev_id, dev_id) &&
-+		    !strcmp(pl->con_id, con_id)) {
-+			phy_unregister_lookup(pl);
-+			kfree(pl);
-+			return;
-+		}
-+}
-+EXPORT_SYMBOL_GPL(phy_remove_lookup);
-+
-+static struct phy *phy_find(struct device *dev, const char *con_id)
-+{
-+	const char *dev_id = dev ? dev_name(dev) : NULL;
-+	int match, best_found = 0, best_possible = 0;
-+	struct phy *phy = ERR_PTR(-ENODEV);
-+	struct phy_lookup *p, *pl = NULL;
-+
-+	if (dev_id)
-+		best_possible += 2;
-+	if (con_id)
-+		best_possible += 1;
-+
-+	list_for_each_entry(p, &phys, node) {
-+		match = 0;
-+		if (p->dev_id) {
-+			if (!dev_id || strcmp(p->dev_id, dev_id))
-+				continue;
-+			match += 2;
-+		}
-+		if (p->con_id) {
-+			if (!con_id || strcmp(p->con_id, con_id))
-+				continue;
-+			match += 1;
-+		}
-+
-+		if (match > best_found) {
-+			pl = p;
-+			if (match != best_possible)
-+				best_found = match;
-+			else
-+				break;
-+		}
-+	}
-+
-+	if (pl) {
-+		struct class_dev_iter iter;
-+		struct device *phy_dev;
-+
-+		class_dev_iter_init(&iter, phy_class, NULL, NULL);
-+		while ((phy_dev = class_dev_iter_next(&iter))) {
-+			if (!strcmp(dev_name(phy_dev), pl->phy_name)) {
-+				phy = to_phy(phy_dev);
-+				break;
-+			}
-+		}
-+		class_dev_iter_exit(&iter);
-+	}
-+
-+	/* fall-back to the old lookup method for now */
-+	if (IS_ERR(phy))
-+		phy = phy_lookup(dev, con_id);
-+	return phy;
-+}
-+
- static struct phy_provider *of_phy_provider_lookup(struct device_node *node)
- {
- 	struct phy_provider *phy_provider;
-@@ -439,7 +572,7 @@ struct phy *phy_get(struct device *dev, const char *string)
- 			string);
- 		phy = _of_phy_get(dev->of_node, index);
- 	} else {
--		phy = phy_lookup(dev, string);
-+		phy = phy_find(dev, string);
+diff --git a/drivers/net/ethernet/stmicro/stmmac/dwmac1000_dma.c b/drivers/net/ethernet/stmicro/stmmac/dwmac1000_dma.c
+index 0c2058a..f713ea7 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/dwmac1000_dma.c
++++ b/drivers/net/ethernet/stmicro/stmmac/dwmac1000_dma.c
+@@ -39,11 +39,11 @@ static int dwmac1000_dma_init(void __iomem *ioaddr, int pbl, int fb, int mb,
+ 	/* DMA SW reset */
+ 	value |= DMA_BUS_MODE_SFT_RESET;
+ 	writel(value, ioaddr + DMA_BUS_MODE);
+-	limit = 10;
++	limit = 100;
+ 	while (limit--) {
+ 		if (!(readl(ioaddr + DMA_BUS_MODE) & DMA_BUS_MODE_SFT_RESET))
+ 			break;
+-		mdelay(10);
++		msleep(25);
  	}
- 	if (IS_ERR(phy))
- 		return phy;
-diff --git a/include/linux/phy/phy.h b/include/linux/phy/phy.h
-index 10d9714..09348a7 100644
---- a/include/linux/phy/phy.h
-+++ b/include/linux/phy/phy.h
-@@ -108,6 +108,20 @@ struct phy_init_data {
- 	.port		= _port,				\
- }
- 
-+struct phy_lookup {
-+	struct list_head node;
-+	const char *phy_name;
-+	const char *dev_id;
-+	const char *con_id;
-+};
-+
-+#define PHY_LOOKUP(a, b, c)	\
-+	{				\
-+		.phy_name = a,		\
-+		.dev_id = b,		\
-+		.con_id = c,		\
-+	}
-+
- #define	to_phy(a)	(container_of((a), struct phy, dev))
- 
- #define	of_phy_provider_register(dev, xlate)	\
-@@ -171,6 +185,10 @@ struct phy_provider *__devm_of_phy_provider_register(struct device *dev,
- void of_phy_provider_unregister(struct phy_provider *phy_provider);
- void devm_of_phy_provider_unregister(struct device *dev,
- 	struct phy_provider *phy_provider);
-+void phy_register_lookup(struct phy_lookup *pl);
-+void phy_unregister_lookup(struct phy_lookup *pl);
-+int phy_create_lookup(struct phy *phy, const char *con_id, const char *dev_id);
-+void phy_remove_lookup(struct phy *phy, const char *con_id, const char *dev_id);
- #else
- static inline int phy_pm_runtime_get(struct phy *phy)
- {
-@@ -338,6 +356,15 @@ static inline void devm_of_phy_provider_unregister(struct device *dev,
- 	struct phy_provider *phy_provider)
- {
- }
-+static inline void phy_register_lookup(struct phy_lookup *pl) { }
-+static inline void phy_unregister_lookup(struct phy_lookup *pl) { }
-+static inline int
-+phy_create_lookup(struct phy *phy, const char *con_id, const char *dev_id)
-+{
-+	return 0;
-+}
-+static inline void phy_remove_lookup(struct phy *phy, const char *con_id,
-+				     const char *dev_id) { }
- #endif
- 
- #endif /* __DRIVERS_PHY_H */
+ 	if (limit < 0)
+ 		return -EBUSY;
+diff --git a/drivers/net/ethernet/stmicro/stmmac/dwmac100_dma.c b/drivers/net/ethernet/stmicro/stmmac/dwmac100_dma.c
+index 7d1dce9..043585f 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/dwmac100_dma.c
++++ b/drivers/net/ethernet/stmicro/stmmac/dwmac100_dma.c
+@@ -41,11 +41,11 @@ static int dwmac100_dma_init(void __iomem *ioaddr, int pbl, int fb, int mb,
+ 	/* DMA SW reset */
+ 	value |= DMA_BUS_MODE_SFT_RESET;
+ 	writel(value, ioaddr + DMA_BUS_MODE);
+-	limit = 10;
++	limit = 100;
+ 	while (limit--) {
+ 		if (!(readl(ioaddr + DMA_BUS_MODE) & DMA_BUS_MODE_SFT_RESET))
+ 			break;
+-		mdelay(10);
++		msleep(25);
+ 	}
+ 	if (limit < 0)
+ 		return -EBUSY;
 -- 
-2.0.0.rc4
+1.9.3
 
