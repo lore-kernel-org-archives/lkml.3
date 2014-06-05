@@ -1,21 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754452AbaFEE61 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 00:58:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43889 "EHLO
+	id S1754480AbaFEE6n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 00:58:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43929 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752547AbaFEEUm (ORCPT
+	with ESMTP id S1752572AbaFEEUl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 00:20:42 -0400
+	Thu, 5 Jun 2014 00:20:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Libin <huawei.libin@huawei.com>, jiang.liu@huawei.com,
-        guohanjun@huawei.com, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>, Rui Xiang <rui.xiang@huawei.com>
-Subject: [PATCH 3.4 082/214] sched/debug: Fix sd->*_idx limit range avoiding overflow
-Date: Wed,  4 Jun 2014 21:17:25 -0700
-Message-Id: <20140605041650.602976532@linuxfoundation.org>
+        Victor Kaplansky <victork@il.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Michael Neuling <mikey@neuling.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Ben Hutchings <ben@decadent.org.uk>,
+        Rui Xiang <rui.xiang@huawei.com>, michael@ellerman.id.au,
+        anton@samba.org, benh@kernel.crashing.org
+Subject: [PATCH 3.4 079/214] perf: Fix perf ring buffer memory ordering
+Date: Wed,  4 Jun 2014 21:17:22 -0700
+Message-Id: <20140605041650.190495293@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -28,40 +34,112 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: libin <huawei.libin@huawei.com>
+From: Peter Zijlstra <peterz@infradead.org>
 
-commit fd9b86d37a600488dbd80fe60cca46b822bff1cd upstream.
+commit bf378d341e4873ed928dc3c636252e6895a21f50 upstream.
 
-Commit 201c373e8e ("sched/debug: Limit sd->*_idx range on
-sysctl") was an incomplete bug fix.
+The PPC64 people noticed a missing memory barrier and crufty old
+comments in the perf ring buffer code. So update all the comments and
+add the missing barrier.
 
-This patch fixes sd->*_idx limit range to [0 ~ CPU_LOAD_IDX_MAX-1]
-avoiding array overflow caused by setting sd->*_idx to CPU_LOAD_IDX_MAX
-on sysctl.
+When the architecture implements local_t using atomic_long_t there
+will be double barriers issued; but short of introducing more
+conditional barrier primitives this is the best we can do.
 
-Signed-off-by: Libin <huawei.libin@huawei.com>
-Cc: <jiang.liu@huawei.com>
-Cc: <guohanjun@huawei.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/51626610.2040607@huawei.com
+Reported-by: Victor Kaplansky <victork@il.ibm.com>
+Tested-by: Victor Kaplansky <victork@il.ibm.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+Cc: michael@ellerman.id.au
+Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Michael Neuling <mikey@neuling.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: anton@samba.org
+Cc: benh@kernel.crashing.org
+Link: http://lkml.kernel.org/r/20131025173749.GG19466@laptop.lan
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
+[bwh: Backported to 3.2: adjust filename]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Cc: Rui Xiang <rui.xiang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/sched/core.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/linux/perf_event.h  |   12 +++++++-----
+ kernel/events/ring_buffer.c |   31 +++++++++++++++++++++++++++----
+ 2 files changed, 34 insertions(+), 9 deletions(-)
 
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -5434,7 +5434,7 @@ static void sd_free_ctl_entry(struct ctl
- }
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -391,13 +391,15 @@ struct perf_event_mmap_page {
+ 	/*
+ 	 * Control data for the mmap() data buffer.
+ 	 *
+-	 * User-space reading the @data_head value should issue an rmb(), on
+-	 * SMP capable platforms, after reading this value -- see
+-	 * perf_event_wakeup().
++	 * User-space reading the @data_head value should issue an smp_rmb(),
++	 * after reading this value.
+ 	 *
+ 	 * When the mapping is PROT_WRITE the @data_tail value should be
+-	 * written by userspace to reflect the last read data. In this case
+-	 * the kernel will not over-write unread data.
++	 * written by userspace to reflect the last read data, after issueing
++	 * an smp_mb() to separate the data read from the ->data_tail store.
++	 * In this case the kernel will not over-write unread data.
++	 *
++	 * See perf_output_put_handle() for the data ordering.
+ 	 */
+ 	__u64   data_head;		/* head in the data section */
+ 	__u64	data_tail;		/* user-space written tail */
+--- a/kernel/events/ring_buffer.c
++++ b/kernel/events/ring_buffer.c
+@@ -75,10 +75,31 @@ again:
+ 		goto out;
  
- static int min_load_idx = 0;
--static int max_load_idx = CPU_LOAD_IDX_MAX;
-+static int max_load_idx = CPU_LOAD_IDX_MAX-1;
+ 	/*
+-	 * Publish the known good head. Rely on the full barrier implied
+-	 * by atomic_dec_and_test() order the rb->head read and this
+-	 * write.
++	 * Since the mmap() consumer (userspace) can run on a different CPU:
++	 *
++	 *   kernel				user
++	 *
++	 *   READ ->data_tail			READ ->data_head
++	 *   smp_mb()	(A)			smp_rmb()	(C)
++	 *   WRITE $data			READ $data
++	 *   smp_wmb()	(B)			smp_mb()	(D)
++	 *   STORE ->data_head			WRITE ->data_tail
++	 *
++	 * Where A pairs with D, and B pairs with C.
++	 *
++	 * I don't think A needs to be a full barrier because we won't in fact
++	 * write data until we see the store from userspace. So we simply don't
++	 * issue the data WRITE until we observe it. Be conservative for now.
++	 *
++	 * OTOH, D needs to be a full barrier since it separates the data READ
++	 * from the tail WRITE.
++	 *
++	 * For B a WMB is sufficient since it separates two WRITEs, and for C
++	 * an RMB is sufficient since it separates two READs.
++	 *
++	 * See perf_output_begin().
+ 	 */
++	smp_wmb();
+ 	rb->user_page->data_head = head;
  
- static void
- set_table_entry(struct ctl_table *entry,
+ 	/*
+@@ -142,9 +163,11 @@ int perf_output_begin(struct perf_output
+ 		 * Userspace could choose to issue a mb() before updating the
+ 		 * tail pointer. So that all reads will be completed before the
+ 		 * write is issued.
++		 *
++		 * See perf_output_put_handle().
+ 		 */
+ 		tail = ACCESS_ONCE(rb->user_page->data_tail);
+-		smp_rmb();
++		smp_mb();
+ 		offset = head = local_read(&rb->head);
+ 		head += size;
+ 		if (unlikely(!perf_output_space(rb, tail, offset, head)))
 
 
