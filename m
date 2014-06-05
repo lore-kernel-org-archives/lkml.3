@@ -1,74 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752088AbaFENmQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 09:42:16 -0400
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:38710 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751332AbaFENmP (ORCPT
+	id S1752119AbaFENmk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 09:42:40 -0400
+Received: from casper.infradead.org ([85.118.1.10]:52419 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751162AbaFENmj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 09:42:15 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140605132750.GA16811@pd.tnic>
+	Thu, 5 Jun 2014 09:42:39 -0400
+Date: Thu, 5 Jun 2014 15:42:35 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, ak@linux.intel.com,
+        jolsa@redhat.com, zheng.z.yan@intel.com,
+        maria.n.dimakopoulou@gmail.com
+Subject: Re: [PATCH 5/9] perf/x86: implement cross-HT corruption bug
+ workaround
+Message-ID: <20140605134235.GK3213@twins.programming.kicks-ass.net>
 References: <1401917658-26065-1-git-send-email-eranian@google.com>
-	<1401917658-26065-10-git-send-email-eranian@google.com>
-	<CADknwL5S8QpzCAgrKHjbGTbEx7nA8L=Vu8d-UWAYCg6X25OcGw@mail.gmail.com>
-	<CABPqkBSimH8Ob_q3dDtQiW_OwuS9nA4Gsx87H26ywNcmYd38Xw@mail.gmail.com>
-	<CADknwL6s2ttb5E2JDr6bc_XkwpxnW5ecU-3Ns88=gvgPvLYkPg@mail.gmail.com>
-	<CABPqkBQUUb+yEvC8y3oLc0DUbF3DJPzbt3sNL7Zqzufh6EYdRw@mail.gmail.com>
-	<CADknwL71NC5wBG1tnqgJ6iiA4y+HYomGpufOn7V+MP2=m7+Mig@mail.gmail.com>
-	<CABPqkBTEafZ5MbYM4UQxX92uWcPiphPeXMoJRKTt8jnrB+5j2w@mail.gmail.com>
-	<20140605132750.GA16811@pd.tnic>
-Date: Thu, 5 Jun 2014 15:42:14 +0200
-Message-ID: <CABPqkBT9ExD4unz0VZ5G1d+oGpkepiwXskgBpv5GTavs=tYAKA@mail.gmail.com>
-Subject: Re: [PATCH 9/9] perf/x86: add syfs entry to disable HT bug workaround
-From: Stephane Eranian <eranian@google.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Matt Fleming <matt@console-pimps.org>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Jiri Olsa <jolsa@redhat.com>, "Yan, Zheng" <zheng.z.yan@intel.com>,
-        Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+ <1401917658-26065-6-git-send-email-eranian@google.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="9RxwyT9MtfFuvYYZ"
+Content-Disposition: inline
+In-Reply-To: <1401917658-26065-6-git-send-email-eranian@google.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 5, 2014 at 3:27 PM, Borislav Petkov <bp@alien8.de> wrote:
-> On Thu, Jun 05, 2014 at 02:02:51PM +0200, Stephane Eranian wrote:
->> It is enabled by default. Nothing is done to try and disable it later
->> even once the kernel is fully booted. So this is mostly for testing
->> and power-users.
->
-> You keep saying "power-users". What is the disadvantage for power users
-> running with the workaround disabled? I.e., why would anyone want to
-> disable it at all, what is the use case for that?
->
-I gave a test case earlier:
 
-# echo 0 >/proc/sys/kernel/nmi_watchdog
-# run_my_uniform_workload_on_all_cpus &
-# perf stat -a -e r81d0,r01d1,r08d0,r20d1 sleep 5
+--9RxwyT9MtfFuvYYZ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-That run gives the correct answer.
+On Wed, Jun 04, 2014 at 11:34:14PM +0200, Stephane Eranian wrote:
+> +static void intel_commit_scheduling(struct cpu_hw_events *cpuc,
+> +				    struct perf_event *event, int cntr)
+> +{
+> +	struct intel_excl_cntrs *excl_cntrs = cpuc->excl_cntrs;
+> +	struct event_constraint *c = event->hw.constraint;
+> +	struct intel_excl_states *xlo, *xl;
+> +	int tid = cpuc->excl_thread_id;
+> +	int o_tid = 1 - tid;
+> +	int is_excl;
+> +
+> +	if (cpuc->is_fake || !c)
+> +		return;
+> +
+> +	is_excl = c->flags & PERF_X86_EVENT_EXCL;
+> +
+> +	if (!(c->flags & PERF_X86_EVENT_DYNAMIC))
+> +		return;
+> +
+> +	WARN_ON_ONCE(!excl_cntrs);
+> +
+> +	if (!excl_cntrs)
+> +		return;
+> +
+> +	xl = &excl_cntrs->states[tid];
+> +	xlo = &excl_cntrs->states[o_tid];
+> +
+> +	WARN_ON_ONCE(!spin_is_locked(&excl_cntrs->lock));
 
-If I just look at CPU0 CPU4 siblings:
+Use:
+	lockdep_assert_held(&excl_cntrs->lock);
 
-CPU0, counter0 leaks N counts to CPU4, counter 0
+It also checks to see the current context is actually the lock holder,
+and it doesn't generate any code when !lockdep.
 
-but at the same time:
+> +
+> +	if (cntr >= 0) {
+> +		if (is_excl)
+> +			xlo->init_state[cntr] = INTEL_EXCL_EXCLUSIVE;
+> +		else
+> +			xlo->init_state[cntr] = INTEL_EXCL_SHARED;
+> +	}
+>  }
 
-CPU4, counter0 leaks N counts to CPU0, counter 0
+--9RxwyT9MtfFuvYYZ
+Content-Type: application/pgp-signature
 
-This is because we have the same event in the same
-counter AND the workload is uniform, meaning the
-event (here loads retired) occurs at the same rate
-on both siblings.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-You can test this by measuring only on one HT.
-# perf stat -a -C0 -e r81d0,r01d1,r08d0,r20d1 sleep 5
+iQIcBAEBAgAGBQJTkHPLAAoJEHZH4aRLwOS6LvYP/3/bhVXzWfflA42gqQe3i+Tz
+x7pnTOfsL0KEzq0bWSizsGXMYXOvlFUs1hLbeJpc94kdJjV/J1bIVchJPWCVHz1I
+ms8PBSqQ+L0i6K2/l/JqeQOfGVK6Vp7Ddw3zVGJrH6rVn8j+utcN7xTZ5VwsdJNd
+EiD1E+wzlWgrDg0IouQmkkn0S6ne3Yo6PPmzKEKPNOAVegdl1G8Pmx2rL1N6dQC5
+tOl1CsqohS12eyMfvFVsOY6cuvLJzgZObu5UlynnlhRlqyNRFCyjgT8VpJclBvld
+0mOalOkSz5wG1SPmn7YeZx8Fak1/PGvqOy9uwTI8qEnq1SXrjZHQ++zUn/iZtQW9
+ooq6nKsCHB11j/v4vxxcASShP2J4udl+x9NLTkEPpMz5bnme2SjFqmU9OEmPITLt
+wjjVF0XTBSE3h0AlLaDazfNQ9CVhMAB7Czp8lPlT7LRstHDdIcPf9AMiH8MQjvxk
+VcOOI46DTSIaM09q0APmGTYxUQNQJ/eYJxoQszHywbvvdtpiTam8OMTLd1RoIxvB
+dFp/zrMEYnp303zHeO5YzjIVgH/TpQiDxA6W9q8FS0Dqvn4311+13i/My1wLgYos
+wY2KQD4XcwA2o0iipljRa8JKaBdFW6gVROvRntMMpA6jxiNHEEPLSZS7LYjwJOIW
+EDZ0fJCWB8Z9YtiZ2jgR
+=2gqq
+-----END PGP SIGNATURE-----
 
-Note that some events, leak more than they count.
-
-Again, this is really for experts. The average users
-should not have to deal with this. So we can drop
-the sysfs entry.
+--9RxwyT9MtfFuvYYZ--
