@@ -1,44 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752529AbaFEVi1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 17:38:27 -0400
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:63581 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751651AbaFEVi0 (ORCPT
+	id S1752645AbaFEVii (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 17:38:38 -0400
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:58377 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751651AbaFEVif (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 17:38:26 -0400
+	Thu, 5 Jun 2014 17:38:35 -0400
+Date: Thu, 5 Jun 2014 14:38:32 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Vlastimil Babka <vbabka@suse.cz>
+cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan@kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
+Subject: Re: [RFC PATCH 6/6] mm, compaction: don't migrate in blocks that
+ cannot be fully compacted in async direct compaction
+In-Reply-To: <53908F10.4020603@suse.cz>
+Message-ID: <alpine.DEB.2.02.1406051431030.18119@chino.kir.corp.google.com>
+References: <alpine.DEB.2.02.1405211954410.13243@chino.kir.corp.google.com> <1401898310-14525-1-git-send-email-vbabka@suse.cz> <1401898310-14525-6-git-send-email-vbabka@suse.cz> <alpine.DEB.2.02.1406041705140.22536@chino.kir.corp.google.com>
+ <53908F10.4020603@suse.cz>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <20140605213354.GD16855@tassilo.jf.intel.com>
-References: <1401917658-26065-1-git-send-email-eranian@google.com>
-	<1401917658-26065-5-git-send-email-eranian@google.com>
-	<20140605082935.GI3213@twins.programming.kicks-ass.net>
-	<20140605213354.GD16855@tassilo.jf.intel.com>
-Date: Thu, 5 Jun 2014 23:38:26 +0200
-Message-ID: <CABPqkBTbt+ro+G0JLQEjLSubWZC7pz1X=qTQetK-i_KBp_D6Gg@mail.gmail.com>
-Subject: Re: [PATCH 4/9] perf/x86: add cross-HT counter exclusion infrastructure
-From: Stephane Eranian <eranian@google.com>
-To: Andi Kleen <ak@linux.intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-        "mingo@elte.hu" <mingo@elte.hu>, Jiri Olsa <jolsa@redhat.com>,
-        "Yan, Zheng" <zheng.z.yan@intel.com>,
-        Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 5, 2014 at 11:33 PM, Andi Kleen <ak@linux.intel.com> wrote:
->> This hard assumes theres only ever 2 threads, which is true and I
->> suppose more in arch/x86 will come apart the moment Intel makes a chip
->> with more, still, do we have topology_thread_id() or so to cure this?
->
->
-> Xeon Phi already has 4 threads today.
->
-Yes, but it does not have that bug (hopefully). This code is just for
-the impacted processors.
+On Thu, 5 Jun 2014, Vlastimil Babka wrote:
 
-> -Andi
->
-> --
-> ak@linux.intel.com -- Speaking for myself only
+> > Ok, so this obsoletes my patchseries that did something similar.  I hope
+> 
+> Your patches 1/3 and 2/3 would still make sense. Checking alloc flags is IMHO
+> better than checking async here. That way, hugepaged and kswapd would still
+> try to migrate stuff which is important as Mel described in the reply to your
+> 3/3.
+> 
+
+Would you mind folding those two patches into your series since you'll be 
+requiring the gfp_mask in struct compact_control and your pageblock skip 
+is better than mine?
+
+> > you can rebase this set on top of linux-next and then propose it formally
+> > without the RFC tag.
+> 
+> I posted this early to facilitate discussion, but if you want to test on
+> linux-next then sure.
+> 
+
+I'd love to test these.
+
+> > We also need to discuss the scheduling heuristics, the reliance on
+> > need_resched(), to abort async compaction.  In testing, we actualy
+> > sometimes see 2-3 pageblocks scanned before terminating and thp has a very
+> > little chance of being allocated.  At the same time, if we try to fault
+> > 64MB of anon memory in and each of the 32 calls to compaction are
+> > expensive but don't result in an order-9 page, we see very lengthy fault
+> > latency.
+> 
+> Yes, I thought you were about to try the 1GB per call setting. I don't
+> currently have a test setup like you. My patch 1/6 still uses on
+> need_resched() but that could be replaced with a later patch.
+> 
+
+Agreed.  I was thinking higher than 1GB would be possible once we have 
+your series that does the pageblock skip for thp, I think the expense 
+would be constant because we won't needlessly be migrating pages unless it 
+has a good chance at succeeding.  I'm slightly concerned about the 
+COMPACT_CLUSTER_MAX termination, though, before we find unmigratable 
+memory but I think that will be very low probability.
+
+> > I think it would be interesting to consider doing async compaction
+> > deferral up to 1 << COMPACT_MAX_DEFER_SHIFT after a sysctl-configurable
+> > amount of memory is scanned, at least for thp, and remove the scheduling
+> > heuristic entirely.
+> 
+> That could work. How about the lock contention heuristic? Is it possible on a
+> large and/or busy system to compact anything substantional without hitting the
+> lock contention? Are your observations about too early abort based on
+> need_resched() or lock contention?
+> 
+
+Eek, it's mostly need_resched() because we don't use zone->lru_lock, we 
+have the memcg lruvec locks for lru locking.  We end up dropping and 
+reacquiring different locks based on the memcg of the page being isolated 
+quite a bit.
+
+This does beg the question about parallel direct compactors, though, that 
+will be contending on the same coarse zone->lru_lock locks and immediately 
+aborting and falling back to PAGE_SIZE pages for thp faults that will be 
+more likely if your patch to grab the high-order page and return it to the 
+page allocator is merged.
