@@ -1,158 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752473AbaFEPe7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 11:34:59 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:36897 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751162AbaFEPe6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 11:34:58 -0400
-Date: Thu, 5 Jun 2014 16:33:53 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Yi Li <yi.li@linaro.org>
-Cc: "ard.biesheuvel@linaro.org" <ard.biesheuvel@linaro.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>, Sudeep Holla <Sudeep.Holla@arm.com>,
-        "steve.capper@linaro.org" <steve.capper@linaro.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "phoenix.liyi@huawei.com" <phoenix.liyi@huawei.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] ARM64:DMI: Add smbios/dmi support on arm64
-Message-ID: <20140605153353.GC31564@leverpostej>
-References: <1401811033-16478-1-git-send-email-yi.li@linaro.org>
- <20140604133200.GA4329@leverpostej>
- <538F34D0.5090905@linaro.org>
+	id S1751962AbaFEPjE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 11:39:04 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35479 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750860AbaFEPjC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jun 2014 11:39:02 -0400
+Message-ID: <53908F10.4020603@suse.cz>
+Date: Thu, 05 Jun 2014 17:38:56 +0200
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <538F34D0.5090905@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: David Rientjes <rientjes@google.com>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan@kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
+Subject: Re: [RFC PATCH 6/6] mm, compaction: don't migrate in blocks that
+ cannot be fully compacted in async direct compaction
+References: <alpine.DEB.2.02.1405211954410.13243@chino.kir.corp.google.com> <1401898310-14525-1-git-send-email-vbabka@suse.cz> <1401898310-14525-6-git-send-email-vbabka@suse.cz> <alpine.DEB.2.02.1406041705140.22536@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.02.1406041705140.22536@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 04, 2014 at 04:01:36PM +0100, Yi Li wrote:
-> Hi Mark,
-> 
->      Please see the comments below:
-> 
-> On Wednesday, June 04, 2014 09:32 PM, Mark Rutland wrote:
-> > On Tue, Jun 03, 2014 at 04:57:13PM +0100, Yi Li wrote:
-> >> Add smbios/dmi support on arm64 system, it depends on
-> >> EFI boot.
-> > And what exactly does this provide us with?
-> >
-> > What is exposed through SMBIOS/DMI, and why would I want to enable it?
-> Yi: SMBIOS/DMI is one basic spec/feature for server product(like x86 and 
-> IA64).
->       Many OEMs/ODMs hope to use ARM64 as server's processor.
->       So we need to support SMBIOS on ARM64.
-> 
->      SMBIOS mainly describes some hardware and software information for 
-> the system, like BIOS information
->      CPU information,  Memory information ,and so on. please refer to 
-> http://www.dmtf.org/standards/smbios
+On 06/05/2014 02:08 AM, David Rientjes wrote:
+> On Wed, 4 Jun 2014, Vlastimil Babka wrote:
+>
+>> In direct compaction, we want to allocate the high-order page as soon as
+>> possible, so migrating from a block of pages that contains also unmigratable
+>> pages just adds to allocation latency.
+>>
+>
+> The title of the patch in the subject line should probably be reworded
+> since it implies we never isolate from blocks that cannot become
+> completely free and what you're really doing is skipping cc->order aligned
+> pages.
+>
+>> This patch therefore makes the migration scanner skip to the next cc->order
+>> aligned block of pages as soon as it cannot isolate a non-free page. Everything
+>> isolated up to that point is put back.
+>>
+>> In this mode, the nr_isolated limit to COMPACT_CLUSTER_MAX is not observed,
+>> allowing the scanner to scan the whole block at once, instead of migrating
+>> COMPACT_CLUSTER_MAX pages and then finding an unmigratable page in the next
+>> call. This might however have some implications on too_many_isolated.
+>>
+>> Also in this RFC PATCH, the "skipping mode" is tied to async migration mode,
+>> which is not optimal. What we most probably want is skipping in direct
+>> compactions, but not from kswapd and hugepaged.
+>>
+>> In very preliminary tests, this has reduced migrate_scanned, isolations and
+>> migrations by about 10%, while the success rate of stress-highalloc mmtests
+>> actually improved a bit.
+>>
+>
+> Ok, so this obsoletes my patchseries that did something similar.  I hope
 
-What information does it provide that is useful that we cannot get from
-elsewhere?
+Your patches 1/3 and 2/3 would still make sense. Checking alloc flags is 
+IMHO better than checking async here. That way, hugepaged and kswapd 
+would still try to migrate stuff which is important as Mel described in 
+the reply to your 3/3.
 
-What use case is enabled by having this support, other than being able
-to tick a box that we have a feature we might not even need?
+> you can rebase this set on top of linux-next and then propose it formally
+> without the RFC tag.
 
-> 
-> >
-> >> Signed-off-by: Yi Li <yi.li@linaro.org>
-> >> ---
-> >>
-> >> Changes since v1:
-> >>    -Followed Ard Biesheuvel's suggestion to rebase the patch on
-> >>     Matt Fleming's arm64-efi branch.
-> >>
-> >>   arch/arm64/Kconfig           |   10 ++++++++++
-> >>   arch/arm64/include/asm/dmi.h |   28 ++++++++++++++++++++++++++++
-> >>   arch/arm64/kernel/setup.c    |    2 ++
-> >>   3 files changed, 40 insertions(+)
-> >>   create mode 100644 arch/arm64/include/asm/dmi.h
-> >>
-> >> diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-> >> index 6c71f12..13ee261 100644
-> >> --- a/arch/arm64/Kconfig
-> >> +++ b/arch/arm64/Kconfig
-> >> @@ -294,6 +294,16 @@ config EFI
-> >>   	  allow the kernel to be booted as an EFI application. This
-> >>   	  is only useful on systems that have UEFI firmware.
-> >>   
-> >> +config DMI
-> >> +	bool "Enable support for SMBIOS (DMI) tables"
-> >> +	depends on EFI
-> >> +	default y
-> >> +	help
-> >> +	  This enables SMBIOS/DMI feature for systems.
-> >> +
-> >> +	  This option is only useful on systems that have UEFI firmware.
-> >> +	  However, even with this option, the resultant kernel should
-> >> +	  continue to boot on existing non-UEFI platforms.
-> >>   endmenu
-> >>   
-> >>   menu "Userspace binary formats"
-> >> diff --git a/arch/arm64/include/asm/dmi.h b/arch/arm64/include/asm/dmi.h
-> >> new file mode 100644
-> >> index 0000000..f2198bf
-> >> --- /dev/null
-> >> +++ b/arch/arm64/include/asm/dmi.h
-> >> @@ -0,0 +1,28 @@
-> >> +/*
-> >> + * arch/arm64/include/asm/dmi.h
-> >> + *
-> >> + * Copyright (C) 2013 Linaro Limited.
-> >> + * Written by: Yi Li (yi.li@linaro.org)
-> >> + *
-> >> + * based on arch/ia64/include/asm/dmi.h
-> >> + *
-> >> + * This file is subject to the terms and conditions of the GNU General Public
-> >> + * License.  See the file "COPYING" in the main directory of this archive
-> >> + * for more details.
-> >> + */
-> >> +
-> >> +
-> >> +#ifndef _ASM_DMI_H
-> >> +#define _ASM_DMI_H 1
-> >> +
-> >> +#include <linux/slab.h>
-> >> +#include <asm/io.h>
-> > Shouldn't that be linux/efi.h?
-> >
-> > Why do we need asm/io.h?
->      Yi: porting it from IA64 , so the io.h is not needed exactly!
->           but slab.h is must included ,not efi.h (tested by compiling)
+I posted this early to facilitate discussion, but if you want to test on 
+linux-next then sure.
 
-Below you refer to efi_lookup_mapped_addr, which (as far as I can tell)
-is defined in efi.h. You might be getting lucky with users of
-dmi_early_remap and dmi_remap having already incldued efi.h, but you
-shouldn't rely on it.
+> We also need to discuss the scheduling heuristics, the reliance on
+> need_resched(), to abort async compaction.  In testing, we actualy
+> sometimes see 2-3 pageblocks scanned before terminating and thp has a very
+> little chance of being allocated.  At the same time, if we try to fault
+> 64MB of anon memory in and each of the 32 calls to compaction are
+> expensive but don't result in an order-9 page, we see very lengthy fault
+> latency.
 
-If you make use of something, you should include the header that defines
-it.
+Yes, I thought you were about to try the 1GB per call setting. I don't 
+currently have a test setup like you. My patch 1/6 still uses on 
+need_resched() but that could be replaced with a later patch.
 
-Cheers,
-Mark.
+> I think it would be interesting to consider doing async compaction
+> deferral up to 1 << COMPACT_MAX_DEFER_SHIFT after a sysctl-configurable
+> amount of memory is scanned, at least for thp, and remove the scheduling
+> heuristic entirely.
 
-> >> +
-> >> +/* Use efi mappings for DMI */
-> >> +#define dmi_early_remap(x, l)	efi_lookup_mapped_addr(x)
-> >> +#define dmi_early_unmap(x, l)
-> >> +#define dmi_remap(x, l)			efi_lookup_mapped_addr(x)
-> >> +#define dmi_unmap(x)
-> >> +#define dmi_alloc(l)			kzalloc(l, GFP_ATOMIC)
-> >> +
-> >> +#endif
-> > None of these seem to use anything from io.h directly.
->      Yi: You are right , io.h doesn't need.
-> > Cheers,
-> > Mark.
-> 
-> 
+That could work. How about the lock contention heuristic? Is it possible 
+on a large and/or busy system to compact anything substantional without 
+hitting the lock contention? Are your observations about too early abort 
+based on need_resched() or lock contention?
+
+Vlastimil
