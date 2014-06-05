@@ -1,181 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751726AbaFELMM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 07:12:12 -0400
-Received: from mail-ig0-f180.google.com ([209.85.213.180]:47627 "EHLO
-	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751140AbaFELMK (ORCPT
+	id S1751790AbaFELNf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 07:13:35 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:36358 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751152AbaFELNd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 07:12:10 -0400
-Date: Thu, 5 Jun 2014 07:12:05 -0400
-From: Matt Porter <mporter@linaro.org>
-To: Jassi Brar <jaswinder.singh@linaro.org>
-Cc: Sudeep Holla <sudeep.holla@arm.com>, Jassi Brar <jassisinghbrar@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>, lkml <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Anna, Suman" <s-anna@ti.com>, Loic Pallardy <loic.pallardy@st.com>,
-        LeyFoon Tan <lftan.linux@gmail.com>,
-        Craig McGeachie <slapdau@yahoo.com.au>,
-        Courtney Cavin <courtney.cavin@sonymobile.com>,
-        Rob Herring <robherring2@gmail.com>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Kumar Gala <galak@codeaurora.org>,
-        "ks.giri@samsung.com" <ks.giri@samsung.com>,
-        Devicetree List <devicetree@vger.kernel.org>
-Subject: Re: [PATCHv5 2/4] mailbox: Introduce framework for mailbox
-Message-ID: <20140605111205.GD32082@beef>
-References: <1400134105-3847-1-git-send-email-jaswinder.singh@linaro.org>
- <1400134260-3962-1-git-send-email-jaswinder.singh@linaro.org>
- <7978295.UBGxYvcnvH@wuerfel>
- <CAJe_Zhe_VFTpPW0sKBsqit347MR7QmEDvzvQTyh1DWr3v991tg@mail.gmail.com>
- <20140529154348.GH32082@beef>
- <CABb+yY2PiGpqy2uevCFexAKeS4aZxJxZHEDJTRN1SW6VVjBzGQ@mail.gmail.com>
- <20140602151454.GK32082@beef>
- <CABb+yY3ZYqtT+R0PwZDtpW0O0SsbxTyiYmXaseZHoj4Nr6UBPQ@mail.gmail.com>
- <CAPKp9uZTnWCojeZHyvrm=vTuY15dAHiW1CWP18JUfuKU-mfH0Q@mail.gmail.com>
- <CAJe_ZheA_2PwzFGwx2rdba0oVsAKRnwK02XE-8nPY6K5NKpdTw@mail.gmail.com>
+	Thu, 5 Jun 2014 07:13:33 -0400
+Date: Thu, 5 Jun 2014 12:13:28 +0100
+From: Peter Griffin <peter.griffin@linaro.org>
+To: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
+Cc: mturquette@linaro.org, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, devicetree@vger.kernel.org, kernel@stlinux.com,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Gabriel Fernandez <gabriel.fernandez@linaro.org>,
+        Lee Jones <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org
+Subject: Re: [STLinux Kernel] [PATCH RESEND 11/12] drivers: clk: st: Update
+ frequency tables for fs660c32 and fs432c65
+Message-ID: <20140605111328.GA11244@griffinp-ThinkPad-X1-Carbon-2nd>
+References: <1401892320-18211-1-git-send-email-gabriel.fernandez@linaro.org>
+ <1401892320-18211-12-git-send-email-gabriel.fernandez@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAJe_ZheA_2PwzFGwx2rdba0oVsAKRnwK02XE-8nPY6K5NKpdTw@mail.gmail.com>
+In-Reply-To: <1401892320-18211-12-git-send-email-gabriel.fernandez@linaro.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 03, 2014 at 03:51:55PM +0530, Jassi Brar wrote:
-> On 3 June 2014 15:05, Sudeep Holla <sudeep.holla@arm.com> wrote:
-> > Hi Jassi,
-> >
-> > On Mon, Jun 2, 2014 at 6:11 PM, Jassi Brar <jassisinghbrar@gmail.com> wrote:
-> >> On Mon, Jun 2, 2014 at 8:44 PM, Matt Porter <mporter@linaro.org> wrote:
-> >>> On Fri, May 30, 2014 at 11:01:55AM +0530, Jassi Brar wrote:
-> >>>
-> >>>>  Being more specific to your platform, I think you need some server
-> >>>> code (mailbox's client) that every driver (like clock, pmu, pinmux
-> >>>> etc) registers with to send messages to remote and receive commands
-> >>>> from remote ... perhaps by registering some filter to sort out
-> >>>> messages for each driver.
-> >>>
-> >>> Right, and here's where you hit on the problem. This server you mention
-> >>> is not a piece of hardware, it would be a software construct. As such, it
-> >>> doesn't fit into the DT binding as it exists. It's probably best to
-> >>> illustrate in DT syntax.
-> >>>
-> >>> If I were to represent the hardware relationship in the DT binding now
-> >>> it would look like this:
-> >>>
-> >>> ---
-> >>> cpm: mailbox@deadbeef {
-> >>>         compatible = "brcm,bcm-cpm-mailbox";
-> >>>         reg = <...>;
-> >>>         #mbox-cells <1>;
-> >>>         interrupts = <...>;
-> >>> };
-> >>>
-> >>> /* clock complex */
-> >>> ccu {
-> >>>         compatible = "brcm,bcm-foo-ccu";
-> >>>         mbox = <&cpm CPM_SYSTEM_CHANNEL>;
-> >>>         mbox-names = "system";
-> >>>         /* leaving out other mailboxes for brevity */
-> >>>         #clock-cells <1>;
-> >>>         clock-output-names = "bar",
-> >>>                              "baz";
-> >>> };
-> >>>
-> >>> pmu {
-> >>>         compatible = "brcm,bcm-foo-pmu"
-> >>>         mbox = <&cpm CPM_SYSTEM_CHANNEL>;
-> >>>         mbox-names = "system";
-> >>> };
-> >>>
-> >>> pinmux {
-> >>>         compatible = "brcm,bcm-foo-pinctrl";
-> >>>         mbox = <&cpm CPM_SYSTEM_CHANNEL>;
-> >>>         mbox-names = "system";
-> >>> };
-> >>> ---
-> >> Yeah, I too don't think its a good idea.
-> >>
-> >>
-> >>> What we would need to do is completely ignore this information in each
-> >>> of the of the client drivers associated with the clock, pmu, and pinmux
-> >>> devices. This IPC server would need to be instantiated and get the
-> >>> mailbox information from some source. mbox_request_channel() only works
-> >>> when the client has an of_node with the mbox-names property present.
-> >>> Let's say we follow this model and represent it in DT:
-> >>>
-> >>> --
-> >>> cpm: mailbox@deadbeef {
-> >>>         compatible = "brcm,bcm-cpm-mailbox";
-> >>>         reg = <...>;
-> >>>         #mbox-cells <1>;
-> >>>         interrupts = <...>;
-> >>> };
-> >>>
-> >>> cpm_ipc {
-> >>>         compatible = "brcm,bcm-cpm-ipc";
-> >>>         mbox = <&cpm CPM_SYSTEM_CHANNEL>;
-> >>>         mbox-names = "system";
-> >>>         /* leaving out other mailboxes for brevity */
-> >>> };
-> >>> ---
-> >>>
-> >>> This would allow an ipc driver to exclusively own this system channel,
-> >>> but now we've invented a binding that doesn't reflect the hardware at
-> >>> all. It's describing software so I don't believe the DT maintainers will
-> >>> allow this type of construct.
-> >>>
-> >> Must the server node specify MMIO and an IRQ, to be acceptable? Like ...
-> >>
-> >> cpm_ipc : cpm@deadbeef {
-> >>          compatible = "brcm,bcm-cpm-ipc";
-> >>        /*  reg = <0xdeadbeef 0x100>; */
-> >>        /*  interrupts = <0 123 4>;  */
-> >>          mbox = <&cpm CPM_SYSTEM_CHANNEL>;
-> >>          mbox-names = "system";
-> >> };
-> >>
-> >> cpm_ipc already specifies a hardware resource (mbox) that its driver
-> >> needs, I think that should be enough reason. If it were some purely
-> >> soft property for the driver like
-> >>       mode = "poll";  //or "irq"
-> >> then the node wouldn't be justified because that is the job of a
-> >> build-time config or run-time module option.
-> >>
-> >
-> > Like Matt, I am also in similar situation where there's a lot of common
-> > code necessary to construct/parse IPCs for each of the drivers using the
-> > mailbox.
-> >
-> > As per your suggestion if we have single DT node to specify both the
-> > controller and the client, we might still have to pollute this node with
-> > software specific compatibles.
-> >
-> I am afraid you misunderstood me. I don't suggest single node for
-> mailbox controller and client, and IIUC, neither did Matt. Please note
-> the controller is cpm and client is cpm_ipc.
+Hi Gabi,
 
-Correct, I had separate controller and consumer nodes as written
-above...to match the binding.
+See my comment below
 
-> BTW, here we at least have a hardware resource to specify in the DT
-> node, there are examples in kernel where the DT nodes are purely
-> virtual. For ex, grep for "linux,spdif-dit". So I think we should be
-> ok.
+On Wed, 04 Jun 2014, Gabriel FERNANDEZ wrote:
+
+> This patch extend the range of possible frequencies of the fs432c65
+> and fs660c32 Quad frequency synthesizers.
 > 
+> Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
+> ---
+>  drivers/clk/st/clkgen-fsyn.c | 65 ++++++++++++++++++++++++++++++++++++++------
+>  1 file changed, 57 insertions(+), 8 deletions(-)
+> 
+> diff --git a/drivers/clk/st/clkgen-fsyn.c b/drivers/clk/st/clkgen-fsyn.c
+> index d7a0341..97a422f 100644
+> --- a/drivers/clk/st/clkgen-fsyn.c
+> +++ b/drivers/clk/st/clkgen-fsyn.c
+> @@ -50,17 +50,66 @@ static struct stm_fs fs216c65_rtbl[] = {
+>  };
+>  
+>  static struct stm_fs fs432c65_rtbl[] = {
+> -	{ .mdiv = 0x1f, .pe = 0x0,	.sdiv = 0x7,	.nsdiv = 0 },	/* 625   Khz */
+> -	{ .mdiv = 0x11, .pe = 0x1c72,	.sdiv = 0x2,	.nsdiv = 1 },	/* 108   MHz */
+> -	{ .mdiv = 0x19, .pe = 0x121a,	.sdiv = 0x0,	.nsdiv = 1 },	/* 297   MHz */
+> +	{ .mdiv = 0x1f, .pe = 0x0,	.sdiv = 0x7,	.nsdiv = 0 },	/* 625     Khz */
+> +	{ .mdiv = 0x13, .pe = 0x777c,	.sdiv = 0x4,	.nsdiv = 1 },	/* 25.175  MHz */
+> +	{ .mdiv = 0x19, .pe = 0x4d35,	.sdiv = 0x2,	.nsdiv = 0 },	/* 25.200  MHz */
+> +	{ .mdiv = 0x11, .pe = 0x1c72,	.sdiv = 0x4,	.nsdiv = 1 },	/* 27.000  MHz */
+> +	{ .mdiv = 0x17, .pe = 0x28f5,	.sdiv = 0x2,	.nsdiv = 0 },	/* 27.027  MHz */
+> +	{ .mdiv = 0x16, .pe = 0x3359,	.sdiv = 0x2,	.nsdiv = 0 },	/* 28.320  MHz */
+> +	{ .mdiv = 0x1f, .pe = 0x2083,	.sdiv = 0x3,	.nsdiv = 1 },	/* 30.240  MHz */
+> +	{ .mdiv = 0x1e, .pe = 0x430d,	.sdiv = 0x3,	.nsdiv = 1 },	/* 31.500  MHz */
+> +	{ .mdiv = 0x17, .pe = 0x0,	.sdiv = 0x3,	.nsdiv = 1 },	/* 40.000  MHz */
+> +	{ .mdiv = 0x19, .pe = 0x121a,	.sdiv = 0x1,	.nsdiv = 0 },	/* 49.500  MHz */
+> +	{ .mdiv = 0x13, .pe = 0x6667,	.sdiv = 0x3,	.nsdiv = 1 },	/* 50.000  MHz */
+> +	{ .mdiv = 0x10, .pe = 0x1ee6,	.sdiv = 0x3,	.nsdiv = 1 },	/* 57.284  MHz */
+> +	{ .mdiv = 0x1d, .pe = 0x3b14,	.sdiv = 0x2,	.nsdiv = 1 },	/* 65.000  MHz */
+> +	{ .mdiv = 0x12, .pe = 0x7c65,	.sdiv = 0x1,	.nsdiv = 0 },	/* 71.000  MHz */
+> +	{ .mdiv = 0x19, .pe = 0xecd,	.sdiv = 0x2,	.nsdiv = 1 },	/* 74.176  MHz */
+> +	{ .mdiv = 0x19, .pe = 0x121a,	.sdiv = 0x2,	.nsdiv = 1 },	/* 74.250  MHz */
+> +	{ .mdiv = 0x19, .pe = 0x3334,	.sdiv = 0x2,	.nsdiv = 1 },	/* 75.000  MHz */
+> +	{ .mdiv = 0x18, .pe = 0x5138,	.sdiv = 0x2,	.nsdiv = 1 },	/* 78.800  MHz */
+> +	{ .mdiv = 0x1d, .pe = 0x77d,	.sdiv = 0x0,	.nsdiv = 0 },	/* 85.500  MHz */
+> +	{ .mdiv = 0x1c, .pe = 0x13d5,	.sdiv = 0x0,	.nsdiv = 0 },	/* 88.750  MHz */
+> +	{ .mdiv = 0x11, .pe = 0x1c72,	.sdiv = 0x2,	.nsdiv = 1 },	/* 108.000 MHz */
+> +	{ .mdiv = 0x17, .pe = 0x28f5,	.sdiv = 0x0,	.nsdiv = 0 },	/* 108.108 MHz */
+> +	{ .mdiv = 0x10, .pe = 0x6e26,	.sdiv = 0x2,	.nsdiv = 1 },	/* 118.963 MHz */
+> +	{ .mdiv = 0x15, .pe = 0x3e63,	.sdiv = 0x0,	.nsdiv = 0 },	/* 119.000 MHz */
+> +	{ .mdiv = 0x1c, .pe = 0x471d,	.sdiv = 0x1,	.nsdiv = 1 },	/* 135.000 MHz */
+> +	{ .mdiv = 0x19, .pe = 0xecd,	.sdiv = 0x1,	.nsdiv = 1 },	/* 148.352 MHz */
+> +	{ .mdiv = 0x19, .pe = 0x121a,	.sdiv = 0x1,	.nsdiv = 1 },	/* 148.500 MHz */
+> +	{ .mdiv = 0x19, .pe = 0x121a,	.sdiv = 0x0,	.nsdiv = 1 },	/* 297     MHz */
+>  };
+>  
+>  static struct stm_fs fs660c32_rtbl[] = {
+> -	{ .mdiv = 0x01, .pe = 0x2aaa,	.sdiv = 0x8,	.nsdiv = 0 },	/* 600   KHz */
+> -	{ .mdiv = 0x02, .pe = 0x3d33,	.sdiv = 0x0,	.nsdiv = 0 },	/* 148.5 Mhz */
+> -	{ .mdiv = 0x13, .pe = 0x5bcc,	.sdiv = 0x0,	.nsdiv = 1 },	/* 297   Mhz */
+> -	{ .mdiv = 0x0e, .pe = 0x1025,	.sdiv = 0x0,	.nsdiv = 1 },	/* 333   Mhz */
+> -	{ .mdiv = 0x0b, .pe = 0x715f,	.sdiv = 0x0,	.nsdiv = 1 },	/* 350   Mhz */
+> +	{ .mdiv = 0x14, .pe = 0x376b,	.sdiv = 0x4,	.nsdiv = 1 },	/* 25.175  MHz */
+> +	{ .mdiv = 0x14, .pe = 0x30c3,	.sdiv = 0x4,	.nsdiv = 1 },	/* 25.200  MHz */
+> +	{ .mdiv = 0x10, .pe = 0x71c7,	.sdiv = 0x4,	.nsdiv = 1 },	/* 27.000  MHz */
+> +	{ .mdiv = 0x00, .pe = 0x47af,	.sdiv = 0x3,	.nsdiv = 0 },	/* 27.027  MHz */
+> +	{ .mdiv = 0x0e, .pe = 0x4e1a,	.sdiv = 0x4,	.nsdiv = 1 },	/* 28.320  MHz */
+> +	{ .mdiv = 0x0b, .pe = 0x534d,	.sdiv = 0x4,	.nsdiv = 1 },	/* 30.240  MHz */
+> +	{ .mdiv = 0x17, .pe = 0x6fbf,	.sdiv = 0x2,	.nsdiv = 0 },	/* 31.500  MHz */
+> +	{ .mdiv = 0x01, .pe = 0x0,	.sdiv = 0x4,	.nsdiv = 1 },	/* 40.000  MHz */
+> +	{ .mdiv = 0x15, .pe = 0x2aab,	.sdiv = 0x3,	.nsdiv = 1 },	/* 49.500  MHz */
+> +	{ .mdiv = 0x14, .pe = 0x6666,	.sdiv = 0x3,	.nsdiv = 1 },	/* 50.000  MHz */
+> +	{ .mdiv = 0x1d, .pe = 0x395f,	.sdiv = 0x1,	.nsdiv = 0 },	/* 57.284  MHz */
+> +	{ .mdiv = 0x08, .pe = 0x4ec5,	.sdiv = 0x3,	.nsdiv = 1 },	/* 65.000  MHz */
+> +	{ .mdiv = 0x05, .pe = 0x1770,	.sdiv = 0x3,	.nsdiv = 1 },	/* 71.000  MHz */
+> +	{ .mdiv = 0x03, .pe = 0x4ba7,	.sdiv = 0x3,	.nsdiv = 1 },	/* 74.176  MHz */
+> +	{ .mdiv = 0x0f, .pe = 0x3426,	.sdiv = 0x1,	.nsdiv = 0 },	/* 74.250  MHz */
+> +	{ .mdiv = 0x0e, .pe = 0x7777,	.sdiv = 0x1,	.nsdiv = 0 },	/* 75.000  MHz */
+> +	{ .mdiv = 0x01, .pe = 0x4053,	.sdiv = 0x3,	.nsdiv = 1 },	/* 78.800  MHz */
+> +	{ .mdiv = 0x09, .pe = 0x15b5,	.sdiv = 0x1,	.nsdiv = 0 },	/* 85.500  MHz */
+> +	{ .mdiv = 0x1b, .pe = 0x3f19,	.sdiv = 0x2,	.nsdiv = 1 },	/* 88.750  MHz */
+> +	{ .mdiv = 0x10, .pe = 0x71c7,	.sdiv = 0x2,	.nsdiv = 1 },	/* 108.000 MHz */
+> +	{ .mdiv = 0x00, .pe = 0x47af,	.sdiv = 0x1,	.nsdiv = 0 },	/* 108.108 MHz */
+> +	{ .mdiv = 0x0c, .pe = 0x3118,	.sdiv = 0x2,	.nsdiv = 1 },	/* 118.963 MHz */
+> +	{ .mdiv = 0x0c, .pe = 0x2f54,	.sdiv = 0x2,	.nsdiv = 1 },	/* 119.000 MHz */
+> +	{ .mdiv = 0x07, .pe = 0xe39,	.sdiv = 0x2,	.nsdiv = 1 },	/* 135.000 MHz */
+> +	{ .mdiv = 0x03, .pe = 0x4ba7,	.sdiv = 0x2,	.nsdiv = 1 },	/* 148.352 MHz */
+> +	{ .mdiv = 0x0f, .pe = 0x3426,	.sdiv = 0x0,	.nsdiv = 0 },	/* 148.500 MHz */
+> +	{ .mdiv = 0x03, .pe = 0x4ba7,	.sdiv = 0x1,	.nsdiv = 1 },	/* 296.704 MHz */
+> +	{ .mdiv = 0x03, .pe = 0x471c,	.sdiv = 0x1,	.nsdiv = 1 },	/* 297     MHz */
+> +	{ .mdiv = 0x1c, .pe = 0x0,	.sdiv = 0x0,	.nsdiv = 1 },	/* 352     Mhz */
+>  };
 
-There's a bit of a difference between my concern over a virtual node and
-this example you've cited. In the dummy spdif transmitter, it's defining
-a virtual device that plugs in for a codec, a hardware concept well
-defined in the audio bindings. I agree that there are many examples of
-this type of virtual node, including dummy phys, but in all cases they
-are stubbing out a real hardware concept.
+These lookup tables should be 'static const'
 
-I find it to be distinctly different to create a node that doesn't
-represent the hardware's use of mailboxes. I'd be happy if a DT
-maintainer could say that this is acceptable though. ;)
+Once fixed:
+ Acked-by: Peter Griffin <peter.griffin@linaro.org>
 
--Matt
+Regards,
+
+Peter.
