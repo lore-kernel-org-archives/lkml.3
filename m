@@ -1,56 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753102AbaFEWRF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 18:17:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38051 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752745AbaFEWRC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 18:17:02 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <CAJfpegvSkr4NJJOfPH4MOhYvaLe=yWv_pR9kK4uiRpScyiapig@mail.gmail.com>
-References: <CAJfpegvSkr4NJJOfPH4MOhYvaLe=yWv_pR9kK4uiRpScyiapig@mail.gmail.com> <CAJfpegtobxoMs+RRrPYLFRPOVSfr_uqZs+HJFLRif3svHGyQwA@mail.gmail.com> <1400838223-30844-1-git-send-email-miklos@szeredi.hu> <28592.1401382081@warthog.procyon.org.uk> <11446.1401420931@jrobl> <7184.1401439773@warthog.procyon.org.uk> <CA+icZUV5P=fVwe_MJJHixwBOBoj7HoKSFuySLdS6AU5L++S=4g@mail.gmail.com> <15839.1401786056@warthog.procyon.org.uk> <CA+icZUUiirxYnoL7pg5TvFEy6pQ+5Q3CuJ0jonJMXTOwhT-LDw@mail.gmail.com> <CA+icZUU8BqGUoQdtuqt403NdCBnJnH1-k64bxTM0b_GSfQr1hQ@mail.gmail.com> <10013.1401791634@warthog.procyon.org.uk> <20140603132153.GA26512@tucsk.piliscsaba.szeredi.hu> <19281.1401809418@warthog.procyon.org.uk>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: dhowells@redhat.com, Sedat Dilek <sedat.dilek@gmail.com>,
-        "J. R. Okajima" <hooanon05g@gmail.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Robo Bot <apw@canonical.com>, Felix Fietkau <nbd@openwrt.org>,
-        Neil Brown <neilb@suse.de>, Jordi Pujol <jordipujolp@gmail.com>,
-        ezk@fsl.cs.sunysb.edu, "mszeredi@suse.cz" <mszeredi@suse.cz>
-Subject: Re: Unionmount and overlayfs testsuite
-Date: Thu, 05 Jun 2014 23:16:00 +0100
-Message-ID: <10878.1402006560@warthog.procyon.org.uk>
+	id S1753144AbaFEWRe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 18:17:34 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:42819 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752717AbaFEWRc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jun 2014 18:17:32 -0400
+Message-ID: <5390EC78.9000805@infradead.org>
+Date: Thu, 05 Jun 2014 15:17:28 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: eric.ernst@linux.intel.com, akpm@linux-foundation.org,
+        jwboyer@fedoraproject.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v1 1/1] Add kernel parameter for kernel version
+References: <538CC567.2060305@linux.intel.com> <1402006157-126864-1-git-send-email-eric.ernst@linux.intel.com>
+In-Reply-To: <1402006157-126864-1-git-send-email-eric.ernst@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Miklos Szeredi <miklos@szeredi.hu> wrote:
-
-> Shell script is the one I'm most familiar with, and that maybe true
-> for other kernel developers too.
+On 06/05/2014 03:09 PM, eric.ernst@linux.intel.com wrote:
+> From: Eric Ernst <eric.ernst@linux.intel.com>
 > 
-> Also, it's what xfstests are using and it would make sense to move
-> towards that.  Although I'm not sure how well it supports
-> multiple-device filesystems.
+> Create a kernel cmdline parameter, "version_addendum", which can be
+> used to add text to the kernel version that is reported from
+> /proc/version.
 
-It was already shell script, but I can do all the layer checking and
-automatically fixing up the error prediction for when pathnames have slashes
-appended much more easily in something like python where I can build and
-maintain a map of the state of the filesystem.
+and you still didn't update Documentation/kernel-parameters.txt.
 
-See:
+> Signed-off-by: Eric Ernst <eric.ernst@linux.intel.com>
+> ---
+>  fs/proc/version.c |   14 +++++++++++++-
+>  init/version.c    |    2 +-
+>  2 files changed, 14 insertions(+), 2 deletions(-)
+> 
+> diff --git a/fs/proc/version.c b/fs/proc/version.c
+> index d2154eb6d78f..442e69e3eecb 100644
+> --- a/fs/proc/version.c
+> +++ b/fs/proc/version.c
+> @@ -5,12 +5,17 @@
+>  #include <linux/seq_file.h>
+>  #include <linux/utsname.h>
+>  
+> +#define ADDENDUM_LENGTH 20
+> +static char version_addendum[ADDENDUM_LENGTH];
+> +
+>  static int version_proc_show(struct seq_file *m, void *v)
+>  {
+>  	seq_printf(m, linux_proc_banner,
+>  		utsname()->sysname,
+>  		utsname()->release,
+> -		utsname()->version);
+> +		utsname()->version,
+> +		version_addendum);
+> +
+>  	return 0;
+>  }
+>  
+> @@ -26,6 +31,13 @@ static const struct file_operations version_proc_fops = {
+>  	.release	= single_release,
+>  };
+>  
+> +static int __init set_version_addendum(char *str)
+> +{
+> +	strncpy(version_addendum, str, ADDENDUM_LENGTH-1);
+> +	return 0;
+> +}
+> +early_param("version_addendum", set_version_addendum);
+> +
+>  static int __init proc_version_init(void)
+>  {
+>  	proc_create("version", 0, NULL, &version_proc_fops);
+> diff --git a/init/version.c b/init/version.c
+> index 1a4718e500fe..180059b69b7a 100644
+> --- a/init/version.c
+> +++ b/init/version.c
+> @@ -47,4 +47,4 @@ const char linux_banner[] =
+>  const char linux_proc_banner[] =
+>  	"%s version %s"
+>  	" (" LINUX_COMPILE_BY "@" LINUX_COMPILE_HOST ")"
+> -	" (" LINUX_COMPILER ") %s\n";
+> +	" (" LINUX_COMPILER ") %s " "%s\n";
+> 
 
-	http://git.infradead.org/users/dhowells/unionmount-testsuite.git/shortlog/refs/heads/switch-to-python
 
-I've also added tests to exercise mkdir and rmdir and have enabled the unlink
-tests.  So far so good with overlayfs.
-
-David
+-- 
+~Randy
