@@ -1,135 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757246AbaFEAw6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 20:52:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39637 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751872AbaFDXUk (ORCPT
+	id S1753481AbaFEA45 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 20:56:57 -0400
+Received: from mga09.intel.com ([134.134.136.24]:14361 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751829AbaFEA4z convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:20:40 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: [PATCH 3.14 005/228] rtmutex: Fix deadlock detector for real
-Date: Wed,  4 Jun 2014 16:20:34 -0700
-Message-Id: <20140604232348.257703545@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
-References: <20140604232347.966798903@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Wed, 4 Jun 2014 20:56:55 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,976,1392192000"; 
+   d="scan'208";a="551780284"
+From: "Zheng, Lv" <lv.zheng@intel.com>
+To: Lee Jones <lee.jones@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "wsa@the-dreams.de" <wsa@the-dreams.de>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "devel@acpica.org" <devel@acpica.org>
+Subject: RE: [PATCH 1/7] ACPICA: Only include ACPI asm files if ACPI is
+ enabled
+Thread-Topic: [PATCH 1/7] ACPICA: Only include ACPI asm files if ACPI is
+ enabled
+Thread-Index: AQHPf+4KU6l0YPi7HkGxvvNa/8AWq5thsJEw
+Date: Thu, 5 Jun 2014 00:56:51 +0000
+Message-ID: <1AE640813FDE7649BE1B193DEA596E88026203D0@SHSMSX101.ccr.corp.intel.com>
+References: <1401883796-17841-1-git-send-email-lee.jones@linaro.org>
+ <1401883796-17841-2-git-send-email-lee.jones@linaro.org>
+In-Reply-To: <1401883796-17841-2-git-send-email-lee.jones@linaro.org>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+Hi, Lee
 
-------------------
+> From: Lee Jones [mailto:lee.jones@linaro.org]
+> Sent: Wednesday, June 04, 2014 8:10 PM
+> 
+> Any drivers which support ACPI and Device Tree probing need to include
+> both respective header files.  Without this patch, if a driver is being
+> used on a platform which does not support ACPI and subsequently does not
+> have the config option enabled, but includes linux/acpi.h the build
+> breaks with:
+> 
+>   In file included from ../include/acpi/platform/acenv.h:150:0,
+>                    from ../include/acpi/acpi.h:56,
+>                    from ../include/linux/match.h:2,
+>                    from ../drivers/i2c/i2c-core.c:43:
+>   ../include/acpi/platform/aclinux.h:73:23:
+>    fatal error: asm/acenv.h: No such file or directory
+>    #include <asm/acenv.h>
+>                        ^
+> Cc: Lv Zheng <lv.zheng@intel.com>
+> Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> Cc: linux-acpi@vger.kernel.org
+> Cc: devel@acpica.org
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> ---
+>  include/acpi/platform/aclinux.h | 5 +++--
+>  1 file changed, 3 insertions(+), 2 deletions(-)
+> 
+> diff --git a/include/acpi/platform/aclinux.h b/include/acpi/platform/aclinux.h
+> index cd1f052..fdf7663 100644
+> --- a/include/acpi/platform/aclinux.h
+> +++ b/include/acpi/platform/aclinux.h
+> @@ -70,9 +70,10 @@
+>  #ifdef EXPORT_ACPI_INTERFACES
+>  #include <linux/export.h>
+>  #endif
+> -#include <asm/acenv.h>
+> 
+> -#ifndef CONFIG_ACPI
+> +#ifdef CONFIG_ACPI
+> +#include <asm/acenv.h>
+> +#else
 
-From: Thomas Gleixner <tglx@linutronix.de>
+This is exactly what I want to do in the next step.
+But you are a bit faster here.
+I believe:
+The miss-ordered inclusions of <asm/acpi.h> is the culprit of all of the miss-ordered inclusions in arch/x86/include/asm.
+You should have noted that <asm/acpi.h> was originally unexpected included by some x86 specific headers.
+Simply doing <asm/acenv.h> exlusion in this way might be able to fix your issue for your architecture, but it could be very likely breaking x86 builds.
+You might be able to find another way to solve your build issue - for example, creating an empty <asm/acenv.h> for arch/arm.
 
-commit 397335f004f41e5fcf7a795e94eb3ab83411a17c upstream.
+Thanks and best regards
+-Lv
 
-The current deadlock detection logic does not work reliably due to the
-following early exit path:
-
-	/*
-	 * Drop out, when the task has no waiters. Note,
-	 * top_waiter can be NULL, when we are in the deboosting
-	 * mode!
-	 */
-	if (top_waiter && (!task_has_pi_waiters(task) ||
-			   top_waiter != task_top_pi_waiter(task)))
-		goto out_unlock_pi;
-
-So this not only exits when the task has no waiters, it also exits
-unconditionally when the current waiter is not the top priority waiter
-of the task.
-
-So in a nested locking scenario, it might abort the lock chain walk
-and therefor miss a potential deadlock.
-
-Simple fix: Continue the chain walk, when deadlock detection is
-enabled.
-
-We also avoid the whole enqueue, if we detect the deadlock right away
-(A-A). It's an optimization, but also prevents that another waiter who
-comes in after the detection and before the task has undone the damage
-observes the situation and detects the deadlock and returns
--EDEADLOCK, which is wrong as the other task is not in a deadlock
-situation.
-
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
-Link: http://lkml.kernel.org/r/20140522031949.725272460@linutronix.de
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- kernel/locking/rtmutex.c |   32 ++++++++++++++++++++++++++++----
- 1 file changed, 28 insertions(+), 4 deletions(-)
-
---- a/kernel/locking/rtmutex.c
-+++ b/kernel/locking/rtmutex.c
-@@ -331,9 +331,16 @@ static int rt_mutex_adjust_prio_chain(st
- 	 * top_waiter can be NULL, when we are in the deboosting
- 	 * mode!
- 	 */
--	if (top_waiter && (!task_has_pi_waiters(task) ||
--			   top_waiter != task_top_pi_waiter(task)))
--		goto out_unlock_pi;
-+	if (top_waiter) {
-+		if (!task_has_pi_waiters(task))
-+			goto out_unlock_pi;
-+		/*
-+		 * If deadlock detection is off, we stop here if we
-+		 * are not the top pi waiter of the task.
-+		 */
-+		if (!detect_deadlock && top_waiter != task_top_pi_waiter(task))
-+			goto out_unlock_pi;
-+	}
- 
- 	/*
- 	 * When deadlock detection is off then we check, if further
-@@ -349,7 +356,12 @@ static int rt_mutex_adjust_prio_chain(st
- 		goto retry;
- 	}
- 
--	/* Deadlock detection */
-+	/*
-+	 * Deadlock detection. If the lock is the same as the original
-+	 * lock which caused us to walk the lock chain or if the
-+	 * current lock is owned by the task which initiated the chain
-+	 * walk, we detected a deadlock.
-+	 */
- 	if (lock == orig_lock || rt_mutex_owner(lock) == top_task) {
- 		debug_rt_mutex_deadlock(deadlock_detect, orig_waiter, lock);
- 		raw_spin_unlock(&lock->wait_lock);
-@@ -515,6 +527,18 @@ static int task_blocks_on_rt_mutex(struc
- 	unsigned long flags;
- 	int chain_walk = 0, res;
- 
-+	/*
-+	 * Early deadlock detection. We really don't want the task to
-+	 * enqueue on itself just to untangle the mess later. It's not
-+	 * only an optimization. We drop the locks, so another waiter
-+	 * can come in before the chain walk detects the deadlock. So
-+	 * the other will detect the deadlock and return -EDEADLOCK,
-+	 * which is wrong, as the other waiter is not in a deadlock
-+	 * situation.
-+	 */
-+	if (detect_deadlock && owner == task)
-+		return -EDEADLK;
-+
- 	raw_spin_lock_irqsave(&task->pi_lock, flags);
- 	__rt_mutex_adjust_prio(task);
- 	waiter->task = task;
-
+> 
+>  /* External globals for __KERNEL__, stubs is needed */
+> 
+> --
+> 1.8.3.2
 
