@@ -1,128 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751979AbaFEOFO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 10:05:14 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:57891 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751380AbaFEOFK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 10:05:10 -0400
-Date: Thu, 5 Jun 2014 15:05:06 +0100
-From: Luis Henriques <luis.henriques@canonical.com>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Patrick McHardy <kaber@trash.net>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Mathias Krause <minipli@googlemail.com>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH 3.4 022/214] filter: prevent nla extensions to peek
- beyond the end of the message
-Message-ID: <20140605140506.GC6020@hercules>
-References: <20140605041639.638675216@linuxfoundation.org>
- <20140605041642.768058331@linuxfoundation.org>
- <20140605133331.GB6020@hercules>
- <1401976224.2412.110.camel@deadeye.wl.decadent.org.uk>
+	id S1752005AbaFEOFm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 10:05:42 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:45275 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750860AbaFEOFN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jun 2014 10:05:13 -0400
+Date: Thu, 5 Jun 2014 16:03:16 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Stephane Eranian <eranian@google.com>
+Cc: Matt Fleming <matt@console-pimps.org>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Jiri Olsa <jolsa@redhat.com>, "Yan, Zheng" <zheng.z.yan@intel.com>,
+        Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
+Subject: Re: [PATCH 9/9] perf/x86: add syfs entry to disable HT bug workaround
+Message-ID: <20140605140316.GB16811@pd.tnic>
+References: <1401917658-26065-1-git-send-email-eranian@google.com>
+ <1401917658-26065-10-git-send-email-eranian@google.com>
+ <CADknwL5S8QpzCAgrKHjbGTbEx7nA8L=Vu8d-UWAYCg6X25OcGw@mail.gmail.com>
+ <CABPqkBSimH8Ob_q3dDtQiW_OwuS9nA4Gsx87H26ywNcmYd38Xw@mail.gmail.com>
+ <CADknwL6s2ttb5E2JDr6bc_XkwpxnW5ecU-3Ns88=gvgPvLYkPg@mail.gmail.com>
+ <CABPqkBQUUb+yEvC8y3oLc0DUbF3DJPzbt3sNL7Zqzufh6EYdRw@mail.gmail.com>
+ <CADknwL71NC5wBG1tnqgJ6iiA4y+HYomGpufOn7V+MP2=m7+Mig@mail.gmail.com>
+ <CABPqkBTEafZ5MbYM4UQxX92uWcPiphPeXMoJRKTt8jnrB+5j2w@mail.gmail.com>
+ <20140605132750.GA16811@pd.tnic>
+ <CABPqkBT9ExD4unz0VZ5G1d+oGpkepiwXskgBpv5GTavs=tYAKA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1401976224.2412.110.camel@deadeye.wl.decadent.org.uk>
+In-Reply-To: <CABPqkBT9ExD4unz0VZ5G1d+oGpkepiwXskgBpv5GTavs=tYAKA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 05, 2014 at 02:50:24PM +0100, Ben Hutchings wrote:
-> On Thu, 2014-06-05 at 14:33 +0100, Luis Henriques wrote:
-> > On Wed, Jun 04, 2014 at 09:16:25PM -0700, Greg Kroah-Hartman wrote:
-> > > 3.4-stable review patch.  If anyone has any objections, please let me know.
-> > > 
-> > > ------------------
-> > > 
-> > > From: Mathias Krause <minipli@googlemail.com>
-> > > 
-> > > [ Upstream commit 05ab8f2647e4221cbdb3856dd7d32bd5407316b3 ]
-> > > 
-> > > The BPF_S_ANC_NLATTR and BPF_S_ANC_NLATTR_NEST extensions fail to check
-> > > for a minimal message length before testing the supplied offset to be
-> > > within the bounds of the message. This allows the subtraction of the nla
-> > > header to underflow and therefore -- as the data type is unsigned --
-> > > allowing far to big offset and length values for the search of the
-> > > netlink attribute.
-> > > 
-> > > The remainder calculation for the BPF_S_ANC_NLATTR_NEST extension is
-> > > also wrong. It has the minuend and subtrahend mixed up, therefore
-> > > calculates a huge length value, allowing to overrun the end of the
-> > > message while looking for the netlink attribute.
-> > > 
-> > > The following three BPF snippets will trigger the bugs when attached to
-> > > a UNIX datagram socket and parsing a message with length 1, 2 or 3.
-> > > 
-> > >  ,-[ PoC for missing size check in BPF_S_ANC_NLATTR ]--
-> > >  | ld	#0x87654321
-> > >  | ldx	#42
-> > >  | ld	#nla
-> > >  | ret	a
-> > >  `---
-> > > 
-> > >  ,-[ PoC for the same bug in BPF_S_ANC_NLATTR_NEST ]--
-> > >  | ld	#0x87654321
-> > >  | ldx	#42
-> > >  | ld	#nlan
-> > >  | ret	a
-> > >  `---
-> > > 
-> > >  ,-[ PoC for wrong remainder calculation in BPF_S_ANC_NLATTR_NEST ]--
-> > >  | ; (needs a fake netlink header at offset 0)
-> > >  | ld	#0
-> > >  | ldx	#42
-> > >  | ld	#nlan
-> > >  | ret	a
-> > >  `---
-> > > 
-> > > Fix the first issue by ensuring the message length fulfills the minimal
-> > > size constrains of a nla header. Fix the second bug by getting the math
-> > > for the remainder calculation right.
-> > > 
-> > > Fixes: 4738c1db15 ("[SKFILTER]: Add SKF_ADF_NLATTR instruction")
-> > > Fixes: d214c7537b ("filter: add SKF_AD_NLATTR_NEST to look for nested..")
-> > > Cc: Patrick McHardy <kaber@trash.net>
-> > > Cc: Pablo Neira Ayuso <pablo@netfilter.org>
-> > > Signed-off-by: Mathias Krause <minipli@googlemail.com>
-> > > Acked-by: Daniel Borkmann <dborkman@redhat.com>
-> > > Signed-off-by: David S. Miller <davem@davemloft.net>
-> > > Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> > > ---
-> > >  net/core/filter.c |    6 +++++-
-> > >  1 file changed, 5 insertions(+), 1 deletion(-)
-> > > 
-> > > --- a/net/core/filter.c
-> > > +++ b/net/core/filter.c
-> > > @@ -338,11 +338,15 @@ load_b:
-> > >  
-> > >  			if (skb_is_nonlinear(skb))
-> > >  				return 0;
-> > > +			if (skb->len < sizeof(struct nlattr))
-> > > +				return 0;
-> > > +			if (skb->len < sizeof(struct nlattr))
-> > > +				return 0;
-> > 
-> > There above code is duplicated this backport.  The same comment
-> > applies to the 3.2.y backport (I've added Ben to the CC list).
+On Thu, Jun 05, 2014 at 03:42:14PM +0200, Stephane Eranian wrote:
+> I gave a test case earlier:
 > 
-> This seems to be due to a bug in patch <https://bugs.debian.org/717782>.
-> I had the same problem when initially trying to fix this in 3.14.  The
-> first two inserted lines should be 16 lines further up.
+> # echo 0 >/proc/sys/kernel/nmi_watchdog
+> # run_my_uniform_workload_on_all_cpus &
+> # perf stat -a -e r81d0,r01d1,r08d0,r20d1 sleep 5
 > 
-> Ben.
+> That run gives the correct answer.
 > 
-> -- 
-> Ben Hutchings
-> I say we take off; nuke the site from orbit.  It's the only way to be sure.
+> If I just look at CPU0 CPU4 siblings:
+> 
+> CPU0, counter0 leaks N counts to CPU4, counter 0
+> 
+> but at the same time:
+> 
+> CPU4, counter0 leaks N counts to CPU0, counter 0
+> 
+> This is because we have the same event in the same
+> counter AND the workload is uniform, meaning the
+> event (here loads retired) occurs at the same rate
+> on both siblings.
+> 
+> You can test this by measuring only on one HT.
+> # perf stat -a -C0 -e r81d0,r01d1,r08d0,r20d1 sleep 5
+> 
+> Note that some events, leak more than they count.
 
-Awesome!  Thank you both for clarifying that.
+Ok, so AFAIU, this particular workload counts correctly just because
+counters leak the same amount. If so, what happens if you run this exact
+same workload with the workaround enabled? I read something about a bit
+more counter multiplexing... or is there a more serious issue?
 
-Cheers,
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
 --
-Luís
