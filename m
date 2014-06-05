@@ -1,60 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751966AbaFEOQT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 10:16:19 -0400
-Received: from mail-ve0-f177.google.com ([209.85.128.177]:60016 "EHLO
-	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751438AbaFEOQR (ORCPT
+	id S1751989AbaFEORO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 10:17:14 -0400
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:57307 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751015AbaFEORM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 10:16:17 -0400
+	Thu, 5 Jun 2014 10:17:12 -0400
 MIME-Version: 1.0
-In-Reply-To: <53907895.8090102@kernel.dk>
-References: <20140604103544.GA11350@dhcp-26-207.brq.redhat.com>
-	<538F2AC2.1060904@kernel.dk>
-	<20140605140127.GA22198@dhcp-26-207.brq.redhat.com>
-	<53907895.8090102@kernel.dk>
-Date: Thu, 5 Jun 2014 22:16:16 +0800
-Message-ID: <CACVXFVMFjR5kqB9SQG-EiKMB3dC0O58_EhJZw2R2m7a9vUuH0A@mail.gmail.com>
-Subject: Re: blk-mq: bitmap tag: performance degradation?
-From: Ming Lei <tom.leiming@gmail.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Alexander Gordeev <agordeev@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+In-Reply-To: <1401975821-3972-1-git-send-email-prarit@redhat.com>
+References: <1401975821-3972-1-git-send-email-prarit@redhat.com>
+Date: Thu, 5 Jun 2014 19:47:12 +0530
+Message-ID: <CAKohpokDZBfZdpSRN_K_QZWXRHk+jSeZ0e4-iBpoaf=hVJ8F_w@mail.gmail.com>
+Subject: Re: [PATCH] Documentation, intel_pstate: Add a description of the
+ intel_pstate internal governors
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Prarit Bhargava <prarit@redhat.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Dirk Brandewie <dirk.brandewie@gmail.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jesper Nilsson <jesper.nilsson@axis.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Ramkumar Ramachandra <artagnon@gmail.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 5, 2014 at 10:03 PM, Jens Axboe <axboe@kernel.dk> wrote:
-> On 2014-06-05 08:01, Alexander Gordeev wrote:
->>
->> On Wed, Jun 04, 2014 at 08:18:42AM -0600, Jens Axboe wrote:
->>>
->>> A null_blk test is the absolute best case for percpu_ida, since
->>> there are enough tags and everything is localized. The above test is
->>> more useful for testing blk-mq than any real world application of
->>> the tagging.
->>>
->>> I've done considerable testing on both 2 and 4 socket (32 and 64
->>> CPUs) and bitmap tagging is better in a much wider range of
->>> applications. This includes even high tag depth devices like nvme,
->>> and more normal ranges like mtip32xx and scsi-mq setups.
->>
->>
->> Just for the record: bitmap tags on a 48 CPU box with NVMe device
->> indeed shows almost the same performance/cache rate as the stock
->> kernel.
+On 5 June 2014 19:13, Prarit Bhargava <prarit@redhat.com> wrote:
+> The current documentation is incomplete wrt the intel_pstate internal
+> governors.  The confusion comes from the general use internal governors
+> which also use the names performance and powersave.  This patch
+> differentiates between the two sets of governors.
 >
+> Cc: Dirk Brandewie <dirk.brandewie@gmail.com>
+> Cc: Randy Dunlap <rdunlap@infradead.org>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Jesper Nilsson <jesper.nilsson@axis.com>
+> Cc: Viresh Kumar <viresh.kumar@linaro.org>
+> Cc: "David S. Miller" <davem@davemloft.net>
+> Cc: Ramkumar Ramachandra <artagnon@gmail.com>
+> Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+> Cc: linux-doc@vger.kernel.org
 >
-> Thanks for confirming. It's one of the dangers of null_blk, it's not always
-> a very accurate simulation of what a real device will do. I think it's
-> mostly a completion side thing, would be great with a small device that
-> supported msi-x and could be used as an irq trigger :-)
+> Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+> ---
+>  Documentation/cpu-freq/governors.txt    |    2 +-
+>  Documentation/cpu-freq/intel-pstate.txt |    8 ++++++++
+>  2 files changed, 9 insertions(+), 1 deletion(-)
+>
+> diff --git a/Documentation/cpu-freq/governors.txt b/Documentation/cpu-freq/governors.txt
+> index 77ec215..c15aa75 100644
+> --- a/Documentation/cpu-freq/governors.txt
+> +++ b/Documentation/cpu-freq/governors.txt
+> @@ -36,7 +36,7 @@ Contents:
+>  1. What Is A CPUFreq Governor?
+>  ==============================
+>
+> -Most cpufreq drivers (in fact, all except one, longrun) or even most
+> +Most cpufreq drivers (except the intel_pstate and longrun) or even most
+>  cpu frequency scaling algorithms only offer the CPU to be set to one
+>  frequency. In order to offer dynamic frequency scaling, the cpufreq
+>  core must be able to tell these drivers of a "target frequency". So
+> diff --git a/Documentation/cpu-freq/intel-pstate.txt b/Documentation/cpu-freq/intel-pstate.txt
+> index e742d21..ce894cc 100644
+> --- a/Documentation/cpu-freq/intel-pstate.txt
+> +++ b/Documentation/cpu-freq/intel-pstate.txt
+> @@ -9,6 +9,14 @@ assumed to implement internal governors by the cpufreq core. All the
+>  logic for selecting the current P state is contained within the
+>  driver; no external governor is used by the cpufreq core.
+>
+> +The Intel P-state driver has two internal governors, performance and
+> +powersave.  These governors differ from the general use governors of the
 
-Maybe null_blk at IRQ_TIMER mode is more close to
-a real device, and I guess the result may be different with
-mode IRQ_NONE/IRQ_SOFTIRQ.
+s/general use/generally used ??
 
-Thanks,
--- 
-Ming Lei
+> +same name in the kernel.  The internal performance governor sets the
+> +max_perf_pct and min_perf_pct to 100; that is, the governor selects the
+> +highest available P state to maximize the performance of the core.  The
+> +internal powersave governor, selects the appropriate P state based on the
+> +current load on the CPU.
+> +
+>  Intel SandyBridge+ processors are supported.
+>
+>  New sysfs files for controlling P state selection have been added to
+> --
+> 1.7.9.3
+>
