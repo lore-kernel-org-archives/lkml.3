@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753032AbaFEEVS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 00:21:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44118 "EHLO
+	id S1754084AbaFEEq7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 00:46:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44149 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752952AbaFEEVO (ORCPT
+	with ESMTP id S1753004AbaFEEVR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 00:21:14 -0400
+	Thu, 5 Jun 2014 00:21:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Qiang Huang <h.huangqiang@huawei.com>
-Subject: [PATCH 3.4 119/214] mac80211: introduce IEEE80211_HW_TEARDOWN_AGGR_ON_BAR_FAIL
-Date: Wed,  4 Jun 2014 21:18:02 -0700
-Message-Id: <20140605041655.672517601@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>, Ben Hutchings <ben@decadent.org.uk>,
+        Weng Meiling <wengmeiling.weng@huawei.com>
+Subject: [PATCH 3.4 125/214] ALSA: hda - Add stereo-dmic fixup for Acer Aspire One 522
+Date: Wed,  4 Jun 2014 21:18:08 -0700
+Message-Id: <20140605041656.503822392@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -29,77 +27,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 5b632fe85ec82e5c43740b52e74c66df50a37db3 upstream.
+commit 63a077e27648b4043b1ca1b4e29f0c42d99616b6 upstream.
 
-Commit f0425beda4d404a6e751439b562100b902ba9c98 "mac80211: retry sending
-failed BAR frames later instead of tearing down aggr" caused regression
-on rt2x00 hardware (connection hangs). This regression was fixed by
-commit be03d4a45c09ee5100d3aaaedd087f19bc20d01 "rt2x00: Don't let
-mac80211 send a BAR when an AMPDU subframe fails". But the latter
-commit caused yet another problem reported in
-https://bugzilla.kernel.org/show_bug.cgi?id=42828#c22
+Acer Aspire One 522 has the infamous digital mic unit that needs the
+phase inversion fixup for stereo.
 
-After long discussion in this thread:
-http://mid.gmane.org/20121018075615.GA18212@redhat.com
-and testing various alternative solutions, which failed on one or other
-setup, we have no other good fix for the issues like just revert both
-mentioned earlier commits.
+Bugzilla: https://bugzilla.novell.com/show_bug.cgi?id=715737
 
-To do not affect other hardware which benefit from commit
-f0425beda4d404a6e751439b562100b902ba9c98, instead of reverting it,
-introduce flag that when used will restore mac80211 behaviour before
-the commit.
-
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-[replaced link with mid.gmane.org that has message-id]
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-[bwh: Backported to 3.2: adjust context]
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-[hq: Backported to 3.4: adjust context]
-Signed-off-by: Qiang Huang <h.huangqiang@huawei.com>
+Cc: Weng Meiling <wengmeiling.weng@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- include/net/mac80211.h |    5 +++++
- net/mac80211/status.c  |    6 +++++-
- 2 files changed, 10 insertions(+), 1 deletion(-)
 
---- a/include/net/mac80211.h
-+++ b/include/net/mac80211.h
-@@ -1174,6 +1174,10 @@ enum sta_notify_cmd {
-  * @IEEE80211_HW_SCAN_WHILE_IDLE: The device can do hw scan while
-  *	being idle (i.e. mac80211 doesn't have to go idle-off during the
-  *	the scan).
-+ *
-+ * @IEEE80211_HW_TEARDOWN_AGGR_ON_BAR_FAIL: On this hardware TX BA session
-+ *	should be tear down once BAR frame will not be acked.
-+ *
-  */
- enum ieee80211_hw_flags {
- 	IEEE80211_HW_HAS_RATE_CONTROL			= 1<<0,
-@@ -1201,6 +1205,7 @@ enum ieee80211_hw_flags {
- 	IEEE80211_HW_AP_LINK_PS				= 1<<22,
- 	IEEE80211_HW_TX_AMPDU_SETUP_IN_HW		= 1<<23,
- 	IEEE80211_HW_SCAN_WHILE_IDLE			= 1<<24,
-+	IEEE80211_HW_TEARDOWN_AGGR_ON_BAR_FAIL		= 1<<26,
+---
+ sound/pci/hda/patch_conexant.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/sound/pci/hda/patch_conexant.c
++++ b/sound/pci/hda/patch_conexant.c
+@@ -4473,6 +4473,7 @@ static const struct snd_pci_quirk cxt505
  };
  
- /**
---- a/net/mac80211/status.c
-+++ b/net/mac80211/status.c
-@@ -432,7 +432,11 @@ void ieee80211_tx_status(struct ieee8021
- 				       IEEE80211_BAR_CTRL_TID_INFO_MASK) >>
- 				      IEEE80211_BAR_CTRL_TID_INFO_SHIFT;
- 
--				ieee80211_set_bar_pending(sta, tid, ssn);
-+				if (local->hw.flags &
-+				    IEEE80211_HW_TEARDOWN_AGGR_ON_BAR_FAIL)
-+					ieee80211_stop_tx_ba_session(&sta->sta, tid);
-+				else
-+					ieee80211_set_bar_pending(sta, tid, ssn);
- 			}
- 		}
- 
+ static const struct snd_pci_quirk cxt5066_fixups[] = {
++	SND_PCI_QUIRK(0x1025, 0x0543, "Acer Aspire One 522", CXT_FIXUP_STEREO_DMIC),
+ 	SND_PCI_QUIRK(0x17aa, 0x20f2, "Lenovo T400", CXT_PINCFG_LENOVO_TP410),
+ 	SND_PCI_QUIRK(0x17aa, 0x215e, "Lenovo T410", CXT_PINCFG_LENOVO_TP410),
+ 	SND_PCI_QUIRK(0x17aa, 0x215f, "Lenovo T510", CXT_PINCFG_LENOVO_TP410),
 
 
