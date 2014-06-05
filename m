@@ -1,95 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752959AbaFEWSo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 18:18:44 -0400
-Received: from mga11.intel.com ([192.55.52.93]:35109 "EHLO mga11.intel.com"
+	id S1753181AbaFEWTa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 18:19:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43362 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752007AbaFEWSn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 18:18:43 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,984,1392192000"; 
-   d="scan'208";a="543149859"
-Message-ID: <5390EC55.2030608@linux.intel.com>
-Date: Thu, 05 Jun 2014 15:16:53 -0700
-From: eric ernst <eric.ernst@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Randy Dunlap <rdunlap@infradead.org>, akpm@linux-foundation.org,
-        jwboyer@fedoraproject.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v1 1/1] Add kernel parameter for kernel version
-References: <538CC567.2060305@linux.intel.com> <1402006157-126864-1-git-send-email-eric.ernst@linux.intel.com> <5390EC78.9000805@infradead.org>
-In-Reply-To: <5390EC78.9000805@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1752521AbaFEWT1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jun 2014 18:19:27 -0400
+Message-ID: <1402006750.9207.267.camel@ul30vt.home>
+Subject: Re: [RFC PATCH v6 17/20] vfio: add local lock in virqfd instead of
+ depending on VFIO PCI
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Antonios Motakis <a.motakis@virtualopensystems.com>
+Cc: kvmarm@lists.cs.columbia.edu, iommu@lists.linux-foundation.org,
+        tech@virtualopensystems.com, a.rigo@virtualopensystems.com,
+        kvm@vger.kernel.org, christoffer.dall@linaro.org, will.deacon@arm.com,
+        kim.phillips@freescale.com, stuart.yoder@freescale.com,
+        eric.auger@linaro.org, Alexander Gordeev <agordeev@redhat.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        open list <linux-kernel@vger.kernel.org>
+Date: Thu, 05 Jun 2014 16:19:10 -0600
+In-Reply-To: <1401987808-23596-18-git-send-email-a.motakis@virtualopensystems.com>
+References: <1401987808-23596-1-git-send-email-a.motakis@virtualopensystems.com>
+	 <1401987808-23596-18-git-send-email-a.motakis@virtualopensystems.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2014-06-05 at 19:03 +0200, Antonios Motakis wrote:
+> Sharing the same spinlock with the VFIO bus driver is not necessary for
+> the virqfd code, so remove that dependency.
 
-On 14-06-05 03:17 PM, Randy Dunlap wrote:
-> On 06/05/2014 03:09 PM, eric.ernst@linux.intel.com wrote:
->> From: Eric Ernst <eric.ernst@linux.intel.com>
->>
->> Create a kernel cmdline parameter, "version_addendum", which can be
->> used to add text to the kernel version that is reported from
->> /proc/version.
-> and you still didn't update Documentation/kernel-parameters.txt.
->
-Correct - I was waiting for the initial feedback of whether this would 
-be useful to community before doing this, sorry for the thrash, Randy.
->> Signed-off-by: Eric Ernst <eric.ernst@linux.intel.com>
->> ---
->>   fs/proc/version.c |   14 +++++++++++++-
->>   init/version.c    |    2 +-
->>   2 files changed, 14 insertions(+), 2 deletions(-)
->>
->> diff --git a/fs/proc/version.c b/fs/proc/version.c
->> index d2154eb6d78f..442e69e3eecb 100644
->> --- a/fs/proc/version.c
->> +++ b/fs/proc/version.c
->> @@ -5,12 +5,17 @@
->>   #include <linux/seq_file.h>
->>   #include <linux/utsname.h>
->>   
->> +#define ADDENDUM_LENGTH 20
->> +static char version_addendum[ADDENDUM_LENGTH];
->> +
->>   static int version_proc_show(struct seq_file *m, void *v)
->>   {
->>   	seq_printf(m, linux_proc_banner,
->>   		utsname()->sysname,
->>   		utsname()->release,
->> -		utsname()->version);
->> +		utsname()->version,
->> +		version_addendum);
->> +
->>   	return 0;
->>   }
->>   
->> @@ -26,6 +31,13 @@ static const struct file_operations version_proc_fops = {
->>   	.release	= single_release,
->>   };
->>   
->> +static int __init set_version_addendum(char *str)
->> +{
->> +	strncpy(version_addendum, str, ADDENDUM_LENGTH-1);
->> +	return 0;
->> +}
->> +early_param("version_addendum", set_version_addendum);
->> +
->>   static int __init proc_version_init(void)
->>   {
->>   	proc_create("version", 0, NULL, &version_proc_fops);
->> diff --git a/init/version.c b/init/version.c
->> index 1a4718e500fe..180059b69b7a 100644
->> --- a/init/version.c
->> +++ b/init/version.c
->> @@ -47,4 +47,4 @@ const char linux_banner[] =
->>   const char linux_proc_banner[] =
->>   	"%s version %s"
->>   	" (" LINUX_COMPILE_BY "@" LINUX_COMPILE_HOST ")"
->> -	" (" LINUX_COMPILER ") %s\n";
->> +	" (" LINUX_COMPILER ") %s " "%s\n";
->>
->
+I like the idea of consolidating this code, but I need more
+justification for why the use of the lock here is independent of the bus
+driver and why it's ok to move from a per-device lock to a global lock.
+Thanks,
+
+Alex
+
+> 
+> Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
+> ---
+>  drivers/vfio/pci/vfio_pci_intrs.c | 10 +++++-----
+>  drivers/vfio/virqfd.c             | 24 +++++++++++++-----------
+>  include/linux/vfio.h              |  3 +--
+>  3 files changed, 19 insertions(+), 18 deletions(-)
+> 
+> diff --git a/drivers/vfio/pci/vfio_pci_intrs.c b/drivers/vfio/pci/vfio_pci_intrs.c
+> index 3f909bb..e56c814 100644
+> --- a/drivers/vfio/pci/vfio_pci_intrs.c
+> +++ b/drivers/vfio/pci/vfio_pci_intrs.c
+> @@ -226,8 +226,8 @@ static int vfio_intx_set_signal(struct vfio_pci_device *vdev, int fd)
+>  static void vfio_intx_disable(struct vfio_pci_device *vdev)
+>  {
+>  	vfio_intx_set_signal(vdev, -1);
+> -	virqfd_disable(vdev, &vdev->ctx[0].unmask);
+> -	virqfd_disable(vdev, &vdev->ctx[0].mask);
+> +	virqfd_disable(&vdev->ctx[0].unmask);
+> +	virqfd_disable(&vdev->ctx[0].mask);
+>  	vdev->irq_type = VFIO_PCI_NUM_IRQS;
+>  	vdev->num_ctx = 0;
+>  	kfree(vdev->ctx);
+> @@ -377,8 +377,8 @@ static void vfio_msi_disable(struct vfio_pci_device *vdev, bool msix)
+>  	vfio_msi_set_block(vdev, 0, vdev->num_ctx, NULL, msix);
+>  
+>  	for (i = 0; i < vdev->num_ctx; i++) {
+> -		virqfd_disable(vdev, &vdev->ctx[i].unmask);
+> -		virqfd_disable(vdev, &vdev->ctx[i].mask);
+> +		virqfd_disable(&vdev->ctx[i].unmask);
+> +		virqfd_disable(&vdev->ctx[i].mask);
+>  	}
+>  
+>  	if (msix) {
+> @@ -415,7 +415,7 @@ static int vfio_pci_set_intx_unmask(struct vfio_pci_device *vdev,
+>  					     vfio_send_intx_eventfd, NULL,
+>  					     &vdev->ctx[0].unmask, fd);
+>  
+> -		virqfd_disable(vdev, &vdev->ctx[0].unmask);
+> +		virqfd_disable(&vdev->ctx[0].unmask);
+>  	}
+>  
+>  	return 0;
+> diff --git a/drivers/vfio/virqfd.c b/drivers/vfio/virqfd.c
+> index 9cf2842..4528450 100644
+> --- a/drivers/vfio/virqfd.c
+> +++ b/drivers/vfio/virqfd.c
+> @@ -17,6 +17,7 @@
+>  #include "pci/vfio_pci_private.h"
+>  
+>  static struct workqueue_struct *vfio_irqfd_cleanup_wq;
+> +static spinlock_t lock;
+>  
+>  int __init vfio_pci_virqfd_init(void)
+>  {
+> @@ -25,6 +26,8 @@ int __init vfio_pci_virqfd_init(void)
+>  	if (!vfio_irqfd_cleanup_wq)
+>  		return -ENOMEM;
+>  
+> +	spin_lock_init(&lock);
+> +
+>  	return 0;
+>  }
+>  
+> @@ -53,21 +56,21 @@ static int virqfd_wakeup(wait_queue_t *wait, unsigned mode, int sync, void *key)
+>  
+>  	if (flags & POLLHUP) {
+>  		unsigned long flags;
+> -		spin_lock_irqsave(&virqfd->vdev->irqlock, flags);
+> +		spin_lock_irqsave(&lock, flags);
+>  
+>  		/*
+>  		 * The eventfd is closing, if the virqfd has not yet been
+>  		 * queued for release, as determined by testing whether the
+> -		 * vdev pointer to it is still valid, queue it now.  As
+> +		 * virqfd pointer to it is still valid, queue it now.  As
+>  		 * with kvm irqfds, we know we won't race against the virqfd
+> -		 * going away because we hold wqh->lock to get here.
+> +		 * going away because we hold the lock to get here.
+>  		 */
+>  		if (*(virqfd->pvirqfd) == virqfd) {
+>  			*(virqfd->pvirqfd) = NULL;
+>  			virqfd_deactivate(virqfd);
+>  		}
+>  
+> -		spin_unlock_irqrestore(&virqfd->vdev->irqlock, flags);
+> +		spin_unlock_irqrestore(&lock, flags);
+>  	}
+>  
+>  	return 0;
+> @@ -143,16 +146,16 @@ int virqfd_enable(struct vfio_pci_device *vdev,
+>  	 * we update the pointer to the virqfd under lock to avoid
+>  	 * pushing multiple jobs to release the same virqfd.
+>  	 */
+> -	spin_lock_irq(&vdev->irqlock);
+> +	spin_lock_irq(&lock);
+>  
+>  	if (*pvirqfd) {
+> -		spin_unlock_irq(&vdev->irqlock);
+> +		spin_unlock_irq(&lock);
+>  		ret = -EBUSY;
+>  		goto err_busy;
+>  	}
+>  	*pvirqfd = virqfd;
+>  
+> -	spin_unlock_irq(&vdev->irqlock);
+> +	spin_unlock_irq(&lock);
+>  
+>  	/*
+>  	 * Install our own custom wake-up handling so we are notified via
+> @@ -189,19 +192,18 @@ err_fd:
+>  	return ret;
+>  }
+>  
+> -void virqfd_disable(struct vfio_pci_device *vdev,
+> -			   struct virqfd **pvirqfd)
+> +void virqfd_disable(struct virqfd **pvirqfd)
+>  {
+>  	unsigned long flags;
+>  
+> -	spin_lock_irqsave(&vdev->irqlock, flags);
+> +	spin_lock_irqsave(&lock, flags);
+>  
+>  	if (*pvirqfd) {
+>  		virqfd_deactivate(*pvirqfd);
+>  		*pvirqfd = NULL;
+>  	}
+>  
+> -	spin_unlock_irqrestore(&vdev->irqlock, flags);
+> +	spin_unlock_irqrestore(&lock, flags);
+>  
+>  	/*
+>  	 * Block until we know all outstanding shutdown jobs have completed.
+> diff --git a/include/linux/vfio.h b/include/linux/vfio.h
+> index 43968e8..44c9808 100644
+> --- a/include/linux/vfio.h
+> +++ b/include/linux/vfio.h
+> @@ -123,7 +123,6 @@ extern int virqfd_enable(struct vfio_pci_device *vdev,
+>  			 int (*handler)(struct vfio_pci_device *, void *),
+>  			 void (*thread)(struct vfio_pci_device *, void *),
+>  			 void *data, struct virqfd **pvirqfd, int fd);
+> -extern void virqfd_disable(struct vfio_pci_device *vdev,
+> -			   struct virqfd **pvirqfd);
+> +extern void virqfd_disable(struct virqfd **pvirqfd);
+>  
+>  #endif /* VFIO_H */
+
+
 
