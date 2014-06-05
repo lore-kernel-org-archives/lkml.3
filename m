@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754126AbaFEEsA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 00:48:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44133 "EHLO
+	id S1754138AbaFEEsY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 00:48:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44128 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752979AbaFEEVQ (ORCPT
+	with ESMTP id S1752879AbaFEEVP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 00:21:16 -0400
+	Thu, 5 Jun 2014 00:21:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Henningsson <david.henningsson@canonical.com>,
-        Takashi Iwai <tiwai@suse.de>, Ben Hutchings <ben@decadent.org.uk>,
-        Weng Meiling <wengmeiling.weng@huawei.com>
-Subject: [PATCH 3.4 122/214] ALSA: HDA: Add inverted internal mic quirk for Lenovo S205
-Date: Wed,  4 Jun 2014 21:18:05 -0700
-Message-Id: <20140605041656.097326491@linuxfoundation.org>
+        Alex Hung <alex.hung@canonical.com>, Matthew Garrett <mjg@redhat.com>,
+        Andreas Sturmlechner <andreas.sturmlechner@gmail.com>
+Subject: [PATCH 3.4 121/214] thinkpad-acpi: fix issuing duplicated key events for brightness up/down
+Date: Wed,  4 Jun 2014 21:18:04 -0700
+Message-Id: <20140605041655.955286991@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -28,33 +27,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Henningsson <david.henningsson@canonical.com>
+From: Alex Hung <alex.hung@canonical.com>
 
-commit b3c5dce81584391af8b6dedb0647e65c17aab3a2 upstream.
+commit ff413195e830541afeae469fc866ecd0319abd7e upstream.
 
-The Lenovo Ideapad S205 has an internal mic where the right channel
-is phase inverted.
+The tp_features.bright_acpimode will not be set correctly for brightness
+control because ACPI_VIDEO_HID will not be located in ACPI. As a result,
+a duplicated key event will always be sent. acpi_video_backlight_support()
+is sufficient to detect standard ACPI brightness control.
 
-BugLink: https://bugs.launchpad.net/bugs/884652
-Signed-off-by: David Henningsson <david.henningsson@canonical.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Cc: Weng Meiling <wengmeiling.weng@huawei.com>
+Signed-off-by: Alex Hung <alex.hung@canonical.com>
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
+Cc: Andreas Sturmlechner <andreas.sturmlechner@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_conexant.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/platform/x86/thinkpad_acpi.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/pci/hda/patch_conexant.c
-+++ b/sound/pci/hda/patch_conexant.c
-@@ -4477,6 +4477,7 @@ static const struct snd_pci_quirk cxt506
- 	SND_PCI_QUIRK(0x17aa, 0x21ce, "Lenovo T420", CXT_PINCFG_LENOVO_TP410),
- 	SND_PCI_QUIRK(0x17aa, 0x21cf, "Lenovo T520", CXT_PINCFG_LENOVO_TP410),
- 	SND_PCI_QUIRK(0x17aa, 0x3975, "Lenovo U300s", CXT_FIXUP_STEREO_DMIC),
-+	SND_PCI_QUIRK(0x17aa, 0x397b, "Lenovo S205", CXT_FIXUP_STEREO_DMIC),
- 	{}
- };
- 
+--- a/drivers/platform/x86/thinkpad_acpi.c
++++ b/drivers/platform/x86/thinkpad_acpi.c
+@@ -3402,7 +3402,7 @@ static int __init hotkey_init(struct ibm
+ 	/* Do not issue duplicate brightness change events to
+ 	 * userspace. tpacpi_detect_brightness_capabilities() must have
+ 	 * been called before this point  */
+-	if (tp_features.bright_acpimode && acpi_video_backlight_support()) {
++	if (acpi_video_backlight_support()) {
+ 		pr_info("This ThinkPad has standard ACPI backlight "
+ 			"brightness control, supported by the ACPI "
+ 			"video driver\n");
 
 
