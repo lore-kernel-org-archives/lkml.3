@@ -1,82 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752273AbaFEDYf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 23:24:35 -0400
-Received: from g6t1524.atlanta.hp.com ([15.193.200.67]:56432 "EHLO
-	g6t1524.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752150AbaFEDYe (ORCPT
+	id S1752163AbaFED2Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 23:28:16 -0400
+Received: from [207.46.163.143] ([207.46.163.143]:52346 "EHLO
+	na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751505AbaFED2O convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 23:24:34 -0400
-Message-ID: <538FE2DE.8080800@hp.com>
-Date: Wed, 04 Jun 2014 23:24:14 -0400
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+	Wed, 4 Jun 2014 23:28:14 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        David Miller <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        stephen hemminger <stephen@networkplumber.org>
+Subject: RE: linux-next: manual merge of the net-next tree with Linus' tree
+Thread-Topic: linux-next: manual merge of the net-next tree with Linus' tree
+Thread-Index: AQHPgGw5CbUFRm+olUWdrbrM8g9I8pth2tDw
+Date: Thu, 5 Jun 2014 03:26:45 +0000
+Message-ID: <1290247eb26c49229a7fcb49021a365f@BY2PR03MB299.namprd03.prod.outlook.com>
+References: <20140605131359.771694b6@canb.auug.org.au>
+In-Reply-To: <20140605131359.771694b6@canb.auug.org.au>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [2601:8:9b00:402:605e:a01a:1e1f:e170]
+x-microsoft-antispam: BL:0;ACTION:Default;RISK:Low;SCL:0;SPMLVL:NotSpam;PCL:0;RULEID:
+x-forefront-prvs: 0233768B38
+x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(428001)(189002)(199002)(51704005)(377454003)(53754006)(13464003)(21056001)(83072002)(46102001)(74662001)(81542001)(19580405001)(83322001)(19580395003)(81342001)(85852003)(92566001)(76576001)(31966008)(4396001)(74316001)(74502001)(79102001)(101416001)(50986999)(76176999)(77982001)(86612001)(76482001)(87936001)(86362001)(2656002)(20776003)(77096999)(54356999)(33646001)(80022001)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR03MB299;H:BY2PR03MB299.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+authentication-results: spf=none (sender IP is )
+ smtp.mailfrom=kys@microsoft.com; 
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Jason Low <jason.low2@hp.com>
-CC: Peter Zijlstra <peterz@infradead.org>, mingo@kernel.org,
-        tglx@linutronix.de, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, paulmck@linux.vnet.ibm.com,
-        tim.c.chen@linux.intel.com, peter@hurleysoftware.com, riel@redhat.com,
-        hpa@zytor.com, walken@google.com, davidlohr@hp.com, aswin@hp.com,
-        scott.norton@hp.com, chegu_vinod@hp.com
-Subject: Re: [RFC PATCH 1/3] locking/mutex: Try to acquire mutex only if it
- is unlocked
-References: <1401908911-8947-1-git-send-email-jason.low2@hp.com>  <1401908911-8947-2-git-send-email-jason.low2@hp.com>  <20140604194322.GN13930@laptop.programming.kicks-ass.net> <1401917173.2232.14.camel@j-VirtualBox>
-In-Reply-To: <1401917173.2232.14.camel@j-VirtualBox>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: microsoft.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/04/2014 05:26 PM, Jason Low wrote:
-> On Wed, 2014-06-04 at 21:43 +0200, Peter Zijlstra wrote:
->> On Wed, Jun 04, 2014 at 12:08:29PM -0700, Jason Low wrote:
->>> Upon entering the slowpath in __mutex_lock_common(), we try once more
->>> to acquire the mutex. We only try to acquire it if MUTEX_SHOW_NO_WAITER
->>> (lock->count>= 0) is true in order to avoid using the atomic xchg()
->>> operation whenever it is not necessary. However, we really only need
->>> to try to acquire if the mutex is free (lock->count == 1).
->>>
->>> This patch changes it so that we only try-acquire the mutex upon
->>> entering the slowpath if it is unlocked, rather than if there are
->>> no waiters. This helps further reduce unncessary atomic xchg()
->>> operations. Furthermore, this patch introduces and uses a new
->>> MUTEX_IS_UNLOCKED() macro to improve readbability.
->>>
->>> Signed-off-by: Jason Low<jason.low2@hp.com>
->>> ---
->>>   kernel/locking/mutex.c |   10 ++++++----
->>>   1 files changed, 6 insertions(+), 4 deletions(-)
->>>
->>> diff --git a/kernel/locking/mutex.c b/kernel/locking/mutex.c
->>> index bc73d33..0925968 100644
->>> --- a/kernel/locking/mutex.c
->>> +++ b/kernel/locking/mutex.c
->>> @@ -48,9 +48,10 @@
->>>
->>>   /*
->>>    * A negative mutex count indicates that waiters are sleeping waiting for the
->>> - * mutex.
->>> + * mutex, and a count of one indicates the mutex is unlocked.
->>>    */
->>>   #define	MUTEX_SHOW_NO_WAITER(mutex)	(atomic_read(&(mutex)->count)>= 0)
->>> +#define	MUTEX_IS_UNLOCKED(mutex)	(atomic_read(&(mutex)->count) == 1)
->> So I recently saw that MUTEX_SHOW_NO_WAITER thing and cried a little;
->> and now you're adding more of that same nonsense.
->>
->> Please make them inline functions, also can we rename the SHOW_NO_WAITER
->> thing, because its not at all clear to me wtf it does; should it be
->> called: mutex_no_waiters() or somesuch?
-> Okay, I can make them inline functions. I mainly added the macro to keep
-> it consistent with the MUTEX_SHOW_NO_WAITER() check, but we can surely
-> make this more clear. mutex_no_waiters() sounds fine, or perhaps
-> something like mutex_has_no_waiters()?
->
 
-You can remove the MUTEX_SHOW_NO_WAITER macro as all the call sites are 
-to be replaced. I didn't check directly for unlocked count because of 
-fairness concern in my original patch, but I think checking directly for 
-unlocked count should be fine too.
 
--Longman
+> -----Original Message-----
+> From: Stephen Rothwell [mailto:sfr@canb.auug.org.au]
+> Sent: Wednesday, June 4, 2014 8:14 PM
+> To: David Miller; netdev@vger.kernel.org
+> Cc: linux-next@vger.kernel.org; linux-kernel@vger.kernel.org; KY Srinivasan;
+> Greg Kroah-Hartman; stephen hemminger
+> Subject: linux-next: manual merge of the net-next tree with Linus' tree
+> 
+> Hi all,
+> 
+> Today's linux-next merge of the net-next tree got a conflict in
+> drivers/hv/channel_mgmt.c between commit d3ba720dd58c ("Drivers: hv:
+> Eliminate the channel spinlock in the callback path") from Linus' tree and
+> commit 1b9d48f2a579 ("hyper-v: make uuid_le const") from the net-next
+> tree.
+> 
+> I fixed it up (see below) and can carry the fix as necessary (no action is
+> required).
+
+Thanks Stephen.
+
+Regards,
+
+K. Y
+> 
+> --
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+> 
+> diff --cc drivers/hv/channel_mgmt.c
+> index 6c8b032cacba,90d654556437..000000000000
+> --- a/drivers/hv/channel_mgmt.c
+> +++ b/drivers/hv/channel_mgmt.c
+> @@@ -404,7 -365,7 +404,7 @@@ static u32  next_vp
+>    * performance critical channels (IDE, SCSI and Network) will be uniformly
+>    * distributed across all available CPUs.
+>    */
+> - static void init_vp_index(struct vmbus_channel *channel, uuid_le
+> *type_guid)  -static u32 get_vp_index(const uuid_le *type_guid)
+> ++static void init_vp_index(struct vmbus_channel *channel, const uuid_le
+> ++*type_guid)
+>   {
+>   	u32 cur_cpu;
+>   	int i;
