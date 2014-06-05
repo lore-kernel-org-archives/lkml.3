@@ -1,93 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751376AbaFEMu2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 08:50:28 -0400
-Received: from mailout4.w2.samsung.com ([211.189.100.14]:59785 "EHLO
-	usmailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750809AbaFEMu1 (ORCPT
+	id S1751591AbaFEMud (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 08:50:33 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:33204 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751438AbaFEMuc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 08:50:27 -0400
-X-AuditID: cbfec372-b7fe76d00000687e-05-539067911c9d
-Date: Thu, 05 Jun 2014 09:50:20 -0300
-From: Mauro Carvalho Chehab <m.chehab@samsung.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL for 3.16-rc1] add DT support for vsp1
-Message-id: <20140605095020.2cc862a2.m.chehab@samsung.com>
-X-Mailer: Claws Mail 3.10.0 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupkluLIzCtJLcpLzFFi42I5/e9woO7E9AnBBhvnc1nMWb+GzeLyrjls
-	Fj0btrJaPOp7y+7A4nFixm8Wj8+b5AKYorhsUlJzMstSi/TtErgy2q/NZi2YIVzxdMF99gbG
-	m3xdjJwcEgImElvXPWCBsMUkLtxbz9bFyMUhJLCEUWLXhB4mCKeZSeLt+V2MIFUsAqoScw7N
-	YgKx2QSMJF41trCC2CJA9ucXV1hBGpgFFjNKfHy+nh0kISxgIdExby3YCl4BK4mWM/NYIdY5
-	S1xoXg4VF5T4MfkemM0soCWxeVsTK4QtL7F5zVvmCYx8s5CUzUJSNgtJ2QJG5lWMoqXFyQXF
-	Sem5hnrFibnFpXnpesn5uZsYIcFXtIPx2QarQ4wCHIxKPLwbcvqDhVgTy4orcw8xSnAwK4nw
-	JkZNCBbiTUmsrEotyo8vKs1JLT7EyMTBKdXAuLZKNsrv08Gk0lMGLlpm2cfvV//lPmnAqNl+
-	1Lyzu65Igjuh3n4fb5gqxxFWRasT/OzBPDIM3g+kLn9etl/P6x3vMd0vQSsyHxnuNJ9i1nt9
-	364ydVfO7yfeO4bvPrlw8+aKFs85n8ROm965cu5IsPzWp0+/sjTfZ3tU6rD31m1d4SOpf87Z
-	KLEUZyQaajEXFScCAAKpSuEcAgAA
+	Thu, 5 Jun 2014 08:50:32 -0400
+Date: Thu, 5 Jun 2014 14:50:22 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Stephane Eranian <eranian@google.com>, LKML <linux-kernel@vger.kernel.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Jiri Olsa <jolsa@redhat.com>, "Yan, Zheng" <zheng.z.yan@intel.com>,
+        Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
+Subject: Re: [PATCH 9/9] perf/x86: add syfs entry to disable HT bug workaround
+Message-ID: <20140605125022.GF6758@twins.programming.kicks-ass.net>
+References: <1401917658-26065-1-git-send-email-eranian@google.com>
+ <1401917658-26065-10-git-send-email-eranian@google.com>
+ <CADknwL5S8QpzCAgrKHjbGTbEx7nA8L=Vu8d-UWAYCg6X25OcGw@mail.gmail.com>
+ <CABPqkBSimH8Ob_q3dDtQiW_OwuS9nA4Gsx87H26ywNcmYd38Xw@mail.gmail.com>
+ <CADknwL6s2ttb5E2JDr6bc_XkwpxnW5ecU-3Ns88=gvgPvLYkPg@mail.gmail.com>
+ <CABPqkBQUUb+yEvC8y3oLc0DUbF3DJPzbt3sNL7Zqzufh6EYdRw@mail.gmail.com>
+ <CADknwL71NC5wBG1tnqgJ6iiA4y+HYomGpufOn7V+MP2=m7+Mig@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="/aVve/J9H4Wl5yVO"
+Content-Disposition: inline
+In-Reply-To: <CADknwL71NC5wBG1tnqgJ6iiA4y+HYomGpufOn7V+MP2=m7+Mig@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
 
-Please pull from:
-  git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media topic/vsp1
+--/aVve/J9H4Wl5yVO
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-for Device Tree support for the VSP1 driver.
+On Thu, Jun 05, 2014 at 12:16:01PM +0100, Matt Fleming wrote:
+> On 5 June 2014 11:19, Stephane Eranian <eranian@google.com> wrote:
+> > How would you know that you have a uniform workload from inside
+> > the kernel?
+>=20
+> That's what I'm asking you ;-)
+>=20
+> >> Does cpu_sibling_map not give you some indication of whether HT is
+> >> enabled? I think the topology_thread_cpumask() is the topology API for
+> >> that. But I could most definitely be wrong. Hopefully someone on the
+> >> Cc list will know.
+> >>
+> > Remember trying some of that, but when perf_event is initialized, those
+> > masks are not yet setup properly.
+>=20
+> Oh, bummer.
 
-Thanks!
-Mauro
+So we init perf very early to get nmi-watchdog up and running, but
+there's no reason you cannot register a second initcall later and flip
+the switch from it there.
 
--
+--/aVve/J9H4Wl5yVO
+Content-Type: application/pgp-signature
 
-The following changes since commit ce9c22443e77594531be84ba8d523f4148ba09fe:
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-  [media] vb2: fix compiler warning (2014-04-23 10:13:57 -0300)
+iQIcBAEBAgAGBQJTkGeOAAoJEHZH4aRLwOS6yKYQAKb+V3GUxzShWKn2E0CcGxcX
+CnxoyBjRNIkLCxsI0BbtH7IKdKmhu88WOS2T1EapJ8f4wkOjBXvVXTQDR6GiVosa
+trzmuZLk0OWCfUawsWp9PhrvwnhJGYmDH+pz3QJkCqcoBhWScDu025+1lOQjm9Ur
+VbFd6RS9uhU7w6FXFOjZhm0S56hDgVVYvsjog84THlHHYG3AHS5etMbvP/BGKHoy
+Ho0ACsy4C5CMKr6FLAFzXEILalCohslndjq3KXEiI2kSg9Ih62dWm8VI4VSOdazw
+qfO+yufH8DC7RJ1hBtAJLB4/4XOqB1G8pbbpSyQtxpLdTGzu3zOPVuyBNAHzcHC0
+zDrDIxJsKq2NVFS5Sm2B/BHh6qTCfc2Owv9D7sq8+CLgpUq4/k/nwODFV9riWGvP
+W4vgrw1AthLV8Hug/bfFsyvr13wsVtB0JDEZOL6iHoUW2JGTLFfP9riSFNRDvRix
+edf+GcdYIgrkJlG0XZlKF8u9SB4oH/H1bLA3F+S1ptpqTiI5hezPAizIqog4vNxI
+50qpO3GWn4ulcnwL1enTEB+r7jWtzg6ICZI2zmuX1S/ZR43c1RKkUlGXJIX6mPU8
+DEVgoyt+VDfoVddC/8BvGW9pC1QbM1F2ubj1erjxvPAGLA+JhSGLTzKlciEBAUwx
+nuLk8Q2sBGkB4SacHbXu
+=uJVi
+-----END PGP SIGNATURE-----
 
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media topic/vsp1
-
-for you to fetch changes up to 0b82fb95d9edf7bdfc6486c67a42dbf9b1e97765:
-
-  [media] v4l: vsp1: Add DT support (2014-04-23 10:21:58 -0300)
-
-----------------------------------------------------------------
-Laurent Pinchart (6):
-      [media] v4l: vsp1: Remove unexisting rt clocks
-      [media] v4l: vsp1: uds: Enable scaling of alpha layer
-      [media] v4l: vsp1: Support multi-input entities
-      [media] v4l: vsp1: Add BRU support
-      [media] v4l: vsp1: Add DT bindings documentation
-      [media] v4l: vsp1: Add DT support
-
- .../devicetree/bindings/media/renesas,vsp1.txt     |  43 +++
- drivers/media/platform/vsp1/Makefile               |   2 +-
- drivers/media/platform/vsp1/vsp1.h                 |   3 +-
- drivers/media/platform/vsp1/vsp1_bru.c             | 395 +++++++++++++++++++++
- drivers/media/platform/vsp1/vsp1_bru.h             |  39 ++
- drivers/media/platform/vsp1/vsp1_drv.c             | 101 +++---
- drivers/media/platform/vsp1/vsp1_entity.c          |  57 +--
- drivers/media/platform/vsp1/vsp1_entity.h          |  24 +-
- drivers/media/platform/vsp1/vsp1_hsit.c            |   7 +-
- drivers/media/platform/vsp1/vsp1_lif.c             |   1 -
- drivers/media/platform/vsp1/vsp1_lut.c             |   1 -
- drivers/media/platform/vsp1/vsp1_regs.h            |  98 +++++
- drivers/media/platform/vsp1/vsp1_rpf.c             |   7 +-
- drivers/media/platform/vsp1/vsp1_rwpf.h            |   4 +
- drivers/media/platform/vsp1/vsp1_sru.c             |   1 -
- drivers/media/platform/vsp1/vsp1_uds.c             |   4 +-
- drivers/media/platform/vsp1/vsp1_video.c           |  26 +-
- drivers/media/platform/vsp1/vsp1_video.h           |   1 +
- drivers/media/platform/vsp1/vsp1_wpf.c             |  13 +-
- 19 files changed, 733 insertions(+), 94 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/media/renesas,vsp1.txt
- create mode 100644 drivers/media/platform/vsp1/vsp1_bru.c
- create mode 100644 drivers/media/platform/vsp1/vsp1_bru.h
-
+--/aVve/J9H4Wl5yVO--
