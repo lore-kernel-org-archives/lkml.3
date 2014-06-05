@@ -1,85 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751166AbaFEEMD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 00:12:03 -0400
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:47374 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750866AbaFEEL7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 00:11:59 -0400
-Message-ID: <538FEDE9.4010603@linaro.org>
-Date: Thu, 05 Jun 2014 12:11:21 +0800
-From: Hanjun Guo <hanjun.guo@linaro.org>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1751291AbaFEEMg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 00:12:36 -0400
+Received: from ozlabs.org ([103.22.144.67]:35253 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751098AbaFEEMf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jun 2014 00:12:35 -0400
+Date: Thu, 5 Jun 2014 14:12:27 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Dave Airlie <airlied@linux.ie>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Jani Nikula <jani.nikula@intel.com>
+Subject: linux-next: build failure after merge of the drm tree
+Message-ID: <20140605141227.7449bb38@canb.auug.org.au>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
 MIME-Version: 1.0
-To: "Zheng, Lv" <lv.zheng@intel.com>, Lee Jones <lee.jones@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "wsa@the-dreams.de" <wsa@the-dreams.de>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "devel@acpica.org" <devel@acpica.org>
-Subject: Re: [PATCH 1/7] ACPICA: Only include ACPI asm files if ACPI is enabled
-References: <1401883796-17841-1-git-send-email-lee.jones@linaro.org> <1401883796-17841-2-git-send-email-lee.jones@linaro.org> <3061297.feg5DGUjIt@vostro.rjw.lan> <20140604125137.GA18171@lee--X1> <1AE640813FDE7649BE1B193DEA596E880262042C@SHSMSX101.ccr.corp.intel.com>
-In-Reply-To: <1AE640813FDE7649BE1B193DEA596E880262042C@SHSMSX101.ccr.corp.intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/OPW+P51QxJBdWP_AoTzaiwe"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-6-5 9:14, Zheng, Lv wrote:
-> Hi, Lee
-> 
->> From: Lee Jones [mailto:lee.jones@linaro.org]
->> Sent: Wednesday, June 04, 2014 8:52 PM
->> To: Rafael J. Wysocki
->>
->> On Wed, 04 Jun 2014, Rafael J. Wysocki wrote:
->>
->>> On Wednesday, June 04, 2014 01:09:50 PM Lee Jones wrote:
->>>> Any drivers which support ACPI and Device Tree probing need to include
->>>> both respective header files.  Without this patch, if a driver is being
->>>> used on a platform which does not support ACPI and subsequently does not
->>>> have the config option enabled, but includes linux/acpi.h the build
->>>> breaks with:
->>>>
->>>>   In file included from ../include/acpi/platform/acenv.h:150:0,
->>>>                    from ../include/acpi/acpi.h:56,
->>>>                    from ../include/linux/match.h:2,
->>>>                    from ../drivers/i2c/i2c-core.c:43:
->>>>   ../include/acpi/platform/aclinux.h:73:23:
->>>>    fatal error: asm/acenv.h: No such file or directory
->>>>    #include <asm/acenv.h>
->>>>                        ^
-> 
-> Note that:
-> In our tree:
-> <asm/acenv.h> is only included by <acpi/acpi.h>.
-> And <acpi/acpi.h> is only included by
-> 1. <linux/acpi.h> when CONFIG_ACPI enabled
-> 2. <linux/sfi_acpi.h> - this is x86 specific, we'll clean it up by implementing stubs for all ACPI external interfaces.
-> So there is no case we need to exclude <asm/acenv.h> when CONFIG_ACPI is not enabled.
-> 
-> I cannot find linux/match.h here.
-> If <linux/match.h> want to include ACPI features, it shouldn't include <acpi/acpi.h>, but should include <linux/acpi.h>.
-> Please refer to:
-> https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=8b48463f
-> And stop including <acpi/acpi.h> directly in any cases.
+--Sig_/OPW+P51QxJBdWP_AoTzaiwe
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Ah, I agree, please ignore my previous email,
-sorry for the noise.
+Hi Dave,
 
-Since it is very important to include <linux/acpi.h> but not <acpi/acpi.h>,
-can we document it somewhere as the guidance? Then people will not
-make such mistake :)
+After merging the drm tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
-Thanks
-Hanjun
+drivers/gpu/drm/i915/intel_fbdev.c: In function 'intel_fb_initial_config':
+drivers/gpu/drm/i915/intel_fbdev.c:392:4: error: implicit declaration of fu=
+nction 'drm_get_connector_name' [-Werror=3Dimplicit-function-declaration]
+    DRM_DEBUG_KMS("using first mode listed on connector %s\n",
+    ^
 
+Caused by commits c0c97622c1bd ("drm/i915: Use the connector name in
+fbdev debug messages") and c23cc4178dd1 ("drm/i915: replace
+drm_get_connector_name() with direct name field use").
+
+I have used the drm tree from next-20140604 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/OPW+P51QxJBdWP_AoTzaiwe
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTj+4xAAoJEMDTa8Ir7ZwVUUsQAIMw0BeoY5LTowxSOUdOm2eC
+/zT1kdTuhuSSJHYRd5/uo2uCOmZcdjFXBid9JJ6LLKXn/fY+JI36U0Ye56VNVaVO
+Vn4tml8zu4UDWRUkX7U7DDVfqjeG7ZD5ci833cyIhiB7gUbSg/Bm4rjvqaQk3+Ex
+sGpa88IZBAw3eAcxWRuIOwYmVL9fcdILYGw4H+V5zcSd/RwdHQbAQhBoAJ6Rmmrk
+gz6b774vln7VX9c6RpKXzs76IoUp9S0YZbZzfJefIymr/taKlT6YZZCHf7g+1QvR
+aEm5/TlivkE6+JkQFzF4nJceKJnw48pTO7eIS1HE72NwOs4+2cQ4SBnkxf9XsaYm
+/KNOsHNv6uaSOieSIEWJ4DQ7ftcHGlv6Xhg8XhZ/AP759SN7nTcqeWedTkjbboBX
+gAeFrW0oxeDy5dnMNYzeDT6p6A0R5Q7WUPkMTTJQx5KZNdznDsj+m/X8lYhgoKId
+J3cBzUWaaYxTuUR+49FCqzTpfy5EcWzICP/84v724AGb+yR78iK+fbdDpfE3MKDx
+xPN2ZUyxtIrTjhMeAeLyKDZPPZcGU3L0DmxHsn2R7nVDhBwbdVXNRiqdntxwiO8k
+R4z9MIrAuSz+Vjeyb6ShhK4DBF/Ayud+FuOUDvPcn3ZQS9LfupLvQ6G8Ih51RfgI
+4c2sQWavQeaJzdWB76Iz
+=02d+
+-----END PGP SIGNATURE-----
+
+--Sig_/OPW+P51QxJBdWP_AoTzaiwe--
