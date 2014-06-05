@@ -1,36 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752746AbaFEP2g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 11:28:36 -0400
-Received: from www.linutronix.de ([62.245.132.108]:49928 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751859AbaFEP2f (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 11:28:35 -0400
-Message-Id: <20140605152544.641846795@linutronix.de>
-User-Agent: quilt/0.63-1
-Date: Thu, 05 Jun 2014 15:28:32 -0000
-From: Thomas Gleixner <tglx@linutronix.de>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Brad Mouring <bmouring@ni.com>
-Subject: [patch 0/2] rtmutex: Sanitze deadlock detection and chain walk
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	id S1752776AbaFEPa0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 11:30:26 -0400
+Received: from vegas.theobroma-systems.com ([144.76.126.164]:53558 "EHLO
+	mail.theobroma-systems.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752158AbaFEPaZ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jun 2014 11:30:25 -0400
+X-Greylist: delayed 903 seconds by postgrey-1.27 at vger.kernel.org; Thu, 05 Jun 2014 11:30:24 EDT
+Content-Type: text/plain; charset=US-ASCII
+Mime-Version: 1.0 (Mac OS X Mail 6.2 \(1499\))
+Subject: Re: [PATCH] usb: gadget: gadgetfs: correct dev state
+From: Marcus Nutzinger <marcus.nutzinger@theobroma-systems.com>
+In-Reply-To: <53907C23.5060404@cogentembedded.com>
+Date: Thu, 5 Jun 2014 17:15:02 +0200
+Cc: Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 7BIT
+Message-Id: <5A6C89E5-92AB-4908-8867-2BE783794E60@theobroma-systems.com>
+References: <1401973680-18413-1-git-send-email-marcus.nutzinger@theobroma-systems.com> <53907C23.5060404@cogentembedded.com>
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+X-Mailer: Apple Mail (2.1499)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Brad found a flaw in the dead lock detection logic when the lock chain
-changes during the chain walk and tried to fixup the deadlock detector
-itself.
+Hi Sergei,
 
-The following patches address this issue in a different way. Instead
-of guessing about the chain change, simply detect it.
+On Jun 5, 2014, at 4:18 PM, Sergei Shtylyov <sergei.shtylyov@cogentembedded.com> wrote:
+
+>   Please also specify that commit's summary line in parens.
+
+I'll resubmit the updated patch in a minute!
+
+>> +	/* other endpoints were all decoupled from this device */
+>> +	spin_lock_irq(&dev->lock);
+>> +	dev->state = STATE_DEV_DISABLED;
+>> +	spin_unlock_irq(&dev->lock);
+> 
+>   Not sure I understand why you need spinlock here... isn't the assignment atomic already?
+
+
+Sure, an assignment might be atomic. However, following the policy of commit 7489d149
+(USB: gadgetfs cleanups) all ep0 state changes shall be protected by spinlocks.
 
 Thanks,
-
-	tglx
+Marcus
 
