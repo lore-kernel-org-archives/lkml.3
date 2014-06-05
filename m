@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754225AbaFEFRT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 01:17:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43595 "EHLO
+	id S1754263AbaFEFRm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 01:17:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43592 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751671AbaFEETs (ORCPT
+	with ESMTP id S1750866AbaFEETr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 00:19:48 -0400
+	Thu, 5 Jun 2014 00:19:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>,
-        =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>
-Subject: [PATCH 3.4 013/214] drm/radeon: call drm_edid_to_eld when we update the edid
-Date: Wed,  4 Jun 2014 21:16:16 -0700
-Message-Id: <20140605041641.545945153@linuxfoundation.org>
+        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
+Subject: [PATCH 3.4 010/214] usb: option: add Alcatel L800MA
+Date: Wed,  4 Jun 2014 21:16:13 -0700
+Message-Id: <20140605041641.112432891@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -30,32 +29,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexdeucher@gmail.com>
+From: Bjørn Mork <bjorn@mork.no>
 
-commit 16086279353cbfecbb3ead474072dced17b97ddc upstream.
+commit dd6b48ecec2ea7d15f28d5e5474388681899a5e1 upstream.
 
-This needs to be done to update some of the fields in
-the connector structure used by the audio code.
+Device interface layout:
+0: ff/ff/ff - serial
+1: ff/00/00 - serial AT+PPP
+2: ff/ff/ff - QMI/wwan
+3: 08/06/50 - storage
 
-Noticed by several users on irc.
-
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Signed-off-by: Christian König <christian.koenig@amd.com>
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_display.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/serial/option.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/gpu/drm/radeon/radeon_display.c
-+++ b/drivers/gpu/drm/radeon/radeon_display.c
-@@ -750,6 +750,7 @@ int radeon_ddc_get_modes(struct radeon_c
- 	if (radeon_connector->edid) {
- 		drm_mode_connector_update_edid_property(&radeon_connector->base, radeon_connector->edid);
- 		ret = drm_add_edid_modes(&radeon_connector->base, radeon_connector->edid);
-+		drm_edid_to_eld(&radeon_connector->base, radeon_connector->edid);
- 		return ret;
- 	}
- 	drm_mode_connector_update_edid_property(&radeon_connector->base, NULL);
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -292,6 +292,7 @@ static void option_instat_callback(struc
+ #define ALCATEL_PRODUCT_X060S_X200		0x0000
+ #define ALCATEL_PRODUCT_X220_X500D		0x0017
+ #define ALCATEL_PRODUCT_L100V			0x011e
++#define ALCATEL_PRODUCT_L800MA			0x0203
+ 
+ #define PIRELLI_VENDOR_ID			0x1266
+ #define PIRELLI_PRODUCT_C100_1			0x1002
+@@ -1521,6 +1522,8 @@ static const struct usb_device_id option
+ 	  .driver_info = (kernel_ulong_t)&net_intf5_blacklist },
+ 	{ USB_DEVICE(ALCATEL_VENDOR_ID, ALCATEL_PRODUCT_L100V),
+ 	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
++	{ USB_DEVICE(ALCATEL_VENDOR_ID, ALCATEL_PRODUCT_L800MA),
++	  .driver_info = (kernel_ulong_t)&net_intf2_blacklist },
+ 	{ USB_DEVICE(AIRPLUS_VENDOR_ID, AIRPLUS_PRODUCT_MCD650) },
+ 	{ USB_DEVICE(TLAYTECH_VENDOR_ID, TLAYTECH_PRODUCT_TEU800) },
+ 	{ USB_DEVICE(LONGCHEER_VENDOR_ID, FOUR_G_SYSTEMS_PRODUCT_W14),
 
 
