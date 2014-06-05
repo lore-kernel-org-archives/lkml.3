@@ -1,88 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751571AbaFEJcO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 05:32:14 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:12776 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750840AbaFEJcN (ORCPT
+	id S1751362AbaFEJnI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 05:43:08 -0400
+Received: from mout.kundenserver.de ([212.227.126.187]:56051 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750833AbaFEJnF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 05:32:13 -0400
-X-IronPort-AV: E=Sophos;i="4.98,980,1392134400"; 
-   d="scan'208";a="31501330"
-Message-ID: <1401958994.3962.2.camel@localhost.localdomain>
-Subject: Re: =?ISO-8859-1?Q?=B7=5Bping=5D=5BPATCH?= v3] lib: add size unit
- t/p/e to memparse
-From: Gui Hecheng <guihc.fnst@cn.fujitsu.com>
-To: <akpm@linux-foundation.org>
-CC: <linux-btrfs@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Date: Thu, 5 Jun 2014 17:03:14 +0800
-In-Reply-To: <1396428877-24089-1-git-send-email-guihc.fnst@cn.fujitsu.com>
-References: <1396428877-24089-1-git-send-email-guihc.fnst@cn.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+	Thu, 5 Jun 2014 05:43:05 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, Dave Martin <Dave.Martin@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Grant Grundler <grundler@chromium.org>, Joerg Roedel <joro@8bytes.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
+        Marc Zyngier <marc.zyngier@arm.com>, iommu@lists.linux-foundation.org,
+        Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
+        linux-tegra@vger.kernel.org, Cho KyongHo <pullip.cho@samsung.com>,
+        Hiroshi Doyu <hdoyu@nvidia.com>
+Subject: Re: [PATCH v2] devicetree: Add generic IOMMU device tree bindings
+Date: Thu, 05 Jun 2014 11:42:12 +0200
+Message-ID: <6794037.0YTCc6JFQV@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140604213159.GB18780@mithrandir>
+References: <1400877395-4235-1-git-send-email-thierry.reding@gmail.com> <4830064.JvgTAs8Xty@wuerfel> <20140604213159.GB18780@mithrandir>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.226.111]
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:yYAghirob7CGtXfYNEqoxhraT2j+yLohYnioRr2RDEo
+ GsOkOucAve+RoKkJGVCUnmarVUJ5YXvCkDwBL3Z3iJ4x7BNJZK
+ Zqmvelp5ut6o4W+YFu7BK69U+5ePi1ycsPhH12mUO4jusCYVV2
+ sSlYEG8iXq+Y8Lv7bb5fdocWsNhYflHOnXOqYwzAq3JAkBc2s4
+ vSdJeU7Ibj+mjPEGnEGM1+pqBJ+JqA0EobmmuwKeePmWIju0T0
+ 9kSPNPqAFOiIealSPP6MzuP1xNpZbnjUutUgEY8tQjBoX7XpiE
+ NwnwPkIz4AXY9JyTVoZxCxbyTkyHIZgE1cwDsv5KgD3+o8ILhb
+ 6Wl8gwb0n5fUQMYcrU0w=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-04-02 at 16:54 +0800, Gui Hecheng wrote:
-> For modern filesystems such as btrfs, t/p/e size level operations
-> are common.
-> add size unit t/p/e parsing to memparse
+On Wednesday 04 June 2014 23:32:00 Thierry Reding wrote:
+> On Fri, May 30, 2014 at 09:01:19PM +0200, Arnd Bergmann wrote:
+> > On Friday 30 May 2014 12:22:32 Dave Martin wrote:
+> > > > +
+> > > > +Examples:
+> > > > +=========
+> > > > +
+> > > > +Single-master IOMMU:
+> > > > +--------------------
+> > > > +
+> > > > + iommu {
+> > > > +         #address-cells = <0>;
+> > > > +         #size-cells = <0>;
+> > > > + };
+> > > > +
+> > > > + master {
+> > > > +         iommus = <&/iommu>;
+> > > > + };
+> > > > +
+> > > > +Multiple-master IOMMU with fixed associations:
+> > > > +----------------------------------------------
+> > > > +
+> > > > + /* multiple-master IOMMU */
+> > > > + iommu {
+> > > > +         /*
+> > > > +          * Masters are statically associated with this IOMMU and
+> > > > +          * address translation is always enabled.
+> > > > +          */
+> > > > +         #address-cells = <0>;
+> > > > +         #size-cells = <0>;
+> > > 
+> > > In this example, can different translations be set up for the different
+> > > masters?
+> > > 
+> > > With no cells available to contain any sort of ID, it looks like this
+> > > is not possible.
+> > 
+> > Correct, this example is for an IOMMU that does not use IDs but has a
+> > shared address space for all devices.
 > 
-> Signed-off-by: Gui Hecheng <guihc.fnst@cn.fujitsu.com>
-> ---
-> changelog
-> 	v1->v2: replace kilobyte with kibibyte, and others
-> 	v2->v3: add missing unit "bytes" in comment
-> ---
->  lib/cmdline.c | 25 ++++++++++++++++++++-----
->  1 file changed, 20 insertions(+), 5 deletions(-)
-> 
-> diff --git a/lib/cmdline.c b/lib/cmdline.c
-> index eb67911..511b9be 100644
-> --- a/lib/cmdline.c
-> +++ b/lib/cmdline.c
-> @@ -119,11 +119,17 @@ char *get_options(const char *str, int nints, int *ints)
->   *	@retptr: (output) Optional pointer to next char after parse completes
->   *
->   *	Parses a string into a number.  The number stored at @ptr is
-> - *	potentially suffixed with %K (for kilobytes, or 1024 bytes),
-> - *	%M (for megabytes, or 1048576 bytes), or %G (for gigabytes, or
-> - *	1073741824).  If the number is suffixed with K, M, or G, then
-> - *	the return value is the number multiplied by one kilobyte, one
-> - *	megabyte, or one gigabyte, respectively.
-> + *	potentially suffixed with
-> + *	%K (for kibibytes, or 1024 bytes),
-> + *	%M (for mebibytes, or 1048576 bytes),
-> + *	%G (for gibibytes, or 1073741824 bytes),
-> + *	%T (for tebibytes, or 1099511627776 bytes),
-> + *	%P (for pebibytes, or 1125899906842624 bytes),
-> + *	%E (for exbibytes, or 1152921504606846976 bytes).
-> + *	If the number is suffixed with K, M, G, T, P, E, then
-> + *	the return value is the number multiplied by one kibibyte, one
-> + *	mebibyte, one gibibyte, one tebibyte, one pebibyte, one exbibyte,
-> + *	respectively.
->   */
->  
->  unsigned long long memparse(const char *ptr, char **retptr)
-> @@ -133,6 +139,15 @@ unsigned long long memparse(const char *ptr, char **retptr)
->  	unsigned long long ret = simple_strtoull(ptr, &endptr, 0);
->  
->  	switch (*endptr) {
-> +	case 'E':
-> +	case 'e':
-> +		ret <<= 10;
-> +	case 'P':
-> +	case 'p':
-> +		ret <<= 10;
-> +	case 'T':
-> +	case 't':
-> +		ret <<= 10;
->  	case 'G':
->  	case 'g':
->  		ret <<= 10;
+> Couldn't these device all still have separate address spaces?
 
+No. If they had separate address spaces, they would require a more
+sophisticated IOMMU. A simple IOMMU without IDs can only be used
+for overcoming address space limits (e.g. for 32-bit DMA masters on
+systems with more than 4GB RAM) but not for strict isolation.
 
+You basically have one page table shared across all devices connected
+to the IOMMU, and every call to dma_alloc_coherent or dma_map_*
+allocates a new IOVA that isn't used by any of the other devices
+already, but you can't prevent a malicious user from getting a device
+to do DMA to an IOVA that has been set up for another device.
+
+You could have one such IOMMU per device of course, but I guess that's
+not what you mean.
+
+	Arnd
