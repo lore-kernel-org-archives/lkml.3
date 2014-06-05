@@ -1,295 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753148AbaFER6z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 13:58:55 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51617 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751905AbaFER6y (ORCPT
+	id S1752373AbaFESAZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 14:00:25 -0400
+Received: from mail-yh0-f49.google.com ([209.85.213.49]:44339 "EHLO
+	mail-yh0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751440AbaFESAY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 13:58:54 -0400
-Date: Thu, 5 Jun 2014 10:58:37 -0700
-From: tip-bot for Igor Mammedov <tipbot@zytor.com>
-Message-ID: <tip-3e1a878b7ccdb31da6d9d2b855c72ad87afeba3f@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        imammedo@redhat.com, tglx@linutronix.de, toshi.kani@hp.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        imammedo@redhat.com, tglx@linutronix.de, toshi.kani@hp.com
-In-Reply-To: <1401975765-22328-4-git-send-email-imammedo@redhat.com>
-References: <1401975765-22328-4-git-send-email-imammedo@redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86/smpboot:
-  Initialize secondary CPU only if master CPU will wait for it
-Git-Commit-ID: 3e1a878b7ccdb31da6d9d2b855c72ad87afeba3f
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Thu, 5 Jun 2014 14:00:24 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140605165213.GI16642@pd.tnic>
+References: <CADknwL6s2ttb5E2JDr6bc_XkwpxnW5ecU-3Ns88=gvgPvLYkPg@mail.gmail.com>
+	<CABPqkBQUUb+yEvC8y3oLc0DUbF3DJPzbt3sNL7Zqzufh6EYdRw@mail.gmail.com>
+	<CADknwL71NC5wBG1tnqgJ6iiA4y+HYomGpufOn7V+MP2=m7+Mig@mail.gmail.com>
+	<CABPqkBTEafZ5MbYM4UQxX92uWcPiphPeXMoJRKTt8jnrB+5j2w@mail.gmail.com>
+	<20140605132750.GA16811@pd.tnic>
+	<CABPqkBT9ExD4unz0VZ5G1d+oGpkepiwXskgBpv5GTavs=tYAKA@mail.gmail.com>
+	<20140605140316.GB16811@pd.tnic>
+	<CAHzUATiVCHytrG3sz8AmC8anZTQcPDRHp91-kWEoeq=RU7UNiw@mail.gmail.com>
+	<20140605151734.GD16811@pd.tnic>
+	<CAHzUATioT8e=RxypbqBsHw-QkcYsdQEiKhb3e44A4S+98Ut6=Q@mail.gmail.com>
+	<20140605165213.GI16642@pd.tnic>
+Date: Thu, 5 Jun 2014 21:00:23 +0300
+Message-ID: <CAHzUATiOi0_U4r+TN_okYh_5_VB-NpW+A5qgg6Vkz9kyrwqZug@mail.gmail.com>
+Subject: Re: [PATCH 9/9] perf/x86: add syfs entry to disable HT bug workaround
+From: Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Stephane Eranian <eranian@google.com>,
+        Matt Fleming <matt@console-pimps.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Jiri Olsa <jolsa@redhat.com>, "Yan, Zheng" <zheng.z.yan@intel.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  3e1a878b7ccdb31da6d9d2b855c72ad87afeba3f
-Gitweb:     http://git.kernel.org/tip/3e1a878b7ccdb31da6d9d2b855c72ad87afeba3f
-Author:     Igor Mammedov <imammedo@redhat.com>
-AuthorDate: Thu, 5 Jun 2014 15:42:45 +0200
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 5 Jun 2014 16:33:08 +0200
+On Thu, Jun 5, 2014 at 7:52 PM, Borislav Petkov <bp@alien8.de> wrote:
+> On Thu, Jun 05, 2014 at 07:39:55PM +0300, Maria Dimakopoulou wrote:
+>> This series aims to avoid corruption of non-corrupting events.
+>> Re-integration of the counts is not related to this.
+>
+> What do you mean "not related"? Then you have a partial workaround. This
+> whole thing is trying to fix a hw bug so of course it is related.
 
-x86/smpboot: Initialize secondary CPU only if master CPU will wait for it
+I said not related to the problem of corruption of non-corrupting events which
+we solve here.
+Re-integration of the counts of corrupting events is a different problem.
+Both problems are related to HT bug.
 
-Hang is observed on virtual machines during CPU hotplug,
-especially in big guests with many CPUs. (It reproducible
-more often if host is over-committed).
+>
+> Once you do the "full" workaround, along with the part which
+> reintegrates the counts and thus completely fixes the issue (I believe),
+> then you don't need to disable it at all because disabling it doesn't
+> make any sense then. See what I'm saying?
+>
+> This is the whole point Matt and I are trying to make: if the *full*
+> workaround doesn't have any noticeable disadvantages, then you don't
+> need to add a disable-mechanism due to the can of worms opening if you
+> do.
+>
 
-It happens because master CPU gives up waiting on
-secondary CPU and allows it to run wild. As result
-AP causes locking or crashing system. For example
-as described here:
+As Stephane pointed out, the sysfs entry is optional and the workaround
+can be disabled only as root.
 
-   https://lkml.org/lkml/2014/3/6/257
+It is not absolutely necessary and it's not important.
+We will drop it in V2.
 
-If master CPU have sent STARTUP IPI successfully,
-and AP signalled to master CPU that it's ready
-to start initialization, make master CPU wait
-indefinitely till AP is onlined.
-To ensure that AP won't ever run wild, make it
-wait at early startup till master CPU confirms its
-intention to wait for AP. If AP doesn't respond in 10
-seconds, the master CPU will timeout and cancel
-AP onlining.
+> How you get this upstream to ease the review is a whole another story
+> and I applaud your desire to keep things clean.
+>
 
-Signed-off-by: Igor Mammedov <imammedo@redhat.com>
-Acked-by: Toshi Kani <toshi.kani@hp.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Link: http://lkml.kernel.org/r/1401975765-22328-4-git-send-email-imammedo@redhat.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/kernel/cpu/common.c | 27 +++++++-----
- arch/x86/kernel/smpboot.c    | 99 ++++++++++++++------------------------------
- 2 files changed, 47 insertions(+), 79 deletions(-)
+Then, I guess we agree to keep the re-integration for another series for
+the reason you just pointed.
 
-diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-index a135239..a4bcbac 100644
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -1221,6 +1221,17 @@ static void dbg_restore_debug_regs(void)
- #define dbg_restore_debug_regs()
- #endif /* ! CONFIG_KGDB */
- 
-+static void wait_for_master_cpu(int cpu)
-+{
-+	/*
-+	 * wait for ACK from master CPU before continuing
-+	 * with AP initialization
-+	 */
-+	WARN_ON(cpumask_test_and_set_cpu(cpu, cpu_initialized_mask));
-+	while (!cpumask_test_cpu(cpu, cpu_callout_mask))
-+		cpu_relax();
-+}
-+
- /*
-  * cpu_init() initializes state that is per-CPU. Some data is already
-  * initialized (naturally) in the bootstrap process, such as the GDT
-@@ -1236,16 +1247,17 @@ void cpu_init(void)
- 	struct task_struct *me;
- 	struct tss_struct *t;
- 	unsigned long v;
--	int cpu;
-+	int cpu = stack_smp_processor_id();
- 	int i;
- 
-+	wait_for_master_cpu(cpu);
-+
- 	/*
- 	 * Load microcode on this cpu if a valid microcode is available.
- 	 * This is early microcode loading procedure.
- 	 */
- 	load_ucode_ap();
- 
--	cpu = stack_smp_processor_id();
- 	t = &per_cpu(init_tss, cpu);
- 	oist = &per_cpu(orig_ist, cpu);
- 
-@@ -1257,9 +1269,6 @@ void cpu_init(void)
- 
- 	me = current;
- 
--	if (cpumask_test_and_set_cpu(cpu, cpu_initialized_mask))
--		panic("CPU#%d already initialized!\n", cpu);
--
- 	pr_debug("Initializing CPU#%d\n", cpu);
- 
- 	clear_in_cr4(X86_CR4_VME|X86_CR4_PVI|X86_CR4_TSD|X86_CR4_DE);
-@@ -1336,13 +1345,9 @@ void cpu_init(void)
- 	struct tss_struct *t = &per_cpu(init_tss, cpu);
- 	struct thread_struct *thread = &curr->thread;
- 
--	show_ucode_info_early();
-+	wait_for_master_cpu(cpu);
- 
--	if (cpumask_test_and_set_cpu(cpu, cpu_initialized_mask)) {
--		printk(KERN_WARNING "CPU#%d already initialized!\n", cpu);
--		for (;;)
--			local_irq_enable();
--	}
-+	show_ucode_info_early();
- 
- 	printk(KERN_INFO "Initializing CPU#%d\n", cpu);
- 
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index ae2fd975..bc52fac 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -111,7 +111,6 @@ atomic_t init_deasserted;
- static void smp_callin(void)
- {
- 	int cpuid, phys_id;
--	unsigned long timeout;
- 
- 	/*
- 	 * If waken up by an INIT in an 82489DX configuration
-@@ -130,37 +129,6 @@ static void smp_callin(void)
- 	 * (This works even if the APIC is not enabled.)
- 	 */
- 	phys_id = read_apic_id();
--	if (cpumask_test_cpu(cpuid, cpu_callin_mask)) {
--		panic("%s: phys CPU#%d, CPU#%d already present??\n", __func__,
--					phys_id, cpuid);
--	}
--	pr_debug("CPU#%d (phys ID: %d) waiting for CALLOUT\n", cpuid, phys_id);
--
--	/*
--	 * STARTUP IPIs are fragile beasts as they might sometimes
--	 * trigger some glue motherboard logic. Complete APIC bus
--	 * silence for 1 second, this overestimates the time the
--	 * boot CPU is spending to send the up to 2 STARTUP IPIs
--	 * by a factor of two. This should be enough.
--	 */
--
--	/*
--	 * Waiting 2s total for startup (udelay is not yet working)
--	 */
--	timeout = jiffies + 2*HZ;
--	while (time_before(jiffies, timeout)) {
--		/*
--		 * Has the boot CPU finished it's STARTUP sequence?
--		 */
--		if (cpumask_test_cpu(cpuid, cpu_callout_mask))
--			break;
--		cpu_relax();
--	}
--
--	if (!time_before(jiffies, timeout)) {
--		panic("%s: CPU%d started up but did not get a callout!\n",
--		      __func__, cpuid);
--	}
- 
- 	/*
- 	 * the boot CPU has finished the init stage and is spinning
-@@ -750,8 +718,8 @@ static int do_boot_cpu(int apicid, int cpu, struct task_struct *idle)
- 	unsigned long start_ip = real_mode_header->trampoline_start;
- 
- 	unsigned long boot_error = 0;
--	int timeout;
- 	int cpu0_nmi_registered = 0;
-+	unsigned long timeout;
- 
- 	/* Just in case we booted with a single CPU. */
- 	alternatives_enable_smp();
-@@ -799,6 +767,15 @@ static int do_boot_cpu(int apicid, int cpu, struct task_struct *idle)
- 	}
- 
- 	/*
-+	 * AP might wait on cpu_callout_mask in cpu_init() with
-+	 * cpu_initialized_mask set if previous attempt to online
-+	 * it timed-out. Clear cpu_initialized_mask so that after
-+	 * INIT/SIPI it could start with a clean state.
-+	 */
-+	cpumask_clear_cpu(cpu, cpu_initialized_mask);
-+	smp_mb();
-+
-+	/*
- 	 * Wake up a CPU in difference cases:
- 	 * - Use the method in the APIC driver if it's defined
- 	 * Otherwise,
-@@ -810,55 +787,41 @@ static int do_boot_cpu(int apicid, int cpu, struct task_struct *idle)
- 		boot_error = wakeup_cpu_via_init_nmi(cpu, start_ip, apicid,
- 						     &cpu0_nmi_registered);
- 
-+
- 	if (!boot_error) {
- 		/*
--		 * allow APs to start initializing.
-+		 * Wait 10s total for a response from AP
- 		 */
--		pr_debug("Before Callout %d\n", cpu);
--		cpumask_set_cpu(cpu, cpu_callout_mask);
--		pr_debug("After Callout %d\n", cpu);
-+		boot_error = -1;
-+		timeout = jiffies + 10*HZ;
-+		while (time_before(jiffies, timeout)) {
-+			if (cpumask_test_cpu(cpu, cpu_initialized_mask)) {
-+				/*
-+				 * Tell AP to proceed with initialization
-+				 */
-+				cpumask_set_cpu(cpu, cpu_callout_mask);
-+				boot_error = 0;
-+				break;
-+			}
-+			udelay(100);
-+			schedule();
-+		}
-+	}
- 
-+	if (!boot_error) {
- 		/*
--		 * Wait 5s total for a response
-+		 * Wait till AP completes initial initialization
- 		 */
--		for (timeout = 0; timeout < 50000; timeout++) {
--			if (cpumask_test_cpu(cpu, cpu_callin_mask))
--				break;	/* It has booted */
--			udelay(100);
-+		while (!cpumask_test_cpu(cpu, cpu_callin_mask)) {
- 			/*
- 			 * Allow other tasks to run while we wait for the
- 			 * AP to come online. This also gives a chance
- 			 * for the MTRR work(triggered by the AP coming online)
- 			 * to be completed in the stop machine context.
- 			 */
-+			udelay(100);
- 			schedule();
- 		}
--
--		if (cpumask_test_cpu(cpu, cpu_callin_mask)) {
--			print_cpu_msr(&cpu_data(cpu));
--			pr_debug("CPU%d: has booted.\n", cpu);
--		} else {
--			boot_error = 1;
--			if (*trampoline_status == 0xA5A5A5A5)
--				/* trampoline started but...? */
--				pr_err("CPU%d: Stuck ??\n", cpu);
--			else
--				/* trampoline code not run */
--				pr_err("CPU%d: Not responding\n", cpu);
--			if (apic->inquire_remote_apic)
--				apic->inquire_remote_apic(apicid);
--		}
--	}
--
--	if (boot_error) {
--		/* Try to put things back the way they were before ... */
--		numa_remove_cpu(cpu); /* was set by numa_add_cpu */
--
--		/* was set by do_boot_cpu() */
--		cpumask_clear_cpu(cpu, cpu_callout_mask);
--
--		/* was set by cpu_init() */
--		cpumask_clear_cpu(cpu, cpu_initialized_mask);
- 	}
- 
- 	/* mark "stuck" area as not stuck */
+
+> --
+> Regards/Gruss,
+>     Boris.
+>
+> Sent from a fat crate under my desk. Formatting is fine.
+> --
