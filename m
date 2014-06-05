@@ -1,47 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753064AbaFEXRK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 19:17:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58646 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752659AbaFEXRI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 19:17:08 -0400
-Date: Thu, 5 Jun 2014 16:20:50 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        linux@roeck-us.net, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
-        stable@vger.kernel.org
-Subject: Re: [PATCH 3.10 000/103] 3.10.42-stable review
-Message-ID: <20140605232050.GC14136@kroah.com>
-References: <20140604232546.704156131@linuxfoundation.org>
+	id S1751966AbaFEX3v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 19:29:51 -0400
+Received: from mga11.intel.com ([192.55.52.93]:35152 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751384AbaFEX3u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jun 2014 19:29:50 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,984,1392192000"; 
+   d="scan'208";a="550493434"
+Date: Thu, 5 Jun 2014 16:29:49 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
+Cc: Borislav Petkov <bp@alien8.de>, Stephane Eranian <eranian@google.com>,
+        Matt Fleming <matt@console-pimps.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        Jiri Olsa <jolsa@redhat.com>, "Yan, Zheng" <zheng.z.yan@intel.com>
+Subject: Re: [PATCH 9/9] perf/x86: add syfs entry to disable HT bug workaround
+Message-ID: <20140605232949.GF16855@tassilo.jf.intel.com>
+References: <CADknwL71NC5wBG1tnqgJ6iiA4y+HYomGpufOn7V+MP2=m7+Mig@mail.gmail.com>
+ <CABPqkBTEafZ5MbYM4UQxX92uWcPiphPeXMoJRKTt8jnrB+5j2w@mail.gmail.com>
+ <20140605132750.GA16811@pd.tnic>
+ <CABPqkBT9ExD4unz0VZ5G1d+oGpkepiwXskgBpv5GTavs=tYAKA@mail.gmail.com>
+ <20140605140316.GB16811@pd.tnic>
+ <CAHzUATiVCHytrG3sz8AmC8anZTQcPDRHp91-kWEoeq=RU7UNiw@mail.gmail.com>
+ <20140605151734.GD16811@pd.tnic>
+ <CAHzUATioT8e=RxypbqBsHw-QkcYsdQEiKhb3e44A4S+98Ut6=Q@mail.gmail.com>
+ <20140605165213.GI16642@pd.tnic>
+ <CAHzUATiOi0_U4r+TN_okYh_5_VB-NpW+A5qgg6Vkz9kyrwqZug@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140604232546.704156131@linuxfoundation.org>
+In-Reply-To: <CAHzUATiOi0_U4r+TN_okYh_5_VB-NpW+A5qgg6Vkz9kyrwqZug@mail.gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 04, 2014 at 04:24:23PM -0700, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.10.42 release.
-> There are 103 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
+> As Stephane pointed out, the sysfs entry is optional and the workaround
+> can be disabled only as root.
 > 
-> Responses should be made by Fri Jun  6 23:24:52 UTC 2014.
-> Anything received after that time might be too late.
-> 
-> The whole patch series can be found in one patch at:
-> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.10.42-rc1.gz
-> and the diffstat can be found below.
+> It is not absolutely necessary and it's not important.
+> We will drop it in V2.
 
-As discussed on the 3.14-stable announcement I've updated this tree as
-well, so there is now a -rc2 out for people to test:
-	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.10.42-rc1.gz
+I would prefer to keep it. It's fairly complex and it's always good
+to have a way to disable complex things in case something goes wrong.
 
-thanks,
-
-greg k-h
+-Andi
