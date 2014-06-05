@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754771AbaFEFKl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 01:10:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43733 "EHLO
+	id S1752990AbaFEFKj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 01:10:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43739 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752207AbaFEEUO (ORCPT
+	with ESMTP id S1752133AbaFEEUO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 5 Jun 2014 00:20:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takao Indoh <indou.takao@jp.fujitsu.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 3.4 036/214] ftrace/module: Hardcode ftrace_module_init() call into load_module()
-Date: Wed,  4 Jun 2014 21:16:39 -0700
-Message-Id: <20140605041644.754507675@linuxfoundation.org>
+        Andrew Victor <linux@maxim.org.za>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Tejun Heo <tj@kernel.org>
+Subject: [PATCH 3.4 037/214] pata_at91: fix ata_host_activate() failure handling
+Date: Wed,  4 Jun 2014 21:16:40 -0700
+Message-Id: <20140605041644.829718526@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -28,152 +31,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 
-commit a949ae560a511fe4e3adf48fa44fefded93e5c2b upstream.
+commit 27aa64b9d1bd0d23fd692c91763a48309b694311 upstream.
 
-A race exists between module loading and enabling of function tracer.
+Add missing clk_put() call to ata_host_activate() failure path.
 
-	CPU 1				CPU 2
-	-----				-----
-  load_module()
-   module->state = MODULE_STATE_COMING
+Sergei says,
 
-				register_ftrace_function()
-				 mutex_lock(&ftrace_lock);
-				 ftrace_startup()
-				  update_ftrace_function();
-				   ftrace_arch_code_modify_prepare()
-				    set_all_module_text_rw();
-				   <enables-ftrace>
-				    ftrace_arch_code_modify_post_process()
-				     set_all_module_text_ro();
+  "Hm, I have once fixed that (see that *if* (!ret)) but looks like a
+   later commit 477c87e90853d136b188c50c0e4a93d01cad872e (ARM:
+   at91/pata: use gpio_is_valid to check the gpio) broke it again. :-(
+   Would be good if the changelog did mention that..."
 
-				[ here all module text is set to RO,
-				  including the module that is
-				  loading!! ]
-
-   blocking_notifier_call_chain(MODULE_STATE_COMING);
-    ftrace_init_module()
-
-     [ tries to modify code, but it's RO, and fails!
-       ftrace_bug() is called]
-
-When this race happens, ftrace_bug() will produces a nasty warning and
-all of the function tracing features will be disabled until reboot.
-
-The simple solution is to treate module load the same way the core
-kernel is treated at boot. To hardcode the ftrace function modification
-of converting calls to mcount into nops. This is done in init/main.c
-there's no reason it could not be done in load_module(). This gives
-a better control of the changes and doesn't tie the state of the
-module to its notifiers as much. Ftrace is special, it needs to be
-treated as such.
-
-The reason this would work, is that the ftrace_module_init() would be
-called while the module is in MODULE_STATE_UNFORMED, which is ignored
-by the set_all_module_text_ro() call.
-
-Link: http://lkml.kernel.org/r/1395637826-3312-1-git-send-email-indou.takao@jp.fujitsu.com
-
-Reported-by: Takao Indoh <indou.takao@jp.fujitsu.com>
-Acked-by: Rusty Russell <rusty@rustcorp.com.au>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Cc: Andrew Victor <linux@maxim.org.za>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
+Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/ftrace.h |    2 ++
- kernel/module.c        |    3 +++
- kernel/trace/ftrace.c  |   27 ++++-----------------------
- 3 files changed, 9 insertions(+), 23 deletions(-)
+ drivers/ata/pata_at91.c |   11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
---- a/include/linux/ftrace.h
-+++ b/include/linux/ftrace.h
-@@ -374,6 +374,7 @@ extern int ftrace_make_call(struct dyn_f
- extern int ftrace_arch_read_dyn_info(char *buf, int size);
+--- a/drivers/ata/pata_at91.c
++++ b/drivers/ata/pata_at91.c
+@@ -408,12 +408,13 @@ static int __devinit pata_at91_probe(str
  
- extern int skip_trace(unsigned long ip);
-+extern void ftrace_module_init(struct module *mod);
+ 	host->private_data = info;
  
- extern void ftrace_disable_daemon(void);
- extern void ftrace_enable_daemon(void);
-@@ -383,6 +384,7 @@ static inline int ftrace_force_update(vo
- static inline void ftrace_disable_daemon(void) { }
- static inline void ftrace_enable_daemon(void) { }
- static inline void ftrace_release_mod(struct module *mod) {}
-+static inline void ftrace_module_init(struct module *mod) {}
- static inline int register_ftrace_command(struct ftrace_func_command *cmd)
- {
- 	return -EINVAL;
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -2951,6 +2951,9 @@ static struct module *load_module(void _
- 	/* This has to be done once we're sure module name is unique. */
- 	dynamic_debug_setup(info.debug, info.num_debug);
+-	return ata_host_activate(host, gpio_is_valid(irq) ? gpio_to_irq(irq) : 0,
+-			gpio_is_valid(irq) ? ata_sff_interrupt : NULL,
+-			irq_flags, &pata_at91_sht);
++	ret = ata_host_activate(host, gpio_is_valid(irq) ? gpio_to_irq(irq) : 0,
++				gpio_is_valid(irq) ? ata_sff_interrupt : NULL,
++				irq_flags, &pata_at91_sht);
++	if (ret)
++		goto err_put;
  
-+	/* Ftrace init must be called in the MODULE_STATE_UNFORMED state */
-+	ftrace_module_init(mod);
-+
- 	/* Find duplicate symbols */
- 	err = verify_export_symbols(mod);
- 	if (err < 0)
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -3880,16 +3880,11 @@ static void ftrace_init_module(struct mo
- 	ftrace_process_locs(mod, start, end);
- }
+-	if (!ret)
+-		return 0;
++	return 0;
  
--static int ftrace_module_notify_enter(struct notifier_block *self,
--				      unsigned long val, void *data)
-+void ftrace_module_init(struct module *mod)
- {
--	struct module *mod = data;
--
--	if (val == MODULE_STATE_COMING)
--		ftrace_init_module(mod, mod->ftrace_callsites,
--				   mod->ftrace_callsites +
--				   mod->num_ftrace_callsites);
--	return 0;
-+	ftrace_init_module(mod, mod->ftrace_callsites,
-+			   mod->ftrace_callsites +
-+			   mod->num_ftrace_callsites);
- }
- 
- static int ftrace_module_notify_exit(struct notifier_block *self,
-@@ -3903,11 +3898,6 @@ static int ftrace_module_notify_exit(str
- 	return 0;
- }
- #else
--static int ftrace_module_notify_enter(struct notifier_block *self,
--				      unsigned long val, void *data)
--{
--	return 0;
--}
- static int ftrace_module_notify_exit(struct notifier_block *self,
- 				     unsigned long val, void *data)
- {
-@@ -3915,11 +3905,6 @@ static int ftrace_module_notify_exit(str
- }
- #endif /* CONFIG_MODULES */
- 
--struct notifier_block ftrace_module_enter_nb = {
--	.notifier_call = ftrace_module_notify_enter,
--	.priority = INT_MAX,	/* Run before anything that can use kprobes */
--};
--
- struct notifier_block ftrace_module_exit_nb = {
- 	.notifier_call = ftrace_module_notify_exit,
- 	.priority = INT_MIN,	/* Run after anything that can remove kprobes */
-@@ -3956,10 +3941,6 @@ void __init ftrace_init(void)
- 				  __start_mcount_loc,
- 				  __stop_mcount_loc);
- 
--	ret = register_module_notifier(&ftrace_module_enter_nb);
--	if (ret)
--		pr_warning("Failed to register trace ftrace module enter notifier\n");
--
- 	ret = register_module_notifier(&ftrace_module_exit_nb);
- 	if (ret)
- 		pr_warning("Failed to register trace ftrace module exit notifier\n");
+ err_put:
+ 	clk_put(info->mck);
 
 
