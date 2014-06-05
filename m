@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752614AbaFEEUn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 00:20:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43885 "EHLO
+	id S1754452AbaFEE61 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 00:58:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43889 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752543AbaFEEUg (ORCPT
+	with ESMTP id S1752547AbaFEEUm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 00:20:36 -0400
+	Thu, 5 Jun 2014 00:20:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hans de Goede <hdegoede@redhat.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.4 072/214] ACPI / blacklist: Add dmi_enable_osi_linux quirk for Asus EEE PC 1015PX
-Date: Wed,  4 Jun 2014 21:17:15 -0700
-Message-Id: <20140605041649.222111266@linuxfoundation.org>
+        Libin <huawei.libin@huawei.com>, jiang.liu@huawei.com,
+        guohanjun@huawei.com, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>, Rui Xiang <rui.xiang@huawei.com>
+Subject: [PATCH 3.4 082/214] sched/debug: Fix sd->*_idx limit range avoiding overflow
+Date: Wed,  4 Jun 2014 21:17:25 -0700
+Message-Id: <20140605041650.602976532@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -27,49 +28,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: libin <huawei.libin@huawei.com>
 
-commit f6e6e1b9fee88c90586787b71dc49bb3ce62bb89 upstream.
+commit fd9b86d37a600488dbd80fe60cca46b822bff1cd upstream.
 
-Without this this EEE PC exports a non working WMI interface, with this it
-exports a working "good old" eeepc_laptop interface, fixing brightness control
-not working as well as rfkill being stuck in a permanent wireless blocked
-state.
+Commit 201c373e8e ("sched/debug: Limit sd->*_idx range on
+sysctl") was an incomplete bug fix.
 
-This is not an ideal way to fix this, but various attempts to fix this
-otherwise have failed, see:
+This patch fixes sd->*_idx limit range to [0 ~ CPU_LOAD_IDX_MAX-1]
+avoiding array overflow caused by setting sd->*_idx to CPU_LOAD_IDX_MAX
+on sysctl.
 
-References: https://bugzilla.redhat.com/show_bug.cgi?id=1067181
-Reported-and-tested-by: lou.cardone@gmail.com
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Libin <huawei.libin@huawei.com>
+Cc: <jiang.liu@huawei.com>
+Cc: <guohanjun@huawei.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/51626610.2040607@huawei.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Cc: Rui Xiang <rui.xiang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/blacklist.c |   13 +++++++++++++
- 1 file changed, 13 insertions(+)
+ kernel/sched/core.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/acpi/blacklist.c
-+++ b/drivers/acpi/blacklist.c
-@@ -327,6 +327,19 @@ static struct dmi_system_id acpi_osi_dmi
- 		     DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad T500"),
- 		},
- 	},
-+	/*
-+	 * Without this this EEEpc exports a non working WMI interface, with
-+	 * this it exports a working "good old" eeepc_laptop interface, fixing
-+	 * both brightness control, and rfkill not working.
-+	 */
-+	{
-+	.callback = dmi_enable_osi_linux,
-+	.ident = "Asus EEE PC 1015PX",
-+	.matches = {
-+		     DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK Computer INC."),
-+		     DMI_MATCH(DMI_PRODUCT_NAME, "1015PX"),
-+		},
-+	},
- 	{}
- };
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -5434,7 +5434,7 @@ static void sd_free_ctl_entry(struct ctl
+ }
  
+ static int min_load_idx = 0;
+-static int max_load_idx = CPU_LOAD_IDX_MAX;
++static int max_load_idx = CPU_LOAD_IDX_MAX-1;
+ 
+ static void
+ set_table_entry(struct ctl_table *entry,
 
 
