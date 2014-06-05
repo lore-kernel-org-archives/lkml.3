@@ -1,208 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752213AbaFEQJL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 12:09:11 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36252 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751592AbaFEQJI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 12:09:08 -0400
-Date: Thu, 5 Jun 2014 18:09:04 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Greg Thelen <gthelen@google.com>,
-        Michel Lespinasse <walken@google.com>, Tejun Heo <tj@kernel.org>,
-        Hugh Dickins <hughd@google.com>, Roman Gushchin <klamm@yandex-team.ru>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH v2 0/4] memcg: Low-limit reclaim
-Message-ID: <20140605160904.GC15939@dhcp22.suse.cz>
-References: <20140528142144.GL9895@dhcp22.suse.cz>
- <20140528152854.GG2878@cmpxchg.org>
- <20140528155414.GN9895@dhcp22.suse.cz>
- <20140528163335.GI2878@cmpxchg.org>
- <20140603110743.GD1321@dhcp22.suse.cz>
- <20140603142249.GP2878@cmpxchg.org>
- <20140604144658.GB17612@dhcp22.suse.cz>
- <20140604154408.GT2878@cmpxchg.org>
- <20140605143235.GC2926@dhcp22.suse.cz>
- <20140605154328.GX2878@cmpxchg.org>
+	id S1752302AbaFEQJW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 12:09:22 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:37878 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751590AbaFEQJS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jun 2014 12:09:18 -0400
+Date: Thu, 5 Jun 2014 17:08:43 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: [PATCH 3.14 008/228] irqchip: Gic: Support forced affinity
+ setting
+Message-ID: <20140605160843.GE31564@leverpostej>
+References: <20140604232347.966798903@linuxfoundation.org>
+ <20140604232348.349139944@linuxfoundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140605154328.GX2878@cmpxchg.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140604232348.349139944@linuxfoundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 05-06-14 11:43:28, Johannes Weiner wrote:
-> On Thu, Jun 05, 2014 at 04:32:35PM +0200, Michal Hocko wrote:
-> > On Wed 04-06-14 11:44:08, Johannes Weiner wrote:
-> > > On Wed, Jun 04, 2014 at 04:46:58PM +0200, Michal Hocko wrote:
-> > > > On Tue 03-06-14 10:22:49, Johannes Weiner wrote:
-> > > > > On Tue, Jun 03, 2014 at 01:07:43PM +0200, Michal Hocko wrote:
-> > > > [...]
-> > > > > > If we consider that memcg and its limits are not zone aware while the
-> > > > > > page allocator and reclaim are zone oriented then I can see a problem
-> > > > > > of unexpected reclaim failure although there is no over commit on the
-> > > > > > low_limit globally. And we do not have in-kernel effective measures to
-> > > > > > mitigate this inherent problem. At least not now and I am afraid it is
-> > > > > > a long route to have something that would work reasonably well in such
-> > > > > > cases.
-> > > > > 
-> > > > > Which "inherent problem"?
-> > > > 
-> > > > zone unawareness of the limit vs. allocation/reclaim which are zone
-> > > > oriented.
-> > > 
-> > > This is a quote from another subthread where you haven't responded:
-> > > 
-> > > ---
-> > > 
-> > > > > > > But who actually cares if an individual zone can be reclaimed?
-> > > > > > > 
-> > > > > > > Userspace allocations can fall back to any other zone.  Unless there
-> > > > > > > are hard bindings, but hopefully nobody binds a memcg to a node that
-> > > > > > > is smaller than that memcg's guarantee. 
-> > > > > > 
-> > > > > > The protected group might spill over to another group and eat it when
-> > > > > > another group would be simply pushed out from the node it is bound to.
-> > > > > 
-> > > > > I don't really understand the point you're trying to make.
-> > > > 
-> > > > I was just trying to show a case where individual zone matters. To make
-> > > > it more specific consider 2 groups A (with low-limit 60% RAM) and B
-> > > > (say with low-limit 10% RAM) and bound to a node X (25% of RAM). Now
-> > > > having 70% of RAM reserved for guarantee makes some sense, right? B is
-> > > > not over-committing the node it is bound to. Yet the A's allocations
-> > > > might make pressure on X regardless that the whole system is still doing
-> > > > good. This can lead to a situation where X gets depleted and nothing
-> > > > would be reclaimable leading to an OOM condition.
-> > > 
-> > > Once you assume control of memory *placement* in the system like this,
-> > > you can not also pretend to be clueless and have unreclaimable memory
-> > > of this magnitude spread around into nodes used by other bound tasks.
-> > 
-> > You are still assuming that the administrator controls the placement.
-> > The load running in your memcg might be a black box for admin. E.g. a
-> > container which pays $$ to get a priority and not get reclaimed if that
-> > is possible. Admin can make sure that the cumulative low_limits for
-> > containers are sane but he doesn't have any control over what the loads
-> > inside are doing and potential OOM when one tries to DOS the other is
-> > definitely not welcome.
+Hi Greg,
+
+On Thu, Jun 05, 2014 at 12:20:37AM +0100, Greg Kroah-Hartman wrote:
+> 3.14-stable review patch.  If anyone has any objections, please let me know.
 > 
-> This is completely backwards, though: if you pay for guaranteed
-
-I didn't say anything about guarantee, though. You even do not need
-anything as strong as guarantee. You are paying for prioritization.
-
-> memory, you don't want to get reclaimed just because some other task
-> that might not even have guarantees starts allocating with a
-> restricted node mask.  This breaks isolation.
-
-If the other task doesn't have any limit set then its pages would get
-reclaimed. This wouldn't be everybody within low limit situation.
-
-> For one, this can be used maliciously by intentionally binding a
-> low-priority task to a node with guaranteed memory and starting to
-> allocate.  Even with a small hard limit, you can just plow through
-> files to push guaranteed cache of the other group out of memory.
->
-> But even if it's not malicious, in such a scenario I'd still prefer
-> OOMing the task with the more restrictive node mask over reclaiming
-> guaranteed memory.
-
-Why?
-
-> Then, on top of that, we can use direct migration to mitigate OOMs in
-> these scenarios (should we sufficiently care about them), but I'd much
-> prefer OOMs over breaking isolation and the possible priority
-> inversion that is inherent in the fallback on NUMA setups.
-
-Could you be more specific about what you mean by priority inversion?
-
-> > > If we were to actively support such configurations, we should be doing
-> > > direct NUMA balancing and migrate these pages out of node X when B
-> > > needs to allocate. 
-> > 
-> > Migration is certainly a way how to reduce the risk. It is a question
-> > whether this is something to be done by the kernel implicitly or by
-> > administrator.
+> ------------------
 > 
-> As long as the kernel is responsible for *any* placement - i.e. unless
-> you bind everything - it might as well be the kernel that fixes it up.
+> From: Thomas Gleixner <tglx@linutronix.de>
 > 
-> > > That would fix the problem for all unevictable
-> > > memory, not just memcg guarantees, and would prefer node-offloading
-> > > over swapping in cases where swap is available.
-> > 
-> > That would certainly lower the risk. But there still might be unmovable
-> > memory sitting on the node so this will never be 100%.
+> commit ffde1de64012c406dfdda8690918248b472f24e4 upstream.
 > 
-> Yes, and as per above, I think in most cases it's actually preferable
-> to kill the bound task (or direct-migrate) over violating guarantees
-> of another task.
+> To support the affinity setting of per cpu timers in the early startup
+> of a not yet online cpu, implement the force logic, which disables the
+> cpu online check.
 > 
-> > > > > > So to me it sounds more responsible to promise only as much as we can
-> > > > > > handle. I think that fallback mode is not crippling the semantic of
-> > > > > > the knob as it triggers only for limit overcommit or strange corner
-> > > > > > cases. We have agreed that we do not care about the first one and
-> > > > > > handling the later one by potentially fatal action doesn't sounds very
-> > > > > > user friendly to me.
-> > > > > 
-> > > > > It *absolutely* cripples the semantics.  Think about the security use
-> > > > > cases of mlock for example, where certain memory may never hit the
-> > > > > platter.  This wouldn't be possible with your watered down guarantees.
-> > > > 
-> > > > Is this really a use case? It sounds like a weak one to me. Because
-> > > > any sudden memory consumption above the limit can reclaim your
-> > > > to-protect-page it will hit the platter and you cannot do anything about
-> > > > this. So yeah, this is not mlock.
-> > > 
-> > > You are right, that is a weak usecase.
-> > > 
-> > > It doesn't change the fact that it does severely weaken the semantics
-> > > and turns it into another best-effort mechanism that the user can't
-> > > count on.  This sucks.  It sucked with soft limits and it will suck
-> > > again.  The irony is that Greg even pointed out you should be doing
-> > > soft limits if you want this sort of behavior.
-> > 
-> > The question is whether we really _need_ hard guarantees. I came with
-> > the low_limit as a replacement for soft_limit which really sucks. But it
-> > sucks not because you cannot count on it. It is the way how it has
-> > opposite semantic which sucks - and the implementation of course. I have
-> > tried to fix it and that route was a no-go.
+> Tagged for stable to allow a simple fix of the affected SoC clock
+> event drivers.
+
+The problems I mentioned on the 3.10 patch [1] apply here too.
+
+Mark.
+
+[1] http://lists.infradead.org/pipermail/linux-arm-kernel/2014-June/262158.html
+
 > 
-> We need hard guarantees for actual isolation.  Otherwise you can't
-> charge for guarantees.
-
-You can still charge for prioritization. Which on its own is a valid use
-case. You seem to be bound to hard guanratee and overlook that there is
-a class of use cases which do not need such a behavior.
-
-Please note that setting up hard guarantee is really non trivial task.
-Especially if any downtime of the service which you want to protect is a
-big deal. I wouldn't be surprised if the risk was big enough that using
-the limit would be a no-go although there would be a possibility of
-performance improvement.
-
-> > I think the hard guarantee makes some sense when we allow to overcommit
-> > the limit. Somebody might really want to setup lowlimit == hardlimit
-> > because reclaim would be more harmful than restart of the application.
-> > I would however expect that this would be more of an exception rather
-> > than regular use. Most users I can think of will set low_limit to an
-> > effective working set size to be isolated from other loads and ephemeral
-> > reclaim will not hurt them. OOM would on other hand would be really
-> > harmful.
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> Tested-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> Cc: Kyungmin Park <kyungmin.park@samsung.com>
+> Cc: Marek Szyprowski <m.szyprowski@samsung.com>
+> Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+> Cc: Tomasz Figa <t.figa@samsung.com>,
+> Cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
+> Cc: Kukjin Kim <kgene.kim@samsung.com>
+> Cc: linux-arm-kernel@lists.infradead.org,
+> Link: http://lkml.kernel.org/r/20140416143315.916984416@linutronix.de
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 > 
-> It's not an either-or because OOM would happen to one group, and
-> guaranteed memory reclaim would happen to another.
-
-I do not follow.
-
--- 
-Michal Hocko
-SUSE Labs
+> ---
+>  drivers/irqchip/irq-gic.c |    8 ++++++--
+>  1 file changed, 6 insertions(+), 2 deletions(-)
+> 
+> --- a/drivers/irqchip/irq-gic.c
+> +++ b/drivers/irqchip/irq-gic.c
+> @@ -246,10 +246,14 @@ static int gic_set_affinity(struct irq_d
+>  			    bool force)
+>  {
+>  	void __iomem *reg = gic_dist_base(d) + GIC_DIST_TARGET + (gic_irq(d) & ~3);
+> -	unsigned int shift = (gic_irq(d) % 4) * 8;
+> -	unsigned int cpu = cpumask_any_and(mask_val, cpu_online_mask);
+> +	unsigned int cpu, shift = (gic_irq(d) % 4) * 8;
+>  	u32 val, mask, bit;
+>  
+> +	if (!force)
+> +		cpu = cpumask_any_and(mask_val, cpu_online_mask);
+> +	else
+> +		cpu = cpumask_first(mask_val);
+> +
+>  	if (cpu >= NR_GIC_CPU_IF || cpu >= nr_cpu_ids)
+>  		return -EINVAL;
+>  
+> 
+> 
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> 
