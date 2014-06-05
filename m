@@ -1,96 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751820AbaFEKcQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 06:32:16 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:43451 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750723AbaFEKcN (ORCPT
+	id S1751856AbaFEKcq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 06:32:46 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:59774 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751085AbaFEKco (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 06:32:13 -0400
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH 7/7] OF/ACPI/I2C: Add generic match function for the
- aforementioned systems
-To: Lee Jones <lee.jones@linaro.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        wsa@the-dreams.de, linux-i2c@vger.kernel.org,
-        devicetree@vger.kernel.org, linus.walleij@linaro.org
-In-Reply-To: <20140605082008.GC19550@lee--X1>
-References: <1401883796-17841-1-git-send-email-lee.jones@linaro.org>
-	<1401883796-17841-8-git-send-email-lee.jones@linaro.org>
-	<5769487.6cMQUCkisu@vostro.rjw.lan>
-	<20140604125141.GB5214@lahna.fi.intel.com>
-	<20140604132820.GA19550@lee--X1>
-	<20140605080000.GE5214@lahna.fi.intel.com>
-	<20140605082008.GC19550@lee--X1>
-Date: Thu, 05 Jun 2014 11:32:09 +0100
-Message-Id: <20140605103209.C8F10C40A4D@trevor.secretlab.ca>
+	Thu, 5 Jun 2014 06:32:44 -0400
+Message-ID: <53904760.8000808@linaro.org>
+Date: Thu, 05 Jun 2014 12:33:04 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sched: Move enum CPU_[xxx_]IDLE to private sched.h
+References: <1401800345-29468-1-git-send-email-daniel.lezcano@linaro.org> <20140604080214.GJ30445@twins.programming.kicks-ass.net> <20140605101709.GA24277@gmail.com>
+In-Reply-To: <20140605101709.GA24277@gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 5 Jun 2014 09:20:08 +0100, Lee Jones <lee.jones@linaro.org> wrote:
-> On Thu, 05 Jun 2014, Mika Westerberg wrote:
-> > On Wed, Jun 04, 2014 at 02:28:20PM +0100, Lee Jones wrote:
-> > > On Wed, 04 Jun 2014, Mika Westerberg wrote:
-> > > > On Wed, Jun 04, 2014 at 02:37:42PM +0200, Rafael J. Wysocki wrote:
-> > > > > On Wednesday, June 04, 2014 01:09:56 PM Lee Jones wrote:
-> > > > > > Currently this is a helper function for the I2C subsystem to aid the
-> > > > > > matching of non-standard compatible strings and devices which use DT
-> > > > > > and/or ACPI, but do not supply any nodes (see: [1] Method 4).  However,
-> > > > > > it has been made more generic as it can be used to only make one call
-> > > > > > for drivers which support any mixture of OF, ACPI and/or I2C matching.
-> > > > > > 
-> > > > > > The initial aim is for of_match_device() to be replaced by this call
-> > > > > > in all I2C device drivers.
-> > > > > > 
-> > > > > > [1] Documentation/i2c/instantiating-devices
-> > > > > > 
-> > > > > > Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> > > > > 
-> > > > > Mika, can you please have a look at this, please?
-> > > > 
-> > > > I don't see any fundamental problems with this wrt. ACPI.
-> > > > 
-> > > > That said, I find it kind of weird to have generic function that then
-> > > > has knowledge of how different buses do their matching.
-> > > > 
-> > > > I would rather see something like firmware_device_match(dev) that goes
-> > > > and matches from DT/ACPI and leave bus specific match to happen internal
-> > > > to that bus.
-> > > 
-> > > Unfortunately that completely defeats the object of the patch.  When a
-> > > of_match_device() is invoked it solely looks up devices based on OF
-> > > matching, but I2C is special in that devices can be registered via
-> > > sysfs, thus will no have device node.  If of_match_device() is called
-> > > in one of these instances it will fail.  The idea of this patch is to
-> > > generify the matching into something does has the knowledge to firstly
-> > > attempt a traditional match, and if that fails will fall back to a
-> > > special i2c_{of,acpi}_match_device() which knows how to deal with
-> > > node-less registration.
-> > 
-> > OK, then but since this is now I2C specific, why call it device_match()
-> > instead of something like i2c_device_match()? Or do you have plans to
-> 
-> So in an early incarnation of the patch I did just that, and it might
-> not actually be such a bad idea still - I'm open to other people's
-> opinions on this.
-> 
-> > add there more knowledge about other buses like SPI and PCI to name few?
-> 
-> ... but yes, this is the new idea - that it can be expanded as required.
+On 06/05/2014 12:17 PM, Ingo Molnar wrote:
+>
+> * Peter Zijlstra <peterz@infradead.org> wrote:
+>
+>> On Tue, Jun 03, 2014 at 02:59:05PM +0200, Daniel Lezcano wrote:
+>>> The different enum CPU_IDLE, CPU_NOT_IDLE, CPU_NEWLY_IDLE and
+>>> CPU_MAX_IDLE_TYPES are only used in kernel/sched/fair.c and
+>>> kernel/sched/stats.c.
+>>>
+>>> Move their definitions in the private 'sched.h' file located in the
+>>> same place than the files above.
+>>>
+>>
+>> Thanks!
+>
+>
+> So this patch breaks x86 64-bit and 32-bit defconfigs:
+>
+> In file included from
+> /home/mingo/tip/arch/x86/kernel/asm-offsets.c:9:0:
+> /home/mingo/tip/include/linux/sched.h:939:24: error:
+> ‘CPU_MAX_IDLE_TYPES’ undeclared here (not in a function)
+>    unsigned int lb_count[CPU_MAX_IDLE_TYPES];
+>                          ^
+> make[2]: *** [arch/x86/kernel/asm-offsets.s] Error 1
+> make[1]: *** [prepare0] Error 2
+> make: *** [sub-make] Error 2
 
-The whole point of this series is to deal with a special use case of i2c
-that we don't need to support for the other bus types. We're having to
-just through special hoops to make it work and I don't want to expand it
-to other bus types if at all possible.
 
-g.
+Gah ! That deserves -10 points to my karma :(
 
-> -- 
-> Lee Jones
-> Linaro STMicroelectronics Landing Team Lead
-> Linaro.org │ Open source software for ARM SoCs
-> Follow Linaro: Facebook | Twitter | Blog
+I did not enabled CONFIG_SCHEDSTATS.
+
+Sorry for the inconvenience.
+
+   -- Daniel
+
+
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
