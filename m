@@ -1,70 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751839AbaFEQSN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 12:18:13 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36464 "EHLO mx2.suse.de"
+	id S1751889AbaFEQU7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 12:20:59 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:50088 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751321AbaFEQSL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 12:18:11 -0400
-Date: Thu, 5 Jun 2014 18:18:07 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Richard Weinberger <richard@nod.at>
-Cc: hannes@cmpxchg.org, bsingharora@gmail.com, kamezawa.hiroyu@jp.fujitsu.com,
-        akpm@linux-foundation.org, vdavydov@parallels.com, tj@kernel.org,
-        handai.szj@taobao.com, rientjes@google.com, oleg@redhat.com,
-        rusty@rustcorp.com.au, kirill.shutemov@linux.intel.com,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [RFC][PATCH] oom: Be less verbose if the oom_control event fd
- has listeners
-Message-ID: <20140605161807.GD15939@dhcp22.suse.cz>
-References: <1401976841-3899-1-git-send-email-richard@nod.at>
- <1401976841-3899-2-git-send-email-richard@nod.at>
- <20140605150025.GB15939@dhcp22.suse.cz>
- <5390930A.8050504@nod.at>
+	id S1750853AbaFEQU5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jun 2014 12:20:57 -0400
+Date: Thu, 5 Jun 2014 18:18:34 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Matt Fleming <matt.fleming@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Ricardo Neri <ricardo.neri-calderon@linux.intel.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>
+Subject: Re: [tip:x86/efi] x86/efi: Check for unsafe dealing with FPU state
+ in irq ctxt
+Message-ID: <20140605161834.GF16642@pd.tnic>
+References: <20140604224920.GB4126@pd.tnic>
+ <538FB775.8070405@amacapital.net>
+ <20140605071805.GA16647@pd.tnic>
+ <CAL01qpuj6jvH4XLvhHAszbqmSPXfW=VOdv+TqMwBuDnArL=ofw@mail.gmail.com>
+ <20140605090206.GA16642@pd.tnic>
+ <CALCETrU2TZhxOZyCvBd1nLDiU4ceiSx_Sd2bsDUCX5arOFidBg@mail.gmail.com>
+ <20140605155307.GD16642@pd.tnic>
+ <CALCETrVqqgExhuAYawh_7tc8-Nm8GGiMxmtw25mLFoxru-odZg@mail.gmail.com>
+ <20140605160842.GE16642@pd.tnic>
+ <CALCETrUors-39hUxS9Bg-dh+DzMcmPOs=6t998sbCVjqXYgyug@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <5390930A.8050504@nod.at>
+In-Reply-To: <CALCETrUors-39hUxS9Bg-dh+DzMcmPOs=6t998sbCVjqXYgyug@mail.gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 05-06-14 17:55:54, Richard Weinberger wrote:
-> Am 05.06.2014 17:00, schrieb Michal Hocko:
-> > On Thu 05-06-14 16:00:41, Richard Weinberger wrote:
-> >> Don't spam the kernel logs if the oom_control event fd has listeners.
-> >> In this case there is no need to print that much lines as user space
-> >> will anyway notice that the memory cgroup has reached its limit.
-> > 
-> > But how do you debug why it is reaching the limit and why a particular
-> > process has been killed?
-> 
-> In my case it's always because customer's Java application gone nuts.
-> So I don't really have to debug a lot. ;-)
-> But I can understand your point.
+On Thu, Jun 05, 2014 at 09:14:51AM -0700, Andy Lutomirski wrote:
+> Is this NMI pstore thing done from any context that's supposed to be
+> recoverable? It's always safe to use the FPU and then panic :)
 
-If you know that handling memcg-OOM condition is easy then maybe you can
-not only listen for the OOM notifications but also handle OOM conditions
-and kill the offender. This would mean that kernel doesn't try to kill
-anything and so wouldn't dump anything to the log.
- 
-> > If we are printing too much then OK, let's remove those parts which are
-> > not that useful but hiding information which tells us more about the oom
-> > decision doesn't sound right to me.
-> 
-> What about adding a sysctl like "vm.oom_verbose"?
-> By default it would be 1.
-> If set to 0 the full OOM information is only printed out if nobody listens
-> to the event fd.
+Right :)
 
-If we have a knob then I guess it should be global and shared by memcg
-as well. I can imagine that somebody might be interested only in the
-tasks dump, while somebody would like to see LRU states and other memory
-counters. So it would be ideally a bitmask of things to output. I do not
-think that a memcg specific solution is good, though.
+> Anyway, if we're just talking about EFI, there's an easier solution:
+> just preallocate a per-cpu FPU context for EFI and make the whole mess
+> be local to the EFI code.  For crypto, that's not so good.
+
+This is probably something for Matt to decide but it sounds doable. If
+I'd have to guess, sooner or later we will need to do proper FPU context
+handling for EFI as I don't see anything stopping it from using FPU
+insns. At least we won't. :-)
 
 -- 
-Michal Hocko
-SUSE Labs
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
