@@ -1,157 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751539AbaFEM06 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 08:26:58 -0400
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:59018 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750840AbaFEM04 (ORCPT
+	id S1751616AbaFEM1Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 08:27:24 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:46298 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751409AbaFEM1W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 08:26:56 -0400
+	Thu, 5 Jun 2014 08:27:22 -0400
+Date: Thu, 5 Jun 2014 14:27:15 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Davidlohr Bueso <davidlohr@hp.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, "Paul E. McKenney" <paulmck@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] locking tree changes for v3.16
+Message-ID: <20140605122715.GD6758@twins.programming.kicks-ass.net>
+References: <20140603114821.GA23711@gmail.com>
+ <1401832251.8843.3.camel@buesod1.americas.hpqcorp.net>
+ <20140604103003.GE11096@twins.programming.kicks-ass.net>
+ <20140605081742.GC4926@gmail.com>
+ <20140605111110.GA26771@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CAF6AEGuaURm-AHHh6G=HnJYFLUWBhPOxKaBQCqn-=-9CQdKe8w@mail.gmail.com>
-References: <1401287192-14701-1-git-send-email-thierry.reding@gmail.com>
- <20140528205145.GB10468@kroah.com> <20140530081504.GA16669@ulmo>
- <20140530160831.GA11182@kroah.com> <CAO_48GE_Y7DQj_nCZ=0gb_AY26_vtPsQybf9zuhsLW1nnaOuQw@mail.gmail.com>
- <20140604132831.GC28484@ulmo> <20140604174902.GC20812@kroah.com> <CAF6AEGuaURm-AHHh6G=HnJYFLUWBhPOxKaBQCqn-=-9CQdKe8w@mail.gmail.com>
-From: Sumit Semwal <sumit.semwal@linaro.org>
-Date: Thu, 5 Jun 2014 17:56:36 +0530
-Message-ID: <CAO_48GG0Gm3d7=CkT+z00-f7RSy7snAg4Vkes1c5J6ZXXELWPQ@mail.gmail.com>
-Subject: Re: [PATCH] fence: Use smp_mb__before_atomic()
-To: Rob Clark <robdclark@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="M38YqGLZlgb6RLPS"
+Content-Disposition: inline
+In-Reply-To: <20140605111110.GA26771@gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
 
-On 5 June 2014 17:21, Rob Clark <robdclark@gmail.com> wrote:
-> On Wed, Jun 4, 2014 at 1:49 PM, Greg Kroah-Hartman
-> <gregkh@linuxfoundation.org> wrote:
->> On Wed, Jun 04, 2014 at 03:28:33PM +0200, Thierry Reding wrote:
->>> On Wed, Jun 04, 2014 at 04:57:07PM +0530, Sumit Semwal wrote:
->>> > Hi Greg,
->>> >
->>> >
->>> > On 30 May 2014 21:38, Greg Kroah-Hartman <gregkh@linuxfoundation.org> wrote:
->>> > > On Fri, May 30, 2014 at 10:15:05AM +0200, Thierry Reding wrote:
->>> > >> On Wed, May 28, 2014 at 01:51:45PM -0700, Greg Kroah-Hartman wrote:
->>> > >> > On Wed, May 28, 2014 at 04:26:32PM +0200, Thierry Reding wrote:
->>> > >> > > From: Thierry Reding <treding@nvidia.com>
->>> > >> > >
->>> > >> > > Commit febdbfe8a91c (arch: Prepare for smp_mb__{before,after}_atomic())
->>> > >> > > deprecated the smp_mb__{before,after}_{atomic,clear}_{dec,inc,bit}*()
->>> > >> > > functions in favour of the unified smp_mb__{before,after}_atomic().
->>> > >> > >
->>> > >> > > Signed-off-by: Thierry Reding <treding@nvidia.com>
->>> > >> > > ---
->>> > >> > >  drivers/base/fence.c | 4 ++--
->>> > >> >
->>> > >> > Where does this file come from?  I've not seen it before, and it's not
->>> > >> > in my tree.
->>> > >>
->>> > >> I think it came in through Sumit's tree and it's only in linux-next I
->>> > >> believe.
->>> > >
->>> > > Odd, linux-next is for merging things in Linus's next release.
->>> > >
->>> > > And as I have never seen this code that will end up being my
->>> > > responsibility to maintain, it seems strange that it will be merged in
->>> > > the next kernel development cycle.
->>> > >
->>> > > What broke down here with our review process that required something to
->>> > > be merged without at least a cc: to me?
->>> >
->>> > This is a new file added by Maarten's patches [1], that got reviewed
->>> > on dri-devel and other mailing lists. Since it was quite closely
->>> > associated with dma-buf, I figured I should take it through the
->>> > dma-buf tree.
->>> >
->>> > I am sorry I didn't notice that you weren't CC'ed on these patches -
->>> > Sincere apologies, since I should've noticed that during the patch
->>> > review process - I would take part of the blame here as well  :(
->>> >
->>> > I do realize now that atleast on my part, I should've asked you before
->>> > taking it through the dma-buf tree - I will make sure things like this
->>> > don't happen again through me.
->>> >
->>> > May I request you to help us handle this - would it help if we add
->>> > Maarten as the maintainer for this file? Any other suggestions?
->>>
->>> Perhaps something like the following would help?
->>>
->>> diff --git a/MAINTAINERS b/MAINTAINERS
->>> index fb39c9c3f0c1..d582f54adec8 100644
->>> --- a/MAINTAINERS
->>> +++ b/MAINTAINERS
->>> @@ -2867,7 +2867,9 @@ L:        linux-media@vger.kernel.org
->>>  L:   dri-devel@lists.freedesktop.org
->>>  L:   linaro-mm-sig@lists.linaro.org
->>>  F:   drivers/base/dma-buf*
->>> +F:   drivers/base/fence.c
->>>  F:   include/linux/dma-buf*
->>> +F:   include/linux/fence.h
->>>  F:   Documentation/dma-buf-sharing.txt
->>>  T:   git git://git.linaro.org/people/sumitsemwal/linux-dma-buf.git
->>> @@ -2936,6 +2938,8 @@ T:        git git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/driver-core.git
->>>  S:   Supported
->>>  F:   Documentation/kobject.txt
->>>  F:   drivers/base/
->>> +X:   drivers/base/dma-buf*
->>> +X:   drivers/base/fence.c
->>>  F:   fs/sysfs/
->>>  F:   fs/debugfs/
->>>  F:   include/linux/kobj*
->>>
->>> That removes Greg from the list generated by get_maintainer.pl for
->>> anything that touches the DMA-BUF files.
->>
->> That doesn't really work for most people, I'll still be "responsible"
->> for the code.
->>
->>> Thinking about it, perhaps moving DMA-BUF into its own subdirectory
->>> would be an option too, to make the separation more obvious.
->>
->> That might be best for some of this.
->>
->> But again, why is the fence.c code needed at all anyway?  I'm not sold
->> on that.
->
-> Fence serves as a way to synchronize between (for example) multiple
-> asynchronous gpu's.  There is definitely a need for this.  Otherwise
-> performance for optimus/prime type setups is going to suck.
->
-> I thought we had added something under Documentation/ about it, but I
-> can't find it now (although possibly looking at the wrong trees)..
-> there is at least a bit of a description in the commit msg:
->
->   https://lkml.org/lkml/2014/2/24/602
->
-> I don't think the question about whether we need something like fence
-> to augment dma-buf is really in doubt.  Maybe it should live somewhere
-> else, I'm not sure.  But it makes sense for it to live wherever
-> dma-buf does, as they are intended to work together.
->
+--M38YqGLZlgb6RLPS
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Pending agreement on the need of fence.c (Rob has given the most
-prominent use case for it, and the lack of existing mechanisms to use
-already), would you be ok if I move all the dma-buf* and related
-(fence.c etc) to its own subdirectory and queue it up for this
-release?
+On Thu, Jun 05, 2014 at 01:11:10PM +0200, Ingo Molnar wrote:
+> Unfortunately even with the latest bits from you the breakage I=20
+> reported weeks ago is not resolved:
+>=20
 
-> BR,
-> -R
->
->
-Best regards,
-~Sumit.
->> greg k-h
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
+crap, its the qrwlock bits, I fixed it for the config you gave me. Some
+paravirt crap header hell thing. Happen to have another .config?
+
+--M38YqGLZlgb6RLPS
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTkGITAAoJEHZH4aRLwOS6J54QAIEIzydA1KqS8ku2CtR3hN9L
+1MLLSjMDKXSWwHRSYtcd/dqEniHjZ2Vec7eSEuRCX8zWI3B8B0phr+n+RYyxs58r
+CXRHg7Sojb6j4aytU9JiFmIA81yfo2+hPMkyRp8K1RTBWA6PtZEyaH+C8Zh20SYV
+spdJhsa1RXcVMd6myCkKTg5sAQtIYsZIMc+vKqsz9iNDK6/ptWVrvcJbcM+TL4gR
+vmRq2Jw0F6OTt9GW576sG5vYr2jkF/QWHP6J3Jm3VXIUVjjJCzXiHA9oFVfX6kx+
+J9X6i2OiB1nnxUk19+VZwSp1mlbstH3k2I4kJfUY53g2xZ9YDfUj2zdW8PHTep8D
+KdBSvfFc2XkXBQMHoJSA0OV1CNRrrE4fGKC1wnRBs6AD9UyHOU9wvNpv/YhAwXvy
+HdQKCTj0Mn8WMF7IcX74iioBO0JDbWqLuTl5XXnamzPcSfA9way3BubHjdEQPvpQ
+YOaZ4SGN3ELoRtwjnMercuZcKHKnP6c8HU5dlmBkTVLmKasKhJfirX+8PPJWSWQV
+n4W1uIqeYYKP7RtZZpazPCi8IQcvkpiQhW49DPbMjWOPIQFufQdBR9dwztVbXkJb
+ELwwgCGpOvwnysparvipRn6PmeQ+5Cka/3sU8FGdzkVo7++pAZdFA87ix4OThbgX
+gqUal5ecHUOkv5ZA9+9R
+=puPK
+-----END PGP SIGNATURE-----
+
+--M38YqGLZlgb6RLPS--
