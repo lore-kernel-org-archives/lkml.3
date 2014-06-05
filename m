@@ -1,96 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752015AbaFEQ6k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 12:58:40 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:42594 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751906AbaFEQ6j (ORCPT
+	id S1752092AbaFERAO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 13:00:14 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:46960 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751419AbaFERAL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 12:58:39 -0400
-Message-ID: <5390A1B7.3050008@infradead.org>
-Date: Thu, 05 Jun 2014 09:58:31 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Thu, 5 Jun 2014 13:00:11 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Paolo Bonzini <pbonzini@redhat.com>, Michal Nazarewicz <mina86@mina86.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: Minchan Kim <minchan@kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Gleb Natapov <gleb@kernel.org>, Alexander Graf <agraf@suse.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        kvm@vger.kernel.org, kvm-ppc@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org
+Subject: Re: [RFC PATCH 3/3] PPC, KVM, CMA: use general CMA reserved area management framework
+In-Reply-To: <538D9363.7020203@redhat.com>
+References: <1401757919-30018-1-git-send-email-iamjoonsoo.kim@lge.com> <1401757919-30018-4-git-send-email-iamjoonsoo.kim@lge.com> <xa1ttx82jx1i.fsf@mina86.com> <538D9363.7020203@redhat.com>
+User-Agent: Notmuch/0.18~rc0+2~gbc64cdc (http://notmuchmail.org) Emacs/24.3.91.1 (x86_64-unknown-linux-gnu)
+Date: Thu, 05 Jun 2014 22:30:02 +0530
+Message-ID: <8761kfuwa5.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Prarit Bhargava <prarit@redhat.com>, linux-kernel@vger.kernel.org
-CC: Viresh Kumar <viresh.kumar@linaro.org>,
-        Dirk Brandewie <dirk.brandewie@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jesper Nilsson <jesper.nilsson@axis.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Ramkumar Ramachandra <artagnon@gmail.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-doc@vger.kernel.org
-Subject: Re: [PATCH] Documentation, intel_pstate: Add a description of the
- intel_pstate internal governors [v2]
-References: <CAKohpokDZBfZdpSRN_K_QZWXRHk+jSeZ0e4-iBpoaf=hVJ8F_w@mail.gmail.com> <1401980832-4552-1-git-send-email-prarit@redhat.com>
-In-Reply-To: <1401980832-4552-1-git-send-email-prarit@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14060517-4790-0000-0000-000001DCA389
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/05/2014 08:07 AM, Prarit Bhargava wrote:
-> The current documentation is incomplete wrt the intel_pstate internal
-> governors.  The confusion comes from the general use internal governors
-> which also use the names performance and powersave.  This patch
-> differentiates between the two sets of governors.
-> 
-> Cc: Viresh Kumar <viresh.kumar@linaro.org>
-> Cc: Dirk Brandewie <dirk.brandewie@gmail.com>
-> Cc: Randy Dunlap <rdunlap@infradead.org>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Jesper Nilsson <jesper.nilsson@axis.com>
-> Cc: Viresh Kumar <viresh.kumar@linaro.org>
-> Cc: "David S. Miller" <davem@davemloft.net>
-> Cc: Ramkumar Ramachandra <artagnon@gmail.com>
-> Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-> Cc: linux-doc@vger.kernel.org
-> Signed-off-by: Prarit Bhargava <prarit@redhat.com>
-> 
-> [v2]: text update
-> ---
->  Documentation/cpu-freq/governors.txt    |    2 +-
->  Documentation/cpu-freq/intel-pstate.txt |    8 ++++++++
->  2 files changed, 9 insertions(+), 1 deletion(-)
-> 
-> diff --git a/Documentation/cpu-freq/governors.txt b/Documentation/cpu-freq/governors.txt
-> index 77ec215..c15aa75 100644
-> --- a/Documentation/cpu-freq/governors.txt
-> +++ b/Documentation/cpu-freq/governors.txt
-> @@ -36,7 +36,7 @@ Contents:
->  1. What Is A CPUFreq Governor?
->  ==============================
->  
-> -Most cpufreq drivers (in fact, all except one, longrun) or even most
-> +Most cpufreq drivers (except the intel_pstate and longrun) or even most
->  cpu frequency scaling algorithms only offer the CPU to be set to one
->  frequency. In order to offer dynamic frequency scaling, the cpufreq
->  core must be able to tell these drivers of a "target frequency". So
-> diff --git a/Documentation/cpu-freq/intel-pstate.txt b/Documentation/cpu-freq/intel-pstate.txt
-> index e742d21..2edd8d9 100644
-> --- a/Documentation/cpu-freq/intel-pstate.txt
-> +++ b/Documentation/cpu-freq/intel-pstate.txt
-> @@ -9,6 +9,14 @@ assumed to implement internal governors by the cpufreq core. All the
->  logic for selecting the current P state is contained within the
->  driver; no external governor is used by the cpufreq core.
->  
-> +The Intel P-state driver has two internal governors, performance and
-> +powersave.  These governors differ from the generally used governors of the
-> +same name in the kernel.  The internal performance governor sets the
-> +max_perf_pct and min_perf_pct to 100; that is, the governor selects the
-> +highest available P state to maximize the performance of the core.  The
-> +internal powersave governor, selects the appropriate P state based on the
+Paolo Bonzini <pbonzini@redhat.com> writes:
 
-no comma here  ---------------^
+> Il 03/06/2014 09:02, Michal Nazarewicz ha scritto:
+>> On Tue, Jun 03 2014, Joonsoo Kim wrote:
+>>> Now, we have general CMA reserved area management framework,
+>>> so use it for future maintainabilty. There is no functional change.
+>>>
+>>> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+>>
+>> Acked-by: Michal Nazarewicz <mina86@mina86.com>
+>>
+>
+> Acked-by: Paolo Bonzini <pbonzini@redhat.com>
+>
+> Aneesh, can you test this series?
 
-> +current load on the CPU.
-> +
->  Intel SandyBridge+ processors are supported.
->  
->  New sysfs files for controlling P state selection have been added to
-> 
+Sorry for the late reply. I will test this and update here.
 
+-aneesh
 
--- 
-~Randy
