@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754009AbaFEEbr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 00:31:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44461 "EHLO
+	id S1754189AbaFEEcE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 00:32:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44456 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753483AbaFEEWJ (ORCPT
+	with ESMTP id S1753478AbaFEEWJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 5 Jun 2014 00:22:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Hellstrom <thellstrom@vmware.com>,
-        Jakob Bornecrantz <jakob@vmware.com>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Weng Meiling <wengmeiling.weng@huawei.com>
-Subject: [PATCH 3.4 185/214] drm/ttm: Fix memory type compatibility check
-Date: Wed,  4 Jun 2014 21:19:08 -0700
-Message-Id: <20140605041704.313767818@linuxfoundation.org>
+        Pavel Roskin <proski@gnu.org>, Chris Wilson <chris@chris-wilson.co.uk>,
+        Dave Airlie <airlied@redhat.com>, Ben Hutchings <ben@decadent.org.uk>,
+        Weng Meiling <wengmeiling.weng@huawei.com>,
+        dri-devel@lists.freedesktop.org
+Subject: [PATCH 3.4 184/214] drm: Pad drm_mode_get_connector to 64-bit boundary
+Date: Wed,  4 Jun 2014 21:19:07 -0700
+Message-Id: <20140605041704.189869660@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -29,95 +29,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Hellstrom <thellstrom@vmware.com>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit 59c8e66378fb78adbcd05f0d09783dde6fef282b upstream.
+commit bc5bd37ce48c66e9192ad2e7231e9678880f6f8e upstream.
 
-Also check the busy placements before deciding to move a buffer object.
-Failing to do this may result in a completely unneccessary move within a
-single memory type.
+Pavel Roskin reported that DRM_IOCTL_MODE_GETCONNECTOR was overwritting
+the 4 bytes beyond the end of its structure with a 32-bit userspace
+running on a 64-bit kernel. This is due to the padding gcc inserts as
+the drm_mode_get_connector struct includes a u64 and its size is not a
+natural multiple of u64s.
 
-Signed-off-by: Thomas Hellstrom <thellstrom@vmware.com>
-Reviewed-by: Jakob Bornecrantz <jakob@vmware.com>
-[bwh: Backported to 3.2: adjust context]
+64-bit kernel:
+
+sizeof(drm_mode_get_connector)=80, alignof=8
+sizeof(drm_mode_get_encoder)=20, alignof=4
+sizeof(drm_mode_modeinfo)=68, alignof=4
+
+32-bit userspace:
+
+sizeof(drm_mode_get_connector)=76, alignof=4
+sizeof(drm_mode_get_encoder)=20, alignof=4
+sizeof(drm_mode_modeinfo)=68, alignof=4
+
+Fortuituously we can insert explicit padding to the tail of our
+structures without breaking ABI.
+
+Reported-by: Pavel Roskin <proski@gnu.org>
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Dave Airlie <airlied@redhat.com>
+Cc: dri-devel@lists.freedesktop.org
+Signed-off-by: Dave Airlie <airlied@redhat.com>
+[bwh: Backported to 3.2: adjust filename]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Cc: Weng Meiling <wengmeiling.weng@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/ttm/ttm_bo.c |   32 ++++++++++++++++++++------------
- 1 file changed, 20 insertions(+), 12 deletions(-)
+ include/drm/drm_mode.h |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/gpu/drm/ttm/ttm_bo.c
-+++ b/drivers/gpu/drm/ttm/ttm_bo.c
-@@ -1091,24 +1091,32 @@ out_unlock:
- 	return ret;
- }
- 
--static int ttm_bo_mem_compat(struct ttm_placement *placement,
--			     struct ttm_mem_reg *mem)
-+static bool ttm_bo_mem_compat(struct ttm_placement *placement,
-+			      struct ttm_mem_reg *mem,
-+			      uint32_t *new_flags)
- {
- 	int i;
- 
- 	if (mem->mm_node && placement->lpfn != 0 &&
- 	    (mem->start < placement->fpfn ||
- 	     mem->start + mem->num_pages > placement->lpfn))
--		return -1;
-+		return false;
- 
- 	for (i = 0; i < placement->num_placement; i++) {
--		if ((placement->placement[i] & mem->placement &
--			TTM_PL_MASK_CACHING) &&
--			(placement->placement[i] & mem->placement &
--			TTM_PL_MASK_MEM))
--			return i;
-+		*new_flags = placement->placement[i];
-+		if ((*new_flags & mem->placement & TTM_PL_MASK_CACHING) &&
-+		    (*new_flags & mem->placement & TTM_PL_MASK_MEM))
-+			return true;
- 	}
--	return -1;
+--- a/include/drm/drm_mode.h
++++ b/include/drm/drm_mode.h
+@@ -223,6 +223,8 @@ struct drm_mode_get_connector {
+ 	__u32 connection;
+ 	__u32 mm_width, mm_height; /**< HxW in millimeters */
+ 	__u32 subpixel;
 +
-+	for (i = 0; i < placement->num_busy_placement; i++) {
-+		*new_flags = placement->busy_placement[i];
-+		if ((*new_flags & mem->placement & TTM_PL_MASK_CACHING) &&
-+		    (*new_flags & mem->placement & TTM_PL_MASK_MEM))
-+			return true;
-+	}
-+
-+	return false;
- }
++	__u32 pad;
+ };
  
- int ttm_bo_validate(struct ttm_buffer_object *bo,
-@@ -1117,6 +1125,7 @@ int ttm_bo_validate(struct ttm_buffer_ob
- 			bool no_wait_gpu)
- {
- 	int ret;
-+	uint32_t new_flags;
- 
- 	BUG_ON(!atomic_read(&bo->reserved));
- 	/* Check that range is valid */
-@@ -1127,8 +1136,7 @@ int ttm_bo_validate(struct ttm_buffer_ob
- 	/*
- 	 * Check whether we need to move buffer.
- 	 */
--	ret = ttm_bo_mem_compat(placement, &bo->mem);
--	if (ret < 0) {
-+	if (!ttm_bo_mem_compat(placement, &bo->mem, &new_flags)) {
- 		ret = ttm_bo_move_buffer(bo, placement, interruptible, no_wait_reserve, no_wait_gpu);
- 		if (ret)
- 			return ret;
-@@ -1137,7 +1145,7 @@ int ttm_bo_validate(struct ttm_buffer_ob
- 		 * Use the access and other non-mapping-related flag bits from
- 		 * the compatible memory placement flags to the active flags
- 		 */
--		ttm_flag_masked(&bo->mem.placement, placement->placement[ret],
-+		ttm_flag_masked(&bo->mem.placement, new_flags,
- 				~TTM_PL_MASK_MEMTYPE);
- 	}
- 	/*
+ #define DRM_MODE_PROP_PENDING	(1<<0)
 
 
