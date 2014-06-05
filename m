@@ -1,97 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752645AbaFEVii (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 17:38:38 -0400
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:58377 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751651AbaFEVif (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 17:38:35 -0400
-Date: Thu, 5 Jun 2014 14:38:32 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Vlastimil Babka <vbabka@suse.cz>
-cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan@kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
-Subject: Re: [RFC PATCH 6/6] mm, compaction: don't migrate in blocks that
- cannot be fully compacted in async direct compaction
-In-Reply-To: <53908F10.4020603@suse.cz>
-Message-ID: <alpine.DEB.2.02.1406051431030.18119@chino.kir.corp.google.com>
-References: <alpine.DEB.2.02.1405211954410.13243@chino.kir.corp.google.com> <1401898310-14525-1-git-send-email-vbabka@suse.cz> <1401898310-14525-6-git-send-email-vbabka@suse.cz> <alpine.DEB.2.02.1406041705140.22536@chino.kir.corp.google.com>
- <53908F10.4020603@suse.cz>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1752051AbaFEVtz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 17:49:55 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751354AbaFEVtw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jun 2014 17:49:52 -0400
+Message-ID: <5390E5FD.5030400@nod.at>
+Date: Thu, 05 Jun 2014 23:49:49 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Honggang Li <enjoymindful@gmail.com>,
+        user-mode-linux-devel@lists.sourceforge.net,
+        user-mode-linux-user@lists.sourceforge.net
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] remove csum_partial_copy_generic_i386 to clean up exception
+ table
+References: <538F275B.7000508@nod.at> <1401941724-6703-1-git-send-email-enjoymindful@gmail.com> <1401941724-6703-2-git-send-email-enjoymindful@gmail.com>
+In-Reply-To: <1401941724-6703-2-git-send-email-enjoymindful@gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 5 Jun 2014, Vlastimil Babka wrote:
+Am 05.06.2014 06:15, schrieb Honggang Li:
+> arch/x86/um/checksum_32.S had been copy & paste from x86. When build
+> x86 uml, csum_partial_copy_generic_i386 mess up the exception table.
+> In fact, exception table dose not work in uml kernel.
 
-> > Ok, so this obsoletes my patchseries that did something similar.  I hope
-> 
-> Your patches 1/3 and 2/3 would still make sense. Checking alloc flags is IMHO
-> better than checking async here. That way, hugepaged and kswapd would still
-> try to migrate stuff which is important as Mel described in the reply to your
-> 3/3.
-> 
+Are you sure that exception tables do not work on UML?
+I said, I'm not sure. Can you please find out?
 
-Would you mind folding those two patches into your series since you'll be 
-requiring the gfp_mask in struct compact_control and your pageblock skip 
-is better than mine?
+In arch/um/kernel/trap.c:segv() we have the mechanism for it:
+        else if (!is_user && arch_fixup(ip, regs))
+                goto out;
 
-> > you can rebase this set on top of linux-next and then propose it formally
-> > without the RFC tag.
-> 
-> I posted this early to facilitate discussion, but if you want to test on
-> linux-next then sure.
-> 
+The interesting question is, is this by design or was it just copy&pasted from x86
+many moons ago? :)
 
-I'd love to test these.
+> And csum_partial_copy_generic_i386 never been called. So, delete it.
 
-> > We also need to discuss the scheduling heuristics, the reliance on
-> > need_resched(), to abort async compaction.  In testing, we actualy
-> > sometimes see 2-3 pageblocks scanned before terminating and thp has a very
-> > little chance of being allocated.  At the same time, if we try to fault
-> > 64MB of anon memory in and each of the 32 calls to compaction are
-> > expensive but don't result in an order-9 page, we see very lengthy fault
-> > latency.
-> 
-> Yes, I thought you were about to try the 1GB per call setting. I don't
-> currently have a test setup like you. My patch 1/6 still uses on
-> need_resched() but that could be replaced with a later patch.
-> 
+I like such clean ups. :-)
 
-Agreed.  I was thinking higher than 1GB would be possible once we have 
-your series that does the pageblock skip for thp, I think the expense 
-would be constant because we won't needlessly be migrating pages unless it 
-has a good chance at succeeding.  I'm slightly concerned about the 
-COMPACT_CLUSTER_MAX termination, though, before we find unmigratable 
-memory but I think that will be very low probability.
-
-> > I think it would be interesting to consider doing async compaction
-> > deferral up to 1 << COMPACT_MAX_DEFER_SHIFT after a sysctl-configurable
-> > amount of memory is scanned, at least for thp, and remove the scheduling
-> > heuristic entirely.
-> 
-> That could work. How about the lock contention heuristic? Is it possible on a
-> large and/or busy system to compact anything substantional without hitting the
-> lock contention? Are your observations about too early abort based on
-> need_resched() or lock contention?
-> 
-
-Eek, it's mostly need_resched() because we don't use zone->lru_lock, we 
-have the memcg lruvec locks for lru locking.  We end up dropping and 
-reacquiring different locks based on the memcg of the page being isolated 
-quite a bit.
-
-This does beg the question about parallel direct compactors, though, that 
-will be contending on the same coarse zone->lru_lock locks and immediately 
-aborting and falling back to PAGE_SIZE pages for thp faults that will be 
-more likely if your patch to grab the high-order page and return it to the 
-page allocator is merged.
+Thanks,
+//richard
