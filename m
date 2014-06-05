@@ -1,43 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752812AbaFEPWw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 11:22:52 -0400
-Received: from mail-we0-f181.google.com ([74.125.82.181]:50783 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752258AbaFEPWu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 11:22:50 -0400
-Date: Thu, 5 Jun 2014 16:22:46 +0100
-From: Peter Griffin <peter.griffin@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, kernel@stlinux.com,
-        linux-pm@vger.kernel.org, eduardo.valentin@ti.com, rui.zhang@intel.com
-Subject: Re: [STLinux Kernel] [PATCH 3/6] thermal: sti: Add support for ST's
- System Config Register based Thermal controller
-Message-ID: <20140605152246.GC7446@griffinp-ThinkPad-X1-Carbon-2nd>
-References: <1401442715-6350-1-git-send-email-lee.jones@linaro.org>
- <1401442715-6350-4-git-send-email-lee.jones@linaro.org>
- <20140605151650.GB7446@griffinp-ThinkPad-X1-Carbon-2nd>
+	id S1752833AbaFEPXI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 11:23:08 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:52823 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751917AbaFEPXE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jun 2014 11:23:04 -0400
+Message-ID: <53908B51.5070509@linux.vnet.ibm.com>
+Date: Thu, 05 Jun 2014 11:22:57 -0400
+From: "Jason J. Herne" <jjherne@linux.vnet.ibm.com>
+Reply-To: jjherne@linux.vnet.ibm.com
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140605151650.GB7446@griffinp-ThinkPad-X1-Carbon-2nd>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Peter Zijlstra <peterz@infradead.org>
+CC: Sasha Levin <sasha.levin@oracle.com>, Tejun Heo <tj@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: workqueue: WARN at at kernel/workqueue.c:2176
+References: <CACvQF52-jUMzK32uoDCb8zn0RZsiC9uzUOq+ZBRXK22esYKS0g@mail.gmail.com> <20140516162945.GZ11096@twins.programming.kicks-ass.net> <53849EB7.9090302@linux.vnet.ibm.com> <20140527142637.GB19143@laptop.programming.kicks-ass.net> <53875F09.3090607@linux.vnet.ibm.com> <538DB076.4090704@cn.fujitsu.com> <20140603141659.GO30445@twins.programming.kicks-ass.net> <538E840D.2040300@cn.fujitsu.com> <20140604064946.GF30445@twins.programming.kicks-ass.net> <538ED7EB.5050303@cn.fujitsu.com> <20140604093907.GC11096@twins.programming.kicks-ass.net> <53904C6B.90001@cn.fujitsu.com>
+In-Reply-To: <53904C6B.90001@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14060515-5806-0000-0000-0000251032DB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lee,
+On 06/05/2014 06:54 AM, Lai Jiangshan wrote:
+> The patch is not tested by Jason, I don't know whether the patch fix the problem.
+> The changlog including the "Reported-by:" and "Tested-by:" need to be updated
+> after it is proved.
 
+I will test this one and get back to you as soon as possible.
 
-> Also a seperate somewhat unrelated question... stih415 and stih416 are very similar 
-> dual die parts. Do you know why the stih415 has support for sas & mpe die temperature
-> sensors, but the stih416 only has support for the sas die?
-
-Ah I see...support for the stih416 mpe sensor is in a subsquent patch in the series.
-
-regards,
-
-Peter.
+-- 
+-- Jason J. Herne (jjherne@linux.vnet.ibm.com)
 
