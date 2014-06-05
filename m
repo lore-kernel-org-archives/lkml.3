@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754207AbaFEEuo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 00:50:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44086 "EHLO
+	id S1754240AbaFEEvB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 00:51:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44081 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752898AbaFEEVK (ORCPT
+	with ESMTP id S1752830AbaFEEVK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 5 Jun 2014 00:21:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Krzysztof Mazur <krzysiek@podlesie.net>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
         Ben Hutchings <ben@decadent.org.uk>,
         Qiang Huang <h.huangqiang@huawei.com>
-Subject: [PATCH 3.4 113/214] i915: ensure that VGA plane is disabled
-Date: Wed,  4 Jun 2014 21:17:56 -0700
-Message-Id: <20140605041654.874735081@linuxfoundation.org>
+Subject: [PATCH 3.4 112/214] i82975x_edac: Fix dimm label initialization
+Date: Wed,  4 Jun 2014 21:17:55 -0700
+Message-Id: <20140605041654.742166481@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -29,76 +29,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Krzysztof Mazur <krzysiek@podlesie.net>
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
 
-commit 0fde901f1ddd2ce0e380a6444f1fb7ca555859e9 upstream.
+commit 479696840239e0cc43efb3c917bdcad2174d2215 upstream.
 
-Some broken systems (like HP nc6120) in some cases, usually after LID
-close/open, enable VGA plane, making display unusable (black screen on LVDS,
-some strange mode on VGA output). We used to disable VGA plane only once at
-startup. Now we also check, if VGA plane is still disabled while changing
-mode, and fix that if something changed it.
+The driver has only 4 hardcoded labels, but allows much more memory.
+Fix it by removing the hardcoded logic, using snprintf() instead.
 
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=57434
-Signed-off-by: Krzysztof Mazur <krzysiek@podlesie.net>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-[bwh: Backported to 3.2: intel_modeset_setup_hw_state() does not
- exist, so call i915_redisable_vga() directly from intel_lid_notify()]
+[   19.833972] general protection fault: 0000 [#1] SMP
+[   19.837733] Modules linked in: i82975x_edac(+) edac_core firewire_ohci firewire_core crc_itu_t nouveau mxm_wmi wmi video i2c_algo_bit drm_kms_helper ttm drm i2c_core
+[   19.837733] CPU 0
+[   19.837733] Pid: 390, comm: udevd Not tainted 3.6.1-1.fc17.x86_64.debug #1 Dell Inc.                 Precision WorkStation 390    /0MY510
+[   19.837733] RIP: 0010:[<ffffffff813463a8>]  [<ffffffff813463a8>] strncpy+0x18/0x30
+[   19.837733] RSP: 0018:ffff880078535b68  EFLAGS: 00010202
+[   19.837733] RAX: ffff880069fa9708 RBX: ffff880078588000 RCX: ffff880069fa9708
+[   19.837733] RDX: 000000000000001f RSI: 5f706f5f63616465 RDI: ffff880069fa9708
+[   19.837733] RBP: ffff880078535b68 R08: ffff880069fa9727 R09: 000000000000fffe
+[   19.837733] R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000003
+[   19.837733] R13: 0000000000000000 R14: ffff880069fa9290 R15: ffff880079624a80
+[   19.837733] FS:  00007f3de01ee840(0000) GS:ffff88007c400000(0000) knlGS:0000000000000000
+[   19.837733] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[   19.837733] CR2: 00007f3de00b9000 CR3: 0000000078dbc000 CR4: 00000000000007f0
+[   19.837733] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[   19.837733] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[   19.837733] Process udevd (pid: 390, threadinfo ffff880078534000, task ffff880079642450)
+[   19.837733] Stack:
+[   19.837733]  ffff880078535c18 ffffffffa017c6b8 00040000816d627f ffff880079624a88
+[   19.837733]  ffffc90004cd6000 ffff880079624520 ffff88007ac21148 0000000000000000
+[   19.837733]  0000000000000000 0004000000000000 feda000078535bc8 ffffffff810d696d
+[   19.837733] Call Trace:
+[   19.837733]  [<ffffffffa017c6b8>] i82975x_init_one+0x2e6/0x3e6 [i82975x_edac]
+...
+
+Fix bug reported at:
+	https://bugzilla.redhat.com/show_bug.cgi?id=848149
+And, very likely:
+	https://bbs.archlinux.org/viewtopic.php?id=148033
+	https://bugzilla.kernel.org/show_bug.cgi?id=47171
+
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+[bwh: Backported to 3.2:
+ - Adjust context
+ - Use csrow->channels[chan].label not csrow->channels[chan]->dimm->label]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Cc: Qiang Huang <h.huangqiang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/i915_drv.h      |    1 +
- drivers/gpu/drm/i915/intel_display.c |   17 +++++++++++++++++
- drivers/gpu/drm/i915/intel_lvds.c    |    1 +
- 3 files changed, 19 insertions(+)
+ drivers/edac/i82975x_edac.c |   11 ++++-------
+ 1 file changed, 4 insertions(+), 7 deletions(-)
 
---- a/drivers/gpu/drm/i915/i915_drv.h
-+++ b/drivers/gpu/drm/i915/i915_drv.h
-@@ -1397,6 +1397,7 @@ static inline void intel_unregister_dsm_
- #endif /* CONFIG_ACPI */
- 
- /* modesetting */
-+extern void i915_redisable_vga(struct drm_device *dev);
- extern void intel_modeset_init(struct drm_device *dev);
- extern void intel_modeset_gem_init(struct drm_device *dev);
- extern void intel_modeset_cleanup(struct drm_device *dev);
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -9254,6 +9254,23 @@ static void i915_disable_vga(struct drm_
- 	POSTING_READ(vga_reg);
- }
- 
-+void i915_redisable_vga(struct drm_device *dev)
-+{
-+	struct drm_i915_private *dev_priv = dev->dev_private;
-+	u32 vga_reg;
-+
-+	if (HAS_PCH_SPLIT(dev))
-+		vga_reg = CPU_VGACNTRL;
-+	else
-+		vga_reg = VGACNTRL;
-+
-+	if (I915_READ(vga_reg) != VGA_DISP_DISABLE) {
-+		DRM_DEBUG_KMS("Something enabled VGA plane, disabling it\n");
-+		I915_WRITE(vga_reg, VGA_DISP_DISABLE);
-+		POSTING_READ(vga_reg);
-+	}
-+}
-+
- void intel_modeset_init(struct drm_device *dev)
+--- a/drivers/edac/i82975x_edac.c
++++ b/drivers/edac/i82975x_edac.c
+@@ -363,10 +363,6 @@ static enum dev_type i82975x_dram_type(v
+ static void i82975x_init_csrows(struct mem_ctl_info *mci,
+ 		struct pci_dev *pdev, void __iomem *mch_window)
  {
- 	struct drm_i915_private *dev_priv = dev->dev_private;
---- a/drivers/gpu/drm/i915/intel_lvds.c
-+++ b/drivers/gpu/drm/i915/intel_lvds.c
-@@ -535,6 +535,7 @@ static int intel_lid_notify(struct notif
+-	static const char *labels[4] = {
+-							"DIMM A1", "DIMM A2",
+-							"DIMM B1", "DIMM B2"
+-						};
+ 	struct csrow_info *csrow;
+ 	unsigned long last_cumul_size;
+ 	u8 value;
+@@ -407,9 +403,10 @@ static void i82975x_init_csrows(struct m
+ 		 *   [0-3] for dual-channel; i.e. csrow->nr_channels = 2
+ 		 */
+ 		for (chan = 0; chan < csrow->nr_channels; chan++)
+-			strncpy(csrow->channels[chan].label,
+-					labels[(index >> 1) + (chan * 2)],
+-					EDAC_MC_LABEL_LEN);
++
++			snprintf(csrow->channels[chan].label, EDAC_MC_LABEL_LEN, "DIMM %c%d",
++				 (chan == 0) ? 'A' : 'B',
++				 index);
  
- 	mutex_lock(&dev->mode_config.mutex);
- 	drm_helper_resume_force_mode(dev);
-+	i915_redisable_vga(dev);
- 	mutex_unlock(&dev->mode_config.mutex);
- 
- 	return NOTIFY_OK;
+ 		if (cumul_size == last_cumul_size)
+ 			continue;	/* not populated */
 
 
