@@ -1,61 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751889AbaFEQU7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 12:20:59 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:50088 "EHLO mail.skyhub.de"
+	id S1752051AbaFEQVY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 12:21:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1616 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750853AbaFEQU5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 12:20:57 -0400
-Date: Thu, 5 Jun 2014 18:18:34 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Matt Fleming <matt.fleming@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Ricardo Neri <ricardo.neri-calderon@linux.intel.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>
-Subject: Re: [tip:x86/efi] x86/efi: Check for unsafe dealing with FPU state
- in irq ctxt
-Message-ID: <20140605161834.GF16642@pd.tnic>
-References: <20140604224920.GB4126@pd.tnic>
- <538FB775.8070405@amacapital.net>
- <20140605071805.GA16647@pd.tnic>
- <CAL01qpuj6jvH4XLvhHAszbqmSPXfW=VOdv+TqMwBuDnArL=ofw@mail.gmail.com>
- <20140605090206.GA16642@pd.tnic>
- <CALCETrU2TZhxOZyCvBd1nLDiU4ceiSx_Sd2bsDUCX5arOFidBg@mail.gmail.com>
- <20140605155307.GD16642@pd.tnic>
- <CALCETrVqqgExhuAYawh_7tc8-Nm8GGiMxmtw25mLFoxru-odZg@mail.gmail.com>
- <20140605160842.GE16642@pd.tnic>
- <CALCETrUors-39hUxS9Bg-dh+DzMcmPOs=6t998sbCVjqXYgyug@mail.gmail.com>
+	id S1751640AbaFEQVX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jun 2014 12:21:23 -0400
+Date: Thu, 5 Jun 2014 12:20:45 -0400
+From: Dave Jones <davej@redhat.com>
+To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        zohar@linux.vnet.ibm.com
+Subject: Re: ima_mmap_file returning 0 to userspace as mmap result.
+Message-ID: <20140605162045.GA25474@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	"Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	zohar@linux.vnet.ibm.com
+References: <20140604233122.GA19838@redhat.com>
+ <538FF4C4.5090300@gmail.com>
+ <20140605155658.GA22673@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CALCETrUors-39hUxS9Bg-dh+DzMcmPOs=6t998sbCVjqXYgyug@mail.gmail.com>
+In-Reply-To: <20140605155658.GA22673@redhat.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 05, 2014 at 09:14:51AM -0700, Andy Lutomirski wrote:
-> Is this NMI pstore thing done from any context that's supposed to be
-> recoverable? It's always safe to use the FPU and then panic :)
+On Thu, Jun 05, 2014 at 11:56:58AM -0400, Dave Jones wrote:
+ > On Thu, Jun 05, 2014 at 06:40:36AM +0200, Michael Kerrisk (man-pages) wrote:
+ >  > On 06/05/2014 01:31 AM, Dave Jones wrote:
+ >  > > I just noticed that trinity was freaking out in places when mmap was
+ >  > > returning zero.  This surprised me, because I had the mmap_min_addr
+ >  > > sysctl set to 64k, so it wasn't a MAP_FIXED mapping that did it.
+ >  > > 
+ >  > > There's no mention of this return value in the man page, so I dug
+ >  > > into the kernel code, and it appears that we do..
+ >  > > 
+ >  > > sys_mmap
+ >  > > vm_mmap_pgoff
+ >  > > security_mmap_file
+ >  > > ima_file_mmap <- returns 0 if not PROT_EXEC
+ >  > > 
+ >  > > and then the 0 gets propagated up as a retval all the way to userspace.
+ > 
+ > I just realised that this affects even kernels with CONFIG_IMA unset,
+ > because there we just do 'return 0' unconditionally.
+ > 
+ > Also, it appears that kernels with CONFIG_SECURITY unset will also
+ > return a zero for the same reason.
 
-Right :)
+Hang on, I was misreading that whole security_mmap_file ret handling code.
+There's something else at work here.  I'll dig and get a reproducer.
 
-> Anyway, if we're just talking about EFI, there's an easier solution:
-> just preallocate a per-cpu FPU context for EFI and make the whole mess
-> be local to the EFI code.  For crypto, that's not so good.
+	Dave
 
-This is probably something for Matt to decide but it sounds doable. If
-I'd have to guess, sooner or later we will need to do proper FPU context
-handling for EFI as I don't see anything stopping it from using FPU
-insns. At least we won't. :-)
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
