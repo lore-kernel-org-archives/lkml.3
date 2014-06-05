@@ -1,52 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751591AbaFEN3k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 09:29:40 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:45008 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750860AbaFEN3i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 09:29:38 -0400
-Date: Thu, 5 Jun 2014 15:27:50 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Stephane Eranian <eranian@google.com>
-Cc: Matt Fleming <matt@console-pimps.org>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Jiri Olsa <jolsa@redhat.com>, "Yan, Zheng" <zheng.z.yan@intel.com>,
-        Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
-Subject: Re: [PATCH 9/9] perf/x86: add syfs entry to disable HT bug workaround
-Message-ID: <20140605132750.GA16811@pd.tnic>
-References: <1401917658-26065-1-git-send-email-eranian@google.com>
- <1401917658-26065-10-git-send-email-eranian@google.com>
- <CADknwL5S8QpzCAgrKHjbGTbEx7nA8L=Vu8d-UWAYCg6X25OcGw@mail.gmail.com>
- <CABPqkBSimH8Ob_q3dDtQiW_OwuS9nA4Gsx87H26ywNcmYd38Xw@mail.gmail.com>
- <CADknwL6s2ttb5E2JDr6bc_XkwpxnW5ecU-3Ns88=gvgPvLYkPg@mail.gmail.com>
- <CABPqkBQUUb+yEvC8y3oLc0DUbF3DJPzbt3sNL7Zqzufh6EYdRw@mail.gmail.com>
- <CADknwL71NC5wBG1tnqgJ6iiA4y+HYomGpufOn7V+MP2=m7+Mig@mail.gmail.com>
- <CABPqkBTEafZ5MbYM4UQxX92uWcPiphPeXMoJRKTt8jnrB+5j2w@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CABPqkBTEafZ5MbYM4UQxX92uWcPiphPeXMoJRKTt8jnrB+5j2w@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1751774AbaFENa0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 09:30:26 -0400
+Received: from vegas.theobroma-systems.com ([144.76.126.164]:38772 "EHLO
+	mail.theobroma-systems.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751118AbaFENaZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jun 2014 09:30:25 -0400
+X-Greylist: delayed 1339 seconds by postgrey-1.27 at vger.kernel.org; Thu, 05 Jun 2014 09:30:24 EDT
+From: Marcus Nutzinger <marcus.nutzinger@theobroma-systems.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Marcus Nutzinger <marcus.nutzinger@theobroma-systems.com>
+Subject: [PATCH] usb: gadget: gadgetfs: correct dev state
+Date: Thu,  5 Jun 2014 15:08:00 +0200
+Message-Id: <1401973680-18413-1-git-send-email-marcus.nutzinger@theobroma-systems.com>
+X-Mailer: git-send-email 1.9.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 05, 2014 at 02:02:51PM +0200, Stephane Eranian wrote:
-> It is enabled by default. Nothing is done to try and disable it later
-> even once the kernel is fully booted. So this is mostly for testing
-> and power-users.
+Commit 1826e9b1 fixes the use after free of "dev".
+However if this is not the final call to dev_release()
+and the state is not reset to STATE_DEV_DISABLED and
+hence all further open() calls to the gadgetfs ep0
+device will fail with EBUSY.
 
-You keep saying "power-users". What is the disadvantage for power users
-running with the workaround disabled? I.e., why would anyone want to
-disable it at all, what is the use case for that?
+So this commit reverts 1826e9b1 and places the call
+put_dev() after setting the state.
 
-Thanks.
+Signed-off-by: Marcus Nutzinger <marcus.nutzinger@theobroma-systems.com>
+Reviewed-by: Christoph Muellner <christoph.muellner@theobroma-systems.com>
+---
+ drivers/usb/gadget/inode.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
+diff --git a/drivers/usb/gadget/inode.c b/drivers/usb/gadget/inode.c
+index a925d0c..6330528 100644
+--- a/drivers/usb/gadget/inode.c
++++ b/drivers/usb/gadget/inode.c
+@@ -1264,8 +1264,13 @@ dev_release (struct inode *inode, struct file *fd)
+ 
+ 	kfree (dev->buf);
+ 	dev->buf = NULL;
+-	put_dev (dev);
+ 
++	/* other endpoints were all decoupled from this device */
++	spin_lock_irq(&dev->lock);
++	dev->state = STATE_DEV_DISABLED;
++	spin_unlock_irq(&dev->lock);
++
++	put_dev (dev);
+ 	return 0;
+ }
+ 
 -- 
-Regards/Gruss,
-    Boris.
+1.9.0
 
-Sent from a fat crate under my desk. Formatting is fine.
---
