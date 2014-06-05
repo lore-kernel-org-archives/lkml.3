@@ -1,59 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752451AbaFERO4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 13:14:56 -0400
-Received: from mail-oa0-f53.google.com ([209.85.219.53]:36973 "EHLO
-	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751872AbaFEROx (ORCPT
+	id S1752647AbaFERPc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 13:15:32 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:61334 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751326AbaFERPa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 13:14:53 -0400
+	Thu, 5 Jun 2014 13:15:30 -0400
+Date: Thu, 5 Jun 2014 10:15:24 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, satoru.takeuchi@gmail.com,
+        shuah.kh@samsung.com, stable@vger.kernel.org
+Subject: Re: [PATCH 3.10 000/103] 3.10.42-stable review
+Message-ID: <20140605171524.GB725@roeck-us.net>
+References: <20140604232546.704156131@linuxfoundation.org>
 MIME-Version: 1.0
-In-Reply-To: <1401975635-6162-1-git-send-email-drysdale@google.com>
-References: <1401975635-6162-1-git-send-email-drysdale@google.com>
-Date: Thu, 5 Jun 2014 10:14:52 -0700
-X-Google-Sender-Auth: XRIXWnpz9N8r5L6GQ6jFM6t2EK4
-Message-ID: <CAGXu5jLjneRP=eF67k86cZNNGczZ=9-D4x9GQ-TaSKheCoG-Tg@mail.gmail.com>
-Subject: Re: [PATCHv4 RESEND 0/3] syscalls,x86: Add execveat() system call
-From: Kees Cook <keescook@chromium.org>
-To: David Drysdale <drysdale@google.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
-        Meredydd Luff <meredydd@senatehouse.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>, "x86@kernel.org" <x86@kernel.org>,
-        linux-arch@vger.kernel.org, linux-api@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140604232546.704156131@linuxfoundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 5, 2014 at 6:40 AM, David Drysdale <drysdale@google.com> wrote:
-> Resending, adding cc:linux-api.
->
-> Also, it may help to add a little more background -- this patch is
-> needed as a (small) part of implementing Capsicum in the Linux kernel.
->
-> Capsicum is a security framework that has been present in FreeBSD since
-> version 9.0 (Jan 2012), and is based on concepts from object-capability
-> security [1].
->
-> One of the features of Capsicum is capability mode, which locks down
-> access to global namespaces such as the filesystem hierarchy.  In
-> capability mode, /proc is thus inaccessible and so fexecve(3) doesn't
-> work -- hence the need for a kernel-space alternative.
->
-> [1] http://www.cl.cam.ac.uk/research/security/capsicum/papers/2010usenix-security-capsicum-website.pdf
+On Wed, Jun 04, 2014 at 04:24:23PM -0700, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.10.42 release.
+> There are 103 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+> 
+> Responses should be made by Fri Jun  6 23:24:52 UTC 2014.
+> Anything received after that time might be too late.
+> 
+Build results:
+	total: 143 pass: 136 skipped: 6 fail: 1
 
-Thanks for reposting!
+Qemu tests all passed.
+Results are as expected (failing build is unicore32:defconfig).
+Details are available at http://server.roeck-us.net:8010/builders.
 
-I think it'd be quite helpful to have this available for very tightly
-confined sandboxes. And in a larger sense, Capsicum itself is an
-interesting way to do programmatic isolation.
-
--Kees
-
--- 
-Kees Cook
-Chrome OS Security
+Guenter
