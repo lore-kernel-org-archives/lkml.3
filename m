@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754388AbaFEEwy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 00:52:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44049 "EHLO
+	id S1754400AbaFEExV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 00:53:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44032 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752854AbaFEEVG (ORCPT
+	with ESMTP id S1752839AbaFEEVF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 00:21:06 -0400
+	Thu, 5 Jun 2014 00:21:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jiang Liu <jiang.liu@huawei.com>, Ben Hutchings <ben@decadent.org.uk>,
-        Jianguo Wu <wujianguo@huawei.com>
-Subject: [PATCH 3.4 105/214] zram: avoid access beyond the zram device
-Date: Wed,  4 Jun 2014 21:17:48 -0700
-Message-Id: <20140605041653.815559455@linuxfoundation.org>
+        Jiang Liu <jiang.liu@huawei.com>, Minchan Kim <minchan@kernel.org>,
+        Jerome Marchand <jmarchan@redhat.com>,
+        Ben Hutchings <ben@decadent.org.uk>, Jianguo Wu <wujianguo@huawei.com>
+Subject: [PATCH 3.4 104/214] zram: destroy all devices on error recovery path in zram_init()
+Date: Wed,  4 Jun 2014 21:17:47 -0700
+Message-Id: <20140605041653.677785020@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -29,51 +30,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jiang Liu <liuj97@gmail.com>
 
-commit 12a7ad3b810e77137d0caf97a6dd97591e075b30 upstream.
+commit 39a9b8ac9333e4268ecff7da6c9d1ab3823ff243 upstream.
 
-Function valid_io_request() should verify the entire request are within
-the zram device address range. Otherwise it may cause invalid memory
-access when accessing/modifying zram->meta->table[index] because the
-'index' is out of range. Then it may access non-exist memory, randomly
-modify memory belong to other subsystems, which is hard to track down.
+On error recovery path of zram_init(), it leaks the zram device object
+causing the failure. So change create_device() to free allocated
+resources on error path.
 
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+Acked-by: Minchan Kim <minchan@kernel.org>
+Acked-by: Jerome Marchand <jmarchan@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Cc: Jianguo Wu <wujianguo@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/zram/zram_drv.c |   17 ++++++++++++-----
- 1 file changed, 12 insertions(+), 5 deletions(-)
+ drivers/staging/zram/zram_drv.c |   15 +++++++++------
+ 1 file changed, 9 insertions(+), 6 deletions(-)
 
 --- a/drivers/staging/zram/zram_drv.c
 +++ b/drivers/staging/zram/zram_drv.c
-@@ -535,13 +535,20 @@ out:
-  */
- static inline int valid_io_request(struct zram *zram, struct bio *bio)
+@@ -703,7 +703,7 @@ static const struct block_device_operati
+ 
+ static int create_device(struct zram *zram, int device_id)
  {
--	if (unlikely(
--		(bio->bi_sector >= (zram->disksize >> SECTOR_SHIFT)) ||
--		(bio->bi_sector & (ZRAM_SECTOR_PER_LOGICAL_BLOCK - 1)) ||
--		(bio->bi_size & (ZRAM_LOGICAL_BLOCK_SIZE - 1)))) {
-+	u64 start, end, bound;
+-	int ret = 0;
++	int ret = -ENOMEM;
  
-+	/* unaligned request */
-+	if (unlikely(bio->bi_sector & (ZRAM_SECTOR_PER_LOGICAL_BLOCK - 1)))
-+		return 0;
-+	if (unlikely(bio->bi_size & (ZRAM_LOGICAL_BLOCK_SIZE - 1)))
-+		return 0;
-+
-+	start = bio->bi_sector;
-+	end = start + (bio->bi_size >> SECTOR_SHIFT);
-+	bound = zram->disksize >> SECTOR_SHIFT;
-+	/* out of range range */
-+	if (unlikely(start >= bound || end >= bound || start > end))
- 		return 0;
--	}
+ 	init_rwsem(&zram->lock);
+ 	init_rwsem(&zram->init_lock);
+@@ -713,7 +713,6 @@ static int create_device(struct zram *zr
+ 	if (!zram->queue) {
+ 		pr_err("Error allocating disk queue for device %d\n",
+ 			device_id);
+-		ret = -ENOMEM;
+ 		goto out;
+ 	}
  
- 	/* I/O request is valid */
- 	return 1;
+@@ -723,11 +722,9 @@ static int create_device(struct zram *zr
+ 	 /* gendisk structure */
+ 	zram->disk = alloc_disk(1);
+ 	if (!zram->disk) {
+-		blk_cleanup_queue(zram->queue);
+ 		pr_warning("Error allocating disk structure for device %d\n",
+ 			device_id);
+-		ret = -ENOMEM;
+-		goto out;
++		goto out_free_queue;
+ 	}
+ 
+ 	zram->disk->major = zram_major;
+@@ -756,11 +753,17 @@ static int create_device(struct zram *zr
+ 				&zram_disk_attr_group);
+ 	if (ret < 0) {
+ 		pr_warning("Error creating sysfs group");
+-		goto out;
++		goto out_free_disk;
+ 	}
+ 
+ 	zram->init_done = 0;
++	return 0;
+ 
++out_free_disk:
++	del_gendisk(zram->disk);
++	put_disk(zram->disk);
++out_free_queue:
++	blk_cleanup_queue(zram->queue);
+ out:
+ 	return ret;
+ }
 
 
