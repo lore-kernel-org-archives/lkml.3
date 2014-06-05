@@ -1,90 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751791AbaFEObo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 10:31:44 -0400
-Received: from casper.infradead.org ([85.118.1.10]:52695 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751739AbaFEObn (ORCPT
+	id S1752659AbaFEOpt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 10:45:49 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:48085 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751747AbaFEObo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 10:31:43 -0400
-Date: Thu, 5 Jun 2014 16:31:40 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Jiri Olsa <jolsa@redhat.com>, "Yan, Zheng" <zheng.z.yan@intel.com>,
-        Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
-Subject: Re: [PATCH 5/9] perf/x86: implement cross-HT corruption bug
- workaround
-Message-ID: <20140605143140.GN6758@twins.programming.kicks-ass.net>
-References: <1401917658-26065-1-git-send-email-eranian@google.com>
- <1401917658-26065-6-git-send-email-eranian@google.com>
- <20140605140400.GM3213@twins.programming.kicks-ass.net>
- <CABPqkBQRDpbkF73sWKXiXJOO0Jbeb9tRTWqScbjNdTG50EN3ug@mail.gmail.com>
- <20140605142135.GM6758@twins.programming.kicks-ass.net>
- <CABPqkBQ9_HWN-LbwoxqDY52gHjevA_8fSoYbcv=wp04Rtp2ESg@mail.gmail.com>
+	Thu, 5 Jun 2014 10:31:44 -0400
+Date: Thu, 5 Jun 2014 07:30:59 -0700
+From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
+Message-ID: <tip-t7yeud34ehimlfi6pklb29p7@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, jolsa@kernel.org,
+        peterz@infradead.org, efault@gmx.de, namhyung@kernel.org,
+        fweisbec@gmail.com, adrian.hunter@intel.com, dsahern@gmail.com,
+        tglx@linutronix.de, dzickus@redhat.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, jolsa@kernel.org,
+        efault@gmx.de, peterz@infradead.org, namhyung@kernel.org,
+        fweisbec@gmail.com, dsahern@gmail.com, adrian.hunter@intel.com,
+        tglx@linutronix.de, dzickus@redhat.com
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf tools:
+  Add warning when disabling perl scripting support due to missing devel files
+Git-Commit-ID: 6a2f2543a1f3aa0e7766e27c30b93d164771e892
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="p1Od3smaOkJqivj4"
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <CABPqkBQ9_HWN-LbwoxqDY52gHjevA_8fSoYbcv=wp04Rtp2ESg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  6a2f2543a1f3aa0e7766e27c30b93d164771e892
+Gitweb:     http://git.kernel.org/tip/6a2f2543a1f3aa0e7766e27c30b93d164771e892
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Mon, 26 May 2014 16:02:30 -0300
+Committer:  Jiri Olsa <jolsa@kernel.org>
+CommitDate: Tue, 3 Jun 2014 21:34:16 +0200
 
---p1Od3smaOkJqivj4
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+perf tools: Add warning when disabling perl scripting support due to missing devel files
 
-On Thu, Jun 05, 2014 at 04:26:38PM +0200, Stephane Eranian wrote:
-> On Thu, Jun 5, 2014 at 4:21 PM, Peter Zijlstra <peterz@infradead.org> wro=
-te:
+We were just showing "libperl: OFF", unlike other features where we
+present the user with a message helping have a feature built in.
 
-> > We could limit each cpu to num_counters/2 exclusive slots. That'll still
-> > be painful with some constrained events I imagine, but in general that
-> > should 'work' I suppose.
->=20
-> That is probably the easiest solution, just modify the dynamic constraint
-> mask some more. Have not yet tried it.
+Fix it by adding the following message:
 
-Right, see what happens :-)
+config/Makefile:450: Missing perl devel files. Disabling perl scripting support, consider installing perl-ExtUtils-Embed
 
-> The repatriation of the leaked count is not so easy either. Need to IPI
-> the other HT. There may be some restrictions as to when we can
-> safely do this.
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Don Zickus <dzickus@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-t7yeud34ehimlfi6pklb29p7@git.kernel.org
+Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+---
+ tools/perf/config/Makefile | 1 +
+ 1 file changed, 1 insertion(+)
 
-Yes, that'll be 'interesting'. You typically cannot do things like
-smp_function_call() from IRQ/NMI context. Which leaves you to
-asynchonous IPIs.
-
-I suppose the easiest way is to simply push the count out to the right
-event when you reprogram the sibling. And maybe kick it every so often
-to force do this just in case the PMU doesn't get reprogrammed a lot.
-
-Still tricky.
-
---p1Od3smaOkJqivj4
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTkH9MAAoJEHZH4aRLwOS6PK0P/2OgBvQLeKJpMcOu0ms4qN+l
-25EmWgQi8nyzwXZ3r+FGW32dCrn5ZW2I3IYl9FRAAdDigxDE2vPwHOfO3nhF3r99
-3S3cd28AAzMkkqgqHen00TNawkrGzHaMIFORbIBLRZIX6U0LTBM2DoI7aqDneoEd
-jE7aXdkI1mybf5zynYLIxgpNJWYCT9rKghhkoREzU1mU+fo/1YuaD/ocUKAeZw0N
-0k+ELhSraMkIKerWD849LDg8Mgemz3YhrJMGxJjqIwsUc5Kwjd3tKoSKjuvz/4Ku
-BfViUlX9LUUAxjIFZm/25XS59WxVjowzHGc8omtaDCrK7+wGB68aDN0xtuOmH1mN
-Ps1dh1hBeUWjaA20PxCAqAazK4wlsI/dkccdopwda96SabaOk5MGOtzzXXo07j8v
-S8dBspRDicP6c2Oa+yAaCiMeRiuyWhYXTI4iDf5HZeJhhrv1/PFziehmwYmAL5t4
-gcdhF7JwJDZHOvnulczUJkz/kqrK/dqMgXrKQeNDnoRr2afYV4GTRDn6ez3H6lGv
-qgX5cykRB8fQ/73m6p2whFfqZO5dupeEkrukEqrU6JqnDbeqmpBtJhCgu7kma6tp
-e+ij13hv/y1F7XKgzlkadlpCdawj/aIpQBPwE73jHdUmL9HLeM8jFRLNv0cesT93
-dH3UUKlqQEauENoSKj3I
-=Kxvq
------END PGP SIGNATURE-----
-
---p1Od3smaOkJqivj4--
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index 729bbdf..319426f 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -447,6 +447,7 @@ else
+   ifneq ($(feature-libperl), 1)
+     CFLAGS += -DNO_LIBPERL
+     NO_LIBPERL := 1
++    msg := $(warning Missing perl devel files. Disabling perl scripting support, consider installing perl-ExtUtils-Embed);
+   else
+     LDFLAGS += $(PERL_EMBED_LDFLAGS)
+     EXTLIBS += $(PERL_EMBED_LIBADD)
