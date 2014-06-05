@@ -1,73 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752770AbaFEW0u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 18:26:50 -0400
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:47918 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751884AbaFEW0s (ORCPT
+	id S1752527AbaFEW3m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 18:29:42 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:42829 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751644AbaFEW3l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 18:26:48 -0400
-Message-ID: <5390EE97.9020702@gmail.com>
-Date: Fri, 06 Jun 2014 00:26:31 +0200
-From: Tomasz Figa <tomasz.figa@gmail.com>
+	Thu, 5 Jun 2014 18:29:41 -0400
+Message-ID: <5390EF50.3010100@infradead.org>
+Date: Thu, 05 Jun 2014 15:29:36 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Doug Anderson <dianders@chromium.org>, Tomasz Figa <t.figa@samsung.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>
-CC: olof@lixom.net, javier.martinez@collabora.co.uk, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        rahul.sharma@samsung.com, shaik.ameer@samsung.com, arun.kk@samsung.com,
-        alim.akhtar@samsung.com, a.hajda@samsung.com,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org
-Subject: Re: [PATCH v3] clk: exynos5420: Remove aclk66_peric from the clock
- tree description
-References: <1401467562-5585-1-git-send-email-dianders@chromium.org> <1402000514-30752-1-git-send-email-dianders@chromium.org>
-In-Reply-To: <1402000514-30752-1-git-send-email-dianders@chromium.org>
-X-Enigmail-Version: 1.6
+To: eric ernst <eric.ernst@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: jwboyer@fedoraproject.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v1 1/1] Add kernel parameter for kernel version
+References: <538CC567.2060305@linux.intel.com>	<1402006157-126864-1-git-send-email-eric.ernst@linux.intel.com> <20140605151633.7dd15e8307cbd3b519ae257b@linux-foundation.org> <5390EC1B.3000706@linux.intel.com>
+In-Reply-To: <5390EC1B.3000706@linux.intel.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05.06.2014 22:35, Doug Anderson wrote:
-> The "aclk66_peric" clock is a gate clock with a whole bunch of gates
-> underneath it.  This big gate isn't very useful to include in our
-> clock tree.  If any of the children need to be turned on then the big
-> gate will need to be on anyway.  ...and there are plenty of other "big
-> gates" that aren't described in our clock tree, some of which shut off
-> collections of clocks that have no relationship in the hierarchy so
-> are hard to model.
+On 06/05/2014 03:15 PM, eric ernst wrote:
 > 
-> "aclk66_peric" is causing earlyprintk problems since it gets disabled
-> as part of the boot process, so let's just remove it.
-> 
-> Strangely (and for no good reason) this clock is exported as part of
-> the common clock bindings.  Remove it since there are no in-kernel
-> device trees using it and no reason anyone out of tree should refer to
-> it either.
-> 
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
-> ---
-> Changes in v3:
-> - Now just remove aclk66_peric from the tree as suggested by Tomasz.
-> 
-> Changes in v2:
-> - Use GATE_A and clk_get().  Save the clock for putting later.
-> - Return 0 from exynos5420_clk_late_init().
-> 
->  drivers/clk/samsung/clk-exynos5420.c   | 85 ++++++++++++++++++++++------------
->  include/dt-bindings/clock/exynos5420.h |  1 -
->  2 files changed, 55 insertions(+), 31 deletions(-)
-> 
+> On 14-06-05 03:16 PM, Andrew Morton wrote:
+>> On Thu,  5 Jun 2014 15:09:17 -0700 eric.ernst@linux.intel.com wrote:
+>>
+>>> Create a kernel cmdline parameter, "version_addendum", which can be
+>>> used to add text to the kernel version that is reported from
+>>> /proc/version.
+>> why?
+> We have a need to keep a single product binary (kernel) across multiple android devices.  A subset of these platforms are looking for extra versioning information appended to it, accessible via /proc/version.  Rather than build multiple otherwise identical kernels with only this extended versioning as differentiation, we are looking to make this a command line parameter.  Understandable if there isn't enough value-add for the community in this patch, but I figured I'd give the patch a shot, as we need this functionality locally.  Thanks.
 
-Mike, I can take this patch to my tree as a fix for 3.16-rc, or if still
-possible and you don't mind, feel free to apply it directly with my ACK:
+Please use a newline character every 70-72 characters instead of assuming
+that all email programs will break that extra long line up into a readable
+format.  (mine does not.)
 
-Acked-by: Tomasz Figa <t.figa@samsung.com>
+What software needs to know the version info?  how early does it run?
+Could it get the version info from 'uname -r' instead of from /proc/version?
 
-Best regards,
-Tomasz
+thanks,
+-- 
+~Randy
