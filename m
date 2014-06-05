@@ -1,62 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753176AbaFEBjg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 21:39:36 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:22553 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751410AbaFEBje (ORCPT
+	id S1752999AbaFEBty (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 21:49:54 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:21544 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751443AbaFEBtw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 21:39:34 -0400
-Date: Wed, 4 Jun 2014 21:39:32 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build warning after merge of the ftrace tree
-Message-ID: <20140604213932.5a48112d@gandalf.local.home>
-In-Reply-To: <20140605013300.GA13341@localhost>
-References: <20140604160921.4f4e69c4@canb.auug.org.au>
-	<20140604122612.366e2874@gandalf.local.home>
-	<20140605002012.GA10446@localhost>
-	<20140604210016.4766adba@gandalf.local.home>
-	<20140605010353.GA13193@localhost>
-	<20140604211202.0eb5d147@gandalf.local.home>
-	<20140605013300.GA13341@localhost>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Wed, 4 Jun 2014 21:49:52 -0400
+Message-ID: <538FCCA3.8060108@huawei.com>
+Date: Thu, 5 Jun 2014 09:49:23 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Tejun Heo <tj@kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
+Subject: Re: [PATCH 2/3] cgroup: make the default root invisible when it's
+ umounted
+References: <538D4956.5050205@huawei.com> <538D4982.10905@huawei.com> <20140603130144.GB26210@htj.dyndns.org> <538EE00F.10406@huawei.com> <20140605012011.GB14370@mtj.dyndns.org>
+In-Reply-To: <20140605012011.GB14370@mtj.dyndns.org>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+X-Originating-IP: [10.177.18.230]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 5 Jun 2014 09:33:00 +0800
-Fengguang Wu <fengguang.wu@intel.com> wrote:
-
-
-> Here are the recent emails sent to you:
+On 2014/6/5 9:20, Tejun Heo wrote:
+> Hello,
 > 
->  439   F May 10 To Steven Rostedt (4440:1) [trace:ftrace/next-3.17 29/29] kernel/trace/ftrace.c:108:27: warning: 'removed_ops' defined but not used
->  446   F May 10 To Steven Rostedt (3531:1) [trace:ftrace/next-3.17 29/29] kernel/trace/ftrace.c:5358:12: error: 'struct ftrace_ops' has no member named 'trampoline'
-> 1207   F May 31 To Steven Rostedt (  43:0) [trace:ftrace/core 29/32] kernel/trace/trace_benchmark.c:38:6: warning: unused variable 'seedsq'
-> 1210   F May 31 To Steven Rostedt (  29:0) [trace:ftrace/core 29/32] kernel/trace/trace_benchmark.c:84:3: warning: comparison of distinct pointer types lacks a cast
-
-I don't have any of those :-(
-
+> On Wed, Jun 04, 2014 at 04:59:59PM +0800, Li Zefan wrote:
+>> The example I gave is the same result if sane_behavior is not specified,
+>> so this is a behavioural change for the old interface?
 > 
-> > I may add a bad commit to one of my branches and see if I get a
-> > response from you just to test it out. I really hope we can fix this
-> > because I've gotten someone dependent on your reports. :-/
+> Hmmm?  Either the userland knows about unified hierarchy or not and
+> there's no point in hiding it if we know that userland knows.  It's
+> really a system-wide thing which happens once.
 > 
-> Yes we need to fix it. The same lost email issue has happened for
-> someone else, which was fixed by changing the email address. I can
-> conveniently redirect reports to any other email addresses you have.
 
-I wonder if the "(Red Hat)" part is causing an issue. Can you send
-directly to my email "rostedt@goodmis.org" and strip the name part?
+Yeah, it's reasonable.
 
-Thanks.
+I thought "mount -t cgroup xxx /cgroup" will mount the default hierarchy,
+but I was wrong.
 
--- Steve
