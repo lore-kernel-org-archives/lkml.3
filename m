@@ -1,57 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752759AbaFESrX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 14:47:23 -0400
-Received: from static.92.5.9.176.clients.your-server.de ([176.9.5.92]:50828
-	"EHLO mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752133AbaFESrV (ORCPT
+	id S1752919AbaFESsY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 14:48:24 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:6176 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752843AbaFESsW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 14:47:21 -0400
-Date: Thu, 5 Jun 2014 20:47:19 +0200
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Josh Boyer <jwboyer@fedoraproject.org>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>
-Subject: Re: Change in security maintainer for a few weeks
-Message-ID: <20140605184719.GA15438@mail.hallyn.com>
-References: <20140605183050.GA5054@kroah.com>
- <CA+5PVA5aG98VfjxjgKdOwN9DQzDbJAJMBWfBwBpV8Ko4565bHg@mail.gmail.com>
+	Thu, 5 Jun 2014 14:48:22 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 05 Jun 2014 11:40:19 -0700
+From: Vidya Sagar <vidyas@nvidia.com>
+To: <linux@arm.linux.org.uk>, <bhelgaas@google.com>, <wangyijing@huawei.com>,
+        <thierry.reding@gmail.com>, <jason@lakedaemon.net>,
+        <will.deacon@arm.com>, <swarren@nvidia.com>, <kthota@nvidia.com>,
+        <vidyas@nvidia.com>
+CC: <sagar.tv@gmail.com>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2] ARM: fix debug prints relevant to PCI devices
+Date: Fri, 6 Jun 2014 00:17:48 +0530
+Message-ID: <1401994068-820-1-git-send-email-vidyas@nvidia.com>
+X-Mailer: git-send-email 1.8.1.5
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+5PVA5aG98VfjxjgKdOwN9DQzDbJAJMBWfBwBpV8Ko4565bHg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Josh Boyer (jwboyer@fedoraproject.org):
-> On Thu, Jun 5, 2014 at 2:30 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> > Hi all,
-> >
-> > James has had to step back from doing kernel work for a few weeks, so
-> > I've offered to step up and handle the security patches to get shuttled
-> > to Linus for merging for a while.
-> >
-> > I'll take his git tree on kernel.org and push those to Linus for
-> > 3.16-rc1, as those look like they have had proper testing in linux-next.
-> >
-> > But there only seems to be 14 patches in there.  Are there pending
-> > patches that people have been sending and need to get in besides those?
-> 
-> Serge seems to have already done this?
-> 
-> https://lkml.org/lkml/2014/6/4/350
-> 
-> Confused...
+As per PCIe spec, fast back-to-back transactions feature
+is not applicable to PCIe devices. Hence, do not print
+that fast back-to-back trasactions are disabled when
+there is a PCIe device found on the bus
 
-Yes, but (this time :) James didn't actually ask me to, so if he asked
-Greg that's great.  Greg, the 5 patches I added on top of James' tree
-were 4 from Paul which are already in linux-next, and one (the highest
-priority one out of a larger set) from Mimi.  If you could add those
-that would be great.
+Signed-off-by: Vidya Sagar <vidyas@nvidia.com>
+---
 
-thanks,
--serge
+v2:
+* Modified has_pcie_dev type to bool and used pci_is_pcie() instead of pci_pcie_cap()
+* replaced printk with pr_info
+
+ arch/arm/kernel/bios32.c | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/kernel/bios32.c b/arch/arm/kernel/bios32.c
+index 17a26c1..d48d9d3 100644
+--- a/arch/arm/kernel/bios32.c
++++ b/arch/arm/kernel/bios32.c
+@@ -290,6 +290,7 @@ void pcibios_fixup_bus(struct pci_bus *bus)
+ {
+ 	struct pci_dev *dev;
+ 	u16 features = PCI_COMMAND_SERR | PCI_COMMAND_PARITY | PCI_COMMAND_FAST_BACK;
++	bool has_pcie_dev = 0;
+ 
+ 	/*
+ 	 * Walk the devices on this bus, working out what we can
+@@ -298,6 +299,8 @@ void pcibios_fixup_bus(struct pci_bus *bus)
+ 	list_for_each_entry(dev, &bus->devices, bus_list) {
+ 		u16 status;
+ 
++		if (!has_pcie_dev)
++			has_pcie_dev = pci_is_pcie(dev);
+ 		pci_read_config_word(dev, PCI_STATUS, &status);
+ 
+ 		/*
+@@ -354,9 +357,11 @@ void pcibios_fixup_bus(struct pci_bus *bus)
+ 
+ 	/*
+ 	 * Report what we did for this bus
++	 * (only if the bus doesn't have even one PCIe device)
+ 	 */
+-	printk(KERN_INFO "PCI: bus%d: Fast back to back transfers %sabled\n",
+-		bus->number, (features & PCI_COMMAND_FAST_BACK) ? "en" : "dis");
++	if (!has_pcie_dev)
++		pr_info(KERN_INFO "PCI: bus%d: Fast back to back transfers %sabled\n",
++			bus->number, (features & PCI_COMMAND_FAST_BACK) ? "en" : "dis");
+ }
+ EXPORT_SYMBOL(pcibios_fixup_bus);
+ 
+-- 
+1.8.1.5
+
