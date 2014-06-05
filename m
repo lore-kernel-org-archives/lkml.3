@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752307AbaFEEgI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 00:36:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44356 "EHLO
+	id S1753335AbaFEEVv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 00:21:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44313 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753346AbaFEEVx (ORCPT
+	with ESMTP id S1753256AbaFEEVr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 00:21:53 -0400
+	Thu, 5 Jun 2014 00:21:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Weng Meiling <wengmeiling.weng@huawei.com>
-Subject: [PATCH 3.4 166/214] drm/i915: Close race between processing unpin task and queueing the flip
-Date: Wed,  4 Jun 2014 21:18:49 -0700
-Message-Id: <20140605041701.853229159@linuxfoundation.org>
+        Jason Wang <jasowang@redhat.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        "K. Y. Srinivasan" <kys@microsoft.com>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        Qiang Huang <h.huangqiang@huawei.com>
+Subject: [PATCH 3.4 157/214] drivers: hv: switch to use mb() instead of smp_mb()
+Date: Wed,  4 Jun 2014 21:18:40 -0700
+Message-Id: <20140605041700.843793410@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -28,189 +30,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+From: Jason Wang <jasowang@redhat.com>
 
-commit e7d841ca03b7ab668620045cd7b428eda9f41601 upstream.
+commit 35848f68b07df3f917cb13fc3c134718669f569b upstream.
 
-Before queuing the flip but crucially after attaching the unpin-work to
-the crtc, we continue to setup the unpin-work. However, should the
-hardware fire early, we see the connected unpin-work and queue the task.
-The task then promptly runs and unpins the fb before we finish taking
-the required references or even pinning it... Havoc.
+Even if guest were compiled without SMP support, it could not assume that host
+wasn't. So switch to use mb() instead of smp_mb() to force memory barriers for
+UP guest.
 
-To close the race, we use the flip-pending atomic to indicate when the
-flip is finally setup and enqueued. So during the flip-done processing,
-we can check more accurately whether the flip was expected.
-
-v2: Add the appropriate mb() to ensure that the writes to the page-flip
-worker are complete prior to marking it active and emitting the MI_FLIP.
-On the read side, the mb should be enforced by the spinlocks.
-
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: stable@vger.kernel.org
-[danvet: Review the barriers a bit, we need a write barrier both
-before and after updating ->pending. Similarly we need a read barrier
-in the interrupt handler both before and after reading ->pending. With
-well-ordered irqs only one barrier in each place should be required,
-but since this patch explicitly sets out to combat spurious interrupts
-with is staged activation of the unpin work we need to go full-bore on
-the barriers, too. Discussed with Chris Wilson on irc and changes
-acked by him.]
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-[wml: Backported to 3.4: adjust context]
-Signed-off-by: Weng Meiling <wengmeiling.weng@huawei.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+Cc: Haiyang Zhang <haiyangz@microsoft.com>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/gpu/drm/i915/i915_debugfs.c  |    4 +--
- drivers/gpu/drm/i915/i915_irq.c      |    4 ++-
- drivers/gpu/drm/i915/intel_display.c |   39 ++++++++++++++++++++++++++++-------
- drivers/gpu/drm/i915/intel_drv.h     |    5 +++-
- 4 files changed, 41 insertions(+), 11 deletions(-)
+[bwh: Backported to 3.2:
+ - Drop changes to functions that don't exist here
+ - hv_ringbuffer_write() has only a write memory barrier]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+[hq: Backported to 3.4:
+ - Add the change in hv_ringbuffer_read]
+Signed-off-by: Qiang Huang <h.huangqiang@huawei.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
---- a/drivers/gpu/drm/i915/i915_debugfs.c
-+++ b/drivers/gpu/drm/i915/i915_debugfs.c
-@@ -340,7 +340,7 @@ static int i915_gem_pageflip_info(struct
- 			seq_printf(m, "No flip due on pipe %c (plane %c)\n",
- 				   pipe, plane);
- 		} else {
--			if (!work->pending) {
-+			if (atomic_read(&work->pending) < INTEL_FLIP_COMPLETE) {
- 				seq_printf(m, "Flip queued on pipe %c (plane %c)\n",
- 					   pipe, plane);
- 			} else {
-@@ -351,7 +351,7 @@ static int i915_gem_pageflip_info(struct
- 				seq_printf(m, "Stall check enabled, ");
- 			else
- 				seq_printf(m, "Stall check waiting for page flip ioctl, ");
--			seq_printf(m, "%d prepares\n", work->pending);
-+			seq_printf(m, "%d prepares\n", atomic_read(&work->pending));
+---
+ drivers/hv/ring_buffer.c |    4 ++--
+ drivers/hv/vmbus_drv.c   |    2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+--- a/drivers/hv/ring_buffer.c
++++ b/drivers/hv/ring_buffer.c
+@@ -383,7 +383,7 @@ int hv_ringbuffer_write(struct hv_ring_b
+ 					     sizeof(u64));
  
- 			if (work->old_fb_obj) {
- 				struct drm_i915_gem_object *obj = work->old_fb_obj;
---- a/drivers/gpu/drm/i915/i915_irq.c
-+++ b/drivers/gpu/drm/i915/i915_irq.c
-@@ -1251,7 +1251,9 @@ static void i915_pageflip_stall_check(st
- 	spin_lock_irqsave(&dev->event_lock, flags);
- 	work = intel_crtc->unpin_work;
+ 	/* Make sure we flush all writes before updating the writeIndex */
+-	smp_wmb();
++	wmb();
  
--	if (work == NULL || work->pending || !work->enable_stall_check) {
-+	if (work == NULL ||
-+	    atomic_read(&work->pending) >= INTEL_FLIP_COMPLETE ||
-+	    !work->enable_stall_check) {
- 		/* Either the pending flip IRQ arrived, or we're too early. Don't check */
- 		spin_unlock_irqrestore(&dev->event_lock, flags);
- 		return;
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -7245,11 +7245,18 @@ static void do_intel_finish_page_flip(st
+ 	/* Now, update the write location */
+ 	hv_set_next_write_location(outring_info, next_write_location);
+@@ -485,7 +485,7 @@ int hv_ringbuffer_read(struct hv_ring_bu
+ 	/* Make sure all reads are done before we update the read index since */
+ 	/* the writer may start writing to the read area once the read index */
+ 	/*is updated */
+-	smp_mb();
++	mb();
  
- 	spin_lock_irqsave(&dev->event_lock, flags);
- 	work = intel_crtc->unpin_work;
--	if (work == NULL || !work->pending) {
-+
-+	/* Ensure we don't miss a work->pending update ... */
-+	smp_rmb();
-+
-+	if (work == NULL || atomic_read(&work->pending) < INTEL_FLIP_COMPLETE) {
- 		spin_unlock_irqrestore(&dev->event_lock, flags);
- 		return;
- 	}
+ 	/* Update the read index */
+ 	hv_set_next_read_location(inring_info, next_read_location);
+--- a/drivers/hv/vmbus_drv.c
++++ b/drivers/hv/vmbus_drv.c
+@@ -466,7 +466,7 @@ static void vmbus_on_msg_dpc(unsigned lo
+ 		 * will not deliver any more messages since there is
+ 		 * no empty slot
+ 		 */
+-		smp_mb();
++		mb();
  
-+	/* and that the unpin work is consistent wrt ->pending. */
-+	smp_rmb();
-+
- 	intel_crtc->unpin_work = NULL;
- 
- 	if (work->event) {
-@@ -7321,16 +7328,25 @@ void intel_prepare_page_flip(struct drm_
- 		to_intel_crtc(dev_priv->plane_to_crtc_mapping[plane]);
- 	unsigned long flags;
- 
-+	/* NB: An MMIO update of the plane base pointer will also
-+	 * generate a page-flip completion irq, i.e. every modeset
-+	 * is also accompanied by a spurious intel_prepare_page_flip().
-+	 */
- 	spin_lock_irqsave(&dev->event_lock, flags);
--	if (intel_crtc->unpin_work) {
--		if ((++intel_crtc->unpin_work->pending) > 1)
--			DRM_ERROR("Prepared flip multiple times\n");
--	} else {
--		DRM_DEBUG_DRIVER("preparing flip with no unpin work?\n");
--	}
-+	if (intel_crtc->unpin_work)
-+		atomic_inc_not_zero(&intel_crtc->unpin_work->pending);
- 	spin_unlock_irqrestore(&dev->event_lock, flags);
- }
- 
-+inline static void intel_mark_page_flip_active(struct intel_crtc *intel_crtc)
-+{
-+	/* Ensure that the work item is consistent when activating it ... */
-+	smp_wmb();
-+	atomic_set(&intel_crtc->unpin_work->pending, INTEL_FLIP_PENDING);
-+	/* and that it is marked active as soon as the irq could fire. */
-+	smp_wmb();
-+}
-+
- static int intel_gen2_queue_flip(struct drm_device *dev,
- 				 struct drm_crtc *crtc,
- 				 struct drm_framebuffer *fb,
-@@ -7367,6 +7383,8 @@ static int intel_gen2_queue_flip(struct
- 	OUT_RING(fb->pitches[0]);
- 	OUT_RING(obj->gtt_offset + offset);
- 	OUT_RING(0); /* aux display base address, unused */
-+
-+	intel_mark_page_flip_active(intel_crtc);
- 	ADVANCE_LP_RING();
- 	return 0;
- 
-@@ -7410,6 +7428,7 @@ static int intel_gen3_queue_flip(struct
- 	OUT_RING(obj->gtt_offset + offset);
- 	OUT_RING(MI_NOOP);
- 
-+	intel_mark_page_flip_active(intel_crtc);
- 	ADVANCE_LP_RING();
- 	return 0;
- 
-@@ -7453,6 +7472,8 @@ static int intel_gen4_queue_flip(struct
- 	pf = 0;
- 	pipesrc = I915_READ(PIPESRC(intel_crtc->pipe)) & 0x0fff0fff;
- 	OUT_RING(pf | pipesrc);
-+
-+	intel_mark_page_flip_active(intel_crtc);
- 	ADVANCE_LP_RING();
- 	return 0;
- 
-@@ -7494,6 +7515,8 @@ static int intel_gen6_queue_flip(struct
- 	pf = 0;
- 	pipesrc = I915_READ(PIPESRC(intel_crtc->pipe)) & 0x0fff0fff;
- 	OUT_RING(pf | pipesrc);
-+
-+	intel_mark_page_flip_active(intel_crtc);
- 	ADVANCE_LP_RING();
- 	return 0;
- 
-@@ -7548,6 +7571,8 @@ static int intel_gen7_queue_flip(struct
- 	intel_ring_emit(ring, (fb->pitches[0] | obj->tiling_mode));
- 	intel_ring_emit(ring, (obj->gtt_offset));
- 	intel_ring_emit(ring, (MI_NOOP));
-+
-+	intel_mark_page_flip_active(intel_crtc);
- 	intel_ring_advance(ring);
- 	return 0;
- 
---- a/drivers/gpu/drm/i915/intel_drv.h
-+++ b/drivers/gpu/drm/i915/intel_drv.h
-@@ -277,7 +277,10 @@ struct intel_unpin_work {
- 	struct drm_i915_gem_object *old_fb_obj;
- 	struct drm_i915_gem_object *pending_flip_obj;
- 	struct drm_pending_vblank_event *event;
--	int pending;
-+	atomic_t pending;
-+#define INTEL_FLIP_INACTIVE	0
-+#define INTEL_FLIP_PENDING	1
-+#define INTEL_FLIP_COMPLETE	2
- 	bool enable_stall_check;
- };
- 
+ 		if (msg->header.message_flags.msg_pending) {
+ 			/*
 
 
