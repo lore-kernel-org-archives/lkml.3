@@ -1,28 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752664AbaFEOje (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 10:39:34 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:48642 "EHLO
+	id S1752674AbaFEOjk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 10:39:40 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:48654 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751326AbaFEOjc (ORCPT
+	with ESMTP id S1751326AbaFEOji (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 10:39:32 -0400
-Date: Thu, 5 Jun 2014 07:38:21 -0700
+	Thu, 5 Jun 2014 10:39:38 -0400
+Date: Thu, 5 Jun 2014 07:38:44 -0700
 From: tip-bot for Vince Weaver <tipbot@zytor.com>
-Message-ID: <tip-53b25335dd60981ad608da7890420898a34469a6@git.kernel.org>
+Message-ID: <tip-c184c980de30dc5f6fec4b281928aa6743708da9@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, will.deacon@arm.com,
-        peterz@infradead.org, acme@kernel.org, vincent.weaver@maine.edu,
-        tglx@linutronix.de
+        torvalds@linux-foundation.org, peterz@infradead.org, acme@kernel.org,
+        vincent.weaver@maine.edu, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        will.deacon@arm.com, torvalds@linux-foundation.org,
-        peterz@infradead.org, acme@kernel.org, vincent.weaver@maine.edu,
-        tglx@linutronix.de
-In-Reply-To: <alpine.DEB.2.10.1405161708060.11099@vincent-weaver-1.umelst.maine.edu>
-References: <alpine.DEB.2.10.1405161708060.11099@vincent-weaver-1.umelst.maine.edu>
+        torvalds@linux-foundation.org, peterz@infradead.org, acme@kernel.org,
+        vincent.weaver@maine.edu, tglx@linutronix.de
+In-Reply-To: <alpine.DEB.2.10.1405161715560.11099@vincent-weaver-1.umelst.maine.edu>
+References: <alpine.DEB.2.10.1405161715560.11099@vincent-weaver-1.umelst.maine.edu>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf: Disable sampled events if no PMU interrupt
-Git-Commit-ID: 53b25335dd60981ad608da7890420898a34469a6
+Subject: [tip:perf/core] perf/x86: Use common PMU interrupt disabled code
+Git-Commit-ID: c184c980de30dc5f6fec4b281928aa6743708da9
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -35,82 +33,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  53b25335dd60981ad608da7890420898a34469a6
-Gitweb:     http://git.kernel.org/tip/53b25335dd60981ad608da7890420898a34469a6
+Commit-ID:  c184c980de30dc5f6fec4b281928aa6743708da9
+Gitweb:     http://git.kernel.org/tip/c184c980de30dc5f6fec4b281928aa6743708da9
 Author:     Vince Weaver <vincent.weaver@maine.edu>
-AuthorDate: Fri, 16 May 2014 17:12:12 -0400
+AuthorDate: Fri, 16 May 2014 17:18:07 -0400
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 5 Jun 2014 12:29:55 +0200
+CommitDate: Thu, 5 Jun 2014 12:30:03 +0200
 
-perf: Disable sampled events if no PMU interrupt
+perf/x86: Use common PMU interrupt disabled code
 
-Add common code to generate -ENOTSUPP at event creation time if an
-architecture attempts to create a sampled event and
-PERF_PMU_NO_INTERRUPT is set.
+Make the x86 perf code use the new common PMU interrupt disabled code.
 
-This adds a new pmu->capabilities flag.  Initially we only support
-PERF_PMU_NO_INTERRUPT (to indicate a PMU has no support for generating
-hardware interrupts) but there are other capabilities that can be
-added later.
+Typically most x86 machines have working PMU interrupts, although
+some older p6-class machines had this problem.
 
 Signed-off-by: Vince Weaver <vincent.weaver@maine.edu>
-Acked-by: Will Deacon <will.deacon@arm.com>
-[peterz: rename to PERF_PMU_CAP_* and moved the pmu::capabilities word into a hole]
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/alpine.DEB.2.10.1405161708060.11099@vincent-weaver-1.umelst.maine.edu
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-
+Link: http://lkml.kernel.org/r/alpine.DEB.2.10.1405161715560.11099@vincent-weaver-1.umelst.maine.edu
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- include/linux/perf_event.h | 10 ++++++++++
- kernel/events/core.c       |  7 +++++++
- 2 files changed, 17 insertions(+)
+ arch/x86/kernel/cpu/perf_event.c | 18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index af6dcf1..267c8f3 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -167,6 +167,11 @@ struct perf_event;
- #define PERF_EVENT_TXN 0x1
- 
- /**
-+ * pmu::capabilities flags
-+ */
-+#define PERF_PMU_CAP_NO_INTERRUPT		0x01
-+
-+/**
-  * struct pmu - generic performance monitoring unit
-  */
- struct pmu {
-@@ -178,6 +183,11 @@ struct pmu {
- 	const char			*name;
- 	int				type;
- 
-+	/*
-+	 * various common per-pmu feature flags
-+	 */
-+	int				capabilities;
-+
- 	int * __percpu			pmu_disable_count;
- 	struct perf_cpu_context * __percpu pmu_cpu_context;
- 	int				task_ctx_nr;
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index a62d142..e9ef0c6 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -7120,6 +7120,13 @@ SYSCALL_DEFINE5(perf_event_open,
- 		}
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 32029e3..2bdfbff 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -303,15 +303,6 @@ int x86_setup_perfctr(struct perf_event *event)
+ 		hwc->sample_period = x86_pmu.max_period;
+ 		hwc->last_period = hwc->sample_period;
+ 		local64_set(&hwc->period_left, hwc->sample_period);
+-	} else {
+-		/*
+-		 * If we have a PMU initialized but no APIC
+-		 * interrupts, we cannot sample hardware
+-		 * events (user-space has to fall back and
+-		 * sample via a hrtimer based software event):
+-		 */
+-		if (!x86_pmu.apic)
+-			return -EOPNOTSUPP;
  	}
  
-+	if (is_sampling_event(event)) {
-+		if (event->pmu->capabilities & PERF_PMU_CAP_NO_INTERRUPT) {
-+			err = -ENOTSUPP;
-+			goto err_alloc;
-+		}
-+	}
+ 	if (attr->type == PERF_TYPE_RAW)
+@@ -1367,6 +1358,15 @@ static void __init pmu_check_apic(void)
+ 	x86_pmu.apic = 0;
+ 	pr_info("no APIC, boot with the \"lapic\" boot parameter to force-enable it.\n");
+ 	pr_info("no hardware sampling interrupt available.\n");
 +
- 	account_event(event);
++	/*
++	 * If we have a PMU initialized but no APIC
++	 * interrupts, we cannot sample hardware
++	 * events (user-space has to fall back and
++	 * sample via a hrtimer based software event):
++	 */
++	pmu.capabilities |= PERF_PMU_CAP_NO_INTERRUPT;
++
+ }
  
- 	/*
+ static struct attribute_group x86_pmu_format_group = {
