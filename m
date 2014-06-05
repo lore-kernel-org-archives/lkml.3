@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754623AbaFEFEf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 01:04:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43841 "EHLO
+	id S1754670AbaFEFE6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 01:04:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43826 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752451AbaFEEU2 (ORCPT
+	with ESMTP id S1752433AbaFEEU0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 00:20:28 -0400
+	Thu, 5 Jun 2014 00:20:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Josef Gajdusek <atx@atx.name>, Jean Delvare <jdelvare@suse.de>,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH 3.4 044/214] hwmon: (emc1403) fix inverted store_hyst()
-Date: Wed,  4 Jun 2014 21:16:47 -0700
-Message-Id: <20140605041645.523807233@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>, airlied@gmail.com
+Subject: [PATCH 3.4 051/214] drm/radeon: fix ATPX detection on non-VGA GPUs
+Date: Wed,  4 Jun 2014 21:16:54 -0700
+Message-Id: <20140605041646.306255603@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
 User-Agent: quilt/0.60-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -27,34 +29,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josef Gajdusek <atx@atx.name>
+From: Alex Deucher <alexdeucher@gmail.com>
 
-commit 17c048fc4bd95efea208a1920f169547d8588f1f upstream.
+commit e9a4099a59cc598a44006059dd775c25e422b772 upstream.
 
-Attempts to set the hysteresis value to a temperature below the target
-limit fails with "write error: Numerical result out of range" due to
-an inverted comparison.
+Some newer PX laptops have the pci device class
+set to DISPLAY_OTHER rather than DISPLAY_VGA.  This
+properly detects ATPX on those laptops.
 
-Signed-off-by: Josef Gajdusek <atx@atx.name>
-Reviewed-by: Jean Delvare <jdelvare@suse.de>
-[Guenter Roeck: Updated headline and description]
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Based on a patch from: Pali Rohár <pali.rohar@gmail.com>
+
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Cc: airlied@gmail.com
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/emc1403.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/radeon_atpx_handler.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/drivers/hwmon/emc1403.c
-+++ b/drivers/hwmon/emc1403.c
-@@ -161,7 +161,7 @@ static ssize_t store_hyst(struct device
- 	if (retval < 0)
- 		goto fail;
+--- a/drivers/gpu/drm/radeon/radeon_atpx_handler.c
++++ b/drivers/gpu/drm/radeon/radeon_atpx_handler.c
+@@ -202,6 +202,13 @@ static bool radeon_atpx_detect(void)
+ 		has_atpx |= (radeon_atpx_pci_probe_handle(pdev) == true);
+ 	}
  
--	hyst = val - retval * 1000;
-+	hyst = retval * 1000 - val;
- 	hyst = DIV_ROUND_CLOSEST(hyst, 1000);
- 	if (hyst < 0 || hyst > 255) {
- 		retval = -ERANGE;
++	/* some newer PX laptops mark the dGPU as a non-VGA display device */
++	while ((pdev = pci_get_class(PCI_CLASS_DISPLAY_OTHER << 8, pdev)) != NULL) {
++		vga_count++;
++
++		has_atpx |= (radeon_atpx_pci_probe_handle(pdev) == true);
++	}
++
+ 	if (has_atpx && vga_count == 2) {
+ 		acpi_get_name(radeon_atpx_priv.atpx_handle, ACPI_FULL_PATHNAME, &buffer);
+ 		printk(KERN_INFO "VGA switcheroo: detected switching method %s handle\n",
 
 
