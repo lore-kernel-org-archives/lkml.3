@@ -1,301 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751362AbaFEGQD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 02:16:03 -0400
-Received: from ns.pmeerw.net ([87.118.82.44]:32878 "EHLO pmeerw.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751159AbaFEGQB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 02:16:01 -0400
-Date: Thu, 5 Jun 2014 08:15:57 +0200 (CEST)
-From: Peter Meerwald <pmeerw@pmeerw.net>
-To: Michael Welling <mwelling@ieee.org>
-cc: Jonathan Cameron <jic23@kernel.org>, linux-iio@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] iio: dac: mcp4902/mcp4912/mcp4922 dac driver
-In-Reply-To: <1401944595-6042-1-git-send-email-mwelling@ieee.org>
-Message-ID: <alpine.DEB.2.01.1406050812220.20498@pmeerw.net>
-References: <alpine.DEB.2.01.1406041128570.12546@pmeerw.net> <1401944595-6042-1-git-send-email-mwelling@ieee.org>
-User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
+	id S1751211AbaFEGXw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 02:23:52 -0400
+Received: from helcar.apana.org.au ([209.40.204.226]:57009 "EHLO
+	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750743AbaFEGXu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jun 2014 02:23:50 -0400
+Date: Thu, 5 Jun 2014 14:23:37 +0800
+From: Herbert Xu <herbert@gondor.apana.org.au>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
+Subject: Crypto Update for 3.16
+Message-ID: <20140605062336.GA14440@gondor.apana.org.au>
+References: <20110724011752.GA14373@gondor.apana.org.au>
+ <20111031040952.GA19659@gondor.apana.org.au>
+ <20120106041250.GA7759@gondor.apana.org.au>
+ <20121004095357.GA11777@gondor.apana.org.au>
+ <20121214103156.GA5840@gondor.apana.org.au>
+ <20130223023331.GA11002@gondor.apana.org.au>
+ <20130907035544.GA22658@gondor.apana.org.au>
+ <20131107080131.GA32307@gondor.apana.org.au>
+ <20140123115319.GA20602@gondor.apana.org.au>
+ <20140401100001.GA12386@gondor.apana.org.au>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140401100001.GA12386@gondor.apana.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Linus:
 
-> This patch provides an iio device driver for the Microchip
-> MCP49x2 series DACs.
+Here is the crypto update for 3.16:
 
-comments inline
- 
-> Signed-off-by: Michael Welling <mwelling@ieee.org>
-> ---
->  drivers/iio/dac/Kconfig   |   10 +++
->  drivers/iio/dac/Makefile  |    1 +
->  drivers/iio/dac/mcp49x2.c |  213 +++++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 224 insertions(+)
->  create mode 100644 drivers/iio/dac/mcp49x2.c
-> 
-> diff --git a/drivers/iio/dac/Kconfig b/drivers/iio/dac/Kconfig
-> index f378ca8..032d678 100644
-> --- a/drivers/iio/dac/Kconfig
-> +++ b/drivers/iio/dac/Kconfig
-> @@ -163,4 +163,14 @@ config MCP4725
->  	  To compile this driver as a module, choose M here: the module
->  	  will be called mcp4725.
->  
-> +config MCP49X2
-> +	tristate "MCP4902, MCP4912, MCP4922 DAC driver"
-> +	depends on SPI
-> +	---help---
-> +	  Say yes here to build the driver for the Microchip MCP49x2
-> +	  series DAC devices.
-> +
-> +	  To compile this driver as a module, choose M here: the module
-> +	  will be called mcp49x2.
-> +
->  endmenu
-> diff --git a/drivers/iio/dac/Makefile b/drivers/iio/dac/Makefile
-> index bb84ad6..2fdfc2e 100644
-> --- a/drivers/iio/dac/Makefile
-> +++ b/drivers/iio/dac/Makefile
-> @@ -18,3 +18,4 @@ obj-$(CONFIG_AD5686) += ad5686.o
->  obj-$(CONFIG_AD7303) += ad7303.o
->  obj-$(CONFIG_MAX517) += max517.o
->  obj-$(CONFIG_MCP4725) += mcp4725.o
-> +obj-$(CONFIG_MCP49X2) += mcp49x2.o
-> diff --git a/drivers/iio/dac/mcp49x2.c b/drivers/iio/dac/mcp49x2.c
-> new file mode 100644
-> index 0000000..f90a83a
-> --- /dev/null
-> +++ b/drivers/iio/dac/mcp49x2.c
-> @@ -0,0 +1,213 @@
-> +/*
-> + * mcp49x2.c
-> + *
-> + * Driver for Microchip Digital to Analog Converters.
-> + * Supports MCP4902, MCP4912, and MCP4922.
-> + *
-> + * Copyright (c) 2014 EMAC Inc.
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; either version 2 of the License, or
-> + * (at your option) any later version.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + */
-> +
-> +#include <linux/module.h>
-> +#include <linux/init.h>
-> +#include <linux/spi/spi.h>
-> +#include <linux/iio/iio.h>
-> +#include <linux/iio/sysfs.h>
-> +#include <linux/regulator/consumer.h>
-> +#include <linux/bitops.h>
-> +
-> +#define	MCP49X2_RES_MASK(x)	GENMASK(x, 0)
+* Added test vectors for SHA/AES-CCM/DES-CBC/3DES-CBC.
+* Fixed a number of error-path memory leaks in tcrypt.
+* Fixed error-path memory leak in caam.
+* Removed unnecessary global mutex from mxs-dcp.
+* Added ahash walk interface that can actually be asynchronous.
+* Cleaned up caam error reporting.
+* Allow crypto_user get operation to be used by non-root users.
+* Add support for SSS module on Exynos.
+* Misc fixes.
 
-MCP49X2_RES_MASK() could go away
-it should be GENMASK(x-1, 0)
 
-> +#define MCP49X2_NUM_CHANNELS	2
-> +
-> +enum mcp49x2_supported_device_ids {
-> +	ID_MCP4902,
-> +	ID_MCP4912,
-> +	ID_MCP4922,
-> +};
-> +
-> +struct mcp49x2_state {
-> +	struct spi_device *spi;
-> +	unsigned int value[MCP49X2_NUM_CHANNELS];
-> +	unsigned int power_mode[MCP49X2_NUM_CHANNELS];
-> +	unsigned int vref_mv;
-> +	struct regulator *vref_reg;
-> +};
-> +
-> +#define MCP49X2_CHAN(chan, bits) {			\
-> +	.type = IIO_VOLTAGE,				\
-> +	.output = 1,					\
-> +	.indexed = 1,					\
-> +	.channel = chan,				\
-> +	.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),	\
-> +	.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),	\
-> +	.scan_type = IIO_ST('u', bits, 16, 12-bits),	\
-> +}
-> +
-> +static int mcp49x2_spi_write(struct spi_device *spi, u8 addr, u32 val)
-> +{
-> +	u8 mosi[2] ____cacheline_aligned;
-> +
-> +	mosi[1] = val & 0xff;
-> +	mosi[0] = (addr == 0) ? 0x00: 0x80;
-> +	mosi[0] |= 0x30 | ((val >> 8) & 0x0f);
-> +
-> +	return spi_write(spi, mosi, 2);
-> +}
-> +
-> +static int mcp49x2_read_raw(struct iio_dev *indio_dev,
-> +		struct iio_chan_spec const *chan,
-> +		int *val,
-> +		int *val2,
-> +		long mask)
-> +{
-> +	struct mcp49x2_state *state = iio_priv(indio_dev);
-> +
-> +	switch (mask) {
-> +	case IIO_CHAN_INFO_RAW:
-> +		*val = state->value[chan->address];
+Please pull from
 
-address is gone, use chan->channel
+git://git.kernel.org/pub/scm/linux/kernel/git/herbert/cryptodev-2.6.git
 
-> +		return IIO_VAL_INT;
-> +	case IIO_CHAN_INFO_SCALE:
-> +		*val = state->vref_mv;
-> +		*val2 = chan->scan_type.realbits;
-> +		return IIO_VAL_FRACTIONAL_LOG2;
-> +	default:
-> +		return -EINVAL;
-> +	}
-> +}
-> +
-> +static int mcp49x2_write_raw(struct iio_dev *indio_dev,
-> +		struct iio_chan_spec const *chan,
-> +		int val,
-> +		int val2,
-> +		long mask)
-> +{
-> +	struct mcp49x2_state *state = iio_priv(indio_dev);
-> +
-> +	switch (mask) {
-> +	case IIO_CHAN_INFO_RAW:
-> +		if (val > MCP49X2_RES_MASK(chan->scan_type.realbits))
-> +			return -EINVAL;
-> +		val <<= chan->scan_type.shift;
-> +		state->value[chan->address] = val;
 
-use chan->channel
+Alexander Gordeev (1):
+      crypto: ccp - Use pci_enable_msix_range() instead of pci_enable_msix()
 
-> +		return mcp49x2_spi_write(state->spi, chan->address, val);
-> +	default:
-> +		return -EINVAL;
-> +	}
-> +}
-> +
-> +static const struct iio_chan_spec mcp49x2_channels[3][MCP49X2_NUM_CHANNELS] = {
-> +	[ID_MCP4902] = { MCP49X2_CHAN(0, 8),	MCP49X2_CHAN(1, 8) },
-> +	[ID_MCP4912] = { MCP49X2_CHAN(0, 10),	MCP49X2_CHAN(1, 10) },
-> +	[ID_MCP4922] = { MCP49X2_CHAN(0, 12),	MCP49X2_CHAN(1, 12) },
-> +};
-> +
-> +static const struct iio_info mcp49x2_info = {
-> +	.read_raw = &mcp49x2_read_raw,
-> +	.write_raw = &mcp49x2_write_raw,
-> +	.driver_module = THIS_MODULE,
-> +};
-> +
-> +static int mcp49x2_probe(struct spi_device *spi)
-> +{
-> +	struct iio_dev *indio_dev;
-> +	struct mcp49x2_state *state;
-> +	const struct spi_device_id *id;
-> +	int ret;
-> +
-> +	indio_dev = devm_iio_device_alloc(&spi->dev, sizeof(*state));
-> +	if (indio_dev == NULL)
-> +		return -ENOMEM;
-> +
-> +	state = iio_priv(indio_dev);
-> +	state->spi = spi;
-> +	state->vref_reg = devm_regulator_get(&spi->dev, "vref");
-> +	if (!IS_ERR(state->vref_reg)) {
-> +		ret = regulator_enable(state->vref_reg);
-> +		if (ret) {
-> +			dev_err(&spi->dev, "Failed to enable vref regulator: %d\n",
-> +				ret);
-> +			return ret;
-> +		}
-> +
-> +		ret = regulator_get_voltage(state->vref_reg);
-> +		if (ret < 0) {
-> +			dev_err(&spi->dev, "Failed to read vref regulator: %d\n",
-> +				ret);
-> +			goto error_disable_reg;
-> +		}
-> +		state->vref_mv = ret / 1000;
-> +	} else {
-> +		dev_info(&spi->dev, "Vref regulator not specified assuming 2.5V\n");
-> +		state->vref_mv = 2500;
-> +	}
-> +
-> +	spi_set_drvdata(spi, indio_dev);
-> +	id = spi_get_device_id(spi);
-> +	indio_dev->dev.parent = &spi->dev;
-> +	indio_dev->info = &mcp49x2_info;
-> +	indio_dev->modes = INDIO_DIRECT_MODE;
-> +	indio_dev->channels = mcp49x2_channels[id->driver_data];
-> +	indio_dev->num_channels = MCP49X2_NUM_CHANNELS;
-> +	indio_dev->name = id->name;
-> +
-> +	ret = devm_iio_device_register(&spi->dev, indio_dev);
-> +	if (ret) {
-> +		dev_err(&spi->dev, "Failed to register iio device: %d\n",
-> +				ret);
-> +		goto error_disable_reg;
-> +	}
-> +
-> +	return 0;
-> +
-> +error_disable_reg:
-> +	if (!IS_ERR(state->vref_reg))
-> +		regulator_disable(state->vref_reg);
-> +
-> +	return ret;
-> +}
-> +
-> +static int mcp49x2_remove(struct spi_device *spi)
-> +{
-> +	struct iio_dev *indio_dev = spi_get_drvdata(spi);
-> +	struct mcp49x2_state *state;
-> +
-> +	state = iio_priv(indio_dev);
-> +
-> +	if (!IS_ERR(state->vref_reg))
-> +		regulator_disable(state->vref_reg);
-> +
-> +	return 0;
-> +}
-> +
-> +static const struct spi_device_id mcp49x2_id[] = {
-> +	{"mcp4902", ID_MCP4902},
-> +	{"mcp4912", ID_MCP4912},
-> +	{"mcp4922", ID_MCP4922},
-> +	{}
-> +};
-> +MODULE_DEVICE_TABLE(spi, mcp49x2_id);
-> +
-> +static struct spi_driver mcp49x2_driver = {
-> +	.driver = {
-> +		   .name = "mcp49x2",
-> +		   .owner = THIS_MODULE,
-> +		   },
-> +	.probe = mcp49x2_probe,
-> +	.remove = mcp49x2_remove,
-> +	.id_table = mcp49x2_id,
-> +};
-> +module_spi_driver(mcp49x2_driver);
-> +
-> +MODULE_AUTHOR("Michael Welling <mwelling@ieee.org>");
-> +MODULE_DESCRIPTION("Microchip MCP4902, MCP4912, MCP4922 DAC");
-> +MODULE_LICENSE("GPL v2");
-> 
+Ard Biesheuvel (1):
+      crypto: testmgr - add test cases for SHA-1, SHA-224, SHA-256 and AES-CCM
 
+Arnd Bergmann (1):
+      crypto: s5p-sss - fix multiplatform build
+
+Christian Engelmayer (3):
+      crypto: tcrypt - Fix potential leak in test_aead_speed() if aad_size is too big
+      crypto: tcrypt - Fix potential leak in test_aead_speed() if crypto_alloc_aead() fails
+      crypto: tcrypt - Fix leak of struct aead_request in test_aead_speed()
+
+Fabio Estevam (1):
+      crypto: mxs-dcp - Remove global mutex
+
+Herbert Xu (2):
+      crypto: ghash-clmulni-intel - Use u128 instead of be128 for internal key
+      crypto: hash - Add real ahash walk interface
+
+Himangi Saraogi (1):
+      hwrng: n2-drv - Introduce the use of the managed version of kzalloc
+
+Horia Geanta (1):
+      crypto: caam - fix mem leak in ahash_setkey
+
+Jean Delvare (3):
+      hwrng: Move UML_RANDOM at the last position
+      hwrng: Turn HW_RANDOM into a menuconfig
+      hwrng: Fix a few driver dependencies and defaults
+
+Jingoo Han (3):
+      crypto: omap-des - use devm_ioremap_resource()
+      hwrng: omap - remove unnecessary OOM messages
+      hwrng: timeriomem - remove unnecessary OOM messages
+
+Jussi Kivilinna (1):
+      crypto: testmgr - add empty and large test vectors for SHA-1, SHA-224, SHA-256, SHA-384 and SHA-512
+
+Leilei Zhao (2):
+      crypto: atmel-aes - correct block size of cfb8 mode
+      crypto: atmel-aes - check alignment of cfb64 mode
+
+Marek Vasut (23):
+      crypto: caam - Contain caam_jr_strstatus() ugliness
+      crypto: caam - Pull all the error codes out
+      crypto: caam - Implement fast-path for error codes with no handler
+      crypto: caam - Pass error type into the functions
+      crypto: caam - Kill the easy targets
+      crypto: caam - Dissolve report_jump_idx()
+      crypto: caam - Clean up report_ccb_status()
+      crypto: caam - Clean up report_deco_status()
+      crypto: caam - Kill SPRINTFCAT() with fire
+      crypto: caam - Sweep the remnants
+      crypto: caam - Fix the 'quoted string split across lines'
+      crypto: geode - Kill AES_MIN_BLOCK_SIZE
+      crypto: geode - Kill AES_IV_LENGTH
+      crypto: geode - Consistently use AES_KEYSIZE_128
+      crypto: geode - Weed out printk() from probe()
+      crypto: geode - Don't use tfm->__crt_alg->cra_name directly
+      crypto: ccp - tfm->__crt_alg->cra_name directly
+      crypto: cesa - tfm->__crt_alg->cra_name directly
+      crypto: dcp - tfm->__crt_alg->cra_name directly
+      crypto: n2 - tfm->__crt_alg->cra_name directly
+      crypto: padlock - tfm->__crt_alg->cra_name directly
+      crypto: sahara - tfm->__crt_alg->cra_name directly
+      crypto: cesa - tfm->__crt_alg->cra_type directly
+
+Matthias-Christian Ott (1):
+      crypto: user - Allow CRYPTO_MSG_GETALG without CAP_NET_ADMIN
+
+Monam Agarwal (1):
+      crypto: nx - Use RCU_INIT_POINTER(x, NULL)
+
+Naveen Krishna Chatradhi (7):
+      crypto: s5p-sss - Use platform_get_irq() instead of _byname()
+      crypto: s5p-sss - Add device tree support
+      crypto: s5p-sss - Add support for SSS module on Exynos
+      crypto: s5p-sss - Let Exynos SoCs select SSS driver
+      crypto: s5p-sss - validate iv before memcpy
+      crypto: s5p-sss - Use clk_prepare/clk_unprepare
+      crypto: s5p-sss - Look for the next request in the queue
+
+Nishanth Menon (1):
+      crypto: omap-des - handle error of pm_runtime_get_sync
+
+Nitesh Lal (1):
+      crypto: testmgr - add aead cbc des, des3_ede tests
+
+Paul Bolle (1):
+      hwrng: picoxcell - remove unbuildable picoxcell TRNG
+
+Sonic Zhang (3):
+      crypto: bfin_crc - access crc registers by readl and writel functions
+      crypto: bfin_crc - ignore duplicated registration of the same algorithm
+      cryptoo: bfin_crc - avoid get physical address of coherence memory by dma_map_single
+
+Tadeusz Struk (1):
+      crypto: testmgr - Fix DMA-API warning
+
+Vakul Garg (1):
+      crypto: caam - reinitialize keys_fit_inline for decrypt and givencrypt
+
+ .../devicetree/bindings/crypto/samsung-sss.txt     |   34 +
+ arch/x86/crypto/ghash-clmulni-intel_asm.S          |    4 +-
+ arch/x86/crypto/ghash-clmulni-intel_glue.c         |   12 +-
+ crypto/ahash.c                                     |   41 +-
+ crypto/crypto_user.c                               |   12 +-
+ crypto/tcrypt.c                                    |   52 +-
+ crypto/testmgr.c                                   |  181 ++-
+ crypto/testmgr.h                                   | 1441 +++++++++++++++++++-
+ drivers/char/hw_random/Kconfig                     |  103 +-
+ drivers/char/hw_random/Makefile                    |    1 -
+ drivers/char/hw_random/n2-drv.c                    |   24 +-
+ drivers/char/hw_random/omap-rng.c                  |    4 +-
+ drivers/char/hw_random/picoxcell-rng.c             |  181 ---
+ drivers/char/hw_random/timeriomem-rng.c            |    4 +-
+ drivers/crypto/Kconfig                             |    6 +-
+ drivers/crypto/atmel-aes.c                         |    8 +-
+ drivers/crypto/bfin_crc.c                          |  103 +-
+ .../include/asm => drivers/crypto}/bfin_crc.h      |    0
+ drivers/crypto/caam/caamalg.c                      |   31 +-
+ drivers/crypto/caam/caamhash.c                     |   32 +-
+ drivers/crypto/caam/caamrng.c                      |    7 +-
+ drivers/crypto/caam/error.c                        |  389 +++---
+ drivers/crypto/caam/error.h                        |    2 +-
+ drivers/crypto/caam/key_gen.c                      |    7 +-
+ drivers/crypto/ccp/ccp-crypto-aes-xts.c            |    4 +-
+ drivers/crypto/ccp/ccp-pci.c                       |    7 +-
+ drivers/crypto/geode-aes.c                         |   28 +-
+ drivers/crypto/geode-aes.h                         |    6 +-
+ drivers/crypto/mv_cesa.c                           |    6 +-
+ drivers/crypto/mxs-dcp.c                           |   52 +-
+ drivers/crypto/n2_core.c                           |    4 +-
+ drivers/crypto/nx/nx-842.c                         |    4 +-
+ drivers/crypto/omap-des.c                          |   33 +-
+ drivers/crypto/padlock-sha.c                       |    2 +-
+ drivers/crypto/s5p-sss.c                           |  148 +-
+ drivers/crypto/sahara.c                            |    2 +-
+ include/crypto/internal/hash.h                     |   13 +
+ 37 files changed, 2245 insertions(+), 743 deletions(-)
+
+Thanks,
 -- 
-
-Peter Meerwald
-+43-664-2444418 (mobile)
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
