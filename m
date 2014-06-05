@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754263AbaFEFRm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 01:17:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43592 "EHLO
+	id S1754866AbaFEFRn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 01:17:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43589 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750866AbaFEETr (ORCPT
+	with ESMTP id S1751637AbaFEETr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 5 Jun 2014 00:19:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Julio Araujo <julio.araujo@wllctel.com.br>,
         =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
-Subject: [PATCH 3.4 010/214] usb: option: add Alcatel L800MA
-Date: Wed,  4 Jun 2014 21:16:13 -0700
-Message-Id: <20140605041641.112432891@linuxfoundation.org>
+Subject: [PATCH 3.4 009/214] usb: option: add Olivetti Olicard 500
+Date: Wed,  4 Jun 2014 21:16:12 -0700
+Message-Id: <20140605041640.981341057@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -31,39 +32,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Bjørn Mork <bjorn@mork.no>
 
-commit dd6b48ecec2ea7d15f28d5e5474388681899a5e1 upstream.
+commit 533b3994610f316e5cd61b56d0c4daa15c830f89 upstream.
 
 Device interface layout:
 0: ff/ff/ff - serial
-1: ff/00/00 - serial AT+PPP
-2: ff/ff/ff - QMI/wwan
-3: 08/06/50 - storage
+1: ff/ff/ff - serial AT+PPP
+2: 08/06/50 - storage
+3: ff/ff/ff - serial
+4: ff/ff/ff - QMI/wwan
 
+Reported-by: Julio Araujo <julio.araujo@wllctel.com.br>
 Signed-off-by: Bjørn Mork <bjorn@mork.no>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/option.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/usb/serial/option.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
 --- a/drivers/usb/serial/option.c
 +++ b/drivers/usb/serial/option.c
-@@ -292,6 +292,7 @@ static void option_instat_callback(struc
- #define ALCATEL_PRODUCT_X060S_X200		0x0000
- #define ALCATEL_PRODUCT_X220_X500D		0x0017
- #define ALCATEL_PRODUCT_L100V			0x011e
-+#define ALCATEL_PRODUCT_L800MA			0x0203
+@@ -354,6 +354,7 @@ static void option_instat_callback(struc
+ #define OLIVETTI_PRODUCT_OLICARD100		0xc000
+ #define OLIVETTI_PRODUCT_OLICARD145		0xc003
+ #define OLIVETTI_PRODUCT_OLICARD200		0xc005
++#define OLIVETTI_PRODUCT_OLICARD500		0xc00b
  
- #define PIRELLI_VENDOR_ID			0x1266
- #define PIRELLI_PRODUCT_C100_1			0x1002
-@@ -1521,6 +1522,8 @@ static const struct usb_device_id option
- 	  .driver_info = (kernel_ulong_t)&net_intf5_blacklist },
- 	{ USB_DEVICE(ALCATEL_VENDOR_ID, ALCATEL_PRODUCT_L100V),
- 	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
-+	{ USB_DEVICE(ALCATEL_VENDOR_ID, ALCATEL_PRODUCT_L800MA),
-+	  .driver_info = (kernel_ulong_t)&net_intf2_blacklist },
- 	{ USB_DEVICE(AIRPLUS_VENDOR_ID, AIRPLUS_PRODUCT_MCD650) },
- 	{ USB_DEVICE(TLAYTECH_VENDOR_ID, TLAYTECH_PRODUCT_TEU800) },
- 	{ USB_DEVICE(LONGCHEER_VENDOR_ID, FOUR_G_SYSTEMS_PRODUCT_W14),
+ /* Celot products */
+ #define CELOT_VENDOR_ID				0x211f
+@@ -1565,6 +1566,9 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD200),
+ 		.driver_info = (kernel_ulong_t)&net_intf6_blacklist
+ 	},
++	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD500),
++		.driver_info = (kernel_ulong_t)&net_intf4_blacklist
++	},
+ 	{ USB_DEVICE(CELOT_VENDOR_ID, CELOT_PRODUCT_CT680M) }, /* CT-650 CDMA 450 1xEVDO modem */
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(SAMSUNG_VENDOR_ID, SAMSUNG_PRODUCT_GT_B3730, USB_CLASS_CDC_DATA, 0x00, 0x00) }, /* Samsung GT-B3730 LTE USB modem.*/
+ 	{ USB_DEVICE(YUGA_VENDOR_ID, YUGA_PRODUCT_CEM600) },
 
 
