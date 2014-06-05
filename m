@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752828AbaFEOlN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 10:41:13 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:48796 "EHLO
+	id S1752782AbaFEOkq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 10:40:46 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:48763 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751662AbaFEOlJ (ORCPT
+	with ESMTP id S1752761AbaFEOkm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 10:41:09 -0400
-Date: Thu, 5 Jun 2014 07:40:15 -0700
-From: tip-bot for Davidlohr Bueso <tipbot@zytor.com>
-Message-ID: <tip-9161f5409798d52aa8598ff12575fde2327bed84@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org,
-        tglx@linutronix.de, davidlohr@hp.com
+	Thu, 5 Jun 2014 10:40:42 -0400
+Date: Thu, 5 Jun 2014 07:40:27 -0700
+From: tip-bot for Cliff Wickman <tipbot@zytor.com>
+Message-ID: <tip-a26fd71953711acb4884df84e393d52de57e4f17@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org, cpw@sgi.com,
+        tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org,
-        tglx@linutronix.de, davidlohr@hp.com
-In-Reply-To: <1401338203.2618.11.camel@buesod1.americas.hpqcorp.net>
-References: <1401338203.2618.11.camel@buesod1.americas.hpqcorp.net>
+        cpw@sgi.com, tglx@linutronix.de
+In-Reply-To: <E1WkgWh-0001yJ-3K@eag09.americas.sgi.com>
+References: <E1WkgWh-0001yJ-3K@eag09.americas.sgi.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:locking/core] locking/mutexes: Documentation update/rewrite
-Git-Commit-ID: 9161f5409798d52aa8598ff12575fde2327bed84
+Subject: [tip:x86/uv] x86/uv: Update the UV3 TLB shootdown logic
+Git-Commit-ID: a26fd71953711acb4884df84e393d52de57e4f17
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -33,321 +31,335 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  9161f5409798d52aa8598ff12575fde2327bed84
-Gitweb:     http://git.kernel.org/tip/9161f5409798d52aa8598ff12575fde2327bed84
-Author:     Davidlohr Bueso <davidlohr@hp.com>
-AuthorDate: Wed, 28 May 2014 21:36:43 -0700
+Commit-ID:  a26fd71953711acb4884df84e393d52de57e4f17
+Gitweb:     http://git.kernel.org/tip/a26fd71953711acb4884df84e393d52de57e4f17
+Author:     Cliff Wickman <cpw@sgi.com>
+AuthorDate: Wed, 14 May 2014 16:15:47 -0500
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 5 Jun 2014 13:29:37 +0200
+CommitDate: Thu, 5 Jun 2014 14:17:20 +0200
 
-locking/mutexes: Documentation update/rewrite
+x86/uv: Update the UV3 TLB shootdown logic
 
-Our mutexes have gone a long ways since the original
-implementation back in 2005/2006. However, the mutex-design.txt
-document is still stuck in the past, to the point where most of
-the information there is practically useless and, more
-important, simply incorrect. This patch pretty much rewrites it
-to resemble what we have nowadays.
+Update of TLB shootdown code for UV3.
 
-Since regular semaphores are almost much extinct in the kernel
-(most users now rely on mutexes or rwsems), it no longer makes
-sense to have such a close comparison, which was copied from
-most of the cover letter when Ingo introduced the generic mutex
-subsystem.
+Kernel function native_flush_tlb_others() calls
+uv_flush_tlb_others() on UV to invalidate tlb page definitions
+on remote cpus. The UV systems have a hardware 'broadcast assist
+unit' which can be used to broadcast shootdown messages to all
+cpu's of selected nodes.
 
-Note that ww_mutexes are intentionally left out, leaving things
-as generic as possible.
+The behavior of the BAU has changed only slightly with UV3:
 
-Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
-Cc: tim.c.chen@linux.intel.com
-Cc: paulmck@linux.vnet.ibm.com
-Cc: waiman.long@hp.com
-Cc: jason.low2@hp.com
-Cc: aswin@hp.com
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1401338203.2618.11.camel@buesod1.americas.hpqcorp.net
+  - UV3 is recognized with is_uv3_hub().
+  - UV2 functions and structures (uv2_xxx) are in most cases
+    simply renamed to uv2_3_xxx.
+  - Some UV2 error workarounds are not needed for UV3.
+    (see uv_bau_message_interrupt and enable_timeouts)
+
+Signed-off-by: Cliff Wickman <cpw@sgi.com>
+Link: http://lkml.kernel.org/r/E1WkgWh-0001yJ-3K@eag09.americas.sgi.com
+[ Removed a few linebreak uglies. ]
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- Documentation/mutex-design.txt | 252 ++++++++++++++++++++++-------------------
- 1 file changed, 135 insertions(+), 117 deletions(-)
+ arch/x86/include/asm/uv/uv_bau.h | 19 ++++++-----
+ arch/x86/platform/uv/tlb_uv.c    | 69 ++++++++++++++++++++++------------------
+ 2 files changed, 49 insertions(+), 39 deletions(-)
 
-diff --git a/Documentation/mutex-design.txt b/Documentation/mutex-design.txt
-index 1dfe62c..ee231ed 100644
---- a/Documentation/mutex-design.txt
-+++ b/Documentation/mutex-design.txt
-@@ -1,139 +1,157 @@
- Generic Mutex Subsystem
+diff --git a/arch/x86/include/asm/uv/uv_bau.h b/arch/x86/include/asm/uv/uv_bau.h
+index 0b46ef2..2d60a78 100644
+--- a/arch/x86/include/asm/uv/uv_bau.h
++++ b/arch/x86/include/asm/uv/uv_bau.h
+@@ -73,6 +73,7 @@
+ #define UV_INTD_SOFT_ACK_TIMEOUT_PERIOD	(is_uv1_hub() ?			\
+ 		UV1_INTD_SOFT_ACK_TIMEOUT_PERIOD :			\
+ 		UV2_INTD_SOFT_ACK_TIMEOUT_PERIOD)
++/* assuming UV3 is the same */
  
- started by Ingo Molnar <mingo@redhat.com>
-+updated by Davidlohr Bueso <davidlohr@hp.com>
+ #define BAU_MISC_CONTROL_MULT_MASK	3
  
--  "Why on earth do we need a new mutex subsystem, and what's wrong
--   with semaphores?"
-+What are mutexes?
-+-----------------
+@@ -93,6 +94,8 @@
+ #define SOFTACK_MSHIFT UVH_LB_BAU_MISC_CONTROL_ENABLE_INTD_SOFT_ACK_MODE_SHFT
+ #define SOFTACK_PSHIFT UVH_LB_BAU_MISC_CONTROL_INTD_SOFT_ACK_TIMEOUT_PERIOD_SHFT
+ #define SOFTACK_TIMEOUT_PERIOD UV_INTD_SOFT_ACK_TIMEOUT_PERIOD
++#define PREFETCH_HINT_SHFT UV3H_LB_BAU_MISC_CONTROL_ENABLE_INTD_PREFETCH_HINT_SHFT
++#define SB_STATUS_SHFT UV3H_LB_BAU_MISC_CONTROL_ENABLE_EXTENDED_SB_STATUS_SHFT
+ #define write_gmmr	uv_write_global_mmr64
+ #define write_lmmr	uv_write_local_mmr
+ #define read_lmmr	uv_read_local_mmr
+@@ -322,8 +325,9 @@ struct uv1_bau_msg_header {
+ /*
+  * UV2 Message header:  16 bytes (128 bits) (bytes 0x30-0x3f of descriptor)
+  * see figure 9-2 of harp_sys.pdf
++ * assuming UV3 is the same
+  */
+-struct uv2_bau_msg_header {
++struct uv2_3_bau_msg_header {
+ 	unsigned int	base_dest_nasid:15;	/* nasid of the first bit */
+ 	/* bits 14:0 */				/* in uvhub map */
+ 	unsigned int	dest_subnodeid:5;	/* must be 0x10, for the LB */
+@@ -395,7 +399,7 @@ struct bau_desc {
+ 	 */
+ 	union bau_msg_header {
+ 		struct uv1_bau_msg_header	uv1_hdr;
+-		struct uv2_bau_msg_header	uv2_hdr;
++		struct uv2_3_bau_msg_header	uv2_3_hdr;
+ 	} header;
  
--firstly, there's nothing wrong with semaphores. But if the simpler
--mutex semantics are sufficient for your code, then there are a couple
--of advantages of mutexes:
-+In the Linux kernel, mutexes refer to a particular locking primitive
-+that enforces serialization on shared memory systems, and not only to
-+the generic term referring to 'mutual exclusion' found in academia
-+or similar theoretical text books. Mutexes are sleeping locks which
-+behave similarly to binary semaphores, and were introduced in 2006[1]
-+as an alternative to these. This new data structure provided a number
-+of advantages, including simpler interfaces, and at that time smaller
-+code (see Disadvantages).
+ 	struct bau_msg_payload			payload;
+@@ -631,11 +635,6 @@ struct bau_control {
+ 	struct hub_and_pnode	*thp;
+ };
  
-- - 'struct mutex' is smaller on most architectures: E.g. on x86,
--   'struct semaphore' is 20 bytes, 'struct mutex' is 16 bytes.
--   A smaller structure size means less RAM footprint, and better
--   CPU-cache utilization.
-+[1] http://lwn.net/Articles/164802/
- 
-- - tighter code. On x86 i get the following .text sizes when
--   switching all mutex-alike semaphores in the kernel to the mutex
--   subsystem:
-+Implementation
-+--------------
- 
--        text    data     bss     dec     hex filename
--     3280380  868188  396860 4545428  455b94 vmlinux-semaphore
--     3255329  865296  396732 4517357  44eded vmlinux-mutex
-+Mutexes are represented by 'struct mutex', defined in include/linux/mutex.h
-+and implemented in kernel/locking/mutex.c. These locks use a three
-+state atomic counter (->count) to represent the different possible
-+transitions that can occur during the lifetime of a lock:
- 
--   that's 25051 bytes of code saved, or a 0.76% win - off the hottest
--   codepaths of the kernel. (The .data savings are 2892 bytes, or 0.33%)
--   Smaller code means better icache footprint, which is one of the
--   major optimization goals in the Linux kernel currently.
-+	  1: unlocked
-+	  0: locked, no waiters
-+   negative: locked, with potential waiters
- 
-- - the mutex subsystem is slightly faster and has better scalability for
--   contended workloads. On an 8-way x86 system, running a mutex-based
--   kernel and testing creat+unlink+close (of separate, per-task files)
--   in /tmp with 16 parallel tasks, the average number of ops/sec is:
-+In its most basic form it also includes a wait-queue and a spinlock
-+that serializes access to it. CONFIG_SMP systems can also include
-+a pointer to the lock task owner (->owner) as well as a spinner MCS
-+lock (->osq), both described below in (ii).
- 
--    Semaphores:                        Mutexes:
-+When acquiring a mutex, there are three possible paths that can be
-+taken, depending on the state of the lock:
- 
--    $ ./test-mutex V 16 10             $ ./test-mutex V 16 10
--    8 CPUs, running 16 tasks.          8 CPUs, running 16 tasks.
--    checking VFS performance.          checking VFS performance.
--    avg loops/sec:      34713          avg loops/sec:      84153
--    CPU utilization:    63%            CPU utilization:    22%
-+(i) fastpath: tries to atomically acquire the lock by decrementing the
-+    counter. If it was already taken by another task it goes to the next
-+    possible path. This logic is architecture specific. On x86-64, the
-+    locking fastpath is 2 instructions:
- 
--   i.e. in this workload, the mutex based kernel was 2.4 times faster
--   than the semaphore based kernel, _and_ it also had 2.8 times less CPU
--   utilization. (In terms of 'ops per CPU cycle', the semaphore kernel
--   performed 551 ops/sec per 1% of CPU time used, while the mutex kernel
--   performed 3825 ops/sec per 1% of CPU time used - it was 6.9 times
--   more efficient.)
+-static inline unsigned long read_mmr_uv2_status(void)
+-{
+-	return read_lmmr(UV2H_LB_BAU_SB_ACTIVATION_STATUS_2);
+-}
 -
--   the scalability difference is visible even on a 2-way P4 HT box:
--
--    Semaphores:                        Mutexes:
--
--    $ ./test-mutex V 16 10             $ ./test-mutex V 16 10
--    4 CPUs, running 16 tasks.          8 CPUs, running 16 tasks.
--    checking VFS performance.          checking VFS performance.
--    avg loops/sec:      127659         avg loops/sec:      181082
--    CPU utilization:    100%           CPU utilization:    34%
--
--   (the straight performance advantage of mutexes is 41%, the per-cycle
--    efficiency of mutexes is 4.1 times better.)
--
-- - there are no fastpath tradeoffs, the mutex fastpath is just as tight
--   as the semaphore fastpath. On x86, the locking fastpath is 2
--   instructions:
--
--    c0377ccb <mutex_lock>:
--    c0377ccb:       f0 ff 08                lock decl (%eax)
--    c0377cce:       78 0e                   js     c0377cde <.text..lock.mutex>
--    c0377cd0:       c3                      ret
-+    0000000000000e10 <mutex_lock>:
-+    e21:   f0 ff 0b                lock decl (%rbx)
-+    e24:   79 08                   jns    e2e <mutex_lock+0x1e>
+ static inline void write_mmr_data_broadcast(int pnode, unsigned long mmr_image)
+ {
+ 	write_gmmr(pnode, UVH_BAU_DATA_BROADCAST, mmr_image);
+@@ -760,7 +759,11 @@ static inline int atomic_read_short(const struct atomic_short *v)
+  */
+ static inline int atom_asr(short i, struct atomic_short *v)
+ {
+-	return i + xadd(&v->counter, i);
++	short __i = i;
++	asm volatile(LOCK_PREFIX "xaddw %0, %1"
++			: "+r" (i), "+m" (v->counter)
++			: : "memory");
++	return i + __i;
+ }
  
-    the unlocking fastpath is equally tight:
+ /*
+diff --git a/arch/x86/platform/uv/tlb_uv.c b/arch/x86/platform/uv/tlb_uv.c
+index dfe605a..ed161c6 100644
+--- a/arch/x86/platform/uv/tlb_uv.c
++++ b/arch/x86/platform/uv/tlb_uv.c
+@@ -1,7 +1,7 @@
+ /*
+  *	SGI UltraViolet TLB flush routines.
+  *
+- *	(c) 2008-2012 Cliff Wickman <cpw@sgi.com>, SGI.
++ *	(c) 2008-2014 Cliff Wickman <cpw@sgi.com>, SGI.
+  *
+  *	This code is released under the GNU General Public License version 2 or
+  *	later.
+@@ -451,7 +451,7 @@ static inline unsigned long long cycles_2_ns(unsigned long long cyc)
  
--    c0377cd1 <mutex_unlock>:
--    c0377cd1:       f0 ff 00                lock incl (%eax)
--    c0377cd4:       7e 0f                   jle    c0377ce5 <.text..lock.mutex+0x7>
--    c0377cd6:       c3                      ret
--
-- - 'struct mutex' semantics are well-defined and are enforced if
--   CONFIG_DEBUG_MUTEXES is turned on. Semaphores on the other hand have
--   virtually no debugging code or instrumentation. The mutex subsystem
--   checks and enforces the following rules:
--
--   * - only one task can hold the mutex at a time
--   * - only the owner can unlock the mutex
--   * - multiple unlocks are not permitted
--   * - recursive locking is not permitted
--   * - a mutex object must be initialized via the API
--   * - a mutex object must not be initialized via memset or copying
--   * - task may not exit with mutex held
--   * - memory areas where held locks reside must not be freed
--   * - held mutexes must not be reinitialized
--   * - mutexes may not be used in hardware or software interrupt
--   *   contexts such as tasklets and timers
--
--   furthermore, there are also convenience features in the debugging
--   code:
--
--   * - uses symbolic names of mutexes, whenever they are printed in debug output
--   * - point-of-acquire tracking, symbolic lookup of function names
--   * - list of all locks held in the system, printout of them
--   * - owner tracking
--   * - detects self-recursing locks and prints out all relevant info
--   * - detects multi-task circular deadlocks and prints out all affected
--   *   locks and tasks (and only those tasks)
-+    0000000000000bc0 <mutex_unlock>:
-+    bc8:   f0 ff 07                lock incl (%rdi)
-+    bcb:   7f 0a                   jg     bd7 <mutex_unlock+0x17>
-+
-+
-+(ii) midpath: aka optimistic spinning, tries to spin for acquisition
-+     while the lock owner is running and there are no other tasks ready
-+     to run that have higher priority (need_resched). The rationale is
-+     that if the lock owner is running, it is likely to release the lock
-+     soon. The mutex spinners are queued up using MCS lock so that only
-+     one spinner can compete for the mutex.
-+
-+     The MCS lock (proposed by Mellor-Crummey and Scott) is a simple spinlock
-+     with the desirable properties of being fair and with each cpu trying
-+     to acquire the lock spinning on a local variable. It avoids expensive
-+     cacheline bouncing that common test-and-set spinlock implementations
-+     incur. An MCS-like lock is specially tailored for optimistic spinning
-+     for sleeping lock implementation. An important feature of the customized
-+     MCS lock is that it has the extra property that spinners are able to exit
-+     the MCS spinlock queue when they need to reschedule. This further helps
-+     avoid situations where MCS spinners that need to reschedule would continue
-+     waiting to spin on mutex owner, only to go directly to slowpath upon
-+     obtaining the MCS lock.
-+
-+
-+(iii) slowpath: last resort, if the lock is still unable to be acquired,
-+      the task is added to the wait-queue and sleeps until woken up by the
-+      unlock path. Under normal circumstances it blocks as TASK_UNINTERRUPTIBLE.
-+
-+While formally kernel mutexes are sleepable locks, it is path (ii) that
-+makes them more practically a hybrid type. By simply not interrupting a
-+task and busy-waiting for a few cycles instead of immediately sleeping,
-+the performance of this lock has been seen to significantly improve a
-+number of workloads. Note that this technique is also used for rw-semaphores.
-+
-+Semantics
-+---------
-+
-+The mutex subsystem checks and enforces the following rules:
-+
-+    - Only one task can hold the mutex at a time.
-+    - Only the owner can unlock the mutex.
-+    - Multiple unlocks are not permitted.
-+    - Recursive locking/unlocking is not permitted.
-+    - A mutex must only be initialized via the API (see below).
-+    - A task may not exit with a mutex held.
-+    - Memory areas where held locks reside must not be freed.
-+    - Held mutexes must not be reinitialized.
-+    - Mutexes may not be used in hardware or software interrupt
-+      contexts such as tasklets and timers.
-+
-+These semantics are fully enforced when CONFIG DEBUG_MUTEXES is enabled.
-+In addition, the mutex debugging code also implements a number of other
-+features that make lock debugging easier and faster:
-+
-+    - Uses symbolic names of mutexes, whenever they are printed
-+      in debug output.
-+    - Point-of-acquire tracking, symbolic lookup of function names,
-+      list of all locks held in the system, printout of them.
-+    - Owner tracking.
-+    - Detects self-recursing locks and prints out all relevant info.
-+    - Detects multi-task circular deadlocks and prints out all affected
-+      locks and tasks (and only those tasks).
-+
-+
-+Interfaces
-+----------
-+Statically define the mutex:
-+   DEFINE_MUTEX(name);
-+
-+Dynamically initialize the mutex:
-+   mutex_init(mutex);
-+
-+Acquire the mutex, uninterruptible:
-+   void mutex_lock(struct mutex *lock);
-+   void mutex_lock_nested(struct mutex *lock, unsigned int subclass);
-+   int  mutex_trylock(struct mutex *lock);
-+
-+Acquire the mutex, interruptible:
-+   int mutex_lock_interruptible_nested(struct mutex *lock,
-+				       unsigned int subclass);
-+   int mutex_lock_interruptible(struct mutex *lock);
-+
-+Acquire the mutex, interruptible, if dec to 0:
-+   int atomic_dec_and_mutex_lock(atomic_t *cnt, struct mutex *lock);
-+
-+Unlock the mutex:
-+   void mutex_unlock(struct mutex *lock);
-+
-+Test if the mutex is taken:
-+   int mutex_is_locked(struct mutex *lock);
+ /*
+  * The reverse of the above; converts a duration in ns to a duration in cycles.
+- */ 
++ */
+ static inline unsigned long long ns_2_cycles(unsigned long long ns)
+ {
+ 	struct cyc2ns_data *data = cyc2ns_read_begin();
+@@ -563,7 +563,7 @@ static int uv1_wait_completion(struct bau_desc *bau_desc,
+  * UV2 could have an extra bit of status in the ACTIVATION_STATUS_2 register.
+  * But not currently used.
+  */
+-static unsigned long uv2_read_status(unsigned long offset, int rshft, int desc)
++static unsigned long uv2_3_read_status(unsigned long offset, int rshft, int desc)
+ {
+ 	unsigned long descriptor_status;
  
- Disadvantages
- -------------
+@@ -606,7 +606,7 @@ int handle_uv2_busy(struct bau_control *bcp)
+ 	return FLUSH_GIVEUP;
+ }
  
--The stricter mutex API means you cannot use mutexes the same way you
--can use semaphores: e.g. they cannot be used from an interrupt context,
--nor can they be unlocked from a different context that which acquired
--it. [ I'm not aware of any other (e.g. performance) disadvantages from
--using mutexes at the moment, please let me know if you find any. ]
--
--Implementation of mutexes
---------------------------
--
--'struct mutex' is the new mutex type, defined in include/linux/mutex.h and
--implemented in kernel/locking/mutex.c. It is a counter-based mutex with a
--spinlock and a wait-list. The counter has 3 states: 1 for "unlocked", 0 for
--"locked" and negative numbers (usually -1) for "locked, potential waiters
--queued".
--
--the APIs of 'struct mutex' have been streamlined:
--
-- DEFINE_MUTEX(name);
-+Unlike its original design and purpose, 'struct mutex' is larger than
-+most locks in the kernel. E.g: on x86-64 it is 40 bytes, almost twice
-+as large as 'struct semaphore' (24 bytes) and 8 bytes shy of the
-+'struct rw_semaphore' variant. Larger structure sizes mean more CPU
-+cache and memory footprint.
+-static int uv2_wait_completion(struct bau_desc *bau_desc,
++static int uv2_3_wait_completion(struct bau_desc *bau_desc,
+ 				unsigned long mmr_offset, int right_shift,
+ 				struct bau_control *bcp, long try)
+ {
+@@ -616,7 +616,7 @@ static int uv2_wait_completion(struct bau_desc *bau_desc,
+ 	long busy_reps = 0;
+ 	struct ptc_stats *stat = bcp->statp;
  
-- mutex_init(mutex);
-+When to use mutexes
-+-------------------
+-	descriptor_stat = uv2_read_status(mmr_offset, right_shift, desc);
++	descriptor_stat = uv2_3_read_status(mmr_offset, right_shift, desc);
  
-- void mutex_lock(struct mutex *lock);
-- int  mutex_lock_interruptible(struct mutex *lock);
-- int  mutex_trylock(struct mutex *lock);
-- void mutex_unlock(struct mutex *lock);
-- int  mutex_is_locked(struct mutex *lock);
-- void mutex_lock_nested(struct mutex *lock, unsigned int subclass);
-- int  mutex_lock_interruptible_nested(struct mutex *lock,
--                                      unsigned int subclass);
-- int atomic_dec_and_mutex_lock(atomic_t *cnt, struct mutex *lock);
-+Unless the strict semantics of mutexes are unsuitable and/or the critical
-+region prevents the lock from being shared, always prefer them to any other
-+locking primitive.
+ 	/* spin on the status MMR, waiting for it to go idle */
+ 	while (descriptor_stat != UV2H_DESC_IDLE) {
+@@ -658,8 +658,7 @@ static int uv2_wait_completion(struct bau_desc *bau_desc,
+ 				/* not to hammer on the clock */
+ 				busy_reps = 0;
+ 				ttm = get_cycles();
+-				if ((ttm - bcp->send_message) >
+-						bcp->timeout_interval)
++				if ((ttm - bcp->send_message) > bcp->timeout_interval)
+ 					return handle_uv2_busy(bcp);
+ 			}
+ 			/*
+@@ -667,8 +666,7 @@ static int uv2_wait_completion(struct bau_desc *bau_desc,
+ 			 */
+ 			cpu_relax();
+ 		}
+-		descriptor_stat = uv2_read_status(mmr_offset, right_shift,
+-									desc);
++		descriptor_stat = uv2_3_read_status(mmr_offset, right_shift, desc);
+ 	}
+ 	bcp->conseccompletes++;
+ 	return FLUSH_COMPLETE;
+@@ -679,8 +677,7 @@ static int uv2_wait_completion(struct bau_desc *bau_desc,
+  * which register to read and position in that register based on cpu in
+  * current hub.
+  */
+-static int wait_completion(struct bau_desc *bau_desc,
+-				struct bau_control *bcp, long try)
++static int wait_completion(struct bau_desc *bau_desc, struct bau_control *bcp, long try)
+ {
+ 	int right_shift;
+ 	unsigned long mmr_offset;
+@@ -695,11 +692,9 @@ static int wait_completion(struct bau_desc *bau_desc,
+ 	}
+ 
+ 	if (bcp->uvhub_version == 1)
+-		return uv1_wait_completion(bau_desc, mmr_offset, right_shift,
+-								bcp, try);
++		return uv1_wait_completion(bau_desc, mmr_offset, right_shift, bcp, try);
+ 	else
+-		return uv2_wait_completion(bau_desc, mmr_offset, right_shift,
+-								bcp, try);
++		return uv2_3_wait_completion(bau_desc, mmr_offset, right_shift, bcp, try);
+ }
+ 
+ /*
+@@ -888,7 +883,7 @@ int uv_flush_send_and_wait(struct cpumask *flush_mask, struct bau_control *bcp,
+ 	struct ptc_stats *stat = bcp->statp;
+ 	struct bau_control *hmaster = bcp->uvhub_master;
+ 	struct uv1_bau_msg_header *uv1_hdr = NULL;
+-	struct uv2_bau_msg_header *uv2_hdr = NULL;
++	struct uv2_3_bau_msg_header *uv2_3_hdr = NULL;
+ 
+ 	if (bcp->uvhub_version == 1) {
+ 		uv1 = 1;
+@@ -902,27 +897,28 @@ int uv_flush_send_and_wait(struct cpumask *flush_mask, struct bau_control *bcp,
+ 	if (uv1)
+ 		uv1_hdr = &bau_desc->header.uv1_hdr;
+ 	else
+-		uv2_hdr = &bau_desc->header.uv2_hdr;
++		/* uv2 and uv3 */
++		uv2_3_hdr = &bau_desc->header.uv2_3_hdr;
+ 
+ 	do {
+ 		if (try == 0) {
+ 			if (uv1)
+ 				uv1_hdr->msg_type = MSG_REGULAR;
+ 			else
+-				uv2_hdr->msg_type = MSG_REGULAR;
++				uv2_3_hdr->msg_type = MSG_REGULAR;
+ 			seq_number = bcp->message_number++;
+ 		} else {
+ 			if (uv1)
+ 				uv1_hdr->msg_type = MSG_RETRY;
+ 			else
+-				uv2_hdr->msg_type = MSG_RETRY;
++				uv2_3_hdr->msg_type = MSG_RETRY;
+ 			stat->s_retry_messages++;
+ 		}
+ 
+ 		if (uv1)
+ 			uv1_hdr->sequence = seq_number;
+ 		else
+-			uv2_hdr->sequence = seq_number;
++			uv2_3_hdr->sequence = seq_number;
+ 		index = (1UL << AS_PUSH_SHIFT) | bcp->uvhub_cpu;
+ 		bcp->send_message = get_cycles();
+ 
+@@ -1080,8 +1076,10 @@ static int set_distrib_bits(struct cpumask *flush_mask, struct bau_control *bcp,
+  * done.  The returned pointer is valid till preemption is re-enabled.
+  */
+ const struct cpumask *uv_flush_tlb_others(const struct cpumask *cpumask,
+-				struct mm_struct *mm, unsigned long start,
+-				unsigned long end, unsigned int cpu)
++						struct mm_struct *mm,
++						unsigned long start,
++						unsigned long end,
++						unsigned int cpu)
+ {
+ 	int locals = 0;
+ 	int remotes = 0;
+@@ -1268,6 +1266,7 @@ void uv_bau_message_interrupt(struct pt_regs *regs)
+ 		if (bcp->uvhub_version == 2)
+ 			process_uv2_message(&msgdesc, bcp);
+ 		else
++			/* no error workaround for uv1 or uv3 */
+ 			bau_process_message(&msgdesc, bcp, 1);
+ 
+ 		msg++;
+@@ -1325,8 +1324,12 @@ static void __init enable_timeouts(void)
+ 		 */
+ 		mmr_image |= (1L << SOFTACK_MSHIFT);
+ 		if (is_uv2_hub()) {
++			/* do not touch the legacy mode bit */
+ 			/* hw bug workaround; do not use extended status */
+ 			mmr_image &= ~(1L << UV2_EXT_SHFT);
++		} else if (is_uv3_hub()) {
++			mmr_image &= ~(1L << PREFETCH_HINT_SHFT);
++			mmr_image |= (1L << SB_STATUS_SHFT);
+ 		}
+ 		write_mmr_misc_control(pnode, mmr_image);
+ 	}
+@@ -1692,7 +1695,7 @@ static void activation_descriptor_init(int node, int pnode, int base_pnode)
+ 	struct bau_desc *bau_desc;
+ 	struct bau_desc *bd2;
+ 	struct uv1_bau_msg_header *uv1_hdr;
+-	struct uv2_bau_msg_header *uv2_hdr;
++	struct uv2_3_bau_msg_header *uv2_3_hdr;
+ 	struct bau_control *bcp;
+ 
+ 	/*
+@@ -1739,15 +1742,15 @@ static void activation_descriptor_init(int node, int pnode, int base_pnode)
+ 			 */
+ 		} else {
+ 			/*
+-			 * BIOS uses legacy mode, but UV2 hardware always
++			 * BIOS uses legacy mode, but uv2 and uv3 hardware always
+ 			 * uses native mode for selective broadcasts.
+ 			 */
+-			uv2_hdr = &bd2->header.uv2_hdr;
+-			uv2_hdr->swack_flag =	1;
+-			uv2_hdr->base_dest_nasid =
++			uv2_3_hdr = &bd2->header.uv2_3_hdr;
++			uv2_3_hdr->swack_flag =	1;
++			uv2_3_hdr->base_dest_nasid =
+ 						UV_PNODE_TO_NASID(base_pnode);
+-			uv2_hdr->dest_subnodeid =	UV_LB_SUBNODEID;
+-			uv2_hdr->command =		UV_NET_ENDPOINT_INTD;
++			uv2_3_hdr->dest_subnodeid =	UV_LB_SUBNODEID;
++			uv2_3_hdr->command =		UV_NET_ENDPOINT_INTD;
+ 		}
+ 	}
+ 	for_each_present_cpu(cpu) {
+@@ -1858,6 +1861,7 @@ static int calculate_destination_timeout(void)
+ 		ts_ns *= (mult1 * mult2);
+ 		ret = ts_ns / 1000;
+ 	} else {
++		/* same destination timeout for uv2 and uv3 */
+ 		/* 4 bits  0/1 for 10/80us base, 3 bits of multiplier */
+ 		mmr_image = uv_read_local_mmr(UVH_LB_BAU_MISC_CONTROL);
+ 		mmr_image = (mmr_image & UV_SA_MASK) >> UV_SA_SHFT;
+@@ -2012,8 +2016,10 @@ static int scan_sock(struct socket_desc *sdp, struct uvhub_desc *bdp,
+ 			bcp->uvhub_version = 1;
+ 		else if (is_uv2_hub())
+ 			bcp->uvhub_version = 2;
++		else if (is_uv3_hub())
++			bcp->uvhub_version = 3;
+ 		else {
+-			printk(KERN_EMERG "uvhub version not 1 or 2\n");
++			printk(KERN_EMERG "uvhub version not 1, 2 or 3\n");
+ 			return 1;
+ 		}
+ 		bcp->uvhub_master = *hmasterp;
+@@ -2138,9 +2144,10 @@ static int __init uv_bau_init(void)
+ 	}
+ 
+ 	vector = UV_BAU_MESSAGE;
+-	for_each_possible_blade(uvhub)
++	for_each_possible_blade(uvhub) {
+ 		if (uv_blade_nr_possible_cpus(uvhub))
+ 			init_uvhub(uvhub, vector, uv_base_pnode);
++	}
+ 
+ 	alloc_intr_gate(vector, uv_bau_message_intr1);
+ 
