@@ -1,46 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752508AbaFESi3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 14:38:29 -0400
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:57730 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751867AbaFESi0 (ORCPT
+	id S1752514AbaFESmA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 14:42:00 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:58192 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751354AbaFESl6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 14:38:26 -0400
+	Thu, 5 Jun 2014 14:41:58 -0400
+Message-ID: <5390B9F3.8030108@wwwdotorg.org>
+Date: Thu, 05 Jun 2014 12:41:55 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <20140605183050.GA5054@kroah.com>
-References: <20140605183050.GA5054@kroah.com>
-Date: Thu, 5 Jun 2014 14:38:25 -0400
-X-Google-Sender-Auth: NAdCp0IeRn-WlVbj72Uq34xI2PA
-Message-ID: <CA+5PVA5aG98VfjxjgKdOwN9DQzDbJAJMBWfBwBpV8Ko4565bHg@mail.gmail.com>
-Subject: Re: Change in security maintainer for a few weeks
-From: Josh Boyer <jwboyer@fedoraproject.org>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: Russell King <linux@arm.linux.org.uk>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Wolfram Sang <wsa@the-dreams.de>, linux-arm-kernel@lists.infradead.org,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v7 4/5] ARM: tegra: Add efuse and apbmisc bindings
+References: <1401973754-19701-1-git-send-email-pdeschrijver@nvidia.com> <1401973754-19701-5-git-send-email-pdeschrijver@nvidia.com>
+In-Reply-To: <1401973754-19701-5-git-send-email-pdeschrijver@nvidia.com>
+X-Enigmail-Version: 1.5.2
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 5, 2014 at 2:30 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> Hi all,
->
-> James has had to step back from doing kernel work for a few weeks, so
-> I've offered to step up and handle the security patches to get shuttled
-> to Linus for merging for a while.
->
-> I'll take his git tree on kernel.org and push those to Linus for
-> 3.16-rc1, as those look like they have had proper testing in linux-next.
->
-> But there only seems to be 14 patches in there.  Are there pending
-> patches that people have been sending and need to get in besides those?
+On 06/05/2014 07:09 AM, Peter De Schrijver wrote:
+> Add efuse and apbmisc bindings for Tegra20, Tegra30, Tegra114 and Tegra124.
 
-Serge seems to have already done this?
+> diff --git a/arch/arm/boot/dts/tegra114.dtsi b/arch/arm/boot/dts/tegra114.dtsi
 
-https://lkml.org/lkml/2014/6/4/350
+> +	apbmisc@70000800 {
+> +		compatible = "nvidia,tegra114-apbmisc", "nvidia,tegra20-apbmisc";
 
-Confused...
-
-josh
+Is the Tegra114 APBMISC register layout 100% a backwards-compatible
+superset of that in Tegra20? For both registers the code currently uses
+*and* all possible registers the code could ever use? Since the APB MISC
+is a bit of a dumping ground for random registers, that feels unlikely,
+but perhaps it's possible.
