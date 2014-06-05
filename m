@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754148AbaFEFQ3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 01:16:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43616 "EHLO
+	id S1751789AbaFEETt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 00:19:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43577 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751953AbaFEET5 (ORCPT
+	with ESMTP id S1751477AbaFEETo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 00:19:57 -0400
+	Thu, 5 Jun 2014 00:19:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dmitry Petukhov <dmgenp@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.4 017/214] l2tp: take PMTU from tunnel UDP socket
-Date: Wed,  4 Jun 2014 21:16:20 -0700
-Message-Id: <20140605041642.075520250@linuxfoundation.org>
+        Richard Farina <sidhayn@gmail.com>, Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH 3.4 007/214] Revert "USB: serial: add usbid for dell wwan card to sierra.c"
+Date: Wed,  4 Jun 2014 21:16:10 -0700
+Message-Id: <20140605041640.712839423@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -27,34 +26,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Petukhov <dmgenp@gmail.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-[ Upstream commit f34c4a35d87949fbb0e0f31eba3c054e9f8199ba ]
+commit 2e01280d2801c72878cf3a7119eac30077b463d5 upstream.
 
-When l2tp driver tries to get PMTU for the tunnel destination, it uses
-the pointer to struct sock that represents PPPoX socket, while it
-should use the pointer that represents UDP socket of the tunnel.
+This reverts commit 1ebca9dad5abe8b2ed4dbd186cd657fb47c1f321.
 
-Signed-off-by: Dmitry Petukhov <dmgenp@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+This device was erroneously added to the sierra driver even though it's
+not a Sierra device and was already handled by the option driver.
+
+Cc: Richard Farina <sidhayn@gmail.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/l2tp/l2tp_ppp.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/net/l2tp/l2tp_ppp.c
-+++ b/net/l2tp/l2tp_ppp.c
-@@ -772,9 +772,9 @@ static int pppol2tp_connect(struct socke
- 	session->deref = pppol2tp_session_sock_put;
+---
+ drivers/usb/serial/sierra.c |    1 -
+ 1 file changed, 1 deletion(-)
+
+--- a/drivers/usb/serial/sierra.c
++++ b/drivers/usb/serial/sierra.c
+@@ -305,7 +305,6 @@ static const struct usb_device_id id_tab
+ 	{ USB_DEVICE(0x0f3d, 0x68A3), 	/* Airprime/Sierra Wireless Direct IP modems */
+ 	  .driver_info = (kernel_ulong_t)&direct_ip_interface_blacklist
+ 	},
+-       { USB_DEVICE(0x413C, 0x08133) }, /* Dell Computer Corp. Wireless 5720 VZW Mobile Broadband (EVDO Rev-A) Minicard GPS Port */
  
- 	/* If PMTU discovery was enabled, use the MTU that was discovered */
--	dst = sk_dst_get(sk);
-+	dst = sk_dst_get(tunnel->sock);
- 	if (dst != NULL) {
--		u32 pmtu = dst_mtu(__sk_dst_get(sk));
-+		u32 pmtu = dst_mtu(__sk_dst_get(tunnel->sock));
- 		if (pmtu != 0)
- 			session->mtu = session->mru = pmtu -
- 				PPPOL2TP_HEADER_OVERHEAD;
+ 	{ }
+ };
 
 
