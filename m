@@ -1,73 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751692AbaFELhw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 07:37:52 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:54994 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751058AbaFELhu (ORCPT
+	id S1751746AbaFELjY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 07:39:24 -0400
+Received: from mail-qa0-f54.google.com ([209.85.216.54]:33404 "EHLO
+	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750866AbaFELjW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 07:37:50 -0400
-Date: Thu, 5 Jun 2014 12:37:10 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Nishanth Menon <nm@ti.com>
-Cc: Liam Girdwood <lgirdwood@gmail.com>,
-        Alban Bedel <alban.bedel@avionic-design.de>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org
-Message-ID: <20140605113710.GV2520@sirena.org.uk>
-References: <1401911605-5157-1-git-send-email-nm@ti.com>
+	Thu, 5 Jun 2014 07:39:22 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="MUnXZt0Uv08c1hBe"
-Content-Disposition: inline
-In-Reply-To: <1401911605-5157-1-git-send-email-nm@ti.com>
-X-Cookie: Your lucky color has faded.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 109.148.252.180
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regulator: core: print error value when constraints are
- not applied
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <20140605111205.GD32082@beef>
+References: <1400134105-3847-1-git-send-email-jaswinder.singh@linaro.org>
+	<1400134260-3962-1-git-send-email-jaswinder.singh@linaro.org>
+	<7978295.UBGxYvcnvH@wuerfel>
+	<CAJe_Zhe_VFTpPW0sKBsqit347MR7QmEDvzvQTyh1DWr3v991tg@mail.gmail.com>
+	<20140529154348.GH32082@beef>
+	<CABb+yY2PiGpqy2uevCFexAKeS4aZxJxZHEDJTRN1SW6VVjBzGQ@mail.gmail.com>
+	<20140602151454.GK32082@beef>
+	<CABb+yY3ZYqtT+R0PwZDtpW0O0SsbxTyiYmXaseZHoj4Nr6UBPQ@mail.gmail.com>
+	<CAPKp9uZTnWCojeZHyvrm=vTuY15dAHiW1CWP18JUfuKU-mfH0Q@mail.gmail.com>
+	<CAJe_ZheA_2PwzFGwx2rdba0oVsAKRnwK02XE-8nPY6K5NKpdTw@mail.gmail.com>
+	<20140605111205.GD32082@beef>
+Date: Thu, 5 Jun 2014 17:09:22 +0530
+Message-ID: <CAJe_ZheUpALkb9+8W_DNu=WGHMn0N+7Ctik6DNJZiARVsbR35Q@mail.gmail.com>
+Subject: Re: [PATCHv5 2/4] mailbox: Introduce framework for mailbox
+From: Jassi Brar <jaswinder.singh@linaro.org>
+To: Matt Porter <mporter@linaro.org>
+Cc: Sudeep Holla <sudeep.holla@arm.com>, Jassi Brar <jassisinghbrar@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>, lkml <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Anna, Suman" <s-anna@ti.com>, Loic Pallardy <loic.pallardy@st.com>,
+        LeyFoon Tan <lftan.linux@gmail.com>,
+        Craig McGeachie <slapdau@yahoo.com.au>,
+        Courtney Cavin <courtney.cavin@sonymobile.com>,
+        Rob Herring <robherring2@gmail.com>,
+        Josh Cartwright <joshc@codeaurora.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Kumar Gala <galak@codeaurora.org>,
+        "ks.giri@samsung.com" <ks.giri@samsung.com>,
+        Devicetree List <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 5 June 2014 16:42, Matt Porter <mporter@linaro.org> wrote:
+> On Tue, Jun 03, 2014 at 03:51:55PM +0530, Jassi Brar wrote:
+>
+>> BTW, here we at least have a hardware resource to specify in the DT
+>> node, there are examples in kernel where the DT nodes are purely
+>> virtual. For ex, grep for "linux,spdif-dit". So I think we should be
+>> ok.
+>>
+>
+> There's a bit of a difference between my concern over a virtual node and
+> this example you've cited. In the dummy spdif transmitter, it's defining
+> a virtual device that plugs in for a codec, a hardware concept well
+> defined in the audio bindings. I agree that there are many examples of
+> this type of virtual node, including dummy phys, but in all cases they
+> are stubbing out a real hardware concept.
+>
+> I find it to be distinctly different to create a node that doesn't
+> represent the hardware's use of mailboxes.
+>
+The way I see "cpm_ipc" is that it represents a device that doesn't
+need MMIO or an IRQ, but only the mailbox hardware resource.
+"linux,spdif-dit" needs no hardware resource at all. So if anything,
+more "virtual" than cpm_ipc.
 
---MUnXZt0Uv08c1hBe
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> I'd be happy if a DT
+> maintainer could say that this is acceptable though. ;)
+>
+OK, though it becomes clear only after reading this ;)
 
-On Wed, Jun 04, 2014 at 02:53:25PM -0500, Nishanth Menon wrote:
-> With commit 064d5cd110f94ce41ca5681dcda8b77fa63d5b95
-> (regulator: core: Fix the init of DT defined fixed regulators)
-> We ensure that regulator must be capable of providing it's current
-> voltage when constraints are used, however adding the return value in
-> the print is a little more informative to explain the nature of the
-> failure involved.
-
-Applied, thanks.
-
---MUnXZt0Uv08c1hBe
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTkFZjAAoJELSic+t+oim9TWkQAJvBO0VvzG3Ib5M94Y7djAXB
-sGBuOKd7m+CmWARKaCEI8uK/vmsv9sWAIIs7EqflnrGMkDot3kpDEQTed4D9jf0b
-cMsXiUGhuWh0rH7nuCNWJulrTiqClIiscoXkrFhKKsGr9lw1esoa/FMTfmqVJPrR
-Nvv6iHCAfqJHUzxp2RW/N8UMvd0PQkhudYmoB5LfYLnXITIli/cS3WNTuuSKKmU4
-dFtQT6/q5dOlRWUEzSxiOOY9W1/7AAt/yDt/rVE6F8UW2JfjaqjDEC9A4RsfQxaD
-6I1HA3AHx1VW4LtIRs/tWistZ1+sCyXulIRDI6YZT8b0sy0fFzyqglfl4Nze75qa
-Br1Y2OMXAEVgR20oalscWBWTW7uirj+dSWQFrxqMRIDTBnIViFdDDhiAgNIpHN4T
-SmtXXRR3kvf5F/1qXtmsVGG7/6HzwGhv4QTG30YGmBQjbYdKGh7BvEYYIbSgmTiP
-nU0gR2/PvZQo+8G2o5oicX44BCmpBe+iINXOQKuKKZfAKHTVsvxwXdZDWttKZlLG
-rGRIfVBSFcrXRsxXsdtNzFWnwjkb+5w0eqrfEon2sF+W0//yhTaytvBeiYU+Er9K
-iBCeU2HwpLCUnmYRkLdyxra8bx5ZI6jC32O38mCupcv3gb3PHinGa4zLRhllK2mC
-ILKniedmxof7Ho0BvTNj
-=W8qL
------END PGP SIGNATURE-----
-
---MUnXZt0Uv08c1hBe--
+Cheers
+-Jassi
