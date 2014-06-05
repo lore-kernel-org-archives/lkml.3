@@ -1,85 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752068AbaFERg0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 13:36:26 -0400
-Received: from mail-we0-f180.google.com ([74.125.82.180]:33677 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751640AbaFERgY (ORCPT
+	id S1752502AbaFERiJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 13:38:09 -0400
+Received: from mail-ig0-f179.google.com ([209.85.213.179]:51936 "EHLO
+	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751693AbaFERiH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 13:36:24 -0400
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH 3/7] i2c: Add the ability to match device to compatible
- string without an of_node
-To: Lee Jones <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Cc: wsa@the-dreams.de, linux-i2c@vger.kernel.org, devicetree@vger.kernel.org,
-        linus.walleij@linaro.org, Lee Jones <lee.jones@linaro.org>
-In-Reply-To: <1401883796-17841-4-git-send-email-lee.jones@linaro.org>
+	Thu, 5 Jun 2014 13:38:07 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140605155509.GH24240@lee--X1>
 References: <1401883796-17841-1-git-send-email-lee.jones@linaro.org>
-	<1401883796-17841-4-git-send-email-lee.jones@linaro.org>
-Date: Thu, 05 Jun 2014 18:36:20 +0100
-Message-Id: <20140605173620.5BDFBC41CBF@trevor.secretlab.ca>
+ <1401883796-17841-8-git-send-email-lee.jones@linaro.org> <20140605103009.85BE4C40A4D@trevor.secretlab.ca>
+ <20140605103709.GE19550@lee--X1> <CACxGe6vLuKygv0E7yq42qe-Lh+nMZ1wrL7PW_TAeoz55wz9q8A@mail.gmail.com>
+ <20140605155509.GH24240@lee--X1>
+From: Grant Likely <grant.likely@linaro.org>
+Date: Thu, 5 Jun 2014 18:37:45 +0100
+X-Google-Sender-Auth: 71e2KF-4F4pVKvhYMiCTDRgrc6k
+Message-ID: <CACxGe6uV7G7WVd84XacA6LwFHaCm-2gUYzdTsjRgy3_UVx8Yxg@mail.gmail.com>
+Subject: Re: [PATCH 7/7] OF/ACPI/I2C: Add generic match function for the
+ aforementioned systems
+To: Lee Jones <lee.jones@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Wolfram Sang <wsa@the-dreams.de>,
+        Linux I2C <linux-i2c@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed,  4 Jun 2014 13:09:52 +0100, Lee Jones <lee.jones@linaro.org> wrote:
-> A great deal of I2C devices are currently matched via DT node name, and
-> as such the compatible naming convention of '<vendor>,<device>' has gone
-> somewhat awry - some nodes don't supply one, some supply an arbitrary
-> string and others the correct device name with an arbitrary vendor prefix.
-> 
-> In an effort to correct this problem we have to supply a mechanism to
-> match a device by compatible string AND by simple device name.  This
-> function strips off the '<vendor>,' part of a supplied compatible string
-> and attempts to match without it.
-> 
-> The plan is to remove this function once all of the compatible strings
-> for each device have been brought into line.
-> 
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> ---
->  drivers/i2c/i2c-core.c | 25 +++++++++++++++++++++++++
->  include/linux/i2c.h    | 10 ++++++++++
->  2 files changed, 35 insertions(+)
-> 
-> diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
-> index d3802dc..7dcd5c3 100644
-> --- a/drivers/i2c/i2c-core.c
-> +++ b/drivers/i2c/i2c-core.c
-> @@ -1090,6 +1090,31 @@ struct i2c_adapter *of_find_i2c_adapter_by_node(struct device_node *node)
->  	return i2c_verify_adapter(dev);
->  }
->  EXPORT_SYMBOL(of_find_i2c_adapter_by_node);
-> +
-> +const struct of_device_id
-> +*i2c_of_match_device_strip_vendor(const struct of_device_id *matches,
-> +				  struct device *dev)
-> +{
-> +	const struct i2c_client *client = i2c_verify_client(dev);
-> +	const char *name;
-> +
-> +	if (!(client && matches))
-> +		return NULL;
-> +
-> +	for (; matches->compatible[0]; matches++) {
-> +		name = strchr(matches->compatible, ',');
-> +		if (!name)
-> +			name = matches->compatible;
-> +		else
-> +			name++;
-> +
-> +		if (!strncmp(client->name, name, strlen(client->name)))
-> +			return matches;
-> +	}
+On Thu, Jun 5, 2014 at 4:55 PM, Lee Jones <lee.jones@linaro.org> wrote:
+> On Thu, 05 Jun 2014, Grant Likely wrote:
+>> On Thu, Jun 5, 2014 at 11:37 AM, Lee Jones <lee.jones@linaro.org> wrote:
+>> > On Thu, 05 Jun 2014, Grant Likely wrote:
+>> >
+>> >> On Wed,  4 Jun 2014 13:09:56 +0100, Lee Jones <lee.jones@linaro.org> wrote:
+>> >> > Currently this is a helper function for the I2C subsystem to aid the
+>> >> > matching of non-standard compatible strings and devices which use DT
+>> >> > and/or ACPI, but do not supply any nodes (see: [1] Method 4).  However,
+>> >> > it has been made more generic as it can be used to only make one call
+>> >> > for drivers which support any mixture of OF, ACPI and/or I2C matching.
+>> >> >
+>> >> > The initial aim is for of_match_device() to be replaced by this call
+>> >> > in all I2C device drivers.
+>> >> >
+>> >> > [1] Documentation/i2c/instantiating-devices
+>> >> >
+>> >> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+>> >>
+>> >> I don't like this. It drops all type safety on the match entry
+>> >> and the caller has no idea what it got back.
+>> >
+>> > Okay, so what's the best way forward?
+>> >
+>> > Introduce a i2c_of_match_device() call instead?
+>>
+>> I still think the way to do it is to emulate the missing i2c_device_id
+>> when calling the drivers .probe() hook by having a temporary copy on
+>> the stack and filling it with data from the OF or ACPI table....
+>
+> That's the opposite of what I'm trying to achieve.  I'm trying to get
+> rid of unused i2c_device_id tables, rather than reinforce their
+> mandatory existence.  I think an i2c_of_match_device() with knowledge
+> of how to match via pure DT principles (of_node/compatible) and a
+> fall-back, which is able to match on a provided of_device_id table
+> alone i.e. without the requirement of an existing of_node.
 
-Is it actually necessary to strip off the vendor name? It would be fine
-to make users include the vendor prefix when creating the device in
-sysfs. In fact that would be preferrable for new drivers so that vendor
-prefixes start getting used correctly.
+What I'm suggesting does allow all those tables to be removed, but
+without a painful API breakage... having said that, it is only the
+drivers that drop their i2c_device_id tables that need to support the
+fallback behaviour, so it would be fine to pass null into the
+i2c_device_id argument and make the driver call the new function that
+returns an of_device_id regardless of whether a node is attached.
 
-If you're worried about preserving exisiting ABI, then I would make
-striping the prefix an option that drivers can enable, but by default
-only match on the full string.
+> I've also been mulling over the idea of removing the second probe()
+> parameter, as suggested by Wolfram.  However, this has quite deep
+> ramifications which would require a great deal of driver adaptions.
+
+That is of course the ideal. It would be a lot of work (I count 633
+users), but it would get i2c exactly where you want it to be. I did
+that kind of work when I merge platform_bus_type with
+of_platform_bus_type.
+
+You can mitigate it though by creating a .probe2 hook that doesn't
+have the parameter and then change over all the users in separate
+commits, finally removing the old hook when safe to do so.
 
 g.
