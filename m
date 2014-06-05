@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753686AbaFEEW3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 00:22:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44524 "EHLO
+	id S1754079AbaFEE1V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 00:27:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44539 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753663AbaFEEW0 (ORCPT
+	with ESMTP id S1753668AbaFEEW2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 00:22:26 -0400
+	Thu, 5 Jun 2014 00:22:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Maxim Mikityanskiy <maxtram95@gmail.com>,
-        Anisse Astier <anisse@astier.eu>, "Lee, Chun-Yi" <jlee@suse.com>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
+        Steve Conklin <steve.conklin@canonical.com>,
         Ben Hutchings <ben@decadent.org.uk>,
         Qiang Huang <h.huangqiang@huawei.com>
-Subject: [PATCH 3.4 197/214] msi-wmi: Fix memory leak
-Date: Wed,  4 Jun 2014 21:19:20 -0700
-Message-Id: <20140605041705.934514295@linuxfoundation.org>
+Subject: [PATCH 3.4 199/214] rapidio/tsi721: Fix interrupt mask when handling MSI
+Date: Wed,  4 Jun 2014 21:19:22 -0700
+Message-Id: <20140605041706.193066155@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -30,44 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Maxim Mikityanskiy <maxtram95@gmail.com>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit 51c94491c82c3d9029f6e87a1a153db321d88e35 upstream.
+commit 94e0104bca7d6927e85119030b8e6e31fde88a7a upstream.
 
-Fix memory leak - don't forget to kfree ACPI object when returning from
-msi_wmi_notify() after suppressing key event.
+Commit 1619f441963e 'rapidio/tsi721: fix bug in MSI interrupt
+handling' (commit 1ccc819da6fd upstream) makes the MSI handler disable
+and re-enable interrupts.  When re-enabling interrupts, we should set
+the same flags as were originally set, but this changed in Linux 3.5 so
+the flags are now inconsistent in 3.2.  In fact, the extra flag isn't
+even defined in 3.2.  Remove the extra flag from the MSI handler.
 
-Signed-off-by: Maxim Mikityanskiy <maxtram95@gmail.com>
-Acked-by: Anisse Astier <anisse@astier.eu>
-Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
-Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
+Reported-by: Steve Conklin <steve.conklin@canonical.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Cc: Qiang Huang <h.huangqiang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/platform/x86/msi-wmi.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/rapidio/devices/tsi721.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/platform/x86/msi-wmi.c
-+++ b/drivers/platform/x86/msi-wmi.c
-@@ -176,7 +176,7 @@ static void msi_wmi_notify(u32 value, vo
- 				pr_debug("Suppressed key event 0x%X - "
- 					 "Last press was %lld us ago\n",
- 					 key->code, ktime_to_us(diff));
--				return;
-+				goto msi_wmi_notify_exit;
- 			}
- 			last_pressed[key->code - SCANCODE_BASE] = cur;
- 
-@@ -195,6 +195,8 @@ static void msi_wmi_notify(u32 value, vo
- 			pr_info("Unknown key pressed - %x\n", eventcode);
- 	} else
- 		pr_info("Unknown event received\n");
-+
-+msi_wmi_notify_exit:
- 	kfree(response.pointer);
- }
+--- a/drivers/rapidio/devices/tsi721.c
++++ b/drivers/rapidio/devices/tsi721.c
+@@ -555,7 +555,7 @@ static irqreturn_t tsi721_irqhandler(int
+ 	/* For MSI mode re-enable device-level interrupts */
+ 	if (priv->flags & TSI721_USING_MSI) {
+ 		dev_int = TSI721_DEV_INT_SR2PC_CH | TSI721_DEV_INT_SRIO |
+-			TSI721_DEV_INT_SMSG_CH | TSI721_DEV_INT_BDMA_CH;
++			TSI721_DEV_INT_SMSG_CH;
+ 		iowrite32(dev_int, priv->regs + TSI721_DEV_INTE);
+ 	}
  
 
 
