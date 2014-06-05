@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754443AbaFEE5z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 00:57:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43953 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752607AbaFEEUn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752614AbaFEEUn (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 5 Jun 2014 00:20:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43885 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752543AbaFEEUg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jun 2014 00:20:36 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>, Rui Xiang <rui.xiang@huawei.com>
-Subject: [PATCH 3.4 084/214] tracing: Keep overwrite in sync between regular and snapshot buffers
-Date: Wed,  4 Jun 2014 21:17:27 -0700
-Message-Id: <20140605041650.878833353@linuxfoundation.org>
+        Hans de Goede <hdegoede@redhat.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.4 072/214] ACPI / blacklist: Add dmi_enable_osi_linux quirk for Asus EEE PC 1015PX
+Date: Wed,  4 Jun 2014 21:17:15 -0700
+Message-Id: <20140605041649.222111266@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -26,41 +27,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Hans de Goede <hdegoede@redhat.com>
 
-commit 80902822658aab18330569587cdb69ac1dfdcea8 upstream.
+commit f6e6e1b9fee88c90586787b71dc49bb3ce62bb89 upstream.
 
-Changing the overwrite mode for the ring buffer via the trace
-option only sets the normal buffer. But the snapshot buffer could
-swap with it, and then the snapshot would be in non overwrite mode
-and the normal buffer would be in overwrite mode, even though the
-option flag states otherwise.
+Without this this EEE PC exports a non working WMI interface, with this it
+exports a working "good old" eeepc_laptop interface, fixing brightness control
+not working as well as rfkill being stuck in a permanent wireless blocked
+state.
 
-Keep the two buffers overwrite modes in sync.
+This is not an ideal way to fix this, but various attempts to fix this
+otherwise have failed, see:
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-Cc: Rui Xiang <rui.xiang@huawei.com>
+References: https://bugzilla.redhat.com/show_bug.cgi?id=1067181
+Reported-and-tested-by: lou.cardone@gmail.com
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/trace/trace.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ drivers/acpi/blacklist.c |   13 +++++++++++++
+ 1 file changed, 13 insertions(+)
 
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -2782,8 +2782,12 @@ int set_tracer_flag(unsigned int mask, i
- 	if (mask == TRACE_ITER_RECORD_CMD)
- 		trace_event_enable_cmd_record(enabled);
+--- a/drivers/acpi/blacklist.c
++++ b/drivers/acpi/blacklist.c
+@@ -327,6 +327,19 @@ static struct dmi_system_id acpi_osi_dmi
+ 		     DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad T500"),
+ 		},
+ 	},
++	/*
++	 * Without this this EEEpc exports a non working WMI interface, with
++	 * this it exports a working "good old" eeepc_laptop interface, fixing
++	 * both brightness control, and rfkill not working.
++	 */
++	{
++	.callback = dmi_enable_osi_linux,
++	.ident = "Asus EEE PC 1015PX",
++	.matches = {
++		     DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK Computer INC."),
++		     DMI_MATCH(DMI_PRODUCT_NAME, "1015PX"),
++		},
++	},
+ 	{}
+ };
  
--	if (mask == TRACE_ITER_OVERWRITE)
-+	if (mask == TRACE_ITER_OVERWRITE) {
- 		ring_buffer_change_overwrite(global_trace.buffer, enabled);
-+#ifdef CONFIG_TRACER_MAX_TRACE
-+		ring_buffer_change_overwrite(max_tr.buffer, enabled);
-+#endif
-+	}
- 
- 	return 0;
- }
 
 
