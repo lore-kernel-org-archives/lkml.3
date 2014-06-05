@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754018AbaFEE0O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 00:26:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44566 "EHLO
+	id S1754037AbaFEE0d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 00:26:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44570 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753711AbaFEEWc (ORCPT
+	with ESMTP id S1753706AbaFEEWb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 00:22:32 -0400
+	Thu, 5 Jun 2014 00:22:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jiri Kosina <jkosina@suse.cz>, Theodore Tso <tytso@mit.edu>,
-        Greg KH <greg@kroah.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ben Hutchings <ben@decadent.org.uk>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Dave Airlie <airlied@redhat.com>, Ben Hutchings <ben@decadent.org.uk>,
         Qiang Huang <h.huangqiang@huawei.com>
-Subject: [PATCH 3.4 200/214] random: fix accounting race condition with lockless irq entropy_count update
-Date: Wed,  4 Jun 2014 21:19:23 -0700
-Message-Id: <20140605041706.326186761@linuxfoundation.org>
+Subject: [PATCH 3.4 204/214] vgacon.c: add cond reschedule points in vgacon_do_font_op
+Date: Wed,  4 Jun 2014 21:19:27 -0700
+Message-Id: <20140605041706.864621992@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -30,74 +28,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Kosina <jkosina@suse.cz>
+From: Marcelo Tosatti <mtosatti@redhat.com>
 
-commit 10b3a32d292c21ea5b3ad5ca5975e88bb20b8d68 upstream.
+commit 7e6d72c15ff4cc0c27573901bb05f9eddbd71ed4 upstream.
 
-Commit 902c098a3663 ("random: use lockless techniques in the interrupt
-path") turned IRQ path from being spinlock protected into lockless
-cmpxchg-retry update.
+Booting a 64-vcpu KVM guest, with CONFIG_PREEMPT_VOLUNTARY,
+can result in a soft lockup:
 
-That commit removed r->lock serialization between crediting entropy bits
-from IRQ context and accounting when extracting entropy on userspace
-read path, but didn't turn the r->entropy_count reads/updates in
-account() to use cmpxchg as well.
+BUG: soft lockup - CPU#41 stuck for 67s! [setfont:1505]
+ RIP: 0010:[<ffffffff812c48da>]
+[<ffffffff812c48da>] vgacon_do_font_op.clone.0+0x1ba/0x550
 
-It has been observed, that under certain circumstances this leads to
-read() on /dev/urandom to return 0 (EOF), as r->entropy_count gets
-corrupted and becomes negative, which in turn results in propagating 0
-all the way from account() to the actual read() call.
+This is due to the 8192 (cmapsz) IO operations taking longer than expected
+due to lock contention in QEMU.
 
-Convert the accounting code to be the proper lockless counterpart of
-what has been partially done by 902c098a3663.
+Add conditional resched points in between writes allowing other tasks to
+execute.
 
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-Cc: Theodore Ts'o <tytso@mit.edu>
-Cc: Greg KH <greg@kroah.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[bwh: Backported to 3.2: adjust context]
+Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
+[bwh: Backported to 3.2: add #include <linux/sched.h>, already present
+ upstream]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Cc: Qiang Huang <h.huangqiang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/char/random.c |   22 +++++++++++++++-------
- 1 file changed, 15 insertions(+), 7 deletions(-)
+ drivers/video/console/vgacon.c |   17 +++++++++++++----
+ 1 file changed, 13 insertions(+), 4 deletions(-)
 
---- a/drivers/char/random.c
-+++ b/drivers/char/random.c
-@@ -867,16 +867,24 @@ static size_t account(struct entropy_sto
- 	if (r->entropy_count / 8 < min + reserved) {
- 		nbytes = 0;
- 	} else {
-+		int entropy_count, orig;
-+retry:
-+		entropy_count = orig = ACCESS_ONCE(r->entropy_count);
- 		/* If limited, never pull more than available */
--		if (r->limit && nbytes + reserved >= r->entropy_count / 8)
--			nbytes = r->entropy_count/8 - reserved;
-+		if (r->limit && nbytes + reserved >= entropy_count / 8)
-+			nbytes = entropy_count/8 - reserved;
+--- a/drivers/video/console/vgacon.c
++++ b/drivers/video/console/vgacon.c
+@@ -42,6 +42,7 @@
+ #include <linux/kd.h>
+ #include <linux/slab.h>
+ #include <linux/vt_kern.h>
++#include <linux/sched.h>
+ #include <linux/selection.h>
+ #include <linux/spinlock.h>
+ #include <linux/ioport.h>
+@@ -1124,11 +1125,15 @@ static int vgacon_do_font_op(struct vgas
  
--		if (r->entropy_count / 8 >= nbytes + reserved)
--			r->entropy_count -= nbytes*8;
--		else
--			r->entropy_count = reserved;
-+		if (entropy_count / 8 >= nbytes + reserved) {
-+			entropy_count -= nbytes*8;
-+			if (cmpxchg(&r->entropy_count, orig, entropy_count) != orig)
-+				goto retry;
-+		} else {
-+			entropy_count = reserved;
-+			if (cmpxchg(&r->entropy_count, orig, entropy_count) != orig)
-+				goto retry;
-+		}
+ 	if (arg) {
+ 		if (set)
+-			for (i = 0; i < cmapsz; i++)
++			for (i = 0; i < cmapsz; i++) {
+ 				vga_writeb(arg[i], charmap + i);
++				cond_resched();
++			}
+ 		else
+-			for (i = 0; i < cmapsz; i++)
++			for (i = 0; i < cmapsz; i++) {
+ 				arg[i] = vga_readb(charmap + i);
++				cond_resched();
++			}
  
--		if (r->entropy_count < random_write_wakeup_thresh) {
-+		if (entropy_count < random_write_wakeup_thresh) {
- 			wake_up_interruptible(&random_write_wait);
- 			kill_fasync(&fasync, SIGIO, POLL_OUT);
+ 		/*
+ 		 * In 512-character mode, the character map is not contiguous if
+@@ -1139,11 +1144,15 @@ static int vgacon_do_font_op(struct vgas
+ 			charmap += 2 * cmapsz;
+ 			arg += cmapsz;
+ 			if (set)
+-				for (i = 0; i < cmapsz; i++)
++				for (i = 0; i < cmapsz; i++) {
+ 					vga_writeb(arg[i], charmap + i);
++					cond_resched();
++				}
+ 			else
+-				for (i = 0; i < cmapsz; i++)
++				for (i = 0; i < cmapsz; i++) {
+ 					arg[i] = vga_readb(charmap + i);
++					cond_resched();
++				}
  		}
+ 	}
+ 
 
 
