@@ -1,102 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752198AbaFEPP2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 11:15:28 -0400
-Received: from mail-yk0-f178.google.com ([209.85.160.178]:38135 "EHLO
-	mail-yk0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751135AbaFEPP1 (ORCPT
+	id S1752320AbaFEPQ4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 11:16:56 -0400
+Received: from mail-we0-f175.google.com ([74.125.82.175]:60133 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751460AbaFEPQz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 11:15:27 -0400
+	Thu, 5 Jun 2014 11:16:55 -0400
+Date: Thu, 5 Jun 2014 16:16:50 +0100
+From: Peter Griffin <peter.griffin@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, kernel@stlinux.com,
+        linux-pm@vger.kernel.org, eduardo.valentin@ti.com, rui.zhang@intel.com
+Subject: Re: [STLinux Kernel] [PATCH 3/6] thermal: sti: Add support for ST's
+ System Config Register based Thermal controller
+Message-ID: <20140605151650.GB7446@griffinp-ThinkPad-X1-Carbon-2nd>
+References: <1401442715-6350-1-git-send-email-lee.jones@linaro.org>
+ <1401442715-6350-4-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
-X-Originating-IP: [84.49.215.185]
-In-Reply-To: <CACVXFVNKGPyv6AVUctotD=Sc97VRRGCXVzJ50pprjCNB7jhUxg@mail.gmail.com>
-References: <1401896895-14262-1-git-send-email-tiwai@suse.de>
- <CACVXFVPpmdXJV2CC-U=bsA820VD42i2-OqBfNfTPPaMergu8TQ@mail.gmail.com>
- <CAG-2HqU=LAXr0o2e9RRCmrX1eWouhepEZHaPfBjrs64xUeb=gw@mail.gmail.com>
- <CACVXFVP1uS7szLqvabtMbiaUgd13bWoYXv5q-Az7wBia=ogf7Q@mail.gmail.com>
- <s5hfvjj1n90.wl%tiwai@suse.de> <CACVXFVP5CSNoyThAcsmihYg_bkq2wn1JtiFJ_7ehpxwjBSaZxQ@mail.gmail.com>
- <s5hbnu71mf1.wl%tiwai@suse.de> <CACVXFVPWq93u5KmLhr+g23t4AiGAnLfd+hX3viajzR_KN+sMrw@mail.gmail.com>
- <CAG-2HqXiFgy5M=k55iOYAdXezxsN-ZanWRWDgH-6fuU-uLawOQ@mail.gmail.com> <CACVXFVNKGPyv6AVUctotD=Sc97VRRGCXVzJ50pprjCNB7jhUxg@mail.gmail.com>
-From: Tom Gundersen <teg@jklm.no>
-Date: Thu, 5 Jun 2014 17:15:06 +0200
-Message-ID: <CAG-2HqWtbpKjkNTLAksGZSqskJRfjVOhGkJJFcJUNBFfajLhCg@mail.gmail.com>
-Subject: Re: [PATCH v2] firmware loader: allow disabling of udev as firmware loader
-To: Ming Lei <ming.lei@canonical.com>
-Cc: Takashi Iwai <tiwai@suse.de>, LKML <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>, Stefan Roese <sr@denx.de>,
-        Arnd Bergmann <arnd@arndb.de>, Abhay Salunke <Abhay_Salunke@dell.com>,
-        Kay Sievers <kay@vrfy.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1401442715-6350-4-git-send-email-lee.jones@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 5, 2014 at 4:54 PM, Ming Lei <ming.lei@canonical.com> wrote:
->> Ubuntu currently enables the firmware loader in both the kernel and in
->> udev, so would not yet have a problem here at the moment. However, I
->> spoke with Martin Pitt and he told me that both Debian and Ubuntu
->> would like to switch this off in udev once it is possible (i.e., once
->> this patch has been merged I guess). Fedora already did, and speaking
->> for Arch we definitely would like to do the same. I did not check with
->> other distros, but I'm pretty sure "everyone" will disable this in
->> udev by the next cycle. At which point having it enabled in the kernel
->> will cause real problems and bug reports.
->
-> That won't cover the case of old distributions with new kernel,
+Hi Lee,
 
-Again: disabling this option will not give problems (unless you have a
-custom setup), even on old userspace, only keeping it enabled on
-future userspace may.
+See my comments below: -
 
-> do
-> you want to break/confuse these users?
+> +/* STiH416 */
+> +#define STIH416_SYSCFG_FRONT(num)		((num - 1000) * 4)
+> +#define STIH416_SAS_THSENS_CONF			STIH416_SYSCFG_FRONT(1552)
+> +#define STIH416_SAS_THSENS_STATUS1		STIH416_SYSCFG_FRONT(1554)
+> +#define STIH416_SAS_THSENS_STATUS2		STIH416_SYSCFG_FRONT(1594)
+> +
+> +/* STiD127 */
+> +#define STID127_SYSCFG_CPU(num)			((num - 700) * 4)
+> +#define STID127_THSENS_CONF			STID127_SYSCFG_CPU(743)
+> +#define STID127_THSENS_STATUS			STID127_SYSCFG_CPU(767)
 
-Not really, no :)
+There is no upstream support for STiD127 SoC AFAIK? I think this should be removed
+from the driver and just keep stih415 / stih416 parts.
 
->> For distro kernels that's not a problem, as they know what to do, but
->> I guess for random kernel users we should give them the correct
->> recommendation.
->
-> Also I remember that android users put firmware under their
-> special path.
+Also a seperate somewhat unrelated question... stih415 and stih416 are very similar 
+dual die parts. Do you know why the stih415 has support for sas & mpe die temperature
+sensors, but the stih416 only has support for the sas die?
 
-That may be, but I don't think this text is primarily aimed at the
-people who put together Android systems... Surely their non-standard
-userspace means that a lot of the advice (and it is nothing else than
-advice!) in the help text does not necessarily apply?
+Regards,
 
->>>>> It only falls back if the request fw is _not_ found from direct loading,
->>>>> so it is reasonable to try to continue to look for it from user space.
->>>
->>>> Some drivers fall back to different firmware (e.g. different revision
->>>> suffix) if the requested file isn't found.  So, this happens in
->>>> reality.
->>>
->>> So do you think the fallback is better or worse? For CPU microcode
->>> case, maybe it is fine, but for other devices, maybe it is better to
->>> get a firmware for working at least.
->>
->> What usecase do you have in mind here? For people using stock udev,
->> enabling the fallback will not give any benefit, but it will soon
->
-> Again, we have old distributions, also it should make sense to fall back
-> to userspace for non-exist firmwares under default path.
+Peter
 
-Even on old distributions, falling back to stock udev will not give
-any benefits. It will look in the same paths as the kernel and fail in
-the same way.
-
->> start giving real problems...
->
-> If there isn't firmwares at default path for devices, the device may
-> not work, and that is the real problem.
-
-These devices will never have worked with stock udev, as it looks in
-the same path as the kernel (the paths the kernel looks in was taken
-from udev to make sure they work the sam). So this must be a
-special/custom setup by someone who knows what they are doing, and
-hopefully knows how to answer the Kconfig.
-
-Cheers,
-
-Tom
