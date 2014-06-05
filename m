@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754670AbaFEFE6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 01:04:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43826 "EHLO
+	id S1752734AbaFEFE5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 01:04:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43831 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752433AbaFEEU0 (ORCPT
+	with ESMTP id S1752449AbaFEEU1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 00:20:26 -0400
+	Thu, 5 Jun 2014 00:20:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>, airlied@gmail.com
-Subject: [PATCH 3.4 051/214] drm/radeon: fix ATPX detection on non-VGA GPUs
-Date: Wed,  4 Jun 2014 21:16:54 -0700
-Message-Id: <20140605041646.306255603@linuxfoundation.org>
+        Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
+        Boris BREZILLON <b.brezillon@overkiz.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>, Felipe Balbi <balbi@ti.com>
+Subject: [PATCH 3.4 052/214] usb: gadget: at91-udc: fix irq and iomem resource retrieval
+Date: Wed,  4 Jun 2014 21:16:55 -0700
+Message-Id: <20140605041646.444869875@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
 User-Agent: quilt/0.60-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,39 +28,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexdeucher@gmail.com>
+From: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
 
-commit e9a4099a59cc598a44006059dd775c25e422b772 upstream.
+commit 886c7c426d465732ec9d1b2bbdda5642fc2e7e05 upstream.
 
-Some newer PX laptops have the pci device class
-set to DISPLAY_OTHER rather than DISPLAY_VGA.  This
-properly detects ATPX on those laptops.
+When using dt resources retrieval (interrupts and reg properties) there is
+no predefined order for these resources in the platform dev resource
+table. Also don't expect the number of resource to be always 2.
 
-Based on a patch from: Pali Rohár <pali.rohar@gmail.com>
-
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Cc: airlied@gmail.com
+Signed-off-by: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+Acked-by: Boris BREZILLON <b.brezillon@overkiz.com>
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_atpx_handler.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/usb/gadget/at91_udc.c |   10 ----------
+ 1 file changed, 10 deletions(-)
 
---- a/drivers/gpu/drm/radeon/radeon_atpx_handler.c
-+++ b/drivers/gpu/drm/radeon/radeon_atpx_handler.c
-@@ -202,6 +202,13 @@ static bool radeon_atpx_detect(void)
- 		has_atpx |= (radeon_atpx_pci_probe_handle(pdev) == true);
+--- a/drivers/usb/gadget/at91_udc.c
++++ b/drivers/usb/gadget/at91_udc.c
+@@ -1741,16 +1741,6 @@ static int __devinit at91udc_probe(struc
+ 		return -ENODEV;
  	}
  
-+	/* some newer PX laptops mark the dGPU as a non-VGA display device */
-+	while ((pdev = pci_get_class(PCI_CLASS_DISPLAY_OTHER << 8, pdev)) != NULL) {
-+		vga_count++;
-+
-+		has_atpx |= (radeon_atpx_pci_probe_handle(pdev) == true);
-+	}
-+
- 	if (has_atpx && vga_count == 2) {
- 		acpi_get_name(radeon_atpx_priv.atpx_handle, ACPI_FULL_PATHNAME, &buffer);
- 		printk(KERN_INFO "VGA switcheroo: detected switching method %s handle\n",
+-	if (pdev->num_resources != 2) {
+-		DBG("invalid num_resources\n");
+-		return -ENODEV;
+-	}
+-	if ((pdev->resource[0].flags != IORESOURCE_MEM)
+-			|| (pdev->resource[1].flags != IORESOURCE_IRQ)) {
+-		DBG("invalid resource type\n");
+-		return -ENODEV;
+-	}
+-
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	if (!res)
+ 		return -ENXIO;
 
 
