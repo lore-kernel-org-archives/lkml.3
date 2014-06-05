@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753275AbaFEEzJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 00:55:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44012 "EHLO
+	id S1752666AbaFEEUt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 00:20:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43948 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752697AbaFEEUx (ORCPT
+	with ESMTP id S1752595AbaFEEUn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 00:20:53 -0400
+	Thu, 5 Jun 2014 00:20:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Harshula Jayasuriya <harshula@redhat.com>,
-        "J. Bruce Fields" <bfields@redhat.com>,
-        Rui Xiang <rui.xiang@huawei.com>
-Subject: [PATCH 3.4 098/214] nfsd: nfsd_open: when dentry_open returns an error do not propagate as struct file
-Date: Wed,  4 Jun 2014 21:17:41 -0700
-Message-Id: <20140605041652.875797186@linuxfoundation.org>
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        Ingo Molnar <mingo@kernel.org>, Rui Xiang <rui.xiang@huawei.com>,
+        a.p.zijlstra@chello.nl, paulus@samba.org, acme@ghostprotocols.net
+Subject: [PATCH 3.4 083/214] perf: Fix error return code
+Date: Wed,  4 Jun 2014 21:17:26 -0700
+Message-Id: <20140605041650.743735178@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -28,96 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Harshula Jayasuriya <harshula@redhat.com>
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-commit e4daf1ffbe6cc3b12aab4d604e627829e93e9914 upstream.
+commit c481420248c6730246d2a1b1773d5d7007ae0835 upstream.
 
-The following call chain:
-------------------------------------------------------------
-nfs4_get_vfs_file
-- nfsd_open
-  - dentry_open
-    - do_dentry_open
-      - __get_file_write_access
-        - get_write_access
-          - return atomic_inc_unless_negative(&inode->i_writecount) ? 0 : -ETXTBSY;
-------------------------------------------------------------
+Fix to return -ENOMEM in the allocation error case instead of 0
+(if pmu_bus_running == 1), as done elsewhere in this function.
 
-can result in the following state:
-------------------------------------------------------------
-struct nfs4_file {
-...
-  fi_fds = {0xffff880c1fa65c80, 0xffffffffffffffe6, 0x0},
-  fi_access = {{
-      counter = 0x1
-    }, {
-      counter = 0x0
-    }},
-...
-------------------------------------------------------------
-
-1) First time around, in nfs4_get_vfs_file() fp->fi_fds[O_WRONLY] is
-NULL, hence nfsd_open() is called where we get status set to an error
-and fp->fi_fds[O_WRONLY] to -ETXTBSY. Thus we do not reach
-nfs4_file_get_access() and fi_access[O_WRONLY] is not incremented.
-
-2) Second time around, in nfs4_get_vfs_file() fp->fi_fds[O_WRONLY] is
-NOT NULL (-ETXTBSY), so nfsd_open() is NOT called, but
-nfs4_file_get_access() IS called and fi_access[O_WRONLY] is incremented.
-Thus we leave a landmine in the form of the nfs4_file data structure in
-an incorrect state.
-
-3) Eventually, when __nfs4_file_put_access() is called it finds
-fi_access[O_WRONLY] being non-zero, it decrements it and calls
-nfs4_file_put_fd() which tries to fput -ETXTBSY.
-------------------------------------------------------------
-...
-     [exception RIP: fput+0x9]
-     RIP: ffffffff81177fa9  RSP: ffff88062e365c90  RFLAGS: 00010282
-     RAX: ffff880c2b3d99cc  RBX: ffff880c2b3d9978  RCX: 0000000000000002
-     RDX: dead000000100101  RSI: 0000000000000001  RDI: ffffffffffffffe6
-     RBP: ffff88062e365c90   R8: ffff88041fe797d8   R9: ffff88062e365d58
-     R10: 0000000000000008  R11: 0000000000000000  R12: 0000000000000001
-     R13: 0000000000000007  R14: 0000000000000000  R15: 0000000000000000
-     ORIG_RAX: ffffffffffffffff  CS: 0010  SS: 0018
-  #9 [ffff88062e365c98] __nfs4_file_put_access at ffffffffa0562334 [nfsd]
- #10 [ffff88062e365cc8] nfs4_file_put_access at ffffffffa05623ab [nfsd]
- #11 [ffff88062e365ce8] free_generic_stateid at ffffffffa056634d [nfsd]
- #12 [ffff88062e365d18] release_open_stateid at ffffffffa0566e4b [nfsd]
- #13 [ffff88062e365d38] nfsd4_close at ffffffffa0567401 [nfsd]
- #14 [ffff88062e365d88] nfsd4_proc_compound at ffffffffa0557f28 [nfsd]
- #15 [ffff88062e365dd8] nfsd_dispatch at ffffffffa054543e [nfsd]
- #16 [ffff88062e365e18] svc_process_common at ffffffffa04ba5a4 [sunrpc]
- #17 [ffff88062e365e98] svc_process at ffffffffa04babe0 [sunrpc]
- #18 [ffff88062e365eb8] nfsd at ffffffffa0545b62 [nfsd]
- #19 [ffff88062e365ee8] kthread at ffffffff81090886
- #20 [ffff88062e365f48] kernel_thread at ffffffff8100c14a
-------------------------------------------------------------
-
-
-Signed-off-by: Harshula Jayasuriya <harshula@redhat.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
-[xr: Backported to 3.4: adjust context]
-Signed-off-by: Rui Xiang <rui.xiang@huawei.com>
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Cc: a.p.zijlstra@chello.nl
+Cc: paulus@samba.org
+Cc: acme@ghostprotocols.net
+Link: http://lkml.kernel.org/r/CAPgLHd8j_fWcgqe%3DKLWjpBj%2B%3Do0Pw6Z-SEq%3DNTPU08c2w1tngQ@mail.gmail.com
+[ Tweaked the error code setting placement and the changelog. ]
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Cc: Rui Xiang <rui.xiang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- fs/nfsd/vfs.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/fs/nfsd/vfs.c
-+++ b/fs/nfsd/vfs.c
-@@ -828,9 +828,10 @@ nfsd_open(struct svc_rqst *rqstp, struct
- 	}
- 	*filp = dentry_open(dget(dentry), mntget(fhp->fh_export->ex_path.mnt),
- 			    flags, current_cred());
--	if (IS_ERR(*filp))
-+	if (IS_ERR(*filp)) {
- 		host_err = PTR_ERR(*filp);
--	else {
-+		*filp = NULL;
-+	} else {
- 		host_err = ima_file_check(*filp, may_flags);
+---
+ kernel/events/core.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -5871,6 +5871,7 @@ skip_type:
+ 	if (pmu->pmu_cpu_context)
+ 		goto got_cpu_context;
  
- 		if (may_flags & NFSD_MAY_64BIT_COOKIE)
++	ret = -ENOMEM;
+ 	pmu->pmu_cpu_context = alloc_percpu(struct perf_cpu_context);
+ 	if (!pmu->pmu_cpu_context)
+ 		goto free_dev;
 
 
