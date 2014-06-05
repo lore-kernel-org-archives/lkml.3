@@ -1,157 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752070AbaFEOcm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 10:32:42 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34179 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751503AbaFEOck (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 10:32:40 -0400
-Date: Thu, 5 Jun 2014 16:32:35 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Greg Thelen <gthelen@google.com>,
-        Michel Lespinasse <walken@google.com>, Tejun Heo <tj@kernel.org>,
-        Hugh Dickins <hughd@google.com>, Roman Gushchin <klamm@yandex-team.ru>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH v2 0/4] memcg: Low-limit reclaim
-Message-ID: <20140605143235.GC2926@dhcp22.suse.cz>
-References: <20140528121023.GA10735@dhcp22.suse.cz>
- <20140528134905.GF2878@cmpxchg.org>
- <20140528142144.GL9895@dhcp22.suse.cz>
- <20140528152854.GG2878@cmpxchg.org>
- <20140528155414.GN9895@dhcp22.suse.cz>
- <20140528163335.GI2878@cmpxchg.org>
- <20140603110743.GD1321@dhcp22.suse.cz>
- <20140603142249.GP2878@cmpxchg.org>
- <20140604144658.GB17612@dhcp22.suse.cz>
- <20140604154408.GT2878@cmpxchg.org>
+	id S1752136AbaFEOcw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 10:32:52 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:48165 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751503AbaFEOcr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jun 2014 10:32:47 -0400
+Date: Thu, 5 Jun 2014 07:32:19 -0700
+From: tip-bot for Jiri Olsa <tipbot@zytor.com>
+Message-ID: <tip-a515114fa3cff8f1da10cd68914d55c10879c3e0@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, paulus@samba.org, acme@redhat.com,
+        hpa@zytor.com, mingo@kernel.org, jolsa@kernel.org,
+        a.p.zijlstra@chello.nl, acme@kernel.org, namhyung@kernel.org,
+        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de,
+        cjashfor@linux.vnet.ibm.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, jolsa@kernel.org, a.p.zijlstra@chello.nl,
+        acme@kernel.org, namhyung@kernel.org, fweisbec@gmail.com,
+        dsahern@gmail.com, tglx@linutronix.de, cjashfor@linux.vnet.ibm.com
+In-Reply-To: <1401732126-19465-1-git-send-email-jolsa@kernel.org>
+References: <1401732126-19465-1-git-send-email-jolsa@kernel.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf record: Fix poll return value propagation
+Git-Commit-ID: a515114fa3cff8f1da10cd68914d55c10879c3e0
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20140604154408.GT2878@cmpxchg.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 04-06-14 11:44:08, Johannes Weiner wrote:
-> On Wed, Jun 04, 2014 at 04:46:58PM +0200, Michal Hocko wrote:
-> > On Tue 03-06-14 10:22:49, Johannes Weiner wrote:
-> > > On Tue, Jun 03, 2014 at 01:07:43PM +0200, Michal Hocko wrote:
-> > [...]
-> > > > If we consider that memcg and its limits are not zone aware while the
-> > > > page allocator and reclaim are zone oriented then I can see a problem
-> > > > of unexpected reclaim failure although there is no over commit on the
-> > > > low_limit globally. And we do not have in-kernel effective measures to
-> > > > mitigate this inherent problem. At least not now and I am afraid it is
-> > > > a long route to have something that would work reasonably well in such
-> > > > cases.
-> > > 
-> > > Which "inherent problem"?
-> > 
-> > zone unawareness of the limit vs. allocation/reclaim which are zone
-> > oriented.
-> 
-> This is a quote from another subthread where you haven't responded:
-> 
-> ---
-> 
-> > > > > But who actually cares if an individual zone can be reclaimed?
-> > > > > 
-> > > > > Userspace allocations can fall back to any other zone.  Unless there
-> > > > > are hard bindings, but hopefully nobody binds a memcg to a node that
-> > > > > is smaller than that memcg's guarantee. 
-> > > > 
-> > > > The protected group might spill over to another group and eat it when
-> > > > another group would be simply pushed out from the node it is bound to.
-> > > 
-> > > I don't really understand the point you're trying to make.
-> > 
-> > I was just trying to show a case where individual zone matters. To make
-> > it more specific consider 2 groups A (with low-limit 60% RAM) and B
-> > (say with low-limit 10% RAM) and bound to a node X (25% of RAM). Now
-> > having 70% of RAM reserved for guarantee makes some sense, right? B is
-> > not over-committing the node it is bound to. Yet the A's allocations
-> > might make pressure on X regardless that the whole system is still doing
-> > good. This can lead to a situation where X gets depleted and nothing
-> > would be reclaimable leading to an OOM condition.
-> 
-> Once you assume control of memory *placement* in the system like this,
-> you can not also pretend to be clueless and have unreclaimable memory
-> of this magnitude spread around into nodes used by other bound tasks.
+Commit-ID:  a515114fa3cff8f1da10cd68914d55c10879c3e0
+Gitweb:     http://git.kernel.org/tip/a515114fa3cff8f1da10cd68914d55c10879c3e0
+Author:     Jiri Olsa <jolsa@kernel.org>
+AuthorDate: Mon, 2 Jun 2014 13:44:23 -0400
+Committer:  Jiri Olsa <jolsa@kernel.org>
+CommitDate: Tue, 3 Jun 2014 21:35:05 +0200
 
-You are still assuming that the administrator controls the placement.
-The load running in your memcg might be a black box for admin. E.g. a
-container which pays $$ to get a priority and not get reclaimed if that
-is possible. Admin can make sure that the cumulative low_limits for
-containers are sane but he doesn't have any control over what the loads
-inside are doing and potential OOM when one tries to DOS the other is
-definitely not welcome.
- 
-> If we were to actively support such configurations, we should be doing
-> direct NUMA balancing and migrate these pages out of node X when B
-> needs to allocate. 
+perf record: Fix poll return value propagation
 
-Migration is certainly a way how to reduce the risk. It is a question
-whether this is something to be done by the kernel implicitly or by
-administrator.
+If the perf record command is interrupted in record__mmap_read_all
+function, the 'done' is set and err has the latest poll return
+value, which is most likely positive number (= number of pollfds
+ready to read).
 
-> That would fix the problem for all unevictable
-> memory, not just memcg guarantees, and would prefer node-offloading
-> over swapping in cases where swap is available.
+This 'positive err' is then propagated to the exit code, resulting
+in not finishing the perf.data header properly, causing following
+error in report:
 
-That would certainly lower the risk. But there still might be unmovable
-memory sitting on the node so this will never be 100%.
+  # perf record -F 50000 -a
 
-> But really, this whole scenario sounds contrived to me.  And there is
-> nothing specific about memcg guarantees in there.
-> 
-> ---
-> 
-> > > > So to me it sounds more responsible to promise only as much as we can
-> > > > handle. I think that fallback mode is not crippling the semantic of
-> > > > the knob as it triggers only for limit overcommit or strange corner
-> > > > cases. We have agreed that we do not care about the first one and
-> > > > handling the later one by potentially fatal action doesn't sounds very
-> > > > user friendly to me.
-> > > 
-> > > It *absolutely* cripples the semantics.  Think about the security use
-> > > cases of mlock for example, where certain memory may never hit the
-> > > platter.  This wouldn't be possible with your watered down guarantees.
-> > 
-> > Is this really a use case? It sounds like a weak one to me. Because
-> > any sudden memory consumption above the limit can reclaim your
-> > to-protect-page it will hit the platter and you cannot do anything about
-> > this. So yeah, this is not mlock.
-> 
-> You are right, that is a weak usecase.
-> 
-> It doesn't change the fact that it does severely weaken the semantics
-> and turns it into another best-effort mechanism that the user can't
-> count on.  This sucks.  It sucked with soft limits and it will suck
-> again.  The irony is that Greg even pointed out you should be doing
-> soft limits if you want this sort of behavior.
+  ---
+  make the system real busy, so there's more chance
+  to interrupt perf in event writing code
+  ---
 
-The question is whether we really _need_ hard guarantees. I came with
-the low_limit as a replacement for soft_limit which really sucks. But it
-sucks not because you cannot count on it. It is the way how it has
-opposite semantic which sucks - and the implementation of course. I have
-tried to fix it and that route was a no-go.
+  ^C[ perf record: Woken up 16 times to write data ]
+  [ perf record: Captured and wrote 30.292 MB perf.data (~1323468 samples) ]
 
-I think the hard guarantee makes some sense when we allow to overcommit
-the limit. Somebody might really want to setup lowlimit == hardlimit
-because reclaim would be more harmful than restart of the application.
-I would however expect that this would be more of an exception rather
-than regular use. Most users I can think of will set low_limit to an
-effective working set size to be isolated from other loads and ephemeral
-reclaim will not hurt them. OOM would on other hand would be really
-harmful.
+  # perf report --stdio > /dev/null
+  WARNING: The perf.data file's data size field is 0 which is unexpected.
+  Was the 'perf record' command properly terminated?
 
-[...]
--- 
-Michal Hocko
-SUSE Labs
+Fixing this by checking for positive poll return value
+and setting err to 0.
+
+Acked-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Acked-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1401732126-19465-1-git-send-email-jolsa@kernel.org
+Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+---
+ tools/perf/builtin-record.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index e4c85b8..ce2cfec 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -454,7 +454,11 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
+ 			if (done)
+ 				break;
+ 			err = poll(rec->evlist->pollfd, rec->evlist->nr_fds, -1);
+-			if (err < 0 && errno == EINTR)
++			/*
++			 * Propagate error, only if there's any. Ignore positive
++			 * number of returned events and interrupt error.
++			 */
++			if (err > 0 || (err < 0 && errno == EINTR))
+ 				err = 0;
+ 			waking++;
+ 		}
