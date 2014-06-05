@@ -1,109 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751802AbaFEQZU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 12:25:20 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:34534 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751118AbaFEQZS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 12:25:18 -0400
-X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.6+dev
-To: Dan Williams <dan.j.williams@intel.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        USB list <linux-usb@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>
-Subject: Re: linux-next crash in xhci_add_ep_to_interval
-In-Reply-To: Your message of "Thu, 05 Jun 2014 08:55:07 -0700."
-             <CAA9_cmfje+8qAh7NqjHi1zcRAPZgJ0xdOK2nM7TKN9NRgqcRfw@mail.gmail.com>
-From: Valdis.Kletnieks@vt.edu
-References: <18529.1401981749@turing-police.cc.vt.edu>
-            <CAA9_cmfje+8qAh7NqjHi1zcRAPZgJ0xdOK2nM7TKN9NRgqcRfw@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1401985468_1971P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
+	id S1751634AbaFEQbt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 12:31:49 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:50303 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750866AbaFEQbs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jun 2014 12:31:48 -0400
+Message-ID: <53909B50.50407@zytor.com>
+Date: Thu, 05 Jun 2014 09:31:12 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Borislav Petkov <bp@alien8.de>, Andy Lutomirski <luto@amacapital.net>
+CC: Matt Fleming <matt.fleming@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Ricardo Neri <ricardo.neri-calderon@linux.intel.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>
+Subject: Re: [tip:x86/efi] x86/efi: Check for unsafe dealing with FPU state
+ in irq ctxt
+References: <20140604224920.GB4126@pd.tnic> <538FB775.8070405@amacapital.net> <20140605071805.GA16647@pd.tnic> <CAL01qpuj6jvH4XLvhHAszbqmSPXfW=VOdv+TqMwBuDnArL=ofw@mail.gmail.com> <20140605090206.GA16642@pd.tnic> <CALCETrU2TZhxOZyCvBd1nLDiU4ceiSx_Sd2bsDUCX5arOFidBg@mail.gmail.com> <20140605155307.GD16642@pd.tnic> <CALCETrVqqgExhuAYawh_7tc8-Nm8GGiMxmtw25mLFoxru-odZg@mail.gmail.com> <20140605160842.GE16642@pd.tnic> <CALCETrUors-39hUxS9Bg-dh+DzMcmPOs=6t998sbCVjqXYgyug@mail.gmail.com> <20140605161834.GF16642@pd.tnic>
+In-Reply-To: <20140605161834.GF16642@pd.tnic>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Date: Thu, 05 Jun 2014 12:24:28 -0400
-Message-ID: <23223.1401985468@turing-police.cc.vt.edu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1401985468_1971P
-Content-Type: text/plain; charset=us-ascii
+On 06/05/2014 09:18 AM, Borislav Petkov wrote:
+> On Thu, Jun 05, 2014 at 09:14:51AM -0700, Andy Lutomirski wrote:
+>> Is this NMI pstore thing done from any context that's supposed to be
+>> recoverable? It's always safe to use the FPU and then panic :)
+> 
+> Right :)
+> 
+>> Anyway, if we're just talking about EFI, there's an easier solution:
+>> just preallocate a per-cpu FPU context for EFI and make the whole mess
+>> be local to the EFI code.  For crypto, that's not so good.
+> 
+> This is probably something for Matt to decide but it sounds doable. If
+> I'd have to guess, sooner or later we will need to do proper FPU context
+> handling for EFI as I don't see anything stopping it from using FPU
+> insns. At least we won't. :-)
+> 
 
-On Thu, 05 Jun 2014 08:55:07 -0700, Dan Williams said:
+The bottom line is that we can't call EFI from a context where we can't
+use the FPU.  Or specifically, we can't then resume execution.  If all
+we're doing is stashing away some data before dying, well, then, by all
+means - but we need to make sure that is what actually happens.
 
-> > On a working boot, it progresses:
->
-> Is a working boot after reverting that change, or it intermittently
-> works?  If it's the latter I'm not sure I trust the bisect result,
-> yet.
+As far adding additional xstate save areas, the current size of the
+xstate is about ~2.5K for AVX-512 enabled processors, and we need one
+per thread.  If we make that two copies, then
+kernel_fpu_begin()..._end() would no longer have to disable preemption,
+but it wouldn't resolve the conflict about using the FPU from IRQ
+context when inside kernel_fpu_begin().._end().
 
-Oh, it's a 100% guaranteed crash.  The following is from a good kernel:
+To support the FPU in IRQ context we end up having to create a percpu
+FPU state stack, and it becomes then a matter of how deep that stack
+would have to be.
 
-> > [    3.823139] usb 3-4.1: New USB device found, idVendor=0e8f, idProduct=0020
-> > [    3.823160] usb 3-4.1: New USB device strings: Mfr=1, Product=2, SerialNumber=0
-> > [    3.823174] usb 3-4.1: Product: PS2toUSB Adapter
-> > [    3.823187] usb 3-4.1: Manufacturer: GASIA
-> > [    3.842836] input: GASIA PS2toUSB Adapter as /devices/pci0000:00/0000:00:14.0/usb3/3-4/3-4.1/3-4.1:1.0/0003:0E8F:0020.0001/input/input14
-> > [    3.848598] hid-generic 0003:0E8F:0020.0001: input,hidraw0: USB HID v1.10 Keyboard [GASIA PS2toUSB Adapter] on usb-0000:00:14.0-4.1/input0
-> > [    3.863592] input: GASIA PS2toUSB Adapter as /devices/pci0000:00/0000:00:14.0/usb3/3-4/3-4.1/3-4.1:1.1/0003:0E8F:0020.0002/input/input15
-> > [    3.878608] hid-generic 0003:0E8F:0020.0002: input,hidraw1: USB HID v1.10 Mouse [GASIA PS2toUSB Adapter] on usb-0000:00:14.0-4.1/input1
+	-hpa
 
-I'm booted on next-20140519
-
-
-> It's a really odd place to crash relative to the peer port changes
-> since those do not affect any xhci internals.  At first glance this
-> also does not look related to the command queue changes.  Mathias, any
-> ideas?
->
-> Valdis, can you get me the output of:
->
-> $ gdb drivers/usb/host/xhci-hcd.ko
-> (gdb) li *(xhci_add_ep_to_interval_table+0xc8)
-
-(gdb) li *(xhci_add_ep_to_interval_table+0xc8)
-0x10c9 is in xhci_add_ep_to_interval_table (drivers/usb/host/xhci.c:2446).
-2441                    normalized_interval = ep_bw->ep_interval - 3;
-2442
-2443            if (normalized_interval == 0)
-2444                    bw_table->interval0_esit_payload += ep_bw->max_esit_payload;
-2445            interval_bw = &bw_table->interval_bw[normalized_interval];
-2446            interval_bw->num_packets += ep_bw->num_packets;
-2447            switch (udev->speed) {
-2448            case USB_SPEED_LOW:
-2449                    interval_bw->overhead[LS_OVERHEAD_TYPE] += 1;
-2450                    break;
-
-Note that's as of the end of the git bisect.  Looks like it picked up
-a duff value for interval_bw somehow, but I have no idea why.
-
-Yeah, you're right, the bisected commit doesn't seem to have anything
-to do with it.  Weird. ;)
-
---==_Exmh_1401985468_1971P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-Comment: Exmh version 2.5 07/13/2001
-
-iQIVAwUBU5CZvAdmEQWDXROgAQJIzw/+LoV1Rx2K26uI0HNijifVrPhDooKjNCxh
-KAvb9hv3fFBAgXgwQLY8qgJ3LxqF6x+jU6A62qr4I095gqGsA6GiQPPfddGvTPqd
-ETQUF1vRrYvIcHBqjoqSu8/K+WM2u8EIz6wRSQJ8TGLHGKi2pfIEn1T/7JGwOVq/
-jqMBusfKp26leKbeM2Xd5jnZyFddy3nCi99hpIPttepgXEykIkjDuGYKElTu7e9a
-P1W3imIJo5EgCwYOWYeRHZ0XQy+fK0t6ZnM7Z7AoSGuIY6ksHcYMZbYXen/luQLK
-k4B5d6RrcCQYR+mEcNuIV8Twm0g670N1XV9i39AdkW0pBOP1wFGqB4/q2aDjfR5T
-K/2mjJ0XlIZB3yznWBN3wHIo5GY6unbHBSOoscx53AXqkga2V1s+XSKQiW0ZVswD
-Jo3pgAj6qY+QrKdjBdEV7zMQ474BR+vGOf/JdzIdljjmBsPd38oN6EhMIegIf5sp
-ogjdJV5FbtfmaCSqt2ymj38p9SfwpumGWth3CBSrapjciRKp0m7X/3qA4sR2oDlS
-KOmgSMziNQhi6aa5L5jkFNaLme7h4pZzLMGiTtBhpS2bKJMI1CZEcKcVVoXj+v9j
-uXyhqVNhd2nbUXnLHtNR+V5+p/pvUqj0JB0UTl2cPi7yjwCqNY7euaNuOsY4nO8w
-JssnmNL5fHs=
-=rQB8
------END PGP SIGNATURE-----
-
---==_Exmh_1401985468_1971P--
