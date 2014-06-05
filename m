@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754122AbaFEErk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 00:47:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44137 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752990AbaFEEVQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752996AbaFEEVQ (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 5 Jun 2014 00:21:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44094 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752818AbaFEEVL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jun 2014 00:21:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Felix Kaechele <felix@fetzig.org>, Takashi Iwai <tiwai@suse.de>,
+        Axel Lin <axel.lin@ingics.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
         Ben Hutchings <ben@decadent.org.uk>,
-        Weng Meiling <wengmeiling.weng@huawei.com>
-Subject: [PATCH 3.4 123/214] ALSA: hda - Add inverted internal mic quirk for Lenovo IdeaPad U310
-Date: Wed,  4 Jun 2014 21:18:06 -0700
-Message-Id: <20140605041656.234571431@linuxfoundation.org>
+        Qiang Huang <h.huangqiang@huawei.com>
+Subject: [PATCH 3.4 115/214] regulator: max8998: Ensure enough delay time for max8998_set_voltage_buck_time_sel
+Date: Wed,  4 Jun 2014 21:17:58 -0700
+Message-Id: <20140605041655.141607224@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -28,32 +29,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felix Kaechele <felix@fetzig.org>
+From: Axel Lin <axel.lin@ingics.com>
 
-commit e4db0952e542090c605fd41d31d761f1b4624f4a upstream.
+commit e8d9897ff064b1683c11c15ea1296a67a45d77b0 upstream.
 
-The Lenovo IdeaPad U310 has an internal mic where the right channel
-is phase inverted.
+commit 81d0a6ae7befb24c06f4aa4856af7f8d1f612171 upstream.
 
-Signed-off-by: Felix Kaechele <felix@fetzig.org>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Use DIV_ROUND_UP to prevent truncation by integer division issue.
+This ensures we return enough delay time.
+
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+[bwh: Backported to 3.2: delay is done by driver, not returned to the caller]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Cc: Weng Meiling <wengmeiling.weng@huawei.com>
+Cc: Qiang Huang <h.huangqiang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_conexant.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/regulator/max8998.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/pci/hda/patch_conexant.c
-+++ b/sound/pci/hda/patch_conexant.c
-@@ -4477,6 +4477,7 @@ static const struct snd_pci_quirk cxt506
- 	SND_PCI_QUIRK(0x17aa, 0x21ce, "Lenovo T420", CXT_PINCFG_LENOVO_TP410),
- 	SND_PCI_QUIRK(0x17aa, 0x21cf, "Lenovo T520", CXT_PINCFG_LENOVO_TP410),
- 	SND_PCI_QUIRK(0x17aa, 0x3975, "Lenovo U300s", CXT_FIXUP_STEREO_DMIC),
-+	SND_PCI_QUIRK(0x17aa, 0x3977, "Lenovo IdeaPad U310", CXT_FIXUP_STEREO_DMIC),
- 	SND_PCI_QUIRK(0x17aa, 0x397b, "Lenovo S205", CXT_FIXUP_STEREO_DMIC),
- 	{}
- };
+--- a/drivers/regulator/max8998.c
++++ b/drivers/regulator/max8998.c
+@@ -492,7 +492,7 @@ buck2_exit:
+ 
+ 	difference = desc->min + desc->step*i - previous_vol/1000;
+ 	if (difference > 0)
+-		udelay(difference / ((val & 0x0f) + 1));
++		udelay(DIV_ROUND_UP(difference, (val & 0x0f) + 1));
+ 
+ 	return ret;
+ }
 
 
