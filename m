@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754201AbaFEEuH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 00:50:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44090 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752908AbaFEEVL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752912AbaFEEVL (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 5 Jun 2014 00:21:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44022 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752818AbaFEEVD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jun 2014 00:21:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Axel Lin <axel.lin@ingics.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Qiang Huang <h.huangqiang@huawei.com>
-Subject: [PATCH 3.4 114/214] regulator: max8997: Use uV in voltage_map_desc
-Date: Wed,  4 Jun 2014 21:17:57 -0700
-Message-Id: <20140605041655.005729326@linuxfoundation.org>
+        Shiva Krishna Merla <shivakrishna.merla@netapp.com>,
+        Krishnasamy Somasundaram <somasundaram.krishnasamy@netapp.com>,
+        Speagle Andy <Andy.Speagle@netapp.com>,
+        Junichi Nomura <j-nomura@ce.jp.nec.com>,
+        Mike Snitzer <snitzer@redhat.com>, Ben Hutchings <ben@decadent.org.uk>,
+        Rui Xiang <rui.xiang@huawei.com>
+Subject: [PATCH 3.4 100/214] dm mpath: fix race condition between multipath_dtr and pg_init_done
+Date: Wed,  4 Jun 2014 21:17:43 -0700
+Message-Id: <20140605041653.139991414@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -29,155 +31,110 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Axel Lin <axel.lin@ingics.com>
+From: Shiva Krishna Merla <shivakrishna.merla@netapp.com>
 
-commit bc3b7756b5ff66828acf7bc24f148d28b8d61108 upstream.
+commit 954a73d5d3073df2231820c718fdd2f18b0fe4c9 upstream.
 
-Current code does integer division (min_vol = min_uV / 1000) before pass
-min_vol to max8997_get_voltage_proper_val().
-So it is possible min_vol is truncated to a smaller value.
+Whenever multipath_dtr() is happening we must prevent queueing any
+further path activation work.  Implement this by adding a new
+'pg_init_disabled' flag to the multipath structure that denotes future
+path activation work should be skipped if it is set.  By disabling
+pg_init and then re-enabling in flush_multipath_work() we also avoid the
+potential for pg_init to be initiated while suspending an mpath device.
 
-For example, if the request min_uV is 800900 for ldo.
-min_vol = 800900 / 1000 = 800 (mV)
-Then max8997_get_voltage_proper_val returns 800 mV for this case which is lower
-than the requested voltage.
+Without this patch a race condition exists that may result in a kernel
+panic:
 
-Use uV rather than mV in voltage_map_desc to prevent truncation by integer
-division.
+1) If after pg_init_done() decrements pg_init_in_progress to 0, a call
+   to wait_for_pg_init_completion() assumes there are no more pending path
+   management commands.
+2) If pg_init_required is set by pg_init_done(), due to retryable
+   mode_select errors, then process_queued_ios() will again queue the
+   path activation work.
+3) If free_multipath() completes before activate_path() work is called a
+   NULL pointer dereference like the following can be seen when
+   accessing members of the recently destructed multipath:
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+BUG: unable to handle kernel NULL pointer dereference at 0000000000000090
+RIP: 0010:[<ffffffffa003db1b>]  [<ffffffffa003db1b>] activate_path+0x1b/0x30 [dm_multipath]
+[<ffffffff81090ac0>] worker_thread+0x170/0x2a0
+[<ffffffff81096c80>] ? autoremove_wake_function+0x0/0x40
+
+[switch to disabling pg_init in flush_multipath_work & header edits by Mike Snitzer]
+Signed-off-by: Shiva Krishna Merla <shivakrishna.merla@netapp.com>
+Reviewed-by: Krishnasamy Somasundaram <somasundaram.krishnasamy@netapp.com>
+Tested-by: Speagle Andy <Andy.Speagle@netapp.com>
+Acked-by: Junichi Nomura <j-nomura@ce.jp.nec.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 [bwh: Backported to 3.2:
  - Adjust context
- - voltage_map_desc also has an n_bits field]
+ - Bump version to 1.3.2 not 1.6.0]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Cc: Qiang Huang <h.huangqiang@huawei.com>
+[xr: Backported to 3.4: Adjust context]
+Signed-off-by: Rui Xiang <rui.xiang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/regulator/max8997.c |   36 +++++++++++++++++-------------------
- 1 file changed, 17 insertions(+), 19 deletions(-)
+ drivers/md/dm-mpath.c |   18 +++++++++++++++---
+ 1 file changed, 15 insertions(+), 3 deletions(-)
 
---- a/drivers/regulator/max8997.c
-+++ b/drivers/regulator/max8997.c
-@@ -71,26 +71,26 @@ struct voltage_map_desc {
- 	unsigned int n_bits;
- };
+--- a/drivers/md/dm-mpath.c
++++ b/drivers/md/dm-mpath.c
+@@ -84,6 +84,7 @@ struct multipath {
+ 	unsigned queue_io;		/* Must we queue all I/O? */
+ 	unsigned queue_if_no_path;	/* Queue I/O if last path fails? */
+ 	unsigned saved_queue_if_no_path;/* Saved state during suspension */
++	unsigned pg_init_disabled:1;	/* pg_init is not currently allowed */
+ 	unsigned pg_init_retries;	/* Number of times to retry pg_init */
+ 	unsigned pg_init_count;		/* Number of times pg_init called */
+ 	unsigned pg_init_delay_msecs;	/* Number of msecs before pg_init retry */
+@@ -493,7 +494,8 @@ static void process_queued_ios(struct wo
+ 	    (!pgpath && !m->queue_if_no_path))
+ 		must_queue = 0;
  
--/* Voltage maps in mV */
-+/* Voltage maps in uV */
- static const struct voltage_map_desc ldo_voltage_map_desc = {
--	.min = 800,	.max = 3950,	.step = 50,	.n_bits = 6,
-+	.min = 800000,	.max = 3950000,	.step = 50000,	.n_bits = 6,
- }; /* LDO1 ~ 18, 21 all */
+-	if (m->pg_init_required && !m->pg_init_in_progress && pgpath)
++	if (m->pg_init_required && !m->pg_init_in_progress && pgpath &&
++	    !m->pg_init_disabled)
+ 		__pg_init_all_paths(m);
  
- static const struct voltage_map_desc buck1245_voltage_map_desc = {
--	.min = 650,	.max = 2225,	.step = 25,	.n_bits = 6,
-+	.min = 650000,	.max = 2225000,	.step = 25000,	.n_bits = 6,
- }; /* Buck1, 2, 4, 5 */
+ out:
+@@ -907,10 +909,20 @@ static void multipath_wait_for_pg_init_c
  
- static const struct voltage_map_desc buck37_voltage_map_desc = {
--	.min = 750,	.max = 3900,	.step = 50,	.n_bits = 6,
-+	.min = 750000,	.max = 3900000,	.step = 50000,	.n_bits = 6,
- }; /* Buck3, 7 */
- 
--/* current map in mA */
-+/* current map in uA */
- static const struct voltage_map_desc charger_current_map_desc = {
--	.min = 200,	.max = 950,	.step = 50,	.n_bits = 4,
-+	.min = 200000,	.max = 950000,	.step = 50000,	.n_bits = 4,
- };
- 
- static const struct voltage_map_desc topoff_current_map_desc = {
--	.min = 50,	.max = 200,	.step = 10,	.n_bits = 4,
-+	.min = 50000,	.max = 200000,	.step = 10000,	.n_bits = 4,
- };
- 
- static const struct voltage_map_desc *reg_voltage_map[] = {
-@@ -194,7 +194,7 @@ static int max8997_list_voltage(struct r
- 	if (val > desc->max)
- 		return -EINVAL;
- 
--	return val * 1000;
-+	return val;
+ static void flush_multipath_work(struct multipath *m)
+ {
++	unsigned long flags;
++
++	spin_lock_irqsave(&m->lock, flags);
++	m->pg_init_disabled = 1;
++	spin_unlock_irqrestore(&m->lock, flags);
++
+ 	flush_workqueue(kmpath_handlerd);
+ 	multipath_wait_for_pg_init_completion(m);
+ 	flush_workqueue(kmultipathd);
+ 	flush_work_sync(&m->trigger_event);
++
++	spin_lock_irqsave(&m->lock, flags);
++	m->pg_init_disabled = 0;
++	spin_unlock_irqrestore(&m->lock, flags);
  }
  
- static int max8997_get_enable_register(struct regulator_dev *rdev,
-@@ -496,7 +496,6 @@ static int max8997_set_voltage_ldobuck(s
- {
- 	struct max8997_data *max8997 = rdev_get_drvdata(rdev);
- 	struct i2c_client *i2c = max8997->iodev->i2c;
--	int min_vol = min_uV / 1000, max_vol = max_uV / 1000;
- 	const struct voltage_map_desc *desc;
- 	int rid = rdev_get_id(rdev);
- 	int reg, shift = 0, mask, ret;
-@@ -522,7 +521,7 @@ static int max8997_set_voltage_ldobuck(s
+ static void multipath_dtr(struct dm_target *ti)
+@@ -1129,7 +1141,7 @@ static int pg_init_limit_reached(struct
  
- 	desc = reg_voltage_map[rid];
+ 	spin_lock_irqsave(&m->lock, flags);
  
--	i = max8997_get_voltage_proper_val(desc, min_vol, max_vol);
-+	i = max8997_get_voltage_proper_val(desc, min_uV, max_uV);
- 	if (i < 0)
- 		return i;
- 
-@@ -541,7 +540,7 @@ static int max8997_set_voltage_ldobuck(s
- 		/* If the voltage is increasing */
- 		if (org < i)
- 			udelay(DIV_ROUND_UP(desc->step * (i - org),
--						max8997->ramp_delay));
-+						max8997->ramp_delay * 1000));
- 	}
- 
- 	return ret;
-@@ -640,7 +639,6 @@ static int max8997_set_voltage_buck(stru
- 	const struct voltage_map_desc *desc;
- 	int new_val, new_idx, damage, tmp_val, tmp_idx, tmp_dmg;
- 	bool gpio_dvs_mode = false;
--	int min_vol = min_uV / 1000, max_vol = max_uV / 1000;
- 
- 	if (rid < MAX8997_BUCK1 || rid > MAX8997_BUCK7)
- 		return -EINVAL;
-@@ -665,7 +663,7 @@ static int max8997_set_voltage_buck(stru
- 						selector);
- 
- 	desc = reg_voltage_map[rid];
--	new_val = max8997_get_voltage_proper_val(desc, min_vol, max_vol);
-+	new_val = max8997_get_voltage_proper_val(desc, min_uV, max_uV);
- 	if (new_val < 0)
- 		return new_val;
- 
-@@ -997,8 +995,8 @@ static __devinit int max8997_pmic_probe(
- 		max8997->buck1_vol[i] = ret =
- 			max8997_get_voltage_proper_val(
- 					&buck1245_voltage_map_desc,
--					pdata->buck1_voltage[i] / 1000,
--					pdata->buck1_voltage[i] / 1000 +
-+					pdata->buck1_voltage[i],
-+					pdata->buck1_voltage[i] +
- 					buck1245_voltage_map_desc.step);
- 		if (ret < 0)
- 			goto err_alloc;
-@@ -1006,8 +1004,8 @@ static __devinit int max8997_pmic_probe(
- 		max8997->buck2_vol[i] = ret =
- 			max8997_get_voltage_proper_val(
- 					&buck1245_voltage_map_desc,
--					pdata->buck2_voltage[i] / 1000,
--					pdata->buck2_voltage[i] / 1000 +
-+					pdata->buck2_voltage[i],
-+					pdata->buck2_voltage[i] +
- 					buck1245_voltage_map_desc.step);
- 		if (ret < 0)
- 			goto err_alloc;
-@@ -1015,8 +1013,8 @@ static __devinit int max8997_pmic_probe(
- 		max8997->buck5_vol[i] = ret =
- 			max8997_get_voltage_proper_val(
- 					&buck1245_voltage_map_desc,
--					pdata->buck5_voltage[i] / 1000,
--					pdata->buck5_voltage[i] / 1000 +
-+					pdata->buck5_voltage[i],
-+					pdata->buck5_voltage[i] +
- 					buck1245_voltage_map_desc.step);
- 		if (ret < 0)
- 			goto err_alloc;
+-	if (m->pg_init_count <= m->pg_init_retries)
++	if (m->pg_init_count <= m->pg_init_retries && !m->pg_init_disabled)
+ 		m->pg_init_required = 1;
+ 	else
+ 		limit_reached = 1;
+@@ -1644,7 +1656,7 @@ out:
+  *---------------------------------------------------------------*/
+ static struct target_type multipath_target = {
+ 	.name = "multipath",
+-	.version = {1, 3, 0},
++	.version = {1, 3, 2},
+ 	.module = THIS_MODULE,
+ 	.ctr = multipath_ctr,
+ 	.dtr = multipath_dtr,
 
 
