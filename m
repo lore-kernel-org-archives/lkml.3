@@ -1,84 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752209AbaFEDOM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 23:14:12 -0400
-Received: from ozlabs.org ([103.22.144.67]:38034 "EHLO ozlabs.org"
+	id S1751872AbaFEDVw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 23:21:52 -0400
+Received: from ozlabs.org ([103.22.144.67]:60437 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751965AbaFEDOJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 23:14:09 -0400
-Date: Thu, 5 Jun 2014 13:13:59 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "K. Y. Srinivasan" <kys@microsoft.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        stephen hemminger <stephen@networkplumber.org>
-Subject: linux-next: manual merge of the net-next tree with Linus' tree
-Message-ID: <20140605131359.771694b6@canb.auug.org.au>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/zo6ckb+r3+m.l5hgW8FNdfH"; protocol="application/pgp-signature"
+	id S1751293AbaFEDVv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 23:21:51 -0400
+Message-ID: <1401938509.17669.9.camel@concordia>
+Subject: Re: kisskb not updated?
+From: Michael Ellerman <mpe@ellerman.id.au>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-Next <linux-next@vger.kernel.org>
+Date: Thu, 05 Jun 2014 13:21:49 +1000
+In-Reply-To: <20140604182812.6ec4b06b@canb.auug.org.au>
+References: <CAMuHMdWwBP6mmWMF3QAvjqo7HQQAB8KZ2QUW5kHZ6iHMMLNYuQ@mail.gmail.com>
+	 <20140604182812.6ec4b06b@canb.auug.org.au>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/zo6ckb+r3+m.l5hgW8FNdfH
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Wed, 2014-06-04 at 18:28 +1000, Stephen Rothwell wrote:
+> Hi Geert,
+> 
+> On Wed, 4 Jun 2014 10:21:06 +0200 Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+> >
+> > kisskb.ellerman.id.au/kisskb/head/page1/ doesn't seem to be updated
+> > anymore? E.g. v3.15-rc8 is missing.
+> 
+> Yeah, our machine room suffered an airconditioning failure and our
+> build host is one of the machines that we can't afford to run at the
+> moment.
 
-Hi all,
+Yeah sorry I was going to put up an "Out of order" notice, but then there was
+talk of restarting the server, but then that never happened.
 
-Today's linux-next merge of the net-next tree got a conflict in
-drivers/hv/channel_mgmt.c between commit d3ba720dd58c ("Drivers: hv:
-Eliminate the channel spinlock in the callback path") from Linus' tree
-and commit 1b9d48f2a579 ("hyper-v: make uuid_le const") from the
-net-next tree.
+Not sure what the ETA is at the moment.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+cheers
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --cc drivers/hv/channel_mgmt.c
-index 6c8b032cacba,90d654556437..000000000000
---- a/drivers/hv/channel_mgmt.c
-+++ b/drivers/hv/channel_mgmt.c
-@@@ -404,7 -365,7 +404,7 @@@ static u32  next_vp
-   * performance critical channels (IDE, SCSI and Network) will be uniformly
-   * distributed across all available CPUs.
-   */
-- static void init_vp_index(struct vmbus_channel *channel, uuid_le *type_gu=
-id)
- -static u32 get_vp_index(const uuid_le *type_guid)
-++static void init_vp_index(struct vmbus_channel *channel, const uuid_le *t=
-ype_guid)
-  {
-  	u32 cur_cpu;
-  	int i;
-
---Sig_/zo6ckb+r3+m.l5hgW8FNdfH
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTj+B9AAoJEMDTa8Ir7ZwVqCgP/RyZj93in7WGZDp6DlhBSdnb
-xS0FZTZVT7ADV5QwaMl2EFrpGL/XoqfWhZK+gjIBprZS++d3m5gP+i4bWMuaS6V0
-ZPW60tQH4GHjXB4p1DLgP5Khn1e5z39pbJxRdZh11OZZRQLUEfy8wU0KvDeT0MFI
-Mgk8rtC5fYLjLIbAhsidhS3T/0ydQolv70sVjPPNOLz8SzM8QLQ9d3hH0wKiwZDk
-SQszOhxvS1LINvznCbJY1XJ+H80CA0s4fZ+TpGaEEdJf+HTEstc6qtjgaUFcQUJU
-Vr6EC64gC0vCTjuB3JWaWcHzKcP84q0fh5WCkpImetxcfJ3SFzmEkYtlSfS8Rd1b
-7U2ZzSDb3dGChwqLiY4GfAkxF4jJ2o4o1Yl6loa4k6V3T+VZvsX6Y6gqiKREqpc+
-j5kSTmbCCoxr+YrPkTdHyNxSbCQ6Q4Ydr9Kl24X9aNANmhR3fq1zAOeVMZZNy13U
-GNPFQeI+22+DWKRZM5iCGtnogjYhGdZYqbRVgX/cdG6nYUT0g84Ft9IMpxU0pA5E
-BbHPxyeWpUMNelVCI4UgIk728FtdP1aVlsDppZFqvnESKJE4NcbRUEcdxy2Cf7f1
-0ck9DjBZjeq5IU4UL1vwjpyHE+V3YjdKadvxco4Jj8cOLrLJY3Tf8BLglAg602/r
-0PV88cjvxiQIe01Maq0l
-=XqEg
------END PGP SIGNATURE-----
-
---Sig_/zo6ckb+r3+m.l5hgW8FNdfH--
