@@ -1,51 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752412AbaFEPsU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 11:48:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52909 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751085AbaFEPsT (ORCPT
+	id S1752842AbaFEPs7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 11:48:59 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:58896 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752709AbaFEPs4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 11:48:19 -0400
-Date: Thu, 5 Jun 2014 08:52:00 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-Cc: Rob Clark <robdclark@gmail.com>, Thierry Reding <thierry.reding@gmail.com>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] fence: Use smp_mb__before_atomic()
-Message-ID: <20140605155200.GC23993@kroah.com>
-References: <1401287192-14701-1-git-send-email-thierry.reding@gmail.com>
- <20140528205145.GB10468@kroah.com>
- <20140530081504.GA16669@ulmo>
- <20140530160831.GA11182@kroah.com>
- <CAO_48GE_Y7DQj_nCZ=0gb_AY26_vtPsQybf9zuhsLW1nnaOuQw@mail.gmail.com>
- <20140604132831.GC28484@ulmo>
- <20140604174902.GC20812@kroah.com>
- <CAF6AEGuaURm-AHHh6G=HnJYFLUWBhPOxKaBQCqn-=-9CQdKe8w@mail.gmail.com>
- <53905BD0.9080002@canonical.com>
+	Thu, 5 Jun 2014 11:48:56 -0400
+From: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
+	<antoine.tenart@free-electrons.com>
+To: sebastian.hesselbarth@gmail.com, Peter.Chen@freescale.com, balbi@ti.com
+Cc: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        alexandre.belloni@free-electrons.com,
+        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
+        linux-usb@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 9/9] ARM: dts: Berlin: enable USB on the BG2Q DMP
+Date: Thu,  5 Jun 2014 17:48:46 +0200
+Message-Id: <1401983326-19205-10-git-send-email-antoine.tenart@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1401983326-19205-1-git-send-email-antoine.tenart@free-electrons.com>
+References: <1401983326-19205-1-git-send-email-antoine.tenart@free-electrons.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53905BD0.9080002@canonical.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 05, 2014 at 02:00:16PM +0200, Maarten Lankhorst wrote:
-> >I don't think the question about whether we need something like fence
-> >to augment dma-buf is really in doubt.  Maybe it should live somewhere
-> >else, I'm not sure.  But it makes sense for it to live wherever
-> >dma-buf does, as they are intended to work together.
-> >
-> Additionally we already have a user for this in the kernel: the GPU
-> drivers that use TTM.
+Enable the 2 available USB PHY and USB nodes on the Marvell Berlin BG2Q
+DMP.
 
-What about the sync code in the android directory?  I thought that was
-supposed to be what GPU drivers were going to use for this type of
-thing.
+Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
+---
+ arch/arm/boot/dts/berlin2q-marvell-dmp.dts | 20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
 
-thanks,
+diff --git a/arch/arm/boot/dts/berlin2q-marvell-dmp.dts b/arch/arm/boot/dts/berlin2q-marvell-dmp.dts
+index 2da9c41e29d8..4195874b9bed 100644
+--- a/arch/arm/boot/dts/berlin2q-marvell-dmp.dts
++++ b/arch/arm/boot/dts/berlin2q-marvell-dmp.dts
+@@ -7,6 +7,8 @@
+  */
+ 
+ /dts-v1/;
++
++#include <dt-bindings/gpio/gpio.h>
+ #include "berlin2q.dtsi"
+ 
+ / {
+@@ -26,3 +28,21 @@
+ &uart0 {
+ 	status = "okay";
+ };
++
++&usb_phy0 {
++	power-gpio = <&portb 8 GPIO_ACTIVE_HIGH>;
++	status = "okay";
++};
++
++&usb_phy2 {
++	power-gpio = <&portb 12 GPIO_ACTIVE_HIGH>;
++	status = "okay";
++};
++
++&usb0 {
++	status = "okay";
++};
++
++&usb2 {
++	status = "okay";
++};
+-- 
+1.9.1
 
-greg k-h
