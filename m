@@ -1,84 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751848AbaFEQfw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 12:35:52 -0400
-Received: from mail-ig0-f172.google.com ([209.85.213.172]:33987 "EHLO
-	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751697AbaFEQft (ORCPT
+	id S1751952AbaFEQgx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 12:36:53 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:40953 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751140AbaFEQgw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 12:35:49 -0400
-MIME-Version: 1.0
-In-Reply-To: <23223.1401985468@turing-police.cc.vt.edu>
-References: <18529.1401981749@turing-police.cc.vt.edu>
-	<CAA9_cmfje+8qAh7NqjHi1zcRAPZgJ0xdOK2nM7TKN9NRgqcRfw@mail.gmail.com>
-	<23223.1401985468@turing-police.cc.vt.edu>
-Date: Thu, 5 Jun 2014 09:35:48 -0700
-Message-ID: <CAPcyv4gYnvF4Nt5itkDsD=DzL8sfETZUBmQqZwiHE1SOZvtsbw@mail.gmail.com>
-Subject: Re: linux-next crash in xhci_add_ep_to_interval
-From: Dan Williams <dan.j.williams@intel.com>
-To: Valdis.Kletnieks@vt.edu
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        USB list <linux-usb@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 5 Jun 2014 12:36:52 -0400
+Message-ID: <1401986205.4103.9.camel@paszta.hi.pengutronix.de>
+Subject: Re: [PATCH 1/9] reset: add the Berlin reset controller driver
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: Antoine =?ISO-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>
+Cc: sebastian.hesselbarth@gmail.com, alexandre.belloni@free-electrons.com,
+        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Date: Thu, 05 Jun 2014 18:36:45 +0200
+In-Reply-To: <1401983326-19205-2-git-send-email-antoine.tenart@free-electrons.com>
+References: <1401983326-19205-1-git-send-email-antoine.tenart@free-electrons.com>
+	 <1401983326-19205-2-git-send-email-antoine.tenart@free-electrons.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:96de:80ff:fec2:9969
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 5, 2014 at 9:24 AM,  <Valdis.Kletnieks@vt.edu> wrote:
-> On Thu, 05 Jun 2014 08:55:07 -0700, Dan Williams said:
->
->> > On a working boot, it progresses:
->>
->> Is a working boot after reverting that change, or it intermittently
->> works?  If it's the latter I'm not sure I trust the bisect result,
->> yet.
->
-> Oh, it's a 100% guaranteed crash.  The following is from a good kernel:
->
->> > [    3.823139] usb 3-4.1: New USB device found, idVendor=0e8f, idProduct=0020
->> > [    3.823160] usb 3-4.1: New USB device strings: Mfr=1, Product=2, SerialNumber=0
->> > [    3.823174] usb 3-4.1: Product: PS2toUSB Adapter
->> > [    3.823187] usb 3-4.1: Manufacturer: GASIA
->> > [    3.842836] input: GASIA PS2toUSB Adapter as /devices/pci0000:00/0000:00:14.0/usb3/3-4/3-4.1/3-4.1:1.0/0003:0E8F:0020.0001/input/input14
->> > [    3.848598] hid-generic 0003:0E8F:0020.0001: input,hidraw0: USB HID v1.10 Keyboard [GASIA PS2toUSB Adapter] on usb-0000:00:14.0-4.1/input0
->> > [    3.863592] input: GASIA PS2toUSB Adapter as /devices/pci0000:00/0000:00:14.0/usb3/3-4/3-4.1/3-4.1:1.1/0003:0E8F:0020.0002/input/input15
->> > [    3.878608] hid-generic 0003:0E8F:0020.0002: input,hidraw1: USB HID v1.10 Mouse [GASIA PS2toUSB Adapter] on usb-0000:00:14.0-4.1/input1
->
-> I'm booted on next-20140519
->
->
->> It's a really odd place to crash relative to the peer port changes
->> since those do not affect any xhci internals.  At first glance this
->> also does not look related to the command queue changes.  Mathias, any
->> ideas?
->>
->> Valdis, can you get me the output of:
->>
->> $ gdb drivers/usb/host/xhci-hcd.ko
->> (gdb) li *(xhci_add_ep_to_interval_table+0xc8)
->
-> (gdb) li *(xhci_add_ep_to_interval_table+0xc8)
-> 0x10c9 is in xhci_add_ep_to_interval_table (drivers/usb/host/xhci.c:2446).
-> 2441                    normalized_interval = ep_bw->ep_interval - 3;
-> 2442
-> 2443            if (normalized_interval == 0)
-> 2444                    bw_table->interval0_esit_payload += ep_bw->max_esit_payload;
-> 2445            interval_bw = &bw_table->interval_bw[normalized_interval];
-> 2446            interval_bw->num_packets += ep_bw->num_packets;
-> 2447            switch (udev->speed) {
-> 2448            case USB_SPEED_LOW:
-> 2449                    interval_bw->overhead[LS_OVERHEAD_TYPE] += 1;
-> 2450                    break;
->
-> Note that's as of the end of the git bisect.  Looks like it picked up
-> a duff value for interval_bw somehow, but I have no idea why.
->
-> Yeah, you're right, the bisected commit doesn't seem to have anything
-> to do with it.  Weird. ;)
+Hi Antoine,
 
-Actually, on second look I bet xhci_alloc_tt_info() is being called
-while hdev->maxchild is not set.  Let me throw together a debug
-patch...
+thank you for the patch. I have a few comments below.
+
+Am Donnerstag, den 05.06.2014, 17:48 +0200 schrieb Antoine Ténart:
+> Add a reset controller for Marvell Berlin SoCs which is used by the
+> USB PHYs drivers (for now).
+> 
+> Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
+> ---
+>  drivers/reset/Makefile       |   1 +
+>  drivers/reset/reset-berlin.c | 113 +++++++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 114 insertions(+)
+>  create mode 100644 drivers/reset/reset-berlin.c
+> 
+> diff --git a/drivers/reset/Makefile b/drivers/reset/Makefile
+> index 4f60caf750ce..fffe2a3dd255 100644
+> --- a/drivers/reset/Makefile
+> +++ b/drivers/reset/Makefile
+> @@ -1,3 +1,4 @@
+>  obj-$(CONFIG_RESET_CONTROLLER) += core.o
+> +obj-$(CONFIG_ARCH_BERLIN) += reset-berlin.o
+>  obj-$(CONFIG_ARCH_SUNXI) += reset-sunxi.o
+>  obj-$(CONFIG_ARCH_STI) += sti/
+> diff --git a/drivers/reset/reset-berlin.c b/drivers/reset/reset-berlin.c
+> new file mode 100644
+> index 000000000000..78b42c882cb2
+> --- /dev/null
+> +++ b/drivers/reset/reset-berlin.c
+> @@ -0,0 +1,113 @@
+> +/*
+> + * Copyright (C) 2014 Marvell Technology Group Ltd.
+> + *
+> + * Antoine Ténart <antoine.tenart@free-electrons.com>
+> + *
+> + * This file is licensed under the terms of the GNU General Public
+> + * License version 2. This program is licensed "as is" without any
+> + * warranty of any kind, whether express or implied.
+> + */
+> +
+> +#include <linux/delay.h>
+> +#include <linux/io.h>
+> +#include <linux/module.h>
+> +#include <linux/of.h>
+> +#include <linux/of_address.h>
+> +#include <linux/platform_device.h>
+
+Is there a reason this is not actually implemented as platform device?
+
+> +#include <linux/reset-controller.h>
+> +#include <linux/slab.h>
+> +#include <linux/spinlock.h>
+> +#include <linux/types.h>
+> +
+> +#define BERLIN_RESET_REGISTER		0x104
+
+How many reset registers are there? (See below).
+
+> +#define to_berlin_reset_priv(p)		\
+> +	container_of((p), struct berlin_reset_priv, rcdev)
+> +
+> +struct berlin_reset_priv {
+> +	spinlock_t			lock;
+> +	void __iomem			*base;
+> +	struct reset_controller_dev	rcdev;
+> +};
+> +
+> +static int berlin_reset_reset(struct reset_controller_dev *rcdev,
+> +			      unsigned long id)
+> +{
+> +	struct berlin_reset_priv *priv = to_berlin_reset_priv(rcdev);
+> +	unsigned long flags;
+> +	int bank = id / BITS_PER_LONG;
+> +	int offset = id % BITS_PER_LONG;
+> +
+> +	spin_lock_irqsave(&priv->lock, flags);
+> +
+> +	writel(BIT(offset), priv->base + bank * 4);
+> +
+> +	spin_unlock_irqrestore(&priv->lock, flags);
+
+Since this is a single write into an apparently self-clearing
+register, I see no need for the spinlock here.
+
+> +	/* let the reset be effective */
+> +	udelay(10);
+> +
+> +	return 0;
+> +}
+> +
+> +static struct reset_control_ops berlin_reset_ops = {
+> +	.reset	= berlin_reset_reset,
+> +};
+> +
+> +static int __berlin_reset_init(struct device_node *np)
+> +{
+> +	struct berlin_reset_priv *priv;
+> +	struct resource res;
+> +	resource_size_t size;
+> +	int ret;
+> +
+> +	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
+> +	if (!priv)
+> +		return -ENOMEM;
+> +
+> +	ret = of_address_to_resource(np, 0, &res);
+> +	if (ret)
+> +		goto err;
+> +
+> +	size = resource_size(&res);
+> +
+> +	priv->base = ioremap(res.start, size);
+> +	if (!priv->base) {
+> +		ret = -ENOMEM;
+> +		goto err;
+> +	}
+
+A platform driver could use devm_kzalloc, platform_get_resource,
+and devm_ioremap_resource here.
+
+> +	priv->base += BERLIN_RESET_REGISTER;
+> +
+> +	priv->rcdev.owner = THIS_MODULE;
+> +	priv->rcdev.nr_resets = size * 32;
+
+This doesn't seem right. The device tree patch shows that
+size = 0x400.
+
+> +	priv->rcdev.ops = &berlin_reset_ops;
+> +	priv->rcdev.of_node = np;
+> +
+> +	reset_controller_register(&priv->rcdev);
+> +
+> +	return 0;
+> +
+> +err:
+> +	kfree(priv);
+> +	return ret;
+> +}
+> +
+> +static const struct of_device_id berlin_reset_of_match[] __initdata = {
+> +	{ .compatible = "marvell,berlin2q-chip-ctrl" },
+> +	{ },
+> +};
+> +
+> +static int __init berlin_reset_init(void)
+> +{
+> +	struct device_node *np;
+> +	int ret;
+> +
+> +	for_each_matching_node(np, berlin_reset_of_match) {
+> +		ret = __berlin_reset_init(np);
+> +		if (ret)
+> +			return ret;
+> +	}
+> +
+> +	return 0;
+> +}
+> +arch_initcall(berlin_reset_init);
+
+regards
+Philipp
+
