@@ -1,86 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752068AbaFENso (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 09:48:44 -0400
-Received: from casper.infradead.org ([85.118.1.10]:52451 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751140AbaFENsn (ORCPT
+	id S1752110AbaFENtx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 09:49:53 -0400
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:54471 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751135AbaFENtv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 09:48:43 -0400
-Date: Thu, 5 Jun 2014 15:48:41 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, ak@linux.intel.com,
-        jolsa@redhat.com, zheng.z.yan@intel.com,
-        maria.n.dimakopoulou@gmail.com
-Subject: Re: [PATCH 5/9] perf/x86: implement cross-HT corruption bug
- workaround
-Message-ID: <20140605134841.GL3213@twins.programming.kicks-ass.net>
-References: <1401917658-26065-1-git-send-email-eranian@google.com>
- <1401917658-26065-6-git-send-email-eranian@google.com>
+	Thu, 5 Jun 2014 09:49:51 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="qyHYMwAXsHLOQihY"
-Content-Disposition: inline
-In-Reply-To: <1401917658-26065-6-git-send-email-eranian@google.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20140605133331.GB6020@hercules>
+References: <20140605041639.638675216@linuxfoundation.org>
+	<20140605041642.768058331@linuxfoundation.org>
+	<20140605133331.GB6020@hercules>
+Date: Thu, 5 Jun 2014 15:49:48 +0200
+Message-ID: <CA+rthh_xdM-i7QiJ7QLayz+n42msL9nORV5mQh4qtJX66uXWWA@mail.gmail.com>
+Subject: Re: [PATCH 3.4 022/214] filter: prevent nla extensions to peek beyond
+ the end of the message
+From: Mathias Krause <minipli@googlemail.com>
+To: Luis Henriques <luis.henriques@canonical.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        stable@vger.kernel.org, Patrick McHardy <kaber@trash.net>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Ben Hutchings <ben@decadent.org.uk>
+Content-Type: multipart/mixed; boundary=047d7bfd05a2bb38a304fb17048a
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--047d7bfd05a2bb38a304fb17048a
+Content-Type: text/plain; charset=UTF-8
 
---qyHYMwAXsHLOQihY
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On 5 June 2014 15:33, Luis Henriques <luis.henriques@canonical.com> wrote:
+> On Wed, Jun 04, 2014 at 09:16:25PM -0700, Greg Kroah-Hartman wrote:
+>> 3.4-stable review patch.  If anyone has any objections, please let me know.
+>> [...]
+>> --- a/net/core/filter.c
+>> +++ b/net/core/filter.c
+>> @@ -338,11 +338,15 @@ load_b:
+>>
+>>                       if (skb_is_nonlinear(skb))
+>>                               return 0;
+>> +                     if (skb->len < sizeof(struct nlattr))
+>> +                             return 0;
+>> +                     if (skb->len < sizeof(struct nlattr))
+>> +                             return 0;
+>
+> There above code is duplicated this backport.  The same comment
+> applies to the 3.2.y backport (I've added Ben to the CC list).
+>
 
-On Wed, Jun 04, 2014 at 11:34:14PM +0200, Stephane Eranian wrote:
+Good catch! The diff should look more like the the one in the
+attachment. I guess patch(1) just failed here to find the right place
+to apply the hunk to.
 
-> +static struct event_constraint *
-> +intel_get_excl_constraints(struct cpu_hw_events *cpuc, struct perf_event *event,
-> +			   struct event_constraint *c)
-> +{
+Thanks,
+Mathias
 
-> +	if (!(c->flags & PERF_X86_EVENT_DYNAMIC)) {
-> +
-> +		/*
-> +		 * in case we fail, we assume no counter
-> +		 * is supported to be on the safe side
-> +		 */
-> +		cx = kmalloc(sizeof(*cx), GFP_KERNEL);
-> +		if (!cx)
-> +			return &emptyconstraint;
-> +
+--047d7bfd05a2bb38a304fb17048a
+Content-Type: text/x-patch; charset=US-ASCII; 
+	name="filter-prevent-nla-extensions-to-peek-beyond-the-end-of-the-message-v3.4.patch"
+Content-Disposition: attachment; 
+	filename="filter-prevent-nla-extensions-to-peek-beyond-the-end-of-the-message-v3.4.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hw24d0lx0
 
-Ok, so forgive me if I'm wrong, but the way we get here is through:
-
-x86_schedule_event()
-  ->start_scheduling()
-    spin_lock()
-  ->get_event_constraints()
-    intel_get_excl_constraints()
-      kmalloc(.gfp=GFP_KERNEL)
-
-How can that ever work?
-
---qyHYMwAXsHLOQihY
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTkHU5AAoJEHZH4aRLwOS6w8cQAKij3dPmF1u0ZK+KrznV3Apm
-BSsPSuH9yxnPcRqXkpvFbbYZFxvzIwW+MDnnH+wApnqRPecpJAyAnmWiV4v27gFZ
-/310iM6kageDMpFlZ/1U1c5HYjsftntYbyKrswsmN1754xN65RtGMxVVcGmw9G9E
-oh4f7eCy9iwnB2sexd21cVh/56EXoIqddlANQLVQpfkcAhSFWsZEezsYrDWbVSH8
-+ZUGg/VU24R71mk7eFL/vGr4sDvZgoPbGUce+/bfwx/wbgvM++8b7pH668kt4O1h
-R1xu8LZMe4ZGSP8WAq6JzJtqlvqoBFzIt8Y1z+D0C+7KRADxywjRFVluZA/3YDDD
-EJn78PmIkqB8esTkFt9hNWlsMrfjyexxKzKUjSMUPZo6LFLB8RgG3nWT6IIpGlOD
-C1oudREUiBsWsEt13s3dLpH+8t9LGdTpH/aPauww+sdNe9udvmuYmuIc2oq5gYnR
-3fO+avja7ph5TiiZXH8wrKi3US1MHl7SZ5DxKzoUseHF09lXHUmKqMJKQUM22uEd
-X3Ww+2C1wVk0ygCtwteoutqkRXl14L0AAVuozAHZO5LKeG4S4F86gyF08N4jEBm5
-fKPYK38bd8TvUm+E81lB2jpRX+MVmYMgI0adJ9/Rgyw1ZQYX2/Qp+js/bqT24Kb8
-CbpLQ1SOS021corBsJ+1
-=eaUU
------END PGP SIGNATURE-----
-
---qyHYMwAXsHLOQihY--
+ZGlmZiAtLWdpdCBhL25ldC9jb3JlL2ZpbHRlci5jIGIvbmV0L2NvcmUvZmlsdGVyLmMKaW5kZXgg
+NmY3NTVjYy4uM2I3Mzk4YSAxMDA2NDQKLS0tIGEvbmV0L2NvcmUvZmlsdGVyLmMKKysrIGIvbmV0
+L2NvcmUvZmlsdGVyLmMKQEAgLTMyMiw2ICszMjIsOCBAQCBsb2FkX2I6CiAKIAkJCWlmIChza2Jf
+aXNfbm9ubGluZWFyKHNrYikpCiAJCQkJcmV0dXJuIDA7CisJCQlpZiAoc2tiLT5sZW4gPCBzaXpl
+b2Yoc3RydWN0IG5sYXR0cikpCisJCQkJcmV0dXJuIDA7CiAJCQlpZiAoQSA+IHNrYi0+bGVuIC0g
+c2l6ZW9mKHN0cnVjdCBubGF0dHIpKQogCQkJCXJldHVybiAwOwogCkBAIC0zMzgsMTEgKzM0MCwx
+MyBAQCBsb2FkX2I6CiAKIAkJCWlmIChza2JfaXNfbm9ubGluZWFyKHNrYikpCiAJCQkJcmV0dXJu
+IDA7CisJCQlpZiAoc2tiLT5sZW4gPCBzaXplb2Yoc3RydWN0IG5sYXR0cikpCisJCQkJcmV0dXJu
+IDA7CiAJCQlpZiAoQSA+IHNrYi0+bGVuIC0gc2l6ZW9mKHN0cnVjdCBubGF0dHIpKQogCQkJCXJl
+dHVybiAwOwogCiAJCQlubGEgPSAoc3RydWN0IG5sYXR0ciAqKSZza2ItPmRhdGFbQV07Ci0JCQlp
+ZiAobmxhLT5ubGFfbGVuID4gQSAtIHNrYi0+bGVuKQorCQkJaWYgKG5sYS0+bmxhX2xlbiA+IHNr
+Yi0+bGVuIC0gQSkKIAkJCQlyZXR1cm4gMDsKIAogCQkJbmxhID0gbmxhX2ZpbmRfbmVzdGVkKG5s
+YSwgWCk7Cg==
+--047d7bfd05a2bb38a304fb17048a--
