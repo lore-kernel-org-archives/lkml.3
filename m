@@ -1,27 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752593AbaFEOh4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 10:37:56 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:48513 "EHLO
+	id S1752607AbaFEOiJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 10:38:09 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:48526 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750860AbaFEOhy (ORCPT
+	with ESMTP id S1750860AbaFEOiG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 10:37:54 -0400
-Date: Thu, 5 Jun 2014 07:36:53 -0700
-From: tip-bot for Giedrius Rekasius <tipbot@zytor.com>
-Message-ID: <tip-0b07939cbfdd05bed0c5ec01b8b25493e6ecd34c@git.kernel.org>
+	Thu, 5 Jun 2014 10:38:06 -0400
+Date: Thu, 5 Jun 2014 07:37:07 -0700
+From: tip-bot for Andy Lutomirski <tipbot@zytor.com>
+Message-ID: <tip-84c407084137d4e491b07ea5ff8665d19106a5ac@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, giedrius.rekasius@gmail.com,
-        peterz@infradead.org, tglx@linutronix.de
+        torvalds@linux-foundation.org, peterz@infradead.org,
+        luto@amacapital.net, tglx@linutronix.de, rjw@rjwysocki.net,
+        daniel.lezcano@linaro.org
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        giedrius.rekasius@gmail.com, torvalds@linux-foundation.org,
-        peterz@infradead.org, tglx@linutronix.de
-In-Reply-To: <1401027811-30066-1-git-send-email-giedrius.rekasius@gmail.com>
-References: <1401027811-30066-1-git-send-email-giedrius.rekasius@gmail.com>
+        torvalds@linux-foundation.org, peterz@infradead.org,
+        luto@amacapital.net, tglx@linutronix.de, rjw@rjwysocki.net,
+        daniel.lezcano@linaro.org
+In-Reply-To: <c65ce49615d338bae8fb79df5daffab19353c900.1401902905.git.luto@amacapital.net>
+References: <c65ce49615d338bae8fb79df5daffab19353c900.1401902905.git.luto@amacapital.net>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: Remove redundant assignment to "rt_rq"
-  in update_curr_rt(...)
-Git-Commit-ID: 0b07939cbfdd05bed0c5ec01b8b25493e6ecd34c
+Subject: [tip:sched/core] cpuidle: Set polling in poll_idle
+Git-Commit-ID: 84c407084137d4e491b07ea5ff8665d19106a5ac
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,49 +35,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  0b07939cbfdd05bed0c5ec01b8b25493e6ecd34c
-Gitweb:     http://git.kernel.org/tip/0b07939cbfdd05bed0c5ec01b8b25493e6ecd34c
-Author:     Giedrius Rekasius <giedrius.rekasius@gmail.com>
-AuthorDate: Sun, 25 May 2014 15:23:31 +0100
+Commit-ID:  84c407084137d4e491b07ea5ff8665d19106a5ac
+Gitweb:     http://git.kernel.org/tip/84c407084137d4e491b07ea5ff8665d19106a5ac
+Author:     Andy Lutomirski <luto@amacapital.net>
+AuthorDate: Wed, 4 Jun 2014 10:31:14 -0700
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 5 Jun 2014 11:52:34 +0200
+CommitDate: Thu, 5 Jun 2014 12:09:49 +0200
 
-sched: Remove redundant assignment to "rt_rq" in update_curr_rt(...)
+cpuidle: Set polling in poll_idle
 
-Variable "rt_rq" is used only in block "for_each_sched_rt_entity" so the
-value assigned to it at the beginning of the update_curr_rt(...) gets
-overwritten without ever being read. Remove redundant assignment and
-move variable declaration to the block in which it is being used.
+poll_idle is the archetypal polling idle loop; tell the core idle
+code about it.
 
-Signed-off-by: Giedrius Rekasius <giedrius.rekasius@gmail.com>
+This avoids pointless IPIs when all of the other cpuidle states are
+disabled.
+
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: kernel-janitors@vger.kernel.org
+Cc: nicolas.pitre@linaro.org
+Cc: umgwanakikbuti@gmail.com
+Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
 Cc: linux-kernel@vger.kernel.org
-Link: http://lkml.kernel.org/r/1401027811-30066-1-git-send-email-giedrius.rekasius@gmail.com
+Cc: linux-pm@vger.kernel.org
+Link: http://lkml.kernel.org/r/c65ce49615d338bae8fb79df5daffab19353c900.1401902905.git.luto@amacapital.net
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/rt.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/cpuidle/driver.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-index 0ebfd7a..43406db 100644
---- a/kernel/sched/rt.c
-+++ b/kernel/sched/rt.c
-@@ -924,7 +924,6 @@ static void update_curr_rt(struct rq *rq)
- {
- 	struct task_struct *curr = rq->curr;
- 	struct sched_rt_entity *rt_se = &curr->rt;
--	struct rt_rq *rt_rq = rt_rq_of_se(rt_se);
- 	u64 delta_exec;
+diff --git a/drivers/cpuidle/driver.c b/drivers/cpuidle/driver.c
+index 136d6a2..9634f20 100644
+--- a/drivers/cpuidle/driver.c
++++ b/drivers/cpuidle/driver.c
+@@ -187,8 +187,11 @@ static int poll_idle(struct cpuidle_device *dev,
  
- 	if (curr->sched_class != &rt_sched_class)
-@@ -949,7 +948,7 @@ static void update_curr_rt(struct rq *rq)
- 		return;
+ 	t1 = ktime_get();
+ 	local_irq_enable();
+-	while (!need_resched())
+-		cpu_relax();
++	if (!current_set_polling_and_test()) {
++		while (!need_resched())
++			cpu_relax();
++	}
++	current_clr_polling();
  
- 	for_each_sched_rt_entity(rt_se) {
--		rt_rq = rt_rq_of_se(rt_se);
-+		struct rt_rq *rt_rq = rt_rq_of_se(rt_se);
- 
- 		if (sched_rt_runtime(rt_rq) != RUNTIME_INF) {
- 			raw_spin_lock(&rt_rq->rt_runtime_lock);
+ 	t2 = ktime_get();
+ 	diff = ktime_to_us(ktime_sub(t2, t1));
