@@ -1,66 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751861AbaFENQu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 09:16:50 -0400
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:57833 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751460AbaFENQs (ORCPT
+	id S1751658AbaFENSK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 09:18:10 -0400
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:63832 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750864AbaFENSI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 09:16:48 -0400
+	Thu, 5 Jun 2014 09:18:08 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AtsNACJtkFN5LOoo/2dsb2JhbABZgweDRag4BpgnAYELF3SCJQEBBScTHCMQCAMOCgklDwUlAyETiEHSdhcWhT+IfQeDK4EVBJoSiyGIGYNKKw
+Date: Thu, 5 Jun 2014 23:17:53 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Cc: rientjes@google.com, Motohiro.Kosaki@us.fujitsu.com, riel@redhat.com,
+        kosaki.motohiro@jp.fujitsu.com, fengguang.wu@intel.com,
+        kamezawa.hiroyu@jp.fujitsu.com, akpm@linux-foundation.org,
+        hch@infradead.org, linux-kernel@vger.kernel.org, xfs@oss.sgi.com
+Subject: Re: [PATCH] mm/vmscan: Do not block forever at
+ shrink_inactive_list().
+Message-ID: <20140605131753.GD4523@dastard>
+References: <20140520063024.GH18954@dastard>
+ <201405202358.ADF10119.SMOFOQLFtOVHJF@I-love.SAKURA.ne.jp>
+ <6B2BA408B38BA1478B473C31C3D2074E31D59D8673@SV-EXCHANGE1.Corp.FC.LOCAL>
+ <201405262045.CDG95893.HLFFOSFMQOVOJt@I-love.SAKURA.ne.jp>
+ <alpine.DEB.2.02.1406031442170.19491@chino.kir.corp.google.com>
+ <201406052145.CIB35534.OQLVMSJFOHtFOF@I-love.SAKURA.ne.jp>
 MIME-Version: 1.0
-In-Reply-To: <20140605125929.GH6758@twins.programming.kicks-ass.net>
-References: <1401917658-26065-1-git-send-email-eranian@google.com>
-	<1401917658-26065-10-git-send-email-eranian@google.com>
-	<CADknwL5S8QpzCAgrKHjbGTbEx7nA8L=Vu8d-UWAYCg6X25OcGw@mail.gmail.com>
-	<CABPqkBSimH8Ob_q3dDtQiW_OwuS9nA4Gsx87H26ywNcmYd38Xw@mail.gmail.com>
-	<CADknwL6s2ttb5E2JDr6bc_XkwpxnW5ecU-3Ns88=gvgPvLYkPg@mail.gmail.com>
-	<CABPqkBQUUb+yEvC8y3oLc0DUbF3DJPzbt3sNL7Zqzufh6EYdRw@mail.gmail.com>
-	<CADknwL71NC5wBG1tnqgJ6iiA4y+HYomGpufOn7V+MP2=m7+Mig@mail.gmail.com>
-	<20140605125022.GF6758@twins.programming.kicks-ass.net>
-	<CABPqkBQMi5NoL1EFB8ajopF8QbF3kiFgk6NkSkaqzruVaEQJOQ@mail.gmail.com>
-	<20140605125929.GH6758@twins.programming.kicks-ass.net>
-Date: Thu, 5 Jun 2014 15:16:47 +0200
-Message-ID: <CABPqkBQq1ifgVEK-kdnyMRz5bmMPgfkoZ7VyP=2U37cUUDMvog@mail.gmail.com>
-Subject: Re: [PATCH 9/9] perf/x86: add syfs entry to disable HT bug workaround
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Matt Fleming <matt@console-pimps.org>, LKML <linux-kernel@vger.kernel.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Jiri Olsa <jolsa@redhat.com>, "Yan, Zheng" <zheng.z.yan@intel.com>,
-        Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201406052145.CIB35534.OQLVMSJFOHtFOF@I-love.SAKURA.ne.jp>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 5, 2014 at 2:59 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Thu, Jun 05, 2014 at 02:55:05PM +0200, Stephane Eranian wrote:
->> On Thu, Jun 5, 2014 at 2:50 PM, Peter Zijlstra <peterz@infradead.org> wrote:
->> > On Thu, Jun 05, 2014 at 12:16:01PM +0100, Matt Fleming wrote:
->> >> On 5 June 2014 11:19, Stephane Eranian <eranian@google.com> wrote:
->> >> > How would you know that you have a uniform workload from inside
->> >> > the kernel?
->> >>
->> >> That's what I'm asking you ;-)
->> >>
->> >> >> Does cpu_sibling_map not give you some indication of whether HT is
->> >> >> enabled? I think the topology_thread_cpumask() is the topology API for
->> >> >> that. But I could most definitely be wrong. Hopefully someone on the
->> >> >> Cc list will know.
->> >> >>
->> >> > Remember trying some of that, but when perf_event is initialized, those
->> >> > masks are not yet setup properly.
->> >>
->> >> Oh, bummer.
->> >
->> > So we init perf very early to get nmi-watchdog up and running, but
->> > there's no reason you cannot register a second initcall later and flip
->> > the switch from it there.
->>
->> and what initcall would that be?
->
-> Pretty much anything !early_initcall() is ran after SMP bringup iirc.
+On Thu, Jun 05, 2014 at 09:45:26PM +0900, Tetsuo Handa wrote:
+> David Rientjes wrote:
+> > On Mon, 26 May 2014, Tetsuo Handa wrote:
+> > 
+> > > In shrink_inactive_list(), we do not insert delay at
+> > > 
+> > >   if (!sc->hibernation_mode && !current_is_kswapd())
+> > >     wait_iff_congested(zone, BLK_RW_ASYNC, HZ/10);
+> > > 
+> > > if sc->hibernation_mode != 0.
+> > > Follow the same reason, we should not insert delay at
+> > > 
+> > >   while (unlikely(too_many_isolated(zone, file, sc))) {
+> > >     congestion_wait(BLK_RW_ASYNC, HZ/10);
+> > > 
+> > >     /* We are about to die and free our memory. Return now. */
+> > >     if (fatal_signal_pending(current))
+> > >       return SWAP_CLUSTER_MAX;
+> > >   }
+> > > 
+> > > if sc->hibernation_mode != 0.
+> > > 
+> > > Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+> > > ---
+> > >  mm/vmscan.c |    3 +++
+> > >  1 files changed, 3 insertions(+), 0 deletions(-)
+> > > 
+> > > diff --git a/mm/vmscan.c b/mm/vmscan.c
+> > > index 32c661d..89c42ca 100644
+> > > --- a/mm/vmscan.c
+> > > +++ b/mm/vmscan.c
+> > > @@ -1362,6 +1362,9 @@ static int too_many_isolated(struct zone *zone, int file,
+> > >  	if (current_is_kswapd())
+> > >  		return 0;
+> > >  
+> > > +	if (sc->hibernation_mode)
+> > > +		return 0;
+> > > +
+> > >  	if (!global_reclaim(sc))
+> > >  		return 0;
+> > >  
+> > 
+> > This isn't the only too_many_isolated() functions that do a delay, how is 
+> > the too_many_isolated() in mm/compaction.c different?
+> > 
+> 
+> I don't know. But today I realized that this patch is not sufficient.
+> 
+> I'm trying to find why __alloc_pages_slowpath() cannot return for many minutes
+> when a certain type of memory pressure is given on a RHEL7 environment with
+> 4 CPU / 2GB RAM. Today I tried to use ftrace for examining the breakdown of
+> time-consuming functions inside __alloc_pages_slowpath(). But on the first run,
+> all processes are trapped into this too_many_isolated()/congestion_wait() loop
+> while kswapd is not running; stalling forever because nobody can perform
+> operations for making too_many_isolated() to return 0.
+> 
+> This means that, under rare circumstances, it is possible that all processes
+> other than kswapd are trapped into too_many_isolated()/congestion_wait() loop
+> while kswapd is sleeping because this loop assumes that somebody else shall
+> wake up kswapd and kswapd shall perform operations for making
+> too_many_isolated() to return 0. However, we cannot guarantee that kswapd is
+> waken by somebody nor kswapd is not blocked by blocking operations inside
+> shrinker functions (e.g. mutex_lock()).
 
-Ok, we can try this. Need to check the impact on NMI watchdog if
-already active.
+So what you are saying is that kswapd is having problems with
+getting blocked on locks held by processes in direct reclaim?
+
+What are the stack traces that demonstrate such a dependency loop?
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
