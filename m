@@ -1,60 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751774AbaFENa0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 09:30:26 -0400
-Received: from vegas.theobroma-systems.com ([144.76.126.164]:38772 "EHLO
-	mail.theobroma-systems.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751118AbaFENaZ (ORCPT
+	id S1751795AbaFENb7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 09:31:59 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:57663 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750809AbaFENb6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 09:30:25 -0400
-X-Greylist: delayed 1339 seconds by postgrey-1.27 at vger.kernel.org; Thu, 05 Jun 2014 09:30:24 EDT
-From: Marcus Nutzinger <marcus.nutzinger@theobroma-systems.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Marcus Nutzinger <marcus.nutzinger@theobroma-systems.com>
-Subject: [PATCH] usb: gadget: gadgetfs: correct dev state
-Date: Thu,  5 Jun 2014 15:08:00 +0200
-Message-Id: <1401973680-18413-1-git-send-email-marcus.nutzinger@theobroma-systems.com>
-X-Mailer: git-send-email 1.9.0
+	Thu, 5 Jun 2014 09:31:58 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAG-2HqU=LAXr0o2e9RRCmrX1eWouhepEZHaPfBjrs64xUeb=gw@mail.gmail.com>
+References: <1401896895-14262-1-git-send-email-tiwai@suse.de>
+	<CACVXFVPpmdXJV2CC-U=bsA820VD42i2-OqBfNfTPPaMergu8TQ@mail.gmail.com>
+	<CAG-2HqU=LAXr0o2e9RRCmrX1eWouhepEZHaPfBjrs64xUeb=gw@mail.gmail.com>
+Date: Thu, 5 Jun 2014 21:31:56 +0800
+Message-ID: <CACVXFVP1uS7szLqvabtMbiaUgd13bWoYXv5q-Az7wBia=ogf7Q@mail.gmail.com>
+Subject: Re: [PATCH v2] firmware loader: allow disabling of udev as firmware loader
+From: Ming Lei <ming.lei@canonical.com>
+To: Tom Gundersen <teg@jklm.no>
+Cc: LKML <linux-kernel@vger.kernel.org>, Greg KH <gregkh@linuxfoundation.org>,
+        Takashi Iwai <tiwai@suse.de>, Stefan Roese <sr@denx.de>,
+        Arnd Bergmann <arnd@arndb.de>, Abhay Salunke <Abhay_Salunke@dell.com>,
+        Kay Sievers <kay@vrfy.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 1826e9b1 fixes the use after free of "dev".
-However if this is not the final call to dev_release()
-and the state is not reset to STATE_DEV_DISABLED and
-hence all further open() calls to the gadgetfs ep0
-device will fail with EBUSY.
+On Thu, Jun 5, 2014 at 8:25 PM, Tom Gundersen <teg@jklm.no> wrote:
+>
+> On 5 Jun 2014 14:18, "Ming Lei" <ming.lei@canonical.com> wrote:
+>>
+>> On Wed, Jun 4, 2014 at 11:48 PM, Takashi Iwai <tiwai@suse.de> wrote:
+>> > [The patch was originally proposed by Tom Gundersen, and rewritten
+>> >  afterwards by me; most of changelogs below borrowed from Tom's
+>> >  original patch -- tiwai]
+>> >
+>> > Currently (at least) the dell-rbu driver selects FW_LOADER_USER_HELPER,
+>> > which means that distros can't really stop loading firmware through
+>> > udev without breaking other users (though some have).
+>> >
+>> > Ideally we would remove/disable the udev firmware helper in both the
+>> > kernel and in udev, but if we were to disable it in udev and not the
+>> > kernel, the result would be (seemingly) hung kernels as no one would
+>> > be around to cancel firmware requests.
+>> >
+>> > This patch allows udev firmware loading to be disabled while still
+>> > allowing non-udev firmware loading, as done by the dell-rbu driver, to
+>> > continue working. This is achieved by only using the fallback
+>> > mechanism when the uevent is suppressed.
+>> >
+>> > The patch renames the user-selectable Kconfig from FW_LOADER_USER_HELPER
+>> > to FW_LOADER_USER_HELPER_FALLBACK, and the former is reverse-selected
+>> > by the latter or the drivers that need userhelper like dell-rbu.
+>> >
+>> > Also, the "default y" is removed together with this change, since it's
+>> > been deprecated in udev upstream, thus rather better to disable it
+>> > nowadays.
+>> >
+>> > Tested with
+>> >     FW_LOADER_USER_HELPER=n
+>> >     LATTICE_ECP3_CONFIG=y
+>> >     DELL_RBU=y
+>> > and udev without the firmware loading support, but I don't have the
+>> > hardware to test the lattice/dell drivers, so additional testing would
+>> > be appreciated.
+>> >
+>> > Reviewed-by: Tom Gundersen <teg@jklm.no>
+>> > Cc: Ming Lei <ming.lei@canonical.com>
+>> > Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>> > Cc: Abhay Salunke <Abhay_Salunke@dell.com>
+>> > Cc: Stefan Roese <sr@denx.de>
+>> > Cc: Arnd Bergmann <arnd@arndb.de>
+>> > Cc: Kay Sievers <kay@vrfy.org>
+>> > Signed-off-by: Takashi Iwai <tiwai@suse.de>
+>> > ---
+>> >  drivers/base/Kconfig          | 10 ++++++++--
+>> >  drivers/base/firmware_class.c | 15 ++++++++++-----
+>> >  include/linux/firmware.h      |  2 +-
+>> >  3 files changed, 19 insertions(+), 8 deletions(-)
+>> >
+>> > diff --git a/drivers/base/Kconfig b/drivers/base/Kconfig
+>> > index 8fa8deab6449..d0bb32e4c416 100644
+>> > --- a/drivers/base/Kconfig
+>> > +++ b/drivers/base/Kconfig
+>> > @@ -144,15 +144,21 @@ config EXTRA_FIRMWARE_DIR
+>> >           some other directory containing the firmware files.
+>> >
+>> >  config FW_LOADER_USER_HELPER
+>> > +       bool
+>> > +
+>> > +config FW_LOADER_USER_HELPER_FALLBACK
+>> >         bool "Fallback user-helper invocation for firmware loading"
+>> >         depends on FW_LOADER
+>> > -       default y
+>> > +       select FW_LOADER_USER_HELPER
+>> >         help
+>> >           This option enables / disables the invocation of user-helper
+>> >           (e.g. udev) for loading firmware files as a fallback after the
+>> >           direct file loading in kernel fails.  The user-mode helper is
+>> >           no longer required unless you have a special firmware file
+>> > that
+>> > -         resides in a non-standard path.
+>> > +         resides in a non-standard path. Moreover, the udev support has
+>> > +         been deprecated upstream.
+>> > +
+>> > +         If you are unsure about this, say N here.
+>>
+>> It may be safer to say Y here for fallback if not sure.
+>
+> Saying Y here will be actively harmful if the firmware loader is disabled in
+> udev (which I guess most distros will do as soon as they can), so I think we
 
-So this commit reverts 1826e9b1 and places the call
-put_dev() after setting the state.
+If fallback is triggered, it means that the firmware can't be found
+in default direct rootfs path, so it is better to continue to look for it
+from userspace.
 
-Signed-off-by: Marcus Nutzinger <marcus.nutzinger@theobroma-systems.com>
-Reviewed-by: Christoph Muellner <christoph.muellner@theobroma-systems.com>
----
- drivers/usb/gadget/inode.c | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+Also it won't a big problem for hanging the request user context
+for some while(60sec at default) if udev is disabled, will it?
 
-diff --git a/drivers/usb/gadget/inode.c b/drivers/usb/gadget/inode.c
-index a925d0c..6330528 100644
---- a/drivers/usb/gadget/inode.c
-+++ b/drivers/usb/gadget/inode.c
-@@ -1264,8 +1264,13 @@ dev_release (struct inode *inode, struct file *fd)
- 
- 	kfree (dev->buf);
- 	dev->buf = NULL;
--	put_dev (dev);
- 
-+	/* other endpoints were all decoupled from this device */
-+	spin_lock_irq(&dev->lock);
-+	dev->state = STATE_DEV_DISABLED;
-+	spin_unlock_irq(&dev->lock);
-+
-+	put_dev (dev);
- 	return 0;
- }
- 
--- 
-1.9.0
+BTW, are you sure most distros will do that in the near future?
 
+> should advice people to say N unless they really know what they are doing
+> and that their userspace can cope with it.
+
+That is why I suggest to say Y if someone isn't sure.
+
+
+Thanks,
+--
+Ming Lei
