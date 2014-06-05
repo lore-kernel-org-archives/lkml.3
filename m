@@ -1,99 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751810AbaFEKaQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 06:30:16 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:65124 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751126AbaFEKaN (ORCPT
+	id S1751820AbaFEKcQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 06:32:16 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:43451 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750723AbaFEKcN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 06:30:13 -0400
+	Thu, 5 Jun 2014 06:32:13 -0400
 From: Grant Likely <grant.likely@linaro.org>
 Subject: Re: [PATCH 7/7] OF/ACPI/I2C: Add generic match function for the
  aforementioned systems
-To: Lee Jones <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Cc: wsa@the-dreams.de, linux-i2c@vger.kernel.org, devicetree@vger.kernel.org,
-        linus.walleij@linaro.org, Lee Jones <lee.jones@linaro.org>
-In-Reply-To: <1401883796-17841-8-git-send-email-lee.jones@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        wsa@the-dreams.de, linux-i2c@vger.kernel.org,
+        devicetree@vger.kernel.org, linus.walleij@linaro.org
+In-Reply-To: <20140605082008.GC19550@lee--X1>
 References: <1401883796-17841-1-git-send-email-lee.jones@linaro.org>
 	<1401883796-17841-8-git-send-email-lee.jones@linaro.org>
-Date: Thu, 05 Jun 2014 11:30:09 +0100
-Message-Id: <20140605103009.85BE4C40A4D@trevor.secretlab.ca>
+	<5769487.6cMQUCkisu@vostro.rjw.lan>
+	<20140604125141.GB5214@lahna.fi.intel.com>
+	<20140604132820.GA19550@lee--X1>
+	<20140605080000.GE5214@lahna.fi.intel.com>
+	<20140605082008.GC19550@lee--X1>
+Date: Thu, 05 Jun 2014 11:32:09 +0100
+Message-Id: <20140605103209.C8F10C40A4D@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed,  4 Jun 2014 13:09:56 +0100, Lee Jones <lee.jones@linaro.org> wrote:
-> Currently this is a helper function for the I2C subsystem to aid the
-> matching of non-standard compatible strings and devices which use DT
-> and/or ACPI, but do not supply any nodes (see: [1] Method 4).  However,
-> it has been made more generic as it can be used to only make one call
-> for drivers which support any mixture of OF, ACPI and/or I2C matching.
+On Thu, 5 Jun 2014 09:20:08 +0100, Lee Jones <lee.jones@linaro.org> wrote:
+> On Thu, 05 Jun 2014, Mika Westerberg wrote:
+> > On Wed, Jun 04, 2014 at 02:28:20PM +0100, Lee Jones wrote:
+> > > On Wed, 04 Jun 2014, Mika Westerberg wrote:
+> > > > On Wed, Jun 04, 2014 at 02:37:42PM +0200, Rafael J. Wysocki wrote:
+> > > > > On Wednesday, June 04, 2014 01:09:56 PM Lee Jones wrote:
+> > > > > > Currently this is a helper function for the I2C subsystem to aid the
+> > > > > > matching of non-standard compatible strings and devices which use DT
+> > > > > > and/or ACPI, but do not supply any nodes (see: [1] Method 4).  However,
+> > > > > > it has been made more generic as it can be used to only make one call
+> > > > > > for drivers which support any mixture of OF, ACPI and/or I2C matching.
+> > > > > > 
+> > > > > > The initial aim is for of_match_device() to be replaced by this call
+> > > > > > in all I2C device drivers.
+> > > > > > 
+> > > > > > [1] Documentation/i2c/instantiating-devices
+> > > > > > 
+> > > > > > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> > > > > 
+> > > > > Mika, can you please have a look at this, please?
+> > > > 
+> > > > I don't see any fundamental problems with this wrt. ACPI.
+> > > > 
+> > > > That said, I find it kind of weird to have generic function that then
+> > > > has knowledge of how different buses do their matching.
+> > > > 
+> > > > I would rather see something like firmware_device_match(dev) that goes
+> > > > and matches from DT/ACPI and leave bus specific match to happen internal
+> > > > to that bus.
+> > > 
+> > > Unfortunately that completely defeats the object of the patch.  When a
+> > > of_match_device() is invoked it solely looks up devices based on OF
+> > > matching, but I2C is special in that devices can be registered via
+> > > sysfs, thus will no have device node.  If of_match_device() is called
+> > > in one of these instances it will fail.  The idea of this patch is to
+> > > generify the matching into something does has the knowledge to firstly
+> > > attempt a traditional match, and if that fails will fall back to a
+> > > special i2c_{of,acpi}_match_device() which knows how to deal with
+> > > node-less registration.
+> > 
+> > OK, then but since this is now I2C specific, why call it device_match()
+> > instead of something like i2c_device_match()? Or do you have plans to
 > 
-> The initial aim is for of_match_device() to be replaced by this call
-> in all I2C device drivers.
+> So in an early incarnation of the patch I did just that, and it might
+> not actually be such a bad idea still - I'm open to other people's
+> opinions on this.
 > 
-> [1] Documentation/i2c/instantiating-devices
+> > add there more knowledge about other buses like SPI and PCI to name few?
 > 
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> ... but yes, this is the new idea - that it can be expanded as required.
 
-I don't like this. It drops all type safety on the match entry
-and the caller has no idea what it got back.
+The whole point of this series is to deal with a special use case of i2c
+that we don't need to support for the other bus types. We're having to
+just through special hoops to make it work and I don't want to expand it
+to other bus types if at all possible.
 
 g.
 
-> ---
->  include/linux/match.h | 40 ++++++++++++++++++++++++++++++++++++++++
->  1 file changed, 40 insertions(+)
->  create mode 100644 include/linux/match.h
-> 
-> diff --git a/include/linux/match.h b/include/linux/match.h
-> new file mode 100644
-> index 0000000..20a08e2
-> --- /dev/null
-> +++ b/include/linux/match.h
-> @@ -0,0 +1,40 @@
-> +#include <linux/of.h>
-> +#include <linux/acpi.h>
-> +#include <linux/i2c.h>
-> +
-> +static void *device_match(struct device *dev)
-> +{
-> +	struct device_driver *driver = dev->driver;
-> +
-> +	if (!driver)
-> +		return NULL;
-> +
-> +	/* Attempt an OF style match */
-> +	if (IS_ENABLED(CONFIG_OF)) {
-> +		const struct of_device_id *of_match =
-> +			i2c_of_match_device(driver->of_match_table, dev);
-> +		if (of_match)
-> +			return (void *)of_match;
-> +	}
-> +
-> +	/* Then ACPI style match */
-> +	if (IS_ENABLED(CONFIG_ACPI)) {
-> +		const struct acpi_device_id *acpi_match	=
-> +			acpi_match_device(driver->acpi_match_table, dev);
-> +		if (acpi_match)
-> +			return (void *)acpi_match;
-> +	}
-> +
-> +	/* Finally an I2C match */
-> +	if (IS_ENABLED(CONFIG_I2C)) {
-> +		struct i2c_client *client = i2c_verify_client(dev);
-> +		struct i2c_driver *i2c_drv = to_i2c_driver(driver);
-> +		struct i2c_device_id *i2c_match;
-> +
-> +		i2c_match = i2c_match_id(i2c_drv->id_table, client);
-> +		if (i2c_match)
-> +			return (void *)i2c_match;
-> +	}
-> +
-> +	return NULL;
-> +}
 > -- 
-> 1.8.3.2
-> 
+> Lee Jones
+> Linaro STMicroelectronics Landing Team Lead
+> Linaro.org │ Open source software for ARM SoCs
+> Follow Linaro: Facebook | Twitter | Blog
 
