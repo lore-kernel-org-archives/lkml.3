@@ -1,84 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751590AbaFEJSK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 05:18:10 -0400
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:54325 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750939AbaFEJSI (ORCPT
+	id S1751255AbaFEJVo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 05:21:44 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:37863 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750742AbaFEJVn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 05:18:08 -0400
+	Thu, 5 Jun 2014 05:21:43 -0400
+Date: Thu, 5 Jun 2014 11:21:30 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Davidlohr Bueso <davidlohr@hp.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, "Paul E. McKenney" <paulmck@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] locking tree changes for v3.16
+Message-ID: <20140605092130.GC6758@twins.programming.kicks-ass.net>
+References: <20140603114821.GA23711@gmail.com>
+ <1401832251.8843.3.camel@buesod1.americas.hpqcorp.net>
+ <20140604103003.GE11096@twins.programming.kicks-ass.net>
+ <20140605081742.GC4926@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20140604185926.GB30884@kroah.com>
-References: <1401869506-48129-1-git-send-email-ritesh.harjani@gmail.com>
-	<1401869506-48129-2-git-send-email-ritesh.harjani@gmail.com>
-	<20140604175145.GD20812@kroah.com>
-	<CAD15agbiuXiiAp62R-NeLeX3rgNftmyb+wGiSVx-FgtcXzxpHA@mail.gmail.com>
-	<20140604185926.GB30884@kroah.com>
-Date: Thu, 5 Jun 2014 14:48:07 +0530
-Message-ID: <CAD15agbUUBsH1Zma7sXMn9PmChKopvqkGLCDEv_HeMWdGjkK=w@mail.gmail.com>
-Subject: Re: [PATCH 1/1] device.h: arm,dma-iommu: Move out dma_iommu_mapping struct
-From: Ritesh Harjani <ritesh.harjani@gmail.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Russell King <rmk@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="NU0Ex4SbNnrxsi6C"
+Content-Disposition: inline
+In-Reply-To: <20140605081742.GC4926@gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
 
-On Thu, Jun 5, 2014 at 12:29 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Thu, Jun 05, 2014 at 12:16:28AM +0530, Ritesh Harjani wrote:
->> Hi Greg,
->>
->> Thanks for reviewing.
->>
->> On Wed, Jun 4, 2014 at 11:21 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
->> > On Wed, Jun 04, 2014 at 01:41:46PM +0530, ritesh.harjani@gmail.com wrote:
->> >> From: Ritesh Harjani <ritesh.harjani@gmail.com>
->> >>
->> >> This patch moves out *mapping pointer of dma_iommu_mapping
->> >> from arch/arm/include/asm/device.h to include/liunux/device.h
->> >
->> > Why?  Who else can use this becides arm devices?
->>
->> Currently only arm and arm64 are the archs at this very moment but
->> later other archs can make use of this, as its an arch independent
->> code. (Similar to as some arch make use of iommu_area_alloc in
->> iommu-helper.c)
->>
->> >
->> >>
->> >> Also, it moves out complete structre definition of dma_iommu_mapping
->> >> to include/linux/iommu-helper.h
->> >>
->> >> This is done since arm iommu's dma-mapping arch independent code,
->> >> needs to be moved out to lib/iommu-helper.c, this means
->> >> dma_iommu_mapping will be arch independent and later other archs
->> >> can make use of it.
->> >
->> > Will that really happen?  Do you have patches that do that?  I'd prefer
->> > to not do stuff like this until you have a patch series that needs it,
->> > otherwise this is just unneeded churn.
->>
->> Yes, foll link has the patch series, (under review)
->> http://www.spinics.net/lists/arm-kernel/msg336896.html
->
-> Make this patch 1/3 of that series and resend, I don't want to take this
-> one if the others are not accepted.
+--NU0Ex4SbNnrxsi6C
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Sure I will do that.
+On Thu, Jun 05, 2014 at 10:17:42AM +0200, Ingo Molnar wrote:
+> > Ingo is 'missing' most of the time, so while I sit here with a=20
+> > massive queue of patches its nearly impossible for me to get=20
+> > anything merged :-(
+>=20
+> Right now I'm somewhat 'missing' because I fell ill right when the=20
+> merge window began :-/ But I merged all your pending bits shortly=20
+> before the merge window started. During the merge window itself I
+> try not to merge fresh patches.
 
->
-> thanks,
->
-> greg k-h
+Yeah, no problem that, it just shows we need to better arrange things
+for when you're not available.
 
-Thanks
-Ritesh
+My/our quilt workflow works really good for me when you're there, but
+its obviously somewhat broken without you. We just need to work out a
+(better) fallback case.
+
+The timing was just somewhat unfortunate.
+
+--NU0Ex4SbNnrxsi6C
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTkDaaAAoJEHZH4aRLwOS6qgEP/1lrKBp5eHB+mkgLdXmA6oQX
+K+iHJyz3jgjwq3q2dOX7B9b3b06OolZNoIkue+/b7r5xVUNBQRdd4mTw0aO1k2hR
+z/8JMtczvwojt3TIyRq8ynMMtK+3cJ+rIrCCYsnRDCETArbwmRzKwUUs/tKhOSJp
+DgFSyxjTySzLSxgXz9uM84mzQAi0k9pKDwCbpZajvKSr6niG+qpl1eTUIDQzVvIf
+yMBz/UkXcOGbxEZ/SN5QqRwAj10oU+tpIoPXaeXGoVj3B5A6APT5JZ3NFmRPS+p6
+RiWi3o5PImTmdLhsfKgzUvKOy11ltI3Si3EP550LxHecjPxaf7mt1OpK7CXJi8eK
+ufuQY0uKaImHABKIS4YOimzBVhnOgfbO24VCHfQfZ/vIgZABxLBw2oetnuSULz+V
+F2tXTYpEcXjmNxdU0HnbImSJTCp9a+Kv5/d2zIYk56z0Qp00QhttGhkrNBM7oT+0
+Vkf3Ej0p5wSJH88LdVvvPWDk2V7lsFIfVhNBazaUsmS3al63fABKSpfvV2KZ6hzi
+E7bkNYHCbITINAj+8R6EO8z7WqMhHfBQPzzTgHwlWWeWvyhULa1nD8GLa0YwlFSU
+3ct13p37PtItTb926H939X6grSjB7x/uQKOZAmTWzSzEbasDe0akgobfKEmvf0UT
+c9UbuVjuNwB9nyj9DixS
+=RVoj
+-----END PGP SIGNATURE-----
+
+--NU0Ex4SbNnrxsi6C--
