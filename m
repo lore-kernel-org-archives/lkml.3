@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752942AbaFEEVM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 00:21:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44043 "EHLO
+	id S1754201AbaFEEuH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 00:50:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44090 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752831AbaFEEVF (ORCPT
+	with ESMTP id S1752908AbaFEEVL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 00:21:05 -0400
+	Thu, 5 Jun 2014 00:21:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Alasdair G Kergon <agk@redhat.com>,
-        Ben Hutchings <ben@decadent.org.uk>, Rui Xiang <rui.xiang@huawei.com>
-Subject: [PATCH 3.4 095/214] dm bufio: avoid a possible __vmalloc deadlock
-Date: Wed,  4 Jun 2014 21:17:38 -0700
-Message-Id: <20140605041652.455609613@linuxfoundation.org>
+        Axel Lin <axel.lin@ingics.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        Qiang Huang <h.huangqiang@huawei.com>
+Subject: [PATCH 3.4 114/214] regulator: max8997: Use uV in voltage_map_desc
+Date: Wed,  4 Jun 2014 21:17:57 -0700
+Message-Id: <20140605041655.005729326@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -28,83 +29,155 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Axel Lin <axel.lin@ingics.com>
 
-commit 502624bdad3dba45dfaacaf36b7d83e39e74b2d2 upstream.
+commit bc3b7756b5ff66828acf7bc24f148d28b8d61108 upstream.
 
-This patch uses memalloc_noio_save to avoid a possible deadlock in
-dm-bufio.  (it could happen only with large block size, at most
-PAGE_SIZE << MAX_ORDER (typically 8MiB).
+Current code does integer division (min_vol = min_uV / 1000) before pass
+min_vol to max8997_get_voltage_proper_val().
+So it is possible min_vol is truncated to a smaller value.
 
-__vmalloc doesn't fully respect gfp flags. The specified gfp flags are
-used for allocation of requested pages, structures vmap_area, vmap_block
-and vm_struct and the radix tree nodes.
+For example, if the request min_uV is 800900 for ldo.
+min_vol = 800900 / 1000 = 800 (mV)
+Then max8997_get_voltage_proper_val returns 800 mV for this case which is lower
+than the requested voltage.
 
-However, the kernel pagetables are allocated always with GFP_KERNEL.
-Thus the allocation of pagetables can recurse back to the I/O layer and
-cause a deadlock.
+Use uV rather than mV in voltage_map_desc to prevent truncation by integer
+division.
 
-This patch uses the function memalloc_noio_save to set per-process
-PF_MEMALLOC_NOIO flag and the function memalloc_noio_restore to restore
-it. When this flag is set, all allocations in the process are done with
-implied GFP_NOIO flag, thus the deadlock can't happen.
-
-This should be backported to stable kernels, but they don't have the
-PF_MEMALLOC_NOIO flag and memalloc_noio_save/memalloc_noio_restore
-functions. So, PF_MEMALLOC should be set and restored instead.
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Alasdair G Kergon <agk@redhat.com>
-[bwh: Backported to 3.2 as recommended]
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+[bwh: Backported to 3.2:
+ - Adjust context
+ - voltage_map_desc also has an n_bits field]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Cc: Rui Xiang <rui.xiang@huawei.com>
+Cc: Qiang Huang <h.huangqiang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-bufio.c |   26 +++++++++++++++++++++++++-
- 1 file changed, 25 insertions(+), 1 deletion(-)
+ drivers/regulator/max8997.c |   36 +++++++++++++++++-------------------
+ 1 file changed, 17 insertions(+), 19 deletions(-)
 
---- a/drivers/md/dm-bufio.c
-+++ b/drivers/md/dm-bufio.c
-@@ -321,6 +321,9 @@ static void __cache_size_refresh(void)
- static void *alloc_buffer_data(struct dm_bufio_client *c, gfp_t gfp_mask,
- 			       enum data_mode *data_mode)
- {
-+	unsigned noio_flag;
-+	void *ptr;
-+
- 	if (c->block_size <= DM_BUFIO_BLOCK_SIZE_SLAB_LIMIT) {
- 		*data_mode = DATA_MODE_SLAB;
- 		return kmem_cache_alloc(DM_BUFIO_CACHE(c), gfp_mask);
-@@ -334,7 +337,28 @@ static void *alloc_buffer_data(struct dm
- 	}
+--- a/drivers/regulator/max8997.c
++++ b/drivers/regulator/max8997.c
+@@ -71,26 +71,26 @@ struct voltage_map_desc {
+ 	unsigned int n_bits;
+ };
  
- 	*data_mode = DATA_MODE_VMALLOC;
--	return __vmalloc(c->block_size, gfp_mask, PAGE_KERNEL);
-+
-+	/*
-+	 * __vmalloc allocates the data pages and auxiliary structures with
-+	 * gfp_flags that were specified, but pagetables are always allocated
-+	 * with GFP_KERNEL, no matter what was specified as gfp_mask.
-+	 *
-+	 * Consequently, we must set per-process flag PF_MEMALLOC_NOIO so that
-+	 * all allocations done by this process (including pagetables) are done
-+	 * as if GFP_NOIO was specified.
-+	 */
-+
-+	if (gfp_mask & __GFP_NORETRY) {
-+		noio_flag = current->flags & PF_MEMALLOC;
-+		current->flags |= PF_MEMALLOC;
-+	}
-+
-+	ptr = __vmalloc(c->block_size, gfp_mask, PAGE_KERNEL);
-+
-+	if (gfp_mask & __GFP_NORETRY)
-+		current->flags = (current->flags & ~PF_MEMALLOC) | noio_flag;
-+
-+	return ptr;
+-/* Voltage maps in mV */
++/* Voltage maps in uV */
+ static const struct voltage_map_desc ldo_voltage_map_desc = {
+-	.min = 800,	.max = 3950,	.step = 50,	.n_bits = 6,
++	.min = 800000,	.max = 3950000,	.step = 50000,	.n_bits = 6,
+ }; /* LDO1 ~ 18, 21 all */
+ 
+ static const struct voltage_map_desc buck1245_voltage_map_desc = {
+-	.min = 650,	.max = 2225,	.step = 25,	.n_bits = 6,
++	.min = 650000,	.max = 2225000,	.step = 25000,	.n_bits = 6,
+ }; /* Buck1, 2, 4, 5 */
+ 
+ static const struct voltage_map_desc buck37_voltage_map_desc = {
+-	.min = 750,	.max = 3900,	.step = 50,	.n_bits = 6,
++	.min = 750000,	.max = 3900000,	.step = 50000,	.n_bits = 6,
+ }; /* Buck3, 7 */
+ 
+-/* current map in mA */
++/* current map in uA */
+ static const struct voltage_map_desc charger_current_map_desc = {
+-	.min = 200,	.max = 950,	.step = 50,	.n_bits = 4,
++	.min = 200000,	.max = 950000,	.step = 50000,	.n_bits = 4,
+ };
+ 
+ static const struct voltage_map_desc topoff_current_map_desc = {
+-	.min = 50,	.max = 200,	.step = 10,	.n_bits = 4,
++	.min = 50000,	.max = 200000,	.step = 10000,	.n_bits = 4,
+ };
+ 
+ static const struct voltage_map_desc *reg_voltage_map[] = {
+@@ -194,7 +194,7 @@ static int max8997_list_voltage(struct r
+ 	if (val > desc->max)
+ 		return -EINVAL;
+ 
+-	return val * 1000;
++	return val;
  }
  
- /*
+ static int max8997_get_enable_register(struct regulator_dev *rdev,
+@@ -496,7 +496,6 @@ static int max8997_set_voltage_ldobuck(s
+ {
+ 	struct max8997_data *max8997 = rdev_get_drvdata(rdev);
+ 	struct i2c_client *i2c = max8997->iodev->i2c;
+-	int min_vol = min_uV / 1000, max_vol = max_uV / 1000;
+ 	const struct voltage_map_desc *desc;
+ 	int rid = rdev_get_id(rdev);
+ 	int reg, shift = 0, mask, ret;
+@@ -522,7 +521,7 @@ static int max8997_set_voltage_ldobuck(s
+ 
+ 	desc = reg_voltage_map[rid];
+ 
+-	i = max8997_get_voltage_proper_val(desc, min_vol, max_vol);
++	i = max8997_get_voltage_proper_val(desc, min_uV, max_uV);
+ 	if (i < 0)
+ 		return i;
+ 
+@@ -541,7 +540,7 @@ static int max8997_set_voltage_ldobuck(s
+ 		/* If the voltage is increasing */
+ 		if (org < i)
+ 			udelay(DIV_ROUND_UP(desc->step * (i - org),
+-						max8997->ramp_delay));
++						max8997->ramp_delay * 1000));
+ 	}
+ 
+ 	return ret;
+@@ -640,7 +639,6 @@ static int max8997_set_voltage_buck(stru
+ 	const struct voltage_map_desc *desc;
+ 	int new_val, new_idx, damage, tmp_val, tmp_idx, tmp_dmg;
+ 	bool gpio_dvs_mode = false;
+-	int min_vol = min_uV / 1000, max_vol = max_uV / 1000;
+ 
+ 	if (rid < MAX8997_BUCK1 || rid > MAX8997_BUCK7)
+ 		return -EINVAL;
+@@ -665,7 +663,7 @@ static int max8997_set_voltage_buck(stru
+ 						selector);
+ 
+ 	desc = reg_voltage_map[rid];
+-	new_val = max8997_get_voltage_proper_val(desc, min_vol, max_vol);
++	new_val = max8997_get_voltage_proper_val(desc, min_uV, max_uV);
+ 	if (new_val < 0)
+ 		return new_val;
+ 
+@@ -997,8 +995,8 @@ static __devinit int max8997_pmic_probe(
+ 		max8997->buck1_vol[i] = ret =
+ 			max8997_get_voltage_proper_val(
+ 					&buck1245_voltage_map_desc,
+-					pdata->buck1_voltage[i] / 1000,
+-					pdata->buck1_voltage[i] / 1000 +
++					pdata->buck1_voltage[i],
++					pdata->buck1_voltage[i] +
+ 					buck1245_voltage_map_desc.step);
+ 		if (ret < 0)
+ 			goto err_alloc;
+@@ -1006,8 +1004,8 @@ static __devinit int max8997_pmic_probe(
+ 		max8997->buck2_vol[i] = ret =
+ 			max8997_get_voltage_proper_val(
+ 					&buck1245_voltage_map_desc,
+-					pdata->buck2_voltage[i] / 1000,
+-					pdata->buck2_voltage[i] / 1000 +
++					pdata->buck2_voltage[i],
++					pdata->buck2_voltage[i] +
+ 					buck1245_voltage_map_desc.step);
+ 		if (ret < 0)
+ 			goto err_alloc;
+@@ -1015,8 +1013,8 @@ static __devinit int max8997_pmic_probe(
+ 		max8997->buck5_vol[i] = ret =
+ 			max8997_get_voltage_proper_val(
+ 					&buck1245_voltage_map_desc,
+-					pdata->buck5_voltage[i] / 1000,
+-					pdata->buck5_voltage[i] / 1000 +
++					pdata->buck5_voltage[i],
++					pdata->buck5_voltage[i] +
+ 					buck1245_voltage_map_desc.step);
+ 		if (ret < 0)
+ 			goto err_alloc;
 
 
