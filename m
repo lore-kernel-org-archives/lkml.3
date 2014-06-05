@@ -1,62 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752536AbaFEUt1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 16:49:27 -0400
-Received: from mout.kundenserver.de ([212.227.126.130]:49482 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752279AbaFEUtE (ORCPT
+	id S1752587AbaFEUts (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 16:49:48 -0400
+Received: from mxip3-inbound.gatech.edu ([130.207.182.45]:13942 "EHLO
+	mxip3-inbound.gatech.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752471AbaFEUtq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 16:49:04 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: devel@driverdev.osuosl.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Luca Risolia <luca.risolia@studio.unibo.it>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        linux-media@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: [PATCH 3/5] staging: sn9c102 depends on USB
-Date: Thu,  5 Jun 2014 22:48:13 +0200
-Message-Id: <1402001295-1980118-4-git-send-email-arnd@arndb.de>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1402001295-1980118-1-git-send-email-arnd@arndb.de>
-References: <1402001295-1980118-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:/guZi+gpUFkZGGvbW+OQELeQ0q68jXCrfGVBCtFVXDP
- DTr0heTRiBnclL2QMYGVlDdlVeBl+MF4Alq3nqwcbJIOitkYrd
- c14ywa0wWOBWk86g+qqBFU2SBtQyB7FalMRkFkMhRFN8wx7Owq
- 7iR1Q85jgIU/vnskHhNddwG3fambCu+S6bFiL6eg3Y4bkdmfHy
- Kc5dKMIHUdUU4NUB2Vo8ZoWhfH3btfisBRIblY/px7Tt9MbIpS
- FxM+80RMUpdQhbtAwaZjg/6CsboWvV9fD6eiGFNeoCLeMLW6Mf
- tQGMjrHYdAtgThjeT9+3ehIUK66+22n9SNhaNguwDnFKw9Zzat
- +gLTfFdxqy2IEhq0wT0BVdQaplOcI2dbSvuByDHX4
+	Thu, 5 Jun 2014 16:49:46 -0400
+X-RemoteIP: 130.207.185.162
+X-Group: ZimbraSenderGroup
+X-Policy: $ZIMBRA
+X-MID: 92163964
+X-SBRS: None
+X-IronPort-AV: E=Sophos;i="4.98,983,1392181200"; 
+   d="scan'208";a="92163964"
+X-GT-Spam-Rating: (0%)
+Message-ID: <5390D7E1.7060606@gatech.edu>
+Date: Thu, 05 Jun 2014 16:49:37 -0400
+From: Pranith Kumar <pranith@gatech.edu>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: peterz@infradead.org
+CC: linux-kernel@vger.kernel.org, tim.c.chen@linux.intel.com, davidlohr@hp.com,
+        mingo@redhat.com
+Subject: [RFC PATCH 1/1] cleanup: use bool as return type for rwsem_is_locked
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the USB code is a loadable module, this driver cannot
-be built-in. This adds an explicit dependency on CONFIG_USB
-so that Kconfig can force sn9c102 to be a module in this case.
+I see that there are functions like this which basically say:
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Luca Risolia <luca.risolia@studio.unibo.it>
-Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Cc: linux-media@vger.kernel.org
-Cc: linux-usb@vger.kernel.org
+return 1 if true else return 0. Is it worth cleaning them up? Or is there any reason why this convention is followed?
+
+use bool as the return type. No reason for return type to be int.
+
+Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
 ---
- drivers/staging/media/sn9c102/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/linux/rwsem-spinlock.h  |    2 +-
+ include/linux/rwsem.h           |    2 +-
+ kernel/locking/rwsem-spinlock.c |    2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/staging/media/sn9c102/Kconfig b/drivers/staging/media/sn9c102/Kconfig
-index c9aba59..10f586b 100644
---- a/drivers/staging/media/sn9c102/Kconfig
-+++ b/drivers/staging/media/sn9c102/Kconfig
-@@ -1,6 +1,6 @@
- config USB_SN9C102
- 	tristate "USB SN9C1xx PC Camera Controller support (DEPRECATED)"
--	depends on VIDEO_V4L2 && MEDIA_USB_SUPPORT
-+	depends on VIDEO_V4L2 && MEDIA_USB_SUPPORT && USB
- 	---help---
- 	  This driver is DEPRECATED, please use the gspca sonixb and
- 	  sonixj modules instead.
+diff --git a/include/linux/rwsem-spinlock.h b/include/linux/rwsem-spinlock.h
+index d5b13bc..9026d2a 100644
+--- a/include/linux/rwsem-spinlock.h
++++ b/include/linux/rwsem-spinlock.h
+@@ -39,7 +39,7 @@ extern int __down_write_trylock(struct rw_semaphore *sem);
+ extern void __up_read(struct rw_semaphore *sem);
+ extern void __up_write(struct rw_semaphore *sem);
+ extern void __downgrade_write(struct rw_semaphore *sem);
+-extern int rwsem_is_locked(struct rw_semaphore *sem);
++extern bool rwsem_is_locked(struct rw_semaphore *sem);
+ 
+ #endif /* __KERNEL__ */
+ #endif /* _LINUX_RWSEM_SPINLOCK_H */
+diff --git a/include/linux/rwsem.h b/include/linux/rwsem.h
+index 091d993..04faf87 100644
+--- a/include/linux/rwsem.h
++++ b/include/linux/rwsem.h
+@@ -49,7 +49,7 @@ extern struct rw_semaphore *rwsem_downgrade_wake(struct rw_semaphore *sem);
+ #include <asm/rwsem.h>
+ 
+ /* In all implementations count != 0 means locked */
+-static inline int rwsem_is_locked(struct rw_semaphore *sem)
++static inline bool rwsem_is_locked(struct rw_semaphore *sem)
+ {
+ 	return sem->count != 0;
+ }
+diff --git a/kernel/locking/rwsem-spinlock.c b/kernel/locking/rwsem-spinlock.c
+index 9be8a91..7374139 100644
+--- a/kernel/locking/rwsem-spinlock.c
++++ b/kernel/locking/rwsem-spinlock.c
+@@ -20,7 +20,7 @@ struct rwsem_waiter {
+ 	enum rwsem_waiter_type type;
+ };
+ 
+-int rwsem_is_locked(struct rw_semaphore *sem)
++bool rwsem_is_locked(struct rw_semaphore *sem)
+ {
+ 	int ret = 1;
+ 	unsigned long flags;
 -- 
-1.8.3.2
-
+1.7.9.5
