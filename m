@@ -1,84 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753410AbaFEBMJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 21:12:09 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:15287 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752833AbaFEBMH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 21:12:07 -0400
-X-Greylist: delayed 31551 seconds by postgrey-1.27 at vger.kernel.org; Wed, 04 Jun 2014 21:12:06 EDT
-Date: Wed, 4 Jun 2014 21:12:02 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build warning after merge of the ftrace tree
-Message-ID: <20140604211202.0eb5d147@gandalf.local.home>
-In-Reply-To: <20140605010353.GA13193@localhost>
-References: <20140604160921.4f4e69c4@canb.auug.org.au>
-	<20140604122612.366e2874@gandalf.local.home>
-	<20140605002012.GA10446@localhost>
-	<20140604210016.4766adba@gandalf.local.home>
-	<20140605010353.GA13193@localhost>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	id S1753416AbaFEBPC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 21:15:02 -0400
+Received: from mga14.intel.com ([192.55.52.115]:58973 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752678AbaFEBO6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 21:14:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.98,976,1392192000"; 
+   d="scan'208";a="542655078"
+From: "Zheng, Lv" <lv.zheng@intel.com>
+To: Lee Jones <lee.jones@linaro.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "wsa@the-dreams.de" <wsa@the-dreams.de>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "devel@acpica.org" <devel@acpica.org>
+Subject: RE: [PATCH 1/7] ACPICA: Only include ACPI asm files if ACPI is
+ enabled
+Thread-Topic: [PATCH 1/7] ACPICA: Only include ACPI asm files if ACPI is
+ enabled
+Thread-Index: AQHPf+4KU6l0YPi7HkGxvvNa/8AWq5tgXPuAgAAEfoCAAVM9IA==
+Date: Thu, 5 Jun 2014 01:14:54 +0000
+Message-ID: <1AE640813FDE7649BE1B193DEA596E880262042C@SHSMSX101.ccr.corp.intel.com>
+References: <1401883796-17841-1-git-send-email-lee.jones@linaro.org>
+ <1401883796-17841-2-git-send-email-lee.jones@linaro.org>
+ <3061297.feg5DGUjIt@vostro.rjw.lan> <20140604125137.GA18171@lee--X1>
+In-Reply-To: <20140604125137.GA18171@lee--X1>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s551FG1d021298
 
-On Thu, 5 Jun 2014 09:03:53 +0800
-Fengguang Wu <fengguang.wu@intel.com> wrote:
+Hi, Lee
 
-> > Was I Cc'd? I don't have that in my inbox, nor do I see it in any of my
-> > spam filters.
+> From: Lee Jones [mailto:lee.jones@linaro.org]
+> Sent: Wednesday, June 04, 2014 8:52 PM
+> To: Rafael J. Wysocki
 > 
-> Yes, here is the email message:
+> On Wed, 04 Jun 2014, Rafael J. Wysocki wrote:
 > 
->         Date: Sat, 31 May 2014 02:16:43 +0800
->         From: kbuild test robot <fengguang.wu@intel.com>
-> ==>     To: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+> > On Wednesday, June 04, 2014 01:09:50 PM Lee Jones wrote:
+> > > Any drivers which support ACPI and Device Tree probing need to include
+> > > both respective header files.  Without this patch, if a driver is being
+> > > used on a platform which does not support ACPI and subsequently does not
+> > > have the config option enabled, but includes linux/acpi.h the build
+> > > breaks with:
+> > >
+> > >   In file included from ../include/acpi/platform/acenv.h:150:0,
+> > >                    from ../include/acpi/acpi.h:56,
+> > >                    from ../include/linux/match.h:2,
+> > >                    from ../drivers/i2c/i2c-core.c:43:
+> > >   ../include/acpi/platform/aclinux.h:73:23:
+> > >    fatal error: asm/acenv.h: No such file or directory
+> > >    #include <asm/acenv.h>
+> > >                        ^
 
-Hmm, I wonder where it ended up? I do have a pretty complex procmailrc
-file, but I even checked the procmail log file, and it doesn't show it.
+Note that:
+In our tree:
+<asm/acenv.h> is only included by <acpi/acpi.h>.
+And <acpi/acpi.h> is only included by
+1. <linux/acpi.h> when CONFIG_ACPI enabled
+2. <linux/sfi_acpi.h> - this is x86 specific, we'll clean it up by implementing stubs for all ACPI external interfaces.
+So there is no case we need to exclude <asm/acenv.h> when CONFIG_ACPI is not enabled.
 
-I don't think my email provider dropped it, as I have all the spam
-filtering turned off and do my own filtering. Although, they may have
-added something behind my back. Wouldn't be the first time.
+I cannot find linux/match.h here.
+If <linux/match.h> want to include ACPI features, it shouldn't include <acpi/acpi.h>, but should include <linux/acpi.h>.
+Please refer to:
+https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=8b48463f
+And stop including <acpi/acpi.h> directly in any cases.
 
-Are you sure that got sent?
-
-Can you check if your bots have triggered anything else for me. Because
-your bots have been surprisingly quiet lately. I just took that as me
-getting better at not pushing crap.
-
-I may add a bad commit to one of my branches and see if I get a
-response from you just to test it out. I really hope we can fix this
-because I've gotten someone dependent on your reports. :-/
-
-
--- Steve
+Thanks and best regards
+-Lv
 
 
->         CC: kbuild-all@01.org
->         Subject: [trace:ftrace/core 29/32] kernel/trace/trace_benchmark.c:38:6: warning: unused variable 'seedsq'
->         User-Agent: Heirloom mailx 12.5 6/20/10
+> >
+> > Which kernel does this happen with?
 > 
->         tree:   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git ftrace/core
->         head:   4c27e756bc019ec1c11232893af036fdae720a97
->         commit: 81dc9f0ef21e40114cc895894c7acf3055f6d1fb [29/32] tracing: Add tracepoint benchmark tracepoint
->         config: make ARCH=x86_64 allmodconfig
+> a0a962d (tag: refs/tags/next-20140602, refs/remotes/next/master)
+>   Add linux-next specific files for 20140602
 > 
->         All warnings:
+> > > Cc: Lv Zheng <lv.zheng@intel.com>
+> > > Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > > Cc: linux-acpi@vger.kernel.org
+> > > Cc: devel@acpica.org
+> > > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> > > ---
+> > >  include/acpi/platform/aclinux.h | 5 +++--
+> > >  1 file changed, 3 insertions(+), 2 deletions(-)
+> > >
+> > > diff --git a/include/acpi/platform/aclinux.h b/include/acpi/platform/aclinux.h
+> > > index cd1f052..fdf7663 100644
+> > > --- a/include/acpi/platform/aclinux.h
+> > > +++ b/include/acpi/platform/aclinux.h
+> > > @@ -70,9 +70,10 @@
+> > >  #ifdef EXPORT_ACPI_INTERFACES
+> > >  #include <linux/export.h>
+> > >  #endif
+> > > -#include <asm/acenv.h>
+> > >
+> > > -#ifndef CONFIG_ACPI
+> > > +#ifdef CONFIG_ACPI
+> > > +#include <asm/acenv.h>
+> > > +#else
+> > >
+> > >  /* External globals for __KERNEL__, stubs is needed */
+> > >
+> > >
+> >
 > 
->            kernel/trace/trace_benchmark.c: In function 'trace_do_benchmark':
->         >> kernel/trace/trace_benchmark.c:38:6: warning: unused variable 'seedsq' [-Wunused-variable]
->              u64 seedsq;                                                                             
->                  ^
-> Thanks,
-> Fengguang
-
+> --
+> Lee Jones
+> Linaro STMicroelectronics Landing Team Lead
+> Linaro.org â”‚ Open source software for ARM SoCs
+> Follow Linaro: Facebook | Twitter | Blog
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
