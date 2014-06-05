@@ -1,188 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751799AbaFETFo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 15:05:44 -0400
-Received: from mga02.intel.com ([134.134.136.20]:18618 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751221AbaFETFn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 15:05:43 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.98,982,1392192000"; 
-   d="scan'208";a="552253967"
-Message-ID: <1401995156.30026.2.camel@dwillia2-mobl2.amr.corp.intel.com>
-Subject: Re: linux-next crash in xhci_add_ep_to_interval
-From: Dan Williams <dan.j.williams@intel.com>
-To: Valdis.Kletnieks@vt.edu
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        USB list <linux-usb@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>
-Date: Thu, 05 Jun 2014 12:05:56 -0700
-In-Reply-To: <33745.1401989394@turing-police.cc.vt.edu>
-References: <18529.1401981749@turing-police.cc.vt.edu>
-	 <CAA9_cmfje+8qAh7NqjHi1zcRAPZgJ0xdOK2nM7TKN9NRgqcRfw@mail.gmail.com>
-	 <23223.1401985468@turing-police.cc.vt.edu>
-	 <CAPcyv4gYnvF4Nt5itkDsD=DzL8sfETZUBmQqZwiHE1SOZvtsbw@mail.gmail.com>
-	 <33745.1401989394@turing-police.cc.vt.edu>
-Content-Type: multipart/mixed; boundary="=-Txm6ECokJT0Mv0AakQe0"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
+	id S1752200AbaFETKZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 15:10:25 -0400
+Received: from mail-bn1lp0139.outbound.protection.outlook.com ([207.46.163.139]:37776
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751418AbaFETKX convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jun 2014 15:10:23 -0400
+From: Varun Sethi <Varun.Sethi@freescale.com>
+To: Will Deacon <will.deacon@arm.com>,
+        Thierry Reding <thierry.reding@gmail.com>
+CC: Mark Rutland <Mark.Rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>, "Arnd Bergmann" <arnd@arndb.de>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        "Grant Grundler" <grundler@chromium.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Linux IOMMU <iommu@lists.linux-foundation.org>,
+        "Rob Herring" <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Cho KyongHo <pullip.cho@samsung.com>,
+        Dave P Martin <Dave.Martin@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Stuart Yoder <stuart.yoder@freescale.com>
+Subject: RE: [PATCH v2] devicetree: Add generic IOMMU device tree bindings
+Thread-Topic: [PATCH v2] devicetree: Add generic IOMMU device tree bindings
+Thread-Index: AQHPdsaiUOp/jHgCJ0WWjZOTtpbJjZtZJRKAgABh1wCAAAcqgIAABQyAgAQdoQCAA2YSAIAAI08AgAG4pNA=
+Date: Thu, 5 Jun 2014 19:10:19 +0000
+Message-ID: <07321368d15d4ad9928ebb83af87e401@DM2PR03MB479.namprd03.prod.outlook.com>
+References: <1400877218-4113-1-git-send-email-thierry.reding@gmail.com>
+	<4545972.cM7IP1qTXQ@wuerfel>
+	<CAL_Jsq+tkFNpjSEZboT+o69B_Z3a8e-ZVKaYDmLwtkyYoPy6VQ@mail.gmail.com>
+	<5288123.eXagyPAxNq@wuerfel>
+	<20140602104104.GD3855@e103592.cambridge.arm.com>
+	<20140604143509.GF28484@ulmo> <20140604164132.GF6644@arm.com>
+In-Reply-To: <20140604164132.GF6644@arm.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [192.88.169.1]
+x-microsoft-antispam: BL:0;ACTION:Default;RISK:Low;SCL:0;SPMLVL:NotSpam;PCL:0;RULEID:
+x-forefront-prvs: 0233768B38
+x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(428001)(189002)(199002)(51704005)(24454002)(377454003)(13464003)(19580405001)(101416001)(77982001)(74662001)(64706001)(66066001)(21056001)(19580395003)(50986999)(31966008)(80022001)(74502001)(74316001)(20776003)(33646001)(4396001)(86362001)(77096999)(92566001)(2656002)(76482001)(83322001)(54356999)(81542001)(76176999)(99286001)(99396002)(46102001)(83072002)(93886002)(87936001)(79102001)(81342001)(76576001)(85852003)(41533002)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:DM2PR03MB349;H:DM2PR03MB479.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+authentication-results: spf=none (sender IP is )
+ smtp.mailfrom=Varun.Sethi@freescale.com; 
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-Txm6ECokJT0Mv0AakQe0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
 
-On Thu, 2014-06-05 at 13:29 -0400, Valdis.Kletnieks@vt.edu wrote:
-> On Thu, 05 Jun 2014 09:35:48 -0700, Dan Williams said:
+> -----Original Message-----
+> From: iommu-bounces@lists.linux-foundation.org [mailto:iommu-
+> bounces@lists.linux-foundation.org] On Behalf Of Will Deacon
+> Sent: Wednesday, June 04, 2014 10:12 PM
+> To: Thierry Reding
+> Cc: Mark Rutland; devicetree@vger.kernel.org; linux-samsung-
+> soc@vger.kernel.org; Pawel Moll; Arnd Bergmann; Ian Campbell; Grant
+> Grundler; Stephen Warren; linux-kernel@vger.kernel.org; Marc Zyngier;
+> Linux IOMMU; Rob Herring; Kumar Gala; linux-tegra@vger.kernel.org; Cho
+> KyongHo; Dave P Martin; linux-arm-kernel@lists.infradead.org
+> Subject: Re: [PATCH v2] devicetree: Add generic IOMMU device tree
+> bindings
 > 
-> > Actually, on second look I bet xhci_alloc_tt_info() is being called
-> > while hdev->maxchild is not set.  Let me throw together a debug
-> > patch...
+> On Wed, Jun 04, 2014 at 03:35:10PM +0100, Thierry Reding wrote:
+> > On Mon, Jun 02, 2014 at 11:41:04AM +0100, Dave Martin wrote:
+> > > In the strictest sense, no.
+> > >
+> > > But for a large set of sane configurations, this probably works.
+> > >
+> > > Small sets of randomly-assigned IDs can just be enumerated one by
+> one.
+> > >
+> > > We wouldn't be able to describe folding and bit shuffling, but we
+> > > probably don't want to encourage that anyway.
+> >
+> > I'm having some difficulty understanding this. You make it sound like
+> > there's a fairly arbitrary number of IDs that the SMMU can handle. So
+> > how is the mapping to devices defined? If you say encourage that does
+> > make it sound like the assignment of IDs is purely defined by some
+> > mechanism in software rather than in hardware. Or they are more or
+> > less randomly picked by someone. If that's the case, is that not
+> > something that should be dynamically allocated by the kernel rather
+> > than put into the device tree?
 > 
-> Sure, no problem - just let me know what variant of linux-next you
-> want it applied against. :)
+> The set of StreamIDs that can be generated by a master is fixed in the
+> hardware. The SMMU can then be programmed to map these incoming IDs onto
+> a context ID (or a set of context IDs), which are the IDs used internally
+> by the SMMU to find the page tables etc.
+> 
+> The StreamID -> ContextID mapping is dynamic and controlled by software.
+> The Master -> StreamIDs mapping is fixed in the hardware.
+The Master -> StreamIDs mapping may not always be fixed in the hardware. At, least in our case we plan to program these via software. PCI devices is one place where this mapping would have to be dynamic (based on the topology i.e. if the devices are connected to a bridge etc). Also, we have a hot plug device architecture where the stream ID is software programmable.
 
-This should apply to -next.  Use "git am -c", but I have attached it for
-convenience as well.  Boots for me, but more importantly does it boot
-for you :-).
+Other than that, based on the isolation requirements (iommu domain) software programmability offers greater flexibility.
 
-8<------
-Subject: usb: fix ->update_hub_device() vs hdev->maxchild
+-Varun
 
-From: Dan Williams <dan.j.williams@intel.com>
-
-Commit d8521afe3586 "usb: assign default peer ports for root hubs"
-delayed marking a hub valid (set hdev->maxchild) until it had been fully
-configured and to enable the publishing of valid hubs to be serialized
-by usb_port_peer_mutex.
-
-However, xhci_update_hub_device() in some cases depends on
-hdev->maxchild already being set.  Do the minimal fix and move it after
-the setting of hdev->maxchild.
-
-Cc: Mathias Nyman <mathias.nyman@linux.intel.com>
-Reported-by: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
-Signed-off-by: Dan Williams <dan.j.williams@intel.com>
----
- drivers/usb/core/hub.c |   24 ++++++++++++------------
- 1 files changed, 12 insertions(+), 12 deletions(-)
-
-diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
-index db6287025c06..971d95745e2a 100644
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -1526,18 +1526,6 @@ static int hub_configure(struct usb_hub *hub,
- 		dev_dbg(hub_dev, "%umA bus power budget for each child\n",
- 				hub->mA_per_port);
- 
--	/* Update the HCD's internal representation of this hub before khubd
--	 * starts getting port status changes for devices under the hub.
--	 */
--	if (hcd->driver->update_hub_device) {
--		ret = hcd->driver->update_hub_device(hcd, hdev,
--				&hub->tt, GFP_KERNEL);
--		if (ret < 0) {
--			message = "can't update HCD hub info";
--			goto fail;
--		}
--	}
--
- 	ret = hub_hub_status(hub, &hubstatus, &hubchange);
- 	if (ret < 0) {
- 		message = "can't get hub status";
-@@ -1593,6 +1581,18 @@ static int hub_configure(struct usb_hub *hub,
- 	if (ret < 0)
- 		goto fail;
- 
-+	/* Update the HCD's internal representation of this hub before khubd
-+	 * starts getting port status changes for devices under the hub.
-+	 */
-+	if (hcd->driver->update_hub_device) {
-+		ret = hcd->driver->update_hub_device(hcd, hdev,
-+				&hub->tt, GFP_KERNEL);
-+		if (ret < 0) {
-+			message = "can't update HCD hub info";
-+			goto fail;
-+		}
-+	}
-+
- 	usb_hub_adjust_deviceremovable(hdev, hub->descriptor);
- 
- 	hub_activate(hub, HUB_INIT);
-
-
---=-Txm6ECokJT0Mv0AakQe0
-Content-Disposition: attachment; filename="valdis-crash-fix.patch"
-Content-Type: text/x-patch; name="valdis-crash-fix.patch"; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-
-usb: fix ->update_hub_device() vs hdev->maxchild
-
-From: Dan Williams <dan.j.williams@intel.com>
-
-Commit d8521afe3586 "usb: assign default peer ports for root hubs"
-delayed marking a hub valid (set hdev->maxchild) until it had been fully
-configured and to enable the publishing of valid hubs to be serialized
-by usb_port_peer_mutex.
-
-However, xhci_update_hub_device() in some cases depends on
-hdev->maxchild already being set.  Do the minimal fix and move it after
-the setting of hdev->maxchild.
-
-Cc: Mathias Nyman <mathias.nyman@linux.intel.com>
-Reported-by: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
-Signed-off-by: Dan Williams <dan.j.williams@intel.com>
----
- drivers/usb/core/hub.c |   24 ++++++++++++------------
- 1 files changed, 12 insertions(+), 12 deletions(-)
-
-diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
-index db6287025c06..971d95745e2a 100644
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -1526,18 +1526,6 @@ static int hub_configure(struct usb_hub *hub,
- 		dev_dbg(hub_dev, "%umA bus power budget for each child\n",
- 				hub->mA_per_port);
- 
--	/* Update the HCD's internal representation of this hub before khubd
--	 * starts getting port status changes for devices under the hub.
--	 */
--	if (hcd->driver->update_hub_device) {
--		ret = hcd->driver->update_hub_device(hcd, hdev,
--				&hub->tt, GFP_KERNEL);
--		if (ret < 0) {
--			message = "can't update HCD hub info";
--			goto fail;
--		}
--	}
--
- 	ret = hub_hub_status(hub, &hubstatus, &hubchange);
- 	if (ret < 0) {
- 		message = "can't get hub status";
-@@ -1593,6 +1581,18 @@ static int hub_configure(struct usb_hub *hub,
- 	if (ret < 0)
- 		goto fail;
- 
-+	/* Update the HCD's internal representation of this hub before khubd
-+	 * starts getting port status changes for devices under the hub.
-+	 */
-+	if (hcd->driver->update_hub_device) {
-+		ret = hcd->driver->update_hub_device(hcd, hdev,
-+				&hub->tt, GFP_KERNEL);
-+		if (ret < 0) {
-+			message = "can't update HCD hub info";
-+			goto fail;
-+		}
-+	}
-+
- 	usb_hub_adjust_deviceremovable(hdev, hub->descriptor);
- 
- 	hub_activate(hub, HUB_INIT);
-
---=-Txm6ECokJT0Mv0AakQe0--
 
