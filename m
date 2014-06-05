@@ -1,45 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751845AbaFEOAR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 10:00:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5769 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751321AbaFEOAP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 10:00:15 -0400
-Date: Thu, 5 Jun 2014 16:01:27 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-kernel@vger.kernel.org, Ming Lei <tom.leiming@gmail.com>
-Subject: Re: blk-mq: bitmap tag: performance degradation?
-Message-ID: <20140605140127.GA22198@dhcp-26-207.brq.redhat.com>
-References: <20140604103544.GA11350@dhcp-26-207.brq.redhat.com>
- <538F2AC2.1060904@kernel.dk>
+	id S1751889AbaFEOAZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 10:00:25 -0400
+Received: from mail-yk0-f181.google.com ([209.85.160.181]:63068 "EHLO
+	mail-yk0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751321AbaFEOAT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jun 2014 10:00:19 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <538F2AC2.1060904@kernel.dk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [84.49.215.185]
+In-Reply-To: <CACVXFVP1uS7szLqvabtMbiaUgd13bWoYXv5q-Az7wBia=ogf7Q@mail.gmail.com>
+References: <1401896895-14262-1-git-send-email-tiwai@suse.de>
+ <CACVXFVPpmdXJV2CC-U=bsA820VD42i2-OqBfNfTPPaMergu8TQ@mail.gmail.com>
+ <CAG-2HqU=LAXr0o2e9RRCmrX1eWouhepEZHaPfBjrs64xUeb=gw@mail.gmail.com> <CACVXFVP1uS7szLqvabtMbiaUgd13bWoYXv5q-Az7wBia=ogf7Q@mail.gmail.com>
+From: Tom Gundersen <teg@jklm.no>
+Date: Thu, 5 Jun 2014 15:59:59 +0200
+Message-ID: <CAG-2HqV_CuC6Snri5-Qpz=VUU55CM7LNWf34DAq2cEj+diN5Jw@mail.gmail.com>
+Subject: Re: [PATCH v2] firmware loader: allow disabling of udev as firmware loader
+To: Ming Lei <ming.lei@canonical.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Greg KH <gregkh@linuxfoundation.org>,
+        Takashi Iwai <tiwai@suse.de>, Stefan Roese <sr@denx.de>,
+        Arnd Bergmann <arnd@arndb.de>, Abhay Salunke <Abhay_Salunke@dell.com>,
+        Kay Sievers <kay@vrfy.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 04, 2014 at 08:18:42AM -0600, Jens Axboe wrote:
-> A null_blk test is the absolute best case for percpu_ida, since
-> there are enough tags and everything is localized. The above test is
-> more useful for testing blk-mq than any real world application of
-> the tagging.
-> 
-> I've done considerable testing on both 2 and 4 socket (32 and 64
-> CPUs) and bitmap tagging is better in a much wider range of
-> applications. This includes even high tag depth devices like nvme,
-> and more normal ranges like mtip32xx and scsi-mq setups.
+On Thu, Jun 5, 2014 at 3:31 PM, Ming Lei <ming.lei@canonical.com> wrote:
+> On Thu, Jun 5, 2014 at 8:25 PM, Tom Gundersen <teg@jklm.no> wrote:
+>>
+>> On 5 Jun 2014 14:18, "Ming Lei" <ming.lei@canonical.com> wrote:
+>>>
+>>> On Wed, Jun 4, 2014 at 11:48 PM, Takashi Iwai <tiwai@suse.de> wrote:
+>>> > [The patch was originally proposed by Tom Gundersen, and rewritten
+>>> >  afterwards by me; most of changelogs below borrowed from Tom's
+>>> >  original patch -- tiwai]
+>>> >
+>>> > Currently (at least) the dell-rbu driver selects FW_LOADER_USER_HELPER,
+>>> > which means that distros can't really stop loading firmware through
+>>> > udev without breaking other users (though some have).
+>>> >
+>>> > Ideally we would remove/disable the udev firmware helper in both the
+>>> > kernel and in udev, but if we were to disable it in udev and not the
+>>> > kernel, the result would be (seemingly) hung kernels as no one would
+>>> > be around to cancel firmware requests.
+>>> >
+>>> > This patch allows udev firmware loading to be disabled while still
+>>> > allowing non-udev firmware loading, as done by the dell-rbu driver, to
+>>> > continue working. This is achieved by only using the fallback
+>>> > mechanism when the uevent is suppressed.
+>>> >
+>>> > The patch renames the user-selectable Kconfig from FW_LOADER_USER_HELPER
+>>> > to FW_LOADER_USER_HELPER_FALLBACK, and the former is reverse-selected
+>>> > by the latter or the drivers that need userhelper like dell-rbu.
+>>> >
+>>> > Also, the "default y" is removed together with this change, since it's
+>>> > been deprecated in udev upstream, thus rather better to disable it
+>>> > nowadays.
+>>> >
+>>> > Tested with
+>>> >     FW_LOADER_USER_HELPER=n
+>>> >     LATTICE_ECP3_CONFIG=y
+>>> >     DELL_RBU=y
+>>> > and udev without the firmware loading support, but I don't have the
+>>> > hardware to test the lattice/dell drivers, so additional testing would
+>>> > be appreciated.
+>>> >
+>>> > Reviewed-by: Tom Gundersen <teg@jklm.no>
+>>> > Cc: Ming Lei <ming.lei@canonical.com>
+>>> > Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>>> > Cc: Abhay Salunke <Abhay_Salunke@dell.com>
+>>> > Cc: Stefan Roese <sr@denx.de>
+>>> > Cc: Arnd Bergmann <arnd@arndb.de>
+>>> > Cc: Kay Sievers <kay@vrfy.org>
+>>> > Signed-off-by: Takashi Iwai <tiwai@suse.de>
+>>> > ---
+>>> >  drivers/base/Kconfig          | 10 ++++++++--
+>>> >  drivers/base/firmware_class.c | 15 ++++++++++-----
+>>> >  include/linux/firmware.h      |  2 +-
+>>> >  3 files changed, 19 insertions(+), 8 deletions(-)
+>>> >
+>>> > diff --git a/drivers/base/Kconfig b/drivers/base/Kconfig
+>>> > index 8fa8deab6449..d0bb32e4c416 100644
+>>> > --- a/drivers/base/Kconfig
+>>> > +++ b/drivers/base/Kconfig
+>>> > @@ -144,15 +144,21 @@ config EXTRA_FIRMWARE_DIR
+>>> >           some other directory containing the firmware files.
+>>> >
+>>> >  config FW_LOADER_USER_HELPER
+>>> > +       bool
+>>> > +
+>>> > +config FW_LOADER_USER_HELPER_FALLBACK
+>>> >         bool "Fallback user-helper invocation for firmware loading"
+>>> >         depends on FW_LOADER
+>>> > -       default y
+>>> > +       select FW_LOADER_USER_HELPER
+>>> >         help
+>>> >           This option enables / disables the invocation of user-helper
+>>> >           (e.g. udev) for loading firmware files as a fallback after the
+>>> >           direct file loading in kernel fails.  The user-mode helper is
+>>> >           no longer required unless you have a special firmware file
+>>> > that
+>>> > -         resides in a non-standard path.
+>>> > +         resides in a non-standard path. Moreover, the udev support has
+>>> > +         been deprecated upstream.
+>>> > +
+>>> > +         If you are unsure about this, say N here.
+>>>
+>>> It may be safer to say Y here for fallback if not sure.
+>>
+>> Saying Y here will be actively harmful if the firmware loader is disabled in
+>> udev (which I guess most distros will do as soon as they can), so I think we
+>
+> If fallback is triggered, it means that the firmware can't be found
+> in default direct rootfs path, so it is better to continue to look for it
+> from userspace.
 
-Just for the record: bitmap tags on a 48 CPU box with NVMe device
-indeed shows almost the same performance/cache rate as the stock
-kernel.
+The kernel looks in the same paths as udev does, so unless you are
+doing something very special (which should mean you know what you are
+doing), saying N will not hurt.
 
+> Also it won't a big problem for hanging the request user context
+> for some while(60sec at default) if udev is disabled, will it?
 
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+Things will still work, but I'm sure we would get a lot of
+confused/angry users. After all, the 60 second hangs were precisely
+the reason the firmware loader was moved to the kernel in the first
+place.
+
+> BTW, are you sure most distros will do that in the near future?
+
+There is no reason not to, and upstream udev will certainly remove the
+feature very soon (so anyone who wants it would have to patch it back
+in).
+
+>> should advice people to say N unless they really know what they are doing
+>> and that their userspace can cope with it.
+>
+> That is why I suggest to say Y if someone isn't sure.
+
+I don't follow. Saying N will always be safe unless you have a very
+custom setup, saying Y will most likely cause lots of confusing hangs
+unless you really have made sure that your userland is set up
+accordingly...
+
+Cheers,
+
+Tom
