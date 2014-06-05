@@ -1,103 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753450AbaFEBCH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 21:02:07 -0400
-Received: from mga02.intel.com ([134.134.136.20]:58108 "EHLO mga02.intel.com"
+	id S1753460AbaFEBEA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 21:04:00 -0400
+Received: from mga14.intel.com ([192.55.52.115]:50585 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751121AbaFEBCF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 21:02:05 -0400
+	id S1751094AbaFEBD6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jun 2014 21:03:58 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.98,976,1392192000"; 
-   d="scan'208";a="551781963"
-From: "Zheng, Lv" <lv.zheng@intel.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Lee Jones <lee.jones@linaro.org>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "wsa@the-dreams.de" <wsa@the-dreams.de>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "devel@acpica.org" <devel@acpica.org>
-Subject: RE: [PATCH 1/7] ACPICA: Only include ACPI asm files if ACPI is
- enabled
-Thread-Topic: [PATCH 1/7] ACPICA: Only include ACPI asm files if ACPI is
- enabled
-Thread-Index: AQHPf+4KU6l0YPi7HkGxvvNa/8AWq5tgXPuAgAAEfoCAAJC1gIAAwBvg
-Date: Thu, 5 Jun 2014 01:01:17 +0000
-Message-ID: <1AE640813FDE7649BE1B193DEA596E88026203F6@SHSMSX101.ccr.corp.intel.com>
-References: <1401883796-17841-1-git-send-email-lee.jones@linaro.org>
- <3061297.feg5DGUjIt@vostro.rjw.lan> <20140604125137.GA18171@lee--X1>
- <1603851.9SBouhvdWS@vostro.rjw.lan>
-In-Reply-To: <1603851.9SBouhvdWS@vostro.rjw.lan>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="utf-8"
+   d="scan'208";a="542651905"
+Date: Thu, 5 Jun 2014 09:03:53 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build warning after merge of the ftrace tree
+Message-ID: <20140605010353.GA13193@localhost>
+References: <20140604160921.4f4e69c4@canb.auug.org.au>
+ <20140604122612.366e2874@gandalf.local.home>
+ <20140605002012.GA10446@localhost>
+ <20140604210016.4766adba@gandalf.local.home>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140604210016.4766adba@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s5512G3b021251
 
-Hi,
-
-> From: linux-i2c-owner@vger.kernel.org [mailto:linux-i2c-owner@vger.kernel.org] On Behalf Of Rafael J. Wysocki
-> Sent: Thursday, June 05, 2014 5:30 AM
+On Wed, Jun 04, 2014 at 09:00:16PM -0400, Steven Rostedt wrote:
+> On Thu, 5 Jun 2014 08:20:12 +0800
+> Fengguang Wu <fengguang.wu@intel.com> wrote:
 > 
-> On Wednesday, June 04, 2014 01:51:37 PM Lee Jones wrote:
-> > On Wed, 04 Jun 2014, Rafael J. Wysocki wrote:
-> >
-> > > On Wednesday, June 04, 2014 01:09:50 PM Lee Jones wrote:
-> > > > Any drivers which support ACPI and Device Tree probing need to include
-> > > > both respective header files.  Without this patch, if a driver is being
-> > > > used on a platform which does not support ACPI and subsequently does not
-> > > > have the config option enabled, but includes linux/acpi.h the build
-> > > > breaks with:
-> > > >
-> > > >   In file included from ../include/acpi/platform/acenv.h:150:0,
-> > > >                    from ../include/acpi/acpi.h:56,
-> > > >                    from ../include/linux/match.h:2,
-> > > >                    from ../drivers/i2c/i2c-core.c:43:
-> > > >   ../include/acpi/platform/aclinux.h:73:23:
-> > > >    fatal error: asm/acenv.h: No such file or directory
-> > > >    #include <asm/acenv.h>
-> > > >                        ^
-> > >
-> > > Which kernel does this happen with?
-> >
-> > a0a962d (tag: refs/tags/next-20140602, refs/remotes/next/master)
-> >   Add linux-next specific files for 20140602
+> > On Wed, Jun 04, 2014 at 12:26:12PM -0400, Steven Rostedt wrote:
+> > > On Wed, 4 Jun 2014 16:09:21 +1000
+> > > Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> > > 
+> > > > Hi Steven,
+> > > > 
+> > > > After merging the ftrace tree, today's linux-next build (x86_64 allmodconfig)
+> > > > produced this warning:
+> > > > 
+> > > > kernel/trace/trace_benchmark.c: In function 'trace_do_benchmark':
+> > > > kernel/trace/trace_benchmark.c:38:6: warning: unused variable 'seedsq' [-Wunused-variable]
+> > > >   u64 seedsq;
+> > > >       ^
+> > > > 
+> > > > Introduced by commit 81dc9f0ef21e ("tracing: Add tracepoint benchmark tracepoint").
+> > > 
+> > > Hmm, I don't know why my tests missed this. I do a allmodconfig looking
+> > > for new warning messages too. Oh, but I do need to add this config to my
+> > > regular testing config :-/
+> > > 
+> > > I'm surprised Wu's bot didn't report it either.
+> > 
+> > Steven, it was reported, here is the email archive:
+> > 
+> > https://lists.01.org/pipermail/kbuild-all/2014-May/004749.html
 > 
-> It looks like the problem is with include/linux/match.h that should not
-> include acpi/acpi.h directly.
+> Was I Cc'd? I don't have that in my inbox, nor do I see it in any of my
+> spam filters.
 
-This is another example that many mis-ordered inclusions are caused by the mis-ordered <asm/acpi.h> inclusion.
+Yes, here is the email message:
 
-> 
-> But I can't find this file in the Linus' next branch even, so I guess it's
-> on its way to that branch?
-> 
+        Date: Sat, 31 May 2014 02:16:43 +0800
+        From: kbuild test robot <fengguang.wu@intel.com>
+==>     To: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+        CC: kbuild-all@01.org
+        Subject: [trace:ftrace/core 29/32] kernel/trace/trace_benchmark.c:38:6: warning: unused variable 'seedsq'
+        User-Agent: Heirloom mailx 12.5 6/20/10
 
-I guess,
-In their tree, they have CONFIG_ACPI enabled for ARM, but we've changed to make:
-1. <asm/acenv.h> the architecture specific layer for ACPICA, and
-2. <asm/acpi.h> is now the architecture specific layer for Linux ACPI.
-So they need to follow this.
+        tree:   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git ftrace/core
+        head:   4c27e756bc019ec1c11232893af036fdae720a97
+        commit: 81dc9f0ef21e40114cc895894c7acf3055f6d1fb [29/32] tracing: Add tracepoint benchmark tracepoint
+        config: make ARCH=x86_64 allmodconfig
 
-Thanks and best regards
--Lv
+        All warnings:
 
-> Rafael
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-i2c" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+           kernel/trace/trace_benchmark.c: In function 'trace_do_benchmark':
+        >> kernel/trace/trace_benchmark.c:38:6: warning: unused variable 'seedsq' [-Wunused-variable]
+             u64 seedsq;                                                                             
+                 ^
+Thanks,
+Fengguang
