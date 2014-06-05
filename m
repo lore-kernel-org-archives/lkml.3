@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753833AbaFEEjo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 00:39:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44281 "EHLO
+	id S1753228AbaFEEVm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 00:21:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44238 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753240AbaFEEVn (ORCPT
+	with ESMTP id S1751180AbaFEEVf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 00:21:43 -0400
+	Thu, 5 Jun 2014 00:21:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Richard Weinberger <richard@nod.at>,
-        Matt Fleming <matt.fleming@intel.com>,
+        Seiji Aguchi <seiji.aguchi@hds.com>, Mike Waychison <mikew@google.com>,
+        Matt Fleming <matt.fleming@intel.com>, Tony Luck <tony.luck@intel.com>,
         Ben Hutchings <ben@decadent.org.uk>, Rui Xiang <rui.xiang@huawei.com>
-Subject: [PATCH 3.4 151/214] x86,efi: Check max_size only if it is non-zero.
-Date: Wed,  4 Jun 2014 21:18:34 -0700
-Message-Id: <20140605041700.121237528@linuxfoundation.org>
+Subject: [PATCH 3.4 143/214] efivars: Disable external interrupt while holding efivars->lock
+Date: Wed,  4 Jun 2014 21:18:26 -0700
+Message-Id: <20140605041659.014982207@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -28,39 +28,229 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Richard Weinberger <richard@nod.at>
+From: Josh Boyer <jwboyer@redhat.com>
 
-commit 7791c8423f1f7f4dad94e753bae67461d5b80be8 upstream.
+commit 81fa4e581d9283f7992a0d8c534bb141eb840a14 upstream.
 
-Some EFI implementations return always a MaximumVariableSize of 0,
-check against max_size only if it is non-zero.
-My Intel DQ67SW desktop board has such an implementation.
+[Problem]
+There is a scenario which efi_pstore fails to log messages in a panic case.
 
-Signed-off-by: Richard Weinberger <richard@nod.at>
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+ - CPUA holds an efi_var->lock in either efivarfs parts
+   or efi_pstore with interrupt enabled.
+ - CPUB panics and sends IPI to CPUA in smp_send_stop().
+ - CPUA stops with holding the lock.
+ - CPUB kicks efi_pstore_write() via kmsg_dump(KSMG_DUMP_PANIC)
+   but it returns without logging messages.
+
+[Patch Description]
+This patch disables an external interruption while holding efivars->lock
+as follows.
+
+In efi_pstore_write() and get_var_data(), spin_lock/spin_unlock is
+replaced by spin_lock_irqsave/spin_unlock_irqrestore because they may
+be called in an interrupt context.
+
+In other functions, they are replaced by spin_lock_irq/spin_unlock_irq.
+because they are all called from a process context.
+
+By applying this patch, we can avoid the problem above with
+a following senario.
+
+ - CPUA holds an efi_var->lock with interrupt disabled.
+ - CPUB panics and sends IPI to CPUA in smp_send_stop().
+ - CPUA receives the IPI after releasing the lock because it is
+   disabling interrupt while holding the lock.
+ - CPUB waits for one sec until CPUA releases the lock.
+ - CPUB kicks efi_pstore_write() via kmsg_dump(KSMG_DUMP_PANIC)
+   And it can hold the lock successfully.
+
+Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
+Acked-by: Mike Waychison <mikew@google.com>
+Acked-by: Matt Fleming <matt.fleming@intel.com>
+Signed-off-by: Tony Luck <tony.luck@intel.com>
+[bwh: Backported to 3.2:
+ - Drop efivarfs changes
+ - Adjust context
+ - Drop change to efi_pstore_erase(), which is implemented using
+   efi_pstore_write() here]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Cc: Rui Xiang <rui.xiang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/platform/efi/efi.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ drivers/firmware/efivars.c |   44 +++++++++++++++++++++++---------------------
+ 1 file changed, 23 insertions(+), 21 deletions(-)
 
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -979,7 +979,12 @@ efi_status_t efi_query_variable_store(u3
- 	if (status != EFI_SUCCESS)
- 		return status;
+--- a/drivers/firmware/efivars.c
++++ b/drivers/firmware/efivars.c
+@@ -396,10 +396,11 @@ static efi_status_t
+ get_var_data(struct efivars *efivars, struct efi_variable *var)
+ {
+ 	efi_status_t status;
++	unsigned long flags;
  
--	if (!storage_size || size > remaining_size || size > max_size ||
-+	if (!max_size && remaining_size > size)
-+		printk_once(KERN_ERR FW_BUG "Broken EFI implementation"
-+			    " is returning MaxVariableSize=0\n");
-+
-+	if (!storage_size || size > remaining_size ||
-+	    (max_size && size > max_size) ||
- 	    (remaining_size - size) < (storage_size / 2))
- 		return EFI_OUT_OF_RESOURCES;
+-	spin_lock(&efivars->lock);
++	spin_lock_irqsave(&efivars->lock, flags);
+ 	status = get_var_data_locked(efivars, var);
+-	spin_unlock(&efivars->lock);
++	spin_unlock_irqrestore(&efivars->lock, flags);
  
+ 	if (status != EFI_SUCCESS) {
+ 		printk(KERN_WARNING "efivars: get_variable() failed 0x%lx!\n",
+@@ -528,14 +529,14 @@ efivar_store_raw(struct efivar_entry *en
+ 		return -EINVAL;
+ 	}
+ 
+-	spin_lock(&efivars->lock);
++	spin_lock_irq(&efivars->lock);
+ 	status = efivars->ops->set_variable(new_var->VariableName,
+ 					    &new_var->VendorGuid,
+ 					    new_var->Attributes,
+ 					    new_var->DataSize,
+ 					    new_var->Data);
+ 
+-	spin_unlock(&efivars->lock);
++	spin_unlock_irq(&efivars->lock);
+ 
+ 	if (status != EFI_SUCCESS) {
+ 		printk(KERN_WARNING "efivars: set_variable() failed: status=%lx\n",
+@@ -646,7 +647,7 @@ static int efi_pstore_open(struct pstore
+ {
+ 	struct efivars *efivars = psi->data;
+ 
+-	spin_lock(&efivars->lock);
++	spin_lock_irq(&efivars->lock);
+ 	efivars->walk_entry = list_first_entry(&efivars->list,
+ 					       struct efivar_entry, list);
+ 	return 0;
+@@ -656,7 +657,7 @@ static int efi_pstore_close(struct pstor
+ {
+ 	struct efivars *efivars = psi->data;
+ 
+-	spin_unlock(&efivars->lock);
++	spin_unlock_irq(&efivars->lock);
+ 	return 0;
+ }
+ 
+@@ -712,11 +713,12 @@ static int efi_pstore_write(enum pstore_
+ 	int i, ret = 0;
+ 	u64 storage_space, remaining_space, max_variable_size;
+ 	efi_status_t status = EFI_NOT_FOUND;
++	unsigned long flags;
+ 
+ 	sprintf(stub_name, "dump-type%u-%u-", type, part);
+ 	sprintf(name, "%s%lu", stub_name, get_seconds());
+ 
+-	spin_lock(&efivars->lock);
++	spin_lock_irqsave(&efivars->lock, flags);
+ 
+ 	/*
+ 	 * Check if there is a space enough to log.
+@@ -728,7 +730,7 @@ static int efi_pstore_write(enum pstore_
+ 						   &remaining_space,
+ 						   &max_variable_size);
+ 	if (status || remaining_space < size + DUMP_NAME_LEN * 2) {
+-		spin_unlock(&efivars->lock);
++		spin_unlock_irqrestore(&efivars->lock, flags);
+ 		*id = part;
+ 		return -ENOSPC;
+ 	}
+@@ -769,7 +771,7 @@ static int efi_pstore_write(enum pstore_
+ 	efivars->ops->set_variable(efi_name, &vendor, PSTORE_EFI_ATTRIBUTES,
+ 				   size, psi->buf);
+ 
+-	spin_unlock(&efivars->lock);
++	spin_unlock_irqrestore(&efivars->lock, flags);
+ 
+ 	if (found)
+ 		efivar_unregister(found);
+@@ -853,7 +855,7 @@ static ssize_t efivar_create(struct file
+ 		return -EINVAL;
+ 	}
+ 
+-	spin_lock(&efivars->lock);
++	spin_lock_irq(&efivars->lock);
+ 
+ 	/*
+ 	 * Does this variable already exist?
+@@ -871,7 +873,7 @@ static ssize_t efivar_create(struct file
+ 		}
+ 	}
+ 	if (found) {
+-		spin_unlock(&efivars->lock);
++		spin_unlock_irq(&efivars->lock);
+ 		return -EINVAL;
+ 	}
+ 
+@@ -885,10 +887,10 @@ static ssize_t efivar_create(struct file
+ 	if (status != EFI_SUCCESS) {
+ 		printk(KERN_WARNING "efivars: set_variable() failed: status=%lx\n",
+ 			status);
+-		spin_unlock(&efivars->lock);
++		spin_unlock_irq(&efivars->lock);
+ 		return -EIO;
+ 	}
+-	spin_unlock(&efivars->lock);
++	spin_unlock_irq(&efivars->lock);
+ 
+ 	/* Create the entry in sysfs.  Locking is not required here */
+ 	status = efivar_create_sysfs_entry(efivars,
+@@ -916,7 +918,7 @@ static ssize_t efivar_delete(struct file
+ 	if (!capable(CAP_SYS_ADMIN))
+ 		return -EACCES;
+ 
+-	spin_lock(&efivars->lock);
++	spin_lock_irq(&efivars->lock);
+ 
+ 	/*
+ 	 * Does this variable already exist?
+@@ -934,7 +936,7 @@ static ssize_t efivar_delete(struct file
+ 		}
+ 	}
+ 	if (!found) {
+-		spin_unlock(&efivars->lock);
++		spin_unlock_irq(&efivars->lock);
+ 		return -EINVAL;
+ 	}
+ 	/* force the Attributes/DataSize to 0 to ensure deletion */
+@@ -950,12 +952,12 @@ static ssize_t efivar_delete(struct file
+ 	if (status != EFI_SUCCESS) {
+ 		printk(KERN_WARNING "efivars: set_variable() failed: status=%lx\n",
+ 			status);
+-		spin_unlock(&efivars->lock);
++		spin_unlock_irq(&efivars->lock);
+ 		return -EIO;
+ 	}
+ 	list_del(&search_efivar->list);
+ 	/* We need to release this lock before unregistering. */
+-	spin_unlock(&efivars->lock);
++	spin_unlock_irq(&efivars->lock);
+ 	efivar_unregister(search_efivar);
+ 
+ 	/* It's dead Jim.... */
+@@ -1110,9 +1112,9 @@ efivar_create_sysfs_entry(struct efivars
+ 	kfree(short_name);
+ 	short_name = NULL;
+ 
+-	spin_lock(&efivars->lock);
++	spin_lock_irq(&efivars->lock);
+ 	list_add(&new_efivar->list, &efivars->list);
+-	spin_unlock(&efivars->lock);
++	spin_unlock_irq(&efivars->lock);
+ 
+ 	return 0;
+ }
+@@ -1181,9 +1183,9 @@ void unregister_efivars(struct efivars *
+ 	struct efivar_entry *entry, *n;
+ 
+ 	list_for_each_entry_safe(entry, n, &efivars->list, list) {
+-		spin_lock(&efivars->lock);
++		spin_lock_irq(&efivars->lock);
+ 		list_del(&entry->list);
+-		spin_unlock(&efivars->lock);
++		spin_unlock_irq(&efivars->lock);
+ 		efivar_unregister(entry);
+ 	}
+ 	if (efivars->new_var)
 
 
