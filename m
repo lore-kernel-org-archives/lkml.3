@@ -1,177 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751977AbaFEUf0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 16:35:26 -0400
-Received: from mail-oa0-f74.google.com ([209.85.219.74]:62872 "EHLO
-	mail-oa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751661AbaFEUfW (ORCPT
+	id S1751660AbaFEUjM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 16:39:12 -0400
+Received: from exprod5og116.obsmtp.com ([64.18.0.147]:57050 "HELO
+	exprod5og116.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751015AbaFEUjJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 16:35:22 -0400
-From: Doug Anderson <dianders@chromium.org>
-To: Tomasz Figa <t.figa@samsung.com>, Mike Turquette <mturquette@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Cc: olof@lixom.net, javier.martinez@collabora.co.uk,
-        Doug Anderson <dianders@chromium.org>, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        rahul.sharma@samsung.com, shaik.ameer@samsung.com, arun.kk@samsung.com,
-        alim.akhtar@samsung.com, a.hajda@samsung.com,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org
-Subject: [PATCH v3] clk: exynos5420: Remove aclk66_peric from the clock tree description
-Date: Thu,  5 Jun 2014 13:35:14 -0700
-Message-Id: <1402000514-30752-1-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 2.0.0.526.g5318336
-In-Reply-To: <1401467562-5585-1-git-send-email-dianders@chromium.org>
-References: <1401467562-5585-1-git-send-email-dianders@chromium.org>
+	Thu, 5 Jun 2014 16:39:09 -0400
+X-Greylist: delayed 339 seconds by postgrey-1.27 at vger.kernel.org; Thu, 05 Jun 2014 16:39:09 EDT
+MIME-Version: 1.0
+In-Reply-To: <20140605134120.GA21607@htj.dyndns.org>
+References: <CACVXFVMnM6w5ZLX=S8fJHeVoEqxH2JG3Wg=GPMeoVnOpAjsvAA@mail.gmail.com>
+	<CAPcyv4icNZU9s7zLYYcrFrNA_9qk4W1je42KKG+ETWqdoQu_kg@mail.gmail.com>
+	<CACVXFVPHfP1VXujLx9sGt3c7ptdG1JvBQkw2JiJQsU1KwJ1zog@mail.gmail.com>
+	<20140605134120.GA21607@htj.dyndns.org>
+Date: Thu, 5 Jun 2014 13:33:29 -0700
+Message-ID: <CAPw-ZTk7wOOYBB-XHH3=pQZk84M2xqhj0haPPCP1XJmtyWfmMg@mail.gmail.com>
+Subject: Re: [Regression] commit 8a4aeec8d(libata/ahci: accommodate tag
+ ordered controllers)
+From: Loc Ho <lho@apm.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Ming Lei <ming.lei@canonical.com>, Dan Williams <dan.j.williams@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Tuan Phan <tphan@apm.com>, Suman Tripathi <stripathi@apm.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The "aclk66_peric" clock is a gate clock with a whole bunch of gates
-underneath it.  This big gate isn't very useful to include in our
-clock tree.  If any of the children need to be turned on then the big
-gate will need to be on anyway.  ...and there are plenty of other "big
-gates" that aren't described in our clock tree, some of which shut off
-collections of clocks that have no relationship in the hierarchy so
-are hard to model.
+Hi Tejun,
 
-"aclk66_peric" is causing earlyprintk problems since it gets disabled
-as part of the boot process, so let's just remove it.
+>> >> Looks the commit 8a4aeec8d(libata/ahci: accommodate tag ordered
+>> >> controllers) causes below sata failure[1] on APM AHCI controller.
+>> >>
+>> >> And the error does disappear after reverting the commit.
+>> >
+>> > Can you give some more details about the workload and the disk?  What
+>> > is the APM AHCI?
+>>
+>> The commit causes the APM arm64 based system not bootable, and not
+>> special workload, just when mounting rootfs or reading init files.
+>>
+>> APM AHCI:
+>>       drivers/ata/ahci_xgene.c
+>
+> Urgh... so, the controller can't handle tags allocated in round-robin
+> instead of lowest-first?  Ming, can you please test with different
+> controllers / disks / ssds and see whether the problem stays with the
+> controller?  Loc, can you guys please look into it so that at least
+> the next revision hardware can fix the issue?
+>
+> Provided that the tag allocation itself isn't broken, which isn't too
+> likely given the lack of bug reports on other controllers, we'll need
+> to blacklist ahci_xgene somehow.  Either disable NCQ support on it or
+> implement an alternative lowest-first tag allocation for it.  If this
+> actually is the controller freaking out about tags allocated in a
+> different order, I'm not sure how much confidence we can put in its
+> NCQ implementation tho and it might be a better idea to simply plug
+> NCQ support on it until we understand the details of the problem.
+>
+> So, something like the following?  Ming, can you please verify whether
+> the following makes the machine boot again?
+>
+> Thanks.
+>
+> diff --git a/drivers/ata/ahci_xgene.c b/drivers/ata/ahci_xgene.c
+> index 77c89bf..4950600 100644
+> --- a/drivers/ata/ahci_xgene.c
+> +++ b/drivers/ata/ahci_xgene.c
+> @@ -302,9 +302,16 @@ static struct ata_port_operations xgene_ahci_ops = {
+>         .read_id = xgene_ahci_read_id,
+>  };
+>
+> +/*
+> + * The controller seems to freak out depending on the order of tag
+> + * allocation.  NCQ support is disabled until the problem is better
+> + * understood.
+> + *
+> + * http://lkml.kernel.org/g/CACVXFVMnM6w5ZLX=S8fJHeVoEqxH2JG3Wg=GPMeoVnOpAjsvAA@mail.gmail.com
+> + */
+>  static const struct ata_port_info xgene_ahci_port_info = {
+> -       AHCI_HFLAGS(AHCI_HFLAG_NO_PMP | AHCI_HFLAG_YES_NCQ),
+> -       .flags = AHCI_FLAG_COMMON | ATA_FLAG_NCQ,
+> +       AHCI_HFLAGS(AHCI_HFLAG_NO_PMP),
+> +       .flags = AHCI_FLAG_COMMON,
+>         .pio_mask = ATA_PIO4,
+>         .udma_mask = ATA_UDMA6,
+>         .port_ops = &xgene_ahci_ops,
 
-Strangely (and for no good reason) this clock is exported as part of
-the common clock bindings.  Remove it since there are no in-kernel
-device trees using it and no reason anyone out of tree should refer to
-it either.
+Suman is very familiar with this and he will proposal an solution.
+Please be aware that this is only an issue with previous revision of
+the chip. With the latest revision in house, this is not an issue.
 
-Signed-off-by: Doug Anderson <dianders@chromium.org>
----
-Changes in v3:
-- Now just remove aclk66_peric from the tree as suggested by Tomasz.
-
-Changes in v2:
-- Use GATE_A and clk_get().  Save the clock for putting later.
-- Return 0 from exynos5420_clk_late_init().
-
- drivers/clk/samsung/clk-exynos5420.c   | 85 ++++++++++++++++++++++------------
- include/dt-bindings/clock/exynos5420.h |  1 -
- 2 files changed, 55 insertions(+), 31 deletions(-)
-
-diff --git a/drivers/clk/samsung/clk-exynos5420.c b/drivers/clk/samsung/clk-exynos5420.c
-index 9d7d7ee..61eccf0 100644
---- a/drivers/clk/samsung/clk-exynos5420.c
-+++ b/drivers/clk/samsung/clk-exynos5420.c
-@@ -890,8 +890,6 @@ static struct samsung_gate_clock exynos5x_gate_clks[] __initdata = {
- 			GATE_BUS_TOP, 9, CLK_IGNORE_UNUSED, 0),
- 	GATE(0, "aclk66_psgen", "mout_user_aclk66_psgen",
- 			GATE_BUS_TOP, 10, CLK_IGNORE_UNUSED, 0),
--	GATE(CLK_ACLK66_PERIC, "aclk66_peric", "mout_user_aclk66_peric",
--			GATE_BUS_TOP, 11, CLK_IGNORE_UNUSED, 0),
- 	GATE(0, "aclk266_isp", "mout_user_aclk266_isp",
- 			GATE_BUS_TOP, 13, 0, 0),
- 	GATE(0, "aclk166", "mout_user_aclk166",
-@@ -994,34 +992,61 @@ static struct samsung_gate_clock exynos5x_gate_clks[] __initdata = {
- 			SRC_MASK_FSYS, 24, CLK_SET_RATE_PARENT, 0),
- 
- 	/* PERIC Block */
--	GATE(CLK_UART0, "uart0", "aclk66_peric", GATE_IP_PERIC, 0, 0, 0),
--	GATE(CLK_UART1, "uart1", "aclk66_peric", GATE_IP_PERIC, 1, 0, 0),
--	GATE(CLK_UART2, "uart2", "aclk66_peric", GATE_IP_PERIC, 2, 0, 0),
--	GATE(CLK_UART3, "uart3", "aclk66_peric", GATE_IP_PERIC, 3, 0, 0),
--	GATE(CLK_I2C0, "i2c0", "aclk66_peric", GATE_IP_PERIC, 6, 0, 0),
--	GATE(CLK_I2C1, "i2c1", "aclk66_peric", GATE_IP_PERIC, 7, 0, 0),
--	GATE(CLK_I2C2, "i2c2", "aclk66_peric", GATE_IP_PERIC, 8, 0, 0),
--	GATE(CLK_I2C3, "i2c3", "aclk66_peric", GATE_IP_PERIC, 9, 0, 0),
--	GATE(CLK_USI0, "usi0", "aclk66_peric", GATE_IP_PERIC, 10, 0, 0),
--	GATE(CLK_USI1, "usi1", "aclk66_peric", GATE_IP_PERIC, 11, 0, 0),
--	GATE(CLK_USI2, "usi2", "aclk66_peric", GATE_IP_PERIC, 12, 0, 0),
--	GATE(CLK_USI3, "usi3", "aclk66_peric", GATE_IP_PERIC, 13, 0, 0),
--	GATE(CLK_I2C_HDMI, "i2c_hdmi", "aclk66_peric", GATE_IP_PERIC, 14, 0, 0),
--	GATE(CLK_TSADC, "tsadc", "aclk66_peric", GATE_IP_PERIC, 15, 0, 0),
--	GATE(CLK_SPI0, "spi0", "aclk66_peric", GATE_IP_PERIC, 16, 0, 0),
--	GATE(CLK_SPI1, "spi1", "aclk66_peric", GATE_IP_PERIC, 17, 0, 0),
--	GATE(CLK_SPI2, "spi2", "aclk66_peric", GATE_IP_PERIC, 18, 0, 0),
--	GATE(CLK_I2S1, "i2s1", "aclk66_peric", GATE_IP_PERIC, 20, 0, 0),
--	GATE(CLK_I2S2, "i2s2", "aclk66_peric", GATE_IP_PERIC, 21, 0, 0),
--	GATE(CLK_PCM1, "pcm1", "aclk66_peric", GATE_IP_PERIC, 22, 0, 0),
--	GATE(CLK_PCM2, "pcm2", "aclk66_peric", GATE_IP_PERIC, 23, 0, 0),
--	GATE(CLK_PWM, "pwm", "aclk66_peric", GATE_IP_PERIC, 24, 0, 0),
--	GATE(CLK_SPDIF, "spdif", "aclk66_peric", GATE_IP_PERIC, 26, 0, 0),
--	GATE(CLK_USI4, "usi4", "aclk66_peric", GATE_IP_PERIC, 28, 0, 0),
--	GATE(CLK_USI5, "usi5", "aclk66_peric", GATE_IP_PERIC, 30, 0, 0),
--	GATE(CLK_USI6, "usi6", "aclk66_peric", GATE_IP_PERIC, 31, 0, 0),
--
--	GATE(CLK_KEYIF, "keyif", "aclk66_peric", GATE_BUS_PERIC, 22, 0, 0),
-+	GATE(CLK_UART0, "uart0", "mout_user_aclk66_peric",
-+			GATE_IP_PERIC, 0, 0, 0),
-+	GATE(CLK_UART1, "uart1", "mout_user_aclk66_peric",
-+			GATE_IP_PERIC, 1, 0, 0),
-+	GATE(CLK_UART2, "uart2", "mout_user_aclk66_peric",
-+			GATE_IP_PERIC, 2, 0, 0),
-+	GATE(CLK_UART3, "uart3", "mout_user_aclk66_peric",
-+			GATE_IP_PERIC, 3, 0, 0),
-+	GATE(CLK_I2C0, "i2c0", "mout_user_aclk66_peric",
-+			GATE_IP_PERIC, 6, 0, 0),
-+	GATE(CLK_I2C1, "i2c1", "mout_user_aclk66_peric",
-+			GATE_IP_PERIC, 7, 0, 0),
-+	GATE(CLK_I2C2, "i2c2", "mout_user_aclk66_peric",
-+			GATE_IP_PERIC, 8, 0, 0),
-+	GATE(CLK_I2C3, "i2c3", "mout_user_aclk66_peric",
-+			GATE_IP_PERIC, 9, 0, 0),
-+	GATE(CLK_USI0, "usi0", "mout_user_aclk66_peric",
-+			GATE_IP_PERIC, 10, 0, 0),
-+	GATE(CLK_USI1, "usi1", "mout_user_aclk66_peric",
-+			GATE_IP_PERIC, 11, 0, 0),
-+	GATE(CLK_USI2, "usi2", "mout_user_aclk66_peric",
-+			GATE_IP_PERIC, 12, 0, 0),
-+	GATE(CLK_USI3, "usi3", "mout_user_aclk66_peric",
-+			GATE_IP_PERIC, 13, 0, 0),
-+	GATE(CLK_I2C_HDMI, "i2c_hdmi", "mout_user_aclk66_peric",
-+			GATE_IP_PERIC, 14, 0, 0),
-+	GATE(CLK_TSADC, "tsadc", "mout_user_aclk66_peric",
-+			GATE_IP_PERIC, 15, 0, 0),
-+	GATE(CLK_SPI0, "spi0", "mout_user_aclk66_peric",
-+			GATE_IP_PERIC, 16, 0, 0),
-+	GATE(CLK_SPI1, "spi1", "mout_user_aclk66_peric",
-+			GATE_IP_PERIC, 17, 0, 0),
-+	GATE(CLK_SPI2, "spi2", "mout_user_aclk66_peric",
-+			GATE_IP_PERIC, 18, 0, 0),
-+	GATE(CLK_I2S1, "i2s1", "mout_user_aclk66_peric",
-+			GATE_IP_PERIC, 20, 0, 0),
-+	GATE(CLK_I2S2, "i2s2", "mout_user_aclk66_peric",
-+			GATE_IP_PERIC, 21, 0, 0),
-+	GATE(CLK_PCM1, "pcm1", "mout_user_aclk66_peric",
-+			GATE_IP_PERIC, 22, 0, 0),
-+	GATE(CLK_PCM2, "pcm2", "mout_user_aclk66_peric",
-+			GATE_IP_PERIC, 23, 0, 0),
-+	GATE(CLK_PWM, "pwm", "mout_user_aclk66_peric",
-+			GATE_IP_PERIC, 24, 0, 0),
-+	GATE(CLK_SPDIF, "spdif", "mout_user_aclk66_peric",
-+			GATE_IP_PERIC, 26, 0, 0),
-+	GATE(CLK_USI4, "usi4", "mout_user_aclk66_peric",
-+			GATE_IP_PERIC, 28, 0, 0),
-+	GATE(CLK_USI5, "usi5", "mout_user_aclk66_peric",
-+			GATE_IP_PERIC, 30, 0, 0),
-+	GATE(CLK_USI6, "usi6", "mout_user_aclk66_peric",
-+			GATE_IP_PERIC, 31, 0, 0),
-+
-+	GATE(CLK_KEYIF, "keyif", "mout_user_aclk66_peric",
-+			GATE_BUS_PERIC, 22, 0, 0),
- 
- 	/* PERIS Block */
- 	GATE(CLK_CHIPID, "chipid", "aclk66_psgen",
-diff --git a/include/dt-bindings/clock/exynos5420.h b/include/dt-bindings/clock/exynos5420.h
-index 97dcb89..14e1c8f 100644
---- a/include/dt-bindings/clock/exynos5420.h
-+++ b/include/dt-bindings/clock/exynos5420.h
-@@ -63,7 +63,6 @@
- #define CLK_SCLK_MPHY_IXTAL24	161
- 
- /* gate clocks */
--#define CLK_ACLK66_PERIC	256
- #define CLK_UART0		257
- #define CLK_UART1		258
- #define CLK_UART2		259
--- 
-2.0.0.526.g5318336
-
+-Loc
