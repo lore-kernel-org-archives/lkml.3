@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753646AbaFEFBO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 01:01:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43876 "EHLO
+	id S1754570AbaFEFBu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 01:01:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43866 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752521AbaFEEUe (ORCPT
+	with ESMTP id S1752331AbaFEEUd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 00:20:34 -0400
+	Thu, 5 Jun 2014 00:20:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
-        Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.4 069/214] ASoC: wm8962: Update register CLASS_D_CONTROL_1 to be non-volatile
-Date: Wed,  4 Jun 2014 21:17:12 -0700
-Message-Id: <20140605041648.806855496@linuxfoundation.org>
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [PATCH 3.4 066/214] nfsd4: warn on finding lockowner without stateids
+Date: Wed,  4 Jun 2014 21:17:09 -0700
+Message-Id: <20140605041648.385175038@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -28,86 +26,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit 44330ab516c15dda8a1e660eeaf0003f84e43e3f upstream.
+commit 27b11428b7de097c42f205beabb1764f4365443b upstream.
 
-The register CLASS_D_CONTROL_1 is marked as volatile because it contains
-a bit, DAC_MUTE, which is also mirrored in the ADC_DAC_CONTROL_1
-register. This causes problems for the "Speaker Switch" control, which
-will report an error if the CODEC is suspended because it relies on a
-volatile register.
+The current code assumes a one-to-one lockowner<->lock stateid
+correspondance.
 
-To resolve this issue mark CLASS_D_CONTROL_1 as non-volatile and
-manually keep the register cache in sync by updating both bits when
-changing the mute status.
-
-Reported-by: Shawn Guo <shawn.guo@linaro.org>
-Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Tested-by: Shawn Guo <shawn.guo@linaro.org>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/wm8962.c |   15 ++++++++++++---
- sound/soc/codecs/wm8962.h |    4 ++++
- 2 files changed, 16 insertions(+), 3 deletions(-)
+ fs/nfsd/nfs4state.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/sound/soc/codecs/wm8962.c
-+++ b/sound/soc/codecs/wm8962.c
-@@ -153,6 +153,7 @@ static struct reg_default wm8962_reg[] =
- 	{ 40, 0x0000 },   /* R40    - SPKOUTL volume */
- 	{ 41, 0x0000 },   /* R41    - SPKOUTR volume */
+--- a/fs/nfsd/nfs4state.c
++++ b/fs/nfsd/nfs4state.c
+@@ -3918,6 +3918,10 @@ static bool same_lockowner_ino(struct nf
  
-+	{ 49, 0x0010 },   /* R49    - Class D Control 1 */
- 	{ 51, 0x0003 },   /* R51    - Class D Control 2 */
- 
- 	{ 56, 0x0506 },   /* R56    - Clocking 4 */
-@@ -794,7 +795,6 @@ static bool wm8962_volatile_register(str
- 	case WM8962_ALC2:
- 	case WM8962_THERMAL_SHUTDOWN_STATUS:
- 	case WM8962_ADDITIONAL_CONTROL_4:
--	case WM8962_CLASS_D_CONTROL_1:
- 	case WM8962_DC_SERVO_6:
- 	case WM8962_INTERRUPT_STATUS_1:
- 	case WM8962_INTERRUPT_STATUS_2:
-@@ -2888,13 +2888,22 @@ static int wm8962_set_fll(struct snd_soc
- static int wm8962_mute(struct snd_soc_dai *dai, int mute)
- {
- 	struct snd_soc_codec *codec = dai->codec;
--	int val;
-+	int val, ret;
- 
- 	if (mute)
--		val = WM8962_DAC_MUTE;
-+		val = WM8962_DAC_MUTE | WM8962_DAC_MUTE_ALT;
- 	else
- 		val = 0;
- 
-+	/**
-+	 * The DAC mute bit is mirrored in two registers, update both to keep
-+	 * the register cache consistent.
-+	 */
-+	ret = snd_soc_update_bits(codec, WM8962_CLASS_D_CONTROL_1,
-+				  WM8962_DAC_MUTE_ALT, val);
-+	if (ret < 0)
-+		return ret;
-+
- 	return snd_soc_update_bits(codec, WM8962_ADC_DAC_CONTROL_1,
- 				   WM8962_DAC_MUTE, val);
- }
---- a/sound/soc/codecs/wm8962.h
-+++ b/sound/soc/codecs/wm8962.h
-@@ -1954,6 +1954,10 @@
- #define WM8962_SPKOUTL_ENA_MASK                 0x0040  /* SPKOUTL_ENA */
- #define WM8962_SPKOUTL_ENA_SHIFT                     6  /* SPKOUTL_ENA */
- #define WM8962_SPKOUTL_ENA_WIDTH                     1  /* SPKOUTL_ENA */
-+#define WM8962_DAC_MUTE_ALT                     0x0010  /* DAC_MUTE */
-+#define WM8962_DAC_MUTE_ALT_MASK                0x0010  /* DAC_MUTE */
-+#define WM8962_DAC_MUTE_ALT_SHIFT                    4  /* DAC_MUTE */
-+#define WM8962_DAC_MUTE_ALT_WIDTH                    1  /* DAC_MUTE */
- #define WM8962_SPKOUTL_PGA_MUTE                 0x0002  /* SPKOUTL_PGA_MUTE */
- #define WM8962_SPKOUTL_PGA_MUTE_MASK            0x0002  /* SPKOUTL_PGA_MUTE */
- #define WM8962_SPKOUTL_PGA_MUTE_SHIFT                1  /* SPKOUTL_PGA_MUTE */
+ 	if (!same_owner_str(&lo->lo_owner, owner, clid))
+ 		return false;
++	if (list_empty(&lo->lo_owner.so_stateids)) {
++		WARN_ON_ONCE(1);
++		return false;
++	}
+ 	lst = list_first_entry(&lo->lo_owner.so_stateids,
+ 			       struct nfs4_ol_stateid, st_perstateowner);
+ 	return lst->st_file->fi_inode == inode;
 
 
