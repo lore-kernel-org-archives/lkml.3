@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753823AbaFEEWp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 00:22:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44604 "EHLO
+	id S1753876AbaFEEXT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 00:23:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44625 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753771AbaFEEWl (ORCPT
+	with ESMTP id S1753804AbaFEEWn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 00:22:41 -0400
+	Thu, 5 Jun 2014 00:22:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
+        Marc Dionne <marc.c.dionne@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
         Ben Hutchings <ben@decadent.org.uk>,
-        Qiang Huang <h.huangqiang@huawei.com>
-Subject: [PATCH 3.4 210/214] crypto: s390 - Fix aes-xts parameter corruption
-Date: Wed,  4 Jun 2014 21:19:33 -0700
-Message-Id: <20140605041707.708926883@linuxfoundation.org>
+        Yijing Wang <wangyijing@huawei.com>
+Subject: [PATCH 3.4 214/214] HID: logitech: dont use stack based dj_report structures
+Date: Wed,  4 Jun 2014 21:19:37 -0700
+Message-Id: <20140605041708.243134847@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -29,100 +28,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gerald Schaefer <gerald.schaefer@de.ibm.com>
+From: Marc Dionne <marc.c.dionne@gmail.com>
 
-commit 9dda2769af4f3f3093434648c409bb351120d9e8 upstream.
+commit d8dc3494f77a5cc3b274bae36f7e74e85cf8a407 upstream.
 
-Some s390 crypto algorithms incorrectly use the crypto_tfm structure to
-store private data. As the tfm can be shared among multiple threads, this
-can result in data corruption.
+On a system with a logitech wireless keyboard/mouse and DMA-API debugging
+enabled, this warning appears at boot:
 
-This patch fixes aes-xts by moving the xts and pcc parameter blocks from
-the tfm onto the stack (48 + 96 bytes).
+kernel: WARNING: at lib/dma-debug.c:929 check_for_stack.part.12+0x70/0xa7()
+kernel: Hardware name: MS-7593
+kernel: uhci_hcd 0000:00:1d.1: DMA-API: device driver maps memory fromstack [addr=ffff8801b0079c29]
 
-Signed-off-by: Gerald Schaefer <gerald.schaefer@de.ibm.com>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
-[bwh: Backported to 3.2: adjust context]
+Make logi_dj_recv_query_paired_devices and logi_dj_recv_switch_to_dj_mode
+use a structure allocated with kzalloc rather than a stack based one.
+
+Signed-off-by: Marc Dionne <marc.c.dionne@gmail.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Cc: Qiang Huang <h.huangqiang@huawei.com>
+Cc: Yijing Wang <wangyijing@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/s390/crypto/aes_s390.c |   31 +++++++++++++++++--------------
- 1 file changed, 17 insertions(+), 14 deletions(-)
+ drivers/hid/hid-logitech-dj.c |   38 ++++++++++++++++++++++++--------------
+ 1 file changed, 24 insertions(+), 14 deletions(-)
 
---- a/arch/s390/crypto/aes_s390.c
-+++ b/arch/s390/crypto/aes_s390.c
-@@ -55,8 +55,7 @@ struct pcc_param {
+--- a/drivers/hid/hid-logitech-dj.c
++++ b/drivers/hid/hid-logitech-dj.c
+@@ -474,28 +474,38 @@ static int logi_dj_recv_send_report(stru
  
- struct s390_xts_ctx {
- 	u8 key[32];
--	u8 xts_param[16];
--	struct pcc_param pcc;
-+	u8 pcc_key[32];
- 	long enc;
- 	long dec;
- 	int key_len;
-@@ -592,7 +591,7 @@ static int xts_aes_set_key(struct crypto
- 		xts_ctx->enc = KM_XTS_128_ENCRYPT;
- 		xts_ctx->dec = KM_XTS_128_DECRYPT;
- 		memcpy(xts_ctx->key + 16, in_key, 16);
--		memcpy(xts_ctx->pcc.key + 16, in_key + 16, 16);
-+		memcpy(xts_ctx->pcc_key + 16, in_key + 16, 16);
- 		break;
- 	case 48:
- 		xts_ctx->enc = 0;
-@@ -603,7 +602,7 @@ static int xts_aes_set_key(struct crypto
- 		xts_ctx->enc = KM_XTS_256_ENCRYPT;
- 		xts_ctx->dec = KM_XTS_256_DECRYPT;
- 		memcpy(xts_ctx->key, in_key, 32);
--		memcpy(xts_ctx->pcc.key, in_key + 32, 32);
-+		memcpy(xts_ctx->pcc_key, in_key + 32, 32);
- 		break;
- 	default:
- 		*flags |= CRYPTO_TFM_RES_BAD_KEY_LEN;
-@@ -622,28 +621,32 @@ static int xts_aes_crypt(struct blkciphe
- 	unsigned int nbytes = walk->nbytes;
- 	unsigned int n;
- 	u8 *in, *out;
--	void *param;
-+	struct pcc_param pcc_param;
-+	struct {
-+		u8 key[32];
-+		u8 init[16];
-+	} xts_param;
+ static int logi_dj_recv_query_paired_devices(struct dj_receiver_dev *djrcv_dev)
+ {
+-	struct dj_report dj_report;
++	struct dj_report *dj_report;
++	int retval;
  
- 	if (!nbytes)
- 		goto out;
+-	memset(&dj_report, 0, sizeof(dj_report));
+-	dj_report.report_id = REPORT_ID_DJ_SHORT;
+-	dj_report.device_index = 0xFF;
+-	dj_report.report_type = REPORT_TYPE_CMD_GET_PAIRED_DEVICES;
+-	return logi_dj_recv_send_report(djrcv_dev, &dj_report);
++	dj_report = kzalloc(sizeof(dj_report), GFP_KERNEL);
++	if (!dj_report)
++		return -ENOMEM;
++	dj_report->report_id = REPORT_ID_DJ_SHORT;
++	dj_report->device_index = 0xFF;
++	dj_report->report_type = REPORT_TYPE_CMD_GET_PAIRED_DEVICES;
++	retval = logi_dj_recv_send_report(djrcv_dev, dj_report);
++	kfree(dj_report);
++	return retval;
+ }
  
--	memset(xts_ctx->pcc.block, 0, sizeof(xts_ctx->pcc.block));
--	memset(xts_ctx->pcc.bit, 0, sizeof(xts_ctx->pcc.bit));
--	memset(xts_ctx->pcc.xts, 0, sizeof(xts_ctx->pcc.xts));
--	memcpy(xts_ctx->pcc.tweak, walk->iv, sizeof(xts_ctx->pcc.tweak));
--	param = xts_ctx->pcc.key + offset;
--	ret = crypt_s390_pcc(func, param);
-+	memset(pcc_param.block, 0, sizeof(pcc_param.block));
-+	memset(pcc_param.bit, 0, sizeof(pcc_param.bit));
-+	memset(pcc_param.xts, 0, sizeof(pcc_param.xts));
-+	memcpy(pcc_param.tweak, walk->iv, sizeof(pcc_param.tweak));
-+	memcpy(pcc_param.key, xts_ctx->pcc_key, 32);
-+	ret = crypt_s390_pcc(func, &pcc_param.key[offset]);
- 	BUG_ON(ret < 0);
  
--	memcpy(xts_ctx->xts_param, xts_ctx->pcc.xts, 16);
--	param = xts_ctx->key + offset;
-+	memcpy(xts_param.key, xts_ctx->key, 32);
-+	memcpy(xts_param.init, pcc_param.xts, 16);
- 	do {
- 		/* only use complete blocks */
- 		n = nbytes & ~(AES_BLOCK_SIZE - 1);
- 		out = walk->dst.virt.addr;
- 		in = walk->src.virt.addr;
+ static int logi_dj_recv_switch_to_dj_mode(struct dj_receiver_dev *djrcv_dev,
+ 					  unsigned timeout)
+ {
+-	struct dj_report dj_report;
++	struct dj_report *dj_report;
++	int retval;
  
--		ret = crypt_s390_km(func, param, out, in, n);
-+		ret = crypt_s390_km(func, &xts_param.key[offset], out, in, n);
- 		BUG_ON(ret < 0 || ret != n);
+-	memset(&dj_report, 0, sizeof(dj_report));
+-	dj_report.report_id = REPORT_ID_DJ_SHORT;
+-	dj_report.device_index = 0xFF;
+-	dj_report.report_type = REPORT_TYPE_CMD_SWITCH;
+-	dj_report.report_params[CMD_SWITCH_PARAM_DEVBITFIELD] = 0x3F;
+-	dj_report.report_params[CMD_SWITCH_PARAM_TIMEOUT_SECONDS] = (u8)timeout;
+-	return logi_dj_recv_send_report(djrcv_dev, &dj_report);
++	dj_report = kzalloc(sizeof(dj_report), GFP_KERNEL);
++	if (!dj_report)
++		return -ENOMEM;
++	dj_report->report_id = REPORT_ID_DJ_SHORT;
++	dj_report->device_index = 0xFF;
++	dj_report->report_type = REPORT_TYPE_CMD_SWITCH;
++	dj_report->report_params[CMD_SWITCH_PARAM_DEVBITFIELD] = 0x3F;
++	dj_report->report_params[CMD_SWITCH_PARAM_TIMEOUT_SECONDS] = (u8)timeout;
++	retval = logi_dj_recv_send_report(djrcv_dev, dj_report);
++	kfree(dj_report);
++	return retval;
+ }
  
- 		nbytes &= AES_BLOCK_SIZE - 1;
+ 
 
 
