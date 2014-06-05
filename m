@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754908AbaFEFTE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 01:19:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43578 "EHLO
+	id S1754921AbaFEFTd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 01:19:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43572 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751503AbaFEETo (ORCPT
+	with ESMTP id S1751460AbaFEETn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 00:19:44 -0400
+	Thu, 5 Jun 2014 00:19:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ludovic Drolez <ldrolez@debian.org>, Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 3.4 008/214] USB: io_ti: fix firmware download on big-endian machines
-Date: Wed,  4 Jun 2014 21:16:11 -0700
-Message-Id: <20140605041640.846041578@linuxfoundation.org>
+        Daniele Palmas <dnlplm@gmail.com>, Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH 3.4 006/214] usb: option driver, add support for Telit UE910v2
+Date: Wed,  4 Jun 2014 21:16:09 -0700
+Message-Id: <20140605041640.576904435@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -26,168 +26,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Daniele Palmas <dnlplm@gmail.com>
 
-commit 5509076d1b4485ce9fb07705fcbcd2695907ab5b upstream.
+commit d6de486bc22255779bd54b0fceb4c240962bf146 upstream.
 
-During firmware download the device expects memory addresses in
-big-endian byte order. As the wIndex parameter which hold the address is
-sent in little-endian byte order regardless of host byte order, we need
-to use swab16 rather than cpu_to_be16.
+option driver, added VID/PID for Telit UE910v2 modem
 
-Also make sure to handle the struct ti_i2c_desc size parameter which is
-returned in little-endian byte order.
-
-Reported-by: Ludovic Drolez <ldrolez@debian.org>
-Tested-by: Ludovic Drolez <ldrolez@debian.org>
+Signed-off-by: Daniele Palmas <dnlplm@gmail.com>
 Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/io_ti.c |   50 +++++++++++++++++++++++++++++----------------
- 1 file changed, 33 insertions(+), 17 deletions(-)
+ drivers/usb/serial/option.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/usb/serial/io_ti.c
-+++ b/drivers/usb/serial/io_ti.c
-@@ -29,6 +29,7 @@
- #include <linux/spinlock.h>
- #include <linux/mutex.h>
- #include <linux/serial.h>
-+#include <linux/swab.h>
- #include <linux/kfifo.h>
- #include <linux/ioctl.h>
- #include <linux/firmware.h>
-@@ -298,7 +299,7 @@ static int read_download_mem(struct usb_
- {
- 	int status = 0;
- 	__u8 read_length;
--	__be16 be_start_address;
-+	u16 be_start_address;
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -243,6 +243,7 @@ static void option_instat_callback(struc
+ #define TELIT_PRODUCT_CC864_DUAL		0x1005
+ #define TELIT_PRODUCT_CC864_SINGLE		0x1006
+ #define TELIT_PRODUCT_DE910_DUAL		0x1010
++#define TELIT_PRODUCT_UE910_V2			0x1012
+ #define TELIT_PRODUCT_LE920			0x1200
  
- 	dbg("%s - @ %x for %d", __func__, start_address, length);
- 
-@@ -315,10 +316,14 @@ static int read_download_mem(struct usb_
- 			dbg("%s - @ %x for %d", __func__,
- 			     start_address, read_length);
- 		}
--		be_start_address = cpu_to_be16(start_address);
-+		/*
-+		 * NOTE: Must use swab as wIndex is sent in little-endian
-+		 *       byte order regardless of host byte order.
-+		 */
-+		be_start_address = swab16((u16)start_address);
- 		status = ti_vread_sync(dev, UMPC_MEMORY_READ,
- 					(__u16)address_type,
--					(__force __u16)be_start_address,
-+					be_start_address,
- 					buffer, read_length);
- 
- 		if (status) {
-@@ -418,7 +423,7 @@ static int write_i2c_mem(struct edgeport
- {
- 	int status = 0;
- 	int write_length;
--	__be16 be_start_address;
-+	u16 be_start_address;
- 
- 	/* We can only send a maximum of 1 aligned byte page at a time */
- 
-@@ -434,11 +439,16 @@ static int write_i2c_mem(struct edgeport
- 	usb_serial_debug_data(debug, &serial->serial->dev->dev,
- 						__func__, write_length, buffer);
- 
--	/* Write first page */
--	be_start_address = cpu_to_be16(start_address);
-+	/*
-+	 * Write first page.
-+	 *
-+	 * NOTE: Must use swab as wIndex is sent in little-endian byte order
-+	 *       regardless of host byte order.
-+	 */
-+	be_start_address = swab16((u16)start_address);
- 	status = ti_vsend_sync(serial->serial->dev,
- 				UMPC_MEMORY_WRITE, (__u16)address_type,
--				(__force __u16)be_start_address,
-+				be_start_address,
- 				buffer,	write_length);
- 	if (status) {
- 		dbg("%s - ERROR %d", __func__, status);
-@@ -462,11 +472,16 @@ static int write_i2c_mem(struct edgeport
- 		usb_serial_debug_data(debug, &serial->serial->dev->dev,
- 					__func__, write_length, buffer);
- 
--		/* Write next page */
--		be_start_address = cpu_to_be16(start_address);
-+		/*
-+		 * Write next page.
-+		 *
-+		 * NOTE: Must use swab as wIndex is sent in little-endian byte
-+		 *       order regardless of host byte order.
-+		 */
-+		be_start_address = swab16((u16)start_address);
- 		status = ti_vsend_sync(serial->serial->dev, UMPC_MEMORY_WRITE,
- 				(__u16)address_type,
--				(__force __u16)be_start_address,
-+				be_start_address,
- 				buffer, write_length);
- 		if (status) {
- 			dev_err(&serial->serial->dev->dev, "%s - ERROR %d\n",
-@@ -673,8 +688,8 @@ static int get_descriptor_addr(struct ed
- 		if (rom_desc->Type == desc_type)
- 			return start_address;
- 
--		start_address = start_address + sizeof(struct ti_i2c_desc)
--							+ rom_desc->Size;
-+		start_address = start_address + sizeof(struct ti_i2c_desc) +
-+						le16_to_cpu(rom_desc->Size);
- 
- 	} while ((start_address < TI_MAX_I2C_SIZE) && rom_desc->Type);
- 
-@@ -687,7 +702,7 @@ static int valid_csum(struct ti_i2c_desc
- 	__u16 i;
- 	__u8 cs = 0;
- 
--	for (i = 0; i < rom_desc->Size; i++)
-+	for (i = 0; i < le16_to_cpu(rom_desc->Size); i++)
- 		cs = (__u8)(cs + buffer[i]);
- 
- 	if (cs != rom_desc->CheckSum) {
-@@ -741,7 +756,7 @@ static int check_i2c_image(struct edgepo
- 			break;
- 
- 		if ((start_address + sizeof(struct ti_i2c_desc) +
--					rom_desc->Size) > TI_MAX_I2C_SIZE) {
-+			le16_to_cpu(rom_desc->Size)) > TI_MAX_I2C_SIZE) {
- 			status = -ENODEV;
- 			dbg("%s - structure too big, erroring out.", __func__);
- 			break;
-@@ -756,7 +771,8 @@ static int check_i2c_image(struct edgepo
- 			/* Read the descriptor data */
- 			status = read_rom(serial, start_address +
- 						sizeof(struct ti_i2c_desc),
--						rom_desc->Size, buffer);
-+						le16_to_cpu(rom_desc->Size),
-+						buffer);
- 			if (status)
- 				break;
- 
-@@ -765,7 +781,7 @@ static int check_i2c_image(struct edgepo
- 				break;
- 		}
- 		start_address = start_address + sizeof(struct ti_i2c_desc) +
--								rom_desc->Size;
-+						le16_to_cpu(rom_desc->Size);
- 
- 	} while ((rom_desc->Type != I2C_DESC_TYPE_ION) &&
- 				(start_address < TI_MAX_I2C_SIZE));
-@@ -804,7 +820,7 @@ static int get_manuf_info(struct edgepor
- 
- 	/* Read the descriptor data */
- 	status = read_rom(serial, start_address+sizeof(struct ti_i2c_desc),
--						rom_desc->Size, buffer);
-+					le16_to_cpu(rom_desc->Size), buffer);
- 	if (status)
- 		goto exit;
- 
+ /* ZTE PRODUCTS */
+@@ -1055,6 +1056,7 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_CC864_DUAL) },
+ 	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_CC864_SINGLE) },
+ 	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_DE910_DUAL) },
++	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_UE910_V2) },
+ 	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_LE920),
+ 		.driver_info = (kernel_ulong_t)&telit_le920_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_MF622, 0xff, 0xff, 0xff) }, /* ZTE WCDMA products */
 
 
