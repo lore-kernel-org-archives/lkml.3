@@ -1,21 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753985AbaFEEmq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 00:42:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44222 "EHLO
+	id S1753461AbaFEEnW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 00:43:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44214 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753150AbaFEEVb (ORCPT
+	with ESMTP id S1753139AbaFEEVa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 00:21:31 -0400
+	Thu, 5 Jun 2014 00:21:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Frederic Berat <fredericx.berat@intel.com>,
-        Russ Gorby <russ.gorby@intel.com>, Alan Cox <alan@linux.intel.com>,
+        Radu Caragea <sinaelgl@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>, Oleg Nesterov <oleg@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Adrian Sendroiu <molecula2788@gmail.com>, Greg KH <greg@kroah.com>,
+        Kamal Mostafa <kamal@canonical.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Ben Hutchings <ben@decadent.org.uk>, Rui Xiang <rui.xiang@huawei.com>
-Subject: [PATCH 3.4 134/214] n_gsm : Flow control handling in Mux driver
-Date: Wed,  4 Jun 2014 21:18:17 -0700
-Message-Id: <20140605041657.725355907@linuxfoundation.org>
+Subject: [PATCH 3.4 138/214] x86 get_unmapped_area: Access mmap_legacy_base through mm_struct member
+Date: Wed,  4 Jun 2014 21:18:21 -0700
+Message-Id: <20140605041658.310704816@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -28,202 +33,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Frederic Berat <fredericx.berat@intel.com>
+From: Radu Caragea <sinaelgl@gmail.com>
 
-commit c01af4fec2c8f303d6b3354d44308d9e6bef8026 upstream.
+commit 41aacc1eea645c99edbe8fbcf78a97dc9b862adc upstream.
 
-- Correcting handling of FCon/FCoff in order to respect 27.010 spec
-- Consider FCon/off will overide all dlci flow control except for
-  dlci0 as we must be able to send control frames.
-- Dlci constipated handling according to FC, RTC and RTR values.
-- Modifying gsm_dlci_data_kick and gsm_dlci_data_sweep according
-  to dlci constipated value
+This is the updated version of df54d6fa5427 ("x86 get_unmapped_area():
+use proper mmap base for bottom-up direction") that only randomizes the
+mmap base address once.
 
-Signed-off-by: Frederic Berat <fredericx.berat@intel.com>
-Signed-off-by: Russ Gorby <russ.gorby@intel.com>
-Signed-off-by: Alan Cox <alan@linux.intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Radu Caragea <sinaelgl@gmail.com>
+Reported-and-tested-by: Jeff Shorey <shoreyjeff@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Michel Lespinasse <walken@google.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Adrian Sendroiu <molecula2788@gmail.com>
+Cc: Greg KH <greg@kroah.com>
+Cc: Kamal Mostafa <kamal@canonical.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Cc: Rui Xiang <rui.xiang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/n_gsm.c |   79 +++++++++++++++++++++++++++++++++++++---------------
- 1 file changed, 57 insertions(+), 22 deletions(-)
+ arch/x86/kernel/sys_x86_64.c |    2 +-
+ arch/x86/mm/mmap.c           |    6 ++++--
+ include/linux/mm_types.h     |    1 +
+ 3 files changed, 6 insertions(+), 3 deletions(-)
 
---- a/drivers/tty/n_gsm.c
-+++ b/drivers/tty/n_gsm.c
-@@ -673,6 +673,8 @@ static struct gsm_msg *gsm_data_alloc(st
-  *
-  *	The tty device has called us to indicate that room has appeared in
-  *	the transmit queue. Ram more data into the pipe if we have any
-+ *	If we have been flow-stopped by a CMD_FCOFF, then we can only
-+ *	send messages on DLCI0 until CMD_FCON
-  *
-  *	FIXME: lock against link layer control transmissions
-  */
-@@ -680,15 +682,19 @@ static struct gsm_msg *gsm_data_alloc(st
- static void gsm_data_kick(struct gsm_mux *gsm)
- {
- 	struct gsm_msg *msg = gsm->tx_head;
-+	struct gsm_msg *free_msg;
- 	int len;
- 	int skip_sof = 0;
- 
--	/* FIXME: We need to apply this solely to data messages */
--	if (gsm->constipated)
--		return;
--
--	while (gsm->tx_head != NULL) {
--		msg = gsm->tx_head;
-+	while (msg) {
-+		if (gsm->constipated && msg->addr) {
-+			msg = msg->next;
-+			continue;
-+		}
-+		if (gsm->dlci[msg->addr]->constipated) {
-+			msg = msg->next;
-+			continue;
-+		}
- 		if (gsm->encoding != 0) {
- 			gsm->txframe[0] = GSM1_SOF;
- 			len = gsm_stuff_frame(msg->data,
-@@ -711,15 +717,19 @@ static void gsm_data_kick(struct gsm_mux
- 						len - skip_sof) < 0)
- 			break;
- 		/* FIXME: Can eliminate one SOF in many more cases */
--		gsm->tx_head = msg->next;
--		if (gsm->tx_head == NULL)
--			gsm->tx_tail = NULL;
- 		gsm->tx_bytes -= msg->len;
--		kfree(msg);
- 		/* For a burst of frames skip the extra SOF within the
- 		   burst */
- 		skip_sof = 1;
-+
-+		if (gsm->tx_head == msg)
-+			gsm->tx_head = msg->next;
-+		free_msg = msg;
-+		msg = msg->next;
-+		kfree(free_msg);
+--- a/arch/x86/kernel/sys_x86_64.c
++++ b/arch/x86/kernel/sys_x86_64.c
+@@ -115,7 +115,7 @@ static void find_start_end(unsigned long
+ 				*begin = new_begin;
+ 		}
+ 	} else {
+-		*begin = TASK_UNMAPPED_BASE;
++		*begin = current->mm->mmap_legacy_base;
+ 		*end = TASK_SIZE;
  	}
-+	if (!gsm->tx_head)
-+		gsm->tx_tail = NULL;
  }
- 
- /**
-@@ -738,6 +748,8 @@ static void __gsm_data_queue(struct gsm_
- 	u8 *dp = msg->data;
- 	u8 *fcs = dp + msg->len;
- 
-+	WARN_ONCE(dlci->constipated, "%s: queueing from a constipated DLCI",
-+		__func__);
- 	/* Fill in the header */
- 	if (gsm->encoding == 0) {
- 		if (msg->len < 128)
-@@ -947,6 +959,9 @@ static void gsm_dlci_data_sweep(struct g
- 			break;
- 		dlci = gsm->dlci[i];
- 		if (dlci == NULL || dlci->constipated) {
-+			if (dlci && (debug & 0x20))
-+				pr_info("%s: DLCI %d is constipated",
-+					__func__, i);
- 			i++;
- 			continue;
- 		}
-@@ -976,6 +991,13 @@ static void gsm_dlci_data_kick(struct gs
- 	unsigned long flags;
- 	int sweep;
- 
-+	if (dlci->constipated) {
-+		if (debug & 0x20)
-+			pr_info("%s: DLCI %d is constipated",
-+				__func__, dlci->addr);
-+		return;
-+	}
-+
- 	spin_lock_irqsave(&dlci->gsm->tx_lock, flags);
- 	/* If we have nothing running then we need to fire up */
- 	sweep = (dlci->gsm->tx_bytes < TX_THRESH_LO);
-@@ -1033,6 +1055,7 @@ static void gsm_process_modem(struct tty
+--- a/arch/x86/mm/mmap.c
++++ b/arch/x86/mm/mmap.c
+@@ -112,12 +112,14 @@ static unsigned long mmap_legacy_base(vo
+  */
+ void arch_pick_mmap_layout(struct mm_struct *mm)
  {
- 	int  mlines = 0;
- 	u8 brk = 0;
-+	int fc;
- 
- 	/* The modem status command can either contain one octet (v.24 signals)
- 	   or two octets (v.24 signals + break signals). The length field will
-@@ -1044,19 +1067,27 @@ static void gsm_process_modem(struct tty
- 	else {
- 		brk = modem & 0x7f;
- 		modem = (modem >> 7) & 0x7f;
--	};
-+	}
- 
- 	/* Flow control/ready to communicate */
--	if (modem & MDM_FC) {
-+	fc = (modem & MDM_FC) || !(modem & MDM_RTR);
-+	if (fc && !dlci->constipated) {
-+		if (debug & 0x20)
-+			pr_info("%s: DLCI %d START constipated (tx_bytes=%d)",
-+				__func__, dlci->addr, dlci->gsm->tx_bytes);
- 		/* Need to throttle our output on this device */
- 		dlci->constipated = 1;
--	}
--	if (modem & MDM_RTC) {
--		mlines |= TIOCM_DSR | TIOCM_DTR;
-+	} else if (!fc && dlci->constipated) {
-+		if (debug & 0x20)
-+			pr_info("%s: DLCI %d END constipated (tx_bytes=%d)",
-+				__func__, dlci->addr, dlci->gsm->tx_bytes);
- 		dlci->constipated = 0;
- 		gsm_dlci_data_kick(dlci);
- 	}
++	mm->mmap_legacy_base = mmap_legacy_base();
++	mm->mmap_base = mmap_base();
 +
- 	/* Map modem bits */
-+	if (modem & MDM_RTC)
-+		mlines |= TIOCM_DSR | TIOCM_DTR;
- 	if (modem & MDM_RTR)
- 		mlines |= TIOCM_RTS | TIOCM_CTS;
- 	if (modem & MDM_IC)
-@@ -1225,19 +1256,23 @@ static void gsm_control_message(struct g
- 		gsm_control_reply(gsm, CMD_TEST, data, clen);
- 		break;
- 	case CMD_FCON:
--		/* Modem wants us to STFU */
--		gsm->constipated = 1;
--		gsm_control_reply(gsm, CMD_FCON, NULL, 0);
--		break;
--	case CMD_FCOFF:
- 		/* Modem can accept data again */
-+		if (debug & 0x20)
-+			pr_info("%s: GSM END constipation", __func__);
- 		gsm->constipated = 0;
--		gsm_control_reply(gsm, CMD_FCOFF, NULL, 0);
-+		gsm_control_reply(gsm, CMD_FCON, NULL, 0);
- 		/* Kick the link in case it is idling */
- 		spin_lock_irqsave(&gsm->tx_lock, flags);
- 		gsm_data_kick(gsm);
- 		spin_unlock_irqrestore(&gsm->tx_lock, flags);
- 		break;
-+	case CMD_FCOFF:
-+		/* Modem wants us to STFU */
-+		if (debug & 0x20)
-+			pr_info("%s: GSM START constipation", __func__);
-+		gsm->constipated = 1;
-+		gsm_control_reply(gsm, CMD_FCOFF, NULL, 0);
-+		break;
- 	case CMD_MSC:
- 		/* Out of band modem line change indicator for a DLCI */
- 		gsm_control_modem(gsm, data, clen);
-@@ -2306,7 +2341,7 @@ static void gsmld_receive_buf(struct tty
- 			gsm->error(gsm, *dp, flags);
- 			break;
- 		default:
--			WARN_ONCE("%s: unknown flag %d\n",
-+			WARN_ONCE(1, "%s: unknown flag %d\n",
- 			       tty_name(tty, buf), flags);
- 			break;
- 		}
+ 	if (mmap_is_legacy()) {
+-		mm->mmap_base = mmap_legacy_base();
++		mm->mmap_base = mm->mmap_legacy_base;
+ 		mm->get_unmapped_area = arch_get_unmapped_area;
+ 		mm->unmap_area = arch_unmap_area;
+ 	} else {
+-		mm->mmap_base = mmap_base();
+ 		mm->get_unmapped_area = arch_get_unmapped_area_topdown;
+ 		mm->unmap_area = arch_unmap_area_topdown;
+ 	}
+--- a/include/linux/mm_types.h
++++ b/include/linux/mm_types.h
+@@ -306,6 +306,7 @@ struct mm_struct {
+ 	void (*unmap_area) (struct mm_struct *mm, unsigned long addr);
+ #endif
+ 	unsigned long mmap_base;		/* base of mmap area */
++	unsigned long mmap_legacy_base;         /* base of mmap area in bottom-up allocations */
+ 	unsigned long task_size;		/* size of task vm space */
+ 	unsigned long cached_hole_size; 	/* if non-zero, the largest hole below free_area_cache */
+ 	unsigned long free_area_cache;		/* first hole of size cached_hole_size or larger */
 
 
