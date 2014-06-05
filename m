@@ -1,91 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751480AbaFEJQw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 05:16:52 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:4824 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750833AbaFEJQu (ORCPT
+	id S1751590AbaFEJSK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 05:18:10 -0400
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:54325 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750939AbaFEJSI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 05:16:50 -0400
-Message-ID: <5390356E.70305@huawei.com>
-Date: Thu, 5 Jun 2014 17:16:30 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Thu, 5 Jun 2014 05:18:08 -0400
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>
-Subject: [PATCH] cgroup: disallow disabled controllers on the default hierarchy
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.18.230]
-X-CFilter-Loop: Reflected
+In-Reply-To: <20140604185926.GB30884@kroah.com>
+References: <1401869506-48129-1-git-send-email-ritesh.harjani@gmail.com>
+	<1401869506-48129-2-git-send-email-ritesh.harjani@gmail.com>
+	<20140604175145.GD20812@kroah.com>
+	<CAD15agbiuXiiAp62R-NeLeX3rgNftmyb+wGiSVx-FgtcXzxpHA@mail.gmail.com>
+	<20140604185926.GB30884@kroah.com>
+Date: Thu, 5 Jun 2014 14:48:07 +0530
+Message-ID: <CAD15agbUUBsH1Zma7sXMn9PmChKopvqkGLCDEv_HeMWdGjkK=w@mail.gmail.com>
+Subject: Re: [PATCH 1/1] device.h: arm,dma-iommu: Move out dma_iommu_mapping struct
+From: Ritesh Harjani <ritesh.harjani@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Russell King <rmk@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After booting with cgroup_disable=memory, I still saw memcg files
-in the default hierarchy, and I can write to them, though it won't
-take effect.
+Hi Greg,
 
-  # dmesg
-  ...
-  Disabling memory control group subsystem
-  ...
-  # mount -t cgroup -o __DEVEL__sane_behavior xxx /cgroup
-  # ls /cgroup
-  ...
-  memory.failcnt                   memory.move_charge_at_immigrate
-  memory.force_empty               memory.numa_stat
-  memory.limit_in_bytes            memory.oom_control
-  ...
-  # cat /cgroup/memory.usage_in_bytes
-  0
+On Thu, Jun 5, 2014 at 12:29 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Thu, Jun 05, 2014 at 12:16:28AM +0530, Ritesh Harjani wrote:
+>> Hi Greg,
+>>
+>> Thanks for reviewing.
+>>
+>> On Wed, Jun 4, 2014 at 11:21 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+>> > On Wed, Jun 04, 2014 at 01:41:46PM +0530, ritesh.harjani@gmail.com wrote:
+>> >> From: Ritesh Harjani <ritesh.harjani@gmail.com>
+>> >>
+>> >> This patch moves out *mapping pointer of dma_iommu_mapping
+>> >> from arch/arm/include/asm/device.h to include/liunux/device.h
+>> >
+>> > Why?  Who else can use this becides arm devices?
+>>
+>> Currently only arm and arm64 are the archs at this very moment but
+>> later other archs can make use of this, as its an arch independent
+>> code. (Similar to as some arch make use of iommu_area_alloc in
+>> iommu-helper.c)
+>>
+>> >
+>> >>
+>> >> Also, it moves out complete structre definition of dma_iommu_mapping
+>> >> to include/linux/iommu-helper.h
+>> >>
+>> >> This is done since arm iommu's dma-mapping arch independent code,
+>> >> needs to be moved out to lib/iommu-helper.c, this means
+>> >> dma_iommu_mapping will be arch independent and later other archs
+>> >> can make use of it.
+>> >
+>> > Will that really happen?  Do you have patches that do that?  I'd prefer
+>> > to not do stuff like this until you have a patch series that needs it,
+>> > otherwise this is just unneeded churn.
+>>
+>> Yes, foll link has the patch series, (under review)
+>> http://www.spinics.net/lists/arm-kernel/msg336896.html
+>
+> Make this patch 1/3 of that series and resend, I don't want to take this
+> one if the others are not accepted.
 
-Signed-off-by: Li Zefan <lizefan@huawei.com>
----
- kernel/cgroup.c | 12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
+Sure I will do that.
 
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index d5032d2..57b647a 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -3070,6 +3070,9 @@ int cgroup_add_cftypes(struct cgroup_subsys *ss, struct cftype *cfts)
- {
- 	int ret;
- 
-+	if (ss->disabled)
-+		return 0;
-+
- 	if (!cfts || cfts[0].name[0] == '\0')
- 		return 0;
- 
-@@ -4679,8 +4682,6 @@ static void __init cgroup_init_subsys(struct cgroup_subsys *ss, bool early)
- 
- 	BUG_ON(online_css(css));
- 
--	cgrp_dfl_root.subsys_mask |= 1 << ss->id;
--
- 	mutex_unlock(&cgroup_mutex);
- }
- 
-@@ -4760,10 +4761,13 @@ int __init cgroup_init(void)
- 
- 		/*
- 		 * cftype registration needs kmalloc and can't be done
--		 * during early_init.  Register base cftypes separately.
-+		 * during early_init, and the disable flag is set after
-+		 * early_init.  Register base cftypes separately.
- 		 */
--		if (ss->base_cftypes)
-+		if (!ss->disabled) {
-+			cgrp_dfl_root.subsys_mask |= 1 << ss->id;
- 			WARN_ON(cgroup_add_cftypes(ss, ss->base_cftypes));
-+		}
- 	}
- 
- 	cgroup_kobj = kobject_create_and_add("cgroup", fs_kobj);
--- 
-1.8.0.2
+>
+> thanks,
+>
+> greg k-h
 
+Thanks
+Ritesh
