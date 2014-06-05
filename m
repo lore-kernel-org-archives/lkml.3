@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753614AbaFEEm2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 00:42:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44245 "EHLO
+	id S1754022AbaFEEmr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 00:42:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44205 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753159AbaFEEVg (ORCPT
+	with ESMTP id S1753145AbaFEEVb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 00:21:36 -0400
+	Thu, 5 Jun 2014 00:21:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Matt Fleming <matt.fleming@intel.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         Ben Hutchings <ben@decadent.org.uk>, Rui Xiang <rui.xiang@huawei.com>
-Subject: [PATCH 3.4 144/214] efi: be more paranoid about available space when creating variables
-Date: Wed,  4 Jun 2014 21:18:27 -0700
-Message-Id: <20140605041659.179359984@linuxfoundation.org>
+Subject: [PATCH 3.4 139/214] ptrace/x86: Introduce set_task_blockstep() helper
+Date: Wed,  4 Jun 2014 21:18:22 -0700
+Message-Id: <20140605041658.446516319@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -28,185 +28,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josh Boyer <jwboyer@redhat.com>
+From: Oleg Nesterov <oleg@redhat.com>
 
-commit 68d929862e29a8b52a7f2f2f86a0600423b093cd upstream.
+commit 848e8f5f0ad3169560c516fff6471be65f76e69f upstream.
 
-UEFI variables are typically stored in flash. For various reasons, avaiable
-space is typically not reclaimed immediately upon the deletion of a
-variable - instead, the system will garbage collect during initialisation
-after a reboot.
+No functional changes, preparation for the next fix and for uprobes
+single-step fixes.
 
-Some systems appear to handle this garbage collection extremely poorly,
-failing if more than 50% of the system flash is in use. This can result in
-the machine refusing to boot. The safest thing to do for the moment is to
-forbid writes if they'd end up using more than half of the storage space.
-We can make this more finegrained later if we come up with a method for
-identifying the broken machines.
+Move the code playing with TIF_BLOCKSTEP/DEBUGCTLMSR_BTF into the
+new helper, set_task_blockstep().
 
-Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
-[bwh: Backported to 3.2:
- - Drop efivarfs changes and unused check_var_size()
- - Add error codes to include/linux/efi.h, added upstream by
-   commit 5d9db883761a ('efi: Add support for a UEFI variable filesystem')
- - Add efi_status_to_err(), added upstream by commit 7253eaba7b17
-   ('efivarfs: Return an error if we fail to read a variable')]
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Cc: Rui Xiang <rui.xiang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/firmware/efivars.c |   88 +++++++++++++++++++++++++++++++++++++++------
- include/linux/efi.h        |    5 ++
- 2 files changed, 82 insertions(+), 11 deletions(-)
+ arch/x86/kernel/step.c |   41 +++++++++++++++++++++--------------------
+ 1 file changed, 21 insertions(+), 20 deletions(-)
 
---- a/drivers/firmware/efivars.c
-+++ b/drivers/firmware/efivars.c
-@@ -409,6 +409,30 @@ get_var_data(struct efivars *efivars, st
- 	return status;
+--- a/arch/x86/kernel/step.c
++++ b/arch/x86/kernel/step.c
+@@ -157,6 +157,21 @@ static int enable_single_step(struct tas
+ 	return 1;
  }
  
-+static efi_status_t
-+check_var_size_locked(struct efivars *efivars, u32 attributes,
-+			unsigned long size)
++static void set_task_blockstep(struct task_struct *task, bool on)
 +{
-+	u64 storage_size, remaining_size, max_size;
-+	efi_status_t status;
-+	const struct efivar_operations *fops = efivars->ops;
++	unsigned long debugctl;
 +
-+	if (!efivars->ops->query_variable_info)
-+		return EFI_UNSUPPORTED;
-+
-+	status = fops->query_variable_info(attributes, &storage_size,
-+					   &remaining_size, &max_size);
-+
-+	if (status != EFI_SUCCESS)
-+		return status;
-+
-+	if (!storage_size || size > remaining_size || size > max_size ||
-+	    (remaining_size - size) < (storage_size / 2))
-+		return EFI_OUT_OF_RESOURCES;
-+
-+	return status;
-+}
-+
- static ssize_t
- efivar_guid_read(struct efivar_entry *entry, char *buf)
- {
-@@ -530,11 +554,16 @@ efivar_store_raw(struct efivar_entry *en
- 	}
- 
- 	spin_lock_irq(&efivars->lock);
--	status = efivars->ops->set_variable(new_var->VariableName,
--					    &new_var->VendorGuid,
--					    new_var->Attributes,
--					    new_var->DataSize,
--					    new_var->Data);
-+
-+	status = check_var_size_locked(efivars, new_var->Attributes,
-+	       new_var->DataSize + utf16_strsize(new_var->VariableName, 1024));
-+
-+	if (status == EFI_SUCCESS || status == EFI_UNSUPPORTED)
-+		status = efivars->ops->set_variable(new_var->VariableName,
-+						    &new_var->VendorGuid,
-+						    new_var->Attributes,
-+						    new_var->DataSize,
-+						    new_var->Data);
- 
- 	spin_unlock_irq(&efivars->lock);
- 
-@@ -641,6 +670,36 @@ efivar_unregister(struct efivar_entry *v
- 	kobject_put(&var->kobj);
- }
- 
-+static int efi_status_to_err(efi_status_t status)
-+{
-+	int err;
-+
-+	switch (status) {
-+	case EFI_INVALID_PARAMETER:
-+		err = -EINVAL;
-+		break;
-+	case EFI_OUT_OF_RESOURCES:
-+		err = -ENOSPC;
-+		break;
-+	case EFI_DEVICE_ERROR:
-+		err = -EIO;
-+		break;
-+	case EFI_WRITE_PROTECTED:
-+		err = -EROFS;
-+		break;
-+	case EFI_SECURITY_VIOLATION:
-+		err = -EACCES;
-+		break;
-+	case EFI_NOT_FOUND:
-+		err = -ENOENT;
-+		break;
-+	default:
-+		err = -EINVAL;
++	debugctl = get_debugctlmsr();
++	if (on) {
++		debugctl |= DEBUGCTLMSR_BTF;
++		set_tsk_thread_flag(task, TIF_BLOCKSTEP);
++	} else {
++		debugctl &= ~DEBUGCTLMSR_BTF;
++		clear_tsk_thread_flag(task, TIF_BLOCKSTEP);
 +	}
-+
-+	return err;
++	update_debugctlmsr(debugctl);
 +}
 +
- #ifdef CONFIG_PSTORE
- 
- static int efi_pstore_open(struct pstore_info *psi)
-@@ -711,7 +770,6 @@ static int efi_pstore_write(enum pstore_
- 	struct efivars *efivars = psi->data;
- 	struct efivar_entry *entry, *found = NULL;
- 	int i, ret = 0;
--	u64 storage_space, remaining_space, max_variable_size;
- 	efi_status_t status = EFI_NOT_FOUND;
- 	unsigned long flags;
- 
-@@ -725,11 +783,11 @@ static int efi_pstore_write(enum pstore_
- 	 * size: a size of logging data
- 	 * DUMP_NAME_LEN * 2: a maximum size of variable name
+ /*
+  * Enable single or block step.
+  */
+@@ -169,19 +184,10 @@ static void enable_step(struct task_stru
+ 	 * So no one should try to use debugger block stepping in a program
+ 	 * that uses user-mode single stepping itself.
  	 */
--	status = efivars->ops->query_variable_info(PSTORE_EFI_ATTRIBUTES,
--						   &storage_space,
--						   &remaining_space,
--						   &max_variable_size);
--	if (status || remaining_space < size + DUMP_NAME_LEN * 2) {
-+
-+	status = check_var_size_locked(efivars, PSTORE_EFI_ATTRIBUTES,
-+					 size + DUMP_NAME_LEN * 2);
-+
-+	if (status) {
- 		spin_unlock_irqrestore(&efivars->lock, flags);
- 		*id = part;
- 		return -ENOSPC;
-@@ -877,6 +935,14 @@ static ssize_t efivar_create(struct file
- 		return -EINVAL;
- 	}
+-	if (enable_single_step(child) && block) {
+-		unsigned long debugctl = get_debugctlmsr();
+-
+-		debugctl |= DEBUGCTLMSR_BTF;
+-		update_debugctlmsr(debugctl);
+-		set_tsk_thread_flag(child, TIF_BLOCKSTEP);
+-	} else if (test_tsk_thread_flag(child, TIF_BLOCKSTEP)) {
+-		unsigned long debugctl = get_debugctlmsr();
+-
+-		debugctl &= ~DEBUGCTLMSR_BTF;
+-		update_debugctlmsr(debugctl);
+-		clear_tsk_thread_flag(child, TIF_BLOCKSTEP);
+-	}
++	if (enable_single_step(child) && block)
++		set_task_blockstep(child, true);
++	else if (test_tsk_thread_flag(child, TIF_BLOCKSTEP))
++		set_task_blockstep(child, false);
+ }
  
-+	status = check_var_size_locked(efivars, new_var->Attributes,
-+	       new_var->DataSize + utf16_strsize(new_var->VariableName, 1024));
-+
-+	if (status && status != EFI_UNSUPPORTED) {
-+		spin_unlock_irq(&efivars->lock);
-+		return efi_status_to_err(status);
-+	}
-+
- 	/* now *really* create the variable via EFI */
- 	status = efivars->ops->set_variable(new_var->VariableName,
- 					    &new_var->VendorGuid,
---- a/include/linux/efi.h
-+++ b/include/linux/efi.h
-@@ -29,7 +29,12 @@
- #define EFI_UNSUPPORTED		( 3 | (1UL << (BITS_PER_LONG-1)))
- #define EFI_BAD_BUFFER_SIZE     ( 4 | (1UL << (BITS_PER_LONG-1)))
- #define EFI_BUFFER_TOO_SMALL	( 5 | (1UL << (BITS_PER_LONG-1)))
-+#define EFI_NOT_READY		( 6 | (1UL << (BITS_PER_LONG-1)))
-+#define EFI_DEVICE_ERROR	( 7 | (1UL << (BITS_PER_LONG-1)))
-+#define EFI_WRITE_PROTECTED	( 8 | (1UL << (BITS_PER_LONG-1)))
-+#define EFI_OUT_OF_RESOURCES	( 9 | (1UL << (BITS_PER_LONG-1)))
- #define EFI_NOT_FOUND		(14 | (1UL << (BITS_PER_LONG-1)))
-+#define EFI_SECURITY_VIOLATION	(26 | (1UL << (BITS_PER_LONG-1)))
+ void user_enable_single_step(struct task_struct *child)
+@@ -199,13 +205,8 @@ void user_disable_single_step(struct tas
+ 	/*
+ 	 * Make sure block stepping (BTF) is disabled.
+ 	 */
+-	if (test_tsk_thread_flag(child, TIF_BLOCKSTEP)) {
+-		unsigned long debugctl = get_debugctlmsr();
+-
+-		debugctl &= ~DEBUGCTLMSR_BTF;
+-		update_debugctlmsr(debugctl);
+-		clear_tsk_thread_flag(child, TIF_BLOCKSTEP);
+-	}
++	if (test_tsk_thread_flag(child, TIF_BLOCKSTEP))
++		set_task_blockstep(child, false);
  
- typedef unsigned long efi_status_t;
- typedef u8 efi_bool_t;
+ 	/* Always clear TIF_SINGLESTEP... */
+ 	clear_tsk_thread_flag(child, TIF_SINGLESTEP);
 
 
