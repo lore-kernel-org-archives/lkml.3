@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753552AbaFEEWO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 00:22:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44434 "EHLO
+	id S1753532AbaFEEWM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 00:22:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44440 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753435AbaFEEWG (ORCPT
+	with ESMTP id S1753472AbaFEEWH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 00:22:06 -0400
+	Thu, 5 Jun 2014 00:22:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jani Nikula <jani.nikula@intel.com>,
-        Peter Verthez <peter.verthez@skynet.be>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Ondrej Zary <linux@rainbow-software.org>,
+        Alex Deucher <alexander.deucher@amd.com>,
         Ben Hutchings <ben@decadent.org.uk>,
         Weng Meiling <wengmeiling.weng@huawei.com>
-Subject: [PATCH 3.4 180/214] drm/i915: ensure single initialization and cleanup of backlight device
-Date: Wed,  4 Jun 2014 21:19:03 -0700
-Message-Id: <20140605041703.670097769@linuxfoundation.org>
+Subject: [PATCH 3.4 181/214] drm/radeon: Another card with wrong primary dac adj
+Date: Wed,  4 Jun 2014 21:19:04 -0700
+Message-Id: <20140605041703.808384495@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -30,98 +29,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jani Nikula <jani.nikula@intel.com>
+From: Ondrej Zary <linux@rainbow-software.org>
 
-commit dc652f90e088798bfa31f496ba994ddadd5d5680 upstream.
+commit f7929f34fa0e0bb6736a2484fdc07d77a1653081 upstream.
 
-Backlight cleanup in the eDP connector destroy callback caused the
-backlight device to be removed on some systems that first initialized LVDS
-and then attempted to initialize eDP. Prevent multiple backlight
-initializations, and ensure backlight cleanup is only done once by moving
-it to modeset cleanup.
+Hello,
+got another card with "too bright" problem:
+Sapphire Radeon VE 7000 DDR (VGA+S-Video)
 
-A small wrinkle is the introduced asymmetry in backlight
-setup/cleanup. This could be solved by adding refcounting, but it seems
-overkill considering that there should only ever be one backlight device.
+lspci -vnn:
+01:00.0 VGA compatible controller [0300]: Advanced Micro Devices [AMD] nee ATI RV100 QY [Radeon 7000/VE] [1002:5159] (prog-if 00 [VGA controller])
+        Subsystem: PC Partner Limited Sapphire Radeon VE 7000 DDR [174b:7c28]
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=55701
-Signed-off-by: Jani Nikula <jani.nikula@intel.com>
-Tested-by: Peter Verthez <peter.verthez@skynet.be>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-[bwh: Backported to 3.2:
- - Adjust context
- - s/dev_priv->backlight\.device/dev_priv->backlight/]
+The patch below fixes the problem for this card.
+But I don't like the blacklist, couldn't some heuristic be used instead?
+The interesting thing is that the manufacturer is the same as the other card
+needing the same quirk. I wonder how many different types are broken this way.
+
+The "wrong" ps2_pdac_adj value that comes from BIOS on this card is 0x300.
+
+====================
+drm/radeon: Add primary dac adj quirk for Sapphire Radeon VE 7000 DDR
+
+Values from BIOS are wrong, causing too bright colors.
+Use default values instead.
+
+Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Cc: Weng Meiling <wengmeiling.weng@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_display.c |    3 +++
- drivers/gpu/drm/i915/intel_dp.c      |    5 -----
- drivers/gpu/drm/i915/intel_lvds.c    |    2 --
- drivers/gpu/drm/i915/intel_panel.c   |    7 ++++++-
- 4 files changed, 9 insertions(+), 8 deletions(-)
+ drivers/gpu/drm/radeon/radeon_combios.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -9471,6 +9471,9 @@ void intel_modeset_cleanup(struct drm_de
- 	del_timer_sync(&dev_priv->idle_timer);
- 	cancel_work_sync(&dev_priv->idle_work);
+--- a/drivers/gpu/drm/radeon/radeon_combios.c
++++ b/drivers/gpu/drm/radeon/radeon_combios.c
+@@ -898,10 +898,14 @@ struct radeon_encoder_primary_dac *radeo
+ 	}
  
-+	/* destroy backlight, if any, before the connectors */
-+	intel_panel_destroy_backlight(dev);
-+
- 	drm_mode_config_cleanup(dev);
- }
- 
---- a/drivers/gpu/drm/i915/intel_dp.c
-+++ b/drivers/gpu/drm/i915/intel_dp.c
-@@ -2289,11 +2289,6 @@ done:
- static void
- intel_dp_destroy(struct drm_connector *connector)
- {
--	struct drm_device *dev = connector->dev;
--
--	if (intel_dpd_is_edp(dev))
--		intel_panel_destroy_backlight(dev);
--
- 	drm_sysfs_connector_remove(connector);
- 	drm_connector_cleanup(connector);
- 	kfree(connector);
---- a/drivers/gpu/drm/i915/intel_lvds.c
-+++ b/drivers/gpu/drm/i915/intel_lvds.c
-@@ -553,8 +553,6 @@ static void intel_lvds_destroy(struct dr
- 	struct drm_device *dev = connector->dev;
- 	struct drm_i915_private *dev_priv = dev->dev_private;
- 
--	intel_panel_destroy_backlight(dev);
--
- 	if (dev_priv->lid_notifier.notifier_call)
- 		acpi_lid_notifier_unregister(&dev_priv->lid_notifier);
- 	drm_sysfs_connector_remove(connector);
---- a/drivers/gpu/drm/i915/intel_panel.c
-+++ b/drivers/gpu/drm/i915/intel_panel.c
-@@ -359,6 +359,9 @@ int intel_panel_setup_backlight(struct d
- 
- 	intel_panel_init_backlight(dev);
- 
-+	if (WARN_ON(dev_priv->backlight))
-+		return -ENODEV;
-+
- 	if (dev_priv->int_lvds_connector)
- 		connector = dev_priv->int_lvds_connector;
- 	else if (dev_priv->int_edp_connector)
-@@ -386,8 +389,10 @@ int intel_panel_setup_backlight(struct d
- void intel_panel_destroy_backlight(struct drm_device *dev)
- {
- 	struct drm_i915_private *dev_priv = dev->dev_private;
--	if (dev_priv->backlight)
-+	if (dev_priv->backlight) {
- 		backlight_device_unregister(dev_priv->backlight);
-+		dev_priv->backlight = NULL;
-+	}
- }
- #else
- int intel_panel_setup_backlight(struct drm_device *dev)
+ 	/* quirks */
++	/* Radeon 7000 (RV100) */
++	if (((dev->pdev->device == 0x5159) &&
++	    (dev->pdev->subsystem_vendor == 0x174B) &&
++	    (dev->pdev->subsystem_device == 0x7c28)) ||
+ 	/* Radeon 9100 (R200) */
+-	if ((dev->pdev->device == 0x514D) &&
++	   ((dev->pdev->device == 0x514D) &&
+ 	    (dev->pdev->subsystem_vendor == 0x174B) &&
+-	    (dev->pdev->subsystem_device == 0x7149)) {
++	    (dev->pdev->subsystem_device == 0x7149))) {
+ 		/* vbios value is bad, use the default */
+ 		found = 0;
+ 	}
 
 
