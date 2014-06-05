@@ -1,79 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751692AbaFEOAQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 10:00:16 -0400
-Received: from mail-qg0-f52.google.com ([209.85.192.52]:59483 "EHLO
-	mail-qg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751118AbaFEOAL (ORCPT
+	id S1751997AbaFEOA5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 10:00:57 -0400
+Received: from mail.sigma-star.at ([95.130.255.111]:62409 "EHLO
+	mail.sigma-star.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751912AbaFEOAy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 10:00:11 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140605133747.GB2942@dhcp22.suse.cz>
-References: <53905594d284f_71f12992fc6a@nysa.notmuch>
-	<20140605133747.GB2942@dhcp22.suse.cz>
-Date: Thu, 5 Jun 2014 09:00:10 -0500
-Message-ID: <CAMP44s1kk8PyMd603g0C9yvHuuUZXzwwNQHpM8Abghvc_Os-SQ@mail.gmail.com>
-Subject: Re: Interactivity regression since v3.11 in mm/vmscan.c
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 5 Jun 2014 10:00:54 -0400
+From: Richard Weinberger <richard@nod.at>
+To: hannes@cmpxchg.org
+Cc: mhocko@suse.cz, bsingharora@gmail.com, kamezawa.hiroyu@jp.fujitsu.com,
+        akpm@linux-foundation.org, vdavydov@parallels.com, tj@kernel.org,
+        handai.szj@taobao.com, rientjes@google.com, oleg@redhat.com,
+        rusty@rustcorp.com.au, kirill.shutemov@linux.intel.com,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        linux-mm@kvack.org, Richard Weinberger <richard@nod.at>
+Subject: [RFC][PATCH] oom: Be less verbose if the oom_control event fd has listeners
+Date: Thu,  5 Jun 2014 16:00:41 +0200
+Message-Id: <1401976841-3899-2-git-send-email-richard@nod.at>
+X-Mailer: git-send-email 1.8.4.2
+In-Reply-To: <1401976841-3899-1-git-send-email-richard@nod.at>
+References: <1401976841-3899-1-git-send-email-richard@nod.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 5, 2014 at 8:37 AM, Michal Hocko <mhocko@suse.cz> wrote:
-> On Thu 05-06-14 06:33:40, Felipe Contreras wrote:
+Don't spam the kernel logs if the oom_control event fd has listeners.
+In this case there is no need to print that much lines as user space
+will anyway notice that the memory cgroup has reached its limit.
 
->> For a while I've noticed that my machine bogs down in certain
->> situations, usually while doing heavy I/O operations, it is not just the
->> I/O operations, but everything, including the graphical interface, even
->> the mouse pointer.
->>
->> As far as I can recall this did not happen in the past.
->>
->> I noticed this specially on certain operations, for example updating a
->> a game on Steam (to an exteranl USB 3.0 device), or copying TV episodes
->> to a USB memory stick (probably flash-based).
->
-> We had a similar report for opensuse. The common part was that there was
-> an IO to a slow USB device going on.
+Signed-off-by: Richard Weinberger <richard@nod.at>
+---
+ include/linux/memcontrol.h |  6 ++++++
+ mm/memcontrol.c            | 20 ++++++++++++++++++++
+ mm/oom_kill.c              |  2 +-
+ 3 files changed, 27 insertions(+), 1 deletion(-)
 
-Well, it's a USB 3.0 device, I can write at 250 MB/s, so it's not
-really that slow.
-
-And in fact, when I read and write to and from the same USB 3.0
-device, I don't see the issue.
-
->> Then I went back to the latest stable version (v3.14.5), and commented
->> out the line I think is causing the slow down:
->>
->>   if (nr_unqueued_dirty == nr_taken || nr_immediate)
->>         congestion_wait(BLK_RW_ASYNC, HZ/10);
->
-> Yes, I came to the same check. I didn't have any confirmation yet so
-> thanks for your confirmation. I've suggested to reduce this
-> congestion_wait only to kswapd:
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 32c661d66a45..ef6a1c0e788c 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -1566,7 +1566,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
->                  * implies that pages are cycling through the LRU faster than
->                  * they are written so also forcibly stall.
->                  */
-> -               if (nr_unqueued_dirty == nr_taken || nr_immediate)
-> +               if ((nr_unqueued_dirty == nr_taken || nr_immediate) && current_is_kswapd())
->                         congestion_wait(BLK_RW_ASYNC, HZ/10);
->         }
-
-Unfortunately that doesn't fix the issue for me.
-
+diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+index b569b8b..506a1a9 100644
+--- a/include/linux/memcontrol.h
++++ b/include/linux/memcontrol.h
+@@ -131,6 +131,7 @@ int mem_cgroup_inactive_anon_is_low(struct lruvec *lruvec);
+ int mem_cgroup_select_victim_node(struct mem_cgroup *memcg);
+ unsigned long mem_cgroup_get_lru_size(struct lruvec *lruvec, enum lru_list);
+ void mem_cgroup_update_lru_size(struct lruvec *, enum lru_list, int);
++extern int mem_cgroup_has_listeners(struct mem_cgroup *memcg);
+ extern void mem_cgroup_print_oom_info(struct mem_cgroup *memcg,
+ 					struct task_struct *p);
+ extern void mem_cgroup_replace_page_cache(struct page *oldpage,
+@@ -358,6 +359,11 @@ mem_cgroup_update_lru_size(struct lruvec *lruvec, enum lru_list lru,
+ {
+ }
+ 
++static inline int mem_cgroup_has_listeners(struct mem_cgroup *memcg)
++{
++	return 0;
++}
++
+ static inline void
+ mem_cgroup_print_oom_info(struct mem_cgroup *memcg, struct task_struct *p)
+ {
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 5177c6d..3864c6a 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -5777,6 +5777,26 @@ static void mem_cgroup_oom_unregister_event(struct mem_cgroup *memcg,
+ 	spin_unlock(&memcg_oom_lock);
+ }
+ 
++/**
++ * mem_cgroup_has_listeners: Returns true in case we have one ore more
++ * listeners on our oom notifier event fd.
++ * @memcg: The memory cgroup that went over limit
++ */
++int mem_cgroup_has_listeners(struct mem_cgroup *memcg)
++{
++	int ret = 0;
++
++	if (!memcg)
++		goto out;
++
++	spin_lock(&memcg_oom_lock);
++	ret = !list_empty(&memcg->oom_notify);
++	spin_unlock(&memcg_oom_lock);
++
++out:
++	return ret;
++}
++
+ static int mem_cgroup_oom_control_read(struct seq_file *sf, void *v)
+ {
+ 	struct mem_cgroup *memcg = mem_cgroup_from_css(seq_css(sf));
+diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+index 3291e82..b5c9433 100644
+--- a/mm/oom_kill.c
++++ b/mm/oom_kill.c
+@@ -434,7 +434,7 @@ void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
+ 		return;
+ 	}
+ 
+-	if (__ratelimit(&oom_rs))
++	if (__ratelimit(&oom_rs) && !mem_cgroup_has_listeners(memcg))
+ 		dump_header(p, gfp_mask, order, memcg, nodemask);
+ 
+ 	task_lock(p);
 -- 
-Felipe Contreras
+1.8.4.2
+
