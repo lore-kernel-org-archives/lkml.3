@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752929AbaFEFPA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 01:15:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43644 "EHLO
+	id S1753806AbaFEFPo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 01:15:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43635 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752015AbaFEEUC (ORCPT
+	with ESMTP id S1751867AbaFEEUB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 00:20:02 -0400
+	Thu, 5 Jun 2014 00:20:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christopher Friedt <chrisfriedt@gmail.com>,
-        Thomas Hellstrom <thellstrom@vmware.com>
-Subject: [PATCH 3.4 012/214] drm/vmwgfx: correct fb_fix_screeninfo.line_length
-Date: Wed,  4 Jun 2014 21:16:15 -0700
-Message-Id: <20140605041641.394122176@linuxfoundation.org>
+        Francois WELLENREITER <f.wellenreiter@gmail.com>,
+        Eric Dumazet <edumazet@google.com>,
+        YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.4 020/214] ipv6: Limit mtu to 65575 bytes
+Date: Wed,  4 Jun 2014 21:16:23 -0700
+Message-Id: <20140605041642.480725817@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -27,50 +30,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christopher Friedt <chrisfriedt@gmail.com>
+From: Eric Dumazet <edumazet@google.com>
 
-commit aa6de142c901cd2d90ef08db30ae87da214bedcc upstream.
+[ Upstream commit 30f78d8ebf7f514801e71b88a10c948275168518 ]
 
-Previously, the vmwgfx_fb driver would allow users to call FBIOSET_VINFO, but it would not adjust
-the FINFO properly, resulting in distorted screen rendering. The patch corrects that behaviour.
+Francois reported that setting big mtu on loopback device could prevent
+tcp sessions making progress.
 
-See https://bugs.gentoo.org/show_bug.cgi?id=494794 for examples.
+We do not support (yet ?) IPv6 Jumbograms and cook corrupted packets.
 
-Signed-off-by: Christopher Friedt <chrisfriedt@gmail.com>
-Reviewed-by: Thomas Hellstrom <thellstrom@vmware.com>
+We must limit the IPv6 MTU to (65535 + 40) bytes in theory.
+
+Tested:
+
+ifconfig lo mtu 70000
+netperf -H ::1
+
+Before patch : Throughput :   0.05 Mbits
+
+After patch : Throughput : 35484 Mbits
+
+Reported-by: Francois WELLENREITER <f.wellenreiter@gmail.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Acked-by: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/gpu/drm/vmwgfx/vmwgfx_fb.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ include/net/ip6_route.h |    5 +++++
+ net/ipv6/route.c        |    5 +++--
+ 2 files changed, 8 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/vmwgfx/vmwgfx_fb.c
-+++ b/drivers/gpu/drm/vmwgfx/vmwgfx_fb.c
-@@ -147,7 +147,7 @@ static int vmw_fb_check_var(struct fb_va
- 	}
+--- a/include/net/ip6_route.h
++++ b/include/net/ip6_route.h
+@@ -34,6 +34,11 @@ struct route_info {
+ #define RT6_LOOKUP_F_SRCPREF_PUBLIC	0x00000010
+ #define RT6_LOOKUP_F_SRCPREF_COA	0x00000020
  
- 	if (!vmw_kms_validate_mode_vram(vmw_priv,
--					info->fix.line_length,
-+					var->xres * var->bits_per_pixel/8,
- 					var->yoffset + var->yres)) {
- 		DRM_ERROR("Requested geom can not fit in framebuffer\n");
- 		return -EINVAL;
-@@ -162,6 +162,8 @@ static int vmw_fb_set_par(struct fb_info
- 	struct vmw_private *vmw_priv = par->vmw_priv;
- 	int ret;
- 
-+	info->fix.line_length = info->var.xres * info->var.bits_per_pixel/8;
++/* We do not (yet ?) support IPv6 jumbograms (RFC 2675)
++ * Unlike IPv4, hdr->seg_len doesn't include the IPv6 header
++ */
++#define IP6_MAX_MTU (0xFFFF + sizeof(struct ipv6hdr))
 +
- 	ret = vmw_kms_write_svga(vmw_priv, info->var.xres, info->var.yres,
- 				 info->fix.line_length,
- 				 par->bpp, par->depth);
-@@ -177,6 +179,7 @@ static int vmw_fb_set_par(struct fb_info
- 		vmw_write(vmw_priv, SVGA_REG_DISPLAY_POSITION_Y, info->var.yoffset);
- 		vmw_write(vmw_priv, SVGA_REG_DISPLAY_WIDTH, info->var.xres);
- 		vmw_write(vmw_priv, SVGA_REG_DISPLAY_HEIGHT, info->var.yres);
-+		vmw_write(vmw_priv, SVGA_REG_BYTES_PER_LINE, info->fix.line_length);
- 		vmw_write(vmw_priv, SVGA_REG_DISPLAY_ID, SVGA_ID_INVALID);
- 	}
+ /*
+  * rt6_srcprefs2flags() and rt6_flags2srcprefs() translate
+  * between IPV6_ADDR_PREFERENCES socket option values
+--- a/net/ipv6/route.c
++++ b/net/ipv6/route.c
+@@ -1092,7 +1092,7 @@ static unsigned int ip6_mtu(const struct
+ 	unsigned int mtu = dst_metric_raw(dst, RTAX_MTU);
  
+ 	if (mtu)
+-		return mtu;
++		goto out;
+ 
+ 	mtu = IPV6_MIN_MTU;
+ 
+@@ -1102,7 +1102,8 @@ static unsigned int ip6_mtu(const struct
+ 		mtu = idev->cnf.mtu6;
+ 	rcu_read_unlock();
+ 
+-	return mtu;
++out:
++	return min_t(unsigned int, mtu, IP6_MAX_MTU);
+ }
+ 
+ static struct dst_entry *icmp6_dst_gc_list;
 
 
