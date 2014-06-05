@@ -1,98 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753084AbaFETvv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 15:51:51 -0400
-Received: from mail-ve0-f176.google.com ([209.85.128.176]:55576 "EHLO
-	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752087AbaFETvr (ORCPT
+	id S1753177AbaFETwp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 15:52:45 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:44374 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751541AbaFETwo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 15:51:47 -0400
+	Thu, 5 Jun 2014 15:52:44 -0400
 MIME-Version: 1.0
-In-Reply-To: <41e5e755638334388a14821a625b703a1f851185.1401728995.git.viresh.kumar@linaro.org>
-References: <cover.1401728994.git.viresh.kumar@linaro.org>
-	<41e5e755638334388a14821a625b703a1f851185.1401728995.git.viresh.kumar@linaro.org>
-Date: Thu, 5 Jun 2014 12:51:46 -0700
-X-Google-Sender-Auth: 7Jvc4ytTGMd5a36lThLnx8jc6HE
-Message-ID: <CAD=FV=UHWEv4WNYdDvvFZ_Ars6TB=YRWf298aKPSjECwjD6a6w@mail.gmail.com>
-Subject: Re: [PATCH V5 2/2] cpufreq: Tegra: implement intermediate frequency callbacks
-From: Doug Anderson <dianders@chromium.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arvind Chauhan <arvind.chauhan@arm.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>
+In-Reply-To: <20140605183050.GA5054@kroah.com>
+References: <20140605183050.GA5054@kroah.com>
+Date: Thu, 5 Jun 2014 22:52:42 +0300
+Message-ID: <CACE9dm8bSo5FD7_hSVjfgkwp3xR06hL+y7EWvhv9nyEssFO4dw@mail.gmail.com>
+Subject: Re: Change in security maintainer for a few weeks
+From: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Viresh,
+On 5 June 2014 21:30, Greg KH <gregkh@linuxfoundation.org> wrote:
+> Hi all,
+>
+> James has had to step back from doing kernel work for a few weeks, so
+> I've offered to step up and handle the security patches to get shuttled
+> to Linus for merging for a while.
+>
+> I'll take his git tree on kernel.org and push those to Linus for
+> 3.16-rc1, as those look like they have had proper testing in linux-next.
+>
+> But there only seems to be 14 patches in there.  Are there pending
+> patches that people have been sending and need to get in besides those?
+>
+> thanks,
+>
 
-On Mon, Jun 2, 2014 at 10:19 AM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> Tegra had always been switching to intermediate frequency (pll_p_clk) since
-> ever. CPUFreq core has better support for handling notifications for these
-> frequencies and so we can adapt Tegra's driver to it.
->
-> Also do a WARN() if clk_set_parent() fails while moving back to pll_x as we
-> should have atleast restored to earlier frequency on error.
->
-> Tested-by: Stephen Warren <swarren@nvidia.com>
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-> ---
->  drivers/cpufreq/tegra-cpufreq.c | 97 ++++++++++++++++++++++++++---------------
->  1 file changed, 62 insertions(+), 35 deletions(-)
->
-> diff --git a/drivers/cpufreq/tegra-cpufreq.c b/drivers/cpufreq/tegra-cpufreq.c
-> index 6e774c6..a5fbc0a 100644
-> --- a/drivers/cpufreq/tegra-cpufreq.c
-> +++ b/drivers/cpufreq/tegra-cpufreq.c
-> @@ -45,46 +45,51 @@ static struct clk *cpu_clk;
->  static struct clk *pll_x_clk;
->  static struct clk *pll_p_clk;
->  static struct clk *emc_clk;
-> +static bool pll_x_prepared;
->
-> -static int tegra_cpu_clk_set_rate(unsigned long rate)
-> +static unsigned int tegra_get_intermediate(struct cpufreq_policy *policy,
-> +                                          unsigned int index)
-> +{
-> +       unsigned int ifreq = clk_get_rate(pll_p_clk) / 1000;
-> +
-> +       /*
-> +        * Don't switch to intermediate freq if:
-> +        * - we are already at it, i.e. policy->cur == ifreq
-> +        * - index corresponds to ifreq
-> +        */
-> +       if ((freq_table[index].frequency == ifreq) || (policy->cur == ifreq))
-> +               return 0;
-> +
-> +       return ifreq;
-> +}
-> +
-> +static int tegra_target_intermediate(struct cpufreq_policy *policy,
-> +                                    unsigned int index)
->  {
->         int ret;
->
->         /*
->          * Take an extra reference to the main pll so it doesn't turn
-> -        * off when we move the cpu off of it
-> +        * off when we move the cpu off of it as enabling it again while we
-> +        * switch to it from tegra_target() would take additional time. Though
-> +        * when target-freq is intermediate freq, we don't need to take this
-> +        * reference.
+Hi Greg,
 
-The "Though when target-freq is intermediate freq, we don't need to
-take this reference." makes me think that this function is actually
-called when target-freq is intermediate freq.  I don't think it is,
-right?
+Mimi sent pull request to James last week without any response...
 
-I don't think that's a huge deal, though and code wise this looks good to me.
+But that is based on James' 3.14 tree..
+May be Mimi need to rebase and send pull request to you..
 
-Reviewed-by: Doug Anderson <dianders@chromium.org>
+Thanks,
+
+- Dmitry
+
+> greg k-h
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
+
+-- 
+Thanks,
+Dmitry
