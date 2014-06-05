@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752544AbaFEEUg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 00:20:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43826 "EHLO
+	id S1752739AbaFEEU5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 00:20:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43970 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752497AbaFEEUb (ORCPT
+	with ESMTP id S1752595AbaFEEUt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 00:20:31 -0400
+	Thu, 5 Jun 2014 00:20:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ingo Molnar <mingo@kernel.org>, Rusty Russell <rusty@rustcorp.com.au>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Romain Izard <romain.izard.pro@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 3.4 064/214] trace: module: Maintain a valid user count
-Date: Wed,  4 Jun 2014 21:17:07 -0700
-Message-Id: <20140605041648.107610705@linuxfoundation.org>
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Ben Hutchings <ben@decadent.org.uk>, Rui Xiang <rui.xiang@huawei.com>
+Subject: [PATCH 3.4 094/214] NFSv4.1: Handle NFS4ERR_DELAY when resetting the NFSv4.1 session
+Date: Wed,  4 Jun 2014 21:17:37 -0700
+Message-Id: <20140605041652.312961027@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -29,44 +27,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Romain Izard <romain.izard.pro@gmail.com>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit 098507ae3ec2331476fb52e85d4040c1cc6d0ef4 upstream.
+commit c489ee290bdbbace6bb63ebe6ebd4dd605819495 upstream.
 
-The replacement of the 'count' variable by two variables 'incs' and
-'decs' to resolve some race conditions during module unloading was done
-in parallel with some cleanup in the trace subsystem, and was integrated
-as a merge.
+NFS4ERR_DELAY is a legal reply when we call DESTROY_SESSION. It
+usually means that the server is busy handling an unfinished RPC
+request. Just sleep for a second and then retry.
+We also need to be able to handle the NFS4ERR_BACK_CHAN_BUSY return
+value. If the NFS server has outstanding callbacks, we just want to
+similarly sleep & retry.
 
-Unfortunately, the formula for this replacement was wrong in the tracing
-code, and the refcount in the traces was not usable as a result.
-
-Use 'count = incs - decs' to compute the user count.
-
-Link: http://lkml.kernel.org/p/1393924179-9147-1-git-send-email-romain.izard.pro@gmail.com
-
-Acked-by: Ingo Molnar <mingo@kernel.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Fixes: c1ab9cab7509 "merge conflict resolution"
-Signed-off-by: Romain Izard <romain.izard.pro@gmail.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+[bwh: Backported to 3.2: adjust context]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Cc: Rui Xiang <rui.xiang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/trace/events/module.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/nfs/nfs4state.c |   14 ++++++++++++--
+ 1 file changed, 12 insertions(+), 2 deletions(-)
 
---- a/include/trace/events/module.h
-+++ b/include/trace/events/module.h
-@@ -78,7 +78,7 @@ DECLARE_EVENT_CLASS(module_refcnt,
+--- a/fs/nfs/nfs4state.c
++++ b/fs/nfs/nfs4state.c
+@@ -1651,8 +1651,18 @@ static int nfs4_reset_session(struct nfs
  
- 	TP_fast_assign(
- 		__entry->ip	= ip;
--		__entry->refcnt	= __this_cpu_read(mod->refptr->incs) + __this_cpu_read(mod->refptr->decs);
-+		__entry->refcnt	= __this_cpu_read(mod->refptr->incs) - __this_cpu_read(mod->refptr->decs);
- 		__assign_str(name, mod->name);
- 	),
- 
+ 	nfs4_begin_drain_session(clp);
+ 	status = nfs4_proc_destroy_session(clp->cl_session);
+-	if (status && status != -NFS4ERR_BADSESSION &&
+-	    status != -NFS4ERR_DEADSESSION) {
++	switch (status) {
++	case 0:
++	case -NFS4ERR_BADSESSION:
++	case -NFS4ERR_DEADSESSION:
++		break;
++	case -NFS4ERR_BACK_CHAN_BUSY:
++	case -NFS4ERR_DELAY:
++		set_bit(NFS4CLNT_SESSION_RESET, &clp->cl_state);
++		status = 0;
++		ssleep(1);
++		goto out;
++	default:
+ 		status = nfs4_recovery_handle_error(clp, status);
+ 		goto out;
+ 	}
 
 
