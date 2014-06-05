@@ -1,25 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751694AbaFEOba (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 10:31:30 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:48064 "EHLO
+	id S1751847AbaFEObq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 10:31:46 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:48088 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751466AbaFEOb2 (ORCPT
+	with ESMTP id S1751790AbaFEObo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 10:31:28 -0400
-Date: Thu, 5 Jun 2014 07:31:12 -0700
-From: tip-bot for Sebastian Andrzej Siewior <tipbot@zytor.com>
-Message-ID: <tip-16a6433615c14097fd8d406b10ce6393aebb7017@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        jolsa@kernel.org, bigeasy@linutronix.de, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        jolsa@kernel.org, tglx@linutronix.de, bigeasy@linutronix.de
-In-Reply-To: <20140528081918.GA28567@linutronix.de>
-References: <20140528081918.GA28567@linutronix.de>
+	Thu, 5 Jun 2014 10:31:44 -0400
+Date: Thu, 5 Jun 2014 07:30:44 -0700
+From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
+Message-ID: <tip-uxeunqetd0sgxyibusapen9a@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, jolsa@kernel.org,
+        peterz@infradead.org, efault@gmx.de, namhyung@kernel.org,
+        fweisbec@gmail.com, adrian.hunter@intel.com, dsahern@gmail.com,
+        tglx@linutronix.de, dzickus@redhat.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, jolsa@kernel.org,
+        efault@gmx.de, peterz@infradead.org, namhyung@kernel.org,
+        fweisbec@gmail.com, dsahern@gmail.com, adrian.hunter@intel.com,
+        tglx@linutronix.de, dzickus@redhat.com
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools:
-  Consider header files outside perf directory in tags target
-Git-Commit-ID: 16a6433615c14097fd8d406b10ce6393aebb7017
+Subject: [tip:perf/core] perf trace: Warn the user when not available
+Git-Commit-ID: 1b5726220fe16ac38eb2db43e7bc82e69f449fca
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,49 +35,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  16a6433615c14097fd8d406b10ce6393aebb7017
-Gitweb:     http://git.kernel.org/tip/16a6433615c14097fd8d406b10ce6393aebb7017
-Author:     Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-AuthorDate: Wed, 28 May 2014 10:19:18 +0200
+Commit-ID:  1b5726220fe16ac38eb2db43e7bc82e69f449fca
+Gitweb:     http://git.kernel.org/tip/1b5726220fe16ac38eb2db43e7bc82e69f449fca
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Mon, 26 May 2014 16:02:29 -0300
 Committer:  Jiri Olsa <jolsa@kernel.org>
-CommitDate: Tue, 3 Jun 2014 21:34:23 +0200
+CommitDate: Tue, 3 Jun 2014 21:34:00 +0200
 
-perf tools: Consider header files outside perf directory in tags target
+perf trace: Warn the user when not available
 
-This fixes lookups like "vi -t event_format"
+When the audit-libs devel package is not found at build time we disable
+the 'trace' command, as we are not able to map syscall numbers to
+strings, but then the message the user is presented is cryptic:
 
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Link: http://lkml.kernel.org/r/20140528081918.GA28567@linutronix.de
+  [root@zoo linux]# trace ls
+  perf: 'ls' is not a perf-command. See 'perf --help'.
+
+Fix it by presenting a more helpful message:
+
+  [root@zoo linux]# trace l
+  trace command not available: missing audit-libs devel package at build time.
+
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Don Zickus <dzickus@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-uxeunqetd0sgxyibusapen9a@git.kernel.org
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/Makefile.perf | 9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ tools/perf/perf.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index 67f7c05..6286e13 100644
---- a/tools/perf/Makefile.perf
-+++ b/tools/perf/Makefile.perf
-@@ -815,17 +815,20 @@ INSTALL_DOC_TARGETS += quick-install-doc quick-install-man quick-install-html
- $(DOC_TARGETS):
- 	$(QUIET_SUBDIR0)Documentation $(QUIET_SUBDIR1) $(@:doc=all)
- 
-+TAG_FOLDERS= . ../lib/traceevent ../lib/api ../lib/symbol
-+TAG_FILES= ../../include/uapi/linux/perf_event.h
-+
- TAGS:
- 	$(RM) TAGS
--	$(FIND) . -name '*.[hcS]' -print | xargs etags -a
-+	$(FIND) $(TAG_FOLDERS) -name '*.[hcS]' -print | xargs etags -a $(TAG_FILES)
- 
- tags:
- 	$(RM) tags
--	$(FIND) . -name '*.[hcS]' -print | xargs ctags -a
-+	$(FIND) $(TAG_FOLDERS) -name '*.[hcS]' -print | xargs ctags -a $(TAG_FILES)
- 
- cscope:
- 	$(RM) cscope*
--	$(FIND) . -name '*.[hcS]' -print | xargs cscope -b
-+	$(FIND) $(TAG_FOLDERS) -name '*.[hcS]' -print | xargs cscope -b $(TAG_FILES)
- 
- ### Detect prefix changes
- TRACK_CFLAGS = $(subst ','\'',$(CFLAGS)):\
+diff --git a/tools/perf/perf.c b/tools/perf/perf.c
+index 431798a..78f7b92 100644
+--- a/tools/perf/perf.c
++++ b/tools/perf/perf.c
+@@ -481,14 +481,18 @@ int main(int argc, const char **argv)
+ 		fprintf(stderr, "cannot handle %s internally", cmd);
+ 		goto out;
+ 	}
+-#ifdef HAVE_LIBAUDIT_SUPPORT
+ 	if (!prefixcmp(cmd, "trace")) {
++#ifdef HAVE_LIBAUDIT_SUPPORT
+ 		set_buildid_dir();
+ 		setup_path();
+ 		argv[0] = "trace";
+ 		return cmd_trace(argc, argv, NULL);
+-	}
++#else
++		fprintf(stderr,
++			"trace command not available: missing audit-libs devel package at build time.\n");
++		goto out;
+ #endif
++	}
+ 	/* Look for flags.. */
+ 	argv++;
+ 	argc--;
