@@ -1,104 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755790AbaFEAFg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 20:05:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40349 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753432AbaFDXWy (ORCPT
+	id S1755813AbaFEAFt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 20:05:49 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:44788 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755797AbaFEAFs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:22:54 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        James Hogan <james.hogan@imgtec.com>, Helge Deller <deller@gmx.de>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        linux-parisc@vger.kernel.org, linux-metag@vger.kernel.org,
-        John David Anglin <dave.anglin@bell.net>
-Subject: [PATCH 3.14 170/228] metag: Reduce maximum stack size to 256MB
-Date: Wed,  4 Jun 2014 16:23:19 -0700
-Message-Id: <20140604232353.491191049@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
-References: <20140604232347.966798903@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Wed, 4 Jun 2014 20:05:48 -0400
 MIME-Version: 1.0
+In-Reply-To: <alpine.LRH.2.00.1406041450310.21286@lnfm1.sai.msu.ru>
+References: <alpine.LRH.2.00.1406041450310.21286@lnfm1.sai.msu.ru>
+Date: Wed, 4 Jun 2014 20:05:46 -0400
+Message-ID: <CAF6AEGvLJeF4QVXkTh2YLLePqQ4h4j+igixeX5HL8o=x4S=CuQ@mail.gmail.com>
+Subject: Re: [PATCH] gpu: drm: msm: Replace type of paddr to uint32_t.
+From: Rob Clark <robdclark@gmail.com>
+To: "Matwey V. Kornilov" <matwey@sai.msu.ru>
+Cc: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        David Airlie <airlied@linux.ie>, linux-arm-msm@vger.kernel.org,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        matwey.kornilov@gmail.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+On Wed, Jun 4, 2014 at 6:54 AM, Matwey V. Kornilov <matwey@sai.msu.ru> wrote:
+> From e7147352639fd8f92b1cc85cff9bc5046c7a2130 Mon Sep 17 00:00:00 2001
+> From: "Matwey V. Kornilov" <matwey.kornilov@gmail.com>
+> Date: Mon, 2 Jun 2014 20:17:29 +0400
+> Subject: [PATCH] Replace type of paddr to uint32_t.
+>
+> This patch helps to avoid the following build issue:
+>
+> drivers/gpu/drm/msm/msm_fbdev.c:108:2: error: passing argument 3 of
+> 'msm_gem_get_iova_locked' from incompatible pointer type [-Werror]
+>   msm_gem_get_iova_locked(fbdev->bo, 0, &paddr);
+>   ^
+> In file included from drivers/gpu/drm/msm/msm_fbdev.c:18:0:
+> drivers/gpu/drm/msm/msm_drv.h:153:5: note: expected 'uint32_t *' but
+> argument is of type 'dma_addr_t *'
+>  int msm_gem_get_iova_locked(struct drm_gem_object *obj, int id,
+>      ^
+>
+> Signed-off-by: Matwey V. Kornilov <matwey@sai.msu.ru>
 
-------------------
+Reviewed-by: Rob Clark <robdclark@gmail.com>
 
-From: James Hogan <james.hogan@imgtec.com>
-
-commit d71f290b4e98a39f49f2595a13be3b4d5ce8e1f1 upstream.
-
-Specify the maximum stack size for arches where the stack grows upward
-(parisc and metag) in asm/processor.h rather than hard coding in
-fs/exec.c so that metag can specify a smaller value of 256MB rather than
-1GB.
-
-This fixes a BUG on metag if the RLIMIT_STACK hard limit is increased
-beyond a safe value by root. E.g. when starting a process after running
-"ulimit -H -s unlimited" it will then attempt to use a stack size of the
-maximum 1GB which is far too big for metag's limited user virtual
-address space (stack_top is usually 0x3ffff000):
-
-BUG: failure at fs/exec.c:589/shift_arg_pages()!
-
-Signed-off-by: James Hogan <james.hogan@imgtec.com>
-Cc: Helge Deller <deller@gmx.de>
-Cc: "James E.J. Bottomley" <jejb@parisc-linux.org>
-Cc: linux-parisc@vger.kernel.org
-Cc: linux-metag@vger.kernel.org
-Cc: John David Anglin <dave.anglin@bell.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- arch/metag/include/asm/processor.h  |    2 ++
- arch/parisc/include/asm/processor.h |    2 ++
- fs/exec.c                           |    6 +++---
- 3 files changed, 7 insertions(+), 3 deletions(-)
-
---- a/arch/metag/include/asm/processor.h
-+++ b/arch/metag/include/asm/processor.h
-@@ -22,6 +22,8 @@
- /* Add an extra page of padding at the top of the stack for the guard page. */
- #define STACK_TOP	(TASK_SIZE - PAGE_SIZE)
- #define STACK_TOP_MAX	STACK_TOP
-+/* Maximum virtual space for stack */
-+#define STACK_SIZE_MAX	(1 << 28)	/* 256 MB */
- 
- /* This decides where the kernel will search for a free chunk of vm
-  * space during mmap's.
---- a/arch/parisc/include/asm/processor.h
-+++ b/arch/parisc/include/asm/processor.h
-@@ -55,6 +55,8 @@
- #define STACK_TOP	TASK_SIZE
- #define STACK_TOP_MAX	DEFAULT_TASK_SIZE
- 
-+#define STACK_SIZE_MAX	(1 << 30)	/* 1 GB */
-+
- #endif
- 
- #ifndef __ASSEMBLY__
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -654,10 +654,10 @@ int setup_arg_pages(struct linux_binprm
- 	unsigned long rlim_stack;
- 
- #ifdef CONFIG_STACK_GROWSUP
--	/* Limit stack size to 1GB */
-+	/* Limit stack size */
- 	stack_base = rlimit_max(RLIMIT_STACK);
--	if (stack_base > (1 << 30))
--		stack_base = 1 << 30;
-+	if (stack_base > STACK_SIZE_MAX)
-+		stack_base = STACK_SIZE_MAX;
- 
- 	/* Make sure we didn't let the argument array grow too large. */
- 	if (vma->vm_end - vma->vm_start > stack_base)
-
-
+> ---
+>  drivers/gpu/drm/msm/msm_fbdev.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/gpu/drm/msm/msm_fbdev.c
+> b/drivers/gpu/drm/msm/msm_fbdev.c
+> index a752ab8..5107fc4 100644
+> --- a/drivers/gpu/drm/msm/msm_fbdev.c
+> +++ b/drivers/gpu/drm/msm/msm_fbdev.c
+> @@ -59,7 +59,7 @@ static int msm_fbdev_create(struct drm_fb_helper *helper,
+>         struct drm_framebuffer *fb = NULL;
+>         struct fb_info *fbi = NULL;
+>         struct drm_mode_fb_cmd2 mode_cmd = {0};
+> -       dma_addr_t paddr;
+> +       uint32_t paddr;
+>         int ret, size;
+>
+>         sizes->surface_bpp = 32;
+> --
+> 1.9.3
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
