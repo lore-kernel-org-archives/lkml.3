@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752443AbaFEEU0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 00:20:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43761 "EHLO
+	id S1752544AbaFEEUg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 00:20:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43826 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752280AbaFEEUR (ORCPT
+	with ESMTP id S1752497AbaFEEUb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 00:20:17 -0400
+	Thu, 5 Jun 2014 00:20:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bodo Stroesser <bstroesser@ts.fujitsu.com>,
-        Corey Minyard <cminyard@mvista.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.4 041/214] ipmi: Reset the KCS timeout when starting error recovery
-Date: Wed,  4 Jun 2014 21:16:44 -0700
-Message-Id: <20140605041645.139057930@linuxfoundation.org>
+        Ingo Molnar <mingo@kernel.org>, Rusty Russell <rusty@rustcorp.com.au>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Romain Izard <romain.izard.pro@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH 3.4 064/214] trace: module: Maintain a valid user count
+Date: Wed,  4 Jun 2014 21:17:07 -0700
+Message-Id: <20140605041648.107610705@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -28,35 +29,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Corey Minyard <cminyard@mvista.com>
+From: Romain Izard <romain.izard.pro@gmail.com>
 
-commit eb6d78ec213e6938559b801421d64714dafcf4b2 upstream.
+commit 098507ae3ec2331476fb52e85d4040c1cc6d0ef4 upstream.
 
-The OBF timer in KCS was not reset in one situation when error recovery
-was started, resulting in an immediate timeout.
+The replacement of the 'count' variable by two variables 'incs' and
+'decs' to resolve some race conditions during module unloading was done
+in parallel with some cleanup in the trace subsystem, and was integrated
+as a merge.
 
-Reported-by: Bodo Stroesser <bstroesser@ts.fujitsu.com>
-Signed-off-by: Corey Minyard <cminyard@mvista.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Unfortunately, the formula for this replacement was wrong in the tracing
+code, and the refcount in the traces was not usable as a result.
+
+Use 'count = incs - decs' to compute the user count.
+
+Link: http://lkml.kernel.org/p/1393924179-9147-1-git-send-email-romain.izard.pro@gmail.com
+
+Acked-by: Ingo Molnar <mingo@kernel.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Fixes: c1ab9cab7509 "merge conflict resolution"
+Signed-off-by: Romain Izard <romain.izard.pro@gmail.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/char/ipmi/ipmi_kcs_sm.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ include/trace/events/module.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/char/ipmi/ipmi_kcs_sm.c
-+++ b/drivers/char/ipmi/ipmi_kcs_sm.c
-@@ -251,8 +251,9 @@ static inline int check_obf(struct si_sm
- 	if (!GET_STATUS_OBF(status)) {
- 		kcs->obf_timeout -= time;
- 		if (kcs->obf_timeout < 0) {
--		    start_error_recovery(kcs, "OBF not ready in time");
--		    return 1;
-+			kcs->obf_timeout = OBF_RETRY_TIMEOUT;
-+			start_error_recovery(kcs, "OBF not ready in time");
-+			return 1;
- 		}
- 		return 0;
- 	}
+--- a/include/trace/events/module.h
++++ b/include/trace/events/module.h
+@@ -78,7 +78,7 @@ DECLARE_EVENT_CLASS(module_refcnt,
+ 
+ 	TP_fast_assign(
+ 		__entry->ip	= ip;
+-		__entry->refcnt	= __this_cpu_read(mod->refptr->incs) + __this_cpu_read(mod->refptr->decs);
++		__entry->refcnt	= __this_cpu_read(mod->refptr->incs) - __this_cpu_read(mod->refptr->decs);
+ 		__assign_str(name, mod->name);
+ 	),
+ 
 
 
