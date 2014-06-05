@@ -1,82 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752659AbaFEOpt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 10:45:49 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:48085 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751747AbaFEObo (ORCPT
+	id S1751660AbaFEOta (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 10:49:30 -0400
+Received: from mail-ig0-f179.google.com ([209.85.213.179]:46031 "EHLO
+	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750910AbaFEOt2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 10:31:44 -0400
-Date: Thu, 5 Jun 2014 07:30:59 -0700
-From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
-Message-ID: <tip-t7yeud34ehimlfi6pklb29p7@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
-        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, jolsa@kernel.org,
-        peterz@infradead.org, efault@gmx.de, namhyung@kernel.org,
-        fweisbec@gmail.com, adrian.hunter@intel.com, dsahern@gmail.com,
-        tglx@linutronix.de, dzickus@redhat.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, jolsa@kernel.org,
-        efault@gmx.de, peterz@infradead.org, namhyung@kernel.org,
-        fweisbec@gmail.com, dsahern@gmail.com, adrian.hunter@intel.com,
-        tglx@linutronix.de, dzickus@redhat.com
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools:
-  Add warning when disabling perl scripting support due to missing devel files
-Git-Commit-ID: 6a2f2543a1f3aa0e7766e27c30b93d164771e892
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Thu, 5 Jun 2014 10:49:28 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAMuHMdUCjC8mceiAJpmEHo1jufa1FXNfBxaP9EiFS+uTO=SJCQ@mail.gmail.com>
+References: <alpine.LRH.2.00.1406041450310.21286@lnfm1.sai.msu.ru>
+	<CAF6AEGvLJeF4QVXkTh2YLLePqQ4h4j+igixeX5HL8o=x4S=CuQ@mail.gmail.com>
+	<CAMuHMdUCjC8mceiAJpmEHo1jufa1FXNfBxaP9EiFS+uTO=SJCQ@mail.gmail.com>
+Date: Thu, 5 Jun 2014 10:49:27 -0400
+Message-ID: <CAF6AEGv=no0Puc63jJja9=--ehQOjr9sUv9Jj-m1Bja_D6Q_SA@mail.gmail.com>
+Subject: Re: [PATCH] gpu: drm: msm: Replace type of paddr to uint32_t.
+From: Rob Clark <robdclark@gmail.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: "Matwey V. Kornilov" <matwey@sai.msu.ru>,
+        David Brown <davidb@codeaurora.org>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        David Airlie <airlied@linux.ie>, linux-arm-msm@vger.kernel.org,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        matwey.kornilov@gmail.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  6a2f2543a1f3aa0e7766e27c30b93d164771e892
-Gitweb:     http://git.kernel.org/tip/6a2f2543a1f3aa0e7766e27c30b93d164771e892
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Mon, 26 May 2014 16:02:30 -0300
-Committer:  Jiri Olsa <jolsa@kernel.org>
-CommitDate: Tue, 3 Jun 2014 21:34:16 +0200
+On Thu, Jun 5, 2014 at 3:24 AM, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+> On Thu, Jun 5, 2014 at 2:05 AM, Rob Clark <robdclark@gmail.com> wrote:
+>> On Wed, Jun 4, 2014 at 6:54 AM, Matwey V. Kornilov <matwey@sai.msu.ru> wrote:
+>>> From e7147352639fd8f92b1cc85cff9bc5046c7a2130 Mon Sep 17 00:00:00 2001
+>>> From: "Matwey V. Kornilov" <matwey.kornilov@gmail.com>
+>>> Date: Mon, 2 Jun 2014 20:17:29 +0400
+>>> Subject: [PATCH] Replace type of paddr to uint32_t.
+>>>
+>>> This patch helps to avoid the following build issue:
+>>>
+>>> drivers/gpu/drm/msm/msm_fbdev.c:108:2: error: passing argument 3 of
+>>> 'msm_gem_get_iova_locked' from incompatible pointer type [-Werror]
+>>>   msm_gem_get_iova_locked(fbdev->bo, 0, &paddr);
+>>>   ^
+>>> In file included from drivers/gpu/drm/msm/msm_fbdev.c:18:0:
+>>> drivers/gpu/drm/msm/msm_drv.h:153:5: note: expected 'uint32_t *' but
+>>> argument is of type 'dma_addr_t *'
+>>>  int msm_gem_get_iova_locked(struct drm_gem_object *obj, int id,
+>>>      ^
+>>>
+>>> Signed-off-by: Matwey V. Kornilov <matwey@sai.msu.ru>
+>>
+>> Reviewed-by: Rob Clark <robdclark@gmail.com>
+>
+> Perhaps the uint32_t should become dma_addr_t instead?
+>
+> drivers/gpu/drm/msm/msm_gem.h has:
+>
+>         struct {
+>                 // XXX
+>                 uint32_t iova;
+>         } domain[NUM_DOMAINS];
+>
+> (note the "XXX").
 
-perf tools: Add warning when disabling perl scripting support due to missing devel files
+the "XXX" is actually for missing refcnting for pin cnt (so we can
+know when it is safe to unpin buffers), which I've not had time to add
+yet (but is not needed yet).
 
-We were just showing "libperl: OFF", unlike other features where we
-present the user with a message helping have a feature built in.
+On the gpu side of things, it will be another big hw change before 64b
+hw (ie. the existing code that deals w/ existing registers won't be
+shared, I don't think).  On display side, I'm less sure, but there
+isn't currently room to expand base address registers to 64bit without
+shuffling a fair bit of registers around, so again probably will be a
+new back-end for 64b display controller.
 
-Fix it by adding the following message:
+The GEM code would still be shared, so may need to support 64b some
+day..  possibly that has to switch over to dma_addr_t and then
+downcast to u32 in the mdp/adreno hw generation specific backend code.
+ But there is at least one more generation of hw before I have to
+worry about that ;-)
 
-config/Makefile:450: Missing perl devel files. Disabling perl scripting support, consider installing perl-ExtUtils-Embed
+BR,
+-R
 
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Don Zickus <dzickus@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-t7yeud34ehimlfi6pklb29p7@git.kernel.org
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
----
- tools/perf/config/Makefile | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index 729bbdf..319426f 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -447,6 +447,7 @@ else
-   ifneq ($(feature-libperl), 1)
-     CFLAGS += -DNO_LIBPERL
-     NO_LIBPERL := 1
-+    msg := $(warning Missing perl devel files. Disabling perl scripting support, consider installing perl-ExtUtils-Embed);
-   else
-     LDFLAGS += $(PERL_EMBED_LDFLAGS)
-     EXTLIBS += $(PERL_EMBED_LIBADD)
+>
+> Gr{oetje,eeting}s,
+>
+>                         Geert
+>
+> --
+> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+>
+> In personal conversations with technical people, I call myself a hacker. But
+> when I'm talking to journalists I just say "programmer" or something like that.
+>                                 -- Linus Torvalds
