@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753939AbaFEEbX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 00:31:23 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44467 "EHLO
+	id S1754009AbaFEEbr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 00:31:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44461 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753508AbaFEEWK (ORCPT
+	with ESMTP id S1753483AbaFEEWJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 00:22:10 -0400
+	Thu, 5 Jun 2014 00:22:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Jon Bloomfield <jon.bloomfield@intel.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Thomas Hellstrom <thellstrom@vmware.com>,
+        Jakob Bornecrantz <jakob@vmware.com>,
         Ben Hutchings <ben@decadent.org.uk>,
         Weng Meiling <wengmeiling.weng@huawei.com>
-Subject: [PATCH 3.4 179/214] drm/i915: Workaround incoherence between fences and LLC across multiple CPUs
-Date: Wed,  4 Jun 2014 21:19:02 -0700
-Message-Id: <20140605041703.540564481@linuxfoundation.org>
+Subject: [PATCH 3.4 185/214] drm/ttm: Fix memory type compatibility check
+Date: Wed,  4 Jun 2014 21:19:08 -0700
+Message-Id: <20140605041704.313767818@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -31,69 +29,95 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+From: Thomas Hellstrom <thellstrom@vmware.com>
 
-commit 25ff1195f8a0b3724541ae7bbe331b4296de9c06 upstream.
+commit 59c8e66378fb78adbcd05f0d09783dde6fef282b upstream.
 
-In order to fully serialize access to the fenced region and the update
-to the fence register we need to take extreme measures on SNB+, and
-manually flush writes to memory prior to writing the fence register in
-conjunction with the memory barriers placed around the register write.
+Also check the busy placements before deciding to move a buffer object.
+Failing to do this may result in a completely unneccessary move within a
+single memory type.
 
-Fixes i-g-t/gem_fence_thrash
-
-v2: Bring a bigger gun
-v3: Switch the bigger gun for heavier bullets (Arjan van de Ven)
-v4: Remove changes for working generations.
-v5: Reduce to a per-cpu wbinvd() call prior to updating the fences.
-v6: Rewrite comments to ellide forgotten history.
-
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=62191
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Jon Bloomfield <jon.bloomfield@intel.com>
-Tested-by: Jon Bloomfield <jon.bloomfield@intel.com> (v2)
-Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-[bwh: Backported to 3.2: insert the cache flush in i915_gem_object_get_fence()]
+Signed-off-by: Thomas Hellstrom <thellstrom@vmware.com>
+Reviewed-by: Jakob Bornecrantz <jakob@vmware.com>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Cc: Weng Meiling <wengmeiling.weng@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/i915_gem.c |   16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
+ drivers/gpu/drm/ttm/ttm_bo.c |   32 ++++++++++++++++++++------------
+ 1 file changed, 20 insertions(+), 12 deletions(-)
 
---- a/drivers/gpu/drm/i915/i915_gem.c
-+++ b/drivers/gpu/drm/i915/i915_gem.c
-@@ -2468,6 +2468,11 @@ i915_find_fence_reg(struct drm_device *d
- 	return avail;
+--- a/drivers/gpu/drm/ttm/ttm_bo.c
++++ b/drivers/gpu/drm/ttm/ttm_bo.c
+@@ -1091,24 +1091,32 @@ out_unlock:
+ 	return ret;
  }
  
-+static void i915_gem_write_fence__ipi(void *data)
-+{
-+	wbinvd();
-+}
+-static int ttm_bo_mem_compat(struct ttm_placement *placement,
+-			     struct ttm_mem_reg *mem)
++static bool ttm_bo_mem_compat(struct ttm_placement *placement,
++			      struct ttm_mem_reg *mem,
++			      uint32_t *new_flags)
+ {
+ 	int i;
+ 
+ 	if (mem->mm_node && placement->lpfn != 0 &&
+ 	    (mem->start < placement->fpfn ||
+ 	     mem->start + mem->num_pages > placement->lpfn))
+-		return -1;
++		return false;
+ 
+ 	for (i = 0; i < placement->num_placement; i++) {
+-		if ((placement->placement[i] & mem->placement &
+-			TTM_PL_MASK_CACHING) &&
+-			(placement->placement[i] & mem->placement &
+-			TTM_PL_MASK_MEM))
+-			return i;
++		*new_flags = placement->placement[i];
++		if ((*new_flags & mem->placement & TTM_PL_MASK_CACHING) &&
++		    (*new_flags & mem->placement & TTM_PL_MASK_MEM))
++			return true;
+ 	}
+-	return -1;
 +
- /**
-  * i915_gem_object_get_fence - set up a fence reg for an object
-  * @obj: object to map through a fence reg
-@@ -2589,6 +2594,17 @@ update:
- 	switch (INTEL_INFO(dev)->gen) {
- 	case 7:
- 	case 6:
-+		/* In order to fully serialize access to the fenced region and
-+		 * the update to the fence register we need to take extreme
-+		 * measures on SNB+. In theory, the write to the fence register
-+		 * flushes all memory transactions before, and coupled with the
-+		 * mb() placed around the register write we serialise all memory
-+		 * operations with respect to the changes in the tiler. Yet, on
-+		 * SNB+ we need to take a step further and emit an explicit wbinvd()
-+		 * on each processor in order to manually flush all memory
-+		 * transactions before updating the fence register.
-+		 */
-+		on_each_cpu(i915_gem_write_fence__ipi, NULL, 1);
- 		ret = sandybridge_write_fence_reg(obj, pipelined);
- 		break;
- 	case 5:
++	for (i = 0; i < placement->num_busy_placement; i++) {
++		*new_flags = placement->busy_placement[i];
++		if ((*new_flags & mem->placement & TTM_PL_MASK_CACHING) &&
++		    (*new_flags & mem->placement & TTM_PL_MASK_MEM))
++			return true;
++	}
++
++	return false;
+ }
+ 
+ int ttm_bo_validate(struct ttm_buffer_object *bo,
+@@ -1117,6 +1125,7 @@ int ttm_bo_validate(struct ttm_buffer_ob
+ 			bool no_wait_gpu)
+ {
+ 	int ret;
++	uint32_t new_flags;
+ 
+ 	BUG_ON(!atomic_read(&bo->reserved));
+ 	/* Check that range is valid */
+@@ -1127,8 +1136,7 @@ int ttm_bo_validate(struct ttm_buffer_ob
+ 	/*
+ 	 * Check whether we need to move buffer.
+ 	 */
+-	ret = ttm_bo_mem_compat(placement, &bo->mem);
+-	if (ret < 0) {
++	if (!ttm_bo_mem_compat(placement, &bo->mem, &new_flags)) {
+ 		ret = ttm_bo_move_buffer(bo, placement, interruptible, no_wait_reserve, no_wait_gpu);
+ 		if (ret)
+ 			return ret;
+@@ -1137,7 +1145,7 @@ int ttm_bo_validate(struct ttm_buffer_ob
+ 		 * Use the access and other non-mapping-related flag bits from
+ 		 * the compatible memory placement flags to the active flags
+ 		 */
+-		ttm_flag_masked(&bo->mem.placement, placement->placement[ret],
++		ttm_flag_masked(&bo->mem.placement, new_flags,
+ 				~TTM_PL_MASK_MEMTYPE);
+ 	}
+ 	/*
 
 
