@@ -1,27 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754480AbaFEE6n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 00:58:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43929 "EHLO
+	id S1754468AbaFEE6l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 00:58:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43941 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752572AbaFEEUl (ORCPT
+	with ESMTP id S1752587AbaFEEUl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 5 Jun 2014 00:20:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Victor Kaplansky <victork@il.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Michael Neuling <mikey@neuling.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Ben Hutchings <ben@decadent.org.uk>,
-        Rui Xiang <rui.xiang@huawei.com>, michael@ellerman.id.au,
-        anton@samba.org, benh@kernel.crashing.org
-Subject: [PATCH 3.4 079/214] perf: Fix perf ring buffer memory ordering
-Date: Wed,  4 Jun 2014 21:17:22 -0700
-Message-Id: <20140605041650.190495293@linuxfoundation.org>
+        Namhyung Kim <namhyung@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Rui Xiang <rui.xiang@huawei.com>
+Subject: [PATCH 3.4 081/214] sched/debug: Limit sd->*_idx range on sysctl
+Date: Wed,  4 Jun 2014 21:17:24 -0700
+Message-Id: <20140605041650.461945474@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -34,112 +28,97 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Zijlstra <peterz@infradead.org>
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-commit bf378d341e4873ed928dc3c636252e6895a21f50 upstream.
+commit 201c373e8e4823700d3160d5c28e1ab18fd1193e upstream.
 
-The PPC64 people noticed a missing memory barrier and crufty old
-comments in the perf ring buffer code. So update all the comments and
-add the missing barrier.
+Various sd->*_idx's are used for refering the rq's load average table
+when selecting a cpu to run.  However they can be set to any number
+with sysctl knobs so that it can crash the kernel if something bad is
+given. Fix it by limiting them into the actual range.
 
-When the architecture implements local_t using atomic_long_t there
-will be double barriers issued; but short of introducing more
-conditional barrier primitives this is the best we can do.
-
-Reported-by: Victor Kaplansky <victork@il.ibm.com>
-Tested-by: Victor Kaplansky <victork@il.ibm.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
-Cc: michael@ellerman.id.au
-Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Michael Neuling <mikey@neuling.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: anton@samba.org
-Cc: benh@kernel.crashing.org
-Link: http://lkml.kernel.org/r/20131025173749.GG19466@laptop.lan
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1345104204-8317-1-git-send-email-namhyung@kernel.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
-[bwh: Backported to 3.2: adjust filename]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Cc: Rui Xiang <rui.xiang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/perf_event.h  |   12 +++++++-----
- kernel/events/ring_buffer.c |   31 +++++++++++++++++++++++++++----
- 2 files changed, 34 insertions(+), 9 deletions(-)
+ kernel/sched/core.c |   35 ++++++++++++++++++++++-------------
+ 1 file changed, 22 insertions(+), 13 deletions(-)
 
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -391,13 +391,15 @@ struct perf_event_mmap_page {
- 	/*
- 	 * Control data for the mmap() data buffer.
- 	 *
--	 * User-space reading the @data_head value should issue an rmb(), on
--	 * SMP capable platforms, after reading this value -- see
--	 * perf_event_wakeup().
-+	 * User-space reading the @data_head value should issue an smp_rmb(),
-+	 * after reading this value.
- 	 *
- 	 * When the mapping is PROT_WRITE the @data_tail value should be
--	 * written by userspace to reflect the last read data. In this case
--	 * the kernel will not over-write unread data.
-+	 * written by userspace to reflect the last read data, after issueing
-+	 * an smp_mb() to separate the data read from the ->data_tail store.
-+	 * In this case the kernel will not over-write unread data.
-+	 *
-+	 * See perf_output_put_handle() for the data ordering.
- 	 */
- 	__u64   data_head;		/* head in the data section */
- 	__u64	data_tail;		/* user-space written tail */
---- a/kernel/events/ring_buffer.c
-+++ b/kernel/events/ring_buffer.c
-@@ -75,10 +75,31 @@ again:
- 		goto out;
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -5433,16 +5433,25 @@ static void sd_free_ctl_entry(struct ctl
+ 	*tablep = NULL;
+ }
  
- 	/*
--	 * Publish the known good head. Rely on the full barrier implied
--	 * by atomic_dec_and_test() order the rb->head read and this
--	 * write.
-+	 * Since the mmap() consumer (userspace) can run on a different CPU:
-+	 *
-+	 *   kernel				user
-+	 *
-+	 *   READ ->data_tail			READ ->data_head
-+	 *   smp_mb()	(A)			smp_rmb()	(C)
-+	 *   WRITE $data			READ $data
-+	 *   smp_wmb()	(B)			smp_mb()	(D)
-+	 *   STORE ->data_head			WRITE ->data_tail
-+	 *
-+	 * Where A pairs with D, and B pairs with C.
-+	 *
-+	 * I don't think A needs to be a full barrier because we won't in fact
-+	 * write data until we see the store from userspace. So we simply don't
-+	 * issue the data WRITE until we observe it. Be conservative for now.
-+	 *
-+	 * OTOH, D needs to be a full barrier since it separates the data READ
-+	 * from the tail WRITE.
-+	 *
-+	 * For B a WMB is sufficient since it separates two WRITEs, and for C
-+	 * an RMB is sufficient since it separates two READs.
-+	 *
-+	 * See perf_output_begin().
- 	 */
-+	smp_wmb();
- 	rb->user_page->data_head = head;
++static int min_load_idx = 0;
++static int max_load_idx = CPU_LOAD_IDX_MAX;
++
+ static void
+ set_table_entry(struct ctl_table *entry,
+ 		const char *procname, void *data, int maxlen,
+-		umode_t mode, proc_handler *proc_handler)
++		umode_t mode, proc_handler *proc_handler,
++		bool load_idx)
+ {
+ 	entry->procname = procname;
+ 	entry->data = data;
+ 	entry->maxlen = maxlen;
+ 	entry->mode = mode;
+ 	entry->proc_handler = proc_handler;
++
++	if (load_idx) {
++		entry->extra1 = &min_load_idx;
++		entry->extra2 = &max_load_idx;
++	}
+ }
  
- 	/*
-@@ -142,9 +163,11 @@ int perf_output_begin(struct perf_output
- 		 * Userspace could choose to issue a mb() before updating the
- 		 * tail pointer. So that all reads will be completed before the
- 		 * write is issued.
-+		 *
-+		 * See perf_output_put_handle().
- 		 */
- 		tail = ACCESS_ONCE(rb->user_page->data_tail);
--		smp_rmb();
-+		smp_mb();
- 		offset = head = local_read(&rb->head);
- 		head += size;
- 		if (unlikely(!perf_output_space(rb, tail, offset, head)))
+ static struct ctl_table *
+@@ -5454,30 +5463,30 @@ sd_alloc_ctl_domain_table(struct sched_d
+ 		return NULL;
+ 
+ 	set_table_entry(&table[0], "min_interval", &sd->min_interval,
+-		sizeof(long), 0644, proc_doulongvec_minmax);
++		sizeof(long), 0644, proc_doulongvec_minmax, false);
+ 	set_table_entry(&table[1], "max_interval", &sd->max_interval,
+-		sizeof(long), 0644, proc_doulongvec_minmax);
++		sizeof(long), 0644, proc_doulongvec_minmax, false);
+ 	set_table_entry(&table[2], "busy_idx", &sd->busy_idx,
+-		sizeof(int), 0644, proc_dointvec_minmax);
++		sizeof(int), 0644, proc_dointvec_minmax, true);
+ 	set_table_entry(&table[3], "idle_idx", &sd->idle_idx,
+-		sizeof(int), 0644, proc_dointvec_minmax);
++		sizeof(int), 0644, proc_dointvec_minmax, true);
+ 	set_table_entry(&table[4], "newidle_idx", &sd->newidle_idx,
+-		sizeof(int), 0644, proc_dointvec_minmax);
++		sizeof(int), 0644, proc_dointvec_minmax, true);
+ 	set_table_entry(&table[5], "wake_idx", &sd->wake_idx,
+-		sizeof(int), 0644, proc_dointvec_minmax);
++		sizeof(int), 0644, proc_dointvec_minmax, true);
+ 	set_table_entry(&table[6], "forkexec_idx", &sd->forkexec_idx,
+-		sizeof(int), 0644, proc_dointvec_minmax);
++		sizeof(int), 0644, proc_dointvec_minmax, true);
+ 	set_table_entry(&table[7], "busy_factor", &sd->busy_factor,
+-		sizeof(int), 0644, proc_dointvec_minmax);
++		sizeof(int), 0644, proc_dointvec_minmax, false);
+ 	set_table_entry(&table[8], "imbalance_pct", &sd->imbalance_pct,
+-		sizeof(int), 0644, proc_dointvec_minmax);
++		sizeof(int), 0644, proc_dointvec_minmax, false);
+ 	set_table_entry(&table[9], "cache_nice_tries",
+ 		&sd->cache_nice_tries,
+-		sizeof(int), 0644, proc_dointvec_minmax);
++		sizeof(int), 0644, proc_dointvec_minmax, false);
+ 	set_table_entry(&table[10], "flags", &sd->flags,
+-		sizeof(int), 0644, proc_dointvec_minmax);
++		sizeof(int), 0644, proc_dointvec_minmax, false);
+ 	set_table_entry(&table[11], "name", sd->name,
+-		CORENAME_MAX_SIZE, 0444, proc_dostring);
++		CORENAME_MAX_SIZE, 0444, proc_dostring, false);
+ 	/* &table[12] is terminator */
+ 
+ 	return table;
 
 
