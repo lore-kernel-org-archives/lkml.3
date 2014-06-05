@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752264AbaFEEUQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 00:20:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43687 "EHLO
+	id S1753437AbaFEFKB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 01:10:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43746 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751332AbaFEEUK (ORCPT
+	with ESMTP id S1752233AbaFEEUP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 00:20:10 -0400
+	Thu, 5 Jun 2014 00:20:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jason Wang <jasowang@redhat.com>, Jamal Hadi Salim <jhs@mojatatu.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.4 030/214] act_mirred: do not drop packets when fails to mirror it
-Date: Wed,  4 Jun 2014 21:16:33 -0700
-Message-Id: <20140605041643.884107395@linuxfoundation.org>
+        Dave Jones <davej@redhat.com>, Hugh Dickins <hughd@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.4 038/214] mm: make fixup_user_fault() check the vma access rights too
+Date: Wed,  4 Jun 2014 21:16:41 -0700
+Message-Id: <20140605041644.886594517@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
@@ -27,49 +27,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jason Wang <jasowang@redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-[ Upstream commit 16c0b164bd24d44db137693a36b428ba28970c62 ]
+commit 1b17844b29ae042576bea588164f2f1e9590a8bc upstream.
 
-We drop packet unconditionally when we fail to mirror it. This is not intended
-in some cases. Consdier for kvm guest, we may mirror the traffic of the bridge
-to a tap device used by a VM. When kernel fails to mirror the packet in
-conditions such as when qemu crashes or stop polling the tap, it's hard for the
-management software to detect such condition and clean the the mirroring
-before. This would lead all packets to the bridge to be dropped and break the
-netowrk of other virtual machines.
+fixup_user_fault() is used by the futex code when the direct user access
+fails, and the futex code wants it to either map in the page in a usable
+form or return an error.  It relied on handle_mm_fault() to map the
+page, and correctly checked the error return from that, but while that
+does map the page, it doesn't actually guarantee that the page will be
+mapped with sufficient permissions to be then accessed.
 
-To solve the issue, the patch does not drop packets when kernel fails to mirror
-it, and only drop the redirected packets.
+So do the appropriate tests of the vma access rights by hand.
 
-Signed-off-by: Jason Wang <jasowang@redhat.com>
-Signed-off-by: Jamal Hadi Salim <jhs@mojatatu.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+[ Side note: arguably handle_mm_fault() could just do that itself, but
+  we have traditionally done it in the caller, because some callers -
+  notably get_user_pages() - have been able to access pages even when
+  they are mapped with PROT_NONE.  Maybe we should re-visit that design
+  decision, but in the meantime this is the minimal patch. ]
+
+Found by Dave Jones running his trinity tool.
+
+Reported-by: Dave Jones <davej@redhat.com>
+Acked-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/sched/act_mirred.c |   11 +++++------
- 1 file changed, 5 insertions(+), 6 deletions(-)
 
---- a/net/sched/act_mirred.c
-+++ b/net/sched/act_mirred.c
-@@ -201,13 +201,12 @@ static int tcf_mirred(struct sk_buff *sk
- out:
- 	if (err) {
- 		m->tcf_qstats.overlimits++;
--		/* should we be asking for packet to be dropped?
--		 * may make sense for redirect case only
--		 */
--		retval = TC_ACT_SHOT;
--	} else {
-+		if (m->tcfm_eaction != TCA_EGRESS_MIRROR)
-+			retval = TC_ACT_SHOT;
-+		else
-+			retval = m->tcf_action;
-+	} else
- 		retval = m->tcf_action;
--	}
- 	spin_unlock(&m->tcf_lock);
+---
+ mm/memory.c |    5 +++++
+ 1 file changed, 5 insertions(+)
+
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -1872,12 +1872,17 @@ int fixup_user_fault(struct task_struct
+ 		     unsigned long address, unsigned int fault_flags)
+ {
+ 	struct vm_area_struct *vma;
++	vm_flags_t vm_flags;
+ 	int ret;
  
- 	return retval;
+ 	vma = find_extend_vma(mm, address);
+ 	if (!vma || address < vma->vm_start)
+ 		return -EFAULT;
+ 
++	vm_flags = (fault_flags & FAULT_FLAG_WRITE) ? VM_WRITE : VM_READ;
++	if (!(vm_flags & vma->vm_flags))
++		return -EFAULT;
++
+ 	ret = handle_mm_fault(mm, vma, address, fault_flags);
+ 	if (ret & VM_FAULT_ERROR) {
+ 		if (ret & VM_FAULT_OOM)
 
 
