@@ -1,90 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751463AbaFEMln (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 08:41:43 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:60803 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750853AbaFEMlm (ORCPT
+	id S1751507AbaFEMpR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 08:45:17 -0400
+Received: from mail-we0-f175.google.com ([74.125.82.175]:43785 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750866AbaFEMpP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 08:41:42 -0400
-Date: Thu, 5 Jun 2014 14:41:37 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Davidlohr Bueso <davidlohr@hp.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, "Paul E. McKenney" <paulmck@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL] locking tree changes for v3.16
-Message-ID: <20140605124137.GE6758@twins.programming.kicks-ass.net>
-References: <20140603114821.GA23711@gmail.com>
- <1401832251.8843.3.camel@buesod1.americas.hpqcorp.net>
- <20140604103003.GE11096@twins.programming.kicks-ass.net>
- <20140605081742.GC4926@gmail.com>
- <20140605111110.GA26771@gmail.com>
- <20140605122715.GD6758@twins.programming.kicks-ass.net>
- <20140605123512.GB1392@gmail.com>
+	Thu, 5 Jun 2014 08:45:15 -0400
+Date: Thu, 5 Jun 2014 14:45:09 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: NeilBrown <neilb@suse.de>
+Cc: Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        David Howells <dhowells@redhat.com>,
+        Steven Whitehouse <swhiteho@redhat.com>, dm-devel@redhat.com,
+        Chris Mason <clm@fb.com>, Josef Bacik <jbacik@fb.com>,
+        Steve French <sfrench@samba.org>, "Theodore Ts'o" <tytso@mit.edu>,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
+        Ingo Molnar <mingo@redhat.com>, Roland McGrath <roland@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-nfs@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH] SCHED: remove proliferation of wait_on_bit action
+ functions.
+Message-ID: <20140605124509.GA1975@gmail.com>
+References: <20140501123738.3e64b2d2@notabene.brown>
+ <20140522090502.GB30094@gmail.com>
+ <20140522195056.445f2dcb@notabene.brown>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="bi5JUZtvcfApsciF"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140605123512.GB1392@gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140522195056.445f2dcb@notabene.brown>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---bi5JUZtvcfApsciF
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+* NeilBrown <neilb@suse.de> wrote:
 
-On Thu, Jun 05, 2014 at 02:35:12PM +0200, Ingo Molnar wrote:
->=20
-> * Peter Zijlstra <peterz@infradead.org> wrote:
->=20
-> > On Thu, Jun 05, 2014 at 01:11:10PM +0200, Ingo Molnar wrote:
-> > > Unfortunately even with the latest bits from you the breakage I=20
-> > > reported weeks ago is not resolved:
-> >=20
-> > crap, its the qrwlock bits, I fixed it for the config you gave me.=20
-> > Some paravirt crap header hell thing. Happen to have another=20
-> > .config?
->=20
-> A simple 'make defconfig' triggers the build failure for me:
->=20
->   kernel/locking/qrwlock.c:24:25: fatal error: asm/qrwlock.h: No such fil=
-e or directory
->=20
-> If I apply the minimal feature-enabling patch below on top of the base=20
-> qrwlock patch.
->=20
+> On Thu, 22 May 2014 11:05:02 +0200 Ingo Molnar <mingo@kernel.org> wrote:
+> 
+> > 
+> > * NeilBrown <neilb@suse.de> wrote:
+> > 
+> > > [[ get_maintainer.pl suggested 61 email address for this patch.
+> > >    I've trimmed that list somewhat.  Hope I didn't miss anyone
+> > >    important...
+> > >    I'm hoping it will go in through the scheduler tree, but would
+> > >    particularly like an Acked-by for the fscache parts.  Other acks
+> > >    welcome.
+> > > ]]
+> > > 
+> > > The current "wait_on_bit" interface requires an 'action' function
+> > > to be provided which does the actual waiting.
+> > > There are over 20 such functions, many of them identical.
+> > > Most cases can be satisfied by one of just two functions, one
+> > > which uses io_schedule() and one which just uses schedule().
+> > > 
+> > > So:
+> > >  Rename wait_on_bit and        wait_on_bit_lock to
+> > >         wait_on_bit_action and wait_on_bit_lock_action
+> > >  to make it explicit that they need an action function.
+> > > 
+> > >  Introduce new wait_on_bit{,_lock} and wait_on_bit{,_lock}_io
+> > >  which are *not* given an action function but implicitly use
+> > >  a standard one.
+> > >  The decision to error-out if a signal is pending is now made
+> > >  based on the 'mode' argument rather than being encoded in the action
+> > >  function.
+> > 
+> > this patch fails to build on x86-32 allyesconfigs.
+> 
+> Could you share the build errors?
 
-Well, that second patch which you neutered below would've provided that
-asm/qrwlock.h.
+Sure, find it attached below.
 
-Lemme see if I can find it with randconfig with both patches applied.
+> > 
+> > Could we keep the old names for a while, and remove them in the next 
+> > cycle or so?
+> 
+> I don't see how changing the names later rather than now will reduce the
+> chance of errors... maybe I'm missing something.
 
---bi5JUZtvcfApsciF
-Content-Type: application/pgp-signature
+Well, it would reduce build errors?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Thanks,
 
-iQIcBAEBAgAGBQJTkGWAAAoJEHZH4aRLwOS61wIQAIkwbevXfGsvzpijp/PT2d/P
-jPrKmt7fA2n7PLl6pbfY9gRUsbGSa9LueJEfBjhlr2mEsNpTSGt8X59iylT9A1vG
-UsG6wCJlCdXQkumJrjsMZn+t3lEXnd0mXhOcHVIKdJ3ZZldVGi1gnqw25s0/LrN+
-t99lDWMjvl0Hy9T5zbliH81xUVeAbeWR776o89U3vrBmo/n/KxkNUIJcCZQFg7fH
-gwzW+34sgQ9xdBlXQee81v/IswC0V272pn9oC9bU0KtlfueF0U1n0CUU40gGTboo
-kBzxFAnZRafw6O4kIuvn4z+9XZ6upVMDfMealwd34zx6TPJwcHViYOuMLzW0mUGT
-ihxOVLTE/9NBNlt90KEw/lgRbFORHRc2WsO2V6BRuK9gUHqtsgYahcsT1WrWdXRy
-xVbAuD+YCovwoRvq/9CV/pe+7Ws3hBfFyBgufGGA2TbaIgx8EDRZClTBJFLKfju1
-PiusKKSftf8jUrCkaBdT7b1hgN4vraO3Hz1XCGUTey8doQDaiPMjZGFyRsSF10z1
-GdYtDZFHpQE0zSWJUSE+EH5urxIieIvtWKcBLg4ymPKixugLUVKnvoqHI8gTugxo
-57ZlYc+iDz/fUMa8jhnUSIZExzyOdX5E2YFGx74xx/u+CGCoqBOXbq/d8H2+A5Z2
-8jC9ZYKjT3IShIAWSmez
-=T42R
------END PGP SIGNATURE-----
+	Ingo
 
---bi5JUZtvcfApsciF--
+====================>
+fs/cifs/file.c: In function ‘cifs_oplock_break’:
+fs/cifs/file.c:3652:4: warning: passing argument 3 of ‘wait_on_bit’ makes integer from pointer without a cast [enabled by default]
+    cifs_pending_writers_wait, TASK_UNINTERRUPTIBLE);
+    ^
+In file included from include/linux/fs.h:6:0,
+                 from fs/cifs/file.c:24:
+include/linux/wait.h:878:1: note: expected ‘unsigned int’ but argument is of type ‘int (*)(void *)’
+ wait_on_bit(void *word, int bit, unsigned mode)
+ ^
+fs/cifs/file.c:3652:4: error: too many arguments to function ‘wait_on_bit’
+    cifs_pending_writers_wait, TASK_UNINTERRUPTIBLE);
+    ^
+In file included from include/linux/fs.h:6:0,
+                 from fs/cifs/file.c:24:
+include/linux/wait.h:878:1: note: declared here
+ wait_on_bit(void *word, int bit, unsigned mode)
+ ^
+  CC      kernel/smp.o
+  CC      kernel/trace/trace_event_perf.o
+make[2]: *** [fs/cifs/file.o] Error 1
+make[2]: *** Waiting for unfinished jobs....
+  CC      drivers/bcma/sprom.o
+  CC      fs/btrfs/locking.o
+  LD      sound/isa/ad1848/snd-ad1848.o
+  LD      sound/isa/ad1848/built-in.o
+  CC      sound/isa/cs423x/cs4231.o
+  CC      lib/fonts/fonts.o
+  CC      lib/fonts/font_sun8x16.o
+  CC      drivers/bcma/driver_chipcommon.o
+  CC      lib/fonts/font_sun12x22.o
