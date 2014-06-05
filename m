@@ -1,52 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752284AbaFEPBy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 11:01:54 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:54601 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752251AbaFEPBw (ORCPT
+	id S1752354AbaFEPCa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 11:02:30 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:51199 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751919AbaFEPC3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 11:01:52 -0400
-Date: Thu, 5 Jun 2014 16:01:02 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Matt Fleming <matt.fleming@intel.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        Dave Hansen <dave.hansen@intel.com>, Borislav Petkov <bp@suse.de>
-Subject: Re: [PATCH] x86/efi: Only pass mapped RAM regions to
- free_bootmem_late()
-Message-ID: <20140605160102.3c58481e@www.etchedpixels.co.uk>
-In-Reply-To: <1401974854-7716-1-git-send-email-matt@console-pimps.org>
-References: <1401974854-7716-1-git-send-email-matt@console-pimps.org>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-MIME-Version: 1.0
+	Thu, 5 Jun 2014 11:02:29 -0400
 Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.2\))
+Subject: Re: [PATCH 9/9] KVM: x86: smsw emulation is incorrect in 64-bit mode
+From: Nadav Amit <nadav.amit@gmail.com>
+In-Reply-To: <53908467.8030100@redhat.com>
+Date: Thu, 5 Jun 2014 18:02:16 +0300
+Cc: Nadav Amit <namit@cs.technion.ac.il>, gleb@kernel.org, tglx@linutronix.de,
+        mingo@redhat.com, hpa@zytor.com, x86@kernel.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 7BIT
+Message-Id: <CB894343-EC15-4A5D-B461-B012FC19FC3A@gmail.com>
+References: <1401723251-8034-1-git-send-email-namit@cs.technion.ac.il> <1401723251-8034-10-git-send-email-namit@cs.technion.ac.il> <53908467.8030100@redhat.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+X-Mailer: Apple Mail (2.1878.2)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu,  5 Jun 2014 14:27:34 +0100
-Matt Fleming <matt@console-pimps.org> wrote:
 
-> From: Matt Fleming <matt.fleming@intel.com>
-> 
-> free_bootmem_late() expects to only be passed RAM regions that the
-> kernel can access, and that have a corresponding 'struct page'. It's
-> possible for regions in the EFI memory map to reside in address ranges
-> for which pfn_to_page() doesn't work, for instance when running on an
-> i386 system with CONFIG_HIGHMEM=n.
-> 
-> This is in fact the case for one of Alan's machines where some of the
-> EFI boot services pages live in highmem, and running a kernel without
-> CONFIG_HIGHMEM enabled results in the following oops,
-> 
->  BUG: unable to handle kernel paging request at f7f1f080
->  IP: [<c17fba96>] __free_pages_bootmem+0x5a/0xb8
->  *pdpt = 0000000001887001 *pde = 0000000001984067 *pte = 000000000 0000000
->  Oops: 0002 [#1] SMP
+On Jun 5, 2014, at 5:53 PM, Paolo Bonzini <pbonzini@redhat.com> wrote:
 
-No improvement, and the if case is never true 8(
+> Il 02/06/2014 17:34, Nadav Amit ha scritto:
+>> In 64-bit mode, when the destination is a register, the assignment is done
+>> according to the operand size. Otherwise (memory operand or no 64-bit mode), a
+>> 16-bit assignment is performed.
+> 
+> I'm sorry, I'm missing the place where 64-bit mode is taken into account?
+It is not, since on 32-bit mode the high-order 16 bits of a register destination are undefined. 
+If I recall correctly, in this case the high-order 16-bits on native system actually reflect the high-order 16-bits of CR0.
 
+Therefore, regardless to the mode of operation:
+1. If the target is memory - the destination is 16-bit
+2. If the target is a register - the register is written according to the operand size.
+
+Nadav
