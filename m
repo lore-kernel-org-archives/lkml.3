@@ -1,72 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751579AbaFENEN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 09:04:13 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:35894 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751043AbaFENEI (ORCPT
+	id S1751494AbaFENIS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 09:08:18 -0400
+Received: from mail-ig0-f176.google.com ([209.85.213.176]:33182 "EHLO
+	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750926AbaFENIQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 09:04:08 -0400
-Message-ID: <53906AC1.6000404@ozlabs.ru>
-Date: Thu, 05 Jun 2014 23:04:01 +1000
-From: Alexey Kardashevskiy <aik@ozlabs.ru>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Thu, 5 Jun 2014 09:08:16 -0400
+Date: Thu, 5 Jun 2014 14:08:09 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Peter Griffin <peter.griffin@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        chris@printf.net, ulf.hansson@linaro.org, maxime.coquelin@st.com,
+        patrice.chotard@st.com, srinivas.kandagatla@gmail.com,
+        devicetree@vger.kernel.org, linux-mmc@vger.kernel.org,
+        kernel@stlinux.com
+Subject: Re: [PATCH v3 09/10] ARM: update multi_v7_defconfig for STI
+Message-ID: <20140605130809.GB24240@lee--X1>
+References: <1401899424-1365-1-git-send-email-peter.griffin@linaro.org>
+ <1401899424-1365-10-git-send-email-peter.griffin@linaro.org>
 MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Alexander Graf <agraf@suse.de>
-CC: linuxppc-dev@lists.ozlabs.org, Paul Mackerras <paulus@samba.org>,
-        Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kvm-ppc@vger.kernel.org
-Subject: Re: [PATCH 3/3] PPC: KVM: Add support for 64bit TCE windows
-References: <1401953144-19186-1-git-send-email-aik@ozlabs.ru>	 <1401953144-19186-4-git-send-email-aik@ozlabs.ru>	 <1401953908.3247.121.camel@pasglop> <539037DB.5080706@ozlabs.ru>	 <1401964037.3247.129.camel@pasglop> <53905ADB.8000100@suse.de> <1401971411.3247.132.camel@pasglop>
-In-Reply-To: <1401971411.3247.132.camel@pasglop>
-Content-Type: text/plain; charset=KOI8-R
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1401899424-1365-10-git-send-email-peter.griffin@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/05/2014 10:30 PM, Benjamin Herrenschmidt wrote:
-> On Thu, 2014-06-05 at 13:56 +0200, Alexander Graf wrote:
->> What if we ask user space to give us a pointer to user space allocated 
->> memory along with the TCE registration? We would still ask user space to 
->> only use the returned fd for TCE modifications, but would have some 
->> nicely swappable memory we can store the TCE entries in.
+> This patch enables SDHCI STI platform driver.
 > 
-> That isn't going to work terribly well for VFIO :-) But yes, for
-> emulated devices, we could improve things a bit, including for
-> the 32-bit TCE tables.
-> 
-> For emulated, the real mode path could walk the page tables and fallback
-> to virtual mode & get_user if the page isn't present, thus operating
-> directly on qemu memory TCE tables instead of the current pinned stuff.
-> 
-> However that has a cost in performance, but since that's really only
-> used for emulated devices and PAPR VIOs, it might not be a huge issue.
-> 
-> But for VFIO we don't have much choice, we need to create something the
-> HW can access.
+> Signed-off-by: Peter Griffin <peter.griffin@linaro.org>
+> ---
+>  arch/arm/configs/multi_v7_defconfig | 1 +
+>  1 file changed, 1 insertion(+)
 
-You are confusing things here.
+Acked-by: Lee Jones <lee.jones@linaro.org>
 
-There are 2 tables:
-1. guest-visible TCE table, this is what is allocated for VIO or emulated PCI;
-2. real HW DMA window, one exists already for DMA32 and one I will
-allocated for a huge window.
-
-I have just #2 for VFIO now but we will need both in order to implement
-H_GET_TCE correctly, and this is the table I will allocate by this new ioctl.
-
-
->> In fact, the code as is today can allocate an arbitrary amount of pinned 
->> kernel memory from within user space without any checks.
-> 
-> Right. We should at least account it in the locked limit.
-
-Yup. And (probably) this thing will keep a counter of how many windows were
-created per KVM instance to avoid having multiple copies of the same table.
-
+> diff --git a/arch/arm/configs/multi_v7_defconfig b/arch/arm/configs/multi_v7_defconfig
+> index d4e8a47..48951fc 100644
+> --- a/arch/arm/configs/multi_v7_defconfig
+> +++ b/arch/arm/configs/multi_v7_defconfig
+> @@ -277,6 +277,7 @@ CONFIG_MMC_SDHCI_TEGRA=y
+>  CONFIG_MMC_SDHCI_DOVE=y
+>  CONFIG_MMC_SDHCI_SPEAR=y
+>  CONFIG_MMC_SDHCI_BCM_KONA=y
+> +CONFIG_MMC_SDHCI_ST=y
+>  CONFIG_MMC_OMAP=y
+>  CONFIG_MMC_OMAP_HS=y
+>  CONFIG_MMC_MVSDIO=y
 
 -- 
-Alexey
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
