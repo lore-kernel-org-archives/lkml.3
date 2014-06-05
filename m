@@ -1,58 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751687AbaFEOFB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 10:05:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40470 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751135AbaFEOE7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 10:04:59 -0400
-Date: Thu, 5 Jun 2014 10:04:16 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Michael Kerrisk <mtk.manpages@gmail.com>
-Cc: WANG Chao <chaowang@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, kexec@lists.infradead.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, mjg59@srcf.ucam.org,
-        Greg Kroah-Hartman <greg@kroah.com>, Borislav Petkov <bp@alien8.de>,
-        Jiri Kosina <jkosina@suse.cz>, dyoung@redhat.com, bhe@redhat.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux API <linux-api@vger.kernel.org>
-Subject: Re: [RFC PATCH 00/13][V3] kexec: A new system call to allow in
- kernel loading
-Message-ID: <20140605140416.GB17389@redhat.com>
-References: <1401800822-27425-1-git-send-email-vgoyal@redhat.com>
- <20140603131203.GA23395@redhat.com>
- <20140604092214.GA17528@dhcp-17-89.nay.redhat.com>
- <20140604175031.GA4406@redhat.com>
- <CAHO5Pa0dxpq7YNe5eUMPE9Mn5m7XCnB1C5mZxrvt2-OqOpVZAA@mail.gmail.com>
+	id S1751979AbaFEOFO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 10:05:14 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:57891 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751380AbaFEOFK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jun 2014 10:05:10 -0400
+Date: Thu, 5 Jun 2014 15:05:06 +0100
+From: Luis Henriques <luis.henriques@canonical.com>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Patrick McHardy <kaber@trash.net>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Mathias Krause <minipli@googlemail.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH 3.4 022/214] filter: prevent nla extensions to peek
+ beyond the end of the message
+Message-ID: <20140605140506.GC6020@hercules>
+References: <20140605041639.638675216@linuxfoundation.org>
+ <20140605041642.768058331@linuxfoundation.org>
+ <20140605133331.GB6020@hercules>
+ <1401976224.2412.110.camel@deadeye.wl.decadent.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <CAHO5Pa0dxpq7YNe5eUMPE9Mn5m7XCnB1C5mZxrvt2-OqOpVZAA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1401976224.2412.110.camel@deadeye.wl.decadent.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 04, 2014 at 09:39:10PM +0200, Michael Kerrisk wrote:
-> Vivek,
+On Thu, Jun 05, 2014 at 02:50:24PM +0100, Ben Hutchings wrote:
+> On Thu, 2014-06-05 at 14:33 +0100, Luis Henriques wrote:
+> > On Wed, Jun 04, 2014 at 09:16:25PM -0700, Greg Kroah-Hartman wrote:
+> > > 3.4-stable review patch.  If anyone has any objections, please let me know.
+> > > 
+> > > ------------------
+> > > 
+> > > From: Mathias Krause <minipli@googlemail.com>
+> > > 
+> > > [ Upstream commit 05ab8f2647e4221cbdb3856dd7d32bd5407316b3 ]
+> > > 
+> > > The BPF_S_ANC_NLATTR and BPF_S_ANC_NLATTR_NEST extensions fail to check
+> > > for a minimal message length before testing the supplied offset to be
+> > > within the bounds of the message. This allows the subtraction of the nla
+> > > header to underflow and therefore -- as the data type is unsigned --
+> > > allowing far to big offset and length values for the search of the
+> > > netlink attribute.
+> > > 
+> > > The remainder calculation for the BPF_S_ANC_NLATTR_NEST extension is
+> > > also wrong. It has the minuend and subtrahend mixed up, therefore
+> > > calculates a huge length value, allowing to overrun the end of the
+> > > message while looking for the netlink attribute.
+> > > 
+> > > The following three BPF snippets will trigger the bugs when attached to
+> > > a UNIX datagram socket and parsing a message with length 1, 2 or 3.
+> > > 
+> > >  ,-[ PoC for missing size check in BPF_S_ANC_NLATTR ]--
+> > >  | ld	#0x87654321
+> > >  | ldx	#42
+> > >  | ld	#nla
+> > >  | ret	a
+> > >  `---
+> > > 
+> > >  ,-[ PoC for the same bug in BPF_S_ANC_NLATTR_NEST ]--
+> > >  | ld	#0x87654321
+> > >  | ldx	#42
+> > >  | ld	#nlan
+> > >  | ret	a
+> > >  `---
+> > > 
+> > >  ,-[ PoC for wrong remainder calculation in BPF_S_ANC_NLATTR_NEST ]--
+> > >  | ; (needs a fake netlink header at offset 0)
+> > >  | ld	#0
+> > >  | ldx	#42
+> > >  | ld	#nlan
+> > >  | ret	a
+> > >  `---
+> > > 
+> > > Fix the first issue by ensuring the message length fulfills the minimal
+> > > size constrains of a nla header. Fix the second bug by getting the math
+> > > for the remainder calculation right.
+> > > 
+> > > Fixes: 4738c1db15 ("[SKFILTER]: Add SKF_ADF_NLATTR instruction")
+> > > Fixes: d214c7537b ("filter: add SKF_AD_NLATTR_NEST to look for nested..")
+> > > Cc: Patrick McHardy <kaber@trash.net>
+> > > Cc: Pablo Neira Ayuso <pablo@netfilter.org>
+> > > Signed-off-by: Mathias Krause <minipli@googlemail.com>
+> > > Acked-by: Daniel Borkmann <dborkman@redhat.com>
+> > > Signed-off-by: David S. Miller <davem@davemloft.net>
+> > > Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> > > ---
+> > >  net/core/filter.c |    6 +++++-
+> > >  1 file changed, 5 insertions(+), 1 deletion(-)
+> > > 
+> > > --- a/net/core/filter.c
+> > > +++ b/net/core/filter.c
+> > > @@ -338,11 +338,15 @@ load_b:
+> > >  
+> > >  			if (skb_is_nonlinear(skb))
+> > >  				return 0;
+> > > +			if (skb->len < sizeof(struct nlattr))
+> > > +				return 0;
+> > > +			if (skb->len < sizeof(struct nlattr))
+> > > +				return 0;
+> > 
+> > There above code is duplicated this backport.  The same comment
+> > applies to the 3.2.y backport (I've added Ben to the CC list).
 > 
-> As per Documentation/SubmitChecklist , please CC linux-api@ on patces
-> that change the ABI/API. See
-> https://www.kernel.org/doc/man-pages/linux-api-ml.html.
-
-Hi Michael,
-
-Sorry, I did not notice that. I will CC linux-api@ in next version of
-patches in patches which introduce new systemcal..
-
+> This seems to be due to a bug in patch <https://bugs.debian.org/717782>.
+> I had the same problem when initially trying to fix this in 3.14.  The
+> first two inserted lines should be 16 lines further up.
 > 
-> Also, is there some draft man page for this new system call?
+> Ben.
+> 
+> -- 
+> Ben Hutchings
+> I say we take off; nuke the site from orbit.  It's the only way to be sure.
 
-No, there is none yet. In fact I don't see a man page for old kexec
-system call either kexec_load().
+Awesome!  Thank you both for clarifying that.
 
-Do you want me to write man page for this new syscall?
-
-Thanks
-Vivek
+Cheers,
+--
+Luís
