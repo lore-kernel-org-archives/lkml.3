@@ -1,608 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752670AbaFESom (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 14:44:42 -0400
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:34607 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751799AbaFESol (ORCPT
+	id S1752373AbaFESqW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 14:46:22 -0400
+Received: from mail-bl2lp0212.outbound.protection.outlook.com ([207.46.163.212]:53539
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751418AbaFESqU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 14:44:41 -0400
-From: Matt Rushton <mvrushton@gmail.com>
-X-Google-Original-From: Matt Rushton <mrushton@amazon.com>
-To: konrad.wilk@oracle.com, boris.ostrovsky@oracle.com,
-        david.vrabel@citrix.com
-Cc: msw@amazon.com, linux-kernel@vger.kernel.org,
-        xen-devel@lists.xenproject.org, Matt Rushton <mrushton@amazon.com>
-Subject: [PATCH] xen/setup: Remap Xen Identity Mapped RAM
-Date: Thu,  5 Jun 2014 11:43:14 -0700
-Message-Id: <1401993794-27084-1-git-send-email-mrushton@amazon.com>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 5 Jun 2014 14:46:20 -0400
+From: Varun Sethi <Varun.Sethi@freescale.com>
+To: Antonios Motakis <a.motakis@virtualopensystems.com>,
+        "alex.williamson@redhat.com" <alex.williamson@redhat.com>,
+        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>
+CC: "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "eric.auger@linaro.org" <eric.auger@linaro.org>,
+        open list <linux-kernel@vger.kernel.org>,
+        "will.deacon@arm.com" <will.deacon@arm.com>,
+        "a.rigo@virtualopensystems.com" <a.rigo@virtualopensystems.com>,
+        Stuart Yoder <stuart.yoder@freescale.com>,
+        "moderated list:ARM SMMU DRIVER" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "tech@virtualopensystems.com" <tech@virtualopensystems.com>,
+        "christoffer.dall@linaro.org" <christoffer.dall@linaro.org>
+Subject: RE: [RFC PATCH v6 04/20] iommu/arm-smmu: add capability
+	IOMMU_CAP_INTR_REMAP
+Thread-Topic: [RFC PATCH v6 04/20] iommu/arm-smmu: add capability
+	IOMMU_CAP_INTR_REMAP
+Thread-Index: AQHPgOA2ZTxVs2xl6U+rpueFyk204Jti1oQw
+Date: Thu, 5 Jun 2014 18:31:35 +0000
+Message-ID: <87aae116ba7a473b85a5a176f300551c@DM2PR03MB479.namprd03.prod.outlook.com>
+References: <1401987808-23596-1-git-send-email-a.motakis@virtualopensystems.com>
+ <1401987808-23596-5-git-send-email-a.motakis@virtualopensystems.com>
+In-Reply-To: <1401987808-23596-5-git-send-email-a.motakis@virtualopensystems.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [192.88.169.1]
+x-microsoft-antispam: BL:0;ACTION:Default;RISK:Low;SCL:0;SPMLVL:NotSpam;PCL:0;RULEID:
+x-forefront-prvs: 0233768B38
+x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(428001)(13464003)(377454003)(51704005)(199002)(189002)(2656002)(83322001)(19580405001)(81542001)(77982001)(224303002)(54356999)(99286001)(2171001)(86362001)(85852003)(99396002)(33646001)(81342001)(101416001)(64706001)(74502001)(76576001)(66066001)(224313003)(79102001)(21056001)(76482001)(46102001)(50986999)(80022001)(83072002)(92566001)(77096999)(87936001)(2201001)(20776003)(31966008)(74662001)(76176999)(4396001)(19580395003)(74316001)(24736002)(217873001);DIR:OUT;SFP:;SCL:1;SRVR:DM2PR03MB350;H:DM2PR03MB479.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+authentication-results: spf=none (sender IP is )
+ smtp.mailfrom=Varun.Sethi@freescale.com; 
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instead of ballooning up and down dom0 memory this remaps the existing mfns
-that were replaced by the identity map. The reason for this is that the
-existing implementation ballooned memory up and and down which caused dom0
-to have discontiguous pages. In some cases this resulted in the use of bounce
-buffers which reduced network I/O performance by up to 15%. This change will
-honor the existing order of the pages with the exception of some boundary
-conditions.
 
-To do this we need to update both the Linux p2m table and the Xen m2p table.
-Particular care must be taken when updating the p2m table since it's important
-to limit table memory consumption and reuse the existing leaf pages which get
-freed when an entire leaf page is set to the identity map. To implement this,
-mapping updates are grouped into blocks with table entries getting cached
-temporarily and then released.
 
-On my test system before:
-Total pages: 2105014
-Total contiguous: 1640635
+> -----Original Message-----
+> From: iommu-bounces@lists.linux-foundation.org [mailto:iommu-
+> bounces@lists.linux-foundation.org] On Behalf Of Antonios Motakis
+> Sent: Thursday, June 05, 2014 10:33 PM
+> To: alex.williamson@redhat.com; kvmarm@lists.cs.columbia.edu;
+> iommu@lists.linux-foundation.org
+> Cc: kvm@vger.kernel.org; eric.auger@linaro.org; open list;
+> will.deacon@arm.com; a.rigo@virtualopensystems.com; Yoder Stuart-B08248;
+> moderated list:ARM SMMU DRIVER; Antonios Motakis;
+> tech@virtualopensystems.com; christoffer.dall@linaro.org
+> Subject: [RFC PATCH v6 04/20] iommu/arm-smmu: add capability
+> IOMMU_CAP_INTR_REMAP
+> 
+> With an ARM SMMU, interrupt remapping should always be safe from the
+> SMMU's point of view, as it is properly handled by the GIC.
+> 
+> Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
+> ---
+>  drivers/iommu/arm-smmu.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/iommu/arm-smmu.c b/drivers/iommu/arm-smmu.c index
+> 15ab2af..ff29402 100644
+> --- a/drivers/iommu/arm-smmu.c
+> +++ b/drivers/iommu/arm-smmu.c
+> @@ -1544,7 +1544,7 @@ static int arm_smmu_domain_has_cap(struct
+> iommu_domain *domain,
+>  	if (smmu_domain->root_cfg.smmu->features &
+> ARM_SMMU_FEAT_COHERENT_WALK)
+>  		caps |= IOMMU_CAP_CACHE_COHERENCY;
+> 
+> -	caps |= IOMMU_CAP_NOEXEC;
+> +	caps |= IOMMU_CAP_NOEXEC | IOMMU_CAP_INTR_REMAP;
+> 
+>  	return !!(cap & caps);
+>  }
+Why mention this as an IOMMU capability when IOMMU doesn't support it? Also, wouldn't this depend on the GIC IP version? What are we gaining by adding this IOMMU capability list?
 
-After:
-Total pages: 2105014
-Total contiguous: 2098904
-
-Signed-off-by: Matthew Rushton <mrushton@amazon.com>
----
- arch/x86/xen/p2m.c   |   20 ++-
- arch/x86/xen/p2m.h   |   15 ++
- arch/x86/xen/setup.c |  378 ++++++++++++++++++++++++++++++++++++++------------
- 3 files changed, 311 insertions(+), 102 deletions(-)
- create mode 100644 arch/x86/xen/p2m.h
-
-diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
-index 85e5d78..a753fc4 100644
---- a/arch/x86/xen/p2m.c
-+++ b/arch/x86/xen/p2m.c
-@@ -164,6 +164,7 @@
- #include <xen/balloon.h>
- #include <xen/grant_table.h>
- 
-+#include "p2m.h"
- #include "multicalls.h"
- #include "xen-ops.h"
- 
-@@ -171,12 +172,6 @@ static void __init m2p_override_init(void);
- 
- unsigned long xen_max_p2m_pfn __read_mostly;
- 
--#define P2M_PER_PAGE		(PAGE_SIZE / sizeof(unsigned long))
--#define P2M_MID_PER_PAGE	(PAGE_SIZE / sizeof(unsigned long *))
--#define P2M_TOP_PER_PAGE	(PAGE_SIZE / sizeof(unsigned long **))
--
--#define MAX_P2M_PFN		(P2M_TOP_PER_PAGE * P2M_MID_PER_PAGE * P2M_PER_PAGE)
--
- /* Placeholders for holes in the address space */
- static RESERVE_BRK_ARRAY(unsigned long, p2m_missing, P2M_PER_PAGE);
- static RESERVE_BRK_ARRAY(unsigned long *, p2m_mid_missing, P2M_MID_PER_PAGE);
-@@ -191,9 +186,11 @@ static RESERVE_BRK_ARRAY(unsigned long, p2m_identity, P2M_PER_PAGE);
- RESERVE_BRK(p2m_mid, PAGE_SIZE * (MAX_DOMAIN_PAGES / (P2M_PER_PAGE * P2M_MID_PER_PAGE)));
- RESERVE_BRK(p2m_mid_mfn, PAGE_SIZE * (MAX_DOMAIN_PAGES / (P2M_PER_PAGE * P2M_MID_PER_PAGE)));
- 
--/* We might hit two boundary violations at the start and end, at max each
-- * boundary violation will require three middle nodes. */
--RESERVE_BRK(p2m_mid_identity, PAGE_SIZE * 2 * 3);
-+/* We may lose up to three pages due to boundary violations for each pfn range
-+ * we identity map. We use a reasonable default to define the max number of
-+ * these ranges that are possible.
-+ */
-+RESERVE_BRK(p2m_mid_identity, PAGE_SIZE * 3 * MAX_REMAP_RANGES);
- 
- /* When we populate back during bootup, the amount of pages can vary. The
-  * max we have is seen is 395979, but that does not mean it can't be more.
-@@ -797,10 +794,9 @@ unsigned long __init set_phys_range_identity(unsigned long pfn_s,
- 		if (!__set_phys_to_machine(pfn, IDENTITY_FRAME(pfn)))
- 			break;
- 
--	if (!WARN((pfn - pfn_s) != (pfn_e - pfn_s),
-+	WARN((pfn - pfn_s) != (pfn_e - pfn_s),
- 		"Identity mapping failed. We are %ld short of 1-1 mappings!\n",
--		(pfn_e - pfn_s) - (pfn - pfn_s)))
--		printk(KERN_DEBUG "1-1 mapping on %lx->%lx\n", pfn_s, pfn);
-+		(pfn_e - pfn_s) - (pfn - pfn_s));
- 
- 	return pfn - pfn_s;
- }
-diff --git a/arch/x86/xen/p2m.h b/arch/x86/xen/p2m.h
-new file mode 100644
-index 0000000..9ce4d51
---- /dev/null
-+++ b/arch/x86/xen/p2m.h
-@@ -0,0 +1,15 @@
-+#ifndef _XEN_P2M_H
-+#define _XEM_P2M_H
-+
-+#define P2M_PER_PAGE        (PAGE_SIZE / sizeof(unsigned long))
-+#define P2M_MID_PER_PAGE    (PAGE_SIZE / sizeof(unsigned long *))
-+#define P2M_TOP_PER_PAGE    (PAGE_SIZE / sizeof(unsigned long **))
-+
-+#define MAX_P2M_PFN         (P2M_TOP_PER_PAGE * P2M_MID_PER_PAGE * P2M_PER_PAGE)
-+
-+#define MAX_REMAP_RANGES    10
-+
-+extern unsigned long __init set_phys_range_identity(unsigned long pfn_s,
-+                                      unsigned long pfn_e);
-+
-+#endif  /* _XEN_P2M_H */
-diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
-index 0982233..25e7d87 100644
---- a/arch/x86/xen/setup.c
-+++ b/arch/x86/xen/setup.c
-@@ -30,6 +30,7 @@
- #include "mmu.h"
- #include "xen-ops.h"
- #include "vdso.h"
-+#include "p2m.h"
- 
- /* These are code, but not functions.  Defined in entry.S */
- extern const char xen_hypervisor_callback[];
-@@ -47,6 +48,9 @@ struct xen_memory_region xen_extra_mem[XEN_EXTRA_MEM_MAX_REGIONS] __initdata;
- /* Number of pages released from the initial allocation. */
- unsigned long xen_released_pages;
- 
-+/* Buffer used to remap identity mapped pages */
-+unsigned long xen_remap_buf[P2M_PER_PAGE] __initdata;
-+
- /* 
-  * The maximum amount of extra memory compared to the base size.  The
-  * main scaling factor is the size of struct page.  At extreme ratios
-@@ -156,120 +160,311 @@ static unsigned long __init xen_do_chunk(unsigned long start,
- 	return len;
- }
- 
--static unsigned long __init xen_release_chunk(unsigned long start,
--					      unsigned long end)
--{
--	/*
--	 * Xen already ballooned out the E820 non RAM regions for us
--	 * and set them up properly in EPT.
--	 */
--	if (xen_feature(XENFEAT_auto_translated_physmap))
--		return end - start;
--
--	return xen_do_chunk(start, end, true);
--}
--
--static unsigned long __init xen_populate_chunk(
-+/*
-+ * Finds the next pfn available in the E820 map after min_pfn.
-+ * This function updates min_pfn with the pfn found and returns
-+ * the size of that range or zero if not found.
-+ */
-+static unsigned long __init xen_find_pfn_range(
- 	const struct e820entry *list, size_t map_size,
--	unsigned long max_pfn, unsigned long *last_pfn,
--	unsigned long credits_left)
-+	unsigned long *min_pfn)
- {
- 	const struct e820entry *entry;
- 	unsigned int i;
- 	unsigned long done = 0;
--	unsigned long dest_pfn;
- 
- 	for (i = 0, entry = list; i < map_size; i++, entry++) {
- 		unsigned long s_pfn;
- 		unsigned long e_pfn;
--		unsigned long pfns;
--		long capacity;
--
--		if (credits_left <= 0)
--			break;
- 
- 		if (entry->type != E820_RAM)
- 			continue;
- 
- 		e_pfn = PFN_DOWN(entry->addr + entry->size);
- 
--		/* We only care about E820 after the xen_start_info->nr_pages */
--		if (e_pfn <= max_pfn)
-+		/* We only care about E820 after this */
-+		if (e_pfn < *min_pfn)
- 			continue;
- 
- 		s_pfn = PFN_UP(entry->addr);
--		/* If the E820 falls within the nr_pages, we want to start
--		 * at the nr_pages PFN.
--		 * If that would mean going past the E820 entry, skip it
-+
-+		/* If min_pfn falls within the E820 entry, we want to start
-+		 * at the min_pfn PFN.
- 		 */
--		if (s_pfn <= max_pfn) {
--			capacity = e_pfn - max_pfn;
--			dest_pfn = max_pfn;
-+		if (s_pfn <= *min_pfn) {
-+			done = e_pfn - *min_pfn;
- 		} else {
--			capacity = e_pfn - s_pfn;
--			dest_pfn = s_pfn;
-+			done = e_pfn - s_pfn;
-+			*min_pfn = s_pfn;
- 		}
--
--		if (credits_left < capacity)
--			capacity = credits_left;
--
--		pfns = xen_do_chunk(dest_pfn, dest_pfn + capacity, false);
--		done += pfns;
--		*last_pfn = (dest_pfn + pfns);
--		if (pfns < capacity)
--			break;
--		credits_left -= pfns;
-+		break;
- 	}
-+
- 	return done;
- }
- 
--static void __init xen_set_identity_and_release_chunk(
--	unsigned long start_pfn, unsigned long end_pfn, unsigned long nr_pages,
--	unsigned long *released, unsigned long *identity)
-+/*
-+ * This releases a chunk of memory and then does the identity map. It's used as
-+ * as a fallback if the remapping fails.
-+ */
-+static void __init xen_set_identity_and_release_chunk(unsigned long start_pfn,
-+	unsigned long end_pfn, unsigned long nr_pages, unsigned long *identity,
-+	unsigned long *released)
- {
--	unsigned long pfn;
-+	WARN_ON(start_pfn > end_pfn);
-+
-+	/* Need to release pages first */
-+	*released += xen_do_chunk(start_pfn, min(end_pfn, nr_pages), true);
-+	*identity += set_phys_range_identity(start_pfn, end_pfn);
-+}
-+
-+/*
-+ * This function updates the p2m and m2p tables with an identity map from
-+ * start_pfn to start_pfn+size and remaps the underlying RAM of the original
-+ * allocation at remap_pfn. It must do so carefully in P2M_PER_PAGE sized blocks
-+ * to not exhaust the reserved brk space. Doing it in properly aligned blocks
-+ * ensures we only allocate the minimum required leaf pages in the p2m table. It
-+ * copies the existing mfns from the p2m table under the 1:1 map, overwrites
-+ * them with the identity map and then updates the p2m and m2p tables with the
-+ * remapped memory.
-+ */
-+static unsigned long __init xen_do_set_identity_and_remap_chunk(
-+        unsigned long start_pfn, unsigned long size, unsigned long remap_pfn)
-+{
-+	unsigned long ident_pfn_iter, remap_pfn_iter;
-+	unsigned long ident_start_pfn_align, remap_start_pfn_align;
-+	unsigned long ident_end_pfn_align, remap_end_pfn_align;
-+	unsigned long ident_boundary_pfn, remap_boundary_pfn;
-+	unsigned long ident_cnt = 0;
-+	unsigned long remap_cnt = 0;
-+	unsigned long left = size;
-+	unsigned long mod;
-+	int i;
-+
-+	WARN_ON(size == 0);
-+
-+	BUG_ON(xen_feature(XENFEAT_auto_translated_physmap));
- 
- 	/*
--	 * If the PFNs are currently mapped, clear the mappings
--	 * (except for the ISA region which must be 1:1 mapped) to
--	 * release the refcounts (in Xen) on the original frames.
--	 */
-+	 * Determine the proper alignment to remap memory in P2M_PER_PAGE sized
-+	 * blocks. We need to keep track of both the existing pfn mapping and
-+	 * the new pfn remapping.
-+ 	 */
-+	mod = start_pfn % P2M_PER_PAGE;
-+	ident_start_pfn_align =
-+		mod ? (start_pfn - mod + P2M_PER_PAGE):start_pfn;
-+	mod = remap_pfn % P2M_PER_PAGE;
-+	remap_start_pfn_align =
-+		mod ? (remap_pfn - mod + P2M_PER_PAGE):remap_pfn;
-+	mod = (start_pfn + size) % P2M_PER_PAGE;
-+	ident_end_pfn_align = start_pfn + size - mod;
-+	mod = (remap_pfn + size) % P2M_PER_PAGE;
-+	remap_end_pfn_align = remap_pfn + size - mod;
-+
-+	/* Iterate over each p2m leaf node in each range */
-+	for (ident_pfn_iter = ident_start_pfn_align, remap_pfn_iter = remap_start_pfn_align;
-+	     ident_pfn_iter < ident_end_pfn_align && remap_pfn_iter < remap_end_pfn_align;
-+	     ident_pfn_iter += P2M_PER_PAGE, remap_pfn_iter += P2M_PER_PAGE) {
-+		/* Check we aren't past the end */
-+		BUG_ON(ident_pfn_iter + P2M_PER_PAGE > start_pfn + size);
-+		BUG_ON(remap_pfn_iter + P2M_PER_PAGE > remap_pfn + size);
-+
-+		/* Save p2m mappings */
-+		for (i = 0; i < P2M_PER_PAGE; i++)
-+			xen_remap_buf[i] = pfn_to_mfn(ident_pfn_iter + i);
-+
-+		/* Set identity map which also frees a p2m leaf */
-+		ident_cnt += set_phys_range_identity(ident_pfn_iter,
-+			ident_pfn_iter + P2M_PER_PAGE);
-+
-+		/* Now remap memory */
-+		for (i = 0; i < P2M_PER_PAGE; i++) {
-+			unsigned long mfn = xen_remap_buf[i];
-+			struct mmu_update update = {
-+				.ptr = (mfn << PAGE_SHIFT) |
-+					MMU_MACHPHYS_UPDATE,
-+				.val = remap_pfn_iter + i
-+			};
-+
-+			/* Update p2m, will use the page freed above */
-+			if (!early_set_phys_to_machine(remap_pfn_iter + i,
-+				mfn)) {
-+				WARN(1, "Failed to set p2m mapping for pfn=%ld mfn=%ld\n",
-+					remap_pfn_iter + i, mfn);
-+				return 0;
-+			}
-+
-+			/* Update m2p */
-+			if (HYPERVISOR_mmu_update(&update, 1, NULL,
-+			    DOMID_SELF) < 0) {
-+				WARN(1, "Failed to set m2p mapping for mfn=%ld pfn=%ld\n",
-+					mfn, remap_pfn_iter + i);
-+				return 0;
-+			}
-+			remap_cnt++;
-+		}
-+
-+		left -= P2M_PER_PAGE;
-+	}
-+
-+	/* Max boundary space possible */
-+	BUG_ON(left > (P2M_PER_PAGE - 1) * 2);
-+
-+	/* Now handle the boundary conditions */
-+	ident_boundary_pfn = start_pfn;
-+	remap_boundary_pfn = remap_pfn;
-+	for (i = 0; i < left; i++) {
-+		unsigned long mfn;
-+		struct mmu_update update;
-+
-+		if (ident_boundary_pfn == ident_start_pfn_align)
-+			ident_boundary_pfn = ident_pfn_iter;
-+		if (remap_boundary_pfn == remap_start_pfn_align)
-+			remap_boundary_pfn = remap_pfn_iter;
-+
-+		/* Check we aren't past the end */
-+		BUG_ON(ident_boundary_pfn >= start_pfn + size);
-+		BUG_ON(remap_boundary_pfn >= remap_pfn + size);
-+
-+		mfn = pfn_to_mfn(ident_boundary_pfn);
-+		update.ptr = (mfn << PAGE_SHIFT) | MMU_MACHPHYS_UPDATE;
-+		update.val = remap_boundary_pfn;
-+
-+		/* Update p2m */
-+		if (!early_set_phys_to_machine(remap_boundary_pfn, mfn)) {
-+			WARN(1, "Failed to set p2m mapping for pfn=%ld mfn=%ld\n",
-+				remap_pfn_iter + i, mfn);
-+			return 0;
-+		}
-+
-+		/* Update m2p */
-+		if (HYPERVISOR_mmu_update(&update, 1, NULL, DOMID_SELF) < 0) {
-+			WARN(1, "Failed to set m2p mapping for mfn=%ld pfn=%ld\n",
-+				mfn, remap_pfn_iter + i);
-+			return 0;
-+		}
-+		remap_cnt++;
-+
-+		ident_boundary_pfn++;
-+		remap_boundary_pfn++;
-+	}
- 
- 	/*
--	 * PVH E820 matches the hypervisor's P2M which means we need to
--	 * account for the proper values of *release and *identity.
-+	 * Finish up the identity map. We need to check if there are zero, one
-+	 * or two boundaries.
- 	 */
--	for (pfn = start_pfn; !xen_feature(XENFEAT_auto_translated_physmap) &&
--	     pfn <= max_pfn_mapped && pfn < end_pfn; pfn++) {
--		pte_t pte = __pte_ma(0);
-+	if (ident_start_pfn_align >= ident_end_pfn_align) {
-+		/* Not remapped above, one boundary case */
-+		ident_cnt += set_phys_range_identity(start_pfn,
-+			start_pfn + size);
-+	} else {
-+		/* Remapped above so check each end of the chunk */
-+		if (start_pfn < ident_start_pfn_align)
-+			ident_cnt += set_phys_range_identity(start_pfn,
-+				ident_start_pfn_align);
-+		if (start_pfn + size > ident_pfn_iter)
-+			ident_cnt += set_phys_range_identity(ident_pfn_iter,
-+				start_pfn + size);
-+	}
- 
--		if (pfn < PFN_UP(ISA_END_ADDRESS))
--			pte = mfn_pte(pfn, PAGE_KERNEL_IO);
-+	BUG_ON(ident_cnt != size);
-+	BUG_ON(remap_cnt != size);
- 
--		(void)HYPERVISOR_update_va_mapping(
--			(unsigned long)__va(pfn << PAGE_SHIFT), pte, 0);
-+	return size;
-+}
-+
-+/*
-+ * This function takes a contiguous pfn range that needs to be identity mapped
-+ * and:
-+ *
-+ *  1) Finds a new range of pfns to use to remap based on E820 and remap_pfn.
-+ *  2) Calls the do_ function to actually do the mapping/remapping work.
-+ *
-+ * The goal is to not allocate additional memory but to remap the existing
-+ * pages. In the case of an error the underlying memory is simply released back
-+ * to Xen and not remapped.
-+ */
-+static unsigned long __init xen_set_identity_and_remap_chunk(
-+        const struct e820entry *list, size_t map_size, unsigned long start_pfn,
-+	unsigned long end_pfn, unsigned long nr_pages, unsigned long remap_pfn,
-+	unsigned long *identity, unsigned long *remapped,
-+	unsigned long *released)
-+{
-+	unsigned long pfn;
-+	unsigned long i = 0;
-+	unsigned long n = end_pfn - start_pfn;
-+
-+	while (i < n) {
-+		unsigned long cur_pfn = start_pfn + i;
-+		unsigned long size = n - i;
-+		unsigned long remap_range_size;
-+
-+		/* Do not remap pages beyond the current allocation */
-+		if (cur_pfn >= nr_pages) {
-+			/* Identity map remaining pages */
-+			*identity += set_phys_range_identity(cur_pfn,
-+				cur_pfn + size);
-+			break;
-+		}
-+		remap_range_size = xen_find_pfn_range(list, map_size,
-+			&remap_pfn);
-+		if (!remap_range_size) {
-+			pr_warning("Unable to find available pfn range, not remapping identity pages\n");
-+			xen_set_identity_and_release_chunk(cur_pfn,
-+				cur_pfn + size, nr_pages, identity, released);
-+			break;
-+		}
-+		if (size > remap_range_size)
-+			size = remap_range_size;
-+
-+		/* Again do not remap pages beyond the original allocation */
-+		if (cur_pfn + size > nr_pages)
-+			size = nr_pages - cur_pfn;
-+
-+		if (!xen_do_set_identity_and_remap_chunk(cur_pfn, size,
-+		    remap_pfn)) {
-+			WARN(1, "Failed to remap 1:1 memory cur_pfn=%ld size=%ld remap_pfn=%ld\n",
-+				cur_pfn, size, remap_pfn);
-+			xen_set_identity_and_release_chunk(cur_pfn,
-+				cur_pfn + size, nr_pages, identity, released);
-+			break;
-+		}
-+
-+		/* Update variables to reflect new mappings. */
-+		i += size;
-+		remap_pfn += size;
-+		*identity += size;
-+		*remapped += size;
- 	}
- 
--	if (start_pfn < nr_pages)
--		*released += xen_release_chunk(
--			start_pfn, min(end_pfn, nr_pages));
-+	/*
-+	 * If the PFNs are currently mapped, the VA mapping also needs
-+	 * to be updated to be 1:1.
-+	 */
-+	for (pfn = start_pfn; pfn <= max_pfn_mapped && pfn < end_pfn; pfn++)
-+		(void)HYPERVISOR_update_va_mapping(
-+			(unsigned long)__va(pfn << PAGE_SHIFT),
-+			mfn_pte(pfn, PAGE_KERNEL_IO), 0);
- 
--	*identity += set_phys_range_identity(start_pfn, end_pfn);
-+	return remap_pfn;
- }
- 
--static unsigned long __init xen_set_identity_and_release(
--	const struct e820entry *list, size_t map_size, unsigned long nr_pages)
-+static unsigned long __init xen_set_identity_and_remap(
-+	const struct e820entry *list, size_t map_size, unsigned long nr_pages,
-+	unsigned long *released)
- {
- 	phys_addr_t start = 0;
--	unsigned long released = 0;
- 	unsigned long identity = 0;
-+	unsigned long remapped = 0;
-+	unsigned long last_pfn = nr_pages;
- 	const struct e820entry *entry;
-+	unsigned long num_released = 0;
- 	int i;
- 
- 	/*
- 	 * Combine non-RAM regions and gaps until a RAM region (or the
- 	 * end of the map) is reached, then set the 1:1 map and
--	 * release the pages (if available) in those non-RAM regions.
-+	 * remap the memory in those non-RAM regions.
- 	 *
- 	 * The combined non-RAM regions are rounded to a whole number
- 	 * of pages so any partial pages are accessible via the 1:1
-@@ -287,22 +482,24 @@ static unsigned long __init xen_set_identity_and_release(
- 				end_pfn = PFN_UP(entry->addr);
- 
- 			if (start_pfn < end_pfn)
--				xen_set_identity_and_release_chunk(
--					start_pfn, end_pfn, nr_pages,
--					&released, &identity);
--
-+				last_pfn = xen_set_identity_and_remap_chunk(
-+						list, map_size, start_pfn,
-+						end_pfn, nr_pages, last_pfn,
-+						&identity, &remapped,
-+						&num_released);
- 			start = end;
- 		}
- 	}
- 
--	if (released)
--		printk(KERN_INFO "Released %lu pages of unused memory\n", released);
--	if (identity)
--		printk(KERN_INFO "Set %ld page(s) to 1-1 mapping\n", identity);
-+	*released = num_released;
- 
--	return released;
--}
-+	pr_info("Set %ld page(s) to 1-1 mapping\n", identity);
-+	pr_info("Remapped %ld page(s), last_pfn=%ld\n", remapped,
-+		last_pfn);
-+	pr_info("Released %ld page(s)\n", num_released);
- 
-+	return last_pfn;
-+}
- static unsigned long __init xen_get_max_pages(void)
- {
- 	unsigned long max_pages = MAX_DOMAIN_PAGES;
-@@ -410,26 +607,27 @@ char * __init xen_memory_setup(void)
- 		extra_pages += max_pages - max_pfn;
- 
- 	/*
--	 * Set P2M for all non-RAM pages and E820 gaps to be identity
--	 * type PFNs.  Any RAM pages that would be made inaccesible by
--	 * this are first released.
-+	 * Set identity map on non-RAM pages and remap the underlying RAM. If
-+	 * auto-translating we simply skip this as Xen has already released the
-+	 * E820 non-RAM memory for us. We no longer allocate additional memory
-+	 * in this case.
- 	 */
--	xen_released_pages = xen_set_identity_and_release(
--		map, memmap.nr_entries, max_pfn);
--
--	/*
--	 * Populate back the non-RAM pages and E820 gaps that had been
--	 * released. */
--	populated = xen_populate_chunk(map, memmap.nr_entries,
--			max_pfn, &last_pfn, xen_released_pages);
-+	if (!xen_feature(XENFEAT_auto_translated_physmap))
-+		last_pfn = xen_set_identity_and_remap(map, memmap.nr_entries,
-+			max_pfn, &xen_released_pages);
- 
--	xen_released_pages -= populated;
- 	extra_pages += xen_released_pages;
- 
- 	if (last_pfn > max_pfn) {
--		max_pfn = min(MAX_DOMAIN_PAGES, last_pfn);
-+		if (last_pfn > MAX_DOMAIN_PAGES) {
-+			pr_warning("Not using full RAM allocation, check CONFIG_MAX_DOMAIN_PAGES");
-+			max_pfn = MAX_DOMAIN_PAGES;
-+		} else {
-+			max_pfn = last_pfn;
-+		}
- 		mem_end = PFN_PHYS(max_pfn);
- 	}
-+
- 	/*
- 	 * Clamp the amount of extra memory to a EXTRA_MEM_RATIO
- 	 * factor the base size.  On non-highmem systems, the base
--- 
-1.7.9.5
-
+-Varun
