@@ -1,176 +1,318 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751642AbaFEMSZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 08:18:25 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:57227 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751000AbaFEMSN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 08:18:13 -0400
+	id S1751418AbaFEMUB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 08:20:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22932 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750860AbaFEMT7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jun 2014 08:19:59 -0400
+Date: Thu, 5 Jun 2014 15:20:23 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: pbonzini@redhat.com, Eric Dumazet <eric.dumazet@gmail.com>,
+        kvm@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        netdev@vger.kernel.org
+Subject: [PATCH v2 1/2] vhost: move acked_features to VQs
+Message-ID: <1401970667-18181-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <1401896895-14262-1-git-send-email-tiwai@suse.de>
-References: <1401896895-14262-1-git-send-email-tiwai@suse.de>
-Date: Thu, 5 Jun 2014 20:18:08 +0800
-Message-ID: <CACVXFVPpmdXJV2CC-U=bsA820VD42i2-OqBfNfTPPaMergu8TQ@mail.gmail.com>
-Subject: Re: [PATCH v2] firmware loader: allow disabling of udev as firmware loader
-From: Ming Lei <ming.lei@canonical.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Tom Gundersen <teg@jklm.no>, Abhay Salunke <Abhay_Salunke@dell.com>,
-        Stefan Roese <sr@denx.de>, Arnd Bergmann <arnd@arndb.de>,
-        Kay Sievers <kay@vrfy.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 4, 2014 at 11:48 PM, Takashi Iwai <tiwai@suse.de> wrote:
-> [The patch was originally proposed by Tom Gundersen, and rewritten
->  afterwards by me; most of changelogs below borrowed from Tom's
->  original patch -- tiwai]
->
-> Currently (at least) the dell-rbu driver selects FW_LOADER_USER_HELPER,
-> which means that distros can't really stop loading firmware through
-> udev without breaking other users (though some have).
->
-> Ideally we would remove/disable the udev firmware helper in both the
-> kernel and in udev, but if we were to disable it in udev and not the
-> kernel, the result would be (seemingly) hung kernels as no one would
-> be around to cancel firmware requests.
->
-> This patch allows udev firmware loading to be disabled while still
-> allowing non-udev firmware loading, as done by the dell-rbu driver, to
-> continue working. This is achieved by only using the fallback
-> mechanism when the uevent is suppressed.
->
-> The patch renames the user-selectable Kconfig from FW_LOADER_USER_HELPER
-> to FW_LOADER_USER_HELPER_FALLBACK, and the former is reverse-selected
-> by the latter or the drivers that need userhelper like dell-rbu.
->
-> Also, the "default y" is removed together with this change, since it's
-> been deprecated in udev upstream, thus rather better to disable it
-> nowadays.
->
-> Tested with
->     FW_LOADER_USER_HELPER=n
->     LATTICE_ECP3_CONFIG=y
->     DELL_RBU=y
-> and udev without the firmware loading support, but I don't have the
-> hardware to test the lattice/dell drivers, so additional testing would
-> be appreciated.
->
-> Reviewed-by: Tom Gundersen <teg@jklm.no>
-> Cc: Ming Lei <ming.lei@canonical.com>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: Abhay Salunke <Abhay_Salunke@dell.com>
-> Cc: Stefan Roese <sr@denx.de>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: Kay Sievers <kay@vrfy.org>
-> Signed-off-by: Takashi Iwai <tiwai@suse.de>
-> ---
->  drivers/base/Kconfig          | 10 ++++++++--
->  drivers/base/firmware_class.c | 15 ++++++++++-----
->  include/linux/firmware.h      |  2 +-
->  3 files changed, 19 insertions(+), 8 deletions(-)
->
-> diff --git a/drivers/base/Kconfig b/drivers/base/Kconfig
-> index 8fa8deab6449..d0bb32e4c416 100644
-> --- a/drivers/base/Kconfig
-> +++ b/drivers/base/Kconfig
-> @@ -144,15 +144,21 @@ config EXTRA_FIRMWARE_DIR
->           some other directory containing the firmware files.
->
->  config FW_LOADER_USER_HELPER
-> +       bool
-> +
-> +config FW_LOADER_USER_HELPER_FALLBACK
->         bool "Fallback user-helper invocation for firmware loading"
->         depends on FW_LOADER
-> -       default y
-> +       select FW_LOADER_USER_HELPER
->         help
->           This option enables / disables the invocation of user-helper
->           (e.g. udev) for loading firmware files as a fallback after the
->           direct file loading in kernel fails.  The user-mode helper is
->           no longer required unless you have a special firmware file that
-> -         resides in a non-standard path.
-> +         resides in a non-standard path. Moreover, the udev support has
-> +         been deprecated upstream.
-> +
-> +         If you are unsure about this, say N here.
+Refactor code to make sure features are only accessed
+under VQ mutex. This makes everything simpler, no need
+for RCU here anymore.
 
-It may be safer to say Y here for fallback if not sure.
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
 
->
->  config DEBUG_DRIVER
->         bool "Driver Core verbose debug messages"
-> diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
-> index d276e33880be..46ea5f4c3bb5 100644
-> --- a/drivers/base/firmware_class.c
-> +++ b/drivers/base/firmware_class.c
-> @@ -100,9 +100,14 @@ static inline long firmware_loading_timeout(void)
->  #define FW_OPT_UEVENT  (1U << 0)
->  #define FW_OPT_NOWAIT  (1U << 1)
->  #ifdef CONFIG_FW_LOADER_USER_HELPER
-> -#define FW_OPT_FALLBACK        (1U << 2)
-> +#define FW_OPT_USERHELPER      (1U << 2)
->  #else
-> -#define FW_OPT_FALLBACK        0
-> +#define FW_OPT_USERHELPER      0
-> +#endif
-> +#ifdef CONFIG_FW_LOADER_USER_HELPER_FALLBACK
-> +#define FW_OPT_FALLBACK                FW_OPT_USERHELPER
-> +#else
-> +#define FW_OPT_FALLBACK                0
->  #endif
->
->  struct firmware_cache {
-> @@ -1111,7 +1116,7 @@ _request_firmware(const struct firmware **firmware_p, const char *name,
->
->         ret = fw_get_filesystem_firmware(device, fw->priv);
->         if (ret) {
-> -               if (opt_flags & FW_OPT_FALLBACK) {
-> +               if (opt_flags & FW_OPT_USERHELPER) {
->                         dev_warn(device,
->                                  "Direct firmware load failed with error %d\n",
->                                  ret);
-> @@ -1171,7 +1176,7 @@ request_firmware(const struct firmware **firmware_p, const char *name,
->  }
->  EXPORT_SYMBOL(request_firmware);
->
-> -#ifdef CONFIG_FW_LOADER_USER_HELPER
-> +#ifdef CONFIG_FW_LOADER_USER_HELPER_FALLBACK
->  /**
->   * request_firmware: - load firmware directly without usermode helper
->   * @firmware_p: pointer to firmware image
-> @@ -1277,7 +1282,7 @@ request_firmware_nowait(
->         fw_work->context = context;
->         fw_work->cont = cont;
->         fw_work->opt_flags = FW_OPT_NOWAIT | FW_OPT_FALLBACK |
-> -               (uevent ? FW_OPT_UEVENT : 0);
-> +               (uevent ? FW_OPT_UEVENT : FW_OPT_USERHELPER);
->
->         if (!try_module_get(module)) {
->                 kfree(fw_work);
-> diff --git a/include/linux/firmware.h b/include/linux/firmware.h
-> index 59529330efd6..67e5b801af0c 100644
-> --- a/include/linux/firmware.h
-> +++ b/include/linux/firmware.h
-> @@ -68,7 +68,7 @@ static inline void release_firmware(const struct firmware *fw)
->
->  #endif
->
-> -#ifdef CONFIG_FW_LOADER_USER_HELPER
-> +#ifdef CONFIG_FW_LOADER_USER_HELPER_FALLBACK
->  int request_firmware_direct(const struct firmware **fw, const char *name,
->                             struct device *device);
->  #else
-> --
-> 1.9.3
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Note: this is on top of my last pull request
+
+ drivers/vhost/vhost.h | 11 +++--------
+ drivers/vhost/net.c   |  8 +++-----
+ drivers/vhost/scsi.c  | 22 +++++++++++++---------
+ drivers/vhost/test.c  |  9 ++++++---
+ drivers/vhost/vhost.c | 35 ++++++++++++++++++-----------------
+ 5 files changed, 43 insertions(+), 42 deletions(-)
+
+diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
+index 35eeb2a..ff454a0 100644
+--- a/drivers/vhost/vhost.h
++++ b/drivers/vhost/vhost.h
+@@ -105,6 +105,7 @@ struct vhost_virtqueue {
+ 	struct vring_used_elem *heads;
+ 	/* Protected by virtqueue mutex. */
+ 	void *private_data;
++	unsigned acked_features;
+ 	/* Log write descriptors */
+ 	void __user *log_base;
+ 	struct vhost_log *log;
+@@ -117,7 +118,6 @@ struct vhost_dev {
+ 	struct vhost_memory __rcu *memory;
+ 	struct mm_struct *mm;
+ 	struct mutex mutex;
+-	unsigned acked_features;
+ 	struct vhost_virtqueue **vqs;
+ 	int nvqs;
+ 	struct file *log_file;
+@@ -174,13 +174,8 @@ enum {
+ 			 (1ULL << VHOST_F_LOG_ALL),
+ };
+ 
+-static inline int vhost_has_feature(struct vhost_dev *dev, int bit)
++static inline int vhost_has_feature(struct vhost_virtqueue *vq, int bit)
+ {
+-	unsigned acked_features;
+-
+-	/* TODO: check that we are running from vhost_worker or dev mutex is
+-	 * held? */
+-	acked_features = rcu_dereference_index_check(dev->acked_features, 1);
+-	return acked_features & (1 << bit);
++	return vq->acked_features & (1 << bit);
+ }
+ #endif
+diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+index e489161..2bc8f29 100644
+--- a/drivers/vhost/net.c
++++ b/drivers/vhost/net.c
+@@ -585,9 +585,9 @@ static void handle_rx(struct vhost_net *net)
+ 	vhost_hlen = nvq->vhost_hlen;
+ 	sock_hlen = nvq->sock_hlen;
+ 
+-	vq_log = unlikely(vhost_has_feature(&net->dev, VHOST_F_LOG_ALL)) ?
++	vq_log = unlikely(vhost_has_feature(vq, VHOST_F_LOG_ALL)) ?
+ 		vq->log : NULL;
+-	mergeable = vhost_has_feature(&net->dev, VIRTIO_NET_F_MRG_RXBUF);
++	mergeable = vhost_has_feature(vq, VIRTIO_NET_F_MRG_RXBUF);
+ 
+ 	while ((sock_len = peek_head_len(sock->sk))) {
+ 		sock_len += sock_hlen;
+@@ -1051,15 +1051,13 @@ static int vhost_net_set_features(struct vhost_net *n, u64 features)
+ 		mutex_unlock(&n->dev.mutex);
+ 		return -EFAULT;
+ 	}
+-	n->dev.acked_features = features;
+-	smp_wmb();
+ 	for (i = 0; i < VHOST_NET_VQ_MAX; ++i) {
+ 		mutex_lock(&n->vqs[i].vq.mutex);
++		n->vqs[i].vq.acked_features = features;
+ 		n->vqs[i].vhost_hlen = vhost_hlen;
+ 		n->vqs[i].sock_hlen = sock_hlen;
+ 		mutex_unlock(&n->vqs[i].vq.mutex);
+ 	}
+-	vhost_net_flush(n);
+ 	mutex_unlock(&n->dev.mutex);
+ 	return 0;
+ }
+diff --git a/drivers/vhost/scsi.c b/drivers/vhost/scsi.c
+index cf50ce9..f1f284f 100644
+--- a/drivers/vhost/scsi.c
++++ b/drivers/vhost/scsi.c
+@@ -1373,6 +1373,9 @@ err_dev:
+ 
+ static int vhost_scsi_set_features(struct vhost_scsi *vs, u64 features)
+ {
++	struct vhost_virtqueue *vq;
++	int i;
++
+ 	if (features & ~VHOST_SCSI_FEATURES)
+ 		return -EOPNOTSUPP;
+ 
+@@ -1382,9 +1385,13 @@ static int vhost_scsi_set_features(struct vhost_scsi *vs, u64 features)
+ 		mutex_unlock(&vs->dev.mutex);
+ 		return -EFAULT;
+ 	}
+-	vs->dev.acked_features = features;
+-	smp_wmb();
+-	vhost_scsi_flush(vs);
++
++	for (i = 0; i < VHOST_SCSI_MAX_VQ; i++) {
++		vq = &vs->vqs[i].vq;
++		mutex_lock(&vq->mutex);
++		vq->acked_features = features;
++		mutex_unlock(&vq->mutex);
++	}
+ 	mutex_unlock(&vs->dev.mutex);
+ 	return 0;
+ }
+@@ -1591,10 +1598,6 @@ tcm_vhost_do_plug(struct tcm_vhost_tpg *tpg,
+ 		return;
+ 
+ 	mutex_lock(&vs->dev.mutex);
+-	if (!vhost_has_feature(&vs->dev, VIRTIO_SCSI_F_HOTPLUG)) {
+-		mutex_unlock(&vs->dev.mutex);
+-		return;
+-	}
+ 
+ 	if (plug)
+ 		reason = VIRTIO_SCSI_EVT_RESET_RESCAN;
+@@ -1603,8 +1606,9 @@ tcm_vhost_do_plug(struct tcm_vhost_tpg *tpg,
+ 
+ 	vq = &vs->vqs[VHOST_SCSI_VQ_EVT].vq;
+ 	mutex_lock(&vq->mutex);
+-	tcm_vhost_send_evt(vs, tpg, lun,
+-			VIRTIO_SCSI_T_TRANSPORT_RESET, reason);
++	if (vhost_has_feature(vq, VIRTIO_SCSI_F_HOTPLUG))
++		tcm_vhost_send_evt(vs, tpg, lun,
++				   VIRTIO_SCSI_T_TRANSPORT_RESET, reason);
+ 	mutex_unlock(&vq->mutex);
+ 	mutex_unlock(&vs->dev.mutex);
+ }
+diff --git a/drivers/vhost/test.c b/drivers/vhost/test.c
+index c2a54fb..6fa3bf8 100644
+--- a/drivers/vhost/test.c
++++ b/drivers/vhost/test.c
+@@ -241,15 +241,18 @@ done:
+ 
+ static int vhost_test_set_features(struct vhost_test *n, u64 features)
+ {
++	struct vhost_virtqueue *vq;
++
+ 	mutex_lock(&n->dev.mutex);
+ 	if ((features & (1 << VHOST_F_LOG_ALL)) &&
+ 	    !vhost_log_access_ok(&n->dev)) {
+ 		mutex_unlock(&n->dev.mutex);
+ 		return -EFAULT;
+ 	}
+-	n->dev.acked_features = features;
+-	smp_wmb();
+-	vhost_test_flush(n);
++	vq = &n->vqs[VHOST_TEST_VQ];
++	mutex_lock(&vq->mutex);
++	vq->acked_features = features;
++	mutex_unlock(&vq->mutex);
+ 	mutex_unlock(&n->dev.mutex);
+ 	return 0;
+ }
+diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
+index 1c05e60..eca8ac7 100644
+--- a/drivers/vhost/vhost.c
++++ b/drivers/vhost/vhost.c
+@@ -524,11 +524,13 @@ static int memory_access_ok(struct vhost_dev *d, struct vhost_memory *mem,
+ 
+ 	for (i = 0; i < d->nvqs; ++i) {
+ 		int ok;
++		bool log;
++
+ 		mutex_lock(&d->vqs[i]->mutex);
++		log = log_all || vhost_has_feature(d->vqs[i], VHOST_F_LOG_ALL);
+ 		/* If ring is inactive, will check when it's enabled. */
+ 		if (d->vqs[i]->private_data)
+-			ok = vq_memory_access_ok(d->vqs[i]->log_base, mem,
+-						 log_all);
++			ok = vq_memory_access_ok(d->vqs[i]->log_base, mem, log);
+ 		else
+ 			ok = 1;
+ 		mutex_unlock(&d->vqs[i]->mutex);
+@@ -538,12 +540,12 @@ static int memory_access_ok(struct vhost_dev *d, struct vhost_memory *mem,
+ 	return 1;
+ }
+ 
+-static int vq_access_ok(struct vhost_dev *d, unsigned int num,
++static int vq_access_ok(struct vhost_virtqueue *vq, unsigned int num,
+ 			struct vring_desc __user *desc,
+ 			struct vring_avail __user *avail,
+ 			struct vring_used __user *used)
+ {
+-	size_t s = vhost_has_feature(d, VIRTIO_RING_F_EVENT_IDX) ? 2 : 0;
++	size_t s = vhost_has_feature(vq, VIRTIO_RING_F_EVENT_IDX) ? 2 : 0;
+ 	return access_ok(VERIFY_READ, desc, num * sizeof *desc) &&
+ 	       access_ok(VERIFY_READ, avail,
+ 			 sizeof *avail + num * sizeof *avail->ring + s) &&
+@@ -565,16 +567,16 @@ EXPORT_SYMBOL_GPL(vhost_log_access_ok);
+ 
+ /* Verify access for write logging. */
+ /* Caller should have vq mutex and device mutex */
+-static int vq_log_access_ok(struct vhost_dev *d, struct vhost_virtqueue *vq,
++static int vq_log_access_ok(struct vhost_virtqueue *vq,
+ 			    void __user *log_base)
+ {
+ 	struct vhost_memory *mp;
+-	size_t s = vhost_has_feature(d, VIRTIO_RING_F_EVENT_IDX) ? 2 : 0;
++	size_t s = vhost_has_feature(vq, VIRTIO_RING_F_EVENT_IDX) ? 2 : 0;
+ 
+ 	mp = rcu_dereference_protected(vq->dev->memory,
+ 				       lockdep_is_held(&vq->mutex));
+ 	return vq_memory_access_ok(log_base, mp,
+-			    vhost_has_feature(vq->dev, VHOST_F_LOG_ALL)) &&
++				   vhost_has_feature(vq, VHOST_F_LOG_ALL)) &&
+ 		(!vq->log_used || log_access_ok(log_base, vq->log_addr,
+ 					sizeof *vq->used +
+ 					vq->num * sizeof *vq->used->ring + s));
+@@ -584,8 +586,8 @@ static int vq_log_access_ok(struct vhost_dev *d, struct vhost_virtqueue *vq,
+ /* Caller should have vq mutex and device mutex */
+ int vhost_vq_access_ok(struct vhost_virtqueue *vq)
+ {
+-	return vq_access_ok(vq->dev, vq->num, vq->desc, vq->avail, vq->used) &&
+-		vq_log_access_ok(vq->dev, vq, vq->log_base);
++	return vq_access_ok(vq, vq->num, vq->desc, vq->avail, vq->used) &&
++		vq_log_access_ok(vq, vq->log_base);
+ }
+ EXPORT_SYMBOL_GPL(vhost_vq_access_ok);
+ 
+@@ -612,8 +614,7 @@ static long vhost_set_memory(struct vhost_dev *d, struct vhost_memory __user *m)
+ 		return -EFAULT;
+ 	}
+ 
+-	if (!memory_access_ok(d, newmem,
+-			      vhost_has_feature(d, VHOST_F_LOG_ALL))) {
++	if (!memory_access_ok(d, newmem, 0)) {
+ 		kfree(newmem);
+ 		return -EFAULT;
+ 	}
+@@ -726,7 +727,7 @@ long vhost_vring_ioctl(struct vhost_dev *d, int ioctl, void __user *argp)
+ 		 * If it is not, we don't as size might not have been setup.
+ 		 * We will verify when backend is configured. */
+ 		if (vq->private_data) {
+-			if (!vq_access_ok(d, vq->num,
++			if (!vq_access_ok(vq, vq->num,
+ 				(void __user *)(unsigned long)a.desc_user_addr,
+ 				(void __user *)(unsigned long)a.avail_user_addr,
+ 				(void __user *)(unsigned long)a.used_user_addr)) {
+@@ -866,7 +867,7 @@ long vhost_dev_ioctl(struct vhost_dev *d, unsigned int ioctl, void __user *argp)
+ 			vq = d->vqs[i];
+ 			mutex_lock(&vq->mutex);
+ 			/* If ring is inactive, will check when it's enabled. */
+-			if (vq->private_data && !vq_log_access_ok(d, vq, base))
++			if (vq->private_data && !vq_log_access_ok(vq, base))
+ 				r = -EFAULT;
+ 			else
+ 				vq->log_base = base;
+@@ -1434,11 +1435,11 @@ static bool vhost_notify(struct vhost_dev *dev, struct vhost_virtqueue *vq)
+ 	 * interrupts. */
+ 	smp_mb();
+ 
+-	if (vhost_has_feature(dev, VIRTIO_F_NOTIFY_ON_EMPTY) &&
++	if (vhost_has_feature(vq, VIRTIO_F_NOTIFY_ON_EMPTY) &&
+ 	    unlikely(vq->avail_idx == vq->last_avail_idx))
+ 		return true;
+ 
+-	if (!vhost_has_feature(dev, VIRTIO_RING_F_EVENT_IDX)) {
++	if (!vhost_has_feature(vq, VIRTIO_RING_F_EVENT_IDX)) {
+ 		__u16 flags;
+ 		if (__get_user(flags, &vq->avail->flags)) {
+ 			vq_err(vq, "Failed to get flags");
+@@ -1499,7 +1500,7 @@ bool vhost_enable_notify(struct vhost_dev *dev, struct vhost_virtqueue *vq)
+ 	if (!(vq->used_flags & VRING_USED_F_NO_NOTIFY))
+ 		return false;
+ 	vq->used_flags &= ~VRING_USED_F_NO_NOTIFY;
+-	if (!vhost_has_feature(dev, VIRTIO_RING_F_EVENT_IDX)) {
++	if (!vhost_has_feature(vq, VIRTIO_RING_F_EVENT_IDX)) {
+ 		r = vhost_update_used_flags(vq);
+ 		if (r) {
+ 			vq_err(vq, "Failed to enable notification at %p: %d\n",
+@@ -1536,7 +1537,7 @@ void vhost_disable_notify(struct vhost_dev *dev, struct vhost_virtqueue *vq)
+ 	if (vq->used_flags & VRING_USED_F_NO_NOTIFY)
+ 		return;
+ 	vq->used_flags |= VRING_USED_F_NO_NOTIFY;
+-	if (!vhost_has_feature(dev, VIRTIO_RING_F_EVENT_IDX)) {
++	if (!vhost_has_feature(vq, VIRTIO_RING_F_EVENT_IDX)) {
+ 		r = vhost_update_used_flags(vq);
+ 		if (r)
+ 			vq_err(vq, "Failed to enable notification at %p: %d\n",
+-- 
+MST
+
