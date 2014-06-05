@@ -1,111 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752213AbaFESiG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 14:38:06 -0400
-Received: from mailrelay006.isp.belgacom.be ([195.238.6.172]:63407 "EHLO
-	mailrelay006.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751495AbaFESiE (ORCPT
+	id S1752508AbaFESi3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 14:38:29 -0400
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:57730 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751867AbaFESi0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 14:38:04 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AsENAPW3kFNXQDfT/2dsb2JhbABZgwesCQUBmCeBDxd0glMvI4EaN4hGAdNPhVWIfR2EKgSPTopFiyCIGYM6Ow
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>, Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 1/1] kernel/locking/lockdep_proc.c: replace seq_printf and seq_puts
-Date: Thu,  5 Jun 2014 20:36:48 +0200
-Message-Id: <1401993408-12126-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.8.4.5
+	Thu, 5 Jun 2014 14:38:26 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140605183050.GA5054@kroah.com>
+References: <20140605183050.GA5054@kroah.com>
+Date: Thu, 5 Jun 2014 14:38:25 -0400
+X-Google-Sender-Auth: NAdCp0IeRn-WlVbj72Uq34xI2PA
+Message-ID: <CA+5PVA5aG98VfjxjgKdOwN9DQzDbJAJMBWfBwBpV8Ko4565bHg@mail.gmail.com>
+Subject: Re: Change in security maintainer for a few weeks
+From: Josh Boyer <jwboyer@fedoraproject.org>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-replace seq_printf by seq_puts and seq_puts by seq_putc where possible
+On Thu, Jun 5, 2014 at 2:30 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> Hi all,
+>
+> James has had to step back from doing kernel work for a few weeks, so
+> I've offered to step up and handle the security patches to get shuttled
+> to Linus for merging for a while.
+>
+> I'll take his git tree on kernel.org and push those to Linus for
+> 3.16-rc1, as those look like they have had proper testing in linux-next.
+>
+> But there only seems to be 14 patches in there.  Are there pending
+> patches that people have been sending and need to get in besides those?
 
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- kernel/locking/lockdep_proc.c | 20 ++++++++++----------
- 1 file changed, 10 insertions(+), 10 deletions(-)
+Serge seems to have already done this?
 
-diff --git a/kernel/locking/lockdep_proc.c b/kernel/locking/lockdep_proc.c
-index ef43ac4..00c62ed 100644
---- a/kernel/locking/lockdep_proc.c
-+++ b/kernel/locking/lockdep_proc.c
-@@ -61,7 +61,7 @@ static int l_show(struct seq_file *m, void *v)
- 	char usage[LOCK_USAGE_CHARS];
- 
- 	if (v == &all_lock_classes) {
--		seq_printf(m, "all lock classes:\n");
-+		seq_puts(m, "all lock classes:\n");
- 		return 0;
- 	}
- 
-@@ -77,18 +77,18 @@ static int l_show(struct seq_file *m, void *v)
- 	get_usage_chars(class, usage);
- 	seq_printf(m, " %s", usage);
- 
--	seq_printf(m, ": ");
-+	seq_puts(m, ": ");
- 	print_name(m, class);
--	seq_puts(m, "\n");
-+	seq_putc(m, '\n');
- 
- 	list_for_each_entry(entry, &class->locks_after, entry) {
- 		if (entry->distance == 1) {
- 			seq_printf(m, " -> [%p] ", entry->class->key);
- 			print_name(m, entry->class);
--			seq_puts(m, "\n");
-+			seq_putc(m, '\n');
- 		}
- 	}
--	seq_puts(m, "\n");
-+	seq_putc(m, '\n');
- 
- 	return 0;
- }
-@@ -141,7 +141,7 @@ static int lc_show(struct seq_file *m, void *v)
- 	int i;
- 
- 	if (v == SEQ_START_TOKEN) {
--		seq_printf(m, "all lock chains:\n");
-+		seq_puts(m, "all lock chains:\n");
- 		return 0;
- 	}
- 
-@@ -154,9 +154,9 @@ static int lc_show(struct seq_file *m, void *v)
- 
- 		seq_printf(m, "[%p] ", class->key);
- 		print_name(m, class);
--		seq_puts(m, "\n");
-+		seq_putc(m, '\n');
- 	}
--	seq_puts(m, "\n");
-+	seq_putc(m, '\n');
- 
- 	return 0;
- }
-@@ -529,7 +529,7 @@ static void seq_header(struct seq_file *m)
- 	seq_puts(m, "lock_stat version 0.4\n");
- 
- 	if (unlikely(!debug_locks))
--		seq_printf(m, "*WARNING* lock debugging disabled!! - possibly due to a lockdep warning\n");
-+		seq_puts(m, "*WARNING* lock debugging disabled!! - possibly due to a lockdep warning\n");
- 
- 	seq_line(m, '-', 0, 40 + 1 + 12 * (14 + 1));
- 	seq_printf(m, "%40s %14s %14s %14s %14s %14s %14s %14s %14s %14s %14s "
-@@ -548,7 +548,7 @@ static void seq_header(struct seq_file *m)
- 			"holdtime-total",
- 			"holdtime-avg");
- 	seq_line(m, '-', 0, 40 + 1 + 12 * (14 + 1));
--	seq_printf(m, "\n");
-+	seq_putc(m, '\n');
- }
- 
- static void *ls_start(struct seq_file *m, loff_t *pos)
--- 
-1.8.4.5
+https://lkml.org/lkml/2014/6/4/350
 
+Confused...
+
+josh
