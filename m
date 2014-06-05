@@ -1,87 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756159AbaFEAM5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 20:12:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40286 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753332AbaFDXWp (ORCPT
+	id S932067AbaFEANt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 20:13:49 -0400
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:35545 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754094AbaFEANr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:22:45 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3.14 154/228] workqueue: fix a possible race condition between rescuer and pwq-release
-Date: Wed,  4 Jun 2014 16:23:03 -0700
-Message-Id: <20140604232352.968416244@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
-References: <20140604232347.966798903@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Wed, 4 Jun 2014 20:13:47 -0400
+Date: Wed, 4 Jun 2014 17:13:44 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Nishanth Aravamudan <nacc@linux.vnet.ibm.com>,
+        Pekka Enberg <penberg@kernel.org>, Christoph Lameter <cl@linux.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Joonsoo Kim <js1304@gmail.com>,
+        Han Pingtian <hanpt@linux.vnet.ibm.com>, paulus@samba.org,
+        Anton Blanchard <anton@samba.org>, mpm@selenic.com,
+        linuxppc-dev@lists.ozlabs.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Subject: Re: [RESEND PATCH] slub: search partial list on numa_mem_id(),
+ instead of numa_node_id()
+In-Reply-To: <1391674026-20092-1-git-send-email-iamjoonsoo.kim@lge.com>
+Message-ID: <alpine.DEB.2.02.1406041712350.23521@chino.kir.corp.google.com>
+References: <20140206020757.GC5433@linux.vnet.ibm.com> <1391674026-20092-1-git-send-email-iamjoonsoo.kim@lge.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+On Wed, 21 May 2014, Joonsoo Kim wrote:
 
-------------------
+> Currently, if allocation constraint to node is NUMA_NO_NODE, we search
+> a partial slab on numa_node_id() node. This doesn't work properly on the
+> system having memoryless node, since it can have no memory on that node and
+> there must be no partial slab on that node.
+> 
+> On that node, page allocation always fallback to numa_mem_id() first. So
+> searching a partial slab on numa_node_id() in that case is proper solution
+> for memoryless node case.
+> 
+> Acked-by: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
+> Acked-by: David Rientjes <rientjes@google.com>
+> Acked-by: Christoph Lameter <cl@linux.com>
+> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> 
+> diff --git a/mm/slub.c b/mm/slub.c
+> index 545a170..cc1f995 100644
+> --- a/mm/slub.c
+> +++ b/mm/slub.c
+> @@ -1698,7 +1698,7 @@ static void *get_partial(struct kmem_cache *s, gfp_t flags, int node,
+>  		struct kmem_cache_cpu *c)
+>  {
+>  	void *object;
+> -	int searchnode = (node == NUMA_NO_NODE) ? numa_node_id() : node;
+> +	int searchnode = (node == NUMA_NO_NODE) ? numa_mem_id() : node;
+>  
+>  	object = get_partial_node(s, get_node(s, searchnode), c, flags);
+>  	if (object || node != NUMA_NO_NODE)
 
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-
-commit 77668c8b559e4fe2acf2a0749c7c83cde49a5025 upstream.
-
-There is a race condition between rescuer_thread() and
-pwq_unbound_release_workfn().
-
-Even after a pwq is scheduled for rescue, the associated work items
-may be consumed by any worker.  If all of them are consumed before the
-rescuer gets to them and the pwq's base ref was put due to attribute
-change, the pwq may be released while still being linked on
-@wq->maydays list making the rescuer dereference already freed pwq
-later.
-
-Make send_mayday() pin the target pwq until the rescuer is done with
-it.
-
-tj: Updated comment and patch description.
-
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- kernel/workqueue.c |   12 ++++++++++++
- 1 file changed, 12 insertions(+)
-
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -1909,6 +1909,12 @@ static void send_mayday(struct work_stru
- 
- 	/* mayday mayday mayday */
- 	if (list_empty(&pwq->mayday_node)) {
-+		/*
-+		 * If @pwq is for an unbound wq, its base ref may be put at
-+		 * any time due to an attribute change.  Pin @pwq until the
-+		 * rescuer is done with it.
-+		 */
-+		get_pwq(pwq);
- 		list_add_tail(&pwq->mayday_node, &wq->maydays);
- 		wake_up_process(wq->rescuer->task);
- 	}
-@@ -2438,6 +2444,12 @@ repeat:
- 		process_scheduled_works(rescuer);
- 
- 		/*
-+		 * Put the reference grabbed by send_mayday().  @pool won't
-+		 * go away while we're holding its lock.
-+		 */
-+		put_pwq(pwq);
-+
-+		/*
- 		 * Leave this pool.  If keep_working() is %true, notify a
- 		 * regular worker; otherwise, we end up with 0 concurrency
- 		 * and stalling the execution.
-
-
+Andrew, can you merge this please?  It's still not in linux-next.
