@@ -1,92 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751571AbaFEGwT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 02:52:19 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:33422 "EHLO
+	id S1751401AbaFEGz0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 02:55:26 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:33737 "EHLO
 	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751255AbaFEGwQ (ORCPT
+	with ESMTP id S1750827AbaFEGzZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 02:52:16 -0400
-Date: Thu, 5 Jun 2014 08:52:05 +0200
+	Thu, 5 Jun 2014 02:55:25 -0400
+Date: Thu, 5 Jun 2014 08:55:20 +0200
 From: Peter Zijlstra <peterz@infradead.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Morten Rasmussen <morten.rasmussen@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
-        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        Dietmar Eggemann <Dietmar.Eggemann@arm.com>, len.brown@intel.com
-Subject: Re: [RFC PATCH 06/16] arm: topology: Define TC2 sched energy and
- provide it to scheduler
-Message-ID: <20140605065205.GA3213@twins.programming.kicks-ass.net>
-References: <1400869003-27769-1-git-send-email-morten.rasmussen@arm.com>
- <20140604160230.GS29593@e103034-lin>
- <20140604172712.GJ13930@laptop.programming.kicks-ass.net>
- <2484761.vkWavnsDx3@vostro.rjw.lan>
+To: Jacob Pan <jacob.jun.pan@linux.intel.com>
+Cc: rafael.j.wysocki@intel.com, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, lenb@kernel.org, mingo@kernel.org,
+        tglx@linutronix.de, hpa@zytor.com, arjan@linux.intel.com,
+        rui.zhang@intel.com, luto@amacapital.net
+Subject: Re: [PATCH] idle, thermal, acpi: Remove home grown idle
+ implementations
+Message-ID: <20140605065520.GB3213@twins.programming.kicks-ass.net>
+References: <20140604085418.GA11096@twins.programming.kicks-ass.net>
+ <20140604015812.140a00d1@jacob-desktop>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="n8g4imXOkfNTN/H1"
+	protocol="application/pgp-signature"; boundary="dc+cDN39EJAMEtIO"
 Content-Disposition: inline
-In-Reply-To: <2484761.vkWavnsDx3@vostro.rjw.lan>
+In-Reply-To: <20140604015812.140a00d1@jacob-desktop>
 User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---n8g4imXOkfNTN/H1
+--dc+cDN39EJAMEtIO
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Wed, Jun 04, 2014 at 11:56:55PM +0200, Rafael J. Wysocki wrote:
-> On Wednesday, June 04, 2014 07:27:12 PM Peter Zijlstra wrote:
-
-> > Well, we eventually want to go there I think. Although we still needed
-> > to come up with something for Intel, because I'm not at all sure how all
-> > that works.
+On Wed, Jun 04, 2014 at 01:58:12AM -0700, Jacob Pan wrote:
+> On Wed, 4 Jun 2014 10:54:18 +0200
+> Peter Zijlstra <peterz@infradead.org> wrote:
 >=20
-> Do you mean power numbers or how P-states work on Intel in general?
+> >=20
+> > I'm still sitting on this patch. Jacub you were going to make it play
+> > nice with QoS?
+> >=20
+> I had a patchset to work through system PM QOS and still maintain the
+> idle injection efficiency. When I saw you did not merge the patch
+> below, I thought you have abandoned it :)
 
-P-states, I'm still not at all sure how all that works on Intel and what
-we can sanely do with them.
+I was waiting for you to do the QoS bits :-)
 
-Supposedly Intel has a means of setting P-states (there's a driver after
-all), but then is completely free to totally ignore it and do something
-entirely different anyhow.
+> The only issue as per our last discussion is the lack of notification
+> when PM QOS cannot be met. But that is intrinsic to PM QOS itself.
+>=20
+> I also consulted with Arjan and looked at directly intercept with
+> intel_idle since both intel_powerclamp and intel_idle are arch specific
+> drivers. But I think that is hard to do at per idle period basis,
+> since we should still allow "natural" idle during the forced idle time.
+>=20
+> So, I think we can take a two stepped approach,
+> 1. integrate your patch with a
+> updated version of https://lkml.org/lkml/2013/11/26/534 such that there
+> is no performance/efficiency regression.
+> 2. add notification mechanism to system qos when constraints cannot be
+> met.
 
-And while APERF/MPERF allows observing what it did, its afaik, nigh on
-impossible to predict wtf its going to do, and therefore any such energy
-computation is going to be a PRNG at best.
+That's fine with me; can you respin those bits?
 
-Now, given all that I'm not sure what we need that P-state driver for,
-so supposedly I'm missing something.
-
-Ideally Len (or someone equally in-the-know) would explain to me how
-exactly all that works and what we can rely upon. All I've gotten so far
-is, you can't rely on anything, and magik. Which is entirely useless.
-
---n8g4imXOkfNTN/H1
+--dc+cDN39EJAMEtIO
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJTkBOHAAoJEHZH4aRLwOS64+kQAKlCijXlyN6C5acpPZH1Yqkm
-+32a0/SWifD93YqgslU2Vq0ml9LhSJ+5FyTxZxJ80/hkGaAf3tbvCfq7u2UOJCzS
-HSuXKk9ZSLl+hTGD+M1MSx3YMFUUWyb1+9Gm+oaaV2FydG51eN/7c5/QEzT9lzKf
-PgJnlPi8TnI9n/FYJ3nQ134lBlmHvwWvyTTkzi0FvdChyUj2VlhHyf5PybQcZdM8
-zDvcMt9E4a825XDyFK74ubqE9RicCydRg8e3aVSMvKUJbsMg9QKJzoez34eAwo6P
-H7rk3vU6nwIJCd0/OQwOkAi0ENU+WyXxg+SxDsQ+it67YeRGa0zBLHQ9IGw09/H/
-sstGV1+pR7ep5/NMGBovAG8ukBxbABTU+AllrDOlffBhWxTRSl/V3nA0ZPPE8hNX
-7aeIxHAYYXGFSe+JI5JfhECVQSXvDi92Sjg/MSz0KRvliTTE8F9ly3Sppk6RU7Gd
-2ZBfNXBy5W11htNTHpUjumFiOnI/cjF2fvYUCTDbnA11Eo1iDPKOrcBqpujYNEiL
-86s156ve23zDpRx1D8VblyphlHOIo8kHiZLdSF2N91ZLYgTEaVO7wEqL+SNzzveS
-8wFAbJ2r31UE103YqvZQIgX/u3o4Z05DHu39dmtt5UG3OAGM4oAdCTY9Lnt/7FJM
-ZzFMi25FO5NUoHgpvXol
-=V40h
+iQIcBAEBAgAGBQJTkBRYAAoJEHZH4aRLwOS6TIIP/2/7HhMzsqEM3xiEKstX/x+W
+NjtcrqB0DhqhSR4Wgxzj6/dAV5mFMMbPfFFTIv3vfadK5IY8LvdvfdPkF6N87iqI
+kx4iemZbeqTzdO6MKVymmn0wHSL7DWET/mJrEY7nGu70KshwQotJJWGlrsdXGwGP
+B7i1Zn01T2SnxZGhcvLn8zBfhyptoW9Xa/BVLNWOn0Pk3QUh8J9h6Fv96fWfpaYN
+J775KzU7HAOXkR84HBqAIUiotpE8836j5yl6ed4TiUfil3mWp5h+9+RCWAa2NnqJ
+k/Ukr1xeUP/8YInfvr1k+cZzRADoRQa5B55mpPrHLesfS9gWtr8M3mfn1aAvkzLb
+dTzHc/Xwe5lG/lAZ/8a1m1+vHF9iU8hEF43zmkTFZjg6wMTV3iqPEkNTMW48v0ZJ
+ONB1Ci7/pfJAlMZMhaMSQeHekFmaWkg1BX3LyikZktvijV5JrtIwdsjJWTwQPS3j
+3FJz1tty5H2FB+htArjDTX4EsmsH1qdomIWyIiGhBEpbLg6ejiBmVRHOQJZ3OEmr
+KoFQYeTa1TrsH0Rvi65r40F1M0sA5IXtBe2xyZzw7iTpyr6XrNvW5HdFO7YIylm3
+AjNVufP+DKnaN3AzKJkmAuG/ysXE6p98X/juhiFTXt40cBRnDApPYFrQCIc3to1G
+feRrKPUemtQaqJua47BB
+=YgC3
 -----END PGP SIGNATURE-----
 
---n8g4imXOkfNTN/H1--
+--dc+cDN39EJAMEtIO--
