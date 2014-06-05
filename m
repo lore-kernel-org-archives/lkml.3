@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754608AbaFEFDy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 01:03:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43826 "EHLO
+	id S1752476AbaFEEU2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 00:20:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43755 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750864AbaFEEU3 (ORCPT
+	with ESMTP id S1752259AbaFEEUQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 00:20:29 -0400
+	Thu, 5 Jun 2014 00:20:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Geert Uytterhoeven <geert+renesas@glider.be>
-Subject: [PATCH 3.4 061/214] Documentation: Update stable address in Chinese and Japanese translations
-Date: Wed,  4 Jun 2014 21:17:04 -0700
-Message-Id: <20140605041647.688690386@linuxfoundation.org>
+        Corey Minyard <cminyard@mvista.com>,
+        Bodo Stroesser <bstroesser@ts.fujitsu.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.4 040/214] ipmi: Fix a race restarting the timer
+Date: Wed,  4 Jun 2014 21:16:43 -0700
+Message-Id: <20140605041645.015851700@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <20140605041639.638675216@linuxfoundation.org>
 References: <20140605041639.638675216@linuxfoundation.org>
 User-Agent: quilt/0.60-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,78 +28,138 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Geert Uytterhoeven <geert+renesas@glider.be>
+From: Bodo Stroesser <bstroesser@ts.fujitsu.com>
 
-commit 98b0f811aade1b7c6e7806c86aa0befd5919d65f upstream.
+commit 48e8ac2979920ffa39117e2d725afa3a749bfe8d upstream.
 
-The English and Korean translations were updated, the Chinese and Japanese
-weren't.
+With recent changes it is possible for the timer handler to detect an
+idle interface and not start the timer, but the thread to start an
+operation at the same time.  The thread will not start the timer in that
+instance, resulting in the timer not running.
 
-Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Instead, move all timer operations under the lock and start the timer in
+the thread if it detect non-idle and the timer is not already running.
+Moving under locks allows the last timeout to be set in both the thread
+and the timer.  'Timer is not running' means that the timer is not
+pending and smi_timeout() is not running.  So we need a flag to detect
+this correctly.
+
+Also fix a few other timeout bugs: setting the last timeout when the
+interrupt has to be disabled and the timer started, and setting the last
+timeout in check_start_timer_thread possibly racing with the timer
+
+Signed-off-by: Corey Minyard <cminyard@mvista.com>
+Signed-off-by: Bodo Stroesser <bstroesser@ts.fujitsu.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- Documentation/ja_JP/HOWTO                   |    2 +-
- Documentation/ja_JP/stable_kernel_rules.txt |    6 +++---
- Documentation/zh_CN/HOWTO                   |    2 +-
- Documentation/zh_CN/stable_kernel_rules.txt |    2 +-
- 4 files changed, 6 insertions(+), 6 deletions(-)
+ drivers/char/ipmi/ipmi_si_intf.c |   46 +++++++++++++++++++++++----------------
+ 1 file changed, 28 insertions(+), 18 deletions(-)
 
---- a/Documentation/ja_JP/HOWTO
-+++ b/Documentation/ja_JP/HOWTO
-@@ -315,7 +315,7 @@ Andrew Morton が Linux-kernel メーリ
- もし、2.6.x.y カーネルが存在しない場合には、番号が一番大きい 2.6.x が
- 最新の安定版カーネルです。
+--- a/drivers/char/ipmi/ipmi_si_intf.c
++++ b/drivers/char/ipmi/ipmi_si_intf.c
+@@ -244,6 +244,9 @@ struct smi_info {
+ 	/* The timer for this si. */
+ 	struct timer_list   si_timer;
  
--2.6.x.y は "stable" チーム <stable@kernel.org> でメンテされており、必
-+2.6.x.y は "stable" チーム <stable@vger.kernel.org> でメンテされており、必
- 要に応じてリリースされます。通常のリリース期間は 2週間毎ですが、差し迫っ
- た問題がなければもう少し長くなることもあります。セキュリティ関連の問題
- の場合はこれに対してだいたいの場合、すぐにリリースがされます。
---- a/Documentation/ja_JP/stable_kernel_rules.txt
-+++ b/Documentation/ja_JP/stable_kernel_rules.txt
-@@ -50,16 +50,16 @@ linux-2.6.29/Documentation/stable_kernel
++	/* This flag is set, if the timer is running (timer_pending() isn't enough) */
++	bool		    timer_running;
++
+ 	/* The time (in jiffies) the last timeout occurred at. */
+ 	unsigned long       last_timeout_jiffies;
  
- -stable ツリーにパッチを送付する手続き-
+@@ -427,6 +430,13 @@ static void start_clear_flags(struct smi
+ 	smi_info->si_state = SI_CLEARING_FLAGS;
+ }
  
-- - 上記の規則に従っているかを確認した後に、stable@kernel.org にパッチ
-+ - 上記の規則に従っているかを確認した後に、stable@vger.kernel.org にパッチ
-    を送る。
-  - 送信者はパッチがキューに受け付けられた際には ACK を、却下された場合
-    には NAK を受け取る。この反応は開発者たちのスケジュールによって、数
-    日かかる場合がある。
-  - もし受け取られたら、パッチは他の開発者たちと関連するサブシステムの
-    メンテナーによるレビューのために -stable キューに追加される。
-- - パッチに stable@kernel.org のアドレスが付加されているときには、それ
-+ - パッチに stable@vger.kernel.org のアドレスが付加されているときには、それ
-    が Linus のツリーに入る時に自動的に stable チームに email される。
-- - セキュリティパッチはこのエイリアス (stable@kernel.org) に送られるべ
-+ - セキュリティパッチはこのエイリアス (stable@vger.kernel.org) に送られるべ
-    きではなく、代わりに security@kernel.org のアドレスに送られる。
++static void smi_mod_timer(struct smi_info *smi_info, unsigned long new_val)
++{
++	smi_info->last_timeout_jiffies = jiffies;
++	mod_timer(&smi_info->si_timer, new_val);
++	smi_info->timer_running = true;
++}
++
+ /*
+  * When we have a situtaion where we run out of memory and cannot
+  * allocate messages, we just leave them in the BMC and run the system
+@@ -439,8 +449,7 @@ static inline void disable_si_irq(struct
+ 		start_disable_irq(smi_info);
+ 		smi_info->interrupt_disabled = 1;
+ 		if (!atomic_read(&smi_info->stop_operation))
+-			mod_timer(&smi_info->si_timer,
+-				  jiffies + SI_TIMEOUT_JIFFIES);
++			smi_mod_timer(smi_info, jiffies + SI_TIMEOUT_JIFFIES);
+ 	}
+ }
  
- レビューサイクル-
---- a/Documentation/zh_CN/HOWTO
-+++ b/Documentation/zh_CN/HOWTO
-@@ -237,7 +237,7 @@ kernel.org网站的pub/linux/kernel/v2.6
- 如果没有2.6.x.y版本内核存在，那么最新的2.6.x版本内核就相当于是当前的稳定
- 版内核。
+@@ -896,15 +905,7 @@ static void sender(void                *
+ 		list_add_tail(&msg->link, &smi_info->xmit_msgs);
  
--2.6.x.y版本由“稳定版”小组（邮件地址<stable@kernel.org>）维护，一般隔周发
-+2.6.x.y版本由“稳定版”小组（邮件地址<stable@vger.kernel.org>）维护，一般隔周发
- 布新版本。
+ 	if (smi_info->si_state == SI_NORMAL && smi_info->curr_msg == NULL) {
+-		/*
+-		 * last_timeout_jiffies is updated here to avoid
+-		 * smi_timeout() handler passing very large time_diff
+-		 * value to smi_event_handler() that causes
+-		 * the send command to abort.
+-		 */
+-		smi_info->last_timeout_jiffies = jiffies;
+-
+-		mod_timer(&smi_info->si_timer, jiffies + SI_TIMEOUT_JIFFIES);
++		smi_mod_timer(smi_info, jiffies + SI_TIMEOUT_JIFFIES);
  
- 内核源码中的Documentation/stable_kernel_rules.txt文件具体描述了可被稳定
---- a/Documentation/zh_CN/stable_kernel_rules.txt
-+++ b/Documentation/zh_CN/stable_kernel_rules.txt
-@@ -42,7 +42,7 @@ Documentation/stable_kernel_rules.txt �
+ 		if (smi_info->thread)
+ 			wake_up_process(smi_info->thread);
+@@ -993,6 +994,17 @@ static int ipmi_thread(void *data)
  
- 向稳定版代码树提交补丁的过程：
+ 		spin_lock_irqsave(&(smi_info->si_lock), flags);
+ 		smi_result = smi_event_handler(smi_info, 0);
++
++		/*
++		 * If the driver is doing something, there is a possible
++		 * race with the timer.  If the timer handler see idle,
++		 * and the thread here sees something else, the timer
++		 * handler won't restart the timer even though it is
++		 * required.  So start it here if necessary.
++		 */
++		if (smi_result != SI_SM_IDLE && !smi_info->timer_running)
++			smi_mod_timer(smi_info, jiffies + SI_TIMEOUT_JIFFIES);
++
+ 		spin_unlock_irqrestore(&(smi_info->si_lock), flags);
+ 		busy_wait = ipmi_thread_busy_wait(smi_result, smi_info,
+ 						  &busy_until);
+@@ -1062,10 +1074,6 @@ static void smi_timeout(unsigned long da
+ 		     * SI_USEC_PER_JIFFY);
+ 	smi_result = smi_event_handler(smi_info, time_diff);
  
--  - 在确认了补丁符合以上的规则后，将补丁发送到stable@kernel.org。
-+  - 在确认了补丁符合以上的规则后，将补丁发送到stable@vger.kernel.org。
-   - 如果补丁被接受到队列里，发送者会收到一个ACK回复，如果没有被接受，收
-     到的是NAK回复。回复需要几天的时间，这取决于开发者的时间安排。
-   - 被接受的补丁会被加到稳定版本队列里，等待其他开发者的审查。
+-	spin_unlock_irqrestore(&(smi_info->si_lock), flags);
+-
+-	smi_info->last_timeout_jiffies = jiffies_now;
+-
+ 	if ((smi_info->irq) && (!smi_info->interrupt_disabled)) {
+ 		/* Running with interrupts, only do long timeouts. */
+ 		timeout = jiffies + SI_TIMEOUT_JIFFIES;
+@@ -1087,7 +1095,10 @@ static void smi_timeout(unsigned long da
+ 
+  do_mod_timer:
+ 	if (smi_result != SI_SM_IDLE)
+-		mod_timer(&(smi_info->si_timer), timeout);
++		smi_mod_timer(smi_info, timeout);
++	else
++		smi_info->timer_running = false;
++	spin_unlock_irqrestore(&(smi_info->si_lock), flags);
+ }
+ 
+ static irqreturn_t si_irq_handler(int irq, void *data)
+@@ -1135,8 +1146,7 @@ static int smi_start_processing(void
+ 
+ 	/* Set up the timer that drives the interface. */
+ 	setup_timer(&new_smi->si_timer, smi_timeout, (long)new_smi);
+-	new_smi->last_timeout_jiffies = jiffies;
+-	mod_timer(&new_smi->si_timer, jiffies + SI_TIMEOUT_JIFFIES);
++	smi_mod_timer(new_smi, jiffies + SI_TIMEOUT_JIFFIES);
+ 
+ 	/*
+ 	 * Check if the user forcefully enabled the daemon.
 
 
