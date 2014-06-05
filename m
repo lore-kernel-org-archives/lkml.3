@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751750AbaFEMxf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jun 2014 08:53:35 -0400
-Received: from mga03.intel.com ([143.182.124.21]:20243 "EHLO mga03.intel.com"
+	id S1751856AbaFEMxw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jun 2014 08:53:52 -0400
+Received: from mga03.intel.com ([143.182.124.21]:20226 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751654AbaFEMxc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jun 2014 08:53:32 -0400
+	id S1751628AbaFEMxa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jun 2014 08:53:30 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.98,981,1392192000"; 
-   d="scan'208";a="441253864"
+   d="scan'208";a="441253855"
 From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
 To: Kishon Vijay Abraham I <kishon@ti.com>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Felipe Balbi <balbi@ti.com>, Vivek Gautam <gautam.vivek@samsung.com>,
         linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: [PATCHv2 6/6] usb: dwc3: host: convey the PHYs to xhci
-Date: Thu,  5 Jun 2014 15:52:58 +0300
-Message-Id: <1401972778-5880-7-git-send-email-heikki.krogerus@linux.intel.com>
+Subject: [PATCHv2 5/6] base: platform: name the device already during allocation
+Date: Thu,  5 Jun 2014 15:52:57 +0300
+Message-Id: <1401972778-5880-6-git-send-email-heikki.krogerus@linux.intel.com>
 X-Mailer: git-send-email 2.0.0.rc4
 In-Reply-To: <1401972778-5880-1-git-send-email-heikki.krogerus@linux.intel.com>
 References: <1401972778-5880-1-git-send-email-heikki.krogerus@linux.intel.com>
@@ -24,69 +24,144 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On some platforms a PHY may need to be handled also in the
-host controller driver. Exynos5420 SoC requires some "PHY
-tuning" based on the USB speed. This patch delivers dwc3's
-PHYs to the xhci platform device when it's created.
+This allows resources such as GPIOs and clocks, which can be
+matched based on the device name when requested, to be
+assigned even when PLATFORM_DEVID_AUTO is used.
 
 Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-Cc: Felipe Balbi <balbi@ti.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/usb/dwc3/host.c | 22 ++++++++++++++++------
- 1 file changed, 16 insertions(+), 6 deletions(-)
+ drivers/base/platform.c | 77 ++++++++++++++++++++++++++++++-------------------
+ 1 file changed, 47 insertions(+), 30 deletions(-)
 
-diff --git a/drivers/usb/dwc3/host.c b/drivers/usb/dwc3/host.c
-index 32db328..8387564 100644
---- a/drivers/usb/dwc3/host.c
-+++ b/drivers/usb/dwc3/host.c
-@@ -27,8 +27,7 @@ int dwc3_host_init(struct dwc3 *dwc)
- 	xhci = platform_device_alloc("xhci-hcd", PLATFORM_DEVID_AUTO);
- 	if (!xhci) {
- 		dev_err(dwc->dev, "couldn't allocate xHCI device\n");
--		ret = -ENOMEM;
--		goto err0;
-+		return -ENOMEM;
- 	}
- 
- 	dma_set_coherent_mask(&xhci->dev, dwc->dev->coherent_dma_mask);
-@@ -46,22 +45,33 @@ int dwc3_host_init(struct dwc3 *dwc)
- 		goto err1;
- 	}
- 
-+	phy_create_lookup(dwc->usb2_generic_phy, "usb2-phy",
-+			  dev_name(&xhci->dev));
-+	phy_create_lookup(dwc->usb3_generic_phy, "usb3-phy",
-+			  dev_name(&xhci->dev));
+diff --git a/drivers/base/platform.c b/drivers/base/platform.c
+index 9e9227e..e856bc4 100644
+--- a/drivers/base/platform.c
++++ b/drivers/base/platform.c
+@@ -177,11 +177,45 @@ struct platform_object {
+  */
+ void platform_device_put(struct platform_device *pdev)
+ {
+-	if (pdev)
+-		put_device(&pdev->dev);
++	if (!pdev)
++		return;
 +
- 	ret = platform_device_add(xhci);
- 	if (ret) {
- 		dev_err(dwc->dev, "failed to register xHCI device\n");
--		goto err1;
-+		goto err2;
++	if (pdev->id_auto) {
++		ida_simple_remove(&platform_devid_ida, pdev->id);
++		pdev->id = PLATFORM_DEVID_AUTO;
++	}
++
++	put_device(&pdev->dev);
+ }
+ EXPORT_SYMBOL_GPL(platform_device_put);
+ 
++static int pdev_set_name(struct platform_device *pdev)
++{
++	int ret;
++
++	switch (pdev->id) {
++	default:
++		return dev_set_name(&pdev->dev, "%s.%d", pdev->name,  pdev->id);
++	case PLATFORM_DEVID_NONE:
++		return dev_set_name(&pdev->dev, "%s", pdev->name);
++	case PLATFORM_DEVID_AUTO:
++		/*
++		 * Automatically allocated device ID. We mark it as such so
++		 * that we remember it must be freed, and we append a suffix
++		 * to avoid namespace collision with explicit IDs.
++		 */
++		ret = ida_simple_get(&platform_devid_ida, 0, 0, GFP_KERNEL);
++		if (ret < 0)
++			return ret;
++		pdev->id = ret;
++		pdev->id_auto = true;
++		return dev_set_name(&pdev->dev, "%s.%d.auto", pdev->name,
++				    pdev->id);
++	}
++
++	return 0;
++}
++
+ static void platform_device_release(struct device *dev)
+ {
+ 	struct platform_object *pa = container_of(dev, struct platform_object,
+@@ -214,6 +248,10 @@ struct platform_device *platform_device_alloc(const char *name, int id)
+ 		device_initialize(&pa->pdev.dev);
+ 		pa->pdev.dev.release = platform_device_release;
+ 		arch_setup_pdev_archdata(&pa->pdev);
++		if (pdev_set_name(&pa->pdev)) {
++			kfree(pa);
++			return NULL;
++		}
  	}
  
- 	return 0;
+ 	return pa ? &pa->pdev : NULL;
+@@ -294,28 +332,6 @@ int platform_device_add(struct platform_device *pdev)
+ 
+ 	pdev->dev.bus = &platform_bus_type;
+ 
+-	switch (pdev->id) {
+-	default:
+-		dev_set_name(&pdev->dev, "%s.%d", pdev->name,  pdev->id);
+-		break;
+-	case PLATFORM_DEVID_NONE:
+-		dev_set_name(&pdev->dev, "%s", pdev->name);
+-		break;
+-	case PLATFORM_DEVID_AUTO:
+-		/*
+-		 * Automatically allocated device ID. We mark it as such so
+-		 * that we remember it must be freed, and we append a suffix
+-		 * to avoid namespace collision with explicit IDs.
+-		 */
+-		ret = ida_simple_get(&platform_devid_ida, 0, 0, GFP_KERNEL);
+-		if (ret < 0)
+-			goto err_out;
+-		pdev->id = ret;
+-		pdev->id_auto = true;
+-		dev_set_name(&pdev->dev, "%s.%d.auto", pdev->name, pdev->id);
+-		break;
+-	}
 -
-+err2:
-+	phy_remove_lookup(dwc->usb2_generic_phy, "usb2-phy",
-+			  dev_name(&xhci->dev));
-+	phy_remove_lookup(dwc->usb3_generic_phy, "usb3-phy",
-+			  dev_name(&xhci->dev));
- err1:
- 	platform_device_put(xhci);
--
--err0:
+ 	for (i = 0; i < pdev->num_resources; i++) {
+ 		struct resource *p, *r = &pdev->resource[i];
+ 
+@@ -358,7 +374,6 @@ int platform_device_add(struct platform_device *pdev)
+ 			release_resource(r);
+ 	}
+ 
+- err_out:
  	return ret;
  }
+ EXPORT_SYMBOL_GPL(platform_device_add);
+@@ -378,11 +393,6 @@ void platform_device_del(struct platform_device *pdev)
+ 	if (pdev) {
+ 		device_del(&pdev->dev);
  
- void dwc3_host_exit(struct dwc3 *dwc)
+-		if (pdev->id_auto) {
+-			ida_simple_remove(&platform_devid_ida, pdev->id);
+-			pdev->id = PLATFORM_DEVID_AUTO;
+-		}
+-
+ 		for (i = 0; i < pdev->num_resources; i++) {
+ 			struct resource *r = &pdev->resource[i];
+ 			unsigned long type = resource_type(r);
+@@ -400,8 +410,15 @@ EXPORT_SYMBOL_GPL(platform_device_del);
+  */
+ int platform_device_register(struct platform_device *pdev)
  {
-+	phy_remove_lookup(dwc->usb2_generic_phy, "usb2-phy",
-+			  dev_name(&dwc->xhci->dev));
-+	phy_remove_lookup(dwc->usb3_generic_phy, "usb3-phy",
-+			  dev_name(&dwc->xhci->dev));
- 	platform_device_unregister(dwc->xhci);
++	int ret;
++
+ 	device_initialize(&pdev->dev);
+ 	arch_setup_pdev_archdata(pdev);
++
++	ret = pdev_set_name(pdev);
++	if (ret)
++		return ret;
++
+ 	return platform_device_add(pdev);
  }
+ EXPORT_SYMBOL_GPL(platform_device_register);
 -- 
 2.0.0.rc4
 
