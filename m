@@ -1,80 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757201AbaFEAqx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jun 2014 20:46:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39753 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752472AbaFDXVL (ORCPT
+	id S932729AbaFEAq6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jun 2014 20:46:58 -0400
+Received: from linuxhacker.ru ([217.76.32.60]:47130 "EHLO fiona.linuxhacker.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757204AbaFEAqz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jun 2014 19:21:11 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>,
-        Terje Bergstrom <tbergstrom@nvidia.com>,
-        Thierry Reding <treding@nvidia.com>
-Subject: [PATCH 3.14 027/228] gpu: host1x: handle the correct # of syncpt regs
-Date: Wed,  4 Jun 2014 16:20:56 -0700
-Message-Id: <20140604232348.956731170@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140604232347.966798903@linuxfoundation.org>
-References: <20140604232347.966798903@linuxfoundation.org>
-User-Agent: quilt/0.63-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	Wed, 4 Jun 2014 20:46:55 -0400
+Subject: Re: [patch v2] mm, pcp: allow restoring percpu_pagelist_fraction default
+Mime-Version: 1.0 (Apple Message framework v1283)
+Content-Type: text/plain; charset=us-ascii
+From: Oleg Drokin <green@linuxhacker.ru>
+In-Reply-To: <alpine.DEB.2.02.1406041734150.17045@chino.kir.corp.google.com>
+Date: Wed, 4 Jun 2014 20:46:05 -0400
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Randy Dunlap <rdunlap@infradead.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-doc@vger.kernel.org,
+        devel@driverdev.osuosl.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <FB428F94-91FA-4E4F-8DA3-060C3C41F261@linuxhacker.ru>
+References: <1399166883-514-1-git-send-email-green@linuxhacker.ru> <alpine.DEB.2.02.1406021837490.13072@chino.kir.corp.google.com> <B549468A-10FC-4897-8720-7C9FEC6FD03A@linuxhacker.ru> <alpine.DEB.2.02.1406022056300.20536@chino.kir.corp.google.com> <2C763027-307F-4BC0-8C0A-7E3D5957A4DA@linuxhacker.ru> <alpine.DEB.2.02.1406031819580.8682@chino.kir.corp.google.com> <85AFB547-D3A1-4818-AD82-FF90909775D2@linuxhacker.ru> <alpine.DEB.2.02.1406041734150.17045@chino.kir.corp.google.com>
+To: David Rientjes <rientjes@google.com>
+X-Mailer: Apple Mail (2.1283)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+Hello!
 
-------------------
+On Jun 4, 2014, at 8:34 PM, David Rientjes wrote:
+> @@ -5850,23 +5851,39 @@ int percpu_pagelist_fraction_sysctl_handler(ctl_table *table, int write,
+> 	void __user *buffer, size_t *length, loff_t *ppos)
+> {
+> 	struct zone *zone;
+> -	unsigned int cpu;
+> +	int old_percpu_pagelist_fraction;
+> 	int ret;
+> 
+> +	mutex_lock(&pcp_batch_high_lock);
+> +	old_percpu_pagelist_fraction = percpu_pagelist_fraction;
+> +
+> 	ret = proc_dointvec_minmax(table, write, buffer, length, ppos);
+> -	if (!write || (ret < 0))
+> -		return ret;
+> +	if (!write || ret < 0)
+> +		goto out;
+> +
+> +	/* Sanity checking to avoid pcp imbalance */
+> +	if (percpu_pagelist_fraction &&
+> +	    percpu_pagelist_fraction < MIN_PERCPU_PAGELIST_FRACTION) {
+> +		percpu_pagelist_fraction = old_percpu_pagelist_fraction;
+> +		ret = -EINVAL;
+> +		goto out;
+> +	}
+> +
+> +	ret = 0;
 
-From: Stephen Warren <swarren@nvidia.com>
+Minor nitpick I guess, but ret cannot be anything but 0 here I think (until somebody changes the way proc_dointvec_minmax for write=true operates)?
 
-commit 22bbd5d949dc7fdd72a4e78e767fa09d8e54b446 upstream.
+The patch is good otherwise.
 
-BIT_WORD() truncates rather than rounds, so the loops in
-syncpt_thresh_isr() and _host1x_intr_disable_all_syncpt_intrs() use <=
-rather than < in an attempt to process the correct number of registers
-when rounding of the conversion of count of bits to count of words is
-necessary. However, when rounding isn't necessary because the value is
-already a multiple of the divisor (as is the case for all values of
-nb_pts the code actually sees), this causes one too many registers to
-be processed.
-
-Solve this by using and explicit DIV_ROUND_UP() call, rather than
-BIT_WORD(), and comparing with < rather than <=.
-
-Fixes: 7ede0b0bf3e2 ("gpu: host1x: Add syncpoint wait and interrupts")
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
-Acked-By: Terje Bergstrom <tbergstrom@nvidia.com>
-Signed-off-by: Thierry Reding <treding@nvidia.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/gpu/host1x/hw/intr_hw.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
---- a/drivers/gpu/host1x/hw/intr_hw.c
-+++ b/drivers/gpu/host1x/hw/intr_hw.c
-@@ -47,7 +47,7 @@ static irqreturn_t syncpt_thresh_isr(int
- 	unsigned long reg;
- 	int i, id;
- 
--	for (i = 0; i <= BIT_WORD(host->info->nb_pts); i++) {
-+	for (i = 0; i < DIV_ROUND_UP(host->info->nb_pts, 32); i++) {
- 		reg = host1x_sync_readl(host,
- 			HOST1X_SYNC_SYNCPT_THRESH_CPU0_INT_STATUS(i));
- 		for_each_set_bit(id, &reg, BITS_PER_LONG) {
-@@ -64,7 +64,7 @@ static void _host1x_intr_disable_all_syn
- {
- 	u32 i;
- 
--	for (i = 0; i <= BIT_WORD(host->info->nb_pts); ++i) {
-+	for (i = 0; i < DIV_ROUND_UP(host->info->nb_pts, 32); ++i) {
- 		host1x_sync_writel(host, 0xffffffffu,
- 			HOST1X_SYNC_SYNCPT_THRESH_INT_DISABLE(i));
- 		host1x_sync_writel(host, 0xffffffffu,
-
-
+Thanks.
